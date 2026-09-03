@@ -459,3 +459,21 @@ paired [Step 5C.1 contract](../../task_contracts/ja/STEP5C1-VARIABLE-SEMANTICS.m
 に従い、`names.rs` は authenticated `SurfaceAst` から binding/reference/capture/
 source-order identity を導出し、duplicate/forward/unreserved を fail closed にする。
 checker `BindingEnv` だけが内部 identity へ写像し、type/thesis は resolver 外に残る。
+parser root の flat token overlay は lexical parent ではなく metadata とし、真の
+non-root sharing は fail closed のまま。`DefinitionBlockItem` 内の variable
+declaration/reference/statement はこの proof-scope receipt の所有外とする。この
+receipt は optional thesis を1件だけ公開するため、受理する `TheoremItem` は最大1件とし、
+複数 theorem transaction は異なる thesis の下へ statement を混在させず
+`InvalidShape` で拒否する。
+
+R-026 public-enum registrations は次の通り:
+
+- `SourceVariableBindingKind`
+- `SourceVariableReferenceKind`
+- `SourceVariableTypeRadix`
+- `SourceVariableTerm`
+- `SourceVariableFormula`
+- `SourceVariableStatement`
+- `SourceVariableScopeError`
+
+すべて `#[non_exhaustive]` とし、exception は登録しない。

@@ -7,7 +7,8 @@ source = "pass_formula_statement_let_such_that_assumption_001.miz"
 expected_outcome = "pass"
 expected_phase = "statement_check"
 diagnostic_codes = []
+tags = ["active_formula_statement"]
 spec_refs = [
   "spec.en.04.variables.let_such_that.semantic",
 ]
-notes = "Audit-1 semantic-bridge inactive oracle seed (September 2026 audit wave): binding expectation for the Step-5 semantic bridge; no active runner tag, earns no current credit. A let generalization with a such-that condition consumes the st antecedent of the universal thesis (spec 4.2, 15.2)."
+notes = "Step 5C.1 active semantic oracle; outcome, phase, key, and backlinks remain frozen. A let generalization with a such-that condition consumes the st antecedent of the universal thesis (spec 4.2, 15.2)."

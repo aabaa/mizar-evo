@@ -1028,7 +1028,7 @@ fn task262_mode_definition_justification_and_semantic_subtrees_are_not_published
         plan.cases.iter().filter(has_active_type_tag).filter(|case| case.expectation.expected_phase == Some(crate::expectation::PipelinePhase::TypeCheck)).count(),
         plan.cases.iter().filter(has_active_type_tag).filter(|case| matches!(case.expectation.expected_outcome, crate::expectation::ExpectedOutcome::Pass | crate::expectation::ExpectedOutcome::Fail)).count(),
         plan.cases.iter().filter(has_active_type_tag).filter(|case| case.source_path.extension().is_some_and(|ext| ext == "miz")).count(),
-    ], [205; 6]);
+    ], [211, 211, 211, 208, 211, 211]);
     assert_eq!(
         (plan.cases.len(), plan.manifest.requirements.len()),
         (558, 499)
@@ -1050,7 +1050,7 @@ fn task262_mode_definition_justification_and_semantic_subtrees_are_not_published
             active_type_elaboration_cases(&plan).count(),
             crate::active_proof_verification_cases(&plan).count(),
         ),
-        (109, 7, 205, 1)
+        (109, 7, 211, 1)
     );
     let type_stage = plan
         .coverage_report

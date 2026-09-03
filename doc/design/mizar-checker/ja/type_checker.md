@@ -47,12 +47,14 @@ VC generation、proof acceptance は追加しない。task 7-11 が以下の nam
 
 - resolver name lookup、label lookup、import/export validation、symbol allocation;
 - `binding_env` が所有済みの binding-context construction と binder identity rule;
-- cluster saturation、registration activation、reduction normalization、
-  canonical `ResolutionTrace` schema;
+- cluster saturation、registration activation、下記 Step 5C.1 の authenticated
+  identity-based slice を超える一般的な reduction normalization、canonical
+  `ResolutionTrace` schema;
 - final ordinary overload root selection、active refinement joining、inserted
   overload-disambiguating `qua` view;
-- `binding_env` が提供する definition-time closure metadata の保存を超える
-  `set`、`deffunc`、`defpred` body の expansion replay;
+- 下記 Step 5C.1 の限定された local-definition slice と `binding_env` が提供する
+  definition-time closure metadata の保存を超える `set`、`deffunc`、`defpred`
+  body の expansion replay;
 - `VcId`、`ObligationAnchor`、proof witness、prover result、accepted verifier
   status、kernel replay;
 - checker diagnostic code-space が外部 planning gate である間の public
@@ -2929,3 +2931,6 @@ paired [Step 5C.1 contract](../../task_contracts/ja/STEP5C1-VARIABLE-SEMANTICS.m
 reserved type、builtin widening、proof-required narrowingを扱う。`BindingEnv`へ
 identityを写像した後、transparent local definitionと限定された`let`/`take`
 thesis遷移を所有する。proof search/theorem acceptanceはdownstreamのまま。
+implicit `let` は authenticated prior root reservation だけを継承し、local alias は
+binding identity で簡約し、recursive inline definition は cycle guard で fail closed
+にする。

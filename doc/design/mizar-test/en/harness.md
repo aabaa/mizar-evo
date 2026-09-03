@@ -120,6 +120,24 @@ pub struct TypeElaborationRunReport {
     pub diagnostics: Vec<ValidationDiagnostic>,
 }
 
+pub struct FormulaStatementRunReport {
+    pub results: Vec<FormulaStatementCaseResult>,
+    pub diagnostics: Vec<ValidationDiagnostic>,
+}
+
+pub struct FormulaStatementCaseResult {
+    pub id: TestCaseId,
+    pub expectation_path: PathBuf,
+    pub status: FormulaStatementCaseStatus,
+    pub actual_detail_keys: Vec<String>,
+}
+
+#[non_exhaustive]
+pub enum FormulaStatementCaseStatus {
+    Passed,
+    Failed,
+}
+
 pub struct TypeElaborationCaseResult {
     pub id: TestCaseId,
     pub expectation_path: PathBuf,
@@ -165,6 +183,8 @@ active runners expose stage-specific report records while sharing the metadata
 plan and validation diagnostics shown above. `SyntaxSmokeRunReport` also
 provides `passed_count`, `failed_count`, `expected_rejection_count`,
 `error_count`, and `warning_count`.
+Step 5C.1 exports `active_formula_statement_cases(&TestPlan)` and
+`run_formula_statement_corpus(&DiscoveryConfig)` alongside that report surface.
 
 ## Public Enum Forward Compatibility
 
@@ -182,6 +202,7 @@ variants.
 | `HarnessError` | `harness` infrastructure failure boundary | `#[non_exhaustive]` downstream forward-compatible surface. |
 | `ParseOnlyCaseStatus` | `runner` parse-only report status | `#[non_exhaustive]` downstream forward-compatible surface. |
 | `DeclarationSymbolCaseStatus` | `runner` declaration-symbol report status | `#[non_exhaustive]` downstream forward-compatible surface. |
+| `FormulaStatementCaseStatus` | `runner` formula-statement report status | `#[non_exhaustive]` downstream forward-compatible surface. |
 | `TypeElaborationCaseStatus` | `runner` type-elaboration report status | `#[non_exhaustive]` downstream forward-compatible surface. |
 | `ProofVerificationCaseStatus` | `runner` exact proof-verification report status | `#[non_exhaustive]` downstream forward-compatible surface. |
 | `SyntaxSmokeCaseStatus` | `runner` syntax-only corpus report status | `#[non_exhaustive]` downstream forward-compatible surface. |
@@ -6161,5 +6182,7 @@ The paired [Step 5C.1 contract](../../task_contracts/en/STEP5C1-VARIABLE-SEMANTI
 adds an `active_formula_statement` runner and CLI command. Its private extractor
 passes unrecovered `SurfaceAst` to the resolver owner and the authenticated
 receipt to the checker; it performs no semantic extraction or textual recovery.
-It activates only the 12 mapped sidecars and never switches on case ids or raw
-source text.
+Exact id/source/phase/outcome and the sole activation tag authenticate admission
+for the six formula and six type rows; they never choose a semantic result.
+The formula route requires the duplicate frontend/checker handshake, while the
+type route preserves resolver keys before legacy dispatch.

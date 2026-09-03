@@ -7,7 +7,8 @@ source = "pass_formula_statement_deffunc_defpred_local_001.miz"
 expected_outcome = "pass"
 expected_phase = "statement_check"
 diagnostic_codes = []
+tags = ["active_formula_statement"]
 spec_refs = [
   "spec.en.04.variables.inline_deffunc_defpred.semantic",
 ]
-notes = "Audit-1 semantic-bridge inactive oracle seed (September 2026 audit wave): binding expectation for the Step-5 semantic bridge; no active runner tag, earns no current credit. Proof-local deffunc/defpred introduce reusable term/formula abbreviations whose applications unfold definitionally (spec 4.4)."
+notes = "Step 5C.1 active semantic oracle; outcome, phase, key, and backlinks remain frozen. Proof-local deffunc/defpred introduce reusable term/formula abbreviations whose applications unfold definitionally (spec 4.4)."

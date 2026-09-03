@@ -7,7 +7,8 @@ source = "pass_type_elaboration_reserve_shadow_explicit_type_001.miz"
 expected_outcome = "pass"
 expected_phase = "type_check"
 diagnostic_codes = []
+tags = ["active_type_elaboration"]
 spec_refs = [
   "spec.en.04.variables.reserve.explicit_override",
 ]
-notes = "Audit-1 semantic-bridge inactive oracle seed (September 2026 audit wave): binding expectation for the Step-5 semantic bridge; no active runner tag, earns no current credit. An explicit quantifier qualification overrides an active reservation for the same identifier (spec 4.3, 4.6)."
+notes = "Step 5C.1 active semantic oracle; outcome, phase, key, and backlinks remain frozen. An explicit quantifier qualification overrides an active reservation for the same identifier (spec 4.3, 4.6)."

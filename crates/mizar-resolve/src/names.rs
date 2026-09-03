@@ -24,7 +24,10 @@ use crate::resolved_ast::{
     SymbolRef,
 };
 use mizar_session::{ModulePath, PackageId, SourceId, SourceRange};
-use mizar_syntax::{SurfaceAst, SurfaceNodeId, SurfaceNodeKind, SurfaceNodeView, SurfaceTokenKind};
+use mizar_syntax::{
+    SurfaceAst, SurfaceNodeId, SurfaceNodeKind, SurfaceNodeView, SurfaceQuantifierKind,
+    SurfaceTokenKind,
+};
 use std::cmp::Ordering;
 use std::collections::{BTreeMap, BTreeSet};
 
@@ -4417,6 +4420,2315 @@ fn source_range_cmp(left: SourceRange, right: SourceRange) -> Ordering {
 
 fn range_key_string(range: SourceRange) -> String {
     format!("{}..{}", range.start, range.end)
+}
+
+// -------------------------------------------------------------------------
+// Step 5C.1 source-derived variable semantics
+// -------------------------------------------------------------------------
+
+/// Dense identity for a source variable binding.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
+pub struct SourceVariableBindingId(usize);
+
+impl SourceVariableBindingId {
+    /// Returns the zero-based binding index.
+    #[must_use]
+    pub const fn index(self) -> usize {
+        self.0
+    }
+}
+
+/// Dense identity for a source variable reference.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
+pub struct SourceVariableReferenceId(usize);
+
+impl SourceVariableReferenceId {
+    /// Returns the zero-based reference index.
+    #[must_use]
+    pub const fn index(self) -> usize {
+        self.0
+    }
+}
+
+/// Kind of source binding admitted by the variable resolver.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
+#[non_exhaustive]
+pub enum SourceVariableBindingKind {
+    /// A top-level default type declaration.
+    Reserve,
+    /// A formula-level quantifier binder.
+    Quantifier,
+    /// A proof-local generalization.
+    Let,
+    /// A proof-local abbreviation introduced by `set`.
+    Set,
+    /// A named value introduced by `reconsider`.
+    Reconsider,
+    /// A local inline function definition.
+    InlineFunctor,
+    /// A local inline predicate definition.
+    InlinePredicate,
+    /// A formal parameter of an inline definition.
+    InlineParameter,
+}
+
+/// Kind of source variable reference admitted by the variable resolver.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
+#[non_exhaustive]
+pub enum SourceVariableReferenceKind {
+    /// A plain term reference.
+    Term,
+    /// A call to an inline function.
+    InlineFunctor { arity: usize },
+    /// A call to an inline predicate.
+    InlinePredicate { arity: usize },
+}
+
+impl SourceVariableReferenceKind {
+    /// Returns the inline-call arity, or `None` for a plain term.
+    #[must_use]
+    pub const fn arity(self) -> Option<usize> {
+        match self {
+            Self::Term => None,
+            Self::InlineFunctor { arity } | Self::InlinePredicate { arity } => Some(arity),
+        }
+    }
+}
+
+/// Root kind of a source type expression.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
+#[non_exhaustive]
+pub enum SourceVariableTypeRadix {
+    /// The mathematical-set radix.
+    Set,
+    /// The universal-object radix.
+    Object,
+}
+
+/// The source type payload retained by the variable resolver.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct SourceVariableType {
+    radix: SourceVariableTypeRadix,
+    attributes: Vec<String>,
+}
+
+impl SourceVariableType {
+    /// Returns the radix type.
+    #[must_use]
+    pub const fn radix(&self) -> SourceVariableTypeRadix {
+        self.radix
+    }
+
+    /// Returns attributes in source order.
+    #[must_use]
+    pub fn attributes(&self) -> &[String] {
+        &self.attributes
+    }
+}
+
+/// One resolved source binding.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct SourceVariableBinding {
+    id: SourceVariableBindingId,
+    kind: SourceVariableBindingKind,
+    spelling: String,
+    node: SurfaceNodeId,
+    range: SourceRange,
+    scope: LocalTermScope,
+    ordinal: usize,
+    declared_type: Option<SourceVariableType>,
+    arity: Option<usize>,
+    captures: Vec<SourceVariableBindingId>,
+}
+
+impl SourceVariableBinding {
+    /// Returns this binding's dense identity.
+    #[must_use]
+    pub const fn id(&self) -> SourceVariableBindingId {
+        self.id
+    }
+
+    /// Returns the binding kind.
+    #[must_use]
+    pub const fn kind(&self) -> SourceVariableBindingKind {
+        self.kind
+    }
+
+    /// Returns the source spelling.
+    #[must_use]
+    pub fn spelling(&self) -> &str {
+        &self.spelling
+    }
+
+    /// Returns the identifier node carrying the binding.
+    #[must_use]
+    pub const fn node(&self) -> SurfaceNodeId {
+        self.node
+    }
+
+    /// Returns the identifier range.
+    #[must_use]
+    pub const fn range(&self) -> SourceRange {
+        self.range
+    }
+
+    /// Returns the lexical scope.
+    #[must_use]
+    pub const fn scope(&self) -> &LocalTermScope {
+        &self.scope
+    }
+
+    /// Returns the source-order declaration ordinal.
+    #[must_use]
+    pub const fn ordinal(&self) -> usize {
+        self.ordinal
+    }
+
+    /// Returns the optional declared type.
+    #[must_use]
+    pub fn declared_type(&self) -> Option<&SourceVariableType> {
+        self.declared_type.as_ref()
+    }
+
+    /// Returns the optional inline arity.
+    #[must_use]
+    pub const fn arity(&self) -> Option<usize> {
+        self.arity
+    }
+
+    /// Returns explicit outer bindings captured by this definition.
+    #[must_use]
+    pub fn captures(&self) -> &[SourceVariableBindingId] {
+        &self.captures
+    }
+}
+
+/// One resolved source reference.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct SourceVariableReference {
+    id: SourceVariableReferenceId,
+    kind: SourceVariableReferenceKind,
+    spelling: String,
+    node: SurfaceNodeId,
+    range: SourceRange,
+    scope: LocalTermScope,
+    ordinal: usize,
+    binding: SourceVariableBindingId,
+}
+
+impl SourceVariableReference {
+    /// Returns this reference's dense identity.
+    #[must_use]
+    pub const fn id(&self) -> SourceVariableReferenceId {
+        self.id
+    }
+
+    /// Returns the reference kind.
+    #[must_use]
+    pub const fn kind(&self) -> SourceVariableReferenceKind {
+        self.kind
+    }
+
+    /// Returns the source spelling.
+    #[must_use]
+    pub fn spelling(&self) -> &str {
+        &self.spelling
+    }
+
+    /// Returns the term/reference node.
+    #[must_use]
+    pub const fn node(&self) -> SurfaceNodeId {
+        self.node
+    }
+
+    /// Returns the identifier range.
+    #[must_use]
+    pub const fn range(&self) -> SourceRange {
+        self.range
+    }
+
+    /// Returns the lexical scope.
+    #[must_use]
+    pub const fn scope(&self) -> &LocalTermScope {
+        &self.scope
+    }
+
+    /// Returns the source-order reference ordinal.
+    #[must_use]
+    pub const fn ordinal(&self) -> usize {
+        self.ordinal
+    }
+
+    /// Returns the authenticated target binding.
+    #[must_use]
+    pub const fn binding(&self) -> SourceVariableBindingId {
+        self.binding
+    }
+}
+
+/// A resolved source term payload.
+#[derive(Debug, Clone, PartialEq, Eq)]
+#[non_exhaustive]
+pub enum SourceVariableTerm {
+    /// A plain binding reference.
+    Binding {
+        node: SurfaceNodeId,
+        range: SourceRange,
+        reference: SourceVariableReferenceId,
+    },
+    /// An identity-based inline functor call.
+    InlineFunctor {
+        node: SurfaceNodeId,
+        range: SourceRange,
+        definition_reference: SourceVariableReferenceId,
+        arguments: Vec<Box<SourceVariableTerm>>,
+    },
+}
+
+impl SourceVariableTerm {
+    /// Returns the outer term node.
+    #[must_use]
+    pub const fn node(&self) -> SurfaceNodeId {
+        match self {
+            Self::Binding { node, .. } | Self::InlineFunctor { node, .. } => *node,
+        }
+    }
+
+    /// Returns the outer term range.
+    #[must_use]
+    pub const fn range(&self) -> SourceRange {
+        match self {
+            Self::Binding { range, .. } | Self::InlineFunctor { range, .. } => *range,
+        }
+    }
+
+    /// Returns the plain-reference id for a binding term.
+    #[must_use]
+    pub const fn reference(&self) -> Option<SourceVariableReferenceId> {
+        match self {
+            Self::Binding { reference, .. } => Some(*reference),
+            Self::InlineFunctor { .. } => None,
+        }
+    }
+
+    /// Returns the inline definition reference, when this is a call.
+    #[must_use]
+    pub const fn definition_reference(&self) -> Option<SourceVariableReferenceId> {
+        match self {
+            Self::Binding { .. } => None,
+            Self::InlineFunctor {
+                definition_reference,
+                ..
+            } => Some(*definition_reference),
+        }
+    }
+
+    /// Returns inline-call arguments.
+    #[must_use]
+    pub fn arguments(&self) -> &[Box<SourceVariableTerm>] {
+        match self {
+            Self::Binding { .. } => &[],
+            Self::InlineFunctor { arguments, .. } => arguments,
+        }
+    }
+}
+
+/// A resolved source formula payload.
+#[derive(Debug, Clone, PartialEq, Eq)]
+#[non_exhaustive]
+pub enum SourceVariableFormula {
+    /// A source equality.
+    Equality {
+        node: SurfaceNodeId,
+        range: SourceRange,
+        left: Box<SourceVariableTerm>,
+        right: Box<SourceVariableTerm>,
+    },
+    /// A source type assertion.
+    TypeAssertion {
+        node: SurfaceNodeId,
+        range: SourceRange,
+        term: Box<SourceVariableTerm>,
+        target: SourceVariableType,
+    },
+    /// An identity-based inline predicate call.
+    InlinePredicate {
+        node: SurfaceNodeId,
+        range: SourceRange,
+        definition_reference: SourceVariableReferenceId,
+        arguments: Vec<Box<SourceVariableTerm>>,
+    },
+    /// A universal quantifier.
+    ForAll {
+        node: SurfaceNodeId,
+        range: SourceRange,
+        binding: SourceVariableBindingId,
+        condition: Option<Box<SourceVariableFormula>>,
+        body: Box<SourceVariableFormula>,
+    },
+    /// An existential quantifier.
+    Exists {
+        node: SurfaceNodeId,
+        range: SourceRange,
+        binding: SourceVariableBindingId,
+        body: Box<SourceVariableFormula>,
+    },
+}
+
+impl SourceVariableFormula {
+    /// Returns the outer formula node.
+    #[must_use]
+    pub const fn node(&self) -> SurfaceNodeId {
+        match self {
+            Self::Equality { node, .. }
+            | Self::TypeAssertion { node, .. }
+            | Self::InlinePredicate { node, .. }
+            | Self::ForAll { node, .. }
+            | Self::Exists { node, .. } => *node,
+        }
+    }
+
+    /// Returns the outer formula range.
+    #[must_use]
+    pub const fn range(&self) -> SourceRange {
+        match self {
+            Self::Equality { range, .. }
+            | Self::TypeAssertion { range, .. }
+            | Self::InlinePredicate { range, .. }
+            | Self::ForAll { range, .. }
+            | Self::Exists { range, .. } => *range,
+        }
+    }
+}
+
+/// A resolved source statement payload.
+#[derive(Debug, Clone, PartialEq, Eq)]
+#[non_exhaustive]
+pub enum SourceVariableStatement {
+    /// A local generalization.
+    Let {
+        node: SurfaceNodeId,
+        range: SourceRange,
+        binding: SourceVariableBindingId,
+        condition: Option<Box<SourceVariableFormula>>,
+    },
+    /// A local abbreviation.
+    Set {
+        node: SurfaceNodeId,
+        range: SourceRange,
+        binding: SourceVariableBindingId,
+        value: Box<SourceVariableTerm>,
+    },
+    /// A named reconsideration.
+    Reconsider {
+        node: SurfaceNodeId,
+        range: SourceRange,
+        binding: SourceVariableBindingId,
+        value: Box<SourceVariableTerm>,
+        target: SourceVariableType,
+        justified: bool,
+    },
+    /// An inline function definition.
+    DefineFunctor {
+        node: SurfaceNodeId,
+        range: SourceRange,
+        binding: SourceVariableBindingId,
+        formals: Vec<SourceVariableBindingId>,
+        result: SourceVariableType,
+        body: Box<SourceVariableTerm>,
+    },
+    /// An inline predicate definition.
+    DefinePredicate {
+        node: SurfaceNodeId,
+        range: SourceRange,
+        binding: SourceVariableBindingId,
+        formals: Vec<SourceVariableBindingId>,
+        body: Box<SourceVariableFormula>,
+    },
+    /// A compact, assumption, or conclusion formula.
+    Assert {
+        node: SurfaceNodeId,
+        range: SourceRange,
+        formula: Box<SourceVariableFormula>,
+        conclusion: bool,
+    },
+    /// An existential witness introduction.
+    Take {
+        node: SurfaceNodeId,
+        range: SourceRange,
+        witness: Box<SourceVariableTerm>,
+        existential_binding: Option<SourceVariableBindingId>,
+    },
+}
+
+impl SourceVariableStatement {
+    /// Returns the statement node.
+    #[must_use]
+    pub const fn node(&self) -> SurfaceNodeId {
+        match self {
+            Self::Let { node, .. }
+            | Self::Set { node, .. }
+            | Self::Reconsider { node, .. }
+            | Self::DefineFunctor { node, .. }
+            | Self::DefinePredicate { node, .. }
+            | Self::Assert { node, .. }
+            | Self::Take { node, .. } => *node,
+        }
+    }
+
+    /// Returns the statement range.
+    #[must_use]
+    pub const fn range(&self) -> SourceRange {
+        match self {
+            Self::Let { range, .. }
+            | Self::Set { range, .. }
+            | Self::Reconsider { range, .. }
+            | Self::DefineFunctor { range, .. }
+            | Self::DefinePredicate { range, .. }
+            | Self::Assert { range, .. }
+            | Self::Take { range, .. } => *range,
+        }
+    }
+}
+
+/// Errors produced by source-derived variable resolution.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
+#[non_exhaustive]
+pub enum SourceVariableScopeError {
+    /// A source range does not belong to the supplied surface source.
+    SourceMismatch,
+    /// The symbol environment belongs to another module.
+    ModuleMismatch,
+    /// The surface AST contains recovered syntax.
+    RecoveredSyntax,
+    /// The represented AST shape is not admitted by this slice.
+    InvalidShape,
+    /// A same-scope local constant was declared more than once.
+    DuplicateLocalConstant,
+    /// A reference points to a later declaration.
+    ForwardReference,
+    /// An implicit variable has no visible reservation.
+    UnreservedImplicitVariable,
+    /// A source reference has no visible local binding.
+    UnresolvedReference,
+    /// An inline call has the wrong number of arguments.
+    ArityMismatch,
+}
+
+impl SourceVariableScopeError {
+    /// Returns the exact semantic detail key, when this is an oracle error.
+    #[must_use]
+    pub const fn detail_key(self) -> Option<&'static str> {
+        match self {
+            Self::DuplicateLocalConstant => Some("variables.local_constant.duplicate_identifier"),
+            Self::ForwardReference => Some("variables.local_constant.forward_reference"),
+            Self::UnreservedImplicitVariable => {
+                Some("variables.reserve.unreserved_implicit_variable")
+            }
+            Self::SourceMismatch
+            | Self::ModuleMismatch
+            | Self::RecoveredSyntax
+            | Self::InvalidShape
+            | Self::UnresolvedReference
+            | Self::ArityMismatch => None,
+        }
+    }
+}
+
+/// Input authenticated by the source-variable resolver.
+pub struct SourceVariableScopeInput<'a> {
+    ast: &'a SurfaceAst,
+    module_id: &'a ModuleId,
+    symbols: &'a crate::env::SymbolEnv,
+}
+
+impl<'a> SourceVariableScopeInput<'a> {
+    /// Creates source-variable resolver input.
+    #[must_use]
+    pub fn new(
+        ast: &'a SurfaceAst,
+        module_id: &'a ModuleId,
+        symbols: &'a crate::env::SymbolEnv,
+    ) -> Self {
+        Self {
+            ast,
+            module_id,
+            symbols,
+        }
+    }
+}
+
+/// Source-derived, authenticated variable scope and payload output.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct ResolvedVariableScope {
+    source_id: SourceId,
+    module_id: ModuleId,
+    bindings: Vec<SourceVariableBinding>,
+    references: Vec<SourceVariableReference>,
+    thesis: Option<SourceVariableFormula>,
+    statements: Vec<SourceVariableStatement>,
+}
+
+impl ResolvedVariableScope {
+    /// Returns the authenticated source id.
+    #[must_use]
+    pub const fn source_id(&self) -> SourceId {
+        self.source_id
+    }
+
+    /// Returns the authenticated module id.
+    #[must_use]
+    pub const fn module_id(&self) -> &ModuleId {
+        &self.module_id
+    }
+
+    /// Returns bindings in deterministic declaration order.
+    #[must_use]
+    pub fn bindings(&self) -> &[SourceVariableBinding] {
+        &self.bindings
+    }
+
+    /// Returns references in deterministic source order.
+    #[must_use]
+    pub fn references(&self) -> &[SourceVariableReference] {
+        &self.references
+    }
+
+    /// Returns the theorem thesis formula, if represented.
+    #[must_use]
+    pub fn thesis(&self) -> Option<&SourceVariableFormula> {
+        self.thesis.as_ref()
+    }
+
+    /// Returns statements in deterministic source order.
+    #[must_use]
+    pub fn statements(&self) -> &[SourceVariableStatement] {
+        &self.statements
+    }
+}
+
+/// Resolver for the frozen Step 5C.1 source-variable slice.
+pub struct SourceVariableScopeResolver;
+
+impl SourceVariableScopeResolver {
+    /// Resolves source-shaped declarations and references after authenticating
+    /// provenance, recovery, and structural shape.
+    pub fn resolve(
+        input: SourceVariableScopeInput<'_>,
+    ) -> Result<ResolvedVariableScope, SourceVariableScopeError> {
+        let scopes = validate_variable_surface(input.ast)?;
+        if input.module_id != input.symbols.module_id() {
+            return Err(SourceVariableScopeError::ModuleMismatch);
+        }
+        if input
+            .ast
+            .node_views()
+            .filter(|view| matches!(view.kind(), SurfaceNodeKind::TheoremItem))
+            .nth(1)
+            .is_some()
+        {
+            return Err(SourceVariableScopeError::InvalidShape);
+        }
+
+        let mut state = VariableResolveState::new(input.ast, input.module_id, scopes);
+        state.collect_declarations()?;
+        state.validate_declarations()?;
+        // Application nodes are only admitted for the two inline-definition
+        // forms owned by this slice.  Perform this structural admission before
+        // walking references so an unrelated/global application cannot leak
+        // through as an unresolved variable reference.
+        state.validate_application_shapes()?;
+        state.collect_references()?;
+        state.resolve_references()?;
+        state.build_output()
+    }
+}
+
+#[derive(Debug, Clone)]
+struct VariableDeclSite {
+    kind: SourceVariableBindingKind,
+    owner: SurfaceNodeId,
+    binder: SurfaceNodeId,
+    spelling: String,
+    range: SourceRange,
+    scope: LocalTermScope,
+    declared_type: Option<SourceVariableType>,
+    arity: Option<usize>,
+}
+
+#[derive(Debug, Clone)]
+struct VariableReferenceSite {
+    node: SurfaceNodeId,
+    spelling: String,
+    range: SourceRange,
+    scope: LocalTermScope,
+    kind: SourceVariableReferenceKind,
+}
+
+struct VariableResolveState<'a> {
+    ast: &'a SurfaceAst,
+    module: &'a ModuleId,
+    scopes: BTreeMap<SurfaceNodeId, LocalTermScope>,
+    parents: BTreeMap<SurfaceNodeId, SurfaceNodeId>,
+    declarations: Vec<VariableDeclSite>,
+    bindings: Vec<SourceVariableBinding>,
+    binding_by_binder: BTreeMap<SurfaceNodeId, SourceVariableBindingId>,
+    binding_by_owner: BTreeMap<SurfaceNodeId, SourceVariableBindingId>,
+    binding_ids_by_owner: BTreeMap<SurfaceNodeId, Vec<SourceVariableBindingId>>,
+    references: Vec<VariableReferenceSite>,
+    resolved_references: Vec<SourceVariableReference>,
+    reference_by_node: BTreeMap<SurfaceNodeId, SourceVariableReferenceId>,
+    thesis_node: Option<SurfaceNodeId>,
+}
+
+impl<'a> VariableResolveState<'a> {
+    fn new(
+        ast: &'a SurfaceAst,
+        module: &'a ModuleId,
+        scopes: (
+            BTreeMap<SurfaceNodeId, LocalTermScope>,
+            BTreeMap<SurfaceNodeId, SurfaceNodeId>,
+        ),
+    ) -> Self {
+        Self {
+            ast,
+            module,
+            scopes: scopes.0,
+            parents: scopes.1,
+            declarations: Vec::new(),
+            bindings: Vec::new(),
+            binding_by_binder: BTreeMap::new(),
+            binding_by_owner: BTreeMap::new(),
+            binding_ids_by_owner: BTreeMap::new(),
+            references: Vec::new(),
+            resolved_references: Vec::new(),
+            reference_by_node: BTreeMap::new(),
+            thesis_node: None,
+        }
+    }
+
+    fn collect_declarations(&mut self) -> Result<(), SourceVariableScopeError> {
+        for view in self.ast.node_views() {
+            let id = view.id();
+            if self.in_definition_block(id) {
+                continue;
+            }
+            match view.kind() {
+                SurfaceNodeKind::ReserveItem => {
+                    if !self
+                        .scopes
+                        .get(&id)
+                        .is_some_and(|scope| scope.path().is_empty())
+                    {
+                        return Err(SourceVariableScopeError::InvalidShape);
+                    }
+                    for segment in direct_children(self.ast, id, |kind| {
+                        matches!(kind, SurfaceNodeKind::ReserveSegment)
+                    }) {
+                        self.collect_segment_declarations(
+                            segment.id(),
+                            SourceVariableBindingKind::Reserve,
+                            segment.id(),
+                            true,
+                        )?;
+                    }
+                }
+                SurfaceNodeKind::LetStatement => {
+                    for segment in direct_children(self.ast, id, |kind| {
+                        matches!(kind, SurfaceNodeKind::QualifiedVariableSegment)
+                    }) {
+                        self.collect_segment_declarations(
+                            segment.id(),
+                            SourceVariableBindingKind::Let,
+                            id,
+                            false,
+                        )?;
+                    }
+                }
+                SurfaceNodeKind::QuantifierVariableSegment => {
+                    // Comprehension segments use a distinct node kind and do not
+                    // participate in the 5C.1 binding surface.
+                    self.collect_segment_declarations(
+                        id,
+                        SourceVariableBindingKind::Quantifier,
+                        id,
+                        false,
+                    )?;
+                }
+                SurfaceNodeKind::SetStatement => {
+                    for equating in direct_children(self.ast, id, |kind| {
+                        matches!(kind, SurfaceNodeKind::Equating)
+                    }) {
+                        let Some(binder) = first_direct_identifier(self.ast, equating.id()) else {
+                            return Err(SourceVariableScopeError::InvalidShape);
+                        };
+                        self.push_decl(VariableDeclSite {
+                            kind: SourceVariableBindingKind::Set,
+                            owner: equating.id(),
+                            binder: binder.id(),
+                            spelling: binder
+                                .as_token()
+                                .expect("identifier token")
+                                .text
+                                .to_string(),
+                            range: binder.range(),
+                            scope: self.scope_of(equating.id()),
+                            declared_type: None,
+                            arity: None,
+                        });
+                    }
+                }
+                SurfaceNodeKind::ReconsiderStatement => {
+                    let target = direct_type_expression(self.ast, id)
+                        .map(|node| source_type(self.ast, node.id()))
+                        .transpose()?;
+                    let Some(target) = target else {
+                        return Err(SourceVariableScopeError::InvalidShape);
+                    };
+                    for item in direct_children(self.ast, id, |kind| {
+                        matches!(kind, SurfaceNodeKind::ReconsiderItem)
+                    }) {
+                        if !has_direct_equals(self.ast, item.id()) {
+                            continue;
+                        }
+                        let Some(binder) = first_direct_identifier(self.ast, item.id()) else {
+                            return Err(SourceVariableScopeError::InvalidShape);
+                        };
+                        self.push_decl(VariableDeclSite {
+                            kind: SourceVariableBindingKind::Reconsider,
+                            owner: item.id(),
+                            binder: binder.id(),
+                            spelling: binder
+                                .as_token()
+                                .expect("identifier token")
+                                .text
+                                .to_string(),
+                            range: binder.range(),
+                            scope: self.scope_of(item.id()),
+                            declared_type: Some(target.clone()),
+                            arity: None,
+                        });
+                    }
+                }
+                SurfaceNodeKind::InlineFunctorDefinition
+                | SurfaceNodeKind::InlinePredicateDefinition => {
+                    let kind = if matches!(view.kind(), SurfaceNodeKind::InlineFunctorDefinition) {
+                        SourceVariableBindingKind::InlineFunctor
+                    } else {
+                        SourceVariableBindingKind::InlinePredicate
+                    };
+                    let Some(binder) = inline_definition_binder(self.ast, id) else {
+                        return Err(SourceVariableScopeError::InvalidShape);
+                    };
+                    let formals = direct_children(self.ast, id, |kind| {
+                        matches!(kind, SurfaceNodeKind::TypedParameter)
+                    })
+                    .collect::<Vec<_>>();
+                    let arity = formals.len();
+                    self.push_decl(VariableDeclSite {
+                        kind,
+                        owner: id,
+                        binder: binder.id(),
+                        spelling: binder
+                            .as_token()
+                            .expect("inline definition identifier")
+                            .text
+                            .to_string(),
+                        range: binder.range(),
+                        // The definition name is visible in its enclosing
+                        // lexical block; only its parameters/body receive
+                        // the definition boundary scope.
+                        scope: self
+                            .parents
+                            .get(&id)
+                            .map(|parent| self.scope_of(*parent))
+                            .unwrap_or_default(),
+                        declared_type: if matches!(kind, SourceVariableBindingKind::InlineFunctor) {
+                            direct_type_expression(self.ast, id)
+                                .map(|node| source_type(self.ast, node.id()))
+                                .transpose()?
+                        } else {
+                            None
+                        },
+                        arity: Some(arity),
+                    });
+                    for formal in formals {
+                        let Some(formal_binder) = first_direct_identifier(self.ast, formal.id())
+                        else {
+                            return Err(SourceVariableScopeError::InvalidShape);
+                        };
+                        let formal_type = direct_type_expression(self.ast, formal.id())
+                            .map(|node| source_type(self.ast, node.id()))
+                            .transpose()?;
+                        if formal_type.is_none() {
+                            return Err(SourceVariableScopeError::InvalidShape);
+                        }
+                        self.push_decl(VariableDeclSite {
+                            kind: SourceVariableBindingKind::InlineParameter,
+                            owner: formal.id(),
+                            binder: formal_binder.id(),
+                            spelling: formal_binder
+                                .as_token()
+                                .expect("formal identifier")
+                                .text
+                                .to_string(),
+                            range: formal_binder.range(),
+                            scope: self.scope_of(formal.id()),
+                            declared_type: formal_type,
+                            arity: None,
+                        });
+                    }
+                }
+                SurfaceNodeKind::TheoremItem => {
+                    if let Some(formula) = outer_formula_descendant(self.ast, id, &self.parents) {
+                        self.thesis_node.get_or_insert(formula.id());
+                    }
+                }
+                _ => {}
+            }
+        }
+        self.declarations.sort_by_key(|decl| {
+            (
+                decl.range.start,
+                decl.range.end,
+                decl.binder.index(),
+                binding_kind_key(decl.kind),
+            )
+        });
+        for (ordinal, decl) in self.declarations.iter().enumerate() {
+            let id = SourceVariableBindingId(ordinal);
+            self.bindings.push(SourceVariableBinding {
+                id,
+                kind: decl.kind,
+                spelling: decl.spelling.clone(),
+                node: decl.binder,
+                range: decl.range,
+                scope: decl.scope.clone(),
+                ordinal,
+                declared_type: decl.declared_type.clone(),
+                arity: decl.arity,
+                captures: Vec::new(),
+            });
+            self.binding_by_binder.insert(decl.binder, id);
+            self.binding_by_owner.entry(decl.owner).or_insert(id);
+            self.binding_ids_by_owner
+                .entry(decl.owner)
+                .or_default()
+                .push(id);
+        }
+        Ok(())
+    }
+
+    fn collect_segment_declarations(
+        &mut self,
+        segment: SurfaceNodeId,
+        kind: SourceVariableBindingKind,
+        owner: SurfaceNodeId,
+        reserve: bool,
+    ) -> Result<(), SourceVariableScopeError> {
+        let child_ids = self.view(segment)?.children().to_vec();
+        let type_node = direct_type_expression(self.ast, segment);
+        let declared_type = type_node
+            .map(|node| source_type(self.ast, node.id()))
+            .transpose()?;
+        if reserve && declared_type.is_none() {
+            return Err(SourceVariableScopeError::InvalidShape);
+        }
+        let mut found = false;
+        for child_id in child_ids {
+            let child = self.view(child_id)?;
+            if let Some(token) = child.as_token()
+                && token.kind == SurfaceTokenKind::Identifier
+                && !matches!(token.text.as_ref(), "be" | "being" | "for")
+            {
+                found = true;
+                self.push_decl(VariableDeclSite {
+                    kind,
+                    owner,
+                    binder: child.id(),
+                    spelling: token.text.to_string(),
+                    range: child.range(),
+                    scope: self.scope_of(segment),
+                    declared_type: declared_type.clone(),
+                    arity: None,
+                });
+            }
+        }
+        if !found {
+            return Err(SourceVariableScopeError::InvalidShape);
+        }
+        Ok(())
+    }
+
+    fn push_decl(&mut self, decl: VariableDeclSite) {
+        self.declarations.push(decl);
+    }
+
+    fn validate_declarations(&self) -> Result<(), SourceVariableScopeError> {
+        for declaration in &self.declarations {
+            if matches!(
+                declaration.kind,
+                SourceVariableBindingKind::Let | SourceVariableBindingKind::Quantifier
+            ) && declaration.declared_type.is_none()
+                && !self.declarations.iter().any(|candidate| {
+                    candidate.kind == SourceVariableBindingKind::Reserve
+                        && candidate.spelling == declaration.spelling
+                        && candidate.range.start <= declaration.range.start
+                })
+            {
+                return Err(SourceVariableScopeError::UnreservedImplicitVariable);
+            }
+        }
+        for (index, left) in self.declarations.iter().enumerate() {
+            for right in self.declarations.iter().skip(index + 1) {
+                if left.spelling != right.spelling || left.scope != right.scope {
+                    continue;
+                }
+                if matches!(
+                    (left.kind, right.kind),
+                    (
+                        SourceVariableBindingKind::Set | SourceVariableBindingKind::Reconsider,
+                        SourceVariableBindingKind::Set | SourceVariableBindingKind::Reconsider
+                    )
+                ) {
+                    return Err(SourceVariableScopeError::DuplicateLocalConstant);
+                }
+            }
+        }
+        Ok(())
+    }
+
+    fn validate_application_shapes(&self) -> Result<(), SourceVariableScopeError> {
+        for view in self.ast.node_views() {
+            if self.in_definition_block(view.id()) {
+                continue;
+            }
+            let (kind, callee) = match view.kind() {
+                SurfaceNodeKind::ApplicationTerm => (
+                    SourceVariableReferenceKind::InlineFunctor {
+                        arity: inline_application_arity(self.ast, view.id()),
+                    },
+                    first_inline_callee(self.ast, view.id()),
+                ),
+                SurfaceNodeKind::InlinePredicateApplication => (
+                    SourceVariableReferenceKind::InlinePredicate {
+                        arity: inline_application_arity(self.ast, view.id()),
+                    },
+                    first_inline_callee(self.ast, view.id()),
+                ),
+                _ => continue,
+            };
+            let Some(callee) = callee else {
+                return Err(SourceVariableScopeError::InvalidShape);
+            };
+            let Some(spelling) = callee
+                .as_token()
+                .map(|token| token.text.to_string())
+                .or_else(|| first_token_text(self.ast, callee.id()).map(str::to_owned))
+            else {
+                return Err(SourceVariableScopeError::InvalidShape);
+            };
+            let reference = VariableReferenceSite {
+                node: callee.id(),
+                spelling,
+                range: callee.range(),
+                scope: self.scope_of(view.id()),
+                kind,
+            };
+            let Some((_, binding_kind, _, _)) = self.visible_binding(&reference) else {
+                return Err(SourceVariableScopeError::InvalidShape);
+            };
+            let expected = match kind {
+                SourceVariableReferenceKind::InlineFunctor { .. } => {
+                    SourceVariableBindingKind::InlineFunctor
+                }
+                SourceVariableReferenceKind::InlinePredicate { .. } => {
+                    SourceVariableBindingKind::InlinePredicate
+                }
+                SourceVariableReferenceKind::Term => unreachable!(),
+            };
+            if binding_kind != expected {
+                return Err(SourceVariableScopeError::InvalidShape);
+            }
+        }
+        Ok(())
+    }
+
+    fn collect_references(&mut self) -> Result<(), SourceVariableScopeError> {
+        let mut refs = Vec::new();
+        for view in self.ast.node_views() {
+            if !matches!(view.kind(), SurfaceNodeKind::TermReference) {
+                continue;
+            }
+            if self.reference_is_protected(view.id()) {
+                continue;
+            }
+            let Some(spelling) = first_token_text(self.ast, view.id()) else {
+                return Err(SourceVariableScopeError::InvalidShape);
+            };
+            let app = nearest_inline_application(view.id(), &self.parents, self.ast);
+            let kind = match app {
+                Some((SurfaceNodeKind::ApplicationTerm, application)) => {
+                    SourceVariableReferenceKind::InlineFunctor {
+                        arity: inline_application_arity(self.ast, application),
+                    }
+                }
+                Some((SurfaceNodeKind::InlinePredicateApplication, application)) => {
+                    SourceVariableReferenceKind::InlinePredicate {
+                        arity: inline_application_arity(self.ast, application),
+                    }
+                }
+                _ => SourceVariableReferenceKind::Term,
+            };
+            refs.push(VariableReferenceSite {
+                node: view.id(),
+                spelling: spelling.to_owned(),
+                range: view.range(),
+                scope: self.scope_of(view.id()),
+                kind,
+            });
+        }
+        // Inline predicate applications keep their callee as a direct
+        // identifier token rather than a TermReference node. Admit that
+        // token explicitly; all argument TermReferences are handled by the
+        // ordinary loop above.
+        for application in self
+            .ast
+            .node_views()
+            .filter(|view| matches!(view.kind(), SurfaceNodeKind::InlinePredicateApplication))
+        {
+            if self.in_definition_block(application.id()) {
+                continue;
+            }
+            let Some(callee) = first_direct_identifier(self.ast, application.id()) else {
+                return Err(SourceVariableScopeError::InvalidShape);
+            };
+            if self.reference_is_protected(callee.id()) {
+                continue;
+            }
+            let token = callee
+                .as_token()
+                .expect("first direct identifier is a token");
+            refs.push(VariableReferenceSite {
+                node: callee.id(),
+                spelling: token.text.to_string(),
+                range: callee.range(),
+                scope: self.scope_of(application.id()),
+                kind: SourceVariableReferenceKind::InlinePredicate {
+                    arity: inline_application_arity(self.ast, application.id()),
+                },
+            });
+        }
+        refs.sort_by_key(|reference| {
+            (
+                reference.range.start,
+                reference.range.end,
+                reference.node.index(),
+            )
+        });
+        self.references = refs;
+        Ok(())
+    }
+
+    fn reference_is_protected(&self, node: SurfaceNodeId) -> bool {
+        if self.binding_by_binder.contains_key(&node) {
+            return true;
+        }
+        let mut current = self.parents.get(&node).copied();
+        while let Some(parent) = current {
+            let Some(view) = self.ast.node_view(parent) else {
+                return true;
+            };
+            if matches!(
+                view.kind(),
+                SurfaceNodeKind::TypeExpression
+                    | SurfaceNodeKind::TypeHead
+                    | SurfaceNodeKind::AttributeChain
+                    | SurfaceNodeKind::AttributeRef
+                    | SurfaceNodeKind::QualifiedSymbol
+                    | SurfaceNodeKind::Reference
+                    | SurfaceNodeKind::QualifiedReference
+                    | SurfaceNodeKind::GroupedReference
+                    | SurfaceNodeKind::BulkReference
+                    | SurfaceNodeKind::ReferenceList
+                    | SurfaceNodeKind::JustificationClause
+                    | SurfaceNodeKind::ImportItem
+                    | SurfaceNodeKind::ReserveSegment
+                    | SurfaceNodeKind::DefinitionBlockItem
+            ) {
+                return true;
+            }
+            current = self.parents.get(&parent).copied();
+        }
+        false
+    }
+
+    fn in_definition_block(&self, node: SurfaceNodeId) -> bool {
+        let mut current = self.parents.get(&node).copied();
+        while let Some(parent) = current {
+            if self
+                .ast
+                .node(parent)
+                .is_some_and(|node| matches!(node.kind, SurfaceNodeKind::DefinitionBlockItem))
+            {
+                return true;
+            }
+            current = self.parents.get(&parent).copied();
+        }
+        false
+    }
+
+    fn resolve_references(&mut self) -> Result<(), SourceVariableScopeError> {
+        for (ordinal, reference) in self.references.iter().enumerate() {
+            let Some((binding_id, binding_kind, binding_arity, binding_node)) =
+                self.visible_binding(reference)
+            else {
+                if self.has_later_binding(reference) {
+                    return Err(SourceVariableScopeError::ForwardReference);
+                }
+                if matches!(
+                    reference.kind,
+                    SourceVariableReferenceKind::InlineFunctor { .. }
+                        | SourceVariableReferenceKind::InlinePredicate { .. }
+                ) {
+                    return Err(SourceVariableScopeError::UnresolvedReference);
+                }
+                if self
+                    .candidate_reservation(&reference.spelling, reference.range.start)
+                    .is_some()
+                {
+                    return Err(SourceVariableScopeError::UnresolvedReference);
+                }
+                return Err(SourceVariableScopeError::UnresolvedReference);
+            };
+            match (reference.kind, binding_kind) {
+                (
+                    SourceVariableReferenceKind::InlineFunctor { arity },
+                    SourceVariableBindingKind::InlineFunctor,
+                )
+                | (
+                    SourceVariableReferenceKind::InlinePredicate { arity },
+                    SourceVariableBindingKind::InlinePredicate,
+                ) if binding_arity != Some(arity) => {
+                    return Err(SourceVariableScopeError::ArityMismatch);
+                }
+                (
+                    SourceVariableReferenceKind::InlineFunctor { .. },
+                    SourceVariableBindingKind::InlineFunctor,
+                )
+                | (
+                    SourceVariableReferenceKind::InlinePredicate { .. },
+                    SourceVariableBindingKind::InlinePredicate,
+                ) => {}
+                (SourceVariableReferenceKind::InlineFunctor { .. }, _)
+                | (SourceVariableReferenceKind::InlinePredicate { .. }, _) => {
+                    return Err(SourceVariableScopeError::UnresolvedReference);
+                }
+                _ => {}
+            }
+            let id = SourceVariableReferenceId(ordinal);
+            self.resolved_references.push(SourceVariableReference {
+                id,
+                kind: reference.kind,
+                spelling: reference.spelling.clone(),
+                node: reference.node,
+                range: reference.range,
+                scope: reference.scope.clone(),
+                ordinal,
+                binding: binding_id,
+            });
+            self.reference_by_node.insert(reference.node, id);
+            if matches!(
+                binding_kind,
+                SourceVariableBindingKind::InlineFunctor
+                    | SourceVariableBindingKind::InlinePredicate
+            ) {
+                if let Some(owner) =
+                    nearest_inline_definition(reference.node, &self.parents, self.ast)
+                    && owner != binding_node
+                {
+                    let owner_id = self
+                        .binding_by_owner
+                        .get(&owner)
+                        .copied()
+                        .ok_or(SourceVariableScopeError::InvalidShape)?;
+                    if binding_id != owner_id {
+                        self.bindings[owner_id.index()].captures.push(binding_id);
+                    }
+                }
+            } else if let Some(owner) =
+                nearest_inline_definition(reference.node, &self.parents, self.ast)
+            {
+                let owner_id = self
+                    .binding_by_owner
+                    .get(&owner)
+                    .copied()
+                    .ok_or(SourceVariableScopeError::InvalidShape)?;
+                let is_formal = self.bindings[binding_id.index()].kind
+                    == SourceVariableBindingKind::InlineParameter;
+                if !is_formal && binding_id != owner_id {
+                    self.bindings[owner_id.index()].captures.push(binding_id);
+                }
+            }
+        }
+        for binding in &mut self.bindings {
+            binding.captures.sort_unstable();
+            binding.captures.dedup();
+        }
+        Ok(())
+    }
+
+    fn visible_binding(
+        &self,
+        reference: &VariableReferenceSite,
+    ) -> Option<(
+        SourceVariableBindingId,
+        SourceVariableBindingKind,
+        Option<usize>,
+        SurfaceNodeId,
+    )> {
+        self.bindings
+            .iter()
+            .filter(|binding| {
+                binding.spelling == reference.spelling
+                    && binding.scope.contains(&reference.scope)
+                    && binding.range.start <= reference.range.start
+            })
+            .max_by_key(|binding| {
+                (
+                    binding.scope.path().len(),
+                    binding.range.start,
+                    binding.range.end,
+                    binding.id.index(),
+                )
+            })
+            .map(|binding| (binding.id, binding.kind, binding.arity, binding.node))
+    }
+
+    fn has_later_binding(&self, reference: &VariableReferenceSite) -> bool {
+        self.bindings.iter().any(|binding| {
+            binding.spelling == reference.spelling
+                && binding.scope.contains(&reference.scope)
+                && binding.range.start > reference.range.start
+        })
+    }
+
+    fn candidate_reservation(
+        &self,
+        spelling: &str,
+        position: usize,
+    ) -> Option<&SourceVariableBinding> {
+        self.bindings.iter().find(|binding| {
+            binding.kind == SourceVariableBindingKind::Reserve
+                && binding.spelling == spelling
+                && binding.range.start <= position
+        })
+    }
+
+    fn build_output(self) -> Result<ResolvedVariableScope, SourceVariableScopeError> {
+        let thesis = self
+            .thesis_node
+            .map(|node| self.parse_formula(node))
+            .transpose()?;
+        let statements = self.parse_statements()?;
+        Ok(ResolvedVariableScope {
+            source_id: self.ast.source_id,
+            module_id: self.module.clone(),
+            bindings: self.bindings,
+            references: self.resolved_references,
+            thesis,
+            statements,
+        })
+    }
+
+    fn parse_statements(&self) -> Result<Vec<SourceVariableStatement>, SourceVariableScopeError> {
+        let mut nodes = self
+            .ast
+            .node_views()
+            .filter(|node| {
+                matches!(
+                    node.kind(),
+                    SurfaceNodeKind::LetStatement
+                        | SurfaceNodeKind::SetStatement
+                        | SurfaceNodeKind::ReconsiderStatement
+                        | SurfaceNodeKind::InlineFunctorDefinition
+                        | SurfaceNodeKind::InlinePredicateDefinition
+                        | SurfaceNodeKind::CompactStatement
+                        | SurfaceNodeKind::ConclusionStatement
+                        | SurfaceNodeKind::AssumptionStatement
+                        | SurfaceNodeKind::TakeStatement
+                )
+            })
+            .filter(|node| !self.in_definition_block(node.id()))
+            .collect::<Vec<_>>();
+        nodes.sort_by_key(|node| (node.range().start, node.range().end, node.id().index()));
+        let mut output = Vec::new();
+        for node in nodes {
+            match node.kind() {
+                SurfaceNodeKind::LetStatement => {
+                    let bindings = self
+                        .binding_ids_by_owner
+                        .get(&node.id())
+                        .cloned()
+                        .ok_or(SourceVariableScopeError::InvalidShape)?;
+                    let condition = first_formula_descendant(self.ast, node.id())
+                        .map(|child| self.parse_formula(child.id()).map(Box::new))
+                        .transpose()?;
+                    for binding in bindings {
+                        output.push(SourceVariableStatement::Let {
+                            node: node.id(),
+                            range: node.range(),
+                            binding,
+                            condition: condition.clone(),
+                        });
+                    }
+                }
+                SurfaceNodeKind::SetStatement => {
+                    let equatings = direct_children(self.ast, node.id(), |kind| {
+                        matches!(kind, SurfaceNodeKind::Equating)
+                    })
+                    .collect::<Vec<_>>();
+                    if equatings.is_empty() {
+                        return Err(SourceVariableScopeError::InvalidShape);
+                    }
+                    for equating in equatings {
+                        let binding = self
+                            .binding_by_owner
+                            .get(&equating.id())
+                            .copied()
+                            .ok_or(SourceVariableScopeError::InvalidShape)?;
+                        let value = direct_term_child(self.ast, equating.id())
+                            .ok_or(SourceVariableScopeError::InvalidShape)
+                            .and_then(|child| self.parse_term(child.id()))?;
+                        output.push(SourceVariableStatement::Set {
+                            node: node.id(),
+                            range: node.range(),
+                            binding,
+                            value: Box::new(value),
+                        });
+                    }
+                }
+                SurfaceNodeKind::ReconsiderStatement => {
+                    let items = direct_children(self.ast, node.id(), |kind| {
+                        matches!(kind, SurfaceNodeKind::ReconsiderItem)
+                    })
+                    .filter(|item| has_direct_equals(self.ast, item.id()))
+                    .collect::<Vec<_>>();
+                    if items.is_empty() {
+                        return Err(SourceVariableScopeError::InvalidShape);
+                    }
+                    let target = direct_type_expression(self.ast, node.id())
+                        .ok_or(SourceVariableScopeError::InvalidShape)
+                        .and_then(|child| source_type(self.ast, child.id()))?;
+                    let justified = self.ast.node(node.id()).is_some_and(|n| {
+                        subtree_has_kind(self.ast, n, |kind| {
+                            matches!(
+                                kind,
+                                SurfaceNodeKind::JustificationClause | SurfaceNodeKind::ProofBlock
+                            )
+                        })
+                    });
+                    for item in items {
+                        let binding = self
+                            .binding_by_owner
+                            .get(&item.id())
+                            .copied()
+                            .ok_or(SourceVariableScopeError::InvalidShape)?;
+                        let value = direct_term_child(self.ast, item.id())
+                            .ok_or(SourceVariableScopeError::InvalidShape)
+                            .and_then(|child| self.parse_term(child.id()))?;
+                        output.push(SourceVariableStatement::Reconsider {
+                            node: node.id(),
+                            range: node.range(),
+                            binding,
+                            value: Box::new(value),
+                            target: target.clone(),
+                            justified,
+                        });
+                    }
+                }
+                SurfaceNodeKind::InlineFunctorDefinition => {
+                    let binding = self
+                        .binding_by_owner
+                        .get(&node.id())
+                        .copied()
+                        .ok_or(SourceVariableScopeError::InvalidShape)?;
+                    let formals = direct_children(self.ast, node.id(), |kind| {
+                        matches!(kind, SurfaceNodeKind::TypedParameter)
+                    })
+                    .filter_map(|formal| {
+                        first_direct_identifier(self.ast, formal.id())
+                            .and_then(|id| self.binding_by_binder.get(&id.id()).copied())
+                    })
+                    .collect::<Vec<_>>();
+                    let result = direct_type_expression(self.ast, node.id())
+                        .ok_or(SourceVariableScopeError::InvalidShape)
+                        .and_then(|child| source_type(self.ast, child.id()))?;
+                    let body = direct_term_definiens(self.ast, node.id())
+                        .ok_or(SourceVariableScopeError::InvalidShape)
+                        .and_then(|child| self.parse_term(child.id()))?;
+                    output.push(SourceVariableStatement::DefineFunctor {
+                        node: node.id(),
+                        range: node.range(),
+                        binding,
+                        formals,
+                        result,
+                        body: Box::new(body),
+                    });
+                }
+                SurfaceNodeKind::InlinePredicateDefinition => {
+                    let binding = self
+                        .binding_by_owner
+                        .get(&node.id())
+                        .copied()
+                        .ok_or(SourceVariableScopeError::InvalidShape)?;
+                    let formals = direct_children(self.ast, node.id(), |kind| {
+                        matches!(kind, SurfaceNodeKind::TypedParameter)
+                    })
+                    .filter_map(|formal| {
+                        first_direct_identifier(self.ast, formal.id())
+                            .and_then(|id| self.binding_by_binder.get(&id.id()).copied())
+                    })
+                    .collect::<Vec<_>>();
+                    let body = direct_formula_definiens(self.ast, node.id())
+                        .ok_or(SourceVariableScopeError::InvalidShape)
+                        .and_then(|child| self.parse_formula(child.id()))?;
+                    output.push(SourceVariableStatement::DefinePredicate {
+                        node: node.id(),
+                        range: node.range(),
+                        binding,
+                        formals,
+                        body: Box::new(body),
+                    });
+                }
+                SurfaceNodeKind::CompactStatement
+                | SurfaceNodeKind::ConclusionStatement
+                | SurfaceNodeKind::AssumptionStatement => {
+                    let child = first_formula_descendant(self.ast, node.id())
+                        .ok_or(SourceVariableScopeError::InvalidShape)?;
+                    output.push(SourceVariableStatement::Assert {
+                        node: node.id(),
+                        range: node.range(),
+                        formula: Box::new(self.parse_formula(child.id())?),
+                        conclusion: matches!(node.kind(), SurfaceNodeKind::ConclusionStatement),
+                    });
+                }
+                SurfaceNodeKind::TakeStatement => {
+                    let witness = direct_children(self.ast, node.id(), |kind| {
+                        matches!(kind, SurfaceNodeKind::Witness)
+                    })
+                    .next()
+                    .and_then(|witness| direct_term_child(self.ast, witness.id()))
+                    .ok_or(SourceVariableScopeError::InvalidShape)
+                    .and_then(|child| self.parse_term(child.id()))?;
+                    let existential_binding = self.nearest_existential_binding(node.id());
+                    output.push(SourceVariableStatement::Take {
+                        node: node.id(),
+                        range: node.range(),
+                        witness: Box::new(witness),
+                        existential_binding,
+                    });
+                }
+                _ => unreachable!(),
+            }
+        }
+        Ok(output)
+    }
+
+    fn parse_formula(
+        &self,
+        node: SurfaceNodeId,
+    ) -> Result<SourceVariableFormula, SourceVariableScopeError> {
+        let view = self.view(node)?;
+        match view.kind() {
+            SurfaceNodeKind::FormulaExpression
+            | SurfaceNodeKind::Proposition
+            | SurfaceNodeKind::TermDefiniens
+            | SurfaceNodeKind::FormulaDefiniens => {
+                let child = first_formula_like_child(self.ast, node)
+                    .ok_or(SourceVariableScopeError::InvalidShape)?;
+                self.parse_formula(child.id())
+            }
+            SurfaceNodeKind::BuiltinPredicateApplication => {
+                let operator = direct_token(self.ast, node, "=");
+                if operator.is_some() {
+                    let terms = direct_term_children(self.ast, node)
+                        .map(|term| self.parse_term(term.id()))
+                        .collect::<Result<Vec<_>, _>>()?;
+                    let [left, right] = terms.as_slice() else {
+                        return Err(SourceVariableScopeError::InvalidShape);
+                    };
+                    Ok(SourceVariableFormula::Equality {
+                        node,
+                        range: view.range(),
+                        left: Box::new(left.clone()),
+                        right: Box::new(right.clone()),
+                    })
+                } else {
+                    Err(SourceVariableScopeError::InvalidShape)
+                }
+            }
+            SurfaceNodeKind::IsAssertion => {
+                let term = direct_term_child(self.ast, node)
+                    .ok_or(SourceVariableScopeError::InvalidShape)
+                    .and_then(|child| self.parse_term(child.id()))?;
+                let target = direct_type_expression(self.ast, node)
+                    .ok_or(SourceVariableScopeError::InvalidShape)
+                    .and_then(|child| source_type(self.ast, child.id()))?;
+                Ok(SourceVariableFormula::TypeAssertion {
+                    node,
+                    range: view.range(),
+                    term: Box::new(term),
+                    target,
+                })
+            }
+            SurfaceNodeKind::InlinePredicateApplication => {
+                let definition = first_inline_callee(self.ast, node)
+                    .ok_or(SourceVariableScopeError::InvalidShape)?;
+                let definition_reference = self
+                    .reference_by_node
+                    .get(&definition.id())
+                    .copied()
+                    .ok_or(SourceVariableScopeError::InvalidShape)?;
+                let arguments = direct_term_children(self.ast, node)
+                    .filter(|child| child.id() != definition.id())
+                    .map(|child| self.parse_term(child.id()).map(Box::new))
+                    .collect::<Result<Vec<_>, _>>()?;
+                Ok(SourceVariableFormula::InlinePredicate {
+                    node,
+                    range: view.range(),
+                    definition_reference,
+                    arguments,
+                })
+            }
+            SurfaceNodeKind::QuantifiedFormula(quantifier) => {
+                let segment = direct_children(self.ast, node, |kind| {
+                    matches!(kind, SurfaceNodeKind::QuantifierVariableSegment)
+                })
+                .next()
+                .ok_or(SourceVariableScopeError::InvalidShape)?;
+                let binder = first_direct_identifier(self.ast, segment.id())
+                    .ok_or(SourceVariableScopeError::InvalidShape)?;
+                let binding = self
+                    .binding_by_binder
+                    .get(&binder.id())
+                    .copied()
+                    .ok_or(SourceVariableScopeError::InvalidShape)?;
+                let formulas = direct_formula_children(self.ast, node)
+                    .map(|child| self.parse_formula(child.id()))
+                    .collect::<Result<Vec<_>, _>>()?;
+                let body = formulas
+                    .last()
+                    .cloned()
+                    .ok_or(SourceVariableScopeError::InvalidShape)?;
+                if matches!(quantifier, SurfaceQuantifierKind::Universal) {
+                    Ok(SourceVariableFormula::ForAll {
+                        node,
+                        range: view.range(),
+                        binding,
+                        condition: if formulas.len() > 1 {
+                            Some(Box::new(formulas[0].clone()))
+                        } else {
+                            None
+                        },
+                        body: Box::new(body),
+                    })
+                } else {
+                    Ok(SourceVariableFormula::Exists {
+                        node,
+                        range: view.range(),
+                        binding,
+                        body: Box::new(body),
+                    })
+                }
+            }
+            _ => {
+                if let Some(child) = first_formula_like_child(self.ast, node) {
+                    self.parse_formula(child.id())
+                } else {
+                    Err(SourceVariableScopeError::InvalidShape)
+                }
+            }
+        }
+    }
+
+    fn parse_term(
+        &self,
+        node: SurfaceNodeId,
+    ) -> Result<SourceVariableTerm, SourceVariableScopeError> {
+        let view = self.view(node)?;
+        match view.kind() {
+            SurfaceNodeKind::TermExpression
+            | SurfaceNodeKind::ParenthesizedTerm
+            | SurfaceNodeKind::TermDefiniens => {
+                let child = first_term_like_child(self.ast, node)
+                    .ok_or(SourceVariableScopeError::InvalidShape)?;
+                self.parse_term(child.id())
+            }
+            SurfaceNodeKind::TermReference => {
+                let reference = self
+                    .reference_by_node
+                    .get(&node)
+                    .copied()
+                    .ok_or(SourceVariableScopeError::InvalidShape)?;
+                Ok(SourceVariableTerm::Binding {
+                    node,
+                    range: view.range(),
+                    reference,
+                })
+            }
+            SurfaceNodeKind::ApplicationTerm => {
+                let definition = first_inline_callee(self.ast, node)
+                    .ok_or(SourceVariableScopeError::InvalidShape)?;
+                let definition_reference = self
+                    .reference_by_node
+                    .get(&definition.id())
+                    .copied()
+                    .ok_or(SourceVariableScopeError::InvalidShape)?;
+                let arguments = direct_term_children(self.ast, node)
+                    .filter(|child| child.id() != definition.id())
+                    .map(|child| self.parse_term(child.id()).map(Box::new))
+                    .collect::<Result<Vec<_>, _>>()?;
+                Ok(SourceVariableTerm::InlineFunctor {
+                    node,
+                    range: view.range(),
+                    definition_reference,
+                    arguments,
+                })
+            }
+            _ => first_term_like_child(self.ast, node)
+                .ok_or(SourceVariableScopeError::InvalidShape)
+                .and_then(|child| self.parse_term(child.id())),
+        }
+    }
+
+    fn nearest_existential_binding(&self, node: SurfaceNodeId) -> Option<SourceVariableBindingId> {
+        let mut current = Some(node);
+        while let Some(id) = current {
+            if let Some(view) = self.ast.node_view(id)
+                && matches!(view.kind(), SurfaceNodeKind::TheoremItem)
+            {
+                return self.theorem_existential_binding(id);
+            }
+            if let Some(view) = self.ast.node_view(id)
+                && matches!(
+                    view.kind(),
+                    SurfaceNodeKind::QuantifiedFormula(SurfaceQuantifierKind::Existential)
+                )
+                && let Some(segment) = direct_children(self.ast, id, |kind| {
+                    matches!(kind, SurfaceNodeKind::QuantifierVariableSegment)
+                })
+                .next()
+                && let Some(binder) = first_direct_identifier(self.ast, segment.id())
+            {
+                return self.binding_by_binder.get(&binder.id()).copied();
+            }
+            current = self.parents.get(&id).copied();
+        }
+        None
+    }
+
+    fn theorem_existential_binding(
+        &self,
+        theorem: SurfaceNodeId,
+    ) -> Option<SourceVariableBindingId> {
+        let formula = outer_formula_descendant(self.ast, theorem, &self.parents)?;
+        self.ast
+            .node_views()
+            .filter(|view| {
+                matches!(
+                    view.kind(),
+                    SurfaceNodeKind::QuantifiedFormula(SurfaceQuantifierKind::Existential)
+                ) && self.is_descendant_or_same(view.id(), formula.id())
+            })
+            .filter_map(|view| {
+                let segment = direct_children(self.ast, view.id(), |kind| {
+                    matches!(kind, SurfaceNodeKind::QuantifierVariableSegment)
+                })
+                .next()?;
+                let binder = first_direct_identifier(self.ast, segment.id())?;
+                let binding = self.binding_by_binder.get(&binder.id()).copied()?;
+                Some((view.range().start, view.range().end, binding))
+            })
+            .min_by_key(|(start, end, _)| (*start, *end))
+            .map(|(_, _, binding)| binding)
+    }
+
+    fn is_descendant_or_same(&self, node: SurfaceNodeId, ancestor: SurfaceNodeId) -> bool {
+        let mut current = Some(node);
+        while let Some(id) = current {
+            if id == ancestor {
+                return true;
+            }
+            current = self.parents.get(&id).copied();
+        }
+        false
+    }
+
+    fn scope_of(&self, node: SurfaceNodeId) -> LocalTermScope {
+        self.scopes.get(&node).cloned().unwrap_or_default()
+    }
+
+    fn view(&self, node: SurfaceNodeId) -> Result<SurfaceNodeView<'_>, SourceVariableScopeError> {
+        self.ast
+            .node_view(node)
+            .ok_or(SourceVariableScopeError::InvalidShape)
+    }
+}
+
+type VariableSurfaceValidation = (
+    BTreeMap<SurfaceNodeId, LocalTermScope>,
+    BTreeMap<SurfaceNodeId, SurfaceNodeId>,
+);
+
+fn validate_variable_surface(
+    ast: &SurfaceAst,
+) -> Result<VariableSurfaceValidation, SourceVariableScopeError> {
+    let mut parents = BTreeMap::new();
+    for view in ast.node_views() {
+        if view.range().source_id != ast.source_id || view.range().start > view.range().end {
+            return Err(SourceVariableScopeError::SourceMismatch);
+        }
+        if view.is_recovered() || view.as_recovery().is_some() {
+            return Err(SourceVariableScopeError::RecoveredSyntax);
+        }
+        for child in view.children() {
+            let Some(child_node) = ast.node(*child) else {
+                return Err(SourceVariableScopeError::InvalidShape);
+            };
+            if child_node.range.source_id != view.range().source_id
+                || child_node.range.start < view.range().start
+                || child_node.range.end > view.range().end
+            {
+                return Err(SourceVariableScopeError::InvalidShape);
+            }
+            if let Some(previous) = parents.get(child).copied() {
+                // Parser-produced roots retain a flat token listing in
+                // addition to the structural compilation-unit edge.  That
+                // listing is metadata, not a second lexical parent; retain
+                // the structural parent for scope walking.
+                let previous_is_root = ast
+                    .node(previous)
+                    .is_some_and(|node| matches!(node.kind, SurfaceNodeKind::Root));
+                let current_is_root = matches!(view.kind(), SurfaceNodeKind::Root);
+                if previous_is_root && !current_is_root {
+                    parents.insert(*child, view.id());
+                } else if !current_is_root && !previous_is_root {
+                    return Err(SourceVariableScopeError::InvalidShape);
+                }
+            } else {
+                parents.insert(*child, view.id());
+            }
+        }
+    }
+    let mut scopes = BTreeMap::new();
+    if let Some(root) = ast.root() {
+        let mut visited = BTreeSet::new();
+        collect_variable_scopes(
+            ast,
+            root,
+            LocalTermScope::default(),
+            &mut scopes,
+            &mut visited,
+        )?;
+        if visited.len() != ast.nodes().len() {
+            return Err(SourceVariableScopeError::InvalidShape);
+        }
+    } else if !ast.nodes().is_empty() {
+        return Err(SourceVariableScopeError::InvalidShape);
+    }
+    for view in ast.node_views() {
+        if view.is_recovered() || view.as_recovery().is_some() {
+            return Err(SourceVariableScopeError::RecoveredSyntax);
+        }
+    }
+    Ok((scopes, parents))
+}
+
+fn collect_variable_scopes(
+    ast: &SurfaceAst,
+    node: SurfaceNodeId,
+    scope: LocalTermScope,
+    scopes: &mut BTreeMap<SurfaceNodeId, LocalTermScope>,
+    visited: &mut BTreeSet<SurfaceNodeId>,
+) -> Result<(), SourceVariableScopeError> {
+    if !visited.insert(node) {
+        return Err(SourceVariableScopeError::InvalidShape);
+    }
+    scopes.insert(node, scope.clone());
+    let view = ast
+        .node_view(node)
+        .ok_or(SourceVariableScopeError::InvalidShape)?;
+    for (index, child) in view.children().iter().enumerate() {
+        let child_view = ast
+            .node_view(*child)
+            .ok_or(SourceVariableScopeError::InvalidShape)?;
+        // A parser root exposes a flat token listing alongside the structural
+        // compilation unit.  Tokens are visited through that structural edge
+        // and must not create a duplicate lexical traversal here.
+        if matches!(view.kind(), SurfaceNodeKind::Root)
+            && matches!(child_view.kind(), SurfaceNodeKind::Token(_))
+        {
+            continue;
+        }
+        let child_scope = if is_variable_scope_boundary(child_view.kind()) {
+            let mut path = scope.path().to_vec();
+            path.push(index as u32);
+            LocalTermScope::new(path)
+        } else {
+            scope.clone()
+        };
+        collect_variable_scopes(ast, *child, child_scope, scopes, visited)?;
+    }
+    Ok(())
+}
+
+fn is_variable_scope_boundary(kind: &SurfaceNodeKind) -> bool {
+    matches!(
+        kind,
+        SurfaceNodeKind::ProofBlock
+            | SurfaceNodeKind::DefinitionBlockItem
+            | SurfaceNodeKind::NowStatement
+            | SurfaceNodeKind::HerebyStatement
+            | SurfaceNodeKind::CaseItem
+            | SurfaceNodeKind::SupposeItem
+            | SurfaceNodeKind::InlineFunctorDefinition
+            | SurfaceNodeKind::InlinePredicateDefinition
+            | SurfaceNodeKind::QuantifiedFormula(_)
+    )
+}
+
+fn direct_children<'a>(
+    ast: &'a SurfaceAst,
+    node: SurfaceNodeId,
+    predicate: impl Fn(&SurfaceNodeKind) -> bool,
+) -> impl Iterator<Item = SurfaceNodeView<'a>> {
+    ast.node_view(node)
+        .into_iter()
+        .flat_map(SurfaceNodeView::child_views)
+        .filter(move |child| predicate(child.kind()))
+}
+
+fn direct_formula_children<'a>(
+    ast: &'a SurfaceAst,
+    node: SurfaceNodeId,
+) -> impl Iterator<Item = SurfaceNodeView<'a>> {
+    ast.node_view(node)
+        .into_iter()
+        .flat_map(SurfaceNodeView::child_views)
+        .filter(|child| {
+            matches!(
+                child.kind(),
+                SurfaceNodeKind::FormulaExpression
+                    | SurfaceNodeKind::Proposition
+                    | SurfaceNodeKind::BuiltinPredicateApplication
+                    | SurfaceNodeKind::IsAssertion
+                    | SurfaceNodeKind::InlinePredicateApplication
+                    | SurfaceNodeKind::QuantifiedFormula(_)
+            )
+        })
+}
+
+fn direct_formula_child<'a>(
+    ast: &'a SurfaceAst,
+    node: SurfaceNodeId,
+) -> Option<SurfaceNodeView<'a>> {
+    direct_formula_children(ast, node).next()
+}
+
+fn first_formula_descendant<'a>(
+    ast: &'a SurfaceAst,
+    node: SurfaceNodeId,
+) -> Option<SurfaceNodeView<'a>> {
+    if let Some(child) = direct_formula_child(ast, node) {
+        return Some(child);
+    }
+    let view = ast.node_view(node)?;
+    for child in view.child_views() {
+        if let Some(formula) = first_formula_descendant(ast, child.id()) {
+            return Some(formula);
+        }
+    }
+    None
+}
+
+fn direct_term_children<'a>(
+    ast: &'a SurfaceAst,
+    node: SurfaceNodeId,
+) -> impl Iterator<Item = SurfaceNodeView<'a>> {
+    ast.node_view(node)
+        .into_iter()
+        .flat_map(SurfaceNodeView::child_views)
+        .filter(|child| {
+            matches!(
+                child.kind(),
+                SurfaceNodeKind::TermExpression
+                    | SurfaceNodeKind::TermReference
+                    | SurfaceNodeKind::ParenthesizedTerm
+                    | SurfaceNodeKind::ApplicationTerm
+                    | SurfaceNodeKind::NumeralTerm
+            )
+        })
+}
+
+fn direct_term_child<'a>(ast: &'a SurfaceAst, node: SurfaceNodeId) -> Option<SurfaceNodeView<'a>> {
+    direct_term_children(ast, node).next()
+}
+
+fn first_formula_like_child<'a>(
+    ast: &'a SurfaceAst,
+    node: SurfaceNodeId,
+) -> Option<SurfaceNodeView<'a>> {
+    ast.node_view(node)
+        .into_iter()
+        .flat_map(SurfaceNodeView::child_views)
+        .find(|child| {
+            matches!(
+                child.kind(),
+                SurfaceNodeKind::FormulaExpression
+                    | SurfaceNodeKind::Proposition
+                    | SurfaceNodeKind::BuiltinPredicateApplication
+                    | SurfaceNodeKind::IsAssertion
+                    | SurfaceNodeKind::InlinePredicateApplication
+                    | SurfaceNodeKind::QuantifiedFormula(_)
+            )
+        })
+}
+
+fn first_term_like_child<'a>(
+    ast: &'a SurfaceAst,
+    node: SurfaceNodeId,
+) -> Option<SurfaceNodeView<'a>> {
+    ast.node_view(node)
+        .into_iter()
+        .flat_map(SurfaceNodeView::child_views)
+        .find(|child| {
+            matches!(
+                child.kind(),
+                SurfaceNodeKind::TermExpression
+                    | SurfaceNodeKind::TermReference
+                    | SurfaceNodeKind::ParenthesizedTerm
+                    | SurfaceNodeKind::ApplicationTerm
+                    | SurfaceNodeKind::NumeralTerm
+            )
+        })
+}
+
+fn direct_term_definiens<'a>(
+    ast: &'a SurfaceAst,
+    node: SurfaceNodeId,
+) -> Option<SurfaceNodeView<'a>> {
+    direct_children(ast, node, |kind| {
+        matches!(kind, SurfaceNodeKind::TermDefiniens)
+    })
+    .next()
+    .and_then(|child| first_term_like_child(ast, child.id()))
+    .or_else(|| direct_term_child(ast, node))
+}
+
+fn direct_formula_definiens<'a>(
+    ast: &'a SurfaceAst,
+    node: SurfaceNodeId,
+) -> Option<SurfaceNodeView<'a>> {
+    direct_children(ast, node, |kind| {
+        matches!(kind, SurfaceNodeKind::FormulaDefiniens)
+    })
+    .next()
+    .and_then(|child| first_formula_like_child(ast, child.id()))
+    .or_else(|| direct_formula_child(ast, node))
+}
+
+fn direct_type_expression<'a>(
+    ast: &'a SurfaceAst,
+    node: SurfaceNodeId,
+) -> Option<SurfaceNodeView<'a>> {
+    direct_children(ast, node, |kind| {
+        matches!(kind, SurfaceNodeKind::TypeExpression)
+    })
+    .next()
+}
+
+fn first_direct_identifier<'a>(
+    ast: &'a SurfaceAst,
+    node: SurfaceNodeId,
+) -> Option<SurfaceNodeView<'a>> {
+    ast.node_view(node)
+        .into_iter()
+        .flat_map(SurfaceNodeView::child_views)
+        .find(|child| {
+            child
+                .as_token()
+                .is_some_and(|token| token.kind == SurfaceTokenKind::Identifier)
+        })
+}
+
+fn first_token_text(ast: &SurfaceAst, node: SurfaceNodeId) -> Option<&str> {
+    ast.node_view(node)
+        .into_iter()
+        .flat_map(SurfaceNodeView::child_views)
+        .find_map(|child| child.as_token().map(|token| token.text.as_ref()))
+}
+
+fn first_direct_term_reference<'a>(
+    ast: &'a SurfaceAst,
+    node: SurfaceNodeId,
+) -> Option<SurfaceNodeView<'a>> {
+    direct_children(ast, node, |kind| {
+        matches!(kind, SurfaceNodeKind::TermReference)
+    })
+    .next()
+}
+
+fn first_inline_callee<'a>(
+    ast: &'a SurfaceAst,
+    node: SurfaceNodeId,
+) -> Option<SurfaceNodeView<'a>> {
+    if let Some(reference) = first_direct_term_reference(ast, node) {
+        return Some(reference);
+    }
+    first_direct_identifier(ast, node)
+}
+
+fn direct_token<'a>(
+    ast: &'a SurfaceAst,
+    node: SurfaceNodeId,
+    text: &str,
+) -> Option<SurfaceNodeView<'a>> {
+    ast.node_view(node)
+        .into_iter()
+        .flat_map(SurfaceNodeView::child_views)
+        .find(|child| {
+            child
+                .as_token()
+                .is_some_and(|token| token.text.as_ref() == text)
+        })
+}
+
+fn has_direct_equals(ast: &SurfaceAst, node: SurfaceNodeId) -> bool {
+    direct_token(ast, node, "=").is_some()
+}
+
+fn inline_definition_binder<'a>(
+    ast: &'a SurfaceAst,
+    node: SurfaceNodeId,
+) -> Option<SurfaceNodeView<'a>> {
+    ast.node_view(node)
+        .into_iter()
+        .flat_map(SurfaceNodeView::child_views)
+        .skip_while(|child| {
+            child.as_token().is_some_and(|token| {
+                token.kind != SurfaceTokenKind::Identifier
+                    || matches!(token.text.as_ref(), "deffunc" | "defpred")
+            })
+        })
+        .find(|child| {
+            child
+                .as_token()
+                .is_some_and(|token| token.kind == SurfaceTokenKind::Identifier)
+        })
+}
+
+fn source_type(
+    ast: &SurfaceAst,
+    node: SurfaceNodeId,
+) -> Result<SourceVariableType, SourceVariableScopeError> {
+    let view = ast
+        .node_view(node)
+        .ok_or(SourceVariableScopeError::InvalidShape)?;
+    if !matches!(view.kind(), SurfaceNodeKind::TypeExpression) {
+        return Err(SourceVariableScopeError::InvalidShape);
+    }
+    let mut attributes = Vec::new();
+    for child in view.child_views() {
+        if matches!(child.kind(), SurfaceNodeKind::AttributeChain) {
+            for attribute in child.child_views() {
+                if !matches!(attribute.kind(), SurfaceNodeKind::AttributeRef) {
+                    continue;
+                }
+                let spelling = attribute
+                    .child_views()
+                    .filter(|descendant| {
+                        matches!(descendant.kind(), SurfaceNodeKind::QualifiedSymbol)
+                    })
+                    .map(|descendant| qualified_symbol_spelling(ast, descendant.id()))
+                    .collect::<Option<Vec<_>>>();
+                let Some(spelling) = spelling else {
+                    return Err(SourceVariableScopeError::InvalidShape);
+                };
+                if spelling.is_empty() {
+                    return Err(SourceVariableScopeError::InvalidShape);
+                }
+                attributes.push(spelling.join("."));
+            }
+        }
+    }
+    let head = view
+        .child_views()
+        .find(|child| matches!(child.kind(), SurfaceNodeKind::TypeHead))
+        .ok_or(SourceVariableScopeError::InvalidShape)?;
+    let head_text = head
+        .child_views()
+        .find_map(|child| {
+            child
+                .as_token()
+                .map(|token| token.text.as_ref())
+                .or_else(|| first_token_text(ast, child.id()))
+        })
+        .ok_or(SourceVariableScopeError::InvalidShape)?;
+    let radix = match head_text {
+        "set" => SourceVariableTypeRadix::Set,
+        "object" => SourceVariableTypeRadix::Object,
+        _ => return Err(SourceVariableScopeError::InvalidShape),
+    };
+    Ok(SourceVariableType { radix, attributes })
+}
+
+fn qualified_symbol_spelling(ast: &SurfaceAst, node: SurfaceNodeId) -> Option<String> {
+    let mut tokens = Vec::new();
+    collect_qualified_symbol_tokens(ast, node, &mut tokens)?;
+    (!tokens.is_empty()).then(|| tokens.join("."))
+}
+
+fn collect_qualified_symbol_tokens(
+    ast: &SurfaceAst,
+    node: SurfaceNodeId,
+    tokens: &mut Vec<String>,
+) -> Option<()> {
+    let view = ast.node_view(node)?;
+    for child in view.child_views() {
+        if let Some(token) = child.as_token() {
+            if matches!(
+                token.kind,
+                SurfaceTokenKind::Identifier | SurfaceTokenKind::UserSymbol
+            ) {
+                tokens.push(token.text.to_string());
+            }
+        } else {
+            collect_qualified_symbol_tokens(ast, child.id(), tokens)?;
+        }
+    }
+    Some(())
+}
+
+fn subtree_has_kind(
+    ast: &SurfaceAst,
+    node: &mizar_syntax::SurfaceNode,
+    predicate: impl Fn(&SurfaceNodeKind) -> bool + Copy,
+) -> bool {
+    predicate(&node.kind)
+        || node.children.iter().any(|child| {
+            ast.node(*child)
+                .is_some_and(|child| subtree_has_kind(ast, child, predicate))
+        })
+}
+
+fn outer_formula_descendant<'a>(
+    ast: &'a SurfaceAst,
+    node: SurfaceNodeId,
+    parents: &BTreeMap<SurfaceNodeId, SurfaceNodeId>,
+) -> Option<SurfaceNodeView<'a>> {
+    ast.node_views()
+        .filter(|candidate| {
+            matches!(
+                candidate.kind(),
+                SurfaceNodeKind::FormulaExpression
+                    | SurfaceNodeKind::QuantifiedFormula(_)
+                    | SurfaceNodeKind::BuiltinPredicateApplication
+                    | SurfaceNodeKind::IsAssertion
+                    | SurfaceNodeKind::InlinePredicateApplication
+            ) && candidate.range().start >= ast.node(node).map(|n| n.range.start).unwrap_or(0)
+                && candidate.range().end
+                    <= ast.node(node).map(|n| n.range.end).unwrap_or(usize::MAX)
+        })
+        .filter(|candidate| {
+            let mut current = parents.get(&candidate.id()).copied();
+            while let Some(parent) = current {
+                if parent == node {
+                    return true;
+                }
+                if ast.node(parent).is_some_and(|parent| {
+                    matches!(
+                        parent.kind,
+                        SurfaceNodeKind::FormulaExpression
+                            | SurfaceNodeKind::QuantifiedFormula(_)
+                            | SurfaceNodeKind::BuiltinPredicateApplication
+                            | SurfaceNodeKind::IsAssertion
+                            | SurfaceNodeKind::InlinePredicateApplication
+                    )
+                }) {
+                    return false;
+                }
+                current = parents.get(&parent).copied();
+            }
+            false
+        })
+        .max_by_key(|candidate| {
+            (
+                candidate
+                    .range()
+                    .end
+                    .saturating_sub(candidate.range().start),
+                usize::MAX.saturating_sub(candidate.id().index()),
+            )
+        })
+}
+
+fn binding_kind_key(kind: SourceVariableBindingKind) -> u8 {
+    match kind {
+        SourceVariableBindingKind::Reserve => 0,
+        SourceVariableBindingKind::Quantifier => 1,
+        SourceVariableBindingKind::Let => 2,
+        SourceVariableBindingKind::Set => 3,
+        SourceVariableBindingKind::Reconsider => 4,
+        SourceVariableBindingKind::InlineFunctor => 5,
+        SourceVariableBindingKind::InlinePredicate => 6,
+        SourceVariableBindingKind::InlineParameter => 7,
+    }
+}
+
+fn nearest_inline_application(
+    node: SurfaceNodeId,
+    parents: &BTreeMap<SurfaceNodeId, SurfaceNodeId>,
+    ast: &SurfaceAst,
+) -> Option<(SurfaceNodeKind, SurfaceNodeId)> {
+    let mut current = parents.get(&node).copied();
+    while let Some(id) = current {
+        let view = ast.node_view(id)?;
+        if matches!(
+            view.kind(),
+            SurfaceNodeKind::ApplicationTerm | SurfaceNodeKind::InlinePredicateApplication
+        ) && first_inline_callee(ast, id).is_some_and(|callee| callee.id() == node)
+        {
+            return Some((view.kind().clone(), id));
+        }
+        current = parents.get(&id).copied();
+    }
+    None
+}
+
+fn nearest_inline_definition(
+    node: SurfaceNodeId,
+    parents: &BTreeMap<SurfaceNodeId, SurfaceNodeId>,
+    ast: &SurfaceAst,
+) -> Option<SurfaceNodeId> {
+    let mut current = parents.get(&node).copied();
+    while let Some(id) = current {
+        let view = ast.node_view(id)?;
+        if matches!(
+            view.kind(),
+            SurfaceNodeKind::InlineFunctorDefinition | SurfaceNodeKind::InlinePredicateDefinition
+        ) {
+            return Some(id);
+        }
+        current = parents.get(&id).copied();
+    }
+    None
+}
+
+fn inline_application_arity(ast: &SurfaceAst, node: SurfaceNodeId) -> usize {
+    direct_term_children(ast, node)
+        .filter(|child| !matches!(child.kind(), SurfaceNodeKind::TermReference))
+        .count()
 }
 
 #[cfg(test)]

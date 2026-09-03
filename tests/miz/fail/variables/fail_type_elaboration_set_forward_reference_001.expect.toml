@@ -9,7 +9,8 @@ expected_phase = "resolve"
 failure_category = "resolve_error"
 stable_detail_key = "variables.local_constant.forward_reference"
 diagnostic_codes = []
+tags = ["active_type_elaboration"]
 spec_refs = [
   "spec.en.04.variables.local_constant_set.semantic",
 ]
-notes = "Audit-1 semantic-bridge inactive oracle seed (September 2026 audit wave): binding expectation for the Step-5 semantic bridge; no active runner tag, earns no current credit. A local constant body may not reference a local constant introduced later in the same reasoning sequence (spec 4.4, 4.6)."
+notes = "Step 5C.1 active semantic oracle; outcome, phase, key, and backlinks remain frozen. A local constant body may not reference a local constant introduced later in the same reasoning sequence (spec 4.4, 4.6)."

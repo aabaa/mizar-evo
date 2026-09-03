@@ -9,7 +9,7 @@ Owning plans: [mizar-resolve](../../mizar-resolve/en/00.crate_plan.md#task-index
 
 | Field | Value |
 |---|---|
-| Status | Frozen; implementation and activation pending |
+| Status | Complete: hard gates 9/9; quality score 100/100; no caps |
 | Purpose | Execute all 12 Step 5C.1 oracle pairs through source-derived resolver and checker seams |
 | Tier | Full: production semantic APIs and previously inactive expectations change |
 | Owner / consumer | `mizar-resolve::names` owns source walking and lexical resolution; checker `binding_env` maps its authenticated identities; `type_checker` alone owns type/thesis decisions; `mizar-test` only invokes and compares |
@@ -62,6 +62,9 @@ mistaken for an expected oracle key. Bound body references, explicit capture ids
 and ordered one-to-one formal/argument ids make inline substitution identity-based
 and capture-safe; missing, recovered, invalid cross-scope provenance, forward,
 duplicate, wrong-arity, or reordered payload fails closed before substitution.
+Because the receipt exposes one optional thesis, it admits at most one
+`TheoremItem`; multiple theorem transactions fail with `InvalidShape` rather
+than being combined.
 Only the exact `deffunc`/`defpred` fixture transfers capture execution from the
 old deferral; Task 270's distinct shadowing fixture and broader `MT10-AS` capture
 work remain deferred and separately owned.
@@ -112,9 +115,14 @@ phase admission is limited to the three exact fail rows above.
 
 ## Exact change boundary and exit
 
-Rust allowlist: `names.rs` plus `names/tests.rs`; `type_checker.rs` plus
+Rust allowlist: `names.rs`, `names/tests.rs`, and the mandatory R-026 public-enum
+rows in `mizar-resolve/tests/lint_policy.rs`; `type_checker.rs` plus
+its `tests/support/source_variable_semantics_unit.rs` unit-test include and
 `checker_source_inventory.tsv`; new runner `formula_statement.rs` and test,
-`runner.rs`, `type_elaboration/admission.rs`, `lib.rs`, and `main.rs`. Test-data
+`runner.rs`, `type_elaboration/admission.rs`, `lib.rs`, `main.rs`, and mandatory
+count/public-enum rows in `mizar-test/tests/{metadata,lint_policy}.rs`, plus the
+count-only isolation assertions in `runner/tests/type_elaboration/{source_attribute_definition,source_functor_definition,source_mode_definition,source_property_implementation,source_statement}.rs`.
+Test-data
 allowlist is the 12 sidecars above, where only the exact tag and stale inactive
 note wording change. Documentation allowlist is this pair; the paired crate
 plans and `names.md`/`type_checker.md`/`harness.md`; the paired mizar-test TODO;
@@ -128,6 +136,22 @@ trace content, activation map, soundness cases, completed contracts/addenda,
 legacy ledgers, or `doc/design/archive/`. Task 277B remains not-ready/zero-credit.
 Trace already says `covered`; active execution is evidenced only by the tags and
 runners.
+
+## Completion evidence
+
+The source-derived route executes all 12 frozen oracles: formula-statement is
+6/6 and type-elaboration is 211/211 overall, including the six variable rows.
+Resolver and checker suites are 184/184 and 587/587; the mizar-test library is
+664/664. Syntax smoke remains 360 cases with 353 passes, seven expected syntax
+rejections, and no failures. Workspace fmt, Clippy with denied warnings, and
+all tests pass, so all nine hard gates pass. The
+resolver owns authenticated identities and structural failures; the checker
+alone owns type/thesis state and the three frozen semantic keys. No `doc/spec`,
+`.miz`, trace, activation-map, archive, or public diagnostic-code change is
+part of this activation. Archive inventory remains 13 files and Task 277B
+remains not-ready/zero-credit. Independent read-only scoring awarded 100/100
+with no caps; broader `given`/`consider`, nested capture matrices, theorem
+acceptance, and Core/VC semantics remain owned by later Step 5C tasks.
 
 Independent spec/boundary, test-sufficiency, implementation, and source/docs/API
 reviews must end without findings. Focused crates/stages, syntax smoke, metadata,

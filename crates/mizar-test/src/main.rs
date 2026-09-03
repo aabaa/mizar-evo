@@ -4,8 +4,8 @@ use std::process::ExitCode;
 
 use mizar_test::{
     DiscoveryConfig, TestPlan, TestProfile, ValidationMode, ValidationSeverity, build_test_plan,
-    run_declaration_symbol_corpus, run_parse_only_corpus, run_proof_verification_corpus,
-    run_syntax_smoke_corpus, run_type_elaboration_corpus,
+    run_declaration_symbol_corpus, run_formula_statement_corpus, run_parse_only_corpus,
+    run_proof_verification_corpus, run_syntax_smoke_corpus, run_type_elaboration_corpus,
 };
 
 fn main() -> ExitCode {
@@ -30,6 +30,7 @@ fn run() -> Result<ExitCode, String> {
             | "syntax-smoke"
             | "declaration-symbol"
             | "type-elaboration"
+            | "formula-statement"
             | "proof-verification"
     ) {
         return Err(usage());
@@ -77,6 +78,7 @@ fn run() -> Result<ExitCode, String> {
         "syntax-smoke" => run_syntax_smoke(&config),
         "declaration-symbol" => run_declaration_symbol(&config),
         "type-elaboration" => run_type_elaboration(&config),
+        "formula-statement" => run_formula_statement(&config),
         "proof-verification" => run_proof_verification(&config),
         _ => unreachable!("command was validated above"),
     }
@@ -239,6 +241,26 @@ fn run_type_elaboration(config: &DiscoveryConfig) -> Result<ExitCode, String> {
     }
 }
 
+fn run_formula_statement(config: &DiscoveryConfig) -> Result<ExitCode, String> {
+    let report = run_formula_statement_corpus(config).map_err(|error| error.to_string())?;
+
+    for diagnostic in &report.diagnostics {
+        eprintln!("{diagnostic}");
+    }
+
+    println!("formula-statement cases: {}", report.results.len());
+    println!("passed: {}", report.passed_count());
+    println!("failed: {}", report.failed_count());
+    println!("errors: {}", report.error_count());
+    println!("warnings: {}", report.warning_count());
+
+    if report.error_count() > 0 {
+        Ok(ExitCode::from(1))
+    } else {
+        Ok(ExitCode::SUCCESS)
+    }
+}
+
 fn run_proof_verification(config: &DiscoveryConfig) -> Result<ExitCode, String> {
     let report = run_proof_verification_corpus(config).map_err(|error| error.to_string())?;
 
@@ -260,7 +282,7 @@ fn run_proof_verification(config: &DiscoveryConfig) -> Result<ExitCode, String> 
 }
 
 fn usage() -> String {
-    "usage: mizar-test <plan|parse-only|syntax-smoke|declaration-symbol|type-elaboration|proof-verification> [--tests-root tests] [--manifest tests/coverage/spec_trace.toml] [--workspace-root .] [--validation-mode metadata|development|release]".to_owned()
+    "usage: mizar-test <plan|parse-only|syntax-smoke|declaration-symbol|type-elaboration|formula-statement|proof-verification> [--tests-root tests] [--manifest tests/coverage/spec_trace.toml] [--workspace-root .] [--validation-mode metadata|development|release]".to_owned()
 }
 
 fn next_value(args: &[String], idx: usize, name: &str) -> Result<String, String> {

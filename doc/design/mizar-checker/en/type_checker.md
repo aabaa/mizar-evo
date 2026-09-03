@@ -50,12 +50,14 @@ the named sections below.
   allocation;
 - binding-context construction or binder identity rules already owned by
   `binding_env`;
-- cluster saturation, registration activation, reduction normalization, or the
+- cluster saturation, registration activation, general reduction normalization
+  beyond the authenticated Step 5C.1 identity-based slice below, or the
   canonical `ResolutionTrace` schema;
 - final ordinary overload root selection, active refinement joining, or inserted
   overload-disambiguating `qua` views;
-- expansion replay for `set`, `deffunc`, or `defpred` bodies beyond preserving
-  the definition-time closure metadata supplied by `binding_env`;
+- expansion replay for `set`, `deffunc`, or `defpred` bodies beyond the bounded
+  Step 5C.1 local-definition slice below and preservation of definition-time
+  closure metadata supplied by `binding_env`;
 - `VcId`, `ObligationAnchor`, proof witness, prover result, accepted verifier
   status, or kernel replay;
 - public diagnostic-code allocation while the checker diagnostic code-space
@@ -3096,4 +3098,6 @@ owns explicit/reserved types, builtin widening and proof-required narrowing,
 identity-projects them through `BindingEnv`, then owns transparent local
 definitions and bounded `let`/`take` thesis transitions. Discharge is limited to
 facts, reflexivity, widening, and definitional reduction; proof search and
-theorem acceptance remain downstream.
+theorem acceptance remain downstream. Implicit `let` inherits only an
+authenticated prior root reservation, local aliases reduce by binding identity,
+and recursive inline definitions fail closed through a cycle guard.

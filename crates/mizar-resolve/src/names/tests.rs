@@ -1,4 +1,5 @@
 use super::*;
+use crate::env::{SymbolEnv, SymbolEnvIndexes};
 use crate::imports::{ImportPathCandidate, ImportPathPrefix, ImportPathResolver};
 use crate::module_index::WorkspaceStubModuleIndexProvider;
 use crate::resolved_ast::{
@@ -2633,6 +2634,1312 @@ fn stale_empty_prefix_reserved_root_bindings_report_the_root_segment() {
             .map(NamespacePathSegment::spelling),
         Some("std")
     );
+}
+
+#[test]
+fn source_variable_resolver_authenticates_and_resolves_quantified_equality() {
+    let source_id = source_id();
+    let module = module_id("pkg", "variables");
+    let ast = source_variable_quantified_ast(source_id, "x", true);
+    let symbols = SymbolEnv::new(module.clone(), SymbolEnvIndexes::default());
+    let resolved = SourceVariableScopeResolver::resolve(SourceVariableScopeInput::new(
+        &ast, &module, &symbols,
+    ))
+    .expect("well-shaped quantified source should resolve");
+
+    assert_eq!(resolved.source_id(), source_id);
+    assert_eq!(resolved.module_id(), &module);
+    assert_eq!(resolved.bindings().len(), 1);
+    assert_eq!(resolved.references().len(), 2);
+    assert_eq!(resolved.bindings()[0].id().index(), 0);
+    assert_eq!(resolved.bindings()[0].ordinal(), 0);
+    assert_eq!(resolved.bindings()[0].range(), range(source_id, 4, 5));
+    assert_eq!(resolved.bindings()[0].scope().path(), &[0]);
+    assert_eq!(
+        resolved.bindings()[0].kind(),
+        SourceVariableBindingKind::Quantifier
+    );
+    assert_eq!(resolved.bindings()[0].spelling(), "x");
+    assert_eq!(
+        resolved.references()[0].binding(),
+        resolved.bindings()[0].id()
+    );
+    assert_eq!(
+        resolved.references()[1].binding(),
+        resolved.bindings()[0].id()
+    );
+    assert_eq!(resolved.references()[0].ordinal(), 0);
+    assert_eq!(resolved.references()[0].range(), range(source_id, 20, 21));
+    assert_eq!(resolved.references()[0].scope().path(), &[0]);
+    assert_eq!(resolved.references()[1].ordinal(), 1);
+    assert_eq!(resolved.references()[1].range(), range(source_id, 24, 25));
+    assert_eq!(resolved.references()[1].scope().path(), &[0]);
+    assert!(matches!(
+        resolved.thesis(),
+        Some(SourceVariableFormula::ForAll { .. })
+    ));
+}
+
+#[test]
+fn source_variable_resolver_reports_semantic_errors_before_reference_walk() {
+    let source_id = source_id();
+    let module = module_id("pkg", "variables");
+    let symbols = SymbolEnv::new(module.clone(), SymbolEnvIndexes::default());
+
+    let unreserved = source_variable_quantified_ast(source_id, "Z", false);
+    assert_eq!(
+        SourceVariableScopeResolver::resolve(SourceVariableScopeInput::new(
+            &unreserved,
+            &module,
+            &symbols,
+        )),
+        Err(SourceVariableScopeError::UnreservedImplicitVariable)
+    );
+    assert_eq!(
+        SourceVariableScopeError::UnreservedImplicitVariable.detail_key(),
+        Some("variables.reserve.unreserved_implicit_variable")
+    );
+
+    let recovered = source_variable_recovered_ast(source_id);
+    assert_eq!(
+        SourceVariableScopeResolver::resolve(SourceVariableScopeInput::new(
+            &recovered, &module, &symbols,
+        )),
+        Err(SourceVariableScopeError::RecoveredSyntax)
+    );
+    assert_eq!(SourceVariableScopeError::RecoveredSyntax.detail_key(), None);
+}
+
+#[test]
+fn source_variable_resolver_rejects_provenance_and_module_mismatches() {
+    let (source, foreign_source) = distinct_source_ids();
+    let module = module_id("pkg", "variables");
+    let ast = source_variable_quantified_ast(source, "x", true);
+    let symbols = SymbolEnv::new(module.clone(), SymbolEnvIndexes::default());
+    let other_module = module_id("pkg", "other");
+    let other_symbols = SymbolEnv::new(other_module.clone(), SymbolEnvIndexes::default());
+
+    assert_eq!(
+        SourceVariableScopeResolver::resolve(SourceVariableScopeInput::new(
+            &ast,
+            &other_module,
+            &symbols,
+        )),
+        Err(SourceVariableScopeError::ModuleMismatch)
+    );
+
+    let foreign_ast = {
+        let mut builder = SurfaceAstBuilder::new(source);
+        let token = builder.add_token(
+            SurfaceTokenKind::Identifier,
+            "x",
+            range(foreign_source, 0, 1),
+        );
+        let root = builder.add_node(SurfaceNodeKind::Root, range(source, 0, 1), vec![token]);
+        builder.finish(Some(root), None)
+    };
+    assert_eq!(
+        SourceVariableScopeResolver::resolve(SourceVariableScopeInput::new(
+            &foreign_ast,
+            &module,
+            &symbols,
+        )),
+        Err(SourceVariableScopeError::SourceMismatch)
+    );
+    let module_mismatch_ast = source_variable_quantified_ast(source, "x", true);
+    assert_eq!(
+        SourceVariableScopeResolver::resolve(SourceVariableScopeInput::new(
+            &module_mismatch_ast,
+            &module,
+            &other_symbols,
+        )),
+        Err(SourceVariableScopeError::ModuleMismatch)
+    );
+}
+
+#[test]
+fn source_variable_resolver_protects_definition_block_variable_surface() {
+    let source_id = source_id();
+    let module = module_id("pkg", "variables");
+    let mut builder = SurfaceAstBuilder::new(source_id);
+    let callee = builder.add_token(SurfaceTokenKind::Identifier, "P", range(source_id, 0, 1));
+    let open = builder.add_token(
+        SurfaceTokenKind::ReservedSymbol,
+        "(",
+        range(source_id, 1, 2),
+    );
+    let close = builder.add_token(
+        SurfaceTokenKind::ReservedSymbol,
+        ")",
+        range(source_id, 2, 3),
+    );
+    let application = builder.add_node(
+        SurfaceNodeKind::InlinePredicateApplication,
+        range(source_id, 0, 3),
+        vec![callee, open, close],
+    );
+    let local_segment = source_variable_typed_segment(&mut builder, source_id, 5, "l");
+    let left_token = builder.add_token(SurfaceTokenKind::Identifier, "x", range(source_id, 21, 22));
+    let left_reference = builder.add_node(
+        SurfaceNodeKind::TermReference,
+        range(source_id, 21, 22),
+        vec![left_token],
+    );
+    let left_term = builder.add_node(
+        SurfaceNodeKind::TermExpression,
+        range(source_id, 21, 22),
+        vec![left_reference],
+    );
+    let equals = builder.add_token(
+        SurfaceTokenKind::ReservedSymbol,
+        "=",
+        range(source_id, 23, 24),
+    );
+    let right_token =
+        builder.add_token(SurfaceTokenKind::Identifier, "x", range(source_id, 25, 26));
+    let right_reference = builder.add_node(
+        SurfaceNodeKind::TermReference,
+        range(source_id, 25, 26),
+        vec![right_token],
+    );
+    let right_term = builder.add_node(
+        SurfaceNodeKind::TermExpression,
+        range(source_id, 25, 26),
+        vec![right_reference],
+    );
+    let equality = builder.add_node(
+        SurfaceNodeKind::BuiltinPredicateApplication,
+        range(source_id, 21, 26),
+        vec![left_term, equals, right_term],
+    );
+    let condition = builder.add_node(
+        SurfaceNodeKind::FormulaExpression,
+        range(source_id, 21, 26),
+        vec![equality],
+    );
+    let local_let = builder.add_node(
+        SurfaceNodeKind::LetStatement,
+        range(source_id, 4, 27),
+        vec![local_segment, condition],
+    );
+    let definition_block = builder.add_node(
+        SurfaceNodeKind::DefinitionBlockItem,
+        range(source_id, 0, 27),
+        vec![application, local_let],
+    );
+    let item_list = builder.add_node(
+        SurfaceNodeKind::ItemList,
+        range(source_id, 0, 27),
+        vec![definition_block],
+    );
+    let unit = builder.add_node(
+        SurfaceNodeKind::CompilationUnit,
+        range(source_id, 0, 27),
+        vec![item_list],
+    );
+    let root = builder.add_node(SurfaceNodeKind::Root, range(source_id, 0, 27), vec![unit]);
+    let ast = builder.finish(Some(root), None);
+    let symbols = SymbolEnv::new(module.clone(), SymbolEnvIndexes::default());
+
+    let resolved = SourceVariableScopeResolver::resolve(SourceVariableScopeInput::new(
+        &ast, &module, &symbols,
+    ))
+    .expect("definition-block variable surface is outside the resolver slice");
+    assert!(resolved.references().is_empty());
+    assert!(resolved.statements().is_empty());
+}
+
+#[test]
+fn source_variable_resolver_rejects_multi_theorem_items_fail_closed() {
+    let source_id = source_id();
+    let module = module_id("pkg", "variables");
+    let ast = source_variable_two_theorem_take_ast(source_id);
+    let symbols = SymbolEnv::new(module.clone(), SymbolEnvIndexes::default());
+
+    assert_eq!(
+        SourceVariableScopeResolver::resolve(SourceVariableScopeInput::new(
+            &ast, &module, &symbols,
+        )),
+        Err(SourceVariableScopeError::InvalidShape)
+    );
+}
+
+#[test]
+fn source_variable_resolver_emits_one_receipt_per_multi_binding_statement() {
+    let source_id = source_id();
+    let module = module_id("pkg", "variables");
+    let ast = source_variable_multi_binding_statements_ast(source_id);
+    let symbols = SymbolEnv::new(module.clone(), SymbolEnvIndexes::default());
+
+    let resolved = SourceVariableScopeResolver::resolve(SourceVariableScopeInput::new(
+        &ast, &module, &symbols,
+    ))
+    .expect("well-shaped multi-binding statements should resolve");
+    let statement_bindings = resolved
+        .statements()
+        .iter()
+        .filter_map(|statement| match statement {
+            SourceVariableStatement::Let { binding, .. }
+            | SourceVariableStatement::Set { binding, .. }
+            | SourceVariableStatement::Reconsider { binding, .. } => Some(
+                resolved
+                    .bindings()
+                    .get(binding.index())
+                    .expect("statement binding should be present")
+                    .spelling(),
+            ),
+            _ => None,
+        })
+        .collect::<Vec<_>>();
+    assert_eq!(statement_bindings, vec!["l", "m", "s", "t", "r", "q"]);
+    assert_eq!(
+        resolved
+            .bindings()
+            .iter()
+            .map(|binding| (
+                binding.ordinal(),
+                binding.range(),
+                binding.scope().path().to_vec()
+            ))
+            .collect::<Vec<_>>(),
+        vec![
+            (0, range(source_id, 8, 9), Vec::<u32>::new()),
+            (1, range(source_id, 21, 22), Vec::<u32>::new()),
+            (2, range(source_id, 35, 36), Vec::<u32>::new()),
+            (3, range(source_id, 61, 62), Vec::<u32>::new()),
+            (4, range(source_id, 71, 72), Vec::<u32>::new()),
+            (5, range(source_id, 101, 102), Vec::<u32>::new()),
+            (6, range(source_id, 111, 112), Vec::<u32>::new()),
+        ]
+    );
+    assert_eq!(
+        resolved
+            .statements()
+            .iter()
+            .map(|statement| statement.range().start)
+            .collect::<Vec<_>>(),
+        vec![20, 20, 60, 60, 90, 90]
+    );
+}
+
+#[test]
+fn source_variable_resolver_reports_inline_functor_arity_mismatch() {
+    let source_id = source_id();
+    let module = module_id("pkg", "variables");
+    let ast = source_variable_inline_functor_ast(source_id, 2);
+    let symbols = SymbolEnv::new(module.clone(), SymbolEnvIndexes::default());
+
+    assert_eq!(
+        SourceVariableScopeResolver::resolve(SourceVariableScopeInput::new(
+            &ast, &module, &symbols,
+        )),
+        Err(SourceVariableScopeError::ArityMismatch)
+    );
+}
+
+#[test]
+fn source_variable_resolver_reports_inline_predicate_arity_mismatch() {
+    let source_id = source_id();
+    let module = module_id("pkg", "variables");
+    let ast = source_variable_inline_predicate_arity_ast(source_id);
+    let symbols = SymbolEnv::new(module.clone(), SymbolEnvIndexes::default());
+
+    assert_eq!(
+        SourceVariableScopeResolver::resolve(SourceVariableScopeInput::new(
+            &ast, &module, &symbols,
+        )),
+        Err(SourceVariableScopeError::ArityMismatch)
+    );
+}
+
+#[test]
+fn source_variable_resolver_rejects_malformed_application_shape() {
+    let source_id = source_id();
+    let module = module_id("pkg", "variables");
+    let mut builder = SurfaceAstBuilder::new(source_id);
+    let application = builder.add_node(
+        SurfaceNodeKind::ApplicationTerm,
+        range(source_id, 0, 1),
+        Vec::new(),
+    );
+    let root = builder.add_node(
+        SurfaceNodeKind::Root,
+        range(source_id, 0, 1),
+        vec![application],
+    );
+    let ast = builder.finish(Some(root), None);
+    let symbols = SymbolEnv::new(module.clone(), SymbolEnvIndexes::default());
+
+    assert_eq!(
+        SourceVariableScopeResolver::resolve(SourceVariableScopeInput::new(
+            &ast, &module, &symbols,
+        )),
+        Err(SourceVariableScopeError::InvalidShape)
+    );
+}
+
+#[test]
+fn source_variable_resolver_reports_unresolved_reference() {
+    let source_id = source_id();
+    let module = module_id("pkg", "variables");
+    let mut builder = SurfaceAstBuilder::new(source_id);
+    let token = builder.add_token(SurfaceTokenKind::Identifier, "x", range(source_id, 0, 1));
+    let reference = builder.add_node(
+        SurfaceNodeKind::TermReference,
+        range(source_id, 0, 1),
+        vec![token],
+    );
+    let root = builder.add_node(
+        SurfaceNodeKind::Root,
+        range(source_id, 0, 1),
+        vec![reference],
+    );
+    let ast = builder.finish(Some(root), None);
+    let symbols = SymbolEnv::new(module.clone(), SymbolEnvIndexes::default());
+
+    assert_eq!(
+        SourceVariableScopeResolver::resolve(SourceVariableScopeInput::new(
+            &ast, &module, &symbols,
+        )),
+        Err(SourceVariableScopeError::UnresolvedReference)
+    );
+}
+
+#[test]
+fn source_variable_resolver_authenticates_inline_functor_captures() {
+    let source_id = source_id();
+    let module = module_id("pkg", "variables");
+    let ast = source_variable_inline_functor_ast(source_id, 1);
+    let symbols = SymbolEnv::new(module.clone(), SymbolEnvIndexes::default());
+
+    let resolved = SourceVariableScopeResolver::resolve(SourceVariableScopeInput::new(
+        &ast, &module, &symbols,
+    ))
+    .expect("well-shaped inline functor should resolve");
+    let functor = resolved
+        .bindings()
+        .iter()
+        .find(|binding| binding.kind() == SourceVariableBindingKind::InlineFunctor)
+        .expect("inline functor binding should be present");
+    let reserve = resolved
+        .bindings()
+        .iter()
+        .find(|binding| binding.kind() == SourceVariableBindingKind::Reserve)
+        .expect("outer reserve binding should be present");
+    assert_eq!(functor.arity(), Some(1));
+    assert_eq!(reserve.id().index(), 0);
+    assert_eq!(functor.captures(), &[reserve.id()]);
+}
+
+#[test]
+fn source_variable_resolver_accepts_parser_style_root_token_overlay() {
+    let source_id = source_id();
+    let module = module_id("pkg", "variables");
+    let ast = source_variable_root_token_overlay_ast(source_id);
+    let symbols = SymbolEnv::new(module.clone(), SymbolEnvIndexes::default());
+    let resolved = SourceVariableScopeResolver::resolve(SourceVariableScopeInput::new(
+        &ast, &module, &symbols,
+    ))
+    .expect("parser-style root token overlay should be metadata only");
+    assert_eq!(resolved.bindings().len(), 1);
+    assert_eq!(resolved.bindings()[0].spelling(), "x");
+    assert_eq!(resolved.bindings()[0].ordinal(), 0);
+    assert_eq!(resolved.bindings()[0].range(), range(source_id, 8, 9));
+    assert!(resolved.bindings()[0].scope().path().is_empty());
+}
+
+#[test]
+#[should_panic(expected = "cannot be shared by multiple non-root parents")]
+fn source_variable_surface_builder_rejects_true_non_root_sharing() {
+    let source_id = source_id();
+    let mut builder = SurfaceAstBuilder::new(source_id);
+    let token = builder.add_token(SurfaceTokenKind::Identifier, "x", range(source_id, 0, 1));
+    let left = builder.add_node(
+        SurfaceNodeKind::TermExpression,
+        range(source_id, 0, 1),
+        vec![token],
+    );
+    let right = builder.add_node(
+        SurfaceNodeKind::TermReference,
+        range(source_id, 0, 1),
+        vec![token],
+    );
+    let root = builder.add_node(
+        SurfaceNodeKind::Root,
+        range(source_id, 0, 1),
+        vec![left, right],
+    );
+    let _ = builder.finish(Some(root), None);
+}
+
+fn distinct_source_ids() -> (SourceId, SourceId) {
+    let snapshot_id = BuildSnapshotId::from_published_schema_str(&format!(
+        "mizar-session-build-snapshot-v1:{}",
+        "05".repeat(Hash::BYTE_LEN)
+    ))
+    .unwrap();
+    let allocator = InMemorySessionIdAllocator::new();
+    (
+        allocator.next_source_id(snapshot_id).unwrap(),
+        allocator.next_source_id(snapshot_id).unwrap(),
+    )
+}
+
+fn source_variable_quantified_ast(source_id: SourceId, spelling: &str, typed: bool) -> SurfaceAst {
+    let mut builder = SurfaceAstBuilder::new(source_id);
+    let for_keyword = builder.add_token(
+        SurfaceTokenKind::ReservedWord,
+        "for",
+        range(source_id, 0, 3),
+    );
+    let binder = builder.add_token(
+        SurfaceTokenKind::Identifier,
+        spelling,
+        range(source_id, 4, 4 + spelling.len()),
+    );
+    let (segment_end, segment) = if typed {
+        let being = builder.add_token(
+            SurfaceTokenKind::ReservedWord,
+            "being",
+            range(source_id, 5 + spelling.len(), 10 + spelling.len()),
+        );
+        let object = builder.add_token(
+            SurfaceTokenKind::ReservedWord,
+            "object",
+            range(source_id, 11 + spelling.len(), 17 + spelling.len()),
+        );
+        let head = builder.add_node(
+            SurfaceNodeKind::TypeHead,
+            range(source_id, 11 + spelling.len(), 17 + spelling.len()),
+            vec![object],
+        );
+        let type_expression = builder.add_node(
+            SurfaceNodeKind::TypeExpression,
+            range(source_id, 11 + spelling.len(), 17 + spelling.len()),
+            vec![head],
+        );
+        let end = 17 + spelling.len();
+        (
+            end,
+            builder.add_node(
+                SurfaceNodeKind::QuantifierVariableSegment,
+                range(source_id, 4, end),
+                vec![binder, being, type_expression],
+            ),
+        )
+    } else {
+        (
+            4 + spelling.len(),
+            builder.add_node(
+                SurfaceNodeKind::QuantifierVariableSegment,
+                range(source_id, 4, 4 + spelling.len()),
+                vec![binder],
+            ),
+        )
+    };
+
+    let left_token = builder.add_token(
+        SurfaceTokenKind::Identifier,
+        spelling,
+        range(source_id, segment_end + 2, segment_end + 2 + spelling.len()),
+    );
+    let left_reference = builder.add_node(
+        SurfaceNodeKind::TermReference,
+        range(source_id, segment_end + 2, segment_end + 2 + spelling.len()),
+        vec![left_token],
+    );
+    let left_term = builder.add_node(
+        SurfaceNodeKind::TermExpression,
+        range(source_id, segment_end + 2, segment_end + 2 + spelling.len()),
+        vec![left_reference],
+    );
+    let equals = builder.add_token(
+        SurfaceTokenKind::ReservedSymbol,
+        "=",
+        range(
+            source_id,
+            segment_end + 3 + spelling.len(),
+            segment_end + 4 + spelling.len(),
+        ),
+    );
+    let right_start = segment_end + 5 + spelling.len();
+    let right_token = builder.add_token(
+        SurfaceTokenKind::Identifier,
+        spelling,
+        range(source_id, right_start, right_start + spelling.len()),
+    );
+    let right_reference = builder.add_node(
+        SurfaceNodeKind::TermReference,
+        range(source_id, right_start, right_start + spelling.len()),
+        vec![right_token],
+    );
+    let right_term = builder.add_node(
+        SurfaceNodeKind::TermExpression,
+        range(source_id, right_start, right_start + spelling.len()),
+        vec![right_reference],
+    );
+    let formula_start = segment_end + 2;
+    let formula_end = right_start + spelling.len();
+    let equality = builder.add_node(
+        SurfaceNodeKind::BuiltinPredicateApplication,
+        range(source_id, formula_start, formula_end),
+        vec![left_term, equals, right_term],
+    );
+    let body = builder.add_node(
+        SurfaceNodeKind::FormulaExpression,
+        range(source_id, formula_start, formula_end),
+        vec![equality],
+    );
+    let holds = builder.add_token(
+        SurfaceTokenKind::ReservedWord,
+        "holds",
+        range(source_id, segment_end + 1, segment_end + 6),
+    );
+    let quantified = builder.add_node(
+        SurfaceNodeKind::QuantifiedFormula(SurfaceQuantifierKind::Universal),
+        range(source_id, 0, formula_end),
+        vec![for_keyword, segment, holds, body],
+    );
+    let theorem = builder.add_node(
+        SurfaceNodeKind::TheoremItem,
+        range(source_id, 0, formula_end),
+        vec![quantified],
+    );
+    let root = builder.add_node(
+        SurfaceNodeKind::Root,
+        range(source_id, 0, formula_end),
+        vec![theorem],
+    );
+    builder.finish(Some(root), None)
+}
+
+fn source_variable_two_theorem_take_ast(source_id: SourceId) -> SurfaceAst {
+    let mut builder = SurfaceAstBuilder::new(source_id);
+    let reserve = builder.add_token(
+        SurfaceTokenKind::ReservedWord,
+        "reserve",
+        range(source_id, 0, 7),
+    );
+    let reserved_x = builder.add_token(SurfaceTokenKind::Identifier, "x", range(source_id, 8, 9));
+    let reserve_be = builder.add_token(
+        SurfaceTokenKind::ReservedWord,
+        "be",
+        range(source_id, 10, 12),
+    );
+    let reserve_object = builder.add_token(
+        SurfaceTokenKind::ReservedWord,
+        "object",
+        range(source_id, 13, 19),
+    );
+    let reserve_head = builder.add_node(
+        SurfaceNodeKind::TypeHead,
+        range(source_id, 13, 19),
+        vec![reserve_object],
+    );
+    let reserve_type = builder.add_node(
+        SurfaceNodeKind::TypeExpression,
+        range(source_id, 13, 19),
+        vec![reserve_head],
+    );
+    let reserve_segment = builder.add_node(
+        SurfaceNodeKind::ReserveSegment,
+        range(source_id, 8, 19),
+        vec![reserved_x, reserve_be, reserve_type],
+    );
+    let reserve_item = builder.add_node(
+        SurfaceNodeKind::ReserveItem,
+        range(source_id, 0, 19),
+        vec![reserve, reserve_segment],
+    );
+
+    let first_theorem = source_variable_typed_quantified_theorem(
+        &mut builder,
+        source_id,
+        20,
+        SurfaceQuantifierKind::Existential,
+        "ex",
+        "y",
+        "st",
+    );
+    let second_theorem = source_variable_typed_quantified_theorem(
+        &mut builder,
+        source_id,
+        100,
+        SurfaceQuantifierKind::Universal,
+        "for",
+        "z",
+        "holds",
+    );
+    let proof_start = builder.add_token(
+        SurfaceTokenKind::ReservedWord,
+        "proof",
+        range(source_id, 131, 136),
+    );
+    let take_keyword = builder.add_token(
+        SurfaceTokenKind::ReservedWord,
+        "take",
+        range(source_id, 137, 141),
+    );
+    let witness_token = builder.add_token(
+        SurfaceTokenKind::Identifier,
+        "x",
+        range(source_id, 142, 143),
+    );
+    let witness_reference = builder.add_node(
+        SurfaceNodeKind::TermReference,
+        range(source_id, 142, 143),
+        vec![witness_token],
+    );
+    let witness_term = builder.add_node(
+        SurfaceNodeKind::TermExpression,
+        range(source_id, 142, 143),
+        vec![witness_reference],
+    );
+    let witness = builder.add_node(
+        SurfaceNodeKind::Witness,
+        range(source_id, 142, 143),
+        vec![witness_term],
+    );
+    let semicolon = builder.add_token(
+        SurfaceTokenKind::ReservedSymbol,
+        ";",
+        range(source_id, 144, 145),
+    );
+    let take = builder.add_node(
+        SurfaceNodeKind::TakeStatement,
+        range(source_id, 137, 145),
+        vec![take_keyword, witness, semicolon],
+    );
+    let proof_end = builder.add_token(
+        SurfaceTokenKind::ReservedWord,
+        "end",
+        range(source_id, 146, 149),
+    );
+    let proof = builder.add_node(
+        SurfaceNodeKind::ProofBlock,
+        range(source_id, 131, 149),
+        vec![proof_start, take, proof_end],
+    );
+    let second_theorem = builder.add_node(
+        SurfaceNodeKind::TheoremItem,
+        range(source_id, 100, 149),
+        vec![second_theorem, proof],
+    );
+
+    let item_list = builder.add_node(
+        SurfaceNodeKind::ItemList,
+        range(source_id, 0, 149),
+        vec![reserve_item, first_theorem, second_theorem],
+    );
+    let unit = builder.add_node(
+        SurfaceNodeKind::CompilationUnit,
+        range(source_id, 0, 149),
+        vec![item_list],
+    );
+    let root = builder.add_node(SurfaceNodeKind::Root, range(source_id, 0, 149), vec![unit]);
+    builder.finish(Some(root), None)
+}
+
+fn source_variable_multi_binding_statements_ast(source_id: SourceId) -> SurfaceAst {
+    let mut builder = SurfaceAstBuilder::new(source_id);
+    let reserve_keyword = builder.add_token(
+        SurfaceTokenKind::ReservedWord,
+        "reserve",
+        range(source_id, 0, 7),
+    );
+    let reserve_binder =
+        builder.add_token(SurfaceTokenKind::Identifier, "x", range(source_id, 8, 9));
+    let reserve_be = builder.add_token(
+        SurfaceTokenKind::ReservedWord,
+        "be",
+        range(source_id, 10, 12),
+    );
+    let reserve_object_token = builder.add_token(
+        SurfaceTokenKind::ReservedWord,
+        "object",
+        range(source_id, 13, 19),
+    );
+    let reserve_head = builder.add_node(
+        SurfaceNodeKind::TypeHead,
+        range(source_id, 13, 19),
+        vec![reserve_object_token],
+    );
+    let reserve_type = builder.add_node(
+        SurfaceNodeKind::TypeExpression,
+        range(source_id, 13, 19),
+        vec![reserve_head],
+    );
+    let reserve_segment = builder.add_node(
+        SurfaceNodeKind::ReserveSegment,
+        range(source_id, 8, 19),
+        vec![reserve_binder, reserve_be, reserve_type],
+    );
+    let reserve_item = builder.add_node(
+        SurfaceNodeKind::ReserveItem,
+        range(source_id, 0, 19),
+        vec![reserve_keyword, reserve_segment],
+    );
+
+    let let_segment_l = source_variable_typed_segment(&mut builder, source_id, 21, "l");
+    let let_segment_m = source_variable_typed_segment(&mut builder, source_id, 35, "m");
+    let let_statement = builder.add_node(
+        SurfaceNodeKind::LetStatement,
+        range(source_id, 20, 49),
+        vec![let_segment_l, let_segment_m],
+    );
+
+    let set_s =
+        source_variable_equating(&mut builder, source_id, 61, "s", SurfaceNodeKind::Equating);
+    let set_t =
+        source_variable_equating(&mut builder, source_id, 71, "t", SurfaceNodeKind::Equating);
+    let set_statement = builder.add_node(
+        SurfaceNodeKind::SetStatement,
+        range(source_id, 60, 80),
+        vec![set_s, set_t],
+    );
+
+    let reconsider_target = source_variable_type_expression(&mut builder, source_id, 92);
+    let reconsider_r = source_variable_equating(
+        &mut builder,
+        source_id,
+        101,
+        "r",
+        SurfaceNodeKind::ReconsiderItem,
+    );
+    let reconsider_q = source_variable_equating(
+        &mut builder,
+        source_id,
+        111,
+        "q",
+        SurfaceNodeKind::ReconsiderItem,
+    );
+    let reconsider_statement = builder.add_node(
+        SurfaceNodeKind::ReconsiderStatement,
+        range(source_id, 90, 120),
+        vec![reconsider_target, reconsider_r, reconsider_q],
+    );
+
+    let item_list = builder.add_node(
+        SurfaceNodeKind::ItemList,
+        range(source_id, 0, 120),
+        vec![
+            reserve_item,
+            let_statement,
+            set_statement,
+            reconsider_statement,
+        ],
+    );
+    let unit = builder.add_node(
+        SurfaceNodeKind::CompilationUnit,
+        range(source_id, 0, 120),
+        vec![item_list],
+    );
+    let root = builder.add_node(SurfaceNodeKind::Root, range(source_id, 0, 120), vec![unit]);
+    builder.finish(Some(root), None)
+}
+
+fn source_variable_inline_functor_ast(source_id: SourceId, argument_count: usize) -> SurfaceAst {
+    let mut builder = SurfaceAstBuilder::new(source_id);
+    let reserve_keyword = builder.add_token(
+        SurfaceTokenKind::ReservedWord,
+        "reserve",
+        range(source_id, 0, 7),
+    );
+    let reserve_binder =
+        builder.add_token(SurfaceTokenKind::Identifier, "x", range(source_id, 8, 9));
+    let reserve_be = builder.add_token(
+        SurfaceTokenKind::ReservedWord,
+        "be",
+        range(source_id, 10, 12),
+    );
+    let reserve_type = source_variable_type_expression(&mut builder, source_id, 13);
+    let reserve_segment = builder.add_node(
+        SurfaceNodeKind::ReserveSegment,
+        range(source_id, 8, 19),
+        vec![reserve_binder, reserve_be, reserve_type],
+    );
+    let reserve_item = builder.add_node(
+        SurfaceNodeKind::ReserveItem,
+        range(source_id, 0, 19),
+        vec![reserve_keyword, reserve_segment],
+    );
+
+    let deffunc = builder.add_token(
+        SurfaceTokenKind::ReservedWord,
+        "deffunc",
+        range(source_id, 20, 27),
+    );
+    let functor_name =
+        builder.add_token(SurfaceTokenKind::Identifier, "F", range(source_id, 28, 29));
+    let formal_name =
+        builder.add_token(SurfaceTokenKind::Identifier, "a", range(source_id, 31, 32));
+    let formal_being = builder.add_token(
+        SurfaceTokenKind::ReservedWord,
+        "being",
+        range(source_id, 33, 38),
+    );
+    let formal_type = source_variable_type_expression(&mut builder, source_id, 39);
+    let formal = builder.add_node(
+        SurfaceNodeKind::TypedParameter,
+        range(source_id, 31, 45),
+        vec![formal_name, formal_being, formal_type],
+    );
+    let definition_open = builder.add_token(
+        SurfaceTokenKind::ReservedSymbol,
+        "(",
+        range(source_id, 29, 30),
+    );
+    let result_type = source_variable_type_expression(&mut builder, source_id, 46);
+    let body_token = builder.add_token(SurfaceTokenKind::Identifier, "x", range(source_id, 53, 54));
+    let body_reference = builder.add_node(
+        SurfaceNodeKind::TermReference,
+        range(source_id, 53, 54),
+        vec![body_token],
+    );
+    let body_term = builder.add_node(
+        SurfaceNodeKind::TermExpression,
+        range(source_id, 53, 54),
+        vec![body_reference],
+    );
+    let definiens = builder.add_node(
+        SurfaceNodeKind::TermDefiniens,
+        range(source_id, 53, 54),
+        vec![body_term],
+    );
+    let definition = builder.add_node(
+        SurfaceNodeKind::InlineFunctorDefinition,
+        range(source_id, 20, 55),
+        vec![
+            deffunc,
+            functor_name,
+            definition_open,
+            formal,
+            result_type,
+            definiens,
+        ],
+    );
+
+    let application_open = builder.add_token(
+        SurfaceTokenKind::ReservedSymbol,
+        "(",
+        range(source_id, 60, 61),
+    );
+    let application_name =
+        builder.add_token(SurfaceTokenKind::Identifier, "F", range(source_id, 61, 62));
+    let application_callee = builder.add_node(
+        SurfaceNodeKind::TermReference,
+        range(source_id, 61, 62),
+        vec![application_name],
+    );
+    let mut application_children = vec![application_open, application_callee];
+    for index in 0..argument_count {
+        if index > 0 {
+            let comma_start = 62 + (index * 3) - 1;
+            let comma = builder.add_token(
+                SurfaceTokenKind::ReservedSymbol,
+                ",",
+                range(source_id, comma_start, comma_start + 1),
+            );
+            application_children.push(comma);
+        }
+        let argument_start = 63 + (index * 3);
+        let argument_token = builder.add_token(
+            SurfaceTokenKind::Identifier,
+            "x",
+            range(source_id, argument_start, argument_start + 1),
+        );
+        let argument_reference = builder.add_node(
+            SurfaceNodeKind::TermReference,
+            range(source_id, argument_start, argument_start + 1),
+            vec![argument_token],
+        );
+        let argument = builder.add_node(
+            SurfaceNodeKind::TermExpression,
+            range(source_id, argument_start, argument_start + 1),
+            vec![argument_reference],
+        );
+        application_children.push(argument);
+    }
+    let close_start = 63 + (argument_count * 3);
+    let application_close = builder.add_token(
+        SurfaceTokenKind::ReservedSymbol,
+        ")",
+        range(source_id, close_start, close_start + 1),
+    );
+    application_children.push(application_close);
+    let application = builder.add_node(
+        SurfaceNodeKind::ApplicationTerm,
+        range(source_id, 60, close_start + 1),
+        application_children,
+    );
+
+    let item_list = builder.add_node(
+        SurfaceNodeKind::ItemList,
+        range(source_id, 0, close_start + 1),
+        vec![reserve_item, definition, application],
+    );
+    let unit = builder.add_node(
+        SurfaceNodeKind::CompilationUnit,
+        range(source_id, 0, close_start + 1),
+        vec![item_list],
+    );
+    let root = builder.add_node(
+        SurfaceNodeKind::Root,
+        range(source_id, 0, close_start + 1),
+        vec![unit],
+    );
+    builder.finish(Some(root), None)
+}
+
+fn source_variable_inline_predicate_arity_ast(source_id: SourceId) -> SurfaceAst {
+    let mut builder = SurfaceAstBuilder::new(source_id);
+    let defpred = builder.add_token(
+        SurfaceTokenKind::ReservedWord,
+        "defpred",
+        range(source_id, 0, 7),
+    );
+    let predicate_name =
+        builder.add_token(SurfaceTokenKind::Identifier, "P", range(source_id, 8, 9));
+    let definition = builder.add_node(
+        SurfaceNodeKind::InlinePredicateDefinition,
+        range(source_id, 0, 10),
+        vec![defpred, predicate_name],
+    );
+
+    let application_name =
+        builder.add_token(SurfaceTokenKind::Identifier, "P", range(source_id, 20, 21));
+    let application_open = builder.add_token(
+        SurfaceTokenKind::ReservedSymbol,
+        "(",
+        range(source_id, 21, 22),
+    );
+    let argument_token =
+        builder.add_token(SurfaceTokenKind::Identifier, "x", range(source_id, 23, 24));
+    let argument_reference = builder.add_node(
+        SurfaceNodeKind::TermReference,
+        range(source_id, 23, 24),
+        vec![argument_token],
+    );
+    let argument = builder.add_node(
+        SurfaceNodeKind::TermExpression,
+        range(source_id, 23, 24),
+        vec![argument_reference],
+    );
+    let application_close = builder.add_token(
+        SurfaceTokenKind::ReservedSymbol,
+        ")",
+        range(source_id, 24, 25),
+    );
+    let application = builder.add_node(
+        SurfaceNodeKind::InlinePredicateApplication,
+        range(source_id, 20, 25),
+        vec![
+            application_name,
+            application_open,
+            argument,
+            application_close,
+        ],
+    );
+    let item_list = builder.add_node(
+        SurfaceNodeKind::ItemList,
+        range(source_id, 0, 25),
+        vec![definition, application],
+    );
+    let unit = builder.add_node(
+        SurfaceNodeKind::CompilationUnit,
+        range(source_id, 0, 25),
+        vec![item_list],
+    );
+    let root = builder.add_node(SurfaceNodeKind::Root, range(source_id, 0, 25), vec![unit]);
+    builder.finish(Some(root), None)
+}
+
+fn source_variable_root_token_overlay_ast(source_id: SourceId) -> SurfaceAst {
+    let mut builder = SurfaceAstBuilder::new(source_id);
+    let reserve_keyword = builder.add_token(
+        SurfaceTokenKind::ReservedWord,
+        "reserve",
+        range(source_id, 0, 7),
+    );
+    let reserve_binder =
+        builder.add_token(SurfaceTokenKind::Identifier, "x", range(source_id, 8, 9));
+    let reserve_be = builder.add_token(
+        SurfaceTokenKind::ReservedWord,
+        "be",
+        range(source_id, 10, 12),
+    );
+    let reserve_type = source_variable_type_expression(&mut builder, source_id, 13);
+    let reserve_segment = builder.add_node(
+        SurfaceNodeKind::ReserveSegment,
+        range(source_id, 8, 19),
+        vec![reserve_binder, reserve_be, reserve_type],
+    );
+    let reserve_item = builder.add_node(
+        SurfaceNodeKind::ReserveItem,
+        range(source_id, 0, 19),
+        vec![reserve_keyword, reserve_segment],
+    );
+    let item_list = builder.add_node(
+        SurfaceNodeKind::ItemList,
+        range(source_id, 0, 19),
+        vec![reserve_item],
+    );
+    let unit = builder.add_node(
+        SurfaceNodeKind::CompilationUnit,
+        range(source_id, 0, 19),
+        vec![item_list],
+    );
+    let mut root_children = vec![unit];
+    root_children.extend(builder.token_node_ids().iter().copied());
+    let root = builder.add_node(
+        SurfaceNodeKind::Root,
+        range(source_id, 0, 19),
+        root_children,
+    );
+    builder.finish(Some(root), None)
+}
+
+fn source_variable_typed_segment(
+    builder: &mut SurfaceAstBuilder,
+    source_id: SourceId,
+    start: usize,
+    spelling: &str,
+) -> mizar_syntax::SurfaceBuilderNodeId {
+    let binder_end = start + spelling.len();
+    let being_start = binder_end + 1;
+    let being_end = being_start + 5;
+    let object_start = being_end + 1;
+    let object_end = object_start + 6;
+    let binder = builder.add_token(
+        SurfaceTokenKind::Identifier,
+        spelling,
+        range(source_id, start, binder_end),
+    );
+    let being = builder.add_token(
+        SurfaceTokenKind::ReservedWord,
+        "being",
+        range(source_id, being_start, being_end),
+    );
+    let object = builder.add_token(
+        SurfaceTokenKind::ReservedWord,
+        "object",
+        range(source_id, object_start, object_end),
+    );
+    let head = builder.add_node(
+        SurfaceNodeKind::TypeHead,
+        range(source_id, object_start, object_end),
+        vec![object],
+    );
+    let type_expression = builder.add_node(
+        SurfaceNodeKind::TypeExpression,
+        range(source_id, object_start, object_end),
+        vec![head],
+    );
+    builder.add_node(
+        SurfaceNodeKind::QualifiedVariableSegment,
+        range(source_id, start, object_end),
+        vec![binder, being, type_expression],
+    )
+}
+
+fn source_variable_type_expression(
+    builder: &mut SurfaceAstBuilder,
+    source_id: SourceId,
+    start: usize,
+) -> mizar_syntax::SurfaceBuilderNodeId {
+    let object = builder.add_token(
+        SurfaceTokenKind::ReservedWord,
+        "object",
+        range(source_id, start, start + 6),
+    );
+    let head = builder.add_node(
+        SurfaceNodeKind::TypeHead,
+        range(source_id, start, start + 6),
+        vec![object],
+    );
+    builder.add_node(
+        SurfaceNodeKind::TypeExpression,
+        range(source_id, start, start + 6),
+        vec![head],
+    )
+}
+
+fn source_variable_equating(
+    builder: &mut SurfaceAstBuilder,
+    source_id: SourceId,
+    start: usize,
+    spelling: &str,
+    kind: SurfaceNodeKind,
+) -> mizar_syntax::SurfaceBuilderNodeId {
+    let binder_end = start + spelling.len();
+    let equals_start = binder_end + 1;
+    let value_start = equals_start + 2;
+    let value_end = value_start + 1;
+    let binder = builder.add_token(
+        SurfaceTokenKind::Identifier,
+        spelling,
+        range(source_id, start, binder_end),
+    );
+    let equals = builder.add_token(
+        SurfaceTokenKind::ReservedSymbol,
+        "=",
+        range(source_id, equals_start, equals_start + 1),
+    );
+    let value_token = builder.add_token(
+        SurfaceTokenKind::Identifier,
+        "x",
+        range(source_id, value_start, value_end),
+    );
+    let value_reference = builder.add_node(
+        SurfaceNodeKind::TermReference,
+        range(source_id, value_start, value_end),
+        vec![value_token],
+    );
+    let value = builder.add_node(
+        SurfaceNodeKind::TermExpression,
+        range(source_id, value_start, value_end),
+        vec![value_reference],
+    );
+    builder.add_node(
+        kind,
+        range(source_id, start, value_end),
+        vec![binder, equals, value],
+    )
+}
+
+fn source_variable_typed_quantified_theorem(
+    builder: &mut SurfaceAstBuilder,
+    source_id: SourceId,
+    start: usize,
+    quantifier: SurfaceQuantifierKind,
+    keyword_text: &str,
+    spelling: &str,
+    tail_text: &str,
+) -> mizar_syntax::SurfaceBuilderNodeId {
+    let keyword_end = start + keyword_text.len();
+    let binder_start = keyword_end + 1;
+    let binder_end = binder_start + spelling.len();
+    let being_start = binder_end + 1;
+    let being_end = being_start + 5;
+    let object_start = being_end + 1;
+    let object_end = object_start + 6;
+    let segment_end = object_end;
+    let tail_start = segment_end + 1;
+    let tail_end = tail_start + tail_text.len();
+    let left_start = tail_end + 1;
+    let left_end = left_start + spelling.len();
+    let equals_start = left_end + 1;
+    let equals_end = equals_start + 1;
+    let right_start = equals_end + 1;
+    let right_end = right_start + spelling.len();
+
+    let keyword = builder.add_token(
+        SurfaceTokenKind::ReservedWord,
+        keyword_text,
+        range(source_id, start, keyword_end),
+    );
+    let binder = builder.add_token(
+        SurfaceTokenKind::Identifier,
+        spelling,
+        range(source_id, binder_start, binder_end),
+    );
+    let being = builder.add_token(
+        SurfaceTokenKind::ReservedWord,
+        "being",
+        range(source_id, being_start, being_end),
+    );
+    let object = builder.add_token(
+        SurfaceTokenKind::ReservedWord,
+        "object",
+        range(source_id, object_start, object_end),
+    );
+    let type_head = builder.add_node(
+        SurfaceNodeKind::TypeHead,
+        range(source_id, object_start, object_end),
+        vec![object],
+    );
+    let type_expression = builder.add_node(
+        SurfaceNodeKind::TypeExpression,
+        range(source_id, object_start, object_end),
+        vec![type_head],
+    );
+    let segment = builder.add_node(
+        SurfaceNodeKind::QuantifierVariableSegment,
+        range(source_id, binder_start, segment_end),
+        vec![binder, being, type_expression],
+    );
+    let tail = builder.add_token(
+        SurfaceTokenKind::ReservedWord,
+        tail_text,
+        range(source_id, tail_start, tail_end),
+    );
+    let left_token = builder.add_token(
+        SurfaceTokenKind::Identifier,
+        spelling,
+        range(source_id, left_start, left_end),
+    );
+    let left_reference = builder.add_node(
+        SurfaceNodeKind::TermReference,
+        range(source_id, left_start, left_end),
+        vec![left_token],
+    );
+    let left_term = builder.add_node(
+        SurfaceNodeKind::TermExpression,
+        range(source_id, left_start, left_end),
+        vec![left_reference],
+    );
+    let equals = builder.add_token(
+        SurfaceTokenKind::ReservedSymbol,
+        "=",
+        range(source_id, equals_start, equals_end),
+    );
+    let right_token = builder.add_token(
+        SurfaceTokenKind::Identifier,
+        spelling,
+        range(source_id, right_start, right_end),
+    );
+    let right_reference = builder.add_node(
+        SurfaceNodeKind::TermReference,
+        range(source_id, right_start, right_end),
+        vec![right_token],
+    );
+    let right_term = builder.add_node(
+        SurfaceNodeKind::TermExpression,
+        range(source_id, right_start, right_end),
+        vec![right_reference],
+    );
+    let equality = builder.add_node(
+        SurfaceNodeKind::BuiltinPredicateApplication,
+        range(source_id, left_start, right_end),
+        vec![left_term, equals, right_term],
+    );
+    let body = builder.add_node(
+        SurfaceNodeKind::FormulaExpression,
+        range(source_id, left_start, right_end),
+        vec![equality],
+    );
+    let quantified = builder.add_node(
+        SurfaceNodeKind::QuantifiedFormula(quantifier),
+        range(source_id, start, right_end),
+        vec![keyword, segment, tail, body],
+    );
+    builder.add_node(
+        SurfaceNodeKind::TheoremItem,
+        range(source_id, start, right_end),
+        vec![quantified],
+    )
+}
+
+fn source_variable_recovered_ast(source_id: SourceId) -> SurfaceAst {
+    let mut builder = SurfaceAstBuilder::new(source_id);
+    let recovered =
+        builder.add_recovered_token(SurfaceTokenKind::Identifier, "x", range(source_id, 0, 1));
+    let root = builder.add_node(
+        SurfaceNodeKind::Root,
+        range(source_id, 0, 1),
+        vec![recovered],
+    );
+    builder.finish(Some(root), None)
 }
 
 fn name_candidate(

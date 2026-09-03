@@ -3,9 +3,9 @@
 use crate::{
     binding_env::{
         BinderIdentity, BindingContextDraft, BindingContextId, BindingContextLayer,
-        BindingContextRecovery, BindingContextTable, BindingDiagnosticTable, BindingDraft,
-        BindingEnv, BindingEnvParts, BindingId, BindingKind, BindingRecoveryState, BindingStatus,
-        BindingTable, BindingTypeSite, CapturedFreeVariables,
+        BindingContextOwner, BindingContextRecovery, BindingContextTable, BindingDiagnosticTable,
+        BindingDraft, BindingEnv, BindingEnvParts, BindingId, BindingKind, BindingRecoveryState,
+        BindingStatus, BindingTable, BindingTypeSite, CapturedFreeVariables,
     },
     typed_ast::{
         BindingTypeRef, BuiltinRuleId, CoercionDraft, CoercionKind, CoercionProvenance,
@@ -24,6 +24,11 @@ use crate::{
 pub(crate) use mizar_resolve::env::{ExportStatus, Visibility};
 use mizar_resolve::{
     env::{ContributionKind, DefinitionKind, SymbolEnv, SymbolKind},
+    names::{
+        LocalTermBinding, ResolvedVariableScope, SourceVariableBindingId,
+        SourceVariableBindingKind, SourceVariableFormula, SourceVariableStatement,
+        SourceVariableTerm, SourceVariableType, SourceVariableTypeRadix,
+    },
     resolved_ast::{ModuleId, SemanticOrigin, SymbolId},
 };
 use mizar_session::{SourceAnchor, SourceId, SourceRange};
@@ -6854,6 +6859,1002 @@ fn write_escaped(output: &mut String, value: &str) {
     }
 }
 
+// ---------------------------------------------------------------------------
+// Step 5C.1: source-derived variable semantics
+// ---------------------------------------------------------------------------
+
+/// A syntax-free input for the source-variable semantic transaction.
+///
+/// `ResolvedVariableScope` is an authenticated resolver receipt.  The checker
+/// deliberately accepts that receipt rather than a `SurfaceAst`, so it cannot
+/// accidentally become a second name resolver.
+pub struct SourceVariableSemanticsInput<'a> {
+    scope: &'a ResolvedVariableScope,
+}
+
+impl<'a> SourceVariableSemanticsInput<'a> {
+    /// Creates an input from an authenticated resolver scope.
+    #[must_use]
+    pub const fn new(scope: &'a ResolvedVariableScope) -> Self {
+        Self { scope }
+    }
+}
+
+/// One checker-owned diagnostic for the Step 5C.1 variable slice.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct SourceVariableSemanticsDiagnostic {
+    source_range: SourceRange,
+    detail_key: &'static str,
+}
+
+impl SourceVariableSemanticsDiagnostic {
+    /// Returns the source range associated with the diagnostic.
+    #[must_use]
+    pub const fn source_range(&self) -> SourceRange {
+        self.source_range
+    }
+
+    /// Returns the stable checker detail key.
+    #[must_use]
+    pub const fn detail_key(&self) -> &'static str {
+        self.detail_key
+    }
+}
+
+/// Immutable result of source-variable semantic checking.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct SourceVariableSemanticsOutput {
+    source_id: SourceId,
+    module_id: ModuleId,
+    binding_types: BTreeMap<SourceVariableBindingId, SourceVariableType>,
+    assumptions: Vec<SourceVariableFormula>,
+    thesis: Option<SourceVariableFormula>,
+    diagnostics: Vec<SourceVariableSemanticsDiagnostic>,
+}
+
+impl SourceVariableSemanticsOutput {
+    /// Returns the authenticated source id.
+    #[must_use]
+    pub const fn source_id(&self) -> SourceId {
+        self.source_id
+    }
+
+    /// Returns the authenticated module id.
+    #[must_use]
+    pub const fn module_id(&self) -> &ModuleId {
+        &self.module_id
+    }
+
+    /// Returns checker-projected types by resolver binding identity.
+    #[must_use]
+    pub const fn binding_types(&self) -> &BTreeMap<SourceVariableBindingId, SourceVariableType> {
+        &self.binding_types
+    }
+
+    /// Returns facts introduced by source `let`/assertion statements.
+    #[must_use]
+    pub fn assumptions(&self) -> &[SourceVariableFormula] {
+        &self.assumptions
+    }
+
+    /// Returns the remaining proof-skeleton thesis.
+    #[must_use]
+    pub fn thesis(&self) -> Option<&SourceVariableFormula> {
+        self.thesis.as_ref()
+    }
+
+    /// Returns checker diagnostics in source statement order.
+    #[must_use]
+    pub fn diagnostics(&self) -> &[SourceVariableSemanticsDiagnostic] {
+        &self.diagnostics
+    }
+}
+
+/// Checker for the frozen Step 5C.1 source-variable slice.
+///
+/// This is intentionally a unit type: all input state is carried by the
+/// authenticated resolver receipt and all output state is immutable.
+#[derive(Debug, Clone, Copy, Default, PartialEq, Eq)]
+pub struct SourceVariableSemanticsChecker;
+
+impl SourceVariableSemanticsChecker {
+    /// Checks one authenticated source-variable scope.
+    #[must_use]
+    pub fn check(input: SourceVariableSemanticsInput<'_>) -> SourceVariableSemanticsOutput {
+        let scope = input.scope;
+        let source_id = scope.source_id();
+        let module_id = scope.module_id().clone();
+
+        // Build the checker projection once, even though semantic identity is
+        // represented by resolver ids in the public result.  The projection
+        // authenticates the same spelling/scope/range/ordinal data through the
+        // existing BindingEnv invariants without changing binding_env.rs.
+        // `ResolvedVariableScope` has private fields and is only constructed
+        // by the resolver after source/module/range/shape validation.  The
+        // projection therefore preserves BindingEnv invariants by
+        // construction; a failure here is an internal contract violation, not
+        // a source semantic error and must not be mapped to a frozen key.
+        let binding_projection = project_binding_env(scope);
+
+        // Only declarations whose type is already semantically available at
+        // the start of the source transaction are installed here.  Local
+        // statements publish let/set/reconsider/definition types below, in
+        // source order, so a later declaration cannot affect an earlier
+        // statement after the first diagnostic.
+        let mut binding_types = scope
+            .bindings()
+            .iter()
+            .filter(|binding| {
+                binding_projection.contains_key(&binding.id())
+                    && matches!(
+                        binding.kind(),
+                        SourceVariableBindingKind::Reserve
+                            | SourceVariableBindingKind::Quantifier
+                            | SourceVariableBindingKind::InlineParameter
+                    )
+            })
+            .filter_map(|binding| {
+                binding
+                    .declared_type()
+                    .cloned()
+                    .map(|ty| (binding.id(), ty))
+            })
+            .collect::<BTreeMap<_, _>>();
+        let mut assumptions = Vec::new();
+        let mut thesis = scope.thesis().cloned();
+        let mut diagnostics = Vec::new();
+        let mut seen_let_names = BTreeSet::new();
+        let mut functor_definitions = BTreeMap::new();
+        let mut predicate_definitions = BTreeMap::new();
+        let mut local_aliases = BTreeMap::new();
+
+        for statement in scope.statements() {
+            if !diagnostics.is_empty() {
+                break;
+            }
+            match statement {
+                SourceVariableStatement::Let {
+                    binding, condition, ..
+                } => {
+                    let Some(declaration) = scope_binding(scope, *binding) else {
+                        continue;
+                    };
+                    let local_name = (
+                        declaration.scope().clone(),
+                        declaration.spelling().to_owned(),
+                    );
+                    if !seen_let_names.insert(local_name) {
+                        diagnostics.push(variable_diagnostic(
+                            statement_range(scope, statement),
+                            "variables.let.duplicate_generalization",
+                        ));
+                        break;
+                    }
+                    if let Some(condition) = condition {
+                        assumptions.push((**condition).clone());
+                    }
+                    if let Some(ty) = source_binding_type(scope, declaration) {
+                        binding_types.insert(*binding, ty.clone());
+                    }
+                    if let Some(body) = thesis.as_ref().and_then(|current| match current {
+                        // The theorem-level binder and its proof-local `let`
+                        // have distinct resolver ids. Their correspondence is
+                        // the authenticated, source-ordered proof-skeleton
+                        // edge rather than a display-name lookup.
+                        SourceVariableFormula::ForAll { body, .. } => Some((**body).clone()),
+                        _ => None,
+                    }) {
+                        thesis = Some(body);
+                    }
+                }
+                SourceVariableStatement::Set { binding, value, .. } => {
+                    if let Some(ty) =
+                        source_term_type(value, scope, &binding_types, &functor_definitions)
+                    {
+                        binding_types.insert(*binding, ty);
+                    }
+                    if let Some(alias) =
+                        reduce_source_term(value, scope, &functor_definitions, &local_aliases)
+                    {
+                        local_aliases.insert(*binding, alias);
+                    }
+                }
+                SourceVariableStatement::Reconsider {
+                    binding,
+                    value,
+                    target,
+                    justified,
+                    ..
+                } => {
+                    let from_type =
+                        source_term_type(value, scope, &binding_types, &functor_definitions);
+                    if !*justified
+                        && (from_type
+                            .as_ref()
+                            .is_none_or(|from| !source_type_can_widen(from, target))
+                            && !source_type_fact_discharges(
+                                &assumptions,
+                                Some(value.as_ref()),
+                                target,
+                                scope,
+                                &functor_definitions,
+                                &local_aliases,
+                            ))
+                    {
+                        diagnostics.push(variable_diagnostic(
+                            statement_range(scope, statement),
+                            "variables.reconsider.unjustified_narrowing",
+                        ));
+                        break;
+                    }
+                    binding_types.insert(*binding, target.clone());
+                    if let Some(alias) =
+                        reduce_source_term(value, scope, &functor_definitions, &local_aliases)
+                    {
+                        local_aliases.insert(*binding, alias);
+                    }
+                }
+                SourceVariableStatement::DefineFunctor {
+                    binding,
+                    formals,
+                    result,
+                    body,
+                    ..
+                } => {
+                    if let Some(definition) =
+                        inline_functor_definition(scope, *binding, formals, result, body)
+                    {
+                        functor_definitions.insert(*binding, definition);
+                    }
+                    binding_types.insert(*binding, result.clone());
+                }
+                SourceVariableStatement::DefinePredicate {
+                    binding,
+                    formals,
+                    body,
+                    ..
+                } => {
+                    if let Some(definition) =
+                        inline_predicate_definition(scope, *binding, formals, body)
+                    {
+                        predicate_definitions.insert(*binding, definition);
+                    }
+                }
+                SourceVariableStatement::Assert {
+                    formula,
+                    conclusion,
+                    ..
+                } => {
+                    // Assertions are facts for subsequent checker-local
+                    // obligations.  No theorem/proof acceptance is attempted.
+                    // Running the identity reducer here consumes inline
+                    // predicate bodies/formals/captures even when the
+                    // assertion is only an assumption.
+                    let _ = formula_is_reflexive(
+                        formula,
+                        scope,
+                        &functor_definitions,
+                        &predicate_definitions,
+                        &local_aliases,
+                    );
+                    if !*conclusion {
+                        assumptions.push((**formula).clone());
+                    }
+                    if *conclusion
+                        && thesis.as_ref().is_some_and(|current| {
+                            formulas_equivalent(
+                                formula,
+                                current,
+                                scope,
+                                &functor_definitions,
+                                &predicate_definitions,
+                                &local_aliases,
+                            )
+                        })
+                    {
+                        // Keep the current thesis value stable; equivalence is
+                        // recorded only as a local discharge, never as proof.
+                    }
+                }
+                SourceVariableStatement::Take {
+                    witness,
+                    existential_binding,
+                    ..
+                } => {
+                    let Some(body) = existential_binding
+                        .as_ref()
+                        .and_then(|binding| existential_body(thesis.as_ref(), *binding))
+                    else {
+                        diagnostics.push(variable_diagnostic(
+                            statement_range(scope, statement),
+                            "variables.take.non_existential_thesis",
+                        ));
+                        break;
+                    };
+                    // Resolve the witness term only through authenticated
+                    // binding identities.  Unknown term payloads remain
+                    // opaque and cannot mutate checker state.
+                    let _ = source_term_type(witness, scope, &binding_types, &functor_definitions);
+                    thesis = Some(body);
+                }
+                _ => {}
+            }
+        }
+
+        SourceVariableSemanticsOutput {
+            source_id,
+            module_id,
+            binding_types,
+            assumptions,
+            thesis,
+            diagnostics,
+        }
+    }
+}
+
+const fn variable_diagnostic(
+    source_range: SourceRange,
+    detail_key: &'static str,
+) -> SourceVariableSemanticsDiagnostic {
+    SourceVariableSemanticsDiagnostic {
+        source_range,
+        detail_key,
+    }
+}
+
+fn statement_range(
+    scope: &ResolvedVariableScope,
+    statement: &SourceVariableStatement,
+) -> SourceRange {
+    match statement {
+        SourceVariableStatement::Let { range, .. }
+        | SourceVariableStatement::Set { range, .. }
+        | SourceVariableStatement::Reconsider { range, .. }
+        | SourceVariableStatement::DefineFunctor { range, .. }
+        | SourceVariableStatement::DefinePredicate { range, .. }
+        | SourceVariableStatement::Assert { range, .. }
+        | SourceVariableStatement::Take { range, .. } => *range,
+        _ => SourceRange {
+            source_id: scope.source_id(),
+            start: 0,
+            end: 0,
+        },
+    }
+}
+
+fn scope_binding(
+    scope: &ResolvedVariableScope,
+    id: SourceVariableBindingId,
+) -> Option<&mizar_resolve::names::SourceVariableBinding> {
+    scope.bindings().iter().find(|binding| binding.id() == id)
+}
+
+fn source_binding_type(
+    scope: &ResolvedVariableScope,
+    binding: &mizar_resolve::names::SourceVariableBinding,
+) -> Option<SourceVariableType> {
+    binding.declared_type().cloned().or_else(|| {
+        if binding.kind() != SourceVariableBindingKind::Let {
+            return None;
+        }
+        // The resolver authenticates declaration identity, lexical scope, and
+        // source order.  An implicit let inherits only the active root
+        // reservation with the same authenticated spelling; this is not a
+        // fresh checker-side name lookup.
+        scope
+            .bindings()
+            .iter()
+            .filter(|candidate| {
+                candidate.kind() == SourceVariableBindingKind::Reserve
+                    && candidate.scope().path().is_empty()
+                    && candidate.spelling() == binding.spelling()
+                    && candidate.ordinal() < binding.ordinal()
+                    && candidate.range().start <= binding.range().start
+            })
+            .max_by_key(|candidate| {
+                (
+                    candidate.range().start,
+                    candidate.range().end,
+                    candidate.ordinal(),
+                )
+            })
+            .and_then(|reservation| reservation.declared_type().cloned())
+    })
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+struct InlineFunctorDefinition {
+    formals: Vec<SourceVariableBindingId>,
+    result: SourceVariableType,
+    body: SourceVariableTerm,
+    captures: Vec<SourceVariableBindingId>,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+struct InlinePredicateDefinition {
+    formals: Vec<SourceVariableBindingId>,
+    body: SourceVariableFormula,
+    captures: Vec<SourceVariableBindingId>,
+}
+
+fn inline_functor_definition(
+    scope: &ResolvedVariableScope,
+    binding: SourceVariableBindingId,
+    formals: &[SourceVariableBindingId],
+    result: &SourceVariableType,
+    body: &SourceVariableTerm,
+) -> Option<InlineFunctorDefinition> {
+    let declaration = scope_binding(scope, binding)?;
+    if declaration.kind() != SourceVariableBindingKind::InlineFunctor
+        || declaration.arity() != Some(formals.len())
+        || !formals.iter().all(|formal| {
+            scope_binding(scope, *formal)
+                .is_some_and(|binding| binding.kind() == SourceVariableBindingKind::InlineParameter)
+        })
+        || !declaration
+            .captures()
+            .iter()
+            .all(|capture| scope_binding(scope, *capture).is_some())
+    {
+        return None;
+    }
+    Some(InlineFunctorDefinition {
+        formals: formals.to_vec(),
+        result: result.clone(),
+        body: body.clone(),
+        captures: declaration.captures().to_vec(),
+    })
+}
+
+fn inline_predicate_definition(
+    scope: &ResolvedVariableScope,
+    binding: SourceVariableBindingId,
+    formals: &[SourceVariableBindingId],
+    body: &SourceVariableFormula,
+) -> Option<InlinePredicateDefinition> {
+    let declaration = scope_binding(scope, binding)?;
+    if declaration.kind() != SourceVariableBindingKind::InlinePredicate
+        || declaration.arity() != Some(formals.len())
+        || !formals.iter().all(|formal| {
+            scope_binding(scope, *formal)
+                .is_some_and(|binding| binding.kind() == SourceVariableBindingKind::InlineParameter)
+        })
+        || !declaration
+            .captures()
+            .iter()
+            .all(|capture| scope_binding(scope, *capture).is_some())
+    {
+        return None;
+    }
+    Some(InlinePredicateDefinition {
+        formals: formals.to_vec(),
+        body: body.clone(),
+        captures: declaration.captures().to_vec(),
+    })
+}
+
+fn source_term_type(
+    term: &SourceVariableTerm,
+    scope: &ResolvedVariableScope,
+    binding_types: &BTreeMap<SourceVariableBindingId, SourceVariableType>,
+    functor_definitions: &BTreeMap<SourceVariableBindingId, InlineFunctorDefinition>,
+) -> Option<SourceVariableType> {
+    match term {
+        SourceVariableTerm::Binding { reference, .. } => scope
+            .references()
+            .iter()
+            .find(|candidate| candidate.id() == *reference)
+            .and_then(|reference| binding_types.get(&reference.binding()).cloned()),
+        SourceVariableTerm::InlineFunctor {
+            definition_reference,
+            ..
+        } => scope
+            .references()
+            .iter()
+            .find(|candidate| candidate.id() == *definition_reference)
+            .and_then(|reference| {
+                functor_definitions
+                    .get(&reference.binding())
+                    .map(|definition| definition.result.clone())
+                    .or_else(|| binding_types.get(&reference.binding()).cloned())
+            }),
+        _ => None,
+    }
+}
+
+fn source_type_can_widen(from: &SourceVariableType, to: &SourceVariableType) -> bool {
+    source_types_equal(from, to)
+        || (matches!(from.radix(), SourceVariableTypeRadix::Set)
+            && matches!(to.radix(), SourceVariableTypeRadix::Object)
+            && from.attributes().is_empty()
+            && to.attributes().is_empty())
+}
+
+fn source_types_equal(left: &SourceVariableType, right: &SourceVariableType) -> bool {
+    left.radix() == right.radix() && left.attributes() == right.attributes()
+}
+
+fn source_type_fact_discharges(
+    assumptions: &[SourceVariableFormula],
+    value: Option<&SourceVariableTerm>,
+    target: &SourceVariableType,
+    scope: &ResolvedVariableScope,
+    functor_definitions: &BTreeMap<SourceVariableBindingId, InlineFunctorDefinition>,
+    substitutions: &BTreeMap<SourceVariableBindingId, ReducedSourceTerm>,
+) -> bool {
+    let Some(value) = value else {
+        return false;
+    };
+    assumptions.iter().any(|formula| match formula {
+        SourceVariableFormula::TypeAssertion {
+            term, target: fact, ..
+        } => {
+            source_types_equal(fact, target)
+                && source_terms_equal(term, value, scope, functor_definitions, substitutions)
+        }
+        _ => false,
+    })
+}
+
+fn source_terms_equal(
+    left: &SourceVariableTerm,
+    right: &SourceVariableTerm,
+    scope: &ResolvedVariableScope,
+    functor_definitions: &BTreeMap<SourceVariableBindingId, InlineFunctorDefinition>,
+    substitutions: &BTreeMap<SourceVariableBindingId, ReducedSourceTerm>,
+) -> bool {
+    if let (Some(left), Some(right)) = (
+        reduce_source_term(left, scope, functor_definitions, substitutions),
+        reduce_source_term(right, scope, functor_definitions, substitutions),
+    ) {
+        return left == right;
+    }
+    match (left, right) {
+        (
+            SourceVariableTerm::Binding {
+                reference: left, ..
+            },
+            SourceVariableTerm::Binding {
+                reference: right, ..
+            },
+        ) => left == right,
+        (
+            SourceVariableTerm::InlineFunctor {
+                definition_reference: left,
+                arguments: left_args,
+                ..
+            },
+            SourceVariableTerm::InlineFunctor {
+                definition_reference: right,
+                arguments: right_args,
+                ..
+            },
+        ) => {
+            left == right
+                && left_args.len() == right_args.len()
+                && left_args.iter().zip(right_args).all(|(left, right)| {
+                    source_terms_equal(left, right, scope, functor_definitions, substitutions)
+                })
+        }
+        // Unknown or unsupported term shapes are never equal by inference.
+        // A type lookup is not an identity proof and must not discharge a
+        // narrowing obligation.
+        _ => false,
+    }
+}
+
+fn formulas_equivalent(
+    left: &SourceVariableFormula,
+    right: &SourceVariableFormula,
+    scope: &ResolvedVariableScope,
+    functor_definitions: &BTreeMap<SourceVariableBindingId, InlineFunctorDefinition>,
+    predicate_definitions: &BTreeMap<SourceVariableBindingId, InlinePredicateDefinition>,
+    substitutions: &BTreeMap<SourceVariableBindingId, ReducedSourceTerm>,
+) -> bool {
+    if let (Some(left), Some(right)) = (
+        reduced_formula_equality(
+            left,
+            scope,
+            functor_definitions,
+            predicate_definitions,
+            substitutions,
+        ),
+        reduced_formula_equality(
+            right,
+            scope,
+            functor_definitions,
+            predicate_definitions,
+            substitutions,
+        ),
+    ) {
+        return left == right;
+    }
+    match (left, right) {
+        (
+            SourceVariableFormula::Equality {
+                left: left_left,
+                right: left_right,
+                ..
+            },
+            SourceVariableFormula::Equality {
+                left: right_left,
+                right: right_right,
+                ..
+            },
+        ) => {
+            source_terms_equal(
+                left_left,
+                right_left,
+                scope,
+                functor_definitions,
+                substitutions,
+            ) && source_terms_equal(
+                left_right,
+                right_right,
+                scope,
+                functor_definitions,
+                substitutions,
+            )
+        }
+        (
+            SourceVariableFormula::InlinePredicate {
+                definition_reference: left_definition,
+                arguments: left_arguments,
+                ..
+            },
+            SourceVariableFormula::InlinePredicate {
+                definition_reference: right_definition,
+                arguments: right_arguments,
+                ..
+            },
+        ) => {
+            left_definition == right_definition
+                && left_arguments.len() == right_arguments.len()
+                && left_arguments
+                    .iter()
+                    .zip(right_arguments)
+                    .all(|(left, right)| source_terms_shape_equal(left, right))
+        }
+        _ => false,
+    }
+}
+
+fn source_terms_shape_equal(left: &SourceVariableTerm, right: &SourceVariableTerm) -> bool {
+    match (left, right) {
+        (
+            SourceVariableTerm::Binding {
+                reference: left, ..
+            },
+            SourceVariableTerm::Binding {
+                reference: right, ..
+            },
+        ) => left == right,
+        (
+            SourceVariableTerm::InlineFunctor {
+                definition_reference: left_definition,
+                arguments: left_arguments,
+                ..
+            },
+            SourceVariableTerm::InlineFunctor {
+                definition_reference: right_definition,
+                arguments: right_arguments,
+                ..
+            },
+        ) => {
+            left_definition == right_definition
+                && left_arguments.len() == right_arguments.len()
+                && left_arguments
+                    .iter()
+                    .zip(right_arguments)
+                    .all(|(left, right)| source_terms_shape_equal(left, right))
+        }
+        _ => false,
+    }
+}
+
+/// A reduced term retains resolver binding identity instead of display text.
+/// The checker only needs this small normal form for the frozen reflexivity and
+/// inline-definition fixture; unsupported shapes remain unreduced.
+#[derive(Debug, Clone, PartialEq, Eq)]
+enum ReducedSourceTerm {
+    Binding(SourceVariableBindingId),
+}
+
+fn reduce_source_term(
+    term: &SourceVariableTerm,
+    scope: &ResolvedVariableScope,
+    functor_definitions: &BTreeMap<SourceVariableBindingId, InlineFunctorDefinition>,
+    substitutions: &BTreeMap<SourceVariableBindingId, ReducedSourceTerm>,
+) -> Option<ReducedSourceTerm> {
+    reduce_source_term_inner(
+        term,
+        scope,
+        functor_definitions,
+        substitutions,
+        &mut BTreeSet::new(),
+    )
+}
+
+fn reduce_source_term_inner(
+    term: &SourceVariableTerm,
+    scope: &ResolvedVariableScope,
+    functor_definitions: &BTreeMap<SourceVariableBindingId, InlineFunctorDefinition>,
+    substitutions: &BTreeMap<SourceVariableBindingId, ReducedSourceTerm>,
+    active_definitions: &mut BTreeSet<SourceVariableBindingId>,
+) -> Option<ReducedSourceTerm> {
+    match term {
+        SourceVariableTerm::Binding { reference, .. } => {
+            let binding = scope
+                .references()
+                .iter()
+                .find(|candidate| candidate.id() == *reference)
+                .map(|reference| reference.binding())?;
+            substitutions
+                .get(&binding)
+                .cloned()
+                .or(Some(ReducedSourceTerm::Binding(binding)))
+        }
+        SourceVariableTerm::InlineFunctor {
+            definition_reference,
+            arguments,
+            ..
+        } => {
+            let definition_binding = scope
+                .references()
+                .iter()
+                .find(|candidate| candidate.id() == *definition_reference)
+                .map(|reference| reference.binding())?;
+            let definition = functor_definitions.get(&definition_binding)?;
+            if definition.formals.len() != arguments.len()
+                || !definition.captures.iter().all(|capture| {
+                    scope
+                        .bindings()
+                        .iter()
+                        .any(|binding| binding.id() == *capture)
+                })
+            {
+                return None;
+            }
+            if !active_definitions.insert(definition_binding) {
+                return None;
+            }
+            let arguments = arguments
+                .iter()
+                .map(|argument| {
+                    reduce_source_term_inner(
+                        argument,
+                        scope,
+                        functor_definitions,
+                        substitutions,
+                        active_definitions,
+                    )
+                })
+                .collect::<Option<Vec<_>>>();
+            let Some(arguments) = arguments else {
+                active_definitions.remove(&definition_binding);
+                return None;
+            };
+            let instantiated =
+                instantiated_substitutions(substitutions, &definition.formals, arguments);
+            let reduced = reduce_source_term_inner(
+                &definition.body,
+                scope,
+                functor_definitions,
+                &instantiated,
+                active_definitions,
+            );
+            active_definitions.remove(&definition_binding);
+            reduced
+        }
+        _ => None,
+    }
+}
+
+fn instantiated_substitutions(
+    substitutions: &BTreeMap<SourceVariableBindingId, ReducedSourceTerm>,
+    formals: &[SourceVariableBindingId],
+    arguments: Vec<ReducedSourceTerm>,
+) -> BTreeMap<SourceVariableBindingId, ReducedSourceTerm> {
+    let mut instantiated = substitutions.clone();
+    for (formal, argument) in formals.iter().copied().zip(arguments) {
+        instantiated.insert(formal, argument);
+    }
+    instantiated
+}
+
+fn reduced_formula_equality(
+    formula: &SourceVariableFormula,
+    scope: &ResolvedVariableScope,
+    functor_definitions: &BTreeMap<SourceVariableBindingId, InlineFunctorDefinition>,
+    predicate_definitions: &BTreeMap<SourceVariableBindingId, InlinePredicateDefinition>,
+    substitutions: &BTreeMap<SourceVariableBindingId, ReducedSourceTerm>,
+) -> Option<(ReducedSourceTerm, ReducedSourceTerm)> {
+    reduced_formula_equality_inner(
+        formula,
+        scope,
+        functor_definitions,
+        predicate_definitions,
+        substitutions,
+        &mut BTreeSet::new(),
+    )
+}
+
+fn reduced_formula_equality_inner(
+    formula: &SourceVariableFormula,
+    scope: &ResolvedVariableScope,
+    functor_definitions: &BTreeMap<SourceVariableBindingId, InlineFunctorDefinition>,
+    predicate_definitions: &BTreeMap<SourceVariableBindingId, InlinePredicateDefinition>,
+    substitutions: &BTreeMap<SourceVariableBindingId, ReducedSourceTerm>,
+    active_definitions: &mut BTreeSet<SourceVariableBindingId>,
+) -> Option<(ReducedSourceTerm, ReducedSourceTerm)> {
+    match formula {
+        SourceVariableFormula::Equality { left, right, .. } => Some((
+            reduce_source_term(left, scope, functor_definitions, substitutions)?,
+            reduce_source_term(right, scope, functor_definitions, substitutions)?,
+        )),
+        SourceVariableFormula::InlinePredicate {
+            definition_reference,
+            arguments,
+            ..
+        } => {
+            let definition_binding = scope
+                .references()
+                .iter()
+                .find(|candidate| candidate.id() == *definition_reference)
+                .map(|reference| reference.binding())?;
+            let definition = predicate_definitions.get(&definition_binding)?;
+            if definition.formals.len() != arguments.len()
+                || !definition.captures.iter().all(|capture| {
+                    scope
+                        .bindings()
+                        .iter()
+                        .any(|binding| binding.id() == *capture)
+                })
+            {
+                return None;
+            }
+            if !active_definitions.insert(definition_binding) {
+                return None;
+            }
+            let arguments = arguments
+                .iter()
+                .map(|argument| {
+                    reduce_source_term(argument, scope, functor_definitions, substitutions)
+                })
+                .collect::<Option<Vec<_>>>();
+            let Some(arguments) = arguments else {
+                active_definitions.remove(&definition_binding);
+                return None;
+            };
+            let instantiated =
+                instantiated_substitutions(substitutions, &definition.formals, arguments);
+            let reduced = reduced_formula_equality_inner(
+                &definition.body,
+                scope,
+                functor_definitions,
+                predicate_definitions,
+                &instantiated,
+                active_definitions,
+            );
+            active_definitions.remove(&definition_binding);
+            reduced
+        }
+        _ => None,
+    }
+}
+
+fn formula_is_reflexive(
+    formula: &SourceVariableFormula,
+    scope: &ResolvedVariableScope,
+    functor_definitions: &BTreeMap<SourceVariableBindingId, InlineFunctorDefinition>,
+    predicate_definitions: &BTreeMap<SourceVariableBindingId, InlinePredicateDefinition>,
+    substitutions: &BTreeMap<SourceVariableBindingId, ReducedSourceTerm>,
+) -> bool {
+    reduced_formula_equality(
+        formula,
+        scope,
+        functor_definitions,
+        predicate_definitions,
+        substitutions,
+    )
+    .is_some_and(|(left, right)| left == right)
+}
+
+fn existential_body(
+    thesis: Option<&SourceVariableFormula>,
+    binding: SourceVariableBindingId,
+) -> Option<SourceVariableFormula> {
+    match thesis? {
+        SourceVariableFormula::Exists {
+            binding: thesis_binding,
+            body,
+            ..
+        } if *thesis_binding == binding => Some((**body).clone()),
+        _ => None,
+    }
+}
+
+fn project_binding_env(
+    scope: &ResolvedVariableScope,
+) -> BTreeMap<SourceVariableBindingId, BindingId> {
+    let mut contexts = BindingContextTable::new();
+    let mut bindings = BindingTable::new();
+    let mut ids = Vec::new();
+    let root = BindingContextId::new(0);
+
+    for binding in scope.bindings() {
+        let local = LocalTermBinding::new(
+            binding.spelling(),
+            binding.scope().clone(),
+            binding.range(),
+            binding.ordinal(),
+        );
+        let mut draft =
+            BindingDraft::from_local_term(root, projected_binding_kind(binding.kind()), &local);
+        if matches!(binding.kind(), SourceVariableBindingKind::Reserve) {
+            draft.identity = BinderIdentity::ReservedVariable {
+                spelling: binding.spelling().to_owned(),
+                declaration_range: binding.range(),
+            };
+        }
+        draft.captured = CapturedFreeVariables::new(
+            binding
+                .captures()
+                .iter()
+                .map(|capture| {
+                    let captured = scope_binding(scope, *capture)
+                        .expect("authenticated resolver capture must target a binding");
+                    BinderIdentity::ResolverLocal {
+                        scope: captured.scope().clone(),
+                        ordinal: captured.ordinal(),
+                        declaration_range: captured.range(),
+                    }
+                })
+                .collect(),
+        );
+        let checker_id = bindings.insert(draft);
+        ids.push((binding.id(), checker_id));
+    }
+
+    let visible = ids.iter().map(|(_, id)| *id).collect::<Vec<_>>();
+    contexts.insert(BindingContextDraft {
+        owner: BindingContextOwner::Module,
+        parent: None,
+        layer: BindingContextLayer::Module,
+        lexical_scope: None,
+        bindings: visible.clone(),
+        visible_bindings: visible,
+        recovery: BindingContextRecovery::Normal,
+    });
+
+    let binding_env = BindingEnv::try_new(BindingEnvParts {
+        source_id: scope.source_id(),
+        module_id: scope.module_id().clone(),
+        contexts,
+        bindings,
+        diagnostics: BindingDiagnosticTable::new(),
+    })
+    .expect("authenticated resolver scope must project to a valid BindingEnv");
+    drop(binding_env);
+    ids.into_iter().collect()
+}
+
+fn projected_binding_kind(kind: SourceVariableBindingKind) -> BindingKind {
+    match kind {
+        SourceVariableBindingKind::Reserve => BindingKind::ReservedVariable,
+        SourceVariableBindingKind::Quantifier => BindingKind::QuantifierBinder,
+        SourceVariableBindingKind::Let => BindingKind::LetBinding,
+        SourceVariableBindingKind::Set | SourceVariableBindingKind::Reconsider => {
+            BindingKind::LocalAbbreviation
+        }
+        SourceVariableBindingKind::InlineFunctor | SourceVariableBindingKind::InlinePredicate => {
+            BindingKind::LocalAbbreviation
+        }
+        SourceVariableBindingKind::InlineParameter => BindingKind::DefinitionParameter,
+        _ => BindingKind::Generated,
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -6871,13 +7872,20 @@ mod tests {
             ResolvedImportIndex, SourceContributionIndex, SymbolEntry, SymbolEnvIndexes,
             SymbolIndex, Visibility,
         },
-        names::LocalTermScope,
+        names::{
+            LocalTermScope, SourceVariableBindingKind, SourceVariableFormula,
+            SourceVariableScopeInput, SourceVariableScopeResolver, SourceVariableStatement,
+        },
         resolved_ast::{FullyQualifiedName, LocalSymbolId, ModuleId, SemanticOrigin},
     };
     use mizar_session::{
         BuildSnapshotId, GeneratedSpanAnchor, GeneratedSpanOrigin, InMemorySessionIdAllocator,
         ModulePath, PackageId, SessionIdAllocator, SourceAnchor, SourceId,
     };
+    include!(concat!(
+        env!("CARGO_MANIFEST_DIR"),
+        "/tests/support/source_variable_semantics_unit.rs"
+    ));
 
     #[test]
     fn declarations_attach_types_and_context_snapshots_are_deterministic() {

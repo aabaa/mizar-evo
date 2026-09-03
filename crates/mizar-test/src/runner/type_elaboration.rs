@@ -31,7 +31,9 @@ mod source_term;
 mod source_type;
 mod type_assertion_routes;
 
-pub(super) use admission::{is_active_type_elaboration, validate_active_type_elaboration_tags};
+pub(super) use admission::{
+    is_active_type_elaboration, is_step5c1_workspace_member, validate_active_type_elaboration_tags,
+};
 #[cfg(test)]
 pub(super) use binary_routes::{
     SOURCE_CHAINED_LOCAL_MODE_RESERVED_VARIABLE_EQUALITY_CONFIG,

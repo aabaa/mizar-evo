@@ -7,7 +7,8 @@ source = "pass_formula_statement_reconsider_builtin_widening_001.miz"
 expected_outcome = "pass"
 expected_phase = "statement_check"
 diagnostic_codes = []
+tags = ["active_formula_statement"]
 spec_refs = [
   "spec.en.04.variables.reconsider.widening",
 ]
-notes = "Audit-1 semantic-bridge inactive oracle seed (September 2026 audit wave): binding expectation for the Step-5 semantic bridge; no active runner tag, earns no current credit. Reconsider to the wider builtin object type needs no justification because set widens to object (spec 4.4, 3.5)."
+notes = "Step 5C.1 active semantic oracle; outcome, phase, key, and backlinks remain frozen. Reconsider to the wider builtin object type needs no justification because set widens to object (spec 4.4, 3.5)."

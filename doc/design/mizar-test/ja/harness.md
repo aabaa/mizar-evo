@@ -119,6 +119,24 @@ pub struct TypeElaborationRunReport {
     pub diagnostics: Vec<ValidationDiagnostic>,
 }
 
+pub struct FormulaStatementRunReport {
+    pub results: Vec<FormulaStatementCaseResult>,
+    pub diagnostics: Vec<ValidationDiagnostic>,
+}
+
+pub struct FormulaStatementCaseResult {
+    pub id: TestCaseId,
+    pub expectation_path: PathBuf,
+    pub status: FormulaStatementCaseStatus,
+    pub actual_detail_keys: Vec<String>,
+}
+
+#[non_exhaustive]
+pub enum FormulaStatementCaseStatus {
+    Passed,
+    Failed,
+}
+
 pub struct TypeElaborationCaseResult {
     pub id: TestCaseId,
     pub expectation_path: PathBuf,
@@ -164,6 +182,9 @@ generic な `TestOutcome` / snapshot reporting surface は future API である�
 plan と validation diagnostics を共有する。`SyntaxSmokeRunReport` は
 `passed_count`、`failed_count`、`expected_rejection_count`、`error_count`、
 `warning_count` も提供する。
+Step 5C.1 は、この report surface とともに
+`active_formula_statement_cases(&TestPlan)` と
+`run_formula_statement_corpus(&DiscoveryConfig)` を公開する。
 
 ## Public Enum Forward Compatibility
 
@@ -180,6 +201,7 @@ match は現在知られている variant に対して exhaustive のままで�
 | `HarnessError` | `harness` infrastructure failure boundary | `#[non_exhaustive]` downstream forward-compatible surface。 |
 | `ParseOnlyCaseStatus` | `runner` parse-only report status | `#[non_exhaustive]` downstream forward-compatible surface。 |
 | `DeclarationSymbolCaseStatus` | `runner` declaration-symbol report status | `#[non_exhaustive]` downstream forward-compatible surface。 |
+| `FormulaStatementCaseStatus` | `runner` formula-statement report status | `#[non_exhaustive]` downstream forward-compatible surface。 |
 | `TypeElaborationCaseStatus` | `runner` type-elaboration report status | `#[non_exhaustive]` downstream forward-compatible surface。 |
 | `ProofVerificationCaseStatus` | `runner` exact proof-verification report status | `#[non_exhaustive]` downstream forward-compatible surface。 |
 | `SyntaxSmokeCaseStatus` | `runner` syntax-only corpus report status | `#[non_exhaustive]` downstream forward-compatible surface。 |
@@ -5609,5 +5631,7 @@ coverage credit、Task277B readinessは追加しない。
 paired [Step 5C.1 contract](../../task_contracts/ja/STEP5C1-VARIABLE-SEMANTICS.md)
 に従い、`active_formula_statement` runner/CLI は unrecovered `SurfaceAst` 構造を
 resolver ownerへ渡し、そのauthenticated receiptをcheckerへ渡す。semantic extraction/
-textual recoveryは行わず、mapped 12 sidecarだけをactive化し、case id/raw source textで
-分岐しない。
+textual recoveryは行わない。exact id/source/phase/outcome と唯一の activation tag は
+formula 6行/type 6行の admission だけを認証し、semantic result は選ばない。formula
+route は duplicate frontend/checker handshake を要求し、type route は legacy dispatch
+前に resolver key を保持する。

@@ -577,6 +577,12 @@ fn public_enum_policies() -> Vec<PublicEnumPolicy> {
         },
         PublicEnumPolicy {
             module: "runner",
+            name: "FormulaStatementCaseStatus",
+            en_doc: "doc/design/mizar-test/en/harness.md",
+            ja_doc: "doc/design/mizar-test/ja/harness.md",
+        },
+        PublicEnumPolicy {
+            module: "runner",
             name: "TypeElaborationCaseStatus",
             en_doc: "doc/design/mizar-test/en/harness.md",
             ja_doc: "doc/design/mizar-test/ja/harness.md",

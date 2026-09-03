@@ -9,7 +9,8 @@ expected_phase = "statement_check"
 failure_category = "proof_failure"
 stable_detail_key = "variables.let.duplicate_generalization"
 diagnostic_codes = []
+tags = ["active_formula_statement"]
 spec_refs = [
   "spec.en.04.variables.scoping.duplicate_generalization",
 ]
-notes = "Audit-1 semantic-bridge inactive oracle seed (September 2026 audit wave): binding expectation for the Step-5 semantic bridge; no active runner tag, earns no current credit. A second let for the same identifier in one proof scope has no remaining universal thesis to consume and redeclares the binder (spec 4.6, 16.3)."
+notes = "Step 5C.1 active semantic oracle; outcome, phase, key, and backlinks remain frozen. A second let for the same identifier in one proof scope has no remaining universal thesis to consume and redeclares the binder (spec 4.6, 16.3)."

@@ -9,7 +9,8 @@ expected_phase = "resolve"
 failure_category = "resolve_error"
 stable_detail_key = "variables.reserve.unreserved_implicit_variable"
 diagnostic_codes = []
+tags = ["active_type_elaboration"]
 spec_refs = [
   "spec.en.04.variables.reserve.implicit_typing",
 ]
-notes = "Audit-1 semantic-bridge inactive oracle seed (September 2026 audit wave): binding expectation for the Step-5 semantic bridge; no active runner tag, earns no current credit. An implicit quantified variable with no active reservation has no type and must be rejected, not defaulted (spec 4.3, 4.5)."
+notes = "Step 5C.1 active semantic oracle; outcome, phase, key, and backlinks remain frozen. An implicit quantified variable with no active reservation has no type and must be rejected, not defaulted (spec 4.3, 4.5)."

@@ -7,7 +7,8 @@ source = "pass_type_elaboration_reserve_implicit_typing_001.miz"
 expected_outcome = "pass"
 expected_phase = "type_check"
 diagnostic_codes = []
+tags = ["active_type_elaboration"]
 spec_refs = [
   "spec.en.04.variables.reserve.implicit_typing",
 ]
-notes = "Audit-1 semantic-bridge inactive oracle seed (September 2026 audit wave): binding expectation for the Step-5 semantic bridge; no active runner tag, earns no current credit. An unqualified quantified variable and a bare let are typed by the active reservation (spec 4.3, 4.5)."
+notes = "Step 5C.1 active semantic oracle; outcome, phase, key, and backlinks remain frozen. An unqualified quantified variable and a bare let are typed by the active reservation (spec 4.3, 4.5)."

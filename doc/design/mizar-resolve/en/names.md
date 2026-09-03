@@ -510,3 +510,21 @@ adds the authenticated `SurfaceAst` variable-scope owner. It derives binding,
 reference, capture, and source-order identity and rejects duplicate/forward/
 unreserved input; checker `BindingEnv` alone maps this receipt internally.
 Type and thesis decisions remain outside the resolver.
+The parser root's flat token overlay is metadata rather than a lexical parent;
+all true non-root sharing still fails closed. `DefinitionBlockItem` variable
+content is outside this proof-scope receipt, including declarations, references,
+and statements. Because this receipt exposes one optional thesis, it admits at
+most one `TheoremItem`; multiple theorem transactions fail with `InvalidShape`
+rather than merging statements under the wrong thesis.
+
+The R-026 public-enum registrations are:
+
+- `SourceVariableBindingKind`
+- `SourceVariableReferenceKind`
+- `SourceVariableTypeRadix`
+- `SourceVariableTerm`
+- `SourceVariableFormula`
+- `SourceVariableStatement`
+- `SourceVariableScopeError`
+
+All remain `#[non_exhaustive]`; no exception is registered.

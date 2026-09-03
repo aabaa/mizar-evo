@@ -173,6 +173,41 @@ const PUBLIC_ENUM_DECISIONS: &[PublicEnumDecision] = &[
         spec_name: "names.md",
     },
     PublicEnumDecision {
+        relative_path: "src/names.rs",
+        enum_name: "SourceVariableBindingKind",
+        spec_name: "names.md",
+    },
+    PublicEnumDecision {
+        relative_path: "src/names.rs",
+        enum_name: "SourceVariableReferenceKind",
+        spec_name: "names.md",
+    },
+    PublicEnumDecision {
+        relative_path: "src/names.rs",
+        enum_name: "SourceVariableTypeRadix",
+        spec_name: "names.md",
+    },
+    PublicEnumDecision {
+        relative_path: "src/names.rs",
+        enum_name: "SourceVariableTerm",
+        spec_name: "names.md",
+    },
+    PublicEnumDecision {
+        relative_path: "src/names.rs",
+        enum_name: "SourceVariableFormula",
+        spec_name: "names.md",
+    },
+    PublicEnumDecision {
+        relative_path: "src/names.rs",
+        enum_name: "SourceVariableStatement",
+        spec_name: "names.md",
+    },
+    PublicEnumDecision {
+        relative_path: "src/names.rs",
+        enum_name: "SourceVariableScopeError",
+        spec_name: "names.md",
+    },
+    PublicEnumDecision {
         relative_path: "src/resolved_ast.rs",
         enum_name: "RecoveryState",
         spec_name: "resolved_ast.md",

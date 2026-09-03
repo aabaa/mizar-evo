@@ -16,6 +16,7 @@ use crate::harness::{DiscoveryConfig, HarnessError, TestCase, TestPlan, build_te
 use crate::staged_model::Stage;
 
 mod declaration_symbol;
+mod formula_statement;
 mod import_fixtures;
 mod parse_only;
 mod proof_verification;
@@ -24,6 +25,10 @@ mod syntax_smoke;
 mod type_elaboration;
 
 use declaration_symbol::{declaration_symbol_failure_diagnostic, run_declaration_symbol_case};
+use formula_statement::{
+    formula_statement_failure_diagnostic, run_formula_statement_case,
+    source_variable_semantics_detail_keys, validate_active_formula_statement_tags,
+};
 use import_fixtures::{
     ParseOnlyImportProvider, augment_type_elaboration_import_summaries,
     augment_type_elaboration_import_summaries_with_imported_public_theorem_label,
@@ -717,10 +722,10 @@ use type_elaboration::{
     assemble_source_reserve_checker_handoff, assert_source_reserve_core_context_readiness,
     assert_source_reserve_core_summary_readiness, assert_source_reserve_handoff,
     expected_type_elaboration_detail_keys, extract_builtin_source_reserve_declarations,
-    is_active_type_elaboration, source_application_transport_detail_keys,
-    source_atomic_formula_transport_detail_keys, source_attribute_definition_transport_detail_keys,
-    source_attribute_detail_keys, source_binding_context_detail_keys,
-    source_builtin_binary_term_formula_detail_keys,
+    is_active_type_elaboration, is_step5c1_workspace_member,
+    source_application_transport_detail_keys, source_atomic_formula_transport_detail_keys,
+    source_attribute_definition_transport_detail_keys, source_attribute_detail_keys,
+    source_binding_context_detail_keys, source_builtin_binary_term_formula_detail_keys,
     source_builtin_type_assertion_formula_detail_keys,
     source_chained_local_mode_asserted_head_detail_keys,
     source_chained_local_mode_radix_asserted_head_detail_keys,
@@ -1293,6 +1298,27 @@ pub struct TypeElaborationRunReport {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
+pub struct FormulaStatementRunReport {
+    pub results: Vec<FormulaStatementCaseResult>,
+    pub diagnostics: Vec<ValidationDiagnostic>,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct FormulaStatementCaseResult {
+    pub id: crate::expectation::TestCaseId,
+    pub expectation_path: PathBuf,
+    pub status: FormulaStatementCaseStatus,
+    pub actual_detail_keys: Vec<String>,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[non_exhaustive]
+pub enum FormulaStatementCaseStatus {
+    Passed,
+    Failed,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub struct TypeElaborationCaseResult {
     pub id: crate::expectation::TestCaseId,
     pub expectation_path: PathBuf,
@@ -1438,6 +1464,36 @@ impl TypeElaborationRunReport {
         self.results
             .iter()
             .filter(|result| result.status == TypeElaborationCaseStatus::Failed)
+            .count()
+    }
+
+    pub fn error_count(&self) -> usize {
+        self.diagnostics
+            .iter()
+            .filter(|diagnostic| diagnostic.severity == ValidationSeverity::Error)
+            .count()
+    }
+
+    pub fn warning_count(&self) -> usize {
+        self.diagnostics
+            .iter()
+            .filter(|diagnostic| diagnostic.severity == ValidationSeverity::Warning)
+            .count()
+    }
+}
+
+impl FormulaStatementRunReport {
+    pub fn passed_count(&self) -> usize {
+        self.results
+            .iter()
+            .filter(|result| result.status == FormulaStatementCaseStatus::Passed)
+            .count()
+    }
+
+    pub fn failed_count(&self) -> usize {
+        self.results
+            .iter()
+            .filter(|result| result.status == FormulaStatementCaseStatus::Failed)
             .count()
     }
 
@@ -1678,7 +1734,20 @@ pub fn run_type_elaboration_corpus(
             diagnostics,
         });
     }
-    diagnostics.extend(validate_active_type_elaboration_tags(&plan));
+    diagnostics.extend(validate_active_type_elaboration_tags(
+        &workspace_root,
+        &plan,
+    ));
+    if diagnostics
+        .iter()
+        .any(|diagnostic| diagnostic.severity == ValidationSeverity::Error)
+    {
+        diagnostics.sort();
+        return Ok(TypeElaborationRunReport {
+            results: Vec::new(),
+            diagnostics,
+        });
+    }
 
     let mut results = Vec::new();
     for (ordinal, case) in active_type_elaboration_cases(&plan).enumerate() {
@@ -1691,6 +1760,49 @@ pub fn run_type_elaboration_corpus(
     diagnostics.sort();
 
     Ok(TypeElaborationRunReport {
+        results,
+        diagnostics,
+    })
+}
+
+pub fn run_formula_statement_corpus(
+    config: &DiscoveryConfig,
+) -> Result<FormulaStatementRunReport, HarnessError> {
+    let workspace_root = normalized_workspace_root(config)?;
+    let plan = build_test_plan(config)?;
+    let mut diagnostics = plan.diagnostics.clone();
+    if plan.error_count() > 0 {
+        return Ok(FormulaStatementRunReport {
+            results: Vec::new(),
+            diagnostics,
+        });
+    }
+    diagnostics.extend(validate_active_formula_statement_tags(
+        &workspace_root,
+        &plan,
+    ));
+    if diagnostics
+        .iter()
+        .any(|diagnostic| diagnostic.severity == ValidationSeverity::Error)
+    {
+        diagnostics.sort();
+        return Ok(FormulaStatementRunReport {
+            results: Vec::new(),
+            diagnostics,
+        });
+    }
+
+    let mut results = Vec::new();
+    for (ordinal, case) in active_formula_statement_cases(&workspace_root, &plan).enumerate() {
+        let result = run_formula_statement_case(&workspace_root, case, ordinal);
+        if result.status == FormulaStatementCaseStatus::Failed {
+            diagnostics.push(formula_statement_failure_diagnostic(case, &result));
+        }
+        results.push(result);
+    }
+    diagnostics.sort();
+
+    Ok(FormulaStatementRunReport {
         results,
         diagnostics,
     })
@@ -1763,6 +1875,15 @@ pub fn active_type_elaboration_cases(plan: &TestPlan) -> impl Iterator<Item = &T
     plan.cases
         .iter()
         .filter(|case| is_active_type_elaboration(case))
+}
+
+pub fn active_formula_statement_cases<'a>(
+    workspace_root: &'a Path,
+    plan: &'a TestPlan,
+) -> impl Iterator<Item = &'a TestCase> {
+    plan.cases
+        .iter()
+        .filter(|case| formula_statement::is_active_formula_statement(workspace_root, case))
 }
 
 pub fn active_proof_verification_cases(plan: &TestPlan) -> impl Iterator<Item = &TestCase> {
@@ -1961,6 +2082,10 @@ fn type_elaboration_detail_keys(
             .into_iter()
             .map(|key| format!("type_elaboration.lower_stage.{key}"))
             .collect();
+    }
+
+    if is_step5c1_workspace_member(workspace_root, case) {
+        return source_variable_semantics_detail_keys(&ast, &resolver.module, &resolver.env);
     }
 
     let symbols = if source_text.as_ref() == type_elaboration::SOURCE_STATEMENT_B5B_TEXT {
@@ -2984,6 +3109,15 @@ impl fmt::Display for DeclarationSymbolCaseStatus {
 }
 
 impl fmt::Display for TypeElaborationCaseStatus {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        f.write_str(match self {
+            Self::Passed => "passed",
+            Self::Failed => "failed",
+        })
+    }
+}
+
+impl fmt::Display for FormulaStatementCaseStatus {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         f.write_str(match self {
             Self::Passed => "passed",
