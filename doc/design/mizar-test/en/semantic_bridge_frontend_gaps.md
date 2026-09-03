@@ -22,11 +22,11 @@ be closed by weakening the corpus expectations.
 | G1 | closed by 5A.2 (20 ledger rows) | Same-module local notation activation is implemented; see the [task contract](../../task_contracts/en/STEP5A2-G1-LOCAL-NOTATION.md). Mixed-row G2/G6 diagnostics and all semantic activation remain with their named owners. |
 | G2 | closed by 5A.3 (3 ledger rows) | Symbolic functor/predicate declaration sites now tokenize per A.2; see the [task contract](../../task_contracts/en/STEP5A3-G2-SYMBOLIC-USER-SYMBOLS.md). Semantic activation remains with the named 5C owners. |
 | G3 | closed by 5A.4 (1 ledger row) | Omitted-justification compact statements now parse beneath `[then] linkable_statement`; see the [task contract](../../task_contracts/en/STEP5A4-G3-THEN-LINKING.md). Semantic activation remains with 5C.9. |
-| G4 | medium | `synonym`/`antonym` notation declarations fail to parse even with identifier spellings on both patterns. |
+| G4 | closed by 5A.5 (3 ledger rows) | Local `synonym`/`antonym` spellings activate after their declaring item; see the [task contract](../../task_contracts/en/STEP5A5-G4-NOTATION-ALIASES.md). Semantic activation remains with 5C.6. |
 | G5 | closed by 5A.1 | Root-reachable AST validation removes the `term qua <structure type>` SurfaceAstBuilder panic; see the [task contract](../../task_contracts/en/STEP5A1-G5-QUA-STRUCTURE.md). Semantic activation remains owned by 5C. |
 | G6 | closed by 5A.6 (2 ledger rows) | Argument-bearing local dependent-mode use now preserves enclosing type/formula tokens; see the [task contract](../../task_contracts/en/STEP5A6-G6-DEPENDENT-MODE-USE.md). Task 68's same-module reserve extraction and imported Tasks 79/82 remain unchanged. |
 | G7 | low (worked around) | Empty justifications are accepted for `existence;`/`uniqueness;` but rejected (`malformed_justification`) for `coherence;`, `symmetry;`, `reducibility;`, `sethood;`, against A.15. The corpus works around it with explicit proof blocks; the inconsistency still needs an owner decision. |
-| G9 | medium | Pattern positions naming an already-active notation spelling (redefine pred, second definition of the same spelling, synonym original pattern) fail to parse. |
+| G9 | production closed; 5A.7 evidence pending | Dependencies 5A.2/5A.5 make already-active spellings parse in predicate redefinitions, second definitions, and synonym original patterns. Dedicated regression evidence is frozen in the [5A.7 contract](../../task_contracts/en/STEP5A7-G9-ACTIVE-PATTERN-SPELLINGS.md); semantic activation remains with 5C.5/5C.6. |
 
 G8 (inline application use) is folded into G1.
 

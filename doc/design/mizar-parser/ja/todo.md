@@ -16,6 +16,8 @@
    [task contract](../../task_contracts/ja/STEP5A5-G4-NOTATION-ALIASES.md)。
 3. [x] **Step 5A.6 / G6** — 実装済み。詳細は
    [task contract](../../task_contracts/ja/STEP5A6-G6-DEPENDENT-MODE-USE.md)。
+4. [~] **Step 5A.7 / G9** — contract freeze 済み。詳細は
+   [task contract](../../task_contracts/ja/STEP5A7-G9-ACTIVE-PATTERN-SPELLINGS.md)。
 
 ## モジュール実装
 
