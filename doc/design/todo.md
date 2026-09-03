@@ -409,7 +409,9 @@ stay binding and must not be weakened.
    activation. Evidence: [STEP5A4-G3-THEN-LINKING](./task_contracts/en/STEP5A4-G3-THEN-LINKING.md).
 5. [ ] **5A.5 (G4)** — `mizar-parser`: parse `synonym`/`antonym`
    notation declarations (both identifier and, after 5A.3, symbolic
-   spellings on both patterns). Deps: 5A.3 for symbolic-spelling cases.
+   spellings on both patterns). Root-cause ownership and frozen scope:
+   [STEP5A5-G4-NOTATION-ALIASES](./task_contracts/en/STEP5A5-G4-NOTATION-ALIASES.md).
+   Deps: 5A.3 for symbolic-spelling cases.
 6. [ ] **5A.6 (G6)** — `mizar-parser`/`mizar-frontend`: accept
    argument-bearing local dependent-mode use (`QMode of A`) in
    binder/type positions; the declaration already parses and imported
