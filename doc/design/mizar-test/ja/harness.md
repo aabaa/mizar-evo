@@ -5603,3 +5603,11 @@ verifyする。
 Task248/33LB composition、registry include、production dispatch、active snapshot、member/
 view/constructor/coherence semantics、diagnostic、fixture/sidecar/trace/metadata mutation、
 coverage credit、Task277B readinessは追加しない。
+
+## Step 5C.1 formula-statement runner
+
+paired [Step 5C.1 contract](../../task_contracts/ja/STEP5C1-VARIABLE-SEMANTICS.md)
+に従い、`active_formula_statement` runner/CLI は unrecovered `SurfaceAst` 構造を
+resolver ownerへ渡し、そのauthenticated receiptをcheckerへ渡す。semantic extraction/
+textual recoveryは行わず、mapped 12 sidecarだけをactive化し、case id/raw source textで
+分岐しない。

@@ -184,6 +184,10 @@ Keep `cargo test -p mizar-test` green after each task (see
       reconciliation set early. Their complete dependencies and blocked gates are
       canonical in checker
       [payload_family_decomposition.md](../../mizar-checker/en/payload_family_decomposition.md).
+      [Step 5C.1](../../task_contracts/en/STEP5C1-VARIABLE-SEMANTICS.md) now owns
+      only its 12 audit-1 variable pairs and first runner increment; the distinct
+      reserved-variable, capture-shadowing, and omitted-`reconsider` fixtures
+      above remain with `MT10-FS`/`MT10-AS`.
     - Core Task 32 now names five more non-placeholder increments in this open
       task: `MT10-CIR-TE`, `MT10-CIR-FS`, `MT10-CIR-AS`, `MT10-CIR-ALG`, and
       `MT10-CFG-PV`. Their exact stage/tag/phase/artifact dependencies and
@@ -1062,4 +1066,3 @@ Details archived: [test_todo_sections.md](../../archive/test_todo_sections.md).
 ## September 2026 Audit-1 Semantic-Bridge Oracle Corpus Increment
 
 Details archived: [test_todo_sections.md](../../archive/test_todo_sections.md).
-

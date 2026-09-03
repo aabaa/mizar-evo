@@ -557,10 +557,10 @@ top to bottom; a task may start early only when its listed deps are done.
 Deps on 5A tasks come from the per-case blocking gaps in the
 activation-map ledger; every 5C task also requires 5B.2.
 
-1. [ ] **5C.1 — Variables, reservations, and local constants**
+1. [~] **5C.1 — Variables, reservations, and local constants**
    (`mizar-checker`, `mizar-resolve`; spec ch. 4). Requirements:
-   `spec.en.04.variables.*` (10 ids). Targets: 12 pairs (1 blocked by
-   G1). Covers `let`/such-that, `set` local constants (duplicates,
+   `spec.en.04.variables.*` (10 ids). Targets: 12 pairs (the historical G1
+   blocker was cleared by 5A.2). Covers `let`/such-that, `set` local constants (duplicates,
    forward references, witness use), `reconsider`
    widening/narrowing-justification, `take` exemplification, inline
    `deffunc`/`defpred`, reserve implicit typing/explicit override, and

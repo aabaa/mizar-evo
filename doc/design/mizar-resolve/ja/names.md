@@ -452,3 +452,10 @@ Existing `debug_text()` grammar、binding/use row、id、orderは不変。
 このfreshness coordinateにより、same `SourceId`/module/count profileをreuseする別structural
 ASTをlater owner receiptがrejectできる。Lookup、display-name association、symbol/definition
 identity、checker capture、diagnostic、active route、semantic result、coverage creditは追加しない。
+
+## Step 5C.1 variable scope resolution
+
+paired [Step 5C.1 contract](../../task_contracts/ja/STEP5C1-VARIABLE-SEMANTICS.md)
+に従い、`names.rs` は authenticated `SurfaceAst` から binding/reference/capture/
+source-order identity を導出し、duplicate/forward/unreserved を fail closed にする。
+checker `BindingEnv` だけが内部 identity へ写像し、type/thesis は resolver 外に残る。

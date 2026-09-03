@@ -6154,3 +6154,12 @@ The probe adds no Task-248/33LB composition, registry include, production
 dispatch, active snapshot, member/view/constructor/coherence semantics,
 diagnostic, fixture/sidecar/trace/metadata mutation, coverage credit, or
 Task277B readiness.
+
+## Step 5C.1 formula-statement runner
+
+The paired [Step 5C.1 contract](../../task_contracts/en/STEP5C1-VARIABLE-SEMANTICS.md)
+adds an `active_formula_statement` runner and CLI command. Its private extractor
+passes unrecovered `SurfaceAst` to the resolver owner and the authenticated
+receipt to the checker; it performs no semantic extraction or textual recovery.
+It activates only the 12 mapped sidecars and never switches on case ids or raw
+source text.

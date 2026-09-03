@@ -502,3 +502,11 @@ This freshness coordinate lets a later owner receipt reject a structurally
 different AST that reuses the same `SourceId`, module, and count profile. It
 adds no lookup, display-name association, symbol/definition identity, checker
 capture, diagnostic, active route, semantic result, or coverage credit.
+
+## Step 5C.1 variable scope resolution
+
+The paired [Step 5C.1 contract](../../task_contracts/en/STEP5C1-VARIABLE-SEMANTICS.md)
+adds the authenticated `SurfaceAst` variable-scope owner. It derives binding,
+reference, capture, and source-order identity and rejects duplicate/forward/
+unreserved input; checker `BindingEnv` alone maps this receipt internally.
+Type and thesis decisions remain outside the resolver.

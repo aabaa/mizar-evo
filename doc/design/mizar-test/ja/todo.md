@@ -183,6 +183,10 @@ regression test を追加した。
       dependency/blocked gateはchecker
       [payload_family_decomposition.md](../../mizar-checker/ja/payload_family_decomposition.md)
       をcanonicalとする。
+      [Step 5C.1](../../task_contracts/ja/STEP5C1-VARIABLE-SEMANTICS.md)はexact
+      audit-1 variable 12 pairとfirst runner incrementだけを所有する。上記のdistinct
+      reserved-variable/capture-shadowing/omitted-`reconsider` fixtureは
+      `MT10-FS`/`MT10-AS`所有のまま。
     - Core Task 32はこのopen task内にさらに5個のnon-placeholder increment、
       `MT10-CIR-TE`、`MT10-CIR-FS`、`MT10-CIR-AS`、`MT10-CIR-ALG`、
       `MT10-CFG-PV`を命名した。Exact stage/tag/phase/artifact dependencyと
@@ -1020,4 +1024,3 @@ Completion evidence: [central Task-269SDC historical contract](../../task_contra
 ## 2026年9月 監査1 意味論ブリッジ・オラクルコーパス増分
 
 本文は英語正本へ移管: [../en/todo.md](../en/todo.md) / [archive](../../archive/test_todo_sections.md).
-
