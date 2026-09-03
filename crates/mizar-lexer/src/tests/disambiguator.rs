@@ -509,6 +509,39 @@ fn disambiguator_admits_punctuation_declarations_at_exact_sites() {
 }
 
 #[test]
+fn disambiguator_admits_symbolic_alias_at_its_site_and_after_activation() {
+    let source = concat!(
+        "definition\n",
+        "  let X, Y be set;\n",
+        "  func Base: X \\+\\ Y -> set equals X;\n",
+        "  synonym X <+> Y for X \\+\\ Y;\n",
+        "end;\n",
+        "X <+> Y;"
+    );
+    let (locals, stream) = disambiguate_local_source(source, ParserLexContext::general());
+
+    let occurrences = stream
+        .tokens
+        .iter()
+        .filter(|token| token.lexeme == "<+>")
+        .collect::<Vec<_>>();
+    assert_eq!(occurrences.len(), 2);
+    assert!(
+        occurrences
+            .iter()
+            .all(|token| token.kind == TokenKind::UserSymbol)
+    );
+    let alias = locals
+        .user_symbols
+        .iter()
+        .find(|declaration| declaration.spelling == "<+>")
+        .expect("symbolic alias should be collected");
+    assert_eq!(occurrences[0].span.start, alias.declared_at.start);
+    assert!(occurrences[1].span.start >= alias.activation_start);
+    assert!(stream.diagnostics.is_empty(), "{:#?}", stream.diagnostics);
+}
+
+#[test]
 fn disambiguator_keeps_identifier_shaped_declaration_as_identifier() {
     let source = "func CallDef: f(X) -> set equals X; f(X);";
     let (_, stream) = disambiguate_local_source(source, ParserLexContext::general());

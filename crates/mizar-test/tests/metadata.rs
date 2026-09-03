@@ -5736,6 +5736,7 @@ fn repository_parse_only_cases_separate_active_runner_seeds_from_future_metadata
             "pass_parser_minimal_token_stream_001",
             "pass_parser_mode_definitions_001",
             "pass_parser_module_skeleton_001",
+            "pass_parser_notation_alias_activation_001",
             "pass_parser_operator_declarations_001",
             "pass_parser_operator_terms_001",
             "pass_parser_predicate_definitions_001",
@@ -6001,6 +6002,9 @@ fn repository_parse_only_cases_separate_active_runner_seeds_from_future_metadata
             PathBuf::from(
                 "tests/miz/fail/parser/fail_parser_redefinition_notation_recovery_001.expect.toml"
             ),
+            PathBuf::from(
+                "tests/miz/pass/parser/pass_parser_notation_alias_activation_001.expect.toml"
+            ),
         ]
     );
 
@@ -6238,8 +6242,8 @@ fn repository_parse_only_runner_executes_active_minimal_parser_seeds() {
     let report = run_parse_only_corpus(&config).unwrap();
 
     assert_eq!(report.error_count(), 0, "{:#?}", report.diagnostics);
-    assert_eq!(report.results.len(), 105);
-    assert_eq!(report.passed_count(), 105);
+    assert_eq!(report.results.len(), 106);
+    assert_eq!(report.passed_count(), 106);
     assert_eq!(report.failed_count(), 0);
     assert!(report.results.iter().any(|result| {
         result.id.0 == "pass_parser_algorithm_control_flow_001"
@@ -7005,6 +7009,46 @@ fn step5a4_gap_ledger_selects_exact_g3_inventory_shape() {
     }
 
     assert_eq!(g3_rows, 1);
+}
+
+#[test]
+fn step5a5_gap_ledger_selects_exact_g4_inventory_shape() {
+    let path = repository_config()
+        .workspace_root
+        .join("tests/coverage/audit1_frontend_gaps.tsv");
+    let input = fs::read_to_string(path).unwrap();
+    let mut lines = input.lines();
+    assert_eq!(lines.next(), Some("source\tgaps"));
+
+    let mut g4_rows = Vec::new();
+    for line in lines {
+        let (source, gaps) = line
+            .split_once('\t')
+            .expect("gap-ledger rows must contain exactly one tab-separated gap field");
+        assert!(!source.is_empty());
+        assert!(!gaps.contains('\t'));
+        if gaps.split(',').any(|gap| gap == "G4") {
+            g4_rows.push((source, gaps));
+        }
+    }
+
+    assert_eq!(
+        g4_rows,
+        vec![
+            (
+                "tests/miz/fail/resolve/fail_type_elaboration_synonym_loci_mismatch_001.miz",
+                "G4,G9",
+            ),
+            (
+                "tests/miz/pass/resolve/pass_type_elaboration_antonym_predicate_001.miz",
+                "G4",
+            ),
+            (
+                "tests/miz/pass/resolve/pass_type_elaboration_synonym_functor_001.miz",
+                "G4,G5",
+            ),
+        ]
+    );
 }
 
 #[test]
@@ -9602,8 +9646,8 @@ fn parse_only_cli_reports_active_runner_summary() {
         String::from_utf8_lossy(&output.stderr)
     );
     let stdout = String::from_utf8_lossy(&output.stdout);
-    assert!(stdout.contains("parse-only cases: 105"));
-    assert!(stdout.contains("passed: 105"));
+    assert!(stdout.contains("parse-only cases: 106"));
+    assert!(stdout.contains("passed: 106"));
     assert!(stdout.contains("failed: 0"));
 }
 

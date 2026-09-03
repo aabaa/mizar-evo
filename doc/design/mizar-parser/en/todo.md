@@ -12,6 +12,8 @@
 
 1. [x] **Step 5A.4 / G3** — complete; see the
    [task contract](../../task_contracts/en/STEP5A4-G3-THEN-LINKING.md).
+2. [x] **Step 5A.5 / G4** — complete with no parser grammar change; see the
+   [task contract](../../task_contracts/en/STEP5A5-G4-NOTATION-ALIASES.md).
 
 ## Module Implementation
 

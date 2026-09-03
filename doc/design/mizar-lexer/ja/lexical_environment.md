@@ -242,12 +242,11 @@ pub struct UserSymbolCandidate {
   `g, k be set` のような comma-separated value-name list を含め、識別できる
   segment 境界からだけ再開します。この scan は `such` と `by` で停止するため、
   後続の条件や参照リストから偽の属性パラメータを導入しません。
-- ローカルの `synonym` と `antonym` 宣言は、保守的な浅い分類を使います。alias 側
-  または original 側に明確な operator-like 記法の手掛かりがある場合、その alias は
-  述語 / functor 形式の記法として記録します。それ以外では、alias head が
-  constructor-name 綴りである場合にだけ記録します。完全な意味論的 alias-family 分類は
-  resolver の責務であり、この prepass は型情報を使って曖昧な word-only alias を任意の
-  記号記法として解釈しません。
+- ローカルの `synonym` と `antonym` 宣言は、Step 5A.5 が適用される場合は
+  exact local-original matching を使います。以下の保守的な浅い分類は、exact な
+  active local original が見つからない場合の fallback です。完全な意味論的 alias-family
+  分類は resolver の責務であり、この prepass は型情報を使って曖昧な word-only alias を
+  任意の記号記法として解釈しません。
 - ローカルのユーザーシンボル候補は、問い合わせ位置が宣言項目末尾の有効化オフセット以上の
   場合にだけ `longest_user_symbol_at_position` から見えます。定義に宣言所有の
   correctness/property clause が続く場合、この完了境界にはその trailing clause と
@@ -347,3 +346,26 @@ lexer は semantic resolution、overload root choice、type fact、registration 
   forward reference の拒否、および同綴り overload candidate の保持をカバーすること;
 - synonym / antonym の prepass 有効化は `for` より前の alias pattern から派生し、
   `for` より後の original pattern からは派生しないこと。
+
+## Step 5A.5 ローカル notation alias の収集
+
+現在の module の `synonym` / `antonym` では、collector は両方の pattern の spelling
+選択から外側の definition parameter を除外します。`for` より後の選択された original
+spelling と original-pattern arity を、alias keyword より前に `activation_start` がある
+active local `pred` / `func` declaration に対して照合します。一致する alias-capable kind
+ごとに lexical candidate を保持し、同じ kind の overload shape は lexical classification
+のために畳み込みますが、predicate / functor の cross-kind candidate は分離して残します。
+登録するのは alternative spelling だけで、arity は alternative pattern から得ます。
+functor の既存 default-fixity rule は、各側の top-level definition parameter または
+locus-shaped operand word を数え、`(0,1)` を prefix、`(1,0)` を postfix、`(1,1)` を
+non-associative infix とし、それ以外には default operator metadata を付けません。
+default precedence は 64 です。
+
+alias は alias semicolon の source-span end で正確に有効化されます。G2 declaration-site
+exception は alternative 自身の `declared_at` span を分類できますが、その境界より前の
+他の位置では有効化しません。locus と original pattern は登録しません。exact な active
+local match がない場合、既存 fallback は operator-like 記法を functor とし、それ以外は
+constructor-mode shape のままにします。imported summary は参照しないため、word-only の
+imported original は未対応で、句読点形の imported original は従来の syntactic fallback
+だけを保持します。意味論的 alias identity、equivalence/negation、loci compatibility、
+overload selection、export/import propagation、diagnostics、checking は collector の範囲外です。

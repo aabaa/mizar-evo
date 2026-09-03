@@ -3,7 +3,7 @@
 > 正本は英語です。英語版: [../en/cache_key.md](../en/cache_key.md)。
 
 状態: task 19 で実装済み。task 20 の parser lexing plan、source-position-aware
-operator metadata、および Step 5A.3 declaration-site symbolic tokenization に合わせて更新済み。
+operator metadata、および Step 5A.5 local notation alias activation に合わせて更新済み。
 
 ## 目的
 
@@ -152,7 +152,11 @@ FrontendDependencyFootprint
 
 `TokenStreamCacheKey` は lexical hash、アクティブ字句環境 fingerprint、現在の default `ParserLexContext`、parser-assisted lexing plan key を組み合わせる。task 20 の plan key は、plan version、default context、位置別の各 lexical byte range とその `ParserLexContext` を記録する。string-required range や user-symbol kind filter が変わると、version string が同じでも tokenization は無効化される。これは token sequence と diagnostics の content key であり、range-faithful artifact key 全体ではない。source-spanned token を再利用する driver は、正確な source range が重要な場合、source-version または source-map identity と合成する必要がある。
 
-`TOKEN_STREAM_CACHE_KEY_VERSION` は `mizar-frontend/token-stream-cache-key/v2` である。同じ source と imported environment でも、句読点形のローカル Functor/Predicate 宣言の正確な宣言開始位置で異なる token stream が生成され得るため、token-stream namespace を v2 へ進める。parser seam version は AST cache key の所有であり、ここでは変更しない。
+`TOKEN_STREAM_CACHE_KEY_VERSION` は
+`mizar-frontend/token-stream-cache-key/v3` である。同じ source と imported environment
+でも、local notation alias が alias item 完了後に alternative spelling を登録できるため、
+異なる token stream が生成され得る。parser seam version は AST cache key の所有であり、
+ここでは変更しない。
 
 `SurfaceAstCacheKey` は token-stream content hash、parser seam cache version、parser-input hash、edition を組み合わせる。Parser seam は `ParserSeam::cache_key_version` により version を公開する。`parser_inputs_hash` は、token stream が不変でも AST shape を変え得るため、edition、string-required context、operator fixity entries を含む。各 fixity entry hash は spelling、fixity kind、precedence、その metadata が有効になる source byte offset、fixity kind が infix の場合の associativity を含む。parser-facing operator metadata は選択済み overload root ではなく spelling 単位の notation に付くため、symbol id は hash しない。
 
@@ -211,3 +215,13 @@ hash に入るが、cache-key structure と storage policy は変更しない。
 ## Step 5A.4 Then-Linking Cache Assessment
 
 [central contract](../../task_contracts/ja/STEP5A4-G3-THEN-LINKING.md) は、同じ token と parser input に対する omitted-justification compact statement の AST/diagnostic result が変わるため、v4 から v5 への invalidation を要求する。token-stream namespace は v2 のままであり、cache-key shape と storage policy は変更しない。
+
+## Step 5A.5 Local Notation Alias Cache Invalidation
+
+[central contract](../../task_contracts/ja/STEP5A5-G4-NOTATION-ALIASES.md) は、token-stream
+invalidation を v2 から v3 へ進めることを要求する。同じ source と imported environment
+でも、active local original から alternative spelling を登録し、alias semicolon 後に
+可視化できるため、異なる token が生成され得る。これは namespace invalidation だけであり、
+cache-key shape、storage policy、frontend public API は変更しない。parser は既存の raw
+`NotationAlias` tree を consume し続けるため、`MIZAR_PARSER_CACHE_KEY_VERSION` は
+`mizar-parser/surface-ast-v5` のままである。

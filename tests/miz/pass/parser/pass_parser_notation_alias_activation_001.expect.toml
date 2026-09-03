@@ -1,0 +1,13 @@
+schema_version = 1
+id = "pass_parser_notation_alias_activation_001"
+kind = "pass"
+stage = "parse_only"
+domain = "parser.notation_alias"
+source = "pass_parser_notation_alias_activation_001.miz"
+expected_outcome = "pass"
+expected_phase = "parse"
+diagnostic_codes = []
+tags = ["active_parse_only"]
+spec_refs = [
+  "spec.en.syntax.redefinition_notation.parser",
+]

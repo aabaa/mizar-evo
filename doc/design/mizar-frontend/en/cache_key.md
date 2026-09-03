@@ -3,8 +3,8 @@
 > Canonical language: English. Japanese companion: [../ja/cache_key.md](../ja/cache_key.md).
 
 Status: implemented by task 19, updated for the task-20 parser lexing plan,
-source-position-aware operator metadata, and Step 5A.3 declaration-site
-symbolic tokenization.
+source-position-aware operator metadata, and Step 5A.5 local notation alias
+activation.
 
 ## Purpose
 
@@ -179,10 +179,11 @@ sequence and diagnostics, not a complete range-faithful artifact key; a driver
 that reuses source-spanned tokens must compose it with source-version or
 source-map identity when exact source ranges matter.
 
-`TOKEN_STREAM_CACHE_KEY_VERSION` is `mizar-frontend/token-stream-cache-key/v2`.
-The bump separates token streams that differ because punctuation-shaped local
-Functor/Predicate declarations are admitted at their exact declaration starts;
-the parser seam version remains owned by the AST cache key.
+`TOKEN_STREAM_CACHE_KEY_VERSION` is
+`mizar-frontend/token-stream-cache-key/v3`. The namespace separates token
+streams that differ because local notation aliases can register an alternative
+spelling after the alias item completes; the parser seam version remains owned
+by the AST cache key.
 
 `SurfaceAstCacheKey` combines the token-stream content hash, parser seam cache
 version, parser-input hash, and edition. Parser seams expose their version
@@ -284,3 +285,14 @@ requires v4-to-v5 invalidation because omitted-justification compact statements
 now produce a different AST/diagnostic result for the same token and parser
 inputs. The token-stream namespace remains v2; cache-key shape and storage
 policy do not change.
+
+## Step 5A.5 Local Notation Alias Cache Invalidation
+
+The [central contract](../../task_contracts/en/STEP5A5-G4-NOTATION-ALIASES.md)
+requires token-stream invalidation from v2 to v3: the same source and imported
+environment can now produce different tokens when an alternative spelling is
+registered from an active local original and becomes visible after the alias
+semicolon. This is a namespace invalidation only; cache-key shapes, storage
+policy, and the frontend public API do not change. `MIZAR_PARSER_CACHE_KEY_VERSION`
+remains `mizar-parser/surface-ast-v5` because the parser continues consuming the
+existing raw `NotationAlias` tree.

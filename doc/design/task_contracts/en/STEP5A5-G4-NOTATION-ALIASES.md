@@ -13,7 +13,7 @@ identity.
 
 | Field | Value |
 |---|---|
-| Status | Frozen for test-first implementation; no production edit yet |
+| Status | Complete; implementation committed after all full-tier gates pass |
 | Tier | Full: parser-visible tokenization, AST/diagnostic output, token-cache identity, and test-first `.miz` |
 | Owner / consumers | `mizar-lexer` owns local alias spelling, kind, arity, fixity, and activation; `mizar-parser` consumes the tokens through its existing `NotationAlias` grammar; `mizar-frontend` owns token-cache identity |
 | Dependencies | Completed 5A.3/G2; Step 5A frozen order selects 5A.5 after completed 5A.4 |
@@ -138,3 +138,23 @@ reviews; focused lexer/frontend/parser/parse-only checks; metadata/link/ledger
 lints; format, warnings-denied workspace Clippy, and full tests. Exit requires
 9/9 hard gates, a valid read-only score of at least 90/100, exact task-only
 staging, local commit, clean postcommit proof, and fresh selection of 5A.6/G6.
+
+## Completion evidence
+
+The new identifier-predicate and symbolic-functor alias source and all three
+immutable G4 ledger sources parse without diagnostics. The active parse-only
+corpus is `106/106`; repository metadata is 555 cases / 499 requirements with
+the 23 expected warnings and pass/fail 312/243. Lexer tests prove exact local
+original matching, cross-kind preservation, same-kind collapse, enclosing
+definition parameter exclusion, and semicolon-bounded activation. Token-cache
+identity is v3; parser-cache identity remains v5.
+
+Independent specification, boundary, test-sufficiency, implementation, and
+source/docs/API reviews ended with no findings after finding-specific repair.
+Focused lexer/frontend/parse-only checks, metadata and lint-policy tests, the
+repository plan, `cargo fmt --check`, warnings-denied workspace Clippy, and
+full `cargo test` pass. All nine hard gates pass. No semantic oracle or trace
+state was activated; the trace delta is only the frozen parse-only backlink,
+and the activation map, gap ledger, coverage audit, and archive remain
+unchanged. G6/G7/G9 and every semantic alias obligation remain with their
+named successor tasks.

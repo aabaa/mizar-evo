@@ -2176,3 +2176,13 @@ justification を省略した場合、proposition の直後に `;` を置ける�
 semicolon-bounded recognition を `then` 配下にも適用し、wrapper は `then` と一つの
 compact child を所有するが justification node は捏造しない。明示 justification/proof
 form と不正な `then` prefix は既存 parsing と local recovery を維持する。
+
+## Step 5A.5 NotationAlias consumer boundary
+
+parser は既存の raw `NotationAlias` tree を通じて `synonym` と `antonym` を引き続き
+consume します。grammar、`NotationPattern` の token preservation、syntax-kind vocabulary、
+recovery behavior、public API は変更しません。lexer は active local original から alternative
+spelling を分類できますが、parser はその original を resolve せず、symbol kind や overload
+を選択せず、alias semantics を割り当てず、synonym / antonym の fact も作りません。従って
+parser cache version と cache-key ownership は不変であり、この producer-side fix の owner は
+`mizar-lexer` です。

@@ -1,0 +1,19 @@
+definition
+  let X, Y be set;
+  pred IdBaseDef: X idbase Y means X = Y;
+end;
+
+definition
+  let X, Y be set;
+  func SymbolBaseDef: X \+\ Y -> set equals X;
+  coherence proof thus thesis; end;
+end;
+
+definition
+  let X, Y be set;
+  antonym X idalias Y for X idbase Y;
+  synonym X <+> Y for X \+\ Y;
+end;
+
+theorem IdentifierAliasUse: for X, Y being set holds X idalias Y by Ref;
+theorem SymbolAliasUse: for X, Y being set holds X <+> Y = X by Ref;

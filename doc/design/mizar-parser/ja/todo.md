@@ -12,6 +12,8 @@
 
 1. [x] **Step 5A.4 / G3** — 完了。詳細は
    [task contract](../../task_contracts/ja/STEP5A4-G3-THEN-LINKING.md)。
+2. [x] **Step 5A.5 / G4** — parser grammar の変更なしで完了。詳細は
+   [task contract](../../task_contracts/ja/STEP5A5-G4-NOTATION-ALIASES.md)。
 
 ## モジュール実装
 

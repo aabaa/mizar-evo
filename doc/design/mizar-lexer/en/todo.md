@@ -9,6 +9,8 @@ language-spec synchronization.
 
 1. [x] **Step 5A.3 / G2** — complete; see the
    [task contract](../../task_contracts/en/STEP5A3-G2-SYMBOLIC-USER-SYMBOLS.md).
+2. [x] **Step 5A.5 / G4** — complete; see the
+   [task contract](../../task_contracts/en/STEP5A5-G4-NOTATION-ALIASES.md).
 
 ## Completed Tasks
 

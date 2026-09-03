@@ -1180,6 +1180,165 @@ fn local_antonym_declarations_activate_only_the_alias_pattern() {
 }
 
 #[test]
+fn local_aliases_inherit_active_original_kinds_and_alternative_fixity() {
+    let source = concat!(
+        "definition\n",
+        "  let X, Y be set;\n",
+        "  pred IdBaseDef: X idbase Y means X = Y;\n",
+        "  func SymbolBaseDef: X \\+\\ Y -> set equals X;\n",
+        "end;\n",
+        "definition\n",
+        "  let X, Y be set;\n",
+        "  antonym X idalias Y for X idbase Y;\n",
+        "  synonym X <+> Y for X \\+\\ Y;\n",
+        "end;\n",
+        "X idalias Y; X <+> Y;"
+    );
+    let raw = scan_raw(source).expect("source should raw scan");
+    let locals = collect_local_lexical_declarations(&raw, module_id("current"));
+
+    let identifier_alias = locals
+        .user_symbols
+        .iter()
+        .find(|declaration| declaration.spelling == "idalias")
+        .expect("identifier alias should be collected");
+    assert_eq!(identifier_alias.kind, UserSymbolKind::Predicate);
+    assert_eq!(identifier_alias.arity, UserSymbolArity::exact(2));
+    assert_eq!(identifier_alias.operator, None);
+    assert_eq!(
+        identifier_alias.activation_start,
+        source[identifier_alias.declared_at.end..]
+            .find(';')
+            .map(|offset| identifier_alias.declared_at.end + offset + 1)
+            .expect("alias should end in a semicolon")
+    );
+    assert!(
+        locals
+            .user_symbols("idalias", identifier_alias.activation_start - 1)
+            .is_empty()
+    );
+
+    let symbolic_alias = locals
+        .user_symbols
+        .iter()
+        .find(|declaration| declaration.spelling == "<+>")
+        .expect("symbolic alias should be collected");
+    assert_eq!(symbolic_alias.kind, UserSymbolKind::Functor);
+    assert_eq!(symbolic_alias.arity, UserSymbolArity::exact(2));
+    assert_eq!(
+        symbolic_alias.operator,
+        Some(ExportedOperatorMetadata {
+            fixity: ExportedOperatorFixity::Infix(ExportedOperatorAssociativity::NonAssociative),
+            precedence: 64,
+        })
+    );
+    assert!(
+        locals
+            .user_symbols("<+>", symbolic_alias.activation_start)
+            .iter()
+            .any(|candidate| candidate.kind == UserSymbolKind::Functor)
+    );
+
+    assert!(locals.user_symbols("X", source.len()).is_empty());
+    assert_eq!(
+        locals
+            .user_symbols
+            .iter()
+            .filter(|declaration| declaration.spelling == "idbase")
+            .count(),
+        1,
+        "the original identifier pattern must not be registered again"
+    );
+    assert_eq!(
+        locals
+            .user_symbols
+            .iter()
+            .filter(|declaration| declaration.spelling == "\\+\\")
+            .count(),
+        1,
+        "the original symbolic pattern must not be registered again"
+    );
+}
+
+#[test]
+fn local_aliases_preserve_cross_kind_candidates_at_the_exact_original_arity() {
+    let source = concat!(
+        "definition\n",
+        "  let X, Y be set;\n",
+        "  pred SharedPred: X shared Y means X = Y;\n",
+        "  func SharedFunc1: X shared Y -> set equals X;\n",
+        "  func SharedFunc2: X shared Y -> set equals Y;\n",
+        "  func SharedUnary: shared X -> set equals X;\n",
+        "  synonym X shared_alias Y for X shared Y;\n",
+        "end;\n",
+        "X shared_alias Y;"
+    );
+    let raw = scan_raw(source).expect("source should raw scan");
+    let locals = collect_local_lexical_declarations(&raw, module_id("current"));
+
+    assert_eq!(
+        locals
+            .user_symbols("shared_alias", source.len())
+            .iter()
+            .map(|candidate| (candidate.kind, candidate.arity))
+            .collect::<Vec<_>>(),
+        vec![
+            (UserSymbolKind::Functor, UserSymbolArity::exact(2)),
+            (UserSymbolKind::Predicate, UserSymbolArity::exact(2)),
+        ],
+        "same-kind overloads collapse lexically, cross-kind candidates survive, and arity-one originals do not match"
+    );
+}
+
+#[test]
+fn local_alias_parameter_selection_is_bounded_to_the_enclosing_definition() {
+    let source = concat!(
+        "definition\n",
+        "  let X be set;\n",
+        "  mode Base is set;\n",
+        "end;\n",
+        "synonym X for Base;\n",
+        "X;"
+    );
+    let raw = scan_raw(source).expect("source should raw scan");
+    let locals = collect_local_lexical_declarations(&raw, module_id("current"));
+
+    assert_eq!(
+        locals
+            .user_symbols("X", source.len())
+            .iter()
+            .map(|candidate| candidate.kind)
+            .collect::<Vec<_>>(),
+        vec![UserSymbolKind::Mode],
+        "a completed definition must not leak its parameter names into a top-level alias"
+    );
+}
+
+#[test]
+fn local_alias_parameter_selection_rejects_parameter_bearing_hyphen_candidates() {
+    let source = concat!(
+        "definition\n",
+        "  let X, Y be set;\n",
+        "  pred Base: X base Y means X = Y;\n",
+        "  synonym X-Y for X base Y;\n",
+        "end;"
+    );
+    let raw = scan_raw(source).expect("source should raw scan");
+    let locals = collect_local_lexical_declarations(&raw, module_id("current"));
+
+    assert!(
+        locals.user_symbols("X-Y", source.len()).is_empty(),
+        "{:#?}",
+        locals.user_symbols
+    );
+    assert!(
+        locals.user_symbols("-", source.len()).is_empty(),
+        "{:#?}",
+        locals.user_symbols
+    );
+}
+
+#[test]
 fn local_operator_declarations_record_metadata_and_activation_ranges() {
     let source = concat!(
         "prefix_operator(\"~\", 70);\n",

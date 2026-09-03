@@ -2,6 +2,7 @@ use crate::raw_lexer::{
     RawTokenKind, RawTokenStream, is_constructor_name_spelling, is_identifier,
     is_identifier_continue, is_identifier_start, is_user_symbol_spelling,
 };
+use crate::scope_skeleton::{LexicalBlockKind, build_scope_skeleton};
 use crate::source::{SourcePos, SourceSpan};
 use crate::tables::{
     RESERVED_SYMBOLS, RESERVED_WORDS, ReservedSymbolTable, ReservedWordTable, is_reserved_symbol,
@@ -1166,6 +1167,7 @@ fn is_local_lexical_entry_spelling(kind: UserSymbolKind, spelling: &str) -> bool
 
 struct LocalDeclarationCollector {
     pieces: Vec<DeclarationPiece>,
+    alias_definition_ranges: Option<Vec<SourceSpan>>,
     current_module: ModuleId,
     next_rank: u32,
     user_symbols: Vec<LocalUserSymbolDeclaration>,
@@ -1189,8 +1191,21 @@ enum DeclarationPieceKind {
 
 impl LocalDeclarationCollector {
     fn new(raw: &RawTokenStream, current_module: ModuleId) -> Self {
+        let pieces = declaration_pieces(raw);
+        let alias_definition_ranges = pieces
+            .iter()
+            .any(|piece| matches!(piece.text.as_str(), "synonym" | "antonym"))
+            .then(|| {
+                build_scope_skeleton(raw)
+                    .blocks
+                    .into_iter()
+                    .filter(|block| block.kind == LexicalBlockKind::Definition)
+                    .map(|block| block.range)
+                    .collect()
+            });
         Self {
-            pieces: declaration_pieces(raw),
+            pieces,
+            alias_definition_ranges,
             current_module,
             next_rank: 0,
             user_symbols: Vec::new(),
@@ -1410,66 +1425,106 @@ impl LocalDeclarationCollector {
         else {
             return;
         };
-        let pattern = &self.pieces[keyword_index + 1..for_index];
-        let original = &self.pieces[for_index + 1..completion.piece_index];
-        let kind = if pattern_has_operator_like_notation(pattern)
-            || pattern_has_operator_like_notation(original)
-        {
-            UserSymbolKind::Functor
-        } else {
-            UserSymbolKind::Mode
-        };
-        if kind == UserSymbolKind::Mode {
-            let Some(selection) = select_constructor_spelling(pattern) else {
+        let pattern = self.pieces[keyword_index + 1..for_index].to_vec();
+        let original = self.pieces[for_index + 1..completion.piece_index].to_vec();
+        let parameter_names = self.definition_parameter_names_before(keyword_index);
+        let mut kinds = self.matching_alias_kinds(&original, &parameter_names, keyword_index);
+        if kinds.is_empty() {
+            let fallback_kind = if pattern_has_operator_like_notation(&pattern)
+                || pattern_has_operator_like_notation(&original)
+            {
+                UserSymbolKind::Functor
+            } else {
+                UserSymbolKind::Mode
+            };
+            kinds.insert(fallback_kind);
+        }
+
+        if kinds.len() == 1 && kinds.contains(&UserSymbolKind::Mode) {
+            let Some(selection) =
+                select_constructor_spelling_with_parameters(&pattern, &parameter_names)
+            else {
                 return;
             };
             self.push_user_symbol_shape(
                 selection.spelling,
                 selection.span,
-                kind,
+                UserSymbolKind::Mode,
                 UserSymbolArity::exact(0),
                 completion.activation_start,
             );
-        } else {
-            if let Some(selection) = select_hyphenated_notation_spelling(pattern) {
-                let arity = pattern_arity_excluding_range(
-                    pattern,
-                    selection.relative_start,
-                    selection.relative_end,
-                );
-                self.push_user_symbol_shape(
-                    selection.spelling,
+            return;
+        }
+
+        let selections = select_alias_notation_spelling(&pattern, &parameter_names);
+        if selections.is_empty() {
+            return;
+        }
+        let has_single_spelling = selections.len() == 1;
+        let mut published = BTreeSet::new();
+        for selection in selections {
+            let arity = pattern_arity_excluding_range(
+                &pattern,
+                selection.relative_start,
+                selection.relative_end,
+            );
+            let operator = has_single_spelling
+                .then(|| {
+                    default_functor_operator_metadata(
+                        UserSymbolKind::Functor,
+                        &pattern,
+                        selection.relative_start,
+                        selection.relative_end,
+                        &parameter_names,
+                    )
+                })
+                .flatten();
+            for kind in &kinds {
+                if !published.insert((selection.spelling.clone(), *kind)) {
+                    continue;
+                }
+                self.push_user_symbol_shape_with_operator(
+                    selection.spelling.clone(),
                     selection.span,
-                    kind,
+                    *kind,
                     arity,
                     completion.activation_start,
+                    (kind == &UserSymbolKind::Functor)
+                        .then_some(operator)
+                        .flatten(),
                 );
-                return;
             }
-            let symbol_selections = select_symbol_spelling_pieces(pattern);
-            if symbol_selections.is_empty() {
-                let Some(selection) = select_notation_spelling(pattern) else {
-                    return;
-                };
-                let arity = pattern_arity(pattern, selection.relative_index);
-                self.push_user_symbol(
-                    keyword_index + 1 + selection.relative_index,
-                    kind,
-                    arity,
-                    completion.activation_start,
-                );
-            } else {
-                let arity = pattern_arity_without_symbol_pieces(pattern);
-                for selection in symbol_selections {
-                    self.push_user_symbol(
-                        keyword_index + 1 + selection.relative_index,
-                        kind,
-                        arity,
-                        completion.activation_start,
-                    );
+        }
+    }
+
+    fn matching_alias_kinds(
+        &self,
+        original: &[DeclarationPiece],
+        parameter_names: &BTreeSet<String>,
+        keyword_index: usize,
+    ) -> BTreeSet<UserSymbolKind> {
+        let position = self.pieces[keyword_index].span.start;
+        let mut kinds = BTreeSet::new();
+        for selection in select_alias_notation_spelling(original, parameter_names) {
+            let arity = pattern_arity_excluding_range(
+                original,
+                selection.relative_start,
+                selection.relative_end,
+            );
+            for declaration in &self.user_symbols {
+                if declaration.activation_start <= position
+                    && declaration.spelling == selection.spelling
+                    && declaration.arity == arity
+                    && matches!(
+                        declaration.kind,
+                        UserSymbolKind::Functor | UserSymbolKind::Predicate
+                    )
+                {
+                    kinds.insert(declaration.kind);
                 }
             }
         }
+        kinds
     }
 
     fn collect_operator_declaration(&mut self, keyword_index: usize) {
@@ -1523,16 +1578,6 @@ impl LocalDeclarationCollector {
             _ => return None,
         };
         Some(ExportedOperatorMetadata { fixity, precedence })
-    }
-
-    fn push_user_symbol(
-        &mut self,
-        piece_index: usize,
-        kind: UserSymbolKind,
-        arity: UserSymbolArity,
-        activation_start: SourcePos,
-    ) {
-        self.push_user_symbol_with_operator(piece_index, kind, arity, activation_start, None);
     }
 
     fn push_user_symbol_with_operator(
@@ -1613,11 +1658,26 @@ impl LocalDeclarationCollector {
 
     fn definition_parameter_names_before(&self, keyword_index: usize) -> BTreeSet<String> {
         let mut names = BTreeSet::new();
-        let block_start = self
-            .pieces
-            .get(..keyword_index)
-            .and_then(|pieces| pieces.iter().rposition(|piece| piece.text == "definition"))
-            .map_or(0, |index| index + 1);
+        let block_start = if let Some(definition_ranges) = &self.alias_definition_ranges {
+            let position = self.pieces[keyword_index].span.start;
+            let Some(definition_start) = definition_ranges
+                .iter()
+                .filter(|range| range.start <= position && position < range.end)
+                .map(|range| range.start)
+                .max()
+            else {
+                return names;
+            };
+            self.pieces
+                .iter()
+                .position(|piece| piece.span.start >= definition_start)
+                .map_or(0, |index| index + 1)
+        } else {
+            self.pieces
+                .get(..keyword_index)
+                .and_then(|pieces| pieces.iter().rposition(|piece| piece.text == "definition"))
+                .map_or(0, |index| index + 1)
+        };
 
         let mut cursor = block_start;
         while cursor < keyword_index {
@@ -1795,21 +1855,12 @@ struct MultiPieceSelection {
     span: SourceSpan,
 }
 
-fn select_notation_spelling(pieces: &[DeclarationPiece]) -> Option<SpellingSelection> {
-    select_notation_spelling_with_parameters(pieces, &BTreeSet::new())
-}
-
 fn select_notation_spelling_with_parameters(
     pieces: &[DeclarationPiece],
     parameter_names: &BTreeSet<String>,
 ) -> Option<SpellingSelection> {
-    if pieces.first().is_some_and(|piece| {
-        piece.kind == DeclarationPieceKind::Word && !parameter_names.contains(piece.text.as_str())
-    }) && pieces
-        .get(1)
-        .is_some_and(|piece| piece.kind == DeclarationPieceKind::Symbol && piece.text == "(")
-    {
-        return Some(SpellingSelection { relative_index: 0 });
+    if let Some(selection) = select_parenthesized_notation_spelling(pieces, parameter_names) {
+        return Some(selection);
     }
 
     pieces
@@ -1817,45 +1868,99 @@ fn select_notation_spelling_with_parameters(
         .position(|piece| {
             piece.kind == DeclarationPieceKind::Symbol && !is_declaration_delimiter(&piece.text)
         })
-        .or_else(|| {
-            let word_indexes = pieces
-                .iter()
-                .enumerate()
-                .filter(|(_, piece)| {
-                    piece.kind == DeclarationPieceKind::Word
-                        && !is_reserved_word(&piece.text)
-                        && !parameter_names.contains(piece.text.as_str())
-                })
-                .map(|(index, _)| index)
-                .collect::<Vec<_>>();
-            match word_indexes.as_slice() {
-                [] => None,
-                [only] => Some(*only),
-                [first, second] => {
-                    if second_word_is_likely_infix_notation(
-                        &pieces[*first],
-                        &pieces[*second],
-                        false,
-                    ) {
-                        Some(*second)
-                    } else {
-                        Some(*first)
-                    }
-                }
-                [first, second, rest @ ..] => {
-                    if second_word_is_likely_infix_notation(
-                        &pieces[*first],
-                        &pieces[*second],
-                        !rest.is_empty(),
-                    ) {
-                        Some(*second)
-                    } else {
-                        Some(*first)
-                    }
-                }
-            }
-        })
+        .or_else(|| select_word_notation_spelling(pieces, parameter_names))
         .map(|relative_index| SpellingSelection { relative_index })
+}
+
+fn select_parenthesized_notation_spelling(
+    pieces: &[DeclarationPiece],
+    parameter_names: &BTreeSet<String>,
+) -> Option<SpellingSelection> {
+    (pieces.first().is_some_and(|piece| {
+        piece.kind == DeclarationPieceKind::Word && !parameter_names.contains(piece.text.as_str())
+    }) && pieces
+        .get(1)
+        .is_some_and(|piece| piece.kind == DeclarationPieceKind::Symbol && piece.text == "("))
+    .then_some(SpellingSelection { relative_index: 0 })
+}
+
+fn select_word_notation_spelling(
+    pieces: &[DeclarationPiece],
+    parameter_names: &BTreeSet<String>,
+) -> Option<usize> {
+    let word_indexes = pieces
+        .iter()
+        .enumerate()
+        .filter(|(_, piece)| {
+            piece.kind == DeclarationPieceKind::Word
+                && !is_reserved_word(&piece.text)
+                && !parameter_names.contains(piece.text.as_str())
+        })
+        .map(|(index, _)| index)
+        .collect::<Vec<_>>();
+    match word_indexes.as_slice() {
+        [] => None,
+        [only] => Some(*only),
+        [first, second] => {
+            second_word_is_likely_infix_notation(&pieces[*first], &pieces[*second], false)
+                .then_some(*second)
+                .or(Some(*first))
+        }
+        [first, second, rest @ ..] => second_word_is_likely_infix_notation(
+            &pieces[*first],
+            &pieces[*second],
+            !rest.is_empty(),
+        )
+        .then_some(*second)
+        .or(Some(*first)),
+    }
+}
+
+fn select_alias_notation_spelling(
+    pieces: &[DeclarationPiece],
+    parameter_names: &BTreeSet<String>,
+) -> Vec<MultiPieceSelection> {
+    if let Some(selection) =
+        select_hyphenated_notation_spelling_with_parameters(pieces, parameter_names)
+    {
+        return vec![selection];
+    }
+
+    let symbol_selections = select_symbol_spelling_pieces(pieces)
+        .into_iter()
+        .filter(|selection| !is_constructor_hyphen_at(pieces, selection.relative_index))
+        .collect::<Vec<_>>();
+    if !symbol_selections.is_empty() {
+        return symbol_selections
+            .into_iter()
+            .map(|selection| {
+                let piece = &pieces[selection.relative_index];
+                MultiPieceSelection {
+                    relative_start: selection.relative_index,
+                    relative_end: selection.relative_index + 1,
+                    spelling: piece.text.clone(),
+                    span: piece.span,
+                }
+            })
+            .collect();
+    }
+
+    let selection = select_parenthesized_notation_spelling(pieces, parameter_names).or_else(|| {
+        select_word_notation_spelling(pieces, parameter_names)
+            .map(|relative_index| SpellingSelection { relative_index })
+    });
+    let Some(selection) = selection else {
+        return Vec::new();
+    };
+    let piece = &pieces[selection.relative_index];
+    Some(MultiPieceSelection {
+        relative_start: selection.relative_index,
+        relative_end: selection.relative_index + 1,
+        spelling: piece.text.clone(),
+        span: piece.span,
+    })
+    .into_iter()
+    .collect()
 }
 
 fn default_functor_operator_metadata(
@@ -1922,6 +2027,13 @@ fn select_symbol_spelling_pieces(pieces: &[DeclarationPiece]) -> Vec<SpellingSel
 }
 
 fn select_hyphenated_notation_spelling(pieces: &[DeclarationPiece]) -> Option<MultiPieceSelection> {
+    select_hyphenated_notation_spelling_with_parameters(pieces, &BTreeSet::new())
+}
+
+fn select_hyphenated_notation_spelling_with_parameters(
+    pieces: &[DeclarationPiece],
+    parameter_names: &BTreeSet<String>,
+) -> Option<MultiPieceSelection> {
     for index in 1..pieces.len().saturating_sub(1) {
         let hyphen = &pieces[index];
         if hyphen.kind != DeclarationPieceKind::Symbol || hyphen.text != "-" {
@@ -1960,6 +2072,13 @@ fn select_hyphenated_notation_spelling(pieces: &[DeclarationPiece]) -> Option<Mu
             && is_constructor_segment_piece(&pieces[end + 1])
         {
             end += 2;
+        }
+
+        if pieces[start..end].iter().any(|piece| {
+            piece.kind == DeclarationPieceKind::Word
+                && parameter_names.contains(piece.text.as_str())
+        }) {
+            continue;
         }
 
         let span = SourceSpan::new(pieces[start].span.start, pieces[end - 1].span.end);
@@ -2047,6 +2166,42 @@ fn select_constructor_spelling(pieces: &[DeclarationPiece]) -> Option<Constructo
             return Some(selection);
         }
         if piece.kind == DeclarationPieceKind::Word && is_constructor_name_spelling(&piece.text) {
+            return Some(ConstructorSelection {
+                spelling: piece.text.clone(),
+                span: piece.span,
+            });
+        }
+        index += 1;
+    }
+    None
+}
+
+fn select_constructor_spelling_with_parameters(
+    pieces: &[DeclarationPiece],
+    parameter_names: &BTreeSet<String>,
+) -> Option<ConstructorSelection> {
+    let mut index = 0;
+    while index < pieces.len() {
+        let piece = &pieces[index];
+        if is_constructor_boundary_word(&piece.text) || piece.kind == DeclarationPieceKind::Symbol {
+            index += 1;
+            continue;
+        }
+        if let Some(selection) = readable_constructor_spelling_at(pieces, index) {
+            let contains_parameter = pieces.iter().any(|candidate| {
+                candidate.span.start >= selection.span.start
+                    && candidate.span.end <= selection.span.end
+                    && candidate.kind == DeclarationPieceKind::Word
+                    && parameter_names.contains(candidate.text.as_str())
+            });
+            if !contains_parameter {
+                return Some(selection);
+            }
+        }
+        if piece.kind == DeclarationPieceKind::Word
+            && !parameter_names.contains(piece.text.as_str())
+            && is_constructor_name_spelling(&piece.text)
+        {
             return Some(ConstructorSelection {
                 spelling: piece.text.clone(),
                 span: piece.span,

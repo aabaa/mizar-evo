@@ -2320,3 +2320,14 @@ omitted. The same semicolon-bounded recognition applies beneath `then`, so the
 wrapper owns `then` and one compact child without inventing a justification
 node. Explicit justification/proof forms and invalid `then` prefixes retain
 their existing parsing and local recovery.
+
+## Step 5A.5 NotationAlias Consumer Boundary
+
+The parser continues to consume `synonym` and `antonym` through the existing raw
+`NotationAlias` tree. Its grammar, `NotationPattern` token preservation,
+syntax-kind vocabulary, recovery behavior, and public API do not change. The
+lexer may classify an alternative spelling from an active local original, but
+the parser does not resolve that original, choose a symbol kind or overload,
+assign alias semantics, or create synonym/antonym facts. Parser cache version
+and cache-key ownership therefore remain unchanged; this producer-side fix is
+owned by `mizar-lexer`.

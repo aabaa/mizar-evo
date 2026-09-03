@@ -257,13 +257,12 @@ Current implementation notes:
   it can identify, including comma-separated value-name lists such as
   `g, k be set`. The scan stops at `such` and `by` so trailing condition or
   reference lists do not introduce fake attribute parameters.
-- Local `synonym` and `antonym` declarations use a conservative shallow
-  classification. If the alias side or original side contains clear
-  operator-like notation evidence, the alias is recorded as predicate/functor
-  style notation. Otherwise the alias head is recorded only if it is a
-  constructor-name spelling. Full semantic alias-family classification remains
-  resolver-owned; this prepass does not use type information to reinterpret an
-  ambiguous word-only alias as arbitrary symbolic notation.
+- Local `synonym` and `antonym` declarations use exact local-original matching
+  where Step 5A.5 applies; the conservative shallow classification below is the
+  fallback when no exact active local original is found. Full semantic
+  alias-family classification remains resolver-owned; this prepass does not use
+  type information to reinterpret an ambiguous word-only alias as arbitrary
+  symbolic notation.
 - Local user-symbol candidates are visible to
   `longest_user_symbol_at_position` only when the queried source position is
   greater than or equal to the activation offset at the end of the declaring
@@ -372,3 +371,29 @@ Tests should cover:
   preservation;
 - synonym/antonym prepass activation is derived from the alias pattern before
   `for`, not from the original pattern after `for`.
+
+## Step 5A.5 Local Notation Alias Collection
+
+For a current-module `synonym` or `antonym`, the collector excludes enclosing
+definition parameters from both pattern spelling selections. It matches the
+selected original spelling and original-pattern arity against active local
+`pred`/`func` declarations whose `activation_start` is no later than the alias
+keyword. Each distinct matching alias-capable kind is retained as a lexical
+candidate: same-kind overload shapes collapse for lexical classification, while
+predicate/functor cross-kind candidates remain separate. The alternative spelling
+alone is registered, with arity from the alternative pattern. For functors, the
+existing default-fixity rule uses top-level definition parameters or
+locus-shaped operand words on each side: `(0,1)` is prefix, `(1,0)` postfix,
+`(1,1)` non-associative infix, and every other shape has no default operator
+metadata; the default precedence is 64.
+
+The alias activates exactly at the alias semicolon's source-span end. The G2
+declaration-site exception may classify the alternative's own `declared_at`
+span but does not activate it elsewhere before that boundary. No locus or
+original pattern is registered. If no exact active local match exists, the
+existing fallback classifies operator-like notation as a functor and otherwise
+keeps constructor-mode shape. Imported summaries are not consulted, so word-only
+imported originals remain unsupported and punctuation-shaped imported originals
+retain only the prior syntactic fallback. Semantic alias identity,
+equivalence/negation, loci compatibility, overload selection, export/import
+propagation, diagnostics, and checking remain outside this collector.
