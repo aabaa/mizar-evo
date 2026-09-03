@@ -273,7 +273,19 @@ builtin `set` / `object` である場合、AST-bounded acyclic chain を pass �
 producer は source mode definition 数と等しい AST-derived traversal budget を持つ。
 この budget は resource guard であり semantic chain-length limit ではない。
 structural guard を満たさない chain は missing-expansion / extraction-gap path に
-残る。task 75 はこの family の forward-reference boundary を固定する。
+残る。
+
+task 74 は AST-bounded chain depth、builtin `set` / `object` terminal、既存の
+equality / pre-desugaring inequality / right-expected membership /
+normalized-reflexive assertion / same-symbol asserted-head consumer、および
+shared / distinct written range を持つ 1 / 2 reserve binding にまたがる structural
+task-creation rule の唯一の live owner である。完了済み point matrix は回帰専用 guard
+であり、別の structural task の owner や先例ではない。semantic / provenance owner
+は Tasks 152/153、164-169、186/187 と relation-specific descendants に残る。この
+product の別 point だけでは task を作らず、semantic dimension または guard の変更には
+別 authority を要する。[Step 5B.1 contract](../../task_contracts/ja/STEP5B1-STRUCTURAL-RULE-CONSOLIDATION.md) を参照する。
+
+task 75 はこの family の forward-reference boundary を固定する。
 reserve head が、その mode declaration item が active になる前に local mode を
 名前参照する場合、lower-stage frontend/resolver processing は checker handoff の前に
 `type_elaboration.lower_stage.frontend:malformed_type_expression` で type

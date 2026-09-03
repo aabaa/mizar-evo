@@ -434,16 +434,10 @@ stay binding and must not be weakened.
 
 #### Step 5B — Consolidation and pending prerequisites [ ]
 
-1. [ ] **5B.1** — `mizar-checker`/`mizar-test`: retire the micro-slice
-   sibling pattern. Document the task-74 AST-bounded structural rule as
-   the single owner of the structural dimensions above (chain depth x
-   builtin terminal x the five consumer shapes x reserve multiplicity),
-   reclassify the completed sibling tasks' matrices as regression-only
-   guards, and record in the checker/test crate plans that new structural
-   points of these dimensions require no new task. No active case,
-   expectation, trace row, source behavior, or credit changes. Light
-   gates (zero-credit structural transport; one-way promotion to full
-   gates if any behavior or credit turns out to change).
+1. [x] **5B.1** — `mizar-checker`/`mizar-test`: the task-74 structural
+   product now has one live owner; completed point matrices are regression-only
+   guards and create no new task. Light-tier evidence and unchanged protected
+   boundaries: [STEP5B1-STRUCTURAL-RULE-CONSOLIDATION](./task_contracts/en/STEP5B1-STRUCTURAL-RULE-CONSOLIDATION.md).
 2. [ ] **5B.2** — complete item 6 of the temporary checker/test
    design-evidence consolidation gate above (semantic readiness
    re-inventory from the C4C4 postcommit proof). It must finish before

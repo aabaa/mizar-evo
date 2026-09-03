@@ -1879,10 +1879,10 @@ task 56 は reserve head が、accepted task-55 bare builtin RHS expansion を�
 same-module no-argument local mode へ expand する場合の one-edge same-module local-mode
 chain まで、この pass slice を拡張する。task 72 は terminal expansion が builtin
 `set` / `object` である場合に、この pass slice を two-edge bare local-mode chain
-へ拡張し、task 73 は three-edge へ拡張する。task 74 はその一時的な depth guard を、
-terminal expansion が正確に builtin `set` / `object` である bare same-module
-no-argument local-mode chain の AST-bounded structural rule に置き換える。この
-structural guard に違反する chain は引き続き
+へ拡張し、task 73 は three-edge へ拡張する。harness は Task 74 の
+[checker-owned structural rule](../../mizar-checker/ja/type_checker.md#task-8-declaration-and-local-binding-checking)
+を consume するだけで per-point task を own / create しない。その guard に違反する
+chain は引き続き
 `checker.type.external.mode_expansion_payload` を出す。task 50 は active
 fail slice を 1 つ追加する: resolver declaration/symbol collection がすでに `SymbolEnv`
 に入れた same-module attribute symbol は builtin reserve type payload に attach してよく、

@@ -286,8 +286,21 @@ attribute-free, and the terminal RHS is exactly builtin `set` / `object`. The
 producer carries an AST-derived traversal budget equal to the number of source
 mode definitions; that budget is a resource guard, not a semantic chain-length
 limit. Chains that violate those structural guards remain on the
-missing-expansion / extraction-gap path. Task 75 fixes the forward-reference
-boundary for this family: if a reserve head names a local mode before that
+missing-expansion / extraction-gap path.
+
+Task 74 is the sole live owner of the structural task-creation rule across
+AST-bounded chain depth, builtin `set`/`object` terminals, the existing
+equality, pre-desugaring inequality, right-expected membership,
+normalized-reflexive assertion, and same-symbol asserted-head consumers, and
+one/two reserve bindings with shared/distinct written ranges. Completed point
+matrices are regression-only guards, not owners or precedents for another
+structural task. Their semantic and provenance ownership remains with Tasks
+152/153, 164-169, 186/187, and their relation-specific descendants. Another
+point in this product creates no task; a changed semantic dimension or guard
+requires separate authority. See the [Step 5B.1 contract](../../task_contracts/en/STEP5B1-STRUCTURAL-RULE-CONSOLIDATION.md).
+
+Task 75 fixes the forward-reference boundary for this family: if a reserve
+head names a local mode before that
 mode declaration item is active, lower-stage frontend/resolver processing
 rejects the type expression with
 `type_elaboration.lower_stage.frontend:malformed_type_expression` before any

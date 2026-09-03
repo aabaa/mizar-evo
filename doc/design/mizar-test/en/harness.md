@@ -1960,10 +1960,10 @@ same-module local-mode chains when the reserve head expands to a preceding
 same-module no-argument local mode whose own preceding source definition has an
 accepted task-55 bare builtin RHS expansion. Task 72 extends the pass slice to
 two bare local-mode dependency edges, and task 73 extends it to three edges,
-when the terminal expansion is builtin `set` / `object`. Task 74 replaces that
-temporary depth guard with an AST-bounded structural rule for bare same-module
-no-argument local-mode chains whose terminal expansion is exactly builtin
-`set` / `object`; chains that violate those structural guards still report
+when the terminal expansion is builtin `set` / `object`. The harness consumes
+Task 74's [checker-owned structural rule](../../mizar-checker/en/type_checker.md#task-8-declaration-and-local-binding-checking)
+without owning or creating per-point tasks; chains that violate its guards
+still report
 `checker.type.external.mode_expansion_payload`. Task 50 adds one
 active fail slice: a same-module attribute symbol that resolver declaration/
 symbol collection has already put in `SymbolEnv` may be attached to the builtin
