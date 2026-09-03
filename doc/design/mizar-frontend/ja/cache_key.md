@@ -3,7 +3,7 @@
 > 正本は英語です。英語版: [../en/cache_key.md](../en/cache_key.md)。
 
 状態: task 19 で実装済み。task 20 の parser lexing plan、source-position-aware
-operator metadata、および Step 5A.5 local notation alias activation に合わせて更新済み。
+operator metadata、および Step 5A.6 dependent-mode parsing に合わせて更新済み。
 
 ## 目的
 
@@ -225,3 +225,11 @@ invalidation を v2 から v3 へ進めることを要求する。同じ source 
 cache-key shape、storage policy、frontend public API は変更しない。parser は既存の raw
 `NotationAlias` tree を consume し続けるため、`MIZAR_PARSER_CACHE_KEY_VERSION` は
 `mizar-parser/surface-ast-v5` のままである。
+
+## Step 5A.6 Dependent-Mode Cache Assessment
+
+[central contract](../../task_contracts/ja/STEP5A6-G6-DEPENDENT-MODE-USE.md) に従い、同じ
+token と parser input に対して unbracketed type argument が外側の follow token を保持し、
+recovery を回避するため、v5 から v6 への invalidation を行う。v3 token namespace、key
+shape、storage policy、frontend public API は不変。focused test は historical v5 reuse を
+reject する。

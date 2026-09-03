@@ -243,3 +243,11 @@ completion state は contract が所有する。
 `then` 配下を含む omitted-justification compact statement を parser recovery ではなく
 complete AST として生成する。seam API と token adaptation は不変であり、completion
 state は contract が所有する。
+
+## Step 5A.6 dependent-mode parser version
+
+[central contract](../../task_contracts/ja/STEP5A6-G6-DEPENDENT-MODE-USE.md) に従い、同じ
+token と parser input が recovery diagnostic なしに外側の type-expression follow token を
+保持するため、`MIZAR_PARSER_CACHE_KEY_VERSION` を v5 から v6 へ進める。seam と token
+adaptation API は不変。real-source frontend regression は exact G6 source 2件を diagnostic
+なしで parse し、final closure state は contract が所有する。

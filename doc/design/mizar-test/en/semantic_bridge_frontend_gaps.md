@@ -24,7 +24,7 @@ be closed by weakening the corpus expectations.
 | G3 | closed by 5A.4 (1 ledger row) | Omitted-justification compact statements now parse beneath `[then] linkable_statement`; see the [task contract](../../task_contracts/en/STEP5A4-G3-THEN-LINKING.md). Semantic activation remains with 5C.9. |
 | G4 | medium | `synonym`/`antonym` notation declarations fail to parse even with identifier spellings on both patterns. |
 | G5 | closed by 5A.1 | Root-reachable AST validation removes the `term qua <structure type>` SurfaceAstBuilder panic; see the [task contract](../../task_contracts/en/STEP5A1-G5-QUA-STRUCTURE.md). Semantic activation remains owned by 5C. |
-| G6 | medium | Argument-bearing local dependent-mode use (`QMode of A`) fails in binder/type positions although the declaration parses (imported argument-bearing modes are handled by the existing task-68 boundary). |
+| G6 | closed by 5A.6 (2 ledger rows) | Argument-bearing local dependent-mode use now preserves enclosing type/formula tokens; see the [task contract](../../task_contracts/en/STEP5A6-G6-DEPENDENT-MODE-USE.md). Task 68's same-module reserve extraction and imported Tasks 79/82 remain unchanged. |
 | G7 | low (worked around) | Empty justifications are accepted for `existence;`/`uniqueness;` but rejected (`malformed_justification`) for `coherence;`, `symmetry;`, `reducibility;`, `sethood;`, against A.15. The corpus works around it with explicit proof blocks; the inconsistency still needs an owner decision. |
 | G9 | medium | Pattern positions naming an already-active notation spelling (redefine pred, second definition of the same spelling, synonym original pattern) fail to parse. |
 

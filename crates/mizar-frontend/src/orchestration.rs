@@ -982,7 +982,69 @@ mod tests {
     }
 
     #[test]
-    fn real_parser_frontend_merges_nested_missing_end_and_uses_parser_v5_cache_key() {
+    fn step5a6_exact_g6_sources_parse_clean_through_frontend() {
+        const DEPENDENT_MODE: &str = include_str!(concat!(
+            env!("CARGO_MANIFEST_DIR"),
+            "/../../tests/miz/pass/modes/",
+            "pass_type_elaboration_mode_dependent_of_params_001.miz"
+        ));
+        const DEPENDENT_RETURN: &str = include_str!(concat!(
+            env!("CARGO_MANIFEST_DIR"),
+            "/../../tests/miz/pass/functors/",
+            "pass_type_elaboration_func_dependent_return_type_001.miz"
+        ));
+        let fixture = PackageFixture::new();
+        let frontend = frontend_for_fixture(&fixture, MizarParserSeam);
+
+        for (relative, source) in [
+            ("src/dependent_mode.miz", DEPENDENT_MODE),
+            ("src/dependent_return.miz", DEPENDENT_RETURN),
+        ] {
+            fixture.write(relative, source);
+            let output = frontend
+                .run(
+                    fixture.request(relative),
+                    &InMemorySessionIdAllocator::new(),
+                )
+                .expect("the exact G6 source should run through the frontend");
+            let replay = frontend
+                .run(
+                    fixture.request(relative),
+                    &InMemorySessionIdAllocator::new(),
+                )
+                .expect("the exact G6 source should replay through the frontend");
+
+            assert!(
+                output.diagnostics.is_empty(),
+                "the exact G6 source {relative} should parse clean: {:#?}",
+                output.diagnostics
+            );
+            assert!(
+                output.ast.is_some(),
+                "the exact G6 source should keep an AST"
+            );
+            let parser_version = output
+                .cache_keys
+                .ast
+                .as_ref()
+                .expect("the exact G6 AST should have a cache key")
+                .parser_version
+                .version
+                .as_ref();
+            assert_eq!(parser_version, MIZAR_PARSER_CACHE_KEY_VERSION);
+            assert_eq!(parser_version, "mizar-parser/surface-ast-v6");
+            assert_ne!(
+                parser_version, "mizar-parser/surface-ast-v5",
+                "the corrected G6 AST must not reuse the historical v5 namespace"
+            );
+            assert_eq!(output.ast, replay.ast);
+            assert_eq!(output.diagnostics, replay.diagnostics);
+            assert_eq!(output.cache_keys, replay.cache_keys);
+        }
+    }
+
+    #[test]
+    fn real_parser_frontend_merges_nested_missing_end_and_uses_parser_v6_cache_key() {
         let fixture = PackageFixture::new();
         fixture.write(
             "src/nested_missing_end.miz",
@@ -1021,8 +1083,8 @@ mod tests {
             MIZAR_PARSER_CACHE_KEY_VERSION
         );
         assert_eq!(
-            MIZAR_PARSER_CACHE_KEY_VERSION, "mizar-parser/surface-ast-v5",
-            "Step 5A.4 parser output semantics must not reuse the v4 AST cache namespace"
+            MIZAR_PARSER_CACHE_KEY_VERSION, "mizar-parser/surface-ast-v6",
+            "Step 5A.6 parser output semantics must not reuse the v5 AST cache namespace"
         );
     }
 
@@ -1097,7 +1159,7 @@ mod tests {
                 .parser_version
                 .version
                 .as_ref(),
-            "mizar-parser/surface-ast-v5"
+            "mizar-parser/surface-ast-v6"
         );
         assert_eq!(target.ast, target_replay.ast);
         assert_eq!(target.diagnostics, target_replay.diagnostics);
@@ -1156,7 +1218,7 @@ mod tests {
                 .parser_version
                 .version
                 .as_ref(),
-            "mizar-parser/surface-ast-v5"
+            "mizar-parser/surface-ast-v6"
         );
         assert_eq!(control.ast, control_replay.ast);
         assert_eq!(control.diagnostics, control_replay.diagnostics);

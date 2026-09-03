@@ -2186,3 +2186,16 @@ spelling を分類できますが、parser はその original を resolve せず
 を選択せず、alias semantics を割り当てず、synonym / antonym の fact も作りません。従って
 parser cache version と cache-key ownership は不変であり、この producer-side fix の owner は
 `mizar-lexer` です。
+
+## Step 5A.6 unbracketed type-argument follow boundary
+
+[central contract](../../task_contracts/ja/STEP5A6-G6-DEPENDENT-MODE-USE.md) に従い、
+`of` / `over` argument は既存の `TypeArguments` node 内に保持し、private かつ
+context-local な follow rule が外側の `by`、`proof`、`->`、`equals`、`means`、`st`、
+`holds`、formula connective を消費せずに残す。この rule は次の argument の前と、
+completed argument の後の両方で使う。comma は argument separator のままであり、generic
+term-list boundary、comprehension-generator separator、structure-field opener は変更しない。
+
+parser が受け取るのは generic `UserSymbol` のままで、mode resolution、arity check、semantic
+付与は行わない。malformed first/trailing argument と missing comma は既存の fail-closed
+diagnostic / recovery node を維持する。AST kind、public API、diagnostic vocabulary は不変。

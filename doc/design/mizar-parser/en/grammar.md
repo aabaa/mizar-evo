@@ -2331,3 +2331,18 @@ the parser does not resolve that original, choose a symbol kind or overload,
 assign alias semantics, or create synonym/antonym facts. Parser cache version
 and cache-key ownership therefore remain unchanged; this producer-side fix is
 owned by `mizar-lexer`.
+
+## Step 5A.6 Unbracketed Type-Argument Follow Boundary
+
+The [central contract](../../task_contracts/en/STEP5A6-G6-DEPENDENT-MODE-USE.md)
+keeps `of`/`over` arguments inside the existing `TypeArguments` node while a
+private, context-local follow rule leaves the enclosing `by`, `proof`, `->`,
+`equals`, `means`, `st`, `holds`, or formula connective unconsumed. The rule is
+checked both before another argument and after a completed argument. Comma
+remains the argument separator, and the generic term-list boundary,
+comprehension-generator separator, and structure-field opener are unchanged.
+
+The parser still receives a generic `UserSymbol`; it does not resolve a mode,
+check arity, or assign semantics. Existing malformed first/trailing arguments
+and missing commas retain fail-closed diagnostics and recovery nodes. No AST
+kind, public API, or diagnostic vocabulary changes.

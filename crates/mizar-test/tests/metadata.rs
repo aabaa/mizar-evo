@@ -27,6 +27,7 @@ use mizar_test::{
 
 static NEXT_ID: AtomicUsize = AtomicUsize::new(0);
 const TEMPLATE_ARGUMENTS_REQUIREMENT_ID: &str = "spec.en.syntax.template_arguments.parser";
+const TYPE_EXPRESSIONS_REQUIREMENT_ID: &str = "spec.en.03.type_expressions.parser";
 const ALGORITHMS_CLAIMS_REQUIREMENT_ID: &str = "spec.en.20.algorithms_claims.parser";
 const ALGORITHM_CONTROL_FLOW_REQUIREMENT_ID: &str = "spec.en.20.algorithm_control_flow.parser";
 const ALGORITHM_VERIFICATION_REQUIREMENT_ID: &str = "spec.en.20.algorithm_verification.parser";
@@ -5446,6 +5447,35 @@ fn repository_type_elaboration_runner_executes_active_source_derived_seeds() {
 fn repository_parse_only_cases_separate_active_runner_seeds_from_future_metadata() {
     let plan = repository_plan();
 
+    let dependent_mode_pass = plan
+        .cases
+        .iter()
+        .find(|case| case.id.0 == "pass_parser_local_dependent_mode_use_001")
+        .expect("dependent-mode parse-only pass seed should be discovered");
+    assert_eq!(dependent_mode_pass.expectation.kind, TestKind::Pass);
+    assert_eq!(dependent_mode_pass.expectation.stage, Stage::ParseOnly);
+    assert_eq!(
+        dependent_mode_pass.expectation.expected_outcome,
+        ExpectedOutcome::Pass
+    );
+    assert_eq!(
+        dependent_mode_pass.expectation.expected_phase,
+        Some(PipelinePhase::Parse)
+    );
+    assert_eq!(
+        dependent_mode_pass
+            .expectation
+            .spec_refs
+            .iter()
+            .map(|spec_ref| spec_ref.0.as_str())
+            .collect::<Vec<_>>(),
+        vec![TYPE_EXPRESSIONS_REQUIREMENT_ID]
+    );
+    assert_eq!(
+        dependent_mode_pass.expectation.tags,
+        vec!["active_parse_only".to_owned()]
+    );
+
     let pass_case = plan
         .cases
         .iter()
@@ -5732,6 +5762,7 @@ fn repository_parse_only_cases_separate_active_runner_seeds_from_future_metadata
             "pass_parser_import_items_001",
             "pass_parser_inline_definitions_001",
             "pass_parser_justifications_001",
+            "pass_parser_local_dependent_mode_use_001",
             "pass_parser_local_notation_activation_001",
             "pass_parser_minimal_token_stream_001",
             "pass_parser_mode_definitions_001",
@@ -5778,6 +5809,29 @@ fn repository_parse_only_cases_separate_active_runner_seeds_from_future_metadata
             ),
             PathBuf::from(
                 "tests/miz/pass/parser/pass_parser_local_notation_activation_001.expect.toml"
+            ),
+        ]
+    );
+
+    let type_expressions_requirement = plan
+        .manifest
+        .requirements
+        .iter()
+        .find(|requirement| requirement.id.0 == TYPE_EXPRESSIONS_REQUIREMENT_ID)
+        .expect("type-expression parse-only requirement should exist");
+    assert_eq!(
+        type_expressions_requirement.tests,
+        vec![
+            PathBuf::from("tests/miz/pass/parser/pass_parser_type_expressions_001.expect.toml"),
+            PathBuf::from("tests/miz/pass/parser/pass_parser_primary_terms_001.expect.toml"),
+            PathBuf::from(
+                "tests/miz/fail/parser/fail_parser_type_expression_malformed_001.expect.toml"
+            ),
+            PathBuf::from(
+                "tests/miz/fail/parser/fail_parser_type_expression_missing_bracket_001.expect.toml"
+            ),
+            PathBuf::from(
+                "tests/miz/pass/parser/pass_parser_local_dependent_mode_use_001.expect.toml"
             ),
         ]
     );
@@ -6242,8 +6296,8 @@ fn repository_parse_only_runner_executes_active_minimal_parser_seeds() {
     let report = run_parse_only_corpus(&config).unwrap();
 
     assert_eq!(report.error_count(), 0, "{:#?}", report.diagnostics);
-    assert_eq!(report.results.len(), 106);
-    assert_eq!(report.passed_count(), 106);
+    assert_eq!(report.results.len(), 107);
+    assert_eq!(report.passed_count(), 107);
     assert_eq!(report.failed_count(), 0);
     assert!(report.results.iter().any(|result| {
         result.id.0 == "pass_parser_algorithm_control_flow_001"
@@ -6286,6 +6340,10 @@ fn repository_parse_only_runner_executes_active_minimal_parser_seeds() {
     }));
     assert!(report.results.iter().any(|result| {
         result.id.0 == "pass_parser_local_notation_activation_001"
+            && result.actual_diagnostic_codes.is_empty()
+    }));
+    assert!(report.results.iter().any(|result| {
+        result.id.0 == "pass_parser_local_dependent_mode_use_001"
             && result.actual_diagnostic_codes.is_empty()
     }));
     assert!(report.results.iter().any(|result| {
@@ -9646,8 +9704,8 @@ fn parse_only_cli_reports_active_runner_summary() {
         String::from_utf8_lossy(&output.stderr)
     );
     let stdout = String::from_utf8_lossy(&output.stdout);
-    assert!(stdout.contains("parse-only cases: 106"));
-    assert!(stdout.contains("passed: 106"));
+    assert!(stdout.contains("parse-only cases: 107"));
+    assert!(stdout.contains("passed: 107"));
     assert!(stdout.contains("failed: 0"));
 }
 

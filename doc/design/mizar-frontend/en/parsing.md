@@ -364,3 +364,12 @@ moves `MIZAR_PARSER_CACHE_KEY_VERSION` from v4 to v5. The same token stream now
 produces a complete omitted-justification compact statement, including beneath
 `then`, instead of parser recovery. The seam API and token adaptation remain
 unchanged; completion state is contract-owned.
+
+## Step 5A.6 Dependent-Mode Parser Version
+
+The [central contract](../../task_contracts/en/STEP5A6-G6-DEPENDENT-MODE-USE.md)
+moves `MIZAR_PARSER_CACHE_KEY_VERSION` from v5 to v6 because the same tokens and
+parser inputs now retain an outer type-expression follow token without a
+recovery diagnostic. The seam and token-adaptation APIs remain unchanged. A
+real-source frontend regression parses both exact G6 sources without
+diagnostics; final closure state remains contract-owned.

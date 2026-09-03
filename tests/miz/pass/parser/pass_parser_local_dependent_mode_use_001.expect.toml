@@ -1,0 +1,13 @@
+schema_version = 1
+id = "pass_parser_local_dependent_mode_use_001"
+kind = "pass"
+stage = "parse_only"
+domain = "parser.dependent_mode"
+source = "pass_parser_local_dependent_mode_use_001.miz"
+expected_outcome = "pass"
+expected_phase = "parse"
+diagnostic_codes = []
+tags = ["active_parse_only"]
+spec_refs = [
+  "spec.en.03.type_expressions.parser",
+]

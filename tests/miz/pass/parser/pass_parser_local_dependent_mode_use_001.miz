@@ -1,0 +1,17 @@
+definition
+  let X be set;
+  mode ParamModeDef: ParamMode of X is set;
+end;
+
+theorem ParamModeUse: for X being set for y being ParamMode of X holds y = y
+proof
+  let y be ParamMode of X;
+  thus y = y;
+end;
+
+definition
+  let X be set;
+  func ParamModeFunctor: idembox X -> ParamMode of X means it = X;
+  existence;
+  uniqueness;
+end;

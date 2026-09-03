@@ -14,7 +14,7 @@
    [task contract](../../task_contracts/en/STEP5A4-G3-THEN-LINKING.md).
 2. [x] **Step 5A.5 / G4** — complete with no parser grammar change; see the
    [task contract](../../task_contracts/en/STEP5A5-G4-NOTATION-ALIASES.md).
-3. [~] **Step 5A.6 / G6** — frozen for test-first implementation; see the
+3. [x] **Step 5A.6 / G6** — implemented; see the
    [task contract](../../task_contracts/en/STEP5A6-G6-DEPENDENT-MODE-USE.md).
 
 ## Module Implementation

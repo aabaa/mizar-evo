@@ -679,6 +679,7 @@ tests = [
   "tests/miz/pass/parser/pass_parser_primary_terms_001.expect.toml",
   "tests/miz/fail/parser/fail_parser_type_expression_malformed_001.expect.toml",
   "tests/miz/fail/parser/fail_parser_type_expression_missing_bracket_001.expect.toml",
+  "tests/miz/pass/parser/pass_parser_local_dependent_mode_use_001.expect.toml",
 ]
 
 [[requirement]]

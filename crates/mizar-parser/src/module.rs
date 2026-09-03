@@ -10020,7 +10020,8 @@ impl Parser {
         let mut saw_argument = false;
         let stop_before_comprehension_generator =
             matches!(policy, Some(RequiredTypePolicy::ComprehensionGenerator));
-        while cursor < self.request.tokens.len() && !self.is_term_argument_list_boundary_at(cursor)
+        while cursor < self.request.tokens.len()
+            && !self.is_unbracketed_type_argument_follow_at(cursor)
         {
             if stop_before_field_list && self.is_structure_field_list_opener_at(cursor) {
                 if expecting_argument {
@@ -10067,7 +10068,7 @@ impl Parser {
                     || comprehension_generator_separator
                 {
                     break;
-                } else if !self.is_term_argument_list_boundary_at(cursor) {
+                } else if !self.is_unbracketed_type_argument_follow_at(cursor) {
                     self.diagnose_malformed_term_expression(
                         cursor,
                         "expected `,` between term arguments",
@@ -16626,6 +16627,16 @@ impl Parser {
             || self.is_reserved_symbol_at(position, "]")
             || self.is_reserved_symbol_at(position, "}")
             || self.is_item_start_at(position)
+    }
+
+    fn is_unbracketed_type_argument_follow_at(&self, position: usize) -> bool {
+        self.is_term_argument_list_boundary_at(position)
+            || self.is_reserved_word_at(position, "by")
+            || self.is_reserved_word_at(position, "proof")
+            || self.is_reserved_symbol_at(position, "->")
+            || self.is_reserved_word_at(position, "equals")
+            || self.is_reserved_word_at(position, "means")
+            || self.is_formula_syntax_boundary_at(position)
     }
 
     fn is_comprehension_generator_separator_at(&self, position: usize) -> bool {

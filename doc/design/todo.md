@@ -412,7 +412,7 @@ stay binding and must not be weakened.
    item without semantic activation. Root-cause ownership and evidence:
    [STEP5A5-G4-NOTATION-ALIASES](./task_contracts/en/STEP5A5-G4-NOTATION-ALIASES.md).
    Deps: completed 5A.3 for symbolic-spelling cases.
-6. [ ] **5A.6 (G6)** — `mizar-parser`/`mizar-frontend`: accept
+6. [x] **5A.6 (G6)** — `mizar-parser`/`mizar-frontend`: accept
    argument-bearing local dependent-mode use (`QMode of A`) in
    binder/type positions; the declaration already parses, while task 68 owns
    the same-module reserve extraction boundary and imported provenance remains

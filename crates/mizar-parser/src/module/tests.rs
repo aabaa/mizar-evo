@@ -19617,6 +19617,210 @@ fn source_id(byte: u8) -> SourceId {
         .unwrap()
 }
 
+#[test]
+fn step5a6_unbracketed_type_argument_follow_set_preserves_ownership() {
+    let source_id = source_id(251);
+    let boundary_cases: &[&[(&str, ParserTokenKind)]] = &[
+        &[("by", ParserTokenKind::ReservedWord)],
+        &[("proof", ParserTokenKind::ReservedWord)],
+        &[("->", ParserTokenKind::ReservedSymbol)],
+        &[("equals", ParserTokenKind::ReservedWord)],
+        &[("means", ParserTokenKind::ReservedWord)],
+        &[("st", ParserTokenKind::ReservedWord)],
+        &[("holds", ParserTokenKind::ReservedWord)],
+        &[("&", ParserTokenKind::ReservedSymbol)],
+        &[
+            ("&", ParserTokenKind::ReservedSymbol),
+            ("...", ParserTokenKind::ReservedSymbol),
+            ("&", ParserTokenKind::ReservedSymbol),
+        ],
+        &[("or", ParserTokenKind::ReservedWord)],
+        &[
+            ("or", ParserTokenKind::ReservedWord),
+            ("...", ParserTokenKind::ReservedSymbol),
+            ("or", ParserTokenKind::ReservedWord),
+        ],
+        &[("implies", ParserTokenKind::ReservedWord)],
+        &[("iff", ParserTokenKind::ReservedWord)],
+    ];
+
+    for boundary in boundary_cases {
+        let mut entries = vec![
+            ("T", ParserTokenKind::UserSymbol),
+            ("of", ParserTokenKind::ReservedWord),
+            ("a", ParserTokenKind::Identifier),
+        ];
+        entries.extend_from_slice(boundary);
+        let mut parser = crate::grammar::Parser::new(ParseRequest::new(
+            source_id,
+            Edition::new("2026"),
+            token_sequence(source_id, &entries),
+            Vec::new(),
+        ));
+        parser.add_token_nodes();
+        let parsed = parser
+            .parse_type_expression_at(0)
+            .expect("the dependent-mode type expression should parse");
+        assert_eq!(
+            parsed.next_position, 3,
+            "the type expression must leave its outer follow unconsumed: {boundary:?}"
+        );
+        assert!(parser.diagnostics.is_empty(), "{:#?}", parser.diagnostics);
+        let ast = parser.events.finish(None, Some(parsed.id));
+        let arguments = single_node(&ast, |kind| matches!(kind, SurfaceNodeKind::TypeArguments));
+        assert_eq!(subtree_token_texts(&ast, arguments), vec!["of", "a"]);
+        assert_eq!(
+            &ast.token_texts()[3..],
+            &boundary.iter().map(|(text, _)| *text).collect::<Vec<_>>(),
+            "the outer follow tokens must remain in the source-preserving AST"
+        );
+    }
+
+    for continuation in [
+        (",", ParserTokenKind::ReservedSymbol),
+        ("b", ParserTokenKind::Identifier),
+    ] {
+        let parser = crate::grammar::Parser::new(ParseRequest::new(
+            source_id,
+            Edition::new("2026"),
+            token_sequence(
+                source_id,
+                &[
+                    ("T", ParserTokenKind::UserSymbol),
+                    ("of", ParserTokenKind::ReservedWord),
+                    ("a", ParserTokenKind::Identifier),
+                    continuation,
+                ],
+            ),
+            Vec::new(),
+        ));
+        assert!(
+            !parser.is_unbracketed_type_argument_follow_at(3),
+            "comma and a possible next term must remain inside the argument-list grammar"
+        );
+    }
+
+    for boundary in [
+        ("holds", ParserTokenKind::ReservedWord),
+        ("means", ParserTokenKind::ReservedWord),
+    ] {
+        let parser = crate::grammar::Parser::new(ParseRequest::new(
+            source_id,
+            Edition::new("2026"),
+            token_sequence(
+                source_id,
+                &[
+                    ("T", ParserTokenKind::UserSymbol),
+                    ("of", ParserTokenKind::ReservedWord),
+                    ("a", ParserTokenKind::Identifier),
+                    boundary,
+                ],
+            ),
+            Vec::new(),
+        ));
+        assert!(
+            !parser.is_term_argument_list_boundary_at(3),
+            "the shared term-list boundary must not be widened"
+        );
+    }
+}
+
+#[test]
+fn step5a6_parses_local_dependent_mode_uses_before_holds_and_means() {
+    let source_id = source_id(252);
+    let output = parse(ParseRequest::new(
+        source_id,
+        Edition::new("2026"),
+        token_sequence(
+            source_id,
+            &[
+                ("theorem", ParserTokenKind::ReservedWord),
+                ("Dependent", ParserTokenKind::Identifier),
+                (":", ParserTokenKind::ReservedSymbol),
+                ("for", ParserTokenKind::ReservedWord),
+                ("X", ParserTokenKind::Identifier),
+                ("being", ParserTokenKind::ReservedWord),
+                ("set", ParserTokenKind::ReservedWord),
+                ("for", ParserTokenKind::ReservedWord),
+                ("y", ParserTokenKind::Identifier),
+                ("being", ParserTokenKind::ReservedWord),
+                ("ParamMode", ParserTokenKind::UserSymbol),
+                ("of", ParserTokenKind::ReservedWord),
+                ("X", ParserTokenKind::Identifier),
+                ("holds", ParserTokenKind::ReservedWord),
+                ("y", ParserTokenKind::Identifier),
+                ("=", ParserTokenKind::ReservedSymbol),
+                ("y", ParserTokenKind::Identifier),
+                ("proof", ParserTokenKind::ReservedWord),
+                ("let", ParserTokenKind::ReservedWord),
+                ("y", ParserTokenKind::Identifier),
+                ("be", ParserTokenKind::ReservedWord),
+                ("ParamMode", ParserTokenKind::UserSymbol),
+                ("of", ParserTokenKind::ReservedWord),
+                ("X", ParserTokenKind::Identifier),
+                (";", ParserTokenKind::ReservedSymbol),
+                ("thus", ParserTokenKind::ReservedWord),
+                ("y", ParserTokenKind::Identifier),
+                ("=", ParserTokenKind::ReservedSymbol),
+                ("y", ParserTokenKind::Identifier),
+                (";", ParserTokenKind::ReservedSymbol),
+                ("end", ParserTokenKind::ReservedWord),
+                (";", ParserTokenKind::ReservedSymbol),
+                ("definition", ParserTokenKind::ReservedWord),
+                ("let", ParserTokenKind::ReservedWord),
+                ("X", ParserTokenKind::Identifier),
+                ("be", ParserTokenKind::ReservedWord),
+                ("set", ParserTokenKind::ReservedWord),
+                (";", ParserTokenKind::ReservedSymbol),
+                ("func", ParserTokenKind::ReservedWord),
+                ("ParamModeFunctor", ParserTokenKind::Identifier),
+                (":", ParserTokenKind::ReservedSymbol),
+                ("idembox", ParserTokenKind::UserSymbol),
+                ("X", ParserTokenKind::Identifier),
+                ("->", ParserTokenKind::ReservedSymbol),
+                ("ParamMode", ParserTokenKind::UserSymbol),
+                ("of", ParserTokenKind::ReservedWord),
+                ("X", ParserTokenKind::Identifier),
+                ("means", ParserTokenKind::ReservedWord),
+                ("it", ParserTokenKind::ReservedWord),
+                ("=", ParserTokenKind::ReservedSymbol),
+                ("X", ParserTokenKind::Identifier),
+                (";", ParserTokenKind::ReservedSymbol),
+                ("existence", ParserTokenKind::ReservedWord),
+                (";", ParserTokenKind::ReservedSymbol),
+                ("uniqueness", ParserTokenKind::ReservedWord),
+                (";", ParserTokenKind::ReservedSymbol),
+                ("end", ParserTokenKind::ReservedWord),
+                (";", ParserTokenKind::ReservedSymbol),
+            ],
+        ),
+        Vec::new(),
+    ));
+
+    assert!(
+        output.diagnostics.is_empty(),
+        "dependent-mode type arguments should preserve outer grammar tokens: {:#?}",
+        output.diagnostics
+    );
+    let ast = output.ast.expect("dependent-mode uses should keep an AST");
+    let arguments = ast
+        .nodes()
+        .iter()
+        .filter(|node| matches!(node.kind, SurfaceNodeKind::TypeArguments))
+        .collect::<Vec<_>>();
+    assert_eq!(arguments.len(), 3);
+    for arguments in arguments {
+        assert_eq!(subtree_token_texts(&ast, arguments), vec!["of", "X"]);
+        assert_eq!(
+            structural_children(&ast, arguments)
+                .iter()
+                .filter(|child| matches!(child.kind, SurfaceNodeKind::TermExpression))
+                .count(),
+            1
+        );
+    }
+}
+
 fn snapshot_id(byte: u8) -> BuildSnapshotId {
     let hex = format!("{byte:02x}").repeat(Hash::BYTE_LEN);
     BuildSnapshotId::from_published_schema_str(&format!("mizar-session-build-snapshot-v1:{hex}"))

@@ -17,7 +17,7 @@ pub const DEFAULT_PARSER_CACHE_KEY_VERSION: &str = "mizar-frontend/parser-seam/c
 /// Cache-key version used by the stub parser seam.
 pub const STUB_PARSER_CACHE_KEY_VERSION: &str = "mizar-frontend/stub-parser/no-ast-v1";
 /// Cache-key version used by the real Mizar parser seam.
-pub const MIZAR_PARSER_CACHE_KEY_VERSION: &str = "mizar-parser/surface-ast-v5";
+pub const MIZAR_PARSER_CACHE_KEY_VERSION: &str = "mizar-parser/surface-ast-v6";
 
 /// Parser request containing a token stream and parser inputs.
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -730,7 +730,7 @@ mod tests {
     }
 
     #[test]
-    fn real_parser_seam_accepts_then_compact_without_justification_under_v5() {
+    fn real_parser_seam_accepts_then_compact_without_justification_under_v6() {
         let source_id = source_id(34);
         let tokens = token_stream(
             source_id,
@@ -793,7 +793,64 @@ mod tests {
         );
         assert_eq!(
             seam.cache_key_version().version.as_ref(),
-            "mizar-parser/surface-ast-v5"
+            "mizar-parser/surface-ast-v6"
+        );
+    }
+
+    #[test]
+    fn real_parser_seam_accepts_dependent_mode_follow_under_v6() {
+        let source_id = source_id(35);
+        let tokens = token_stream(
+            source_id,
+            vec![
+                token(source_id, TokenKind::ReservedWord, "theorem", 0, 7),
+                token(source_id, TokenKind::Identifier, "T", 8, 9),
+                token(source_id, TokenKind::ReservedSymbol, ":", 9, 10),
+                token(source_id, TokenKind::ReservedWord, "for", 11, 14),
+                token(source_id, TokenKind::Identifier, "X", 15, 16),
+                token(source_id, TokenKind::ReservedWord, "being", 17, 22),
+                token(source_id, TokenKind::ReservedWord, "set", 23, 26),
+                token(source_id, TokenKind::ReservedWord, "for", 27, 30),
+                token(source_id, TokenKind::Identifier, "y", 31, 32),
+                token(source_id, TokenKind::ReservedWord, "being", 33, 38),
+                token(source_id, TokenKind::UserSymbol, "ParamMode", 39, 48),
+                token(source_id, TokenKind::ReservedWord, "of", 49, 51),
+                token(source_id, TokenKind::Identifier, "X", 52, 53),
+                token(source_id, TokenKind::ReservedWord, "holds", 54, 59),
+                token(source_id, TokenKind::Identifier, "y", 60, 61),
+                token(source_id, TokenKind::ReservedSymbol, "=", 62, 63),
+                token(source_id, TokenKind::Identifier, "y", 64, 65),
+                token(source_id, TokenKind::ReservedSymbol, ";", 65, 66),
+            ],
+        );
+        let inputs = ParserInputs::new(
+            Edition::new("2026"),
+            OperatorFixityTable::empty(),
+            StringRequiredContext::None,
+        );
+        let seam = MizarParserSeam;
+
+        let output = seam.parse(ParseRequest::new(&tokens, inputs));
+
+        assert!(output.diagnostics.is_empty(), "{:#?}", output.diagnostics);
+        let ast = output
+            .ast
+            .expect("dependent-mode use should keep an AST through the real seam");
+        assert_eq!(
+            ast.nodes()
+                .iter()
+                .filter(|node| matches!(node.kind, SurfaceNodeKind::TypeArguments))
+                .count(),
+            1
+        );
+        assert_eq!(
+            seam.cache_key_version().version.as_ref(),
+            "mizar-parser/surface-ast-v6"
+        );
+        assert_ne!(
+            seam.cache_key_version().version.as_ref(),
+            "mizar-parser/surface-ast-v5",
+            "dependent-mode follow semantics must not reuse the historical v5 namespace"
         );
     }
 

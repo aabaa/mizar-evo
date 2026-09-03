@@ -3,8 +3,7 @@
 > Canonical language: English. Japanese companion: [../ja/cache_key.md](../ja/cache_key.md).
 
 Status: implemented by task 19, updated for the task-20 parser lexing plan,
-source-position-aware operator metadata, and Step 5A.5 local notation alias
-activation.
+source-position-aware operator metadata, and Step 5A.6 dependent-mode parsing.
 
 ## Purpose
 
@@ -296,3 +295,11 @@ semicolon. This is a namespace invalidation only; cache-key shapes, storage
 policy, and the frontend public API do not change. `MIZAR_PARSER_CACHE_KEY_VERSION`
 remains `mizar-parser/surface-ast-v5` because the parser continues consuming the
 existing raw `NotationAlias` tree.
+
+## Step 5A.6 Dependent-Mode Cache Assessment
+
+The [central contract](../../task_contracts/en/STEP5A6-G6-DEPENDENT-MODE-USE.md)
+requires v5-to-v6 invalidation because unbracketed type arguments now preserve
+their enclosing follow token and avoid recovery for identical tokens and
+parser inputs. The v3 token namespace, key shapes, storage policy, and public
+frontend API do not change. Focused tests reject historical v5 reuse.
