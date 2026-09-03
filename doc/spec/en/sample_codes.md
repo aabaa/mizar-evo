@@ -4,7 +4,9 @@
 
 These examples are illustrative library sketches. They are intended to show how
 the surface syntax from the specification fits together; omitted proofs are
-written as `...`, and omitted correctness obligations are shown only by name.
+written as `...`. A bare correctness name such as `coherence;` uses the legal
+empty-justification form and leaves the unchanged obligation to no-hint
+verification; it is not an assertion that the obligation is automatically true.
 
 ## Directory structure
 

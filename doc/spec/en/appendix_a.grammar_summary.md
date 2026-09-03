@@ -696,6 +696,7 @@ conditions                   ::= "that" proposition { "and" proposition } ;
 
 justification                ::= [ simple_justification ] | proof | computation_proof ;
 simple_justification         ::= "by" references ;
+(* The empty justification alternative is intentional; see Chapter 15 §15.8. *)
 references                   ::= reference { "," reference } ;
 reference                    ::= label_identifier [ template_args ]
                                | qualified_reference [ template_args ]

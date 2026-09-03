@@ -675,6 +675,7 @@ conditions                   ::= "that" proposition { "and" proposition } ;
 
 justification                ::= [ simple_justification ] | proof | computation_proof ;
 simple_justification         ::= "by" references ;
+(* 空justificationの選択肢は意図的です。第15章 §15.8を参照。 *)
 references                   ::= reference { "," reference } ;
 reference                    ::= label_identifier [ template_args ]
                                | qualified_reference [ template_args ]

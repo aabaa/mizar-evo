@@ -2,9 +2,11 @@
 
 > Canonical language: English. English canonical version: [../en/sample_codes.md](../en/sample_codes.md).
 
-これらの例は、library のスケッチを説明するためのものです。それらは、その方法を示すことを目的としています。
-仕様の表面構文は適合します。省略された証明は
-`...` と書かれ、省略された正確さの義務は名前のみで示されます。
+これらの例は、library のスケッチを説明するためのものです。仕様の表面構文を
+組み合わせる方法を示し、省略された証明は `...` と書きます。
+`coherence;` のような bare correctness name は正当な空 justification 形式であり、
+obligation を no-hint verification に残します。obligation が自動的に真になるという
+assertion ではありません。
 
 ## ディレクトリ構造
 
