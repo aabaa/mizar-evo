@@ -6,8 +6,9 @@ use mizar_session::{
     SourceRange,
 };
 use mizar_syntax::{
-    SkippedTokenReason, SurfaceFormulaConnective, SurfaceFormulaConstant, SurfaceNodeKind,
-    SurfaceOperatorAssociativity, SurfaceQuantifierKind, SyntaxDiagnosticCode, SyntaxRecoveryKind,
+    SkippedTokenReason, SurfaceBuilderNodeId, SurfaceFormulaConnective, SurfaceFormulaConstant,
+    SurfaceNodeKind, SurfaceOperatorAssociativity, SurfaceQuantifierKind, SyntaxDiagnosticCode,
+    SyntaxRecoveryKind,
 };
 
 #[test]
@@ -5496,6 +5497,7 @@ fn parser_recovers_task26_mode_definition_gaps() {
                 ("set", ParserTokenKind::ReservedWord),
                 (";", ParserTokenKind::ReservedSymbol),
                 ("sethood", ParserTokenKind::ReservedWord),
+                ("by", ParserTokenKind::ReservedWord),
                 (";", ParserTokenKind::ReservedSymbol),
                 ("mode", ParserTokenKind::ReservedWord),
                 ("LegacyMeans", ParserTokenKind::Identifier),
@@ -6316,7 +6318,7 @@ fn parser_recovers_task28_property_clause_gaps() {
         count_nodes(&ast, |kind| matches!(
             kind,
             SurfaceNodeKind::ErrorRecovery(SyntaxRecoveryKind::MissingProofStep)
-        )) >= 3,
+        )) >= 2,
         "missing property justifications should insert MissingProofStep recovery"
     );
     assert!(
@@ -19819,6 +19821,191 @@ fn step5a6_parses_local_dependent_mode_uses_before_holds_and_means() {
             1
         );
     }
+}
+
+fn run_step5a8_private_path(
+    entries: &[(&str, ParserTokenKind)],
+    parse: impl FnOnce(&mut crate::grammar::Parser) -> SurfaceBuilderNodeId,
+) -> (
+    mizar_syntax::SurfaceAst,
+    Vec<mizar_syntax::SyntaxDiagnostic>,
+) {
+    let source_id = source_id(253);
+    let mut parser = crate::grammar::Parser::new(ParseRequest::new(
+        source_id,
+        Edition::new("2026"),
+        token_sequence(source_id, entries),
+        Vec::new(),
+    ));
+    parser.add_token_nodes();
+    let node = parse(&mut parser);
+    let diagnostics = parser.diagnostics.clone();
+    let ast = parser.events.finish(None, Some(node));
+    (ast, diagnostics)
+}
+
+fn assert_step5a8_omitted_path(
+    entries: &[(&str, ParserTokenKind)],
+    parse: impl FnOnce(&mut crate::grammar::Parser) -> SurfaceBuilderNodeId,
+    expected_kind: impl Fn(&SurfaceNodeKind) -> bool,
+) {
+    let (ast, diagnostics) = run_step5a8_private_path(entries, parse);
+    assert!(
+        diagnostics.is_empty(),
+        "omitted path diagnostics: {diagnostics:#?}"
+    );
+    assert_eq!(count_nodes(&ast, expected_kind), 1);
+    assert_eq!(
+        count_nodes(&ast, |kind| matches!(
+            kind,
+            SurfaceNodeKind::ErrorRecovery(_)
+        )),
+        0,
+        "omitted justifications must not fabricate recovery nodes"
+    );
+    assert_eq!(
+        count_nodes(&ast, |kind| matches!(
+            kind,
+            SurfaceNodeKind::JustificationClause
+        )),
+        0,
+        "omitted justifications must not fabricate JustificationClause nodes"
+    );
+    assert_eq!(
+        count_nodes(&ast, |kind| matches!(
+            kind,
+            SurfaceNodeKind::ErrorRecovery(SyntaxRecoveryKind::MissingProofStep)
+        )),
+        0,
+        "omitted justifications must not fabricate MissingProofStep recovery"
+    );
+}
+
+#[test]
+fn step5a8_private_paths_accept_immediate_semicolons() {
+    assert_step5a8_omitted_path(
+        &[
+            ("existence", ParserTokenKind::ReservedWord),
+            (";", ParserTokenKind::ReservedSymbol),
+        ],
+        |parser| {
+            parser
+                .parse_registration_correctness_condition_at(0, "existence")
+                .id
+        },
+        |kind| matches!(kind, SurfaceNodeKind::CorrectnessCondition),
+    );
+    assert_step5a8_omitted_path(
+        &[
+            ("sethood", ParserTokenKind::ReservedWord),
+            (";", ParserTokenKind::ReservedSymbol),
+        ],
+        |parser| parser.parse_mode_property_at(0).id,
+        |kind| matches!(kind, SurfaceNodeKind::ModeProperty),
+    );
+    assert_step5a8_omitted_path(
+        &[
+            ("symmetry", ParserTokenKind::ReservedWord),
+            (";", ParserTokenKind::ReservedSymbol),
+        ],
+        |parser| parser.parse_property_clause_at(0).id,
+        |kind| matches!(kind, SurfaceNodeKind::PropertyClause),
+    );
+    assert_step5a8_omitted_path(
+        &[
+            ("coherence", ParserTokenKind::ReservedWord),
+            (";", ParserTokenKind::ReservedSymbol),
+        ],
+        |parser| parser.parse_coherence_condition_at(0).id,
+        |kind| matches!(kind, SurfaceNodeKind::CoherenceCondition),
+    );
+    assert_step5a8_omitted_path(
+        &[
+            ("coherence", ParserTokenKind::ReservedWord),
+            (";", ParserTokenKind::ReservedSymbol),
+        ],
+        |parser| parser.parse_inheritance_coherence_condition_at(0).id,
+        |kind| matches!(kind, SurfaceNodeKind::CoherenceCondition),
+    );
+    assert_step5a8_omitted_path(
+        &[
+            ("coherence", ParserTokenKind::ReservedWord),
+            ("with", ParserTokenKind::ReservedWord),
+            ("Label", ParserTokenKind::Identifier),
+            (";", ParserTokenKind::ReservedSymbol),
+        ],
+        |parser| parser.parse_coherence_condition_at(0).id,
+        |kind| matches!(kind, SurfaceNodeKind::CoherenceCondition),
+    );
+}
+
+fn assert_step5a8_malformed_path(
+    entries: &[(&str, ParserTokenKind)],
+    parse: impl FnOnce(&mut crate::grammar::Parser) -> SurfaceBuilderNodeId,
+    expected_kind: impl Fn(&SurfaceNodeKind) -> bool,
+    expected_recovery: impl Fn(&SurfaceNodeKind) -> bool,
+) {
+    let (ast, diagnostics) = run_step5a8_private_path(entries, parse);
+    assert!(
+        diagnostics
+            .iter()
+            .any(|diagnostic| diagnostic.code == SyntaxDiagnosticCode::MalformedJustification),
+        "malformed path should retain MalformedJustification: {diagnostics:#?}"
+    );
+    assert_eq!(count_nodes(&ast, expected_kind), 1);
+    assert!(
+        count_nodes(&ast, expected_recovery) > 0,
+        "malformed path should retain its recovery node"
+    );
+}
+
+#[test]
+fn step5a8_private_paths_retain_malformed_justification_recovery() {
+    assert_step5a8_malformed_path(
+        &[
+            ("sethood", ParserTokenKind::ReservedWord),
+            ("by", ParserTokenKind::ReservedWord),
+            (";", ParserTokenKind::ReservedSymbol),
+        ],
+        |parser| parser.parse_mode_property_at(0).id,
+        |kind| matches!(kind, SurfaceNodeKind::ModeProperty),
+        |kind| {
+            matches!(
+                kind,
+                SurfaceNodeKind::ErrorRecovery(SyntaxRecoveryKind::MissingProofStep)
+            )
+        },
+    );
+    assert_step5a8_malformed_path(
+        &[
+            ("symmetry", ParserTokenKind::ReservedWord),
+            ("junk", ParserTokenKind::Identifier),
+            (";", ParserTokenKind::ReservedSymbol),
+        ],
+        |parser| parser.parse_property_clause_at(0).id,
+        |kind| matches!(kind, SurfaceNodeKind::PropertyClause),
+        |kind| {
+            matches!(
+                kind,
+                SurfaceNodeKind::ErrorRecovery(SyntaxRecoveryKind::MissingProofStep)
+            )
+        },
+    );
+    assert_step5a8_malformed_path(
+        &[
+            ("coherence", ParserTokenKind::ReservedWord),
+            ("with", ParserTokenKind::ReservedWord),
+            (";", ParserTokenKind::ReservedSymbol),
+        ],
+        |parser| parser.parse_coherence_condition_at(0).id,
+        |kind| matches!(kind, SurfaceNodeKind::CoherenceCondition),
+        |kind| {
+            matches!(
+                kind,
+                SurfaceNodeKind::ErrorRecovery(SyntaxRecoveryKind::MissingProofStep)
+            )
+        },
+    );
 }
 
 fn snapshot_id(byte: u8) -> BuildSnapshotId {

@@ -17,7 +17,7 @@ pub const DEFAULT_PARSER_CACHE_KEY_VERSION: &str = "mizar-frontend/parser-seam/c
 /// Cache-key version used by the stub parser seam.
 pub const STUB_PARSER_CACHE_KEY_VERSION: &str = "mizar-frontend/stub-parser/no-ast-v1";
 /// Cache-key version used by the real Mizar parser seam.
-pub const MIZAR_PARSER_CACHE_KEY_VERSION: &str = "mizar-parser/surface-ast-v6";
+pub const MIZAR_PARSER_CACHE_KEY_VERSION: &str = "mizar-parser/surface-ast-v7";
 
 /// Parser request containing a token stream and parser inputs.
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -730,7 +730,7 @@ mod tests {
     }
 
     #[test]
-    fn real_parser_seam_accepts_then_compact_without_justification_under_v6() {
+    fn real_parser_seam_accepts_then_compact_without_justification_under_v7() {
         let source_id = source_id(34);
         let tokens = token_stream(
             source_id,
@@ -793,12 +793,12 @@ mod tests {
         );
         assert_eq!(
             seam.cache_key_version().version.as_ref(),
-            "mizar-parser/surface-ast-v6"
+            "mizar-parser/surface-ast-v7"
         );
     }
 
     #[test]
-    fn real_parser_seam_accepts_dependent_mode_follow_under_v6() {
+    fn real_parser_seam_accepts_dependent_mode_follow_under_v7() {
         let source_id = source_id(35);
         let tokens = token_stream(
             source_id,
@@ -845,7 +845,7 @@ mod tests {
         );
         assert_eq!(
             seam.cache_key_version().version.as_ref(),
-            "mizar-parser/surface-ast-v6"
+            "mizar-parser/surface-ast-v7"
         );
         assert_ne!(
             seam.cache_key_version().version.as_ref(),

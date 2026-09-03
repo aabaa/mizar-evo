@@ -18,7 +18,7 @@
    [task contract](../../task_contracts/ja/STEP5A6-G6-DEPENDENT-MODE-USE.md)。
 4. [x] **Step 5A.7 / G9** — regression-only change で完了。詳細は
    [task contract](../../task_contracts/ja/STEP5A7-G9-ACTIVE-PATTERN-SPELLINGS.md)。
-5. [~] **Step 5A.8 / G7** — 承認済み仕様判断をfreeze。詳細は
+5. [x] **Step 5A.8 / G7** — 承認済み empty-justification 修正を完了。詳細は
    [task contract](../../task_contracts/ja/STEP5A8-G7-EMPTY-JUSTIFICATIONS.md)。
 
 ## モジュール実装

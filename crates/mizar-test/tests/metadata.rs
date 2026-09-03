@@ -5476,6 +5476,61 @@ fn repository_parse_only_cases_separate_active_runner_seeds_from_future_metadata
         vec!["active_parse_only".to_owned()]
     );
 
+    let empty_justifications_pass = plan
+        .cases
+        .iter()
+        .find(|case| case.id.0 == "pass_parser_empty_justifications_001")
+        .expect("empty-justification parse-only pass seed should be discovered");
+    assert_eq!(empty_justifications_pass.expectation.schema_version, 1);
+    assert_eq!(empty_justifications_pass.expectation.kind, TestKind::Pass);
+    assert_eq!(
+        empty_justifications_pass.expectation.stage,
+        Stage::ParseOnly
+    );
+    assert_eq!(
+        empty_justifications_pass.expectation.domain,
+        "parser.empty_justification"
+    );
+    assert_eq!(
+        empty_justifications_pass.expectation.source,
+        PathBuf::from("pass_parser_empty_justifications_001.miz")
+    );
+    assert_eq!(
+        empty_justifications_pass.expectation.expected_outcome,
+        ExpectedOutcome::Pass
+    );
+    assert_eq!(
+        empty_justifications_pass.expectation.expected_phase,
+        Some(PipelinePhase::Parse)
+    );
+    assert!(
+        empty_justifications_pass
+            .expectation
+            .diagnostic_codes
+            .is_empty()
+    );
+    assert_eq!(
+        empty_justifications_pass
+            .expectation
+            .spec_refs
+            .iter()
+            .map(|spec_ref| spec_ref.0.as_str())
+            .collect::<Vec<_>>(),
+        vec![
+            STRUCTURES_REQUIREMENT_ID,
+            MODE_DEFINITIONS_REQUIREMENT_ID,
+            PROPERTY_IMPLEMENTATIONS_REQUIREMENT_ID,
+            CORRECTNESS_CONDITIONS_REQUIREMENT_ID,
+            REGISTRATIONS_REQUIREMENT_ID,
+            PROPERTY_CLAUSES_REQUIREMENT_ID,
+            REDEFINITION_NOTATION_REQUIREMENT_ID,
+        ]
+    );
+    assert_eq!(
+        empty_justifications_pass.expectation.tags,
+        vec!["active_parse_only".to_owned()]
+    );
+
     let dependent_mode_pass = plan
         .cases
         .iter()
@@ -5786,6 +5841,7 @@ fn repository_parse_only_cases_separate_active_runner_seeds_from_future_metadata
             "pass_parser_conclusions_iterative_001",
             "pass_parser_consider_reconsider_001",
             "pass_parser_definition_attributes_001",
+            "pass_parser_empty_justifications_001",
             "pass_parser_export_visibility_001",
             "pass_parser_formula_connectives_001",
             "pass_parser_functor_definitions_001",
@@ -6067,6 +6123,7 @@ fn repository_parse_only_cases_separate_active_runner_seeds_from_future_metadata
             PathBuf::from(
                 "tests/miz/fail/parser/fail_parser_mode_definitions_recovery_001.expect.toml"
             ),
+            PathBuf::from("tests/miz/pass/parser/pass_parser_empty_justifications_001.expect.toml"),
         ]
     );
 
@@ -6092,6 +6149,7 @@ fn repository_parse_only_cases_separate_active_runner_seeds_from_future_metadata
             PathBuf::from(
                 "tests/miz/pass/parser/pass_parser_active_pattern_spellings_001.expect.toml"
             ),
+            PathBuf::from("tests/miz/pass/parser/pass_parser_empty_justifications_001.expect.toml"),
         ]
     );
 
@@ -6109,6 +6167,7 @@ fn repository_parse_only_cases_separate_active_runner_seeds_from_future_metadata
             PathBuf::from(
                 "tests/miz/fail/parser/fail_parser_property_clauses_recovery_001.expect.toml"
             ),
+            PathBuf::from("tests/miz/pass/parser/pass_parser_empty_justifications_001.expect.toml"),
         ]
     );
 
@@ -6128,6 +6187,7 @@ fn repository_parse_only_cases_separate_active_runner_seeds_from_future_metadata
             PathBuf::from(
                 "tests/miz/fail/parser/fail_parser_property_implementations_recovery_001.expect.toml"
             ),
+            PathBuf::from("tests/miz/pass/parser/pass_parser_empty_justifications_001.expect.toml"),
         ]
     );
 
@@ -6143,6 +6203,7 @@ fn repository_parse_only_cases_separate_active_runner_seeds_from_future_metadata
         vec![
             PathBuf::from("tests/miz/pass/parser/pass_parser_structures_001.expect.toml"),
             PathBuf::from("tests/miz/fail/parser/fail_parser_structures_recovery_001.expect.toml"),
+            PathBuf::from("tests/miz/pass/parser/pass_parser_empty_justifications_001.expect.toml"),
         ]
     );
 
@@ -6162,6 +6223,7 @@ fn repository_parse_only_cases_separate_active_runner_seeds_from_future_metadata
             PathBuf::from(
                 "tests/miz/fail/parser/fail_parser_definition_attributes_recovery_001.expect.toml"
             ),
+            PathBuf::from("tests/miz/pass/parser/pass_parser_empty_justifications_001.expect.toml"),
         ]
     );
 
@@ -6182,6 +6244,7 @@ fn repository_parse_only_cases_separate_active_runner_seeds_from_future_metadata
             PathBuf::from(
                 "tests/miz/pass/parser/pass_parser_local_notation_activation_001.expect.toml"
             ),
+            PathBuf::from("tests/miz/pass/parser/pass_parser_empty_justifications_001.expect.toml"),
         ]
     );
 
@@ -6329,11 +6392,15 @@ fn repository_parse_only_runner_executes_active_minimal_parser_seeds() {
     let report = run_parse_only_corpus(&config).unwrap();
 
     assert_eq!(report.error_count(), 0, "{:#?}", report.diagnostics);
-    assert_eq!(report.results.len(), 108);
-    assert_eq!(report.passed_count(), 108);
+    assert_eq!(report.results.len(), 109);
+    assert_eq!(report.passed_count(), 109);
     assert_eq!(report.failed_count(), 0);
     assert!(report.results.iter().any(|result| {
         result.id.0 == "pass_parser_active_pattern_spellings_001"
+            && result.actual_diagnostic_codes.is_empty()
+    }));
+    assert!(report.results.iter().any(|result| {
+        result.id.0 == "pass_parser_empty_justifications_001"
             && result.actual_diagnostic_codes.is_empty()
     }));
     assert!(report.results.iter().any(|result| {
@@ -6540,7 +6607,6 @@ fn repository_parse_only_runner_executes_active_minimal_parser_seeds() {
                 == vec![
                     "malformed_term_expression".to_owned(),
                     "malformed_term_expression".to_owned(),
-                    "malformed_justification".to_owned(),
                     "malformed_term_expression".to_owned(),
                     "malformed_term_expression".to_owned(),
                     "malformed_justification".to_owned(),
@@ -6571,7 +6637,6 @@ fn repository_parse_only_runner_executes_active_minimal_parser_seeds() {
                     "malformed_type_expression".to_owned(),
                     "malformed_type_expression".to_owned(),
                     "malformed_term_expression".to_owned(),
-                    "malformed_justification".to_owned(),
                     "missing_end".to_owned(),
                     "missing_semicolon".to_owned(),
                 ]
@@ -6580,7 +6645,6 @@ fn repository_parse_only_runner_executes_active_minimal_parser_seeds() {
         result.id.0 == "fail_parser_property_clauses_recovery_001"
             && result.actual_diagnostic_codes
                 == vec![
-                    "malformed_justification".to_owned(),
                     "malformed_justification".to_owned(),
                     "malformed_justification".to_owned(),
                     "missing_semicolon".to_owned(),
@@ -9741,8 +9805,8 @@ fn parse_only_cli_reports_active_runner_summary() {
         String::from_utf8_lossy(&output.stderr)
     );
     let stdout = String::from_utf8_lossy(&output.stdout);
-    assert!(stdout.contains("parse-only cases: 108"));
-    assert!(stdout.contains("passed: 108"));
+    assert!(stdout.contains("parse-only cases: 109"));
+    assert!(stdout.contains("passed: 109"));
     assert!(stdout.contains("failed: 0"));
 }
 

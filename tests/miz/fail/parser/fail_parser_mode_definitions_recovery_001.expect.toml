@@ -21,7 +21,6 @@ diagnostic_codes = [
   "malformed_formula_expression",
   "malformed_type_expression",
   "missing_semicolon",
-  "malformed_justification",
   "malformed_formula_expression",
   "malformed_term_expression",
   "malformed_type_expression",
@@ -31,4 +30,4 @@ tags = ["active_parse_only"]
 spec_refs = [
   "spec.en.07.mode_definitions.parser",
 ]
-notes = "Active parse-only runner coverage for parser task 26 recovery: missing mode labels, colons, patterns, is delimiters, body types, mode semicolons, sethood justifications, and rejected legacy means mode bodies."
+notes = "Active parse-only runner coverage for parser task 26 recovery: missing mode labels, colons, patterns, is delimiters, body types, mode semicolons, legal bare sethood, malformed non-semicolon sethood tails, and rejected legacy means mode bodies."

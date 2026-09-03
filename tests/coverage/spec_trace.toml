@@ -1164,6 +1164,7 @@ coverage = "pass_and_fail"
 tests = [
   "tests/miz/pass/parser/pass_parser_structures_001.expect.toml",
   "tests/miz/fail/parser/fail_parser_structures_recovery_001.expect.toml",
+  "tests/miz/pass/parser/pass_parser_empty_justifications_001.expect.toml",
 ]
 
 [[requirement]]
@@ -1412,6 +1413,7 @@ coverage = "pass_and_fail"
 tests = [
   "tests/miz/pass/parser/pass_parser_mode_definitions_001.expect.toml",
   "tests/miz/fail/parser/fail_parser_mode_definitions_recovery_001.expect.toml",
+  "tests/miz/pass/parser/pass_parser_empty_justifications_001.expect.toml",
 ]
 
 [[requirement]]
@@ -1577,6 +1579,7 @@ notes = "Parser Task 48 implements the complete property implementation as the t
 tests = [
   "tests/miz/pass/parser/pass_parser_property_implementations_001.expect.toml",
   "tests/miz/fail/parser/fail_parser_property_implementations_recovery_001.expect.toml",
+  "tests/miz/pass/parser/pass_parser_empty_justifications_001.expect.toml",
 ]
 
 [[requirement]]
@@ -3265,6 +3268,7 @@ coverage = "pass_and_fail"
 tests = [
   "tests/miz/pass/parser/pass_parser_definition_attributes_001.expect.toml",
   "tests/miz/fail/parser/fail_parser_definition_attributes_recovery_001.expect.toml",
+  "tests/miz/pass/parser/pass_parser_empty_justifications_001.expect.toml",
 ]
 
 [[requirement]]
@@ -3764,6 +3768,7 @@ tests = [
   "tests/miz/pass/parser/pass_parser_registrations_001.expect.toml",
   "tests/miz/fail/parser/fail_parser_registrations_recovery_001.expect.toml",
   "tests/miz/pass/parser/pass_parser_local_notation_activation_001.expect.toml",
+  "tests/miz/pass/parser/pass_parser_empty_justifications_001.expect.toml",
 ]
 
 [[requirement]]
@@ -7136,6 +7141,7 @@ coverage = "pass_and_fail"
 tests = [
   "tests/miz/pass/parser/pass_parser_property_clauses_001.expect.toml",
   "tests/miz/fail/parser/fail_parser_property_clauses_recovery_001.expect.toml",
+  "tests/miz/pass/parser/pass_parser_empty_justifications_001.expect.toml",
 ]
 
 [[requirement]]
@@ -7151,6 +7157,7 @@ tests = [
   "tests/miz/fail/parser/fail_parser_redefinition_notation_recovery_001.expect.toml",
   "tests/miz/pass/parser/pass_parser_notation_alias_activation_001.expect.toml",
   "tests/miz/pass/parser/pass_parser_active_pattern_spellings_001.expect.toml",
+  "tests/miz/pass/parser/pass_parser_empty_justifications_001.expect.toml",
 ]
 
 [[requirement]]

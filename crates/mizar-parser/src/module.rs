@@ -3865,9 +3865,12 @@ impl Parser {
             cursor = justification.next_position;
             children.push(justification.id);
             recovery_nodes.extend(justification.recovery_nodes);
-        } else if !self.is_semicolon_at(cursor)
-            && !self.is_registration_content_synchronization_boundary_at(cursor)
-        {
+        } else if self.is_semicolon_at(cursor) {
+            // An omitted justification is intentional when the condition is
+            // terminated immediately.  Leave the obligation for the
+            // verifier's no-hint proof policy; do not fabricate syntax
+            // recovery or justification nodes here.
+        } else if !self.is_registration_content_synchronization_boundary_at(cursor) {
             self.diagnose_malformed_justification(
                 cursor,
                 "expected registration correctness-condition justification",
@@ -5211,7 +5214,7 @@ impl Parser {
             cursor = justification.next_position;
             children.push(justification.id);
             recovery_nodes.extend(justification.recovery_nodes);
-        } else {
+        } else if !self.is_semicolon_at(cursor) {
             self.diagnose_malformed_justification(cursor, "expected sethood justification");
             if !self.is_semicolon_at(cursor)
                 && !self.is_definition_content_synchronization_boundary_at(cursor)
@@ -5253,7 +5256,7 @@ impl Parser {
             cursor = justification.next_position;
             children.push(justification.id);
             recovery_nodes.extend(justification.recovery_nodes);
-        } else {
+        } else if !self.is_semicolon_at(cursor) {
             self.diagnose_malformed_justification(cursor, "expected property justification");
             self.push_missing_proof_step(cursor, &mut children, &mut recovery_nodes);
             if !self.is_semicolon_at(cursor)
@@ -7613,7 +7616,7 @@ impl Parser {
             cursor = justification.next_position;
             children.push(justification.id);
             recovery_nodes.extend(justification.recovery_nodes);
-        } else {
+        } else if !self.is_semicolon_at(cursor) {
             self.diagnose_malformed_justification(
                 cursor,
                 "expected inheritance coherence justification",
@@ -7983,6 +7986,7 @@ impl Parser {
             );
         }
 
+        let mut missing_with_label = false;
         if self.is_reserved_word_at(cursor, "with") {
             children.push(self.token_node_ids[cursor]);
             cursor += 1;
@@ -7990,6 +7994,7 @@ impl Parser {
                 children.push(self.token_node_ids[cursor]);
                 cursor += 1;
             } else {
+                missing_with_label = true;
                 self.diagnose_malformed_justification(
                     cursor,
                     "expected label after `coherence with`",
@@ -8002,7 +8007,7 @@ impl Parser {
             cursor = justification.next_position;
             children.push(justification.id);
             recovery_nodes.extend(justification.recovery_nodes);
-        } else {
+        } else if !self.is_semicolon_at(cursor) || missing_with_label {
             self.diagnose_malformed_justification(cursor, "expected coherence justification");
             self.push_missing_proof_step(cursor, &mut children, &mut recovery_nodes);
             if !self.is_semicolon_at(cursor)

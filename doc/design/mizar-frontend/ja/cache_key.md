@@ -3,7 +3,8 @@
 > 正本は英語です。英語版: [../en/cache_key.md](../en/cache_key.md)。
 
 状態: task 19 で実装済み。task 20 の parser lexing plan、source-position-aware
-operator metadata、および Step 5A.6 dependent-mode parsing に合わせて更新済み。
+operator metadata、Step 5A.6 dependent-mode parsing、および Step 5A.8
+empty-justification parsing に合わせて更新済み。
 
 ## 目的
 
@@ -233,3 +234,12 @@ token と parser input に対して unbracketed type argument が外側の follo
 recovery を回避するため、v5 から v6 への invalidation を行う。v3 token namespace、key
 shape、storage policy、frontend public API は不変。focused test は historical v5 reuse を
 reject する。
+
+## Step 5A.8 Empty-Justification Cache Assessment
+
+[central contract](../../task_contracts/en/STEP5A8-G7-EMPTY-JUSTIFICATIONS.md) に従い、同じ
+token と parser input でも合法的な omitted justification によって AST と diagnostic の
+結果が変わり得るため、v6 から v7 へ invalidation を行う。token namespace、cache-key の
+shape、storage policy、frontend public API は不変。real frontend seam regression は合法的な
+omitted-justification source で v7 parser namespace を確認し、deterministic replay を比較
+する。

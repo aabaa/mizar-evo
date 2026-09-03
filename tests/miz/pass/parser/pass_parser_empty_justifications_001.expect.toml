@@ -1,0 +1,12 @@
+schema_version = 1
+id = "pass_parser_empty_justifications_001"
+kind = "pass"
+stage = "parse_only"
+domain = "parser.empty_justification"
+source = "pass_parser_empty_justifications_001.miz"
+expected_outcome = "pass"
+expected_phase = "parse"
+diagnostic_codes = []
+tags = ["active_parse_only"]
+spec_refs = ["spec.en.05.structures.parser", "spec.en.07.mode_definitions.parser", "spec.en.07.modes.property_implementation.parser", "spec.en.16.correctness_conditions.parser", "spec.en.17.clusters_and_registrations.parser", "spec.en.syntax.property_clauses.parser", "spec.en.syntax.redefinition_notation.parser"]
+notes = "Active parse-only coverage for legal empty justifications across generic correctness conditions, property clauses, mode sethood, redefinition coherence with and without an original label, property implementations, inheritance coherence, and registration existence/coherence/reducibility. Omission supplies no proof evidence and leaves each obligation unchanged for downstream no-hint verification."

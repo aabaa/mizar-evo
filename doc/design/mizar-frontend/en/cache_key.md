@@ -3,7 +3,8 @@
 > Canonical language: English. Japanese companion: [../ja/cache_key.md](../ja/cache_key.md).
 
 Status: implemented by task 19, updated for the task-20 parser lexing plan,
-source-position-aware operator metadata, and Step 5A.6 dependent-mode parsing.
+source-position-aware operator metadata, Step 5A.6 dependent-mode parsing, and
+Step 5A.8 empty-justification parsing.
 
 ## Purpose
 
@@ -303,3 +304,12 @@ requires v5-to-v6 invalidation because unbracketed type arguments now preserve
 their enclosing follow token and avoid recovery for identical tokens and
 parser inputs. The v3 token namespace, key shapes, storage policy, and public
 frontend API do not change. Focused tests reject historical v5 reuse.
+
+## Step 5A.8 Empty-Justification Cache Assessment
+
+The [central contract](../../task_contracts/en/STEP5A8-G7-EMPTY-JUSTIFICATIONS.md)
+requires v6-to-v7 invalidation because legal omitted justifications can change
+the AST and diagnostic result for identical token and parser inputs. The token
+namespace, cache-key shape, storage policy, and frontend public API remain
+unchanged. The real frontend seam regression checks a legal omitted-justification
+source, confirms the v7 parser namespace, and compares deterministic replay.

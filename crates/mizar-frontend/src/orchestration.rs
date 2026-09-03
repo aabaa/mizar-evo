@@ -1032,7 +1032,7 @@ mod tests {
                 .version
                 .as_ref();
             assert_eq!(parser_version, MIZAR_PARSER_CACHE_KEY_VERSION);
-            assert_eq!(parser_version, "mizar-parser/surface-ast-v6");
+            assert_eq!(parser_version, "mizar-parser/surface-ast-v7");
             assert_ne!(
                 parser_version, "mizar-parser/surface-ast-v5",
                 "the corrected G6 AST must not reuse the historical v5 namespace"
@@ -1041,6 +1041,57 @@ mod tests {
             assert_eq!(output.diagnostics, replay.diagnostics);
             assert_eq!(output.cache_keys, replay.cache_keys);
         }
+    }
+
+    #[test]
+    fn step5a8_empty_justifications_parse_clean_and_replay_with_parser_v7_cache_key() {
+        const EMPTY_JUSTIFICATIONS: &str =
+            "definition\n  mode EmptySethood: Bare is set;\n  sethood;\nend;\n";
+
+        let fixture = PackageFixture::new();
+        fixture.write("src/empty_justifications.miz", EMPTY_JUSTIFICATIONS);
+        let frontend = frontend_for_fixture(&fixture, MizarParserSeam);
+        let ids = InMemorySessionIdAllocator::new();
+
+        let output = frontend
+            .run(fixture.request("src/empty_justifications.miz"), &ids)
+            .expect("the legal omitted-justification source should run through the frontend");
+        let replay = frontend
+            .run(
+                fixture.request("src/empty_justifications.miz"),
+                &InMemorySessionIdAllocator::new(),
+            )
+            .expect("the legal omitted-justification source should replay through the frontend");
+
+        assert!(output.diagnostics.is_empty(), "{:#?}", output.diagnostics);
+        let ast = output
+            .ast
+            .as_ref()
+            .expect("the legal omitted-justification source should retain an AST");
+        assert!(ast.nodes().iter().all(|node| {
+            !matches!(
+                node.kind,
+                SurfaceNodeKind::JustificationClause | SurfaceNodeKind::ErrorRecovery(_)
+            )
+        }));
+        assert_eq!(
+            output
+                .cache_keys
+                .ast
+                .as_ref()
+                .expect("the parsed source should have an AST cache key")
+                .parser_version
+                .version
+                .as_ref(),
+            MIZAR_PARSER_CACHE_KEY_VERSION
+        );
+        assert_eq!(
+            MIZAR_PARSER_CACHE_KEY_VERSION, "mizar-parser/surface-ast-v7",
+            "legal omitted justifications must not reuse the historical v6 namespace"
+        );
+        assert_eq!(output.ast, replay.ast);
+        assert_eq!(output.diagnostics, replay.diagnostics);
+        assert_eq!(output.cache_keys, replay.cache_keys);
     }
 
     #[test]
@@ -1117,7 +1168,7 @@ mod tests {
                     .parser_version
                     .version
                     .as_ref(),
-                "mizar-parser/surface-ast-v6"
+                "mizar-parser/surface-ast-v7"
             );
             assert_eq!(output.ast, replay.ast);
             assert_eq!(output.diagnostics, replay.diagnostics);
@@ -1126,7 +1177,7 @@ mod tests {
     }
 
     #[test]
-    fn real_parser_frontend_merges_nested_missing_end_and_uses_parser_v6_cache_key() {
+    fn real_parser_frontend_merges_nested_missing_end_and_uses_parser_v7_cache_key() {
         let fixture = PackageFixture::new();
         fixture.write(
             "src/nested_missing_end.miz",
@@ -1165,7 +1216,7 @@ mod tests {
             MIZAR_PARSER_CACHE_KEY_VERSION
         );
         assert_eq!(
-            MIZAR_PARSER_CACHE_KEY_VERSION, "mizar-parser/surface-ast-v6",
+            MIZAR_PARSER_CACHE_KEY_VERSION, "mizar-parser/surface-ast-v7",
             "Step 5A.6 parser output semantics must not reuse the v5 AST cache namespace"
         );
     }
@@ -1241,7 +1292,7 @@ mod tests {
                 .parser_version
                 .version
                 .as_ref(),
-            "mizar-parser/surface-ast-v6"
+            "mizar-parser/surface-ast-v7"
         );
         assert_eq!(target.ast, target_replay.ast);
         assert_eq!(target.diagnostics, target_replay.diagnostics);
@@ -1300,7 +1351,7 @@ mod tests {
                 .parser_version
                 .version
                 .as_ref(),
-            "mizar-parser/surface-ast-v6"
+            "mizar-parser/surface-ast-v7"
         );
         assert_eq!(control.ast, control_replay.ast);
         assert_eq!(control.diagnostics, control_replay.diagnostics);

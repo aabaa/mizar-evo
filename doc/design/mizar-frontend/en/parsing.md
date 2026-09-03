@@ -373,3 +373,13 @@ parser inputs now retain an outer type-expression follow token without a
 recovery diagnostic. The seam and token-adaptation APIs remain unchanged. A
 real-source frontend regression parses both exact G6 sources without
 diagnostics; final closure state remains contract-owned.
+
+## Step 5A.8 Empty-Justification Parser Version
+
+The [central contract](../../task_contracts/en/STEP5A8-G7-EMPTY-JUSTIFICATIONS.md)
+moves `MIZAR_PARSER_CACHE_KEY_VERSION` from
+`mizar-parser/surface-ast-v6` to v7. The same tokens and parser inputs can now
+produce an AST without fabricated justification or recovery nodes when an
+obligation is legally followed immediately by `;`. The frontend seam and token
+adaptation APIs remain unchanged; the frontend only forwards the parser result
+and invalidates the previous AST-cache namespace.

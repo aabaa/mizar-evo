@@ -25,7 +25,7 @@ be closed by weakening the corpus expectations.
 | G4 | closed by 5A.5 (3 ledger rows) | Local `synonym`/`antonym` spellings activate after their declaring item; see the [task contract](../../task_contracts/en/STEP5A5-G4-NOTATION-ALIASES.md). Semantic activation remains with 5C.6. |
 | G5 | closed by 5A.1 | Root-reachable AST validation removes the `term qua <structure type>` SurfaceAstBuilder panic; see the [task contract](../../task_contracts/en/STEP5A1-G5-QUA-STRUCTURE.md). Semantic activation remains owned by 5C. |
 | G6 | closed by 5A.6 (2 ledger rows) | Argument-bearing local dependent-mode use now preserves enclosing type/formula tokens; see the [task contract](../../task_contracts/en/STEP5A6-G6-DEPENDENT-MODE-USE.md). Task 68's same-module reserve extraction and imported Tasks 79/82 remain unchanged. |
-| G7 | decision frozen; implementation pending | Empty justification remains legal and proof obligations remain unchanged; the bounded parser correction is owned by the [5A.8 contract](../../task_contracts/en/STEP5A8-G7-EMPTY-JUSTIFICATIONS.md). |
+| G7 | closed by 5A.8 | Empty justification remains legal and proof obligations remain unchanged; the bounded parser/cache correction and parse-only evidence are recorded in the [5A.8 contract](../../task_contracts/en/STEP5A8-G7-EMPTY-JUSTIFICATIONS.md). |
 | G9 | closed by 5A.7 (3 ledger rows) | Dependencies 5A.2/5A.5 make already-active spellings parse in predicate redefinitions, second definitions, and synonym original patterns; dedicated evidence is recorded in the [5A.7 contract](../../task_contracts/en/STEP5A7-G9-ACTIVE-PATTERN-SPELLINGS.md). Semantic activation remains with 5C.5/5C.6. |
 
 G8 (inline application use) is folded into G1.

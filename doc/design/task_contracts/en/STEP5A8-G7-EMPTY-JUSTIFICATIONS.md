@@ -9,7 +9,7 @@ Owning plan: [mizar-parser](../../mizar-parser/en/00.crate_plan.md).
 
 | Field | Value |
 |---|---|
-| Status | Frozen after the explicit human decision on 2026-09-03; implementation pending |
+| Status | Complete; hard gates 9/9 pass; final quality score 100/100 |
 | Tier | Full: specification, `.miz`, expectations, traceability, parser behavior, and cache identity |
 | Owner / consumers | `mizar-parser` owns syntax admission and recovery; `mizar-frontend` owns parser-cache invalidation; `mizar-test` owns corpus execution |
 | Dependencies | Step 5A.1-5A.7 complete; no semantic dependency |
@@ -100,3 +100,45 @@ parse-only checks, link/ledger lint, `cargo fmt --all --check`, warnings-denied
 workspace Clippy, and full workspace tests. Exit requires hard gates 9/9, a
 valid score of at least 90/100, exact task-only staging, a local commit, clean
 postcommit proof, and fresh dependency-minimal selection of Step 5A.9.
+
+## Completion evidence
+
+The test-first source initially failed with exactly eight
+`malformed_justification` diagnostics. The five private paths now accept only
+an immediate semicolon and create no justification or recovery node. Malformed
+`by`, junk, and missing `coherence with` labels remain rejected. The frontend
+uses parser cache v7 and replays the corrected AST deterministically.
+
+Independent specification, boundary, test-sufficiency, implementation, and
+source/docs/API reviews ended with no findings after targeted repairs. The
+four existing expectations changed only by removal of their now-valid bare-form
+diagnostic and a matching note; their sources and rejection identities remain
+unchanged. The coverage audit has the frozen no-impact disposition.
+
+Verification passed: focused parser/frontend tests; all 141 metadata tests;
+plan 558 cases / 499 requirements / 315 pass / 243 fail / 0 errors / 23
+pre-existing warnings; parse-only 109/109; `cargo fmt --all --check`;
+warnings-denied workspace Clippy; and full workspace tests plus doctests.
+
+| Hard gate | Result |
+|---|---|
+| 1. specification consistency | Pass: approved EN/JA intent and reviews agree |
+| 2. documented/tested behavior | Pass: five bounded paths and real frontend evidence |
+| 3. milestone `.miz` coverage | Pass: one test-first active pair |
+| 4. expectation integrity | Pass: four authority-driven diagnostic removals only |
+| 5. design/source synchronization | Pass: paired parser/frontend owners agree |
+| 6. responsibility boundaries | Pass: no proof acceptance or public API change |
+| 7. coverage-audit disposition | Pass: explicit no-impact; audit byte-identical |
+| 8. verification | Pass: every required command completed |
+| 9. residual-risk classification | Pass: proof discharge and 5C activation deferred |
+
+Activation map, coverage audit, and the 13-file archive retain their frozen
+hashes; oracle activation and trace states are unchanged. Task 277B remains
+not-ready/zero-credit, and semantic-credit throughput remains `0 tasks/week`.
+
+Next handoff: select Step 5A.9 by fresh inventory. Keep Sol xhigh for authority,
+boundary, and final gates; use Luna xhigh only for frozen inventory, localized
+implementation, focused verification, and first-pass independent reviews.
+
+The read-only advisory score was 100/100 with no cap; parent Sol independently
+confirmed hard gates 9/9 and the final 100/100 score.

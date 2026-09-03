@@ -251,3 +251,12 @@ token と parser input が recovery diagnostic なしに外側の type-expressio
 保持するため、`MIZAR_PARSER_CACHE_KEY_VERSION` を v5 から v6 へ進める。seam と token
 adaptation API は不変。real-source frontend regression は exact G6 source 2件を diagnostic
 なしで parse し、final closure state は contract が所有する。
+
+## Step 5A.8 empty-justification parser version
+
+central [EN contract](../../task_contracts/en/STEP5A8-G7-EMPTY-JUSTIFICATIONS.md) に従い、
+`MIZAR_PARSER_CACHE_KEY_VERSION` を `mizar-parser/surface-ast-v6` から v7 へ進める。同じ
+token と parser input でも、obligation の直後に合法的に `;` が続く場合は、fabricated な
+justification node や recovery node を作らずに AST を生成できる。frontend seam と token
+adaptation API は不変であり、frontend は parser result をそのまま渡し、旧 AST cache
+namespace を無効化する。

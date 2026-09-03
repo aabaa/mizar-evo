@@ -12,11 +12,10 @@ stable_detail_key = "parser.definitions.property_clauses_recovery"
 diagnostic_codes = [
   "malformed_justification",
   "malformed_justification",
-  "malformed_justification",
   "missing_semicolon",
 ]
 tags = ["active_parse_only"]
 spec_refs = [
   "spec.en.syntax.property_clauses.parser",
 ]
-notes = "Active parse-only runner coverage for parser task 28 recovery: missing property justifications, skipped malformed justification tails, malformed `by` clauses, and semicolon recovery that preserves a following property item."
+notes = "Active parse-only runner coverage for parser task 28 recovery: legal bare property clauses, skipped malformed non-semicolon justification tails, malformed `by` clauses, and semicolon recovery that preserves a following property item."

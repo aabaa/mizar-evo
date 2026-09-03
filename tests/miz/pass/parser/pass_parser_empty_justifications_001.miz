@@ -1,0 +1,29 @@
+import parser.type_fixtures;
+definition
+  let x be set;
+  attr EmptyGeneric: x is odd means thesis;
+  existence; uniqueness; coherence;
+  compatibility; consistency; reducibility;
+  mode EmptySethood: Bare is set;
+  sethood;
+  symmetry;
+  redefine attr EmptyAttr: x is empty means thesis;
+  coherence;
+  redefine pred EmptyPred: x R x means thesis;
+  coherence with Original;
+end;
+definition let M be T;
+  property M.direct equals M;
+  coherence;
+end;
+definition
+  inherit EmptyChild extends set where
+    field carrier from it;
+    coherence;
+  end;
+end;
+registration
+  cluster EmptyExists: non empty set; existence;
+  cluster EmptyConditional: empty -> empty for set; coherence;
+  reduce EmptyReduction: x to x; reducibility;
+end;
