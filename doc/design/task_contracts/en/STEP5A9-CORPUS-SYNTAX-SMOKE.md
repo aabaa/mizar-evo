@@ -9,7 +9,7 @@ Owning plan: [mizar-test](../../mizar-test/en/00.crate_plan.md).
 
 | Field | Value |
 |---|---|
-| Status | Refrozen after the test-first all-source probe |
+| Status | Complete; full gates 9/9 and quality 100/100, pending local implementation commit |
 | Tier | Full: production runner, CLI, and public Rust API |
 | Owner / consumers | `mizar-test` owns corpus selection, the exact exception ledger, frontend execution, and the report; `mizar-frontend` and `mizar-parser` remain unchanged providers |
 | Dependencies | Step 5A.1-5A.8 complete; all G1-G9 frontend gaps are closed |
@@ -143,4 +143,21 @@ of Step 5B.1.
 
 ## Completion evidence
 
-Pending implementation and full-tier verification.
+- Outcome: public runner/API/CLI cover all 360 eligible cases as 353 `Passed`,
+  seven exact `ExpectedSyntaxRejection`, and zero `Failed`; semantic credit is
+  unchanged at `0 tasks/week`.
+- Reviews: specification/equivalence, boundary, test sufficiency,
+  implementation, and source/docs/API reviews ended with no findings after
+  finding-specific re-review.
+- Verification: plan `558/499/315/243/23/0`, parse-only `109/109`, focused
+  syntax-smoke unit `2/2`, metadata `12/12`, lint `16/16`, format, warnings-
+  denied workspace Clippy, and full workspace tests all passed.
+- Hard gates: parent Sol judged 9/9 passed and quality 100/100; coverage-audit impact remains none.
+  Protected hashes and the 13-file archive aggregate match their frozen values;
+  no oracle, expectation, trace state, parser/cache, or specification changed.
+- Deferred: four template rows remain with their existing spec-decision owner;
+  Tasks 75/76/77 retain their active-range rows. Task 277B remains not-ready and
+  zero-credit.
+- Handoff: select Step 5B.1 next with Luna xhigh for the frozen light-tier
+  structural documentation transport; return any authority, semantic-credit,
+  ownership, or one-way-promotion issue to the parent Sol xhigh.

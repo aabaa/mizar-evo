@@ -19,10 +19,11 @@ use mizar_session::{
 };
 use mizar_test::{
     CoverageShape, DiscoveryConfig, ExpectedOutcome, PipelinePhase, RequirementStatus, Stage,
-    TestKind, TestPlan, TestProfile, ValidationMode, active_parse_only_cases,
-    active_proof_verification_cases, active_type_elaboration_cases, architecture22_scenario_specs,
-    build_test_plan, run_declaration_symbol_corpus, run_parse_only_corpus,
-    run_proof_verification_corpus, run_type_elaboration_corpus,
+    SyntaxSmokeCaseResult, SyntaxSmokeCaseStatus, SyntaxSmokeRunReport, TestKind, TestPlan,
+    TestProfile, ValidationMode, active_parse_only_cases, active_proof_verification_cases,
+    active_type_elaboration_cases, architecture22_scenario_specs, build_test_plan,
+    run_declaration_symbol_corpus, run_parse_only_corpus, run_proof_verification_corpus,
+    run_syntax_smoke_corpus, run_type_elaboration_corpus, syntax_smoke_cases,
 };
 
 static NEXT_ID: AtomicUsize = AtomicUsize::new(0);
@@ -3274,6 +3275,632 @@ spec_refs = ["spec.en.determinism.snapshot"]
     assert!(first.contains(
         "diagnostic|error|tests/miz/pass/parser/pass_snapshot_failure_001.expect.toml|parse_only|E-PARSE-ONLY-SNAPSHOT"
     ));
+}
+
+#[test]
+fn syntax_smoke_selects_non_parse_only_miz_across_profiles_and_replays_in_plan_order() {
+    let corpus = Corpus::new();
+    corpus.add_requirement("spec.en.test.syntax_smoke", &[]);
+    corpus.write(
+        "tests/miz/pass/parser/pass_syntax_smoke_fast_001.miz",
+        "alpha;\n",
+    );
+    corpus.write(
+        "tests/miz/pass/parser/pass_syntax_smoke_fast_001.expect.toml",
+        r#"schema_version = 1
+id = "pass_syntax_smoke_fast_001"
+kind = "pass"
+stage = "lexical"
+domain = "parser"
+source = "pass_syntax_smoke_fast_001.miz"
+expected_outcome = "pass"
+expected_phase = "lex"
+diagnostic_codes = []
+spec_refs = ["spec.en.test.syntax_smoke"]
+"#,
+    );
+    corpus.write(
+        "tests/miz/pass/parser/pass_syntax_smoke_stress_001.miz",
+        "alpha;\n",
+    );
+    corpus.write(
+        "tests/miz/pass/parser/pass_syntax_smoke_stress_001.expect.toml",
+        r#"schema_version = 1
+id = "pass_syntax_smoke_stress_001"
+kind = "pass"
+stage = "lexical"
+domain = "parser"
+source = "pass_syntax_smoke_stress_001.miz"
+expected_outcome = "pass"
+expected_phase = "lex"
+diagnostic_codes = []
+profiles = ["stress"]
+spec_refs = ["spec.en.test.syntax_smoke"]
+"#,
+    );
+    corpus.write(
+        "tests/miz/pass/parser/pass_syntax_smoke_tagged_001.miz",
+        "alpha;\n",
+    );
+    corpus.write(
+        "tests/miz/pass/parser/pass_syntax_smoke_tagged_001.expect.toml",
+        r#"schema_version = 1
+id = "pass_syntax_smoke_tagged_001"
+kind = "pass"
+stage = "lexical"
+domain = "parser"
+source = "pass_syntax_smoke_tagged_001.miz"
+expected_outcome = "pass"
+expected_phase = "lex"
+diagnostic_codes = []
+tags = ["active_syntax_smoke"]
+spec_refs = ["spec.en.test.syntax_smoke"]
+"#,
+    );
+    corpus.write(
+        "tests/miz/pass/parser/pass_syntax_smoke_parse_only_001.miz",
+        "alpha;\n",
+    );
+    corpus.write(
+        "tests/miz/pass/parser/pass_syntax_smoke_parse_only_001.expect.toml",
+        r#"schema_version = 1
+id = "pass_syntax_smoke_parse_only_001"
+kind = "pass"
+stage = "parse_only"
+domain = "parser"
+source = "pass_syntax_smoke_parse_only_001.miz"
+expected_outcome = "pass"
+expected_phase = "parse"
+diagnostic_codes = []
+spec_refs = ["spec.en.test.syntax_smoke"]
+"#,
+    );
+    corpus.write(
+        "tests/miz/pass/parser/pass_syntax_smoke_non_miz_001.src",
+        "alpha;\n",
+    );
+    corpus.write(
+        "tests/miz/pass/parser/pass_syntax_smoke_non_miz_001.expect.toml",
+        r#"schema_version = 1
+id = "pass_syntax_smoke_non_miz_001"
+kind = "pass"
+stage = "lexical"
+domain = "parser"
+source = "pass_syntax_smoke_non_miz_001.src"
+expected_outcome = "pass"
+expected_phase = "lex"
+diagnostic_codes = []
+spec_refs = ["spec.en.test.syntax_smoke"]
+"#,
+    );
+
+    let mut full_config = corpus.config();
+    full_config.profile = TestProfile::Full;
+    let full_plan = build_test_plan(&full_config).unwrap();
+    let selected = syntax_smoke_cases(&full_plan)
+        .map(|case| case.id.0.as_str())
+        .collect::<Vec<_>>();
+    assert_eq!(
+        selected,
+        vec![
+            "pass_syntax_smoke_fast_001",
+            "pass_syntax_smoke_stress_001",
+            "pass_syntax_smoke_tagged_001",
+        ]
+    );
+
+    let first = run_syntax_smoke_corpus(&corpus.config()).unwrap();
+    let second = run_syntax_smoke_corpus(&corpus.config()).unwrap();
+    assert_eq!(
+        canonical_syntax_smoke_report(&first, &corpus.root),
+        canonical_syntax_smoke_report(&second, &corpus.root)
+    );
+    assert_eq!(first.results.len(), 3);
+    assert_eq!(first.passed_count(), 3);
+    assert_eq!(first.expected_rejection_count(), 0);
+    assert_eq!(first.failed_count(), 0);
+}
+
+#[test]
+fn syntax_smoke_plan_errors_return_no_results_and_retain_plan_diagnostics() {
+    let corpus = Corpus::new();
+    corpus.write(
+        "tests/miz/pass/parser/pass_syntax_smoke_bad_plan_001.miz",
+        "alpha;\n",
+    );
+    corpus.write(
+        "tests/miz/pass/parser/pass_syntax_smoke_bad_plan_001.expect.toml",
+        "schema_version = \"invalid\"\n",
+    );
+
+    let report = run_syntax_smoke_corpus(&corpus.config()).unwrap();
+
+    assert!(report.results.is_empty(), "{report:#?}");
+    assert!(
+        report
+            .diagnostics
+            .iter()
+            .any(|diagnostic| diagnostic.code.0 == "E-EXPECT-SCHEMA"),
+        "{:#?}",
+        report.diagnostics
+    );
+}
+
+#[test]
+fn syntax_smoke_reports_all_frontend_diagnostics_and_uses_syntax_ledger_only() {
+    let corpus = Corpus::new();
+    corpus.add_requirement("spec.en.test.syntax_smoke", &[]);
+    corpus.write(
+        "tests/miz/fail/parser/fail_syntax_smoke_diagnostics_001.miz",
+        "then now end;\nthen hereby end;\nper cases by computation(steps: 1);\nper cases;\ncase thesis\n  thus thesis;\nend;\nper cases;\ncase thesis;\n  thus thesis;\nsuppose thesis;\n",
+    );
+    corpus.write(
+        "tests/miz/fail/parser/fail_syntax_smoke_diagnostics_001.expect.toml",
+        r#"schema_version = 1
+id = "fail_syntax_smoke_diagnostics_001"
+kind = "fail"
+stage = "advanced_semantics"
+domain = "parser"
+source = "fail_syntax_smoke_diagnostics_001.miz"
+expected_outcome = "fail"
+expected_phase = "verification"
+failure_category = "semantic_error"
+stable_detail_key = "semantic.synthetic"
+diagnostic_codes = []
+tags = ["allow_frontend_recovery_diagnostics"]
+spec_refs = ["spec.en.test.syntax_smoke"]
+"#,
+    );
+    write_syntax_ledger(
+        &corpus,
+        &[syntax_ledger_row(
+            "fail_syntax_smoke_diagnostics_001",
+            "tests/miz/fail/parser/fail_syntax_smoke_diagnostics_001.miz",
+            "malformed_formula_expression,missing_semicolon,malformed_formula_expression,missing_semicolon,malformed_justification,missing_semicolon,malformed_formula_expression,missing_end,missing_semicolon,unexpected_top_level_token,missing_end,missing_end",
+        )],
+    );
+
+    let report = run_syntax_smoke_corpus(&corpus.config()).unwrap();
+    assert_eq!(report.results.len(), 1);
+    assert_eq!(report.passed_count(), 0);
+    assert_eq!(report.expected_rejection_count(), 1);
+    assert_eq!(report.failed_count(), 0);
+    assert_eq!(
+        report.results[0].status,
+        SyntaxSmokeCaseStatus::ExpectedSyntaxRejection
+    );
+    assert_eq!(
+        report.results[0].actual_diagnostic_codes,
+        [
+            "lexing:ScopeSkeleton(MissingEnd)",
+            "lexing:ScopeSkeleton(MissingEnd)",
+            "malformed_formula_expression",
+            "missing_semicolon",
+            "malformed_formula_expression",
+            "missing_semicolon",
+            "malformed_justification",
+            "missing_semicolon",
+            "malformed_formula_expression",
+            "missing_end",
+            "missing_semicolon",
+            "unexpected_top_level_token",
+            "missing_end",
+            "missing_end",
+        ]
+    );
+}
+
+#[test]
+fn syntax_smoke_reports_missing_ast_as_failed_case() {
+    let corpus = Corpus::new();
+    corpus.add_requirement("spec.en.test.syntax_smoke", &[]);
+    add_syntax_smoke_case(
+        &corpus,
+        "fail_syntax_smoke_missing_ast_001",
+        "tests/miz/fail/parser/fail_syntax_smoke_missing_ast_001.miz",
+        "end;\n",
+        false,
+    );
+
+    let report = run_syntax_smoke_corpus(&corpus.config()).unwrap();
+    let result = &report.results[0];
+    assert_eq!(result.status, SyntaxSmokeCaseStatus::Failed);
+    assert!(
+        result
+            .actual_diagnostic_codes
+            .contains(&"missing_ast".to_owned())
+    );
+    assert_has_syntax_smoke_report_diagnostic(
+        &report,
+        "E-SYNTAX-SMOKE-ASSERT",
+        "syntax_smoke.fail_syntax_smoke_missing_ast_001",
+    );
+}
+
+#[test]
+fn syntax_smoke_accepts_exact_ledger_row_as_expected_rejection() {
+    let corpus = Corpus::new();
+    corpus.add_requirement("spec.en.test.syntax_smoke", &[]);
+    add_syntax_smoke_case(
+        &corpus,
+        "fail_syntax_smoke_expected_001",
+        "tests/miz/fail/parser/fail_syntax_smoke_expected_001.miz",
+        "export 123;\n",
+        false,
+    );
+    write_syntax_ledger(
+        &corpus,
+        &[syntax_ledger_row(
+            "fail_syntax_smoke_expected_001",
+            "tests/miz/fail/parser/fail_syntax_smoke_expected_001.miz",
+            "malformed_export",
+        )],
+    );
+
+    let report = run_syntax_smoke_corpus(&corpus.config()).unwrap();
+
+    assert_eq!(report.results.len(), 1);
+    assert_eq!(report.passed_count(), 0);
+    assert_eq!(report.expected_rejection_count(), 1);
+    assert_eq!(report.failed_count(), 0);
+    assert_eq!(report.error_count(), 0, "{:#?}", report.diagnostics);
+    assert_eq!(
+        report.results[0].status,
+        SyntaxSmokeCaseStatus::ExpectedSyntaxRejection
+    );
+    assert_eq!(
+        report.results[0].actual_diagnostic_codes,
+        ["malformed_export"]
+    );
+}
+
+#[test]
+fn syntax_smoke_missing_ledger_file_is_an_infrastructure_error() {
+    let corpus = Corpus::new();
+    fs::remove_file(
+        corpus
+            .root
+            .join("tests/coverage/syntax_smoke_expected_rejections.tsv"),
+    )
+    .unwrap();
+
+    let error = run_syntax_smoke_corpus(&corpus.config()).unwrap_err();
+
+    assert!(
+        error
+            .to_string()
+            .contains("syntax_smoke_expected_rejections.tsv")
+    );
+}
+
+#[test]
+fn syntax_smoke_rejects_missing_and_mismatched_ledger_rows() {
+    let corpus = Corpus::new();
+    corpus.add_requirement("spec.en.test.syntax_smoke", &[]);
+    add_syntax_smoke_case(
+        &corpus,
+        "fail_syntax_smoke_missing_001",
+        "tests/miz/fail/parser/fail_syntax_smoke_missing_001.miz",
+        "export 123;\n",
+        false,
+    );
+    for (name, ledger, detail_key) in [
+        (
+            "missing",
+            "case_id\tsource\tsyntax_diagnostic_codes\towner\n",
+            "syntax_smoke.ledger.missing.fail_syntax_smoke_missing_001",
+        ),
+        (
+            "path-mismatch",
+            "case_id\tsource\tsyntax_diagnostic_codes\towner\nfail_syntax_smoke_missing_001\ttests/miz/fail/parser/other.miz\tmalformed_export\ttask-75\n",
+            "syntax_smoke.ledger.mismatch.fail_syntax_smoke_missing_001",
+        ),
+        (
+            "code-mismatch",
+            "case_id\tsource\tsyntax_diagnostic_codes\towner\nfail_syntax_smoke_missing_001\ttests/miz/fail/parser/fail_syntax_smoke_missing_001.miz\tmissing_semicolon\ttask-75\n",
+            "syntax_smoke.ledger.mismatch.fail_syntax_smoke_missing_001",
+        ),
+    ] {
+        corpus.write(
+            "tests/coverage/syntax_smoke_expected_rejections.tsv",
+            ledger,
+        );
+        let report = run_syntax_smoke_corpus(&corpus.config()).unwrap();
+        let failed = report
+            .results
+            .iter()
+            .find(|result| result.id.0 == "fail_syntax_smoke_missing_001")
+            .expect("missing/mismatched ledger must retain its selected case");
+        assert_eq!(
+            failed.status,
+            SyntaxSmokeCaseStatus::Failed,
+            "variant={name}"
+        );
+        assert_eq!(report.expected_rejection_count(), 0, "variant={name}");
+        assert!(report.error_count() > 0, "variant={name}: {report:#?}");
+        assert_has_syntax_smoke_report_diagnostic(&report, "E-SYNTAX-SMOKE-LEDGER", detail_key);
+    }
+}
+
+#[test]
+fn syntax_smoke_rejects_stale_extra_duplicate_reordered_and_malformed_ledger_rows() {
+    let malformed_ledgers = [
+        "wrong-header\n",
+        "case_id\tsource\tsyntax_diagnostic_codes\towner\nonly-three-fields\tfoo\tbar\n",
+        "case_id\tsource\tsyntax_diagnostic_codes\towner\ncase\tsrc.miz\t\ttask-75\n",
+        "case_id\tsource\tsyntax_diagnostic_codes\towner\ncase\tsrc.miz\tmalformed_export,,missing_semicolon\ttask-75\n",
+        "case_id\tsource\tsyntax_diagnostic_codes\towner\ncase\tsrc.miz\t malformed_export\ttask-75\n",
+        "case_id\tsource\tsyntax_diagnostic_codes\towner\n\n",
+        "case_id\tsource\tsyntax_diagnostic_codes\towner\ncase\tsrc.miz\tmalformed_export\towner\r\n",
+        "case_id\tsource\tsyntax_diagnostic_codes\towner\ncase\t../src.miz\tmalformed_export\ttask-75\n",
+        "case_id\tsource\tsyntax_diagnostic_codes\towner\ncase,id\tsrc.miz\tmalformed_export\towner\n",
+        "case_id\tsource\tsyntax_diagnostic_codes\towner\ncase\tsrc,other.miz\tmalformed_export\towner\n",
+        "case_id\tsource\tsyntax_diagnostic_codes\towner\ncase\tsrc.miz\tmalformed_export\towner,id\n",
+    ];
+    let corpus = Corpus::new();
+    corpus.add_requirement("spec.en.test.syntax_smoke", &[]);
+    add_syntax_smoke_case(
+        &corpus,
+        "fail_syntax_smoke_malformed_001",
+        "tests/miz/fail/parser/fail_syntax_smoke_malformed_001.miz",
+        "export 123;\n",
+        false,
+    );
+    for ledger in malformed_ledgers {
+        corpus.write(
+            "tests/coverage/syntax_smoke_expected_rejections.tsv",
+            ledger,
+        );
+
+        let report = run_syntax_smoke_corpus(&corpus.config()).unwrap();
+
+        assert!(report.results.is_empty(), "{report:#?}");
+        assert!(report.error_count() > 0, "{report:#?}");
+    }
+
+    corpus.write(
+        "tests/coverage/syntax_smoke_expected_rejections.tsv",
+        [
+            b"case_id\tsource\tsyntax_diagnostic_codes\towner\n".as_slice(),
+            &[0xff, 0xfe],
+        ]
+        .concat(),
+    );
+    let report = run_syntax_smoke_corpus(&corpus.config()).unwrap();
+    assert!(report.results.is_empty(), "{report:#?}");
+    assert_has_syntax_smoke_report_diagnostic(
+        &report,
+        "E-SYNTAX-SMOKE-LEDGER",
+        "syntax_smoke.ledger.utf8",
+    );
+
+    corpus.write(
+        "tests/coverage/syntax_smoke_expected_rejections.tsv",
+        "case_id\tsource\tsyntax_diagnostic_codes\towner\nfail_syntax_smoke_malformed_001\ttests/miz/fail/parser/fail_syntax_smoke_malformed_001.miz\tmalformed_export\tunknown-owner\n",
+    );
+    let report = run_syntax_smoke_corpus(&corpus.config()).unwrap();
+    assert!(report.results.is_empty(), "{report:#?}");
+    assert_has_syntax_smoke_report_diagnostic(
+        &report,
+        "E-SYNTAX-SMOKE-LEDGER",
+        "syntax_smoke.ledger.owner.unknown-owner",
+    );
+
+    let stale = Corpus::new();
+    stale.add_requirement("spec.en.test.syntax_smoke", &[]);
+    add_syntax_smoke_case(
+        &stale,
+        "fail_syntax_smoke_stale_001",
+        "tests/miz/fail/parser/fail_syntax_smoke_stale_001.miz",
+        "export 123;\n",
+        false,
+    );
+    add_syntax_smoke_case(
+        &stale,
+        "pass_syntax_smoke_stale_002",
+        "tests/miz/pass/parser/pass_syntax_smoke_stale_002.miz",
+        "alpha;\n",
+        true,
+    );
+    let exact = syntax_ledger_row(
+        "fail_syntax_smoke_stale_001",
+        "tests/miz/fail/parser/fail_syntax_smoke_stale_001.miz",
+        "malformed_export",
+    );
+    let stale_row = syntax_ledger_row(
+        "pass_syntax_smoke_stale_002",
+        "tests/miz/pass/parser/pass_syntax_smoke_stale_002.miz",
+        "malformed_export",
+    );
+    write_syntax_ledger(&stale, &[exact, stale_row]);
+    let report = run_syntax_smoke_corpus(&stale.config()).unwrap();
+    let stale_result = report
+        .results
+        .iter()
+        .find(|result| result.id.0 == "pass_syntax_smoke_stale_002")
+        .expect("stale row should resolve to the selected syntax-clean case");
+    assert_eq!(stale_result.status, SyntaxSmokeCaseStatus::Failed);
+    assert_eq!(report.expected_rejection_count(), 1);
+    assert!(report.error_count() > 0, "{report:#?}");
+
+    let extra = Corpus::new();
+    extra.add_requirement("spec.en.test.syntax_smoke", &[]);
+    add_syntax_smoke_case(
+        &extra,
+        "pass_syntax_smoke_extra_001",
+        "tests/miz/pass/parser/pass_syntax_smoke_extra_001.miz",
+        "alpha;\n",
+        true,
+    );
+    write_syntax_ledger(
+        &extra,
+        &[syntax_ledger_row(
+            "unknown_syntax_smoke_case",
+            "tests/miz/pass/parser/unknown_syntax_smoke_case.miz",
+            "malformed_export",
+        )],
+    );
+    let report = run_syntax_smoke_corpus(&extra.config()).unwrap();
+    assert!(report.results.is_empty(), "{report:#?}");
+    assert!(report.error_count() > 0, "{report:#?}");
+
+    let duplicate_id = Corpus::new();
+    duplicate_id.add_requirement("spec.en.test.syntax_smoke", &[]);
+    add_syntax_smoke_case(
+        &duplicate_id,
+        "fail_syntax_smoke_duplicate_a_001",
+        "tests/miz/fail/parser/fail_syntax_smoke_duplicate_a_001.miz",
+        "export 123;\n",
+        false,
+    );
+    add_syntax_smoke_case(
+        &duplicate_id,
+        "fail_syntax_smoke_duplicate_b_001",
+        "tests/miz/fail/parser/fail_syntax_smoke_duplicate_b_001.miz",
+        "export 123;\n",
+        false,
+    );
+    write_syntax_ledger(
+        &duplicate_id,
+        &[
+            syntax_ledger_row(
+                "fail_syntax_smoke_duplicate_a_001",
+                "tests/miz/fail/parser/fail_syntax_smoke_duplicate_a_001.miz",
+                "malformed_export",
+            ),
+            syntax_ledger_row(
+                "fail_syntax_smoke_duplicate_a_001",
+                "tests/miz/fail/parser/fail_syntax_smoke_duplicate_b_001.miz",
+                "malformed_export",
+            ),
+        ],
+    );
+    let report = run_syntax_smoke_corpus(&duplicate_id.config()).unwrap();
+    assert!(report.results.is_empty(), "{report:#?}");
+    assert_has_syntax_smoke_report_diagnostic(
+        &report,
+        "E-SYNTAX-SMOKE-LEDGER",
+        "syntax_smoke.ledger.duplicate_id.fail_syntax_smoke_duplicate_a_001",
+    );
+
+    let duplicate_source = Corpus::new();
+    duplicate_source.add_requirement("spec.en.test.syntax_smoke", &[]);
+    add_syntax_smoke_case(
+        &duplicate_source,
+        "fail_syntax_smoke_duplicate_a_001",
+        "tests/miz/fail/parser/fail_syntax_smoke_duplicate_a_001.miz",
+        "export 123;\n",
+        false,
+    );
+    add_syntax_smoke_case(
+        &duplicate_source,
+        "fail_syntax_smoke_duplicate_b_001",
+        "tests/miz/fail/parser/fail_syntax_smoke_duplicate_b_001.miz",
+        "export 123;\n",
+        false,
+    );
+    write_syntax_ledger(
+        &duplicate_source,
+        &[
+            syntax_ledger_row(
+                "fail_syntax_smoke_duplicate_a_001",
+                "tests/miz/fail/parser/fail_syntax_smoke_duplicate_a_001.miz",
+                "malformed_export",
+            ),
+            syntax_ledger_row(
+                "fail_syntax_smoke_duplicate_b_001",
+                "tests/miz/fail/parser/fail_syntax_smoke_duplicate_a_001.miz",
+                "malformed_export",
+            ),
+        ],
+    );
+    let report = run_syntax_smoke_corpus(&duplicate_source.config()).unwrap();
+    assert!(report.results.is_empty(), "{report:#?}");
+    assert_has_syntax_smoke_report_diagnostic(
+        &report,
+        "E-SYNTAX-SMOKE-LEDGER",
+        "syntax_smoke.ledger.duplicate_source.tests/miz/fail/parser/fail_syntax_smoke_duplicate_a_001.miz",
+    );
+
+    let corpus = Corpus::new();
+    corpus.add_requirement("spec.en.test.syntax_smoke", &[]);
+    for id in [
+        "fail_syntax_smoke_order_a_001",
+        "fail_syntax_smoke_order_b_001",
+    ] {
+        add_syntax_smoke_case(
+            &corpus,
+            id,
+            &format!("tests/miz/fail/parser/{id}.miz"),
+            "export 123;\n",
+            false,
+        );
+    }
+    let row_a = syntax_ledger_row(
+        "fail_syntax_smoke_order_a_001",
+        "tests/miz/fail/parser/fail_syntax_smoke_order_a_001.miz",
+        "malformed_export",
+    );
+    let row_b = syntax_ledger_row(
+        "fail_syntax_smoke_order_b_001",
+        "tests/miz/fail/parser/fail_syntax_smoke_order_b_001.miz",
+        "malformed_export",
+    );
+    write_syntax_ledger(&corpus, &[row_a.clone(), row_b.clone()]);
+    let report = run_syntax_smoke_corpus(&corpus.config()).unwrap();
+    assert_eq!(report.expected_rejection_count(), 2);
+    assert_eq!(report.failed_count(), 0, "{report:#?}");
+    assert_eq!(
+        report
+            .results
+            .iter()
+            .map(|result| result.id.0.as_str())
+            .collect::<Vec<_>>(),
+        [
+            "fail_syntax_smoke_order_a_001",
+            "fail_syntax_smoke_order_b_001",
+        ]
+    );
+
+    write_syntax_ledger(&corpus, &[row_b, row_a]);
+    let report = run_syntax_smoke_corpus(&corpus.config()).unwrap();
+    assert!(report.results.is_empty(), "{report:#?}");
+    assert!(report.error_count() > 0, "{report:#?}");
+}
+
+#[test]
+fn syntax_smoke_passes_non_syntax_diagnostics_and_retains_their_order() {
+    let corpus = Corpus::new();
+    corpus.add_requirement("spec.en.test.syntax_smoke", &[]);
+    add_syntax_smoke_case(
+        &corpus,
+        "pass_syntax_smoke_non_syntax_diagnostic_001",
+        "tests/miz/pass/parser/pass_syntax_smoke_non_syntax_diagnostic_001.miz",
+        "theorem DupLet: for x being object holds x = x\nproof\n  let x be object;\n  let x be object;\n  thus x = x;\nend;\n",
+        true,
+    );
+
+    let report = run_syntax_smoke_corpus(&corpus.config()).unwrap();
+
+    assert_eq!(report.results.len(), 1);
+    assert_eq!(report.passed_count(), 1, "{report:#?}");
+    assert_eq!(report.expected_rejection_count(), 0);
+    assert_eq!(report.failed_count(), 0);
+    assert_eq!(
+        report.results[0].actual_diagnostic_codes,
+        ["lexing:ScopeSkeleton(DuplicateBindingName)",]
+    );
+}
+
+#[test]
+fn syntax_smoke_repository_has_exactly_360_cases_353_passed_7_expected_and_no_failures() {
+    let report = run_syntax_smoke_corpus(&repository_config()).unwrap();
+
+    assert_eq!(report.results.len(), 360);
+    assert_eq!(report.passed_count(), 353);
+    assert_eq!(report.expected_rejection_count(), 7);
+    assert_eq!(report.failed_count(), 0);
+    assert_eq!(report.error_count(), 0, "{:#?}", report.diagnostics);
 }
 
 #[test]
@@ -9811,6 +10438,52 @@ fn parse_only_cli_reports_active_runner_summary() {
 }
 
 #[test]
+fn syntax_smoke_cli_reports_repository_360_353_7_0_summary() {
+    let output = std::process::Command::new(env!("CARGO_BIN_EXE_mizar-test"))
+        .arg("syntax-smoke")
+        .arg("--workspace-root")
+        .arg(repository_config().workspace_root)
+        .output()
+        .expect("mizar-test syntax-smoke should run");
+
+    assert!(
+        output.status.success(),
+        "syntax-smoke CLI failed: stdout={} stderr={}",
+        String::from_utf8_lossy(&output.stdout),
+        String::from_utf8_lossy(&output.stderr)
+    );
+    let stdout = String::from_utf8_lossy(&output.stdout);
+    assert!(stdout.contains("syntax-smoke cases: 360"));
+    assert!(stdout.contains("passed: 353"));
+    assert!(stdout.contains("expected syntax rejections: 7"));
+    assert!(stdout.contains("failed: 0"));
+    assert!(stdout.contains("errors: 0"));
+}
+
+#[test]
+fn syntax_smoke_cli_returns_one_for_malformed_ledger_and_two_when_missing() {
+    let malformed = Corpus::new();
+    malformed.write(
+        "tests/coverage/syntax_smoke_expected_rejections.tsv",
+        "wrong-header\n",
+    );
+    let output = syntax_smoke_cli(&malformed).output().unwrap();
+    assert_eq!(output.status.code(), Some(1));
+    assert!(String::from_utf8_lossy(&output.stderr).contains("E-SYNTAX-SMOKE-LEDGER"));
+
+    let missing = Corpus::new();
+    fs::remove_file(
+        missing
+            .root
+            .join("tests/coverage/syntax_smoke_expected_rejections.tsv"),
+    )
+    .unwrap();
+    let output = syntax_smoke_cli(&missing).output().unwrap();
+    assert_eq!(output.status.code(), Some(2));
+    assert!(String::from_utf8_lossy(&output.stderr).contains("syntax smoke ledger"));
+}
+
+#[test]
 fn declaration_symbol_cli_reports_active_runner_summary() {
     let output = std::process::Command::new(env!("CARGO_BIN_EXE_mizar-test"))
         .arg("declaration-symbol")
@@ -10705,6 +11378,10 @@ impl Corpus {
         let corpus = Self { root };
         corpus.create_standard_roots();
         corpus.write("tests/coverage/spec_trace.toml", "");
+        corpus.write(
+            "tests/coverage/syntax_smoke_expected_rejections.tsv",
+            "case_id\tsource\tsyntax_diagnostic_codes\towner\n",
+        );
         corpus
     }
 
@@ -10792,6 +11469,51 @@ impl Drop for Corpus {
     fn drop(&mut self) {
         let _ = fs::remove_dir_all(&self.root);
     }
+}
+
+fn add_syntax_smoke_case(corpus: &Corpus, id: &str, source_path: &str, source: &str, pass: bool) {
+    let source_name = Path::new(source_path)
+        .file_name()
+        .and_then(|name| name.to_str())
+        .expect("syntax smoke fixture source should have a UTF-8 basename");
+    corpus.write(source_path, source);
+    let expectation = if pass {
+        pass_expectation(id, source_name, "spec.en.test.syntax_smoke")
+    } else {
+        format!(
+            r#"schema_version = 1
+id = "{id}"
+kind = "fail"
+stage = "lexical"
+domain = "parser"
+source = "{source_name}"
+expected_outcome = "fail"
+expected_phase = "lex"
+failure_category = "syntax_error"
+stable_detail_key = "syntax.synthetic"
+diagnostic_codes = []
+spec_refs = ["spec.en.test.syntax_smoke"]
+"#
+        )
+    };
+    let expectation_path = Path::new(source_path).with_extension("expect.toml");
+    corpus.write(expectation_path, expectation);
+}
+
+fn syntax_ledger_row(id: &str, source: &str, codes: &str) -> String {
+    format!("{id}\t{source}\t{codes}\ttask-75")
+}
+
+fn write_syntax_ledger(corpus: &Corpus, rows: &[String]) {
+    let mut ledger = "case_id\tsource\tsyntax_diagnostic_codes\towner\n".to_owned();
+    if !rows.is_empty() {
+        ledger.push_str(&rows.join("\n"));
+        ledger.push('\n');
+    }
+    corpus.write(
+        "tests/coverage/syntax_smoke_expected_rejections.tsv",
+        ledger,
+    );
 }
 
 fn expectation(id: &str, source: &str, spec_ref: &str) -> String {
@@ -11196,6 +11918,21 @@ fn assert_has_report_code(report: &mizar_test::ParseOnlyRunReport, code: &str) {
     );
 }
 
+fn assert_has_syntax_smoke_report_diagnostic(
+    report: &SyntaxSmokeRunReport,
+    code: &str,
+    detail_key: &str,
+) {
+    assert!(
+        report
+            .diagnostics
+            .iter()
+            .any(|diagnostic| { diagnostic.code.0 == code && diagnostic.detail_key == detail_key }),
+        "expected syntax-smoke diagnostic {code} with detail {detail_key:?}, got {:#?}",
+        report.diagnostics
+    );
+}
+
 fn assert_has_declaration_symbol_report_code(
     report: &mizar_test::DeclarationSymbolRunReport,
     code: &str,
@@ -11363,6 +12100,34 @@ fn canonical_parse_only_report(report: &mizar_test::ParseOnlyRunReport, root: &P
     output
 }
 
+fn canonical_syntax_smoke_report(report: &SyntaxSmokeRunReport, root: &Path) -> String {
+    let mut output = String::new();
+    writeln!(
+        output,
+        "syntax-smoke-counts|{}|{}|{}|{}|{}",
+        report.results.len(),
+        report.passed_count(),
+        report.expected_rejection_count(),
+        report.failed_count(),
+        report.error_count()
+    )
+    .unwrap();
+    for result in &report.results {
+        let result: &SyntaxSmokeCaseResult = result;
+        writeln!(
+            output,
+            "syntax-smoke-result|{}|{}|{}|codes={}",
+            result.id.0,
+            rel_string(root, &result.expectation_path),
+            syntax_smoke_status(result.status),
+            result.actual_diagnostic_codes.join(",")
+        )
+        .unwrap();
+    }
+    push_canonical_diagnostics(&mut output, root, &report.diagnostics);
+    output
+}
+
 fn canonical_declaration_symbol_report(
     report: &mizar_test::DeclarationSymbolRunReport,
     root: &Path,
@@ -11488,6 +12253,15 @@ fn parse_only_status(status: mizar_test::ParseOnlyCaseStatus) -> &'static str {
     }
 }
 
+fn syntax_smoke_status(status: SyntaxSmokeCaseStatus) -> &'static str {
+    match status {
+        SyntaxSmokeCaseStatus::Passed => "passed",
+        SyntaxSmokeCaseStatus::ExpectedSyntaxRejection => "expected-syntax-rejection",
+        SyntaxSmokeCaseStatus::Failed => "failed",
+        _ => "unknown",
+    }
+}
+
 fn declaration_symbol_status(status: mizar_test::DeclarationSymbolCaseStatus) -> &'static str {
     match status {
         mizar_test::DeclarationSymbolCaseStatus::Passed => "passed",
@@ -11539,6 +12313,15 @@ fn plan_cli(corpus: &Corpus) -> std::process::Command {
     let mut command = std::process::Command::new(env!("CARGO_BIN_EXE_mizar-test"));
     command
         .arg("plan")
+        .arg("--workspace-root")
+        .arg(&corpus.root);
+    command
+}
+
+fn syntax_smoke_cli(corpus: &Corpus) -> std::process::Command {
+    let mut command = std::process::Command::new(env!("CARGO_BIN_EXE_mizar-test"));
+    command
+        .arg("syntax-smoke")
         .arg("--workspace-root")
         .arg(&corpus.root);
     command

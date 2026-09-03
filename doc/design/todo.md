@@ -427,11 +427,10 @@ stay binding and must not be weakened.
    syntax while preserving all proof obligations; the paired specification
    clarification and bounded parser/cache/test scope are frozen in
    [STEP5A8-G7-EMPTY-JUSTIFICATIONS](./task_contracts/en/STEP5A8-G7-EMPTY-JUSTIFICATIONS.md).
-9. [ ] **5A.9** — `mizar-test`: corpus-wide syntax smoke guard — parse
-   every non-`parse_only` corpus source through the real frontend and
-   assert no syntax diagnostics (promote the audit-1 throwaway harness
-   into a committed runner). Deps: 5A.1-5A.8 (all G1-G9 frontend gaps
-   closed, including G7 implementation).
+9. [x] **5A.9** — `mizar-test`: the committed corpus-wide syntax smoke
+   guard checks every non-`parse_only` source and admits only the seven exact
+   fail-closed ledger rows. Evidence and deferrals:
+   [STEP5A9-CORPUS-SYNTAX-SMOKE](./task_contracts/en/STEP5A9-CORPUS-SYNTAX-SMOKE.md).
 
 #### Step 5B — Consolidation and pending prerequisites [ ]
 

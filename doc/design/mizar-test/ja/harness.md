@@ -138,11 +138,32 @@ pub struct ProofVerificationCaseResult {
     pub status: ProofVerificationCaseStatus,
     pub failure: Option<String>,
 }
+
+pub struct SyntaxSmokeRunReport {
+    pub results: Vec<SyntaxSmokeCaseResult>,
+    pub diagnostics: Vec<ValidationDiagnostic>,
+}
+
+pub struct SyntaxSmokeCaseResult {
+    pub id: TestCaseId,
+    pub expectation_path: PathBuf,
+    pub status: SyntaxSmokeCaseStatus,
+    pub actual_diagnostic_codes: Vec<String>,
+}
+
+#[non_exhaustive]
+pub enum SyntaxSmokeCaseStatus {
+    Passed,
+    ExpectedSyntaxRejection,
+    Failed,
+}
 ```
 
 generic な `TestOutcome` / snapshot reporting surface は future API である。
 現在の active runner は stage-specific report record を公開し、上記の metadata
-plan と validation diagnostics を共有する。
+plan と validation diagnostics を共有する。`SyntaxSmokeRunReport` は
+`passed_count`、`failed_count`、`expected_rejection_count`、`error_count`、
+`warning_count` も提供する。
 
 ## Public Enum Forward Compatibility
 
@@ -161,6 +182,7 @@ match は現在知られている variant に対して exhaustive のままで�
 | `DeclarationSymbolCaseStatus` | `runner` declaration-symbol report status | `#[non_exhaustive]` downstream forward-compatible surface。 |
 | `TypeElaborationCaseStatus` | `runner` type-elaboration report status | `#[non_exhaustive]` downstream forward-compatible surface。 |
 | `ProofVerificationCaseStatus` | `runner` exact proof-verification report status | `#[non_exhaustive]` downstream forward-compatible surface。 |
+| `SyntaxSmokeCaseStatus` | `runner` syntax-only corpus report status | `#[non_exhaustive]` downstream forward-compatible surface。 |
 
 この module が所有する exhaustive public enum exception はない。
 
@@ -170,6 +192,7 @@ match は現在知られている variant に対して exhaustive のままで�
 |---|---|
 | metadata plan | payload を実行せずに sidecar を discover し、layout、expectation schema、traceability を validate |
 | parse-only | active な `.miz` parse-only case を `mizar-frontend` と `MizarParserSeam` で run |
+| syntax-smoke | supplied config の `TestProfile::Full` を force し、expectation stage が `parse_only` でない全 selected `.miz` case を plan order のまま run する。tag、expected outcome/phase、diagnostic expectation、activation-map membership は参照せず、exact fail-closed syntax-rejection ledger を適用する |
 | declaration-symbol | active な `.miz` declaration-symbol case を frontend parsing と resolver declaration/symbol collection で run |
 | type-elaboration | active な `.miz` type-elaboration case を frontend parsing と resolver declaration/symbol collection で run し、対応済み reserve-only declaration payload を抽出し、checker-owned `BindingEnv` / `DeclarationInput` / `DeclarationChecker` handoff production を syntax-free な `mizar-checker` seam に委譲し、successful bare-builtin case、task-55 bare local-mode-expansion case、task-56 one-edge local-mode chain case、task-74 structural bare local-mode chain case は `TypedAst` と `ResolvedTypedAst` まで継続し、`mizar-core` の `ResolvedTypedAstSummary::from_ast` で summary-readiness を確認し、complete checker-owned `BindingEnv` を `SourceBindingCoreContextProducer` へ渡して binder-only `CoreContext` handoff を構築し、same-module attributed reserve declaration、local structure reserve head、attributed local structure reserve head、task-57 の local structure RHS を持つ real local-mode expansion、task-58 の attributed builtin RHS を持つ real local-mode expansion、task-59 の real direct bare-builtin expansion を持つ attributed local-mode reserve head、task-60 の real direct local-structure RHS expansion を持つ attributed local-mode reserve head、task-61 の real direct attributed-builtin RHS expansion を持つ attributed local-mode reserve head、task-62 の local structure RHS で終端する one-edge bare local-mode chain、task-63 の attributed builtin RHS で終端する one-edge bare local-mode chain、task-64 の one-edge bare-builtin chain を持つ attributed local-mode reserve head、task-65 の one-edge structure-RHS chain を持つ attributed local-mode reserve head、task-66 の one-edge attributed-builtin-RHS chain を持つ attributed local-mode reserve head は checker evidence-query gap、narrow な task-55/task-56/task-57/task-58/task-59/task-60/task-61/task-62/task-63/task-64/task-65/task-66/task-74 expansion slice を持たない same-module local mode reserve head（mixed attributed/bare local-mode source、attributed chain dependency、task-74 structural guard violation chain を含む）は checker mode-expansion payload gap として surface し、task-67 structure-qualified attribute reference、task-68 argument-bearing local-mode reserve head、task-69 argument-bearing local-structure reserve head、task-70 bracket-form local-mode reserve head、task-71 bracket-form local-structure reserve head は source-to-checker extraction-gap boundary case として surface し、task-75 forward local-mode reserve head、task-76 forward local-structure reserve head、task-77 forward local-attribute reserve type expression は checker handoff 前の lower-stage active-range boundary case として surface し、未対応 checker payload family は stable external dependency gap として surface する |
 | proof-verification | exact Task-180 active proof-verification source だけを source-to-checker-to-Core-to-VC へ2回通し、complete `VcSet` debug baseline を比較する。broader proof-verification family は deferred のまま |
@@ -231,6 +254,14 @@ wrapper definitionを所有せず、route aliasはtest-onlyである。private f
 test/CLI oracleをownership guardとする。fully qualified name/nestingを変えない
 ため、test sourceは`src/runner/tests.rs`、`src/runner/tests/`、既存integration-
 test fileに維持する。
+
+### Step 5A.9 additive ownership
+
+上記のfrozen Task 250 checkpointは書き換えない。Step 5A.9は
+`src/runner/syntax_smoke.rs`をsyntax-smoke executionとledger validationのsole owner
+として追加し、`runner.rs`はpublic recordとcorpus orchestrationだけを所有する。
+leafは441行、SHA-256は
+`a262cf8ae45e0ea2a0727e2c597d9f0cccd2f54e5f6b7ec728d7d4408c00c248`である。
 
 Task 75/76/77 addendum for `type-elaboration`: later declaration を名前参照する
 forward same-module local-mode reserve head、local-structure reserve head、
@@ -1770,6 +1801,26 @@ positive imported mode elaboration、CoreIr、ControlFlowIr、VC、proof payload
    byte-for-byte で比較する。
 10. phase、failure category、rejection reason、diagnostic code、snapshot diff summary 付きで failures を report する。
 
+`syntax-smoke` runner は supplied config を clone して `profile = Full` にし、expectation
+stage が `parse_only` でない `.miz` source だけを選び、canonical plan order を保持する。
+`tests/coverage/syntax_smoke_expected_rejections.tsv` を読み、正確な LF/UTF-8 header
+`case_id<TAB>source<TAB>syntax_diagnostic_codes<TAB>owner`、4個のnon-empty field、clean
+workspace-relative forward-slash path、ordered な non-empty syntax-code vector、既存の
+owner token を要求する。ledger SHA-256 は
+`54bd225e86fffde5c3b114dcfd66bb5bfd18683cc96477078486ddfd9496b019` である。
+malformed content、duplicate id/source、unresolved membership、out-of-order row は
+plan-like validation error となり、report は case result を持たず CLI は exit 1 となる。
+execution 中の missing/mismatched row と stale/extra consumption は validation
+diagnostic と、selected case があれば `Failed` result を生成する。ledger I/O と plan
+construction の `HarnessError` は public `Err` のままで CLI exit 2 となる。
+
+selected source は real frontend/import seam を一度だけ panic-isolated に run する。
+`Passed` は successful execution、`SurfaceAst` の存在、syntax diagnostic 0 を要求する。
+non-syntax frontend diagnostic は `actual_diagnostic_codes` に保持されるが、この
+syntax-only predicate を fail させない。AST を伴う successful execution の complete な
+exact ledger match は `ExpectedSyntaxRejection`、unledgered/mismatched syntax vector、
+panic、frontend error、missing AST は `Failed` となる。case の semantic oracle は参照しない。
+
 現在の parse-only runner は、各 active corpus file を一時的な `src/` package に
 copy し、実際の frontend parser seam を実行する。pass case では AST が生成され、
 assertion 対象の diagnostics がないことを要求する。fail case では、期待値を bare
@@ -2108,6 +2159,12 @@ key scenarios:
   observable artifact を生成する
 - architecture-22 matrix metadata が required scenario ids をすべて planned として
   report し、owning consumer runner が存在する前の fake active row を reject する
+
+Step 5A.9 の tests は profile-independent selection、deterministic replay、syntax-only
+pass/rejection semantics、non-syntax diagnostic retention、panic isolation、exact ledger
+admission と各 fail-closed ledger mutation も cover する。repository/CLI oracle は正確に
+`360 total / 353 passed / 7 expected syntax rejections / 0 failed` である。
+`mizar-test syntax-smoke` はこの count を表示し、clean oracle では exit 0 となる。
 
 ## Constraints and Assumptions
 

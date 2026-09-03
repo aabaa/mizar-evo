@@ -291,7 +291,5 @@ the 205 active type-elaboration cases) is not restated here.
 - The 29 parse-blocked sources become immediately usable syntax regression
   material for the gap-closure tasks in
   [semantic_bridge_frontend_gaps.md](./semantic_bridge_frontend_gaps.md).
-- A committed corpus-wide syntax smoke guard (parse every non-parse_only
-  corpus source, assert no syntax diagnostics or record the ledger) is
-  recommended once gaps G1-G9 close; the throwaway audit harness used to
-  produce these results is reproduced in the gaps document.
+- Corpus-wide syntax smoke guard: [Step 5A.9 contract](../../task_contracts/en/STEP5A9-CORPUS-SYNTAX-SMOKE.md)
+  and [exact syntax-rejection ledger](../../../../tests/coverage/syntax_smoke_expected_rejections.tsv).

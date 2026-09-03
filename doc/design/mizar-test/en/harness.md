@@ -139,11 +139,32 @@ pub struct ProofVerificationCaseResult {
     pub status: ProofVerificationCaseStatus,
     pub failure: Option<String>,
 }
+
+pub struct SyntaxSmokeRunReport {
+    pub results: Vec<SyntaxSmokeCaseResult>,
+    pub diagnostics: Vec<ValidationDiagnostic>,
+}
+
+pub struct SyntaxSmokeCaseResult {
+    pub id: TestCaseId,
+    pub expectation_path: PathBuf,
+    pub status: SyntaxSmokeCaseStatus,
+    pub actual_diagnostic_codes: Vec<String>,
+}
+
+#[non_exhaustive]
+pub enum SyntaxSmokeCaseStatus {
+    Passed,
+    ExpectedSyntaxRejection,
+    Failed,
+}
 ```
 
 The generic `TestOutcome`/snapshot-reporting surface is future API. Current
 active runners expose stage-specific report records while sharing the metadata
-plan and validation diagnostics shown above.
+plan and validation diagnostics shown above. `SyntaxSmokeRunReport` also
+provides `passed_count`, `failed_count`, `expected_rejection_count`,
+`error_count`, and `warning_count`.
 
 ## Public Enum Forward Compatibility
 
@@ -163,6 +184,7 @@ variants.
 | `DeclarationSymbolCaseStatus` | `runner` declaration-symbol report status | `#[non_exhaustive]` downstream forward-compatible surface. |
 | `TypeElaborationCaseStatus` | `runner` type-elaboration report status | `#[non_exhaustive]` downstream forward-compatible surface. |
 | `ProofVerificationCaseStatus` | `runner` exact proof-verification report status | `#[non_exhaustive]` downstream forward-compatible surface. |
+| `SyntaxSmokeCaseStatus` | `runner` syntax-only corpus report status | `#[non_exhaustive]` downstream forward-compatible surface. |
 
 No exhaustive public enum exceptions are owned by this module.
 
@@ -172,6 +194,7 @@ No exhaustive public enum exceptions are owned by this module.
 |---|---|
 | metadata plan | discover sidecars and validate layout, expectation schema, and traceability without executing payloads |
 | parse-only | run active `.miz` parse-only cases through `mizar-frontend` and `MizarParserSeam` |
+| syntax-smoke | force `TestProfile::Full`; run every selected `.miz` case whose expectation stage is not `parse_only`, preserving plan order and ignoring tags, expected outcome/phase, diagnostic expectations, and activation-map membership; apply the exact fail-closed syntax-rejection ledger |
 | declaration-symbol | run active `.miz` declaration-symbol cases through frontend parsing and resolver declaration/symbol collection |
 | type-elaboration | run active `.miz` type-elaboration cases through frontend parsing and resolver declaration/symbol collection, extract supported reserve-only declaration payloads, delegate checker-owned `BindingEnv`/`DeclarationInput`/`DeclarationChecker` handoff production to the syntax-free `mizar-checker` seam, continue successful bare-builtin, task-55 bare local-mode-expansion, task-56 one-edge local-mode chain, and task-74 structural bare local-mode chain cases through `TypedAst` and `ResolvedTypedAst`, confirm `mizar-core` summary-readiness through `ResolvedTypedAstSummary::from_ast`, pass the complete checker-owned `BindingEnv` to `SourceBindingCoreContextProducer` for a binder-only `CoreContext` handoff, surface same-module attributed reserve declarations, local structure reserve heads, attributed local structure reserve heads, task-57 real local-mode expansions with local structure RHSs, task-58 real local-mode expansions with attributed builtin RHSs, task-59 attributed local-mode reserve heads with real direct bare-builtin expansions, task-60 attributed local-mode reserve heads with real direct local-structure RHS expansions, task-61 attributed local-mode reserve heads with real direct attributed-builtin RHS expansions, task-62 one-edge bare local-mode chains ending in local structure RHSs, task-63 one-edge bare local-mode chains ending in attributed builtin RHSs, task-64 attributed local-mode reserve heads with one-edge bare-builtin chains, task-65 attributed local-mode reserve heads with one-edge structure-RHS chains, and task-66 attributed local-mode reserve heads with one-edge attributed-builtin-RHS chains as checker evidence-query gaps, surface same-module local mode reserve heads that lack the narrow task-55/task-56/task-57/task-58/task-59/task-60/task-61/task-62/task-63/task-64/task-65/task-66/task-74 expansion slices, including mixed attributed/bare local-mode sources, attributed chain dependencies, and chains that violate task-74 structural guards, as checker mode-expansion payload gaps, surface task-67 structure-qualified attribute references, task-68 argument-bearing local-mode reserve heads, task-69 argument-bearing local-structure reserve heads, task-70 bracket-form local-mode reserve heads, and task-71 bracket-form local-structure reserve heads as source-to-checker extraction-gap boundary cases, surface task-75 forward local-mode reserve heads, task-76 forward local-structure reserve heads, and task-77 forward local-attribute reserve type expressions as lower-stage active-range boundary cases before checker handoff, and surface unsupported checker payload families as stable external dependency gaps |
 | proof-verification | run only the exact Task-180 active proof-verification source through source-to-checker-to-Core-to-VC twice and compare the complete `VcSet` debug baseline; broader proof-verification families remain deferred |
@@ -237,6 +260,14 @@ the documented public API, and the exact discovered-test/CLI oracles are the
 ownership guards. Test
 sources remain under `src/runner/tests.rs`, `src/runner/tests/`, and existing
 integration-test files so fully qualified names and nesting do not change.
+
+### Step 5A.9 additive ownership
+
+The frozen Task 250 checkpoint above is not rewritten. Step 5A.9 adds
+`src/runner/syntax_smoke.rs` as the sole owner of syntax-smoke execution and
+ledger validation; `runner.rs` owns only its public records and corpus
+orchestration. The leaf is 441 lines with SHA-256
+`a262cf8ae45e0ea2a0727e2c597d9f0cccd2f54e5f6b7ec728d7d4408c00c248`.
 
 Task 75/76/77 addendum for `type-elaboration`: forward same-module local-mode
 reserve heads, local-structure reserve heads, and local-attribute reserve type
@@ -1843,6 +1874,32 @@ ControlFlowIr, VC, or proof payloads.
    byte-for-byte as described below.
 10. Report failures with phase, failure category, rejection reason, diagnostic code, and snapshot diff summary.
 
+The `syntax-smoke` runner clones the supplied config with `profile = Full`,
+selects exactly `.miz` sources whose expectation stage is not `parse_only`,
+and retains canonical plan order. It reads
+`tests/coverage/syntax_smoke_expected_rejections.tsv`, whose exact LF/UTF-8
+header is `case_id<TAB>source<TAB>syntax_diagnostic_codes<TAB>owner`; rows
+must contain four non-empty fields, clean workspace-relative forward-slash
+paths, ordered non-empty syntax-code vectors, and the existing owner token.
+The ledger SHA-256 is
+`54bd225e86fffde5c3b114dcfd66bb5bfd18683cc96477078486ddfd9496b019`.
+Malformed content, duplicate ids/sources, unresolved membership, and
+out-of-order rows are plan-like validation errors: the report has no case
+results and the CLI exits 1. During execution, missing or mismatched rows and
+stale/extra consumption produce validation diagnostics and `Failed` results
+where a selected case exists.
+Ledger file I/O and plan-construction `HarnessError`s remain public `Err` and
+CLI exit 2.
+
+Each selected source runs once through the real frontend/import seam in a
+panic-isolated call. `Passed` requires successful execution, a `SurfaceAst`,
+and no syntax diagnostic. Non-syntax frontend diagnostics remain in
+`actual_diagnostic_codes` and do not fail this syntax-only predicate. A
+complete exact ledger match from a successful execution with an AST yields
+`ExpectedSyntaxRejection`; an unledgered or mismatched syntax vector, panic,
+frontend error, or missing AST yields `Failed`. The case's semantic oracle is
+never consulted.
+
 The current parse-only runner copies each active corpus file into a temporary
 `src/` package, runs the real frontend parser seam, requires pass cases to
 produce an AST with no assertion diagnostics, and compares fail cases against
@@ -2209,6 +2266,13 @@ Key scenarios:
   as sequential snapshot generation.
 - architecture-22 matrix metadata reports all required scenario ids as planned
   and rejects fake active rows before an owning consumer runner exists.
+
+Step 5A.9 tests additionally cover profile-independent selection and
+deterministic replay, syntax-only pass/rejection semantics, non-syntax
+diagnostic retention, panic isolation, exact ledger admission and every
+fail-closed ledger mutation. The repository and CLI oracle is exactly
+`360 total / 353 passed / 7 expected syntax rejections / 0 failed`.
+`mizar-test syntax-smoke` prints these counts and exits 0 for the clean oracle.
 
 ## Constraints and Assumptions
 

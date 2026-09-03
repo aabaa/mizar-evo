@@ -6,6 +6,8 @@ include!("tests/proof_verification.rs");
 
 include!("tests/parse_only.rs");
 
+include!("tests/syntax_smoke.rs");
+
 include!("tests/type_elaboration/source_extraction.rs");
 
 include!("tests/type_elaboration/reserved_binary.rs");

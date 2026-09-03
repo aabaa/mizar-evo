@@ -165,6 +165,29 @@ fn public_enums_are_non_exhaustive_and_documented() {
 }
 
 #[test]
+fn syntax_smoke_ledger_matches_frozen_rows_and_sha256() {
+    let workspace = workspace_root();
+    let path = workspace.join("tests/coverage/syntax_smoke_expected_rejections.tsv");
+    let actual = fs::read_to_string(&path)
+        .unwrap_or_else(|error| panic!("failed to read `{}`: {error}", path.display()));
+    let expected = r#"case_id	source	syntax_diagnostic_codes	owner
+fail_template_func_actual_result_widening_001	tests/miz/fail/templates/fail_template_func_actual_result_widening_001.miz	malformed_formula_expression,malformed_formula_expression,missing_semicolon	template-spec-decision
+fail_template_inference_requires_explicit_qua_view_001	tests/miz/fail/templates/fail_template_inference_requires_explicit_qua_view_001.miz	malformed_term_expression,malformed_term_expression,malformed_type_expression,malformed_type_expression,malformed_term_expression,malformed_term_expression,malformed_term_expression,malformed_term_expression,malformed_term_expression,malformed_type_expression,malformed_type_expression,malformed_term_expression,malformed_term_expression,malformed_term_expression,malformed_term_expression,malformed_term_expression,malformed_type_expression,malformed_type_expression,malformed_term_expression,malformed_term_expression,malformed_type_expression,malformed_type_expression	template-spec-decision
+fail_template_qua_view_attribute_leak_001	tests/miz/fail/templates/fail_template_qua_view_attribute_leak_001.miz	malformed_term_expression,malformed_term_expression,malformed_type_expression,malformed_type_expression,malformed_term_expression,malformed_term_expression,malformed_term_expression,malformed_term_expression,malformed_term_expression,malformed_type_expression,malformed_type_expression,malformed_term_expression,malformed_term_expression,malformed_term_expression,malformed_term_expression,malformed_term_expression,malformed_type_expression,malformed_type_expression,malformed_term_expression,malformed_term_expression,malformed_type_expression,malformed_type_expression,malformed_formula_expression,malformed_formula_expression,missing_semicolon,malformed_formula_expression,malformed_term_expression,malformed_term_expression,missing_semicolon,malformed_formula_expression,malformed_term_expression,malformed_term_expression,unexpected_top_level_token,unexpected_top_level_token	template-spec-decision
+fail_template_type_actual_missing_existential_001	tests/miz/fail/templates/fail_template_type_actual_missing_existential_001.miz	malformed_formula_expression,malformed_formula_expression,missing_semicolon,unexpected_top_level_token,unexpected_top_level_token	template-spec-decision
+fail_type_elaboration_local_attribute_forward_reference_gap_001	tests/miz/fail/types/fail_type_elaboration_local_attribute_forward_reference_gap_001.miz	malformed_type_expression	task-77
+fail_type_elaboration_local_mode_forward_reference_gap_001	tests/miz/fail/types/fail_type_elaboration_local_mode_forward_reference_gap_001.miz	malformed_type_expression	task-75
+fail_type_elaboration_local_structure_forward_reference_gap_001	tests/miz/fail/types/fail_type_elaboration_local_structure_forward_reference_gap_001.miz	malformed_type_expression	task-76
+"#;
+
+    assert_eq!(actual, expected, "syntax-smoke ledger rows drifted");
+    assert_eq!(
+        sha256_hex(actual.as_bytes()),
+        "54bd225e86fffde5c3b114dcfd66bb5bfd18683cc96477078486ddfd9496b019"
+    );
+}
+
+#[test]
 fn task_contracts_are_recursively_paired_and_supported_links_resolve() {
     assert_eq!(
         sha256_hex(b""),
@@ -537,6 +560,12 @@ fn public_enum_policies() -> Vec<PublicEnumPolicy> {
         PublicEnumPolicy {
             module: "runner",
             name: "ParseOnlyCaseStatus",
+            en_doc: "doc/design/mizar-test/en/harness.md",
+            ja_doc: "doc/design/mizar-test/ja/harness.md",
+        },
+        PublicEnumPolicy {
+            module: "runner",
+            name: "SyntaxSmokeCaseStatus",
             en_doc: "doc/design/mizar-test/en/harness.md",
             ja_doc: "doc/design/mizar-test/ja/harness.md",
         },

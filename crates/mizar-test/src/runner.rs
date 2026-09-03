@@ -20,6 +20,7 @@ mod import_fixtures;
 mod parse_only;
 mod proof_verification;
 mod shared;
+mod syntax_smoke;
 mod type_elaboration;
 
 use declaration_symbol::{declaration_symbol_failure_diagnostic, run_declaration_symbol_case};
@@ -35,6 +36,10 @@ use proof_verification::{
 use shared::{
     FrontendRun, frontend_detail_keys, normalized_tests_root, normalized_workspace_root,
     resolver_symbol_collection, run_frontend,
+};
+use syntax_smoke::{
+    parse_syntax_smoke_ledger, read_syntax_smoke_ledger, run_syntax_smoke_case,
+    syntax_smoke_failure_diagnostic, syntax_smoke_ledger_diagnostic, workspace_relative_source,
 };
 #[cfg(test)]
 use type_elaboration::{
@@ -1238,6 +1243,28 @@ pub enum ParseOnlyCaseStatus {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
+pub struct SyntaxSmokeRunReport {
+    pub results: Vec<SyntaxSmokeCaseResult>,
+    pub diagnostics: Vec<ValidationDiagnostic>,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct SyntaxSmokeCaseResult {
+    pub id: crate::expectation::TestCaseId,
+    pub expectation_path: PathBuf,
+    pub status: SyntaxSmokeCaseStatus,
+    pub actual_diagnostic_codes: Vec<String>,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[non_exhaustive]
+pub enum SyntaxSmokeCaseStatus {
+    Passed,
+    ExpectedSyntaxRejection,
+    Failed,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub struct DeclarationSymbolRunReport {
     pub results: Vec<DeclarationSymbolCaseResult>,
     pub diagnostics: Vec<ValidationDiagnostic>,
@@ -1314,6 +1341,43 @@ impl ParseOnlyRunReport {
         self.results
             .iter()
             .filter(|result| result.status == ParseOnlyCaseStatus::Failed)
+            .count()
+    }
+
+    pub fn error_count(&self) -> usize {
+        self.diagnostics
+            .iter()
+            .filter(|diagnostic| diagnostic.severity == ValidationSeverity::Error)
+            .count()
+    }
+
+    pub fn warning_count(&self) -> usize {
+        self.diagnostics
+            .iter()
+            .filter(|diagnostic| diagnostic.severity == ValidationSeverity::Warning)
+            .count()
+    }
+}
+
+impl SyntaxSmokeRunReport {
+    pub fn passed_count(&self) -> usize {
+        self.results
+            .iter()
+            .filter(|result| result.status == SyntaxSmokeCaseStatus::Passed)
+            .count()
+    }
+
+    pub fn failed_count(&self) -> usize {
+        self.results
+            .iter()
+            .filter(|result| result.status == SyntaxSmokeCaseStatus::Failed)
+            .count()
+    }
+
+    pub fn expected_rejection_count(&self) -> usize {
+        self.results
+            .iter()
+            .filter(|result| result.status == SyntaxSmokeCaseStatus::ExpectedSyntaxRejection)
             .count()
     }
 
@@ -1451,6 +1515,126 @@ pub fn run_parse_only_corpus(config: &DiscoveryConfig) -> Result<ParseOnlyRunRep
     })
 }
 
+pub fn run_syntax_smoke_corpus(
+    config: &DiscoveryConfig,
+) -> Result<SyntaxSmokeRunReport, HarnessError> {
+    let mut full_config = config.clone();
+    full_config.profile = crate::harness::TestProfile::Full;
+    let workspace_root = normalized_workspace_root(&full_config)?;
+    let plan = build_test_plan(&full_config)?;
+    let mut diagnostics = plan.diagnostics.clone();
+    if plan.error_count() > 0 {
+        return Ok(SyntaxSmokeRunReport {
+            results: Vec::new(),
+            diagnostics,
+        });
+    }
+
+    let selected_cases = syntax_smoke_cases(&plan).collect::<Vec<_>>();
+    let ledger_path = normalized_tests_root(&workspace_root, &full_config)
+        .join("coverage/syntax_smoke_expected_rejections.tsv");
+    let ledger_bytes = read_syntax_smoke_ledger(&ledger_path)?;
+    let ledger = match parse_syntax_smoke_ledger(
+        &ledger_path,
+        &ledger_bytes,
+        &workspace_root,
+        &selected_cases,
+    ) {
+        Ok(ledger) => ledger,
+        Err(ledger_diagnostics) => {
+            diagnostics.extend(ledger_diagnostics);
+            diagnostics.sort();
+            return Ok(SyntaxSmokeRunReport {
+                results: Vec::new(),
+                diagnostics,
+            });
+        }
+    };
+
+    let mut results = Vec::new();
+    let mut ledger_row_index = 0usize;
+    let mut consumed_ledger_rows = vec![false; ledger.rows.len()];
+    let mut reported_ledger_rows = vec![false; ledger.rows.len()];
+    for (ordinal, case) in selected_cases.into_iter().enumerate() {
+        let execution = run_syntax_smoke_case(&workspace_root, case, ordinal);
+        let mut result = execution.result;
+        let expected_row = ledger.rows.get(ledger_row_index);
+        let expected_row_for_case = expected_row.filter(|row| row.selected_index == Some(ordinal));
+        let exact_expected_rejection = expected_row_for_case.is_some_and(|row| {
+            row.case_id == case.id.0
+                && workspace_relative_source(&workspace_root, &case.source_path)
+                    .is_some_and(|source| source == row.source)
+                && execution.syntax_diagnostic_codes == row.syntax_diagnostic_codes
+        });
+
+        if exact_expected_rejection {
+            consumed_ledger_rows[ledger_row_index] = true;
+            if execution.completed && execution.has_ast {
+                result.status = SyntaxSmokeCaseStatus::ExpectedSyntaxRejection;
+            }
+            ledger_row_index += 1;
+        } else if expected_row_for_case.is_some() {
+            let row_index = ledger_row_index;
+            let row = expected_row_for_case.expect("checked above");
+            result.status = SyntaxSmokeCaseStatus::Failed;
+            reported_ledger_rows[row_index] = true;
+            if execution.syntax_diagnostic_codes.is_empty() {
+                diagnostics.push(syntax_smoke_ledger_diagnostic(
+                    &ledger.path,
+                    format!("syntax_smoke.ledger.stale.{}", case.id.0),
+                    format!(
+                        "syntax smoke ledger row `{}` is stale because the selected case emitted no syntax diagnostics",
+                        row.case_id
+                    ),
+                ));
+            } else if !exact_expected_rejection {
+                diagnostics.push(syntax_smoke_ledger_diagnostic(
+                    &ledger.path,
+                    format!("syntax_smoke.ledger.mismatch.{}", case.id.0),
+                    format!(
+                        "syntax smoke ledger row `{}` did not exactly match the ordered syntax diagnostic vector {:?}",
+                        row.case_id, execution.syntax_diagnostic_codes
+                    ),
+                ));
+            }
+            ledger_row_index += 1;
+        } else if !execution.syntax_diagnostic_codes.is_empty() {
+            diagnostics.push(syntax_smoke_ledger_diagnostic(
+                &ledger.path,
+                format!("syntax_smoke.ledger.missing.{}", case.id.0),
+                format!(
+                    "selected syntax case `{}` emitted unledgered syntax diagnostics {:?}",
+                    case.id.0, execution.syntax_diagnostic_codes
+                ),
+            ));
+        }
+
+        if result.status == SyntaxSmokeCaseStatus::Failed {
+            diagnostics.push(syntax_smoke_failure_diagnostic(case, &result));
+        }
+        results.push(result);
+    }
+
+    for (row_index, row) in ledger.rows.iter().enumerate() {
+        if !consumed_ledger_rows[row_index] && !reported_ledger_rows[row_index] {
+            diagnostics.push(syntax_smoke_ledger_diagnostic(
+                &ledger.path,
+                format!("syntax_smoke.ledger.extra.{}", row.case_id),
+                format!(
+                    "syntax smoke ledger row `{}` was not consumed exactly once",
+                    row.case_id
+                ),
+            ));
+        }
+    }
+    diagnostics.sort();
+
+    Ok(SyntaxSmokeRunReport {
+        results,
+        diagnostics,
+    })
+}
+
 pub fn run_declaration_symbol_corpus(
     config: &DiscoveryConfig,
 ) -> Result<DeclarationSymbolRunReport, HarnessError> {
@@ -1558,6 +1742,15 @@ fn run_proof_verification_plan(
 
 pub fn active_parse_only_cases(plan: &TestPlan) -> impl Iterator<Item = &TestCase> {
     plan.cases.iter().filter(|case| is_active_parse_only(case))
+}
+
+pub fn syntax_smoke_cases(plan: &TestPlan) -> impl Iterator<Item = &TestCase> {
+    plan.cases.iter().filter(|case| {
+        case.source_path
+            .extension()
+            .is_some_and(|extension| extension == "miz")
+            && case.expectation.stage != Stage::ParseOnly
+    })
 }
 
 pub fn active_declaration_symbol_cases(plan: &TestPlan) -> impl Iterator<Item = &TestCase> {
