@@ -423,21 +423,15 @@ stay binding and must not be weakened.
    covers already-active notation spellings; production behavior was already
    closed by 5A.2/5A.5. Evidence:
    [STEP5A7-G9-ACTIVE-PATTERN-SPELLINGS](./task_contracts/en/STEP5A7-G9-ACTIVE-PATTERN-SPELLINGS.md).
-8. [ ] **5A.8 (G7, spec decision)** — spec-decision task, not a silent
-   parser fix: spec A.15 admits an empty justification, and the parser
-   accepts bare `existence;`/`uniqueness;` but rejects bare `coherence;`,
-   `symmetry;`, `reducibility;`, `sethood;` (`malformed_justification`).
-   Decide the spec-or-parser correction; per AGENTS.md this is a
-   specification-intent change updating `doc/spec/en/` and `doc/spec/ja/`
-   together, with corpus seeds for the decided behavior. Settle corpus-map
-   spec findings 1 and 2 (`sample_codes.md` bare-obligation sketch forms)
-   in the same decision record. The audit-1 corpus is not blocked on this
-   task (it uses explicit proof blocks). Deps: none.
+8. [~] **5A.8 (G7)** — human-approved decision keeps empty justification
+   syntax while preserving all proof obligations; the paired specification
+   clarification and bounded parser/cache/test scope are frozen in
+   [STEP5A8-G7-EMPTY-JUSTIFICATIONS](./task_contracts/en/STEP5A8-G7-EMPTY-JUSTIFICATIONS.md).
 9. [ ] **5A.9** — `mizar-test`: corpus-wide syntax smoke guard — parse
    every non-`parse_only` corpus source through the real frontend and
    assert no syntax diagnostics (promote the audit-1 throwaway harness
-   into a committed runner). Deps: 5A.1-5A.7 (G1-G9 closed except the
-   G7 decision).
+   into a committed runner). Deps: 5A.1-5A.8 (all G1-G9 frontend gaps
+   closed, including G7 implementation).
 
 #### Step 5B — Consolidation and pending prerequisites [ ]
 

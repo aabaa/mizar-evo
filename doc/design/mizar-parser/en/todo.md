@@ -18,6 +18,8 @@
    [task contract](../../task_contracts/en/STEP5A6-G6-DEPENDENT-MODE-USE.md).
 4. [x] **Step 5A.7 / G9** — complete with regression-only changes; see the
    [task contract](../../task_contracts/en/STEP5A7-G9-ACTIVE-PATTERN-SPELLINGS.md).
+5. [~] **Step 5A.8 / G7** — approved specification decision frozen; see the
+   [task contract](../../task_contracts/en/STEP5A8-G7-EMPTY-JUSTIFICATIONS.md).
 
 ## Module Implementation
 

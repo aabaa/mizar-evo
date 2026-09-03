@@ -70,15 +70,10 @@ expectations must not be weakened to match current behavior.
 
 ## Spec Findings (for audit 2)
 
-1. **Empty justification inconsistency.** A.15 admits an empty
-   justification, and the parser accepts bare `existence;`/`uniqueness;`,
-   but rejects bare `coherence;`, `symmetry;`, `reducibility;`, `sethood;`
-   (`malformed_justification`). Either the grammar or the parser must be
-   corrected; the corpus uses explicit `proof thus thesis; end;` blocks so
-   each case isolates its own target construct.
-2. **`sample_codes.md` sketch forms.** The samples write bare obligation
-   names as ellipsis ("omitted correctness obligations are shown only by
-   name"), which reads as legal syntax but is not decided by the spec text.
+1. **Empty justification decision.** Human-approved intent and correction
+   scope are frozen in the [5A.8 contract](../../task_contracts/en/STEP5A8-G7-EMPTY-JUSTIFICATIONS.md).
+2. **`sample_codes.md` sketch forms.** Resolved by the same 5A.8 decision;
+   bare obligation names are the legal empty-justification form.
 3. **Mandatory property-implementation correctness.** A.7 makes
    `existence`/`uniqueness` grammatically mandatory for means-form property
    implementations, so their omission is a *syntax* rejection
