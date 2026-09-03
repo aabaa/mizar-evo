@@ -414,9 +414,11 @@ stay binding and must not be weakened.
    Deps: completed 5A.3 for symbolic-spelling cases.
 6. [ ] **5A.6 (G6)** — `mizar-parser`/`mizar-frontend`: accept
    argument-bearing local dependent-mode use (`QMode of A`) in
-   binder/type positions; the declaration already parses and imported
-   argument-bearing modes are handled by the task-68 boundary. Deps:
-   none.
+   binder/type positions; the declaration already parses, while task 68 owns
+   the same-module reserve extraction boundary and imported provenance remains
+   separately owned. Frozen scope:
+   [STEP5A6-G6-DEPENDENT-MODE-USE](./task_contracts/en/STEP5A6-G6-DEPENDENT-MODE-USE.md).
+   Deps: completed 5A.5 by frozen order.
 7. [ ] **5A.7 (G9)** — `mizar-parser`: parse pattern positions that name
    an already-active notation spelling (redefine pred, second definition
    of the same spelling, synonym original pattern). Deps: 5A.2, 5A.5.
