@@ -19,7 +19,7 @@ const ACTIVE_FORMULA_STATEMENT_TAG: &str = "active_formula_statement";
 const DUPLICATE_BINDING_FRONTEND_KEY: &str = "frontend:lexing:ScopeSkeleton(DuplicateBindingName)";
 const DUPLICATE_GENERALIZATION_KEY: &str = "variables.let.duplicate_generalization";
 
-const EXACT_FORMULA_STATEMENT_CASES: [(&str, &str, ExpectedOutcome); 6] = [
+const EXACT_FORMULA_STATEMENT_CASES: [(&str, &str, ExpectedOutcome); 7] = [
     (
         "pass_formula_statement_deffunc_defpred_local_001",
         "tests/miz/pass/variables/pass_formula_statement_deffunc_defpred_local_001.miz",
@@ -49,6 +49,11 @@ const EXACT_FORMULA_STATEMENT_CASES: [(&str, &str, ExpectedOutcome); 6] = [
         "fail_formula_statement_take_non_existential_thesis_001",
         "tests/miz/fail/variables/fail_formula_statement_take_non_existential_thesis_001.miz",
         ExpectedOutcome::Fail,
+    ),
+    (
+        "pass_formula_statement_attr_negated_chain_assertion_001",
+        "tests/miz/pass/attributes/pass_formula_statement_attr_negated_chain_assertion_001.miz",
+        ExpectedOutcome::Pass,
     ),
 ];
 
@@ -184,6 +189,16 @@ fn formula_statement_detail_keys(
             .map(|key| format!("formula_statement.lower_stage.{key}"))
             .collect();
     }
+    if case.id.0 == "pass_formula_statement_attr_negated_chain_assertion_001"
+        && is_active_formula_statement(workspace_root, case)
+    {
+        let keys = super::type_elaboration::source_attribute_semantics_detail_keys(
+            &ast,
+            resolver.module.clone(),
+            &resolver.env,
+        );
+        return reconcile_frontend_and_semantics(frontend_keys, keys);
+    }
     let semantics = source_variable_semantics_detail_keys(&ast, &resolver.module, &resolver.env);
     reconcile_frontend_and_semantics(frontend_keys, semantics)
 }
@@ -295,15 +310,15 @@ mod tests {
     };
 
     #[test]
-    fn exact_inventory_has_six_unique_id_source_pairs() {
-        assert_eq!(EXACT_FORMULA_STATEMENT_CASES.len(), 6);
+    fn exact_inventory_has_seven_unique_id_source_pairs() {
+        assert_eq!(EXACT_FORMULA_STATEMENT_CASES.len(), 7);
         assert_eq!(
             EXACT_FORMULA_STATEMENT_CASES
                 .iter()
                 .map(|(id, source, _)| (*id, *source))
                 .collect::<BTreeSet<_>>()
                 .len(),
-            6
+            7
         );
     }
 
@@ -405,9 +420,9 @@ mod tests {
     }
 
     #[test]
-    fn corpus_executes_exact_six_and_preserves_checker_keys() {
+    fn corpus_executes_exact_seven_and_preserves_checker_keys() {
         let report = super::super::run_formula_statement_corpus(&config()).unwrap();
-        assert_eq!(report.results.len(), 6);
+        assert_eq!(report.results.len(), 7);
         assert_eq!(report.error_count(), 0, "{:?}", report.diagnostics);
         assert!(
             report.results.iter().all(|result| {

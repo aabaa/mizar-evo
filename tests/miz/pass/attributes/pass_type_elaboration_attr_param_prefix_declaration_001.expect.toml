@@ -10,4 +10,5 @@ diagnostic_codes = []
 spec_refs = [
   "spec.en.06.attributes.param_prefix.declaration",
 ]
-notes = "Audit-1 semantic-bridge inactive oracle seed (September 2026 audit wave): binding expectation for the Step-5 semantic bridge; no active runner tag, earns no current credit. A parameterized attribute is declared with an in-scope parameter as its param_prefix and applied with a numeral prefix at a use site (spec 6.2, A.2 param_prefix rules)."
+tags = ["active_type_elaboration"]
+notes = "Active Step 5C.3 parameterized attribute semantic check."

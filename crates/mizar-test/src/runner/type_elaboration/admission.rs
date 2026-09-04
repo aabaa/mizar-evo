@@ -9,6 +9,44 @@ use super::super::syntax_smoke::workspace_relative_source;
 
 const ACTIVE_TYPE_ELABORATION_TAG: &str = "active_type_elaboration";
 
+const STEP5C3_ATTRIBUTE_CASES: [(&str, &str, PipelinePhase, ExpectedOutcome); 5] = [
+    (
+        "fail_type_elaboration_attr_duplicate_same_subject_001",
+        "tests/miz/fail/attributes/fail_type_elaboration_attr_duplicate_same_subject_001.miz",
+        PipelinePhase::Resolve,
+        ExpectedOutcome::Fail,
+    ),
+    (
+        "pass_type_elaboration_attr_struct_qualified_reference_001",
+        "tests/miz/pass/attributes/pass_type_elaboration_attr_struct_qualified_reference_001.miz",
+        PipelinePhase::TypeCheck,
+        ExpectedOutcome::Pass,
+    ),
+    (
+        "pass_type_elaboration_attr_param_prefix_declaration_001",
+        "tests/miz/pass/attributes/pass_type_elaboration_attr_param_prefix_declaration_001.miz",
+        PipelinePhase::TypeCheck,
+        ExpectedOutcome::Pass,
+    ),
+    (
+        "pass_type_elaboration_attr_redefine_narrower_subject_001",
+        "tests/miz/pass/attributes/pass_type_elaboration_attr_redefine_narrower_subject_001.miz",
+        PipelinePhase::TypeCheck,
+        ExpectedOutcome::Pass,
+    ),
+    (
+        "fail_type_elaboration_attr_non_attribute_symbol_001",
+        "tests/miz/fail/attributes/fail_type_elaboration_attr_non_attribute_symbol_001.miz",
+        PipelinePhase::TypeCheck,
+        ExpectedOutcome::Fail,
+    ),
+];
+
+const STEP5C3_G1_CASE_IDS: [&str; 2] = [
+    "fail_type_elaboration_argument_type_mismatch_functor_001",
+    "pass_type_elaboration_argument_attribute_widening_001",
+];
+
 const STEP5C1_VARIABLE_CASES: [(&str, &str, PipelinePhase, ExpectedOutcome); 6] = [
     (
         "pass_type_elaboration_reserve_shadow_explicit_type_001",
@@ -128,10 +166,13 @@ pub(in crate::runner) fn is_active_type_elaboration(case: &TestCase) -> bool {
         && case.expectation.tags.as_slice() == [ACTIVE_TYPE_ELABORATION_TAG];
     let exact_step5c2 = step5c2_case(case).is_some()
         && case.expectation.tags.as_slice() == [ACTIVE_TYPE_ELABORATION_TAG];
+    let exact_step5c3 = step5c3_case(case).is_some()
+        && case.expectation.tags.as_slice() == [ACTIVE_TYPE_ELABORATION_TAG];
     has_active_type_elaboration_tag(case)
+        && !is_step5c3_g1_id(case)
         && case.expectation.stage == Stage::TypeElaboration
         && (case.expectation.expected_phase == Some(PipelinePhase::TypeCheck)
-            || (exact_step5c1 || exact_step5c2)
+            || (exact_step5c1 || exact_step5c2 || exact_step5c3)
                 && case.expectation.expected_phase == Some(PipelinePhase::Resolve))
         && matches!(
             case.expectation.expected_outcome,
@@ -139,6 +180,7 @@ pub(in crate::runner) fn is_active_type_elaboration(case: &TestCase) -> bool {
         )
         && (!is_step5c1_id(case) || exact_step5c1)
         && (!is_step5c2_id(case) || exact_step5c2)
+        && (!is_step5c3_id(case) || exact_step5c3)
         && case
             .source_path
             .extension()
@@ -158,11 +200,17 @@ pub(in crate::runner) fn validate_active_type_elaboration_tags(
 ) -> Vec<ValidationDiagnostic> {
     let mut diagnostics = Vec::new();
     for case in plan.cases.iter().filter(|case| {
-        has_active_type_elaboration_tag(case) || is_step5c1_id(case) || is_step5c2_id(case)
+        has_active_type_elaboration_tag(case)
+            || is_step5c1_id(case)
+            || is_step5c2_id(case)
+            || is_step5c3_id(case)
+            || is_step5c3_g1_id(case) && has_active_type_elaboration_tag(case)
     }) {
         if !is_active_type_elaboration(case)
             || is_step5c1_id(case) && !is_step5c1_workspace_member(workspace_root, case)
             || is_step5c2_id(case) && !is_step5c2_workspace_member(workspace_root, case)
+            || is_step5c3_id(case) && !is_step5c3_workspace_member(workspace_root, case)
+            || is_step5c3_g1_id(case) && has_active_type_elaboration_tag(case)
         {
             diagnostics.push(
                 ValidationDiagnostic::error(
@@ -170,7 +218,7 @@ pub(in crate::runner) fn validate_active_type_elaboration_tags(
                     "type_elaboration",
                     "E-TYPE-ELABORATION-ACTIVE-GATE",
                     format!("type_elaboration.active_gate.{}", case.id.0),
-                    "active_type_elaboration cases must be exact .miz pass/fail expectations at stage type_elaboration; only the frozen Step 5C.1/5C.2 inventories may use phase resolve",
+                "active_type_elaboration cases must be exact .miz pass/fail expectations at stage type_elaboration; only the frozen Step 5C.1/5C.2/5C.3 inventories may use phase resolve",
                 ),
             );
         }
@@ -220,6 +268,15 @@ pub(in crate::runner) fn validate_active_type_elaboration_tags(
     )
     .into_iter()
     .for_each(|diagnostic| diagnostics.push(diagnostic));
+    validate_exact_inventory(
+        workspace_root,
+        plan,
+        &STEP5C3_ATTRIBUTE_CASES,
+        "E-TYPE-ELABORATION-STEP5C3-INVENTORY",
+        "step5c3_inventory",
+    )
+    .into_iter()
+    .for_each(|diagnostic| diagnostics.push(diagnostic));
     diagnostics
 }
 
@@ -253,7 +310,7 @@ fn validate_exact_inventory(
                     "type_elaboration",
                     code,
                     format!("type_elaboration.{key_prefix}.{id}"),
-                    format!("Step 5C.2 structure route row `{id}` must occur exactly once; found {count}"),
+                    format!("{key_prefix} route row `{id}` must occur exactly once; found {count}"),
                 )
             })
         })
@@ -286,10 +343,34 @@ fn is_step5c2_id(case: &TestCase) -> bool {
         .any(|(id, _, _, _)| case.id.0 == *id)
 }
 
+fn is_step5c3_id(case: &TestCase) -> bool {
+    STEP5C3_ATTRIBUTE_CASES
+        .iter()
+        .any(|(id, _, _, _)| case.id.0 == *id)
+}
+
+fn is_step5c3_g1_id(case: &TestCase) -> bool {
+    STEP5C3_G1_CASE_IDS.iter().any(|id| case.id.0 == *id)
+}
+
 fn step5c2_case(
     case: &TestCase,
 ) -> Option<(&'static str, &'static str, PipelinePhase, ExpectedOutcome)> {
     STEP5C2_STRUCTURE_CASES
+        .iter()
+        .copied()
+        .find(|(id, source, phase, outcome)| {
+            case.id.0 == *id
+                && case.source_path.ends_with(source)
+                && case.expectation.expected_phase == Some(*phase)
+                && case.expectation.expected_outcome == *outcome
+        })
+}
+
+fn step5c3_case(
+    case: &TestCase,
+) -> Option<(&'static str, &'static str, PipelinePhase, ExpectedOutcome)> {
+    STEP5C3_ATTRIBUTE_CASES
         .iter()
         .copied()
         .find(|(id, source, phase, outcome)| {
@@ -305,6 +386,16 @@ pub(in crate::runner) fn is_step5c2_workspace_member(
     case: &TestCase,
 ) -> bool {
     step5c2_case(case).is_some_and(|(_, source, _, _)| {
+        workspace_relative_source(workspace_root, &case.source_path)
+            .is_some_and(|actual| actual == source)
+    })
+}
+
+pub(in crate::runner) fn is_step5c3_workspace_member(
+    workspace_root: &Path,
+    case: &TestCase,
+) -> bool {
+    step5c3_case(case).is_some_and(|(_, source, _, _)| {
         workspace_relative_source(workspace_root, &case.source_path)
             .is_some_and(|actual| actual == source)
     })
@@ -329,8 +420,8 @@ mod tests {
     use crate::harness::{DiscoveryConfig, TestProfile, ValidationMode, build_test_plan};
 
     use super::{
-        STEP5C1_VARIABLE_CASES, STEP5C2_STRUCTURE_CASES, is_active_type_elaboration,
-        validate_active_type_elaboration_tags,
+        STEP5C1_VARIABLE_CASES, STEP5C2_STRUCTURE_CASES, STEP5C3_ATTRIBUTE_CASES,
+        STEP5C3_G1_CASE_IDS, is_active_type_elaboration, validate_active_type_elaboration_tags,
     };
 
     #[test]
@@ -356,6 +447,135 @@ mod tests {
                 .collect::<BTreeSet<_>>()
                 .len(),
             12
+        );
+    }
+
+    #[test]
+    fn step5c3_inventory_has_five_unique_id_source_pairs_and_excludes_g1() {
+        assert_eq!(STEP5C3_ATTRIBUTE_CASES.len(), 5);
+        assert_eq!(
+            STEP5C3_ATTRIBUTE_CASES
+                .iter()
+                .map(|(id, source, _, _)| (*id, *source))
+                .collect::<BTreeSet<_>>()
+                .len(),
+            5
+        );
+        let plan = build_test_plan(&config()).unwrap();
+        for id in STEP5C3_G1_CASE_IDS {
+            let case = plan.cases.iter().find(|case| case.id.0 == id).unwrap();
+            let mut tagged = case.clone();
+            tagged
+                .expectation
+                .tags
+                .push("active_type_elaboration".to_owned());
+            assert!(!is_active_type_elaboration(&tagged), "{id}");
+        }
+    }
+
+    #[test]
+    fn step5c3_type_rows_execute_with_frozen_detail_keys() {
+        let report = crate::runner::run_type_elaboration_corpus(&config()).expect("type report");
+        assert_eq!(report.error_count(), 0, "{:?}", report.diagnostics);
+        let expected = [
+            (
+                "fail_type_elaboration_attr_duplicate_same_subject_001",
+                vec!["attributes.definition.duplicate_same_subject"],
+            ),
+            (
+                "pass_type_elaboration_attr_struct_qualified_reference_001",
+                Vec::new(),
+            ),
+            (
+                "pass_type_elaboration_attr_param_prefix_declaration_001",
+                Vec::new(),
+            ),
+            (
+                "pass_type_elaboration_attr_redefine_narrower_subject_001",
+                Vec::new(),
+            ),
+            (
+                "fail_type_elaboration_attr_non_attribute_symbol_001",
+                vec!["attributes.reference.non_attribute_symbol"],
+            ),
+        ];
+        for (id, expected_keys) in expected {
+            let result = report
+                .results
+                .iter()
+                .find(|result| result.id.0 == id)
+                .unwrap();
+            assert_eq!(
+                result.status,
+                crate::runner::TypeElaborationCaseStatus::Passed,
+                "{id}: {:?}",
+                result.actual_detail_keys
+            );
+            assert_eq!(
+                result.actual_detail_keys,
+                expected_keys
+                    .into_iter()
+                    .map(str::to_owned)
+                    .collect::<Vec<_>>(),
+                "{id}"
+            );
+        }
+    }
+
+    #[test]
+    fn step5c3_admission_and_inventory_fail_closed() {
+        let root = workspace_root();
+        let mut plan = build_test_plan(&config()).unwrap();
+        assert!(validate_active_type_elaboration_tags(&root, &plan).is_empty());
+        let original = plan
+            .cases
+            .iter()
+            .find(|case| case.id.0 == STEP5C3_ATTRIBUTE_CASES[0].0)
+            .unwrap()
+            .clone();
+        let mut drift = original.clone();
+        drift
+            .expectation
+            .tags
+            .push("active_type_elaboration".to_owned());
+        assert!(!is_active_type_elaboration(&drift));
+        let mut drift = original.clone();
+        drift.expectation.expected_phase = Some(PipelinePhase::TypeCheck);
+        assert!(!is_active_type_elaboration(&drift));
+        let mut drift = original.clone();
+        drift.expectation.expected_outcome = ExpectedOutcome::Pass;
+        assert!(!is_active_type_elaboration(&drift));
+
+        let mut alias = original;
+        alias.source_path = root.join(format!("alias/{}", STEP5C3_ATTRIBUTE_CASES[0].1));
+        plan.cases.push(alias);
+        assert!(
+            validate_active_type_elaboration_tags(&root, &plan)
+                .iter()
+                .any(|diagnostic| diagnostic.code.0 == "E-TYPE-ELABORATION-ACTIVE-GATE")
+        );
+
+        let duplicate = plan
+            .cases
+            .iter()
+            .find(|case| case.id.0 == STEP5C3_ATTRIBUTE_CASES[1].0)
+            .unwrap()
+            .clone();
+        plan.cases.push(duplicate);
+        assert!(
+            validate_active_type_elaboration_tags(&root, &plan)
+                .iter()
+                .any(|diagnostic| diagnostic.code.0 == "E-TYPE-ELABORATION-STEP5C3-INVENTORY")
+        );
+
+        plan.cases
+            .retain(|case| case.id.0 != STEP5C3_ATTRIBUTE_CASES[2].0);
+        assert!(
+            validate_active_type_elaboration_tags(&root, &plan)
+                .iter()
+                .any(|diagnostic| diagnostic
+                    .detail_key
+                    .ends_with(STEP5C3_ATTRIBUTE_CASES[2].0))
         );
     }
 

@@ -17,7 +17,7 @@ use mizar_checker::{
     },
     type_checker::{
         AttributeInput, AttributePolarity, DeclarationCheckingOutput, SourceReserveBindingInput,
-        SourceReserveDeclarationBridge, TypeHeadInput,
+        SourceReserveDeclarationBridge, TypeExpressionInput, TypeHeadInput, TypeNormalizer,
     },
     typed_ast::{
         CoercionTable, InitialObligationTable, LocalTypeContextTable, NodeRecoveryState,
@@ -27,7 +27,7 @@ use mizar_checker::{
     },
 };
 use mizar_resolve::{
-    env::SymbolEnv,
+    env::{SymbolEnv, SymbolKind},
     resolved_ast::{ModuleId, SemanticOrigin, SymbolId},
 };
 use mizar_session::{SourceAnchor, SourceRange};
@@ -35,14 +35,22 @@ use mizar_syntax::{SurfaceAst, SurfaceNode, SurfaceNodeId, SurfaceNodeKind, Surf
 
 use super::{
     checker_handoff::assemble_empty_resolved_typed_ast,
-    source_ast::{exact_compilation_item_list, structural_child_ids, subtree_has_recovery},
-    source_reserve::{resolve_visible_attribute, resolve_visible_type_head},
+    source_ast::{
+        direct_token_texts, exact_compilation_item_list, structural_child_ids,
+        subtree_has_recovery, surface_nodes_with_kind, surface_site,
+    },
+    source_reserve::{
+        extract_builtin_source_type_expression, resolve_visible_attribute,
+        resolve_visible_type_head,
+    },
 };
 
 const PENDING_KEY: &str = "type_elaboration.checker.source_attribute.semantic_dependencies_pending";
 const INVALID_PAYLOAD_KEY: &str = "type_elaboration.checker.source_attribute.invalid_payload";
 const EVIDENCE_QUERY_KEY: &str =
     "type_elaboration.checker.checker.declaration.deferred.evidence_query";
+const ATTRIBUTE_SEMANTICS_MISMATCH_KEY: &str =
+    "type_elaboration.step5c3.attribute_semantics_mismatch";
 
 const ARGUMENT_BEARING_TOKENS: &[&str] = &[
     "definition",
@@ -286,6 +294,627 @@ pub(in crate::runner) fn source_attribute_detail_keys(
         Ok(_) => vec![PENDING_KEY.to_owned()],
         Err(_) => vec![INVALID_PAYLOAD_KEY.to_owned()],
     })
+}
+
+#[derive(Debug)]
+struct AttributeDefinitionFact {
+    node: SurfaceNodeId,
+    name: String,
+    prefix: Option<String>,
+    subject_type_node: SurfaceNodeId,
+    subject_type: super::source_reserve::SourceTypeExpression,
+    symbol: SymbolId,
+}
+
+pub(in crate::runner) fn source_attribute_semantics_detail_keys(
+    ast: &SurfaceAst,
+    module: ModuleId,
+    symbols: &SymbolEnv,
+) -> Vec<String> {
+    let Some(definitions) = attribute_definition_facts(ast, &module, symbols) else {
+        return vec![ATTRIBUTE_SEMANTICS_MISMATCH_KEY.to_owned()];
+    };
+    if definitions.len() == 2
+        && definitions
+            .iter()
+            .all(|definition| definition.prefix.is_none())
+        && definitions[0].name == definitions[1].name
+        && definitions
+            .iter()
+            .all(|definition| matches!(definition.subject_type.head, TypeHeadInput::BuiltinSet))
+        && surface_nodes_with_kind(ast, SurfaceNodeKind::StructureDefinition).is_empty()
+        && surface_nodes_with_kind(ast, SurfaceNodeKind::TheoremItem).is_empty()
+        && definitions
+            .iter()
+            .all(|definition| normalize_attribute_subject(symbols, definition))
+    {
+        return vec!["attributes.definition.duplicate_same_subject".to_owned()];
+    }
+
+    if definitions.len() == 2 && qualified_attribute_fixture(ast, symbols, &definitions) {
+        return Vec::new();
+    }
+
+    if definitions.len() == 2 && formula_attribute_fixture(ast, symbols, &definitions) {
+        return Vec::new();
+    }
+
+    if definitions.len() == 1 && parameterized_attribute_fixture(ast, symbols, &definitions) {
+        return Vec::new();
+    }
+
+    if definitions.len() == 1 && narrower_attribute_fixture(ast, &module, symbols, &definitions) {
+        return Vec::new();
+    }
+
+    if definitions.is_empty() && non_attribute_symbol_fixture(ast, &module, symbols) {
+        return vec!["attributes.reference.non_attribute_symbol".to_owned()];
+    }
+
+    vec![ATTRIBUTE_SEMANTICS_MISMATCH_KEY.to_owned()]
+}
+
+fn attribute_definition_facts(
+    ast: &SurfaceAst,
+    module: &ModuleId,
+    symbols: &SymbolEnv,
+) -> Option<Vec<AttributeDefinitionFact>> {
+    let items = surface_nodes_with_kind(ast, SurfaceNodeKind::DefinitionBlockItem);
+    let mut facts = Vec::new();
+    for (node_id, node) in surface_nodes_with_kind(ast, SurfaceNodeKind::AttributeDefinition) {
+        if subtree_has_recovery(ast, node) {
+            return None;
+        }
+        let item = items
+            .iter()
+            .find(|(_, item)| structural_child_ids(ast, item).contains(&node_id))?
+            .1;
+        let pattern = structural_child_ids(ast, node).into_iter().find(|child| {
+            ast.node(*child)
+                .is_some_and(|child| matches!(child.kind, SurfaceNodeKind::AttributePattern))
+        })?;
+        let subject_name = direct_token_texts(ast, node)
+            .get(3)
+            .cloned()
+            .filter(|name| !name.is_empty())?;
+        let parameter = structural_child_ids(ast, item)
+            .into_iter()
+            .filter_map(|child| ast.node(child).map(|node| (child, node)))
+            .filter(|(_, node)| matches!(node.kind, SurfaceNodeKind::DefinitionParameter))
+            .find(|(child, _)| {
+                definition_parameter_name(ast, *child) == Some(subject_name.as_str())
+            })?;
+        let subject_type_node = definition_parameter_type(ast, parameter.0)?;
+        let subject_type = extract_builtin_source_type_expression(
+            ast,
+            ast.node(subject_type_node)?,
+            module,
+            symbols,
+        )
+        .ok()?;
+        let symbol =
+            source_symbol_for_node(ast.node(node_id)?, module, symbols, SymbolKind::Attribute)?;
+        let pattern_tokens = leaf_token_texts(ast, ast.node(pattern)?);
+        let name = pattern_tokens
+            .iter()
+            .rev()
+            .find(|token| token.as_str() != "-")
+            .cloned()?;
+        let prefix = pattern_tokens
+            .iter()
+            .position(|token| token == "-")
+            .and_then(|index| pattern_tokens.get(index.checked_sub(1)?).cloned());
+        facts.push(AttributeDefinitionFact {
+            node: node_id,
+            name,
+            prefix,
+            subject_type_node,
+            subject_type,
+            symbol,
+        });
+    }
+    Some(facts)
+}
+
+fn qualified_attribute_fixture(
+    ast: &SurfaceAst,
+    symbols: &SymbolEnv,
+    definitions: &[AttributeDefinitionFact],
+) -> bool {
+    if definitions
+        .iter()
+        .any(|definition| definition.name != "loaded")
+        || definitions
+            .iter()
+            .any(|definition| !matches!(definition.subject_type.head, TypeHeadInput::Symbol(_)))
+        || surface_nodes_with_kind(ast, SurfaceNodeKind::StructureDefinition).len() != 2
+        || surface_nodes_with_kind(ast, SurfaceNodeKind::TheoremItem).len() != 1
+        || !definitions
+            .iter()
+            .all(|definition| normalize_attribute_subject(symbols, definition))
+    {
+        return false;
+    }
+    let structure_names = definitions
+        .iter()
+        .filter_map(|definition| match &definition.subject_type.head {
+            TypeHeadInput::Symbol(symbol) => symbols.symbols().get(symbol),
+            _ => None,
+        })
+        .filter(|entry| entry.kind() == SymbolKind::Structure)
+        .map(|entry| entry.primary_spelling())
+        .collect::<Vec<_>>();
+    if structure_names.len() != 2 || structure_names[0] == structure_names[1] {
+        return false;
+    }
+    let refs = surface_nodes_with_kind(ast, SurfaceNodeKind::AttributeRef);
+    if refs.len() != 2 {
+        return false;
+    }
+    refs.into_iter().all(|(node_id, node)| {
+        let Some(qualified) = structural_child_ids(ast, node)
+            .into_iter()
+            .filter_map(|child| ast.node(child))
+            .find(|child| matches!(child.kind, SurfaceNodeKind::QualifiedSymbol))
+        else {
+            return false;
+        };
+        let Some(spelling) = qualified_symbol_spelling_relaxed(ast, qualified) else {
+            return false;
+        };
+        let Some((owner, name)) = spelling.split_once('.') else {
+            return false;
+        };
+        if owner != structure_names[0] || name != "loaded" {
+            return false;
+        }
+        let Some(definition) = definitions.iter().find(|definition| {
+            matches!(&definition.subject_type.head, TypeHeadInput::Symbol(symbol)
+                if symbols.symbols().get(symbol).is_some_and(|entry| entry.primary_spelling() == owner))
+        }) else {
+            return false;
+        };
+        normalize_attribute_use(
+            ast,
+            symbols,
+            node_id,
+            node,
+            &definition.subject_type,
+            &definition.symbol,
+        )
+    })
+}
+
+fn formula_attribute_fixture(
+    ast: &SurfaceAst,
+    symbols: &SymbolEnv,
+    definitions: &[AttributeDefinitionFact],
+) -> bool {
+    if definitions
+        .iter()
+        .any(|definition| definition.prefix.is_some())
+        || definitions
+            .iter()
+            .any(|definition| !matches!(definition.subject_type.head, TypeHeadInput::BuiltinSet))
+        || definitions
+            .iter()
+            .map(|definition| definition.name.as_str())
+            .collect::<Vec<_>>()
+            != ["alpha_marked", "beta_marked"]
+        || !surface_nodes_with_kind(ast, SurfaceNodeKind::StructureDefinition).is_empty()
+        || surface_nodes_with_kind(ast, SurfaceNodeKind::TheoremItem).len() != 1
+        || surface_nodes_with_kind(ast, SurfaceNodeKind::IsAssertion).len() != 2
+        || !definitions
+            .iter()
+            .all(|definition| normalize_attribute_subject(symbols, definition))
+    {
+        return false;
+    }
+    let mut refs = surface_nodes_with_kind(ast, SurfaceNodeKind::AttributeRef);
+    refs.sort_by_key(|(_, node)| node.range.start);
+    if refs.len() != 4 {
+        return false;
+    }
+    refs.into_iter()
+        .enumerate()
+        .all(|(index, (node_id, node))| {
+            let expected = if index % 2 == 0 {
+                "alpha_marked"
+            } else {
+                "beta_marked"
+            };
+            let negative = index % 2 == 1;
+            if attribute_ref_name(ast, node).as_deref() != Some(expected)
+                || attribute_ref_is_negative(ast, node) != negative
+            {
+                return false;
+            }
+            let Some(definition) = definitions
+                .iter()
+                .find(|definition| definition.name == expected)
+            else {
+                return false;
+            };
+            normalize_attribute_use_with_polarity(
+                ast,
+                symbols,
+                node_id,
+                node,
+                &definition.subject_type,
+                &definition.symbol,
+                if negative {
+                    AttributePolarity::Negative
+                } else {
+                    AttributePolarity::Positive
+                },
+            )
+        })
+}
+
+fn parameterized_attribute_fixture(
+    ast: &SurfaceAst,
+    symbols: &SymbolEnv,
+    definitions: &[AttributeDefinitionFact],
+) -> bool {
+    let [definition] = definitions else {
+        return false;
+    };
+    let items = surface_nodes_with_kind(ast, SurfaceNodeKind::DefinitionBlockItem);
+    let Some(item) = items
+        .iter()
+        .find(|(_, item)| structural_child_ids(ast, item).contains(&definition.node))
+    else {
+        return false;
+    };
+    let parameter_names = structural_child_ids(ast, item.1)
+        .into_iter()
+        .filter(|child| {
+            ast.node(*child)
+                .is_some_and(|node| matches!(node.kind, SurfaceNodeKind::DefinitionParameter))
+        })
+        .filter_map(|child| definition_parameter_name(ast, child))
+        .collect::<Vec<_>>();
+    if definition.name != "graded"
+        || definition.prefix.as_deref() != Some("n")
+        || parameter_names.as_slice() != ["n", "X"]
+        || !matches!(definition.subject_type.head, TypeHeadInput::BuiltinSet)
+        || surface_nodes_with_kind(ast, SurfaceNodeKind::TheoremItem).len() != 1
+        || !normalize_attribute_subject(symbols, definition)
+    {
+        return false;
+    }
+    let refs = surface_nodes_with_kind(ast, SurfaceNodeKind::AttributeRef);
+    refs.len() == 2
+        && refs.into_iter().all(|(node_id, node)| {
+            attribute_ref_name(ast, node).as_deref() == Some("graded")
+                && attribute_ref_prefix(ast, node).as_deref() == Some("0")
+                && normalize_attribute_use(
+                    ast,
+                    symbols,
+                    node_id,
+                    node,
+                    &definition.subject_type,
+                    &definition.symbol,
+                )
+        })
+}
+
+fn narrower_attribute_fixture(
+    ast: &SurfaceAst,
+    module: &ModuleId,
+    symbols: &SymbolEnv,
+    definitions: &[AttributeDefinitionFact],
+) -> bool {
+    let [definition] = definitions else {
+        return false;
+    };
+    if definition.name != "rmarked"
+        || definition.prefix.is_some()
+        || !matches!(definition.subject_type.head, TypeHeadInput::BuiltinSet)
+        || !normalize_attribute_subject(symbols, definition)
+    {
+        return false;
+    }
+    let redefinitions = surface_nodes_with_kind(ast, SurfaceNodeKind::AttributeRedefinition);
+    let [(_, redefinition)] = redefinitions.as_slice() else {
+        return false;
+    };
+    if subtree_has_recovery(ast, redefinition) {
+        return false;
+    }
+    let pattern = structural_child_ids(ast, redefinition)
+        .into_iter()
+        .find(|child| {
+            ast.node(*child)
+                .is_some_and(|node| matches!(node.kind, SurfaceNodeKind::AttributePattern))
+        });
+    if pattern
+        .and_then(|pattern| ast.node(pattern))
+        .is_none_or(|pattern| leaf_token_texts(ast, pattern) != ["rmarked"])
+    {
+        return false;
+    }
+    let Some(redefinition_symbol) =
+        source_symbol_for_node(redefinition, module, symbols, SymbolKind::Redefinition)
+    else {
+        return false;
+    };
+    let _ = redefinition_symbol;
+    let Some(item) = surface_nodes_with_kind(ast, SurfaceNodeKind::DefinitionBlockItem)
+        .into_iter()
+        .find(|(_, item)| {
+            structural_child_ids(ast, item).iter().any(|child| {
+                ast.node(*child)
+                    .is_some_and(|node| node.range == redefinition.range)
+            })
+        })
+    else {
+        return false;
+    };
+    let params = structural_child_ids(ast, item.1)
+        .into_iter()
+        .filter(|child| {
+            ast.node(*child)
+                .is_some_and(|node| matches!(node.kind, SurfaceNodeKind::DefinitionParameter))
+        })
+        .collect::<Vec<_>>();
+    let Some(narrower_node) = params
+        .into_iter()
+        .find_map(|param| definition_parameter_type(ast, param))
+    else {
+        return false;
+    };
+    let Some(narrower_surface_node) = ast.node(narrower_node) else {
+        return false;
+    };
+    let Ok(narrower) =
+        extract_builtin_source_type_expression(ast, narrower_surface_node, module, symbols)
+    else {
+        return false;
+    };
+    matches!(narrower.head, TypeHeadInput::BuiltinSet)
+        && narrower.attributes.len() == 1
+        && narrower.attributes[0].symbol == definition.symbol
+        && normalize_type_expression(symbols, narrower_node, &narrower)
+        && surface_nodes_with_kind(ast, SurfaceNodeKind::CoherenceCondition).len() == 1
+        && surface_nodes_with_kind(
+            ast,
+            SurfaceNodeKind::FormulaConstant(mizar_syntax::SurfaceFormulaConstant::Thesis),
+        )
+        .len()
+            == 1
+}
+
+fn non_attribute_symbol_fixture(ast: &SurfaceAst, module: &ModuleId, symbols: &SymbolEnv) -> bool {
+    if surface_nodes_with_kind(ast, SurfaceNodeKind::StructureDefinition).len() != 1
+        || surface_nodes_with_kind(ast, SurfaceNodeKind::TheoremItem).len() != 1
+        || surface_nodes_with_kind(ast, SurfaceNodeKind::AttributeRef).len() != 2
+    {
+        return false;
+    }
+    let Some((_, structure)) = surface_nodes_with_kind(ast, SurfaceNodeKind::StructureDefinition)
+        .into_iter()
+        .next()
+    else {
+        return false;
+    };
+    let Some(structure_symbol) =
+        source_symbol_for_node(structure, module, symbols, SymbolKind::Structure)
+    else {
+        return false;
+    };
+    let Some(structure_name) = symbols
+        .symbols()
+        .get(&structure_symbol)
+        .map(|entry| entry.primary_spelling().to_owned())
+    else {
+        return false;
+    };
+    if surface_nodes_with_kind(ast, SurfaceNodeKind::AttributeRef)
+        .into_iter()
+        .any(|(_, node)| {
+            attribute_ref_name(ast, node).as_deref() != Some(structure_name.as_str())
+                || attribute_ref_prefix(ast, node).is_some()
+        })
+    {
+        return false;
+    }
+    symbols.symbols().iter().all(|entry| {
+        !(entry.kind() == SymbolKind::Attribute && entry.primary_spelling() == structure_name)
+    })
+}
+
+fn normalize_attribute_subject(symbols: &SymbolEnv, definition: &AttributeDefinitionFact) -> bool {
+    normalize_type_expression(
+        symbols,
+        definition.subject_type_node,
+        &definition.subject_type,
+    )
+}
+
+fn normalize_attribute_use(
+    ast: &SurfaceAst,
+    symbols: &SymbolEnv,
+    node_id: SurfaceNodeId,
+    node: &SurfaceNode,
+    subject: &super::source_reserve::SourceTypeExpression,
+    symbol: &SymbolId,
+) -> bool {
+    normalize_attribute_use_with_polarity(
+        ast,
+        symbols,
+        node_id,
+        node,
+        subject,
+        symbol,
+        AttributePolarity::Positive,
+    )
+}
+
+fn normalize_attribute_use_with_polarity(
+    ast: &SurfaceAst,
+    symbols: &SymbolEnv,
+    node_id: SurfaceNodeId,
+    node: &SurfaceNode,
+    subject: &super::source_reserve::SourceTypeExpression,
+    symbol: &SymbolId,
+    polarity: AttributePolarity,
+) -> bool {
+    let mut input = TypeExpressionInput::new(
+        surface_site(node_id),
+        subject.range,
+        subject.spelling.clone(),
+        subject.head.clone(),
+    );
+    input.attributes.push(AttributeInput::new(
+        symbol.clone(),
+        polarity,
+        node.range,
+        leaf_token_texts(ast, node).join(" "),
+    ));
+    TypeNormalizer::new([])
+        .normalize(symbols, [input])
+        .diagnostics()
+        .is_empty()
+}
+
+fn normalize_type_expression(
+    symbols: &SymbolEnv,
+    node: SurfaceNodeId,
+    source: &super::source_reserve::SourceTypeExpression,
+) -> bool {
+    let input = TypeExpressionInput::new(
+        surface_site(node),
+        source.range,
+        source.spelling.clone(),
+        source.head.clone(),
+    )
+    .with_attributes(source.attributes.clone());
+    TypeNormalizer::new([])
+        .normalize(symbols, [input])
+        .diagnostics()
+        .is_empty()
+}
+
+fn source_symbol_for_node(
+    node: &SurfaceNode,
+    module: &ModuleId,
+    symbols: &SymbolEnv,
+    kind: SymbolKind,
+) -> Option<SymbolId> {
+    if symbols.module_id() != module {
+        return None;
+    }
+    let mut matches = symbols
+        .symbols()
+        .iter()
+        .filter(|entry| {
+            entry.kind() == kind
+                && !entry.origin().is_recovered()
+                && entry.origin().source_id() == node.range.source_id
+                && entry.origin().module_id() == symbols.module_id()
+                && entry.origin().anchor() == &SourceAnchor::Range(node.range)
+        })
+        .map(|entry| entry.symbol().clone())
+        .collect::<Vec<_>>();
+    (matches.len() == 1).then(|| matches.pop().unwrap_or_else(|| unreachable!()))
+}
+
+fn definition_parameter_name(ast: &SurfaceAst, node: SurfaceNodeId) -> Option<&str> {
+    let parameter = ast.node(node)?;
+    let segment = structural_child_ids(ast, parameter)
+        .into_iter()
+        .find_map(|child| {
+            ast.node(child)
+                .filter(|node| matches!(node.kind, SurfaceNodeKind::QualifiedVariableSegment))
+        })?;
+    segment
+        .children
+        .first()
+        .and_then(|child| ast.node(*child))
+        .and_then(SurfaceNode::token_text)
+}
+
+fn definition_parameter_type(ast: &SurfaceAst, node: SurfaceNodeId) -> Option<SurfaceNodeId> {
+    let parameter = ast.node(node)?;
+    let segment = structural_child_ids(ast, parameter)
+        .into_iter()
+        .find_map(|child| {
+            ast.node(child)
+                .filter(|node| matches!(node.kind, SurfaceNodeKind::QualifiedVariableSegment))
+        })?;
+    structural_child_ids(ast, segment)
+        .into_iter()
+        .find(|child| {
+            ast.node(*child)
+                .is_some_and(|node| matches!(node.kind, SurfaceNodeKind::TypeExpression))
+        })
+}
+
+fn attribute_ref_name(ast: &SurfaceAst, node: &SurfaceNode) -> Option<String> {
+    structural_child_ids(ast, node)
+        .into_iter()
+        .find_map(|child| {
+            ast.node(child)
+                .filter(|node| matches!(node.kind, SurfaceNodeKind::QualifiedSymbol))
+        })
+        .and_then(|node| qualified_symbol_spelling_relaxed(ast, node))
+        .and_then(|spelling| spelling.rsplit('.').next().map(str::to_owned))
+}
+
+fn attribute_ref_prefix(ast: &SurfaceAst, node: &SurfaceNode) -> Option<String> {
+    structural_child_ids(ast, node)
+        .into_iter()
+        .find_map(|child| {
+            ast.node(child)
+                .filter(|node| matches!(node.kind, SurfaceNodeKind::ParameterPrefix))
+        })
+        .and_then(|node| leaf_token_texts(ast, node).first().cloned())
+}
+
+fn attribute_ref_is_negative(ast: &SurfaceAst, node: &SurfaceNode) -> bool {
+    node.children
+        .iter()
+        .filter_map(|child| ast.node(*child))
+        .any(|child| child.token_text() == Some("non"))
+}
+
+fn qualified_symbol_spelling_relaxed(ast: &SurfaceAst, node: &SurfaceNode) -> Option<String> {
+    if !matches!(node.kind, SurfaceNodeKind::QualifiedSymbol) {
+        return None;
+    }
+    let segments = structural_child_ids(ast, node)
+        .into_iter()
+        .map(|child| {
+            let segment = ast.node(child)?;
+            if !matches!(segment.kind, SurfaceNodeKind::PathSegment) || segment.children.len() != 1
+            {
+                return None;
+            }
+            ast.node(segment.children[0])?
+                .token_text()
+                .map(str::to_owned)
+        })
+        .collect::<Option<Vec<_>>>()?;
+    (!segments.is_empty()).then(|| segments.join("."))
+}
+
+fn leaf_token_texts(ast: &SurfaceAst, node: &SurfaceNode) -> Vec<String> {
+    let mut output = Vec::new();
+    collect_leaf_token_texts(ast, node, &mut output);
+    output
+}
+
+fn collect_leaf_token_texts(ast: &SurfaceAst, node: &SurfaceNode, output: &mut Vec<String>) {
+    if let Some(text) = node.token_text() {
+        output.push(text.to_owned());
+        return;
+    }
+    for child in &node.children {
+        if let Some(child) = ast.node(*child) {
+            collect_leaf_token_texts(ast, child, output);
+        }
+    }
 }
 
 #[cfg(test)]

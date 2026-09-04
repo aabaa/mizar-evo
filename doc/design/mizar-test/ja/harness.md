@@ -1,5 +1,14 @@
 # Module: harness
 
+## Step 5C.3 attribute semantic runner
+
+private route は activation map の non-G1 type-elaboration 5行、parse-only 1行、
+formula-statement 1行だけを受理する。source extraction 前に id、path、stage、phase、
+outcome、sole stage tag を結び、G1 argument-widening 2行は inactive のままとする。
+runner は `SurfaceAst` から syntax-free input だけを抽出し、authenticated resolver
+identity を既存 checker type に通して、未変更の sidecar outcome と stable detail key
+だけを比較する。
+
 ## Parser Task 46 operator-declaration parse-only increment
 
 exact pass/fail pairはordinary parse-only runnerへadmitする。pass sidecarはdiagnostic 0、

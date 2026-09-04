@@ -12,4 +12,5 @@ diagnostic_codes = []
 spec_refs = [
   "spec.en.06.attributes.param_prefix.lexicon_rejection",
 ]
-notes = "Audit-1 semantic-bridge inactive oracle seed (September 2026 audit wave): binding expectation for the Step-5 semantic bridge; no active runner tag, earns no current credit. A param_prefix split requires an in-scope parameter; otherwise the whole spelling must match the active lexicon, so an unbound prefix spelling is a lexical/parse rejection (spec 6.2, A.2)."
+tags = ["active_parse_only"]
+notes = "Active Step 5C.3 unbound parameter-prefix parse check."

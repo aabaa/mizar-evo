@@ -3,6 +3,14 @@
 > canonical languageはEnglish。English canonical:
 > [../en/source_attribute.md](../en/source_attribute.md)。
 
+## Step 5C.3 attribute semantics
+
+bounded runner adapter は resolver-authenticated attribute / structure identity を既存の
+`TypeNormalizer` へ渡し、checker representation や public entry point を追加しない。
+exact route は qualifier selection と polarity を検査し、frozen syntax shape の parameter
+prefix だけを受理する。attribute position の non-attribute symbol を拒否し、definition
+uniqueness は resolver の source-order 所有のままとする。
+
 ## Purpose And Authority
 
 `source_attribute`は[`00.crate_plan.md`](./00.crate_plan.md)でfreezeしたTask 250

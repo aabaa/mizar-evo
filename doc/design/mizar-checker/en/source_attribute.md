@@ -3,6 +3,14 @@
 > Canonical language: English. Japanese companion:
 > [../ja/source_attribute.md](../ja/source_attribute.md).
 
+## Step 5C.3 attribute semantics
+
+The bounded runner adapter supplies resolver-authenticated attribute and structure identities to
+the existing `TypeNormalizer`; it adds no checker representation or public entry point. The exact
+route checks qualifier selection and polarity, and admits a parameter prefix only from the frozen
+syntax shape. It rejects a non-attribute symbol in an attribute position; definition uniqueness
+remains a resolver-owned source-order decision.
+
 ## Purpose And Authority
 
 `source_attribute` implements the Task 250 raw

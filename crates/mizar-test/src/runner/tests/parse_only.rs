@@ -452,3 +452,61 @@
             0
         );
     }
+
+    #[test]
+    fn step5c3_parse_shape_rejects_token_recovery_and_ast_drift() {
+        let source = include_str!(concat!(
+            env!("CARGO_MANIFEST_DIR"),
+            "/../../tests/miz/fail/attributes/",
+            "fail_type_elaboration_attr_param_prefix_unbound_001.miz"
+        ));
+        let (ast, _, _, _, _) =
+            task253_ast_from_source_text_with_diagnostic_count(source, 503_200);
+        assert!(super::parse_only::step5c3_parse_shape(&ast));
+
+        for (ordinal, mutated) in [
+            source.replacen("k-scaled", "q-scaled", 1),
+            source.replacen("let X be set;", "let k be object;\n  let X be set;", 1),
+        ]
+        .into_iter()
+        .enumerate()
+        {
+            let (ast, _, _, _, _) =
+                task253_ast_from_source_text_with_diagnostic_count(&mutated, 503_201 + ordinal);
+            assert!(!super::parse_only::step5c3_parse_shape(&ast));
+        }
+
+        let mut builder = SurfaceAstBuilder::new(ast.source_id);
+        let mut rebuilt = Vec::with_capacity(ast.nodes().len());
+        for node in ast.nodes() {
+            let children = node
+                .children
+                .iter()
+                .map(|child| rebuilt[child.index()])
+                .collect();
+            let id = match &node.kind {
+                SurfaceNodeKind::Token(token) if node.recovered => {
+                    builder.add_recovered_token(token.kind, token.text.as_ref(), node.range)
+                }
+                SurfaceNodeKind::Token(token) => {
+                    builder.add_token(token.kind, token.text.as_ref(), node.range)
+                }
+                SurfaceNodeKind::ErrorRecovery(kind) => {
+                    builder.add_recovery(*kind, node.range, children)
+                }
+                SurfaceNodeKind::AttributeDefinition => builder.add_node(
+                    SurfaceNodeKind::PredicateDefinition,
+                    node.range,
+                    children,
+                ),
+                kind => builder.add_node(kind.clone(), node.range, children),
+            };
+            rebuilt.push(id);
+        }
+        let mutated = builder.finish(
+            ast.root().map(|node| rebuilt[node.index()]),
+            ast.expression_root().map(|node| rebuilt[node.index()]),
+        );
+        assert_eq!(mutated.token_texts(), ast.token_texts());
+        assert!(!super::parse_only::step5c3_parse_shape(&mutated));
+    }

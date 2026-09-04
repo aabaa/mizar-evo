@@ -12,4 +12,5 @@ diagnostic_codes = []
 spec_refs = [
   "spec.en.06.attributes.reference.symbol_class",
 ]
-notes = "Audit-1 semantic-bridge inactive oracle seed (September 2026 audit wave): binding expectation for the Step-5 semantic bridge; no active runner tag, earns no current credit. A structure name cannot occupy an attribute position in a type expression; symbol-class mismatch is rejected (spec 6.3, 3.3)."
+tags = ["active_type_elaboration"]
+notes = "Active Step 5C.3 non-attribute symbol rejection check."

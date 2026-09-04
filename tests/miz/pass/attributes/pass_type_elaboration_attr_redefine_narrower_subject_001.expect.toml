@@ -10,4 +10,5 @@ diagnostic_codes = []
 spec_refs = [
   "spec.en.06.attributes.redefine.coherence",
 ]
-notes = "Audit-1 semantic-bridge inactive oracle seed (September 2026 audit wave): binding expectation for the Step-5 semantic bridge; no active runner tag, earns no current credit. An attribute may be redefined for a narrower subject type with a coherence obligation tying the definitions together (spec 6.7)."
+tags = ["active_type_elaboration"]
+notes = "Active Step 5C.3 narrower-subject attribute redefinition check."

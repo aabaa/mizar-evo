@@ -12,4 +12,5 @@ diagnostic_codes = []
 spec_refs = [
   "spec.en.06.attributes.definition.uniqueness",
 ]
-notes = "Audit-1 semantic-bridge inactive oracle seed (September 2026 audit wave): binding expectation for the Step-5 semantic bridge; no active runner tag, earns no current credit. Two attribute definitions with the same name and the same subject type in one module conflict (spec 6.1, 6.6)."
+tags = ["active_type_elaboration"]
+notes = "Active Step 5C.3 duplicate-subject attribute semantic check."

@@ -626,3 +626,75 @@ fn task250_synthetic_attribute_symbols_with_kinds(
     }
     SymbolEnv::new(module, indexes)
 }
+
+#[test]
+fn step5c3_attribute_routes_reject_source_and_resolver_drift() {
+    const MISMATCH: &str = "type_elaboration.step5c3.attribute_semantics_mismatch";
+    let root = Path::new(env!("CARGO_MANIFEST_DIR"))
+        .parent()
+        .and_then(Path::parent)
+        .unwrap();
+    let mutations = [
+        (
+            "tests/miz/fail/attributes/fail_type_elaboration_attr_duplicate_same_subject_001.miz",
+            "dupmarked",
+            "othermarked",
+        ),
+        (
+            "tests/miz/pass/attributes/pass_type_elaboration_attr_struct_qualified_reference_001.miz",
+            "QBoxA.loaded",
+            "QBoxB.loaded",
+        ),
+        (
+            "tests/miz/pass/attributes/pass_type_elaboration_attr_param_prefix_declaration_001.miz",
+            "0-graded",
+            "1-graded",
+        ),
+        (
+            "tests/miz/pass/attributes/pass_type_elaboration_attr_redefine_narrower_subject_001.miz",
+            "coherence",
+            "existence",
+        ),
+        (
+            "tests/miz/fail/attributes/fail_type_elaboration_attr_non_attribute_symbol_001.miz",
+            "HBox",
+            "OtherBox",
+        ),
+        (
+            "tests/miz/pass/attributes/pass_formula_statement_attr_negated_chain_assertion_001.miz",
+            "non beta_marked",
+            "beta_marked",
+        ),
+        (
+            "tests/miz/pass/attributes/pass_formula_statement_attr_negated_chain_assertion_001.miz",
+            "alpha_marked non beta_marked",
+            "beta_marked non alpha_marked",
+        ),
+    ];
+    for (ordinal, (path, before, after)) in mutations.into_iter().enumerate() {
+        let source = std::fs::read_to_string(root.join(path)).unwrap();
+        let mutated = source.replacen(before, after, 1);
+        assert_ne!(mutated, source, "{path}");
+        let (ast, module, _, symbols) =
+            task253_ast_from_source_text(&mutated, 503_000 + ordinal);
+        assert_eq!(
+            super::type_elaboration::source_attribute_semantics_detail_keys(
+                &ast, module, &symbols,
+            ),
+            [MISMATCH.to_owned()],
+            "{path}: {before} -> {after}"
+        );
+    }
+
+    let source = std::fs::read_to_string(root.join(mutations[0].0)).unwrap();
+    let (ast, module, _, _) = task253_ast_from_source_text(&source, 503_100);
+    let (_, _, _, foreign_symbols) = task253_ast_from_source_text(&source, 503_101);
+    assert_eq!(
+        super::type_elaboration::source_attribute_semantics_detail_keys(
+            &ast,
+            module,
+            &foreign_symbols,
+        ),
+        [MISMATCH.to_owned()]
+    );
+}

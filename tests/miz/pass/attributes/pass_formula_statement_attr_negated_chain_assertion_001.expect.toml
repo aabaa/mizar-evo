@@ -10,4 +10,5 @@ diagnostic_codes = []
 spec_refs = [
   "spec.en.06.attributes.test_chain.negation",
 ]
-notes = "Audit-1 semantic-bridge inactive oracle seed (September 2026 audit wave): binding expectation for the Step-5 semantic bridge; no active runner tag, earns no current credit. An is-assertion may test a chain of attributes including a non-negated member (spec 6.3, 14.5 attribute test chains)."
+tags = ["active_formula_statement"]
+notes = "Active Step 5C.3 negated attribute-chain statement check."

@@ -34,7 +34,7 @@ mod type_assertion_routes;
 
 pub(super) use admission::{
     is_active_type_elaboration, is_step5c1_workspace_member, is_step5c2_workspace_member,
-    validate_active_type_elaboration_tags,
+    is_step5c3_workspace_member, validate_active_type_elaboration_tags,
 };
 #[cfg(test)]
 pub(super) use binary_routes::{
@@ -351,6 +351,8 @@ pub(super) use source_application::{
     synthetic_source_application_output, unwrapped_imported_source_application_handoff_for_test,
     wrapped_imported_source_application_handoff_for_test,
 };
+pub(super) use source_ast::subtree_has_recovery as subtree_has_recovery_for_parse;
+pub(super) use source_ast::surface_nodes_with_kind as surface_nodes_with_kind_for_parse;
 #[cfg(test)]
 pub(super) use source_ast::{
     direct_token_texts, structural_child_ids, surface_nodes_with_kind, surface_site,
@@ -362,7 +364,9 @@ pub(super) use source_atomic_formula::{
     source_atomic_formula_output_with_mutation, source_atomic_formula_output_with_source,
     source_atomic_formula_output_with_source_and_mutation,
 };
-pub(super) use source_attribute::source_attribute_detail_keys;
+pub(super) use source_attribute::{
+    source_attribute_detail_keys, source_attribute_semantics_detail_keys,
+};
 #[cfg(test)]
 pub(super) use source_attribute::{source_attribute_output, synthetic_source_attribute_output};
 pub(super) use source_attribute_definition::source_attribute_definition_transport_detail_keys;
