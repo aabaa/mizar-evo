@@ -13,8 +13,8 @@ use crate::staged_model::Stage;
 use super::import_fixtures::augment_type_elaboration_import_summaries;
 use super::shared::{resolver_symbol_collection, run_frontend, snapshot_id};
 use super::syntax_smoke::workspace_relative_source;
-use super::type_elaboration::source_contradiction_core_ir;
 use super::type_elaboration::source_structure_semantics::source_structure_semantics_output;
+use super::type_elaboration::{source_contradiction_core_ir, step5c4_mode_sethood_is_unprovable};
 use super::{ProofVerificationCaseResult, ProofVerificationCaseStatus};
 
 const ACTIVE_PROOF_VERIFICATION_TAG: &str = "active_proof_verification";
@@ -29,6 +29,11 @@ pub(in crate::runner) const STEP5C2_PROOF_CASES: [(&str, &str); 2] = [
         "tests/miz/pass/structures/pass_proof_verification_struct_with_update_001.miz",
     ),
 ];
+const STEP5C4_PROOF_CASE: (&str, &str) = (
+    "fail_proof_verification_mode_sethood_unprovable_001",
+    "tests/miz/fail/modes/fail_proof_verification_mode_sethood_unprovable_001.miz",
+);
+const STEP5C4_PROOF_DETAIL_KEY: &str = "modes.sethood.unprovable";
 const GENERATION_SCHEMA: &str = "mizar-vc-generation-task31-v1";
 const VC_SCHEMA: &str = "mizar-vc-vcset-task31-v1";
 
@@ -42,7 +47,10 @@ pub(super) fn is_active_proof_verification(case: &TestCase) -> bool {
     let step5c2 = step5c2_proof_case(case).is_some()
         && case.expectation.tags.as_slice() == [ACTIVE_PROOF_VERIFICATION_TAG]
         && case.expectation.snapshots.is_none();
-    (task180 || step5c2)
+    let step5c4 = step5c4_proof_case(case).is_some()
+        && case.expectation.tags.as_slice() == [ACTIVE_PROOF_VERIFICATION_TAG]
+        && case.expectation.snapshots.is_none();
+    (task180 || step5c2 || step5c4)
         && case
             .source_path
             .extension()
@@ -59,6 +67,7 @@ pub(super) fn validate_active_proof_verification_tags(
         .filter(|case| {
             case.id.0 == EXACT_TASK180_CASE_ID
                 || is_step5c2_proof_id(case)
+                || case.id.0 == STEP5C4_PROOF_CASE.0
                 || case
                     .expectation
                     .tags
@@ -70,6 +79,8 @@ pub(super) fn validate_active_proof_verification_tags(
     for case in reserved_cases {
         if !is_active_proof_verification(case)
             || is_step5c2_proof_id(case) && !is_step5c2_proof_workspace_member(workspace_root, case)
+            || step5c4_proof_case(case).is_some()
+                && !is_step5c4_proof_workspace_member(workspace_root, case)
         {
             diagnostics.push(ValidationDiagnostic::error(
                 &case.expectation_path,
@@ -114,6 +125,32 @@ pub(super) fn validate_active_proof_verification_tags(
             }
         }
     }
+    if workspace_root.join(STEP5C4_PROOF_CASE.1).is_file() {
+        let count = plan
+            .cases
+            .iter()
+            .filter(|case| {
+                case.id.0 == STEP5C4_PROOF_CASE.0
+                    && workspace_relative_source(workspace_root, &case.source_path)
+                        .is_some_and(|actual| actual == STEP5C4_PROOF_CASE.1)
+            })
+            .count();
+        if count != 1 {
+            diagnostics.push(ValidationDiagnostic::error(
+                Path::new(STEP5C4_PROOF_CASE.1),
+                "proof_verification",
+                "E-PROOF-VERIFICATION-STEP5C4-INVENTORY",
+                format!(
+                    "proof_verification.step5c4_inventory.{}",
+                    STEP5C4_PROOF_CASE.0
+                ),
+                format!(
+                    "Step 5C.4 proof row `{}` must occur exactly once; found {count}",
+                    STEP5C4_PROOF_CASE.0
+                ),
+            ));
+        }
+    }
     diagnostics
 }
 
@@ -138,12 +175,69 @@ fn is_step5c2_proof_workspace_member(workspace_root: &Path, case: &TestCase) -> 
     })
 }
 
+fn step5c4_proof_case(case: &TestCase) -> Option<(&'static str, &'static str)> {
+    (case.id.0 == STEP5C4_PROOF_CASE.0
+        && case.source_path.ends_with(STEP5C4_PROOF_CASE.1)
+        && case.expectation.stage == Stage::ProofVerification
+        && case.expectation.expected_phase == Some(PipelinePhase::Verification)
+        && case.expectation.expected_outcome == ExpectedOutcome::Fail
+        && case.expectation.stable_detail_key.as_deref() == Some(STEP5C4_PROOF_DETAIL_KEY)
+        && case.expectation.diagnostic_payloads.is_empty())
+    .then_some(STEP5C4_PROOF_CASE)
+}
+
+fn is_step5c4_proof_workspace_member(workspace_root: &Path, case: &TestCase) -> bool {
+    step5c4_proof_case(case).is_some_and(|(_, source)| {
+        workspace_relative_source(workspace_root, &case.source_path)
+            .is_some_and(|actual| actual == source)
+    })
+}
+
 pub(super) fn run_proof_verification_case(
     workspace_root: &Path,
     tests_root: &Path,
     case: &TestCase,
     ordinal: usize,
 ) -> ProofVerificationCaseResult {
+    if is_step5c4_proof_workspace_member(workspace_root, case) {
+        let frontend = run_frontend(workspace_root, case, ordinal);
+        let failure = match frontend {
+            Ok(frontend) if frontend.diagnostics.is_empty() => {
+                let Some(ast) = frontend.ast else {
+                    return ProofVerificationCaseResult {
+                        id: case.id.clone(),
+                        expectation_path: case.expectation_path.clone(),
+                        status: ProofVerificationCaseStatus::Failed,
+                        failure: Some("Step 5C.4 proof source produced no AST".to_owned()),
+                    };
+                };
+                let resolver = resolver_symbol_collection(workspace_root, case, &ast);
+                if !resolver.detail_keys.is_empty() {
+                    Some("Step 5C.4 proof source produced resolver diagnostics".to_owned())
+                } else {
+                    step5c4_mode_sethood_is_unprovable(
+                        &ast,
+                        &resolver.module,
+                        &resolver.shells,
+                        &resolver.env,
+                    )
+                    .err()
+                }
+            }
+            Ok(_) => Some("Step 5C.4 proof source produced frontend diagnostics".to_owned()),
+            Err(error) => Some(error),
+        };
+        return ProofVerificationCaseResult {
+            id: case.id.clone(),
+            expectation_path: case.expectation_path.clone(),
+            status: if failure.is_none() {
+                ProofVerificationCaseStatus::Passed
+            } else {
+                ProofVerificationCaseStatus::Failed
+            },
+            failure,
+        };
+    }
     if is_step5c2_proof_workspace_member(workspace_root, case) {
         let first = normalize_structure_case(workspace_root, case, ordinal);
         let second = normalize_structure_case(workspace_root, case, ordinal);

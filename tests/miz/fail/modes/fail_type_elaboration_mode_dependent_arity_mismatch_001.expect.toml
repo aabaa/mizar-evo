@@ -6,6 +6,7 @@ domain = "modes.dependent"
 source = "fail_type_elaboration_mode_dependent_arity_mismatch_001.miz"
 expected_outcome = "fail"
 expected_phase = "type_check"
+tags = ["active_type_elaboration"]
 failure_category = "type_error"
 stable_detail_key = "modes.dependent.argument_arity_mismatch"
 diagnostic_codes = []

@@ -3,6 +3,13 @@
 > Canonical language: English. Japanese companion:
 > [../ja/source_property_implementation.md](../ja/source_property_implementation.md).
 
+## Step 5C.4 property-implementation semantics
+
+A property implementation is checked against a resolver-authenticated property member of its
+subject structure. `equals` normalizes its direct value term without existence or uniqueness
+obligations. `means` binds `it` and requires both ordered existence and uniqueness clauses before
+the implementation is admitted.
+
 ## Task 264 Scope And Authority
 
 Checker Task 264 owns one syntax-free, immutable source-to-checker intake for

@@ -22,10 +22,15 @@ use mizar_checker::{
         SourceTypeModeRhsExtensionInput, SourceTypeModeRhsId, SourceTypeModeRhsInput,
         SourceTypeModeRhsProducer, SourceTypeProducer,
     },
+    type_checker::{
+        CoercionObligationChecker, InitialObligationInput, InitialRequirementKind, ModeExpansion,
+        TypeExpressionInput, TypeHeadInput, TypeNormalizer,
+    },
     typed_ast::{
-        CoercionTable, InitialObligationTable, LocalTypeContextId, NodeRecoveryState,
-        TypeDiagnosticTable, TypeFactTable, TypeTable, TypedArena, TypedArenaBuilder, TypedAst,
-        TypedAstParts, TypedNode, TypedNodeId, TypedNodeLinks, TypedSiteRef, TypingState,
+        CoercionTable, InitialObligationKind, InitialObligationStatus, InitialObligationTable,
+        LocalTypeContextId, NodeRecoveryState, TypeDiagnosticTable, TypeFactTable, TypeTable,
+        TypedArena, TypedArenaBuilder, TypedAst, TypedAstParts, TypedNode, TypedNodeId,
+        TypedNodeLinks, TypedSiteRef, TypingState,
     },
 };
 use mizar_resolve::{
@@ -40,9 +45,17 @@ use mizar_resolve::{
     symbols::{SignatureProjectionExtractor, SymbolOverloadPolicy},
 };
 use mizar_session::{SourceAnchor, SourceId, SourceRange};
-use mizar_syntax::{SurfaceAst, SurfaceNodeId, SurfaceNodeKind, SurfaceTokenKind};
+use mizar_syntax::{
+    SurfaceAst, SurfaceFormulaConstant, SurfaceNode, SurfaceNodeId, SurfaceNodeKind,
+    SurfaceTokenKind,
+};
 
 use super::checker_handoff::assemble_empty_resolved_typed_ast;
+use super::source_ast::{
+    leaf_token_texts, structural_child_ids, subtree_has_recovery, surface_nodes_with_kind,
+    surface_site, surface_text,
+};
+use super::source_reserve::extract_builtin_source_type_expression;
 
 pub(in crate::runner) const SOURCE_MODE_DEFINITION_TEXT: &str = concat!(
     "definition\n",
@@ -54,6 +67,7 @@ pub(in crate::runner) const SOURCE_MODE_DEFINITION_TEXT: &str = concat!(
 );
 
 const INVALID_PAYLOAD_KEY: &str = "type_elaboration.checker.source_mode_definition.invalid_payload";
+const STEP5C4_MODE_MISMATCH_KEY: &str = "modes.mode_semantics_mismatch";
 
 #[derive(Debug)]
 pub(in crate::runner) struct SourceModeDefinitionRouteOutput {
@@ -209,7 +223,7 @@ pub(in crate::runner) fn source_mode_definition_transport_detail_keys(
 ) -> Option<Vec<String>> {
     match source_mode_definition_output_impl(
         ast,
-        module,
+        module.clone(),
         shells,
         symbols,
         source_text,
@@ -219,6 +233,352 @@ pub(in crate::runner) fn source_mode_definition_transport_detail_keys(
         Some(Ok(output)) if route_output_is_exact(&output) => Some(Vec::new()),
         Some(Ok(_)) | Some(Err(_)) => Some(vec![INVALID_PAYLOAD_KEY.to_owned()]),
     }
+    .or_else(|| step5c4_mode_semantics_detail_keys(ast, module, shells, symbols))
+}
+
+pub(in crate::runner) fn step5c4_mode_semantics_detail_keys(
+    ast: &SurfaceAst,
+    module: ModuleId,
+    shells: &DeclarationShellSet,
+    symbols: &SymbolEnv,
+) -> Option<Vec<String>> {
+    let modes = surface_nodes_with_kind(ast, SurfaceNodeKind::ModeDefinition);
+    if modes.is_empty() {
+        return None;
+    }
+    let dependent = modes.len() == 2
+        && modes.iter().all(|(_, mode)| {
+            structural_child_ids(ast, mode).into_iter().any(|child| {
+                ast.node(child).is_some_and(|node| {
+                    matches!(node.kind, SurfaceNodeKind::ModePattern)
+                        && leaf_token_texts(ast, node).contains(&"of".to_owned())
+                })
+            })
+        });
+    let attributed = modes.len() == 1
+        && surface_nodes_with_kind(ast, SurfaceNodeKind::StructureDefinition).len() == 1
+        && surface_nodes_with_kind(ast, SurfaceNodeKind::AttributeDefinition).len() == 1
+        && mode_rhs(ast, modes[0].1).is_some_and(|(_, rhs)| {
+            structural_child_ids(ast, rhs).into_iter().any(|child| {
+                ast.node(child)
+                    .is_some_and(|node| matches!(node.kind, SurfaceNodeKind::AttributeChain))
+            })
+        });
+    if !dependent && !attributed {
+        return None;
+    }
+    if modes.iter().any(|(id, mode)| {
+        subtree_has_recovery(ast, mode)
+            || !shells.declarations().iter().any(|shell| {
+                shell.kind() == DeclarationShellKind::ModeDefinition
+                    && shell.node_id() == *id
+                    && shell.module() == &module
+                    && shell.range() == mode.range
+                    && !shell.recovered()
+            })
+            || mode_pattern(ast, mode)
+                .and_then(|pattern| mode_symbol_for_node(ast, &module, symbols, *id, pattern))
+                .is_none()
+    }) {
+        return Some(vec![STEP5C4_MODE_MISMATCH_KEY.to_owned()]);
+    }
+    if dependent {
+        let wrong = dependent_mode_is_wrong_arity(ast, &module, symbols, &modes);
+        return Some(if wrong {
+            vec!["modes.dependent.argument_arity_mismatch".to_owned()]
+        } else {
+            vec![STEP5C4_MODE_MISMATCH_KEY.to_owned()]
+        });
+    }
+    Some(
+        if attributed_mode_is_valid(ast, &module, symbols, &modes[0]) {
+            Vec::new()
+        } else {
+            vec![STEP5C4_MODE_MISMATCH_KEY.to_owned()]
+        },
+    )
+}
+
+fn mode_pattern<'a>(ast: &'a SurfaceAst, mode: &'a SurfaceNode) -> Option<&'a SurfaceNode> {
+    structural_child_ids(ast, mode)
+        .into_iter()
+        .find_map(|child| {
+            ast.node(child)
+                .filter(|node| matches!(node.kind, SurfaceNodeKind::ModePattern))
+        })
+}
+
+fn mode_rhs<'a>(
+    ast: &'a SurfaceAst,
+    mode: &'a SurfaceNode,
+) -> Option<(SurfaceNodeId, &'a SurfaceNode)> {
+    structural_child_ids(ast, mode)
+        .into_iter()
+        .find_map(|child| {
+            ast.node(child)
+                .filter(|node| matches!(node.kind, SurfaceNodeKind::TypeExpression))
+                .map(|node| (child, node))
+        })
+}
+
+fn mode_symbol_for_node(
+    ast: &SurfaceAst,
+    module: &ModuleId,
+    symbols: &SymbolEnv,
+    mode_id: SurfaceNodeId,
+    pattern: &SurfaceNode,
+) -> Option<SymbolId> {
+    let mode = ast.node(mode_id)?;
+    let spelling = leaf_token_texts(ast, pattern).join(" ");
+    let mut candidates = symbols
+        .symbols()
+        .iter()
+        .filter(|entry| {
+            entry.kind() == SymbolKind::Mode
+                && entry.primary_spelling() == spelling
+                && entry.origin().source_id() == ast.source_id
+                && entry.origin().module_id() == module
+                && entry.origin().anchor() == &SourceAnchor::Range(mode.range)
+                && !entry.origin().is_recovered()
+        })
+        .map(|entry| entry.symbol().clone())
+        .collect::<Vec<_>>();
+    (candidates.len() == 1).then(|| candidates.pop().unwrap_or_else(|| unreachable!()))
+}
+
+fn attributed_mode_is_valid(
+    ast: &SurfaceAst,
+    module: &ModuleId,
+    symbols: &SymbolEnv,
+    (mode_id, mode): &(SurfaceNodeId, &SurfaceNode),
+) -> bool {
+    let Some(pattern) = mode_pattern(ast, mode) else {
+        return false;
+    };
+    let Some((rhs_id, rhs)) = mode_rhs(ast, mode) else {
+        return false;
+    };
+    let Ok(source_type) = extract_builtin_source_type_expression(ast, rhs, module, symbols) else {
+        return false;
+    };
+    let input = TypeExpressionInput::new(
+        surface_site(rhs_id),
+        source_type.range,
+        source_type.spelling,
+        source_type.head,
+    )
+    .with_attributes(source_type.attributes);
+    TypeNormalizer::default()
+        .normalize(symbols, [input])
+        .diagnostics()
+        .is_empty()
+        && mode_symbol_for_node(ast, module, symbols, *mode_id, pattern).is_some()
+}
+
+fn dependent_mode_is_wrong_arity(
+    ast: &SurfaceAst,
+    module: &ModuleId,
+    symbols: &SymbolEnv,
+    modes: &[(SurfaceNodeId, &SurfaceNode)],
+) -> bool {
+    let Some((first_id, first_mode)) = modes.first() else {
+        return false;
+    };
+    let Some(first_pattern) = mode_pattern(ast, first_mode) else {
+        return false;
+    };
+    let Some(first_symbol) = mode_symbol_for_node(ast, module, symbols, *first_id, first_pattern)
+    else {
+        return false;
+    };
+    let Some((first_rhs_id, first_rhs)) = mode_rhs(ast, first_mode) else {
+        return false;
+    };
+    let Ok(radix) = extract_builtin_source_type_expression(ast, first_rhs, module, symbols) else {
+        return false;
+    };
+    let Some((second_id, second_mode)) = modes.get(1) else {
+        return false;
+    };
+    let Some(second_pattern) = mode_pattern(ast, second_mode) else {
+        return false;
+    };
+    let Some((rhs_id, rhs)) = mode_rhs(ast, second_mode) else {
+        return false;
+    };
+    let children = structural_child_ids(ast, rhs);
+    let [head_id] = children.as_slice() else {
+        return false;
+    };
+    let Some(head) = ast.node(*head_id) else {
+        return false;
+    };
+    let head_children = structural_child_ids(ast, head);
+    let [head_symbol_id, args_id] = head_children.as_slice() else {
+        return false;
+    };
+    let Some(args_node) = ast.node(*args_id) else {
+        return false;
+    };
+    if !matches!(head.kind, SurfaceNodeKind::TypeHead)
+        || !matches!(args_node.kind, SurfaceNodeKind::TypeArguments)
+    {
+        return false;
+    }
+    let Some(head_child) = ast.node(*head_symbol_id) else {
+        return false;
+    };
+    let head_spelling = surface_text(ast, head_child);
+    let first_name = leaf_token_texts(ast, first_pattern)
+        .into_iter()
+        .next()
+        .unwrap_or_default();
+    let Some(applied_symbol) = (head_spelling == first_name).then_some(first_symbol.clone()) else {
+        return false;
+    };
+    let args = structural_child_ids(ast, args_node)
+        .into_iter()
+        .filter_map(|id| {
+            ast.node(id)
+                .filter(|node| matches!(node.kind, SurfaceNodeKind::TermExpression))
+                .map(|node| {
+                    TypeExpressionInput::new(
+                        surface_site(id),
+                        node.range,
+                        surface_text(ast, node),
+                        TypeHeadInput::BuiltinSet,
+                    )
+                })
+        })
+        .collect::<Vec<_>>();
+    let declared_arity = leaf_token_texts(ast, first_pattern)
+        .iter()
+        .position(|token| token == "of")
+        .map(|of| {
+            leaf_token_texts(ast, first_pattern)[of + 1..]
+                .iter()
+                .filter(|token| token.as_str() != ",")
+                .count()
+        });
+    if declared_arity != Some(1) || args.len() != 2 || declared_arity == Some(args.len()) {
+        return false;
+    }
+    let radix = TypeExpressionInput::new(
+        surface_site(first_rhs_id),
+        radix.range,
+        radix.spelling,
+        radix.head,
+    )
+    .with_attributes(radix.attributes);
+    let input = TypeExpressionInput::new(
+        surface_site(rhs_id),
+        rhs.range,
+        surface_text(ast, rhs),
+        TypeHeadInput::Symbol(applied_symbol),
+    )
+    .with_args(args);
+    let output = TypeNormalizer::new([(first_symbol, ModeExpansion::new(radix, Vec::new()))])
+        .normalize(symbols, [input]);
+    output
+        .diagnostics()
+        .canonical_iter()
+        .filter(|(_, diagnostic)| diagnostic.message_key == "checker.type.wrong_mode_arity")
+        .count()
+        == 1
+        && output
+            .diagnostics()
+            .canonical_iter()
+            .all(|(_, diagnostic)| {
+                matches!(
+                    diagnostic.message_key.as_str(),
+                    "checker.type.wrong_mode_arity" | "checker.type.recovery"
+                )
+            })
+        && mode_symbol_for_node(ast, module, symbols, *second_id, second_pattern).is_some()
+}
+
+pub(in crate::runner) fn step5c4_mode_sethood_is_unprovable(
+    ast: &SurfaceAst,
+    module: &ModuleId,
+    shells: &DeclarationShellSet,
+    symbols: &SymbolEnv,
+) -> Result<(), String> {
+    let modes = surface_nodes_with_kind(ast, SurfaceNodeKind::ModeDefinition);
+    if modes.len() != 1 {
+        return Err("expected one mode definition".to_owned());
+    }
+    let (mode_id, mode) = modes[0];
+    if subtree_has_recovery(ast, mode)
+        || !shells.declarations().iter().any(|shell| {
+            shell.kind() == DeclarationShellKind::ModeDefinition
+                && shell.node_id() == mode_id
+                && shell.module() == module
+                && shell.range() == mode.range
+                && !shell.recovered()
+        })
+    {
+        return Err("mode declaration identity is not authenticated".to_owned());
+    }
+    let pattern = mode_pattern(ast, mode).ok_or_else(|| "mode pattern is missing".to_owned())?;
+    mode_symbol_for_node(ast, module, symbols, mode_id, pattern)
+        .ok_or_else(|| "mode resolver identity is not authenticated".to_owned())?;
+    let (rhs_id, rhs) = mode_rhs(ast, mode).ok_or_else(|| "mode radix is missing".to_owned())?;
+    let source_type = extract_builtin_source_type_expression(ast, rhs, module, symbols)
+        .map_err(|_| "mode radix is not a supported source type".to_owned())?;
+    if !matches!(source_type.head, TypeHeadInput::BuiltinSet) || !source_type.attributes.is_empty()
+    {
+        return Err("mode radix is not a normalized bare set".to_owned());
+    }
+    let properties = surface_nodes_with_kind(ast, SurfaceNodeKind::ModeProperty);
+    let proofs = surface_nodes_with_kind(ast, SurfaceNodeKind::ProofBlock);
+    let conclusions = surface_nodes_with_kind(ast, SurfaceNodeKind::ConclusionStatement);
+    let constants = surface_nodes_with_kind(
+        ast,
+        SurfaceNodeKind::FormulaConstant(SurfaceFormulaConstant::Thesis),
+    );
+    if properties.len() != 1 || proofs.len() != 1 || conclusions.len() != 1 || constants.len() != 1
+    {
+        return Err("sethood proof shape is not exact".to_owned());
+    }
+    let property = properties[0].1;
+    let target = TypeExpressionInput::new(
+        surface_site(rhs_id),
+        source_type.range,
+        source_type.spelling,
+        source_type.head,
+    );
+    let checking = CoercionObligationChecker::default().check(
+        symbols,
+        &TypeFactTable::new(),
+        [],
+        [InitialObligationInput::new(
+            surface_site(properties[0].0),
+            property.range,
+            InitialRequirementKind::Sethood,
+            target,
+        )],
+    );
+    let obligations = checking.initial_obligations().iter().collect::<Vec<_>>();
+    if !checking.diagnostics().is_empty()
+        || obligations.len() != 1
+        || obligations[0].1.kind != InitialObligationKind::Sethood
+        || obligations[0].1.status != InitialObligationStatus::Pending
+        || obligations[0].1.owner != surface_site(properties[0].0)
+    {
+        return Err("checker did not preserve the pending sethood obligation".to_owned());
+    }
+    if subtree_has_recovery(ast, property)
+        || !structural_child_ids(ast, mode).contains(&properties[0].0)
+        || !structural_child_ids(ast, property).contains(&proofs[0].0)
+        || !leaf_token_texts(ast, property).contains(&"sethood".to_owned())
+        || leaf_token_texts(ast, conclusions[0].1)
+            .windows(2)
+            .all(|tokens| tokens != ["thus", "thesis"])
+        || leaf_token_texts(ast, constants[0].1).as_slice() != ["thesis"]
+    {
+        return Err("sethood proof is not the trivial thesis attempt".to_owned());
+    }
+    Ok(())
 }
 
 #[cfg(test)]

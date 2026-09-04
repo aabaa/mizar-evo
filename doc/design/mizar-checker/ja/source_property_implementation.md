@@ -4,6 +4,12 @@
 > [../en/source_property_implementation.md](../en/source_property_implementation.md).
 > 本文は同じTask 264 contractの日本語companionです。
 
+## Step 5C.4 property-implementation semantics
+
+property implementation は subject structure の resolver-authenticated property member に対して
+check する。`equals` は existence/uniqueness を要求せず direct value term を normalize し、
+`means` は `it` を束縛して ordered existence と uniqueness の両 clause を要求する。
+
 ## Task 264 scope / authority
 
 Task 264はstruct property implementationとinitial correctness obligationの

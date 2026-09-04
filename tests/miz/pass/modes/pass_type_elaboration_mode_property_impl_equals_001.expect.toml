@@ -6,6 +6,7 @@ domain = "modes.property_implementation"
 source = "pass_type_elaboration_mode_property_impl_equals_001.miz"
 expected_outcome = "pass"
 expected_phase = "type_check"
+tags = ["active_type_elaboration"]
 diagnostic_codes = []
 spec_refs = [
   "spec.en.07.modes.property_implementation.equals",

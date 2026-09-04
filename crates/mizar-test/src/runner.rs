@@ -34,8 +34,9 @@ use import_fixtures::{
     augment_type_elaboration_import_summaries_with_imported_public_theorem_label,
 };
 use parse_only::{
-    is_step5c3_parse_only_case, is_step5c3_parse_only_workspace_member,
-    parse_only_failure_diagnostic, run_parse_only_case, validate_step5c3_parse_only_inventory,
+    is_step5c3_parse_only_case, is_step5c3_parse_only_workspace_member, is_step5c4_parse_only_case,
+    is_step5c4_parse_only_workspace_member, parse_only_failure_diagnostic, run_parse_only_case,
+    validate_step5c3_parse_only_inventory, validate_step5c4_parse_only_inventory,
 };
 use proof_verification::{
     is_active_proof_verification, proof_verification_failure_diagnostic,
@@ -726,10 +727,11 @@ use type_elaboration::{
     assert_source_reserve_core_summary_readiness, assert_source_reserve_handoff,
     expected_type_elaboration_detail_keys, extract_builtin_source_reserve_declarations,
     is_active_type_elaboration, is_step5c1_workspace_member, is_step5c2_workspace_member,
-    is_step5c3_workspace_member, source_application_transport_detail_keys,
-    source_atomic_formula_transport_detail_keys, source_attribute_definition_transport_detail_keys,
-    source_attribute_detail_keys, source_attribute_semantics_detail_keys,
-    source_binding_context_detail_keys, source_builtin_binary_term_formula_detail_keys,
+    is_step5c3_workspace_member, is_step5c4_workspace_member,
+    source_application_transport_detail_keys, source_atomic_formula_transport_detail_keys,
+    source_attribute_definition_transport_detail_keys, source_attribute_detail_keys,
+    source_attribute_semantics_detail_keys, source_binding_context_detail_keys,
+    source_builtin_binary_term_formula_detail_keys,
     source_builtin_type_assertion_formula_detail_keys,
     source_chained_local_mode_asserted_head_detail_keys,
     source_chained_local_mode_radix_asserted_head_detail_keys,
@@ -1563,6 +1565,10 @@ pub fn run_parse_only_corpus(config: &DiscoveryConfig) -> Result<ParseOnlyRunRep
         &workspace_root,
         &plan,
     ));
+    diagnostics.extend(validate_step5c4_parse_only_inventory(
+        &workspace_root,
+        &plan,
+    ));
 
     let mut results = Vec::new();
     for (ordinal, case) in active_parse_only_cases(&plan).enumerate() {
@@ -1906,6 +1912,7 @@ pub fn active_proof_verification_cases(plan: &TestPlan) -> impl Iterator<Item = 
 
 fn is_active_parse_only(case: &TestCase) -> bool {
     let exact_step5c3 = is_step5c3_parse_only_case(case);
+    let exact_step5c4 = is_step5c4_parse_only_case(case);
     has_active_parse_only_tag(case)
         && case.expectation.stage == Stage::ParseOnly
         && case.expectation.expected_phase == Some(PipelinePhase::Parse)
@@ -1922,6 +1929,11 @@ fn is_active_parse_only(case: &TestCase) -> bool {
             .0
             .starts_with("fail_type_elaboration_attr_param_prefix_unbound_001")
             || exact_step5c3)
+        && (!case
+            .id
+            .0
+            .starts_with("fail_parse_only_mode_property_impl_missing_correctness_001")
+            || exact_step5c4)
 }
 
 fn is_active_declaration_symbol(case: &TestCase) -> bool {
@@ -1961,10 +1973,13 @@ fn validate_active_parse_only_tags(
         .filter(|case| {
             (has_active_parse_only_tag(case)
                 || is_step5c3_parse_only_case(case)
+                || case.id.0 == "fail_parse_only_mode_property_impl_missing_correctness_001"
                 || case.id.0 == "fail_type_elaboration_attr_param_prefix_unbound_001")
                 && (!is_active_parse_only(case)
                     || case.id.0 == "fail_type_elaboration_attr_param_prefix_unbound_001"
-                        && !is_step5c3_parse_only_workspace_member(workspace_root, case))
+                        && !is_step5c3_parse_only_workspace_member(workspace_root, case)
+                    || is_step5c4_parse_only_case(case)
+                        && !is_step5c4_parse_only_workspace_member(workspace_root, case))
         })
         .map(|case| {
             ValidationDiagnostic::error(
@@ -2118,6 +2133,42 @@ fn type_elaboration_detail_keys(
         }
         return source_structure_semantics_detail_keys(&ast, resolver.module, &resolver.env);
     }
+    if is_step5c4_workspace_member(workspace_root, case) && !resolver.detail_keys.is_empty() {
+        return resolver
+            .detail_keys
+            .into_iter()
+            .map(|key| format!("type_elaboration.lower_stage.{key}"))
+            .collect();
+    }
+    let symbols = if source_text.as_ref() == type_elaboration::SOURCE_STATEMENT_B5B_TEXT {
+        augment_type_elaboration_import_summaries_with_imported_public_theorem_label(
+            &ast,
+            &resolver.module,
+            resolver.env.clone(),
+        )
+    } else {
+        augment_type_elaboration_import_summaries(&ast, &resolver.module, resolver.env.clone())
+    };
+    if is_step5c4_workspace_member(workspace_root, case) {
+        if let Some(keys) = source_mode_definition_transport_detail_keys(
+            &ast,
+            resolver.module.clone(),
+            &resolver.shells,
+            &symbols,
+            &source_text,
+        ) {
+            return keys;
+        }
+        if let Some(keys) = source_property_implementation_transport_detail_keys(
+            &ast,
+            resolver.module.clone(),
+            &resolver.shells,
+            &symbols,
+            &source_text,
+        ) {
+            return keys;
+        }
+    }
     if !resolver.detail_keys.is_empty() {
         return resolver
             .detail_keys
@@ -2130,15 +2181,6 @@ fn type_elaboration_detail_keys(
         return source_variable_semantics_detail_keys(&ast, &resolver.module, &resolver.env);
     }
 
-    let symbols = if source_text.as_ref() == type_elaboration::SOURCE_STATEMENT_B5B_TEXT {
-        augment_type_elaboration_import_summaries_with_imported_public_theorem_label(
-            &ast,
-            &resolver.module,
-            resolver.env,
-        )
-    } else {
-        augment_type_elaboration_import_summaries(&ast, &resolver.module, resolver.env)
-    };
     if is_active_type_elaboration(case) && is_step5c3_workspace_member(workspace_root, case) {
         return source_attribute_semantics_detail_keys(&ast, resolver.module.clone(), &symbols);
     }

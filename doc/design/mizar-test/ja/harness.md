@@ -1,5 +1,11 @@
 # Module: harness
 
+## Step 5C.4 mode semantic runner
+
+private route は activation map の non-G6 type-elaboration 5 行、parse-only 1 行、
+proof-verification 1 行だけを admit する。id/path/stage/phase/outcome/sole tag を固定し、
+G6 dependent-mode 行は inactive のまま、semantic mismatch は fail closed にする。
+
 ## Step 5C.3 attribute semantic runner
 
 private route は activation map の non-G1 type-elaboration 5行、parse-only 1行、

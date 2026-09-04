@@ -79,6 +79,28 @@ pub(in crate::runner) fn direct_token_texts(ast: &SurfaceAst, node: &SurfaceNode
         .collect()
 }
 
+pub(in crate::runner) fn leaf_token_texts(ast: &SurfaceAst, node: &SurfaceNode) -> Vec<String> {
+    let mut texts = Vec::new();
+    collect_leaf_token_texts(ast, node, &mut texts);
+    texts
+}
+
+fn collect_leaf_token_texts(ast: &SurfaceAst, node: &SurfaceNode, texts: &mut Vec<String>) {
+    if let Some(text) = node.token_text() {
+        texts.push(text.to_owned());
+        return;
+    }
+    for child in &node.children {
+        if let Some(child) = ast.node(*child) {
+            collect_leaf_token_texts(ast, child, texts);
+        }
+    }
+}
+
+pub(in crate::runner) fn surface_text(ast: &SurfaceAst, node: &SurfaceNode) -> String {
+    leaf_token_texts(ast, node).join(" ")
+}
+
 pub(in crate::runner) fn qualified_symbol_spelling(
     ast: &SurfaceAst,
     node: &SurfaceNode,

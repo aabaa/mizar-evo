@@ -510,3 +510,116 @@
         assert_eq!(mutated.token_texts(), ast.token_texts());
         assert!(!super::parse_only::step5c3_parse_shape(&mutated));
     }
+
+    #[test]
+    fn step5c4_parse_shape_rejects_source_and_ast_semantic_drift() {
+        let source = include_str!(concat!(
+            env!("CARGO_MANIFEST_DIR"),
+            "/../../tests/miz/fail/modes/",
+            "fail_parse_only_mode_property_impl_missing_correctness_001.miz"
+        ));
+        let (ast, _, _, _, _) =
+            task253_ast_from_source_text_with_diagnostic_count(source, 503_300);
+        assert!(super::parse_only::step5c4_parse_shape(&ast));
+        for mutated in [
+            source.replacen("mark2", "mark3", 1),
+            source.replacen("means it = B.data", "equals B.data", 1),
+        ] {
+            let (mutated_ast, _, _, _, _) =
+                task253_ast_from_source_text_with_diagnostic_count(&mutated, 503_301);
+            assert!(!super::parse_only::step5c4_parse_shape(&mutated_ast));
+        }
+        let changed_kind = rebuild_surface_ast_replacing_kind(
+            &ast,
+            SurfaceNodeKind::CorrectnessCondition,
+            SurfaceNodeKind::FormulaDefiniens,
+        );
+        assert_eq!(changed_kind.token_texts(), ast.token_texts());
+        assert!(!super::parse_only::step5c4_parse_shape(&changed_kind));
+    }
+
+    #[test]
+    fn step5c4_parse_admission_and_inventory_reject_metadata_and_path_drift() {
+        let workspace_root = Path::new(env!("CARGO_MANIFEST_DIR"))
+            .parent()
+            .and_then(Path::parent)
+            .expect("workspace root")
+            .to_path_buf();
+        let config = DiscoveryConfig {
+            workspace_root: workspace_root.clone(),
+            tests_root: workspace_root.join("tests"),
+            manifest_path: workspace_root.join("tests/coverage/spec_trace.toml"),
+            profile: TestProfile::Fast,
+            validation_mode: ValidationMode::Metadata,
+        };
+        let plan = build_test_plan(&config).expect("repository plan");
+        let id = "fail_parse_only_mode_property_impl_missing_correctness_001";
+        let exact = plan
+            .cases
+            .iter()
+            .find(|case| case.id.0 == id)
+            .expect("Step 5C.4 parse case")
+            .clone();
+        assert!(super::parse_only::is_step5c4_parse_only_case(&exact));
+        assert!(super::is_active_parse_only(&exact));
+
+        let mut variants = Vec::new();
+        let mut missing_tag = exact.clone();
+        missing_tag.expectation.tags.clear();
+        variants.push(missing_tag);
+        let mut duplicate_tag = exact.clone();
+        duplicate_tag
+            .expectation
+            .tags
+            .push("active_parse_only".to_owned());
+        variants.push(duplicate_tag);
+        let mut wrong_stage = exact.clone();
+        wrong_stage.expectation.stage = crate::Stage::TypeElaboration;
+        variants.push(wrong_stage);
+        let mut wrong_phase = exact.clone();
+        wrong_phase.expectation.expected_phase = Some(crate::PipelinePhase::TypeCheck);
+        variants.push(wrong_phase);
+        let mut wrong_outcome = exact.clone();
+        wrong_outcome.expectation.expected_outcome = crate::ExpectedOutcome::Pass;
+        variants.push(wrong_outcome);
+        let mut wrong_key = exact.clone();
+        wrong_key.expectation.stable_detail_key = Some("wrong.key".to_owned());
+        variants.push(wrong_key);
+        for variant in variants {
+            assert!(!super::parse_only::is_step5c4_parse_only_case(&variant));
+            let mut mutated = plan.clone();
+            *mutated
+                .cases
+                .iter_mut()
+                .find(|case| case.id.0 == id)
+                .expect("mutable Step 5C.4 parse case") = variant;
+            assert!(super::validate_active_parse_only_tags(&workspace_root, &mutated)
+                .iter()
+                .any(|diagnostic| diagnostic.code.0 == "E-PARSE-ONLY-ACTIVE-GATE"));
+        }
+
+        let mut alias_plan = plan.clone();
+        let mut alias = exact.clone();
+        alias.source_path = workspace_root.join("alias").join(&alias.expectation.source);
+        alias_plan.cases.push(alias);
+        assert!(super::validate_active_parse_only_tags(&workspace_root, &alias_plan)
+            .iter()
+            .any(|diagnostic| diagnostic.code.0 == "E-PARSE-ONLY-ACTIVE-GATE"));
+
+        let mut duplicate_plan = plan.clone();
+        duplicate_plan.cases.push(exact);
+        assert!(super::parse_only::validate_step5c4_parse_only_inventory(
+            &workspace_root,
+            &duplicate_plan
+        )
+        .iter()
+        .any(|diagnostic| diagnostic.code.0 == "E-PARSE-ONLY-STEP5C4-INVENTORY"));
+        let mut missing_plan = plan;
+        missing_plan.cases.retain(|case| case.id.0 != id);
+        assert!(super::parse_only::validate_step5c4_parse_only_inventory(
+            &workspace_root,
+            &missing_plan
+        )
+        .iter()
+        .any(|diagnostic| diagnostic.code.0 == "E-PARSE-ONLY-STEP5C4-INVENTORY"));
+    }

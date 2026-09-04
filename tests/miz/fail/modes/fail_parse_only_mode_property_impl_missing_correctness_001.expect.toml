@@ -6,6 +6,7 @@ domain = "modes.property_implementation"
 source = "fail_parse_only_mode_property_impl_missing_correctness_001.miz"
 expected_outcome = "fail"
 expected_phase = "parse"
+tags = ["active_parse_only"]
 failure_category = "syntax_error"
 stable_detail_key = "modes.property_implementation.missing_existence_uniqueness"
 diagnostic_codes = []

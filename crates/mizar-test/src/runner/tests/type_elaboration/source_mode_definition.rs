@@ -1,6 +1,6 @@
 use super::type_elaboration::{
     SOURCE_MODE_DEFINITION_TEXT, SourceModeDefinitionRouteMutation, source_mode_definition_output,
-    source_mode_definition_output_with_mutation,
+    source_mode_definition_output_with_mutation, step5c4_mode_semantics_detail_keys,
 };
 use mizar_checker::typed_ast::TypedNodeId;
 
@@ -8,6 +8,80 @@ const TASK262_CASE: &str = "pass_type_elaboration_mode_definition_payload_001";
 const TASK262_SPEC_REF: &str = "spec.en.checker.type_elaboration.source_mode_definition_payload";
 const TASK262_HISTORICAL_GAP_CASE: &str = "fail_type_elaboration_mode_structure_definition_gap_001";
 const TASK262_MIXED_CASE: &str = "fail_type_elaboration_predicate_functor_definition_gap_001";
+
+#[test]
+fn step5c4_mode_bridge_uses_authenticated_source_and_resolver_semantics() {
+    let source = include_str!(concat!(
+        env!("CARGO_MANIFEST_DIR"),
+        "/../../tests/miz/pass/modes/",
+        "pass_type_elaboration_mode_attributed_struct_radix_001.miz"
+    ));
+    let (ast, module, shells, symbols) = task253_ast_from_source_text(source, 504_000);
+    assert_eq!(
+        step5c4_mode_semantics_detail_keys(&ast, module.clone(), &shells, &symbols),
+        Some(Vec::new())
+    );
+    let mutated_source = source.replacen("fine", "ghost", 1);
+    let (mutated_ast, mutated_module, mutated_shells, mutated_symbols) =
+        task253_ast_from_source_text(&mutated_source, 504_001);
+    assert_ne!(
+        step5c4_mode_semantics_detail_keys(
+            &mutated_ast,
+            mutated_module,
+            &mutated_shells,
+            &mutated_symbols
+        ),
+        Some(Vec::new())
+    );
+    assert_ne!(
+        step5c4_mode_semantics_detail_keys(
+            &ast,
+            module.clone(),
+            &mutated_shells,
+            &mutated_symbols
+        ),
+        Some(Vec::new())
+    );
+    let changed_kind = rebuild_surface_ast_replacing_kind(
+        &ast,
+        SurfaceNodeKind::AttributeChain,
+        SurfaceNodeKind::TermList,
+    );
+    assert_eq!(changed_kind.token_texts(), ast.token_texts());
+    assert_ne!(
+        step5c4_mode_semantics_detail_keys(&changed_kind, module, &shells, &symbols),
+        Some(Vec::new())
+    );
+
+    let arity_source = include_str!(concat!(
+        env!("CARGO_MANIFEST_DIR"),
+        "/../../tests/miz/fail/modes/",
+        "fail_type_elaboration_mode_dependent_arity_mismatch_001.miz"
+    ));
+    let (arity_ast, arity_module, arity_shells, arity_symbols) =
+        task253_ast_from_source_text(arity_source, 504_002);
+    assert_eq!(
+        step5c4_mode_semantics_detail_keys(
+            &arity_ast,
+            arity_module,
+            &arity_shells,
+            &arity_symbols
+        ),
+        Some(vec!["modes.dependent.argument_arity_mismatch".to_owned()])
+    );
+    let corrected = arity_source.replacen("MK3 of X, Y", "MK3 of X", 1);
+    let (corrected_ast, corrected_module, corrected_shells, corrected_symbols) =
+        task253_ast_from_source_text(&corrected, 504_003);
+    assert_ne!(
+        step5c4_mode_semantics_detail_keys(
+            &corrected_ast,
+            corrected_module,
+            &corrected_shells,
+            &corrected_symbols
+        ),
+        Some(vec!["modes.dependent.argument_arity_mismatch".to_owned()])
+    );
+}
 
 #[derive(Debug)]
 enum Task262ExpectedSurfaceKind {
@@ -1028,7 +1102,7 @@ fn task262_mode_definition_justification_and_semantic_subtrees_are_not_published
         plan.cases.iter().filter(has_active_type_tag).filter(|case| case.expectation.expected_phase == Some(crate::expectation::PipelinePhase::TypeCheck)).count(),
         plan.cases.iter().filter(has_active_type_tag).filter(|case| matches!(case.expectation.expected_outcome, crate::expectation::ExpectedOutcome::Pass | crate::expectation::ExpectedOutcome::Fail)).count(),
         plan.cases.iter().filter(has_active_type_tag).filter(|case| case.source_path.extension().is_some_and(|ext| ext == "miz")).count(),
-    ], [228, 228, 228, 223, 228, 228]);
+    ], [233, 233, 233, 228, 233, 233]);
     assert_eq!(
         (plan.cases.len(), plan.manifest.requirements.len()),
         (558, 499)
@@ -1050,7 +1124,7 @@ fn task262_mode_definition_justification_and_semantic_subtrees_are_not_published
             active_type_elaboration_cases(&plan).count(),
             crate::active_proof_verification_cases(&plan).count(),
         ),
-        (110, 7, 228, 3)
+        (111, 7, 233, 4)
     );
     let type_stage = plan
         .coverage_report

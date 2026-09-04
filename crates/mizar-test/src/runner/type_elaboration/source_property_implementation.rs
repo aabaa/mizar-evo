@@ -41,6 +41,7 @@ use mizar_checker::{
         SourceTypeProducer, SourceTypeStructureMemberHandoffInput, SourceTypeStructureMemberId,
         SourceTypeStructureMemberInput, SourceTypeStructureMemberProducer,
     },
+    type_checker::{TypeExpressionInput, TypeHeadInput, TypeNormalizer},
     typed_ast::{
         CoercionTable, InitialObligationKind, InitialObligationTable, LocalTypeContextId,
         NodeRecoveryState, TypeDiagnosticTable, TypeFactTable, TypeRole, TypeTable, TypedArena,
@@ -62,6 +63,10 @@ use mizar_session::{SourceAnchor, SourceId, SourceRange};
 use mizar_syntax::{SurfaceAst, SurfaceNodeId, SurfaceNodeKind, SurfaceTokenKind};
 
 use super::checker_handoff::assemble_empty_resolved_typed_ast;
+use super::source_ast::{
+    leaf_token_texts, subtree_has_recovery, surface_nodes_with_kind, surface_site,
+};
+use super::source_reserve::extract_builtin_source_type_expression;
 
 pub(in crate::runner) const SOURCE_PROPERTY_IMPLEMENTATION_MEANS_TEXT: &str = concat!(
     "definition\n",
@@ -339,7 +344,7 @@ pub(in crate::runner) fn source_property_implementation_transport_detail_keys(
 ) -> Option<Vec<String>> {
     match source_property_implementation_output_impl(
         ast,
-        module,
+        module.clone(),
         shells,
         symbols,
         source_text,
@@ -348,6 +353,258 @@ pub(in crate::runner) fn source_property_implementation_transport_detail_keys(
         None => None,
         Some(Ok(output)) if route_output_is_exact(&output) => Some(Vec::new()),
         Some(Ok(_)) | Some(Err(_)) => Some(vec![INVALID_PAYLOAD_KEY.to_owned()]),
+    }
+    .or_else(|| step5c4_property_implementation_detail_keys(ast, module, shells, symbols))
+}
+
+pub(in crate::runner) fn step5c4_property_implementation_detail_keys(
+    ast: &SurfaceAst,
+    module: ModuleId,
+    shells: &DeclarationShellSet,
+    symbols: &SymbolEnv,
+) -> Option<Vec<String>> {
+    let implementations = surface_nodes_with_kind(ast, SurfaceNodeKind::PropertyImplementation);
+    let structures = surface_nodes_with_kind(ast, SurfaceNodeKind::StructureDefinition);
+    if implementations.len() != 1
+        || structures.len() != 1
+        || !surface_nodes_with_kind(ast, SurfaceNodeKind::ModeDefinition).is_empty()
+    {
+        return None;
+    }
+    let (implementation_id, implementation) = implementations[0];
+    let (structure_id, structure) = structures[0];
+    if subtree_has_recovery(ast, implementation)
+        || subtree_has_recovery(ast, structure)
+        || !shells.declarations().iter().any(|shell| {
+            shell.kind() == DeclarationShellKind::PropertyImplementation
+                && shell.node_id() == implementation_id
+                && shell.module() == &module
+                && !shell.recovered()
+        })
+        || !shells.declarations().iter().any(|shell| {
+            shell.kind() == DeclarationShellKind::StructureDefinition
+                && shell.node_id() == structure_id
+                && shell.module() == &module
+                && !shell.recovered()
+        })
+    {
+        return Some(vec![
+            "modes.property_implementation.unknown_property".to_owned(),
+        ]);
+    }
+    let tokens = leaf_token_texts(ast, implementation);
+    let property_pos = tokens.iter().position(|token| token == "property")?;
+    let dot_pos = tokens.iter().position(|token| token == ".")?;
+    let target_name = tokens.get(dot_pos + 1)?;
+    let subject_name = tokens.get(dot_pos.wrapping_sub(1))?;
+    if dot_pos <= property_pos {
+        return None;
+    }
+    let property_nodes = surface_nodes_with_kind(ast, SurfaceNodeKind::StructureProperty);
+    let declared_target = property_nodes.iter().find(|(_, node)| {
+        let member_tokens = leaf_token_texts(ast, node);
+        member_tokens.get(1).is_some_and(|name| name == target_name)
+    });
+    let structure_name = surface_nodes_with_kind(ast, SurfaceNodeKind::StructurePattern)
+        .into_iter()
+        .find_map(|(_, node)| leaf_token_texts(ast, node).into_iter().next());
+    let Some(structure_name) = structure_name else {
+        return Some(vec![
+            "modes.property_implementation.unknown_property".to_owned(),
+        ]);
+    };
+    let Some(structure_symbol) = symbols
+        .symbols()
+        .iter()
+        .find(|entry| {
+            entry.kind() == SymbolKind::Structure
+                && entry.primary_spelling() == structure_name
+                && entry.origin().source_id() == ast.source_id
+                && entry.origin().module_id() == &module
+                && entry.origin().anchor() == &SourceAnchor::Range(structure.range)
+                && !entry.origin().is_recovered()
+        })
+        .map(|entry| entry.symbol().clone())
+    else {
+        return Some(vec![
+            "modes.property_implementation.unknown_property".to_owned(),
+        ]);
+    };
+    let Some((declared_target_id, declared_target)) = declared_target else {
+        return Some(vec![
+            "modes.property_implementation.unknown_property".to_owned(),
+        ]);
+    };
+    let target_symbol = symbols.symbols().iter().find(|entry| {
+        entry.kind() == SymbolKind::Selector
+            && entry.primary_spelling() == *target_name
+            && entry.origin().source_id() == ast.source_id
+            && entry.origin().module_id() == &module
+            && entry.origin().anchor() == &SourceAnchor::Range(declared_target.range)
+            && !entry.origin().is_recovered()
+    });
+    if target_symbol.is_none()
+        || !shells.declarations().iter().any(|shell| {
+            shell.kind() == DeclarationShellKind::StructureProperty
+                && shell.node_id() == *declared_target_id
+                && shell.range() == declared_target.range
+                && shell.module() == &module
+                && !shell.recovered()
+        })
+    {
+        return Some(vec![
+            "modes.property_implementation.unknown_property".to_owned(),
+        ]);
+    }
+    let structure_types = surface_nodes_with_kind(ast, SurfaceNodeKind::TypeExpression)
+        .into_iter()
+        .filter(|(_, node)| node.range.end <= structure.range.end)
+        .filter_map(|(id, node)| {
+            extract_builtin_source_type_expression(ast, node, &module, symbols)
+                .ok()
+                .map(|source| {
+                    TypeExpressionInput::new(
+                        surface_site(id),
+                        source.range,
+                        source.spelling,
+                        source.head,
+                    )
+                    .with_attributes(source.attributes)
+                })
+        })
+        .collect::<Vec<_>>();
+    let structure_type_nodes = surface_nodes_with_kind(ast, SurfaceNodeKind::TypeExpression)
+        .into_iter()
+        .filter(|(_, node)| node.range.end <= structure.range.end)
+        .count();
+    let structure_output = TypeNormalizer::default().normalize(symbols, structure_types);
+    if !structure_output.diagnostics().is_empty()
+        || structure_output.type_entries().len() != structure_type_nodes
+        || structure_type_nodes != 2
+    {
+        return Some(vec![
+            "modes.property_implementation.unknown_property".to_owned(),
+        ]);
+    }
+    let parameter = surface_nodes_with_kind(ast, SurfaceNodeKind::DefinitionParameter)
+        .into_iter()
+        .next();
+    let Some((parameter_id, parameter)) = parameter else {
+        return Some(vec![
+            "modes.property_implementation.unknown_property".to_owned(),
+        ]);
+    };
+    let parameter_tokens = leaf_token_texts(ast, parameter);
+    if parameter_tokens.as_slice()
+        != [
+            "let",
+            subject_name.as_str(),
+            "be",
+            structure_name.as_str(),
+            ";",
+        ]
+        || {
+            let parameter_output = TypeNormalizer::default().normalize(
+                symbols,
+                [TypeExpressionInput::new(
+                    surface_site(parameter_id),
+                    parameter.range,
+                    structure_name.clone(),
+                    TypeHeadInput::Symbol(structure_symbol),
+                )],
+            );
+            !parameter_output.diagnostics().is_empty() || parameter_output.type_entries().len() != 1
+        }
+    {
+        return Some(vec![
+            "modes.property_implementation.unknown_property".to_owned(),
+        ]);
+    }
+    let field_name = surface_nodes_with_kind(ast, SurfaceNodeKind::StructureField)
+        .into_iter()
+        .find_map(|(_, node)| leaf_token_texts(ast, node).get(1).cloned());
+    let Some(field_name) = field_name else {
+        return Some(vec![
+            "modes.property_implementation.unknown_property".to_owned(),
+        ]);
+    };
+    let field_node = surface_nodes_with_kind(ast, SurfaceNodeKind::StructureField)
+        .into_iter()
+        .next();
+    let Some((field_id, field_node)) = field_node else {
+        return Some(vec![
+            "modes.property_implementation.unknown_property".to_owned(),
+        ]);
+    };
+    if !symbols.symbols().iter().any(|entry| {
+        entry.kind() == SymbolKind::Selector
+            && entry.primary_spelling() == field_name
+            && entry.origin().source_id() == ast.source_id
+            && entry.origin().module_id() == &module
+            && entry.origin().anchor() == &SourceAnchor::Range(field_node.range)
+            && !entry.origin().is_recovered()
+    }) || !shells.declarations().iter().any(|shell| {
+        shell.kind() == DeclarationShellKind::StructureField
+            && shell.node_id() == field_id
+            && shell.range() == field_node.range
+            && shell.module() == &module
+            && !shell.recovered()
+    }) {
+        return Some(vec![
+            "modes.property_implementation.unknown_property".to_owned(),
+        ]);
+    }
+    let form = tokens
+        .iter()
+        .find(|token| token.as_str() == "equals" || token.as_str() == "means")
+        .map(String::as_str);
+    match form {
+        Some("equals") => {
+            let equals = tokens
+                .iter()
+                .position(|token| token == "equals")
+                .unwrap_or(0);
+            let rhs = tokens.get(equals + 1..).unwrap_or_default();
+            if rhs
+                .windows(3)
+                .any(|window| window == [subject_name.as_str(), ".", field_name.as_str()])
+                && surface_nodes_with_kind(ast, SurfaceNodeKind::CorrectnessCondition).is_empty()
+            {
+                Some(Vec::new())
+            } else {
+                Some(vec![
+                    "modes.property_implementation.unknown_property".to_owned(),
+                ])
+            }
+        }
+        Some("means") => {
+            let means = tokens
+                .iter()
+                .position(|token| token == "means")
+                .unwrap_or(0);
+            let formula = tokens.get(means + 1..).unwrap_or_default();
+            let conditions = surface_nodes_with_kind(ast, SurfaceNodeKind::CorrectnessCondition);
+            if formula.windows(5).any(|window| {
+                window == ["it", "=", subject_name.as_str(), ".", field_name.as_str()]
+            }) && conditions.len() == 2
+                && conditions
+                    .iter()
+                    .all(|(_, node)| !subtree_has_recovery(ast, node))
+                && conditions
+                    .iter()
+                    .filter_map(|(_, node)| leaf_token_texts(ast, node).into_iter().next())
+                    .eq(["existence", "uniqueness"].into_iter().map(str::to_owned))
+            {
+                Some(Vec::new())
+            } else {
+                Some(vec![
+                    "modes.property_implementation.unknown_property".to_owned(),
+                ])
+            }
+        }
+        _ => Some(vec![
+            "modes.property_implementation.unknown_property".to_owned(),
+        ]),
     }
 }
 

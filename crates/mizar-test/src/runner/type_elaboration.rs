@@ -34,7 +34,8 @@ mod type_assertion_routes;
 
 pub(super) use admission::{
     is_active_type_elaboration, is_step5c1_workspace_member, is_step5c2_workspace_member,
-    is_step5c3_workspace_member, validate_active_type_elaboration_tags,
+    is_step5c3_workspace_member, is_step5c4_workspace_member,
+    validate_active_type_elaboration_tags,
 };
 #[cfg(test)]
 pub(super) use binary_routes::{
@@ -436,11 +437,15 @@ pub(super) use source_functor_definition::{
     SOURCE_FUNCTOR_DEFINITION_TEXT, SourceFunctorDefinitionRouteMutation,
     source_functor_definition_output, source_functor_definition_output_with_mutation,
 };
-pub(super) use source_mode_definition::source_mode_definition_transport_detail_keys;
+#[cfg(test)]
+pub(super) use source_mode_definition::step5c4_mode_semantics_detail_keys;
 #[cfg(test)]
 pub(super) use source_mode_definition::{
     SOURCE_MODE_DEFINITION_TEXT, SourceModeDefinitionRouteMutation, source_mode_definition_output,
     source_mode_definition_output_with_mutation,
+};
+pub(super) use source_mode_definition::{
+    source_mode_definition_transport_detail_keys, step5c4_mode_sethood_is_unprovable,
 };
 pub(super) use source_predicate_definition::source_predicate_definition_transport_detail_keys;
 #[cfg(test)]
@@ -493,6 +498,8 @@ pub(super) use source_proof_local_declaration::{
     source_proof_local_let_type_output_with_mutation, task269sdu_missing_dependency_error_for_test,
 };
 pub(super) use source_property_implementation::source_property_implementation_transport_detail_keys;
+#[cfg(test)]
+pub(super) use source_property_implementation::step5c4_property_implementation_detail_keys;
 #[cfg(test)]
 pub(super) use source_property_implementation::{
     SOURCE_PROPERTY_IMPLEMENTATION_EQUALS_TEXT, SOURCE_PROPERTY_IMPLEMENTATION_MEANS_TEXT,

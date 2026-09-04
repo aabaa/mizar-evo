@@ -6,6 +6,7 @@ domain = "modes.attributed_radix"
 source = "pass_type_elaboration_mode_attributed_struct_radix_001.miz"
 expected_outcome = "pass"
 expected_phase = "type_check"
+tags = ["active_type_elaboration"]
 diagnostic_codes = []
 spec_refs = [
   "spec.en.07.modes.attributed_radix.struct",

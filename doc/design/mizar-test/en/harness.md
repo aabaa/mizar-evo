@@ -1,5 +1,12 @@
 # Module: harness
 
+## Step 5C.4 mode semantic runner
+
+The private route admits only the five non-G6 type-elaboration rows, one parse-only row, and one
+proof-verification row listed by the activation map. Admission binds id, path, stage, phase,
+outcome, and the sole stage tag before extraction; the G6 dependent-mode row remains inactive.
+Semantic mismatches fail closed instead of falling through to a generic runner.
+
 ## Step 5C.3 attribute semantic runner
 
 The private route admits only the five non-G1 type-elaboration rows, one parse-only row, and one

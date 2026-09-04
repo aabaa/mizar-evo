@@ -329,6 +329,40 @@
     use std::path::Path;
     use std::sync::Arc;
 
+    fn rebuild_surface_ast_replacing_kind(
+        ast: &SurfaceAst,
+        from: SurfaceNodeKind,
+        to: SurfaceNodeKind,
+    ) -> SurfaceAst {
+        let mut builder = SurfaceAstBuilder::new(ast.source_id);
+        let mut rebuilt = Vec::with_capacity(ast.nodes().len());
+        for node in ast.nodes() {
+            let children = node
+                .children
+                .iter()
+                .map(|child| rebuilt[child.index()])
+                .collect();
+            let id = match &node.kind {
+                SurfaceNodeKind::Token(token) if node.recovered => {
+                    builder.add_recovered_token(token.kind, token.text.as_ref(), node.range)
+                }
+                SurfaceNodeKind::Token(token) => {
+                    builder.add_token(token.kind, token.text.as_ref(), node.range)
+                }
+                SurfaceNodeKind::ErrorRecovery(kind) => {
+                    builder.add_recovery(*kind, node.range, children)
+                }
+                kind if *kind == from => builder.add_node(to.clone(), node.range, children),
+                kind => builder.add_node(kind.clone(), node.range, children),
+            };
+            rebuilt.push(id);
+        }
+        builder.finish(
+            ast.root().map(|node| rebuilt[node.index()]),
+            ast.expression_root().map(|node| rebuilt[node.index()]),
+        )
+    }
+
     fn source_symbol_env(module: ResolverModuleId) -> SymbolEnv {
         source_local_symbol_env(module, "empty", SymbolKind::Attribute)
     }

@@ -3,6 +3,13 @@
 > Canonical language: English. Japanese companion:
 > [../ja/source_mode_definition.md](../ja/source_mode_definition.md).
 
+## Step 5C.4 mode semantics
+
+The semantic route preserves resolver identity and declared parameter order when normalizing a
+mode radix. A mode application with a different argument count is rejected. Attributed structure
+radixes are normalized through the existing type and attribute inputs. Sethood is a separate proof
+obligation; an unproved obligation publishes no sethood fact.
+
 ## Task 262 Scope And Authority
 
 Checker Task 262 owns one syntax-free, immutable source-to-checker intake for

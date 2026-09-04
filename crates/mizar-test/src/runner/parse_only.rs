@@ -14,7 +14,66 @@ const STEP5C3_PARSE_ONLY_CASE: (&str, &str, ExpectedOutcome) = (
     "tests/miz/fail/attributes/fail_type_elaboration_attr_param_prefix_unbound_001.miz",
     ExpectedOutcome::Fail,
 );
+const STEP5C4_PARSE_ONLY_CASE: (&str, &str, ExpectedOutcome) = (
+    "fail_parse_only_mode_property_impl_missing_correctness_001",
+    "tests/miz/fail/modes/fail_parse_only_mode_property_impl_missing_correctness_001.miz",
+    ExpectedOutcome::Fail,
+);
+const STEP5C4_PARSE_ONLY_DETAIL_KEY: &str =
+    "modes.property_implementation.missing_existence_uniqueness";
 const ACTIVE_PARSE_ONLY_TAG: &str = "active_parse_only";
+
+pub(super) fn is_step5c4_parse_only_case(case: &TestCase) -> bool {
+    case.id.0 == STEP5C4_PARSE_ONLY_CASE.0
+        && case.source_path.ends_with(STEP5C4_PARSE_ONLY_CASE.1)
+        && case.expectation.tags.as_slice() == [ACTIVE_PARSE_ONLY_TAG]
+        && case.expectation.stage == crate::staged_model::Stage::ParseOnly
+        && case.expectation.expected_phase == Some(crate::expectation::PipelinePhase::Parse)
+        && case.expectation.expected_outcome == STEP5C4_PARSE_ONLY_CASE.2
+        && case.expectation.stable_detail_key.as_deref() == Some(STEP5C4_PARSE_ONLY_DETAIL_KEY)
+        && case.expectation.diagnostic_payloads.is_empty()
+}
+
+pub(super) fn is_step5c4_parse_only_workspace_member(
+    workspace_root: &Path,
+    case: &TestCase,
+) -> bool {
+    is_step5c4_parse_only_case(case)
+        && super::syntax_smoke::workspace_relative_source(workspace_root, &case.source_path)
+            .is_some_and(|source| source == STEP5C4_PARSE_ONLY_CASE.1)
+}
+
+pub(super) fn validate_step5c4_parse_only_inventory(
+    workspace_root: &Path,
+    plan: &crate::harness::TestPlan,
+) -> Vec<ValidationDiagnostic> {
+    if !workspace_root.join(STEP5C4_PARSE_ONLY_CASE.1).is_file() {
+        return Vec::new();
+    }
+    let count = plan
+        .cases
+        .iter()
+        .filter(|case| {
+            case.id.0 == STEP5C4_PARSE_ONLY_CASE.0
+                && super::syntax_smoke::workspace_relative_source(workspace_root, &case.source_path)
+                    .is_some_and(|source| source == STEP5C4_PARSE_ONLY_CASE.1)
+        })
+        .count();
+    if count == 1 {
+        Vec::new()
+    } else {
+        vec![ValidationDiagnostic::error(
+            Path::new(STEP5C4_PARSE_ONLY_CASE.1),
+            "parse_only",
+            "E-PARSE-ONLY-STEP5C4-INVENTORY",
+            format!("parse_only.step5c4_inventory.{}", STEP5C4_PARSE_ONLY_CASE.0),
+            format!(
+                "Step 5C.4 parse-only route row `{}` must occur exactly once; found {count}",
+                STEP5C4_PARSE_ONLY_CASE.0
+            ),
+        )]
+    }
+}
 
 pub(super) fn is_step5c3_parse_only_case(case: &TestCase) -> bool {
     case.id.0 == STEP5C3_PARSE_ONLY_CASE.0
@@ -76,6 +135,7 @@ pub(super) fn run_parse_only_case(
     let (has_ast, actual_diagnostic_codes, ast_snapshot) = match output {
         Ok(output) => {
             let step5c3 = is_step5c3_parse_only_workspace_member(workspace_root, case);
+            let step5c4 = is_step5c4_parse_only_workspace_member(workspace_root, case);
             (
                 output.ast.is_some(),
                 if step5c3 {
@@ -83,6 +143,12 @@ pub(super) fn run_parse_only_case(
                         Vec::new()
                     } else {
                         vec!["step5c3_parse_shape_mismatch".to_owned()]
+                    }
+                } else if step5c4 {
+                    if output.ast.as_ref().is_some_and(step5c4_parse_shape) {
+                        Vec::new()
+                    } else {
+                        vec![STEP5C4_PARSE_ONLY_DETAIL_KEY.to_owned()]
                     }
                 } else {
                     assertion_diagnostic_codes(case, &output.diagnostics)
@@ -181,6 +247,94 @@ pub(in crate::runner) fn step5c3_parse_shape(ast: &SurfaceAst) -> bool {
         && definitions.len() == 1
         && super::type_elaboration::subtree_has_recovery_for_parse(ast, definitions[0].1)
         && recovered.len() == 1
+}
+
+pub(in crate::runner) fn step5c4_parse_shape(ast: &SurfaceAst) -> bool {
+    if ast.token_texts()
+        != [
+            "definition",
+            "struct",
+            "U2Box",
+            "where",
+            "field",
+            "data",
+            "->",
+            "set",
+            ";",
+            "property",
+            "mark2",
+            "->",
+            "set",
+            ";",
+            "end",
+            ";",
+            "end",
+            ";",
+            "definition",
+            "let",
+            "B",
+            "be",
+            "U2Box",
+            ";",
+            "property",
+            "B",
+            ".",
+            "mark2",
+            "means",
+            "it",
+            "=",
+            "B",
+            ".",
+            "data",
+            ";",
+            "end",
+            ";",
+        ]
+    {
+        return false;
+    }
+    ast.root()
+        .and_then(|root| ast.node(root))
+        .is_some_and(|root| {
+            matches!(root.kind, SurfaceNodeKind::Root)
+                && !root.recovered
+                && super::type_elaboration::surface_nodes_with_kind_for_parse(
+                    ast,
+                    SurfaceNodeKind::StructureDefinition,
+                )
+                .len()
+                    == 1
+                && super::type_elaboration::surface_nodes_with_kind_for_parse(
+                    ast,
+                    SurfaceNodeKind::StructureField,
+                )
+                .len()
+                    == 1
+                && super::type_elaboration::surface_nodes_with_kind_for_parse(
+                    ast,
+                    SurfaceNodeKind::StructureProperty,
+                )
+                .len()
+                    == 1
+                && super::type_elaboration::surface_nodes_with_kind_for_parse(
+                    ast,
+                    SurfaceNodeKind::PropertyImplementation,
+                )
+                .len()
+                    == 1
+                && super::type_elaboration::surface_nodes_with_kind_for_parse(
+                    ast,
+                    SurfaceNodeKind::CorrectnessCondition,
+                )
+                .len()
+                    == 2
+                && super::type_elaboration::surface_nodes_with_kind_for_parse(
+                    ast,
+                    SurfaceNodeKind::CorrectnessCondition,
+                )
+                .iter()
+                .all(|(_, node)| super::type_elaboration::subtree_has_recovery_for_parse(ast, node))
+        })
 }
 
 pub(super) fn parse_only_failure_diagnostic(

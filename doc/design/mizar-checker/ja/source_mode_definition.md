@@ -3,6 +3,12 @@
 > canonical language は英語である。英語版:
 > [../en/source_mode_definition.md](../en/source_mode_definition.md)。
 
+## Step 5C.4 mode semantics
+
+semantic route は resolver identity と宣言 parameter 順を保持して mode radix を normalize
+する。argument 数が異なる mode application は reject する。attributed structure radix は
+既存 type/attribute input を使い、未証明 sethood obligation は fact を公開しない。
+
 ## Task 262 の scope と authority
 
 Checker Task 262 は、ordinary parameterized `mode` definition、その

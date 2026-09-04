@@ -3164,7 +3164,7 @@ fn active_runner_reports_are_byte_stable_across_repeated_runs() {
     let root = config.workspace_root.clone();
     let plan = build_test_plan(&config).unwrap();
 
-    assert_eq!(active_proof_verification_cases(&plan).count(), 3);
+    assert_eq!(active_proof_verification_cases(&plan).count(), 4);
 
     let parse_first = canonical_parse_only_report(&run_parse_only_corpus(&config).unwrap(), &root);
     let parse_second = canonical_parse_only_report(&run_parse_only_corpus(&config).unwrap(), &root);
@@ -5572,8 +5572,8 @@ fn repository_type_elaboration_runner_executes_active_source_derived_seeds() {
     let report = run_type_elaboration_corpus(&config).unwrap();
 
     assert_eq!(report.error_count(), 0, "{:#?}", report.diagnostics);
-    assert_eq!(report.results.len(), 228);
-    assert_eq!(report.passed_count(), 228);
+    assert_eq!(report.results.len(), 233);
+    assert_eq!(report.passed_count(), 233);
     assert_eq!(report.failed_count(), 0);
     let task31_result = report
         .results
@@ -6394,6 +6394,7 @@ fn repository_parse_only_cases_separate_active_runner_seeds_from_future_metadata
         active_cases,
         vec![
             "fail_type_elaboration_attr_param_prefix_unbound_001",
+            "fail_parse_only_mode_property_impl_missing_correctness_001",
             "fail_parser_algorithm_control_flow_recovery_001",
             "fail_parser_algorithm_verification_recovery_001",
             "fail_parser_algorithms_claims_recovery_001",
@@ -7020,8 +7021,8 @@ fn repository_parse_only_runner_executes_active_minimal_parser_seeds() {
     let report = run_parse_only_corpus(&config).unwrap();
 
     assert_eq!(report.error_count(), 0, "{:#?}", report.diagnostics);
-    assert_eq!(report.results.len(), 110);
-    assert_eq!(report.passed_count(), 110);
+    assert_eq!(report.results.len(), 111);
+    assert_eq!(report.passed_count(), 111);
     assert_eq!(report.failed_count(), 0);
     assert!(report.results.iter().any(|result| {
         result.id.0 == "pass_parser_active_pattern_spellings_001"
@@ -10433,8 +10434,8 @@ fn parse_only_cli_reports_active_runner_summary() {
         String::from_utf8_lossy(&output.stderr)
     );
     let stdout = String::from_utf8_lossy(&output.stdout);
-    assert!(stdout.contains("parse-only cases: 110"));
-    assert!(stdout.contains("passed: 110"));
+    assert!(stdout.contains("parse-only cases: 111"));
+    assert!(stdout.contains("passed: 111"));
     assert!(stdout.contains("failed: 0"));
 }
 
@@ -10521,8 +10522,8 @@ fn type_elaboration_cli_reports_active_runner_summary() {
         String::from_utf8_lossy(&output.stderr)
     );
     let stdout = String::from_utf8_lossy(&output.stdout);
-    assert!(stdout.contains("type-elaboration cases: 228"));
-    assert!(stdout.contains("passed: 228"));
+    assert!(stdout.contains("type-elaboration cases: 233"));
+    assert!(stdout.contains("passed: 233"));
     assert!(stdout.contains("failed: 0"));
 }
 
@@ -10542,8 +10543,8 @@ fn proof_verification_cli_reports_task180_and_step5c2_summary() {
         String::from_utf8_lossy(&output.stderr)
     );
     let stdout = String::from_utf8_lossy(&output.stdout);
-    assert!(stdout.contains("proof-verification cases: 3"));
-    assert!(stdout.contains("passed: 3"));
+    assert!(stdout.contains("proof-verification cases: 4"));
+    assert!(stdout.contains("passed: 4"));
     assert!(stdout.contains("failed: 0"));
 }
 

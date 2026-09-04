@@ -2,6 +2,7 @@ use super::type_elaboration::{
     SOURCE_PROPERTY_IMPLEMENTATION_EQUALS_TEXT, SOURCE_PROPERTY_IMPLEMENTATION_MEANS_TEXT,
     SourcePropertyImplementationRouteMutation, SourcePropertyImplementationRouteOutput,
     source_property_implementation_output, source_property_implementation_output_with_mutation,
+    step5c4_property_implementation_detail_keys,
 };
 
 const TASK264_MEANS_CASE: &str =
@@ -10,6 +11,86 @@ const TASK264_EQUALS_CASE: &str =
     "pass_type_elaboration_property_implementation_equals_payload_001";
 const TASK264_SPEC_REF: &str =
     "spec.en.checker.type_elaboration.source_property_implementation_payload";
+
+#[test]
+fn step5c4_property_bridge_rejects_authenticated_semantic_drift() {
+    let source = include_str!(concat!(
+        env!("CARGO_MANIFEST_DIR"),
+        "/../../tests/miz/pass/modes/",
+        "pass_type_elaboration_mode_property_impl_equals_001.miz"
+    ));
+    let (ast, module, shells, symbols) = task253_ast_from_source_text(source, 504_010);
+    assert_eq!(
+        step5c4_property_implementation_detail_keys(&ast, module.clone(), &shells, &symbols),
+        Some(Vec::new())
+    );
+    let mutated_source = source.replacen("B.data", "B.unknown", 1);
+    let (mutated_ast, mutated_module, mutated_shells, mutated_symbols) =
+        task253_ast_from_source_text(&mutated_source, 504_011);
+    assert_eq!(
+        step5c4_property_implementation_detail_keys(
+            &mutated_ast,
+            mutated_module.clone(),
+            &mutated_shells,
+            &mutated_symbols
+        ),
+        Some(vec!["modes.property_implementation.unknown_property".to_owned()])
+    );
+    assert_ne!(
+        step5c4_property_implementation_detail_keys(
+            &ast,
+            module.clone(),
+            &mutated_shells,
+            &mutated_symbols
+        ),
+        Some(Vec::new())
+    );
+    let changed_kind = rebuild_surface_ast_replacing_kind(
+        &ast,
+        SurfaceNodeKind::StructureProperty,
+        SurfaceNodeKind::StructureField,
+    );
+    assert_eq!(changed_kind.token_texts(), ast.token_texts());
+    assert_ne!(
+        step5c4_property_implementation_detail_keys(
+            &changed_kind,
+            module,
+            &shells,
+            &symbols
+        ),
+        Some(Vec::new())
+    );
+
+    let means_source = include_str!(concat!(
+        env!("CARGO_MANIFEST_DIR"),
+        "/../../tests/miz/pass/modes/",
+        "pass_type_elaboration_mode_property_impl_means_001.miz"
+    ));
+    let (means_ast, means_module, means_shells, means_symbols) =
+        task253_ast_from_source_text(means_source, 504_012);
+    assert_eq!(
+        step5c4_property_implementation_detail_keys(
+            &means_ast,
+            means_module,
+            &means_shells,
+            &means_symbols
+        ),
+        Some(Vec::new())
+    );
+    let reordered = means_source
+        .replacen("existence;\n  uniqueness;", "uniqueness;\n  existence;", 1);
+    let (reordered_ast, reordered_module, reordered_shells, reordered_symbols) =
+        task253_ast_from_source_text(&reordered, 504_013);
+    assert_ne!(
+        step5c4_property_implementation_detail_keys(
+            &reordered_ast,
+            reordered_module,
+            &reordered_shells,
+            &reordered_symbols
+        ),
+        Some(Vec::new())
+    );
+}
 
 #[test]
 fn task264_exact_sources_surface_resolver_lower_and_outputs_are_stable() {
@@ -153,7 +234,7 @@ fn task264_two_case_trace_selection_and_mixed_boundaries_are_exact() {
             active_type_elaboration_cases(&plan).count(),
             crate::active_proof_verification_cases(&plan).count(),
         ),
-        (110, 7, 228, 3)
+        (111, 7, 233, 4)
     );
     let type_stage = plan
         .coverage_report

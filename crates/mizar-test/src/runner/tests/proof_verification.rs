@@ -217,6 +217,141 @@
     }
 
     #[test]
+    fn step5c4_proof_admission_inventory_and_semantics_fail_closed() {
+        let workspace_root = Path::new(env!("CARGO_MANIFEST_DIR"))
+            .parent()
+            .and_then(Path::parent)
+            .expect("workspace root")
+            .to_path_buf();
+        let config = DiscoveryConfig {
+            workspace_root: workspace_root.clone(),
+            tests_root: workspace_root.join("tests"),
+            manifest_path: workspace_root.join("tests/coverage/spec_trace.toml"),
+            profile: TestProfile::Fast,
+            validation_mode: ValidationMode::Metadata,
+        };
+        let plan = build_test_plan(&config).expect("repository plan");
+        let id = "fail_proof_verification_mode_sethood_unprovable_001";
+        let exact = plan
+            .cases
+            .iter()
+            .find(|case| case.id.0 == id)
+            .expect("Step 5C.4 proof case")
+            .clone();
+        assert!(super::proof_verification::is_active_proof_verification(
+            &exact
+        ));
+
+        let mut variants = Vec::new();
+        let mut missing_tag = exact.clone();
+        missing_tag.expectation.tags.clear();
+        variants.push(missing_tag);
+        let mut duplicate_tag = exact.clone();
+        duplicate_tag
+            .expectation
+            .tags
+            .push("active_proof_verification".to_owned());
+        variants.push(duplicate_tag);
+        let mut wrong_stage = exact.clone();
+        wrong_stage.expectation.stage = crate::Stage::TypeElaboration;
+        variants.push(wrong_stage);
+        let mut wrong_phase = exact.clone();
+        wrong_phase.expectation.expected_phase = Some(crate::PipelinePhase::VcGeneration);
+        variants.push(wrong_phase);
+        let mut wrong_outcome = exact.clone();
+        wrong_outcome.expectation.expected_outcome = crate::ExpectedOutcome::Pass;
+        variants.push(wrong_outcome);
+        let mut wrong_key = exact.clone();
+        wrong_key.expectation.stable_detail_key = Some("wrong.key".to_owned());
+        variants.push(wrong_key);
+        for variant in variants {
+            assert!(!super::proof_verification::is_active_proof_verification(
+                &variant
+            ));
+            let mut mutated = plan.clone();
+            *mutated
+                .cases
+                .iter_mut()
+                .find(|case| case.id.0 == id)
+                .expect("mutable Step 5C.4 proof case") = variant;
+            assert!(super::proof_verification::validate_active_proof_verification_tags(
+                &workspace_root,
+                &mutated
+            )
+            .iter()
+            .any(|diagnostic| diagnostic.code.0 == "E-PROOF-VERIFICATION-ACTIVE-GATE"));
+        }
+
+        let mut alias_plan = plan.clone();
+        let mut alias = exact.clone();
+        alias.source_path = workspace_root.join("alias").join(&alias.expectation.source);
+        alias_plan.cases.push(alias);
+        assert!(super::proof_verification::validate_active_proof_verification_tags(
+            &workspace_root,
+            &alias_plan
+        )
+        .iter()
+        .any(|diagnostic| diagnostic.code.0 == "E-PROOF-VERIFICATION-ACTIVE-GATE"));
+
+        let mut duplicate_plan = plan.clone();
+        duplicate_plan.cases.push(exact.clone());
+        assert!(super::proof_verification::validate_active_proof_verification_tags(
+            &workspace_root,
+            &duplicate_plan
+        )
+        .iter()
+        .any(|diagnostic| diagnostic.code.0 == "E-PROOF-VERIFICATION-STEP5C4-INVENTORY"));
+        let mut missing_plan = plan;
+        missing_plan.cases.retain(|case| case.id.0 != id);
+        assert!(super::proof_verification::validate_active_proof_verification_tags(
+            &workspace_root,
+            &missing_plan
+        )
+        .iter()
+        .any(|diagnostic| diagnostic.code.0 == "E-PROOF-VERIFICATION-STEP5C4-INVENTORY"));
+
+        let source = std::fs::read_to_string(&exact.source_path).expect("Step 5C.4 proof source");
+        let (ast, module, shells, symbols) = task253_ast_from_source_text(&source, 504_020);
+        assert!(super::type_elaboration::step5c4_mode_sethood_is_unprovable(
+            &ast, &module, &shells, &symbols
+        )
+        .is_ok());
+        let changed_kind = rebuild_surface_ast_replacing_kind(
+            &ast,
+            SurfaceNodeKind::ModeProperty,
+            SurfaceNodeKind::CorrectnessCondition,
+        );
+        assert_eq!(changed_kind.token_texts(), ast.token_texts());
+        assert!(super::type_elaboration::step5c4_mode_sethood_is_unprovable(
+            &changed_kind,
+            &module,
+            &shells,
+            &symbols
+        )
+        .is_err());
+        let changed_source = source.replacen("TinyOf", "OtherTiny", 1);
+        let (_, _, changed_shells, changed_symbols) =
+            task253_ast_from_source_text(&changed_source, 504_021);
+        assert!(super::type_elaboration::step5c4_mode_sethood_is_unprovable(
+            &ast,
+            &module,
+            &changed_shells,
+            &changed_symbols
+        )
+        .is_err());
+        let object_radix = source.replacen("is set;\n  sethood", "is object;\n  sethood", 1);
+        let (object_ast, object_module, object_shells, object_symbols) =
+            task253_ast_from_source_text(&object_radix, 504_022);
+        assert!(super::type_elaboration::step5c4_mode_sethood_is_unprovable(
+            &object_ast,
+            &object_module,
+            &object_shells,
+            &object_symbols
+        )
+        .is_err());
+    }
+
+    #[test]
     fn task31_snapshot_failures_and_report_projection_fail_closed() {
         let workspace_root = Path::new(env!("CARGO_MANIFEST_DIR"))
             .parent()
@@ -310,7 +445,7 @@
             &temp,
             &mismatch_plan,
         );
-        assert_eq!(mismatch_report.results.len(), 3);
+        assert_eq!(mismatch_report.results.len(), 4);
         let mismatch_result = mismatch_report
             .results
             .iter()
@@ -350,8 +485,8 @@
             validation_mode: ValidationMode::Metadata,
         };
         let report = super::run_proof_verification_corpus(&config).expect("proof report");
-        assert_eq!(report.results.len(), 3);
-        assert_eq!(report.passed_count(), 3);
+        assert_eq!(report.results.len(), 4);
+        assert_eq!(report.passed_count(), 4);
         assert_eq!(report.failed_count(), 0);
         assert_eq!(report.error_count(), 0, "{:#?}", report.diagnostics);
     }

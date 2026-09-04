@@ -6,6 +6,7 @@ domain = "modes.sethood"
 source = "fail_proof_verification_mode_sethood_unprovable_001.miz"
 expected_outcome = "fail"
 expected_phase = "verification"
+tags = ["active_proof_verification"]
 failure_category = "proof_failure"
 stable_detail_key = "modes.sethood.unprovable"
 diagnostic_codes = []
