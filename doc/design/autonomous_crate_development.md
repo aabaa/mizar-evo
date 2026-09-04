@@ -209,10 +209,9 @@ responsibility and readiness remain plan-owned.
 
 Each task must update `doc/design/spec_coverage_audit.md` when it changes the
 coverage status, design mapping, follow-up owner, or deferred rationale for any
-`doc/spec/en/` chapter. If a task has no audit impact, record that explicitly
-in its task contract instead of making a no-op audit edit. For small localized
-work that requires neither a task contract nor a plan row, record the no-impact
-decision in the review or final response when relevant.
+`doc/spec/en/` chapter. If a task has no audit impact, leave the audit unchanged
+and write nothing: silence is the no-impact record. Mention it in the final
+response only when a reviewer asks.
 
 ## Source Observation
 
@@ -255,9 +254,9 @@ doc/design/task_contracts/ja/<task-id>.md
 ```
 
 `<task-id>` must match `[A-Za-z0-9][A-Za-z0-9._-]*` and be identical in both
-trees. The English contract is canonical; the Japanese companion is updated in
-the same logical change and links back to it. The English and Japanese
-contracts link to the corresponding owning crate plans. If an owner has no
+trees. The English contract is canonical and at most 60 lines; the Japanese
+companion is a pointer stub (title, canonical link, owner-plan links) created in
+the same change. Both files link to the corresponding owning crate plans. If an owner has no
 Japanese plan under an adapted non-bilingual layout, the Japanese contract
 links the canonical English plan and records that exception. A task contract
 is a derived orchestration record and cannot introduce or override language
@@ -273,9 +272,14 @@ The contract must identify:
   test artifacts, and lower-stage ownership
 - stable links to owner-local API, invariant, runner, and test-design sections
   instead of copies of those sections
-- `doc/design/spec_coverage_audit.md` impact, or an explicit no-impact decision
-- required review roles, verification commands, count/hash impact, exit
-  criteria, completion evidence, and next-task handoff
+- `doc/design/spec_coverage_audit.md` impact when there is one
+- required review roles, verification commands, and exit criteria
+
+A contract never carries completion evidence, measured counts, digests, gate
+tallies, scores, review outcomes, model names, reasoning settings, or the
+next-task handoff. Those go in the commit body (see the `volume:` line in
+AGENTS.md) and the final response. The
+[Documentation Volume Ledger](#documentation-volume-ledger) lint rejects them.
 
 ### Single-owner documentation rule
 
@@ -293,10 +297,12 @@ continue to own responsibility, specification/test inventory, gaps, audit
 expectations, readiness, and exit criteria.
 
 Update only documents whose owned state changes. There is no required fan-out
-file count, and repeated boilerplate is not synchronization evidence. Record
-measured verification counts and hashes once in the task contract or required
-exit report and link to them elsewhere. If an audit has no impact, leave it
-unchanged and record the no-impact decision in the contract.
+file count, and repeated boilerplate is not synchronization evidence. Measured
+verification counts and hashes live in the commit body, never in live design
+documents. If an audit has no impact, leave it unchanged and write nothing.
+Contracts link to owner documents; module, harness, audit, and traceability
+documents never link back to a contract. A contract is linked only from
+`doc/design/todo.md`, crate plans, crate todos, and the coverage audit.
 
 Stable module inventories and public-enum policies remain in their existing
 owner documents when required by repository lint. A future task-contract lint
@@ -378,6 +384,46 @@ Use a finding-specific follow-up review after fixes. Any authority ambiguity,
 semantic choice, public-API expansion, lower-stage change, or soundness issue
 returns to the parent agent at the user's requested reasoning setting.
 
+## Volume And Scope Review
+
+Every review sequence, full or light tier, includes one independent volume and
+scope review after the implementation review. Reviews are otherwise one-way
+ratchets: a gap finding adds text or code, and nothing removes it. This review
+is the counterweight.
+
+The reviewer receives the task diff, the contract, and the authority
+references, and returns only a list of removable items: lines, files, public
+types, tests, paragraphs, or pointer edits. An item is removable, and therefore
+a blocking finding, when none of `doc/spec/en/`, a `.miz` test, its
+expectation, or the frozen contract requires it. Duplicated AST or payload
+representations, single-use abstractions, speculative fields, restated
+evidence, and documentation fan-out are the expected finding classes. "Nothing
+removable" must be stated with a one-line justification. The implementer
+removes every confirmed item and repeats the review until it reports none.
+
+Budgets the reviewer checks against the `volume:` commit line:
+
+| Measure | Limit without prior user approval |
+|---|---:|
+| task-contract length, per language | 60 lines |
+| documentation lines added per task, all commits | 200 |
+| documentation added versus production added | 2 : 1 |
+| production lines added per task | 300 without a presented plan |
+
+## Documentation Volume Ledger
+
+`tests/coverage/doc_volume_baseline.tsv` is a ratchet consumed by
+`cargo test` (`lint_policy.rs`). It records, per file or contract, the ceiling
+that existing documents already exceed. Rows may only be lowered or removed;
+raising a row or adding one for a new file requires explicit user approval
+recorded in the commit body. Files without a row are held at the default.
+
+| Kind | Scope | Default |
+|---|---|---:|
+| `ceremony_tokens` | `doc/design/**/*.md` except `archive/` and this protocol: occurrences of `quality score`, `score cap`, `xhigh`, `<n>/100`, `hard gate(s) n/m`, the words `Luna`/`Sol`/`Terra`, and 64-hex digests | 0 |
+| `contract_lines` | each `doc/design/task_contracts/{en,ja}/**/*.md` | 60 |
+| `contract_fanout` | files outside `task_contracts/`, `todo.md`, crate plans, crate todos, and `spec_coverage_audit.md` that link a contract | 0 |
+
 ## Gate Tiering
 
 Ceremony is tiered by what a task can put at risk (September 2026 audit 2).
@@ -444,7 +490,8 @@ all hard gates pass:
 5. `doc/design` and source are synchronized within the target crate scope
 6. crate responsibility boundaries are not violated
 7. `doc/design/spec_coverage_audit.md` is updated for any changed spec/design
-   coverage, follow-up ownership, or deferred coverage status
+   coverage, follow-up ownership, or deferred coverage status (unchanged
+   coverage leaves the file and every other document untouched)
 8. required verification commands pass, or any unrun command is explicitly
    justified
 9. remaining risks are classified as deferred, out of scope, or human-owned
@@ -476,6 +523,10 @@ Score caps:
 | `source_undocumented_behavior` remains | 84 |
 | `test_expectation_drift` remains | 79 |
 | required verification failure | 74 |
+| task contract longer than 60 lines in either language | 84 |
+| documentation added exceeds twice production added, or 200 lines per task | 84 |
+| evidence, scores, digests, or model routing written under `doc/` | 79 |
+| volume and scope review skipped or its findings left unresolved | 79 |
 | unapproved semantic behavior change | 69 |
 | unapproved soundness-boundary change | 59 |
 | implementation-derived spec/test expectation change | 49 |
@@ -484,19 +535,26 @@ Scoring rubric:
 
 | Category | Points |
 |---|---:|
-| Specification completeness | 20 |
+| Economy: smallest diff, no duplicate representations, budgets met | 20 |
 | Test contract and coverage | 20 |
-| Traceability | 15 |
+| Specification completeness | 15 |
 | Implementation correctness | 15 |
-| Design/source synchronization | 10 |
+| Traceability | 10 |
 | Boundary discipline | 10 |
+| Design/source synchronization | 5 |
 | Verification health | 5 |
-| Handoff quality | 5 |
 | Total | 100 |
+
+Economy is scored from the `volume:` commit line, the volume and scope review
+result, and the public-type delta. A task that adds a parallel term, formula,
+or statement representation where an existing one could be referenced scores
+at most 5 of 20 in this category.
 
 ## Crate Exit Report
 
-At the end of crate-wide autonomous development, produce a Crate Exit Report.
+At the end of crate-wide autonomous development, produce a Crate Exit Report
+in the final response and the pull-request description. It is not stored under
+`doc/design/`; the volume ledger rejects its scores and digests there.
 
 The report must include:
 
@@ -547,14 +605,14 @@ Excluded:
 
 | Category | Points |
 |---|---:|
-| Specification completeness | /20 |
+| Economy | /20 |
 | Test contract and coverage | /20 |
-| Traceability | /15 |
+| Specification completeness | /15 |
 | Implementation correctness | /15 |
-| Design/source synchronization | /10 |
+| Traceability | /10 |
 | Boundary discipline | /10 |
+| Design/source synchronization | /5 |
 | Verification health | /5 |
-| Handoff quality | /5 |
 | Total | /100 |
 
 ## Deferred Items
@@ -594,6 +652,41 @@ Next recommended work:
 Known constraints:
 Open questions:
 ```
+
+## Delegation And Model Routing
+
+The parent agent keeps the user-requested reasoning setting and decides
+authority interpretation, specification or test intent, soundness boundaries,
+public API ownership, semantic acceptance, and final scoring. A lower setting
+for a sub-agent never lowers the parent setting or relaxes a gate.
+
+When a session exposes per-agent GPT-5.6 selection, follow the
+[current official OpenAI model guidance](https://developers.openai.com/api/docs/guides/latest-model)
+and these routes; availability and quota are environment facts, not policy:
+
+- Sol at the parent setting for the decisions above.
+- Luna `xhigh` for bounded work after the parent has frozen the contract:
+  deterministic inventory, count and hash checks, whole-section compaction,
+  manifest and link validation, focused verification, localized
+  contract-driven implementation, and first-pass independent reviews. Luna
+  must not resolve a `spec_gap`, derive test intent, invent semantics,
+  authorize a lower-stage change, expand scope, or accept a disputed finding;
+  it escalates without editing beyond the frozen scope.
+- Terra `high` (or `xhigh` with measured gain) as the intermediate route for
+  cross-module implementation, precision review, or a disagreement above
+  Luna's assignment that does not yet need a parent decision.
+- Broaden a route only after representative repository trials comparing task
+  success, missed findings, repair loops, gate agreement, tokens, latency, and
+  cost against one lower setting. If a model is not exposed, use the closest
+  eligible route without blocking.
+
+Without per-agent model selection: parent setting for authority conflicts,
+specification gaps, soundness, disputed semantics, and final scoring; `high`
+for bounded implementation and independent reviews after the contract is
+frozen; `medium` or lower only for deterministic inventory and mechanical
+checks. Sub-agent output is subject to the same reviews, verification, gates,
+and commit rules as any other output. Effective model and setting, when they
+matter, are recorded in the final response, never under `doc/`.
 
 ## PR Type Guidance
 

@@ -12,6 +12,11 @@
 - If an English document in a bilingual area changes but the Japanese companion cannot be updated in the same change, explicitly note the reason and mark the Japanese document as needing synchronization.
 - When adding a new English documentation file in a bilingual area, add the corresponding Japanese companion or a clearly marked Japanese placeholder that links to the canonical English file.
 
+## Documentation Volume
+
+- Design documents record decisions and boundaries only. Never write scores, gate tallies, digests, review outcomes, model names, or reasoning settings under `doc/`; `cargo test` enforces this via `tests/coverage/doc_volume_baseline.tsv`, whose rows may only be lowered or removed.
+- Task contracts are at most 60 lines per language and are linked only from `doc/design/todo.md`, crate plans, crate todos, or `doc/design/spec_coverage_audit.md`.
+
 ## Commit Message Suggestions
 
 - After editing source code or documentation, include a suggested commit message in the final response.

@@ -188,6 +188,118 @@ fail_type_elaboration_local_structure_forward_reference_gap_001	tests/miz/fail/t
 }
 
 #[test]
+fn documentation_volume_stays_within_baseline() {
+    assert_doc_volume_matcher_vectors();
+
+    let workspace = workspace_root();
+    let ledger_path = workspace.join(DOC_VOLUME_BASELINE_PATH);
+    let ledger = read_to_string(&ledger_path);
+    let mut violations = Vec::new();
+    let baseline = parse_doc_volume_baseline(&ledger, &mut violations);
+
+    let design_root = workspace.join("doc/design");
+    let mut files = Vec::new();
+    collect_markdown_files(&design_root, &mut files);
+    let mut documents = BTreeMap::new();
+    for path in files {
+        let relative = workspace_relative_slash_path(&workspace, &path);
+        if relative.starts_with("doc/design/archive/") {
+            continue;
+        }
+        documents.insert(relative, read_to_string(&path));
+    }
+
+    // 1. Ceremony tokens: evaluation scores, gate tallies, model routing, and
+    //    digests belong in commit bodies, never in live design documents.
+    for (relative, document) in &documents {
+        if relative == DOC_VOLUME_PROTOCOL_PATH {
+            continue;
+        }
+        let actual = ceremony_token_count(document);
+        check_doc_volume_ratchet(
+            &baseline,
+            "ceremony_tokens",
+            relative,
+            actual,
+            0,
+            "ceremony tokens (scores, gate tallies, xhigh/model names, 64-hex digests); \
+             move them to the commit body",
+            &mut violations,
+        );
+    }
+
+    // 2. Task contracts: new contracts stay at or below 60 lines per language.
+    for (relative, document) in &documents {
+        if !relative.starts_with("doc/design/task_contracts/") {
+            continue;
+        }
+        let actual = document.lines().count();
+        check_doc_volume_ratchet(
+            &baseline,
+            "contract_lines",
+            relative,
+            actual,
+            DOC_VOLUME_CONTRACT_LINE_LIMIT,
+            "lines; a task contract records decisions and boundaries only",
+            &mut violations,
+        );
+    }
+
+    // 3. Contract fan-out: a contract is linked from the roadmap, crate plans,
+    //    crate todos, and the coverage audit only; module documents own their
+    //    own facts and never point back at orchestration records.
+    let contract_ids: BTreeSet<String> = documents
+        .keys()
+        .filter_map(|relative| relative.strip_prefix("doc/design/task_contracts/en/"))
+        .filter_map(|rest| rest.strip_suffix(".md"))
+        .map(|rest| rest.rsplit('/').next().unwrap_or(rest).to_owned())
+        .collect();
+    for id in &contract_ids {
+        let needles = [
+            format!("task_contracts/en/{id}.md"),
+            format!("task_contracts/ja/{id}.md"),
+        ];
+        let actual = documents
+            .iter()
+            .filter(|(relative, _)| !relative.starts_with("doc/design/task_contracts/"))
+            .filter(|(relative, _)| !contract_fanout_allowed(relative))
+            .filter(|(_, document)| needles.iter().any(|needle| document.contains(needle)))
+            .count();
+        check_doc_volume_ratchet(
+            &baseline,
+            "contract_fanout",
+            id,
+            actual,
+            0,
+            "module documents link this contract; link it from todo.md, crate plans, \
+             crate todos, or the coverage audit only",
+            &mut violations,
+        );
+    }
+
+    // 4. Stale baseline rows must be removed so the ratchet only tightens.
+    for (kind, key) in baseline.keys() {
+        let exists = match kind.as_str() {
+            "contract_fanout" => contract_ids.contains(key),
+            _ => documents.contains_key(key),
+        };
+        if !exists {
+            violations.push(format!(
+                "{DOC_VOLUME_BASELINE_PATH}: stale row {kind}\t{key}; remove it"
+            ));
+        }
+    }
+
+    assert!(
+        violations.is_empty(),
+        "documentation volume policy violations (baseline rows in \
+         {DOC_VOLUME_BASELINE_PATH} may only be lowered or removed; raising one requires \
+         explicit user approval recorded in the commit body):\n{}",
+        violations.join("\n")
+    );
+}
+
+#[test]
 fn task_contracts_are_recursively_paired_and_supported_links_resolve() {
     assert_eq!(
         sha256_hex(b""),
@@ -3084,4 +3196,283 @@ fn workspace_root() -> PathBuf {
         .and_then(Path::parent)
         .map(Path::to_path_buf)
         .expect("mizar-test crate must live under crates/")
+}
+
+const DOC_VOLUME_BASELINE_PATH: &str = "tests/coverage/doc_volume_baseline.tsv";
+const DOC_VOLUME_PROTOCOL_PATH: &str = "doc/design/autonomous_crate_development.md";
+const DOC_VOLUME_CONTRACT_LINE_LIMIT: usize = 60;
+const DOC_VOLUME_KINDS: [&str; 3] = ["ceremony_tokens", "contract_lines", "contract_fanout"];
+
+fn parse_doc_volume_baseline(
+    ledger: &str,
+    violations: &mut Vec<String>,
+) -> BTreeMap<(String, String), usize> {
+    let mut rows = BTreeMap::new();
+    let mut lines = ledger.lines();
+    if lines.next() != Some("kind\tpath\tvalue") {
+        violations.push(format!(
+            "{DOC_VOLUME_BASELINE_PATH}: header must be `kind\\tpath\\tvalue`"
+        ));
+        return rows;
+    }
+    let mut previous: Option<(String, String)> = None;
+    for (index, line) in lines.enumerate() {
+        let line_number = index + 2;
+        let fields: Vec<&str> = line.split('\t').collect();
+        let [kind, key, value] = fields[..] else {
+            violations.push(format!(
+                "{DOC_VOLUME_BASELINE_PATH}:{line_number}: expected three tab-separated fields"
+            ));
+            continue;
+        };
+        if !DOC_VOLUME_KINDS.contains(&kind) {
+            violations.push(format!(
+                "{DOC_VOLUME_BASELINE_PATH}:{line_number}: unknown kind {kind:?}"
+            ));
+            continue;
+        }
+        let Ok(value) = value.parse::<usize>() else {
+            violations.push(format!(
+                "{DOC_VOLUME_BASELINE_PATH}:{line_number}: value must be a non-negative integer"
+            ));
+            continue;
+        };
+        let row_key = (kind.to_owned(), key.to_owned());
+        if previous
+            .as_ref()
+            .is_some_and(|previous| *previous >= row_key)
+        {
+            violations.push(format!(
+                "{DOC_VOLUME_BASELINE_PATH}:{line_number}: rows must be unique and sorted by kind then path"
+            ));
+        }
+        previous = Some(row_key.clone());
+        rows.insert(row_key, value);
+    }
+    rows
+}
+
+fn check_doc_volume_ratchet(
+    baseline: &BTreeMap<(String, String), usize>,
+    kind: &str,
+    key: &str,
+    actual: usize,
+    default_limit: usize,
+    what: &str,
+    violations: &mut Vec<String>,
+) {
+    let limit = baseline
+        .get(&(kind.to_owned(), key.to_owned()))
+        .copied()
+        .unwrap_or(default_limit);
+    if actual > limit {
+        violations.push(format!("{key}: {actual} > {limit} {what} [{kind}]"));
+    }
+}
+
+fn workspace_relative_slash_path(workspace: &Path, path: &Path) -> String {
+    let relative = path.strip_prefix(workspace).unwrap_or_else(|error| {
+        panic!(
+            "failed to make {} relative to {}: {error}",
+            path.display(),
+            workspace.display()
+        )
+    });
+    relative
+        .components()
+        .map(|component| component.as_os_str().to_string_lossy().into_owned())
+        .collect::<Vec<_>>()
+        .join("/")
+}
+
+fn contract_fanout_allowed(relative: &str) -> bool {
+    if relative == "doc/design/todo.md" || relative == "doc/design/spec_coverage_audit.md" {
+        return true;
+    }
+    let parts: Vec<&str> = relative.split('/').collect();
+    if parts.last() == Some(&"00.crate_plan.md") {
+        return true;
+    }
+    parts.len() == 5 && matches!(parts[3], "en" | "ja") && parts[4] == "todo.md"
+}
+
+/// Counts evaluation ceremony that must not live in design documents:
+/// `quality score`, `score cap`, `xhigh`, `<digits>/100`, `hard gate(s) N/M`,
+/// the model names `Luna`/`Sol`/`Terra` as whole words, and runs of 64 or
+/// more lowercase hex digits.
+fn ceremony_token_count(document: &str) -> usize {
+    let lower = document.to_ascii_lowercase();
+    lower.matches("quality score").count()
+        + lower.matches("score cap").count()
+        + lower.matches("xhigh").count()
+        + score_fraction_count(document)
+        + gate_fraction_count(&lower)
+        + hex_digest_count(document)
+        + whole_word_count(document, "Luna")
+        + whole_word_count(document, "Sol")
+        + whole_word_count(document, "Terra")
+}
+
+fn is_word_byte(byte: u8) -> bool {
+    byte.is_ascii_alphanumeric() || byte == b'_'
+}
+
+fn whole_word_count(document: &str, word: &str) -> usize {
+    let bytes = document.as_bytes();
+    document
+        .match_indices(word)
+        .filter(|(start, _)| {
+            let end = start + word.len();
+            let before_ok = *start == 0 || !is_word_byte(bytes[start - 1]);
+            let after_ok = end >= bytes.len() || !is_word_byte(bytes[end]);
+            before_ok && after_ok
+        })
+        .count()
+}
+
+fn score_fraction_count(document: &str) -> usize {
+    let bytes = document.as_bytes();
+    document
+        .match_indices("/100")
+        .filter(|(start, _)| {
+            let end = start + 4;
+            let digit_before = *start > 0 && bytes[start - 1].is_ascii_digit();
+            let digit_after = end < bytes.len() && bytes[end].is_ascii_digit();
+            digit_before && !digit_after
+        })
+        .count()
+}
+
+fn gate_fraction_count(lower: &str) -> usize {
+    let bytes = lower.as_bytes();
+    let mut count = 0;
+    for (start, _) in lower.match_indices("hard gate") {
+        let mut index = start + "hard gate".len();
+        if bytes.get(index) == Some(&b's') {
+            index += 1;
+        }
+        if bytes.get(index) != Some(&b' ') {
+            continue;
+        }
+        index += 1;
+        let digits_start = index;
+        while bytes.get(index).is_some_and(u8::is_ascii_digit) {
+            index += 1;
+        }
+        if index == digits_start || bytes.get(index) != Some(&b'/') {
+            continue;
+        }
+        index += 1;
+        let denominator_start = index;
+        while bytes.get(index).is_some_and(u8::is_ascii_digit) {
+            index += 1;
+        }
+        if index > denominator_start {
+            count += 1;
+        }
+    }
+    count
+}
+
+fn hex_digest_count(document: &str) -> usize {
+    let mut count = 0;
+    let mut run = 0;
+    for byte in document.bytes().chain(std::iter::once(b' ')) {
+        if matches!(byte, b'0'..=b'9' | b'a'..=b'f') {
+            run += 1;
+        } else {
+            if run >= 64 {
+                count += 1;
+            }
+            run = 0;
+        }
+    }
+    count
+}
+
+fn assert_doc_volume_matcher_vectors() {
+    assert_eq!(ceremony_token_count("plain design prose about sets"), 0);
+    assert_eq!(ceremony_token_count("Hard gates:\n"), 0);
+    assert_eq!(ceremony_token_count("hard gates 9/9 pass"), 1);
+    assert_eq!(ceremony_token_count("Hard gate 1/9 failed"), 1);
+    assert_eq!(ceremony_token_count("final quality score 100/100"), 2);
+    assert_eq!(ceremony_token_count("Score caps applied: none"), 1);
+    assert_eq!(ceremony_token_count("ratio 3/1000 and 1/100"), 1);
+    assert_eq!(
+        ceremony_token_count("Sol xhigh parent; Luna `xhigh`; Terra high"),
+        5
+    );
+    assert_eq!(ceremony_token_count("Solar Lunar Terrace Solution"), 0);
+    assert_eq!(ceremony_token_count("Lunaはruntime"), 1);
+    assert_eq!(
+        ceremony_token_count(&format!("digest {} end", "a".repeat(64))),
+        1
+    );
+    assert_eq!(
+        ceremony_token_count(&format!("short {} end", "a".repeat(63))),
+        0
+    );
+    assert!(contract_fanout_allowed("doc/design/todo.md"));
+    assert!(contract_fanout_allowed(
+        "doc/design/mizar-core/en/00.crate_plan.md"
+    ));
+    assert!(contract_fanout_allowed("doc/design/mizar-core/ja/todo.md"));
+    assert!(!contract_fanout_allowed(
+        "doc/design/mizar-core/en/elaborator.md"
+    ));
+    assert!(!contract_fanout_allowed(
+        "doc/design/mizar-core/en/nested/todo.md"
+    ));
+
+    let mut violations = Vec::new();
+    let rows = parse_doc_volume_baseline(
+        "kind\tpath\tvalue\nceremony_tokens\ta.md\t3\ncontract_lines\tb.md\t70\n",
+        &mut violations,
+    );
+    assert!(violations.is_empty(), "{violations:?}");
+    assert_eq!(rows.len(), 2);
+    let mut violations = Vec::new();
+    parse_doc_volume_baseline(
+        "kind\tpath\tvalue\ncontract_lines\tb.md\t70\nceremony_tokens\ta.md\t3\nbogus\tc\t1\n",
+        &mut violations,
+    );
+    assert_eq!(violations.len(), 2, "{violations:?}");
+    let mut violations = Vec::new();
+    check_doc_volume_ratchet(
+        &rows,
+        "ceremony_tokens",
+        "a.md",
+        3,
+        0,
+        "tokens",
+        &mut violations,
+    );
+    check_doc_volume_ratchet(
+        &rows,
+        "ceremony_tokens",
+        "a.md",
+        4,
+        0,
+        "tokens",
+        &mut violations,
+    );
+    check_doc_volume_ratchet(
+        &rows,
+        "ceremony_tokens",
+        "z.md",
+        1,
+        0,
+        "tokens",
+        &mut violations,
+    );
+    check_doc_volume_ratchet(
+        &rows,
+        "contract_lines",
+        "new.md",
+        60,
+        60,
+        "lines",
+        &mut violations,
+    );
+    assert_eq!(violations.len(), 2, "{violations:?}");
 }
