@@ -3,7 +3,7 @@
 > Canonical language: English. Japanese companion:
 > [../ja/elaborator.md](../ja/elaborator.md).
 
-Step 5C.2's bounded structure normalizer is specified by its [central task contract](../../task_contracts/en/STEP5C2-STRUCTURE-SEMANTICS.md); generic `CoreIr` and Task-180 VC behavior remain unchanged.
+Step 5C.2's bounded structure normalizer leaves generic `CoreIr` and Task-180 VC behavior unchanged.
 
 Status: `mizar-core` task 7 module specification. This document is the
 normative task-local design for tasks 8-13. It refines

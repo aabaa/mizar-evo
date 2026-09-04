@@ -3,7 +3,7 @@
 > Canonical language: English. Japanese companion:
 > [../ja/source_structure.md](../ja/source_structure.md).
 
-Step 5C.2 semantics are owned by the [central task contract](../../task_contracts/en/STEP5C2-STRUCTURE-SEMANTICS.md); this Task 254 transport remains frozen.
+This Task 254 transport remains frozen.
 
 ## Scope
 

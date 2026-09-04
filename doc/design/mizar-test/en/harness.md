@@ -1,7 +1,5 @@
 # Module: harness
 
-Step 5C.2's exact 14-case activation and syntax-free extraction boundary are owned by its [central task contract](../../task_contracts/en/STEP5C2-STRUCTURE-SEMANTICS.md).
-
 ## Parser Task 46 Operator-Declaration Parse-Only Increment
 
 The exact pass/fail pair is admitted by the ordinary parse-only runner. The
@@ -6180,8 +6178,7 @@ Task277B readiness.
 
 ## Step 5C.1 formula-statement runner
 
-The paired [Step 5C.1 contract](../../task_contracts/en/STEP5C1-VARIABLE-SEMANTICS.md)
-adds an `active_formula_statement` runner and CLI command. Its private extractor
+The harness owns an `active_formula_statement` runner and CLI command. Its private extractor
 passes unrecovered `SurfaceAst` to the resolver owner and the authenticated
 receipt to the checker; it performs no semantic extraction or textual recovery.
 Exact id/source/phase/outcome and the sole activation tag authenticate admission

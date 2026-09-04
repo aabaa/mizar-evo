@@ -1,7 +1,5 @@
 # Module: harness
 
-Step 5C.2 の exact 14-case activation と syntax-free extraction boundary は [central task contract](../../task_contracts/ja/STEP5C2-STRUCTURE-SEMANTICS.md) が所有します。
-
 ## Parser Task 46 operator-declaration parse-only increment
 
 exact pass/fail pairはordinary parse-only runnerへadmitする。pass sidecarはdiagnostic 0、
@@ -5630,8 +5628,7 @@ coverage credit、Task277B readinessは追加しない。
 
 ## Step 5C.1 formula-statement runner
 
-paired [Step 5C.1 contract](../../task_contracts/ja/STEP5C1-VARIABLE-SEMANTICS.md)
-に従い、`active_formula_statement` runner/CLI は unrecovered `SurfaceAst` 構造を
+`active_formula_statement` runner/CLI は unrecovered `SurfaceAst` 構造を
 resolver ownerへ渡し、そのauthenticated receiptをcheckerへ渡す。semantic extraction/
 textual recoveryは行わない。exact id/source/phase/outcome と唯一の activation tag は
 formula 6行/type 6行の admission だけを認証し、semantic result は選ばない。formula

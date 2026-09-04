@@ -3,7 +3,7 @@
 > 正本は英語です。英語版:
 > [../en/elaborator.md](../en/elaborator.md)。
 
-Step 5C.2 の限定 structure normalizer は [central task contract](../../task_contracts/ja/STEP5C2-STRUCTURE-SEMANTICS.md) に従い、generic `CoreIr` と Task-180 VC behavior は変更しません。
+Step 5C.2 の限定 structure normalizer は generic `CoreIr` と Task-180 VC behavior を変更しません。
 
 状態: `mizar-core` task 7 のモジュール仕様。この文書は task 8-13 の
 task-local design であり、[architecture 06](../../architecture/ja/06.elaboration_and_core_ir.md)

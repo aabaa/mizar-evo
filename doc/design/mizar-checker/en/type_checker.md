@@ -3092,8 +3092,7 @@ proof intent, or theorem acceptance enters `type_checker`.
 
 ## Step 5C.1 variable semantics
 
-The paired [Step 5C.1 contract](../../task_contracts/en/STEP5C1-VARIABLE-SEMANTICS.md)
-adds a syntax-free checker transaction over resolver-authenticated bindings. It
+The checker owns a syntax-free transaction over resolver-authenticated bindings. It
 owns explicit/reserved types, builtin widening and proof-required narrowing,
 identity-projects them through `BindingEnv`, then owns transparent local
 definitions and bounded `let`/`take` thesis transitions. Discharge is limited to

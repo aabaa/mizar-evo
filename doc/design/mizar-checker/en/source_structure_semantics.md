@@ -3,8 +3,7 @@
 > Canonical language: English. Japanese companion:
 > [../ja/source_structure_semantics.md](../ja/source_structure_semantics.md).
 
-This module owns the bounded Step 5C.2 semantic checker described by the
-[central task contract](../../task_contracts/en/STEP5C2-STRUCTURE-SEMANTICS.md).
+This module owns the bounded Step 5C.2 semantic checker.
 It consumes syntax-free records with resolver-backed structure/member identities
 and structurally authenticated source-local variable identities, checks
 structure definitions, inheritance, constructors, selectors, field updates,

@@ -2926,8 +2926,7 @@ theorem acceptanceは`type_checker`へ入らない。
 
 ## Step 5C.1 variable semantics
 
-paired [Step 5C.1 contract](../../task_contracts/ja/STEP5C1-VARIABLE-SEMANTICS.md)
-に従い、resolver-authenticated binding 上の syntax-free transaction が explicit/
+checker は resolver-authenticated binding 上の syntax-free transaction で explicit/
 reserved type、builtin widening、proof-required narrowingを扱う。`BindingEnv`へ
 identityを写像した後、transparent local definitionと限定された`let`/`take`
 thesis遷移を所有する。proof search/theorem acceptanceはdownstreamのまま。

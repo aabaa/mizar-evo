@@ -455,8 +455,7 @@ identity、checker capture、diagnostic、active route、semantic result、cover
 
 ## Step 5C.1 variable scope resolution
 
-paired [Step 5C.1 contract](../../task_contracts/ja/STEP5C1-VARIABLE-SEMANTICS.md)
-に従い、`names.rs` は authenticated `SurfaceAst` から binding/reference/capture/
+`names.rs` は authenticated `SurfaceAst` から binding/reference/capture/
 source-order identity を導出し、duplicate/forward/unreserved を fail closed にする。
 checker `BindingEnv` だけが内部 identity へ写像し、type/thesis は resolver 外に残る。
 parser root の flat token overlay は lexical parent ではなく metadata とし、真の
