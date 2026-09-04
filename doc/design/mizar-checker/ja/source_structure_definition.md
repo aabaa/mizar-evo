@@ -3,6 +3,8 @@
 > canonical languageは英語である。canonical文書:
 > [../en/source_structure_definition.md](../en/source_structure_definition.md)。
 
+Step 5C.2 semantics は [central task contract](../../task_contracts/ja/STEP5C2-STRUCTURE-SEMANTICS.md) が所有し、この Task 263 transport は凍結を維持します。
+
 ## Task 263 scopeとauthority
 
 Checker Task 263は、2個の通常zero-parameter structure宣言、field/property

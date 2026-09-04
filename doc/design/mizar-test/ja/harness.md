@@ -1,5 +1,7 @@
 # Module: harness
 
+Step 5C.2 の exact 14-case activation と syntax-free extraction boundary は [central task contract](../../task_contracts/ja/STEP5C2-STRUCTURE-SEMANTICS.md) が所有します。
+
 ## Parser Task 46 operator-declaration parse-only increment
 
 exact pass/fail pairはordinary parse-only runnerへadmitする。pass sidecarはdiagnostic 0、

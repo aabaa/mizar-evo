@@ -3,6 +3,8 @@
 > Canonical language: English. Japanese companion:
 > [../ja/source_structure_definition.md](../ja/source_structure_definition.md).
 
+Step 5C.2 semantics are owned by the [central task contract](../../task_contracts/en/STEP5C2-STRUCTURE-SEMANTICS.md); this Task 263 transport remains frozen.
+
 ## Task 263 Scope And Authority
 
 Checker Task 263 owns one syntax-free immutable intake for two ordinary

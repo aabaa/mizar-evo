@@ -3,6 +3,8 @@
 > 正本は英語です。英語版:
 > [../en/source_structure.md](../en/source_structure.md)。
 
+Step 5C.2 semantics は [central task contract](../../task_contracts/ja/STEP5C2-STRUCTURE-SEMANTICS.md) が所有し、この Task 254 transport は凍結を維持します。
+
 ## スコープ
 
 Checker Task 254 は、source structure construction、selector access、

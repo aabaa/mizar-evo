@@ -1,5 +1,7 @@
 # Module: harness
 
+Step 5C.2's exact 14-case activation and syntax-free extraction boundary are owned by its [central task contract](../../task_contracts/en/STEP5C2-STRUCTURE-SEMANTICS.md).
+
 ## Parser Task 46 Operator-Declaration Parse-Only Increment
 
 The exact pass/fail pair is admitted by the ordinary parse-only runner. The

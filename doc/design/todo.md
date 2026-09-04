@@ -565,7 +565,7 @@ activation-map ledger; every 5C task also requires 5B.2.
    widening/narrowing-justification, `take` exemplification, inline
    `deffunc`/`defpred`, reserve implicit typing/explicit override, and
    duplicate-generalization rejection. Deps: 5A.2.
-2. [ ] **5C.2 — Structures** (`mizar-checker`, `mizar-core`; spec
+2. [~] **5C.2 — Structures** (`mizar-checker`, `mizar-core`; spec
    ch. 5). Requirements: `spec.en.05.structures.*` (11 ids). Targets: 14
    pairs (none gap-blocked). Covers definition fields/properties,
    inheritance (rename, member coverage, from-`set`, diamond
