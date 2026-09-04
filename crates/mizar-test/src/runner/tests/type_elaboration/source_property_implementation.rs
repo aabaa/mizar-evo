@@ -234,7 +234,7 @@ fn task264_two_case_trace_selection_and_mixed_boundaries_are_exact() {
             active_type_elaboration_cases(&plan).count(),
             crate::active_proof_verification_cases(&plan).count(),
         ),
-        (111, 7, 233, 4)
+        (111, 7, 240, 4)
     );
     let type_stage = plan
         .coverage_report

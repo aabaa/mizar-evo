@@ -34,7 +34,7 @@ mod type_assertion_routes;
 
 pub(super) use admission::{
     is_active_type_elaboration, is_step5c1_workspace_member, is_step5c2_workspace_member,
-    is_step5c3_workspace_member, is_step5c4_workspace_member,
+    is_step5c3_workspace_member, is_step5c4_workspace_member, is_step5c5_workspace_member,
     validate_active_type_elaboration_tags,
 };
 #[cfg(test)]
@@ -431,11 +431,14 @@ pub(super) use source_formula_composition::{
     source_predicate_chain_composition_output_with_source,
     source_predicate_chain_composition_output_with_source_and_mutation,
 };
-pub(super) use source_functor_definition::source_functor_definition_transport_detail_keys;
 #[cfg(test)]
 pub(super) use source_functor_definition::{
     SOURCE_FUNCTOR_DEFINITION_TEXT, SourceFunctorDefinitionRouteMutation,
     source_functor_definition_output, source_functor_definition_output_with_mutation,
+};
+pub(super) use source_functor_definition::{
+    source_functor_definition_transport_detail_keys, step5c5_functor_duplicate_detail_keys,
+    step5c5_functor_semantics_detail_keys,
 };
 #[cfg(test)]
 pub(super) use source_mode_definition::step5c4_mode_semantics_detail_keys;
@@ -447,11 +450,13 @@ pub(super) use source_mode_definition::{
 pub(super) use source_mode_definition::{
     source_mode_definition_transport_detail_keys, step5c4_mode_sethood_is_unprovable,
 };
-pub(super) use source_predicate_definition::source_predicate_definition_transport_detail_keys;
 #[cfg(test)]
 pub(super) use source_predicate_definition::{
     SOURCE_PREDICATE_DEFINITION_TEXT, SourcePredicateDefinitionRouteMutation,
     source_predicate_definition_output, source_predicate_definition_output_with_mutation,
+};
+pub(super) use source_predicate_definition::{
+    source_predicate_definition_transport_detail_keys, step5c5_predicate_semantics_detail_keys,
 };
 #[cfg(test)]
 pub(super) use source_proof_local_declaration::{

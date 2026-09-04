@@ -812,3 +812,9 @@ workspace warnings-denied Clippy、workspace `cargo test`、全5 CLI/count/hash
 gateです。independent review 4件はno findingsで完了し、全9 hard gateはPASS、
 score capなしのquality scoreは`100/100`です。task commitとpost-commit fresh
 inventoryはpendingです。
+
+## Step 5C.5 predicate property semantics
+
+active source bridgeはunrecovered predicate definitionをresolver shell/symbol認証後にのみ
+受理する。symmetry/reflexivityはbinary arityを要求し、unary declarationはrejectする。
+property proof dischargeとbroader predicate semanticsは対象外とする。

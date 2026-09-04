@@ -260,3 +260,10 @@ count/hash unchanged、all nine gates PASS、valid 90+ quality、exact staging�
 commit、clean worktree、protected stash unchanged、fresh implementation selectionで
 exitします。implementationも同じreview/hard gateとprojected executable count、
 one logical-task commitを必須とします。
+
+## Step 5C.5 functor semantics
+
+active source bridgeはfunctor declarationを認証してから既存source/type payloadをcheckする。
+`means`はexistence/uniqueness、`equals` definiensはdeclared result typeとの一致、
+commutativityはbinary arityを要求する。builtin bracket pairに新しいterm表現は追加せず、
+duplicate signatureはresolver ownerのままとする。

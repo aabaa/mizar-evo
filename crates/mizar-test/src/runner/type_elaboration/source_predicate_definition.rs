@@ -26,6 +26,7 @@ use mizar_checker::{
         SourceTypeExpressionId, SourceTypeExpressionInput, SourceTypeHandoffInput, SourceTypeHead,
         SourceTypeProducer,
     },
+    type_checker::{TypeExpressionInput, TypeNormalizer},
     typed_ast::{
         CoercionTable, InitialObligationTable, LocalTypeContextId, NodeRecoveryState,
         TypeDiagnosticTable, TypeFactTable, TypeTable, TypedArena, TypedArenaBuilder, TypedAst,
@@ -45,7 +46,10 @@ use mizar_syntax::{SurfaceAst, SurfaceNodeId, SurfaceNodeKind, SurfaceTokenKind}
 
 use super::{
     checker_handoff::assemble_empty_resolved_typed_ast,
-    source_ast::{direct_token_texts, structural_child_ids, subtree_has_recovery},
+    source_ast::{
+        authenticated_local_declaration, direct_token_texts, leaf_token_texts,
+        structural_child_ids, subtree_has_recovery, surface_nodes_with_kind, surface_site,
+    },
     source_context::{
         SourceTwoParameterDefinitionContextSites,
         source_two_parameter_definition_context_projection,
@@ -247,6 +251,122 @@ pub(in crate::runner) fn source_predicate_definition_transport_detail_keys(
         Some(Ok(output)) if route_output_is_exact(&output) => Some(Vec::new()),
         Some(Ok(_)) | Some(Err(_)) => Some(vec![INVALID_PAYLOAD_KEY.to_owned()]),
     }
+}
+
+pub(in crate::runner) fn step5c5_predicate_semantics_detail_keys(
+    ast: &SurfaceAst,
+    module: &ModuleId,
+    shells: &DeclarationShellSet,
+    symbols: &SymbolEnv,
+) -> Option<Vec<String>> {
+    let definitions = surface_nodes_with_kind(ast, SurfaceNodeKind::PredicateDefinition);
+    if definitions.is_empty() {
+        return None;
+    }
+    let properties = surface_nodes_with_kind(ast, SurfaceNodeKind::PropertyClause);
+    let invalid = || vec!["type_elaboration.checker.step5c5.predicate.invalid_payload".to_owned()];
+    let [(definition_id, definition)] = definitions.as_slice() else {
+        return Some(invalid());
+    };
+    if subtree_has_recovery(ast, definition)
+        || !authenticated_local_declaration(
+            ast,
+            module,
+            shells,
+            symbols,
+            *definition_id,
+            definition,
+            DeclarationShellKind::PredicateDefinition,
+            SymbolKind::Predicate,
+            DefinitionKind::Predicate,
+            true,
+        )
+        || properties.is_empty()
+        || properties.iter().any(|(id, property)| {
+            subtree_has_recovery(ast, property)
+                || !authenticated_local_declaration(
+                    ast,
+                    module,
+                    shells,
+                    symbols,
+                    *id,
+                    property,
+                    DeclarationShellKind::PropertyClause,
+                    SymbolKind::Attribute,
+                    DefinitionKind::Attribute,
+                    true,
+                )
+        })
+    {
+        return Some(invalid());
+    }
+    let Some(pattern) = structural_child_ids(ast, definition)
+        .into_iter()
+        .find_map(|id| {
+            ast.node(id)
+                .filter(|node| matches!(node.kind, SurfaceNodeKind::PredicatePattern))
+        })
+    else {
+        return Some(invalid());
+    };
+    let parameters = surface_nodes_with_kind(ast, SurfaceNodeKind::QualifiedVariableSegment)
+        .into_iter()
+        .flat_map(|(_, segment)| direct_token_texts(ast, segment))
+        .take_while(|token| token != "be" && token != "being")
+        .filter(|token| token != ",")
+        .collect::<Vec<_>>();
+    let arity = leaf_token_texts(ast, pattern)
+        .iter()
+        .filter(|token| parameters.iter().any(|parameter| parameter == *token))
+        .count();
+    let property_kinds = properties
+        .iter()
+        .filter_map(|(_, property)| direct_token_texts(ast, property).into_iter().next())
+        .collect::<Vec<_>>();
+    if !matches!(property_kinds.as_slice(), [kind] if kind == "symmetry")
+        && !matches!(property_kinds.as_slice(), [first, second] if first == "symmetry" && second == "reflexivity")
+    {
+        return Some(invalid());
+    }
+    let normalized_parameters = surface_nodes_with_kind(ast, SurfaceNodeKind::DefinitionParameter)
+        .into_iter()
+        .flat_map(|(_, parameter)| structural_child_ids(ast, parameter))
+        .filter_map(|id| ast.node(id).map(|node| (id, node)))
+        .filter(|(_, node)| matches!(node.kind, SurfaceNodeKind::QualifiedVariableSegment))
+        .filter_map(|(_, segment)| {
+            structural_child_ids(ast, segment)
+                .into_iter()
+                .find_map(|id| ast.node(id).map(|node| (id, node)))
+        })
+        .filter(|(_, node)| matches!(node.kind, SurfaceNodeKind::TypeExpression))
+        .filter_map(|(id, node)| {
+            super::source_reserve::extract_builtin_source_type_expression(
+                ast, node, module, symbols,
+            )
+            .ok()
+            .map(|source_type| {
+                TypeExpressionInput::new(
+                    surface_site(id),
+                    source_type.range,
+                    source_type.spelling,
+                    source_type.head,
+                )
+            })
+        })
+        .collect::<Vec<_>>();
+    if normalized_parameters.is_empty()
+        || !TypeNormalizer::default()
+            .normalize(symbols, normalized_parameters)
+            .diagnostics()
+            .is_empty()
+    {
+        return Some(invalid());
+    }
+    Some(match arity {
+        2 => Vec::new(),
+        1 => vec!["predicates.property.arity_mismatch".to_owned()],
+        _ => invalid(),
+    })
 }
 
 #[cfg(test)]

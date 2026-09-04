@@ -6,6 +6,7 @@ domain = "functors.definition"
 source = "fail_type_elaboration_func_duplicate_same_signature_001.miz"
 expected_outcome = "fail"
 expected_phase = "resolve"
+tags = ["active_type_elaboration"]
 failure_category = "resolve_error"
 stable_detail_key = "functors.definition.duplicate_same_signature"
 diagnostic_codes = []

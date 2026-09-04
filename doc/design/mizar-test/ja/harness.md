@@ -5649,3 +5649,9 @@ textual recoveryは行わない。exact id/source/phase/outcome と唯一の act
 formula 6行/type 6行の admission だけを認証し、semantic result は選ばない。formula
 route は duplicate frontend/checker handshake を要求し、type route は legacy dispatch
 前に resolver key を保持する。
+
+## Step 5C.5 type-elaboration admission
+
+harnessはnon-gap 7行だけをexact id、workspace-relative path、stage、phase、outcome、sole
+tagで受理する。private source-semantic dispatch前にresolver diagnosticを保持し、
+G1/G2/G6/G9の10行はtagが付いてもineligibleとする。

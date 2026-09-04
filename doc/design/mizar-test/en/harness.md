@@ -6201,3 +6201,9 @@ Exact id/source/phase/outcome and the sole activation tag authenticate admission
 for the six formula and six type rows; they never choose a semantic result.
 The formula route requires the duplicate frontend/checker handshake, while the
 type route preserves resolver keys before legacy dispatch.
+
+## Step 5C.5 type-elaboration admission
+
+The harness admits only the seven exact non-gap predicate/functor rows by id, workspace-relative
+path, stage, phase, outcome, and sole tag. It preserves resolver diagnostics before private
+source-semantic dispatch; the ten G1/G2/G6/G9 rows remain ineligible even if tagged.

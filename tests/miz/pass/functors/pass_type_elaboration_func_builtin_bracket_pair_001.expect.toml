@@ -6,6 +6,7 @@ domain = "functors.bracket_application"
 source = "pass_type_elaboration_func_builtin_bracket_pair_001.miz"
 expected_outcome = "pass"
 expected_phase = "type_check"
+tags = ["active_type_elaboration"]
 diagnostic_codes = []
 spec_refs = [
   "spec.en.10.functors.bracket_application.builtin",

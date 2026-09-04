@@ -180,6 +180,7 @@
         extract_source_two_edge_local_object_mode_reserved_variable_type_assertion,
         extract_source_two_edge_local_object_mode_two_hop_asserted_head, resolve_visible_attribute,
         resolve_visible_type_head, resolver_symbol_collection, run_frontend,
+        type_elaboration_detail_keys,
         source_binding_context_detail_keys, source_binding_context_output,
         source_builtin_type_assertion_formula_output,
         source_type_application_output,
@@ -323,7 +324,7 @@
     use mizar_syntax::{
         SurfaceAst, SurfaceAstBuilder, SurfaceBuilderNodeId, SurfaceFormulaBinaryOperator,
         SurfaceFormulaConnective, SurfaceFormulaConstant, SurfaceFormulaPrefixOperator,
-        SurfaceNodeKind, SurfaceQuantifierKind, SurfaceTokenKind,
+        SurfaceNodeId, SurfaceNodeKind, SurfaceQuantifierKind, SurfaceTokenKind,
     };
     use std::collections::{BTreeMap, BTreeSet};
     use std::path::Path;
@@ -353,6 +354,56 @@
                     builder.add_recovery(*kind, node.range, children)
                 }
                 kind if *kind == from => builder.add_node(to.clone(), node.range, children),
+                kind => builder.add_node(kind.clone(), node.range, children),
+            };
+            rebuilt.push(id);
+        }
+        builder.finish(
+            ast.root().map(|node| rebuilt[node.index()]),
+            ast.expression_root().map(|node| rebuilt[node.index()]),
+        )
+    }
+
+    fn rebuild_surface_ast_recovering_first_token_in_kind(
+        ast: &SurfaceAst,
+        owner_kind: SurfaceNodeKind,
+    ) -> SurfaceAst {
+        fn first_token(ast: &SurfaceAst, id: SurfaceNodeId) -> Option<SurfaceNodeId> {
+            let node = ast.node(id)?;
+            if matches!(node.kind, SurfaceNodeKind::Token(_)) {
+                return Some(id);
+            }
+            node.children
+                .iter()
+                .find_map(|child| first_token(ast, *child))
+        }
+
+        let owner = surface_nodes_with_kind(ast, owner_kind)
+            .into_iter()
+            .next()
+            .expect("recovery owner")
+            .0;
+        let target = first_token(ast, owner).expect("recovery token");
+        let mut builder = SurfaceAstBuilder::new(ast.source_id);
+        let mut rebuilt = Vec::with_capacity(ast.nodes().len());
+        for (index, node) in ast.nodes().iter().enumerate() {
+            let children = node
+                .children
+                .iter()
+                .map(|child| rebuilt[child.index()])
+                .collect();
+            let id = match &node.kind {
+                SurfaceNodeKind::Token(token) if index == target.index() => builder
+                    .add_recovered_token(token.kind, token.text.as_ref(), node.range),
+                SurfaceNodeKind::Token(token) if node.recovered => {
+                    builder.add_recovered_token(token.kind, token.text.as_ref(), node.range)
+                }
+                SurfaceNodeKind::Token(token) => {
+                    builder.add_token(token.kind, token.text.as_ref(), node.range)
+                }
+                SurfaceNodeKind::ErrorRecovery(kind) => {
+                    builder.add_recovery(*kind, node.range, children)
+                }
                 kind => builder.add_node(kind.clone(), node.range, children),
             };
             rebuilt.push(id);

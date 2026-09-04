@@ -34,6 +34,7 @@ use mizar_checker::{
         SourceTypeExpressionId, SourceTypeExpressionInput, SourceTypeHandoffInput, SourceTypeHead,
         SourceTypeProducer,
     },
+    type_checker::{TypeExpressionInput, TypeNormalizer},
     typed_ast::{
         CoercionTable, InitialObligationTable, LocalTypeContextId, NodeRecoveryState,
         TypeDiagnosticTable, TypeFactTable, TypeTable, TypedArena, TypedArenaBuilder, TypedAst,
@@ -54,7 +55,13 @@ use mizar_resolve::{
 use mizar_session::{SourceAnchor, SourceId, SourceRange};
 use mizar_syntax::{SurfaceAst, SurfaceNodeId, SurfaceNodeKind, SurfaceTokenKind};
 
-use super::checker_handoff::assemble_empty_resolved_typed_ast;
+use super::{
+    checker_handoff::assemble_empty_resolved_typed_ast,
+    source_ast::{
+        authenticated_local_declaration, direct_token_texts, leaf_token_texts,
+        structural_child_ids, subtree_has_recovery, surface_nodes_with_kind, surface_site,
+    },
+};
 
 pub(in crate::runner) const SOURCE_FUNCTOR_DEFINITION_TEXT: &str = concat!(
     "definition\n",
@@ -301,6 +308,351 @@ pub(in crate::runner) fn source_functor_definition_transport_detail_keys(
         Some(Ok(output)) if route_output_is_exact(&output) => Some(Vec::new()),
         Some(Ok(_)) | Some(Err(_)) => Some(vec![INVALID_PAYLOAD_KEY.to_owned()]),
     }
+}
+
+pub(in crate::runner) fn step5c5_functor_duplicate_detail_keys(
+    ast: &SurfaceAst,
+    module: &ModuleId,
+    shells: &DeclarationShellSet,
+    symbols: &SymbolEnv,
+    resolver_keys: &[String],
+) -> Option<Vec<String>> {
+    let definitions = surface_nodes_with_kind(ast, SurfaceNodeKind::FunctorDefinition);
+    let [left, right] = definitions.as_slice() else {
+        return None;
+    };
+    let patterns = definitions
+        .iter()
+        .filter_map(|(_, definition)| {
+            structural_child_ids(ast, definition)
+                .into_iter()
+                .find_map(|id| {
+                    ast.node(id)
+                        .filter(|node| matches!(node.kind, SurfaceNodeKind::FunctorPattern))
+                })
+        })
+        .map(|pattern| leaf_token_texts(ast, pattern))
+        .collect::<Vec<_>>();
+    let returns = definitions
+        .iter()
+        .filter_map(|(_, definition)| {
+            structural_child_ids(ast, definition)
+                .into_iter()
+                .find_map(|id| {
+                    ast.node(id)
+                        .filter(|node| matches!(node.kind, SurfaceNodeKind::TypeExpression))
+                })
+        })
+        .map(|node| leaf_token_texts(ast, node))
+        .collect::<Vec<_>>();
+    let parameter_types = surface_nodes_with_kind(ast, SurfaceNodeKind::DefinitionParameter)
+        .into_iter()
+        .filter_map(|(_, parameter)| {
+            structural_child_ids(ast, parameter)
+                .into_iter()
+                .filter_map(|id| ast.node(id))
+                .find(|node| matches!(node.kind, SurfaceNodeKind::QualifiedVariableSegment))
+        })
+        .filter_map(|segment| {
+            structural_child_ids(ast, segment)
+                .into_iter()
+                .filter_map(|id| ast.node(id))
+                .find(|node| matches!(node.kind, SurfaceNodeKind::TypeExpression))
+        })
+        .map(|node| leaf_token_texts(ast, node))
+        .collect::<Vec<_>>();
+    if resolver_keys != ["declaration_symbol.signature.same_signature_definition_conflict"]
+        || ![left, right].into_iter().all(|(id, node)| {
+            authenticated_local_declaration(
+                ast,
+                module,
+                shells,
+                symbols,
+                *id,
+                node,
+                DeclarationShellKind::FunctorDefinition,
+                SymbolKind::Functor,
+                DefinitionKind::Functor,
+                false,
+            )
+        })
+        || !matches!(patterns.as_slice(), [first, second] if first == second)
+        || !matches!(returns.as_slice(), [first, second] if first == second)
+        || parameter_types.as_slice() != [vec!["set"], vec!["set"]]
+    {
+        return None;
+    }
+    Some(vec![
+        "functors.definition.duplicate_same_signature".to_owned(),
+    ])
+}
+
+pub(in crate::runner) fn step5c5_functor_semantics_detail_keys(
+    ast: &SurfaceAst,
+    module: &ModuleId,
+    shells: &DeclarationShellSet,
+    symbols: &SymbolEnv,
+) -> Option<Vec<String>> {
+    let definitions = surface_nodes_with_kind(ast, SurfaceNodeKind::FunctorDefinition);
+    if definitions.is_empty() {
+        let applications = surface_nodes_with_kind(ast, SurfaceNodeKind::ApplicationTerm)
+            .into_iter()
+            .filter(|(_, node)| direct_token_texts(ast, node).as_slice() == ["[", ",", "]"])
+            .collect::<Vec<_>>();
+        if applications.is_empty() {
+            return None;
+        }
+        let invalid =
+            || vec!["type_elaboration.checker.step5c5.functor.invalid_payload".to_owned()];
+        let theorems = surface_nodes_with_kind(ast, SurfaceNodeKind::TheoremItem);
+        let [(theorem_id, theorem)] = theorems.as_slice() else {
+            return Some(invalid());
+        };
+        if applications.len() != 4
+            || subtree_has_recovery(ast, theorem)
+            || applications.iter().any(|(_, application)| {
+                subtree_has_recovery(ast, application)
+                    || leaf_token_texts(ast, application).as_slice() != ["[", "x", ",", "y", "]"]
+                    || structural_child_ids(ast, application)
+                        .into_iter()
+                        .filter_map(|id| ast.node(id))
+                        .filter(|node| matches!(node.kind, SurfaceNodeKind::TermExpression))
+                        .count()
+                        != 2
+            })
+            || leaf_token_texts(ast, theorem)
+                .iter()
+                .filter(|token| token.as_str() == "=")
+                .count()
+                != 2
+            || !authenticated_local_declaration(
+                ast,
+                module,
+                shells,
+                symbols,
+                *theorem_id,
+                theorem,
+                DeclarationShellKind::Theorem,
+                SymbolKind::Theorem,
+                DefinitionKind::Theorem,
+                true,
+            )
+        {
+            return Some(invalid());
+        }
+        let binding_shapes = [
+            SurfaceNodeKind::QuantifierVariableSegment,
+            SurfaceNodeKind::QualifiedVariableSegment,
+        ]
+        .into_iter()
+        .flat_map(|kind| surface_nodes_with_kind(ast, kind))
+        .map(|(_, node)| leaf_token_texts(ast, node))
+        .collect::<Vec<_>>();
+        if binding_shapes.as_slice()
+            != [
+                vec!["x", ",", "y", "being", "object"],
+                vec!["x", ",", "y", "be", "object"],
+            ]
+        {
+            return Some(invalid());
+        }
+        let type_inputs = surface_nodes_with_kind(ast, SurfaceNodeKind::TypeExpression)
+            .into_iter()
+            .filter_map(|(id, node)| {
+                super::source_reserve::extract_builtin_source_type_expression(
+                    ast, node, module, symbols,
+                )
+                .ok()
+                .map(|source_type| {
+                    TypeExpressionInput::new(
+                        surface_site(id),
+                        source_type.range,
+                        source_type.spelling,
+                        source_type.head,
+                    )
+                })
+            })
+            .collect::<Vec<_>>();
+        return Some(
+            if type_inputs.len() == 2
+                && TypeNormalizer::default()
+                    .normalize(symbols, type_inputs)
+                    .diagnostics()
+                    .is_empty()
+            {
+                Vec::new()
+            } else {
+                invalid()
+            },
+        );
+    }
+    let invalid = || vec!["type_elaboration.checker.step5c5.functor.invalid_payload".to_owned()];
+    let [(definition_id, definition)] = definitions.as_slice() else {
+        return Some(invalid());
+    };
+    if subtree_has_recovery(ast, definition)
+        || !authenticated_local_declaration(
+            ast,
+            module,
+            shells,
+            symbols,
+            *definition_id,
+            definition,
+            DeclarationShellKind::FunctorDefinition,
+            SymbolKind::Functor,
+            DefinitionKind::Functor,
+            true,
+        )
+    {
+        return Some(invalid());
+    }
+    let direct = direct_token_texts(ast, definition);
+    let properties = surface_nodes_with_kind(ast, SurfaceNodeKind::PropertyClause);
+    let parameters = surface_nodes_with_kind(ast, SurfaceNodeKind::QualifiedVariableSegment)
+        .into_iter()
+        .flat_map(|(_, segment)| direct_token_texts(ast, segment))
+        .take_while(|token| token != "be" && token != "being")
+        .filter(|token| token != ",")
+        .collect::<Vec<_>>();
+    let arity = structural_child_ids(ast, definition)
+        .into_iter()
+        .find_map(|id| {
+            ast.node(id)
+                .filter(|node| matches!(node.kind, SurfaceNodeKind::FunctorPattern))
+        })
+        .map_or(0, |pattern| {
+            leaf_token_texts(ast, pattern)
+                .iter()
+                .filter(|token| parameters.iter().any(|parameter| parameter == *token))
+                .count()
+        });
+    if direct.iter().any(|token| token == "means") {
+        let formula_definiens = surface_nodes_with_kind(ast, SurfaceNodeKind::FormulaDefiniens);
+        if !properties.is_empty()
+            || !matches!(formula_definiens.as_slice(), [(_, node)] if !subtree_has_recovery(ast, node))
+            || arity != 1
+        {
+            return Some(invalid());
+        }
+        let conditions = surface_nodes_with_kind(ast, SurfaceNodeKind::CorrectnessCondition)
+            .into_iter()
+            .filter_map(|(_, condition)| direct_token_texts(ast, condition).into_iter().next())
+            .collect::<Vec<_>>();
+        return Some(match conditions.as_slice() {
+            [existence, uniqueness] if existence == "existence" && uniqueness == "uniqueness" => {
+                Vec::new()
+            }
+            [] => vec!["functors.means.missing_correctness".to_owned()],
+            _ => invalid(),
+        });
+    }
+    if !direct.iter().any(|token| token == "equals") {
+        return Some(invalid());
+    }
+    if !properties.is_empty() {
+        let property_kinds = properties
+            .iter()
+            .filter_map(|(_, property)| direct_token_texts(ast, property).into_iter().next())
+            .collect::<Vec<_>>();
+        if property_kinds.as_slice() != ["commutativity"]
+            || properties.iter().any(|(id, property)| {
+                subtree_has_recovery(ast, property)
+                    || !authenticated_local_declaration(
+                        ast,
+                        module,
+                        shells,
+                        symbols,
+                        *id,
+                        property,
+                        DeclarationShellKind::PropertyClause,
+                        SymbolKind::Attribute,
+                        DefinitionKind::Attribute,
+                        true,
+                    )
+            })
+        {
+            return Some(invalid());
+        }
+        return Some(match arity {
+            2 => Vec::new(),
+            1 => vec!["functors.property.arity_mismatch".to_owned()],
+            _ => invalid(),
+        });
+    }
+    let result_type_matches = (|| {
+        let children = structural_child_ids(ast, definition);
+        let (return_id, return_node) = children.iter().find_map(|id| {
+            ast.node(*id)
+                .filter(|node| matches!(node.kind, SurfaceNodeKind::TypeExpression))
+                .map(|node| (*id, node))
+        })?;
+        let definiens = children.iter().find_map(|id| {
+            ast.node(*id)
+                .filter(|node| matches!(node.kind, SurfaceNodeKind::TermDefiniens))
+        })?;
+        let parameter_name = leaf_token_texts(ast, definiens)
+            .into_iter()
+            .find(|token| token != ";")?;
+        let (parameter_id, parameter_node) =
+            surface_nodes_with_kind(ast, SurfaceNodeKind::QualifiedVariableSegment)
+                .into_iter()
+                .find(|(_, segment)| {
+                    direct_token_texts(ast, segment)
+                        .iter()
+                        .take_while(|token| token.as_str() != "be" && token.as_str() != "being")
+                        .any(|token| token == &parameter_name)
+                })
+                .and_then(|(_, segment)| {
+                    structural_child_ids(ast, segment)
+                        .into_iter()
+                        .find_map(|id| {
+                            ast.node(id)
+                                .filter(|node| matches!(node.kind, SurfaceNodeKind::TypeExpression))
+                                .map(|node| (id, node))
+                        })
+                })?;
+        let parameter = super::source_reserve::extract_builtin_source_type_expression(
+            ast,
+            parameter_node,
+            module,
+            symbols,
+        )
+        .ok()?;
+        let result = super::source_reserve::extract_builtin_source_type_expression(
+            ast,
+            return_node,
+            module,
+            symbols,
+        )
+        .ok()?;
+        let matches = parameter.head == result.head;
+        TypeNormalizer::default()
+            .normalize(
+                symbols,
+                [
+                    TypeExpressionInput::new(
+                        surface_site(parameter_id),
+                        parameter.range,
+                        parameter.spelling,
+                        parameter.head,
+                    ),
+                    TypeExpressionInput::new(
+                        surface_site(return_id),
+                        result.range,
+                        result.spelling,
+                        result.head,
+                    ),
+                ],
+            )
+            .diagnostics()
+            .is_empty()
+            .then_some(matches)
+    })();
+    Some(match result_type_matches {
+        Some(true) => Vec::new(),
+        Some(false) => vec!["functors.equals.result_type_mismatch".to_owned()],
+        None => invalid(),
+    })
 }
 
 #[cfg(test)]

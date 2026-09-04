@@ -1,10 +1,92 @@
 use super::type_elaboration::{
     SOURCE_PREDICATE_DEFINITION_TEXT, SourcePredicateDefinitionRouteMutation,
     source_predicate_definition_output, source_predicate_definition_output_with_mutation,
+    step5c5_predicate_semantics_detail_keys,
 };
 
 const TASK259_CASE: &str = "pass_type_elaboration_predicate_definition_payload_001";
 const TASK260_MIXED_CASE: &str = "fail_type_elaboration_predicate_functor_definition_gap_001";
+
+#[test]
+fn step5c5_predicate_semantics_require_authenticated_binary_properties() {
+    let pass = include_str!(concat!(
+        env!("CARGO_MANIFEST_DIR"),
+        "/../../tests/miz/pass/predicates/pass_type_elaboration_pred_properties_declaration_001.miz"
+    ));
+    let fail = include_str!(concat!(
+        env!("CARGO_MANIFEST_DIR"),
+        "/../../tests/miz/fail/predicates/fail_type_elaboration_pred_property_arity_mismatch_001.miz"
+    ));
+    let (pass_ast, pass_module, pass_shells, pass_symbols) =
+        task253_ast_from_source_text(pass, 505_000);
+    assert_eq!(
+        step5c5_predicate_semantics_detail_keys(
+            &pass_ast,
+            &pass_module,
+            &pass_shells,
+            &pass_symbols
+        ),
+        Some(Vec::new())
+    );
+
+    let (fail_ast, fail_module, fail_shells, fail_symbols) =
+        task253_ast_from_source_text(fail, 505_001);
+    let mismatch = Some(vec!["predicates.property.arity_mismatch".to_owned()]);
+    assert_eq!(
+        step5c5_predicate_semantics_detail_keys(
+            &fail_ast,
+            &fail_module,
+            &fail_shells,
+            &fail_symbols
+        ),
+        mismatch
+    );
+    assert_ne!(
+        step5c5_predicate_semantics_detail_keys(
+            &pass_ast,
+            &pass_module,
+            &fail_shells,
+            &fail_symbols
+        ),
+        Some(Vec::new())
+    );
+    let changed_kind = rebuild_surface_ast_replacing_kind(
+        &pass_ast,
+        SurfaceNodeKind::PredicatePattern,
+        SurfaceNodeKind::TermList,
+    );
+    assert_ne!(
+        step5c5_predicate_semantics_detail_keys(
+            &changed_kind,
+            &pass_module,
+            &pass_shells,
+            &pass_symbols
+        ),
+        Some(Vec::new())
+    );
+    let recovered = rebuild_surface_ast_recovering_first_token_in_kind(
+        &fail_ast,
+        SurfaceNodeKind::PredicateDefinition,
+    );
+    assert_ne!(
+        step5c5_predicate_semantics_detail_keys(
+            &recovered,
+            &fail_module,
+            &fail_shells,
+            &fail_symbols
+        ),
+        mismatch
+    );
+
+    let widened = fail
+        .replacen("let X be set", "let X, Y be set", 1)
+        .replacen("pred SoloDef: solo X", "pred SoloDef: X solo Y", 1);
+    let (ast, module, shells, symbols) = task253_ast_from_source_text(&widened, 505_002);
+    assert_ne!(
+        step5c5_predicate_semantics_detail_keys(&ast, &module, &shells, &symbols),
+        mismatch
+    );
+}
 
 #[test]
 fn task259_real_source_surface_resolver_and_lower_bundle_is_exact() {

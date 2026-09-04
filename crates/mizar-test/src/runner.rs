@@ -727,7 +727,7 @@ use type_elaboration::{
     assert_source_reserve_core_summary_readiness, assert_source_reserve_handoff,
     expected_type_elaboration_detail_keys, extract_builtin_source_reserve_declarations,
     is_active_type_elaboration, is_step5c1_workspace_member, is_step5c2_workspace_member,
-    is_step5c3_workspace_member, is_step5c4_workspace_member,
+    is_step5c3_workspace_member, is_step5c4_workspace_member, is_step5c5_workspace_member,
     source_application_transport_detail_keys, source_atomic_formula_transport_detail_keys,
     source_attribute_definition_transport_detail_keys, source_attribute_detail_keys,
     source_attribute_semantics_detail_keys, source_binding_context_detail_keys,
@@ -865,8 +865,9 @@ use type_elaboration::{
     source_two_edge_local_object_mode_reserved_variable_membership_detail_keys,
     source_two_edge_local_object_mode_reserved_variable_type_assertion_detail_keys,
     source_two_edge_local_object_mode_two_hop_asserted_head_detail_keys,
-    source_type_application_detail_keys, type_elaboration_failure_diagnostic,
-    validate_active_type_elaboration_tags,
+    source_type_application_detail_keys, step5c5_functor_duplicate_detail_keys,
+    step5c5_functor_semantics_detail_keys, step5c5_predicate_semantics_detail_keys,
+    type_elaboration_failure_diagnostic, validate_active_type_elaboration_tags,
 };
 
 const ACTIVE_PARSE_ONLY_TAG: &str = "active_parse_only";
@@ -2140,6 +2141,24 @@ fn type_elaboration_detail_keys(
             .map(|key| format!("type_elaboration.lower_stage.{key}"))
             .collect();
     }
+    if is_step5c5_workspace_member(workspace_root, case) {
+        if let Some(keys) = step5c5_functor_duplicate_detail_keys(
+            &ast,
+            &resolver.module,
+            &resolver.shells,
+            &resolver.env,
+            &resolver.detail_keys,
+        ) {
+            return keys;
+        }
+        if !resolver.detail_keys.is_empty() {
+            return resolver
+                .detail_keys
+                .into_iter()
+                .map(|key| format!("type_elaboration.lower_stage.{key}"))
+                .collect();
+        }
+    }
     let symbols = if source_text.as_ref() == type_elaboration::SOURCE_STATEMENT_B5B_TEXT {
         augment_type_elaboration_import_summaries_with_imported_public_theorem_label(
             &ast,
@@ -2149,6 +2168,23 @@ fn type_elaboration_detail_keys(
     } else {
         augment_type_elaboration_import_summaries(&ast, &resolver.module, resolver.env.clone())
     };
+    if is_step5c5_workspace_member(workspace_root, case) {
+        return step5c5_predicate_semantics_detail_keys(
+            &ast,
+            &resolver.module,
+            &resolver.shells,
+            &symbols,
+        )
+        .or_else(|| {
+            step5c5_functor_semantics_detail_keys(
+                &ast,
+                &resolver.module,
+                &resolver.shells,
+                &symbols,
+            )
+        })
+        .unwrap_or_else(|| vec!["type_elaboration.checker.step5c5.invalid_payload".to_owned()]);
+    }
     if is_step5c4_workspace_member(workspace_root, case) {
         if let Some(keys) = source_mode_definition_transport_detail_keys(
             &ast,

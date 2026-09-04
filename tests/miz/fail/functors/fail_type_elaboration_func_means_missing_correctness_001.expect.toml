@@ -6,6 +6,7 @@ domain = "functors.means_definition"
 source = "fail_type_elaboration_func_means_missing_correctness_001.miz"
 expected_outcome = "fail"
 expected_phase = "type_check"
+tags = ["active_type_elaboration"]
 failure_category = "type_error"
 stable_detail_key = "functors.means.missing_correctness"
 diagnostic_codes = []

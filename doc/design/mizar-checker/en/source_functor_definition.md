@@ -697,3 +697,10 @@ commit, clean worktree, unchanged protected stash, and fresh post-commit
 inventory selecting the implementation. Implementation has the same review
 and hard-gate requirements plus the projected executable counts and one
 dedicated logical-task commit.
+
+## Step 5C.5 functor semantics
+
+The active source bridge authenticates functor declarations before checking existing source/type
+payloads. A `means` definition requires existence and uniqueness, an `equals` definiens must match
+the declared result type, and commutativity requires binary arity. Builtin bracket pairs add no new
+term representation, and duplicate signatures remain resolver-owned.

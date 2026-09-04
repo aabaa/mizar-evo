@@ -838,3 +838,9 @@ checker library `435/435`, runner library `512/512`, resolver library
 `cargo test`, and all five CLI/count/hash gates. The four independent reviews
 ended with no findings, and all nine hard gates pass with an uncapped
 `100/100`. The task commit and post-commit fresh inventory remain pending.
+
+## Step 5C.5 predicate property semantics
+
+The active source bridge admits unrecovered predicate definitions only after resolver shell and
+symbol authentication. Symmetry and reflexivity require binary arity; unary declarations are
+rejected, while property proof discharge and broader predicate semantics remain outside this slice.

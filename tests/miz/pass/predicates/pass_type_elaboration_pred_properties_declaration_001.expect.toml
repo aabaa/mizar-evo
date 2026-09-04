@@ -6,6 +6,7 @@ domain = "predicates.properties"
 source = "pass_type_elaboration_pred_properties_declaration_001.miz"
 expected_outcome = "pass"
 expected_phase = "type_check"
+tags = ["active_type_elaboration"]
 diagnostic_codes = []
 spec_refs = [
   "spec.en.09.predicates.properties.declaration",

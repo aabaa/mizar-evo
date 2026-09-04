@@ -1,12 +1,203 @@
 use super::type_elaboration::{
     SOURCE_FUNCTOR_DEFINITION_TEXT, SourceFunctorDefinitionRouteMutation,
     source_functor_definition_output, source_functor_definition_output_with_mutation,
+    step5c5_functor_duplicate_detail_keys, step5c5_functor_semantics_detail_keys,
 };
 
 const TASK260_CASE: &str = "pass_type_elaboration_functor_definition_payload_001";
 const TASK260_FUNCTOR_MIXED_CASE: &str =
     "fail_type_elaboration_predicate_functor_definition_gap_001";
 const TASK260_SPEC_REF: &str = "spec.en.checker.type_elaboration.source_functor_definition_payload";
+
+#[test]
+fn step5c5_functor_semantics_reject_malformed_or_unauthenticated_payloads() {
+    let equals = include_str!(concat!(
+        env!("CARGO_MANIFEST_DIR"),
+        "/../../tests/miz/fail/functors/fail_type_elaboration_func_equals_result_type_mismatch_001.miz"
+    ));
+    let (ast, module, shells, symbols) = task253_ast_from_source_text(equals, 505_010);
+    let mismatch = Some(vec!["functors.equals.result_type_mismatch".to_owned()]);
+    assert_eq!(
+        step5c5_functor_semantics_detail_keys(&ast, &module, &shells, &symbols),
+        mismatch
+    );
+    let changed_kind = rebuild_surface_ast_replacing_kind(
+        &ast,
+        SurfaceNodeKind::TypeExpression,
+        SurfaceNodeKind::TermExpression,
+    );
+    assert_ne!(
+        step5c5_functor_semantics_detail_keys(&changed_kind, &module, &shells, &symbols),
+        mismatch
+    );
+    let recovered = rebuild_surface_ast_recovering_first_token_in_kind(
+        &ast,
+        SurfaceNodeKind::FunctorDefinition,
+    );
+    assert_ne!(
+        step5c5_functor_semantics_detail_keys(&recovered, &module, &shells, &symbols),
+        mismatch
+    );
+
+    let bracket = include_str!(concat!(
+        env!("CARGO_MANIFEST_DIR"),
+        "/../../tests/miz/pass/functors/pass_type_elaboration_func_builtin_bracket_pair_001.miz"
+    ));
+    let (bracket_ast, bracket_module, bracket_shells, bracket_symbols) =
+        task253_ast_from_source_text(bracket, 505_011);
+    assert_eq!(
+        step5c5_functor_semantics_detail_keys(
+            &bracket_ast,
+            &bracket_module,
+            &bracket_shells,
+            &bracket_symbols
+        ),
+        Some(Vec::new())
+    );
+    let changed_bracket = rebuild_surface_ast_replacing_kind(
+        &bracket_ast,
+        SurfaceNodeKind::ApplicationTerm,
+        SurfaceNodeKind::TermList,
+    );
+    assert_ne!(
+        step5c5_functor_semantics_detail_keys(
+            &changed_bracket,
+            &bracket_module,
+            &bracket_shells,
+            &bracket_symbols
+        ),
+        Some(Vec::new())
+    );
+    let recovered_theorem = rebuild_surface_ast_recovering_first_token_in_kind(
+        &bracket_ast,
+        SurfaceNodeKind::TheoremItem,
+    );
+    assert_ne!(
+        step5c5_functor_semantics_detail_keys(
+            &recovered_theorem,
+            &bracket_module,
+            &bracket_shells,
+            &bracket_symbols
+        ),
+        Some(Vec::new())
+    );
+    let unbound = bracket.replacen("[x, y]", "[z, y]", 1);
+    let (unbound_ast, unbound_module, unbound_shells, unbound_symbols) =
+        task253_ast_from_source_text(&unbound, 505_012);
+    assert_ne!(
+        step5c5_functor_semantics_detail_keys(
+            &unbound_ast,
+            &unbound_module,
+            &unbound_shells,
+            &unbound_symbols
+        ),
+        Some(Vec::new())
+    );
+    assert_ne!(
+        step5c5_functor_semantics_detail_keys(&ast, &module, &bracket_shells, &bracket_symbols),
+        mismatch
+    );
+}
+
+#[test]
+fn step5c5_functor_missing_conditions_arity_and_duplicate_are_semantic() {
+    let means = include_str!(concat!(
+        env!("CARGO_MANIFEST_DIR"),
+        "/../../tests/miz/fail/functors/fail_type_elaboration_func_means_missing_correctness_001.miz"
+    ));
+    let (ast, module, shells, symbols) = task253_ast_from_source_text(means, 505_020);
+    let missing = Some(vec!["functors.means.missing_correctness".to_owned()]);
+    assert_eq!(
+        step5c5_functor_semantics_detail_keys(&ast, &module, &shells, &symbols),
+        missing
+    );
+    let complete = means.replacen("end;", "  existence;\n  uniqueness;\nend;", 1);
+    let (ast, module, shells, symbols) = task253_ast_from_source_text(&complete, 505_021);
+    assert_ne!(
+        step5c5_functor_semantics_detail_keys(&ast, &module, &shells, &symbols),
+        missing
+    );
+
+    let property = include_str!(concat!(
+        env!("CARGO_MANIFEST_DIR"),
+        "/../../tests/miz/fail/functors/fail_type_elaboration_func_property_arity_mismatch_001.miz"
+    ));
+    let (ast, module, shells, symbols) = task253_ast_from_source_text(property, 505_022);
+    let mismatch = Some(vec!["functors.property.arity_mismatch".to_owned()]);
+    assert_eq!(
+        step5c5_functor_semantics_detail_keys(&ast, &module, &shells, &symbols),
+        mismatch
+    );
+    let widened = property
+        .replacen("let X be set", "let X, Y be set", 1)
+        .replacen("solobox X", "solobox(X,Y)", 1);
+    let (ast, module, shells, symbols) = task253_ast_from_source_text(&widened, 505_023);
+    assert_ne!(
+        step5c5_functor_semantics_detail_keys(&ast, &module, &shells, &symbols),
+        mismatch
+    );
+
+    let duplicate = include_str!(concat!(
+        env!("CARGO_MANIFEST_DIR"),
+        "/../../tests/miz/fail/functors/fail_type_elaboration_func_duplicate_same_signature_001.miz"
+    ));
+    let (ast, module, shells, symbols) = task253_ast_from_source_text(duplicate, 505_024);
+    let resolver_key = vec![
+        "declaration_symbol.signature.same_signature_definition_conflict".to_owned(),
+    ];
+    assert_eq!(
+        step5c5_functor_duplicate_detail_keys(
+            &ast,
+            &module,
+            &shells,
+            &symbols,
+            &resolver_key
+        ),
+        Some(vec!["functors.definition.duplicate_same_signature".to_owned()])
+    );
+    assert_eq!(
+        step5c5_functor_duplicate_detail_keys(&ast, &module, &shells, &symbols, &[]),
+        None
+    );
+}
+
+#[test]
+fn step5c5_unexpected_resolver_diagnostic_stays_lower_stage() {
+    let workspace_root = Path::new(env!("CARGO_MANIFEST_DIR"))
+        .parent()
+        .and_then(Path::parent)
+        .expect("workspace root")
+        .to_path_buf();
+    let config = DiscoveryConfig {
+        workspace_root: workspace_root.clone(),
+        tests_root: workspace_root.join("tests"),
+        manifest_path: workspace_root.join("tests/coverage/spec_trace.toml"),
+        profile: TestProfile::Fast,
+        validation_mode: ValidationMode::Metadata,
+    };
+    let plan = build_test_plan(&config).expect("Step 5C.5 test plan");
+    let active = plan
+        .cases
+        .iter()
+        .find(|case| case.id.0 == "fail_type_elaboration_func_duplicate_same_signature_001")
+        .expect("active duplicate functor");
+    let (ordinal, unexpected) = plan
+        .cases
+        .iter()
+        .enumerate()
+        .find(|(_, case)| case.id.0 == "fail_resolve_same_signature_return_conflict_001")
+        .expect("different resolver conflict");
+    let output = run_frontend(&workspace_root, unexpected, ordinal).expect("frontend output");
+    assert!(output.diagnostics.is_empty());
+    let mut snapshot = None;
+    assert_eq!(
+        type_elaboration_detail_keys(&workspace_root, active, output, &mut snapshot),
+        vec![
+            "type_elaboration.lower_stage.declaration_symbol.signature.same_signature_return_conflict"
+                .to_owned()
+        ]
+    );
+}
 
 #[derive(Debug)]
 enum Task260ExpectedSurfaceKind {
@@ -1400,7 +1591,7 @@ fn task260_route_publishes_no_proof_fact_acceptance_or_vc() {
             .filter(|case| case.source_path.extension().is_some_and(|ext| ext == "miz"))
             .count(),
     ];
-    assert_eq!(active_type_consumer_counts, [233, 233, 233, 228, 233, 233]);
+    assert_eq!(active_type_consumer_counts, [240, 240, 240, 234, 240, 240]);
     assert_eq!(
         (plan.cases.len(), plan.manifest.requirements.len()),
         (558, 499)
@@ -1422,7 +1613,7 @@ fn task260_route_publishes_no_proof_fact_acceptance_or_vc() {
             active_type_elaboration_cases(&plan).count(),
             crate::active_proof_verification_cases(&plan).count(),
         ),
-        (111, 7, 233, 4)
+        (111, 7, 240, 4)
     );
     let type_stage = plan
         .coverage_report

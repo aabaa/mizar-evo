@@ -1,4 +1,10 @@
 use mizar_checker::typed_ast::{TypedNodeId, TypedSiteRef};
+use mizar_resolve::{
+    declarations::{DeclarationShellKind, DeclarationShellSet},
+    env::{DefinitionKind, SymbolEnv, SymbolKind},
+    resolved_ast::ModuleId,
+};
+use mizar_session::SourceAnchor;
 use mizar_syntax::{SurfaceAst, SurfaceNode, SurfaceNodeId, SurfaceNodeKind};
 
 use crate::runner::import_fixtures::module_path_spelling;
@@ -134,6 +140,50 @@ pub(in crate::runner) fn subtree_has_recovery(ast: &SurfaceAst, node: &SurfaceNo
             .iter()
             .filter_map(|child| ast.node(*child))
             .any(|child| subtree_has_recovery(ast, child))
+}
+
+#[allow(clippy::too_many_arguments)] // Rationale: keep all resolver authentication authorities explicit at this shared private seam.
+pub(in crate::runner) fn authenticated_local_declaration(
+    ast: &SurfaceAst,
+    module: &ModuleId,
+    shells: &DeclarationShellSet,
+    symbols: &SymbolEnv,
+    node_id: SurfaceNodeId,
+    node: &SurfaceNode,
+    shell_kind: DeclarationShellKind,
+    symbol_kind: SymbolKind,
+    definition_kind: DefinitionKind,
+    require_no_conflict: bool,
+) -> bool {
+    let shell_is_exact = shells.declarations().iter().any(|shell| {
+        shell.kind() == shell_kind
+            && shell.node_id() == node_id
+            && shell.module() == module
+            && shell.range() == node.range
+            && !shell.recovered()
+    });
+    let entries = symbols
+        .symbols()
+        .iter()
+        .filter(|entry| {
+            entry.kind() == symbol_kind
+                && entry.symbol().module() == module
+                && entry.origin().source_id() == ast.source_id
+                && entry.origin().module_id() == module
+                && entry.origin().anchor() == &SourceAnchor::Range(node.range)
+                && !entry.origin().is_recovered()
+        })
+        .collect::<Vec<_>>();
+    shell_is_exact
+        && entries.len() == 1
+        && symbols
+            .definitions()
+            .by_symbol(entries[0].symbol())
+            .is_some_and(|definition| {
+                definition.kind() == definition_kind
+                    && definition.origin() == entries[0].origin()
+                    && (!require_no_conflict || definition.conflict().is_none())
+            })
 }
 
 pub(in crate::runner) fn is_exact_parser_type_fixtures_import(
