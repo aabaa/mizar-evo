@@ -63,6 +63,7 @@ task 33 で pair が同期済みであるとは、以下をすべて満たすこ
 | `source_property_implementation.md` | `../ja/source_property_implementation.md` | `../en/source_property_implementation.md` | Task-264 Chapters-5/7/13/16 authority、exact means/equals sources/85/56-row AST、resolver property provenance、Task-248P/249PI/252/254/256 association、five-table public ABI、means-only `it`、declared return lookup、pending property obligations、Typed/Resolved ownership、Task-259 isolation、exact consumer/count/exclusion/public enum policy | none |
 | `source_set_term.md` | `../ja/source_set_term.md` | `../en/source_set_term.md` | Task-255/255C1 authority/boundary、seven-table set/choice/qua/generator/type-site/condition/edge/request transport、Task-252/253/254 fingerprint association、exact/synthetic consumer、exclusion、public enum policy | none |
 | `source_structure.md` | `../ja/source_structure.md` | `../en/source_structure.md` | Task-254 authority/boundary、seven-table structure/member/FieldUpdate/edge/request transport、Task-252/253 fingerprint association、exact/synthetic consumer、exclusion、public enum policy | none |
+| `source_structure_semantics.md` | `../ja/source_structure_semantics.md` | `../en/source_structure_semantics.md` | Step 5C.2 bounded source-derived structure semantic checker、exact identity types、immutable output、diagnostic phase/key、public enum policy | none |
 | `source_statement.md` | `../ja/source_statement.md` | `../en/source_statement.md` | Tasks 258A/258B1 authority/boundary、five-table theorem/statement transportとlocal-label/citation composition、BindingEnv/Task-252/256 fingerprint、replay-authenticated resolver input、ownership exclusion、exact dormant consumer、semantic deferral、public enum policy | none |
 | `source_evidence.md` | `../ja/source_evidence.md` | `../en/source_evidence.md` | Task-251 authority/boundary、request/response transport model、Task-249/250 association、catalog/payload validation、ownership、exact consumer、exclusion、public enum policy | none |
 | `source_template.md` | `../ja/source_template.md` | `../en/source_template.md` | Task-277A direct parser-origin five-table transport、targetless provenance、neutral Typed/Resolved ownership、private runner boundary、exclusion、public enum policy | none |
@@ -681,4 +682,3 @@ Completion evidence: [central Task-269SDC historical contract](../../task_contra
 ## Task264D equals selector identity synchronization
 
 本文は英語正本へ移管: [../en/bilingual_sync_audit.md](../en/bilingual_sync_audit.md) / [archive](../../archive/checker_bilingual_sync_audit_sections.md).
-

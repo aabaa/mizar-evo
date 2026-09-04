@@ -7,7 +7,8 @@ source = "pass_type_elaboration_struct_property_member_001.miz"
 expected_outcome = "pass"
 expected_phase = "type_check"
 diagnostic_codes = []
+tags = ["active_type_elaboration"]
 spec_refs = [
   "spec.en.05.structures.definition.properties",
 ]
-notes = "Audit-1 semantic-bridge inactive oracle seed (September 2026 audit wave): binding expectation for the Step-5 semantic bridge; no active runner tag, earns no current credit. A struct definition mixing a field and a property member elaborates; the property member is definable per implementation rather than stored (spec 5.2)."
+notes = "Step 5C.2 active semantic bridge. A struct definition mixing a field and a property member elaborates; the property member is definable per implementation rather than stored (spec 5.2)."

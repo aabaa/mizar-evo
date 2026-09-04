@@ -9,7 +9,8 @@ expected_phase = "type_check"
 failure_category = "type_error"
 stable_detail_key = "structures.inherit.uncovered_base_member"
 diagnostic_codes = []
+tags = ["active_type_elaboration"]
 spec_refs = [
   "spec.en.05.structures.inherit.member_coverage",
 ]
-notes = "Audit-1 semantic-bridge inactive oracle seed (September 2026 audit wave): binding expectation for the Step-5 semantic bridge; no active runner tag, earns no current credit. Every base member must be inherited by name match or rename; an uncovered base field is rejected (spec 5.3; sample sorted.miz comment)."
+notes = "Step 5C.2 active semantic bridge. Every base member must be inherited by name match or rename; an uncovered base field is rejected (spec 5.3; sample sorted.miz comment)."

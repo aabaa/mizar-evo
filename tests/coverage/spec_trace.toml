@@ -1191,19 +1191,7 @@ tests = [
   "tests/miz/fail/types/fail_type_elaboration_local_structure_term_gap_001.expect.toml",
   "tests/miz/fail/types/fail_type_elaboration_mode_structure_definition_gap_001.expect.toml",
 ]
-notes = "Task 254 adds source-transport-only coverage for written structure construction and selector occurrences. Constructor/member/view semantics, field/property identity, coverage/default checks, result typing, facts, and acceptance remain deferred to Task 263."
-
-[[requirement]]
-id = "spec.en.05.structures.with_update.semantic"
-source = "doc/spec/en/05.structures.md"
-section = "5.7 Field Access (Selectors)"
-stage = "proof_verification"
-status = "covered"
-required = true
-coverage = "pass"
-tests = [
-  "tests/miz/pass/structures/pass_proof_verification_struct_with_update_001.expect.toml",
-]
+notes = "Tasks 254/263 provide bounded structure transport. Step 5C.2 activates its exact definition/inheritance/constructor/selector profiles, while these two gap fixtures still stop at missing base-shape/constructor-witness evidence; generalized parameterized/default/imported/coercive structure semantics, result typing, facts, and acceptance remain deferred."
 
 [[requirement]]
 id = "spec.en.06.attribute_definitions.parser"
@@ -2557,6 +2545,18 @@ tests = [
   "tests/miz/pass/parser/pass_parser_selector_updates_001.expect.toml",
   "tests/miz/fail/parser/fail_parser_structure_update_missing_close_001.expect.toml",
   "tests/miz/fail/parser/fail_parser_structure_update_missing_value_001.expect.toml",
+]
+
+[[requirement]]
+id = "spec.en.13.structure_update.semantic"
+source = "doc/spec/en/13.term_expression.md"
+section = "13.3.3 Structure Update"
+stage = "proof_verification"
+status = "covered"
+required = true
+coverage = "pass"
+tests = [
+  "tests/miz/pass/structures/pass_proof_verification_struct_with_update_001.expect.toml",
 ]
 
 [[requirement]]

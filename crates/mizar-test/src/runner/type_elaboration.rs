@@ -25,6 +25,7 @@ mod source_set_term;
 mod source_statement;
 mod source_structure;
 mod source_structure_definition;
+pub(in crate::runner) mod source_structure_semantics;
 #[cfg(test)]
 mod source_template;
 mod source_term;
@@ -32,7 +33,8 @@ mod source_type;
 mod type_assertion_routes;
 
 pub(super) use admission::{
-    is_active_type_elaboration, is_step5c1_workspace_member, validate_active_type_elaboration_tags,
+    is_active_type_elaboration, is_step5c1_workspace_member, is_step5c2_workspace_member,
+    validate_active_type_elaboration_tags,
 };
 #[cfg(test)]
 pub(super) use binary_routes::{
@@ -731,6 +733,7 @@ pub(super) use source_structure_definition::{
     SOURCE_STRUCTURE_DEFINITION_TEXT, SourceStructureDefinitionRouteMutation,
     source_structure_definition_output, source_structure_definition_output_with_mutation,
 };
+pub(super) use source_structure_semantics::source_structure_semantics_detail_keys;
 #[cfg(test)]
 pub(super) use source_template::{
     SOURCE_TEMPLATE_TEXT, source_template_output, source_template_output_with_mutation,

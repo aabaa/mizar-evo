@@ -7,7 +7,8 @@ source = "pass_proof_verification_struct_with_update_001.miz"
 expected_outcome = "pass"
 expected_phase = "vc_generation"
 diagnostic_codes = []
+tags = ["active_proof_verification"]
 spec_refs = [
-  "spec.en.05.structures.with_update.semantic",
+  "spec.en.13.structure_update.semantic",
 ]
-notes = "Audit-1 semantic-bridge inactive oracle seed (September 2026 audit wave): binding expectation for the Step-5 semantic bridge; no active runner tag, earns no current credit. A with-update produces a copy whose updated selector reads back the new value (spec 5.7)."
+notes = "Step 5C.2 active semantic bridge. A with-update produces a new immutable value whose updated selector reads back the new value (spec 13.3.3)."

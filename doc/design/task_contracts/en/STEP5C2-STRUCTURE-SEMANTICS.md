@@ -11,7 +11,7 @@ Owning plans: [mizar-checker](../../mizar-checker/en/00.crate_plan.md#task-index
 
 | Field | Value |
 |---|---|
-| Status | Ready: the user authorized the no-spec-change test-intent and trace repair on 2026-09-04; implementation not yet started |
+| Status | Complete (2026-09-04): all 14 mapped oracles execute through the frozen checker/Core boundary |
 | Purpose | Execute all 14 Step 5C.2 oracle pairs through source-derived checker and Core seams |
 | Tier | Full: structure semantics, Core normalization, and inactive expectations change |
 | Owner / consumer | `mizar-checker` owns definition, inheritance, type, constructor, selector, and update validity; `mizar-core` owns definitional term normalization; `mizar-test` only extracts authenticated syntax-free inputs, invokes, and compares |
@@ -42,11 +42,15 @@ corpus map without changing stage, status, outcome, or behavior.
 
 The runner converts an unrecovered `SurfaceAst` to source-order syntax-free
 records carrying range, spelling, ordinal, and available resolver `SymbolId`.
-The checker authenticates source/module, unique resolver entries, symbol kinds,
-ranges, and order against `SymbolEnv`; missing, extra, duplicate, reordered,
-recovered, cross-module, unresolved-required, or unsupported shapes fail closed.
-Spelling never substitutes for identity; unresolved mapping/selector spelling is
-retained only for its frozen negative key.
+The checker authenticates resolver-backed structure/member records against
+`SymbolEnv`. Exact-slice variables are not resolver symbols: the runner assigns
+the private `step5c2/variable` source-local identity form, and the checker
+authenticates its module/local/FQN encoding, unique identity and spelling,
+range/order, declared type, and every declaration/reference match. Missing,
+extra, duplicate, reordered, recovered, cross-module, unresolved-required, or
+unsupported shapes fail closed. For resolver-backed records, spelling never
+substitutes for identity; unresolved mapping/selector spelling is retained only
+for its frozen negative key.
 
 `source_structure_semantics.rs` adds private-field, getter-only records under
 these public entry points (public enums are `#[non_exhaustive]`):
@@ -112,16 +116,36 @@ proof reruns checker/Core and requires identical zero-VC receipts.
 Rust scope is one checker module/tests/inventory lint, bounded private runner
 extraction/admission/dispatch/count tests, and one Core normalizer/tests/lint.
 Data scope is the authorized diamond `.miz`; `with` sidecar/trace/map/corpus ref;
-14 tags/notes; this pair/owner links/todo; and Chapter 5/13 audit rows.
+the now-bounded Chapter 5 payload-gap trace note; 14 tags/notes; this pair/owner
+links/todo; and Chapter 5/13 audit rows.
 Prior Task 254/263 sections and completed contracts remain frozen.
 
-Except for the exact authorized diamond source and `with` reference repair, do
-not edit `doc/spec`, any `.miz`, expectation outcomes/phases/keys/backlinks,
-trace content, activation-map content/order, public diagnostics, soundness
-cases, legacy ledgers, completed addenda, or `doc/design/archive/`. Task 277B
-stays not-ready/zero-credit. Independent spec/boundary, test, implementation,
-and source/docs/API reviews must end without findings. Focused tests precede
+Except for the exact authorized diamond source, `with` reference repair, and
+the finding-required payload-gap note clarification, do not edit `doc/spec`, any
+`.miz`, expectation outcomes/phases/keys/backlinks, other trace content,
+activation-map content/order, public diagnostics, soundness cases, legacy
+ledgers, completed addenda, or `doc/design/archive/`. Task 277B stays
+not-ready/zero-credit. Independent spec/boundary, test, implementation, and
+source/docs/API reviews must end without findings. Focused tests precede
 workspace fmt, warnings-denied Clippy, full tests, metadata/link/ledger lint,
 deterministic reruns, exact 14/120 joins, protected hashes, nine hard gates and
 an independent score of at least 90/100. Exit requires an exact task-only local
 commit, clean postcommit proof, and throughput `2 semantic-credit tasks/week`.
+
+## Completion evidence
+
+All 14 mapped oracles execute: type elaboration is 223/223 overall and proof
+verification is 3/3, including unchanged Task-180 behavior. Checker tests are
+600/600, Core tests 169/169, and the mizar-test library 670/670. Syntax smoke
+remains 360 cases with 353 passes, seven expected rejections, and no failures.
+Workspace fmt, warnings-denied Clippy, all-feature tests, and metadata/link/
+ledger lints pass; the 14/120 activation join is exact and deterministic.
+
+Independent specification/boundary, test-sufficiency, implementation, and
+source/docs/API reviews ended without findings. All nine hard gates pass; the
+independent uncapped quality score is 100/100. The only `.miz` edit is the
+authorized diamond repair, only the 14 mapped sidecars are activated, and the
+authorized update-reference move changes no trace outcome. `doc/spec`, public
+diagnostic codes, archive (13 files), and the 23-case certificate corpus remain
+unchanged. Broader structure semantics stay deferred, Task 277B remains
+not-ready/zero-credit, and throughput is `2 semantic-credit tasks/week`.

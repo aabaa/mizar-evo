@@ -179,7 +179,8 @@ top-level public API group:
   `SourceStructureCoreItemAssociation`、
   `SourceStructureCoreItemAssociationTable`、
   `SourceStructureCoreContextHandoff`、`SourceStructureCoreContextError`、
-  `SourceStructureCoreContextProducer`、
+  `SourceStructureCoreContextProducer`、`SourceStructureCoreNormalizer`、
+  `SourceStructureCoreReceipt`、`SourceStructureCoreNormalizationError`、
   `SourcePropertyCarrierCoreContextHandoff`、
   `SourcePropertyCarrierCoreContextError`、
   `SourcePropertyCarrierCoreContextProducer`、

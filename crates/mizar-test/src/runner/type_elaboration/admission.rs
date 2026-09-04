@@ -48,18 +48,97 @@ const STEP5C1_VARIABLE_CASES: [(&str, &str, PipelinePhase, ExpectedOutcome); 6] 
     ),
 ];
 
+const STEP5C2_STRUCTURE_CASES: [(&str, &str, PipelinePhase, ExpectedOutcome); 12] = [
+    (
+        "fail_type_elaboration_struct_constructor_missing_field_001",
+        "tests/miz/fail/structures/fail_type_elaboration_struct_constructor_missing_field_001.miz",
+        PipelinePhase::TypeCheck,
+        ExpectedOutcome::Fail,
+    ),
+    (
+        "fail_type_elaboration_struct_duplicate_member_001",
+        "tests/miz/fail/structures/fail_type_elaboration_struct_duplicate_member_001.miz",
+        PipelinePhase::Resolve,
+        ExpectedOutcome::Fail,
+    ),
+    (
+        "pass_type_elaboration_struct_definition_basic_001",
+        "tests/miz/pass/structures/pass_type_elaboration_struct_definition_basic_001.miz",
+        PipelinePhase::TypeCheck,
+        ExpectedOutcome::Pass,
+    ),
+    (
+        "pass_type_elaboration_struct_property_member_001",
+        "tests/miz/pass/structures/pass_type_elaboration_struct_property_member_001.miz",
+        PipelinePhase::TypeCheck,
+        ExpectedOutcome::Pass,
+    ),
+    (
+        "pass_type_elaboration_struct_dependent_bracket_params_001",
+        "tests/miz/pass/structures/pass_type_elaboration_struct_dependent_bracket_params_001.miz",
+        PipelinePhase::TypeCheck,
+        ExpectedOutcome::Pass,
+    ),
+    (
+        "fail_type_elaboration_struct_diamond_inconsistent_001",
+        "tests/miz/fail/structures/fail_type_elaboration_struct_diamond_inconsistent_001.miz",
+        PipelinePhase::TypeCheck,
+        ExpectedOutcome::Fail,
+    ),
+    (
+        "pass_type_elaboration_struct_diamond_consistent_001",
+        "tests/miz/pass/structures/pass_type_elaboration_struct_diamond_consistent_001.miz",
+        PipelinePhase::TypeCheck,
+        ExpectedOutcome::Pass,
+    ),
+    (
+        "pass_type_elaboration_struct_inherit_from_set_001",
+        "tests/miz/pass/structures/pass_type_elaboration_struct_inherit_from_set_001.miz",
+        PipelinePhase::TypeCheck,
+        ExpectedOutcome::Pass,
+    ),
+    (
+        "fail_type_elaboration_struct_inherit_uncovered_member_001",
+        "tests/miz/fail/structures/fail_type_elaboration_struct_inherit_uncovered_member_001.miz",
+        PipelinePhase::TypeCheck,
+        ExpectedOutcome::Fail,
+    ),
+    (
+        "fail_type_elaboration_struct_inherit_unknown_source_001",
+        "tests/miz/fail/structures/fail_type_elaboration_struct_inherit_unknown_source_001.miz",
+        PipelinePhase::TypeCheck,
+        ExpectedOutcome::Fail,
+    ),
+    (
+        "pass_type_elaboration_struct_inherit_rename_001",
+        "tests/miz/pass/structures/pass_type_elaboration_struct_inherit_rename_001.miz",
+        PipelinePhase::TypeCheck,
+        ExpectedOutcome::Pass,
+    ),
+    (
+        "fail_type_elaboration_struct_unknown_selector_001",
+        "tests/miz/fail/structures/fail_type_elaboration_struct_unknown_selector_001.miz",
+        PipelinePhase::TypeCheck,
+        ExpectedOutcome::Fail,
+    ),
+];
+
 pub(in crate::runner) fn is_active_type_elaboration(case: &TestCase) -> bool {
     let exact_step5c1 = step5c1_case(case).is_some()
+        && case.expectation.tags.as_slice() == [ACTIVE_TYPE_ELABORATION_TAG];
+    let exact_step5c2 = step5c2_case(case).is_some()
         && case.expectation.tags.as_slice() == [ACTIVE_TYPE_ELABORATION_TAG];
     has_active_type_elaboration_tag(case)
         && case.expectation.stage == Stage::TypeElaboration
         && (case.expectation.expected_phase == Some(PipelinePhase::TypeCheck)
-            || exact_step5c1 && case.expectation.expected_phase == Some(PipelinePhase::Resolve))
+            || (exact_step5c1 || exact_step5c2)
+                && case.expectation.expected_phase == Some(PipelinePhase::Resolve))
         && matches!(
             case.expectation.expected_outcome,
             ExpectedOutcome::Pass | ExpectedOutcome::Fail
         )
         && (!is_step5c1_id(case) || exact_step5c1)
+        && (!is_step5c2_id(case) || exact_step5c2)
         && case
             .source_path
             .extension()
@@ -78,13 +157,12 @@ pub(in crate::runner) fn validate_active_type_elaboration_tags(
     plan: &TestPlan,
 ) -> Vec<ValidationDiagnostic> {
     let mut diagnostics = Vec::new();
-    for case in plan
-        .cases
-        .iter()
-        .filter(|case| has_active_type_elaboration_tag(case) || is_step5c1_id(case))
-    {
+    for case in plan.cases.iter().filter(|case| {
+        has_active_type_elaboration_tag(case) || is_step5c1_id(case) || is_step5c2_id(case)
+    }) {
         if !is_active_type_elaboration(case)
             || is_step5c1_id(case) && !is_step5c1_workspace_member(workspace_root, case)
+            || is_step5c2_id(case) && !is_step5c2_workspace_member(workspace_root, case)
         {
             diagnostics.push(
                 ValidationDiagnostic::error(
@@ -92,7 +170,7 @@ pub(in crate::runner) fn validate_active_type_elaboration_tags(
                     "type_elaboration",
                     "E-TYPE-ELABORATION-ACTIVE-GATE",
                     format!("type_elaboration.active_gate.{}", case.id.0),
-                    "active_type_elaboration cases must be .miz pass/fail expectations at stage type_elaboration and phase type_check; only the exact Step 5C.1 fail inventory may use phase resolve",
+                    "active_type_elaboration cases must be exact .miz pass/fail expectations at stage type_elaboration; only the frozen Step 5C.1/5C.2 inventories may use phase resolve",
                 ),
             );
         }
@@ -133,7 +211,53 @@ pub(in crate::runner) fn validate_active_type_elaboration_tags(
             }
         }
     }
+    validate_exact_inventory(
+        workspace_root,
+        plan,
+        &STEP5C2_STRUCTURE_CASES,
+        "E-TYPE-ELABORATION-STEP5C2-INVENTORY",
+        "step5c2_inventory",
+    )
+    .into_iter()
+    .for_each(|diagnostic| diagnostics.push(diagnostic));
     diagnostics
+}
+
+fn validate_exact_inventory(
+    workspace_root: &Path,
+    plan: &TestPlan,
+    rows: &[(&str, &str, PipelinePhase, ExpectedOutcome)],
+    code: &'static str,
+    key_prefix: &str,
+) -> Vec<ValidationDiagnostic> {
+    if !rows
+        .iter()
+        .any(|(_, source, _, _)| workspace_root.join(source).is_file())
+    {
+        return Vec::new();
+    }
+    rows.iter()
+        .filter_map(|(id, source, _, _)| {
+            let count = plan
+                .cases
+                .iter()
+                .filter(|case| {
+                    case.id.0 == *id
+                        && workspace_relative_source(workspace_root, &case.source_path)
+                            .is_some_and(|actual| actual == *source)
+                })
+                .count();
+            (count != 1).then(|| {
+                ValidationDiagnostic::error(
+                    std::path::Path::new(source),
+                    "type_elaboration",
+                    code,
+                    format!("type_elaboration.{key_prefix}.{id}"),
+                    format!("Step 5C.2 structure route row `{id}` must occur exactly once; found {count}"),
+                )
+            })
+        })
+        .collect()
 }
 
 fn is_step5c1_id(case: &TestCase) -> bool {
@@ -156,6 +280,36 @@ fn step5c1_case(
         })
 }
 
+fn is_step5c2_id(case: &TestCase) -> bool {
+    STEP5C2_STRUCTURE_CASES
+        .iter()
+        .any(|(id, _, _, _)| case.id.0 == *id)
+}
+
+fn step5c2_case(
+    case: &TestCase,
+) -> Option<(&'static str, &'static str, PipelinePhase, ExpectedOutcome)> {
+    STEP5C2_STRUCTURE_CASES
+        .iter()
+        .copied()
+        .find(|(id, source, phase, outcome)| {
+            case.id.0 == *id
+                && case.source_path.ends_with(source)
+                && case.expectation.expected_phase == Some(*phase)
+                && case.expectation.expected_outcome == *outcome
+        })
+}
+
+pub(in crate::runner) fn is_step5c2_workspace_member(
+    workspace_root: &Path,
+    case: &TestCase,
+) -> bool {
+    step5c2_case(case).is_some_and(|(_, source, _, _)| {
+        workspace_relative_source(workspace_root, &case.source_path)
+            .is_some_and(|actual| actual == source)
+    })
+}
+
 pub(in crate::runner) fn is_step5c1_workspace_member(
     workspace_root: &Path,
     case: &TestCase,
@@ -175,7 +329,8 @@ mod tests {
     use crate::harness::{DiscoveryConfig, TestProfile, ValidationMode, build_test_plan};
 
     use super::{
-        STEP5C1_VARIABLE_CASES, is_active_type_elaboration, validate_active_type_elaboration_tags,
+        STEP5C1_VARIABLE_CASES, STEP5C2_STRUCTURE_CASES, is_active_type_elaboration,
+        validate_active_type_elaboration_tags,
     };
 
     #[test]
@@ -188,6 +343,122 @@ mod tests {
                 .collect::<BTreeSet<_>>()
                 .len(),
             6
+        );
+    }
+
+    #[test]
+    fn step5c2_inventory_has_twelve_unique_id_source_pairs() {
+        assert_eq!(STEP5C2_STRUCTURE_CASES.len(), 12);
+        assert_eq!(
+            STEP5C2_STRUCTURE_CASES
+                .iter()
+                .map(|(id, source, _, _)| (*id, *source))
+                .collect::<BTreeSet<_>>()
+                .len(),
+            12
+        );
+    }
+
+    #[test]
+    fn step5c2_exact_type_rows_execute_with_frozen_detail_keys() {
+        let report = crate::runner::run_type_elaboration_corpus(&config()).expect("type report");
+        let expected = [
+            Some("structures.constructor.missing_field_argument"),
+            Some("structures.definition.duplicate_member"),
+            None,
+            None,
+            None,
+            Some("structures.inherit.diamond_inconsistency"),
+            None,
+            None,
+            Some("structures.inherit.uncovered_base_member"),
+            Some("structures.inherit.unknown_source_member"),
+            None,
+            Some("structures.selector.unknown_field"),
+        ];
+        for ((id, _, _, _), detail_key) in STEP5C2_STRUCTURE_CASES.iter().zip(expected) {
+            let matches = report
+                .results
+                .iter()
+                .filter(|result| result.id.0 == *id)
+                .collect::<Vec<_>>();
+            assert_eq!(matches.len(), 1, "{id}");
+            let result = matches[0];
+            assert_eq!(
+                result.status,
+                crate::runner::TypeElaborationCaseStatus::Passed,
+                "{id}: {:?}",
+                result.actual_detail_keys
+            );
+            assert_eq!(
+                result.actual_detail_keys,
+                detail_key
+                    .into_iter()
+                    .map(str::to_owned)
+                    .collect::<Vec<_>>(),
+                "{id}"
+            );
+        }
+    }
+
+    #[test]
+    fn step5c2_resolve_admission_and_inventory_fail_closed() {
+        let root = workspace_root();
+        let mut plan = build_test_plan(&config()).unwrap();
+        let original = plan
+            .cases
+            .iter()
+            .find(|case| case.id.0 == STEP5C2_STRUCTURE_CASES[1].0)
+            .unwrap()
+            .clone();
+        assert!(is_active_type_elaboration(&original));
+
+        let mut duplicate_tag = original.clone();
+        duplicate_tag
+            .expectation
+            .tags
+            .push("active_type_elaboration".to_owned());
+        assert!(!is_active_type_elaboration(&duplicate_tag));
+
+        let mut wrong_phase = original.clone();
+        wrong_phase.expectation.expected_phase = Some(PipelinePhase::TypeCheck);
+        assert!(!is_active_type_elaboration(&wrong_phase));
+
+        let mut wrong_outcome = original.clone();
+        wrong_outcome.expectation.expected_outcome = ExpectedOutcome::Pass;
+        assert!(!is_active_type_elaboration(&wrong_outcome));
+
+        let mut alias = original.clone();
+        alias.source_path = root.join(format!("alias/{}", STEP5C2_STRUCTURE_CASES[1].1));
+        assert!(alias.source_path.ends_with(STEP5C2_STRUCTURE_CASES[1].1));
+        plan.cases.push(alias);
+        assert!(
+            validate_active_type_elaboration_tags(&root, &plan)
+                .iter()
+                .any(|diagnostic| diagnostic.code.0 == "E-TYPE-ELABORATION-ACTIVE-GATE")
+        );
+
+        let duplicate = plan
+            .cases
+            .iter()
+            .find(|case| case.id.0 == STEP5C2_STRUCTURE_CASES[0].0)
+            .unwrap()
+            .clone();
+        plan.cases.push(duplicate);
+        assert!(
+            validate_active_type_elaboration_tags(&root, &plan)
+                .iter()
+                .any(|diagnostic| { diagnostic.code.0 == "E-TYPE-ELABORATION-STEP5C2-INVENTORY" })
+        );
+
+        plan.cases
+            .retain(|case| case.id.0 != STEP5C2_STRUCTURE_CASES[2].0);
+        assert!(
+            validate_active_type_elaboration_tags(&root, &plan)
+                .iter()
+                .any(|diagnostic| diagnostic
+                    .detail_key
+                    .ends_with(STEP5C2_STRUCTURE_CASES[2].0))
         );
     }
 

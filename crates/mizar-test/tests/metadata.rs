@@ -3164,7 +3164,7 @@ fn active_runner_reports_are_byte_stable_across_repeated_runs() {
     let root = config.workspace_root.clone();
     let plan = build_test_plan(&config).unwrap();
 
-    assert_eq!(active_proof_verification_cases(&plan).count(), 1);
+    assert_eq!(active_proof_verification_cases(&plan).count(), 3);
 
     let parse_first = canonical_parse_only_report(&run_parse_only_corpus(&config).unwrap(), &root);
     let parse_second = canonical_parse_only_report(&run_parse_only_corpus(&config).unwrap(), &root);
@@ -5572,8 +5572,8 @@ fn repository_type_elaboration_runner_executes_active_source_derived_seeds() {
     let report = run_type_elaboration_corpus(&config).unwrap();
 
     assert_eq!(report.error_count(), 0, "{:#?}", report.diagnostics);
-    assert_eq!(report.results.len(), 211);
-    assert_eq!(report.passed_count(), 211);
+    assert_eq!(report.results.len(), 223);
+    assert_eq!(report.passed_count(), 223);
     assert_eq!(report.failed_count(), 0);
     let task31_result = report
         .results
@@ -10520,13 +10520,13 @@ fn type_elaboration_cli_reports_active_runner_summary() {
         String::from_utf8_lossy(&output.stderr)
     );
     let stdout = String::from_utf8_lossy(&output.stdout);
-    assert!(stdout.contains("type-elaboration cases: 211"));
-    assert!(stdout.contains("passed: 211"));
+    assert!(stdout.contains("type-elaboration cases: 223"));
+    assert!(stdout.contains("passed: 223"));
     assert!(stdout.contains("failed: 0"));
 }
 
 #[test]
-fn proof_verification_cli_reports_exact_task180_summary() {
+fn proof_verification_cli_reports_task180_and_step5c2_summary() {
     let output = std::process::Command::new(env!("CARGO_BIN_EXE_mizar-test"))
         .arg("proof-verification")
         .arg("--workspace-root")
@@ -10541,8 +10541,8 @@ fn proof_verification_cli_reports_exact_task180_summary() {
         String::from_utf8_lossy(&output.stderr)
     );
     let stdout = String::from_utf8_lossy(&output.stdout);
-    assert!(stdout.contains("proof-verification cases: 1"));
-    assert!(stdout.contains("passed: 1"));
+    assert!(stdout.contains("proof-verification cases: 3"));
+    assert!(stdout.contains("passed: 3"));
     assert!(stdout.contains("failed: 0"));
 }
 

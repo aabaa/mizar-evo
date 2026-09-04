@@ -98,9 +98,9 @@ is its task 1). "Next work" points into the
 | mizar-parser | Grammar, Pratt parsing, syntax recovery, parse-only corpus | [x] Tasks 1-48 plus bounded `PARSER-RECOVERY-B1B1P-P1` and Step 5A.4-5A.8 complete | No inferred Task 49; human-owned P-265-47D remains separate | [todo](./mizar-parser/en/todo.md) |
 | mizar-frontend | Source loading and phase 1-3 orchestration | [x] prior milestone plus Step 5A.2/5A.3/5A.6/5A.8 increments | — | [todo](./mizar-frontend/en/todo.md) |
 | mizar-resolve | Module graph, namespaces, symbols, labels, signatures | [~] prior milestone plus [Step 5C.1](./task_contracts/en/STEP5C1-VARIABLE-SEMANTICS.md) variable resolution | Preserve owner boundaries; next Step 5C resolver work follows the activation map | [todo](./mizar-resolve/en/todo.md) |
-| mizar-test | Corpus discovery, expectations, staged model, traceability, harness | [~] prior milestone plus [Step 5C.1](./task_contracts/en/STEP5C1-VARIABLE-SEMANTICS.md) formula/type activation | Start Step 5C.2 in activation-map order | [todo](./mizar-test/en/todo.md) |
-| mizar-checker | Type checking, cluster/registration resolution, overload resolution | [~] prior milestone plus [Step 5C.1](./task_contracts/en/STEP5C1-VARIABLE-SEMANTICS.md) variable semantics | Start Step 5C.2; Task 277B remains not-ready/zero-credit | [todo](./mizar-checker/en/todo.md) |
-| mizar-core | Elaboration, binder-normalized core logic, control-flow preparation | [x] core/control-flow milestone, tasks 27-32 complete | step-5 Tasks 33-53 under the Task-32 graph | [todo](./mizar-core/en/todo.md) |
+| mizar-test | Corpus discovery, expectations, staged model, traceability, harness | [~] prior milestone plus [Step 5C.1](./task_contracts/en/STEP5C1-VARIABLE-SEMANTICS.md) and [Step 5C.2](./task_contracts/en/STEP5C2-STRUCTURE-SEMANTICS.md) semantic activations | Start Step 5C.3 in activation-map order | [todo](./mizar-test/en/todo.md) |
+| mizar-checker | Type checking, cluster/registration resolution, overload resolution | [~] prior milestone plus [Step 5C.1](./task_contracts/en/STEP5C1-VARIABLE-SEMANTICS.md) variable and [Step 5C.2](./task_contracts/en/STEP5C2-STRUCTURE-SEMANTICS.md) structure semantics | Start Step 5C.3; Task 277B remains not-ready/zero-credit | [todo](./mizar-checker/en/todo.md) |
+| mizar-core | Elaboration, binder-normalized core logic, control-flow preparation | [x] core/control-flow milestone, tasks 27-32, plus [Step 5C.2](./task_contracts/en/STEP5C2-STRUCTURE-SEMANTICS.md) bounded normalization | step-5 Tasks 33-53 under the Task-32 graph | [todo](./mizar-core/en/todo.md) |
 | mizar-vc | VC IR, VC generation, deterministic pre-ATP discharge | [x] exact source-derived contradiction VC integration complete through task 31 | dependency-paced VC Tasks 32-55; VC 40/53 and S1 gates remain explicit | [todo](./mizar-vc/en/todo.md) |
 | mizar-kernel | Trusted certificate parsing and checking | [x] SAT-backed kernel milestone complete | step 4 task 35 resolved; task 32 parked; tasks 30-34 resolved | [todo](./mizar-kernel/en/todo.md) |
 | mizar-atp | ATP encoding, backend execution, portfolio candidates | [x] candidate-evidence milestone complete through task 29 | step 7 | [todo](./mizar-atp/en/todo.md) |
@@ -565,8 +565,9 @@ activation-map ledger; every 5C task also requires 5B.2.
    widening/narrowing-justification, `take` exemplification, inline
    `deffunc`/`defpred`, reserve implicit typing/explicit override, and
    duplicate-generalization rejection. Deps: 5A.2.
-2. [~] **5C.2 — Structures** (`mizar-checker`, `mizar-core`; spec
-   ch. 5). Requirements: `spec.en.05.structures.*` (11 ids). Targets: 14
+2. [x] **5C.2 — Structures** (`mizar-checker`, `mizar-core`; spec
+   ch. 5). Requirements: `spec.en.05.structures.*` (10 ids) plus
+   `spec.en.13.structure_update.semantic`. Targets: 14
    pairs (none gap-blocked). Covers definition fields/properties,
    inheritance (rename, member coverage, from-`set`, diamond
    consistency), dependent bracket parameters, constructors

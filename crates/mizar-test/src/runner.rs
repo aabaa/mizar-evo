@@ -722,7 +722,7 @@ use type_elaboration::{
     assemble_source_reserve_checker_handoff, assert_source_reserve_core_context_readiness,
     assert_source_reserve_core_summary_readiness, assert_source_reserve_handoff,
     expected_type_elaboration_detail_keys, extract_builtin_source_reserve_declarations,
-    is_active_type_elaboration, is_step5c1_workspace_member,
+    is_active_type_elaboration, is_step5c1_workspace_member, is_step5c2_workspace_member,
     source_application_transport_detail_keys, source_atomic_formula_transport_detail_keys,
     source_attribute_definition_transport_detail_keys, source_attribute_detail_keys,
     source_binding_context_detail_keys, source_builtin_binary_term_formula_detail_keys,
@@ -827,7 +827,8 @@ use type_elaboration::{
     source_right_parenthesized_reserved_variable_membership_detail_keys,
     source_set_enumeration_formula_detail_keys, source_set_term_transport_detail_keys,
     source_statement_transport_detail_keys, source_structure_definition_transport_detail_keys,
-    source_structure_transport_detail_keys, source_term_transport_error_detail_keys,
+    source_structure_semantics_detail_keys, source_structure_transport_detail_keys,
+    source_term_transport_error_detail_keys,
     source_three_edge_local_mode_asserted_head_detail_keys,
     source_three_edge_local_mode_radix_asserted_head_detail_keys,
     source_three_edge_local_mode_reserved_variable_equality_detail_keys,
@@ -1834,7 +1835,10 @@ fn run_proof_verification_plan(
     plan: &TestPlan,
 ) -> ProofVerificationRunReport {
     let mut diagnostics = plan.diagnostics.clone();
-    diagnostics.extend(validate_active_proof_verification_tags(plan));
+    diagnostics.extend(validate_active_proof_verification_tags(
+        workspace_root,
+        plan,
+    ));
 
     let mut results = Vec::new();
     for (ordinal, case) in active_proof_verification_cases(plan).enumerate() {
@@ -2076,6 +2080,20 @@ fn type_elaboration_detail_keys(
         return vec!["type_elaboration.lower_stage.declaration_symbol.no_ast".to_owned()];
     };
     let resolver = resolver_symbol_collection(workspace_root, case, &ast);
+    if is_step5c2_workspace_member(workspace_root, case) {
+        if resolver
+            .detail_keys
+            .iter()
+            .any(|key| key != "declaration_symbol.symbol.duplicate_declaration")
+        {
+            return resolver
+                .detail_keys
+                .into_iter()
+                .map(|key| format!("type_elaboration.lower_stage.{key}"))
+                .collect();
+        }
+        return source_structure_semantics_detail_keys(&ast, resolver.module, &resolver.env);
+    }
     if !resolver.detail_keys.is_empty() {
         return resolver
             .detail_keys

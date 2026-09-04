@@ -9,7 +9,8 @@ expected_phase = "type_check"
 failure_category = "type_error"
 stable_detail_key = "structures.selector.unknown_field"
 diagnostic_codes = []
+tags = ["active_type_elaboration"]
 spec_refs = [
   "spec.en.05.structures.selector.resolution",
 ]
-notes = "Audit-1 semantic-bridge inactive oracle seed (September 2026 audit wave): binding expectation for the Step-5 semantic bridge; no active runner tag, earns no current credit. Field access must resolve to a declared member of the subject structure type; an unknown selector is rejected (spec 5.7)."
+notes = "Step 5C.2 active semantic bridge. Field access must resolve to a declared member of the subject structure type; an unknown selector is rejected (spec 5.7)."

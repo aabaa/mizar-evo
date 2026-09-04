@@ -25,6 +25,10 @@ use crate::{
         ProofBranchKind,
     },
 };
+use mizar_checker::source_structure_semantics::{
+    SourceStructureEqualityInput, SourceStructureMemberKind as SourceStructureSemanticMemberKind,
+    SourceStructureSemanticsOutput, SourceStructureTerm, SourceStructureType,
+};
 use mizar_checker::{
     binding_env::{
         BinderIdentity, BindingContextId, BindingContextLayer, BindingContextOwner,
@@ -15822,6 +15826,631 @@ fn insert_algorithm_error_statement(
         diagnostic.owner = Some(CoreNodeRef::AlgorithmStmt(statement));
     }
     (statement, diagnostic_id)
+}
+
+/// A canonical term produced by the bounded Step 5C.2 structure normalizer.
+///
+/// Selectors and functional updates do not survive normalization: a selector
+/// of a constructor is replaced by its field value, and the one supported
+/// update is applied to the constructor before that selection.  This type is
+/// intentionally separate from [`CoreIr`] and carries no proof or VC state.
+#[derive(Debug, Clone, PartialEq, Eq)]
+#[non_exhaustive]
+enum SourceStructureNormalizedTerm {
+    /// A resolver-authenticated variable reference.
+    Variable(SymbolId),
+    /// A constructor with fields in declaration order.
+    Constructor {
+        /// Resolver identity of the structure declaration.
+        structure: SymbolId,
+        /// Exact bracket arguments from the constructor occurrence.
+        type_arguments: Vec<SourceStructureType>,
+        /// Stored fields in declaration order.
+        fields: Vec<SourceStructureNormalizedField>,
+    },
+}
+
+/// One field in a normalized structure constructor.
+#[derive(Debug, Clone, PartialEq, Eq)]
+struct SourceStructureNormalizedField {
+    member: SymbolId,
+    value: SourceStructureNormalizedTerm,
+}
+
+impl SourceStructureNormalizedField {
+    /// Returns the resolver identity of the field.
+    #[must_use]
+    const fn member(&self) -> &SymbolId {
+        &self.member
+    }
+
+    /// Returns the normalized field value.
+    #[must_use]
+    const fn value(&self) -> &SourceStructureNormalizedTerm {
+        &self.value
+    }
+}
+
+/// One reflexively normalized theorem proposition or `thus` conclusion.
+#[derive(Debug, Clone, PartialEq, Eq)]
+struct SourceStructureNormalizedEquality {
+    value: SourceStructureNormalizedTerm,
+}
+
+/// Immutable Core receipt for a bounded structure proof normalization.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct SourceStructureCoreReceipt {
+    source_id: SourceId,
+    module_id: ModuleId,
+    equalities: Vec<SourceStructureNormalizedEquality>,
+    residual_vcs: Vec<()>,
+}
+
+impl SourceStructureCoreReceipt {
+    /// Returns the source identity carried by the receipt.
+    #[must_use]
+    pub const fn source_id(&self) -> SourceId {
+        self.source_id
+    }
+
+    /// Returns the module identity carried by the receipt.
+    #[must_use]
+    pub const fn module_id(&self) -> &ModuleId {
+        &self.module_id
+    }
+
+    /// Returns the number of reflexively normalized equalities.
+    #[must_use]
+    pub const fn equality_count(&self) -> usize {
+        self.equalities.len()
+    }
+
+    /// Returns the number of residual VC slots.
+    #[must_use]
+    pub const fn residual_vc_count(&self) -> usize {
+        self.residual_vcs.len()
+    }
+
+    /// Returns residual VC slots. This is empty for the authorized cases.
+    #[must_use]
+    pub fn residual_vcs(&self) -> &[()] {
+        &self.residual_vcs
+    }
+
+    /// Returns whether all normalized obligations have zero residual VCs.
+    #[must_use]
+    pub fn has_zero_residual_vcs(&self) -> bool {
+        self.residual_vcs.is_empty()
+    }
+}
+
+/// Errors raised by the fail-closed bounded structure normalizer.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[non_exhaustive]
+pub enum SourceStructureCoreNormalizationError {
+    /// The checker output contains one or more diagnostics.
+    DiagnosticBearingOutput,
+    /// The output contains malformed source metadata or identities.
+    MalformedOutput,
+    /// A proposition or conclusion is not reflexive after normalization.
+    UnequalEquality,
+    /// The output contains a shape outside this exact semantic slice.
+    UnsupportedShape,
+}
+
+impl fmt::Display for SourceStructureCoreNormalizationError {
+    fn fmt(&self, formatter: &mut fmt::Formatter<'_>) -> fmt::Result {
+        formatter.write_str(match self {
+            Self::DiagnosticBearingOutput => "structure semantic output contains diagnostics",
+            Self::MalformedOutput => "malformed structure semantic output",
+            Self::UnequalEquality => "structure equality is not reflexive after normalization",
+            Self::UnsupportedShape => "unsupported structure normalization shape",
+        })
+    }
+}
+
+impl Error for SourceStructureCoreNormalizationError {}
+
+/// Normalizes the bounded source-derived structure semantic output.
+#[derive(Debug, Clone, Copy, Default, PartialEq, Eq)]
+pub struct SourceStructureCoreNormalizer;
+
+impl SourceStructureCoreNormalizer {
+    /// Normalizes one diagnostic-free checker output into an immutable receipt.
+    pub fn normalize(
+        output: &SourceStructureSemanticsOutput,
+    ) -> Result<SourceStructureCoreReceipt, SourceStructureCoreNormalizationError> {
+        if !output.diagnostics().is_empty() {
+            return Err(SourceStructureCoreNormalizationError::DiagnosticBearingOutput);
+        }
+        if output.structures().is_empty() || output.claims().len() != 1 {
+            return Err(SourceStructureCoreNormalizationError::UnsupportedShape);
+        }
+
+        let mut state = StructureNormalizationState::new(output);
+        state.validate_output_shape()?;
+
+        // Validate every source-term occurrence retained by the checker.  A
+        // receipt is never formed while an unsupported occurrence is hidden
+        // in the side collection rather than in a theorem equality.
+        for term in output.terms() {
+            let (_, updates) = state.normalize_term(term)?;
+            if updates > 1 {
+                return Err(SourceStructureCoreNormalizationError::UnsupportedShape);
+            }
+        }
+
+        let claim = &output.claims()[0];
+        if claim.conclusions().is_empty() {
+            return Err(SourceStructureCoreNormalizationError::UnsupportedShape);
+        }
+        let mut equalities = Vec::with_capacity(1 + claim.conclusions().len());
+        equalities.push(state.normalize_equality(claim.proposition())?);
+        for conclusion in claim.conclusions() {
+            equalities.push(state.normalize_equality(conclusion)?);
+        }
+
+        Ok(SourceStructureCoreReceipt {
+            source_id: output.source_id(),
+            module_id: output.module_id().clone(),
+            equalities,
+            residual_vcs: Vec::new(),
+        })
+    }
+}
+
+#[derive(Debug)]
+struct StructureNormalizationState<'output> {
+    output: &'output SourceStructureSemanticsOutput,
+}
+
+impl<'output> StructureNormalizationState<'output> {
+    const fn new(output: &'output SourceStructureSemanticsOutput) -> Self {
+        Self { output }
+    }
+
+    fn validate_output_shape(&self) -> Result<(), SourceStructureCoreNormalizationError> {
+        let structures = self.output.structures();
+        let mut structure_symbols = BTreeSet::new();
+        let mut member_symbols = BTreeSet::new();
+        for structure in structures {
+            if structure.symbol().module() != self.output.module_id()
+                || structure.spelling().is_empty()
+                || !valid_range(self.output.source_id(), structure.source_range())
+                || !structure_symbols.insert(structure.symbol().clone())
+            {
+                return Err(SourceStructureCoreNormalizationError::MalformedOutput);
+            }
+            if structure
+                .members()
+                .windows(2)
+                .any(|window| window[0].source_ordinal() >= window[1].source_ordinal())
+            {
+                return Err(SourceStructureCoreNormalizationError::MalformedOutput);
+            }
+            for member in structure.members() {
+                if member.symbol().module() != self.output.module_id()
+                    || member.spelling().is_empty()
+                    || !valid_range(self.output.source_id(), member.source_range())
+                    || !member_symbols.insert(member.symbol().clone())
+                {
+                    return Err(SourceStructureCoreNormalizationError::MalformedOutput);
+                }
+                self.validate_type(member.ty())?;
+            }
+        }
+        if structures
+            .windows(2)
+            .any(|window| window[0].source_ordinal() >= window[1].source_ordinal())
+        {
+            return Err(SourceStructureCoreNormalizationError::MalformedOutput);
+        }
+        if self
+            .output
+            .claims()
+            .windows(2)
+            .any(|window| window[0].source_ordinal() >= window[1].source_ordinal())
+        {
+            return Err(SourceStructureCoreNormalizationError::MalformedOutput);
+        }
+        for claim in self.output.claims() {
+            if !valid_range(self.output.source_id(), claim.source_range())
+                || claim
+                    .conclusions()
+                    .windows(2)
+                    .any(|window| window[0].source_ordinal() >= window[1].source_ordinal())
+            {
+                return Err(SourceStructureCoreNormalizationError::MalformedOutput);
+            }
+        }
+        Ok(())
+    }
+
+    fn structure(
+        &self,
+        symbol: &SymbolId,
+    ) -> Result<
+        &mizar_checker::source_structure_semantics::SourceStructureDefinition,
+        SourceStructureCoreNormalizationError,
+    > {
+        self.output
+            .structures()
+            .iter()
+            .find(|structure| structure.symbol() == symbol)
+            .ok_or(SourceStructureCoreNormalizationError::MalformedOutput)
+    }
+
+    fn normalize_equality(
+        &mut self,
+        equality: &SourceStructureEqualityInput,
+    ) -> Result<SourceStructureNormalizedEquality, SourceStructureCoreNormalizationError> {
+        if equality.recovered() || !valid_range(self.output.source_id(), equality.source_range()) {
+            return Err(SourceStructureCoreNormalizationError::MalformedOutput);
+        }
+        if matches!(equality.left(), SourceStructureTerm::Update { .. })
+            || matches!(equality.right(), SourceStructureTerm::Update { .. })
+        {
+            return Err(SourceStructureCoreNormalizationError::UnsupportedShape);
+        }
+        let (left, left_updates) = self.normalize_term(equality.left())?;
+        let (right, right_updates) = self.normalize_term(equality.right())?;
+        if left_updates > 1 || right_updates > 1 {
+            return Err(SourceStructureCoreNormalizationError::UnsupportedShape);
+        }
+        finish_normalized_equality(left, right)
+    }
+
+    fn normalize_term(
+        &mut self,
+        term: &SourceStructureTerm,
+    ) -> Result<(SourceStructureNormalizedTerm, usize), SourceStructureCoreNormalizationError> {
+        if term.recovered() || !valid_range(self.output.source_id(), term.source_range()) {
+            return Err(SourceStructureCoreNormalizationError::MalformedOutput);
+        }
+        match term {
+            SourceStructureTerm::Variable { symbol, .. } => {
+                self.validate_symbol_module(symbol)?;
+                Ok((SourceStructureNormalizedTerm::Variable(symbol.clone()), 0))
+            }
+            SourceStructureTerm::Constructor {
+                structure,
+                type_arguments,
+                arguments,
+                ..
+            } => self.normalize_constructor(structure, type_arguments, arguments),
+            SourceStructureTerm::Select {
+                subject,
+                member,
+                spelling,
+                ..
+            } => {
+                let Some(member) = member else {
+                    return Err(SourceStructureCoreNormalizationError::MalformedOutput);
+                };
+                let (subject, updates) = self.normalize_term(subject)?;
+                let SourceStructureNormalizedTerm::Constructor { fields, .. } = subject else {
+                    return Err(SourceStructureCoreNormalizationError::UnsupportedShape);
+                };
+                let field = fields
+                    .iter()
+                    .find(|field| field.member() == member)
+                    .ok_or(SourceStructureCoreNormalizationError::UnsupportedShape)?;
+                let structure_member = self.member(member)?;
+                if structure_member.spelling() != spelling
+                    || structure_member.kind() != SourceStructureSemanticMemberKind::Field
+                {
+                    return Err(SourceStructureCoreNormalizationError::MalformedOutput);
+                }
+                Ok((field.value().clone(), updates))
+            }
+            SourceStructureTerm::Update {
+                subject,
+                member,
+                spelling,
+                value,
+                ..
+            } => {
+                if !matches!(subject.as_ref(), SourceStructureTerm::Constructor { .. }) {
+                    return Err(SourceStructureCoreNormalizationError::UnsupportedShape);
+                }
+                let Some(member) = member else {
+                    return Err(SourceStructureCoreNormalizationError::MalformedOutput);
+                };
+                let (subject, subject_updates) = self.normalize_term(subject)?;
+                if subject_updates != 0 {
+                    return Err(SourceStructureCoreNormalizationError::UnsupportedShape);
+                }
+                let SourceStructureNormalizedTerm::Constructor {
+                    structure,
+                    type_arguments,
+                    mut fields,
+                } = subject
+                else {
+                    return Err(SourceStructureCoreNormalizationError::UnsupportedShape);
+                };
+                let structure_member = self.member(member)?;
+                if structure_member.spelling() != spelling
+                    || structure_member.kind() != SourceStructureSemanticMemberKind::Field
+                {
+                    return Err(SourceStructureCoreNormalizationError::MalformedOutput);
+                }
+                let (value, value_updates) = self.normalize_term(value)?;
+                if value_updates != 0 {
+                    return Err(SourceStructureCoreNormalizationError::UnsupportedShape);
+                }
+                replace_normalized_field(&mut fields, member, value)?;
+                Ok((
+                    SourceStructureNormalizedTerm::Constructor {
+                        structure,
+                        type_arguments,
+                        fields,
+                    },
+                    1,
+                ))
+            }
+            _ => Err(SourceStructureCoreNormalizationError::UnsupportedShape),
+        }
+    }
+
+    fn normalize_constructor(
+        &mut self,
+        structure: &SymbolId,
+        type_arguments: &[SourceStructureType],
+        arguments: &[mizar_checker::source_structure_semantics::SourceStructureFieldArgument],
+    ) -> Result<(SourceStructureNormalizedTerm, usize), SourceStructureCoreNormalizationError> {
+        self.validate_symbol_module(structure)?;
+        for ty in type_arguments {
+            self.validate_type(ty)?;
+        }
+        let definition = self.structure(structure)?;
+        let fields = definition
+            .members()
+            .iter()
+            .filter(|member| member.kind() == SourceStructureSemanticMemberKind::Field)
+            .map(|member| (member.symbol().clone(), member.spelling().to_owned()))
+            .collect::<Vec<_>>();
+        let mut values: Vec<Option<SourceStructureNormalizedTerm>> =
+            (0..fields.len()).map(|_| None).collect();
+        for argument in arguments {
+            if argument.recovered()
+                || !valid_range(self.output.source_id(), argument.source_range())
+            {
+                return Err(SourceStructureCoreNormalizationError::MalformedOutput);
+            }
+            let Some(member) = argument.member() else {
+                return Err(SourceStructureCoreNormalizationError::MalformedOutput);
+            };
+            let Some(index) = fields.iter().position(|field| &field.0 == member) else {
+                return Err(SourceStructureCoreNormalizationError::UnsupportedShape);
+            };
+            let field = &fields[index];
+            if field.1 != argument.spelling() || values[index].is_some() {
+                return Err(SourceStructureCoreNormalizationError::MalformedOutput);
+            }
+            let (value, updates) = self.normalize_term(argument.value())?;
+            if updates != 0 {
+                return Err(SourceStructureCoreNormalizationError::UnsupportedShape);
+            }
+            values[index] = Some(value);
+        }
+        let mut normalized_fields = Vec::with_capacity(fields.len());
+        for (field, value) in fields.into_iter().zip(values) {
+            let Some(value) = value else {
+                return Err(SourceStructureCoreNormalizationError::MalformedOutput);
+            };
+            normalized_fields.push(SourceStructureNormalizedField {
+                member: field.0,
+                value,
+            });
+        }
+        Ok((
+            SourceStructureNormalizedTerm::Constructor {
+                structure: structure.clone(),
+                type_arguments: type_arguments.to_vec(),
+                fields: normalized_fields,
+            },
+            0,
+        ))
+    }
+
+    fn member(
+        &self,
+        symbol: &SymbolId,
+    ) -> Result<
+        &mizar_checker::source_structure_semantics::SourceStructureMember,
+        SourceStructureCoreNormalizationError,
+    > {
+        self.output
+            .structures()
+            .iter()
+            .flat_map(|structure| structure.members())
+            .find(|member| member.symbol() == symbol)
+            .ok_or(SourceStructureCoreNormalizationError::MalformedOutput)
+    }
+
+    fn validate_type(
+        &self,
+        ty: &SourceStructureType,
+    ) -> Result<(), SourceStructureCoreNormalizationError> {
+        if let SourceStructureType::Structure { symbol, arguments } = ty {
+            self.validate_symbol_module(symbol)?;
+            self.structure(symbol)?;
+            for argument in arguments {
+                self.validate_type(argument)?;
+            }
+        }
+        Ok(())
+    }
+
+    fn validate_symbol_module(
+        &self,
+        symbol: &SymbolId,
+    ) -> Result<(), SourceStructureCoreNormalizationError> {
+        if symbol.module() != self.output.module_id() {
+            return Err(SourceStructureCoreNormalizationError::MalformedOutput);
+        }
+        Ok(())
+    }
+}
+
+fn finish_normalized_equality(
+    left: SourceStructureNormalizedTerm,
+    right: SourceStructureNormalizedTerm,
+) -> Result<SourceStructureNormalizedEquality, SourceStructureCoreNormalizationError> {
+    if left != right {
+        return Err(SourceStructureCoreNormalizationError::UnequalEquality);
+    }
+    Ok(SourceStructureNormalizedEquality { value: left })
+}
+
+fn replace_normalized_field(
+    fields: &mut [SourceStructureNormalizedField],
+    member: &SymbolId,
+    value: SourceStructureNormalizedTerm,
+) -> Result<(), SourceStructureCoreNormalizationError> {
+    let Some(field) = fields.iter_mut().find(|field| field.member() == member) else {
+        return Err(SourceStructureCoreNormalizationError::UnsupportedShape);
+    };
+    field.value = value;
+    Ok(())
+}
+
+fn valid_range(source_id: SourceId, range: SourceRange) -> bool {
+    range.source_id == source_id && range.start <= range.end
+}
+
+#[cfg(test)]
+mod source_structure_normalizer_tests {
+    use super::*;
+    use mizar_session::{BuildSnapshotId, InMemorySessionIdAllocator, SessionIdAllocator};
+    fn variable(name: &str) -> SourceStructureNormalizedTerm {
+        SourceStructureNormalizedTerm::Variable(SymbolId::new(
+            ModuleId::new(
+                mizar_session::PackageId::new("core-test"),
+                mizar_session::ModulePath::new("structure"),
+            ),
+            mizar_resolve::resolved_ast::LocalSymbolId::new(name),
+            mizar_resolve::resolved_ast::FullyQualifiedName::new(format!(
+                "core-test::structure::{name}"
+            )),
+        ))
+    }
+
+    fn field(name: &str, value: SourceStructureNormalizedTerm) -> SourceStructureNormalizedField {
+        SourceStructureNormalizedField {
+            member: SymbolId::new(
+                ModuleId::new(
+                    mizar_session::PackageId::new("core-test"),
+                    mizar_session::ModulePath::new("structure"),
+                ),
+                mizar_resolve::resolved_ast::LocalSymbolId::new(name),
+                mizar_resolve::resolved_ast::FullyQualifiedName::new(format!(
+                    "core-test::structure::{name}"
+                )),
+            ),
+            value,
+        }
+    }
+
+    #[test]
+    fn constructor_selection_reduces_to_the_field_value() {
+        let fields = [
+            field("first", variable("a")),
+            field("second", variable("b")),
+        ];
+        let selected = fields
+            .iter()
+            .find(|field| field.member().fqn().as_str().ends_with("::first"))
+            .expect("first field")
+            .value()
+            .clone();
+        assert_eq!(selected, variable("a"));
+    }
+
+    #[test]
+    fn exactly_one_update_is_applied_before_selection() {
+        let member = SymbolId::new(
+            ModuleId::new(
+                mizar_session::PackageId::new("core-test"),
+                mizar_session::ModulePath::new("structure"),
+            ),
+            mizar_resolve::resolved_ast::LocalSymbolId::new("second"),
+            mizar_resolve::resolved_ast::FullyQualifiedName::new("core-test::structure::second"),
+        );
+        let mut fields = vec![
+            field("first", variable("a")),
+            field("second", variable("b")),
+        ];
+        replace_normalized_field(&mut fields, &member, variable("c")).expect("update");
+        assert_eq!(fields[1].value(), &variable("c"));
+    }
+
+    #[test]
+    fn malformed_and_unsupported_inputs_fail_closed() {
+        let source = test_source_id();
+        assert!(!valid_range(
+            source,
+            SourceRange {
+                source_id: source,
+                start: 1,
+                end: 0,
+            }
+        ));
+        let mut fields = vec![field("first", variable("a"))];
+        let missing = SymbolId::new(
+            ModuleId::new(
+                mizar_session::PackageId::new("core-test"),
+                mizar_session::ModulePath::new("structure"),
+            ),
+            mizar_resolve::resolved_ast::LocalSymbolId::new("missing"),
+            mizar_resolve::resolved_ast::FullyQualifiedName::new("core-test::structure::missing"),
+        );
+        assert_eq!(
+            replace_normalized_field(&mut fields, &missing, variable("b")),
+            Err(SourceStructureCoreNormalizationError::UnsupportedShape)
+        );
+    }
+
+    #[test]
+    fn unequal_and_diagnostic_errors_are_explicit() {
+        assert_eq!(
+            finish_normalized_equality(variable("a"), variable("b")),
+            Err(SourceStructureCoreNormalizationError::UnequalEquality)
+        );
+        assert_eq!(
+            SourceStructureCoreNormalizationError::DiagnosticBearingOutput,
+            SourceStructureCoreNormalizationError::DiagnosticBearingOutput
+        );
+    }
+
+    #[test]
+    fn receipt_is_deterministic_and_has_no_residual_vcs() {
+        let value = variable("a");
+        let receipt = SourceStructureCoreReceipt {
+            source_id: test_source_id(),
+            module_id: ModuleId::new(
+                mizar_session::PackageId::new("core-test"),
+                mizar_session::ModulePath::new("structure"),
+            ),
+            equalities: vec![SourceStructureNormalizedEquality { value }],
+            residual_vcs: Vec::new(),
+        };
+        let replay = receipt.clone();
+        assert_eq!(receipt, replay);
+        assert_eq!(receipt.residual_vc_count(), 0);
+        assert!(receipt.has_zero_residual_vcs());
+    }
+
+    fn test_source_id() -> SourceId {
+        let snapshot = BuildSnapshotId::from_published_schema_str(&format!(
+            "mizar-session-build-snapshot-v1:{}",
+            "0a".repeat(32)
+        ))
+        .expect("valid test snapshot");
+        InMemorySessionIdAllocator::new()
+            .next_source_id(snapshot)
+            .expect("test source id")
+    }
 }
 
 #[cfg(test)]

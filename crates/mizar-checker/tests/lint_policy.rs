@@ -269,6 +269,10 @@ fn checker_public_enums_are_forward_compatible_and_documented() {
             "src/source_structure_definition.rs",
             "source_structure_definition.md",
         ),
+        (
+            "src/source_structure_semantics.rs",
+            "source_structure_semantics.md",
+        ),
         ("src/source_template.rs", "source_template.md"),
         (
             "src/source_template_type_parameter_association.rs",
@@ -888,6 +892,7 @@ fn public_checker_api_is_documented(root: &Path, path: &Path, line: &str) -> boo
             || path == Path::new("src/source_proof_local_declaration.rs")
             || path == Path::new("src/source_structure.rs")
             || path == Path::new("src/source_structure_definition.rs")
+            || path == Path::new("src/source_structure_semantics.rs")
             || path == Path::new("src/source_template.rs")
             || path == Path::new("src/source_template_type_parameter_association.rs")
             || path == Path::new("src/type_checker.rs")
@@ -922,6 +927,7 @@ fn public_checker_api_is_documented(root: &Path, path: &Path, line: &str) -> boo
                 | "pub mod source_proof_local_declaration;"
                 | "pub mod source_structure;"
                 | "pub mod source_structure_definition;"
+                | "pub mod source_structure_semantics;"
                 | "pub mod source_template;"
                 | "pub mod source_template_type_parameter_association;"
                 | "pub mod type_checker;"

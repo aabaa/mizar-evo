@@ -9,7 +9,8 @@ expected_phase = "type_check"
 failure_category = "type_error"
 stable_detail_key = "structures.inherit.unknown_source_member"
 diagnostic_codes = []
+tags = ["active_type_elaboration"]
 spec_refs = [
   "spec.en.05.structures.inherit.rename",
 ]
-notes = "Audit-1 semantic-bridge inactive oracle seed (September 2026 audit wave): binding expectation for the Step-5 semantic bridge; no active runner tag, earns no current credit. A field-from rename must name an existing base member; an unknown source member is rejected (spec 5.3)."
+notes = "Step 5C.2 active semantic bridge. A field-from rename must name an existing base member; an unknown source member is rejected (spec 5.3)."

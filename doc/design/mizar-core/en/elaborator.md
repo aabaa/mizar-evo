@@ -788,6 +788,7 @@ payload categories can be added without breaking downstream exhaustive matches.
 | `SourceAttributeCoreContextError` | `#[non_exhaustive]` downstream forward-compatible surface. |
 | `SourceModeCoreContextError` | `#[non_exhaustive]` downstream forward-compatible surface. |
 | `SourceStructureCoreContextError` | `#[non_exhaustive]` downstream forward-compatible surface. |
+| `SourceStructureCoreNormalizationError` | `#[non_exhaustive]` downstream forward-compatible surface. |
 | `SourcePropertyCarrierCoreContextError` | `#[non_exhaustive]` downstream forward-compatible surface. |
 | `SourcePropertySelectorTypeContextError` | `#[non_exhaustive]` downstream forward-compatible surface. |
 | `SourcePropertyParameterCoreContextError` | `#[non_exhaustive]` downstream forward-compatible surface. |

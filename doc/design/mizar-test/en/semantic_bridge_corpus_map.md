@@ -126,7 +126,7 @@ the 205 active type-elaboration cases) is not restated here.
 | `spec.en.05.structures.inherit.member_coverage` | 5.3 Inheritance | `type_elaboration` | fail | `fail_type_elaboration_struct_inherit_uncovered_member_001` |
 | `spec.en.05.structures.inherit.rename` | 5.3 Inheritance | `type_elaboration` | pass_and_fail | `fail_type_elaboration_struct_inherit_unknown_source_001`<br>`pass_type_elaboration_struct_inherit_rename_001` |
 | `spec.en.05.structures.selector.resolution` | 5.7 Field Access (Selectors) | `type_elaboration` | fail | `fail_type_elaboration_struct_unknown_selector_001` |
-| `spec.en.05.structures.with_update.semantic` | 5.7 Field Access (Selectors) | `proof_verification` | pass | `pass_proof_verification_struct_with_update_001` |
+| `spec.en.13.structure_update.semantic` | 13.3.3 Structure Update | `proof_verification` | pass | `pass_proof_verification_struct_with_update_001` |
 
 ### Chapter 06 (06.attributes.md)
 

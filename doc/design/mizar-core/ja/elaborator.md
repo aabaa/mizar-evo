@@ -678,6 +678,7 @@ algorithm payload category を下流 crate の exhaustive match を壊さずに�
 | `SourceAttributeCoreContextError` | `#[non_exhaustive]` downstream forward-compatible surface。 |
 | `SourceModeCoreContextError` | `#[non_exhaustive]` downstream forward-compatible surface。 |
 | `SourceStructureCoreContextError` | `#[non_exhaustive]` downstream forward-compatible surface。 |
+| `SourceStructureCoreNormalizationError` | `#[non_exhaustive]` downstream forward-compatible surface。 |
 | `SourcePropertyCarrierCoreContextError` | `#[non_exhaustive]` downstream forward-compatible surface。 |
 | `SourcePropertySelectorTypeContextError` | `#[non_exhaustive]` downstream forward-compatible surface。 |
 | `SourcePropertyParameterCoreContextError` | `#[non_exhaustive]` downstream forward-compatible surface。 |

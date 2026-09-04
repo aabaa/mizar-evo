@@ -1,27 +1,22 @@
 definition
-  struct GBase where
-    field load -> set;
+  struct GLeftPayload where
+    field value -> set;
   end;
 
   struct GLeft where
-    field lload -> set;
+    field payload -> GLeftPayload;
   end;
 
-  inherit GLeft extends GBase where
-    field lload from load;
+  struct GRightPayload where
+    field value -> set;
   end;
 
   struct GRight where
-    field rload -> set;
-  end;
-
-  inherit GRight extends GBase where
-    field rload from load;
+    field payload -> GRightPayload;
   end;
 
   struct GTop where
-    field lload -> set;
-    field rload -> set;
+    field payload -> GLeftPayload;
   end;
 
   inherit GTop extends GLeft;
