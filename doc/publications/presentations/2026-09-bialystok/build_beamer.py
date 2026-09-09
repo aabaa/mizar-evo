@@ -749,7 +749,7 @@ def make_talk_track(title: str, visible_lines: list[str], explicit_note_lines: l
         note_lines.extend(
             [
                 "",
-                "After the example, say which design obligation the syntax makes visible.",
+                "After the example, explain which design obligation the syntax shows.",
             ]
         )
     if has_table:
@@ -771,8 +771,8 @@ def make_talk_track(title: str, visible_lines: list[str], explicit_note_lines: l
         note_lines.extend(
             [
                 "",
-                f"Use this as the transition: {clean_title}.",
-                "Point to the visible example, question, or diagram before moving on.",
+                f"Introduce the next topic: {clean_title}.",
+                "Point to the example, question, or diagram before you continue.",
             ]
         )
     return note_lines

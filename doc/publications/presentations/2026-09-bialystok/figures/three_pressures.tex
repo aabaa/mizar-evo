@@ -11,7 +11,7 @@
   note/.style={font=\sffamily\footnotesize\itshape, text=black!60, align=center},
 ]
   \node[pressure, fill=orange!15, draw=orange!70!black] (scale)
-    {\textbf{Scale}\\ \footnotesize $\sim$1500 interdependent\\ \footnotesize articles};
+    {\textbf{Scale}\\ \footnotesize $\sim$1500 linked\\ \footnotesize articles};
   \node[pressure, fill=orange!15, draw=orange!70!black, right=10mm of scale] (tool)
     {\textbf{Tooling expectations}\\ \footnotesize reproducible builds,\\ \footnotesize instant feedback, packages};
   \node[pressure, fill=orange!15, draw=orange!70!black, right=10mm of tool] (ai)
@@ -27,6 +27,6 @@
   \draw[flow] (ai.south) -- (mizar.north east |- mizar.north);
 
   \node[note, below=3.5mm of mizar]
-    {evolve the boundaries --- preserve the language};
+    {change the boundaries --- keep the language};
 \end{tikzpicture}
 \end{document}
