@@ -6207,3 +6207,18 @@ type route preserves resolver keys before legacy dispatch.
 The harness admits only the seven exact non-gap predicate/functor rows by id, workspace-relative
 path, stage, phase, outcome, and sole tag. It preserves resolver diagnostics before private
 source-semantic dispatch; the ten G1/G2/G6/G9 rows remain ineligible even if tagged.
+
+## Module declaration corpus bridge
+
+The declaration-symbol runner admits only the four exact non-gap module rows from
+the activation map. It validates source/sidecar identity and metadata before dispatch;
+invalid admission cannot fall through to the generic symbol-collection pass.
+Its private fixture module index includes only readable `parser/type_fixtures.miz`
+and `parser/nested_capture_fixtures.miz` under crate testdata. The former supplies
+public `divides` notation for the branch-import fixture; neither file grants proof
+or imported type/interface credit. Lexical summaries remain syntax-only.
+Unrecovered AST imports retain path, alias, source order, and branch provenance in
+resolver candidates. Existing import resolution decides target existence and alias
+conflicts. Private theorem acceptance requires resolving its actual later citation
+to the same-module private, local-only symbol; proof validity is not checked.
+Proof-local label projections are outside this bridge and are rejected before name lookup.

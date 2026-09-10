@@ -9,6 +9,7 @@ expected_phase = "resolve"
 failure_category = "resolve_error"
 stable_detail_key = "modules.import.unknown_module"
 diagnostic_codes = []
+tags = ["active_declaration_symbol"]
 spec_refs = [
   "spec.en.12.modules.import.resolution",
 ]

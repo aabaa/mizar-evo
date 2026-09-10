@@ -872,6 +872,45 @@ use type_elaboration::{
 
 const ACTIVE_PARSE_ONLY_TAG: &str = "active_parse_only";
 const ACTIVE_DECLARATION_SYMBOL_TAG: &str = "active_declaration_symbol";
+
+struct ModuleSemanticsAdmission {
+    id: &'static str,
+    source_path: &'static str,
+    expectation_path: &'static str,
+    outcome: ExpectedOutcome,
+    detail_key: Option<&'static str>,
+}
+
+const MODULE_SEMANTICS_ADMISSIONS: &[ModuleSemanticsAdmission] = &[
+    ModuleSemanticsAdmission {
+        id: "fail_declaration_symbol_import_duplicate_alias_001",
+        source_path: "tests/miz/fail/resolve/fail_declaration_symbol_import_duplicate_alias_001.miz",
+        expectation_path: "tests/miz/fail/resolve/fail_declaration_symbol_import_duplicate_alias_001.expect.toml",
+        outcome: ExpectedOutcome::Fail,
+        detail_key: Some("modules.import.duplicate_alias"),
+    },
+    ModuleSemanticsAdmission {
+        id: "pass_declaration_symbol_branch_import_form_001",
+        source_path: "tests/miz/pass/resolve/pass_declaration_symbol_branch_import_form_001.miz",
+        expectation_path: "tests/miz/pass/resolve/pass_declaration_symbol_branch_import_form_001.expect.toml",
+        outcome: ExpectedOutcome::Pass,
+        detail_key: None,
+    },
+    ModuleSemanticsAdmission {
+        id: "fail_declaration_symbol_import_unknown_module_001",
+        source_path: "tests/miz/fail/resolve/fail_declaration_symbol_import_unknown_module_001.miz",
+        expectation_path: "tests/miz/fail/resolve/fail_declaration_symbol_import_unknown_module_001.expect.toml",
+        outcome: ExpectedOutcome::Fail,
+        detail_key: Some("modules.import.unknown_module"),
+    },
+    ModuleSemanticsAdmission {
+        id: "pass_declaration_symbol_private_theorem_visibility_001",
+        source_path: "tests/miz/pass/resolve/pass_declaration_symbol_private_theorem_visibility_001.miz",
+        expectation_path: "tests/miz/pass/resolve/pass_declaration_symbol_private_theorem_visibility_001.expect.toml",
+        outcome: ExpectedOutcome::Pass,
+        detail_key: None,
+    },
+];
 #[cfg(test)]
 const TYPE_ELABORATION_PARENTHESIZED_RESERVED_VARIABLE_EQUALITY_INVALID_PAYLOAD_KEY: &str =
     SOURCE_PARENTHESIZED_RESERVED_VARIABLE_EQUALITY_CONFIG.invalid_payload_key;
@@ -1719,7 +1758,19 @@ pub fn run_declaration_symbol_corpus(
             diagnostics,
         });
     }
-    diagnostics.extend(validate_active_declaration_symbol_tags(&plan));
+    diagnostics.extend(validate_active_declaration_symbol_tags(
+        &workspace_root,
+        &plan,
+    ));
+    if diagnostics
+        .iter()
+        .any(|diagnostic| diagnostic.severity == ValidationSeverity::Error)
+    {
+        return Ok(DeclarationSymbolRunReport {
+            results: Vec::new(),
+            diagnostics,
+        });
+    }
 
     let mut results = Vec::new();
     for (ordinal, case) in active_declaration_symbol_cases(&plan).enumerate() {
@@ -1938,6 +1989,9 @@ fn is_active_parse_only(case: &TestCase) -> bool {
 }
 
 fn is_active_declaration_symbol(case: &TestCase) -> bool {
+    if is_module_semantics_candidate(case) {
+        return exact_module_semantics_admission(case, None);
+    }
     has_active_declaration_symbol_tag(case)
         && case.expectation.stage == Stage::DeclarationSymbol
         && case.expectation.expected_phase == Some(PipelinePhase::Resolve)
@@ -1949,6 +2003,67 @@ fn is_active_declaration_symbol(case: &TestCase) -> bool {
             .source_path
             .extension()
             .is_some_and(|extension| extension == "miz")
+}
+
+pub(super) fn is_module_semantics_candidate(case: &TestCase) -> bool {
+    MODULE_SEMANTICS_ADMISSIONS
+        .iter()
+        .any(|admission| module_semantics_matches_admission(case, admission))
+}
+
+fn module_semantics_matches_admission(
+    case: &TestCase,
+    admission: &ModuleSemanticsAdmission,
+) -> bool {
+    case.id.0 == admission.id
+        || case.source_path.ends_with(admission.source_path)
+        || case.expectation_path.ends_with(admission.expectation_path)
+        || case.source_path.file_name().is_some_and(|name| {
+            Path::new(admission.source_path)
+                .file_name()
+                .is_some_and(|expected| name == expected)
+        })
+        || case.expectation_path.file_name().is_some_and(|name| {
+            Path::new(admission.expectation_path)
+                .file_name()
+                .is_some_and(|expected| name == expected)
+        })
+}
+
+fn exact_module_semantics_admission(case: &TestCase, workspace_root: Option<&Path>) -> bool {
+    let Some(admission) = MODULE_SEMANTICS_ADMISSIONS.iter().find(|admission| {
+        case.id.0 == admission.id
+            || case.source_path.ends_with(admission.source_path)
+            || case.expectation_path.ends_with(admission.expectation_path)
+    }) else {
+        return false;
+    };
+    let source_path_matches = workspace_root
+        .and_then(|root| workspace_relative_source(root, &case.source_path))
+        .is_some_and(|path| path == admission.source_path)
+        || workspace_root.is_none() && case.source_path.ends_with(admission.source_path);
+    let expectation_path_matches = workspace_root
+        .and_then(|root| workspace_relative_source(root, &case.expectation_path))
+        .is_some_and(|path| path == admission.expectation_path)
+        || workspace_root.is_none() && case.expectation_path.ends_with(admission.expectation_path);
+    case.id.0 == admission.id
+        && source_path_matches
+        && expectation_path_matches
+        && case.expectation.id == case.id
+        && case.expectation.source
+            == Path::new(admission.source_path)
+                .file_name()
+                .map(PathBuf::from)
+                .unwrap()
+        && case.expectation.stage == Stage::DeclarationSymbol
+        && case.expectation.expected_phase == Some(PipelinePhase::Resolve)
+        && case.expectation.expected_outcome == admission.outcome
+        && case.expectation.stable_detail_key.as_deref() == admission.detail_key
+        && case.expectation.diagnostic_codes.is_empty()
+        && case.expectation.diagnostic_payloads.is_empty()
+        && case.expectation.declaration_symbol_payloads.is_empty()
+        && case.expectation.tags.len() == 1
+        && case.expectation.tags[0] == ACTIVE_DECLARATION_SYMBOL_TAG
 }
 
 fn has_active_parse_only_tag(case: &TestCase) -> bool {
@@ -1994,8 +2109,55 @@ fn validate_active_parse_only_tags(
         .collect()
 }
 
-fn validate_active_declaration_symbol_tags(plan: &TestPlan) -> Vec<ValidationDiagnostic> {
+fn validate_active_declaration_symbol_tags(
+    workspace_root: &Path,
+    plan: &TestPlan,
+) -> Vec<ValidationDiagnostic> {
     let mut diagnostics = Vec::new();
+    if MODULE_SEMANTICS_ADMISSIONS.iter().any(|admission| {
+        workspace_root.join(admission.source_path).is_file()
+            || workspace_root.join(admission.expectation_path).is_file()
+    }) {
+        for admission in MODULE_SEMANTICS_ADMISSIONS {
+            let count = plan
+                .cases
+                .iter()
+                .filter(|case| {
+                    case.id.0 == admission.id
+                        && workspace_relative_source(workspace_root, &case.source_path)
+                            .is_some_and(|path| path == admission.source_path)
+                })
+                .count();
+            if count == 1 {
+                continue;
+            }
+            diagnostics.push(ValidationDiagnostic::error(
+                workspace_root.join(admission.expectation_path),
+                "declaration_symbol",
+                "E-DECLARATION-SYMBOL-MODULE-INVENTORY",
+                format!("declaration_symbol.module_inventory.{}", admission.id),
+                format!(
+                    "Step 5C.6 module-semantic admission row `{}` must occur exactly once; found {count}",
+                    admission.id
+                ),
+            ));
+        }
+    }
+    for case in plan
+        .cases
+        .iter()
+        .filter(|case| is_module_semantics_candidate(case))
+    {
+        if !exact_module_semantics_admission(case, Some(workspace_root)) {
+            diagnostics.push(ValidationDiagnostic::error(
+                &case.expectation_path,
+                "declaration_symbol",
+                "E-DECLARATION-SYMBOL-MODULE-ADMISSION",
+                format!("declaration_symbol.module_admission.{}", case.id.0),
+                "Step 5C.6 module-semantic cases require their exact mapped id, workspace paths, stage, phase, outcome, key, and sole active_declaration_symbol tag",
+            ));
+        }
+    }
     for case in plan
         .cases
         .iter()

@@ -1,25 +1,39 @@
+use std::fs;
 use std::path::Path;
 
 use mizar_resolve::env::{
     ContributionKind, DefinitionKind, ExportStatus, NamespacePath, SourceContributionId, SymbolEnv,
     SymbolKind, Visibility,
 };
+use mizar_resolve::imports::{
+    ImportPathCandidate, ImportPathFailureClass, ImportPathPrefix, ImportPathResolver,
+};
 use mizar_resolve::labels::{
     LabelProjection, LabelProjectionSource, LabelReferenceCandidate, LabelReferenceScope,
     LabelResolutionResult, LabelResolver, ProofLabelSourceCollector,
 };
-use mizar_resolve::resolved_ast::{
-    LabelExpectation, LabelKind, LabelOriginPath, LabelResolution, ModuleId, RecoveryState,
-    ReferenceSite, SemanticOrigin, SurfaceResolvedArena,
+use mizar_resolve::module_index::{
+    IndexedModuleId, ModuleIndexEntry, ModuleIndexInput, ModuleIndexLocation,
+    WorkspaceStubModuleIndexProvider,
 };
-use mizar_session::{SourceAnchor, SourceId, SourceRange};
-use mizar_syntax::SurfaceAst;
+use mizar_resolve::names::{NameReferenceCandidate, NameSymbolProjection, SymbolNameResolver};
+use mizar_resolve::resolved_ast::{
+    LabelExpectation, LabelKind, LabelOriginPath, LabelResolution, ModuleId, NameResolution,
+    RecoveryState, ReferenceSite, SemanticOrigin, SurfaceResolvedArena,
+};
+use mizar_session::{Edition, ModulePath, PackageId, SourceAnchor, SourceId, SourceRange};
+use mizar_syntax::{SurfaceAst, SurfaceNode, SurfaceNodeKind};
 
 use crate::diagnostic::ValidationDiagnostic;
 use crate::expectation::ExpectedOutcome;
 use crate::harness::TestCase;
 
 use super::shared::{FrontendRun, frontend_detail_keys, resolver_symbol_collection, run_frontend};
+use super::type_elaboration::{
+    authenticated_local_declaration, structural_child_ids,
+    subtree_has_recovery_for_parse as subtree_has_recovery,
+    surface_nodes_with_kind_for_parse as surface_nodes_with_kind,
+};
 use super::{DeclarationSymbolCaseResult, DeclarationSymbolCaseStatus};
 
 pub(super) fn run_declaration_symbol_case(
@@ -85,8 +99,11 @@ fn declaration_symbol_observation(
             payload_keys: Vec::new(),
         };
     };
-    let proof_label_profile = proof_label_confinement_profile(&output.source_text, &ast);
     let resolver = resolver_symbol_collection(workspace_root, case, &ast);
+    if super::is_module_semantics_candidate(case) {
+        return module_semantics_observation(workspace_root, &ast, &resolver);
+    }
+    let proof_label_profile = proof_label_confinement_profile(&output.source_text, &ast);
     if let Some(profile) = proof_label_profile {
         let detail_key = if resolver.detail_keys.is_empty()
             && case.expectation.diagnostic_codes.is_empty()
@@ -110,6 +127,368 @@ fn declaration_symbol_observation(
         detail_keys: resolver.detail_keys,
         payload_keys,
     }
+}
+
+const MODULE_SEMANTICS_INPUT_DETAIL: &str = "declaration_symbol.module_semantics.input";
+const PRIVATE_THEOREM_INPUT_DETAIL: &str = "declaration_symbol.private_theorem.input";
+
+fn module_semantics_observation(
+    workspace_root: &Path,
+    ast: &SurfaceAst,
+    resolver: &super::shared::ResolverSymbolCollection,
+) -> DeclarationSymbolObservation {
+    if !resolver.detail_keys.is_empty() {
+        return DeclarationSymbolObservation {
+            detail_keys: resolver.detail_keys.clone(),
+            payload_keys: Vec::new(),
+        };
+    }
+    let Some(candidates) = import_path_candidates(ast) else {
+        return DeclarationSymbolObservation {
+            detail_keys: vec![MODULE_SEMANTICS_INPUT_DETAIL.to_owned()],
+            payload_keys: Vec::new(),
+        };
+    };
+    if candidates.is_empty() {
+        if private_theorem_is_valid(ast, &resolver.module, &resolver.shells, &resolver.env) {
+            return DeclarationSymbolObservation::default();
+        }
+        return DeclarationSymbolObservation {
+            detail_keys: vec![PRIVATE_THEOREM_INPUT_DETAIL.to_owned()],
+            payload_keys: Vec::new(),
+        };
+    }
+    let Some(provider) = fixture_module_index(workspace_root) else {
+        return DeclarationSymbolObservation {
+            detail_keys: vec![MODULE_SEMANTICS_INPUT_DETAIL.to_owned()],
+            payload_keys: Vec::new(),
+        };
+    };
+    let resolution = ImportPathResolver::new(ModuleIndexInput::new(&provider))
+        .resolve(&resolver.module, &candidates);
+    if let Some(unresolved) = resolution.unresolved().first() {
+        let detail = match unresolved.class() {
+            ImportPathFailureClass::DuplicateAlias => "modules.import.duplicate_alias",
+            ImportPathFailureClass::UnknownModule => "modules.import.unknown_module",
+            _ => MODULE_SEMANTICS_INPUT_DETAIL,
+        };
+        return DeclarationSymbolObservation {
+            detail_keys: vec![detail.to_owned()],
+            payload_keys: Vec::new(),
+        };
+    }
+    if resolution.resolved().is_empty() {
+        return DeclarationSymbolObservation {
+            detail_keys: vec![MODULE_SEMANTICS_INPUT_DETAIL.to_owned()],
+            payload_keys: Vec::new(),
+        };
+    }
+    DeclarationSymbolObservation::default()
+}
+
+fn fixture_module_index(workspace_root: &Path) -> Option<WorkspaceStubModuleIndexProvider> {
+    const FIXTURES: &[(&str, &str)] = &[
+        ("parser.type_fixtures", "parser/type_fixtures.miz"),
+        (
+            "parser.nested_capture_fixtures",
+            "parser/nested_capture_fixtures.miz",
+        ),
+    ];
+    let package = PackageId::new("mizar-test-corpus");
+    let mut modules = Vec::new();
+    let source_root = workspace_root.join("crates/mizar-test/tests/testdata");
+    for (module, relative_path) in FIXTURES {
+        let path = source_root.join(relative_path);
+        if !path.is_file() || fs::read_to_string(&path).is_err() {
+            return None;
+        }
+        let module_path = ModulePath::new(*module);
+        let normalized_path = path.to_string_lossy().into_owned();
+        modules.push(ModuleIndexEntry {
+            module: IndexedModuleId::new(package.clone(), module_path.clone()),
+            package_id: package.clone(),
+            module_path,
+            location: ModuleIndexLocation::WorkspaceFile {
+                source_root: source_root.to_string_lossy().into_owned(),
+                normalized_path,
+                source_relative_path: (*relative_path).to_owned(),
+            },
+            edition: Edition::new("2026"),
+        });
+    }
+    Some(WorkspaceStubModuleIndexProvider::new(
+        Vec::new(),
+        Vec::new(),
+        modules,
+        Vec::new(),
+    ))
+}
+
+pub(super) fn import_path_candidates(ast: &SurfaceAst) -> Option<Vec<ImportPathCandidate>> {
+    let mut candidates = Vec::new();
+    let mut ordinal = 0;
+    for (_, import) in surface_nodes_with_kind(ast, SurfaceNodeKind::ImportItem) {
+        if subtree_has_recovery(ast, import) {
+            return None;
+        }
+        let import_children = structural_child_ids(ast, import);
+        if import_children.is_empty() {
+            return None;
+        }
+        for child_id in import_children {
+            let child = ast.node(child_id)?;
+            match child.kind {
+                SurfaceNodeKind::ImportAliasDecl => {
+                    let candidate = import_alias_candidate(ast, child, ordinal)?;
+                    candidates.push(candidate);
+                    ordinal += 1;
+                }
+                SurfaceNodeKind::ModuleBranchImport => {
+                    let branch_candidates = module_branch_candidates(ast, child, ordinal)?;
+                    ordinal += branch_candidates.len();
+                    candidates.extend(branch_candidates);
+                }
+                _ => return None,
+            }
+        }
+    }
+    Some(candidates)
+}
+
+fn import_alias_candidate(
+    ast: &SurfaceAst,
+    node: &SurfaceNode,
+    ordinal: usize,
+) -> Option<ImportPathCandidate> {
+    let children = structural_child_ids(ast, node);
+    let module_path_id = *children.first()?;
+    let module_path = ast.node(module_path_id)?;
+    let (prefix, components) = module_path_components(ast, module_path)?;
+    let alias = match children.as_slice() {
+        [_] => None,
+        [_, alias_id] => {
+            let alias = ast.node(*alias_id)?;
+            if !matches!(alias.kind, SurfaceNodeKind::PathSegment) || alias.children.len() != 1 {
+                return None;
+            }
+            Some(direct_segment_text(ast, alias)?)
+        }
+        _ => return None,
+    };
+    let mut candidate = ImportPathCandidate::new(components, prefix, alias, node.range, ordinal);
+    if children.len() == 2 {
+        candidate = candidate.with_alias_range(ast.node(*children.get(1)?)?.range);
+    }
+    Some(candidate)
+}
+
+fn module_branch_candidates(
+    ast: &SurfaceAst,
+    node: &SurfaceNode,
+    ordinal: usize,
+) -> Option<Vec<ImportPathCandidate>> {
+    let children = structural_child_ids(ast, node);
+    let base = ast.node(*children.first()?)?;
+    let (prefix, base_components) = module_path_components(ast, base)?;
+    let members = children[1..]
+        .iter()
+        .filter_map(|child_id| ast.node(*child_id))
+        .filter(|child| matches!(child.kind, SurfaceNodeKind::PathSegment))
+        .collect::<Vec<_>>();
+    if members.is_empty() || members.len() + 1 != children.len() {
+        return None;
+    }
+    members
+        .into_iter()
+        .enumerate()
+        .map(|(index, member)| {
+            let member_name = direct_segment_text(ast, member)?;
+            let mut components = base_components.clone();
+            components.push(member_name);
+            Some(
+                ImportPathCandidate::new(components, prefix, None, node.range, ordinal + index)
+                    .with_branch_provenance(base.range, member.range),
+            )
+        })
+        .collect()
+}
+
+fn module_path_components(
+    ast: &SurfaceAst,
+    node: &SurfaceNode,
+) -> Option<(ImportPathPrefix, Vec<String>)> {
+    if !matches!(node.kind, SurfaceNodeKind::ModulePath) || subtree_has_recovery(ast, node) {
+        return None;
+    }
+    let mut prefix = ImportPathPrefix::Unprefixed;
+    let mut components = Vec::new();
+    for child_id in &node.children {
+        let child = ast.node(*child_id)?;
+        match &child.kind {
+            SurfaceNodeKind::RelativePrefix => {
+                if prefix != ImportPathPrefix::Unprefixed {
+                    return None;
+                }
+                let text = direct_token_text(ast, child)?;
+                prefix = match text.as_str() {
+                    "." => ImportPathPrefix::Current,
+                    ".." => ImportPathPrefix::Parent,
+                    _ => return None,
+                };
+            }
+            SurfaceNodeKind::PathSegment => components.push(direct_segment_text(ast, child)?),
+            SurfaceNodeKind::Token(_) => {}
+            _ => return None,
+        }
+    }
+    (!components.is_empty()).then_some((prefix, components))
+}
+
+fn direct_segment_text(ast: &SurfaceAst, node: &SurfaceNode) -> Option<String> {
+    let [child_id] = node.children.as_slice() else {
+        return None;
+    };
+    ast.node(*child_id)
+        .and_then(SurfaceNode::token_text)
+        .map(str::to_owned)
+}
+
+fn direct_token_text(ast: &SurfaceAst, node: &SurfaceNode) -> Option<String> {
+    node.children
+        .iter()
+        .find_map(|child_id| ast.node(*child_id).and_then(SurfaceNode::token_text))
+        .map(str::to_owned)
+}
+
+pub(super) fn private_theorem_is_valid(
+    ast: &SurfaceAst,
+    module: &ModuleId,
+    shells: &mizar_resolve::declarations::DeclarationShellSet,
+    env: &SymbolEnv,
+) -> bool {
+    if env.module_id() != module || ast.node_views().any(|node| node.is_recovered()) {
+        return false;
+    }
+    let private_theorems = surface_nodes_with_kind(ast, SurfaceNodeKind::VisibleItem)
+        .into_iter()
+        .filter_map(|(_, visible)| {
+            let children = structural_child_ids(ast, visible);
+            if children.len() != 2
+                || !matches!(
+                    ast.node(children[0])?.kind,
+                    SurfaceNodeKind::VisibilityMarker
+                )
+            {
+                return None;
+            }
+            let marker = ast.node(children[0])?;
+            if direct_token_text(ast, marker)?.as_str() != "private" {
+                return None;
+            }
+            let theorem_id = children[1];
+            let theorem = ast.node(theorem_id)?;
+            matches!(theorem.kind, SurfaceNodeKind::TheoremItem).then_some((theorem_id, theorem))
+        })
+        .collect::<Vec<_>>();
+    let [(theorem_id, theorem)] = private_theorems.as_slice() else {
+        return false;
+    };
+    if !authenticated_local_declaration(
+        ast,
+        module,
+        shells,
+        env,
+        *theorem_id,
+        theorem,
+        mizar_resolve::declarations::DeclarationShellKind::Theorem,
+        SymbolKind::Theorem,
+        DefinitionKind::Theorem,
+        true,
+    ) {
+        return false;
+    }
+    let Some(owner_name) = theorem
+        .children
+        .get(1)
+        .and_then(|child_id| ast.node(*child_id))
+        .and_then(SurfaceNode::token_text)
+        .map(str::to_owned)
+    else {
+        return false;
+    };
+    let Some(symbol) = env.symbols().iter().find(|entry| {
+        entry.kind() == SymbolKind::Theorem
+            && entry.symbol().module() == module
+            && entry.namespace() == &NamespacePath::new(module.path().as_str())
+            && entry.primary_spelling() == owner_name
+            && entry.origin().source_id() == ast.source_id
+            && entry.origin().module_id() == module
+            && entry.origin().anchor() == &SourceAnchor::Range(theorem.range)
+    }) else {
+        return false;
+    };
+    if symbol.visibility() != Visibility::Private
+        || symbol.export_status() != ExportStatus::LocalOnly
+    {
+        return false;
+    }
+    let Some(contribution) = env.contributions().get(symbol.contribution()) else {
+        return false;
+    };
+    if contribution.module() != module
+        || !matches!(contribution.kind(), ContributionKind::LocalSource { source_id } if *source_id == ast.source_id)
+    {
+        return false;
+    }
+    let Ok(resolved) = SurfaceResolvedArena::lower(ast, module) else {
+        return false;
+    };
+    let Ok(collection) = ProofLabelSourceCollector::new(
+        ast,
+        module,
+        NamespacePath::new(module.path().as_str()),
+        contribution.id(),
+        &resolved,
+    )
+    .and_then(|collector| collector.collect()) else {
+        return false;
+    };
+    let [reference] = collection.references() else {
+        return false;
+    };
+    if !collection.projections().is_empty()
+        || surface_nodes_with_kind(ast, SurfaceNodeKind::Reference).len() != 1
+        || reference.site().spelling() != owner_name
+        || theorem.range.end > reference.site().range().start
+    {
+        return false;
+    }
+    let projection = NameSymbolProjection::current_module(
+        symbol.symbol().clone(),
+        symbol.namespace().clone(),
+        symbol.primary_spelling(),
+        SymbolKind::Theorem,
+        symbol.visibility(),
+        theorem.range,
+        theorem.range.end,
+    );
+    let candidate = NameReferenceCandidate::unqualified(
+        reference.site().clone(),
+        reference.origin().clone(),
+        reference.site().range().start,
+    );
+    let resolution = SymbolNameResolver::new(&[projection], &[]).resolve(
+        module,
+        &NamespacePath::new(module.path().as_str()),
+        &[candidate],
+    );
+    let Some((_, entry)) = resolution.table().iter().next() else {
+        return false;
+    };
+    matches!(
+        entry.resolution(),
+        NameResolution::Resolved(resolved) if resolved.symbol() == symbol.symbol()
+    )
 }
 
 const PROOF_LABEL_SCOPE_INPUT_DETAIL: &str = "declaration_symbol.label.proof_scope_input";

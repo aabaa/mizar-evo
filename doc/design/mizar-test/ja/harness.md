@@ -5655,3 +5655,17 @@ route は duplicate frontend/checker handshake を要求し、type route は leg
 harnessはnon-gap 7行だけをexact id、workspace-relative path、stage、phase、outcome、sole
 tagで受理する。private source-semantic dispatch前にresolver diagnosticを保持し、
 G1/G2/G6/G9の10行はtagが付いてもineligibleとする。
+
+## Module declaration corpus bridge
+
+declaration-symbol runner は activation map の non-gap module 4行のみを受理し、
+source/sidecar の同一性と metadata を dispatch 前に検査する。不正な入力を汎用の
+symbol collection に流さない。private fixture module index は crate testdata の
+読み取り可能な `parser/type_fixtures.miz` と `parser/nested_capture_fixtures.miz`
+だけを含む。前者は branch import 用に public `divides` notation を提供するが、
+両者とも証明・imported type/interface の検証には使わない。lexical summary は構文専用。
+recovery のない AST import の path・alias・順序・branch provenance を既存 resolver
+candidate へ渡し、module 存在と alias 衝突を解決する。private theorem は実際の後続
+citation が同一 module の private/local-only symbol に解決されることを要求し、
+証明の妥当性は検査しない。
+proof-local label projection は本 bridge の対象外とし、name lookup 前に拒否する。

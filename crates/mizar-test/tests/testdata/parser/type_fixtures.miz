@@ -1,0 +1,4 @@
+definition
+  let X, Y be object;
+  public pred DividesDef: X divides Y means X = Y;
+end;

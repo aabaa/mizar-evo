@@ -7,6 +7,7 @@ source = "pass_declaration_symbol_private_theorem_visibility_001.miz"
 expected_outcome = "pass"
 expected_phase = "resolve"
 diagnostic_codes = []
+tags = ["active_declaration_symbol"]
 spec_refs = [
   "spec.en.12.modules.visibility.private_local",
 ]
