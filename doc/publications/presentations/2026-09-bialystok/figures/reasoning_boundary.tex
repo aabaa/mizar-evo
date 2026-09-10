@@ -17,17 +17,18 @@
            \footnotesize resolver, checker,\\ \footnotesize elaborator};
   \node[stage, fill=orange!18, draw=orange!70!black, right=of sem]
     (atp) {\textbf{ATP-side search}\\[1pt]
-           \footnotesize E, Vampire, SAT, \dots\\ \footnotesize\bfseries untrusted};
+           \footnotesize E, Vampire, CVC5, Z3\\ \footnotesize\bfseries untrusted};
   \node[stage, fill=green!14, draw=green!45!black, right=of atp]
     (ker) {\textbf{Kernel-side checking}\\[1pt]
-           \footnotesize certificate replay\\ \footnotesize\bfseries trusted, small};
+           \footnotesize formula/substitution evidence\\
+           \footnotesize\bfseries trusted SAT check, small};
 
-  \draw[flow] (sem) -- node[artifact, above=1mm, midway] {well-typed, resolved\\ obligations} (atp);
-  \draw[flow] (atp) -- node[artifact, above=1mm, midway] {candidate proof\\ evidence} (ker);
+  \draw[flow] (sem) -- node[artifact, above=10mm, midway] {well-typed, resolved\\ obligations} (atp);
+  \draw[flow] (atp) -- node[artifact, above=10mm, midway] {candidate proof\\ evidence} (ker);
 
   \node[rule, below=3.5mm of sem] {owns names, types,\\ clusters, overloads};
-  \node[rule, below=3.5mm of atp] {never resolves names,\\ never defines truth};
-  \node[rule, below=3.5mm of ker] {never searches;\\ exit codes are not proof};
+  \node[rule, below=3.5mm of atp] {never resolves names,\\ never selects global premises};
+  \node[rule, below=3.5mm of ker] {checks supplied substitutions;\\ exit codes are not proof};
 
   \node[artifact, right=8mm of ker, align=center]
     (out) {accepted /\\ rejected};

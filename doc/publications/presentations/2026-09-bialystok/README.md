@@ -71,8 +71,8 @@ Run `pdflatex` twice when frame numbers in the footer look stale.
       checked June 18, 2026).
 - [ ] Re-verify every exact MML excerpt against the current MML: article,
       line numbers, and text (Backup A lists all excerpts).
-- [ ] Re-check every specification example against `doc/spec/en/` (last
-      re-check: July 10, 2026; see Source Status in `draft.md`).
+- [ ] Re-check every specification example against `doc/spec/en/`; see
+      Source Status in `draft.md` for the authority and example conventions.
 - [ ] Update the project-status frame (11.x - Where The Project Stands
       Today): crate count, line counts, completed audits.
 - [ ] Verify `references.bib` entries against publisher metadata.

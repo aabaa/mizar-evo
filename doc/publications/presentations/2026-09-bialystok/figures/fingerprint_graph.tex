@@ -21,7 +21,7 @@
   \draw[dep] (b1) -- (a1);
   \draw[dep] (c1) -- (b1);
   \node[plabel, above=3mm of b1]
-    {proof-body change:\\ public statements unchanged --- importers reuse};
+    {theorem proof edit:\\ public statement + accepted status unchanged --- importers reuse};
 
   % Scenario 2: interface edit
   \node[redo, below=17mm of a1] (a2) {\texttt{set}\\ \footnotesize interface edited};
@@ -33,8 +33,8 @@
     {interface change:\\ the dependency cone re-verifies};
 
   \node[note, below=3.5mm of b2]
-    {reuse requires matching fingerprints: source, dependency interfaces,\\
-     obligations, proof witnesses --- and a clean build must reproduce
-     every acceptance};
+    {reuse requires all relevant keys: source/dependency slices, package/lockfile,\\
+     toolchain/schema, registration/cluster, verifier policy, evidence/witnesses;\\
+     missing data is a cache miss --- a clean build must reproduce every acceptance};
 \end{tikzpicture}
 \end{document}

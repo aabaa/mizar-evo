@@ -41,6 +41,7 @@ Every code example carries one of three status labels:
 - `doc/spec/en/17.clusters_and_registrations.md`
 - `doc/spec/en/18.templates.md`
 - `doc/spec/en/20.algorithm_and_verification.md`
+- `doc/spec/en/21.source_code_annotation_and_atp.md`
 - `doc/spec/en/23.package_management_and_build_system.md`
 - `doc/spec/en/sample_codes.md`
 - `doc/design/architecture/en/00.pipeline_overview.md`
@@ -65,12 +66,10 @@ The MML plain-text files state GPL-3.0-or-later / CC-BY-SA-3.0-or-later
 distribution terms; the final deck must keep article attribution, source URLs,
 and line numbers in speaker notes.
 
-Specification examples re-checked against `doc/spec/en/` on July 10, 2026:
-the standard-library namespace root is now `mml` throughout (Chapter 12),
-reduction rule selection is pattern subsumption, then guard specificity, then
-FQN tie-break (Chapter 17, §17.6.4), and template parameter inference is
-defined as unique-declared-type only, with `qua` never inferred (Chapter 18,
-§18.2.7).
+Specification examples follow `doc/spec/en/`. They assume the required
+imports and earlier declarations; `...` marks omitted proof text.
+Kernel evidence follows Chapter 21, §21.7, and the current evidence design
+in `doc/design/architecture/en/15.kernel_certificate_format.md`.
 
 ## Deck Shape
 
@@ -351,9 +350,9 @@ end;
 
 Rules that make this deterministic:
 
-- all imports appear before the first item; no mid-file environment changes;
-- imports provide the initial active lexicon. Every symbol, notation,
-  registration, and theorem is traceable to exactly one import;
+- all imports appear before the first non-import item;
+- imports provide the initial active lexicon. Local declarations extend it
+  after their declaration points; imported items retain their source FQNs;
 - stable fully-qualified names are derived from package and module paths.
 
 ### Frame 2.4 - The Evo Answer: Packages [deep dive]
@@ -373,7 +372,8 @@ topology = { version = "^0.9", features = ["metric"] }
 
 Bullets:
 
-- a manifest plus a lockfile makes every build reproducible;
+- reproducible builds need fixed source, lockfile, toolchain, and verifier
+  settings, including deterministic ATP evidence;
 - versioned reuse (SemVer) replaces manual copying between article sets.
 
 ### Frame 2.5 - Migrating The Environment [deep dive]
@@ -459,9 +459,14 @@ Three distinct concepts:
 
 | Concept | Meaning | Consequence |
 |---|---|---|
-| `field` | intrinsic data supplied by the value | constructor shape, equality |
-| `property` | uniquely determined canonical value | existence/uniqueness obligations |
+| `field` | stored data | constructor arguments; equality of exact instances |
+| `property` | derived value from an implementation | `means`: existence/uniqueness; `equals`: direct term |
 | `attribute` | predicate-style refinement | cluster propagation, not layout |
+
+Speaker note:
+
+- A property declaration gives no value. Implementations supply values;
+  constructors take fields only. Overlapping implementations need `coherence`.
 
 ### Frame 3.4 - The Evo Answer: Explicit Inheritance
 
@@ -481,10 +486,9 @@ definition
 end;
 ```
 
-Bullets:
-
 - one `inherit` statement per parent; mapping and renaming are source text;
-- narrowing and type conversions carry `coherence` proof obligations;
+- non-identical inherited member types need `coherence` proofs of subtype
+  inclusion. Same-name, same-type mappings need no proof;
 - the additive/multiplicative naming convention becomes a checked view.
 
 ### Frame 3.5 - The Evo Answer: Diamonds Become Checkable
@@ -492,26 +496,33 @@ Bullets:
 Mizar Evo (specification example):
 
 ```mizar
-struct DoubleLoopStr where
-  field carrier -> set;
-  field add -> BinOp of carrier;
-  field mul -> BinOp of carrier;
-  property zero -> Element of carrier;
-  property one -> Element of carrier;
-end;
+definition
+  struct DoubleLoopStr where
+    field carrier -> set;
+    field add -> BinOp of carrier;
+    field mul -> BinOp of carrier;
+    property zero -> Element of carrier;
+    property one -> Element of carrier;
+  end;
 
-inherit DoubleLoopStr extends AddLoopStr;
-inherit DoubleLoopStr extends MulLoopStr;
+  inherit DoubleLoopStr extends AddLoopStr;
+  inherit DoubleLoopStr extends MulLoopStr;
+end;
 ```
+
+Inheritance diagram (sketch):
 
 ![The diamond, with checkable joins](figures/diamond_inheritance.pdf)
 
-Message:
+- same-name, same-type members can join even when their root declarations
+  differ. Other joins need `coherence` proofs of subtype inclusion;
+- renamed paths remain distinct views. A diamond is allowed; invalid
+  mappings or missing proofs produce diagnostics.
 
-- the verifier traces `from` chains to root declarations; both paths must
-  introduce the same components (the shared `carrier` above);
-- diamond inheritance becomes a diagnostic with source spans, not a silent
-  merge decided by declaration order.
+Speaker note:
+
+- The diagram assumes the shown parent mappings from `AddLoopStr` and
+  `MulLoopStr` to `Magma`. The code adds their shared child.
 
 ### Frame 3.6 - What Is Preserved, What We Ask
 
@@ -584,9 +595,9 @@ Bullets:
 
 - every registration item carries a required label: citable in `by`,
   reported in diagnostics, part of the module interface;
-- the verifier stores an import-filtered cluster resolution graph;
-- `@show_resolution` and explanation artifacts answer "why (not)?" with the
-  actual chain, e.g. empty -> finite -> countable.
+- the verifier uses an import-filtered view of the global cluster graph;
+- `explain-attribute` and resolution traces show why an attribute follows
+  or why resolution fails, e.g. empty -> finite -> countable.
 
 ### Frame 4.4 - The Evo Answer: Oriented Reductions [deep dive]
 
@@ -617,7 +628,8 @@ Bullets:
 Preserved:
 
 - registrations and clusters remain first-class; proofs stay short;
-- no new proof text is required at use sites - only traces are added.
+- cluster applications need no repeated proofs. Reductions may need
+  local guard evidence or an explicit equality citation.
 
 Questions for Bialystok:
 
@@ -660,22 +672,31 @@ Speaker note:
 Key rules:
 
 - ATPs never resolve names, infer types, expand clusters, or pick overloads;
-- the kernel never searches for proofs;
+- the kernel checks supplied formulas and substitutions, then runs its
+  trusted SAT check. It does not select premises or invent substitutions;
 - deterministic pre-ATP discharge needs replayable evidence too - nothing is
   accepted because an earlier phase said "done".
 
-### Frame 5.3 - Certificates, Not Success Bits
+Speaker note:
 
-![A certificate and its kernel replay](figures/certificate_replay.pdf)
+- Development policy may record `externally_attested` results. These are
+  separate from kernel-verified proofs.
 
-Bullets:
+### Frame 5.3 - Formula And Substitution Evidence
 
-- accepted evidence is normalized into replayable certificate data;
-- the kernel checks imported facts, substitutions, clause well-formedness,
-  and the resolution/SAT trace. It does not trust a solver's exit code.
-  Unsoundness in search cannot cause unsoundness in accepted results;
-- hashes link an accepted proof to its dependency slice. The proof cannot
-  be reused with another slice without checking.
+![KernelEvidence and the kernel's SAT check](figures/certificate_replay.pdf)
+
+- `KernelEvidence` contains source formulas, explicit substitutions,
+  provenance, and target/goal bindings;
+- the kernel checks this evidence, derives instantiated formulas and SAT
+  clauses, and requires UNSAT from its trusted in-process Rust SAT checker;
+- backend resolution traces, SMT proof objects, logs, and exit codes are
+  not trusted acceptance evidence.
+
+Speaker note:
+
+- Hashes bind evidence to its dependency context. The kernel also checks
+  binder conditions and the goal's refutation polarity.
 
 ### Frame 5.4 - The Same Boundary Controls AI
 
@@ -727,13 +748,14 @@ Message:
 
 Preserved:
 
-- the de Bruijn discipline: a small checker judges everything;
+- the de Bruijn discipline: acceptance uses a small trusted core, including
+  its SAT checker;
 - proof text stays declarative and readable - automation maintains the
   argument, it does not replace it.
 
 Questions for Bialystok:
 
-- Is the SAT/resolution certificate approach convincing for Mizar-style
+- Is the formula/substitution evidence approach convincing for Mizar-style
   obligations, including clusters and definitional expansions?
 - Which evidence format would the team be most willing to audit?
 
@@ -754,11 +776,11 @@ Bullets:
 
 Bullets:
 
-- hash the source, the dependency interfaces, the generated obligations, and
-  the proof witnesses;
-- reuse a result only when fingerprints and verifier policy match;
-- a proof-body-only change does not rebuild importers, because public
-  statements and statuses are unchanged;
+- cache keys cover source, dependency slices, package/lockfile, toolchain,
+  schema, policy, registrations, obligations, evidence, and witnesses;
+- reuse requires all relevant keys to match; missing data causes a cache miss;
+- a theorem proof-body edit does not rebuild importers if its exported
+  statement and accepted status stay unchanged;
 - independent modules, obligations, ATP runs, and kernel checks run in
   parallel; results are published in canonical order.
 
@@ -773,21 +795,24 @@ A clean build must reproduce every acceptance.
 
 ```text
 resident memory should scale with:
-  active source
+  active source and typed AST
   imported public interfaces
   import-filtered indexes
   active module obligations
+  in-flight proof checks and ATP runs
+  small caches
 
 not with:
   imported proof bodies
+  imported proof witnesses
   private lemmas outside the interface
   registration data outside the import closure
 ```
 
 Message:
 
-- Interfaces are loaded; proof bodies are not. This is what makes whole-MML
-  editing sessions possible on ordinary hardware.
+- This is a resident-memory model, not a measured performance guarantee.
+  Proof bodies and traces load lazily for specific queries.
 
 ### Frame 6.4 - What Is Preserved, What We Ask
 
@@ -861,14 +886,14 @@ Bullets:
 
 - a template is an ordinary `definition` block whose leading `let` binds
   parameters: types, values, predicates, or functors;
-- one mechanism covers structures, modes, functors, predicates, theorems,
-  registrations, and algorithms;
-- readable short forms remain: `Module over R` is an automatic synonym for
-  `Module[R]`, `Subset of X` for `Subset[X]`.
+- predicate and functor parameters cannot be used in `attr`, `mode`,
+  `struct`, `func`, or `pred` items;
+- eligible templates get short forms: `Module over R` for `Module[R]`,
+  `Subset of X` for `Subset[X]`. Constrained templates require brackets.
 
 ### Frame 7.4 - Bounded Parameters And Generic Theorems [deep dive]
 
-Mizar Evo (specification example):
+Mizar Evo (sketch from specification §18.2.2; `Product` laws omitted):
 
 ```mizar
 definition
@@ -885,11 +910,12 @@ Message:
 
 - `type extends commutative Magma` states what the parameter must provide
   before any proof search begins;
-- the theorem is proved once, for every commutative operation.
+- commutativity alone is not enough for this sketch: `Product` also needs
+  associativity and a unit for the empty product.
 
 ### Frame 7.5 - One Proof, Many Instantiations [deep dive]
 
-Instantiation (specification example):
+Instantiation (sketch; assumes the required laws and attribute evidence):
 
 ```mizar
 PermProduct[AddMagma]              :: additive form
@@ -924,7 +950,7 @@ Bullets:
 
 - predicate parameters follow the familiar `defpred` convention;
 - legacy schemes have a direct, mechanical migration target;
-- instantiation is explicit bracket syntax, so tools and artifacts see
+- theorem instantiation uses explicit brackets, so tools and artifacts see
   exactly which instance a proof uses.
 
 ### Frame 7.7 - What Is Preserved, What We Ask
@@ -933,18 +959,17 @@ Preserved:
 
 - scheme-style reasoning keeps the same power;
 - `of` / `over` phrasing keeps mathematical prose readable;
-- first-order discipline: templates are checked instantiation, not a new
-  logic.
+- first-order discipline: each instantiation is checked; templates add no
+  new logic.
 
 Questions for Bialystok:
 
 - Which MML schemes should be the first migration targets?
 - Are brackets acceptable as the canonical identity form, with `of`/`over`
   as display forms?
-- The specification limits inference. A parameter is inferred only when
-  the declared argument types determine it uniquely. `qua` views are never
-  inferred. Does this rule suit real MML idioms, or does it require too many
-  explicit `[T]`?
+- For `func` and `pred` templates, normalized declared argument types must
+  determine each inferred type parameter uniquely. `qua` views are never
+  inferred. Does this rule require too many explicit `[T]` arguments?
 
 ## Part 8. Story 7: Verified Computation With Algorithms
 
@@ -1012,12 +1037,11 @@ end;
 
 Bullets:
 
-- the Mizar Virtual Machine (MVM) evaluates ground goals during
-  verification, under explicit step, time, and depth budgets;
-- only ground equalities and ground predicates qualify; everything else
-  still requires a classical proof;
-- imported algorithms are opaque: downstream proofs may use only their
-  `ensures` contract, never their body.
+- the Mizar Virtual Machine (MVM) supports only ground equalities and predicates,
+  using computable algorithms defined in the current package;
+- step, time, and depth limits are optional; each defaults to `0` (unlimited);
+- algorithms from other packages are opaque. Their `ensures` contract is
+  usable when termination is known; their body cannot be executed here.
 
 ### Frame 8.4 - The Evo Answer: Termination Allows Recursion [deep dive]
 
@@ -1038,10 +1062,15 @@ end;
 Bullets:
 
 - ordinary `func` definitions are definitional extensions: never recursive;
-- once its termination obligations are proved, a `terminating`
-  algorithm is promoted to a functor, usable in any proof;
+- a `terminating` algorithm becomes a functor after all contract and
+  termination obligations are proved for inputs satisfying `requires`;
 - this is the only way to add recursion to the mathematical layer.
   It requires a proof.
+
+Speaker note:
+
+- Each call must satisfy `requires`. An ordinary algorithm may prove only
+  partial correctness and is not promoted to a functor.
 
 ### Frame 8.5 - Computation Never Redefines Truth [deep dive]
 
@@ -1050,7 +1079,7 @@ Bullets:
 - contracts, invariants, and termination measures generate verification
   conditions that pass through the same ATP-plus-kernel boundary as
   ordinary theorems (story 4);
-- `by computation` is MVM replay under budgets, not solver trust;
+- `by computation` uses MVM replay with optional limits;
 - code extraction (to runtime targets) is strictly downstream of verified
   artifacts and can never affect acceptance.
 
@@ -1063,8 +1092,9 @@ Message:
 
 Preserved:
 
-- the theorem language is unchanged; algorithms live in `definition` blocks
-  and interact with proofs only through contracts and verified promotion;
+- algorithms live in `definition` blocks. Proofs can use verified promotion
+  or `by computation` for computable ground calls in the current package;
+- a partial algorithm's `ensures` needs evidence that the call terminates;
 - first-order set-theoretic foundations stay intact.
 
 Questions for Bialystok:
@@ -1089,9 +1119,9 @@ Bullets:
 - A written explanation needs an order that helps readers. Reuse needs
   dependency order. One structure cannot serve both as well as possible.
 
-### Frame 9.2 - The Evo Answer: Linked, Not Merged
+### Frame 9.2 - The Evo Proposal: Linked Records
 
-![The article-to-library link model](figures/fm_links.pdf)
+![A proposed article-to-library link model (sketch)](figures/fm_links.pdf)
 
 Message:
 
@@ -1105,15 +1135,16 @@ Message:
 |---|---|
 | readers | written explanations come first; formal source is one click away |
 | maintainers | refactoring no longer rewrites published explanations |
-| authors | articles cite stable identities, not file layouts |
-| AI tools | prose for retrieval, fingerprints for exact context |
+| authors | frozen `pub` article identities; FQNs for library locations |
+| planned AI tools | prose for retrieval, fingerprints for exact context |
 
 ### Frame 9.4 - What Is Preserved, What We Ask
 
 Preserved:
 
 - Formalized Mathematics remains a real journal with review and written explanations;
-- origin metadata keeps the link to every existing MML citation.
+- proposed origin metadata links migrated items to MML citations; the
+  migration mapping still needs to be defined.
 
 Questions for Bialystok:
 
@@ -1124,14 +1155,19 @@ Questions for Bialystok:
 
 ## Part 10. Architecture In One Picture
 
-### Frame 10.1 - The Pipeline
+### Frame 10.1 - The Core ATP Path
 
-![The pipeline, with responsibility groups](figures/pipeline.pdf)
+![The core ATP path, with responsibility groups](figures/pipeline.pdf)
 
 Message:
 
 - every boundary states who owns a fact, which artifact records it, and
   what must be recomputed when it changes. That is the main purpose.
+
+Speaker note:
+
+- The diagram shows the ATP path. Only obligations still open after
+  deterministic discharge go to ATP; earlier discharge also needs evidence.
 
 ### Frame 10.2 - Responsibility Split [deep dive]
 
@@ -1151,7 +1187,7 @@ Message:
 |---|---|
 | dependencies | resolver, package manager |
 | structures and automation | checker (inheritance and cluster graphs, traces) |
-| search vs trust | ATP layer, kernel, certificates |
+| search vs trust | ATP layer, kernel, formula/substitution evidence |
 | scale | artifacts, fingerprints, scheduler |
 | templates | elaborator (checked instantiation) |
 | algorithms | VC generator, MVM |
@@ -1186,8 +1222,8 @@ Bullets:
 
 - bilingual language specification: 24 chapters plus appendices, English
   canonical with Japanese companions (`doc/spec/`);
-- architecture specification: 24 documents covering the pipeline, kernel,
-  certificate format, and AI agent interface (`doc/design/architecture/`);
+- 24 draft architecture documents covering the pipeline, kernel,
+  kernel evidence, and AI agent interface (`doc/design/architecture/`);
 - a Rust workspace of 20 crates - lexer, parser, resolver, checker, VC
   generator, ATP bridge, kernel, build system - roughly 400k lines including
   tests;
@@ -1220,7 +1256,7 @@ Bullets:
 
 - translated articles and lines; accepted parser subset;
 - resolved imports versus unresolved dependencies;
-- obligations closed deterministically versus by ATP-plus-certificate;
+- obligations closed deterministically versus by ATP with kernel evidence;
 - memory and wall-clock per module, incremental versus clean;
 - compatibility decisions that required human judgment.
 
@@ -1228,7 +1264,7 @@ Bullets:
 
 Policy:
 
-- preserve theorem identity through origin metadata;
+- define origin mappings to preserve MML theorem identity;
 - keep compatibility aliases where they help migration;
 - record every difference from old behavior with a reason and a test.
 
@@ -1237,7 +1273,7 @@ Policy:
 | compatibility work takes all our time | small representative parts first; no all-at-once translation |
 | registrations behave differently | trace artifacts and comparison reports early |
 | package layout breaks journal links | origin metadata, article-to-library identifiers |
-| AI edits hide migration mistakes | Red edits stay forbidden; verifier artifacts required |
+| AI edits hide migration mistakes | Red edits stay forbidden to ordinary agents; verifier artifacts required |
 
 ### Frame 11.4 - What September 2026 Should Produce
 
@@ -1320,6 +1356,7 @@ This map replaces the EBNF shown in earlier drafts.
 | Registrations and reductions | `17.clusters_and_registrations.md` |
 | Templates and schemes | `18.templates.md` |
 | Algorithms and MVM | `20.algorithm_and_verification.md` |
+| ATP and kernel evidence | `21.source_code_annotation_and_atp.md` |
 | Packages and artifacts | `23.package_management_and_build_system.md` |
 | Cross-chapter grammar | `appendix_a.grammar_summary.md` |
 | Worked library sketches | `sample_codes.md` |
@@ -1337,13 +1374,13 @@ build each with `pdflatex` inside `figures/`):
    [done: `figures/diamond_inheritance.pdf`, used in frame 3.5]
 4. Reasoning boundary: semantics / ATP search / kernel checking (story 4).
    [done: `figures/reasoning_boundary.pdf`, used in frame 5.2]
-5. Certificate object and replay (story 4).
+5. KernelEvidence and the trusted SAT check (story 4).
    [done: `figures/certificate_replay.pdf`, used in frame 5.3]
 6. Incremental fingerprint graph (story 5).
    [done: `figures/fingerprint_graph.pdf`, used in frame 6.2]
 7. Formalized Mathematics article-to-library link model (story 8).
    [done: `figures/fm_links.pdf`, used in frame 9.2]
-8. Full pipeline with story overlay (Part 10).
+8. Core ATP path with responsibility groups (Part 10).
    [done: `figures/pipeline.pdf`, used in frame 10.1]
 9. Roadmap timeline (Part 11).
    [done: `figures/roadmap_timeline.pdf`, used in frame 11.1]
@@ -1362,7 +1399,7 @@ Possible sections:
 2. Mizar as baseline: readability, MML, Formalized Mathematics.
 3. Design principles and the three goals.
 4. Language evolution: dependencies, structures, registrations, templates.
-5. Verifier architecture, certificates, and the small kernel.
+5. Verifier architecture, kernel evidence, and the trusted SAT checker.
 6. Verified computation and the MVM.
 7. AI-safe proof development.
 8. Package-based library and publication workflow.
@@ -1390,11 +1427,11 @@ Prepared answers to other possible objections:
 | Objection | Prepared answer |
 |---|---|
 | Why not improve current Mizar incrementally? | The problems concern boundaries: article granularity, monolithic trust, and implicit environments. These boundaries cannot change in small steps. The rest of the design stays close to Mizar. |
-| What happens to authorship and credit of MML articles? | Origin metadata keeps article identity and authorship during migration. The `pub` namespace keeps published articles unchanged so they can still be cited. |
+| What happens to authorship and credit of MML articles? | We propose origin mappings that preserve identity and credit during migration. The mapping format is still open. The `pub` namespace keeps published articles unchanged. |
 | Is this a fork of the community? | It is a proposal to the community; this visit is its first review. The namespace governance model assumes that the Mizar team controls the `mml` root. |
 | What about GPL / CC-BY-SA obligations? | Migration preserves license and attribution of MML content; toolchain licensing is open for discussion. |
 | Are the claims about AI too strong? | AI assistance is an optional layer that never enters the trusted base; every proposal also works without it. |
-| Why a new kernel instead of the existing checker? | Certificate replay needs a small, auditable core. The existing checker's semantics remain the reference for obligation generation. |
+| Why a new kernel instead of the existing checker? | Formula/substitution evidence needs a small trusted core, including a SAT checker. Mizar Evo's specification defines the obligations; legacy behavior guides migration comparisons. |
 
 Speaker note:
 

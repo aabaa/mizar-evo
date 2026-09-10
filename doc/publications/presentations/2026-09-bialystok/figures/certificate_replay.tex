@@ -1,4 +1,4 @@
-% Figure: certificate object and kernel replay (story 4).
+% Figure: kernel evidence and trusted SAT checking (story 4).
 % Build: pdflatex certificate_replay.tex  (run inside figures/)
 \documentclass[tikz,border=6pt]{standalone}
 \usetikzlibrary{positioning,arrows.meta}
@@ -14,26 +14,25 @@
   flow/.style={-{Stealth[length=2.8mm]}, line width=1pt, black!70},
 ]
   \node[doc] (cert) {%
-    \textbf{ProofCertificate}\\[1.5pt]
+    \textbf{KernelEvidence}\\[1.5pt]
     \footnotesize
     \begin{tabular}{@{}l@{}}
       target VC fingerprint\\
       kernel profile\\
-      imported facts + hashes\\
-      generated clauses\\
-      substitutions\\
-      resolution trace\\
-      final goal
+      formula evidence + source bindings\\
+      substitutions + binders\\
+      provenance + availability\\
+      final goal + polarity
     \end{tabular}};
 
   \node[kern, right=16mm of cert] (kernel) {%
-    \textbf{Minimal kernel (replay)}\\[1.5pt]
+    \textbf{Minimal kernel (check)}\\[1.5pt]
     \footnotesize
     \begin{tabular}{@{}l@{}}
-      do imported facts match their hashes?\\
-      are clauses well-formed?\\
-      is every trace step locally valid?\\
-      does the trace reach the goal?
+      do target bindings and provenance match?\\
+      are substitutions valid?\\
+      derive formulas and the SAT instance\\
+      trusted SAT checker confirms UNSAT
     \end{tabular}};
 
   \node[verdict, fill=green!14, draw=green!45!black, anchor=west]
@@ -41,13 +40,13 @@
   \node[verdict, fill=red!12, draw=red!60!black, anchor=west]
     (rej) at ([xshift=14mm,yshift=-7mm]kernel.east) {rejected};
 
-  \draw[flow] (cert) -- node[font=\sffamily\footnotesize\itshape, above] {replay} (kernel);
+  \draw[flow] (cert) -- node[font=\sffamily\footnotesize\itshape, above] {check} (kernel);
   \draw[flow] (kernel.east) -- (acc.west);
   \draw[flow] (kernel.east) -- (rej.west);
 
   \node[font=\sffamily\footnotesize\itshape, text=black!60,
         below=4mm of kernel.south, align=center]
-    {solver exit codes never decide acceptance ---\\
-     hashes link the proof to its dependency slice};
+    {solver exit codes and backend traces are diagnostic only ---\\
+     hashes link evidence to its dependency slice};
 \end{tikzpicture}
 \end{document}

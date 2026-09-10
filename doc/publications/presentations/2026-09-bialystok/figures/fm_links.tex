@@ -24,7 +24,8 @@
   \node[layer, below=of fp, fill=green!12, draw=green!45!black] (hash)
     {verified artifact hash};
   \node[layer, below=of hash, fill=gray!14, draw=black!55] (origin)
-    {origin id \texttt{(mizar:GROUP\_1:\dots)}};
+    {origin id \texttt{(mizar:GROUP\_1:\dots)}\\[-1pt]
+     \footnotesize format sketch};
 
   \draw[flow] (fm) -- (pkg);
   \draw[flow] (pkg) -- (fqn);
@@ -38,5 +39,9 @@
   \node[role] at ([xshift=4mm]fp.east)     {semantic drift detection};
   \node[role] at ([xshift=4mm]hash.east)   {reproducible verification};
   \node[role] at ([xshift=4mm]origin.east) {links to MML citations};
+
+  \node[font=\sffamily\footnotesize\itshape, text=black!60, align=center,
+        below=4mm of origin]
+    {linked records/references, not a derivation};
 \end{tikzpicture}
 \end{document}

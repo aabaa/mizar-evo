@@ -523,8 +523,8 @@ end;
 \setlength{\itemsep}{1pt}
 \setlength{\parsep}{0pt}
 \setlength{\parskip}{0pt}
-\item all imports appear before the first item; no mid-file environment changes;
-\item imports provide the initial active lexicon. Every symbol, notation, registration, and theorem is traceable to exactly one import;
+\item all imports appear before the first non-import item;
+\item imports provide the initial active lexicon. Local declarations extend it after their declaration points; imported items retain their source FQNs;
 \item stable fully-qualified names are derived from package and module paths.
 \end{itemize}
 \note{
@@ -536,8 +536,8 @@ end;
 \setlength{\itemsep}{1pt}
 \setlength{\parsep}{0pt}
 \setlength{\parskip}{0pt}
-\item all imports appear before the first item; no mid-file environment changes;
-\item imports provide the initial active lexicon. Every symbol, notation, registration, and theorem is traceable to exactly one import;
+\item all imports appear before the first non-import item;
+\item imports provide the initial active lexicon. Local declarations extend it after their declaration points; imported items retain their source FQNs;
 \item stable fully-qualified names are derived from package and module paths.
 \end{itemize}
 After the example, explain which design obligation the syntax shows.
@@ -564,7 +564,7 @@ topology = { version = "^0.9", features = ["metric"] }
 \setlength{\itemsep}{1pt}
 \setlength{\parsep}{0pt}
 \setlength{\parskip}{0pt}
-\item a manifest plus a lockfile makes every build reproducible;
+\item reproducible builds need fixed source, lockfile, toolchain, and verifier settings, including deterministic ATP evidence;
 \item versioned reuse (SemVer) replaces manual copying between article sets.
 \end{itemize}
 \note{
@@ -576,7 +576,7 @@ topology = { version = "^0.9", features = ["metric"] }
 \setlength{\itemsep}{1pt}
 \setlength{\parsep}{0pt}
 \setlength{\parskip}{0pt}
-\item a manifest plus a lockfile makes every build reproducible;
+\item reproducible builds need fixed source, lockfile, toolchain, and verifier settings, including deterministic ATP evidence;
 \item versioned reuse (SemVer) replaces manual copying between article sets.
 \end{itemize}
 After the example, explain which design obligation the syntax shows.
@@ -751,8 +751,8 @@ end;
 \toprule
 \textbf{Concept} & \textbf{Meaning} & \textbf{Consequence} \\
 \midrule
-\texttt{field} & intrinsic data supplied by the value & constructor shape, equality \\
-\texttt{property} & uniquely determined canonical value & existence/uniqueness obligations \\
+\texttt{field} & stored data & constructor arguments; equality of exact instances \\
+\texttt{property} & derived value from an implementation & \texttt{means}: existence/uniqueness; \texttt{equals}: direct term \\
 \texttt{attribute} & predicate-style refinement & cluster propagation, not layout \\
 \bottomrule
 \end{tabularx}
@@ -761,11 +761,15 @@ end;
 \note{
 \smallskip
 \textbf{Presenter script:}
-After the example, explain which design obligation the syntax shows.
-
+\smallskip
+\textbf{Say:}
+\begin{itemize}
+\setlength{\itemsep}{1pt}
+\setlength{\parsep}{0pt}
+\setlength{\parskip}{0pt}
+\item A property declaration gives no value. Implementations supply values; constructors take fields only. Overlapping implementations need \texttt{coherence}.
+\end{itemize}
 For the table, read the row labels first, then the design reason.
-
-Introduce the next topic: The Evo Answer: Field, Property, Attribute. Point to the example, question, or diagram before you continue.
 
 }
 \end{frame}
@@ -786,14 +790,12 @@ definition
   end;
 end;
 \end{lstlisting}
-\smallskip
-\textbf{Key Points:}
 \begin{itemize}
 \setlength{\itemsep}{1pt}
 \setlength{\parsep}{0pt}
 \setlength{\parskip}{0pt}
 \item one \texttt{inherit} statement per parent; mapping and renaming are source text;
-\item narrowing and type conversions carry \texttt{coherence} proof obligations;
+\item non-identical inherited member types need \texttt{coherence} proofs of subtype inclusion. Same-name, same-type mappings need no proof;
 \item the additive/multiplicative naming convention becomes a checked view.
 \end{itemize}
 \note{
@@ -806,7 +808,7 @@ end;
 \setlength{\parsep}{0pt}
 \setlength{\parskip}{0pt}
 \item one inherit statement per parent; mapping and renaming are source text;
-\item narrowing and type conversions carry coherence proof obligations;
+\item non-identical inherited member types need coherence proofs of subtype inclusion. Same-name, same-type mappings need no proof;
 \item the additive/multiplicative naming convention becomes a checked view.
 \end{itemize}
 After the example, explain which design obligation the syntax shows.
@@ -818,39 +820,45 @@ After the example, explain which design obligation the syntax shows.
 \smallskip
 \textbf{Mizar Evo}~\badgeSpec
 \begin{lstlisting}[language={mizar},basicstyle=\ttfamily\footnotesize]
-struct DoubleLoopStr where
-  field carrier -> set;
-  field add -> BinOp of carrier;
-  field mul -> BinOp of carrier;
-  property zero -> Element of carrier;
-  property one -> Element of carrier;
-end;
+definition
+  struct DoubleLoopStr where
+    field carrier -> set;
+    field add -> BinOp of carrier;
+    field mul -> BinOp of carrier;
+    property zero -> Element of carrier;
+    property one -> Element of carrier;
+  end;
 
-inherit DoubleLoopStr extends AddLoopStr;
-inherit DoubleLoopStr extends MulLoopStr;
+  inherit DoubleLoopStr extends AddLoopStr;
+  inherit DoubleLoopStr extends MulLoopStr;
+end;
 \end{lstlisting}
 \note{
 \smallskip
 \textbf{Presenter script:}
-After the example, explain which design obligation the syntax shows.
-
-Introduce the next topic: The Evo Answer: Diamonds Become Checkable (1/2). Point to the example, question, or diagram before you continue.
-
-}
-\end{frame}
-
-\begin{frame}[fragile,t]{3.5 - The Evo Answer: Diamonds Become Checkable (2/2)}
-\begin{center}
-\includegraphics[width=\textwidth,height=0.52\textheight,keepaspectratio]{figures/diamond_inheritance.pdf}
-\end{center}
 \smallskip
-\textbf{Message:}
+\textbf{Say:}
 \begin{itemize}
 \setlength{\itemsep}{1pt}
 \setlength{\parsep}{0pt}
 \setlength{\parskip}{0pt}
-\item the verifier traces \texttt{from} chains to root declarations; both paths must introduce the same components (the shared \texttt{carrier} above);
-\item diamond inheritance becomes a diagnostic with source spans, not a silent merge decided by declaration order.
+\item The diagram assumes the shown parent mappings from \texttt{AddLoopStr} and \texttt{MulLoopStr} to \texttt{Magma}. The code adds their shared child.
+\end{itemize}
+}
+\end{frame}
+
+\begin{frame}[fragile,t]{3.5 - The Evo Answer: Diamonds Become Checkable (2/2)}
+\smallskip
+\textbf{Inheritance diagram}~\badgeSketch
+\begin{center}
+\includegraphics[width=\textwidth,height=0.52\textheight,keepaspectratio]{figures/diamond_inheritance.pdf}
+\end{center}
+\begin{itemize}
+\setlength{\itemsep}{1pt}
+\setlength{\parsep}{0pt}
+\setlength{\parskip}{0pt}
+\item same-name, same-type members can join even when their root declarations differ. Other joins need \texttt{coherence} proofs of subtype inclusion;
+\item renamed paths remain distinct views. A diamond is allowed; invalid mappings or missing proofs produce diagnostics.
 \end{itemize}
 \note{
 \smallskip
@@ -861,8 +869,8 @@ Introduce the next topic: The Evo Answer: Diamonds Become Checkable (1/2). Point
 \setlength{\itemsep}{1pt}
 \setlength{\parsep}{0pt}
 \setlength{\parskip}{0pt}
-\item the verifier traces from chains to root declarations; both paths must introduce the same components (the shared carrier above);
-\item diamond inheritance becomes a diagnostic with source spans, not a silent merge decided by declaration order.
+\item same-name, same-type members can join even when their root declarations differ. Other joins need coherence proofs of subtype inclusion;
+\item renamed paths remain distinct views. A diamond is allowed; invalid mappings or missing proofs produce diagnostics.
 \end{itemize}
 }
 \end{frame}
@@ -988,8 +996,8 @@ end;
 \setlength{\parsep}{0pt}
 \setlength{\parskip}{0pt}
 \item every registration item carries a required label: citable in \texttt{by}, reported in diagnostics, part of the module interface;
-\item the verifier stores an import-filtered cluster resolution graph;
-\item \texttt{@show\_resolution} and explanation artifacts answer "why (not)?" with the actual chain, e.g. empty -> finite -> countable.
+\item the verifier uses an import-filtered view of the global cluster graph;
+\item \texttt{explain-attribute} and resolution traces show why an attribute follows or why resolution fails, e.g. empty -> finite -> countable.
 \end{itemize}
 \note{
 \smallskip
@@ -1001,8 +1009,8 @@ end;
 \setlength{\parsep}{0pt}
 \setlength{\parskip}{0pt}
 \item every registration item carries a required label: citable in by, reported in diagnostics, part of the module interface;
-\item the verifier stores an import-filtered cluster resolution graph;
-\item @show\_resolution and explanation artifacts answer "why (not)?" with the actual chain, e.g. empty -> finite -> countable.
+\item the verifier uses an import-filtered view of the global cluster graph;
+\item explain-attribute and resolution traces show why an attribute follows or why resolution fails, e.g. empty -> finite -> countable.
 \end{itemize}
 After the example, explain which design obligation the syntax shows.
 
@@ -1059,7 +1067,7 @@ After the example, explain which design obligation the syntax shows.
 \setlength{\parsep}{0pt}
 \setlength{\parskip}{0pt}
 \item registrations and clusters remain first-class; proofs stay short;
-\item no new proof text is required at use sites - only traces are added.
+\item cluster applications need no repeated proofs. Reductions may need local guard evidence or an explicit equality citation.
 \end{itemize}
 \smallskip
 \textbf{Questions for Bialystok:}
@@ -1080,7 +1088,7 @@ After the example, explain which design obligation the syntax shows.
 \setlength{\parsep}{0pt}
 \setlength{\parskip}{0pt}
 \item registrations and clusters remain first-class; proofs stay short;
-\item no new proof text is required at use sites - only traces are added.
+\item cluster applications need no repeated proofs. Reductions may need local guard evidence or an explicit equality citation.
 \item Which cluster explanations would help most with daily work: failure explanations, firing traces, or difference reports between environments?
 \item Which MML article families make the most complex use of registrations and should become migration benchmarks for the cluster graph?
 \end{itemize}
@@ -1142,12 +1150,20 @@ After the example, explain which design obligation the syntax shows.
 \setlength{\parsep}{0pt}
 \setlength{\parskip}{0pt}
 \item ATPs never resolve names, infer types, expand clusters, or pick overloads;
-\item the kernel never searches for proofs;
+\item the kernel checks supplied formulas and substitutions, then runs its trusted SAT check. It does not select premises or invent substitutions;
 \item deterministic pre-ATP discharge needs replayable evidence too - nothing is accepted because an earlier phase said "done".
 \end{itemize}
 \note{
 \smallskip
 \textbf{Presenter script:}
+\smallskip
+\textbf{Say:}
+\begin{itemize}
+\setlength{\itemsep}{1pt}
+\setlength{\parsep}{0pt}
+\setlength{\parskip}{0pt}
+\item Development policy may record \texttt{externally\_attested} results. These are separate from kernel-verified proofs.
+\end{itemize}
 \smallskip
 \textbf{Read aloud:}
 \begin{itemize}
@@ -1155,47 +1171,44 @@ After the example, explain which design obligation the syntax shows.
 \setlength{\parsep}{0pt}
 \setlength{\parskip}{0pt}
 \item ATPs never resolve names, infer types, expand clusters, or pick overloads;
-\item the kernel never searches for proofs;
+\item the kernel checks supplied formulas and substitutions, then runs its trusted SAT check. It does not select premises or invent substitutions;
 \item deterministic pre-ATP discharge needs replayable evidence too - nothing is accepted because an earlier phase said "done".
 \end{itemize}
 }
 \end{frame}
 
-\begin{frame}[fragile,t]{5.3 - Certificates, Not Success Bits (1/2)}
+\begin{frame}[fragile,t]{5.3 - Formula And Substitution Evidence}
 \begin{center}
 \includegraphics[width=\textwidth,height=0.52\textheight,keepaspectratio]{figures/certificate_replay.pdf}
 \end{center}
-\note{
-\smallskip
-\textbf{Presenter script:}
-Introduce the next topic: Certificates, Not Success Bits (1/2). Point to the example, question, or diagram before you continue.
-
-}
-\end{frame}
-
-\begin{frame}[fragile,t]{5.3 - Certificates, Not Success Bits (2/2)}
-\smallskip
-\textbf{Key Points:}
 \begin{itemize}
 \setlength{\itemsep}{1pt}
 \setlength{\parsep}{0pt}
 \setlength{\parskip}{0pt}
-\item accepted evidence is normalized into replayable certificate data;
-\item the kernel checks imported facts, substitutions, clause well-formedness, and the resolution/SAT trace. It does not trust a solver's exit code. Unsoundness in search cannot cause unsoundness in accepted results;
-\item hashes link an accepted proof to its dependency slice. The proof cannot be reused with another slice without checking.
+\item \texttt{KernelEvidence} contains source formulas, explicit substitutions, provenance, and target/goal bindings;
+\item the kernel checks this evidence, derives instantiated formulas and SAT clauses, and requires UNSAT from its trusted in-process Rust SAT checker;
+\item backend resolution traces, SMT proof objects, logs, and exit codes are not trusted acceptance evidence.
 \end{itemize}
 \note{
 \smallskip
 \textbf{Presenter script:}
+\smallskip
+\textbf{Say:}
+\begin{itemize}
+\setlength{\itemsep}{1pt}
+\setlength{\parsep}{0pt}
+\setlength{\parskip}{0pt}
+\item Hashes bind evidence to its dependency context. The kernel also checks binder conditions and the goal's refutation polarity.
+\end{itemize}
 \smallskip
 \textbf{Read aloud:}
 \begin{itemize}
 \setlength{\itemsep}{1pt}
 \setlength{\parsep}{0pt}
 \setlength{\parskip}{0pt}
-\item accepted evidence is normalized into replayable certificate data;
-\item the kernel checks imported facts, substitutions, clause well-formedness, and the resolution/SAT trace. It does not trust a solver's exit code. Unsoundness in search cannot cause unsoundness in accepted results;
-\item hashes link an accepted proof to its dependency slice. The proof cannot be reused with another slice without checking.
+\item KernelEvidence contains source formulas, explicit substitutions, provenance, and target/goal bindings;
+\item the kernel checks this evidence, derives instantiated formulas and SAT clauses, and requires UNSAT from its trusted in-process Rust SAT checker;
+\item backend resolution traces, SMT proof objects, logs, and exit codes are not trusted acceptance evidence.
 \end{itemize}
 }
 \end{frame}
@@ -1297,7 +1310,7 @@ For the table, read the row labels first, then the design reason.
 \setlength{\itemsep}{1pt}
 \setlength{\parsep}{0pt}
 \setlength{\parskip}{0pt}
-\item the de Bruijn discipline: a small checker judges everything;
+\item the de Bruijn discipline: acceptance uses a small trusted core, including its SAT checker;
 \item proof text stays declarative and readable - automation maintains the argument, it does not replace it.
 \end{itemize}
 \smallskip
@@ -1306,7 +1319,7 @@ For the table, read the row labels first, then the design reason.
 \setlength{\itemsep}{1pt}
 \setlength{\parsep}{0pt}
 \setlength{\parskip}{0pt}
-\item Is the SAT/resolution certificate approach convincing for Mizar-style obligations, including clusters and definitional expansions?
+\item Is the formula/substitution evidence approach convincing for Mizar-style obligations, including clusters and definitional expansions?
 \item Which evidence format would the team be most willing to audit?
 \end{itemize}
 \note{
@@ -1318,9 +1331,9 @@ For the table, read the row labels first, then the design reason.
 \setlength{\itemsep}{1pt}
 \setlength{\parsep}{0pt}
 \setlength{\parskip}{0pt}
-\item the de Bruijn discipline: a small checker judges everything;
+\item the de Bruijn discipline: acceptance uses a small trusted core, including its SAT checker;
 \item proof text stays declarative and readable - automation maintains the argument, it does not replace it.
-\item Is the SAT/resolution certificate approach convincing for Mizar-style obligations, including clusters and definitional expansions?
+\item Is the formula/substitution evidence approach convincing for Mizar-style obligations, including clusters and definitional expansions?
 \item Which evidence format would the team be most willing to audit?
 \end{itemize}
 }
@@ -1363,9 +1376,9 @@ For the table, read the row labels first, then the design reason.
 \setlength{\itemsep}{1pt}
 \setlength{\parsep}{0pt}
 \setlength{\parskip}{0pt}
-\item hash the source, the dependency interfaces, the generated obligations, and the proof witnesses;
-\item reuse a result only when fingerprints and verifier policy match;
-\item a proof-body-only change does not rebuild importers, because public statements and statuses are unchanged;
+\item cache keys cover source, dependency slices, package/lockfile, toolchain, schema, policy, registrations, obligations, evidence, and witnesses;
+\item reuse requires all relevant keys to match; missing data causes a cache miss;
+\item a theorem proof-body edit does not rebuild importers if its exported statement and accepted status stay unchanged;
 \item independent modules, obligations, ATP runs, and kernel checks run in parallel; results are published in canonical order.
 \end{itemize}
 \note{
@@ -1377,9 +1390,9 @@ For the table, read the row labels first, then the design reason.
 \setlength{\itemsep}{1pt}
 \setlength{\parsep}{0pt}
 \setlength{\parskip}{0pt}
-\item hash the source, the dependency interfaces, the generated obligations, and the proof witnesses;
-\item reuse a result only when fingerprints and verifier policy match;
-\item a proof-body-only change does not rebuild importers, because public statements and statuses are unchanged;
+\item cache keys cover source, dependency slices, package/lockfile, toolchain, schema, policy, registrations, obligations, evidence, and witnesses;
+\item reuse requires all relevant keys to match; missing data causes a cache miss;
+\item a theorem proof-body edit does not rebuild importers if its exported statement and accepted status stay unchanged;
 \item independent modules, obligations, ATP runs, and kernel checks run in parallel; results are published in canonical order.
 \end{itemize}
 }
@@ -1407,13 +1420,16 @@ Introduce the next topic: The Evo Answer: Fingerprints And Incrementality (2/2).
 \begin{frame}[fragile,t]{6.3 - The Evo Answer: A Memory Contract\deepdivetag}
 \begin{lstlisting}[language={},basicstyle=\ttfamily\footnotesize]
 resident memory should scale with:
-  active source
+  active source and typed AST
   imported public interfaces
   import-filtered indexes
   active module obligations
+  in-flight proof checks and ATP runs
+  small caches
 
 not with:
   imported proof bodies
+  imported proof witnesses
   private lemmas outside the interface
   registration data outside the import closure
 \end{lstlisting}
@@ -1423,7 +1439,7 @@ not with:
 \setlength{\itemsep}{1pt}
 \setlength{\parsep}{0pt}
 \setlength{\parskip}{0pt}
-\item Interfaces are loaded; proof bodies are not. This is what makes whole-MML editing sessions possible on ordinary hardware.
+\item This is a resident-memory model, not a measured performance guarantee. Proof bodies and traces load lazily for specific queries.
 \end{itemize}
 \note{
 \smallskip
@@ -1434,7 +1450,7 @@ not with:
 \setlength{\itemsep}{1pt}
 \setlength{\parsep}{0pt}
 \setlength{\parskip}{0pt}
-\item Interfaces are loaded; proof bodies are not. This is what makes whole-MML editing sessions possible on ordinary hardware.
+\item This is a resident-memory model, not a measured performance guarantee. Proof bodies and traces load lazily for specific queries.
 \end{itemize}
 After the example, explain which design obligation the syntax shows.
 
@@ -1575,8 +1591,8 @@ end;
 \setlength{\parsep}{0pt}
 \setlength{\parskip}{0pt}
 \item a template is an ordinary \texttt{definition} block whose leading \texttt{let} binds parameters: types, values, predicates, or functors;
-\item one mechanism covers structures, modes, functors, predicates, theorems, registrations, and algorithms;
-\item readable short forms remain: \texttt{Module over R} is an automatic synonym for \texttt{Module[R]}, \texttt{Subset of X} for \texttt{Subset[X]}.
+\item predicate and functor parameters cannot be used in \texttt{attr}, \texttt{mode}, \texttt{struct}, \texttt{func}, or \texttt{pred} items;
+\item eligible templates get short forms: \texttt{Module over R} for \texttt{Module[R]}, \texttt{Subset of X} for \texttt{Subset[X]}. Constrained templates require brackets.
 \end{itemize}
 \note{
 \smallskip
@@ -1588,8 +1604,8 @@ end;
 \setlength{\parsep}{0pt}
 \setlength{\parskip}{0pt}
 \item a template is an ordinary definition block whose leading let binds parameters: types, values, predicates, or functors;
-\item one mechanism covers structures, modes, functors, predicates, theorems, registrations, and algorithms;
-\item readable short forms remain: Module over R is an automatic synonym for Module[R], Subset of X for Subset[X].
+\item predicate and functor parameters cannot be used in attr, mode, struct, func, or pred items;
+\item eligible templates get short forms: Module over R for Module[R], Subset of X for Subset[X]. Constrained templates require brackets.
 \end{itemize}
 After the example, explain which design obligation the syntax shows.
 
@@ -1598,7 +1614,7 @@ After the example, explain which design obligation the syntax shows.
 
 \begin{frame}[fragile,t]{7.4 - Bounded Parameters And Generic Theorems\deepdivetag}
 \smallskip
-\textbf{Mizar Evo}~\badgeSpec
+\textbf{Mizar Evo}~\badgeSketch~{\footnotesize(from specification §18.2.2; \texttt{Product} laws omitted)}
 \begin{lstlisting}[language={mizar},basicstyle=\ttfamily\footnotesize]
 definition
   let T be type extends commutative Magma;
@@ -1616,7 +1632,7 @@ end;
 \setlength{\parsep}{0pt}
 \setlength{\parskip}{0pt}
 \item \texttt{type extends commutative Magma} states what the parameter must provide before any proof search begins;
-\item the theorem is proved once, for every commutative operation.
+\item commutativity alone is not enough for this sketch: \texttt{Product} also needs associativity and a unit for the empty product.
 \end{itemize}
 \note{
 \smallskip
@@ -1627,8 +1643,9 @@ end;
 \setlength{\itemsep}{1pt}
 \setlength{\parsep}{0pt}
 \setlength{\parskip}{0pt}
+\item Mizar Evo (sketch from specification §18.2.2; Product laws omitted):
 \item type extends commutative Magma states what the parameter must provide before any proof search begins;
-\item the theorem is proved once, for every commutative operation.
+\item commutativity alone is not enough for this sketch: Product also needs associativity and a unit for the empty product.
 \end{itemize}
 After the example, explain which design obligation the syntax shows.
 
@@ -1637,7 +1654,7 @@ After the example, explain which design obligation the syntax shows.
 
 \begin{frame}[fragile,t]{7.5 - One Proof, Many Instantiations\deepdivetag}
 \smallskip
-\textbf{Instantiation}~\badgeSpec
+\textbf{Instantiation}~\badgeSketch~{\footnotesize(; assumes the required laws and attribute evidence)}
 \begin{lstlisting}[language={mizar},basicstyle=\ttfamily\small]
 PermProduct[AddMagma]              :: additive form
 PermProduct[commutative MulMagma]  :: multiplicative form
@@ -1663,6 +1680,7 @@ PermProduct[R qua MulMagma]        :: R's multiplicative view
 \setlength{\itemsep}{1pt}
 \setlength{\parsep}{0pt}
 \setlength{\parskip}{0pt}
+\item Instantiation (sketch; assumes the required laws and attribute evidence):
 \item qua selects the intended view when a ring reaches Magma along two paths - and notation follows the view: the generic * displays as + under the additive instantiation.
 \end{itemize}
 After the example, explain which design obligation the syntax shows.
@@ -1690,7 +1708,7 @@ end;
 \setlength{\parskip}{0pt}
 \item predicate parameters follow the familiar \texttt{defpred} convention;
 \item legacy schemes have a direct, mechanical migration target;
-\item instantiation is explicit bracket syntax, so tools and artifacts see exactly which instance a proof uses.
+\item theorem instantiation uses explicit brackets, so tools and artifacts see exactly which instance a proof uses.
 \end{itemize}
 \note{
 \smallskip
@@ -1703,7 +1721,7 @@ end;
 \setlength{\parskip}{0pt}
 \item predicate parameters follow the familiar defpred convention;
 \item legacy schemes have a direct, mechanical migration target;
-\item instantiation is explicit bracket syntax, so tools and artifacts see exactly which instance a proof uses.
+\item theorem instantiation uses explicit brackets, so tools and artifacts see exactly which instance a proof uses.
 \end{itemize}
 After the example, explain which design obligation the syntax shows.
 
@@ -1719,7 +1737,7 @@ After the example, explain which design obligation the syntax shows.
 \setlength{\parskip}{0pt}
 \item scheme-style reasoning keeps the same power;
 \item \texttt{of} / \texttt{over} phrasing keeps mathematical prose readable;
-\item first-order discipline: templates are checked instantiation, not a new logic.
+\item first-order discipline: each instantiation is checked; templates add no new logic.
 \end{itemize}
 \smallskip
 \textbf{Questions for Bialystok:}
@@ -1729,7 +1747,7 @@ After the example, explain which design obligation the syntax shows.
 \setlength{\parskip}{0pt}
 \item Which MML schemes should be the first migration targets?
 \item Are brackets acceptable as the canonical identity form, with \texttt{of}/\texttt{over} as display forms?
-\item The specification limits inference. A parameter is inferred only when the declared argument types determine it uniquely. \texttt{qua} views are never inferred. Does this rule suit real MML idioms, or does it require too many explicit \texttt{[T]}?
+\item For \texttt{func} and \texttt{pred} templates, normalized declared argument types must determine each inferred type parameter uniquely. \texttt{qua} views are never inferred. Does this rule require too many explicit \texttt{[T]} arguments?
 \end{itemize}
 \note{
 \smallskip
@@ -1742,7 +1760,7 @@ After the example, explain which design obligation the syntax shows.
 \setlength{\parskip}{0pt}
 \item scheme-style reasoning keeps the same power;
 \item of / over phrasing keeps mathematical prose readable;
-\item first-order discipline: templates are checked instantiation, not a new logic.
+\item first-order discipline: each instantiation is checked; templates add no new logic.
 \item Which MML schemes should be the first migration targets?
 \item Are brackets acceptable as the canonical identity form, with of/over as display forms?
 \end{itemize}
@@ -1852,9 +1870,9 @@ end;
 \setlength{\itemsep}{1pt}
 \setlength{\parsep}{0pt}
 \setlength{\parskip}{0pt}
-\item the Mizar Virtual Machine (MVM) evaluates ground goals during verification, under explicit step, time, and depth budgets;
-\item only ground equalities and ground predicates qualify; everything else still requires a classical proof;
-\item imported algorithms are opaque: downstream proofs may use only their \texttt{ensures} contract, never their body.
+\item the Mizar Virtual Machine (MVM) supports only ground equalities and predicates, using computable algorithms defined in the current package;
+\item step, time, and depth limits are optional; each defaults to \texttt{0} (unlimited);
+\item algorithms from other packages are opaque. Their \texttt{ensures} contract is usable when termination is known; their body cannot be executed here.
 \end{itemize}
 \note{
 \smallskip
@@ -1865,9 +1883,9 @@ end;
 \setlength{\itemsep}{1pt}
 \setlength{\parsep}{0pt}
 \setlength{\parskip}{0pt}
-\item the Mizar Virtual Machine (MVM) evaluates ground goals during verification, under explicit step, time, and depth budgets;
-\item only ground equalities and ground predicates qualify; everything else still requires a classical proof;
-\item imported algorithms are opaque: downstream proofs may use only their ensures contract, never their body.
+\item the Mizar Virtual Machine (MVM) supports only ground equalities and predicates, using computable algorithms defined in the current package;
+\item step, time, and depth limits are optional; each defaults to 0 (unlimited);
+\item algorithms from other packages are opaque. Their ensures contract is usable when termination is known; their body cannot be executed here.
 \end{itemize}
 After the example, explain which design obligation the syntax shows.
 
@@ -1895,12 +1913,20 @@ end;
 \setlength{\parsep}{0pt}
 \setlength{\parskip}{0pt}
 \item ordinary \texttt{func} definitions are definitional extensions: never recursive;
-\item once its termination obligations are proved, a \texttt{terminating} algorithm is promoted to a functor, usable in any proof;
+\item a \texttt{terminating} algorithm becomes a functor after all contract and termination obligations are proved for inputs satisfying \texttt{requires};
 \item this is the only way to add recursion to the mathematical layer. It requires a proof.
 \end{itemize}
 \note{
 \smallskip
 \textbf{Presenter script:}
+\smallskip
+\textbf{Say:}
+\begin{itemize}
+\setlength{\itemsep}{1pt}
+\setlength{\parsep}{0pt}
+\setlength{\parskip}{0pt}
+\item Each call must satisfy \texttt{requires}. An ordinary algorithm may prove only partial correctness and is not promoted to a functor.
+\end{itemize}
 \smallskip
 \textbf{Read aloud:}
 \begin{itemize}
@@ -1908,11 +1934,9 @@ end;
 \setlength{\parsep}{0pt}
 \setlength{\parskip}{0pt}
 \item ordinary func definitions are definitional extensions: never recursive;
-\item once its termination obligations are proved, a terminating algorithm is promoted to a functor, usable in any proof;
+\item a terminating algorithm becomes a functor after all contract and termination obligations are proved for inputs satisfying requires;
 \item this is the only way to add recursion to the mathematical layer. It requires a proof.
 \end{itemize}
-After the example, explain which design obligation the syntax shows.
-
 }
 \end{frame}
 
@@ -1924,7 +1948,7 @@ After the example, explain which design obligation the syntax shows.
 \setlength{\parsep}{0pt}
 \setlength{\parskip}{0pt}
 \item contracts, invariants, and termination measures generate verification conditions that pass through the same ATP-plus-kernel boundary as ordinary theorems (story 4);
-\item \texttt{by computation} is MVM replay under budgets, not solver trust;
+\item \texttt{by computation} uses MVM replay with optional limits;
 \item code extraction (to runtime targets) is strictly downstream of verified artifacts and can never affect acceptance.
 \end{itemize}
 \smallskip
@@ -1945,7 +1969,7 @@ After the example, explain which design obligation the syntax shows.
 \setlength{\parsep}{0pt}
 \setlength{\parskip}{0pt}
 \item contracts, invariants, and termination measures generate verification conditions that pass through the same ATP-plus-kernel boundary as ordinary theorems (story 4);
-\item by computation is MVM replay under budgets, not solver trust;
+\item by computation uses MVM replay with optional limits;
 \item code extraction (to runtime targets) is strictly downstream of verified artifacts and can never affect acceptance.
 \item Algorithms let the library express more. They do not change what it means for a theorem to be accepted.
 \end{itemize}
@@ -1959,7 +1983,8 @@ After the example, explain which design obligation the syntax shows.
 \setlength{\itemsep}{1pt}
 \setlength{\parsep}{0pt}
 \setlength{\parskip}{0pt}
-\item the theorem language is unchanged; algorithms live in \texttt{definition} blocks and interact with proofs only through contracts and verified promotion;
+\item algorithms live in \texttt{definition} blocks. Proofs can use verified promotion or \texttt{by computation} for computable ground calls in the current package;
+\item a partial algorithm's \texttt{ensures} needs evidence that the call terminates;
 \item first-order set-theoretic foundations stay intact.
 \end{itemize}
 \smallskip
@@ -1981,11 +2006,11 @@ After the example, explain which design obligation the syntax shows.
 \setlength{\itemsep}{1pt}
 \setlength{\parsep}{0pt}
 \setlength{\parskip}{0pt}
-\item the theorem language is unchanged; algorithms live in definition blocks and interact with proofs only through contracts and verified promotion;
+\item algorithms live in definition blocks. Proofs can use verified promotion or by computation for computable ground calls in the current package;
+\item a partial algorithm's ensures needs evidence that the call terminates;
 \item first-order set-theoretic foundations stay intact.
 \item Which computational examples would show clear benefits to mathematicians without shifting the culture toward programming?
 \item Are there MML areas (number theory, combinatorics, finite structures) where by computation would immediately shorten real proofs?
-\item Which extraction targets matter first, if any?
 \end{itemize}
 }
 \end{frame}
@@ -2018,7 +2043,7 @@ After the example, explain which design obligation the syntax shows.
 }
 \end{frame}
 
-\begin{frame}[fragile,t]{9.2 - The Evo Answer: Linked, Not Merged}
+\begin{frame}[fragile,t]{9.2 - The Evo Proposal: Linked Records}
 \begin{center}
 \includegraphics[width=\textwidth,height=0.52\textheight,keepaspectratio]{figures/fm_links.pdf}
 \end{center}
@@ -2054,8 +2079,8 @@ After the example, explain which design obligation the syntax shows.
 \midrule
 readers & written explanations come first; formal source is one click away \\
 maintainers & refactoring no longer rewrites published explanations \\
-authors & articles cite stable identities, not file layouts \\
-AI tools & prose for retrieval, fingerprints for exact context \\
+authors & frozen \texttt{pub} article identities; FQNs for library locations \\
+planned AI tools & prose for retrieval, fingerprints for exact context \\
 \bottomrule
 \end{tabularx}
 \end{footnotesize}
@@ -2078,7 +2103,7 @@ Introduce the next topic: Who Gains What. Point to the example, question, or dia
 \setlength{\parsep}{0pt}
 \setlength{\parskip}{0pt}
 \item Formalized Mathematics remains a real journal with review and written explanations;
-\item origin metadata keeps the link to every existing MML citation.
+\item proposed origin metadata links migrated items to MML citations; the migration mapping still needs to be defined.
 \end{itemize}
 \smallskip
 \textbf{Questions for Bialystok:}
@@ -2099,7 +2124,7 @@ Introduce the next topic: Who Gains What. Point to the example, question, or dia
 \setlength{\parsep}{0pt}
 \setlength{\parskip}{0pt}
 \item Formalized Mathematics remains a real journal with review and written explanations;
-\item origin metadata keeps the link to every existing MML citation.
+\item proposed origin metadata links migrated items to MML citations; the migration mapping still needs to be defined.
 \item Which identity should be primary in user-facing citations: article label, library FQN, or origin id?
 \item How should existing Formalized Mathematics articles link to migrated modules - by updating old links now, when articles are revised, or not at all?
 \end{itemize}
@@ -2107,7 +2132,7 @@ Introduce the next topic: Who Gains What. Point to the example, question, or dia
 \end{frame}
 
 \section{Part 10. Architecture In One Picture}
-\begin{frame}[fragile,t]{10.1 - The Pipeline}
+\begin{frame}[fragile,t]{10.1 - The Core ATP Path}
 \begin{center}
 \includegraphics[width=\textwidth,height=0.52\textheight,keepaspectratio]{figures/pipeline.pdf}
 \end{center}
@@ -2122,6 +2147,14 @@ Introduce the next topic: Who Gains What. Point to the example, question, or dia
 \note{
 \smallskip
 \textbf{Presenter script:}
+\smallskip
+\textbf{Say:}
+\begin{itemize}
+\setlength{\itemsep}{1pt}
+\setlength{\parsep}{0pt}
+\setlength{\parskip}{0pt}
+\item The diagram shows the ATP path. Only obligations still open after deterministic discharge go to ATP; earlier discharge also needs evidence.
+\end{itemize}
 \smallskip
 \textbf{Read aloud:}
 \begin{itemize}
@@ -2172,7 +2205,7 @@ Introduce the next topic: Responsibility Split. Point to the example, question, 
 \midrule
 dependencies & resolver, package manager \\
 structures and automation & checker (inheritance and cluster graphs, traces) \\
-search vs trust & ATP layer, kernel, certificates \\
+search vs trust & ATP layer, kernel, formula/substitution evidence \\
 scale & artifacts, fingerprints, scheduler \\
 templates & elaborator (checked instantiation) \\
 algorithms & VC generator, MVM \\
@@ -2248,7 +2281,7 @@ After the example, explain which design obligation the syntax shows.
 \setlength{\parsep}{0pt}
 \setlength{\parskip}{0pt}
 \item bilingual language specification: 24 chapters plus appendices, English canonical with Japanese companions (\texttt{doc/spec/});
-\item architecture specification: 24 documents covering the pipeline, kernel, certificate format, and AI agent interface (\texttt{doc/design/architecture/});
+\item 24 draft architecture documents covering the pipeline, kernel, kernel evidence, and AI agent interface (\texttt{doc/design/architecture/});
 \item a Rust workspace of 20 crates - lexer, parser, resolver, checker, VC generator, ATP bridge, kernel, build system - roughly 400k lines including tests;
 \item focused audits completed in 2026: kernel soundness, template logic encoding, SAT solver dependency;
 \item the roadmap is split into small tasks that can be verified separately.
@@ -2271,7 +2304,7 @@ After the example, explain which design obligation the syntax shows.
 \setlength{\parsep}{0pt}
 \setlength{\parskip}{0pt}
 \item bilingual language specification: 24 chapters plus appendices, English canonical with Japanese companions (doc/spec/);
-\item architecture specification: 24 documents covering the pipeline, kernel, certificate format, and AI agent interface (doc/design/architecture/);
+\item 24 draft architecture documents covering the pipeline, kernel, kernel evidence, and AI agent interface (doc/design/architecture/);
 \item a Rust workspace of 20 crates - lexer, parser, resolver, checker, VC generator, ATP bridge, kernel, build system - roughly 400k lines including tests;
 \item focused audits completed in 2026: kernel soundness, template logic encoding, SAT solver dependency;
 \item the roadmap is split into small tasks that can be verified separately.
@@ -2325,7 +2358,7 @@ After the example, explain which design obligation the syntax shows.
 \setlength{\parskip}{0pt}
 \item translated articles and lines; accepted parser subset;
 \item resolved imports versus unresolved dependencies;
-\item obligations closed deterministically versus by ATP-plus-certificate;
+\item obligations closed deterministically versus by ATP with kernel evidence;
 \item memory and wall-clock per module, incremental versus clean;
 \item compatibility decisions that required human judgment.
 \end{itemize}
@@ -2340,7 +2373,7 @@ After the example, explain which design obligation the syntax shows.
 \setlength{\parskip}{0pt}
 \item translated articles and lines; accepted parser subset;
 \item resolved imports versus unresolved dependencies;
-\item obligations closed deterministically versus by ATP-plus-certificate;
+\item obligations closed deterministically versus by ATP with kernel evidence;
 \item memory and wall-clock per module, incremental versus clean;
 \item compatibility decisions that required human judgment.
 \end{itemize}
@@ -2354,7 +2387,7 @@ After the example, explain which design obligation the syntax shows.
 \setlength{\itemsep}{1pt}
 \setlength{\parsep}{0pt}
 \setlength{\parskip}{0pt}
-\item preserve theorem identity through origin metadata;
+\item define origin mappings to preserve MML theorem identity;
 \item keep compatibility aliases where they help migration;
 \item record every difference from old behavior with a reason and a test.
 \end{itemize}
@@ -2368,7 +2401,7 @@ After the example, explain which design obligation the syntax shows.
 compatibility work takes all our time & small representative parts first; no all-at-once translation \\
 registrations behave differently & trace artifacts and comparison reports early \\
 package layout breaks journal links & origin metadata, article-to-library identifiers \\
-AI edits hide migration mistakes & Red edits stay forbidden; verifier artifacts required \\
+AI edits hide migration mistakes & Red edits stay forbidden to ordinary agents; verifier artifacts required \\
 \bottomrule
 \end{tabularx}
 \end{footnotesize}
@@ -2382,7 +2415,7 @@ AI edits hide migration mistakes & Red edits stay forbidden; verifier artifacts 
 \setlength{\itemsep}{1pt}
 \setlength{\parsep}{0pt}
 \setlength{\parskip}{0pt}
-\item preserve theorem identity through origin metadata;
+\item define origin mappings to preserve MML theorem identity;
 \item keep compatibility aliases where they help migration;
 \item record every difference from old behavior with a reason and a test.
 \end{itemize}
@@ -2595,7 +2628,7 @@ Attributes and modes & \texttt{06.attributes.md}, \texttt{07.modes.md} \\
 Registrations and reductions & \texttt{17.clusters\_and\_registrations.md} \\
 Templates and schemes & \texttt{18.templates.md} \\
 Algorithms and MVM & \texttt{20.algorithm\_and\_verification.md} \\
-Packages and artifacts & \texttt{23.package\_management\_and\_build\_system.md} \\
+ATP and kernel evidence & \texttt{21.source\_code\_annotation\_and\_atp.md} \\
 \bottomrule
 \end{tabularx}
 \end{footnotesize}
@@ -2626,6 +2659,7 @@ For the table, read the row labels first, then the design reason.
 \toprule
 \textbf{Topic} & \textbf{Specification source (under \texttt{doc/spec/en/})} \\
 \midrule
+Packages and artifacts & \texttt{23.package\_management\_and\_build\_system.md} \\
 Cross-chapter grammar & \texttt{appendix\_a.grammar\_summary.md} \\
 Worked library sketches & \texttt{sample\_codes.md} \\
 \bottomrule
@@ -2656,7 +2690,7 @@ Required diagrams for the final deck (\texttt{figures/*.tex}, TikZ standalone;
 \item Environment-to-import migration (story 1). [done: \texttt{figures/environ\_migration.pdf}, used in frame 2.5]
 \item Structure inheritance and diamond coherence (story 2). [done: \texttt{figures/diamond\_inheritance.pdf}, used in frame 3.5]
 \item Reasoning boundary: semantics / ATP search / kernel checking (story 4). [done: \texttt{figures/reasoning\_boundary.pdf}, used in frame 5.2]
-\item Certificate object and replay (story 4). [done: \texttt{figures/certificate\_replay.pdf}, used in frame 5.3]
+\item KernelEvidence and the trusted SAT check (story 4). [done: \texttt{figures/certificate\_replay.pdf}, used in frame 5.3]
 \end{enumerate}
 \note{
 \smallskip
@@ -2685,7 +2719,7 @@ Required diagrams for the final deck (\texttt{figures/*.tex}, TikZ standalone;
 \setlength{\parskip}{0pt}
 \item Incremental fingerprint graph (story 5). [done: \texttt{figures/fingerprint\_graph.pdf}, used in frame 6.2]
 \item Formalized Mathematics article-to-library link model (story 8). [done: \texttt{figures/fm\_links.pdf}, used in frame 9.2]
-\item Full pipeline with story overlay (Part 10). [done: \texttt{figures/pipeline.pdf}, used in frame 10.1]
+\item Core ATP path with responsibility groups (Part 10). [done: \texttt{figures/pipeline.pdf}, used in frame 10.1]
 \item Roadmap timeline (Part 11). [done: \texttt{figures/roadmap\_timeline.pdf}, used in frame 11.1]
 \end{enumerate}
 \note{
@@ -2699,7 +2733,7 @@ Required diagrams for the final deck (\texttt{figures/*.tex}, TikZ standalone;
 \setlength{\parskip}{0pt}
 \item Incremental fingerprint graph (story 5). [done: figures/fingerprint\_graph.pdf, used in frame 6.2]
 \item Formalized Mathematics article-to-library link model (story 8). [done: figures/fm\_links.pdf, used in frame 9.2]
-\item Full pipeline with story overlay (Part 10). [done: figures/pipeline.pdf, used in frame 10.1]
+\item Core ATP path with responsibility groups (Part 10). [done: figures/pipeline.pdf, used in frame 10.1]
 \item Roadmap timeline (Part 11). [done: figures/roadmap\_timeline.pdf, used in frame 11.1]
 \end{itemize}
 }
@@ -2724,7 +2758,7 @@ Required diagrams for the final deck (\texttt{figures/*.tex}, TikZ standalone;
 \item Mizar as baseline: readability, MML, Formalized Mathematics.
 \item Design principles and the three goals.
 \item Language evolution: dependencies, structures, registrations, templates.
-\item Verifier architecture, certificates, and the small kernel.
+\item Verifier architecture, kernel evidence, and the trusted SAT checker.
 \item Verified computation and the MVM.
 \item AI-safe proof development.
 \end{enumerate}
@@ -2827,7 +2861,7 @@ After the example, explain which design obligation the syntax shows.
 \textbf{Objection} & \textbf{Prepared answer} \\
 \midrule
 Why not improve current Mizar incrementally? & The problems concern boundaries: article granularity, monolithic trust, and implicit environments. These boundaries cannot change in small steps. The rest of the design stays close to Mizar. \\
-What happens to authorship and credit of MML articles? & Origin metadata keeps article identity and authorship during migration. The \texttt{pub} namespace keeps published articles unchanged so they can still be cited. \\
+What happens to authorship and credit of MML articles? & We propose origin mappings that preserve identity and credit during migration. The mapping format is still open. The \texttt{pub} namespace keeps published articles unchanged. \\
 Is this a fork of the community? & It is a proposal to the community; this visit is its first review. The namespace governance model assumes that the Mizar team controls the \texttt{mml} root. \\
 \bottomrule
 \end{tabularx}
@@ -2861,7 +2895,7 @@ For the table, read the row labels first, then the design reason.
 \midrule
 What about GPL / CC-BY-SA obligations? & Migration preserves license and attribution of MML content; toolchain licensing is open for discussion. \\
 Are the claims about AI too strong? & AI assistance is an optional layer that never enters the trusted base; every proposal also works without it. \\
-Why a new kernel instead of the existing checker? & Certificate replay needs a small, auditable core. The existing checker's semantics remain the reference for obligation generation. \\
+Why a new kernel instead of the existing checker? & Formula/substitution evidence needs a small trusted core, including a SAT checker. Mizar Evo's specification defines the obligations; legacy behavior guides migration comparisons. \\
 \bottomrule
 \end{tabularx}
 \end{footnotesize}

@@ -1,4 +1,4 @@
-% Figure: the full pipeline with responsibility groups (part 10).
+% Figure: the core ATP path with responsibility groups (part 10).
 % Build: pdflatex pipeline.tex  (run inside figures/)
 \documentclass[tikz,border=6pt]{standalone}
 \usetikzlibrary{positioning,arrows.meta,fit,backgrounds}
@@ -22,7 +22,7 @@
   \node[art, below=14mm of typ] (core) {CoreIr};
   \node[art, left=of core] (vc) {VcIr};
   \node[art, left=of vc, fill=orange!14, draw=orange!70!black] (prob) {AtpProblem};
-  \node[art, left=of prob, fill=green!12, draw=green!45!black] (cert) {ProofCertificate};
+  \node[art, left=of prob, fill=green!12, draw=green!45!black] (cert) {KernelEvidence\\ \scriptsize candidate};
   \node[art, left=of cert, fill=green!12, draw=green!45!black] (ver) {VerifiedArtifact};
 
   \draw[flow] (src) -- (tok);
@@ -33,7 +33,7 @@
   \draw[flow] (core) -- (vc);
   \draw[flow] (vc) -- (prob);
   \draw[flow] (prob) -- (cert);
-  \draw[flow] (cert) -- (ver);
+  \draw[flow] (cert) -- node[font=\sffamily\scriptsize, above] {check} (ver);
 
   % Responsibility groups
   \node[group, above=1.5mm of tok] {frontend};

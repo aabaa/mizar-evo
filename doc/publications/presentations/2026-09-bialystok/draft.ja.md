@@ -33,6 +33,7 @@ Mizar Evo は「既存 Mizar の置き換え」ではなく、「Mizar の伝統
 - `doc/spec/en/17.clusters_and_registrations.md`
 - `doc/spec/en/18.templates.md`
 - `doc/spec/en/20.algorithm_and_verification.md`
+- `doc/spec/en/21.source_code_annotation_and_atp.md`
 - `doc/spec/en/23.package_management_and_build_system.md`
 - `doc/spec/en/sample_codes.md`
 - `doc/design/architecture/en/00.pipeline_overview.md`
@@ -55,7 +56,7 @@ Mizar Evo は「既存 Mizar の置き換え」ではなく、「Mizar の伝統
 
 MML プレーンテキストは GPL-3.0-or-later / CC-BY-SA-3.0-or-later の配布条件を明記している。最終版デッキでは記事名・出典 URL・行番号を発表者ノートに必ず保持する。
 
-仕様書の例は 2026年7月10日 に `doc/spec/en/` と再照合済み: 標準ライブラリの名前空間ルートは `mml` に統一(第12章)、簡約の規則選択は「パターン包摂 → ガード特異性 → FQN タイブレーク」(第17章 §17.6.4)、テンプレートのパラメータ推論は「宣言型から一意に定まる場合のみ・`qua` は決して推論しない」で確定(第18章 §18.2.7)。
+仕様書の例は `doc/spec/en/` に従う。必要な import と先行宣言を前提とし、`...` は省略した証明テキストを表す。カーネル証拠は第21章 §21.7 と `doc/design/architecture/en/15.kernel_certificate_format.md` の現行設計に従う。
 
 ## デッキの形
 
@@ -312,8 +313,8 @@ end;
 
 決定性を与える規則:
 
-- すべての import は最初のアイテムより前に置く。ファイル途中での環境変更はない。
-- import が有効な語彙(active lexicon)の種になり、すべての記号・記法・registration・定理は、ちょうど1つの import まで追跡できる。
+- すべての import は最初の非 import アイテムより前に置く。
+- import が初期の有効な語彙(active lexicon)を供給する。局所宣言は宣言位置以降で語彙を拡張し、インポートされたアイテムは出典の FQN を保持する。
 - 安定した完全修飾名(FQN)はパッケージとモジュールのパスから導出される。
 
 ### Frame 2.4 - Evo の答え: パッケージ [deep dive]
@@ -333,7 +334,7 @@ topology = { version = "^0.9", features = ["metric"] }
 
 要点:
 
-- マニフェストとロックファイルがすべてのビルドを再現可能にする。
+- 再現可能なビルドには、固定したソース、ロックファイル、ツールチェーン、検証器設定(決定的な ATP 証拠を含む)が必要である。
 - バージョン付き再利用(SemVer)が、記事集合間のその場しのぎのコピーを置き換える。
 
 ### Frame 2.5 - 環境の移行 [deep dive]
@@ -412,9 +413,13 @@ end;
 
 | 概念 | 意味 | 帰結 |
 |---|---|---|
-| `field` | 値が供給する固有データ | 構成子の形、外延的等価性 |
-| `property` | 一意に定まる標準値 | existence/uniqueness の証明義務 |
+| `field` | 格納データ | 構成子引数、exact instance の等価性 |
+| `property` | 実装から得られる派生値 | `means`: existence/uniqueness、`equals`: 直接の項 |
 | `attribute` | 述語型の細別 | cluster 伝播に参加。レイアウトではない |
+
+発表者ノート:
+
+- property 宣言だけでは値は得られず、実装が値を供給する。構成子の引数は field のみ。実装の定義域が重なる場合は `coherence` が必要。
 
 ### Frame 3.4 - Evo の答え: 明示的な継承
 
@@ -437,7 +442,7 @@ end;
 要点:
 
 - `inherit` 文は親1つにつき1つ。対応付けと改名はソーステキストである。
-- 型の絞り込みや変換には `coherence` 証明義務が付く。
+- 継承メンバーの型が同一でない場合、部分型包含の `coherence` 証明が必要。同名・同型の対応付けでは不要。
 - 加法版・乗法版という命名慣習が、検査されるビューになる。
 
 ### Frame 3.5 - Evo の答え: ダイアモンドが検査可能になる
@@ -445,24 +450,32 @@ end;
 Mizar Evo(specification example):
 
 ```mizar
-struct DoubleLoopStr where
-  field carrier -> set;
-  field add -> BinOp of carrier;
-  field mul -> BinOp of carrier;
-  property zero -> Element of carrier;
-  property one -> Element of carrier;
-end;
+definition
+  struct DoubleLoopStr where
+    field carrier -> set;
+    field add -> BinOp of carrier;
+    field mul -> BinOp of carrier;
+    property zero -> Element of carrier;
+    property one -> Element of carrier;
+  end;
 
-inherit DoubleLoopStr extends AddLoopStr;
-inherit DoubleLoopStr extends MulLoopStr;
+  inherit DoubleLoopStr extends AddLoopStr;
+  inherit DoubleLoopStr extends MulLoopStr;
+end;
 ```
+
+継承図(sketch):
 
 ![検査可能な結合を持つダイアモンド](figures/diamond_inheritance.pdf)
 
 メッセージ:
 
-- 検証器は `from` の連鎖をルート宣言まで辿る。両方の経路が同じ構成要素を導入しなければならない(上図の共有される `carrier`)。
-- ダイアモンド継承は、宣言順で決まる無言のマージではなく、ソース位置付きの診断になる。
+- 同名・同型のメンバーは、ルート宣言が異なっていても結合できる。それ以外の結合には部分型包含の `coherence` 証明が必要。
+- 改名経路は別々のビューとして保持する。ダイアモンド自体は許され、無効な対応付けや証明の欠落が診断になる。
+
+発表者ノート:
+
+- 図は `AddLoopStr` と `MulLoopStr` から `Magma` への、図中の親対応付けを前提とする。コードは両者を親とする子構造体を追加する。
 
 ### Frame 3.6 - 保存されるもの、問いたいこと
 
@@ -527,8 +540,8 @@ end;
 要点:
 
 - すべての registration 項目に必須のラベルが付く。`by` で引用でき、診断で報告され、モジュールインターフェースの一部になる。
-- 検証器は import でフィルタされた cluster 解決グラフを保持する。
-- `@show_resolution` と説明成果物が「なぜ(そうでないのか)」に実際の連鎖で答える。例: empty -> finite -> countable。
+- 検証器はグローバルな cluster グラフを import でフィルタしたビューを使う。
+- `explain-attribute` と resolution trace が、属性を導出できる理由や解決が失敗する理由を示す。例: empty -> finite -> countable。
 
 ### Frame 4.4 - Evo の答え: 向き付き簡約 [deep dive]
 
@@ -557,7 +570,7 @@ end;
 保存されるもの:
 
 - registration と cluster は第一級のまま。証明は短いまま。
-- 使用側に新しい証明テキストは要求されない。追加されるのはトレースだけである。
+- cluster の適用には証明の繰り返しは要らない。簡約には局所的なガード証拠か、明示的な等式引用が要ることがある。
 
 Bialystok への問い:
 
@@ -594,18 +607,26 @@ without trusting the searcher?
 鍵となる規則:
 
 - ATP は名前解決も型推論も cluster 展開もオーバーロード選択も行わない。
-- カーネルは証明探索を行わない。
+- カーネルは与えられた式と代入を検査し、信頼された SAT 検査を実行する。前提を選ばず、代入を発明しない。
 - ATP 前の決定的な討ち取り(discharge)にも再生可能な証拠が要る。「前の段階が済んだと言ったから」では何も受理されない。
 
-### Frame 5.3 - 成功ビットではなく証明書
+発表者ノート:
 
-![証明書とカーネルによる再生](figures/certificate_replay.pdf)
+- 開発ポリシーは `externally_attested` の結果を記録できる。これはカーネル検査済みの証明とは別である。
+
+### Frame 5.3 - 式と代入の証拠
+
+![KernelEvidence とカーネルの trusted SAT check](figures/certificate_replay.pdf)
 
 要点:
 
-- 受理される証拠は再生可能な証明書データに正規化される。
-- カーネルはインポートされた事実、代入、節の整形式性、resolution/SAT トレースを検査する。ソルバの終了コードは信頼しない。ゆえに探索の不健全性は受理結果の不健全性になり得ない。
-- ある依存スライスで受理された証明が別のスライスへ音もなく移動することはない。ハッシュが固定する。
+- `KernelEvidence` はソース式、明示的な代入、出典情報、対象/目標への束縛を含む。
+- カーネルはこの証拠を検査し、インスタンス化された式と SAT 節を導出し、信頼されたプロセス内 Rust SAT checker による UNSAT を要求する。
+- バックエンドの resolution トレース、SMT 証明オブジェクト、ログ、終了コードは、受理の証拠として信頼しない。
+
+発表者ノート:
+
+- ハッシュは証拠を依存関係コンテキストに束縛する。カーネルは束縛変数の条件と目標の反駁極性も検査する。
 
 ### Frame 5.4 - 同じ境界が AI を飼い慣らす
 
@@ -653,12 +674,12 @@ theorem
 
 保存されるもの:
 
-- de Bruijn の規律: 小さな検査器がすべてを裁く。
+- de Bruijn の規律: 受理は SAT checker を含む小さな信頼コアを使う。
 - 証明テキストは宣言的で可読なまま。自動化は論証を保守するのであって、置き換えるのではない。
 
 Bialystok への問い:
 
-- SAT/resolution 証明書の構想は、cluster や定義展開を含む Mizar 型の証明義務に対して説得力があるか。
+- 式/代入の証拠方式は、cluster や定義展開を含む Mizar 型の証明義務に対して説得力があるか。
 - チームが最も監査してもよいと思える証拠フォーマットはどれか。
 
 ## Part 6. Story 5: Verification That Scales(スケールする検証)
@@ -676,9 +697,9 @@ Bialystok への問い:
 
 要点:
 
-- ソース、依存インターフェース、生成された証明義務、証明witnessをハッシュする。
-- フィンガープリントと検証器ポリシーが一致するときだけ結果を再利用する。
-- 証明本体のみの変更はインポート側を再ビルドしない。公開される主張とステータスが不変だからである。
+- キャッシュキーはソース、依存スライス、パッケージ/ロックファイル、ツールチェーン、スキーマ、ポリシー、registration、義務、証拠、witnessを含む。
+- 関係するすべてのキーが一致するときだけ再利用し、データが欠ければ cache miss になる。
+- 定理の証明本体を変更しても、公開された statement と受理 status が変わらなければ importer は再ビルドしない。
 - 独立なモジュール、証明義務、ATP 実行、カーネル検査は並列に走り、結果は正準順で公開される。
 
 ![フィンガープリントグラフ: 変更が何を再検証するか](figures/fingerprint_graph.pdf)
@@ -695,20 +716,23 @@ A clean build must always be able to reproduce every acceptance.
 
 ```text
 resident memory should scale with:
-  active source
+  active source and typed AST
   imported public interfaces
   import-filtered indexes
   active module obligations
+  in-flight proof checks and ATP runs
+  small caches
 
 not with:
   imported proof bodies
+  imported proof witnesses
   private lemmas outside the interface
   registration data outside the import closure
 ```
 
 メッセージ:
 
-- インターフェースはロードされ、証明本体はロードされない。これが普通のハードウェアで MML 全体の編集セッションを可能にする。
+- これは常駐メモリのモデルであり、測定済みの性能保証ではない。特定の query に必要なときだけ証明本体と trace を lazy にロードする。
 
 ### Frame 6.4 - 保存されるもの、問いたいこと
 
@@ -774,12 +798,12 @@ end;
 要点:
 
 - テンプレートは、先頭の `let` がパラメータ(型・値・述語・functor)を束縛する、通常の `definition` ブロックである。
-- 1つの機構が構造体・モード・functor・述語・定理・registration・アルゴリズムを覆う。
-- 読みやすい省略形は生き残る: `Module over R` は `Module[R]` の自動 synonym、`Subset of X` は `Subset[X]` の自動 synonym。
+- predicate と functor のパラメータは `attr`、`mode`、`struct`、`func`、`pred` 項目では使えない。
+- 適格なテンプレートには短い形式が使える: `Module over R` は `Module[R]`、`Subset of X` は `Subset[X]` である。制約付きテンプレートにはブラケットが必要である。
 
 ### Frame 7.4 - 有界パラメータと汎用定理 [deep dive]
 
-Mizar Evo(specification example):
+Mizar Evo(仕様 §18.2.2 のスケッチ; `Product` の法則は省略):
 
 ```mizar
 definition
@@ -795,11 +819,11 @@ end;
 メッセージ:
 
 - `type extends commutative Magma` は、証明探索が始まる前にパラメータが満たすべきものを述べる。
-- 定理は一度だけ証明され、すべての可換演算を覆う。
+- このスケッチでは可換性だけでは足りない。`Product` には結合律と空積の単位元も必要である。
 
 ### Frame 7.5 - 1つの証明、多くのインスタンス化 [deep dive]
 
-インスタンス化(specification example):
+インスタンス化(スケッチ; 必要な法則と attribute の証拠を仮定):
 
 ```mizar
 PermProduct[AddMagma]              :: 加法形
@@ -832,7 +856,7 @@ end;
 
 - 述語パラメータは馴染みの `defpred` の慣習に従う。
 - 旧 scheme には直接的・機械的な移行先がある。
-- インスタンス化は明示的なブラケット構文なので、ツールと成果物は証明がどのインスタンスを使ったかを正確に見られる。
+- 定理のインスタンス化は明示的なブラケット構文を使うので、ツールと成果物は証明がどのインスタンスを使ったかを正確に見られる。
 
 ### Frame 7.7 - 保存されるもの、問いたいこと
 
@@ -840,13 +864,13 @@ end;
 
 - scheme 型の推論は能力を落とさず生き残る。
 - `of` / `over` の言い回しが数学的散文の可読性を保つ。
-- 一階の規律: テンプレートは検査されるインスタンス化であり、新しい論理ではない。
+- 一階の規律: 各インスタンス化を検査する。テンプレートは新しい論理を追加しない。
 
 Bialystok への問い:
 
 - 最初の移行対象にすべき MML の scheme はどれか。
 - ブラケットを正準の同一性形式とし、`of`/`over` を表示形式とすることは受け入れ可能か。
-- 仕様はパラメータ推論を保守的に確定した: 宣言された引数型からパラメータが一意に定まる場合のみ推論し、`qua` ビューは決して推論しない。この保守性は実際の MML イディオムに適合するか、それとも明示的な `[T]` を要求しすぎるか。
+- `func` と `pred` テンプレートでは、正規化した宣言引数型が、推論する各型パラメータを一意に定めなければならない。`qua` ビューは推論しない。この規則は明示的な `[T]` 引数を要求しすぎるか。
 
 ## Part 8. Story 7: Verified Computation With Algorithms(アルゴリズムによる検証済み計算)
 
@@ -912,9 +936,9 @@ end;
 
 要点:
 
-- Mizar Virtual Machine(MVM)が検証中に ground な目標を評価する。ステップ数・時間・深さの明示的な予算の下で動く。
-- 対象になるのは ground な等式と ground な述語だけで、それ以外は従来どおり古典的な証明を要する。
-- インポートされたアルゴリズムは不透明である。下流の証明が使えるのは `ensures` 契約だけで、本体は決して使えない。
+- Mizar Virtual Machine(MVM)が対象とするのは ground な等式と述語だけであり、現行パッケージで定義された計算可能なアルゴリズムを使って評価する。
+- ステップ、時間、深さの制限は任意で、それぞれの既定値は `0`(無制限)である。
+- 他パッケージのアルゴリズムは不透明である。停止性が分かっている場合は `ensures` 契約を使えるが、ここで本体を実行することはできない。
 
 ### Frame 8.4 - Evo の答え: 停止性が再帰を買う [deep dive]
 
@@ -935,15 +959,19 @@ end;
 要点:
 
 - 通常の `func` 定義は定義による拡張であり、決して再帰しない。
-- 停止性義務を果たすと、`terminating` アルゴリズムは本物の functor に昇格し、あらゆる証明で使える。
+- `requires` を満たす入力について contract と termination のすべての義務を証明すると、`terminating` アルゴリズムは functor に昇格する。
 - これが再帰が数学の層に入る唯一の扉であり、その扉は証明の形をしている。
+
+発表者ノート:
+
+- 各呼び出しは `requires` を満たさなければならない。通常の algorithm では停止性の証明は必須ではなく、functor に昇格されない。
 
 ### Frame 8.5 - 計算は真理を再定義しない [deep dive]
 
 要点:
 
 - 契約、不変条件、停止性測度が生成する検証条件は、通常の定理と同じ ATP+カーネル境界(物語4)を通る。
-- `by computation` は予算付きの MVM 再生であり、ソルバへの信頼ではない。
+- `by computation` は制限を任意に設定できる MVM replay を使う。
 - コード抽出(実行ターゲットへの出力)は検証済み成果物の厳密に下流であり、受理へ逆流することはない。
 
 メッセージ:
@@ -954,7 +982,8 @@ end;
 
 保存されるもの:
 
-- 定理の言語は不変である。アルゴリズムは `definition` ブロックに住み、証明と関わるのは契約と検証済み昇格を通じてだけである。
+- アルゴリズムは `definition` ブロックに置く。証明では検証済みの昇格、または現行パッケージの計算可能な ground 呼び出しに対する `by computation` を使える。
+- 部分アルゴリズムの `ensures` を使うには、その呼び出しが停止する証拠が必要である。
 - 一階の集合論的基礎は無傷のまま残る。
 
 Bialystok への問い:
@@ -973,9 +1002,9 @@ Bialystok への問い:
 - しかし記事の同一性とライブラリの編成は強く結合している。ライブラリのリファクタリングは出版済み記事の構造に負荷をかけ、パッケージ再利用にはジャーナル向けの同一性が存在しない。
 - 解説は物語の順序を欲し、再利用は依存の順序を欲する。1つの構造で両方は最適化できない。
 
-### Frame 9.2 - Evo の答え: 結合ではなくリンク
+### Frame 9.2 - Evo の提案: リンクされた記録
 
-![記事-ライブラリ リンクモデル](figures/fm_links.pdf)
+![提案する記事-ライブラリ リンクモデル(スケッチ)](figures/fm_links.pdf)
 
 メッセージ:
 
@@ -987,15 +1016,15 @@ Bialystok への問い:
 |---|---|
 | 読者 | 散文が主役のまま。形式ソースはワンクリック先 |
 | 保守者 | リファクタリングが出版済み解説を書き換えなくなる |
-| 著者 | 記事はファイル配置ではなく安定した同一性を引用する |
-| AI ツール | 検索には散文、正確な文脈にはフィンガープリント |
+| 著者 | 凍結した `pub` の記事同一性。ライブラリ内の所在は FQN |
+| 計画中の AI ツール | 検索には散文、正確な文脈にはフィンガープリント |
 
 ### Frame 9.4 - 保存されるもの、問いたいこと
 
 保存されるもの:
 
 - Formalized Mathematics は査読と解説を備えた本物のジャーナルであり続ける。
-- origin メタデータが既存のすべての MML 引用との連続性を保つ。
+- 提案する origin メタデータは移行項目を MML 引用へリンクする。移行マッピングはまだ定義されていない。
 
 Bialystok への問い:
 
@@ -1004,13 +1033,17 @@ Bialystok への問い:
 
 ## Part 10. Architecture In One Picture(一枚の絵のアーキテクチャ)
 
-### Frame 10.1 - パイプライン
+### Frame 10.1 - コア ATP 経路
 
-![責務グループ付きパイプライン](figures/pipeline.pdf)
+![責務グループ付きコア ATP 経路](figures/pipeline.pdf)
 
 メッセージ:
 
 - すべての境界は、誰がその事実を所有し、どの成果物がそれを記録し、変更時に何を再計算すべきかを述べる。それこそが要点である。
+
+発表者ノート:
+
+- 図は ATP 経路を示す。決定的な討ち取りの後も開いている義務だけが ATP に進み、先行する討ち取りにも証拠が要る。
 
 ### Frame 10.2 - 責務の分割 [deep dive]
 
@@ -1030,7 +1063,7 @@ Bialystok への問い:
 |---|---|
 | 依存関係 | リゾルバ、パッケージマネージャ |
 | 構造体と自動化 | チェッカ(継承・cluster グラフ、トレース) |
-| 探索と信頼 | ATP 層、カーネル、証明書 |
+| 探索と信頼 | ATP 層、カーネル、式/代入の証拠 |
 | スケール | 成果物、フィンガープリント、スケジューラ |
 | テンプレート | エラボレータ(検査されるインスタンス化) |
 | アルゴリズム | VC 生成器、MVM |
@@ -1063,7 +1096,7 @@ Accept everything that should pass
 要点:
 
 - 二言語の言語仕様: 24章+付録(英語正典、日本語対訳。`doc/spec/`)。
-- アーキテクチャ仕様: パイプライン、カーネル、証明書形式、AI エージェントインタフェースを扱う24文書(`doc/design/architecture/`)。
+- パイプライン、カーネル、kernel evidence、AI agent interface を扱うアーキテクチャのドラフト文書24本(`doc/design/architecture/`)。
 - 20クレートの Rust ワークスペース — 字句解析器、パーサ、リゾルバ、チェッカ、VC 生成器、ATP ブリッジ、カーネル、ビルドシステム — テスト込みで約40万行。
 - 2026年に完了した集中監査: カーネル健全性、テンプレート論理エンコーディング、SAT ソルバ依存関係。
 - ロードマップは小さく独立に検証可能なタスク群に分解済み。
@@ -1092,7 +1125,7 @@ Accept everything that should pass
 
 - 翻訳済み記事数と行数。受理されたパーサのサブセット。
 - 解決された import と未解決の依存。
-- 決定的に閉じた義務と、ATP+証明書で閉じた義務。
+- 決定的に閉じた義務と、kernel evidence を伴う ATP で閉じた義務。
 - モジュールあたりのメモリと実時間。差分ビルドとクリーンビルドの比。
 - 人間の判断を要した互換性決定の件数。
 
@@ -1100,7 +1133,7 @@ Accept everything that should pass
 
 ポリシー:
 
-- origin メタデータで定理の同一性を保存する。
+- MML の定理同一性を保つ origin mapping を定義する。
 - 移行に役立つところでは互換エイリアスを残す。
 - 旧挙動からのすべての乖離を、理由とテストとともに記録する。
 
@@ -1109,7 +1142,7 @@ Accept everything that should pass
 | 互換性作業がプロジェクトを飲み込む | 代表スライスを先に。ビッグバン翻訳はしない |
 | registration の挙動が変わる | トレース成果物と比較レポートを早期に |
 | パッケージ配置がジャーナルのリンクを壊す | origin メタデータ、記事-ライブラリ識別子 |
-| AI 編集が移行ミスを隠す | Red 編集は禁止のまま。検証器成果物を必須に |
+| AI 編集が移行ミスを隠す | 通常のエージェントには Red 編集を禁止したまま、検証器成果物を必須に |
 
 ### Frame 11.4 - 2026年9月が生むべきもの
 
@@ -1192,6 +1225,7 @@ Beamer 化のために用意した短い抜粋:
 | registration と簡約 | `17.clusters_and_registrations.md` |
 | テンプレートと scheme | `18.templates.md` |
 | アルゴリズムと MVM | `20.algorithm_and_verification.md` |
+| ATP とカーネル証拠 | `21.source_code_annotation_and_atp.md` |
 | パッケージと成果物 | `23.package_management_and_build_system.md` |
 | 章横断の文法 | `appendix_a.grammar_summary.md` |
 | ライブラリのスケッチ集 | `sample_codes.md` |
@@ -1204,10 +1238,10 @@ Beamer 化のために用意した短い抜粋:
 2. environ から import への移行(物語1)。[作成済み: `figures/environ_migration.pdf`、Frame 2.5 で使用]
 3. 構造体継承とダイアモンドの整合性(物語2)。[作成済み: `figures/diamond_inheritance.pdf`、Frame 3.5 で使用]
 4. 推論境界: 意味論 / ATP 探索 / カーネル検査(物語4)。[作成済み: `figures/reasoning_boundary.pdf`、Frame 5.2 で使用]
-5. 証明書オブジェクトと再生(物語4)。[作成済み: `figures/certificate_replay.pdf`、Frame 5.3 で使用]
+5. KernelEvidence と trusted SAT check(物語4)。[作成済み: `figures/certificate_replay.pdf`、Frame 5.3 で使用]
 6. 差分検証のフィンガープリントグラフ(物語5)。[作成済み: `figures/fingerprint_graph.pdf`、Frame 6.2 で使用]
 7. Formalized Mathematics の記事-ライブラリ リンクモデル(物語8)。[作成済み: `figures/fm_links.pdf`、Frame 9.2 で使用]
-8. 物語を重ねた全パイプライン(Part 10)。[作成済み: `figures/pipeline.pdf`、Frame 10.1 で使用]
+8. 責務グループ付きコア ATP 経路(Part 10)。[作成済み: `figures/pipeline.pdf`、Frame 10.1 で使用]
 9. ロードマップ年表(Part 11)。[作成済み: `figures/roadmap_timeline.pdf`、Frame 11.1 で使用]
 
 ## Backup D. 論文アウトラインの種
@@ -1224,7 +1258,7 @@ Mizar Evo: Readable, AI-Ready, and Scalable Formal Mathematics
 2. 基準線としての Mizar: 可読性、MML、Formalized Mathematics。
 3. 設計原則と3本柱。
 4. 言語の進化: 依存関係、構造体、registration、テンプレート。
-5. 検証器アーキテクチャ、証明書、小さなカーネル。
+5. 検証器アーキテクチャ、kernel evidence、trusted SAT checker。
 6. 検証済み計算と MVM。
 7. AI 安全な証明開発。
 8. パッケージベースのライブラリと出版ワークフロー。
@@ -1251,11 +1285,11 @@ Beamer 化の前にこのチェックリストを使う:
 | 反論 | 準備回答 |
 |---|---|
 | なぜ現行 Mizar の漸進的改良ではだめなのか | 痛みは境界の形をしている: 記事粒度、一枚岩の信頼、暗黙の環境。境界は漸進的には動かせないが、境界より上はすべて意図的に保守的である。 |
-| 既存 MML 記事の著者性とクレジットはどうなるか | origin メタデータが移行を通じて記事の同一性と著者性を保存する。`pub` 名前空間は出版済み記事を凍結したまま引用可能に保つ。 |
+| 既存 MML 記事の著者性とクレジットはどうなるか | 移行中の同一性とクレジットを保つ origin mapping を提案する。マッピング形式はまだ開いている。`pub` 名前空間は出版済み記事を変更せずに保つ。 |
 | これはコミュニティのフォークではないのか | コミュニティへの提案であり、この訪問がその最初のレビューである。名前空間のガバナンスモデルは `mml` ルートを Mizar チームが統治する前提である。 |
 | GPL / CC-BY-SA の義務はどうするのか | 移行は MML 内容のライセンスと帰属を保存する。ツールチェーンのライセンスは議論に開かれている。 |
 | AI の話は誇大宣伝ではないのか | AI 支援は信頼基盤に決して入らない選択的レイヤであり、すべての提案は AI なしでも成立する。 |
-| なぜ既存チェッカではなく新しいカーネルなのか | 証明書の再生検査には小さく監査可能なコアが要る。既存チェッカの意味論は、義務生成の参照基準であり続ける。 |
+| なぜ既存チェッカではなく新しいカーネルなのか | 式/代入の証拠には SAT checker を含む小さな信頼コアが要る。Mizar Evo の仕様が義務を定め、旧挙動は移行比較の指針になる。 |
 
 発表者ノート:
 

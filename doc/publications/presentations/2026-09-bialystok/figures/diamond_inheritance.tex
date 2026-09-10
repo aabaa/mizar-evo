@@ -26,14 +26,15 @@
   \draw[inh] (dbl) -- (mul);
 
   \node[check, right=10mm of magma, align=left, text width=52mm]
-    {\textcolor{green!40!black}{\textbf{checked join:}} \texttt{carrier}
-     reached along both paths must be the same component};
+    {\textcolor{green!40!black}{\textbf{checked joins:}} same-name,
+     same-type members join even from distinct roots; other members require
+     subtype coherence};
   \node[check, right=10mm of dbl, align=left, text width=52mm]
-    {\textcolor{blue!50!black}{\textbf{distinct views:}} \texttt{add} and
-     \texttt{mul} are renamed edges and stay separate};
+    {\textcolor{blue!50!black}{\textbf{distinct views:}} renamed \texttt{add}
+     and \texttt{mul} stay separate; missing proofs or invalid mappings are
+     diagnostics};
 
   \node[font=\sffamily\footnotesize\itshape, text=black!60, below=4mm of dbl]
-    {the verifier traces \texttt{from} chains to root declarations ---
-     disagreement is a diagnostic with source spans};
+    {the verifier traces \texttt{from} chains to root declarations};
 \end{tikzpicture}
 \end{document}
