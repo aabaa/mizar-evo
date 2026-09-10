@@ -803,11 +803,11 @@ end;
 
 ### Frame 7.4 - 有界パラメータと汎用定理 [deep dive]
 
-Mizar Evo(仕様 §18.2.2 のスケッチ; `Product` の法則は省略):
+Mizar Evo(仕様 §18.2.2 の例; 証明は省略):
 
 ```mizar
 definition
-  let T be type extends commutative Magma;
+  let T be type extends commutative associative unital Magma;
   theorem PermProduct[T]:
     for s being FinSequence of T,
         p being Permutation of dom s
@@ -818,16 +818,16 @@ end;
 
 メッセージ:
 
-- `type extends commutative Magma` は、証明探索が始まる前にパラメータが満たすべきものを述べる。
-- このスケッチでは可換性だけでは足りない。`Product` には結合律と空積の単位元も必要である。
+- 境界条件は、可換性、結合律、単位元を要求する。
+- `Product[T]` は単位元から始め、選択した演算で列を fold する。これらの定義方程式はライブラリが証明する。
 
 ### Frame 7.5 - 1つの証明、多くのインスタンス化 [deep dive]
 
-インスタンス化(スケッチ; 必要な法則と attribute の証拠を仮定):
+インスタンス化(仕様の例; 必要な registration を仮定):
 
 ```mizar
-PermProduct[AddMagma]              :: 加法形
-PermProduct[commutative MulMagma]  :: 乗法形
+PermProduct[commutative associative unital AddMagma]
+PermProduct[commutative associative unital MulMagma]
 
 let R be commutative Ring;
 PermProduct[R qua AddMagma]        :: R の加法ビュー
@@ -836,7 +836,8 @@ PermProduct[R qua MulMagma]        :: R の乗法ビュー
 
 メッセージ:
 
-- 環が2つの経路で Magma に到達するとき、`qua` が意図したビューを選ぶ。そして記法はビューに追従する。総称の `*` は加法インスタンスの下では `+` として表示される。
+- 環は2つの経路で Magma に到達する。`qua` がビューを選ぶ。ビューは記法も決める。総称の `*` は加法の場合には `+` として表示される。
+- 必要な属性は、選択したビュー上で成立していなければならない。
 
 ### Frame 7.6 - scheme は普通のテンプレートになる [deep dive]
 

@@ -893,11 +893,11 @@ Bullets:
 
 ### Frame 7.4 - Bounded Parameters And Generic Theorems [deep dive]
 
-Mizar Evo (sketch from specification §18.2.2; `Product` laws omitted):
+Mizar Evo (specification example, §18.2.2; proof omitted):
 
 ```mizar
 definition
-  let T be type extends commutative Magma;
+  let T be type extends commutative associative unital Magma;
   theorem PermProduct[T]:
     for s being FinSequence of T,
         p being Permutation of dom s
@@ -908,18 +908,17 @@ end;
 
 Message:
 
-- `type extends commutative Magma` states what the parameter must provide
-  before any proof search begins;
-- commutativity alone is not enough for this sketch: `Product` also needs
-  associativity and a unit for the empty product.
+- The bound requires commutativity, associativity, and a unit.
+- `Product[T]` starts with the unit and folds the sequence with the
+  selected operation. The library proves these defining equations.
 
 ### Frame 7.5 - One Proof, Many Instantiations [deep dive]
 
-Instantiation (sketch; assumes the required laws and attribute evidence):
+Instantiation (specification example, with the required registrations):
 
 ```mizar
-PermProduct[AddMagma]              :: additive form
-PermProduct[commutative MulMagma]  :: multiplicative form
+PermProduct[commutative associative unital AddMagma]
+PermProduct[commutative associative unital MulMagma]
 
 let R be commutative Ring;
 PermProduct[R qua AddMagma]        :: R's additive view
@@ -928,9 +927,10 @@ PermProduct[R qua MulMagma]        :: R's multiplicative view
 
 Message:
 
-- `qua` selects the intended view when a ring reaches Magma along two
-  paths - and notation follows the view: the generic `*` displays as `+`
-  under the additive instantiation.
+- A ring reaches Magma along two paths. `qua` selects the view.
+  The view also sets the notation: the generic `*` appears as `+`
+  for addition.
+- The required attributes must hold on the selected view.
 
 ### Frame 7.6 - Schemes Become Ordinary Templates [deep dive]
 

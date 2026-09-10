@@ -1614,10 +1614,10 @@ After the example, explain which design obligation the syntax shows.
 
 \begin{frame}[fragile,t]{7.4 - Bounded Parameters And Generic Theorems\deepdivetag}
 \smallskip
-\textbf{Mizar Evo}~\badgeSketch~{\footnotesize(from specification §18.2.2; \texttt{Product} laws omitted)}
+\textbf{Mizar Evo}~\badgeSpec~{\footnotesize(§18.2.2; proof omitted)}
 \begin{lstlisting}[language={mizar},basicstyle=\ttfamily\footnotesize]
 definition
-  let T be type extends commutative Magma;
+  let T be type extends commutative associative unital Magma;
   theorem PermProduct[T]:
     for s being FinSequence of T,
         p being Permutation of dom s
@@ -1631,8 +1631,8 @@ end;
 \setlength{\itemsep}{1pt}
 \setlength{\parsep}{0pt}
 \setlength{\parskip}{0pt}
-\item \texttt{type extends commutative Magma} states what the parameter must provide before any proof search begins;
-\item commutativity alone is not enough for this sketch: \texttt{Product} also needs associativity and a unit for the empty product.
+\item The bound requires commutativity, associativity, and a unit.
+\item \texttt{Product[T]} starts with the unit and folds the sequence with the selected operation. The library proves these defining equations.
 \end{itemize}
 \note{
 \smallskip
@@ -1643,9 +1643,9 @@ end;
 \setlength{\itemsep}{1pt}
 \setlength{\parsep}{0pt}
 \setlength{\parskip}{0pt}
-\item Mizar Evo (sketch from specification §18.2.2; Product laws omitted):
-\item type extends commutative Magma states what the parameter must provide before any proof search begins;
-\item commutativity alone is not enough for this sketch: Product also needs associativity and a unit for the empty product.
+\item Mizar Evo (specification example, §18.2.2; proof omitted):
+\item The bound requires commutativity, associativity, and a unit.
+\item Product[T] starts with the unit and folds the sequence with the selected operation. The library proves these defining equations.
 \end{itemize}
 After the example, explain which design obligation the syntax shows.
 
@@ -1654,10 +1654,10 @@ After the example, explain which design obligation the syntax shows.
 
 \begin{frame}[fragile,t]{7.5 - One Proof, Many Instantiations\deepdivetag}
 \smallskip
-\textbf{Instantiation}~\badgeSketch~{\footnotesize(; assumes the required laws and attribute evidence)}
+\textbf{Instantiation}~\badgeSpec~{\footnotesize(with the required registrations)}
 \begin{lstlisting}[language={mizar},basicstyle=\ttfamily\small]
-PermProduct[AddMagma]              :: additive form
-PermProduct[commutative MulMagma]  :: multiplicative form
+PermProduct[commutative associative unital AddMagma]
+PermProduct[commutative associative unital MulMagma]
 
 let R be commutative Ring;
 PermProduct[R qua AddMagma]        :: R's additive view
@@ -1669,7 +1669,8 @@ PermProduct[R qua MulMagma]        :: R's multiplicative view
 \setlength{\itemsep}{1pt}
 \setlength{\parsep}{0pt}
 \setlength{\parskip}{0pt}
-\item \texttt{qua} selects the intended view when a ring reaches Magma along two paths - and notation follows the view: the generic \texttt{*} displays as \texttt{+} under the additive instantiation.
+\item A ring reaches Magma along two paths. \texttt{qua} selects the view. The view also sets the notation: the generic \texttt{*} appears as \texttt{+} for addition.
+\item The required attributes must hold on the selected view.
 \end{itemize}
 \note{
 \smallskip
@@ -1680,8 +1681,8 @@ PermProduct[R qua MulMagma]        :: R's multiplicative view
 \setlength{\itemsep}{1pt}
 \setlength{\parsep}{0pt}
 \setlength{\parskip}{0pt}
-\item Instantiation (sketch; assumes the required laws and attribute evidence):
-\item qua selects the intended view when a ring reaches Magma along two paths - and notation follows the view: the generic * displays as + under the additive instantiation.
+\item A ring reaches Magma along two paths. qua selects the view. The view also sets the notation: the generic * appears as + for addition.
+\item The required attributes must hold on the selected view.
 \end{itemize}
 After the example, explain which design obligation the syntax shows.
 

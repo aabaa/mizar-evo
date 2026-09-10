@@ -10,4 +10,4 @@ diagnostic_codes = []
 spec_refs = [
   "spec.en.18.templates.predicate_parameter.declaration",
 ]
-notes = "Audit-1 semantic-bridge inactive oracle seed (September 2026 audit wave): binding expectation for the Step-5 semantic bridge; no active runner tag, earns no current credit. A template may take a predicate parameter and use its inline application in the definiens (spec 18.x; A.18 pred_param)."
+notes = "Inactive type-elaboration oracle: a theorem may apply a predicate parameter from its enclosing definition (spec 18.2.3, 18.2.6, 18.8.2; declaration syntax follows theorem_item in 18.11). This checks typing intent only, not proof verification; no active runner tag or current semantic credit. Use in a pred definiens remains forbidden."

@@ -255,7 +255,7 @@ the 205 active type-elaboration cases) is not restated here.
 | Requirement | Section | Stage | Coverage | Cases |
 |---|---|---|---|---|
 | `spec.en.18.templates.instantiation.arity` | 18.2 Template Declarations | `type_elaboration` | fail | `fail_type_elaboration_template_arity_mismatch_001` |
-| `spec.en.18.templates.predicate_parameter.declaration` | 18.6 Template for Predicates (pred) | `type_elaboration` | pass | `pass_type_elaboration_template_pred_param_001` |
+| `spec.en.18.templates.predicate_parameter.declaration` | 18.2.3 Predicate Parameters; 18.2.6 Scoping Rules | `type_elaboration` | pass | `pass_type_elaboration_template_pred_param_001` |
 | `spec.en.18.templates.type_parameter.extends_bound` | 18.2 Template Declarations | `type_elaboration` | pass_and_fail | `fail_type_elaboration_template_bound_violation_001`<br>`pass_type_elaboration_template_extends_bound_001` |
 | `spec.en.18.templates.type_parameter.functor` | 18.7 Template for Functors (func) | `type_elaboration` | pass | `pass_type_elaboration_template_type_param_functor_001` |
 
