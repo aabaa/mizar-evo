@@ -82,6 +82,13 @@ Frames marked `[deep dive]` can be skipped without losing the main points.
 Keep each story's questions for later review. Choose two or three questions
 for discussion at the end.
 
+Read the main sentences from top to bottom, including code captions and diagram
+explanations. Code, tables, sources, and sections marked "for later review" are
+optional during the talk. The notes edition repeats the main sentences under
+"Read aloud" and keeps extra explanation and sources separate. Use the title-page
+notes for the opening. Spend more time on selected examples, such as 3.3, 5.2,
+and 8.2; rehearse this route to check the timing.
+
 ## Part 0. Opening
 
 ### Frame 0.1 - Title
@@ -102,16 +109,15 @@ A discussion with the Bialystok Mizar team, September 2026
 
 Speaker note:
 
-- Thank the team.
-- Explain that this is a design review. The team knows best whether the
-  project still looks and reads like Mizar.
-- The design is still open to change. We want to hear objections.
-- Explain frames 3.3, 5.2, and 8.2. Cover the other frames briefly and skip
-  deep dives unless needed. The handout keeps the details for later review.
+- Thank you for inviting me to Bialystok. Today I will introduce Mizar Evo.
+- Mizar is a system for writing mathematical proofs and checking them by computer.
+  Evo is a project to update its language and tools while keeping proofs readable.
+- I will give an overview. The handout keeps the details for later review.
+- The design is still open. I would welcome your comments and objections.
 
 ### Frame 0.2 - A First Look
 
-Legacy Mizar (exact MML excerpt):
+Current Mizar names the parent structure (exact MML excerpt):
 
 ```mizar
 definition
@@ -120,7 +126,7 @@ definition
 end;
 ```
 
-Mizar Evo (specification example):
+Evo also maps the fields to a common Magma view (specification example):
 
 ```mizar
 definition
@@ -138,10 +144,10 @@ end;
 
 Speaker note:
 
+- Both examples describe a carrier and a binary operation.
+  Current Mizar already names the parent, `1-sorted`.
+  The Evo example adds a view of the same fields as a `Magma`.
 - Source: current MML `algstr_0.miz`, lines 37-40.
-- Current Mizar already names the parent: `(1-sorted)`. Evo adds an explicit
-  mapping to a common `Magma` view. Both examples describe a carrier and a
-  binary operation; the Evo example also shows this extra view.
 
 ### Frame 0.3 - The Proposal In One Sentence
 
@@ -152,15 +158,11 @@ Preserve Mizar's mathematical vernacular.
 Update the compiler, verifier, artifact, and publication layers.
 ```
 
-What this talk does not claim:
-
-- Full MML migration is not complete.
-- The language standard is not final.
-- AI assistance is not a substitute for proof checking.
-- We build on what the current Mizar system has achieved.
-
-The Evo examples follow the specification. Some are not yet supported by
-the implementation. See frame 11.0 for the current scope.
+- This is the main proposal. We build on what current Mizar has achieved.
+- The language standard is still a draft. Full MML migration is not complete.
+- AI assistance must never replace proof checking.
+- The Evo examples follow the specification. Some are not yet implemented.
+  I will explain the current implementation scope near the end.
 
 ### Frame 0.4 - How To Read The Examples [deep dive]
 
@@ -181,13 +183,12 @@ Reading rule:
 
 ### Frame 0.5 - What We Need From This Visit
 
-Bullets:
-
-- find compatibility constraints that are hard to see outside MML work;
-- choose migration benchmark articles that are small but representative;
-- review the trust boundary for ATP search and kernel checking;
-- discuss how Formalized Mathematics should link to a package library;
-- collect the objections we have not thought of.
+- The purpose of this visit is to learn from your experience with Mizar.
+- I would like to identify compatibility needs and choose small MML articles
+  for migration experiments.
+- I also hope to discuss how we check results from automated theorem provers, or ATPs.
+  Another topic is how we link our work to Formalized Mathematics.
+- My main question is this.
 
 Main question:
 
@@ -196,82 +197,66 @@ What must Mizar Evo preserve so that the Mizar community
 still recognizes it as Mizar?
 ```
 
+Speaker note:
+
+- There may be constraints that are hard to see without daily MML work.
+  Please tell me about objections I have missed.
+
 ## Part 1. Why Now
 
 ### Frame 1.1 - What Mizar Got Right
 
-Bullets:
-
-- declarative proof text that reads as mathematics;
-- soft types, modes, and adjective-rich vocabulary;
-- attributes, registrations, and clusters as reusable automation;
-- a well-established, carefully maintained library (MML 5.94.1493: 1493 articles);
-- a tradition of publishing formal articles (Formalized Mathematics).
-
-Message:
-
-- We build on these strengths. We judge every proposal by whether it
-  protects them.
+- First, let me explain what I want to keep.
+- Mizar proofs are declarative and read as mathematics.
+- Soft types, modes, and attributes give us a rich mathematical vocabulary.
+- Registrations and clusters provide automation that other proofs can reuse.
+- The Mizar Mathematical Library, or MML, is large and carefully maintained.
+  Formalized Mathematics
+  provides a way to publish this work.
+- I want to judge each Evo proposal by how well it protects these strengths.
 
 Speaker note:
 
-- The audience knows its own system. Spend one minute on the strengths
-  we agree on.
+- The library version cited here is MML 5.94.1493, with 1493 articles.
 
 ### Frame 1.2 - Pressure One: Scale
 
-Bullets:
-
-- MML has grown to roughly 1500 articles that depend on each other.
-- The unit of dependency, review, and reuse is the whole article.
-- Tools resolve article environments. But reviewers cannot see the resolved
-  dependencies in the source.
-- Whole-library maintenance operations (renames, refactorings, revisions)
-  become more risky as the library grows.
-
-Message:
-
-- The problem is not that current Mizar is wrong. It is that article-level
-  boundaries were designed for a smaller library.
+- The first reason for this work is library size.
+- MML has roughly 1500 articles that depend on each other.
+- An article is the unit of dependency, review, and reuse.
+- Tools resolve article environments, but the resolved dependencies are
+  not visible in the source.
+- As the library grows, renaming and revising articles can affect more work.
+  Evo asks whether smaller boundaries would help us maintain the library.
 
 ### Frame 1.3 - Pressure Two: Tooling Expectations
 
-Bullets:
-
-- Editors are expected to give immediate feedback, even on incomplete or broken source.
-- Builds are expected to be reproducible from a manifest and lockfile.
-- Reuse is expected to work through packages with versions.
-- Documentation is expected to be generated, linked, and browsable.
-
-Message:
-
-- Common programming tools already provide these features. New users
-  expect formal libraries to provide them too.
+- The second reason is the way people now expect tools to work.
+- We expect editors to give quick feedback, even while the source is incomplete.
+- We expect a manifest and lockfile to make builds reproducible.
+- We expect packages with versions and documentation that we can browse.
+- These features are common in programming tools. I want them to support
+  work on formal libraries too.
 
 ### Frame 1.4 - Pressure Three: AI
 
-Bullets:
-
-- AI agents are already useful for search, explanation, and repair.
-- They need a limited amount of structured context linked to the source,
-  rather than a copy of the whole library.
-- Their output must never decide whether a proof is valid. Verification
-  must stay independent of how capable the assistant is.
-- Readable source helps here. AI editing and retrieval work best with
-  stable local text patterns.
-
-Message:
-
-- Mizar's readability makes safe AI assistance possible today.
+- The third reason is AI assistance.
+- AI tools can help us search, explain, and edit proofs.
+- They need a small amount of structured context linked to the source.
+  They should not need a copy of the whole library for each task.
+- Their output must still be checked. Proof validity must not depend on
+  how capable the AI tool is.
+- Mizar's readable source helps here. Stable local text patterns make
+  editing and retrieval easier.
 
 ### Frame 1.5 - Three Pressures, One Design
 
 ![Three pressures on a proven design](figures/three_pressures.pdf)
 
-Message:
-
-- These three needs do not mean that Mizar's design was wrong.
-  Together, they give us reasons to change its boundaries.
+- This diagram brings the three reasons together: library size, tools, and AI.
+- They do not mean that Mizar's design was wrong.
+- They explain why I want to update some boundaries while keeping
+  Mizar's readable mathematical language.
 
 ### Frame 1.6 - The Design Rule
 
@@ -282,7 +267,11 @@ Do not make proofs harder to read to add automation.
 Use automation to protect and extend readability.
 ```
 
-Three goals, one test:
+- This gives us three questions. Can people still read the proof?
+  Can tools inspect its context? Will the design work as the library grows?
+- The next eight stories apply these questions to specific problems.
+
+Details for later review:
 
 | Goal | Test for every feature |
 |---|---|
@@ -290,15 +279,11 @@ Three goals, one test:
 | AI-readiness | can a tool see a limited context that we can audit? |
 | Scalability | do boundaries stay stable as the library grows? |
 
-Speaker note:
-
-- The eight stories that follow each apply this rule to one specific problem.
-
 ## Part 2. Story 1: Dependencies You Can See
 
 ### Frame 2.1 - The Problem
 
-Legacy Mizar (exact MML excerpt):
+This environment lists dependencies (exact MML excerpt):
 
 ```mizar
 environ
@@ -314,12 +299,14 @@ environ
 begin :: Additive structures
 ```
 
+- Our first story is about dependencies. These lists tell Mizar which
+  library material an article needs.
+- This form has supported library growth for decades. The question is how
+  to make dependencies easier to review in a larger library.
+
 Speaker note:
 
 - Source: current MML `algstr_0.miz`, lines 15-25.
-- Everyone here has edited these blocks, trying changes until they work.
-- `environ` has supported library growth for decades. We need to consider
-  the cost of using it with today's larger library.
 
 ### Frame 2.2 - Why This Is Difficult [deep dive]
 
@@ -340,7 +327,7 @@ Message:
 
 ### Frame 2.3 - The Evo Answer: Import Prelude
 
-Mizar Evo (specification example):
+Evo puts imports before definitions (specification example):
 
 ```mizar
 import .function;
@@ -353,12 +340,11 @@ definition
 end;
 ```
 
-Rules that make this deterministic:
-
-- all imports appear before the first non-import item;
-- imports provide the initial active lexicon. Local declarations extend it
-  after their declaration points; imported items retain their source FQNs;
-- stable fully-qualified names are derived from package and module paths.
+- Here, the imports come before the first non-import item.
+- They provide the initial active lexicon. Local declarations extend it
+  after their declaration points.
+- Imported items keep their source FQNs. Package and module paths give
+  each item a stable fully-qualified name.
 
 ### Frame 2.4 - The Evo Answer: Packages [deep dive]
 
@@ -392,13 +378,13 @@ Message:
 
 ### Frame 2.6 - What Is Preserved, What We Ask
 
-Preserved:
+- The aim is to preserve the mathematics and theorem identities during migration.
+- A module is still a readable text, with article-style authorship.
+- Origin metadata records where migrated items came from.
+  I will return to this when I discuss publication.
+- The questions below are for later review. I will now turn to structures.
 
-- the mathematics and theorem identities are untouched;
-- article-style authorship remains; a module is still a readable text;
-- migration keeps origin metadata (story 8 returns to this).
-
-Questions for Bialystok:
+Questions for later review:
 
 - Which `environ` roles must remain visually familiar during migration?
 - Which current article dependencies are hardest to explain, and would make
@@ -408,7 +394,7 @@ Questions for Bialystok:
 
 ### Frame 3.1 - The Problem
 
-Legacy Mizar (exact MML excerpt):
+This structure uses the familiar compact form (exact MML excerpt):
 
 ```mizar
 definition
@@ -417,18 +403,16 @@ definition
 end;
 ```
 
-Bullets:
-
-- parent link, fields, and selector layout are one compact declaration;
-- with multiple parents, the merge of inherited fields is implicit;
-- renamed views (additive vs multiplicative) depend on naming conventions;
-- stored data and canonical values (a zero, a unit) are not distinguished.
+- One declaration contains the parent link, fields, and selectors.
+- With several parents, it also determines which inherited fields are shared.
+- Additive and multiplicative views depend on naming conventions.
+- The syntax does not separate stored data from canonical values such as zero.
+- Evo proposes a more explicit way to state these choices.
 
 Speaker note:
 
+- This short form keeps structures close to informal mathematical writing.
 - Source: current MML `algstr_0.miz`, lines 37-40.
-- Explain why this short form was useful: structures stayed close to
-  informal mathematical writing.
 
 ### Frame 3.2 - Why This Is Difficult [deep dive]
 
@@ -447,7 +431,7 @@ Message:
 
 ### Frame 3.3 - The Evo Answer: Field, Property, Attribute
 
-Mizar Evo (specification example):
+Evo separates fields, properties, and attributes (specification example):
 
 ```mizar
 definition
@@ -459,22 +443,21 @@ definition
 end;
 ```
 
-| Concept | Meaning | Consequence |
-|---|---|---|
-| `field` | stored data | constructor arguments; equality of exact instances |
-| `property` | derived value from an implementation | `means`: existence/uniqueness; `equals`: direct term |
-| `attribute` | predicate-style refinement | cluster propagation, not layout |
-
-A property declaration supplies no value. An implementation must provide it.
+- A field stores data, like `carrier` and `add` here. Fields are constructor
+  arguments and determine equality of exact instances.
+- A property, like `zero` here, gets its value from an implementation.
+  The declaration alone supplies no value. `means` requires existence and
+  uniqueness; `equals` gives a term.
+- An attribute is a predicate-style refinement. It supports cluster propagation
+  and does not change the layout.
 
 Speaker note:
 
-- Explain: distinguish stored fields, derived properties, and attributes.
-  Constructors take fields only. Overlapping implementations need `coherence`.
+- Overlapping property implementations need `coherence`.
 
 ### Frame 3.4 - The Evo Answer: Explicit Inheritance
 
-Mizar Evo (specification example):
+Evo writes each parent mapping explicitly (specification example):
 
 ```mizar
 definition
@@ -490,14 +473,14 @@ definition
 end;
 ```
 
-- one `inherit` statement per parent; mapping and renaming are source text;
-- non-identical inherited member types need `coherence` proofs of subtype
-  inclusion. Same-name, same-type mappings need no proof;
-- the additive/multiplicative naming convention becomes a checked view.
+- There is one `inherit` statement for each parent.
+- Here, `from` maps the child's `add` field to the parent's `binop` field.
+- Syntactically identical member types need no proof, even if a name changes.
+  Other types need `coherence` proofs of subtype inclusion.
 
 ### Frame 3.5 - The Evo Answer: Diamonds Become Checkable
 
-Mizar Evo (specification example):
+This child has two parent structures (specification example):
 
 ```mizar
 definition
@@ -514,27 +497,28 @@ definition
 end;
 ```
 
-Inheritance diagram (sketch):
+The diagram shows the inheritance paths (sketch):
 
 ![The diamond, with checkable joins](figures/diamond_inheritance.pdf)
 
-- same-name, same-type members can join even when their root declarations
-  differ. Other joins need `coherence` proofs of subtype inclusion;
+- Same-name, same-type members can join across roots. Different member types need
+  `coherence` proofs of subtype inclusion.
 - Renamed views stay distinct. Invalid mappings or missing proofs give diagnostics.
 
 Speaker note:
 
-- The diagram assumes the shown parent mappings from `AddLoopStr` and
-  `MulLoopStr` to `Magma`. The code adds their shared child.
+- The diagram assumes the shown mappings from `AddLoopStr` and `MulLoopStr`
+  to `Magma`. The code adds their shared child, `DoubleLoopStr`.
 
 ### Frame 3.6 - What Is Preserved, What We Ask
 
-Preserved:
+- We still use carriers, selectors, and `Element of`, as in Mizar.
+- Aggregates become longer only when we need to make a hidden choice explicit.
+- The main question is whether this form is readable in real algebraic articles.
+- I would like to test it on structures with several inheritance paths.
+  Next, I will discuss registrations and clusters.
 
-- structures remain Mizar structures: carriers, selectors, `Element of`;
-- aggregates become longer only where we need to make a hidden decision explicit.
-
-Questions for Bialystok:
+Questions for later review:
 
 - Is the `field` / `property` / `attribute` split readable in real algebraic
   articles, or does it require too many annotations in simple cases?
@@ -546,7 +530,7 @@ Questions for Bialystok:
 
 ### Frame 4.1 - The Problem
 
-Legacy Mizar (exact MML excerpt):
+This registration lets Mizar reuse a proved fact (exact MML excerpt):
 
 ```mizar
 registration
@@ -558,11 +542,12 @@ Element
 end;
 ```
 
+- Registrations let attributes propagate automatically, so proofs stay short.
+- I want to keep this idea and make the steps of the automation easier to see.
+
 Speaker note:
 
 - Source: current MML `algstr_0.miz`, lines 104-109.
-- Registrations are one of Mizar's best ideas. Adjectives propagate
-  automatically, so proofs stay short. But it is hard to see how this works.
 
 ### Frame 4.2 - Why This Is Difficult [deep dive]
 
@@ -582,7 +567,7 @@ Message:
 
 ### Frame 4.3 - The Evo Answer: Labeled, Traceable Registrations
 
-Mizar Evo (specification example):
+Evo gives every registration item a label (specification example):
 
 ```mizar
 registration
@@ -594,13 +579,10 @@ registration
 end;
 ```
 
-Bullets:
-
-- every registration item carries a required label: citable in `by`,
-  reported in diagnostics, part of the module interface;
-- the verifier uses an import-filtered view of the global cluster graph;
-- `explain-attribute` and resolution traces show why an attribute follows
-  or why resolution fails, e.g. empty -> finite -> countable.
+- We can cite the label in `by`. It also appears in diagnostics and the module interface.
+- The verifier uses an import-filtered view of the global cluster graph.
+- `explain-attribute` and resolution traces explain success or failure.
+  For example, they can show the steps from empty to finite to countable.
 
 ### Frame 4.4 - The Evo Answer: Oriented Reductions [deep dive]
 
@@ -628,13 +610,14 @@ Bullets:
 
 ### Frame 4.5 - What Is Preserved, What We Ask
 
-Preserved:
+- Registrations and clusters remain part of the language, and proofs stay short.
+- Applying a cluster does not require us to repeat its proof.
+- A reduction simplifies a term using an equality. It may need local guard
+  evidence or an explicit equality citation.
+- I would like to learn which explanations would help most in daily MML work.
+  This leads to the next story: stronger proof search.
 
-- registrations and clusters remain first-class; proofs stay short;
-- cluster applications need no repeated proofs. Reductions may need
-  local guard evidence or an explicit equality citation.
-
-Questions for Bialystok:
+Questions for later review:
 
 - Which cluster explanations would help most with daily work: failure
   explanations, firing traces, or difference reports between environments?
@@ -645,13 +628,11 @@ Questions for Bialystok:
 
 ### Frame 5.1 - The Problem
 
-Bullets:
-
-- Users want stronger automation: bigger `by` steps, hammer-style search.
+- Users want stronger automation, including larger `by` steps and hammer-style search.
 - MizAR and MPTP already use ATP search with MML premises.
-- We want stronger proof search while keeping proof checking small.
-- Evo requires checkable evidence from search. The search result alone
-  cannot establish a kernel-verified proof.
+- Evo's goal is to keep proof checking small as search becomes stronger.
+- A search result alone is not a kernel-verified proof. We need checkable evidence.
+- So the question is this.
 
 Slide text:
 
@@ -662,37 +643,36 @@ without trusting the searcher?
 
 Speaker note:
 
-- Credit MizAR, MPTP, and hammer research. Explain Evo's evidence contract
-  without claiming that earlier tools must trust their search backends.
+- This builds on MizAR, MPTP, and hammer research.
+  I am describing Evo's evidence contract, not making a claim that earlier
+  tools must trust their search backends.
 
 ### Frame 5.2 - The Evo Answer: A Reasoning Boundary
 
 ![The reasoning boundary: semantics, untrusted search, trusted checking](figures/reasoning_boundary.pdf)
 
-Key rules:
-
-- ATPs never resolve names, infer types, expand clusters, or pick overloads;
-- the kernel checks supplied formulas and substitutions, then runs its
-  trusted SAT check. It does not select premises or invent substitutions;
-- deterministic pre-ATP discharge needs replayable evidence too - nothing is
-  accepted because an earlier phase said "done".
+- We can read this diagram from left to right.
+- Mizar-side phases resolve names, infer types, expand clusters, and pick overloads.
+  ATPs do none of these tasks.
+- The kernel checks the supplied formulas and substitutions, then runs its trusted SAT check.
+  It does not select premises or invent substitutions.
+- Earlier deterministic discharge also needs replayable evidence.
 
 Speaker note:
 
-- Explain: search proposes evidence; the kernel checks it.
-- Development policy may record `externally_attested` results. These are
-  separate from kernel-verified proofs.
+- Development policy may record `externally_attested` results.
+  These are separate from kernel-verified proofs.
 
 ### Frame 5.3 - Formula And Substitution Evidence
 
 ![KernelEvidence and the kernel's SAT check](figures/certificate_replay.pdf)
 
-- `KernelEvidence` contains source formulas, explicit substitutions,
-  provenance, and target/goal bindings;
-- the kernel checks this evidence, derives instantiated formulas and SAT
-  clauses, and requires UNSAT from its trusted in-process Rust SAT checker;
-- backend resolution traces, SMT proof objects, logs, and exit codes are
-  not trusted acceptance evidence.
+- Here we can see what the evidence contains: source formulas, substitutions,
+  provenance, and target and goal bindings.
+- The kernel checks it, derives instantiated formulas and SAT clauses,
+  and requires UNSAT from its trusted in-process Rust SAT checker.
+- Backend resolution traces, SMT proof objects, logs, and exit codes
+  are not trusted acceptance evidence.
 
 Speaker note:
 
@@ -701,7 +681,7 @@ Speaker note:
 
 ### Frame 5.4 - The Same Boundary Controls AI
 
-Legacy Mizar (exact MML excerpt):
+An AI tool could help repair a citation like this one (exact MML excerpt):
 
 ```mizar
 theorem
@@ -713,17 +693,15 @@ proof
 end;
 ```
 
-Message:
-
-- Citation repair is a standard safe AI edit. It proposes a missing or
-  more precise `by` reference. The edit is local to the source and keeps
-  the meaning. The verifier checks it just like a human edit.
+- The AI tool can propose a missing or more precise `by` reference.
+- This is a local edit that keeps the statement's meaning.
+- The verifier checks it just as it would check a human edit.
+- The AI proposes the change. The verifier and kernel decide whether to accept it.
 
 Speaker note:
 
+- The assistant's strength never enters the trusted base.
 - Source: current MML `struct_0.miz`, lines 637-643.
-- The agent proposes; the verifier and kernel decide. The assistant's
-  strength never enters the trusted base.
 
 ### Frame 5.5 - Edit Classes: Green, Yellow, Red [deep dive]
 
@@ -747,14 +725,13 @@ Message:
 
 ### Frame 5.6 - What Is Preserved, What We Ask
 
-Preserved:
+- This keeps the de Bruijn discipline: a small trusted core checks acceptance.
+  In this design, the core includes its SAT checker.
+- Proof text stays declarative and readable. Automation helps maintain the argument.
+- I would welcome your views on the evidence format.
+- Now let us look at the cost of checking a large library.
 
-- the de Bruijn discipline: acceptance uses a small trusted core, including
-  its SAT checker;
-- proof text stays declarative and readable - automation maintains the
-  argument, it does not replace it.
-
-Questions for Bialystok:
+Questions for later review:
 
 - Is the formula/substitution evidence approach convincing for Mizar-style
   obligations, including clusters and definitional expansions?
@@ -764,26 +741,21 @@ Questions for Bialystok:
 
 ### Frame 6.1 - The Problem
 
-Bullets:
-
-- Verifying the whole MML is a batch operation measured in hours.
-- The reuse boundary is the accepted article: a small change re-verifies
-  more than it should.
-- Memory follows the article environment, not the actually used interface.
-- These costs follow from using the article as the unit in a large
-  library. They are not errors in the current design.
+- Checking the whole MML takes hours.
+- The accepted article is the unit of reuse. A small edit can therefore
+  cause more checking than we would like.
+- Memory use follows the article environment, including material outside
+  the interface actually used.
+- These costs follow from the article as a unit. Evo proposes smaller units of reuse.
 
 ### Frame 6.2 - The Evo Answer: Fingerprints And Incrementality
 
-Bullets:
-
-- cache keys cover source, dependency slices, package/lockfile, toolchain,
-  schema, policy, registrations, obligations, evidence, and witnesses;
-- reuse requires all relevant keys to match; missing data causes a cache miss;
-- a theorem proof-body edit does not rebuild importers if its exported
-  statement and accepted status stay unchanged;
-- independent modules, obligations, ATP runs, and kernel checks run in
-  parallel; results are published in canonical order.
+- Evo uses fingerprints to decide when earlier results can be reused.
+- All relevant cache keys must match. Missing data causes a cache miss.
+- A proof-body edit does not rebuild importers when the exported statement
+  and accepted status stay unchanged.
+- Independent modules, obligations, ATP runs, and kernel checks can run in parallel.
+  Results are published in canonical order.
 
 ![The fingerprint graph: what a change re-verifies](figures/fingerprint_graph.pdf)
 
@@ -791,6 +763,11 @@ Bullets:
 Cache reuse is never proof authority.
 A clean build must reproduce every acceptance.
 ```
+
+Speaker note:
+
+- The cache keys cover source, dependency slices, package and lockfile,
+  toolchain, schema, policy, registrations, obligations, evidence, and witnesses.
 
 ### Frame 6.3 - The Evo Answer: A Memory Contract [deep dive]
 
@@ -817,12 +794,13 @@ Message:
 
 ### Frame 6.4 - What Is Preserved, What We Ask
 
-Preserved:
+- Caching and parallel work change checking time. They must not change truth.
+- A person still reviews complete source text, in the style of an article.
+- We need tests that compare incremental results with a clean build.
+- I would like to use real MML maintenance tasks for these tests.
+  Next, I will turn to templates.
 
-- clean-build semantics: caching and parallelism change speed, never truth;
-- article-style review: what a human reads is still complete source text.
-
-Questions for Bialystok:
+Questions for later review:
 
 - What clean-build equivalence tests would make incremental verification
   trustworthy to the team that maintains MML today?
@@ -833,7 +811,7 @@ Questions for Bialystok:
 
 ### Frame 7.1 - The Problem, Part One: Schemes Use Separate Rules
 
-Legacy Mizar (exact MML excerpt):
+This familiar scheme expresses induction (exact MML excerpt):
 
 ```mizar
 scheme
@@ -843,12 +821,10 @@ A1: P[0] and
 A2: for k be Nat st P[k] holds P[k + 1]
 ```
 
-Bullets:
-
-- schemes support second-order patterns (induction, separation, replacement).
-  They work, but they use a separate mechanism with separate rules;
+- Schemes support second-order patterns such as induction, separation, and replacement.
 - Classic `scheme` blocks define theorem schemas. Parameterized definitions
   use other language forms.
+- Evo proposes a common template system for these tasks.
 
 Speaker note:
 
@@ -856,23 +832,17 @@ Speaker note:
 
 ### Frame 7.2 - The Problem, Part Two: A Common Template System
 
-Bullets:
-
-- Mizar already supports parameterized constructions, such as `Polynom-Ring L`.
-- Schemes and parameterized definitions use different mechanisms.
-- Evo proposes a common template system for definitions and theorem schemas,
-  with explicit rules for each kind of parameter.
-
-Message:
-
-- The aim is to make generic mathematics easier to write and maintain.
-  We need migration examples to test whether these rules help.
+- Mizar already has parameterized constructions, such as `Polynom-Ring L`.
+- The aim is to give definitions and theorem schemas a common template system.
+- Each kind of parameter still has explicit rules.
+- We need migration examples to see whether these rules make generic
+  mathematics easier to write and maintain.
 
 Source: [POLYNOM3, definition 10](https://mizar.uwb.edu.pl/version/current/html/polynom3.html).
 
 ### Frame 7.3 - The Evo Answer: Templates
 
-Mizar Evo (specification example):
+This template begins with a type parameter (specification example):
 
 ```mizar
 definition
@@ -884,14 +854,15 @@ definition
 end;
 ```
 
-Bullets:
+- A template is an ordinary `definition` block. Its leading `let` binds the parameters.
+- Parameters can be types, values, predicates, or functors.
+- Predicate and functor parameters cannot occur in `attr`, `mode`, `struct`, `func`, or `pred` items.
+- Some templates allow short forms such as `Module over R` and `Subset of X`.
+  Constrained templates require brackets.
 
-- a template is an ordinary `definition` block whose leading `let` binds
-  parameters: types, values, predicates, or functors;
-- predicate and functor parameters cannot be used in `attr`, `mode`,
-  `struct`, `func`, or `pred` items;
-- eligible templates get short forms: `Module over R` for `Module[R]`,
-  `Subset of X` for `Subset[X]`. Constrained templates require brackets.
+Speaker note:
+
+- The short forms display `Module[R]` and `Subset[X]`.
 
 ### Frame 7.4 - Bounded Parameters And Generic Theorems [deep dive]
 
@@ -957,14 +928,13 @@ Bullets:
 
 ### Frame 7.7 - What Is Preserved, What We Ask
 
-Preserved:
+- Scheme-style reasoning keeps the same power.
+- The words `of` and `over` help keep mathematical text readable.
+- Each instantiation is checked. Templates add no new logic.
+- I would like to try this design on existing MML schemes.
+  The next story connects proofs with algorithms.
 
-- scheme-style reasoning keeps the same power;
-- `of` / `over` phrasing keeps mathematical prose readable;
-- first-order discipline: each instantiation is checked; templates add no
-  new logic.
-
-Questions for Bialystok:
+Questions for later review:
 
 - Which MML schemes should be the first migration targets?
 - Are brackets acceptable as the canonical identity form, with `of`/`over`
@@ -977,12 +947,11 @@ Questions for Bialystok:
 
 ### Frame 8.1 - The Problem
 
-Bullets:
-
-- Mizar already has arithmetic automation and proofs of program correctness.
-- Evo proposes a language form for algorithms with contracts, linked to
-  verification, execution, and code extraction.
-- The question is how to connect these steps within one language and toolchain.
+- Mizar already provides arithmetic automation and proofs of program correctness.
+- Evo proposes a language form for algorithms with contracts.
+- The goal is to connect verification, execution, and code extraction
+  within one language and toolchain.
+- Execution and code extraction are still planned work.
 
 Slide text:
 
@@ -996,7 +965,7 @@ Examples in MML: `NUMERALS` for arithmetic requirements;
 
 ### Frame 8.2 - The Evo Answer: Algorithms With Contracts
 
-Mizar Evo (specification example, condensed from spec section 20.12):
+This is Euclid's algorithm with a contract (specification example):
 
 ```mizar
 definition
@@ -1016,17 +985,16 @@ definition
 end;
 ```
 
-- `ensures` and the invariant cite the mathematical `Gcd`: no circularity.
+The contract and invariant use mathematical `Gcd`, so there is no circular definition.
+The loop computes the result. The `decreasing` measure on `y` proves termination.
 
 Speaker note:
 
-- Explain: the contract uses mathematics. The algorithm computes the result, and
-  the library functor `Gcd` specifies it. The `decreasing` measure on `y`
-  proves termination.
+- This example is condensed from specification section 20.12.
 
 ### Frame 8.3 - The Evo Answer: Proof By Computation
 
-Mizar Evo (specification example):
+The specification allows proofs by computation (specification example):
 
 ```mizar
 theorem EuclidGcd12_8:  euclid_gcd(12, 8)  = 4  by computation;
@@ -1038,13 +1006,12 @@ proof
 end;
 ```
 
-Bullets:
-
-- the Mizar Virtual Machine (MVM) supports only ground equalities and predicates,
-  using computable algorithms defined in the current package;
-- step, time, and depth limits are optional; each defaults to `0` (unlimited);
-- algorithms from other packages are opaque. Their `ensures` contract is
-  usable when termination is known; their body cannot be executed here.
+- The Mizar Virtual Machine, or MVM, evaluates ground equalities and predicates.
+  It uses computable algorithms defined in the current package.
+  Non-ground formulas need classical proofs.
+- Step, time, and depth limits are optional. Each defaults to zero, meaning unlimited.
+- Other packages' algorithm bodies cannot run here. Their `ensures` contracts
+  can be used when termination is known.
 
 ### Frame 8.4 - The Evo Answer: Termination Allows Recursion [deep dive]
 
@@ -1093,14 +1060,15 @@ Message:
 
 ### Frame 8.6 - What Is Preserved, What We Ask
 
-Preserved:
+- Algorithms stay inside `definition` blocks.
+- Verified promotion lets a `terminating` algorithm become a functor
+  after its obligations are proved.
+- Proofs can also use `by computation` for computable ground calls in the current package.
+- A partial algorithm's `ensures` requires evidence that the call terminates.
+- The first-order set-theoretic foundations stay the same.
+- Now I will turn to how we publish and cite this work.
 
-- algorithms live in `definition` blocks. Proofs can use verified promotion
-  or `by computation` for computable ground calls in the current package;
-- a partial algorithm's `ensures` needs evidence that the call terminates;
-- first-order set-theoretic foundations stay intact.
-
-Questions for Bialystok:
+Questions for later review:
 
 - Which computational examples would show clear benefits to mathematicians
   without shifting the culture toward programming?
@@ -1112,24 +1080,20 @@ Questions for Bialystok:
 
 ### Frame 9.1 - The Problem
 
-Bullets:
-
-- Formalized Mathematics gives Mizar a rare feature: a research journal
-  linked to a formal library, with articles that people can cite.
-- But article identity is closely tied to library organization. Refactoring
-  the library can conflict with the structure of published articles.
-  Package reuse has no identity for journal citations.
-- A written explanation needs an order that helps readers. Reuse needs
-  dependency order. One structure cannot serve both as well as possible.
+- Formalized Mathematics links a research journal to a formal library.
+  People can read and cite its articles.
+- A journal article has an order that helps explain the mathematics.
+  A reusable library needs an order based on dependencies.
+- Changes to library organization can therefore affect links to published articles.
+  Package reuse also lacks an identity for journal citations.
+- Evo proposes separate, linked records for journal articles and library items.
 
 ### Frame 9.2 - The Evo Proposal: Linked Records
 
 ![A proposed article-to-library link model (sketch)](figures/fm_links.pdf)
 
-Message:
-
-- Linked records connect journal citations, library locations,
-  verification artifacts, and MML origins.
+- This sketch links citations, library items, verification artifacts, and MML origins.
+- It shows links between records, not a derivation.
 
 ### Frame 9.3 - Who Gains What [deep dive]
 
@@ -1142,13 +1106,13 @@ Message:
 
 ### Frame 9.4 - What Is Preserved, What We Ask
 
-Preserved:
+- Formalized Mathematics would remain a journal with review and written explanations.
+- Origin metadata would link migrated items to their MML citations.
+  The migration mapping still needs to be defined.
+- I would like to discuss which identifiers readers should see in citations.
+- That completes the eight stories. Let us now look at the whole design.
 
-- Formalized Mathematics remains a real journal with review and written explanations;
-- proposed origin metadata links migrated items to MML citations; the
-  migration mapping still needs to be defined.
-
-Questions for Bialystok:
+Questions for later review:
 
 - Which identity should be primary in user-facing citations: article label,
   library FQN, or origin id?
@@ -1161,15 +1125,11 @@ Questions for Bialystok:
 
 ![The core ATP path, with responsibility groups](figures/pipeline.pdf)
 
-Message:
-
-- every boundary states who owns a fact, which artifact records it, and
-  what must be recomputed when it changes. That is the main purpose.
-
-Speaker note:
-
-- The diagram shows the ATP path. Only obligations still open after
-  deterministic discharge go to ATP; earlier discharge also needs evidence.
+- This diagram shows the ATP path through the proposed pipeline.
+- Only obligations still open after deterministic discharge go to ATP.
+  Earlier discharge also needs evidence.
+- Each boundary states who owns a fact, which artifact records it,
+  and what must be checked again after a change.
 
 ### Frame 10.2 - Responsibility Split [deep dive]
 
@@ -1185,6 +1145,11 @@ Speaker note:
 
 ### Frame 10.3 - Pipeline Stages For The Eight Stories
 
+- These eight stories belong to one pipeline, from name resolution to publication.
+- Each stage keeps its own responsibility for meaning and proof checking.
+
+Details for later review:
+
 | Story | Pipeline stage |
 |---|---|
 | dependencies | resolver, package manager |
@@ -1194,11 +1159,6 @@ Speaker note:
 | templates | elaborator (checked instantiation) |
 | algorithms | VC generator, MVM |
 | publication | artifact emitter, doc generation |
-
-Message:
-
-- The eight stories describe one pipeline. Each starts with a different
-  problem that users face.
 
 ### Frame 10.4 - Testing The Trust Boundary [deep dive]
 
@@ -1220,41 +1180,32 @@ Bullets:
 
 ### Frame 11.0 - Where The Project Stands Today
 
-Bullets:
-
-- Specification: 24 chapters plus appendices; English is canonical, with
-  Japanese companions.
-- Implemented parts: frontend processing, selected semantic cases,
+- Before I finish, let me separate the design from the implementation.
+- The specification has 24 chapters and appendices. English is canonical;
+  Japanese companions are available.
+- Implemented parts include frontend processing, selected semantic cases,
   ATP candidate generation, and kernel evidence checking.
-- In progress: the full path from source input through ATP search and
-  kernel checking to published artifacts. Tests with real external provers
-  are still needed.
-- Deferred: MVM execution and code extraction.
-- Full MML migration remains future work.
-
-Message:
-
-- The planned end-of-2026 alpha is a milestone in work already under way.
+- The full path from source through ATP and kernel checking to published
+  artifacts is still in progress. Tests with real external provers are still needed.
+- MVM execution, code extraction, and full MML migration remain future work.
 
 Speaker note:
 
-- This is the September 2026 scope. Component tests do not establish that
-  the full pipeline works. See `doc/design/todo.md`, Completion Gates.
+- This is the September 2026 scope. Component tests do not show that the
+  full pipeline works. See `doc/design/todo.md`, Completion Gates.
 
 ### Frame 11.1 - Migration Needs Research
 
 ![Roadmap timeline](figures/roadmap_timeline.pdf)
 
-1. End of 2026, alpha: core-subset frontend and parser, import and module
-   resolution prototype, structured diagnostics, early artifacts.
-2. 2027, migration laboratory: translate 3-5 representative MML articles by
-   hand and by script. Classify and record every mismatch.
-3. 2027-2028, expansion: foundational set and relation fragments; then
-   algebraic structures and dependency cones around successful fragments.
-
-Non-goals for the alpha:
-
-- full MML verification, final compatibility layer, stable AI protocol.
+- We plan an alpha at the end of 2026. It covers a core frontend subset,
+  import and module resolution prototypes, diagnostics, and early artifacts.
+- In 2027, we plan to translate three to five representative MML articles
+  by hand and by script. We will record every mismatch.
+- In 2027 and 2028, we plan to expand from set and relation fragments
+  to algebraic structures and their dependencies.
+- The alpha does not aim at full MML verification, a final compatibility
+  layer, or a stable AI protocol.
 
 ### Frame 11.2 - What We Will Measure [deep dive]
 
@@ -1283,17 +1234,18 @@ Policy:
 
 ### Frame 11.4 - What September 2026 Should Produce
 
-Bullets:
-
-- a list of migration benchmark articles in priority order;
-- agreement on compatibility metadata needs;
-- review notes on the eight stories, especially structures and clusters;
-- a first paper outline;
-- a shared list of objections and risks.
+- For this visit, I hope we can choose migration benchmark articles in priority order.
+- I would like to agree on the compatibility metadata we need.
+- I also hope to collect comments on the eight stories, especially structures and clusters.
+- A first paper outline and a shared list of objections would help guide the next steps.
 
 ### Frame 11.5 - What We Ask Of You
 
-Questions:
+- I do not expect us to settle every design question today.
+- The handout keeps the questions below for later review.
+- Your choice of small MML examples would help us test the proposal in practice.
+
+Questions for later review:
 
 - Which MML articles are small but structurally representative?
 - Which idioms matter to the Mizar community, beyond their technical use?
@@ -1304,6 +1256,8 @@ Questions:
 
 ### Frame 12.1 - The Main Question, Again
 
+- I would like to finish with the question from the beginning.
+
 Slide question:
 
 ```text
@@ -1311,21 +1265,14 @@ What must Mizar Evo preserve so that the Mizar community
 still recognizes it as Mizar?
 ```
 
-Speaker note:
-
-- Return to the opening example: the structure that still reads as Mizar.
-- Choose two or three questions: what must be preserved, which small MML
-  articles to migrate first, and which proposal needs the most change.
-- Invite readers to review the other questions in the handout later.
+- Which small MML articles should we migrate first?
+- Which proposal needs the most change?
 
 ### Frame 12.2 - Closing
 
-Final slide:
-
-```text
-Update Mizar Evo where a larger library needs it.
-Keep the current design where it defines Mizar's mathematical identity.
-```
+- Mizar Evo should update the parts that need to support a larger library.
+- It should keep the parts that define Mizar's mathematical identity.
+- Thank you for listening. I would welcome your questions and comments.
 
 ## Backup A. Prepared Exact Examples
 

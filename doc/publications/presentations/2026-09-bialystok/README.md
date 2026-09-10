@@ -38,8 +38,12 @@ EBNF is intentionally absent; `doc/spec/en/` remains the grammar authority.
 Frames whose headings carry `[deep dive]` in `draft.md` can be skipped
 without breaking a story arc; the generated deck marks them with a small
 "deep dive" tag. Keep the full deck as a handout. For the 45-minute talk,
-explain selected examples and cover the rest briefly; the title-page notes
-suggest frames 3.3, 5.2, and 8.2. Choose two or three closing questions.
+read the main sentences from top to bottom. Code captions and diagram
+explanations are part of this reading order; code, tables, sources, and sections
+marked "for later review" can be left for the handout. The notes edition repeats
+all main sentences under "Read aloud", followed by optional notes and sources.
+The title-page notes provide the opening words. Spend more time on selected
+examples, such as frames 3.3, 5.2, and 8.2. Choose two or three closing questions.
 Whether the slot includes questions is still to be confirmed.
 
 ## Regenerating The Deck
@@ -58,9 +62,11 @@ Run `pdflatex` twice when frame numbers in the footer look stale.
 
 ## Working Assumptions
 
-- The target audience knows current Mizar well; the deck acknowledges shared
-  pains instead of explaining Mizar to its authors.
+- The audience includes the Mizar group and other faculty members.
+  The opening briefly introduces Mizar before discussing the proposed changes.
 - The talk should be in English.
+- Main-slide prose uses short, complete sentences at CEFR B2 middle or below.
+  Keep technical terms, code, and exact MML excerpts unchanged when simplifying it.
 - Every code example carries a status label: exact MML excerpt (with article
   and line numbers), specification example, or sketch.
 - Exact MML excerpts keep attribution, URLs, and line numbers in speaker

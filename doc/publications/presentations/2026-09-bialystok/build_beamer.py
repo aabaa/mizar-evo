@@ -666,106 +666,82 @@ def split_speaker_notes(lines: list[str]) -> tuple[list[str], list[str]]:
     return visible, notes
 
 
-def extract_key_points(lines: list[str], max_points: int = 5) -> tuple[list[str], bool, bool]:
+def extract_key_points(lines: list[str]) -> tuple[list[str], list[str]]:
+    """Keep all spoken prose in slide order; omit code, tables, and review details."""
     points: list[str] = []
-    in_code = False
-    has_code = False
-    has_table = False
+    sources: list[str] = []
     current: list[str] = []
+    code_lang: str | None = None
+    code_lines: list[str] = []
+    optional = False
+    source = False
 
     def flush_current() -> None:
-        nonlocal current
-        if current and len(points) < max_points:
-            text = " ".join(part.strip() for part in current).strip()
-            if text:
-                points.append(plain_text(text))
-        current = []
+        if current:
+            (sources if source else points).append(" ".join(current))
+            current.clear()
 
     for raw_line in lines:
-        line = raw_line.rstrip("\n")
-        stripped = line.strip()
+        stripped = raw_line.strip()
         if stripped.startswith("```"):
             flush_current()
-            in_code = not in_code
-            has_code = True
+            if code_lang is None:
+                code_lang = stripped[3:]
+            else:
+                if not optional and is_key_phrase_block(code_lines, code_lang):
+                    points.append(" ".join(line.strip() for line in code_lines))
+                code_lang = None
+                code_lines.clear()
             continue
-        if in_code:
+        if code_lang is not None:
+            code_lines.append(raw_line)
             continue
-        if not stripped:
+        if stripped in {"Details for later review:", "Questions for later review:"}:
             flush_current()
+            optional = True
+        if optional:
             continue
-        if IMAGE_RE.match(stripped):
+        if not stripped or IMAGE_RE.match(stripped) or stripped.startswith("|"):
             flush_current()
+            source = False
             continue
-        if stripped.startswith("|"):
+        if stripped.startswith(("Source:", "Examples in MML:")):
             flush_current()
-            has_table = True
+            source = True
+            current.append(stripped)
+            continue
+        status = CODE_STATUS_RE.match(stripped.removesuffix(":"))
+        if status:
+            flush_current()
+            caption = status.group("pre")
+            if caption not in {"Mizar Evo", "Instantiation", "Forbidden repair"}:
+                points.append(caption.rstrip(".") + ".")
             continue
         if SECTION_LABEL_RE.match(stripped):
             flush_current()
             continue
-        bullet = re.match(r"^\s*-\s+(.*)$", line)
-        ordered = re.match(r"^\s*\d+\.\s+(.*)$", line)
-        if bullet or ordered:
+        bullet = re.match(r"^(?:-\s+|\d+\.\s+)(.*)$", stripped)
+        if bullet:
             flush_current()
-            current = [(bullet or ordered).group(1)]
-            continue
-        if current and (line.startswith("  ") or line.startswith("    ")):
+            source = False
+            current.append(bullet.group(1))
+        else:
             current.append(stripped)
-            continue
-        if len(stripped) <= 160 and len(points) < max_points:
-            flush_current()
-            current = [stripped]
     flush_current()
-    return points[:max_points], has_code, has_table
+    return points, sources
 
 
-def make_talk_track(title: str, visible_lines: list[str], explicit_note_lines: list[str]) -> list[str]:
-    clean_title = plain_frame_title(title)
-    points, has_code, has_table = extract_key_points(visible_lines, max_points=5)
-    if explicit_note_lines or has_code or has_table:
-        points = points[:3]
-    note_lines: list[str] = ["Presenter script:"]
-
-    if explicit_note_lines:
-        note_lines.extend(["", "Say:"])
-        note_lines.extend(explicit_note_lines)
-
+def make_talk_track(visible_lines: list[str], explicit_note_lines: list[str]) -> list[str]:
+    points, sources = extract_key_points(visible_lines)
+    note_lines: list[str] = []
     if points:
-        note_lines.extend(["", "Read aloud:"])
-        for point in points:
-            note_lines.append(f"- {point}")
-
-    if has_code and not explicit_note_lines:
-        note_lines.extend(
-            [
-                "",
-                "After the example, explain which design obligation the syntax shows.",
-            ]
-        )
-    if has_table:
-        note_lines.extend(
-            [
-                "",
-                "For the table, read the row labels first, then the design reason.",
-            ]
-        )
-
-    if "Syntax" in clean_title or "Grammar" in clean_title:
-        note_lines.extend(
-            [
-                "",
-                "Slow down: this is language-specification review, not only implementation detail.",
-            ]
-        )
-    if not points and not explicit_note_lines:
-        note_lines.extend(
-            [
-                "",
-                f"Introduce the next topic: {clean_title}.",
-                "Point to the example, question, or diagram before you continue.",
-            ]
-        )
+        note_lines = ["Read aloud:", ""] + [f"- {point}" for point in points]
+    else:
+        note_lines = ["Optional detail (see slide)."]
+    if explicit_note_lines or sources:
+        note_lines.extend(["", "Optional notes and sources:", ""])
+        note_lines.extend(explicit_note_lines)
+        note_lines.extend(["", *[f"- {source}" for source in sources]])
     return note_lines
 
 
@@ -1035,7 +1011,7 @@ def emit_beamer(
     ]
     if title_notes:
         out.append(r"\note{")
-        out.extend(render_frame_body(["Presenter script:", ""] + title_notes))
+        out.extend(render_frame_body(["Read aloud:", ""] + title_notes))
         out.append(r"}")
     out.extend([r"\end{frame}", ""])
 
@@ -1057,7 +1033,7 @@ def emit_beamer(
                     chunk_heading = f"{chunk_heading} ({chunk_index + 1}/{len(chunks)})"
                 chunk_notes = explicit_notes if chunk_index == 0 else []
                 body_tex = render_frame_body(chunk)
-                note_tex = render_frame_body(make_talk_track(chunk_heading, chunk, chunk_notes))
+                note_tex = render_frame_body(make_talk_track(chunk, chunk_notes))
                 title_tex = frame_title(chunk_heading)
                 if is_deep:
                     title_tex += r"\deepdivetag"
