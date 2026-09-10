@@ -1,5 +1,10 @@
 # Module: harness
 
+The Step 5C.9 route admits only its seven non-G3 mapped rows, preserving exact stage
+metadata. It assembles existing resolver/checker inputs and observes checker case-completeness
+failure only at verification, after statement checking succeeds; unrelated errors earn no key.
+The formula cases grant no proof acceptance, and then/hence remains inactive.
+
 The Step 5C.8 route authenticates its seven exact mapped rows across parse, type and statement
 stages. Existing resolver identities and checker handoffs carry formula/statement inputs;
 parser diagnostic provenance, not token matching alone, supplies the non-associative `iff` failure.

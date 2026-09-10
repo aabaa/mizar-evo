@@ -1,5 +1,10 @@
 # Module: names
 
+`resolve_proof_occurrences(SourceVariableScopeInput)` returns the existing sealed
+`ResolvedVariableScope`, additionally collecting Given/Consider bindings and their
+condition/descendant uses within the enclosing block. Legacy entry points are unchanged;
+it adds binding kinds, not formula or statement payloads.
+
 `SourceVariableScopeResolver::resolve_occurrences` retains existing binding/reference identities
 and declared generator types, admitting mapper-before-generator uses only within their comprehension.
 It makes no statement/thesis projection; legacy `resolve` keeps its existing profile.

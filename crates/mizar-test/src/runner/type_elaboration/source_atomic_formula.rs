@@ -1091,9 +1091,51 @@ pub(in crate::runner) fn step5c8_formula_typed_ast(
     symbols: &SymbolEnv,
     scope: &mizar_resolve::names::ResolvedVariableScope,
     binding_env: &BindingEnv,
+    proof_organization: bool,
 ) -> Result<TypedAst, String> {
-    let source_arena = membership_typed_arena(ast)?;
+    let mut source_arena = membership_typed_arena(ast)?;
     let primary = membership_primary_terms(ast, module, scope, binding_env, &source_arena)?;
+    let mut sets = None;
+    if proof_organization {
+        let roots = ast
+            .node_views()
+            .filter(|view| matches!(view.kind(), SurfaceNodeKind::SetEnumeration))
+            .map(|view| view.id().index())
+            .collect::<Vec<_>>();
+        if !roots.is_empty() {
+            let output = step5c7_set_output(
+                ast,
+                module.clone(),
+                binding_env.clone(),
+                &roots,
+                SourceTermParts {
+                    arena: source_arena,
+                    handoff: primary.clone(),
+                },
+            )?;
+            source_arena = output.typed_ast.nodes().clone();
+            sets = Some(
+                output
+                    .typed_ast
+                    .source_set_term()
+                    .ok_or("missing enumeration handoff")?
+                    .clone(),
+            );
+        }
+    }
+    let operand = |id| {
+        let node = ast.node(id).ok_or("missing formula operand")?;
+        let children = structural_child_ids(ast, node);
+        if let ([child], Some(sets)) = (children.as_slice(), sets.as_ref())
+            && matches!(
+                ast.nodes()[child.index()].kind,
+                SurfaceNodeKind::SetEnumeration
+            )
+        {
+            return set_target(sets, ast.nodes()[child.index()].range);
+        }
+        step5c8_primary_operand(ast, id, &primary)
+    };
     let mut formulas = ast
         .node_views()
         .filter_map(|view| {
@@ -1149,8 +1191,8 @@ pub(in crate::runner) fn step5c8_formula_typed_ast(
                 let [left, right] = children.as_slice() else {
                     return Err("formula builtin atom requires two operands".to_owned());
                 };
-                let left = step5c8_primary_operand(ast, *left, &primary)?;
-                let right = step5c8_primary_operand(ast, *right, &primary)?;
+                let left = operand(*left)?;
+                let right = operand(*right)?;
                 let edge_base = edges.len();
                 edges.extend([
                     edge(
@@ -1197,7 +1239,7 @@ pub(in crate::runner) fn step5c8_formula_typed_ast(
                 let [subject, asserted_type] = children.as_slice() else {
                     return Err("formula type assertion shape is not binary".to_owned());
                 };
-                let subject = step5c8_primary_operand(ast, *subject, &primary)?;
+                let subject = operand(*subject)?;
                 let type_node = ast
                     .node(*asserted_type)
                     .ok_or_else(|| "formula asserted type disappeared".to_owned())?;
@@ -1290,20 +1332,26 @@ pub(in crate::runner) fn step5c8_formula_typed_ast(
         &primary,
         None,
         None,
-        None,
+        sets.as_ref(),
         &arena,
     )
     .map_err(|error| error.to_string())?;
-    empty_typed_ast_with_primary(
+    let mut typed = empty_typed_ast_with_primary(
         ast,
         module.clone(),
         SourceTermParts {
             arena,
             handoff: primary,
         },
-    )?
-    .with_source_atomic_formula(handoff)
-    .map_err(|error| error.to_string())
+    )?;
+    if let Some(sets) = sets {
+        typed = typed
+            .with_source_set_term(sets)
+            .map_err(|error| error.to_string())?;
+    }
+    typed
+        .with_source_atomic_formula(handoff)
+        .map_err(|error| error.to_string())
 }
 fn step5c8_primary_operand(
     ast: &SurfaceAst,

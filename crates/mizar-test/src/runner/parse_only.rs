@@ -139,7 +139,7 @@ pub(super) fn run_parse_only_case(
             (
                 output.ast.is_some(),
                 if super::formula_statement::is_step5c8_candidate(case) {
-                    if super::formula_statement::step5c8_admitted(Some(workspace_root), case)
+                    if super::formula_statement::step5_formula_admitted(Some(workspace_root), case)
                         && step5c8_iff_diagnostic(&output)
                     {
                         Vec::new()

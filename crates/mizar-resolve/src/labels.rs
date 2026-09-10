@@ -498,18 +498,30 @@ impl<'a> ProofLabelSourceCollector<'a> {
     /// The structural arena is revalidated on every call so a collector never
     /// relies on stale constructor validation.
     pub fn collect(&self) -> Result<ProofLabelSourceCollection, ProofLabelSourceCollectionError> {
-        self.collect_impl(false)
+        self.collect_impl(false, false)
     }
 
     pub fn collect_with_let_conditions(
         &self,
     ) -> Result<ProofLabelSourceCollection, ProofLabelSourceCollectionError> {
-        self.collect_impl(true)
+        self.collect_impl(true, false)
+    }
+
+    /// Collects labels and citations for bounded proof organization forms.
+    ///
+    /// This opt-in traversal keeps the existing collection payload and
+    /// provenance while admitting Given/Consider conditions, block bodies,
+    /// case branches, and iterative-equality justifications.
+    pub fn collect_with_proof_organization(
+        &self,
+    ) -> Result<ProofLabelSourceCollection, ProofLabelSourceCollectionError> {
+        self.collect_impl(true, true)
     }
 
     fn collect_impl(
         &self,
         include_let_conditions: bool,
+        include_proof_organization: bool,
     ) -> Result<ProofLabelSourceCollection, ProofLabelSourceCollectionError> {
         self.resolved
             .validate_against(self.ast, self.resolved.module())
@@ -521,7 +533,7 @@ impl<'a> ProofLabelSourceCollector<'a> {
                 references: Vec::new(),
             });
         };
-        let mut state = ProofLabelCollectionState::new(self);
+        let mut state = ProofLabelCollectionState::new(self, include_proof_organization);
         for child in item_list.child_views() {
             if child.is_recovered() || !matches!(child.kind(), SurfaceNodeKind::TheoremItem) {
                 continue;
@@ -543,6 +555,7 @@ struct TheoremOwner<'a> {
 
 struct ProofLabelCollectionState<'a, 'collector> {
     collector: &'collector ProofLabelSourceCollector<'a>,
+    include_proof_organization: bool,
     projections: Vec<LabelProjection>,
     references: Vec<LabelReferenceCandidate>,
     ordinal: usize,
@@ -552,9 +565,13 @@ struct ProofLabelCollectionState<'a, 'collector> {
 }
 
 impl<'a, 'collector> ProofLabelCollectionState<'a, 'collector> {
-    fn new(collector: &'collector ProofLabelSourceCollector<'a>) -> Self {
+    fn new(
+        collector: &'collector ProofLabelSourceCollector<'a>,
+        include_proof_organization: bool,
+    ) -> Self {
         Self {
             collector,
+            include_proof_organization,
             projections: Vec::new(),
             references: Vec::new(),
             ordinal: 0,
@@ -628,7 +645,9 @@ impl<'a, 'collector> ProofLabelCollectionState<'a, 'collector> {
                 SurfaceNodeKind::CompactStatement | SurfaceNodeKind::ConclusionStatement
             ) || (include_let_conditions
                 && matches!(statement.kind(), SurfaceNodeKind::LetStatement)
-                && exact_compact_statement_label(statement).is_some());
+                && exact_compact_statement_label(statement).is_some())
+                || (self.include_proof_organization
+                    && proof_organization_statement(statement.kind()));
             if !visitable {
                 continue;
             }
@@ -662,21 +681,62 @@ impl<'a, 'collector> ProofLabelCollectionState<'a, 'collector> {
         self.ordinal += 1;
         let statement_ordinal = self.ordinal;
 
-        let label = exact_compact_statement_label(statement);
-        let projection_index = if let Some(label) = label {
-            Some(self.push_projection(
-                theorem,
-                statement,
-                label,
-                owner_spelling,
-                owner_occurrence,
-                statement_ordinal,
-                scope,
-                relative_proof_path,
-            )?)
+        let branch_scope = if matches!(statement.kind(), SurfaceNodeKind::SupposeItem) {
+            let mut nested = scope.to_vec();
+            nested.push(checked_scope_component(
+                statement.id(),
+                statement.id().index(),
+            )?);
+            nested
         } else {
-            None
+            scope.to_vec()
         };
+        let body_scope = if matches!(
+            statement.kind(),
+            SurfaceNodeKind::NowStatement | SurfaceNodeKind::HerebyStatement
+        ) {
+            let mut nested = scope.to_vec();
+            nested.push(checked_scope_component(
+                statement.id(),
+                statement.id().index(),
+            )?);
+            nested
+        } else if matches!(statement.kind(), SurfaceNodeKind::SupposeItem) {
+            branch_scope.clone()
+        } else {
+            scope.to_vec()
+        };
+        let mut statement_relative_path = relative_proof_path.to_vec();
+        if matches!(
+            statement.kind(),
+            SurfaceNodeKind::NowStatement
+                | SurfaceNodeKind::HerebyStatement
+                | SurfaceNodeKind::SupposeItem
+        ) {
+            statement_relative_path.push(checked_scope_component(
+                statement.id(),
+                statement.id().index(),
+            )?);
+        }
+        let projection_indices = statement_labels(statement)
+            .into_iter()
+            .map(|(label_owner, label)| {
+                self.push_projection(
+                    theorem,
+                    label_owner,
+                    label,
+                    owner_spelling,
+                    owner_occurrence,
+                    statement_ordinal,
+                    if matches!(statement.kind(), SurfaceNodeKind::SupposeItem) {
+                        &branch_scope
+                    } else {
+                        scope
+                    },
+                    &statement_relative_path,
+                )
+            })
+            .collect::<Result<Vec<_>, _>>()?;
 
         for child in statement.child_views() {
             if child.is_recovered() {
@@ -686,9 +746,9 @@ impl<'a, 'collector> ProofLabelCollectionState<'a, 'collector> {
                 SurfaceNodeKind::ProofBlock if proof_block_boundary_is_supported(child) => {
                     let component = checked_scope_component(child.id(), *proof_child_index)?;
                     *proof_child_index += 1;
-                    let mut child_scope = scope.to_vec();
+                    let mut child_scope = body_scope.clone();
                     child_scope.push(component);
-                    let mut child_relative_path = relative_proof_path.to_vec();
+                    let mut child_relative_path = statement_relative_path.clone();
                     child_relative_path.push(component);
                     self.visit_proof(
                         theorem,
@@ -701,14 +761,53 @@ impl<'a, 'collector> ProofLabelCollectionState<'a, 'collector> {
                     )?;
                 }
                 SurfaceNodeKind::JustificationClause => {
-                    self.visit_justification(theorem, statement, child, statement_ordinal, scope)?;
+                    self.visit_justification(
+                        theorem,
+                        statement,
+                        child,
+                        statement_ordinal,
+                        &body_scope,
+                    )?;
+                }
+                _ if self.include_proof_organization
+                    && proof_organization_statement(child.kind()) =>
+                {
+                    self.visit_statement(
+                        theorem,
+                        owner_spelling,
+                        owner_occurrence,
+                        child,
+                        &body_scope,
+                        &statement_relative_path,
+                        proof_child_index,
+                        include_let_conditions,
+                    )?;
+                }
+                _ if self.include_proof_organization
+                    && matches!(child.kind(), SurfaceNodeKind::IterativeEqualityStep) =>
+                {
+                    for nested in child.child_views() {
+                        if matches!(nested.kind(), SurfaceNodeKind::JustificationClause)
+                            && !nested.is_recovered()
+                        {
+                            self.visit_justification(
+                                theorem,
+                                child,
+                                nested,
+                                statement_ordinal,
+                                &body_scope,
+                            )?;
+                        }
+                    }
                 }
                 _ => {}
             }
         }
 
-        if let Some(index) = projection_index {
-            self.set_projection_visible_after(index, self.ordinal);
+        if !matches!(statement.kind(), SurfaceNodeKind::SupposeItem) {
+            for index in projection_indices {
+                self.set_projection_visible_after(index, self.ordinal);
+            }
         }
         Ok(())
     }
@@ -872,6 +971,94 @@ fn exact_proof_label_item_list(ast: &SurfaceAst) -> Option<SurfaceNodeView<'_>> 
     if children.len() != 1
         || children[0].is_recovered()
         || !matches!(children[0].kind(), SurfaceNodeKind::ItemList)
+    {
+        return None;
+    }
+    Some(children[0])
+}
+
+fn proof_organization_statement(kind: &SurfaceNodeKind) -> bool {
+    matches!(
+        kind,
+        SurfaceNodeKind::CompactStatement
+            | SurfaceNodeKind::ConclusionStatement
+            | SurfaceNodeKind::LetStatement
+            | SurfaceNodeKind::GivenStatement
+            | SurfaceNodeKind::ConsiderStatement
+            | SurfaceNodeKind::NowStatement
+            | SurfaceNodeKind::HerebyStatement
+            | SurfaceNodeKind::CaseReasoningStatement
+            | SurfaceNodeKind::SupposeItem
+            | SurfaceNodeKind::IterativeEqualityStatement
+    )
+}
+
+fn statement_labels<'a>(
+    statement: SurfaceNodeView<'a>,
+) -> Vec<(SurfaceNodeView<'a>, SurfaceNodeView<'a>)> {
+    match statement.kind() {
+        SurfaceNodeKind::LetStatement
+        | SurfaceNodeKind::CompactStatement
+        | SurfaceNodeKind::ConclusionStatement => exact_compact_statement_label(statement)
+            .into_iter()
+            .map(|label| (statement, label))
+            .collect(),
+        SurfaceNodeKind::GivenStatement | SurfaceNodeKind::ConsiderStatement => {
+            condition_labels(statement)
+        }
+        SurfaceNodeKind::SupposeItem => branch_labels(statement),
+        SurfaceNodeKind::NowStatement
+        | SurfaceNodeKind::HerebyStatement
+        | SurfaceNodeKind::CaseReasoningStatement
+        | SurfaceNodeKind::IterativeEqualityStatement => exact_statement_label(statement)
+            .into_iter()
+            .map(|label| (statement, label))
+            .collect(),
+        _ => Vec::new(),
+    }
+}
+
+fn condition_labels<'a>(
+    statement: SurfaceNodeView<'a>,
+) -> Vec<(SurfaceNodeView<'a>, SurfaceNodeView<'a>)> {
+    statement
+        .child_views()
+        .filter(|child| matches!(child.kind(), SurfaceNodeKind::ConditionList))
+        .flat_map(|conditions| {
+            conditions
+                .child_views()
+                .filter(|child| matches!(child.kind(), SurfaceNodeKind::Proposition))
+                .filter_map(|proposition| {
+                    exact_statement_label(proposition).map(|label| (proposition, label))
+                })
+                .collect::<Vec<_>>()
+        })
+        .collect()
+}
+
+fn branch_labels<'a>(
+    statement: SurfaceNodeView<'a>,
+) -> Vec<(SurfaceNodeView<'a>, SurfaceNodeView<'a>)> {
+    let labels = condition_labels(statement);
+    if !labels.is_empty() {
+        return labels;
+    }
+    statement
+        .child_views()
+        .filter(|child| matches!(child.kind(), SurfaceNodeKind::Proposition))
+        .filter_map(|proposition| {
+            exact_statement_label(proposition).map(|label| (proposition, label))
+        })
+        .collect()
+}
+
+fn exact_statement_label(statement: SurfaceNodeView<'_>) -> Option<SurfaceNodeView<'_>> {
+    let children = statement.child_views().collect::<Vec<_>>();
+    if children.len() < 2
+        || children[0].is_recovered()
+        || children[1].is_recovered()
+        || !token_has_kind(&children[0], SurfaceTokenKind::Identifier)
+        || !token_is(&children[1], SurfaceTokenKind::ReservedSymbol, ":")
     {
         return None;
     }

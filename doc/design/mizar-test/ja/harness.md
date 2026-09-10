@@ -1,5 +1,9 @@
 # Module: harness
 
+Step 5C.9 は G3 を除く対応7行だけを厳密な stage metadata で受け入れる。
+既存 resolver/checker 入力を構成し、文検査後の網羅性不成立だけを verification で観測する。
+無関係なエラー・式検査成功に証明受理を与えず、then/hence は非活性のままとする。
+
 Step 5C.8 は parse・type・statement の対象 7 行だけを厳密に照合し、既存 resolver の識別子と checker handoff を使う。
 `iff` 連鎖の拒否は文字列だけでなく parser の実際の診断位置で確認する。文検査の成功は proof-verification や証明書受理を活性化しない。
 

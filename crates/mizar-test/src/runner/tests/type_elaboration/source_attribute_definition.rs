@@ -988,7 +988,7 @@ fn source_attribute_definition_route_publishes_no_semantic_outputs() {
             active_type_elaboration_cases(&plan).count(),
             crate::active_proof_verification_cases(&plan).count(),
         ),
-        (112, 11, 246, 6)
+        (112, 11, 246, 7)
     );
     let type_stage = plan
         .coverage_report

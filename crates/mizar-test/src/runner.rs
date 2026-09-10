@@ -1602,7 +1602,7 @@ pub fn run_parse_only_corpus(config: &DiscoveryConfig) -> Result<ParseOnlyRunRep
         });
     }
     diagnostics.extend(validate_active_parse_only_tags(&workspace_root, &plan));
-    diagnostics.extend(formula_statement::validate_step5c8_admission(
+    diagnostics.extend(formula_statement::validate_step5_formula_admission(
         &workspace_root,
         &plan,
     ));
@@ -1810,7 +1810,7 @@ pub fn run_type_elaboration_corpus(
         &workspace_root,
         &plan,
     ));
-    diagnostics.extend(formula_statement::validate_step5c8_admission(
+    diagnostics.extend(formula_statement::validate_step5_formula_admission(
         &workspace_root,
         &plan,
     ));
@@ -1972,9 +1972,12 @@ pub fn active_proof_verification_cases(plan: &TestPlan) -> impl Iterator<Item = 
 }
 
 fn is_active_parse_only(case: &TestCase) -> bool {
+    if formula_statement::is_step5c9_candidate(case) {
+        return false;
+    }
     if formula_statement::is_step5c8_candidate(case) {
         return case.expectation.stage == Stage::ParseOnly
-            && formula_statement::step5c8_admitted(None, case);
+            && formula_statement::step5_formula_admitted(None, case);
     }
     let exact_step5c3 = is_step5c3_parse_only_case(case);
     let exact_step5c4 = is_step5c4_parse_only_case(case);
@@ -2347,7 +2350,7 @@ fn type_elaboration_detail_keys(
         return step5c7_term_detail_keys(&ast, &resolver.module, &symbols);
     }
     if formula_statement::is_step5c8_candidate(case) {
-        if !formula_statement::step5c8_admitted(Some(workspace_root), case)
+        if !formula_statement::step5_formula_admitted(Some(workspace_root), case)
             || !resolver.detail_keys.is_empty()
         {
             return vec!["formulas.invalid_admission_or_resolver".to_owned()];

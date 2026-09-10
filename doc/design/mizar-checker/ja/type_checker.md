@@ -1,5 +1,11 @@
 # mizar-checker: Type Checker
 
+`SourceVariableSemanticsChecker::check_proof_organization` は `check_formula_statements` と同じ入力を取り、
+組込み型、存在例化、ブロック・分岐の目標と実際の引用 ID を検査して `Result<bool, String>` を返す。
+bool は場合分けの網羅性義務を反射等式・相補的条件で満たせたかを示し、未対応義務はエラーになる。
+定理受理ではない。既存ノード・辺、primary/atomic/set handoff、束縛スコープを再利用する。
+この限定プロファイルは `suppose` 分岐のみを扱い、同義の `case` 表記は後続に保留する。
+
 `SourceVariableSemanticsChecker::check_formula_statements` は既存の typed arena、primary/atomic handoff と resolver の変数・ラベルを使う限定的な論理式／文検査を担う。
 組み込み型、結合子・量化子、一般化、順序付き witness 代入を検査し、新しい論理式 IR や定理・証明受理は生成しない。
 入力は `&TypedAst`、`&ResolvedVariableScope`、`&SymbolEnv`、`&ProofLabelSourceCollection`、`&LabelResolutionResult`、出力は `Result<(), String>`。

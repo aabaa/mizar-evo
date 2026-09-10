@@ -130,6 +130,10 @@ fn normalize_term_ast(
 }
 
 pub(super) fn is_active_proof_verification(case: &TestCase) -> bool {
+    if super::formula_statement::is_step5c9_candidate(case) {
+        return case.expectation.stage == Stage::ProofVerification
+            && super::formula_statement::step5_formula_admitted(None, case);
+    }
     let task180 = case.id.0 == EXACT_TASK180_CASE_ID
         && active_tag_count(case) == 1
         && case.expectation.stage == Stage::ProofVerification
@@ -169,7 +173,8 @@ pub(super) fn validate_active_proof_verification_tags(
                     .any(|tag| tag == ACTIVE_PROOF_VERIFICATION_TAG)
         })
         .collect::<Vec<_>>();
-    let mut diagnostics = Vec::new();
+    let mut diagnostics =
+        super::formula_statement::validate_step5_formula_admission(workspace_root, plan);
     for case in reserved_cases {
         if !is_active_proof_verification(case)
             || is_step5c2_proof_id(case) && !is_step5c2_proof_workspace_member(workspace_root, case)
@@ -320,6 +325,44 @@ pub(super) fn run_proof_verification_case(
     case: &TestCase,
     ordinal: usize,
 ) -> ProofVerificationCaseResult {
+    if super::formula_statement::is_step5c9_candidate(case) {
+        let check = || -> Result<(), String> {
+            if !is_active_proof_verification(case)
+                || !super::formula_statement::step5_formula_admitted(Some(workspace_root), case)
+            {
+                return Err("invalid Step 5C.9 proof admission".to_owned());
+            }
+            let frontend = run_frontend(workspace_root, case, ordinal)?;
+            if !frontend.diagnostics.is_empty() {
+                return Err("case-completeness frontend diagnostics".to_owned());
+            }
+            let ast = frontend.ast.ok_or("case-completeness source has no AST")?;
+            let resolver = resolver_symbol_collection(workspace_root, case, &ast);
+            if !resolver.detail_keys.is_empty() {
+                return Err("case-completeness resolver diagnostics".to_owned());
+            }
+            if super::formula_statement::check_formula_ast_with_organization(
+                &ast,
+                &resolver.module,
+                &resolver.env,
+                true,
+            )? {
+                return Err("expected an incomplete source-derived case split".to_owned());
+            }
+            Ok(())
+        };
+        let failure = check().err();
+        return ProofVerificationCaseResult {
+            id: case.id.clone(),
+            expectation_path: case.expectation_path.clone(),
+            status: if failure.is_none() {
+                ProofVerificationCaseStatus::Passed
+            } else {
+                ProofVerificationCaseStatus::Failed
+            },
+            failure,
+        };
+    }
     if step5c7_proof_candidate(case) {
         let check = || -> Result<(), String> {
             if !step5c7_proof_workspace_member(workspace_root, case) {

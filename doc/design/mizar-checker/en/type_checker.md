@@ -1,5 +1,14 @@
 # mizar-checker: Type Checker
 
+`SourceVariableSemanticsChecker::check_proof_organization` takes the same inputs as
+`check_formula_statements` and returns `Result<bool, String>` after bounded builtin typing,
+existential instantiation, block/branch goal checks and source-identity-based citations.
+The boolean records whether all encountered case-completeness obligations are discharged
+by reflexive equality or complementary conditions; unsupported obligations return an error.
+It is not theorem acceptance. Existing node IDs/edges, primary/atomic/set handoffs and
+resolver scopes carry terms and formulas; no second expression representation is introduced.
+This profile admits only `suppose` branches; the interchangeable `case` surface is deferred.
+
 `SourceVariableSemanticsChecker::check_formula_statements` checks the bounded formula/statement
 slice through existing typed arenas, primary/atomic handoffs and sealed resolver bindings/labels.
 It checks builtin atom types, connective/quantifier structure, generalization and ordered witness

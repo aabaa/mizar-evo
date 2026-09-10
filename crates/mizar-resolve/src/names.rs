@@ -4472,6 +4472,10 @@ pub enum SourceVariableBindingKind {
     InlineParameter,
     /// A direct generator of a set comprehension.
     ComprehensionGenerator,
+    /// A proof-local witness introduced by `given`.
+    GivenWitness,
+    /// A proof-local witness introduced by `consider`.
+    ConsiderWitness,
 }
 
 /// Kind of source variable reference admitted by the variable resolver.
@@ -5035,7 +5039,7 @@ impl SourceVariableScopeResolver {
             return Err(SourceVariableScopeError::InvalidShape);
         }
 
-        let mut state = VariableResolveState::new(input.ast, input.module_id, scopes, false);
+        let mut state = VariableResolveState::new(input.ast, input.module_id, scopes, false, false);
         state.collect_declarations()?;
         state.validate_declarations()?;
         // Application nodes are only admitted for the two inline-definition
@@ -5058,7 +5062,35 @@ impl SourceVariableScopeResolver {
             return Err(SourceVariableScopeError::ModuleMismatch);
         }
 
-        let mut state = VariableResolveState::new(input.ast, input.module_id, scopes, true);
+        let mut state = VariableResolveState::new(input.ast, input.module_id, scopes, true, false);
+        state.collect_declarations()?;
+        state.validate_declarations()?;
+        state.validate_application_shapes()?;
+        state.collect_references()?;
+        state.resolve_references()?;
+        Ok(ResolvedVariableScope {
+            source_id: input.ast.source_id,
+            module_id: input.module_id.clone(),
+            bindings: state.bindings,
+            references: state.resolved_references,
+            thesis: None,
+            statements: Vec::new(),
+        })
+    }
+
+    /// Resolves proof-local occurrences, including Given/Consider witnesses.
+    ///
+    /// This opt-in profile deliberately returns the existing sealed scope
+    /// shape: proof statement payloads remain checker-owned.
+    pub fn resolve_proof_occurrences(
+        input: SourceVariableScopeInput<'_>,
+    ) -> Result<ResolvedVariableScope, SourceVariableScopeError> {
+        let scopes = validate_variable_surface_with_mode(input.ast, true)?;
+        if input.module_id != input.symbols.module_id() {
+            return Err(SourceVariableScopeError::ModuleMismatch);
+        }
+
+        let mut state = VariableResolveState::new(input.ast, input.module_id, scopes, true, true);
         state.collect_declarations()?;
         state.validate_declarations()?;
         state.validate_application_shapes()?;
@@ -5111,6 +5143,7 @@ struct VariableResolveState<'a> {
     reference_by_node: BTreeMap<SurfaceNodeId, SourceVariableReferenceId>,
     thesis_node: Option<SurfaceNodeId>,
     comprehension_scopes: bool,
+    proof_organization: bool,
 }
 
 impl<'a> VariableResolveState<'a> {
@@ -5122,6 +5155,7 @@ impl<'a> VariableResolveState<'a> {
             BTreeMap<SurfaceNodeId, SurfaceNodeId>,
         ),
         comprehension_scopes: bool,
+        proof_organization: bool,
     ) -> Self {
         Self {
             ast,
@@ -5138,6 +5172,7 @@ impl<'a> VariableResolveState<'a> {
             reference_by_node: BTreeMap::new(),
             thesis_node: None,
             comprehension_scopes,
+            proof_organization,
         }
     }
 
@@ -5177,6 +5212,20 @@ impl<'a> VariableResolveState<'a> {
                             id,
                             false,
                         )?;
+                    }
+                }
+                SurfaceNodeKind::GivenStatement | SurfaceNodeKind::ConsiderStatement
+                    if self.proof_organization =>
+                {
+                    let kind = if matches!(view.kind(), SurfaceNodeKind::GivenStatement) {
+                        SourceVariableBindingKind::GivenWitness
+                    } else {
+                        SourceVariableBindingKind::ConsiderWitness
+                    };
+                    for segment in direct_children(self.ast, id, |kind| {
+                        matches!(kind, SurfaceNodeKind::QualifiedVariableSegment)
+                    }) {
+                        self.collect_segment_declarations(segment.id(), kind, id, false)?;
                     }
                 }
                 SurfaceNodeKind::QuantifierVariableSegment => {
@@ -5429,7 +5478,10 @@ impl<'a> VariableResolveState<'a> {
         for declaration in &self.declarations {
             if matches!(
                 declaration.kind,
-                SourceVariableBindingKind::Let | SourceVariableBindingKind::Quantifier
+                SourceVariableBindingKind::Let
+                    | SourceVariableBindingKind::Quantifier
+                    | SourceVariableBindingKind::GivenWitness
+                    | SourceVariableBindingKind::ConsiderWitness
             ) && declaration.declared_type.is_none()
                 && !self.declarations.iter().any(|candidate| {
                     candidate.kind == SourceVariableBindingKind::Reserve
@@ -5451,7 +5503,15 @@ impl<'a> VariableResolveState<'a> {
                         SourceVariableBindingKind::Set | SourceVariableBindingKind::Reconsider,
                         SourceVariableBindingKind::Set | SourceVariableBindingKind::Reconsider
                     )
-                ) {
+                ) || (self.proof_organization
+                    && [left.kind, right.kind].iter().any(|kind| {
+                        matches!(
+                            kind,
+                            SourceVariableBindingKind::GivenWitness
+                                | SourceVariableBindingKind::ConsiderWitness
+                        )
+                    }))
+                {
                     return Err(SourceVariableScopeError::DuplicateLocalConstant);
                 }
             }
@@ -6811,6 +6871,8 @@ fn binding_kind_key(kind: SourceVariableBindingKind) -> u8 {
         SourceVariableBindingKind::InlinePredicate => 6,
         SourceVariableBindingKind::InlineParameter => 7,
         SourceVariableBindingKind::ComprehensionGenerator => 8,
+        SourceVariableBindingKind::GivenWitness => 9,
+        SourceVariableBindingKind::ConsiderWitness => 10,
     }
 }
 

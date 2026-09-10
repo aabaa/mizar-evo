@@ -1,5 +1,10 @@
 # Module: labels
 
+`collect_with_proof_organization()` additionally traverses Given/Consider conditions,
+Now/Hereby blocks, `suppose` branches and iterative equalities using the existing collection.
+Labels retain their real declaration/citation origins, block scopes and visibility order;
+branch assumptions never escape their branch. Other collector entry points are unchanged.
+
 `collect_with_let_conditions` additionally collects a sole labeled `let ... such that` condition
 with the existing source origin, proof scope, and visibility ordering. Ordinary `collect` is unchanged.
 

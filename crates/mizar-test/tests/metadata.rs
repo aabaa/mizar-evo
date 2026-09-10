@@ -3164,7 +3164,7 @@ fn active_runner_reports_are_byte_stable_across_repeated_runs() {
     let root = config.workspace_root.clone();
     let plan = build_test_plan(&config).unwrap();
 
-    assert_eq!(active_proof_verification_cases(&plan).count(), 6);
+    assert_eq!(active_proof_verification_cases(&plan).count(), 7);
 
     let parse_first = canonical_parse_only_report(&run_parse_only_corpus(&config).unwrap(), &root);
     let parse_second = canonical_parse_only_report(&run_parse_only_corpus(&config).unwrap(), &root);
@@ -10544,8 +10544,8 @@ fn proof_verification_cli_reports_task180_and_step5c2_summary() {
         String::from_utf8_lossy(&output.stderr)
     );
     let stdout = String::from_utf8_lossy(&output.stdout);
-    assert!(stdout.contains("proof-verification cases: 6"));
-    assert!(stdout.contains("passed: 6"));
+    assert!(stdout.contains("proof-verification cases: 7"));
+    assert!(stdout.contains("passed: 7"));
     assert!(stdout.contains("failed: 0"));
 }
 

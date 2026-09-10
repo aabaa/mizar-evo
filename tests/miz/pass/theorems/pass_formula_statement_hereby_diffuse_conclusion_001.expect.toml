@@ -7,6 +7,7 @@ source = "pass_formula_statement_hereby_diffuse_conclusion_001.miz"
 expected_outcome = "pass"
 expected_phase = "statement_check"
 diagnostic_codes = []
+tags = ["active_formula_statement"]
 spec_refs = [
   "spec.en.15.statements.hereby.diffuse_conclusion",
 ]

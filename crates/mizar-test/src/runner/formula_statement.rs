@@ -57,6 +57,58 @@ const STEP5C8_CASES: [(&str, Stage, Option<&str>); 7] = [
     ),
 ];
 
+const STEP5C9_CASES: [(&str, Stage, Option<&str>); 7] = [
+    (
+        "pass_formula_statement_consider_choice_001",
+        Stage::FormulaStatement,
+        None,
+    ),
+    (
+        "pass_formula_statement_now_diffuse_statement_001",
+        Stage::FormulaStatement,
+        None,
+    ),
+    (
+        "pass_formula_statement_given_existential_assumption_001",
+        Stage::FormulaStatement,
+        None,
+    ),
+    (
+        "pass_formula_statement_hereby_diffuse_conclusion_001",
+        Stage::FormulaStatement,
+        None,
+    ),
+    (
+        "pass_formula_statement_iterative_equality_001",
+        Stage::FormulaStatement,
+        None,
+    ),
+    (
+        "pass_formula_statement_per_cases_suppose_001",
+        Stage::FormulaStatement,
+        None,
+    ),
+    (
+        "fail_proof_verification_per_cases_incomplete_001",
+        Stage::ProofVerification,
+        Some("theorems.per_cases.incomplete_case_split"),
+    ),
+];
+
+pub(super) fn is_step5c9_candidate(case: &TestCase) -> bool {
+    STEP5C9_CASES.iter().any(|(id, _, _)| {
+        case.id.0 == *id
+            || case
+                .source_path
+                .file_name()
+                .is_some_and(|name| name == format!("{id}.miz").as_str())
+            || case
+                .expectation_path
+                .file_name()
+                .is_some_and(|name| name == format!("{id}.expect.toml").as_str())
+    })
+}
+
 pub(super) fn is_step5c8_candidate(case: &TestCase) -> bool {
     STEP5C8_CASES.iter().any(|(id, _, _)| {
         case.id.0 == *id
@@ -71,8 +123,12 @@ pub(super) fn is_step5c8_candidate(case: &TestCase) -> bool {
     })
 }
 
-pub(super) fn step5c8_admitted(root: Option<&Path>, case: &TestCase) -> bool {
-    let Some((id, stage, key)) = STEP5C8_CASES.iter().find(|(id, _, _)| case.id.0 == *id) else {
+pub(super) fn step5_formula_admitted(root: Option<&Path>, case: &TestCase) -> bool {
+    let Some((id, stage, key)) = STEP5C8_CASES
+        .iter()
+        .chain(STEP5C9_CASES.iter())
+        .find(|(id, _, _)| case.id.0 == *id)
+    else {
         return false;
     };
     let outcome = if key.is_some() {
@@ -81,11 +137,20 @@ pub(super) fn step5c8_admitted(root: Option<&Path>, case: &TestCase) -> bool {
         ExpectedOutcome::Pass
     };
     let directory = if key.is_some() { "fail" } else { "pass" };
-    let source = format!("tests/miz/{directory}/formulas/{id}.miz");
+    let folder = if STEP5C9_CASES
+        .iter()
+        .any(|(candidate, _, _)| candidate == id)
+    {
+        "theorems"
+    } else {
+        "formulas"
+    };
+    let source = format!("tests/miz/{directory}/{folder}/{id}.miz");
     let sidecar = Path::new(&source).with_extension("expect.toml");
     let phase = match stage {
         Stage::ParseOnly => PipelinePhase::Parse,
         Stage::TypeElaboration => PipelinePhase::Resolve,
+        Stage::ProofVerification => PipelinePhase::Verification,
         _ => PipelinePhase::StatementCheck,
     };
     case.expectation.id == case.id
@@ -146,9 +211,9 @@ const EXACT_FORMULA_STATEMENT_CASES: [(&str, &str, ExpectedOutcome); 7] = [
 ];
 
 pub(super) fn is_active_formula_statement(workspace_root: &Path, case: &TestCase) -> bool {
-    if is_step5c8_candidate(case) {
+    if is_step5c8_candidate(case) || is_step5c9_candidate(case) {
         return case.expectation.stage == Stage::FormulaStatement
-            && step5c8_admitted(Some(workspace_root), case);
+            && step5_formula_admitted(Some(workspace_root), case);
     }
     exact_formula_statement_case(workspace_root, case).is_some()
         && case.expectation.tags.as_slice() == [ACTIVE_FORMULA_STATEMENT_TAG]
@@ -160,39 +225,65 @@ pub(super) fn is_active_formula_statement(workspace_root: &Path, case: &TestCase
             .is_some_and(|extension| extension == "miz")
 }
 
-pub(super) fn validate_step5c8_admission(
+pub(super) fn validate_step5_formula_admission(
     workspace_root: &Path,
     plan: &TestPlan,
 ) -> Vec<ValidationDiagnostic> {
     let mut diagnostics = Vec::new();
-    for (id, _, key) in STEP5C8_CASES {
+    for (id, _, key) in STEP5C8_CASES.iter().chain(STEP5C9_CASES.iter()) {
         let directory = if key.is_some() { "fail" } else { "pass" };
-        let source = format!("tests/miz/{directory}/formulas/{id}.miz");
+        let extra = STEP5C9_CASES
+            .iter()
+            .any(|(candidate, _, _)| candidate == id);
+        let folder = if extra { "theorems" } else { "formulas" };
+        let source = format!("tests/miz/{directory}/{folder}/{id}.miz");
         if workspace_root.join(&source).is_file()
             && plan
                 .cases
                 .iter()
-                .filter(|case| case.id.0 == id && step5c8_admitted(Some(workspace_root), case))
+                .filter(|case| {
+                    case.id.0 == *id && step5_formula_admitted(Some(workspace_root), case)
+                })
                 .count()
                 != 1
         {
             diagnostics.push(ValidationDiagnostic::error(
                 Path::new(&source),
                 "formula_statement",
-                "E-FORMULAS-STEP5C8-INVENTORY",
-                format!("formulas.step5c8_inventory.{id}"),
-                "Step 5C.8 requires exactly one authenticated mapped row",
+                if extra {
+                    "E-FORMULAS-STEP5C9-INVENTORY"
+                } else {
+                    "E-FORMULAS-STEP5C8-INVENTORY"
+                },
+                format!(
+                    "formulas.step5c{}_inventory.{id}",
+                    if extra { 9 } else { 8 }
+                ),
+                "The formula bridge requires exactly one authenticated mapped row",
             ));
         }
     }
-    for case in plan.cases.iter().filter(|case| is_step5c8_candidate(case)) {
-        if !step5c8_admitted(Some(workspace_root), case) {
+    for case in plan
+        .cases
+        .iter()
+        .filter(|case| is_step5c8_candidate(case) || is_step5c9_candidate(case))
+    {
+        if !step5_formula_admitted(Some(workspace_root), case) {
+            let extra = is_step5c9_candidate(case);
             diagnostics.push(ValidationDiagnostic::error(
                 &case.expectation_path,
                 "formula_statement",
-                "E-FORMULAS-STEP5C8-ADMISSION",
-                format!("formulas.step5c8_admission.{}", case.id.0),
-                "Step 5C.8 metadata or workspace path does not match its mapped row",
+                if extra {
+                    "E-FORMULAS-STEP5C9-ADMISSION"
+                } else {
+                    "E-FORMULAS-STEP5C8-ADMISSION"
+                },
+                format!(
+                    "formulas.step5c{}_admission.{}",
+                    if extra { 9 } else { 8 },
+                    case.id.0
+                ),
+                "Formula bridge metadata or workspace path does not match its mapped row",
             ));
         }
     }
@@ -203,9 +294,10 @@ pub(super) fn validate_active_formula_statement_tags(
     workspace_root: &Path,
     plan: &TestPlan,
 ) -> Vec<ValidationDiagnostic> {
-    let mut diagnostics = validate_step5c8_admission(workspace_root, plan);
+    let mut diagnostics = validate_step5_formula_admission(workspace_root, plan);
     for case in plan.cases.iter().filter(|case| {
         !is_step5c8_candidate(case)
+            && !is_step5c9_candidate(case)
             && (active_tag_count(case) > 0
                 || EXACT_FORMULA_STATEMENT_CASES
                     .iter()
@@ -321,14 +413,21 @@ fn formula_statement_detail_keys(
             .map(|key| format!("formula_statement.lower_stage.{key}"))
             .collect();
     }
-    if is_step5c8_candidate(case) {
-        if !step5c8_admitted(Some(workspace_root), case) {
+    if is_step5c8_candidate(case) || is_step5c9_candidate(case) {
+        if !step5_formula_admitted(Some(workspace_root), case) {
             return vec!["formulas.invalid_admission".to_owned()];
         }
-        let semantics = check_formula_ast(&ast, &resolver.module, &resolver.env)
-            .err()
-            .into_iter()
-            .collect();
+        let checked = if is_step5c9_candidate(case) {
+            check_formula_ast_with_organization(&ast, &resolver.module, &resolver.env, true)
+                .and_then(|complete| {
+                    complete
+                        .then_some(())
+                        .ok_or_else(|| "theorems.per_cases.incomplete_case_split".to_owned())
+                })
+        } else {
+            check_formula_ast(&ast, &resolver.module, &resolver.env)
+        };
+        let semantics = checked.err().into_iter().collect();
         return reconcile_frontend_and_semantics(frontend_keys, semantics);
     }
     if case.id.0 == "pass_formula_statement_attr_negated_chain_assertion_001"
@@ -350,14 +449,31 @@ fn check_formula_ast(
     module: &ModuleId,
     symbols: &SymbolEnv,
 ) -> Result<(), String> {
+    check_formula_ast_with_organization(ast, module, symbols, false).map(|_| ())
+}
+
+pub(super) fn check_formula_ast_with_organization(
+    ast: &SurfaceAst,
+    module: &ModuleId,
+    symbols: &SymbolEnv,
+    organization: bool,
+) -> Result<bool, String> {
     use mizar_resolve::labels::{LabelResolver, ProofLabelSourceCollector};
-    let scope = SourceVariableScopeResolver::resolve_occurrences(SourceVariableScopeInput::new(
-        ast, module, symbols,
-    ))
+    let input = SourceVariableScopeInput::new(ast, module, symbols);
+    let scope = if organization {
+        SourceVariableScopeResolver::resolve_proof_occurrences(input)
+    } else {
+        SourceVariableScopeResolver::resolve_occurrences(input)
+    }
     .map_err(|error| format!("formulas.scope:{error:?}"))?;
     let bindings = SourceVariableSemanticsChecker::occurrence_binding_env(&scope);
     let typed = super::type_elaboration::step5c8_formula_typed_ast(
-        ast, module, symbols, &scope, &bindings,
+        ast,
+        module,
+        symbols,
+        &scope,
+        &bindings,
+        organization,
     )?;
     let arena = mizar_resolve::resolved_ast::SurfaceResolvedArena::lower(ast, module)
         .map_err(|error| error.to_string())?;
@@ -374,13 +490,26 @@ fn check_formula_ast(
         owner.contribution(),
         &arena,
     )
-    .and_then(|collector| collector.collect_with_let_conditions())
+    .and_then(|collector| {
+        if organization {
+            collector.collect_with_proof_organization()
+        } else {
+            collector.collect_with_let_conditions()
+        }
+    })
     .map_err(|error| error.to_string())?;
     let resolved =
         LabelResolver::new(labels.projections()).resolve(module, &namespace, labels.references());
-    SourceVariableSemanticsChecker::check_formula_statements(
-        &typed, &scope, symbols, &labels, &resolved,
-    )
+    if organization {
+        SourceVariableSemanticsChecker::check_proof_organization(
+            &typed, &scope, symbols, &labels, &resolved,
+        )
+    } else {
+        SourceVariableSemanticsChecker::check_formula_statements(
+            &typed, &scope, symbols, &labels, &resolved,
+        )
+        .map(|_| true)
+    }
 }
 
 fn lower_stage_keys(keys: Vec<String>) -> Vec<String> {
@@ -540,12 +669,12 @@ mod tests {
     };
 
     #[test]
-    fn step5c8_admission_rejects_metadata_and_cross_stage_fallback() {
+    fn step5c8_and_step5c9_admission_reject_metadata_and_cross_stage_fallback() {
         let root = workspace_root();
         let plan = build_test_plan(&config()).unwrap();
-        for (id, _, _) in super::STEP5C8_CASES {
+        for (id, _, _) in super::STEP5C8_CASES.into_iter().chain(super::STEP5C9_CASES) {
             let original = plan.cases.iter().find(|case| case.id.0 == id).unwrap();
-            assert!(super::step5c8_admitted(Some(&root), original), "{id}");
+            assert!(super::step5_formula_admitted(Some(&root), original), "{id}");
             let mutations: &[fn(&mut crate::harness::TestCase)] = &[
                 |case| case.id.0.push_str("_forged"),
                 |case| case.expectation.id.0.push_str("_forged"),
@@ -555,7 +684,14 @@ mod tests {
                         case.expectation_path.with_file_name("wrong.expect.toml")
                 },
                 |case| case.expectation.source = "wrong.miz".into(),
-                |case| case.expectation.stage = crate::staged_model::Stage::ProofVerification,
+                |case| {
+                    case.expectation.stage =
+                        if case.expectation.stage == crate::staged_model::Stage::ProofVerification {
+                            crate::staged_model::Stage::TypeElaboration
+                        } else {
+                            crate::staged_model::Stage::ProofVerification
+                        }
+                },
                 |case| case.expectation.expected_phase = Some(PipelinePhase::TypeCheck),
                 |case| case.expectation.expected_outcome = ExpectedOutcome::MetadataOnly,
                 |case| case.expectation.stable_detail_key = Some("wrong".into()),
@@ -566,30 +702,39 @@ mod tests {
             for mutate in mutations {
                 let mut case = original.clone();
                 mutate(&mut case);
-                assert!(super::is_step5c8_candidate(&case));
-                assert!(!super::step5c8_admitted(Some(&root), &case), "{case:?}");
+                assert!(super::is_step5c8_candidate(&case) || super::is_step5c9_candidate(&case));
+                assert!(
+                    !super::step5_formula_admitted(Some(&root), &case),
+                    "{case:?}"
+                );
                 assert!(!is_active_formula_statement(&root, &case));
                 assert!(!super::super::is_active_parse_only(&case));
                 assert!(!super::super::is_active_type_elaboration(&case));
+                assert!(!super::super::is_active_proof_verification(&case));
             }
             let mut wrong_root = original.clone();
             wrong_root.source_path = root
                 .join("alias")
                 .join(original.source_path.strip_prefix(&root).unwrap());
-            assert!(!super::step5c8_admitted(Some(&root), &wrong_root));
+            assert!(!super::step5_formula_admitted(Some(&root), &wrong_root));
             let mut missing = plan.clone();
+            let task = if super::is_step5c9_candidate(original) {
+                9
+            } else {
+                8
+            };
             missing.cases.retain(|case| case.id.0 != id);
             assert!(
                 validate_active_formula_statement_tags(&root, &missing)
                     .iter()
-                    .any(|d| d.detail_key == format!("formulas.step5c8_inventory.{id}"))
+                    .any(|d| d.detail_key == format!("formulas.step5c{task}_inventory.{id}"))
             );
             let mut duplicate = plan.clone();
             duplicate.cases.push(original.clone());
             assert!(
                 validate_active_formula_statement_tags(&root, &duplicate)
                     .iter()
-                    .any(|d| d.detail_key == format!("formulas.step5c8_inventory.{id}"))
+                    .any(|d| d.detail_key == format!("formulas.step5c{task}_inventory.{id}"))
             );
         }
     }
@@ -611,6 +756,228 @@ mod tests {
             resolver.detail_keys
         );
         super::check_formula_ast(&ast, &resolver.module, &resolver.env)
+    }
+
+    fn check_organization_source(source: &str) -> Result<bool, String> {
+        let root = workspace_root();
+        let plan = build_test_plan(&config()).unwrap();
+        let case = plan
+            .cases
+            .iter()
+            .find(|case| case.id.0 == super::STEP5C9_CASES[0].0)
+            .unwrap();
+        let output = super::step5c8_test_frontend(source);
+        if !output.diagnostics.is_empty() {
+            return Err(format!("frontend: {:?}", output.diagnostics));
+        }
+        let ast = output.ast.ok_or("missing AST")?;
+        let resolver = super::resolver_symbol_collection(&root, case, &ast);
+        if !resolver.detail_keys.is_empty() {
+            return Err(format!("resolver: {:?}", resolver.detail_keys));
+        }
+        super::check_formula_ast_with_organization(&ast, &resolver.module, &resolver.env, true)
+    }
+
+    #[test]
+    fn step5c9_all_mapped_sources_reach_their_semantic_outcome() {
+        let plan = build_test_plan(&config()).unwrap();
+        for (ordinal, (id, _, key)) in super::STEP5C9_CASES.into_iter().enumerate() {
+            let case = plan.cases.iter().find(|case| case.id.0 == id).unwrap();
+            let output = super::run_frontend(&workspace_root(), case, ordinal).unwrap();
+            assert!(
+                output.diagnostics.is_empty(),
+                "{id}: {:?}",
+                output.diagnostics
+            );
+            let ast = output.ast.unwrap();
+            let resolver = super::resolver_symbol_collection(&workspace_root(), case, &ast);
+            assert!(resolver.detail_keys.is_empty(), "{id}");
+            let scope = super::SourceVariableScopeResolver::resolve_proof_occurrences(
+                super::SourceVariableScopeInput::new(&ast, &resolver.module, &resolver.env),
+            )
+            .unwrap();
+            assert_eq!(scope.source_id(), ast.source_id);
+            assert_eq!(scope.module_id(), &resolver.module);
+            assert_eq!(
+                super::check_formula_ast_with_organization(
+                    &ast,
+                    &resolver.module,
+                    &resolver.env,
+                    true
+                ),
+                Ok(key.is_none()),
+                "{id}"
+            );
+        }
+        let gap = plan
+            .cases
+            .iter()
+            .find(|case| case.id.0 == "pass_formula_statement_then_hence_linking_001")
+            .unwrap();
+        assert!(!is_active_formula_statement(&workspace_root(), gap));
+        assert!(
+            check_organization_source(&std::fs::read_to_string(&gap.source_path).unwrap()).is_err()
+        );
+    }
+
+    #[test]
+    fn step5c9_given_and_consider_authenticate_witnesses_and_citations() {
+        let given = include_str!(
+            "../../../../tests/miz/pass/theorems/pass_formula_statement_given_existential_assumption_001.miz"
+        );
+        assert_eq!(
+            check_organization_source(&given.replace("y0", "witness").replace("A1", "Premise")),
+            Ok(true)
+        );
+        for (from, to) in [
+            ("given y0 being object", "given y0 being set"),
+            (
+                "(ex y being object st y in A)",
+                "(ex y being object st y = y)",
+            ),
+            ("take y0", "take A"),
+            ("by A1", "by Missing"),
+        ] {
+            assert!(
+                check_organization_source(&given.replace(from, to)).is_err(),
+                "{to}"
+            );
+        }
+        let consider = include_str!(
+            "../../../../tests/miz/pass/theorems/pass_formula_statement_consider_choice_001.miz"
+        );
+        for (from, to) in [
+            ("consider z being object", "consider z being set"),
+            ("by A1", "by A2"),
+            ("by A1", "by Missing"),
+            ("A2: z = x", "A2: z in x"),
+            ("take x", "take Missing"),
+        ] {
+            assert!(
+                check_organization_source(&consider.replace(from, to)).is_err(),
+                "{to}"
+            );
+        }
+    }
+
+    #[test]
+    fn step5c9_witness_scopes_keep_condition_descendant_and_shadowing_identity() {
+        use mizar_resolve::names::{SourceVariableScopeInput, SourceVariableScopeResolver};
+        let resolve = |source: &str| {
+            let output = super::step5c8_test_frontend(source);
+            let ast = output.ast.unwrap();
+            let module = mizar_resolve::resolved_ast::ModuleId::new(
+                mizar_session::PackageId::new("scope"),
+                mizar_session::ModulePath::new("scope"),
+            );
+            let env = mizar_resolve::env::SymbolEnv::new(module.clone(), Default::default());
+            SourceVariableScopeResolver::resolve_proof_occurrences(SourceVariableScopeInput::new(
+                &ast, &module, &env,
+            ))
+        };
+        for declaration in [
+            "given y being object such that y = x;",
+            "consider y being object such that y = x by Dummy;",
+        ] {
+            let source = format!(
+                "theorem F: for x being object holds x = x proof let x be object; {declaration} now {declaration} now y = y; end; end; y = y; end;"
+            );
+            let scope = resolve(&source).unwrap();
+            let bindings = scope
+                .bindings()
+                .iter()
+                .filter(|binding| binding.spelling() == "y")
+                .collect::<Vec<_>>();
+            assert_eq!(bindings.len(), 2);
+            let expected_kind = if declaration.starts_with("given") {
+                mizar_resolve::names::SourceVariableBindingKind::GivenWitness
+            } else {
+                mizar_resolve::names::SourceVariableBindingKind::ConsiderWitness
+            };
+            assert!(
+                bindings
+                    .iter()
+                    .all(|binding| binding.kind() == expected_kind)
+            );
+            assert!(bindings[0].ordinal() < bindings[1].ordinal());
+            assert_ne!(bindings[0].scope(), bindings[1].scope());
+            for binding in &bindings {
+                let range = binding.range();
+                assert_eq!(&source[range.start..range.end], "y");
+            }
+            let ids = scope
+                .references()
+                .iter()
+                .filter(|reference| reference.spelling() == "y")
+                .map(|reference| reference.binding())
+                .collect::<Vec<_>>();
+            let (outer, inner) = (bindings[0].id(), bindings[1].id());
+            assert_eq!(ids, [outer, inner, inner, inner, outer, outer]);
+            assert!(
+                resolve(&source.replacen(declaration, "", 1)).is_err(),
+                "parent leak"
+            );
+            assert!(resolve(&format!("theorem F: for x being object holds x = x proof let x be object; now {declaration} end; now y = y; end; end;")).is_err(), "sibling leak");
+            assert!(resolve(&format!("theorem F: for x being object holds x = x proof let x be object; {declaration} {declaration} end;")).is_err(), "same-scope duplicate");
+        }
+    }
+
+    #[test]
+    fn step5c9_blocks_chains_and_branch_completeness_are_independent() {
+        let now = include_str!(
+            "../../../../tests/miz/pass/theorems/pass_formula_statement_now_diffuse_statement_001.miz"
+        );
+        assert!(check_organization_source(&now.replace("by A1", "by Missing")).is_err());
+        assert!(check_organization_source(&now.replace("thus", "hence")).is_err());
+        let hereby = include_str!(
+            "../../../../tests/miz/pass/theorems/pass_formula_statement_hereby_diffuse_conclusion_001.miz"
+        );
+        assert!(check_organization_source(&hereby.replace("thus X = X", "thus X in X")).is_err());
+        let chain = include_str!(
+            "../../../../tests/miz/pass/theorems/pass_formula_statement_iterative_equality_001.miz"
+        );
+        assert!(check_organization_source(&chain.replace(".= {X}", ".= {}")).is_err());
+        assert!(check_organization_source(&chain.replace("by A1", "by Missing")).is_err());
+        let cases = include_str!(
+            "../../../../tests/miz/pass/theorems/pass_formula_statement_per_cases_suppose_001.miz"
+        );
+        assert!(check_organization_source(&cases.replace("by A2", "by A1")).is_err());
+        assert!(check_organization_source(&cases.replace("suppose", "case")).is_err());
+        assert!(
+            check_organization_source(&cases.replace("thus X = X or not X = X", "thus X = X"))
+                .is_err()
+        );
+        assert_eq!(
+            check_organization_source(&cases.replace("X = X", "X in X")),
+            Ok(true)
+        );
+        assert!(
+            check_organization_source(
+                &cases
+                    .replace("X = X", "X in X")
+                    .replace("suppose A2: not", "suppose A2:")
+            )
+            .is_err()
+        );
+        assert!(
+            check_organization_source(&cases.replace(
+                "suppose A2: not X = X",
+                "suppose A2: ex y being object st y = y"
+            ))
+            .is_err()
+        );
+        let incomplete = include_str!(
+            "../../../../tests/miz/fail/theorems/fail_proof_verification_per_cases_incomplete_001.miz"
+        );
+        assert_eq!(check_organization_source(incomplete), Ok(false));
+        assert_eq!(
+            check_organization_source(&incomplete.replace("suppose not X = X", "suppose X = X")),
+            Ok(true)
+        );
+        assert!(
+            check_organization_source(&incomplete.replace("suppose not X = X", "suppose X in X"))
+                .is_err()
+        );
     }
 
     #[test]
@@ -822,7 +1189,7 @@ mod tests {
     #[test]
     fn corpus_executes_exact_seven_and_preserves_checker_keys() {
         let report = super::super::run_formula_statement_corpus(&config()).unwrap();
-        assert_eq!(report.results.len(), 12);
+        assert_eq!(report.results.len(), 18);
         assert_eq!(report.error_count(), 0, "{:?}", report.diagnostics);
         assert!(
             report.results.iter().all(|result| {

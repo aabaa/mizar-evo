@@ -292,9 +292,12 @@ const STEP5C2_STRUCTURE_CASES: [(&str, &str, PipelinePhase, ExpectedOutcome); 12
 ];
 
 pub(in crate::runner) fn is_active_type_elaboration(case: &TestCase) -> bool {
+    if super::super::formula_statement::is_step5c9_candidate(case) {
+        return false;
+    }
     if super::super::formula_statement::is_step5c8_candidate(case) {
         return case.expectation.stage == Stage::TypeElaboration
-            && super::super::formula_statement::step5c8_admitted(None, case);
+            && super::super::formula_statement::step5_formula_admitted(None, case);
     }
     let exact_step5c1 = step5c1_case(case).is_some()
         && case.expectation.tags.as_slice() == [ACTIVE_TYPE_ELABORATION_TAG];

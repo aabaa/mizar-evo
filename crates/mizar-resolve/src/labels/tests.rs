@@ -129,6 +129,120 @@ fn duplicate_and_visible_nested_labels_are_internal_diagnostics() {
 }
 
 #[test]
+fn proof_organization_branch_labels_are_visible_only_in_their_branch() {
+    let source_id = source_id();
+    let mut builder = CollectorAstBuilder::new(source_id);
+
+    let first_label = builder.proposition(Some("A"), Some(":"), true);
+    let first_reference = builder.reference("A", false, false);
+    let first_justification = builder.justification(
+        ("by", SurfaceTokenKind::ReservedWord),
+        vec![first_reference],
+        false,
+    );
+    let first_body_proposition = builder.proposition(None, None, true);
+    let first_body = builder.compact(first_body_proposition, Some(first_justification));
+    let first_suppose = builder.token(SurfaceTokenKind::ReservedWord, "suppose");
+    let first_semicolon = builder.token(SurfaceTokenKind::ReservedSymbol, ";");
+    let first_end = builder.token(SurfaceTokenKind::ReservedWord, "end");
+    let first_trailing_semicolon = builder.token(SurfaceTokenKind::ReservedSymbol, ";");
+    let first_branch = builder.node(
+        SurfaceNodeKind::SupposeItem,
+        vec![
+            first_suppose,
+            first_label,
+            first_semicolon,
+            first_body,
+            first_end,
+            first_trailing_semicolon,
+        ],
+    );
+
+    let second_reference = builder.reference("A", false, false);
+    let second_justification = builder.justification(
+        ("by", SurfaceTokenKind::ReservedWord),
+        vec![second_reference],
+        false,
+    );
+    let second_body_proposition = builder.proposition(None, None, true);
+    let second_body = builder.compact(second_body_proposition, Some(second_justification));
+    let second_suppose = builder.token(SurfaceTokenKind::ReservedWord, "suppose");
+    let second_proposition = builder.proposition(None, None, true);
+    let second_semicolon = builder.token(SurfaceTokenKind::ReservedSymbol, ";");
+    let second_end = builder.token(SurfaceTokenKind::ReservedWord, "end");
+    let second_trailing_semicolon = builder.token(SurfaceTokenKind::ReservedSymbol, ";");
+    let second_branch = builder.node(
+        SurfaceNodeKind::SupposeItem,
+        vec![
+            second_suppose,
+            second_proposition,
+            second_semicolon,
+            second_body,
+            second_end,
+            second_trailing_semicolon,
+        ],
+    );
+    let per = builder.token(SurfaceTokenKind::ReservedWord, "per");
+    let cases = builder.token(SurfaceTokenKind::ReservedWord, "cases");
+    let reasoning_semicolon = builder.token(SurfaceTokenKind::ReservedSymbol, ";");
+    let reasoning = builder.node(
+        SurfaceNodeKind::CaseReasoningStatement,
+        vec![per, cases, reasoning_semicolon, first_branch, second_branch],
+    );
+    let theorem = builder.valid_theorem("Owner", vec![reasoning]);
+    let ast = builder.finish_items(vec![theorem]);
+    let collection = collect_proof_fixture(&ast);
+    assert_eq!(
+        collection
+            .projections()
+            .iter()
+            .map(LabelProjection::primary_spelling)
+            .collect::<Vec<_>>(),
+        vec!["A"]
+    );
+
+    let module = module_id("pkg", "main");
+    let projection = &collection.projections()[0];
+    assert_eq!(projection.module(), &module);
+    assert_eq!(projection.declaration_range().source_id, source_id);
+    assert!(
+        matches!(projection.source(), LabelProjectionSource::CurrentModule {
+        proof_scope: Some(scope), ..
+    } if matches!(collection.references()[0].scope(), LabelReferenceScope::Unqualified {
+        proof_scope: Some(reference_scope)
+    } if reference_scope == scope))
+    );
+    assert!(collection.references()[0].ordinal() < collection.references()[1].ordinal());
+    let resolved = LabelResolver::new(collection.projections()).resolve(
+        &module,
+        &NamespacePath::new("main"),
+        collection.references(),
+    );
+    for (id, reference) in resolved.ids().iter().zip(collection.references()) {
+        let entry = resolved.table().get(*id).unwrap();
+        assert_eq!(entry.site(), reference.site());
+        assert_eq!(entry.origin(), reference.origin());
+        assert_eq!(reference.site().range().source_id, source_id);
+    }
+    assert!(matches!(
+        resolved
+            .table()
+            .get(resolved.ids()[0])
+            .unwrap()
+            .resolution(),
+        LabelResolution::Resolved(_)
+    ));
+    assert!(matches!(
+        resolved
+            .table()
+            .get(resolved.ids()[1])
+            .unwrap()
+            .resolution(),
+        LabelResolution::Unresolved(_)
+    ));
+}
+
+#[test]
 fn forward_references_to_later_theorem_labels_are_unresolved() {
     let source_id = source_id();
     let current = module_id("app", "main");
@@ -2907,6 +3021,23 @@ fn collect_fixture(ast: &SurfaceAst) -> ProofLabelSourceCollection {
     )
     .unwrap()
     .collect()
+    .unwrap()
+}
+
+fn collect_proof_fixture(ast: &SurfaceAst) -> ProofLabelSourceCollection {
+    let module = module_id("pkg", "main");
+    let mut contributions = SourceContributionIndex::new();
+    let contribution = contribution(&mut contributions, module.clone(), ast.source_id, 0);
+    let resolved = SurfaceResolvedArena::lower(ast, &module).unwrap();
+    ProofLabelSourceCollector::new(
+        ast,
+        &module,
+        NamespacePath::new("main"),
+        contribution,
+        &resolved,
+    )
+    .unwrap()
+    .collect_with_proof_organization()
     .unwrap()
 }
 

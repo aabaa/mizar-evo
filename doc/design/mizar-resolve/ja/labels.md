@@ -1,5 +1,9 @@
 # Module: labels
 
+`collect_with_proof_organization()` は既存の収集型で Given/Consider 条件、Now/Hereby、
+`suppose` 分岐・反復等式も巡回する。宣言・引用の origin、ブロックスコープ、可視順序を保持し、
+分岐の仮定は外へ漏らさない。他の収集入口は変更しない。
+
 `collect_with_let_conditions` は単独のラベル付き `let ... such that` 条件を、既存の source origin・proof scope・可視順序で収集する。
 通常の `collect` の受理範囲と順序は変更しない。
 

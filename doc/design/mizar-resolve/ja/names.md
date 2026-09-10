@@ -1,5 +1,9 @@
 # Module: names
 
+`resolve_proof_occurrences(SourceVariableScopeInput)` は既存の sealed `ResolvedVariableScope` を返し、
+Given/Consider の束縛と条件・子ブロック内の参照を所属ブロックの範囲で収集する。
+旧入口は変更せず、追加するのは束縛種別のみで、式・文の payload は追加しない。
+
 `SourceVariableScopeResolver::resolve_occurrences` は既存の束縛・参照 ID と生成変数の宣言型を保持し、
 生成変数より前の mapper 参照を同じ内包表記のスコープ内だけで解決する。文・thesis は構築せず、従来の `resolve` は不変。
 

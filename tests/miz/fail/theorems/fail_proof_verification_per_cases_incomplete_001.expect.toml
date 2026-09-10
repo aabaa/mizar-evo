@@ -9,6 +9,7 @@ expected_phase = "verification"
 failure_category = "proof_failure"
 stable_detail_key = "theorems.per_cases.incomplete_case_split"
 diagnostic_codes = []
+tags = ["active_proof_verification"]
 spec_refs = [
   "spec.en.15.statements.per_cases.completeness_obligation",
 ]
