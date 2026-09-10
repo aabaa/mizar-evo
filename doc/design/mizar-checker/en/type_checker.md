@@ -1,5 +1,14 @@
 # mizar-checker: Type Checker
 
+`SourceVariableSemanticsChecker::check_formula_statements` checks the bounded formula/statement
+slice through existing typed arenas, primary/atomic handoffs and sealed resolver bindings/labels.
+It checks builtin atom types, connective/quantifier structure, generalization and ordered witness
+substitution without constructing another formula IR or granting theorem/proof acceptance.
+Inputs are `&TypedAst`, `&ResolvedVariableScope`, `&SymbolEnv`,
+`&ProofLabelSourceCollection`, `&LabelResolutionResult`; output is `Result<(), String>`.
+The arena retains original node IDs, child edges and structural `SurfaceAst` kind names;
+primary/atomic nodes retain their existing checker source-kind tags and immutable handoffs.
+
 `occurrence_binding_env` projects a resolver receipt into one module transaction, not a lexical
 visibility authority. `step5c7_type_detail_keys` requires term/formula inference before accepting
 bounded source inhabitation or builtin-widening evidence; it grants no theorem/proof credit.

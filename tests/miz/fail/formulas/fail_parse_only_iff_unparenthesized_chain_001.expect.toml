@@ -9,6 +9,7 @@ expected_phase = "parse"
 failure_category = "syntax_error"
 stable_detail_key = "formulas.iff.unparenthesized_chain"
 diagnostic_codes = []
+tags = ["active_parse_only"]
 spec_refs = [
   "spec.en.14.formulas.iff.non_associative",
 ]

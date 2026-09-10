@@ -9,6 +9,7 @@ expected_phase = "resolve"
 failure_category = "resolve_error"
 stable_detail_key = "formulas.free_variable_unbound"
 diagnostic_codes = []
+tags = ["active_type_elaboration"]
 spec_refs = [
   "spec.en.14.formulas.free_variables.binding",
 ]

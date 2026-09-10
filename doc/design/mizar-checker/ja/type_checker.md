@@ -1,5 +1,10 @@
 # mizar-checker: Type Checker
 
+`SourceVariableSemanticsChecker::check_formula_statements` は既存の typed arena、primary/atomic handoff と resolver の変数・ラベルを使う限定的な論理式／文検査を担う。
+組み込み型、結合子・量化子、一般化、順序付き witness 代入を検査し、新しい論理式 IR や定理・証明受理は生成しない。
+入力は `&TypedAst`、`&ResolvedVariableScope`、`&SymbolEnv`、`&ProofLabelSourceCollection`、`&LabelResolutionResult`、出力は `Result<(), String>`。
+arena は元の node ID・子辺・構造ノードの `SurfaceAst` kind 名を保持し、primary/atomic ノードは既存 checker の kind tag と不変 handoff を保持する。
+
 `occurrence_binding_env` の module context は受け渡し単位であり、lexical visibility の根拠ではない。
 `step5c7_type_detail_keys` は限定された inhabitation・builtin widening の根拠を受理する前に項・式を推論し、定理・証明の受理は行わない。
 

@@ -1,5 +1,10 @@
 # Module: harness
 
+The Step 5C.8 route authenticates its seven exact mapped rows across parse, type and statement
+stages. Existing resolver identities and checker handoffs carry formula/statement inputs;
+parser diagnostic provenance, not token matching alone, supplies the non-associative `iff` failure.
+Statement-checking success does not activate proof verification or certificate acceptance.
+
 The Step 5C.7 route admits only its mapped non-G5 type/proof rows with exact sidecar metadata.
 Source occurrences, choice evidence, qua bases, and proof citations are extracted independently of
 case names; proof success requires discharged membership goals. The G5 narrowing row stays inactive.

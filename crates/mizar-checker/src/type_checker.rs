@@ -7005,6 +7005,202 @@ impl SourceVariableSemanticsChecker {
         project_binding_env(scope).0
     }
 
+    /// Checks the bounded Step 5C.8 formula/statement transport.
+    ///
+    /// The handoffs remain the source of identity and ordering.  This method
+    /// only projects their existing rows into the ordinary term/formula
+    /// checker and validates the small connective/quantifier slice selected by
+    /// the activation map.
+    pub fn check_formula_statements(
+        typed: &crate::typed_ast::TypedAst,
+        scope: &ResolvedVariableScope,
+        symbols: &SymbolEnv,
+        labels: &mizar_resolve::labels::ProofLabelSourceCollection,
+        resolved_labels: &mizar_resolve::labels::LabelResolutionResult,
+    ) -> Result<(), String> {
+        let invalid = || "formulas.typed_ast_invalid".to_owned();
+        if typed.source_id() != scope.source_id()
+            || typed.module_id() != scope.module_id()
+            || symbols.module_id() != scope.module_id()
+            || !typed.diagnostics().is_empty()
+            || typed
+                .nodes()
+                .iter()
+                .any(|(_, node)| node.recovery != NodeRecoveryState::Normal)
+        {
+            return Err(invalid());
+        }
+        let binding_env = Self::occurrence_binding_env(scope);
+        let primary = typed.source_term().ok_or_else(invalid)?;
+        let atomic = typed.source_atomic_formula().ok_or_else(invalid)?;
+        if primary.source_id() != typed.source_id()
+            || primary.module_id() != typed.module_id()
+            || atomic.source_id() != typed.source_id()
+            || atomic.module_id() != typed.module_id()
+        {
+            return Err(invalid());
+        }
+        if primary.terms().len() != scope.references().len()
+            || primary.references().len() != scope.references().len()
+        {
+            return Err(invalid());
+        }
+        for (id, term) in primary.terms().iter() {
+            let Some(reference) = primary
+                .references()
+                .iter()
+                .find(|(_, reference)| reference.term() == id)
+                .map(|(_, reference)| reference)
+            else {
+                return Err(invalid());
+            };
+            let Some(source_reference) = scope.references().iter().find(|source_reference| {
+                source_reference.node().index() == term.site().node().index()
+            }) else {
+                return Err(invalid());
+            };
+            if reference.binding().index() != source_reference.binding().index()
+                || reference.lexical_scope() != Some(source_reference.scope())
+                || reference.use_ordinal() != source_reference.ordinal()
+                || term.source_range() != source_reference.range()
+                || term.spelling() != source_reference.spelling()
+            {
+                return Err(invalid());
+            }
+        }
+        step5c8_statement_shape(typed, scope, primary, atomic, labels, resolved_labels)?;
+
+        let mut terms = Vec::new();
+        for (id, term) in primary.terms().iter() {
+            if term.recovery() != crate::source_term::SourcePrimaryTermRecovery::Normal
+                || term.kind() != crate::source_term::SourcePrimaryTermKind::VariableReference
+            {
+                return Err(invalid());
+            }
+            let reference = primary
+                .references()
+                .iter()
+                .find(|(_, reference)| reference.term() == id)
+                .map(|(_, reference)| reference.binding())
+                .ok_or_else(invalid)?;
+            let binding = scope
+                .bindings()
+                .get(reference.index())
+                .ok_or_else(invalid)?;
+            if binding
+                .declared_type()
+                .is_none_or(|ty| !ty.attributes().is_empty())
+            {
+                return Err(invalid());
+            }
+            let mut input = TermInput::new(
+                term.site().clone(),
+                term.context(),
+                term.source_range(),
+                TermKind::Variable,
+            )
+            .with_reference(TermReference::Binding(reference));
+            let radix = binding.declared_type().map(|ty| ty.radix());
+            let head = match radix {
+                Some(SourceVariableTypeRadix::Set) => TypeHeadInput::BuiltinSet,
+                Some(SourceVariableTypeRadix::Object) => TypeHeadInput::BuiltinObject,
+                None => return Err(invalid()),
+                Some(_) => return Err(invalid()),
+            };
+            input = input.with_result_type(TypeExpressionInput::new(
+                term.site().clone(),
+                term.source_range(),
+                term.spelling(),
+                head,
+            ));
+            terms.push(input);
+        }
+        let mut formulas = Vec::new();
+        for (id, formula) in atomic.formulas().iter() {
+            if formula.recovery()
+                != crate::source_atomic_formula::SourceAtomicFormulaRecovery::Normal
+            {
+                return Err(invalid());
+            }
+            let kind = match formula.kind() {
+                crate::source_atomic_formula::SourceAtomicFormulaKind::Equality => {
+                    FormulaKind::Equality
+                }
+                crate::source_atomic_formula::SourceAtomicFormulaKind::Membership => {
+                    FormulaKind::Membership
+                }
+                crate::source_atomic_formula::SourceAtomicFormulaKind::TypeAssertion => {
+                    FormulaKind::TypeAssertion
+                }
+                _ => return Err(invalid()),
+            };
+            let edges = atomic
+                .edges()
+                .iter()
+                .filter(|(_, edge)| edge.formula() == id)
+                .collect::<Vec<_>>();
+            let mut input = FormulaInput::new(
+                formula.site().clone(),
+                formula.context(),
+                formula.source_range(),
+                kind,
+            );
+            let mut formula_terms = Vec::new();
+            for (_, edge) in edges {
+                let crate::source_atomic_formula::SourceAtomicTermTarget::Primary(term) =
+                    edge.target()
+                else {
+                    return Err(invalid());
+                };
+                let Some(term) = primary.terms().get(term) else {
+                    return Err(invalid());
+                };
+                formula_terms.push(term.site().clone());
+            }
+            input = input.with_terms(formula_terms);
+            if matches!(kind, FormulaKind::TypeAssertion) {
+                let Some((_, type_site)) = atomic
+                    .type_sites()
+                    .iter()
+                    .find(|(_, site)| site.formula() == id)
+                else {
+                    return Err(invalid());
+                };
+                let head = match type_site.head() {
+                    crate::source_atomic_formula::SourceAssertionTypeHead::BuiltinSet => {
+                        TypeHeadInput::BuiltinSet
+                    }
+                    crate::source_atomic_formula::SourceAssertionTypeHead::BuiltinObject => {
+                        TypeHeadInput::BuiltinObject
+                    }
+                };
+                input = input.with_asserted_type(TypeExpressionInput::new(
+                    type_site.site().clone(),
+                    type_site.source_range(),
+                    type_site.spelling(),
+                    head,
+                ));
+            }
+            formulas.push(input);
+        }
+        let output = TermFormulaChecker::default().infer(symbols, &binding_env, terms, formulas);
+        if output.diagnostics().iter().any(|(_, diagnostic)| {
+            diagnostic.severity == TypeDiagnosticSeverity::Error
+                || diagnostic.recovery == DiagnosticRecoveryState::Degraded
+        }) || output
+            .terms()
+            .iter()
+            .any(|(_, term)| term.status != TermStatus::Inferred)
+            || output
+                .formulas()
+                .iter()
+                .any(|(_, formula)| formula.status != FormulaStatus::Checked)
+        {
+            return Err(invalid());
+        }
+        step5c8_atomic_restrictions(atomic, primary, scope)
+    }
+
     /// Checks one authenticated source-variable scope.
     #[must_use]
     pub fn check(input: SourceVariableSemanticsInput<'_>) -> SourceVariableSemanticsOutput {
@@ -7237,6 +7433,628 @@ impl SourceVariableSemanticsChecker {
             diagnostics,
         }
     }
+}
+
+fn step5c8_statement_shape(
+    typed: &crate::typed_ast::TypedAst,
+    scope: &ResolvedVariableScope,
+    primary: &crate::source_term::SourcePrimaryTermHandoff,
+    atomic: &crate::source_atomic_formula::SourceAtomicFormulaHandoff,
+    labels: &mizar_resolve::labels::ProofLabelSourceCollection,
+    resolved: &mizar_resolve::labels::LabelResolutionResult,
+) -> Result<(), String> {
+    let invalid = || "formulas.typed_ast_invalid".to_owned();
+    let one = |kind| {
+        let nodes = typed
+            .nodes()
+            .iter()
+            .filter_map(|(id, node)| (node.kind.as_str() == kind).then_some(id))
+            .collect::<Vec<_>>();
+        nodes.try_into().map_err(|_| invalid())
+    };
+    let [theorem] = one("TheoremItem")?;
+    let [proof] = one("ProofBlock")?;
+    let [conclusion] = one("ConclusionStatement")?;
+    let theorem_range = step5c8_range(typed, theorem).ok_or_else(invalid)?;
+    let proof_range = step5c8_range(typed, proof).ok_or_else(invalid)?;
+    if !step5c8_contains(theorem_range, proof_range) {
+        return Err(invalid());
+    }
+    let theorem_children = step5c8_children(typed, theorem).ok_or_else(invalid)?;
+    let [written_thesis, written_proof] = theorem_children.as_slice() else {
+        return Err(invalid());
+    };
+    if *written_proof != proof {
+        return Err(invalid());
+    }
+    let proof_children = step5c8_children(typed, proof).ok_or_else(invalid)?;
+    if proof_children.last() != Some(&conclusion) {
+        return Err(invalid());
+    }
+    let mut thesis = step5c8_unwrap(typed, *written_thesis).ok_or_else(invalid)?;
+    let mut substitutions = BTreeMap::new();
+    let mut cursor = 0;
+    let mut guarded_lets = Vec::new();
+    while step5c8_kind(typed, thesis) == Some("QuantifiedFormula(Universal)") {
+        let (bound, guard, body) = step5c8_quantifier(typed, scope, thesis, false)?;
+        let Some(local_node) = proof_children.get(cursor).copied() else {
+            return Err(invalid());
+        };
+        let (locals, local_guard) = step5c8_let(typed, scope, local_node)?;
+        if bound.len() != locals.len()
+            || bound.iter().zip(&locals).any(|(bound, local)| {
+                scope
+                    .bindings()
+                    .get(bound.index())
+                    .and_then(|binding| binding.declared_type())
+                    != scope
+                        .bindings()
+                        .get(local.index())
+                        .and_then(|binding| binding.declared_type())
+            })
+            || guard.is_some() != local_guard.is_some()
+        {
+            return Err(invalid());
+        }
+        substitutions.extend(bound.iter().copied().zip(locals.iter().copied()));
+        if let (Some(guard), Some(local_guard)) = (guard, local_guard) {
+            if !step5c8_formula_equal(
+                typed,
+                scope,
+                primary,
+                atomic,
+                guard,
+                local_guard,
+                &substitutions,
+            ) {
+                return Err(invalid());
+            }
+            guarded_lets.push((local_node, local_guard));
+        }
+        cursor += 1;
+        thesis = body;
+    }
+    let mut existential = Vec::new();
+    while step5c8_kind(typed, thesis) == Some("QuantifiedFormula(Existential)") {
+        let (bound, guard, body) = step5c8_quantifier(typed, scope, thesis, true)?;
+        if guard.is_some() {
+            return Err(invalid());
+        }
+        existential.extend(bound);
+        thesis = body;
+    }
+    if existential.is_empty() {
+        if cursor + 1 != proof_children.len() {
+            return Err(invalid());
+        }
+    } else {
+        let Some(take) = proof_children.get(cursor).copied() else {
+            return Err(invalid());
+        };
+        let witnesses = step5c8_take(typed, scope, primary, take)?;
+        if cursor + 2 != proof_children.len()
+            || witnesses.len() != existential.len()
+            || witnesses.iter().zip(&existential).any(|(witness, bound)| {
+                let declared = |id: SourceVariableBindingId| {
+                    scope
+                        .bindings()
+                        .get(id.index())
+                        .and_then(|binding| binding.declared_type())
+                };
+                !declared(*witness)
+                    .zip(declared(*bound))
+                    .is_some_and(|(actual, expected)| source_type_can_widen(actual, expected))
+            })
+        {
+            return Err(invalid());
+        }
+        substitutions.extend(existential.into_iter().zip(witnesses));
+    }
+    let conclusion_children = step5c8_children(typed, conclusion).ok_or_else(invalid)?;
+    let Some(written_conclusion) = conclusion_children.first().copied() else {
+        return Err(invalid());
+    };
+    let written_conclusion = step5c8_unwrap(typed, written_conclusion).ok_or_else(invalid)?;
+    if !step5c8_formula_equal(
+        typed,
+        scope,
+        primary,
+        atomic,
+        thesis,
+        written_conclusion,
+        &substitutions,
+    ) {
+        return Err(invalid());
+    }
+    let invalid = || "formulas.label_provenance_invalid".to_owned();
+    if resolved.has_unresolved() || !resolved.diagnostics().is_empty() {
+        return Err(invalid());
+    }
+    if guarded_lets.is_empty() {
+        return (labels.projections().is_empty()
+            && labels.references().is_empty()
+            && resolved.ids().is_empty())
+        .then_some(())
+        .ok_or_else(invalid);
+    }
+    let mut projections = Vec::new();
+    for (let_node, _) in &guarded_lets {
+        let range = step5c8_range(typed, *let_node).ok_or_else(invalid)?;
+        let matches = labels
+            .projections()
+            .iter()
+            .filter(|projection| step5c8_contains(range, projection.declaration_range()))
+            .collect::<Vec<_>>();
+        let [projection] = matches.as_slice() else {
+            return Err(invalid());
+        };
+        projections.push(*projection);
+    }
+    if labels.projections().len() != projections.len() {
+        return Err(invalid());
+    }
+    let conclusion_range = step5c8_range(typed, conclusion).ok_or_else(invalid)?;
+    let references = labels
+        .references()
+        .iter()
+        .filter(|reference| step5c8_contains(conclusion_range, reference.site().range()))
+        .collect::<Vec<_>>();
+    let [reference] = references.as_slice() else {
+        return Err(invalid());
+    };
+    let target = projections.last().ok_or_else(invalid)?;
+    let (_, condition) = guarded_lets.last().ok_or_else(invalid)?;
+    if !step5c8_formula_equal(
+        typed,
+        scope,
+        primary,
+        atomic,
+        *condition,
+        written_conclusion,
+        &substitutions,
+    ) {
+        return Err(invalid());
+    }
+    let entry = resolved
+        .ids()
+        .iter()
+        .find_map(|id| {
+            resolved.table().get(*id).filter(|entry| {
+                entry.site() == reference.site() && entry.origin() == reference.origin()
+            })
+        })
+        .ok_or_else(invalid)?;
+    if !matches!(entry.resolution(), mizar_resolve::resolved_ast::LabelResolution::Resolved(label) if label.origin() == target.origin_path())
+    {
+        return Err(invalid());
+    }
+    Ok(())
+}
+
+fn step5c8_kind(typed: &crate::typed_ast::TypedAst, id: TypedNodeId) -> Option<&str> {
+    typed.nodes().node(id).map(|node| node.kind.as_str())
+}
+
+fn step5c8_range(typed: &crate::typed_ast::TypedAst, id: TypedNodeId) -> Option<SourceRange> {
+    match typed.nodes().node(id)?.anchor {
+        SourceAnchor::Range(range) => Some(range),
+        _ => None,
+    }
+}
+
+fn step5c8_contains(parent: SourceRange, child: SourceRange) -> bool {
+    parent.source_id == child.source_id && parent.start <= child.start && parent.end >= child.end
+}
+
+fn step5c8_children(
+    typed: &crate::typed_ast::TypedAst,
+    id: TypedNodeId,
+) -> Option<Vec<TypedNodeId>> {
+    Some(
+        typed
+            .nodes()
+            .node(id)?
+            .children
+            .iter()
+            .copied()
+            .filter(|child| {
+                !step5c8_kind(typed, *child).is_some_and(|kind| kind.starts_with("Token("))
+            })
+            .collect(),
+    )
+}
+
+fn step5c8_unwrap(typed: &crate::typed_ast::TypedAst, mut id: TypedNodeId) -> Option<TypedNodeId> {
+    while matches!(
+        step5c8_kind(typed, id),
+        Some("Proposition" | "FormulaExpression")
+    ) {
+        let children = step5c8_children(typed, id)?;
+        let [child] = children.as_slice() else {
+            return None;
+        };
+        id = *child;
+    }
+    Some(id)
+}
+
+fn step5c8_quantifier(
+    typed: &crate::typed_ast::TypedAst,
+    scope: &ResolvedVariableScope,
+    id: TypedNodeId,
+    existential: bool,
+) -> Result<
+    (
+        Vec<SourceVariableBindingId>,
+        Option<TypedNodeId>,
+        TypedNodeId,
+    ),
+    String,
+> {
+    let invalid = || "formulas.typed_ast_invalid".to_owned();
+    let expected = if existential {
+        "QuantifiedFormula(Existential)"
+    } else {
+        "QuantifiedFormula(Universal)"
+    };
+    if step5c8_kind(typed, id) != Some(expected) {
+        return Err(invalid());
+    }
+    let children = step5c8_children(typed, id).ok_or_else(invalid)?;
+    let split = children
+        .iter()
+        .take_while(|child| step5c8_kind(typed, **child) == Some("QuantifierVariableSegment"))
+        .count();
+    if split == 0 {
+        return Err(invalid());
+    }
+    let mut bindings = Vec::new();
+    for segment in &children[..split] {
+        let range = step5c8_range(typed, *segment).ok_or_else(invalid)?;
+        let mut segment_bindings = scope
+            .bindings()
+            .iter()
+            .filter(|binding| {
+                binding.kind() == SourceVariableBindingKind::Quantifier
+                    && step5c8_contains(range, binding.range())
+            })
+            .collect::<Vec<_>>();
+        segment_bindings.sort_by_key(|binding| binding.ordinal());
+        if segment_bindings.is_empty()
+            || segment_bindings.iter().any(|binding| {
+                binding
+                    .declared_type()
+                    .is_none_or(|ty| !ty.attributes().is_empty())
+            })
+        {
+            return Err(invalid());
+        }
+        bindings.extend(segment_bindings.into_iter().map(|binding| binding.id()));
+    }
+    let (guard, body) = match &children[split..] {
+        [body] => (None, *body),
+        [guard, body] if !existential => (Some(*guard), *body),
+        _ => return Err(invalid()),
+    };
+    let guard = match guard {
+        Some(guard) => Some(step5c8_unwrap(typed, guard).ok_or_else(invalid)?),
+        None => None,
+    };
+    Ok((
+        bindings,
+        guard,
+        step5c8_unwrap(typed, body).ok_or_else(invalid)?,
+    ))
+}
+
+fn step5c8_let(
+    typed: &crate::typed_ast::TypedAst,
+    scope: &ResolvedVariableScope,
+    id: TypedNodeId,
+) -> Result<(Vec<SourceVariableBindingId>, Option<TypedNodeId>), String> {
+    let invalid = || "formulas.typed_ast_invalid".to_owned();
+    if step5c8_kind(typed, id) != Some("LetStatement") {
+        return Err(invalid());
+    }
+    let children = step5c8_children(typed, id).ok_or_else(invalid)?;
+    let split = children
+        .iter()
+        .take_while(|child| step5c8_kind(typed, **child) == Some("QualifiedVariableSegment"))
+        .count();
+    if split == 0
+        || !(children[split..].is_empty()
+            || (children[split..].len() == 1
+                && step5c8_kind(typed, children[split]) == Some("ConditionList")))
+    {
+        return Err(invalid());
+    }
+    let mut bindings = Vec::new();
+    for segment in &children[..split] {
+        let range = step5c8_range(typed, *segment).ok_or_else(invalid)?;
+        let mut locals = scope
+            .bindings()
+            .iter()
+            .filter(|binding| {
+                binding.kind() == SourceVariableBindingKind::Let
+                    && step5c8_contains(range, binding.range())
+            })
+            .collect::<Vec<_>>();
+        locals.sort_by_key(|binding| binding.ordinal());
+        if locals.is_empty() {
+            return Err(invalid());
+        }
+        bindings.extend(locals.into_iter().map(|binding| binding.id()));
+    }
+    let guard = match children.get(split) {
+        Some(condition) => {
+            let children = step5c8_children(typed, *condition).ok_or_else(invalid)?;
+            let [proposition] = children.as_slice() else {
+                return Err(invalid());
+            };
+            Some(step5c8_unwrap(typed, *proposition).ok_or_else(invalid)?)
+        }
+        None => None,
+    };
+    Ok((bindings, guard))
+}
+
+fn step5c8_take(
+    typed: &crate::typed_ast::TypedAst,
+    scope: &ResolvedVariableScope,
+    primary: &crate::source_term::SourcePrimaryTermHandoff,
+    id: TypedNodeId,
+) -> Result<Vec<SourceVariableBindingId>, String> {
+    let invalid = || "formulas.typed_ast_invalid".to_owned();
+    if step5c8_kind(typed, id) != Some("TakeStatement") {
+        return Err(invalid());
+    }
+    let witnesses = step5c8_children(typed, id).ok_or_else(invalid)?;
+    if witnesses.is_empty()
+        || witnesses
+            .iter()
+            .any(|witness| step5c8_kind(typed, *witness) != Some("Witness"))
+    {
+        return Err(invalid());
+    }
+    witnesses
+        .into_iter()
+        .map(|witness| {
+            if typed
+                .nodes()
+                .node(witness)
+                .ok_or_else(invalid)?
+                .children
+                .iter()
+                .any(|child| {
+                    step5c8_kind(typed, *child).is_some_and(|kind| kind.contains("text: \"=\""))
+                })
+            {
+                return Err(invalid());
+            }
+            let terms = step5c8_children(typed, witness).ok_or_else(invalid)?;
+            let [term] = terms.as_slice() else {
+                return Err(invalid());
+            };
+            if step5c8_kind(typed, *term) != Some("TermExpression") {
+                return Err(invalid());
+            }
+            step5c8_term_binding(typed, scope, primary, *term).ok_or_else(invalid)
+        })
+        .collect()
+}
+
+fn step5c8_term_binding(
+    typed: &crate::typed_ast::TypedAst,
+    scope: &ResolvedVariableScope,
+    primary: &crate::source_term::SourcePrimaryTermHandoff,
+    mut id: TypedNodeId,
+) -> Option<SourceVariableBindingId> {
+    while step5c8_kind(typed, id) == Some("TermExpression") {
+        let children = step5c8_children(typed, id)?;
+        let [child] = children.as_slice() else {
+            return None;
+        };
+        id = *child;
+    }
+    primary
+        .terms()
+        .iter()
+        .find(|(_, term)| term.site().node().index() == id.index())
+        .and_then(|(term, _)| {
+            primary.references().iter().find_map(|(_, reference)| {
+                (reference.term() == term).then_some(reference.binding())
+            })
+        })
+        .and_then(|binding| {
+            scope
+                .bindings()
+                .get(binding.index())
+                .map(|binding| binding.id())
+        })
+}
+
+fn step5c8_formula_equal(
+    typed: &crate::typed_ast::TypedAst,
+    scope: &ResolvedVariableScope,
+    primary: &crate::source_term::SourcePrimaryTermHandoff,
+    atomic: &crate::source_atomic_formula::SourceAtomicFormulaHandoff,
+    left: TypedNodeId,
+    right: TypedNodeId,
+    substitutions: &BTreeMap<SourceVariableBindingId, SourceVariableBindingId>,
+) -> bool {
+    let Some(left) = step5c8_unwrap(typed, left) else {
+        return false;
+    };
+    let Some(right) = step5c8_unwrap(typed, right) else {
+        return false;
+    };
+    if step5c8_kind(typed, left) != step5c8_kind(typed, right) {
+        return false;
+    }
+    let left_atomic = atomic
+        .formulas()
+        .iter()
+        .find(|(_, formula)| formula.site().node().index() == left.index());
+    let right_atomic = atomic
+        .formulas()
+        .iter()
+        .find(|(_, formula)| formula.site().node().index() == right.index());
+    match (left_atomic, right_atomic) {
+        (Some((left_id, left_formula)), Some((right_id, right_formula))) => {
+            if left_formula.kind() != right_formula.kind() {
+                return false;
+            }
+            let mut left_edges = atomic
+                .edges()
+                .iter()
+                .filter(|(_, edge)| edge.formula() == left_id)
+                .map(|(_, edge)| edge)
+                .collect::<Vec<_>>();
+            let mut right_edges = atomic
+                .edges()
+                .iter()
+                .filter(|(_, edge)| edge.formula() == right_id)
+                .map(|(_, edge)| edge)
+                .collect::<Vec<_>>();
+            left_edges.sort_by_key(|edge| edge.ordinal());
+            right_edges.sort_by_key(|edge| edge.ordinal());
+            if left_edges.len() != right_edges.len()
+                || left_edges.iter().zip(&right_edges).any(|(left, right)| {
+                    left.ordinal() != right.ordinal()
+                        || left.role() != right.role()
+                        || step5c8_atomic_binding(scope, primary, left.target()).and_then(
+                            |binding| substitutions.get(&binding).copied().or(Some(binding)),
+                        ) != step5c8_atomic_binding(scope, primary, right.target())
+                })
+            {
+                return false;
+            }
+            let left_type = atomic
+                .type_sites()
+                .iter()
+                .find(|(_, site)| site.formula() == left_id)
+                .map(|(_, site)| site.head());
+            let right_type = atomic
+                .type_sites()
+                .iter()
+                .find(|(_, site)| site.formula() == right_id)
+                .map(|(_, site)| site.head());
+            left_type == right_type
+        }
+        (None, None) => {
+            let kind = step5c8_kind(typed, left).unwrap_or("");
+            let arity = match kind {
+                "ParenthesizedFormula" | "PrefixFormula(Not)" => 1,
+                "BinaryFormula(SurfaceFormulaBinaryOperator { connective: And, repeated: false })"
+                | "BinaryFormula(SurfaceFormulaBinaryOperator { connective: Or, repeated: false })"
+                | "BinaryFormula(SurfaceFormulaBinaryOperator { connective: Implies, repeated: false })"
+                | "BinaryFormula(SurfaceFormulaBinaryOperator { connective: Iff, repeated: false })" => {
+                    2
+                }
+                _ => return false,
+            };
+            let Some(left_children) = step5c8_children(typed, left) else {
+                return false;
+            };
+            let Some(right_children) = step5c8_children(typed, right) else {
+                return false;
+            };
+            left_children.len() == arity
+                && right_children.len() == arity
+                && (!kind.contains("connective: Iff")
+                    || left_children.iter().chain(&right_children).all(|child| {
+                        step5c8_unwrap(typed, *child)
+                            .and_then(|id| step5c8_kind(typed, id))
+                            .is_none_or(|kind| !kind.contains("connective: Iff"))
+                    }))
+                && left_children
+                    .iter()
+                    .zip(right_children)
+                    .all(|(left, right)| {
+                        step5c8_formula_equal(
+                            typed,
+                            scope,
+                            primary,
+                            atomic,
+                            *left,
+                            right,
+                            substitutions,
+                        )
+                    })
+        }
+        _ => false,
+    }
+}
+
+fn step5c8_atomic_binding(
+    scope: &ResolvedVariableScope,
+    primary: &crate::source_term::SourcePrimaryTermHandoff,
+    target: crate::source_atomic_formula::SourceAtomicTermTarget,
+) -> Option<SourceVariableBindingId> {
+    let crate::source_atomic_formula::SourceAtomicTermTarget::Primary(term) = target else {
+        return None;
+    };
+    primary
+        .references()
+        .iter()
+        .find_map(|(_, reference)| (reference.term() == term).then_some(reference.binding()))
+        .and_then(|binding| {
+            scope
+                .bindings()
+                .get(binding.index())
+                .map(|binding| binding.id())
+        })
+}
+
+fn step5c8_atomic_restrictions(
+    atomic: &crate::source_atomic_formula::SourceAtomicFormulaHandoff,
+    primary: &crate::source_term::SourcePrimaryTermHandoff,
+    scope: &ResolvedVariableScope,
+) -> Result<(), String> {
+    let invalid = || "formulas.typed_ast_invalid".to_owned();
+    for (id, formula) in atomic.formulas().iter() {
+        let edges = atomic
+            .edges()
+            .iter()
+            .filter(|(_, edge)| edge.formula() == id)
+            .collect::<Vec<_>>();
+        match formula.kind() {
+            crate::source_atomic_formula::SourceAtomicFormulaKind::Equality => {}
+            crate::source_atomic_formula::SourceAtomicFormulaKind::Membership => {
+                let (_, right) = edges
+                    .iter()
+                    .find(|(_, edge)| {
+                        edge.role()
+                            == crate::source_atomic_formula::SourceAtomicEdgeRole::BuiltinRightOperand
+                    })
+                    .ok_or_else(invalid)?;
+                let crate::source_atomic_formula::SourceAtomicTermTarget::Primary(term) =
+                    right.target()
+                else {
+                    return Err(invalid());
+                };
+                let Some(reference) = primary
+                    .references()
+                    .iter()
+                    .find(|(_, reference)| reference.term() == term)
+                    .map(|(_, reference)| reference.binding())
+                else {
+                    return Err(invalid());
+                };
+                if scope
+                    .bindings()
+                    .get(reference.index())
+                    .and_then(|binding| binding.declared_type())
+                    .is_none_or(|ty| ty.radix() != SourceVariableTypeRadix::Set)
+                {
+                    return Err(invalid());
+                }
+            }
+            crate::source_atomic_formula::SourceAtomicFormulaKind::TypeAssertion => {}
+            _ => return Err(invalid()),
+        }
+    }
+    Ok(())
 }
 
 const fn variable_diagnostic(

@@ -1085,6 +1085,247 @@ pub(in crate::runner) fn step5c7_membership_typed_ast(
     .map_err(|error| error.to_string())
 }
 
+pub(in crate::runner) fn step5c8_formula_typed_ast(
+    ast: &SurfaceAst,
+    module: &ModuleId,
+    symbols: &SymbolEnv,
+    scope: &mizar_resolve::names::ResolvedVariableScope,
+    binding_env: &BindingEnv,
+) -> Result<TypedAst, String> {
+    let source_arena = membership_typed_arena(ast)?;
+    let primary = membership_primary_terms(ast, module, scope, binding_env, &source_arena)?;
+    let mut formulas = ast
+        .node_views()
+        .filter_map(|view| {
+            let node = ast.node(view.id())?;
+            let kind = match node.kind {
+                SurfaceNodeKind::BuiltinPredicateApplication => {
+                    match direct_token_texts(ast, node).as_slice() {
+                        [operator] if operator == "=" => Some(SourceAtomicFormulaKind::Equality),
+                        [operator] if operator == "in" => Some(SourceAtomicFormulaKind::Membership),
+                        _ => None,
+                    }
+                }
+                SurfaceNodeKind::IsAssertion
+                    if direct_token_texts(ast, node).as_slice() == ["is"] =>
+                {
+                    Some(SourceAtomicFormulaKind::TypeAssertion)
+                }
+                _ => None,
+            }?;
+            Some((view.id(), kind))
+        })
+        .collect::<Vec<_>>();
+    formulas.sort_by_key(|(id, _)| {
+        let range = ast.nodes()[id.index()].range;
+        (range.start, range.end, id.index())
+    });
+    if formulas.is_empty() {
+        return Err("formula source AST has no supported atomic formula".into());
+    }
+    let mut atomic = Vec::with_capacity(formulas.len());
+    let mut type_sites = Vec::new();
+    let mut edges = Vec::with_capacity(formulas.len() * 2);
+    let mut requests = Vec::new();
+    let mut owned_kinds = BTreeMap::new();
+    for (ordinal, (formula_id, kind)) in formulas.iter().copied().enumerate() {
+        let formula = ast
+            .node(formula_id)
+            .ok_or_else(|| "formula atomic node disappeared".to_owned())?;
+        let formula_key = SourceAtomicFormulaId::new(ordinal);
+        insert_kind(&mut owned_kinds, formula_id.index(), formula_kind_key(kind))?;
+        atomic.push(SourceAtomicFormulaInput {
+            site: surface_site(formula_id),
+            source_range: formula.range,
+            source_ordinal: ordinal,
+            context: BindingContextId::new(0),
+            recovery: SourceAtomicFormulaRecovery::Normal,
+            spelling: surface_text(ast, formula),
+            kind,
+        });
+        match kind {
+            SourceAtomicFormulaKind::Equality | SourceAtomicFormulaKind::Membership => {
+                let children = structural_child_ids(ast, formula);
+                let [left, right] = children.as_slice() else {
+                    return Err("formula builtin atom requires two operands".to_owned());
+                };
+                let left = step5c8_primary_operand(ast, *left, &primary)?;
+                let right = step5c8_primary_operand(ast, *right, &primary)?;
+                let edge_base = edges.len();
+                edges.extend([
+                    edge(
+                        formula_key,
+                        0,
+                        SourceAtomicEdgeRole::BuiltinLeftOperand,
+                        left,
+                    ),
+                    edge(
+                        formula_key,
+                        1,
+                        SourceAtomicEdgeRole::BuiltinRightOperand,
+                        right,
+                    ),
+                ]);
+                let request_edge = if kind == SourceAtomicFormulaKind::Membership {
+                    1
+                } else {
+                    0
+                };
+                requests.push(SourceAtomicRequestInput {
+                    formula: formula_key,
+                    ordinal: 0,
+                    kind: SourceAtomicRequestKind::OperandExpectedType,
+                    edge: Some(SourceAtomicEdgeId::new(edge_base + request_edge)),
+                    candidate: None,
+                    type_site: None,
+                    attribute: None,
+                });
+                if kind == SourceAtomicFormulaKind::Equality {
+                    requests.push(SourceAtomicRequestInput {
+                        formula: formula_key,
+                        ordinal: 1,
+                        kind: SourceAtomicRequestKind::OperandExpectedType,
+                        edge: Some(SourceAtomicEdgeId::new(edge_base + 1)),
+                        candidate: None,
+                        type_site: None,
+                        attribute: None,
+                    });
+                }
+            }
+            SourceAtomicFormulaKind::TypeAssertion => {
+                let children = structural_child_ids(ast, formula);
+                let [subject, asserted_type] = children.as_slice() else {
+                    return Err("formula type assertion shape is not binary".to_owned());
+                };
+                let subject = step5c8_primary_operand(ast, *subject, &primary)?;
+                let type_node = ast
+                    .node(*asserted_type)
+                    .ok_or_else(|| "formula asserted type disappeared".to_owned())?;
+                if !matches!(type_node.kind, SurfaceNodeKind::TypeExpression) {
+                    return Err("formula assertion target is not a type expression".to_owned());
+                }
+                let head = unique_descendant(ast, asserted_type.index(), |kind| {
+                    matches!(kind, SurfaceNodeKind::TypeHead)
+                })?;
+                let head_node = ast
+                    .node(head)
+                    .ok_or_else(|| "formula asserted type head disappeared".to_owned())?;
+                let spelling = surface_text(ast, type_node);
+                let head_spelling = surface_text(ast, head_node);
+                let head_kind = match spelling.as_str() {
+                    "set" if head_spelling == "set" => SourceAssertionTypeHead::BuiltinSet,
+                    "object" if head_spelling == "object" => SourceAssertionTypeHead::BuiltinObject,
+                    _ => return Err("formula assertion target is not a builtin type".to_owned()),
+                };
+                let type_site_id =
+                    mizar_checker::source_atomic_formula::SourceAssertionTypeSiteId::new(
+                        type_sites.len(),
+                    );
+                insert_kind(
+                    &mut owned_kinds,
+                    asserted_type.index(),
+                    "source.formula.atomic.asserted-type",
+                )?;
+                insert_kind(
+                    &mut owned_kinds,
+                    head.index(),
+                    "source.formula.atomic.asserted-type-head",
+                )?;
+                type_sites.push(SourceAssertionTypeSiteInput {
+                    formula: formula_key,
+                    site: surface_site(*asserted_type),
+                    source_range: type_node.range,
+                    spelling: spelling.clone(),
+                    head_site: surface_site(head),
+                    head_range: head_node.range,
+                    head_spelling,
+                    context: BindingContextId::new(0),
+                    recovery: SourceAtomicFormulaRecovery::Normal,
+                    head: head_kind,
+                });
+                edges.push(edge(
+                    formula_key,
+                    0,
+                    SourceAtomicEdgeRole::AssertionSubject,
+                    subject,
+                ));
+                requests.push(SourceAtomicRequestInput {
+                    formula: formula_key,
+                    ordinal: 0,
+                    kind: SourceAtomicRequestKind::TypeAssertionReachability,
+                    edge: None,
+                    candidate: None,
+                    type_site: Some(type_site_id),
+                    attribute: None,
+                });
+            }
+            _ => unreachable!(),
+        }
+    }
+    let mut arena = membership_restore_arena(ast, &source_arena)?;
+    let mut nodes = arena
+        .iter()
+        .map(|(_, node)| node.clone())
+        .collect::<Vec<_>>();
+    for (index, kind) in owned_kinds {
+        nodes[index].kind = kind.into();
+    }
+    arena = TypedArena::try_new(arena.root(), nodes).map_err(|error| error.to_string())?;
+    let handoff = SourceAtomicFormulaProducer::build(
+        SourceAtomicFormulaHandoffInput {
+            source_id: ast.source_id,
+            module_id: module.clone(),
+            formulas: atomic,
+            wrappers: Vec::new(),
+            predicate_segments: Vec::new(),
+            predicate_heads: Vec::new(),
+            candidates: Vec::new(),
+            type_sites,
+            attributes: Vec::new(),
+            edges,
+            requests,
+        },
+        binding_env,
+        symbols,
+        &primary,
+        None,
+        None,
+        None,
+        &arena,
+    )
+    .map_err(|error| error.to_string())?;
+    empty_typed_ast_with_primary(
+        ast,
+        module.clone(),
+        SourceTermParts {
+            arena,
+            handoff: primary,
+        },
+    )?
+    .with_source_atomic_formula(handoff)
+    .map_err(|error| error.to_string())
+}
+fn step5c8_primary_operand(
+    ast: &SurfaceAst,
+    operand: SurfaceNodeId,
+    primary: &SourcePrimaryTermHandoff,
+) -> Result<SourceAtomicTermTarget, String> {
+    let wrapper = ast
+        .node(operand)
+        .ok_or_else(|| "formula operand disappeared".to_owned())?;
+    let children = structural_child_ids(ast, wrapper);
+    let [child] = children.as_slice() else {
+        return Err("formula operand is not a single wrapper".to_owned());
+    };
+    let node = ast
+        .node(*child)
+        .ok_or_else(|| "formula operand disappeared".to_owned())?;
+    match node.kind {
+        SurfaceNodeKind::TermReference => primary_target(primary, node.range),
+        _ => Err("formula atom requires an authenticated variable operand".to_owned()),
+    }
+}
+
 fn membership_typed_arena(ast: &SurfaceAst) -> Result<TypedArena, String> {
     let root = ast
         .root()

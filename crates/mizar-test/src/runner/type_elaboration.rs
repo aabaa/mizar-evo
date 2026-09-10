@@ -359,6 +359,7 @@ pub(super) use source_ast::{authenticated_local_declaration, structural_child_id
 pub(super) use source_ast::{direct_token_texts, surface_nodes_with_kind, surface_site};
 pub(super) use source_atomic_formula::source_atomic_formula_transport_detail_keys;
 pub(super) use source_atomic_formula::step5c7_membership_typed_ast;
+pub(super) use source_atomic_formula::step5c8_formula_typed_ast;
 #[cfg(test)]
 pub(super) use source_atomic_formula::{
     SourceAtomicFormulaRouteOutput, source_atomic_formula_output,

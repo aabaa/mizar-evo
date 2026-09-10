@@ -138,7 +138,15 @@ pub(super) fn run_parse_only_case(
             let step5c4 = is_step5c4_parse_only_workspace_member(workspace_root, case);
             (
                 output.ast.is_some(),
-                if step5c3 {
+                if super::formula_statement::is_step5c8_candidate(case) {
+                    if super::formula_statement::step5c8_admitted(Some(workspace_root), case)
+                        && step5c8_iff_diagnostic(&output)
+                    {
+                        Vec::new()
+                    } else {
+                        vec!["formulas.iff.invalid_diagnostic_provenance".to_owned()]
+                    }
+                } else if step5c3 {
                     if output.ast.as_ref().is_some_and(step5c3_parse_shape) {
                         Vec::new()
                     } else {
@@ -193,6 +201,30 @@ pub(super) fn run_parse_only_case(
         actual_diagnostic_codes,
         snapshot_failure,
     }
+}
+
+fn step5c8_iff_diagnostic(output: &super::shared::FrontendRun) -> bool {
+    use mizar_frontend::orchestration::{DiagnosticCode, DiagnosticLocation};
+    use mizar_syntax::SurfaceFormulaConnective;
+    let (Some(ast), [diagnostic]) = (&output.ast, output.diagnostics.as_slice()) else {
+        return false;
+    };
+    if diagnostic.code != DiagnosticCode::Syntax("non_associative_operator_chain".into())
+        || ast.nodes().iter().any(|node| node.recovered)
+    {
+        return false;
+    }
+    ast.nodes().iter().any(|node| {
+        if !matches!(node.kind, SurfaceNodeKind::BinaryFormula(operator) if operator.connective == SurfaceFormulaConnective::Iff) {
+            return false;
+        }
+        let [left, operator, _right] = node.children.as_slice() else { return false; };
+        ast.node(*left).is_some_and(|left| matches!(left.kind, SurfaceNodeKind::BinaryFormula(operator) if operator.connective == SurfaceFormulaConnective::Iff))
+            && ast.node(*operator).is_some_and(|operator| {
+                operator.token_text() == Some("iff")
+                    && diagnostic.location == DiagnosticLocation::SourceRange(operator.range)
+            })
+    })
 }
 
 pub(in crate::runner) fn step5c3_parse_shape(ast: &SurfaceAst) -> bool {
@@ -392,5 +424,43 @@ fn compare_surface_ast_snapshot(
             expected.len(),
             actual.len()
         ))
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::runner::formula_statement::step5c8_test_frontend;
+
+    #[test]
+    fn step5c8_iff_rejection_requires_the_real_chain_diagnostic_and_location() {
+        let source = "theorem F: for x being set holds x = x iff x = x iff x = x;";
+        let mut output = step5c8_test_frontend(source);
+        assert!(step5c8_iff_diagnostic(&output), "{:?}", output.diagnostics);
+        let diagnostic = output.diagnostics[0].clone();
+        output.diagnostics.clear();
+        assert!(!step5c8_iff_diagnostic(&output));
+        output.diagnostics = vec![diagnostic.clone(), diagnostic.clone()];
+        assert!(!step5c8_iff_diagnostic(&output));
+        output.diagnostics = vec![diagnostic.clone()];
+        output.diagnostics[0].code =
+            mizar_frontend::orchestration::DiagnosticCode::Syntax("missing_semicolon".into());
+        assert!(!step5c8_iff_diagnostic(&output));
+        output.diagnostics = vec![diagnostic.clone()];
+        output.diagnostics[0].location =
+            mizar_frontend::orchestration::DiagnosticLocation::SourceRange(
+                output.ast.as_ref().unwrap().nodes()[0].range,
+            );
+        assert!(!step5c8_iff_diagnostic(&output));
+        for source in [
+            "theorem F: for x being set holds (x = x iff x = x) iff x = x;",
+            "theorem F: for x being set holds x = x iff (x = x iff x = x);",
+            "theorem F: for x being set holds x = ;",
+        ] {
+            let mut unrelated = step5c8_test_frontend(source);
+            assert!(!step5c8_iff_diagnostic(&unrelated));
+            unrelated.diagnostics = vec![diagnostic.clone()];
+            assert!(!step5c8_iff_diagnostic(&unrelated));
+        }
     }
 }

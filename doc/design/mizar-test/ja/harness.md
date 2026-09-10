@@ -1,5 +1,8 @@
 # Module: harness
 
+Step 5C.8 は parse・type・statement の対象 7 行だけを厳密に照合し、既存 resolver の識別子と checker handoff を使う。
+`iff` 連鎖の拒否は文字列だけでなく parser の実際の診断位置で確認する。文検査の成功は proof-verification や証明書受理を活性化しない。
+
 Step 5C.7 は activation map の non-G5 type/proof 行だけを sidecar の厳密な照合後に受理する。
 出現・choice の根拠・qua の元項・前提引用をケース名から推測せず抽出し、証明は所属関係の検査を必要とする。G5 narrowing 行は inactive のまま。
 
