@@ -1716,7 +1716,7 @@ fn validate_payload(
     validate_formulas(input, bindings, arena, &mut sites)?;
     let wrapper_groups = validate_wrappers(input, arena, &mut sites)?;
     let effective = effective_formula_occurrences(input, &wrapper_groups);
-    validate_formula_order(input, &effective)?;
+    validate_formula_order(input, &effective, set_terms, arena)?;
     validate_cross_family_ranges(
         input,
         &effective,
@@ -1840,7 +1840,10 @@ fn is_authenticated_condition_container(
         return false;
     };
     if set_term.kind() != SourceSetTermKind::Comprehension
-        || formula.kind != SourceAtomicFormulaKind::Equality
+        || !matches!(
+            formula.kind,
+            SourceAtomicFormulaKind::Equality | SourceAtomicFormulaKind::Membership
+        )
         || formula.recovery != SourceAtomicFormulaRecovery::Normal
         || formula.context != set_term.context()
         || formula.source_range != effective_formula_range
@@ -1970,16 +1973,37 @@ fn effective_formula_occurrences(
 fn validate_formula_order(
     input: &SourceAtomicFormulaHandoffInput,
     effective: &[EffectiveOccurrence],
+    set_terms: Option<&SourceSetTermHandoff>,
+    arena: &TypedArena,
 ) -> Result<(), SourceAtomicFormulaError> {
     for index in 1..effective.len() {
-        let previous = &effective[index - 1];
         let current = &effective[index];
-        if current.range.start < previous.range.start
-            || ranges_overlap(previous.range, current.range)
-        {
-            return Err(SourceAtomicFormulaError::ReorderedFormula {
-                formula: SourceAtomicFormulaId::new(index),
+        for (prior, previous) in effective[..index].iter().enumerate() {
+            let nested_condition = set_terms.is_some_and(|sets| {
+                input.formulas[prior].kind == SourceAtomicFormulaKind::Membership
+                    && sets.terms().iter().any(|(id, set)| {
+                        properly_contains(previous.range, set.source_range())
+                            && input.edges.iter().any(|edge| {
+                                edge.formula == SourceAtomicFormulaId::new(prior)
+                                    && edge.target == SourceAtomicTermTarget::SetTerm(id)
+                            })
+                            && is_authenticated_condition_container(
+                                &input.formulas[index],
+                                current.range,
+                                sets,
+                                id,
+                                set.source_range(),
+                                arena,
+                            )
+                    })
             });
+            if current.range.start < previous.range.start
+                || ranges_overlap(previous.range, current.range) && !nested_condition
+            {
+                return Err(SourceAtomicFormulaError::ReorderedFormula {
+                    formula: SourceAtomicFormulaId::new(index),
+                });
+            }
         }
     }
     debug_assert_eq!(effective.len(), input.formulas.len());

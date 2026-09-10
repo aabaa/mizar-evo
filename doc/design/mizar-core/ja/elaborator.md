@@ -1,5 +1,8 @@
 # Elaborator
 
+`normalize_source_membership_proof` は検査済みの借用 source transaction だけを受け取り、proof-local 束縛を対応させる。
+列挙集合への所属、または引用された直接上界からの恒等 mapper への所属を簡約し、generic IR・空の VC receipt・kernel evidence は作らない。
+
 > 正本は英語です。英語版:
 > [../en/elaborator.md](../en/elaborator.md)。
 

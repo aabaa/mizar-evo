@@ -7,6 +7,7 @@ source = "pass_type_elaboration_term_choice_builtin_001.miz"
 expected_outcome = "pass"
 expected_phase = "type_check"
 diagnostic_codes = []
+tags = ["active_type_elaboration"]
 spec_refs = [
   "spec.en.13.terms.choice.inhabited_type",
 ]

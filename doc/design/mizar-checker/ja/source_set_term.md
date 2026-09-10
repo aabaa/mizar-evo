@@ -1,5 +1,8 @@
 # ソース set/choice/qua-term transport
 
+transport 専用の `build` とは別に、`check_membership_proof` は既存の項・式 ID を参照する `SourceMembershipProof` を構築する。
+裸の型、有効な予約、proof-local 束縛対応、直接の集合上界、前提引用を検査して Core に渡し、任意の条件式の推論は行わない。
+
 > 正本は英語です。英語版:
 > [../en/source_set_term.md](../en/source_set_term.md)。
 

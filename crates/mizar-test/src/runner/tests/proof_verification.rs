@@ -445,7 +445,7 @@
             &temp,
             &mismatch_plan,
         );
-        assert_eq!(mismatch_report.results.len(), 4);
+        assert_eq!(mismatch_report.results.len(), 6);
         let mismatch_result = mismatch_report
             .results
             .iter()
@@ -485,8 +485,8 @@
             validation_mode: ValidationMode::Metadata,
         };
         let report = super::run_proof_verification_corpus(&config).expect("proof report");
-        assert_eq!(report.results.len(), 4);
-        assert_eq!(report.passed_count(), 4);
+        assert_eq!(report.results.len(), 6);
+        assert_eq!(report.passed_count(), 6);
         assert_eq!(report.failed_count(), 0);
         assert_eq!(report.error_count(), 0, "{:#?}", report.diagnostics);
     }

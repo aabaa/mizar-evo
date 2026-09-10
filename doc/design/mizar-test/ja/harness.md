@@ -1,5 +1,8 @@
 # Module: harness
 
+Step 5C.7 は activation map の non-G5 type/proof 行だけを sidecar の厳密な照合後に受理する。
+出現・choice の根拠・qua の元項・前提引用をケース名から推測せず抽出し、証明は所属関係の検査を必要とする。G5 narrowing 行は inactive のまま。
+
 ## Step 5C.4 mode semantic runner
 
 private route は activation map の non-G6 type-elaboration 5 行、parse-only 1 行、

@@ -143,6 +143,8 @@ Correspondence:
 
 Source: `crates/mizar-core/src/elaborator.rs`. Owning spec: `elaborator.md`.
 
+`normalize_source_membership_proof` consumes checker-sealed membership obligations as specified in [elaborator.md](./elaborator.md).
+
 Top-level public API groups:
 
 - Context preparation: `CoreContextResult`, `CoreContextError`,

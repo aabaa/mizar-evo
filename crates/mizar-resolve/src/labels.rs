@@ -498,6 +498,19 @@ impl<'a> ProofLabelSourceCollector<'a> {
     /// The structural arena is revalidated on every call so a collector never
     /// relies on stale constructor validation.
     pub fn collect(&self) -> Result<ProofLabelSourceCollection, ProofLabelSourceCollectionError> {
+        self.collect_impl(false)
+    }
+
+    pub fn collect_with_let_conditions(
+        &self,
+    ) -> Result<ProofLabelSourceCollection, ProofLabelSourceCollectionError> {
+        self.collect_impl(true)
+    }
+
+    fn collect_impl(
+        &self,
+        include_let_conditions: bool,
+    ) -> Result<ProofLabelSourceCollection, ProofLabelSourceCollectionError> {
         self.resolved
             .validate_against(self.ast, self.resolved.module())
             .map_err(ProofLabelSourceCollectionError::SurfaceArena)?;
@@ -516,7 +529,7 @@ impl<'a> ProofLabelSourceCollector<'a> {
             let Some(owner) = exact_theorem_owner(child) else {
                 continue;
             };
-            state.visit_theorem(child, owner)?;
+            state.visit_theorem(child, owner, include_let_conditions)?;
         }
         Ok(state.finish())
     }
@@ -562,6 +575,7 @@ impl<'a, 'collector> ProofLabelCollectionState<'a, 'collector> {
         &mut self,
         theorem: SurfaceNodeView<'a>,
         owner: TheoremOwner<'a>,
+        include_let_conditions: bool,
     ) -> Result<(), ProofLabelSourceCollectionError> {
         if !proof_block_boundary_is_supported(owner.proof) {
             return Ok(());
@@ -584,9 +598,12 @@ impl<'a, 'collector> ProofLabelCollectionState<'a, 'collector> {
             owner.proof,
             &scope,
             &[],
+            include_let_conditions,
         )
     }
 
+    // Rationale: thread owner/scope identity and the opt-in collection mode without collector state.
+    #[allow(clippy::too_many_arguments)]
     fn visit_proof(
         &mut self,
         theorem: SurfaceNodeView<'a>,
@@ -595,6 +612,7 @@ impl<'a, 'collector> ProofLabelCollectionState<'a, 'collector> {
         proof: SurfaceNodeView<'a>,
         scope: &[u32],
         relative_proof_path: &[u32],
+        include_let_conditions: bool,
     ) -> Result<(), ProofLabelSourceCollectionError> {
         if !proof_block_boundary_is_supported(proof) {
             return Ok(());
@@ -605,20 +623,25 @@ impl<'a, 'collector> ProofLabelCollectionState<'a, 'collector> {
             if statement.is_recovered() {
                 continue;
             }
-            match statement.kind() {
-                SurfaceNodeKind::CompactStatement | SurfaceNodeKind::ConclusionStatement => {
-                    self.visit_statement(
-                        theorem,
-                        owner_spelling,
-                        owner_occurrence,
-                        statement,
-                        scope,
-                        relative_proof_path,
-                        &mut proof_child_index,
-                    )?;
-                }
-                _ => {}
+            let visitable = matches!(
+                statement.kind(),
+                SurfaceNodeKind::CompactStatement | SurfaceNodeKind::ConclusionStatement
+            ) || (include_let_conditions
+                && matches!(statement.kind(), SurfaceNodeKind::LetStatement)
+                && exact_compact_statement_label(statement).is_some());
+            if !visitable {
+                continue;
             }
+            self.visit_statement(
+                theorem,
+                owner_spelling,
+                owner_occurrence,
+                statement,
+                scope,
+                relative_proof_path,
+                &mut proof_child_index,
+                include_let_conditions,
+            )?;
         }
         Ok(())
     }
@@ -634,13 +657,12 @@ impl<'a, 'collector> ProofLabelCollectionState<'a, 'collector> {
         scope: &[u32],
         relative_proof_path: &[u32],
         proof_child_index: &mut usize,
+        include_let_conditions: bool,
     ) -> Result<(), ProofLabelSourceCollectionError> {
         self.ordinal += 1;
         let statement_ordinal = self.ordinal;
 
-        let label = matches!(statement.kind(), SurfaceNodeKind::CompactStatement)
-            .then(|| exact_compact_statement_label(statement))
-            .flatten();
+        let label = exact_compact_statement_label(statement);
         let projection_index = if let Some(label) = label {
             Some(self.push_projection(
                 theorem,
@@ -675,6 +697,7 @@ impl<'a, 'collector> ProofLabelCollectionState<'a, 'collector> {
                         child,
                         &child_scope,
                         &child_relative_path,
+                        include_let_conditions,
                     )?;
                 }
                 SurfaceNodeKind::JustificationClause => {
@@ -898,6 +921,19 @@ fn proof_block_boundary_is_supported(proof: SurfaceNodeView<'_>) -> bool {
 }
 
 fn exact_compact_statement_label(statement: SurfaceNodeView<'_>) -> Option<SurfaceNodeView<'_>> {
+    let statement = match statement.kind() {
+        SurfaceNodeKind::LetStatement => {
+            let condition_lists = statement
+                .child_views()
+                .filter(|child| matches!(child.kind(), SurfaceNodeKind::ConditionList))
+                .collect::<Vec<_>>();
+            *condition_lists
+                .first()
+                .filter(|_| condition_lists.len() == 1)?
+        }
+        SurfaceNodeKind::CompactStatement => statement,
+        _ => return None,
+    };
     let propositions = statement
         .child_views()
         .filter(|child| matches!(child.kind(), SurfaceNodeKind::Proposition))

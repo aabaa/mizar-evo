@@ -878,7 +878,526 @@ impl SourceSetRequest {
 /// Atomically validates and constructs source-set-term handoffs.
 pub struct SourceSetTermProducer;
 
+/// Checked source membership proof, retaining existing term/formula identities.
+/// This is a borrowed checker-to-Core transaction, not a new expression IR.
+pub struct SourceMembershipProof<'a> {
+    typed: &'a crate::typed_ast::TypedAst,
+    scope: &'a mizar_resolve::names::ResolvedVariableScope,
+    goals: [crate::source_atomic_formula::SourceAtomicFormulaId; 2],
+    premises: Option<[crate::source_atomic_formula::SourceAtomicFormulaId; 2]>,
+    substitutions:
+        std::collections::BTreeMap<crate::binding_env::BindingId, crate::binding_env::BindingId>,
+}
+
+impl SourceMembershipProof<'_> {
+    pub const fn typed(&self) -> &crate::typed_ast::TypedAst {
+        self.typed
+    }
+    pub const fn scope(&self) -> &mizar_resolve::names::ResolvedVariableScope {
+        self.scope
+    }
+    pub const fn goals(&self) -> [crate::source_atomic_formula::SourceAtomicFormulaId; 2] {
+        self.goals
+    }
+    pub const fn premises(
+        &self,
+    ) -> Option<[crate::source_atomic_formula::SourceAtomicFormulaId; 2]> {
+        self.premises
+    }
+    pub fn canonical_binding(
+        &self,
+        binding: crate::binding_env::BindingId,
+    ) -> crate::binding_env::BindingId {
+        self.substitutions.get(&binding).copied().unwrap_or(binding)
+    }
+}
+
 impl SourceSetTermProducer {
+    /// Checks the bounded quantified membership proof before Core normalization.
+    pub fn check_membership_proof<'a>(
+        typed: &'a crate::typed_ast::TypedAst,
+        scope: &'a mizar_resolve::names::ResolvedVariableScope,
+        bindings: &BindingEnv,
+        labels: &mizar_resolve::labels::ProofLabelSourceCollection,
+        resolved_labels: &mizar_resolve::labels::LabelResolutionResult,
+        symbols: &mizar_resolve::env::SymbolEnv,
+    ) -> Result<SourceMembershipProof<'a>, String> {
+        use crate::binding_env::BindingId;
+        use crate::source_atomic_formula::{
+            SourceAtomicFormulaKind as AtomicKind, SourceAtomicTermTarget as Target,
+        };
+        use crate::typed_ast::TypedNodeId;
+        use mizar_resolve::names::{
+            SourceVariableBindingKind as BindingKind, SourceVariableTypeRadix as Radix,
+        };
+        let invalid = || "invalid bounded source membership proof".to_owned();
+        let primary = typed.source_term().ok_or_else(invalid)?;
+        let sets = typed.source_set_term().ok_or_else(invalid)?;
+        let atomic = typed.source_atomic_formula().ok_or_else(invalid)?;
+        if typed.source_id() != scope.source_id()
+            || typed.module_id() != scope.module_id()
+            || bindings.source_id() != scope.source_id()
+            || bindings.module_id() != scope.module_id()
+            || symbols.module_id() != scope.module_id()
+            || !typed.diagnostics().is_empty()
+            || typed
+                .nodes()
+                .iter()
+                .any(|(_, node)| node.recovery != NodeRecoveryState::Normal)
+            || primary.references().len() != scope.references().len()
+            || !primary.numeric_type_requests().is_empty()
+        {
+            return Err(invalid());
+        }
+        let nodes_of_kind = |kind: &str| {
+            typed
+                .nodes()
+                .iter()
+                .filter_map(|(id, node)| (node.kind.as_str() == kind).then_some(id))
+                .collect::<Vec<_>>()
+        };
+        let range = |id: TypedNodeId| match typed.nodes().node(id).map(|node| &node.anchor) {
+            Some(SourceAnchor::Range(range)) => Ok(*range),
+            _ => Err(invalid()),
+        };
+        let theorem_nodes = nodes_of_kind("TheoremItem");
+        let proof_nodes = nodes_of_kind("ProofBlock");
+        let conclusion_nodes = nodes_of_kind("ConclusionStatement");
+        let ([theorem], [proof], [conclusion]) = (
+            theorem_nodes.as_slice(),
+            proof_nodes.as_slice(),
+            conclusion_nodes.as_slice(),
+        ) else {
+            return Err(invalid());
+        };
+        let theorem_range = range(*theorem)?;
+        let proof_range = range(*proof)?;
+        let conclusion_range = range(*conclusion)?;
+        if !properly_contains(theorem_range, proof_range)
+            || !properly_contains(proof_range, conclusion_range)
+            || symbols
+                .symbols()
+                .iter()
+                .filter(|entry| {
+                    entry.kind() == mizar_resolve::env::SymbolKind::Theorem
+                        && entry.origin().source_id() == scope.source_id()
+                        && entry.origin().anchor() == &SourceAnchor::Range(theorem_range)
+                        && !entry.origin().is_recovered()
+                })
+                .count()
+                != 1
+        {
+            return Err(invalid());
+        }
+        // Every source node remains in the existing TypedArena. Unknown proof
+        // syntax is rejected rather than silently dropped during extraction.
+        for (_, node) in typed.nodes().iter() {
+            let kind = node.kind.as_str();
+            if kind.starts_with("Token(")
+                || kind.starts_with("source.term.")
+                || kind == "source.formula.atomic.membership"
+            {
+                continue;
+            }
+            if !matches!(
+                kind,
+                "Root"
+                    | "CompilationUnit"
+                    | "ItemList"
+                    | "ReserveItem"
+                    | "ReserveSegment"
+                    | "TypeExpression"
+                    | "TypeHead"
+                    | "TheoremItem"
+                    | "Label"
+                    | "LabelDeclaration"
+                    | "FormulaExpression"
+                    | "QuantifiedFormula(Universal)"
+                    | "QuantifierVariableSegment"
+                    | "ProofBlock"
+                    | "StatementItem"
+                    | "LetStatement"
+                    | "QualifiedVariableSegment"
+                    | "ConditionList"
+                    | "Proposition"
+                    | "ConclusionStatement"
+                    | "TermExpression"
+                    | "ComprehensionVariableSegment"
+                    | "JustificationClause"
+                    | "ReferenceList"
+                    | "Reference"
+            ) {
+                return Err(format!("unsupported membership proof node {kind}"));
+            }
+        }
+        let binding_type = |index: usize| {
+            let binding = scope.bindings().get(index)?;
+            binding.declared_type().or_else(|| {
+                scope
+                    .bindings()
+                    .iter()
+                    .rev()
+                    .find(|reserve| {
+                        reserve.kind() == BindingKind::Reserve
+                            && reserve.spelling() == binding.spelling()
+                            && reserve.range().end <= binding.range().start
+                            && binding.scope().path().starts_with(reserve.scope().path())
+                    })
+                    .and_then(|reserve| reserve.declared_type())
+            })
+        };
+        let quantified = scope
+            .bindings()
+            .iter()
+            .filter(|binding| binding.kind() == BindingKind::Quantifier)
+            .collect::<Vec<_>>();
+        let locals = scope
+            .bindings()
+            .iter()
+            .filter(|binding| binding.kind() == BindingKind::Let)
+            .collect::<Vec<_>>();
+        if quantified.len() != 2
+            || locals.len() != 2
+            || scope.bindings().iter().any(|binding| {
+                !matches!(
+                    binding.kind(),
+                    BindingKind::Reserve
+                        | BindingKind::Quantifier
+                        | BindingKind::Let
+                        | BindingKind::ComprehensionGenerator
+                )
+            })
+        {
+            return Err(invalid());
+        }
+        let mut substitutions = std::collections::BTreeMap::new();
+        for (quantifier, local) in quantified.iter().zip(&locals) {
+            let ty = binding_type(quantifier.id().index()).ok_or_else(invalid)?;
+            if !ty.attributes().is_empty()
+                || binding_type(local.id().index()).is_none_or(|local_type| {
+                    local_type.radix() != ty.radix() || !local_type.attributes().is_empty()
+                })
+                || !properly_contains(theorem_range, quantifier.range())
+                || range_contains(proof_range, quantifier.range())
+                || !properly_contains(proof_range, local.range())
+                || local.range().end >= conclusion_range.start
+            {
+                return Err(invalid());
+            }
+            substitutions.insert(
+                BindingId::new(quantifier.id().index()),
+                BindingId::new(local.id().index()),
+            );
+        }
+        for (id, term) in primary.terms().iter() {
+            let reference = primary
+                .references()
+                .iter()
+                .find(|(_, reference)| reference.term() == id)
+                .map(|(_, reference)| reference)
+                .ok_or_else(invalid)?;
+            let source_reference = scope
+                .references()
+                .iter()
+                .find(|reference| reference.node().index() == term.site().node().index())
+                .ok_or_else(invalid)?;
+            if reference.binding().index() != source_reference.binding().index()
+                || term.source_range() != source_reference.range()
+                || term.spelling() != source_reference.spelling()
+                || reference.lexical_scope() != Some(source_reference.scope())
+            {
+                return Err(invalid());
+            }
+            let ty = binding_type(reference.binding().index()).ok_or_else(invalid)?;
+            if !ty.attributes().is_empty() {
+                return Err(invalid());
+            }
+        }
+        if sets.terms().len() != 2
+            || sets.terms().iter().any(|(_, term)| {
+                !matches!(
+                    term.kind(),
+                    SourceSetTermKind::Enumeration | SourceSetTermKind::Comprehension
+                )
+            })
+        {
+            return Err(invalid());
+        }
+        let primary_binding = |id| {
+            primary
+                .references()
+                .iter()
+                .find(|(_, reference)| reference.term() == id)
+                .map(|(_, reference)| reference.binding())
+                .ok_or_else(invalid)
+        };
+        let mut goals = Vec::new();
+        let mut premises = Vec::new();
+        let mut guards = Vec::new();
+        for (id, formula) in atomic.formulas().iter() {
+            if formula.kind() != AtomicKind::Membership {
+                return Err(invalid());
+            }
+            let edges = atomic
+                .edges()
+                .iter()
+                .filter(|(_, edge)| edge.formula() == id)
+                .map(|(_, edge)| edge.target())
+                .collect::<Vec<_>>();
+            let [Target::Primary(left), right] = edges.as_slice() else {
+                return Err(invalid());
+            };
+            match right {
+                Target::Primary(right) => {
+                    if binding_type(primary_binding(*right)?.index())
+                        .is_none_or(|ty| ty.radix() != Radix::Set || !ty.attributes().is_empty())
+                    {
+                        return Err(invalid());
+                    }
+                    if let Some((set_id, set)) = sets.terms().iter().find(|(_, set)| {
+                        properly_contains(set.source_range(), formula.source_range())
+                    }) {
+                        let generators = sets
+                            .generators()
+                            .iter()
+                            .filter(|(_, generator)| generator.term() == set_id)
+                            .map(|(_, generator)| generator)
+                            .collect::<Vec<_>>();
+                        let [generator] = generators.as_slice() else {
+                            return Err(invalid());
+                        };
+                        let binding = scope
+                            .bindings()
+                            .iter()
+                            .find(|binding| binding.range() == generator.source_range())
+                            .ok_or_else(invalid)?;
+                        let ty = binding_type(binding.id().index()).ok_or_else(invalid)?;
+                        let bound = scope
+                            .bindings()
+                            .get(primary_binding(*right)?.index())
+                            .ok_or_else(invalid)?;
+                        if binding.kind() != BindingKind::ComprehensionGenerator
+                            || ty.radix() != Radix::Object
+                            || !ty.attributes().is_empty()
+                            || primary_binding(*left)?.index() != binding.id().index()
+                            || range_contains(set.source_range(), bound.range())
+                            || !binding.scope().path().starts_with(bound.scope().path())
+                        {
+                            return Err(invalid());
+                        }
+                        guards.push(id);
+                    } else {
+                        premises.push(id);
+                    }
+                }
+                Target::SetTerm(_) => goals.push(id),
+                _ => return Err(invalid()),
+            };
+        }
+        let goals: [_; 2] = goals.try_into().map_err(|_| invalid())?;
+        let goal_ranges = goals.map(|id| {
+            atomic
+                .formulas()
+                .get(id)
+                .expect("collected formula")
+                .source_range()
+        });
+        if range_contains(proof_range, goal_ranges[0])
+            || !properly_contains(conclusion_range, goal_ranges[1])
+        {
+            return Err(invalid());
+        }
+        let comprehension = sets
+            .terms()
+            .iter()
+            .all(|(_, set)| set.kind() == SourceSetTermKind::Comprehension);
+        let premises = if comprehension {
+            let premises: [_; 2] = premises.try_into().map_err(|_| invalid())?;
+            if guards.len() != 2
+                || labels.projections().len() != 1
+                || labels.references().len() != 1
+                || resolved_labels.ids().len() != 1
+                || !resolved_labels.diagnostics().is_empty()
+                || resolved_labels.has_unresolved()
+            {
+                return Err(invalid());
+            }
+            let premise_ranges = premises.map(|id| {
+                atomic
+                    .formulas()
+                    .get(id)
+                    .expect("collected formula")
+                    .source_range()
+            });
+            let local_lets = nodes_of_kind("LetStatement");
+            let premise_let = local_lets
+                .iter()
+                .copied()
+                .find(|id| {
+                    range(*id).is_ok_and(|range| properly_contains(range, premise_ranges[1]))
+                })
+                .ok_or_else(invalid)?;
+            let projection = &labels.projections()[0];
+            let reference = resolved_labels
+                .table()
+                .get(resolved_labels.ids()[0])
+                .ok_or_else(invalid)?;
+            if range_contains(proof_range, premise_ranges[0])
+                || !properly_contains(proof_range, premise_ranges[1])
+                || !range_contains(range(premise_let)?, projection.declaration_range())
+                || !properly_contains(conclusion_range, labels.references()[0].site().range())
+                || reference.site() != labels.references()[0].site()
+                || reference.origin() != labels.references()[0].origin()
+                || !matches!(reference.resolution(), mizar_resolve::resolved_ast::LabelResolution::Resolved(label) if label.origin() == projection.origin_path())
+            {
+                return Err(invalid());
+            }
+            Some(premises)
+        } else {
+            if !premises.is_empty()
+                || !guards.is_empty()
+                || !labels.projections().is_empty()
+                || !labels.references().is_empty()
+                || sets
+                    .terms()
+                    .iter()
+                    .any(|(_, set)| set.kind() != SourceSetTermKind::Enumeration)
+            {
+                return Err(invalid());
+            }
+            None
+        };
+        let structural = |id: TypedNodeId| {
+            typed
+                .nodes()
+                .node(id)
+                .expect("validated node")
+                .children
+                .iter()
+                .copied()
+                .filter(|id| {
+                    !typed
+                        .nodes()
+                        .node(*id)
+                        .expect("validated child")
+                        .kind
+                        .as_str()
+                        .starts_with("Token(")
+                })
+                .collect::<Vec<_>>()
+        };
+        let kind = |id: TypedNodeId| {
+            typed
+                .nodes()
+                .node(id)
+                .expect("validated node")
+                .kind
+                .as_str()
+        };
+        let leaf = |mut id: TypedNodeId| -> Result<TypedNodeId, String> {
+            while matches!(kind(id), "Proposition" | "FormulaExpression") {
+                let children = structural(id);
+                let [child] = children.as_slice() else {
+                    return Err(invalid());
+                };
+                id = *child;
+            }
+            Ok(id)
+        };
+        let theorem_children = structural(*theorem);
+        let [written_thesis, written_proof] = theorem_children.as_slice() else {
+            return Err(invalid());
+        };
+        if written_proof != proof {
+            return Err(invalid());
+        }
+        let mut thesis = leaf(*written_thesis)?;
+        let mut quantifier_count = 0;
+        let mut written_guard = None;
+        while kind(thesis) == "QuantifiedFormula(Universal)" {
+            quantifier_count += 1;
+            let children = structural(thesis);
+            let split = children
+                .iter()
+                .take_while(|node| kind(**node) == "QuantifierVariableSegment")
+                .count();
+            if split == 0 {
+                return Err(invalid());
+            }
+            match &children[split..] {
+                [body] => thesis = *body,
+                [guard, body] if written_guard.is_none() => {
+                    written_guard = Some(*guard);
+                    thesis = *body;
+                }
+                _ => return Err(invalid()),
+            }
+        }
+        if quantifier_count == 0
+            || quantifier_count != nodes_of_kind("QuantifiedFormula(Universal)").len()
+            || thesis != atomic.formulas().get(goals[0]).expect("goal").site().node()
+            || written_guard
+                != premises.map(|ids| {
+                    atomic
+                        .formulas()
+                        .get(ids[0])
+                        .expect("premise")
+                        .site()
+                        .node()
+                })
+        {
+            return Err(invalid());
+        }
+        let proof_children = structural(*proof);
+        if proof_children.last() != Some(conclusion) {
+            return Err(invalid());
+        }
+        let mut local_guard = None;
+        for statement in &proof_children[..proof_children.len() - 1] {
+            if kind(*statement) != "LetStatement" {
+                return Err(invalid());
+            }
+            for child in structural(*statement) {
+                match kind(child) {
+                    "QualifiedVariableSegment" => {}
+                    "ConditionList" if local_guard.is_none() => {
+                        let children = structural(child);
+                        let [proposition] = children.as_slice() else {
+                            return Err(invalid());
+                        };
+                        local_guard = Some(leaf(*proposition)?);
+                    }
+                    _ => return Err(invalid()),
+                }
+            }
+        }
+        let conclusion_children = structural(*conclusion);
+        let expected_tail = if comprehension { 1 } else { 0 };
+        if conclusion_children.len() != 1 + expected_tail
+            || leaf(conclusion_children[0])?
+                != atomic.formulas().get(goals[1]).expect("goal").site().node()
+            || comprehension && kind(conclusion_children[1]) != "JustificationClause"
+            || local_guard
+                != premises.map(|ids| {
+                    atomic
+                        .formulas()
+                        .get(ids[1])
+                        .expect("premise")
+                        .site()
+                        .node()
+                })
+        {
+            return Err(invalid());
+        }
+        Ok(SourceMembershipProof {
+            typed,
+            scope,
+            goals,
+            premises,
+            substitutions,
+        })
+    }
+
     pub fn build(
         input: SourceSetTermHandoffInput,
         bindings: &BindingEnv,

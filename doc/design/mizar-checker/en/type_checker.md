@@ -1,5 +1,9 @@
 # mizar-checker: Type Checker
 
+`occurrence_binding_env` projects a resolver receipt into one module transaction, not a lexical
+visibility authority. `step5c7_type_detail_keys` requires term/formula inference before accepting
+bounded source inhabitation or builtin-widening evidence; it grants no theorem/proof credit.
+
 > Canonical language: English. Japanese companion:
 > [../ja/type_checker.md](../ja/type_checker.md).
 

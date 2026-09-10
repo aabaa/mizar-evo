@@ -7,6 +7,7 @@ source = "pass_proof_verification_term_comprehension_guarded_001.miz"
 expected_outcome = "pass"
 expected_phase = "vc_generation"
 diagnostic_codes = []
+tags = ["active_proof_verification"]
 spec_refs = [
   "spec.en.13.terms.set_comprehension.membership",
 ]

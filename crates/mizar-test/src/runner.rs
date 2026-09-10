@@ -728,10 +728,10 @@ use type_elaboration::{
     expected_type_elaboration_detail_keys, extract_builtin_source_reserve_declarations,
     is_active_type_elaboration, is_step5c1_workspace_member, is_step5c2_workspace_member,
     is_step5c3_workspace_member, is_step5c4_workspace_member, is_step5c5_workspace_member,
-    source_application_transport_detail_keys, source_atomic_formula_transport_detail_keys,
-    source_attribute_definition_transport_detail_keys, source_attribute_detail_keys,
-    source_attribute_semantics_detail_keys, source_binding_context_detail_keys,
-    source_builtin_binary_term_formula_detail_keys,
+    is_step5c7_workspace_member, source_application_transport_detail_keys,
+    source_atomic_formula_transport_detail_keys, source_attribute_definition_transport_detail_keys,
+    source_attribute_detail_keys, source_attribute_semantics_detail_keys,
+    source_binding_context_detail_keys, source_builtin_binary_term_formula_detail_keys,
     source_builtin_type_assertion_formula_detail_keys,
     source_chained_local_mode_asserted_head_detail_keys,
     source_chained_local_mode_radix_asserted_head_detail_keys,
@@ -867,7 +867,8 @@ use type_elaboration::{
     source_two_edge_local_object_mode_two_hop_asserted_head_detail_keys,
     source_type_application_detail_keys, step5c5_functor_duplicate_detail_keys,
     step5c5_functor_semantics_detail_keys, step5c5_predicate_semantics_detail_keys,
-    type_elaboration_failure_diagnostic, validate_active_type_elaboration_tags,
+    step5c7_term_detail_keys, type_elaboration_failure_diagnostic,
+    validate_active_type_elaboration_tags,
 };
 
 const ACTIVE_PARSE_ONLY_TAG: &str = "active_parse_only";
@@ -2330,6 +2331,9 @@ fn type_elaboration_detail_keys(
     } else {
         augment_type_elaboration_import_summaries(&ast, &resolver.module, resolver.env.clone())
     };
+    if is_step5c7_workspace_member(workspace_root, case) {
+        return step5c7_term_detail_keys(&ast, &resolver.module, &symbols);
+    }
     if is_step5c5_workspace_member(workspace_root, case) {
         return step5c5_predicate_semantics_detail_keys(
             &ast,

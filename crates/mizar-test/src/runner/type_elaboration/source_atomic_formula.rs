@@ -1,7 +1,7 @@
 use std::collections::BTreeMap;
 
 use mizar_checker::{
-    binding_env::{BindingContextId, BindingEnv},
+    binding_env::{BindingContextId, BindingEnv, BindingId},
     resolved_typed_ast::{
         ResolvedNodeKindHint, ResolvedNodeKindHintKind, ResolvedTypedAst, SourceNodeRole,
     },
@@ -16,17 +16,23 @@ use mizar_checker::{
         SourcePredicateSegmentInput, SourcePredicateSegmentPolarityInput,
     },
     source_set_term::SourceSetTermHandoff,
-    source_term::SourcePrimaryTermHandoff,
+    source_term::{
+        SourcePrimaryTermHandoff, SourcePrimaryTermHandoffInput, SourcePrimaryTermId,
+        SourcePrimaryTermInput, SourcePrimaryTermKind, SourcePrimaryTermProducer,
+        SourcePrimaryTermRecovery, SourcePrimaryTermReferenceInput, SourcePrimaryTermReferenceRole,
+        SourcePrimaryTermRole,
+    },
     typed_ast::{
-        CoercionTable, InitialObligationTable, LocalTypeContextTable, TypeDiagnosticTable,
-        TypeFactTable, TypeTable, TypedAst, TypedAstParts, TypedSiteRef,
+        CoercionTable, InitialObligationTable, LocalTypeContextTable, NodeRecoveryState,
+        TypeDiagnosticTable, TypeFactTable, TypeTable, TypedArena, TypedAst, TypedAstParts,
+        TypedNode, TypedNodeId, TypedSiteRef,
     },
 };
 use mizar_resolve::{
     env::{SymbolEnv, SymbolKind},
     resolved_ast::{ModuleId, SymbolId},
 };
-use mizar_session::SourceRange;
+use mizar_session::{SourceAnchor, SourceRange};
 use mizar_syntax::{SurfaceAst, SurfaceNode, SurfaceNodeId, SurfaceNodeKind};
 
 use super::{
@@ -35,7 +41,7 @@ use super::{
         imported_source_application_output_with_source_term,
         imported_source_application_owned_node_kinds,
     },
-    source_ast::{structural_child_ids, surface_site},
+    source_ast::{direct_token_texts, structural_child_ids, surface_site, surface_text},
     source_formula::{
         SourceBuiltinBinaryTermFormula, SourceBuiltinTypeAssertionFormula,
         SourceImportedAttributeAssertionFormula, SourceImportedPredicateChainFormula,
@@ -46,7 +52,7 @@ use super::{
         extract_source_imported_predicate_chain_formula,
         extract_source_imported_predicate_functor_formula, extract_source_set_enumeration_formula,
     },
-    source_set_term::source_set_term_output_with_source_term,
+    source_set_term::{source_set_term_output_with_source_term, step5c7_set_output},
     source_term::{SourceTermParts, source_term_parts_for_roots},
 };
 
@@ -921,6 +927,260 @@ impl ExactAtomicRoute {
             requests,
         })
     }
+}
+
+pub(in crate::runner) fn step5c7_membership_typed_ast(
+    ast: &SurfaceAst,
+    module: &ModuleId,
+    symbols: &SymbolEnv,
+    scope: &mizar_resolve::names::ResolvedVariableScope,
+    binding_env: &BindingEnv,
+) -> Result<TypedAst, String> {
+    let arena = membership_typed_arena(ast)?;
+    let primary = membership_primary_terms(ast, module, scope, binding_env, &arena)?;
+    let roots = ast
+        .nodes()
+        .iter()
+        .enumerate()
+        .filter_map(|(index, node)| {
+            matches!(
+                node.kind,
+                SurfaceNodeKind::SetEnumeration | SurfaceNodeKind::SetComprehension
+            )
+            .then_some(index)
+        })
+        .collect::<Vec<_>>();
+    let set_output = step5c7_set_output(
+        ast,
+        module.clone(),
+        binding_env.clone(),
+        &roots,
+        SourceTermParts {
+            arena: arena.clone(),
+            handoff: primary.clone(),
+        },
+    )?;
+    let set_handoff = set_output
+        .typed_ast
+        .source_set_term()
+        .ok_or_else(|| "membership set transaction produced no set handoff".to_owned())?
+        .clone();
+    let arena = membership_restore_arena(ast, set_output.typed_ast.nodes())?;
+    let mut formulas = ast
+        .node_views()
+        .filter_map(|view| {
+            let node = ast.node(view.id())?;
+            (matches!(node.kind, SurfaceNodeKind::BuiltinPredicateApplication)
+                && direct_token_texts(ast, node) == ["in"])
+            .then_some(view.id())
+        })
+        .collect::<Vec<_>>();
+    formulas.sort_by_key(|id| {
+        let node = &ast.nodes()[id.index()];
+        (node.range.start, node.range.end, id.index())
+    });
+    if formulas.is_empty() {
+        return Err("membership source AST has no membership formula".to_owned());
+    }
+    let mut atomic_formulas = Vec::with_capacity(formulas.len());
+    let mut edges = Vec::with_capacity(formulas.len() * 2);
+    let mut requests = Vec::with_capacity(formulas.len());
+    for (formula_ordinal, formula_id) in formulas.iter().copied().enumerate() {
+        let formula = ast
+            .node(formula_id)
+            .ok_or_else(|| "membership formula disappeared".to_owned())?;
+        let children = structural_child_ids(ast, formula);
+        let [left, right] = children.as_slice() else {
+            return Err("membership formula does not have two operands".to_owned());
+        };
+        let target = |operand| -> Result<SourceAtomicTermTarget, String> {
+            let wrapper = ast
+                .node(operand)
+                .ok_or_else(|| "membership operand disappeared".to_owned())?;
+            let children = structural_child_ids(ast, wrapper);
+            let [child] = children.as_slice() else {
+                return Err("membership operand is not a single wrapper".to_owned());
+            };
+            let node = ast
+                .node(*child)
+                .ok_or_else(|| "membership operand disappeared".to_owned())?;
+            match node.kind {
+                SurfaceNodeKind::TermReference => primary_target(&primary, node.range),
+                SurfaceNodeKind::SetEnumeration | SurfaceNodeKind::SetComprehension => {
+                    set_target(&set_handoff, node.range)
+                }
+                _ => Err("membership operand has an unsupported term shape".to_owned()),
+            }
+        };
+        let left = target(*left)?;
+        let right = target(*right)?;
+        let formula_key = SourceAtomicFormulaId::new(formula_ordinal);
+        atomic_formulas.push(SourceAtomicFormulaInput {
+            site: surface_site(formula_id),
+            source_range: formula.range,
+            source_ordinal: formula_ordinal,
+            context: BindingContextId::new(0),
+            recovery: SourceAtomicFormulaRecovery::Normal,
+            spelling: surface_text(ast, formula),
+            kind: SourceAtomicFormulaKind::Membership,
+        });
+        edges.extend([
+            edge(
+                formula_key,
+                0,
+                SourceAtomicEdgeRole::BuiltinLeftOperand,
+                left,
+            ),
+            edge(
+                formula_key,
+                1,
+                SourceAtomicEdgeRole::BuiltinRightOperand,
+                right,
+            ),
+        ]);
+        requests.push(SourceAtomicRequestInput {
+            formula: formula_key,
+            ordinal: 0,
+            kind: SourceAtomicRequestKind::OperandExpectedType,
+            edge: Some(SourceAtomicEdgeId::new(edges.len() - 1)),
+            candidate: None,
+            type_site: None,
+            attribute: None,
+        });
+    }
+    let handoff = SourceAtomicFormulaProducer::build(
+        SourceAtomicFormulaHandoffInput {
+            source_id: ast.source_id,
+            module_id: module.clone(),
+            formulas: atomic_formulas,
+            wrappers: Vec::new(),
+            predicate_segments: Vec::new(),
+            predicate_heads: Vec::new(),
+            candidates: Vec::new(),
+            type_sites: Vec::new(),
+            attributes: Vec::new(),
+            edges,
+            requests,
+        },
+        binding_env,
+        symbols,
+        &primary,
+        None,
+        None,
+        Some(&set_handoff),
+        &arena,
+    )
+    .map_err(|error| error.to_string())?;
+    empty_typed_ast_with_primary(
+        ast,
+        module.clone(),
+        SourceTermParts {
+            arena,
+            handoff: primary,
+        },
+    )?
+    .with_source_set_term(set_handoff)
+    .map_err(|error| error.to_string())?
+    .with_source_atomic_formula(handoff)
+    .map_err(|error| error.to_string())
+}
+
+fn membership_typed_arena(ast: &SurfaceAst) -> Result<TypedArena, String> {
+    let root = ast
+        .root()
+        .ok_or_else(|| "membership surface AST has no root".to_owned())?;
+    if ast.nodes().iter().any(|node| node.recovered) {
+        return Err("membership surface AST contains recovery".to_owned());
+    }
+    let nodes = ast
+        .nodes()
+        .iter()
+        .map(|node| {
+            let kind = if matches!(node.kind, SurfaceNodeKind::TermReference) {
+                "source.term.variable-reference".to_owned()
+            } else {
+                "source.surface.unowned".to_owned()
+            };
+            TypedNode::new(kind, SourceAnchor::Range(node.range))
+                .with_children(
+                    node.children
+                        .iter()
+                        .map(|child| TypedNodeId::new(child.index()))
+                        .collect(),
+                )
+                .with_recovery(NodeRecoveryState::Normal)
+        })
+        .collect();
+    TypedArena::try_new(Some(TypedNodeId::new(root.index())), nodes)
+        .map_err(|error| error.to_string())
+}
+
+fn membership_restore_arena(
+    ast: &SurfaceAst,
+    set_arena: &TypedArena,
+) -> Result<TypedArena, String> {
+    if ast.nodes().len() != set_arena.len() {
+        return Err("membership set arena identity changed".to_owned());
+    }
+    let mut nodes = set_arena
+        .iter()
+        .map(|(_, node)| node.clone())
+        .collect::<Vec<_>>();
+    for (index, node) in nodes.iter_mut().enumerate() {
+        if node.kind.as_str() == "source.surface.unowned" {
+            let surface = &ast.nodes()[index];
+            node.kind = if matches!(surface.kind, SurfaceNodeKind::BuiltinPredicateApplication)
+                && direct_token_texts(ast, surface) == ["in"]
+            {
+                "source.formula.atomic.membership".into()
+            } else {
+                format!("{:?}", surface.kind).into()
+            };
+        }
+    }
+    TypedArena::try_new(set_arena.root(), nodes).map_err(|error| error.to_string())
+}
+
+fn membership_primary_terms(
+    ast: &SurfaceAst,
+    module: &ModuleId,
+    scope: &mizar_resolve::names::ResolvedVariableScope,
+    binding_env: &BindingEnv,
+    arena: &TypedArena,
+) -> Result<SourcePrimaryTermHandoff, String> {
+    let mut terms = Vec::new();
+    let mut references = Vec::new();
+    for (ordinal, reference) in scope.references().iter().enumerate() {
+        terms.push(SourcePrimaryTermInput {
+            site: surface_site(reference.node()),
+            source_range: reference.range(),
+            source_ordinal: ordinal,
+            context: BindingContextId::new(0),
+            recovery: SourcePrimaryTermRecovery::Normal,
+            spelling: reference.spelling().to_owned(),
+            kind: SourcePrimaryTermKind::VariableReference,
+            role: SourcePrimaryTermRole::Value,
+            parent: None,
+        });
+        references.push(SourcePrimaryTermReferenceInput {
+            term: SourcePrimaryTermId::new(ordinal),
+            binding: BindingId::new(reference.binding().index()),
+            role: SourcePrimaryTermReferenceRole::Variable,
+        });
+    }
+    SourcePrimaryTermProducer::build_from_occurrences(
+        SourcePrimaryTermHandoffInput {
+            source_id: ast.source_id,
+            module_id: module.clone(),
+            terms,
+            references,
+            numeric_type_requests: Vec::new(),
+        },
+        binding_env,
+        arena,
+        scope,
+    )
+    .map_err(|error| error.to_string())
 }
 
 fn edge(

@@ -9,6 +9,7 @@ expected_phase = "resolve"
 failure_category = "resolve_error"
 stable_detail_key = "terms.comprehension.unbound_mapper_variable"
 diagnostic_codes = []
+tags = ["active_type_elaboration"]
 spec_refs = [
   "spec.en.13.terms.set_comprehension.guarded",
 ]

@@ -1,5 +1,8 @@
 # Module: names
 
+`SourceVariableScopeResolver::resolve_occurrences` は既存の束縛・参照 ID と生成変数の宣言型を保持し、
+生成変数より前の mapper 参照を同じ内包表記のスコープ内だけで解決する。文・thesis は構築せず、従来の `resolve` は不変。
+
 > 正本は英語です。英語版: [../en/names.md](../en/names.md)。
 
 状態: task R-012 は R-013 から R-016 に向けた resolver-owned name-resolution

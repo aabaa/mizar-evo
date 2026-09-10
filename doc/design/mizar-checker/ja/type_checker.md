@@ -1,5 +1,8 @@
 # mizar-checker: Type Checker
 
+`occurrence_binding_env` の module context は受け渡し単位であり、lexical visibility の根拠ではない。
+`step5c7_type_detail_keys` は限定された inhabitation・builtin widening の根拠を受理する前に項・式を推論し、定理・証明の受理は行わない。
+
 > 正本は英語です。英語版:
 > [../en/type_checker.md](../en/type_checker.md)。
 

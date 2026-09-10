@@ -1,5 +1,9 @@
 # Source Primary-Term Handoff
 
+`build_from_occurrences` authenticates complete primary-reference coverage against a sealed resolver
+scope and its module-context binding projection. It preserves lexical scope and source order;
+this separate entry does not weaken the legacy producer's declaration-point checks.
+
 > Canonical language: English. Japanese companion:
 > [../ja/source_term.md](../ja/source_term.md).
 

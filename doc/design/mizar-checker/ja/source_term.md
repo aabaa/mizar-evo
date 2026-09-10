@@ -1,5 +1,8 @@
 # Source primary-term handoff
 
+`build_from_occurrences` は resolver の検査済みスコープと module context への束縛射影を使い、primary 参照の完全な対応を検査する。
+元の lexical scope と出現順を保持し、従来の producer による宣言位置の検査は緩めない。
+
 > canonical languageはEnglishである。
 > [English source_term.md](../en/source_term.md)
 

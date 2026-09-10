@@ -1,5 +1,8 @@
 # ソース atomic-formula transport
 
+atomic 式の range の入れ子は、所属式の集合オペランドに属する検査済み内包条件だけを許し、直接の子の anchor と所有関係を保持する。
+それ以外の重なりは拒否し、この受け渡しだけで条件の真偽を認定しない。
+
 > 正本は英語です。英語版:
 > [../en/source_atomic_formula.md](../en/source_atomic_formula.md)。
 

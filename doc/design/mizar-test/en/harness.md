@@ -1,5 +1,9 @@
 # Module: harness
 
+The Step 5C.7 route admits only its mapped non-G5 type/proof rows with exact sidecar metadata.
+Source occurrences, choice evidence, qua bases, and proof citations are extracted independently of
+case names; proof success requires discharged membership goals. The G5 narrowing row stays inactive.
+
 ## Step 5C.4 mode semantic runner
 
 The private route admits only the five non-G6 type-elaboration rows, one parse-only row, and one

@@ -4470,6 +4470,8 @@ pub enum SourceVariableBindingKind {
     InlinePredicate,
     /// A formal parameter of an inline definition.
     InlineParameter,
+    /// A direct generator of a set comprehension.
+    ComprehensionGenerator,
 }
 
 /// Kind of source variable reference admitted by the variable resolver.
@@ -4913,6 +4915,8 @@ pub enum SourceVariableScopeError {
     UnresolvedReference,
     /// An inline call has the wrong number of arguments.
     ArityMismatch,
+    /// A comprehension mapper refers to an unbound source variable.
+    UnboundComprehensionMapper,
 }
 
 impl SourceVariableScopeError {
@@ -4931,6 +4935,7 @@ impl SourceVariableScopeError {
             | Self::InvalidShape
             | Self::UnresolvedReference
             | Self::ArityMismatch => None,
+            Self::UnboundComprehensionMapper => Some("terms.comprehension.unbound_mapper_variable"),
         }
     }
 }
@@ -5030,7 +5035,7 @@ impl SourceVariableScopeResolver {
             return Err(SourceVariableScopeError::InvalidShape);
         }
 
-        let mut state = VariableResolveState::new(input.ast, input.module_id, scopes);
+        let mut state = VariableResolveState::new(input.ast, input.module_id, scopes, false);
         state.collect_declarations()?;
         state.validate_declarations()?;
         // Application nodes are only admitted for the two inline-definition
@@ -5041,6 +5046,32 @@ impl SourceVariableScopeResolver {
         state.collect_references()?;
         state.resolve_references()?;
         state.build_output()
+    }
+
+    /// Resolves source variable occurrences, including one direct generator
+    /// scope for each set comprehension, without producing proof payloads.
+    pub fn resolve_occurrences(
+        input: SourceVariableScopeInput<'_>,
+    ) -> Result<ResolvedVariableScope, SourceVariableScopeError> {
+        let scopes = validate_variable_surface_with_mode(input.ast, true)?;
+        if input.module_id != input.symbols.module_id() {
+            return Err(SourceVariableScopeError::ModuleMismatch);
+        }
+
+        let mut state = VariableResolveState::new(input.ast, input.module_id, scopes, true);
+        state.collect_declarations()?;
+        state.validate_declarations()?;
+        state.validate_application_shapes()?;
+        state.collect_references()?;
+        state.resolve_references()?;
+        Ok(ResolvedVariableScope {
+            source_id: input.ast.source_id,
+            module_id: input.module_id.clone(),
+            bindings: state.bindings,
+            references: state.resolved_references,
+            thesis: None,
+            statements: Vec::new(),
+        })
     }
 }
 
@@ -5079,6 +5110,7 @@ struct VariableResolveState<'a> {
     resolved_references: Vec<SourceVariableReference>,
     reference_by_node: BTreeMap<SurfaceNodeId, SourceVariableReferenceId>,
     thesis_node: Option<SurfaceNodeId>,
+    comprehension_scopes: bool,
 }
 
 impl<'a> VariableResolveState<'a> {
@@ -5089,6 +5121,7 @@ impl<'a> VariableResolveState<'a> {
             BTreeMap<SurfaceNodeId, LocalTermScope>,
             BTreeMap<SurfaceNodeId, SurfaceNodeId>,
         ),
+        comprehension_scopes: bool,
     ) -> Self {
         Self {
             ast,
@@ -5104,6 +5137,7 @@ impl<'a> VariableResolveState<'a> {
             resolved_references: Vec::new(),
             reference_by_node: BTreeMap::new(),
             thesis_node: None,
+            comprehension_scopes,
         }
     }
 
@@ -5154,6 +5188,33 @@ impl<'a> VariableResolveState<'a> {
                         id,
                         false,
                     )?;
+                }
+                SurfaceNodeKind::ComprehensionVariableSegment
+                    if self.comprehension_scopes
+                        && self.parents.get(&id).is_some_and(|parent| {
+                            self.ast.node(*parent).is_some_and(|view| {
+                                matches!(view.kind, SurfaceNodeKind::SetComprehension)
+                            })
+                        }) =>
+                {
+                    let Some(binder) = first_direct_identifier(self.ast, id) else {
+                        return Err(SourceVariableScopeError::InvalidShape);
+                    };
+                    let token = binder
+                        .as_token()
+                        .expect("first direct identifier is a token");
+                    self.push_decl(VariableDeclSite {
+                        kind: SourceVariableBindingKind::ComprehensionGenerator,
+                        owner: id,
+                        binder: binder.id(),
+                        spelling: token.text.to_string(),
+                        range: binder.range(),
+                        scope: self.scope_of(id),
+                        declared_type: direct_type_expression(self.ast, id)
+                            .map(|ty| source_type(self.ast, ty.id()))
+                            .transpose()?,
+                        arity: None,
+                    });
                 }
                 SurfaceNodeKind::SetStatement => {
                     for equating in direct_children(self.ast, id, |kind| {
@@ -5583,6 +5644,11 @@ impl<'a> VariableResolveState<'a> {
             let Some((binding_id, binding_kind, binding_arity, binding_node)) =
                 self.visible_binding(reference)
             else {
+                if self.comprehension_scopes
+                    && self.comprehension_mapper_owner(reference.node).is_some()
+                {
+                    return Err(SourceVariableScopeError::UnboundComprehensionMapper);
+                }
                 if self.has_later_binding(reference) {
                     return Err(SourceVariableScopeError::ForwardReference);
                 }
@@ -5692,7 +5758,10 @@ impl<'a> VariableResolveState<'a> {
             .filter(|binding| {
                 binding.spelling == reference.spelling
                     && binding.scope.contains(&reference.scope)
-                    && binding.range.start <= reference.range.start
+                    && (binding.range.start <= reference.range.start
+                        || (binding.kind == SourceVariableBindingKind::ComprehensionGenerator
+                            && self.enclosing_comprehension(binding.node)
+                                == self.enclosing_comprehension(reference.node)))
             })
             .max_by_key(|binding| {
                 (
@@ -5710,7 +5779,46 @@ impl<'a> VariableResolveState<'a> {
             binding.spelling == reference.spelling
                 && binding.scope.contains(&reference.scope)
                 && binding.range.start > reference.range.start
+                && !(binding.kind == SourceVariableBindingKind::ComprehensionGenerator
+                    && self.enclosing_comprehension(binding.node)
+                        == self.enclosing_comprehension(reference.node))
         })
+    }
+
+    fn enclosing_comprehension(&self, node: SurfaceNodeId) -> Option<SurfaceNodeId> {
+        let mut current = Some(node);
+        while let Some(id) = current {
+            if self
+                .ast
+                .node(id)
+                .is_some_and(|view| matches!(view.kind, SurfaceNodeKind::SetComprehension))
+            {
+                return Some(id);
+            }
+            current = self.parents.get(&id).copied();
+        }
+        None
+    }
+
+    fn comprehension_mapper_owner(&self, node: SurfaceNodeId) -> Option<SurfaceNodeId> {
+        let mut current = Some(node);
+        while let Some(id) = current {
+            let parent = self.parents.get(&id).copied()?;
+            if self
+                .ast
+                .node(parent)
+                .is_some_and(|view| matches!(view.kind, SurfaceNodeKind::TermExpression))
+                && self.parents.get(&parent).is_some_and(|grandparent| {
+                    self.ast
+                        .node(*grandparent)
+                        .is_some_and(|view| matches!(view.kind, SurfaceNodeKind::SetComprehension))
+                })
+            {
+                return self.parents.get(&parent).copied();
+            }
+            current = Some(parent);
+        }
+        None
     }
 
     fn candidate_reservation(
@@ -6184,6 +6292,13 @@ type VariableSurfaceValidation = (
 fn validate_variable_surface(
     ast: &SurfaceAst,
 ) -> Result<VariableSurfaceValidation, SourceVariableScopeError> {
+    validate_variable_surface_with_mode(ast, false)
+}
+
+fn validate_variable_surface_with_mode(
+    ast: &SurfaceAst,
+    comprehension_scopes: bool,
+) -> Result<VariableSurfaceValidation, SourceVariableScopeError> {
     let mut parents = BTreeMap::new();
     for view in ast.node_views() {
         if view.range().source_id != ast.source_id || view.range().start > view.range().end {
@@ -6230,6 +6345,7 @@ fn validate_variable_surface(
             LocalTermScope::default(),
             &mut scopes,
             &mut visited,
+            comprehension_scopes,
         )?;
         if visited.len() != ast.nodes().len() {
             return Err(SourceVariableScopeError::InvalidShape);
@@ -6251,6 +6367,7 @@ fn collect_variable_scopes(
     scope: LocalTermScope,
     scopes: &mut BTreeMap<SurfaceNodeId, LocalTermScope>,
     visited: &mut BTreeSet<SurfaceNodeId>,
+    comprehension_scopes: bool,
 ) -> Result<(), SourceVariableScopeError> {
     if !visited.insert(node) {
         return Err(SourceVariableScopeError::InvalidShape);
@@ -6271,14 +6388,24 @@ fn collect_variable_scopes(
         {
             continue;
         }
-        let child_scope = if is_variable_scope_boundary(child_view.kind()) {
+        let child_scope = if is_variable_scope_boundary(child_view.kind())
+            || (comprehension_scopes
+                && matches!(child_view.kind(), SurfaceNodeKind::SetComprehension))
+        {
             let mut path = scope.path().to_vec();
             path.push(index as u32);
             LocalTermScope::new(path)
         } else {
             scope.clone()
         };
-        collect_variable_scopes(ast, *child, child_scope, scopes, visited)?;
+        collect_variable_scopes(
+            ast,
+            *child,
+            child_scope,
+            scopes,
+            visited,
+            comprehension_scopes,
+        )?;
     }
     Ok(())
 }
@@ -6683,6 +6810,7 @@ fn binding_kind_key(kind: SourceVariableBindingKind) -> u8 {
         SourceVariableBindingKind::InlineFunctor => 5,
         SourceVariableBindingKind::InlinePredicate => 6,
         SourceVariableBindingKind::InlineParameter => 7,
+        SourceVariableBindingKind::ComprehensionGenerator => 8,
     }
 }
 

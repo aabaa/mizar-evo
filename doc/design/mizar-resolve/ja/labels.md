@@ -1,5 +1,8 @@
 # Module: labels
 
+`collect_with_let_conditions` は単独のラベル付き `let ... such that` 条件を、既存の source origin・proof scope・可視順序で収集する。
+通常の `collect` の受理範囲と順序は変更しない。
+
 > 正本は英語です。英語版: [../en/labels.md](../en/labels.md)。
 
 状態: task R-017 は resolver-owned label-resolution contract を仕様化し、task

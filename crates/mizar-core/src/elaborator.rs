@@ -15955,6 +15955,149 @@ impl Error for SourceStructureCoreNormalizationError {}
 #[derive(Debug, Clone, Copy, Default, PartialEq, Eq)]
 pub struct SourceStructureCoreNormalizer;
 
+/// Discharges the two checked source membership goals without inventing a VC
+/// receipt. The returned count records obligations actually inspected.
+pub fn normalize_source_membership_proof(
+    proof: &mizar_checker::source_set_term::SourceMembershipProof<'_>,
+) -> Result<usize, String> {
+    use mizar_checker::source_atomic_formula::{
+        SourceAtomicFormulaId, SourceAtomicTermTarget as Target,
+    };
+    use mizar_checker::source_set_term::{SourceSetTermId, SourceSetTermKind};
+    let invalid = || "source membership obligation did not normalize".to_owned();
+    let typed = proof.typed();
+    let primary = typed.source_term().ok_or_else(invalid)?;
+    let sets = typed.source_set_term().ok_or_else(invalid)?;
+    let atomic = typed.source_atomic_formula().ok_or_else(invalid)?;
+    let binding = |id| {
+        primary
+            .references()
+            .iter()
+            .find(|(_, reference)| reference.term() == id)
+            .map(|(_, reference)| proof.canonical_binding(reference.binding()))
+            .ok_or_else(invalid)
+    };
+    let operands = |id: SourceAtomicFormulaId| {
+        let edges = atomic
+            .edges()
+            .iter()
+            .filter(|(_, edge)| edge.formula() == id)
+            .map(|(_, edge)| edge.target())
+            .collect::<Vec<_>>();
+        <[_; 2]>::try_from(edges).map_err(|_| invalid())
+    };
+    let enumeration = |set: SourceSetTermId| {
+        sets.edges()
+            .iter()
+            .filter(|(_, edge)| edge.term() == set)
+            .map(|(_, edge)| match edge.target() {
+                mizar_checker::source_set_term::SourceSetTarget::Primary(id) => binding(id),
+                _ => Err(invalid()),
+            })
+            .collect::<Result<Vec<_>, String>>()
+    };
+    let comprehension_bound = |set: SourceSetTermId| {
+        let term = sets.terms().get(set).ok_or_else(invalid)?;
+        let generators = sets
+            .generators()
+            .iter()
+            .filter(|(_, generator)| generator.term() == set)
+            .map(|(_, row)| row)
+            .collect::<Vec<_>>();
+        let [generator] = generators.as_slice() else {
+            return Err(invalid());
+        };
+        let generator_binding = proof
+            .scope()
+            .bindings()
+            .iter()
+            .find(|binding| binding.range() == generator.source_range())
+            .map(|binding| mizar_checker::binding_env::BindingId::new(binding.id().index()))
+            .ok_or_else(invalid)?;
+        let mapper = sets
+            .edges()
+            .iter()
+            .find(|(_, edge)| edge.term() == set)
+            .map(|(_, row)| row.target())
+            .ok_or_else(invalid)?;
+        let mizar_checker::source_set_term::SourceSetTarget::Primary(mapper) = mapper else {
+            return Err(invalid());
+        };
+        if binding(mapper)? != generator_binding {
+            return Err(invalid());
+        }
+        let guards = atomic
+            .formulas()
+            .iter()
+            .filter(|(_, formula)| {
+                formula.source_range().start > term.source_range().start
+                    && formula.source_range().end < term.source_range().end
+            })
+            .map(|(id, _)| id)
+            .collect::<Vec<_>>();
+        let [guard] = guards.as_slice() else {
+            return Err(invalid());
+        };
+        let [Target::Primary(left), Target::Primary(right)] = operands(*guard)? else {
+            return Err(invalid());
+        };
+        if binding(left)? != generator_binding {
+            return Err(invalid());
+        }
+        binding(right)
+    };
+    let goals = proof.goals();
+    let [Target::Primary(claim_left), Target::SetTerm(claim_set)] = operands(goals[0])? else {
+        return Err(invalid());
+    };
+    let [Target::Primary(proof_left), Target::SetTerm(proof_set)] = operands(goals[1])? else {
+        return Err(invalid());
+    };
+    if binding(claim_left)? != binding(proof_left)? {
+        return Err(invalid());
+    }
+    let claim_kind = sets.terms().get(claim_set).ok_or_else(invalid)?.kind();
+    if claim_kind != sets.terms().get(proof_set).ok_or_else(invalid)?.kind() {
+        return Err(invalid());
+    }
+    match claim_kind {
+        SourceSetTermKind::Enumeration => {
+            if proof.premises().is_some() || enumeration(claim_set)? != enumeration(proof_set)? {
+                return Err(invalid());
+            }
+            for goal in goals {
+                let [Target::Primary(left), Target::SetTerm(set)] = operands(goal)? else {
+                    return Err(invalid());
+                };
+                if !enumeration(set)?.contains(&binding(left)?) {
+                    return Err(invalid());
+                }
+            }
+        }
+        SourceSetTermKind::Comprehension => {
+            if comprehension_bound(claim_set)? != comprehension_bound(proof_set)? {
+                return Err(invalid());
+            }
+            for (goal, premise) in goals.into_iter().zip(proof.premises().ok_or_else(invalid)?) {
+                let [Target::Primary(left), Target::SetTerm(set)] = operands(goal)? else {
+                    return Err(invalid());
+                };
+                let [Target::Primary(premise_left), Target::Primary(bound)] = operands(premise)?
+                else {
+                    return Err(invalid());
+                };
+                if binding(left)? != binding(premise_left)?
+                    || comprehension_bound(set)? != binding(bound)?
+                {
+                    return Err(invalid());
+                }
+            }
+        }
+        _ => return Err(invalid()),
+    }
+    Ok(goals.len())
+}
+
 impl SourceStructureCoreNormalizer {
     /// Normalizes one diagnostic-free checker output into an immutable receipt.
     pub fn normalize(

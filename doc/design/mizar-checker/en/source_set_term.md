@@ -1,5 +1,9 @@
 # Source Set/Choice/Qua-Term Transport
 
+Separate from transport-only `build`, `check_membership_proof` seals a borrowed `SourceMembershipProof`
+over existing term/formula IDs. It checks bare types, active reservations, proof-local alpha binding,
+direct set bounds, and premise citations before Core normalization; arbitrary guards are excluded.
+
 > Canonical language: English. Japanese companion:
 > [../ja/source_set_term.md](../ja/source_set_term.md).
 

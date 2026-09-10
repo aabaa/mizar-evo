@@ -1,5 +1,9 @@
 # Module: names
 
+`SourceVariableScopeResolver::resolve_occurrences` retains existing binding/reference identities
+and declared generator types, admitting mapper-before-generator uses only within their comprehension.
+It makes no statement/thesis projection; legacy `resolve` keeps its existing profile.
+
 > Canonical language: English. Japanese companion: [../ja/names.md](../ja/names.md).
 
 Status: task R-012 specifies the resolver-owned name-resolution contract for

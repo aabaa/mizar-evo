@@ -35,7 +35,7 @@ mod type_assertion_routes;
 pub(super) use admission::{
     is_active_type_elaboration, is_step5c1_workspace_member, is_step5c2_workspace_member,
     is_step5c3_workspace_member, is_step5c4_workspace_member, is_step5c5_workspace_member,
-    validate_active_type_elaboration_tags,
+    is_step5c7_workspace_member, validate_active_type_elaboration_tags,
 };
 #[cfg(test)]
 pub(super) use binary_routes::{
@@ -358,6 +358,7 @@ pub(super) use source_ast::{authenticated_local_declaration, structural_child_id
 #[cfg(test)]
 pub(super) use source_ast::{direct_token_texts, surface_nodes_with_kind, surface_site};
 pub(super) use source_atomic_formula::source_atomic_formula_transport_detail_keys;
+pub(super) use source_atomic_formula::step5c7_membership_typed_ast;
 #[cfg(test)]
 pub(super) use source_atomic_formula::{
     SourceAtomicFormulaRouteOutput, source_atomic_formula_output,
@@ -517,7 +518,6 @@ pub(super) use source_reserve::extract_builtin_source_reserve_declarations_after
 pub(super) use source_reserve::{
     resolve_visible_attribute, resolve_visible_type_head, source_mode_symbol_spelling,
 };
-pub(super) use source_set_term::source_set_term_transport_detail_keys;
 #[cfg(test)]
 pub(super) use source_set_term::{
     SetEnumerationBindingMutation, SetEnumerationFinalMutation, SetEnumerationHandoffMutation,
@@ -530,6 +530,7 @@ pub(super) use source_set_term::{
     source_set_term_output_with_source, source_set_term_output_with_source_and_mutation,
     synthetic_source_set_term_output, synthetic_source_set_term_output_with_mutation,
 };
+pub(super) use source_set_term::{source_set_term_transport_detail_keys, step5c7_term_detail_keys};
 #[cfg(test)]
 pub(super) use source_statement::{
     SOURCE_PROOF_LOCAL_GIVEN_CONDITION_TEXT, SOURCE_PROOF_LOCAL_GIVEN_DESCENDANT_SET_TEXT,

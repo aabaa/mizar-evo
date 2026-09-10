@@ -1,5 +1,8 @@
 # Module: labels
 
+`collect_with_let_conditions` additionally collects a sole labeled `let ... such that` condition
+with the existing source origin, proof scope, and visibility ordering. Ordinary `collect` is unchanged.
+
 > Canonical language: English. Japanese companion: [../ja/labels.md](../ja/labels.md).
 
 Status: task R-017 specified the resolver-owned label-resolution contract, and

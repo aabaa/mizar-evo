@@ -502,6 +502,46 @@ impl TermFormulaChecker {
         Ok(self.infer(symbols, binding_env, term_inputs, formula_inputs))
     }
 
+    /// Runs the bounded Step 5C.7 type slice over authenticated checker input.
+    ///
+    /// The source runner supplies the already-authenticated inhabitation and
+    /// builtin-widening decisions; this method still performs ordinary term
+    /// and formula inference before accepting either decision.
+    pub fn step5c7_type_detail_keys(
+        &self,
+        symbols: &SymbolEnv,
+        binding_env: &BindingEnv,
+        term_inputs: impl IntoIterator<Item = TermInput>,
+        formula_inputs: impl IntoIterator<Item = FormulaInput>,
+        choice_inhabited: Option<bool>,
+        qua_widening: Option<bool>,
+    ) -> Vec<String> {
+        let output = self.infer(symbols, binding_env, term_inputs, formula_inputs);
+        let well_formed = !output.diagnostics().iter().any(|(_, diagnostic)| {
+            diagnostic.severity == TypeDiagnosticSeverity::Error
+                || diagnostic.recovery == DiagnosticRecoveryState::Degraded
+        }) && output
+            .terms()
+            .iter()
+            .all(|(_, term)| !matches!(term.status, TermStatus::Error | TermStatus::Skipped))
+            && output.formulas().iter().all(|(_, formula)| {
+                !matches!(
+                    formula.status,
+                    FormulaStatus::Error | FormulaStatus::Skipped
+                )
+            });
+        if !well_formed {
+            return vec!["type_elaboration.checker.typed_ast_invalid".to_owned()];
+        }
+        if choice_inhabited == Some(false) {
+            return vec!["terms.choice.missing_inhabitation".to_owned()];
+        }
+        if qua_widening == Some(false) {
+            return vec!["type_elaboration.checker.typed_ast_invalid".to_owned()];
+        }
+        Vec::new()
+    }
+
     #[cfg(test)]
     pub(crate) fn infer_without_symbols_for_test(
         &self,
@@ -6958,6 +6998,13 @@ impl SourceVariableSemanticsOutput {
 pub struct SourceVariableSemanticsChecker;
 
 impl SourceVariableSemanticsChecker {
+    /// Projects an authenticated resolver scope into the checker binding
+    /// environment used by term/formula inference.
+    #[must_use]
+    pub fn occurrence_binding_env(scope: &ResolvedVariableScope) -> BindingEnv {
+        project_binding_env(scope).0
+    }
+
     /// Checks one authenticated source-variable scope.
     #[must_use]
     pub fn check(input: SourceVariableSemanticsInput<'_>) -> SourceVariableSemanticsOutput {
@@ -6974,7 +7021,7 @@ impl SourceVariableSemanticsChecker {
         // projection therefore preserves BindingEnv invariants by
         // construction; a failure here is an internal contract violation, not
         // a source semantic error and must not be mapped to a frozen key.
-        let binding_projection = project_binding_env(scope);
+        let (_, binding_projection) = project_binding_env(scope);
 
         // Only declarations whose type is already semantically available at
         // the start of the source transaction are installed here.  Local
@@ -7776,7 +7823,7 @@ fn existential_body(
 
 fn project_binding_env(
     scope: &ResolvedVariableScope,
-) -> BTreeMap<SourceVariableBindingId, BindingId> {
+) -> (BindingEnv, BTreeMap<SourceVariableBindingId, BindingId>) {
     let mut contexts = BindingContextTable::new();
     let mut bindings = BindingTable::new();
     let mut ids = Vec::new();
@@ -7835,8 +7882,7 @@ fn project_binding_env(
         diagnostics: BindingDiagnosticTable::new(),
     })
     .expect("authenticated resolver scope must project to a valid BindingEnv");
-    drop(binding_env);
-    ids.into_iter().collect()
+    (binding_env, ids.into_iter().collect())
 }
 
 fn projected_binding_kind(kind: SourceVariableBindingKind) -> BindingKind {
@@ -7851,6 +7897,7 @@ fn projected_binding_kind(kind: SourceVariableBindingKind) -> BindingKind {
             BindingKind::LocalAbbreviation
         }
         SourceVariableBindingKind::InlineParameter => BindingKind::DefinitionParameter,
+        SourceVariableBindingKind::ComprehensionGenerator => BindingKind::QuantifierBinder,
         _ => BindingKind::Generated,
     }
 }
@@ -10804,6 +10851,103 @@ mod tests {
         assert!(debug.find("builtin=\"alpha\"") < debug.find("builtin=\"zeta\""));
         assert!(!debug.contains("obligation#"));
         assert!(!debug.contains("registration"));
+    }
+
+    #[test]
+    fn step5c7_type_detail_keys_require_inference_before_bounded_evidence() {
+        let source = source_id();
+        let symbols = symbol_env(Vec::new());
+        let binding_env = binding_env_for_declarations(source, Vec::new());
+        let object_type = |node| {
+            TypeExpressionInput::new(
+                site(node),
+                range(source, node * 5, node * 5 + 3),
+                "object",
+                TypeHeadInput::BuiltinObject,
+            )
+        };
+        let numeral_terms = vec![
+            TermInput::new(
+                site(10),
+                BindingContextId::new(0),
+                range(source, 10, 11),
+                TermKind::Numeral,
+            )
+            .with_result_type(object_type(10)),
+            TermInput::new(
+                site(11),
+                BindingContextId::new(0),
+                range(source, 11, 12),
+                TermKind::Numeral,
+            )
+            .with_result_type(object_type(11)),
+        ];
+        let equality = FormulaInput::new(
+            site(12),
+            BindingContextId::new(0),
+            range(source, 12, 13),
+            FormulaKind::Equality,
+        )
+        .with_terms(vec![site(10), site(11)]);
+        assert!(
+            TermFormulaChecker::default()
+                .step5c7_type_detail_keys(
+                    &symbols,
+                    &binding_env,
+                    numeral_terms,
+                    [equality],
+                    None,
+                    None,
+                )
+                .is_empty()
+        );
+
+        let choice_type_left = TypeExpressionInput::new(
+            site(20),
+            range(source, 20, 21),
+            "set",
+            TypeHeadInput::BuiltinSet,
+        );
+        let choice_type_right = TypeExpressionInput::new(
+            site(24),
+            range(source, 24, 25),
+            "set",
+            TypeHeadInput::BuiltinSet,
+        );
+        let choice_terms = vec![
+            TermInput::new(
+                site(21),
+                BindingContextId::new(0),
+                range(source, 21, 22),
+                TermKind::Choice,
+            )
+            .with_result_type(choice_type_left),
+            TermInput::new(
+                site(22),
+                BindingContextId::new(0),
+                range(source, 22, 23),
+                TermKind::Choice,
+            )
+            .with_result_type(choice_type_right),
+        ];
+        let choice_equality = FormulaInput::new(
+            site(23),
+            BindingContextId::new(0),
+            range(source, 23, 24),
+            FormulaKind::Equality,
+        )
+        .with_terms(vec![site(21), site(22)]);
+        assert_eq!(
+            TermFormulaChecker::default().step5c7_type_detail_keys(
+                &symbols,
+                &binding_env,
+                choice_terms,
+                [choice_equality],
+                Some(false),
+                None,
+            ),
+            vec!["terms.choice.missing_inhabitation".to_owned()]
+        );
     }
 
     #[test]

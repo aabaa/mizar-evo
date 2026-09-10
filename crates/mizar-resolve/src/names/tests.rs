@@ -3006,6 +3006,102 @@ fn source_variable_resolver_reports_unresolved_reference() {
 }
 
 #[test]
+fn source_variable_occurrences_bind_comprehension_mapper_and_guard() {
+    let source_id = source_id();
+    let module = module_id("pkg", "variables");
+    let ast = source_variable_comprehension_ast(source_id, "x", "x");
+    let symbols = SymbolEnv::new(module.clone(), SymbolEnvIndexes::default());
+
+    let resolved = SourceVariableScopeResolver::resolve_occurrences(SourceVariableScopeInput::new(
+        &ast, &module, &symbols,
+    ))
+    .expect("comprehension occurrences should resolve");
+    let generator = resolved
+        .bindings()
+        .iter()
+        .find(|binding| binding.kind() == SourceVariableBindingKind::ComprehensionGenerator)
+        .expect("generator binding should be present");
+    let reserve = resolved
+        .bindings()
+        .iter()
+        .find(|binding| binding.kind() == SourceVariableBindingKind::Reserve)
+        .expect("outer reservation should be present");
+    assert_eq!(generator.spelling(), "x");
+    assert_eq!(generator.range(), range(source_id, 30, 31));
+    assert_eq!(
+        resolved
+            .references()
+            .iter()
+            .map(|reference| (reference.spelling(), reference.binding()))
+            .collect::<Vec<_>>(),
+        vec![
+            ("x", generator.id()),
+            ("x", generator.id()),
+            ("x", generator.id()),
+            ("x", reserve.id()),
+        ]
+    );
+    assert!(resolved.thesis().is_none());
+    assert!(resolved.statements().is_empty());
+}
+
+#[test]
+fn source_variable_occurrences_do_not_capture_comprehension_generators_outside() {
+    let source_id = source_id();
+    let module = module_id("pkg", "variables");
+    let ast = source_variable_comprehension_ast(source_id, "x", "x");
+    let symbols = SymbolEnv::new(module.clone(), SymbolEnvIndexes::default());
+
+    let resolved = SourceVariableScopeResolver::resolve_occurrences(SourceVariableScopeInput::new(
+        &ast, &module, &symbols,
+    ))
+    .expect("outer reservation should resolve outside the comprehension");
+    let reserve = resolved
+        .bindings()
+        .iter()
+        .find(|binding| binding.kind() == SourceVariableBindingKind::Reserve)
+        .expect("outer reservation should be present");
+    let generator = resolved
+        .bindings()
+        .iter()
+        .find(|binding| binding.kind() == SourceVariableBindingKind::ComprehensionGenerator)
+        .expect("generator binding should be present");
+    assert_eq!(
+        resolved
+            .references()
+            .iter()
+            .map(|reference| reference.binding())
+            .collect::<Vec<_>>(),
+        vec![generator.id(), generator.id(), generator.id(), reserve.id()]
+    );
+}
+
+#[test]
+fn source_variable_occurrences_report_only_unbound_mapper_references() {
+    let source_id = source_id();
+    let module = module_id("pkg", "variables");
+    let ast = source_variable_comprehension_ast(source_id, "missing", "x");
+    let symbols = SymbolEnv::new(module.clone(), SymbolEnvIndexes::default());
+
+    assert_eq!(
+        SourceVariableScopeResolver::resolve_occurrences(SourceVariableScopeInput::new(
+            &ast, &module, &symbols,
+        )),
+        Err(SourceVariableScopeError::UnboundComprehensionMapper)
+    );
+    assert_eq!(
+        SourceVariableScopeError::UnboundComprehensionMapper.detail_key(),
+        Some("terms.comprehension.unbound_mapper_variable")
+    );
+    assert_eq!(
+        SourceVariableScopeResolver::resolve(SourceVariableScopeInput::new(
+            &ast, &module, &symbols,
+        )),
+        Err(SourceVariableScopeError::UnresolvedReference)
+    );
+}
+
+#[test]
 fn source_variable_resolver_authenticates_inline_functor_captures() {
     let source_id = source_id();
     let module = module_id("pkg", "variables");
@@ -3083,6 +3179,193 @@ fn distinct_source_ids() -> (SourceId, SourceId) {
         allocator.next_source_id(snapshot_id).unwrap(),
         allocator.next_source_id(snapshot_id).unwrap(),
     )
+}
+
+fn source_variable_comprehension_ast(
+    source_id: SourceId,
+    mapper_spelling: &str,
+    generator_spelling: &str,
+) -> SurfaceAst {
+    let mut builder = SurfaceAstBuilder::new(source_id);
+    let reserve_keyword = builder.add_token(
+        SurfaceTokenKind::ReservedWord,
+        "reserve",
+        range(source_id, 0, 7),
+    );
+    let reserve_binder =
+        builder.add_token(SurfaceTokenKind::Identifier, "x", range(source_id, 8, 9));
+    let reserve_be = builder.add_token(
+        SurfaceTokenKind::ReservedWord,
+        "be",
+        range(source_id, 10, 12),
+    );
+    let reserve_object = builder.add_token(
+        SurfaceTokenKind::ReservedWord,
+        "object",
+        range(source_id, 13, 19),
+    );
+    let reserve_head = builder.add_node(
+        SurfaceNodeKind::TypeHead,
+        range(source_id, 13, 19),
+        vec![reserve_object],
+    );
+    let reserve_type = builder.add_node(
+        SurfaceNodeKind::TypeExpression,
+        range(source_id, 13, 19),
+        vec![reserve_head],
+    );
+    let reserve_segment = builder.add_node(
+        SurfaceNodeKind::ReserveSegment,
+        range(source_id, 8, 19),
+        vec![reserve_binder, reserve_be, reserve_type],
+    );
+    let reserve_item = builder.add_node(
+        SurfaceNodeKind::ReserveItem,
+        range(source_id, 0, 19),
+        vec![reserve_keyword, reserve_segment],
+    );
+
+    let mapper_token = builder.add_token(
+        SurfaceTokenKind::Identifier,
+        mapper_spelling,
+        range(source_id, 22, 22 + mapper_spelling.len()),
+    );
+    let mapper_reference = builder.add_node(
+        SurfaceNodeKind::TermReference,
+        range(source_id, 22, 22 + mapper_spelling.len()),
+        vec![mapper_token],
+    );
+    let mapper = builder.add_node(
+        SurfaceNodeKind::TermExpression,
+        range(source_id, 22, 22 + mapper_spelling.len()),
+        vec![mapper_reference],
+    );
+    let where_keyword = builder.add_token(
+        SurfaceTokenKind::ReservedWord,
+        "where",
+        range(source_id, 24, 29),
+    );
+    let generator_token = builder.add_token(
+        SurfaceTokenKind::Identifier,
+        generator_spelling,
+        range(source_id, 30, 30 + generator_spelling.len()),
+    );
+    let generator_is = builder.add_token(
+        SurfaceTokenKind::ReservedWord,
+        "is",
+        range(source_id, 32, 34),
+    );
+    let generator_type_head = builder.add_token(
+        SurfaceTokenKind::ReservedWord,
+        "object",
+        range(source_id, 35, 41),
+    );
+    let generator_head = builder.add_node(
+        SurfaceNodeKind::TypeHead,
+        range(source_id, 35, 41),
+        vec![generator_type_head],
+    );
+    let generator_type = builder.add_node(
+        SurfaceNodeKind::TypeExpression,
+        range(source_id, 35, 41),
+        vec![generator_head],
+    );
+    let generator_segment = builder.add_node(
+        SurfaceNodeKind::ComprehensionVariableSegment,
+        range(source_id, 30, 41),
+        vec![generator_token, generator_is, generator_type],
+    );
+    let guard_left_token = builder.add_token(
+        SurfaceTokenKind::Identifier,
+        generator_spelling,
+        range(source_id, 50, 50 + generator_spelling.len()),
+    );
+    let guard_left_reference = builder.add_node(
+        SurfaceNodeKind::TermReference,
+        range(source_id, 50, 50 + generator_spelling.len()),
+        vec![guard_left_token],
+    );
+    let guard_left = builder.add_node(
+        SurfaceNodeKind::TermExpression,
+        range(source_id, 50, 50 + generator_spelling.len()),
+        vec![guard_left_reference],
+    );
+    let equals = builder.add_token(
+        SurfaceTokenKind::ReservedSymbol,
+        "=",
+        range(source_id, 52, 53),
+    );
+    let guard_right_token = builder.add_token(
+        SurfaceTokenKind::Identifier,
+        generator_spelling,
+        range(source_id, 54, 54 + generator_spelling.len()),
+    );
+    let guard_right_reference = builder.add_node(
+        SurfaceNodeKind::TermReference,
+        range(source_id, 54, 54 + generator_spelling.len()),
+        vec![guard_right_token],
+    );
+    let guard_right = builder.add_node(
+        SurfaceNodeKind::TermExpression,
+        range(source_id, 54, 54 + generator_spelling.len()),
+        vec![guard_right_reference],
+    );
+    let guard = builder.add_node(
+        SurfaceNodeKind::BuiltinPredicateApplication,
+        range(source_id, 50, 54 + generator_spelling.len()),
+        vec![guard_left, equals, guard_right],
+    );
+    let condition = builder.add_node(
+        SurfaceNodeKind::FormulaExpression,
+        range(source_id, 50, 54 + generator_spelling.len()),
+        vec![guard],
+    );
+    let open = builder.add_token(
+        SurfaceTokenKind::ReservedSymbol,
+        "{",
+        range(source_id, 20, 21),
+    );
+    let colon = builder.add_token(
+        SurfaceTokenKind::ReservedSymbol,
+        ":",
+        range(source_id, 42, 43),
+    );
+    let close = builder.add_token(
+        SurfaceTokenKind::ReservedSymbol,
+        "}",
+        range(source_id, 60, 61),
+    );
+    let comprehension = builder.add_node(
+        SurfaceNodeKind::SetComprehension,
+        range(source_id, 20, 61),
+        vec![
+            open,
+            mapper,
+            where_keyword,
+            generator_segment,
+            colon,
+            condition,
+            close,
+        ],
+    );
+    let outside_token =
+        builder.add_token(SurfaceTokenKind::Identifier, "x", range(source_id, 70, 71));
+    let outside_reference = builder.add_node(
+        SurfaceNodeKind::TermReference,
+        range(source_id, 70, 71),
+        vec![outside_token],
+    );
+    let outside = builder.add_node(
+        SurfaceNodeKind::TermExpression,
+        range(source_id, 70, 71),
+        vec![outside_reference],
+    );
+    let root = builder.add_node(
+        SurfaceNodeKind::Root,
+        range(source_id, 0, 71),
+        vec![reserve_item, comprehension, outside],
+    );
+    builder.finish(Some(root), None)
 }
 
 fn source_variable_quantified_ast(source_id: SourceId, spelling: &str, typed: bool) -> SurfaceAst {

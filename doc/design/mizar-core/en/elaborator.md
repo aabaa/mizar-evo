@@ -1,5 +1,9 @@
 # Elaborator
 
+`normalize_source_membership_proof` consumes only the checked borrowed source transaction.
+It reconciles proof-local bindings and discharges enumeration membership or identity-mapper
+membership from the cited direct bound; it creates no generic IR, empty VC receipt, or kernel evidence.
+
 > Canonical language: English. Japanese companion:
 > [../ja/elaborator.md](../ja/elaborator.md).
 

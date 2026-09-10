@@ -20,6 +20,10 @@ use mizar_checker::{
     },
     source_structure::{SourceStructureHandoff, SourceStructureTermId},
     source_term::SourcePrimaryTermHandoff,
+    type_checker::{
+        FormulaInput, FormulaKind, SourceVariableSemanticsChecker, TermFormulaChecker, TermInput,
+        TermKind, TermReference, TypeExpressionInput, TypeHeadInput,
+    },
     typed_ast::{
         CoercionTable, InitialObligationTable, LocalTypeContextTable, NodeRecoveryState,
         TypeDiagnosticTable, TypeFactTable, TypeTable, TypedArena, TypedAst, TypedAstParts,
@@ -29,7 +33,10 @@ use mizar_checker::{
 use mizar_resolve::{
     declarations::{DeclarationShell, DeclarationShellKind, DeclarationShellSet},
     env::SymbolEnv,
-    names::{LocalTermBinding, LocalTermScope},
+    names::{
+        LocalTermBinding, LocalTermScope, SourceVariableScopeInput, SourceVariableScopeResolver,
+        SourceVariableTypeRadix,
+    },
     resolved_ast::ModuleId,
 };
 use mizar_session::SourceRange;
@@ -49,15 +56,238 @@ use super::{
     },
     source_ast::{
         direct_token_texts, exact_compilation_item_list, is_exact_parser_type_fixtures_import,
-        structural_child_ids, subtree_has_recovery, surface_site,
+        structural_child_ids, subtree_has_recovery, surface_nodes_with_kind, surface_site,
     },
-    source_reserve::extract_builtin_source_reserve_declarations_after_node_guard,
+    source_reserve::{
+        extract_builtin_source_reserve_declarations_after_node_guard,
+        extract_builtin_source_type_expression,
+    },
     source_term::SourceTermParts,
 };
 
 const INVALID_PAYLOAD_KEY: &str = "type_elaboration.checker.typed_ast_invalid";
 const PAYLOAD_EXTRACTION_GAP_KEY: &str =
     "type_elaboration.external_dependency.ast_payload_extraction";
+
+/// Checks the bounded term families using existing checker inputs.
+pub(in crate::runner) fn step5c7_term_detail_keys(
+    ast: &SurfaceAst,
+    module: &ModuleId,
+    symbols: &SymbolEnv,
+) -> Vec<String> {
+    let scope = match SourceVariableScopeResolver::resolve_occurrences(
+        SourceVariableScopeInput::new(ast, module, symbols),
+    ) {
+        Ok(scope) => scope,
+        Err(error) => {
+            return vec![
+                error
+                    .detail_key()
+                    .filter(|key| *key == "terms.comprehension.unbound_mapper_variable")
+                    .unwrap_or(INVALID_PAYLOAD_KEY)
+                    .to_owned(),
+            ];
+        }
+    };
+    let check = || -> Option<Vec<String>> {
+        let theorems = surface_nodes_with_kind(ast, SurfaceNodeKind::TheoremItem);
+        let [(_, theorem)] = theorems.as_slice() else {
+            return None;
+        };
+        if subtree_has_recovery(ast, theorem) {
+            return None;
+        }
+        let bodies = structural_child_ids(ast, theorem)
+            .into_iter()
+            .filter(|id| {
+                matches!(
+                    ast.node(*id).map(|node| &node.kind),
+                    Some(SurfaceNodeKind::FormulaExpression)
+                )
+            })
+            .collect::<Vec<_>>();
+        let [body] = bodies.as_slice() else {
+            return None;
+        };
+        let mut formula_id = *body;
+        loop {
+            let node = ast.node(formula_id)?;
+            let children = structural_child_ids(ast, node);
+            match node.kind {
+                SurfaceNodeKind::FormulaExpression if children.len() == 1 => {
+                    formula_id = children[0]
+                }
+                SurfaceNodeKind::QuantifiedFormula(
+                    mizar_syntax::SurfaceQuantifierKind::Universal,
+                ) if children.len() >= 2
+                    && children[..children.len() - 1].iter().all(|id| {
+                        matches!(
+                            ast.node(*id).map(|node| &node.kind),
+                            Some(SurfaceNodeKind::QuantifierVariableSegment)
+                        )
+                    }) =>
+                {
+                    formula_id = *children.last()?
+                }
+                SurfaceNodeKind::BuiltinPredicateApplication
+                    if direct_token_texts(ast, node) == ["="] =>
+                {
+                    break;
+                }
+                _ => return None,
+            }
+        }
+        let formula_node = ast.node(formula_id)?;
+        let operands = structural_child_ids(ast, formula_node);
+        if operands.len() != 2 {
+            return None;
+        }
+        let unwrap = |mut id| -> Option<SurfaceNodeId> {
+            loop {
+                let node = ast.node(id)?;
+                if !matches!(
+                    node.kind,
+                    SurfaceNodeKind::TermExpression | SurfaceNodeKind::ParenthesizedTerm
+                ) {
+                    return Some(id);
+                }
+                let children = structural_child_ids(ast, node);
+                let [child] = children.as_slice() else {
+                    return None;
+                };
+                id = *child;
+            }
+        };
+        let binding = |id| {
+            scope
+                .references()
+                .iter()
+                .find(|reference| reference.node() == id)
+                .and_then(|reference| scope.bindings().get(reference.binding().index()))
+        };
+        let mut terms = Vec::new();
+        let mut inhabited = None;
+        let mut widening = None;
+        for operand in operands {
+            let id = unwrap(operand)?;
+            let node = ast.node(id)?;
+            let site = surface_site(id);
+            let mut reference = None;
+            let (kind, ty) = match node.kind {
+                SurfaceNodeKind::NumeralTerm if direct_token_texts(ast, node) == ["0"] => (
+                    TermKind::Numeral,
+                    TypeExpressionInput::new(
+                        site.clone(),
+                        node.range,
+                        "object",
+                        TypeHeadInput::BuiltinObject,
+                    ),
+                ),
+                SurfaceNodeKind::TermReference => {
+                    let declaration = binding(id)?;
+                    let ty = declaration.declared_type()?;
+                    if !ty.attributes().is_empty() {
+                        return None;
+                    }
+                    let (spelling, head) = match ty.radix() {
+                        SourceVariableTypeRadix::Set => ("set", TypeHeadInput::BuiltinSet),
+                        SourceVariableTypeRadix::Object => ("object", TypeHeadInput::BuiltinObject),
+                        _ => return None,
+                    };
+                    reference = Some(TermReference::Binding(
+                        mizar_checker::binding_env::BindingId::new(declaration.id().index()),
+                    ));
+                    (
+                        TermKind::Variable,
+                        TypeExpressionInput::new(site.clone(), node.range, spelling, head),
+                    )
+                }
+                SurfaceNodeKind::ChoiceTerm | SurfaceNodeKind::QuaExpression => {
+                    let children = structural_child_ids(ast, node);
+                    let choice = matches!(node.kind, SurfaceNodeKind::ChoiceTerm);
+                    if children.len() != if choice { 1 } else { 2 } {
+                        return None;
+                    }
+                    let target = ast.node(*children.last()?)?;
+                    if !matches!(target.kind, SurfaceNodeKind::TypeExpression) {
+                        return None;
+                    }
+                    let ty = extract_builtin_source_type_expression(ast, target, module, symbols)
+                        .ok()?;
+                    if !matches!(
+                        ty.head,
+                        TypeHeadInput::BuiltinSet | TypeHeadInput::BuiltinObject
+                    ) {
+                        return None;
+                    }
+                    let kind = if choice {
+                        if !ty.attributes.is_empty() && !symbols.registrations().is_empty() {
+                            return None;
+                        }
+                        inhabited = Some(inhabited.unwrap_or(true) && ty.attributes.is_empty());
+                        TermKind::Choice
+                    } else {
+                        let base = unwrap(children[0])?;
+                        if !matches!(ast.node(base)?.kind, SurfaceNodeKind::TermReference) {
+                            return None;
+                        }
+                        let actual = binding(base)?.declared_type()?;
+                        if !actual.attributes().is_empty() || !ty.attributes.is_empty() {
+                            return None;
+                        }
+                        widening = Some(matches!(
+                            (actual.radix(), &ty.head),
+                            (
+                                SourceVariableTypeRadix::Set,
+                                TypeHeadInput::BuiltinSet | TypeHeadInput::BuiltinObject
+                            ) | (
+                                SourceVariableTypeRadix::Object,
+                                TypeHeadInput::BuiltinObject
+                            )
+                        ));
+                        TermKind::SourceQua
+                    };
+                    (
+                        kind,
+                        TypeExpressionInput::new(site.clone(), ty.range, ty.spelling, ty.head)
+                            .with_attributes(ty.attributes),
+                    )
+                }
+                _ => return None,
+            };
+            let mut term = TermInput::new(site, BindingContextId::new(0), node.range, kind)
+                .with_result_type(ty);
+            term.reference = reference;
+            terms.push(term);
+        }
+        if !matches!(
+            (terms[0].kind, terms[1].kind),
+            (TermKind::Choice, TermKind::Choice)
+                | (TermKind::Numeral, TermKind::Numeral)
+                | (TermKind::SourceQua, TermKind::Variable)
+                | (TermKind::Variable, TermKind::SourceQua)
+        ) {
+            return None;
+        }
+        let formula = FormulaInput::new(
+            surface_site(formula_id),
+            BindingContextId::new(0),
+            formula_node.range,
+            FormulaKind::Equality,
+        )
+        .with_terms(terms.iter().map(|term| term.site.clone()).collect());
+        let bindings = SourceVariableSemanticsChecker::occurrence_binding_env(&scope);
+        Some(TermFormulaChecker::default().step5c7_type_detail_keys(
+            symbols,
+            &bindings,
+            terms,
+            [formula],
+            inhabited,
+            widening,
+        ))
+    };
+    check().unwrap_or_else(|| vec![INVALID_PAYLOAD_KEY.to_owned()])
+}
 
 #[derive(Debug)]
 pub(in crate::runner) struct SourceSetTermRouteOutput {
@@ -2793,6 +3023,75 @@ pub(super) fn source_set_term_output_with_source_term(
         roots,
         source_term,
         BindingContextId::new(0),
+    )
+}
+
+pub(super) fn step5c7_set_output(
+    ast: &SurfaceAst,
+    module: ModuleId,
+    binding_env: BindingEnv,
+    roots: &[usize],
+    source_term: SourceTermParts,
+) -> Result<SourceSetTermRouteOutput, String> {
+    let mut extracted = extract_set_terms(
+        ast,
+        &module,
+        BindingContextId::new(0),
+        &[],
+        None,
+        None,
+        &BTreeSet::new(),
+        true,
+    )?;
+    // Resolver-authenticated generators may occur in their own mapper.
+    // The legacy transport selector deliberately excludes that family.
+    let mut roots = roots.to_vec();
+    roots.sort_by_key(|root| ast.nodes()[*root].range.start);
+    for root in roots {
+        if matches!(ast.nodes()[root].kind, SurfaceNodeKind::SetComprehension) {
+            let term = SourceSetTermId::new(extracted.terms.len());
+            extracted.terms.push(ExtractedTerm {
+                node: root,
+                kind: SourceSetTermKind::Comprehension,
+                recovery: SourceSetTermRecovery::Normal,
+            });
+            collect_comprehension(
+                ast,
+                &module,
+                term,
+                root,
+                None,
+                None,
+                &BTreeSet::new(),
+                true,
+                &mut extracted,
+            )?;
+        } else {
+            collect_target(
+                ast,
+                &module,
+                root,
+                None,
+                None,
+                &BTreeSet::new(),
+                true,
+                &mut extracted,
+            )?;
+        }
+    }
+    normalize_extracted_tables(ast, &mut extracted);
+    build_output(
+        ast,
+        module,
+        binding_env,
+        extracted,
+        Some(SyntheticSourceSetTermDependencies {
+            arena: source_term.arena,
+            primary: source_term.handoff,
+            application: None,
+            structure: None,
+        }),
+        |_| {},
     )
 }
 

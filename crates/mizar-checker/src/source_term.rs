@@ -16,7 +16,10 @@ use crate::{
     typed_ast::{NodeRecoveryState, TypedArena, TypedNode, TypedNodeId, TypedSiteRef, TypingState},
 };
 use mizar_lexer::is_identifier;
-use mizar_resolve::{names::LocalTermScope, resolved_ast::ModuleId};
+use mizar_resolve::{
+    names::{LocalTermScope, ResolvedVariableScope, SourceVariableReferenceKind},
+    resolved_ast::ModuleId,
+};
 use mizar_session::{SourceAnchor, SourceId, SourceRange};
 use std::{
     error::Error,
@@ -1426,6 +1429,89 @@ impl SourcePrimaryTermProducer {
             },
         })
     }
+
+    /// Builds the source-term handoff from sealed resolver occurrences.
+    pub fn build_from_occurrences(
+        input: SourcePrimaryTermHandoffInput,
+        binding_env: &BindingEnv,
+        arena: &TypedArena,
+        scope: &ResolvedVariableScope,
+    ) -> Result<SourcePrimaryTermHandoff, SourcePrimaryTermError> {
+        let invalid_transaction = || SourcePrimaryTermError::InvalidTransaction;
+        if input.source_id != scope.source_id()
+            || &input.module_id != scope.module_id()
+            || *binding_env
+                != crate::type_checker::SourceVariableSemanticsChecker::occurrence_binding_env(
+                    scope,
+                )
+        {
+            return Err(invalid_transaction());
+        }
+        let context_id = BindingContextId::new(0);
+
+        let terms = validate_terms(input.source_id, &input.terms, binding_env, arena)?;
+        for (index, term) in terms.iter().enumerate() {
+            if term.context != context_id
+                || term.recovery != SourcePrimaryTermRecovery::Normal
+                || term.kind != SourcePrimaryTermKind::VariableReference
+                || term.role != SourcePrimaryTermRole::Value
+            {
+                return Err(SourcePrimaryTermError::InvalidTerm {
+                    term: SourcePrimaryTermId::new(index),
+                });
+            }
+        }
+
+        let mut matched = std::collections::BTreeSet::new();
+        let mut references = Vec::with_capacity(input.references.len());
+        let invalid_reference = |index| SourcePrimaryTermError::InvalidReference {
+            reference: SourcePrimaryTermReferenceId::new(index),
+        };
+        for (index, input_reference) in input.references.iter().enumerate() {
+            let term = terms
+                .get(input_reference.term.index())
+                .ok_or_else(|| invalid_reference(index))?;
+            let (actual_id, actual) = scope
+                .references()
+                .iter()
+                .enumerate()
+                .find(|(_, reference)| reference.node().index() == term.site.node().index())
+                .ok_or_else(|| invalid_reference(index))?;
+            if !matched.insert(actual_id)
+                || input_reference.role != SourcePrimaryTermReferenceRole::Variable
+                || actual.kind() != SourceVariableReferenceKind::Term
+                || actual.range() != term.source_range
+                || actual.spelling() != term.spelling
+                || actual.binding().index() != input_reference.binding.index()
+            {
+                return Err(invalid_reference(index));
+            }
+            references.push(SourcePrimaryTermReference {
+                term: input_reference.term,
+                binding: input_reference.binding,
+                role: input_reference.role,
+                // This scope is authenticated by the resolver occurrence,
+                // not used as a legacy BindingEnv lookup-time authority.
+                lexical_scope: Some(actual.scope().clone()),
+                use_ordinal: actual.ordinal(),
+            });
+        }
+        if matched.len() != scope.references().len() {
+            return Err(invalid_reference(input.references.len()));
+        }
+        validate_reference_cardinality(&terms, &references)?;
+        let numeric_type_requests =
+            validate_numeric_requests(&input.numeric_type_requests, &terms)?;
+        Ok(SourcePrimaryTermHandoff {
+            source_id: input.source_id,
+            module_id: input.module_id,
+            terms: SourcePrimaryTermTable { rows: terms },
+            references: SourcePrimaryTermReferenceTable { rows: references },
+            numeric_type_requests: SourceNumericTypeRequestTable {
+                rows: numeric_type_requests,
+            },
+        })
+    }
 }
 
 fn validate_terms(
@@ -2265,6 +2351,7 @@ mod tests {
             SourceTypeApplicationForm, SourceTypeApplicationInput, SourceTypeExpressionId,
             SourceTypeExpressionInput, SourceTypeHandoffInput, SourceTypeHead,
         },
+        type_checker::SourceVariableSemanticsChecker,
         typed_ast::{
             CoercionTable, InitialObligationTable, LocalTypeContextTable, TypeDiagnosticTable,
             TypeFactId, TypeFactTable, TypeRole, TypeTable, TypedArenaBuilder, TypedAst,
@@ -2276,12 +2363,14 @@ mod tests {
             ContributionKind, DefinitionIndex, DefinitionKind, DefinitionShell,
             SourceContributionIndex, SymbolEnv, SymbolEnvIndexes,
         },
-        names::LocalTermBinding,
+        names::{LocalTermBinding, SourceVariableScopeInput, SourceVariableScopeResolver},
         resolved_ast::{FullyQualifiedName, LocalSymbolId, SemanticOrigin, SymbolId},
     };
     use mizar_session::{
         BuildSnapshotId, InMemorySessionIdAllocator, ModulePath, PackageId, SessionIdAllocator as _,
     };
+    use mizar_syntax as syntax;
+    use syntax::{SurfaceAstBuilder, SurfaceNodeKind, SurfaceTokenKind};
 
     #[derive(Clone)]
     struct Fixture {
@@ -2633,6 +2722,102 @@ mod tests {
             bindings,
             arena,
         }
+    }
+
+    fn occurrence_fixture() -> (
+        mizar_resolve::names::ResolvedVariableScope,
+        BindingEnv,
+        TypedArena,
+        SourcePrimaryTermHandoffInput,
+    ) {
+        let source = source_id_for("b3");
+        let module = module("source.occurrences");
+        let mut builder = SurfaceAstBuilder::new(source);
+        let reserve = builder.add_token(
+            SurfaceTokenKind::ReservedWord,
+            "reserve",
+            range(source, 0, 7),
+        );
+        let binder = builder.add_token(SurfaceTokenKind::Identifier, "x", range(source, 8, 9));
+        let be = builder.add_token(SurfaceTokenKind::ReservedWord, "be", range(source, 10, 12));
+        let object = builder.add_token(
+            SurfaceTokenKind::ReservedWord,
+            "object",
+            range(source, 13, 19),
+        );
+        let head = builder.add_node(
+            SurfaceNodeKind::TypeHead,
+            range(source, 13, 19),
+            vec![object],
+        );
+        let ty = builder.add_node(
+            SurfaceNodeKind::TypeExpression,
+            range(source, 13, 19),
+            vec![head],
+        );
+        let segment = builder.add_node(
+            SurfaceNodeKind::ReserveSegment,
+            range(source, 8, 19),
+            vec![binder, be, ty],
+        );
+        let reserve_item = builder.add_node(
+            SurfaceNodeKind::ReserveItem,
+            range(source, 0, 19),
+            vec![reserve, segment],
+        );
+        let reference_token =
+            builder.add_token(SurfaceTokenKind::Identifier, "x", range(source, 24, 25));
+        let reference = builder.add_node(
+            SurfaceNodeKind::TermReference,
+            range(source, 24, 25),
+            vec![reference_token],
+        );
+        let term = builder.add_node(
+            SurfaceNodeKind::TermExpression,
+            range(source, 24, 25),
+            vec![reference],
+        );
+        let root = builder.add_node(
+            SurfaceNodeKind::Root,
+            range(source, 0, 25),
+            vec![reserve_item, term],
+        );
+        let ast = builder.finish(Some(root), None);
+        let symbols = SymbolEnv::new(module.clone(), SymbolEnvIndexes::default());
+        let scope = SourceVariableScopeResolver::resolve_occurrences(
+            SourceVariableScopeInput::new(&ast, &module, &symbols),
+        )
+        .expect("occurrence scope");
+        let binding_env = SourceVariableSemanticsChecker::occurrence_binding_env(&scope);
+        let actual = &scope.references()[0];
+        let input = SourcePrimaryTermHandoffInput {
+            source_id: source,
+            module_id: module,
+            terms: vec![SourcePrimaryTermInput {
+                site: TypedSiteRef::Node(TypedNodeId::new(actual.node().index())),
+                source_range: actual.range(),
+                source_ordinal: 0,
+                context: BindingContextId::new(0),
+                recovery: SourcePrimaryTermRecovery::Normal,
+                spelling: actual.spelling().to_owned(),
+                kind: SourcePrimaryTermKind::VariableReference,
+                role: SourcePrimaryTermRole::Value,
+                parent: None,
+            }],
+            references: vec![SourcePrimaryTermReferenceInput {
+                term: SourcePrimaryTermId::new(0),
+                binding: BindingId::new(actual.binding().index()),
+                role: SourcePrimaryTermReferenceRole::Variable,
+            }],
+            numeric_type_requests: Vec::new(),
+        };
+        let node = TypedNode::new(
+            typed_kind_key(SourcePrimaryTermKind::VariableReference),
+            SourceAnchor::Range(actual.range()),
+        );
+        let arena = TypedArena::try_new(None, vec![node; actual.node().index() + 1])
+            .expect("typed occurrence arena");
+        (scope, binding_env, arena, input)
     }
 
     fn build(fixture: &Fixture) -> Result<SourcePrimaryTermHandoff, SourcePrimaryTermError> {
@@ -3539,6 +3724,65 @@ mod tests {
             statement_semantics: None,
             statement_proofs: None,
         })
+    }
+
+    #[test]
+    fn occurrence_builder_authenticates_resolver_target_and_scope() {
+        let (scope, binding_env, arena, input) = occurrence_fixture();
+        let handoff =
+            SourcePrimaryTermProducer::build_from_occurrences(input, &binding_env, &arena, &scope)
+                .expect("sealed occurrence should build");
+        let reference = handoff
+            .references()
+            .get(SourcePrimaryTermReferenceId::new(0))
+            .expect("reference row");
+        assert_eq!(reference.use_ordinal(), scope.references()[0].ordinal());
+        assert_eq!(
+            reference.lexical_scope(),
+            Some(scope.references()[0].scope())
+        );
+    }
+
+    #[test]
+    fn occurrence_builder_rejects_counterfeit_or_incomplete_inputs() {
+        let (scope, binding_env, arena, mut input) = occurrence_fixture();
+        input.terms[0].source_range.start += 1;
+        assert!(matches!(
+            SourcePrimaryTermProducer::build_from_occurrences(input, &binding_env, &arena, &scope,),
+            Err(SourcePrimaryTermError::InvalidTerm { .. })
+        ));
+
+        let (scope, binding_env, arena, mut input) = occurrence_fixture();
+        input.references.clear();
+        assert!(matches!(
+            SourcePrimaryTermProducer::build_from_occurrences(input, &binding_env, &arena, &scope,),
+            Err(SourcePrimaryTermError::InvalidReference { .. })
+        ));
+
+        let (scope, mut binding_env, arena, input) = occurrence_fixture();
+        binding_env
+            .binding_mut_for_test(BindingId::new(0))
+            .unwrap()
+            .declaration_range
+            .start += 1;
+        assert_eq!(
+            SourcePrimaryTermProducer::build_from_occurrences(input, &binding_env, &arena, &scope,),
+            Err(SourcePrimaryTermError::InvalidTransaction)
+        );
+
+        let (scope, binding_env, arena, mut input) = occurrence_fixture();
+        input.module_id = module("source.wrong");
+        assert_eq!(
+            SourcePrimaryTermProducer::build_from_occurrences(input, &binding_env, &arena, &scope,),
+            Err(SourcePrimaryTermError::InvalidTransaction)
+        );
+
+        let (scope, binding_env, arena, mut input) = occurrence_fixture();
+        input.terms[0].context = BindingContextId::new(1);
+        assert!(matches!(
+            SourcePrimaryTermProducer::build_from_occurrences(input, &binding_env, &arena, &scope,),
+            Err(SourcePrimaryTermError::InvalidTerm { .. })
+        ));
     }
 
     #[test]
