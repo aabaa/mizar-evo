@@ -18,6 +18,8 @@ EBNF is intentionally absent; `doc/spec/en/` remains the grammar authority.
 - `build_beamer.py` - generates the Beamer decks from `draft.md`: title
   page, status-label badges, key-phrase blocks, Mizar syntax highlighting,
   booktabs tables, embedded figures, deep-dive tags.
+  Frame identifiers follow the draft headings. Backups C and E are production
+  notes retained in the drafts and excluded from both generated decks.
 - `bialystok_detail.tex` / `bialystok_detail.pdf` - generated discussion deck.
   The PDF uses A4 landscape physical pages for reliable printer-side handout
   layouts; the 16:9 slide content is scaled proportionally and centered.
@@ -35,8 +37,10 @@ EBNF is intentionally absent; `doc/spec/en/` remains the grammar authority.
 
 Frames whose headings carry `[deep dive]` in `draft.md` can be skipped
 without breaking a story arc; the generated deck marks them with a small
-"deep dive" tag. The unmarked core path is roughly 48 frames (about 60-75
-minutes plus discussion).
+"deep dive" tag. Keep the full deck as a handout. For the 45-minute talk,
+explain selected examples and cover the rest briefly; the title-page notes
+suggest frames 3.3, 5.2, and 8.2. Choose two or three closing questions.
+Whether the slot includes questions is still to be confirmed.
 
 ## Regenerating The Deck
 
@@ -61,8 +65,8 @@ Run `pdflatex` twice when frame numbers in the footer look stale.
   and line numbers), specification example, or sketch.
 - Exact MML excerpts keep attribution, URLs, and line numbers in speaker
   notes (GPL-3.0-or-later / CC-BY-SA-3.0-or-later distribution terms).
-- The seminar is informal: depth is preferred over strict time discipline,
-  and every story ends with questions for the Bialystok team.
+- Each story ends with questions for later review; the oral overview uses
+  selected examples and leaves the details in the handout.
 
 ## Pre-Talk Checklist (August 2026)
 
@@ -73,8 +77,8 @@ Run `pdflatex` twice when frame numbers in the footer look stale.
       line numbers, and text (Backup A lists all excerpts).
 - [ ] Re-check every specification example against `doc/spec/en/`; see
       Source Status in `draft.md` for the authority and example conventions.
-- [ ] Update the project-status frame (11.x - Where The Project Stands
-      Today): crate count, line counts, completed audits.
+- [ ] Update the project-status frame (11.0 - Where The Project Stands
+      Today): supported parts, incomplete integration, deferred execution.
 - [ ] Verify `references.bib` entries against publisher metadata.
 - [ ] Rebuild figures and both decks; skim every page for overflow.
 - [ ] Confirm `draft.ja.md` is synchronized with `draft.md`.

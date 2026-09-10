@@ -47,12 +47,13 @@
 \item Thank the team.
 \item Explain that this is a design review. The team knows best whether the project still looks and reads like Mizar.
 \item The design is still open to change. We want to hear objections.
+\item Explain frames 3.3, 5.2, and 8.2. Cover the other frames briefly and skip deep dives unless needed. The handout keeps the details for later review.
 \end{itemize}
 }
 \end{frame}
 
 \section{Part 0. Opening}
-\begin{frame}[fragile,t]{0.1 - A First Look}
+\begin{frame}[fragile,t]{0.2 - A First Look}
 \smallskip
 \textbf{Legacy Mizar}~\badgeMML
 \begin{lstlisting}[language={mizar},basicstyle=\ttfamily\footnotesize]
@@ -86,12 +87,12 @@ end;
 \setlength{\parsep}{0pt}
 \setlength{\parskip}{0pt}
 \item Source: current MML \texttt{algstr\_0.miz}, lines 37-40.
-\item This slide shows the main idea. It still reads as Mizar, and the mathematics is unchanged. The parent link and field mapping were implicit. Now they are visible in source text that the verifier can check.
+\item Current Mizar already names the parent: \texttt{(1-sorted)}. Evo adds an explicit mapping to a common \texttt{Magma} view. Both examples describe a carrier and a binary operation; the Evo example also shows this extra view.
 \end{itemize}
 }
 \end{frame}
 
-\begin{frame}[fragile,t]{0.2 - The Proposal In One Sentence}
+\begin{frame}[fragile,t]{0.3 - The Proposal In One Sentence}
 \smallskip
 \textbf{Key Phrase:}
 \begin{center}
@@ -110,6 +111,8 @@ end;
 \item AI assistance is not a substitute for proof checking.
 \item We build on what the current Mizar system has achieved.
 \end{itemize}
+The Evo examples follow the specification. Some are not yet supported by the implementation. See frame 11.0 for the current scope.
+
 \note{
 \smallskip
 \textbf{Presenter script:}
@@ -128,7 +131,7 @@ After the example, explain which design obligation the syntax shows.
 }
 \end{frame}
 
-\begin{frame}[fragile,t]{0.3 - How To Read The Examples\deepdivetag}
+\begin{frame}[fragile,t]{0.4 - How To Read The Examples\deepdivetag}
 \smallskip
 \textbf{Every code example is labeled:}
 \begin{footnotesize}
@@ -152,6 +155,7 @@ sketch & an example; not yet fixed by the specification \\
 \setlength{\parsep}{0pt}
 \setlength{\parskip}{0pt}
 \item No EBNF appears in this talk. The language is shown through examples only; \texttt{doc/spec/en/} remains the authority for grammar and edge cases.
+\item Examples assume required imports and earlier declarations. \texttt{...} marks omitted proof text.
 \end{itemize}
 \note{
 \smallskip
@@ -163,13 +167,14 @@ sketch & an example; not yet fixed by the specification \\
 \setlength{\parsep}{0pt}
 \setlength{\parskip}{0pt}
 \item No EBNF appears in this talk. The language is shown through examples only; doc/spec/en/ remains the authority for grammar and edge cases.
+\item Examples assume required imports and earlier declarations. ... marks omitted proof text.
 \end{itemize}
 For the table, read the row labels first, then the design reason.
 
 }
 \end{frame}
 
-\begin{frame}[fragile,t]{0.4 - What We Need From This Visit}
+\begin{frame}[fragile,t]{0.5 - What We Need From This Visit}
 \smallskip
 \textbf{Key Points:}
 \begin{itemize}
@@ -586,7 +591,7 @@ After the example, explain which design obligation the syntax shows.
 
 \begin{frame}[fragile,t]{2.5 - Migrating The Environment\deepdivetag}
 \begin{center}
-\includegraphics[width=\textwidth,height=0.52\textheight,keepaspectratio]{figures/environ_migration.pdf}
+\includegraphics[width=\textwidth,height=0.63\textheight,keepaspectratio]{figures/environ_migration.pdf}
 \end{center}
 \smallskip
 \textbf{Message:}
@@ -594,7 +599,7 @@ After the example, explain which design obligation the syntax shows.
 \setlength{\itemsep}{1pt}
 \setlength{\parsep}{0pt}
 \setlength{\parskip}{0pt}
-\item migration needs more than renaming. Current environments mix roles for semantics, syntax, and automation. Migration reports must explain what each imported module provides.
+\item Migration changes more than names: reports must show each module's syntax, semantics, and automation.
 \end{itemize}
 \note{
 \smallskip
@@ -605,7 +610,7 @@ After the example, explain which design obligation the syntax shows.
 \setlength{\itemsep}{1pt}
 \setlength{\parsep}{0pt}
 \setlength{\parskip}{0pt}
-\item migration needs more than renaming. Current environments mix roles for semantics, syntax, and automation. Migration reports must explain what each imported module provides.
+\item Migration changes more than names: reports must show each module's syntax, semantics, and automation.
 \end{itemize}
 }
 \end{frame}
@@ -701,7 +706,7 @@ end;
 \setlength{\itemsep}{1pt}
 \setlength{\parsep}{0pt}
 \setlength{\parskip}{0pt}
-\item Diamond inheritance (one structure reachable through two parent paths) is resolved by convention and declaration order, not by checkable source.
+\item With diamond inheritance, readers need to trace which inherited selectors are shared. Evo proposes explicit member mappings for these paths.
 \item The syntax does not tell a migration tool whether a selector is intrinsic data, a canonical value with obligations, or an inherited view.
 \item Errors appear far from their cause, as type mismatches in later articles.
 \end{itemize}
@@ -722,7 +727,7 @@ end;
 \setlength{\itemsep}{1pt}
 \setlength{\parsep}{0pt}
 \setlength{\parskip}{0pt}
-\item Diamond inheritance (one structure reachable through two parent paths) is resolved by convention and declaration order, not by checkable source.
+\item With diamond inheritance, readers need to trace which inherited selectors are shared. Evo proposes explicit member mappings for these paths.
 \item The syntax does not tell a migration tool whether a selector is intrinsic data, a canonical value with obligations, or an inherited view.
 \item Errors appear far from their cause, as type mismatches in later articles.
 \item At MML scale, structure inheritance is a graph maintenance problem, and the graph needs explicit edges that the verifier can check.
@@ -742,8 +747,6 @@ definition
   end;
 end;
 \end{lstlisting}
-\smallskip
-\textbf{Three distinct concepts:}
 \begin{footnotesize}
 \setlength{\tabcolsep}{3pt}
 \renewcommand{\arraystretch}{1.15}
@@ -758,6 +761,8 @@ end;
 \end{tabularx}
 \end{footnotesize}
 
+A property declaration supplies no value. An implementation must provide it.
+
 \note{
 \smallskip
 \textbf{Presenter script:}
@@ -767,7 +772,15 @@ end;
 \setlength{\itemsep}{1pt}
 \setlength{\parsep}{0pt}
 \setlength{\parskip}{0pt}
-\item A property declaration gives no value. Implementations supply values; constructors take fields only. Overlapping implementations need \texttt{coherence}.
+\item Explain: distinguish stored fields, derived properties, and attributes. Constructors take fields only. Overlapping implementations need \texttt{coherence}.
+\end{itemize}
+\smallskip
+\textbf{Read aloud:}
+\begin{itemize}
+\setlength{\itemsep}{1pt}
+\setlength{\parsep}{0pt}
+\setlength{\parskip}{0pt}
+\item A property declaration supplies no value. An implementation must provide it.
 \end{itemize}
 For the table, read the row labels first, then the design reason.
 
@@ -851,14 +864,14 @@ end;
 \smallskip
 \textbf{Inheritance diagram}~\badgeSketch
 \begin{center}
-\includegraphics[width=\textwidth,height=0.52\textheight,keepaspectratio]{figures/diamond_inheritance.pdf}
+\includegraphics[width=\textwidth,height=0.57\textheight,keepaspectratio]{figures/diamond_inheritance.pdf}
 \end{center}
 \begin{itemize}
 \setlength{\itemsep}{1pt}
 \setlength{\parsep}{0pt}
 \setlength{\parskip}{0pt}
 \item same-name, same-type members can join even when their root declarations differ. Other joins need \texttt{coherence} proofs of subtype inclusion;
-\item renamed paths remain distinct views. A diamond is allowed; invalid mappings or missing proofs produce diagnostics.
+\item Renamed views stay distinct. Invalid mappings or missing proofs give diagnostics.
 \end{itemize}
 \note{
 \smallskip
@@ -870,7 +883,7 @@ end;
 \setlength{\parsep}{0pt}
 \setlength{\parskip}{0pt}
 \item same-name, same-type members can join even when their root declarations differ. Other joins need coherence proofs of subtype inclusion;
-\item renamed paths remain distinct views. A diamond is allowed; invalid mappings or missing proofs produce diagnostics.
+\item Renamed views stay distinct. Invalid mappings or missing proofs give diagnostics.
 \end{itemize}
 }
 \end{frame}
@@ -1104,9 +1117,9 @@ After the example, explain which design obligation the syntax shows.
 \setlength{\parsep}{0pt}
 \setlength{\parskip}{0pt}
 \item Users want stronger automation: bigger \texttt{by} steps, hammer-style search.
-\item But in a monolithic verifier, every gain in search power grows the code that must be trusted.
-\item External provers (ATPs) are strong exactly where Mizar's core is first-order - and they are the least auditable component of all.
-\item MizAR and MPTP research already showed that ATP search is powerful on MML premises; the open question is trust, not power.
+\item MizAR and MPTP already use ATP search with MML premises.
+\item We want stronger proof search while keeping proof checking small.
+\item Evo requires checkable evidence from search. The search result alone cannot establish a kernel-verified proof.
 \end{itemize}
 \smallskip
 \textbf{Key Phrase:}
@@ -1124,7 +1137,7 @@ After the example, explain which design obligation the syntax shows.
 \setlength{\itemsep}{1pt}
 \setlength{\parsep}{0pt}
 \setlength{\parskip}{0pt}
-\item Mention MizAR, MPTP, and hammer research by name. They showed how well search works on MML. Mizar Evo adds a boundary that allows us to use that search without making the trusted base larger.
+\item Credit MizAR, MPTP, and hammer research. Explain Evo's evidence contract without claiming that earlier tools must trust their search backends.
 \end{itemize}
 \smallskip
 \textbf{Read aloud:}
@@ -1133,8 +1146,8 @@ After the example, explain which design obligation the syntax shows.
 \setlength{\parsep}{0pt}
 \setlength{\parskip}{0pt}
 \item Users want stronger automation: bigger by steps, hammer-style search.
-\item But in a monolithic verifier, every gain in search power grows the code that must be trusted.
-\item External provers (ATPs) are strong exactly where Mizar's core is first-order - and they are the least auditable component of all.
+\item MizAR and MPTP already use ATP search with MML premises.
+\item We want stronger proof search while keeping proof checking small.
 \end{itemize}
 }
 \end{frame}
@@ -1162,6 +1175,7 @@ After the example, explain which design obligation the syntax shows.
 \setlength{\itemsep}{1pt}
 \setlength{\parsep}{0pt}
 \setlength{\parskip}{0pt}
+\item Explain: search proposes evidence; the kernel checks it.
 \item Development policy may record \texttt{externally\_attested} results. These are separate from kernel-verified proofs.
 \end{itemize}
 \smallskip
@@ -1511,7 +1525,7 @@ A2: for k be Nat st P[k] holds P[k + 1]
 \setlength{\parsep}{0pt}
 \setlength{\parskip}{0pt}
 \item schemes support second-order patterns (induction, separation, replacement). They work, but they use a separate mechanism with separate rules;
-\item schemes can parameterize theorems, but not structures, modes, or functors.
+\item Classic \texttt{scheme} blocks define theorem schemas. Parameterized definitions use other language forms.
 \end{itemize}
 \note{
 \smallskip
@@ -1531,21 +1545,21 @@ A2: for k be Nat st P[k] holds P[k + 1]
 \setlength{\parsep}{0pt}
 \setlength{\parskip}{0pt}
 \item schemes support second-order patterns (induction, separation, replacement). They work, but they use a separate mechanism with separate rules;
-\item schemes can parameterize theorems, but not structures, modes, or functors.
+\item Classic scheme blocks define theorem schemas. Parameterized definitions use other language forms.
 \end{itemize}
 }
 \end{frame}
 
-\begin{frame}[fragile,t]{7.2 - The Problem, Part Two: Copy-Paste Algebra}
+\begin{frame}[fragile,t]{7.2 - The Problem, Part Two: A Common Template System}
 \smallskip
 \textbf{Key Points:}
 \begin{itemize}
 \setlength{\itemsep}{1pt}
 \setlength{\parsep}{0pt}
 \setlength{\parskip}{0pt}
-\item \texttt{addMagma} and \texttt{multMagma} are the same mathematics twice, related only by naming convention (we saw this in story 2);
-\item polynomial rings, vector spaces, and matrix theories are written again for each carrier because there is no parameterized construction;
-\item a theorem proved for one commutative operation is re-proved for \texttt{+} and \texttt{*} separately.
+\item Mizar already supports parameterized constructions, such as \texttt{Polynom-Ring L}.
+\item Schemes and parameterized definitions use different mechanisms.
+\item Evo proposes a common template system for definitions and theorem schemas, with explicit rules for each kind of parameter.
 \end{itemize}
 \smallskip
 \textbf{Message:}
@@ -1553,8 +1567,10 @@ A2: for k be Nat st P[k] holds P[k + 1]
 \setlength{\itemsep}{1pt}
 \setlength{\parsep}{0pt}
 \setlength{\parskip}{0pt}
-\item Without a generics mechanism, the library needs duplicate articles. Each copy needs maintenance.
+\item The aim is to make generic mathematics easier to write and maintain. We need migration examples to test whether these rules help.
 \end{itemize}
+Source: POLYNOM3, definition 10 (\url{https://mizar.uwb.edu.pl/version/current/html/polynom3.html}).
+
 \note{
 \smallskip
 \textbf{Presenter script:}
@@ -1564,10 +1580,11 @@ A2: for k be Nat st P[k] holds P[k + 1]
 \setlength{\itemsep}{1pt}
 \setlength{\parsep}{0pt}
 \setlength{\parskip}{0pt}
-\item addMagma and multMagma are the same mathematics twice, related only by naming convention (we saw this in story 2);
-\item polynomial rings, vector spaces, and matrix theories are written again for each carrier because there is no parameterized construction;
-\item a theorem proved for one commutative operation is re-proved for + and * separately.
-\item Without a generics mechanism, the library needs duplicate articles. Each copy needs maintenance.
+\item Mizar already supports parameterized constructions, such as Polynom-Ring L.
+\item Schemes and parameterized definitions use different mechanisms.
+\item Evo proposes a common template system for definitions and theorem schemas, with explicit rules for each kind of parameter.
+\item The aim is to make generic mathematics easier to write and maintain. We need migration examples to test whether these rules help.
+\item Source: POLYNOM3, definition 10.
 \end{itemize}
 }
 \end{frame}
@@ -1776,17 +1793,19 @@ After the example, explain which design obligation the syntax shows.
 \setlength{\itemsep}{1pt}
 \setlength{\parsep}{0pt}
 \setlength{\parskip}{0pt}
-\item Current Mizar can define \texttt{Gcd} and prove its theory - but cannot compute \texttt{gcd(48, 18)}; every numeric fact needs a hand-written proof chain.
-\item There is no checked connection between MML mathematics and executable code; verified-algorithm work must leave the system entirely.
-\item This is a boundary of the design, not a defect: Mizar chose to be a proof language. The question is whether that boundary still meets our needs.
+\item Mizar already has arithmetic automation and proofs of program correctness.
+\item Evo proposes a language form for algorithms with contracts, linked to verification, execution, and code extraction.
+\item The question is how to connect these steps within one language and toolchain.
 \end{itemize}
 \smallskip
 \textbf{Key Phrase:}
 \begin{center}
 \begin{beamercolorbox}[rounded=true,sep=2.5mm,wd=0.9\textwidth]{keyphrase}
-\centering\itshape The library describes computation.\\ It cannot perform or export it.
+\centering\itshape Connect mathematical proofs with executable algorithms.
 \end{beamercolorbox}
 \end{center}
+Examples in MML: \texttt{NUMERALS} for arithmetic requirements; \texttt{FIB\_FUSC} for program correctness (see the Formalized Mathematics contents (\url{https://mizar.uwb.edu.pl/fm/contents.html})).
+
 \note{
 \smallskip
 \textbf{Presenter script:}
@@ -1796,9 +1815,9 @@ After the example, explain which design obligation the syntax shows.
 \setlength{\itemsep}{1pt}
 \setlength{\parsep}{0pt}
 \setlength{\parskip}{0pt}
-\item Current Mizar can define Gcd and prove its theory - but cannot compute gcd(48, 18); every numeric fact needs a hand-written proof chain.
-\item There is no checked connection between MML mathematics and executable code; verified-algorithm work must leave the system entirely.
-\item This is a boundary of the design, not a defect: Mizar chose to be a proof language. The question is whether that boundary still meets our needs.
+\item Mizar already has arithmetic automation and proofs of program correctness.
+\item Evo proposes a language form for algorithms with contracts, linked to verification, execution, and code extraction.
+\item The question is how to connect these steps within one language and toolchain.
 \end{itemize}
 After the example, explain which design obligation the syntax shows.
 
@@ -1840,7 +1859,7 @@ end;
 \setlength{\itemsep}{1pt}
 \setlength{\parsep}{0pt}
 \setlength{\parskip}{0pt}
-\item The contract uses mathematics. The algorithm computes the result, and the library functor \texttt{Gcd} specifies it. The \texttt{decreasing} measure on \texttt{y} proves termination.
+\item Explain: the contract uses mathematics. The algorithm computes the result, and the library functor \texttt{Gcd} specifies it. The \texttt{decreasing} measure on \texttt{y} proves termination.
 \end{itemize}
 \smallskip
 \textbf{Read aloud:}
@@ -2046,7 +2065,7 @@ end;
 
 \begin{frame}[fragile,t]{9.2 - The Evo Proposal: Linked Records}
 \begin{center}
-\includegraphics[width=\textwidth,height=0.52\textheight,keepaspectratio]{figures/fm_links.pdf}
+\includegraphics[width=\textwidth,height=0.66\textheight,keepaspectratio]{figures/fm_links.pdf}
 \end{center}
 \smallskip
 \textbf{Message:}
@@ -2054,7 +2073,7 @@ end;
 \setlength{\itemsep}{1pt}
 \setlength{\parsep}{0pt}
 \setlength{\parskip}{0pt}
-\item each layer answers a different question: research citation, current location, semantic drift detection, reproducible verification, and links to MML and past Formalized Mathematics volumes.
+\item Linked records connect journal citations, library locations, verification artifacts, and MML origins.
 \end{itemize}
 \note{
 \smallskip
@@ -2065,7 +2084,7 @@ end;
 \setlength{\itemsep}{1pt}
 \setlength{\parsep}{0pt}
 \setlength{\parskip}{0pt}
-\item each layer answers a different question: research citation, current location, semantic drift detection, reproducible verification, and links to MML and past Formalized Mathematics volumes.
+\item Linked records connect journal citations, library locations, verification artifacts, and MML origins.
 \end{itemize}
 }
 \end{frame}
@@ -2274,18 +2293,18 @@ After the example, explain which design obligation the syntax shows.
 \end{frame}
 
 \section{Part 11. Roadmap And Collaboration}
-\begin{frame}[fragile,t]{11.1 - Where The Project Stands Today}
+\begin{frame}[fragile,t]{11.0 - Where The Project Stands Today}
 \smallskip
 \textbf{Key Points:}
 \begin{itemize}
 \setlength{\itemsep}{1pt}
 \setlength{\parsep}{0pt}
 \setlength{\parskip}{0pt}
-\item bilingual language specification: 24 chapters plus appendices, English canonical with Japanese companions (\texttt{doc/spec/});
-\item 24 draft architecture documents covering the pipeline, kernel, kernel evidence, and AI agent interface (\texttt{doc/design/architecture/});
-\item a Rust workspace of 20 crates - lexer, parser, resolver, checker, VC generator, ATP bridge, kernel, build system - roughly 400k lines including tests;
-\item focused audits completed in 2026: kernel soundness, template logic encoding, SAT solver dependency;
-\item the roadmap is split into small tasks that can be verified separately.
+\item Specification: 24 chapters plus appendices; English is canonical, with Japanese companions.
+\item Implemented parts: frontend processing, selected semantic cases, ATP candidate generation, and kernel evidence checking.
+\item In progress: the full path from source input through ATP search and kernel checking to published artifacts. Tests with real external provers are still needed.
+\item Deferred: MVM execution and code extraction.
+\item Full MML migration remains future work.
 \end{itemize}
 \smallskip
 \textbf{Message:}
@@ -2299,21 +2318,27 @@ After the example, explain which design obligation the syntax shows.
 \smallskip
 \textbf{Presenter script:}
 \smallskip
+\textbf{Say:}
+\begin{itemize}
+\setlength{\itemsep}{1pt}
+\setlength{\parsep}{0pt}
+\setlength{\parskip}{0pt}
+\item This is the September 2026 scope. Component tests do not establish that the full pipeline works. See \texttt{doc/design/todo.md}, Completion Gates.
+\end{itemize}
+\smallskip
 \textbf{Read aloud:}
 \begin{itemize}
 \setlength{\itemsep}{1pt}
 \setlength{\parsep}{0pt}
 \setlength{\parskip}{0pt}
-\item bilingual language specification: 24 chapters plus appendices, English canonical with Japanese companions (doc/spec/);
-\item 24 draft architecture documents covering the pipeline, kernel, kernel evidence, and AI agent interface (doc/design/architecture/);
-\item a Rust workspace of 20 crates - lexer, parser, resolver, checker, VC generator, ATP bridge, kernel, build system - roughly 400k lines including tests;
-\item focused audits completed in 2026: kernel soundness, template logic encoding, SAT solver dependency;
-\item the roadmap is split into small tasks that can be verified separately.
+\item Specification: 24 chapters plus appendices; English is canonical, with Japanese companions.
+\item Implemented parts: frontend processing, selected semantic cases, ATP candidate generation, and kernel evidence checking.
+\item In progress: the full path from source input through ATP search and kernel checking to published artifacts. Tests with real external provers are still needed.
 \end{itemize}
 }
 \end{frame}
 
-\begin{frame}[fragile,t]{11.2 - Migration Needs Research}
+\begin{frame}[fragile,t]{11.1 - Migration Needs Research}
 \begin{center}
 \includegraphics[width=\textwidth,height=0.52\textheight,keepaspectratio]{figures/roadmap_timeline.pdf}
 \end{center}
@@ -2350,7 +2375,7 @@ After the example, explain which design obligation the syntax shows.
 }
 \end{frame}
 
-\begin{frame}[fragile,t]{11.3 - What We Will Measure\deepdivetag}
+\begin{frame}[fragile,t]{11.2 - What We Will Measure\deepdivetag}
 \smallskip
 \textbf{Key Points:}
 \begin{itemize}
@@ -2381,7 +2406,7 @@ After the example, explain which design obligation the syntax shows.
 }
 \end{frame}
 
-\begin{frame}[fragile,t]{11.4 - Compatibility Policy And Risks\deepdivetag}
+\begin{frame}[fragile,t]{11.3 - Compatibility Policy And Risks\deepdivetag}
 \smallskip
 \textbf{Policy:}
 \begin{itemize}
@@ -2425,7 +2450,7 @@ For the table, read the row labels first, then the design reason.
 }
 \end{frame}
 
-\begin{frame}[fragile,t]{11.5 - What September 2026 Should Produce}
+\begin{frame}[fragile,t]{11.4 - What September 2026 Should Produce}
 \smallskip
 \textbf{Key Points:}
 \begin{itemize}
@@ -2456,7 +2481,7 @@ For the table, read the row labels first, then the design reason.
 }
 \end{frame}
 
-\begin{frame}[fragile,t]{11.6 - What We Ask Of You}
+\begin{frame}[fragile,t]{11.5 - What We Ask Of You}
 \smallskip
 \textbf{Questions:}
 \begin{itemize}
@@ -2504,7 +2529,8 @@ For the table, read the row labels first, then the design reason.
 \setlength{\parsep}{0pt}
 \setlength{\parskip}{0pt}
 \item Return to the opening example: the structure that still reads as Mizar.
-\item Ask for objections to each story, as well as to the overall plan.
+\item Choose two or three questions: what must be preserved, which small MML articles to migrate first, and which proposal needs the most change.
+\item Invite readers to review the other questions in the handout later.
 \end{itemize}
 }
 \end{frame}
@@ -2531,7 +2557,7 @@ Introduce the next topic: Closing. Point to the example, question, or diagram be
 \section{Backup A. Prepared Exact Examples}
 \begin{frame}[fragile,t]{Backup A. Prepared Exact Examples (1/2)}
 \smallskip
-\textbf{Prepared short excerpts for Beamer conversion:}
+\textbf{Exact excerpts used in this talk:}
 \begin{scriptsize}
 \setlength{\tabcolsep}{3pt}
 \renewcommand{\arraystretch}{1.15}
@@ -2547,7 +2573,7 @@ Registration/cluster & \texttt{algstr\_0.miz} & 104-109 & Frame 4.1 \\
 \end{scriptsize}
 
 \smallskip
-\textbf{Prepared short excerpts for Beamer conversion:}
+\textbf{Exact excerpts used in this talk:}
 \begin{scriptsize}
 \setlength{\tabcolsep}{3pt}
 \renewcommand{\arraystretch}{1.15}
@@ -2567,9 +2593,9 @@ Induction scheme & \texttt{nat\_1.miz} & near 90 & Frame 7.1 \\
 \setlength{\itemsep}{1pt}
 \setlength{\parsep}{0pt}
 \setlength{\parskip}{0pt}
-\item \texttt{ALGSTR\_0}: <https://mizar.uwb.edu.pl/version/current/mml/algstr\_0.miz>
-\item \texttt{STRUCT\_0}: <https://mizar.uwb.edu.pl/version/current/mml/struct\_0.miz>
-\item \texttt{NAT\_1}: <https://mizar.uwb.edu.pl/version/current/mml/nat\_1.miz>
+\item \texttt{ALGSTR\_0}: \url{https://mizar.uwb.edu.pl/version/current/mml/algstr\_0.miz}
+\item \texttt{STRUCT\_0}: \url{https://mizar.uwb.edu.pl/version/current/mml/struct\_0.miz}
+\item \texttt{NAT\_1}: \url{https://mizar.uwb.edu.pl/version/current/mml/nat\_1.miz}
 \end{itemize}
 \note{
 \smallskip
@@ -2580,9 +2606,9 @@ Induction scheme & \texttt{nat\_1.miz} & near 90 & Frame 7.1 \\
 \setlength{\itemsep}{1pt}
 \setlength{\parsep}{0pt}
 \setlength{\parskip}{0pt}
-\item ALGSTR\_0: <https://mizar.uwb.edu.pl/version/current/mml/algstr\_0.miz>
-\item STRUCT\_0: <https://mizar.uwb.edu.pl/version/current/mml/struct\_0.miz>
-\item NAT\_1: <https://mizar.uwb.edu.pl/version/current/mml/nat\_1.miz>
+\item ALGSTR\_0: \url{https://mizar.uwb.edu.pl/version/current/mml/algstr\_0.miz}
+\item STRUCT\_0: \url{https://mizar.uwb.edu.pl/version/current/mml/struct\_0.miz}
+\item NAT\_1: \url{https://mizar.uwb.edu.pl/version/current/mml/nat\_1.miz}
 \end{itemize}
 For the table, read the row labels first, then the design reason.
 
@@ -2614,7 +2640,7 @@ For the table, read the row labels first, then the design reason.
 
 \section{Backup B. Specification Reference Map}
 \begin{frame}[fragile,t]{Backup B. Specification Reference Map (1/2)}
-The slides show examples only. The specification is the authority for grammar and semantics. This map replaces the EBNF shown in earlier drafts.
+Specification used: 10 September 2026. For grammar and semantics, see \texttt{doc/spec/en/00.index.md} in the repository (\url{https://github.com/aabaa/mizar-evo}). Online files may change after this talk.
 
 \begin{footnotesize}
 \setlength{\tabcolsep}{3pt}
@@ -2643,9 +2669,9 @@ ATP and kernel evidence & \texttt{21.source\_code\_annotation\_and\_atp.md} \\
 \setlength{\itemsep}{1pt}
 \setlength{\parsep}{0pt}
 \setlength{\parskip}{0pt}
-\item The slides show examples only.
-\item The specification is the authority for grammar and semantics.
-\item This map replaces the EBNF shown in earlier drafts.
+\item Specification used: 10 September 2026. For grammar and semantics, see
+\item doc/spec/en/00.index.md in the repository.
+\item Online files may change after this talk.
 \end{itemize}
 For the table, read the row labels first, then the design reason.
 
@@ -2674,69 +2700,6 @@ For the table, read the row labels first, then the design reason.
 
 Introduce the next topic: Backup B. Specification Reference Map (2/2). Point to the example, question, or diagram before you continue.
 
-}
-\end{frame}
-
-\section{Backup C. Diagram List}
-\begin{frame}[fragile,t]{Backup C. Diagram List (1/2)}
-Required diagrams for the final deck (\texttt{figures/*.tex}, TikZ standalone;
-
-\smallskip
-\textbf{build each with \texttt{pdflatex} inside \texttt{figures/}):}
-\begin{enumerate}
-\setlength{\itemsep}{1pt}
-\setlength{\parsep}{0pt}
-\setlength{\parskip}{0pt}
-\item Three pressures on a proven design (Part 1). [done: \texttt{figures/three\_pressures.pdf}, used in frame 1.5]
-\item Environment-to-import migration (story 1). [done: \texttt{figures/environ\_migration.pdf}, used in frame 2.5]
-\item Structure inheritance and diamond coherence (story 2). [done: \texttt{figures/diamond\_inheritance.pdf}, used in frame 3.5]
-\item Reasoning boundary: semantics / ATP search / kernel checking (story 4). [done: \texttt{figures/reasoning\_boundary.pdf}, used in frame 5.2]
-\item KernelEvidence and the trusted SAT check (story 4). [done: \texttt{figures/certificate\_replay.pdf}, used in frame 5.3]
-\end{enumerate}
-\note{
-\smallskip
-\textbf{Presenter script:}
-\smallskip
-\textbf{Read aloud:}
-\begin{itemize}
-\setlength{\itemsep}{1pt}
-\setlength{\parsep}{0pt}
-\setlength{\parskip}{0pt}
-\item Required diagrams for the final deck (figures/*.tex, TikZ standalone;
-\item Three pressures on a proven design (Part 1). [done: figures/three\_pressures.pdf, used in frame 1.5]
-\item Environment-to-import migration (story 1). [done: figures/environ\_migration.pdf, used in frame 2.5]
-\item Structure inheritance and diamond coherence (story 2). [done: figures/diamond\_inheritance.pdf, used in frame 3.5]
-\item Reasoning boundary: semantics / ATP search / kernel checking (story 4). [done: figures/reasoning\_boundary.pdf, used in frame 5.2]
-\end{itemize}
-}
-\end{frame}
-
-\begin{frame}[fragile,t]{Backup C. Diagram List (2/2)}
-\smallskip
-\textbf{build each with \texttt{pdflatex} inside \texttt{figures/}):}
-\begin{enumerate}
-\setlength{\itemsep}{1pt}
-\setlength{\parsep}{0pt}
-\setlength{\parskip}{0pt}
-\item Incremental fingerprint graph (story 5). [done: \texttt{figures/fingerprint\_graph.pdf}, used in frame 6.2]
-\item Formalized Mathematics article-to-library link model (story 8). [done: \texttt{figures/fm\_links.pdf}, used in frame 9.2]
-\item Core ATP path with responsibility groups (Part 10). [done: \texttt{figures/pipeline.pdf}, used in frame 10.1]
-\item Roadmap timeline (Part 11). [done: \texttt{figures/roadmap\_timeline.pdf}, used in frame 11.1]
-\end{enumerate}
-\note{
-\smallskip
-\textbf{Presenter script:}
-\smallskip
-\textbf{Read aloud:}
-\begin{itemize}
-\setlength{\itemsep}{1pt}
-\setlength{\parsep}{0pt}
-\setlength{\parskip}{0pt}
-\item Incremental fingerprint graph (story 5). [done: figures/fingerprint\_graph.pdf, used in frame 6.2]
-\item Formalized Mathematics article-to-library link model (story 8). [done: figures/fm\_links.pdf, used in frame 9.2]
-\item Core ATP path with responsibility groups (Part 10). [done: figures/pipeline.pdf, used in frame 10.1]
-\item Roadmap timeline (Part 11). [done: figures/roadmap\_timeline.pdf, used in frame 11.1]
-\end{itemize}
 }
 \end{frame}
 
@@ -2808,48 +2771,6 @@ After the example, explain which design obligation the syntax shows.
 }
 \end{frame}
 
-\section{Backup E. Reviewer Checklist}
-\begin{frame}[fragile,t]{Backup E. Reviewer Checklist}
-\smallskip
-\textbf{Use this checklist before converting to Beamer:}
-\begin{itemize}
-\setlength{\itemsep}{1pt}
-\setlength{\parsep}{0pt}
-\setlength{\parskip}{0pt}
-\item Does every story open with a real cost, not a feature announcement?
-\item Does every criticism explain why the current practice was useful?
-\item Does every code example carry its status label (exact MML excerpt, specification example, or sketch)?
-\item Is every exact excerpt attributed with article and line numbers?
-\item Does every story end with questions the audience can actually answer?
-\item Are Red AI edits clearly forbidden?
-\item Are migration claims measurable?
-\end{itemize}
-\smallskip
-\textbf{Use this checklist before converting to Beamer:}
-\begin{itemize}
-\setlength{\itemsep}{1pt}
-\setlength{\parsep}{0pt}
-\setlength{\parskip}{0pt}
-\item Is EBNF absent from all frames?
-\end{itemize}
-\note{
-\smallskip
-\textbf{Presenter script:}
-\smallskip
-\textbf{Read aloud:}
-\begin{itemize}
-\setlength{\itemsep}{1pt}
-\setlength{\parsep}{0pt}
-\setlength{\parskip}{0pt}
-\item Does every story open with a real cost, not a feature announcement?
-\item Does every criticism explain why the current practice was useful?
-\item Does every code example carry its status label (exact MML excerpt, specification example, or sketch)?
-\item Is every exact excerpt attributed with article and line numbers?
-\item Does every story end with questions the audience can actually answer?
-\end{itemize}
-}
-\end{frame}
-
 \section{Backup F. Possible Objections}
 \begin{frame}[fragile,t]{Backup F. Possible Objections (1/2)}
 \smallskip
@@ -2861,7 +2782,7 @@ After the example, explain which design obligation the syntax shows.
 \toprule
 \textbf{Objection} & \textbf{Prepared answer} \\
 \midrule
-Why not improve current Mizar incrementally? & The problems concern boundaries: article granularity, monolithic trust, and implicit environments. These boundaries cannot change in small steps. The rest of the design stays close to Mizar. \\
+Why not improve current Mizar incrementally? & Some proposals may also help existing tools. Evo explores changes to modules, proof evidence, and library artifacts together. Migration examples should help us decide which changes are useful. \\
 What happens to authorship and credit of MML articles? & We propose origin mappings that preserve identity and credit during migration. The mapping format is still open. The \texttt{pub} namespace keeps published articles unchanged. \\
 Is this a fork of the community? & It is a proposal to the community; this visit is its first review. The namespace governance model assumes that the Mizar team controls the \texttt{mml} root. \\
 \bottomrule

@@ -6,12 +6,12 @@
 \begin{tikzpicture}[
   font=\sffamily,
   layer/.style={draw, rounded corners=2pt, align=left, minimum width=62mm,
-                minimum height=8mm, line width=0.6pt, inner sep=2mm,
+                minimum height=7mm, line width=0.6pt, inner sep=1.5mm,
                 font=\sffamily\small},
-  role/.style={font=\sffamily\footnotesize\itshape, text=black!60, align=left,
+  role/.style={font=\sffamily\small\itshape, text=black!70, align=left,
                anchor=west},
   flow/.style={-{Stealth[length=2.6mm]}, line width=0.9pt, black!70},
-  node distance=3.2mm,
+  node distance=2mm,
 ]
   \node[layer, fill=violet!12, draw=violet!60!black] (fm)
     {\textbf{Formalized Mathematics theorem}};
@@ -25,7 +25,7 @@
     {verified artifact hash};
   \node[layer, below=of hash, fill=gray!14, draw=black!55] (origin)
     {origin id \texttt{(mizar:GROUP\_1:\dots)}\\[-1pt]
-     \footnotesize format sketch};
+     format sketch};
 
   \draw[flow] (fm) -- (pkg);
   \draw[flow] (pkg) -- (fqn);
@@ -40,8 +40,8 @@
   \node[role] at ([xshift=4mm]hash.east)   {reproducible verification};
   \node[role] at ([xshift=4mm]origin.east) {links to MML citations};
 
-  \node[font=\sffamily\footnotesize\itshape, text=black!60, align=center,
-        below=4mm of origin]
+  \node[font=\sffamily\small\itshape, text=black!70, align=center,
+        below=2mm of origin]
     {linked records/references, not a derivation};
 \end{tikzpicture}
 \end{document}

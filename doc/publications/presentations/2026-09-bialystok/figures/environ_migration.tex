@@ -6,14 +6,14 @@
 \begin{tikzpicture}[
   font=\sffamily,
   role/.style={draw, rounded corners=2pt, align=center, minimum width=34mm,
-               minimum height=7mm, line width=0.5pt, fill=orange!12,
+               minimum height=6mm, line width=0.5pt, fill=orange!12,
                draw=orange!70!black, font=\sffamily\small},
   target/.style={draw, rounded corners=2pt, align=center, minimum width=58mm,
-                 minimum height=7mm, line width=0.5pt, fill=blue!10,
+                 minimum height=6mm, line width=0.5pt, fill=blue!10,
                  draw=blue!50!black, font=\sffamily\small},
   head/.style={font=\sffamily\small\bfseries, text=black!65},
   flow/.style={-{Stealth[length=2.4mm]}, line width=0.8pt, black!60},
-  node distance=2.6mm,
+  node distance=1.6mm,
 ]
   \node[role] (voc) {\texttt{vocabularies}};
   \node[role, below=of voc] (not) {\texttt{notations}};
@@ -35,10 +35,10 @@
   \node[head, above=3mm of voc] {environ role\\[-2pt]};
   \node[head, above=3mm of tvoc] {Evo target\\[-2pt]};
 
-  \node[font=\sffamily\footnotesize\itshape, text=black!60, below=4mm of thm,
+  \node[font=\sffamily\small\itshape, text=black!70, below=2mm of thm,
         align=center, text width=36mm]
     {implicit, article-scoped, resolved by the Accommodator};
-  \node[font=\sffamily\footnotesize\itshape, text=black!60, below=4mm of tthm,
+  \node[font=\sffamily\small\itshape, text=black!70, below=2mm of tthm,
         align=center, text width=56mm]
     {explicit, module-scoped, reviewable source text};
 \end{tikzpicture}

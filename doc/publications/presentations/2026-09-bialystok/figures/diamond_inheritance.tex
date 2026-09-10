@@ -9,16 +9,16 @@
                  minimum height=11mm, line width=0.7pt, fill=blue!10,
                  draw=blue!50!black, font=\sffamily\small},
   inh/.style={-{Stealth[length=2.8mm]}, line width=0.9pt, black!70},
-  map/.style={font=\sffamily\footnotesize\ttfamily, text=black!60, align=center},
-  check/.style={font=\sffamily\footnotesize, align=left},
+  map/.style={font=\sffamily\small\ttfamily, text=black!70, align=center},
+  check/.style={font=\sffamily\small, align=left},
 ]
-  \node[struct] (magma) {\textbf{Magma}\\ \footnotesize\texttt{carrier, binop}};
+  \node[struct] (magma) {\textbf{Magma}\\ \texttt{carrier, binop}};
   \node[struct, below left=11mm and 12mm of magma] (add)
-    {\textbf{AddLoopStr}\\ \footnotesize\texttt{zero}};
+    {\textbf{AddLoopStr}\\ \texttt{zero}};
   \node[struct, below right=11mm and 12mm of magma] (mul)
-    {\textbf{MulLoopStr}\\ \footnotesize\texttt{one}};
+    {\textbf{MulLoopStr}\\ \texttt{one}};
   \node[struct, below=32mm of magma] (dbl)
-    {\textbf{DoubleLoopStr}\\ \footnotesize\texttt{add, mul, zero, one}};
+    {\textbf{DoubleLoopStr}\\ \texttt{add, mul, zero, one}};
 
   \draw[inh] (add) -- node[map, above left=-1mm and -3mm] {add from binop} (magma);
   \draw[inh] (mul) -- node[map, above right=-1mm and -3mm] {mul from binop} (magma);
@@ -34,7 +34,7 @@
      and \texttt{mul} stay separate; missing proofs or invalid mappings are
      diagnostics};
 
-  \node[font=\sffamily\footnotesize\itshape, text=black!60, below=4mm of dbl]
+  \node[font=\sffamily\small\itshape, text=black!70, below=4mm of dbl]
     {the verifier traces \texttt{from} chains to root declarations};
 \end{tikzpicture}
 \end{document}

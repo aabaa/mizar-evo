@@ -52,6 +52,11 @@ DEEP_DIVE_TAG = " [deep dive]"
 FRAME_WEIGHT_LIMIT = 18.5
 MAX_CODE_LINES_PER_BLOCK = 15
 MAX_LIST_ITEMS_PER_BLOCK = 7
+FIGURE_HEIGHT_LIMITS = {
+    "environ_migration": 0.63,
+    "diamond_inheritance": 0.57,
+    "fm_links": 0.66,
+}
 
 CODE_STATUS_RE = re.compile(
     r"^(?P<pre>.*?)\s*\((?P<status>exact MML excerpt|specification example|sketch)"
@@ -111,20 +116,16 @@ def escape_tex(text: str) -> str:
 
 
 def inline_tex(text: str) -> str:
-    def link_repl(match: re.Match[str]) -> str:
-        label = inline_tex(match.group(1))
-        url = escape_tex(match.group(2))
-        return rf"{label} (\url{{{url}}})"
-
-    def code_repl(match: re.Match[str]) -> str:
-        return rf"\texttt{{{escape_tex(match.group(1))}}}"
-
-    text = re.sub(r"\[([^\]]+)\]\(([^)]+)\)", link_repl, text)
     parts: list[str] = []
     pos = 0
-    for match in re.finditer(r"`([^`]+)`", text):
+    for match in re.finditer(r"`([^`]+)`|\[([^\]]+)\]\(([^)]+)\)|<(https?://[^>]+)>", text):
         parts.append(escape_tex(text[pos : match.start()]))
-        parts.append(code_repl(match))
+        if match.group(1) is not None:
+            parts.append(rf"\texttt{{{escape_tex(match.group(1))}}}")
+        elif match.group(2) is not None:
+            parts.append(rf"{inline_tex(match.group(2))} (\url{{{escape_tex(match.group(3))}}})")
+        else:
+            parts.append(rf"\url{{{escape_tex(match.group(4))}}}")
         pos = match.end()
     parts.append(escape_tex(text[pos:]))
     return "".join(parts)
@@ -145,17 +146,6 @@ def plain_frame_title(markdown_title: str) -> str:
     title = re.sub(r"^Frame\s+", "", markdown_title.strip())
     title = re.sub(r"^[0-9][0-9A-Za-z.]*\s*-\s*", "", title)
     return plain_text(title)
-
-
-def section_part_number(section_title: str) -> str | None:
-    match = re.match(r"^Part\s+(\d+)\.", section_title)
-    return match.group(1) if match else None
-
-
-def renumber_frame_heading(title_text: str, part_number: str, counter: int) -> str:
-    title = re.sub(r"^Frame\s+", "", title_text.strip())
-    title = re.sub(r"^[0-9][0-9A-Za-z.]*\s*-\s*", "", title)
-    return f"Frame {part_number}.{counter} - {title}"
 
 
 def is_table_start(lines: list[str], index: int) -> bool:
@@ -622,7 +612,7 @@ def image_weight(path: str) -> float:
     """Estimate frame weight from the figure's displayed height.
 
     Mirrors append_image: width=\\textwidth (~138mm) capped at
-    0.52*textheight (~72mm body height); weight scales the displayed
+    the figure's height limit (~72mm body height); weight scales the displayed
     height to the FRAME_WEIGHT_LIMIT budget.
     """
     try:
@@ -642,14 +632,15 @@ def image_weight(path: str) -> float:
         aspect = (nums[2] - nums[0]) / (nums[3] - nums[1])
     except (OSError, AttributeError, ZeroDivisionError, ValueError):
         return 10.0
-    displayed_height = min(138.0 / aspect, 0.52 * 72.0)
+    displayed_height = min(138.0 / aspect, FIGURE_HEIGHT_LIMITS.get(Path(path).stem, 0.52) * 72.0)
     return 1.5 + displayed_height / 72.0 * FRAME_WEIGHT_LIMIT
 
 
 def append_image(out: list[str], path: str) -> None:
+    height_limit = FIGURE_HEIGHT_LIMITS.get(Path(path).stem, 0.52)
     out.append(r"\begin{center}")
     out.append(
-        rf"\includegraphics[width=\textwidth,height=0.52\textheight,"
+        rf"\includegraphics[width=\textwidth,height={height_limit}\textheight,"
         rf"keepaspectratio]{{{path}}}"
     )
     out.append(r"\end{center}")
@@ -889,8 +880,6 @@ def parse_markdown(path: Path) -> tuple[str, list[tuple[str, str | None, list[st
     current_lines: list[str] = []
     appendix_started = False
     include_current_section = False
-    current_part_number: str | None = None
-    frame_counters: dict[str, int] = {}
 
     def close_frame() -> None:
         nonlocal current_title, current_lines
@@ -901,13 +890,6 @@ def parse_markdown(path: Path) -> tuple[str, list[tuple[str, str | None, list[st
                 current_title = None
                 current_lines = []
                 return
-            if current_part_number is not None and heading.startswith("Frame "):
-                frame_counters[current_part_number] = frame_counters.get(current_part_number, 0) + 1
-                heading = renumber_frame_heading(
-                    heading,
-                    current_part_number,
-                    frame_counters[current_part_number],
-                )
             units.append(("frame", heading, current_lines))
         current_title = None
         current_lines = []
@@ -922,29 +904,25 @@ def parse_markdown(path: Path) -> tuple[str, list[tuple[str, str | None, list[st
             include_current_section = title_text in PART_REMAP
             if include_current_section:
                 mapped_title = PART_REMAP[title_text]
-                current_part_number = section_part_number(mapped_title)
                 units.append(("section", mapped_title, []))
             elif title_text in PART_APPEND_TO:
                 include_current_section = True
-                current_part_number = PART_APPEND_TO[title_text]
-            else:
-                current_part_number = None
             continue
         if line.startswith("## Backup "):
             close_frame()
-            include_current_section = True
-            current_part_number = None
+            title_text = line[3:].strip()
+            include_current_section = not title_text.startswith(("Backup C.", "Backup E."))
+            if not include_current_section:
+                continue
             if not appendix_started:
                 units.append(("appendix", None, []))
                 appendix_started = True
-            title_text = line[3:].strip()
             units.append(("section", title_text, []))
             current_title = title_text
             current_lines = []
             continue
         if line.startswith("## "):
             close_frame()
-            current_part_number = None
             if include_current_section:
                 current_title = line[3:].strip()
                 current_lines = []
