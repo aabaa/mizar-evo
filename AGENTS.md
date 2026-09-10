@@ -13,8 +13,8 @@ Where the two differ, the protocol wins.
 - Never add a file, public type, field, adapter, or abstraction for a single
   use. Inline first; abstract only at three or more real call sites.
 - If you write 200 lines and it could be 50, rewrite it.
-- If a change needs more than 300 production lines or a new public seam, STOP
-  and present the plan before writing code.
+- For changes exceeding 300 production lines or adding a public seam, present
+  the plan first; this alone does not require user approval.
 - Documentation records decisions and boundaries only. Never write evidence,
   scores, gate tallies, digests, review outcomes, model names, or reasoning
   settings into `doc/`. They go in the commit body. `cargo test` enforces this
@@ -39,10 +39,10 @@ When the user writes something like the following, run the full workflow:
 Codex agent を使い、AGENTS.md のワークフローに従って、完了まで進めてください。
 ```
 
-This wording asks for sub-agents in the review and delegation phases where
-available. If the task is ambiguous enough that implementation would be risky,
-ask one concise clarifying question; otherwise make reasonable assumptions and
-proceed.
+This wording asks for sub-agents in review and delegation where available.
+Resolve implementation and test-infrastructure gaps autonomously under existing
+specification, test intent, and authorized scope. Ask only for unresolved
+semantic decisions or approvals required by user constraints or the protocol.
 
 ## Task Workflow
 
