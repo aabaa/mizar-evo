@@ -9,6 +9,7 @@ expected_phase = "resolve"
 failure_category = "resolve_error"
 stable_detail_key = "theorems.reference.unknown_label"
 diagnostic_codes = []
+tags = ["active_type_elaboration"]
 spec_refs = [
   "spec.en.16.theorems.reference.module_local_label",
 ]

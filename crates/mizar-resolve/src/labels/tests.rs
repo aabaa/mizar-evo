@@ -1,6 +1,8 @@
 use super::*;
-use crate::env::{ContributionKind, SourceContributionIndex};
-use crate::resolved_ast::{ResolvedArenaBuilder, ResolvedNode, SemanticOrigin};
+use crate::env::{ContributionKind, SourceContributionIndex, SymbolEntry, SymbolEnvIndexes};
+use crate::resolved_ast::{
+    FullyQualifiedName, LocalSymbolId, ResolvedArenaBuilder, ResolvedNode, SemanticOrigin, SymbolId,
+};
 use mizar_session::{
     BuildSnapshotId, Hash, InMemorySessionIdAllocator, ModulePath, PackageId, SessionIdAllocator,
     SourceAnchor, SourceId,
@@ -68,6 +70,128 @@ fn unqualified_citation_respects_proof_block_visibility_and_confinement() {
     assert_unresolved_label(&resolved, 2, LabelExpectation::ProofOrTheorem, "B");
     assert_resolved_label(&resolved, 3, "dep::logic::theorem::Lib");
     assert!(resolved.has_unresolved());
+}
+
+#[test]
+fn theorem_owner_opt_in_authenticates_theorem_and_lemma_labels() {
+    let (source_id, foreign_source) = distinct_source_ids();
+    let module = module_id("pkg", "main");
+    let namespace = NamespacePath::new("main");
+    let mut builder = CollectorAstBuilder::new(source_id);
+    let lemma_statement = builder.valid_statement("L", None, false);
+    let lemma_proof = builder.proof(vec![lemma_statement], ("proof", false), ("end", false));
+    let lemma_children = vec![
+        builder.token(SurfaceTokenKind::ReservedWord, "lemma"),
+        builder.token(SurfaceTokenKind::Identifier, "LemmaOwner"),
+        builder.token(SurfaceTokenKind::ReservedSymbol, ":"),
+        builder.formula(),
+        lemma_proof,
+        builder.token(SurfaceTokenKind::ReservedSymbol, ";"),
+    ];
+    let lemma = builder.node(SurfaceNodeKind::LemmaItem, lemma_children);
+    let theorem_statement = builder.valid_statement("T", Some("LemmaOwner"), false);
+    let theorem = builder.valid_theorem("TheoremOwner", vec![theorem_statement]);
+    let ast = builder.finish_items(vec![lemma, theorem]);
+    let resolved = SurfaceResolvedArena::lower(&ast, &module).unwrap();
+    let item_list = exact_proof_label_item_list(&ast).unwrap();
+    let items = item_list.child_views().collect::<Vec<_>>();
+    let mut contributions = SourceContributionIndex::new();
+    let contribution = contribution(&mut contributions, module.clone(), source_id, 0);
+    let mut indexes = SymbolEnvIndexes::default();
+    for (item, spelling, kind, local) in [
+        (&items[0], "LemmaOwner", SymbolKind::Lemma, "lemma-owner"),
+        (
+            &items[1],
+            "TheoremOwner",
+            SymbolKind::Theorem,
+            "theorem-owner",
+        ),
+    ] {
+        let symbol = SymbolId::new(
+            module.clone(),
+            LocalSymbolId::new(local),
+            FullyQualifiedName::new(format!("pkg::main::{local}")),
+        );
+        let origin = origin(source_id, module.clone(), item.range(), item.id().index());
+        indexes.symbols.insert(SymbolEntry::new(
+            symbol,
+            kind,
+            namespace.clone(),
+            spelling,
+            origin,
+            contribution,
+        ));
+    }
+    let symbols = SymbolEnv::new(module.clone(), indexes);
+    let collection =
+        ProofLabelSourceCollector::new(&ast, &module, namespace.clone(), contribution, &resolved)
+            .unwrap()
+            .collect_with_theorem_owners(&symbols)
+            .unwrap();
+    assert_eq!(
+        collection
+            .projections()
+            .iter()
+            .map(LabelProjection::primary_spelling)
+            .collect::<Vec<_>>(),
+        vec!["LemmaOwner", "L", "TheoremOwner", "T"]
+    );
+    assert_eq!(collection.references()[0].ordinal(), 2);
+    let result = LabelResolver::new(collection.projections()).resolve(
+        &module,
+        &namespace,
+        collection.references(),
+    );
+    assert_resolved_label(&result, 0, "pkg::main::lemma-owner");
+    let collect_owner = |ast: &SurfaceAst, spelling, kind, origin_source| {
+        let item = exact_proof_label_item_list(ast)
+            .unwrap()
+            .child_views()
+            .next()
+            .unwrap();
+        let mut indexes = SymbolEnvIndexes::default();
+        indexes.symbols.insert(SymbolEntry::new(
+            SymbolId::new(
+                module.clone(),
+                LocalSymbolId::new("owner"),
+                FullyQualifiedName::new("owner"),
+            ),
+            kind,
+            namespace.clone(),
+            spelling,
+            origin(
+                origin_source,
+                module.clone(),
+                range(origin_source, item.range().start, item.range().end),
+                item.id().index(),
+            ),
+            contribution,
+        ));
+        let symbols = SymbolEnv::new(module.clone(), indexes);
+        let resolved = SurfaceResolvedArena::lower(ast, &module).unwrap();
+        ProofLabelSourceCollector::new(ast, &module, namespace.clone(), contribution, &resolved)
+            .unwrap()
+            .collect_with_theorem_owners(&symbols)
+            .unwrap()
+    };
+    let malformed = malformed_theorem_owner_ast(source_id, TheoremShapeMutation::WrongRole);
+    let mut wrong_kind_builder = CollectorAstBuilder::new(source_id);
+    let wrong_kind_item = wrong_kind_builder.valid_theorem("Owner", Vec::new());
+    let wrong_kind = wrong_kind_builder.finish_items(vec![wrong_kind_item]);
+    let mut wrong_source_builder = CollectorAstBuilder::new(source_id);
+    let wrong_source_item = wrong_source_builder.valid_theorem("Owner", Vec::new());
+    let wrong_source = wrong_source_builder.finish_items(vec![wrong_source_item]);
+    for (index, collection) in [
+        collect_owner(&malformed, "BadOwner", SymbolKind::Theorem, source_id),
+        collect_owner(&wrong_kind, "Owner", SymbolKind::Lemma, source_id),
+        collect_owner(&wrong_source, "Owner", SymbolKind::Theorem, foreign_source),
+    ]
+    .into_iter()
+    .enumerate()
+    {
+        assert!(collection.projections().is_empty(), "case {index}");
+        assert!(collection.references().is_empty(), "case {index}");
+    }
 }
 
 #[test]

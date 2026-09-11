@@ -1,5 +1,11 @@
 # Elaborator
 
+`lower_source_theorem_skeletons` は checker の不透明な `SourceTheoremCheck` のみを受け、既存の source owner・
+formula identity を Core の item・formula・proof seed で lower する。source range、
+binder 対応、引用先、証明義務 provenance を保持する。修飾なしの証明付き owner だけを対象とし、
+open/assumed の登録は checker/policy に留める。resolver 環境/Visibility を受け取らず、
+Task-31 例外や汎用 checked-proof installation は拡張しない。
+
 `normalize_source_membership_proof` は検査済みの借用 source transaction だけを受け取り、proof-local 束縛を対応させる。
 列挙集合への所属、または引用された直接上界からの恒等 mapper への所属を簡約し、generic IR・空の VC receipt・kernel evidence は作らない。
 

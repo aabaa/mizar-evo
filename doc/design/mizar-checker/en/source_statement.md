@@ -1,5 +1,10 @@
 # Source Statement Transport
 
+The owner metadata enums also represent `SourceTheoremRole::Lemma` and
+`SourceTheoremStatus::{Open, Assumed}` for the opt-in theorem-skeleton checker.
+The historical Task 258A producer below still admits only Theorem/Unmodified;
+its statement/reference installation profiles are not extended.
+
 > Canonical language: English. Japanese companion:
 > [../ja/source_statement.md](../ja/source_statement.md).
 

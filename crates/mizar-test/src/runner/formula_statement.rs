@@ -95,6 +95,53 @@ const STEP5C9_CASES: [(&str, Stage, Option<&str>); 7] = [
     ),
 ];
 
+pub(super) const STEP5C10_CASES: [(&str, Stage, Option<&str>); 6] = [
+    (
+        "pass_proof_verification_lemma_reference_001",
+        Stage::ProofVerification,
+        None,
+    ),
+    (
+        "fail_type_elaboration_unknown_reference_label_001",
+        Stage::TypeElaboration,
+        Some("theorems.reference.unknown_label"),
+    ),
+    (
+        "fail_formula_statement_assume_without_antecedent_001",
+        Stage::FormulaStatement,
+        Some("theorems.skeleton.assumption_without_antecedent"),
+    ),
+    (
+        "fail_formula_statement_conclusion_mismatch_001",
+        Stage::FormulaStatement,
+        Some("theorems.skeleton.conclusion_mismatch"),
+    ),
+    (
+        "fail_formula_statement_incomplete_proof_001",
+        Stage::FormulaStatement,
+        Some("theorems.skeleton.incomplete_proof"),
+    ),
+    (
+        "pass_proof_verification_theorem_status_open_assumed_001",
+        Stage::ProofVerification,
+        None,
+    ),
+];
+
+pub(super) fn is_step5c10_candidate(case: &TestCase) -> bool {
+    STEP5C10_CASES.iter().any(|(id, _, _)| {
+        case.id.0 == *id
+            || case
+                .source_path
+                .file_name()
+                .is_some_and(|name| name == format!("{id}.miz").as_str())
+            || case
+                .expectation_path
+                .file_name()
+                .is_some_and(|name| name == format!("{id}.expect.toml").as_str())
+    })
+}
+
 pub(super) fn is_step5c9_candidate(case: &TestCase) -> bool {
     STEP5C9_CASES.iter().any(|(id, _, _)| {
         case.id.0 == *id
@@ -127,6 +174,7 @@ pub(super) fn step5_formula_admitted(root: Option<&Path>, case: &TestCase) -> bo
     let Some((id, stage, key)) = STEP5C8_CASES
         .iter()
         .chain(STEP5C9_CASES.iter())
+        .chain(STEP5C10_CASES.iter())
         .find(|(id, _, _)| case.id.0 == *id)
     else {
         return false;
@@ -139,6 +187,7 @@ pub(super) fn step5_formula_admitted(root: Option<&Path>, case: &TestCase) -> bo
     let directory = if key.is_some() { "fail" } else { "pass" };
     let folder = if STEP5C9_CASES
         .iter()
+        .chain(STEP5C10_CASES.iter())
         .any(|(candidate, _, _)| candidate == id)
     {
         "theorems"
@@ -147,10 +196,12 @@ pub(super) fn step5_formula_admitted(root: Option<&Path>, case: &TestCase) -> bo
     };
     let source = format!("tests/miz/{directory}/{folder}/{id}.miz");
     let sidecar = Path::new(&source).with_extension("expect.toml");
-    let phase = match stage {
-        Stage::ParseOnly => PipelinePhase::Parse,
-        Stage::TypeElaboration => PipelinePhase::Resolve,
-        Stage::ProofVerification => PipelinePhase::Verification,
+    let phase = match (id, stage) {
+        (id, _) if *id == STEP5C10_CASES[0].0 => PipelinePhase::VcGeneration,
+        (id, _) if *id == STEP5C10_CASES[5].0 => PipelinePhase::StatementCheck,
+        (_, Stage::ParseOnly) => PipelinePhase::Parse,
+        (_, Stage::TypeElaboration) => PipelinePhase::Resolve,
+        (_, Stage::ProofVerification) => PipelinePhase::Verification,
         _ => PipelinePhase::StatementCheck,
     };
     case.expectation.id == case.id
@@ -211,7 +262,7 @@ const EXACT_FORMULA_STATEMENT_CASES: [(&str, &str, ExpectedOutcome); 7] = [
 ];
 
 pub(super) fn is_active_formula_statement(workspace_root: &Path, case: &TestCase) -> bool {
-    if is_step5c8_candidate(case) || is_step5c9_candidate(case) {
+    if is_step5c8_candidate(case) || is_step5c9_candidate(case) || is_step5c10_candidate(case) {
         return case.expectation.stage == Stage::FormulaStatement
             && step5_formula_admitted(Some(workspace_root), case);
     }
@@ -230,59 +281,59 @@ pub(super) fn validate_step5_formula_admission(
     plan: &TestPlan,
 ) -> Vec<ValidationDiagnostic> {
     let mut diagnostics = Vec::new();
-    for (id, _, key) in STEP5C8_CASES.iter().chain(STEP5C9_CASES.iter()) {
-        let directory = if key.is_some() { "fail" } else { "pass" };
-        let extra = STEP5C9_CASES
-            .iter()
-            .any(|(candidate, _, _)| candidate == id);
-        let folder = if extra { "theorems" } else { "formulas" };
-        let source = format!("tests/miz/{directory}/{folder}/{id}.miz");
-        if workspace_root.join(&source).is_file()
-            && plan
-                .cases
-                .iter()
-                .filter(|case| {
-                    case.id.0 == *id && step5_formula_admitted(Some(workspace_root), case)
-                })
-                .count()
-                != 1
-        {
-            diagnostics.push(ValidationDiagnostic::error(
-                Path::new(&source),
-                "formula_statement",
-                if extra {
-                    "E-FORMULAS-STEP5C9-INVENTORY"
-                } else {
-                    "E-FORMULAS-STEP5C8-INVENTORY"
-                },
-                format!(
-                    "formulas.step5c{}_inventory.{id}",
-                    if extra { 9 } else { 8 }
-                ),
-                "The formula bridge requires exactly one authenticated mapped row",
-            ));
+    for (task, rows) in [
+        (8, STEP5C8_CASES.as_slice()),
+        (9, STEP5C9_CASES.as_slice()),
+        (10, STEP5C10_CASES.as_slice()),
+    ] {
+        for (id, _, key) in rows {
+            let directory = if key.is_some() { "fail" } else { "pass" };
+            let folder = if task == 8 { "formulas" } else { "theorems" };
+            let source = format!("tests/miz/{directory}/{folder}/{id}.miz");
+            if workspace_root.join(&source).is_file()
+                && plan
+                    .cases
+                    .iter()
+                    .filter(|case| {
+                        case.id.0 == *id && step5_formula_admitted(Some(workspace_root), case)
+                    })
+                    .count()
+                    != 1
+            {
+                diagnostics.push(ValidationDiagnostic::error(
+                    Path::new(&source),
+                    "formula_statement",
+                    match task {
+                        10 => "E-FORMULAS-STEP5C10-INVENTORY",
+                        9 => "E-FORMULAS-STEP5C9-INVENTORY",
+                        _ => "E-FORMULAS-STEP5C8-INVENTORY",
+                    },
+                    format!("formulas.step5c{task}_inventory.{id}"),
+                    "The formula bridge requires exactly one authenticated mapped row",
+                ));
+            }
         }
     }
-    for case in plan
-        .cases
-        .iter()
-        .filter(|case| is_step5c8_candidate(case) || is_step5c9_candidate(case))
-    {
+    for case in plan.cases.iter().filter(|case| {
+        is_step5c8_candidate(case) || is_step5c9_candidate(case) || is_step5c10_candidate(case)
+    }) {
         if !step5_formula_admitted(Some(workspace_root), case) {
-            let extra = is_step5c9_candidate(case);
+            let task = if is_step5c10_candidate(case) {
+                10
+            } else if is_step5c9_candidate(case) {
+                9
+            } else {
+                8
+            };
             diagnostics.push(ValidationDiagnostic::error(
                 &case.expectation_path,
                 "formula_statement",
-                if extra {
-                    "E-FORMULAS-STEP5C9-ADMISSION"
-                } else {
-                    "E-FORMULAS-STEP5C8-ADMISSION"
+                match task {
+                    10 => "E-FORMULAS-STEP5C10-ADMISSION",
+                    9 => "E-FORMULAS-STEP5C9-ADMISSION",
+                    _ => "E-FORMULAS-STEP5C8-ADMISSION",
                 },
-                format!(
-                    "formulas.step5c{}_admission.{}",
-                    if extra { 9 } else { 8 },
-                    case.id.0
-                ),
+                format!("formulas.step5c{task}_admission.{}", case.id.0),
                 "Formula bridge metadata or workspace path does not match its mapped row",
             ));
         }
@@ -298,6 +349,7 @@ pub(super) fn validate_active_formula_statement_tags(
     for case in plan.cases.iter().filter(|case| {
         !is_step5c8_candidate(case)
             && !is_step5c9_candidate(case)
+            && !is_step5c10_candidate(case)
             && (active_tag_count(case) > 0
                 || EXACT_FORMULA_STATEMENT_CASES
                     .iter()
@@ -413,11 +465,20 @@ fn formula_statement_detail_keys(
             .map(|key| format!("formula_statement.lower_stage.{key}"))
             .collect();
     }
-    if is_step5c8_candidate(case) || is_step5c9_candidate(case) {
+    if is_step5c8_candidate(case) || is_step5c9_candidate(case) || is_step5c10_candidate(case) {
         if !step5_formula_admitted(Some(workspace_root), case) {
             return vec!["formulas.invalid_admission".to_owned()];
         }
-        let checked = if is_step5c9_candidate(case) {
+        let checked = if is_step5c10_candidate(case) {
+            super::proof_verification::theorem_ast_output(
+                &ast,
+                &resolver.module,
+                &resolver.env,
+                PipelinePhase::StatementCheck,
+                super::shared::snapshot_id(0),
+            )
+            .map(|_| ())
+        } else if is_step5c9_candidate(case) {
             check_formula_ast_with_organization(&ast, &resolver.module, &resolver.env, true)
                 .and_then(|complete| {
                     complete
@@ -669,10 +730,14 @@ mod tests {
     };
 
     #[test]
-    fn step5c8_and_step5c9_admission_reject_metadata_and_cross_stage_fallback() {
+    fn step5c8_through_step5c10_admission_reject_metadata_and_cross_stage_fallback() {
         let root = workspace_root();
         let plan = build_test_plan(&config()).unwrap();
-        for (id, _, _) in super::STEP5C8_CASES.into_iter().chain(super::STEP5C9_CASES) {
+        for (id, _, _) in super::STEP5C8_CASES
+            .into_iter()
+            .chain(super::STEP5C9_CASES)
+            .chain(super::STEP5C10_CASES)
+        {
             let original = plan.cases.iter().find(|case| case.id.0 == id).unwrap();
             assert!(super::step5_formula_admitted(Some(&root), original), "{id}");
             let mutations: &[fn(&mut crate::harness::TestCase)] = &[
@@ -702,7 +767,11 @@ mod tests {
             for mutate in mutations {
                 let mut case = original.clone();
                 mutate(&mut case);
-                assert!(super::is_step5c8_candidate(&case) || super::is_step5c9_candidate(&case));
+                assert!(
+                    super::is_step5c8_candidate(&case)
+                        || super::is_step5c9_candidate(&case)
+                        || super::is_step5c10_candidate(&case)
+                );
                 assert!(
                     !super::step5_formula_admitted(Some(&root), &case),
                     "{case:?}"
@@ -718,7 +787,9 @@ mod tests {
                 .join(original.source_path.strip_prefix(&root).unwrap());
             assert!(!super::step5_formula_admitted(Some(&root), &wrong_root));
             let mut missing = plan.clone();
-            let task = if super::is_step5c9_candidate(original) {
+            let task = if super::is_step5c10_candidate(original) {
+                10
+            } else if super::is_step5c9_candidate(original) {
                 9
             } else {
                 8
@@ -1189,7 +1260,7 @@ mod tests {
     #[test]
     fn corpus_executes_exact_seven_and_preserves_checker_keys() {
         let report = super::super::run_formula_statement_corpus(&config()).unwrap();
-        assert_eq!(report.results.len(), 18);
+        assert_eq!(report.results.len(), 21);
         assert_eq!(report.error_count(), 0, "{:?}", report.diagnostics);
         assert!(
             report.results.iter().all(|result| {
@@ -1199,6 +1270,11 @@ mod tests {
         let actual = report
             .results
             .iter()
+            .filter(|result| {
+                EXACT_FORMULA_STATEMENT_CASES
+                    .iter()
+                    .any(|(id, _, _)| result.id.0 == *id)
+            })
             .filter(|result| !result.actual_detail_keys.is_empty())
             .map(|result| (result.id.0.as_str(), result.actual_detail_keys.clone()))
             .collect::<Vec<_>>();

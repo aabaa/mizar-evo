@@ -1,5 +1,15 @@
 # mizar-checker: Type Checker
 
+`SourceVariableSemanticsChecker::check_theorem_skeletons` consumes the existing typed
+arena, occurrence scope, symbols and sealed label inputs, returning an opaque borrowed
+`SourceTheoremCheck`. It authenticates theorem/lemma role and status,
+builtin universal/equality shapes, ordered generalization, pending conclusions and
+module-local citation provenance. Skeleton errors remain distinct from malformed inputs.
+The seal exposes `Vec<(SourceTheoremOwnerInput, &'static str)>` by shared slice:
+visibility is checker-projected `"public"`/`"private"`; unsupported visibility fails closed.
+Read-only typed/scope/label receipts accompany it, never SymbolEnv or resolver Visibility.
+This bridge does not trust proofs.
+
 `SourceVariableSemanticsChecker::check_proof_organization` takes the same inputs as
 `check_formula_statements` and returns `Result<bool, String>` after bounded builtin typing,
 existential instantiation, block/branch goal checks and source-identity-based citations.

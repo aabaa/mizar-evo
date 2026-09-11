@@ -1,5 +1,10 @@
 # Module: harness
 
+Step 5C.10 は対応する6行だけを各行の固定 phase で実行する。
+既存 resolver/checker 入力を構成し、lemma 引用では実際の Core/VC lower を実行する。
+open/assumed の policy 登録を証明受理にせず、4件の負例は固有の骨格・解決エラーでのみ満たす。
+不正 metadata、対象外 source、無関係な失敗には負例の成功を与えない。
+
 Step 5C.9 は G3 を除く対応7行だけを厳密な stage metadata で受け入れる。
 既存 resolver/checker 入力を構成し、文検査後の網羅性不成立だけを verification で観測する。
 無関係なエラー・式検査成功に証明受理を与えず、then/hence は非活性のままとする。

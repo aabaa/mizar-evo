@@ -13,6 +13,7 @@ path = "src/lib.rs"
 mizar-checker = { path = "../mizar-checker" }
 mizar-core = { path = "../mizar-core" }
 mizar-frontend = { path = "../mizar-frontend" }
+mizar-proof = { path = "../mizar-proof" }
 mizar-resolve = { path = "../mizar-resolve" }
 mizar-session = { path = "../mizar-session" }
 mizar-syntax = { path = "../mizar-syntax" }

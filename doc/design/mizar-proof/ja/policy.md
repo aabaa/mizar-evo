@@ -1,5 +1,9 @@
 # mizar-proof Policy Spec
 
+source の open/assumed 登録は既存 development policy の `OpenObligation` と
+`PolicyAssumption` で観測する。両者は別の非 kernel-verification class であり、
+strict release の拒否規則は変えない。
+
 > 正本は英語です。英語版:
 > [../en/policy.md](../en/policy.md)。
 

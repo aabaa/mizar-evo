@@ -6990,6 +6990,46 @@ impl SourceVariableSemanticsOutput {
     }
 }
 
+/// Opaque borrowed result of bounded theorem-skeleton checking, not proof acceptance.
+#[derive(Debug)]
+pub struct SourceTheoremCheck<'a> {
+    typed: &'a crate::typed_ast::TypedAst,
+    scope: &'a ResolvedVariableScope,
+    labels: &'a mizar_resolve::labels::ProofLabelSourceCollection,
+    resolved: &'a mizar_resolve::labels::LabelResolutionResult,
+    owners: Vec<(
+        crate::source_statement::SourceTheoremOwnerInput,
+        &'static str,
+    )>,
+}
+
+impl SourceTheoremCheck<'_> {
+    pub const fn typed_ast(&self) -> &crate::typed_ast::TypedAst {
+        self.typed
+    }
+
+    pub const fn scope(&self) -> &ResolvedVariableScope {
+        self.scope
+    }
+
+    pub const fn labels(&self) -> &mizar_resolve::labels::ProofLabelSourceCollection {
+        self.labels
+    }
+
+    pub const fn resolved_labels(&self) -> &mizar_resolve::labels::LabelResolutionResult {
+        self.resolved
+    }
+
+    pub fn owners(
+        &self,
+    ) -> &[(
+        crate::source_statement::SourceTheoremOwnerInput,
+        &'static str,
+    )] {
+        &self.owners
+    }
+}
+
 /// Checker for the frozen Step 5C.1 source-variable slice.
 ///
 /// This is intentionally a unit type: all input state is carried by the
@@ -6998,6 +7038,355 @@ impl SourceVariableSemanticsOutput {
 pub struct SourceVariableSemanticsChecker;
 
 impl SourceVariableSemanticsChecker {
+    /// Checks the bounded theorem/lemma skeletons without accepting proofs.
+    pub fn check_theorem_skeletons<'a>(
+        typed: &'a crate::typed_ast::TypedAst,
+        scope: &'a ResolvedVariableScope,
+        symbols: &SymbolEnv,
+        labels: &'a mizar_resolve::labels::ProofLabelSourceCollection,
+        resolved: &'a mizar_resolve::labels::LabelResolutionResult,
+    ) -> Result<SourceTheoremCheck<'a>, String> {
+        use crate::source_statement::{
+            SourceStatementRecovery, SourceTheoremOwnerInput, SourceTheoremRole,
+            SourceTheoremStatus,
+        };
+        use mizar_resolve::resolved_ast::LabelResolution;
+        let invalid = || "theorems.source.invalid".to_owned();
+        Self::check_formula_statements_mode(typed, scope, symbols, labels, resolved, true)?;
+        let primary = typed.source_term().ok_or_else(invalid)?;
+        let atomic = typed.source_atomic_formula().ok_or_else(invalid)?;
+        if typed.source_set_term().is_some()
+            || atomic.formulas().iter().any(|(_, row)| {
+                row.kind() != crate::source_atomic_formula::SourceAtomicFormulaKind::Equality
+            })
+            || *resolved
+                != mizar_resolve::labels::LabelResolver::new(labels.projections()).resolve(
+                    typed.module_id(),
+                    &mizar_resolve::env::NamespacePath::new(typed.module_id().path().as_str()),
+                    labels.references(),
+                )
+        {
+            return Err(invalid());
+        }
+        for reference in labels.references() {
+            if reference.origin().source_id() != typed.source_id()
+                || reference.origin().module_id() != typed.module_id()
+                || reference.origin().import_edge().is_some()
+                || reference.origin().is_recovered()
+                || reference.origin().anchor() != &SourceAnchor::Range(reference.site().range())
+            {
+                return Err(invalid());
+            }
+            let entry = resolved
+                .ids()
+                .iter()
+                .find_map(|id| {
+                    resolved.table().get(*id).filter(|entry| {
+                        entry.site() == reference.site() && entry.origin() == reference.origin()
+                    })
+                })
+                .ok_or_else(invalid)?;
+            match entry.resolution() {
+                LabelResolution::Resolved(_) => {}
+                LabelResolution::Unresolved(_) => {
+                    return Err("theorems.reference.unknown_label".into());
+                }
+                _ => return Err(invalid()),
+            }
+        }
+        if !resolved.diagnostics().is_empty() {
+            return Err(invalid());
+        }
+        let items = typed
+            .nodes()
+            .iter()
+            .filter_map(|(id, _)| (step5c8_kind(typed, id) == Some("ItemList")).then_some(id))
+            .collect::<Vec<_>>();
+        let [items] = items.as_slice() else {
+            return Err(invalid());
+        };
+        let items = step5c8_children(typed, *items).ok_or_else(invalid)?;
+        if items.is_empty()
+            || items
+                .iter()
+                .any(|id| !matches!(step5c8_kind(typed, *id), Some("TheoremItem" | "LemmaItem")))
+        {
+            return Err(invalid());
+        }
+        let mut owners = Vec::new();
+        let mut facts = BTreeMap::new();
+        for item in items {
+            let range = step5c8_range(typed, item).ok_or_else(invalid)?;
+            let raw = &typed.nodes().node(item).ok_or_else(invalid)?.children;
+            let mut cursor = 0;
+            let status = if step5c10_token(typed, raw.first().copied(), "ReservedWord", "open") {
+                cursor += 1;
+                SourceTheoremStatus::Open
+            } else if step5c10_token(typed, raw.first().copied(), "ReservedWord", "assumed") {
+                cursor += 1;
+                SourceTheoremStatus::Assumed
+            } else {
+                SourceTheoremStatus::Unmodified
+            };
+            let (role, symbol_kind, definition_kind, keyword) =
+                if step5c8_kind(typed, item) == Some("LemmaItem") {
+                    (
+                        SourceTheoremRole::Lemma,
+                        SymbolKind::Lemma,
+                        DefinitionKind::Lemma,
+                        "lemma",
+                    )
+                } else {
+                    (
+                        SourceTheoremRole::Theorem,
+                        SymbolKind::Theorem,
+                        DefinitionKind::Theorem,
+                        "theorem",
+                    )
+                };
+            let entries = symbols
+                .symbols()
+                .iter()
+                .filter(|entry| {
+                    entry.kind() == symbol_kind
+                        && entry.origin().anchor() == &SourceAnchor::Range(range)
+                })
+                .collect::<Vec<_>>();
+            let [entry] = entries.as_slice() else {
+                return Err(invalid());
+            };
+            let definition = symbols
+                .definitions()
+                .by_symbol(entry.symbol())
+                .ok_or_else(invalid)?;
+            let contribution = symbols
+                .contributions()
+                .get(entry.contribution())
+                .ok_or_else(invalid)?;
+            if entry.symbol().module() != typed.module_id()
+                || definition.kind() != definition_kind
+                || definition.conflict().is_some()
+                || definition.origin() != entry.origin()
+                || definition.contribution() != entry.contribution()
+                || definition.visibility() != entry.visibility()
+                || !step5c10_token(typed, raw.get(cursor).copied(), "ReservedWord", keyword)
+                || !step5c10_token(
+                    typed,
+                    raw.get(cursor + 1).copied(),
+                    "Identifier",
+                    entry.primary_spelling(),
+                )
+                || !step5c10_token(typed, raw.get(cursor + 2).copied(), "ReservedSymbol", ":")
+                || !step5c10_token(typed, raw.last().copied(), "ReservedSymbol", ";")
+                || exact_statement_owner_source_range(
+                    StatementOwnerProvenanceState {
+                        anchor: entry.origin().anchor(),
+                        owner_source: entry.origin().source_id(),
+                        owner_module: entry.origin().module_id(),
+                        has_import_edge: entry.origin().import_edge().is_some(),
+                        owner_recovered: entry.origin().is_recovered(),
+                        definition_recovered: definition.origin().is_recovered(),
+                        contribution_module: contribution.module(),
+                        contribution_kind: contribution.kind(),
+                    },
+                    typed.source_id(),
+                    typed.module_id(),
+                ) != Some(range)
+            {
+                return Err(invalid());
+            }
+            let children = step5c8_children(typed, item).ok_or_else(invalid)?;
+            if raw.len() != cursor + children.len() + 4
+                || raw[cursor + 3..raw.len() - 1] != children
+            {
+                return Err(invalid());
+            }
+            let Some(written) = children.first().copied() else {
+                return Err(invalid());
+            };
+            let formula = step5c8_unwrap(typed, written).ok_or_else(invalid)?;
+            if step5c8_kind(typed, formula) != Some("QuantifiedFormula(Universal)") {
+                return Err(invalid());
+            }
+            let (bound, guard, goal) = step5c8_quantifier(typed, scope, formula, false)?;
+            if bound.len() != 1
+                || guard.is_some()
+                || !step5c9_reflexive(typed, scope, primary, atomic, goal)
+            {
+                return Err(invalid());
+            }
+            let atom = atomic
+                .formulas()
+                .iter()
+                .find(|(_, row)| row.site().node() == goal)
+                .map(|(id, _)| id)
+                .ok_or_else(invalid)?;
+            if atomic
+                .edges()
+                .iter()
+                .filter(|(_, row)| row.formula() == atom)
+                .any(|(_, row)| {
+                    step5c8_primary_binding(scope, primary, row.target()) != Some(bound[0])
+                })
+            {
+                return Err(invalid());
+            }
+            if status != SourceTheoremStatus::Unmodified {
+                if children.len() != 1 {
+                    return Err(invalid());
+                }
+            } else {
+                let [_, proof] = children.as_slice() else {
+                    return Err(invalid());
+                };
+                if step5c8_kind(typed, *proof) != Some("ProofBlock") {
+                    return Err(invalid());
+                }
+                let statements = step5c8_children(typed, *proof).ok_or_else(invalid)?;
+                let Some(generalization) = statements.first().copied() else {
+                    return Err(invalid());
+                };
+                let (locals, restriction) = step5c8_let(typed, scope, generalization)?;
+                if locals.len() != 1
+                    || restriction.is_some()
+                    || scope.bindings()[bound[0].index()].declared_type()
+                        != scope.bindings()[locals[0].index()].declared_type()
+                {
+                    return Err(invalid());
+                }
+                let substitutions = BTreeMap::from([(bound[0], locals[0])]);
+                let mut closed = false;
+                for statement in &statements[1..] {
+                    if closed {
+                        return Err(invalid());
+                    }
+                    match step5c8_kind(typed, *statement) {
+                        Some("AssumptionStatement") => {
+                            let (_, assumption) =
+                                step5c9_condition(typed, *statement).ok_or_else(invalid)?;
+                            if !step5c10_token(
+                                typed,
+                                typed
+                                    .nodes()
+                                    .node(*statement)
+                                    .and_then(|node| node.children.first().copied()),
+                                "ReservedWord",
+                                "assume",
+                            ) || !step5c8_formula_equal(
+                                typed,
+                                scope,
+                                primary,
+                                atomic,
+                                assumption,
+                                assumption,
+                                &BTreeMap::new(),
+                            ) {
+                                return Err(invalid());
+                            }
+                            return Err("theorems.skeleton.assumption_without_antecedent".into());
+                        }
+                        Some("ConclusionStatement") => {
+                            let raw = &typed.nodes().node(*statement).ok_or_else(invalid)?.children;
+                            if !step5c10_token(typed, raw.first().copied(), "ReservedWord", "thus")
+                            {
+                                return Err(invalid());
+                            }
+                            let children =
+                                step5c8_children(typed, *statement).ok_or_else(invalid)?;
+                            let Some(proposition) = children.first().copied() else {
+                                return Err(invalid());
+                            };
+                            if children.len() > 2
+                                || children.get(1).is_some_and(|id| {
+                                    step5c8_kind(typed, *id) != Some("JustificationClause")
+                                })
+                            {
+                                return Err(invalid());
+                            }
+                            let conclusion =
+                                step5c8_unwrap(typed, proposition).ok_or_else(invalid)?;
+                            if !step5c8_formula_equal(
+                                typed,
+                                scope,
+                                primary,
+                                atomic,
+                                conclusion,
+                                conclusion,
+                                &BTreeMap::new(),
+                            ) {
+                                return Err(invalid());
+                            }
+                            if !step5c8_formula_equal(
+                                typed,
+                                scope,
+                                primary,
+                                atomic,
+                                goal,
+                                conclusion,
+                                &substitutions,
+                            ) {
+                                return Err("theorems.skeleton.conclusion_mismatch".into());
+                            }
+                            if let Some(cited) =
+                                step5c9_citation(typed, labels, resolved, *statement, &facts)?
+                            {
+                                let (cited_bound, cited_guard, cited_goal) =
+                                    step5c8_quantifier(typed, scope, cited, false)?;
+                                if cited_bound.len() != 1
+                                    || cited_guard.is_some()
+                                    || scope.bindings()[cited_bound[0].index()].declared_type()
+                                        != scope.bindings()[locals[0].index()].declared_type()
+                                    || !step5c8_formula_equal(
+                                        typed,
+                                        scope,
+                                        primary,
+                                        atomic,
+                                        cited_goal,
+                                        conclusion,
+                                        &BTreeMap::from([(cited_bound[0], locals[0])]),
+                                    )
+                                {
+                                    return Err(invalid());
+                                }
+                            }
+                            closed = true;
+                        }
+                        _ => return Err(invalid()),
+                    }
+                }
+                if !closed {
+                    return Err("theorems.skeleton.incomplete_proof".into());
+                }
+                facts.insert(item, formula);
+            }
+            let visibility = match entry.visibility() {
+                Visibility::Public => "public",
+                Visibility::Private => "private",
+                _ => return Err("theorems.source.invalid_visibility".to_owned()),
+            };
+            owners.push((
+                SourceTheoremOwnerInput {
+                    symbol: entry.symbol().clone(),
+                    contribution: entry.contribution(),
+                    site: TypedSiteRef::Node(item),
+                    source_range: range,
+                    spelling: entry.primary_spelling().to_owned(),
+                    role,
+                    status,
+                    recovery: SourceStatementRecovery::Normal,
+                },
+                visibility,
+            ));
+        }
+        Ok(SourceTheoremCheck {
+            typed,
+            scope,
+            labels,
+            resolved,
+            owners,
+        })
+    }
+
     /// Projects an authenticated resolver scope into the checker binding
     /// environment used by term/formula inference.
     #[must_use]
@@ -7535,6 +7924,18 @@ impl SourceVariableSemanticsChecker {
             diagnostics,
         }
     }
+}
+
+fn step5c10_token(
+    typed: &crate::typed_ast::TypedAst,
+    id: Option<TypedNodeId>,
+    kind: &str,
+    text: &str,
+) -> bool {
+    id.and_then(|id| step5c8_kind(typed, id))
+        .is_some_and(|actual| {
+            actual == format!("Token(SurfaceToken {{ kind: {kind}, text: {text:?} }})")
+        })
 }
 
 fn step5c9_organization(

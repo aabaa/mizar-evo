@@ -1972,7 +1972,9 @@ pub fn active_proof_verification_cases(plan: &TestPlan) -> impl Iterator<Item = 
 }
 
 fn is_active_parse_only(case: &TestCase) -> bool {
-    if formula_statement::is_step5c9_candidate(case) {
+    if formula_statement::is_step5c9_candidate(case)
+        || formula_statement::is_step5c10_candidate(case)
+    {
         return false;
     }
     if formula_statement::is_step5c8_candidate(case) {
@@ -2348,6 +2350,23 @@ fn type_elaboration_detail_keys(
     };
     if is_step5c7_workspace_member(workspace_root, case) {
         return step5c7_term_detail_keys(&ast, &resolver.module, &symbols);
+    }
+    if formula_statement::is_step5c10_candidate(case) {
+        if !formula_statement::step5_formula_admitted(Some(workspace_root), case)
+            || !resolver.detail_keys.is_empty()
+        {
+            return vec!["theorems.invalid_admission_or_resolver".into()];
+        }
+        return proof_verification::theorem_ast_output(
+            &ast,
+            &resolver.module,
+            &symbols,
+            PipelinePhase::Resolve,
+            shared::snapshot_id(0),
+        )
+        .err()
+        .into_iter()
+        .collect();
     }
     if formula_statement::is_step5c8_candidate(case) {
         if !formula_statement::step5_formula_admitted(Some(workspace_root), case)

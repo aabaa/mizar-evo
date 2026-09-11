@@ -129,8 +129,129 @@ fn normalize_term_ast(
     mizar_core::elaborator::normalize_source_membership_proof(&checked)
 }
 
+pub(super) fn theorem_ast_output(
+    ast: &mizar_syntax::SurfaceAst,
+    module: &mizar_resolve::resolved_ast::ModuleId,
+    symbols: &mizar_resolve::env::SymbolEnv,
+    phase: PipelinePhase,
+    snapshot: mizar_session::BuildSnapshotId,
+) -> Result<
+    (
+        Vec<mizar_proof::policy::CandidatePolicyClass>,
+        Option<VcSet>,
+    ),
+    String,
+> {
+    use mizar_checker::{
+        source_statement::SourceTheoremStatus, type_checker::SourceVariableSemanticsChecker,
+    };
+    use mizar_proof::policy::{
+        CandidatePolicyClass, PolicyCandidate, ProofPolicyEvaluator, VerifierPolicy,
+    };
+    use mizar_resolve::labels::{LabelResolver, ProofLabelSourceCollector};
+    use mizar_resolve::names::{SourceVariableScopeInput, SourceVariableScopeResolver};
+    use mizar_vc::generator::{
+        CoreGenerationCandidateSet, CoreGenerationInput, VcNormalizationInput,
+    };
+    use mizar_vc::vc_ir::{SeedIntakeTable, VcModuleRef};
+    let scope = SourceVariableScopeResolver::resolve_proof_occurrences(
+        SourceVariableScopeInput::new(ast, module, symbols),
+    )
+    .map_err(|error| format!("theorem scope: {error:?}"))?;
+    let bindings = SourceVariableSemanticsChecker::occurrence_binding_env(&scope);
+    let typed = super::type_elaboration::step5c8_formula_typed_ast(
+        ast, module, symbols, &scope, &bindings, true,
+    )?;
+    let arena = mizar_resolve::resolved_ast::SurfaceResolvedArena::lower(ast, module)
+        .map_err(|error| error.to_string())?;
+    let owner = symbols
+        .symbols()
+        .iter()
+        .find(|entry| {
+            matches!(
+                entry.kind(),
+                mizar_resolve::env::SymbolKind::Theorem | mizar_resolve::env::SymbolKind::Lemma
+            )
+        })
+        .ok_or("theorem owner missing")?;
+    let namespace = mizar_resolve::env::NamespacePath::new(module.path().as_str());
+    let labels = ProofLabelSourceCollector::new(
+        ast,
+        module,
+        namespace.clone(),
+        owner.contribution(),
+        &arena,
+    )
+    .and_then(|collector| collector.collect_with_theorem_owners(symbols))
+    .map_err(|error| error.to_string())?;
+    let resolved =
+        LabelResolver::new(labels.projections()).resolve(module, &namespace, labels.references());
+    let checked = SourceVariableSemanticsChecker::check_theorem_skeletons(
+        &typed, &scope, symbols, &labels, &resolved,
+    )?;
+    let policy = ProofPolicyEvaluator::new(VerifierPolicy::development());
+    let mut classes = Vec::new();
+    for (owner, _) in checked.owners() {
+        let (candidate, expected) = match owner.status {
+            SourceTheoremStatus::Unmodified => continue,
+            SourceTheoremStatus::Open => (
+                PolicyCandidate::OpenObligation,
+                CandidatePolicyClass::OpenAllowed,
+            ),
+            SourceTheoremStatus::Assumed => (
+                PolicyCandidate::PolicyAssumption,
+                CandidatePolicyClass::AssumedByPolicy,
+            ),
+            _ => return Err("unsupported theorem status".into()),
+        };
+        let decision = policy.evaluate_candidate(&candidate);
+        if decision.class != expected
+            || decision.can_schedule_kernel_check
+            || decision.kernel_evidence_check_kind.is_some()
+        {
+            return Err("theorem status crossed proof-policy boundary".into());
+        }
+        classes.push(decision.class);
+    }
+    match phase {
+        PipelinePhase::Resolve | PipelinePhase::StatementCheck => return Ok((classes, None)),
+        PipelinePhase::VcGeneration if classes.is_empty() => {}
+        _ => return Err("unsupported theorem phase/status".into()),
+    }
+    let core = mizar_core::elaborator::lower_source_theorem_skeletons(&checked)?;
+    let flow = mizar_core::control_flow::build_control_flow_ir(&core);
+    let handoff = mizar_core::control_flow::build_obligation_seed_handoff(&core, &flow);
+    let intake = SeedIntakeTable::try_from_handoff(&handoff).map_err(|error| error.to_string())?;
+    let package = module.package().as_str();
+    let path = module.path().as_str();
+    let candidates = CoreGenerationCandidateSet::try_from_seed_intake(CoreGenerationInput {
+        schema_version: &GenerationSchemaVersion::new(GENERATION_SCHEMA),
+        module: &VcModuleRef::new(format!(
+            "package={}:{};module={}:{}",
+            package.len(),
+            package,
+            path.len(),
+            path
+        )),
+        intake: &intake,
+        handoff: &handoff,
+        flow_output: Some(&flow),
+    })
+    .map_err(|error| error.to_string())?;
+    let vcs = CoreGenerationCandidateSet::try_normalize(VcNormalizationInput {
+        schema_version: &VcSchemaVersion::new(VC_SCHEMA),
+        snapshot,
+        source: ast.source_id,
+        candidates: &candidates,
+    })
+    .map_err(|error| error.to_string())?;
+    Ok((classes, Some(vcs)))
+}
+
 pub(super) fn is_active_proof_verification(case: &TestCase) -> bool {
-    if super::formula_statement::is_step5c9_candidate(case) {
+    if super::formula_statement::is_step5c9_candidate(case)
+        || super::formula_statement::is_step5c10_candidate(case)
+    {
         return case.expectation.stage == Stage::ProofVerification
             && super::formula_statement::step5_formula_admitted(None, case);
     }
@@ -325,6 +446,55 @@ pub(super) fn run_proof_verification_case(
     case: &TestCase,
     ordinal: usize,
 ) -> ProofVerificationCaseResult {
+    if super::formula_statement::is_step5c10_candidate(case) {
+        let check = || -> Result<(), String> {
+            if !is_active_proof_verification(case)
+                || !super::formula_statement::step5_formula_admitted(Some(workspace_root), case)
+            {
+                return Err("invalid Step 5C.10 proof admission".into());
+            }
+            let frontend = run_frontend(workspace_root, case, ordinal)?;
+            if !frontend.diagnostics.is_empty() {
+                return Err("theorem frontend diagnostics".into());
+            }
+            let ast = frontend.ast.ok_or("theorem source has no AST")?;
+            let resolver = resolver_symbol_collection(workspace_root, case, &ast);
+            if !resolver.detail_keys.is_empty() {
+                return Err("theorem resolver diagnostics".into());
+            }
+            let phase = case
+                .expectation
+                .expected_phase
+                .ok_or("theorem phase missing")?;
+            let (classes, vcs) = theorem_ast_output(
+                &ast,
+                &resolver.module,
+                &resolver.env,
+                phase,
+                snapshot_id(ordinal),
+            )?;
+            match (phase, vcs) {
+                (PipelinePhase::VcGeneration, Some(vcs))
+                    if !vcs.vcs().is_empty() && classes.is_empty() =>
+                {
+                    Ok(())
+                }
+                (PipelinePhase::StatementCheck, None) if !classes.is_empty() => Ok(()),
+                _ => Err("theorem phase produced no matching output".into()),
+            }
+        };
+        let failure = check().err();
+        return ProofVerificationCaseResult {
+            id: case.id.clone(),
+            expectation_path: case.expectation_path.clone(),
+            status: if failure.is_none() {
+                ProofVerificationCaseStatus::Passed
+            } else {
+                ProofVerificationCaseStatus::Failed
+            },
+            failure,
+        };
+    }
     if super::formula_statement::is_step5c9_candidate(case) {
         let check = || -> Result<(), String> {
             if !is_active_proof_verification(case)
@@ -659,6 +829,403 @@ mod term_proof_tests {
         fs::remove_dir(root).unwrap();
         // Exercise the checker even when frontend diagnostics would already reject.
         output.ast.unwrap()
+    }
+
+    #[test]
+    fn step5c10_mapped_sources_reach_frozen_phases() {
+        use mizar_proof::policy::CandidatePolicyClass;
+        let config = config();
+        let plan = crate::harness::build_test_plan(&config).unwrap();
+        for (ordinal, (id, _, key)) in super::super::formula_statement::STEP5C10_CASES
+            .into_iter()
+            .enumerate()
+        {
+            let case = plan.cases.iter().find(|case| case.id.0 == id).unwrap();
+            let output = run_frontend(&config.workspace_root, case, ordinal).unwrap();
+            assert!(
+                output.diagnostics.is_empty(),
+                "{id}: {:?}",
+                output.diagnostics
+            );
+            let ast = output.ast.unwrap();
+            let resolver = resolver_symbol_collection(&config.workspace_root, case, &ast);
+            assert!(
+                resolver.detail_keys.is_empty(),
+                "{id}: {:?}",
+                resolver.detail_keys
+            );
+            let phase = case.expectation.expected_phase.unwrap();
+            let result = theorem_ast_output(
+                &ast,
+                &resolver.module,
+                &resolver.env,
+                phase,
+                snapshot_id(ordinal),
+            );
+            if let Some(key) = key {
+                assert_eq!(result.unwrap_err(), key, "{id}");
+                continue;
+            }
+            let (classes, vcs) = result.unwrap_or_else(|error| panic!("{id}: {error}"));
+            match phase {
+                PipelinePhase::StatementCheck => {
+                    assert_eq!(
+                        classes,
+                        [
+                            CandidatePolicyClass::OpenAllowed,
+                            CandidatePolicyClass::AssumedByPolicy
+                        ]
+                    );
+                    assert!(vcs.is_none());
+                }
+                PipelinePhase::VcGeneration => {
+                    assert!(classes.is_empty());
+                    let vcs = vcs.unwrap();
+                    assert_eq!(vcs.source(), ast.source_id);
+                    assert_eq!(vcs.snapshot(), snapshot_id(ordinal));
+                    assert_eq!(vcs.vcs().len(), 2);
+                    let mut context_sizes = Vec::new();
+                    for vc in vcs.vcs() {
+                        assert_eq!(vc.status, mizar_vc::vc_ir::VcStatus::Open);
+                        assert!(
+                            vc.local_context.entries().iter().all(
+                                |entry| entry.formula.is_some() && !entry.provenance.is_empty()
+                            )
+                        );
+                        assert!(!vc.provenance.is_empty());
+                        context_sizes.push(vc.local_context.entries().len());
+                    }
+                    context_sizes.sort();
+                    assert_eq!(context_sizes, [1, 2]);
+                    assert_eq!(
+                        theorem_ast_output(
+                            &ast,
+                            &resolver.module,
+                            &resolver.env,
+                            phase,
+                            snapshot_id(ordinal)
+                        )
+                        .unwrap()
+                        .1,
+                        Some(vcs)
+                    );
+                }
+                _ => panic!("unexpected success phase"),
+            }
+            let run = run_proof_verification_case(
+                &config.workspace_root,
+                &config.workspace_root.join("tests"),
+                case,
+                ordinal,
+            );
+            assert_eq!(
+                run.status,
+                super::super::ProofVerificationCaseStatus::Passed,
+                "{:?}",
+                run.failure
+            );
+        }
+    }
+
+    fn check_theorem_source(
+        source: &str,
+        phase: PipelinePhase,
+    ) -> Result<
+        (
+            Vec<mizar_proof::policy::CandidatePolicyClass>,
+            Option<VcSet>,
+        ),
+        String,
+    > {
+        let config = config();
+        let plan = crate::harness::build_test_plan(&config).unwrap();
+        let case = plan
+            .cases
+            .iter()
+            .find(|case| case.id.0 == super::super::formula_statement::STEP5C10_CASES[0].0)
+            .unwrap();
+        let ast = parse(source);
+        let resolver = resolver_symbol_collection(&config.workspace_root, case, &ast);
+        if !resolver.detail_keys.is_empty() {
+            return Err(format!("resolver: {:?}", resolver.detail_keys));
+        }
+        theorem_ast_output(
+            &ast,
+            &resolver.module,
+            &resolver.env,
+            phase,
+            snapshot_id(777),
+        )
+    }
+
+    #[test]
+    fn step5c10_skeleton_errors_require_the_actual_thesis_and_repair() {
+        let valid = "theorem T: for X being set holds X = X proof let X be set; thus X = X; end;";
+        assert!(check_theorem_source(valid, PipelinePhase::VcGeneration).is_ok());
+        assert!(
+            check_theorem_source(
+                &valid.replace(
+                    "proof let X be set; thus X = X;",
+                    "proof let Y be set; thus Y = Y;"
+                ),
+                PipelinePhase::VcGeneration
+            )
+            .is_ok()
+        );
+        for (source, key) in [
+            (
+                valid.replace("thus X = X;", "assume A: X = X; thus X = X;"),
+                "theorems.skeleton.assumption_without_antecedent",
+            ),
+            (
+                valid.replace("thus X = X;", "thus not X = X;"),
+                "theorems.skeleton.conclusion_mismatch",
+            ),
+            (
+                valid.replace("thus X = X;", ""),
+                "theorems.skeleton.incomplete_proof",
+            ),
+        ] {
+            assert_eq!(
+                check_theorem_source(&source, PipelinePhase::StatementCheck).unwrap_err(),
+                key
+            );
+        }
+        for source in [
+            valid.replace("let X be set", "let X be object"),
+            valid.replace("thus", "hence"),
+            valid.replace("thus X = X;", "thus X = X; thus X = X;"),
+            valid.replace("for X being set holds", "for X being set st X = X holds"),
+            valid.replace("thus X = X", "thus Y = Y"),
+        ] {
+            assert!(
+                check_theorem_source(&source, PipelinePhase::StatementCheck).is_err(),
+                "{source}"
+            );
+        }
+    }
+
+    #[test]
+    fn step5c10_citations_are_prior_clean_owners_not_names() {
+        let source = include_str!(
+            "../../../../tests/miz/pass/theorems/pass_proof_verification_lemma_reference_001.miz"
+        );
+        let renamed = source
+            .replace("Lem1", "Earlier")
+            .replace("UseLem1", "Later")
+            .replace("X", "Bound");
+        assert_eq!(
+            check_theorem_source(&renamed, PipelinePhase::VcGeneration)
+                .unwrap()
+                .1
+                .unwrap()
+                .vcs()
+                .len(),
+            2
+        );
+        for source in [
+            source.replace("by Lem1", "by Missing"),
+            source.replace("by Lem1", "by UseLem1"),
+            source.replace("thus X = X;", "thus X = X by UseLem1;"),
+        ] {
+            assert_eq!(
+                check_theorem_source(&source, PipelinePhase::Resolve).unwrap_err(),
+                "theorems.reference.unknown_label",
+                "{source}"
+            );
+        }
+        for source in [
+            source.replace("by Lem1", "by Lem1, Lem1"),
+            source.replace("lemma Lem1", "assumed lemma Lem1"),
+            source
+                .replacen("being set", "being object", 1)
+                .replacen("be set", "be object", 1),
+        ] {
+            assert!(
+                check_theorem_source(&source, PipelinePhase::VcGeneration).is_err(),
+                "{source}"
+            );
+        }
+    }
+
+    #[test]
+    fn step5c10_status_projection_never_supplies_a_clean_dependency() {
+        use mizar_proof::policy::{
+            CandidatePolicyClass, PolicyCandidate, ProofPolicyEvaluator, VerifierPolicy,
+        };
+        let source = "open theorem O: for X being set holds X = X; assumed theorem A: for X being set holds X = X;";
+        let (classes, vcs) = check_theorem_source(source, PipelinePhase::StatementCheck).unwrap();
+        assert_eq!(
+            classes,
+            [
+                CandidatePolicyClass::OpenAllowed,
+                CandidatePolicyClass::AssumedByPolicy
+            ]
+        );
+        assert!(vcs.is_none());
+        assert!(check_theorem_source(source, PipelinePhase::VcGeneration).is_err());
+        for status in ["open", "assumed"] {
+            let dependency = format!(
+                "{status} theorem A: for X being set holds X = X; theorem T: for X being set holds X = X proof let X be set; thus X = X by A; end;"
+            );
+            assert!(check_theorem_source(&dependency, PipelinePhase::StatementCheck).is_err());
+            let justified = format!(
+                "{status} theorem T: for X being set holds X = X proof let X be set; thus X = X; end;"
+            );
+            assert!(check_theorem_source(&justified, PipelinePhase::StatementCheck).is_err());
+        }
+        for policy in [VerifierPolicy::development(), VerifierPolicy::release()] {
+            let evaluator = ProofPolicyEvaluator::new(policy);
+            for candidate in [
+                PolicyCandidate::OpenObligation,
+                PolicyCandidate::PolicyAssumption,
+            ] {
+                let decision = evaluator.evaluate_candidate(&candidate);
+                assert!(!decision.can_schedule_kernel_check);
+                assert!(decision.kernel_evidence_check_kind.is_none());
+                assert!(!matches!(
+                    decision.class,
+                    CandidatePolicyClass::KernelVerified
+                        | CandidatePolicyClass::DischargedBuiltin
+                        | CandidatePolicyClass::KernelCheckable
+                ));
+            }
+        }
+    }
+
+    #[test]
+    fn step5c10_theorem_receipts_reject_substituted_resolution() {
+        use mizar_checker::type_checker::SourceVariableSemanticsChecker;
+        use mizar_resolve::{
+            env::NamespacePath,
+            labels::{
+                LabelProjection, LabelProjectionData, LabelResolver, ProofLabelSourceCollector,
+            },
+            names::{SourceVariableScopeInput, SourceVariableScopeResolver},
+            resolved_ast::SurfaceResolvedArena,
+        };
+        let config = config();
+        let plan = crate::harness::build_test_plan(&config).unwrap();
+        let case = plan
+            .cases
+            .iter()
+            .find(|case| case.id.0 == super::super::formula_statement::STEP5C10_CASES[0].0)
+            .unwrap();
+        let source = fs::read_to_string(&case.source_path)
+            .unwrap()
+            .replace("by Lem1", "by Missing");
+        let ast = parse(&source);
+        let resolver = resolver_symbol_collection(&config.workspace_root, case, &ast);
+        let scope = SourceVariableScopeResolver::resolve_proof_occurrences(
+            SourceVariableScopeInput::new(&ast, &resolver.module, &resolver.env),
+        )
+        .unwrap();
+        let bindings = SourceVariableSemanticsChecker::occurrence_binding_env(&scope);
+        let typed = super::super::type_elaboration::step5c8_formula_typed_ast(
+            &ast,
+            &resolver.module,
+            &resolver.env,
+            &scope,
+            &bindings,
+            true,
+        )
+        .unwrap();
+        let arena = SurfaceResolvedArena::lower(&ast, &resolver.module).unwrap();
+        let namespace = NamespacePath::new(resolver.module.path().as_str());
+        let labels = ProofLabelSourceCollector::new(
+            &ast,
+            &resolver.module,
+            namespace.clone(),
+            resolver.env.symbols().iter().next().unwrap().contribution(),
+            &arena,
+        )
+        .unwrap()
+        .collect_with_theorem_owners(&resolver.env)
+        .unwrap();
+        let genuine = LabelResolver::new(labels.projections()).resolve(
+            &resolver.module,
+            &namespace,
+            labels.references(),
+        );
+        assert_eq!(
+            SourceVariableSemanticsChecker::check_theorem_skeletons(
+                &typed,
+                &scope,
+                &resolver.env,
+                &labels,
+                &genuine,
+            )
+            .unwrap_err(),
+            "theorems.reference.unknown_label"
+        );
+        let owner = labels
+            .projections()
+            .iter()
+            .find(|label| label.primary_spelling() == "Lem1")
+            .unwrap();
+        let renamed = LabelProjection::current_module(
+            LabelProjectionData {
+                origin_path: owner.origin_path().clone(),
+                module: owner.module().clone(),
+                namespace: owner.namespace().clone(),
+                primary_spelling: "Missing".into(),
+                kind: owner.kind(),
+                declaration_range: owner.declaration_range(),
+                origin: owner.origin().clone(),
+                contribution: owner.contribution(),
+            },
+            match owner.source() {
+                mizar_resolve::labels::LabelProjectionSource::CurrentModule {
+                    visible_after_ordinal,
+                    ..
+                } => *visible_after_ordinal,
+                _ => panic!("expected local theorem label"),
+            },
+        );
+        let substituted = LabelResolver::new(&[renamed]).resolve(
+            &resolver.module,
+            &namespace,
+            labels.references(),
+        );
+        assert!(!substituted.has_unresolved());
+        assert_eq!(
+            SourceVariableSemanticsChecker::check_theorem_skeletons(
+                &typed,
+                &scope,
+                &resolver.env,
+                &labels,
+                &substituted,
+            )
+            .unwrap_err(),
+            "theorems.source.invalid"
+        );
+    }
+
+    #[test]
+    fn step5c10_theorem_receipts_reject_foreign_source_identity() {
+        use mizar_session::SessionIdAllocator;
+        let config = config();
+        let plan = crate::harness::build_test_plan(&config).unwrap();
+        let case = plan
+            .cases
+            .iter()
+            .find(|case| case.id.0 == super::super::formula_statement::STEP5C10_CASES[0].0)
+            .unwrap();
+        let mut ast = parse(&fs::read_to_string(&case.source_path).unwrap());
+        let resolver = resolver_symbol_collection(&config.workspace_root, case, &ast);
+        let ids = mizar_session::InMemorySessionIdAllocator::new();
+        ids.next_source_id(snapshot_id(777)).unwrap();
+        ast.source_id = ids.next_source_id(snapshot_id(777)).unwrap();
+        assert!(
+            theorem_ast_output(
+                &ast,
+                &resolver.module,
+                &resolver.env,
+                PipelinePhase::VcGeneration,
+                snapshot_id(777)
+            )
+            .is_err()
+        );
     }
 
     #[test]

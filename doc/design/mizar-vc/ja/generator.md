@@ -1,5 +1,8 @@
 # Module: generator
 
+限定 theorem bridge は既存 Core seed handoff・seed intake・candidate 正規化を使う。
+lemma 引用の実際の終端証明義務と symbolic premise を保持し、VC を kernel 受理にしない。
+
 > 正本は英語です。英語版:
 > [../en/generator.md](../en/generator.md)。
 

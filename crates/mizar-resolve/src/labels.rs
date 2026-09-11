@@ -8,7 +8,8 @@
 //! premises, or assign public resolver diagnostic codes.
 
 use crate::env::{
-    ExportStatus, LabelEntry, LabelIndex, NamespacePath, SourceContributionId, Visibility,
+    ExportStatus, LabelEntry, LabelIndex, NamespacePath, SourceContributionId, SymbolEnv,
+    SymbolKind, Visibility,
 };
 use crate::recovery::suppress_dependent_diagnostic_for_recovered_origin;
 use crate::resolved_ast::{
@@ -498,13 +499,13 @@ impl<'a> ProofLabelSourceCollector<'a> {
     /// The structural arena is revalidated on every call so a collector never
     /// relies on stale constructor validation.
     pub fn collect(&self) -> Result<ProofLabelSourceCollection, ProofLabelSourceCollectionError> {
-        self.collect_impl(false, false)
+        self.collect_impl(false, false, None)
     }
 
     pub fn collect_with_let_conditions(
         &self,
     ) -> Result<ProofLabelSourceCollection, ProofLabelSourceCollectionError> {
-        self.collect_impl(true, false)
+        self.collect_impl(true, false, None)
     }
 
     /// Collects labels and citations for bounded proof organization forms.
@@ -515,18 +516,33 @@ impl<'a> ProofLabelSourceCollector<'a> {
     pub fn collect_with_proof_organization(
         &self,
     ) -> Result<ProofLabelSourceCollection, ProofLabelSourceCollectionError> {
-        self.collect_impl(true, true)
+        self.collect_impl(true, true, None)
+    }
+
+    /// Collects authenticated theorem/lemma owner labels and proof labels.
+    pub fn collect_with_theorem_owners(
+        &self,
+        symbols: &SymbolEnv,
+    ) -> Result<ProofLabelSourceCollection, ProofLabelSourceCollectionError> {
+        self.collect_impl(false, false, Some(symbols))
     }
 
     fn collect_impl(
         &self,
         include_let_conditions: bool,
         include_proof_organization: bool,
+        theorem_owners: Option<&SymbolEnv>,
     ) -> Result<ProofLabelSourceCollection, ProofLabelSourceCollectionError> {
         self.resolved
             .validate_against(self.ast, self.resolved.module())
             .map_err(ProofLabelSourceCollectionError::SurfaceArena)?;
 
+        if theorem_owners.is_some_and(|symbols| symbols.module_id() != self.resolved.module()) {
+            return Ok(ProofLabelSourceCollection {
+                projections: vec![],
+                references: vec![],
+            });
+        }
         let Some(item_list) = exact_proof_label_item_list(self.ast) else {
             return Ok(ProofLabelSourceCollection {
                 projections: Vec::new(),
@@ -535,13 +551,26 @@ impl<'a> ProofLabelSourceCollector<'a> {
         };
         let mut state = ProofLabelCollectionState::new(self, include_proof_organization);
         for child in item_list.child_views() {
-            if child.is_recovered() || !matches!(child.kind(), SurfaceNodeKind::TheoremItem) {
+            if child.is_recovered()
+                || !(matches!(child.kind(), SurfaceNodeKind::TheoremItem)
+                    || theorem_owners.is_some()
+                        && matches!(child.kind(), SurfaceNodeKind::LemmaItem))
+            {
                 continue;
             }
-            let Some(owner) = exact_theorem_owner(child) else {
+            let owner = exact_theorem_owner(child, theorem_owners.is_some());
+            let Some(owner) = owner else {
                 continue;
             };
+            let owner_projection =
+                theorem_owners.and_then(|symbols| state.push_theorem_owner(child, owner, symbols));
+            if theorem_owners.is_some() && owner_projection.is_none() {
+                continue;
+            }
             state.visit_theorem(child, owner, include_let_conditions)?;
+            if let Some(index) = owner_projection {
+                state.set_projection_visible_after(index, state.ordinal);
+            }
         }
         Ok(state.finish())
     }
@@ -550,7 +579,8 @@ impl<'a> ProofLabelSourceCollector<'a> {
 #[derive(Clone, Copy)]
 struct TheoremOwner<'a> {
     spelling: &'a str,
-    proof: SurfaceNodeView<'a>,
+    spelling_range: SourceRange,
+    proof: Option<SurfaceNodeView<'a>>,
 }
 
 struct ProofLabelCollectionState<'a, 'collector> {
@@ -594,7 +624,10 @@ impl<'a, 'collector> ProofLabelCollectionState<'a, 'collector> {
         owner: TheoremOwner<'a>,
         include_let_conditions: bool,
     ) -> Result<(), ProofLabelSourceCollectionError> {
-        if !proof_block_boundary_is_supported(owner.proof) {
+        let Some(proof) = owner.proof else {
+            return Ok(());
+        };
+        if !proof_block_boundary_is_supported(proof) {
             return Ok(());
         }
 
@@ -612,7 +645,7 @@ impl<'a, 'collector> ProofLabelCollectionState<'a, 'collector> {
             theorem,
             owner.spelling,
             current_owner_occurrence,
-            owner.proof,
+            proof,
             &scope,
             &[],
             include_let_conditions,
@@ -882,6 +915,98 @@ impl<'a, 'collector> ProofLabelCollectionState<'a, 'collector> {
         }
     }
 
+    fn push_theorem_owner(
+        &mut self,
+        theorem: SurfaceNodeView<'a>,
+        owner: TheoremOwner<'a>,
+        symbols: &SymbolEnv,
+    ) -> Option<usize> {
+        if owner
+            .proof
+            .is_some_and(|proof| !proof_block_boundary_is_supported(proof))
+        {
+            return None;
+        }
+        let module = self.collector.resolved.module();
+        let owner_kind = match theorem.kind() {
+            SurfaceNodeKind::TheoremItem => SymbolKind::Theorem,
+            SurfaceNodeKind::LemmaItem => SymbolKind::Lemma,
+            _ => return None,
+        };
+        let symbol = symbols
+            .symbols()
+            .iter()
+            .filter(|entry| {
+                entry.symbol().module() == module
+                    && entry.kind() == owner_kind
+                    && entry.namespace() == &self.collector.namespace
+                    && entry.primary_spelling() == owner.spelling
+                    && entry.contribution() == self.collector.contribution
+                    && entry.origin().source_id() == self.collector.ast.source_id
+                    && entry.origin().module_id() == module
+                    && source_range_from_anchor(entry.origin().anchor()) == Some(theorem.range())
+                    && !entry.origin().is_recovered()
+            })
+            .collect::<Vec<_>>();
+        let [symbol] = symbol.as_slice() else {
+            return None;
+        };
+        let owner_range = owner.spelling_range;
+        let labels = symbols
+            .labels()
+            .visible_candidates(&self.collector.namespace, owner.spelling)
+            .into_iter()
+            .filter(|entry| {
+                entry.kind() == LabelKind::Theorem
+                    && entry.origin().module_id() == module
+                    && entry.origin().source_id() == self.collector.ast.source_id
+                    && entry.contribution() == symbol.contribution()
+                    && !entry.origin().is_recovered()
+            })
+            .collect::<Vec<_>>();
+        if labels.len() > 1
+            || labels.first().is_some_and(|entry| {
+                source_range_from_anchor(entry.origin().anchor()) != Some(owner_range)
+            })
+        {
+            return None;
+        }
+        let (origin_path, origin, declaration_range, contribution) =
+            if let Some(label) = labels.first().copied() {
+                (
+                    label.origin_path().clone(),
+                    label.origin().clone(),
+                    source_range_from_anchor(label.origin().anchor())?,
+                    label.contribution(),
+                )
+            } else {
+                (
+                    LabelOriginPath::new(symbol.symbol().fqn().as_str()),
+                    symbol.origin().clone(),
+                    owner_range,
+                    symbol.contribution(),
+                )
+            };
+        let projection = LabelProjection::current_module(
+            LabelProjectionData {
+                origin_path,
+                module: module.clone(),
+                namespace: self.collector.namespace.clone(),
+                primary_spelling: owner.spelling.to_owned(),
+                kind: LabelKind::Theorem,
+                declaration_range,
+                origin,
+                contribution,
+            },
+            usize::MAX,
+        )
+        .with_visibility(symbol.visibility())
+        .with_export_status(symbol.export_status());
+        let index = self.projections.len();
+        self.projections.push(projection);
+        Some(index)
+    }
+
     fn visit_justification(
         &mut self,
         theorem: SurfaceNodeView<'a>,
@@ -1065,13 +1190,34 @@ fn exact_statement_label(statement: SurfaceNodeView<'_>) -> Option<SurfaceNodeVi
     Some(children[0])
 }
 
-fn exact_theorem_owner(theorem: SurfaceNodeView<'_>) -> Option<TheoremOwner<'_>> {
-    let children = theorem.child_views().collect::<Vec<_>>();
-    if children.len() < 4
-        || children[..3].iter().any(|child| child.is_recovered())
-        || !token_is(&children[0], SurfaceTokenKind::ReservedWord, "theorem")
-        || !token_has_kind(&children[1], SurfaceTokenKind::Identifier)
-        || !token_is(&children[2], SurfaceTokenKind::ReservedSymbol, ":")
+fn exact_theorem_owner(
+    item: SurfaceNodeView<'_>,
+    allow_proofless: bool,
+) -> Option<TheoremOwner<'_>> {
+    let expected_role = match item.kind() {
+        SurfaceNodeKind::TheoremItem => "theorem",
+        SurfaceNodeKind::LemmaItem => "lemma",
+        _ => return None,
+    };
+    let children = item.child_views().collect::<Vec<_>>();
+    if children.len() < 4 {
+        return None;
+    }
+    let proofless = allow_proofless
+        && children.first().is_some_and(|child| {
+            token_is(child, SurfaceTokenKind::ReservedWord, "open")
+                || token_is(child, SurfaceTokenKind::ReservedWord, "assumed")
+        });
+    let index = usize::from(proofless);
+    let role_token = children.get(index)?;
+    let spelling_token = children.get(index + 1)?;
+    let colon = children.get(index + 2)?;
+    if [role_token, spelling_token, colon]
+        .iter()
+        .any(|child| child.is_recovered())
+        || !token_is(role_token, SurfaceTokenKind::ReservedWord, expected_role)
+        || !token_has_kind(spelling_token, SurfaceTokenKind::Identifier)
+        || !token_is(colon, SurfaceTokenKind::ReservedSymbol, ":")
     {
         return None;
     }
@@ -1080,12 +1226,16 @@ fn exact_theorem_owner(theorem: SurfaceNodeView<'_>) -> Option<TheoremOwner<'_>>
         .copied()
         .filter(|child| matches!(child.kind(), SurfaceNodeKind::ProofBlock))
         .collect::<Vec<_>>();
-    if proofs.len() != 1 || proofs[0].is_recovered() {
-        return None;
-    }
+    let proof = match proofs.as_slice() {
+        [proof] if !proofless && !proof.is_recovered() => Some(*proof),
+        [] if proofless => None,
+        _ => return None,
+    };
+    let spelling = spelling_token.as_token()?.text.as_ref();
     Some(TheoremOwner {
-        spelling: children[1].as_token()?.text.as_ref(),
-        proof: proofs[0],
+        spelling,
+        spelling_range: spelling_token.range(),
+        proof,
     })
 }
 
@@ -1226,6 +1376,13 @@ fn proof_label_origin_path(
     ))
 }
 
+fn source_range_from_anchor(anchor: &SourceAnchor) -> Option<SourceRange> {
+    if let SourceAnchor::Range(range) = anchor {
+        Some(*range)
+    } else {
+        None
+    }
+}
 /// Crate-local/internal label diagnostic kind.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
 #[non_exhaustive]

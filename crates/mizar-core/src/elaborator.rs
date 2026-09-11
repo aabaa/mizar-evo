@@ -73,6 +73,7 @@ use mizar_checker::{
         SourcePropertyImplementationHandoff, SourcePropertyImplementationStyle,
         SourcePropertyParameterId,
     },
+    source_statement::{SourceTheoremOwnerInput, SourceTheoremRole, SourceTheoremStatus},
     source_structure::{
         SourceStructureEdgeId, SourceStructureEdgeRole, SourceStructureMemberId,
         SourceStructureMemberRole, SourceStructureRecovery, SourceStructureRequestId,
@@ -98,7 +99,9 @@ use mizar_checker::{
     },
 };
 use mizar_resolve::env::{ExportStatus, Visibility};
-use mizar_resolve::names::FraenkelGeneratorVariableBindingId;
+use mizar_resolve::names::{
+    FraenkelGeneratorVariableBindingId, SourceVariableBindingKind, SourceVariableTypeRadix,
+};
 use mizar_resolve::resolved_ast::{ModuleId, SemanticOrigin, SymbolId};
 use mizar_session::{SourceAnchor, SourceId, SourceRange};
 use std::{
@@ -14305,6 +14308,521 @@ fn attach_proof_backrefs(
             citations: pending.citations.clone(),
         });
     }
+}
+
+/// Lowers the authenticated bounded source theorem/lemma skeleton profile.
+pub fn lower_source_theorem_skeletons(
+    check: &mizar_checker::type_checker::SourceTheoremCheck<'_>,
+) -> Result<CoreIr, String> {
+    let typed = check.typed_ast();
+    let scope = check.scope();
+    let labels = check.labels();
+    let resolved = check.resolved_labels();
+    let owners = check.owners();
+    if owners.is_empty() {
+        return Err("theorems.core.invalid_input".to_owned());
+    }
+    if owners
+        .iter()
+        .any(|(owner, _)| owner.status != SourceTheoremStatus::Unmodified)
+    {
+        return Err("theorems.core.status_unsupported".to_owned());
+    }
+
+    let invalid = || "theorems.core.invalid_input".to_owned();
+    let kind = |id: TypedNodeId| typed.nodes().node(id).map(|node| node.kind.as_str());
+    let range = |id: TypedNodeId| match typed.nodes().node(id)?.anchor {
+        SourceAnchor::Range(value) => Some(value),
+        _ => None,
+    };
+    let children = |id: TypedNodeId| -> Option<Vec<TypedNodeId>> {
+        Some(
+            typed
+                .nodes()
+                .node(id)?
+                .children
+                .iter()
+                .copied()
+                .filter(|child| !kind(*child).is_some_and(|value| value.starts_with("Token(")))
+                .collect(),
+        )
+    };
+    let unwrap = |mut id: TypedNodeId| -> Option<TypedNodeId> {
+        while matches!(kind(id), Some("Proposition" | "FormulaExpression")) {
+            let nested = children(id)?;
+            let [child] = nested.as_slice() else {
+                return None;
+            };
+            id = *child;
+        }
+        Some(id)
+    };
+    let contains = |outer: SourceRange, inner: SourceRange| {
+        outer.source_id == inner.source_id && outer.start <= inner.start && outer.end >= inner.end
+    };
+    let primary = typed.source_term().ok_or_else(invalid)?;
+    let atomic = typed.source_atomic_formula().ok_or_else(invalid)?;
+    let binding_for_target =
+        |target: mizar_checker::source_atomic_formula::SourceAtomicTermTarget| {
+            let mizar_checker::source_atomic_formula::SourceAtomicTermTarget::Primary(term) =
+                target
+            else {
+                return None;
+            };
+            primary
+                .references()
+                .iter()
+                .find_map(|(_, reference)| {
+                    (reference.term() == term).then_some(reference.binding())
+                })
+                .and_then(|binding| scope.bindings().get(binding.index()).map(|row| row.id()))
+        };
+    let checker_key = |owner: &SourceTheoremOwnerInput, suffix: &str| {
+        format!("checker/theorem/{}/{}", owner.symbol.fqn().as_str(), suffix)
+    };
+
+    let mut term_seeds = Vec::new();
+    let mut formula_seeds = Vec::new();
+    let append_equality = |term_seeds: &mut Vec<CoreTermSeed>,
+                           formula_seeds: &mut Vec<CoreFormulaSeed>,
+                           owner: &SourceTheoremOwnerInput,
+                           formula_node: TypedNodeId|
+     -> Result<CoreFormulaSeedId, String> {
+        let formula = atomic
+            .formulas()
+            .iter()
+            .find(|(_, row)| row.site().node().index() == formula_node.index())
+            .ok_or_else(invalid)?;
+        let mut edges = atomic
+            .edges()
+            .iter()
+            .filter(|(_, edge)| edge.formula() == formula.0)
+            .map(|(_, edge)| edge)
+            .collect::<Vec<_>>();
+        edges.sort_by_key(|edge| edge.ordinal());
+        if edges.len() != 2 {
+            return Err(invalid());
+        }
+        let mut terms = Vec::new();
+        for edge in &edges {
+            let binding = binding_for_target(edge.target()).ok_or_else(invalid)?;
+            let mizar_checker::source_atomic_formula::SourceAtomicTermTarget::Primary(term) =
+                edge.target()
+            else {
+                return Err(invalid());
+            };
+            let source = primary
+                .terms()
+                .get(term)
+                .map(|row| row.source_range())
+                .ok_or_else(invalid)?;
+            term_seeds.push(CoreTermSeed::new(
+                CoreTermSeedKind::Var(CoreVarId::new(binding.index())),
+                CoreSourceRef::direct(source),
+                CheckerOwnedProvenance::checker(checker_key(owner, "term")),
+            ));
+            terms.push(CoreTermSeedId::new(term_seeds.len() - 1));
+        }
+        let source = formula.1.source_range();
+        formula_seeds.push(CoreFormulaSeed::new(
+            CoreFormulaSeedKind::Equals {
+                left: terms[0],
+                right: terms[1],
+            },
+            CoreSourceRef::direct(source),
+            CheckerOwnedProvenance::checker(checker_key(owner, "equality")),
+        ));
+        Ok(CoreFormulaSeedId::new(formula_seeds.len() - 1))
+    };
+
+    let mut owner_formula_seeds = BTreeMap::new();
+    let mut owner_records = Vec::new();
+    for (owner, _) in owners {
+        let owner_node = owner.site.node();
+        let owner_children = children(owner_node).ok_or_else(invalid)?;
+        let Some(written) = owner_children.first().copied() else {
+            return Err(invalid());
+        };
+        let formula_node = unwrap(written).ok_or_else(invalid)?;
+        if kind(formula_node) != Some("QuantifiedFormula(Universal)") {
+            return Err(invalid());
+        }
+        let quantifier_children = children(formula_node).ok_or_else(invalid)?;
+        let split = quantifier_children
+            .iter()
+            .take_while(|id| kind(**id) == Some("QuantifierVariableSegment"))
+            .count();
+        if split != 1 || quantifier_children.len() != 2 {
+            return Err(invalid());
+        }
+        let segment_range = range(quantifier_children[0]).ok_or_else(invalid)?;
+        let mut bound = scope
+            .bindings()
+            .iter()
+            .filter(|binding| {
+                binding.kind() == SourceVariableBindingKind::Quantifier
+                    && contains(segment_range, binding.range())
+            })
+            .collect::<Vec<_>>();
+        bound.sort_by_key(|binding| binding.ordinal());
+        let [bound] = bound.as_slice() else {
+            return Err(invalid());
+        };
+        let body = unwrap(quantifier_children[1]).ok_or_else(invalid)?;
+        let body_seed = append_equality(&mut term_seeds, &mut formula_seeds, owner, body)?;
+        let guard_source = bound.range();
+        let guard_seed = {
+            let term = term_seeds.len();
+            term_seeds.push(CoreTermSeed::new(
+                CoreTermSeedKind::Var(CoreVarId::new(bound.id().index())),
+                CoreSourceRef::direct(guard_source),
+                CheckerOwnedProvenance::checker(checker_key(owner, "binder")),
+            ));
+            let ty = match bound.declared_type().ok_or_else(invalid)?.radix() {
+                SourceVariableTypeRadix::Set => "set",
+                SourceVariableTypeRadix::Object => "object",
+                _ => return Err(invalid()),
+            };
+            formula_seeds.push(CoreFormulaSeed::new(
+                CoreFormulaSeedKind::TypePred {
+                    subject: CoreTermSeedId::new(term),
+                    ty: CoreTypePredicate::new(ty),
+                },
+                CoreSourceRef::direct(guard_source),
+                CheckerOwnedProvenance::checker(checker_key(owner, "binder")),
+            ));
+            CoreFormulaSeedId::new(formula_seeds.len() - 1)
+        };
+        let proposition = CoreFormulaSeed::new(
+            CoreFormulaSeedKind::Forall {
+                binders: vec![
+                    QuantifierBinderSeed::new(
+                        CoreVarId::new(bound.id().index()),
+                        "quantifier",
+                        CoreSourceRef::direct(segment_range),
+                        CheckerOwnedProvenance::checker(checker_key(owner, "quantifier")),
+                    )
+                    .with_guard(guard_seed, vec![CoreVarId::new(bound.id().index())])
+                    .with_source_name(bound.spelling()),
+                ],
+                body: body_seed,
+            },
+            CoreSourceRef::direct(owner.source_range),
+            CheckerOwnedProvenance::checker(checker_key(owner, "proposition")),
+        );
+        formula_seeds.push(proposition);
+        let proposition = CoreFormulaSeedId::new(formula_seeds.len() - 1);
+
+        let proof = {
+            let [_, proof] = owner_children.as_slice() else {
+                return Err(invalid());
+            };
+            if kind(*proof) != Some("ProofBlock") {
+                return Err(invalid());
+            }
+            let proof_children = children(*proof).ok_or_else(invalid)?;
+            let let_node = *proof_children.first().ok_or_else(invalid)?;
+            if kind(let_node) != Some("LetStatement") {
+                return Err(invalid());
+            }
+            let let_children = children(let_node).ok_or_else(invalid)?;
+            let let_split = let_children
+                .iter()
+                .take_while(|id| kind(**id) == Some("QualifiedVariableSegment"))
+                .count();
+            if let_split != 1 || let_children.len() != 1 {
+                return Err(invalid());
+            }
+            let let_range = range(let_children[0]).ok_or_else(invalid)?;
+            let mut locals = scope
+                .bindings()
+                .iter()
+                .filter(|binding| {
+                    binding.kind() == SourceVariableBindingKind::Let
+                        && contains(let_range, binding.range())
+                })
+                .collect::<Vec<_>>();
+            locals.sort_by_key(|binding| binding.ordinal());
+            let [local] = locals.as_slice() else {
+                return Err(invalid());
+            };
+            let conclusion = *proof_children.last().ok_or_else(invalid)?;
+            if kind(conclusion) != Some("ConclusionStatement") {
+                return Err(invalid());
+            }
+            let conclusion_children = children(conclusion).ok_or_else(invalid)?;
+            if conclusion_children.is_empty() {
+                return Err(invalid());
+            }
+            let conclusion_node = unwrap(conclusion_children[0]).ok_or_else(invalid)?;
+            let local_seed =
+                append_equality(&mut term_seeds, &mut formula_seeds, owner, conclusion_node)?;
+            let local_guard = {
+                let term = term_seeds.len();
+                term_seeds.push(CoreTermSeed::new(
+                    CoreTermSeedKind::Var(CoreVarId::new(local.id().index())),
+                    CoreSourceRef::direct(local.range()),
+                    CheckerOwnedProvenance::checker(checker_key(owner, "proof-let")),
+                ));
+                let ty = match local.declared_type().ok_or_else(invalid)?.radix() {
+                    SourceVariableTypeRadix::Set => "set",
+                    SourceVariableTypeRadix::Object => "object",
+                    _ => return Err(invalid()),
+                };
+                formula_seeds.push(CoreFormulaSeed::new(
+                    CoreFormulaSeedKind::TypePred {
+                        subject: CoreTermSeedId::new(term),
+                        ty: CoreTypePredicate::new(ty),
+                    },
+                    CoreSourceRef::direct(local.range()),
+                    CheckerOwnedProvenance::checker(checker_key(owner, "proof-let")),
+                ));
+                CoreFormulaSeedId::new(formula_seeds.len() - 1)
+            };
+            let references = labels
+                .references()
+                .iter()
+                .filter(|reference| {
+                    range(conclusion).is_some_and(|site| contains(site, reference.site().range()))
+                })
+                .collect::<Vec<_>>();
+            if references.len() > 1 {
+                return Err(invalid());
+            }
+            let cited = if let Some(reference) = references.first() {
+                let entry = resolved
+                    .ids()
+                    .iter()
+                    .find_map(|id| {
+                        resolved.table().get(*id).filter(|entry| {
+                            entry.site() == reference.site() && entry.origin() == reference.origin()
+                        })
+                    })
+                    .ok_or_else(invalid)?;
+                let mizar_resolve::resolved_ast::LabelResolution::Resolved(label) =
+                    entry.resolution()
+                else {
+                    return Err(invalid());
+                };
+                let projection = labels
+                    .projections()
+                    .iter()
+                    .find(|projection| projection.origin_path() == label.origin())
+                    .ok_or_else(invalid)?;
+                let target_owner = owners
+                    .iter()
+                    .find(|(candidate, _)| {
+                        contains(candidate.source_range, projection.declaration_range())
+                            && candidate.contribution == projection.contribution()
+                    })
+                    .ok_or_else(invalid)?;
+                if target_owner.0.source_range.start >= owner.source_range.start {
+                    return Err(invalid());
+                }
+                Some((target_owner.0.symbol.clone(), target_owner.0.site.node()))
+            } else {
+                None
+            };
+            (
+                local.id(),
+                local_guard,
+                local_seed,
+                range(conclusion).ok_or_else(invalid)?,
+                cited,
+            )
+        };
+        owner_formula_seeds.insert(owner_node, proposition);
+        owner_records.push((owner.clone(), proposition, proof));
+    }
+
+    let mut context_input = CoreContextInput::new(ResolvedTypedAstSummary::new(
+        typed.source_id(),
+        typed.module_id().clone(),
+    ));
+    for (owner, _, proof) in &owner_records {
+        let (item_kind, boundary) = match owner.role {
+            SourceTheoremRole::Theorem => (CoreItemKind::Theorem, DefinitionBoundaryKind::Theorem),
+            SourceTheoremRole::Lemma => (CoreItemKind::Lemma, DefinitionBoundaryKind::Lemma),
+            _ => return Err(invalid()),
+        };
+        let visibility = owners
+            .iter()
+            .find_map(|(candidate, visibility)| {
+                (candidate.symbol == owner.symbol).then_some(*visibility)
+            })
+            .ok_or_else(invalid)?;
+        let dependencies = proof
+            .4
+            .as_ref()
+            .map(|(symbol, _)| vec![symbol.clone()])
+            .unwrap_or_default();
+        let provenance = CheckerOwnedProvenance::try_new(vec![
+            CoreProvenance::new(
+                CoreProvenancePhase::Resolver,
+                format!("resolver/theorem/{}", owner.symbol.fqn().as_str()),
+            ),
+            CoreProvenance::new(CoreProvenancePhase::Checker, checker_key(owner, "owner")),
+        ])
+        .map_err(|error| error.to_string())?;
+        let seed = CoreItemSeed::new(
+            owner.symbol.clone(),
+            item_kind,
+            visibility,
+            CoreSourceRef::direct(owner.source_range)
+                .with_provenance(provenance.as_slice().to_vec()),
+            provenance,
+        )
+        .with_dependencies(dependencies)
+        .with_definition_boundary(boundary);
+        context_input.item_seeds.push(seed);
+    }
+    for binding in scope.bindings() {
+        let Some(ty) = binding.declared_type() else {
+            continue;
+        };
+        if !ty.attributes().is_empty() {
+            return Err(invalid());
+        }
+        let role = match binding.kind() {
+            SourceVariableBindingKind::Quantifier => "quantifier",
+            SourceVariableBindingKind::Let => "proof-let",
+            _ => "source-variable",
+        };
+        let provenance = CheckerOwnedProvenance::checker(format!(
+            "checker/binding/{}/{}..{}",
+            binding.id().index(),
+            binding.range().start,
+            binding.range().end
+        ));
+        context_input.variable_seeds.push(CoreVariableSeed::new(
+            CoreVarId::new(binding.id().index()),
+            NormalizedVarClass::Free,
+            role,
+            NormalizedVarSort::Term,
+            provenance.clone(),
+        ));
+        context_input.binder_seeds.push(CoreBinderSeed::new(
+            CoreVarId::new(binding.id().index()),
+            CoreSourceRef::direct(binding.range()),
+            provenance,
+        ));
+    }
+    let context = prepare_core_context(context_input).map_err(|error| error.to_string())?;
+    let lowering_owner = context
+        .item_registry()
+        .id_for_symbol(&owners[0].0.symbol)
+        .ok_or_else(invalid)?;
+    let term_formula = lower_term_and_formula_inputs(
+        &context,
+        TermAndFormulaLoweringInput {
+            owner: lowering_owner,
+            template_type_parameter_sethoods: Vec::new(),
+            terms: term_seeds,
+            formulas: formula_seeds,
+            failed_sites: Vec::new(),
+        },
+    )
+    .map_err(|error| error.to_string())?;
+    let definitions =
+        lower_definition_inputs(&context, &term_formula, DefinitionLoweringInput::new())
+            .map_err(|error| error.to_string())?;
+    let mut proof_seeds = Vec::new();
+    for (source_owner, proposition_seed, proof) in owner_records {
+        let (local, local_guard_seed, local_goal_seed, conclusion_range, cited) = proof;
+        let item = context
+            .item_registry()
+            .id_for_symbol(&source_owner.symbol)
+            .ok_or_else(invalid)?;
+        let proposition = *term_formula
+            .formula_map
+            .get(&proposition_seed)
+            .ok_or_else(invalid)?;
+        let local_goal = *term_formula
+            .formula_map
+            .get(&local_goal_seed)
+            .ok_or_else(invalid)?;
+        let local_guard = *term_formula
+            .formula_map
+            .get(&local_guard_seed)
+            .ok_or_else(invalid)?;
+        let mut context_formulas = vec![local_guard];
+        let mut citations = Vec::new();
+        if let Some((symbol, cited_node)) = cited {
+            let cited_seed = owner_formula_seeds.get(&cited_node).ok_or_else(invalid)?;
+            context_formulas.push(
+                *term_formula
+                    .formula_map
+                    .get(cited_seed)
+                    .ok_or_else(invalid)?,
+            );
+            citations.push(CoreCitation::Symbol(symbol));
+        }
+        let skeleton_key = format!(
+            "checker/theorem/{}/skeleton",
+            source_owner.symbol.fqn().as_str()
+        );
+        let terminal = ProofNodeSeed::TerminalGoal(
+            ProofTerminalGoalSeed::active(
+                local_goal,
+                format!("proof/{}", source_owner.symbol.fqn().as_str()),
+                format!("{}.proof", source_owner.symbol.fqn().as_str()),
+                CoreSourceRef::direct(conclusion_range).with_provenance(vec![CoreProvenance::new(
+                    CoreProvenancePhase::ProofSkeleton,
+                    skeleton_key.clone(),
+                )]),
+                CheckerOwnedProvenance::checker(format!("{skeleton_key}/terminal")),
+            )
+            .with_context(context_formulas)
+            .with_citations(citations.clone()),
+        );
+        let local_binding = scope.bindings().get(local.index()).ok_or_else(invalid)?;
+        proof_seeds.push(ProofSeed {
+            owner: item,
+            symbol: source_owner.symbol,
+            proposition,
+            status: CoreProofStatus::PendingAutomaticProof,
+            skeleton: ProofSkeletonSeed::Node(ProofNodeSeed::IntroduceBinder {
+                binder: CoreBinder {
+                    var: CoreVarId::new(local.index()),
+                    role: CoreVarRole::new("proof-let"),
+                    ty_guard: Some(local_guard),
+                    source_name: Some(local_binding.spelling().to_owned()),
+                    source: CoreSourceRef::direct(local_binding.range()),
+                },
+                child: Box::new(terminal),
+                source: CoreSourceRef::direct(local_binding.range()),
+                provenance: CheckerOwnedProvenance::checker(format!("{skeleton_key}/let")),
+            }),
+            source: CoreSourceRef::direct(source_owner.source_range),
+            provenance: CheckerOwnedProvenance::checker(format!("{skeleton_key}/proof")),
+        });
+    }
+    let proofs = lower_proof_inputs(
+        &context,
+        &term_formula,
+        &definitions,
+        ProofLoweringInput {
+            proofs: proof_seeds,
+        },
+    )
+    .map_err(|error| error.to_string())?;
+    CoreIr::try_new(CoreIrParts {
+        source_id: context.source_id(),
+        module_id: context.module_id().clone(),
+        items: context.item_registry().items().clone(),
+        terms: term_formula.terms,
+        formulas: term_formula.formulas,
+        definitions: definitions.definitions,
+        proofs: proofs.proofs,
+        proof_nodes: proofs.proof_nodes,
+        algorithms: CoreAlgorithmTable::new(),
+        algorithm_statements: CoreAlgorithmStmtTable::new(),
+        generated: term_formula.generated,
+        obligation_seeds: proofs.obligation_seeds,
+        source_map: proofs.source_map,
+        diagnostics: proofs.diagnostics,
+    })
+    .map_err(|error| error.to_string())
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]

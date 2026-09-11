@@ -253,6 +253,7 @@ top-level public API group:
   `AlgorithmLoweringInput`, `AlgorithmSeed`, `AlgorithmPayloadSeed`,
   `AlgorithmStmtSeed`, `AlgorithmMatchArmSeed`,
   `AlgorithmLoweringOutput`, `lower_algorithm_inputs`
+- source theorem-skeleton lowering: `lower_source_theorem_skeletons`（[仕様の所有元](./elaborator.md)）。
 
 対応:
 

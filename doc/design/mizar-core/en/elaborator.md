@@ -1,5 +1,12 @@
 # Elaborator
 
+`lower_source_theorem_skeletons` consumes only the opaque checker `SourceTheoremCheck` and lowers
+existing source owner/formula identities through Core item, formula and proof
+seeds. Source ranges, binder correspondence, citation targets and obligation
+provenance are preserved. This lowering admits only unmodified proof-bearing
+owners; open/assumed registration stays in checker/policy. This seam admits no resolver
+environment/Visibility and does not extend the Task-31 exception or generic checked-proof installation.
+
 `normalize_source_membership_proof` consumes only the checked borrowed source transaction.
 It reconciles proof-local bindings and discharges enumeration membership or identity-mapper
 membership from the cited direct bound; it creates no generic IR, empty VC receipt, or kernel evidence.

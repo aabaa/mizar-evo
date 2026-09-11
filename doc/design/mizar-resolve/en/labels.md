@@ -1,5 +1,10 @@
 # Module: labels
 
+`collect_with_theorem_owners` is an opt-in extension for theorem/lemma declarations
+and proof citations. It projects module-local owners after their declarations and
+retains exact source order, scope, reference site and origin; older collectors
+keep their existing profiles. Status does not turn a label into a verified fact.
+
 `collect_with_proof_organization()` additionally traverses Given/Consider conditions,
 Now/Hereby blocks, `suppose` branches and iterative equalities using the existing collection.
 Labels retain their real declaration/citation origins, block scopes and visibility order;

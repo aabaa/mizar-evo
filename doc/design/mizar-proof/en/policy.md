@@ -1,5 +1,9 @@
 # mizar-proof Policy Spec
 
+Source open/assumed registration may be observed through the existing development
+policy's `OpenObligation` and `PolicyAssumption` candidates. These distinct policy
+classes are not kernel verification; strict release rejection remains unchanged.
+
 > Canonical language: English. Japanese companion:
 > [../ja/policy.md](../ja/policy.md).
 

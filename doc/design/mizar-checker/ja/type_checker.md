@@ -1,5 +1,12 @@
 # mizar-checker: Type Checker
 
+`SourceVariableSemanticsChecker::check_theorem_skeletons` は既存の typed arena、
+occurrence scope、symbol、label 入力を検証し、不透明な借用 `SourceTheoremCheck` を返す。
+theorem/lemma と status、組込み全称・等式、順序付き汎化、残存 thesis、引用 provenance を検査する。
+seal は `Vec<(SourceTheoremOwnerInput, &'static str)>` の共有 slice と typed/scope/label 参照だけを公開する。
+visibility は checker が `"public"`/`"private"` に射影し、未対応値は拒否する。SymbolEnv や resolver Visibility は渡さない。
+骨格エラーと不正入力を区別し、statement の登録・検査を信頼済み証明へ昇格させない。
+
 `SourceVariableSemanticsChecker::check_proof_organization` は `check_formula_statements` と同じ入力を取り、
 組込み型、存在例化、ブロック・分岐の目標と実際の引用 ID を検査して `Result<bool, String>` を返す。
 bool は場合分けの網羅性義務を反射等式・相補的条件で満たせたかを示し、未対応義務はエラーになる。

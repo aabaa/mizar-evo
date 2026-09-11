@@ -1,5 +1,9 @@
 # Module: generator
 
+The bounded theorem bridge uses the existing Core seed handoff, seed intake and
+candidate normalization. Lemma references retain their real terminal obligations
+and symbolic premises; generated VCs remain untrusted, with no kernel acceptance.
+
 > Canonical language: English. Japanese companion:
 > [../ja/generator.md](../ja/generator.md).
 

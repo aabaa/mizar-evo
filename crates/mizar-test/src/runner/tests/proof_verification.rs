@@ -445,7 +445,7 @@
             &temp,
             &mismatch_plan,
         );
-        assert_eq!(mismatch_report.results.len(), 7);
+        assert_eq!(mismatch_report.results.len(), 9);
         let mismatch_result = mismatch_report
             .results
             .iter()
@@ -485,7 +485,7 @@
             validation_mode: ValidationMode::Metadata,
         };
         let report = super::run_proof_verification_corpus(&config).expect("proof report");
-        assert_eq!(report.results.len(), 7);
+        assert_eq!(report.results.len(), 9);
         let id = "fail_proof_verification_per_cases_incomplete_001";
         let plan = build_test_plan(&config).unwrap();
         let case = plan.cases.iter().find(|case| case.id.0 == id).unwrap();
@@ -495,7 +495,7 @@
         assert!(!super::formula_statement::is_active_formula_statement(&workspace_root, case));
         assert_eq!(report.results.iter().find(|result| result.id.0 == id).unwrap().status,
             super::ProofVerificationCaseStatus::Passed);
-        assert_eq!(report.passed_count(), 7);
+        assert_eq!(report.passed_count(), 9);
         assert_eq!(report.failed_count(), 0);
         assert_eq!(report.error_count(), 0, "{:#?}", report.diagnostics);
     }

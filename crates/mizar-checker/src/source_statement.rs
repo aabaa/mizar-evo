@@ -230,12 +230,15 @@ pub struct SourceStatementCitationInput {
 #[non_exhaustive]
 pub enum SourceTheoremRole {
     Theorem,
+    Lemma,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
 #[non_exhaustive]
 pub enum SourceTheoremStatus {
     Unmodified,
+    Open,
+    Assumed,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
@@ -13235,12 +13238,15 @@ fn write_dense_ids<T: Copy>(output: &mut String, rows: &[T], index: impl Fn(T) -
 fn theorem_role_key(role: SourceTheoremRole) -> &'static str {
     match role {
         SourceTheoremRole::Theorem => "theorem",
+        SourceTheoremRole::Lemma => "lemma",
     }
 }
 
 fn theorem_status_key(status: SourceTheoremStatus) -> &'static str {
     match status {
         SourceTheoremStatus::Unmodified => "unmodified",
+        SourceTheoremStatus::Open => "open",
+        SourceTheoremStatus::Assumed => "assumed",
     }
 }
 
