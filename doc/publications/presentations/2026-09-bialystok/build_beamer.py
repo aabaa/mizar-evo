@@ -46,7 +46,7 @@ LABEL_REWRITES = {
     "Speaker note": "Presenter Note",
 }
 
-SECTION_LABEL_RE = re.compile(r"^[A-Za-z][A-Za-z0-9 `/'()&.,-]{0,80}:$")
+SECTION_LABEL_RE = re.compile(r"^(?:\*\*)?[A-Za-z][A-Za-z0-9 *`/'()&.,-]{0,80}:$")
 IMAGE_RE = re.compile(r"^!\[([^\]]*)\]\(([^)]+)\)$")
 DEEP_DIVE_TAG = " [deep dive]"
 FRAME_WEIGHT_LIMIT = 18.5
@@ -118,14 +118,16 @@ def escape_tex(text: str) -> str:
 def inline_tex(text: str) -> str:
     parts: list[str] = []
     pos = 0
-    for match in re.finditer(r"`([^`]+)`|\[([^\]]+)\]\(([^)]+)\)|<(https?://[^>]+)>", text):
+    for match in re.finditer(r"`([^`]+)`|\[([^\]]+)\]\(([^)]+)\)|<(https?://[^>]+)>|\*\*(.+?)\*\*", text):
         parts.append(escape_tex(text[pos : match.start()]))
         if match.group(1) is not None:
             parts.append(rf"\texttt{{{escape_tex(match.group(1))}}}")
         elif match.group(2) is not None:
             parts.append(rf"{inline_tex(match.group(2))} (\url{{{escape_tex(match.group(3))}}})")
-        else:
+        elif match.group(4) is not None:
             parts.append(rf"\url{{{escape_tex(match.group(4))}}}")
+        else:
+            parts.append(rf"\textcolor{{blue!55!black}}{{\textbf{{{inline_tex(match.group(5))}}}}}")
         pos = match.end()
     parts.append(escape_tex(text[pos:]))
     return "".join(parts)
@@ -137,6 +139,7 @@ def frame_title(markdown_title: str) -> str:
 
 
 def plain_text(text: str) -> str:
+    text = re.sub(r"\*\*(.*?)\*\*", r"\1", text)
     text = re.sub(r"`([^`]+)`", r"\1", text)
     text = re.sub(r"\[([^\]]+)\]\(([^)]+)\)", r"\1", text)
     return text.strip()
@@ -219,7 +222,7 @@ def flush_paragraph(paragraph: list[str], out: list[str]) -> None:
     paragraph.clear()
     if not text:
         return
-    if text.endswith(":") and len(text) <= 80:
+    if text.endswith(":") and len(plain_text(text)) <= 80:
         label = LABEL_REWRITES.get(text[:-1], text[:-1])
         status = CODE_STATUS_RE.match(label)
         out.append(r"\smallskip")
@@ -580,7 +583,7 @@ def is_key_phrase_block(code_lines: list[str], lang: str) -> bool:
     if lang != "text" or not code_lines or len(code_lines) > 4:
         return False
     for line in code_lines:
-        if "->" in line or line.startswith("  ") or len(line) > 72:
+        if "->" in line or line.startswith("  ") or len(plain_text(line)) > 72:
             return False
     return True
 

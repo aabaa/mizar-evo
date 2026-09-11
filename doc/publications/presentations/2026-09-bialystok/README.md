@@ -38,13 +38,30 @@ EBNF is intentionally absent; `doc/spec/en/` remains the grammar authority.
 Frames whose headings carry `[deep dive]` in `draft.md` can be skipped
 without breaking a story arc; the generated deck marks them with a small
 "deep dive" tag. Keep the full deck as a handout. For the 45-minute talk,
-read the main sentences from top to bottom. Code captions and diagram
-explanations are part of this reading order; code, tables, sources, and sections
-marked "for later review" can be left for the handout. The notes edition repeats
-all main sentences under "Read aloud", followed by optional notes and sources.
-The title-page notes provide the opening words. Spend more time on selected
-examples, such as frames 3.3, 5.2, and 8.2. Choose two or three closing questions.
-Whether the slot includes questions is still to be confirmed.
+read the dark-blue bold sentences from top to bottom. Start with the title-page
+notes; after that, slides without highlighted prose can be skipped. Other prose,
+code, tables, sources, and sections marked "for later review" are optional.
+Code syntax colors do not mark talk priorities. The notes edition keeps the same
+emphasis under "Read aloud", followed by optional notes and sources.
+
+Use this provisional budget, including time to point to code and diagrams.
+The highlighted text alone is not a timed 45-minute script. Whether the slot
+includes questions is still to be confirmed; allow five minutes for questions
+or extra explanation and check the timing in rehearsal.
+
+| Parts | Topic | Minutes |
+|---|---|---:|
+| 0–1 | Opening and motivation | 6 |
+| 2–4 | Dependencies, structures, registrations; focus on 3.3 | 10 |
+| 5 | Search and checking; focus on 5.2 | 8 |
+| 6–7 | Scale and templates | 5 |
+| 8–10 | Algorithms, publication, pipeline; focus on 8.2 | 7 |
+| 11–12 | Status, roadmap, closing | 4 |
+| — | Questions or extra explanation | 5 |
+
+In the drafts, `**...**` marks these priorities in prose and short `text`
+key-phrase blocks. Keep the EN/JA selections aligned. Mizar and TOML listings
+retain their original text and syntax highlighting.
 
 ## Regenerating The Deck
 
