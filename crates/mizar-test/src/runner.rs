@@ -1835,23 +1835,19 @@ fn step5c11_registration_admitted(root: &Path, case: &TestCase) -> bool {
         && case.expectation.tags.as_slice() == ["active_advanced_semantics"]
 }
 
-fn source_registration_intake(
+fn source_registration_inputs(
     root: &Path,
     case: &TestCase,
     output: FrontendRun,
 ) -> Result<
     (
-        mizar_checker::registration_resolution::RegistrationDatabase,
-        mizar_checker::type_checker::TermFormulaInferenceOutput,
+        mizar_resolve::resolved_ast::SurfaceResolvedArena,
+        mizar_checker::typed_ast::TypedArena,
+        mizar_resolve::env::SymbolEnv,
     ),
     String,
 > {
-    use mizar_checker::registration_resolution::{
-        PendingRegistrationStatus, RegistrationPatternStatus,
-    };
-    use mizar_checker::typed_ast::{
-        InitialObligationKind, InitialObligationStatus, TypedArena, TypedNode, TypedNodeId,
-    };
+    use mizar_checker::typed_ast::{TypedArena, TypedNode, TypedNodeId};
     if !output.diagnostics.is_empty() {
         return Err("registration.frontend_diagnostics".into());
     }
@@ -1887,15 +1883,33 @@ fn source_registration_intake(
             .collect(),
     )
     .map_err(|error| error.to_string())?;
-    let (database, inference) =
-        mizar_checker::registration_resolution::check_source_registration_intake(
-            &source,
-            &nodes,
-            &symbols.env,
-        )?;
+    Ok((source, nodes, symbols.env))
+}
+
+fn source_registration_intake(
+    root: &Path,
+    case: &TestCase,
+    output: FrontendRun,
+) -> Result<
+    (
+        mizar_checker::registration_resolution::RegistrationDatabase,
+        mizar_checker::type_checker::TermFormulaInferenceOutput,
+    ),
+    String,
+> {
+    use mizar_checker::registration_resolution::{
+        PendingRegistrationStatus, RegistrationPatternStatus,
+    };
+    use mizar_checker::typed_ast::{InitialObligationKind, InitialObligationStatus};
+    let (source, nodes, symbols) = source_registration_inputs(root, case, output)?;
+    let check = mizar_checker::registration_resolution::check_source_registration_intake(
+        &source, &nodes, &symbols,
+    )?;
+    let database = check.database();
+    let inference = check.inference();
     if database.module_id() != source.module()
         || database.pending().is_empty()
-        || database.pending().len() != symbols.env.registrations().iter().count()
+        || database.pending().len() != symbols.registrations().iter().count()
         || database.initial_obligations().len() != database.pending().len()
         || !database.activated().is_empty()
         || !database.rejected().is_empty()
@@ -1911,7 +1925,6 @@ fn source_registration_intake(
                 || pending.may_contribute_to_inference()
                 || pending.obligations().len() != 1
                 || !symbols
-                    .env
                     .registrations()
                     .iter()
                     .any(|entry| entry.id() == pending.resolver_registration())
@@ -1929,7 +1942,7 @@ fn source_registration_intake(
     {
         return Err("registration.invalid_pending_output".into());
     }
-    Ok((database, inference))
+    Ok(check.into_outputs())
 }
 
 fn validate_step5c11_registration_inventory(
@@ -2198,7 +2211,9 @@ pub fn active_proof_verification_cases(plan: &TestPlan) -> impl Iterator<Item = 
 }
 
 fn is_active_parse_only(case: &TestCase) -> bool {
-    if is_step5c11_registration_candidate(case) {
+    if is_step5c11_registration_candidate(case)
+        || proof_verification::is_step5c11_proof_candidate(case)
+    {
         return false;
     }
     if parse_only::is_step5c11_parse_candidate(case) {
@@ -2239,7 +2254,9 @@ fn is_active_parse_only(case: &TestCase) -> bool {
 }
 
 fn is_active_declaration_symbol(case: &TestCase) -> bool {
-    if is_step5c11_registration_candidate(case) {
+    if is_step5c11_registration_candidate(case)
+        || proof_verification::is_step5c11_proof_candidate(case)
+    {
         return false;
     }
     if parse_only::is_step5c11_parse_candidate(case) {

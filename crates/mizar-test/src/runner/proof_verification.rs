@@ -34,6 +34,51 @@ const STEP5C4_PROOF_CASE: (&str, &str) = (
     "tests/miz/fail/modes/fail_proof_verification_mode_sethood_unprovable_001.miz",
 );
 const STEP5C4_PROOF_DETAIL_KEY: &str = "modes.sethood.unprovable";
+const STEP5C11_PROOF_ID: &str = "fail_proof_verification_functorial_false_coherence_001";
+const STEP5C11_PROOF_SOURCE: &str =
+    "tests/miz/fail/clusters/fail_proof_verification_functorial_false_coherence_001.miz";
+
+pub(super) fn is_step5c11_proof_candidate(case: &TestCase) -> bool {
+    case.id.0 == STEP5C11_PROOF_ID
+        || case.expectation.id.0 == STEP5C11_PROOF_ID
+        || case.source_path.file_name() == Path::new(STEP5C11_PROOF_SOURCE).file_name()
+        || case.expectation_path.file_name()
+            == Path::new(STEP5C11_PROOF_SOURCE)
+                .with_extension("expect.toml")
+                .file_name()
+}
+
+pub(super) fn step5c11_proof_admitted(root: Option<&Path>, case: &TestCase) -> bool {
+    case.id.0 == STEP5C11_PROOF_ID
+        && case.expectation.id == case.id
+        && case.source_path.ends_with(STEP5C11_PROOF_SOURCE)
+        && case
+            .expectation_path
+            .ends_with(Path::new(STEP5C11_PROOF_SOURCE).with_extension("expect.toml"))
+        && root.is_none_or(|root| {
+            workspace_relative_source(root, &case.source_path).as_deref()
+                == Some(STEP5C11_PROOF_SOURCE)
+                && workspace_relative_source(root, &case.expectation_path).is_some_and(|path| {
+                    Path::new(&path)
+                        == Path::new(STEP5C11_PROOF_SOURCE).with_extension("expect.toml")
+                })
+        })
+        && case.expectation.source == Path::new(STEP5C11_PROOF_SOURCE).file_name().unwrap()
+        && case.expectation.kind == crate::expectation::TestKind::Fail
+        && case.expectation.stage == Stage::ProofVerification
+        && case.expectation.expected_phase == Some(PipelinePhase::Verification)
+        && case.expectation.expected_outcome == ExpectedOutcome::Fail
+        && case.expectation.failure_category.as_deref() == Some("proof_failure")
+        && case.expectation.stable_detail_key.as_deref()
+            == Some("clusters.functorial.false_coherence")
+        && case.expectation.rejection_reason.is_none()
+        && case.expectation.diagnostic_codes.is_empty()
+        && case.expectation.diagnostic_payloads.is_empty()
+        && case.expectation.declaration_symbol_payloads.is_empty()
+        && case.expectation.snapshots.is_none()
+        && case.expectation.tags.as_slice() == [ACTIVE_PROOF_VERIFICATION_TAG]
+}
+
 const GENERATION_SCHEMA: &str = "mizar-vc-generation-task31-v1";
 const VC_SCHEMA: &str = "mizar-vc-vcset-task31-v1";
 const STEP5C7_PROOF_CASES: [(&str, &str); 2] = [
@@ -150,10 +195,6 @@ pub(super) fn theorem_ast_output(
     };
     use mizar_resolve::labels::{LabelResolver, ProofLabelSourceCollector};
     use mizar_resolve::names::{SourceVariableScopeInput, SourceVariableScopeResolver};
-    use mizar_vc::generator::{
-        CoreGenerationCandidateSet, CoreGenerationInput, VcNormalizationInput,
-    };
-    use mizar_vc::vc_ir::{SeedIntakeTable, VcModuleRef};
     let scope = SourceVariableScopeResolver::resolve_proof_occurrences(
         SourceVariableScopeInput::new(ast, module, symbols),
     )
@@ -219,9 +260,21 @@ pub(super) fn theorem_ast_output(
         _ => return Err("unsupported theorem phase/status".into()),
     }
     let core = mizar_core::elaborator::lower_source_theorem_skeletons(&checked)?;
-    let flow = mizar_core::control_flow::build_control_flow_ir(&core);
-    let handoff = mizar_core::control_flow::build_obligation_seed_handoff(&core, &flow);
+    Ok((classes, Some(generate_core_vcs(&core, snapshot)?)))
+}
+
+pub(super) fn generate_core_vcs(
+    core: &mizar_core::core_ir::CoreIr,
+    snapshot: mizar_session::BuildSnapshotId,
+) -> Result<VcSet, String> {
+    use mizar_vc::generator::{
+        CoreGenerationCandidateSet, CoreGenerationInput, VcNormalizationInput,
+    };
+    use mizar_vc::vc_ir::{SeedIntakeTable, VcModuleRef};
+    let flow = mizar_core::control_flow::build_control_flow_ir(core);
+    let handoff = mizar_core::control_flow::build_obligation_seed_handoff(core, &flow);
     let intake = SeedIntakeTable::try_from_handoff(&handoff).map_err(|error| error.to_string())?;
+    let module = core.module_id();
     let package = module.package().as_str();
     let path = module.path().as_str();
     let candidates = CoreGenerationCandidateSet::try_from_seed_intake(CoreGenerationInput {
@@ -241,14 +294,17 @@ pub(super) fn theorem_ast_output(
     let vcs = CoreGenerationCandidateSet::try_normalize(VcNormalizationInput {
         schema_version: &VcSchemaVersion::new(VC_SCHEMA),
         snapshot,
-        source: ast.source_id,
+        source: core.source_id(),
         candidates: &candidates,
     })
     .map_err(|error| error.to_string())?;
-    Ok((classes, Some(vcs)))
+    Ok(vcs)
 }
 
 pub(super) fn is_active_proof_verification(case: &TestCase) -> bool {
+    if is_step5c11_proof_candidate(case) {
+        return step5c11_proof_admitted(None, case);
+    }
     if super::is_step5c11_registration_candidate(case) {
         return false;
     }
@@ -293,6 +349,7 @@ pub(super) fn validate_active_proof_verification_tags(
                 || is_step5c2_proof_id(case)
                 || case.id.0 == STEP5C4_PROOF_CASE.0
                 || step5c7_proof_candidate(case)
+                || is_step5c11_proof_candidate(case)
                 || case
                     .expectation
                     .tags
@@ -303,7 +360,8 @@ pub(super) fn validate_active_proof_verification_tags(
     let mut diagnostics =
         super::formula_statement::validate_step5_formula_admission(workspace_root, plan);
     for case in reserved_cases {
-        if !is_active_proof_verification(case)
+        if is_step5c11_proof_candidate(case) && !step5c11_proof_admitted(Some(workspace_root), case)
+            || !is_active_proof_verification(case)
             || is_step5c2_proof_id(case) && !is_step5c2_proof_workspace_member(workspace_root, case)
             || step5c4_proof_case(case).is_some()
                 && !is_step5c4_proof_workspace_member(workspace_root, case)
@@ -404,6 +462,26 @@ pub(super) fn validate_active_proof_verification_tags(
             }
         }
     }
+    if workspace_root
+        .join("tests/coverage/step5_activation_map.tsv")
+        .is_file()
+        || workspace_root.join(STEP5C11_PROOF_SOURCE).is_file()
+    {
+        let count = plan
+            .cases
+            .iter()
+            .filter(|case| step5c11_proof_admitted(Some(workspace_root), case))
+            .count();
+        if count != 1 {
+            diagnostics.push(ValidationDiagnostic::error(
+                Path::new(STEP5C11_PROOF_SOURCE),
+                "proof_verification",
+                "E-PROOF-VERIFICATION-STEP5C11-INVENTORY",
+                "proof_verification.step5c11_inventory",
+                format!("Step 5C.11 false-coherence row must occur exactly once; found {count}"),
+            ));
+        }
+    }
     diagnostics
 }
 
@@ -452,6 +530,40 @@ pub(super) fn run_proof_verification_case(
     case: &TestCase,
     ordinal: usize,
 ) -> ProofVerificationCaseResult {
+    if is_step5c11_proof_candidate(case) {
+        let check = || -> Result<(), String> {
+            if !step5c11_proof_admitted(Some(workspace_root), case) {
+                return Err("invalid Step 5C.11 proof admission".into());
+            }
+            let (source, nodes, symbols) = super::source_registration_inputs(
+                workspace_root,
+                case,
+                run_frontend(workspace_root, case, ordinal)?,
+            )?;
+            let checked = mizar_checker::registration_resolution::check_source_registration_intake(
+                &source, &nodes, &symbols,
+            )?;
+            let core = mizar_core::elaborator::lower_source_functorial_registration(&checked)?;
+            let vcs = generate_core_vcs(&core, snapshot_id(ordinal))?;
+            if mizar_vc::discharge::failed_functorial_coherence(&core, &vcs)?.is_none() {
+                return Err(
+                    "registration coherence did not produce the expected proof failure".into(),
+                );
+            }
+            Ok(())
+        };
+        let failure = check().err();
+        return ProofVerificationCaseResult {
+            id: case.id.clone(),
+            expectation_path: case.expectation_path.clone(),
+            status: if failure.is_none() {
+                ProofVerificationCaseStatus::Passed
+            } else {
+                ProofVerificationCaseStatus::Failed
+            },
+            failure,
+        };
+    }
     if super::formula_statement::is_step5c10_candidate(case) {
         let check = || -> Result<(), String> {
             if !is_active_proof_verification(case)

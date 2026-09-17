@@ -1,5 +1,7 @@
 # Elaborator
 
+`lower_source_functorial_registration` consumes only checker-sealed SourceRegistrationCheck, without SymbolEnv access or repeated name/type checking, into existing Core definitions and the complete guarded correctness goal. It retains source proof ownership and actual bindings; it neither parses request keys nor supplies accepted registration effects.
+
 `lower_source_theorem_skeletons` consumes only the opaque checker `SourceTheoremCheck` and lowers
 existing source owner/formula identities through Core item, formula and proof
 seeds. Source ranges, binder correspondence, citation targets and obligation

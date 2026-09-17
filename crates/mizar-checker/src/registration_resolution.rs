@@ -45,13 +45,49 @@ use mizar_resolve::{
 };
 use mizar_syntax::ast::{SurfaceNodeKind as K, SurfaceTokenKind};
 
+/// Authenticated registration inputs and checker outputs for pending and Core consumers.
+#[derive(Debug)]
+pub struct SourceRegistrationCheck<'a> {
+    nodes: &'a TypedArena,
+    database: RegistrationDatabase,
+    inference: TermFormulaInferenceOutput,
+    bindings: BindingEnv,
+    owners: Vec<(TypedNodeId, SymbolId, &'static str)>,
+}
+
+impl SourceRegistrationCheck<'_> {
+    pub const fn nodes(&self) -> &TypedArena {
+        self.nodes
+    }
+
+    pub const fn database(&self) -> &RegistrationDatabase {
+        &self.database
+    }
+
+    pub const fn inference(&self) -> &TermFormulaInferenceOutput {
+        &self.inference
+    }
+
+    pub const fn bindings(&self) -> &BindingEnv {
+        &self.bindings
+    }
+
+    pub fn owners(&self) -> &[(TypedNodeId, SymbolId, &'static str)] {
+        &self.owners
+    }
+
+    pub fn into_outputs(self) -> (RegistrationDatabase, TermFormulaInferenceOutput) {
+        (self.database, self.inference)
+    }
+}
+
 /// Checks the bounded local set-registration slice without activating its effects.
 /// The goal is a schema request over checked source operands, not a discharged proof.
-pub fn check_source_registration_intake(
+pub fn check_source_registration_intake<'a>(
     source: &SurfaceResolvedArena,
-    nodes: &TypedArena,
+    nodes: &'a TypedArena,
     symbols: &SymbolEnv,
-) -> Result<(RegistrationDatabase, TermFormulaInferenceOutput), String> {
+) -> Result<SourceRegistrationCheck<'a>, String> {
     let invalid = || "registration.source_intake_invalid".to_owned();
     mizar_resolve::symbols::validate_source_symbol_env(source, symbols)?;
     if nodes.len() != source.arena().len()
@@ -439,7 +475,40 @@ pub fn check_source_registration_intake(
     {
         return Err(invalid());
     }
-    Ok((database, output))
+    let mut owners = Vec::new();
+    for (id, node) in source.arena().iter() {
+        let kind = match node.kind() {
+            K::AttributeDefinition => SymbolKind::Attribute,
+            K::FunctorDefinition => SymbolKind::Functor,
+            K::ExistentialRegistration
+            | K::ConditionalRegistration
+            | K::FunctorialRegistration
+            | K::ReductionRegistration => SymbolKind::Registration,
+            _ => continue,
+        };
+        let owner = symbols
+            .symbols()
+            .iter()
+            .find(|entry| entry.kind() == kind && entry.origin().anchor() == node.origin().anchor())
+            .ok_or_else(invalid)?;
+        let visibility = match owner.visibility() {
+            Visibility::Private => "private",
+            Visibility::Public => "public",
+            _ => return Err(invalid()),
+        };
+        owners.push((
+            TypedNodeId::new(id.index()),
+            owner.symbol().clone(),
+            visibility,
+        ));
+    }
+    Ok(SourceRegistrationCheck {
+        nodes,
+        database,
+        inference: output,
+        bindings: binding_env,
+        owners,
+    })
 }
 
 struct SourceRegistrationIntake<'a> {
@@ -745,6 +814,23 @@ impl SourceRegistrationIntake<'_> {
         let children = self.children(node).to_vec();
         match self.node(node).kind() {
             K::FormulaExpression if children.len() == 1 => self.equality(children[0], subject),
+            K::PrefixFormula(_) if children.len() == 2 && self.text(children[0])? == "not" => {
+                self.equality(children[1], subject)?;
+                let operand = self
+                    .formulas
+                    .last()
+                    .ok_or("registration.negation_operand")?;
+                if operand.kind != FormulaKind::Equality {
+                    return Err("registration.unsupported_attribute_body".into());
+                }
+                self.formulas.push(FormulaInput::new(
+                    self.site(node),
+                    operand.context,
+                    self.range(node),
+                    FormulaKind::Negation,
+                ));
+                Ok(())
+            }
             K::BuiltinPredicateApplication
                 if children.len() == 3 && self.text(children[1])? == "=" =>
             {

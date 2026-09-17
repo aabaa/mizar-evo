@@ -14310,6 +14310,474 @@ fn attach_proof_backrefs(
     }
 }
 
+/// Lowers the checker-authenticated local set/identity functorial registration.
+pub fn lower_source_functorial_registration(
+    check: &mizar_checker::registration_resolution::SourceRegistrationCheck<'_>,
+) -> Result<CoreIr, String> {
+    use mizar_checker::type_checker::TermReference;
+    let nodes = check.nodes();
+    let database = check.database();
+    let checked = check.inference();
+    let invalid = || "registration.core.unsupported_source".to_owned();
+    let kind = |id| nodes.node(id).map(|node| node.kind.as_str());
+    let range = |id| match nodes.node(id).map(|node| &node.anchor) {
+        Some(SourceAnchor::Range(range)) => Ok(*range),
+        _ => Err(invalid()),
+    };
+    let children = |id| -> Vec<TypedNodeId> {
+        nodes
+            .node(id)
+            .into_iter()
+            .flat_map(|node| &node.children)
+            .copied()
+            .filter(|child| !kind(*child).is_some_and(|name| name.starts_with("Token(")))
+            .collect()
+    };
+    let only = |id, wanted: &str| -> Result<TypedNodeId, String> {
+        let found = children(id)
+            .into_iter()
+            .filter(|child| kind(*child) == Some(wanted))
+            .collect::<Vec<_>>();
+        match found.as_slice() {
+            [child] => Ok(*child),
+            _ => Err(invalid()),
+        }
+    };
+    let unwrap = |mut id| -> Result<TypedNodeId, String> {
+        while matches!(
+            kind(id),
+            Some("TermExpression" | "FormulaExpression" | "Proposition")
+        ) {
+            let nested = children(id);
+            let [child] = nested.as_slice() else {
+                return Err(invalid());
+            };
+            id = *child;
+        }
+        Ok(id)
+    };
+    let contains = |outer: SourceRange, inner: SourceRange| {
+        outer.source_id == inner.source_id && outer.start <= inner.start && inner.end <= outer.end
+    };
+    let provenance = |id: TypedNodeId| {
+        CheckerOwnedProvenance::checker(format!("registration/source-node#{}", id.index()))
+    };
+    let pending = database.pending().iter().next().ok_or_else(invalid)?;
+    let registration_symbol = pending.source().symbol().ok_or_else(invalid)?;
+    let [initial_id] = pending.obligations() else {
+        return Err(invalid());
+    };
+    let initial = database
+        .initial_obligations()
+        .get(*initial_id)
+        .ok_or_else(invalid)?;
+    let registration = initial.owner.node();
+    if kind(registration) != Some("FunctorialRegistration") {
+        return Err(invalid());
+    }
+    let registration_correctness = only(registration, "CorrectnessCondition")?;
+    if !children(registration_correctness).is_empty() {
+        return Err(invalid());
+    }
+    let mut input = CoreContextInput::new(ResolvedTypedAstSummary::new(
+        checked.source_id(),
+        checked.module_id().clone(),
+    ));
+    let owners = check.owners();
+    for (node, symbol, visibility) in owners {
+        let item_kind = match kind(*node) {
+            Some("AttributeDefinition") => CoreItemKind::Attribute,
+            Some("FunctorDefinition") => CoreItemKind::Functor,
+            Some("FunctorialRegistration") => CoreItemKind::Registration,
+            _ => return Err(invalid()),
+        };
+        input.item_seeds.push(
+            CoreItemSeed::new(
+                symbol.clone(),
+                item_kind,
+                *visibility,
+                CoreSourceRef::direct(range(*node)?),
+                provenance(*node),
+            )
+            .with_definition_boundary(if *node == registration {
+                DefinitionBoundaryKind::Registration
+            } else {
+                DefinitionBoundaryKind::DefinitionalItem
+            }),
+        );
+    }
+    if owners.len() != 3 {
+        return Err(invalid());
+    }
+    let mut terms = Vec::new();
+    let mut term_ids = BTreeMap::new();
+    let mut bindings = BTreeMap::new();
+    for (_, term) in checked.terms().iter() {
+        let Some(TermReference::Binding(binding)) = term.reference else {
+            continue;
+        };
+        let node = term.site.node();
+        term_ids.insert(node, CoreTermSeedId::new(terms.len()));
+        terms.push(CoreTermSeed::new(
+            CoreTermSeedKind::Var(CoreVarId::new(binding.index())),
+            CoreSourceRef::direct(range(node)?),
+            provenance(node),
+        ));
+    }
+    for (binding, entry) in check.bindings().bindings().iter() {
+        let declarations = nodes
+            .iter()
+            .filter_map(|(id, node)| {
+                (node.anchor == SourceAnchor::Range(entry.declaration_range)
+                    && node.kind.as_str().starts_with("Token("))
+                .then_some(id)
+            })
+            .collect::<Vec<_>>();
+        let [declaration] = declarations.as_slice() else {
+            return Err(invalid());
+        };
+        bindings.insert(binding, *declaration);
+        let var = CoreVarId::new(binding.index());
+        input.variable_seeds.push(CoreVariableSeed::new(
+            var,
+            NormalizedVarClass::Free,
+            "parameter",
+            NormalizedVarSort::Term,
+            provenance(*declaration),
+        ));
+        input.binder_seeds.push(CoreBinderSeed::new(
+            var,
+            CoreSourceRef::direct(range(*declaration)?),
+            provenance(*declaration),
+        ));
+    }
+    for (_, term) in checked.terms().iter() {
+        let Some(TermReference::Symbol(functor)) = &term.reference else {
+            continue;
+        };
+        let node = term.site.node();
+        let nested = children(node);
+        let [argument] = nested.as_slice() else {
+            return Err(invalid());
+        };
+        let argument = *term_ids.get(&unwrap(*argument)?).ok_or_else(invalid)?;
+        term_ids.insert(node, CoreTermSeedId::new(terms.len()));
+        terms.push(CoreTermSeed::new(
+            CoreTermSeedKind::Apply {
+                functor: functor.clone(),
+                args: vec![argument],
+            },
+            CoreSourceRef::direct(range(node)?),
+            provenance(node),
+        ));
+    }
+    let application_node = unwrap(only(registration, "TermExpression")?)?;
+    let application = *term_ids.get(&application_node).ok_or_else(invalid)?;
+    let CoreTermSeedKind::Apply { args, .. } = &terms[application.index()].kind else {
+        return Err(invalid());
+    };
+    let parameter_term = args[0];
+    let CoreTermSeedKind::Var(parameter) = terms[parameter_term.index()].kind else {
+        return Err(invalid());
+    };
+    let declaration = *bindings
+        .get(&BindingId::new(parameter.index()))
+        .ok_or_else(invalid)?;
+    let mut formulas = Vec::new();
+    let mut append = |node, kind| -> Result<CoreFormulaSeedId, String> {
+        let id = CoreFormulaSeedId::new(formulas.len());
+        formulas.push(CoreFormulaSeed::new(
+            kind,
+            CoreSourceRef::direct(range(node)?),
+            provenance(node),
+        ));
+        Ok(id)
+    };
+    let mut formula_ids = BTreeMap::new();
+    for (_, formula) in checked.formulas().iter() {
+        let node = formula.site.node();
+        let seed = match formula.kind {
+            FormulaKind::Equality if formula.terms.len() == 2 => CoreFormulaSeedKind::Equals {
+                left: *term_ids.get(&formula.terms[0].node()).ok_or_else(invalid)?,
+                right: *term_ids.get(&formula.terms[1].node()).ok_or_else(invalid)?,
+            },
+            FormulaKind::Negation => {
+                let nested = children(node);
+                let [child] = nested.as_slice() else {
+                    return Err(invalid());
+                };
+                CoreFormulaSeedKind::Not(*formula_ids.get(&unwrap(*child)?).ok_or_else(invalid)?)
+            }
+            _ => return Err(invalid()),
+        };
+        formula_ids.insert(node, append(node, seed)?);
+    }
+    let mut definitions = Vec::new();
+    let mut attribute = None;
+    let mut functor_proof = None;
+    for (node, symbol, _) in owners.iter().filter(|(node, _, _)| *node != registration) {
+        let definition_range = range(*node)?;
+        let subject = checked
+            .terms()
+            .iter()
+            .find_map(|(_, term)| {
+                if !contains(definition_range, range(term.site.node()).ok()?) {
+                    return None;
+                }
+                match term.reference {
+                    Some(TermReference::Binding(binding)) => Some((binding, term.site.node())),
+                    _ => None,
+                }
+            })
+            .ok_or_else(invalid)?;
+        let var = CoreVarId::new(subject.0.index());
+        let bound = *bindings.get(&subject.0).ok_or_else(invalid)?;
+        let guard = append(
+            bound,
+            CoreFormulaSeedKind::TypePred {
+                subject: term_ids[&subject.1],
+                ty: CoreTypePredicate::new("set"),
+            },
+        )?;
+        let body = if kind(*node) == Some("AttributeDefinition") {
+            attribute = Some(symbol.clone());
+            let body = unwrap(only(only(*node, "FormulaDefiniens")?, "FormulaExpression")?)?;
+            (None, Some(*formula_ids.get(&body).ok_or_else(invalid)?))
+        } else {
+            let block = nodes
+                .iter()
+                .find(|(_, parent)| parent.children.contains(node))
+                .map(|(id, _)| id)
+                .ok_or_else(invalid)?;
+            let correctness = only(block, "CorrectnessCondition")?;
+            let proof = only(correctness, "ProofBlock")?;
+            let conclusion = only(proof, "ConclusionStatement")?;
+            if children(correctness) != [proof]
+                || children(proof) != [conclusion]
+                || nodes
+                    .node(conclusion)
+                    .and_then(|node| node.children.first())
+                    .and_then(|node| kind(*node))
+                    != Some("Token(SurfaceToken { kind: ReservedWord, text: \"thus\" })")
+            {
+                return Err(invalid());
+            }
+            let written = children(conclusion);
+            let [written] = written.as_slice() else {
+                return Err(invalid());
+            };
+            if kind(unwrap(*written)?) != Some("FormulaConstant(Thesis)") {
+                return Err(invalid());
+            }
+            let body = unwrap(only(only(*node, "TermDefiniens")?, "TermExpression")?)?;
+            let body = *term_ids.get(&body).ok_or_else(invalid)?;
+            // The written no-hint thesis is the result type. Identity plus the
+            // checked set parameter guard establishes it, independently of registration.
+            if terms[body.index()].kind != CoreTermSeedKind::Var(var) {
+                return Err(invalid());
+            }
+            let result_guard = append(
+                correctness,
+                CoreFormulaSeedKind::TypePred {
+                    subject: body,
+                    ty: CoreTypePredicate::new("set"),
+                },
+            )?;
+            let implication = append(
+                correctness,
+                CoreFormulaSeedKind::Implies {
+                    premise: guard,
+                    conclusion: result_guard,
+                },
+            )?;
+            let proposition = append(
+                correctness,
+                CoreFormulaSeedKind::Forall {
+                    binders: vec![QuantifierBinderSeed::new(
+                        var,
+                        "definition-parameter",
+                        CoreSourceRef::direct(range(bound)?),
+                        provenance(bound),
+                    )],
+                    body: implication,
+                },
+            )?;
+            functor_proof = Some((symbol.clone(), proof, conclusion, proposition));
+            (Some(body), None)
+        };
+        definitions.push((*node, symbol.clone(), var, bound, guard, body));
+    }
+    let mut append = |kind| append(registration, kind);
+    let parameter_guard = append(CoreFormulaSeedKind::TypePred {
+        subject: parameter_term,
+        ty: CoreTypePredicate::new("set"),
+    })?;
+    let result_guard = append(CoreFormulaSeedKind::TypePred {
+        subject: application,
+        ty: CoreTypePredicate::new("set"),
+    })?;
+    let premise = append(CoreFormulaSeedKind::And(vec![
+        parameter_guard,
+        result_guard,
+    ]))?;
+    let conclusion = append(CoreFormulaSeedKind::Atom {
+        predicate: attribute.ok_or_else(invalid)?,
+        args: vec![application],
+    })?;
+    let implication = append(CoreFormulaSeedKind::Implies {
+        premise,
+        conclusion,
+    })?;
+    let goal = append(CoreFormulaSeedKind::Forall {
+        binders: vec![QuantifierBinderSeed::new(
+            parameter,
+            "registration-parameter",
+            CoreSourceRef::direct(range(declaration)?),
+            provenance(declaration),
+        )],
+        body: implication,
+    })?;
+    let context = prepare_core_context(input).map_err(|error| error.to_string())?;
+    let owner = context
+        .item_registry()
+        .id_for_symbol(registration_symbol)
+        .ok_or_else(invalid)?;
+    let lowered = lower_term_and_formula_inputs(
+        &context,
+        TermAndFormulaLoweringInput {
+            owner,
+            template_type_parameter_sethoods: Vec::new(),
+            terms,
+            formulas,
+            failed_sites: Vec::new(),
+        },
+    )
+    .map_err(|error| error.to_string())?;
+    let definition_seeds = definitions
+        .into_iter()
+        .map(|(node, symbol, var, bound, guard, body)| {
+            Ok(DefinitionSeed {
+                owner: context
+                    .item_registry()
+                    .id_for_symbol(&symbol)
+                    .ok_or_else(invalid)?,
+                symbol,
+                params: vec![CoreBinder {
+                    var,
+                    role: "definition-parameter".into(),
+                    ty_guard: Some(lowered.formula_map[&guard]),
+                    source_name: None,
+                    source: CoreSourceRef::direct(range(bound)?),
+                }],
+                body: match body {
+                    (Some(term), None) => DefinitionBodySeed::Term(lowered.term_map[&term]),
+                    (None, Some(formula)) => {
+                        DefinitionBodySeed::Formula(lowered.formula_map[&formula])
+                    }
+                    _ => return Err(invalid()),
+                },
+                expansion: ExpansionPolicy::Transparent,
+                correctness: Vec::new(),
+                generated_dependencies: Vec::new(),
+                source: CoreSourceRef::direct(range(node)?),
+                provenance: provenance(node),
+            })
+        })
+        .collect::<Result<Vec<_>, String>>()?;
+    let mut definitions = lower_definition_inputs(
+        &context,
+        &lowered,
+        DefinitionLoweringInput {
+            definitions: definition_seeds,
+        },
+    )
+    .map_err(|error| error.to_string())?;
+    let goal = lowered.formula_map[&goal];
+    let source_ref = CoreSourceRef::direct(initial.source_range);
+    let seed = definitions.obligation_seeds.insert(ObligationSeed {
+        owner,
+        kind: ObligationSeedKind::CheckerInitial,
+        goal: Some(goal),
+        context: Vec::new(),
+        local_path: format!(
+            "registration/{}/coherence",
+            registration_symbol.fqn().as_str()
+        )
+        .into(),
+        label: Some(CoreLabelRef::new(registration_symbol.fqn().as_str())),
+        semantic_origin: initial.provenance.as_str().into(),
+        provenance: vec![
+            CoreProvenance::new(
+                CoreProvenancePhase::Checker,
+                format!("initial-obligation#{}", initial_id.index()),
+            ),
+            CoreProvenance::new(CoreProvenancePhase::Checker, initial.provenance.as_str()),
+            CoreProvenance::new(
+                CoreProvenancePhase::Checker,
+                "vc-registration-style:registration",
+            ),
+        ],
+        source: source_ref.clone(),
+        core_refs: vec![CoreNodeRef::Item(owner), CoreNodeRef::Formula(goal)],
+        status: ObligationSeedStatus::Active,
+        diagnostics: Vec::new(),
+    });
+    definitions
+        .source_map
+        .obligation_sources
+        .insert(seed, source_ref);
+    let (functor, proof, conclusion, proposition) = functor_proof.ok_or_else(invalid)?;
+    let proposition = lowered.formula_map[&proposition];
+    let statement_source = CoreSourceRef::direct(range(conclusion)?)
+        .with_provenance(provenance(conclusion).as_slice().to_vec());
+    let mut proof_nodes = CoreProofNodeTable::new();
+    let root = proof_nodes.insert(CoreProofNode {
+        kind: CoreProofNodeKind::Step {
+            label: None,
+            formula: proposition,
+            justification: CoreJustification {
+                citations: Vec::new(),
+                source: statement_source.clone(),
+            },
+        },
+        source: statement_source.clone(),
+        diagnostics: Vec::new(),
+    });
+    definitions
+        .source_map
+        .proof_sources
+        .insert(root, statement_source);
+    let mut proofs = CoreProofTable::new();
+    proofs.insert(CoreProof {
+        item: context
+            .item_registry()
+            .id_for_symbol(&functor)
+            .ok_or_else(invalid)?,
+        proposition,
+        root,
+        status: CoreProofStatus::PendingAutomaticProof,
+        source: CoreSourceRef::direct(range(proof)?)
+            .with_provenance(provenance(proof).as_slice().to_vec()),
+    });
+    CoreIr::try_new(CoreIrParts {
+        source_id: checked.source_id(),
+        module_id: checked.module_id().clone(),
+        items: context.item_registry().items().clone(),
+        terms: lowered.terms,
+        formulas: lowered.formulas,
+        definitions: definitions.definitions,
+        proofs,
+        proof_nodes,
+        algorithms: CoreAlgorithmTable::new(),
+        algorithm_statements: CoreAlgorithmStmtTable::new(),
+        generated: lowered.generated,
+        obligation_seeds: definitions.obligation_seeds,
+        source_map: definitions.source_map,
+        diagnostics: definitions.diagnostics,
+    })
+    .map_err(|error| error.to_string())
+}
+
 /// Lowers the authenticated bounded source theorem/lemma skeleton profile.
 pub fn lower_source_theorem_skeletons(
     check: &mizar_checker::type_checker::SourceTheoremCheck<'_>,

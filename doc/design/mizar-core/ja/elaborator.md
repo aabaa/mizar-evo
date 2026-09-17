@@ -1,5 +1,7 @@
 # Elaborator
 
+`lower_source_functorial_registration` はchecker が封印した SourceRegistrationCheck のみを受け、生の SymbolEnv 参照や名前・型検査の再実行なしに既存 Core の定義と全ガードを含む正当性目標を生成する。 ソースの証明所有関係・束縛を保持し、要求キーを式として解析せず、登録の受理済み効果も供給しない。
+
 `lower_source_theorem_skeletons` は checker の不透明な `SourceTheoremCheck` のみを受け、既存の source owner・
 formula identity を Core の item・formula・proof seed で lower する。source range、
 binder 対応、引用先、証明義務 provenance を保持する。修飾なしの証明付き owner だけを対象とし、

@@ -1,7 +1,7 @@
 # mizar-checker: registration resolution
 
 `check_source_registration_intake` は解決済みソース、型付きノード、記号の由来を照合し、
-builtin set の引数、等式で定義した属性、恒等関数を検査する。4 種の登録を検査し、
+builtin set の引数、等式または否定等式で定義した属性、恒等関数を検査する。封印された SourceRegistrationCheck は不変の型付きノード、既存の登録・推論・BindingEnv 出力、検査済み (node, symbol, visibility) 所有者情報を保持し、保留登録と Core の消費側へ渡す。4 種の登録を検査し、
 簡約項の構造からサイズと自由変数を求める。検証待ちの正当性要求は §17.8.3 の形を
 検査済みのソース項に結び付け、関数型登録の結果型ガードも保持する。
 既存の登録・型推論出力を返し、活性化入力や受理済み効果は生成しない。

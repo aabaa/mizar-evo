@@ -166,8 +166,7 @@ fn step5c11_four_real_sources_create_only_checked_pending_registrations() {
 #[test]
 fn step5c11_source_intake_rejects_wrong_bindings_types_guards_and_correctness() {
     let mutations = [
-        ("existential", "means X = X", "means not X = X"),
-
+        ("existential", "means X = X", "means not X = Y"),
         (
             "existential",
             "CReg1: cmarked set",
@@ -361,34 +360,20 @@ fn step5c11_advanced_admission_is_exact_and_rejects_stage_fallback() {
 #[test]
 fn step5c11_intake_authenticates_complete_typed_projection_and_symbol_environment() {
     use mizar_checker::registration_resolution::check_source_registration_intake;
-    use mizar_checker::typed_ast::{
-        NodeRecoveryState, TypedArena, TypedNode, TypedNodeId, TypingState,
-    };
+    use mizar_checker::typed_ast::{NodeRecoveryState, TypedArena, TypingState};
     use mizar_resolve::resolved_ast::SurfaceResolvedArena;
     let (case, text) = step5c11_source_case("functorial");
-    let ast = super::formula_statement::step5c8_test_frontend(&text)
-        .ast
-        .unwrap();
-    let collected =
-        super::resolver_symbol_collection(&step5c11_config().workspace_root, &case, &ast);
-    let source = SurfaceResolvedArena::lower(&ast, &collected.module).unwrap();
-    let raw_nodes = source
-        .arena()
+    let frontend = super::formula_statement::step5c8_test_frontend(&text);
+    let ast = frontend.ast.clone().unwrap();
+    let (source, typed, symbols) =
+        super::source_registration_inputs(&step5c11_config().workspace_root, &case, frontend)
+            .unwrap();
+    let raw_nodes = typed
         .iter()
-        .map(|(id, node)| {
-            TypedNode::new(format!("{:?}", node.kind()), node.origin().anchor().clone())
-                .with_resolved_node(id)
-                .with_children(
-                    node.children()
-                        .iter()
-                        .map(|id| TypedNodeId::new(id.index()))
-                        .collect(),
-                )
-        })
+        .map(|(_, node)| node.clone())
         .collect::<Vec<_>>();
-    let root = Some(TypedNodeId::new(source.arena().root().index()));
-    let typed = TypedArena::try_new(root, raw_nodes.clone()).unwrap();
-    check_source_registration_intake(&source, &typed, &collected.env).unwrap();
+    let root = typed.root();
+    check_source_registration_intake(&source, &typed, &symbols).unwrap();
     for mutation in 0..7 {
         let mut nodes = raw_nodes.clone();
         let mut actual_root = root;
@@ -404,14 +389,14 @@ fn step5c11_intake_authenticates_complete_typed_projection_and_symbol_environmen
         }
         let corrupt = TypedArena::try_new(actual_root, nodes).unwrap();
         assert!(
-            check_source_registration_intake(&source, &corrupt, &collected.env).is_err(),
+            check_source_registration_intake(&source, &corrupt, &symbols).is_err(),
             "accepted projection mutation {mutation}"
         );
     }
     let foreign_module =
         ResolverModuleId::new(PackageId::new("foreign"), ModulePath::new("foreign"));
     let foreign_source = SurfaceResolvedArena::lower(&ast, &foreign_module).unwrap();
-    assert!(check_source_registration_intake(&foreign_source, &typed, &collected.env).is_err());
+    assert!(check_source_registration_intake(&foreign_source, &typed, &symbols).is_err());
     let changed_ast =
         super::formula_statement::step5c8_test_frontend(&text.replace("cbox", "fbox"))
             .ast
@@ -641,4 +626,498 @@ fn step5c11_correctness_requests_bind_actual_owners_guards_and_checked_operands(
             );
         }
     }
+}
+
+fn step5c11_false_coherence_case() -> (crate::harness::TestCase, String) {
+    let plan = build_test_plan(&step5c11_config()).unwrap();
+    let case = plan
+        .cases
+        .into_iter()
+        .find(|case| case.id.0 == "fail_proof_verification_functorial_false_coherence_001")
+        .unwrap();
+    let text = std::fs::read_to_string(&case.source_path).unwrap();
+    (case, text)
+}
+
+fn step5c11_functorial_core(
+    case: &crate::harness::TestCase,
+    text: &str,
+) -> Result<mizar_core::core_ir::CoreIr, String> {
+    let (source, nodes, symbols) = super::source_registration_inputs(
+        &step5c11_config().workspace_root,
+        case,
+        super::formula_statement::step5c8_test_frontend(text),
+    )?;
+    let checked = mizar_checker::registration_resolution::check_source_registration_intake(&source, &nodes, &symbols)?;
+    mizar_core::elaborator::lower_source_functorial_registration(&checked)
+}
+
+#[test]
+fn step5c11_false_coherence_executes_real_guarded_goal_and_definition_polarity() {
+    use mizar_core::core_ir::{CoreFormulaKind as F, DefinitionBody};
+    use mizar_vc::discharge::failed_functorial_coherence;
+    let (case, text) = step5c11_false_coherence_case();
+    for source in [
+        text.clone(),
+        text.replace("C4Def", "OtherAttribute")
+            .replace("CBox3Def", "OtherFunction")
+            .replace("CReg4", "OtherRegistration")
+            .replace("cbox3", "renamed_box")
+            .replace("f4marked", "renamed_mark")
+            .replace('X', "Y"),
+    ] {
+        let core = step5c11_functorial_core(&case, &source).unwrap();
+        assert_eq!(core, step5c11_functorial_core(&case, &source).unwrap());
+        assert_eq!(core.definitions().len(), 2);
+        let goal = core
+            .obligation_seeds()
+            .iter()
+            .next()
+            .unwrap()
+            .1
+            .goal
+            .unwrap();
+        let F::Forall { binders, body } = &core.formulas().get(goal).unwrap().kind else {
+            panic!("full quantifier missing")
+        };
+        assert_eq!(binders.len(), 1);
+        let F::Implies {
+            premise,
+            conclusion,
+        } = core.formulas().get(*body).unwrap().kind
+        else {
+            panic!("guard implication missing")
+        };
+        let F::And(ref guards) = core.formulas().get(premise).unwrap().kind else {
+            panic!("both guards missing")
+        };
+        assert_eq!(guards.len(), 2);
+        assert!(guards.iter().all(|id| matches!(&core.formulas().get(*id).unwrap().kind, F::TypePred { ty, .. } if ty.as_str() == "set")));
+        let F::TypePred {
+            subject: parameter, ..
+        } = core.formulas().get(guards[0]).unwrap().kind
+        else {
+            unreachable!()
+        };
+        let F::TypePred {
+            subject: application,
+            ..
+        } = core.formulas().get(guards[1]).unwrap().kind
+        else {
+            unreachable!()
+        };
+        assert_eq!(
+            core.terms().get(parameter).unwrap().kind,
+            mizar_core::core_ir::CoreTermKind::Var(binders[0].var)
+        );
+        let mizar_core::core_ir::CoreTermKind::Apply { ref args, .. } =
+            core.terms().get(application).unwrap().kind
+        else {
+            panic!("result guard lost application")
+        };
+        assert_eq!(args, &[parameter]);
+        let F::Atom { ref args, .. } = core.formulas().get(conclusion).unwrap().kind else {
+            panic!("consequent lost attribute")
+        };
+        assert_eq!(args, &[application]);
+        assert!(core.definitions().iter().any(|(_, def)| matches!(def.body, DefinitionBody::Formula(id) if matches!(core.formulas().get(id).unwrap().kind, F::Not(_)))));
+        let vcs =
+            super::proof_verification::generate_core_vcs(&core, super::shared::snapshot_id(5800))
+                .unwrap();
+        assert_eq!(
+            vcs,
+            super::proof_verification::generate_core_vcs(&core, super::shared::snapshot_id(5800))
+                .unwrap()
+        );
+        assert_eq!(
+            failed_functorial_coherence(&core, &vcs).unwrap(),
+            Some(vcs.vcs()[0].id)
+        );
+        let (database, inference) = step5c11_check_source(&case, &source).unwrap();
+        assert!(database.activated().is_empty() && database.rejected().is_empty());
+        assert!(
+            database
+                .pending()
+                .iter()
+                .all(|row| !row.may_contribute_to_inference())
+        );
+        assert!(
+            inference
+                .formulas()
+                .iter()
+                .any(|(_, formula)| formula.kind
+                    == mizar_checker::type_checker::FormulaKind::Negation)
+        );
+    }
+    let positive = step5c11_functorial_core(&case, &text.replace("not X = X", "X = X")).unwrap();
+    let vcs =
+        super::proof_verification::generate_core_vcs(&positive, super::shared::snapshot_id(5800))
+            .unwrap();
+    assert_eq!(failed_functorial_coherence(&positive, &vcs).unwrap(), None);
+    let report = super::run_proof_verification_corpus(&step5c11_config()).unwrap();
+    assert_eq!(
+        report.failed_count() + report.error_count(),
+        0,
+        "{report:?}"
+    );
+    assert!(report.results.iter().any(|row| row.id == case.id));
+}
+
+#[test]
+fn step5c11_false_coherence_rejects_unsupported_source_proofs_and_operands() {
+    let (case, text) = step5c11_false_coherence_case();
+    for (before, after) in [
+        ("thus thesis;", "thus contradiction;"),
+        ("thus thesis;", "hence thesis;"),
+        ("thus thesis;", "assume X = X; thus thesis;"),
+        ("thus thesis;", "thus thesis by Missing;"),
+        ("coherence;", "coherence proof thus thesis; end;"),
+        ("CReg4: cbox3 X", "CReg4: cbox3 Y"),
+        ("not X = X", "not X = Y"),
+        ("not X = X", "not not X = X"),
+        ("for set", "for object"),
+        ("equals X", "equals {X}"),
+        ("cbox3 X -> set", "cbox3 X -> object"),
+    ] {
+        assert!(text.contains(before));
+        assert!(
+            step5c11_functorial_core(&case, &text.replace(before, after)).is_err(),
+            "ignored {before} -> {after}"
+        );
+    }
+}
+
+#[test]
+fn step5c11_false_coherence_consumer_rejects_core_and_vc_corruption() {
+    use mizar_core::core_ir::*;
+    use mizar_vc::discharge::failed_functorial_coherence;
+    let (case, text) = step5c11_false_coherence_case();
+    let core = step5c11_functorial_core(&case, &text).unwrap();
+    let original_vcs =
+        super::proof_verification::generate_core_vcs(&core, super::shared::snapshot_id(5800))
+            .unwrap();
+    for mutation in 0..13 {
+        let mut parts = CoreIrParts {
+            source_id: core.source_id(),
+            module_id: core.module_id().clone(),
+            items: core.items().clone(),
+            terms: core.terms().clone(),
+            formulas: core.formulas().clone(),
+            definitions: core.definitions().clone(),
+            proofs: core.proofs().clone(),
+            proof_nodes: core.proof_nodes().clone(),
+            algorithms: core.algorithms().clone(),
+            algorithm_statements: core.algorithm_statements().clone(),
+            generated: core.generated().clone(),
+            obligation_seeds: core.obligation_seeds().clone(),
+            source_map: core.source_map().clone(),
+            diagnostics: core.diagnostics().clone(),
+        };
+        let (seed_id, seed) = core.obligation_seeds().iter().next().unwrap();
+        let goal = seed.goal.unwrap();
+        let definition = core
+            .definitions()
+            .iter()
+            .find(|(_, d)| matches!(d.body, DefinitionBody::Formula(_)))
+            .unwrap()
+            .0;
+        match mutation {
+            0 => {
+                // Change the actual attribute body while preserving a well-formed Core graph.
+                let DefinitionBody::Formula(body) = parts.definitions.get(definition).unwrap().body
+                else {
+                    unreachable!()
+                };
+                let CoreFormulaKind::Not(inner) = parts.formulas.get(body).unwrap().kind else {
+                    unreachable!()
+                };
+                parts.definitions.get_mut(definition).unwrap().body =
+                    DefinitionBody::Formula(inner);
+            }
+            1 => {
+                let id = core
+                    .formulas()
+                    .iter()
+                    .find(|(_, f)| matches!(f.kind, CoreFormulaKind::TypePred { .. }))
+                    .unwrap()
+                    .0;
+                let CoreFormulaKind::TypePred { ref mut ty, .. } =
+                    parts.formulas.get_mut(id).unwrap().kind
+                else {
+                    unreachable!()
+                };
+                *ty = "object".into();
+            }
+            2 => parts.formulas.get_mut(goal).unwrap().kind = CoreFormulaKind::False,
+            3 => parts
+                .obligation_seeds
+                .get_mut(seed_id)
+                .unwrap()
+                .context
+                .push(goal),
+            4 => {
+                let functor = core
+                    .definitions()
+                    .iter()
+                    .find(|(_, d)| matches!(d.body, DefinitionBody::Term(_)))
+                    .unwrap()
+                    .1;
+                parts.definitions.get_mut(definition).unwrap().symbol = functor.symbol.clone();
+            }
+            5 => {
+                let id = core
+                    .terms()
+                    .iter()
+                    .find(|(_, t)| matches!(t.kind, CoreTermKind::Apply { .. }))
+                    .unwrap()
+                    .0;
+                let CoreTermKind::Apply { ref mut args, .. } =
+                    parts.terms.get_mut(id).unwrap().kind
+                else {
+                    unreachable!()
+                };
+                args.clear();
+            }
+            6 => parts
+                .obligation_seeds
+                .get_mut(seed_id)
+                .unwrap()
+                .provenance
+                .clear(),
+            7 => {
+                let CoreFormulaKind::Forall { body, .. } = parts.formulas.get(goal).unwrap().kind
+                else {
+                    unreachable!()
+                };
+                let CoreFormulaKind::Implies { premise, .. } =
+                    parts.formulas.get(body).unwrap().kind
+                else {
+                    unreachable!()
+                };
+                let CoreFormulaKind::And(ref guards) = parts.formulas.get(premise).unwrap().kind
+                else {
+                    unreachable!()
+                };
+                let result = guards[1];
+                let CoreFormulaKind::TypePred { ref mut ty, .. } =
+                    parts.formulas.get_mut(result).unwrap().kind
+                else {
+                    unreachable!()
+                };
+                *ty = "object".into();
+            }
+            8 => {
+                let id = core.proofs().iter().next().unwrap().0;
+                parts.proofs.get_mut(id).unwrap().item = seed.owner;
+            }
+            9 => {
+                let id = core.proofs().iter().next().unwrap().0;
+                parts.proofs.get_mut(id).unwrap().proposition = goal;
+            }
+            10 => {
+                let (id, proof) = core.proofs().iter().next().unwrap();
+                parts.proofs.get_mut(id).unwrap().source = core.items().get(proof.item).unwrap().source.clone();
+            }
+            11 => {
+                let root = core.proofs().iter().next().unwrap().1.root;
+                let CoreProofNodeKind::Step { ref mut justification, .. } = parts.proof_nodes.get_mut(root).unwrap().kind else { unreachable!() };
+                justification.citations.push(CoreCitation::Label("injected".into()));
+            }
+            12 => {
+                parts.proofs = CoreProofTable::new();
+                parts.proof_nodes = CoreProofNodeTable::new();
+                parts.source_map.proof_sources.clear();
+            }
+            _ => unreachable!(),
+        }
+        let changed = CoreIr::try_new(parts).unwrap();
+        let generated = super::proof_verification::generate_core_vcs(
+            &changed,
+            super::shared::snapshot_id(5800),
+        );
+        if let Ok(vcs) = generated {
+            let outcome = failed_functorial_coherence(&changed, &vcs);
+            if mutation == 0 {
+                assert_eq!(outcome.unwrap(), None);
+            } else {
+                assert!(outcome.is_err(), "accepted Core mutation {mutation}");
+            }
+        } else {
+            assert!(!matches!(mutation, 0 | 7..=12), "valid modified Core must generate VCs");
+        }
+        if mutation != 0 {
+            assert!(failed_functorial_coherence(&changed, &original_vcs).is_err());
+        }
+    }
+    for mutation in 0..3 {
+        use mizar_vc::vc_ir::{SeedOriginRef, VcFormulaRef, VcSet, VcSetParts};
+        let mut parts = VcSetParts {
+            schema_version: original_vcs.schema_version().clone(),
+            snapshot: original_vcs.snapshot(),
+            source: original_vcs.source(),
+            module: original_vcs.module().clone(),
+            generated_formulas: original_vcs.generated_formulas().to_vec(),
+            vcs: original_vcs.vcs().to_vec(),
+            seed_accounting: original_vcs.seed_accounting().to_vec(),
+        };
+        match mutation {
+            0 => {
+                parts.vcs[0].goal = VcFormulaRef::Core(
+                    core.formulas()
+                        .iter()
+                        .find(|(_, f)| matches!(f.kind, CoreFormulaKind::Equals { .. }))
+                        .unwrap()
+                        .0,
+                )
+            }
+            1 => {
+                parts.seed_accounting[0].origin = SeedOriginRef::ExistingCore {
+                    seed: ObligationSeedId::new(99),
+                }
+            }
+            2 => {
+                parts.vcs[0].source.primary =
+                    core.definitions().iter().next().unwrap().1.source.clone()
+            }
+            _ => unreachable!(),
+        }
+        let corrupt = VcSet::try_new(parts).unwrap();
+        assert!(
+            failed_functorial_coherence(&core, &corrupt).is_err(),
+            "accepted VC mutation {mutation}"
+        );
+    }
+    let positive = step5c11_functorial_core(&case, &text.replace("not X = X", "X = X")).unwrap();
+    let unrelated_vcs =
+        super::proof_verification::generate_core_vcs(&positive, super::shared::snapshot_id(5800))
+            .unwrap();
+    assert!(failed_functorial_coherence(&core, &unrelated_vcs).is_err());
+}
+
+#[test]
+fn step5c11_false_coherence_admission_is_exact_and_cannot_fall_back() {
+    use crate::{
+        expectation::{ExpectedOutcome, PipelinePhase},
+        staged_model::Stage,
+    };
+    let (original, _) = step5c11_false_coherence_case();
+    let config = step5c11_config();
+    assert!(super::is_active_proof_verification(&original));
+    for mutation in 0..13 {
+        let mut case = original.clone();
+        match mutation {
+            0 => case.id.0.push_str("_extra"),
+            1 => {
+                case.source_path = config.workspace_root.join("alias").join(
+                    case.source_path
+                        .strip_prefix(&config.workspace_root)
+                        .unwrap(),
+                )
+            }
+            2 => case.expectation_path = case.expectation_path.with_file_name("wrong.expect.toml"),
+            3 => case.expectation.expected_phase = Some(PipelinePhase::VcGeneration),
+            4 => case.expectation.expected_outcome = ExpectedOutcome::Pass,
+            5 => case.expectation.tags.clear(),
+            6 => case.expectation.tags.push("extra".into()),
+            7 => case.expectation.stable_detail_key = Some("wrong".into()),
+            8 => case.expectation.failure_category = None,
+            9 => case.expectation.diagnostic_codes.push("E-UNRELATED".into()),
+            10 => case.expectation.rejection_reason = Some("wrong".into()),
+            11 => case.expectation.snapshots = Some("wrong".into()),
+            12 => case
+                .expectation
+                .declaration_symbol_payloads
+                .push("wrong".into()),
+            _ => unreachable!(),
+        }
+        assert!(
+            !super::proof_verification::step5c11_proof_admitted(
+                Some(&config.workspace_root),
+                &case
+            ),
+            "mutation {mutation}"
+        );
+    }
+    for (stage, phase, tag) in [
+        (Stage::ParseOnly, PipelinePhase::Parse, "active_parse_only"),
+        (
+            Stage::DeclarationSymbol,
+            PipelinePhase::Resolve,
+            "active_declaration_symbol",
+        ),
+        (
+            Stage::TypeElaboration,
+            PipelinePhase::TypeCheck,
+            "active_type_elaboration",
+        ),
+        (
+            Stage::FormulaStatement,
+            PipelinePhase::StatementCheck,
+            "active_formula_statement",
+        ),
+        (
+            Stage::AdvancedSemantics,
+            PipelinePhase::ClusterResolution,
+            "active_advanced_semantics",
+        ),
+    ] {
+        let mut case = original.clone();
+        case.expectation.stage = stage;
+        case.expectation.expected_phase = Some(phase);
+        case.expectation.tags = vec![tag.into()];
+        assert!(!super::is_active_parse_only(&case));
+        assert!(!super::is_active_declaration_symbol(&case));
+        assert!(!super::is_active_type_elaboration(&case));
+        assert!(!super::formula_statement::is_active_formula_statement(
+            &config.workspace_root,
+            &case
+        ));
+        assert!(!super::is_active_proof_verification(&case));
+        assert!(!super::step5c11_registration_admitted(
+            &config.workspace_root,
+            &case
+        ));
+        case.id.0 = "corrupt_identity".into();
+        case.source_path = config.workspace_root.join("alias.miz");
+        case.expectation_path = config.workspace_root.join("alias.expect.toml");
+        assert!(!super::is_active_parse_only(&case));
+        assert!(!super::is_active_declaration_symbol(&case));
+        assert!(!super::is_active_type_elaboration(&case));
+        assert!(!super::formula_statement::is_active_formula_statement(&config.workspace_root, &case));
+        assert!(!super::is_active_proof_verification(&case));
+    }
+    let plan = build_test_plan(&config).unwrap();
+    assert!(
+        super::proof_verification::validate_active_proof_verification_tags(
+            &config.workspace_root,
+            &plan
+        )
+        .is_empty()
+    );
+    for duplicate in [false, true] {
+        let mut changed = plan.clone();
+        if duplicate {
+            changed.cases.push(original.clone());
+        } else {
+            changed.cases.retain(|case| case.id != original.id);
+        }
+        assert!(
+            !super::proof_verification::validate_active_proof_verification_tags(
+                &config.workspace_root,
+                &changed
+            )
+            .is_empty()
+        );
+    }
+    let temporary = std::process::Command::new("mktemp").arg("-d").output().unwrap();
+    assert!(temporary.status.success());
+    let root = PathBuf::from(String::from_utf8(temporary.stdout).unwrap().trim());
+    let mut absent = plan.clone();
+    absent.cases.clear();
+    assert!(super::proof_verification::validate_active_proof_verification_tags(&root, &absent).is_empty());
+    std::fs::create_dir_all(root.join("tests/coverage")).unwrap();
+    std::fs::copy(config.workspace_root.join("tests/coverage/step5_activation_map.tsv"), root.join("tests/coverage/step5_activation_map.tsv")).unwrap();
+    assert!(super::proof_verification::validate_active_proof_verification_tags(&root, &absent).iter().any(|diagnostic| diagnostic.detail_key == "proof_verification.step5c11_inventory"));
+    std::fs::remove_dir_all(root).unwrap();
+
 }

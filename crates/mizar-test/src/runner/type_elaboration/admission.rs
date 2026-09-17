@@ -292,7 +292,9 @@ const STEP5C2_STRUCTURE_CASES: [(&str, &str, PipelinePhase, ExpectedOutcome); 12
 ];
 
 pub(in crate::runner) fn is_active_type_elaboration(case: &TestCase) -> bool {
-    if super::super::is_step5c11_registration_candidate(case) {
+    if super::super::is_step5c11_registration_candidate(case)
+        || super::super::proof_verification::is_step5c11_proof_candidate(case)
+    {
         return false;
     }
     if super::super::parse_only::is_step5c11_parse_candidate(case) {

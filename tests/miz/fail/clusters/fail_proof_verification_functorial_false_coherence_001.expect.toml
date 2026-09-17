@@ -9,6 +9,7 @@ expected_phase = "verification"
 failure_category = "proof_failure"
 stable_detail_key = "clusters.functorial.false_coherence"
 diagnostic_codes = []
+tags = ["active_proof_verification"]
 spec_refs = [
   "spec.en.17.clusters.functorial.false_coherence",
 ]

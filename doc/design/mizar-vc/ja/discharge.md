@@ -1,5 +1,7 @@
 # Module: discharge
 
+`failed_functorial_coherence` は Core/VC の対応を照合し、成立する引数・結果ガードの下にある実際の否定反射等式だけを失敗と判定する。 検査済み属性・恒等関数の定義とソースの正当化に従い、未対応または単なる NeedsAtp の目標には失敗判定も受理も与えない。
+
 > 正本は英語です。英語版:
 > [../en/discharge.md](../en/discharge.md)。
 

@@ -1,5 +1,7 @@
 # Module: discharge
 
+`failed_functorial_coherence` authenticates Core/VC links and observes failure only for the actual negated reflexive equality under established parameter and result guards. It follows the checked attribute/identity-functor definitions and source justification; unsupported or merely NeedsAtp goals earn no failure observation or acceptance.
+
 > Canonical language: English. Japanese companion:
 > [../ja/discharge.md](../ja/discharge.md).
 

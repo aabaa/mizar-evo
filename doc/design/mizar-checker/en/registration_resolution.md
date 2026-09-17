@@ -1,7 +1,7 @@
 # mizar-checker: Registration Resolution
 
 `check_source_registration_intake` authenticates resolved source, typed nodes and symbol origins
-for builtin-set parameters, equality-defined attributes and identity functors. It checks the four
+for builtin-set parameters, equality- or negated-equality-defined attributes and identity functors. Its sealed SourceRegistrationCheck retains immutable typed nodes, existing registration/inference/BindingEnv outputs and checked (node, symbol, visibility) owner metadata for pending and Core consumers. It checks the four
 registration forms and derives reduction size/free variables from their terms. Pending correctness
 requests bind the §17.8.3 schema to checked source operands, including full functorial result guards.
 It returns existing registration and inference outputs with no activation inputs or accepted effects.

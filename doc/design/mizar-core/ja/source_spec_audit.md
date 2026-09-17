@@ -142,7 +142,7 @@ public function:
 
 Source: `crates/mizar-core/src/elaborator.rs`。owning spec: `elaborator.md`。
 
-`normalize_source_membership_proof` は checker が封印した所属証明義務を受け取る。境界は [elaborator.md](./elaborator.md) を参照。
+`normalize_source_membership_proof` は checker が封印した所属証明義務を受け取り、`lower_source_functorial_registration` は限定された関手的登録の正当性ゴールを下げる。境界は [elaborator.md](./elaborator.md) を参照。
 
 top-level public API group:
 

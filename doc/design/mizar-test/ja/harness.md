@@ -1,5 +1,7 @@
 # Module: harness
 
+偽 coherence の厳密な証明ケースはソース → Core → VC の対応を認証して verification の失敗を観測し、未対応目標や保留状態だけでは失敗キーを満たさない。
+
 advanced-semantics コマンドは登録の正常系 4 行を cluster_resolution で実行する。
 厳密な sidecar 照合後にソースから検査した登録と正当性義務の保留状態を確認する。
 受理、推論効果、証明の達成は意味しない。

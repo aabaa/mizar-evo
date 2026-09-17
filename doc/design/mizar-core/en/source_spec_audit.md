@@ -143,7 +143,7 @@ Correspondence:
 
 Source: `crates/mizar-core/src/elaborator.rs`. Owning spec: `elaborator.md`.
 
-`normalize_source_membership_proof` consumes checker-sealed membership obligations as specified in [elaborator.md](./elaborator.md).
+`normalize_source_membership_proof` consumes checker-sealed membership obligations; `lower_source_functorial_registration` lowers the bounded functorial correctness goal as specified in [elaborator.md](./elaborator.md).
 
 Top-level public API groups:
 

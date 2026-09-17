@@ -19,6 +19,295 @@ pub const DEFAULT_COMPUTATION_LIMIT_POLICY: &str = "task-11-computation-step-lim
 pub const DEFINITIONAL_REDUCTION_POLICY: &str = "task-11-definitional-reduction";
 pub const DEFINITIONAL_REDUCTION_ALLOW: &str = "allow";
 
+/// Detects the bounded source functorial coherence failure without accepting a proof.
+pub fn failed_functorial_coherence(
+    core: &mizar_core::core_ir::CoreIr,
+    vcs: &VcSet,
+) -> Result<Option<VcId>, String> {
+    use crate::{
+        generator::{CoreGenerationCandidateSet, CoreGenerationInput, VcNormalizationInput},
+        vc_ir::{RegistrationCorrectnessKind, SeedIntakeTable, VcKind, VcModuleRef},
+    };
+    use mizar_core::{
+        control_flow::{build_control_flow_ir, build_obligation_seed_handoff},
+        core_ir::{
+            CoreFormulaKind as Formula, CoreItemKind, CoreItemStatus, CoreNodeRef,
+            CoreProofNodeKind, CoreProofStatus, CoreProvenancePhase, CoreSourceAnchor,
+            CoreTermKind as Term, DefinitionBody, ExpansionPolicy, ObligationSeedKind,
+            ObligationSeedStatus,
+        },
+    };
+    let unsupported = || "unsupported or unauthenticated functorial coherence".to_owned();
+    let [vc] = vcs.vcs() else {
+        return Err(unsupported());
+    };
+    if core.has_error_nodes()
+        || core.items().len() != 3
+        || core.definitions().len() != 2
+        || core.obligation_seeds().len() != 1
+        || core.proofs().len() != 1
+        || core.proof_nodes().len() != 1
+        || !core.algorithms().is_empty()
+        || core.items().iter().any(|(_, item)| {
+            item.status != CoreItemStatus::Valid || item.symbol.module() != core.module_id()
+        })
+    {
+        return Err(unsupported());
+    }
+    // Replay the existing generator to authenticate all seed, source-map, owner,
+    // provenance, context and goal links rather than trusting a matching goal ID.
+    let flow = build_control_flow_ir(core);
+    let handoff = build_obligation_seed_handoff(core, &flow);
+    let intake = SeedIntakeTable::try_from_handoff(&handoff).map_err(|e| e.to_string())?;
+    let package = core.module_id().package().as_str();
+    let path = core.module_id().path().as_str();
+    let candidates = CoreGenerationCandidateSet::try_from_seed_intake(CoreGenerationInput {
+        schema_version: &vc.anchor.generation_schema_version,
+        module: &VcModuleRef::new(format!(
+            "package={}:{};module={}:{}",
+            package.len(),
+            package,
+            path.len(),
+            path
+        )),
+        intake: &intake,
+        handoff: &handoff,
+        flow_output: Some(&flow),
+    })
+    .map_err(|e| e.to_string())?;
+    let expected = CoreGenerationCandidateSet::try_normalize(VcNormalizationInput {
+        schema_version: vcs.schema_version(),
+        snapshot: vcs.snapshot(),
+        source: core.source_id(),
+        candidates: &candidates,
+    })
+    .map_err(|e| e.to_string())?;
+    if &expected != vcs
+        || vc.kind
+            != (VcKind::RegistrationStyleCorrectness {
+                style: RegistrationCorrectnessKind::Registration,
+            })
+    {
+        return Err(unsupported());
+    }
+    let (_, seed) = core
+        .obligation_seeds()
+        .iter()
+        .next()
+        .ok_or_else(unsupported)?;
+    let owner = core.items().get(seed.owner).ok_or_else(unsupported)?;
+    let goal = seed.goal.ok_or_else(unsupported)?;
+    if owner.kind != CoreItemKind::Registration
+        || seed.kind != ObligationSeedKind::CheckerInitial
+        || seed.status != ObligationSeedStatus::Active
+        || !seed.context.is_empty()
+        || !seed.diagnostics.is_empty()
+        || seed.core_refs != [CoreNodeRef::Item(seed.owner), CoreNodeRef::Formula(goal)]
+        || !seed.provenance.iter().any(|p| {
+            p.phase == CoreProvenancePhase::Checker
+                && p.key
+                    .as_str()
+                    .strip_prefix("initial-obligation#")
+                    .is_some_and(|id| id.parse::<usize>().is_ok())
+        })
+    {
+        return Err(unsupported());
+    }
+    let formula = |id| {
+        core.formulas()
+            .get(id)
+            .map(|f| &f.kind)
+            .ok_or_else(unsupported)
+    };
+    let term = |id| {
+        core.terms()
+            .get(id)
+            .map(|t| &t.kind)
+            .ok_or_else(unsupported)
+    };
+    let Formula::Forall { binders, body } = formula(goal)? else {
+        return Err(unsupported());
+    };
+    let [binder] = binders.as_slice() else {
+        return Err(unsupported());
+    };
+    let Formula::Implies {
+        premise,
+        conclusion,
+    } = formula(*body)?
+    else {
+        return Err(unsupported());
+    };
+    let Formula::And(guards) = formula(*premise)? else {
+        return Err(unsupported());
+    };
+    let [parameter, result] = guards.as_slice() else {
+        return Err(unsupported());
+    };
+    let Formula::TypePred { subject, ty } = formula(*parameter)? else {
+        return Err(unsupported());
+    };
+    if binder.ty_guard.is_some()
+        || ty.as_str() != "set"
+        || term(*subject)? != &Term::Var(binder.var)
+    {
+        return Err(unsupported());
+    }
+    let Formula::TypePred {
+        subject: application,
+        ty,
+    } = formula(*result)?
+    else {
+        return Err(unsupported());
+    };
+    let Term::Apply { functor, args } = term(*application)? else {
+        return Err(unsupported());
+    };
+    let Formula::Atom {
+        predicate,
+        args: attr_args,
+    } = formula(*conclusion)?
+    else {
+        return Err(unsupported());
+    };
+    if ty.as_str() != "set" || args != &[*subject] || attr_args != &[*application] {
+        return Err(unsupported());
+    }
+    let mut polarity = None;
+    let mut identity = false;
+    let mut bound_variables = BTreeSet::from([binder.var]);
+    for (_, definition) in core.definitions().iter() {
+        let item = core
+            .items()
+            .get(definition.owner.anchor_item())
+            .ok_or_else(unsupported)?;
+        let [param] = definition.params.as_slice() else {
+            return Err(unsupported());
+        };
+        let Formula::TypePred {
+            subject: parameter,
+            ty,
+        } = formula(param.ty_guard.ok_or_else(unsupported)?)?
+        else {
+            return Err(unsupported());
+        };
+        if definition.owner.item().is_none()
+            || definition.symbol != item.symbol
+            || definition.expansion != ExpansionPolicy::Transparent
+            || !definition.correctness.is_empty()
+            || !definition.generated_dependencies.is_empty()
+            || !bound_variables.insert(param.var)
+            || ty.as_str() != "set"
+            || term(*parameter)? != &Term::Var(param.var)
+        {
+            return Err(unsupported());
+        }
+        match &definition.body {
+            DefinitionBody::Term(body)
+                if definition.symbol == *functor && item.kind == CoreItemKind::Functor =>
+            {
+                if identity || term(*body)? != &Term::Var(param.var) {
+                    return Err(unsupported());
+                }
+                let (_, proof) = core.proofs().iter().next().ok_or_else(unsupported)?;
+                let node = core.proof_nodes().get(proof.root).ok_or_else(unsupported)?;
+                let CoreProofNodeKind::Step {
+                    label,
+                    formula: step_goal,
+                    justification,
+                } = &node.kind
+                else {
+                    return Err(unsupported());
+                };
+                let (
+                    CoreSourceAnchor::SourceRange(item_range),
+                    CoreSourceAnchor::SourceRange(proof_range),
+                    CoreSourceAnchor::SourceRange(step_range),
+                ) = (
+                    &item.source.anchor,
+                    &proof.source.anchor,
+                    &node.source.anchor,
+                )
+                else {
+                    return Err(unsupported());
+                };
+                if proof.item != definition.owner.anchor_item()
+                    || proof.status != CoreProofStatus::PendingAutomaticProof
+                    || *step_goal != proof.proposition
+                    || label.is_some()
+                    || !justification.citations.is_empty()
+                    || justification.source != node.source
+                    || !node.diagnostics.is_empty()
+                    || item_range.end > proof_range.start
+                    || proof_range.start > step_range.start
+                    || step_range.end > proof_range.end
+                {
+                    return Err(unsupported());
+                }
+                let Formula::Forall {
+                    binders,
+                    body: proposition,
+                } = formula(proof.proposition)?
+                else {
+                    return Err(unsupported());
+                };
+                let [proof_param] = binders.as_slice() else {
+                    return Err(unsupported());
+                };
+                let Formula::Implies {
+                    premise,
+                    conclusion,
+                } = formula(*proposition)?
+                else {
+                    return Err(unsupported());
+                };
+                let Formula::TypePred {
+                    subject: result,
+                    ty,
+                } = formula(*conclusion)?
+                else {
+                    return Err(unsupported());
+                };
+                if proof_param.var != param.var
+                    || proof_param.source.anchor != param.source.anchor
+                    || proof_param.ty_guard.is_some()
+                    || Some(*premise) != param.ty_guard
+                    || result != body
+                    || ty.as_str() != "set"
+                {
+                    return Err(unsupported());
+                }
+                // The parameter guard and identity body establish the full set result guard.
+                identity = true;
+            }
+            DefinitionBody::Formula(body)
+                if definition.symbol == *predicate && item.kind == CoreItemKind::Attribute =>
+            {
+                if polarity.is_some() {
+                    return Err(unsupported());
+                }
+                let (negated, equality) = match formula(*body)? {
+                    Formula::Not(inner) => (true, formula(*inner)?),
+                    equality => (false, equality),
+                };
+                let Formula::Equals { left, right } = equality else {
+                    return Err(unsupported());
+                };
+                if term(*left)? != &Term::Var(param.var) || term(*right)? != &Term::Var(param.var) {
+                    return Err(unsupported());
+                }
+                polarity = Some(negated);
+            }
+            _ => return Err(unsupported()),
+        }
+    }
+    match (identity, polarity) {
+        (true, Some(true)) => Ok(Some(vc.id)),
+        (true, Some(false)) => Ok(None),
+        _ => Err(unsupported()),
+    }
+}
+
 #[derive(Debug, Clone, Copy)]
 pub struct DischargeInput<'a> {
     pub vc_set: &'a VcSet,

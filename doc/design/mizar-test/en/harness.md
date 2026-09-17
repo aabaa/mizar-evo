@@ -1,5 +1,7 @@
 # Module: harness
 
+The exact false-coherence proof row consumes authenticated source → Core → VC failure at verification; unsupported goals and pending status alone never satisfy its failure key.
+
 The advanced-semantics command admits the four mapped positive registration rows at
 cluster_resolution, authenticates their exact sidecars, and consumes source-checked pending
 registrations and correctness obligations. It grants no acceptance, inference or proof credit.
