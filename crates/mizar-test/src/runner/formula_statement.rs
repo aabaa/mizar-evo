@@ -262,6 +262,9 @@ const EXACT_FORMULA_STATEMENT_CASES: [(&str, &str, ExpectedOutcome); 7] = [
 ];
 
 pub(super) fn is_active_formula_statement(workspace_root: &Path, case: &TestCase) -> bool {
+    if super::is_step5c11_registration_candidate(case) {
+        return false;
+    }
     if super::parse_only::is_step5c11_parse_candidate(case) {
         return false;
     }

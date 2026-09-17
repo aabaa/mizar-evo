@@ -31,6 +31,146 @@ use mizar_syntax::{
 use std::cmp::Ordering;
 use std::collections::{BTreeMap, BTreeSet};
 
+/// Resolves a bounded builtin-set parameter use to its source declaration token.
+///
+/// Only preceding direct definition/registration parameters in the nearest block
+/// are admitted. Nested binding scopes and ambiguous declarations fail closed.
+pub fn resolve_registration_parameter(
+    source: &SurfaceResolvedArena,
+    reference: ResolvedNodeId,
+) -> Result<ResolvedNodeId, String> {
+    use mizar_session::SourceAnchor;
+    let invalid = || "unsupported or unbound registration parameter reference".to_owned();
+    let arena = source.arena();
+    let node = |id| arena.node(id).ok_or_else(invalid);
+    let token = |id| match arena.node(id).map(|node| node.kind()) {
+        Some(SurfaceNodeKind::Token(token)) => Some(token),
+        _ => None,
+    };
+    let range = |id| match arena.node(id).map(|node| node.origin().anchor()) {
+        Some(SourceAnchor::Range(range)) => Some(*range),
+        _ => None,
+    };
+    let mut parents = BTreeMap::new();
+    for (id, current) in arena.iter() {
+        let span = range(id).ok_or_else(invalid)?;
+        if current.origin().source_id() != source.source_id()
+            || current.origin().module_id() != source.module()
+            || current.origin().is_recovered()
+            || matches!(current.kind(), SurfaceNodeKind::ErrorRecovery(_))
+            || span.source_id != source.source_id()
+            || span.start > span.end
+        {
+            return Err(invalid());
+        }
+        for child in current.children() {
+            let child_span = range(*child).ok_or_else(invalid)?;
+            if child_span.start < span.start || child_span.end > span.end {
+                return Err(invalid());
+            }
+            // The parser root also lists tokens; that edge is not a lexical parent.
+            if !matches!(current.kind(), SurfaceNodeKind::Root)
+                && parents.insert(*child, id).is_some()
+            {
+                return Err(invalid());
+            }
+        }
+    }
+    let spelling = token(reference)
+        .filter(|token| token.kind == SurfaceTokenKind::Identifier)
+        .ok_or_else(invalid)?
+        .text
+        .as_ref();
+    let parent = node(*parents.get(&reference).ok_or_else(invalid)?)?;
+    let valid_role = match parent.kind() {
+        SurfaceNodeKind::TermReference => parent.children() == [reference],
+        SurfaceNodeKind::FunctorPattern => {
+            matches!(parent.children(), [_, argument] if *argument == reference)
+        }
+        SurfaceNodeKind::AttributeDefinition => parent.children().windows(3).any(|triple| {
+            triple[1] == reference
+                && token(triple[0]).is_some_and(|t| t.text.as_ref() == ":")
+                && token(triple[2]).is_some_and(|t| t.text.as_ref() == "is")
+        }),
+        _ => false,
+    };
+    if !valid_role {
+        return Err(invalid());
+    }
+    let mut owner = reference;
+    loop {
+        owner = *parents.get(&owner).ok_or_else(invalid)?;
+        let kind = node(owner)?.kind();
+        if matches!(
+            kind,
+            SurfaceNodeKind::DefinitionBlockItem | SurfaceNodeKind::RegistrationBlockItem
+        ) {
+            break;
+        }
+        if is_variable_scope_boundary(kind)
+            || matches!(
+                kind,
+                SurfaceNodeKind::SetComprehension
+                    | SurfaceNodeKind::DefinitionParameter
+                    | SurfaceNodeKind::RegistrationParameter
+            )
+        {
+            return Err(invalid());
+        }
+    }
+    let mut binding = None;
+    for parameter in node(owner)?.children() {
+        let declaration = node(*parameter)?;
+        let expected = if matches!(node(owner)?.kind(), SurfaceNodeKind::DefinitionBlockItem) {
+            SurfaceNodeKind::DefinitionParameter
+        } else {
+            SurfaceNodeKind::RegistrationParameter
+        };
+        if declaration.kind() != &expected {
+            continue;
+        }
+        let [let_token, segment, semicolon] = declaration.children() else {
+            return Err(invalid());
+        };
+        if token(*let_token).is_none_or(|t| t.text.as_ref() != "let")
+            || token(*semicolon).is_none_or(|t| t.text.as_ref() != ";")
+            || node(*segment)?.kind() != &SurfaceNodeKind::QualifiedVariableSegment
+        {
+            return Err(invalid());
+        }
+        let [binder, be, ty] = node(*segment)?.children() else {
+            return Err(invalid());
+        };
+        let name = token(*binder)
+            .filter(|t| t.kind == SurfaceTokenKind::Identifier)
+            .ok_or_else(invalid)?;
+        if name.text.as_ref() != spelling {
+            continue;
+        }
+        if range(*parameter).ok_or_else(invalid)?.end > range(reference).ok_or_else(invalid)?.start
+            || token(*be).is_none_or(|t| t.text.as_ref() != "be")
+            || node(*ty)?.kind() != &SurfaceNodeKind::TypeExpression
+        {
+            return Err(invalid());
+        }
+        let [head] = node(*ty)?.children() else {
+            return Err(invalid());
+        };
+        let [set] = node(*head)?.children() else {
+            return Err(invalid());
+        };
+        if node(*head)?.kind() != &SurfaceNodeKind::TypeHead
+            || token(*set).is_none_or(|t| {
+                t.kind != SurfaceTokenKind::ReservedWord || t.text.as_ref() != "set"
+            })
+            || binding.replace(*binder).is_some()
+        {
+            return Err(invalid());
+        }
+    }
+    binding.ok_or_else(invalid)
+}
+
 /// Stable id for one admitted template type-parameter binding.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub struct TemplateTypeParameterBindingId(usize);

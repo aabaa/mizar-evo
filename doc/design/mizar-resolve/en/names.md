@@ -1,5 +1,9 @@
 # Module: names
 
+`resolve_registration_parameter` resolves a parameter use to its actual preceding declaration
+in the same definition or registration block. It admits builtin-set parameters and checks lexical
+ownership, order and recovery; it creates no new binding or symbol representation.
+
 `resolve_proof_occurrences(SourceVariableScopeInput)` returns the existing sealed
 `ResolvedVariableScope`, additionally collecting Given/Consider bindings and their
 condition/descendant uses within the enclosing block. Legacy entry points are unchanged;

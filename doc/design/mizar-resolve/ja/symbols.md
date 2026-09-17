@@ -1,5 +1,7 @@
 # Module: symbols
 
+`validate_source_symbol_env` は既存の収集処理を再利用して局所記号環境全体の由来を照合する。
+
 > 正本は英語です。英語版: [../en/symbols.md](../en/symbols.md)。
 
 Status: task R-019〜R-021 は resolver-owned な signature collection 経路を仕様化し

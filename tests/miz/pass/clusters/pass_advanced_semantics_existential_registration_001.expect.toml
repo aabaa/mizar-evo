@@ -7,6 +7,7 @@ source = "pass_advanced_semantics_existential_registration_001.miz"
 expected_outcome = "pass"
 expected_phase = "cluster_resolution"
 diagnostic_codes = []
+tags = ["active_advanced_semantics"]
 spec_refs = [
   "spec.en.17.clusters.existential.registration",
 ]

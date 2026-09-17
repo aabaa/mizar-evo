@@ -1793,6 +1793,232 @@ pub fn run_declaration_symbol_corpus(
     })
 }
 
+const STEP5C11_REGISTRATION_IDS: [&str; 4] = [
+    "pass_advanced_semantics_existential_registration_001",
+    "pass_advanced_semantics_conditional_registration_001",
+    "pass_advanced_semantics_functorial_registration_001",
+    "pass_advanced_semantics_reduce_registration_001",
+];
+
+fn is_step5c11_registration_candidate(case: &TestCase) -> bool {
+    STEP5C11_REGISTRATION_IDS.iter().any(|id| {
+        case.id.0 == *id
+            || case.expectation.id.0 == *id
+            || case.source_path.file_stem().is_some_and(|stem| stem == *id)
+            || case
+                .expectation_path
+                .file_name()
+                .is_some_and(|name| name == format!("{id}.expect.toml").as_str())
+    })
+}
+
+fn step5c11_registration_admitted(root: &Path, case: &TestCase) -> bool {
+    let path = format!("tests/miz/pass/clusters/{}.miz", case.id.0);
+    STEP5C11_REGISTRATION_IDS.contains(&case.id.0.as_str())
+        && workspace_relative_source(root, &case.source_path).as_deref() == Some(path.as_str())
+        && workspace_relative_source(root, &case.expectation_path).is_some_and(|actual| {
+            Path::new(&actual) == Path::new(&path).with_extension("expect.toml")
+        })
+        && case.expectation.id == case.id
+        && case.expectation.source == Path::new(&path).file_name().unwrap()
+        && case.expectation.kind == crate::expectation::TestKind::Pass
+        && case.expectation.stage == Stage::AdvancedSemantics
+        && case.expectation.expected_phase == Some(PipelinePhase::ClusterResolution)
+        && case.expectation.expected_outcome == ExpectedOutcome::Pass
+        && case.expectation.failure_category.is_none()
+        && case.expectation.rejection_reason.is_none()
+        && case.expectation.stable_detail_key.is_none()
+        && case.expectation.diagnostic_codes.is_empty()
+        && case.expectation.diagnostic_payloads.is_empty()
+        && case.expectation.declaration_symbol_payloads.is_empty()
+        && case.expectation.snapshots.is_none()
+        && case.expectation.tags.as_slice() == ["active_advanced_semantics"]
+}
+
+fn source_registration_intake(
+    root: &Path,
+    case: &TestCase,
+    output: FrontendRun,
+) -> Result<
+    (
+        mizar_checker::registration_resolution::RegistrationDatabase,
+        mizar_checker::type_checker::TermFormulaInferenceOutput,
+    ),
+    String,
+> {
+    use mizar_checker::registration_resolution::{
+        PendingRegistrationStatus, RegistrationPatternStatus,
+    };
+    use mizar_checker::typed_ast::{
+        InitialObligationKind, InitialObligationStatus, TypedArena, TypedNode, TypedNodeId,
+    };
+    if !output.diagnostics.is_empty() {
+        return Err("registration.frontend_diagnostics".into());
+    }
+    let ast = output.ast.ok_or("registration.missing_ast")?;
+    let symbols = resolver_symbol_collection(root, case, &ast);
+    if !symbols.detail_keys.is_empty() {
+        return Err("registration.resolver_diagnostics".into());
+    }
+    let source = mizar_resolve::resolved_ast::SurfaceResolvedArena::lower(&ast, &symbols.module)
+        .map_err(|error| error.to_string())?;
+    if source
+        .arena()
+        .iter()
+        .any(|(_, node)| node.origin().is_recovered())
+    {
+        return Err("registration.recovered_source".into());
+    }
+    let nodes = TypedArena::try_new(
+        Some(TypedNodeId::new(source.arena().root().index())),
+        source
+            .arena()
+            .iter()
+            .map(|(id, node)| {
+                TypedNode::new(format!("{:?}", node.kind()), node.origin().anchor().clone())
+                    .with_resolved_node(id)
+                    .with_children(
+                        node.children()
+                            .iter()
+                            .map(|child| TypedNodeId::new(child.index()))
+                            .collect(),
+                    )
+            })
+            .collect(),
+    )
+    .map_err(|error| error.to_string())?;
+    let (database, inference) =
+        mizar_checker::registration_resolution::check_source_registration_intake(
+            &source,
+            &nodes,
+            &symbols.env,
+        )?;
+    if database.module_id() != source.module()
+        || database.pending().is_empty()
+        || database.pending().len() != symbols.env.registrations().iter().count()
+        || database.initial_obligations().len() != database.pending().len()
+        || !database.activated().is_empty()
+        || !database.rejected().is_empty()
+        || !database.diagnostics().is_empty()
+        || !inference.diagnostics().is_empty()
+        || inference.source_id() != source.source_id()
+        || inference.module_id() != source.module()
+        || database.pending().iter().any(|pending| {
+            !matches!(
+                pending.pattern_status(),
+                RegistrationPatternStatus::Validated(_)
+            ) || pending.status() != PendingRegistrationStatus::AwaitingVerifierAcceptance
+                || pending.may_contribute_to_inference()
+                || pending.obligations().len() != 1
+                || !symbols
+                    .env
+                    .registrations()
+                    .iter()
+                    .any(|entry| entry.id() == pending.resolver_registration())
+                || pending.obligations().iter().any(|id| {
+                    database
+                        .initial_obligations()
+                        .get(*id)
+                        .is_none_or(|obligation| {
+                            obligation.kind != InitialObligationKind::RegistrationCorrectness
+                                || obligation.status != InitialObligationStatus::Pending
+                                || nodes.node(obligation.owner.node()).is_none()
+                        })
+                })
+        })
+    {
+        return Err("registration.invalid_pending_output".into());
+    }
+    Ok((database, inference))
+}
+
+fn validate_step5c11_registration_inventory(
+    root: &Path,
+    plan: &TestPlan,
+) -> Vec<ValidationDiagnostic> {
+    let mut diagnostics = Vec::new();
+    for id in STEP5C11_REGISTRATION_IDS {
+        if plan
+            .cases
+            .iter()
+            .filter(|case| case.id.0 == id && step5c11_registration_admitted(root, case))
+            .count()
+            != 1
+        {
+            diagnostics.push(ValidationDiagnostic::error(
+                root,
+                "advanced_semantics",
+                "E-ADVANCED-SEMANTICS-INVENTORY",
+                format!("advanced_semantics.inventory.{id}"),
+                "each mapped registration must have exactly one admitted source/sidecar pair",
+            ));
+        }
+    }
+    for case in &plan.cases {
+        if (is_step5c11_registration_candidate(case)
+            || case
+                .expectation
+                .tags
+                .iter()
+                .any(|tag| tag == "active_advanced_semantics"))
+            && !step5c11_registration_admitted(root, case)
+        {
+            diagnostics.push(ValidationDiagnostic::error(&case.expectation_path, "advanced_semantics",
+                "E-ADVANCED-SEMANTICS-ADMISSION", format!("advanced_semantics.admission.{}", case.id.0),
+                "registration admission requires exact mapped identity, stage, phase, outcome, empty keys and sole tag"));
+        }
+    }
+    diagnostics
+}
+
+pub fn run_advanced_semantics_corpus(
+    config: &DiscoveryConfig,
+) -> Result<TypeElaborationRunReport, HarnessError> {
+    let root = normalized_workspace_root(config)?;
+    let plan = build_test_plan(config)?;
+    let mut report = TypeElaborationRunReport {
+        results: Vec::new(),
+        diagnostics: plan.diagnostics.clone(),
+    };
+    report
+        .diagnostics
+        .extend(validate_step5c11_registration_inventory(&root, &plan));
+    if report.error_count() == 0 {
+        for (ordinal, case) in plan
+            .cases
+            .iter()
+            .filter(|case| step5c11_registration_admitted(&root, case))
+            .enumerate()
+        {
+            let result = run_frontend(&root, case, ordinal)
+                .and_then(|output| source_registration_intake(&root, case, output));
+            let actual_detail_keys = result.err().into_iter().collect::<Vec<_>>();
+            if !actual_detail_keys.is_empty() {
+                report.diagnostics.push(ValidationDiagnostic::error(
+                    &case.expectation_path,
+                    "advanced_semantics",
+                    "E-ADVANCED-SEMANTICS-FAILURE",
+                    format!("advanced_semantics.failure.{}", case.id.0),
+                    actual_detail_keys.join(", "),
+                ));
+            }
+            report.results.push(TypeElaborationCaseResult {
+                id: case.id.clone(),
+                expectation_path: case.expectation_path.clone(),
+                status: if actual_detail_keys.is_empty() {
+                    TypeElaborationCaseStatus::Passed
+                } else {
+                    TypeElaborationCaseStatus::Failed
+                },
+                actual_detail_keys,
+                snapshot_failure: None,
+            });
+        }
+    }
+    report.diagnostics.sort();
+    Ok(report)
+}
+
 pub fn run_type_elaboration_corpus(
     config: &DiscoveryConfig,
 ) -> Result<TypeElaborationRunReport, HarnessError> {
@@ -1972,6 +2198,9 @@ pub fn active_proof_verification_cases(plan: &TestPlan) -> impl Iterator<Item = 
 }
 
 fn is_active_parse_only(case: &TestCase) -> bool {
+    if is_step5c11_registration_candidate(case) {
+        return false;
+    }
     if parse_only::is_step5c11_parse_candidate(case) {
         return parse_only::step5c11_parse_admitted(None, case);
     }
@@ -2010,6 +2239,9 @@ fn is_active_parse_only(case: &TestCase) -> bool {
 }
 
 fn is_active_declaration_symbol(case: &TestCase) -> bool {
+    if is_step5c11_registration_candidate(case) {
+        return false;
+    }
     if parse_only::is_step5c11_parse_candidate(case) {
         return false;
     }

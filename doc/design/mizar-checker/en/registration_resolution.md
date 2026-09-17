@@ -1,5 +1,14 @@
 # mizar-checker: Registration Resolution
 
+`check_source_registration_intake` authenticates resolved source, typed nodes and symbol origins
+for builtin-set parameters, equality-defined attributes and identity functors. It checks the four
+registration forms and derives reduction size/free variables from their terms. Pending correctness
+requests bind the §17.8.3 schema to checked source operands, including full functorial result guards.
+It returns existing registration and inference outputs with no activation inputs or accepted effects.
+Core goal lowering, proof discharge and accepted-status transport remain separate responsibilities.
+Direct syntax matching is permitted only for this authenticated source intake; existing payload consumers retain their boundaries.
+This bounded profile admits one registration per source and at most one set parameter per block.
+
 > Canonical language: English. Japanese companion:
 > [../ja/registration_resolution.md](../ja/registration_resolution.md).
 

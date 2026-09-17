@@ -1,5 +1,9 @@
 # Module: names
 
+`resolve_registration_parameter` は引数の参照を同じ定義・登録ブロック内の先行宣言へ解決する。
+builtin set の引数を対象とし、字句的な所有関係、順序、回復ノードを検査する。
+新しい束縛・記号表現は生成しない。
+
 `resolve_proof_occurrences(SourceVariableScopeInput)` は既存の sealed `ResolvedVariableScope` を返し、
 Given/Consider の束縛と条件・子ブロック内の参照を所属ブロックの範囲で収集する。
 旧入口は変更せず、追加するのは束縛種別のみで、式・文の payload は追加しない。

@@ -21,6 +21,866 @@ use std::{
     fmt::{self, Write as _},
 };
 
+use crate::{
+    binding_env::{
+        BindingContextDraft, BindingContextId, BindingContextLayer, BindingContextOwner,
+        BindingContextRecovery, BindingContextTable, BindingDiagnosticTable, BindingDraft,
+        BindingEnv, BindingEnvParts, BindingId, BindingKind, BindingTable, BindingTypeSite,
+    },
+    type_checker::{
+        FormulaInput, FormulaKind, FormulaStatus, TermFormulaChecker, TermFormulaInferenceOutput,
+        TermInput, TermKind, TermReference, TermStatus, TypeExpressionInput, TypeHeadInput,
+    },
+    typed_ast::{NodeRecoveryState, TypedArena, TypedNodeId, TypingState},
+};
+use mizar_resolve::{
+    env::{NamespacePath, SymbolKind},
+    names::{
+        LocalTermBinding, LocalTermScope, NameReferenceCandidate, NameSymbolProjection,
+        SymbolNameResolver, resolve_registration_parameter,
+    },
+    resolved_ast::{
+        NameResolution, ReferenceSite, ResolvedNode, ResolvedNodeId, SurfaceResolvedArena,
+    },
+};
+use mizar_syntax::ast::{SurfaceNodeKind as K, SurfaceTokenKind};
+
+/// Checks the bounded local set-registration slice without activating its effects.
+/// The goal is a schema request over checked source operands, not a discharged proof.
+pub fn check_source_registration_intake(
+    source: &SurfaceResolvedArena,
+    nodes: &TypedArena,
+    symbols: &SymbolEnv,
+) -> Result<(RegistrationDatabase, TermFormulaInferenceOutput), String> {
+    let invalid = || "registration.source_intake_invalid".to_owned();
+    mizar_resolve::symbols::validate_source_symbol_env(source, symbols)?;
+    if nodes.len() != source.arena().len()
+        || nodes.root().map(TypedNodeId::index) != Some(source.arena().root().index())
+    {
+        return Err(invalid());
+    }
+    for (id, resolved) in source.arena().iter() {
+        let typed = nodes
+            .node(TypedNodeId::new(id.index()))
+            .ok_or_else(invalid)?;
+        if resolved.recovery() != RecoveryState::Normal
+            || typed.recovery != NodeRecoveryState::Normal
+            || typed.resolved_node != Some(id)
+            || typed.anchor != *resolved.origin().anchor()
+            || typed.kind.as_str() != format!("{:?}", resolved.kind())
+            || typed.typing != TypingState::Unknown
+            || typed.links != Default::default()
+            || typed
+                .children
+                .iter()
+                .map(|child| child.index())
+                .collect::<Vec<_>>()
+                != resolved
+                    .children()
+                    .iter()
+                    .map(|child| child.index())
+                    .collect::<Vec<_>>()
+        {
+            return Err(invalid());
+        }
+    }
+    let mut intake = SourceRegistrationIntake {
+        source,
+        symbols,
+        contexts: BindingContextTable::new(),
+        bindings: BindingTable::new(),
+        parameters: BTreeMap::new(),
+        definitions: BTreeMap::new(),
+        terms: BTreeMap::new(),
+        formulas: Vec::new(),
+        projections: Vec::new(),
+    };
+    intake.contexts.insert(BindingContextDraft {
+        owner: BindingContextOwner::Module,
+        parent: None,
+        layer: BindingContextLayer::Module,
+        lexical_scope: None,
+        bindings: Vec::new(),
+        visible_bindings: Vec::new(),
+        recovery: BindingContextRecovery::Normal,
+    });
+    // Walk only top-level blocks. Proof contents remain owned by the future verifier.
+    let unit = intake.only(source.arena().root(), &K::CompilationUnit)?;
+    let items = intake.only(unit, &K::ItemList)?;
+    let mut registrations = Vec::new();
+    for block in intake.children(items).to_vec() {
+        let definition = match intake.node(block).kind() {
+            K::DefinitionBlockItem => true,
+            K::RegistrationBlockItem => false,
+            _ => return Err(invalid()),
+        };
+        let mut last_definition = None;
+        for child in intake.structural(block) {
+            if last_definition
+                .is_some_and(|owner| intake.node(owner).kind() == &K::FunctorDefinition)
+                && intake.node(child).kind() != &K::CorrectnessCondition
+            {
+                return Err(invalid());
+            }
+            match intake.node(child).kind() {
+                K::DefinitionParameter if definition => intake.parameter(block, child)?,
+                K::RegistrationParameter if !definition => intake.parameter(block, child)?,
+                K::AttributeDefinition | K::FunctorDefinition if definition => {
+                    intake.definition(child)?;
+                    last_definition = Some(child);
+                }
+                K::CorrectnessCondition if definition => {
+                    let owner = last_definition.take().ok_or_else(invalid)?;
+                    if intake.node(owner).kind() != &K::FunctorDefinition {
+                        return Err(invalid());
+                    }
+                    intake.correctness(child, "coherence")?;
+                }
+                K::ExistentialRegistration
+                | K::ConditionalRegistration
+                | K::FunctorialRegistration
+                | K::ReductionRegistration
+                    if !definition =>
+                {
+                    registrations.push(child);
+                }
+                _ => return Err(invalid()),
+            }
+        }
+        if last_definition.is_some_and(|node| intake.node(node).kind() == &K::FunctorDefinition) {
+            return Err(invalid());
+        }
+    }
+    if registrations.len() != 1 || registrations.len() != symbols.registrations().len() {
+        return Err(invalid());
+    }
+    let mut validations = Vec::new();
+    let mut required_types = Vec::new();
+    for registration in registrations {
+        let entry = symbols
+            .registrations()
+            .iter()
+            .find(|entry| entry.origin().anchor() == intake.node(registration).origin().anchor())
+            .ok_or_else(invalid)?;
+        let structural = intake.structural(registration);
+        let correctness = *structural.last().ok_or_else(invalid)?;
+        if intake.node(correctness).kind() != &K::CorrectnessCondition {
+            return Err(invalid());
+        }
+        let kind = intake.node(registration).kind().clone();
+        intake.correctness(
+            correctness,
+            match kind {
+                K::ExistentialRegistration => "existence",
+                K::ReductionRegistration => "reducibility",
+                _ => "coherence",
+            },
+        )?;
+        let mut referenced = Vec::new();
+        let mut guards = Vec::new();
+        let mut operands = Vec::new();
+        let block = intake.parent(registration)?;
+        let params = intake
+            .parameters
+            .iter()
+            .filter(|(_, (_, _, owner))| *owner == block)
+            .map(|(node, (_, ty, _))| (*node, *ty))
+            .collect::<Vec<_>>();
+        for (binding, ty) in &params {
+            if intake.range(*binding).end >= intake.range(registration).start {
+                return Err(invalid());
+            }
+            required_types.push(intake.site(*ty));
+            guards.push(format!("parameter={binding:?}:type={ty:?}"));
+        }
+        let pattern = match kind {
+            K::ExistentialRegistration | K::ConditionalRegistration => {
+                if !params.is_empty() {
+                    return Err(invalid());
+                }
+                let ty = intake.only(registration, &K::TypeExpression)?;
+                let head = intake.only(ty, &K::TypeHead)?;
+                intake.set_type(head)?;
+                required_types.push(intake.site(head));
+                guards.push(format!("generated={registration:?}:domain={head:?}"));
+                let attrs = if kind == K::ExistentialRegistration {
+                    let chain = intake.only(ty, &K::AttributeChain)?;
+                    if intake.structural(ty) != vec![chain, head] {
+                        return Err(invalid());
+                    }
+                    intake.structural(chain)
+                } else {
+                    if intake.structural(ty) != vec![head] {
+                        return Err(invalid());
+                    }
+                    structural
+                        .iter()
+                        .copied()
+                        .filter(|id| intake.node(*id).kind() == &K::AttributeRef)
+                        .collect()
+                };
+                if attrs.len()
+                    != if kind == K::ExistentialRegistration {
+                        1
+                    } else {
+                        2
+                    }
+                    || structural.len()
+                        != if kind == K::ExistentialRegistration {
+                            2
+                        } else {
+                            4
+                        }
+                {
+                    return Err(invalid());
+                }
+                let mut keys = Vec::new();
+                for attr in attrs {
+                    let symbol = intake.attribute(attr, head)?;
+                    operands.push(format!("attribute={attr:?}:symbol={symbol:?}"));
+                    referenced.push(RegistrationReferencedSymbol::compatible(
+                        RegistrationReferencedSymbolRole::Attribute,
+                        symbol.clone(),
+                    ));
+                    keys.push(RegistrationAttributeKey::new(format!("{symbol:?}")));
+                }
+                if kind == K::ExistentialRegistration {
+                    RegistrationValidationPattern::Existential {
+                        type_head: "builtin.set".into(),
+                        attributes: keys,
+                    }
+                } else {
+                    RegistrationValidationPattern::Conditional {
+                        type_head: "builtin.set".into(),
+                        antecedent: vec![keys[0].clone()],
+                        consequent: vec![keys[1].clone()],
+                    }
+                }
+            }
+            K::FunctorialRegistration => {
+                if structural.len() != 4 || params.len() != 1 {
+                    return Err(invalid());
+                }
+                let term = intake.only(registration, &K::TermExpression)?;
+                let ty = intake.only(registration, &K::TypeExpression)?;
+                let head = intake.only(ty, &K::TypeHead)?;
+                if intake.structural(ty) != vec![head] {
+                    return Err(invalid());
+                }
+                let expected = intake.set_type(head)?;
+                required_types.push(intake.site(head));
+                let (term_site, term_pattern, symbol) = intake.term(term)?;
+                let symbol = symbol.ok_or_else(invalid)?;
+                intake
+                    .terms
+                    .get_mut(&term_site)
+                    .ok_or_else(invalid)?
+                    .expected_type = Some(expected);
+                let attr = intake.only(registration, &K::AttributeRef)?;
+                let attribute = intake.attribute(attr, head)?;
+                guards.push(format!("result={term_site:?}:type={head:?}"));
+                operands.push(format!(
+                    "application={term_site:?}:functor={symbol:?}:term={term_pattern:?}:attribute={attr:?}:{attribute:?}"
+                ));
+                referenced.push(RegistrationReferencedSymbol::compatible(
+                    RegistrationReferencedSymbolRole::Functor,
+                    symbol.clone(),
+                ));
+                referenced.push(RegistrationReferencedSymbol::compatible(
+                    RegistrationReferencedSymbolRole::Attribute,
+                    attribute.clone(),
+                ));
+                RegistrationValidationPattern::Functorial {
+                    functor: format!("{symbol:?}:{term_site:?}").into(),
+                    result_type: "builtin.set".into(),
+                    consequent: vec![format!("{attribute:?}").into()],
+                }
+            }
+            K::ReductionRegistration => {
+                if structural.len() != 3 || params.len() != 1 {
+                    return Err(invalid());
+                }
+                let mut patterns = Vec::new();
+                for term in &structural[..2] {
+                    if intake.node(*term).kind() != &K::TermExpression {
+                        return Err(invalid());
+                    }
+                    let (site, pattern, symbol) = intake.term(*term)?;
+                    operands.push(format!("equality_operand={site:?}:term={pattern:?}"));
+                    if let Some(symbol) = symbol {
+                        referenced.push(RegistrationReferencedSymbol::compatible(
+                            RegistrationReferencedSymbolRole::Functor,
+                            symbol,
+                        ));
+                    }
+                    patterns.push(pattern);
+                }
+                RegistrationValidationPattern::Reduction {
+                    lhs: patterns.remove(0),
+                    rhs: patterns.remove(0),
+                }
+            }
+            _ => return Err(invalid()),
+        };
+        // This fixed schema selects the later Core construction. It is not a formula language.
+        let schema = match pattern.kind() {
+            RegistrationValidationKind::Existential => "exists.domain_and_attribute",
+            RegistrationValidationKind::Conditional => {
+                "forall.domain_and_antecedent_implies_consequent"
+            }
+            RegistrationValidationKind::Functorial => {
+                "forall.parameters_and_result_implies_attribute"
+            }
+            RegistrationValidationKind::Reduction => "forall.parameters_implies_equality",
+        };
+        let definitions = referenced
+            .iter()
+            .filter_map(|reference| reference.symbol())
+            .map(|symbol| {
+                let (definition, subject, ty) = intake.definitions[symbol];
+                let range = intake.range(definition);
+                let formulas = intake
+                    .formulas
+                    .iter()
+                    .filter(|formula| {
+                        range.start <= formula.source_range.start
+                            && formula.source_range.end <= range.end
+                    })
+                    .map(|formula| (formula.site.clone(), formula.kind, formula.terms.clone()))
+                    .collect::<Vec<_>>();
+                (
+                    symbol.clone(),
+                    definition,
+                    intake.site(subject),
+                    intake.site(ty),
+                    formulas,
+                )
+            })
+            .collect::<Vec<_>>();
+        let goal = format!(
+            "registration-schema-v1;module={:?};source={:?};owner={registration:?};registration={:?};schema={schema};guards={guards:?};operands={operands:?};checked_types={required_types:?};definitions={definitions:?}",
+            source.module(),
+            source.source_id(),
+            entry.id()
+        );
+        validations.push(
+            RegistrationValidationInput::new(
+                entry.id(),
+                intake.site(registration),
+                intake.range(registration),
+                pattern,
+                goal,
+                format!("source-correctness:{correctness:?}"),
+            )
+            .with_parameters(
+                params
+                    .iter()
+                    .map(|(node, _)| RegistrationValidationParameter::new(format!("{node:?}"))),
+            )
+            .with_referenced_symbols(referenced),
+        );
+    }
+    let binding_env = BindingEnv::try_new(BindingEnvParts {
+        source_id: source.source_id(),
+        module_id: source.module().clone(),
+        contexts: intake.contexts,
+        bindings: intake.bindings,
+        diagnostics: BindingDiagnosticTable::new(),
+    })
+    .map_err(|_| invalid())?;
+    let mut type_sites = std::collections::BTreeSet::new();
+    for term in intake.terms.values_mut() {
+        for (role, ty) in [
+            ("registration.result", &mut term.result_type),
+            ("registration.expected", &mut term.expected_type),
+        ] {
+            if let Some(ty) = ty
+                && !type_sites.insert(ty.site.clone())
+            {
+                // A repeated declaration type is an inferred type at this real term,
+                // while its original TypeHead remains normalized exactly once.
+                ty.site = TypedSiteRef::Role {
+                    node: term.site.node(),
+                    role: role.into(),
+                };
+            }
+        }
+    }
+    let output = TermFormulaChecker::default().infer(
+        symbols,
+        &binding_env,
+        intake.terms.into_values(),
+        intake.formulas,
+    );
+    if !output.diagnostics().is_empty()
+        || required_types.iter().any(|site| {
+            !output
+                .type_entries()
+                .iter()
+                .any(|(_, entry)| &entry.owner == site)
+        })
+        || output
+            .terms()
+            .iter()
+            .any(|(_, term)| term.status != TermStatus::Inferred)
+        || output
+            .formulas()
+            .iter()
+            .any(|(_, formula)| formula.status != FormulaStatus::Checked)
+    {
+        return Err(invalid());
+    }
+    let database = RegistrationDatabase::from_symbol_env_with_validation(symbols, validations, []);
+    if !database.activated().is_empty()
+        || !database.rejected().is_empty()
+        || !database.diagnostics().is_empty()
+        || database.pending().len() != symbols.registrations().len()
+        || database.initial_obligations().len() != symbols.registrations().len()
+    {
+        return Err(invalid());
+    }
+    Ok((database, output))
+}
+
+struct SourceRegistrationIntake<'a> {
+    source: &'a SurfaceResolvedArena,
+    symbols: &'a SymbolEnv,
+    contexts: BindingContextTable,
+    bindings: BindingTable,
+    parameters: BTreeMap<ResolvedNodeId, (BindingId, ResolvedNodeId, ResolvedNodeId)>,
+    // Existing source declaration, subject/argument token, and its set type occurrence.
+    definitions: BTreeMap<SymbolId, (ResolvedNodeId, ResolvedNodeId, ResolvedNodeId)>,
+    terms: BTreeMap<TypedSiteRef, TermInput>,
+    formulas: Vec<FormulaInput>,
+    projections: Vec<NameSymbolProjection>,
+}
+
+impl SourceRegistrationIntake<'_> {
+    fn node(&self, node: ResolvedNodeId) -> &ResolvedNode {
+        self.source
+            .arena()
+            .node(node)
+            .expect("validated structural arena")
+    }
+    fn children(&self, node: ResolvedNodeId) -> &[ResolvedNodeId] {
+        self.node(node).children()
+    }
+    fn structural(&self, node: ResolvedNodeId) -> Vec<ResolvedNodeId> {
+        self.children(node)
+            .iter()
+            .copied()
+            .filter(|id| !matches!(self.node(*id).kind(), K::Token(_)))
+            .collect()
+    }
+    fn only(&self, node: ResolvedNodeId, kind: &K) -> Result<ResolvedNodeId, String> {
+        let matches = self
+            .children(node)
+            .iter()
+            .copied()
+            .filter(|id| self.node(*id).kind() == kind)
+            .collect::<Vec<_>>();
+        match matches.as_slice() {
+            [node] => Ok(*node),
+            _ => Err("registration.source_shape".into()),
+        }
+    }
+    fn range(&self, node: ResolvedNodeId) -> SourceRange {
+        match self.node(node).origin().anchor() {
+            SourceAnchor::Range(range) => *range,
+            _ => unreachable!("authenticated source"),
+        }
+    }
+    fn site(&self, node: ResolvedNodeId) -> TypedSiteRef {
+        TypedSiteRef::Node(TypedNodeId::new(node.index()))
+    }
+    fn text(&self, node: ResolvedNodeId) -> Result<&str, String> {
+        match self.node(node).kind() {
+            K::Token(token) => Ok(&token.text),
+            _ => Err("registration.token_required".into()),
+        }
+    }
+    fn parent(&self, node: ResolvedNodeId) -> Result<ResolvedNodeId, String> {
+        self.source
+            .arena()
+            .iter()
+            .find(|(_, parent)| parent.kind() != &K::Root && parent.children().contains(&node))
+            .map(|(id, _)| id)
+            .ok_or_else(|| "registration.owner_missing".into())
+    }
+    fn set_type(&self, node: ResolvedNodeId) -> Result<TypeExpressionInput, String> {
+        let children = self.children(node);
+        if self.node(node).kind() != &K::TypeHead
+            || children.len() != 1
+            || self.text(children[0])? != "set"
+        {
+            return Err("registration.unsupported_type".into());
+        }
+        Ok(TypeExpressionInput::new(
+            self.site(node),
+            self.range(node),
+            "set",
+            TypeHeadInput::BuiltinSet,
+        ))
+    }
+    fn correctness(&self, node: ResolvedNodeId, keyword: &str) -> Result<(), String> {
+        let children = self.children(node);
+        if self.node(node).kind() != &K::CorrectnessCondition
+            || !(children.len() == 2 || children.len() == 3)
+            || self.text(children[0])? != keyword
+            || self.text(*children.last().ok_or("registration.correctness")?)? != ";"
+            || (children.len() == 3 && self.node(children[1]).kind() != &K::ProofBlock)
+        {
+            return Err("registration.correctness_owner".into());
+        }
+        Ok(())
+    }
+    fn parameter(&mut self, block: ResolvedNodeId, node: ResolvedNodeId) -> Result<(), String> {
+        let segment = self.only(node, &K::QualifiedVariableSegment)?;
+        let children = self.children(segment);
+        if children.len() != 3
+            || self.text(children[1])? != "be"
+            || !matches!(self.node(children[0]).kind(), K::Token(token) if token.kind == SurfaceTokenKind::Identifier)
+        {
+            return Err("registration.parameter_shape".into());
+        }
+        let declaration = children[0];
+        let ty = self.only(children[2], &K::TypeHead)?;
+        if self.structural(children[2]) != vec![ty] {
+            return Err("registration.parameter_type".into());
+        }
+        self.set_type(ty)?;
+        if self
+            .parameters
+            .values()
+            .any(|(_, _, owner)| *owner == block)
+        {
+            return Err("registration.multiple_parameters_unsupported".into());
+        }
+        let context = BindingContextId::new(self.contexts.len());
+        let local = LocalTermBinding::new(
+            self.text(declaration)?,
+            LocalTermScope::new(vec![block.index() as u32]),
+            self.range(declaration),
+            declaration.index(),
+        );
+        let mut draft =
+            BindingDraft::from_local_term(context, BindingKind::DefinitionParameter, &local);
+        draft.type_site = BindingTypeSite::Source(self.range(ty));
+        let binding = self.bindings.insert(draft);
+        self.contexts.insert(BindingContextDraft {
+            owner: BindingContextOwner::SourceStatement {
+                source_range: self.range(block),
+            },
+            parent: Some(BindingContextId::new(0)),
+            layer: BindingContextLayer::Block,
+            lexical_scope: Some(local.scope().clone()),
+            bindings: vec![binding],
+            visible_bindings: vec![binding],
+            recovery: BindingContextRecovery::Normal,
+        });
+        self.parameters.insert(declaration, (binding, ty, block));
+        Ok(())
+    }
+    fn variable(
+        &mut self,
+        token: ResolvedNodeId,
+        site: ResolvedNodeId,
+    ) -> Result<ResolvedNodeId, String> {
+        let declaration = resolve_registration_parameter(self.source, token)?;
+        let (binding, ty, _) = *self
+            .parameters
+            .get(&declaration)
+            .ok_or("registration.parameter_missing")?;
+        let context = self
+            .bindings
+            .get(binding)
+            .ok_or("registration.binding_missing")?
+            .owner_context;
+        let input = TermInput::new(
+            self.site(site),
+            context,
+            self.range(site),
+            TermKind::Variable,
+        )
+        .with_reference(TermReference::Binding(binding))
+        .with_result_type(self.set_type(ty)?);
+        self.terms.entry(self.site(site)).or_insert(input);
+        Ok(declaration)
+    }
+    fn resolve(&self, token: ResolvedNodeId, kind: SymbolKind) -> Result<SymbolId, String> {
+        let candidate = NameReferenceCandidate::unqualified(
+            ReferenceSite::new(token, self.range(token), self.text(token)?),
+            self.node(token).origin().clone(),
+            self.range(token).start,
+        );
+        let resolution = SymbolNameResolver::new(&self.projections, &[]).resolve(
+            self.source.module(),
+            &NamespacePath::new(self.source.module().path().as_str()),
+            &[candidate],
+        );
+        match resolution
+            .table()
+            .iter()
+            .next()
+            .map(|(_, entry)| entry.resolution())
+        {
+            Some(NameResolution::Resolved(reference))
+                if self
+                    .symbols
+                    .symbols()
+                    .get(reference.symbol())
+                    .is_some_and(|entry| entry.kind() == kind) =>
+            {
+                Ok(reference.symbol().clone())
+            }
+            _ => Err("registration.symbol_reference".into()),
+        }
+    }
+    fn definition(&mut self, node: ResolvedNodeId) -> Result<(), String> {
+        let entry = self
+            .symbols
+            .symbols()
+            .iter()
+            .find(|entry| entry.origin().anchor() == self.node(node).origin().anchor())
+            .ok_or("registration.definition_symbol")?;
+        let symbol = entry.symbol().clone();
+        let attribute = self.node(node).kind() == &K::AttributeDefinition;
+        if entry.kind()
+            != if attribute {
+                SymbolKind::Attribute
+            } else {
+                SymbolKind::Functor
+            }
+        {
+            return Err("registration.definition_kind".into());
+        }
+        let pattern = self.only(
+            node,
+            if attribute {
+                &K::AttributePattern
+            } else {
+                &K::FunctorPattern
+            },
+        )?;
+        let pattern_children = self.children(pattern).to_vec();
+        if pattern_children.len() != if attribute { 1 } else { 2 } {
+            return Err("registration.definition_signature".into());
+        }
+        let name = self.text(pattern_children[0])?.to_owned();
+        let children = self.children(node).to_vec();
+        if children.len() != 9 {
+            return Err("registration.definition_shape".into());
+        }
+        let subject = if attribute {
+            children[3]
+        } else {
+            pattern_children[1]
+        };
+        let declaration = self.variable(subject, subject)?;
+        let (_, ty, _) = *self
+            .parameters
+            .get(&declaration)
+            .ok_or("registration.subject_type")?;
+        if attribute {
+            if self.text(children[0])? != "attr"
+                || self.text(children[2])? != ":"
+                || self.text(children[4])? != "is"
+                || self.text(children[6])? != "means"
+                || self.text(children[8])? != ";"
+            {
+                return Err("registration.attribute_shape".into());
+            }
+            let body = self.only(node, &K::FormulaDefiniens)?;
+            let formula = self.only(body, &K::FormulaExpression)?;
+            if self.structural(node) != vec![pattern, body] || self.children(body) != [formula] {
+                return Err("registration.attribute_body".into());
+            }
+            self.equality(formula, declaration)?;
+        } else {
+            if self.text(children[0])? != "func"
+                || self.text(children[2])? != ":"
+                || self.text(children[4])? != "->"
+                || self.text(children[6])? != "equals"
+                || self.text(children[8])? != ";"
+            {
+                return Err("registration.functor_shape".into());
+            }
+            let result = self.only(node, &K::TypeExpression)?;
+            let head = self.only(result, &K::TypeHead)?;
+            if self.structural(result) != vec![head] {
+                return Err("registration.functor_type".into());
+            }
+            self.set_type(head)?;
+            let body = self.only(node, &K::TermDefiniens)?;
+            let term = self.only(body, &K::TermExpression)?;
+            if self.structural(node) != vec![pattern, result, body] || self.children(body) != [term]
+            {
+                return Err("registration.functor_body".into());
+            }
+            let (_, term_pattern, callee) = self.term(term)?;
+            if callee.is_some()
+                || term_pattern.size != 1
+                || term_pattern.free_variables
+                    != vec![RegistrationVariableOccurrence::new(
+                        format!("{declaration:?}"),
+                        1,
+                    )]
+            {
+                return Err("registration.functor_not_identity".into());
+            }
+        }
+        self.projections.push(NameSymbolProjection::current_module(
+            symbol.clone(),
+            entry.namespace().clone(),
+            name,
+            entry.kind(),
+            entry.visibility(),
+            self.range(node),
+            self.range(node).end,
+        ));
+        self.definitions.insert(symbol, (node, subject, ty));
+        Ok(())
+    }
+    fn equality(&mut self, node: ResolvedNodeId, subject: ResolvedNodeId) -> Result<(), String> {
+        let children = self.children(node).to_vec();
+        match self.node(node).kind() {
+            K::FormulaExpression if children.len() == 1 => self.equality(children[0], subject),
+            K::BuiltinPredicateApplication
+                if children.len() == 3 && self.text(children[1])? == "=" =>
+            {
+                let mut terms = Vec::new();
+                for term in [children[0], children[2]] {
+                    let (site, pattern, callee) = self.term(term)?;
+                    if callee.is_some()
+                        || pattern.size != 1
+                        || pattern.free_variables
+                            != vec![RegistrationVariableOccurrence::new(
+                                format!("{subject:?}"),
+                                1,
+                            )]
+                    {
+                        return Err("registration.attribute_subject".into());
+                    }
+                    terms.push(site);
+                }
+                let binding = self
+                    .parameters
+                    .get(&subject)
+                    .ok_or("registration.formula_binding")?
+                    .0;
+                let context = self
+                    .bindings
+                    .get(binding)
+                    .ok_or("registration.formula_context")?
+                    .owner_context;
+                self.formulas.push(
+                    FormulaInput::new(
+                        self.site(node),
+                        context,
+                        self.range(node),
+                        FormulaKind::Equality,
+                    )
+                    .with_terms(terms),
+                );
+                Ok(())
+            }
+            _ => Err("registration.unsupported_attribute_body".into()),
+        }
+    }
+    fn attribute(
+        &mut self,
+        node: ResolvedNodeId,
+        domain: ResolvedNodeId,
+    ) -> Result<SymbolId, String> {
+        if self.node(node).kind() != &K::AttributeRef {
+            return Err("registration.attribute_required".into());
+        }
+        let mut token = node;
+        for kind in [K::QualifiedSymbol, K::PathSegment] {
+            let child = self.only(token, &kind)?;
+            if self.children(token) != [child] {
+                return Err("registration.attribute_arguments".into());
+            }
+            token = child;
+        }
+        let children = self.children(token);
+        if children.len() != 1 {
+            return Err("registration.attribute_arguments".into());
+        }
+        let symbol = self.resolve(children[0], SymbolKind::Attribute)?;
+        let (_, subject, _) = *self
+            .definitions
+            .get(&symbol)
+            .ok_or("registration.attribute_definition")?;
+        let expected = self.set_type(domain)?;
+        self.terms
+            .get_mut(&self.site(subject))
+            .ok_or("registration.attribute_signature")?
+            .expected_type = Some(expected);
+        Ok(symbol)
+    }
+    fn term(
+        &mut self,
+        node: ResolvedNodeId,
+    ) -> Result<(TypedSiteRef, RegistrationTermPattern, Option<SymbolId>), String> {
+        let children = self.children(node).to_vec();
+        match self.node(node).kind() {
+            K::TermExpression if children.len() == 1 => self.term(children[0]),
+            K::TermReference if children.len() == 1 => {
+                let declaration = self.variable(children[0], node)?;
+                let site = self.site(node);
+                Ok((
+                    site.clone(),
+                    RegistrationTermPattern::new(
+                        format!("{site:?}"),
+                        1,
+                        [RegistrationVariableOccurrence::new(
+                            format!("{declaration:?}"),
+                            1,
+                        )],
+                        self.range(node),
+                    ),
+                    None,
+                ))
+            }
+            K::PrefixExpression(operator)
+                if children.len() == 2
+                    && operator.spelling.as_ref() == self.text(children[0])? =>
+            {
+                let symbol = self.resolve(children[0], SymbolKind::Functor)?;
+                let (definition, _, _) = *self
+                    .definitions
+                    .get(&symbol)
+                    .ok_or("registration.functor_definition")?;
+                let result = self.only(definition, &K::TypeExpression)?;
+                let result_head = self.only(result, &K::TypeHead)?;
+                let (argument, mut pattern, _) = self.term(children[1])?;
+                let context = self
+                    .terms
+                    .get(&argument)
+                    .ok_or("registration.argument_type")?
+                    .context;
+                let site = self.site(node);
+                let input = TermInput::new(
+                    site.clone(),
+                    context,
+                    self.range(node),
+                    TermKind::FunctorApplication,
+                )
+                .with_reference(TermReference::Symbol(symbol.clone()))
+                .with_result_type(self.set_type(result_head)?);
+                self.terms.entry(site.clone()).or_insert(input);
+                pattern.size += 1;
+                pattern.fingerprint =
+                    format!("{symbol:?}({})", pattern.fingerprint.as_str()).into();
+                pattern.source_range = Some(self.range(node));
+                Ok((site, pattern, Some(symbol)))
+            }
+            _ => Err("registration.unsupported_term".into()),
+        }
+    }
+}
+
 macro_rules! dense_id {
     ($name:ident) => {
         #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]

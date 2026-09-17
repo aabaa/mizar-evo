@@ -12479,3 +12479,23 @@ fn snapshot_id(byte: u8) -> BuildSnapshotId {
 fn rel(root: &Path, path: &Path) -> PathBuf {
     path.strip_prefix(root).unwrap().to_path_buf()
 }
+
+#[test]
+fn step5c11_advanced_semantics_cli_executes_pending_registration_intake() {
+    let output = std::process::Command::new(env!("CARGO_BIN_EXE_mizar-test"))
+        .arg("advanced-semantics")
+        .arg("--workspace-root")
+        .arg(repository_config().workspace_root)
+        .output()
+        .expect("advanced-semantics CLI should run");
+    assert!(
+        output.status.success(),
+        "stdout={} stderr={}",
+        String::from_utf8_lossy(&output.stdout),
+        String::from_utf8_lossy(&output.stderr)
+    );
+    let stdout = String::from_utf8_lossy(&output.stdout);
+    assert!(stdout.contains("advanced-semantics cases: 4"), "{stdout}");
+    assert!(stdout.contains("passed: 4"), "{stdout}");
+    assert!(stdout.contains("failed: 0"), "{stdout}");
+}

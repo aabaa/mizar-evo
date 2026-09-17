@@ -1,5 +1,7 @@
 # Module: symbols
 
+`validate_source_symbol_env` reuses resolver collection to authenticate the complete local symbol environment.
+
 > Canonical language: English. Japanese companion: [../ja/symbols.md](../ja/symbols.md).
 
 Status: tasks R-019 to R-021 specify and implement the resolver-owned

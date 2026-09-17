@@ -1,5 +1,9 @@
 # Module: harness
 
+The advanced-semantics command admits the four mapped positive registration rows at
+cluster_resolution, authenticates their exact sidecars, and consumes source-checked pending
+registrations and correctness obligations. It grants no acceptance, inference or proof credit.
+
 The Step 5C.11 parse route admits only the mapped restricted-adjective rejection.
 It authenticates the parser diagnostics and their locations in a registration header;
 missing diagnostics, repaired syntax, unrelated errors and malformed metadata fail closed.

@@ -31,6 +31,62 @@ use std::collections::{BTreeMap, BTreeSet};
 use std::error::Error;
 use std::fmt;
 
+/// Authenticates an unaugmented source symbol environment through its collectors.
+///
+/// Signature serialization remains resolver-owned. This replays the existing
+/// collectors over the same nodes, then compares every environment index.
+pub fn validate_source_symbol_env(
+    source: &SurfaceResolvedArena,
+    symbols: &SymbolEnv,
+) -> Result<(), String> {
+    let invalid =
+        || "source symbol environment does not match its declaration collection".to_owned();
+    let mut builder = mizar_syntax::SurfaceAstBuilder::new(source.source_id());
+    let mut rebuilt = Vec::with_capacity(source.arena().len());
+    for (_, node) in source.arena().iter() {
+        let SourceAnchor::Range(range) = node.origin().anchor() else {
+            return Err(invalid());
+        };
+        if node.origin().is_recovered() || matches!(node.kind(), SurfaceNodeKind::ErrorRecovery(_))
+        {
+            return Err(invalid());
+        }
+        let children = node
+            .children()
+            .iter()
+            .map(|child| rebuilt.get(child.index()).copied().ok_or_else(invalid))
+            .collect::<Result<Vec<_>, _>>()?;
+        let id = match node.kind() {
+            SurfaceNodeKind::Token(token) => {
+                builder.add_token(token.kind, token.text.clone(), *range)
+            }
+            kind => builder.add_node(kind.clone(), *range, children),
+        };
+        rebuilt.push(id);
+    }
+    let root = rebuilt
+        .get(source.arena().root().index())
+        .copied()
+        .ok_or_else(invalid)?;
+    let ast = builder.finish(Some(root), None);
+    source
+        .validate_against(&ast, source.module())
+        .map_err(|_| invalid())?;
+    let shells = DeclarationShellCollector::new(&ast, source.module()).collect();
+    let projections = SignatureProjectionExtractor::new(
+        &ast,
+        &shells,
+        NamespacePath::new(source.module().path().as_str()),
+    )
+    .extract();
+    let collected =
+        SymbolCollector::new(source.source_id(), source.module(), &shells, &projections).collect();
+    if !collected.diagnostics().is_empty() || collected.env() != symbols {
+        return Err(invalid());
+    }
+    Ok(())
+}
+
 /// Duplicate and overload policy for an opaque declaration projection.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
 #[non_exhaustive]

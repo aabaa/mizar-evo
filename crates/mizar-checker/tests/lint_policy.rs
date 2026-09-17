@@ -61,48 +61,30 @@ fn checker_manifest_keeps_task_one_package_metadata() {
 }
 
 #[test]
-fn checker_manifest_dependency_boundary_is_task258b1_scoped() {
+fn checker_manifest_dependency_boundary_is_step5c11_scoped() {
     let manifest_path = crate_root().join("Cargo.toml");
     let manifest = read_to_string(&manifest_path);
     let dependency_sections = dependency_sections(&manifest);
 
     assert_eq!(
         dependency_sections,
-        [
-            (
-                "dependencies".to_owned(),
-                vec![
-                    "mizar-lexer = { path = \"../mizar-lexer\" }",
-                    "mizar-resolve = { path = \"../mizar-resolve\" }",
-                    "mizar-session = { path = \"../mizar-session\" }",
-                ],
-            ),
-            (
-                "dev-dependencies".to_owned(),
-                vec!["mizar-syntax = { path = \"../mizar-syntax\" }"],
-            ),
-        ],
-        "{} must keep the established production dependencies and only the \
-         Task-258B1 test-only syntax dependency until another task-scoped \
-         checker spec expands the crate boundary",
+        [(
+            "dependencies".to_owned(),
+            vec![
+                "mizar-lexer = { path = \"../mizar-lexer\" }",
+                "mizar-resolve = { path = \"../mizar-resolve\" }",
+                "mizar-session = { path = \"../mizar-session\" }",
+                "mizar-syntax = { path = \"../mizar-syntax\" }",
+            ]
+        )],
+        "{} must keep the Step 5C.11 authenticated registration intake dependency boundary",
         manifest_path.display()
     );
 }
 
 #[test]
-fn checker_task258b1_syntax_dependency_remains_test_only() {
+fn checker_task258b1_syntax_alias_remains_test_only() {
     let root = crate_root();
-    let manifest = read_to_string(&root.join("Cargo.toml"));
-    assert!(
-        section(&manifest, "dependencies")
-            .iter()
-            .all(|line| !line.contains("mizar-syntax")),
-        "Task-258B1 must not add mizar-syntax to production dependencies"
-    );
-    assert_eq!(
-        section(&manifest, "dev-dependencies"),
-        ["mizar-syntax = { path = \"../mizar-syntax\" }"]
-    );
     let source = read_to_string(&root.join("src/source_statement.rs"));
     assert_eq!(
         source.matches("use mizar_syntax as syntax;").count(),
@@ -112,12 +94,19 @@ fn checker_task258b1_syntax_dependency_remains_test_only() {
 }
 
 #[test]
-fn checker_source_does_not_import_syntax_directly() {
+fn checker_source_syntax_import_is_limited_to_registration_intake() {
     let root = crate_root();
     let mut violations = Vec::new();
 
     for path in checker_src_files(&root) {
         let source = read_to_string(&path);
+        let source = if path == root.join("src/registration_resolution.rs") {
+            let permitted = "use mizar_syntax::ast::{SurfaceNodeKind as K, SurfaceTokenKind};";
+            assert_eq!(source.matches(permitted).count(), 1);
+            source.replace(permitted, "")
+        } else {
+            source
+        };
         if source.contains("mizar_syntax::") || source.contains("extern crate mizar_syntax") {
             let display_path = path.strip_prefix(&root).unwrap_or(&path);
             violations.push(display_path.display().to_string());
