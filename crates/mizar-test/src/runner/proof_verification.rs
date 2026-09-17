@@ -302,7 +302,7 @@ pub(super) fn generate_core_vcs(
 }
 
 pub(super) fn is_active_proof_verification(case: &TestCase) -> bool {
-    if super::is_step5c12_candidate(case) {
+    if super::is_step5c13_overload_candidate(case) || super::is_step5c12_candidate(case) {
         return false;
     }
     if is_step5c11_proof_candidate(case) {

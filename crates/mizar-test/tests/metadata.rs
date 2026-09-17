@@ -12495,7 +12495,7 @@ fn step5c11_advanced_semantics_cli_executes_pending_registration_intake() {
         String::from_utf8_lossy(&output.stderr)
     );
     let stdout = String::from_utf8_lossy(&output.stdout);
-    assert!(stdout.contains("advanced-semantics cases: 4"), "{stdout}");
-    assert!(stdout.contains("passed: 4"), "{stdout}");
+    assert!(stdout.contains("advanced-semantics cases: 5"), "{stdout}");
+    assert!(stdout.contains("passed: 5"), "{stdout}");
     assert!(stdout.contains("failed: 0"), "{stdout}");
 }

@@ -2960,3 +2960,8 @@ binding identity で簡約し、recursive inline definition は cycle guard で 
 `check_source_unbounded_template_types(&SurfaceResolvedArena, &SymbolEnv) -> Result<(), String>` はローカルなソースと環境の由来を認証し、明示引数を持つ恒等関手と述語仮引数の定理を型検査する。resolver の宣言 ID によって抽象型・述語・項の仮引数を区別し、抽象型を builtin set や架空のシンボルへ置換しない。シグネチャ、角括弧の位置、返却型、本体の型・束縛同一性を先に検査し、実際の set 型引数を代入した後で既存の具体型・項検査を用い、定理と証明内の呼出しを別々に検査する。
 述語の各量化引数は実際の `pred(T)` の定義域に照合し、結合子と量化の型も検査するが、真理・証明の承認は与えない。明示引数の個数不一致だけが `templates.argument.arity_mismatch` を返す。省略引数の推論は未対応で、このキーには分類しない。未対応のシグネチャ・本体・スコープ・上界・実引数は拒否する。この resolved-shape reader は checker が所有し、registration intake と同様に厳密な `use mizar_syntax::ast::{SurfaceNodeKind as K, SurfaceTokenKind};` のみ許す。他の構文 import・依存制限は維持する。承認済み事実、集合性、Core/VC、Task277B の実績は生成しない。
 テストは実ソースの抽象・具体型判断、両呼出し、改名、別由来・重複・回復済み所有者、仮引数・本体・定義域の変異、省略と明示引数の区別を対象とする。
+
+## Distinct-loci overload source checking
+
+`check_source_distinct_loci_overloads(&SurfaceResolvedArena, &SymbolEnv, &TypedArena)` は既存の `(TypeNormalizationOutput, OverloadCollectionOutput, TemplateExpansionOutput, CandidateViabilityOutput, SpecificityGraphOutput, OverloadSelectionOutput)` を `Result<_, String>` として返す。ソース・環境・typed arena の完全な対応を認証し、通常の仮引数と定理・証明の束縛を解決し、set の恒等定義と構造体 selector の定義を検査し、全シグネチャと実引数型を同じ表で正規化する。定義だけを構造体 checker に渡して実際のメンバー同一性を認証する。source intake が必須フィールドの builtin set 型を確認して §17.3.4 の constructor-witness 規則を適用する。変数シンボルや承認済み登録を捏造しない。
+ソースの両呼出しで可視な両 ordinary root を収集し、既存 overload 段階を変更せず消費する。実引数型で適合性を判断し、選択された宣言から結果型を導く。定理の期待型や引用は root を選択しない。未対応 profile、属性付き実引数、template、再定義、曖昧性入力を拒否し、証明・登録承認・view・Core/VC の実績を与えない。明示ペイロード境界と構文 import 制限を維持する。テストは全既存出力、両 root と呼出し、構造体引数による別 root 選択、改名、所有者・束縛・メンバー・型・順序の変異、完全な由来を検査する。

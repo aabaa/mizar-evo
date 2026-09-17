@@ -353,8 +353,8 @@ fn step5c11_advanced_admission_is_exact_and_rejects_stage_fallback() {
     }
     let report = super::run_advanced_semantics_corpus(&config).unwrap();
     assert_eq!(report.error_count(), 0, "{:?}", report.diagnostics);
-    assert_eq!(report.results.len(), 4);
-    assert_eq!(report.passed_count(), 4);
+    assert_eq!(report.results.len(), 5);
+    assert_eq!(report.passed_count(), 5);
 }
 
 #[test]
@@ -1120,4 +1120,523 @@ fn step5c11_false_coherence_admission_is_exact_and_cannot_fall_back() {
     assert!(super::proof_verification::validate_active_proof_verification_tags(&root, &absent).iter().any(|diagnostic| diagnostic.detail_key == "proof_verification.step5c11_inventory"));
     std::fs::remove_dir_all(root).unwrap();
 
+}
+
+fn step5c13_case() -> crate::harness::TestCase {
+    build_test_plan(&step5c11_config())
+        .unwrap()
+        .cases
+        .into_iter()
+        .find(|case| case.id.0 == super::STEP5C13_OVERLOAD_IDS[0])
+        .unwrap()
+}
+
+fn step5c13_inputs(
+    text: &str,
+) -> Result<
+    (
+        mizar_resolve::resolved_ast::SurfaceResolvedArena,
+        mizar_checker::typed_ast::TypedArena,
+        mizar_resolve::env::SymbolEnv,
+    ),
+    String,
+> {
+    super::source_registration_inputs(
+        &step5c11_config().workspace_root,
+        &step5c13_case(),
+        super::formula_statement::step5c8_test_frontend(text),
+    )
+}
+
+#[test]
+fn step5c13_real_source_selects_from_both_roots_at_both_sites_by_actual_type() {
+    use mizar_checker::overload_resolution::{
+        CandidateViabilityStatus, ExposedResultSource, OverloadResultStatus,
+    };
+    use mizar_checker::type_checker::{check_source_distinct_loci_overloads, TypeHeadRef};
+    let case = step5c13_case();
+    let text = std::fs::read_to_string(&case.source_path).unwrap();
+    for (source_text, structure) in [
+        (text.clone(), false),
+        (
+            text.replace("ovbox", "other_box")
+                .replace("OvBox", "OtherBox")
+                .replace("X", "A")
+                .replace("B be", "C be")
+                .replace("other_box B", "other_box C")
+                .replace("B.d", "C.d")
+                .replace(" d ", " value ")
+                .replace(".d", ".value"),
+            false,
+        ),
+        (
+            text.replace("for X being set", "for X being OvBox")
+                .replace("  let X be set;\n  thus", "  let X be OvBox;\n  thus")
+                .replace("ovbox X = X", "ovbox X = X.d"),
+            true,
+        ),
+    ] {
+        let (source, typed, symbols) = step5c13_inputs(&source_text).unwrap();
+        let outputs = check_source_distinct_loci_overloads(&source, &symbols, &typed).unwrap();
+        assert_eq!(
+            outputs,
+            check_source_distinct_loci_overloads(&source, &symbols, &typed).unwrap()
+        );
+        let (normalization, collection, expansion, viability, graphs, selection) = outputs;
+        assert_eq!(collection.sites().len(), 2);
+        assert_eq!(collection.candidates().len(), 4);
+        assert_eq!(expansion.candidates().len(), 4);
+        assert_eq!(viability.decisions().len(), 4);
+        assert_eq!(
+            viability
+                .decisions()
+                .iter()
+                .filter(|(_, row)| matches!(row.status, CandidateViabilityStatus::Viable { .. }))
+                .count(),
+            2
+        );
+        assert_eq!(
+            viability
+                .decisions()
+                .iter()
+                .filter(|(_, row)| matches!(row.status, CandidateViabilityStatus::Rejected { .. }))
+                .count(),
+            2
+        );
+        assert_eq!(graphs.graphs().len(), 2);
+        assert_eq!(selection.results().len(), 2);
+        assert!(selection.inserted_views().is_empty());
+        let mut declarations = symbols
+            .symbols()
+            .iter()
+            .filter(|entry| entry.kind() == mizar_resolve::env::SymbolKind::Functor)
+            .collect::<Vec<_>>();
+        declarations.sort_by_key(|entry| match entry.origin().anchor() {
+            mizar_session::SourceAnchor::Range(r) => r.start,
+            _ => panic!("missing range"),
+        });
+        assert_eq!(declarations.len(), 2);
+        let structure_symbol = symbols
+            .symbols()
+            .iter()
+            .find(|entry| entry.kind() == mizar_resolve::env::SymbolKind::Structure)
+            .unwrap()
+            .symbol();
+        let applications = source
+            .arena()
+            .iter()
+            .filter(|(_, node)| {
+                matches!(
+                    node.kind(),
+                    mizar_syntax::ast::SurfaceNodeKind::PrefixExpression(_)
+                )
+            })
+            .collect::<Vec<_>>();
+        assert_eq!(applications.len(), 2);
+        for (index, (_, output)) in collection.sites().iter().enumerate() {
+            let (id, application) = applications[index];
+            assert_eq!(
+                output.owner,
+                mizar_checker::typed_ast::TypedSiteRef::Node(
+                    mizar_checker::typed_ast::TypedNodeId::new(id.index())
+                )
+            );
+            assert_eq!(
+                mizar_session::SourceAnchor::Range(output.source_range),
+                *application.origin().anchor()
+            );
+            assert_eq!(
+                output.arguments,
+                vec![mizar_checker::typed_ast::TypedSiteRef::Node(
+                    mizar_checker::typed_ast::TypedNodeId::new(application.children()[1].index())
+                )]
+            );
+        }
+        for (id, site) in collection.sites().iter() {
+            assert!(site.expected.is_none());
+            let candidates = collection
+                .candidates()
+                .iter()
+                .filter(|(_, row)| row.site == id)
+                .map(|(_, row)| row)
+                .collect::<Vec<_>>();
+            assert_eq!(candidates.len(), 2);
+            assert_ne!(candidates[0].ordinary_root, candidates[1].ordinary_root);
+            assert_ne!(candidates[0].parameters, candidates[1].parameters);
+            for candidate in candidates {
+                assert_eq!(candidate.symbol, candidate.ordinary_root);
+                assert!(candidate.coherence.is_none());
+                assert!(candidate.template.is_none());
+                let declaration = declarations[candidate.provenance.declaration_order];
+                assert_eq!(&candidate.symbol, declaration.symbol());
+                assert_eq!(
+                    mizar_session::SourceAnchor::Range(candidate.provenance.source_range.unwrap()),
+                    *declaration.origin().anchor()
+                );
+                assert_eq!(candidate.parameters.len(), 1);
+                let expected = if candidate.provenance.declaration_order == 0 {
+                    TypeHeadRef::BuiltinSet
+                } else {
+                    TypeHeadRef::Structure(structure_symbol.clone())
+                };
+                assert_eq!(
+                    normalization
+                        .normalized_types()
+                        .get(candidate.parameters[0])
+                        .unwrap()
+                        .head,
+                    expected
+                );
+                assert_eq!(
+                    normalization
+                        .normalized_types()
+                        .get(candidate.result.unwrap())
+                        .unwrap()
+                        .head,
+                    TypeHeadRef::BuiltinSet
+                );
+                assert!(candidate.provenance.source_range.unwrap().end <= site.source_range.start);
+            }
+        }
+        for (_, result) in selection.results().iter() {
+            let OverloadResultStatus::Resolved {
+                root,
+                exposed_result: Some(exposed),
+                refinements,
+                inserted_views,
+            } = &result.status
+            else {
+                panic!("{:?}", result.status)
+            };
+            let selected = graphs.candidates().get(*root).unwrap();
+            assert_eq!(
+                &selected.symbol,
+                declarations[usize::from(structure)].symbol()
+            );
+            assert!(
+                refinements.is_empty() && inserted_views.is_empty() && exposed.evidence.is_empty()
+            );
+            assert_eq!(exposed.source, ExposedResultSource::SelectedRoot);
+            assert_eq!(exposed.result, selected.result);
+            assert_eq!(
+                normalization
+                    .normalized_types()
+                    .get(exposed.result.unwrap())
+                    .unwrap()
+                    .head,
+                TypeHeadRef::BuiltinSet
+            );
+            let parameter = &normalization
+                .normalized_types()
+                .get(selected.parameters[0])
+                .unwrap()
+                .head;
+            if structure {
+                assert!(matches!(parameter, TypeHeadRef::Structure(_)));
+            } else {
+                assert_eq!(parameter, &TypeHeadRef::BuiltinSet);
+            }
+        }
+    }
+    let report = super::run_advanced_semantics_corpus(&step5c11_config()).unwrap();
+    assert_eq!(report.error_count(), 0, "{:?}", report.diagnostics);
+    assert_eq!(report.results.len(), 5);
+    assert_eq!(report.passed_count(), 5);
+}
+
+#[test]
+fn step5c13_rejects_source_signature_selector_binding_and_order_corruption() {
+    use mizar_checker::type_checker::check_source_distinct_loci_overloads;
+    let text = std::fs::read_to_string(step5c13_case().source_path).unwrap();
+    for (before, after) in [
+        (
+            "func Ov1Def: ovbox X -> set equals X",
+            "func Ov1Def: ovbox X -> OvBox equals X",
+        ),
+        ("let B be OvBox", "let B be set"),
+        ("field d -> set", "field d -> object"),
+        ("equals B.d", "equals B.missing"),
+        ("equals B.d", "equals X.d"),
+        ("equals X;", "equals Y;"),
+        ("ovbox B -> set", "ovbox X -> set"),
+        ("let X be set;\n  thus", "let Y be set;\n  thus"),
+        ("thus ovbox X = X", "thus ovbox Y = X"),
+        ("holds ovbox X = X", "holds ovbox Y = X"),
+        ("thus ovbox X = X", "thus X = X"),
+        ("coherence;", "existence;"),
+        ("func Ov2Def:", "redefine func Ov2Def:"),
+    ] {
+        assert!(text.contains(before));
+        let input = step5c13_inputs(&text.replace(before, after));
+        assert!(
+            input
+                .and_then(
+                    |(source, typed, symbols)| check_source_distinct_loci_overloads(
+                        &source, &symbols, &typed
+                    )
+                )
+                .is_err(),
+            "{before} -> {after}"
+        );
+    }
+    let split = text.find("theorem OvUse1:").unwrap();
+    let first_end = text.find("end;").unwrap() + 4;
+    for changed in [
+        format!("{}\n{}", &text[split..], &text[..split]),
+        format!("{}\n{}", &text[..first_end], text),
+        text[first_end..].to_owned(),
+    ] {
+        assert!(step5c13_inputs(&changed)
+            .and_then(|(s, t, e)| check_source_distinct_loci_overloads(&s, &e, &t))
+            .is_err());
+    }
+}
+
+#[test]
+fn step5c13_authenticates_complete_source_environment_and_neutral_projection() {
+    use mizar_checker::type_checker::check_source_distinct_loci_overloads;
+    use mizar_checker::typed_ast::{NodeRecoveryState, TypedArena, TypingState};
+    use mizar_resolve::resolved_ast::SurfaceResolvedArena;
+    let case = step5c13_case();
+    let text = std::fs::read_to_string(&case.source_path).unwrap();
+    let frontend = super::formula_statement::step5c8_test_frontend(&text);
+    let ast = frontend.ast.clone().unwrap();
+    let (source, typed, symbols) =
+        super::source_registration_inputs(&step5c11_config().workspace_root, &case, frontend)
+            .unwrap();
+    check_source_distinct_loci_overloads(&source, &symbols, &typed).unwrap();
+    let raw = typed
+        .iter()
+        .map(|(_, node)| node.clone())
+        .collect::<Vec<_>>();
+    for mutation in 0..7 {
+        let mut nodes = raw.clone();
+        let mut root = typed.root();
+        match mutation {
+            0 => nodes[0].kind = "Unrelated".into(),
+            1 => nodes[0].resolved_node = nodes[1].resolved_node,
+            2 => nodes[0].anchor = nodes[1].anchor.clone(),
+            3 => nodes[0].recovery = NodeRecoveryState::Recovered,
+            4 => nodes[0].typing = TypingState::Successful,
+            5 => nodes.last_mut().unwrap().children.clear(),
+            6 => root = None,
+            _ => unreachable!(),
+        }
+        let changed = TypedArena::try_new(root, nodes).unwrap();
+        assert!(
+            check_source_distinct_loci_overloads(&source, &symbols, &changed).is_err(),
+            "mutation {mutation}"
+        );
+    }
+    let foreign = ResolverModuleId::new(PackageId::new("other"), ModulePath::new("other"));
+    assert!(check_source_distinct_loci_overloads(
+        &SurfaceResolvedArena::lower(&ast, &foreign).unwrap(),
+        &symbols,
+        &typed
+    )
+    .is_err());
+    let (_, _, changed_env) = step5c13_inputs(&text.replace("ovbox", "otherbox")).unwrap();
+    assert!(check_source_distinct_loci_overloads(&source, &changed_env, &typed).is_err());
+}
+
+#[test]
+fn step5c13_admission_reserves_both_rows_and_all_stage_aliases() {
+    let config = step5c11_config();
+    let original = step5c13_case();
+    assert!(super::step5c13_overload_admitted(
+        &config.workspace_root,
+        &original
+    ));
+    for mutation in 0..14 {
+        let mut case = original.clone();
+        match mutation {
+            0 => case.id.0.push_str("_extra"),
+            1 => case.expectation.id.0.push_str("_extra"),
+            2 => case.source_path = case.source_path.with_file_name("wrong.miz"),
+            3 => case.expectation_path = case.expectation_path.with_file_name("wrong.expect.toml"),
+            4 => case.expectation.source = PathBuf::from("wrong.miz"),
+            5 => case.expectation.stage = crate::staged_model::Stage::TypeElaboration,
+            6 => {
+                case.expectation.expected_phase = Some(crate::expectation::PipelinePhase::TypeCheck)
+            }
+            7 => case.expectation.expected_outcome = crate::expectation::ExpectedOutcome::Fail,
+            8 => case.expectation.tags.clear(),
+            9 => case.expectation.tags.push("extra".into()),
+            10 => case.expectation.diagnostic_codes.push("E-UNRELATED".into()),
+            11 => case.expectation.stable_detail_key = Some("wrong.detail".into()),
+            12 => case.expectation.kind = crate::expectation::TestKind::Fail,
+            13 => case.expectation.rejection_reason = Some("wrong.reason".into()),
+            _ => unreachable!(),
+        }
+        assert!(
+            !super::step5c13_overload_admitted(&config.workspace_root, &case),
+            "mutation {mutation}"
+        );
+    }
+    let plan = build_test_plan(&config).unwrap();
+    let negative = plan
+        .cases
+        .iter()
+        .find(|case| case.id.0 == super::STEP5C13_OVERLOAD_IDS[1])
+        .unwrap();
+    assert!(negative.expectation.tags.is_empty());
+    for source_case in [&original, negative] {
+        for (stage, phase, tag) in [
+            (
+                crate::staged_model::Stage::ParseOnly,
+                crate::expectation::PipelinePhase::Parse,
+                "active_parse_only",
+            ),
+            (
+                crate::staged_model::Stage::DeclarationSymbol,
+                crate::expectation::PipelinePhase::Resolve,
+                "active_declaration_symbol",
+            ),
+            (
+                crate::staged_model::Stage::TypeElaboration,
+                crate::expectation::PipelinePhase::TypeCheck,
+                "active_type_elaboration",
+            ),
+            (
+                crate::staged_model::Stage::FormulaStatement,
+                crate::expectation::PipelinePhase::StatementCheck,
+                "active_formula_statement",
+            ),
+            (
+                crate::staged_model::Stage::ProofVerification,
+                crate::expectation::PipelinePhase::VcGeneration,
+                "active_proof_verification",
+            ),
+        ] {
+            for alias in [false, true] {
+                let mut case = source_case.clone();
+                case.expectation.stage = stage;
+                case.expectation.expected_phase = Some(phase);
+                case.expectation.tags = vec![tag.into()];
+                if alias {
+                    case.id.0 = "unrelated".into();
+                    case.source_path = case.source_path.with_file_name("unrelated.miz");
+                    case.expectation_path = case
+                        .expectation_path
+                        .with_file_name("unrelated.expect.toml");
+                }
+                assert!(!super::is_active_parse_only(&case));
+                assert!(!super::is_active_declaration_symbol(&case));
+                assert!(!super::is_active_type_elaboration(&case));
+                assert!(!super::formula_statement::is_active_formula_statement(
+                    &config.workspace_root,
+                    &case
+                ));
+                assert!(!super::is_active_proof_verification(&case));
+                assert!(!super::step5c13_overload_admitted(
+                    &config.workspace_root,
+                    &case
+                ));
+            }
+        }
+    }
+    assert!(
+        super::validate_step5c11_registration_inventory(&config.workspace_root, &plan).is_empty()
+    );
+    let mut missing = plan.clone();
+    missing.cases.retain(|case| case.id != original.id);
+    let mut duplicate = plan;
+    duplicate.cases.push(original);
+    for invalid in [missing, duplicate] {
+        assert!(
+            super::validate_step5c11_registration_inventory(&config.workspace_root, &invalid)
+                .iter()
+                .any(|d| d.code.0 == "E-ADVANCED-SEMANTICS-INVENTORY")
+        );
+    }
+}
+
+#[test]
+fn step5c13_checks_each_coherently_corrupted_source_callee() {
+    use mizar_resolve::resolved_ast::SurfaceResolvedArena;
+    use mizar_syntax::ast::{SurfaceAstBuilder, SurfaceNodeKind as K};
+    let case = step5c13_case();
+    let text = std::fs::read_to_string(&case.source_path).unwrap();
+    let ast = super::formula_statement::step5c8_test_frontend(&text)
+        .ast
+        .unwrap();
+    for target in [2, 3] {
+        let mut builder = SurfaceAstBuilder::new(ast.source_id);
+        let mut rebuilt = Vec::new();
+        let mut occurrence = 0;
+        let mut changed_callee = None;
+        for (index, node) in ast.nodes().iter().enumerate() {
+            let children = node
+                .children
+                .iter()
+                .map(|child| rebuilt[child.index()])
+                .collect();
+            let id = match &node.kind {
+                K::Token(token) => {
+                    let changed = token.text.as_ref() == "ovbox" && {
+                        occurrence += 1;
+                        occurrence - 1 == target
+                    };
+                    if changed {
+                        changed_callee = Some(index);
+                    }
+                    builder.add_token(
+                        token.kind,
+                        if changed {
+                            "wrong".into()
+                        } else {
+                            token.text.clone()
+                        },
+                        node.range,
+                    )
+                }
+                K::PrefixExpression(operator)
+                    if node.children.first().map(|id| id.index()) == changed_callee =>
+                {
+                    let mut operator = operator.clone();
+                    operator.spelling = "wrong".into();
+                    builder.add_node(K::PrefixExpression(operator), node.range, children)
+                }
+                kind => builder.add_node(kind.clone(), node.range, children),
+            };
+            rebuilt.push(id);
+        }
+        assert_eq!(occurrence, 4);
+        let changed = builder.finish(Some(rebuilt[ast.root().unwrap().index()]), None);
+        let env =
+            super::resolver_symbol_collection(&step5c11_config().workspace_root, &case, &changed);
+        assert!(env.detail_keys.is_empty());
+        let resolved = SurfaceResolvedArena::lower(&changed, &env.module).unwrap();
+        mizar_resolve::symbols::validate_source_symbol_env(&resolved, &env.env).unwrap();
+        let typed = mizar_checker::typed_ast::TypedArena::try_new(
+            Some(mizar_checker::typed_ast::TypedNodeId::new(
+                resolved.arena().root().index(),
+            )),
+            resolved
+                .arena()
+                .iter()
+                .map(|(id, node)| {
+                    mizar_checker::typed_ast::TypedNode::new(
+                        format!("{:?}", node.kind()),
+                        node.origin().anchor().clone(),
+                    )
+                    .with_resolved_node(id)
+                    .with_children(
+                        node.children()
+                            .iter()
+                            .map(|child| mizar_checker::typed_ast::TypedNodeId::new(child.index()))
+                            .collect(),
+                    )
+                })
+                .collect(),
+        )
+        .unwrap();
+        assert!(
+            mizar_checker::type_checker::check_source_distinct_loci_overloads(
+                &resolved, &env.env, &typed
+            )
+            .is_err(),
+            "callee {target}"
+        );
+    }
 }

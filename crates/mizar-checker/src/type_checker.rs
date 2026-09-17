@@ -43,6 +43,549 @@ use std::{
     fmt::{self, Write as _},
 };
 
+/// Checks the bounded ordinary overload profile using source-derived signatures and actuals.
+pub fn check_source_distinct_loci_overloads(
+    source: &SurfaceResolvedArena,
+    symbols: &SymbolEnv,
+    typed: &crate::typed_ast::TypedArena,
+) -> Result<
+    (
+        TypeNormalizationOutput,
+        crate::overload_resolution::OverloadCollectionOutput,
+        crate::overload_resolution::TemplateExpansionOutput,
+        crate::overload_resolution::CandidateViabilityOutput,
+        crate::overload_resolution::SpecificityGraphOutput,
+        crate::overload_resolution::OverloadSelectionOutput,
+    ),
+    String,
+> {
+    use crate::overload_resolution::*;
+    use crate::source_structure_semantics::{
+        SourceStructureDefinitionInput, SourceStructureMemberInput, SourceStructureMemberKind,
+        SourceStructureProgramInput, SourceStructureSemanticsChecker, SourceStructureType,
+    };
+    let invalid = || "overload.unsupported_distinct_loci_source".to_owned();
+    mizar_resolve::symbols::validate_source_symbol_env(source, symbols)?;
+    if typed.len() != source.arena().len()
+        || typed.root() != Some(TypedNodeId::new(source.arena().root().index()))
+    {
+        return Err(invalid());
+    }
+    for (id, node) in source.arena().iter() {
+        let expected = crate::typed_ast::TypedNode::new(
+            format!("{:?}", node.kind()),
+            node.origin().anchor().clone(),
+        )
+        .with_resolved_node(id)
+        .with_children(
+            node.children()
+                .iter()
+                .map(|child| TypedNodeId::new(child.index()))
+                .collect(),
+        );
+        if typed.node(TypedNodeId::new(id.index())) != Some(&expected) {
+            return Err(invalid());
+        }
+    }
+    let node = |id| source.arena().node(id).ok_or_else(invalid);
+    let parts = |id, kind: &K| {
+        let current = node(id)?;
+        if current.kind() != kind {
+            return Err(invalid());
+        }
+        Ok(current.children())
+    };
+    let only = |id, kind: &K| {
+        let [child] = parts(id, kind)? else {
+            return Err(invalid());
+        };
+        Ok(*child)
+    };
+    let text = |id| match node(id)?.kind() {
+        K::Token(token) => Ok(token.text.as_ref()),
+        _ => Err(invalid()),
+    };
+    let tokens = |pairs: &[(ResolvedNodeId, &str)]| {
+        for (id, expected) in pairs {
+            let kind = if expected.chars().all(char::is_alphabetic) {
+                SurfaceTokenKind::ReservedWord
+            } else {
+                SurfaceTokenKind::ReservedSymbol
+            };
+            if !matches!(node(*id)?.kind(), K::Token(token) if token.kind == kind && token.text.as_ref() == *expected)
+            {
+                return Err(invalid());
+            }
+        }
+        Ok(())
+    };
+    let range = |id| match node(id)?.origin().anchor() {
+        SourceAnchor::Range(range) => Ok(*range),
+        _ => Err(invalid()),
+    };
+    let site = |id: ResolvedNodeId| TypedSiteRef::Node(TypedNodeId::new(id.index()));
+    let formal = |id| resolve_template_formal(source, id).map_err(|_| invalid());
+    let symbol = |id, kind| {
+        let anchor = node(id)?.origin().anchor();
+        let mut entries = symbols
+            .symbols()
+            .iter()
+            .filter(|entry| entry.kind() == kind && entry.origin().anchor() == anchor);
+        let entry = entries.next().ok_or_else(invalid)?;
+        if entries.next().is_some() {
+            return Err(invalid());
+        }
+        Ok(entry)
+    };
+    let structural = node(source.arena().root())?
+        .children()
+        .iter()
+        .copied()
+        .filter(|id| {
+            !matches!(
+                source.arena().node(*id).map(|n| n.kind()),
+                Some(K::Token(_))
+            )
+        })
+        .collect::<Vec<_>>();
+    let [unit] = structural.as_slice() else {
+        return Err(invalid());
+    };
+    let [set_block, structure_block, box_block, theorem] =
+        parts(only(*unit, &K::CompilationUnit)?, &K::ItemList)?
+    else {
+        return Err(invalid());
+    };
+    let [definition_kw, structure, end, semi] = parts(*structure_block, &K::DefinitionBlockItem)?
+    else {
+        return Err(invalid());
+    };
+    tokens(&[(*definition_kw, "definition"), (*end, "end"), (*semi, ";")])?;
+    let [struct_kw, pattern, where_kw, field, end, semi] =
+        parts(*structure, &K::StructureDefinition)?
+    else {
+        return Err(invalid());
+    };
+    tokens(&[
+        (*struct_kw, "struct"),
+        (*where_kw, "where"),
+        (*end, "end"),
+        (*semi, ";"),
+    ])?;
+    let structure_name = only(*pattern, &K::StructurePattern)?;
+    let [field_kw, field_name, arrow, field_type, semi] = parts(*field, &K::StructureField)? else {
+        return Err(invalid());
+    };
+    tokens(&[(*field_kw, "field"), (*arrow, "->"), (*semi, ";")])?;
+    // The required builtin-set field supplies a constructor witness (spec17 §17.3.4).
+    tokens(&[(
+        only(only(*field_type, &K::TypeExpression)?, &K::TypeHead)?,
+        "set",
+    )])?;
+    let structure_symbol = symbol(*structure, SymbolKind::Structure)?;
+    let field_symbol = symbol(*field, SymbolKind::Selector)?;
+    let structure_output = SourceStructureSemanticsChecker::check(
+        SourceStructureProgramInput::new(
+            source.source_id(),
+            source.module().clone(),
+            vec![SourceStructureDefinitionInput::new(
+                structure_symbol.symbol().clone(),
+                text(structure_name)?,
+                Vec::new(),
+                vec![SourceStructureMemberInput::new(
+                    field_symbol.symbol().clone(),
+                    text(*field_name)?,
+                    field_symbol.primary_spelling(),
+                    SourceStructureMemberKind::Field,
+                    SourceStructureType::Set,
+                    range(*field)?,
+                    0,
+                    false,
+                )],
+                range(*structure)?,
+                0,
+                false,
+            )],
+            Vec::new(),
+            Vec::new(),
+            Vec::new(),
+            Vec::new(),
+        ),
+        symbols,
+    )
+    .map_err(|_| invalid())?;
+    if !structure_output.diagnostics().is_empty() {
+        return Err(invalid());
+    }
+    let [checked_structure] = structure_output.structures() else {
+        return Err(invalid());
+    };
+    let checked_field = checked_structure
+        .member(field_symbol.symbol())
+        .ok_or_else(invalid)?;
+    let mut type_inputs = Vec::new();
+    for (id, current) in source
+        .arena()
+        .iter()
+        .filter(|(_, node)| node.kind() == &K::TypeExpression)
+    {
+        let head = only(only(id, &K::TypeExpression)?, &K::TypeHead)?;
+        let (spelling, head) = if matches!(node(head)?.kind(), K::Token(token) if token.kind == SurfaceTokenKind::ReservedWord && token.text.as_ref() == "set")
+        {
+            ("set", TypeHeadInput::BuiltinSet)
+        } else {
+            let name = only(only(head, &K::QualifiedSymbol)?, &K::PathSegment)?;
+            if text(name)? != text(structure_name)?
+                || range(id)?.start < range(*structure_block)?.end
+            {
+                return Err(invalid());
+            }
+            (
+                text(name)?,
+                TypeHeadInput::Symbol(structure_symbol.symbol().clone()),
+            )
+        };
+        let SourceAnchor::Range(span) = current.origin().anchor() else {
+            return Err(invalid());
+        };
+        type_inputs.push(TypeExpressionInput::new(site(id), *span, spelling, head));
+    }
+    let normalization = TypeNormalizer::default().normalize(symbols, type_inputs);
+    if !normalization.diagnostics().is_empty() {
+        return Err(invalid());
+    }
+    let normalized = |id| {
+        normalization
+            .type_entries()
+            .iter()
+            .find_map(|(_, entry)| {
+                if entry.owner == site(id)
+                    && let TypeEntryActual::Known(ty) = entry.actual
+                {
+                    return Some(ty);
+                }
+                None
+            })
+            .ok_or_else(invalid)
+    };
+    let set_type = normalized(*field_type)?;
+    let mut signatures = Vec::new();
+    let mut bindings = BTreeMap::new();
+    let mut body_checks = Vec::new();
+    let mut labels = Vec::new();
+    let mut overload_name = None;
+    for block in [*set_block, *box_block] {
+        let [definition_kw, parameter, definition, coherence, end, semi] =
+            parts(block, &K::DefinitionBlockItem)?
+        else {
+            return Err(invalid());
+        };
+        tokens(&[(*definition_kw, "definition"), (*end, "end"), (*semi, ";")])?;
+        let [let_kw, segment, semi] = parts(*parameter, &K::DefinitionParameter)? else {
+            return Err(invalid());
+        };
+        tokens(&[(*let_kw, "let"), (*semi, ";")])?;
+        let [binder, be, parameter_type] = parts(*segment, &K::QualifiedVariableSegment)? else {
+            return Err(invalid());
+        };
+        tokens(&[(*be, "be")])?;
+        let [
+            func,
+            label,
+            colon,
+            pattern,
+            arrow,
+            result_type,
+            equals,
+            body,
+            semi,
+        ] = parts(*definition, &K::FunctorDefinition)?
+        else {
+            return Err(invalid());
+        };
+        tokens(&[
+            (*func, "func"),
+            (*colon, ":"),
+            (*arrow, "->"),
+            (*equals, "equals"),
+            (*semi, ";"),
+        ])?;
+        let [name, argument] = parts(*pattern, &K::FunctorPattern)? else {
+            return Err(invalid());
+        };
+        if formal(*argument)? != *binder
+            || overload_name.is_some_and(|previous| previous != text(*name).unwrap_or_default())
+        {
+            return Err(invalid());
+        }
+        overload_name = Some(text(*name)?);
+        let [coherence_kw, semi] = parts(*coherence, &K::CorrectnessCondition)? else {
+            return Err(invalid());
+        };
+        tokens(&[(*coherence_kw, "coherence"), (*semi, ";")])?;
+        let declaration = symbol(*definition, SymbolKind::Functor)?;
+        signatures.push((
+            declaration,
+            normalized(*parameter_type)?,
+            normalized(*result_type)?,
+            range(block)?.end,
+        ));
+        labels.push(text(*label)?);
+        bindings.insert(*binder, normalized(*parameter_type)?);
+        body_checks.push((
+            only(only(*body, &K::TermDefiniens)?, &K::TermExpression)?,
+            *binder,
+            normalized(*result_type)?,
+        ));
+    }
+    let box_type = signatures[1].1;
+    if signatures[0].1 != set_type
+        || box_type == set_type
+        || signatures.iter().any(|signature| signature.2 != set_type)
+    {
+        return Err(invalid());
+    }
+    let [theorem_kw, _, colon, formula, proof, semi] = parts(*theorem, &K::TheoremItem)? else {
+        return Err(invalid());
+    };
+    tokens(&[(*theorem_kw, "theorem"), (*colon, ":"), (*semi, ";")])?;
+    symbol(*theorem, SymbolKind::Theorem)?;
+    let quantified = only(*formula, &K::FormulaExpression)?;
+    if !matches!(node(quantified)?.kind(), K::QuantifiedFormula(_)) {
+        return Err(invalid());
+    }
+    let [for_kw, segment, holds, equality] = node(quantified)?.children() else {
+        return Err(invalid());
+    };
+    tokens(&[(*for_kw, "for"), (*holds, "holds")])?;
+    let [proof_kw, local, conclusion, end] = parts(*proof, &K::ProofBlock)? else {
+        return Err(invalid());
+    };
+    tokens(&[(*proof_kw, "proof"), (*end, "end")])?;
+    let [let_kw, local_segment, semi] = parts(*local, &K::LetStatement)? else {
+        return Err(invalid());
+    };
+    tokens(&[(*let_kw, "let"), (*semi, ";")])?;
+    let [thus, proposition, justification, semi] = parts(*conclusion, &K::ConclusionStatement)?
+    else {
+        return Err(invalid());
+    };
+    tokens(&[(*thus, "thus"), (*semi, ";")])?;
+    let [by, references] = parts(*justification, &K::JustificationClause)? else {
+        return Err(invalid());
+    };
+    tokens(&[(*by, "by")])?;
+    let citation = only(only(*references, &K::ReferenceList)?, &K::Reference)?;
+    if !labels.contains(&text(citation)?) {
+        return Err(invalid());
+    }
+    let proof_equality = only(only(*proposition, &K::Proposition)?, &K::FormulaExpression)?;
+    let mut calls = Vec::new();
+    for (segment, kind, keyword, equality) in [
+        (*segment, K::QuantifierVariableSegment, "being", *equality),
+        (
+            *local_segment,
+            K::QualifiedVariableSegment,
+            "be",
+            proof_equality,
+        ),
+    ] {
+        let [binder, be, ty] = parts(segment, &kind)? else {
+            return Err(invalid());
+        };
+        tokens(&[(*be, keyword)])?;
+        let actual_type = normalized(*ty)?;
+        bindings.insert(*binder, actual_type);
+        let [left, equals, right] = parts(equality, &K::BuiltinPredicateApplication)? else {
+            return Err(invalid());
+        };
+        tokens(&[(*equals, "=")])?;
+        let application = only(*left, &K::TermExpression)?;
+        let [callee, argument] = node(application)?.children() else {
+            return Err(invalid());
+        };
+        if !matches!(node(application)?.kind(), K::PrefixExpression(operator) if operator.spelling.as_ref() == text(*callee)?)
+            || Some(text(*callee)?) != overload_name
+            || formal(only(*argument, &K::TermReference)?)? != *binder
+            || signatures
+                .iter()
+                .any(|signature| signature.3 > range(application).map_or(0, |r| r.start))
+        {
+            return Err(invalid());
+        }
+        calls.push((
+            application,
+            *argument,
+            actual_type,
+            only(*right, &K::TermExpression)?,
+            *binder,
+        ));
+    }
+    // Variable identity comes from lexical resolution; selector identity comes from
+    // the authenticated structure member, never an invented variable SymbolId.
+    let term_type = |id, binder| {
+        let (base, member) = if node(id)?.kind() == &K::SelectorAccess {
+            let [base, dot, name] = parts(id, &K::SelectorAccess)? else {
+                return Err(invalid());
+            };
+            tokens(&[(*dot, ".")])?;
+            (*base, Some(*name))
+        } else {
+            (id, None)
+        };
+        if formal(only(base, &K::TermReference)?)? != binder {
+            return Err(invalid());
+        }
+        let ty = *bindings.get(&binder).ok_or_else(invalid)?;
+        if let Some(member) = member {
+            if ty != box_type
+                || text(member)? != checked_field.spelling()
+                || checked_field.symbol() != field_symbol.symbol()
+                || checked_field.ty() != &SourceStructureType::Set
+            {
+                return Err(invalid());
+            }
+            Ok(set_type)
+        } else {
+            Ok(ty)
+        }
+    };
+    for (body, binder, result) in body_checks {
+        if term_type(body, binder)? != result {
+            return Err(invalid());
+        }
+    }
+    let mut sites = Vec::new();
+    let mut candidates = Vec::new();
+    for (application, argument, _, _, _) in &calls {
+        let key = OverloadSiteKey::new(format!("source-overload:{}", application.index()));
+        sites.push(OverloadSiteInput {
+            key: key.clone(),
+            owner: site(*application),
+            source_range: range(*application)?,
+            kind: OverloadSiteKind::FunctorApplication,
+            name: OverloadNameKey::new(overload_name.ok_or_else(invalid)?),
+            arguments: vec![site(*argument)],
+            expected: None,
+            source_qua: Vec::new(),
+            recovery: OverloadSiteRecovery::Normal,
+        });
+        for (order, (declaration, parameter, result, _)) in signatures.iter().enumerate() {
+            let SourceAnchor::Range(span) = declaration.origin().anchor() else {
+                return Err(invalid());
+            };
+            candidates.push(OverloadCandidateInput {
+                site: key.clone(),
+                symbol: declaration.symbol().clone(),
+                ordinary_root: declaration.symbol().clone(),
+                declaration_kind: CandidateDeclarationKind::Functor,
+                parameters: vec![*parameter],
+                result: Some(*result),
+                origin: CandidateOrigin::Ordinary,
+                template: None,
+                coherence: None,
+                provenance: CandidateProvenance {
+                    stable_key: CandidateProvenanceKey::new(format!(
+                        "source-declaration:{}",
+                        span.start
+                    )),
+                    source_range: Some(*span),
+                    scope: CandidateScope::Local,
+                    declaration_order: order,
+                },
+            });
+        }
+    }
+    let collection = OverloadCollectionOutput::collect(sites, candidates);
+    let expansion = TemplateExpansionOutput::expand(&collection);
+    let mut evidence = Vec::new();
+    for (candidate, entry) in expansion.candidates().iter() {
+        let owner = &collection
+            .sites()
+            .get(entry.site)
+            .ok_or_else(invalid)?
+            .owner;
+        let actual = calls
+            .iter()
+            .find(|call| site(call.0) == *owner)
+            .ok_or_else(invalid)?
+            .2;
+        evidence.push(CandidateViabilityInput {
+            candidate,
+            arguments: vec![ArgumentViabilityEvidence::Exact { actual }],
+        });
+    }
+    let viability = CandidateViabilityOutput::filter(&expansion, evidence);
+    let graphs = SpecificityGraphOutput::build(&viability, []);
+    let mut resolution = Vec::new();
+    for (_, graph) in graphs.graphs().iter() {
+        if !graph.diagnostics.is_empty() {
+            return Err(invalid());
+        }
+        let [root] = graph.nodes.as_slice() else {
+            return Err(invalid());
+        };
+        let selected = graphs
+            .candidates()
+            .get(root.candidate)
+            .ok_or_else(invalid)?;
+        resolution.push(OverloadSiteResolutionInput {
+            site: graph.site,
+            refinements: Vec::new(),
+            inserted_views: Vec::new(),
+            refinement_join: RefinementJoinPayload {
+                status: RefinementJoinStatus::Compatible,
+                exposed_result: Some(ExposedResultPayload {
+                    result: selected.result,
+                    source: ExposedResultSource::SelectedRoot,
+                    evidence: Vec::new(),
+                }),
+            },
+        });
+    }
+    let selection = OverloadSelectionOutput::resolve(&graphs, resolution);
+    if !collection.diagnostics().is_empty()
+        || !expansion.diagnostics().is_empty()
+        || selection.results().len() != calls.len()
+    {
+        return Err(invalid());
+    }
+    for (_, result) in selection.results().iter() {
+        if !result.diagnostics.is_empty() {
+            return Err(invalid());
+        }
+        let OverloadResultStatus::Resolved {
+            root,
+            exposed_result: Some(exposed),
+            ..
+        } = &result.status
+        else {
+            return Err(invalid());
+        };
+        let selected = graphs.candidates().get(*root).ok_or_else(invalid)?;
+        let owner = &collection
+            .sites()
+            .get(result.site)
+            .ok_or_else(invalid)?
+            .owner;
+        let call = calls
+            .iter()
+            .find(|call| site(call.0) == *owner)
+            .ok_or_else(invalid)?;
+        if selected.result != exposed.result || exposed.result != Some(term_type(call.3, call.4)?) {
+            return Err(invalid());
+        }
+    }
+    Ok((
+        normalization,
+        collection,
+        expansion,
+        viability,
+        graphs,
+        selection,
+    ))
+}
+
 /// Checks the bounded unbounded-template profiles without accepting proof results.
 pub fn check_source_unbounded_template_types(
     source: &SurfaceResolvedArena,

@@ -6257,3 +6257,7 @@ Proof-local label projections are outside this bridge and are rejected before na
 ## Unbounded template type admission
 
 The type-elaboration runner admits only the exact unbounded type-parameter functor, predicate-parameter theorem and arity-mismatch rows from the activation map. IDs, source/sidecar paths, stage, type-check phase, outcome, diagnostic payload, key and sole active tag are authenticated before dispatch. Reserved identities cannot fall through another stage or legacy profile. The harness passes actual resolved source and symbols to the checker and observes its result; it never decides formal identity, arity or substitution. Both extends-set rows remain inactive, and Task277A/277B transports retain their profiles and zero semantic credit. Tests cover missing/duplicate rows, metadata and cross-stage mutations in addition to source-driven checking.
+
+## Distinct-loci overload admission
+
+The advanced-semantics runner additionally admits only the exact positive distinct-loci overload row at `overload_resolution`. It authenticates IDs, source/sidecar paths, stage, phase, pass outcome, empty diagnostic/key payloads and the sole active tag; the ambiguity row and cross-stage aliases remain reserved and inactive. The harness passes real resolved source, symbol environment and typed projection to the checker and observes existing outputs. It performs no candidate typing, selection or acceptance. Missing/duplicate mapped rows and all metadata/phase drift fail admission; prior registration routes retain their own requirements.

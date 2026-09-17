@@ -359,7 +359,8 @@ pub(in crate::runner) fn is_active_type_elaboration(case: &TestCase) -> bool {
     if is_step5c12_candidate(case) {
         return step5c12_admitted(None, case);
     }
-    if super::super::is_step5c11_registration_candidate(case)
+    if super::super::is_step5c13_overload_candidate(case)
+        || super::super::is_step5c11_registration_candidate(case)
         || super::super::proof_verification::is_step5c11_proof_candidate(case)
     {
         return false;

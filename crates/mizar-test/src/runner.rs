@@ -1835,6 +1835,47 @@ fn step5c11_registration_admitted(root: &Path, case: &TestCase) -> bool {
         && case.expectation.tags.as_slice() == ["active_advanced_semantics"]
 }
 
+const STEP5C13_OVERLOAD_IDS: [&str; 2] = [
+    "pass_advanced_semantics_overload_distinct_loci_001",
+    "fail_advanced_semantics_overload_ambiguous_candidates_001",
+];
+
+fn is_step5c13_overload_candidate(case: &TestCase) -> bool {
+    STEP5C13_OVERLOAD_IDS.iter().any(|id| {
+        case.id.0 == *id
+            || case.expectation.id.0 == *id
+            || case.source_path.file_stem().is_some_and(|stem| stem == *id)
+            || case
+                .expectation_path
+                .file_name()
+                .is_some_and(|name| name == format!("{id}.expect.toml").as_str())
+    })
+}
+
+fn step5c13_overload_admitted(root: &Path, case: &TestCase) -> bool {
+    let id = STEP5C13_OVERLOAD_IDS[0];
+    let path = format!("tests/miz/pass/overload/{id}.miz");
+    case.id.0 == id
+        && case.expectation.id == case.id
+        && workspace_relative_source(root, &case.source_path).as_deref() == Some(path.as_str())
+        && workspace_relative_source(root, &case.expectation_path).is_some_and(|actual| {
+            Path::new(&actual) == Path::new(&path).with_extension("expect.toml")
+        })
+        && case.expectation.source == Path::new(&path).file_name().unwrap()
+        && case.expectation.kind == crate::expectation::TestKind::Pass
+        && case.expectation.stage == Stage::AdvancedSemantics
+        && case.expectation.expected_phase == Some(PipelinePhase::OverloadResolution)
+        && case.expectation.expected_outcome == ExpectedOutcome::Pass
+        && case.expectation.failure_category.is_none()
+        && case.expectation.rejection_reason.is_none()
+        && case.expectation.stable_detail_key.is_none()
+        && case.expectation.diagnostic_codes.is_empty()
+        && case.expectation.diagnostic_payloads.is_empty()
+        && case.expectation.declaration_symbol_payloads.is_empty()
+        && case.expectation.snapshots.is_none()
+        && case.expectation.tags.as_slice() == ["active_advanced_semantics"]
+}
+
 fn source_registration_inputs(
     root: &Path,
     case: &TestCase,
@@ -1967,18 +2008,36 @@ fn validate_step5c11_registration_inventory(
             ));
         }
     }
+    if plan
+        .cases
+        .iter()
+        .filter(|case| step5c13_overload_admitted(root, case))
+        .count()
+        != 1
+    {
+        diagnostics.push(ValidationDiagnostic::error(
+            root,
+            "advanced_semantics",
+            "E-ADVANCED-SEMANTICS-INVENTORY",
+            "advanced_semantics.inventory.overload_distinct_loci",
+            "the mapped distinct-loci overload must have exactly one admitted source/sidecar pair",
+        ));
+    }
     for case in &plan.cases {
         if (is_step5c11_registration_candidate(case)
+            || case.id.0 == STEP5C13_OVERLOAD_IDS[0]
+            || (is_step5c13_overload_candidate(case) && !case.expectation.tags.is_empty())
             || case
                 .expectation
                 .tags
                 .iter()
                 .any(|tag| tag == "active_advanced_semantics"))
             && !step5c11_registration_admitted(root, case)
+            && !step5c13_overload_admitted(root, case)
         {
             diagnostics.push(ValidationDiagnostic::error(&case.expectation_path, "advanced_semantics",
                 "E-ADVANCED-SEMANTICS-ADMISSION", format!("advanced_semantics.admission.{}", case.id.0),
-                "registration admission requires exact mapped identity, stage, phase, outcome, empty keys and sole tag"));
+                "advanced admission requires exact mapped identity, stage, phase, outcome, empty keys and sole tag"));
         }
     }
     diagnostics
@@ -2000,11 +2059,23 @@ pub fn run_advanced_semantics_corpus(
         for (ordinal, case) in plan
             .cases
             .iter()
-            .filter(|case| step5c11_registration_admitted(&root, case))
+            .filter(|case| {
+                step5c11_registration_admitted(&root, case)
+                    || step5c13_overload_admitted(&root, case)
+            })
             .enumerate()
         {
-            let result = run_frontend(&root, case, ordinal)
-                .and_then(|output| source_registration_intake(&root, case, output));
+            let result = run_frontend(&root, case, ordinal).and_then(|output| {
+                if step5c13_overload_admitted(&root, case) {
+                    let (source, nodes, symbols) = source_registration_inputs(&root, case, output)?;
+                    mizar_checker::type_checker::check_source_distinct_loci_overloads(
+                        &source, &symbols, &nodes,
+                    )
+                    .map(|_| ())
+                } else {
+                    source_registration_intake(&root, case, output).map(|_| ())
+                }
+            });
             let actual_detail_keys = result.err().into_iter().collect::<Vec<_>>();
             if !actual_detail_keys.is_empty() {
                 report.diagnostics.push(ValidationDiagnostic::error(
@@ -2211,7 +2282,8 @@ pub fn active_proof_verification_cases(plan: &TestPlan) -> impl Iterator<Item = 
 }
 
 fn is_active_parse_only(case: &TestCase) -> bool {
-    if is_step5c12_candidate(case)
+    if is_step5c13_overload_candidate(case)
+        || is_step5c12_candidate(case)
         || is_step5c11_registration_candidate(case)
         || proof_verification::is_step5c11_proof_candidate(case)
     {
@@ -2255,7 +2327,8 @@ fn is_active_parse_only(case: &TestCase) -> bool {
 }
 
 fn is_active_declaration_symbol(case: &TestCase) -> bool {
-    if is_step5c12_candidate(case)
+    if is_step5c13_overload_candidate(case)
+        || is_step5c12_candidate(case)
         || is_step5c11_registration_candidate(case)
         || proof_verification::is_step5c11_proof_candidate(case)
     {

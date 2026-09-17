@@ -8,6 +8,7 @@
 > Every heading, every registered ledger redirect line, and every section
 > with open work remains below.
 
+- [~] [Step 5C.13: distinct loci](../../task_contracts/en/STEP5C13-DISTINCT-LOCI.md); bare set/structure overload selection; attributed ambiguity remains deferred.
 - [~] [Step 5C.12: unbounded templates](../../task_contracts/en/STEP5C12-UNBOUNDED-TEMPLATES.md); explicit identity-functor and predicate-formal checking; extends-set interpretation remains pending.
 - [~] [Step 5C.11: cluster registrations](../../task_contracts/en/STEP5C11-CLUSTER-REGISTRATIONS.md); parser admission, pending intake and functorial false-coherence verification are active; false reducibility and accepted effects remain pending.
 

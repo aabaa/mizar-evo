@@ -246,7 +246,7 @@ pub fn resolve_template_formal(
         | SurfaceNodeKind::TypeHead
         | SurfaceNodeKind::TemplateLocus => parent.children() == [reference],
         SurfaceNodeKind::FunctorPattern => {
-            matches!(parent.children(), [_, _, argument] if *argument == reference)
+            matches!(parent.children(), [_, argument] | [_, _, argument] if *argument == reference)
         }
         SurfaceNodeKind::InlinePredicateApplication => {
             parent.children().first() == Some(&reference)
@@ -313,8 +313,12 @@ pub fn resolve_template_formal(
                     SurfaceNodeKind::QuantifiedFormula(_),
                     SurfaceNodeKind::QuantifierVariableSegment,
                 )
-                | (SurfaceNodeKind::ProofBlock, SurfaceNodeKind::LetStatement) => {
-                    let segment = if matches!(declaration.kind(), SurfaceNodeKind::LetStatement) {
+                | (SurfaceNodeKind::ProofBlock, SurfaceNodeKind::LetStatement)
+                | (SurfaceNodeKind::DefinitionBlockItem, SurfaceNodeKind::DefinitionParameter) => {
+                    let segment = if matches!(
+                        declaration.kind(),
+                        SurfaceNodeKind::LetStatement | SurfaceNodeKind::DefinitionParameter
+                    ) {
                         let [let_token, segment, semicolon] = parts else {
                             return Err(invalid());
                         };
