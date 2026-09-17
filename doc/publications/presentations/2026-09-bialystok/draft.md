@@ -582,8 +582,8 @@ registration
 end;
 ```
 
-- **We can cite the label in `by`. It also appears in diagnostics and the module interface.**
-- The verifier uses an import-filtered view of the global cluster graph.
+- **Labels make cluster use traceable. Explicit citation in `by` is optional.**
+- **The verifier applies applicable clusters automatically within the active environment.**
 - **`explain-attribute` and resolution traces explain success or failure.
   For example, they can show the steps from empty to finite to countable.**
 
