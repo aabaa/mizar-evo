@@ -668,9 +668,9 @@ end;
 \setlength{\itemsep}{1pt}
 \setlength{\parsep}{0pt}
 \setlength{\parskip}{0pt}
-\item With diamond inheritance, readers need to trace which inherited selectors are shared. Evo proposes explicit member mappings for these paths.
-\item The syntax does not tell a migration tool whether a selector is intrinsic data, a canonical value with obligations, or an inherited view.
-\item Errors appear far from their cause, as type mismatches in later articles.
+\item Current Mizar defines \texttt{addMagma} and \texttt{multMagma} separately, although both describe a carrier with one binary operation.
+\item Common definitions and proofs are repeated in additive and multiplicative forms.
+\item Evo's member renaming lets both structures use a common \texttt{Magma} theory, while keeping their familiar operation names.
 \end{itemize}
 \smallskip
 \textbf{Message:}
@@ -678,7 +678,7 @@ end;
 \setlength{\itemsep}{1pt}
 \setlength{\parsep}{0pt}
 \setlength{\parskip}{0pt}
-\item At MML scale, structure inheritance is a graph maintenance problem, and the graph needs explicit edges that the verifier can check.
+\item \textcolor{blue!55!black}{\textbf{Define and prove the common theory once, then reuse it through renamed views.}}
 \end{itemize}
 \note{
 \smallskip
@@ -687,10 +687,10 @@ end;
 \setlength{\itemsep}{1pt}
 \setlength{\parsep}{0pt}
 \setlength{\parskip}{0pt}
-\item With diamond inheritance, readers need to trace which inherited selectors are shared. Evo proposes explicit member mappings for these paths.
-\item The syntax does not tell a migration tool whether a selector is intrinsic data, a canonical value with obligations, or an inherited view.
-\item Errors appear far from their cause, as type mismatches in later articles.
-\item At MML scale, structure inheritance is a graph maintenance problem, and the graph needs explicit edges that the verifier can check.
+\item Current Mizar defines \texttt{addMagma} and \texttt{multMagma} separately, although both describe a carrier with one binary operation.
+\item Common definitions and proofs are repeated in additive and multiplicative forms.
+\item Evo's member renaming lets both structures use a common \texttt{Magma} theory, while keeping their familiar operation names.
+\item \textcolor{blue!55!black}{\textbf{Define and prove the common theory once, then reuse it through renamed views.}}
 \end{itemize}
 }
 \end{frame}
@@ -810,6 +810,7 @@ end;
 \setlength{\parsep}{0pt}
 \setlength{\parskip}{0pt}
 \item The diagram assumes the shown mappings from \texttt{AddLoopStr} and \texttt{MulLoopStr} to \texttt{Magma}. The code adds their shared child, \texttt{DoubleLoopStr}.
+\item Same-name, same-type members can join across roots. Different member types need \texttt{coherence} proofs of subtype inclusion.
 \end{itemize}
 }
 \end{frame}
@@ -824,8 +825,8 @@ end;
 \setlength{\itemsep}{1pt}
 \setlength{\parsep}{0pt}
 \setlength{\parskip}{0pt}
-\item Same-name, same-type members can join across roots. Different member types need \texttt{coherence} proofs of subtype inclusion.
-\item Renamed views stay distinct. Invalid mappings or missing proofs give diagnostics.
+\item \textcolor{blue!55!black}{\textbf{Define and prove once for \texttt{Magma}; reuse through the additive and multiplicative views.}}
+\item The views stay distinct; theorem assumptions must hold for each view.
 \end{itemize}
 \note{
 \smallskip
@@ -835,8 +836,8 @@ end;
 \setlength{\parsep}{0pt}
 \setlength{\parskip}{0pt}
 \item The diagram shows the inheritance paths.
-\item Same-name, same-type members can join across roots. Different member types need \texttt{coherence} proofs of subtype inclusion.
-\item Renamed views stay distinct. Invalid mappings or missing proofs give diagnostics.
+\item \textcolor{blue!55!black}{\textbf{Define and prove once for \texttt{Magma}; reuse through the additive and multiplicative views.}}
+\item The views stay distinct; theorem assumptions must hold for each view.
 \end{itemize}
 }
 \end{frame}

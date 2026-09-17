@@ -421,16 +421,15 @@ Speaker note:
 
 Bullets:
 
-- With diamond inheritance, readers need to trace which inherited selectors
-  are shared. Evo proposes explicit member mappings for these paths.
-- The syntax does not tell a migration tool whether a selector is intrinsic
-  data, a canonical value with obligations, or an inherited view.
-- Errors appear far from their cause, as type mismatches in later articles.
+- Current Mizar defines `addMagma` and `multMagma` separately,
+  although both describe a carrier with one binary operation.
+- Common definitions and proofs are repeated in additive and multiplicative forms.
+- Evo's member renaming lets both structures use a common `Magma` theory,
+  while keeping their familiar operation names.
 
 Message:
 
-- At MML scale, structure inheritance is a graph maintenance problem, and the
-  graph needs explicit edges that the verifier can check.
+- **Define and prove the common theory once, then reuse it through renamed views.**
 
 ### Frame 3.3 - The Evo Answer: Field, Property, Attribute
 
@@ -504,14 +503,15 @@ The diagram shows the inheritance paths (sketch):
 
 ![The diamond, with checkable joins](figures/diamond_inheritance.pdf)
 
-- Same-name, same-type members can join across roots. Different member types need
-  `coherence` proofs of subtype inclusion.
-- Renamed views stay distinct. Invalid mappings or missing proofs give diagnostics.
+- **Define and prove once for `Magma`; reuse through the additive and multiplicative views.**
+- The views stay distinct; theorem assumptions must hold for each view.
 
 Speaker note:
 
 - The diagram assumes the shown mappings from `AddLoopStr` and `MulLoopStr`
   to `Magma`. The code adds their shared child, `DoubleLoopStr`.
+- Same-name, same-type members can join across roots. Different member types need
+  `coherence` proofs of subtype inclusion.
 
 ### Frame 3.6 - What Is Preserved, What We Ask
 
