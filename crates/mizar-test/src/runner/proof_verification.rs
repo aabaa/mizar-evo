@@ -358,7 +358,9 @@ pub(super) fn generate_core_vcs(
 }
 
 pub(super) fn is_active_proof_verification(case: &TestCase) -> bool {
-    if super::type_elaboration::is_step5c5_predicate_duplicate_candidate(case) {
+    if super::type_elaboration::is_step5c5_predicate_duplicate_candidate(case)
+        || super::type_elaboration::is_step5c6_alias_candidate(case)
+    {
         return false;
     }
     if is_step5c14_return_candidate(case) {

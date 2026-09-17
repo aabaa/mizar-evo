@@ -6257,6 +6257,14 @@ conflicts. Private theorem acceptance requires resolving its actual later citati
 to the same-module private, local-only symbol; proof validity is not checked.
 Proof-local label projections are outside this bridge and are rejected before name lookup.
 
+The exact `fail_type_elaboration_synonym_loci_mismatch_001` row is separately admitted at
+`type_elaboration` / `resolve` with `notation.synonym.loci_mismatch`, empty codes and its sole active tag.
+Authenticate all source/sidecar identity and metadata; reserved identities cannot fall through other stages.
+After clean frontend processing, fresh source-aware resolver replay must reproduce every shell/environment
+index and the sole synonym-loci diagnostic, anchored to the actual alias and earlier original functor.
+Only that diagnostic maps to the frozen key; unrelated errors, stale inputs and unsupported shapes fail closed.
+The four module outcomes stay intact; both positive alias rows remain inactive without type/proof acceptance.
+
 ## Unbounded template type admission
 
 The type-elaboration runner admits only the exact unbounded type-parameter functor, predicate-parameter theorem and arity-mismatch rows from the activation map. IDs, source/sidecar paths, stage, type-check phase, outcome, diagnostic payload, key and sole active tag are authenticated before dispatch. Reserved identities cannot fall through another stage or legacy profile. The harness passes actual resolved source and symbols to the checker and observes its result; it never decides formal identity, arity or substitution. Both extends-set rows remain inactive, and Task277A/277B transports retain their profiles and zero semantic credit. Tests cover missing/duplicate rows, metadata and cross-stage mutations in addition to source-driven checking.

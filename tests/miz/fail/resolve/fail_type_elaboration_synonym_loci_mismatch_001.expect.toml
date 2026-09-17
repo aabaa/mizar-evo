@@ -12,4 +12,5 @@ diagnostic_codes = []
 spec_refs = [
   "spec.en.11.symbols.synonym.functor",
 ]
-notes = "Audit-1 semantic-bridge inactive oracle seed (September 2026 audit wave): binding expectation for the Step-5 semantic bridge; no active runner tag, earns no current credit. A synonym pattern must match the loci arity of its original pattern (spec 11.x synonym; A.11)."
+notes = "Active source-derived synonym locus-count rejection after authenticating the original local functor; no positive alias acceptance."
+tags = ["active_type_elaboration"]

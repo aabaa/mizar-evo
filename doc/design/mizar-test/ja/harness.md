@@ -5696,6 +5696,13 @@ citation が同一 module の private/local-only symbol に解決されること
 証明の妥当性は検査しない。
 proof-local label projection は本 bridge の対象外とし、name lookup 前に拒否する。
 
+`fail_type_elaboration_synonym_loci_mismatch_001` だけを別途 `type_elaboration` / `resolve`、
+`notation.synonym.loci_mismatch`、空の code と単独 active tag で受理する。source/sidecar の同一性と
+全 metadata を照合し、予約した同一性を他 stage に流さない。frontend 成功後の source-aware resolver replay が
+全 shell/environment index と実際の alias・先行 original functor に結び付く単独 locus 診断を再現することを要求する。
+この診断だけを固定 key に写像し、無関係な error・古い入力・未対応形状は拒否する。
+既存 module 4行を維持し、positive alias 2行は非活性のまま、型・証明の受理を与えない。
+
 ## Unbounded template type admission
 
 型 elaboration runner は activation map の上界なし型パラメータ関手、述語パラメータ定理、引数個数不一致の厳密な行だけを受理する。ID、ソース・sidecar パス、stage、type-check phase、結果、診断ペイロード、キー、唯一の active tag を dispatch 前に認証し、予約された同一性が別 stage や従来 profile へ迂回することを防ぐ。実際の resolved source と symbols を checker へ渡して結果を観測し、仮引数同一性・個数・型代入を harness で判断しない。extends-set の両行は無効のまま保持し、Task277A/277B の transport profile と意味論実績なしの境界を維持する。テストはソース由来の検査に加えて欠落・重複行、メタデータ、stage 間の変異を対象とする。

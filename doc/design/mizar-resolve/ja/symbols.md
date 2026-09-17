@@ -364,6 +364,14 @@ diagnostic record は R-G001 が未解決の間 crate-local/internal に留め�
 declaration origin、conflict candidate、relation target、recovery state は保持するが、
 public numeric resolver code は割り当てない。
 
+`SignatureProjectionExtractor::collect(module)` は opaque collection を再利用し、局所 functor の
+synonym と一意に束縛された bare builtin loci に限り `SymbolDiagnosticClass::SynonymLociMismatch` を生成する。
+両 pattern と、先行する完了済み definition block 内の functor 1個を namespace・notation shape・順序付き locus type で照合し、
+binder 名・label・本体を constructor 同一性にしない。括弧付き引数列も対象だが、locus 重複・未束縛・
+recovery・曖昧または未対応 target はこの診断を生成しない。診断は実際の alias shell/range、元 constructor の
+SymbolId、source contribution を保持する。locus 数の不一致を拒否し、同数や合法な並べ替えに alias 受理は与えない。
+source collection と replay はこの入口を使い、既存 opaque collection・数値診断 code・positive alias semantics は変更しない。
+
 ## Determinism
 
 signature collection は同等入力に対して byte-stable でなければならない:

@@ -6,14 +6,14 @@ Owning plans: [mizar-resolve](../../mizar-resolve/en/00.crate_plan.md#task-index
 
 ## Frozen assignment
 
-- Status: complete; full tier. Dependencies 5A.1, 5A.5, and 5A.7 are complete.
-- Purpose: connect four non-gap Step 5C.6 corpus pairs to existing resolver owners.
-- `mizar-resolve` owns import and local-name resolution; `mizar-frontend` retains
+- Status: five mapped outcomes complete; two positive aliases deferred; full tier.
+- Dependencies 5A.1, 5A.5, and 5A.7 are complete; the two positive aliases stay inactive.
+- `mizar-resolve` owns import, local-name and bounded alias resolution; `mizar-frontend` retains
   syntax/lexical-summary ownership; `mizar-test` owns admission and fixture wiring.
 - Classification: `source_drift` / executable `test_gap`; the syntax-only fixture
   provider is not a semantic module index. Missing fixture infrastructure is
   an implementation prerequisite, not a new language decision.
-- Authority: [§11.3–11.4](../../../spec/en/11.symbol_management.md#113-import-behavior-and-conflict-resolution),
+- Authority: [§11.1–11.5](../../../spec/en/11.symbol_management.md#111-synonyms-and-antonyms),
   [§12.3](../../../spec/en/12.modules_and_namespaces.md#123-import-statements),
   [§12.5](../../../spec/en/12.modules_and_namespaces.md#125-visibility-control-privatepublic),
   the mapped sources and expectations, [trace](../../../../tests/coverage/spec_trace.toml),
@@ -21,8 +21,8 @@ Owning plans: [mizar-resolve](../../mizar-resolve/en/00.crate_plan.md#task-index
 
 ## Activation and scope
 
-All four retain `declaration_symbol`, phase `resolve`, and empty public codes;
-only their sole `active_declaration_symbol` tag is added.
+The original four retain `declaration_symbol` / `resolve` and sole `active_declaration_symbol`.
+The additional synonym row retains `type_elaboration` / `resolve` and sole `active_type_elaboration`; public codes stay empty.
 
 | Case | Result |
 |---|---|
@@ -30,9 +30,10 @@ only their sole `active_declaration_symbol` tag is added.
 | `pass_declaration_symbol_branch_import_form_001` | pass |
 | `fail_declaration_symbol_import_unknown_module_001` | `modules.import.unknown_module` |
 | `pass_declaration_symbol_private_theorem_visibility_001` | pass |
+| `fail_type_elaboration_synonym_loci_mismatch_001` | `notation.synonym.loci_mismatch` |
 
 Admission authenticates exact id, workspace-relative source/sidecar paths, stage,
-phase, outcome, key, and sole tag; malformed admission must not fall back.
+phase, outcome, category, domain, spec refs and sole tag; reserved identities never fall through other stages.
 Reuse `SurfaceAst`, resolver import candidates, module index, symbol collection,
 and name/label resolution. Add no public type or parallel term/formula/statement IR.
 The [harness](../../mizar-test/en/harness.md) owns a bounded fixture index grounded in
@@ -44,9 +45,9 @@ the [import owner](../../mizar-resolve/en/imports.md). Resolve the actual privat
 theorem citation to the earlier same-module symbol and require private/local-only
 visibility via the [symbol owner](../../mizar-resolve/en/symbols.md).
 
-No proof checking, imported proof/interface elaboration, general workspace build,
-new diagnostics, lower-stage behavior, or deeper import matrix is introduced.
-The three G4/G5/G9 pairs stay inactive; Chapter 12 audit coverage changes only.
+The [symbol owner](../../mizar-resolve/en/symbols.md#recovery-and-diagnostics) specifies source-aware collection and its internal synonym-loci diagnostic.
+Authenticate actual ordered bound loci and the unique earlier functor before mapping the mismatch; equal arity or reordered loci alone grant no alias acceptance.
+No proof checking, imported interface elaboration, alias equivalence, new public numeric code or deeper import matrix; update only Chapter 11 continuation coverage.
 Preserve existing `.miz`, outcomes/phases/keys, trace, activation map, archive,
 soundness boundaries, the certificate rejection corpus, and Task 277B state.
 
@@ -54,6 +55,6 @@ soundness boundaries, the certificate rejection corpus, and Task 277B state.
 
 Review specification/docs, tests, implementation, removable volume/scope, and
 source/doc consistency. Test exact activation plus invalid admission, missing
-fixtures, import provenance, and private citation/visibility failures. Run focused
+fixtures, import provenance, private visibility, actual alias targets, legal reordered loci, and diagnostic replay. Run focused
 tests and corpus commands, then workspace fmt, warnings-denied Clippy, and tests.
-Exit with four activations and one local task commit within the approved budgets.
+Exit with the original four plus the synonym negative within the same cumulative task budgets.

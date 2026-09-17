@@ -36,6 +36,112 @@ use super::type_elaboration::{
 };
 use super::{DeclarationSymbolCaseResult, DeclarationSymbolCaseStatus};
 
+pub(super) fn step5c6_synonym_detail_keys(
+    ast: &SurfaceAst,
+    module: &ModuleId,
+    shells: &mizar_resolve::declarations::DeclarationShellSet,
+    symbols: &SymbolEnv,
+    resolver_keys: &[String],
+) -> Option<Vec<String>> {
+    use mizar_resolve::{
+        declarations::{DeclarationShellCollector, DeclarationShellKind},
+        symbols::{SignatureProjectionExtractor, SymbolDiagnosticClass},
+    };
+    if resolver_keys != ["declaration_symbol.notation.synonym_loci_mismatch"]
+        || subtree_has_recovery(ast, ast.node(ast.root()?)?)
+        || ast
+            .nodes()
+            .iter()
+            .any(|node| node.range.source_id != ast.source_id)
+    {
+        return None;
+    }
+    let actual_shells = DeclarationShellCollector::new(ast, module).collect();
+    let actual = SignatureProjectionExtractor::new(
+        ast,
+        &actual_shells,
+        NamespacePath::new(module.path().as_str()),
+    )
+    .collect(module);
+    let [diagnostic] = actual.diagnostics() else {
+        return None;
+    };
+    if &actual_shells != shells
+        || actual.env() != symbols
+        || diagnostic.class() != SymbolDiagnosticClass::SynonymLociMismatch
+    {
+        return None;
+    }
+    let alias = shells.declaration(diagnostic.shell()?)?;
+    let alias_node = ast.node(alias.node_id())?;
+    let [original] = diagnostic.candidates() else {
+        return None;
+    };
+    let target = symbols.definitions().by_symbol(original)?;
+    let target_shell = shells
+        .declarations()
+        .iter()
+        .find(|shell| target.origin().anchor() == &SourceAnchor::Range(shell.range()))?;
+    let target_node = ast.node(target_shell.node_id())?;
+    if alias.kind() != DeclarationShellKind::NotationAlias
+        || diagnostic.range() != alias.range()
+        || alias.range().start < target_shell.range().end
+        || !authenticated_local_declaration(
+            ast,
+            module,
+            shells,
+            symbols,
+            alias.node_id(),
+            alias_node,
+            DeclarationShellKind::NotationAlias,
+            SymbolKind::Synonym,
+            DefinitionKind::Synonym,
+            true,
+        )
+        || !authenticated_local_declaration(
+            ast,
+            module,
+            shells,
+            symbols,
+            target_shell.node_id(),
+            target_node,
+            DeclarationShellKind::FunctorDefinition,
+            SymbolKind::Functor,
+            DefinitionKind::Functor,
+            true,
+        )
+    {
+        return None;
+    }
+    let alias_entry = symbols.symbols().iter().find(|entry| {
+        entry.kind() == SymbolKind::Synonym
+            && entry.origin().anchor() == &SourceAnchor::Range(alias.range())
+    })?;
+    let contribution = symbols.contributions().get(target.contribution())?;
+    let alias_definition = symbols.definitions().by_symbol(alias_entry.symbol())?;
+    if contribution.module() != module
+        || contribution.kind()
+            != &(ContributionKind::LocalSource {
+                source_id: ast.source_id,
+            })
+        || alias_entry.contribution() != target.contribution()
+        || !contribution.effects().symbols().contains(original)
+        || !contribution
+            .effects()
+            .symbols()
+            .contains(alias_entry.symbol())
+        || !contribution.effects().definitions().contains(&target.id())
+        || !contribution
+            .effects()
+            .definitions()
+            .contains(&alias_definition.id())
+        || contribution.effects().diagnostics() != [diagnostic.id()]
+    {
+        return None;
+    }
+    Some(vec!["notation.synonym.loci_mismatch".to_owned()])
+}
+
 pub(super) fn run_declaration_symbol_case(
     workspace_root: &Path,
     case: &TestCase,

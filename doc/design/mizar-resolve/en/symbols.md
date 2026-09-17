@@ -400,6 +400,17 @@ Diagnostic records remain crate-local/internal while R-G001 is open. They
 preserve source ranges, declaration origins, conflict candidates, relation
 targets, and recovery state, but assign no public numeric resolver codes.
 
+`SignatureProjectionExtractor::collect(module)` reuses opaque symbol collection and adds
+source-owned `SymbolDiagnosticClass::SynonymLociMismatch` only for ordinary local functor
+synonyms with uniquely bound bare builtin loci. It authenticates both patterns and the unique
+functor in an earlier completed definition block by namespace, notation shape and ordered locus types; binder names,
+labels and bodies do not define constructor identity. Parenthesized argument lists are allowed;
+repeated/unbound loci, recovery, ambiguous or unsupported targets cannot supply this diagnostic.
+The diagnostic anchors the actual alias shell/range, identifies the original constructor SymbolId,
+and belongs to the source contribution. Unequal locus counts reject the alias; equal counts and
+legal permutations do not establish an accepted relation. Source collection and replay use this
+entry point; explicit opaque collection, numeric codes and positive alias semantics stay unchanged.
+
 ## Determinism
 
 Signature collection must be byte-stable for equivalent inputs:

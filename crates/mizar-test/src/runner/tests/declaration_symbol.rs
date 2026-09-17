@@ -406,7 +406,7 @@ fn step5c6_four_module_cases_have_exact_outcomes_and_keys() {
 }
 
 #[test]
-fn step5c6_admission_rejects_single_metadata_drift_and_keeps_three_gaps_inactive() {
+fn step5c6_admission_rejects_metadata_drift_and_keeps_three_alias_rows_outside_declaration_stage() {
     use crate::expectation::{ExpectedOutcome, PipelinePhase};
 
     let (workspace_root, plan) = step5c6_plan();
@@ -453,14 +453,14 @@ fn step5c6_admission_rejects_single_metadata_drift_and_keeps_three_gaps_inactive
                 .ends_with("pass_declaration_symbol_branch_import_form_001_changed"))
     );
 
-    let inactive_gap_ids = [
+    let alias_ids = [
         "pass_type_elaboration_antonym_predicate_001",
         "pass_type_elaboration_synonym_functor_001",
         "fail_type_elaboration_synonym_loci_mismatch_001",
     ];
-    for id in inactive_gap_ids {
-        let case = plan.cases.iter().find(|case| case.id.0 == id).expect("inactive gap");
-        assert!(!super::is_active_declaration_symbol(case), "{id} must remain inactive");
+    for id in alias_ids {
+        let case = plan.cases.iter().find(|case| case.id.0 == id).expect("alias case");
+        assert!(!super::is_active_declaration_symbol(case), "{id} is outside declaration stage");
     }
 }
 
@@ -652,4 +652,304 @@ fn step5c6_fixture_absence_and_private_citation_boundaries_fail_closed() {
     }
     std::fs::remove_file(&probe.source_path).expect("remove owned probe");
     std::fs::remove_dir(&scratch).expect("remove empty owned workspace");
+}
+#[test]
+fn step5c6_synonym_mismatch_requires_actual_unique_target_and_loci() {
+    use mizar_resolve::declarations::{DeclarationShellCollector, DeclarationShellKind};
+    use mizar_resolve::symbols::{
+        SignatureProjectionExtractor, SymbolCollector, SymbolDiagnosticClass,
+        validate_source_symbol_env,
+    };
+    let exact = include_str!(concat!(
+        env!("CARGO_MANIFEST_DIR"),
+        "/../../tests/miz/fail/resolve/fail_type_elaboration_synonym_loci_mismatch_001.miz"
+    ));
+    let (base, tail) = exact.split_once("\n\ndefinition\n").unwrap();
+    let alias = format!("definition\n{tail}");
+    let module = ResolverModuleId::new(
+        PackageId::new("synonym-source"),
+        ModulePath::new("mismatch"),
+    );
+    let collect = |source: &str| {
+        let output = super::formula_statement::step5c8_test_frontend(source);
+        assert!(
+            output.diagnostics.is_empty(),
+            "{source}: {:?}",
+            output.diagnostics
+        );
+        let ast = output.ast.unwrap();
+        let shells = DeclarationShellCollector::new(&ast, &module).collect();
+        let result = SignatureProjectionExtractor::new(
+            &ast,
+            &shells,
+            NamespacePath::new(module.path().as_str()),
+        )
+        .collect(&module);
+        (ast, shells, result)
+    };
+    let key = vec!["declaration_symbol.notation.synonym_loci_mismatch".to_owned()];
+    let mapped = |ast: &SurfaceAst,
+                  shells: &mizar_resolve::declarations::DeclarationShellSet,
+                  env: &SymbolEnv| {
+        super::declaration_symbol::step5c6_synonym_detail_keys(ast, &module, shells, env, &key)
+    };
+    let expected = Some(vec!["notation.synonym.loci_mismatch".to_owned()]);
+    let other =
+        "definition let P,Q be set; func OtherDef: P otherbase Q -> set equals Q; coherence; end;";
+    for (source, target_start) in [
+        (exact.to_owned(), "func SynBase2Def"),
+        (
+            format!(
+                "{}\n{}",
+                base.replace('X', "A").replace('Y', "B"),
+                alias.replace('X', "P").replace('Y', "Q").replace('Z', "R")
+            ),
+            "func SynBase2Def",
+        ),
+        (
+            exact
+                .replace("SynBase2Def", "Renamed")
+                .replace("equals X", "equals Y"),
+            "func Renamed",
+        ),
+        (
+            format!(
+                "{base}\n{other}\n{}",
+                alias.replace("synbase2", "otherbase")
+            ),
+            "func OtherDef",
+        ),
+    ] {
+        let (ast, shells, result) = collect(&source);
+        assert_eq!(mapped(&ast, &shells, result.env()), expected, "{source}");
+        let replay = SignatureProjectionExtractor::new(
+            &ast,
+            &shells,
+            NamespacePath::new(module.path().as_str()),
+        )
+        .collect(&module);
+        assert_eq!(result, replay);
+        let [diagnostic] = result.diagnostics() else {
+            panic!("sole synonym diagnostic")
+        };
+        assert_eq!(
+            diagnostic.class(),
+            SymbolDiagnosticClass::SynonymLociMismatch
+        );
+        let alias_shell = shells.declaration(diagnostic.shell().unwrap()).unwrap();
+        assert_eq!(alias_shell.kind(), DeclarationShellKind::NotationAlias);
+        assert_eq!(diagnostic.range(), alias_shell.range());
+        assert_eq!(diagnostic.range().start, source.find("synonym").unwrap());
+        let [original] = diagnostic.candidates() else {
+            panic!("actual unique original")
+        };
+        let definition = result.env().definitions().by_symbol(original).unwrap();
+        assert_eq!(
+            definition.kind(),
+            mizar_resolve::env::DefinitionKind::Functor
+        );
+        assert!(definition.conflict().is_none());
+        let SourceAnchor::Range(range) = definition.origin().anchor() else {
+            panic!("source constructor")
+        };
+        assert_eq!(range.start, source.find(target_start).unwrap());
+        assert!(range.end < diagnostic.range().start);
+        let contribution = result
+            .env()
+            .contributions()
+            .get(definition.contribution())
+            .unwrap();
+        assert_eq!(contribution.effects().diagnostics(), [diagnostic.id()]);
+        assert!(contribution.effects().symbols().contains(original));
+    }
+    for source in [
+        exact.replace("synbad(X, Y, Z)", "synbad(X, Y)"),
+        exact.replace("synbad(X, Y, Z)", "synbad(Y, X)"),
+        exact
+            .replacen("let X, Y be set;", "let X, Y, Z be set;", 1)
+            .replace("X synbase2 Y", "synbase2(X,Y,Z)"),
+        exact.replacen("let X, Y be set;", "let X be object; let Y be set;", 1),
+        exact.replace("for X synbase2 Y", "for X synbase2"),
+        exact.replace("for X synbase2 Y", "for X missingbase Y"),
+        alias.clone(),
+        format!("{alias}\n{base}"),
+        "definition let X,Y,Z be set; func SynBase2Def: X synbase2 Y -> set equals X; coherence; synonym synbad(X,Y,Z) for X synbase2 Y; end;".to_owned(),
+        format!(
+            "{base}\n{}\n{alias}",
+            base.replace("SynBase2Def", "Duplicate")
+        ),
+        format!("definition let X,Y be set; pred X synbase2 Y means X=X; end;\n{alias}"),
+        exact.replace("synbad(X, Y, Z)", "synbad(X, Y, X)"),
+        exact.replace("synbad(X, Y, Z)", "synbad(X, Y, Missing)"),
+        exact.replace("for X synbase2 Y", "for X synbase2 X"),
+        exact.replace("let X, Y, Z be set;", "let X, Y, Z be set; assume X=X;"),
+    ] {
+        let (ast, shells, result) = collect(&source);
+        assert!(
+            result
+                .diagnostics()
+                .iter()
+                .all(|d| d.class() != SymbolDiagnosticClass::SynonymLociMismatch),
+            "{source}"
+        );
+        assert_eq!(mapped(&ast, &shells, result.env()), None, "{source}");
+        assert!(
+            result
+                .env()
+                .symbols()
+                .iter()
+                .filter(|entry| entry.kind() == SymbolKind::Synonym)
+                .all(|entry| entry.relations().is_empty())
+        );
+    }
+    for (source, frontend_error) in [
+        (exact.replace("for X synbase2 Y", "for"), true),
+        (
+            exact.replace("let X, Y, Z be set;", "let X, Y, Z be Missing;"),
+            true,
+        ),
+        (exact.replace("synbad(X, Y, Z)", "synbad()"), false),
+        (exact.replace("synbad(X, Y, Z)", "synbad((X,Y,Z))"), false),
+    ] {
+        let output = super::formula_statement::step5c8_test_frontend(&source);
+        if frontend_error {
+            assert!(!output.diagnostics.is_empty(), "{source}");
+        }
+        let ast = output.ast.expect("source recovery AST");
+        let shells = DeclarationShellCollector::new(&ast, &module).collect();
+        let result = SignatureProjectionExtractor::new(
+            &ast,
+            &shells,
+            NamespacePath::new(module.path().as_str()),
+        )
+        .collect(&module);
+        assert!(
+            result
+                .diagnostics()
+                .iter()
+                .all(|diagnostic| diagnostic.class() != SymbolDiagnosticClass::SynonymLociMismatch),
+            "{source}"
+        );
+        assert_eq!(mapped(&ast, &shells, result.env()), None, "{source}");
+    }
+    let (ast, shells, result) = collect(exact);
+    let source = mizar_resolve::resolved_ast::SurfaceResolvedArena::lower(&ast, &module).unwrap();
+    let projections = SignatureProjectionExtractor::new(
+        &ast,
+        &shells,
+        NamespacePath::new(module.path().as_str()),
+    )
+    .extract();
+    let legacy = SymbolCollector::new(ast.source_id, &module, &shells, &projections).collect();
+    assert!(legacy.diagnostics().is_empty());
+    assert!(validate_source_symbol_env(&source, legacy.env()).is_err());
+    assert!(validate_source_symbol_env(&source, result.env()).is_err());
+    let (healthy_ast, _, healthy) = collect(&exact.replace("synbad(X, Y, Z)", "synbad(X, Y)"));
+    assert!(healthy.diagnostics().is_empty());
+    let healthy_source =
+        mizar_resolve::resolved_ast::SurfaceResolvedArena::lower(&healthy_ast, &module).unwrap();
+    assert!(validate_source_symbol_env(&healthy_source, healthy.env()).is_ok());
+    let recovered =
+        rebuild_surface_ast_recovering_first_token_in_kind(&ast, SurfaceNodeKind::NotationAlias);
+    assert_eq!(mapped(&recovered, &shells, result.env()), None);
+    assert_eq!(
+        mapped(
+            &ast,
+            &mizar_resolve::declarations::DeclarationShellSet::default(),
+            result.env()
+        ),
+        None
+    );
+    let mut foreign = ast.clone();
+    let ids = InMemorySessionIdAllocator::new();
+    ids.next_source_id(snapshot_id(0)).unwrap();
+    foreign.source_id = ids.next_source_id(snapshot_id(0)).unwrap();
+    assert_eq!(mapped(&foreign, &shells, result.env()), None);
+    let foreign_module =
+        ResolverModuleId::new(PackageId::new("foreign"), ModulePath::new("mismatch"));
+    assert_eq!(
+        super::declaration_symbol::step5c6_synonym_detail_keys(
+            &ast,
+            &foreign_module,
+            &shells,
+            result.env(),
+            &key
+        ),
+        None
+    );
+    for keys in [vec![], vec![key[0].clone(), "unrelated".into()]] {
+        assert_eq!(
+            super::declaration_symbol::step5c6_synonym_detail_keys(
+                &ast,
+                &module,
+                &shells,
+                result.env(),
+                &keys
+            ),
+            None
+        );
+    }
+    let (_, _, stale) = collect(&exact.replace("synbase2", "otherbase"));
+    assert_eq!(mapped(&ast, &shells, stale.env()), None);
+    for mutation in 0..3 {
+        let mut indexes = super::import_fixtures::clone_symbol_env_indexes(result.env());
+        match mutation {
+            0 => indexes.contributions = Default::default(),
+            1 => indexes.definitions = Default::default(),
+            _ => {
+                let target = result
+                    .env()
+                    .symbols()
+                    .iter()
+                    .find(|entry| entry.kind() == SymbolKind::Functor)
+                    .unwrap();
+                let alias_range = result.diagnostics()[0].range();
+                let origin = SemanticOrigin::new(
+                    ast.source_id,
+                    module.clone(),
+                    SourceAnchor::Range(alias_range),
+                    target.origin().structural_path().to_vec(),
+                );
+                let mut changed = SymbolEntry::new(
+                    target.symbol().clone(),
+                    target.kind(),
+                    target.namespace().clone(),
+                    target.primary_spelling(),
+                    origin,
+                    target.contribution(),
+                )
+                .with_visibility(target.visibility())
+                .with_export_status(target.export_status())
+                .with_relations(target.relations().to_vec());
+                if let Some(notation) = target.notation_spelling() {
+                    changed = changed.with_notation_spelling(notation);
+                }
+                if let Some(signature) = target.signature() {
+                    changed = changed.with_signature(signature.clone());
+                }
+                indexes.symbols = Default::default();
+                for entry in result.env().symbols().iter() {
+                    indexes
+                        .symbols
+                        .insert(if entry.symbol() == target.symbol() {
+                            changed.clone()
+                        } else {
+                            entry.clone()
+                        });
+                }
+                assert_eq!(indexes.symbols.len(), result.env().symbols().len());
+            }
+        }
+        let changed = SymbolEnv::new(module.clone(), indexes);
+        assert_ne!(&changed, result.env());
+        assert_eq!(mapped(&ast, &shells, &changed), None);
+    }
+    let (unrelated_ast, unrelated_shells, unrelated) = collect(&format!(
+        "{exact}\ntheorem Extra: for X being set holds X=X; theorem Extra: for X being set holds X=X;"
+    ));
+    assert!(unrelated.diagnostics().len() > 1);
+    assert_eq!(
+        mapped(&unrelated_ast, &unrelated_shells, unrelated.env()),
+        None
+    );
 }

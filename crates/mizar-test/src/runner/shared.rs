@@ -10,7 +10,7 @@ use mizar_resolve::declarations::{DeclarationShellCollector, DeclarationShellSet
 use mizar_resolve::env::{NamespacePath, SymbolEnv};
 use mizar_resolve::resolved_ast::ModuleId as ResolverModuleId;
 use mizar_resolve::symbols::{
-    SignatureProjectionExtractor, SymbolCollector, SymbolDiagnostic, SymbolDiagnosticClass,
+    SignatureProjectionExtractor, SymbolDiagnostic, SymbolDiagnosticClass,
 };
 use mizar_session::{
     BuildSnapshotId, DiskSourceLoader, Edition, InMemorySessionIdAllocator, ModulePath, PackageId,
@@ -128,8 +128,7 @@ pub(super) fn resolver_symbol_collection(
     let module = resolver_module_id(workspace_root, &case.source_path);
     let namespace = NamespacePath::new(module.path().as_str());
     let shells = DeclarationShellCollector::new(ast, &module).collect();
-    let projections = SignatureProjectionExtractor::new(ast, &shells, namespace).extract();
-    let result = SymbolCollector::new(ast.source_id, &module, &shells, &projections).collect();
+    let result = SignatureProjectionExtractor::new(ast, &shells, namespace).collect(&module);
 
     let detail_keys = result
         .diagnostics()
@@ -235,6 +234,9 @@ fn resolver_module_id(workspace_root: &Path, source_path: &Path) -> ResolverModu
 
 fn symbol_diagnostic_detail_key(diagnostic: &SymbolDiagnostic) -> String {
     match diagnostic.class() {
+        SymbolDiagnosticClass::SynonymLociMismatch => {
+            "declaration_symbol.notation.synonym_loci_mismatch".to_owned()
+        }
         SymbolDiagnosticClass::SameSignatureReturnConflict => {
             "declaration_symbol.signature.same_signature_return_conflict".to_owned()
         }

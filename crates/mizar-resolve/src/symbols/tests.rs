@@ -704,6 +704,68 @@ fn overloadable_candidates_form_groups_and_illegal_groups_get_diagnostics() {
 }
 
 #[test]
+fn source_synonym_diagnostic_uses_original_identity_and_normal_contribution() {
+    let source = source_id();
+    let module = module_id();
+    let shells = shells_for(
+        source,
+        vec![
+            test_item(0, SurfaceNodeKind::FunctorDefinition),
+            test_item(10, SurfaceNodeKind::NotationAlias),
+        ],
+    );
+    let original = &shells.declarations()[0];
+    let alias = &shells.declarations()[1];
+    let namespace = NamespacePath::new(module.path().as_str());
+    let projections = vec![
+        projection(
+            original.id(),
+            namespace.clone(),
+            "base",
+            SymbolKind::Functor,
+            DefinitionKind::Functor,
+        ),
+        projection(
+            alias.id(),
+            namespace,
+            "alternate",
+            SymbolKind::Synonym,
+            DefinitionKind::Synonym,
+        ),
+    ];
+    let collector = SymbolCollector::new(source, &module, &shells, &projections);
+    let opaque = collector.clone().collect();
+    assert!(opaque.diagnostics().is_empty());
+    let pairs = [(alias.id(), original.id())];
+    let result = collector.clone().collect_targeted(None, &pairs).0;
+    assert_eq!(result, collector.collect_targeted(None, &pairs).0);
+    let [diagnostic] = result.diagnostics() else {
+        panic!("one source mismatch");
+    };
+    assert_eq!(
+        diagnostic.class(),
+        SymbolDiagnosticClass::SynonymLociMismatch
+    );
+    assert_eq!(diagnostic.shell(), Some(alias.id()));
+    assert_eq!(diagnostic.range(), alias.range());
+    let original = result
+        .env()
+        .definitions()
+        .iter()
+        .find(|entry| entry.kind() == DefinitionKind::Functor)
+        .unwrap();
+    assert_eq!(diagnostic.candidates(), &[original.symbol().clone()]);
+    assert!(original.conflict().is_none());
+    let contribution = result
+        .env()
+        .contributions()
+        .get(original.contribution())
+        .unwrap();
+    assert_eq!(contribution.effects().diagnostics(), &[diagnostic.id()]);
+    assert_eq!(definition_conflicts(&result), definition_conflicts(&opaque));
+}
+
+#[test]
 fn predicate_signatures_canonicalize_actual_loci_and_keep_conflict_metadata() {
     for parameters in [
         vec![("A", "set"), ("B", "object")],

@@ -2285,6 +2285,7 @@ pub fn active_proof_verification_cases(plan: &TestPlan) -> impl Iterator<Item = 
 fn is_active_parse_only(case: &TestCase) -> bool {
     if proof_verification::is_step5c14_return_candidate(case)
         || type_elaboration::is_step5c5_predicate_duplicate_candidate(case)
+        || type_elaboration::is_step5c6_alias_candidate(case)
         || is_step5c14_static_candidate(case)
         || is_step5c13_overload_candidate(case)
         || is_step5c12_candidate(case)
@@ -2333,6 +2334,7 @@ fn is_active_parse_only(case: &TestCase) -> bool {
 fn is_active_declaration_symbol(case: &TestCase) -> bool {
     if proof_verification::is_step5c14_return_candidate(case)
         || type_elaboration::is_step5c5_predicate_duplicate_candidate(case)
+        || type_elaboration::is_step5c6_alias_candidate(case)
         || is_step5c14_static_candidate(case)
         || is_step5c13_overload_candidate(case)
         || is_step5c12_candidate(case)
@@ -2627,6 +2629,11 @@ fn type_elaboration_detail_keys(
     output: FrontendRun,
     snapshot_text: &mut Option<String>,
 ) -> Vec<String> {
+    if type_elaboration::is_step5c6_alias_candidate(case)
+        && !type_elaboration::step5c6_synonym_admitted(Some(workspace_root), case)
+    {
+        return vec!["type_elaboration.step5c6.invalid_admission".to_owned()];
+    }
     if type_elaboration::is_step5c5_predicate_duplicate_candidate(case)
         && (!is_active_type_elaboration(case) || !is_step5c5_workspace_member(workspace_root, case))
     {
@@ -2676,6 +2683,16 @@ fn type_elaboration_detail_keys(
         return vec!["type_elaboration.lower_stage.declaration_symbol.no_ast".to_owned()];
     };
     let resolver = resolver_symbol_collection(workspace_root, case, &ast);
+    if type_elaboration::is_step5c6_alias_candidate(case) {
+        return declaration_symbol::step5c6_synonym_detail_keys(
+            &ast,
+            &resolver.module,
+            &resolver.shells,
+            &resolver.env,
+            &resolver.detail_keys,
+        )
+        .unwrap_or_else(|| vec!["type_elaboration.step5c6.unsupported_source".to_owned()]);
+    }
     if is_step5c12_candidate(case) {
         if !step5c12_admitted(Some(workspace_root), case) || !resolver.detail_keys.is_empty() {
             return vec!["templates.invalid_admission_or_resolver".into()];

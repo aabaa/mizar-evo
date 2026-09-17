@@ -73,14 +73,12 @@ pub fn validate_source_symbol_env(
         .validate_against(&ast, source.module())
         .map_err(|_| invalid())?;
     let shells = DeclarationShellCollector::new(&ast, source.module()).collect();
-    let projections = SignatureProjectionExtractor::new(
+    let collected = SignatureProjectionExtractor::new(
         &ast,
         &shells,
         NamespacePath::new(source.module().path().as_str()),
     )
-    .extract();
-    let collected =
-        SymbolCollector::new(source.source_id(), source.module(), &shells, &projections).collect();
+    .collect(source.module());
     if !collected.diagnostics().is_empty() || collected.env() != symbols {
         return Err(invalid());
     }
@@ -325,6 +323,8 @@ pub enum SymbolDiagnosticClass {
     /// Ordinary declarations with identical argument signatures and the same
     /// or absent return signature.
     SameSignatureDefinitionConflict,
+    /// A source-authenticated synonym has a different number of bound loci.
+    SynonymLociMismatch,
 }
 
 /// Crate-local/internal symbol collection diagnostic.
@@ -712,7 +712,7 @@ impl SourceNestedFraenkelFunctorOwnerProducer {
 
         let (symbols, allocations) =
             SymbolCollector::new(ast.source_id, module, &shells, &projections)
-                .collect_targeted(Some(shell.id()));
+                .collect_targeted(Some(shell.id()), &[]);
         if !symbols.diagnostics().is_empty() || allocations.len() != 1 {
             return Err(SourceNestedFraenkelFunctorOwnerError::InvalidSymbolAssociation);
         }
@@ -950,6 +950,89 @@ impl<'a> SignatureProjectionExtractor<'a> {
         }
     }
 
+    /// Collects source symbols and bounded local synonym-loci mismatches.
+    #[must_use]
+    pub fn collect(&self, module: &ModuleId) -> SymbolCollectionResult {
+        let projections = self.extract();
+        let collector = SymbolCollector::new(self.ast.source_id, module, self.shells, &projections);
+        if self.namespace != NamespacePath::new(module.path().as_str())
+            || *self.shells != DeclarationShellCollector::new(self.ast, module).collect()
+            || SurfaceResolvedArena::lower(self.ast, module).is_err()
+            || self.ast.node_views().any(|node| {
+                node.is_recovered()
+                    || matches!(node.kind(), SurfaceNodeKind::ErrorRecovery(_))
+                    || node.range().source_id != self.ast.source_id
+                    || node.range().start > node.range().end
+                    || node.children().iter().collect::<BTreeSet<_>>().len()
+                        != node.children().len()
+                    || node
+                        .child_views()
+                        .any(|child| !source_range_contains(node.range(), child.range()))
+            })
+        {
+            return collector.collect();
+        }
+        let originals = self
+            .shells
+            .declarations()
+            .iter()
+            .filter_map(|shell| {
+                if shell.kind() != DeclarationShellKind::FunctorDefinition {
+                    return None;
+                }
+                let view = self.ast.node_view(shell.node_id())?;
+                let pattern = first_child_matching(view, is_functor_pattern)?;
+                let key = self.bound_pattern_key(shell, view, pattern, true)?;
+                Some((shell, key))
+            })
+            .collect::<Vec<_>>();
+        let mut mismatches = Vec::new();
+        for shell in self
+            .shells
+            .declarations()
+            .iter()
+            .filter(|shell| shell.kind() == DeclarationShellKind::NotationAlias)
+        {
+            let Some(view) = self.ast.node_view(shell.node_id()) else {
+                continue;
+            };
+            let children = view.child_views().collect::<Vec<_>>();
+            let [synonym, alternate, separator, original, terminator] = children.as_slice() else {
+                continue;
+            };
+            if !matches!(synonym.as_token(), Some(token) if token.kind == SurfaceTokenKind::ReservedWord && token.text.as_ref() == "synonym")
+                || !matches!(separator.as_token(), Some(token) if token.kind == SurfaceTokenKind::ReservedWord && token.text.as_ref() == "for")
+                || !matches!(terminator.as_token(), Some(token) if token.kind == SurfaceTokenKind::ReservedSymbol && token.text.as_ref() == ";")
+                || alternate.kind() != &SurfaceNodeKind::NotationPattern
+                || original.kind() != &SurfaceNodeKind::NotationPattern
+            {
+                continue;
+            }
+            let Some(alternate) = self.bound_pattern_key(shell, view, *alternate, true) else {
+                continue;
+            };
+            let Some(original) = self.bound_pattern_key(shell, view, *original, true) else {
+                continue;
+            };
+            let candidates = originals
+                .iter()
+                .filter(|(target, key)| {
+                    target.range().end <= shell.range().start
+                        && self
+                            .definition_context_block(target)
+                            .is_some_and(|block| block.range().end <= shell.range().start)
+                        && *key == original
+                })
+                .collect::<Vec<_>>();
+            if let [(target, _)] = candidates.as_slice()
+                && alternate.arity != original.arity
+            {
+                mismatches.push((shell.id(), target.id()));
+            }
+        }
+        collector.collect_targeted(None, &mismatches).0
+    }
+
     /// Extracts concrete parser-backed projections for represented shell kinds.
     #[must_use]
     pub fn extract(&self) -> Vec<SymbolDeclarationProjection> {
@@ -1144,6 +1227,16 @@ impl<'a> SignatureProjectionExtractor<'a> {
             });
         }
         let pattern = first_child_matching(view, is_predicate_pattern)?;
+        self.bound_pattern_key(shell, view, pattern, false)
+    }
+
+    fn bound_pattern_key(
+        &self,
+        shell: &DeclarationShell,
+        view: SurfaceNodeView<'_>,
+        pattern: SurfaceNodeView<'_>,
+        parenthesized: bool,
+    ) -> Option<FunctorSignatureKey> {
         let block = self
             .ast
             .node_view(self.definition_context_block(shell)?.node_id())?;
@@ -1213,6 +1306,7 @@ impl<'a> SignatureProjectionExtractor<'a> {
                     return None;
                 }
                 for (index, name) in names.iter().enumerate() {
+                    let binder = name.id();
                     let name = name.as_token()?;
                     if index % 2 == 1 {
                         if name.kind != SurfaceTokenKind::ReservedSymbol
@@ -1222,7 +1316,7 @@ impl<'a> SignatureProjectionExtractor<'a> {
                         }
                     } else if name.kind != SurfaceTokenKind::Identifier
                         || parameters
-                            .insert(name.text.as_ref(), token.text.as_ref())
+                            .insert(name.text.as_ref(), (binder, token.text.as_ref()))
                             .is_some()
                     {
                         return None;
@@ -1238,13 +1332,19 @@ impl<'a> SignatureProjectionExtractor<'a> {
             let token = child.as_token()?;
             let text = token.text.as_ref();
             if token.kind == SurfaceTokenKind::Identifier && parameters.contains_key(text) {
-                if !loci.insert(text) {
+                let (binder, ty) = parameters[text];
+                if !loci.insert(binder) {
                     return None;
                 }
                 skeleton.push(("locus", types.len().to_string()));
-                types.push(parameters[text]);
+                types.push(ty);
             } else if token.kind == SurfaceTokenKind::ReservedSymbol && text == "," {
                 skeleton.push(("comma", String::new()));
+            } else if parenthesized
+                && token.kind == SurfaceTokenKind::ReservedSymbol
+                && matches!(text, "(" | ")")
+            {
+                skeleton.push((if text == "(" { "open" } else { "close" }, String::new()));
             } else if matches!(
                 token.kind,
                 SurfaceTokenKind::Identifier
@@ -1262,6 +1362,15 @@ impl<'a> SignatureProjectionExtractor<'a> {
         if [&skeleton[..head], &skeleton[head + 1..]]
             .iter()
             .any(|side| {
+                let mut side = *side;
+                if side.first().is_some_and(|(kind, _)| *kind == "open")
+                    && side.last().is_some_and(|(kind, _)| *kind == "close")
+                {
+                    side = &side[1..side.len() - 1];
+                    if side.is_empty() {
+                        return true;
+                    }
+                }
                 !side.is_empty()
                     && (side.len() % 2 == 0
                         || side.iter().enumerate().any(|(index, (kind, _))| {
@@ -1271,6 +1380,7 @@ impl<'a> SignatureProjectionExtractor<'a> {
         {
             return None;
         }
+        skeleton.retain(|(kind, _)| !matches!(*kind, "open" | "close"));
         Some(FunctorSignatureKey {
             argument_context: format!("{types:?}"),
             pattern: format!("{skeleton:?}"),
@@ -1523,7 +1633,7 @@ impl<'a> SymbolCollector<'a> {
     /// Collects opaque symbol entries and duplicate/overload metadata.
     #[must_use]
     pub fn collect(self) -> SymbolCollectionResult {
-        self.collect_targeted(None).0
+        self.collect_targeted(None, &[]).0
     }
 
     /// Collects symbols while optionally retaining the allocation row for one
@@ -1532,6 +1642,7 @@ impl<'a> SymbolCollector<'a> {
     fn collect_targeted(
         self,
         target: Option<DeclarationShellId>,
+        synonym_mismatches: &[(DeclarationShellId, DeclarationShellId)],
     ) -> (SymbolCollectionResult, Vec<OwnerAllocation>) {
         let mut indexes = SymbolEnvIndexes::default();
         let contribution = indexes.contributions.insert(
@@ -1568,6 +1679,40 @@ impl<'a> SymbolCollector<'a> {
         }
 
         let conflicts = classify_conflicts(&collected, &mut diagnostic_drafts);
+        for (alias_shell, original_shell) in synonym_mismatches {
+            let Some(alias) = collected
+                .iter()
+                .find(|item| item.shell.id() == *alias_shell)
+            else {
+                continue;
+            };
+            let Some(original) = collected
+                .iter()
+                .find(|item| item.shell.id() == *original_shell)
+            else {
+                continue;
+            };
+            if alias.recovered
+                || original.recovered
+                || conflicts.contains_key(&alias.symbol)
+                || conflicts.contains_key(&original.symbol)
+                || alias.projection.symbol_kind() != SymbolKind::Synonym
+                || alias.projection.definition_kind() != Some(DefinitionKind::Synonym)
+                || original.projection.symbol_kind() != SymbolKind::Functor
+                || original.projection.definition_kind() != Some(DefinitionKind::Functor)
+                || alias.projection.namespace() != original.projection.namespace()
+            {
+                continue;
+            }
+            diagnostic_drafts.push(DiagnosticDraft {
+                class: SymbolDiagnosticClass::SynonymLociMismatch,
+                shell: Some(alias.shell.id()),
+                spelling: alias.projection.primary_spelling().to_owned(),
+                range: alias.shell.range(),
+                candidates: vec![original.symbol.clone()],
+                overload_key: None,
+            });
+        }
         let (diagnostics, diagnostic_by_group) = finalize_diagnostics(diagnostic_drafts);
         for diagnostic in &diagnostics {
             indexes
