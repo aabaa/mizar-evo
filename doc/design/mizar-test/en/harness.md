@@ -34,10 +34,14 @@ case names; proof success requires discharged membership goals. The G5 narrowing
 
 ## Step 5C.4 mode semantic runner
 
-The private route admits only the five non-G6 type-elaboration rows, one parse-only row, and one
-proof-verification row listed by the activation map. Admission binds id, path, stage, phase,
-outcome, and the sole stage tag before extraction; the G6 dependent-mode row remains inactive.
-Semantic mismatches fail closed instead of falling through to a generic runner.
+The private route preserves the original seven rows and adds only the dependent-mode positive
+at `type_elaboration` / `type_check`. Authenticate source/sidecar identities and all stage/outcome,
+domain/spec-ref/tag metadata and auxiliary-payload absence; reserved identities cannot fall through other stages.
+The new branch supplies actual source/neutral typed projections and resolver environment to the
+[mode checker](../../mizar-checker/en/source_mode_definition.md#step-5c4-mode-semantics), requiring both mode-use
+argument bindings and fully checked declarations/terms. Neither matching set types, a reflexive equality,
+empty diagnostics nor another valid occurrence substitutes for a missing or wrong actual binding.
+Semantic mismatches fail closed; Task262 transport and prior mode/property outcomes remain unchanged.
 
 ## Step 5C.3 attribute semantic runner
 

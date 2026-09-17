@@ -10,4 +10,5 @@ diagnostic_codes = []
 spec_refs = [
   "spec.en.07.modes.dependent.of_parameters",
 ]
-notes = "Audit-1 semantic-bridge inactive oracle seed (September 2026 audit wave): binding expectation for the Step-5 semantic bridge; no active runner tag, earns no current credit. A dependent mode declared over a let-bound parameter is used with the of argument form (spec 7.7; sample function.miz)."
+notes = "Active type checking of both source-bound mode arguments and the locally inhabited builtin-set RHS; no proof or sethood acceptance."
+tags = ["active_type_elaboration"]

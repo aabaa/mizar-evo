@@ -584,7 +584,7 @@ activation-map ledger; every 5C task also requires 5B.2.
    (struct-qualified case).
 4. [x] **[5C.4 — Modes and property implementations](./task_contracts/en/STEP5C4-MODE-SEMANTICS.md)** (`mizar-checker`;
    spec ch. 7). Requirements: `spec.en.07.modes.*` (7 ids). Targets: 8
-   pairs (1 blocked by G6). Covers attributed struct radixes, dependent
+   pairs, including the plain-RHS dependent positive. Covers attributed struct radixes, dependent
    modes (`of` parameters, arity mismatch), property implementations
    (`means`/`equals`, unknown property, grammatically mandatory
    correctness), and the unprovable-sethood boundary. Deps: 5A.6, and

@@ -27,9 +27,12 @@ Step 5C.7 は activation map の non-G5 type/proof 行だけを sidecar の厳�
 
 ## Step 5C.4 mode semantic runner
 
-private route は activation map の non-G6 type-elaboration 5 行、parse-only 1 行、
-proof-verification 1 行だけを admit する。id/path/stage/phase/outcome/sole tag を固定し、
-G6 dependent-mode 行は inactive のまま、semantic mismatch は fail closed にする。
+private route は従来7行を維持し、dependent-mode positive だけを `type_elaboration` / `type_check` に追加する。
+source/sidecar 同一性、全 stage/outcome・domain/spec-ref/tag metadata と補助 payload 不在を照合し、
+予約した同一性を他 stage に流さない。実際の source/neutral typed projection と resolver environment を
+[mode checker](../../mizar-checker/ja/source_mode_definition.md#step-5c4-mode-semantics) に渡し、両 use の argument binding と
+完全に検査された declaration/term を要求する。同じ set 型・反射等式・空の診断・他の正常 use は、
+欠落または誤った actual binding を補わない。不一致は拒否し、Task262 transport と既存 mode/property 結果を維持する。
 
 ## Step 5C.3 attribute semantic runner
 

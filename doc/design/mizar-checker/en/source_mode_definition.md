@@ -10,6 +10,23 @@ mode radix. A mode application with a different argument count is rejected. Attr
 radixes are normalized through the existing type and attribute inputs. Sethood is a separate proof
 obligation; an unproved obligation publishes no sethood fact.
 
+`type_checker::check_source_dependent_mode_types` directly checks one local mode with one
+bare-set formal and a plain-set RHS, including both quantified and proof-local `of` uses.
+It takes authenticated `SurfaceResolvedArena`, `TypedArena` and `SymbolEnv` references and returns
+`Result<(BindingEnv, DeclarationCheckingOutput, TermFormulaInferenceOutput), String>`.
+Source/environment and complete typed-node correspondence precede extraction. Existing binding
+contexts preserve definition parameters, reserved defaults, quantifiers and proof-local lets as
+distinct source identities. Each actual argument resolves in its own lexical context and is checked
+against the formal's known set guard; inference diagnostics alone do not establish compatibility.
+After each real argument binding and guard is checked, substitution leaves the authenticated formal-free
+RHS unchanged. Argument term sites/references remain inspectable even when resulting set types coincide.
+Known unattributed builtin-set inhabitation discharges the declaration's local §7.8 requirement
+under its parameter guard; no synthetic accepted-mode or registration fact is published.
+Existing declaration/term/formula tables check the two applications and their variable uses;
+missing inputs, deferred results or unsupported types fail closed, without theorem/proof credit.
+`TypeExpressionInput.args`, zero-argument `ModeExpansion` normalization and the sealed Task262
+transport remain unchanged. Attributed/dependent RHSs, imports, dependent functors and sethood stay deferred.
+
 ## Task 262 Scope And Authority
 
 Checker Task 262 owns one syntax-free, immutable source-to-checker intake for

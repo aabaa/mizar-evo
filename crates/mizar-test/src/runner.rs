@@ -2285,6 +2285,7 @@ pub fn active_proof_verification_cases(plan: &TestPlan) -> impl Iterator<Item = 
 fn is_active_parse_only(case: &TestCase) -> bool {
     if proof_verification::is_step5c14_return_candidate(case)
         || type_elaboration::is_step5c5_predicate_duplicate_candidate(case)
+        || type_elaboration::is_step5c4_dependent_candidate(case)
         || type_elaboration::is_step5c6_alias_candidate(case)
         || is_step5c14_static_candidate(case)
         || is_step5c13_overload_candidate(case)
@@ -2334,6 +2335,7 @@ fn is_active_parse_only(case: &TestCase) -> bool {
 fn is_active_declaration_symbol(case: &TestCase) -> bool {
     if proof_verification::is_step5c14_return_candidate(case)
         || type_elaboration::is_step5c5_predicate_duplicate_candidate(case)
+        || type_elaboration::is_step5c4_dependent_candidate(case)
         || type_elaboration::is_step5c6_alias_candidate(case)
         || is_step5c14_static_candidate(case)
         || is_step5c13_overload_candidate(case)
@@ -2629,6 +2631,20 @@ fn type_elaboration_detail_keys(
     output: FrontendRun,
     snapshot_text: &mut Option<String>,
 ) -> Vec<String> {
+    if type_elaboration::is_step5c4_dependent_candidate(case) {
+        if !type_elaboration::step5c4_dependent_admitted(Some(workspace_root), case) {
+            return vec!["modes.dependent.invalid_admission".to_owned()];
+        }
+        return source_registration_inputs(workspace_root, case, output)
+            .and_then(|(source, typed, symbols)| {
+                mizar_checker::type_checker::check_source_dependent_mode_types(
+                    &source, &typed, &symbols,
+                )
+            })
+            .err()
+            .into_iter()
+            .collect();
+    }
     if type_elaboration::is_step5c6_alias_candidate(case)
         && !type_elaboration::step5c6_synonym_admitted(Some(workspace_root), case)
     {

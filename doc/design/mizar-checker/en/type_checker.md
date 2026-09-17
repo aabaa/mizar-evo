@@ -1,5 +1,7 @@
 # mizar-checker: Type Checker
 
+`check_source_dependent_mode_types` implements the [bounded dependent-mode owner](./source_mode_definition.md#step-5c4-mode-semantics) using existing binding, declaration and inference tables.
+
 `SourceVariableSemanticsChecker::check_theorem_skeletons` consumes the existing typed
 arena, occurrence scope, symbols and sealed label inputs, returning an opaque borrowed
 `SourceTheoremCheck`. It authenticates theorem/lemma role and status,

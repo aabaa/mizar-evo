@@ -9,6 +9,18 @@ semantic route は resolver identity と宣言 parameter 順を保持して mode
 する。argument 数が異なる mode application は reject する。attributed structure radix は
 既存 type/attribute input を使い、未証明 sethood obligation は fact を公開しない。
 
+`type_checker::check_source_dependent_mode_types` は bare-set formal 1個・plain-set RHS の局所 mode と、
+量化子内および proof-local の `of` use を直接検査する。認証済み `SurfaceResolvedArena`、`TypedArena`、
+`SymbolEnv` 参照を受け、`Result<(BindingEnv, DeclarationCheckingOutput, TermFormulaInferenceOutput), String>` を返す。
+source/environment と全 typed node を照合し、定義 parameter・reserve default・量化子・proof-local let の
+source identity を分離する。実引数は各 lexical context で解決し、formal の Known set guard と照合する。
+推論診断が空でも型互換性の根拠にはしない。各実引数の束縛と guard を検査した後、formal を含まない
+認証済み RHS は代入で変化しない。結果が同じ set 型でも argument term site/reference を観測可能に保つ。
+Known unattributed builtin-set の存在性で parameter guard 下の局所 §7.8 義務を満たし、accepted-mode や
+registration fact を創作しない。既存 declaration/term/formula table で両 use を検査し、入力欠落・deferred・
+未対応型は拒否する。定理・証明の受理は与えず、`TypeExpressionInput.args`、引数なし `ModeExpansion`、
+Task262 transport は変更しない。属性付き・依存 RHS、import、dependent functor、sethood は保留する。
+
 ## Task 262 の scope と authority
 
 Checker Task 262 は、ordinary parameterized `mode` definition、その

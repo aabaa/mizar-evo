@@ -1,5 +1,7 @@
 # mizar-checker: Type Checker
 
+`check_source_dependent_mode_types` は既存 binding・declaration・inference table を使い、[限定 dependent-mode owner](./source_mode_definition.md#step-5c4-mode-semantics) の検査を実装する。
+
 `SourceVariableSemanticsChecker::check_theorem_skeletons` は既存の typed arena、
 occurrence scope、symbol、label 入力を検証し、不透明な借用 `SourceTheoremCheck` を返す。
 theorem/lemma と status、組込み全称・等式、順序付き汎化、残存 thesis、引用 provenance を検査する。
