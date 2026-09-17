@@ -1010,11 +1010,8 @@ end;
 ```
 
 - **The Mizar Virtual Machine, or MVM, evaluates ground equalities and predicates.
-  It uses computable algorithms defined in the current package.
   Non-ground formulas need classical proofs.**
 - Step, time, and depth limits are optional. Each defaults to zero, meaning unlimited.
-- **Other packages' algorithm bodies cannot run here. Their `ensures` contracts
-  can be used when termination is known.**
 
 ### Frame 8.4 - The Evo Answer: Termination Allows Recursion [deep dive]
 

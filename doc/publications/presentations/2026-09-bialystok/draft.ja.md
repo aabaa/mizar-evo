@@ -942,11 +942,8 @@ end;
 ```
 
 - **Mizar Virtual Machine、略して MVM は、ground な等式と述語を評価します。
-  現在のパッケージで定義した computable な algorithm を使います。
   non-ground な論理式には古典的な証明が必要です。**
 - ステップ数、時間、深さの上限は省略可能です。それぞれ既定値は0で、無制限を意味します。
-- **ほかのパッケージの algorithm 本体は、ここでは実行できません。
-  停止性が分かっていれば、その `ensures` 契約を利用できます。**
 
 ### Frame 8.4 - Evo の答え: 停止性が再帰を買う [deep dive]
 
