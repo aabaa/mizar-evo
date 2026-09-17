@@ -7,6 +7,8 @@
 > Every heading, every registered ledger redirect line, and every section
 > with open work remains below.
 
+- [~] [Step 5C.11: cluster registrations](../../task_contracts/en/STEP5C11-CLUSTER-REGISTRATIONS.md); parser admission first, semantic registration work remains pending.
+
 ## Parser Task 46 / Operator-Declaration Parse-Only Completion
 
 - [x] Admit the exact active pass/fail pair and pin its sidecars.

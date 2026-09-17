@@ -1972,6 +1972,9 @@ pub fn active_proof_verification_cases(plan: &TestPlan) -> impl Iterator<Item = 
 }
 
 fn is_active_parse_only(case: &TestCase) -> bool {
+    if parse_only::is_step5c11_parse_candidate(case) {
+        return parse_only::step5c11_parse_admitted(None, case);
+    }
     if formula_statement::is_step5c9_candidate(case)
         || formula_statement::is_step5c10_candidate(case)
     {
@@ -2007,6 +2010,9 @@ fn is_active_parse_only(case: &TestCase) -> bool {
 }
 
 fn is_active_declaration_symbol(case: &TestCase) -> bool {
+    if parse_only::is_step5c11_parse_candidate(case) {
+        return false;
+    }
     if is_module_semantics_candidate(case) {
         return exact_module_semantics_admission(case, None);
     }
@@ -2106,10 +2112,13 @@ fn validate_active_parse_only_tags(
         .iter()
         .filter(|case| {
             (has_active_parse_only_tag(case)
+                || parse_only::is_step5c11_parse_candidate(case)
                 || is_step5c3_parse_only_case(case)
                 || case.id.0 == "fail_parse_only_mode_property_impl_missing_correctness_001"
                 || case.id.0 == "fail_type_elaboration_attr_param_prefix_unbound_001")
                 && (!is_active_parse_only(case)
+                    || parse_only::is_step5c11_parse_candidate(case)
+                        && !parse_only::step5c11_parse_admitted(Some(workspace_root), case)
                     || case.id.0 == "fail_type_elaboration_attr_param_prefix_unbound_001"
                         && !is_step5c3_parse_only_workspace_member(workspace_root, case)
                     || is_step5c4_parse_only_case(case)

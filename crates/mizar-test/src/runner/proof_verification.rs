@@ -249,6 +249,9 @@ pub(super) fn theorem_ast_output(
 }
 
 pub(super) fn is_active_proof_verification(case: &TestCase) -> bool {
+    if super::parse_only::is_step5c11_parse_candidate(case) {
+        return false;
+    }
     if super::formula_statement::is_step5c9_candidate(case)
         || super::formula_statement::is_step5c10_candidate(case)
     {

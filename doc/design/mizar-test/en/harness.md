@@ -1,5 +1,10 @@
 # Module: harness
 
+The Step 5C.11 parse route admits only the mapped restricted-adjective rejection.
+It authenticates the parser diagnostics and their locations in a registration header;
+missing diagnostics, repaired syntax, unrelated errors and malformed metadata fail closed.
+Registration correctness, accepted status, closure and reduction remain outside this route.
+
 Step 5C.10 admits only its six mapped rows at their individual frozen phases.
 The harness assembles existing resolver/checker inputs, runs real Core/VC lowering
 for lemma citation, and observes open/assumed policy registration without proof

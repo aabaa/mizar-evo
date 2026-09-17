@@ -1124,7 +1124,7 @@ fn task262_mode_definition_justification_and_semantic_subtrees_are_not_published
             active_type_elaboration_cases(&plan).count(),
             crate::active_proof_verification_cases(&plan).count(),
         ),
-        (112, 11, 247, 9)
+        (113, 11, 247, 9)
     );
     let type_stage = plan
         .coverage_report
