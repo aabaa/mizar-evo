@@ -5706,3 +5706,7 @@ advanced-semantics runner は異なる引数型の overload 正常系の厳密�
 ## Static algorithm admission
 
 algorithm の break-outside-loop と ghost-isolation の厳密な行は type_elaboration/elaboration でソース検査、封印 Core lowering、CFG 診断を実行する。ID、ソース・sidecar パス、fail 結果・分類・キー、唯一の active tag、空の診断・payload・snapshot 欄を認証し、別 stage や別名での実績を許さない。実際の `IllegalBreak`／`GhostIsolationViolation` だけを対応する固定キーへ写し、不正 break 後の到達不能文は付随診断とする。未対応ソース、handoff 不正、その他の診断は基盤エラーに留め、obligation・VC を生成しない。
+
+## Algorithm return-contract admission
+
+厳密な ensures-return algorithm 行だけを proof_verification/vc_generation で受理し、既存 outcome/domain、唯一の active tag、既存 ensures ref と `spec.en.mizar_vc.vc_ir.algorithm_ensures_return_snapshot`、厳密な `snapshots/vc/pass_proof_verification_algorithm_ensures_return_001.vc_ir.snap` を要求する。ID、ソース・sidecar パス、矛盾する payload を封印 checker/Core/VC 経路の前に検査する。生成 VcSet 全体を決定的に baseline と比較する。メモリ上で ensures を除いたソース対照は追加 active 行なしで `snapshots/vc/step5c14_algorithm_no_ensures.vc_ir.snap` を所有する。別 stage と未対応入力には実績を与えず、静的 algorithm 観測は別のゼロ VC 経路を維持する。

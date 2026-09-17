@@ -100,7 +100,7 @@ literal top-level public item:
 
 - `CoreGenerationInput`, `VcNormalizationInput`,
   `CoreGenerationCandidateSet`, `CoreGenerationCandidate`,
-  `CoreGenerationNoCandidate`, `GeneratorError`
+  `CoreGenerationNoCandidate`, `GeneratorError`, `generate_source_algorithm_postconditions`
 
 Correspondence:
 

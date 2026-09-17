@@ -2283,7 +2283,8 @@ pub fn active_proof_verification_cases(plan: &TestPlan) -> impl Iterator<Item = 
 }
 
 fn is_active_parse_only(case: &TestCase) -> bool {
-    if is_step5c14_static_candidate(case)
+    if proof_verification::is_step5c14_return_candidate(case)
+        || is_step5c14_static_candidate(case)
         || is_step5c13_overload_candidate(case)
         || is_step5c12_candidate(case)
         || is_step5c11_registration_candidate(case)
@@ -2329,7 +2330,8 @@ fn is_active_parse_only(case: &TestCase) -> bool {
 }
 
 fn is_active_declaration_symbol(case: &TestCase) -> bool {
-    if is_step5c14_static_candidate(case)
+    if proof_verification::is_step5c14_return_candidate(case)
+        || is_step5c14_static_candidate(case)
         || is_step5c13_overload_candidate(case)
         || is_step5c12_candidate(case)
         || is_step5c11_registration_candidate(case)

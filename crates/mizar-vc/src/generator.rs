@@ -40,6 +40,385 @@ mod task180;
 
 pub use task180::{ExactTask180VcError, ExactTask180VcInput, generate_exact_task180_vc};
 
+/// Generates open postconditions for the authenticated immutable single-return slice.
+pub fn generate_source_algorithm_postconditions(
+    core: &mizar_core::core_ir::CoreIr,
+    snapshot: BuildSnapshotId,
+    generation_schema: &GenerationSchemaVersion,
+    vc_schema: &VcSchemaVersion,
+) -> Result<VcSet, String> {
+    use crate::vc_ir::{
+        VcGeneratedFormula, VcGeneratedFormulaId, VcGeneratedFormulaKind, VcGeneratedFormulaShape,
+    };
+    use mizar_core::{
+        control_flow::{
+            ControlFlowTerminator, LocalKind, LocalMutability, Reachability, build_control_flow_ir,
+            build_obligation_seed_handoff,
+        },
+        core_ir::{
+            CoreAlgorithmStmtKind, CoreFormulaKind, CoreItemKind, CoreItemStatus,
+            CoreProvenancePhase, CoreTermKind,
+        },
+    };
+    let invalid = || "algorithms.postcondition.unsupported_core".to_owned();
+    let range = |source: &CoreSourceRef| match source.anchor {
+        CoreSourceAnchor::SourceRange(range)
+            if range.source_id == core.source_id() && range.start < range.end =>
+        {
+            Ok(range)
+        }
+        _ => Err(invalid()),
+    };
+    let checked_source = |source: &CoreSourceRef| -> Result<(), String> {
+        range(source)?;
+        let [provenance] = source.provenance.as_slice() else {
+            return Err(invalid());
+        };
+        if provenance.phase != CoreProvenancePhase::Checker
+            || !provenance
+                .key
+                .as_str()
+                .strip_prefix("algorithm/source-node#")
+                .is_some_and(|id| id.parse::<usize>().is_ok())
+        {
+            return Err(invalid());
+        }
+        Ok(())
+    };
+    if core.items().len() != 1
+        || core.algorithms().len() != 1
+        || core.algorithm_statements().len() != 1
+        || !core.definitions().is_empty()
+        || !core.proofs().is_empty()
+        || !core.proof_nodes().is_empty()
+        || !core.generated().is_empty()
+        || !core.obligation_seeds().is_empty()
+        || !core.diagnostics().is_empty()
+    {
+        return Err(invalid());
+    }
+    let (algorithm_id, algorithm) = core.algorithms().iter().next().ok_or_else(invalid)?;
+    let item = core.items().get(algorithm.item).ok_or_else(invalid)?;
+    let [parameter] = algorithm.params.as_slice() else {
+        return Err(invalid());
+    };
+    let result = algorithm.result.as_ref().ok_or_else(invalid)?;
+    let [statement_id] = algorithm.statements.as_slice() else {
+        return Err(invalid());
+    };
+    let statement = core
+        .algorithm_statements()
+        .get(*statement_id)
+        .ok_or_else(invalid)?;
+    let CoreAlgorithmStmtKind::Return(Some(returned)) = statement.kind else {
+        return Err(invalid());
+    };
+    let contracts = &algorithm.contracts;
+    if item.kind != CoreItemKind::Algorithm
+        || item.status != CoreItemStatus::Valid
+        || item.visibility.as_str() != "public"
+        || item.symbol != algorithm.symbol
+        || item.symbol.module() != core.module_id()
+        || item.source.anchor != algorithm.source.anchor
+        || !item.source.provenance.is_empty()
+        || !item.dependencies.is_empty()
+        || !algorithm.ghost_effects.is_empty()
+        || parameter.var == result.var
+        || parameter.role.as_str() != "parameter"
+        || result.role.as_str() != "result"
+        || result.source_name.is_some()
+        || !parameter.source.provenance.is_empty()
+        || !contracts.requires.is_empty()
+        || !contracts.assertions.is_empty()
+        || !contracts.invariants.is_empty()
+        || !contracts.decreasing.is_empty()
+        || contracts.ensures.len() > 1
+        || core.formulas().len() != 2 + contracts.ensures.len()
+    {
+        return Err(invalid());
+    }
+    checked_source(&algorithm.source)?;
+    checked_source(&statement.source)?;
+    checked_source(&result.source)?;
+    let owner_range = range(&algorithm.source)?;
+    let parameter_range = range(&parameter.source)?;
+    let result_range = range(&result.source)?;
+    let return_range = range(&statement.source)?;
+    if parameter_range.end > owner_range.start
+        || owner_range.start >= result_range.start
+        || result_range.end >= return_range.start
+        || return_range.end > owner_range.end
+    {
+        return Err(invalid());
+    }
+    for (_, term) in core.terms().iter() {
+        checked_source(&term.source)?;
+    }
+    for (_, formula) in core.formulas().iter() {
+        checked_source(&formula.source)?;
+    }
+    let mut used_terms = BTreeSet::from([returned]);
+    let parameter_guard = parameter.ty_guard.ok_or_else(invalid)?;
+    for binder in [parameter, result] {
+        let guard = binder.ty_guard.ok_or_else(invalid)?;
+        let formula = core.formulas().get(guard).ok_or_else(invalid)?;
+        let CoreFormulaKind::TypePred { subject, ty } = &formula.kind else {
+            return Err(invalid());
+        };
+        let term = core.terms().get(*subject).ok_or_else(invalid)?;
+        if ty.as_str() != "object"
+            || term.kind != CoreTermKind::Var(binder.var)
+            || term.source != formula.source
+            || term.source.anchor != binder.source.anchor
+            || (binder.var == result.var && term.source != binder.source)
+            || !used_terms.insert(*subject)
+        {
+            return Err(invalid());
+        }
+    }
+    let return_term = core.terms().get(returned).ok_or_else(invalid)?;
+    let return_term_range = range(&return_term.source)?;
+    if return_term.kind != CoreTermKind::Var(parameter.var)
+        || return_term_range.start < return_range.start
+        || return_term_range.end > return_range.end
+    {
+        return Err(invalid());
+    }
+    let mut substituted = None;
+    if let [ensures] = contracts.ensures.as_slice() {
+        let formula = core.formulas().get(*ensures).ok_or_else(invalid)?;
+        let CoreFormulaKind::Equals { left, right } = formula.kind else {
+            return Err(invalid());
+        };
+        let ensures_range = range(&formula.source)?;
+        let mut operands = Vec::new();
+        let mut previous_end = ensures_range.start;
+        for term_id in [left, right] {
+            let term = core.terms().get(term_id).ok_or_else(invalid)?;
+            let term_range = range(&term.source)?;
+            if !used_terms.insert(term_id)
+                || term_range.start < previous_end
+                || term_range.end > ensures_range.end
+            {
+                return Err(invalid());
+            }
+            previous_end = term_range.end;
+            operands.push(match term.kind {
+                CoreTermKind::Var(var) if var == result.var => returned,
+                CoreTermKind::Var(var) if var == parameter.var => term_id,
+                _ => return Err(invalid()),
+            });
+        }
+        if ensures_range.start != range(&core.terms().get(left).ok_or_else(invalid)?.source)?.start
+            || ensures_range.end != range(&core.terms().get(right).ok_or_else(invalid)?.source)?.end
+            || ensures_range.start <= result_range.end
+            || ensures_range.end >= return_range.start
+        {
+            return Err(invalid());
+        }
+        substituted = Some((operands[0], operands[1]));
+    }
+    let header_terms = core
+        .terms()
+        .iter()
+        .filter(|(id, _)| !used_terms.contains(id))
+        .collect::<Vec<_>>();
+    let [(_, header)] = header_terms.as_slice() else {
+        return Err(invalid());
+    };
+    let header_range = range(&header.source)?;
+    if header.kind != CoreTermKind::Var(parameter.var)
+        || header_range.start <= owner_range.start
+        || header_range.end >= result_range.start
+    {
+        return Err(invalid());
+    }
+    let flow_output = build_control_flow_ir(core);
+    let (flow_id, flow) = flow_output.flows.iter().next().ok_or_else(invalid)?;
+    let block = flow.blocks.get(flow.entry).ok_or_else(invalid)?;
+    let (exit_id, exit) = flow.exits.iter().next().ok_or_else(invalid)?;
+    let context = flow.contexts.get(block.context_in).ok_or_else(invalid)?;
+    let parameter_local = flow
+        .locals
+        .iter()
+        .find(|(_, local)| local.kind == LocalKind::Parameter)
+        .ok_or_else(invalid)?;
+    if flow_output.flows.len() != 1
+        || flow.item != algorithm.item
+        || flow.algorithm != algorithm_id
+        || flow.symbol != algorithm.symbol
+        || flow.blocks.len() != 1
+        || flow.exits.len() != 1
+        || flow.locals.len() != 2
+        || flow.contexts.len() != 1
+        || !flow.diagnostics.is_empty()
+        || block.reachable != Reachability::Reachable
+        || block.terminator != ControlFlowTerminator::Return(Some(returned))
+        || exit.kind != ControlFlowExitKind::Return
+        || exit.statement != Some(*statement_id)
+        || exit.from != flow.entry
+        || parameter_local.1.binder != *parameter
+        || parameter_local.1.ghost
+        || parameter_local.1.mutability != LocalMutability::Immutable
+        || context.definitely_initialized != [parameter_local.0]
+        || !context.available_facts.is_empty()
+        || !context.path_conditions.is_empty()
+        || !flow.assignment_effects.is_empty()
+        || !flow.call_sites.is_empty()
+        || !flow.loops.is_empty()
+        || !flow.context_facts.is_empty()
+    {
+        return Err(invalid());
+    }
+    let handoff = build_obligation_seed_handoff(core, &flow_output);
+    if handoff.entries.len() != 1 + contracts.ensures.len() {
+        return Err(invalid());
+    }
+    for (_, entry) in handoff.entries.iter() {
+        let site = entry.flow_site.as_ref().ok_or_else(invalid)?;
+        if entry.origin
+            != (ObligationHandoffOrigin::FlowDerived {
+                flow: flow_id,
+                algorithm: algorithm_id,
+            })
+            || entry.seed.owner != algorithm.item
+            || entry.seed.status != ObligationSeedStatus::Deferred
+            || !entry.seed.context.is_empty()
+            || !entry.seed.diagnostics.is_empty()
+        {
+            return Err(invalid());
+        }
+        match site.kind {
+            ControlFlowObligationSiteKind::Ensures
+                if contracts.ensures.first().copied() == entry.seed.goal
+                    && entry.seed.kind == ObligationSeedKind::AlgorithmContract
+                    && site.statement == Some(*statement_id)
+                    && site.block == Some(flow.entry)
+                    && site.exit == Some(exit_id) => {}
+            ControlFlowObligationSiteKind::PartialTermination
+                if entry.seed.kind == ObligationSeedKind::AlgorithmTermination
+                    && entry.seed.goal.is_none()
+                    && site.statement.is_none()
+                    && site.exit.is_none() => {}
+            _ => return Err(invalid()),
+        }
+    }
+    let intake = SeedIntakeTable::try_from_handoff(&handoff).map_err(|error| error.to_string())?;
+    let package = core.module_id().package().as_str();
+    let path = core.module_id().path().as_str();
+    let module = VcModuleRef::new(format!(
+        "package={}:{};module={}:{}",
+        package.len(),
+        package,
+        path.len(),
+        path
+    ));
+    let candidates = CoreGenerationCandidateSet::try_from_seed_intake(CoreGenerationInput {
+        schema_version: generation_schema,
+        module: &module,
+        intake: &intake,
+        handoff: &handoff,
+        flow_output: Some(&flow_output),
+    })
+    .map_err(|error| error.to_string())?;
+    let raw = CoreGenerationCandidateSet::try_normalize(VcNormalizationInput {
+        schema_version: vc_schema,
+        snapshot,
+        source: core.source_id(),
+        candidates: &candidates,
+    })
+    .map_err(|error| error.to_string())?;
+    if raw.vcs().len() != contracts.ensures.len()
+        || raw.seed_accounting().len() != handoff.entries.len()
+        || candidates.no_candidates().len() != 1
+    {
+        return Err(invalid());
+    }
+    let Some((left, right)) = substituted else {
+        return Ok(raw);
+    };
+    let [original] = raw.vcs() else {
+        return Err(invalid());
+    };
+    let mut vc = original.clone();
+    let candidate = candidates
+        .candidate_for_handoff(vc.seed.handoff)
+        .ok_or_else(invalid)?;
+    let seed = &handoff
+        .entries
+        .get(vc.seed.handoff)
+        .ok_or_else(invalid)?
+        .seed;
+    if vc.kind != VcKind::AlgorithmPostcondition
+        || vc.status != VcStatus::Open
+        || vc.goal != VcFormulaRef::Core(contracts.ensures[0])
+    {
+        return Err(invalid());
+    }
+    let provenance = core
+        .formulas()
+        .get(parameter_guard)
+        .ok_or_else(invalid)?
+        .source
+        .provenance
+        .iter()
+        .cloned()
+        .map(|core| VcProvenance {
+            phase: VcProvenancePhase::CoreHandoff,
+            key: "algorithm-parameter-type".into(),
+            core: Some(core),
+        })
+        .collect();
+    vc.local_context = LocalContext::try_new(
+        vec![ContextEntry {
+            id: ContextEntryId::new(0),
+            sort_key: "algorithm-parameter-type-0000".into(),
+            kind: ContextEntryKind::CheckerFact,
+            formula: Some(VcFormulaRef::Core(parameter_guard)),
+            provenance,
+        }],
+        vc.local_context.policy_inputs().to_vec(),
+    )
+    .map_err(|error| error.to_string())?;
+    vc.premises = vec![PremiseRef::LocalContext(ContextEntryId::new(0))];
+    vc.goal = VcFormulaRef::Generated(VcGeneratedFormulaId::new(0));
+    vc.provenance.push(VcProvenance {
+        phase: VcProvenancePhase::Generator,
+        key: format!(
+            "source-algorithm-postcondition-v1:{}",
+            generation_schema.as_str()
+        )
+        .into(),
+        core: None,
+    });
+    vc.anchor = anchor_for_seed(AnchorForSeedInput {
+        schema_version: generation_schema,
+        seed,
+        kind: &vc.kind,
+        owner: candidate.owner.clone(),
+        label: candidate.label.clone(),
+        source: &seed.source,
+        goal: vc.goal,
+        local_context: &vc.local_context,
+    });
+    let generated = VcGeneratedFormula {
+        id: VcGeneratedFormulaId::new(0),
+        kind: VcGeneratedFormulaKind::AlgorithmPostcondition,
+        shape: VcGeneratedFormulaShape::Equals { left, right },
+        provenance: vc.provenance.clone(),
+    };
+    VcSet::try_new(VcSetParts {
+        schema_version: vc_schema.clone(),
+        snapshot,
+        source: core.source_id(),
+        module,
+        generated_formulas: vec![generated],
+        vcs: vec![vc],
+        seed_accounting: raw.seed_accounting().to_vec(),
+    })
+    .map_err(|error| error.to_string())
+}
+
 #[derive(Debug, Clone, Copy)]
 pub struct CoreGenerationInput<'a> {
     pub schema_version: &'a GenerationSchemaVersion,

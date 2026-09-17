@@ -528,3 +528,7 @@ task 17 は `vc_ir` の public enum をすべて downstream forward-compatible A
 
 この module が所有する exhaustive public enum exception はない。現在の variant を意図的に
 列挙する `mizar-vc` 内部 match は exhaustive のままでよい。
+
+## Concrete return equality
+
+`VcGeneratedFormulaKind::AlgorithmPostcondition` と `VcGeneratedFormulaShape::Equals { left: CoreTermId, right: CoreTermId }` は既存の不変 Core 項上の実際の置換済み等式を保持する。generator が両参照と所有者を Core に照合し、別の項表現や文字列式を導入しない。debug bytes は両オペランドの順序を保持する。Core payload がなければ canonical identity・依存・再利用解析は未解決とし、discharge は Unknown を返す。数値 ID の一致だけでは証明しない。

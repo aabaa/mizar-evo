@@ -2968,4 +2968,4 @@ binding identity で簡約し、recursive inline definition は cycle guard で 
 
 ## Static source algorithm checking
 
-`check_source_algorithm_types(&SurfaceResolvedArena, &TypedArena, &SymbolEnv)` は借用型の opaque `SourceAlgorithmCheck` を返す。ソース・環境・中立 typed 表の完全な対応と実際の algorithm 所有者を認証し、既存 `BindingEnv` と項推論で object 仮引数、順序付き初期化 var/ghost-var、変数 return、break を検査する。実際の宣言・使用同一性、局所変数の推論型、期待 return 型とソース順序を保持する。封印結果は既存の不変 typed・binding・inference・owner データのみを runner/Core に渡し、生の resolver 権限は渡さない。契約、代入、loop、const、snapshot/claim、呼出し、リテラルは拒否し、証明・全域性・登録承認を与えない。
+`check_source_algorithm_types(&SurfaceResolvedArena, &TypedArena, &SymbolEnv)` は借用型の opaque `SourceAlgorithmCheck` を返す。ソース・環境・中立 typed 表の完全な対応と実際の algorithm 所有者を認証し、既存 `BindingEnv` と項推論で object 仮引数、順序付き初期化 var/ghost-var、変数 return、break を検査する。実際の宣言・使用同一性、局所変数の推論型、期待 return 型とソース順序を保持する。封印結果は既存の不変 typed・binding・inference・owner データのみを runner/Core に渡し、生の resolver 権限は渡さない。別の単一 return profile は任意の等式 ensures を受理し、object 型の生成 result 束縛を契約スコープだけで可視にする。実際の順序付きオペランド参照を検査し、等式を仮定せず、本文の return から result を参照させない。その他の契約、代入、loop、const、snapshot/claim、呼出し、リテラルは拒否し、証明・全域性・登録承認を与えない。

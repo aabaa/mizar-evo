@@ -3164,7 +3164,7 @@ fn active_runner_reports_are_byte_stable_across_repeated_runs() {
     let root = config.workspace_root.clone();
     let plan = build_test_plan(&config).unwrap();
 
-    assert_eq!(active_proof_verification_cases(&plan).count(), 10);
+    assert_eq!(active_proof_verification_cases(&plan).count(), 11);
 
     let parse_first = canonical_parse_only_report(&run_parse_only_corpus(&config).unwrap(), &root);
     let parse_second = canonical_parse_only_report(&run_parse_only_corpus(&config).unwrap(), &root);
@@ -4034,6 +4034,32 @@ fn repository_corpus_plan_succeeds() {
     assert_eq!(vc_task31_coverage.coverage, CoverageShape::Snapshot);
     assert_eq!(vc_task31_coverage.evidence.snapshot, 1);
     assert!(vc_task31_coverage.missing_shapes.is_empty());
+    let return_snapshot_ref = "spec.en.mizar_vc.vc_ir.algorithm_ensures_return_snapshot";
+    let return_requirement = plan
+        .manifest
+        .requirements
+        .iter()
+        .find(|row| row.id.0 == return_snapshot_ref)
+        .unwrap();
+    assert_eq!(return_requirement.stage, Stage::ProofVerification);
+    assert_eq!(return_requirement.status, RequirementStatus::Covered);
+    assert_eq!(return_requirement.coverage, CoverageShape::Snapshot);
+    assert!(return_requirement.required);
+    assert_eq!(
+        return_requirement.tests,
+        [PathBuf::from(
+            "tests/miz/pass/algorithms/pass_proof_verification_algorithm_ensures_return_001.expect.toml"
+        )]
+    );
+    let return_coverage = plan
+        .coverage_report
+        .requirements
+        .iter()
+        .find(|row| row.id.0 == return_snapshot_ref)
+        .unwrap();
+    assert_eq!(return_coverage.computed_status, RequirementStatus::Covered);
+    assert_eq!(return_coverage.evidence.snapshot, 1);
+    assert!(return_coverage.missing_shapes.is_empty());
     let deferred_proof_rows =
         plan.manifest
             .requirements
@@ -4041,13 +4067,14 @@ fn repository_corpus_plan_succeeds() {
             .filter(|requirement| {
                 // September 2026 audit-1 semantic-bridge oracle rows use numeric
                 // spec-chapter ids (`spec.en.NN....`) and are inactive seeds; the
-                // exact-only VC Task-31 guard below applies to the legacy rows.
+                // exact baseline guards above apply separately to the legacy rows.
                 let audit1_row =
                     requirement.id.0.split('.').nth(2).is_some_and(|seg| {
                         seg.len() == 2 && seg.chars().all(|c| c.is_ascii_digit())
                     });
                 requirement.stage == Stage::ProofVerification
                     && requirement.id.0 != EXACT_VC_TASK31_SNAPSHOT_SPEC_REF
+                    && requirement.id.0 != return_snapshot_ref
                     && !audit1_row
             })
             .collect::<Vec<_>>();
@@ -10545,8 +10572,8 @@ fn proof_verification_cli_reports_task180_and_step5c2_summary() {
         String::from_utf8_lossy(&output.stderr)
     );
     let stdout = String::from_utf8_lossy(&output.stdout);
-    assert!(stdout.contains("proof-verification cases: 10"));
-    assert!(stdout.contains("passed: 10"));
+    assert!(stdout.contains("proof-verification cases: 11"));
+    assert!(stdout.contains("passed: 11"));
     assert!(stdout.contains("failed: 0"));
 }
 

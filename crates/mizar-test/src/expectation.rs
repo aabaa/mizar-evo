@@ -1328,13 +1328,45 @@ pub fn validate_expectation_path(
                 .spec_refs
                 .iter()
                 .any(|spec_ref| spec_ref.0 == EXACT_TASK31_VC_SNAPSHOT_SPEC_REF);
-        if !active_parse_only && !exact_task31_core_snapshot && !exact_task31_vc_snapshot {
+        let exact_algorithm_return_snapshot = expectation.id.0
+            == "pass_proof_verification_algorithm_ensures_return_001"
+            && path.strip_prefix(tests_root).ok()
+                == Some(Path::new(
+                    "miz/pass/algorithms/pass_proof_verification_algorithm_ensures_return_001.expect.toml",
+                ))
+            && expectation.source
+                == Path::new("pass_proof_verification_algorithm_ensures_return_001.miz")
+            && expectation.kind == TestKind::Pass
+            && expectation.stage == Stage::ProofVerification
+            && expectation.expected_phase == Some(PipelinePhase::VcGeneration)
+            && expectation.expected_outcome == ExpectedOutcome::Pass
+            && expectation.domain == "algorithms.contracts"
+            && expectation.tags.as_slice() == ["active_proof_verification"]
+            && expectation.failure_category.is_none()
+            && expectation.stable_detail_key.is_none()
+            && expectation.rejection_reason.is_none()
+            && expectation.diagnostic_codes.is_empty()
+            && expectation.diagnostic_payloads.is_empty()
+            && expectation.declaration_symbol_payloads.is_empty()
+            && snapshot_path
+                == Path::new(
+                    "snapshots/vc/pass_proof_verification_algorithm_ensures_return_001.vc_ir.snap",
+                )
+            && expectation.spec_refs.iter().map(|id| id.0.as_str()).eq([
+                "spec.en.20.algorithms.contracts.ensures",
+                "spec.en.mizar_vc.vc_ir.algorithm_ensures_return_snapshot",
+            ]);
+        if !active_parse_only
+            && !exact_task31_core_snapshot
+            && !exact_task31_vc_snapshot
+            && !exact_algorithm_return_snapshot
+        {
             diagnostics.push(ValidationDiagnostic::error(
                 path,
                 "expectation",
                 "E-EXPECT-SNAPSHOT-SCOPE",
                 "expectation.snapshots",
-                "snapshots are supported only for active parse-only pass/fail cases or the exact Core/VC Task-31 contradiction pass case/path/spec_ref",
+                "snapshots require active parse-only cases or an exact admitted Core/VC baseline case, path and spec_ref",
             ));
         }
     }

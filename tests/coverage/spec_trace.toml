@@ -7057,6 +7057,19 @@ deferred_reason = "Task 15 records this broad corpus obligation as an external_d
 tests = []
 
 [[requirement]]
+id = "spec.en.mizar_vc.vc_ir.algorithm_ensures_return_snapshot"
+source = "doc/design/mizar-vc/en/source_vc_decomposition.md"
+section = "VC Task 43; bounded source ensures-return open VcIr snapshot"
+stage = "proof_verification"
+status = "covered"
+required = true
+coverage = "snapshot"
+notes = "Only the source-derived one-return equality postcondition, actual result substitution, parameter type context and complete seed accounting are covered by this full VcIr snapshot. Proof, termination and algorithm acceptance and broader VC43 branches remain uncredited."
+tests = [
+  "tests/miz/pass/algorithms/pass_proof_verification_algorithm_ensures_return_001.expect.toml",
+]
+
+[[requirement]]
 id = "spec.en.mizar_vc.vc_ir.task180_proof_verification_snapshot"
 source = "doc/design/mizar-vc/en/source_vc_decomposition.md"
 section = "VC Task 31; exact Task-180 open VcIr proof-verification snapshot"

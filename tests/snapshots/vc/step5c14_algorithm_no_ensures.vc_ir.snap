@@ -1,0 +1,9 @@
+vc-set-debug-v1
+schema-version: VcSchemaVersion("mizar-vc-vcset-step5c14-return-v1")
+snapshot: BuildSnapshotId(Hash([0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1]))
+source: SourceId(OpaqueId(1))
+module: VcModuleRef("package=17:mizar-test-corpus;module=78:tests.miz.pass.algorithms.pass_proof_verification_algorithm_ensures_return_001")
+[generated-formulas]
+[seed-accounting]
+seed ObligationHandoffId(0): origin=FlowDerived { flow: ControlFlowId(0), algorithm: CoreAlgorithmId(0) }; status=Deferred; mapping=NoConcreteVc { reason: DeferredExternal(VcText("task 7 requires explicit goal formula for AlgorithmTermination site PartialTermination")) }
+[vcs]

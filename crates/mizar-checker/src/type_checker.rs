@@ -43,7 +43,7 @@ use std::{
     fmt::{self, Write as _},
 };
 
-/// Authenticated, immutable source algorithm input for static Core lowering.
+/// Authenticated, immutable source algorithm input for Core lowering.
 #[derive(Debug)]
 pub struct SourceAlgorithmCheck<'a> {
     typed: &'a crate::typed_ast::TypedArena,
@@ -227,6 +227,7 @@ pub fn check_source_algorithm_types<'a>(
         parameters,
         arrow,
         return_type,
+        clauses @ ..,
         body,
         semi,
     ] = algorithm_parts
@@ -250,6 +251,17 @@ pub fn check_source_algorithm_types<'a>(
         return Err(invalid());
     };
     tokens(&[(*do_kw, "do"), (*end, "end")])?;
+    let ensures = match clauses {
+        [] => None,
+        [ensures] if node(*ensures)?.kind() == &K::AlgorithmEnsuresClause => Some(*ensures),
+        _ => return Err(invalid()),
+    };
+    if ensures.is_some()
+        && (identifier(*binder)? == "result"
+            || !matches!(parts(*statements, &K::AlgorithmStatementList)?, [statement] if node(*statement)?.kind() == &K::ReturnStatement))
+    {
+        return Err(invalid());
+    }
     let algorithm_anchor = node(*algorithm)?.origin().anchor();
     let mut owners = symbols.symbols().iter().filter(|entry| {
         entry.kind() == SymbolKind::Algorithm && entry.origin().anchor() == algorithm_anchor
@@ -270,6 +282,7 @@ pub fn check_source_algorithm_types<'a>(
     }
     let definition_context = BindingContextId::new(1);
     let body_context = BindingContextId::new(2);
+    let ensures_context = BindingContextId::new(3);
     let definition_scope =
         LocalTermScope::new(vec![u32::try_from(block.index()).map_err(|_| invalid())?]);
     let body_scope = LocalTermScope::new(vec![
@@ -294,6 +307,62 @@ pub fn check_source_algorithm_types<'a>(
         None,
         false,
     )];
+    let mut formulas = Vec::new();
+    let result_binding = if let Some(ensures) = ensures {
+        let [ensures_kw, expression] = parts(ensures, &K::AlgorithmEnsuresClause)? else {
+            return Err(invalid());
+        };
+        tokens(&[(*ensures_kw, "ensures")])?;
+        let equality = only(*expression, &K::FormulaExpression)?;
+        let [left, equals, right] = parts(equality, &K::BuiltinPredicateApplication)? else {
+            return Err(invalid());
+        };
+        tokens(&[(*equals, "=")])?;
+        let operands = [
+            only(*left, &K::TermExpression)?,
+            only(*right, &K::TermExpression)?,
+        ];
+        for term in operands {
+            uses.push((
+                term,
+                only(term, &K::TermReference)?,
+                ensures_context,
+                None,
+                false,
+            ));
+        }
+        formulas.push(
+            FormulaInput::new(
+                TypedSiteRef::Node(TypedNodeId::new(equality.index())),
+                ensures_context,
+                range(equality)?,
+                FormulaKind::Equality,
+            )
+            .with_terms(
+                operands
+                    .map(|id| TypedSiteRef::Node(TypedNodeId::new(id.index())))
+                    .to_vec(),
+            ),
+        );
+        Some(bindings.insert(BindingDraft {
+            spelling: "result".into(),
+            kind: BindingKind::Generated,
+            identity: BinderIdentity::Generated {
+                context: ensures_context,
+                counter: 0,
+            },
+            owner_context: ensures_context,
+            declaration_range: range(*return_type)?,
+            visible_after_ordinal: range(*return_type)?.end,
+            type_site: BindingTypeSite::Source(range(*return_type)?),
+            status: BindingStatus::Active,
+            captured: CapturedFreeVariables::default(),
+            diagnostics: Vec::new(),
+            recovery: BindingRecoveryState::Normal,
+        }))
+    } else {
+        None
+    };
     let mut local_names = BTreeSet::new();
     for statement in parts(*statements, &K::AlgorithmStatementList)? {
         match node(*statement)?.kind() {
@@ -361,7 +430,10 @@ pub fn check_source_algorithm_types<'a>(
             _ => return Err(invalid()),
         }
     }
-    let all_bindings = bindings.iter().map(|(id, _)| id).collect::<Vec<_>>();
+    let all_bindings = bindings
+        .iter()
+        .filter_map(|(id, entry)| (entry.kind != BindingKind::Generated).then_some(id))
+        .collect::<Vec<_>>();
     let mut contexts = BindingContextTable::new();
     for (index, source_owner, scope, owned, visible) in [
         (0, None, None, Vec::new(), Vec::new()),
@@ -404,6 +476,19 @@ pub fn check_source_algorithm_types<'a>(
             recovery: BindingContextRecovery::Normal,
         });
     }
+    if let (Some(ensures), Some(result)) = (ensures, result_binding) {
+        contexts.insert(BindingContextDraft {
+            owner: BindingContextOwner::SourceFormula {
+                source_range: range(ensures)?,
+            },
+            parent: Some(definition_context),
+            layer: BindingContextLayer::Expression,
+            lexical_scope: Some(definition_scope.clone()),
+            bindings: vec![result],
+            visible_bindings: vec![parameter_binding, result],
+            recovery: BindingContextRecovery::Normal,
+        });
+    }
     let bindings = BindingEnv::try_new(BindingEnvParts {
         source_id: source.source_id(),
         module_id: source.module().clone(),
@@ -413,9 +498,12 @@ pub fn check_source_algorithm_types<'a>(
     })
     .map_err(|_| invalid())?;
     let mut binding_types = BTreeMap::from([(parameter_binding, *parameter_type)]);
+    if let Some(result) = result_binding {
+        binding_types.insert(result, *return_type);
+    }
     let mut terms = Vec::new();
     for (term, token, context, initialized_binding, is_return) in uses {
-        let scope = if context == definition_context {
+        let scope = if context != body_context {
             &definition_scope
         } else {
             &body_scope
@@ -460,7 +548,7 @@ pub fn check_source_algorithm_types<'a>(
             binding_types.insert(local, ty);
         }
     }
-    let inference = TermFormulaChecker::default().infer(symbols, &bindings, terms, []);
+    let inference = TermFormulaChecker::default().infer(symbols, &bindings, terms, formulas);
     if !inference.diagnostics().is_empty()
         || !inference.facts().is_empty()
         || !inference.candidate_sets().is_empty()
@@ -486,6 +574,16 @@ pub fn check_source_algorithm_types<'a>(
         {
             return Err(invalid());
         }
+    }
+    if inference.formulas().iter().any(|(_, formula)| {
+        formula.kind != FormulaKind::Equality
+            || formula.status != FormulaStatus::Checked
+            || formula.terms.len() != 2
+            || !formula.deferred.is_empty()
+            || formula.candidate_set.is_some()
+            || !formula.facts.is_empty()
+    }) {
+        return Err(invalid());
     }
     Ok(SourceAlgorithmCheck {
         typed,

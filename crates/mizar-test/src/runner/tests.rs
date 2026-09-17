@@ -2207,3 +2207,741 @@ fn step5c14_static_admission_is_exact_and_has_no_other_stage_credit() {
     }
     assert!(super::validate_active_type_elaboration_tags(&config.workspace_root, &plan).is_empty());
 }
+
+fn step5c14_return_case() -> crate::harness::TestCase {
+    build_test_plan(&step5c11_config())
+        .unwrap()
+        .cases
+        .into_iter()
+        .find(|case| case.id.0 == "pass_proof_verification_algorithm_ensures_return_001")
+        .unwrap()
+}
+
+fn step5c14_return_vcs(
+    core: &mizar_core::core_ir::CoreIr,
+) -> Result<mizar_vc::vc_ir::VcSet, String> {
+    mizar_vc::generator::generate_source_algorithm_postconditions(
+        core,
+        super::shared::snapshot_id(0),
+        &mizar_vc::vc_ir::GenerationSchemaVersion::new("mizar-vc-generation-step5c14-return-v1"),
+        &mizar_vc::vc_ir::VcSchemaVersion::new("mizar-vc-vcset-step5c14-return-v1"),
+    )
+}
+
+#[test]
+fn step5c14_return_source_preserves_contract_and_substitutes_actual_return() {
+    use mizar_core::core_ir::{
+        CoreAlgorithmStmtKind as S, CoreFormulaKind as F, CoreTermKind as T, ObligationSeedStatus,
+    };
+    use mizar_vc::vc_ir::{
+        ContextEntryKind, SeedVcMapping, VcFormulaRef, VcGeneratedFormulaKind,
+        VcGeneratedFormulaShape, VcKind, VcStatus,
+    };
+    let case = step5c14_return_case();
+    let text = std::fs::read_to_string(&case.source_path).unwrap();
+    for (source, operands) in [
+        (text.clone(), ["result", "a"]),
+        (
+            text.replace("idalgo", "renamed")
+                .replace("let a be", "let other be")
+                .replace("(a)", "(other)")
+                .replace("= a", "= other")
+                .replace("return a;", "return other;"),
+            ["result", "other"],
+        ),
+        (text.replace("result = a", "a = result"), ["a", "result"]),
+        (
+            text.replace("result = a", "result = result"),
+            ["result", "result"],
+        ),
+        (text.replace("result = a", "a = a"), ["a", "a"]),
+    ] {
+        use mizar_checker::binding_env::{
+            BinderIdentity, BindingContextOwner, BindingKind, BindingTypeSite,
+        };
+        use mizar_session::SourceAnchor;
+        let (resolved, typed, symbols) = super::source_registration_inputs(
+            &step5c11_config().workspace_root,
+            &case,
+            super::formula_statement::step5c8_test_frontend(&source),
+        )
+        .unwrap();
+        let checked =
+            mizar_checker::type_checker::check_source_algorithm_types(&resolved, &typed, &symbols)
+                .unwrap();
+        let (result_id, generated) = checked
+            .bindings()
+            .bindings()
+            .iter()
+            .find(|(_, b)| b.kind == BindingKind::Generated)
+            .unwrap();
+        assert!(
+            matches!(generated.identity, BinderIdentity::Generated { context, .. } if context == generated.owner_context)
+        );
+        let type_start = source.find("-> object").unwrap() + 3;
+        assert_eq!(
+            (
+                generated.declaration_range.start,
+                generated.declaration_range.end
+            ),
+            (type_start, type_start + "object".len())
+        );
+        assert_eq!(
+            generated.type_site,
+            BindingTypeSite::Source(generated.declaration_range)
+        );
+        let context = checked
+            .bindings()
+            .contexts()
+            .get(generated.owner_context)
+            .unwrap();
+        assert!(
+            matches!(context.owner, BindingContextOwner::SourceFormula { source_range } if source_range.start == source.find("ensures ").unwrap())
+        );
+        assert!(
+            context.bindings.contains(&result_id) && context.visible_bindings.contains(&result_id)
+        );
+        for (_, other) in checked.bindings().contexts().iter() {
+            if other.id != generated.owner_context {
+                assert!(!other.visible_bindings.contains(&result_id));
+            }
+        }
+        let core = mizar_core::elaborator::lower_source_algorithms(&checked).unwrap();
+        let replay = step5c14_static_core(&case, &source).unwrap();
+        assert_eq!(core, replay);
+        assert!(
+            core.diagnostics().is_empty()
+                && core.obligation_seeds().is_empty()
+                && core.proofs().is_empty()
+        );
+        let (_, algorithm) = core.algorithms().iter().next().unwrap();
+        assert_eq!(core.algorithms().len(), 1);
+        assert_eq!(algorithm.params.len(), 1);
+        let parameter = &algorithm.params[0];
+        let result = algorithm.result.as_ref().unwrap();
+        assert_ne!(parameter.var, result.var);
+        assert_eq!(algorithm.contracts.ensures.len(), 1);
+        let contract = algorithm.contracts.ensures[0];
+        let F::Equals { left, right } = core.formulas().get(contract).unwrap().kind else {
+            panic!("actual equality missing")
+        };
+        let [statement] = algorithm.statements.as_slice() else {
+            panic!("one return required")
+        };
+        let S::Return(Some(returned)) = core.algorithm_statements().get(*statement).unwrap().kind
+        else {
+            panic!("actual return missing")
+        };
+        assert_eq!(
+            core.terms().get(returned).unwrap().kind,
+            T::Var(parameter.var)
+        );
+        let formula_start = source.find("ensures ").unwrap() + "ensures ".len();
+        let right_start = formula_start + operands[0].len() + " = ".len();
+        for ((term, spelling), offset) in [left, right]
+            .into_iter()
+            .zip(operands)
+            .zip([formula_start, right_start])
+        {
+            let actual = core.terms().get(term).unwrap();
+            assert_eq!(
+                actual.kind,
+                T::Var(if spelling == "result" {
+                    result.var
+                } else {
+                    parameter.var
+                })
+            );
+            let mizar_core::core_ir::CoreSourceAnchor::SourceRange(range) = actual.source.anchor
+            else {
+                panic!("operand source missing")
+            };
+            assert_eq!((range.start, range.end), (offset, offset + spelling.len()));
+            let checked_term = checked
+                .inference()
+                .terms()
+                .iter()
+                .find(|(_, term)| {
+                    typed.node(term.site.node()).unwrap().anchor == SourceAnchor::Range(range)
+                })
+                .unwrap()
+                .1;
+            let Some(mizar_checker::type_checker::TermReference::Binding(binding)) =
+                checked_term.reference
+            else {
+                panic!("checked binding missing")
+            };
+            assert_eq!(
+                checked.bindings().bindings().get(binding).unwrap().kind,
+                if spelling == "result" {
+                    BindingKind::Generated
+                } else {
+                    BindingKind::DefinitionParameter
+                }
+            );
+        }
+        assert_eq!(
+            result.source.anchor,
+            mizar_core::core_ir::CoreSourceAnchor::SourceRange(generated.declaration_range)
+        );
+        let (type_node, _) = typed
+            .iter()
+            .find(|(_, node)| {
+                node.kind.as_str() == "TypeExpression"
+                    && node.anchor == SourceAnchor::Range(generated.declaration_range)
+            })
+            .unwrap();
+        assert!(result.source.provenance.iter().any(|p| p.phase
+            == mizar_core::core_ir::CoreProvenancePhase::Checker
+            && p.key.as_str() == format!("algorithm/source-node#{}", type_node.index())));
+        let vcs = step5c14_return_vcs(&core).unwrap();
+        assert_eq!(vcs, step5c14_return_vcs(&replay).unwrap());
+        assert_eq!(
+            vcs.debug_text(),
+            step5c14_return_vcs(&replay).unwrap().debug_text()
+        );
+        assert_eq!(vcs.vcs().len(), 1);
+        assert_eq!(vcs.generated_formulas().len(), 1);
+        let vc = &vcs.vcs()[0];
+        assert_eq!(vc.kind, VcKind::AlgorithmPostcondition);
+        assert_eq!(vc.status, VcStatus::Open);
+        assert!(!vc.anchor.is_complete());
+        let VcFormulaRef::Generated(goal) = vc.goal else {
+            panic!("concrete VC goal missing")
+        };
+        let goal = vcs.generated_formula(goal).unwrap();
+        assert_eq!(goal.kind, VcGeneratedFormulaKind::AlgorithmPostcondition);
+        let expected = |id| {
+            if core.terms().get(id).unwrap().kind == T::Var(result.var) {
+                returned
+            } else {
+                id
+            }
+        };
+        assert_eq!(
+            goal.shape,
+            VcGeneratedFormulaShape::Equals {
+                left: expected(left),
+                right: expected(right)
+            }
+        );
+        assert!(!goal.provenance.is_empty());
+        let [context] = vc.local_context.entries() else {
+            panic!("exact parameter context required")
+        };
+        assert_eq!(context.kind, ContextEntryKind::CheckerFact);
+        assert_eq!(
+            context.formula,
+            Some(VcFormulaRef::Core(parameter.ty_guard.unwrap()))
+        );
+        assert!(!context.provenance.is_empty());
+        let F::TypePred { subject, ref ty } = core
+            .formulas()
+            .get(parameter.ty_guard.unwrap())
+            .unwrap()
+            .kind
+        else {
+            panic!("parameter type missing")
+        };
+        assert_eq!(ty.as_str(), "object");
+        assert_eq!(
+            core.terms().get(subject).unwrap().kind,
+            T::Var(parameter.var)
+        );
+        let flow = mizar_core::control_flow::build_control_flow_ir(&core);
+        let handoff = mizar_core::control_flow::build_obligation_seed_handoff(&core, &flow);
+        assert_eq!(vcs.seed_accounting().len(), 2);
+        let mut postconditions = 0;
+        let mut metadata = 0;
+        for row in vcs.seed_accounting() {
+            let entry = handoff.entries.get(row.handoff).unwrap();
+            assert_eq!(row.seed_status, entry.seed.status);
+            assert_eq!(row.seed_status, ObligationSeedStatus::Deferred);
+            match row.mapping {
+                SeedVcMapping::One { vc: id } => {
+                    postconditions += 1;
+                    assert_eq!(id, vc.id);
+                    assert_eq!(entry.seed.goal, Some(contract));
+                }
+                SeedVcMapping::NoConcreteVc { .. } => {
+                    metadata += 1;
+                    assert!(entry.seed.goal.is_none());
+                }
+                _ => panic!("unexpected accounting"),
+            }
+        }
+        assert_eq!((postconditions, metadata), (1, 1));
+        if source == text {
+            assert_eq!(
+                std::fs::read_to_string(
+                    step5c11_config()
+                        .workspace_root
+                        .join("tests")
+                        .join(case.expectation.snapshots.as_ref().unwrap())
+                )
+                .unwrap(),
+                vcs.debug_text()
+            );
+        }
+    }
+}
+
+#[test]
+fn step5c14_return_no_contract_is_zero_vc_and_unsupported_source_is_rejected() {
+    let case = step5c14_return_case();
+    let text = std::fs::read_to_string(&case.source_path).unwrap();
+    let without = text.replace("    ensures result = a\n", "");
+    assert_ne!(text, without);
+    let core = step5c14_static_core(&case, &without).unwrap();
+    let vcs = step5c14_return_vcs(&core).unwrap();
+    assert_eq!(
+        vcs,
+        step5c14_return_vcs(&step5c14_static_core(&case, &without).unwrap()).unwrap()
+    );
+    assert!(vcs.vcs().is_empty() && vcs.generated_formulas().is_empty());
+    assert_eq!(vcs.seed_accounting().len(), 1);
+    assert!(matches!(
+        vcs.seed_accounting()[0].mapping,
+        mizar_vc::vc_ir::SeedVcMapping::NoConcreteVc { .. }
+    ));
+    assert_eq!(
+        std::fs::read_to_string(
+            step5c11_config()
+                .workspace_root
+                .join("tests")
+                .join("snapshots/vc/step5c14_algorithm_no_ensures.vc_ir.snap")
+        )
+        .unwrap(),
+        vcs.debug_text()
+    );
+    for source in [
+        text.replace("return a;", "return result;"),
+        text.replace("result = a", "result = missing"),
+        text.replace("result = a", "result in a"),
+        text.replace("result = a", "not result = a"),
+        text.replace("result = a", "result = a ensures result = a"),
+        text.replace("    ensures", "    requires a = a\n    ensures"),
+        text.replace("return a;", "var x := a; return x;"),
+        text.replace("return a;", "return a; return a;"),
+        text.replace("return a;", "assert a = a; return a;"),
+        text.replace("return a;", "return missing;"),
+        text.replace("-> object", "-> set"),
+    ] {
+        assert!(
+            step5c14_static_core(&case, &source).is_err(),
+            "unsupported source: {source}"
+        );
+    }
+}
+
+#[test]
+fn step5c14_return_rejects_core_binding_guard_owner_and_reference_corruption() {
+    use mizar_core::core_ir::*;
+    let case = step5c14_return_case();
+    let core =
+        step5c14_static_core(&case, &std::fs::read_to_string(&case.source_path).unwrap()).unwrap();
+    let (algorithm_id, algorithm) = core.algorithms().iter().next().unwrap();
+    let result = algorithm.result.as_ref().unwrap();
+    let parameter = &algorithm.params[0];
+    let ensure = algorithm.contracts.ensures[0];
+    let statement = algorithm.statements[0];
+    let CoreAlgorithmStmtKind::Return(Some(returned)) =
+        core.algorithm_statements().get(statement).unwrap().kind
+    else {
+        panic!()
+    };
+    for mutation in 0..22 {
+        let mut parts = CoreIrParts {
+            source_id: core.source_id(),
+            module_id: core.module_id().clone(),
+            items: core.items().clone(),
+            terms: core.terms().clone(),
+            formulas: core.formulas().clone(),
+            definitions: core.definitions().clone(),
+            proofs: core.proofs().clone(),
+            proof_nodes: core.proof_nodes().clone(),
+            algorithms: core.algorithms().clone(),
+            algorithm_statements: core.algorithm_statements().clone(),
+            generated: core.generated().clone(),
+            obligation_seeds: core.obligation_seeds().clone(),
+            source_map: core.source_map().clone(),
+            diagnostics: core.diagnostics().clone(),
+        };
+        match mutation {
+            0 => {
+                parts
+                    .algorithms
+                    .get_mut(algorithm_id)
+                    .unwrap()
+                    .result
+                    .as_mut()
+                    .unwrap()
+                    .var = parameter.var
+            }
+            1 => {
+                parts.algorithms.get_mut(algorithm_id).unwrap().params[0].ty_guard = result.ty_guard
+            }
+            2 => parts
+                .algorithms
+                .get_mut(algorithm_id)
+                .unwrap()
+                .contracts
+                .ensures
+                .push(ensure),
+            3 => parts
+                .algorithms
+                .get_mut(algorithm_id)
+                .unwrap()
+                .statements
+                .push(statement),
+            4 => parts.formulas.get_mut(ensure).unwrap().kind = CoreFormulaKind::True,
+            5 => parts.terms.get_mut(returned).unwrap().kind = CoreTermKind::Var(result.var),
+            6 => {
+                parts
+                    .formulas
+                    .get_mut(parameter.ty_guard.unwrap())
+                    .unwrap()
+                    .kind = CoreFormulaKind::TypePred {
+                    subject: returned,
+                    ty: CoreTypePredicate::new("set"),
+                }
+            }
+            7 => parts.algorithms.get_mut(algorithm_id).unwrap().item = CoreItemId::new(999),
+            8 => parts
+                .algorithm_statements
+                .get_mut(statement)
+                .unwrap()
+                .source
+                .provenance
+                .clear(),
+            9 => parts
+                .formulas
+                .get_mut(ensure)
+                .unwrap()
+                .source
+                .provenance
+                .clear(),
+            10 => parts
+                .algorithms
+                .get_mut(algorithm_id)
+                .unwrap()
+                .result
+                .as_mut()
+                .unwrap()
+                .source
+                .provenance
+                .clear(),
+            11 => {
+                parts
+                    .algorithms
+                    .get_mut(algorithm_id)
+                    .unwrap()
+                    .result
+                    .as_mut()
+                    .unwrap()
+                    .ty_guard = parameter.ty_guard
+            }
+            12 => {
+                parts.algorithms.get_mut(algorithm_id).unwrap().params[0].role = "local:var".into()
+            }
+            13 => {
+                parts.source_map.term_sources.remove(&returned);
+            }
+            14 => {
+                parts.source_map.formula_sources.remove(&ensure);
+            }
+            15 => {
+                let CoreFormulaKind::Equals { left, right } =
+                    parts.formulas.get(ensure).unwrap().kind
+                else {
+                    panic!()
+                };
+                parts.formulas.get_mut(ensure).unwrap().kind = CoreFormulaKind::Equals {
+                    left: right,
+                    right: left,
+                };
+            }
+            16 => {
+                let CoreFormulaKind::Equals { left, right } =
+                    parts.formulas.get(ensure).unwrap().kind
+                else {
+                    panic!()
+                };
+                parts.terms.get_mut(left).unwrap().source =
+                    parts.terms.get(right).unwrap().source.clone();
+                parts
+                    .source_map
+                    .term_sources
+                    .insert(left, parts.terms.get(left).unwrap().source.clone());
+            }
+            17 => {
+                let id = parts
+                    .terms
+                    .insert(core.terms().get(returned).unwrap().clone());
+                parts
+                    .source_map
+                    .term_sources
+                    .insert(id, parts.terms.get(id).unwrap().source.clone());
+            }
+            18 => {
+                let id = parts
+                    .formulas
+                    .insert(core.formulas().get(ensure).unwrap().clone());
+                parts
+                    .source_map
+                    .formula_sources
+                    .insert(id, parts.formulas.get(id).unwrap().source.clone());
+            }
+            19 => {
+                let id = parts
+                    .algorithm_statements
+                    .insert(core.algorithm_statements().get(statement).unwrap().clone());
+                parts.source_map.algorithm_sources.insert(
+                    id,
+                    parts.algorithm_statements.get(id).unwrap().source.clone(),
+                );
+            }
+            20 => {
+                parts.diagnostics.insert(CoreDiagnostic::error(
+                    CoreDiagnosticClass::AlgorithmShell,
+                    "algorithm.test_corruption",
+                    algorithm.source.clone(),
+                ));
+            }
+            21 => {
+                let CoreFormulaKind::TypePred { subject, .. } =
+                    parts.formulas.get(result.ty_guard.unwrap()).unwrap().kind
+                else {
+                    panic!()
+                };
+                parts
+                    .formulas
+                    .get_mut(result.ty_guard.unwrap())
+                    .unwrap()
+                    .kind = CoreFormulaKind::TypePred {
+                    subject,
+                    ty: CoreTypePredicate::new("set"),
+                };
+            }
+            _ => unreachable!(),
+        }
+        if mutation == 8 {
+            parts.source_map.algorithm_sources.insert(
+                statement,
+                parts
+                    .algorithm_statements
+                    .get(statement)
+                    .unwrap()
+                    .source
+                    .clone(),
+            );
+        }
+        if mutation == 9 {
+            parts
+                .source_map
+                .formula_sources
+                .insert(ensure, parts.formulas.get(ensure).unwrap().source.clone());
+        }
+        let invalid = CoreIr::try_new(parts);
+        if matches!(mutation, 7 | 13 | 14) {
+            assert!(
+                invalid.is_err(),
+                "Core must reject invalid owner/map {mutation}"
+            );
+        } else {
+            let invalid =
+                invalid.unwrap_or_else(|error| panic!("structural Core probe {mutation}: {error}"));
+            assert!(
+                step5c14_return_vcs(&invalid).is_err(),
+                "VC corruption {mutation}"
+            );
+        }
+    }
+}
+
+#[test]
+fn step5c14_return_admission_requires_exact_snapshot_trace_and_stage() {
+    use crate::expectation::{ExpectedOutcome, PipelinePhase, TestKind};
+    use crate::staged_model::Stage;
+    let config = step5c11_config();
+    let plan = build_test_plan(&config).unwrap();
+    let original = step5c14_return_case();
+    assert!(super::proof_verification::step5c14_return_admitted(
+        Some(&config.workspace_root),
+        &original
+    ));
+    assert!(
+        crate::expectation::validate_expectation_path(
+            &original.expectation_path,
+            &original.expectation,
+            &config.workspace_root.join("tests")
+        )
+        .is_empty()
+    );
+    for mutation in 0..21 {
+        let mut case = original.clone();
+        match mutation {
+            0 => case.id.0.push_str("_extra"),
+            1 => case.expectation.id.0.push_str("_extra"),
+            2 => case.source_path = case.source_path.with_file_name("wrong.miz"),
+            3 => case.expectation_path = case.expectation_path.with_file_name("wrong.expect.toml"),
+            4 => case.expectation.source = PathBuf::from("wrong.miz"),
+            5 => case.expectation.stage = Stage::TypeElaboration,
+            6 => case.expectation.expected_phase = Some(PipelinePhase::Verification),
+            7 => case.expectation.expected_outcome = ExpectedOutcome::Fail,
+            8 => case.expectation.tags.clear(),
+            9 => case.expectation.tags.push("extra".into()),
+            10 => case.expectation.diagnostic_codes.push("E-UNRELATED".into()),
+            11 => case.expectation.stable_detail_key = Some("wrong.key".into()),
+            12 => case.expectation.kind = TestKind::Fail,
+            13 => case.expectation.rejection_reason = Some("wrong.reason".into()),
+            14 => case.expectation.failure_category = Some("proof_failure".into()),
+            15 => case.expectation.snapshots = None,
+            16 => case.expectation.snapshots = Some(PathBuf::from("snapshots/wrong.snap")),
+            17 => {
+                case.expectation.spec_refs.pop();
+            }
+            18 => case.expectation.spec_refs[1].0.push_str("_wrong"),
+            19 => case.expectation.spec_refs.reverse(),
+            20 => case.expectation.domain = "wrong.domain".into(),
+            _ => unreachable!(),
+        }
+        assert!(
+            !super::proof_verification::step5c14_return_admitted(
+                Some(&config.workspace_root),
+                &case
+            ),
+            "mutation {mutation}"
+        );
+        if !matches!(mutation, 0 | 2 | 15) {
+            assert!(
+                crate::expectation::validate_expectation_path(
+                    &case.expectation_path,
+                    &case.expectation,
+                    &config.workspace_root.join("tests")
+                )
+                .iter()
+                .any(|diagnostic| diagnostic.code.0 == "E-EXPECT-SNAPSHOT-SCOPE"),
+                "snapshot scope mutation {mutation}"
+            );
+        }
+    }
+    for (stage, phase, tag) in [
+        (Stage::ParseOnly, PipelinePhase::Parse, "active_parse_only"),
+        (
+            Stage::DeclarationSymbol,
+            PipelinePhase::Resolve,
+            "active_declaration_symbol",
+        ),
+        (
+            Stage::TypeElaboration,
+            PipelinePhase::TypeCheck,
+            "active_type_elaboration",
+        ),
+        (
+            Stage::FormulaStatement,
+            PipelinePhase::StatementCheck,
+            "active_formula_statement",
+        ),
+        (
+            Stage::AdvancedSemantics,
+            PipelinePhase::ClusterResolution,
+            "active_advanced_semantics",
+        ),
+    ] {
+        for alias in [false, true] {
+            let mut case = original.clone();
+            case.expectation.stage = stage;
+            case.expectation.expected_phase = Some(phase);
+            case.expectation.tags = vec![tag.into()];
+            if alias {
+                case.id.0 = "unrelated".into();
+                case.source_path = case.source_path.with_file_name("unrelated.miz");
+                case.expectation_path = case
+                    .expectation_path
+                    .with_file_name("unrelated.expect.toml");
+            }
+            assert!(!super::is_active_parse_only(&case));
+            assert!(!super::is_active_declaration_symbol(&case));
+            assert!(!super::is_active_type_elaboration(&case));
+            assert!(!super::formula_statement::is_active_formula_statement(
+                &config.workspace_root,
+                &case
+            ));
+            assert!(!super::is_active_proof_verification(&case));
+            assert!(!super::step5c11_registration_admitted(
+                &config.workspace_root,
+                &case
+            ));
+            assert!(!super::step5c13_overload_admitted(
+                &config.workspace_root,
+                &case
+            ));
+        }
+    }
+    let run = super::proof_verification::run_proof_verification_case(
+        &config.workspace_root,
+        &config.workspace_root.join(&config.tests_root),
+        &original,
+        999,
+    );
+    assert_eq!(
+        run.status,
+        super::ProofVerificationCaseStatus::Passed,
+        "{:?}",
+        run.failure
+    );
+    let temporary = std::process::Command::new("mktemp")
+        .arg("-d")
+        .output()
+        .unwrap();
+    assert!(temporary.status.success());
+    let root = PathBuf::from(String::from_utf8(temporary.stdout).unwrap().trim());
+    let missing_snapshot = super::proof_verification::run_proof_verification_case(
+        &config.workspace_root,
+        &root,
+        &original,
+        0,
+    );
+    assert_eq!(
+        missing_snapshot.status,
+        super::ProofVerificationCaseStatus::Failed
+    );
+    assert!(
+        missing_snapshot
+            .failure
+            .unwrap()
+            .contains("could not be read")
+    );
+    let snapshot = root.join(original.expectation.snapshots.as_ref().unwrap());
+    std::fs::create_dir_all(snapshot.parent().unwrap()).unwrap();
+    std::fs::write(&snapshot, "incorrect snapshot").unwrap();
+    let wrong_snapshot = super::proof_verification::run_proof_verification_case(
+        &config.workspace_root,
+        &root,
+        &original,
+        0,
+    );
+    assert_eq!(
+        wrong_snapshot.status,
+        super::ProofVerificationCaseStatus::Failed
+    );
+    assert!(
+        wrong_snapshot
+            .failure
+            .unwrap()
+            .contains("snapshot differed")
+    );
+    std::fs::remove_dir_all(&root).unwrap();
+    let mut missing = plan.clone();
+    missing.cases.retain(|case| case.id != original.id);
+    let mut duplicate = plan.clone();
+    duplicate.cases.push(original);
+    for invalid in [missing, duplicate] {
+        assert!(
+            super::validate_active_proof_verification_tags(&config.workspace_root, &invalid)
+                .iter()
+                .any(|d| d.code.0 == "E-PROOF-VERIFICATION-STEP5C14-INVENTORY")
+        );
+    }
+}

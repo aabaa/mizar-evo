@@ -10,9 +10,9 @@ use mizar_core::{
     },
     core_ir::{
         CoreAlgorithmId, CoreDefinitionId, CoreDiagnosticId, CoreFormulaId, CoreItemId,
-        CoreLabelRef, CoreProvenance, CoreSourceRef, CoreVarId, LocalProofOrProgramPath,
-        NormalizedSemanticOrigin, ObligationSeedCanonicalKey, ObligationSeedId, ObligationSeedKind,
-        ObligationSeedStatus,
+        CoreLabelRef, CoreProvenance, CoreSourceRef, CoreTermId, CoreVarId,
+        LocalProofOrProgramPath, NormalizedSemanticOrigin, ObligationSeedCanonicalKey,
+        ObligationSeedId, ObligationSeedKind, ObligationSeedStatus,
     },
 };
 use mizar_session::{BuildSnapshotId, Hash, SourceId, SourceRange};
@@ -325,12 +325,17 @@ pub enum VcGeneratedFormulaKind {
     NegatedPremise,
     GeneratedTypeObligation,
     AlgorithmPathCondition,
+    AlgorithmPostcondition,
     PolicyMarker,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 #[non_exhaustive]
 pub enum VcGeneratedFormulaShape {
+    Equals {
+        left: CoreTermId,
+        right: CoreTermId,
+    },
     True,
     False,
     Ref(VcFormulaRef),
@@ -352,7 +357,7 @@ pub enum VcGeneratedFormulaShape {
 impl VcGeneratedFormulaShape {
     fn referenced_formulas(&self) -> Vec<VcFormulaRef> {
         match self {
-            Self::True | Self::False | Self::Diagnostic(_) => Vec::new(),
+            Self::True | Self::False | Self::Equals { .. } | Self::Diagnostic(_) => Vec::new(),
             Self::Ref(formula) | Self::Not(formula) => vec![*formula],
             Self::And(formulas) | Self::Or(formulas) => formulas.clone(),
             Self::Implies {
@@ -2043,6 +2048,14 @@ fn write_formula_shape_payload(
     active_generated: &mut BTreeSet<VcGeneratedFormulaId>,
 ) -> bool {
     match shape {
+        VcGeneratedFormulaShape::Equals { left, right } => {
+            writeln!(
+                output,
+                "shape: equals core-terms-unresolved {left:?} {right:?}"
+            )
+            .expect("write string");
+            false
+        }
         VcGeneratedFormulaShape::True => {
             writeln!(output, "shape: true").expect("write string");
             true

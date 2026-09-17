@@ -732,7 +732,7 @@ IR264. **Authenticated structure-property definition owner.** [x]
 43. **Algorithm structured conditional, while, and jump CoreIr.** [~]
 44. **Range and collection loop CoreIr.** [ ]
 45. **Match pattern, capture, and exhaustiveness CoreIr.** [ ]
-46. **Algorithm contract, call-request, recursion, and termination metadata.** [ ]
+46. **Algorithm contract, call-request, recursion, and termination metadata.** [~]
 47. **Snapshot and claim CoreIr.** [ ]
     - Tasks 42-47 are separate Chapter-20 joint vertical tasks from mizar-test
       AST extraction through syntax-free checker projection and Core lowering,
@@ -743,9 +743,9 @@ IR264. **Authenticated structure-property definition owner.** [x]
 49. **Range and collection-loop CFG attachment.** [ ]
 50. **Match CFG attachment.** [ ]
 51. **Snapshot and claim flow state.** [ ]
-52. **Contract, call, ghost, and termination CFG attachment.** [ ]
+52. **Contract, call, ghost, and termination CFG attachment.** [~]
 53. **Complete source-derived flow diagnostics.** [~]
-    - [Step 5C.14](../../task_contracts/en/STEP5C14-ALGORITHM-SEMANTICS.md) owns only bounded header/local/return/break lowering and static break/ghost observations; the complete families and CFG snapshot baseline remain deferred.
+    - [Step 5C.14](../../task_contracts/en/STEP5C14-ALGORITHM-SEMANTICS.md) owns bounded header/local/return/break lowering, static break/ghost observations, and ensures metadata with return-site attachment; the complete families and CFG snapshot baseline remain deferred.
     - Tasks 48-53 are separate phase-10 tasks paired with `MT10-CFG-PV`.
       Task 48 adds `SnapshotKind::ControlFlowIr` only with its first real
       baseline. Concrete substitution/VCs, public-code invention, proof/artifact

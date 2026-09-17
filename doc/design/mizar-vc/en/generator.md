@@ -621,3 +621,7 @@ breaking downstream exhaustive matches.
 No exhaustive public enum exceptions are owned by this module. Internal
 `mizar-vc` matches that intentionally enumerate current variants may remain
 exhaustive.
+
+## Bounded source return postconditions
+
+`generate_source_algorithm_postconditions(&CoreIr, BuildSnapshotId, &GenerationSchemaVersion, &VcSchemaVersion) -> Result<VcSet, String>` validates the complete single-object-parameter, one-variable-return profile with optional equality ensures, then derives and authenticates CFG/handoff and existing intake/normalization. It replaces actual result-variable leaves by the actual return term in a VC-owned equality, retaining parameter leaves and the real parameter type-guard context; result/ensures are never assumptions. The raw normalized goal/context is internal only. Source/owner/maps/provenance and every seed are preserved atomically: ensures yields one open postcondition; the existing goal-less termination metadata remains NoConcreteVc with its original status. No ensures yields a complete zero-VC set with honest accounting. Diagnostics, extra state/contracts and malformed inputs fail closed. Anchors remain incomplete where payload identity is unavailable; no discharge, acceptance or termination promotion occurs. Tests replay whole sets/full debug snapshots, source operand/rename/zero-contract controls, and ownership/reference/context/accounting corruption.

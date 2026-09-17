@@ -14860,6 +14860,9 @@ pub fn lower_source_algorithms(
     let mut formulas = Vec::new();
     let mut binders = Vec::new();
     for (binding, entry) in check.bindings().bindings().iter() {
+        if entry.kind == BindingKind::Generated {
+            continue;
+        }
         let declarations = typed
             .iter()
             .filter_map(|(id, node)| {
@@ -14939,11 +14942,15 @@ pub fn lower_source_algorithms(
     // The seal authenticates the written object result even without a return.
     // Its implicit storage is separate from every source-declared binding.
     let result_node = only(*algorithm_node, "TypeExpression")?;
-    let result_source = source_with_provenance(
-        CoreSourceRef::direct(range(result_node)?),
-        &provenance(result_node),
+    let result_source = CoreSourceRef::direct(range(result_node)?);
+    let result_var = CoreVarId::new(
+        check
+            .bindings()
+            .bindings()
+            .iter()
+            .find_map(|(id, entry)| (entry.kind == BindingKind::Generated).then_some(id.index()))
+            .unwrap_or(check.bindings().bindings().len()),
     );
-    let result_var = CoreVarId::new(check.bindings().bindings().len());
     let result_type = checked
         .normalized_types()
         .iter()
@@ -14976,6 +14983,25 @@ pub fn lower_source_algorithms(
         result_source.clone(),
         provenance(result_node),
     ));
+    let mut ensures = Vec::new();
+    for (_, formula) in checked.formulas().iter() {
+        let [left, right] = formula.terms.as_slice() else {
+            return Err(invalid());
+        };
+        if formula.kind != mizar_checker::type_checker::FormulaKind::Equality {
+            return Err(invalid());
+        }
+        let site = formula.site.node();
+        ensures.push(CoreFormulaSeedId::new(formulas.len()));
+        formulas.push(CoreFormulaSeed::new(
+            CoreFormulaSeedKind::Equals {
+                left: *term_ids.get(&left.node()).ok_or_else(invalid)?,
+                right: *term_ids.get(&right.node()).ok_or_else(invalid)?,
+            },
+            CoreSourceRef::direct(range(site)?),
+            provenance(site),
+        ));
+    }
     let context = prepare_core_context(input).map_err(|error| error.to_string())?;
     let owner = context
         .item_registry()
@@ -15062,9 +15088,12 @@ pub fn lower_source_algorithms(
                     role: "result".into(),
                     ty_guard: Some(lowered.formula_map[&result_guard]),
                     source_name: None,
-                    source: result_source,
+                    source: source_with_provenance(result_source, &provenance(result_node)),
                 }),
-                contracts: CoreContractSet::default(),
+                contracts: CoreContractSet {
+                    ensures: ensures.iter().map(|id| lowered.formula_map[id]).collect(),
+                    ..CoreContractSet::default()
+                },
                 payload: AlgorithmPayloadSeed::Statements(statements),
                 ghost_effects: Vec::new(),
                 source: CoreSourceRef::direct(range(*algorithm_node)?),

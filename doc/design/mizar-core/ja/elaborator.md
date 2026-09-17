@@ -889,4 +889,4 @@ obligation/definition/route/acceptance/fact/coverage creditなし。
 
 ## Static source algorithm lowering
 
-`lower_source_algorithms(&SourceAlgorithmCheck) -> Result<CoreIr, String>` は checker が封印した静的 profile だけを消費する。検査済み binding 同一性と項を既存 Core 変数・項・algorithm item・Let/Return/Break seed に変換し、仮引数の不変性、独立した暗黙の result binder による記述された return 型、ghost/runtime role、実際の初期化参照、ソース所有者、break 後を含む全文を保持する。既存 lowering と Core 検証から source map と空の obligation 表を得る。生の SymbolEnv、未解決構文、捏造した変数同一性、契約・状態置換、証明、terminating 昇格は境界に入らない。
+`lower_source_algorithms(&SourceAlgorithmCheck) -> Result<CoreIr, String>` は checker が封印した静的 profile または単一 return の等式契約 profile を消費する。検査済み binding 同一性と項を既存 Core 変数・項・algorithm item・Let/Return/Break seed に変換し、仮引数の不変性、独立した暗黙の result binder による記述された return 型、ghost/runtime role、実際の初期化参照、ソース所有者、break 後を含む全文を保持する。既存 lowering と Core 検証から source map と空の obligation 表を得る。検査済み契約の result BindingId を同じ暗黙 result slot に対応させ、実際の等式を変更せず CoreContractSet.ensures に保持し、CFG が return への配置を所有する。生の SymbolEnv、未解決構文、捏造した変数同一性、具体的な契約・状態置換、証明、terminating 昇格は境界に入らない。

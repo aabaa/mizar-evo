@@ -644,6 +644,7 @@ impl<'a> SliceBuilder<'a> {
                 match &generated.shape {
                     VcGeneratedFormulaShape::True
                     | VcGeneratedFormulaShape::False
+                    | VcGeneratedFormulaShape::Equals { .. }
                     | VcGeneratedFormulaShape::Diagnostic(_) => {}
                     VcGeneratedFormulaShape::Ref(inner) | VcGeneratedFormulaShape::Not(inner) => {
                         self.collect_formula_inner(*inner, active_formulas, active_context);
@@ -1268,7 +1269,7 @@ fn formula_shape_fingerprint_payload(
     match shape {
         VcGeneratedFormulaShape::True => Some("shape=true".to_owned()),
         VcGeneratedFormulaShape::False => Some("shape=false".to_owned()),
-        VcGeneratedFormulaShape::Diagnostic(_) => None,
+        VcGeneratedFormulaShape::Equals { .. } | VcGeneratedFormulaShape::Diagnostic(_) => None,
         VcGeneratedFormulaShape::Ref(formula) => {
             formula_fingerprint_payload_inner(vc_set, *formula, active)
                 .map(|inner| format!("shape=ref({inner})"))
@@ -2489,32 +2490,37 @@ mod tests {
 
     #[test]
     fn unresolved_generated_payloads_are_independently_incomplete() {
-        let set = fixture_set(fixture_parts(
-            VcStatus::NeedsAtp,
-            VcFormulaRef::Generated(VcGeneratedFormulaId::new(0)),
-            vec![generated_formula(
-                0,
-                VcGeneratedFormulaShape::Diagnostic(CoreDiagnosticId::new(0)),
-            )],
-            complete_anchor_fixture(),
-        ));
+        for shape in [
+            VcGeneratedFormulaShape::Diagnostic(CoreDiagnosticId::new(0)),
+            VcGeneratedFormulaShape::Equals {
+                left: mizar_core::core_ir::CoreTermId::new(0),
+                right: mizar_core::core_ir::CoreTermId::new(0),
+            },
+        ] {
+            let set = fixture_set(fixture_parts(
+                VcStatus::NeedsAtp,
+                VcFormulaRef::Generated(VcGeneratedFormulaId::new(0)),
+                vec![generated_formula(0, shape)],
+                complete_anchor_fixture(),
+            ));
 
-        let slices = try_compute_dependency_slices(DependencySliceInput {
-            vc_set: &set,
-            discharge_output: None,
-        })
-        .expect("generated diagnostic slice");
-        let slice = only_slice(&slices);
+            let slices = try_compute_dependency_slices(DependencySliceInput {
+                vc_set: &set,
+                discharge_output: None,
+            })
+            .expect("generated diagnostic slice");
+            let slice = only_slice(&slices);
 
-        assert_eq!(
-            slice.completeness(),
-            DependencySliceCompleteness::IncompleteUncacheable
-        );
-        assert!(slice.unknowns().iter().any(|unknown| {
-            unknown.family() == DependencyUnknownFamily::UpstreamPayload
-                && unknown.local_key() == "generated-formula:unresolved"
-                && unknown.reason().contains("generated formula payload")
-        }));
+            assert_eq!(
+                slice.completeness(),
+                DependencySliceCompleteness::IncompleteUncacheable
+            );
+            assert!(slice.unknowns().iter().any(|unknown| {
+                unknown.family() == DependencyUnknownFamily::UpstreamPayload
+                    && unknown.local_key() == "generated-formula:unresolved"
+                    && unknown.reason().contains("generated formula payload")
+            }));
+        }
     }
 
     #[test]

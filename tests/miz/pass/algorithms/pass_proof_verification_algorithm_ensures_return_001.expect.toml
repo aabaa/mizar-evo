@@ -7,7 +7,10 @@ source = "pass_proof_verification_algorithm_ensures_return_001.miz"
 expected_outcome = "pass"
 expected_phase = "vc_generation"
 diagnostic_codes = []
+tags = ["active_proof_verification"]
+snapshots = "snapshots/vc/pass_proof_verification_algorithm_ensures_return_001.vc_ir.snap"
 spec_refs = [
   "spec.en.20.algorithms.contracts.ensures",
+  "spec.en.mizar_vc.vc_ir.algorithm_ensures_return_snapshot",
 ]
-notes = "Audit-1 semantic-bridge inactive oracle seed (September 2026 audit wave): binding expectation for the Step-5 semantic bridge; no active runner tag, earns no current credit. A terminating loop-free algorithm with an ensures contract generates and satisfies its postcondition obligation at the return site (spec 20.1, 20.4)."
+notes = "Source checking and Core lowering preserve the actual ensures equality and return term; VC generation substitutes result and retains the parameter type context. The complete open VcSet snapshot includes honest metadata-only termination accounting. No proof, termination or algorithm acceptance is claimed."

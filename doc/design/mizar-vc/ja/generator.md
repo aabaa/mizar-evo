@@ -551,3 +551,7 @@ exhaustive match を壊さず追加できるよう、各 enum は `#[non_exhaust
 
 この module が所有する exhaustive public enum exception はない。現在の variant を意図的に
 列挙する `mizar-vc` 内部 match は exhaustive のままでよい。
+
+## Bounded source return postconditions
+
+`generate_source_algorithm_postconditions(&CoreIr, BuildSnapshotId, &GenerationSchemaVersion, &VcSchemaVersion) -> Result<VcSet, String>` は object 仮引数一つ、変数 return 一つ、任意の等式 ensures からなる完全な profile を検証し、CFG/handoff と既存 intake/normalization を導出・認証する。実際の result 変数葉を返却項で置換した VC 所有の等式にし、仮引数葉と実際の仮引数型ガード文脈を保持する。result や ensures を仮定にせず、未置換の正規化結果を外へ公開しない。ソース・所有者・map・由来と全 seed を原子的に保持し、ensures は open postcondition 一つ、既存の goal のない終了メタデータは元の status の NoConcreteVc とする。ensures がなければ正確な accounting を持つ完全なゼロ VC 集合を返す。診断、追加状態・契約、不正入力は拒否する。payload 同一性が不足する anchor は未完のままとし、discharge・承認・終了性昇格を行わない。テストは全体集合・完全 debug snapshot の再現、オペランド・改名・契約なしの対照、所有者・参照・文脈・accounting 破損を検査する。

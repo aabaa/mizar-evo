@@ -6265,3 +6265,7 @@ The advanced-semantics runner additionally admits only the exact positive distin
 ## Static algorithm admission
 
 The exact break-outside-loop and ghost-isolation algorithm rows execute source checking, sealed Core lowering and CFG diagnostics at type_elaboration/elaboration. Admission authenticates IDs, source/sidecar paths, fail outcome/category/key, sole active tag and empty diagnostic/payload/snapshot fields; other stages and aliases cannot claim these rows. Only actual `IllegalBreak` or `GhostIsolationViolation` maps to the corresponding frozen key; an unreachable statement after illegal break is collateral. Unsupported source, handoff failures and other diagnostics remain infrastructure failures. The runner emits no obligations or VCs.
+
+## Algorithm return-contract admission
+
+Only the exact ensures-return algorithm row is admitted at proof_verification/vc_generation with its unchanged outcome/domain, sole active tag, existing ensures ref plus `spec.en.mizar_vc.vc_ir.algorithm_ensures_return_snapshot`, and exact `snapshots/vc/pass_proof_verification_algorithm_ensures_return_001.vc_ir.snap`. IDs, source/sidecar paths and contradictory payloads are checked before the sealed checker/Core/VC route. The full generated VcSet is compared deterministically to its baseline; an in-memory no-ensures source control owns `snapshots/vc/step5c14_algorithm_no_ensures.vc_ir.snap` without another active row. Other stages and unsupported inputs earn no credit; static algorithm observations retain their separate zero-VC route.

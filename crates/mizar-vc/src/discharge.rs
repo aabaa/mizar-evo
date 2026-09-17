@@ -960,6 +960,7 @@ fn collect_generated_formula_refs_inner(
         match &generated.shape {
             VcGeneratedFormulaShape::True
             | VcGeneratedFormulaShape::False
+            | VcGeneratedFormulaShape::Equals { .. }
             | VcGeneratedFormulaShape::Diagnostic(_) => {}
             VcGeneratedFormulaShape::Ref(inner) | VcGeneratedFormulaShape::Not(inner) => {
                 collect_generated_formula_refs_inner(vc_set, *inner, generated_formulas, active);
@@ -1203,9 +1204,9 @@ fn formula_truth_inner(
                 premise,
                 conclusion,
             } => implies_truth(vc_set, *premise, *conclusion, active),
-            VcGeneratedFormulaShape::Quantified { .. } | VcGeneratedFormulaShape::Diagnostic(_) => {
-                FormulaTruth::Unknown
-            }
+            VcGeneratedFormulaShape::Quantified { .. }
+            | VcGeneratedFormulaShape::Equals { .. }
+            | VcGeneratedFormulaShape::Diagnostic(_) => FormulaTruth::Unknown,
         });
 
     active.remove(&id);
@@ -1370,6 +1371,36 @@ mod tests {
         BuildSnapshotId, Hash, InMemorySessionIdAllocator, SessionIdAllocator, SourceId,
         SourceRange,
     };
+
+    #[test]
+    fn generated_core_equality_stays_unknown_even_for_equal_ids() {
+        for right in [7, 8] {
+            let goal = VcFormulaRef::Generated(VcGeneratedFormulaId::new(0));
+            let original = fixture_set(fixture_parts(
+                VcStatus::NeedsAtp,
+                goal,
+                vec![generated_formula(
+                    0,
+                    VcGeneratedFormulaShape::Equals {
+                        left: mizar_core::core_ir::CoreTermId::new(7),
+                        right: mizar_core::core_ir::CoreTermId::new(right),
+                    },
+                )],
+            ));
+            assert_eq!(formula_truth(&original, goal), FormulaTruth::Unknown);
+            assert!(original.canonical_vc_fingerprint(VcId::new(0)).is_none());
+            let output = try_discharge(DischargeInput {
+                vc_set: &original,
+                policy: &DischargePolicy::default(),
+            })
+            .unwrap();
+            assert_eq!(output.vc_set(), &original);
+            assert!(output.evidence_records().is_empty());
+            assert!(original.debug_text().contains(&format!(
+                "Equals {{ left: CoreTermId(7), right: CoreTermId({right}) }}"
+            )));
+        }
+    }
 
     #[test]
     fn discharges_generated_tautology_and_preserves_shape() {

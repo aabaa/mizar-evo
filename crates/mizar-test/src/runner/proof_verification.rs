@@ -79,6 +79,62 @@ pub(super) fn step5c11_proof_admitted(root: Option<&Path>, case: &TestCase) -> b
         && case.expectation.tags.as_slice() == [ACTIVE_PROOF_VERIFICATION_TAG]
 }
 
+const STEP5C14_RETURN_ID: &str = "pass_proof_verification_algorithm_ensures_return_001";
+const STEP5C14_RETURN_SOURCE: &str =
+    "tests/miz/pass/algorithms/pass_proof_verification_algorithm_ensures_return_001.miz";
+const STEP5C14_RETURN_SNAPSHOT: &str =
+    "snapshots/vc/pass_proof_verification_algorithm_ensures_return_001.vc_ir.snap";
+
+pub(super) fn is_step5c14_return_candidate(case: &TestCase) -> bool {
+    case.id.0 == STEP5C14_RETURN_ID
+        || case.expectation.id.0 == STEP5C14_RETURN_ID
+        || case.source_path.file_name() == Path::new(STEP5C14_RETURN_SOURCE).file_name()
+        || case.expectation_path.file_name()
+            == Path::new(STEP5C14_RETURN_SOURCE)
+                .with_extension("expect.toml")
+                .file_name()
+}
+
+pub(super) fn step5c14_return_admitted(root: Option<&Path>, case: &TestCase) -> bool {
+    case.id.0 == STEP5C14_RETURN_ID
+        && case.expectation.id == case.id
+        && case.source_path.ends_with(STEP5C14_RETURN_SOURCE)
+        && case
+            .expectation_path
+            .ends_with(Path::new(STEP5C14_RETURN_SOURCE).with_extension("expect.toml"))
+        && root.is_none_or(|root| {
+            workspace_relative_source(root, &case.source_path).as_deref()
+                == Some(STEP5C14_RETURN_SOURCE)
+                && workspace_relative_source(root, &case.expectation_path).is_some_and(|path| {
+                    Path::new(&path)
+                        == Path::new(STEP5C14_RETURN_SOURCE).with_extension("expect.toml")
+                })
+        })
+        && case.expectation.source == Path::new(STEP5C14_RETURN_SOURCE).file_name().unwrap()
+        && case.expectation.kind == crate::expectation::TestKind::Pass
+        && case.expectation.stage == Stage::ProofVerification
+        && case.expectation.domain == "algorithms.contracts"
+        && case.expectation.expected_phase == Some(PipelinePhase::VcGeneration)
+        && case.expectation.expected_outcome == ExpectedOutcome::Pass
+        && case.expectation.failure_category.is_none()
+        && case.expectation.stable_detail_key.is_none()
+        && case.expectation.rejection_reason.is_none()
+        && case.expectation.diagnostic_codes.is_empty()
+        && case.expectation.diagnostic_payloads.is_empty()
+        && case.expectation.declaration_symbol_payloads.is_empty()
+        && case.expectation.snapshots.as_deref() == Some(Path::new(STEP5C14_RETURN_SNAPSHOT))
+        && case.expectation.tags.as_slice() == [ACTIVE_PROOF_VERIFICATION_TAG]
+        && case
+            .expectation
+            .spec_refs
+            .iter()
+            .map(|id| id.0.as_str())
+            .eq([
+                "spec.en.20.algorithms.contracts.ensures",
+                "spec.en.mizar_vc.vc_ir.algorithm_ensures_return_snapshot",
+            ])
+}
+
 const GENERATION_SCHEMA: &str = "mizar-vc-generation-task31-v1";
 const VC_SCHEMA: &str = "mizar-vc-vcset-task31-v1";
 const STEP5C7_PROOF_CASES: [(&str, &str); 2] = [
@@ -302,6 +358,9 @@ pub(super) fn generate_core_vcs(
 }
 
 pub(super) fn is_active_proof_verification(case: &TestCase) -> bool {
+    if is_step5c14_return_candidate(case) {
+        return step5c14_return_admitted(None, case);
+    }
     if super::is_step5c14_static_candidate(case)
         || super::is_step5c13_overload_candidate(case)
         || super::is_step5c12_candidate(case)
@@ -356,6 +415,7 @@ pub(super) fn validate_active_proof_verification_tags(
                 || case.id.0 == STEP5C4_PROOF_CASE.0
                 || step5c7_proof_candidate(case)
                 || is_step5c11_proof_candidate(case)
+                || is_step5c14_return_candidate(case)
                 || case
                     .expectation
                     .tags
@@ -366,7 +426,10 @@ pub(super) fn validate_active_proof_verification_tags(
     let mut diagnostics =
         super::formula_statement::validate_step5_formula_admission(workspace_root, plan);
     for case in reserved_cases {
-        if is_step5c11_proof_candidate(case) && !step5c11_proof_admitted(Some(workspace_root), case)
+        if is_step5c14_return_candidate(case)
+            && !step5c14_return_admitted(Some(workspace_root), case)
+            || is_step5c11_proof_candidate(case)
+                && !step5c11_proof_admitted(Some(workspace_root), case)
             || !is_active_proof_verification(case)
             || is_step5c2_proof_id(case) && !is_step5c2_proof_workspace_member(workspace_root, case)
             || step5c4_proof_case(case).is_some()
@@ -488,6 +551,24 @@ pub(super) fn validate_active_proof_verification_tags(
             ));
         }
     }
+    if (workspace_root
+        .join("tests/coverage/step5_activation_map.tsv")
+        .is_file()
+        || plan.cases.iter().any(is_step5c14_return_candidate))
+        && plan
+            .cases
+            .iter()
+            .filter(|case| step5c14_return_admitted(Some(workspace_root), case))
+            .count()
+            != 1
+    {
+        diagnostics.push(ValidationDiagnostic::error(
+            Path::new(STEP5C14_RETURN_SOURCE), "proof_verification",
+            "E-PROOF-VERIFICATION-STEP5C14-INVENTORY",
+            "proof_verification.step5c14_return_inventory",
+            "the algorithm return-contract row must occur exactly once with its authenticated snapshot",
+        ));
+    }
     diagnostics
 }
 
@@ -536,6 +617,53 @@ pub(super) fn run_proof_verification_case(
     case: &TestCase,
     ordinal: usize,
 ) -> ProofVerificationCaseResult {
+    if is_step5c14_return_candidate(case) {
+        let check = || -> Result<(), String> {
+            if !step5c14_return_admitted(Some(workspace_root), case) {
+                return Err("invalid algorithm return-contract admission".into());
+            }
+            // Snapshot identity is independent of the active corpus ordering.
+            let build = || -> Result<VcSet, String> {
+                let (source, typed, symbols) = super::source_registration_inputs(
+                    workspace_root,
+                    case,
+                    run_frontend(workspace_root, case, 0)?,
+                )?;
+                let checked = mizar_checker::type_checker::check_source_algorithm_types(
+                    &source, &typed, &symbols,
+                )?;
+                let core = mizar_core::elaborator::lower_source_algorithms(&checked)?;
+                mizar_vc::generator::generate_source_algorithm_postconditions(
+                    &core,
+                    snapshot_id(0),
+                    &GenerationSchemaVersion::new("mizar-vc-generation-step5c14-return-v1"),
+                    &VcSchemaVersion::new("mizar-vc-vcset-step5c14-return-v1"),
+                )
+            };
+            let first = build()?;
+            let second = build()?;
+            if first != second || first.debug_text() != second.debug_text() {
+                return Err("algorithm source-to-VC rerun was nondeterministic".into());
+            }
+            let expected = fs::read_to_string(tests_root.join(STEP5C14_RETURN_SNAPSHOT))
+                .map_err(|error| format!("algorithm VC snapshot could not be read: {error}"))?;
+            if first.debug_text() != expected {
+                return Err("algorithm VC snapshot differed".into());
+            }
+            Ok(())
+        };
+        let failure = check().err();
+        return ProofVerificationCaseResult {
+            id: case.id.clone(),
+            expectation_path: case.expectation_path.clone(),
+            status: if failure.is_none() {
+                ProofVerificationCaseStatus::Passed
+            } else {
+                ProofVerificationCaseStatus::Failed
+            },
+            failure,
+        };
+    }
     if is_step5c11_proof_candidate(case) {
         let check = || -> Result<(), String> {
             if !step5c11_proof_admitted(Some(workspace_root), case) {
@@ -821,9 +949,8 @@ pub(in crate::runner) fn generate_case_vc(
     case: &TestCase,
     _ordinal: usize,
 ) -> Result<VcSet, String> {
-    // Task-180 is the single snapshot-backed proof case.  Its source and
-    // snapshot identities stay fixed when later snapshot-free proof routes
-    // are admitted before it in corpus order.
+    // Task-180 source and snapshot identities stay fixed when later proof
+    // routes are admitted before it in corpus order.
     let ordinal = 0;
     let frontend = run_frontend(workspace_root, case, ordinal)?;
     if !frontend.diagnostics.is_empty() {

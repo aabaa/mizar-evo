@@ -572,3 +572,7 @@ breaking downstream exhaustive matches.
 No exhaustive public enum exceptions are owned by this module. Internal
 `mizar-vc` matches that intentionally enumerate current variants may remain
 exhaustive.
+
+## Concrete return equality
+
+`VcGeneratedFormulaKind::AlgorithmPostcondition` with `VcGeneratedFormulaShape::Equals { left: CoreTermId, right: CoreTermId }` stores the actual substituted equality over existing immutable Core terms. Its generator authenticates both references and ownership against Core; no parallel term representation or string formula is introduced. Debug bytes preserve both ordered operands. Without Core payload, canonical identity and dependency/reuse analysis remain unresolved, and discharge returns Unknown; equal numeric ids alone prove nothing.
