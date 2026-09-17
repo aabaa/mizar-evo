@@ -318,6 +318,90 @@ pub(in crate::runner) fn step5c5_functor_duplicate_detail_keys(
     resolver_keys: &[String],
 ) -> Option<Vec<String>> {
     let definitions = surface_nodes_with_kind(ast, SurfaceNodeKind::FunctorDefinition);
+    let predicates = surface_nodes_with_kind(ast, SurfaceNodeKind::PredicateDefinition);
+    if definitions.is_empty() && !predicates.is_empty() {
+        use mizar_resolve::{
+            declarations::DeclarationShellCollector,
+            env::DeclarationConflictClass,
+            symbols::{SymbolCollector, SymbolDiagnosticClass},
+        };
+        let [left, right] = predicates.as_slice() else {
+            return None;
+        };
+        let items = super::source_ast::exact_compilation_item_list(ast)?;
+        if subtree_has_recovery(ast, items)
+            || ast
+                .nodes()
+                .iter()
+                .any(|node| node.range.source_id != ast.source_id)
+            || structural_child_ids(ast, items).iter().any(|id| {
+                ast.node(*id)
+                    .is_none_or(|node| node.kind != SurfaceNodeKind::DefinitionBlockItem)
+            })
+            || shells.declarations().iter().any(|shell| {
+                !matches!(
+                    shell.kind(),
+                    DeclarationShellKind::DefinitionBlock
+                        | DeclarationShellKind::PredicateDefinition
+                )
+            })
+            || resolver_keys != ["declaration_symbol.signature.same_signature_definition_conflict"]
+        {
+            return None;
+        }
+        let actual_shells = DeclarationShellCollector::new(ast, module).collect();
+        let projections = SignatureProjectionExtractor::new(
+            ast,
+            &actual_shells,
+            NamespacePath::new(module.path().as_str()),
+        )
+        .extract();
+        let actual =
+            SymbolCollector::new(ast.source_id, module, &actual_shells, &projections).collect();
+        let [diagnostic] = actual.diagnostics() else {
+            return None;
+        };
+        if &actual_shells != shells
+            || actual.env() != symbols
+            || symbols.symbols().len() != 2
+            || symbols.definitions().len() != 2
+            || diagnostic.class() != SymbolDiagnosticClass::SameSignatureDefinitionConflict
+            || diagnostic.range() != left.1.range
+            || diagnostic.candidates().len() != 2
+            || !diagnostic
+                .candidates()
+                .iter()
+                .zip([left, right])
+                .all(|(symbol, (id, node))| {
+                    authenticated_local_declaration(
+                        ast,
+                        module,
+                        shells,
+                        symbols,
+                        *id,
+                        node,
+                        DeclarationShellKind::PredicateDefinition,
+                        SymbolKind::Predicate,
+                        DefinitionKind::Predicate,
+                        false,
+                    ) && symbols
+                        .definitions()
+                        .by_symbol(symbol)
+                        .is_some_and(|definition| {
+                            definition.origin().anchor() == &SourceAnchor::Range(node.range)
+                                && definition.conflict()
+                                    == Some(
+                                        &DeclarationConflictClass::SameSignatureDefinitionConflict,
+                                    )
+                        })
+                })
+        {
+            return None;
+        }
+        return Some(vec![
+            "predicates.definition.duplicate_same_signature".to_owned(),
+        ]);
+    }
     let [left, right] = definitions.as_slice() else {
         return None;
     };
@@ -1794,5 +1878,353 @@ const fn source_range(source_id: SourceId, start: usize, end: usize) -> SourceRa
         source_id,
         start,
         end,
+    }
+}
+
+#[cfg(test)]
+mod predicate_duplicate_tests {
+    use super::*;
+    use mizar_resolve::{
+        declarations::DeclarationShellCollector,
+        env::DeclarationConflictClass,
+        symbols::{SymbolCollector, SymbolDiagnosticClass},
+    };
+    use mizar_session::{ModulePath, PackageId};
+
+    #[test]
+    fn step5c5_predicate_duplicate_uses_actual_loci_and_conflict_provenance() {
+        let exact = include_str!(concat!(
+            env!("CARGO_MANIFEST_DIR"),
+            "/../../tests/miz/fail/predicates/fail_type_elaboration_pred_duplicate_same_signature_001.miz"
+        ));
+        let (first, tail) = exact.split_once("\n\ndefinition\n").unwrap();
+        let second = format!("definition\n{tail}");
+        let heterogeneous = first.replace("let X, Y be set;", "let X be set; let Y be object;");
+        let module = ModuleId::new(
+            PackageId::new("predicate-source"),
+            ModulePath::new("duplicate"),
+        );
+        let collect = |text: &str| {
+            let output = crate::runner::formula_statement::step5c8_test_frontend(text);
+            assert!(
+                output.diagnostics.is_empty(),
+                "{text}: {:?}",
+                output.diagnostics
+            );
+            let ast = output.ast.unwrap();
+            let shells = DeclarationShellCollector::new(&ast, &module).collect();
+            let projections = SignatureProjectionExtractor::new(
+                &ast,
+                &shells,
+                NamespacePath::new(module.path().as_str()),
+            )
+            .extract();
+            let collected =
+                SymbolCollector::new(ast.source_id, &module, &shells, &projections).collect();
+            (ast, shells, collected)
+        };
+        let key =
+            vec!["declaration_symbol.signature.same_signature_definition_conflict".to_owned()];
+        let expected = Some(vec![
+            "predicates.definition.duplicate_same_signature".to_owned(),
+        ]);
+        for (source, conflict) in [
+            (exact.to_owned(), true),
+            (
+                format!("{first}\n{}", second.replace('X', "A").replace('Y', "B")),
+                true,
+            ),
+            (
+                exact
+                    .replace("Dup1Def", "First")
+                    .replace("Dup2Def", "Second")
+                    .replace("means X = Y", "means X in Y")
+                    .replace("means Y = X", "means Y = Y"),
+                true,
+            ),
+            (format!("{second}\n{first}"), true),
+            (
+                format!("{first}\n{}", second.replace("X, Y be set", "Y, X be set")),
+                true,
+            ),
+            (
+                format!(
+                    "{first}\n{}",
+                    second.replace("let X, Y be set;", "let X be set; let Y be set;")
+                ),
+                true,
+            ),
+            (
+                format!(
+                    "{first}\n{}",
+                    second.replace("let X, Y be set;", "let X be object; let Y be set;")
+                ),
+                false,
+            ),
+            (
+                format!("{first}\n{}", second.replace("duppred", "otherpred")),
+                false,
+            ),
+            (
+                format!("{first}\ndefinition let X be set; pred duppred X means X=X; end;"),
+                false,
+            ),
+            (
+                format!(
+                    "{heterogeneous}\n{}",
+                    second.replace("let X, Y be set;", "let X be object; let Y be set;")
+                ),
+                false,
+            ),
+            (
+                format!(
+                    "{heterogeneous}\n{}",
+                    second.replace("let X, Y be set;", "let Y be object; let X be set;")
+                ),
+                true,
+            ),
+            (
+                format!(
+                    "{heterogeneous}\n{}",
+                    second
+                        .replace("let X, Y be set;", "let X be object; let Y be set;")
+                        .replace("X duppred Y", "Y duppred X")
+                ),
+                true,
+            ),
+            (
+                format!(
+                    "{first}\ndefinition let X,Y be set; func X duppred Y -> set equals X; end;"
+                ),
+                false,
+            ),
+        ] {
+            let (ast, shells, collected) = collect(&source);
+            let conflicts = collected
+                .diagnostics()
+                .iter()
+                .filter(|d| d.class() == SymbolDiagnosticClass::SameSignatureDefinitionConflict)
+                .collect::<Vec<_>>();
+            assert_eq!(conflicts.len(), usize::from(conflict), "{source}");
+            let mapped = step5c5_functor_duplicate_detail_keys(
+                &ast,
+                &module,
+                &shells,
+                collected.env(),
+                &key,
+            );
+            if !conflict {
+                assert_eq!(mapped, None, "{source}");
+                continue;
+            }
+            assert_eq!(mapped, expected, "{source}");
+            assert_eq!(collected.diagnostics().len(), 1);
+            let definitions = surface_nodes_with_kind(&ast, SurfaceNodeKind::PredicateDefinition);
+            let diagnostic = conflicts[0];
+            assert_eq!(diagnostic.range(), definitions[0].1.range);
+            assert_eq!(diagnostic.candidates().len(), 2);
+            for (symbol, (_, node)) in diagnostic.candidates().iter().zip(definitions) {
+                let definition = collected.env().definitions().by_symbol(symbol).unwrap();
+                assert_eq!(definition.kind(), DefinitionKind::Predicate);
+                assert_eq!(
+                    definition.conflict(),
+                    Some(&DeclarationConflictClass::SameSignatureDefinitionConflict)
+                );
+                assert_eq!(definition.origin().source_id(), ast.source_id);
+                assert_eq!(definition.origin().module_id(), &module);
+                assert_eq!(
+                    definition.origin().anchor(),
+                    &SourceAnchor::Range(node.range)
+                );
+            }
+        }
+        let functors = include_str!(concat!(
+            env!("CARGO_MANIFEST_DIR"),
+            "/../../tests/miz/fail/functors/fail_type_elaboration_func_duplicate_same_signature_001.miz"
+        ));
+        let mixed = functors.replacen(
+            "  coherence;",
+            "  coherence;\n  pred Extra: extra X means X=X;",
+            1,
+        );
+        let (mixed_ast, mixed_shells, mixed_symbols) = collect(&mixed);
+        assert_eq!(mixed_symbols.diagnostics().len(), 1);
+        assert_eq!(
+            step5c5_functor_duplicate_detail_keys(
+                &mixed_ast,
+                &module,
+                &mixed_shells,
+                mixed_symbols.env(),
+                &key
+            ),
+            Some(vec![
+                "functors.definition.duplicate_same_signature".to_owned()
+            ])
+        );
+        let forward = format!(
+            "{first}\ndefinition let X be set; pred X duppred Y means X=X; let Y be set; end;"
+        );
+        let (forward_ast, forward_shells, forward_symbols) = collect(&forward);
+        assert!(
+            forward_symbols
+                .diagnostics()
+                .iter()
+                .all(|diagnostic| diagnostic.class()
+                    != SymbolDiagnosticClass::SameSignatureDefinitionConflict)
+        );
+        assert_eq!(
+            step5c5_functor_duplicate_detail_keys(
+                &forward_ast,
+                &module,
+                &forward_shells,
+                forward_symbols.env(),
+                &key
+            ),
+            None
+        );
+        for unsupported in [
+            "definition let X,Y be set; pred X duppred(Y) means X=Y; end;",
+            "definition let T be type; let X,Y be T; pred X duppred[T] Y means X=Y; end;",
+            "definition let X,Y be set; pred X duppred X means X=X; end;",
+            "definition let X be set; pred X duppred Y means X=X; end;",
+            "definition let X,Y be set; assume X=X; pred X duppred Y means X=Y; end;",
+        ] {
+            let source = format!("{first}\n{unsupported}");
+            let (ast, shells, collected) = collect(&source);
+            assert_eq!(
+                step5c5_functor_duplicate_detail_keys(
+                    &ast,
+                    &module,
+                    &shells,
+                    collected.env(),
+                    &key
+                ),
+                None,
+                "{source}"
+            );
+        }
+        let (ast, shells, collected) = collect(exact);
+        let symbols = collected.env();
+        for malformed in [
+            exact.replace("means Y = X", "means Y ="),
+            format!("{first}\ndefinition let X,Y be Missing; pred X duppred Y means X=Y; end;"),
+            "definition let X,duppred be set; pred L1: X duppred Y means X=X; end; definition let A,B be set; pred L2: A B Y means A=A; end;".to_owned(),
+            "definition let duppred,Y be set; pred L1: X duppred Y means Y=Y; end; definition let A,B be set; pred L2: X A B means A=A; end;".to_owned(),
+        ] {
+            let recovered = crate::runner::formula_statement::step5c8_test_frontend(&malformed);
+            assert!(!recovered.diagnostics.is_empty(), "{malformed}");
+            let recovered_ast = recovered.ast.unwrap();
+            let recovered_shells = DeclarationShellCollector::new(&recovered_ast, &module).collect();
+            let projections = SignatureProjectionExtractor::new(&recovered_ast, &recovered_shells, NamespacePath::new(module.path().as_str())).extract();
+            let recovered_symbols = SymbolCollector::new(recovered_ast.source_id, &module, &recovered_shells, &projections).collect();
+            assert_eq!(step5c5_functor_duplicate_detail_keys(&recovered_ast, &module, &recovered_shells, recovered_symbols.env(), &key), None, "{malformed}");
+        }
+        let mut foreign_source = ast.clone();
+        use mizar_session::SessionIdAllocator;
+        let ids = mizar_session::InMemorySessionIdAllocator::new();
+        let snapshot = crate::runner::shared::snapshot_id(0);
+        ids.next_source_id(snapshot).unwrap();
+        foreign_source.source_id = ids.next_source_id(snapshot).unwrap();
+        assert_eq!(
+            step5c5_functor_duplicate_detail_keys(&foreign_source, &module, &shells, symbols, &key),
+            None
+        );
+        let foreign_module = ModuleId::new(PackageId::new("foreign"), ModulePath::new("duplicate"));
+        assert_eq!(
+            step5c5_functor_duplicate_detail_keys(&ast, &foreign_module, &shells, symbols, &key),
+            None
+        );
+        assert_eq!(
+            step5c5_functor_duplicate_detail_keys(
+                &ast,
+                &module,
+                &DeclarationShellSet::default(),
+                symbols,
+                &key
+            ),
+            None
+        );
+        for keys in [vec![], vec![key[0].clone(), "unrelated".into()]] {
+            assert_eq!(
+                step5c5_functor_duplicate_detail_keys(&ast, &module, &shells, symbols, &keys),
+                None
+            );
+        }
+        let (_, _, stale) = collect(&exact.replace("duppred", "otherpred"));
+        assert_eq!(
+            step5c5_functor_duplicate_detail_keys(&ast, &module, &shells, stale.env(), &key),
+            None
+        );
+        let altered = resolver_env_with_mutation(
+            symbols,
+            SourceFunctorDefinitionRouteMutation::WrongResolverContribution,
+        );
+        assert_ne!(&altered, symbols);
+        assert_eq!(
+            step5c5_functor_duplicate_detail_keys(&ast, &module, &shells, &altered, &key),
+            None
+        );
+        let mut forged_definitions = DefinitionIndex::new();
+        for definition in symbols.definitions().iter() {
+            let mut shell = DefinitionShell::new(
+                definition.symbol().clone(),
+                definition.kind(),
+                definition.origin().clone(),
+                definition.contribution(),
+            )
+            .with_visibility(definition.visibility())
+            .with_parameters(definition.parameters().to_vec())
+            .with_binders(definition.binders().to_vec())
+            .with_dependencies(definition.dependencies().to_vec())
+            .with_conflict(DeclarationConflictClass::DuplicateSpelling);
+            if let Some(arity) = definition.arity() {
+                shell = shell.with_arity(arity);
+            }
+            if let Some(notation) = definition.notation_shape() {
+                shell = shell.with_notation_shape(notation);
+            }
+            if let Some(doc) = definition.doc_attachment() {
+                shell = shell.with_doc_attachment(doc.clone());
+            }
+            if let Some(signature) = definition.signature() {
+                shell = shell.with_signature(signature.clone());
+            }
+            assert_eq!(forged_definitions.insert(shell), definition.id());
+        }
+        let forged = SymbolEnv::new(
+            module.clone(),
+            SymbolEnvIndexes {
+                imports: symbols.imports().clone(),
+                exports: symbols.exports().clone(),
+                symbols: symbols.symbols().clone(),
+                labels: symbols.labels().clone(),
+                definitions: forged_definitions,
+                overloads: symbols.overloads().clone(),
+                registrations: symbols.registrations().clone(),
+                lexical_summaries: symbols.lexical_summaries().clone(),
+                namespace_graph: symbols.namespace_graph().clone(),
+                declaration_dependencies: symbols.declaration_dependencies().clone(),
+                contributions: symbols.contributions().clone(),
+                module_summaries: symbols.module_summaries().clone(),
+            },
+        );
+        assert_eq!(
+            step5c5_functor_duplicate_detail_keys(&ast, &module, &shells, &forged, &key),
+            None
+        );
+        let (unrelated_ast, unrelated_shells, unrelated) = collect(&format!(
+            "{exact}\ntheorem Extra: for X being set holds X=X; theorem Extra: for X being set holds X=X;"
+        ));
+        assert!(unrelated.diagnostics().len() > 1);
+        assert_eq!(
+            step5c5_functor_duplicate_detail_keys(
+                &unrelated_ast,
+                &module,
+                &unrelated_shells,
+                unrelated.env(),
+                &key
+            ),
+            None
+        );
     }
 }

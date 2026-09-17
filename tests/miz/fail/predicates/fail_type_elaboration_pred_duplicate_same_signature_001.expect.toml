@@ -12,4 +12,5 @@ diagnostic_codes = []
 spec_refs = [
   "spec.en.09.predicates.definition.uniqueness",
 ]
-notes = "Audit-1 semantic-bridge inactive oracle seed (September 2026 audit wave): binding expectation for the Step-5 semantic bridge; no active runner tag, earns no current credit. Two predicate definitions with the same symbol and the same loci signature in one module conflict (spec 9.8)."
+tags = ["active_type_elaboration"]
+notes = "Source-derived ordinary predicate signature conflict at resolve; actual bare builtin loci determine identity independently of definition labels, bodies and bound-variable spelling."

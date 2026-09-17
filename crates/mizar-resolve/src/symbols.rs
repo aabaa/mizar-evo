@@ -122,12 +122,13 @@ struct FunctorSignatureKey {
     argument_context: String,
     pattern: String,
     arity: Option<u32>,
-    return_type: String,
+    return_type: Option<String>,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Hash)]
 struct FunctorArgumentSignatureKey {
     namespace: NamespacePath,
+    kind: SymbolKind,
     spelling: String,
     argument_context: String,
     pattern: String,
@@ -138,11 +139,17 @@ impl FunctorSignatureKey {
     fn argument_key(
         &self,
         namespace: NamespacePath,
+        kind: SymbolKind,
         spelling: String,
     ) -> FunctorArgumentSignatureKey {
         FunctorArgumentSignatureKey {
             namespace,
-            spelling,
+            kind,
+            spelling: if kind == SymbolKind::Predicate {
+                String::new()
+            } else {
+                spelling
+            },
             argument_context: self.argument_context.clone(),
             pattern: self.pattern.clone(),
             arity: self.arity,
@@ -315,8 +322,8 @@ pub enum SymbolDiagnosticClass {
     /// Same argument-signature functor declarations with incompatible return
     /// signatures.
     SameSignatureReturnConflict,
-    /// Same argument-signature functor declarations with identical return
-    /// signatures.
+    /// Ordinary declarations with identical argument signatures and the same
+    /// or absent return signature.
     SameSignatureDefinitionConflict,
 }
 
@@ -1085,10 +1092,13 @@ impl<'a> SignatureProjectionExtractor<'a> {
             return None;
         }
         let notation = normalized_token_shape(pattern);
-        let functor_signature_key = (symbol_kind == SymbolKind::Functor
-            && definition_kind == DefinitionKind::Functor)
-            .then(|| self.functor_signature_key(shell, view, &notation, None))
-            .flatten();
+        let functor_signature_key = match (symbol_kind, definition_kind) {
+            (SymbolKind::Functor, DefinitionKind::Functor)
+            | (SymbolKind::Predicate, DefinitionKind::Predicate) => {
+                self.functor_signature_key(shell, view, &notation, None)
+            }
+            _ => None,
+        };
         let mut projection = SymbolDeclarationProjection::new(
             shell.id(),
             self.namespace.clone(),
@@ -1124,12 +1134,148 @@ impl<'a> SignatureProjectionExtractor<'a> {
         pattern: &str,
         arity: Option<u32>,
     ) -> Option<FunctorSignatureKey> {
-        let return_type = first_child_matching(view, is_type_expression)?;
+        if view.kind() == &SurfaceNodeKind::FunctorDefinition {
+            let return_type = first_child_matching(view, is_type_expression)?;
+            return Some(FunctorSignatureKey {
+                argument_context: self.definition_context_key(shell),
+                pattern: pattern.to_owned(),
+                arity,
+                return_type: Some(normalized_token_shape(return_type)),
+            });
+        }
+        let pattern = first_child_matching(view, is_predicate_pattern)?;
+        let block = self
+            .ast
+            .node_view(self.definition_context_block(shell)?.node_id())?;
+        if !block.children().contains(&view.id())
+            || self.ast.node_views().any(|node| {
+                source_range_contains(block.range(), node.range())
+                    && (node.is_recovered()
+                        || matches!(node.kind(), SurfaceNodeKind::ErrorRecovery(_)))
+            })
+        {
+            return None;
+        }
+        let mut parameters = BTreeMap::new();
+        for parameter in block
+            .child_views()
+            .take_while(|child| child.id() != view.id())
+        {
+            match parameter.kind() {
+                SurfaceNodeKind::Token(_)
+                | SurfaceNodeKind::PredicateDefinition
+                | SurfaceNodeKind::FunctorDefinition => continue,
+                SurfaceNodeKind::DefinitionParameter => {}
+                _ => return None,
+            }
+            if parameter.range().end > view.range().start {
+                return None;
+            }
+            for segment in parameter.child_views() {
+                if let Some(token) = segment.as_token() {
+                    if matches!(
+                        (token.kind, token.text.as_ref()),
+                        (SurfaceTokenKind::ReservedWord, "let")
+                            | (SurfaceTokenKind::ReservedSymbol, "," | ";")
+                    ) {
+                        continue;
+                    }
+                    return None;
+                }
+                if segment.kind() != &SurfaceNodeKind::QualifiedVariableSegment {
+                    return None;
+                }
+                let parts = segment.child_views().collect::<Vec<_>>();
+                let (ty, names) = parts.split_last()?;
+                let (be, names) = names.split_last()?;
+                if ty.kind() != &SurfaceNodeKind::TypeExpression
+                    || !matches!(be.as_token(), Some(token) if token.kind == SurfaceTokenKind::ReservedWord && token.text.as_ref() == "be")
+                    || names.is_empty()
+                    || names.len() % 2 == 0
+                {
+                    return None;
+                }
+                let heads = ty.child_views().collect::<Vec<_>>();
+                let [head] = heads.as_slice() else {
+                    return None;
+                };
+                if head.kind() != &SurfaceNodeKind::TypeHead {
+                    return None;
+                }
+                let tokens = head.child_views().collect::<Vec<_>>();
+                let [token] = tokens.as_slice() else {
+                    return None;
+                };
+                let token = token.as_token()?;
+                if token.kind != SurfaceTokenKind::ReservedWord
+                    || !matches!(token.text.as_ref(), "set" | "object")
+                {
+                    return None;
+                }
+                for (index, name) in names.iter().enumerate() {
+                    let name = name.as_token()?;
+                    if index % 2 == 1 {
+                        if name.kind != SurfaceTokenKind::ReservedSymbol
+                            || name.text.as_ref() != ","
+                        {
+                            return None;
+                        }
+                    } else if name.kind != SurfaceTokenKind::Identifier
+                        || parameters
+                            .insert(name.text.as_ref(), token.text.as_ref())
+                            .is_some()
+                    {
+                        return None;
+                    }
+                }
+            }
+        }
+        let mut loci = BTreeSet::new();
+        let mut types = Vec::new();
+        let mut skeleton = Vec::new();
+        let mut notation = false;
+        for child in pattern.child_views() {
+            let token = child.as_token()?;
+            let text = token.text.as_ref();
+            if token.kind == SurfaceTokenKind::Identifier && parameters.contains_key(text) {
+                if !loci.insert(text) {
+                    return None;
+                }
+                skeleton.push(("locus", types.len().to_string()));
+                types.push(parameters[text]);
+            } else if token.kind == SurfaceTokenKind::ReservedSymbol && text == "," {
+                skeleton.push(("comma", String::new()));
+            } else if matches!(
+                token.kind,
+                SurfaceTokenKind::Identifier
+                    | SurfaceTokenKind::UserSymbol
+                    | SurfaceTokenKind::LexemeRun
+            ) && !notation
+            {
+                notation = true;
+                skeleton.push(("notation", text.to_owned()));
+            } else {
+                return None;
+            }
+        }
+        let head = skeleton.iter().position(|(kind, _)| *kind == "notation")?;
+        if [&skeleton[..head], &skeleton[head + 1..]]
+            .iter()
+            .any(|side| {
+                !side.is_empty()
+                    && (side.len() % 2 == 0
+                        || side.iter().enumerate().any(|(index, (kind, _))| {
+                            *kind != if index % 2 == 0 { "locus" } else { "comma" }
+                        }))
+            })
+        {
+            return None;
+        }
         Some(FunctorSignatureKey {
-            argument_context: self.definition_context_key(shell),
-            pattern: pattern.to_owned(),
-            arity,
-            return_type: normalized_token_shape(return_type),
+            argument_context: format!("{types:?}"),
+            pattern: format!("{skeleton:?}"),
+            arity: u32::try_from(types.len()).ok(),
+            return_type: None,
         })
     }
 
@@ -1794,9 +1940,14 @@ fn classify_same_argument_signature_conflicts(
         if item.projection.overload_policy() != SymbolOverloadPolicy::Overloadable {
             continue;
         }
-        if item.projection.symbol_kind() != SymbolKind::Functor
-            || item.projection.definition_kind() != Some(DefinitionKind::Functor)
-        {
+        if !matches!(
+            (
+                item.projection.symbol_kind(),
+                item.projection.definition_kind()
+            ),
+            (SymbolKind::Functor, Some(DefinitionKind::Functor))
+                | (SymbolKind::Predicate, Some(DefinitionKind::Predicate))
+        ) {
             continue;
         }
         let Some(key) = &item.projection.functor_signature_key else {
@@ -1805,6 +1956,7 @@ fn classify_same_argument_signature_conflicts(
         groups
             .entry(key.argument_key(
                 item.projection.namespace().clone(),
+                item.projection.symbol_kind(),
                 item.projection.primary_spelling().to_owned(),
             ))
             .or_default()
@@ -1820,7 +1972,7 @@ fn classify_same_argument_signature_conflicts(
         let mut return_keys = candidates
             .iter()
             .filter_map(|candidate| candidate.projection.functor_signature_key.as_ref())
-            .map(|key| key.return_type.as_str())
+            .map(|key| key.return_type.as_deref())
             .collect::<Vec<_>>();
         return_keys.sort_unstable();
         return_keys.dedup();

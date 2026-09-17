@@ -5677,9 +5677,10 @@ route は duplicate frontend/checker handshake を要求し、type route は leg
 
 ## Step 5C.5 type-elaboration admission
 
-harnessはnon-gap 7行だけをexact id、workspace-relative path、stage、phase、outcome、sole
-tagで受理する。private source-semantic dispatch前にresolver diagnosticを保持し、
-G1/G2/G6/G9の10行はtagが付いてもineligibleとする。
+harness は既存7行を維持し、source/sidecar metadata を厳密に照合して predicate duplicate だけを resolve に追加する。
+collector replay は既存 signature conflict 1件を実際の両 predicate 宣言と保存された conflict metadata に結び付け、
+label・本体・生の locus 名を判定根拠にしない。追加 resolver error は拒否し、残る G1/G2/G6/G9 の9行は
+tag があっても未対応とする。予約した case 同一性を他 stage にフォールバックさせず、predicate の証明受理は与えない。
 
 ## Module declaration corpus bridge
 

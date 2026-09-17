@@ -769,8 +769,8 @@ pub enum DeclarationConflictClass {
     SameSignatureReturnConflict,
     /// Recovered declaration shell.
     RecoveredShell,
-    /// Same argument-signature functor declarations with identical return
-    /// signatures.
+    /// Ordinary declarations with identical argument signatures and the same
+    /// or absent return signature.
     SameSignatureDefinitionConflict,
 }
 

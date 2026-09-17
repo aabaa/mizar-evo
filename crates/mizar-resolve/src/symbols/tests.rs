@@ -704,6 +704,190 @@ fn overloadable_candidates_form_groups_and_illegal_groups_get_diagnostics() {
 }
 
 #[test]
+fn predicate_signatures_canonicalize_actual_loci_and_keep_conflict_metadata() {
+    for parameters in [
+        vec![("A", "set"), ("B", "object")],
+        vec![("B", "object"), ("A", "set")],
+    ] {
+        let (projections, result) = predicate_signature_pair(&parameters, &["A", "rel", "B"]);
+        assert_ne!(
+            projections[0].primary_spelling(),
+            projections[1].primary_spelling()
+        );
+        assert_eq!(
+            projections[0].functor_signature_key,
+            projections[1].functor_signature_key
+        );
+        assert_eq!(result.diagnostics().len(), 1);
+        let diagnostic = &result.diagnostics()[0];
+        assert_eq!(
+            diagnostic.class(),
+            SymbolDiagnosticClass::SameSignatureDefinitionConflict
+        );
+        assert_eq!(diagnostic.candidates().len(), 2);
+        let ranges = candidate_source_ranges(&result, diagnostic.candidates());
+        assert!(ranges[0].start < ranges[1].start);
+        for symbol in diagnostic.candidates() {
+            assert_eq!(
+                result
+                    .env()
+                    .definitions()
+                    .by_symbol(symbol)
+                    .unwrap()
+                    .conflict(),
+                Some(&DeclarationConflictClass::SameSignatureDefinitionConflict)
+            );
+        }
+    }
+}
+
+#[test]
+fn predicate_signature_near_misses_and_unsupported_loci_do_not_conflict() {
+    for (parameters, pattern, supported) in [
+        (
+            vec![("A", "set"), ("B", "set")],
+            vec!["A", "rel", "B"],
+            true,
+        ),
+        (
+            vec![("A", "set"), ("B", "object")],
+            vec!["B", "rel", "A"],
+            true,
+        ),
+        (
+            vec![("A", "set"), ("B", "object")],
+            vec!["A", "other", "B"],
+            true,
+        ),
+        (vec![("A", "set")], vec!["rel", "A"], true),
+        (vec![("A", "set")], vec!["A", "rel", "B"], false),
+        (vec![("A", "set")], vec!["A", "rel", "A"], false),
+        (vec![("A", "set"), ("B", "set")], vec!["A", "B", "Y"], false),
+        (vec![("A", "set"), ("B", "set")], vec!["Y", "B", "A"], false),
+        (vec![("A", "set")], vec!["A", ",", "rel"], false),
+        (vec![("A", "set")], vec!["rel", ",", "A"], false),
+        (vec![("A", "set")], vec!["rel", "A", ","], false),
+        (
+            vec![("A", "set"), ("B", "set")],
+            vec!["rel", "A", ",", "B"],
+            true,
+        ),
+        (vec![("A", "set"), ("A", "object")], vec!["rel", "A"], false),
+        (vec![("A", "type")], vec!["rel", "A"], false),
+        (
+            vec![("A", "set"), ("B", "object")],
+            vec!["A", "rel", "(", "B", ")"],
+            false,
+        ),
+    ] {
+        let (projections, result) = predicate_signature_pair(&parameters, &pattern);
+        assert_eq!(
+            projections[1].functor_signature_key.is_some(),
+            supported,
+            "{parameters:?} {pattern:?}"
+        );
+        assert!(
+            result.diagnostics().is_empty(),
+            "{parameters:?} {pattern:?}"
+        );
+    }
+}
+
+fn predicate_signature_pair(
+    parameters: &[(&str, &str)],
+    pattern: &[&str],
+) -> (Vec<SymbolDeclarationProjection>, SymbolCollectionResult) {
+    let source = source_id();
+    let mut builder = SurfaceAstBuilder::new(source);
+    let mut blocks = Vec::new();
+    for (index, (parameters, pattern)) in [
+        (&[("X", "set"), ("Y", "object")][..], &["X", "rel", "Y"][..]),
+        (parameters, pattern),
+    ]
+    .into_iter()
+    .enumerate()
+    {
+        let start = index * 500;
+        let mut children = Vec::new();
+        for (index, (name, ty)) in parameters.iter().enumerate() {
+            let offset = start + index * 30;
+            let name = builder.add_token(
+                SurfaceTokenKind::Identifier,
+                *name,
+                range(source, offset, offset + 1),
+            );
+            let be = builder.add_token(
+                SurfaceTokenKind::ReservedWord,
+                "be",
+                range(source, offset + 2, offset + 4),
+            );
+            let ty = builder.add_token(
+                SurfaceTokenKind::ReservedWord,
+                *ty,
+                range(source, offset + 5, offset + 11),
+            );
+            let head = builder.add_node(
+                SurfaceNodeKind::TypeHead,
+                range(source, offset + 5, offset + 11),
+                vec![ty],
+            );
+            let ty = builder.add_node(
+                SurfaceNodeKind::TypeExpression,
+                range(source, offset + 5, offset + 11),
+                vec![head],
+            );
+            let segment = builder.add_node(
+                SurfaceNodeKind::QualifiedVariableSegment,
+                range(source, offset, offset + 11),
+                vec![name, be, ty],
+            );
+            children.push(builder.add_node(
+                SurfaceNodeKind::DefinitionParameter,
+                range(source, offset, offset + 11),
+                vec![segment],
+            ));
+        }
+        let tokens = pattern
+            .iter()
+            .map(|text| {
+                (
+                    if matches!(*text, "(" | ")" | ",") {
+                        SurfaceTokenKind::ReservedSymbol
+                    } else {
+                        SurfaceTokenKind::Identifier
+                    },
+                    *text,
+                )
+            })
+            .collect::<Vec<_>>();
+        let tokens = token_sequence(&mut builder, source, start + 200, &tokens);
+        let pattern = builder.add_node(
+            SurfaceNodeKind::PredicatePattern,
+            range(source, start + 200, start + 280),
+            tokens,
+        );
+        children.push(builder.add_node(
+            SurfaceNodeKind::PredicateDefinition,
+            range(source, start + 190, start + 300),
+            vec![pattern],
+        ));
+        blocks.push(builder.add_node(
+            SurfaceNodeKind::DefinitionBlockItem,
+            range(source, start, start + 350),
+            children,
+        ));
+    }
+    let root = finish_module(&mut builder, source, blocks);
+    let ast = builder.finish(Some(root), None);
+    let module = module_id();
+    let shells = DeclarationShellCollector::new(&ast, &module).collect();
+    let projections =
+        SignatureProjectionExtractor::new(&ast, &shells, NamespacePath::new("main")).extract();
+    let result = collect(source, &shells, &projections);
+    (projections, result)
+}
+
+#[test]
 fn same_signature_functor_conflicts_get_specific_internal_class() {
     let source_id = source_id();
     let shells = shells_for(
@@ -932,7 +1116,7 @@ fn parser_backed_functor_signature_conflict_uses_extracted_return_types() {
     assert_eq!(
         functor_keys
             .iter()
-            .map(|key| key.return_type.as_str())
+            .map(|key| key.return_type.as_deref().unwrap())
             .collect::<Vec<_>>(),
         vec!["set", "round set"]
     );
@@ -1013,7 +1197,7 @@ fn same_return_conflict_requires_the_exact_ordinary_functor_argument_key() {
                 argument_context: context.to_owned(),
                 pattern: pattern.to_owned(),
                 arity: Some(arity),
-                return_type: "set".to_owned(),
+                return_type: Some("set".to_owned()),
             })
         };
     let mut near_misses = Vec::new();
@@ -3557,7 +3741,7 @@ fn functor_signature_key(
         argument_context: argument_context.to_owned(),
         pattern: pattern.to_owned(),
         arity: Some(1),
-        return_type: return_type.to_owned(),
+        return_type: Some(return_type.to_owned()),
     }
 }
 

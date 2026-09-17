@@ -2284,6 +2284,7 @@ pub fn active_proof_verification_cases(plan: &TestPlan) -> impl Iterator<Item = 
 
 fn is_active_parse_only(case: &TestCase) -> bool {
     if proof_verification::is_step5c14_return_candidate(case)
+        || type_elaboration::is_step5c5_predicate_duplicate_candidate(case)
         || is_step5c14_static_candidate(case)
         || is_step5c13_overload_candidate(case)
         || is_step5c12_candidate(case)
@@ -2331,6 +2332,7 @@ fn is_active_parse_only(case: &TestCase) -> bool {
 
 fn is_active_declaration_symbol(case: &TestCase) -> bool {
     if proof_verification::is_step5c14_return_candidate(case)
+        || type_elaboration::is_step5c5_predicate_duplicate_candidate(case)
         || is_step5c14_static_candidate(case)
         || is_step5c13_overload_candidate(case)
         || is_step5c12_candidate(case)
@@ -2625,6 +2627,11 @@ fn type_elaboration_detail_keys(
     output: FrontendRun,
     snapshot_text: &mut Option<String>,
 ) -> Vec<String> {
+    if type_elaboration::is_step5c5_predicate_duplicate_candidate(case)
+        && (!is_active_type_elaboration(case) || !is_step5c5_workspace_member(workspace_root, case))
+    {
+        return vec!["type_elaboration.checker.step5c5.invalid_payload".to_owned()];
+    }
     let frontend_diagnostic_keys = frontend_detail_keys(case, &output.diagnostics);
     if !frontend_diagnostic_keys.is_empty() {
         return frontend_diagnostic_keys

@@ -250,6 +250,11 @@ projectionだけを受け入れる。namespace、primary spelling、normalized n
 normalized definition argument context、syntactic arityでgroup化し、recovered declarationと
 別kind pairを除外する。
 
+限定 ordinary-predicate 経路は一意で括弧なしの pattern loci を同じ block の先行する明示的な裸 set/object 仮引数に結び付ける。
+private conflict key は namespace・kind・正準化した notation/locus 位置・順序付き引数型・arity を使い、
+label・means 本体・束縛変数名に依存しない。公開名・同一性は維持し、未対応型・guard・括弧付き/template pattern・recovery は未対応とする。
+predicate に return surface を作らず、実際の全 candidate をソース順に保持した SameSignatureDefinitionConflict を使う。
+
 2件以上のcandidate groupでnormalized return surfaceがすべて同じ場合、resolverはinternal
 `SameSignatureDefinitionConflict` diagnostic exactly 1件を出し、全candidate definitionへ
 `DeclarationConflictClass::SameSignatureDefinitionConflict`を保存する。distinctなnormalized
@@ -260,9 +265,8 @@ diagnosticをanchorする。diagnostic Debug spellingはRust variant名
 `SameSignatureDefinitionConflict`、new definition-conflict metadataのexplicit `SymbolEnv`
 snapshot spellingはexact `same_signature_definition_conflict`である。
 
-これはsyntactic signature-collection checkに留まる。normalized surface textはbinder
-alpha-equivalenceやsemantic type equivalenceではなく、overload rankingとwinner selectionは
-checker-ownedである。resolverはoverload candidateを選択、順位付け、書き換えしない。
+functor profile は syntactic surface check に留まる。predicate locus の正準化を一般の型等価性・import・template signature に広げず、
+overload ranking と winner selection は checker が所有する。resolverはoverload candidateを選択、順位付け、書き換えしない。
 
 ## Checker Task 263R frozen selector-owner conflict partition
 

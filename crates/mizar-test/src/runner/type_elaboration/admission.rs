@@ -132,7 +132,7 @@ pub(in crate::runner) fn step5c14_static_admitted(root: Option<&Path>, case: &Te
         && case.expectation.tags.as_slice() == [ACTIVE_TYPE_ELABORATION_TAG]
 }
 
-const STEP5C5_CASES: [(&str, &str, PipelinePhase, ExpectedOutcome); 7] = [
+const STEP5C5_CASES: [(&str, &str, PipelinePhase, ExpectedOutcome); 8] = [
     (
         "fail_type_elaboration_pred_property_arity_mismatch_001",
         "tests/miz/fail/predicates/fail_type_elaboration_pred_property_arity_mismatch_001.miz",
@@ -175,14 +175,19 @@ const STEP5C5_CASES: [(&str, &str, PipelinePhase, ExpectedOutcome); 7] = [
         PipelinePhase::TypeCheck,
         ExpectedOutcome::Fail,
     ),
+    (
+        "fail_type_elaboration_pred_duplicate_same_signature_001",
+        "tests/miz/fail/predicates/fail_type_elaboration_pred_duplicate_same_signature_001.miz",
+        PipelinePhase::Resolve,
+        ExpectedOutcome::Fail,
+    ),
 ];
 
-const STEP5C5_BLOCKED_CASE_IDS: [&str; 10] = [
+const STEP5C5_BLOCKED_CASE_IDS: [&str; 9] = [
     "pass_formula_statement_pred_negated_application_001",
     "fail_type_elaboration_pred_argument_type_mismatch_001",
     "pass_proof_verification_pred_phrase_identifier_001",
     "pass_proof_verification_pred_symbolic_infix_001",
-    "fail_type_elaboration_pred_duplicate_same_signature_001",
     "pass_type_elaboration_pred_redefine_narrower_loci_001",
     "pass_type_elaboration_func_dependent_return_type_001",
     "pass_proof_verification_func_equals_infix_operator_001",
@@ -747,6 +752,16 @@ fn is_step5c4_id(case: &TestCase) -> bool {
 
 fn is_step5c5_id(case: &TestCase) -> bool {
     STEP5C5_CASES.iter().any(|(id, _, _, _)| case.id.0 == *id)
+        || is_step5c5_predicate_duplicate_candidate(case)
+}
+
+pub(in crate::runner) fn is_step5c5_predicate_duplicate_candidate(case: &TestCase) -> bool {
+    let (id, source, _, _) = STEP5C5_CASES[7];
+    case.id.0 == id
+        || case.expectation.id.0 == id
+        || case.source_path.file_name() == Path::new(source).file_name()
+        || case.expectation_path.file_name()
+            == Path::new(source).with_extension("expect.toml").file_name()
 }
 
 fn is_step5c7_candidate(case: &TestCase) -> bool {
@@ -847,6 +862,9 @@ fn step5c4_case(
 fn step5c5_case(
     case: &TestCase,
 ) -> Option<(&'static str, &'static str, PipelinePhase, ExpectedOutcome)> {
+    if is_step5c5_predicate_duplicate_candidate(case) && case.id.0 != STEP5C5_CASES[7].0 {
+        return None;
+    }
     STEP5C5_CASES
         .iter()
         .copied()
@@ -855,6 +873,31 @@ fn step5c5_case(
                 && case.source_path.ends_with(source)
                 && case.expectation.expected_phase == Some(*phase)
                 && case.expectation.expected_outcome == *outcome
+                && (*id != STEP5C5_CASES[7].0
+                    || (case.expectation.id == case.id
+                        && case.expectation.kind == crate::expectation::TestKind::Fail
+                        && case.expectation.stage == Stage::TypeElaboration
+                        && case
+                            .expectation_path
+                            .ends_with(Path::new(source).with_extension("expect.toml"))
+                        && case.expectation.source == Path::new(source).file_name().unwrap()
+                        && case.expectation.domain == "predicates.definition"
+                        && case.expectation.failure_category.as_deref() == Some("resolve_error")
+                        && case.expectation.stable_detail_key.as_deref()
+                            == Some("predicates.definition.duplicate_same_signature")
+                        && case.expectation.spec_refs.len() == 1
+                        && case.expectation.spec_refs[0].0
+                            == "spec.en.09.predicates.definition.uniqueness"
+                        && case.expectation.diagnostic_codes.is_empty()
+                        && case.expectation.diagnostic_payloads.is_empty()
+                        && case.expectation.declaration_symbol_payloads.is_empty()
+                        && case.expectation.rejection_reason.is_none()
+                        && case.expectation.snapshots.is_none()
+                        && case.expectation.ast_profile.is_none()
+                        && case.expectation.snapshot_profiles.is_empty()
+                        && case.expectation.tokens.is_empty()
+                        && case.expectation.origin.is_none()
+                        && case.expectation.architecture22.is_none()))
         })
 }
 
@@ -895,6 +938,10 @@ pub(in crate::runner) fn is_step5c5_workspace_member(
     step5c5_case(case).is_some_and(|(_, source, _, _)| {
         workspace_relative_source(workspace_root, &case.source_path)
             .is_some_and(|actual| actual == source)
+            && (case.id.0 != STEP5C5_CASES[7].0
+                || workspace_relative_source(workspace_root, &case.expectation_path).is_some_and(
+                    |actual| actual == Path::new(source).with_extension("expect.toml"),
+                ))
     })
 }
 
@@ -1198,14 +1245,14 @@ mod tests {
 
     #[test]
     fn step5c5_inventory_admission_and_blocked_rows_are_exact() {
-        assert_eq!(STEP5C5_CASES.len(), 7);
+        assert_eq!(STEP5C5_CASES.len(), 8);
         assert_eq!(
             STEP5C5_CASES
                 .iter()
                 .map(|(id, source, _, _)| (*id, *source))
                 .collect::<BTreeSet<_>>()
                 .len(),
-            7
+            8
         );
         let root = workspace_root();
         let mut plan = build_test_plan(&config()).unwrap();
@@ -1287,6 +1334,10 @@ mod tests {
                 "fail_type_elaboration_func_property_arity_mismatch_001",
                 vec!["functors.property.arity_mismatch"],
             ),
+            (
+                "fail_type_elaboration_pred_duplicate_same_signature_001",
+                vec!["predicates.definition.duplicate_same_signature"],
+            ),
         ];
         for (id, keys) in expected {
             let result = report
@@ -1304,6 +1355,125 @@ mod tests {
                 keys.into_iter().map(str::to_owned).collect::<Vec<_>>(),
                 "{id}"
             );
+        }
+    }
+
+    #[test]
+    fn step5c5_predicate_conflict_admission_rejects_aliases_and_payloads() {
+        use crate::expectation::TestKind;
+        use crate::harness::TestCase;
+        use crate::staged_model::Stage;
+        let root = workspace_root();
+        let plan = build_test_plan(&config()).unwrap();
+        let original = plan
+            .cases
+            .iter()
+            .find(|case| case.id.0 == STEP5C5_CASES[7].0)
+            .unwrap();
+        assert!(super::is_step5c5_workspace_member(&root, original));
+        let mut legacy_alias = plan
+            .cases
+            .iter()
+            .find(|case| case.id.0 == STEP5C5_CASES[0].0)
+            .unwrap()
+            .clone();
+        legacy_alias.expectation.id = original.expectation.id.clone();
+        assert!(super::is_step5c5_predicate_duplicate_candidate(
+            &legacy_alias
+        ));
+        assert!(!is_active_type_elaboration(&legacy_alias));
+        for mutate in [
+            (|case: &mut TestCase| case.id.0 = "alias".into()) as fn(&mut TestCase),
+            |case| case.expectation.id.0 = "alias".into(),
+            |case| case.source_path = "alias.miz".into(),
+            |case| case.expectation_path = "alias.expect.toml".into(),
+            |case| case.expectation.source = "alias.miz".into(),
+            |case| case.expectation.kind = TestKind::Pass,
+            |case| case.expectation.expected_phase = Some(PipelinePhase::TypeCheck),
+            |case| case.expectation.expected_outcome = ExpectedOutcome::Pass,
+            |case| case.expectation.failure_category = Some("type_error".into()),
+            |case| case.expectation.stable_detail_key = Some("unrelated".into()),
+            |case| case.expectation.domain = "other".into(),
+            |case| case.expectation.spec_refs.clear(),
+            |case| case.expectation.spec_refs[0].0.push_str("_forged"),
+            |case| case.expectation.tags.clear(),
+            |case| {
+                case.expectation
+                    .tags
+                    .push(ACTIVE_TYPE_ELABORATION_TAG.into())
+            },
+            |case| case.expectation.diagnostic_codes.push("forged".into()),
+            |case| case.expectation.diagnostic_payloads.push("forged".into()),
+            |case| {
+                case.expectation
+                    .declaration_symbol_payloads
+                    .push("forged".into())
+            },
+            |case| case.expectation.rejection_reason = Some("forged".into()),
+            |case| case.expectation.snapshots = Some("forged.snap".into()),
+            |case| case.expectation.ast_profile = Some("forged".into()),
+            |case| case.expectation.snapshot_profiles.push("forged".into()),
+            |case| {
+                case.id.0 = "alias".into();
+                case.source_path = "alias.miz".into();
+                case.expectation_path = "alias.expect.toml".into();
+                case.expectation.source = "alias.miz".into();
+            },
+        ] {
+            let mut changed = original.clone();
+            mutate(&mut changed);
+            assert!(super::is_step5c5_predicate_duplicate_candidate(&changed));
+            assert!(!is_active_type_elaboration(&changed));
+            assert!(!crate::runner::is_active_parse_only(&changed));
+            assert!(!crate::runner::is_active_declaration_symbol(&changed));
+            assert!(
+                !crate::runner::formula_statement::is_active_formula_statement(&root, &changed)
+            );
+            assert!(!crate::runner::is_active_proof_verification(&changed));
+        }
+        for (stage, phase, tag) in [
+            (Stage::ParseOnly, PipelinePhase::Parse, "active_parse_only"),
+            (
+                Stage::DeclarationSymbol,
+                PipelinePhase::Resolve,
+                "active_declaration_symbol",
+            ),
+            (
+                Stage::FormulaStatement,
+                PipelinePhase::StatementCheck,
+                "active_formula_statement",
+            ),
+            (
+                Stage::ProofVerification,
+                PipelinePhase::VcGeneration,
+                "active_proof_verification",
+            ),
+        ] {
+            let mut changed = original.clone();
+            changed.expectation.stage = stage;
+            changed.expectation.expected_phase = Some(phase);
+            changed.expectation.expected_outcome = ExpectedOutcome::Pass;
+            changed.expectation.kind = TestKind::Pass;
+            changed.expectation.stable_detail_key = None;
+            changed.expectation.failure_category = None;
+            changed.expectation.tags = vec![tag.into()];
+            assert!(!is_active_type_elaboration(&changed));
+            assert!(!crate::runner::is_active_parse_only(&changed));
+            assert!(!crate::runner::is_active_declaration_symbol(&changed));
+            assert!(
+                !crate::runner::formula_statement::is_active_formula_statement(&root, &changed)
+            );
+            assert!(!crate::runner::is_active_proof_verification(&changed));
+        }
+        for sidecar in [false, true] {
+            let mut changed = original.clone();
+            let path = if sidecar {
+                &mut changed.expectation_path
+            } else {
+                &mut changed.source_path
+            };
+            *path = root.join("alias").join(path.strip_prefix(&root).unwrap());
+            assert!(!super::is_step5c5_workspace_member(&root, &changed));
         }
     }
 

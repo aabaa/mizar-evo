@@ -6236,9 +6236,11 @@ type route preserves resolver keys before legacy dispatch.
 
 ## Step 5C.5 type-elaboration admission
 
-The harness admits only the seven exact non-gap predicate/functor rows by id, workspace-relative
-path, stage, phase, outcome, and sole tag. It preserves resolver diagnostics before private
-source-semantic dispatch; the ten G1/G2/G6/G9 rows remain ineligible even if tagged.
+The harness retains seven predicate/functor rows and adds only the predicate duplicate at resolve,
+authenticating exact source/sidecar metadata. Collector replay binds the sole existing signature
+conflict to both actual predicate declarations and their stored conflict metadata; labels, bodies
+and raw locus spellings are not the oracle. Extra resolver errors fail closed, and the other
+nine G1/G2/G6/G9 rows remain ineligible even if tagged. Reserved identities cannot fall through other stages; no predicate proof credit follows.
 
 ## Module declaration corpus bridge
 

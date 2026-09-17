@@ -266,6 +266,13 @@ equivalent explicit test projections). It groups by namespace, primary
 spelling, normalized notation pattern, normalized definition argument context,
 and syntactic arity. Recovered declarations and other kind pairs are excluded.
 
+The bounded ordinary-predicate path binds pattern loci to actual preceding block parameters
+with explicit bare set/object types and unique unparenthesized loci. Its private key uses namespace, kind, canonical
+notation/locus positions, ordered argument types and arity; labels, means bodies and bound
+variable spelling are irrelevant. Public names/identities stay unchanged; unsupported types,
+guards, grouped/template patterns and recovered shapes are unsupported. Predicates have no return surface and use
+SameSignatureDefinitionConflict with every actual candidate retained in source order.
+
 For a group of at least two candidates whose normalized return surface is
 identical, the resolver emits exactly one internal
 `SameSignatureDefinitionConflict` diagnostic and stores
@@ -280,8 +287,8 @@ candidate. The diagnostic Debug spelling is the Rust variant name
 of the new definition-conflict metadata is exactly
 `same_signature_definition_conflict`.
 
-This remains a syntactic signature-collection check. Normalized surface text
-is not binder alpha-equivalence or semantic type equivalence, and overload
+The functor profile remains a syntactic surface check. Predicate locus canonicalization
+does not extend to general type equivalence, imported or template signatures; overload
 ranking and winner selection remain checker-owned. The resolver does not
 select, rank, or rewrite overload candidates.
 
