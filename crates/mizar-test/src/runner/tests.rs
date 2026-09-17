@@ -3856,3 +3856,504 @@ fn step5c3_functor_argument_mismatch_never_credits_unsupported_source_or_forged_
     assert!(!frontend.diagnostics.is_empty());
     assert!(super::source_registration_inputs(&config.workspace_root, case, frontend).is_err());
 }
+#[test]
+fn step5c5_predicate_arguments_preserve_order_bindings_polarity_and_real_rejections() {
+    use super::type_elaboration::{
+        step5c3_functor_argument_detail_keys, step5c5_predicate_argument_detail_keys,
+    };
+    use mizar_checker::overload_resolution::{
+        CandidateDeclarationKind, CandidateRejectionReason, CandidateViabilityStatus,
+        OverloadResultStatus, OverloadSiteKind,
+    };
+    use mizar_checker::type_checker::{
+        NormalizedTypeStatus, TypeHeadRef, check_source_distinct_loci_overloads,
+    };
+    use mizar_resolve::{env::SymbolKind, names::resolve_template_formal};
+    use mizar_syntax::SurfaceNodeKind as K;
+    let config = step5c11_config();
+    let plan = build_test_plan(&config).unwrap();
+    let case = plan
+        .cases
+        .iter()
+        .find(|case| case.id.0 == "fail_type_elaboration_pred_argument_type_mismatch_001")
+        .unwrap();
+    let text = std::fs::read_to_string(&case.source_path).unwrap();
+    let valid = text
+        .replace("X being set", "X being PredBox")
+        .replace("X be set", "X be PredBox");
+    let renamed = text
+        .replace("PredBox", "Container")
+        .replace("MatchesDef", "RelatesDef")
+        .replace("BadMatch1", "UseRelates")
+        .replace("matches", "relates")
+        .replace("let P, Q", "let Left, Right")
+        .replace("P relates Q", "Left relates Right")
+        .replace("P.d", "Left.value")
+        .replace("Q.d", "Right.value")
+        .replace("field d", "field value")
+        .replace("X", "Actual");
+    let mut variants = Vec::new();
+    for mask in 0..4 {
+        let mut changed = text.clone();
+        if mask & 1 != 0 {
+            changed = changed.replace("X being set", "X being PredBox");
+        }
+        if mask & 2 != 0 {
+            changed = changed.replace("X be set", "X be PredBox");
+        }
+        variants.push((
+            changed,
+            [
+                if mask & 1 == 0 { vec![0, 1] } else { vec![] },
+                if mask & 2 == 0 { vec![0, 1] } else { vec![] },
+            ],
+        ));
+    }
+    variants.extend([
+        (renamed, [vec![0, 1], vec![0, 1]]),
+        (
+            valid.replace("X matches X", "X.d matches X"),
+            [vec![0], vec![0]],
+        ),
+        (
+            valid.replace("X matches X", "X matches X.d"),
+            [vec![1], vec![1]],
+        ),
+        (
+            text.replace("X matches X", "X does not matches X"),
+            [vec![0, 1], vec![0, 1]],
+        ),
+        (
+            valid.replace("X matches X", "X does not matches X"),
+            [vec![], vec![]],
+        ),
+    ]);
+    for (variant, rejected_indices) in variants {
+        let frontend = super::formula_statement::step5c8_test_frontend(&variant);
+        assert!(
+            frontend.diagnostics.is_empty(),
+            "{variant}: {:?}",
+            frontend.diagnostics
+        );
+        let (source, typed, symbols) =
+            super::source_registration_inputs(&config.workspace_root, case, frontend).unwrap();
+        let outputs =
+            check_source_distinct_loci_overloads(&source, &symbols, &typed, true).unwrap();
+        assert_eq!(
+            outputs,
+            check_source_distinct_loci_overloads(&source, &symbols, &typed, true).unwrap()
+        );
+        assert!(check_source_distinct_loci_overloads(&source, &symbols, &typed, false).is_err());
+        assert!(step5c3_functor_argument_detail_keys(&source, &symbols, &typed).is_err());
+        let rejected_sites = rejected_indices
+            .iter()
+            .filter(|indices| !indices.is_empty())
+            .count();
+        assert_eq!(
+            step5c5_predicate_argument_detail_keys(&source, &symbols, &typed).unwrap(),
+            if rejected_sites == 0 {
+                vec![]
+            } else {
+                vec!["predicates.application.argument_type_mismatch".to_owned()]
+            }
+        );
+        let (normalization, collection, expansion, viability, graphs, selection) = outputs;
+        assert!(normalization.diagnostics().is_empty());
+        assert!(collection.diagnostics().is_empty());
+        assert!(expansion.diagnostics().is_empty());
+        assert_eq!(collection.sites().len(), 2);
+        assert_eq!(collection.candidates().len(), 2);
+        assert_eq!(expansion.candidates().len(), 2);
+        assert_eq!(viability.decisions().len(), 2);
+        assert_eq!(viability.diagnostics().len(), rejected_sites);
+        assert_eq!(graphs.graphs().len(), 2);
+        assert_eq!(selection.results().len(), 2);
+        assert!(selection.inserted_views().is_empty());
+        let predicate = symbols
+            .symbols()
+            .iter()
+            .find(|entry| entry.kind() == SymbolKind::Predicate)
+            .unwrap();
+        let structure = symbols
+            .symbols()
+            .iter()
+            .find(|entry| entry.kind() == SymbolKind::Structure)
+            .unwrap();
+        let selector = symbols
+            .symbols()
+            .iter()
+            .find(|entry| entry.kind() == SymbolKind::Selector)
+            .unwrap();
+        assert!(
+            matches!(selector.origin().anchor(), SourceAnchor::Range(range) if variant[range.start..range.end].contains("field "))
+        );
+        let (_, pattern) = source
+            .arena()
+            .iter()
+            .find(|(_, node)| node.kind() == &K::PredicatePattern)
+            .unwrap();
+        let formals = [
+            resolve_template_formal(&source, pattern.children()[0]).unwrap(),
+            resolve_template_formal(&source, pattern.children()[2]).unwrap(),
+        ];
+        assert_ne!(formals[0], formals[1]);
+        let renamed = variant.contains("let Left, Right");
+        let formal_offsets = if renamed {
+            [
+                variant.find("let Left").unwrap() + 4,
+                variant.find(", Right be").unwrap() + 2,
+            ]
+        } else {
+            [
+                variant.find("let P").unwrap() + 4,
+                variant.find(", Q be").unwrap() + 2,
+            ]
+        };
+        for (formal, offset) in formals.iter().zip(formal_offsets) {
+            assert!(
+                matches!(source.arena().node(*formal).unwrap().origin().anchor(), SourceAnchor::Range(range) if range.start == offset)
+            );
+        }
+        let actual_name = if renamed { "Actual" } else { "X" };
+        let binder_offsets = [
+            variant.find(&format!("for {actual_name}")).unwrap() + 4,
+            variant.find(&format!("let {actual_name}")).unwrap() + 4,
+        ];
+        let mut occurrences = Vec::new();
+        let mut binders = Vec::new();
+        for (index, (site_id, site)) in collection.sites().iter().enumerate() {
+            assert_eq!(site.kind, OverloadSiteKind::PredicateApplication);
+            let application = source
+                .arena()
+                .node(
+                    typed
+                        .node(site.owner.node())
+                        .unwrap()
+                        .resolved_node
+                        .unwrap(),
+                )
+                .unwrap();
+            assert_eq!(application.kind(), &K::PredicateApplication);
+            assert_eq!(
+                SourceAnchor::Range(site.source_range),
+                *application.origin().anchor()
+            );
+            if variant.contains(" not ") {
+                assert!(variant[site.source_range.start..site.source_range.end].contains(" not "));
+            }
+            let segment = source.arena().node(application.children()[0]).unwrap();
+            assert_eq!(segment.kind(), &K::PredicateSegment);
+            let actual_slots = [segment.children()[0], *segment.children().last().unwrap()];
+            assert_eq!(
+                site.arguments
+                    .iter()
+                    .map(|site| site.node().index())
+                    .collect::<Vec<_>>(),
+                actual_slots.map(|id| source.arena().node(id).unwrap().children()[0].index())
+            );
+            for argument in &site.arguments {
+                let node = source
+                    .arena()
+                    .node(typed.node(argument.node()).unwrap().resolved_node.unwrap())
+                    .unwrap();
+                let reference = if node.kind() == &K::SelectorAccess {
+                    source.arena().node(node.children()[0]).unwrap()
+                } else {
+                    node
+                };
+                assert_eq!(reference.kind(), &K::TermReference);
+                let binder = resolve_template_formal(&source, reference.children()[0]).unwrap();
+                assert!(!formals.contains(&binder));
+                assert!(
+                    matches!(source.arena().node(binder).unwrap().origin().anchor(), SourceAnchor::Range(range) if range.start == binder_offsets[index])
+                );
+                binders.push(binder);
+                occurrences.push(argument.clone());
+            }
+            let (_, candidate) = expansion
+                .candidates()
+                .iter()
+                .find(|(_, row)| row.site == site_id)
+                .unwrap();
+            assert_eq!(
+                candidate.declaration_kind,
+                CandidateDeclarationKind::Predicate
+            );
+            assert_eq!(&candidate.symbol, predicate.symbol());
+            assert_eq!(candidate.ordinary_root, candidate.symbol);
+            assert_eq!(
+                SourceAnchor::Range(candidate.provenance.source_range.unwrap()),
+                *predicate.origin().anchor()
+            );
+            assert!(candidate.result.is_none());
+            assert_eq!(candidate.parameters.len(), 2);
+            for parameter in &candidate.parameters {
+                let parameter = normalization.normalized_types().get(*parameter).unwrap();
+                assert_eq!(
+                    parameter.head,
+                    TypeHeadRef::Structure(structure.symbol().clone())
+                );
+                assert_eq!(parameter.status, NormalizedTypeStatus::Known);
+            }
+            let (_, decision) = viability
+                .decisions()
+                .iter()
+                .find(|(_, row)| row.site == site_id)
+                .unwrap();
+            assert_eq!(decision.source_candidate, candidate.id);
+            let (_, result) = selection
+                .results()
+                .iter()
+                .find(|(_, row)| row.site == site_id)
+                .unwrap();
+            assert!(result.diagnostics.is_empty());
+            if rejected_indices[index].is_empty() {
+                assert!(
+                    matches!(&decision.status, CandidateViabilityStatus::Viable { views } if views.len() == 2 && views.iter().all(|view| view.actual == candidate.parameters[view.argument_index] && view.target == view.actual))
+                );
+                assert!(
+                    matches!(&result.status, OverloadResultStatus::Resolved { exposed_result: None, refinements, inserted_views, .. } if refinements.is_empty() && inserted_views.is_empty())
+                );
+            } else {
+                let CandidateViabilityStatus::Rejected { reasons } = &decision.status else {
+                    panic!("{:?}", decision.status)
+                };
+                assert_eq!(
+                    reasons
+                        .iter()
+                        .map(|reason| reason.argument_index)
+                        .collect::<Vec<_>>(),
+                    rejected_indices[index]
+                );
+                for reason in reasons {
+                    assert_eq!(reason.reason, CandidateRejectionReason::MissingEvidence);
+                    assert_eq!(
+                        reason.target,
+                        Some(candidate.parameters[reason.argument_index])
+                    );
+                    let actual = normalization
+                        .normalized_types()
+                        .get(reason.actual.unwrap())
+                        .unwrap();
+                    assert_eq!(actual.head, TypeHeadRef::BuiltinSet);
+                    assert_eq!(actual.status, NormalizedTypeStatus::Known);
+                }
+                assert_eq!(decision.diagnostics.len(), 1);
+                assert!(decision.output_candidate.is_none());
+                assert!(
+                    matches!(&result.status, OverloadResultStatus::NoMatch { rejected } if rejected.is_empty())
+                );
+            }
+        }
+        for (index, occurrence) in occurrences.iter().enumerate() {
+            assert!(!occurrences[..index].contains(occurrence));
+        }
+        assert_eq!(binders[0], binders[1]);
+        assert_eq!(binders[2], binders[3]);
+        assert_ne!(binders[0], binders[2]);
+    }
+}
+
+#[test]
+fn step5c5_predicate_argument_mismatch_rejects_other_errors_and_forged_inputs() {
+    use super::type_elaboration::{
+        step5c3_functor_argument_detail_keys, step5c5_predicate_argument_detail_keys,
+    };
+    use mizar_checker::typed_ast::{TypedArena, TypingState};
+    use mizar_resolve::resolved_ast::SurfaceResolvedArena;
+    use mizar_syntax::ast::{SurfaceAstBuilder, SurfaceNodeKind as K};
+    let config = step5c11_config();
+    let plan = build_test_plan(&config).unwrap();
+    let case = plan
+        .cases
+        .iter()
+        .find(|case| case.id.0 == "fail_type_elaboration_pred_argument_type_mismatch_001")
+        .unwrap();
+    let text = std::fs::read_to_string(&case.source_path).unwrap();
+    let inputs = |text: &str| {
+        let frontend = super::formula_statement::step5c8_test_frontend(text);
+        assert!(
+            frontend.diagnostics.is_empty(),
+            "semantic control must parse cleanly: {text}: {:?}",
+            frontend.diagnostics
+        );
+        super::source_registration_inputs(&config.workspace_root, case, frontend).unwrap()
+    };
+    for (from, to) in [
+        ("P.d = Q.d", "P.d = Q"),
+        ("P.d = Q.d", "X.d = Q.d"),
+        ("P.d = Q.d", "P.missing = Q.d"),
+        ("P.d = Q.d", "P.d = Q.missing"),
+        ("P matches Q", "Q matches P"),
+        ("P matches Q", "P matches P"),
+        ("P, Q be PredBox", "P, Q be set"),
+        ("field d -> set", "field d -> object"),
+        ("holds X matches X", "holds P matches X"),
+        ("thus X matches X", "thus X matches Q"),
+        ("X matches X", "X matches X matches X"),
+    ] {
+        let changed = text.replace(from, to);
+        assert_ne!(changed, text);
+        let (source, typed, symbols) = inputs(&changed);
+        assert!(
+            step5c5_predicate_argument_detail_keys(&source, &symbols, &typed).is_err(),
+            "{changed}"
+        );
+    }
+    let widening = text
+        .replace("P, Q be PredBox", "P, Q be object")
+        .replace("P.d = Q.d", "P = Q");
+    let (source, typed, symbols) = inputs(&widening);
+    assert!(step5c5_predicate_argument_detail_keys(&source, &symbols, &typed).is_err());
+    let (source, typed, symbols) = inputs(&text);
+    let raw = typed
+        .iter()
+        .map(|(_, node)| node.clone())
+        .collect::<Vec<_>>();
+    let argument_ids = typed.iter().filter(|(_, node)| node.kind.as_str() == "TermReference" && matches!(node.anchor, SourceAnchor::Range(range) if range.start > text.find("theorem").unwrap())).map(|(id, _)| id).collect::<Vec<_>>();
+    assert_eq!(argument_ids.len(), 4);
+    for argument in &argument_ids {
+        for mutation in 0..3 {
+            let mut nodes = raw.clone();
+            let other = argument_ids
+                .iter()
+                .find(|id| *id != argument)
+                .unwrap()
+                .index();
+            match mutation {
+                0 => nodes[argument.index()].resolved_node = nodes[other].resolved_node,
+                1 => nodes[argument.index()].anchor = nodes[other].anchor.clone(),
+                2 => nodes[argument.index()].typing = TypingState::Successful,
+                _ => unreachable!(),
+            }
+            assert!(
+                step5c5_predicate_argument_detail_keys(
+                    &source,
+                    &symbols,
+                    &TypedArena::try_new(typed.root(), nodes).unwrap()
+                )
+                .is_err()
+            );
+        }
+    }
+    let ast = super::formula_statement::step5c8_test_frontend(&text)
+        .ast
+        .unwrap();
+    let offsets = text
+        .match_indices("X matches X")
+        .map(|(offset, _)| offset + 2)
+        .collect::<Vec<_>>();
+    assert_eq!(offsets.len(), 2);
+    for target in offsets.into_iter().map(Some).chain([None]) {
+        let mut builder = SurfaceAstBuilder::new(ast.source_id);
+        let mut rebuilt = Vec::new();
+        let mut changed = 0;
+        for node in ast.nodes() {
+            let mut children = node
+                .children
+                .iter()
+                .map(|id| rebuilt[id.index()])
+                .collect::<Vec<_>>();
+            let id = match &node.kind {
+                K::Token(token) => {
+                    let spelling = if Some(node.range.start) == target {
+                        assert_eq!(token.text.as_ref(), "matches");
+                        changed += 1;
+                        "unknown".into()
+                    } else {
+                        token.text.clone()
+                    };
+                    builder.add_token(token.kind, spelling, node.range)
+                }
+                kind => {
+                    if target.is_none() && kind == &K::ItemList {
+                        assert_eq!(children.len(), 3);
+                        children.swap(0, 1);
+                        changed += 1;
+                    }
+                    builder.add_node(kind.clone(), node.range, children)
+                }
+            };
+            rebuilt.push(id);
+        }
+        assert_eq!(changed, 1);
+        let mut frontend = super::formula_statement::step5c8_test_frontend(&text);
+        frontend.ast = Some(builder.finish(Some(rebuilt[ast.root().unwrap().index()]), None));
+        let (changed_source, changed_typed, changed_symbols) =
+            super::source_registration_inputs(&config.workspace_root, case, frontend).unwrap();
+        mizar_resolve::symbols::validate_source_symbol_env(&changed_source, &changed_symbols)
+            .unwrap();
+        assert!(
+            step5c5_predicate_argument_detail_keys(
+                &changed_source,
+                &changed_symbols,
+                &changed_typed
+            )
+            .is_err()
+        );
+    }
+    let foreign = ResolverModuleId::new(PackageId::new("foreign"), ModulePath::new("predicate"));
+    assert!(
+        step5c5_predicate_argument_detail_keys(
+            &SurfaceResolvedArena::lower(&ast, &foreign).unwrap(),
+            &symbols,
+            &typed
+        )
+        .is_err()
+    );
+    let mut foreign_ast = ast.clone();
+    let ids = InMemorySessionIdAllocator::new();
+    ids.next_source_id(snapshot_id(0)).unwrap();
+    foreign_ast.source_id = ids.next_source_id(snapshot_id(0)).unwrap();
+    assert!(
+        step5c5_predicate_argument_detail_keys(
+            &SurfaceResolvedArena::lower(&foreign_ast, symbols.module_id()).unwrap(),
+            &symbols,
+            &typed
+        )
+        .is_err()
+    );
+    let (_, _, other_symbols) = inputs(&text.replace("PredBox", "OtherBox"));
+    assert!(step5c5_predicate_argument_detail_keys(&source, &other_symbols, &typed).is_err());
+    let mut indexes = super::import_fixtures::clone_symbol_env_indexes(&symbols);
+    indexes.definitions = Default::default();
+    assert!(
+        step5c5_predicate_argument_detail_keys(
+            &source,
+            &SymbolEnv::new(symbols.module_id().clone(), indexes),
+            &typed
+        )
+        .is_err()
+    );
+    let theorem = text.find("theorem BadMatch1:").unwrap();
+    let duplicate = format!("{text}\n{}", &text[theorem..]);
+    let frontend = super::formula_statement::step5c8_test_frontend(&duplicate);
+    assert!(frontend.diagnostics.is_empty());
+    let result = super::resolver_symbol_collection(
+        &config.workspace_root,
+        case,
+        frontend.ast.as_ref().unwrap(),
+    );
+    assert!(!result.detail_keys.is_empty());
+    assert!(super::source_registration_inputs(&config.workspace_root, case, frontend).is_err());
+    let frontend = super::formula_statement::step5c8_test_frontend(
+        &text.replace("thus X matches X;", "thus X does matches X;"),
+    );
+    assert!(!frontend.diagnostics.is_empty());
+    assert!(super::source_registration_inputs(&config.workspace_root, case, frontend).is_err());
+    let functor_case = plan
+        .cases
+        .iter()
+        .find(|case| case.id.0 == "fail_type_elaboration_argument_type_mismatch_functor_001")
+        .unwrap();
+    let frontend = super::formula_statement::step5c8_test_frontend(
+        &std::fs::read_to_string(&functor_case.source_path).unwrap(),
+    );
+    let (source, typed, symbols) =
+        super::source_registration_inputs(&config.workspace_root, functor_case, frontend).unwrap();
+    assert_eq!(
+        step5c3_functor_argument_detail_keys(&source, &symbols, &typed).unwrap(),
+        vec!["types.application.argument_type_mismatch"]
+    );
+    assert!(step5c5_predicate_argument_detail_keys(&source, &symbols, &typed).is_err());
+}

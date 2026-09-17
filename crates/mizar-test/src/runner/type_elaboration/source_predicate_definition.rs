@@ -253,6 +253,110 @@ pub(in crate::runner) fn source_predicate_definition_transport_detail_keys(
     }
 }
 
+pub(in crate::runner) fn step5c5_predicate_argument_detail_keys(
+    source: &mizar_resolve::resolved_ast::SurfaceResolvedArena,
+    symbols: &SymbolEnv,
+    typed: &TypedArena,
+) -> Result<Vec<String>, String> {
+    use mizar_checker::overload_resolution::{
+        CandidateDeclarationKind, CandidateRejectionReason, CandidateViabilityStatus,
+        OverloadDiagnosticClass, OverloadResultStatus, OverloadSiteKind,
+    };
+    use mizar_checker::type_checker::{
+        NormalizedTypeStatus, TypeHeadRef, check_source_distinct_loci_overloads,
+    };
+    let (normalization, collection, expansion, viability, _, selection) =
+        check_source_distinct_loci_overloads(source, symbols, typed, true)?;
+    let invalid = || "predicates.application.unsupported_argument_evidence".to_owned();
+    let mut rejected = 0;
+    for (_, decision) in viability.decisions().iter() {
+        let candidate = expansion
+            .candidates()
+            .get(decision.source_candidate)
+            .ok_or_else(invalid)?;
+        let result = selection
+            .results()
+            .iter()
+            .find(|(_, result)| result.site == decision.site)
+            .map(|(_, result)| result)
+            .ok_or_else(invalid)?;
+        let site = collection.sites().get(decision.site).ok_or_else(invalid)?;
+        if candidate.site != decision.site
+            || site.kind != OverloadSiteKind::PredicateApplication
+            || candidate.declaration_kind != CandidateDeclarationKind::Predicate
+            || candidate.parameters.len() != 2
+            || site.arguments.len() != 2
+            || candidate.symbol != candidate.ordinary_root
+            || !symbols.symbols().iter().any(|entry| {
+                entry.symbol() == &candidate.symbol && entry.kind() == SymbolKind::Predicate
+            })
+        {
+            return Err(invalid());
+        }
+        match (&decision.status, &result.status) {
+            (CandidateViabilityStatus::Viable { .. }, OverloadResultStatus::Resolved { .. }) => {}
+            (
+                CandidateViabilityStatus::Rejected { reasons },
+                OverloadResultStatus::NoMatch { .. },
+            ) => {
+                let [diagnostic] = decision.diagnostics.as_slice() else {
+                    return Err(invalid());
+                };
+                let diagnostic = viability
+                    .diagnostics()
+                    .get(*diagnostic)
+                    .ok_or_else(invalid)?;
+                if reasons.is_empty()
+                    || reasons.len() > 2
+                    || reasons
+                        .windows(2)
+                        .any(|pair| pair[0].argument_index >= pair[1].argument_index)
+                {
+                    return Err(invalid());
+                }
+                for reason in reasons {
+                    let actual = normalization
+                        .normalized_types()
+                        .get(reason.actual.ok_or_else(invalid)?)
+                        .ok_or_else(invalid)?;
+                    let target = normalization
+                        .normalized_types()
+                        .get(reason.target.ok_or_else(invalid)?)
+                        .ok_or_else(invalid)?;
+                    if reason.reason != CandidateRejectionReason::MissingEvidence
+                        || candidate.parameters.get(reason.argument_index) != Some(&target.id)
+                        || actual.status != NormalizedTypeStatus::Known
+                        || target.status != NormalizedTypeStatus::Known
+                        || actual.head != TypeHeadRef::BuiltinSet
+                        || !matches!(&target.head, TypeHeadRef::Structure(symbol) if symbols.symbols().iter().any(|entry| entry.symbol() == symbol && entry.kind() == SymbolKind::Structure))
+                        || !actual.args.is_empty()
+                        || !target.args.is_empty()
+                        || actual.attributes != mizar_checker::type_checker::AttributeSet::empty()
+                        || target.attributes != mizar_checker::type_checker::AttributeSet::empty()
+                        || diagnostic.site != Some(decision.site)
+                        || diagnostic.class != OverloadDiagnosticClass::Viability
+                        || diagnostic.message_key.as_str() != "overload.viability.missing_evidence"
+                    {
+                        return Err(invalid());
+                    }
+                }
+                rejected += 1;
+            }
+            _ => return Err(invalid()),
+        }
+    }
+    if viability.decisions().len() != collection.sites().len()
+        || viability.diagnostics().len() != rejected
+    {
+        return Err(invalid());
+    }
+    Ok(if rejected == 0 {
+        Vec::new()
+    } else {
+        vec!["predicates.application.argument_type_mismatch".into()]
+    })
+}
+
 pub(in crate::runner) fn step5c5_predicate_semantics_detail_keys(
     ast: &SurfaceAst,
     module: &ModuleId,

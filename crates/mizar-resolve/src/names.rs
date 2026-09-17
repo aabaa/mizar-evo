@@ -248,6 +248,15 @@ pub fn resolve_template_formal(
         SurfaceNodeKind::FunctorPattern => {
             matches!(parent.children(), [_, argument] | [_, _, argument] if *argument == reference)
         }
+        SurfaceNodeKind::PredicatePattern => {
+            matches!(parent.children(), [left, head, right]
+                if (*left == reference || *right == reference)
+                    && token(*left).is_some_and(|left| left.kind == SurfaceTokenKind::Identifier
+                        && token(*right).is_some_and(|right| right.kind == SurfaceTokenKind::Identifier
+                            && left.text != right.text
+                            && token(*head).is_some_and(|head| matches!(head.kind, SurfaceTokenKind::Identifier | SurfaceTokenKind::UserSymbol)
+                                && head.text != left.text && head.text != right.text))))
+        }
         SurfaceNodeKind::InlinePredicateApplication => {
             parent.children().first() == Some(&reference)
         }
@@ -280,7 +289,7 @@ pub fn resolve_template_formal(
         for child in node(owner)?.children() {
             let declaration = node(*child)?;
             let parts = declaration.children();
-            let (binder, declaration_end, predicate) = match (kind, declaration.kind()) {
+            let (binders, declaration_end, predicate) = match (kind, declaration.kind()) {
                 (SurfaceNodeKind::DefinitionBlockItem, SurfaceNodeKind::TemplateParameter) => {
                     let [let_token, binder, be, rest @ .., semicolon] = parts else {
                         return Err(invalid());
@@ -307,7 +316,11 @@ pub fn resolve_template_formal(
                         }
                         _ => return Err(invalid()),
                     };
-                    (*binder, range(*child).ok_or_else(invalid)?.end, predicate)
+                    (
+                        vec![*binder],
+                        range(*child).ok_or_else(invalid)?.end,
+                        predicate,
+                    )
                 }
                 (
                     SurfaceNodeKind::QuantifiedFormula(_),
@@ -332,27 +345,39 @@ pub fn resolve_template_formal(
                     } else {
                         declaration
                     };
-                    let [binder, be, ty] = segment.children() else {
-                        return Err(invalid());
+                    let (binders, be, ty) = match segment.children() {
+                        [binder, be, ty] => (vec![*binder], be, ty),
+                        [left, comma, right, be, ty]
+                            if declaration.kind() == &SurfaceNodeKind::DefinitionParameter
+                                && text(*comma, ",")
+                                && token(*left)
+                                    .zip(token(*right))
+                                    .is_some_and(|(left, right)| left.text != right.text) =>
+                        {
+                            (vec![*left, *right], be, ty)
+                        }
+                        _ => return Err(invalid()),
                     };
                     if !(text(*be, "be") || text(*be, "being"))
                         || node(*ty)?.kind() != &SurfaceNodeKind::TypeExpression
                     {
                         return Err(invalid());
                     }
-                    (*binder, range(*child).ok_or_else(invalid)?.end, false)
+                    (binders, range(*child).ok_or_else(invalid)?.end, false)
                 }
                 _ => continue,
             };
-            let name = token(binder)
-                .filter(|token| token.kind == SurfaceTokenKind::Identifier)
-                .ok_or_else(invalid)?;
-            if name.text.as_ref() == spelling
-                && (declaration_end > range(reference).ok_or_else(invalid)?.start
-                    || (predicate && !predicate_owner)
-                    || binding.replace(binder).is_some())
-            {
-                return Err(invalid());
+            for binder in binders {
+                let name = token(binder)
+                    .filter(|token| token.kind == SurfaceTokenKind::Identifier)
+                    .ok_or_else(invalid)?;
+                if name.text.as_ref() == spelling
+                    && (declaration_end > range(reference).ok_or_else(invalid)?.start
+                        || (predicate && !predicate_owner)
+                        || binding.replace(binder).is_some())
+                {
+                    return Err(invalid());
+                }
             }
         }
         if binding.is_some() || matches!(kind, SurfaceNodeKind::DefinitionBlockItem) {

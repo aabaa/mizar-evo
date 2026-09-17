@@ -492,4 +492,4 @@ R-026 public-enum registrations は次の通り:
 
 `resolve_template_formal(&SurfaceResolvedArena, ResolvedNodeId) -> Result<ResolvedNodeId, String>` は対応範囲の仮引数参照を実際の宣言トークンへ解決する。ソース・モジュール・範囲・字句上の親を認証し、先行する型・述語・値パラメータ、定理の量化束縛、証明内 let を実際のスコープ内で解決する。同名でも異なる所有者の宣言を統合せず、重複・前方・回復済み・別由来の参照を拒否する。述語仮引数は theorem/algorithm 項だけで可視とする。型代入や証明検査は行わず、従来の template-generator 収集と registration-parameter 解決の契約を維持する。
 テストは定理・証明の同名束縛、別由来の同名仮引数、不正なスコープと由来を区別し、一貫した改名を維持する。
-通常の callable 参照も、同じ宣言同一性・スコープ・順序検査の下で直接の `DefinitionParameter` qualified segment と unary な非 template 関手パターン引数を受理する。基底型の解釈と field selector の型検査は checker が所有し、従来 template・registration profile は変更しない。
+通常の callable 参照も、同じ宣言同一性・スコープ・順序検査の下で直接の `DefinitionParameter` qualified segment（重複のない comma 区切り2束縛を含む）、unary な非 template 関手パターン引数、plain binary predicate pattern の両 locus 位置を受理する。基底型の解釈と field selector の型検査は checker が所有し、従来 template・registration profile は変更しない。

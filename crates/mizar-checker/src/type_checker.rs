@@ -1467,18 +1467,82 @@ pub fn check_source_distinct_loci_overloads(
     let mut body_checks = Vec::new();
     let mut labels = Vec::new();
     let mut overload_name = None;
+    let predicate = single_structure_candidate
+        && node(*box_block)?.children().iter().any(|id| {
+            source
+                .arena()
+                .node(*id)
+                .is_some_and(|node| node.kind() == &K::PredicateDefinition)
+        });
     for block in set_block.into_iter().chain(std::iter::once(*box_block)) {
-        let [definition_kw, parameter, definition, coherence, end, semi] =
-            parts(block, &K::DefinitionBlockItem)?
-        else {
-            return Err(invalid());
-        };
+        let (definition_kw, parameter, definition, coherence, end, semi) =
+            match (predicate, parts(block, &K::DefinitionBlockItem)?) {
+                (false, [keyword, parameter, definition, coherence, end, semi]) => {
+                    (keyword, parameter, definition, Some(*coherence), end, semi)
+                }
+                (true, [keyword, parameter, definition, end, semi]) => {
+                    (keyword, parameter, definition, None, end, semi)
+                }
+                _ => return Err(invalid()),
+            };
         tokens(&[(*definition_kw, "definition"), (*end, "end"), (*semi, ";")])?;
         let [let_kw, segment, semi] = parts(*parameter, &K::DefinitionParameter)? else {
             return Err(invalid());
         };
         tokens(&[(*let_kw, "let"), (*semi, ";")])?;
-        let [binder, be, parameter_type] = parts(*segment, &K::QualifiedVariableSegment)? else {
+        let parameters = parts(*segment, &K::QualifiedVariableSegment)?;
+        if predicate {
+            let [left_binder, comma, right_binder, be, parameter_type] = parameters else {
+                return Err(invalid());
+            };
+            tokens(&[(*comma, ","), (*be, "be")])?;
+            let [pred, label, colon, pattern, means, body, semi] =
+                parts(*definition, &K::PredicateDefinition)?
+            else {
+                return Err(invalid());
+            };
+            tokens(&[
+                (*pred, "pred"),
+                (*colon, ":"),
+                (*means, "means"),
+                (*semi, ";"),
+            ])?;
+            text(*label)?;
+            let [left, name, right] = parts(*pattern, &K::PredicatePattern)? else {
+                return Err(invalid());
+            };
+            if formal(*left)? != *left_binder || formal(*right)? != *right_binder {
+                return Err(invalid());
+            }
+            overload_name = Some(text(*name)?);
+            let parameter_type = normalized(*parameter_type)?;
+            signatures.push((
+                symbol(*definition, SymbolKind::Predicate)?,
+                vec![parameter_type; 2],
+                None,
+                range(block)?.end,
+            ));
+            bindings.insert(*left_binder, parameter_type);
+            bindings.insert(*right_binder, parameter_type);
+            let equality = only(only(*body, &K::FormulaDefiniens)?, &K::FormulaExpression)?;
+            let [left, equals, right] = parts(equality, &K::BuiltinPredicateApplication)? else {
+                return Err(invalid());
+            };
+            tokens(&[(*equals, "=")])?;
+            for operand in [left, right] {
+                let term = only(*operand, &K::TermExpression)?;
+                let [base, _, _] = parts(term, &K::SelectorAccess)? else {
+                    return Err(invalid());
+                };
+                let binder = formal(only(*base, &K::TermReference)?)?;
+                if ![*left_binder, *right_binder].contains(&binder) {
+                    return Err(invalid());
+                }
+                body_checks.push((term, binder, set_type));
+            }
+            continue;
+        }
+        let [binder, be, parameter_type] = parameters else {
             return Err(invalid());
         };
         tokens(&[(*be, "be")])?;
@@ -1512,15 +1576,16 @@ pub fn check_source_distinct_loci_overloads(
             return Err(invalid());
         }
         overload_name = Some(text(*name)?);
-        let [coherence_kw, semi] = parts(*coherence, &K::CorrectnessCondition)? else {
+        let [coherence_kw, semi] = parts(coherence.ok_or_else(invalid)?, &K::CorrectnessCondition)?
+        else {
             return Err(invalid());
         };
         tokens(&[(*coherence_kw, "coherence"), (*semi, ";")])?;
         let declaration = symbol(*definition, SymbolKind::Functor)?;
         signatures.push((
             declaration,
-            normalized(*parameter_type)?,
-            normalized(*result_type)?,
+            vec![normalized(*parameter_type)?],
+            Some(normalized(*result_type)?),
             range(block)?.end,
         ));
         labels.push(text(*label)?);
@@ -1531,10 +1596,13 @@ pub fn check_source_distinct_loci_overloads(
             normalized(*result_type)?,
         ));
     }
-    let box_type = signatures.last().ok_or_else(invalid)?.1;
-    if (!single_structure_candidate && signatures[0].1 != set_type)
+    let box_type = signatures.last().ok_or_else(invalid)?.1[0];
+    if (!single_structure_candidate && signatures[0].1 != [set_type])
         || box_type == set_type
-        || signatures.iter().any(|signature| signature.2 != set_type)
+        || (!predicate
+            && signatures
+                .iter()
+                .any(|signature| signature.2 != Some(set_type)))
     {
         return Err(invalid());
     }
@@ -1597,6 +1665,34 @@ pub fn check_source_distinct_loci_overloads(
         tokens(&[(*be, keyword)])?;
         let actual_type = normalized(*ty)?;
         bindings.insert(*binder, actual_type);
+        if predicate {
+            let segment = only(equality, &K::PredicateApplication)?;
+            let (left, head, right) = match parts(segment, &K::PredicateSegment)? {
+                [left, head, right] => (left, head, right),
+                [left, auxiliary, not, head, right] => {
+                    tokens(&[(*auxiliary, "does"), (*not, "not")])?;
+                    (left, head, right)
+                }
+                _ => return Err(invalid()),
+            };
+            let head = only(
+                only(only(*head, &K::PredicateHead)?, &K::QualifiedSymbol)?,
+                &K::PathSegment,
+            )?;
+            if Some(text(head)?) != overload_name || signatures[0].3 > range(equality)?.start {
+                return Err(invalid());
+            }
+            calls.push((
+                equality,
+                vec![
+                    only(*left, &K::TermExpression)?,
+                    only(*right, &K::TermExpression)?,
+                ],
+                None,
+                *binder,
+            ));
+            continue;
+        }
         let [left, equals, right] = parts(equality, &K::BuiltinPredicateApplication)? else {
             return Err(invalid());
         };
@@ -1616,9 +1712,8 @@ pub fn check_source_distinct_loci_overloads(
         }
         calls.push((
             application,
-            *argument,
-            actual_type,
-            only(*right, &K::TermExpression)?,
+            vec![*argument],
+            Some(only(*right, &K::TermExpression)?),
             *binder,
         ));
     }
@@ -1656,24 +1751,28 @@ pub fn check_source_distinct_loci_overloads(
             return Err(invalid());
         }
     }
-    if single_structure_candidate {
+    if single_structure_candidate && !predicate {
         for call in &calls {
-            if term_type(call.3, call.4)? != set_type {
+            if term_type(call.2.ok_or_else(invalid)?, call.3)? != set_type {
                 return Err(invalid());
             }
         }
     }
     let mut sites = Vec::new();
     let mut candidates = Vec::new();
-    for (application, argument, _, _, _) in &calls {
+    for (application, arguments, _, _) in &calls {
         let key = OverloadSiteKey::new(format!("source-overload:{}", application.index()));
         sites.push(OverloadSiteInput {
             key: key.clone(),
             owner: site(*application),
             source_range: range(*application)?,
-            kind: OverloadSiteKind::FunctorApplication,
+            kind: if predicate {
+                OverloadSiteKind::PredicateApplication
+            } else {
+                OverloadSiteKind::FunctorApplication
+            },
             name: OverloadNameKey::new(overload_name.ok_or_else(invalid)?),
-            arguments: vec![site(*argument)],
+            arguments: arguments.iter().map(|argument| site(*argument)).collect(),
             expected: None,
             source_qua: Vec::new(),
             recovery: OverloadSiteRecovery::Normal,
@@ -1686,9 +1785,13 @@ pub fn check_source_distinct_loci_overloads(
                 site: key.clone(),
                 symbol: declaration.symbol().clone(),
                 ordinary_root: declaration.symbol().clone(),
-                declaration_kind: CandidateDeclarationKind::Functor,
-                parameters: vec![*parameter],
-                result: Some(*result),
+                declaration_kind: if predicate {
+                    CandidateDeclarationKind::Predicate
+                } else {
+                    CandidateDeclarationKind::Functor
+                },
+                parameters: parameter.clone(),
+                result: *result,
                 origin: CandidateOrigin::Ordinary,
                 template: None,
                 coherence: None,
@@ -1713,14 +1816,22 @@ pub fn check_source_distinct_loci_overloads(
             .get(entry.site)
             .ok_or_else(invalid)?
             .owner;
-        let actual = calls
+        let call = calls
             .iter()
             .find(|call| site(call.0) == *owner)
-            .ok_or_else(invalid)?
-            .2;
+            .ok_or_else(invalid)?;
+        let arguments = call
+            .1
+            .iter()
+            .map(|argument| {
+                Ok(ArgumentViabilityEvidence::Exact {
+                    actual: term_type(*argument, call.3)?,
+                })
+            })
+            .collect::<Result<Vec<_>, String>>()?;
         evidence.push(CandidateViabilityInput {
             candidate,
-            arguments: vec![ArgumentViabilityEvidence::Exact { actual }],
+            arguments,
         });
     }
     let viability = CandidateViabilityOutput::filter(&expansion, evidence);
@@ -1746,8 +1857,8 @@ pub fn check_source_distinct_loci_overloads(
             inserted_views: Vec::new(),
             refinement_join: RefinementJoinPayload {
                 status: RefinementJoinStatus::Compatible,
-                exposed_result: Some(ExposedResultPayload {
-                    result: selected.result,
+                exposed_result: selected.result.map(|result| ExposedResultPayload {
+                    result: Some(result),
                     source: ExposedResultSource::SelectedRoot,
                     evidence: Vec::new(),
                 }),
@@ -1772,13 +1883,20 @@ pub fn check_source_distinct_loci_overloads(
         }
         let OverloadResultStatus::Resolved {
             root,
-            exposed_result: Some(exposed),
+            exposed_result,
             ..
         } = &result.status
         else {
             return Err(invalid());
         };
         let selected = graphs.candidates().get(*root).ok_or_else(invalid)?;
+        if predicate {
+            if selected.result.is_some() || exposed_result.is_some() {
+                return Err(invalid());
+            }
+            continue;
+        }
+        let exposed = exposed_result.as_ref().ok_or_else(invalid)?;
         let owner = &collection
             .sites()
             .get(result.site)
@@ -1788,7 +1906,9 @@ pub fn check_source_distinct_loci_overloads(
             .iter()
             .find(|call| site(call.0) == *owner)
             .ok_or_else(invalid)?;
-        if selected.result != exposed.result || exposed.result != Some(term_type(call.3, call.4)?) {
+        if selected.result != exposed.result
+            || exposed.result != Some(term_type(call.2.ok_or_else(invalid)?, call.3)?)
+        {
             return Err(invalid());
         }
     }

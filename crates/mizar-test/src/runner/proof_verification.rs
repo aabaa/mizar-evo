@@ -359,6 +359,7 @@ pub(super) fn generate_core_vcs(
 
 pub(super) fn is_active_proof_verification(case: &TestCase) -> bool {
     if super::type_elaboration::is_step5c5_predicate_duplicate_candidate(case)
+        || super::type_elaboration::is_step5c5_argument_candidate(case)
         || super::type_elaboration::is_step5c3_argument_candidate(case)
         || super::type_elaboration::is_step5c4_dependent_candidate(case)
         || super::type_elaboration::is_step5c6_alias_candidate(case)

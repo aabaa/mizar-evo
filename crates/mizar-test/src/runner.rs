@@ -2285,6 +2285,7 @@ pub fn active_proof_verification_cases(plan: &TestPlan) -> impl Iterator<Item = 
 fn is_active_parse_only(case: &TestCase) -> bool {
     if proof_verification::is_step5c14_return_candidate(case)
         || type_elaboration::is_step5c5_predicate_duplicate_candidate(case)
+        || type_elaboration::is_step5c5_argument_candidate(case)
         || type_elaboration::is_step5c3_argument_candidate(case)
         || type_elaboration::is_step5c4_dependent_candidate(case)
         || type_elaboration::is_step5c6_alias_candidate(case)
@@ -2336,6 +2337,7 @@ fn is_active_parse_only(case: &TestCase) -> bool {
 fn is_active_declaration_symbol(case: &TestCase) -> bool {
     if proof_verification::is_step5c14_return_candidate(case)
         || type_elaboration::is_step5c5_predicate_duplicate_candidate(case)
+        || type_elaboration::is_step5c5_argument_candidate(case)
         || type_elaboration::is_step5c3_argument_candidate(case)
         || type_elaboration::is_step5c4_dependent_candidate(case)
         || type_elaboration::is_step5c6_alias_candidate(case)
@@ -2633,6 +2635,16 @@ fn type_elaboration_detail_keys(
     output: FrontendRun,
     snapshot_text: &mut Option<String>,
 ) -> Vec<String> {
+    if type_elaboration::is_step5c5_argument_candidate(case) {
+        if !type_elaboration::step5c5_argument_admitted(Some(workspace_root), case) {
+            return vec!["predicates.application.invalid_admission".to_owned()];
+        }
+        return source_registration_inputs(workspace_root, case, output)
+            .and_then(|(source, typed, symbols)| {
+                type_elaboration::step5c5_predicate_argument_detail_keys(&source, &symbols, &typed)
+            })
+            .unwrap_or_else(|error| vec![error]);
+    }
     if type_elaboration::is_step5c3_argument_candidate(case) {
         if !type_elaboration::step5c3_argument_admitted(Some(workspace_root), case) {
             return vec!["types.application.invalid_admission".to_owned()];

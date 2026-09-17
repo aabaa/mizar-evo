@@ -35,10 +35,11 @@ mod type_assertion_routes;
 pub(super) use admission::{
     is_active_type_elaboration, is_step5c1_workspace_member, is_step5c2_workspace_member,
     is_step5c3_argument_candidate, is_step5c3_workspace_member, is_step5c4_dependent_candidate,
-    is_step5c4_workspace_member, is_step5c5_predicate_duplicate_candidate,
-    is_step5c5_workspace_member, is_step5c6_alias_candidate, is_step5c7_workspace_member,
-    is_step5c12_candidate, is_step5c14_static_candidate, step5c3_argument_admitted,
-    step5c4_dependent_admitted, step5c6_synonym_admitted, step5c12_admitted,
+    is_step5c4_workspace_member, is_step5c5_argument_candidate,
+    is_step5c5_predicate_duplicate_candidate, is_step5c5_workspace_member,
+    is_step5c6_alias_candidate, is_step5c7_workspace_member, is_step5c12_candidate,
+    is_step5c14_static_candidate, step5c3_argument_admitted, step5c4_dependent_admitted,
+    step5c5_argument_admitted, step5c6_synonym_admitted, step5c12_admitted,
     step5c14_static_admitted, validate_active_type_elaboration_tags,
 };
 #[cfg(test)]
@@ -461,7 +462,8 @@ pub(super) use source_predicate_definition::{
     source_predicate_definition_output, source_predicate_definition_output_with_mutation,
 };
 pub(super) use source_predicate_definition::{
-    source_predicate_definition_transport_detail_keys, step5c5_predicate_semantics_detail_keys,
+    source_predicate_definition_transport_detail_keys, step5c5_predicate_argument_detail_keys,
+    step5c5_predicate_semantics_detail_keys,
 };
 #[cfg(test)]
 pub(super) use source_proof_local_declaration::{

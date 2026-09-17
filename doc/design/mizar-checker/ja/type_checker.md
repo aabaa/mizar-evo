@@ -2965,6 +2965,11 @@ binding identity で簡約し、recursive inline definition は cycle guard で 
 述語の各量化引数は実際の `pred(T)` の定義域に照合し、結合子と量化の型も検査するが、真理・証明の承認は与えない。明示引数の個数不一致だけが `templates.argument.arity_mismatch` を返す。省略引数の推論は未対応で、このキーには分類しない。未対応のシグネチャ・本体・スコープ・上界・実引数は拒否する。この resolved-shape reader は checker が所有し、registration intake と同様に厳密な `use mizar_syntax::ast::{SurfaceNodeKind as K, SurfaceTokenKind};` のみ許す。他の構文 import・依存制限は維持する。承認済み事実、集合性、Core/VC、Task277B の実績は生成しない。
 テストは実ソースの抽象・具体型判断、両呼出し、改名、別由来・重複・回復済み所有者、仮引数・本体・定義域の変異、省略と明示引数の区別を対象とする。
 
+## Ordinary predicate application checking
+
+`check_source_distinct_loci_overloads` の single-candidate profile は必須 builtin-set field を持つ bare local structure 上の binary predicate も検査する。順序付き loci、実際の束縛、selector 等式の本体、segment 極性と両 call を認証し、predicate candidate に項の結果型を付けない。
+認証済み引数位置での実際の Known set→structure viability rejection だけを `predicates.application.argument_type_mismatch` に写像する。汎用 MissingEvidence/NoMatch や無関係な診断では不足する。証明・展開・承認を与えず、C13/C3 profile と atomic-formula transport の境界を維持する。
+
 ## Distinct-loci overload source checking
 
 `check_source_distinct_loci_overloads(&SurfaceResolvedArena, &SymbolEnv, &TypedArena, single_structure_candidate: bool)` は既存の `(TypeNormalizationOutput, OverloadCollectionOutput, TemplateExpansionOutput, CandidateViabilityOutput, SpecificityGraphOutput, OverloadSelectionOutput)` を `Result<_, String>` として返す。ソース・環境・typed arena の完全な対応を認証し、通常の仮引数と定理・証明の束縛を解決し、set の恒等定義と構造体 selector の定義を検査し、全シグネチャと実引数型を同じ表で正規化する。定義だけを構造体 checker に渡して実際のメンバー同一性を認証する。source intake が必須フィールドの builtin set 型を確認して §17.3.4 の constructor-witness 規則を適用する。変数シンボルや承認済み登録を捏造しない。

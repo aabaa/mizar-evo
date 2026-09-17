@@ -12,4 +12,5 @@ diagnostic_codes = []
 spec_refs = [
   "spec.en.09.predicates.application.typing",
 ]
-notes = "Audit-1 semantic-bridge inactive oracle seed (September 2026 audit wave): binding expectation for the Step-5 semantic bridge; no active runner tag, earns no current credit. A predicate whose loci require a structure type rejects builtin-set arguments (spec 9.4)."
+notes = "Checks both predicate applications and their actual ordered arguments through authenticated overload viability; builtin set cannot widen to the declared local structure locus type."
+tags = ["active_type_elaboration"]
