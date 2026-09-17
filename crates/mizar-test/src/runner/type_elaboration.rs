@@ -34,11 +34,12 @@ mod type_assertion_routes;
 
 pub(super) use admission::{
     is_active_type_elaboration, is_step5c1_workspace_member, is_step5c2_workspace_member,
-    is_step5c3_workspace_member, is_step5c4_dependent_candidate, is_step5c4_workspace_member,
-    is_step5c5_predicate_duplicate_candidate, is_step5c5_workspace_member,
-    is_step5c6_alias_candidate, is_step5c7_workspace_member, is_step5c12_candidate,
-    is_step5c14_static_candidate, step5c4_dependent_admitted, step5c6_synonym_admitted,
-    step5c12_admitted, step5c14_static_admitted, validate_active_type_elaboration_tags,
+    is_step5c3_argument_candidate, is_step5c3_workspace_member, is_step5c4_dependent_candidate,
+    is_step5c4_workspace_member, is_step5c5_predicate_duplicate_candidate,
+    is_step5c5_workspace_member, is_step5c6_alias_candidate, is_step5c7_workspace_member,
+    is_step5c12_candidate, is_step5c14_static_candidate, step5c3_argument_admitted,
+    step5c4_dependent_admitted, step5c6_synonym_admitted, step5c12_admitted,
+    step5c14_static_admitted, validate_active_type_elaboration_tags,
 };
 #[cfg(test)]
 pub(super) use binary_routes::{
@@ -441,8 +442,8 @@ pub(super) use source_functor_definition::{
     source_functor_definition_output, source_functor_definition_output_with_mutation,
 };
 pub(super) use source_functor_definition::{
-    source_functor_definition_transport_detail_keys, step5c5_functor_duplicate_detail_keys,
-    step5c5_functor_semantics_detail_keys,
+    source_functor_definition_transport_detail_keys, step5c3_functor_argument_detail_keys,
+    step5c5_functor_duplicate_detail_keys, step5c5_functor_semantics_detail_keys,
 };
 #[cfg(test)]
 pub(super) use source_mode_definition::step5c4_mode_semantics_detail_keys;

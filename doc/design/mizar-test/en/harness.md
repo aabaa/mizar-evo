@@ -45,12 +45,15 @@ Semantic mismatches fail closed; Task262 transport and prior mode/property outco
 
 ## Step 5C.3 attribute semantic runner
 
-The private route admits only the five non-G1 type-elaboration rows, one parse-only row, and one
-formula-statement row listed by the activation map. Admission binds id, path, stage, phase,
-outcome, and the sole stage tag before source extraction; the two G1 argument-widening rows remain
-inactive. The runner reads `SurfaceAst` only to extract syntax-free inputs, passes authenticated
-resolver identities through existing checker types, and compares only the unchanged sidecar
-outcome and stable detail key.
+The private route preserves the original seven rows and adds only the functor argument mismatch
+at `type_elaboration` / `type_check`; the attributed-widening positive remains inactive.
+Authenticate both source/sidecar identities and all stage/outcome/category/key/domain/spec-ref/tag metadata
+and auxiliary-payload absence; reserved identities cannot fall through other stages. The new branch uses
+actual source/neutral typed projections and the [checker single-candidate profile](../../mizar-checker/en/type_checker.md#distinct-loci-overload-source-checking).
+Map only an authenticated builtin-set-to-required-structure rejection from its existing viability tables,
+checking both call sites and every candidate/diagnostic. Valid other calls do not hide a mismatch;
+all-valid calls, coarse MissingEvidence/NoMatch and unrelated errors cannot satisfy the negative.
+Prior attribute routes and C13's strict profile remain unchanged; no accepted registration or proof is produced.
 
 ## Parser Task 46 Operator-Declaration Parse-Only Increment
 

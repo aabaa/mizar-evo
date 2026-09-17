@@ -1228,11 +1228,13 @@ pub fn check_source_dependent_mode_types(
     Ok((bindings, checked, inference))
 }
 
-/// Checks the bounded ordinary overload profile using source-derived signatures and actuals.
+/// Checks source-derived signatures and actuals in the bounded ordinary overload profiles.
+/// The single-structure profile also returns genuine no-match results; the two-root profile requires selection.
 pub fn check_source_distinct_loci_overloads(
     source: &SurfaceResolvedArena,
     symbols: &SymbolEnv,
     typed: &crate::typed_ast::TypedArena,
+    single_structure_candidate: bool,
 ) -> Result<
     (
         TypeNormalizationOutput,
@@ -1336,10 +1338,16 @@ pub fn check_source_distinct_loci_overloads(
     let [unit] = structural.as_slice() else {
         return Err(invalid());
     };
-    let [set_block, structure_block, box_block, theorem] =
-        parts(only(*unit, &K::CompilationUnit)?, &K::ItemList)?
-    else {
-        return Err(invalid());
+    let items = parts(only(*unit, &K::CompilationUnit)?, &K::ItemList)?;
+    let (set_block, structure_block, box_block, theorem) = match (single_structure_candidate, items)
+    {
+        (false, [set_block, structure_block, box_block, theorem]) => {
+            (Some(*set_block), structure_block, box_block, theorem)
+        }
+        (true, [structure_block, box_block, theorem]) => {
+            (None, structure_block, box_block, theorem)
+        }
+        _ => return Err(invalid()),
     };
     let [definition_kw, structure, end, semi] = parts(*structure_block, &K::DefinitionBlockItem)?
     else {
@@ -1459,7 +1467,7 @@ pub fn check_source_distinct_loci_overloads(
     let mut body_checks = Vec::new();
     let mut labels = Vec::new();
     let mut overload_name = None;
-    for block in [*set_block, *box_block] {
+    for block in set_block.into_iter().chain(std::iter::once(*box_block)) {
         let [definition_kw, parameter, definition, coherence, end, semi] =
             parts(block, &K::DefinitionBlockItem)?
         else {
@@ -1523,8 +1531,8 @@ pub fn check_source_distinct_loci_overloads(
             normalized(*result_type)?,
         ));
     }
-    let box_type = signatures[1].1;
-    if signatures[0].1 != set_type
+    let box_type = signatures.last().ok_or_else(invalid)?.1;
+    if (!single_structure_candidate && signatures[0].1 != set_type)
         || box_type == set_type
         || signatures.iter().any(|signature| signature.2 != set_type)
     {
@@ -1551,18 +1559,26 @@ pub fn check_source_distinct_loci_overloads(
         return Err(invalid());
     };
     tokens(&[(*let_kw, "let"), (*semi, ";")])?;
-    let [thus, proposition, justification, semi] = parts(*conclusion, &K::ConclusionStatement)?
-    else {
-        return Err(invalid());
+    let (thus, proposition, justification, semi) = match (
+        single_structure_candidate,
+        parts(*conclusion, &K::ConclusionStatement)?,
+    ) {
+        (false, [thus, proposition, justification, semi]) => {
+            (thus, proposition, Some(*justification), semi)
+        }
+        (true, [thus, proposition, semi]) => (thus, proposition, None, semi),
+        _ => return Err(invalid()),
     };
     tokens(&[(*thus, "thus"), (*semi, ";")])?;
-    let [by, references] = parts(*justification, &K::JustificationClause)? else {
-        return Err(invalid());
-    };
-    tokens(&[(*by, "by")])?;
-    let citation = only(only(*references, &K::ReferenceList)?, &K::Reference)?;
-    if !labels.contains(&text(citation)?) {
-        return Err(invalid());
+    if let Some(justification) = justification {
+        let [by, references] = parts(justification, &K::JustificationClause)? else {
+            return Err(invalid());
+        };
+        tokens(&[(*by, "by")])?;
+        let citation = only(only(*references, &K::ReferenceList)?, &K::Reference)?;
+        if !labels.contains(&text(citation)?) {
+            return Err(invalid());
+        }
     }
     let proof_equality = only(only(*proposition, &K::Proposition)?, &K::FormulaExpression)?;
     let mut calls = Vec::new();
@@ -1640,6 +1656,13 @@ pub fn check_source_distinct_loci_overloads(
             return Err(invalid());
         }
     }
+    if single_structure_candidate {
+        for call in &calls {
+            if term_type(call.3, call.4)? != set_type {
+                return Err(invalid());
+            }
+        }
+    }
     let mut sites = Vec::new();
     let mut candidates = Vec::new();
     for (application, argument, _, _, _) in &calls {
@@ -1707,6 +1730,9 @@ pub fn check_source_distinct_loci_overloads(
         if !graph.diagnostics.is_empty() {
             return Err(invalid());
         }
+        if single_structure_candidate && graph.nodes.is_empty() {
+            continue;
+        }
         let [root] = graph.nodes.as_slice() else {
             return Err(invalid());
         };
@@ -1738,6 +1764,11 @@ pub fn check_source_distinct_loci_overloads(
     for (_, result) in selection.results().iter() {
         if !result.diagnostics.is_empty() {
             return Err(invalid());
+        }
+        if single_structure_candidate
+            && matches!(result.status, OverloadResultStatus::NoMatch { .. })
+        {
+            continue;
         }
         let OverloadResultStatus::Resolved {
             root,

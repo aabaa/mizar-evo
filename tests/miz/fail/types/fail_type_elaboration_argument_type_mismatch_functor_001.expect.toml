@@ -12,4 +12,5 @@ diagnostic_codes = []
 spec_refs = [
   "spec.en.03.types.widening.argument_position",
 ]
-notes = "Audit-1 semantic-bridge inactive oracle seed (September 2026 audit wave): binding expectation for the Step-5 semantic bridge; no active runner tag, earns no current credit. A functor whose locus requires a structure type rejects a builtin-set argument; set does not widen to a structure (spec 3.5, 8.3)."
+notes = "Checks both actual source applications through authenticated overload viability; builtin set cannot widen to the declared local structure argument type."
+tags = ["active_type_elaboration"]

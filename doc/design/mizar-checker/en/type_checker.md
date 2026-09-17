@@ -3147,8 +3147,18 @@ Tests cover source-derived symbolic and concrete judgments, both call sites, ren
 
 ## Distinct-loci overload source checking
 
-`check_source_distinct_loci_overloads(&SurfaceResolvedArena, &SymbolEnv, &TypedArena)` returns the existing `(TypeNormalizationOutput, OverloadCollectionOutput, TemplateExpansionOutput, CandidateViabilityOutput, SpecificityGraphOutput, OverloadSelectionOutput)` in `Result<_, String>`. It authenticates complete source/environment/typed correspondence, resolves ordinary parameters and theorem/proof binders, checks the set identity and structure selector definitions, and normalizes all signatures and actual types in one table. Definition-only structure checking authenticates members; the source intake checks the required field is builtin set and applies §17.3.4’s constructor-witness rule. It invents neither variable symbols nor accepted registrations.
-Both source applications collect both visible ordinary roots and consume the unchanged overload stages. Viability follows actual argument types; exposed result types follow selected declarations. Expected theorem types and citations cannot choose a root. Unsupported profiles, attributed actuals, templates, redefinitions and ambiguity inputs fail closed; no proof, registration acceptance, views or Core/VC credit follows. Existing explicit-payload overload boundaries and syntax-import restrictions remain intact. Tests inspect all existing outputs, both roots/sites, the other-root structure-argument variation, renaming, owner/binder/member/type/order corruption and complete source provenance.
+`check_source_distinct_loci_overloads(&SurfaceResolvedArena, &SymbolEnv, &TypedArena, single_structure_candidate: bool)` returns the existing `(TypeNormalizationOutput, OverloadCollectionOutput, TemplateExpansionOutput, CandidateViabilityOutput, SpecificityGraphOutput, OverloadSelectionOutput)` in `Result<_, String>`. It authenticates complete source/environment/typed correspondence, resolves ordinary parameters and theorem/proof binders, checks the set identity and structure selector definitions, and normalizes all signatures and actual types in one table. Definition-only structure checking authenticates members; the source intake checks the required field is builtin set and applies §17.3.4’s constructor-witness rule. It invents neither variable symbols nor accepted registrations.
+In the strict profile, both source applications collect both visible ordinary roots and consume the unchanged overload stages. Viability follows actual argument types; exposed result types follow selected declarations. Expected theorem types and citations cannot choose a root. Unsupported profiles, attributed actuals, templates, redefinitions and ambiguity inputs fail closed; no proof, registration acceptance, views or Core/VC credit follows. Existing explicit-payload overload boundaries and syntax-import restrictions remain intact. Tests inspect all existing outputs, both roots/sites, the other-root structure-argument variation, renaming, owner/binder/member/type/order corruption and complete source provenance.
+
+C13 passes `false`, preserving its two-root profile and successful selection requirement. C3 passes
+`true` only for one ordinary structure-selector functor and both theorem/proof-local calls, without
+requiring a citation. This profile retains all declaration/member/binder/type authentication and
+builtin-field constructor inhabitation, and permits genuine `NoMatch` in the existing output tables.
+Only a viability rejection whose actual type is known builtin set and whose parameter is the
+actual authenticated structure may yield `types.application.argument_type_mismatch`; generic
+`MissingEvidence`, empty graphs or unrelated diagnostics are insufficient. Every call is accounted
+for, including valid controls; no selected root or exposed result is fabricated for rejected calls.
+Neither profile admits attributed/inherited/imported targets, synthetic accepted facts or proof credit.
 
 ## Static source algorithm checking
 

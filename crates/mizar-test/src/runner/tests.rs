@@ -1153,7 +1153,7 @@ fn step5c13_real_source_selects_from_both_roots_at_both_sites_by_actual_type() {
     use mizar_checker::overload_resolution::{
         CandidateViabilityStatus, ExposedResultSource, OverloadResultStatus,
     };
-    use mizar_checker::type_checker::{check_source_distinct_loci_overloads, TypeHeadRef};
+    use mizar_checker::type_checker::{TypeHeadRef, check_source_distinct_loci_overloads};
     let case = step5c13_case();
     let text = std::fs::read_to_string(&case.source_path).unwrap();
     for (source_text, structure) in [
@@ -1177,10 +1177,11 @@ fn step5c13_real_source_selects_from_both_roots_at_both_sites_by_actual_type() {
         ),
     ] {
         let (source, typed, symbols) = step5c13_inputs(&source_text).unwrap();
-        let outputs = check_source_distinct_loci_overloads(&source, &symbols, &typed).unwrap();
+        let outputs =
+            check_source_distinct_loci_overloads(&source, &symbols, &typed, false).unwrap();
         assert_eq!(
             outputs,
-            check_source_distinct_loci_overloads(&source, &symbols, &typed).unwrap()
+            check_source_distinct_loci_overloads(&source, &symbols, &typed, false).unwrap()
         );
         let (normalization, collection, expansion, viability, graphs, selection) = outputs;
         assert_eq!(collection.sites().len(), 2);
@@ -1372,7 +1373,7 @@ fn step5c13_rejects_source_signature_selector_binding_and_order_corruption() {
             input
                 .and_then(
                     |(source, typed, symbols)| check_source_distinct_loci_overloads(
-                        &source, &symbols, &typed
+                        &source, &symbols, &typed, false
                     )
                 )
                 .is_err(),
@@ -1386,9 +1387,11 @@ fn step5c13_rejects_source_signature_selector_binding_and_order_corruption() {
         format!("{}\n{}", &text[..first_end], text),
         text[first_end..].to_owned(),
     ] {
-        assert!(step5c13_inputs(&changed)
-            .and_then(|(s, t, e)| check_source_distinct_loci_overloads(&s, &e, &t))
-            .is_err());
+        assert!(
+            step5c13_inputs(&changed)
+                .and_then(|(s, t, e)| check_source_distinct_loci_overloads(&s, &e, &t, false))
+                .is_err()
+        );
     }
 }
 
@@ -1404,7 +1407,7 @@ fn step5c13_authenticates_complete_source_environment_and_neutral_projection() {
     let (source, typed, symbols) =
         super::source_registration_inputs(&step5c11_config().workspace_root, &case, frontend)
             .unwrap();
-    check_source_distinct_loci_overloads(&source, &symbols, &typed).unwrap();
+    check_source_distinct_loci_overloads(&source, &symbols, &typed, false).unwrap();
     let raw = typed
         .iter()
         .map(|(_, node)| node.clone())
@@ -1424,19 +1427,22 @@ fn step5c13_authenticates_complete_source_environment_and_neutral_projection() {
         }
         let changed = TypedArena::try_new(root, nodes).unwrap();
         assert!(
-            check_source_distinct_loci_overloads(&source, &symbols, &changed).is_err(),
+            check_source_distinct_loci_overloads(&source, &symbols, &changed, false).is_err(),
             "mutation {mutation}"
         );
     }
     let foreign = ResolverModuleId::new(PackageId::new("other"), ModulePath::new("other"));
-    assert!(check_source_distinct_loci_overloads(
-        &SurfaceResolvedArena::lower(&ast, &foreign).unwrap(),
-        &symbols,
-        &typed
-    )
-    .is_err());
+    assert!(
+        check_source_distinct_loci_overloads(
+            &SurfaceResolvedArena::lower(&ast, &foreign).unwrap(),
+            &symbols,
+            &typed,
+            false
+        )
+        .is_err()
+    );
     let (_, _, changed_env) = step5c13_inputs(&text.replace("ovbox", "otherbox")).unwrap();
-    assert!(check_source_distinct_loci_overloads(&source, &changed_env, &typed).is_err());
+    assert!(check_source_distinct_loci_overloads(&source, &changed_env, &typed, false).is_err());
 }
 
 #[test]
@@ -1633,7 +1639,7 @@ fn step5c13_checks_each_coherently_corrupted_source_callee() {
         .unwrap();
         assert!(
             mizar_checker::type_checker::check_source_distinct_loci_overloads(
-                &resolved, &env.env, &typed
+                &resolved, &env.env, &typed, false
             )
             .is_err(),
             "callee {target}"
@@ -3402,4 +3408,451 @@ fn step5c4_dependent_mode_rejects_each_bad_argument_and_corrupt_source_associati
         )
         .is_err()
     );
+}
+
+#[test]
+fn step5c3_functor_argument_mismatch_tracks_both_real_candidates_and_actual_bindings() {
+    use super::type_elaboration::step5c3_functor_argument_detail_keys;
+    use mizar_checker::overload_resolution::{
+        ArgumentViabilityEvidence, CandidateRejectionReason, CandidateViabilityInput,
+        CandidateViabilityOutput, CandidateViabilityStatus, OverloadResultStatus,
+        OverloadSelectionOutput, SpecificityGraphOutput,
+    };
+    use mizar_checker::type_checker::{
+        NormalizedTypeStatus, TypeHeadRef, check_source_distinct_loci_overloads,
+    };
+    use mizar_checker::typed_ast::{TypedNodeId, TypedSiteRef};
+    use mizar_resolve::{env::SymbolKind, names::resolve_template_formal};
+    let config = step5c11_config();
+    let plan = build_test_plan(&config).unwrap();
+    let case = plan
+        .cases
+        .iter()
+        .find(|case| case.id.0 == "fail_type_elaboration_argument_type_mismatch_functor_001")
+        .unwrap();
+    let text = std::fs::read_to_string(&case.source_path).unwrap();
+    let renamed = text
+        .replace("WBox2", "Container")
+        .replace("wget", "extract")
+        .replace("WGetDef", "ExtractDef")
+        .replace("WidenBad1", "UseExtract")
+        .replace(" d ", " value ")
+        .replace(".d", ".value")
+        .replace("B", "Formal")
+        .replace("X", "Actual");
+    for (variant, mask) in (0..4)
+        .map(|mask| (text.clone(), mask))
+        .chain([(renamed, 0)])
+    {
+        let mut variant = variant;
+        if mask & 1 != 0 {
+            variant = variant.replace(
+                "for X being set holds wget X = X",
+                "for X being WBox2 holds wget X = X.d",
+            );
+        }
+        if mask & 2 != 0 {
+            variant = variant.replace(
+                "let X be set;\n  thus wget X = X",
+                "let X be WBox2;\n  thus wget X = X.d",
+            );
+        }
+        let frontend = super::formula_statement::step5c8_test_frontend(&variant);
+        assert!(
+            frontend.diagnostics.is_empty(),
+            "{variant}: {:?}",
+            frontend.diagnostics
+        );
+        let (source, typed, symbols) =
+            super::source_registration_inputs(&config.workspace_root, case, frontend).unwrap();
+        let outputs =
+            check_source_distinct_loci_overloads(&source, &symbols, &typed, true).unwrap();
+        assert_eq!(
+            outputs,
+            check_source_distinct_loci_overloads(&source, &symbols, &typed, true).unwrap()
+        );
+        assert!(check_source_distinct_loci_overloads(&source, &symbols, &typed, false).is_err());
+        let keys = step5c3_functor_argument_detail_keys(&source, &symbols, &typed).unwrap();
+        assert_eq!(
+            keys,
+            if mask == 3 {
+                Vec::<String>::new()
+            } else {
+                vec!["types.application.argument_type_mismatch".into()]
+            }
+        );
+        let (normalization, collection, expansion, viability, graphs, selection) = outputs;
+        assert!(normalization.diagnostics().is_empty());
+        assert!(collection.diagnostics().is_empty());
+        assert!(expansion.diagnostics().is_empty());
+        assert_eq!(collection.sites().len(), 2);
+        assert_eq!(collection.candidates().len(), 2);
+        assert_eq!(expansion.candidates().len(), 2);
+        assert_eq!(viability.decisions().len(), 2);
+        assert_eq!(graphs.graphs().len(), 2);
+        assert_eq!(selection.results().len(), 2);
+        assert!(selection.inserted_views().is_empty());
+        let constructor = symbols
+            .symbols()
+            .iter()
+            .find(|entry| entry.kind() == SymbolKind::Functor)
+            .unwrap();
+        let structure = symbols
+            .symbols()
+            .iter()
+            .find(|entry| entry.kind() == SymbolKind::Structure)
+            .unwrap();
+        let binder_offsets = if variant.contains("Actual") {
+            [
+                variant.find("for Actual").unwrap() + 4,
+                variant.find("let Actual").unwrap() + 4,
+            ]
+        } else {
+            [
+                variant.find("for X").unwrap() + 4,
+                variant.find("let X").unwrap() + 4,
+            ]
+        };
+        let mut binders = Vec::new();
+        for (index, (site_id, site)) in collection.sites().iter().enumerate() {
+            let application = typed
+                .node(site.owner.node())
+                .unwrap()
+                .resolved_node
+                .unwrap();
+            let application_node = source.arena().node(application).unwrap();
+            assert_eq!(
+                SourceAnchor::Range(site.source_range),
+                *application_node.origin().anchor()
+            );
+            assert_eq!(
+                site.arguments,
+                vec![TypedSiteRef::Node(TypedNodeId::new(
+                    application_node.children()[1].index()
+                ))]
+            );
+            let argument = source.arena().node(application_node.children()[1]).unwrap();
+            assert_eq!(
+                argument.kind(),
+                &mizar_syntax::SurfaceNodeKind::TermReference
+            );
+            let binder = resolve_template_formal(&source, argument.children()[0]).unwrap();
+            assert!(
+                matches!(source.arena().node(binder).unwrap().origin().anchor(), SourceAnchor::Range(range) if range.start == binder_offsets[index])
+            );
+            binders.push(binder);
+            let (_, candidate) = expansion
+                .candidates()
+                .iter()
+                .find(|(_, row)| row.site == site_id)
+                .unwrap();
+            assert_eq!(&candidate.symbol, constructor.symbol());
+            assert_eq!(candidate.ordinary_root, candidate.symbol);
+            assert_eq!(
+                SourceAnchor::Range(candidate.provenance.source_range.unwrap()),
+                *constructor.origin().anchor()
+            );
+            assert_eq!(candidate.parameters.len(), 1);
+            let parameter = normalization
+                .normalized_types()
+                .get(candidate.parameters[0])
+                .unwrap();
+            assert_eq!(
+                parameter.head,
+                TypeHeadRef::Structure(structure.symbol().clone())
+            );
+            assert_eq!(parameter.status, NormalizedTypeStatus::Known);
+            assert_eq!(
+                normalization
+                    .normalized_types()
+                    .get(candidate.result.unwrap())
+                    .unwrap()
+                    .head,
+                TypeHeadRef::BuiltinSet
+            );
+            let (_, decision) = viability
+                .decisions()
+                .iter()
+                .find(|(_, row)| row.site == site_id)
+                .unwrap();
+            assert_eq!(decision.source_candidate, candidate.id);
+            let (_, result) = selection
+                .results()
+                .iter()
+                .find(|(_, row)| row.site == site_id)
+                .unwrap();
+            assert!(result.diagnostics.is_empty());
+            if mask & (1 << index) == 0 {
+                let CandidateViabilityStatus::Rejected { reasons } = &decision.status else {
+                    panic!("{:?}", decision.status)
+                };
+                let [reason] = reasons.as_slice() else {
+                    panic!("{reasons:?}")
+                };
+                assert_eq!(reason.argument_index, 0);
+                assert_eq!(reason.reason, CandidateRejectionReason::MissingEvidence);
+                assert_eq!(reason.target, Some(parameter.id));
+                let actual = normalization
+                    .normalized_types()
+                    .get(reason.actual.unwrap())
+                    .unwrap();
+                assert_eq!(actual.head, TypeHeadRef::BuiltinSet);
+                assert_eq!(actual.status, NormalizedTypeStatus::Known);
+                assert!(
+                    matches!(&result.status, OverloadResultStatus::NoMatch { rejected } if rejected.is_empty())
+                );
+                assert!(decision.output_candidate.is_none());
+            } else {
+                let CandidateViabilityStatus::Viable { views } = &decision.status else {
+                    panic!("{:?}", decision.status)
+                };
+                assert_eq!(views.len(), 1);
+                assert_eq!(views[0].actual, parameter.id);
+                assert_eq!(views[0].target, parameter.id);
+                assert!(matches!(
+                    result.status,
+                    OverloadResultStatus::Resolved { .. }
+                ));
+            }
+        }
+        assert_ne!(binders[0], binders[1]);
+        if mask == 0 && variant == text {
+            // The same coarse pipeline failure also occurs for the reverse pair;
+            // its actual/target heads, rather than NoMatch, identify its meaning.
+            let mut candidates = collection
+                .candidates()
+                .iter()
+                .map(
+                    |(_, row)| mizar_checker::overload_resolution::OverloadCandidateInput {
+                        site: row.site_key.clone(),
+                        symbol: row.symbol.clone(),
+                        ordinary_root: row.ordinary_root.clone(),
+                        declaration_kind: row.declaration_kind.clone(),
+                        parameters: vec![row.result.unwrap()],
+                        result: row.result,
+                        origin: row.origin.clone(),
+                        template: None,
+                        coherence: None,
+                        provenance: row.provenance.clone(),
+                    },
+                )
+                .collect::<Vec<_>>();
+            let structure_type = expansion.candidates().iter().next().unwrap().1.parameters[0];
+            let sites = collection.sites().iter().map(|(_, row)| {
+                mizar_checker::overload_resolution::OverloadSiteInput {
+                    key: row.key.clone(),
+                    owner: row.owner.clone(),
+                    source_range: row.source_range,
+                    kind: row.kind.clone(),
+                    name: row.name.clone(),
+                    arguments: row.arguments.clone(),
+                    expected: None,
+                    source_qua: Vec::new(),
+                    recovery: row.recovery.clone(),
+                }
+            });
+            let other = mizar_checker::overload_resolution::OverloadCollectionOutput::collect(
+                sites,
+                candidates.drain(..),
+            );
+            let expanded =
+                mizar_checker::overload_resolution::TemplateExpansionOutput::expand(&other);
+            let filtered = CandidateViabilityOutput::filter(
+                &expanded,
+                expanded
+                    .candidates()
+                    .iter()
+                    .map(|(candidate, _)| CandidateViabilityInput {
+                        candidate,
+                        arguments: vec![ArgumentViabilityEvidence::Exact {
+                            actual: structure_type,
+                        }],
+                    }),
+            );
+            for (_, row) in filtered.decisions().iter() {
+                assert!(
+                    matches!(&row.status, CandidateViabilityStatus::Rejected { reasons } if reasons[0].reason == CandidateRejectionReason::MissingEvidence && reasons[0].actual == Some(structure_type))
+                );
+            }
+            let selected =
+                OverloadSelectionOutput::resolve(&SpecificityGraphOutput::build(&filtered, []), []);
+            assert!(
+                selected
+                    .results()
+                    .iter()
+                    .all(|(_, row)| matches!(row.status, OverloadResultStatus::NoMatch { .. }))
+            );
+        }
+    }
+}
+
+#[test]
+fn step5c3_functor_argument_mismatch_never_credits_unsupported_source_or_forged_identity() {
+    use super::type_elaboration::step5c3_functor_argument_detail_keys;
+    use mizar_checker::typed_ast::{TypedArena, TypingState};
+    use mizar_resolve::resolved_ast::SurfaceResolvedArena;
+    let config = step5c11_config();
+    let plan = build_test_plan(&config).unwrap();
+    let case = plan
+        .cases
+        .iter()
+        .find(|case| case.id.0 == "fail_type_elaboration_argument_type_mismatch_functor_001")
+        .unwrap();
+    let text = std::fs::read_to_string(&case.source_path).unwrap();
+    let inputs = |text: &str| {
+        let frontend = super::formula_statement::step5c8_test_frontend(text);
+        assert!(
+            frontend.diagnostics.is_empty(),
+            "semantic control must parse cleanly: {text}: {:?}",
+            frontend.diagnostics
+        );
+        super::source_registration_inputs(&config.workspace_root, case, frontend).unwrap()
+    };
+    for (from, to) in [
+        ("equals B.d", "equals B"),
+        ("equals B.d", "equals X.d"),
+        ("equals B.d", "equals B.missing"),
+        ("wget B -> set", "wget B -> object"),
+        ("field d -> set", "field d -> object"),
+        ("holds wget X = X", "holds wget B = X"),
+        ("thus wget X = X", "thus wget B = X"),
+        ("holds wget X = X", "holds wget X = B"),
+        ("thus wget X = X", "thus wget X = B"),
+        ("let B be WBox2", "let B be set"),
+        ("coherence;", "existence;"),
+    ] {
+        let changed = text.replace(from, to);
+        assert_ne!(changed, text);
+        let (source, typed, symbols) = inputs(&changed);
+        assert!(
+            step5c3_functor_argument_detail_keys(&source, &symbols, &typed).is_err(),
+            "{changed}"
+        );
+    }
+    let legal_widening = text
+        .replace("let B be WBox2", "let B be object")
+        .replace("wget B -> set equals B.d", "wget B -> object equals B");
+    let (source, typed, symbols) = inputs(&legal_widening);
+    assert!(step5c3_functor_argument_detail_keys(&source, &symbols, &typed).is_err());
+    let (source, typed, symbols) = inputs(&text);
+    let applications = typed
+        .iter()
+        .filter(|(_, node)| node.kind.as_str().starts_with("PrefixExpression("))
+        .map(|(id, _)| id)
+        .collect::<Vec<_>>();
+    assert_eq!(applications.len(), 2);
+    let raw = typed
+        .iter()
+        .map(|(_, node)| node.clone())
+        .collect::<Vec<_>>();
+    for application in applications {
+        let argument = typed.node(application).unwrap().children[1].index();
+        for mutation in 0..4 {
+            let mut nodes = raw.clone();
+            match mutation {
+                0 => nodes[argument].anchor = nodes[application.index()].anchor.clone(),
+                1 => nodes[argument].resolved_node = nodes[application.index()].resolved_node,
+                2 => nodes[argument].typing = TypingState::Successful,
+                3 => nodes[argument].children.clear(),
+                _ => unreachable!(),
+            }
+            let changed = TypedArena::try_new(typed.root(), nodes).unwrap();
+            assert!(step5c3_functor_argument_detail_keys(&source, &symbols, &changed).is_err());
+        }
+    }
+    let ast = super::formula_statement::step5c8_test_frontend(&text)
+        .ast
+        .unwrap();
+    let call_offsets = text
+        .match_indices("wget X")
+        .map(|(offset, _)| offset)
+        .collect::<Vec<_>>();
+    assert_eq!(call_offsets.len(), 2);
+    for target in call_offsets.into_iter().map(Some).chain([None]) {
+        use mizar_syntax::ast::{SurfaceAstBuilder, SurfaceNodeKind as K};
+        let mut builder = SurfaceAstBuilder::new(ast.source_id);
+        let mut rebuilt = Vec::new();
+        let mut changes = 0;
+        for node in ast.nodes() {
+            let mut children = node
+                .children
+                .iter()
+                .map(|id| rebuilt[id.index()])
+                .collect::<Vec<_>>();
+            let id = match &node.kind {
+                K::Token(token) => {
+                    let spelling = if Some(node.range.start) == target {
+                        assert_eq!(token.text.as_ref(), "wget");
+                        changes += 1;
+                        "oops".into()
+                    } else {
+                        token.text.clone()
+                    };
+                    builder.add_token(token.kind, spelling, node.range)
+                }
+                K::PrefixExpression(operator) if Some(node.range.start) == target => {
+                    let mut operator = operator.clone();
+                    operator.spelling = "oops".into();
+                    builder.add_node(K::PrefixExpression(operator), node.range, children)
+                }
+                kind => {
+                    if target.is_none() && kind == &K::ItemList {
+                        assert_eq!(children.len(), 3);
+                        children.swap(0, 1);
+                        changes += 1;
+                    }
+                    builder.add_node(kind.clone(), node.range, children)
+                }
+            };
+            rebuilt.push(id);
+        }
+        assert_eq!(changes, 1);
+        let mut frontend = super::formula_statement::step5c8_test_frontend(&text);
+        frontend.ast = Some(builder.finish(Some(rebuilt[ast.root().unwrap().index()]), None));
+        let (changed_source, changed_typed, changed_symbols) =
+            super::source_registration_inputs(&config.workspace_root, case, frontend).unwrap();
+        mizar_resolve::symbols::validate_source_symbol_env(&changed_source, &changed_symbols)
+            .unwrap();
+        assert!(
+            step5c3_functor_argument_detail_keys(&changed_source, &changed_symbols, &changed_typed)
+                .is_err()
+        );
+    }
+    let foreign_module =
+        ResolverModuleId::new(PackageId::new("foreign"), ModulePath::new("argument"));
+    let foreign = SurfaceResolvedArena::lower(&ast, &foreign_module).unwrap();
+    assert!(step5c3_functor_argument_detail_keys(&foreign, &symbols, &typed).is_err());
+    let mut other_ast = ast.clone();
+    let ids = InMemorySessionIdAllocator::new();
+    ids.next_source_id(snapshot_id(0)).unwrap();
+    other_ast.source_id = ids.next_source_id(snapshot_id(0)).unwrap();
+    let foreign_source = SurfaceResolvedArena::lower(&other_ast, symbols.module_id()).unwrap();
+    assert!(step5c3_functor_argument_detail_keys(&foreign_source, &symbols, &typed).is_err());
+    let (_, _, other_symbols) = inputs(&text.replace("WBox2", "Container"));
+    assert!(step5c3_functor_argument_detail_keys(&source, &other_symbols, &typed).is_err());
+    let mut indexes = super::import_fixtures::clone_symbol_env_indexes(&symbols);
+    indexes.definitions = Default::default();
+    assert!(
+        step5c3_functor_argument_detail_keys(
+            &source,
+            &SymbolEnv::new(symbols.module_id().clone(), indexes),
+            &typed
+        )
+        .is_err()
+    );
+    let theorem_start = text.find("theorem WidenBad1:").unwrap();
+    let unrelated = format!("{text}\n{}", &text[theorem_start..]);
+    let frontend = super::formula_statement::step5c8_test_frontend(&unrelated);
+    assert!(frontend.diagnostics.is_empty(), "{:?}", frontend.diagnostics);
+    let result = super::resolver_symbol_collection(
+        &config.workspace_root,
+        case,
+        frontend.ast.as_ref().unwrap(),
+    );
+    assert!(!result.detail_keys.is_empty());
+    assert!(super::source_registration_inputs(&config.workspace_root, case, frontend).is_err());
+    let malformed = text.replace("thus wget X = X;", "thus wget X = ;");
+    let frontend = super::formula_statement::step5c8_test_frontend(&malformed);
+    assert!(!frontend.diagnostics.is_empty());
+    assert!(super::source_registration_inputs(&config.workspace_root, case, frontend).is_err());
 }

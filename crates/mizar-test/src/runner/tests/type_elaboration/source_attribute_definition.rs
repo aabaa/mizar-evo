@@ -965,7 +965,7 @@ fn source_attribute_definition_route_publishes_no_semantic_outputs() {
                 .filter(|case| case.source_path.extension().is_some_and(|ext| ext == "miz"))
                 .count(),
         ],
-        [255, 255, 255, 242, 255, 255]
+        [256, 256, 256, 243, 256, 256]
     );
     assert_eq!(
         (plan.cases.len(), plan.manifest.requirements.len()),
@@ -988,7 +988,7 @@ fn source_attribute_definition_route_publishes_no_semantic_outputs() {
             active_type_elaboration_cases(&plan).count(),
             crate::active_proof_verification_cases(&plan).count(),
         ),
-        (113, 11, 255, 11)
+        (113, 11, 256, 11)
     );
     let type_stage = plan
         .coverage_report

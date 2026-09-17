@@ -36,12 +36,14 @@ source/sidecar 同一性、全 stage/outcome・domain/spec-ref/tag metadata と�
 
 ## Step 5C.3 attribute semantic runner
 
-private route は activation map の non-G1 type-elaboration 5行、parse-only 1行、
-formula-statement 1行だけを受理する。source extraction 前に id、path、stage、phase、
-outcome、sole stage tag を結び、G1 argument-widening 2行は inactive のままとする。
-runner は `SurfaceAst` から syntax-free input だけを抽出し、authenticated resolver
-identity を既存 checker type に通して、未変更の sidecar outcome と stable detail key
-だけを比較する。
+private route は従来7行を維持し、functor argument mismatch だけを `type_elaboration` / `type_check` に追加する。
+属性付き widening positive は inactive のまま、両 source/sidecar 同一性、全 stage/outcome/category/key/domain/
+spec-ref/tag metadata と補助 payload 不在を照合し、予約した同一性を他 stage に流さない。
+実際の source/neutral typed projection を [checker 単一候補 profile](../../mizar-checker/ja/type_checker.md#distinct-loci-overload-source-checking) に渡し、
+既存 viability table の認証済み builtin-set-to-required-structure rejection だけを写像する。
+両 call site と全 candidate/diagnostic を照合し、他の正常 call は不一致を隠さない。全 call 正常、
+汎用 MissingEvidence/NoMatch、無関係な error では negative を満たせない。
+既存 attribute route と C13 strict profile を維持し、accepted registration や証明を生成しない。
 
 ## Parser Task 46 operator-declaration parse-only increment
 
