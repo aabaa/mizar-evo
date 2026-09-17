@@ -933,7 +933,7 @@ Bullets:
 
 - Scheme-style reasoning keeps the same power.
 - The words `of` and `over` help keep mathematical text readable.
-- **Each instantiation is checked. Templates add no new logic.**
+- **Each template body is checked once at declaration time. Each use checks the required constraints. Templates add no new logic.**
 - **I would like to try this design on existing MML schemes.
   The next story connects proofs with algorithms.**
 
