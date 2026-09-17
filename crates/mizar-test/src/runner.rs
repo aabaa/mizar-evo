@@ -728,7 +728,7 @@ use type_elaboration::{
     expected_type_elaboration_detail_keys, extract_builtin_source_reserve_declarations,
     is_active_type_elaboration, is_step5c1_workspace_member, is_step5c2_workspace_member,
     is_step5c3_workspace_member, is_step5c4_workspace_member, is_step5c5_workspace_member,
-    is_step5c7_workspace_member, source_application_transport_detail_keys,
+    is_step5c7_workspace_member, is_step5c12_candidate, source_application_transport_detail_keys,
     source_atomic_formula_transport_detail_keys, source_attribute_definition_transport_detail_keys,
     source_attribute_detail_keys, source_attribute_semantics_detail_keys,
     source_binding_context_detail_keys, source_builtin_binary_term_formula_detail_keys,
@@ -867,7 +867,7 @@ use type_elaboration::{
     source_two_edge_local_object_mode_two_hop_asserted_head_detail_keys,
     source_type_application_detail_keys, step5c5_functor_duplicate_detail_keys,
     step5c5_functor_semantics_detail_keys, step5c5_predicate_semantics_detail_keys,
-    step5c7_term_detail_keys, type_elaboration_failure_diagnostic,
+    step5c7_term_detail_keys, step5c12_admitted, type_elaboration_failure_diagnostic,
     validate_active_type_elaboration_tags,
 };
 
@@ -2211,7 +2211,8 @@ pub fn active_proof_verification_cases(plan: &TestPlan) -> impl Iterator<Item = 
 }
 
 fn is_active_parse_only(case: &TestCase) -> bool {
-    if is_step5c11_registration_candidate(case)
+    if is_step5c12_candidate(case)
+        || is_step5c11_registration_candidate(case)
         || proof_verification::is_step5c11_proof_candidate(case)
     {
         return false;
@@ -2254,7 +2255,8 @@ fn is_active_parse_only(case: &TestCase) -> bool {
 }
 
 fn is_active_declaration_symbol(case: &TestCase) -> bool {
-    if is_step5c11_registration_candidate(case)
+    if is_step5c12_candidate(case)
+        || is_step5c11_registration_candidate(case)
         || proof_verification::is_step5c11_proof_candidate(case)
     {
         return false;
@@ -2558,6 +2560,22 @@ fn type_elaboration_detail_keys(
         return vec!["type_elaboration.lower_stage.declaration_symbol.no_ast".to_owned()];
     };
     let resolver = resolver_symbol_collection(workspace_root, case, &ast);
+    if is_step5c12_candidate(case) {
+        if !step5c12_admitted(Some(workspace_root), case) || !resolver.detail_keys.is_empty() {
+            return vec!["templates.invalid_admission_or_resolver".into()];
+        }
+        return mizar_resolve::resolved_ast::SurfaceResolvedArena::lower(&ast, &resolver.module)
+            .map_err(|error| error.to_string())
+            .and_then(|source| {
+                mizar_checker::type_checker::check_source_unbounded_template_types(
+                    &source,
+                    &resolver.env,
+                )
+            })
+            .err()
+            .into_iter()
+            .collect();
+    }
     if is_step5c2_workspace_member(workspace_root, case) {
         if resolver
             .detail_keys

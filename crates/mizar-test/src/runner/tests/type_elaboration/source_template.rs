@@ -311,3 +311,496 @@ fn task277a_runner_stays_private_targetless_and_semantic_free() {
     assert!(source_template_output(&changed_ast, changed_module, &changed).is_none());
     assert!(source_template_output(&ast, module, &changed).is_none());
 }
+fn step5c12_case(id: &str) -> (crate::harness::TestCase, String) {
+    let case = build_test_plan(&step5c11_config())
+        .unwrap()
+        .cases
+        .into_iter()
+        .find(|case| case.id.0 == id)
+        .unwrap();
+    let source = std::fs::read_to_string(&case.source_path).unwrap();
+    (case, source)
+}
+
+fn step5c12_inputs(
+    case: &crate::harness::TestCase,
+    text: &str,
+) -> (
+    mizar_resolve::resolved_ast::SurfaceResolvedArena,
+    mizar_resolve::env::SymbolEnv,
+) {
+    let frontend = super::formula_statement::step5c8_test_frontend(text);
+    assert!(
+        frontend.diagnostics.is_empty(),
+        "{text}\n{:?}",
+        frontend.diagnostics
+    );
+    let ast = frontend.ast.unwrap();
+    let symbols = super::resolver_symbol_collection(&step5c11_config().workspace_root, case, &ast);
+    assert!(
+        symbols.detail_keys.is_empty(),
+        "{text}\n{:?}",
+        symbols.detail_keys
+    );
+    (
+        mizar_resolve::resolved_ast::SurfaceResolvedArena::lower(&ast, &symbols.module).unwrap(),
+        symbols.env,
+    )
+}
+
+fn step5c12_check(case: &crate::harness::TestCase, text: &str) -> Result<(), String> {
+    let (source, symbols) = step5c12_inputs(case, text);
+    mizar_checker::type_checker::check_source_unbounded_template_types(&source, &symbols)
+}
+
+#[test]
+fn step5c12_real_templates_check_symbolic_formals_and_concrete_uses() {
+    for (id, expected) in [
+        (
+            "pass_type_elaboration_template_type_param_functor_001",
+            Ok(()),
+        ),
+        ("pass_type_elaboration_template_pred_param_001", Ok(())),
+        (
+            "fail_type_elaboration_template_arity_mismatch_001",
+            Err("templates.argument.arity_mismatch".into()),
+        ),
+    ] {
+        let (case, source) = step5c12_case(id);
+        assert_eq!(step5c12_check(&case, &source), expected, "{id}");
+        assert_eq!(
+            step5c12_check(&case, &source),
+            expected,
+            "deterministic {id}"
+        );
+        let renamed = source
+            .replace("TId", "RenamedId")
+            .replace("THolds", "RenamedHolds")
+            .replace("tid", "renamed_id")
+            .replace('T', "U")
+            .replace('P', "Q")
+            .replace('A', "B")
+            .replace('x', "y");
+        assert_eq!(step5c12_check(&case, &renamed), expected, "renamed {id}");
+        let result = super::run_type_elaboration_case(
+            &step5c11_config().workspace_root,
+            &step5c11_config().workspace_root.join("tests"),
+            &case,
+            0,
+        );
+        assert_eq!(
+            result.status,
+            super::TypeElaborationCaseStatus::Passed,
+            "{result:?}"
+        );
+    }
+}
+
+#[test]
+fn step5c12_identity_requires_the_actual_abstract_type_and_value_bindings() {
+    let (case, source) = step5c12_case("pass_type_elaboration_template_type_param_functor_001");
+    for (old, new) in [
+        ("let x be T;", "let x be object;"),
+        ("-> T equals", "-> set equals"),
+        ("equals x", "equals A"),
+        ("tid[T]", "tid[x]"),
+        (
+            "let T be type;\n  let x be T;",
+            "let x be T;\n  let T be type;",
+        ),
+        ("let T be type;", "let T be type; let U be type;"),
+        ("for A being set", "for A being object"),
+        ("let A be set", "let A be object"),
+        ("tid[set] A = A by", "tid[set] x = A by"),
+        ("coherence;", "coherence; coherence;"),
+    ] {
+        let changed = source.replace(old, new);
+        assert_ne!(changed, source);
+        let result = step5c12_check(&case, &changed);
+        assert!(result.is_err(), "accepted {old} => {new}");
+        assert_ne!(result.unwrap_err(), "templates.argument.arity_mismatch");
+    }
+    let (_, symbols) = step5c12_inputs(&case, &source);
+    let (renamed, _) = step5c12_inputs(&case, &source.replace("TIdDef", "ForeignDef"));
+    assert!(
+        mizar_checker::type_checker::check_source_unbounded_template_types(&renamed, &symbols)
+            .is_err()
+    );
+}
+
+#[test]
+fn step5c12_arity_is_derived_from_each_explicit_application() {
+    let (case, source) = step5c12_case("fail_type_elaboration_template_arity_mismatch_001");
+    let mismatch = Err("templates.argument.arity_mismatch".to_owned());
+    assert_eq!(step5c12_check(&case, &source), mismatch);
+    assert_eq!(
+        step5c12_check(&case, &source.replacen("[set, set]", "[set]", 1)),
+        mismatch
+    );
+    let second_only = source.replace("thus tid4[set, set]", "thus tid4[set]");
+    assert_eq!(step5c12_check(&case, &second_only), mismatch);
+    let valid = source.replace("[set, set]", "[set]");
+    assert_eq!(step5c12_check(&case, &valid), Ok(()));
+    for changed in [
+        valid.replace("[set]", ""),
+        source.replace("equals x", "equals A"),
+        source.replace("thus tid4[set, set] A", "thus tid4[set, set] x"),
+        source.replace("for A being set", "for A being object"),
+        source.replace("[set, set]", "[object, object]"),
+    ] {
+        let error = step5c12_check(&case, &changed).expect_err("unsupported source");
+        assert_ne!(error, "templates.argument.arity_mismatch", "{changed}");
+    }
+}
+
+#[test]
+fn step5c12_predicate_formals_check_each_domain_and_quantified_argument() {
+    let (case, source) = step5c12_case("pass_type_elaboration_template_pred_param_001");
+    for (old, new) in [
+        ("pred(T)", "pred(set)"),
+        ("for x being T", "for x being set"),
+        ("implies P(x)", "implies P(T)"),
+        ("(P(x) implies", "(Q(x) implies"),
+        ("implies P(x)", "implies P(x, x)"),
+        ("let P be pred(T);", "let P be pred(T); let Q be pred(T);"),
+        (
+            "theorem THoldsDef: for x being T holds (P(x) implies P(x));",
+            "pred THoldsDef: testp x means P(x);",
+        ),
+    ] {
+        assert!(
+            step5c12_check(&case, &source.replace(old, new)).is_err(),
+            "{old} => {new}"
+        );
+    }
+    let (resolved, _) = step5c12_inputs(&case, &source);
+    let uses = resolved
+        .arena()
+        .iter()
+        .filter_map(|(id, node)| match node.kind() {
+            mizar_syntax::SurfaceNodeKind::Token(token) if token.text.as_ref() == "x" => Some(id),
+            _ => None,
+        })
+        .collect::<Vec<_>>();
+    assert_eq!(uses.len(), 3);
+    for use_id in &uses[1..] {
+        assert_eq!(
+            mizar_resolve::names::resolve_template_formal(&resolved, *use_id).unwrap(),
+            uses[0]
+        );
+    }
+    assert!(mizar_resolve::names::resolve_template_formal(&resolved, uses[0]).is_err());
+}
+
+#[test]
+fn step5c12_admission_reserves_all_template_rows_and_exact_endpoints() {
+    let config = step5c11_config();
+    let plan = build_test_plan(&config).unwrap();
+    let (original, _) = step5c12_case("fail_type_elaboration_template_arity_mismatch_001");
+    assert!(super::step5c12_admitted(
+        Some(&config.workspace_root),
+        &original
+    ));
+    for mutation in 0..14 {
+        let mut case = original.clone();
+        match mutation {
+            0 => case.id.0.push_str("_alias"),
+            1 => case.expectation.id.0.push_str("_alias"),
+            2 => {
+                case.source_path = config.workspace_root.join("alias").join(
+                    case.source_path
+                        .strip_prefix(&config.workspace_root)
+                        .unwrap(),
+                )
+            }
+            3 => case.expectation_path = case.expectation_path.with_file_name("wrong.expect.toml"),
+            4 => case.expectation.expected_phase = Some(crate::PipelinePhase::Resolve),
+            5 => case.expectation.expected_outcome = crate::ExpectedOutcome::Pass,
+            6 => case.expectation.failure_category = None,
+            7 => case.expectation.stable_detail_key = Some("wrong".into()),
+            8 => case.expectation.tags.clear(),
+            9 => case.expectation.tags.push("extra".into()),
+            10 => case.expectation.snapshots = Some("wrong".into()),
+            11 => case.expectation.rejection_reason = Some("wrong".into()),
+            12 => case.expectation.diagnostic_codes.push("E-WRONG".into()),
+            13 => case
+                .expectation
+                .declaration_symbol_payloads
+                .push("wrong".into()),
+            _ => unreachable!(),
+        }
+        assert!(
+            !super::step5c12_admitted(Some(&config.workspace_root), &case),
+            "mutation {mutation}"
+        );
+    }
+    for id in [
+        "pass_type_elaboration_template_extends_bound_001",
+        "fail_type_elaboration_template_bound_violation_001",
+    ] {
+        let mut case = plan
+            .cases
+            .iter()
+            .find(|case| case.id.0 == id)
+            .unwrap()
+            .clone();
+        case.expectation.tags = vec!["active_type_elaboration".into()];
+        assert!(!super::is_active_type_elaboration(&case));
+    }
+    for (stage, phase, tag) in [
+        (
+            crate::Stage::ParseOnly,
+            crate::PipelinePhase::Parse,
+            "active_parse_only",
+        ),
+        (
+            crate::Stage::DeclarationSymbol,
+            crate::PipelinePhase::Resolve,
+            "active_declaration_symbol",
+        ),
+        (
+            crate::Stage::FormulaStatement,
+            crate::PipelinePhase::StatementCheck,
+            "active_formula_statement",
+        ),
+        (
+            crate::Stage::ProofVerification,
+            crate::PipelinePhase::Verification,
+            "active_proof_verification",
+        ),
+        (
+            crate::Stage::AdvancedSemantics,
+            crate::PipelinePhase::OverloadResolution,
+            "active_advanced_semantics",
+        ),
+    ] {
+        let mut case = original.clone();
+        case.expectation.stage = stage;
+        case.expectation.expected_phase = Some(phase);
+        case.expectation.tags = vec![tag.into()];
+        for only_expectation_identity in [false, true] {
+            if only_expectation_identity {
+                case.id.0 = "alias".into();
+                case.source_path = config.workspace_root.join("alias.miz");
+                case.expectation_path = config.workspace_root.join("alias.expect.toml");
+            }
+            assert!(!super::is_active_type_elaboration(&case));
+            assert!(!super::is_active_parse_only(&case));
+            assert!(!super::is_active_declaration_symbol(&case));
+            assert!(!super::is_active_proof_verification(&case));
+            assert!(!super::formula_statement::is_active_formula_statement(
+                &config.workspace_root,
+                &case
+            ));
+            assert!(!super::step5c11_registration_admitted(
+                &config.workspace_root,
+                &case
+            ));
+        }
+    }
+    assert!(super::validate_active_type_elaboration_tags(&config.workspace_root, &plan).is_empty());
+    for duplicate in [false, true] {
+        let mut changed = plan.clone();
+        if duplicate {
+            changed.cases.push(original.clone());
+        } else {
+            changed.cases.retain(|case| case.id != original.id);
+        }
+        assert!(
+            super::validate_active_type_elaboration_tags(&config.workspace_root, &changed)
+                .iter()
+                .any(|diagnostic| diagnostic.code.0 == "E-TYPE-ELABORATION-STEP5C12-INVENTORY")
+        );
+    }
+    let mut empty = plan;
+    empty.cases.clear();
+    assert!(
+        super::validate_active_type_elaboration_tags(&config.workspace_root, &empty)
+            .iter()
+            .any(|diagnostic| diagnostic.code.0 == "E-TYPE-ELABORATION-STEP5C12-INVENTORY")
+    );
+}
+
+#[test]
+fn step5c12_formal_bindings_and_source_environment_are_authenticated() {
+    use mizar_resolve::{
+        names::resolve_template_formal,
+        resolved_ast::{ModuleId, SurfaceResolvedArena},
+    };
+    let (case, text) = step5c12_case("pass_type_elaboration_template_type_param_functor_001");
+    let (source, symbols) = step5c12_inputs(&case, &text);
+    let uses = source.arena().iter().filter_map(|(_, node)| {
+        if node.kind() != &mizar_syntax::SurfaceNodeKind::TermReference { return None; }
+        let [reference] = node.children() else { return None; };
+        matches!(source.arena().node(*reference).unwrap().kind(), mizar_syntax::SurfaceNodeKind::Token(token) if token.text.as_ref() == "A").then_some(*reference)
+    }).collect::<Vec<_>>();
+    assert_eq!(uses.len(), 4);
+    let declarations = uses
+        .iter()
+        .map(|id| resolve_template_formal(&source, *id).unwrap())
+        .collect::<Vec<_>>();
+    assert_eq!(declarations[0], declarations[1]);
+    assert_eq!(declarations[2], declarations[3]);
+    assert_ne!(declarations[0], declarations[2]);
+    for declaration in declarations {
+        assert!(resolve_template_formal(&source, declaration).is_err());
+    }
+    let ast = super::formula_statement::step5c8_test_frontend(&text)
+        .ast
+        .unwrap();
+    let foreign = ModuleId::new(
+        mizar_session::PackageId::new("foreign"),
+        mizar_session::ModulePath::new("foreign"),
+    );
+    let changed = SurfaceResolvedArena::lower(&ast, &foreign).unwrap();
+    assert!(
+        mizar_checker::type_checker::check_source_unbounded_template_types(&changed, &symbols)
+            .is_err()
+    );
+    let recovered =
+        super::formula_statement::step5c8_test_frontend(&text.replace("let x be T;", "let x be ;"));
+    assert!(!recovered.diagnostics.is_empty());
+    if let Some(ast) = recovered.ast
+        && let Ok(recovered) = SurfaceResolvedArena::lower(&ast, source.module())
+    {
+        assert!(
+            mizar_checker::type_checker::check_source_unbounded_template_types(
+                &recovered, &symbols
+            )
+            .is_err()
+        );
+        assert!(resolve_template_formal(&recovered, uses[0]).is_err());
+    }
+}
+
+#[test]
+fn step5c12_direct_resolution_rejects_illegal_owners_and_application_identities() {
+    use mizar_resolve::{names::resolve_template_formal, resolved_ast::SurfaceResolvedArena};
+    use mizar_syntax::{SurfaceAstBuilder, SurfaceNodeKind as K};
+    let (predicate_case, predicate_text) =
+        step5c12_case("pass_type_elaboration_template_pred_param_001");
+    let ordinary = predicate_text.replace(
+        "theorem THoldsDef: for x being T holds (P(x) implies P(x));",
+        "let x be T; pred FormalUseDef: formaluse x means P(x);",
+    );
+    for (text, valid) in [(&predicate_text, true), (&ordinary, false)] {
+        let frontend = super::formula_statement::step5c8_test_frontend(text);
+        assert!(
+            frontend.diagnostics.is_empty(),
+            "{:?}",
+            frontend.diagnostics
+        );
+        let ast = frontend.ast.unwrap();
+        let env = super::resolver_symbol_collection(
+            &step5c11_config().workspace_root,
+            &predicate_case,
+            &ast,
+        );
+        let source = SurfaceResolvedArena::lower(&ast, &env.module).unwrap();
+        let uses = source
+            .arena()
+            .iter()
+            .filter(|(_, node)| node.kind() == &K::InlinePredicateApplication)
+            .map(|(_, node)| node.children()[0])
+            .collect::<Vec<_>>();
+        assert!(!uses.is_empty());
+        for reference in uses {
+            assert_eq!(resolve_template_formal(&source, reference).is_ok(), valid);
+        }
+    }
+    let (case, text) = step5c12_case("fail_type_elaboration_template_arity_mismatch_001");
+    for changed in [
+        text.replace("let T be type;", "let T be type; let T be type;"),
+        text.replace(
+            "let T be type;\n  let x be T;",
+            "let x be T; let T be type;",
+        ),
+    ] {
+        let ast = super::formula_statement::step5c8_test_frontend(&changed)
+            .ast
+            .unwrap();
+        let env = super::resolver_symbol_collection(&step5c11_config().workspace_root, &case, &ast);
+        let source = SurfaceResolvedArena::lower(&ast, &env.module).unwrap();
+        let reference = source.arena().iter().find_map(|(_, node)| {
+            if node.kind() != &K::TypeHead { return None; }
+            let reference = *node.children().first()?;
+            matches!(source.arena().node(reference)?.kind(), K::Token(token) if token.text.as_ref() == "T").then_some(reference)
+        }).unwrap();
+        assert!(resolve_template_formal(&source, reference).is_err());
+    }
+    let (source, _) = step5c12_inputs(&case, &text);
+    let ast = super::formula_statement::step5c8_test_frontend(&text)
+        .ast
+        .unwrap();
+    for target in [1, 2] {
+        let mut builder = SurfaceAstBuilder::new(ast.source_id);
+        let mut rebuilt = Vec::new();
+        let mut occurrence = 0;
+        let mut changed_callee = None;
+        for (index, node) in ast.nodes().iter().enumerate() {
+            let children = node
+                .children
+                .iter()
+                .map(|child| rebuilt[child.index()])
+                .collect();
+            let id = match &node.kind {
+                K::Token(token) => {
+                    let changed = token.text.as_ref() == "tid4" && {
+                        occurrence += 1;
+                        occurrence - 1 == target
+                    };
+                    if changed {
+                        changed_callee = Some(index);
+                    }
+                    builder.add_token(
+                        token.kind,
+                        if changed {
+                            "bad4".into()
+                        } else {
+                            token.text.clone()
+                        },
+                        node.range,
+                    )
+                }
+                K::PrefixExpression(operator)
+                    if node.children.first().map(|id| id.index()) == changed_callee =>
+                {
+                    let mut operator = operator.clone();
+                    operator.spelling = "bad4".into();
+                    builder.add_node(K::PrefixExpression(operator), node.range, children)
+                }
+                kind => builder.add_node(kind.clone(), node.range, children),
+            };
+            rebuilt.push(id);
+        }
+        assert_eq!(occurrence, 3);
+        let changed = builder.finish(Some(rebuilt[ast.root().unwrap().index()]), None);
+        let changed_env =
+            super::resolver_symbol_collection(&step5c11_config().workspace_root, &case, &changed);
+        assert!(changed_env.detail_keys.is_empty());
+        let changed = SurfaceResolvedArena::lower(&changed, source.module()).unwrap();
+        let symbols = changed_env.env;
+        mizar_resolve::symbols::validate_source_symbol_env(&changed, &symbols).unwrap();
+        let error =
+            mizar_checker::type_checker::check_source_unbounded_template_types(&changed, &symbols)
+                .unwrap_err();
+        assert_ne!(
+            error, "templates.argument.arity_mismatch",
+            "callee {target}"
+        );
+    }
+    let (definition, theorem) = text.split_once("\ntheorem").unwrap();
+    let before = format!("theorem{theorem}\n{definition}\n");
+    let keys = super::type_elaboration_detail_keys(
+        &step5c11_config().workspace_root,
+        &case,
+        super::formula_statement::step5c8_test_frontend(&before),
+        &mut None,
+    );
+    assert!(!keys.is_empty());
+    assert!(
+        !keys
+            .iter()
+            .any(|key| key == "templates.argument.arity_mismatch")
+    );
+}

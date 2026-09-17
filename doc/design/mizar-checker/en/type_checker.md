@@ -3132,3 +3132,9 @@ facts, reflexivity, widening, and definitional reduction; proof search and
 theorem acceptance remain downstream. Implicit `let` inherits only an
 authenticated prior root reservation, local aliases reduce by binding identity,
 and recursive inline definitions fail closed through a cycle guard.
+
+## Unbounded template type checking
+
+`check_source_unbounded_template_types(&SurfaceResolvedArena, &SymbolEnv) -> Result<(), String>` authenticates local source/environment provenance before checking the explicit identity-functor and predicate-formal theorem profiles. Resolver declaration IDs distinguish abstract type, predicate and term formals; abstract types never become builtin set or fabricated symbols. Identity signatures, bracket loci, result types and bodies must share the actual declared type/binding identities before concrete substitution. Each theorem and proof-local call is checked independently through existing concrete type/term machinery after the actual set substitution.
+The predicate profile checks each quantified argument against its actual `pred(T)` domain and checks connective/quantifier typing; no truth or proof credit follows. Explicit bracket count mismatch alone yields `templates.argument.arity_mismatch`; omitted-argument inference remains unsupported and cannot yield that key. Unsupported signatures, bodies, scopes, bounds and actuals fail closed. The checker owns this resolved-shape reader: only the exact `use mizar_syntax::ast::{SurfaceNodeKind as K, SurfaceTokenKind};` import is permitted here alongside registration intake; other syntax imports and dependency restrictions remain unchanged. No accepted facts, sethood, Core/VC outputs or Task277B credit are produced.
+Tests cover source-derived symbolic and concrete judgments, both call sites, renaming, foreign/duplicate/recovered owners, formal/body/domain mutations and omitted versus explicit arguments.

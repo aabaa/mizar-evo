@@ -487,3 +487,8 @@ R-026 public-enum registrations は次の通り:
 - `SourceVariableScopeError`
 
 すべて `#[non_exhaustive]` とし、exception は登録しない。
+
+## Unbounded template formal resolution
+
+`resolve_template_formal(&SurfaceResolvedArena, ResolvedNodeId) -> Result<ResolvedNodeId, String>` は対応範囲の仮引数参照を実際の宣言トークンへ解決する。ソース・モジュール・範囲・字句上の親を認証し、先行する型・述語・値パラメータ、定理の量化束縛、証明内 let を実際のスコープ内で解決する。同名でも異なる所有者の宣言を統合せず、重複・前方・回復済み・別由来の参照を拒否する。述語仮引数は theorem/algorithm 項だけで可視とする。型代入や証明検査は行わず、従来の template-generator 収集と registration-parameter 解決の契約を維持する。
+テストは定理・証明の同名束縛、別由来の同名仮引数、不正なスコープと由来を区別し、一貫した改名を維持する。

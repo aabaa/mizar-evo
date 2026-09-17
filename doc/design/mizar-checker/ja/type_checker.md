@@ -2954,3 +2954,9 @@ thesis遷移を所有する。proof search/theorem acceptanceはdownstreamのま
 implicit `let` は authenticated prior root reservation だけを継承し、local alias は
 binding identity で簡約し、recursive inline definition は cycle guard で fail closed
 にする。
+
+## Unbounded template type checking
+
+`check_source_unbounded_template_types(&SurfaceResolvedArena, &SymbolEnv) -> Result<(), String>` はローカルなソースと環境の由来を認証し、明示引数を持つ恒等関手と述語仮引数の定理を型検査する。resolver の宣言 ID によって抽象型・述語・項の仮引数を区別し、抽象型を builtin set や架空のシンボルへ置換しない。シグネチャ、角括弧の位置、返却型、本体の型・束縛同一性を先に検査し、実際の set 型引数を代入した後で既存の具体型・項検査を用い、定理と証明内の呼出しを別々に検査する。
+述語の各量化引数は実際の `pred(T)` の定義域に照合し、結合子と量化の型も検査するが、真理・証明の承認は与えない。明示引数の個数不一致だけが `templates.argument.arity_mismatch` を返す。省略引数の推論は未対応で、このキーには分類しない。未対応のシグネチャ・本体・スコープ・上界・実引数は拒否する。この resolved-shape reader は checker が所有し、registration intake と同様に厳密な `use mizar_syntax::ast::{SurfaceNodeKind as K, SurfaceTokenKind};` のみ許す。他の構文 import・依存制限は維持する。承認済み事実、集合性、Core/VC、Task277B の実績は生成しない。
+テストは実ソースの抽象・具体型判断、両呼出し、改名、別由来・重複・回復済み所有者、仮引数・本体・定義域の変異、省略と明示引数の区別を対象とする。

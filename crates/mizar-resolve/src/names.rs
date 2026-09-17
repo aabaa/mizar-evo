@@ -171,6 +171,193 @@ pub fn resolve_registration_parameter(
     binding.ok_or_else(invalid)
 }
 
+/// Resolves a direct unbounded template or local variable use to its binder token.
+///
+/// This lookup authenticates lexical identity only; it performs no type substitution.
+pub fn resolve_template_formal(
+    source: &SurfaceResolvedArena,
+    reference: ResolvedNodeId,
+) -> Result<ResolvedNodeId, String> {
+    use mizar_session::SourceAnchor;
+    let invalid = || "unsupported or unbound template formal reference".to_owned();
+    let arena = source.arena();
+    let node = |id| arena.node(id).ok_or_else(invalid);
+    let token = |id| match arena.node(id).map(|node| node.kind()) {
+        Some(SurfaceNodeKind::Token(token)) => Some(token),
+        _ => None,
+    };
+    let text = |id, spelling| {
+        token(id).is_some_and(|token| {
+            matches!(
+                token.kind,
+                SurfaceTokenKind::ReservedWord | SurfaceTokenKind::ReservedSymbol
+            ) && token.text.as_ref() == spelling
+        })
+    };
+    let range = |id| match arena.node(id).map(|node| node.origin().anchor()) {
+        Some(SourceAnchor::Range(range)) => Some(*range),
+        _ => None,
+    };
+    let mut parents = BTreeMap::new();
+    for (id, current) in arena.iter() {
+        let span = range(id).ok_or_else(invalid)?;
+        if current.origin().source_id() != source.source_id()
+            || current.origin().module_id() != source.module()
+            || current.origin().is_recovered()
+            || matches!(current.kind(), SurfaceNodeKind::ErrorRecovery(_))
+            || span.source_id != source.source_id()
+            || span.start > span.end
+            || matches!(current.kind(), SurfaceNodeKind::Root) != (id == arena.root())
+        {
+            return Err(invalid());
+        }
+        let mut preceding_end = span.start;
+        for child in current.children() {
+            let child_span = range(*child).ok_or_else(invalid)?;
+            if child_span.start < span.start
+                || child_span.end > span.end
+                || (id != arena.root() && child_span.start < preceding_end)
+            {
+                return Err(invalid());
+            }
+            preceding_end = child_span.end;
+            // Root's flat token list is metadata, not another lexical parent.
+            if !(id == arena.root() && token(*child).is_some())
+                && parents.insert(*child, id).is_some()
+            {
+                return Err(invalid());
+            }
+        }
+    }
+    if arena
+        .iter()
+        .any(|(id, _)| id != arena.root() && token(id).is_none() && !parents.contains_key(&id))
+    {
+        return Err(invalid());
+    }
+    let spelling = token(reference)
+        .filter(|token| token.kind == SurfaceTokenKind::Identifier)
+        .ok_or_else(invalid)?
+        .text
+        .as_ref();
+    let parent = node(*parents.get(&reference).ok_or_else(invalid)?)?;
+    let valid_role = match parent.kind() {
+        SurfaceNodeKind::TermReference
+        | SurfaceNodeKind::TypeHead
+        | SurfaceNodeKind::TemplateLocus => parent.children() == [reference],
+        SurfaceNodeKind::FunctorPattern => {
+            matches!(parent.children(), [_, _, argument] if *argument == reference)
+        }
+        SurfaceNodeKind::InlinePredicateApplication => {
+            parent.children().first() == Some(&reference)
+        }
+        _ => false,
+    };
+    if !valid_role {
+        return Err(invalid());
+    }
+    let mut owner = reference;
+    let mut predicate_owner = false;
+    while let Some(parent) = parents.get(&owner) {
+        owner = *parent;
+        let kind = node(owner)?.kind();
+        if matches!(kind, SurfaceNodeKind::SetComprehension) {
+            return Err(invalid());
+        }
+        predicate_owner |= matches!(
+            kind,
+            SurfaceNodeKind::TheoremItem | SurfaceNodeKind::AlgorithmDefinition
+        );
+        if !matches!(
+            kind,
+            SurfaceNodeKind::DefinitionBlockItem
+                | SurfaceNodeKind::ProofBlock
+                | SurfaceNodeKind::QuantifiedFormula(_)
+        ) {
+            continue;
+        }
+        let mut binding = None;
+        for child in node(owner)?.children() {
+            let declaration = node(*child)?;
+            let parts = declaration.children();
+            let (binder, declaration_end, predicate) = match (kind, declaration.kind()) {
+                (SurfaceNodeKind::DefinitionBlockItem, SurfaceNodeKind::TemplateParameter) => {
+                    let [let_token, binder, be, rest @ .., semicolon] = parts else {
+                        return Err(invalid());
+                    };
+                    if !text(*let_token, "let")
+                        || !(text(*be, "be") || text(*be, "being"))
+                        || !text(*semicolon, ";")
+                    {
+                        return Err(invalid());
+                    }
+                    let predicate = match rest {
+                        [ty] if text(*ty, "type")
+                            || node(*ty)?.kind() == &SurfaceNodeKind::TypeExpression =>
+                        {
+                            false
+                        }
+                        [pred, open, ty, close]
+                            if text(*pred, "pred")
+                                && text(*open, "(")
+                                && text(*close, ")")
+                                && node(*ty)?.kind() == &SurfaceNodeKind::TypeExpression =>
+                        {
+                            true
+                        }
+                        _ => return Err(invalid()),
+                    };
+                    (*binder, range(*child).ok_or_else(invalid)?.end, predicate)
+                }
+                (
+                    SurfaceNodeKind::QuantifiedFormula(_),
+                    SurfaceNodeKind::QuantifierVariableSegment,
+                )
+                | (SurfaceNodeKind::ProofBlock, SurfaceNodeKind::LetStatement) => {
+                    let segment = if matches!(declaration.kind(), SurfaceNodeKind::LetStatement) {
+                        let [let_token, segment, semicolon] = parts else {
+                            return Err(invalid());
+                        };
+                        if !text(*let_token, "let")
+                            || !text(*semicolon, ";")
+                            || node(*segment)?.kind() != &SurfaceNodeKind::QualifiedVariableSegment
+                        {
+                            return Err(invalid());
+                        }
+                        node(*segment)?
+                    } else {
+                        declaration
+                    };
+                    let [binder, be, ty] = segment.children() else {
+                        return Err(invalid());
+                    };
+                    if !(text(*be, "be") || text(*be, "being"))
+                        || node(*ty)?.kind() != &SurfaceNodeKind::TypeExpression
+                    {
+                        return Err(invalid());
+                    }
+                    (*binder, range(*child).ok_or_else(invalid)?.end, false)
+                }
+                _ => continue,
+            };
+            let name = token(binder)
+                .filter(|token| token.kind == SurfaceTokenKind::Identifier)
+                .ok_or_else(invalid)?;
+            if name.text.as_ref() == spelling
+                && (declaration_end > range(reference).ok_or_else(invalid)?.start
+                    || (predicate && !predicate_owner)
+                    || binding.replace(binder).is_some())
+            {
+                return Err(invalid());
+            }
+        }
+        if binding.is_some() || matches!(kind, SurfaceNodeKind::DefinitionBlockItem) {
+            return binding.ok_or_else(invalid);
+        }
+    }
+    Err(invalid())
+}
+
 /// Stable id for one admitted template type-parameter binding.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub struct TemplateTypeParameterBindingId(usize);

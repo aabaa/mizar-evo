@@ -540,3 +540,8 @@ The R-026 public-enum registrations are:
 - `SourceVariableScopeError`
 
 All remain `#[non_exhaustive]`; no exception is registered.
+
+## Unbounded template formal resolution
+
+`resolve_template_formal(&SurfaceResolvedArena, ResolvedNodeId) -> Result<ResolvedNodeId, String>` resolves a supported formal use to its real declaration token. It authenticates source/module/ranges and lexical parents, then resolves preceding type/predicate/value parameters and theorem-quantifier/proof-let bindings within their actual scopes. Same-spelling declarations never merge across owners; duplicate, forward, recovered and foreign references fail closed. Predicate formals are visible only to theorem/algorithm items. This lookup performs no type substitution or proof checking; historical template-generator collection and registration-parameter resolution retain their contracts.
+Tests distinguish shadowed theorem/proof bindings, same-name foreign formals and malformed scope/provenance while preserving consistent renaming.

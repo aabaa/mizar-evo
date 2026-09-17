@@ -6253,3 +6253,7 @@ resolver candidates. Existing import resolution decides target existence and ali
 conflicts. Private theorem acceptance requires resolving its actual later citation
 to the same-module private, local-only symbol; proof validity is not checked.
 Proof-local label projections are outside this bridge and are rejected before name lookup.
+
+## Unbounded template type admission
+
+The type-elaboration runner admits only the exact unbounded type-parameter functor, predicate-parameter theorem and arity-mismatch rows from the activation map. IDs, source/sidecar paths, stage, type-check phase, outcome, diagnostic payload, key and sole active tag are authenticated before dispatch. Reserved identities cannot fall through another stage or legacy profile. The harness passes actual resolved source and symbols to the checker and observes its result; it never decides formal identity, arity or substitution. Both extends-set rows remain inactive, and Task277A/277B transports retain their profiles and zero semantic credit. Tests cover missing/duplicate rows, metadata and cross-stage mutations in addition to source-driven checking.
