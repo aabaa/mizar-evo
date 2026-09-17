@@ -245,10 +245,16 @@ pub fn resolve_template_formal(
         SurfaceNodeKind::TermReference
         | SurfaceNodeKind::TypeHead
         | SurfaceNodeKind::TemplateLocus => parent.children() == [reference],
-        SurfaceNodeKind::FunctorPattern => {
-            matches!(parent.children(), [_, argument] | [_, _, argument] if *argument == reference)
+        SurfaceNodeKind::FunctorPattern
+            if matches!(parent.children(), [_, _])
+                || matches!(parent.children(), [_, loci, _]
+                    if node(*loci)?.kind() == &SurfaceNodeKind::TemplateLoci) =>
+        {
+            parent.children().last() == Some(&reference)
         }
-        SurfaceNodeKind::PredicatePattern => {
+        SurfaceNodeKind::PredicatePattern
+        | SurfaceNodeKind::FunctorPattern
+        | SurfaceNodeKind::NotationPattern => {
             matches!(parent.children(), [left, head, right]
                 if (*left == reference || *right == reference)
                     && token(*left).is_some_and(|left| left.kind == SurfaceTokenKind::Identifier
@@ -348,8 +354,7 @@ pub fn resolve_template_formal(
                     let (binders, be, ty) = match segment.children() {
                         [binder, be, ty] => (vec![*binder], be, ty),
                         [left, comma, right, be, ty]
-                            if declaration.kind() == &SurfaceNodeKind::DefinitionParameter
-                                && text(*comma, ",")
+                            if text(*comma, ",")
                                 && token(*left)
                                     .zip(token(*right))
                                     .is_some_and(|(left, right)| left.text != right.text) =>

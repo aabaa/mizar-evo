@@ -5707,7 +5707,8 @@ proof-local label projection は本 bridge の対象外とし、name lookup 前�
 全 metadata を照合し、予約した同一性を他 stage に流さない。frontend 成功後の source-aware resolver replay が
 全 shell/environment index と実際の alias・先行 original functor に結び付く単独 locus 診断を再現することを要求する。
 この診断だけを固定 key に写像し、無関係な error・古い入力・未対応形状は拒否する。
-既存 module 4行を維持し、positive alias 2行は非活性のまま、型・証明の受理を与えない。
+既存 module 4行と synonym 負例を維持する。functor-synonym 正例だけを同じ完全な metadata/別 stage 認証の下で type_check に追加し、failure key/category はなく、antonym は非活性のままとする。
+harness は実 resolved source・symbols・中立 typed node を source synonym checker に渡し、認証済み型検査の成功を要求する。自分で mapping を作らず、resolver mismatch の不在を成功にしない。不正 relation・無関係な診断・下位段階失敗は正例の実績を得ない。
 
 ## Unbounded template type admission
 

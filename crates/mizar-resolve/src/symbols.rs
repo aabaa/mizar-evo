@@ -12,8 +12,8 @@ use crate::declarations::{
 use crate::env::{
     ContributionKind, DeclarationConflictClass, DefinitionId, DefinitionKind, DefinitionShell,
     DiagnosticAnchorId, ExportStatus, LexicalSummaryKind, NamespacePath, OverloadKey,
-    RegistrationKind, SignatureShell, SourceContributionId, SymbolEntry, SymbolEnv,
-    SymbolEnvIndexes, SymbolKind, Visibility,
+    RegistrationKind, RelationKind, RelationMetadata, SignatureShell, SourceContributionId,
+    SymbolEntry, SymbolEnv, SymbolEnvIndexes, SymbolKind, Visibility,
 };
 use crate::names::{
     FraenkelGeneratorVariableBindingId, FraenkelGeneratorVariableSourceCollection,
@@ -25,7 +25,7 @@ use crate::resolved_ast::{
     SurfaceResolvedArena, SymbolId,
 };
 use mizar_session::{SourceAnchor, SourceId, SourceRange};
-use mizar_syntax::{SurfaceAst, SurfaceNodeKind, SurfaceNodeView, SurfaceTokenKind};
+use mizar_syntax::{SurfaceAst, SurfaceNodeId, SurfaceNodeKind, SurfaceNodeView, SurfaceTokenKind};
 use std::cmp::Ordering;
 use std::collections::{BTreeMap, BTreeSet};
 use std::error::Error;
@@ -950,7 +950,7 @@ impl<'a> SignatureProjectionExtractor<'a> {
         }
     }
 
-    /// Collects source symbols and bounded local synonym-loci mismatches.
+    /// Collects source symbols, bounded synonym relations and locus mismatches.
     #[must_use]
     pub fn collect(&self, module: &ModuleId) -> SymbolCollectionResult {
         let projections = self.extract();
@@ -986,7 +986,7 @@ impl<'a> SignatureProjectionExtractor<'a> {
                 Some((shell, key))
             })
             .collect::<Vec<_>>();
-        let mut mismatches = Vec::new();
+        let mut synonym_candidates = Vec::new();
         for shell in self
             .shells
             .declarations()
@@ -1008,29 +1008,45 @@ impl<'a> SignatureProjectionExtractor<'a> {
             {
                 continue;
             }
-            let Some(alternate) = self.bound_pattern_key(shell, view, *alternate, true) else {
+            let Some((alternate_key, alternate_loci)) =
+                self.bound_pattern_key(shell, view, *alternate, true)
+            else {
                 continue;
             };
-            let Some(original) = self.bound_pattern_key(shell, view, *original, true) else {
+            let Some((original_key, original_loci)) =
+                self.bound_pattern_key(shell, view, *original, true)
+            else {
                 continue;
             };
             let candidates = originals
                 .iter()
-                .filter(|(target, key)| {
+                .filter(|(target, (key, _))| {
                     target.range().end <= shell.range().start
                         && self
                             .definition_context_block(target)
                             .is_some_and(|block| block.range().end <= shell.range().start)
-                        && *key == original
+                        && *key == original_key
                 })
                 .collect::<Vec<_>>();
-            if let [(target, _)] = candidates.as_slice()
-                && alternate.arity != original.arity
-            {
-                mismatches.push((shell.id(), target.id()));
+            if let [(target, _)] = candidates.as_slice() {
+                let bijective = alternate_loci.len() == 2
+                    && original_loci.len() == 2
+                    && alternate_loci
+                        .iter()
+                        .all(|locus| original_loci.contains(locus))
+                    && alternate.children().len() == 3
+                    && original.children().len() == 3
+                    && self
+                        .ast
+                        .node_view(target.node_id())
+                        .and_then(|target| first_child_matching(target, is_functor_pattern))
+                        .is_some_and(|pattern| pattern.children().len() == 3);
+                if bijective || alternate_key.arity != original_key.arity {
+                    synonym_candidates.push((shell.id(), target.id(), bijective));
+                }
             }
         }
-        collector.collect_targeted(None, &mismatches).0
+        collector.collect_targeted(None, &synonym_candidates).0
     }
 
     /// Extracts concrete parser-backed projections for represented shell kinds.
@@ -1228,6 +1244,7 @@ impl<'a> SignatureProjectionExtractor<'a> {
         }
         let pattern = first_child_matching(view, is_predicate_pattern)?;
         self.bound_pattern_key(shell, view, pattern, false)
+            .map(|(key, _)| key)
     }
 
     fn bound_pattern_key(
@@ -1236,7 +1253,7 @@ impl<'a> SignatureProjectionExtractor<'a> {
         view: SurfaceNodeView<'_>,
         pattern: SurfaceNodeView<'_>,
         parenthesized: bool,
-    ) -> Option<FunctorSignatureKey> {
+    ) -> Option<(FunctorSignatureKey, Vec<SurfaceNodeId>)> {
         let block = self
             .ast
             .node_view(self.definition_context_block(shell)?.node_id())?;
@@ -1324,7 +1341,7 @@ impl<'a> SignatureProjectionExtractor<'a> {
                 }
             }
         }
-        let mut loci = BTreeSet::new();
+        let mut loci = Vec::new();
         let mut types = Vec::new();
         let mut skeleton = Vec::new();
         let mut notation = false;
@@ -1333,9 +1350,10 @@ impl<'a> SignatureProjectionExtractor<'a> {
             let text = token.text.as_ref();
             if token.kind == SurfaceTokenKind::Identifier && parameters.contains_key(text) {
                 let (binder, ty) = parameters[text];
-                if !loci.insert(binder) {
+                if loci.contains(&binder) {
                     return None;
                 }
+                loci.push(binder);
                 skeleton.push(("locus", types.len().to_string()));
                 types.push(ty);
             } else if token.kind == SurfaceTokenKind::ReservedSymbol && text == "," {
@@ -1381,12 +1399,15 @@ impl<'a> SignatureProjectionExtractor<'a> {
             return None;
         }
         skeleton.retain(|(kind, _)| !matches!(*kind, "open" | "close"));
-        Some(FunctorSignatureKey {
-            argument_context: format!("{types:?}"),
-            pattern: format!("{skeleton:?}"),
-            arity: u32::try_from(types.len()).ok(),
-            return_type: None,
-        })
+        Some((
+            FunctorSignatureKey {
+                argument_context: format!("{types:?}"),
+                pattern: format!("{skeleton:?}"),
+                arity: u32::try_from(types.len()).ok(),
+                return_type: None,
+            },
+            loci,
+        ))
     }
 
     fn definition_context_key(&self, shell: &DeclarationShell) -> String {
@@ -1642,7 +1663,7 @@ impl<'a> SymbolCollector<'a> {
     fn collect_targeted(
         self,
         target: Option<DeclarationShellId>,
-        synonym_mismatches: &[(DeclarationShellId, DeclarationShellId)],
+        synonym_candidates: &[(DeclarationShellId, DeclarationShellId, bool)],
     ) -> (SymbolCollectionResult, Vec<OwnerAllocation>) {
         let mut indexes = SymbolEnvIndexes::default();
         let contribution = indexes.contributions.insert(
@@ -1679,7 +1700,8 @@ impl<'a> SymbolCollector<'a> {
         }
 
         let conflicts = classify_conflicts(&collected, &mut diagnostic_drafts);
-        for (alias_shell, original_shell) in synonym_mismatches {
+        let mut synonym_targets = BTreeMap::new();
+        for (alias_shell, original_shell, bijective) in synonym_candidates {
             let Some(alias) = collected
                 .iter()
                 .find(|item| item.shell.id() == *alias_shell)
@@ -1701,7 +1723,19 @@ impl<'a> SymbolCollector<'a> {
                 || original.projection.symbol_kind() != SymbolKind::Functor
                 || original.projection.definition_kind() != Some(DefinitionKind::Functor)
                 || alias.projection.namespace() != original.projection.namespace()
+                || alias.shell.kind() != DeclarationShellKind::NotationAlias
+                || original.shell.kind() != DeclarationShellKind::FunctorDefinition
+                || [alias, original].iter().any(|item| {
+                    item.origin.source_id() != self.source_id
+                        || item.origin.module_id() != self.module
+                        || item.origin.anchor() != &SourceAnchor::Range(item.shell.range())
+                        || item.contribution != contribution
+                })
             {
+                continue;
+            }
+            if *bijective {
+                synonym_targets.insert(alias.symbol.clone(), original.symbol.clone());
                 continue;
             }
             diagnostic_drafts.push(DiagnosticDraft {
@@ -1722,9 +1756,13 @@ impl<'a> SymbolCollector<'a> {
 
         let mut allocations = Vec::new();
         for item in &collected {
-            if let Some(allocation) =
-                self.insert_symbol(&mut indexes, item, conflicts.get(&item.symbol), target)
-            {
+            if let Some(allocation) = self.insert_symbol(
+                &mut indexes,
+                item,
+                conflicts.get(&item.symbol),
+                target,
+                synonym_targets.get(&item.symbol),
+            ) {
                 allocations.push(allocation);
             }
         }
@@ -1758,6 +1796,7 @@ impl<'a> SymbolCollector<'a> {
         item: &CollectedProjection,
         conflict: Option<&DeclarationConflictClass>,
         target: Option<DeclarationShellId>,
+        synonym_target: Option<&SymbolId>,
     ) -> Option<OwnerAllocation> {
         let signature = item.signature.clone();
         let mut symbol_entry = SymbolEntry::new(
@@ -1773,6 +1812,12 @@ impl<'a> SymbolCollector<'a> {
         .with_signature(signature.clone());
         if let Some(notation) = &item.projection.notation_spelling {
             symbol_entry = symbol_entry.with_notation_spelling(notation.clone());
+        }
+        if let Some(target) = synonym_target {
+            symbol_entry = symbol_entry.with_relations(vec![RelationMetadata::new(
+                RelationKind::Synonym,
+                target.clone(),
+            )]);
         }
         indexes.symbols.insert(symbol_entry);
         indexes

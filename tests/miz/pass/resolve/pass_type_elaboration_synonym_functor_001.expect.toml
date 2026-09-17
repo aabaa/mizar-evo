@@ -10,4 +10,5 @@ diagnostic_codes = []
 spec_refs = [
   "spec.en.11.symbols.synonym.functor",
 ]
-notes = "Audit-1 semantic-bridge inactive oracle seed (September 2026 audit wave): binding expectation for the Step-5 semantic bridge; no active runner tag, earns no current credit. A functor synonym introduces an alternative notation resolving to the same constructor (spec 11.x synonym; A.11)."
+notes = "Checks the actual synonym constructor relation and source locus permutation at both typed applications; grants no definitional unfolding or theorem proof credit."
+tags = ["active_type_elaboration"]

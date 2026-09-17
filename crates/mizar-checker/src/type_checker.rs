@@ -1228,6 +1228,419 @@ pub fn check_source_dependent_mode_types(
     Ok((bindings, checked, inference))
 }
 
+/// Checks the bounded binary set-functor synonym profile using real alias-locus identities.
+/// Returns original-root applications and argument viability, without unfolding or proof credit.
+pub fn check_source_functor_synonym_types(
+    source: &SurfaceResolvedArena,
+    symbols: &SymbolEnv,
+    typed: &crate::typed_ast::TypedArena,
+) -> Result<
+    (
+        TypeNormalizationOutput,
+        crate::overload_resolution::OverloadCollectionOutput,
+        crate::overload_resolution::CandidateViabilityOutput,
+    ),
+    String,
+> {
+    use crate::overload_resolution::*;
+    use mizar_resolve::env::RelationKind;
+    let invalid = || "notation.synonym.unsupported_source_types".to_owned();
+    mizar_resolve::symbols::validate_source_symbol_env(source, symbols)?;
+    if typed.len() != source.arena().len()
+        || typed.root() != Some(TypedNodeId::new(source.arena().root().index()))
+    {
+        return Err(invalid());
+    }
+    for (id, node) in source.arena().iter() {
+        let expected = crate::typed_ast::TypedNode::new(
+            format!("{:?}", node.kind()),
+            node.origin().anchor().clone(),
+        )
+        .with_resolved_node(id)
+        .with_children(
+            node.children()
+                .iter()
+                .map(|id| TypedNodeId::new(id.index()))
+                .collect(),
+        );
+        if typed.node(TypedNodeId::new(id.index())) != Some(&expected) {
+            return Err(invalid());
+        }
+    }
+    let node = |id| source.arena().node(id).ok_or_else(invalid);
+    let parts = |id, kind: &K| {
+        let current = node(id)?;
+        if current.kind() != kind {
+            return Err(invalid());
+        }
+        Ok(current.children())
+    };
+    let only = |id, kind: &K| {
+        let [child] = parts(id, kind)? else {
+            return Err(invalid());
+        };
+        Ok(*child)
+    };
+    let text = |id| match node(id)?.kind() {
+        K::Token(token) => Ok(token.text.as_ref()),
+        _ => Err(invalid()),
+    };
+    let tokens = |pairs: &[(ResolvedNodeId, &str)]| {
+        for (id, expected) in pairs {
+            let kind = if expected.chars().all(char::is_alphabetic) {
+                SurfaceTokenKind::ReservedWord
+            } else {
+                SurfaceTokenKind::ReservedSymbol
+            };
+            if !matches!(node(*id)?.kind(), K::Token(token) if token.kind == kind && token.text.as_ref() == *expected)
+            {
+                return Err(invalid());
+            }
+        }
+        Ok(())
+    };
+    let range = |id| match node(id)?.origin().anchor() {
+        SourceAnchor::Range(range) => Ok(*range),
+        _ => Err(invalid()),
+    };
+    let site = |id: ResolvedNodeId| TypedSiteRef::Node(TypedNodeId::new(id.index()));
+    let formal = |id| resolve_template_formal(source, id).map_err(|_| invalid());
+    let symbol = |id, kind| {
+        let anchor = node(id)?.origin().anchor();
+        let mut entries = symbols
+            .symbols()
+            .iter()
+            .filter(|entry| entry.kind() == kind && entry.origin().anchor() == anchor);
+        let entry = entries.next().ok_or_else(invalid)?;
+        if entries.next().is_some() {
+            return Err(invalid());
+        }
+        Ok(entry)
+    };
+    let grouped = |id, kind: &K, keyword| {
+        let [left, comma, right, be, ty] = parts(id, kind)? else {
+            return Err(invalid());
+        };
+        tokens(&[(*comma, ","), (*be, keyword)])?;
+        if !matches!(node(*left)?.kind(), K::Token(token) if token.kind == SurfaceTokenKind::Identifier)
+            || !matches!(node(*right)?.kind(), K::Token(token) if token.kind == SurfaceTokenKind::Identifier)
+            || text(*left)? == text(*right)?
+        {
+            return Err(invalid());
+        }
+        Ok(([*left, *right], *ty))
+    };
+    let structural = node(source.arena().root())?
+        .children()
+        .iter()
+        .copied()
+        .filter(|id| {
+            !matches!(
+                source.arena().node(*id).map(|node| node.kind()),
+                Some(K::Token(_))
+            )
+        })
+        .collect::<Vec<_>>();
+    let [unit] = structural.as_slice() else {
+        return Err(invalid());
+    };
+    let [definition_block, alias_block, theorem] =
+        parts(only(*unit, &K::CompilationUnit)?, &K::ItemList)?
+    else {
+        return Err(invalid());
+    };
+    let [definition_kw, parameter, definition, coherence, end, semi] =
+        parts(*definition_block, &K::DefinitionBlockItem)?
+    else {
+        return Err(invalid());
+    };
+    tokens(&[(*definition_kw, "definition"), (*end, "end"), (*semi, ";")])?;
+    let [let_kw, segment, semi] = parts(*parameter, &K::DefinitionParameter)? else {
+        return Err(invalid());
+    };
+    tokens(&[(*let_kw, "let"), (*semi, ";")])?;
+    let (definition_binders, parameter_type) =
+        grouped(*segment, &K::QualifiedVariableSegment, "be")?;
+    let [
+        func,
+        label,
+        colon,
+        pattern,
+        arrow,
+        result_type,
+        equals,
+        body,
+        semi,
+    ] = parts(*definition, &K::FunctorDefinition)?
+    else {
+        return Err(invalid());
+    };
+    tokens(&[
+        (*func, "func"),
+        (*colon, ":"),
+        (*arrow, "->"),
+        (*equals, "equals"),
+        (*semi, ";"),
+    ])?;
+    let [left, original_name, right] = parts(*pattern, &K::FunctorPattern)? else {
+        return Err(invalid());
+    };
+    let original_formals = [formal(*left)?, formal(*right)?];
+    if original_formals[0] == original_formals[1]
+        || original_formals
+            .iter()
+            .any(|id| !definition_binders.contains(id))
+    {
+        return Err(invalid());
+    }
+    let [coherence_kw, semi] = parts(*coherence, &K::CorrectnessCondition)? else {
+        return Err(invalid());
+    };
+    tokens(&[(*coherence_kw, "coherence"), (*semi, ";")])?;
+    let original = symbol(*definition, SymbolKind::Functor)?;
+    let [definition_kw, alias_parameter, alias, end, semi] =
+        parts(*alias_block, &K::DefinitionBlockItem)?
+    else {
+        return Err(invalid());
+    };
+    tokens(&[(*definition_kw, "definition"), (*end, "end"), (*semi, ";")])?;
+    let [let_kw, segment, semi] = parts(*alias_parameter, &K::DefinitionParameter)? else {
+        return Err(invalid());
+    };
+    tokens(&[(*let_kw, "let"), (*semi, ";")])?;
+    let (alias_binders, _) = grouped(*segment, &K::QualifiedVariableSegment, "be")?;
+    let [synonym_kw, alternate, for_kw, target, semi] = parts(*alias, &K::NotationAlias)? else {
+        return Err(invalid());
+    };
+    tokens(&[(*synonym_kw, "synonym"), (*for_kw, "for"), (*semi, ";")])?;
+    let [alt_left, alias_name, alt_right] = parts(*alternate, &K::NotationPattern)? else {
+        return Err(invalid());
+    };
+    let [target_left, target_name, target_right] = parts(*target, &K::NotationPattern)? else {
+        return Err(invalid());
+    };
+    let alternate_formals = [formal(*alt_left)?, formal(*alt_right)?];
+    let target_formals = [formal(*target_left)?, formal(*target_right)?];
+    if alternate_formals[0] == alternate_formals[1]
+        || target_formals[0] == target_formals[1]
+        || alternate_formals
+            .iter()
+            .chain(&target_formals)
+            .any(|id| !alias_binders.contains(id))
+        || text(*original_name)? != text(*target_name)?
+        || range(*definition_block)?.end > range(*alias_block)?.start
+    {
+        return Err(invalid());
+    }
+    let alias_symbol = symbol(*alias, SymbolKind::Synonym)?;
+    let [relation] = alias_symbol.relations() else {
+        return Err(invalid());
+    };
+    if relation.kind() != RelationKind::Synonym || relation.target() != original.symbol() {
+        return Err(invalid());
+    }
+    let permutation = if target_formals == alternate_formals {
+        [0, 1]
+    } else {
+        [1, 0]
+    };
+    let mut type_inputs = Vec::new();
+    for (id, current) in source
+        .arena()
+        .iter()
+        .filter(|(_, node)| node.kind() == &K::TypeExpression)
+    {
+        tokens(&[(only(only(id, &K::TypeExpression)?, &K::TypeHead)?, "set")])?;
+        let SourceAnchor::Range(span) = current.origin().anchor() else {
+            return Err(invalid());
+        };
+        type_inputs.push(TypeExpressionInput::new(
+            site(id),
+            *span,
+            "set",
+            TypeHeadInput::BuiltinSet,
+        ));
+    }
+    let normalization = TypeNormalizer::default().normalize(symbols, type_inputs);
+    if !normalization.diagnostics().is_empty()
+        || normalization
+            .normalized_types()
+            .iter()
+            .any(|(_, ty)| ty.status != NormalizedTypeStatus::Known)
+    {
+        return Err(invalid());
+    }
+    let normalized = |id| {
+        normalization
+            .type_entries()
+            .iter()
+            .find_map(|(_, entry)| match entry.actual {
+                TypeEntryActual::Known(ty) if entry.owner == site(id) => Some(ty),
+                _ => None,
+            })
+            .ok_or_else(invalid)
+    };
+    let result = normalized(*result_type)?;
+    let mut bindings = BTreeMap::new();
+    for binder in definition_binders {
+        bindings.insert(binder, normalized(parameter_type)?);
+    }
+    let body = only(
+        only(only(*body, &K::TermDefiniens)?, &K::TermExpression)?,
+        &K::TermReference,
+    )?;
+    let body_binder = formal(body)?;
+    if !definition_binders.contains(&body_binder) || bindings.get(&body_binder) != Some(&result) {
+        return Err(invalid());
+    }
+    let [theorem_kw, _, colon, formula, proof, semi] = parts(*theorem, &K::TheoremItem)? else {
+        return Err(invalid());
+    };
+    tokens(&[(*theorem_kw, "theorem"), (*colon, ":"), (*semi, ";")])?;
+    symbol(*theorem, SymbolKind::Theorem)?;
+    let quantified = only(*formula, &K::FormulaExpression)?;
+    let universal = node(quantified)?.kind();
+    if format!("{universal:?}") != "QuantifiedFormula(Universal)" {
+        return Err(invalid());
+    }
+    let [for_kw, quantified_segment, holds, equality] = parts(quantified, universal)? else {
+        return Err(invalid());
+    };
+    tokens(&[(*for_kw, "for"), (*holds, "holds")])?;
+    let [proof_kw, local, conclusion, end] = parts(*proof, &K::ProofBlock)? else {
+        return Err(invalid());
+    };
+    tokens(&[(*proof_kw, "proof"), (*end, "end")])?;
+    let [let_kw, local_segment, semi] = parts(*local, &K::LetStatement)? else {
+        return Err(invalid());
+    };
+    tokens(&[(*let_kw, "let"), (*semi, ";")])?;
+    let [thus, proposition, justification, semi] = parts(*conclusion, &K::ConclusionStatement)?
+    else {
+        return Err(invalid());
+    };
+    tokens(&[(*thus, "thus"), (*semi, ";")])?;
+    let [by, references] = parts(*justification, &K::JustificationClause)? else {
+        return Err(invalid());
+    };
+    tokens(&[(*by, "by")])?;
+    if text(only(only(*references, &K::ReferenceList)?, &K::Reference)?)? != text(*label)? {
+        return Err(invalid());
+    }
+    let proof_equality = only(only(*proposition, &K::Proposition)?, &K::FormulaExpression)?;
+    let mut sites = Vec::new();
+    let mut candidates = Vec::new();
+    let mut actuals = Vec::new();
+    for (segment, kind, keyword, equality) in [
+        (
+            *quantified_segment,
+            K::QuantifierVariableSegment,
+            "being",
+            *equality,
+        ),
+        (
+            *local_segment,
+            K::QualifiedVariableSegment,
+            "be",
+            proof_equality,
+        ),
+    ] {
+        let (local_binders, ty) = grouped(segment, &kind, keyword)?;
+        for binder in local_binders {
+            bindings.insert(binder, normalized(ty)?);
+        }
+        let [left, equals, right] = parts(equality, &K::BuiltinPredicateApplication)? else {
+            return Err(invalid());
+        };
+        tokens(&[(*equals, "=")])?;
+        let application = only(*left, &K::TermExpression)?;
+        let [left, head, right_argument] = node(application)?.children() else {
+            return Err(invalid());
+        };
+        if !matches!(node(application)?.kind(), K::InfixExpression(operator) if operator.spelling.as_ref() == text(*head)?)
+            || text(*head)? != text(*alias_name)?
+            || range(*alias_block)?.end > range(application)?.start
+        {
+            return Err(invalid());
+        }
+        let arguments = [*left, *right_argument];
+        let mut argument_types = Vec::new();
+        for argument in arguments {
+            let binder = formal(only(argument, &K::TermReference)?)?;
+            if !local_binders.contains(&binder) {
+                return Err(invalid());
+            }
+            argument_types.push(*bindings.get(&binder).ok_or_else(invalid)?);
+        }
+        let rhs = formal(only(only(*right, &K::TermExpression)?, &K::TermReference)?)?;
+        if !local_binders.contains(&rhs) || bindings.get(&rhs) != Some(&result) {
+            return Err(invalid());
+        }
+        let key = OverloadSiteKey::new(format!("source-synonym:{}", application.index()));
+        sites.push(OverloadSiteInput {
+            key: key.clone(),
+            owner: site(application),
+            source_range: range(application)?,
+            kind: OverloadSiteKind::FunctorApplication,
+            name: OverloadNameKey::new(text(*alias_name)?),
+            arguments: permutation.map(|index| site(arguments[index])).to_vec(),
+            expected: None,
+            source_qua: Vec::new(),
+            recovery: OverloadSiteRecovery::Normal,
+        });
+        candidates.push(OverloadCandidateInput {
+            site: key,
+            symbol: original.symbol().clone(),
+            ordinary_root: original.symbol().clone(),
+            declaration_kind: CandidateDeclarationKind::Functor,
+            parameters: original_formals.iter().map(|id| bindings[id]).collect(),
+            result: Some(result),
+            origin: CandidateOrigin::Ordinary,
+            template: None,
+            coherence: None,
+            provenance: CandidateProvenance {
+                stable_key: CandidateProvenanceKey::new(format!(
+                    "source-declaration:{}",
+                    range(*definition)?.start
+                )),
+                source_range: Some(range(*definition)?),
+                scope: CandidateScope::Local,
+                declaration_order: 0,
+            },
+        });
+        actuals.push((
+            site(application),
+            permutation.map(|index| argument_types[index]),
+        ));
+    }
+    let collection = OverloadCollectionOutput::collect(sites, candidates);
+    let expansion = TemplateExpansionOutput::expand(&collection);
+    let mut evidence = Vec::new();
+    for (candidate, entry) in expansion.candidates().iter() {
+        let owner = &collection
+            .sites()
+            .get(entry.site)
+            .ok_or_else(invalid)?
+            .owner;
+        let (_, actuals) = actuals
+            .iter()
+            .find(|(site, _)| site == owner)
+            .ok_or_else(invalid)?;
+        evidence.push(CandidateViabilityInput {
+            candidate,
+            arguments: actuals
+                .iter()
+                .map(|actual| ArgumentViabilityEvidence::Exact { actual: *actual })
+                .collect(),
+        });
+    }
+    let viability = CandidateViabilityOutput::filter(&expansion, evidence);
+    if !collection.diagnostics().is_empty() || !expansion.diagnostics().is_empty() || !viability.diagnostics().is_empty()
+        || collection.sites().len() != 2 || collection.candidates().len() != 2 || expansion.candidates().len() != 2 || viability.decisions().len() != 2
+        || viability.decisions().iter().any(|(_, decision)| !matches!(&decision.status, CandidateViabilityStatus::Viable { views } if views.len() == 2)) { return Err(invalid()); }
+    Ok((normalization, collection, viability))
+}
+
 /// Checks source-derived signatures and actuals in the bounded ordinary overload profiles.
 /// The single-structure profile also returns genuine no-match results; the two-root profile requires selection.
 pub fn check_source_distinct_loci_overloads(

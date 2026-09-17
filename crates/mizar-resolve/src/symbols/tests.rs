@@ -736,7 +736,7 @@ fn source_synonym_diagnostic_uses_original_identity_and_normal_contribution() {
     let collector = SymbolCollector::new(source, &module, &shells, &projections);
     let opaque = collector.clone().collect();
     assert!(opaque.diagnostics().is_empty());
-    let pairs = [(alias.id(), original.id())];
+    let pairs = [(alias.id(), original.id(), false)];
     let result = collector.clone().collect_targeted(None, &pairs).0;
     assert_eq!(result, collector.collect_targeted(None, &pairs).0);
     let [diagnostic] = result.diagnostics() else {
@@ -763,6 +763,57 @@ fn source_synonym_diagnostic_uses_original_identity_and_normal_contribution() {
         .unwrap();
     assert_eq!(contribution.effects().diagnostics(), &[diagnostic.id()]);
     assert_eq!(definition_conflicts(&result), definition_conflicts(&opaque));
+    assert!(
+        opaque
+            .env()
+            .symbols()
+            .iter()
+            .all(|entry| entry.relations().is_empty())
+    );
+
+    // Only the authenticated source path supplies a bijective pair to finalization.
+    let pairs = [(alias.id(), pairs[0].1, true)];
+    let related = SymbolCollector::new(source, &module, &shells, &projections)
+        .collect_targeted(None, &pairs)
+        .0;
+    assert!(related.diagnostics().is_empty());
+    let alternate = related
+        .env()
+        .symbols()
+        .iter()
+        .find(|entry| entry.kind() == SymbolKind::Synonym)
+        .unwrap();
+    assert_eq!(
+        alternate.relations(),
+        &[RelationMetadata::new(
+            RelationKind::Synonym,
+            original.symbol().clone()
+        )]
+    );
+    assert_eq!(alternate.contribution(), original.contribution());
+    assert_eq!(
+        definition_conflicts(&related),
+        definition_conflicts(&opaque)
+    );
+
+    for change in 0..3 {
+        let mut invalid = projections.clone();
+        match change {
+            0 => invalid[0].symbol_kind = SymbolKind::Predicate,
+            1 => invalid[0].definition_kind = Some(DefinitionKind::Predicate),
+            _ => invalid[0].namespace = NamespacePath::new("foreign"),
+        }
+        let invalid = SymbolCollector::new(source, &module, &shells, &invalid)
+            .collect_targeted(None, &pairs)
+            .0;
+        assert!(
+            invalid
+                .env()
+                .symbols()
+                .iter()
+                .all(|entry| entry.relations().is_empty())
+        );
+    }
 }
 
 #[test]

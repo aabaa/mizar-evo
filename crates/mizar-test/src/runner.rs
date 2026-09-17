@@ -2669,10 +2669,21 @@ fn type_elaboration_detail_keys(
             .into_iter()
             .collect();
     }
-    if type_elaboration::is_step5c6_alias_candidate(case)
-        && !type_elaboration::step5c6_synonym_admitted(Some(workspace_root), case)
-    {
-        return vec!["type_elaboration.step5c6.invalid_admission".to_owned()];
+    if type_elaboration::is_step5c6_alias_candidate(case) {
+        if !type_elaboration::step5c6_synonym_admitted(Some(workspace_root), case) {
+            return vec!["type_elaboration.step5c6.invalid_admission".to_owned()];
+        }
+        if case.expectation.expected_outcome == crate::expectation::ExpectedOutcome::Pass {
+            return source_registration_inputs(workspace_root, case, output)
+                .and_then(|(source, typed, symbols)| {
+                    mizar_checker::type_checker::check_source_functor_synonym_types(
+                        &source, &symbols, &typed,
+                    )
+                })
+                .err()
+                .into_iter()
+                .collect();
+        }
     }
     if type_elaboration::is_step5c5_predicate_duplicate_candidate(case)
         && (!is_active_type_elaboration(case) || !is_step5c5_workspace_member(workspace_root, case))

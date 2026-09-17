@@ -186,15 +186,36 @@ pub(in crate::runner) fn is_step5c6_alias_candidate(case: &TestCase) -> bool {
 }
 
 pub(in crate::runner) fn step5c6_synonym_admitted(root: Option<&Path>, case: &TestCase) -> bool {
-    let path = format!("tests/miz/fail/resolve/{}.miz", STEP5C6_ALIAS_IDS[0]);
+    use crate::expectation::TestKind;
+    let (directory, kind, phase, outcome, category, detail) = if case.id.0 == STEP5C6_ALIAS_IDS[0] {
+        (
+            "fail",
+            TestKind::Fail,
+            PipelinePhase::Resolve,
+            ExpectedOutcome::Fail,
+            Some("resolve_error"),
+            Some("notation.synonym.loci_mismatch"),
+        )
+    } else if case.id.0 == STEP5C6_ALIAS_IDS[1] {
+        (
+            "pass",
+            TestKind::Pass,
+            PipelinePhase::TypeCheck,
+            ExpectedOutcome::Pass,
+            None,
+            None,
+        )
+    } else {
+        return false;
+    };
+    let path = format!("tests/miz/{directory}/resolve/{}.miz", case.id.0);
     let exact_path = |actual: &Path, expected: &Path| match root {
         Some(root) => {
             workspace_relative_source(root, actual).is_some_and(|path| Path::new(&path) == expected)
         }
         None => actual.ends_with(expected),
     };
-    case.id.0 == STEP5C6_ALIAS_IDS[0]
-        && case.expectation.schema_version == 1
+    case.expectation.schema_version == 1
         && case.expectation.id == case.id
         && exact_path(&case.source_path, Path::new(&path))
         && exact_path(
@@ -202,12 +223,12 @@ pub(in crate::runner) fn step5c6_synonym_admitted(root: Option<&Path>, case: &Te
             &Path::new(&path).with_extension("expect.toml"),
         )
         && case.expectation.source == Path::new(&path).file_name().unwrap()
-        && case.expectation.kind == crate::expectation::TestKind::Fail
+        && case.expectation.kind == kind
         && case.expectation.stage == Stage::TypeElaboration
-        && case.expectation.expected_phase == Some(PipelinePhase::Resolve)
-        && case.expectation.expected_outcome == ExpectedOutcome::Fail
-        && case.expectation.failure_category.as_deref() == Some("resolve_error")
-        && case.expectation.stable_detail_key.as_deref() == Some("notation.synonym.loci_mismatch")
+        && case.expectation.expected_phase == Some(phase)
+        && case.expectation.expected_outcome == outcome
+        && case.expectation.failure_category.as_deref() == category
+        && case.expectation.stable_detail_key.as_deref() == detail
         && case.expectation.domain == "notation.synonym"
         && case.expectation.spec_refs.len() == 1
         && case.expectation.spec_refs[0].0 == "spec.en.11.symbols.synonym.functor"
@@ -736,8 +757,9 @@ pub(in crate::runner) fn validate_active_type_elaboration_tags(
     let mut diagnostics = Vec::new();
     for case in plan.cases.iter().filter(|case| {
         has_active_type_elaboration_tag(case)
-            || case.id.0 == STEP5C6_ALIAS_IDS[0]
-            || case.expectation.id.0 == STEP5C6_ALIAS_IDS[0]
+            || STEP5C6_ALIAS_IDS[..2]
+                .iter()
+                .any(|id| case.id.0 == *id || case.expectation.id.0 == *id)
             || is_step5c14_static_candidate(case)
             || STEP5C12_IDS[..3].iter().any(|id| case.id.0 == *id)
             || is_step5c1_id(case)
@@ -787,20 +809,26 @@ pub(in crate::runner) fn validate_active_type_elaboration_tags(
     if workspace_root
         .join("tests/coverage/step5_activation_map.tsv")
         .is_file()
-        && plan
-            .cases
-            .iter()
-            .filter(|case| step5c6_synonym_admitted(Some(workspace_root), case))
-            .count()
-            != 1
     {
-        diagnostics.push(ValidationDiagnostic::error(
-            workspace_root,
-            "type_elaboration",
-            "E-TYPE-ELABORATION-STEP5C6-INVENTORY",
-            "type_elaboration.step5c6_inventory.synonym",
-            "the synonym-loci negative must have exactly one admitted source/sidecar pair",
-        ));
+        for id in &STEP5C6_ALIAS_IDS[..2] {
+            if plan
+                .cases
+                .iter()
+                .filter(|case| {
+                    case.id.0 == *id && step5c6_synonym_admitted(Some(workspace_root), case)
+                })
+                .count()
+                != 1
+            {
+                diagnostics.push(ValidationDiagnostic::error(
+                    workspace_root,
+                    "type_elaboration",
+                    "E-TYPE-ELABORATION-STEP5C6-INVENTORY",
+                    "type_elaboration.step5c6_inventory.synonym",
+                    "each frozen synonym case must have exactly one admitted source/sidecar pair",
+                ));
+            }
+        }
     }
     if STEP5C1_VARIABLE_CASES
         .iter()
@@ -2275,18 +2303,34 @@ mod tests {
             .iter()
             .find(|case| case.id.0 == super::STEP5C6_ALIAS_IDS[0])
             .unwrap();
-        assert!(super::step5c6_synonym_admitted(Some(&root), original));
+        let positive = plan
+            .cases
+            .iter()
+            .find(|case| case.id.0 == super::STEP5C6_ALIAS_IDS[1])
+            .unwrap();
+        let originals = [original, positive];
         assert!(validate_active_type_elaboration_tags(&root, &plan).is_empty());
-        let result =
-            crate::runner::run_type_elaboration_case(&root, &root.join("tests"), original, 5606);
-        assert_eq!(
-            result.status,
-            crate::runner::TypeElaborationCaseStatus::Passed
-        );
-        assert_eq!(
-            result.actual_detail_keys,
-            ["notation.synonym.loci_mismatch"]
-        );
+        for original in originals {
+            assert!(super::step5c6_synonym_admitted(Some(&root), original));
+            let result = crate::runner::run_type_elaboration_case(
+                &root,
+                &root.join("tests"),
+                original,
+                5606,
+            );
+            assert_eq!(
+                result.status,
+                crate::runner::TypeElaborationCaseStatus::Passed
+            );
+            assert_eq!(
+                result.actual_detail_keys,
+                if original.expectation.kind == TestKind::Fail {
+                    vec!["notation.synonym.loci_mismatch".to_owned()]
+                } else {
+                    vec![]
+                }
+            );
+        }
         let rejected = |case: &TestCase| {
             assert!(super::is_step5c6_alias_candidate(case));
             assert!(!super::step5c6_synonym_admitted(Some(&root), case));
@@ -2303,9 +2347,30 @@ mod tests {
             |case| case.expectation_path = "alias.expect.toml".into(),
             |case| case.expectation.source = "alias.miz".into(),
             |case| case.expectation.schema_version = 2,
-            |case| case.expectation.kind = TestKind::Pass,
-            |case| case.expectation.expected_phase = Some(PipelinePhase::TypeCheck),
-            |case| case.expectation.expected_outcome = ExpectedOutcome::Pass,
+            |case| {
+                case.expectation.kind = if case.expectation.kind == TestKind::Pass {
+                    TestKind::Fail
+                } else {
+                    TestKind::Pass
+                }
+            },
+            |case| {
+                case.expectation.expected_phase = Some(
+                    if case.expectation.expected_phase == Some(PipelinePhase::TypeCheck) {
+                        PipelinePhase::Resolve
+                    } else {
+                        PipelinePhase::TypeCheck
+                    },
+                )
+            },
+            |case| {
+                case.expectation.expected_outcome =
+                    if case.expectation.expected_outcome == ExpectedOutcome::Pass {
+                        ExpectedOutcome::Fail
+                    } else {
+                        ExpectedOutcome::Pass
+                    }
+            },
             |case| case.expectation.failure_category = Some("type_error".into()),
             |case| case.expectation.stable_detail_key = Some("unrelated".into()),
             |case| case.expectation.domain = "other".into(),
@@ -2362,9 +2427,11 @@ mod tests {
                 })
             },
         ] {
-            let mut changed = original.clone();
-            mutate(&mut changed);
-            rejected(&changed);
+            for original in originals {
+                let mut changed = original.clone();
+                mutate(&mut changed);
+                rejected(&changed);
+            }
         }
         let mut legacy = plan
             .cases
@@ -2372,9 +2439,11 @@ mod tests {
             .find(|case| case.id.0 == STEP5C5_CASES[0].0)
             .unwrap()
             .clone();
-        legacy.expectation.id = original.expectation.id.clone();
-        rejected(&legacy);
-        for id in &super::STEP5C6_ALIAS_IDS[1..] {
+        for original in originals {
+            legacy.expectation.id = original.expectation.id.clone();
+            rejected(&legacy);
+        }
+        for id in &super::STEP5C6_ALIAS_IDS[2..] {
             let mut positive = plan
                 .cases
                 .iter()
@@ -2402,38 +2471,45 @@ mod tests {
                 "active_proof_verification",
             ),
         ] {
-            let mut changed = original.clone();
-            changed.expectation.stage = stage;
-            changed.expectation.expected_phase = Some(phase);
-            changed.expectation.expected_outcome = ExpectedOutcome::Pass;
-            changed.expectation.kind = TestKind::Pass;
-            changed.expectation.failure_category = None;
-            changed.expectation.stable_detail_key = None;
-            changed.expectation.tags = vec![tag.into()];
-            rejected(&changed);
+            for original in originals {
+                let mut changed = original.clone();
+                changed.expectation.stage = stage;
+                changed.expectation.expected_phase = Some(phase);
+                changed.expectation.expected_outcome = ExpectedOutcome::Pass;
+                changed.expectation.kind = TestKind::Pass;
+                changed.expectation.failure_category = None;
+                changed.expectation.stable_detail_key = None;
+                changed.expectation.tags = vec![tag.into()];
+                rejected(&changed);
+            }
         }
         for sidecar in [false, true] {
-            let mut changed = original.clone();
-            let path = if sidecar {
-                &mut changed.expectation_path
-            } else {
-                &mut changed.source_path
-            };
-            *path = root.join("alias").join(path.strip_prefix(&root).unwrap());
-            assert!(!super::step5c6_synonym_admitted(Some(&root), &changed));
+            for original in originals {
+                let mut changed = original.clone();
+                let path = if sidecar {
+                    &mut changed.expectation_path
+                } else {
+                    &mut changed.source_path
+                };
+                *path = root.join("alias").join(path.strip_prefix(&root).unwrap());
+                assert!(!super::step5c6_synonym_admitted(Some(&root), &changed));
+            }
         }
         for duplicate in [false, true] {
-            let mut changed = plan.clone();
-            if duplicate {
-                changed.cases.push(original.clone());
-            } else {
-                changed.cases.retain(|case| case.id != original.id);
+            for original in originals {
+                let mut changed = plan.clone();
+                if duplicate {
+                    changed.cases.push(original.clone());
+                } else {
+                    changed.cases.retain(|case| case.id != original.id);
+                }
+                assert!(
+                    validate_active_type_elaboration_tags(&root, &changed)
+                        .iter()
+                        .any(|diagnostic| diagnostic.code.0
+                            == "E-TYPE-ELABORATION-STEP5C6-INVENTORY")
+                );
             }
-            assert!(
-                validate_active_type_elaboration_tags(&root, &changed)
-                    .iter()
-                    .any(|diagnostic| diagnostic.code.0 == "E-TYPE-ELABORATION-STEP5C6-INVENTORY")
-            );
         }
     }
 

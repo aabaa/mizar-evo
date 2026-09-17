@@ -4357,3 +4357,612 @@ fn step5c5_predicate_argument_mismatch_rejects_other_errors_and_forged_inputs() 
     );
     assert!(step5c5_predicate_argument_detail_keys(&source, &symbols, &typed).is_err());
 }
+#[test]
+fn step5c6_functor_synonym_types_preserve_original_root_locus_order_and_eight_binders() {
+    use mizar_checker::overload_resolution::{CandidateViabilityStatus, OverloadSiteKind};
+    use mizar_checker::type_checker::{TypeHeadRef, check_source_functor_synonym_types};
+    use mizar_checker::typed_ast::{TypeEntryActual, TypedNodeId, TypedSiteRef};
+    use mizar_resolve::{
+        env::{RelationKind, SymbolKind},
+        names::resolve_template_formal,
+    };
+    use mizar_syntax::SurfaceNodeKind as K;
+    let config = step5c11_config();
+    let plan = build_test_plan(&config).unwrap();
+    let case = plan
+        .cases
+        .iter()
+        .find(|case| case.id.0 == "pass_type_elaboration_synonym_functor_001")
+        .unwrap();
+    let text = std::fs::read_to_string(&case.source_path).unwrap();
+    let blocks = text.split("\n\n").collect::<Vec<_>>();
+    let (header, proof) = blocks[2].split_once("proof").unwrap();
+    let renamed = format!(
+        "{}\n\n{}\n\n{}proof{}",
+        blocks[0].replace("X", "BaseL").replace("Y", "BaseR"),
+        blocks[1].replace("X", "AliasL").replace("Y", "AliasR"),
+        header.replace("X", "HeaderL").replace("Y", "HeaderR"),
+        proof.replace("X", "LocalL").replace("Y", "LocalR")
+    )
+    .replace("synbase", "original")
+    .replace("synalt", "alternate")
+    .replace("SynBaseDef", "OriginalDef")
+    .replace("SynUse1", "UseAlias");
+    for (variant, permutation, actual_order) in [
+        (text.clone(), [0, 1], [[0, 1], [0, 1]]),
+        (renamed.clone(), [0, 1], [[0, 1], [0, 1]]),
+        (
+            renamed.replace(
+                "synonym AliasL alternate AliasR",
+                "synonym AliasR alternate AliasL",
+            ),
+            [1, 0],
+            [[0, 1], [0, 1]],
+        ),
+        (
+            text.replace("synonym X synalt Y", "synonym Y synalt X"),
+            [1, 0],
+            [[0, 1], [0, 1]],
+        ),
+        (
+            text.replace("for X synbase Y", "for Y synbase X"),
+            [1, 0],
+            [[0, 1], [0, 1]],
+        ),
+        (
+            text.replace("holds X synalt Y", "holds Y synalt X"),
+            [0, 1],
+            [[1, 0], [0, 1]],
+        ),
+        (
+            text.replace("thus X synalt Y", "thus Y synalt X"),
+            [0, 1],
+            [[0, 1], [1, 0]],
+        ),
+        (
+            text.replace("holds X synalt Y", "holds X synalt X")
+                .replace("thus X synalt Y", "thus X synalt X"),
+            [0, 1],
+            [[0, 0], [0, 0]],
+        ),
+        (
+            text.replace("equals X;", "equals Y;"),
+            [0, 1],
+            [[0, 1], [0, 1]],
+        ),
+        (
+            text.replace("= X\nproof", "= Y\nproof")
+                .replace("= X by", "= Y by"),
+            [0, 1],
+            [[0, 1], [0, 1]],
+        ),
+    ] {
+        let frontend = super::formula_statement::step5c8_test_frontend(&variant);
+        assert!(
+            frontend.diagnostics.is_empty(),
+            "{variant}: {:?}",
+            frontend.diagnostics
+        );
+        let (source, typed, symbols) =
+            super::source_registration_inputs(&config.workspace_root, case, frontend).unwrap();
+        let output = check_source_functor_synonym_types(&source, &symbols, &typed).unwrap();
+        assert_eq!(
+            output,
+            check_source_functor_synonym_types(&source, &symbols, &typed).unwrap()
+        );
+        let (normalization, collection, viability) = output;
+        assert!(normalization.diagnostics().is_empty());
+        assert!(collection.diagnostics().is_empty());
+        assert!(viability.diagnostics().is_empty());
+        assert_eq!(collection.sites().len(), 2);
+        assert_eq!(collection.candidates().len(), 2);
+        assert_eq!(viability.decisions().len(), 2);
+        let original = symbols
+            .symbols()
+            .iter()
+            .find(|entry| entry.kind() == SymbolKind::Functor)
+            .unwrap();
+        let alias = symbols
+            .symbols()
+            .iter()
+            .find(|entry| entry.kind() == SymbolKind::Synonym)
+            .unwrap();
+        assert_ne!(original.symbol(), alias.symbol());
+        assert_eq!(alias.relations().len(), 1);
+        assert_eq!(alias.relations()[0].kind(), RelationKind::Synonym);
+        assert_eq!(alias.relations()[0].target(), original.symbol());
+        let mut groups = source
+            .arena()
+            .iter()
+            .filter(|(_, node)| {
+                matches!(
+                    node.kind(),
+                    K::QualifiedVariableSegment | K::QuantifierVariableSegment
+                )
+            })
+            .map(|(_, node)| [node.children()[0], node.children()[2]])
+            .collect::<Vec<_>>();
+        groups.sort_by_key(|group| {
+            match source.arena().node(group[0]).unwrap().origin().anchor() {
+                SourceAnchor::Range(range) => range.start,
+                _ => unreachable!(),
+            }
+        });
+        assert_eq!(groups.len(), 4);
+        let identities = groups
+            .iter()
+            .flatten()
+            .copied()
+            .collect::<std::collections::BTreeSet<_>>();
+        assert_eq!(identities.len(), 8);
+        let (_, original_pattern) = source
+            .arena()
+            .iter()
+            .find(|(_, node)| node.kind() == &K::FunctorPattern)
+            .unwrap();
+        assert_eq!(
+            [
+                resolve_template_formal(&source, original_pattern.children()[0]).unwrap(),
+                resolve_template_formal(&source, original_pattern.children()[2]).unwrap()
+            ],
+            groups[0]
+        );
+        for (_, pattern) in source
+            .arena()
+            .iter()
+            .filter(|(_, node)| node.kind() == &K::NotationPattern)
+        {
+            let binding_pair = [
+                resolve_template_formal(&source, pattern.children()[0]).unwrap(),
+                resolve_template_formal(&source, pattern.children()[2]).unwrap(),
+            ];
+            assert_ne!(binding_pair[0], binding_pair[1]);
+            assert!(binding_pair.iter().all(|id| groups[1].contains(id)));
+        }
+        let (_, definition) = source
+            .arena()
+            .iter()
+            .find(|(_, node)| node.kind() == &K::FunctorDefinition)
+            .unwrap();
+        let return_site = TypedSiteRef::Node(TypedNodeId::new(definition.children()[5].index()));
+        let declared_result = normalization
+            .type_entries()
+            .iter()
+            .find(|(_, entry)| entry.owner == return_site)
+            .unwrap()
+            .1
+            .actual;
+        let mut occurrences = Vec::new();
+        for (index, (site_id, site)) in collection.sites().iter().enumerate() {
+            assert_eq!(site.kind, OverloadSiteKind::FunctorApplication);
+            let application = source
+                .arena()
+                .node(
+                    typed
+                        .node(site.owner.node())
+                        .unwrap()
+                        .resolved_node
+                        .unwrap(),
+                )
+                .unwrap();
+            assert!(matches!(application.kind(), K::InfixExpression(_)));
+            assert_eq!(
+                SourceAnchor::Range(site.source_range),
+                *application.origin().anchor()
+            );
+            let written = [application.children()[0], application.children()[2]];
+            assert_ne!(written[0], written[1]);
+            assert_eq!(
+                site.arguments,
+                permutation.map(|slot| TypedSiteRef::Node(TypedNodeId::new(written[slot].index())))
+            );
+            for (slot, reference) in written.iter().enumerate() {
+                let node = source.arena().node(*reference).unwrap();
+                assert_eq!(node.kind(), &K::TermReference);
+                assert_eq!(
+                    resolve_template_formal(&source, node.children()[0]).unwrap(),
+                    groups[index + 2][actual_order[index][slot]]
+                );
+                occurrences.push(*reference);
+            }
+            let (_, candidate) = collection
+                .candidates()
+                .iter()
+                .find(|(_, row)| row.site == site_id)
+                .unwrap();
+            assert_eq!(&candidate.symbol, original.symbol());
+            assert_eq!(candidate.ordinary_root, candidate.symbol);
+            assert_eq!(
+                SourceAnchor::Range(candidate.provenance.source_range.unwrap()),
+                *original.origin().anchor()
+            );
+            assert_eq!(
+                declared_result,
+                TypeEntryActual::Known(candidate.result.unwrap())
+            );
+            assert_eq!(candidate.parameters.len(), 2);
+            for ty in candidate.parameters.iter().chain(candidate.result.iter()) {
+                assert_eq!(
+                    normalization.normalized_types().get(*ty).unwrap().head,
+                    TypeHeadRef::BuiltinSet
+                );
+            }
+            let (_, decision) = viability
+                .decisions()
+                .iter()
+                .find(|(_, row)| row.site == site_id)
+                .unwrap();
+            assert_eq!(decision.source_candidate, candidate.id);
+            let CandidateViabilityStatus::Viable { views } = &decision.status else {
+                panic!("{:?}", decision.status)
+            };
+            assert_eq!(
+                views
+                    .iter()
+                    .map(|view| view.argument_index)
+                    .collect::<Vec<_>>(),
+                vec![0, 1]
+            );
+            assert!(views.iter().all(|view| view.actual
+                == candidate.parameters[view.argument_index]
+                && view.target == view.actual
+                && view.facts.is_empty()
+                && view.coercion.is_none()));
+        }
+        assert_eq!(
+            occurrences
+                .iter()
+                .collect::<std::collections::BTreeSet<_>>()
+                .len(),
+            4
+        );
+    }
+}
+
+#[test]
+fn step5c6_functor_synonym_types_reject_unrelated_failures_and_forged_relations() {
+    use mizar_checker::type_checker::check_source_functor_synonym_types;
+    use mizar_checker::typed_ast::{TypedArena, TypingState};
+    use mizar_resolve::{
+        env::{RelationKind, RelationMetadata, SymbolIndex, SymbolKind},
+        resolved_ast::SurfaceResolvedArena,
+    };
+    use mizar_syntax::ast::{SurfaceAstBuilder, SurfaceNodeKind as K};
+    let config = step5c11_config();
+    let plan = build_test_plan(&config).unwrap();
+    let case = plan
+        .cases
+        .iter()
+        .find(|case| case.id.0 == "pass_type_elaboration_synonym_functor_001")
+        .unwrap();
+    let text = std::fs::read_to_string(&case.source_path).unwrap();
+    let inputs = |text: &str| {
+        let frontend = super::formula_statement::step5c8_test_frontend(text);
+        assert!(
+            frontend.diagnostics.is_empty(),
+            "semantic control must parse cleanly: {text}: {:?}",
+            frontend.diagnostics
+        );
+        super::source_registration_inputs(&config.workspace_root, case, frontend).unwrap()
+    };
+    for (from, to) in [
+        ("equals X;", "equals Missing;"),
+        ("equals X;", "equals (X);"),
+        ("-> set", "-> object"),
+        ("being set", "being object"),
+        ("let X, Y be set;\n  thus", "let X, Y be object;\n  thus"),
+        ("holds X synalt Y", "holds Missing synalt Y"),
+        ("thus X synalt Y", "thus X synalt Missing"),
+        ("holds X synalt Y = X", "holds X synalt Y = Missing"),
+        ("= X by", "= Missing by"),
+        ("by SynBaseDef", "by SynUse1"),
+        ("coherence;", "existence;"),
+        (
+            "synonym X synalt Y for X synbase Y",
+            "synonym X synalt X for X synbase Y",
+        ),
+    ] {
+        let changed = text.replace(from, to);
+        assert_ne!(changed, text);
+        let (source, typed, symbols) = inputs(&changed);
+        assert!(
+            check_source_functor_synonym_types(&source, &symbols, &typed).is_err(),
+            "{changed}"
+        );
+    }
+    let (source, typed, symbols) = inputs(&text);
+    let original = symbols
+        .symbols()
+        .iter()
+        .find(|entry| entry.kind() == SymbolKind::Functor)
+        .unwrap();
+    let alias = symbols
+        .symbols()
+        .iter()
+        .find(|entry| entry.kind() == SymbolKind::Synonym)
+        .unwrap();
+    for relations in [
+        vec![],
+        vec![RelationMetadata::new(
+            RelationKind::Antonym,
+            original.symbol().clone(),
+        )],
+        vec![RelationMetadata::new(
+            RelationKind::Synonym,
+            alias.symbol().clone(),
+        )],
+    ] {
+        let mut indexes = super::import_fixtures::clone_symbol_env_indexes(&symbols);
+        indexes.symbols = SymbolIndex::new();
+        for entry in symbols.symbols().iter() {
+            indexes.symbols.insert(if entry.symbol() == alias.symbol() {
+                entry.clone().with_relations(relations.clone())
+            } else {
+                entry.clone()
+            });
+        }
+        assert!(
+            check_source_functor_synonym_types(
+                &source,
+                &SymbolEnv::new(symbols.module_id().clone(), indexes),
+                &typed
+            )
+            .is_err()
+        );
+    }
+    let raw = typed
+        .iter()
+        .map(|(_, node)| node.clone())
+        .collect::<Vec<_>>();
+    let calls = typed
+        .iter()
+        .filter(|(_, node)| node.kind.as_str().starts_with("InfixExpression("))
+        .map(|(id, _)| id)
+        .collect::<Vec<_>>();
+    assert_eq!(calls.len(), 2);
+    for call in &calls {
+        for argument in [raw[call.index()].children[0], raw[call.index()].children[2]] {
+            for mutation in 0..3 {
+                let mut nodes = raw.clone();
+                match mutation {
+                    0 => nodes[argument.index()].resolved_node = nodes[call.index()].resolved_node,
+                    1 => nodes[argument.index()].anchor = nodes[call.index()].anchor.clone(),
+                    2 => nodes[argument.index()].typing = TypingState::Successful,
+                    _ => unreachable!(),
+                }
+                assert!(
+                    check_source_functor_synonym_types(
+                        &source,
+                        &symbols,
+                        &TypedArena::try_new(typed.root(), nodes).unwrap()
+                    )
+                    .is_err()
+                );
+            }
+        }
+    }
+    let ast = super::formula_statement::step5c8_test_frontend(&text)
+        .ast
+        .unwrap();
+    let head_offsets = calls
+        .iter()
+        .map(|id| match raw[raw[id.index()].children[1].index()].anchor {
+            SourceAnchor::Range(range) => range.start,
+            _ => unreachable!(),
+        })
+        .collect::<Vec<_>>();
+    for target in head_offsets.into_iter().map(Some).chain([None]) {
+        let mut builder = SurfaceAstBuilder::new(ast.source_id);
+        let mut rebuilt = Vec::new();
+        let mut changed = 0;
+        for node in ast.nodes() {
+            let mut children = node
+                .children
+                .iter()
+                .map(|id| rebuilt[id.index()])
+                .collect::<Vec<_>>();
+            let id = match &node.kind {
+                K::Token(token) => {
+                    let spelling = if Some(node.range.start) == target {
+                        assert_eq!(token.text.as_ref(), "synalt");
+                        changed += 1;
+                        "absent".into()
+                    } else {
+                        token.text.clone()
+                    };
+                    builder.add_token(token.kind, spelling, node.range)
+                }
+                K::InfixExpression(operator)
+                    if node
+                        .children
+                        .get(1)
+                        .is_some_and(|id| Some(ast.node(*id).unwrap().range.start) == target) =>
+                {
+                    let mut operator = operator.clone();
+                    operator.spelling = "absent".into();
+                    builder.add_node(K::InfixExpression(operator), node.range, children)
+                }
+                kind => {
+                    if target.is_none() && kind == &K::ItemList {
+                        assert_eq!(children.len(), 3);
+                        children.swap(0, 1);
+                        changed += 1;
+                    }
+                    builder.add_node(kind.clone(), node.range, children)
+                }
+            };
+            rebuilt.push(id);
+        }
+        assert_eq!(changed, 1);
+        let mut frontend = super::formula_statement::step5c8_test_frontend(&text);
+        frontend.ast = Some(builder.finish(Some(rebuilt[ast.root().unwrap().index()]), None));
+        let (changed_source, changed_typed, changed_symbols) =
+            super::source_registration_inputs(&config.workspace_root, case, frontend).unwrap();
+        assert!(
+            check_source_functor_synonym_types(&changed_source, &changed_symbols, &changed_typed)
+                .is_err()
+        );
+    }
+    let foreign = ResolverModuleId::new(PackageId::new("foreign"), ModulePath::new("synonym"));
+    assert!(
+        check_source_functor_synonym_types(
+            &SurfaceResolvedArena::lower(&ast, &foreign).unwrap(),
+            &symbols,
+            &typed
+        )
+        .is_err()
+    );
+    let mut other_ast = ast.clone();
+    let ids = InMemorySessionIdAllocator::new();
+    ids.next_source_id(snapshot_id(0)).unwrap();
+    other_ast.source_id = ids.next_source_id(snapshot_id(0)).unwrap();
+    assert!(
+        check_source_functor_synonym_types(
+            &SurfaceResolvedArena::lower(&other_ast, symbols.module_id()).unwrap(),
+            &symbols,
+            &typed
+        )
+        .is_err()
+    );
+    let (_, _, other_symbols) = inputs(&text.replace("synalt", "otheralias"));
+    assert!(check_source_functor_synonym_types(&source, &other_symbols, &typed).is_err());
+    let mut indexes = super::import_fixtures::clone_symbol_env_indexes(&symbols);
+    indexes.definitions = Default::default();
+    assert!(
+        check_source_functor_synonym_types(
+            &source,
+            &SymbolEnv::new(symbols.module_id().clone(), indexes),
+            &typed
+        )
+        .is_err()
+    );
+    let theorem = text.find("theorem SynUse1:").unwrap();
+    let frontend =
+        super::formula_statement::step5c8_test_frontend(&format!("{text}\n{}", &text[theorem..]));
+    assert!(frontend.diagnostics.is_empty());
+    assert!(
+        !super::resolver_symbol_collection(
+            &config.workspace_root,
+            case,
+            frontend.ast.as_ref().unwrap()
+        )
+        .detail_keys
+        .is_empty()
+    );
+    assert!(super::source_registration_inputs(&config.workspace_root, case, frontend).is_err());
+    let frontend = super::formula_statement::step5c8_test_frontend(&text.replace("= X by", "= by"));
+    assert!(!frontend.diagnostics.is_empty());
+    assert!(super::source_registration_inputs(&config.workspace_root, case, frontend).is_err());
+}
+
+#[test]
+fn step5c6_functor_synonym_relation_selects_actual_target_and_rejects_unsupported_sources() {
+    use mizar_checker::type_checker::check_source_functor_synonym_types;
+    use mizar_resolve::env::{RelationKind, SymbolKind};
+    let config = step5c11_config();
+    let plan = build_test_plan(&config).unwrap();
+    let case = plan
+        .cases
+        .iter()
+        .find(|case| case.id.0 == "pass_type_elaboration_synonym_functor_001")
+        .unwrap();
+    let text = std::fs::read_to_string(&case.source_path).unwrap();
+    let blocks = text.split("\n\n").collect::<Vec<_>>();
+    let second = blocks[0]
+        .replace("SynBaseDef", "SecondDef")
+        .replace("synbase", "secondbase");
+    let two_targets = format!(
+        "{}\n\n{}\n\n{}\n\n{}",
+        blocks[0],
+        second,
+        blocks[1].replace("synbase", "secondbase"),
+        blocks[2]
+    );
+    let frontend = super::formula_statement::step5c8_test_frontend(&two_targets);
+    assert!(
+        frontend.diagnostics.is_empty(),
+        "{:?}",
+        frontend.diagnostics
+    );
+    let (source, typed, symbols) =
+        super::source_registration_inputs(&config.workspace_root, case, frontend).unwrap();
+    let mut originals = symbols
+        .symbols()
+        .iter()
+        .filter(|entry| entry.kind() == SymbolKind::Functor)
+        .collect::<Vec<_>>();
+    originals.sort_by_key(|entry| match entry.origin().anchor() {
+        SourceAnchor::Range(range) => range.start,
+        _ => unreachable!(),
+    });
+    assert_eq!(originals.len(), 2);
+    assert_ne!(originals[0].symbol(), originals[1].symbol());
+    let alias = symbols
+        .symbols()
+        .iter()
+        .find(|entry| entry.kind() == SymbolKind::Synonym)
+        .unwrap();
+    assert_eq!(alias.relations().len(), 1);
+    assert_eq!(alias.relations()[0].kind(), RelationKind::Synonym);
+    assert_eq!(alias.relations()[0].target(), originals[1].symbol());
+    assert!(check_source_functor_synonym_types(&source, &symbols, &typed).is_err());
+    let predicate =
+        "definition\n let X, Y be set;\n pred SynBaseDef: X synbase Y means X = Y;\nend;";
+    for variant in [
+        format!(
+            "{}\n{}\n{}",
+            blocks[0],
+            blocks[0].replace("SynBaseDef", "DuplicateDef"),
+            blocks[1]
+        ),
+        format!(
+            "{}\n{}",
+            blocks[0],
+            blocks[1].replace("for X synbase Y", "for X missing Y")
+        ),
+        format!("{}\n{}", blocks[1], blocks[0]),
+        format!("{predicate}\n{}", blocks[1]),
+        format!(
+            "{}\n{}\n{}",
+            blocks[0],
+            blocks[1],
+            blocks[1]
+                .replace("synalt", "thirdname")
+                .replace("synbase", "synalt")
+        ),
+        format!(
+            "{}\n{}",
+            blocks[0],
+            blocks[1]
+                .replace("X, Y be set", "X, Y, Z be set")
+                .replace("for X synbase Y", "for X synbase Z")
+        ),
+    ] {
+        let frontend = super::formula_statement::step5c8_test_frontend(&variant);
+        assert!(
+            frontend.diagnostics.is_empty(),
+            "{variant}: {:?}",
+            frontend.diagnostics
+        );
+        let result = super::resolver_symbol_collection(
+            &config.workspace_root,
+            case,
+            frontend.ast.as_ref().unwrap(),
+        );
+        let last_alias = result
+            .env
+            .symbols()
+            .iter()
+            .filter(|entry| entry.kind() == SymbolKind::Synonym)
+            .max_by_key(|entry| match entry.origin().anchor() {
+                SourceAnchor::Range(range) => range.start,
+                _ => unreachable!(),
+            })
+            .unwrap();
+        assert!(
+            last_alias.relations().is_empty(),
+            "{variant}: {:?}",
+            last_alias.relations()
+        );
+    }
+}

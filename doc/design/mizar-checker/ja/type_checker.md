@@ -2970,6 +2970,11 @@ binding identity で簡約し、recursive inline definition は cycle guard で 
 `check_source_distinct_loci_overloads` の single-candidate profile は必須 builtin-set field を持つ bare local structure 上の binary predicate も検査する。順序付き loci、実際の束縛、selector 等式の本体、segment 極性と両 call を認証し、predicate candidate に項の結果型を付けない。
 認証済み引数位置での実際の Known set→structure viability rejection だけを `predicates.application.argument_type_mismatch` に写像する。汎用 MissingEvidence/NoMatch や無関係な診断では不足する。証明・展開・承認を与えず、C13/C3 profile と atomic-formula transport の境界を維持する。
 
+## Source functor synonym typing
+
+`check_source_functor_synonym_types(&SurfaceResolvedArena, &SymbolEnv, &TypedArena)` は既存 `(TypeNormalizationOutput, OverloadCollectionOutput, CandidateViabilityOutput)` を `Result<_, String>` で返す。builtin-set 2 loci の引数を返す関手、実際の synonym-target relation と locus 全単射を認証し、定理と証明内の両 call・引数・返却型・等式オペランド型を検査する。
+collection の arguments は元 constructor 順の実 occurrence site とし、ソースの綴りと束縛同一性を維持する。全 actual viability 判定の成功後だけ出力を返す。展開・定理/coherence 証明・登録承認・一般 overload 選択を与えず、C3/C13 profile と source-application transport は変更しない。
+
 ## Distinct-loci overload source checking
 
 `check_source_distinct_loci_overloads(&SurfaceResolvedArena, &SymbolEnv, &TypedArena, single_structure_candidate: bool)` は既存の `(TypeNormalizationOutput, OverloadCollectionOutput, TemplateExpansionOutput, CandidateViabilityOutput, SpecificityGraphOutput, OverloadSelectionOutput)` を `Result<_, String>` として返す。ソース・環境・typed arena の完全な対応を認証し、通常の仮引数と定理・証明の束縛を解決し、set の恒等定義と構造体 selector の定義を検査し、全シグネチャと実引数型を同じ表で正規化する。定義だけを構造体 checker に渡して実際のメンバー同一性を認証する。source intake が必須フィールドの builtin set 型を確認して §17.3.4 の constructor-witness 規則を適用する。変数シンボルや承認済み登録を捏造しない。
