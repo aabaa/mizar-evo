@@ -57,7 +57,7 @@ const STEP5C8_CASES: [(&str, Stage, Option<&str>); 7] = [
     ),
 ];
 
-const STEP5C9_CASES: [(&str, Stage, Option<&str>); 7] = [
+const STEP5C9_CASES: [(&str, Stage, Option<&str>); 8] = [
     (
         "pass_formula_statement_consider_choice_001",
         Stage::FormulaStatement,
@@ -92,6 +92,11 @@ const STEP5C9_CASES: [(&str, Stage, Option<&str>); 7] = [
         "fail_proof_verification_per_cases_incomplete_001",
         Stage::ProofVerification,
         Some("theorems.per_cases.incomplete_case_split"),
+    ),
+    (
+        "pass_formula_statement_then_hence_linking_001",
+        Stage::FormulaStatement,
+        None,
     ),
 ];
 
@@ -145,6 +150,7 @@ pub(super) fn is_step5c10_candidate(case: &TestCase) -> bool {
 pub(super) fn is_step5c9_candidate(case: &TestCase) -> bool {
     STEP5C9_CASES.iter().any(|(id, _, _)| {
         case.id.0 == *id
+            || case.expectation.id.0 == *id
             || case
                 .source_path
                 .file_name()
@@ -205,6 +211,19 @@ pub(super) fn step5_formula_admitted(root: Option<&Path>, case: &TestCase) -> bo
         _ => PipelinePhase::StatementCheck,
     };
     case.expectation.id == case.id
+        && (*id != STEP5C9_CASES[7].0
+            || (case.expectation.kind == crate::expectation::TestKind::Pass
+                && case.expectation.domain == "theorems.linking"
+                && case.expectation.spec_refs.len() == 1
+                && case.expectation.spec_refs[0].0 == "spec.en.15.statements.linking.then_hence"
+                && case.expectation.failure_category.is_none()
+                && case.expectation.rejection_reason.is_none()
+                && case.expectation.declaration_symbol_payloads.is_empty()
+                && case.expectation.ast_profile.is_none()
+                && case.expectation.snapshot_profiles.is_empty()
+                && case.expectation.tokens.is_empty()
+                && case.expectation.origin.is_none()
+                && case.expectation.architecture22.is_none()))
         && case.source_path.ends_with(&source)
         && case.expectation_path.ends_with(&sidecar)
         && case.expectation.source == Path::new(&source).file_name().unwrap()
@@ -892,15 +911,215 @@ mod tests {
                 "{id}"
             );
         }
-        let gap = plan
+    }
+
+    #[test]
+    fn step5c9_linking_requires_immediate_identity_and_closes_the_goal() {
+        let source = "theorem Link: for X,Y being set st X=Y holds X=Y proof let X,Y be set; assume A:X=Y; then X=Y; hence X=Y; end;";
+        for valid in [
+            source.to_owned(),
+            source
+                .replace("X", "Left")
+                .replace("Y", "Right")
+                .replace("A:", "Premise:"),
+            source.replace("then X=Y; ", ""),
+            source.replace("then X=Y;", "then X=Y; then X=Y;"),
+        ] {
+            assert_eq!(check_organization_source(&valid), Ok(true), "{valid}");
+        }
+        for (from, to) in [
+            ("st X=Y", "st X=X"),
+            ("assume A:X=Y", "assume A:X=X"),
+            ("then X=Y", "then Y=X"),
+            ("hence X=Y", "hence X=X"),
+            ("holds X=Y", "holds X=X"),
+            ("let X,Y be set", "let X,Y be object"),
+            ("assume A:X=Y; ", ""),
+            ("assume A:X=Y; then X=Y; ", ""),
+            ("then X=Y", "then X=Y by A"),
+            ("hence X=Y", "hence X=Y by A"),
+            ("then X=Y;", "then A:X=Y;"),
+            ("then X=Y;", "X=Y by Later; Later:X=Y by A;"),
+            ("hence X=Y;", "hence X=Y; then X=Y;"),
+            ("then X=Y;", "Inner: now thus X=Y by A; end;"),
+        ] {
+            let changed = source.replace(from, to);
+            assert_ne!(changed, source);
+            assert!(check_organization_source(&changed).is_err(), "{changed}");
+        }
+        let unrelated = source
+            .replace("holds X=Y", "holds X=X")
+            .replace("hence X=Y", "hence X=X");
+        assert!(check_organization_source(&unrelated).is_err());
+        let take = "theorem Link: for X being set st X=X holds ex Y being set st Y=X proof let X be set; assume A:X=X; take X; then X=X; hence X=X; end;";
+        assert_eq!(
+            check_organization_source(&take.replace("then X=X; hence X=X;", "thus X=X;")),
+            Ok(true)
+        );
+        assert!(check_organization_source(take).is_err());
+        let block = source
+            .replace("then X=Y;", "Inner: now thus X=Y by A; end;")
+            .replace("hence X=Y;", "thus X=Y by Inner;");
+        assert_eq!(check_organization_source(&block), Ok(true));
+        let first_hence =
+            "theorem Link: for X being set holds X=X proof let X be set; hence X=X; end;";
+        assert!(check_organization_source(first_hence).is_err());
+    }
+
+    #[test]
+    fn step5c9_linking_preserves_source_bindings_and_assumption_label() {
+        use mizar_resolve::labels::{LabelProjectionSource, ProofLabelSourceCollector};
+        use mizar_resolve::names::SourceVariableBindingKind;
+        use mizar_syntax::SurfaceNodeKind;
+        let exact = include_str!(
+            "../../../../tests/miz/pass/theorems/pass_formula_statement_then_hence_linking_001.miz"
+        );
+        let plan = build_test_plan(&config()).unwrap();
+        let case = plan
             .cases
             .iter()
-            .find(|case| case.id.0 == "pass_formula_statement_then_hence_linking_001")
+            .find(|case| case.id.0 == super::STEP5C9_CASES[7].0)
             .unwrap();
-        assert!(!is_active_formula_statement(&workspace_root(), gap));
-        assert!(
-            check_organization_source(&std::fs::read_to_string(&gap.source_path).unwrap()).is_err()
-        );
+        for (source, variable, label) in [
+            (exact.to_owned(), "X", "A1"),
+            (
+                exact.replace("X", "Value").replace("A1", "Premise"),
+                "Value",
+                "Premise",
+            ),
+        ] {
+            assert_eq!(check_organization_source(&source), Ok(true));
+            let ast = super::step5c8_test_frontend(&source).ast.unwrap();
+            let resolver = super::resolver_symbol_collection(&workspace_root(), case, &ast);
+            assert!(resolver.detail_keys.is_empty());
+            let scope = super::SourceVariableScopeResolver::resolve_proof_occurrences(
+                super::SourceVariableScopeInput::new(&ast, &resolver.module, &resolver.env),
+            )
+            .unwrap();
+            let bindings = scope
+                .bindings()
+                .iter()
+                .filter(|binding| binding.spelling() == variable)
+                .collect::<Vec<_>>();
+            assert_eq!(bindings.len(), 2);
+            assert_eq!(bindings[0].kind(), SourceVariableBindingKind::Quantifier);
+            assert_eq!(bindings[1].kind(), SourceVariableBindingKind::Let);
+            assert_ne!(bindings[0].id(), bindings[1].id());
+            let proof_start = source.find("proof").unwrap();
+            let references = scope
+                .references()
+                .iter()
+                .filter(|reference| reference.spelling() == variable)
+                .collect::<Vec<_>>();
+            assert_eq!(references.len(), 10);
+            for reference in references {
+                let range = reference.range();
+                assert_eq!(&source[range.start..range.end], variable);
+                assert_eq!(
+                    reference.binding(),
+                    bindings[usize::from(range.start > proof_start)].id()
+                );
+            }
+            let arena =
+                mizar_resolve::resolved_ast::SurfaceResolvedArena::lower(&ast, &resolver.module)
+                    .unwrap();
+            let owner = resolver
+                .env
+                .symbols()
+                .iter()
+                .find(|entry| entry.kind() == mizar_resolve::env::SymbolKind::Theorem)
+                .unwrap();
+            let labels = ProofLabelSourceCollector::new(
+                &ast,
+                &resolver.module,
+                mizar_resolve::env::NamespacePath::new(resolver.module.path().as_str()),
+                owner.contribution(),
+                &arena,
+            )
+            .unwrap()
+            .collect_with_proof_organization()
+            .unwrap();
+            let [projection] = labels.projections() else {
+                panic!("one actual assumption label required")
+            };
+            assert!(labels.references().is_empty());
+            assert_eq!(projection.primary_spelling(), label);
+            assert_eq!(projection.module(), &resolver.module);
+            let label_start = source.find(&format!("{label}:")).unwrap();
+            let range = projection.declaration_range();
+            assert_eq!(
+                (range.start, range.end),
+                (label_start, label_start + label.len())
+            );
+            assert_eq!(projection.origin().source_id(), ast.source_id);
+            assert_eq!(
+                projection.origin().anchor(),
+                &mizar_session::SourceAnchor::Range(range)
+            );
+            let proposition = ast
+                .node_views()
+                .find(|node| {
+                    matches!(node.kind(), SurfaceNodeKind::Proposition)
+                        && node.range().start == label_start
+                })
+                .unwrap();
+            assert_eq!(
+                projection.origin().structural_path()[1] as usize,
+                proposition.id().index()
+            );
+            assert!(matches!(
+                projection.source(),
+                LabelProjectionSource::CurrentModule {
+                    proof_scope: Some(_),
+                    ..
+                }
+            ));
+        }
+    }
+
+    #[test]
+    fn step5c9_linking_admission_rejects_auxiliary_payloads_and_id_only_aliases() {
+        let plan = build_test_plan(&config()).unwrap();
+        let root = workspace_root();
+        let original = plan
+            .cases
+            .iter()
+            .find(|case| case.id.0 == super::STEP5C9_CASES[7].0)
+            .unwrap();
+        for mutate in [
+            (|case: &mut crate::harness::TestCase| {
+                case.expectation.kind = crate::expectation::TestKind::Snapshot
+            }) as fn(&mut crate::harness::TestCase),
+            |case| case.expectation.domain = "theorems.other".into(),
+            |case| case.expectation.spec_refs.clear(),
+            |case| case.expectation.spec_refs[0].0.push_str("_forged"),
+            |case| case.expectation.failure_category = Some("proof_failure".into()),
+            |case| case.expectation.rejection_reason = Some("forged".into()),
+            |case| {
+                case.expectation
+                    .declaration_symbol_payloads
+                    .push("forged".into())
+            },
+            |case| case.expectation.diagnostic_payloads.push("forged".into()),
+            |case| case.expectation.snapshots = Some("forged.snap".into()),
+            |case| case.expectation.ast_profile = Some("forged".into()),
+            |case| case.expectation.snapshot_profiles.push("forged".into()),
+            |case| {
+                case.id.0 = "alias".into();
+                case.source_path = "alias.miz".into();
+                case.expectation_path = "alias.expect.toml".into();
+                case.expectation.source = "alias.miz".into();
+            },
+        ] {
+            let mut case = original.clone();
+            mutate(&mut case);
+            assert!(super::is_step5c9_candidate(&case));
+            assert!(!super::step5_formula_admitted(Some(&root), &case));
+            assert!(!is_active_formula_statement(&root, &case));
+            assert!(!super::super::is_active_parse_only(&case));
+            assert!(!super::super::is_active_type_elaboration(&case));
+            assert!(!super::super::is_active_proof_verification(&case));
+        }
     }
 
     #[test]
@@ -1272,7 +1491,7 @@ mod tests {
     #[test]
     fn corpus_executes_exact_seven_and_preserves_checker_keys() {
         let report = super::super::run_formula_statement_corpus(&config()).unwrap();
-        assert_eq!(report.results.len(), 21);
+        assert_eq!(report.results.len(), 22);
         assert_eq!(report.error_count(), 0, "{:?}", report.diagnostics);
         assert!(
             report.results.iter().all(|result| {

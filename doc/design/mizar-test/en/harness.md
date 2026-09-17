@@ -17,10 +17,11 @@ for lemma citation, and observes open/assumed policy registration without proof
 acceptance. Exact skeleton/resolve errors alone satisfy the four negative rows;
 malformed metadata, unsupported source and unrelated failures never do.
 
-The Step 5C.9 route admits only its seven non-G3 mapped rows, preserving exact stage
-metadata. It assembles existing resolver/checker inputs and observes checker case-completeness
-failure only at verification, after statement checking succeeds; unrelated errors earn no key.
-The formula cases grant no proof acceptance, and then/hence remains inactive.
+The Step 5C.9 route retains its seven initial mapped rows and adds only then/hence
+at formula_statement / statement_check, authenticating its exact paths, kind, domain,
+spec ref, tag and absent auxiliary payloads. Existing resolver/checker inputs carry
+actual predecessor linking. Only checker case-completeness failure after statement
+checking earns the verification key; formula success grants no proof acceptance.
 
 The Step 5C.8 route authenticates its seven exact mapped rows across parse, type and statement
 stages. Existing resolver identities and checker handoffs carry formula/statement inputs;

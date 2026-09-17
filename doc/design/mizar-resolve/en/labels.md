@@ -5,8 +5,9 @@ and proof citations. It projects module-local owners after their declarations an
 retains exact source order, scope, reference site and origin; older collectors
 keep their existing profiles. Status does not turn a label into a verified fact.
 
-`collect_with_proof_organization()` additionally traverses Given/Consider conditions,
-Now/Hereby blocks, `suppose` branches and iterative equalities using the existing collection.
+`collect_with_proof_organization()` additionally traverses Assume/Given/Consider conditions,
+Then wrappers and their actual inner statements, Now/Hereby blocks, `suppose` branches
+and iterative equalities using the existing collection; implicit linking invents no label.
 Labels retain their real declaration/citation origins, block scopes and visibility order;
 branch assumptions never escape their branch. Other collector entry points are unchanged.
 

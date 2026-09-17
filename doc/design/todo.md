@@ -620,7 +620,7 @@ activation-map ledger; every 5C task also requires 5B.2.
    Deps: none beyond 5B.2.
 9. [x] **[5C.9 — Statements and proof organization](./task_contracts/en/STEP5C9-PROOF-ORGANIZATION.md)** (`mizar-checker`;
    spec ch. 15). Requirements: `spec.en.15.statements.*` (8 ids).
-   Targets: 8 pairs (1 blocked by G3). Covers
+   Targets: 8 pairs. Covers
    `consider`/`given`/`hereby`/`now`, `then`/`hence` linking, iterative
    equality, and `per cases` (suppose pass, completeness obligation
    fail). Deps: 5A.4.

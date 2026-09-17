@@ -7,7 +7,8 @@ source = "pass_formula_statement_then_hence_linking_001.miz"
 expected_outcome = "pass"
 expected_phase = "statement_check"
 diagnostic_codes = []
+tags = ["active_formula_statement"]
 spec_refs = [
   "spec.en.15.statements.linking.then_hence",
 ]
-notes = "Audit-1 semantic-bridge inactive oracle seed (September 2026 audit wave): binding expectation for the Step-5 semantic bridge; no active runner tag, earns no current credit. then links the preceding statement as an implicit premise and hence combines linking with a conclusion (spec 15.4, 15.8)."
+notes = "Source-derived guarded assumption and immediate-predecessor identity linking; hence closes the remaining thesis at statement_check without theorem acceptance."

@@ -1109,6 +1109,8 @@ fn proof_organization_statement(kind: &SurfaceNodeKind) -> bool {
             | SurfaceNodeKind::ConclusionStatement
             | SurfaceNodeKind::LetStatement
             | SurfaceNodeKind::GivenStatement
+            | SurfaceNodeKind::AssumptionStatement
+            | SurfaceNodeKind::ThenStatement
             | SurfaceNodeKind::ConsiderStatement
             | SurfaceNodeKind::NowStatement
             | SurfaceNodeKind::HerebyStatement
@@ -1131,7 +1133,9 @@ fn statement_labels<'a>(
         SurfaceNodeKind::GivenStatement | SurfaceNodeKind::ConsiderStatement => {
             condition_labels(statement)
         }
-        SurfaceNodeKind::SupposeItem => branch_labels(statement),
+        SurfaceNodeKind::AssumptionStatement | SurfaceNodeKind::SupposeItem => {
+            branch_labels(statement)
+        }
         SurfaceNodeKind::NowStatement
         | SurfaceNodeKind::HerebyStatement
         | SurfaceNodeKind::CaseReasoningStatement

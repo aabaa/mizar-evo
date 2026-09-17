@@ -17,7 +17,11 @@ The boolean records whether all encountered case-completeness obligations are di
 by reflexive equality or complementary conditions; unsupported obligations return an error.
 It is not theorem acceptance. Existing node IDs/edges, primary/atomic/set handoffs and
 resolver scopes carry terms and formulas; no second expression representation is introduced.
-This profile admits only `suppose` branches; the interchangeable `case` surface is deferred.
+Guarded `assume` matches the instantiated antecedent. Root-block `then`/`hence`
+requires identity agreement with the actual immediately preceding checked formula;
+`hence` also matches and closes the thesis. Intervening nonpropositional steps and
+block boundaries clear the predecessor; no theorem goal or older cited fact substitutes
+for it. Sequential justifications/nesting/per-cases and the `case` branch surface remain deferred.
 
 `SourceVariableSemanticsChecker::check_formula_statements` checks the bounded formula/statement
 slice through existing typed arenas, primary/atomic handoffs and sealed resolver bindings/labels.

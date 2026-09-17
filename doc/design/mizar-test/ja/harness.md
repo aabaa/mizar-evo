@@ -15,9 +15,9 @@ Step 5C.10 は対応する6行だけを各行の固定 phase で実行する。
 open/assumed の policy 登録を証明受理にせず、4件の負例は固有の骨格・解決エラーでのみ満たす。
 不正 metadata、対象外 source、無関係な失敗には負例の成功を与えない。
 
-Step 5C.9 は G3 を除く対応7行だけを厳密な stage metadata で受け入れる。
-既存 resolver/checker 入力を構成し、文検査後の網羅性不成立だけを verification で観測する。
-無関係なエラー・式検査成功に証明受理を与えず、then/hence は非活性のままとする。
+Step 5C.9 は初期7行を維持し、then/hence だけを formula_statement / statement_check に追加する。
+厳密な path・kind・domain・spec ref・tag と補助 payload 不在を照合し、既存 resolver/checker 入力で実際の直前関係を渡す。
+文検査後の checker 網羅性不成立だけが verification の失敗キーを満たし、式検査成功に証明受理を与えない。
 
 Step 5C.8 は parse・type・statement の対象 7 行だけを厳密に照合し、既存 resolver の識別子と checker handoff を使う。
 `iff` 連鎖の拒否は文字列だけでなく parser の実際の診断位置で確認する。文検査の成功は proof-verification や証明書受理を活性化しない。

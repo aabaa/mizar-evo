@@ -4,8 +4,8 @@
 宣言後に有効な module-local owner と引用の source 順序・scope・site・origin を保持する。
 旧 collector の受付範囲は維持し、status によって label を検証済み事実にしない。
 
-`collect_with_proof_organization()` は既存の収集型で Given/Consider 条件、Now/Hereby、
-`suppose` 分岐・反復等式も巡回する。宣言・引用の origin、ブロックスコープ、可視順序を保持し、
+`collect_with_proof_organization()` は既存の収集型で Assume/Given/Consider 条件、Then とその実際の内側文、
+Now/Hereby、`suppose` 分岐・反復等式も巡回し、暗黙の linking 用ラベルを作らない。宣言・引用の origin、ブロックスコープ、可視順序を保持し、
 分岐の仮定は外へ漏らさない。他の収集入口は変更しない。
 
 `collect_with_let_conditions` は単独のラベル付き `let ... such that` 条件を、既存の source origin・proof scope・可視順序で収集する。

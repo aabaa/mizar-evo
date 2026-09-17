@@ -9531,8 +9531,10 @@ fn step5c9_organization(
     let mut substitutions = BTreeMap::new();
     // This is an index of checked source nodes, not another formula payload.
     let mut facts = BTreeMap::new();
+    let mut predecessor = None;
     let mut cursor = 0;
     while step5c8_kind(typed, thesis) == Some("QuantifiedFormula(Universal)") {
+        predecessor = None;
         let statement = *statements.get(cursor).ok_or_else(invalid)?;
         let (locals, local_guard) = step5c8_let(typed, scope, statement)?;
         if local_guard.is_some() {
@@ -9550,16 +9552,33 @@ fn step5c9_organization(
         cursor += 1;
         if let Some(guard) = guard {
             let given = *statements.get(cursor).ok_or_else(invalid)?;
-            let witnesses = step5c9_witness_bindings(
-                typed,
-                scope,
-                given,
-                SourceVariableBindingKind::GivenWitness,
-            )?;
             let (proposition, condition) = step5c9_condition(typed, given).ok_or_else(invalid)?;
             let mut local = substitutions.clone();
-            let (_, antecedent) =
-                step5c9_instantiate(typed, scope, guard, &witnesses, &mut local, true, false)?;
+            let antecedent = if step5c8_kind(typed, given) == Some("AssumptionStatement") {
+                if !step5c10_token(
+                    typed,
+                    typed
+                        .nodes()
+                        .node(given)
+                        .and_then(|node| node.children.first())
+                        .copied(),
+                    "ReservedWord",
+                    "assume",
+                ) || step5c8_children(typed, given).is_none_or(|children| children.len() != 1)
+                {
+                    return Err(invalid());
+                }
+                predecessor = Some((given, condition));
+                guard
+            } else {
+                let witnesses = step5c9_witness_bindings(
+                    typed,
+                    scope,
+                    given,
+                    SourceVariableBindingKind::GivenWitness,
+                )?;
+                step5c9_instantiate(typed, scope, guard, &witnesses, &mut local, true, false)?.1
+            };
             if !step5c8_formula_equal(typed, scope, primary, atomic, antecedent, condition, &local)
             {
                 return Err(invalid());
@@ -9575,8 +9594,79 @@ fn step5c9_organization(
         if closed {
             return Err(invalid());
         }
+        let previous = predecessor.take();
         let children = step5c8_children(typed, statement).ok_or_else(invalid)?;
-        match step5c8_kind(typed, statement) {
+        let kind = step5c8_kind(typed, statement);
+        let first = typed
+            .nodes()
+            .node(statement)
+            .and_then(|node| node.children.first())
+            .copied();
+        match kind {
+            Some("ThenStatement" | "ConclusionStatement")
+                if kind == Some("ThenStatement")
+                    || step5c10_token(typed, first, "ReservedWord", "hence") =>
+            {
+                let (previous_statement, previous_formula) = previous.ok_or_else(invalid)?;
+                if index.checked_sub(1).and_then(|index| statements.get(index))
+                    != Some(&previous_statement)
+                {
+                    return Err(invalid());
+                }
+                let linked = kind == Some("ThenStatement");
+                let proposition = if linked {
+                    if !step5c10_token(typed, first, "ReservedWord", "then") {
+                        return Err(invalid());
+                    }
+                    let [compact] = children.as_slice() else {
+                        return Err(invalid());
+                    };
+                    if step5c8_kind(typed, *compact) != Some("CompactStatement") {
+                        return Err(invalid());
+                    }
+                    let parts = step5c8_children(typed, *compact).ok_or_else(invalid)?;
+                    let [proposition] = parts.as_slice() else {
+                        return Err(invalid());
+                    };
+                    *proposition
+                } else {
+                    let [proposition] = children.as_slice() else {
+                        return Err(invalid());
+                    };
+                    *proposition
+                };
+                if step5c8_kind(typed, proposition) != Some("Proposition") {
+                    return Err(invalid());
+                }
+                let formula = step5c8_unwrap(typed, proposition).ok_or_else(invalid)?;
+                if !step5c8_formula_equal(
+                    typed,
+                    scope,
+                    primary,
+                    atomic,
+                    previous_formula,
+                    formula,
+                    &substitutions,
+                ) || !linked
+                    && !step5c8_formula_equal(
+                        typed,
+                        scope,
+                        primary,
+                        atomic,
+                        thesis,
+                        formula,
+                        &substitutions,
+                    )
+                {
+                    return Err(invalid());
+                }
+                if linked {
+                    facts.insert(proposition, formula);
+                    predecessor = Some((statement, formula));
+                } else {
+                    closed = true;
+                }
+            }
             Some("TakeStatement") => {
                 let witnesses = step5c8_take(typed, scope, primary, statement)?;
                 thesis = step5c9_instantiate(
