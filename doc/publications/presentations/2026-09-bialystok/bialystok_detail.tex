@@ -1026,7 +1026,83 @@ end;
 }
 \end{frame}
 
-\begin{frame}[fragile,t]{4.5 - What Is Preserved, What We Ask}
+\begin{frame}[fragile,t]{4.5 - Overloading: Which Definition Does This Mean?}
+\begin{itemize}
+\setlength{\itemsep}{1pt}
+\setlength{\parsep}{0pt}
+\setlength{\parskip}{0pt}
+\item \textcolor{blue!55!black}{\textbf{The same symbol can have several definitions. Its spelling alone does not tell us which one applies.}}
+\item Cluster inference can make an argument fit several parameter types.
+\item \textcolor{blue!55!black}{\textbf{For example, a finite topological space is both countable and compact. If \texttt{f} has an overload for each, both may apply.}}
+\item We need a clear selection rule and a way to state our intent when it cannot choose.
+\end{itemize}
+\note{
+\smallskip
+\textbf{Read aloud:}
+\begin{itemize}
+\setlength{\itemsep}{1pt}
+\setlength{\parsep}{0pt}
+\setlength{\parskip}{0pt}
+\item \textcolor{blue!55!black}{\textbf{The same symbol can have several definitions. Its spelling alone does not tell us which one applies.}}
+\item Cluster inference can make an argument fit several parameter types.
+\item \textcolor{blue!55!black}{\textbf{For example, a finite topological space is both countable and compact. If \texttt{f} has an overload for each, both may apply.}}
+\item We need a clear selection rule and a way to state our intent when it cannot choose.
+\end{itemize}
+\smallskip
+\textbf{Optional notes and sources:}
+\begin{itemize}
+\setlength{\itemsep}{1pt}
+\setlength{\parsep}{0pt}
+\setlength{\parskip}{0pt}
+\item Specification sections 19.2.1 and 19.4.4 supply the example with the required registrations. The two overloads are independent definitions; neither parameter type is more specific than the other.
+\end{itemize}
+}
+\end{frame}
+
+\begin{frame}[fragile,t]{4.6 - The Evo Answer: Resolve Or Explain Ambiguity}
+\smallskip
+\textbf{Two independent overloads, with the required registrations}~\badgeSketch
+\begin{lstlisting}[language={mizar},basicstyle=\ttfamily\small]
+:: f accepts countable TopSpace or compact TopSpace
+let S be finite TopSpace;
+f(S);                         :: ambiguous
+f(S qua countable TopSpace);   :: choose countable
+f(S qua compact TopSpace);     :: choose compact
+\end{lstlisting}
+\begin{itemize}
+\setlength{\itemsep}{1pt}
+\setlength{\parsep}{0pt}
+\setlength{\parskip}{0pt}
+\item \textcolor{blue!55!black}{\textbf{Evo prefers more specific parameter types after cluster inference. Return types do not choose the overload.}}
+\item \textcolor{blue!55!black}{\textbf{If several best definitions remain, Evo reports ambiguity. Here, \texttt{qua} makes the intended type explicit.}}
+\item \textcolor{blue!55!black}{\textbf{This selects the meaning before proof search begins.}}
+\end{itemize}
+\note{
+\smallskip
+\textbf{Read aloud:}
+\begin{itemize}
+\setlength{\itemsep}{1pt}
+\setlength{\parsep}{0pt}
+\setlength{\parskip}{0pt}
+\item Two independent overloads, with the required registrations.
+\item \textcolor{blue!55!black}{\textbf{Evo prefers more specific parameter types after cluster inference. Return types do not choose the overload.}}
+\item \textcolor{blue!55!black}{\textbf{If several best definitions remain, Evo reports ambiguity. Here, \texttt{qua} makes the intended type explicit.}}
+\item \textcolor{blue!55!black}{\textbf{This selects the meaning before proof search begins.}}
+\end{itemize}
+\smallskip
+\textbf{Optional notes and sources:}
+\begin{itemize}
+\setlength{\itemsep}{1pt}
+\setlength{\parsep}{0pt}
+\setlength{\parskip}{0pt}
+\item Source: specification sections 19.3.1 and 19.4. These are illustrative calls.
+\item Scope and tie-breakers also apply; coherent \texttt{redefine} items of one root combine (section 19.5).
+\item Qualify ambiguous imports with \texttt{module\_path.symbol\_name} (section 19.6.3).
+\end{itemize}
+}
+\end{frame}
+
+\begin{frame}[fragile,t]{4.7 - What Is Preserved, What We Ask}
 \begin{itemize}
 \setlength{\itemsep}{1pt}
 \setlength{\parsep}{0pt}

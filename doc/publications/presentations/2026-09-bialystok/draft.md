@@ -611,7 +611,42 @@ Bullets:
   specificity, then FQN tie-break);
 - unoriented identification idioms become auditable `reduce` items.
 
-### Frame 4.5 - What Is Preserved, What We Ask
+### Frame 4.5 - Overloading: Which Definition Does This Mean?
+
+- **The same symbol can have several definitions. Its spelling alone does not tell us which one applies.**
+- Cluster inference can make an argument fit several parameter types.
+- **For example, a finite topological space is both countable and compact.
+  If `f` has an overload for each, both may apply.**
+- We need a clear selection rule and a way to state our intent when it cannot choose.
+
+Speaker note:
+
+- Specification sections 19.2.1 and 19.4.4 supply the example with the required registrations.
+  The two overloads are independent definitions; neither parameter type is more specific than the other.
+
+### Frame 4.6 - The Evo Answer: Resolve Or Explain Ambiguity
+
+Two independent overloads, with the required registrations (sketch):
+
+```mizar
+:: f accepts countable TopSpace or compact TopSpace
+let S be finite TopSpace;
+f(S);                         :: ambiguous
+f(S qua countable TopSpace);   :: choose countable
+f(S qua compact TopSpace);     :: choose compact
+```
+
+- **Evo prefers more specific parameter types after cluster inference. Return types do not choose the overload.**
+- **If several best definitions remain, Evo reports ambiguity. Here, `qua` makes the intended type explicit.**
+- **This selects the meaning before proof search begins.**
+
+Speaker note:
+
+- Source: specification sections 19.3.1 and 19.4. These are illustrative calls.
+- Scope and tie-breakers also apply; coherent `redefine` items of one root combine (section 19.5).
+- Qualify ambiguous imports with `module_path.symbol_name` (section 19.6.3).
+
+### Frame 4.7 - What Is Preserved, What We Ask
 
 - Registrations and clusters remain part of the language, and proofs stay short.
 - Applying a cluster does not require us to repeat its proof.
