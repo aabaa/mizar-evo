@@ -455,9 +455,9 @@ begin :: Additive structures
 \setlength{\itemsep}{1pt}
 \setlength{\parsep}{0pt}
 \setlength{\parskip}{0pt}
-\item Information about a symbol's origin is spread across several role lists. A reviewer cannot see which article provides which notation, constructor, or cluster.
+\item Article order matters in environment lists such as \texttt{notations} and \texttt{definitions}. Authors must understand not only which articles to include, but also how to order them.
 \item The Accommodator resolves the environment. But the resolved dependencies are not source text that a person can review.
-\item Tools cannot cache or invalidate units smaller than an article.
+\item Users must list individual articles even when they want a whole topic, such as elementary group theory.
 \item Moving a theorem between articles risks breaking unknown dependents.
 \end{itemize}
 \smallskip
@@ -475,9 +475,9 @@ begin :: Additive structures
 \setlength{\itemsep}{1pt}
 \setlength{\parsep}{0pt}
 \setlength{\parskip}{0pt}
-\item Information about a symbol's origin is spread across several role lists. A reviewer cannot see which article provides which notation, constructor, or cluster.
+\item Article order matters in environment lists such as \texttt{notations} and \texttt{definitions}. Authors must understand not only which articles to include, but also how to order them.
 \item The Accommodator resolves the environment. But the resolved dependencies are not source text that a person can review.
-\item Tools cannot cache or invalidate units smaller than an article.
+\item Users must list individual articles even when they want a whole topic, such as elementary group theory.
 \item Moving a theorem between articles risks breaking unknown dependents.
 \item Implicit dependencies add work to every edit, review, and tool. That cost grows with the library.
 \end{itemize}
@@ -539,6 +539,7 @@ topology = { version = "^0.9", features = ["metric"] }
 \setlength{\itemsep}{1pt}
 \setlength{\parsep}{0pt}
 \setlength{\parskip}{0pt}
+\item With \texttt{export}, a library can offer a topic such as elementary group theory through one aggregate module and a single import.
 \item reproducible builds need fixed source, lockfile, toolchain, and verifier settings, including deterministic ATP evidence;
 \item versioned reuse (SemVer) replaces manual copying between article sets.
 \end{itemize}
@@ -549,6 +550,7 @@ topology = { version = "^0.9", features = ["metric"] }
 \setlength{\itemsep}{1pt}
 \setlength{\parsep}{0pt}
 \setlength{\parskip}{0pt}
+\item With \texttt{export}, a library can offer a topic such as elementary group theory through one aggregate module and a single import.
 \item reproducible builds need fixed source, lockfile, toolchain, and verifier settings, including deterministic ATP evidence;
 \item versioned reuse (SemVer) replaces manual copying between article sets.
 \end{itemize}

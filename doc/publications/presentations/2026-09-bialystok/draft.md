@@ -313,12 +313,13 @@ Speaker note:
 
 Bullets:
 
-- Information about a symbol's origin is spread across several role lists.
-  A reviewer cannot see which article provides which notation, constructor,
-  or cluster.
+- Article order matters in environment lists such as `notations` and
+  `definitions`. Authors must understand not only which articles to include,
+  but also how to order them.
 - The Accommodator resolves the environment. But the resolved dependencies
   are not source text that a person can review.
-- Tools cannot cache or invalidate units smaller than an article.
+- Users must list individual articles even when they want a whole topic,
+  such as elementary group theory.
 - Moving a theorem between articles risks breaking unknown dependents.
 
 Message:
@@ -364,6 +365,7 @@ topology = { version = "^0.9", features = ["metric"] }
 
 Bullets:
 
+- With `export`, a library can offer a topic such as elementary group theory through one aggregate module and a single import.
 - reproducible builds need fixed source, lockfile, toolchain, and verifier
   settings, including deterministic ATP evidence;
 - versioned reuse (SemVer) replaces manual copying between article sets.
