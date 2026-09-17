@@ -728,8 +728,8 @@ IR264. **Authenticated structure-property definition owner.** [x]
 41. **Missing scheme/theorem-role-dependent Core slices.** [blocked]
     - Reserved under Gate S1 until canonical parser/syntax/resolver ownership
       names the roles; checker 277/Core 38 do not synthesize them.
-42. **Algorithm header, locals, assignment, and `Pick` CoreIr.** [ ]
-43. **Algorithm structured conditional, while, and jump CoreIr.** [ ]
+42. **Algorithm header, locals, assignment, and `Pick` CoreIr.** [~]
+43. **Algorithm structured conditional, while, and jump CoreIr.** [~]
 44. **Range and collection loop CoreIr.** [ ]
 45. **Match pattern, capture, and exhaustiveness CoreIr.** [ ]
 46. **Algorithm contract, call-request, recursion, and termination metadata.** [ ]
@@ -739,12 +739,13 @@ IR264. **Authenticated structure-property definition owner.** [x]
       each paired with `MT10-CIR-ALG`. Actual call/result substitution, VCs,
       promotion, MVM, extraction, and guessed parser/resolver identities are
       forbidden.
-48. **Basic source-derived ControlFlowIr.** [ ]
+48. **Basic source-derived ControlFlowIr.** [~]
 49. **Range and collection-loop CFG attachment.** [ ]
 50. **Match CFG attachment.** [ ]
 51. **Snapshot and claim flow state.** [ ]
 52. **Contract, call, ghost, and termination CFG attachment.** [ ]
-53. **Complete source-derived flow diagnostics.** [ ]
+53. **Complete source-derived flow diagnostics.** [~]
+    - [Step 5C.14](../../task_contracts/en/STEP5C14-ALGORITHM-SEMANTICS.md) owns only bounded header/local/return/break lowering and static break/ghost observations; the complete families and CFG snapshot baseline remain deferred.
     - Tasks 48-53 are separate phase-10 tasks paired with `MT10-CFG-PV`.
       Task 48 adds `SnapshotKind::ControlFlowIr` only with its first real
       baseline. Concrete substitution/VCs, public-code invention, proof/artifact

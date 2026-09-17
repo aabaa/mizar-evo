@@ -401,6 +401,7 @@ enum ControlFlowDiagnosticKind {
     UnsupportedLocalDeclaration,
     IllegalBreak,
     IllegalContinue,
+    GhostIsolationViolation { local: LocalId, var: CoreVarId },
     Phase9Error,
     FlowDiagnostic,
 }
@@ -513,8 +514,8 @@ diagnostic catalog is:
 - malformed or missing algorithm statement carried from phase 9;
 - unsupported aliasing/lvalue metadata.
 
-Assignment to immutable parameter/const locals, ghost leakage into runtime
-state, call/contract instantiation errors, unsupported pattern payloads,
+Assignment to immutable parameter/const locals, ghost leakage at sinks beyond runtime
+initializers/returns (including assignments, conditions and calls), call/contract instantiation errors, unsupported pattern payloads,
 snapshot/claim payloads, and alias/lvalue precision require checker-owned
 target/payload metadata that the current `CoreAlgorithmStmtKind` and `CorePlace`
 surface do not expose. They remain deferred and must not be inferred from source
@@ -600,9 +601,9 @@ current variants.
 
 [source_family_decomposition.md](./source_family_decomposition.md) assigns
 separate Core Tasks 48-53 to basic CFGs, range/collection loops, match,
-snapshot/claim state, semantic attachment, and diagnostics. The first real CFG
+snapshot/claim state, semantic attachment, and diagnostics. The first source-derived CFG snapshot
 task must add `SnapshotKind::ControlFlowIr` with its first real baseline in the
-same commit. Phase 10 carries substitution-request metadata but never creates
+same commit; diagnostic-only observations do not claim that baseline. Phase 10 carries substitution-request metadata but never creates
 or applies call/result substitutions or VCs.
 
 ## Validation And Tests
@@ -665,3 +666,7 @@ Task 18 tests must cover:
 
 Spec-only task 14 is verified by bilingual documentation review and diff
 checks. Rust implementation and tests are deferred to tasks 15-18.
+
+## Source static algorithm observations
+
+Source Let/Return/Break statements use existing CFG construction and `IllegalBreak`. `GhostIsolationViolation { local, var }` records actual ghost dependencies of runtime initializers and returns, with deterministic statement/use provenance; existing recursive term-use collection supplies those identities. Ghost initializers may read runtime or ghost values. Check static sinks even when unreachable; the later `UnreachableStatement` after illegal break remains a collateral diagnostic. This bounded path creates no obligation or VC and does not claim assignment/condition/call ghost checks or the complete diagnostic family.

@@ -629,6 +629,7 @@ pub enum ControlFlowDiagnosticKind {
     Phase9Error,
     UnreachableStatement { block: BasicBlockId },
     UseBeforeAssignment { local: LocalId, var: CoreVarId },
+    GhostIsolationViolation { local: LocalId, var: CoreVarId },
     FlowDiagnostic,
 }
 
@@ -1463,6 +1464,29 @@ impl<'a> FlowBuilder<'a> {
                 ))
             }
             CoreAlgorithmStmtKind::Return(value) => {
+                if let Some(value) = value {
+                    let mut uses = Vec::new();
+                    self.collect_term_uses(*value, &BTreeSet::new(), &mut uses);
+                    for usage in uses {
+                        if self
+                            .flow
+                            .locals
+                            .get(usage.local)
+                            .is_some_and(|local| local.ghost)
+                        {
+                            self.add_diagnostic(ControlFlowDiagnostic {
+                                kind: ControlFlowDiagnosticKind::GhostIsolationViolation {
+                                    local: usage.local,
+                                    var: usage.var,
+                                },
+                                algorithm: self.algorithm_id,
+                                statement: Some(statement_id),
+                                source: usage.source,
+                                carried_core_diagnostic: None,
+                            });
+                        }
+                    }
+                }
                 if cursor.reachable == Reachability::Reachable
                     && let Some(value) = value
                 {
@@ -1580,6 +1604,29 @@ impl<'a> FlowBuilder<'a> {
                 source: binder.source.clone(),
                 carried_core_diagnostic: None,
             });
+        }
+        if !local_ghost && let Some(value) = value {
+            let mut uses = Vec::new();
+            self.collect_term_uses(value, &BTreeSet::new(), &mut uses);
+            for usage in uses {
+                if self
+                    .flow
+                    .locals
+                    .get(usage.local)
+                    .is_some_and(|local| local.ghost)
+                {
+                    self.add_diagnostic(ControlFlowDiagnostic {
+                        kind: ControlFlowDiagnosticKind::GhostIsolationViolation {
+                            local: usage.local,
+                            var: usage.var,
+                        },
+                        algorithm: self.algorithm_id,
+                        statement: Some(statement_id),
+                        source: usage.source,
+                        carried_core_diagnostic: None,
+                    });
+                }
+            }
         }
         if cursor.reachable == Reachability::Reachable
             && let Some(value) = value
@@ -2888,7 +2935,8 @@ const fn diagnostic_class_rank(kind: &ControlFlowDiagnosticKind) -> u8 {
         ControlFlowDiagnosticKind::Phase9Error => 3,
         ControlFlowDiagnosticKind::UnreachableStatement { .. } => 4,
         ControlFlowDiagnosticKind::UseBeforeAssignment { .. } => 5,
-        ControlFlowDiagnosticKind::FlowDiagnostic => 6,
+        ControlFlowDiagnosticKind::GhostIsolationViolation { .. } => 6,
+        ControlFlowDiagnosticKind::FlowDiagnostic => 7,
     }
 }
 
@@ -6030,6 +6078,129 @@ mod tests {
             ControlFlowTerminator::Return(None)
         ));
         assert!(flow.diagnostics.is_empty());
+    }
+
+    #[test]
+    fn control_flow_rejects_ghost_dependencies_at_runtime_sinks_even_unreachable() {
+        for return_sink in [false, true] {
+            for unreachable in [false, true] {
+                let mut fixture = CoreFixture::new();
+                let parameter = fixture.binder(0, "parameter", 1);
+                let parameter_use = fixture.term_var(0, 11);
+                let ghost = fixture.stmt(
+                    CoreAlgorithmStmtKind::Let {
+                        binder: fixture.binder(1, "local:var", 10),
+                        value: Some(parameter_use),
+                        ghost: true,
+                    },
+                    12,
+                );
+                let ghost_use = fixture.term_var(1, 22);
+                let tuple = fixture.term(CoreTermKind::Tuple(vec![ghost_use]), 23);
+                let selection = fixture.term(
+                    CoreTermKind::Select {
+                        selector: symbol("field"),
+                        base: tuple,
+                    },
+                    24,
+                );
+                let nested = fixture.term(
+                    CoreTermKind::Apply {
+                        functor: symbol("wrap"),
+                        args: vec![selection],
+                    },
+                    25,
+                );
+                let mut statements = vec![ghost];
+                if unreachable {
+                    statements.push(fixture.stmt(CoreAlgorithmStmtKind::Break, 15));
+                }
+                let sink = fixture.stmt(
+                    if return_sink {
+                        CoreAlgorithmStmtKind::Return(Some(nested))
+                    } else {
+                        CoreAlgorithmStmtKind::Let {
+                            binder: fixture.binder(2, "local:var", 21),
+                            value: Some(nested),
+                            ghost: false,
+                        }
+                    },
+                    26,
+                );
+                statements.push(sink);
+                let core = fixture.finish(vec![parameter], None, statements);
+                let output = build_control_flow_ir(&core);
+                assert_eq!(output, build_control_flow_ir(&core));
+                let flow = only_flow(&output);
+                let violations = flow
+                    .diagnostics
+                    .iter()
+                    .filter_map(|(_, diagnostic)| {
+                        matches!(
+                            diagnostic.kind,
+                            ControlFlowDiagnosticKind::GhostIsolationViolation { .. }
+                        )
+                        .then_some(diagnostic)
+                    })
+                    .collect::<Vec<_>>();
+                let [violation] = violations.as_slice() else {
+                    panic!("one ghost dependency expected");
+                };
+                let ControlFlowDiagnosticKind::GhostIsolationViolation { local, var } =
+                    violation.kind
+                else {
+                    unreachable!()
+                };
+                assert_eq!(var, CoreVarId::new(1));
+                assert!(flow.locals.get(local).unwrap().ghost);
+                assert_eq!(flow.locals.get(local).unwrap().binder.var, var);
+                assert_eq!(violation.statement, Some(sink));
+                assert_eq!(
+                    violation.source,
+                    core.terms().get(ghost_use).unwrap().source
+                );
+                assert_eq!(
+                    flow.diagnostics
+                        .iter()
+                        .filter(|(_, diagnostic)| matches!(
+                            diagnostic.kind,
+                            ControlFlowDiagnosticKind::IllegalBreak
+                        ))
+                        .count(),
+                    usize::from(unreachable)
+                );
+                assert_eq!(flow.diagnostics.len(), if unreachable { 3 } else { 1 });
+            }
+        }
+    }
+
+    #[test]
+    fn control_flow_allows_runtime_and_ghost_reads_at_ghost_initializers() {
+        let mut fixture = CoreFixture::new();
+        let parameter = fixture.binder(0, "parameter", 1);
+        let parameter_use = fixture.term_var(0, 11);
+        let first = fixture.stmt(
+            CoreAlgorithmStmtKind::Let {
+                binder: fixture.binder(1, "local:var", 10),
+                value: Some(parameter_use),
+                ghost: true,
+            },
+            12,
+        );
+        let ghost_use = fixture.term_var(1, 21);
+        let second = fixture.stmt(
+            CoreAlgorithmStmtKind::Let {
+                binder: fixture.binder(2, "local:var", 20),
+                value: Some(ghost_use),
+                ghost: true,
+            },
+            22,
+        );
+        let returned = fixture.stmt(CoreAlgorithmStmtKind::Return(Some(parameter_use)), 30);
+        let core = fixture.finish(vec![parameter], None, vec![first, second, returned]);
+        let output = build_control_flow_ir(&core);
+        assert!(only_flow(&output).diagnostics.is_empty());
+        assert!(core.obligation_seeds().is_empty());
     }
 
     #[test]

@@ -14778,6 +14778,320 @@ pub fn lower_source_functorial_registration(
     .map_err(|error| error.to_string())
 }
 
+/// Lowers checker-authenticated flat object algorithms into existing Core statements.
+pub fn lower_source_algorithms(
+    check: &mizar_checker::type_checker::SourceAlgorithmCheck<'_>,
+) -> Result<CoreIr, String> {
+    use mizar_checker::{
+        type_checker::{TermReference, TypeHeadRef},
+        typed_ast::TypeEntryActual,
+    };
+    let typed = check.typed();
+    let checked = check.inference();
+    let (algorithm_node, symbol) = check.algorithm();
+    let invalid = || "algorithms.core.unsupported_source".to_owned();
+    let node = |id| typed.node(id).ok_or_else(invalid);
+    let range = |id| match node(id)?.anchor {
+        SourceAnchor::Range(range) => Ok(range),
+        _ => Err(invalid()),
+    };
+    let provenance = |id: TypedNodeId| {
+        CheckerOwnedProvenance::checker(format!("algorithm/source-node#{}", id.index()))
+    };
+    let only = |id, kind: &str| -> Result<TypedNodeId, String> {
+        let children = node(id)?
+            .children
+            .iter()
+            .filter(|child| {
+                typed
+                    .node(**child)
+                    .is_some_and(|node| node.kind.as_str() == kind)
+            })
+            .copied()
+            .collect::<Vec<_>>();
+        match children.as_slice() {
+            [child] => Ok(*child),
+            _ => Err(invalid()),
+        }
+    };
+    let term_node = |id| only(only(id, "TermExpression")?, "TermReference");
+    let mut input = CoreContextInput::new(ResolvedTypedAstSummary::new(
+        checked.source_id(),
+        checked.module_id().clone(),
+    ));
+    input.item_seeds.push(
+        CoreItemSeed::new(
+            symbol.clone(),
+            CoreItemKind::Algorithm,
+            "public",
+            CoreSourceRef::direct(range(*algorithm_node)?),
+            provenance(*algorithm_node),
+        )
+        .with_definition_boundary(DefinitionBoundaryKind::Algorithm),
+    );
+    let mut terms = Vec::new();
+    let mut term_ids = BTreeMap::new();
+    let mut type_predicates = BTreeMap::new();
+    for (_, term) in checked.terms().iter() {
+        let Some(TermReference::Binding(binding)) = term.reference else {
+            return Err(invalid());
+        };
+        let TypeEntryActual::Known(ty) = checked
+            .type_entries()
+            .get(term.type_entry)
+            .ok_or_else(invalid)?
+            .actual
+        else {
+            return Err(invalid());
+        };
+        let predicate = match checked.normalized_types().get(ty).ok_or_else(invalid)?.head {
+            TypeHeadRef::BuiltinObject => "object",
+            _ => return Err(invalid()),
+        };
+        let site = term.site.node();
+        type_predicates.insert(site, predicate);
+        term_ids.insert(site, CoreTermSeedId::new(terms.len()));
+        terms.push(CoreTermSeed::new(
+            CoreTermSeedKind::Var(CoreVarId::new(binding.index())),
+            CoreSourceRef::direct(range(site)?),
+            provenance(site),
+        ));
+    }
+    let mut formulas = Vec::new();
+    let mut binders = Vec::new();
+    for (binding, entry) in check.bindings().bindings().iter() {
+        let declarations = typed
+            .iter()
+            .filter_map(|(id, node)| {
+                (node.anchor == SourceAnchor::Range(entry.declaration_range)
+                    && node.kind.as_str().starts_with("Token("))
+                .then_some(id)
+            })
+            .collect::<Vec<_>>();
+        let [declaration] = declarations.as_slice() else {
+            return Err(invalid());
+        };
+        let (role, type_site) = match entry.kind {
+            BindingKind::DefinitionParameter => {
+                let header = only(*algorithm_node, "AlgorithmParameters")?;
+                let site = node(header)?
+                    .children
+                    .iter()
+                    .find(|child| term_ids.contains_key(child))
+                    .copied()
+                    .ok_or_else(invalid)?;
+                ("parameter", site)
+            }
+            BindingKind::LetBinding => {
+                let variable = typed
+                    .iter()
+                    .find_map(|(id, node)| {
+                        (node.kind.as_str() == "VariableBinding"
+                            && node.children.first() == Some(declaration))
+                        .then_some(id)
+                    })
+                    .ok_or_else(invalid)?;
+                ("local:var", term_node(variable)?)
+            }
+            _ => return Err(invalid()),
+        };
+        let var = CoreVarId::new(binding.index());
+        let source = CoreSourceRef::direct(entry.declaration_range);
+        input.variable_seeds.push(CoreVariableSeed::new(
+            var,
+            NormalizedVarClass::Free,
+            role,
+            NormalizedVarSort::Term,
+            provenance(*declaration),
+        ));
+        input.binder_seeds.push(CoreBinderSeed::new(
+            var,
+            source.clone(),
+            provenance(*declaration),
+        ));
+        let subject = CoreTermSeedId::new(terms.len());
+        terms.push(CoreTermSeed::new(
+            CoreTermSeedKind::Var(var),
+            source.clone(),
+            provenance(*declaration),
+        ));
+        let guard = CoreFormulaSeedId::new(formulas.len());
+        formulas.push(CoreFormulaSeed::new(
+            CoreFormulaSeedKind::TypePred {
+                subject,
+                ty: CoreTypePredicate::new(*type_predicates.get(&type_site).ok_or_else(invalid)?),
+            },
+            source.clone(),
+            provenance(*declaration),
+        ));
+        binders.push((
+            *declaration,
+            guard,
+            CoreBinder {
+                var,
+                role: role.into(),
+                ty_guard: None,
+                source_name: Some(entry.spelling.clone()),
+                source,
+            },
+        ));
+    }
+    // The seal authenticates the written object result even without a return.
+    // Its implicit storage is separate from every source-declared binding.
+    let result_node = only(*algorithm_node, "TypeExpression")?;
+    let result_source = source_with_provenance(
+        CoreSourceRef::direct(range(result_node)?),
+        &provenance(result_node),
+    );
+    let result_var = CoreVarId::new(check.bindings().bindings().len());
+    let result_type = checked
+        .normalized_types()
+        .iter()
+        .find_map(|(_, ty)| (ty.head == TypeHeadRef::BuiltinObject).then_some("object"))
+        .ok_or_else(invalid)?;
+    input.variable_seeds.push(CoreVariableSeed::new(
+        result_var,
+        NormalizedVarClass::Generated,
+        "result",
+        NormalizedVarSort::Term,
+        provenance(result_node),
+    ));
+    input.binder_seeds.push(CoreBinderSeed::new(
+        result_var,
+        result_source.clone(),
+        provenance(result_node),
+    ));
+    let result_term = CoreTermSeedId::new(terms.len());
+    terms.push(CoreTermSeed::new(
+        CoreTermSeedKind::Var(result_var),
+        result_source.clone(),
+        provenance(result_node),
+    ));
+    let result_guard = CoreFormulaSeedId::new(formulas.len());
+    formulas.push(CoreFormulaSeed::new(
+        CoreFormulaSeedKind::TypePred {
+            subject: result_term,
+            ty: CoreTypePredicate::new(result_type),
+        },
+        result_source.clone(),
+        provenance(result_node),
+    ));
+    let context = prepare_core_context(input).map_err(|error| error.to_string())?;
+    let owner = context
+        .item_registry()
+        .id_for_symbol(symbol)
+        .ok_or_else(invalid)?;
+    let lowered = lower_term_and_formula_inputs(
+        &context,
+        TermAndFormulaLoweringInput {
+            owner,
+            template_type_parameter_sethoods: Vec::new(),
+            terms,
+            formulas,
+            failed_sites: Vec::new(),
+        },
+    )
+    .map_err(|error| error.to_string())?;
+    let mut params = Vec::new();
+    let mut local_binders = BTreeMap::new();
+    for (declaration, guard, mut binder) in binders {
+        binder.ty_guard = Some(lowered.formula_map[&guard]);
+        if binder.role.as_str() == "parameter" {
+            params.push(binder);
+        } else {
+            local_binders.insert(declaration, binder);
+        }
+    }
+    let statement_list = only(
+        only(*algorithm_node, "AlgorithmBody")?,
+        "AlgorithmStatementList",
+    )?;
+    let mut statements = Vec::new();
+    for statement in &node(statement_list)?.children {
+        let source = CoreSourceRef::direct(range(*statement)?);
+        let provenance = provenance(*statement);
+        statements.push(match node(*statement)?.kind.as_str() {
+            "VariableDeclaration" => {
+                let variable = only(*statement, "VariableBinding")?;
+                let declaration = node(variable)?.children.first().ok_or_else(invalid)?;
+                let ghost = node(*statement)?
+                    .children
+                    .first()
+                    .and_then(|id| typed.node(*id))
+                    .is_some_and(|node| {
+                        node.kind.as_str()
+                            == "Token(SurfaceToken { kind: ReservedWord, text: \"ghost\" })"
+                    });
+                AlgorithmStmtSeed::Let {
+                    binder: local_binders.remove(declaration).ok_or_else(invalid)?,
+                    value: Some(
+                        lowered.term_map
+                            [term_ids.get(&term_node(variable)?).ok_or_else(invalid)?],
+                    ),
+                    ghost,
+                    source,
+                    provenance,
+                }
+            }
+            "ReturnStatement" => AlgorithmStmtSeed::Return {
+                value: Some(
+                    lowered.term_map[term_ids.get(&term_node(*statement)?).ok_or_else(invalid)?],
+                ),
+                source,
+                provenance,
+            },
+            "BreakStatement" => AlgorithmStmtSeed::Break { source, provenance },
+            _ => return Err(invalid()),
+        });
+    }
+    let definitions = lower_definition_inputs(&context, &lowered, DefinitionLoweringInput::new())
+        .map_err(|error| error.to_string())?;
+    let proofs = lower_proof_inputs(&context, &lowered, &definitions, ProofLoweringInput::new())
+        .map_err(|error| error.to_string())?;
+    let algorithms = lower_algorithm_inputs(
+        &context,
+        &lowered,
+        &proofs,
+        AlgorithmLoweringInput {
+            algorithms: vec![AlgorithmSeed {
+                owner,
+                symbol: symbol.clone(),
+                params,
+                result: Some(CoreBinder {
+                    var: result_var,
+                    role: "result".into(),
+                    ty_guard: Some(lowered.formula_map[&result_guard]),
+                    source_name: None,
+                    source: result_source,
+                }),
+                contracts: CoreContractSet::default(),
+                payload: AlgorithmPayloadSeed::Statements(statements),
+                ghost_effects: Vec::new(),
+                source: CoreSourceRef::direct(range(*algorithm_node)?),
+                provenance: provenance(*algorithm_node),
+            }],
+        },
+    )
+    .map_err(|error| error.to_string())?;
+    CoreIr::try_new(CoreIrParts {
+        source_id: checked.source_id(),
+        module_id: checked.module_id().clone(),
+        items: context.item_registry().items().clone(),
+        terms: lowered.terms,
+        formulas: lowered.formulas,
+        definitions: definitions.definitions,
+        proofs: proofs.proofs,
+        proof_nodes: proofs.proof_nodes,
+        algorithms: algorithms.algorithms,
+        algorithm_statements: algorithms.algorithm_statements,
+        generated: lowered.generated,
+        obligation_seeds: proofs.obligation_seeds,
+        source_map: algorithms.source_map,
+        diagnostics: algorithms.diagnostics,
+    })
+    .map_err(|error| error.to_string())
+}
+
 /// Lowers the authenticated bounded source theorem/lemma skeleton profile.
 pub fn lower_source_theorem_skeletons(
     check: &mizar_checker::type_checker::SourceTheoremCheck<'_>,

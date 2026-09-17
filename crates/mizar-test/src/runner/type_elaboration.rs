@@ -35,8 +35,8 @@ mod type_assertion_routes;
 pub(super) use admission::{
     is_active_type_elaboration, is_step5c1_workspace_member, is_step5c2_workspace_member,
     is_step5c3_workspace_member, is_step5c4_workspace_member, is_step5c5_workspace_member,
-    is_step5c7_workspace_member, is_step5c12_candidate, step5c12_admitted,
-    validate_active_type_elaboration_tags,
+    is_step5c7_workspace_member, is_step5c12_candidate, is_step5c14_static_candidate,
+    step5c12_admitted, step5c14_static_admitted, validate_active_type_elaboration_tags,
 };
 #[cfg(test)]
 pub(super) use binary_routes::{

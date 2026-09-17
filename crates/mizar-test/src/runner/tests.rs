@@ -1640,3 +1640,570 @@ fn step5c13_checks_each_coherently_corrupted_source_callee() {
         );
     }
 }
+
+fn step5c14_static_case(name: &str) -> crate::harness::TestCase {
+    let id = format!("fail_type_elaboration_algorithm_{name}_001");
+    build_test_plan(&step5c11_config())
+        .unwrap()
+        .cases
+        .into_iter()
+        .find(|case| case.id.0 == id)
+        .unwrap()
+}
+
+fn step5c14_static_core(
+    case: &crate::harness::TestCase,
+    text: &str,
+) -> Result<mizar_core::core_ir::CoreIr, String> {
+    let (source, typed, symbols) = super::source_registration_inputs(
+        &step5c11_config().workspace_root,
+        case,
+        super::formula_statement::step5c8_test_frontend(text),
+    )?;
+    let checked =
+        mizar_checker::type_checker::check_source_algorithm_types(&source, &typed, &symbols)?;
+    mizar_core::elaborator::lower_source_algorithms(&checked)
+}
+
+#[test]
+fn step5c14_static_real_sources_preserve_checked_bindings_and_actual_cfg_errors() {
+    use mizar_checker::type_checker::{
+        TermReference, TermStatus, TypeHeadRef, check_source_algorithm_types,
+    };
+    use mizar_checker::typed_ast::TypeEntryActual;
+    use mizar_core::control_flow::{
+        ControlFlowDiagnosticKind as D, LocalMutability, build_control_flow_ir,
+    };
+    use mizar_core::core_ir::{
+        CoreAlgorithmStmtKind as S, CoreFormulaKind, CoreSourceAnchor, CoreTermKind,
+    };
+    let config = step5c11_config();
+    for name in ["break_outside_loop", "ghost_isolation"] {
+        let case = step5c14_static_case(name);
+        let text = std::fs::read_to_string(&case.source_path).unwrap();
+        let renamed = text
+            .replace("badbreak", "other_break")
+            .replace("ghostleak", "other_ghost")
+            .replace(" a ", " param ")
+            .replace("(a)", "(param)")
+            .replace(" a;", " param;")
+            .replace(" g ", " hidden ")
+            .replace(" g;", " hidden;")
+            .replace(" x ", " visible ")
+            .replace(" x;", " visible;");
+        for source_text in [&text, &renamed] {
+            let (source, typed, symbols) = super::source_registration_inputs(
+                &config.workspace_root,
+                &case,
+                super::formula_statement::step5c8_test_frontend(source_text),
+            )
+            .unwrap();
+            let checked = check_source_algorithm_types(&source, &typed, &symbols).unwrap();
+            let inference = checked.inference();
+            assert!(
+                inference.diagnostics().is_empty()
+                    && inference.facts().is_empty()
+                    && inference.candidate_sets().is_empty()
+            );
+            assert_eq!(
+                checked.bindings().bindings().len(),
+                if name == "ghost_isolation" { 3 } else { 1 }
+            );
+            assert_eq!(
+                inference.terms().len(),
+                if name == "ghost_isolation" { 4 } else { 2 }
+            );
+            for (_, term) in inference.terms().iter() {
+                assert_eq!(term.status, TermStatus::Inferred);
+                let Some(TermReference::Binding(binding)) = term.reference else {
+                    panic!("missing actual binding")
+                };
+                let entry = checked.bindings().bindings().get(binding).unwrap();
+                let mizar_session::SourceAnchor::Range(use_range) =
+                    typed.node(term.site.node()).unwrap().anchor
+                else {
+                    panic!("missing use range")
+                };
+                assert!(entry.declaration_range.end <= use_range.start);
+                let TypeEntryActual::Known(ty) = inference
+                    .type_entries()
+                    .get(term.type_entry)
+                    .unwrap()
+                    .actual
+                else {
+                    panic!("unknown type")
+                };
+                assert_eq!(
+                    inference.normalized_types().get(ty).unwrap().head,
+                    TypeHeadRef::BuiltinObject
+                );
+            }
+            let core = mizar_core::elaborator::lower_source_algorithms(&checked).unwrap();
+            assert_eq!(core, step5c14_static_core(&case, source_text).unwrap());
+            assert!(
+                core.obligation_seeds().is_empty()
+                    && core.diagnostics().is_empty()
+                    && core.proofs().is_empty()
+            );
+            let (algorithm_id, algorithm) = core.algorithms().iter().next().unwrap();
+            assert_eq!(core.algorithms().len(), 1);
+            assert_eq!(&algorithm.symbol, &checked.algorithm().1);
+            assert_eq!(algorithm.params.len(), 1);
+            let result = algorithm
+                .result
+                .as_ref()
+                .expect("preserve written return type");
+            assert_ne!(result.var, algorithm.params[0].var);
+            let CoreFormulaKind::TypePred { subject, ty } =
+                &core.formulas().get(result.ty_guard.unwrap()).unwrap().kind
+            else {
+                panic!("missing result type guard")
+            };
+            assert_eq!(ty.as_str(), "object");
+            assert_eq!(
+                core.terms().get(*subject).unwrap().kind,
+                CoreTermKind::Var(result.var)
+            );
+            let algorithm_source = source
+                .arena()
+                .node(
+                    typed
+                        .node(checked.algorithm().0)
+                        .unwrap()
+                        .resolved_node
+                        .unwrap(),
+                )
+                .unwrap();
+            let return_type = algorithm_source
+                .children()
+                .iter()
+                .copied()
+                .find(|id| {
+                    source.arena().node(*id).unwrap().kind()
+                        == &mizar_syntax::ast::SurfaceNodeKind::TypeExpression
+                })
+                .unwrap();
+            let mizar_session::SourceAnchor::Range(return_range) =
+                source.arena().node(return_type).unwrap().origin().anchor()
+            else {
+                panic!("missing written return range")
+            };
+            assert_eq!(
+                result.source.anchor,
+                CoreSourceAnchor::SourceRange(*return_range)
+            );
+            assert!(result.source.provenance.iter().any(|p| p.phase
+                == mizar_core::core_ir::CoreProvenancePhase::Checker
+                && p.key.as_str() == format!("algorithm/source-node#{}", return_type.index())));
+            assert_eq!(
+                algorithm.contracts,
+                mizar_core::core_ir::CoreContractSet::default()
+            );
+            let statements = algorithm
+                .statements
+                .iter()
+                .map(|id| (*id, core.algorithm_statements().get(*id).unwrap()))
+                .collect::<Vec<_>>();
+            let source_statements = source
+                .arena()
+                .iter()
+                .find(|(_, node)| {
+                    node.kind() == &mizar_syntax::ast::SurfaceNodeKind::AlgorithmStatementList
+                })
+                .unwrap()
+                .1
+                .children();
+            assert_eq!(statements.len(), source_statements.len());
+            for (_, statement) in &statements {
+                if let S::Let { binder, .. } = &statement.kind {
+                    assert_ne!(result.var, binder.var);
+                }
+            }
+            for ((_, statement), source_id) in statements.iter().zip(source_statements) {
+                assert_eq!(statement.owner, algorithm_id);
+                let mizar_session::SourceAnchor::Range(range) =
+                    source.arena().node(*source_id).unwrap().origin().anchor()
+                else {
+                    panic!("missing statement range")
+                };
+                assert_eq!(
+                    statement.source.anchor,
+                    CoreSourceAnchor::SourceRange(*range)
+                );
+            }
+            if name == "ghost_isolation" {
+                let S::Let {
+                    binder: g,
+                    value: Some(initial),
+                    ghost: true,
+                } = &statements[0].1.kind
+                else {
+                    panic!("missing ghost initialization")
+                };
+                let S::Let {
+                    binder: x,
+                    value: Some(read_g),
+                    ghost: false,
+                } = &statements[1].1.kind
+                else {
+                    panic!("missing runtime initialization")
+                };
+                assert_ne!(g.var, x.var);
+                assert_eq!(
+                    core.terms().get(*initial).unwrap().kind,
+                    CoreTermKind::Var(algorithm.params[0].var)
+                );
+                assert_eq!(
+                    core.terms().get(*read_g).unwrap().kind,
+                    CoreTermKind::Var(g.var)
+                );
+                let S::Return(Some(ret)) = statements[2].1.kind else {
+                    panic!("missing return")
+                };
+                assert_eq!(
+                    core.terms().get(ret).unwrap().kind,
+                    CoreTermKind::Var(x.var)
+                );
+            } else {
+                assert!(matches!(statements[0].1.kind, S::Break));
+                assert!(matches!(statements[1].1.kind, S::Return(_)));
+            }
+            let flow = build_control_flow_ir(&core);
+            assert_eq!(flow, build_control_flow_ir(&core));
+            assert_eq!(flow.flows.len(), 1);
+            let (_, flow) = flow.flows.iter().next().unwrap();
+            assert_eq!(flow.algorithm, algorithm_id);
+            assert!(
+                flow.locals
+                    .iter()
+                    .any(|(_, local)| local.binder.var == algorithm.params[0].var
+                        && local.mutability == LocalMutability::Immutable
+                        && !local.ghost)
+            );
+            if name == "ghost_isolation" {
+                let diagnostics = flow.diagnostics.iter().map(|(_, d)| d).collect::<Vec<_>>();
+                assert_eq!(diagnostics.len(), 1);
+                let D::GhostIsolationViolation { local, var } = diagnostics[0].kind else {
+                    panic!("wrong static error")
+                };
+                assert!(flow.locals.get(local).unwrap().ghost);
+                assert_eq!(var, flow.locals.get(local).unwrap().binder.var);
+                assert_eq!(diagnostics[0].statement, Some(statements[1].0));
+                let S::Let {
+                    value: Some(read), ..
+                } = statements[1].1.kind
+                else {
+                    unreachable!()
+                };
+                assert_eq!(
+                    diagnostics[0].source,
+                    core.terms().get(read).unwrap().source
+                );
+            } else {
+                assert!(
+                    flow.diagnostics
+                        .iter()
+                        .any(|(_, d)| d.kind == D::IllegalBreak
+                            && d.statement == Some(statements[0].0)
+                            && d.source == statements[0].1.source)
+                );
+                assert!(flow.diagnostics.iter().any(|(_, d)| matches!(
+                    d.kind,
+                    D::UnreachableStatement { .. }
+                ) && d.statement
+                    == Some(statements[1].0)));
+            }
+            let keys = super::type_elaboration_detail_keys(
+                &config.workspace_root,
+                &case,
+                super::formula_statement::step5c8_test_frontend(source_text),
+                &mut None,
+            );
+            assert_eq!(
+                keys,
+                vec![case.expectation.stable_detail_key.clone().unwrap()]
+            );
+        }
+    }
+}
+
+#[test]
+fn step5c14_static_ghost_checks_actual_sinks_and_preserves_shadowing() {
+    use mizar_core::control_flow::{ControlFlowDiagnosticKind as D, build_control_flow_ir};
+    use mizar_core::core_ir::{CoreAlgorithmStmtKind as S, CoreTermKind};
+    let case = step5c14_static_case("ghost_isolation");
+    let text = std::fs::read_to_string(&case.source_path).unwrap();
+    for source in [
+        text.replace("var x := g", "var x := a"),
+        text.replace("ghost var", "var"),
+        text.replace(
+            "ghost var g := a;\n    var x := g;\n    return x;",
+            "var a := a;\n    return a;",
+        ),
+    ] {
+        let core = step5c14_static_core(&case, &source).unwrap();
+        let flow = build_control_flow_ir(&core);
+        assert!(flow.flows.iter().all(|(_, f)| f.diagnostics.is_empty()));
+        assert!(core.obligation_seeds().is_empty());
+        let keys = super::type_elaboration_detail_keys(
+            &step5c11_config().workspace_root,
+            &case,
+            super::formula_statement::step5c8_test_frontend(&source),
+            &mut None,
+        );
+        assert!(keys.is_empty(), "safe source observations: {keys:?}");
+        if source.contains("var a := a") {
+            let (_, algorithm) = core.algorithms().iter().next().unwrap();
+            let S::Let {
+                binder,
+                value: Some(initial),
+                ..
+            } = &core
+                .algorithm_statements()
+                .get(algorithm.statements[0])
+                .unwrap()
+                .kind
+            else {
+                panic!("missing shadow")
+            };
+            assert_ne!(binder.var, algorithm.params[0].var);
+            assert_eq!(
+                core.terms().get(*initial).unwrap().kind,
+                CoreTermKind::Var(algorithm.params[0].var)
+            );
+            let S::Return(Some(ret)) = core
+                .algorithm_statements()
+                .get(algorithm.statements[1])
+                .unwrap()
+                .kind
+            else {
+                panic!("missing shadow return")
+            };
+            assert_eq!(
+                core.terms().get(ret).unwrap().kind,
+                CoreTermKind::Var(binder.var)
+            );
+        }
+    }
+    let repaired_case = step5c14_static_case("break_outside_loop");
+    let repaired = std::fs::read_to_string(&repaired_case.source_path)
+        .unwrap()
+        .replace("    break;\n", "");
+    assert!(
+        super::type_elaboration_detail_keys(
+            &step5c11_config().workspace_root,
+            &repaired_case,
+            super::formula_statement::step5c8_test_frontend(&repaired),
+            &mut None
+        )
+        .is_empty()
+    );
+    for source in [
+        text.replace("var x := g;\n    return x;", "return g;"),
+        text.replace("var x := g;", "return a;\n    var x := g;"),
+    ] {
+        let core = step5c14_static_core(&case, &source).unwrap();
+        assert!(build_control_flow_ir(&core).flows.iter().any(|(_, flow)| {
+            flow.diagnostics
+                .iter()
+                .any(|(_, d)| matches!(d.kind, D::GhostIsolationViolation { .. }))
+        }));
+    }
+    for (from, to) in [
+        ("ghostleak(a)", "ghostleak(g)"),
+        ("var g := a", "var g := g"),
+        ("var x := g", "var x := x"),
+        ("return x", "return absent"),
+        ("var x := g", "const x := g"),
+        ("return x;", "x := a;\n return x;"),
+        ("return x;", "while a = a do break; end; return x;"),
+        ("let a be object", "let a be set"),
+        ("-> object", "-> set"),
+    ] {
+        assert!(
+            step5c14_static_core(&case, &text.replace(from, to)).is_err(),
+            "{from}->{to}"
+        );
+        let keys = super::type_elaboration_detail_keys(
+            &step5c11_config().workspace_root,
+            &case,
+            super::formula_statement::step5c8_test_frontend(&text.replace(from, to)),
+            &mut None,
+        );
+        assert!(
+            !keys
+                .iter()
+                .any(|key| key == "algorithms.ghost.isolation_violation"
+                    || key == "algorithms.control_flow.break_outside_loop")
+        );
+    }
+}
+
+#[test]
+fn step5c14_static_seal_rejects_projection_environment_and_owner_corruption() {
+    use mizar_checker::type_checker::check_source_algorithm_types;
+    use mizar_checker::typed_ast::{NodeRecoveryState, TypedArena, TypingState};
+    use mizar_resolve::resolved_ast::SurfaceResolvedArena;
+    let case = step5c14_static_case("ghost_isolation");
+    let text = std::fs::read_to_string(&case.source_path).unwrap();
+    let frontend = super::formula_statement::step5c8_test_frontend(&text);
+    let ast = frontend.ast.clone().unwrap();
+    let (source, typed, symbols) =
+        super::source_registration_inputs(&step5c11_config().workspace_root, &case, frontend)
+            .unwrap();
+    check_source_algorithm_types(&source, &typed, &symbols).unwrap();
+    let raw = typed
+        .iter()
+        .map(|(_, node)| node.clone())
+        .collect::<Vec<_>>();
+    for mutation in 0..7 {
+        let mut nodes = raw.clone();
+        let mut root = typed.root();
+        match mutation {
+            0 => nodes[0].kind = "Unrelated".into(),
+            1 => nodes[0].resolved_node = nodes[1].resolved_node,
+            2 => nodes[0].anchor = nodes[1].anchor.clone(),
+            3 => nodes[0].recovery = NodeRecoveryState::Recovered,
+            4 => nodes[0].typing = TypingState::Successful,
+            5 => nodes.last_mut().unwrap().children.clear(),
+            6 => root = None,
+            _ => unreachable!(),
+        }
+        let changed = TypedArena::try_new(root, nodes).unwrap();
+        assert!(
+            check_source_algorithm_types(&source, &changed, &symbols).is_err(),
+            "mutation {mutation}"
+        );
+    }
+    let foreign = ResolverModuleId::new(PackageId::new("foreign"), ModulePath::new("foreign"));
+    assert!(
+        check_source_algorithm_types(
+            &SurfaceResolvedArena::lower(&ast, &foreign).unwrap(),
+            &typed,
+            &symbols
+        )
+        .is_err()
+    );
+    let changed = super::formula_statement::step5c8_test_frontend(
+        &text.replace("ghostleak", "other_algorithm"),
+    )
+    .ast
+    .unwrap();
+    let wrong =
+        super::resolver_symbol_collection(&step5c11_config().workspace_root, &case, &changed);
+    assert!(check_source_algorithm_types(&source, &typed, &wrong.env).is_err());
+    assert!(step5c14_static_core(&case, &format!("{text}\n{text}")).is_err());
+}
+
+#[test]
+fn step5c14_static_admission_is_exact_and_has_no_other_stage_credit() {
+    let config = step5c11_config();
+    let plan = build_test_plan(&config).unwrap();
+    for name in ["break_outside_loop", "ghost_isolation"] {
+        let original = step5c14_static_case(name);
+        assert!(super::step5c14_static_admitted(
+            Some(&config.workspace_root),
+            &original
+        ));
+        for mutation in 0..15 {
+            let mut case = original.clone();
+            match mutation {
+                0 => case.id.0.push_str("_extra"),
+                1 => case.expectation.id.0.push_str("_extra"),
+                2 => case.source_path = case.source_path.with_file_name("wrong.miz"),
+                3 => {
+                    case.expectation_path =
+                        case.expectation_path.with_file_name("wrong.expect.toml")
+                }
+                4 => case.expectation.source = PathBuf::from("wrong.miz"),
+                5 => case.expectation.stage = crate::staged_model::Stage::ProofVerification,
+                6 => {
+                    case.expectation.expected_phase =
+                        Some(crate::expectation::PipelinePhase::TypeCheck)
+                }
+                7 => case.expectation.expected_outcome = crate::expectation::ExpectedOutcome::Pass,
+                8 => case.expectation.tags.clear(),
+                9 => case.expectation.tags.push("extra".into()),
+                10 => case.expectation.diagnostic_codes.push("E-UNRELATED".into()),
+                11 => case.expectation.stable_detail_key = Some("wrong.key".into()),
+                12 => case.expectation.kind = crate::expectation::TestKind::Pass,
+                13 => case.expectation.rejection_reason = Some("wrong.reason".into()),
+                14 => case.expectation.failure_category = None,
+                _ => unreachable!(),
+            }
+            assert!(
+                !super::step5c14_static_admitted(Some(&config.workspace_root), &case),
+                "mutation {mutation}"
+            );
+        }
+        for (stage, phase, tag) in [
+            (
+                crate::staged_model::Stage::ParseOnly,
+                crate::expectation::PipelinePhase::Parse,
+                "active_parse_only",
+            ),
+            (
+                crate::staged_model::Stage::DeclarationSymbol,
+                crate::expectation::PipelinePhase::Resolve,
+                "active_declaration_symbol",
+            ),
+            (
+                crate::staged_model::Stage::FormulaStatement,
+                crate::expectation::PipelinePhase::StatementCheck,
+                "active_formula_statement",
+            ),
+            (
+                crate::staged_model::Stage::AdvancedSemantics,
+                crate::expectation::PipelinePhase::ClusterResolution,
+                "active_advanced_semantics",
+            ),
+            (
+                crate::staged_model::Stage::ProofVerification,
+                crate::expectation::PipelinePhase::VcGeneration,
+                "active_proof_verification",
+            ),
+        ] {
+            for alias in [false, true] {
+                let mut case = original.clone();
+                case.expectation.stage = stage;
+                case.expectation.expected_phase = Some(phase);
+                case.expectation.tags = vec![tag.into()];
+                if alias {
+                    case.id.0 = "unrelated".into();
+                    case.source_path = case.source_path.with_file_name("unrelated.miz");
+                    case.expectation_path = case
+                        .expectation_path
+                        .with_file_name("unrelated.expect.toml");
+                }
+                assert!(!super::is_active_parse_only(&case));
+                assert!(!super::is_active_declaration_symbol(&case));
+                assert!(!super::is_active_type_elaboration(&case));
+                assert!(!super::formula_statement::is_active_formula_statement(
+                    &config.workspace_root,
+                    &case
+                ));
+                assert!(!super::is_active_proof_verification(&case));
+                assert!(!super::step5c11_registration_admitted(
+                    &config.workspace_root,
+                    &case
+                ));
+                assert!(!super::step5c13_overload_admitted(
+                    &config.workspace_root,
+                    &case
+                ));
+            }
+        }
+        let mut missing = plan.clone();
+        missing.cases.retain(|case| case.id != original.id);
+        let mut duplicate = plan.clone();
+        duplicate.cases.push(original);
+        for invalid in [missing, duplicate] {
+            assert!(
+                super::validate_active_type_elaboration_tags(&config.workspace_root, &invalid)
+                    .iter()
+                    .any(|d| d.code.0 == "E-TYPE-ELABORATION-STEP5C14-INVENTORY")
+            );
+        }
+    }
+    assert!(super::validate_active_type_elaboration_tags(&config.workspace_root, &plan).is_empty());
+}

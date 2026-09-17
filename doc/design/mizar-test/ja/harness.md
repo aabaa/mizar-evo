@@ -5702,3 +5702,7 @@ proof-local label projection は本 bridge の対象外とし、name lookup 前�
 ## Distinct-loci overload admission
 
 advanced-semantics runner は異なる引数型の overload 正常系の厳密な行だけを `overload_resolution` で追加受理する。ID、ソース・sidecar パス、stage、phase、pass 結果、空の診断・キーペイロード、唯一の active tag を認証する。曖昧性の行と別 stage の別名は予約し、無効のまま維持する。実際の resolved source、symbol environment、typed projection を checker へ渡して既存出力を観測し、候補の型検査・選択・承認は行わない。対応行の欠落・重複、メタデータ・phase の不一致は受理せず、従来 registration 経路の要件を保持する。
+
+## Static algorithm admission
+
+algorithm の break-outside-loop と ghost-isolation の厳密な行は type_elaboration/elaboration でソース検査、封印 Core lowering、CFG 診断を実行する。ID、ソース・sidecar パス、fail 結果・分類・キー、唯一の active tag、空の診断・payload・snapshot 欄を認証し、別 stage や別名での実績を許さない。実際の `IllegalBreak`／`GhostIsolationViolation` だけを対応する固定キーへ写し、不正 break 後の到達不能文は付随診断とする。未対応ソース、handoff 不正、その他の診断は基盤エラーに留め、obligation・VC を生成しない。

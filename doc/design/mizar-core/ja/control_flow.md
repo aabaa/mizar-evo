@@ -370,6 +370,7 @@ enum ControlFlowDiagnosticKind {
     UnsupportedLocalDeclaration,
     IllegalBreak,
     IllegalContinue,
+    GhostIsolationViolation { local: LocalId, var: CoreVarId },
     Phase9Error,
     FlowDiagnostic,
 }
@@ -466,7 +467,7 @@ structural diagnostic をすでに emit している。より広い diagnostic c
 - phase 9 から持ち越された malformed / missing algorithm statement。
 - unsupported aliasing / lvalue metadata。
 
-immutable parameter / const local への assignment、ghost value の runtime state への流入、
+immutable parameter / const local への assignment、runtime 初期化子・return 以外（代入・条件・呼出しを含む）への ghost value の流入、
 call / contract instantiation error、unsupported pattern payload、snapshot / claim payload、
 alias / lvalue precision は、現在の `CoreAlgorithmStmtKind` と `CorePlace` surface が公開していない
 checker-owned target / payload metadata を必要とする。これらは deferred のままであり、source spelling から
@@ -546,8 +547,8 @@ diagnostic category を下流 crate の exhaustive match を壊さずに追加�
 
 [source_family_decomposition.md](./source_family_decomposition.md) はbasic CFG、
 range/collection loop、match、snapshot/claim state、semantic attachment、diagnosticを
-別々のCore Tasks 48-53へ割り当てる。最初のreal CFG taskは最初のreal baselineと
-同じcommitで`SnapshotKind::ControlFlowIr`を追加する。Phase 10はsubstitution-request
+別々のCore Tasks 48-53へ割り当てる。最初のsource-derived CFG snapshot taskは最初のreal baselineと
+同じcommitで`SnapshotKind::ControlFlowIr`を追加する。診断のみの観測はそのbaselineの実績としない。Phase 10はsubstitution-request
 metadataを搬送するが、call/result substitutionやVCを生成/適用しない。
 
 ## validation と test
@@ -605,3 +606,7 @@ task 18 の test は次を覆う。
 
 spec-only task 14 は bilingual documentation review と diff check で検証する。Rust 実装と test は
 task 15-18 に deferred する。
+
+## Source static algorithm observations
+
+ソースの Let/Return/Break は既存 CFG 構築と `IllegalBreak` を使用する。`GhostIsolationViolation { local, var }` は runtime 初期化子と return の実際の ghost 依存を、決定的な statement/use 由来とともに記録し、既存の再帰的な項使用収集から同一性を得る。ghost 初期化子は runtime/ghost 値を読める。到達不能でも静的な参照先を検査し、不正 break 後の `UnreachableStatement` は付随診断として保持する。この限定経路は obligation・VC を作らず、代入・条件・呼出しの ghost 検査や診断群全体の完了を主張しない。

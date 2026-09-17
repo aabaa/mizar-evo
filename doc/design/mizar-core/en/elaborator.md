@@ -1025,3 +1025,7 @@ definition, route, acceptance, fact, or coverage credit is created.
 - eagerly inline every definition;
 - assign `VcId`s, build CFGs, run proof search, mark proof acceptance, call the
   kernel, emit artifact schemas, or invent cache/proof reuse anchors.
+
+## Static source algorithm lowering
+
+`lower_source_algorithms(&SourceAlgorithmCheck) -> Result<CoreIr, String>` consumes only the checker-sealed static profile. It maps checked binding identities and terms to existing Core variables, terms, algorithm items and Let/Return/Break seeds, preserving parameter immutability, the written return type through a distinct implicit result binder, ghost/runtime roles, real initializer references, source ownership and all statements, including those after break. Existing lowering and Core validation produce the source maps and empty obligation table. No raw SymbolEnv, unresolved syntax, invented variable identity, contract/state substitution, proof or terminating promotion enters this boundary.

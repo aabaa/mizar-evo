@@ -728,10 +728,11 @@ use type_elaboration::{
     expected_type_elaboration_detail_keys, extract_builtin_source_reserve_declarations,
     is_active_type_elaboration, is_step5c1_workspace_member, is_step5c2_workspace_member,
     is_step5c3_workspace_member, is_step5c4_workspace_member, is_step5c5_workspace_member,
-    is_step5c7_workspace_member, is_step5c12_candidate, source_application_transport_detail_keys,
-    source_atomic_formula_transport_detail_keys, source_attribute_definition_transport_detail_keys,
-    source_attribute_detail_keys, source_attribute_semantics_detail_keys,
-    source_binding_context_detail_keys, source_builtin_binary_term_formula_detail_keys,
+    is_step5c7_workspace_member, is_step5c12_candidate, is_step5c14_static_candidate,
+    source_application_transport_detail_keys, source_atomic_formula_transport_detail_keys,
+    source_attribute_definition_transport_detail_keys, source_attribute_detail_keys,
+    source_attribute_semantics_detail_keys, source_binding_context_detail_keys,
+    source_builtin_binary_term_formula_detail_keys,
     source_builtin_type_assertion_formula_detail_keys,
     source_chained_local_mode_asserted_head_detail_keys,
     source_chained_local_mode_radix_asserted_head_detail_keys,
@@ -867,8 +868,8 @@ use type_elaboration::{
     source_two_edge_local_object_mode_two_hop_asserted_head_detail_keys,
     source_type_application_detail_keys, step5c5_functor_duplicate_detail_keys,
     step5c5_functor_semantics_detail_keys, step5c5_predicate_semantics_detail_keys,
-    step5c7_term_detail_keys, step5c12_admitted, type_elaboration_failure_diagnostic,
-    validate_active_type_elaboration_tags,
+    step5c7_term_detail_keys, step5c12_admitted, step5c14_static_admitted,
+    type_elaboration_failure_diagnostic, validate_active_type_elaboration_tags,
 };
 
 const ACTIVE_PARSE_ONLY_TAG: &str = "active_parse_only";
@@ -2282,7 +2283,8 @@ pub fn active_proof_verification_cases(plan: &TestPlan) -> impl Iterator<Item = 
 }
 
 fn is_active_parse_only(case: &TestCase) -> bool {
-    if is_step5c13_overload_candidate(case)
+    if is_step5c14_static_candidate(case)
+        || is_step5c13_overload_candidate(case)
         || is_step5c12_candidate(case)
         || is_step5c11_registration_candidate(case)
         || proof_verification::is_step5c11_proof_candidate(case)
@@ -2327,7 +2329,8 @@ fn is_active_parse_only(case: &TestCase) -> bool {
 }
 
 fn is_active_declaration_symbol(case: &TestCase) -> bool {
-    if is_step5c13_overload_candidate(case)
+    if is_step5c14_static_candidate(case)
+        || is_step5c13_overload_candidate(case)
         || is_step5c12_candidate(case)
         || is_step5c11_registration_candidate(case)
         || proof_verification::is_step5c11_proof_candidate(case)
@@ -2626,6 +2629,37 @@ fn type_elaboration_detail_keys(
             .into_iter()
             .map(|key| format!("type_elaboration.lower_stage.{key}"))
             .collect();
+    }
+
+    if is_step5c14_static_candidate(case) {
+        if !step5c14_static_admitted(Some(workspace_root), case) {
+            return vec!["algorithms.invalid_static_admission".into()];
+        }
+        let checked = source_registration_inputs(workspace_root, case, output).and_then(|(source, typed, symbols)| {
+            let checked = mizar_checker::type_checker::check_source_algorithm_types(&source, &typed, &symbols)?;
+            let core = mizar_core::elaborator::lower_source_algorithms(&checked)?;
+            if !core.obligation_seeds().is_empty() || !core.diagnostics().is_empty() { return Err("algorithms.unexpected_static_core_output".into()); }
+            let flow = mizar_core::control_flow::build_control_flow_ir(&core);
+            let mut keys = std::collections::BTreeSet::new();
+            for (_, algorithm) in flow.flows.iter() {
+                use mizar_core::control_flow::ControlFlowDiagnosticKind as D;
+                use mizar_core::core_ir::CoreSourceAnchor;
+                let break_end = algorithm.diagnostics.iter().filter_map(|(_, diagnostic)| {
+                    if diagnostic.kind != D::IllegalBreak { return None; }
+                    match diagnostic.source.anchor { CoreSourceAnchor::SourceRange(range) => Some(range.end), _ => None }
+                }).min();
+                for (_, diagnostic) in algorithm.diagnostics.iter() {
+                    match diagnostic.kind {
+                        D::IllegalBreak => { keys.insert("algorithms.control_flow.break_outside_loop".to_owned()); }
+                        D::GhostIsolationViolation { .. } => { keys.insert("algorithms.ghost.isolation_violation".to_owned()); }
+                        D::UnreachableStatement { .. } if matches!(diagnostic.source.anchor, CoreSourceAnchor::SourceRange(range) if break_end.is_some_and(|end| end <= range.start)) => (),
+                        _ => return Err("algorithms.unexpected_static_diagnostic".into()),
+                    }
+                }
+            }
+            Ok(keys.into_iter().collect())
+        });
+        return checked.unwrap_or_else(|error| vec![format!("algorithms.static_intake.{error}")]);
     }
 
     let source_text = output.source_text;

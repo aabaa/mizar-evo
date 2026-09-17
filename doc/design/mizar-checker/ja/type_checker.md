@@ -2965,3 +2965,7 @@ binding identity で簡約し、recursive inline definition は cycle guard で 
 
 `check_source_distinct_loci_overloads(&SurfaceResolvedArena, &SymbolEnv, &TypedArena)` は既存の `(TypeNormalizationOutput, OverloadCollectionOutput, TemplateExpansionOutput, CandidateViabilityOutput, SpecificityGraphOutput, OverloadSelectionOutput)` を `Result<_, String>` として返す。ソース・環境・typed arena の完全な対応を認証し、通常の仮引数と定理・証明の束縛を解決し、set の恒等定義と構造体 selector の定義を検査し、全シグネチャと実引数型を同じ表で正規化する。定義だけを構造体 checker に渡して実際のメンバー同一性を認証する。source intake が必須フィールドの builtin set 型を確認して §17.3.4 の constructor-witness 規則を適用する。変数シンボルや承認済み登録を捏造しない。
 ソースの両呼出しで可視な両 ordinary root を収集し、既存 overload 段階を変更せず消費する。実引数型で適合性を判断し、選択された宣言から結果型を導く。定理の期待型や引用は root を選択しない。未対応 profile、属性付き実引数、template、再定義、曖昧性入力を拒否し、証明・登録承認・view・Core/VC の実績を与えない。明示ペイロード境界と構文 import 制限を維持する。テストは全既存出力、両 root と呼出し、構造体引数による別 root 選択、改名、所有者・束縛・メンバー・型・順序の変異、完全な由来を検査する。
+
+## Static source algorithm checking
+
+`check_source_algorithm_types(&SurfaceResolvedArena, &TypedArena, &SymbolEnv)` は借用型の opaque `SourceAlgorithmCheck` を返す。ソース・環境・中立 typed 表の完全な対応と実際の algorithm 所有者を認証し、既存 `BindingEnv` と項推論で object 仮引数、順序付き初期化 var/ghost-var、変数 return、break を検査する。実際の宣言・使用同一性、局所変数の推論型、期待 return 型とソース順序を保持する。封印結果は既存の不変 typed・binding・inference・owner データのみを runner/Core に渡し、生の resolver 権限は渡さない。契約、代入、loop、const、snapshot/claim、呼出し、リテラルは拒否し、証明・全域性・登録承認を与えない。

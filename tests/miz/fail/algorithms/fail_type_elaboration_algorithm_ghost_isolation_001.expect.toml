@@ -9,7 +9,8 @@ expected_phase = "elaboration"
 failure_category = "type_error"
 stable_detail_key = "algorithms.ghost.isolation_violation"
 diagnostic_codes = []
+tags = ["active_type_elaboration"]
 spec_refs = [
   "spec.en.20.algorithms.ghost.isolation_static",
 ]
-notes = "Audit-1 semantic-bridge inactive oracle seed (September 2026 audit wave): binding expectation for the Step-5 semantic bridge; no active runner tag, earns no current credit. Real state may not depend on ghost state; initializing a real var from a ghost var violates static ghost isolation (spec 20.6; Core ghost-isolation boundary)."
+notes = "Source algorithm checking and Core/CFG reject the runtime initializer dependency on a ghost local (spec 20.1.3 and 20.13.5), without obligations or VCs."

@@ -6261,3 +6261,7 @@ The type-elaboration runner admits only the exact unbounded type-parameter funct
 ## Distinct-loci overload admission
 
 The advanced-semantics runner additionally admits only the exact positive distinct-loci overload row at `overload_resolution`. It authenticates IDs, source/sidecar paths, stage, phase, pass outcome, empty diagnostic/key payloads and the sole active tag; the ambiguity row and cross-stage aliases remain reserved and inactive. The harness passes real resolved source, symbol environment and typed projection to the checker and observes existing outputs. It performs no candidate typing, selection or acceptance. Missing/duplicate mapped rows and all metadata/phase drift fail admission; prior registration routes retain their own requirements.
+
+## Static algorithm admission
+
+The exact break-outside-loop and ghost-isolation algorithm rows execute source checking, sealed Core lowering and CFG diagnostics at type_elaboration/elaboration. Admission authenticates IDs, source/sidecar paths, fail outcome/category/key, sole active tag and empty diagnostic/payload/snapshot fields; other stages and aliases cannot claim these rows. Only actual `IllegalBreak` or `GhostIsolationViolation` maps to the corresponding frozen key; an unreachable statement after illegal break is collateral. Unsupported source, handoff failures and other diagnostics remain infrastructure failures. The runner emits no obligations or VCs.

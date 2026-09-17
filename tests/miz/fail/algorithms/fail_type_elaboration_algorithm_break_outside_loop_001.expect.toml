@@ -9,7 +9,8 @@ expected_phase = "elaboration"
 failure_category = "type_error"
 stable_detail_key = "algorithms.control_flow.break_outside_loop"
 diagnostic_codes = []
+tags = ["active_type_elaboration"]
 spec_refs = [
   "spec.en.20.algorithms.control_flow.loop_scope",
 ]
-notes = "Audit-1 semantic-bridge inactive oracle seed (September 2026 audit wave): binding expectation for the Step-5 semantic bridge; no active runner tag, earns no current credit. break is only legal inside a loop body; a top-level break in an algorithm body is a static control-flow error (spec 20.2)."
+notes = "Source algorithm checking and Core/CFG report the real out-of-loop break at elaboration (spec 20.2.6), without obligations or VCs."

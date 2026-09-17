@@ -74,6 +74,64 @@ pub(in crate::runner) fn step5c12_admitted(root: Option<&Path>, case: &TestCase)
         && case.expectation.tags.as_slice() == [ACTIVE_TYPE_ELABORATION_TAG]
 }
 
+const STEP5C14_STATIC_CASES: [(&str, &str); 2] = [
+    (
+        "fail_type_elaboration_algorithm_break_outside_loop_001",
+        "algorithms.control_flow.break_outside_loop",
+    ),
+    (
+        "fail_type_elaboration_algorithm_ghost_isolation_001",
+        "algorithms.ghost.isolation_violation",
+    ),
+];
+
+pub(in crate::runner) fn is_step5c14_static_candidate(case: &TestCase) -> bool {
+    STEP5C14_STATIC_CASES.iter().any(|(id, _)| {
+        case.id.0 == *id
+            || case.expectation.id.0 == *id
+            || case.source_path.file_stem().is_some_and(|stem| stem == *id)
+            || case
+                .expectation_path
+                .file_name()
+                .is_some_and(|name| name == format!("{id}.expect.toml").as_str())
+    })
+}
+
+pub(in crate::runner) fn step5c14_static_admitted(root: Option<&Path>, case: &TestCase) -> bool {
+    let Some((id, key)) = STEP5C14_STATIC_CASES
+        .iter()
+        .find(|(id, _)| case.id.0 == *id)
+    else {
+        return false;
+    };
+    let path = format!("tests/miz/fail/algorithms/{id}.miz");
+    let exact_path = |actual: &Path, expected: &Path| match root {
+        Some(root) => {
+            workspace_relative_source(root, actual).is_some_and(|path| Path::new(&path) == expected)
+        }
+        None => actual.ends_with(expected),
+    };
+    case.expectation.id == case.id
+        && exact_path(&case.source_path, Path::new(&path))
+        && exact_path(
+            &case.expectation_path,
+            &Path::new(&path).with_extension("expect.toml"),
+        )
+        && case.expectation.source == Path::new(&path).file_name().unwrap()
+        && case.expectation.kind == crate::expectation::TestKind::Fail
+        && case.expectation.stage == Stage::TypeElaboration
+        && case.expectation.expected_phase == Some(PipelinePhase::Elaboration)
+        && case.expectation.expected_outcome == ExpectedOutcome::Fail
+        && case.expectation.failure_category.as_deref() == Some("type_error")
+        && case.expectation.stable_detail_key.as_deref() == Some(*key)
+        && case.expectation.rejection_reason.is_none()
+        && case.expectation.diagnostic_codes.is_empty()
+        && case.expectation.diagnostic_payloads.is_empty()
+        && case.expectation.declaration_symbol_payloads.is_empty()
+        && case.expectation.snapshots.is_none()
+        && case.expectation.tags.as_slice() == [ACTIVE_TYPE_ELABORATION_TAG]
+}
+
 const STEP5C5_CASES: [(&str, &str, PipelinePhase, ExpectedOutcome); 7] = [
     (
         "fail_type_elaboration_pred_property_arity_mismatch_001",
@@ -356,6 +414,9 @@ const STEP5C2_STRUCTURE_CASES: [(&str, &str, PipelinePhase, ExpectedOutcome); 12
 ];
 
 pub(in crate::runner) fn is_active_type_elaboration(case: &TestCase) -> bool {
+    if is_step5c14_static_candidate(case) {
+        return step5c14_static_admitted(None, case);
+    }
     if is_step5c12_candidate(case) {
         return step5c12_admitted(None, case);
     }
@@ -429,6 +490,7 @@ pub(in crate::runner) fn validate_active_type_elaboration_tags(
     let mut diagnostics = Vec::new();
     for case in plan.cases.iter().filter(|case| {
         has_active_type_elaboration_tag(case)
+            || is_step5c14_static_candidate(case)
             || STEP5C12_IDS[..3].iter().any(|id| case.id.0 == *id)
             || is_step5c1_id(case)
             || is_step5c2_id(case)
@@ -440,6 +502,8 @@ pub(in crate::runner) fn validate_active_type_elaboration_tags(
             || is_step5c3_g1_id(case) && has_active_type_elaboration_tag(case)
     }) {
         if !is_active_type_elaboration(case)
+            || is_step5c14_static_candidate(case)
+                && !step5c14_static_admitted(Some(workspace_root), case)
             || is_step5c12_candidate(case) && !step5c12_admitted(Some(workspace_root), case)
             || is_step5c1_id(case) && !is_step5c1_workspace_member(workspace_root, case)
             || is_step5c2_id(case) && !is_step5c2_workspace_member(workspace_root, case)
@@ -550,6 +614,31 @@ pub(in crate::runner) fn validate_active_type_elaboration_tags(
                     workspace_root, "type_elaboration", "E-TYPE-ELABORATION-STEP5C12-INVENTORY",
                     format!("type_elaboration.step5c12_inventory.{id}"),
                     "each unbounded template row must have exactly one admitted source/sidecar pair",
+                ));
+            }
+        }
+    }
+    if workspace_root
+        .join("tests/coverage/step5_activation_map.tsv")
+        .is_file()
+        || plan.cases.iter().any(is_step5c14_static_candidate)
+    {
+        for (id, _) in STEP5C14_STATIC_CASES {
+            if plan
+                .cases
+                .iter()
+                .filter(|case| {
+                    case.id.0 == id && step5c14_static_admitted(Some(workspace_root), case)
+                })
+                .count()
+                != 1
+            {
+                diagnostics.push(ValidationDiagnostic::error(
+                    workspace_root,
+                    "type_elaboration",
+                    "E-TYPE-ELABORATION-STEP5C14-INVENTORY",
+                    format!("type_elaboration.step5c14_inventory.{id}"),
+                    "each static algorithm row must have exactly one admitted source/sidecar pair",
                 ));
             }
         }
