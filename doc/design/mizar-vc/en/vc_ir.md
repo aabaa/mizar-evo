@@ -580,3 +580,12 @@ exhaustive.
 `VcProgramValue { var: CoreVarId, definition: Option<CoreAlgorithmStmtId> }` identifies an immutable parameter with None or a value after its actual declaration/write with Some; the generator validates owner, destination, source order and definition-before-use against Core.
 `ProgramEquals` and `ProgramTypePredicate` store these values and actual checked predicates; AlgorithmStateFact distinguishes declaration/write context from AlgorithmAssertion goals. Core remains immutable, and unknown Core payload keeps truth, fingerprints and reuse conservative.
 `ContextEntryKind::PendingAlgorithmAssertion { handoff }` links a later assumption to the exact earlier assertion goal through One seed accounting; validation rejects wrong owners, goals, self-dependencies and cycles. It remains an unresolved proof dependency, never a direct/false accepted premise or reusable evidence.
+
+## Builtin choice accounting
+
+`SeedNoVcReason::BuiltinSetInhabitation { origin: GeneratedOriginId }` is the [source
+generator](./generator.md#source-existential-registration-proof) accounting case, not
+skipped/deferred work or Discharged evidence. VcSet structural validation requires an Active ExistingCore
+seed origin; only full Core regeneration can authenticate the referenced generated origin and real
+seed goal. Generic consumers must not derive truth or acceptance from this caller-constructible
+value.

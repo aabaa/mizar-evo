@@ -646,3 +646,20 @@ existing guard-fact referenceをverifyしてsnapshotをtransportするが、gate
 evaluatorをcallせずregistration statusを変更しない。supplied transportは
 activated registration、satisfied gate、accepted fact、artifact resultではない。
 Task 274とexternal accepted-status authorityはblocked-reservedのままである。
+
+## Source existential-registration proof
+
+`check_source_existential_registration_proof(&SurfaceResolvedArena, &TypedArena, &SymbolEnv) ->
+Result<SourceRegistrationCheck, String>` は全 source/environment・中立 typed projection、先行 local set
+属性定義、実 take/属性引用による存在証明と改名を照合する。recovery・無関係な resolver error を拒否し、後続 consumer は活性化しない。実 formal
+の等式/否定等式は型検査のみ行う。
+
+seal は既存 RegistrationValidationInput・SourceSetTermHandoff・評価済み ExistentialGateOutput を
+validations()/choice_terms()/choice_gates() で公開し、旧 profile の choice record は空とする。中立 node/推論には実
+request と正規化 pattern がない。両 bare `the set` の ChoiceNonempty/ResultType、type
+site/range、Satisfied/BuiltinSet/Builtin を照合し、属性・型引数・view・自由引数・仮定・diagnostic・受理済み登録を認めない。独立 gate
+は対象登録を使わず、ActivationInput は生成しない。
+
+Task251 transport と pending intake は維持する。限定受理対応は [proof
+status](../../mizar-proof/ja/status.md#source-existential-registration-proof) が所有し、汎用
+Task274/artifact import は保留する。

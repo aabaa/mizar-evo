@@ -62,6 +62,7 @@ matching crate or module-level boundary comment:
 
 | Public API group | Spec coverage | Test coverage | Result |
 |---|---|---|---|
+| `prove_source_existential_registration` | [Fresh source-owned association](./status.md#source-existential-registration-proof), including both normal kernel checks and same-environment local activation. | Real-source, foreign-input, choice/accounting, substitution and kernel/policy-rejection controls. | implemented; widening and artifact publication remain deferred |
 | `ObligationAnchor`, `ProofObligationIdentity`, `ExplanationRef` | Stable obligation identity and explanation references in `status.md`. | Empty identity checks, projection fixtures, and reuse metadata tests. | consistent |
 | `TrustedUsedAxiomsRef`, `TrustedUsedAxiomsError` | Trusted `used_axioms` boundary in `status.md`. | Accepted proof-obligation kernel result constructor, non-accepted/policy-tainted/consistency-check rejection, missing/mismatched evidence hash, and non-trusted status rejection tests. | consistent |
 | `ProofStatusProjectionInput`, `project_status`, `ProofStatusProjection`, `StatusProjectionError` | Projection inputs, stale/mismatched input rejection, and final projection shape in `status.md`. | Projection class fixtures, policy-fingerprint mismatch, trusted-axiom validation, and explanation/diagnostic metadata tests. | consistent |

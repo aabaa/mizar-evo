@@ -48,6 +48,13 @@ spec-ref/tag metadata と補助 payload 不在を照合し、予約した同一�
 汎用 MissingEvidence/NoMatch、無関係な error では negative を満たせない。
 既存 attribute route と C13 strict profile を維持し、accepted registration や証明を生成しない。
 
+独立 source-registration 前提工程では、不変の C3 widening 全 source を Rust integration test から [proof
+status](../../mizar-proof/ja/status.md#source-existential-registration-proof) に渡し、テスト専用 `mizar-kernel` 依存で通常証拠を独立検査する。完全な Core/VC と 両
+handoff baseline は元の親目標、二つの open leaf、明示的 builtin nonempty accounting を保持し、実 kernel/policy 検査から一致する
+module-local 登録だけを生成する。widening sidecar・trace/map・stage・既存八 outcome
+は変更しない。改名、source/seal・citation・負の定義・choice/gate/owner/accounting の改変、kernel/policy 拒否、source-order
+visibility を検査し、偽 Accepted fixture で positive credit を作らない。
+
 ## Parser Task 46 operator-declaration parse-only increment
 
 exact pass/fail pairはordinary parse-only runnerへadmitする。pass sidecarはdiagnostic 0、

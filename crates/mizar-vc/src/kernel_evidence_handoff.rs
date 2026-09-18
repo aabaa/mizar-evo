@@ -960,6 +960,239 @@ pub enum KernelEvidenceRole {
     Substitution,
 }
 
+/// Replays the complete source registration VC graph before projecting normal kernel evidence.
+pub fn build_source_existential_kernel_handoff(
+    core: &mizar_core::core_ir::CoreIr,
+    vc_set: &VcSet,
+    vc_id: VcId,
+) -> Result<VcKernelEvidenceHandoff, String> {
+    use crate::vc_ir::VcGeneratedFormulaShape;
+    use mizar_core::core_ir::{CoreFormulaKind, CoreTermKind};
+    let invalid = || "registration.handoff.invalid_projection".to_owned();
+    let vc = vc_set.vc(vc_id).ok_or_else(invalid)?;
+    let replay = crate::generator::generate_source_existential_registration(
+        core,
+        vc_set.snapshot(),
+        &vc.anchor.generation_schema_version,
+        vc_set.schema_version(),
+    )?;
+    if &replay != vc_set {
+        return Err(invalid());
+    }
+    let (_, definition) = core.definitions().iter().next().ok_or_else(invalid)?;
+    let (_, origin) = core.generated().iter().next().ok_or_else(invalid)?;
+    let functor = origin.functor.as_ref().ok_or_else(invalid)?;
+    let formal = definition.params.first().ok_or_else(invalid)?;
+    // Numeric kernel names are projections of complete symbol identities, never arena IDs.
+    let identity = |key: &str| {
+        let hash = stable_fingerprint_hash("source-registration-kernel-symbol", key.as_bytes());
+        u32::from_be_bytes(hash.as_bytes()[..4].try_into().expect("four digest bytes"))
+    };
+    let keys = [
+        (1u8, format!("attribute:{:?}", definition.symbol)),
+        (2, format!("choice:{functor:?}")),
+        (3, "builtin:equality".to_owned()),
+        (4, "builtin:set".to_owned()),
+    ];
+    let symbols = keys
+        .iter()
+        .map(|(kind, key)| (*kind, identity(key)))
+        .collect::<BTreeMap<_, _>>();
+    if symbols.values().copied().collect::<BTreeSet<_>>().len() != symbols.len() {
+        return Err(invalid());
+    }
+    let variable = identity(&format!("definition-formal:{:?}:0", definition.symbol));
+    let symbol_manifest = symbols
+        .iter()
+        .enumerate()
+        .map(|(index, (kind, id))| {
+            let mut payload = vec![*kind];
+            payload.extend(id.to_be_bytes());
+            KernelManifestEntry {
+                entry_id: index as u32,
+                payload,
+            }
+        })
+        .collect::<Vec<_>>();
+    let variable_manifest = vec![KernelManifestEntry {
+        entry_id: 0,
+        payload: variable.to_be_bytes().to_vec(),
+    }];
+    let frame = |tag: u8, subtype: u8, payload: Vec<u8>| {
+        let mut bytes = vec![tag, subtype];
+        bytes.extend((payload.len() as u32).to_be_bytes());
+        bytes.extend(payload);
+        bytes
+    };
+    let mut term_payloads = BTreeMap::new();
+    for (id, term) in core.terms().iter() {
+        let (tag, payload) = match &term.kind {
+            CoreTermKind::Var(var) if *var == formal.var => (1, variable.to_be_bytes().to_vec()),
+            CoreTermKind::Apply {
+                functor: actual,
+                args,
+            } if actual == functor && args.is_empty() => {
+                let mut payload = vec![2];
+                payload.extend(symbols[&2].to_be_bytes());
+                payload.extend(0u32.to_be_bytes());
+                (2, payload)
+            }
+            _ => continue,
+        };
+        let mut wire = vec![tag];
+        wire.extend(&payload);
+        term_payloads.insert(id, (wire, frame(1, tag, payload)));
+    }
+    let mut projections = BTreeMap::new();
+    for (id, formula) in core.formulas().iter() {
+        let (kind, args) = match &formula.kind {
+            CoreFormulaKind::Atom { predicate, args } if predicate == &definition.symbol => {
+                (1, args.clone())
+            }
+            CoreFormulaKind::Equals { left, right } => (3, vec![*left, *right]),
+            CoreFormulaKind::TypePred { subject, ty } if ty.as_str() == "builtin.set" => {
+                (4, vec![*subject])
+            }
+            _ => continue,
+        };
+        if args.iter().any(|arg| !term_payloads.contains_key(arg)) {
+            continue;
+        }
+        let mut wire_atom = vec![kind];
+        wire_atom.extend(symbols[&kind].to_be_bytes());
+        wire_atom.extend((args.len() as u32).to_be_bytes());
+        wire_atom.extend((args.len() as u32).to_be_bytes());
+        let mut canonical_atom = wire_atom.clone();
+        for arg in args {
+            wire_atom.extend(&term_payloads[&arg].0);
+            canonical_atom.extend(&term_payloads[&arg].1);
+        }
+        let mut wire = vec![1];
+        wire.extend(wire_atom);
+        projections.insert(
+            VcFormulaRef::Core(id),
+            (wire, frame(11, 1, frame(2, kind, canonical_atom))),
+        );
+    }
+    // Core's only non-atomic leaf body is the actual optional negative definition.
+    for (id, formula) in core.formulas().iter() {
+        if let CoreFormulaKind::Not(child) = formula.kind {
+            let (wire, canonical) = projections
+                .get(&VcFormulaRef::Core(child))
+                .ok_or_else(invalid)?;
+            let mut negated = vec![2];
+            negated.extend(wire);
+            projections.insert(
+                VcFormulaRef::Core(id),
+                (negated, frame(11, 2, canonical.clone())),
+            );
+        }
+    }
+    for formula in vc_set.generated_formulas() {
+        let pair = match &formula.shape {
+            VcGeneratedFormulaShape::Ref(reference) => {
+                projections.get(reference).ok_or_else(invalid)?.clone()
+            }
+            VcGeneratedFormulaShape::Not(reference) => {
+                let (wire, canonical) = projections.get(reference).ok_or_else(invalid)?;
+                let mut negated = vec![2];
+                negated.extend(wire);
+                (negated, frame(11, 2, canonical.clone()))
+            }
+            VcGeneratedFormulaShape::And(children) | VcGeneratedFormulaShape::Or(children) => {
+                let tag = if matches!(formula.shape, VcGeneratedFormulaShape::And(_)) {
+                    3
+                } else {
+                    4
+                };
+                let mut wire = vec![tag];
+                wire.extend((children.len() as u32).to_be_bytes());
+                let mut canonical = (children.len() as u32).to_be_bytes().to_vec();
+                for child in children {
+                    let pair = projections.get(child).ok_or_else(invalid)?;
+                    wire.extend(&pair.0);
+                    canonical.extend(&pair.1);
+                }
+                (wire, frame(11, tag, canonical))
+            }
+            _ => return Err(invalid()),
+        };
+        projections.insert(VcFormulaRef::Generated(formula.id), pair);
+    }
+    let provenance = format!(
+        "source={:?};module={:?};definition={definition:?};origin={origin:?};accounting={:?}",
+        core.source_id(),
+        core.module_id(),
+        vc_set.seed_accounting()
+    )
+    .into_bytes();
+    let formula_payloads = projections
+        .into_iter()
+        .map(|(formula, (wire, canonical))| {
+            let mut fingerprint = b"MIZAR_KERNEL_FORMULA\0".to_vec();
+            fingerprint.extend(canonical);
+            KernelFormulaPayload {
+                formula_ref: formula,
+                projection: KernelFormulaProjection {
+                    formula_fingerprint: KernelEvidenceFingerprint {
+                        algorithm_id: KERNEL_FORMULA_FINGERPRINT_ALGORITHM_ID,
+                        digest: fingerprint,
+                    },
+                    formula_bytes: wire,
+                    provenance_payload: provenance.clone(),
+                },
+            }
+        })
+        .collect::<Vec<_>>();
+    let mut substitutions = Vec::new();
+    if vc_id.index() == 1 {
+        let source_formula = match vc.premises.last() {
+            Some(PremiseRef::GeneratedFact { formula }) => *formula,
+            _ => return Err(invalid()),
+        };
+        let witness = core
+            .terms()
+            .iter()
+            .find_map(|(id, term)| matches!(term.kind, CoreTermKind::Apply { .. }).then_some(id))
+            .ok_or_else(invalid)?;
+        let mut binder = 1u16.to_be_bytes().to_vec();
+        binder.extend(0u32.to_be_bytes());
+        binder.extend(1u32.to_be_bytes());
+        binder.extend(variable.to_be_bytes());
+        binder.extend(0u32.to_be_bytes());
+        let mut payload = 0u32.to_be_bytes().to_vec();
+        payload.push(1);
+        payload.extend(0u32.to_be_bytes()); // Root formula substitution has no term rewrite path.
+        payload.extend(1u32.to_be_bytes());
+        payload.extend(variable.to_be_bytes());
+        payload.extend(&term_payloads[&witness].0);
+        payload.push(1);
+        substitutions.push(KernelSubstitutionPayload {
+            substitution_id: 0,
+            source_formula,
+            binder_context_encoding: binder,
+            payload,
+            freshness_witnesses: Vec::new(),
+            free_variable_constraints: Vec::new(),
+            provenance_payload: provenance,
+        });
+    }
+    build_kernel_evidence_handoff(KernelEvidenceHandoffInput {
+        vc_set,
+        vc: vc_id,
+        goal_polarity: KernelGoalPolarity::AssertFalseForRefutation,
+        kernel_profile: KernelEvidenceProfile::v1(1, KernelClauseTautologyPolicy::Reject),
+        symbol_manifest: &symbol_manifest,
+        variable_manifest: &variable_manifest,
+        formula_payloads: &formula_payloads,
+        imported_formula_payloads: &[],
+        substitutions: &substitutions,
+        formula_context: None,
+        discharge_output: None,
+    })
+    .map_err(|e| e.to_string())
+}
+
 pub fn build_kernel_evidence_handoff(
     input: KernelEvidenceHandoffInput<'_>,
 ) -> Result<VcKernelEvidenceHandoff, KernelEvidenceHandoffError> {

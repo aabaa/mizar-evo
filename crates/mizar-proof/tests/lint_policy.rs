@@ -99,13 +99,17 @@ fn proof_manifest_dependency_boundary_is_task_one_minimal() {
             vec![
                 "mizar-artifact = { path = \"../mizar-artifact\" }",
                 "mizar-atp = { path = \"../mizar-atp\" }",
+                "mizar-checker = { path = \"../mizar-checker\" }",
+                "mizar-core = { path = \"../mizar-core\" }",
                 "mizar-kernel = { path = \"../mizar-kernel\" }",
+                "mizar-resolve = { path = \"../mizar-resolve\" }",
                 "mizar-session = { path = \"../mizar-session\" }",
                 "mizar-vc = { path = \"../mizar-vc\" }",
             ],
         )],
         "{} must keep task-1 production dependencies limited to mizar-session, \
-         mizar-kernel, mizar-vc, mizar-atp, and mizar-artifact; \
+         mizar-kernel, mizar-vc, mizar-atp, mizar-artifact, and the source-registration \
+         owners mizar-resolve, mizar-checker, and mizar-core; \
          dev/build/target dependency sections require a later explicit task",
         manifest_path.display()
     );

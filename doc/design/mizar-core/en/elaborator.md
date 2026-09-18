@@ -1031,3 +1031,21 @@ definition, route, acceptance, fact, or coverage credit is created.
 ## Static source algorithm lowering
 
 `lower_source_algorithms(&SourceAlgorithmCheck) -> Result<CoreIr, String>` consumes the sealed static or flat object-state profile. It preserves actual parameter/local/result identities, written return type, var/const/ghost roles, initializers, statement order and checker provenance through existing lowering. Direct-variable writes become typed AssignLocal seeds from the checked destination BindingId; the target belongs to the same algorithm, and opaque CorePlace strings do not encode binding identity. Source-owned formula maps place only header equalities in CoreContractSet.ensures and each body assertion in its own Assert seed. Prefix-negated equality lowers to existing Equals then Not(child), retaining both checked formula identities, parent edge, ranges and provenance; Assert references the outer formula. The contract result binding maps to the existing distinct implicit result slot. Source maps and empty Core obligation tables remain unchanged boundaries; CFG owns placement and static assignment diagnostics, while VC owns value versions and concrete formulas. No raw resolver authority, accepted algorithm fact or terminating promotion is introduced.
+
+## Source existential-registration proof
+
+`lower_source_existential_registration(&SourceRegistrationCheck) -> Result<CoreIr, String>` consumes
+the [checker
+seal](../../mizar-checker/en/registration_resolution.md#source-existential-registration-proof).
+Preserve the original attributed Exists goal and guarded definition; transport its authenticated source citation as the canonical `Label("definition:<attribute FQN>")` in the Step and Terminal, not as a proof Symbol.
+Definition formal, existential binder and choice identity are distinct. The separate active
+GeneratedNonEmptiness seed has exactly `Exists z. is_set(z)`, a fresh local binder and no extra
+conjunct or premise.
+
+One proof-owned StableChoice origin has the actual normalized bare-set key, generated functor and
+zero params. Both written occurrences are applications of that functor with empty args and their
+distinct actual ranges; never replace the choice by empty set. Existing
+CurrentGoal/Step/Sequence/TerminalGoal and typed CoreNodeRefs connect both seeds, origin, terms,
+type step and cited terminal. Validate complete formula/term/source maps, order, reachability and
+owners; provenance text is no gate receipt. No Take DTO, raw environment, repeated checker
+evaluation or accepted status.

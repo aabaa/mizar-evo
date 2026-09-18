@@ -559,3 +559,15 @@ exhaustive match を壊さず追加できるよう、各 enum は `#[non_exhaust
 ## Bounded void-claim generation
 
 `generate_source_void_claim(&CoreIr, BuildSnapshotId, &GenerationSchemaVersion, &VcSchemaVersion) -> Result<VcSet, String>` は先行する仮引数なし void algorithm の bare return、claim を source とする theorem seed、型付き algorithm 依存、実際の全称命題と proof-local 汎化・目標を認証する。空 interface は実行変数 binder や状態前提を追加しない。新鮮な CFG/handoff と既存 intake/normalization により open theorem-proof VC 一つと正直な終了メタデータ accounting を生成する。VC は ExistingCore seed 依存と theorem・terminal・algorithm の関連 source を保持し、所有者不整合、wrapper・依存の欠落、空でない実行 interface、不完全な source/map を拒否する。実行・定理受理・再利用適格性・Task274 証拠を推測せず、状態・snapshot claim は保留する。
+
+## Source existential-registration proof
+
+`generate_source_existential_registration(&CoreIr, BuildSnapshotId, &GenerationSchemaVersion,
+&VcSchemaVersion) -> Result<VcSet, String>` は全 [Core
+profile](../../mizar-core/ja/elaborator.md#source-existential-registration-proof)、正規定義ラベルと実定義・逆参照・ガード・本体・source の対応を検証する。ラベルだけを前提・証拠とせず、kernel の定義置換を引き続き要求する。元の登録 seed を実
+capture-safe 束縛置換に従い、証人型と属性本体の二つの open leaf へ順序付き Expanded で結ぶ。
+
+この source operation だけが別の active nonempty seed を NoConcreteVc(BuiltinSetInhabitation { origin })
+に対応させ、実 Exists-set 目標と行を保持する。汎用 intake は active goal を VC 候補のままとする。独立 base inhabitation により choice
+型事実を生成し、属性目標を仮定しない。seed/term/formula/leaf/source map/owner の不足・余剰を拒否し、公開 reason/ID や provenance text
+を受理証拠にしない。

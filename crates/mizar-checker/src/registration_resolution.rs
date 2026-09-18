@@ -53,6 +53,9 @@ pub struct SourceRegistrationCheck<'a> {
     inference: TermFormulaInferenceOutput,
     bindings: BindingEnv,
     owners: Vec<(TypedNodeId, SymbolId, &'static str)>,
+    validations: Vec<RegistrationValidationInput>,
+    choice_terms: Option<crate::source_set_term::SourceSetTermHandoff>,
+    choice_gates: Option<ExistentialGateOutput>,
 }
 
 impl SourceRegistrationCheck<'_> {
@@ -76,6 +79,18 @@ impl SourceRegistrationCheck<'_> {
         &self.owners
     }
 
+    pub fn validations(&self) -> &[RegistrationValidationInput] {
+        &self.validations
+    }
+
+    pub const fn choice_terms(&self) -> Option<&crate::source_set_term::SourceSetTermHandoff> {
+        self.choice_terms.as_ref()
+    }
+
+    pub const fn choice_gates(&self) -> Option<&ExistentialGateOutput> {
+        self.choice_gates.as_ref()
+    }
+
     pub fn into_outputs(self) -> (RegistrationDatabase, TermFormulaInferenceOutput) {
         (self.database, self.inference)
     }
@@ -87,6 +102,24 @@ pub fn check_source_registration_intake<'a>(
     source: &SurfaceResolvedArena,
     nodes: &'a TypedArena,
     symbols: &SymbolEnv,
+) -> Result<SourceRegistrationCheck<'a>, String> {
+    check_source_registration_profile(source, nodes, symbols, false)
+}
+
+/// Authenticates the local attributed-set existence proof and its independent choices.
+pub fn check_source_existential_registration_proof<'a>(
+    source: &SurfaceResolvedArena,
+    nodes: &'a TypedArena,
+    symbols: &SymbolEnv,
+) -> Result<SourceRegistrationCheck<'a>, String> {
+    check_source_registration_profile(source, nodes, symbols, true)
+}
+
+fn check_source_registration_profile<'a>(
+    source: &SurfaceResolvedArena,
+    nodes: &'a TypedArena,
+    symbols: &SymbolEnv,
+    source_proof: bool,
 ) -> Result<SourceRegistrationCheck<'a>, String> {
     let invalid = || "registration.source_intake_invalid".to_owned();
     mizar_resolve::symbols::validate_source_symbol_env(source, symbols)?;
@@ -140,11 +173,137 @@ pub fn check_source_registration_intake<'a>(
         visible_bindings: Vec::new(),
         recovery: BindingContextRecovery::Normal,
     });
-    // Walk only top-level blocks. Proof contents remain owned by the future verifier.
+    if source_proof {
+        // Replay names throughout the source, including consumers not elaborated below.
+        let mut projections = Vec::new();
+        let mut labels = Vec::new();
+        for (id, node) in source.arena().iter() {
+            let (pattern, kind) = match node.kind() {
+                K::AttributeDefinition => (K::AttributePattern, SymbolKind::Attribute),
+                K::FunctorDefinition => (K::FunctorPattern, SymbolKind::Functor),
+                _ => continue,
+            };
+            let pattern = intake.only(id, &pattern)?;
+            let name = *intake.children(pattern).first().ok_or_else(invalid)?;
+            let entry = symbols
+                .symbols()
+                .iter()
+                .find(|entry| {
+                    entry.kind() == kind && entry.origin().anchor() == node.origin().anchor()
+                })
+                .ok_or_else(invalid)?;
+            let [_, label, colon, ..] = intake.children(id) else {
+                return Err(invalid());
+            };
+            if !matches!(intake.node(*label).kind(), K::Token(token) if token.kind == SurfaceTokenKind::Identifier)
+                || intake.text(*colon)? != ":"
+            {
+                return Err(invalid());
+            }
+            labels.push((intake.text(*label)?, id));
+            projections.push(NameSymbolProjection::current_module(
+                entry.symbol().clone(),
+                entry.namespace().clone(),
+                intake.text(name)?,
+                kind,
+                entry.visibility(),
+                intake.range(id),
+                intake.range(id).end,
+            ));
+        }
+        let namespace = NamespacePath::new(source.module().path().as_str());
+        for (id, node) in source.arena().iter() {
+            match node.kind() {
+                K::TermReference => {
+                    let [token] = intake.children(id) else {
+                        return Err(invalid());
+                    };
+                    mizar_resolve::names::resolve_template_formal(source, *token)?;
+                }
+                K::FunctorPattern => {
+                    let [_, locus] = intake.children(id) else {
+                        return Err(invalid());
+                    };
+                    mizar_resolve::names::resolve_template_formal(source, *locus)?;
+                }
+                K::PrefixExpression(_) | K::AttributeRef => {
+                    let (token, expected) = match node.kind() {
+                        K::PrefixExpression(operator) => {
+                            let [token, _] = intake.children(id) else {
+                                return Err(invalid());
+                            };
+                            if intake.text(*token)? != operator.spelling.as_ref() {
+                                return Err(invalid());
+                            }
+                            (*token, SymbolKind::Functor)
+                        }
+                        _ => {
+                            let qualified = intake.only(id, &K::QualifiedSymbol)?;
+                            let path = intake.only(qualified, &K::PathSegment)?;
+                            let [token] = intake.children(path) else {
+                                return Err(invalid());
+                            };
+                            if intake.children(id) != [qualified]
+                                || intake.children(qualified) != [path]
+                            {
+                                return Err(invalid());
+                            }
+                            (*token, SymbolKind::Attribute)
+                        }
+                    };
+                    let candidate = NameReferenceCandidate::unqualified(
+                        ReferenceSite::new(token, intake.range(token), intake.text(token)?),
+                        intake.node(token).origin().clone(),
+                        intake.range(token).start,
+                    );
+                    let resolution = SymbolNameResolver::new(&projections, &[]).resolve(
+                        source.module(),
+                        &namespace,
+                        &[candidate],
+                    );
+                    if !matches!(resolution.table().iter().next().map(|(_, entry)| entry.resolution()),
+                        Some(NameResolution::Resolved(reference)) if symbols.symbols().get(reference.symbol()).is_some_and(|entry| entry.kind() == expected))
+                    {
+                        return Err(invalid());
+                    }
+                }
+                K::Reference => {
+                    let [token] = intake.children(id) else {
+                        return Err(invalid());
+                    };
+                    if !matches!(intake.node(*token).kind(), K::Token(token) if token.kind == SurfaceTokenKind::Identifier)
+                    {
+                        return Err(invalid());
+                    }
+                    let spelling = intake.text(*token)?;
+                    let candidates = labels
+                        .iter()
+                        .filter(|(label, _)| *label == spelling)
+                        .map(|(_, definition)| *definition)
+                        .collect::<Vec<_>>();
+                    let [label] = candidates.as_slice() else {
+                        return Err(invalid());
+                    };
+                    if intake.range(*label).end > intake.range(id).start {
+                        return Err(invalid());
+                    }
+                }
+                K::TypeHead => {
+                    intake.set_type(id)?;
+                }
+                K::PredicateHead => return Err(invalid()),
+                _ => (),
+            }
+        }
+    }
+    // Pending intake does not execute proofs; the source profile checks its own proof below.
     let unit = intake.only(source.arena().root(), &K::CompilationUnit)?;
     let items = intake.only(unit, &K::ItemList)?;
     let mut registrations = Vec::new();
     for block in intake.children(items).to_vec() {
+        if source_proof && !registrations.is_empty() {
+            continue;
+        }
         let definition = match intake.node(block).kind() {
             K::DefinitionBlockItem => true,
             K::RegistrationBlockItem => false,
@@ -159,8 +318,12 @@ pub fn check_source_registration_intake<'a>(
                 return Err(invalid());
             }
             match intake.node(child).kind() {
-                K::DefinitionParameter if definition => intake.parameter(block, child)?,
-                K::RegistrationParameter if !definition => intake.parameter(block, child)?,
+                K::DefinitionParameter if definition => {
+                    intake.parameter(block, child, source_proof)?
+                }
+                K::RegistrationParameter if !definition => {
+                    intake.parameter(block, child, source_proof)?
+                }
                 K::AttributeDefinition | K::FunctorDefinition if definition => {
                     intake.definition(child)?;
                     last_definition = Some(child);
@@ -416,6 +579,11 @@ pub fn check_source_registration_intake<'a>(
             .with_referenced_symbols(referenced),
         );
     }
+    let choice_input = if source_proof {
+        Some(intake.existential_proof(&validations)?)
+    } else {
+        None
+    };
     let binding_env = BindingEnv::try_new(BindingEnvParts {
         source_id: source.source_id(),
         module_id: source.module().clone(),
@@ -466,7 +634,8 @@ pub fn check_source_registration_intake<'a>(
     {
         return Err(invalid());
     }
-    let database = RegistrationDatabase::from_symbol_env_with_validation(symbols, validations, []);
+    let database =
+        RegistrationDatabase::from_symbol_env_with_validation(symbols, validations.clone(), []);
     if !database.activated().is_empty()
         || !database.rejected().is_empty()
         || !database.diagnostics().is_empty()
@@ -475,8 +644,90 @@ pub fn check_source_registration_intake<'a>(
     {
         return Err(invalid());
     }
+    let (choice_terms, choice_gates) = if let Some(input) = choice_input {
+        use crate::source_term::{SourcePrimaryTermHandoffInput, SourcePrimaryTermProducer};
+        let mut projected = nodes
+            .iter()
+            .map(|(_, node)| node.clone())
+            .collect::<Vec<_>>();
+        for term in &input.terms {
+            projected[term.site.node().index()].kind = "source.term.set.choice".into();
+        }
+        for ty in &input.type_sites {
+            projected[ty.site.node().index()].kind = "source.term.set.target-type".into();
+            projected[ty.head_site.node().index()].kind = "source.term.set.target-type-head".into();
+        }
+        let projected = TypedArena::try_new(nodes.root(), projected).map_err(|_| invalid())?;
+        let primary = SourcePrimaryTermProducer::build(
+            SourcePrimaryTermHandoffInput {
+                source_id: source.source_id(),
+                module_id: source.module().clone(),
+                terms: Vec::new(),
+                references: Vec::new(),
+                numeric_type_requests: Vec::new(),
+            },
+            &binding_env,
+            &projected,
+        )
+        .map_err(|_| invalid())?;
+        let choice = crate::source_set_term::SourceSetTermProducer::build(
+            input,
+            &binding_env,
+            &primary,
+            None,
+            None,
+            &projected,
+        )
+        .map_err(|_| invalid())?;
+        let gates = ExistentialGateOutput::evaluate(
+            &database,
+            choice.terms().iter().map(|(_, term)| {
+                ExistentialGateInput::new(
+                    term.site().clone(),
+                    term.source_range(),
+                    "builtin.set",
+                    "builtin.set",
+                    [],
+                )
+                .with_base_evidence(ExistentialGateBaseEvidence::new(
+                    ExistentialGateBaseEvidenceKind::BuiltinSet,
+                    "builtin.set",
+                    ExistentialGateBaseEvidenceCoverage::Builtin,
+                ))
+            }),
+        );
+        if gates.len() != 2
+            || !gates.diagnostics().is_empty()
+            || gates.iter().any(|gate| {
+                gate.status() != ExistentialGateStatus::Satisfied
+                    || gate.registration().is_some()
+                    || gate.base_evidence_kind()
+                        != Some(ExistentialGateBaseEvidenceKind::BuiltinSet)
+                    || gate.base_evidence_coverage()
+                        != Some(ExistentialGateBaseEvidenceCoverage::Builtin)
+                    || !gate.facts().is_empty()
+                    || !gate.diagnostics().is_empty()
+            })
+        {
+            return Err(invalid());
+        }
+        (Some(choice), Some(gates))
+    } else {
+        (None, None)
+    };
     let mut owners = Vec::new();
     for (id, node) in source.arena().iter() {
+        if source_proof
+            && !validations
+                .iter()
+                .any(|row| row.owner.node().index() == id.index())
+            && !intake
+                .definitions
+                .values()
+                .any(|(definition, _, _)| *definition == id)
+        {
+            continue;
+        }
         let kind = match node.kind() {
             K::AttributeDefinition => SymbolKind::Attribute,
             K::FunctorDefinition => SymbolKind::Functor,
@@ -508,6 +759,9 @@ pub fn check_source_registration_intake<'a>(
         inference: output,
         bindings: binding_env,
         owners,
+        validations,
+        choice_terms,
+        choice_gates,
     })
 }
 
@@ -525,6 +779,208 @@ struct SourceRegistrationIntake<'a> {
 }
 
 impl SourceRegistrationIntake<'_> {
+    fn existential_proof(
+        &mut self,
+        validations: &[RegistrationValidationInput],
+    ) -> Result<crate::source_set_term::SourceSetTermHandoffInput, String> {
+        use crate::source_set_term::*;
+        let invalid = || "registration.source_existential_proof_invalid".to_owned();
+        let [validation] = validations else {
+            return Err(invalid());
+        };
+        let registration = self
+            .source
+            .arena()
+            .iter()
+            .find(|(id, _)| id.index() == validation.owner.node().index())
+            .map(|(id, _)| id)
+            .ok_or_else(invalid)?;
+        if self.node(registration).kind() != &K::ExistentialRegistration
+            || self.definitions.len() != 1
+            || self.parameters.len() != 1
+            || !validation.parameters.is_empty()
+            || !validation.assumptions.is_empty()
+        {
+            return Err(invalid());
+        }
+        let (attribute, (definition, _, _)) = self.definitions.iter().next().ok_or_else(invalid)?;
+        let attribute = attribute.clone();
+        let definition = *definition;
+        if self.node(definition).kind() != &K::AttributeDefinition
+            || self.range(definition).end >= self.range(registration).start
+        {
+            return Err(invalid());
+        }
+        let correctness = self.only(registration, &K::CorrectnessCondition)?;
+        let proof = self.only(correctness, &K::ProofBlock)?;
+        let proof_children = self.children(proof).to_vec();
+        let [proof_kw, take, conclusion, end] = proof_children.as_slice() else {
+            return Err(invalid());
+        };
+        if self.text(*proof_kw)? != "proof"
+            || self.text(*end)? != "end"
+            || self.node(*take).kind() != &K::TakeStatement
+            || self.node(*conclusion).kind() != &K::ConclusionStatement
+        {
+            return Err(invalid());
+        }
+        let take_children = self.children(*take).to_vec();
+        let [take_kw, witness, take_semi] = take_children.as_slice() else {
+            return Err(invalid());
+        };
+        if self.text(*take_kw)? != "take"
+            || self.text(*take_semi)? != ";"
+            || self.node(*witness).kind() != &K::Witness
+        {
+            return Err(invalid());
+        }
+        let witness_children = self.children(*witness).to_vec();
+        let [first] = witness_children.as_slice() else {
+            return Err(invalid());
+        };
+        let conclusion_children = self.children(*conclusion).to_vec();
+        let [thus, proposition, justification, semi] = conclusion_children.as_slice() else {
+            return Err(invalid());
+        };
+        if self.text(*thus)? != "thus"
+            || self.text(*semi)? != ";"
+            || self.node(*proposition).kind() != &K::Proposition
+            || self.node(*justification).kind() != &K::JustificationClause
+        {
+            return Err(invalid());
+        }
+        let proposition_children = self.children(*proposition).to_vec();
+        let [formula] = proposition_children.as_slice() else {
+            return Err(invalid());
+        };
+        let assertion = self.only(*formula, &K::IsAssertion)?;
+        if self.node(*formula).kind() != &K::FormulaExpression
+            || self.children(*formula) != [assertion]
+        {
+            return Err(invalid());
+        }
+        let assertion_children = self.children(assertion).to_vec();
+        let [second, is_kw, chain] = assertion_children.as_slice() else {
+            return Err(invalid());
+        };
+        if self.text(*is_kw)? != "is" || self.node(*chain).kind() != &K::AttributeTestChain {
+            return Err(invalid());
+        }
+        let written_attr = self.only(*chain, &K::AttributeRef)?;
+        if self.children(*chain) != [written_attr] {
+            return Err(invalid());
+        }
+        let target = self.only(registration, &K::TypeExpression)?;
+        let domain = self.only(target, &K::TypeHead)?;
+        if self.attribute(written_attr, domain)? != attribute {
+            return Err(invalid());
+        }
+        let justification_children = self.children(*justification).to_vec();
+        let [by, references] = justification_children.as_slice() else {
+            return Err(invalid());
+        };
+        let citation = self.only(*references, &K::Reference)?;
+        let citation_children = self.children(citation).to_vec();
+        let [label] = citation_children.as_slice() else {
+            return Err(invalid());
+        };
+        if self.text(*by)? != "by"
+            || self.node(*references).kind() != &K::ReferenceList
+            || self.children(*references) != [citation]
+        {
+            return Err(invalid());
+        }
+        let definition_label = *self.children(definition).get(1).ok_or_else(invalid)?;
+        if self.text(*label)? != self.text(definition_label)?
+            || self.range(definition).end >= self.range(*label).start
+        {
+            return Err(invalid());
+        }
+        let mut input = SourceSetTermHandoffInput {
+            source_id: self.source.source_id(),
+            module_id: self.source.module().clone(),
+            terms: Vec::new(),
+            wrappers: Vec::new(),
+            generators: Vec::new(),
+            type_sites: Vec::new(),
+            conditions: Vec::new(),
+            edges: Vec::new(),
+            requests: Vec::new(),
+        };
+        for (ordinal, expression) in [*first, *second].into_iter().enumerate() {
+            let choice = self.only(expression, &K::ChoiceTerm)?;
+            if self.node(expression).kind() != &K::TermExpression
+                || self.children(expression) != [choice]
+            {
+                return Err(invalid());
+            }
+            let choice_children = self.children(choice).to_vec();
+            let [the, ty] = choice_children.as_slice() else {
+                return Err(invalid());
+            };
+            let head = self.only(*ty, &K::TypeHead)?;
+            if self.text(*the)? != "the"
+                || self.node(*ty).kind() != &K::TypeExpression
+                || self.children(*ty) != [head]
+            {
+                return Err(invalid());
+            }
+            let builtin = self.set_type(head)?;
+            let term = SourceSetTermId::new(ordinal);
+            input.terms.push(SourceSetTermInput {
+                site: self.site(choice),
+                source_range: self.range(choice),
+                source_ordinal: ordinal,
+                context: BindingContextId::new(0),
+                recovery: SourceSetTermRecovery::Normal,
+                spelling: "the set".into(),
+                kind: SourceSetTermKind::Choice,
+            });
+            input.type_sites.push(SourceSetTypeSiteInput {
+                owner: SourceSetTypeOwner::Term {
+                    term,
+                    role: SourceSetTypeRole::ChoiceTarget,
+                },
+                site: self.site(*ty),
+                source_range: self.range(*ty),
+                spelling: "set".into(),
+                head_site: self.site(head),
+                head_range: self.range(head),
+                head_spelling: "set".into(),
+                context: BindingContextId::new(0),
+                recovery: SourceSetTermRecovery::Normal,
+                head: SourceSetTypeHead::BuiltinSet,
+            });
+            for (request_ordinal, kind, type_site) in [
+                (
+                    0,
+                    SourceSetRequestKind::ChoiceNonempty,
+                    Some(SourceSetTypeSiteId::new(ordinal)),
+                ),
+                (1, SourceSetRequestKind::ResultType, None),
+            ] {
+                input.requests.push(SourceSetRequestInput {
+                    term,
+                    ordinal: request_ordinal,
+                    kind,
+                    generator: None,
+                    type_site,
+                });
+            }
+            self.terms.insert(
+                self.site(choice),
+                TermInput::new(
+                    self.site(choice),
+                    BindingContextId::new(0),
+                    self.range(choice),
+                    TermKind::Choice,
+                )
+                .with_result_type(builtin),
+            );
+        }
+        Ok(input)
+    }
+
     fn node(&self, node: ResolvedNodeId) -> &ResolvedNode {
         self.source
             .arena()
@@ -603,7 +1059,12 @@ impl SourceRegistrationIntake<'_> {
         }
         Ok(())
     }
-    fn parameter(&mut self, block: ResolvedNodeId, node: ResolvedNodeId) -> Result<(), String> {
+    fn parameter(
+        &mut self,
+        block: ResolvedNodeId,
+        node: ResolvedNodeId,
+        source_proof: bool,
+    ) -> Result<(), String> {
         let segment = self.only(node, &K::QualifiedVariableSegment)?;
         let children = self.children(segment);
         if children.len() != 3
@@ -630,7 +1091,11 @@ impl SourceRegistrationIntake<'_> {
             self.text(declaration)?,
             LocalTermScope::new(vec![block.index() as u32]),
             self.range(declaration),
-            declaration.index(),
+            if source_proof {
+                self.bindings.len()
+            } else {
+                declaration.index()
+            },
         );
         let mut draft =
             BindingDraft::from_local_term(context, BindingKind::DefinitionParameter, &local);

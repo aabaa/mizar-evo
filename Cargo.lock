@@ -570,7 +570,10 @@ version = "0.1.0"
 dependencies = [
  "mizar-artifact",
  "mizar-atp",
+ "mizar-checker",
+ "mizar-core",
  "mizar-kernel",
+ "mizar-resolve",
  "mizar-session",
  "mizar-vc",
 ]
@@ -608,6 +611,7 @@ dependencies = [
  "mizar-checker",
  "mizar-core",
  "mizar-frontend",
+ "mizar-kernel",
  "mizar-proof",
  "mizar-resolve",
  "mizar-session",

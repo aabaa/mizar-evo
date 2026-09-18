@@ -103,7 +103,7 @@ Literal top-level public items:
 
 - `CoreGenerationInput`, `VcNormalizationInput`,
   `CoreGenerationCandidateSet`, `CoreGenerationCandidate`,
-  `CoreGenerationNoCandidate`, `GeneratorError`, `generate_source_algorithm_postconditions`, `generate_source_void_claim`
+  `CoreGenerationNoCandidate`, `GeneratorError`, `generate_source_algorithm_postconditions`, `generate_source_void_claim`, `generate_source_existential_registration`
 
 Correspondence:
 
@@ -195,7 +195,7 @@ Literal top-level public items:
   `KernelFinalGoalEvidence`, `KernelGoalPolarity`,
   `KernelEvidenceDiagnosticInputs`, `KernelDischargeDiagnostic`,
   `KernelEvidenceHandoffError`, `KernelEvidenceRole`,
-  `build_kernel_evidence_handoff`
+  `build_kernel_evidence_handoff`, `build_source_existential_kernel_handoff`
 
 Correspondence:
 

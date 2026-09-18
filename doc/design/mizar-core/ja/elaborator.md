@@ -892,3 +892,16 @@ obligation/definition/route/acceptance/fact/coverage creditなし。
 ## Static source algorithm lowering
 
 `lower_source_algorithms(&SourceAlgorithmCheck) -> Result<CoreIr, String>` は封印された静的 profile または平坦な object 状態 profile を消費する。実際の仮引数・局所変数・result 同一性、記述された return 型、var/const/ghost role、初期化子、文順序と checker 由来を既存 lowering で保持する。直接変数への書込みは検査済み代入先 BindingId から型付き AssignLocal seed にし、同じ algorithm の束縛を要求する。opaque CorePlace 文字列に束縛同一性を符号化しない。ソース所有の式 map は header 等式だけを CoreContractSet.ensures に、本文 assertion を各 Assert seed に渡し、契約 result 束縛を既存の独立した暗黙 result slot に対応させる。prefix 否定等式は既存 Equals と Not(child) に下げ、両 checked formula の同一性・親子辺・範囲・由来を保持し、Assert は外側を参照する。source map と空の Core obligation 表の境界を維持し、配置と静的代入診断は CFG、値の世代と具体的な式は VC が所有する。生の resolver 権限、algorithm 承認、terminating 昇格を導入しない。
+
+## Source existential-registration proof
+
+`lower_source_existential_registration(&SourceRegistrationCheck) -> Result<CoreIr, String>` は
+[checker
+seal](../../mizar-checker/ja/registration_resolution.md#source-existential-registration-proof)
+を消費し、元の属性付き Exists とガード付き定義を保持する。認証済みソース引用は proof Symbol ではなく正規化された `Label("definition:<attribute FQN>")` として Step と Terminal に渡す。定義 formal・存在束縛・choice を区別する。別の active GeneratedNonEmptiness seed
+は新しい local binder と厳密な `Exists z. is_set(z)` だけを持ち、追加 conjunct/前提はない。
+
+proof 所有 StableChoice は実 bare-set 正規化 key・generated functor・空 params を持つ。両実出現はその functor の空引数適用と別々の実
+range であり、空集合に置換しない。既存 CurrentGoal/Step/Sequence/TerminalGoal と型付き CoreNodeRef が両 seed・origin・term・型
+step・引用終端を結ぶ。全 formula/term/source map・順序・到達性・所有者を検証し、provenance 文字列を gate receipt としない。Take DTO・raw
+environment・checker 再評価・受理状態は追加しない。

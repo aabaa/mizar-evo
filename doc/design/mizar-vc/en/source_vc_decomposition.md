@@ -27,8 +27,8 @@ upstream task authority is checker Task 247's
 and Core Task 32's
 [source-family decomposition](../../mizar-core/en/source_family_decomposition.md).
 Core Task 31 is the sole exact Task-180 Core exception. Core Tasks 33-53,
-Gate A1/MC-G004, and Gate S1 remain unimplemented dependencies rather than
-available payloads.
+general Gate A1/MC-G004, and Gate S1 remain unavailable; the bounded source
+existential-proof prerequisite is owned by [generator](./generator.md#source-existential-registration-proof).
 
 Task 30 preserves the clean-entry behavioral oracles: active runners parse 96,
 declaration 4, and type elaboration 188; plan 403/368; type elaboration
@@ -262,3 +262,5 @@ prerequisite and recommended continuation, followed by Core 33 and its
 descendants. The top-level TODO independently authorizes parser Tasks 47-48
 and resolver Task 31, so every continuation still requires a fresh global
 inventory rather than a unique-priority claim. Steps 6/7 remain deferred.
+
+The source existential-proof prerequisite exercises bounded VC36/37 semantics in real-source Rust tests with complete Core/VC/handoff baselines. It retains the nonempty seed with explicit builtin accounting and expands the original registration parent into both actual witness/body leaves. It adds no mapped pipeline case, MT10 trace activation, VC40 trace context, imported acceptance or broader family completion; the final source-to-accepted association is proof-owned.

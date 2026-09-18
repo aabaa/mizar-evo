@@ -91,7 +91,7 @@ name prerequisites; they are not redefined here.
 | 37 | Statement/theorem shells; assumptions/conclusions; proof-local declarations and closures; source-level `reconsider`; non-Task-180 proof skeletons, citations, cases, pending/blocked state, thesis, and terminal goals. | Checker 258 and 269-272; Core 33-35; Core 34 conversion API; parser 47 for `reconsider`; `MT10-CIR-FS`. | Task-180 remains Core 31. No proof search, implicit closure, theorem fact, acceptance, discharge, or verified premise. |
 | 38 | Direct template-role Core metadata, authenticated substitution requests, ordinary/template overload results, redefinition/notation roots, coherence/refinement input, and exposed views. | Checker 277-279; Core 33-36; `MT10-CIR-AS`. | Executable direct roles only. Missing scheme/theorem roles are Core 41/Gate S1. No substitution result, guessed root, accepted coherence, or fresh scheme symbol. |
 | 39 | Pending registration shells and correctness/initial-obligation intake for existential, conditional, functorial, and reduction registrations. | Checker 273; Core 33-37; `MT10-CIR-AS`. | Pending intake only. No accepted status, activation, closure, rewrite, trace, artifact, `VcId`, or discharge. |
-| 40 | **Blocked-reserved:** authenticated accepted-registration activation plus source-derived cluster and reduction trace lowering. | Checker 274-276; Core 34-35 and 39; Gate A1 and MC-G004; `MT10-CIR-AS`. | Not executable until the accepted verifier/artifact-status producer, schema, authentication, and corruption tests are canonically named. Never derive `Accepted` from order, local checking, or an obligation request. |
+| 40 | **Partial prerequisite implemented:** authenticated module-local existential proof association; broader accepted activation/cluster/reduction traces remain blocked. | [Source lowerer](./elaborator.md#source-existential-registration-proof), checker source proof and proof-owned fresh kernel checks; MC-G004 and MT10-CIR-AS remain deferred. | Preserve parent, witness and nonempty obligations. This Rust integration prerequisite gives no mapped Core40 family completion or accepted cluster/reduction trace. |
 | 41 | **Blocked-reserved:** scheme/theorem-role-dependent Core slices not exposed by direct parser/syntax roles. | Checker Gate S1; applicable Core 33-38; `MT10-CIR-AS`. | Not executable until canonical parser/syntax and resolver ownership names the missing roles. Task 277 and Core 38 do not fabricate them. |
 
 Core 39 and 40 remain separate logical tasks: pending registration intake is
@@ -241,7 +241,7 @@ commit or a synthetic Core/CFG snapshot is forbidden.
 
 ## Gates And Cross-Crate Boundary
 
-- Gate A1 and MC-G004 continue to block Core 40.
+- Gate A1 now names only the bounded source existential-proof prerequisite; MC-G004 and broader Core40 remain blocked.
 - Gate S1 continues to block Core 41 and any algorithm template slice that
   actually requires a missing scheme/theorem role.
 - MC-G005 and CORE-AUDIT-G006 keep public diagnostic codes outside these tasks.

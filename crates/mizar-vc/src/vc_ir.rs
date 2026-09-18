@@ -760,6 +760,9 @@ impl SeedVcMapping {
 #[derive(Debug, Clone, PartialEq, Eq)]
 #[non_exhaustive]
 pub enum SeedNoVcReason {
+    BuiltinSetInhabitation {
+        origin: mizar_core::core_ir::GeneratedOriginId,
+    },
     SkippedInvalidInput,
     DeferredExternal(VcText),
     MissingGoal(VcText),
@@ -1604,6 +1607,15 @@ fn validate_seed_accounting(rows: &[SeedAccounting], vcs: &[VcIr]) -> Result<(),
 
 fn validate_mapping(row: &SeedAccounting, vc_ids: &BTreeSet<VcId>) -> Result<(), VcIrError> {
     match &row.mapping {
+        SeedVcMapping::NoConcreteVc {
+            reason: SeedNoVcReason::BuiltinSetInhabitation { .. },
+        } if row.seed_status != ObligationSeedStatus::Active
+            || !matches!(row.origin, SeedOriginRef::ExistingCore { .. }) =>
+        {
+            Err(VcIrError::MissingHandoffSource {
+                handoff: row.handoff,
+            })
+        }
         SeedVcMapping::NoConcreteVc { .. } => Ok(()),
         SeedVcMapping::One { vc } => validate_mapped_vc(row.handoff, *vc, vc_ids),
         SeedVcMapping::Expanded { vcs, .. } => {
@@ -3249,6 +3261,31 @@ mod tests {
         .expect_err("unsorted context");
 
         assert!(matches!(error, VcIrError::ContextEntriesNotSorted { .. }));
+    }
+
+    #[test]
+    fn builtin_set_accounting_requires_an_active_existing_seed() {
+        let mut parts = fixture_parts(VcStatus::Open);
+        parts.vcs.clear();
+        parts.seed_accounting[0].mapping = SeedVcMapping::NoConcreteVc {
+            reason: SeedNoVcReason::BuiltinSetInhabitation {
+                origin: mizar_core::core_ir::GeneratedOriginId::new(0),
+            },
+        };
+        assert!(VcSet::try_new(parts.clone()).is_ok());
+        for status in [
+            ObligationSeedStatus::Skipped,
+            ObligationSeedStatus::Deferred,
+            ObligationSeedStatus::Error,
+        ] {
+            let mut invalid = parts.clone();
+            invalid.seed_accounting[0].seed_status = status;
+            assert!(VcSet::try_new(invalid).is_err());
+        }
+        parts.seed_accounting[0].origin = SeedOriginRef::Unsupported {
+            origin: VcText::new("foreign"),
+        };
+        assert!(VcSet::try_new(parts).is_err());
     }
 
     #[test]

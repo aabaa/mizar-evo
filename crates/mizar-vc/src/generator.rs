@@ -40,6 +40,602 @@ mod task180;
 
 pub use task180::{ExactTask180VcError, ExactTask180VcInput, generate_exact_task180_vc};
 
+/// Expands an authenticated local existential registration and its independent set gate.
+pub fn generate_source_existential_registration(
+    core: &mizar_core::core_ir::CoreIr,
+    snapshot: BuildSnapshotId,
+    generation_schema: &GenerationSchemaVersion,
+    vc_schema: &VcSchemaVersion,
+) -> Result<VcSet, String> {
+    use crate::vc_ir::{
+        ExpandedVcRef, ExpansionSchemaVersion, VcGeneratedFormula, VcGeneratedFormulaId,
+        VcGeneratedFormulaKind, VcGeneratedFormulaShape,
+    };
+    use mizar_core::core_ir::*;
+    let invalid = || "registration.vc.invalid_source_graph".to_owned();
+    let range = |source: &CoreSourceRef| match source.anchor {
+        CoreSourceAnchor::SourceRange(r) if r.source_id == core.source_id() && r.start < r.end => {
+            Ok(r)
+        }
+        _ => Err(invalid()),
+    };
+    let contains = |outer: &CoreSourceRef, inner: &CoreSourceRef| -> Result<bool, String> {
+        let (a, b) = (range(outer)?, range(inner)?);
+        Ok(a.start <= b.start && b.end <= a.end)
+    };
+    if core.items().len() != 2
+        || core.definitions().len() != 1
+        || core.generated().len() != 1
+        || core.proofs().len() != 1
+        || core.proof_nodes().len() != 7
+        || core.terms().len() != 5
+        || core.obligation_seeds().len() != 2
+        || !core.algorithms().is_empty()
+        || !core.algorithm_statements().is_empty()
+        || !core.diagnostics().is_empty()
+    {
+        return Err(invalid());
+    }
+    let (definition_id, definition) = core.definitions().iter().next().ok_or_else(invalid)?;
+    let attribute = core
+        .items()
+        .get(definition.owner.item().ok_or_else(invalid)?)
+        .ok_or_else(invalid)?;
+    let (proof_id, proof) = core.proofs().iter().next().ok_or_else(invalid)?;
+    let owner = core.items().get(proof.item).ok_or_else(invalid)?;
+    let (origin_id, origin) = core.generated().iter().next().ok_or_else(invalid)?;
+    let functor = origin.functor.as_ref().ok_or_else(invalid)?;
+    let [formal] = definition.params.as_slice() else {
+        return Err(invalid());
+    };
+    let DefinitionBody::Formula(body) = definition.body else {
+        return Err(invalid());
+    };
+    if attribute.kind != CoreItemKind::Attribute
+        || owner.kind != CoreItemKind::Registration
+        || definition.symbol != attribute.symbol
+        || definition.source != attribute.source
+        || definition.expansion != ExpansionPolicy::Transparent
+        || !definition.correctness.is_empty()
+        || !definition.generated_dependencies.is_empty()
+        || formal.role.as_str() != "definition-parameter"
+        || formal.source_name.is_some()
+        || !formal.source.provenance.is_empty()
+        || proof.status != CoreProofStatus::PendingAutomaticProof
+        || origin.kind != GeneratedOriginKind::StableChoice
+        || origin.owner != proof.item
+        || origin.key.as_str() != "choice:builtin.set"
+        || !origin.params.is_empty()
+        || origin.source != proof.source
+        || origin.evidence.len() != 2
+        || origin
+            .evidence
+            .iter()
+            .any(|p| p.phase != CoreProvenancePhase::Checker)
+        || functor.module() != core.module_id()
+        || functor.local().as_str() != format!("{}::$choice_set", owner.symbol.local().as_str())
+        || functor.fqn().as_str() != format!("{}::$choice_set", owner.symbol.fqn().as_str())
+        || range(&attribute.source)?.end > range(&owner.source)?.start
+        || !contains(&owner.source, &proof.source)?
+        || range(&formal.source)?.end > range(&attribute.source)?.start
+    {
+        return Err(invalid());
+    }
+    for (_, item) in core.items().iter() {
+        if item.status != CoreItemStatus::Valid
+            || item.symbol.module() != core.module_id()
+            || item.visibility.as_str() != "public"
+            || !item.dependencies.is_empty()
+            || !item.diagnostics.is_empty()
+        {
+            return Err(invalid());
+        }
+    }
+    let node = |id| core.proof_nodes().get(id).ok_or_else(invalid);
+    let root = node(proof.root)?;
+    let CoreProofNodeKind::CurrentGoal { thesis, child } = root.kind else {
+        return Err(invalid());
+    };
+    let sequence = node(child)?;
+    let CoreProofNodeKind::Sequence { children } = &sequence.kind else {
+        return Err(invalid());
+    };
+    let [n_current, type_step, attr_step, terminal] = children.as_slice() else {
+        return Err(invalid());
+    };
+    let nc = node(*n_current)?;
+    let CoreProofNodeKind::CurrentGoal {
+        thesis: n_goal,
+        child: n_terminal,
+    } = nc.kind
+    else {
+        return Err(invalid());
+    };
+    let nt = node(n_terminal)?;
+    let CoreProofNodeKind::TerminalGoal {
+        obligation: n_id,
+        citations: n_citations,
+    } = &nt.kind
+    else {
+        return Err(invalid());
+    };
+    let terminal = node(*terminal)?;
+    let CoreProofNodeKind::TerminalGoal {
+        obligation: parent_id,
+        citations,
+    } = &terminal.kind
+    else {
+        return Err(invalid());
+    };
+    let type_step = node(*type_step)?;
+    let attr_step = node(*attr_step)?;
+    let CoreProofNodeKind::Step {
+        label: type_label,
+        formula: witness_formula,
+        justification: type_justification,
+    } = &type_step.kind
+    else {
+        return Err(invalid());
+    };
+    let CoreProofNodeKind::Step {
+        label: attr_label,
+        formula: terminal_formula,
+        justification: attr_justification,
+    } = &attr_step.kind
+    else {
+        return Err(invalid());
+    };
+    let parent = core
+        .obligation_seeds()
+        .get(*parent_id)
+        .ok_or_else(invalid)?;
+    let nonempty = core.obligation_seeds().get(*n_id).ok_or_else(invalid)?;
+    if thesis != proof.proposition
+        || parent.goal != Some(thesis)
+        || nonempty.goal != Some(n_goal)
+        || parent.kind != ObligationSeedKind::CheckerInitial
+        || nonempty.kind != ObligationSeedKind::GeneratedNonEmptiness
+        || parent.local_path.as_str() != "registration/existence"
+        || nonempty.local_path.as_str() != "registration/choice-nonempty"
+        || parent.semantic_origin != nonempty.semantic_origin
+        || parent.semantic_origin.as_str().is_empty()
+        || !n_citations.is_empty()
+        || citations
+            != &[CoreCitation::Label(CoreLabelRef::new(format!(
+                "definition:{}",
+                attribute.symbol.fqn().as_str()
+            )))]
+        || attr_justification.citations != *citations
+        || type_justification.citations != [CoreCitation::Generated(origin_id)]
+        || type_label.is_some()
+        || attr_label.is_some()
+        || type_justification.source != type_step.source
+        || attr_justification.source != attr_step.source
+        || terminal.source != attr_step.source
+        || nonempty.source != proof.source
+        || [&root.source, &sequence.source, &nc.source, &nt.source]
+            .iter()
+            .any(|s| **s != proof.source)
+        || !contains(&parent.source, &proof.source)?
+        || !contains(&owner.source, &parent.source)?
+        || !contains(&proof.source, &type_step.source)?
+        || !contains(&proof.source, &terminal.source)?
+        || range(&type_step.source)?.end > range(&terminal.source)?.start
+    {
+        return Err(invalid());
+    }
+    for (_, seed) in core.obligation_seeds().iter() {
+        if seed.owner != proof.item
+            || seed.status != ObligationSeedStatus::Active
+            || !seed.context.is_empty()
+            || seed.label.is_some()
+            || !seed.diagnostics.is_empty()
+            || seed.provenance != seed.source.provenance
+        {
+            return Err(invalid());
+        }
+    }
+    let formula = |id| core.formulas().get(id).ok_or_else(invalid);
+    let term = |id| core.terms().get(id).ok_or_else(invalid);
+    let CoreFormulaKind::Exists {
+        binders,
+        body: conjunction,
+    } = &formula(thesis)?.kind
+    else {
+        return Err(invalid());
+    };
+    let [x] = binders.as_slice() else {
+        return Err(invalid());
+    };
+    let CoreFormulaKind::Exists {
+        binders,
+        body: n_body,
+    } = &formula(n_goal)?.kind
+    else {
+        return Err(invalid());
+    };
+    let [z] = binders.as_slice() else {
+        return Err(invalid());
+    };
+    if x.var == formal.var
+        || z.var == formal.var
+        || x.var == z.var
+        || x.ty_guard.is_some()
+        || z.ty_guard.is_some()
+        || x.source_name.is_some()
+        || z.source_name.is_some()
+        || x.role.as_str() != "registration-witness"
+        || z.role.as_str() != "choice-nonempty"
+        || x.source != owner.source
+        || z.source != proof.source
+    {
+        return Err(invalid());
+    }
+    let CoreFormulaKind::And(conjuncts) = &formula(*conjunction)?.kind else {
+        return Err(invalid());
+    };
+    let [parent_guard, parent_attribute] = conjuncts.as_slice() else {
+        return Err(invalid());
+    };
+    let type_subject = |id| match &formula(id)?.kind {
+        CoreFormulaKind::TypePred { subject, ty } if ty.as_str() == "builtin.set" => Ok(*subject),
+        _ => Err(invalid()),
+    };
+    let v = type_subject(formal.ty_guard.ok_or_else(invalid)?)?;
+    let xt = type_subject(*parent_guard)?;
+    let zt = type_subject(*n_body)?;
+    let w = type_subject(*witness_formula)?;
+    let CoreFormulaKind::Atom { predicate, args } = &formula(*terminal_formula)?.kind else {
+        return Err(invalid());
+    };
+    let [w1] = args.as_slice() else {
+        return Err(invalid());
+    };
+    if predicate != &attribute.symbol
+        || v == xt
+        || v == zt
+        || xt == zt
+        || w == *w1
+        || term(v)?.kind != CoreTermKind::Var(formal.var)
+        || term(xt)?.kind != CoreTermKind::Var(x.var)
+        || term(zt)?.kind != CoreTermKind::Var(z.var)
+        || term(v)?.source != formal.source
+        || term(xt)?.source != owner.source
+        || term(zt)?.source != proof.source
+        || term(w)?.kind
+            != (CoreTermKind::Apply {
+                functor: functor.clone(),
+                args: Vec::new(),
+            })
+        || term(*w1)?.kind != term(w)?.kind
+        || !contains(&type_step.source, &term(w)?.source)?
+        || !contains(&terminal.source, &term(*w1)?.source)?
+    {
+        return Err(invalid());
+    }
+    for (witness, evidence) in [w, *w1].into_iter().zip(&origin.evidence) {
+        let witness = term(witness)?;
+        let [provenance] = witness.source.provenance.as_slice() else {
+            return Err(invalid());
+        };
+        let node = provenance
+            .key
+            .as_str()
+            .strip_prefix("registration/source-node#")
+            .and_then(|node| node.parse::<usize>().ok())
+            .ok_or_else(invalid)?;
+        if evidence
+            != &CoreProvenance::new(
+                CoreProvenancePhase::Checker,
+                format!(
+                    "builtin-set-choice:Node(TypedNodeId({node})):{:?}",
+                    range(&witness.source)?
+                ),
+            )
+        {
+            return Err(invalid());
+        }
+    }
+    let find = |kind: CoreFormulaKind| -> Result<CoreFormulaId, String> {
+        let found = core
+            .formulas()
+            .iter()
+            .filter(|(_, f)| f.kind == kind)
+            .map(|(id, _)| id)
+            .collect::<Vec<_>>();
+        match found.as_slice() {
+            [id] => Ok(*id),
+            _ => Err(invalid()),
+        }
+    };
+    if find(CoreFormulaKind::Atom {
+        predicate: attribute.symbol.clone(),
+        args: vec![xt],
+    })? != *parent_attribute
+    {
+        return Err(invalid());
+    }
+    let formal_attribute = find(CoreFormulaKind::Atom {
+        predicate: attribute.symbol.clone(),
+        args: vec![v],
+    })?;
+    let witness_attribute = find(CoreFormulaKind::Atom {
+        predicate: attribute.symbol.clone(),
+        args: vec![w],
+    })?;
+    let eq = find(CoreFormulaKind::Equals { left: v, right: v })?;
+    if body != eq && formula(body)?.kind != CoreFormulaKind::Not(eq) {
+        return Err(invalid());
+    }
+    let expected_formulas = [
+        formal.ty_guard.unwrap(),
+        body,
+        eq,
+        *parent_guard,
+        *parent_attribute,
+        *conjunction,
+        thesis,
+        *n_body,
+        n_goal,
+        *witness_formula,
+        *terminal_formula,
+        formal_attribute,
+        witness_attribute,
+    ]
+    .into_iter()
+    .collect::<BTreeSet<_>>();
+    if expected_formulas.len() != core.formulas().len() {
+        return Err(invalid());
+    }
+    for (ids, source) in [
+        (
+            vec![formal.ty_guard.unwrap(), formal_attribute],
+            &attribute.source,
+        ),
+        (
+            vec![*parent_guard, *parent_attribute, *conjunction, thesis],
+            &owner.source,
+        ),
+        (vec![*n_body, n_goal], &proof.source),
+        (vec![*witness_formula, witness_attribute], &type_step.source),
+        (vec![*terminal_formula], &terminal.source),
+    ] {
+        if ids
+            .into_iter()
+            .any(|id| !formula(id).is_ok_and(|f| &f.source == source))
+        {
+            return Err(invalid());
+        }
+    }
+    if !contains(&attribute.source, &formula(eq)?.source)?
+        || !contains(&attribute.source, &formula(body)?.source)?
+    {
+        return Err(invalid());
+    }
+    let expected_refs = vec![
+        CoreNodeRef::Item(proof.item),
+        CoreNodeRef::Definition(definition_id),
+        CoreNodeRef::Generated(origin_id),
+        CoreNodeRef::Term(w),
+        CoreNodeRef::Term(*w1),
+        CoreNodeRef::ObligationSeed(*n_id),
+        CoreNodeRef::Formula(thesis),
+        CoreNodeRef::Formula(*witness_formula),
+        CoreNodeRef::Formula(*terminal_formula),
+        CoreNodeRef::Proof(proof_id),
+        CoreNodeRef::ProofNode(proof.root),
+    ];
+    if parent.core_refs != expected_refs
+        || nonempty.core_refs
+            != [
+                CoreNodeRef::Item(proof.item),
+                CoreNodeRef::Generated(origin_id),
+                CoreNodeRef::Formula(n_goal),
+            ]
+    {
+        return Err(invalid());
+    }
+    let mut sources = CoreSourceMap::new();
+    sources
+        .item_sources
+        .extend(core.items().iter().map(|(id, n)| (id, n.source.clone())));
+    sources
+        .term_sources
+        .extend(core.terms().iter().map(|(id, n)| (id, n.source.clone())));
+    sources
+        .formula_sources
+        .extend(core.formulas().iter().map(|(id, n)| (id, n.source.clone())));
+    sources
+        .definition_sources
+        .insert(definition_id, definition.source.clone());
+    sources
+        .generated_sources
+        .insert(origin_id, origin.source.clone());
+    sources.obligation_sources.extend(
+        core.obligation_seeds()
+            .iter()
+            .map(|(id, n)| (id, n.source.clone())),
+    );
+    for (id, n) in core.proof_nodes().iter() {
+        if !n.diagnostics.is_empty() {
+            return Err(invalid());
+        }
+        sources.proof_sources.insert(id, n.source.clone());
+    }
+    if &sources != core.source_map() {
+        return Err(invalid());
+    }
+    for source in sources
+        .item_sources
+        .values()
+        .chain(sources.term_sources.values())
+        .chain(sources.formula_sources.values())
+        .chain(sources.proof_sources.values())
+        .chain(sources.obligation_sources.values())
+    {
+        range(source)?;
+        if source != &formal.source {
+            let [provenance] = source.provenance.as_slice() else {
+                return Err(invalid());
+            };
+            if provenance.phase != CoreProvenancePhase::Checker
+                || provenance
+                    .key
+                    .as_str()
+                    .strip_prefix("registration/source-node#")
+                    .and_then(|node| node.parse::<usize>().ok())
+                    .is_none()
+            {
+                return Err(invalid());
+            }
+        }
+    }
+    let mut provenance = generator_provenance(parent, "source-existential-registration");
+    provenance.push(VcProvenance {
+        phase: VcProvenancePhase::CoreHandoff,
+        key: VcText::new(format!(
+            "parent-refs={:?};nonempty-refs={:?}",
+            parent.core_refs, nonempty.core_refs
+        )),
+        core: None,
+    });
+    let mut generated_formulas = Vec::new();
+    let mut generated = |shape, kind| {
+        let id = VcGeneratedFormulaId::new(generated_formulas.len());
+        generated_formulas.push(VcGeneratedFormula {
+            id,
+            kind,
+            shape,
+            provenance: provenance.clone(),
+        });
+        VcFormulaRef::Generated(id)
+    };
+    // This fact is licensed only after replay of the independent bare-set inhabitation gate.
+    let choice_type = generated(
+        VcGeneratedFormulaShape::Ref(VcFormulaRef::Core(*witness_formula)),
+        VcGeneratedFormulaKind::GeneratedTypeObligation,
+    );
+    let not_guard = generated(
+        VcGeneratedFormulaShape::Not(VcFormulaRef::Core(formal.ty_guard.unwrap())),
+        VcGeneratedFormulaKind::NegatedPremise,
+    );
+    let not_attribute = generated(
+        VcGeneratedFormulaShape::Not(VcFormulaRef::Core(formal_attribute)),
+        VcGeneratedFormulaKind::NegatedPremise,
+    );
+    let not_body = generated(
+        VcGeneratedFormulaShape::Not(VcFormulaRef::Core(body)),
+        VcGeneratedFormulaKind::NegatedPremise,
+    );
+    let forward = generated(
+        VcGeneratedFormulaShape::Or(vec![not_attribute, VcFormulaRef::Core(body)]),
+        VcGeneratedFormulaKind::Conjunction,
+    );
+    let backward = generated(
+        VcGeneratedFormulaShape::Or(vec![not_body, VcFormulaRef::Core(formal_attribute)]),
+        VcGeneratedFormulaKind::Conjunction,
+    );
+    let equivalent = generated(
+        VcGeneratedFormulaShape::And(vec![forward, backward]),
+        VcGeneratedFormulaKind::Conjunction,
+    );
+    let guarded_definition = generated(
+        VcGeneratedFormulaShape::Or(vec![not_guard, equivalent]),
+        VcGeneratedFormulaKind::Conjunction,
+    );
+    let local_context = LocalContext::try_new(Vec::new(), Vec::new()).map_err(|e| e.to_string())?;
+    let kind = VcKind::RegistrationStyleCorrectness {
+        style: RegistrationCorrectnessKind::Registration,
+    };
+    let handoff = ObligationHandoffId::new(parent_id.index());
+    let vcs = [*witness_formula, witness_attribute]
+        .into_iter()
+        .enumerate()
+        .map(|(index, goal)| {
+            let mut premises = vec![PremiseRef::GeneratedFact {
+                formula: choice_type,
+            }];
+            if index == 1 {
+                premises.push(PremiseRef::GeneratedFact {
+                    formula: guarded_definition,
+                });
+            }
+            let goal = VcFormulaRef::Core(goal);
+            VcIr {
+                id: VcId::new(index),
+                kind: kind.clone(),
+                source: VcSourceRef {
+                    primary: parent.source.clone(),
+                    related: vec![
+                        proof.source.clone(),
+                        nonempty.source.clone(),
+                        type_step.source.clone(),
+                        terminal.source.clone(),
+                    ],
+                },
+                seed: SeedVcRef { handoff },
+                anchor: anchor_for_seed(AnchorForSeedInput {
+                    schema_version: generation_schema,
+                    seed: parent,
+                    kind: &kind,
+                    owner: AnchorOwner::Registration(proof.item),
+                    label: None,
+                    source: &parent.source,
+                    goal,
+                    local_context: &local_context,
+                }),
+                local_context: local_context.clone(),
+                premises,
+                goal,
+                proof_hint: None,
+                status: VcStatus::Open,
+                provenance: provenance.clone(),
+            }
+        })
+        .collect();
+    let mut seed_accounting = vec![
+        SeedAccounting {
+            handoff,
+            origin: SeedOriginRef::ExistingCore { seed: *parent_id },
+            seed_status: parent.status,
+            mapping: SeedVcMapping::Expanded {
+                vcs: (0..2)
+                    .map(|i| ExpandedVcRef {
+                        expansion_index: i,
+                        vc: VcId::new(i),
+                    })
+                    .collect(),
+                expansion_schema: ExpansionSchemaVersion::new("source-existential-registration-v1"),
+            },
+        },
+        SeedAccounting {
+            handoff: ObligationHandoffId::new(n_id.index()),
+            origin: SeedOriginRef::ExistingCore { seed: *n_id },
+            seed_status: nonempty.status,
+            mapping: SeedVcMapping::NoConcreteVc {
+                reason: SeedNoVcReason::BuiltinSetInhabitation { origin: origin_id },
+            },
+        },
+    ];
+    seed_accounting.sort_by_key(|row| row.handoff);
+    VcSet::try_new(VcSetParts {
+        schema_version: vc_schema.clone(),
+        snapshot,
+        source: core.source_id(),
+        module: VcModuleRef::new(format!(
+            "package={}:{};module={}:{}",
+            core.module_id().package().as_str().len(),
+            core.module_id().package().as_str(),
+            core.module_id().path().as_str().len(),
+            core.module_id().path().as_str()
+        )),
+        generated_formulas,
+        vcs,
+        seed_accounting,
+    })
+    .map_err(|e| e.to_string())
+}
+
 /// Generates the open theorem obligation of an authenticated void-algorithm claim.
 pub fn generate_source_void_claim(
     core: &mizar_core::core_ir::CoreIr,

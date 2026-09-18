@@ -666,9 +666,9 @@ unchecked row below is one future nonempty logical task and one commit.
   depends on parser Task 47.
 - [ ] **Task 272:** non-Task-180 proof-skeleton/justification producer.
 - [ ] **Task 273:** registration-item/correctness/initial-obligation intake producer.
-- [ ] **Task 274 (blocked-reserved):** accepted verifier/artifact-status import
-  and activation adapter. Not executable until canonical authority names the
-  upstream owner, schema, authentication rules, and tests.
+- [ ] **Task 274:** bounded module-local source-proof association is implemented in
+  [proof status](../../mizar-proof/en/status.md#source-existential-registration-proof);
+  general accepted verifier/artifact import and activation remain deferred.
 - [ ] **Task 275:** source-derived cluster-closure trace producer.
 - [ ] **Task 276:** source-derived reduction/normalization trace producer.
 - [ ] **Task 277:** direct template role/actual/guard producer. Missing

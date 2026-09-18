@@ -1,8 +1,8 @@
 //! Artifact- and diagnostics-facing proof status projection.
 //!
-//! This module projects already-selected proof outcomes. It does not run ATP
-//! backends, call the kernel, solve SAT problems, query caches, stage
-//! witnesses, write artifact manifests, or accept proofs.
+//! This module projects proof outcomes. Its bounded source-registration facade
+//! owns fresh normal kernel checks before constructing a local registration database.
+//! It does not run ATP backends, query caches, or write artifact manifests.
 
 use std::{error::Error, fmt};
 
@@ -24,6 +24,297 @@ use crate::{
 
 const USED_AXIOMS_HASH_DOMAIN: &str = "mizar-proof-trusted-used-axioms-v1";
 const PROOF_REUSE_VALIDATION_HASH_DOMAIN: &str = "mizar-proof-reuse-validation-v1";
+
+/// Proves the authenticated local existential registration and returns its local database.
+pub fn prove_source_existential_registration(
+    source: &mizar_resolve::resolved_ast::SurfaceResolvedArena,
+    nodes: &mizar_checker::typed_ast::TypedArena,
+    symbols: &mizar_resolve::env::SymbolEnv,
+    snapshot: mizar_session::BuildSnapshotId,
+    policy: &VerifierPolicy,
+) -> Result<mizar_checker::registration_resolution::RegistrationDatabase, String> {
+    use crate::policy::{CandidatePolicyClass, PolicyCandidate, ProofPolicyEvaluator};
+    use mizar_checker::registration_resolution::{
+        ActivationInput, RegistrationDatabase, check_source_existential_registration_proof,
+    };
+    use mizar_kernel::{
+        certificate_parser::{ClauseTautologyPolicy, Fingerprint, KernelProfileRecord},
+        checker::{
+            FormulaEvidenceContext, ImportedFactContextLimits, KernelCheckPolicy,
+            KernelContextIdentityEntry, KernelContextIdentityPayload, KernelContextIdentitySource,
+            KernelEvidenceCheckInput, KernelEvidenceCheckKind, KernelEvidenceCheckLimits,
+            KernelFormulaProducerRef, KernelVcGeneratedFormulaId, check_kernel_evidence,
+        },
+        formula_evidence::{FormulaEvidenceParseContext, parse_formula_evidence},
+        rejection::TargetVcFingerprint,
+    };
+    use mizar_vc::{
+        generator::generate_source_existential_registration,
+        kernel_evidence_handoff::{
+            KernelCertificateHashInputAlgorithm, KernelClauseTautologyPolicy,
+            KernelContextIdentitySource as SourceContext, KernelEvidenceFingerprint,
+            KernelFormulaSource, KernelGoalPolarity, build_source_existential_kernel_handoff,
+        },
+        vc_ir::{GenerationSchemaVersion, VcFormulaRef, VcSchemaVersion},
+    };
+    let invalid = || "registration.proof.invalid_source_evidence".to_owned();
+    let check = check_source_existential_registration_proof(source, nodes, symbols)?;
+    let core = mizar_core::elaborator::lower_source_existential_registration(&check)?;
+    let vcs = generate_source_existential_registration(
+        &core,
+        snapshot,
+        &GenerationSchemaVersion::new("source-existential-registration-v1"),
+        &VcSchemaVersion::new("vc-v1"),
+    )?;
+    if vcs.vcs().len() != 2 {
+        return Err(invalid());
+    }
+    let evaluator = ProofPolicyEvaluator::new(policy.clone());
+    if !evaluator.can_schedule_kernel_check(&PolicyCandidate::UncheckedBuiltinDischarge {
+        has_stable_kernel_representation: true,
+    }) {
+        return Err("registration.proof.kernel_policy_rejected".into());
+    }
+    let put_u32 = |value: usize, output: &mut Vec<u8>| -> Result<(), String> {
+        output.extend_from_slice(&u32::try_from(value).map_err(|_| invalid())?.to_be_bytes());
+        Ok(())
+    };
+    let put_bytes = |value: &[u8], output: &mut Vec<u8>| -> Result<(), String> {
+        put_u32(value.len(), output)?;
+        output.extend_from_slice(value);
+        Ok(())
+    };
+    let put_fingerprint =
+        |value: &KernelEvidenceFingerprint, output: &mut Vec<u8>| -> Result<(), String> {
+            output.push(value.algorithm_id);
+            put_bytes(&value.digest, output)
+        };
+    let mut hashes = Vec::new();
+    for vc in vcs.vcs() {
+        let handoff = build_source_existential_kernel_handoff(&core, &vcs, vc.id)?;
+        let envelope = handoff.canonical_evidence();
+        let profile = envelope.kernel_profile();
+        if envelope.schema_version() != 1
+            || envelope.encoding_version() != 1
+            || profile.clause_schema_version != 1
+            || profile.clause_encoding_version != 1
+            || profile.certificate_hash_input_algorithm
+                != KernelCertificateHashInputAlgorithm::CanonicalEnvelopeV1
+            || envelope.final_goal().polarity != KernelGoalPolarity::AssertFalseForRefutation
+        {
+            return Err(invalid());
+        }
+        let tautology = match profile.clause_tautology_policy {
+            KernelClauseTautologyPolicy::Reject => ClauseTautologyPolicy::Reject,
+            KernelClauseTautologyPolicy::Marker => ClauseTautologyPolicy::Marker,
+            _ => return Err(invalid()),
+        };
+        let kernel_profile = KernelProfileRecord::v1(profile.profile_id, tautology);
+        let mut sections: [Vec<Vec<u8>>; 6] = std::array::from_fn(|_| Vec::new());
+        sections[0] = envelope
+            .symbol_manifest()
+            .iter()
+            .map(|entry| entry.payload.clone())
+            .collect();
+        sections[1] = envelope
+            .variable_manifest()
+            .iter()
+            .map(|entry| entry.payload.clone())
+            .collect();
+        for formula in envelope.formula_evidence() {
+            let (tag, context) = match formula.source() {
+                KernelFormulaSource::LocalHypothesis { local_context_id } => (1, *local_context_id),
+                KernelFormulaSource::CitedPremise { local_context_id } => (2, *local_context_id),
+                KernelFormulaSource::GeneratedVcFact { vc_fact_id } => (3, *vc_fact_id),
+                _ => return Err(invalid()),
+            };
+            let mut item = formula.formula_id().to_be_bytes().to_vec();
+            item.push(tag);
+            put_fingerprint(formula.formula_fingerprint(), &mut item)?;
+            item.extend_from_slice(&formula.provenance_id().to_be_bytes());
+            item.extend_from_slice(&context.to_be_bytes());
+            item.extend_from_slice(formula.formula_bytes());
+            sections[2].push(item);
+        }
+        for substitution in envelope.substitutions() {
+            let mut item = substitution.substitution_id.to_be_bytes().to_vec();
+            item.extend_from_slice(&substitution.source_formula_id.to_be_bytes());
+            item.extend_from_slice(&substitution.provenance_id.to_be_bytes());
+            put_bytes(&substitution.binder_context_encoding, &mut item)?;
+            item.extend_from_slice(&substitution.payload);
+            put_u32(substitution.freshness_witnesses.len(), &mut item)?;
+            for witness in &substitution.freshness_witnesses {
+                item.extend_from_slice(witness);
+            }
+            put_u32(substitution.free_variable_constraints.len(), &mut item)?;
+            for constraint in &substitution.free_variable_constraints {
+                item.extend_from_slice(constraint);
+            }
+            sections[3].push(item);
+        }
+        for provenance in envelope.provenance() {
+            let mut item = provenance.provenance_id.to_be_bytes().to_vec();
+            put_fingerprint(&provenance.target_vc, &mut item)?;
+            put_fingerprint(&provenance.formula_fingerprint, &mut item)?;
+            put_bytes(&provenance.payload, &mut item)?;
+            sections[4].push(item);
+        }
+        let goal = envelope.final_goal();
+        let mut item = vec![1];
+        put_fingerprint(&goal.formula_fingerprint, &mut item)?;
+        item.extend_from_slice(&goal.provenance_id.to_be_bytes());
+        item.extend_from_slice(&goal.formula_bytes);
+        sections[5].push(item);
+        let mut bytes = b"MIZAR_KERNEL_EVIDENCE\0".to_vec();
+        bytes.extend_from_slice(&envelope.schema_version().to_be_bytes());
+        bytes.extend_from_slice(&envelope.encoding_version().to_be_bytes());
+        bytes.extend_from_slice(&profile.profile_id.to_be_bytes());
+        bytes.extend_from_slice(&profile.clause_schema_version.to_be_bytes());
+        bytes.extend_from_slice(&profile.clause_encoding_version.to_be_bytes());
+        bytes.push(kernel_profile.clause_tautology_policy.tag());
+        bytes.push(kernel_profile.certificate_hash_input_algorithm.tag());
+        put_fingerprint(envelope.target_vc(), &mut bytes)?;
+        put_u32(sections.len(), &mut bytes)?;
+        let mut payload = Vec::new();
+        for (index, section) in sections.iter().enumerate() {
+            let tag = u8::try_from(index + 1).map_err(|_| invalid())?;
+            let offset = payload.len();
+            for item in section {
+                payload.extend_from_slice(&[tag, 1]);
+                put_bytes(item, &mut payload)?;
+            }
+            bytes.push(tag);
+            put_u32(section.len(), &mut bytes)?;
+            put_u32(offset, &mut bytes)?;
+            put_u32(payload.len() - offset, &mut bytes)?;
+        }
+        bytes.extend(payload);
+        let target = envelope.target_vc();
+        let fingerprint = Fingerprint::new(target.algorithm_id, target.digest.clone());
+        let parsed = parse_formula_evidence(
+            &bytes,
+            &FormulaEvidenceParseContext::v1(fingerprint, kernel_profile),
+        )
+        .map_err(|error| format!("registration.proof.parse:{error:?}"))?;
+        let target = TargetVcFingerprint::new(target.algorithm_id, target.digest.clone());
+        let entries = handoff
+            .context_identity()
+            .entries()
+            .iter()
+            .map(|entry| {
+                let source = match entry.source() {
+                    SourceContext::LocalHypothesis { local_context_id } => {
+                        KernelContextIdentitySource::LocalHypothesis { local_context_id }
+                    }
+                    SourceContext::CitedPremise { local_context_id } => {
+                        KernelContextIdentitySource::CitedPremise { local_context_id }
+                    }
+                    SourceContext::GeneratedVcFact { vc_fact_id } => {
+                        KernelContextIdentitySource::GeneratedVcFact { vc_fact_id }
+                    }
+                    _ => return Err(invalid()),
+                };
+                let producer = match entry.producer_formula_ref() {
+                    VcFormulaRef::Core(id) => KernelFormulaProducerRef::Core(id),
+                    VcFormulaRef::Generated(id) => KernelFormulaProducerRef::Generated(
+                        KernelVcGeneratedFormulaId::new(id.index()),
+                    ),
+                    _ => return Err(invalid()),
+                };
+                Ok(KernelContextIdentityEntry::new(
+                    source,
+                    entry.formula_id(),
+                    Fingerprint::new(
+                        entry.formula_fingerprint().algorithm_id,
+                        entry.formula_fingerprint().digest.clone(),
+                    ),
+                    producer,
+                ))
+            })
+            .collect::<Result<Vec<_>, String>>()?;
+        let requirements = handoff.formula_context_requirements();
+        if requirements.is_some_and(|context| {
+            !context.imported_axioms.is_empty() || !context.imported_theorems.is_empty()
+        }) {
+            return Err(invalid());
+        }
+        let context = FormulaEvidenceContext::with_context_identity(
+            Some(handoff.context_identity_hash().as_bytes().to_vec()),
+            Vec::new(),
+            Vec::new(),
+            Some(KernelContextIdentityPayload::new(
+                target.clone(),
+                handoff.canonical_hash(),
+                handoff.context_identity_hash(),
+                entries,
+            )),
+            ImportedFactContextLimits::default(),
+        )
+        .map_err(|error| format!("registration.proof.context:{error:?}"))?;
+        let result = check_kernel_evidence(KernelEvidenceCheckInput {
+            target_vc_fingerprint: &target,
+            evidence: &parsed,
+            formula_context: Some(&context),
+            check_kind: KernelEvidenceCheckKind::ProofObligation,
+            policy: KernelCheckPolicy::default(),
+            limits: KernelEvidenceCheckLimits::default(),
+        });
+        let input =
+            KernelPolicyInput::from_kernel_result(&result, KernelEvidenceOrigin::BuiltinDischarge);
+        if input.status() != KernelCheckStatus::Accepted
+            || input.policy_taint()
+            || !input.is_proof_obligation()
+            || input.accepted_goal_polarity()
+                != Some(AcceptedGoalPolarity::AssertFalseForRefutation)
+            || evaluator.candidate_class(&PolicyCandidate::KernelResult(input))
+                != CandidatePolicyClass::DischargedBuiltin
+        {
+            return Err(format!("registration.proof.kernel_rejected:{result:?}"));
+        }
+        hashes.push(handoff.canonical_hash());
+    }
+    let [validation] = check.validations() else {
+        return Err(invalid());
+    };
+    let entry = symbols
+        .registrations()
+        .iter()
+        .find(|entry| entry.id() == validation.resolver_registration())
+        .ok_or_else(invalid)?;
+    let pattern = format!("{:?}", validation.pattern());
+    let association = format!(
+        "source-existential-registration-v1;source={:?};module={:?};snapshot={snapshot:?};validation={validation:?};core={core:?};vcs={vcs:?};handoffs={hashes:?};policy={:?}",
+        source.source_id(),
+        source.module(),
+        policy.policy_fingerprint()
+    );
+    let mut fingerprint = StableHasher::new("source-existential-registration-v1");
+    fingerprint.field_str("association", &association);
+    let fingerprint = fingerprint.finalize();
+    let activation = ActivationInput::accepted(
+        entry.id(),
+        entry.kind(),
+        pattern.clone(),
+        pattern,
+        validation.correctness_provenance().as_str(),
+        association,
+    )
+    .with_validation_kind(validation.pattern().kind())
+    .with_fingerprint(format!("{fingerprint:?}"));
+    let database = RegistrationDatabase::from_symbol_env_with_validation(
+        symbols,
+        [validation.clone()],
+        [activation],
+    );
+    if database.activated().len() != 1
+        || !database.pending().is_empty()
+        || !database.rejected().is_empty()
+        || !database.diagnostics().is_empty()
+    {
+        return Err(invalid());
+    }
+    Ok(database)
+}
 
 /// Stable source identity for proof-reuse candidates across edits.
 #[derive(Clone, Debug, Eq, PartialEq, Ord, PartialOrd, std::hash::Hash)]

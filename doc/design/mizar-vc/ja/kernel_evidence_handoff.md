@@ -352,3 +352,15 @@ expectations to match current behavior.
 F9 legacy-audit-path ambiguity を閉じる。Migration-only trusted boundary の rejection
 taxonomy に触れるため `xhigh` を保つ。typo-only documentation synchronization だけなら
 lower reasoning が適切である。
+
+## Source existential-registration proof
+
+`build_source_existential_kernel_handoff(&CoreIr, &VcSet, VcId) -> Result<VcKernelEvidenceHandoff,
+String>` は全 source VC を再生成・比較してから実 Core symbol・全 term・Boolean formula を canonical manifest・formula
+bytes・algorithm-2 fingerprint に射影する。実引用のガード付き定義、formal、formal-to-choice 置換を保持し、label/debug
+text/unknown Core fingerprint から式を作らない。
+
+証人型 leaf は独立 gate の choice 型事実、属性 leaf はさらに実定義と K の等式を使う。source/module/snapshot・context
+identity・元の目標・置換 provenance を保持し、汎用 fingerprint は保守的なままとする。handoff envelope/hash-input text は binary
+evidence ではない。[Proof status](../../mizar-proof/ja/status.md#source-existential-registration-proof) が
+wire 化・実検査・source に結び付く活性化を所有する。

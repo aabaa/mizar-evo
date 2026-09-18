@@ -19,6 +19,9 @@ mizar-session = { path = "../mizar-session" }
 mizar-syntax = { path = "../mizar-syntax" }
 mizar-vc = { path = "../mizar-vc" }
 
+[dev-dependencies]
+mizar-kernel = { path = "../mizar-kernel" }
+
 [lints]
 workspace = true
 

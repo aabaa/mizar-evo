@@ -58,6 +58,15 @@ checking both call sites and every candidate/diagnostic. Valid other calls do no
 all-valid calls, coarse MissingEvidence/NoMatch and unrelated errors cannot satisfy the negative.
 Prior attribute routes and C13's strict profile remain unchanged; no accepted registration or proof is produced.
 
+The separate source-registration prerequisite runs the unchanged whole C3 widening fixture through
+[proof status](../../mizar-proof/en/status.md#source-existential-registration-proof) in Rust
+integration tests with a test-only `mizar-kernel` dependency for independent normal evidence checks. Complete Core/VC and both handoff baselines retain the original parent, two open
+leaves and explicit builtin nonempty accounting; real kernel and policy checks must produce only the
+matching module-local registration. The widening sidecar, trace/map, stage and all eight active
+outcomes remain unchanged. Renames, source/seal corruption, missing/wrong citation, negative
+definition, choice/gate/owner/accounting mutations, kernel/policy rejection and source-order
+visibility are controls; no fabricated Accepted fixture supplies positive credit.
+
 ## Parser Task 46 Operator-Declaration Parse-Only Increment
 
 The exact pass/fail pair is admitted by the ordinary parse-only runner. The

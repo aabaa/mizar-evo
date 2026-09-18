@@ -222,3 +222,29 @@ No exhaustive public enum exceptions are owned by this module.
 Status projection does not run ATP backends, perform SAT solving, call the
 kernel, invent substitutions, select premises, query proof caches, stage or
 publish witnesses, write artifact manifests, or accept proofs.
+
+## Source existential-registration proof
+
+`prove_source_existential_registration(&SurfaceResolvedArena, &TypedArena, &SymbolEnv,
+BuildSnapshotId, &VerifierPolicy) -> Result<RegistrationDatabase, String>` freshly invokes
+[checker](../../mizar-checker/en/registration_resolution.md#source-existential-registration-proof),
+Core, VC and both source handoffs. Its private serializer writes their actual fields in the
+unchanged six-section Formula v1 binary format, including full terms, substitutions, provenance,
+context identity and AssertFalseForRefutation. It runs the existing parser and check_kernel_evidence
+itself for both leaves; caller Accepted inputs, kernel-result summaries, cached handoffs and
+diagnostic/hash text cannot substitute.
+
+Require existing UncheckedBuiltinDischarge scheduling permission before checking, then use
+KernelEvidenceOrigin::BuiltinDischarge. Both fresh Accepted, untainted ProofObligation results must
+pass existing KernelPolicyInput/ProofPolicyEvaluator as genuine DischargedBuiltin. Construct
+existing ActivationInput and RegistrationDatabase inside this call with the same authenticated
+SymbolEnv and checker validation, binding the full pattern, correctness owner, original
+parent/nonempty/leaf association, source/module/snapshot, handoff hashes and current policy. Failure
+produces no activation or mutation of the pending input; no new kernel receipt or trust policy is
+introduced.
+
+The returned database is this call's module-local output, not a transferable proof receipt. Later
+consumers must use this producer within the same authenticated source orchestration, never accept an
+arbitrary returned/public database as proof authority. Preserve item-order visibility and no
+retroactive facts. C3 widening, C5/C13, broader Task274, artifact publication and cluster/reduction
+effects remain deferred.

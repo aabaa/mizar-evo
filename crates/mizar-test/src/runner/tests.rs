@@ -8868,3 +8868,975 @@ fn step5c6_antonym_authenticates_relations_source_environment_and_both_calls() {
         }
     }
 }
+
+fn step5c3_registration_case() -> crate::harness::TestCase {
+    build_test_plan(&step5c11_config())
+        .unwrap()
+        .cases
+        .into_iter()
+        .find(|case| case.id.0 == "pass_type_elaboration_argument_attribute_widening_001")
+        .unwrap()
+}
+
+fn step5c3_registration_inputs(
+    text: &str,
+) -> Result<
+    (
+        mizar_resolve::resolved_ast::SurfaceResolvedArena,
+        mizar_checker::typed_ast::TypedArena,
+        mizar_resolve::env::SymbolEnv,
+    ),
+    String,
+> {
+    super::source_registration_inputs(
+        &step5c11_config().workspace_root,
+        &step5c3_registration_case(),
+        super::formula_statement::step5c8_test_frontend(text),
+    )
+}
+
+fn step5c3_registration_vcs(
+    core: &mizar_core::core_ir::CoreIr,
+) -> Result<mizar_vc::vc_ir::VcSet, String> {
+    mizar_vc::generator::generate_source_existential_registration(
+        core,
+        super::shared::snapshot_id(0),
+        &mizar_vc::vc_ir::GenerationSchemaVersion::new("source-existential-registration-v1"),
+        &mizar_vc::vc_ir::VcSchemaVersion::new("vc-v1"),
+    )
+}
+
+#[test]
+fn step5c3_source_registration_preserves_real_choices_accounting_and_full_baselines() {
+    use mizar_checker::registration_resolution::*;
+    use mizar_core::core_ir::{
+        CoreFormulaKind, CoreTermKind, ObligationSeedKind, ObligationSeedStatus,
+    };
+    use mizar_vc::vc_ir::{SeedNoVcReason, SeedVcMapping, VcStatus};
+    let text = std::fs::read_to_string(step5c3_registration_case().source_path).unwrap();
+    let renamed = text
+        .replace("WMDef", "MarkDefinition")
+        .replace("wmarked", "tagged")
+        .replace("WMarkedExists", "TaggedExists")
+        .replace("WBoxDef", "BoxDefinition")
+        .replace("wbox", "container")
+        .replace("WidenArg1", "Consumer")
+        .replace("X", "Value");
+    for (index, text) in [text, renamed].iter().enumerate() {
+        let (source, nodes, symbols) = step5c3_registration_inputs(text).unwrap();
+        let checked =
+            check_source_existential_registration_proof(&source, &nodes, &symbols).unwrap();
+        assert!(checked.database().activated().is_empty());
+        assert_eq!(checked.database().pending().len(), 1);
+        assert_eq!(checked.validations().len(), 1);
+        let choices = checked.choice_terms().unwrap();
+        assert_eq!(choices.terms().len(), 2);
+        assert_eq!(choices.type_sites().len(), 2);
+        assert_eq!(choices.requests().len(), 4);
+        let gates = checked.choice_gates().unwrap();
+        assert_eq!(gates.len(), 2);
+        for ((_, choice), gate) in choices.terms().iter().zip(gates.iter()) {
+            assert_eq!(gate.source_range(), choice.source_range());
+            assert_eq!(gate.owner(), choice.site());
+            assert_eq!(gate.status(), ExistentialGateStatus::Satisfied);
+            assert_eq!(
+                gate.base_evidence_kind(),
+                Some(ExistentialGateBaseEvidenceKind::BuiltinSet)
+            );
+            assert_eq!(
+                gate.base_evidence_coverage(),
+                Some(ExistentialGateBaseEvidenceCoverage::Builtin)
+            );
+            assert!(gate.registration().is_none());
+            assert!(gate.attributes().is_empty() && gate.facts().is_empty());
+        }
+        let core = mizar_core::elaborator::lower_source_existential_registration(&checked).unwrap();
+        let witnesses = core
+            .terms()
+            .iter()
+            .filter(|(_, term)| matches!(term.kind, CoreTermKind::Apply { .. }))
+            .collect::<Vec<_>>();
+        assert_eq!(witnesses.len(), 2);
+        assert_ne!(witnesses[0].0, witnesses[1].0);
+        assert_ne!(witnesses[0].1.source, witnesses[1].1.source);
+        assert_eq!(witnesses[0].1.kind, witnesses[1].1.kind);
+        let (_, nonempty) = core
+            .obligation_seeds()
+            .iter()
+            .find(|(_, seed)| seed.kind == ObligationSeedKind::GeneratedNonEmptiness)
+            .unwrap();
+        assert_eq!(nonempty.status, ObligationSeedStatus::Active);
+        assert!(nonempty.context.is_empty());
+        assert!(matches!(
+            core.formulas().get(nonempty.goal.unwrap()).unwrap().kind,
+            CoreFormulaKind::Exists { .. }
+        ));
+        let vcs = step5c3_registration_vcs(&core).unwrap();
+        assert_eq!(vcs.vcs().len(), 2);
+        assert!(vcs.vcs().iter().all(|vc| vc.status == VcStatus::Open));
+        assert_eq!(vcs.seed_accounting().len(), 2);
+        assert!(vcs.seed_accounting().iter().any(|row| matches!(
+            row.mapping,
+            SeedVcMapping::NoConcreteVc {
+                reason: SeedNoVcReason::BuiltinSetInhabitation { .. }
+            }
+        ) && row.seed_status
+            == ObligationSeedStatus::Active));
+        assert!(vcs.seed_accounting().iter().any(|row| matches!(&row.mapping, SeedVcMapping::Expanded { vcs, .. } if vcs.len() == 2 && vcs[0].expansion_index == 0 && vcs[1].expansion_index == 1)));
+        let mut handoff_text = String::new();
+        for vc in vcs.vcs() {
+            let handoff =
+                mizar_vc::kernel_evidence_handoff::build_source_existential_kernel_handoff(
+                    &core, &vcs, vc.id,
+                )
+                .unwrap();
+            assert!(handoff.targets_vc(&vcs, vc.id).unwrap());
+            assert_eq!(
+                handoff.canonical_evidence().substitutions().len(),
+                vc.id.index()
+            );
+            assert!(step5c3_check_registration_handoff(&handoff, "clean").is_ok());
+            handoff_text.push_str(&handoff.debug_text());
+        }
+        if index == 0 {
+            for (path, actual) in [
+                (
+                    "core/step5c3_source_registration.core_ir.snap",
+                    core.debug_text(),
+                ),
+                (
+                    "vc/step5c3_source_registration.vc_ir.snap",
+                    vcs.debug_text(),
+                ),
+                (
+                    "vc/step5c3_source_registration.kernel_handoff.snap",
+                    handoff_text,
+                ),
+            ] {
+                assert_eq!(
+                    actual,
+                    std::fs::read_to_string(
+                        step5c11_config()
+                            .workspace_root
+                            .join("tests/snapshots")
+                            .join(path)
+                    )
+                    .unwrap(),
+                    "{path}"
+                );
+            }
+        }
+        let database = mizar_proof::status::prove_source_existential_registration(
+            &source,
+            &nodes,
+            &symbols,
+            super::shared::snapshot_id(0),
+            &mizar_proof::policy::VerifierPolicy::release(),
+        )
+        .unwrap();
+        let active = database.activated().iter().next().unwrap();
+        assert_eq!(database.activated().len(), 1);
+        assert!(database.pending().is_empty() && database.rejected().is_empty());
+        assert_eq!(
+            active.pattern().as_str(),
+            format!("{:?}", checked.validations()[0].pattern())
+        );
+        assert_eq!(
+            active.source().origin(),
+            symbols.registrations().iter().next().unwrap().origin()
+        );
+        assert_eq!(
+            active.correctness().as_str(),
+            checked.validations()[0].correctness_provenance().as_str()
+        );
+        assert!(active.fingerprint().is_some());
+        assert!(
+            checked.database().activated().is_empty(),
+            "proof does not mutate earlier pending input"
+        );
+        let policy =
+            mizar_proof::policy::VerifierPolicy::release().with_kernel_evidence_formats([]);
+        assert!(
+            mizar_proof::status::prove_source_existential_registration(
+                &source,
+                &nodes,
+                &symbols,
+                super::shared::snapshot_id(0),
+                &policy
+            )
+            .is_err()
+        );
+        let RegistrationValidationPattern::Existential { attributes, .. } =
+            checked.validations()[0].pattern()
+        else {
+            panic!("existential");
+        };
+        let candidate = ExistentialGateCandidate::new(
+            active.id(),
+            active.pattern().clone(),
+            active.correctness().clone(),
+            active.evidence().clone(),
+            active.trigger().clone(),
+            attributes.clone(),
+        )
+        .with_fingerprint(active.fingerprint().unwrap().clone());
+        let site = nodes
+            .iter()
+            .find(|(_, node)| node.kind.as_str() == "Theorem")
+            .map(|(id, _)| id)
+            .unwrap_or(nodes.root().unwrap());
+        let range = mizar_session::SourceRange {
+            source_id: source.source_id(),
+            start: text.len() - 2,
+            end: text.len() - 1,
+        };
+        for (pattern, expected) in [
+            (active.pattern().clone(), true),
+            (RegistrationPatternKey::new("builtin.set"), false),
+        ] {
+            let gate = ExistentialGateOutput::evaluate(
+                &database,
+                [ExistentialGateInput::new(
+                    mizar_checker::typed_ast::TypedSiteRef::Node(site),
+                    range,
+                    pattern,
+                    active.trigger().clone(),
+                    attributes.clone(),
+                )
+                .with_candidates([candidate.clone()])],
+            );
+            assert_eq!(
+                gate.iter().next().unwrap().status() == ExistentialGateStatus::Satisfied,
+                expected
+            );
+        }
+    }
+}
+
+#[test]
+fn step5c3_source_registration_rejects_invalid_source_and_foreign_neutral_inputs() {
+    use mizar_checker::{
+        registration_resolution::check_source_existential_registration_proof as check,
+        typed_ast::{NodeRecoveryState, TypedArena, TypingState},
+    };
+    use mizar_resolve::resolved_ast::SurfaceResolvedArena;
+    let text = std::fs::read_to_string(step5c3_registration_case().source_path).unwrap();
+    for (from, to) in [
+        ("by WMDef;", ";"),
+        ("by WMDef;", "by WBoxDef;"),
+        ("by WMDef;", "by Missing;"),
+        ("take the set;", "take the wmarked set;"),
+        ("thus the set is wmarked", "thus the wmarked set is wmarked"),
+        ("take the set;", ""),
+        (
+            "take the set;\n    thus the set is wmarked by WMDef;",
+            "thus the set is wmarked by WMDef;\n    take the set;",
+        ),
+        ("holds wbox X = X", "holds wbox Absent = X"),
+    ] {
+        let changed = text.replacen(from, to, 1);
+        assert_ne!(changed, text);
+        let frontend = super::formula_statement::step5c8_test_frontend(&changed);
+        assert!(
+            frontend.diagnostics.is_empty(),
+            "semantic control {from}: {:?}",
+            frontend.diagnostics
+        );
+        let rejected = step5c3_registration_inputs(&changed)
+            .map_or(true, |(source, nodes, symbols)| {
+                check(&source, &nodes, &symbols).is_err()
+            });
+        assert!(rejected, "accepted source mutation {from} -> {to}");
+    }
+    let (definition, rest) = text.split_once("registration\n").unwrap();
+    let (registration, later) = rest.split_once("\n\ndefinition\n").unwrap();
+    let reordered = format!("registration\n{registration}\n{definition}\ndefinition\n{later}");
+    assert!(
+        step5c3_registration_inputs(&reordered).map_or(true, |(source, nodes, symbols)| check(
+            &source, &nodes, &symbols
+        )
+        .is_err())
+    );
+    for malformed in [
+        text.replace("take the set;", "take ;"),
+        text.replace("take the set;", "assume contradiction; take the set;"),
+        text.replace("holds wbox X = X", "holds missing X = X"),
+    ] {
+        assert!(
+            !super::formula_statement::step5c8_test_frontend(&malformed)
+                .diagnostics
+                .is_empty()
+        );
+        assert!(step5c3_registration_inputs(&malformed).is_err());
+    }
+    let (source, nodes, symbols) = step5c3_registration_inputs(&text).unwrap();
+    let (_, _, foreign_symbols) =
+        step5c3_registration_inputs(&text.replace("wmarked", "marked")).unwrap();
+    assert!(check(&source, &nodes, &foreign_symbols).is_err());
+    let ast = super::formula_statement::step5c8_test_frontend(&text)
+        .ast
+        .unwrap();
+    let foreign_module =
+        ResolverModuleId::new(PackageId::new("foreign"), ModulePath::new("registration"));
+    assert!(
+        check(
+            &SurfaceResolvedArena::lower(&ast, &foreign_module).unwrap(),
+            &nodes,
+            &symbols
+        )
+        .is_err()
+    );
+    let mut foreign_ast = ast;
+    let ids = InMemorySessionIdAllocator::new();
+    ids.next_source_id(snapshot_id(0)).unwrap();
+    foreign_ast.source_id = ids.next_source_id(snapshot_id(0)).unwrap();
+    assert!(
+        check(
+            &SurfaceResolvedArena::lower(&foreign_ast, source.module()).unwrap(),
+            &nodes,
+            &symbols
+        )
+        .is_err()
+    );
+    let target = nodes
+        .iter()
+        .find(|(_, node)| node.kind.as_str() == "TakeStatement")
+        .unwrap()
+        .0;
+    for mutation in 0..5 {
+        let mut raw = nodes
+            .iter()
+            .map(|(_, node)| node.clone())
+            .collect::<Vec<_>>();
+        match mutation {
+            0 => raw[target.index()].typing = TypingState::Successful,
+            1 => raw[target.index()].recovery = NodeRecoveryState::Recovered,
+            2 => raw[target.index()].children.clear(),
+            3 => {
+                raw[target.index()].resolved_node = raw[nodes.root().unwrap().index()].resolved_node
+            }
+            4 => raw[target.index()].anchor = raw[nodes.root().unwrap().index()].anchor.clone(),
+            _ => unreachable!(),
+        }
+        let altered = TypedArena::try_new(nodes.root(), raw).unwrap();
+        assert!(
+            check(&source, &altered, &symbols).is_err(),
+            "neutral mutation {mutation}"
+        );
+    }
+    let negative = text.replacen("means X = X", "means not X = X", 1);
+    let (source, nodes, symbols) = step5c3_registration_inputs(&negative).unwrap();
+    let checked = check(&source, &nodes, &symbols).unwrap();
+    let core = mizar_core::elaborator::lower_source_existential_registration(&checked).unwrap();
+    let vcs = step5c3_registration_vcs(&core).unwrap();
+    for vc in vcs.vcs() {
+        let handoff = mizar_vc::kernel_evidence_handoff::build_source_existential_kernel_handoff(
+            &core, &vcs, vc.id,
+        )
+        .unwrap();
+        assert_eq!(
+            step5c3_check_registration_handoff(&handoff, "clean").is_ok(),
+            vc.id.index() == 0
+        );
+    }
+    assert!(
+        mizar_proof::status::prove_source_existential_registration(
+            &source,
+            &nodes,
+            &symbols,
+            super::shared::snapshot_id(0),
+            &mizar_proof::policy::VerifierPolicy::release()
+        )
+        .is_err()
+    );
+    assert!(checked.database().activated().is_empty());
+}
+
+// Independent test encoder for the normal six-section Formula-v1 wire format.
+fn step5c3_check_registration_handoff(
+    handoff: &mizar_vc::kernel_evidence_handoff::VcKernelEvidenceHandoff,
+    mutation: &str,
+) -> Result<mizar_kernel::checker::KernelCheckResult, String> {
+    use mizar_kernel::{
+        certificate_parser::{ClauseTautologyPolicy, Fingerprint, KernelProfileRecord},
+        checker::{
+            FormulaEvidenceContext, ImportedFactContextLimits, KernelCheckPolicy,
+            KernelCheckStatus, KernelContextIdentityEntry, KernelContextIdentityPayload,
+            KernelContextIdentitySource, KernelEvidenceCheckInput, KernelEvidenceCheckKind,
+            KernelEvidenceCheckLimits, KernelFormulaProducerRef, KernelVcGeneratedFormulaId,
+            check_kernel_evidence,
+        },
+        formula_evidence::{FormulaEvidenceParseContext, parse_formula_evidence},
+        rejection::TargetVcFingerprint,
+    };
+    use mizar_vc::{
+        kernel_evidence_handoff::{
+            KernelContextIdentitySource as VcSource, KernelEvidenceFingerprint, KernelFormulaSource,
+        },
+        vc_ir::VcFormulaRef,
+    };
+    fn bytes(value: &[u8], target: &mut Vec<u8>) {
+        target.extend(u32::try_from(value.len()).unwrap().to_be_bytes());
+        target.extend(value);
+    }
+    fn fingerprint(value: &KernelEvidenceFingerprint, target: &mut Vec<u8>) {
+        target.push(value.algorithm_id);
+        bytes(&value.digest, target);
+    }
+    let envelope = handoff.canonical_evidence();
+    let mut sections: [Vec<Vec<u8>>; 6] = Default::default();
+    sections[0] = envelope
+        .symbol_manifest()
+        .iter()
+        .map(|entry| entry.payload.clone())
+        .collect();
+    sections[1] = envelope
+        .variable_manifest()
+        .iter()
+        .map(|entry| entry.payload.clone())
+        .collect();
+    for formula in envelope.formula_evidence() {
+        let (kind, context) = match formula.source() {
+            KernelFormulaSource::GeneratedVcFact { vc_fact_id } => (3, *vc_fact_id),
+            KernelFormulaSource::CitedPremise { local_context_id } => (2, *local_context_id),
+            KernelFormulaSource::LocalHypothesis { local_context_id } => (1, *local_context_id),
+            _ => panic!("unexpected source"),
+        };
+        let mut item = formula.formula_id().to_be_bytes().to_vec();
+        item.push(kind);
+        fingerprint(formula.formula_fingerprint(), &mut item);
+        item.extend(formula.provenance_id().to_be_bytes());
+        item.extend(context.to_be_bytes());
+        item.extend(formula.formula_bytes());
+        sections[2].push(item);
+    }
+    for substitution in envelope.substitutions() {
+        let mut item = substitution.substitution_id.to_be_bytes().to_vec();
+        item.extend(
+            if mutation == "substitution-source" {
+                0u32
+            } else {
+                substitution.source_formula_id
+            }
+            .to_be_bytes(),
+        );
+        item.extend(substitution.provenance_id.to_be_bytes());
+        bytes(&substitution.binder_context_encoding, &mut item);
+        if mutation == "substitution-actual" {
+            let mut payload = substitution.payload[..17].to_vec();
+            payload.push(1);
+            payload.extend(&substitution.payload[13..17]);
+            payload.push(1);
+            item.extend(payload);
+        } else {
+            item.extend(&substitution.payload);
+        }
+        item.extend(
+            u32::try_from(substitution.freshness_witnesses.len())
+                .unwrap()
+                .to_be_bytes(),
+        );
+        for row in &substitution.freshness_witnesses {
+            item.extend(row);
+        }
+        item.extend(
+            u32::try_from(substitution.free_variable_constraints.len())
+                .unwrap()
+                .to_be_bytes(),
+        );
+        for row in &substitution.free_variable_constraints {
+            item.extend(row);
+        }
+        sections[3].push(item);
+    }
+    if mutation == "missing-substitution" {
+        sections[3].clear();
+    }
+    for row in envelope.provenance() {
+        let mut item = row.provenance_id.to_be_bytes().to_vec();
+        fingerprint(&row.target_vc, &mut item);
+        fingerprint(&row.formula_fingerprint, &mut item);
+        bytes(&row.payload, &mut item);
+        sections[4].push(item);
+    }
+    let goal = envelope.final_goal();
+    let mut item = vec![if mutation == "polarity" { 2 } else { 1 }];
+    fingerprint(&goal.formula_fingerprint, &mut item);
+    item.extend(goal.provenance_id.to_be_bytes());
+    item.extend(&goal.formula_bytes);
+    sections[5].push(item);
+    let profile = envelope.kernel_profile();
+    let mut wire = b"MIZAR_KERNEL_EVIDENCE\0".to_vec();
+    for value in [1u16, 1, profile.profile_id, 1, 1] {
+        wire.extend(value.to_be_bytes());
+    }
+    wire.extend([1, 1]);
+    fingerprint(envelope.target_vc(), &mut wire);
+    wire.extend(6u32.to_be_bytes());
+    let mut payload = Vec::new();
+    for (index, rows) in sections.iter().enumerate() {
+        let tag = u8::try_from(index + 1).unwrap();
+        let start = payload.len();
+        for row in rows {
+            payload.extend([tag, 1]);
+            bytes(row, &mut payload);
+        }
+        wire.push(tag);
+        for value in [rows.len(), start, payload.len() - start] {
+            wire.extend(u32::try_from(value).unwrap().to_be_bytes());
+        }
+    }
+    wire.extend(payload);
+    if mutation == "wire" {
+        wire[0] ^= 1;
+    }
+    if mutation == "goal-bytes" {
+        *wire.last_mut().unwrap() ^= 1;
+    }
+    let target = envelope.target_vc();
+    let target = TargetVcFingerprint::new(target.algorithm_id, target.digest.clone());
+    let parsed = parse_formula_evidence(
+        &wire,
+        &FormulaEvidenceParseContext::v1(
+            Fingerprint::new(
+                envelope.target_vc().algorithm_id,
+                envelope.target_vc().digest.clone(),
+            ),
+            KernelProfileRecord::v1(profile.profile_id, ClauseTautologyPolicy::Reject),
+        ),
+    )
+    .map_err(|error| format!("{error:?}"))?;
+    let entries = handoff
+        .context_identity()
+        .entries()
+        .iter()
+        .skip(usize::from(mutation == "context"))
+        .map(|entry| {
+            let source = match entry.source() {
+                VcSource::GeneratedVcFact { vc_fact_id } => {
+                    KernelContextIdentitySource::GeneratedVcFact { vc_fact_id }
+                }
+                VcSource::CitedPremise { local_context_id } => {
+                    KernelContextIdentitySource::CitedPremise { local_context_id }
+                }
+                VcSource::LocalHypothesis { local_context_id } => {
+                    KernelContextIdentitySource::LocalHypothesis { local_context_id }
+                }
+                _ => panic!("unexpected context"),
+            };
+            let producer = match entry.producer_formula_ref() {
+                VcFormulaRef::Core(id) => KernelFormulaProducerRef::Core(id),
+                VcFormulaRef::Generated(id) => {
+                    KernelFormulaProducerRef::Generated(KernelVcGeneratedFormulaId::new(id.index()))
+                }
+                _ => panic!("unexpected formula"),
+            };
+            KernelContextIdentityEntry::new(
+                source,
+                entry.formula_id(),
+                Fingerprint::new(
+                    entry.formula_fingerprint().algorithm_id,
+                    entry.formula_fingerprint().digest.clone(),
+                ),
+                producer,
+            )
+        })
+        .collect();
+    let context = FormulaEvidenceContext::with_context_identity(
+        (mutation != "provenance").then(|| handoff.context_identity_hash().as_bytes().to_vec()),
+        Vec::new(),
+        Vec::new(),
+        Some(KernelContextIdentityPayload::new(
+            target.clone(),
+            handoff.canonical_hash(),
+            handoff.context_identity_hash(),
+            entries,
+        )),
+        ImportedFactContextLimits::default(),
+    )
+    .map_err(|error| format!("{error:?}"))?;
+    let mut limits = KernelEvidenceCheckLimits::default();
+    if mutation == "resource" {
+        limits.max_pipeline_steps = 0;
+    }
+    let result = check_kernel_evidence(KernelEvidenceCheckInput {
+        target_vc_fingerprint: &target,
+        evidence: &parsed,
+        formula_context: Some(&context),
+        check_kind: KernelEvidenceCheckKind::ProofObligation,
+        policy: KernelCheckPolicy::default(),
+        limits,
+    });
+    if result.status() != KernelCheckStatus::Accepted {
+        return Err(format!("{result:?}"));
+    }
+    assert!(!result.policy_taint());
+    Ok(result)
+}
+
+#[test]
+fn step5c3_source_registration_normal_wire_rejects_context_polarity_and_substitution_changes() {
+    let text = std::fs::read_to_string(step5c3_registration_case().source_path).unwrap();
+    let (source, nodes, symbols) = step5c3_registration_inputs(&text).unwrap();
+    let checked =
+        mizar_checker::registration_resolution::check_source_existential_registration_proof(
+            &source, &nodes, &symbols,
+        )
+        .unwrap();
+    let core = mizar_core::elaborator::lower_source_existential_registration(&checked).unwrap();
+    let vcs = step5c3_registration_vcs(&core).unwrap();
+    for vc in vcs.vcs() {
+        let handoff = mizar_vc::kernel_evidence_handoff::build_source_existential_kernel_handoff(
+            &core, &vcs, vc.id,
+        )
+        .unwrap();
+        let result = step5c3_check_registration_handoff(&handoff, "clean").unwrap();
+        assert!(result.sat_check_report().is_some());
+        for mutation in ["wire", "goal-bytes", "context", "provenance", "polarity", "resource"] {
+            assert!(
+                step5c3_check_registration_handoff(&handoff, mutation).is_err(),
+                "leaf {:?}: {mutation}",
+                vc.id
+            );
+        }
+        if vc.id.index() == 1 {
+            for mutation in [
+                "missing-substitution",
+                "substitution-source",
+                "substitution-actual",
+            ] {
+                assert!(
+                    step5c3_check_registration_handoff(&handoff, mutation).is_err(),
+                    "{mutation}"
+                );
+            }
+        }
+    }
+}
+
+#[test]
+fn step5c3_source_registration_rejects_coherent_core_and_vc_corruption() {
+    use mizar_core::core_ir::*;
+    use mizar_vc::vc_ir::*;
+    let text = std::fs::read_to_string(step5c3_registration_case().source_path).unwrap();
+    let (source, nodes, symbols) = step5c3_registration_inputs(&text).unwrap();
+    let checked =
+        mizar_checker::registration_resolution::check_source_existential_registration_proof(
+            &source, &nodes, &symbols,
+        )
+        .unwrap();
+    let core = mizar_core::elaborator::lower_source_existential_registration(&checked).unwrap();
+    let (origin_id, _) = core.generated().iter().next().unwrap();
+    let (definition_id, definition) = core.definitions().iter().next().unwrap();
+    let (parent_id, parent) = core
+        .obligation_seeds()
+        .iter()
+        .find(|(_, seed)| seed.kind == ObligationSeedKind::CheckerInitial)
+        .unwrap();
+    let (nonempty_id, nonempty) = core
+        .obligation_seeds()
+        .iter()
+        .find(|(_, seed)| seed.kind == ObligationSeedKind::GeneratedNonEmptiness)
+        .unwrap();
+    let witness = core
+        .terms()
+        .iter()
+        .find(|(_, term)| matches!(term.kind, CoreTermKind::Apply { .. }))
+        .unwrap()
+        .0;
+    let witnesses = core
+        .terms()
+        .iter()
+        .filter(|(_, term)| matches!(term.kind, CoreTermKind::Apply { .. }))
+        .map(|(id, _)| id)
+        .collect::<Vec<_>>();
+    let CoreFormulaKind::Exists {
+        body: nonempty_body,
+        ..
+    } = core.formulas().get(nonempty.goal.unwrap()).unwrap().kind
+    else {
+        panic!("nonempty");
+    };
+    let (_, proof) = core.proofs().iter().next().unwrap();
+    let step = core
+        .proof_nodes()
+        .iter()
+        .find(|(_, node)| matches!(node.kind, CoreProofNodeKind::Step { .. }))
+        .unwrap()
+        .0;
+    for mutation in 0..25 {
+        let mut parts = CoreIrParts {
+            source_id: core.source_id(),
+            module_id: core.module_id().clone(),
+            items: core.items().clone(),
+            terms: core.terms().clone(),
+            formulas: core.formulas().clone(),
+            definitions: core.definitions().clone(),
+            proofs: core.proofs().clone(),
+            proof_nodes: core.proof_nodes().clone(),
+            algorithms: core.algorithms().clone(),
+            algorithm_statements: core.algorithm_statements().clone(),
+            generated: core.generated().clone(),
+            obligation_seeds: core.obligation_seeds().clone(),
+            source_map: core.source_map().clone(),
+            diagnostics: core.diagnostics().clone(),
+        };
+        match mutation {
+            0 => parts.generated.get_mut(origin_id).unwrap().key = "choice:attributed.set".into(),
+            1 => {
+                parts.generated.get_mut(origin_id).unwrap().owner = definition.owner.item().unwrap()
+            }
+            2 => parts
+                .generated
+                .get_mut(origin_id)
+                .unwrap()
+                .params
+                .push(definition.params[0].var),
+            3 => {
+                parts.generated.get_mut(origin_id).unwrap().functor =
+                    Some(definition.symbol.clone())
+            }
+            4 => parts.generated.get_mut(origin_id).unwrap().evidence.clear(),
+            5 => {
+                parts.terms.get_mut(witnesses[1]).unwrap().kind = CoreTermKind::Apply {
+                    functor: definition.symbol.clone(),
+                    args: vec![],
+                }
+            }
+            6 => parts.terms.get_mut(witness).unwrap().source = proof.source.clone(),
+            7 => {
+                parts.formulas.get_mut(nonempty_body).unwrap().kind = CoreFormulaKind::Atom {
+                    predicate: definition.symbol.clone(),
+                    args: vec![witness],
+                }
+            }
+            8 => {
+                let CoreFormulaKind::Exists { binders, .. } =
+                    &mut parts.formulas.get_mut(nonempty.goal.unwrap()).unwrap().kind
+                else {
+                    unreachable!();
+                };
+                binders[0].ty_guard = definition.params[0].ty_guard;
+            }
+            9 => {
+                let CoreFormulaKind::Exists { binders, .. } =
+                    &mut parts.formulas.get_mut(nonempty.goal.unwrap()).unwrap().kind
+                else {
+                    unreachable!();
+                };
+                binders[0].var = definition.params[0].var;
+            }
+            10 => {
+                parts.obligation_seeds.get_mut(nonempty_id).unwrap().status =
+                    ObligationSeedStatus::Deferred
+            }
+            11 => {
+                parts.obligation_seeds.get_mut(nonempty_id).unwrap().source = parent.source.clone()
+            }
+            12 => parts
+                .obligation_seeds
+                .get_mut(parent_id)
+                .unwrap()
+                .context
+                .push(nonempty_body),
+            13 => {
+                parts
+                    .obligation_seeds
+                    .get_mut(parent_id)
+                    .unwrap()
+                    .core_refs
+                    .pop();
+            }
+            14 => {
+                let CoreProofNodeKind::Step { justification, .. } =
+                    &mut parts.proof_nodes.get_mut(step).unwrap().kind
+                else {
+                    unreachable!();
+                };
+                justification.citations.clear();
+            }
+            15 => {
+                parts
+                    .terms
+                    .insert(core.terms().get(witness).unwrap().clone());
+            }
+            16 => {
+                parts
+                    .formulas
+                    .insert(core.formulas().get(nonempty_body).unwrap().clone());
+            }
+            17 => {
+                let mut duplicate = parent.clone();
+                duplicate.local_path = "extra".into();
+                parts.obligation_seeds.insert(duplicate);
+            }
+            18 => {
+                parts.definitions.get_mut(definition_id).unwrap().params[0].ty_guard =
+                    Some(nonempty_body)
+            }
+            19 => {
+                let DefinitionBody::Formula(body) = definition.body else {
+                    unreachable!();
+                };
+                let CoreFormulaKind::Equals { right, .. } =
+                    &mut parts.formulas.get_mut(body).unwrap().kind
+                else {
+                    unreachable!();
+                };
+                *right = witness;
+            }
+            20 => parts.generated.get_mut(origin_id).unwrap().source = parent.source.clone(),
+            21 => {
+                parts.generated.get_mut(origin_id).unwrap().kind =
+                    GeneratedOriginKind::FraenkelComprehension
+            }
+            22 => parts
+                .obligation_seeds
+                .get_mut(nonempty_id)
+                .unwrap()
+                .context
+                .push(parent.goal.unwrap()),
+            23 => {
+                let CoreFormulaKind::Exists { body, .. } =
+                    &mut parts.formulas.get_mut(nonempty.goal.unwrap()).unwrap().kind
+                else {
+                    unreachable!();
+                };
+                *body = parent.goal.unwrap();
+            }
+            24 => {
+                for (_, node) in parts.proof_nodes.iter_mut() {
+                    let citations = match &mut node.kind {
+                        CoreProofNodeKind::Step { justification, .. } => {
+                            &mut justification.citations
+                        }
+                        CoreProofNodeKind::TerminalGoal { citations, .. } => citations,
+                        _ => continue,
+                    };
+                    for citation in citations {
+                        if matches!(citation, CoreCitation::Label(label)
+                            if label.as_str().starts_with("definition:"))
+                        {
+                            *citation = CoreCitation::Label(CoreLabelRef::new("definition:foreign"));
+                        }
+                    }
+                }
+            }
+            _ => unreachable!(),
+        }
+        parts.source_map.term_sources = parts
+            .terms
+            .iter()
+            .map(|(id, row)| (id, row.source.clone()))
+            .collect();
+        parts.source_map.formula_sources = parts
+            .formulas
+            .iter()
+            .map(|(id, row)| (id, row.source.clone()))
+            .collect();
+        parts.source_map.generated_sources = parts
+            .generated
+            .iter()
+            .map(|(id, row)| (id, row.source.clone()))
+            .collect();
+        parts.source_map.proof_sources = parts
+            .proof_nodes
+            .iter()
+            .map(|(id, row)| (id, row.source.clone()))
+            .collect();
+        parts.source_map.obligation_sources = parts
+            .obligation_seeds
+            .iter()
+            .map(|(id, row)| (id, row.source.clone()))
+            .collect();
+        let altered = CoreIr::try_new(parts).unwrap_or_else(|error| {
+            panic!("mutation {mutation} should be structurally valid: {error}")
+        });
+        assert!(
+            step5c3_registration_vcs(&altered).is_err(),
+            "accepted Core mutation {mutation}"
+        );
+    }
+    let vcs = step5c3_registration_vcs(&core).unwrap();
+    for mutation in 0..11 {
+        let mut parts = VcSetParts {
+            schema_version: vcs.schema_version().clone(),
+            snapshot: vcs.snapshot(),
+            source: vcs.source(),
+            module: vcs.module().clone(),
+            generated_formulas: vcs.generated_formulas().to_vec(),
+            vcs: vcs.vcs().to_vec(),
+            seed_accounting: vcs.seed_accounting().to_vec(),
+        };
+        match mutation {
+            0 => parts.vcs[1].goal = parts.vcs[0].goal,
+            1 => {
+                let goal = parts.vcs[1].goal;
+                parts.vcs[1]
+                    .premises
+                    .push(PremiseRef::GeneratedFact { formula: goal });
+            }
+            2 => parts.generated_formulas[0].shape = VcGeneratedFormulaShape::True,
+            3 => parts.vcs[0].status = VcStatus::NeedsAtp,
+            4 => parts.vcs[0].premises.clear(),
+            5 => parts
+                .seed_accounting
+                .retain(|row| matches!(row.mapping, SeedVcMapping::Expanded { .. })),
+            6 => {
+                let row = parts
+                    .seed_accounting
+                    .iter_mut()
+                    .find(|row| matches!(row.mapping, SeedVcMapping::NoConcreteVc { .. }))
+                    .unwrap();
+                row.mapping = SeedVcMapping::NoConcreteVc {
+                    reason: SeedNoVcReason::BuiltinSetInhabitation {
+                        origin: GeneratedOriginId::new(origin_id.index() + 1),
+                    },
+                };
+            }
+            7 => {
+                let row = parts
+                    .seed_accounting
+                    .iter_mut()
+                    .find(|row| matches!(row.mapping, SeedVcMapping::Expanded { .. }))
+                    .unwrap();
+                let SeedVcMapping::Expanded { vcs, .. } = &mut row.mapping else {
+                    unreachable!();
+                };
+                vcs[0].vc = VcId::new(1);
+                vcs[1].vc = VcId::new(0);
+            }
+            8 => {
+                parts.vcs[1].local_context = LocalContext::try_new(
+                    vec![ContextEntry {
+                        id: ContextEntryId::new(0),
+                        sort_key: CanonicalSortKey::new("injected"),
+                        kind: ContextEntryKind::ProofAssumption,
+                        formula: Some(parts.vcs[1].goal),
+                        provenance: vec![],
+                    }],
+                    vec![],
+                )
+                .unwrap()
+            }
+            9 => {
+                parts.vcs[0].anchor.generation_schema_version =
+                    GenerationSchemaVersion::new("foreign")
+            }
+            10 => parts.vcs[1].source.related.clear(),
+            _ => unreachable!(),
+        }
+        let altered = VcSet::try_new(parts).unwrap_or_else(|error| {
+            panic!("mutation {mutation} should be structurally valid: {error}")
+        });
+        assert!(
+            mizar_vc::kernel_evidence_handoff::build_source_existential_kernel_handoff(
+                &core,
+                &altered,
+                VcId::new(1)
+            )
+            .is_err(),
+            "accepted VC mutation {mutation}"
+        );
+    }
+}

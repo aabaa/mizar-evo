@@ -629,3 +629,18 @@ exhaustive.
 ## Bounded void-claim generation
 
 `generate_source_void_claim(&CoreIr, BuildSnapshotId, &GenerationSchemaVersion, &VcSchemaVersion) -> Result<VcSet, String>` authenticates the single earlier zero-parameter void algorithm with bare return, claim-anchored theorem seed, typed algorithm dependency, genuine quantified proposition and proof-local generalization/goal. The empty interface contributes no execution-variable binder or state premise. It derives a fresh CFG/handoff and uses existing intake/normalization for one open theorem-proof VC plus honest metadata-only termination accounting. The VC retains the ExistingCore seed dependency and related theorem, terminal and algorithm sources; malformed ownership, missing wrapper/dependency, nonempty execution interfaces and incomplete source/maps fail closed. No execution, theorem acceptance, reuse eligibility or Task274 evidence is inferred; state/snapshot claims remain deferred.
+
+## Source existential-registration proof
+
+`generate_source_existential_registration(&CoreIr, BuildSnapshotId, &GenerationSchemaVersion,
+&VcSchemaVersion) -> Result<VcSet, String>` validates the complete [Core
+profile](../../mizar-core/en/elaborator.md#source-existential-registration-proof), including exact canonical definition labels and their real definition/backreferences, guard, body and sources; labels alone are neither premises nor evidence, and kernel definition substitution remains required. The original
+registration seed maps through ordered Expanded accounting to exactly two open leaves: witness type
+and attributed body under the actual capture-safe binder substitution.
+
+Only this source operation maps the separate active nonempty seed to
+NoConcreteVc(BuiltinSetInhabitation { origin }), preserving its real Exists-set goal and accounting
+row. Generic intake still considers that active goal eligible for a VC. Independently validated base
+inhabitation licenses the generated choice-type fact; the attributed goal is never assumed.
+Missing/extra seeds, terms, formulas, leaves, source maps or owner links reject; no public reason/ID
+or provenance text certifies acceptance.

@@ -608,9 +608,9 @@ per-fixture consumers, and gates are canonical in the decomposition document.
 
 The accepted mapping is checker Tasks 248-264 and 269-279, mizar-test Task-10
 increments `MT10-FS`/`MT10-AS`, parser Tasks 47-48, resolver Task 31, the
-blocked-reserved Gate A1 in Task 274, and external Gate S1 outside executable
-Task 277. Task 274 cannot execute until canonical authority names an accepted
-verifier/artifact-status producer and schema. Missing scheme/theorem roles
+partially implemented Gate A1 in Task 274, and external Gate S1 outside executable
+Task 277. Only the bounded [source-proof association](../../mizar-proof/en/status.md#source-existential-registration-proof)
+is executable; accepted artifact import remains blocked. Missing scheme/theorem roles
 remain outside executable Task 277 under Gate S1, blocked on a named parser/
 syntax/resolver owner. Neither gate may be filled by inferred payloads.
 

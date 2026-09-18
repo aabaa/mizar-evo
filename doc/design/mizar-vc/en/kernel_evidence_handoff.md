@@ -376,3 +376,18 @@ F6 is implemented on both producer and kernel-consumer sides. Keep `xhigh`
 because the work touches the rejection taxonomy for a migration-only trusted
 boundary; lower reasoning is appropriate only for typo-only documentation
 synchronization.
+
+## Source existential-registration proof
+
+`build_source_existential_kernel_handoff(&CoreIr, &VcSet, VcId) -> Result<VcKernelEvidenceHandoff,
+String>` regenerates and compares the complete source VC set before projecting actual Core symbols,
+full terms and Boolean formulas to canonical manifests, formula bytes and algorithm-2 fingerprints.
+Preserve the cited guarded definition, its real formal and explicit formal-to-choice substitution;
+no label/debug text or unknown Core fingerprint supplies formula contents.
+
+The witness-type leaf uses the independently gated choice-type fact; the attributed leaf
+additionally uses the actual definition and K equality. Preserve source/module/snapshot, context
+identity, original goal and substitution provenance; generic fingerprints remain conservative. The
+handoff envelope/hash-input text is not binary kernel evidence. [Proof
+status](../../mizar-proof/en/status.md#source-existential-registration-proof) owns wire
+serialization, actual checks and source-bound activation.

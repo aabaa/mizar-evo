@@ -704,3 +704,24 @@ snapshot without calling the gate evaluator or changing registration status.
 Supplied transport is not an activated registration, satisfied gate, accepted
 fact, or artifact result. Task 274 and its external accepted-status authority
 remain blocked-reserved.
+
+## Source existential-registration proof
+
+`check_source_existential_registration_proof(&SurfaceResolvedArena, &TypedArena, &SymbolEnv) ->
+Result<SourceRegistrationCheck, String>` authenticates the whole source/environment and neutral
+typed projection, one preceding local set-attribute definition and the actual take/cited-attribute
+existence proof, including renames. Recovery and unrelated resolver errors reject; later consumer
+semantics remain inactive. Equality or negated equality of the real definition formal is
+type-checked, not proved.
+
+Retain existing RegistrationValidationInput, SourceSetTermHandoff and evaluated
+ExistentialGateOutput in the seal via read-only validations()/choice_terms()/choice_gates(); old
+profiles have no choice records. Neutral nodes and inference omit these source requests and
+normalized pattern. Both bare `the set` occurrences require exact ChoiceNonempty/ResultType pairs,
+type sites/ranges and Satisfied/BuiltinSet/Builtin results without attributes, type arguments,
+views, free parameters, assumptions, diagnostics or accepted registrations. This independent gate
+never uses the target registration; no ActivationInput is produced.
+
+Task251 transport and pending intake remain unchanged. The bounded accepted association belongs to
+[proof status](../../mizar-proof/en/status.md#source-existential-registration-proof); general
+Task274/artifact import stays deferred.

@@ -208,3 +208,23 @@ No exhaustive public enum exceptions are owned by this module.
 status projection は ATP backend 実行、SAT solving、kernel 呼び出し、substitution
 invention、premise selection、proof cache query、witness の stage/publish、artifact
 manifest write、proof acceptance を行わない。
+
+## Source existential-registration proof
+
+`prove_source_existential_registration(&SurfaceResolvedArena, &TypedArena, &SymbolEnv,
+BuildSnapshotId, &VerifierPolicy) -> Result<RegistrationDatabase, String>` は
+[checker](../../mizar-checker/ja/registration_resolution.md#source-existential-registration-proof)・Core・VC・両
+handoff を新たに実行する。private serializer は全 term・置換・provenance・context identity・AssertFalseForRefutation
+を含む実 field を不変の六 section Formula v1 binary format にする。既存 parser と check_kernel_evidence を両 leaf
+に自ら適用し、caller Accepted・result summary・cached handoff・diagnostic/hash text を代用しない。
+
+検査前に既存 UncheckedBuiltinDischarge の実行許可を要求し、結果に KernelEvidenceOrigin::BuiltinDischarge を用いる。両 fresh
+Accepted・untainted・ProofObligation 結果が既存 KernelPolicyInput/ProofPolicyEvaluator の真正な
+DischargedBuiltin を満たす必要がある。同じ認証済み SymbolEnv と checker validation から関数内で既存
+ActivationInput/RegistrationDatabase を構築し、全 pattern・正当性 owner・親/nonempty/leaf
+関係・source/module/snapshot・handoff hash・現 policy を結ぶ。失敗で活性化や pending 入力変更は起こらず、kernel receipt や trust
+policy は追加しない。
+
+返却 database は当該呼出しの module-local 出力であり transferable proof receipt ではない。後続 consumer は同じ認証済み source
+orchestration 内で producer を使い、任意の public database を証明権威にしない。item-order visibility と非遡及性を保ち、C3
+widening・C5/C13・広域 Task274・artifact publication・cluster/reduction 効果は保留する。

@@ -15,6 +15,9 @@ workspace = true
 [dependencies]
 mizar-artifact = { path = "../mizar-artifact" }
 mizar-atp = { path = "../mizar-atp" }
+mizar-checker = { path = "../mizar-checker" }
+mizar-core = { path = "../mizar-core" }
 mizar-kernel = { path = "../mizar-kernel" }
+mizar-resolve = { path = "../mizar-resolve" }
 mizar-session = { path = "../mizar-session" }
 mizar-vc = { path = "../mizar-vc" }

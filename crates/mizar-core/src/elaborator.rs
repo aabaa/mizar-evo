@@ -14310,6 +14310,493 @@ fn attach_proof_backrefs(
     }
 }
 
+/// Lowers the authenticated local existence proof and its independent choice gates.
+pub fn lower_source_existential_registration(
+    check: &mizar_checker::registration_resolution::SourceRegistrationCheck<'_>,
+) -> Result<CoreIr, String> {
+    use mizar_checker::source_set_term::{
+        SourceSetRequestKind, SourceSetTermKind, SourceSetTypeHead,
+    };
+    use mizar_resolve::resolved_ast::{FullyQualifiedName, LocalSymbolId};
+    let invalid = || "registration.core.invalid_existential_source".to_owned();
+    let [validation] = check.validations() else {
+        return Err(invalid());
+    };
+    let choices = check.choice_terms().ok_or_else(invalid)?;
+    let gates = check.choice_gates().ok_or_else(invalid)?;
+    if choices.terms().len() != 2
+        || choices.type_sites().len() != 2
+        || choices.requests().len() != 4
+        || gates.len() != 2
+        || !gates.diagnostics().is_empty()
+        || check.owners().len() != 2
+        || check.bindings().bindings().len() != 1
+        || !check.inference().diagnostics().is_empty()
+    {
+        return Err(invalid());
+    }
+    for ((id, choice), gate) in choices.terms().iter().zip(gates.iter()) {
+        let requests = choices
+            .requests()
+            .iter()
+            .map(|(_, request)| request)
+            .filter(|request| request.term() == id)
+            .collect::<Vec<_>>();
+        let [nonempty, result] = requests.as_slice() else {
+            return Err(invalid());
+        };
+        let ty = choices
+            .type_sites()
+            .get(nonempty.type_site().ok_or_else(invalid)?)
+            .ok_or_else(invalid)?;
+        if choice.kind() != SourceSetTermKind::Choice
+            || ty.head() != SourceSetTypeHead::BuiltinSet
+            || nonempty.kind() != SourceSetRequestKind::ChoiceNonempty
+            || result.kind() != SourceSetRequestKind::ResultType
+            || gate.owner() != choice.site()
+            || gate.source_range() != choice.source_range()
+            || gate.status() != ExistentialGateStatus::Satisfied
+            || gate.registration().is_some()
+            || gate.base_evidence_kind() != Some(ExistentialGateBaseEvidenceKind::BuiltinSet)
+            || gate.base_evidence_coverage() != Some(ExistentialGateBaseEvidenceCoverage::Builtin)
+            || !gate.attributes().is_empty()
+            || !gate.facts().is_empty()
+            || !gate.diagnostics().is_empty()
+        {
+            return Err(invalid());
+        }
+    }
+    let nodes = check.nodes();
+    let kind = |id| nodes.node(id).map(|node| node.kind.as_str());
+    let range = |id| match nodes.node(id).map(|node| &node.anchor) {
+        Some(SourceAnchor::Range(range)) => Ok(*range),
+        _ => Err(invalid()),
+    };
+    let children = |id| {
+        nodes
+            .node(id)
+            .into_iter()
+            .flat_map(|node| &node.children)
+            .copied()
+            .filter(|id| !kind(*id).is_some_and(|kind| kind.starts_with("Token(")))
+            .collect::<Vec<_>>()
+    };
+    let only = |id, name| -> Result<TypedNodeId, String> {
+        let found = children(id)
+            .into_iter()
+            .filter(|id| kind(*id) == Some(name))
+            .collect::<Vec<_>>();
+        match found.as_slice() {
+            [id] => Ok(*id),
+            _ => Err(invalid()),
+        }
+    };
+    let registration = validation.owner().node();
+    let correctness = only(registration, "CorrectnessCondition")?;
+    let proof = only(correctness, "ProofBlock")?;
+    let take = only(proof, "TakeStatement")?;
+    let terminal = only(proof, "ConclusionStatement")?;
+    let provenance = |node: TypedNodeId| {
+        vec![CoreProvenance::new(
+            CoreProvenancePhase::Checker,
+            format!("registration/source-node#{}", node.index()),
+        )]
+    };
+    let source = |node| -> Result<CoreSourceRef, String> {
+        Ok(CoreSourceRef::direct(range(node)?).with_provenance(provenance(node)))
+    };
+    let mut items = CoreItemTable::new();
+    let mut source_map = CoreSourceMap::new();
+    let mut attribute = None;
+    let mut owner = None;
+    for (node, symbol, visibility) in check.owners() {
+        let item_kind = match kind(*node) {
+            Some("AttributeDefinition") => CoreItemKind::Attribute,
+            Some("ExistentialRegistration") => CoreItemKind::Registration,
+            _ => return Err(invalid()),
+        };
+        let item = items.insert(CoreItem::new(
+            symbol.clone(),
+            item_kind,
+            *visibility,
+            source(*node)?,
+        ));
+        source_map.item_sources.insert(item, source(*node)?);
+        if *node == registration {
+            owner = Some((item, symbol.clone()));
+        } else {
+            attribute = Some((item, *node, symbol.clone()));
+        }
+    }
+    let (owner, registration_symbol) = owner.ok_or_else(invalid)?;
+    let (attribute_item, definition_node, attribute_symbol) = attribute.ok_or_else(invalid)?;
+    let (binding_id, binding) = check
+        .bindings()
+        .bindings()
+        .iter()
+        .next()
+        .ok_or_else(invalid)?;
+    let BindingTypeSite::Source(binding_type) = binding.type_site else {
+        return Err(invalid());
+    };
+    let formal = CoreVarId::new(binding_id.index());
+    let existential = CoreVarId::new(formal.index() + 1);
+    let nonempty_var = CoreVarId::new(formal.index() + 2);
+    let mut terms = CoreTermTable::new();
+    let formal_term = terms.insert(CoreTerm::new(
+        CoreTermKind::Var(formal),
+        CoreSourceRef::direct(binding_type),
+    ));
+    let existential_term = terms.insert(CoreTerm::new(
+        CoreTermKind::Var(existential),
+        source(registration)?,
+    ));
+    let nonempty_term = terms.insert(CoreTerm::new(
+        CoreTermKind::Var(nonempty_var),
+        source(proof)?,
+    ));
+    let functor = SymbolId::new(
+        registration_symbol.module().clone(),
+        LocalSymbolId::new(format!(
+            "{}::$choice_set",
+            registration_symbol.local().as_str()
+        )),
+        FullyQualifiedName::new(format!(
+            "{}::$choice_set",
+            registration_symbol.fqn().as_str()
+        )),
+    );
+    let mut generated = GeneratedOriginTable::new();
+    let origin = generated.insert(GeneratedOrigin {
+        owner,
+        kind: GeneratedOriginKind::StableChoice,
+        key: GeneratedOriginKey::new("choice:builtin.set"),
+        functor: Some(functor.clone()),
+        params: Vec::new(),
+        evidence: gates
+            .iter()
+            .map(|gate| {
+                CoreProvenance::new(
+                    CoreProvenancePhase::Checker,
+                    format!(
+                        "builtin-set-choice:{:?}:{:?}",
+                        gate.owner(),
+                        gate.source_range()
+                    ),
+                )
+            })
+            .collect(),
+        source: source(proof)?,
+    });
+    source_map.generated_sources.insert(origin, source(proof)?);
+    let witnesses = choices
+        .terms()
+        .iter()
+        .map(|(_, choice)| {
+            terms.insert(CoreTerm::new(
+                CoreTermKind::Apply {
+                    functor: functor.clone(),
+                    args: Vec::new(),
+                },
+                CoreSourceRef::direct(choice.source_range())
+                    .with_provenance(provenance(choice.site().node())),
+            ))
+        })
+        .collect::<Vec<_>>();
+    let mut formulas = CoreFormulaTable::new();
+    let mut formula = |kind, node| -> Result<CoreFormulaId, String> {
+        Ok(formulas.insert(CoreFormula::new(kind, source(node)?)))
+    };
+    let guard = formula(
+        CoreFormulaKind::TypePred {
+            subject: formal_term,
+            ty: "builtin.set".into(),
+        },
+        definition_node,
+    )?;
+    let checked_formulas = check
+        .inference()
+        .formulas()
+        .iter()
+        .map(|(_, formula)| formula)
+        .collect::<Vec<_>>();
+    let equality = checked_formulas
+        .iter()
+        .find(|formula| formula.kind == FormulaKind::Equality)
+        .ok_or_else(invalid)?;
+    let equality_body = formula(
+        CoreFormulaKind::Equals {
+            left: formal_term,
+            right: formal_term,
+        },
+        equality.site.node(),
+    )?;
+    let body = if let Some(negation) = checked_formulas
+        .iter()
+        .find(|formula| formula.kind == FormulaKind::Negation)
+    {
+        formula(CoreFormulaKind::Not(equality_body), negation.site.node())?
+    } else {
+        equality_body
+    };
+    if checked_formulas.len() != if body == equality_body { 1 } else { 2 } {
+        return Err(invalid());
+    }
+    let parent_guard = formula(
+        CoreFormulaKind::TypePred {
+            subject: existential_term,
+            ty: "builtin.set".into(),
+        },
+        registration,
+    )?;
+    let attributed = formula(
+        CoreFormulaKind::Atom {
+            predicate: attribute_symbol.clone(),
+            args: vec![existential_term],
+        },
+        registration,
+    )?;
+    let conjunction = formula(
+        CoreFormulaKind::And(vec![parent_guard, attributed]),
+        registration,
+    )?;
+    let binder = |var, role: &str, node| -> Result<CoreBinder, String> {
+        Ok(CoreBinder {
+            var,
+            role: role.into(),
+            ty_guard: None,
+            source_name: None,
+            source: source(node)?,
+        })
+    };
+    let goal = formula(
+        CoreFormulaKind::Exists {
+            binders: vec![binder(existential, "registration-witness", registration)?],
+            body: conjunction,
+        },
+        registration,
+    )?;
+    let nonempty_body = formula(
+        CoreFormulaKind::TypePred {
+            subject: nonempty_term,
+            ty: "builtin.set".into(),
+        },
+        proof,
+    )?;
+    let nonempty_goal = formula(
+        CoreFormulaKind::Exists {
+            binders: vec![binder(nonempty_var, "choice-nonempty", proof)?],
+            body: nonempty_body,
+        },
+        proof,
+    )?;
+    let witness_type = formula(
+        CoreFormulaKind::TypePred {
+            subject: witnesses[0],
+            ty: "builtin.set".into(),
+        },
+        take,
+    )?;
+    let conclusion = formula(
+        CoreFormulaKind::Atom {
+            predicate: attribute_symbol.clone(),
+            args: vec![witnesses[1]],
+        },
+        terminal,
+    )?;
+    formula(
+        CoreFormulaKind::Atom {
+            predicate: attribute_symbol.clone(),
+            args: vec![formal_term],
+        },
+        definition_node,
+    )?;
+    formula(
+        CoreFormulaKind::Atom {
+            predicate: attribute_symbol.clone(),
+            args: vec![witnesses[0]],
+        },
+        take,
+    )?;
+    let mut definitions = CoreDefinitionTable::new();
+    let definition = definitions.insert(CoreDefinition {
+        owner: CoreDefinitionOwner::for_item(attribute_item),
+        symbol: attribute_symbol.clone(),
+        params: vec![CoreBinder {
+            var: formal,
+            role: "definition-parameter".into(),
+            ty_guard: Some(guard),
+            source_name: None,
+            source: CoreSourceRef::direct(binding_type),
+        }],
+        body: DefinitionBody::Formula(body),
+        expansion: ExpansionPolicy::Transparent,
+        correctness: Vec::new(),
+        generated_dependencies: Vec::new(),
+        source: source(definition_node)?,
+    });
+    source_map
+        .definition_sources
+        .insert(definition, source(definition_node)?);
+    let mut seeds = ObligationSeedTable::new();
+    let mut seed = |kind, goal, node, path: &str, refs| -> Result<ObligationSeedId, String> {
+        let source = source(node)?;
+        let id = seeds.insert(ObligationSeed {
+            owner,
+            kind,
+            goal: Some(goal),
+            context: Vec::new(),
+            local_path: path.into(),
+            label: None,
+            semantic_origin: validation.correctness_provenance().as_str().into(),
+            provenance: provenance(node),
+            source: source.clone(),
+            core_refs: refs,
+            status: ObligationSeedStatus::Active,
+            diagnostics: Vec::new(),
+        });
+        source_map.obligation_sources.insert(id, source);
+        Ok(id)
+    };
+    let nonempty = seed(
+        ObligationSeedKind::GeneratedNonEmptiness,
+        nonempty_goal,
+        proof,
+        "registration/choice-nonempty",
+        vec![
+            CoreNodeRef::Item(owner),
+            CoreNodeRef::Generated(origin),
+            CoreNodeRef::Formula(nonempty_goal),
+        ],
+    )?;
+    let parent = seed(
+        ObligationSeedKind::CheckerInitial,
+        goal,
+        correctness,
+        "registration/existence",
+        vec![
+            CoreNodeRef::Item(owner),
+            CoreNodeRef::Definition(definition),
+            CoreNodeRef::Generated(origin),
+            CoreNodeRef::Term(witnesses[0]),
+            CoreNodeRef::Term(witnesses[1]),
+            CoreNodeRef::ObligationSeed(nonempty),
+            CoreNodeRef::Formula(goal),
+            CoreNodeRef::Formula(witness_type),
+            CoreNodeRef::Formula(conclusion),
+        ],
+    )?;
+    let mut proof_nodes = CoreProofNodeTable::new();
+    let mut proof_node = |kind, node| -> Result<CoreProofNodeId, String> {
+        let source = source(node)?;
+        let id = proof_nodes.insert(CoreProofNode {
+            kind,
+            source: source.clone(),
+            diagnostics: Vec::new(),
+        });
+        source_map.proof_sources.insert(id, source);
+        Ok(id)
+    };
+    let nonempty_terminal = proof_node(
+        CoreProofNodeKind::TerminalGoal {
+            obligation: nonempty,
+            citations: Vec::new(),
+        },
+        proof,
+    )?;
+    let nonempty_current = proof_node(
+        CoreProofNodeKind::CurrentGoal {
+            thesis: nonempty_goal,
+            child: nonempty_terminal,
+        },
+        proof,
+    )?;
+    let type_step = proof_node(
+        CoreProofNodeKind::Step {
+            label: None,
+            formula: witness_type,
+            justification: CoreJustification {
+                citations: vec![CoreCitation::Generated(origin)],
+                source: source(take)?,
+            },
+        },
+        take,
+    )?;
+    let definition_citation = CoreCitation::Label(CoreLabelRef::new(format!(
+        "definition:{}",
+        attribute_symbol.fqn().as_str()
+    )));
+    let attr_step = proof_node(
+        CoreProofNodeKind::Step {
+            label: None,
+            formula: conclusion,
+            justification: CoreJustification {
+                citations: vec![definition_citation.clone()],
+                source: source(terminal)?,
+            },
+        },
+        terminal,
+    )?;
+    let parent_terminal = proof_node(
+        CoreProofNodeKind::TerminalGoal {
+            obligation: parent,
+            citations: vec![definition_citation],
+        },
+        terminal,
+    )?;
+    let sequence = proof_node(
+        CoreProofNodeKind::Sequence {
+            children: vec![nonempty_current, type_step, attr_step, parent_terminal],
+        },
+        proof,
+    )?;
+    let root = proof_node(
+        CoreProofNodeKind::CurrentGoal {
+            thesis: goal,
+            child: sequence,
+        },
+        proof,
+    )?;
+    let mut proofs = CoreProofTable::new();
+    let proof_id = proofs.insert(CoreProof {
+        item: owner,
+        proposition: goal,
+        root,
+        status: CoreProofStatus::PendingAutomaticProof,
+        source: source(proof)?,
+    });
+    seeds
+        .get_mut(parent)
+        .ok_or_else(invalid)?
+        .core_refs
+        .extend([CoreNodeRef::Proof(proof_id), CoreNodeRef::ProofNode(root)]);
+    source_map
+        .term_sources
+        .extend(terms.iter().map(|(id, term)| (id, term.source.clone())));
+    source_map.formula_sources.extend(
+        formulas
+            .iter()
+            .map(|(id, formula)| (id, formula.source.clone())),
+    );
+    CoreIr::try_new(CoreIrParts {
+        source_id: check.inference().source_id(),
+        module_id: check.inference().module_id().clone(),
+        items,
+        terms,
+        formulas,
+        definitions,
+        proofs,
+        proof_nodes,
+        algorithms: CoreAlgorithmTable::new(),
+        algorithm_statements: CoreAlgorithmStmtTable::new(),
+        generated,
+        obligation_seeds: seeds,
+        source_map,
+        diagnostics: CoreDiagnosticTable::new(),
+    })
+    .map_err(|error| error.to_string())
+}
+
 /// Lowers checked local set/identity functorial and reduction correctness goals.
 pub fn lower_source_functorial_registration(
     check: &mizar_checker::registration_resolution::SourceRegistrationCheck<'_>,

@@ -536,3 +536,10 @@ task 17 は `vc_ir` の public enum をすべて downstream forward-compatible A
 `VcProgramValue { var: CoreVarId, definition: Option<CoreAlgorithmStmtId> }` は None で不変仮引数、Some で実際の宣言・書込み直後の値を識別する。generator が所有者・代入先・ソース順序・定義後使用を Core に照合する。
 `ProgramEquals` と `ProgramTypePredicate` はこの値と実際の検査済み述語を保持し、AlgorithmStateFact が宣言・書込み文脈を AlgorithmAssertion 目標と区別する。Core は不変とし、Core payload が不明なら真偽・fingerprint・再利用を保守的に扱う。
 `ContextEntryKind::PendingAlgorithmAssertion { handoff }` は One seed accounting を通じて後続の仮定を厳密な先行 assertion 目標へ結び付け、所有者・目標の不一致、自己依存、循環を拒否する。未解決の証明依存であり、直接・偽の承認済み前提や再利用可能な証拠にはしない。
+
+## Builtin choice accounting
+
+`SeedNoVcReason::BuiltinSetInhabitation { origin: GeneratedOriginId }` は [source
+generator](./generator.md#source-existential-registration-proof) の accounting であり skipped/deferred や
+Discharged evidence ではない。VcSet 構造検査は active な ExistingCore seed origin を要求し、参照 generated origin と実 seed goal
+の認証は全 Core 再生成が行う。caller が構築できる値から汎用 consumer が真偽・受理を導いてはならない。
