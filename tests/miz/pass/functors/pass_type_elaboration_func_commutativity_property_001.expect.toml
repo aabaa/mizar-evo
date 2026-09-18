@@ -10,4 +10,5 @@ diagnostic_codes = []
 spec_refs = [
   "spec.en.10.functors.properties.declaration",
 ]
-notes = "Audit-1 semantic-bridge inactive oracle seed (September 2026 audit wave): binding expectation for the Step-5 semantic bridge; no active runner tag, earns no current credit. A binary functor whose definiens is symmetric may declare the commutativity property (spec 10.6, A.10 func_property)."
+tags = ["active_type_elaboration"]
+notes = "Checks the actual binary set-enumeration body and declaration types, retaining commutativity as one pending property obligation; no proved property or rewrite is published."

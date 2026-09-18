@@ -703,4 +703,4 @@ dedicated logical-task commit.
 The active source bridge authenticates functor declarations before checking existing source/type
 payloads. A `means` definition requires existence and uniqueness, an `equals` definiens must match
 the declared result type, and commutativity requires binary arity. Builtin bracket pairs add no new
-term representation, and duplicate signatures remain resolver-owned.
+term representation, and duplicate signatures remain resolver-owned. The [property checker](./type_checker.md#source-functor-property-typing) additionally checks the actual set-enumeration definiens before the commutativity declaration can type-check; its obligation remains unproved and the frozen Task260 transport is unchanged.

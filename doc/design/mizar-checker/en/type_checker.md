@@ -3149,6 +3149,11 @@ The same operation admits one preceding bare structure with a required builtin-s
 The actual T token supplies a definition-parameter binding for the schema structure object. Its T.carrier selector references the actual member and must have the declared set result; x:T and the functor locus remain symbolic element-type identities, never normalized as the structure itself. No fake SymbolId(T), generated object identity or sethood fact is introduced.
 Both theorem/proof calls are authenticated before a supported builtin actual lacking the real structure bound produces templates.argument.bound_violation. Valid declaration-only bodies pass without fabricated instantiation. Other actual/view/inheritance/attribute profiles remain unsupported, not bound negatives; no proof, coherence acceptance or Task277B credit follows.
 
+## Source functor property typing
+
+`TermFormulaChecker::check_source_functor_property(&SurfaceResolvedArena, &SymbolEnv, &TypedArena)` returns existing `(BindingEnv, TermFormulaInferenceOutput, InitialObligationTable)` in `Result<_, String>`. It authenticates complete source/environment/neutral-typed correspondence and the binary builtin-set functor, ordered bound loci, operator declaration, actual two-element set-enumeration body, declared set result and commutativity owner/justification. Actual bindings and every body occurrence are checked before success; property arity alone cannot bypass the body.
+The sole initial obligation is Pending FunctorPropertyCorrectness, tied to the actual functor/property and ordered loci through existing goal/provenance keys. This checker-local request is not a canonical formula or proof: nonsymmetric well-typed bodies still owe the obligation. Generic TypedAst installation rejects this kind without its owning source path; no acceptance, rewrite rule, Core/VC handoff or Task260 profile expansion follows.
+
 ## Ordinary predicate application checking
 
 The single-candidate profile of `check_source_distinct_loci_overloads` also checks one binary predicate over a bare local structure with a required builtin-set field. It authenticates ordered loci, actual bindings, selector-equality body, segment polarity and both calls; predicate candidates have no term result.

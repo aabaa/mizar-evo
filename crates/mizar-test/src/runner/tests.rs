@@ -7355,3 +7355,368 @@ fn step5c14_claim_rejects_genuine_foreign_and_stale_algorithm_seals() {
         );
     }
 }
+
+fn step5c5_functor_property_case() -> (crate::harness::TestCase, String) {
+    let case = build_test_plan(&step5c11_config())
+        .unwrap()
+        .cases
+        .into_iter()
+        .find(|case| case.id.0 == "pass_type_elaboration_func_commutativity_property_001")
+        .unwrap();
+    let text = std::fs::read_to_string(&case.source_path).unwrap();
+    (case, text)
+}
+
+#[test]
+fn step5c5_functor_property_checks_body_bindings_and_retains_only_a_pending_obligation() {
+    use mizar_checker::{
+        binding_env::BindingKind,
+        type_checker::{
+            NormalizedTypeStatus, TermFormulaChecker, TermKind, TermReference, TermStatus,
+            TypeHeadRef,
+        },
+        typed_ast::{InitialObligationKind, InitialObligationStatus, TypeEntryActual, TypeStatus},
+    };
+    let config = step5c11_config();
+    let (case, text) = step5c5_functor_property_case();
+    for (variant, body_order) in [
+        (text.clone(), [0, 1]),
+        (text.replace("PairJoinDef", "UnionRule"), [0, 1]),
+        (text.replace("X", "Left").replace("Y", "Right"), [0, 1]),
+        (text.replace(r"\*\", r"\+\"), [0, 1]),
+        (text.replace("{X, Y}", "{Y, X}"), [1, 0]),
+        (text.replace(r"X \*\ Y ->", r"Y \*\ X ->"), [0, 1]),
+        (text.replace("{X, Y}", "{X, X}"), [0, 0]),
+    ] {
+        let frontend = super::formula_statement::step5c8_test_frontend(&variant);
+        assert!(
+            frontend.diagnostics.is_empty(),
+            "{variant}: {:?}",
+            frontend.diagnostics
+        );
+        let (source, typed, symbols) =
+            super::source_registration_inputs(&config.workspace_root, &case, frontend).unwrap();
+        let result =
+            TermFormulaChecker::check_source_functor_property(&source, &symbols, &typed).unwrap();
+        assert_eq!(
+            result,
+            TermFormulaChecker::check_source_functor_property(&source, &symbols, &typed).unwrap()
+        );
+        let (bindings, checked, obligations) = result;
+        assert!(bindings.diagnostics().is_empty() && checked.diagnostics().is_empty());
+        assert!(
+            checked.formulas().is_empty()
+                && checked.facts().is_empty()
+                && checked.candidate_sets().is_empty()
+        );
+        let formals = bindings
+            .bindings()
+            .iter()
+            .map(|(_, entry)| entry)
+            .collect::<Vec<_>>();
+        assert_eq!(formals.len(), 2);
+        for formal in &formals {
+            assert_eq!(formal.kind, BindingKind::DefinitionParameter);
+            assert_eq!(
+                &variant[formal.declaration_range.start..formal.declaration_range.end],
+                formal.spelling
+            );
+            assert!(formal.declaration_range.end < variant.find("func ").unwrap());
+        }
+        assert_ne!(formals[0].id, formals[1].id);
+        assert_ne!(formals[0].identity, formals[1].identity);
+        let terms = checked
+            .terms()
+            .iter()
+            .map(|(_, term)| term)
+            .collect::<Vec<_>>();
+        assert_eq!(terms.len(), 3);
+        for term in &terms {
+            assert_eq!(term.status, TermStatus::Inferred);
+            assert!(term.deferred.is_empty() && term.candidate_set.is_none());
+            let TypeEntryActual::Known(id) =
+                checked.type_entries().get(term.type_entry).unwrap().actual
+            else {
+                panic!("body type must be known")
+            };
+            assert_eq!(
+                checked.type_entries().get(term.type_entry).unwrap().status,
+                TypeStatus::Known
+            );
+            let normalized = checked.normalized_types().get(id).unwrap();
+            assert_eq!(normalized.status, NormalizedTypeStatus::Known);
+            assert_eq!(normalized.head, TypeHeadRef::BuiltinSet);
+        }
+        let elements = terms
+            .iter()
+            .filter(|term| term.kind == TermKind::Variable)
+            .collect::<Vec<_>>();
+        assert_eq!(elements.len(), 2);
+        assert_ne!(elements[0].site, elements[1].site);
+        for (element, formal_index) in elements.iter().zip(body_order) {
+            assert_eq!(
+                element.reference,
+                Some(TermReference::Binding(formals[formal_index].id))
+            );
+            let SourceAnchor::Range(range) = typed.node(element.site.node()).unwrap().anchor else {
+                panic!("real body occurrence")
+            };
+            assert_eq!(
+                &variant[range.start..range.end],
+                formals[formal_index].spelling
+            );
+        }
+        let body = terms
+            .iter()
+            .find(|term| term.kind == TermKind::SetEnumeration)
+            .unwrap();
+        assert!(body.reference.is_none());
+        let body_type = checked.type_entries().get(body.type_entry).unwrap();
+        let TypeEntryActual::Known(actual_type) = body_type.actual else {
+            unreachable!()
+        };
+        assert_eq!(body_type.expected, Some(actual_type));
+        assert_eq!(body.expected_type, Some(actual_type));
+        let SourceAnchor::Range(body_range) = typed.node(body.site.node()).unwrap().anchor else {
+            unreachable!()
+        };
+        assert!(variant[body_range.start..body_range.end].starts_with('{'));
+        for element in elements {
+            let SourceAnchor::Range(range) = typed.node(element.site.node()).unwrap().anchor else {
+                unreachable!()
+            };
+            assert!(body_range.start < range.start && range.end < body_range.end);
+        }
+        assert_eq!(obligations.len(), 1);
+        let (_, obligation) = obligations.iter().next().unwrap();
+        assert_eq!(
+            obligation.kind,
+            InitialObligationKind::FunctorPropertyCorrectness
+        );
+        assert_eq!(obligation.status, InitialObligationStatus::Pending);
+        assert!(obligation.assumptions.is_empty());
+        let (definition_id, definition) = source
+            .arena()
+            .iter()
+            .find(|(_, node)| node.kind() == &mizar_syntax::SurfaceNodeKind::FunctorDefinition)
+            .unwrap();
+        let functor = symbols
+            .symbols()
+            .iter()
+            .find(|entry| entry.origin().anchor() == definition.origin().anchor())
+            .unwrap();
+        let property_symbol = symbols
+            .symbols()
+            .iter()
+            .find(|entry| entry.origin().anchor() == &SourceAnchor::Range(obligation.source_range))
+            .unwrap();
+        let pattern = source
+            .arena()
+            .iter()
+            .find(|(_, node)| node.kind() == &mizar_syntax::SurfaceNodeKind::FunctorPattern)
+            .unwrap()
+            .1;
+        let mut loci = Vec::new();
+        for child in pattern.children() {
+            let node = source.arena().node(*child).unwrap();
+            if let mizar_syntax::SurfaceNodeKind::Token(token) = node.kind()
+                && let Some(formal) = formals
+                    .iter()
+                    .find(|formal| formal.spelling == token.text.as_ref())
+            {
+                let declaration = source
+                    .arena()
+                    .iter()
+                    .find(|(_, node)| {
+                        node.origin().anchor() == &SourceAnchor::Range(formal.declaration_range)
+                    })
+                    .unwrap()
+                    .0;
+                loci.push(declaration.index());
+            }
+        }
+        assert_eq!(loci.len(), 2);
+        assert_ne!(loci[0], loci[1]);
+        let return_type = definition
+            .children()
+            .iter()
+            .find(|id| {
+                source.arena().node(**id).unwrap().kind()
+                    == &mizar_syntax::SurfaceNodeKind::TypeExpression
+            })
+            .unwrap();
+        assert_eq!(
+            obligation.goal.as_str(),
+            format!(
+                "source.functor.property.request:functor={}:property={}:loci={},{}:body={}:type={}",
+                functor.symbol().fqn().as_str(),
+                obligation.owner.node().index(),
+                loci[0],
+                loci[1],
+                body.site.node().index(),
+                return_type.index()
+            )
+        );
+        assert_eq!(
+            obligation.provenance.as_str(),
+            format!(
+                "source.functor.property:owner={}:node={}",
+                property_symbol.symbol().fqn().as_str(),
+                obligation.owner.node().index()
+            )
+        );
+        assert_ne!(definition_id.index(), obligation.owner.node().index());
+        let property = typed.node(obligation.owner.node()).unwrap();
+        assert_eq!(property.kind.as_str(), "PropertyClause");
+        assert_eq!(
+            property.anchor,
+            SourceAnchor::Range(obligation.source_range)
+        );
+        assert!(
+            variant[obligation.source_range.start..obligation.source_range.end]
+                .starts_with("commutativity")
+        );
+    }
+}
+
+#[test]
+fn step5c5_functor_property_rejects_unsupported_bodies_and_foreign_owners() {
+    use mizar_checker::type_checker::TermFormulaChecker;
+    let config = step5c11_config();
+    let (case, text) = step5c5_functor_property_case();
+    for (before, after) in [
+        (r#""\\*\\""#, r#""\\+\\""#),
+        ("{X, Y}", "{Missing, Y}"),
+        ("{X, Y}", "{X, Missing}"),
+        ("{X, Y}", "[X, Y]"),
+        ("{X, Y}", "{X}"),
+        ("X \\*\\ Y ->", "X \\*\\ X ->"),
+        ("-> set", "-> object"),
+        ("X, Y be set", "X, Y be object"),
+        ("commutativity", "idempotence"),
+        (
+            "commutativity\n  proof\n    thus thesis;\n  end;",
+            "commutativity;",
+        ),
+        ("  commutativity\n  proof\n    thus thesis;\n  end;\n", ""),
+    ] {
+        let changed = text.replace(before, after);
+        assert_ne!(changed, text);
+        let frontend = super::formula_statement::step5c8_test_frontend(&changed);
+        assert!(
+            frontend.diagnostics.is_empty(),
+            "{before} => {after}: {:?}",
+            frontend.diagnostics
+        );
+        let outcome = super::source_registration_inputs(&config.workspace_root, &case, frontend)
+            .and_then(|(source, typed, symbols)| {
+                TermFormulaChecker::check_source_functor_property(&source, &symbols, &typed)
+            });
+        assert!(outcome.is_err(), "unsupported {before} => {after}");
+    }
+    let duplicate_binding = text.replace("let X, Y", "let X, X");
+    let frontend = super::formula_statement::step5c8_test_frontend(&duplicate_binding);
+    assert!(!frontend.diagnostics.is_empty());
+    assert!(super::source_registration_inputs(&config.workspace_root, &case, frontend).is_err());
+    let duplicate = format!("{text}\n{}", text.split("infix_operator").next().unwrap());
+    let frontend = super::formula_statement::step5c8_test_frontend(&duplicate);
+    assert!(frontend.diagnostics.is_empty());
+    let resolution = super::resolver_symbol_collection(
+        &config.workspace_root,
+        &case,
+        frontend.ast.as_ref().unwrap(),
+    );
+    assert!(!resolution.detail_keys.is_empty());
+    assert!(super::source_registration_inputs(&config.workspace_root, &case, frontend).is_err());
+    let malformed = text.replace("{X, Y}", "{X, Y");
+    let frontend = super::formula_statement::step5c8_test_frontend(&malformed);
+    assert!(!frontend.diagnostics.is_empty());
+    assert!(super::source_registration_inputs(&config.workspace_root, &case, frontend).is_err());
+}
+
+#[test]
+fn step5c5_functor_property_rejects_forged_source_typed_and_symbol_inputs() {
+    use mizar_checker::{
+        type_checker::TermFormulaChecker,
+        typed_ast::{TypedArena, TypingState},
+    };
+    use mizar_resolve::{env::SymbolEnv, resolved_ast::SurfaceResolvedArena};
+    let config = step5c11_config();
+    let (case, text) = step5c5_functor_property_case();
+    let inputs = |text: &str| {
+        let frontend = super::formula_statement::step5c8_test_frontend(text);
+        assert!(frontend.diagnostics.is_empty());
+        super::source_registration_inputs(&config.workspace_root, &case, frontend).unwrap()
+    };
+    let (source, typed, symbols) = inputs(&text);
+    let (foreign_source, _, foreign_symbols) = inputs(&text.replace("PairJoinDef", "AnotherRule"));
+    assert!(
+        TermFormulaChecker::check_source_functor_property(&foreign_source, &symbols, &typed)
+            .is_err()
+    );
+    assert!(
+        TermFormulaChecker::check_source_functor_property(&source, &foreign_symbols, &typed)
+            .is_err()
+    );
+    let ast = super::formula_statement::step5c8_test_frontend(&text)
+        .ast
+        .unwrap();
+    let foreign = ResolverModuleId::new(PackageId::new("foreign"), ModulePath::new("property"));
+    assert!(
+        TermFormulaChecker::check_source_functor_property(
+            &SurfaceResolvedArena::lower(&ast, &foreign).unwrap(),
+            &symbols,
+            &typed
+        )
+        .is_err()
+    );
+    for mutation in 0..3 {
+        let mut indexes = super::import_fixtures::clone_symbol_env_indexes(&symbols);
+        match mutation {
+            0 => indexes.definitions = Default::default(),
+            1 => indexes.symbols = Default::default(),
+            2 => indexes.contributions = Default::default(),
+            _ => unreachable!(),
+        }
+        assert!(
+            TermFormulaChecker::check_source_functor_property(
+                &source,
+                &SymbolEnv::new(symbols.module_id().clone(), indexes),
+                &typed
+            )
+            .is_err()
+        );
+    }
+    let original_nodes = typed
+        .iter()
+        .map(|(_, node)| node.clone())
+        .collect::<Vec<_>>();
+    let targets = typed
+        .iter()
+        .filter(|(_, node)| {
+            matches!(
+                node.kind.as_str(),
+                "TermReference" | "PropertyClause" | "FunctorPattern" | "OperatorDeclaration"
+            )
+        })
+        .map(|(id, _)| id)
+        .collect::<Vec<_>>();
+    assert_eq!(targets.len(), 5);
+    for target in targets {
+        for mutation in 0..3 {
+            let mut nodes = original_nodes.clone();
+            match mutation {
+                0 => nodes[target.index()].kind = "ForeignOwner".into(),
+                1 => nodes[target.index()].resolved_node = None,
+                2 => nodes[target.index()].typing = TypingState::Successful,
+                _ => unreachable!(),
+            }
+            let forged = TypedArena::try_new(typed.root(), nodes).unwrap();
+            assert!(
+                TermFormulaChecker::check_source_functor_property(&source, &symbols, &forged)
+                    .is_err(),
+                "{target:?}/{mutation}"
+            );
+        }
+    }
+}

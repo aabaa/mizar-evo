@@ -1171,6 +1171,7 @@ fn validate_baseline(
         matches!(
             row.kind,
             InitialObligationKind::PredicatePropertyCorrectness
+                | InitialObligationKind::FunctorPropertyCorrectness
                 | InitialObligationKind::FunctorExistence
                 | InitialObligationKind::FunctorUniqueness
         )
@@ -2089,6 +2090,7 @@ fn validate_baseline_prefix(
         matches!(
             row.kind,
             InitialObligationKind::PredicatePropertyCorrectness
+                | InitialObligationKind::FunctorPropertyCorrectness
                 | InitialObligationKind::FunctorExistence
                 | InitialObligationKind::FunctorUniqueness
         )

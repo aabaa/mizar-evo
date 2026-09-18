@@ -9,6 +9,7 @@ use super::super::syntax_smoke::workspace_relative_source;
 
 const ACTIVE_TYPE_ELABORATION_TAG: &str = "active_type_elaboration";
 const STEP5C5_ARGUMENT_ID: &str = "fail_type_elaboration_pred_argument_type_mismatch_001";
+const STEP5C5_PROPERTY_ID: &str = "pass_type_elaboration_func_commutativity_property_001";
 const STEP5C3_ARGUMENT_ID: &str = "fail_type_elaboration_argument_type_mismatch_functor_001";
 const STEP5C4_DEPENDENT_ID: &str = "pass_type_elaboration_mode_dependent_of_params_001";
 
@@ -19,26 +20,37 @@ const STEP5C6_ALIAS_IDS: [&str; 3] = [
 ];
 
 pub(in crate::runner) fn is_step5c5_argument_candidate(case: &TestCase) -> bool {
-    let id = STEP5C5_ARGUMENT_ID;
-    case.id.0 == id
-        || case.expectation.id.0 == id
-        || case.source_path.file_stem().is_some_and(|stem| stem == id)
-        || case
-            .expectation_path
-            .file_name()
-            .is_some_and(|name| name == format!("{id}.expect.toml").as_str())
+    [STEP5C5_ARGUMENT_ID, STEP5C5_PROPERTY_ID]
+        .into_iter()
+        .any(|id| {
+            case.id.0 == id
+                || case.expectation.id.0 == id
+                || case.source_path.file_stem().is_some_and(|stem| stem == id)
+                || case
+                    .expectation_path
+                    .file_name()
+                    .is_some_and(|name| name == format!("{id}.expect.toml").as_str())
+        })
 }
 
 pub(in crate::runner) fn step5c5_argument_admitted(root: Option<&Path>, case: &TestCase) -> bool {
-    let path = format!("tests/miz/fail/predicates/{STEP5C5_ARGUMENT_ID}.miz");
+    let property = case.id.0 == STEP5C5_PROPERTY_ID;
+    if !property && case.id.0 != STEP5C5_ARGUMENT_ID {
+        return false;
+    }
+    let directory = if property {
+        "pass/functors"
+    } else {
+        "fail/predicates"
+    };
+    let path = format!("tests/miz/{directory}/{}.miz", case.id.0);
     let exact_path = |actual: &Path, expected: &Path| match root {
         Some(root) => {
             workspace_relative_source(root, actual).is_some_and(|path| Path::new(&path) == expected)
         }
         None => actual.ends_with(expected),
     };
-    case.id.0 == STEP5C5_ARGUMENT_ID
-        && case.expectation.schema_version == 1
+    case.expectation.schema_version == 1
         && case.expectation.id == case.id
         && exact_path(&case.source_path, Path::new(&path))
         && exact_path(
@@ -46,16 +58,36 @@ pub(in crate::runner) fn step5c5_argument_admitted(root: Option<&Path>, case: &T
             &Path::new(&path).with_extension("expect.toml"),
         )
         && case.expectation.source == Path::new(&path).file_name().unwrap()
-        && case.expectation.kind == crate::expectation::TestKind::Fail
+        && case.expectation.kind
+            == if property {
+                crate::expectation::TestKind::Pass
+            } else {
+                crate::expectation::TestKind::Fail
+            }
         && case.expectation.stage == Stage::TypeElaboration
         && case.expectation.expected_phase == Some(PipelinePhase::TypeCheck)
-        && case.expectation.expected_outcome == ExpectedOutcome::Fail
-        && case.expectation.failure_category.as_deref() == Some("type_error")
+        && case.expectation.expected_outcome
+            == if property {
+                ExpectedOutcome::Pass
+            } else {
+                ExpectedOutcome::Fail
+            }
+        && case.expectation.failure_category.as_deref() == (!property).then_some("type_error")
         && case.expectation.stable_detail_key.as_deref()
-            == Some("predicates.application.argument_type_mismatch")
-        && case.expectation.domain == "predicates.application"
+            == (!property).then_some("predicates.application.argument_type_mismatch")
+        && case.expectation.domain
+            == if property {
+                "functors.properties"
+            } else {
+                "predicates.application"
+            }
         && case.expectation.spec_refs.len() == 1
-        && case.expectation.spec_refs[0].0 == "spec.en.09.predicates.application.typing"
+        && case.expectation.spec_refs[0].0
+            == if property {
+                "spec.en.10.functors.properties.declaration"
+            } else {
+                "spec.en.09.predicates.application.typing"
+            }
         && case.expectation.profiles.as_slice() == ["fast"]
         && case.expectation.rejection_reason.is_none()
         && case.expectation.diagnostic_codes.is_empty()
@@ -405,7 +437,7 @@ pub(in crate::runner) fn step5c14_static_admitted(root: Option<&Path>, case: &Te
         && case.expectation.tags.as_slice() == [ACTIVE_TYPE_ELABORATION_TAG]
 }
 
-const STEP5C5_CASES: [(&str, &str, PipelinePhase, ExpectedOutcome); 9] = [
+const STEP5C5_CASES: [(&str, &str, PipelinePhase, ExpectedOutcome); 10] = [
     (
         "fail_type_elaboration_pred_property_arity_mismatch_001",
         "tests/miz/fail/predicates/fail_type_elaboration_pred_property_arity_mismatch_001.miz",
@@ -460,9 +492,15 @@ const STEP5C5_CASES: [(&str, &str, PipelinePhase, ExpectedOutcome); 9] = [
         PipelinePhase::TypeCheck,
         ExpectedOutcome::Fail,
     ),
+    (
+        STEP5C5_PROPERTY_ID,
+        "tests/miz/pass/functors/pass_type_elaboration_func_commutativity_property_001.miz",
+        PipelinePhase::TypeCheck,
+        ExpectedOutcome::Pass,
+    ),
 ];
 
-const STEP5C5_BLOCKED_CASE_IDS: [&str; 8] = [
+const STEP5C5_BLOCKED_CASE_IDS: [&str; 7] = [
     "pass_formula_statement_pred_negated_application_001",
     "pass_proof_verification_pred_phrase_identifier_001",
     "pass_proof_verification_pred_symbolic_infix_001",
@@ -470,7 +508,6 @@ const STEP5C5_BLOCKED_CASE_IDS: [&str; 8] = [
     "pass_type_elaboration_func_dependent_return_type_001",
     "pass_proof_verification_func_equals_infix_operator_001",
     "pass_proof_verification_func_means_prefix_001",
-    "pass_type_elaboration_func_commutativity_property_001",
 ];
 
 const STEP5C7_TERM_CASES: [(&str, &str, PipelinePhase, ExpectedOutcome, Option<&str>); 5] = [
@@ -1197,7 +1234,7 @@ fn step5c4_case(
 fn step5c5_case(
     case: &TestCase,
 ) -> Option<(&'static str, &'static str, PipelinePhase, ExpectedOutcome)> {
-    if is_step5c5_argument_candidate(case) && case.id.0 != STEP5C5_ARGUMENT_ID {
+    if is_step5c5_argument_candidate(case) && !step5c5_argument_admitted(None, case) {
         return None;
     }
     if is_step5c5_predicate_duplicate_candidate(case) && case.id.0 != STEP5C5_CASES[7].0 {
@@ -1597,14 +1634,14 @@ mod tests {
 
     #[test]
     fn step5c5_inventory_admission_and_blocked_rows_are_exact() {
-        assert_eq!(STEP5C5_CASES.len(), 9);
+        assert_eq!(STEP5C5_CASES.len(), 10);
         assert_eq!(
             STEP5C5_CASES
                 .iter()
                 .map(|(id, source, _, _)| (*id, *source))
                 .collect::<BTreeSet<_>>()
                 .len(),
-            9
+            10
         );
         let root = workspace_root();
         let mut plan = build_test_plan(&config()).unwrap();
@@ -1658,6 +1695,7 @@ mod tests {
         let report = crate::runner::run_type_elaboration_corpus(&config()).expect("type report");
         assert_eq!(report.error_count(), 0, "{:?}", report.diagnostics);
         let expected = [
+            (super::STEP5C5_PROPERTY_ID, Vec::new()),
             (
                 "fail_type_elaboration_pred_property_arity_mismatch_001",
                 vec!["predicates.property.arity_mismatch"],
@@ -1842,160 +1880,189 @@ mod tests {
         use crate::staged_model::Stage;
         let root = workspace_root();
         let plan = build_test_plan(&config()).unwrap();
-        let original = plan
-            .cases
-            .iter()
-            .find(|case| case.id.0 == super::STEP5C5_ARGUMENT_ID)
-            .unwrap();
-        assert!(super::step5c5_argument_admitted(Some(&root), original));
-        assert!(validate_active_type_elaboration_tags(&root, &plan).is_empty());
-        let result =
-            crate::runner::run_type_elaboration_case(&root, &root.join("tests"), original, 5605);
-        assert_eq!(
-            result.status,
-            crate::runner::TypeElaborationCaseStatus::Passed
-        );
-        assert_eq!(
-            result.actual_detail_keys,
-            ["predicates.application.argument_type_mismatch"]
-        );
-        let rejected = |case: &TestCase| {
-            assert!(super::is_step5c5_argument_candidate(case));
-            assert!(!super::step5c5_argument_admitted(Some(&root), case));
-            assert!(!is_active_type_elaboration(case));
-            assert!(!crate::runner::is_active_parse_only(case));
-            assert!(!crate::runner::is_active_declaration_symbol(case));
-            assert!(!crate::runner::formula_statement::is_active_formula_statement(&root, case));
-            assert!(!crate::runner::is_active_proof_verification(case));
-        };
-        for mutate in [
-            (|case: &mut TestCase| case.id.0 = "alias".into()) as fn(&mut TestCase),
-            |case| case.expectation.id.0 = "alias".into(),
-            |case| case.source_path = "alias.miz".into(),
-            |case| case.expectation_path = "alias.expect.toml".into(),
-            |case| case.expectation.source = "alias.miz".into(),
-            |case| case.expectation.schema_version = 2,
-            |case| case.expectation.kind = TestKind::Pass,
-            |case| case.expectation.expected_phase = Some(PipelinePhase::Resolve),
-            |case| case.expectation.expected_outcome = ExpectedOutcome::Pass,
-            |case| case.expectation.failure_category = None,
-            |case| case.expectation.stable_detail_key = Some("unrelated".into()),
-            |case| case.expectation.domain = "other".into(),
-            |case| case.expectation.spec_refs.clear(),
-            |case| case.expectation.spec_refs[0].0.push_str("_forged"),
-            |case| case.expectation.profiles.push("other".into()),
-            |case| case.expectation.tags.clear(),
-            |case| {
-                case.expectation
-                    .tags
-                    .push(ACTIVE_TYPE_ELABORATION_TAG.into())
-            },
-            |case| case.expectation.diagnostic_codes.push("forged".into()),
-            |case| case.expectation.diagnostic_payloads.push("forged".into()),
-            |case| {
-                case.expectation
-                    .declaration_symbol_payloads
-                    .push("forged".into())
-            },
-            |case| case.expectation.rejection_reason = Some("forged".into()),
-            |case| case.expectation.snapshots = Some("forged.snap".into()),
-            |case| case.expectation.ast_profile = Some("forged".into()),
-            |case| case.expectation.snapshot_profiles.push("forged".into()),
-            |case| {
-                case.expectation.tokens.push(TokenExpectation {
-                    kind: "Identifier".into(),
-                    lexeme: "X".into(),
-                    span_start: None,
-                    span_end: None,
-                    span_start_line: None,
-                    span_start_col: None,
-                    span_end_line: None,
-                    span_end_col: None,
-                })
-            },
-            |case| {
-                case.expectation.origin = Some(OriginMetadata {
-                    schema_version: 1,
-                    kind: TestKind::Fail,
-                    generator: "forged".into(),
-                    generator_version: "1".into(),
-                    seed: "0".into(),
-                    profile: "forged".into(),
-                    expected_outcome: ExpectedOutcome::Fail,
-                    minimized: false,
-                    original_failure_category: None,
-                })
-            },
-            |case| {
-                case.expectation.architecture22 = Some(Architecture22Metadata {
-                    scenarios: vec!["forged".into()],
-                    equivalence_class: None,
-                    gate: Architecture22Gate::Planned,
-                })
-            },
-        ] {
-            let mut changed = original.clone();
-            mutate(&mut changed);
-            rejected(&changed);
-        }
-        let mut legacy = plan
-            .cases
-            .iter()
-            .find(|case| case.id.0 == STEP5C5_CASES[0].0)
-            .unwrap()
-            .clone();
-        legacy.expectation.id = original.expectation.id.clone();
-        rejected(&legacy);
-        for (stage, phase, tag) in [
-            (Stage::ParseOnly, PipelinePhase::Parse, "active_parse_only"),
-            (
-                Stage::DeclarationSymbol,
-                PipelinePhase::Resolve,
-                "active_declaration_symbol",
-            ),
-            (
-                Stage::FormulaStatement,
-                PipelinePhase::StatementCheck,
-                "active_formula_statement",
-            ),
-            (
-                Stage::ProofVerification,
-                PipelinePhase::VcGeneration,
-                "active_proof_verification",
-            ),
-        ] {
-            let mut changed = original.clone();
-            changed.expectation.stage = stage;
-            changed.expectation.expected_phase = Some(phase);
-            changed.expectation.expected_outcome = ExpectedOutcome::Pass;
-            changed.expectation.kind = TestKind::Pass;
-            changed.expectation.failure_category = None;
-            changed.expectation.stable_detail_key = None;
-            changed.expectation.tags = vec![tag.into()];
-            rejected(&changed);
-        }
-        for sidecar in [false, true] {
-            let mut changed = original.clone();
-            let path = if sidecar {
-                &mut changed.expectation_path
-            } else {
-                &mut changed.source_path
-            };
-            *path = root.join("alias").join(path.strip_prefix(&root).unwrap());
-            assert!(!super::step5c5_argument_admitted(Some(&root), &changed));
-        }
-        for duplicate in [false, true] {
-            let mut changed = plan.clone();
-            if duplicate {
-                changed.cases.push(original.clone());
-            } else {
-                changed.cases.retain(|case| case.id != original.id);
-            }
-            assert!(
-                validate_active_type_elaboration_tags(&root, &changed)
-                    .iter()
-                    .any(|diagnostic| diagnostic.code.0 == "E-TYPE-ELABORATION-STEP5C5-INVENTORY")
+        for id in [super::STEP5C5_ARGUMENT_ID, super::STEP5C5_PROPERTY_ID] {
+            let original = plan.cases.iter().find(|case| case.id.0 == id).unwrap();
+            assert!(super::step5c5_argument_admitted(Some(&root), original));
+            assert!(validate_active_type_elaboration_tags(&root, &plan).is_empty());
+            let result = crate::runner::run_type_elaboration_case(
+                &root,
+                &root.join("tests"),
+                original,
+                5605,
             );
+            assert_eq!(
+                result.status,
+                crate::runner::TypeElaborationCaseStatus::Passed
+            );
+            assert_eq!(
+                result.actual_detail_keys,
+                if id == super::STEP5C5_ARGUMENT_ID {
+                    vec!["predicates.application.argument_type_mismatch"]
+                } else {
+                    Vec::new()
+                }
+            );
+            let rejected = |case: &TestCase| {
+                assert!(super::is_step5c5_argument_candidate(case));
+                assert!(!super::step5c5_argument_admitted(Some(&root), case));
+                assert!(!is_active_type_elaboration(case));
+                assert!(!crate::runner::is_active_parse_only(case));
+                assert!(!crate::runner::is_active_declaration_symbol(case));
+                assert!(
+                    !crate::runner::formula_statement::is_active_formula_statement(&root, case)
+                );
+                assert!(!crate::runner::is_active_proof_verification(case));
+            };
+            for mutate in [
+                (|case: &mut TestCase| case.id.0 = "alias".into()) as fn(&mut TestCase),
+                |case| case.expectation.id.0 = "alias".into(),
+                |case| case.source_path = "alias.miz".into(),
+                |case| case.expectation_path = "alias.expect.toml".into(),
+                |case| case.expectation.source = "alias.miz".into(),
+                |case| case.expectation.schema_version = 2,
+                |case| {
+                    case.expectation.kind = if case.expectation.kind == TestKind::Pass {
+                        TestKind::Fail
+                    } else {
+                        TestKind::Pass
+                    }
+                },
+                |case| case.expectation.expected_phase = Some(PipelinePhase::Resolve),
+                |case| {
+                    case.expectation.expected_outcome =
+                        if case.expectation.expected_outcome == ExpectedOutcome::Pass {
+                            ExpectedOutcome::Fail
+                        } else {
+                            ExpectedOutcome::Pass
+                        }
+                },
+                |case| {
+                    case.expectation.failure_category =
+                        if case.expectation.failure_category.is_some() {
+                            None
+                        } else {
+                            Some("forged".into())
+                        }
+                },
+                |case| case.expectation.stable_detail_key = Some("unrelated".into()),
+                |case| case.expectation.domain = "other".into(),
+                |case| case.expectation.spec_refs.clear(),
+                |case| case.expectation.spec_refs[0].0.push_str("_forged"),
+                |case| case.expectation.profiles.push("other".into()),
+                |case| case.expectation.tags.clear(),
+                |case| {
+                    case.expectation
+                        .tags
+                        .push(ACTIVE_TYPE_ELABORATION_TAG.into())
+                },
+                |case| case.expectation.diagnostic_codes.push("forged".into()),
+                |case| case.expectation.diagnostic_payloads.push("forged".into()),
+                |case| {
+                    case.expectation
+                        .declaration_symbol_payloads
+                        .push("forged".into())
+                },
+                |case| case.expectation.rejection_reason = Some("forged".into()),
+                |case| case.expectation.snapshots = Some("forged.snap".into()),
+                |case| case.expectation.ast_profile = Some("forged".into()),
+                |case| case.expectation.snapshot_profiles.push("forged".into()),
+                |case| {
+                    case.expectation.tokens.push(TokenExpectation {
+                        kind: "Identifier".into(),
+                        lexeme: "X".into(),
+                        span_start: None,
+                        span_end: None,
+                        span_start_line: None,
+                        span_start_col: None,
+                        span_end_line: None,
+                        span_end_col: None,
+                    })
+                },
+                |case| {
+                    case.expectation.origin = Some(OriginMetadata {
+                        schema_version: 1,
+                        kind: TestKind::Fail,
+                        generator: "forged".into(),
+                        generator_version: "1".into(),
+                        seed: "0".into(),
+                        profile: "forged".into(),
+                        expected_outcome: ExpectedOutcome::Fail,
+                        minimized: false,
+                        original_failure_category: None,
+                    })
+                },
+                |case| {
+                    case.expectation.architecture22 = Some(Architecture22Metadata {
+                        scenarios: vec!["forged".into()],
+                        equivalence_class: None,
+                        gate: Architecture22Gate::Planned,
+                    })
+                },
+            ] {
+                let mut changed = original.clone();
+                mutate(&mut changed);
+                rejected(&changed);
+            }
+            let mut legacy = plan
+                .cases
+                .iter()
+                .find(|case| case.id.0 == STEP5C5_CASES[0].0)
+                .unwrap()
+                .clone();
+            legacy.expectation.id = original.expectation.id.clone();
+            rejected(&legacy);
+            for (stage, phase, tag) in [
+                (Stage::ParseOnly, PipelinePhase::Parse, "active_parse_only"),
+                (
+                    Stage::DeclarationSymbol,
+                    PipelinePhase::Resolve,
+                    "active_declaration_symbol",
+                ),
+                (
+                    Stage::FormulaStatement,
+                    PipelinePhase::StatementCheck,
+                    "active_formula_statement",
+                ),
+                (
+                    Stage::ProofVerification,
+                    PipelinePhase::VcGeneration,
+                    "active_proof_verification",
+                ),
+            ] {
+                let mut changed = original.clone();
+                changed.expectation.stage = stage;
+                changed.expectation.expected_phase = Some(phase);
+                changed.expectation.expected_outcome = ExpectedOutcome::Pass;
+                changed.expectation.kind = TestKind::Pass;
+                changed.expectation.failure_category = None;
+                changed.expectation.stable_detail_key = None;
+                changed.expectation.tags = vec![tag.into()];
+                rejected(&changed);
+            }
+            for sidecar in [false, true] {
+                let mut changed = original.clone();
+                let path = if sidecar {
+                    &mut changed.expectation_path
+                } else {
+                    &mut changed.source_path
+                };
+                *path = root.join("alias").join(path.strip_prefix(&root).unwrap());
+                assert!(!super::step5c5_argument_admitted(Some(&root), &changed));
+            }
+            for duplicate in [false, true] {
+                let mut changed = plan.clone();
+                if duplicate {
+                    changed.cases.push(original.clone());
+                } else {
+                    changed.cases.retain(|case| case.id != original.id);
+                }
+                assert!(
+                    validate_active_type_elaboration_tags(&root, &changed)
+                        .iter()
+                        .any(|diagnostic| diagnostic.code.0
+                            == "E-TYPE-ELABORATION-STEP5C5-INVENTORY")
+                );
+            }
         }
     }
 

@@ -6246,12 +6246,13 @@ type route preserves resolver keys before legacy dispatch.
 
 ## Step 5C.5 type-elaboration admission
 
-The harness retains eight predicate/functor rows and adds only predicate argument mismatch at type_check,
+The harness retains nine predicate/functor rows and adds only functor commutativity typing at type_check,
 authenticating exact source/sidecar metadata. For the retained predicate duplicate, collector replay binds the sole existing signature
 conflict to both actual predicate declarations and their stored conflict metadata; labels, bodies
 and raw locus spellings are not the oracle. Extra resolver errors fail closed, and the other
-eight G1/G2/G6/G9 rows remain ineligible even if tagged. Reserved identities cannot fall through other stages; no predicate proof credit follows.
-The new row authenticates both ids, exact paths, stage/phase/key/domain/spec ref, sole tag and absent payloads before calling the shared source checker. Only source-linked predicate-kind rejections of actual set arguments against the real structure loci map to its key; both calls and every diagnostic are accounted for, while valid controls yield no negative key.
+seven G1/G2/G6/G9 rows remain ineligible even if tagged. Reserved identities cannot fall through other stages; no predicate/functor proof credit follows.
+The predicate argument row authenticates both ids, exact paths, stage/phase/key/domain/spec ref, sole tag and absent payloads before calling the shared source checker. Only source-linked predicate-kind rejections of actual set arguments against the real structure loci map to its key; both calls and every diagnostic are accounted for, while valid controls yield no negative key.
+The commutativity pass binds both ids, exact source/sidecar paths, pass/type_check, functors.properties, sole spec.en.10.functors.properties.declaration ref, sole active tag and empty failure/payload fields. The direct checker must return checked body types and exactly one source-owned Pending functor-property obligation; the runner never infers symmetry or proof, and either id or filename reserves cross-stage admission.
 
 ## Module declaration corpus bridge
 

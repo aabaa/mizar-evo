@@ -4105,6 +4105,7 @@ pub enum InitialObligationKind {
     Narrowing,
     RegistrationCorrectness,
     PredicatePropertyCorrectness,
+    FunctorPropertyCorrectness,
     FunctorExistence,
     FunctorUniqueness,
     PropertyImplementationExistence,
@@ -4705,7 +4706,9 @@ fn validate_typed_ast(parts: &TypedAstParts) -> Result<(), TypedAstError> {
     if parts.initial_obligations.iter().any(|(_, row)| {
         matches!(
             row.kind,
-            InitialObligationKind::FunctorExistence | InitialObligationKind::FunctorUniqueness
+            InitialObligationKind::FunctorPropertyCorrectness
+                | InitialObligationKind::FunctorExistence
+                | InitialObligationKind::FunctorUniqueness
         )
     }) {
         return Err(TypedAstError::InvalidSourceFunctorDefinition);
@@ -5851,6 +5854,7 @@ fn initial_obligation_kind_name(kind: InitialObligationKind) -> &'static str {
         InitialObligationKind::Narrowing => "narrowing",
         InitialObligationKind::RegistrationCorrectness => "registration_correctness",
         InitialObligationKind::PredicatePropertyCorrectness => "predicate_property_correctness",
+        InitialObligationKind::FunctorPropertyCorrectness => "functor_property_correctness",
         InitialObligationKind::FunctorExistence => "functor_existence",
         InitialObligationKind::FunctorUniqueness => "functor_uniqueness",
         InitialObligationKind::PropertyImplementationExistence => {
@@ -5905,6 +5909,30 @@ mod tests {
     use mizar_session::{
         BuildSnapshotId, InMemorySessionIdAllocator, ModulePath, PackageId, SessionIdAllocator,
     };
+
+    #[test]
+    fn raw_functor_property_obligation_requires_its_source_owner() {
+        let source = source_id();
+        let mut parts = parts_with(
+            source,
+            single_node_arena(source),
+            LocalTypeContextTable::new(),
+            TypeFactTable::new(),
+        );
+        parts.initial_obligations.insert(InitialObligationDraft {
+            kind: InitialObligationKind::FunctorPropertyCorrectness,
+            owner: TypedSiteRef::Node(TypedNodeId::new(0)),
+            source_range: range(source, 0, 1),
+            assumptions: Vec::new(),
+            goal: InitialObligationGoal::new("source.functor.property.request"),
+            provenance: InitialObligationProvenance::new("source.functor.property"),
+            status: InitialObligationStatus::Pending,
+        });
+        assert!(matches!(
+            TypedAst::try_new(parts),
+            Err(TypedAstError::InvalidSourceFunctorDefinition)
+        ));
+    }
 
     #[test]
     fn arena_ids_are_dense_and_debug_rendering_is_stable() {

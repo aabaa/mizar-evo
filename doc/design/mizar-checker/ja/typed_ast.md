@@ -410,6 +410,8 @@ task 3 は `InitialObligationStatus::is_available_for_handoff()` を `Pending`
 obligation にだけ公開する。`Blocked` と `Invalidated` obligation は、所有する
 後続 task が変更するまで diagnostic state として残る。
 
+`FunctorPropertyCorrectness` は checker-local な未証明関手 property request であり、owner/range と goal/provenance key が実宣言と property を識別する。PredicatePropertyCorrectness と区別し、canonical VC goal・証明・受理済 property・汎用 TypedAst installation 権限を与えない。
+
 必須 obligation kind:
 
 - type expression と witness を導入する構文が必要とする sethood obligation

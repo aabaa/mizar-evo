@@ -2969,6 +2969,11 @@ binding identity で簡約し、recursive inline definition は cycle guard で 
 実際の T トークンは schema 構造 object の definition-parameter binding を与える。T.carrier は実際の member を参照し、宣言どおり set 型でなければならない。x:T と関手 locus は symbolic element-type identity のままで構造自体へ正規化せず、架空の SymbolId(T)、生成 object 同一性、集合性の事実を作らない。
 定理・証明の両呼出しを認証した後でのみ、対応する builtin 実引数が実際の構造上界を持たない場合に templates.argument.bound_violation を返す。宣言のみの正しい本体は架空のインスタンス化なしに成功する。その他の実引数・view・継承・属性 profile は上界違反ではなく未対応とし、証明・coherence 承認・Task277B の実績を与えない。
 
+## Source functor property typing
+
+`TermFormulaChecker::check_source_functor_property(&SurfaceResolvedArena, &SymbolEnv, &TypedArena)` は既存 `(BindingEnv, TermFormulaInferenceOutput, InitialObligationTable)` を `Result<_, String>` で返す。完全な source/env/neutral-typed 対応、builtin-set 二項関手、順序付き束縛 loci、operator 宣言、実際の2要素集合列挙本体、宣言された set 返却型、commutativity 所有者と justification を認証する。全本体 occurrence と実 binding を検査し、arity だけで成功させない。
+唯一の初期 obligation は Pending FunctorPropertyCorrectness とし、既存 goal/provenance key で実関手・property・順序付き loci に結び付ける。checker-local request は canonical formula や証明ではなく、非対称でも well-typed な本体には未証明 obligation が残る。汎用 TypedAst installation は所有 source path のない同 kind を拒否し、受理・rewrite rule・Core/VC handoff・Task260 profile 拡張を与えない。
+
 ## Ordinary predicate application checking
 
 `check_source_distinct_loci_overloads` の single-candidate profile は必須 builtin-set field を持つ bare local structure 上の binary predicate も検査する。順序付き loci、実際の束縛、selector 等式の本体、segment 極性と両 call を認証し、predicate candidate に項の結果型を付けない。

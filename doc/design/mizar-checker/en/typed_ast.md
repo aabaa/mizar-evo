@@ -419,6 +419,8 @@ Task 3 exposes `InitialObligationStatus::is_available_for_handoff()` for
 `Pending` obligations only. `Blocked` and `Invalidated` obligations remain
 diagnostic state until the owning later task changes them.
 
+`FunctorPropertyCorrectness` is a checker-local pending functor-property request; its owner/range and goal/provenance keys identify the actual declaration and property. It is distinct from PredicatePropertyCorrectness and grants no canonical VC goal, proof, accepted property or generic TypedAst installation authority.
+
 Required obligation kinds include:
 
 - sethood obligations for type expressions and constructs that introduce

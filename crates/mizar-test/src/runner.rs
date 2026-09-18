@@ -2641,7 +2641,16 @@ fn type_elaboration_detail_keys(
         }
         return source_registration_inputs(workspace_root, case, output)
             .and_then(|(source, typed, symbols)| {
-                type_elaboration::step5c5_predicate_argument_detail_keys(&source, &symbols, &typed)
+                if case.expectation.domain == "functors.properties" {
+                    mizar_checker::type_checker::TermFormulaChecker::check_source_functor_property(
+                        &source, &symbols, &typed,
+                    )
+                    .map(|_| Vec::new())
+                } else {
+                    type_elaboration::step5c5_predicate_argument_detail_keys(
+                        &source, &symbols, &typed,
+                    )
+                }
             })
             .unwrap_or_else(|error| vec![error]);
     }

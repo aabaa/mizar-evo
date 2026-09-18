@@ -593,7 +593,7 @@ activation-map ledger; every 5C task also requires 5B.2.
 5. [~] **[5C.5 — Predicates and functors](./task_contracts/en/STEP5C5-PREDICATE-FUNCTOR-SEMANTICS.md)** (`mizar-checker`; spec ch. 9
    and 10). Requirements: `spec.en.09.predicates.*` (7 ids) plus
    `spec.en.10.functors.*` (8 ids). Targets: 17 pairs; nine complete,
-   eight G1/G2/G6/G9 gaps deferred. Covers
+   plus commutativity typing complete; seven G1/G2/G6/G9 gaps deferred. Covers
    symbolic/phrase definitions, `equals`/`means` styles and definitional
    unfolding, dependent return types, bracket application, properties
    declarations and arity checks, duplicate-signature rejection, and

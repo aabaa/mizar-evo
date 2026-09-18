@@ -3687,6 +3687,418 @@ pub struct TermFormulaChecker {
 }
 
 impl TermFormulaChecker {
+    /// Checks the bounded binary set-functor body and records its unproved property request.
+    pub fn check_source_functor_property(
+        source: &SurfaceResolvedArena,
+        symbols: &SymbolEnv,
+        typed: &crate::typed_ast::TypedArena,
+    ) -> Result<
+        (
+            BindingEnv,
+            TermFormulaInferenceOutput,
+            InitialObligationTable,
+        ),
+        String,
+    > {
+        use crate::binding_env::{BindingLookupResult, BindingLookupSite};
+        let invalid = || "functors.property.unsupported_source_types".to_owned();
+        mizar_resolve::symbols::validate_source_symbol_env(source, symbols)?;
+        let node = |id| source.arena().node(id).ok_or_else(invalid);
+        let range = |id| match node(id)?.origin().anchor() {
+            SourceAnchor::Range(range) => Ok(*range),
+            _ => Err(invalid()),
+        };
+        let root = source.arena().root();
+        if typed.len() != source.arena().len()
+            || typed.root() != Some(TypedNodeId::new(root.index()))
+        {
+            return Err(invalid());
+        }
+        let mut parents = BTreeMap::new();
+        for (id, current) in source.arena().iter() {
+            let span = range(id)?;
+            let expected = crate::typed_ast::TypedNode::new(
+                format!("{:?}", current.kind()),
+                current.origin().anchor().clone(),
+            )
+            .with_resolved_node(id)
+            .with_children(
+                current
+                    .children()
+                    .iter()
+                    .map(|child| TypedNodeId::new(child.index()))
+                    .collect(),
+            );
+            if typed.node(TypedNodeId::new(id.index())) != Some(&expected) {
+                return Err(invalid());
+            }
+            let mut end = span.start;
+            for child in current.children() {
+                let child_span = range(*child)?;
+                if child_span.start < span.start
+                    || child_span.end > span.end
+                    || (id != root && child_span.start < end)
+                {
+                    return Err(invalid());
+                }
+                end = child_span.end;
+                if !(id == root && matches!(node(*child)?.kind(), K::Token(_)))
+                    && parents.insert(*child, id).is_some()
+                {
+                    return Err(invalid());
+                }
+            }
+        }
+        if source
+            .arena()
+            .iter()
+            .any(|(id, _)| id != root && !parents.contains_key(&id))
+        {
+            return Err(invalid());
+        }
+        let parts = |id, kind: &K| {
+            let current = node(id)?;
+            if current.kind() != kind {
+                return Err(invalid());
+            }
+            Ok(current.children())
+        };
+        let only = |id, kind: &K| {
+            let [child] = parts(id, kind)? else {
+                return Err(invalid());
+            };
+            Ok(*child)
+        };
+        let text = |id| match node(id)?.kind() {
+            K::Token(token) => Ok(token.text.as_ref()),
+            _ => Err(invalid()),
+        };
+        let tokens = |pairs: &[(ResolvedNodeId, &str)]| {
+            for (id, expected) in pairs {
+                let kind = if expected.chars().all(|ch| ch.is_alphabetic() || ch == '_') {
+                    SurfaceTokenKind::ReservedWord
+                } else {
+                    SurfaceTokenKind::ReservedSymbol
+                };
+                if !matches!(node(*id)?.kind(), K::Token(token) if token.kind == kind && token.text.as_ref() == *expected)
+                {
+                    return Err(invalid());
+                }
+            }
+            Ok(())
+        };
+        let site = |id: ResolvedNodeId| TypedSiteRef::Node(TypedNodeId::new(id.index()));
+        let formal = |id| resolve_template_formal(source, id).map_err(|_| invalid());
+        let structural = node(root)?
+            .children()
+            .iter()
+            .copied()
+            .filter(|id| {
+                !matches!(
+                    source.arena().node(*id).map(|node| node.kind()),
+                    Some(K::Token(_))
+                )
+            })
+            .collect::<Vec<_>>();
+        let [unit] = structural.as_slice() else {
+            return Err(invalid());
+        };
+        let [block, operator] = parts(only(*unit, &K::CompilationUnit)?, &K::ItemList)? else {
+            return Err(invalid());
+        };
+        let [
+            definition_kw,
+            parameter,
+            definition,
+            coherence,
+            property,
+            end,
+            semi,
+        ] = parts(*block, &K::DefinitionBlockItem)?
+        else {
+            return Err(invalid());
+        };
+        tokens(&[(*definition_kw, "definition"), (*end, "end"), (*semi, ";")])?;
+        let [let_kw, segment, semi] = parts(*parameter, &K::DefinitionParameter)? else {
+            return Err(invalid());
+        };
+        tokens(&[(*let_kw, "let"), (*semi, ";")])?;
+        let [first, comma, second, be, parameter_type] =
+            parts(*segment, &K::QualifiedVariableSegment)?
+        else {
+            return Err(invalid());
+        };
+        tokens(&[(*comma, ","), (*be, "be")])?;
+        let binders = [*first, *second];
+        if text(*first)? == text(*second)? || binders.iter().any(|id| !matches!(node(*id).map(|node| node.kind()), Ok(K::Token(token)) if token.kind == SurfaceTokenKind::Identifier)) {
+            return Err(invalid());
+        }
+        let [
+            func,
+            label,
+            colon,
+            pattern,
+            arrow,
+            result_type,
+            equals,
+            body,
+            semi,
+        ] = parts(*definition, &K::FunctorDefinition)?
+        else {
+            return Err(invalid());
+        };
+        tokens(&[
+            (*func, "func"),
+            (*colon, ":"),
+            (*arrow, "->"),
+            (*equals, "equals"),
+            (*semi, ";"),
+        ])?;
+        if !matches!(node(*label)?.kind(), K::Token(token) if token.kind == SurfaceTokenKind::Identifier)
+        {
+            return Err(invalid());
+        }
+        let [left, head, right] = parts(*pattern, &K::FunctorPattern)? else {
+            return Err(invalid());
+        };
+        let loci = [formal(*left)?, formal(*right)?];
+        if loci[0] == loci[1] || loci.iter().any(|id| !binders.contains(id)) {
+            return Err(invalid());
+        }
+        let [coherence_kw, semi] = parts(*coherence, &K::CorrectnessCondition)? else {
+            return Err(invalid());
+        };
+        tokens(&[(*coherence_kw, "coherence"), (*semi, ";")])?;
+        let [commutativity, proof, semi] = parts(*property, &K::PropertyClause)? else {
+            return Err(invalid());
+        };
+        tokens(&[(*commutativity, "commutativity"), (*semi, ";")])?;
+        let [proof_kw, conclusion, end] = parts(*proof, &K::ProofBlock)? else {
+            return Err(invalid());
+        };
+        tokens(&[(*proof_kw, "proof"), (*end, "end")])?;
+        let [thus, proposition, semi] = parts(*conclusion, &K::ConclusionStatement)? else {
+            return Err(invalid());
+        };
+        tokens(&[(*thus, "thus"), (*semi, ";")])?;
+        let thesis = only(only(*proposition, &K::Proposition)?, &K::FormulaExpression)?;
+        if format!("{:?}", node(thesis)?.kind()) != "FormulaConstant(Thesis)" {
+            return Err(invalid());
+        }
+        tokens(&[(only(thesis, node(thesis)?.kind())?, "thesis")])?;
+        let [
+            infix,
+            open,
+            spelling,
+            comma,
+            assoc,
+            comma2,
+            precedence,
+            close,
+            semi,
+        ] = parts(*operator, &K::OperatorDeclaration)?
+        else {
+            return Err(invalid());
+        };
+        tokens(&[
+            (*infix, "infix_operator"),
+            (*open, "("),
+            (*comma, ","),
+            (*assoc, "left"),
+            (*comma2, ","),
+            (*close, ")"),
+            (*semi, ";"),
+        ])?;
+        let quoted_head = format!(
+            "\"{}\"",
+            text(*head)?.replace('\\', "\\\\").replace('"', "\\\"")
+        );
+        if !matches!(node(*spelling)?.kind(), K::Token(token) if token.kind == SurfaceTokenKind::StringLiteral && token.text.as_ref() == quoted_head)
+            || !matches!(node(*precedence)?.kind(), K::Token(token) if token.kind == SurfaceTokenKind::Numeral && token.text.as_ref() == "90")
+        {
+            return Err(invalid());
+        }
+        let mut owners = Vec::new();
+        for (id, kind, definition_kind) in [
+            (*definition, SymbolKind::Functor, DefinitionKind::Functor),
+            (*property, SymbolKind::Attribute, DefinitionKind::Attribute),
+        ] {
+            let anchor = node(id)?.origin().anchor();
+            let mut entries = symbols
+                .symbols()
+                .iter()
+                .filter(|entry| entry.kind() == kind && entry.origin().anchor() == anchor);
+            let entry = entries.next().ok_or_else(invalid)?;
+            let declared = symbols
+                .definitions()
+                .by_symbol(entry.symbol())
+                .ok_or_else(invalid)?;
+            if entries.next().is_some()
+                || declared.kind() != definition_kind
+                || declared.origin() != entry.origin()
+                || declared.contribution() != entry.contribution()
+                || declared.conflict().is_some()
+            {
+                return Err(invalid());
+            }
+            owners.push(entry.symbol());
+        }
+        let builtin = |id, owner| -> Result<TypeExpressionInput, String> {
+            tokens(&[(only(only(id, &K::TypeExpression)?, &K::TypeHead)?, "set")])?;
+            Ok(TypeExpressionInput::new(
+                owner,
+                range(id)?,
+                "set",
+                TypeHeadInput::BuiltinSet,
+            ))
+        };
+        let context = BindingContextId::new(1);
+        let scope = LocalTermScope::new(vec![u32::try_from(block.index()).map_err(|_| invalid())?]);
+        let mut table = BindingTable::new();
+        let mut identities = BTreeMap::new();
+        for binder in binders {
+            let local = LocalTermBinding::new(
+                text(binder)?,
+                scope.clone(),
+                range(binder)?,
+                range(*parameter)?.end,
+            );
+            let mut draft =
+                BindingDraft::from_local_term(context, BindingKind::DefinitionParameter, &local);
+            draft.type_site = BindingTypeSite::Source(range(*parameter_type)?);
+            identities.insert(binder, table.insert(draft));
+        }
+        let mut contexts = BindingContextTable::new();
+        contexts.insert(BindingContextDraft {
+            owner: BindingContextOwner::Module,
+            parent: None,
+            layer: BindingContextLayer::Module,
+            lexical_scope: None,
+            bindings: Vec::new(),
+            visible_bindings: Vec::new(),
+            recovery: BindingContextRecovery::Normal,
+        });
+        let owned = identities.values().copied().collect::<Vec<_>>();
+        contexts.insert(BindingContextDraft {
+            owner: BindingContextOwner::SourceStatement {
+                source_range: range(*block)?,
+            },
+            parent: Some(BindingContextId::new(0)),
+            layer: BindingContextLayer::Declaration,
+            lexical_scope: Some(scope.clone()),
+            bindings: owned.clone(),
+            visible_bindings: owned,
+            recovery: BindingContextRecovery::Normal,
+        });
+        let bindings = BindingEnv::try_new(BindingEnvParts {
+            source_id: source.source_id(),
+            module_id: source.module().clone(),
+            contexts,
+            bindings: table,
+            diagnostics: BindingDiagnosticTable::new(),
+        })
+        .map_err(|_| invalid())?;
+        let enumeration = only(only(*body, &K::TermDefiniens)?, &K::TermExpression)?;
+        let [open, first, comma, second, close] = parts(enumeration, &K::SetEnumeration)? else {
+            return Err(invalid());
+        };
+        tokens(&[(*open, "{"), (*comma, ","), (*close, "}")])?;
+        let mut terms = Vec::new();
+        for expression in [*first, *second] {
+            let term = only(expression, &K::TermExpression)?;
+            let token = only(term, &K::TermReference)?;
+            let binding = *identities.get(&formal(token)?).ok_or_else(invalid)?;
+            if bindings
+                .lookup(&BindingLookupSite::new(
+                    text(token)?,
+                    context,
+                    Some(scope.clone()),
+                    range(token)?.start,
+                ))
+                .map_err(|_| invalid())?
+                != BindingLookupResult::Local(binding)
+            {
+                return Err(invalid());
+            }
+            terms.push(
+                TermInput::new(site(term), context, range(term)?, TermKind::Variable)
+                    .with_reference(TermReference::Binding(binding))
+                    .with_result_type(builtin(*parameter_type, site(term))?),
+            );
+        }
+        // Enumeration has its own builtin-set rule; the written return type is only an expectation.
+        terms.push(
+            TermInput::new(
+                site(enumeration),
+                context,
+                range(enumeration)?,
+                TermKind::SetEnumeration,
+            )
+            .with_result_type(TypeExpressionInput::new(
+                site(enumeration),
+                range(enumeration)?,
+                "set",
+                TypeHeadInput::BuiltinSet,
+            ))
+            .with_expected_type(builtin(*result_type, site(*result_type))?),
+        );
+        let inference = Self::default().infer(symbols, &bindings, terms, []);
+        if !inference.diagnostics().is_empty()
+            || !inference.candidate_sets().is_empty()
+            || !inference.facts().is_empty()
+            || inference.terms().iter().count() != 3
+        {
+            return Err(invalid());
+        }
+        for (_, term) in inference.terms().iter() {
+            let entry = inference
+                .type_entries()
+                .get(term.type_entry)
+                .ok_or_else(invalid)?;
+            let TypeEntryActual::Known(actual) = entry.actual else {
+                return Err(invalid());
+            };
+            let ty = inference
+                .normalized_types()
+                .get(actual)
+                .ok_or_else(invalid)?;
+            if term.status != TermStatus::Inferred
+                || !term.deferred.is_empty()
+                || entry.status != TypeStatus::Known
+                || ty.status != NormalizedTypeStatus::Known
+                || ty.head != TypeHeadRef::BuiltinSet
+                || ty.attributes != AttributeSet::empty()
+                || !ty.args.is_empty()
+                || (term.site == site(enumeration) && entry.expected != Some(actual))
+            {
+                return Err(invalid());
+            }
+        }
+        let mut obligations = InitialObligationTable::new();
+        obligations.insert(InitialObligationDraft {
+            kind: InitialObligationKind::FunctorPropertyCorrectness,
+            owner: site(*property),
+            source_range: range(*property)?,
+            assumptions: Vec::new(),
+            goal: InitialObligationGoal::new(format!(
+                "source.functor.property.request:functor={}:property={}:loci={},{}:body={}:type={}",
+                owners[0].fqn().as_str(),
+                property.index(),
+                loci[0].index(),
+                loci[1].index(),
+                enumeration.index(),
+                result_type.index()
+            )),
+            provenance: InitialObligationProvenance::new(format!(
+                "source.functor.property:owner={}:node={}",
+                owners[1].fqn().as_str(),
+                property.index()
+            )),
+            status: InitialObligationStatus::Pending,
+        });
+        Ok((bindings, inference, obligations))
+    }
+
     pub fn new(normalizer: TypeNormalizer) -> Self {
         Self { normalizer }
     }
@@ -9887,6 +10299,7 @@ fn initial_obligation_kind_name(kind: InitialObligationKind) -> &'static str {
         InitialObligationKind::Narrowing => "narrowing",
         InitialObligationKind::RegistrationCorrectness => "registration_correctness",
         InitialObligationKind::PredicatePropertyCorrectness => "predicate_property_correctness",
+        InitialObligationKind::FunctorPropertyCorrectness => "functor_property_correctness",
         InitialObligationKind::FunctorExistence => "functor_existence",
         InitialObligationKind::FunctorUniqueness => "functor_uniqueness",
         InitialObligationKind::PropertyImplementationExistence => {

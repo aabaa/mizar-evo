@@ -3796,3 +3796,20 @@ fn other_contribution_id(source: SourceId) -> SourceContributionId {
         SourceAnchor::Range(range(source, 0, 261)),
     )
 }
+
+#[test]
+fn functor_property_request_cannot_enter_task260_baselines() {
+    let mut baseline = unrelated_baseline(source_id());
+    let mut property = unrelated_draft(source_id());
+    property.kind = InitialObligationKind::FunctorPropertyCorrectness;
+    baseline.insert(property);
+    assert!(matches!(
+        validate_baseline(&baseline),
+        Err(SourceFunctorDefinitionError::InvalidObligation)
+    ));
+    assert!(validate_baseline_prefix(&baseline, 1).is_ok());
+    assert!(matches!(
+        validate_baseline_prefix(&baseline, 2),
+        Err(SourceFunctorDefinitionError::InvalidObligation)
+    ));
+}

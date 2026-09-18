@@ -266,4 +266,4 @@ one logical-task commitを必須とします。
 active source bridgeはfunctor declarationを認証してから既存source/type payloadをcheckする。
 `means`はexistence/uniqueness、`equals` definiensはdeclared result typeとの一致、
 commutativityはbinary arityを要求する。builtin bracket pairに新しいterm表現は追加せず、
-duplicate signatureはresolver ownerのままとする。
+duplicate signatureはresolver ownerのままとする。[property checker](./type_checker.md#source-functor-property-typing) は commutativity 宣言の型検査成功前に実際の集合列挙 definiens も検査する。obligation は未証明とし、固定された Task260 transport は変更しない。
