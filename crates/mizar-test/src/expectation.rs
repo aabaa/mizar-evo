@@ -1328,34 +1328,62 @@ pub fn validate_expectation_path(
                 .spec_refs
                 .iter()
                 .any(|spec_ref| spec_ref.0 == EXACT_TASK31_VC_SNAPSHOT_SPEC_REF);
-        let exact_algorithm_return_snapshot = [
+        let exact_source_vc_snapshot = [
             (
                 "pass_proof_verification_algorithm_ensures_return_001",
+                "pass/algorithms",
                 "algorithms.contracts",
                 "spec.en.20.algorithms.contracts.ensures",
                 "spec.en.mizar_vc.vc_ir.algorithm_ensures_return_snapshot",
+                None,
             ),
             (
                 "pass_proof_verification_algorithm_var_const_assert_001",
+                "pass/algorithms",
                 "algorithms.state",
                 "spec.en.20.algorithms.state.var_const_assert",
                 "spec.en.mizar_vc.vc_ir.algorithm_var_const_assert_snapshot",
+                None,
+            ),
+            (
+                "fail_proof_verification_reduce_false_reducibility_001",
+                "fail/clusters",
+                "clusters.reduction",
+                "spec.en.17.clusters.reduce.false_reducibility",
+                "spec.en.mizar_vc.vc_ir.reduce_false_reducibility_snapshot",
+                Some("clusters.reduce.false_reducibility"),
             ),
         ]
         .into_iter()
-        .any(|(id, domain, spec_ref, snapshot_ref)| {
+        .any(|(id, directory, domain, spec_ref, snapshot_ref, detail)| {
+            let failure = detail.is_some();
             expectation.id.0 == id
                 && path.strip_prefix(tests_root).ok()
-                    == Some(Path::new(&format!("miz/pass/algorithms/{id}.expect.toml")))
+                    == Some(Path::new(&format!("miz/{directory}/{id}.expect.toml")))
                 && expectation.source == Path::new(&format!("{id}.miz"))
-                && expectation.kind == TestKind::Pass
+                && expectation.kind
+                    == if failure {
+                        TestKind::Fail
+                    } else {
+                        TestKind::Pass
+                    }
                 && expectation.stage == Stage::ProofVerification
-                && expectation.expected_phase == Some(PipelinePhase::VcGeneration)
-                && expectation.expected_outcome == ExpectedOutcome::Pass
+                && expectation.expected_phase
+                    == Some(if failure {
+                        PipelinePhase::Verification
+                    } else {
+                        PipelinePhase::VcGeneration
+                    })
+                && expectation.expected_outcome
+                    == if failure {
+                        ExpectedOutcome::Fail
+                    } else {
+                        ExpectedOutcome::Pass
+                    }
                 && expectation.domain == domain
                 && expectation.tags.as_slice() == ["active_proof_verification"]
-                && expectation.failure_category.is_none()
-                && expectation.stable_detail_key.is_none()
+                && expectation.failure_category.as_deref() == failure.then_some("proof_failure")
+                && expectation.stable_detail_key.as_deref() == detail
                 && expectation.rejection_reason.is_none()
                 && expectation.diagnostic_codes.is_empty()
                 && expectation.diagnostic_payloads.is_empty()
@@ -1370,7 +1398,7 @@ pub fn validate_expectation_path(
         if !active_parse_only
             && !exact_task31_core_snapshot
             && !exact_task31_vc_snapshot
-            && !exact_algorithm_return_snapshot
+            && !exact_source_vc_snapshot
         {
             diagnostics.push(ValidationDiagnostic::error(
                 path,

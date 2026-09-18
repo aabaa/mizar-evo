@@ -8,6 +8,8 @@ It returns existing registration and inference outputs with no activation inputs
 Core goal lowering, proof discharge and accepted-status transport remain separate responsibilities.
 Direct syntax matching is permitted only for this authenticated source intake; existing payload consumers retain their boundaries.
 This bounded profile admits one registration per source and at most one set parameter per block.
+Reduction terms additionally admit transparent parentheses and singleton enumeration with an actual checked element.
+Enumeration has builtin set type; grouping contributes no semantic size, while the singleton contributes one node.
 
 > Canonical language: English. Japanese companion:
 > [../ja/registration_resolution.md](../ja/registration_resolution.md).

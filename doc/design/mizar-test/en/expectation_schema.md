@@ -264,7 +264,7 @@ Fields:
 | `rejection_reason` | conditional | Required for certificate and kernel rejection; optional otherwise. |
 | `diagnostic_codes` | yes | Stable diagnostic codes in deterministic order. |
 | `diagnostic_payloads` | no | Optional stable summaries for machine-readable diagnostic payloads in deterministic order. |
-| `snapshots` | no | Transitional parse-only `SurfaceAst` baseline path; the exact Core Task-31 exception is pass-only. |
+| `snapshots` | no | Transitional parse-only `SurfaceAst` baseline path or the [exact reduction failure VcIr baseline](harness.md) at `verification`; the Core Task-31 exception remains pass-only. |
 | `stable_detail_key` | yes | Stable detail identity independent of diagnostic wording. |
 
 A fail test that succeeds is a harness failure. A fail test that fails earlier

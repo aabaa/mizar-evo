@@ -7083,6 +7083,19 @@ tests = [
 ]
 
 [[requirement]]
+id = "spec.en.mizar_vc.vc_ir.reduce_false_reducibility_snapshot"
+source = "doc/design/mizar-vc/en/source_vc_decomposition.md"
+section = "VC Task 39; bounded identity-singleton reduction VcIr snapshot"
+stage = "proof_verification"
+status = "covered"
+required = true
+coverage = "snapshot"
+notes = "Only the source-derived guarded reduction goal, Reduction correctness family, actual registration proof and complete VC accounting are covered. The failure observation grants no accepted registration, reduction effect or broader VC39 proof credit."
+tests = [
+  "tests/miz/fail/clusters/fail_proof_verification_reduce_false_reducibility_001.expect.toml",
+]
+
+[[requirement]]
 id = "spec.en.mizar_vc.vc_ir.task180_proof_verification_snapshot"
 source = "doc/design/mizar-vc/en/source_vc_decomposition.md"
 section = "VC Task 31; exact Task-180 open VcIr proof-verification snapshot"

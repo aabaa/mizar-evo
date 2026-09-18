@@ -7,13 +7,13 @@ Owning plans: [checker](../../mizar-checker/en/00.crate_plan.md#task-index),
 
 ## Frozen assignment
 
-- Status: partial; full tier; checker owns semantics; resolve owns bindings.
+- Status: complete for the seven mapped source outcomes; full tier; checker owns semantics; resolve owns bindings.
 - Dependencies: 5A.2, 5B.2, 5C.3 and 5C.10 bounded work complete.
 - Authority: [Chapter 17](../../../spec/en/17.clusters_and_registrations.md)
   §§17.1,17.3–7,17.8.3,17.9–10; Chapters [3](../../../spec/en/03.type_system.md),
-  [6](../../../spec/en/06.attributes.md), [10](../../../spec/en/10.functors.md).
+  [6](../../../spec/en/06.attributes.md), [10](../../../spec/en/10.functors.md), [13](../../../spec/en/13.term_expression.md) §§13.4.1,13.8.6.
 - Cases: the seven 5C.11 rows in the [activation map](../../../../tests/coverage/step5_activation_map.tsv).
-  Parser rejection and four pending-intake rows are active; next is only functorial false coherence at proof_verification/verification.
+  Parser rejection, four pending-intake rows and both bounded correctness failures execute at their unchanged stages.
 - Classification: source/Core correctness-checking drift and executable test gap.
 
 ## Scope and boundaries
@@ -41,9 +41,8 @@ rejected and diagnostic tables. Pending records contribute no inference/effects.
 Harness adds real advanced-semantics execution/CLI admission, reusing existing report
 objects; it extracts neutral inputs and consumes checker outputs, never decides semantics.
 Authenticate exact ids/paths/stage/phase/outcome/keys/tags, reject cross-stage fallback,
-and add only the false-coherence sidecar's active_proof_verification tag.
-Preserve existing profiles, .miz/expectation intent, trace/map/ratchet and Task277B.
-Core consumes only that check, with no raw SymbolEnv or repeated name/type checking, and lowers the full guarded functorial goal and actual definitions/proof through existing IR; VC failure requires authenticated Core/VC links and actual negated reflexive equality under established guards, never NeedsAtp alone.
+and admit only the two correctness-failure sidecars with active_proof_verification.
+Preserve existing profiles, .miz/expectation intent, canonical trace rows, map/ratchet and Task277B.
 Task274 accepted effects remain blocked. Owners: [Core](../../mizar-core/en/elaborator.md), [VC](../../mizar-vc/en/discharge.md), [registration](../../mizar-checker/en/registration_resolution.md),
 [names](../../mizar-resolve/en/names.md), [harness](../../mizar-test/en/harness.md).
 Audit impact: Chapter17 pending validation and source correctness failure, without acceptance or closure credit.
@@ -52,6 +51,6 @@ Audit impact: Chapter17 pending validation and source correctness failure, witho
 
 Review specs/docs, tests, implementation, volume and consistency; test all four outputs,
 renaming, source/owner/scope/type/guard/operand corruption, reduction order and exact
-admission, false coherence, positive polarity and Core/VC-link corruption; preserve pending non-inference and the parser oracle.
+admission, both correctness failures, positive polarity/reflexive RHS and Core/VC-link corruption; preserve pending non-inference and the parser oracle.
+Add complete failure/near-miss VC baselines and the narrow [VC39 trace](../../mizar-vc/en/source_vc_decomposition.md); retain verification/fail admission.
 Run focused tests/corpora, fmt, warnings-denied Clippy and cargo test; commit this increment.
-Keep the parent task open until all seven unchanged-stage outcomes execute.

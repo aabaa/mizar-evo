@@ -630,9 +630,9 @@ activation-map ledger; every 5C task also requires 5B.2.
     gap-blocked). Covers thesis tracking (assume-without-antecedent,
     conclusion mismatch, incomplete proof), lemma citation, unknown
     reference labels, and open/assumed theorem status. Deps: 5C.8, 5C.9.
-11. [~] **[5C.11 — Clusters and registrations](./task_contracts/en/STEP5C11-CLUSTER-REGISTRATIONS.md)** (`mizar-checker`; spec
+11. [x] **[5C.11 — Clusters and registrations](./task_contracts/en/STEP5C11-CLUSTER-REGISTRATIONS.md)** (`mizar-checker`; spec
     ch. 17). Requirements: `spec.en.17.clusters.*` (7 ids). Targets: 7
-    pairs (4 blocked by G1). Covers existential/conditional/functorial
+    pairs. Covers existential/conditional/functorial
     registrations, reduction registrations, false
     coherence/reducibility rejection, and restricted adjective forms.
     Deps: 5A.2, 5C.3, 5C.10.

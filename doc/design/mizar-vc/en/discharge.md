@@ -1,6 +1,8 @@
 # Module: discharge
 
-`failed_functorial_coherence` authenticates Core/VC links and observes failure only for the actual negated reflexive equality under established parameter and result guards. It follows the checked attribute/identity-functor definitions and source justification; unsupported or merely NeedsAtp goals earn no failure observation or acceptance.
+`failed_functorial_coherence` authenticates Core/VC/source/proof links and requires absent premise-labels/proof hints and empty premises before observing either the existing negated-reflexive functorial failure or a bounded reduction failure.
+For reduction, actual transparent identity applications and the singleton of the same binder must yield `forall X:set. X={X}`, with exactly its bare-set guard and no extra assumptions. The builtin empty set refutes this universal equation because its singleton is nonempty (spec §§13.4.1,13.8.6,17.3.4,17.9.4).
+The internal semantic witness yields only the actual failing VcId, never a source witness, countermodel artifact, accepted fact or kernel evidence; a reflexive RHS yields no failure, and unsupported or NeedsAtp goals earn no failure observation.
 
 > Canonical language: English. Japanese companion:
 > [../ja/discharge.md](../ja/discharge.md).

@@ -19,7 +19,7 @@ pub const DEFAULT_COMPUTATION_LIMIT_POLICY: &str = "task-11-computation-step-lim
 pub const DEFINITIONAL_REDUCTION_POLICY: &str = "task-11-definitional-reduction";
 pub const DEFINITIONAL_REDUCTION_ALLOW: &str = "allow";
 
-/// Detects the bounded source functorial coherence failure without accepting a proof.
+/// Detects bounded source functorial/reduction failures without accepting a proof.
 pub fn failed_functorial_coherence(
     core: &mizar_core::core_ir::CoreIr,
     vcs: &VcSet,
@@ -33,17 +33,26 @@ pub fn failed_functorial_coherence(
         core_ir::{
             CoreFormulaKind as Formula, CoreItemKind, CoreItemStatus, CoreNodeRef,
             CoreProofNodeKind, CoreProofStatus, CoreProvenancePhase, CoreSourceAnchor,
-            CoreTermKind as Term, DefinitionBody, ExpansionPolicy, ObligationSeedKind,
-            ObligationSeedStatus,
+            CoreSourceRef, CoreTermKind as Term, DefinitionBody, ExpansionPolicy,
+            ObligationSeedKind, ObligationSeedStatus,
         },
     };
     let unsupported = || "unsupported or unauthenticated functorial coherence".to_owned();
     let [vc] = vcs.vcs() else {
         return Err(unsupported());
     };
+    let reduction = match vc.kind {
+        VcKind::RegistrationStyleCorrectness {
+            style: RegistrationCorrectnessKind::Reduction,
+        } => true,
+        VcKind::RegistrationStyleCorrectness {
+            style: RegistrationCorrectnessKind::Registration,
+        } => false,
+        _ => return Err(unsupported()),
+    };
     if core.has_error_nodes()
-        || core.items().len() != 3
-        || core.definitions().len() != 2
+        || core.items().len() != if reduction { 2 } else { 3 }
+        || core.definitions().len() != if reduction { 1 } else { 2 }
         || core.obligation_seeds().len() != 1
         || core.proofs().len() != 1
         || core.proof_nodes().len() != 1
@@ -82,12 +91,7 @@ pub fn failed_functorial_coherence(
         candidates: &candidates,
     })
     .map_err(|e| e.to_string())?;
-    if &expected != vcs
-        || vc.kind
-            != (VcKind::RegistrationStyleCorrectness {
-                style: RegistrationCorrectnessKind::Registration,
-            })
-    {
+    if &expected != vcs {
         return Err(unsupported());
     }
     let (_, seed) = core
@@ -101,6 +105,9 @@ pub fn failed_functorial_coherence(
         || seed.kind != ObligationSeedKind::CheckerInitial
         || seed.status != ObligationSeedStatus::Active
         || !seed.context.is_empty()
+        || seed.label.is_some()
+        || !vc.premises.is_empty()
+        || vc.proof_hint.is_some()
         || !seed.diagnostics.is_empty()
         || seed.core_refs != [CoreNodeRef::Item(seed.owner), CoreNodeRef::Formula(goal)]
         || !seed.provenance.iter().any(|p| {
@@ -138,6 +145,197 @@ pub fn failed_functorial_coherence(
     else {
         return Err(unsupported());
     };
+    if reduction {
+        let (_, definition) = core.definitions().iter().next().ok_or_else(unsupported)?;
+        let item_id = definition.owner.item().ok_or_else(unsupported)?;
+        let item = core.items().get(item_id).ok_or_else(unsupported)?;
+        let [param] = definition.params.as_slice() else {
+            return Err(unsupported());
+        };
+        let Formula::TypePred { subject, ty } = formula(*premise)? else {
+            return Err(unsupported());
+        };
+        let Formula::Equals { left, right } = formula(*conclusion)? else {
+            return Err(unsupported());
+        };
+        let Term::Apply { functor, args } = term(*left)? else {
+            return Err(unsupported());
+        };
+        let [inner] = args.as_slice() else {
+            return Err(unsupported());
+        };
+        let Term::Apply {
+            functor: inner_functor,
+            args: inner_args,
+        } = term(*inner)?
+        else {
+            return Err(unsupported());
+        };
+        let guard = param.ty_guard.ok_or_else(unsupported)?;
+        let Formula::TypePred {
+            subject: parameter,
+            ty: parameter_type,
+        } = formula(guard)?
+        else {
+            return Err(unsupported());
+        };
+        let DefinitionBody::Term(definiens) = definition.body else {
+            return Err(unsupported());
+        };
+        let (singleton, rhs_variable) = match term(*right)? {
+            Term::SetEnum(elements) if elements.len() == 1 => (true, elements[0]),
+            Term::Var(_) => (false, *right),
+            _ => return Err(unsupported()),
+        };
+        let used_terms =
+            BTreeSet::from([*parameter, definiens, *subject, *left, *inner, rhs_variable]);
+        if binder.ty_guard.is_some()
+            || binder.var == param.var
+            || binder.role.as_str() != "registration-parameter"
+            || param.role.as_str() != "definition-parameter"
+            || binder.source_name.is_some()
+            || param.source_name.is_some()
+            || ty.as_str() != "set"
+            || parameter_type.as_str() != "set"
+            || term(*subject)? != &Term::Var(binder.var)
+            || term(rhs_variable)? != &Term::Var(binder.var)
+            || term(*parameter)? != &Term::Var(param.var)
+            || term(definiens)? != &Term::Var(param.var)
+            || inner_args != &[*subject]
+            || functor != inner_functor
+            || *functor != definition.symbol
+            || definition.symbol != item.symbol
+            || item.kind != CoreItemKind::Functor
+            || definition.expansion != ExpansionPolicy::Transparent
+            || !definition.correctness.is_empty()
+            || !definition.generated_dependencies.is_empty()
+            || core.items().iter().map(|(id, _)| id).collect::<Vec<_>>() != [item_id, seed.owner]
+            || core
+                .items()
+                .iter()
+                .any(|(_, row)| !row.dependencies.is_empty() || !row.diagnostics.is_empty())
+            || !core.algorithm_statements().is_empty()
+            || !core.generated().is_empty()
+            || !core.diagnostics().is_empty()
+            || BTreeSet::from([guard, *premise, *conclusion, *body, goal]).len() != 5
+            || core.formulas().len() != 5
+            || used_terms.len() != 6
+            || (singleton && used_terms.contains(right))
+            || core.terms().len() != 6 + usize::from(singleton)
+            || seed.local_path.as_str()
+                != format!("registration/{}/reducibility", owner.symbol.fqn().as_str())
+        {
+            return Err(unsupported());
+        }
+        let range = |source: &CoreSourceRef| match source.anchor {
+            CoreSourceAnchor::SourceRange(range) if range.start < range.end => Ok(range),
+            _ => Err(unsupported()),
+        };
+        // CoreIr construction checks every source-map row against its owner. Check
+        // this profile's source order, occurrence ranges and checker provenance too.
+        // Item anchors remain direct; checked definition/goal anchors bind them below.
+        for source in core
+            .terms()
+            .iter()
+            .map(|(_, row)| &row.source)
+            .chain(core.formulas().iter().map(|(_, row)| &row.source))
+            .chain(core.definitions().iter().map(|(_, row)| &row.source))
+            .chain(core.proofs().iter().map(|(_, row)| &row.source))
+            .chain(core.proof_nodes().iter().map(|(_, row)| &row.source))
+            .chain(std::iter::once(&binder.source))
+        {
+            range(source)?;
+            if !source.provenance.iter().any(|p| {
+                p.phase == CoreProvenancePhase::Checker
+                    && p.key
+                        .as_str()
+                        .strip_prefix("registration/source-node#")
+                        .is_some_and(|id| id.parse::<usize>().is_ok())
+            }) {
+                return Err(unsupported());
+            }
+        }
+        let item_range = range(&item.source)?;
+        let registration_range = range(&owner.source)?;
+        let parameter_range = range(&param.source)?;
+        let binder_range = range(&binder.source)?;
+        let left_range = range(&core.terms().get(*left).ok_or_else(unsupported)?.source)?;
+        let inner_range = range(&core.terms().get(*inner).ok_or_else(unsupported)?.source)?;
+        let subject_range = range(&core.terms().get(*subject).ok_or_else(unsupported)?.source)?;
+        let right_range = range(&core.terms().get(*right).ok_or_else(unsupported)?.source)?;
+        let rhs_range = range(
+            &core
+                .terms()
+                .get(rhs_variable)
+                .ok_or_else(unsupported)?
+                .source,
+        )?;
+        let (_, proof) = core.proofs().iter().next().ok_or_else(unsupported)?;
+        let node = core.proof_nodes().get(proof.root).ok_or_else(unsupported)?;
+        let CoreProofNodeKind::Step {
+            label,
+            formula: step_goal,
+            justification,
+        } = &node.kind
+        else {
+            return Err(unsupported());
+        };
+        let proof_range = range(&proof.source)?;
+        let step_range = range(&node.source)?;
+        if !item.source.provenance.is_empty()
+            || !owner.source.provenance.is_empty()
+            || definition.source.anchor != item.source.anchor
+            || core
+                .formulas()
+                .get(guard)
+                .ok_or_else(unsupported)?
+                .source
+                .anchor
+                != param.source.anchor
+            || [*premise, *conclusion, *body, goal].iter().any(|id| {
+                core.formulas()
+                    .get(*id)
+                    .is_none_or(|row| row.source.anchor != owner.source.anchor)
+            })
+            || seed.source.anchor != owner.source.anchor
+            || parameter_range.end >= item_range.start
+            || item_range.end >= binder_range.start
+            || binder_range.end >= registration_range.start
+            || registration_range.start >= left_range.start
+            || left_range.start >= inner_range.start
+            || inner_range.start >= subject_range.start
+            || subject_range.end > inner_range.end
+            || inner_range.end > left_range.end
+            || left_range.end >= right_range.start
+            || right_range.end >= proof_range.start
+            || (singleton
+                && (right_range.start >= rhs_range.start || rhs_range.end >= right_range.end))
+            || proof.item != seed.owner
+            || proof.status != CoreProofStatus::PendingAutomaticProof
+            || proof.proposition != goal
+            || *step_goal != goal
+            || label.is_some()
+            || !justification.citations.is_empty()
+            || justification.source != node.source
+            || !node.diagnostics.is_empty()
+            || proof_range.start >= step_range.start
+            || step_range.end >= proof_range.end
+            || proof_range.end > registration_range.end
+        {
+            return Err(unsupported());
+        }
+        let mut previous_end = item_range.start;
+        for term_id in [*parameter, definiens] {
+            let term_range = range(&core.terms().get(term_id).ok_or_else(unsupported)?.source)?;
+            if term_range.start <= previous_end || term_range.end >= item_range.end {
+                return Err(unsupported());
+            }
+            previous_end = term_range.end;
+        }
+        // At X={}, the identity applications yield {}, while {X} is nonempty.
+        // The variable RHS is reflexive; neither result publishes accepted evidence.
+        return Ok(singleton.then_some(vc.id));
+    }
     let Formula::And(guards) = formula(*premise)? else {
         return Err(unsupported());
     };

@@ -912,6 +912,47 @@ impl SourceRegistrationIntake<'_> {
         let children = self.children(node).to_vec();
         match self.node(node).kind() {
             K::TermExpression if children.len() == 1 => self.term(children[0]),
+            K::ParenthesizedTerm | K::SetEnumeration if children.len() == 3 => {
+                let singleton = self.node(node).kind() == &K::SetEnumeration;
+                let (open, close) = if singleton { ("{", "}") } else { ("(", ")") };
+                if !matches!(self.node(children[0]).kind(), K::Token(token)
+                    if token.kind == SurfaceTokenKind::ReservedSymbol && token.text.as_ref() == open)
+                    || !matches!(self.node(children[2]).kind(), K::Token(token)
+                        if token.kind == SurfaceTokenKind::ReservedSymbol && token.text.as_ref() == close)
+                    || self.node(children[1]).kind() != &K::TermExpression
+                {
+                    return Err("registration.unsupported_term".into());
+                }
+                let (element, mut pattern, symbol) = self.term(children[1])?;
+                if !singleton {
+                    return Ok((element, pattern, symbol));
+                }
+                let context = self
+                    .terms
+                    .get(&element)
+                    .ok_or("registration.element_type")?
+                    .context;
+                let site = self.site(node);
+                self.terms.insert(
+                    site.clone(),
+                    TermInput::new(
+                        site.clone(),
+                        context,
+                        self.range(node),
+                        TermKind::SetEnumeration,
+                    )
+                    .with_result_type(TypeExpressionInput::new(
+                        site.clone(),
+                        self.range(node),
+                        "set",
+                        TypeHeadInput::BuiltinSet,
+                    )),
+                );
+                pattern.size += 1;
+                pattern.fingerprint = format!("singleton({})", pattern.fingerprint.as_str()).into();
+                pattern.source_range = Some(self.range(node));
+                Ok((site, pattern, symbol))
+            }
             K::TermReference if children.len() == 1 => {
                 let declaration = self.variable(children[0], node)?;
                 let site = self.site(node);

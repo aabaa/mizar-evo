@@ -1,6 +1,9 @@
 # Module: harness
 
-偽 coherence の厳密な証明ケースはソース → Core → VC の対応を認証して verification の失敗を観測し、未対応目標や保留状態だけでは失敗キーを満たさない。
+偽 coherence・偽 reducibility の厳密な証明ケースはソース → Core → VC の対応を認証して verification の失敗を観測し、未対応目標や保留状態だけでは失敗キーを満たさない。
+簡約行では `snapshots/vc/fail_proof_verification_reduce_false_reducibility_001.vc_ir.snap` と `spec.en.mizar_vc.vc_ir.reduce_false_reducibility_snapshot` を元の正本参照と共に認証する。
+失敗観測前に、実ソースから再生成した不変の完全な VcSet 同士と `debug_text()` 全体を baseline と比較し、baseline の欠落・破損、metadata・stage の変更を拒否する。
+実ソースの反射的右辺 control も open な Reduction VC 1件と独立した完全 baseline を保持し、失敗も受理も与えない。
 
 advanced-semantics コマンドは登録の正常系 4 行を cluster_resolution で実行する。
 厳密な sidecar 照合後にソースから検査した登録と正当性義務の保留状態を確認する。

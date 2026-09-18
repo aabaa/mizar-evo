@@ -14310,11 +14310,11 @@ fn attach_proof_backrefs(
     }
 }
 
-/// Lowers the checker-authenticated local set/identity functorial registration.
+/// Lowers checked local set/identity functorial and reduction correctness goals.
 pub fn lower_source_functorial_registration(
     check: &mizar_checker::registration_resolution::SourceRegistrationCheck<'_>,
 ) -> Result<CoreIr, String> {
-    use mizar_checker::type_checker::TermReference;
+    use mizar_checker::type_checker::{TermKind, TermReference};
     let nodes = check.nodes();
     let database = check.database();
     let checked = check.inference();
@@ -14346,7 +14346,7 @@ pub fn lower_source_functorial_registration(
     let unwrap = |mut id| -> Result<TypedNodeId, String> {
         while matches!(
             kind(id),
-            Some("TermExpression" | "FormulaExpression" | "Proposition")
+            Some("TermExpression" | "ParenthesizedTerm" | "FormulaExpression" | "Proposition")
         ) {
             let nested = children(id);
             let [child] = nested.as_slice() else {
@@ -14372,11 +14372,41 @@ pub fn lower_source_functorial_registration(
         .get(*initial_id)
         .ok_or_else(invalid)?;
     let registration = initial.owner.node();
-    if kind(registration) != Some("FunctorialRegistration") {
-        return Err(invalid());
+    let reduction = match kind(registration) {
+        Some("ReductionRegistration") => true,
+        Some("FunctorialRegistration") => false,
+        _ => return Err(invalid()),
+    };
+    if reduction {
+        let unit = only(nodes.root().ok_or_else(invalid)?, "CompilationUnit")?;
+        let blocks = children(only(unit, "ItemList")?);
+        let [definition_block, registration_block] = blocks.as_slice() else {
+            return Err(invalid());
+        };
+        let definition_parts = children(*definition_block);
+        let [parameter, definition, correctness] = definition_parts.as_slice() else {
+            return Err(invalid());
+        };
+        let registration_parts = children(*registration_block);
+        let [registration_parameter, actual_registration] = registration_parts.as_slice() else {
+            return Err(invalid());
+        };
+        if kind(*definition_block) != Some("DefinitionBlockItem")
+            || kind(*registration_block) != Some("RegistrationBlockItem")
+            || kind(*parameter) != Some("DefinitionParameter")
+            || kind(*definition) != Some("FunctorDefinition")
+            || kind(*correctness) != Some("CorrectnessCondition")
+            || !children(*correctness).is_empty()
+            || kind(*registration_parameter) != Some("RegistrationParameter")
+            || *actual_registration != registration
+            || range(*definition_block)?.end > range(*registration_block)?.start
+            || check.bindings().bindings().len() != 2
+        {
+            return Err(invalid());
+        }
     }
     let registration_correctness = only(registration, "CorrectnessCondition")?;
-    if !children(registration_correctness).is_empty() {
+    if !reduction && !children(registration_correctness).is_empty() {
         return Err(invalid());
     }
     let mut input = CoreContextInput::new(ResolvedTypedAstSummary::new(
@@ -14388,7 +14418,7 @@ pub fn lower_source_functorial_registration(
         let item_kind = match kind(*node) {
             Some("AttributeDefinition") => CoreItemKind::Attribute,
             Some("FunctorDefinition") => CoreItemKind::Functor,
-            Some("FunctorialRegistration") => CoreItemKind::Registration,
+            Some("FunctorialRegistration" | "ReductionRegistration") => CoreItemKind::Registration,
             _ => return Err(invalid()),
         };
         input.item_seeds.push(
@@ -14406,7 +14436,7 @@ pub fn lower_source_functorial_registration(
             }),
         );
     }
-    if owners.len() != 3 {
+    if owners.len() != if reduction { 2 } else { 3 } {
         return Err(invalid());
     }
     let mut terms = Vec::new();
@@ -14451,34 +14481,97 @@ pub fn lower_source_functorial_registration(
             provenance(*declaration),
         ));
     }
-    for (_, term) in checked.terms().iter() {
-        let Some(TermReference::Symbol(functor)) = &term.reference else {
+    let mut compound_terms = checked
+        .terms()
+        .iter()
+        .map(|(_, term)| term)
+        .collect::<Vec<_>>();
+    if reduction {
+        // The seal authenticates AST child-before-parent order. Do not depend on
+        // the inference table's ordering when lowering nested applications.
+        compound_terms.sort_by_key(|term| term.site.node().index());
+    }
+    for term in compound_terms {
+        if !matches!(
+            term.kind,
+            TermKind::FunctorApplication | TermKind::SetEnumeration
+        ) {
             continue;
-        };
+        }
         let node = term.site.node();
         let nested = children(node);
         let [argument] = nested.as_slice() else {
             return Err(invalid());
         };
         let argument = *term_ids.get(&unwrap(*argument)?).ok_or_else(invalid)?;
+        let seed = match (term.kind, &term.reference) {
+            (TermKind::FunctorApplication, Some(TermReference::Symbol(functor))) => {
+                CoreTermSeedKind::Apply {
+                    functor: functor.clone(),
+                    args: vec![argument],
+                }
+            }
+            (TermKind::SetEnumeration, None) if reduction => {
+                CoreTermSeedKind::SetEnum(vec![argument])
+            }
+            _ => return Err(invalid()),
+        };
         term_ids.insert(node, CoreTermSeedId::new(terms.len()));
         terms.push(CoreTermSeed::new(
-            CoreTermSeedKind::Apply {
-                functor: functor.clone(),
-                args: vec![argument],
-            },
+            seed,
             CoreSourceRef::direct(range(node)?),
             provenance(node),
         ));
     }
-    let application_node = unwrap(only(registration, "TermExpression")?)?;
+    let operands = children(registration)
+        .into_iter()
+        .filter(|id| kind(*id) == Some("TermExpression"))
+        .collect::<Vec<_>>();
+    if operands.len() != if reduction { 2 } else { 1 } {
+        return Err(invalid());
+    }
+    let application_node = unwrap(operands[0])?;
     let application = *term_ids.get(&application_node).ok_or_else(invalid)?;
-    let CoreTermSeedKind::Apply { args, .. } = &terms[application.index()].kind else {
+    let CoreTermSeedKind::Apply { functor, args } = &terms[application.index()].kind else {
         return Err(invalid());
     };
-    let parameter_term = args[0];
+    let [argument] = args.as_slice() else {
+        return Err(invalid());
+    };
+    let parameter_term = if reduction {
+        let CoreTermSeedKind::Apply {
+            functor: inner,
+            args,
+        } = &terms[argument.index()].kind
+        else {
+            return Err(invalid());
+        };
+        let [parameter] = args.as_slice() else {
+            return Err(invalid());
+        };
+        if inner != functor || &owners[0].1 != functor {
+            return Err(invalid());
+        }
+        *parameter
+    } else {
+        *argument
+    };
     let CoreTermSeedKind::Var(parameter) = terms[parameter_term.index()].kind else {
         return Err(invalid());
+    };
+    let rhs = if reduction {
+        let rhs = *term_ids.get(&unwrap(operands[1])?).ok_or_else(invalid)?;
+        let element = match &terms[rhs.index()].kind {
+            CoreTermSeedKind::SetEnum(elements) if elements.len() == 1 => elements[0],
+            CoreTermSeedKind::Var(_) => rhs,
+            _ => return Err(invalid()),
+        };
+        if terms[element.index()].kind != CoreTermSeedKind::Var(parameter) {
+            return Err(invalid());
+        }
+        Some(rhs)
+    } else {
+        None
     };
     let declaration = *bindings
         .get(&BindingId::new(parameter.index()))
@@ -14514,7 +14607,7 @@ pub fn lower_source_functorial_registration(
     }
     let mut definitions = Vec::new();
     let mut attribute = None;
-    let mut functor_proof = None;
+    let mut source_proof = None;
     for (node, symbol, _) in owners.iter().filter(|(node, _, _)| *node != registration) {
         let definition_range = range(*node)?;
         let subject = checked
@@ -14550,59 +14643,42 @@ pub fn lower_source_functorial_registration(
                 .map(|(id, _)| id)
                 .ok_or_else(invalid)?;
             let correctness = only(block, "CorrectnessCondition")?;
-            let proof = only(correctness, "ProofBlock")?;
-            let conclusion = only(proof, "ConclusionStatement")?;
-            if children(correctness) != [proof]
-                || children(proof) != [conclusion]
-                || nodes
-                    .node(conclusion)
-                    .and_then(|node| node.children.first())
-                    .and_then(|node| kind(*node))
-                    != Some("Token(SurfaceToken { kind: ReservedWord, text: \"thus\" })")
-            {
-                return Err(invalid());
-            }
-            let written = children(conclusion);
-            let [written] = written.as_slice() else {
-                return Err(invalid());
-            };
-            if kind(unwrap(*written)?) != Some("FormulaConstant(Thesis)") {
-                return Err(invalid());
-            }
             let body = unwrap(only(only(*node, "TermDefiniens")?, "TermExpression")?)?;
             let body = *term_ids.get(&body).ok_or_else(invalid)?;
-            // The written no-hint thesis is the result type. Identity plus the
-            // checked set parameter guard establishes it, independently of registration.
+            // Identity plus the checked parameter guard establishes the set result,
+            // independently of the unproved registration.
             if terms[body.index()].kind != CoreTermSeedKind::Var(var) {
                 return Err(invalid());
             }
-            let result_guard = append(
-                correctness,
-                CoreFormulaSeedKind::TypePred {
-                    subject: body,
-                    ty: CoreTypePredicate::new("set"),
-                },
-            )?;
-            let implication = append(
-                correctness,
-                CoreFormulaSeedKind::Implies {
-                    premise: guard,
-                    conclusion: result_guard,
-                },
-            )?;
-            let proposition = append(
-                correctness,
-                CoreFormulaSeedKind::Forall {
-                    binders: vec![QuantifierBinderSeed::new(
-                        var,
-                        "definition-parameter",
-                        CoreSourceRef::direct(range(bound)?),
-                        provenance(bound),
-                    )],
-                    body: implication,
-                },
-            )?;
-            functor_proof = Some((symbol.clone(), proof, conclusion, proposition));
+            if !reduction {
+                let result_guard = append(
+                    correctness,
+                    CoreFormulaSeedKind::TypePred {
+                        subject: body,
+                        ty: CoreTypePredicate::new("set"),
+                    },
+                )?;
+                let implication = append(
+                    correctness,
+                    CoreFormulaSeedKind::Implies {
+                        premise: guard,
+                        conclusion: result_guard,
+                    },
+                )?;
+                let proposition = append(
+                    correctness,
+                    CoreFormulaSeedKind::Forall {
+                        binders: vec![QuantifierBinderSeed::new(
+                            var,
+                            "definition-parameter",
+                            CoreSourceRef::direct(range(bound)?),
+                            provenance(bound),
+                        )],
+                        body: implication,
+                    },
+                )?;
+                source_proof = Some((symbol.clone(), correctness, proposition));
+            }
             (Some(body), None)
         };
         definitions.push((*node, symbol.clone(), var, bound, guard, body));
@@ -14612,18 +14688,29 @@ pub fn lower_source_functorial_registration(
         subject: parameter_term,
         ty: CoreTypePredicate::new("set"),
     })?;
-    let result_guard = append(CoreFormulaSeedKind::TypePred {
-        subject: application,
-        ty: CoreTypePredicate::new("set"),
-    })?;
-    let premise = append(CoreFormulaSeedKind::And(vec![
-        parameter_guard,
-        result_guard,
-    ]))?;
-    let conclusion = append(CoreFormulaSeedKind::Atom {
-        predicate: attribute.ok_or_else(invalid)?,
-        args: vec![application],
-    })?;
+    let (premise, conclusion) = if let Some(rhs) = rhs {
+        (
+            parameter_guard,
+            append(CoreFormulaSeedKind::Equals {
+                left: application,
+                right: rhs,
+            })?,
+        )
+    } else {
+        let result_guard = append(CoreFormulaSeedKind::TypePred {
+            subject: application,
+            ty: CoreTypePredicate::new("set"),
+        })?;
+        let premise = append(CoreFormulaSeedKind::And(vec![
+            parameter_guard,
+            result_guard,
+        ]))?;
+        let conclusion = append(CoreFormulaSeedKind::Atom {
+            predicate: attribute.ok_or_else(invalid)?,
+            args: vec![application],
+        })?;
+        (premise, conclusion)
+    };
     let implication = append(CoreFormulaSeedKind::Implies {
         premise,
         conclusion,
@@ -14637,6 +14724,77 @@ pub fn lower_source_functorial_registration(
         )],
         body: implication,
     })?;
+    if reduction {
+        source_proof = Some((registration_symbol.clone(), registration_correctness, goal));
+    }
+    let (proof_owner, correctness, proposition) = source_proof.ok_or_else(invalid)?;
+    let proof = only(correctness, "ProofBlock")?;
+    let conclusion = only(proof, "ConclusionStatement")?;
+    if children(correctness) != [proof]
+        || children(proof) != [conclusion]
+        || nodes
+            .node(conclusion)
+            .and_then(|node| node.children.first())
+            .and_then(|node| kind(*node))
+            != Some("Token(SurfaceToken { kind: ReservedWord, text: \"thus\" })")
+    {
+        return Err(invalid());
+    }
+    let written = children(conclusion);
+    let [written] = written.as_slice() else {
+        return Err(invalid());
+    };
+    let thesis = unwrap(*written)?;
+    if kind(thesis) != Some("FormulaConstant(Thesis)") {
+        return Err(invalid());
+    }
+    if reduction {
+        let [proof_kw, _, end] = nodes.node(proof).ok_or_else(invalid)?.children.as_slice() else {
+            return Err(invalid());
+        };
+        let [_, _, semicolon] = nodes
+            .node(conclusion)
+            .ok_or_else(invalid)?
+            .children
+            .as_slice()
+        else {
+            return Err(invalid());
+        };
+        let expression = only(*written, "FormulaExpression")?;
+        if kind(*written) != Some("Proposition")
+            || nodes.node(*written).ok_or_else(invalid)?.children != [expression]
+            || nodes.node(expression).ok_or_else(invalid)?.children != [thesis]
+            || !contains(range(registration)?, range(proof)?)
+            || !contains(range(proof)?, range(conclusion)?)
+        {
+            return Err(invalid());
+        }
+        let [thesis_kw] = nodes.node(thesis).ok_or_else(invalid)?.children.as_slice() else {
+            return Err(invalid());
+        };
+        for (token, expected) in [
+            (
+                *proof_kw,
+                "Token(SurfaceToken { kind: ReservedWord, text: \"proof\" })",
+            ),
+            (
+                *end,
+                "Token(SurfaceToken { kind: ReservedWord, text: \"end\" })",
+            ),
+            (
+                *semicolon,
+                "Token(SurfaceToken { kind: ReservedSymbol, text: \";\" })",
+            ),
+            (
+                *thesis_kw,
+                "Token(SurfaceToken { kind: ReservedWord, text: \"thesis\" })",
+            ),
+        ] {
+            if kind(token) != Some(expected) {
+                return Err(invalid());
+            }
+        }
+    }
     let context = prepare_core_context(input).map_err(|error| error.to_string())?;
     let owner = context
         .item_registry()
@@ -14700,11 +14858,16 @@ pub fn lower_source_functorial_registration(
         goal: Some(goal),
         context: Vec::new(),
         local_path: format!(
-            "registration/{}/coherence",
-            registration_symbol.fqn().as_str()
+            "registration/{}/{}",
+            registration_symbol.fqn().as_str(),
+            if reduction {
+                "reducibility"
+            } else {
+                "coherence"
+            }
         )
         .into(),
-        label: Some(CoreLabelRef::new(registration_symbol.fqn().as_str())),
+        label: None,
         semantic_origin: initial.provenance.as_str().into(),
         provenance: vec![
             CoreProvenance::new(
@@ -14714,7 +14877,11 @@ pub fn lower_source_functorial_registration(
             CoreProvenance::new(CoreProvenancePhase::Checker, initial.provenance.as_str()),
             CoreProvenance::new(
                 CoreProvenancePhase::Checker,
-                "vc-registration-style:registration",
+                if reduction {
+                    "vc-registration-style:reduction"
+                } else {
+                    "vc-registration-style:registration"
+                },
             ),
         ],
         source: source_ref.clone(),
@@ -14726,7 +14893,6 @@ pub fn lower_source_functorial_registration(
         .source_map
         .obligation_sources
         .insert(seed, source_ref);
-    let (functor, proof, conclusion, proposition) = functor_proof.ok_or_else(invalid)?;
     let proposition = lowered.formula_map[&proposition];
     let statement_source = CoreSourceRef::direct(range(conclusion)?)
         .with_provenance(provenance(conclusion).as_slice().to_vec());
@@ -14751,7 +14917,7 @@ pub fn lower_source_functorial_registration(
     proofs.insert(CoreProof {
         item: context
             .item_registry()
-            .id_for_symbol(&functor)
+            .id_for_symbol(&proof_owner)
             .ok_or_else(invalid)?,
         proposition,
         root,

@@ -1,6 +1,8 @@
 # Elaborator
 
-`lower_source_functorial_registration` consumes only checker-sealed SourceRegistrationCheck, without SymbolEnv access or repeated name/type checking, into existing Core definitions and the complete guarded correctness goal. It retains source proof ownership and actual bindings; it neither parses request keys nor supplies accepted registration effects.
+`lower_source_functorial_registration` consumes only checker-sealed SourceRegistrationCheck into existing Core definitions and full guarded functorial or reduction goals, without SymbolEnv access, repeated name/type checking, request-key parsing or accepted effects.
+The reduction profile retains nested identity applications, a singleton or variable RHS, distinct definition/registration binders and the actual registration-owned `thus thesis` proof linked to its goal; its guard is bare set with no additional assumptions.
+Both uncited profiles retain registration identity in the item/path and omit a seed premise-label; the actual reducibility seed carries `vc-registration-style:reduction`, selecting the existing `RegistrationStyleCorrectness` / `Reduction` VC family.
 
 `lower_source_theorem_skeletons` consumes only the opaque checker `SourceTheoremCheck` and lowers
 existing source owner/formula identities through Core item, formula and proof

@@ -34,48 +34,82 @@ const STEP5C4_PROOF_CASE: (&str, &str) = (
     "tests/miz/fail/modes/fail_proof_verification_mode_sethood_unprovable_001.miz",
 );
 const STEP5C4_PROOF_DETAIL_KEY: &str = "modes.sethood.unprovable";
-const STEP5C11_PROOF_ID: &str = "fail_proof_verification_functorial_false_coherence_001";
-const STEP5C11_PROOF_SOURCE: &str =
-    "tests/miz/fail/clusters/fail_proof_verification_functorial_false_coherence_001.miz";
+const STEP5C11_PROOF_CASES: [(&str, &str, &str, &str, &str); 2] = [
+    (
+        "fail_proof_verification_functorial_false_coherence_001",
+        "tests/miz/fail/clusters/fail_proof_verification_functorial_false_coherence_001.miz",
+        "clusters.functorial",
+        "spec.en.17.clusters.functorial.false_coherence",
+        "clusters.functorial.false_coherence",
+    ),
+    (
+        "fail_proof_verification_reduce_false_reducibility_001",
+        "tests/miz/fail/clusters/fail_proof_verification_reduce_false_reducibility_001.miz",
+        "clusters.reduction",
+        "spec.en.17.clusters.reduce.false_reducibility",
+        "clusters.reduce.false_reducibility",
+    ),
+];
 
 pub(super) fn is_step5c11_proof_candidate(case: &TestCase) -> bool {
-    case.id.0 == STEP5C11_PROOF_ID
-        || case.expectation.id.0 == STEP5C11_PROOF_ID
-        || case.source_path.file_name() == Path::new(STEP5C11_PROOF_SOURCE).file_name()
-        || case.expectation_path.file_name()
-            == Path::new(STEP5C11_PROOF_SOURCE)
-                .with_extension("expect.toml")
-                .file_name()
+    STEP5C11_PROOF_CASES.iter().any(|(id, source, ..)| {
+        case.id.0 == *id
+            || case.expectation.id.0 == *id
+            || case.source_path.file_name() == Path::new(source).file_name()
+            || case.expectation_path.file_name()
+                == Path::new(source).with_extension("expect.toml").file_name()
+    })
 }
 
 pub(super) fn step5c11_proof_admitted(root: Option<&Path>, case: &TestCase) -> bool {
-    case.id.0 == STEP5C11_PROOF_ID
-        && case.expectation.id == case.id
-        && case.source_path.ends_with(STEP5C11_PROOF_SOURCE)
+    let Some((index, (_, source, domain, spec_ref, detail))) = STEP5C11_PROOF_CASES
+        .iter()
+        .enumerate()
+        .find(|(_, (id, ..))| case.id.0 == *id)
+    else {
+        return false;
+    };
+    let reduction = index == 1;
+    let snapshot = format!("snapshots/vc/{}.vc_ir.snap", case.id.0);
+    let refs = case.expectation.spec_refs.iter().map(|id| id.0.as_str());
+    case.expectation.id == case.id
+        && case.source_path.ends_with(source)
         && case
             .expectation_path
-            .ends_with(Path::new(STEP5C11_PROOF_SOURCE).with_extension("expect.toml"))
+            .ends_with(Path::new(source).with_extension("expect.toml"))
         && root.is_none_or(|root| {
-            workspace_relative_source(root, &case.source_path).as_deref()
-                == Some(STEP5C11_PROOF_SOURCE)
+            workspace_relative_source(root, &case.source_path).as_deref() == Some(*source)
                 && workspace_relative_source(root, &case.expectation_path).is_some_and(|path| {
-                    Path::new(&path)
-                        == Path::new(STEP5C11_PROOF_SOURCE).with_extension("expect.toml")
+                    Path::new(&path) == Path::new(source).with_extension("expect.toml")
                 })
         })
-        && case.expectation.source == Path::new(STEP5C11_PROOF_SOURCE).file_name().unwrap()
+        && case.expectation.source == Path::new(source).file_name().unwrap()
+        && case.expectation.schema_version == 1
+        && case.expectation.profiles.as_slice() == ["fast"]
         && case.expectation.kind == crate::expectation::TestKind::Fail
         && case.expectation.stage == Stage::ProofVerification
         && case.expectation.expected_phase == Some(PipelinePhase::Verification)
         && case.expectation.expected_outcome == ExpectedOutcome::Fail
+        && case.expectation.domain == *domain
         && case.expectation.failure_category.as_deref() == Some("proof_failure")
-        && case.expectation.stable_detail_key.as_deref()
-            == Some("clusters.functorial.false_coherence")
+        && case.expectation.stable_detail_key.as_deref() == Some(*detail)
+        && if reduction {
+            refs.eq([
+                *spec_ref,
+                "spec.en.mizar_vc.vc_ir.reduce_false_reducibility_snapshot",
+            ]) && case.expectation.snapshots.as_deref() == Some(Path::new(&snapshot))
+        } else {
+            refs.eq([*spec_ref]) && case.expectation.snapshots.is_none()
+        }
         && case.expectation.rejection_reason.is_none()
         && case.expectation.diagnostic_codes.is_empty()
         && case.expectation.diagnostic_payloads.is_empty()
         && case.expectation.declaration_symbol_payloads.is_empty()
-        && case.expectation.snapshots.is_none()
+        && case.expectation.ast_profile.is_none()
+        && case.expectation.snapshot_profiles.is_empty()
+        && case.expectation.tokens.is_empty()
+        && case.expectation.origin.is_none()
+        && case.expectation.architecture22.is_none()
         && case.expectation.tags.as_slice() == [ACTIVE_PROOF_VERIFICATION_TAG]
 }
 
@@ -551,24 +585,30 @@ pub(super) fn validate_active_proof_verification_tags(
             }
         }
     }
-    if workspace_root
-        .join("tests/coverage/step5_activation_map.tsv")
-        .is_file()
-        || workspace_root.join(STEP5C11_PROOF_SOURCE).is_file()
-    {
-        let count = plan
-            .cases
-            .iter()
-            .filter(|case| step5c11_proof_admitted(Some(workspace_root), case))
-            .count();
-        if count != 1 {
-            diagnostics.push(ValidationDiagnostic::error(
-                Path::new(STEP5C11_PROOF_SOURCE),
-                "proof_verification",
-                "E-PROOF-VERIFICATION-STEP5C11-INVENTORY",
-                "proof_verification.step5c11_inventory",
-                format!("Step 5C.11 false-coherence row must occur exactly once; found {count}"),
-            ));
+    for (id, source, ..) in STEP5C11_PROOF_CASES {
+        if workspace_root
+            .join("tests/coverage/step5_activation_map.tsv")
+            .is_file()
+            || workspace_root.join(source).is_file()
+        {
+            let count = plan
+                .cases
+                .iter()
+                .filter(|case| {
+                    case.id.0 == id && step5c11_proof_admitted(Some(workspace_root), case)
+                })
+                .count();
+            if count != 1 {
+                diagnostics.push(ValidationDiagnostic::error(
+                    Path::new(source),
+                    "proof_verification",
+                    "E-PROOF-VERIFICATION-STEP5C11-INVENTORY",
+                    "proof_verification.step5c11_inventory",
+                    format!(
+                        "each Step 5C.11 correctness row must occur exactly once; found {count}"
+                    ),
+                ));
+            }
         }
     }
     if workspace_root
@@ -702,20 +742,39 @@ pub(super) fn run_proof_verification_case(
             if !step5c11_proof_admitted(Some(workspace_root), case) {
                 return Err("invalid Step 5C.11 proof admission".into());
             }
-            let (source, nodes, symbols) = super::source_registration_inputs(
-                workspace_root,
-                case,
-                run_frontend(workspace_root, case, ordinal)?,
-            )?;
-            let checked = mizar_checker::registration_resolution::check_source_registration_intake(
-                &source, &nodes, &symbols,
-            )?;
-            let core = mizar_core::elaborator::lower_source_functorial_registration(&checked)?;
-            let vcs = generate_core_vcs(&core, snapshot_id(ordinal))?;
+            let reduction = case.id.0 == STEP5C11_PROOF_CASES[1].0;
+            let ordinal = if reduction { 0 } else { ordinal };
+            let build = || -> Result<(_, VcSet), String> {
+                let (source, nodes, symbols) = super::source_registration_inputs(
+                    workspace_root,
+                    case,
+                    run_frontend(workspace_root, case, ordinal)?,
+                )?;
+                let checked =
+                    mizar_checker::registration_resolution::check_source_registration_intake(
+                        &source, &nodes, &symbols,
+                    )?;
+                let core = mizar_core::elaborator::lower_source_functorial_registration(&checked)?;
+                let vcs = generate_core_vcs(&core, snapshot_id(ordinal))?;
+                Ok((core, vcs))
+            };
+            let (core, vcs) = build()?;
+            if reduction {
+                let replay = build()?;
+                if core != replay.0 || vcs != replay.1 || vcs.debug_text() != replay.1.debug_text()
+                {
+                    return Err("reduction source-to-VC rerun was nondeterministic".into());
+                }
+                let expected = fs::read_to_string(
+                    tests_root.join(case.expectation.snapshots.as_ref().unwrap()),
+                )
+                .map_err(|error| format!("reduction VC snapshot could not be read: {error}"))?;
+                if vcs.debug_text() != expected {
+                    return Err("reduction VC snapshot differed".into());
+                }
+            }
             if mizar_vc::discharge::failed_functorial_coherence(&core, &vcs)?.is_none() {
-                return Err(
-                    "registration coherence did not produce the expected proof failure".into(),
-                );
+                return Err("registration did not produce the expected correctness failure".into());
             }
             Ok(())
         };

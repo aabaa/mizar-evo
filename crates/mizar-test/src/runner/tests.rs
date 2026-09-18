@@ -729,6 +729,9 @@ fn step5c11_false_coherence_executes_real_guarded_goal_and_definition_polarity()
             super::proof_verification::generate_core_vcs(&core, super::shared::snapshot_id(5800))
                 .unwrap()
         );
+        assert!(core.obligation_seeds().iter().all(|(_, seed)| seed.label.is_none()));
+        assert!(vcs.vcs()[0].premises.is_empty());
+        assert!(vcs.vcs()[0].proof_hint.is_none());
         assert_eq!(
             failed_functorial_coherence(&core, &vcs).unwrap(),
             Some(vcs.vcs()[0].id)
@@ -796,7 +799,7 @@ fn step5c11_false_coherence_consumer_rejects_core_and_vc_corruption() {
     let original_vcs =
         super::proof_verification::generate_core_vcs(&core, super::shared::snapshot_id(5800))
             .unwrap();
-    for mutation in 0..13 {
+    for mutation in 0..14 {
         let mut parts = CoreIrParts {
             source_id: core.source_id(),
             module_id: core.module_id().clone(),
@@ -928,6 +931,10 @@ fn step5c11_false_coherence_consumer_rejects_core_and_vc_corruption() {
                 parts.proof_nodes = CoreProofNodeTable::new();
                 parts.source_map.proof_sources.clear();
             }
+            13 => {
+                parts.obligation_seeds.get_mut(seed_id).unwrap().label =
+                    Some(CoreLabelRef::new(core.items().get(seed.owner).unwrap().symbol.fqn().as_str()));
+            }
             _ => unreachable!(),
         }
         let changed = CoreIr::try_new(parts).unwrap();
@@ -943,7 +950,7 @@ fn step5c11_false_coherence_consumer_rejects_core_and_vc_corruption() {
                 assert!(outcome.is_err(), "accepted Core mutation {mutation}");
             }
         } else {
-            assert!(!matches!(mutation, 0 | 7..=12), "valid modified Core must generate VCs");
+            assert!(!matches!(mutation, 0 | 7..=13), "valid modified Core must generate VCs");
         }
         if mutation != 0 {
             assert!(failed_functorial_coherence(&changed, &original_vcs).is_err());
@@ -1000,126 +1007,188 @@ fn step5c11_false_coherence_admission_is_exact_and_cannot_fall_back() {
         expectation::{ExpectedOutcome, PipelinePhase},
         staged_model::Stage,
     };
-    let (original, _) = step5c11_false_coherence_case();
-    let config = step5c11_config();
-    assert!(super::is_active_proof_verification(&original));
-    for mutation in 0..13 {
-        let mut case = original.clone();
-        match mutation {
-            0 => case.id.0.push_str("_extra"),
-            1 => {
-                case.source_path = config.workspace_root.join("alias").join(
-                    case.source_path
-                        .strip_prefix(&config.workspace_root)
-                        .unwrap(),
-                )
+    for (original, _) in [step5c11_false_coherence_case(), step5c11_reduce_case()] {
+        let config = step5c11_config();
+        assert!(super::is_active_proof_verification(&original));
+        for mutation in 0..27 {
+            let mut case = original.clone();
+            match mutation {
+                0 => case.id.0.push_str("_extra"),
+                1 => {
+                    case.source_path = config.workspace_root.join("alias").join(
+                        case.source_path
+                            .strip_prefix(&config.workspace_root)
+                            .unwrap(),
+                    )
+                }
+                2 => {
+                    case.expectation_path =
+                        case.expectation_path.with_file_name("wrong.expect.toml")
+                }
+                3 => case.expectation.expected_phase = Some(PipelinePhase::VcGeneration),
+                4 => case.expectation.expected_outcome = ExpectedOutcome::Pass,
+                5 => case.expectation.tags.clear(),
+                6 => case.expectation.tags.push("extra".into()),
+                7 => case.expectation.stable_detail_key = Some("wrong".into()),
+                8 => case.expectation.failure_category = None,
+                9 => case.expectation.diagnostic_codes.push("E-UNRELATED".into()),
+                10 => case.expectation.rejection_reason = Some("wrong".into()),
+                11 => case.expectation.snapshots = Some("wrong".into()),
+                12 => case
+                    .expectation
+                    .declaration_symbol_payloads
+                    .push("wrong".into()),
+                13 => case.expectation.id.0.push_str("_alias"),
+                14 => case.expectation.domain.push_str("_wrong"),
+                15 => case.expectation.spec_refs[0].0.push_str("_wrong"),
+                16 => case
+                    .expectation
+                    .spec_refs
+                    .push(case.expectation.spec_refs[0].clone()),
+                17 => {
+                    case.expectation.spec_refs.pop();
+                }
+                18 => case.expectation.snapshots = None,
+                19 => case.expectation.kind = crate::expectation::TestKind::Pass,
+                20 => case.expectation.source = "wrong.miz".into(),
+                21 => case.expectation.schema_version = 2,
+                22 => case.expectation.profiles.push("extra".into()),
+                23 => case.expectation.ast_profile = Some("wrong".into()),
+                24 => case.expectation.snapshot_profiles.push("wrong".into()),
+                25 => case.expectation.diagnostic_payloads.push("wrong".into()),
+                26 => {
+                    if case.expectation.snapshots.is_none() {
+                        continue;
+                    }
+                    case.expectation.spec_refs.reverse();
+                }
+                _ => unreachable!(),
             }
-            2 => case.expectation_path = case.expectation_path.with_file_name("wrong.expect.toml"),
-            3 => case.expectation.expected_phase = Some(PipelinePhase::VcGeneration),
-            4 => case.expectation.expected_outcome = ExpectedOutcome::Pass,
-            5 => case.expectation.tags.clear(),
-            6 => case.expectation.tags.push("extra".into()),
-            7 => case.expectation.stable_detail_key = Some("wrong".into()),
-            8 => case.expectation.failure_category = None,
-            9 => case.expectation.diagnostic_codes.push("E-UNRELATED".into()),
-            10 => case.expectation.rejection_reason = Some("wrong".into()),
-            11 => case.expectation.snapshots = Some("wrong".into()),
-            12 => case
-                .expectation
-                .declaration_symbol_payloads
-                .push("wrong".into()),
-            _ => unreachable!(),
+            if mutation == 18 && original.expectation.snapshots.is_none() {
+                continue;
+            }
+            assert!(
+                !super::proof_verification::step5c11_proof_admitted(
+                    Some(&config.workspace_root),
+                    &case
+                ),
+                "mutation {mutation}"
+            );
+            if original.expectation.snapshots.is_some() && !matches!(mutation, 0 | 1 | 18 | 21..=24)
+            {
+                assert!(
+                    crate::expectation::validate_expectation_path(
+                        &case.expectation_path,
+                        &case.expectation,
+                        &config.workspace_root.join("tests")
+                    )
+                    .iter()
+                    .any(|diagnostic| diagnostic.code.0 == "E-EXPECT-SNAPSHOT-SCOPE"),
+                    "reduction snapshot scope mutation {mutation}"
+                );
+            }
         }
-        assert!(
-            !super::proof_verification::step5c11_proof_admitted(
-                Some(&config.workspace_root),
-                &case
+        for (stage, phase, tag) in [
+            (Stage::ParseOnly, PipelinePhase::Parse, "active_parse_only"),
+            (
+                Stage::DeclarationSymbol,
+                PipelinePhase::Resolve,
+                "active_declaration_symbol",
             ),
-            "mutation {mutation}"
-        );
-    }
-    for (stage, phase, tag) in [
-        (Stage::ParseOnly, PipelinePhase::Parse, "active_parse_only"),
-        (
-            Stage::DeclarationSymbol,
-            PipelinePhase::Resolve,
-            "active_declaration_symbol",
-        ),
-        (
-            Stage::TypeElaboration,
-            PipelinePhase::TypeCheck,
-            "active_type_elaboration",
-        ),
-        (
-            Stage::FormulaStatement,
-            PipelinePhase::StatementCheck,
-            "active_formula_statement",
-        ),
-        (
-            Stage::AdvancedSemantics,
-            PipelinePhase::ClusterResolution,
-            "active_advanced_semantics",
-        ),
-    ] {
-        let mut case = original.clone();
-        case.expectation.stage = stage;
-        case.expectation.expected_phase = Some(phase);
-        case.expectation.tags = vec![tag.into()];
-        assert!(!super::is_active_parse_only(&case));
-        assert!(!super::is_active_declaration_symbol(&case));
-        assert!(!super::is_active_type_elaboration(&case));
-        assert!(!super::formula_statement::is_active_formula_statement(
-            &config.workspace_root,
-            &case
-        ));
-        assert!(!super::is_active_proof_verification(&case));
-        assert!(!super::step5c11_registration_admitted(
-            &config.workspace_root,
-            &case
-        ));
-        case.id.0 = "corrupt_identity".into();
-        case.source_path = config.workspace_root.join("alias.miz");
-        case.expectation_path = config.workspace_root.join("alias.expect.toml");
-        assert!(!super::is_active_parse_only(&case));
-        assert!(!super::is_active_declaration_symbol(&case));
-        assert!(!super::is_active_type_elaboration(&case));
-        assert!(!super::formula_statement::is_active_formula_statement(&config.workspace_root, &case));
-        assert!(!super::is_active_proof_verification(&case));
-    }
-    let plan = build_test_plan(&config).unwrap();
-    assert!(
-        super::proof_verification::validate_active_proof_verification_tags(
-            &config.workspace_root,
-            &plan
-        )
-        .is_empty()
-    );
-    for duplicate in [false, true] {
-        let mut changed = plan.clone();
-        if duplicate {
-            changed.cases.push(original.clone());
-        } else {
-            changed.cases.retain(|case| case.id != original.id);
-        }
-        assert!(
-            !super::proof_verification::validate_active_proof_verification_tags(
+            (
+                Stage::TypeElaboration,
+                PipelinePhase::TypeCheck,
+                "active_type_elaboration",
+            ),
+            (
+                Stage::FormulaStatement,
+                PipelinePhase::StatementCheck,
+                "active_formula_statement",
+            ),
+            (
+                Stage::AdvancedSemantics,
+                PipelinePhase::ClusterResolution,
+                "active_advanced_semantics",
+            ),
+        ] {
+            let mut case = original.clone();
+            case.expectation.stage = stage;
+            case.expectation.expected_phase = Some(phase);
+            case.expectation.tags = vec![tag.into()];
+            assert!(!super::is_active_parse_only(&case));
+            assert!(!super::is_active_declaration_symbol(&case));
+            assert!(!super::is_active_type_elaboration(&case));
+            assert!(!super::formula_statement::is_active_formula_statement(
                 &config.workspace_root,
-                &changed
+                &case
+            ));
+            assert!(!super::is_active_proof_verification(&case));
+            assert!(!super::step5c11_registration_admitted(
+                &config.workspace_root,
+                &case
+            ));
+            case.id.0 = "corrupt_identity".into();
+            case.source_path = config.workspace_root.join("alias.miz");
+            case.expectation_path = config.workspace_root.join("alias.expect.toml");
+            assert!(!super::is_active_parse_only(&case));
+            assert!(!super::is_active_declaration_symbol(&case));
+            assert!(!super::is_active_type_elaboration(&case));
+            assert!(!super::formula_statement::is_active_formula_statement(
+                &config.workspace_root,
+                &case
+            ));
+            assert!(!super::is_active_proof_verification(&case));
+        }
+        let plan = build_test_plan(&config).unwrap();
+        assert!(
+            super::proof_verification::validate_active_proof_verification_tags(
+                &config.workspace_root,
+                &plan
             )
             .is_empty()
         );
+        for duplicate in [false, true] {
+            let mut changed = plan.clone();
+            if duplicate {
+                changed.cases.push(original.clone());
+            } else {
+                changed.cases.retain(|case| case.id != original.id);
+            }
+            assert!(
+                !super::proof_verification::validate_active_proof_verification_tags(
+                    &config.workspace_root,
+                    &changed
+                )
+                .is_empty()
+            );
+        }
+        let temporary = std::process::Command::new("mktemp")
+            .arg("-d")
+            .output()
+            .unwrap();
+        assert!(temporary.status.success());
+        let root = PathBuf::from(String::from_utf8(temporary.stdout).unwrap().trim());
+        let mut absent = plan.clone();
+        absent.cases.clear();
+        assert!(
+            super::proof_verification::validate_active_proof_verification_tags(&root, &absent)
+                .is_empty()
+        );
+        std::fs::create_dir_all(root.join("tests/coverage")).unwrap();
+        std::fs::copy(
+            config
+                .workspace_root
+                .join("tests/coverage/step5_activation_map.tsv"),
+            root.join("tests/coverage/step5_activation_map.tsv"),
+        )
+        .unwrap();
+        assert!(
+            super::proof_verification::validate_active_proof_verification_tags(&root, &absent)
+                .iter()
+                .any(|diagnostic| diagnostic.detail_key == "proof_verification.step5c11_inventory")
+        );
+        std::fs::remove_dir_all(root).unwrap();
     }
-    let temporary = std::process::Command::new("mktemp").arg("-d").output().unwrap();
-    assert!(temporary.status.success());
-    let root = PathBuf::from(String::from_utf8(temporary.stdout).unwrap().trim());
-    let mut absent = plan.clone();
-    absent.cases.clear();
-    assert!(super::proof_verification::validate_active_proof_verification_tags(&root, &absent).is_empty());
-    std::fs::create_dir_all(root.join("tests/coverage")).unwrap();
-    std::fs::copy(config.workspace_root.join("tests/coverage/step5_activation_map.tsv"), root.join("tests/coverage/step5_activation_map.tsv")).unwrap();
-    assert!(super::proof_verification::validate_active_proof_verification_tags(&root, &absent).iter().any(|diagnostic| diagnostic.detail_key == "proof_verification.step5c11_inventory"));
-    std::fs::remove_dir_all(root).unwrap();
-
 }
 
 fn step5c13_case() -> crate::harness::TestCase {
@@ -5810,4 +5879,526 @@ fn step5c14_state_rejects_corrupt_core_write_formula_and_source_ownership() {
             "state corruption {mutation}"
         );
     }
+}
+
+fn step5c11_reduce_case() -> (crate::harness::TestCase, String) {
+    let case = build_test_plan(&step5c11_config())
+        .unwrap()
+        .cases
+        .into_iter()
+        .find(|case| case.id.0 == "fail_proof_verification_reduce_false_reducibility_001")
+        .unwrap();
+    let text = std::fs::read_to_string(&case.source_path).unwrap();
+    (case, text)
+}
+
+#[test]
+fn step5c11_reduce_retains_the_actual_guarded_goal_proof_and_complete_vc() {
+    use mizar_core::core_ir::{
+        CoreFormulaKind as F, CoreProofNodeKind, CoreProofStatus, CoreSourceAnchor,
+        CoreTermKind as T, DefinitionBody,
+    };
+    use mizar_vc::{
+        discharge::failed_functorial_coherence,
+        vc_ir::{RegistrationCorrectnessKind, VcKind, VcStatus},
+    };
+    let (case, text) = step5c11_reduce_case();
+    for (source, singleton, baseline) in [
+        (
+            text.clone(),
+            true,
+            Some("fail_proof_verification_reduce_false_reducibility_001.vc_ir.snap"),
+        ),
+        (
+            text.replace("to {X}", "to X"),
+            false,
+            Some("step5c11_reduce_reflexive_rhs.vc_ir.snap"),
+        ),
+        (
+            text.replace("CBox4Def", "IdentityDefinition")
+                .replace("CRed2", "ReductionLabel")
+                .replace("cbox4", "identity_fun")
+                .replace('X', "Subject"),
+            true,
+            None,
+        ),
+        (
+            text.replace("cbox4 (cbox4 X) to {X}", "cbox4 ((cbox4 X)) to {(X)}"),
+            true,
+            None,
+        ),
+    ] {
+        let frontend = super::formula_statement::step5c8_test_frontend(&source);
+        assert!(
+            frontend.diagnostics.is_empty(),
+            "{:?}",
+            frontend.diagnostics
+        );
+        let core = step5c11_functorial_core(&case, &source).unwrap();
+        assert_eq!(core, step5c11_functorial_core(&case, &source).unwrap());
+        assert_eq!(
+            (
+                core.items().len(),
+                core.definitions().len(),
+                core.proofs().len(),
+                core.proof_nodes().len(),
+                core.obligation_seeds().len()
+            ),
+            (2, 1, 1, 1, 1)
+        );
+        let (_, definition) = core.definitions().iter().next().unwrap();
+        let (_, seed) = core.obligation_seeds().iter().next().unwrap();
+        let goal = seed.goal.unwrap();
+        let F::Forall { binders, body } = &core.formulas().get(goal).unwrap().kind else {
+            panic!("original universal goal")
+        };
+        assert_eq!(binders.len(), 1);
+        assert_eq!(definition.params.len(), 1);
+        assert_ne!(binders[0].var, definition.params[0].var);
+        let F::Implies {
+            premise,
+            conclusion,
+        } = core.formulas().get(*body).unwrap().kind
+        else {
+            panic!("original guard")
+        };
+        let F::TypePred { subject, ref ty } = core.formulas().get(premise).unwrap().kind else {
+            panic!("bare set guard")
+        };
+        assert_eq!(ty.as_str(), "set");
+        assert_eq!(
+            core.terms().get(subject).unwrap().kind,
+            T::Var(binders[0].var)
+        );
+        let F::Equals { left, right } = core.formulas().get(conclusion).unwrap().kind else {
+            panic!("original equality")
+        };
+        let T::Apply {
+            ref functor,
+            ref args,
+        } = core.terms().get(left).unwrap().kind
+        else {
+            panic!("outer application")
+        };
+        assert_eq!(functor, &definition.symbol);
+        assert_eq!(args.len(), 1);
+        let T::Apply {
+            functor: ref inner_functor,
+            args: ref inner_args,
+        } = core.terms().get(args[0]).unwrap().kind
+        else {
+            panic!("inner application")
+        };
+        assert_eq!(inner_functor, &definition.symbol);
+        assert_eq!(inner_args, &[subject]);
+        let rhs = if singleton {
+            let T::SetEnum(ref elements) = core.terms().get(right).unwrap().kind else {
+                panic!("actual singleton")
+            };
+            assert_eq!(elements.len(), 1);
+            elements[0]
+        } else {
+            right
+        };
+        assert_eq!(core.terms().get(rhs).unwrap().kind, T::Var(binders[0].var));
+        assert_ne!(rhs, subject, "two real source occurrences");
+        let DefinitionBody::Term(definiens) = definition.body else {
+            panic!("real identity body")
+        };
+        assert_eq!(
+            core.terms().get(definiens).unwrap().kind,
+            T::Var(definition.params[0].var)
+        );
+        let proof = core.proofs().iter().next().unwrap().1;
+        assert_eq!(proof.item, seed.owner);
+        assert_eq!(proof.proposition, goal);
+        assert_eq!(proof.status, CoreProofStatus::PendingAutomaticProof);
+        let step = core.proof_nodes().get(proof.root).unwrap();
+        let CoreProofNodeKind::Step {
+            label,
+            formula,
+            justification,
+        } = &step.kind
+        else {
+            panic!("real thesis step")
+        };
+        assert!(label.is_none() && justification.citations.is_empty());
+        assert_eq!(*formula, goal);
+        for (actual, kind) in [
+            (
+                &proof.source,
+                mizar_syntax::ast::SurfaceNodeKind::ProofBlock,
+            ),
+            (
+                &step.source,
+                mizar_syntax::ast::SurfaceNodeKind::ConclusionStatement,
+            ),
+        ] {
+            let expected = frontend
+                .ast
+                .as_ref()
+                .unwrap()
+                .nodes()
+                .iter()
+                .find(|node| node.kind == kind)
+                .unwrap()
+                .range;
+            let CoreSourceAnchor::SourceRange(range) = actual.anchor else {
+                panic!("actual source range")
+            };
+            assert_eq!((range.start, range.end), (expected.start, expected.end));
+        }
+        let vcs =
+            super::proof_verification::generate_core_vcs(&core, super::shared::snapshot_id(0))
+                .unwrap();
+        let replay =
+            super::proof_verification::generate_core_vcs(&core, super::shared::snapshot_id(0))
+                .unwrap();
+        assert_eq!(vcs, replay);
+        assert_eq!(vcs.debug_text(), replay.debug_text());
+        assert_eq!((vcs.vcs().len(), vcs.seed_accounting().len()), (1, 1));
+        assert_eq!(
+            vcs.vcs()[0].kind,
+            VcKind::RegistrationStyleCorrectness {
+                style: RegistrationCorrectnessKind::Reduction
+            }
+        );
+        assert_eq!(vcs.vcs()[0].status, VcStatus::Open);
+        assert!(seed.label.is_none());
+        assert!(vcs.vcs()[0].premises.is_empty());
+        assert!(vcs.vcs()[0].proof_hint.is_none());
+        assert_eq!(
+            failed_functorial_coherence(&core, &vcs).unwrap(),
+            singleton.then_some(vcs.vcs()[0].id)
+        );
+        let (database, _) = step5c11_check_source(&case, &source).unwrap();
+        assert!(database.activated().is_empty() && database.rejected().is_empty());
+        assert_eq!(database.pending().len(), 1);
+        assert!(
+            database
+                .pending()
+                .iter()
+                .all(|row| !row.may_contribute_to_inference())
+        );
+        if let Some(baseline) = baseline {
+            assert_eq!(
+                vcs.debug_text(),
+                std::fs::read_to_string(
+                    step5c11_config()
+                        .workspace_root
+                        .join("tests/snapshots/vc")
+                        .join(baseline)
+                )
+                .unwrap()
+            );
+        }
+    }
+}
+
+#[test]
+fn step5c11_reduce_source_controls_cannot_borrow_the_failure_key() {
+    let (case, text) = step5c11_reduce_case();
+    for (old, new) in [
+        ("equals X", "equals {X}"),
+        ("let X be set;", "let X be object;"),
+        ("to {X}", "to {X, X}"),
+        ("to {X}", "to {}"),
+        ("to {X}", "to {Y}"),
+        ("thus thesis;", "thus thesis by CBox4Def;"),
+        ("thus thesis;", "thus L: thesis;"),
+        ("thus thesis;", "thus thesis; thus thesis;"),
+        (
+            "reducibility\n  proof\n    thus thesis;\n  end;",
+            "reducibility;",
+        ),
+        (
+            "registration\n",
+            "definition\n  let Y be set;\nend;\nregistration\n",
+        ),
+    ] {
+        let changed = text.replace(old, new);
+        assert_ne!(changed, text);
+        let frontend = super::formula_statement::step5c8_test_frontend(&changed);
+        assert!(
+            frontend.diagnostics.is_empty(),
+            "{old} => {new}: {:?}",
+            frontend.diagnostics
+        );
+        if let Ok(core) = step5c11_functorial_core(&case, &changed) {
+            let vcs =
+                super::proof_verification::generate_core_vcs(&core, super::shared::snapshot_id(0))
+                    .unwrap();
+            assert!(
+                mizar_vc::discharge::failed_functorial_coherence(&core, &vcs).is_err(),
+                "unsupported {old} => {new}"
+            );
+        }
+    }
+    let recovered = text.replace("thus thesis;", "assume X = X; thus thesis;");
+    assert!(
+        !super::formula_statement::step5c8_test_frontend(&recovered)
+            .diagnostics
+            .is_empty()
+    );
+    assert!(step5c11_functorial_core(&case, &recovered).is_err());
+    let orientation = text.replace("cbox4 (cbox4 X)", "cbox4 X");
+    assert!(
+        super::formula_statement::step5c8_test_frontend(&orientation)
+            .diagnostics
+            .is_empty()
+    );
+    assert!(
+        step5c11_check_source(&case, &orientation).is_err(),
+        "equal size is not reducibility proof failure"
+    );
+    let (original, nodes, symbols) = super::source_registration_inputs(
+        &step5c11_config().workspace_root,
+        &case,
+        super::formula_statement::step5c8_test_frontend(&text),
+    )
+    .unwrap();
+    let changed = text.replace("CBox4Def", "ForeignDef");
+    let (foreign, _, _) = super::source_registration_inputs(
+        &step5c11_config().workspace_root,
+        &case,
+        super::formula_statement::step5c8_test_frontend(&changed),
+    )
+    .unwrap();
+    assert!(
+        mizar_checker::registration_resolution::check_source_registration_intake(
+            &foreign, &nodes, &symbols
+        )
+        .is_err()
+    );
+    let mut rows = nodes
+        .iter()
+        .map(|(_, node)| node.clone())
+        .collect::<Vec<_>>();
+    rows[0].kind = "ForeignToken".into();
+    let recovered_nodes =
+        mizar_checker::typed_ast::TypedArena::try_new(nodes.root(), rows).unwrap();
+    assert!(
+        mizar_checker::registration_resolution::check_source_registration_intake(
+            &original,
+            &recovered_nodes,
+            &symbols
+        )
+        .is_err()
+    );
+}
+
+#[test]
+fn step5c11_reduce_refutation_rejects_foreign_goals_proofs_and_vcs() {
+    use mizar_core::core_ir::{
+        CoreCitation, CoreFormulaKind as F, CoreIr, CoreIrParts, CoreLabelRef, CoreProofNodeKind,
+        CoreProofStatus, CoreTermKind as T, DefinitionBody,
+    };
+    use mizar_vc::{
+        discharge::failed_functorial_coherence,
+        vc_ir::{RegistrationCorrectnessKind, VcFormulaRef, VcKind, VcSet, VcSetParts, VcStatus},
+    };
+    let (case, text) = step5c11_reduce_case();
+    let core = step5c11_functorial_core(&case, &text).unwrap();
+    let original_vcs =
+        super::proof_verification::generate_core_vcs(&core, super::shared::snapshot_id(0)).unwrap();
+    let (seed_id, seed) = core.obligation_seeds().iter().next().unwrap();
+    let goal = seed.goal.unwrap();
+    let F::Forall { body, .. } = core.formulas().get(goal).unwrap().kind else {
+        unreachable!()
+    };
+    let F::Implies {
+        premise,
+        conclusion,
+    } = core.formulas().get(body).unwrap().kind
+    else {
+        unreachable!()
+    };
+    let F::Equals { left, right } = core.formulas().get(conclusion).unwrap().kind else {
+        unreachable!()
+    };
+    let T::Apply { ref args, .. } = core.terms().get(left).unwrap().kind else {
+        unreachable!()
+    };
+    let inner = args[0];
+    let T::SetEnum(ref elements) = core.terms().get(right).unwrap().kind else {
+        unreachable!()
+    };
+    let rhs = elements[0];
+    let (definition_id, definition) = core.definitions().iter().next().unwrap();
+    let (proof_id, proof) = core.proofs().iter().next().unwrap();
+    for mutation in 0..15 {
+        let mut parts = CoreIrParts {
+            source_id: core.source_id(),
+            module_id: core.module_id().clone(),
+            items: core.items().clone(),
+            terms: core.terms().clone(),
+            formulas: core.formulas().clone(),
+            definitions: core.definitions().clone(),
+            proofs: core.proofs().clone(),
+            proof_nodes: core.proof_nodes().clone(),
+            algorithms: core.algorithms().clone(),
+            algorithm_statements: core.algorithm_statements().clone(),
+            generated: core.generated().clone(),
+            obligation_seeds: core.obligation_seeds().clone(),
+            source_map: core.source_map().clone(),
+            diagnostics: core.diagnostics().clone(),
+        };
+        match mutation {
+            0 => parts.formulas.get_mut(premise).unwrap().kind = F::False,
+            1 => {
+                let F::TypePred { ty, .. } = &mut parts.formulas.get_mut(premise).unwrap().kind
+                else {
+                    unreachable!()
+                };
+                *ty = "object".into();
+            }
+            2 => {
+                let F::TypePred { ty, .. } = &mut parts
+                    .formulas
+                    .get_mut(definition.params[0].ty_guard.unwrap())
+                    .unwrap()
+                    .kind
+                else {
+                    unreachable!()
+                };
+                *ty = "object".into();
+            }
+            3 => {
+                let T::Apply { functor, .. } = &mut parts.terms.get_mut(inner).unwrap().kind else {
+                    unreachable!()
+                };
+                *functor = core.items().get(seed.owner).unwrap().symbol.clone();
+            }
+            4 => {
+                let T::Apply { args, .. } = &mut parts.terms.get_mut(inner).unwrap().kind else {
+                    unreachable!()
+                };
+                args[0] = rhs;
+            }
+            5 => parts.terms.get_mut(rhs).unwrap().kind = T::Var(definition.params[0].var),
+            6 => {
+                let F::TypePred { subject, .. } = parts
+                    .formulas
+                    .get(definition.params[0].ty_guard.unwrap())
+                    .unwrap()
+                    .kind
+                else {
+                    unreachable!()
+                };
+                parts.definitions.get_mut(definition_id).unwrap().body =
+                    DefinitionBody::Term(subject);
+            }
+            7 => parts.proofs.get_mut(proof_id).unwrap().proposition = conclusion,
+            8 => parts.proofs.get_mut(proof_id).unwrap().status = CoreProofStatus::Open,
+            9 => parts.proofs.get_mut(proof_id).unwrap().item = definition.owner.item().unwrap(),
+            10 => {
+                let CoreProofNodeKind::Step { justification, .. } =
+                    &mut parts.proof_nodes.get_mut(proof.root).unwrap().kind
+                else {
+                    unreachable!()
+                };
+                justification
+                    .citations
+                    .push(CoreCitation::Label("foreign".into()));
+            }
+            11 => parts
+                .obligation_seeds
+                .get_mut(seed_id)
+                .unwrap()
+                .context
+                .push(premise),
+            12 => {
+                parts.proofs.get_mut(proof_id).unwrap().source =
+                    core.items().get(seed.owner).unwrap().source.clone()
+            }
+            13 => {
+                let changed = definition.source.clone();
+                parts.proof_nodes.get_mut(proof.root).unwrap().source = changed.clone();
+                parts.source_map.proof_sources.insert(proof.root, changed);
+            }
+            14 => {
+                parts.obligation_seeds.get_mut(seed_id).unwrap().label = Some(CoreLabelRef::new(
+                    core.items().get(seed.owner).unwrap().symbol.fqn().as_str(),
+                ));
+            }
+            _ => unreachable!(),
+        }
+        let changed = CoreIr::try_new(parts).unwrap();
+        let generated =
+            super::proof_verification::generate_core_vcs(&changed, super::shared::snapshot_id(0))
+                .unwrap();
+        assert!(
+            failed_functorial_coherence(&changed, &generated).is_err(),
+            "Core mutation {mutation}"
+        );
+        assert!(
+            failed_functorial_coherence(&changed, &original_vcs).is_err(),
+            "stale VC {mutation}"
+        );
+    }
+    for mutation in 0..4 {
+        let mut parts = VcSetParts {
+            schema_version: original_vcs.schema_version().clone(),
+            snapshot: original_vcs.snapshot(),
+            source: original_vcs.source(),
+            module: original_vcs.module().clone(),
+            generated_formulas: original_vcs.generated_formulas().to_vec(),
+            vcs: original_vcs.vcs().to_vec(),
+            seed_accounting: original_vcs.seed_accounting().to_vec(),
+        };
+        match mutation {
+            0 => {
+                parts.vcs[0].kind = VcKind::RegistrationStyleCorrectness {
+                    style: RegistrationCorrectnessKind::Registration,
+                }
+            }
+            1 => parts.vcs[0].status = VcStatus::NeedsAtp,
+            2 => parts.vcs[0].goal = VcFormulaRef::Core(conclusion),
+            3 => parts.vcs[0].source.primary = definition.source.clone(),
+            _ => unreachable!(),
+        }
+        let changed = VcSet::try_new(parts).unwrap();
+        assert!(
+            failed_functorial_coherence(&core, &changed).is_err(),
+            "VC mutation {mutation}"
+        );
+    }
+}
+
+#[test]
+fn step5c11_reduce_runner_requires_the_complete_committed_baseline() {
+    let config = step5c11_config();
+    let (case, _) = step5c11_reduce_case();
+    let run = |tests_root: &Path, ordinal| {
+        super::run_proof_verification_case(&config.workspace_root, tests_root, &case, ordinal)
+    };
+    for ordinal in [0, 73] {
+        let result = run(&config.workspace_root.join("tests"), ordinal);
+        assert_eq!(
+            result.status,
+            super::ProofVerificationCaseStatus::Passed,
+            "{result:?}"
+        );
+    }
+    let temporary = std::process::Command::new("mktemp")
+        .arg("-d")
+        .output()
+        .unwrap();
+    assert!(temporary.status.success());
+    let root = PathBuf::from(String::from_utf8(temporary.stdout).unwrap().trim());
+    let missing = run(&root, 0);
+    assert_eq!(missing.status, super::ProofVerificationCaseStatus::Failed);
+    assert!(
+        missing
+            .failure
+            .unwrap()
+            .contains("snapshot could not be read")
+    );
+    let baseline = root.join(case.expectation.snapshots.as_ref().unwrap());
+    std::fs::create_dir_all(baseline.parent().unwrap()).unwrap();
+    std::fs::write(baseline, "vc-ir-debug-v1\ntruncated\n").unwrap();
+    let corrupt = run(&root, 0);
+    assert_eq!(corrupt.status, super::ProofVerificationCaseStatus::Failed);
+    assert!(corrupt.failure.unwrap().contains("snapshot differed"));
+    std::fs::remove_dir_all(root).unwrap();
 }

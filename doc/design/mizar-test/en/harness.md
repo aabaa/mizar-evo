@@ -1,6 +1,9 @@
 # Module: harness
 
-The exact false-coherence proof row consumes authenticated source → Core → VC failure at verification; unsupported goals and pending status alone never satisfy its failure key.
+The exact false-coherence and false-reducibility proof rows consume authenticated source → Core → VC failure at verification; unsupported goals and pending status alone never satisfy their failure keys.
+The reduction row also authenticates `snapshots/vc/fail_proof_verification_reduce_false_reducibility_001.vc_ir.snap` and `spec.en.mizar_vc.vc_ir.reduce_false_reducibility_snapshot` alongside its original canonical reference.
+Before failure observation, compare immutable complete source-to-VC reruns and their `debug_text()` bytes with the full baseline; missing or corrupt baselines, metadata and cross-stage changes fail closed.
+The real-source reflexive-RHS near miss retains one open Reduction VC and its own complete baseline; no failure or acceptance follows.
 
 The advanced-semantics command admits the four mapped positive registration rows at
 cluster_resolution, authenticates their exact sidecars, and consumes source-checked pending

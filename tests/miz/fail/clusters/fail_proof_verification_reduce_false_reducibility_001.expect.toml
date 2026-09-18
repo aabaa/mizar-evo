@@ -9,7 +9,10 @@ expected_phase = "verification"
 failure_category = "proof_failure"
 stable_detail_key = "clusters.reduce.false_reducibility"
 diagnostic_codes = []
+tags = ["active_proof_verification"]
+snapshots = "snapshots/vc/fail_proof_verification_reduce_false_reducibility_001.vc_ir.snap"
 spec_refs = [
   "spec.en.17.clusters.reduce.false_reducibility",
+  "spec.en.mizar_vc.vc_ir.reduce_false_reducibility_snapshot",
 ]
-notes = "Audit-1 semantic-bridge inactive oracle seed (September 2026 audit wave): binding expectation for the Step-5 semantic bridge; no active runner tag, earns no current credit. A reduction registration whose two sides are not provably equal must fail its reducibility obligation (spec 17.6, 17.9)."
+notes = "The source-derived nested identity reduction retains its actual guarded correctness goal and registration proof through Core and a complete Reduction VC baseline. Authenticated identity-versus-singleton refutation yields the existing proof failure; no reduction rule or accepted registration is published."
