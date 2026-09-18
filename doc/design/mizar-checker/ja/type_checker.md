@@ -23,7 +23,8 @@ guard 付き `assume` は例化済み前件と一致させる。root block の `
 arena は元の node ID・子辺・構造ノードの `SurfaceAst` kind 名を保持し、primary/atomic ノードは既存 checker の kind tag と不変 handoff を保持する。
 
 `occurrence_binding_env` の module context は受け渡し単位であり、lexical visibility の根拠ではない。
-`step5c7_type_detail_keys` は限定された inhabitation・builtin widening の根拠を受理する前に項・式を推論し、定理・証明の受理は行わない。
+`step5c7_type_detail_keys` は choice 根拠の判定前に実際の項・式を推論し、ソースに対応する CoercionInput の対を消費する。
+裸の set -> 局所構造体は正規化した型の対と厳密な SourceQua 拒否からだけ invalid narrowing とし、両ソース箇所を検査する。証明の受理は与えない。
 
 > 正本は英語です。英語版:
 > [../en/type_checker.md](../en/type_checker.md)。
@@ -2277,7 +2278,7 @@ task 11 が所有する。
 `ObligationAnchor`、prover status、proof witness、accepted verifier status を割り当ててはならない。
 context-sensitive な `Assumed` fact は omitted `reconsider` helper が直接 query しない。upstream
 producer が fact-query / context boundary を使って consumable supporting fact id を先に供給する
-必要がある。source-derived reconsider/coercion extraction は MC-G019/MC-G020 の下で deferred の
+必要がある。上記の限定 qua profile を超える source-derived reconsider/coercion extraction は MC-G019/MC-G020 の下で deferred の
 ままである。
 
 ## Task 11: type facts and queries

@@ -9,7 +9,8 @@ expected_phase = "type_check"
 failure_category = "type_error"
 stable_detail_key = "terms.qua.invalid_narrowing"
 diagnostic_codes = []
+tags = ["active_type_elaboration"]
 spec_refs = [
   "spec.en.13.terms.qua.widening",
 ]
-notes = "Audit-1 semantic-bridge inactive oracle seed (September 2026 audit wave): binding expectation for the Step-5 semantic bridge; no active runner tag, earns no current credit. qua cannot forge a narrowing to a structure type that the term does not statically inhabit (spec 13.6)."
+notes = "Source-backed type checking rejects qua from set to a bare local structure that the term does not statically inhabit (spec 13.6); no proof acceptance is granted."

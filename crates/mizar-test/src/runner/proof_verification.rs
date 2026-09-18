@@ -462,6 +462,7 @@ pub(super) fn is_active_proof_verification(case: &TestCase) -> bool {
         || super::type_elaboration::is_step5c3_argument_candidate(case)
         || super::type_elaboration::is_step5c4_dependent_candidate(case)
         || super::type_elaboration::is_step5c6_alias_candidate(case)
+        || super::type_elaboration::is_step5c7_candidate(case)
     {
         return false;
     }
@@ -1889,6 +1890,132 @@ mod term_proof_tests {
             validate_active_proof_verification_tags(root, &plan)
                 .iter()
                 .any(|diagnostic| diagnostic.detail_key.ends_with(STEP5C7_PROOF_CASES[1].0))
+        );
+    }
+
+    #[test]
+    fn step5c7_qua_checks_both_source_scopes_and_rejects_unrelated_errors() {
+        let config = config();
+        let root = &config.workspace_root;
+        let plan = crate::harness::build_test_plan(&config).unwrap();
+        let case = plan
+            .cases
+            .iter()
+            .find(|case| case.id.0 == "fail_type_elaboration_term_qua_invalid_narrowing_001")
+            .unwrap();
+        let source = fs::read_to_string(&case.source_path).unwrap();
+        let keys = |source: &str| {
+            let ast = parse(source);
+            let symbols = resolver_symbol_collection(root, case, &ast);
+            if !symbols.detail_keys.is_empty() {
+                return symbols.detail_keys;
+            }
+            super::super::type_elaboration::step5c7_term_detail_keys(
+                &ast,
+                &symbols.module,
+                &symbols.env,
+            )
+        };
+        let invalid = vec!["terms.qua.invalid_narrowing".to_owned()];
+        assert_eq!(keys(&source), invalid);
+        let legal = source.replace("qua QuaBox", "qua object");
+        assert!(keys(&legal).is_empty());
+        assert!(keys(&source.replace("qua QuaBox", "qua set")).is_empty());
+        assert_eq!(
+            keys(&source.replacen("qua QuaBox", "qua object", 1)),
+            invalid
+        );
+        assert_eq!(
+            keys(&legal.replacen("qua object", "qua QuaBox", 1)),
+            invalid
+        );
+        let renamed = source
+            .replace("QuaBox", "Crate")
+            .replace("field d", "field payload")
+            .replace("X", "Y");
+        assert_eq!(keys(&renamed), invalid);
+        assert!(keys(&renamed.replace("qua Crate", "qua object")).is_empty());
+        let (_, theorem) = source.split_once("theorem").unwrap();
+        let definition = source.split_once("theorem").unwrap().0;
+        for changed in [
+            source.replace("qua QuaBox", "qua Unknown"),
+            source.replacen("X qua", "Z qua", 1),
+            source.replace("being set", "being object"),
+            source.replace("be set", "be object"),
+            source.replace("field d -> set;", "field d -> object;"),
+            source.replace("field d -> set;", "field d -> set; field d -> set;"),
+            source.replace("field d -> set;", "field d -> ;"),
+            source.replace("struct QuaBox where", "struct QuaBox -> Missing where"),
+            source.replace("qua QuaBox", "qua empty QuaBox"),
+            source.replace(
+                "struct QuaBox where\n    field d -> set;\n  end;",
+                "mode QuaBox is set;",
+            ),
+            format!("theorem{theorem}{definition}"),
+            source.replace("thus (X qua QuaBox)", "thus (Z qua object)"),
+        ] {
+            assert_ne!(keys(&changed), invalid, "{changed}");
+        }
+        let ast = parse(&source);
+        let symbols = resolver_symbol_collection(root, case, &ast);
+        let mut pending = vec![ast.root().unwrap()];
+        let mut reachable = std::collections::BTreeSet::new();
+        while let Some(id) = pending.pop() {
+            assert!(
+                reachable.insert(id),
+                "duplicate structural parent for {id:?}"
+            );
+            let node = ast.node(id).unwrap();
+            pending.extend(node.children.iter().copied().filter(|child| {
+                node.kind != mizar_syntax::SurfaceNodeKind::Root
+                    || !matches!(
+                        ast.node(*child).unwrap().kind,
+                        mizar_syntax::SurfaceNodeKind::Token(_)
+                    )
+            }));
+        }
+        assert_eq!(reachable.len(), ast.nodes().len(), "orphan source nodes");
+        let scope = mizar_resolve::names::SourceVariableScopeResolver::resolve_occurrences(
+            mizar_resolve::names::SourceVariableScopeInput::new(
+                &ast,
+                &symbols.module,
+                &symbols.env,
+            ),
+        )
+        .unwrap();
+        let bindings = scope
+            .references()
+            .iter()
+            .map(|reference| reference.binding())
+            .collect::<std::collections::BTreeSet<_>>();
+        assert_eq!(bindings.len(), 2);
+        let qua_sites = ast
+            .nodes()
+            .iter()
+            .filter(|node| node.kind == mizar_syntax::SurfaceNodeKind::QuaExpression)
+            .map(|node| node.range)
+            .collect::<Vec<_>>();
+        assert_eq!(qua_sites.len(), 2);
+        assert_ne!(qua_sites[0], qua_sites[1]);
+        let renamed_ast = parse(&renamed);
+        let stale = super::super::type_elaboration::step5c7_term_detail_keys(
+            &renamed_ast,
+            &symbols.module,
+            &symbols.env,
+        );
+        assert_ne!(stale, invalid);
+        let mut foreign_ast = ast.clone();
+        use mizar_session::SessionIdAllocator;
+        let ids = mizar_session::InMemorySessionIdAllocator::new();
+        ids.next_source_id(snapshot_id(777)).unwrap();
+        foreign_ast.source_id = ids.next_source_id(snapshot_id(777)).unwrap();
+        assert_ne!(
+            super::super::type_elaboration::step5c7_term_detail_keys(
+                &foreign_ast,
+                &symbols.module,
+                &symbols.env
+            ),
+            invalid
         );
     }
 

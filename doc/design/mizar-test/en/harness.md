@@ -31,9 +31,9 @@ stages. Existing resolver identities and checker handoffs carry formula/statemen
 parser diagnostic provenance, not token matching alone, supplies the non-associative `iff` failure.
 Statement-checking success does not activate proof verification or certificate acceptance.
 
-The Step 5C.7 route admits only its mapped non-G5 type/proof rows with exact sidecar metadata.
+The Step 5C.7 route retains its seven rows and adds only the mapped invalid-qua type_check rejection with exact sidecar metadata.
 Source occurrences, choice evidence, qua bases, and proof citations are extracted independently of
-case names; proof success requires discharged membership goals. The G5 narrowing row stays inactive.
+case names; proof success requires discharged membership goals. Both qua sites use actual bindings/types after source/environment and lower-stage checks. The narrowing key requires an earlier bare local structure with actual builtin-set field witnesses, without registration; inherited/attributed targets and unrelated errors earn no key.
 
 ## Step 5C.4 mode semantic runner
 

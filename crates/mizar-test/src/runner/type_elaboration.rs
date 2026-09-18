@@ -37,10 +37,10 @@ pub(super) use admission::{
     is_step5c3_argument_candidate, is_step5c3_workspace_member, is_step5c4_dependent_candidate,
     is_step5c4_workspace_member, is_step5c5_argument_candidate,
     is_step5c5_predicate_duplicate_candidate, is_step5c5_workspace_member,
-    is_step5c6_alias_candidate, is_step5c7_workspace_member, is_step5c12_candidate,
-    is_step5c14_static_candidate, step5c3_argument_admitted, step5c4_dependent_admitted,
-    step5c5_argument_admitted, step5c6_synonym_admitted, step5c12_admitted,
-    step5c14_static_admitted, validate_active_type_elaboration_tags,
+    is_step5c6_alias_candidate, is_step5c7_candidate, is_step5c7_workspace_member,
+    is_step5c12_candidate, is_step5c14_static_candidate, step5c3_argument_admitted,
+    step5c4_dependent_admitted, step5c5_argument_admitted, step5c6_synonym_admitted,
+    step5c12_admitted, step5c14_static_admitted, validate_active_type_elaboration_tags,
 };
 #[cfg(test)]
 pub(super) use binary_routes::{

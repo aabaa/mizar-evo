@@ -15948,6 +15948,12 @@ impl Parser {
         while cursor < self.request.tokens.len() {
             let at_top_level = paren_depth == 0 && bracket_depth == 0 && brace_depth == 0;
             if at_top_level {
+                if self.is_reserved_word_at(cursor, "qua")
+                    && let Some(target_end) = self.type_expression_end_at(cursor + 1)
+                {
+                    cursor = target_end;
+                    continue;
+                }
                 if cursor > position
                     && (self.is_builtin_predicate_at(cursor)
                         || self.is_reserved_word_at(cursor, "is")

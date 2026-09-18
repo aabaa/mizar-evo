@@ -35,8 +35,8 @@ The arena retains original node IDs, child edges and structural `SurfaceAst` kin
 primary/atomic nodes retain their existing checker source-kind tags and immutable handoffs.
 
 `occurrence_binding_env` projects a resolver receipt into one module transaction, not a lexical
-visibility authority. `step5c7_type_detail_keys` requires term/formula inference before accepting
-bounded source inhabitation or builtin-widening evidence; it grants no theorem/proof credit.
+visibility authority. `step5c7_type_detail_keys` infers actual terms/formulas before choice evidence and consumes source-bound CoercionInput pairs.
+Bare set -> local structure earns invalid narrowing only from its normalized pair and exact SourceQua rejection; both source sites are checked, with no proof credit.
 
 > Canonical language: English. Japanese companion:
 > [../ja/type_checker.md](../ja/type_checker.md).
@@ -2415,7 +2415,7 @@ Required behavior:
 Context-sensitive `Assumed` facts are not queried directly by the omitted
 `reconsider` helper; an upstream producer must first use the fact-query/context
 boundary to supply a consumable supporting fact id. Source-derived
-reconsider/coercion extraction remains deferred under MC-G019/MC-G020.
+reconsider/coercion extraction beyond the bounded qua profile above remains deferred under MC-G019/MC-G020.
 
 ## Task 11: Type Facts And Queries
 

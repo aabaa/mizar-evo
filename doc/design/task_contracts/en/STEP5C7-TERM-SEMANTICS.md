@@ -6,13 +6,12 @@ Owning plans: [checker](../../mizar-checker/en/00.crate_plan.md#task-index), [re
 
 ## Frozen assignment
 
-- Status: complete; full tier; dependency 5A.1 is complete.
-- Purpose: activate only the seven non-gap Step 5C.7 pairs in the [activation map](../../../../tests/coverage/step5_activation_map.tsv).
+- Status: complete for the eight mapped rows; full tier; dependency 5A.1 complete.
 - Authority: [Chapter 13](../../../spec/en/13.term_expression.md) §§13.1.4,
-  13.4–13.6, 13.8.6; [Chapter 3](../../../spec/en/03.type_system.md) builtin widening;
+  13.4–13.6, 13.8.6–7; [Chapter 3](../../../spec/en/03.type_system.md) §§3.4–3.5;
   [§7.8.1](../../../spec/en/07.modes.md#781-mode-property-sethood) and
   [§17.3.4](../../../spec/en/17.clusters_and_registrations.md#1734-inhabitation-evidence-and-existential-registrations), [Chapter 15](../../../spec/en/15.statements.md) premise labels;
-  mapped `.miz` sources, expectations, and unchanged trace manifest.
+  the eight [mapped sources](../../../../tests/coverage/step5_activation_map.tsv), expectations and unchanged trace.
 - The approved direct-membership set bound is specified in §13.4.2 (EN/JA).
   It does not grant `sethood(object)` or infer bounds from arbitrary formulas.
 - Classification: executable `test_gap` / `source_drift`; the guarded-comprehension `spec_gap` is resolved by the approved specification change.
@@ -28,12 +27,13 @@ respectively. Public codes stay empty; phase names below are exact.
 | `term_choice_builtin_001` | type / `type_check`: pass |
 | `term_numeral_equality_001` | type / `type_check`: pass |
 | `term_qua_widening_001` | type / `type_check`: pass |
+| `term_qua_invalid_narrowing_001` | type / `type_check`: `terms.qua.invalid_narrowing` |
 | `term_comprehension_unbound_mapper_001` | type / `resolve`: `terms.comprehension.unbound_mapper_variable` |
 | `term_comprehension_guarded_001` | proof / `vc_generation`: pass |
 | `term_set_enumeration_membership_001` | proof / `vc_generation`: pass |
 
-The G5 narrowing pair stays inactive. Admission authenticates id, source/sidecar
-paths, stage, phase, outcome, key, empty public codes, and sole stage tag.
+Admission authenticates id, paths, stage, phase, outcome, key, codes and sole tag;
+qua also checks kind/domain/category/spec ref and absence of auxiliary payloads; [parser lookahead](../../mizar-parser/en/grammar.md#task-11-qua-qualification) skips complete qua target types before formula classification.
 Malformed mapped rows must fail closed rather than fall through to older routes.
 Reuse `SurfaceAst`, existing resolver binding identities, checker `Source*`
 handoffs/type inference, and Core source-handoff normalization; add no parallel IR.
@@ -55,6 +55,6 @@ Review specification/docs, test sufficiency, implementation, removable volume,
 and source/doc consistency. Runner unit tests reject missing/wrong-root/extra-tag
 admission, missing/non-set/dependent guards, wrong mapper binding, missing/wrong
 citation, and altered conclusions; malformed provenance must not earn oracle credit.
-Keep these mutations fixture-free; test the seven exact corpus outcomes separately.
+Keep controls fixture-free; test all eight outcomes and both qua source sites separately.
 Run focused tests/corpus commands, fmt, warnings-denied Clippy, and cargo test.
-One local commit; respect the approved production/documentation/public-type budgets.
+Retain approved cumulative production/documentation budgets; add no new public types.

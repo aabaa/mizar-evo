@@ -2290,6 +2290,7 @@ fn is_active_parse_only(case: &TestCase) -> bool {
         || type_elaboration::is_step5c3_argument_candidate(case)
         || type_elaboration::is_step5c4_dependent_candidate(case)
         || type_elaboration::is_step5c6_alias_candidate(case)
+        || type_elaboration::is_step5c7_candidate(case)
         || is_step5c14_static_candidate(case)
         || is_step5c13_overload_candidate(case)
         || is_step5c12_candidate(case)
@@ -2343,6 +2344,7 @@ fn is_active_declaration_symbol(case: &TestCase) -> bool {
         || type_elaboration::is_step5c3_argument_candidate(case)
         || type_elaboration::is_step5c4_dependent_candidate(case)
         || type_elaboration::is_step5c6_alias_candidate(case)
+        || type_elaboration::is_step5c7_candidate(case)
         || is_step5c14_static_candidate(case)
         || is_step5c13_overload_candidate(case)
         || is_step5c12_candidate(case)
@@ -2817,6 +2819,19 @@ fn type_elaboration_detail_keys(
                 .collect();
         }
     }
+    if type_elaboration::is_step5c7_candidate(case) {
+        if !is_active_type_elaboration(case) || !is_step5c7_workspace_member(workspace_root, case) {
+            return vec!["type_elaboration.checker.typed_ast_invalid".into()];
+        }
+        if !resolver.detail_keys.is_empty() {
+            return resolver
+                .detail_keys
+                .into_iter()
+                .map(|key| format!("type_elaboration.lower_stage.{key}"))
+                .collect();
+        }
+        return step5c7_term_detail_keys(&ast, &resolver.module, &resolver.env);
+    }
     let symbols = if source_text.as_ref() == type_elaboration::SOURCE_STATEMENT_B5B_TEXT {
         augment_type_elaboration_import_summaries_with_imported_public_theorem_label(
             &ast,
@@ -2826,9 +2841,6 @@ fn type_elaboration_detail_keys(
     } else {
         augment_type_elaboration_import_summaries(&ast, &resolver.module, resolver.env.clone())
     };
-    if is_step5c7_workspace_member(workspace_root, case) {
-        return step5c7_term_detail_keys(&ast, &resolver.module, &symbols);
-    }
     if formula_statement::is_step5c10_candidate(case) {
         if !formula_statement::step5_formula_admitted(Some(workspace_root), case)
             || !resolver.detail_keys.is_empty()

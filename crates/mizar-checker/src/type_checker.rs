@@ -4935,9 +4935,8 @@ impl TermFormulaChecker {
 
     /// Runs the bounded Step 5C.7 type slice over authenticated checker input.
     ///
-    /// The source runner supplies the already-authenticated inhabitation and
-    /// builtin-widening decisions; this method still performs ordinary term
-    /// and formula inference before accepting either decision.
+    /// The runner authenticates source inputs; this owner classifies qua types
+    /// and requires the coercion checker's exact rejection before reporting narrowing.
     pub fn step5c7_type_detail_keys(
         &self,
         symbols: &SymbolEnv,
@@ -4945,9 +4944,11 @@ impl TermFormulaChecker {
         term_inputs: impl IntoIterator<Item = TermInput>,
         formula_inputs: impl IntoIterator<Item = FormulaInput>,
         choice_inhabited: Option<bool>,
-        qua_widening: Option<bool>,
+        qua_inputs: impl IntoIterator<Item = CoercionInput>,
     ) -> Vec<String> {
-        let output = self.infer(symbols, binding_env, term_inputs, formula_inputs);
+        let terms = term_inputs.into_iter().collect::<Vec<_>>();
+        let mut qua_inputs = qua_inputs.into_iter().collect::<Vec<_>>();
+        let output = self.infer(symbols, binding_env, terms.clone(), formula_inputs);
         let well_formed = !output.diagnostics().iter().any(|(_, diagnostic)| {
             diagnostic.severity == TypeDiagnosticSeverity::Error
                 || diagnostic.recovery == DiagnosticRecoveryState::Degraded
@@ -4964,11 +4965,123 @@ impl TermFormulaChecker {
         if !well_formed {
             return vec!["type_elaboration.checker.typed_ast_invalid".to_owned()];
         }
+        let qua_invalid = (|| {
+            if qua_inputs.len()
+                != terms
+                    .iter()
+                    .filter(|term| term.kind == TermKind::SourceQua)
+                    .count()
+            {
+                return None;
+            }
+            if qua_inputs.is_empty() {
+                return Some(false);
+            }
+            if symbols.module_id() != binding_env.module_id() {
+                return None;
+            }
+            let heads = output
+                .terms()
+                .iter()
+                .map(|(_, term)| {
+                    let entry = output.type_entries().get(term.type_entry)?;
+                    let TypeEntryActual::Known(id) = entry.actual else {
+                        return None;
+                    };
+                    let ty = output.normalized_types().get(id)?;
+                    (term.status == TermStatus::Inferred
+                        && ty.status == NormalizedTypeStatus::Known
+                        && ty.args.is_empty()
+                        && ty.attributes.is_empty())
+                    .then_some((term.site.clone(), &ty.head))
+                })
+                .collect::<Option<BTreeMap<_, _>>>()?;
+            let mut seen = BTreeSet::new();
+            let mut rejected = 0;
+            for input in &mut qua_inputs {
+                let qua = terms
+                    .iter()
+                    .find(|term| term.site == input.site && term.kind == TermKind::SourceQua)?;
+                let base = terms.iter().find(|term| {
+                    Some(&term.site) == input.from_type.as_ref().map(|ty| &ty.site)
+                        && term.kind == TermKind::Variable
+                })?;
+                let expected = CoercionInput::new(
+                    qua.site.clone(),
+                    qua.source_range,
+                    CoercionRequestKind::SourceQua,
+                    qua.result_type.clone()?,
+                )
+                .with_from_type(base.result_type.clone()?);
+                if *input != expected
+                    || !seen.insert(input.site.clone())
+                    || !matches!(base.reference, Some(TermReference::Binding(_)))
+                    || base.context != qua.context
+                    || base.source_range.source_id != binding_env.source_id()
+                    || input.source_range.source_id != binding_env.source_id()
+                    || base.source_range.start < qua.source_range.start
+                    || base.source_range.end > input.to_type.source_range.start
+                    || input.to_type.source_range.end > qua.source_range.end
+                {
+                    return None;
+                }
+                match (heads.get(&base.site)?, heads.get(&qua.site)?) {
+                    (
+                        TypeHeadRef::BuiltinSet,
+                        TypeHeadRef::BuiltinSet | TypeHeadRef::BuiltinObject,
+                    )
+                    | (TypeHeadRef::BuiltinObject, TypeHeadRef::BuiltinObject) => {
+                        input.evidence = CoercionEvidence::StaticUpcast
+                    }
+                    (TypeHeadRef::BuiltinSet, TypeHeadRef::Structure(_)) => rejected += 1,
+                    _ => return None,
+                }
+            }
+            let checked = CoercionObligationChecker::default().check(
+                symbols,
+                output.facts(),
+                qua_inputs.clone(),
+                [],
+            );
+            if checked.coercions().len() != qua_inputs.len()
+                || checked.diagnostics().len() != rejected
+            {
+                return None;
+            }
+            for input in &qua_inputs {
+                let row = checked
+                    .coercions()
+                    .iter()
+                    .find(|(_, row)| row.site == input.site)?
+                    .1;
+                if row.kind != CoercionKind::SourceQua {
+                    return None;
+                }
+                if input.evidence == CoercionEvidence::Missing {
+                    let CoercionProvenance::Recovery(id) = row.provenance else {
+                        return None;
+                    };
+                    let diagnostic = checked.diagnostics().get(id)?;
+                    if row.status != CoercionStatus::Rejected
+                        || diagnostic.owner.as_ref() != Some(&input.site)
+                        || diagnostic.source_range != input.source_range
+                        || diagnostic.message_key != "checker.coercion.invalid_source_qua_target"
+                    {
+                        return None;
+                    }
+                } else if row.status != CoercionStatus::Candidate {
+                    return None;
+                }
+            }
+            Some(rejected != 0)
+        })();
         if choice_inhabited == Some(false) {
             return vec!["terms.choice.missing_inhabitation".to_owned()];
         }
-        if qua_widening == Some(false) {
-            return vec!["type_elaboration.checker.typed_ast_invalid".to_owned()];
+        match qua_invalid {
+            None => return vec!["type_elaboration.checker.typed_ast_invalid".to_owned()],
+            Some(true) => return vec!["terms.qua.invalid_narrowing".to_owned()],
+            Some(false) => {}
         }
         Vec::new()
     }
@@ -17522,7 +17635,7 @@ mod tests {
                     numeral_terms,
                     [equality],
                     None,
-                    None,
+                    [],
                 )
                 .is_empty()
         );
@@ -17569,10 +17682,171 @@ mod tests {
                 choice_terms,
                 [choice_equality],
                 Some(false),
-                None,
+                [],
             ),
             vec!["terms.choice.missing_inhabitation".to_owned()]
         );
+    }
+
+    #[test]
+    fn step5c7_qua_requires_normalized_corresponding_inputs_and_exact_rejection() {
+        let source = source_id();
+        let structure = symbol_id("Box", "pkg::main::Box");
+        let symbols = symbol_env(vec![symbol_entry(structure.clone(), SymbolKind::Structure)]);
+        let bindings = binding_env_for_declarations(
+            source,
+            vec![binding_spec(
+                "X",
+                BindingKind::LetBinding,
+                BindingStatus::Active,
+            )],
+        );
+        let from = TypeExpressionInput::new(
+            site(10),
+            range(source, 20, 21),
+            "set",
+            TypeHeadInput::BuiltinSet,
+        );
+        let to = TypeExpressionInput::new(
+            site(12),
+            range(source, 26, 29),
+            "Box",
+            TypeHeadInput::Symbol(structure.clone()),
+        );
+        let base = TermInput::new(
+            site(10),
+            BindingContextId::new(1),
+            range(source, 20, 21),
+            TermKind::Variable,
+        )
+        .with_reference(TermReference::Binding(BindingId::new(0)))
+        .with_result_type(from.clone());
+        let qua = TermInput::new(
+            site(11),
+            BindingContextId::new(1),
+            range(source, 20, 29),
+            TermKind::SourceQua,
+        )
+        .with_result_type(to.clone());
+        let terms = vec![base, qua];
+        let input = CoercionInput::new(
+            site(11),
+            range(source, 20, 29),
+            CoercionRequestKind::SourceQua,
+            to,
+        )
+        .with_from_type(from);
+        let run = |terms: Vec<TermInput>, inputs: Vec<CoercionInput>| {
+            TermFormulaChecker::default().step5c7_type_detail_keys(
+                &symbols,
+                &bindings,
+                terms,
+                [],
+                None,
+                inputs,
+            )
+        };
+        assert_eq!(
+            run(terms.clone(), vec![input.clone()]),
+            ["terms.qua.invalid_narrowing"]
+        );
+        let inferred = TermFormulaChecker::default().infer(&symbols, &bindings, terms.clone(), []);
+        let checked = CoercionObligationChecker::default().check(
+            &symbols,
+            inferred.facts(),
+            [input.clone()],
+            [],
+        );
+        let row = checked.coercions().iter().next().unwrap().1;
+        assert_eq!(row.site, input.site);
+        assert_eq!(row.kind, CoercionKind::SourceQua);
+        assert_eq!(row.status, CoercionStatus::Rejected);
+        assert_eq!(
+            checked
+                .normalized_types()
+                .get(row.from.unwrap())
+                .unwrap()
+                .head,
+            TypeHeadRef::BuiltinSet
+        );
+        assert_eq!(
+            checked.normalized_types().get(row.to).unwrap().head,
+            TypeHeadRef::Structure(structure)
+        );
+        let CoercionProvenance::Recovery(id) = row.provenance else {
+            panic!("missing recovery provenance")
+        };
+        let diagnostic = checked.diagnostics().get(id).unwrap();
+        assert_eq!(diagnostic.owner.as_ref(), Some(&input.site));
+        assert_eq!(diagnostic.source_range, input.source_range);
+        assert_eq!(
+            diagnostic.message_key,
+            "checker.coercion.invalid_source_qua_target"
+        );
+        for mutation in 0..12 {
+            let mut changed = input.clone();
+            let mut changed_terms = terms.clone();
+            match mutation {
+                0 => changed.from_type.as_mut().unwrap().head = TypeHeadInput::BuiltinObject,
+                1 => changed.to_type.head = TypeHeadInput::BuiltinObject,
+                2 => changed.site = site(99),
+                3 => changed.from_type.as_mut().unwrap().site = site(99),
+                4 => changed.to_type.site = site(99),
+                5 => changed.source_range = range(source, 21, 29),
+                6 => changed.evidence = CoercionEvidence::StaticUpcast,
+                7 => changed.evidence = CoercionEvidence::StructureInheritance,
+                8 => changed_terms[0].reference = Some(TermReference::Binding(BindingId::new(99))),
+                9 => changed_terms[0].source_range = range(source, 10, 11),
+                10 => changed_terms[0].context = BindingContextId::new(0),
+                11 => changed_terms.push(
+                    TermInput::new(
+                        site(90),
+                        BindingContextId::new(1),
+                        range(source, 90, 91),
+                        TermKind::Numeral,
+                    )
+                    .with_result_type(TypeExpressionInput::new(
+                        site(91),
+                        range(source, 90, 91),
+                        "missing",
+                        TypeHeadInput::Symbol(symbol_id("Missing", "pkg::main::Missing")),
+                    )),
+                ),
+                _ => unreachable!(),
+            }
+            assert_eq!(
+                run(changed_terms, vec![changed]),
+                ["type_elaboration.checker.typed_ast_invalid"],
+                "mutation {mutation}"
+            );
+        }
+        assert_eq!(
+            run(terms.clone(), vec![]),
+            ["type_elaboration.checker.typed_ast_invalid"]
+        );
+        assert_eq!(
+            run(terms.clone(), vec![input.clone(), input.clone()]),
+            ["type_elaboration.checker.typed_ast_invalid"]
+        );
+        for (from, to) in [
+            (TypeHeadInput::BuiltinSet, TypeHeadInput::BuiltinSet),
+            (TypeHeadInput::BuiltinSet, TypeHeadInput::BuiltinObject),
+            (TypeHeadInput::BuiltinObject, TypeHeadInput::BuiltinObject),
+            (TypeHeadInput::BuiltinObject, TypeHeadInput::BuiltinSet),
+        ] {
+            let mut changed_terms = terms.clone();
+            let mut changed = input.clone();
+            changed_terms[0].result_type.as_mut().unwrap().head = from.clone();
+            changed_terms[1].result_type.as_mut().unwrap().head = to.clone();
+            changed.from_type.as_mut().unwrap().head = from.clone();
+            changed.to_type.head = to.clone();
+            let keys = run(changed_terms, vec![changed]);
+            if from == TypeHeadInput::BuiltinObject && to == TypeHeadInput::BuiltinSet {
+                assert_eq!(keys, ["type_elaboration.checker.typed_ast_invalid"]);
+            } else {
+                assert!(keys.is_empty(), "{from:?} -> {to:?}: {keys:?}");
+            }
+        }
     }
 
     #[test]

@@ -25,8 +25,8 @@ Step 5C.9 は初期7行を維持し、then/hence だけを formula_statement / s
 Step 5C.8 は parse・type・statement の対象 7 行だけを厳密に照合し、既存 resolver の識別子と checker handoff を使う。
 `iff` 連鎖の拒否は文字列だけでなく parser の実際の診断位置で確認する。文検査の成功は proof-verification や証明書受理を活性化しない。
 
-Step 5C.7 は activation map の non-G5 type/proof 行だけを sidecar の厳密な照合後に受理する。
-出現・choice の根拠・qua の元項・前提引用をケース名から推測せず抽出し、証明は所属関係の検査を必要とする。G5 narrowing 行は inactive のまま。
+Step 5C.7 は既存7行を維持し、厳密な sidecar 照合で対応する invalid-qua の type_check 拒否だけを追加する。
+出現・choice 根拠・qua 元項・前提引用はケース名から推測しない。ソース・環境・下位段階の検査後に両 qua 箇所の実際の束縛と型を使う。narrowing キーは先行する裸の局所構造体の実際の builtin-set フィールドによる登録不要の構築子 witness を要求し、継承・属性付き対象や無関係なエラーには与えない。所属証明の成功には目標の検証を要する。
 
 ## Step 5C.4 mode semantic runner
 

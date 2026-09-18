@@ -320,6 +320,7 @@ pub(super) fn is_active_formula_statement(workspace_root: &Path, case: &TestCase
         || super::type_elaboration::is_step5c3_argument_candidate(case)
         || super::type_elaboration::is_step5c4_dependent_candidate(case)
         || super::type_elaboration::is_step5c6_alias_candidate(case)
+        || super::type_elaboration::is_step5c7_candidate(case)
         || super::is_step5c14_static_candidate(case)
         || super::is_step5c12_candidate(case)
         || super::is_step5c13_overload_candidate(case)

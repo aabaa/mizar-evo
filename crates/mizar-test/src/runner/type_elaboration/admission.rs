@@ -520,7 +520,7 @@ const STEP5C5_BLOCKED_CASE_IDS: [&str; 7] = [
     "pass_proof_verification_func_means_prefix_001",
 ];
 
-const STEP5C7_TERM_CASES: [(&str, &str, PipelinePhase, ExpectedOutcome, Option<&str>); 5] = [
+const STEP5C7_TERM_CASES: [(&str, &str, PipelinePhase, ExpectedOutcome, Option<&str>); 6] = [
     (
         "fail_type_elaboration_term_choice_uninhabited_001",
         "tests/miz/fail/terms/fail_type_elaboration_term_choice_uninhabited_001.miz",
@@ -555,6 +555,13 @@ const STEP5C7_TERM_CASES: [(&str, &str, PipelinePhase, ExpectedOutcome, Option<&
         PipelinePhase::Resolve,
         ExpectedOutcome::Fail,
         Some("terms.comprehension.unbound_mapper_variable"),
+    ),
+    (
+        "fail_type_elaboration_term_qua_invalid_narrowing_001",
+        "tests/miz/fail/terms/fail_type_elaboration_term_qua_invalid_narrowing_001.miz",
+        PipelinePhase::TypeCheck,
+        ExpectedOutcome::Fail,
+        Some("terms.qua.invalid_narrowing"),
     ),
 ];
 
@@ -823,7 +830,6 @@ pub(in crate::runner) fn is_active_type_elaboration(case: &TestCase) -> bool {
         && (!is_step5c4_id(case) || exact_step5c4)
         && (!is_step5c5_id(case) || exact_step5c5)
         && (!is_step5c7_candidate(case) || exact_step5c7)
-        && case.id.0 != "fail_type_elaboration_term_qua_invalid_narrowing_001"
         && case
             .source_path
             .extension()
@@ -1146,7 +1152,7 @@ pub(in crate::runner) fn is_step5c5_predicate_duplicate_candidate(case: &TestCas
             == Path::new(source).with_extension("expect.toml").file_name()
 }
 
-fn is_step5c7_candidate(case: &TestCase) -> bool {
+pub(in crate::runner) fn is_step5c7_candidate(case: &TestCase) -> bool {
     step5c7_case(case).is_some()
 }
 
@@ -1164,6 +1170,7 @@ fn step5c7_case(
         .copied()
         .find(|(id, source, _, _, _)| {
             case.id.0 == *id
+                || case.expectation.id.0 == *id
                 || case.source_path.file_name() == Path::new(source).file_name()
                 || case.expectation_path.file_name()
                     == Path::new(source).with_extension("expect.toml").file_name()
@@ -1189,6 +1196,23 @@ fn step5c7_exact_metadata(case: &TestCase) -> bool {
         && case.expectation.expected_outcome == outcome
         && case.expectation.stable_detail_key.as_deref() == detail_key
         && case.expectation.diagnostic_codes.is_empty()
+        && (case.id.0 != "fail_type_elaboration_term_qua_invalid_narrowing_001"
+            || (case.expectation.schema_version == 1
+                && case.expectation.kind == crate::expectation::TestKind::Fail
+                && case.expectation.failure_category.as_deref() == Some("type_error")
+                && case.expectation.domain == "terms.qua_qualification"
+                && case.expectation.spec_refs.len() == 1
+                && case.expectation.spec_refs[0].0 == "spec.en.13.terms.qua.widening"
+                && case.expectation.profiles.as_slice() == ["fast"]
+                && case.expectation.rejection_reason.is_none()
+                && case.expectation.diagnostic_payloads.is_empty()
+                && case.expectation.declaration_symbol_payloads.is_empty()
+                && case.expectation.snapshots.is_none()
+                && case.expectation.ast_profile.is_none()
+                && case.expectation.snapshot_profiles.is_empty()
+                && case.expectation.tokens.is_empty()
+                && case.expectation.origin.is_none()
+                && case.expectation.architecture22.is_none()))
 }
 
 fn is_step5c5_blocked_id(case: &TestCase) -> bool {
@@ -1372,6 +1396,7 @@ mod tests {
 
     use crate::expectation::{ExpectedOutcome, PipelinePhase};
     use crate::harness::{DiscoveryConfig, TestProfile, ValidationMode, build_test_plan};
+    use crate::staged_model::Stage;
 
     use super::{
         ACTIVE_TYPE_ELABORATION_TAG, STEP5C1_VARIABLE_CASES, STEP5C2_STRUCTURE_CASES,
@@ -2629,34 +2654,18 @@ mod tests {
 
     #[test]
     fn step5c7_admission_and_inventory_are_exact() {
-        assert_eq!(STEP5C7_TERM_CASES.len(), 5);
+        assert_eq!(STEP5C7_TERM_CASES.len(), 6);
         assert_eq!(
             STEP5C7_TERM_CASES
                 .iter()
                 .map(|(id, source, _, _, _)| (*id, *source))
                 .collect::<BTreeSet<_>>()
                 .len(),
-            5
+            6
         );
         let root = workspace_root();
         let mut plan = build_test_plan(&config()).unwrap();
         assert!(validate_active_type_elaboration_tags(&root, &plan).is_empty());
-        let blocked_id = "fail_type_elaboration_term_qua_invalid_narrowing_001";
-        let mut blocked = plan
-            .cases
-            .iter()
-            .find(|case| case.id.0 == blocked_id)
-            .unwrap()
-            .clone();
-        blocked.expectation.tags = vec![ACTIVE_TYPE_ELABORATION_TAG.to_owned()];
-        assert!(!is_active_type_elaboration(&blocked));
-        let mut blocked_plan = plan.clone();
-        blocked_plan.cases.push(blocked);
-        assert!(
-            validate_active_type_elaboration_tags(&root, &blocked_plan)
-                .iter()
-                .any(|diagnostic| diagnostic.detail_key.ends_with(blocked_id))
-        );
         for (id, _, phase, outcome, _) in STEP5C7_TERM_CASES {
             let case = plan.cases.iter().find(|case| case.id.0 == id).unwrap();
             assert!(is_active_type_elaboration(case), "{id}");
@@ -2726,10 +2735,83 @@ mod tests {
     }
 
     #[test]
+    fn step5c7_qua_metadata_mutations_cannot_escape_to_other_routes() {
+        let root = workspace_root();
+        let plan = build_test_plan(&config()).unwrap();
+        let original = plan
+            .cases
+            .iter()
+            .find(|case| case.id.0 == STEP5C7_TERM_CASES[5].0)
+            .unwrap();
+        for mutation in 0..26 {
+            let mut case = original.clone();
+            match mutation {
+                0 => case.id.0 = "renamed".into(),
+                1 => case.expectation.id.0 = "renamed".into(),
+                2 => case.source_path = root.join("wrong.miz"),
+                3 => case.expectation_path = root.join("wrong.expect.toml"),
+                4 => case.expectation.source = "wrong.miz".into(),
+                5 => case.expectation.kind = crate::expectation::TestKind::Pass,
+                6 => case.expectation.expected_phase = Some(PipelinePhase::Resolve),
+                7 => case.expectation.stage = Stage::FormulaStatement,
+                8 => case.expectation.expected_outcome = ExpectedOutcome::Pass,
+                9 => case.expectation.domain = "wrong".into(),
+                10 => case.expectation.failure_category = Some("wrong".into()),
+                11 => case.expectation.stable_detail_key = Some("wrong".into()),
+                12 => case.expectation.spec_refs.clear(),
+                13 => case.expectation.tags.clear(),
+                14 => case
+                    .expectation
+                    .tags
+                    .push(ACTIVE_TYPE_ELABORATION_TAG.into()),
+                15 => case.expectation.diagnostic_codes.push("wrong".into()),
+                16 => case.expectation.diagnostic_payloads.push("wrong".into()),
+                17 => case
+                    .expectation
+                    .declaration_symbol_payloads
+                    .push("wrong".into()),
+                18 => case.expectation.snapshots = Some("wrong".into()),
+                19 => case.expectation.ast_profile = Some("wrong".into()),
+                20 => case.expectation.snapshot_profiles.push("wrong".into()),
+                21 => case.expectation.rejection_reason = Some("wrong".into()),
+                22 => case.expectation.profiles.clear(),
+                23 => case.expectation.schema_version = 2,
+                24 => case.expectation.spec_refs[0].0 = "wrong".into(),
+                25 => {
+                    case.id.0 = "renamed".into();
+                    case.source_path = root.join("wrong.miz");
+                    case.expectation_path = root.join("wrong.expect.toml");
+                }
+                _ => unreachable!(),
+            }
+            assert!(!is_active_type_elaboration(&case), "mutation {mutation}");
+            for stage in [
+                Stage::ParseOnly,
+                Stage::DeclarationSymbol,
+                Stage::FormulaStatement,
+                Stage::ProofVerification,
+            ] {
+                case.expectation.stage = stage;
+                assert!(super::is_step5c7_candidate(&case), "mutation {mutation}");
+                assert!(!crate::runner::is_active_parse_only(&case));
+                assert!(!crate::runner::is_active_declaration_symbol(&case));
+                assert!(
+                    !crate::runner::formula_statement::is_active_formula_statement(&root, &case)
+                );
+                assert!(!crate::runner::proof_verification::is_active_proof_verification(&case));
+            }
+        }
+    }
+
+    #[test]
     fn step5c7_rows_execute_with_frozen_details() {
         let report = crate::runner::run_type_elaboration_corpus(&config()).expect("type report");
         assert_eq!(report.error_count(), 0, "{:?}", report.diagnostics);
         let expected = [
+            (
+                "fail_type_elaboration_term_qua_invalid_narrowing_001",
+                vec!["terms.qua.invalid_narrowing"],
+            ),
             (
                 "fail_type_elaboration_term_choice_uninhabited_001",
                 vec!["terms.choice.missing_inhabitation"],

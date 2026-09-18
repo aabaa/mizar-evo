@@ -21,8 +21,9 @@ use mizar_checker::{
     source_structure::{SourceStructureHandoff, SourceStructureTermId},
     source_term::SourcePrimaryTermHandoff,
     type_checker::{
-        FormulaInput, FormulaKind, SourceVariableSemanticsChecker, TermFormulaChecker, TermInput,
-        TermKind, TermReference, TypeExpressionInput, TypeHeadInput,
+        CoercionInput, CoercionRequestKind, FormulaInput, FormulaKind,
+        SourceVariableSemanticsChecker, TermFormulaChecker, TermInput, TermKind, TermReference,
+        TypeExpressionInput, TypeHeadInput,
     },
     typed_ast::{
         CoercionTable, InitialObligationTable, LocalTypeContextTable, NodeRecoveryState,
@@ -32,14 +33,14 @@ use mizar_checker::{
 };
 use mizar_resolve::{
     declarations::{DeclarationShell, DeclarationShellKind, DeclarationShellSet},
-    env::SymbolEnv,
+    env::{SymbolEnv, SymbolKind},
     names::{
         LocalTermBinding, LocalTermScope, SourceVariableScopeInput, SourceVariableScopeResolver,
         SourceVariableTypeRadix,
     },
-    resolved_ast::ModuleId,
+    resolved_ast::{ModuleId, SurfaceResolvedArena},
 };
-use mizar_session::SourceRange;
+use mizar_session::{SourceAnchor, SourceRange};
 use mizar_syntax::{SurfaceAst, SurfaceNode, SurfaceNodeId, SurfaceNodeKind};
 
 #[cfg(not(test))]
@@ -138,7 +139,7 @@ pub(in crate::runner) fn step5c7_term_detail_keys(
             }
         }
         let formula_node = ast.node(formula_id)?;
-        let operands = structural_child_ids(ast, formula_node);
+        let mut operands = structural_child_ids(ast, formula_node);
         if operands.len() != 2 {
             return None;
         }
@@ -165,11 +166,29 @@ pub(in crate::runner) fn step5c7_term_detail_keys(
                 .find(|reference| reference.node() == id)
                 .and_then(|reference| scope.bindings().get(reference.binding().index()))
         };
+        let quas = surface_nodes_with_kind(ast, SurfaceNodeKind::QuaExpression);
+        if !quas.is_empty() {
+            let source = SurfaceResolvedArena::lower(ast, module).ok()?;
+            mizar_resolve::symbols::validate_source_symbol_env(&source, symbols).ok()?;
+            for (id, qua) in &quas {
+                let children = structural_child_ids(ast, qua);
+                let [base, _] = children.as_slice() else {
+                    return None;
+                };
+                if qua.range.start < theorem.range.start || qua.range.end > theorem.range.end {
+                    return None;
+                }
+                operands.extend([*id, unwrap(*base)?]);
+            }
+        }
+        let mut seen = BTreeSet::new();
         let mut terms = Vec::new();
         let mut inhabited = None;
-        let mut widening = None;
         for operand in operands {
             let id = unwrap(operand)?;
+            if !seen.insert(id) {
+                continue;
+            }
             let node = ast.node(id)?;
             let site = surface_site(id);
             let mut reference = None;
@@ -214,7 +233,64 @@ pub(in crate::runner) fn step5c7_term_detail_keys(
                     }
                     let ty = extract_builtin_source_type_expression(ast, target, module, symbols)
                         .ok()?;
-                    if !matches!(
+                    if let TypeHeadInput::Symbol(symbol) = &ty.head {
+                        if choice || !ty.attributes.is_empty() {
+                            return None;
+                        }
+                        let entry = symbols.symbols().get(symbol)?;
+                        let (definition_id, definition) =
+                            surface_nodes_with_kind(ast, SurfaceNodeKind::StructureDefinition)
+                                .into_iter()
+                                .find(|(_, definition)| {
+                                    entry.origin().anchor()
+                                        == &SourceAnchor::Range(definition.range)
+                                })?;
+                        let block = ast
+                            .nodes()
+                            .iter()
+                            .find(|block| block.children.contains(&definition_id))?;
+                        if entry.kind() != SymbolKind::Structure
+                            || symbol.module() != module
+                            || block.kind != SurfaceNodeKind::DefinitionBlockItem
+                            || structural_child_ids(ast, block) != [definition_id]
+                            || block.range.end > node.range.start
+                        {
+                            return None;
+                        }
+                        let children = structural_child_ids(ast, definition);
+                        let [pattern, field] = children.as_slice() else {
+                            return None;
+                        };
+                        let pattern = ast.node(*pattern)?;
+                        let field = ast.node(*field)?;
+                        let member_tokens = direct_token_texts(ast, field);
+                        if pattern.kind != SurfaceNodeKind::StructurePattern
+                            || pattern.children.len() != 1
+                            || field.kind != SurfaceNodeKind::StructureField
+                            || member_tokens.len() != 4
+                            || member_tokens[0] != "field"
+                            || member_tokens[2] != "->"
+                            || member_tokens[3] != ";"
+                        {
+                            return None;
+                        }
+                        let children = structural_child_ids(ast, field);
+                        let [field_type] = children.as_slice() else {
+                            return None;
+                        };
+                        let field_type = extract_builtin_source_type_expression(
+                            ast,
+                            ast.node(*field_type)?,
+                            module,
+                            symbols,
+                        )
+                        .ok()?;
+                        if field_type.head != TypeHeadInput::BuiltinSet
+                            || !field_type.attributes.is_empty()
+                        {
+                            return None;
+                        }
+                    } else if !matches!(
                         ty.head,
                         TypeHeadInput::BuiltinSet | TypeHeadInput::BuiltinObject
                     ) {
@@ -227,30 +303,17 @@ pub(in crate::runner) fn step5c7_term_detail_keys(
                         inhabited = Some(inhabited.unwrap_or(true) && ty.attributes.is_empty());
                         TermKind::Choice
                     } else {
-                        let base = unwrap(children[0])?;
-                        if !matches!(ast.node(base)?.kind, SurfaceNodeKind::TermReference) {
-                            return None;
-                        }
-                        let actual = binding(base)?.declared_type()?;
-                        if !actual.attributes().is_empty() || !ty.attributes.is_empty() {
-                            return None;
-                        }
-                        widening = Some(matches!(
-                            (actual.radix(), &ty.head),
-                            (
-                                SourceVariableTypeRadix::Set,
-                                TypeHeadInput::BuiltinSet | TypeHeadInput::BuiltinObject
-                            ) | (
-                                SourceVariableTypeRadix::Object,
-                                TypeHeadInput::BuiltinObject
-                            )
-                        ));
                         TermKind::SourceQua
                     };
                     (
                         kind,
-                        TypeExpressionInput::new(site.clone(), ty.range, ty.spelling, ty.head)
-                            .with_attributes(ty.attributes),
+                        TypeExpressionInput::new(
+                            surface_site(*children.last()?),
+                            ty.range,
+                            ty.spelling,
+                            ty.head,
+                        )
+                        .with_attributes(ty.attributes),
                     )
                 }
                 _ => return None,
@@ -269,13 +332,29 @@ pub(in crate::runner) fn step5c7_term_detail_keys(
         ) {
             return None;
         }
+        let mut qua_inputs = Vec::new();
+        for (id, node) in quas {
+            let children = structural_child_ids(ast, node);
+            let base = unwrap(children[0])?;
+            let base = terms.iter().find(|term| term.site == surface_site(base))?;
+            let qua = terms.iter().find(|term| term.site == surface_site(id))?;
+            qua_inputs.push(
+                CoercionInput::new(
+                    qua.site.clone(),
+                    qua.source_range,
+                    CoercionRequestKind::SourceQua,
+                    qua.result_type.clone()?,
+                )
+                .with_from_type(base.result_type.clone()?),
+            );
+        }
         let formula = FormulaInput::new(
             surface_site(formula_id),
             BindingContextId::new(0),
             formula_node.range,
             FormulaKind::Equality,
         )
-        .with_terms(terms.iter().map(|term| term.site.clone()).collect());
+        .with_terms(terms.iter().take(2).map(|term| term.site.clone()).collect());
         let bindings = SourceVariableSemanticsChecker::occurrence_binding_env(&scope);
         Some(TermFormulaChecker::default().step5c7_type_detail_keys(
             symbols,
@@ -283,7 +362,7 @@ pub(in crate::runner) fn step5c7_term_detail_keys(
             terms,
             [formula],
             inhabited,
-            widening,
+            qua_inputs,
         ))
     };
     check().unwrap_or_else(|| vec![INVALID_PAYLOAD_KEY.to_owned()])
