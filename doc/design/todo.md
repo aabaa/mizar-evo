@@ -606,7 +606,7 @@ activation-map ledger; every 5C task also requires 5B.2.
    and unknown-module rejection, and private visibility. Deeper import
    matrices stay owned by the resolver crate corpus. Deps: 5A.1, 5A.5,
    5A.7.
-7. [x] **[5C.7 — Terms](./task_contracts/en/STEP5C7-TERM-SEMANTICS.md)** (`mizar-checker`; spec ch. 13). Requirements:
+7. [~] **[5C.7 — Terms](./task_contracts/en/STEP5C7-TERM-SEMANTICS.md)** (`mizar-checker`; spec ch. 13). Requirements:
    `spec.en.13.terms.*` (6 ids). Targets: 8 pairs (1 blocked by G5).
    Covers numeral typing, choice (`the`) inhabitation, `qua`
    widening/invalid narrowing, set enumeration, and guarded set
