@@ -1395,8 +1395,73 @@ pub fn generate_source_algorithm_postconditions(
     let result = algorithm.result.as_ref().ok_or_else(invalid)?;
     let statement_id = algorithm.statements.last().ok_or_else(invalid)?;
     let stateful = algorithm.statements.len() > 1;
-    if core.algorithm_statements().len() != algorithm.statements.len()
-        || algorithm.statements.iter().collect::<BTreeSet<_>>().len() != algorithm.statements.len()
+    let mut statement_order = algorithm.statements.clone();
+    let mut source_loop = None;
+    if algorithm.statements.iter().any(|id| {
+        core.algorithm_statements()
+            .get(*id)
+            .is_some_and(|row| matches!(row.kind, CoreAlgorithmStmtKind::While { .. }))
+    }) {
+        let [initial, loop_id, returned] = algorithm.statements.as_slice() else {
+            return Err(invalid());
+        };
+        let CoreAlgorithmStmtKind::Let {
+            binder,
+            value: Some(_),
+            ghost: false,
+        } = &core
+            .algorithm_statements()
+            .get(*initial)
+            .ok_or_else(invalid)?
+            .kind
+        else {
+            return Err(invalid());
+        };
+        let loop_row = core
+            .algorithm_statements()
+            .get(*loop_id)
+            .ok_or_else(invalid)?;
+        let CoreAlgorithmStmtKind::While {
+            condition,
+            invariants,
+            decreasing,
+            body,
+        } = &loop_row.kind
+        else {
+            return Err(invalid());
+        };
+        let [invariant] = invariants.as_slice() else {
+            return Err(invalid());
+        };
+        let [assignment] = body.as_slice() else {
+            return Err(invalid());
+        };
+        let assignment_row = core
+            .algorithm_statements()
+            .get(*assignment)
+            .ok_or_else(invalid)?;
+        if binder.role.as_str() != "local:var"
+            || !decreasing.is_empty()
+            || algorithm.contracts.ensures.len() != 1
+            || !matches!(assignment_row.kind, CoreAlgorithmStmtKind::AssignLocal { target, .. } if target == binder.var)
+            || range(&assignment_row.source)?.end >= range(&loop_row.source)?.end
+            || range(
+                &core
+                    .algorithm_statements()
+                    .get(*returned)
+                    .ok_or_else(invalid)?
+                    .source,
+            )?
+            .start
+                <= range(&loop_row.source)?.end
+        {
+            return Err(invalid());
+        }
+        source_loop = Some((*loop_id, *condition, *invariant, *assignment));
+        statement_order = vec![*initial, *loop_id, *assignment, *returned];
+    }
+    if core.algorithm_statements().len() != statement_order.len()
+        || statement_order.iter().collect::<BTreeSet<_>>().len() != statement_order.len()
     {
         return Err(invalid());
     }
@@ -1502,7 +1567,7 @@ pub fn generate_source_algorithm_postconditions(
     let mut visible = vec![parameter];
     let mut snapshot_names = BTreeSet::new();
     let mut previous_end = result_range.end;
-    for id in &algorithm.statements {
+    for id in &statement_order {
         let current = core.algorithm_statements().get(*id).ok_or_else(invalid)?;
         let current_range = range(&current.source)?;
         if current_range.start < previous_end || current_range.end > owner_range.end {
@@ -1562,6 +1627,50 @@ pub fn generate_source_algorithm_postconditions(
                     return Err(invalid());
                 }
                 Vec::new()
+            }
+            CoreAlgorithmStmtKind::While {
+                condition,
+                invariants,
+                ..
+            } => {
+                let outer = core.formulas().get(*condition).ok_or_else(invalid)?;
+                let CoreFormulaKind::Not(inner) = outer.kind else {
+                    return Err(invalid());
+                };
+                let invariant = invariants[0];
+                let condition_range = range(&outer.source)?;
+                let invariant_range =
+                    range(&core.formulas().get(invariant).ok_or_else(invalid)?.source)?;
+                if source_loop.is_none_or(|(loop_id, _, _, _)| loop_id != *id)
+                    || condition_range.start <= current_range.start
+                    || condition_range.end >= invariant_range.start
+                    || invariant_range.end >= current_range.end
+                    || !used_formulas.insert(*condition)
+                {
+                    return Err(invalid());
+                }
+                let mut operands = Vec::new();
+                for formula in [inner, invariant] {
+                    let formula_row = core.formulas().get(formula).ok_or_else(invalid)?;
+                    let CoreFormulaKind::Equals { left, right } = formula_row.kind else {
+                        return Err(invalid());
+                    };
+                    let span = range(&formula_row.source)?;
+                    if !used_formulas.insert(formula)
+                        || range(&core.terms().get(left).ok_or_else(invalid)?.source)?.start
+                            != span.start
+                        || range(&core.terms().get(right).ok_or_else(invalid)?.source)?.end
+                            != span.end
+                        || (formula == inner
+                            && (span.start <= condition_range.start
+                                || span.end != condition_range.end))
+                    {
+                        return Err(invalid());
+                    }
+                    operands.extend([left, right]);
+                }
+                previous_end = invariant_range.end;
+                operands
             }
             CoreAlgorithmStmtKind::Assert { formula } => {
                 let outer = core.formulas().get(*formula).ok_or_else(invalid)?;
@@ -1687,20 +1796,56 @@ pub fn generate_source_algorithm_postconditions(
         .iter()
         .find(|(_, local)| local.kind == LocalKind::Parameter)
         .ok_or_else(invalid)?;
+    let return_block = if let Some((loop_statement, condition, invariant, assignment)) = source_loop
+    {
+        let Some(ControlFlowStatementPlacement::LoopHeader { loop_id, header }) =
+            flow.source_map.statement_placements.get(&loop_statement)
+        else {
+            return Err(invalid());
+        };
+        let loop_row = flow.loops.get(*loop_id).ok_or_else(invalid)?;
+        let header_block = flow.blocks.get(*header).ok_or_else(invalid)?;
+        let body_block = flow.blocks.get(loop_row.body).ok_or_else(invalid)?;
+        if flow.loops.len() != 1
+            || flow.blocks.len() != 4
+            || loop_row.header != *header
+            || loop_row.algorithm != algorithm_id
+            || loop_row.condition != condition
+            || loop_row.invariants != [invariant]
+            || !loop_row.decreasing.is_empty()
+            || block.terminator != ControlFlowTerminator::Goto(*header)
+            || header_block.terminator
+                != (ControlFlowTerminator::Branch {
+                    condition,
+                    then_block: loop_row.body,
+                    else_block: loop_row.exit,
+                })
+            || body_block.statements != [assignment]
+            || body_block.terminator != ControlFlowTerminator::Goto(*header)
+            || flow.contracts.loop_invariants.len() != 2
+            || flow.termination.partial_sites.len() != 2
+        {
+            return Err(invalid());
+        }
+        loop_row.exit
+    } else {
+        flow.entry
+    };
+    let return_block_row = flow.blocks.get(return_block).ok_or_else(invalid)?;
     if flow_output.flows.len() != 1
         || flow.item != algorithm.item
         || flow.algorithm != algorithm_id
         || flow.symbol != algorithm.symbol
-        || flow.blocks.len() != 1
+        || (source_loop.is_none() && flow.blocks.len() != 1)
         || flow.exits.len() != 1
         || flow.locals.len() != binders.len()
         || (!stateful && flow.contexts.len() != 1)
         || !flow.diagnostics.is_empty()
         || block.reachable != Reachability::Reachable
-        || block.terminator != ControlFlowTerminator::Return(Some(returned))
+        || return_block_row.terminator != ControlFlowTerminator::Return(Some(returned))
         || exit.kind != ControlFlowExitKind::Return
         || exit.statement != Some(*statement_id)
-        || exit.from != flow.entry
+        || exit.from != return_block
         || parameter_local.1.binder != *parameter
         || parameter_local.1.ghost
         || parameter_local.1.mutability != LocalMutability::Immutable
@@ -1709,14 +1854,18 @@ pub fn generate_source_algorithm_postconditions(
         || !context.path_conditions.is_empty()
         || (!stateful && !flow.assignment_effects.is_empty())
         || !flow.call_sites.is_empty()
-        || !flow.loops.is_empty()
+        || (source_loop.is_none() && !flow.loops.is_empty())
         || (!stateful && !flow.context_facts.is_empty())
     {
         return Err(invalid());
     }
     let handoff = build_obligation_seed_handoff(core, &flow_output);
     let ghost_effects = &flow.ghost_effects.ghost_assignment_effects;
-    if handoff.entries.len() != 1 + contracts.ensures.len() + assertions.len() + ghost_effects.len()
+    if handoff.entries.len()
+        != 1 + contracts.ensures.len()
+            + assertions.len()
+            + ghost_effects.len()
+            + if source_loop.is_some() { 3 } else { 0 }
     {
         return Err(invalid());
     }
@@ -1739,7 +1888,7 @@ pub fn generate_source_algorithm_postconditions(
                 if contracts.ensures.first().copied() == entry.seed.goal
                     && entry.seed.kind == ObligationSeedKind::AlgorithmContract
                     && site.statement == Some(*statement_id)
-                    && site.block == Some(flow.entry)
+                    && site.block == Some(return_block)
                     && site.exit == Some(exit_id) => {}
             ControlFlowObligationSiteKind::StatementAssertion
                 if site.statement.and_then(|id| assertions.get(&id)).copied()
@@ -1764,6 +1913,10 @@ pub fn generate_source_algorithm_postconditions(
                             && entry.seed.source == effect.source.clone().with_provenance(provenance)
                             && matches!(effect.target, AssignmentEffectTarget::Local(local) if Some(local) == site.local && flow.locals.get(local).is_some_and(|local| local.ghost && local.algorithm == algorithm_id))
                     }) => {}
+            ControlFlowObligationSiteKind::LoopInvariant
+                if source_loop.is_some_and(|(_, _, invariant, _)| entry.seed.goal == Some(invariant))
+                    && entry.seed.kind == ObligationSeedKind::AlgorithmContract
+                    && matches!(flow_invariant_site(&entry.seed, site, flow), Some(LoopInvariantPhase::Entry | LoopInvariantPhase::Preservation)) => {}
             ControlFlowObligationSiteKind::PartialTermination
                 if entry.seed.kind == ObligationSeedKind::AlgorithmTermination
                     && entry.seed.goal.is_none()
@@ -1797,7 +1950,8 @@ pub fn generate_source_algorithm_postconditions(
         candidates: &candidates,
     })
     .map_err(|error| error.to_string())?;
-    if raw.vcs().len() != contracts.ensures.len() + assertions.len()
+    if raw.vcs().len()
+        != contracts.ensures.len() + assertions.len() + if source_loop.is_some() { 2 } else { 0 }
         || raw.seed_accounting().len() != handoff.entries.len()
         || candidates
             .no_candidates()
@@ -1934,6 +2088,189 @@ pub fn generate_source_algorithm_postconditions(
                         return Err(invalid());
                     }
                 }
+                CoreAlgorithmStmtKind::While {
+                    condition,
+                    invariants,
+                    body,
+                    ..
+                } => {
+                    let invariant = invariants[0];
+                    let assignment = body[0];
+                    let CoreAlgorithmStmtKind::AssignLocal { target, value } = core
+                        .algorithm_statements()
+                        .get(assignment)
+                        .ok_or_else(invalid)?
+                        .kind
+                    else {
+                        return Err(invalid());
+                    };
+                    // The actual body is the complete MayWrite set for this bounded profile.
+                    let target_guard = binders
+                        .iter()
+                        .find(|binder| binder.var == target)
+                        .and_then(|binder| binder.ty_guard)
+                        .ok_or_else(invalid)?;
+                    let CoreFormulaKind::TypePred { ty, .. } =
+                        &core.formulas().get(target_guard).ok_or_else(invalid)?.kind
+                    else {
+                        return Err(invalid());
+                    };
+                    let invariant_sites = handoff
+                        .entries
+                        .iter()
+                        .filter_map(|(id, entry)| {
+                            let site = entry.flow_site.as_ref()?;
+                            (site.kind == ControlFlowObligationSiteKind::LoopInvariant)
+                                .then(|| {
+                                    flow_invariant_site(&entry.seed, site, flow)
+                                        .map(|phase| (phase, id))
+                                })
+                                .flatten()
+                        })
+                        .collect::<BTreeMap<_, _>>();
+                    if invariant_sites.len() != 2 {
+                        return Err(invalid());
+                    }
+                    let entry_handoff = *invariant_sites
+                        .get(&LoopInvariantPhase::Entry)
+                        .ok_or_else(invalid)?;
+                    let preservation_handoff = *invariant_sites
+                        .get(&LoopInvariantPhase::Preservation)
+                        .ok_or_else(invalid)?;
+                    let emit = |generated: &mut Vec<VcGeneratedFormula>, shape, kind| {
+                        let id = VcGeneratedFormulaId::new(generated.len());
+                        generated.push(VcGeneratedFormula {
+                            id,
+                            kind,
+                            shape,
+                            provenance: provenance.clone(),
+                        });
+                        VcFormulaRef::Generated(id)
+                    };
+                    let instantiate = |formula,
+                                       values: &BTreeMap<_, VcProgramValue>,
+                                       generated: &mut Vec<VcGeneratedFormula>|
+                     -> Result<VcFormulaRef, String> {
+                        let outer = &core.formulas().get(formula).ok_or_else(invalid)?.kind;
+                        let inner = if let CoreFormulaKind::Not(child) = outer {
+                            &core.formulas().get(*child).ok_or_else(invalid)?.kind
+                        } else {
+                            outer
+                        };
+                        let CoreFormulaKind::Equals { left, right } = *inner else {
+                            return Err(invalid());
+                        };
+                        let operand = |id| -> Result<VcProgramValue, String> {
+                            let CoreTermKind::Var(var) =
+                                core.terms().get(id).ok_or_else(invalid)?.kind
+                            else {
+                                return Err(invalid());
+                            };
+                            values.get(&var).copied().ok_or_else(invalid)
+                        };
+                        let formula = emit(
+                            generated,
+                            VcGeneratedFormulaShape::ProgramEquals {
+                                left: operand(left)?,
+                                right: operand(right)?,
+                            },
+                            VcGeneratedFormulaKind::AlgorithmStateFact,
+                        );
+                        Ok(if matches!(outer, CoreFormulaKind::Not(_)) {
+                            emit(
+                                generated,
+                                VcGeneratedFormulaShape::Not(formula),
+                                VcGeneratedFormulaKind::AlgorithmPathCondition,
+                            )
+                        } else {
+                            formula
+                        })
+                    };
+                    goals.insert(
+                        entry_handoff,
+                        instantiate(invariant, &values, &mut generated)?,
+                    );
+                    projected.insert(entry_handoff, entries.clone());
+                    // Retain only the immutable parameter context across the cutpoint.
+                    // The local's new value has no equality with its entry value.
+                    entries.truncate(1);
+                    values.insert(
+                        target,
+                        VcProgramValue {
+                            var: target,
+                            definition: Some(*id),
+                        },
+                    );
+                    let head_values = values.clone();
+                    let head_type = emit(
+                        &mut generated,
+                        VcGeneratedFormulaShape::ProgramTypePredicate {
+                            subject: values[&target],
+                            ty: ty.clone(),
+                        },
+                        VcGeneratedFormulaKind::AlgorithmStateFact,
+                    );
+                    let head_invariant = instantiate(invariant, &values, &mut generated)?;
+                    let guard = instantiate(*condition, &values, &mut generated)?;
+                    let context = |rows: &[(ContextEntryKind, VcFormulaRef)]| {
+                        let mut context = entries.clone();
+                        for (kind, formula) in rows {
+                            let index = context.len();
+                            context.push(ContextEntry {
+                                id: ContextEntryId::new(index),
+                                sort_key: format!("algorithm-state-{index:08}").into(),
+                                kind: kind.clone(),
+                                formula: Some(*formula),
+                                provenance: provenance.clone(),
+                            });
+                        }
+                        context
+                    };
+                    let rhs =
+                        source_program_value(core, value, &mut values, Some((target, assignment)))?;
+                    let assignment_fact = emit(
+                        &mut generated,
+                        VcGeneratedFormulaShape::ProgramEquals {
+                            left: values[&target],
+                            right: rhs,
+                        },
+                        VcGeneratedFormulaKind::AlgorithmStateFact,
+                    );
+                    let assignment_type = emit(
+                        &mut generated,
+                        VcGeneratedFormulaShape::ProgramTypePredicate {
+                            subject: values[&target],
+                            ty: ty.clone(),
+                        },
+                        VcGeneratedFormulaKind::AlgorithmStateFact,
+                    );
+                    projected.insert(
+                        preservation_handoff,
+                        context(&[
+                            (ContextEntryKind::PostHavocFact, head_type),
+                            (ContextEntryKind::LoopInvariantAvailable, head_invariant),
+                            (ContextEntryKind::AlgorithmPathCondition, guard),
+                            (ContextEntryKind::GeneratedFact, assignment_fact),
+                            (ContextEntryKind::GeneratedFact, assignment_type),
+                        ]),
+                    );
+                    goals.insert(
+                        preservation_handoff,
+                        instantiate(invariant, &values, &mut generated)?,
+                    );
+                    let exit_guard = emit(
+                        &mut generated,
+                        VcGeneratedFormulaShape::Not(guard),
+                        VcGeneratedFormulaKind::AlgorithmPathCondition,
+                    );
+                    let exit_context = context(&[
+                        (ContextEntryKind::PostHavocFact, head_type),
+                        (ContextEntryKind::LoopInvariantAvailable, head_invariant),
+                        (ContextEntryKind::AlgorithmPathCondition, exit_guard),
+                    ]);
+                    entries = exit_context;
+                    values = head_values;
+                }
                 CoreAlgorithmStmtKind::Assert { formula } => {
                     let outer = &core.formulas().get(*formula).ok_or_else(invalid)?.kind;
                     let equality = if let CoreFormulaKind::Not(child) = outer {
@@ -2059,11 +2396,21 @@ pub fn generate_source_algorithm_postconditions(
                 .candidate_for_handoff(vc.seed.handoff)
                 .ok_or_else(invalid)?;
             let entry = handoff.entries.get(vc.seed.handoff).ok_or_else(invalid)?;
-            let statement = entry
-                .flow_site
-                .as_ref()
-                .and_then(|site| site.statement)
-                .and_then(|id| core.algorithm_statements().get(id))
+            let site = entry.flow_site.as_ref().ok_or_else(invalid)?;
+            let consuming_statement = site
+                .statement
+                .or_else(|| {
+                    let (loop_statement, _, _, assignment) = source_loop?;
+                    match flow_invariant_site(&entry.seed, site, flow)? {
+                        LoopInvariantPhase::Entry => Some(loop_statement),
+                        LoopInvariantPhase::Preservation => Some(assignment),
+                        _ => None,
+                    }
+                })
+                .ok_or_else(invalid)?;
+            let statement = core
+                .algorithm_statements()
+                .get(consuming_statement)
                 .ok_or_else(invalid)?;
             if vc.status != VcStatus::Open
                 || vc.goal != VcFormulaRef::Core(entry.seed.goal.ok_or_else(invalid)?)
@@ -2081,6 +2428,11 @@ pub fn generate_source_algorithm_postconditions(
                 .iter()
                 .map(|entry| PremiseRef::LocalContext(entry.id))
                 .collect();
+            if source_loop.is_some() {
+                vc.premises.push(PremiseRef::ConservativeUnknown {
+                    reason: "unresolved source loop invariant obligations".into(),
+                });
+            }
             vc.goal = goals.remove(&vc.seed.handoff).ok_or_else(invalid)?;
             // Preserve the exact consuming program point separately from the contract formula's source.
             vc.source.related.push(statement.source.clone());

@@ -3164,7 +3164,7 @@ fn active_runner_reports_are_byte_stable_across_repeated_runs() {
     let root = config.workspace_root.clone();
     let plan = build_test_plan(&config).unwrap();
 
-    assert_eq!(active_proof_verification_cases(&plan).count(), 19);
+    assert_eq!(active_proof_verification_cases(&plan).count(), 20);
 
     let parse_first = canonical_parse_only_report(&run_parse_only_corpus(&config).unwrap(), &root);
     let parse_second = canonical_parse_only_report(&run_parse_only_corpus(&config).unwrap(), &root);
@@ -4051,6 +4051,11 @@ fn repository_corpus_plan_succeeds() {
             "pass/algorithms",
         ),
         (
+            "spec.en.mizar_vc.vc_ir.algorithm_while_invariant",
+            "pass_proof_verification_algorithm_while_invariant_001",
+            "pass/algorithms",
+        ),
+        (
             "spec.en.mizar_vc.vc_ir.algorithm_var_const_assert_snapshot",
             "pass_proof_verification_algorithm_var_const_assert_001",
             "pass/algorithms",
@@ -4103,6 +4108,7 @@ fn repository_corpus_plan_succeeds() {
             "spec.en.mizar_vc.vc_ir.algorithm_void_claim_snapshot"
                 | "spec.en.mizar_vc.vc_ir.algorithm_assert_failure_snapshot"
                 | "spec.en.mizar_vc.vc_ir.algorithm_ghost_snapshot"
+                | "spec.en.mizar_vc.vc_ir.algorithm_while_invariant"
                 | "spec.en.mizar_vc.vc_ir.computation_request_snapshot"
                 | "spec.en.mizar_vc.vc_ir.phrase_predicate_snapshot"
                 | "spec.en.mizar_vc.vc_ir.symbolic_predicate_snapshot"
@@ -4115,6 +4121,8 @@ fn repository_corpus_plan_succeeds() {
                 requirement.section,
                 if snapshot_ref == "spec.en.mizar_vc.vc_ir.computation_request_snapshot" {
                     "VC Task 32; bounded source computation request VcIr snapshot"
+                } else if snapshot_ref == "spec.en.mizar_vc.vc_ir.algorithm_while_invariant" {
+                    "VC Task 47; bounded while invariant VcIr snapshot"
                 } else if snapshot_ref == "spec.en.mizar_vc.vc_ir.algorithm_ghost_snapshot" {
                     "VC Task 43; bounded ghost snapshot return VcIr snapshot"
                 } else if snapshot_ref == "spec.en.mizar_vc.vc_ir.phrase_predicate_snapshot" {
@@ -10668,8 +10676,8 @@ fn proof_verification_cli_reports_task180_and_step5c2_summary() {
         String::from_utf8_lossy(&output.stderr)
     );
     let stdout = String::from_utf8_lossy(&output.stdout);
-    assert!(stdout.contains("proof-verification cases: 19"));
-    assert!(stdout.contains("passed: 19"));
+    assert!(stdout.contains("proof-verification cases: 20"));
+    assert!(stdout.contains("passed: 20"));
     assert!(stdout.contains("failed: 0"));
 }
 

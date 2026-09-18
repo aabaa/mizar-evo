@@ -7123,6 +7123,19 @@ tests = [
 
 
 [[requirement]]
+id = "spec.en.mizar_vc.vc_ir.algorithm_while_invariant"
+source = "doc/design/mizar-vc/en/source_vc_decomposition.md"
+section = "VC Task 47; bounded while invariant VcIr snapshot"
+stage = "proof_verification"
+status = "covered"
+required = true
+coverage = "snapshot"
+notes = "Actual loop establishment, post-havoc preservation and normal-exit postcondition remain Open; both unresolved termination rows are retained. No execution, termination proof or acceptance follows."
+tests = [
+  "tests/miz/pass/algorithms/pass_proof_verification_algorithm_while_invariant_001.expect.toml",
+]
+
+[[requirement]]
 id = "spec.en.mizar_vc.vc_ir.computation_request_snapshot"
 source = "doc/design/mizar-vc/en/source_vc_decomposition.md"
 section = "VC Task 32; bounded source computation request VcIr snapshot"

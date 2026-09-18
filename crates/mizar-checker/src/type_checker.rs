@@ -466,7 +466,58 @@ pub fn check_source_algorithm_types<'a>(
     let mut local_names = BTreeSet::new();
     let mut snapshots = BTreeMap::new();
     let mut snapshot_names = BTreeSet::new();
-    for statement in parts(*statements, &K::AlgorithmStatementList)? {
+    let mut statement_order = body_statements.to_vec();
+    if body_statements
+        .iter()
+        .any(|id| node(*id).is_ok_and(|node| node.kind() == &K::WhileStatement))
+    {
+        let [initial, loop_site, returned] = body_statements else {
+            return Err(invalid());
+        };
+        if node(*initial)?.kind() != &K::VariableDeclaration
+            || node(*returned)?.kind() != &K::ReturnStatement
+            || ensures.is_none()
+        {
+            return Err(invalid());
+        }
+        let [var, _, _] = node(*initial)?.children() else {
+            return Err(invalid());
+        };
+        tokens(&[(*var, "var")])?;
+        let [while_kw, condition, do_kw, invariant, nested, end, semi] =
+            parts(*loop_site, &K::WhileStatement)?
+        else {
+            return Err(invalid());
+        };
+        tokens(&[
+            (*while_kw, "while"),
+            (*do_kw, "do"),
+            (*end, "end"),
+            (*semi, ";"),
+        ])?;
+        if !matches!(
+            node(only(*condition, &K::FormulaExpression)?)?.kind(),
+            K::PrefixFormula(_)
+        ) {
+            return Err(invalid());
+        }
+        let [invariant_kw, formula, semi] = parts(*invariant, &K::LoopInvariantClause)? else {
+            return Err(invalid());
+        };
+        tokens(&[(*invariant_kw, "invariant"), (*semi, ";")])?;
+        if node(only(*formula, &K::FormulaExpression)?)?.kind() != &K::BuiltinPredicateApplication {
+            return Err(invalid());
+        }
+        let [assignment] = parts(*nested, &K::AlgorithmStatementList)? else {
+            return Err(invalid());
+        };
+        if node(*assignment)?.kind() != &K::AssignmentStatement {
+            return Err(invalid());
+        }
+        equality_sites.extend([(*condition, body_context), (*formula, body_context)]);
+        statement_order = vec![*initial, *assignment, *returned];
+    }
+    for statement in &statement_order {
         match node(*statement)?.kind() {
             K::VariableDeclaration => {
                 let declaration = node(*statement)?.children();

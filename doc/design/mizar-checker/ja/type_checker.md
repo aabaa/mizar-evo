@@ -3022,7 +3022,7 @@ Known builtin set actual と実際に認証された structure parameter の via
 
 ## Static source algorithm checking
 
-`check_source_algorithm_types(&SurfaceResolvedArena, &TypedArena, &SymbolEnv)` はソース・環境・中立 typed 表と algorithm 所有者の完全な対応を認証し、借用型の opaque `SourceAlgorithmCheck` を返す。既存 BindingEnv と項・式推論で object 仮引数、順序付き初期化 var/const/ghost-var、宣言・使用同一性、推論型と期待 return 型を保持する。平坦な契約 profile は直接変数への代入、等式または prefix not 一つで否定した等式 assert、末尾 return も受理し、代入先には値を読み出さず実際の BindingId を渡す。result は任意の等式 ensures だけに可視とし、宣言順序で shadowing・前方参照を判定し、assert と ensures の所有者を区別してどちらも仮定しない。prefix 否定は assert に限定し、実 node・等式の子・個別に検査した項出現を保持する。否定した ensures/requires や式の置換による近道は認めない。封印は不変の typed・binding・inference・owner データだけを公開し、生の resolver 権限を渡さない。field 代入先、注釈、justification、他の契約、入れ子制御、入れ子 snapshot、呼出し、リテラルは未対応とする。別の空 interface profile は、仮引数なし・bare return の先行 void algorithm と後続 claim target を実 local algorithm symbol により認証し、空 binding/inference table はその algorithm のみを表す。入れ子 theorem は `check_theorem_skeletons` が所有し、証明・全域性・登録承認を与えない。
+`check_source_algorithm_types(&SurfaceResolvedArena, &TypedArena, &SymbolEnv)` はソース・環境・中立 typed 表と algorithm 所有者の完全な対応を認証し、借用型の opaque `SourceAlgorithmCheck` を返す。既存 BindingEnv と項・式推論で object 仮引数、順序付き初期化 var/const/ghost-var、宣言・使用同一性、推論型と期待 return 型を保持する。平坦な契約 profile は直接変数への代入、等式または prefix not 一つで否定した等式 assert、末尾 return も受理し、代入先には値を読み出さず実際の BindingId を渡す。result は任意の等式 ensures だけに可視とし、宣言順序で shadowing・前方参照を判定し、assert と ensures の所有者を区別してどちらも仮定しない。prefix 否定は assert と限定 while guard に対応し、実 node・等式の子・個別に検査した項出現を保持する。否定した ensures/requires や式の置換による近道は認めない。封印は不変の typed・binding・inference・owner データだけを公開し、生の resolver 権限を渡さない。field 代入先、限定 while invariant 以外の注釈、justification、他の契約、限定 while 以外の制御、入れ子 snapshot、呼出し、リテラルは未対応とする。別の空 interface profile は、仮引数なし・bare return の先行 void algorithm と後続 claim target を実 local algorithm symbol により認証し、空 binding/inference table はその algorithm のみを表す。入れ子 theorem は `check_theorem_skeletons` が所有し、証明・全域性・登録承認を与えない。
 
 ## Source attributed argument widening
 
@@ -3069,3 +3069,7 @@ call-site result、rewrite、Core/VC、Step6/MVM の動作は追加しない。
 [Core consumer](../../mizar-core/ja/elaborator.md#source-phrase-predicate-theorem) が guard 付き定義と open obligation を所有し、この seal は証明や大域的な accepted-definition 効果を与えない。
 
 **限定 symbolic 拡張。** 既存 predicate producer と theorem seal replay を拡張し、set 二引数 predicate の本体として object 量化一つと membership 前件・後件を扱う。実 symbolic head、入れ子束縛子と formal 参照、quantifier/st/holds 構造、object/set オペランド推論、二つの正の自己適用を認証する。入れ子文脈は両 definition formal を継承し、theorem・proof 束縛子は独立とする。宣言・出現対応から body binding を導出し、引数順や同じ数値 ID で代用しない。追加量化・結合子・property・citation・外部参照は未対応とし、seal field や公開 API は増やさない。
+
+## 限定 while 検査
+
+`check_source_algorithm_types` は初期化済み実行時ローカル一つ、while 一つ、等式 invariant 一つ、否定等式 guard、ローカル代入一つ、最後の return を扱う。注釈・本体の所有者、入れ子文の完全な対応、出現スコープと BindingId を認証し、result は ensures 内に限る。既存推論でオペランドと代入型を検査する。入れ子は不変 typed node に保持し seal のフィールドを増やさない。入れ子ループ、追加注釈、decreasing、break/continue、ghost オペランド、追加本体文は拒否する。

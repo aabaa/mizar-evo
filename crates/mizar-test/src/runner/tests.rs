@@ -2374,6 +2374,194 @@ fn step5c14_return_vcs(
 }
 
 #[test]
+fn step5c14_while_real_source_havoc_preservation_exit_and_controls() {
+    use mizar_core::control_flow::{build_control_flow_ir, build_obligation_seed_handoff, ControlFlowTerminator, LoopInvariantPlacement};
+    use mizar_core::core_ir::{CoreAlgorithmStmtKind as S, CoreFormulaKind as F, CoreTermKind, ObligationSeedKind, ObligationSeedStatus};
+    use mizar_vc::vc_ir::{ContextEntryKind, LoopInvariantPhase, PremiseRef, SeedVcMapping, VcFormulaRef, VcGeneratedFormulaShape as G, VcKind, VcProgramValue as V, VcStatus};
+    let config = step5c11_config();
+    let case = build_test_plan(&config).unwrap().cases.into_iter().find(|case| case.id.0 == "pass_proof_verification_algorithm_while_invariant_001").unwrap();
+    let original = std::fs::read_to_string(&case.source_path).unwrap();
+    let renamed = original.replace("loopalgo", "renamed").replace("let a be", "let input be").replace("(a)", "(input)").replace("= a", "= input").replace("x", "saved");
+    for (text, invariant_parameter, self_write, return_parameter) in [
+        (original.clone(), false, false, false),
+        (renamed, false, false, false),
+        (original.replace("invariant x = x", "invariant x = a"), true, false, false),
+        (original.replace("      x := a", "      x := x"), false, true, false),
+        (original.replace("return x", "return a"), false, false, true),
+    ] {
+        let core = step5c14_static_core(&case, &text).unwrap();
+        assert_eq!(core, step5c14_static_core(&case, &text).unwrap());
+        let (algorithm_id, algorithm) = core.algorithms().iter().next().unwrap();
+        let [declaration, loop_statement, returned] = algorithm.statements.as_slice() else { panic!("source statement order") };
+        let S::Let { binder, value: Some(initializer), ghost: false } = &core.algorithm_statements().get(*declaration).unwrap().kind else { panic!("initializer") };
+        let S::While { condition, invariants, decreasing, body } = &core.algorithm_statements().get(*loop_statement).unwrap().kind else { panic!("while") };
+        assert!(decreasing.is_empty());
+        let [invariant] = invariants.as_slice() else { panic!("invariant") };
+        let [assignment] = body.as_slice() else { panic!("body") };
+        assert_eq!(core.algorithm_statements().len(), 4);
+        for (_, statement) in core.algorithm_statements().iter() { assert_eq!(statement.owner, algorithm_id); }
+        let parameter = V { var: algorithm.params[0].var, definition: None };
+        let initial = V { var: binder.var, definition: Some(*declaration) };
+        let head = V { var: binder.var, definition: Some(*loop_statement) };
+        let written = V { var: binder.var, definition: Some(*assignment) };
+        assert_eq!(core.terms().get(*initializer).unwrap().kind, CoreTermKind::Var(parameter.var));
+        let S::AssignLocal { target, value } = core.algorithm_statements().get(*assignment).unwrap().kind else { panic!("assignment") };
+        assert_eq!(target, binder.var);
+        assert_eq!(core.terms().get(value).unwrap().kind, CoreTermKind::Var(if self_write { binder.var } else { parameter.var }));
+        let F::Not(guard) = core.formulas().get(*condition).unwrap().kind else { panic!("guard polarity") };
+        assert!(matches!(core.formulas().get(guard).unwrap().kind, F::Equals { .. }));
+        assert!(matches!(core.formulas().get(*invariant).unwrap().kind, F::Equals { .. }));
+        assert!(matches!(core.algorithm_statements().get(*returned).unwrap().kind, S::Return(Some(_))));
+        let flow = build_control_flow_ir(&core);
+        assert_eq!(flow, build_control_flow_ir(&core));
+        let (_, graph) = flow.flows.iter().next().unwrap();
+        assert!(graph.diagnostics.is_empty());
+        assert_eq!(graph.blocks.len(), 4);
+        assert_eq!(graph.loops.len(), 1);
+        assert_eq!(graph.assignment_effects.len(), 2);
+        assert_eq!(graph.termination.partial_sites.len(), 2);
+        let (_, loop_row) = graph.loops.iter().next().unwrap();
+        assert_eq!(graph.blocks.get(graph.entry).unwrap().terminator, ControlFlowTerminator::Goto(loop_row.header));
+        assert_eq!(graph.blocks.get(loop_row.header).unwrap().terminator, ControlFlowTerminator::Branch { condition: *condition, then_block: loop_row.body, else_block: loop_row.exit });
+        assert_eq!(graph.blocks.get(loop_row.body).unwrap().terminator, ControlFlowTerminator::Goto(loop_row.header));
+        assert!(matches!(graph.contracts.loop_invariants[0].placement, LoopInvariantPlacement::Header { .. }));
+        assert!(matches!(graph.contracts.loop_invariants[1].placement, LoopInvariantPlacement::NormalBackedge { .. }));
+        let handoff = build_obligation_seed_handoff(&core, &flow);
+        assert_eq!(handoff.entries.len(), 5);
+        assert_eq!(handoff.entries.iter().filter(|(_, row)| row.seed.kind == ObligationSeedKind::AlgorithmTermination && row.seed.status == ObligationSeedStatus::Deferred && row.seed.goal.is_none()).count(), 2);
+        let vcs = step5c14_return_vcs(&core).unwrap();
+        assert_eq!(vcs, step5c14_return_vcs(&core).unwrap());
+        assert_eq!(vcs.vcs().len(), 3);
+        assert_eq!(vcs.seed_accounting().len(), 5);
+        assert_eq!(vcs.seed_accounting().iter().filter(|row| matches!(row.mapping, SeedVcMapping::NoConcreteVc { .. })).count(), 2);
+        let shape = |reference| {
+            let VcFormulaRef::Generated(id) = reference else { panic!("generated state") };
+            &vcs.generated_formula(id).unwrap().shape
+        };
+        let entry = vcs.vcs().iter().find(|vc| vc.kind == VcKind::LoopInvariant { phase: LoopInvariantPhase::Entry }).unwrap();
+        let preservation = vcs.vcs().iter().find(|vc| vc.kind == VcKind::LoopInvariant { phase: LoopInvariantPhase::Preservation }).unwrap();
+        let exit = vcs.vcs().iter().find(|vc| vc.kind == VcKind::AlgorithmPostcondition).unwrap();
+        assert_eq!(shape(entry.goal), &G::ProgramEquals { left: initial, right: if invariant_parameter { parameter } else { initial } });
+        assert_eq!(shape(preservation.goal), &G::ProgramEquals { left: written, right: if invariant_parameter { parameter } else { written } });
+        assert_eq!(shape(exit.goal), &G::ProgramEquals { left: if return_parameter { parameter } else { head }, right: parameter });
+        assert_eq!(entry.local_context.entries().len(), 3);
+        assert_eq!(preservation.local_context.entries().len(), 6);
+        assert_eq!(exit.local_context.entries().len(), 4);
+        assert!(!entry.local_context.entries().iter().any(|row| row.kind == ContextEntryKind::LoopInvariantAvailable));
+        for vc in [preservation, exit] {
+            let summary = vc.local_context.entries().iter().find(|row| row.kind == ContextEntryKind::LoopInvariantAvailable).unwrap();
+            assert_eq!(shape(summary.formula.unwrap()), &G::ProgramEquals { left: head, right: if invariant_parameter { parameter } else { head } });
+        }
+        assert!(preservation.local_context.entries().iter().any(|row| row.formula.is_some_and(|formula| matches!(formula, VcFormulaRef::Generated(_)) && shape(formula) == &G::ProgramEquals { left: written, right: if self_write { head } else { parameter } })));
+        let guard = preservation.local_context.entries().iter().find(|row| row.kind == ContextEntryKind::AlgorithmPathCondition).unwrap().formula.unwrap();
+        let G::Not(equality) = shape(guard) else { panic!("negated head guard") };
+        assert_eq!(shape(*equality), &G::ProgramEquals { left: head, right: parameter });
+        let exit_guard = exit.local_context.entries().iter().find(|row| row.kind == ContextEntryKind::AlgorithmPathCondition).unwrap().formula.unwrap();
+        assert_eq!(shape(exit_guard), &G::Not(guard));
+        for row in preservation.local_context.entries().iter().chain(exit.local_context.entries()) {
+            if let Some(VcFormulaRef::Generated(id)) = row.formula {
+                match &vcs.generated_formula(id).unwrap().shape {
+                    G::ProgramEquals { left, right } => { assert_ne!(*left, initial); assert_ne!(*right, initial); }
+                    G::ProgramTypePredicate { subject, .. } => assert_ne!(*subject, initial),
+                    _ => {}
+                }
+            }
+        }
+        for row in exit.local_context.entries() {
+            if let Some(VcFormulaRef::Generated(id)) = row.formula
+                && let G::ProgramEquals { left, right } = vcs.generated_formula(id).unwrap().shape {
+                assert_ne!(left, written); assert_ne!(right, written);
+            }
+        }
+        for vc in vcs.vcs() {
+            assert_eq!(vc.status, VcStatus::Open);
+            assert!(vc.premises.iter().any(|premise| matches!(premise, PremiseRef::ConservativeUnknown { .. })));
+            assert!(vcs.canonical_vc_fingerprint(vc.id).is_none());
+        }
+        let slices = mizar_vc::dependency_slice::try_compute_dependency_slices(mizar_vc::dependency_slice::DependencySliceInput { vc_set: &vcs, discharge_output: None }).unwrap();
+        assert!(slices.slices().iter().all(|slice| !slice.unknowns().is_empty()));
+    }
+    for text in [
+        original.replace("not x = a", "x = a"),
+        original.replace("invariant x = x;", "invariant not x = x;"),
+        original.replace("invariant x = x;", "invariant x = x; invariant x = a;"),
+        original.replace("invariant x = x;", "invariant x = x; decreasing x;"),
+        original.replace("      x := a;", "      break;"),
+        original.replace("      x := a;", "      continue;"),
+        original.replace("      x := a;", "      x := a; x := x;"),
+        original.replace("      x := a;", "      while not x = a do invariant x = x; x := a; end;"),
+        original.replace("      x := a;", "      x := result;"),
+        original.replace("      x := a;", "      x := missing;"),
+        original.replace("var x", "ghost var x"),
+        original.replace("var x", "const x"),
+    ] { assert!(step5c14_static_core(&case, &text).is_err(), "{text}"); }
+    let parameter_write = original.replace("      x := a;", "      a := x;");
+    let parameter_write = step5c14_static_core(&case, &parameter_write).unwrap();
+    assert!(!build_control_flow_ir(&parameter_write).flows.iter().next().unwrap().1.diagnostics.is_empty());
+    assert!(step5c14_return_vcs(&parameter_write).is_err());
+}
+
+#[test]
+fn step5c14_while_rejects_reachable_core_and_seal_corruption() {
+    use mizar_core::core_ir::*;
+    use mizar_checker::typed_ast::{TypedArena, TypedNodeId};
+    let config = step5c11_config();
+    let case = step5c14_return_case();
+    let text = "definition let a be object; algorithm loopalgo(a) -> object ensures result = a do var x := a; while not x = a do invariant x = x; x := a; end; return x; end; end;";
+    let (source, typed, symbols) = super::source_registration_inputs(&config.workspace_root, &case, super::formula_statement::step5c8_test_frontend(text)).unwrap();
+    for kind in ["WhileStatement", "LoopInvariantClause", "AssignmentStatement", "PrefixFormula(Not)"] {
+        let mut nodes = typed.iter().map(|(_, node)| node.clone()).collect::<Vec<_>>();
+        let index = nodes.iter().position(|node| node.kind.as_str() == kind).unwrap();
+        nodes[index].children.reverse();
+        let changed = TypedArena::try_new(typed.root(), nodes).unwrap();
+        assert!(mizar_checker::type_checker::check_source_algorithm_types(&source, &changed, &symbols).is_err(), "{kind}");
+    }
+    let mut nodes = typed.iter().map(|(_, node)| node.clone()).collect::<Vec<_>>();
+    let index = nodes.iter().position(|node| node.kind.as_str() == "WhileStatement").unwrap();
+    nodes[index].resolved_node = Some(source.arena().root());
+    let changed = TypedArena::try_new(Some(TypedNodeId::new(source.arena().root().index())), nodes).unwrap();
+    assert!(mizar_checker::type_checker::check_source_algorithm_types(&source, &changed, &symbols).is_err());
+    let core = step5c14_static_core(&case, text).unwrap();
+    let (_, algorithm) = core.algorithms().iter().next().unwrap();
+    let loop_statement = algorithm.statements[1];
+    let CoreAlgorithmStmtKind::While { condition, invariants, body, .. } = &core.algorithm_statements().get(loop_statement).unwrap().kind else { panic!() };
+    let assignment = body[0];
+    for mutation in 0..6 {
+        let mut parts = CoreIrParts { source_id: core.source_id(), module_id: core.module_id().clone(), items: core.items().clone(), terms: core.terms().clone(), formulas: core.formulas().clone(), definitions: core.definitions().clone(), proofs: core.proofs().clone(), proof_nodes: core.proof_nodes().clone(), algorithms: core.algorithms().clone(), algorithm_statements: core.algorithm_statements().clone(), generated: core.generated().clone(), obligation_seeds: core.obligation_seeds().clone(), source_map: core.source_map().clone(), diagnostics: core.diagnostics().clone() };
+        match mutation {
+            0 => parts.algorithm_statements.get_mut(assignment).unwrap().owner = CoreAlgorithmId::new(999),
+            1 => {
+                let row = parts.algorithm_statements.get_mut(assignment).unwrap();
+                row.source.provenance.clear();
+                parts.source_map.algorithm_sources.insert(assignment, row.source.clone());
+            }
+            2 => {
+                let row = parts.formulas.get_mut(invariants[0]).unwrap();
+                row.source = core.formulas().get(*condition).unwrap().source.clone();
+                parts.source_map.formula_sources.insert(invariants[0], row.source.clone());
+            }
+            3 => {
+                let CoreFormulaKind::Not(child) = core.formulas().get(*condition).unwrap().kind else { panic!() };
+                let row = parts.formulas.get_mut(*condition).unwrap();
+                row.kind = core.formulas().get(child).unwrap().kind.clone();
+            }
+            4 => {
+                let CoreAlgorithmStmtKind::While { body, .. } = &mut parts.algorithm_statements.get_mut(loop_statement).unwrap().kind else { panic!() };
+                body.push(assignment);
+            }
+            5 => {
+                let CoreAlgorithmStmtKind::AssignLocal { target, .. } = &mut parts.algorithm_statements.get_mut(assignment).unwrap().kind else { panic!() };
+                *target = algorithm.params[0].var;
+            }
+            _ => unreachable!(),
+        }
+        let changed = CoreIr::try_new(parts);
+        if mutation == 0 { assert!(changed.is_err(), "Core ownership mutation {mutation}"); }
+        else { let changed = changed.unwrap_or_else(|error| panic!("structural probe {mutation}: {error}")); assert!(step5c14_return_vcs(&changed).is_err(), "source graph mutation {mutation}"); }
+    }
+}
+
+#[test]
 fn step5c14_snapshot_preserves_visible_storage_and_capture_point() {
     use mizar_core::control_flow::{ControlFlowStatementPlacement as P, build_control_flow_ir};
     use mizar_core::core_ir::{
@@ -3260,6 +3448,11 @@ fn step5c14_return_admission_requires_exact_snapshot_trace_and_stage() {
         plan.cases
             .iter()
             .find(|case| case.id.0 == "pass_proof_verification_algorithm_ghost_snapshot_001")
+            .unwrap()
+            .clone(),
+        plan.cases
+            .iter()
+            .find(|case| case.id.0 == "pass_proof_verification_algorithm_while_invariant_001")
             .unwrap()
             .clone(),
         plan.cases

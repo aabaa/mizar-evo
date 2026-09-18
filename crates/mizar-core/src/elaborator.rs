@@ -15743,6 +15743,7 @@ pub fn lower_source_algorithms(
     ));
     let mut ensures = Vec::new();
     let mut assertion_formulas = BTreeMap::new();
+    let mut loop_formulas = BTreeMap::new();
     let mut formula_ids = BTreeMap::new();
     for (_, formula) in checked.formulas().iter() {
         if formula.kind == mizar_checker::type_checker::FormulaKind::Negation {
@@ -15798,6 +15799,9 @@ pub fn lower_source_algorithms(
             "AlgorithmEnsuresClause" => ensures.push(*id),
             "AssertStatement" => {
                 assertion_formulas.insert(owner, *id);
+            }
+            "WhileStatement" | "LoopInvariantClause" => {
+                loop_formulas.insert(owner, *id);
             }
             _ => return Err(invalid()),
         }
@@ -15898,11 +15902,48 @@ pub fn lower_source_algorithms(
                 source,
                 provenance,
             },
+            "WhileStatement" => {
+                let annotation = only(*statement, "LoopInvariantClause")?;
+                let body = only(*statement, "AlgorithmStatementList")?;
+                let [assignment] = node(body)?.children.as_slice() else {
+                    return Err(invalid());
+                };
+                let target = only(*assignment, "Lvalue")?;
+                let assignment_source =
+                    CoreSourceRef::direct(range(*assignment)?).with_provenance(vec![
+                        CoreProvenance::new(
+                            CoreProvenancePhase::Checker,
+                            format!("algorithm/source-node#{}", target.index()),
+                        ),
+                    ]);
+                AlgorithmStmtSeed::While {
+                    condition: lowered.formula_map
+                        [&loop_formulas.remove(statement).ok_or_else(invalid)?],
+                    invariants: vec![
+                        lowered.formula_map
+                            [&loop_formulas.remove(&annotation).ok_or_else(invalid)?],
+                    ],
+                    decreasing: Vec::new(),
+                    body: vec![AlgorithmStmtSeed::AssignLocal {
+                        target: destinations.remove(&target).ok_or_else(invalid)?,
+                        value: lowered.term_map
+                            [term_ids.get(&term_node(*assignment)?).ok_or_else(invalid)?],
+                        source: assignment_source,
+                        provenance: CheckerOwnedProvenance::checker(format!(
+                            "algorithm/source-node#{}",
+                            assignment.index()
+                        )),
+                    }],
+                    source,
+                    provenance,
+                }
+            }
             "BreakStatement" => AlgorithmStmtSeed::Break { source, provenance },
             _ => return Err(invalid()),
         });
     }
-    if !destinations.is_empty()
+    if !loop_formulas.is_empty()
+        || !destinations.is_empty()
         || !assertion_formulas.is_empty()
         || !local_binders.is_empty()
         || !snapshots.is_empty()

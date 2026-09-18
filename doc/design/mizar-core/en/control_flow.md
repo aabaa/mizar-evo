@@ -664,3 +664,5 @@ Source Let/Return/Break statements retain existing construction and IllegalBreak
 
 The implemented `ControlFlowStatementPlacement::Snapshot { block, context, captures: Vec<LocalId> }` records the actual pre-statement ProgramContextId and exact visible locals, using the Core statement as snapshot identity. Validate source order, same-owner local mapping and initialized captures; visibility follows source-name shadowing, not the entire definitely-initialized set.
 Capture neither writes state nor adds facts, obligations or termination credit. Context assignment effects retain earlier value/write identities; later writes cannot replace the saved context. Nested snapshots and claim links remain unsupported.
+
+The bounded source while reuses existing loop placements, condition edges and invariant header/backedge sites. The body assignment retains its nested statement and actual local identity. CFG contexts are structural inputs; VC generation owns MayWrite, cutpoint value freshening and exit negation, and must not treat copied entry assignment effects as loop-head equalities.

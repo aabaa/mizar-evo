@@ -5794,3 +5794,7 @@ Core/VcSet 全体の不変再実行と [VcSet 全体の snapshot](../../mizar-vc
 ## 限定 symbolic predicate admission
 
 `pass_proof_verification_pred_symbolic_infix_001` だけを既存 pass/proof_verification/vc_generation、predicates.symbolic_definition、元 semantic ref、唯一の active_proof_verification tag、symbolic snapshot ref/path で受理する。厳密な source/sidecar identity、欠落・重複 inventory、alias、誤 stage、補助 payload 不在を認証する。Core/VcSet 全体の決定的再実行と baseline を比較し、先行 outcome を維持する。五束縛子と symbolic head の独立改名、membership container 交換、未束縛・型違反・偽 scope/owner の拒否を検査する。credit は生成に限る。
+
+## 限定 while admission
+
+`pass_proof_verification_algorithm_while_invariant_001` のみを既存 pass/proof_verification/vc_generation、algorithms.loops、while_invariant semantic ref で有効化する。`spec.en.mizar_vc.vc_ir.algorithm_while_invariant` と `snapshots/vc/pass_proof_verification_algorithm_while_invariant_001.vc_ir.snap` を追加し、trace section は `VC Task 47; bounded while invariant VcIr snapshot` とする。厳密な source/sidecar identity、唯一の active tag、矛盾 payload の不在、完全な決定的 VcSet 比較を要求する。三目標、cutpoint・書込み identity、未解決依存と seed accounting を検査し、改名および代入・invariant オペランド変更を実グラフに反映する。証明検証成功・停止性の credit は付与しない。

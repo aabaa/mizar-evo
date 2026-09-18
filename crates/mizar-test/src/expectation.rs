@@ -1378,6 +1378,14 @@ pub fn validate_expectation_path(
                 None,
             ),
             (
+                "pass_proof_verification_algorithm_while_invariant_001",
+                "pass/algorithms",
+                "algorithms.loops",
+                "spec.en.20.algorithms.loops.while_invariant",
+                "spec.en.mizar_vc.vc_ir.algorithm_while_invariant",
+                None,
+            ),
+            (
                 "pass_proof_verification_algorithm_var_const_assert_001",
                 "pass/algorithms",
                 "algorithms.state",

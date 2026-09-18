@@ -331,7 +331,7 @@ pub enum VcGeneratedFormulaKind {
     PolicyMarker,
 }
 
-/// A variable's immutable value at entry or after one actual local write.
+/// An immutable parameter value, actual local write, or authenticated loop cutpoint value.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub struct VcProgramValue {
     pub var: CoreVarId,

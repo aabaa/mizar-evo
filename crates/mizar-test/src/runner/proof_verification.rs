@@ -237,7 +237,7 @@ fn phrase_theorem_output(
     Ok((core, vcs))
 }
 
-const STEP5C14_VC_CASES: [(&str, &str, &str, &str, &str, &str); 6] = [
+const STEP5C14_VC_CASES: [(&str, &str, &str, &str, &str, &str); 7] = [
     (
         "pass_proof_verification_computation_justification_001",
         "tests/miz/pass/algorithms/pass_proof_verification_computation_justification_001.miz",
@@ -269,6 +269,14 @@ const STEP5C14_VC_CASES: [(&str, &str, &str, &str, &str, &str); 6] = [
         "spec.en.20.algorithms.ghost.snapshot",
         "spec.en.mizar_vc.vc_ir.algorithm_ghost_snapshot",
         "snapshots/vc/pass_proof_verification_algorithm_ghost_snapshot_001.vc_ir.snap",
+    ),
+    (
+        "pass_proof_verification_algorithm_while_invariant_001",
+        "tests/miz/pass/algorithms/pass_proof_verification_algorithm_while_invariant_001.miz",
+        "algorithms.loops",
+        "spec.en.20.algorithms.loops.while_invariant",
+        "spec.en.mizar_vc.vc_ir.algorithm_while_invariant",
+        "snapshots/vc/pass_proof_verification_algorithm_while_invariant_001.vc_ir.snap",
     ),
     (
         "pass_proof_verification_algorithm_var_const_assert_001",

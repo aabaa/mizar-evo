@@ -1,19 +1,19 @@
 # Task STEP5C14-ALGORITHM-SEMANTICS: bounded algorithm observations
 
 Canonical language: English; [Japanese pointer](../ja/STEP5C14-ALGORITHM-SEMANTICS.md).
-Status: partial; static/state and bounded void-claim VCs active; contradictory-assertion failure active; computation request active; flat snapshot capture active; tier: full. Primary owner: mizar-core; consumers: mizar-vc, mizar-test;
+Status: partial; static/state and bounded void-claim VCs active; contradictory-assertion failure active; computation request active; flat snapshot capture active; bounded while generation active; tier: full. Primary owner: mizar-core; consumers: mizar-vc, mizar-test;
 checker owns authenticated binding/type intake. Dependencies: existing parser,
 resolver replay, BindingEnv, term/formula inference, Core/CFG and VC seed accounting.
 Owner plans: [Core](../../mizar-core/en/00.crate_plan.md),
 [checker](../../mizar-checker/en/00.crate_plan.md),
 [test](../../mizar-test/en/00.crate_plan.md).
-
 ## Purpose and authority
 Activate the existing algorithm break-outside-loop and ghost-isolation
 type-elaboration failures through source -> checker -> Core -> CFG; additionally activate the existing `pass_proof_verification_algorithm_ensures_return_001.miz` and `pass_proof_verification_algorithm_var_const_assert_001.miz` and `pass_proof_verification_claim_block_theorem_001.miz` at proof_verification/vc_generation.
 The existing computation row retains source-owned literal/request transport. The unchanged `pass_proof_verification_algorithm_ghost_snapshot_001.miz` is specified at pass/vc_generation through [flat capture](../../mizar-core/en/control_flow.md#flat-snapshot-flow) and its ordinary Open return VC.
+The unchanged `pass_proof_verification_algorithm_while_invariant_001.miz` targets pass/vc_generation via [while generation](../../mizar-vc/en/generator.md#bounded-while-postconditions), with source/Core/CFG ownership and controls in the paired module owners.
 Authority: [2](../../../spec/en/02.lexical_structure.md) §2.7, [3](../../../spec/en/03.type_system.md) §3.4, [16](../../../spec/en/16.theorems_and_proofs.md) §§16.1–2; [14](../../../spec/en/14.formulas.md) §§14.3.5,14.5.2; spec [20](../../../spec/en/20.algorithm_and_verification.md)
-§§20.1.1–4, 20.2.6, 20.4.1–3, 20.6.1–2, 20.9.2 and 20.13.1/3/5; tests/miz/{pass,fail}/algorithms/
+§§20.1.1–4, 20.2.2/6, 20.4.1–3, 20.6.1–2, 20.9.2 and 20.13.1/3/5; tests/miz/{pass,fail}/algorithms/
 `fail_type_elaboration_algorithm_break_outside_loop_001.miz` and
 `fail_type_elaboration_algorithm_ghost_isolation_001.miz`, with existing sidecars.
 Both observations remain type_elaboration / elaboration / fail / type_error;
@@ -38,14 +38,14 @@ Graph boundaries: [source families](../../mizar-core/en/source_family_decomposit
 
 No semantic blocker remains. Raw SymbolEnv and unresolved syntax stay outside
 Core; no parallel AST, accepted algorithm fact or fabricated type evidence.
-Exclude field assignment, nested flow, calls, other contracts, loop havoc,
+Exclude field assignment, flow beyond the bounded while, calls and other contracts,
 nested snapshots and snapshot claims, broader claims, computation execution/acceptance, termination proof/promotion, MVM and Step6. The [bounded request producer](../../mizar-vc/en/generator.md#bounded-computation-request-generation) retains the actual zero equality and explicit steps digits as an Open theorem-proof VC; other literal/options profiles remain unsupported.
 This is partial Core42/43/46/47/48/51/52/53 source/diagnostic coverage, not completion or a
 CFG snapshot baseline; flat captures use actual visible declaration identities and capture-point context without adding facts; bounded postconditions/assertions are partial VC43 and void claims partial VC54, and computation requests partial VC32. Task274 and later C14 slices remain deferred.
 
 ## Artifacts and exit
 Change existing checker/Core/CFG/VC/runner modules and relevant Rust tests;
-activate only these sidecars without changing semantic expectations; return/state cases retain generated/zero-VC baselines; the void claim adds its full generated VcSet baseline and narrow snapshot trace. The contradictory-assertion row adds complete raw-negative and positive-equality control baselines; the computation row retains its request-preserving baseline. Flat snapshot adds its complete return VcIr baseline/trace and exact Core/CFG capture controls, including shadowing, declaration/write order and ghost isolation.
+activate only these sidecars without changing semantic expectations; return/state cases retain generated/zero-VC baselines; the void claim adds its full generated VcSet baseline and narrow snapshot trace. The contradictory-assertion row adds complete raw-negative and positive-equality control baselines; the computation row retains its request-preserving baseline. While adds authentic establishment/preservation/return VCs and complete baseline/trace with cutpoint, changed-body and owner-corruption controls. Flat snapshot adds its complete return VcIr baseline/trace and exact Core/CFG capture controls, including shadowing, declaration/write order and ghost isolation.
 Maintain paired owning module docs and public-item inventories where needed,
 this EN contract plus JA pointer, owner plan links and Chapter20 audit's partial
 static-source coverage, symbolic computation requests and Chapter14's bounded negated-reflexive failure coverage. Preserve the repaired claim fixture and all other source/semantic expectations; no execution, theorem acceptance or Task274 credit follows.

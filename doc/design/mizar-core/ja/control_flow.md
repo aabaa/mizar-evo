@@ -607,3 +607,5 @@ task 15-18 に deferred する。
 
 実装済みの `ControlFlowStatementPlacement::Snapshot { block, context, captures: Vec<LocalId> }` は Core 文を snapshot 同一性とし、実際の直前 ProgramContextId と可視 local 集合を保持する。ソース順序・同一所有者・初期化を検証し、可視性は definitely-initialized 全体でなく名前の shadowing に従う。
 捕捉は書込み・事実・義務・終了承認を作らない。保存文脈の assignment effect は以前の値・書込み同一性を保持し、後続書込みで置換しない。入れ子 snapshot・claim link は未対応とする。
+
+限定ソース while は既存ループ配置、条件辺、invariant 入口・後退辺 site を使う。本体代入は入れ子文と実ローカル identity を保持する。CFG 文脈は構造入力であり、MayWrite、cutpoint 値の freshening、出口での否定は VC 生成が所有する。コピーされた入口代入 effect をループ先頭の等式として扱わない。

@@ -9,5 +9,8 @@ expected_phase = "vc_generation"
 diagnostic_codes = []
 spec_refs = [
   "spec.en.20.algorithms.loops.while_invariant",
+  "spec.en.mizar_vc.vc_ir.algorithm_while_invariant",
 ]
 notes = "Audit-1 semantic-bridge inactive oracle seed (September 2026 audit wave): binding expectation for the Step-5 semantic bridge; no active runner tag, earns no current credit. A while loop carries invariant annotations that generate preservation obligations; this loop is never entered and the ensures holds on exit (spec 20.2, 20.5)."
+tags = ["active_proof_verification"]
+snapshots = "snapshots/vc/pass_proof_verification_algorithm_while_invariant_001.vc_ir.snap"

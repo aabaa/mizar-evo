@@ -1077,3 +1077,7 @@ Exactly one Active TheoremProof seed belongs to a `PendingAutomaticProof` theore
 ## Bounded symbolic predicate theorem
 
 The existing sealed `lower_source_theorem_skeletons` route additionally lowers the actual body `forall z (object(z) -> (z in X -> z in Y))` inside the guarded predicate biconditional. Use existing Forall/Implies/Iff and primitive Membership seeds; retain five distinct declaration identities for the two formals, body binder, theorem binder and proof-local binder. Source/formula/term maps and definition-owned provenance authenticate both membership edges and capture boundaries; do not infer formals by zipping body operands with declarations. The actual user-symbol predicate goal, ordered local-set-guard/definition context and pending terminal proof remain unchanged in kind. No unfolding, correctness proof or accepted fact follows.
+
+## Bounded while lowering
+
+`lower_source_algorithms` consumes the existing seal and emits existing `AlgorithmStmtSeed::While` with the actual condition, invariant, empty decreasing list and nested `AssignLocal`; the loop annotation is not an assertion or algorithm-wide invariant. Authenticate each nested source node exactly once and preserve all formula, statement and owner maps. No parallel syntax representation or synthesized proof is introduced.
