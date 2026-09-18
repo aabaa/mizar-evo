@@ -2516,11 +2516,14 @@ pub fn check_source_attribute_widening_types(
 
 /// Checks source-derived signatures and actuals in the bounded ordinary overload profiles.
 /// The single-structure profile also returns genuine no-match results; the two-root profile requires selection.
+// reason: Keep the existing pipeline tuple instead of a single-use public result wrapper.
+#[allow(clippy::type_complexity)]
 pub fn check_source_distinct_loci_overloads(
     source: &SurfaceResolvedArena,
     symbols: &SymbolEnv,
     typed: &crate::typed_ast::TypedArena,
     single_structure_candidate: bool,
+    registrations: Option<&crate::registration_resolution::RegistrationDatabase>,
 ) -> Result<
     (
         TypeNormalizationOutput,
@@ -2529,15 +2532,61 @@ pub fn check_source_distinct_loci_overloads(
         crate::overload_resolution::CandidateViabilityOutput,
         crate::overload_resolution::SpecificityGraphOutput,
         crate::overload_resolution::OverloadSelectionOutput,
+        Option<(
+            crate::registration_resolution::ExistentialGateOutput,
+            CoercionCheckingOutput,
+        )>,
     ),
     String,
 > {
-    use crate::overload_resolution::*;
     use crate::source_structure_semantics::{
         SourceStructureDefinitionInput, SourceStructureMemberInput, SourceStructureMemberKind,
         SourceStructureProgramInput, SourceStructureSemanticsChecker, SourceStructureType,
     };
+    use crate::{overload_resolution::*, registration_resolution::*};
     let invalid = || "overload.unsupported_distinct_loci_source".to_owned();
+    if single_structure_candidate && registrations.is_some() {
+        return Err(invalid());
+    }
+    let registration_check = registrations
+        .map(|_| check_source_existential_registration_proof(source, typed, symbols))
+        .transpose()?;
+    if let (Some(database), Some(checked)) = (registrations, registration_check.as_ref()) {
+        if checked.validations().len() != 3
+            || database.module_id() != source.module()
+            || database.activated().len() != 3
+            || !database.pending().is_empty()
+            || !database.rejected().is_empty()
+            || !database.diagnostics().is_empty()
+        {
+            return Err(invalid());
+        }
+        for validation in checked.validations() {
+            let active = database
+                .activated()
+                .iter()
+                .find(|active| active.resolver_registration() == validation.resolver_registration())
+                .ok_or_else(invalid)?;
+            let pending = checked
+                .database()
+                .pending()
+                .iter()
+                .find(|pending| {
+                    pending.resolver_registration() == validation.resolver_registration()
+                })
+                .ok_or_else(invalid)?;
+            if active.source() != pending.source()
+                || active.pattern().as_str() != format!("{:?}", validation.pattern())
+                || active.trigger().as_str() != format!("{:?}", validation.pattern())
+                || active.correctness().as_str() != validation.correctness_provenance().as_str()
+                || active.validation_kind() != Some(RegistrationValidationKind::Existential)
+                || active.fingerprint().is_none()
+                || !active.parameters().is_empty()
+            {
+                return Err(invalid());
+            }
+        }
+    }
     mizar_resolve::symbols::validate_source_symbol_env(source, symbols)?;
     if typed.len() != source.arena().len()
         || typed.root() != Some(TypedNodeId::new(source.arena().root().index()))
@@ -2625,96 +2674,175 @@ pub fn check_source_distinct_loci_overloads(
         return Err(invalid());
     };
     let items = parts(only(*unit, &K::CompilationUnit)?, &K::ItemList)?;
-    let (set_block, structure_block, box_block, theorem) = match (single_structure_candidate, items)
-    {
-        (false, [set_block, structure_block, box_block, theorem]) => {
-            (Some(*set_block), structure_block, box_block, theorem)
+    let mut registration_end = None;
+    let (set_block, box_block, theorem, structure_details) = if registrations.is_some() {
+        let [attributes, registration, left, right, theorem] = items else {
+            return Err(invalid());
+        };
+        if node(*attributes)?.kind() != &K::DefinitionBlockItem
+            || node(*registration)?.kind() != &K::RegistrationBlockItem
+            || range(*attributes)?.end > range(*registration)?.start
+            || range(*registration)?.end > range(*left)?.start
+            || range(*left)?.end > range(*right)?.start
+            || range(*right)?.end > range(*theorem)?.start
+        {
+            return Err(invalid());
         }
-        (true, [structure_block, box_block, theorem]) => {
-            (None, structure_block, box_block, theorem)
-        }
-        _ => return Err(invalid()),
-    };
-    let [definition_kw, structure, end, semi] = parts(*structure_block, &K::DefinitionBlockItem)?
-    else {
-        return Err(invalid());
-    };
-    tokens(&[(*definition_kw, "definition"), (*end, "end"), (*semi, ";")])?;
-    let [struct_kw, pattern, where_kw, field, end, semi] =
-        parts(*structure, &K::StructureDefinition)?
-    else {
-        return Err(invalid());
-    };
-    tokens(&[
-        (*struct_kw, "struct"),
-        (*where_kw, "where"),
-        (*end, "end"),
-        (*semi, ";"),
-    ])?;
-    let structure_name = only(*pattern, &K::StructurePattern)?;
-    let [field_kw, field_name, arrow, field_type, semi] = parts(*field, &K::StructureField)? else {
-        return Err(invalid());
-    };
-    tokens(&[(*field_kw, "field"), (*arrow, "->"), (*semi, ";")])?;
-    // The required builtin-set field supplies a constructor witness (spec17 §17.3.4).
-    tokens(&[(
-        only(only(*field_type, &K::TypeExpression)?, &K::TypeHead)?,
-        "set",
-    )])?;
-    let structure_symbol = symbol(*structure, SymbolKind::Structure)?;
-    let field_symbol = symbol(*field, SymbolKind::Selector)?;
-    let structure_output = SourceStructureSemanticsChecker::check(
-        SourceStructureProgramInput::new(
-            source.source_id(),
-            source.module().clone(),
-            vec![SourceStructureDefinitionInput::new(
-                structure_symbol.symbol().clone(),
-                text(structure_name)?,
-                Vec::new(),
-                vec![SourceStructureMemberInput::new(
-                    field_symbol.symbol().clone(),
-                    text(*field_name)?,
-                    field_symbol.primary_spelling(),
-                    SourceStructureMemberKind::Field,
-                    SourceStructureType::Set,
-                    range(*field)?,
+        registration_end = Some(range(*registration)?.end);
+        (Some(*left), right, theorem, None)
+    } else {
+        let (set_block, structure_block, box_block, theorem) =
+            match (single_structure_candidate, items) {
+                (false, [set_block, structure_block, box_block, theorem]) => {
+                    (Some(*set_block), structure_block, box_block, theorem)
+                }
+                (true, [structure_block, box_block, theorem]) => {
+                    (None, structure_block, box_block, theorem)
+                }
+                _ => return Err(invalid()),
+            };
+        let [definition_kw, structure, end, semi] =
+            parts(*structure_block, &K::DefinitionBlockItem)?
+        else {
+            return Err(invalid());
+        };
+        tokens(&[(*definition_kw, "definition"), (*end, "end"), (*semi, ";")])?;
+        let [struct_kw, pattern, where_kw, field, end, semi] =
+            parts(*structure, &K::StructureDefinition)?
+        else {
+            return Err(invalid());
+        };
+        tokens(&[
+            (*struct_kw, "struct"),
+            (*where_kw, "where"),
+            (*end, "end"),
+            (*semi, ";"),
+        ])?;
+        let structure_name = only(*pattern, &K::StructurePattern)?;
+        let [field_kw, field_name, arrow, field_type, semi] = parts(*field, &K::StructureField)?
+        else {
+            return Err(invalid());
+        };
+        tokens(&[(*field_kw, "field"), (*arrow, "->"), (*semi, ";")])?;
+        // The required builtin-set field supplies a constructor witness (spec17 §17.3.4).
+        tokens(&[(
+            only(only(*field_type, &K::TypeExpression)?, &K::TypeHead)?,
+            "set",
+        )])?;
+        let structure_symbol = symbol(*structure, SymbolKind::Structure)?;
+        let field_symbol = symbol(*field, SymbolKind::Selector)?;
+        let structure_output = SourceStructureSemanticsChecker::check(
+            SourceStructureProgramInput::new(
+                source.source_id(),
+                source.module().clone(),
+                vec![SourceStructureDefinitionInput::new(
+                    structure_symbol.symbol().clone(),
+                    text(structure_name)?,
+                    Vec::new(),
+                    vec![SourceStructureMemberInput::new(
+                        field_symbol.symbol().clone(),
+                        text(*field_name)?,
+                        field_symbol.primary_spelling(),
+                        SourceStructureMemberKind::Field,
+                        SourceStructureType::Set,
+                        range(*field)?,
+                        0,
+                        false,
+                    )],
+                    range(*structure)?,
                     0,
                     false,
                 )],
-                range(*structure)?,
-                0,
-                false,
-            )],
-            Vec::new(),
-            Vec::new(),
-            Vec::new(),
-            Vec::new(),
-        ),
-        symbols,
-    )
-    .map_err(|_| invalid())?;
-    if !structure_output.diagnostics().is_empty() {
-        return Err(invalid());
-    }
-    let [checked_structure] = structure_output.structures() else {
-        return Err(invalid());
+                Vec::new(),
+                Vec::new(),
+                Vec::new(),
+                Vec::new(),
+            ),
+            symbols,
+        )
+        .map_err(|_| invalid())?;
+        if !structure_output.diagnostics().is_empty() {
+            return Err(invalid());
+        }
+        let [checked_structure] = structure_output.structures() else {
+            return Err(invalid());
+        };
+        let checked_field = checked_structure
+            .member(field_symbol.symbol())
+            .ok_or_else(invalid)?;
+        (
+            set_block,
+            box_block,
+            theorem,
+            Some((
+                structure_name,
+                *structure_block,
+                structure_symbol,
+                field_symbol,
+                checked_field.clone(),
+            )),
+        )
     };
-    let checked_field = checked_structure
-        .member(field_symbol.symbol())
-        .ok_or_else(invalid)?;
     let mut type_inputs = Vec::new();
-    for (id, current) in source
+    for (id, _) in source
         .arena()
         .iter()
         .filter(|(_, node)| node.kind() == &K::TypeExpression)
     {
-        let head = only(only(id, &K::TypeExpression)?, &K::TypeHead)?;
-        let (spelling, head) = if matches!(node(head)?.kind(), K::Token(token) if token.kind == SurfaceTokenKind::ReservedWord && token.text.as_ref() == "set")
+        // The authenticated prerequisite owns the attribute-test type wrappers
+        // inside registration proofs; normalize only this consumer's later types.
+        if let Some(end) = registration_end
+            && range(id)?.start < end
+        {
+            continue;
+        }
+        let mut attributes = Vec::new();
+        let head = if registrations.is_some() {
+            match parts(id, &K::TypeExpression)? {
+                [head] => *head,
+                [chain, head] => {
+                    for attribute_ref in parts(*chain, &K::AttributeChain)? {
+                        let token = only(
+                            only(only(*attribute_ref, &K::AttributeRef)?, &K::QualifiedSymbol)?,
+                            &K::PathSegment,
+                        )?;
+                        let matching = symbols
+                            .symbols()
+                            .iter()
+                            .filter(|entry| {
+                                entry.kind() == SymbolKind::Attribute
+                                    && entry.primary_spelling() == text(token).unwrap_or_default()
+                            })
+                            .collect::<Vec<_>>();
+                        let [attribute] = matching.as_slice() else {
+                            return Err(invalid());
+                        };
+                        attributes.push(AttributeInput::new(
+                            attribute.symbol().clone(),
+                            AttributePolarity::Positive,
+                            range(*attribute_ref)?,
+                            text(token)?,
+                        ));
+                    }
+                    if attributes.is_empty() || attributes.len() > 2 {
+                        return Err(invalid());
+                    }
+                    *head
+                }
+                _ => return Err(invalid()),
+            }
+        } else {
+            only(id, &K::TypeExpression)?
+        };
+        let head = only(head, &K::TypeHead)?;
+        let (spelling, head) = if matches!(node(head)?.kind(),K::Token(token) if token.kind==SurfaceTokenKind::ReservedWord && token.text.as_ref()=="set")
         {
             ("set", TypeHeadInput::BuiltinSet)
         } else {
+            let (structure_name, structure_block, structure_symbol, _, _) =
+                structure_details.as_ref().ok_or_else(invalid)?;
             let name = only(only(head, &K::QualifiedSymbol)?, &K::PathSegment)?;
-            if text(name)? != text(structure_name)?
+            if text(name)? != text(*structure_name)?
                 || range(id)?.start < range(*structure_block)?.end
             {
                 return Err(invalid());
@@ -2724,12 +2852,12 @@ pub fn check_source_distinct_loci_overloads(
                 TypeHeadInput::Symbol(structure_symbol.symbol().clone()),
             )
         };
-        let SourceAnchor::Range(span) = current.origin().anchor() else {
-            return Err(invalid());
-        };
-        type_inputs.push(TypeExpressionInput::new(site(id), *span, spelling, head));
+        type_inputs.push(
+            TypeExpressionInput::new(site(id), range(id)?, spelling, head)
+                .with_attributes(attributes),
+        );
     }
-    let normalization = TypeNormalizer::default().normalize(symbols, type_inputs);
+    let normalization = TypeNormalizer::default().normalize(symbols, type_inputs.clone());
     if !normalization.diagnostics().is_empty() {
         return Err(invalid());
     }
@@ -2747,7 +2875,16 @@ pub fn check_source_distinct_loci_overloads(
             })
             .ok_or_else(invalid)
     };
-    let set_type = normalized(*field_type)?;
+    let set_type = normalization
+        .normalized_types()
+        .iter()
+        .find_map(|(id, ty)| {
+            (ty.head == TypeHeadRef::BuiltinSet && ty.args.is_empty() && ty.attributes.is_empty())
+                .then_some(id)
+        })
+        .ok_or_else(invalid)?;
+    let mut binder_types = BTreeMap::new();
+    let mut signature_sites = Vec::new();
     let mut signatures = Vec::new();
     let mut bindings = BTreeMap::new();
     let mut body_checks = Vec::new();
@@ -2874,8 +3011,13 @@ pub fn check_source_distinct_loci_overloads(
             Some(normalized(*result_type)?),
             range(block)?.end,
         ));
+        if registrations.is_some() && labels.contains(&text(*label)?) {
+            return Err(invalid());
+        }
         labels.push(text(*label)?);
         bindings.insert(*binder, normalized(*parameter_type)?);
+        binder_types.insert(*binder, *parameter_type);
+        signature_sites.push((*parameter_type, *result_type));
         body_checks.push((
             only(only(*body, &K::TermDefiniens)?, &K::TermExpression)?,
             *binder,
@@ -2883,7 +3025,7 @@ pub fn check_source_distinct_loci_overloads(
         ));
     }
     let box_type = signatures.last().ok_or_else(invalid)?.1[0];
-    if (!single_structure_candidate && signatures[0].1 != [set_type])
+    if (registrations.is_none() && !single_structure_candidate && signatures[0].1 != [set_type])
         || box_type == set_type
         || (!predicate
             && signatures
@@ -2920,7 +3062,9 @@ pub fn check_source_distinct_loci_overloads(
         (false, [thus, proposition, justification, semi]) => {
             (thus, proposition, Some(*justification), semi)
         }
-        (true, [thus, proposition, semi]) => (thus, proposition, None, semi),
+        (_, [thus, proposition, semi]) if single_structure_candidate || registrations.is_some() => {
+            (thus, proposition, None, semi)
+        }
         _ => return Err(invalid()),
     };
     tokens(&[(*thus, "thus"), (*semi, ";")])?;
@@ -2951,6 +3095,7 @@ pub fn check_source_distinct_loci_overloads(
         tokens(&[(*be, keyword)])?;
         let actual_type = normalized(*ty)?;
         bindings.insert(*binder, actual_type);
+        binder_types.insert(*binder, *ty);
         if predicate {
             let segment = only(equality, &K::PredicateApplication)?;
             let (left, head, right) = match parts(segment, &K::PredicateSegment)? {
@@ -3020,6 +3165,8 @@ pub fn check_source_distinct_loci_overloads(
         }
         let ty = *bindings.get(&binder).ok_or_else(invalid)?;
         if let Some(member) = member {
+            let (_, _, _, field_symbol, checked_field) =
+                structure_details.as_ref().ok_or_else(invalid)?;
             if ty != box_type
                 || text(member)? != checked_field.spelling()
                 || checked_field.symbol() != field_symbol.symbol()
@@ -3032,9 +3179,200 @@ pub fn check_source_distinct_loci_overloads(
             Ok(ty)
         }
     };
-    for (body, binder, result) in body_checks {
-        if term_type(body, binder)? != result {
+    let mut gates = None;
+    if let (Some(database), Some(checked)) = (registrations, registration_check.as_ref()) {
+        if binder_types.len() != 4
+            || signatures.len() != 2
+            || calls.len() != 2
+            || calls[0].3 == calls[1].3
+        {
             return Err(invalid());
+        }
+        let mut parameter_attributes = Vec::new();
+        for signature in &signatures {
+            let ty = normalization
+                .normalized_types()
+                .get(signature.1[0])
+                .ok_or_else(invalid)?;
+            let [attribute] = ty.attributes.positive() else {
+                return Err(invalid());
+            };
+            parameter_attributes.push((&attribute.symbol, &attribute.args));
+        }
+        if parameter_attributes[0] == parameter_attributes[1] {
+            return Err(invalid());
+        }
+        let mut inputs = Vec::new();
+        for ty in binder_types.values() {
+            let normalized_type = normalization
+                .normalized_types()
+                .get(normalized(*ty)?)
+                .ok_or_else(invalid)?;
+            if normalized_type.status != NormalizedTypeStatus::Known
+                || normalized_type.head != TypeHeadRef::BuiltinSet
+                || !normalized_type.args.is_empty()
+                || !normalized_type.attributes.negative().is_empty()
+                || normalized_type.attributes.positive().is_empty()
+                || range(*ty)?.start < registration_end.ok_or_else(invalid)?
+            {
+                return Err(invalid());
+            }
+            let mut keys = normalized_type
+                .attributes
+                .positive()
+                .iter()
+                .map(|attribute| RegistrationAttributeKey::new(format!("{:?}", attribute.symbol)))
+                .collect::<Vec<_>>();
+            keys.sort();
+            let validation=checked.validations().iter().find(|validation|matches!(validation.pattern(),RegistrationValidationPattern::Existential{type_head,attributes} if type_head.as_str()=="builtin.set" && {let mut actual=attributes.clone();actual.sort();actual==keys})).ok_or_else(invalid)?;
+            let active = database
+                .activated()
+                .iter()
+                .find(|active| active.resolver_registration() == validation.resolver_registration())
+                .ok_or_else(invalid)?;
+            inputs.push(
+                ExistentialGateInput::new(
+                    site(*ty),
+                    range(*ty)?,
+                    active.pattern().clone(),
+                    active.trigger().clone(),
+                    keys.clone(),
+                )
+                .with_candidates([ExistentialGateCandidate::new(
+                    active.id(),
+                    active.pattern().clone(),
+                    active.correctness().clone(),
+                    active.evidence().clone(),
+                    active.trigger().clone(),
+                    keys,
+                )
+                .with_fingerprint(active.fingerprint().ok_or_else(invalid)?.clone())]),
+            );
+        }
+        let output = ExistentialGateOutput::evaluate(database, inputs);
+        if !output.diagnostics().is_empty()
+            || output.iter().any(|gate| {
+                gate.status() != ExistentialGateStatus::Satisfied
+                    || gate.registration().is_none()
+                    || gate.base_evidence_kind().is_some()
+            })
+        {
+            return Err(invalid());
+        }
+        gates = Some(output);
+    }
+    let can_widen = |actual, target| -> Result<bool, String> {
+        let actual = normalization
+            .normalized_types()
+            .get(actual)
+            .ok_or_else(invalid)?;
+        let target = normalization
+            .normalized_types()
+            .get(target)
+            .ok_or_else(invalid)?;
+        if actual.status != NormalizedTypeStatus::Known
+            || target.status != NormalizedTypeStatus::Known
+            || actual.head != TypeHeadRef::BuiltinSet
+            || target.head != TypeHeadRef::BuiltinSet
+            || actual.args != target.args
+            || !actual.attributes.negative().is_empty()
+            || !target.attributes.negative().is_empty()
+        {
+            return Ok(false);
+        }
+        let actual = actual
+            .attributes
+            .positive()
+            .iter()
+            .map(|attribute| (&attribute.symbol, &attribute.args))
+            .collect::<BTreeSet<_>>();
+        Ok(target
+            .attributes
+            .positive()
+            .iter()
+            .all(|attribute| actual.contains(&(&attribute.symbol, &attribute.args))))
+    };
+    let input_facts = TypeFactTable::new();
+    let mut coercions = CoercionCheckingState {
+        input_facts: &input_facts,
+        normalized_types: normalization.normalized_types().clone(),
+        type_entries: normalization.type_entries().clone(),
+        coercions: CoercionTable::new(),
+        initial_obligations: InitialObligationTable::new(),
+        facts: TypeFactTable::new(),
+        diagnostics: TypeDiagnosticTable::new(),
+    };
+    let entries = type_entries_by_site(normalization.type_entries());
+    let mut widen = |owner, from_node, to_node| {
+        let actual = normalized(from_node)?;
+        let target = normalized(to_node)?;
+        if actual == target || !can_widen(actual, target)? {
+            return Err(invalid());
+        }
+        let from = type_inputs
+            .iter()
+            .find(|input| input.site == site(from_node))
+            .ok_or_else(invalid)?
+            .clone();
+        let to = type_inputs
+            .iter()
+            .find(|input| input.site == site(to_node))
+            .ok_or_else(invalid)?
+            .clone();
+        let before = coercions.coercions.len();
+        coercions.check_coercion(
+            CoercionInput::new(
+                site(owner),
+                range(owner)?,
+                CoercionRequestKind::Widening,
+                to,
+            )
+            .with_from_type(from)
+            .with_evidence(CoercionEvidence::BuiltinRadix),
+            &entries,
+        );
+        let row = coercions
+            .coercions
+            .iter()
+            .last()
+            .map(|(_, row)| row)
+            .ok_or_else(invalid)?;
+        if coercions.coercions.len() != before + 1
+            || !coercions.diagnostics.is_empty()
+            || !coercions.initial_obligations.is_empty()
+            || row.status != CoercionStatus::Candidate
+            || row.from != Some(actual)
+            || row.to != target
+            || row.site != site(owner)
+            || row.obligation.is_some()
+            || row.supporting_facts.len() != 1
+            || row.supporting_facts.iter().any(|id| {
+                coercions.facts.get(*id).is_none_or(|fact| {
+                    fact.subject != site(owner)
+                        || fact.status != FactStatus::Known
+                        || !matches!(fact.provenance, FactProvenance::Builtin(_))
+                })
+            })
+        {
+            return Err(invalid());
+        }
+        Ok(row.clone())
+    };
+    for (index, (body, binder, result)) in body_checks.iter().enumerate() {
+        let actual = term_type(*body, *binder)?;
+        if registrations.is_some() {
+            if actual != *result {
+                widen(*body, signature_sites[index].0, signature_sites[index].1)?;
+            } else if !can_widen(actual, *result)? {
+                return Err(invalid());
+            }
+        } else if actual != *result {
+            return Err(invalid());
+        }
+    }
+    if registrations.is_some() {
+        for call in &calls {
+            term_type(call.2.ok_or_else(invalid)?, call.3)?;
         }
     }
     if single_structure_candidate && !predicate {
@@ -3106,28 +3444,89 @@ pub fn check_source_distinct_loci_overloads(
             .iter()
             .find(|call| site(call.0) == *owner)
             .ok_or_else(invalid)?;
-        let arguments = call
-            .1
-            .iter()
-            .map(|argument| {
-                Ok(ArgumentViabilityEvidence::Exact {
-                    actual: term_type(*argument, call.3)?,
-                })
-            })
-            .collect::<Result<Vec<_>, String>>()?;
+        let mut arguments = Vec::new();
+        for (argument, target) in call.1.iter().zip(&entry.parameters) {
+            let actual = term_type(*argument, call.3)?;
+            arguments.push(if registrations.is_none() || actual == *target {
+                ArgumentViabilityEvidence::Exact { actual }
+            } else if can_widen(actual, *target)? {
+                let declaration = signatures
+                    .iter()
+                    .position(|signature| signature.0.symbol() == &entry.symbol)
+                    .ok_or_else(invalid)?;
+                let row = widen(
+                    *argument,
+                    *binder_types.get(&call.3).ok_or_else(invalid)?,
+                    signature_sites[declaration].0,
+                )?;
+                ArgumentViabilityEvidence::Coercion {
+                    actual,
+                    target: *target,
+                    coercion: row.id,
+                    kind: ViabilityCoercionKind::Widening,
+                    status: ViabilityCoercionStatus::Accepted,
+                    facts: row.supporting_facts,
+                    path: None,
+                }
+            } else {
+                ArgumentViabilityEvidence::FactWidening {
+                    actual,
+                    target: *target,
+                    facts: Vec::new(),
+                    status: ViabilityFactStatus::Rejected,
+                }
+            });
+        }
         evidence.push(CandidateViabilityInput {
             candidate,
             arguments,
         });
     }
     let viability = CandidateViabilityOutput::filter(&expansion, evidence);
-    let graphs = SpecificityGraphOutput::build(&viability, []);
+    let mut comparisons = Vec::new();
+    if registrations.is_some() {
+        let viable = viability
+            .decisions()
+            .iter()
+            .filter_map(|(_, decision)| decision.output_candidate)
+            .collect::<Vec<_>>();
+        for (index, left) in viable.iter().enumerate() {
+            for right in &viable[index + 1..] {
+                let lhs = viability.candidates().get(*left).ok_or_else(invalid)?;
+                let rhs = viability.candidates().get(*right).ok_or_else(invalid)?;
+                if lhs.site != rhs.site {
+                    continue;
+                }
+                let status = match (
+                    can_widen(lhs.parameters[0], rhs.parameters[0])?,
+                    can_widen(rhs.parameters[0], lhs.parameters[0])?,
+                ) {
+                    (true, true) => SpecificityComparisonStatus::Equivalent,
+                    (true, false) => SpecificityComparisonStatus::LeftAtLeastRight,
+                    (false, true) => SpecificityComparisonStatus::RightAtLeastLeft,
+                    (false, false) => SpecificityComparisonStatus::Incomparable,
+                };
+                comparisons.push(SpecificityComparisonInput {
+                    left: *left,
+                    right: *right,
+                    status,
+                    reasons: vec![SpecificityReasonKey::new(
+                        "source.builtin-set.attribute-inclusion",
+                    )],
+                });
+            }
+        }
+    }
+    let graphs = SpecificityGraphOutput::build(&viability, comparisons);
     let mut resolution = Vec::new();
     for (_, graph) in graphs.graphs().iter() {
         if !graph.diagnostics.is_empty() {
             return Err(invalid());
         }
         if single_structure_candidate && graph.nodes.is_empty() {
+            continue;
+        }
+        if registrations.is_some() && graph.nodes.len() > 1 {
             continue;
         }
         let [root] = graph.nodes.as_slice() else {
@@ -3159,6 +3558,21 @@ pub fn check_source_distinct_loci_overloads(
         return Err(invalid());
     }
     for (_, result) in selection.results().iter() {
+        if registrations.is_some()
+            && let OverloadResultStatus::Ambiguous { candidates } = &result.status
+        {
+            if candidates.len() != 2
+                || result.diagnostics.len() != 1
+                || result.diagnostics.iter().any(|id| {
+                    selection.diagnostics().get(*id).is_none_or(|diagnostic| {
+                        diagnostic.message_key.as_str() != "overload.selection.ambiguous_selection"
+                    })
+                })
+            {
+                return Err(invalid());
+            }
+            continue;
+        }
         if !result.diagnostics.is_empty() {
             return Err(invalid());
         }
@@ -3193,11 +3607,25 @@ pub fn check_source_distinct_loci_overloads(
             .find(|call| site(call.0) == *owner)
             .ok_or_else(invalid)?;
         if selected.result != exposed.result
-            || exposed.result != Some(term_type(call.2.ok_or_else(invalid)?, call.3)?)
+            || (registrations.is_none()
+                && exposed.result != Some(term_type(call.2.ok_or_else(invalid)?, call.3)?))
         {
             return Err(invalid());
         }
     }
+    let attributed = gates.map(|gates| {
+        (
+            gates,
+            CoercionCheckingOutput {
+                normalized_types: coercions.normalized_types,
+                type_entries: coercions.type_entries,
+                coercions: coercions.coercions,
+                initial_obligations: coercions.initial_obligations,
+                facts: coercions.facts,
+                diagnostics: coercions.diagnostics,
+            },
+        )
+    });
     Ok((
         normalization,
         collection,
@@ -3205,6 +3633,7 @@ pub fn check_source_distinct_loci_overloads(
         viability,
         graphs,
         selection,
+        attributed,
     ))
 }
 

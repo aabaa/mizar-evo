@@ -265,8 +265,8 @@ pub(in crate::runner) fn step5c5_predicate_argument_detail_keys(
     use mizar_checker::type_checker::{
         NormalizedTypeStatus, TypeHeadRef, check_source_distinct_loci_overloads,
     };
-    let (normalization, collection, expansion, viability, _, selection) =
-        check_source_distinct_loci_overloads(source, symbols, typed, true)?;
+    let (normalization, collection, expansion, viability, _, selection, _) =
+        check_source_distinct_loci_overloads(source, symbols, typed, true, None)?;
     let invalid = || "predicates.application.unsupported_argument_evidence".to_owned();
     let mut rejected = 0;
     for (_, decision) in viability.decisions().iter() {

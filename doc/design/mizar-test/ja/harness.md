@@ -5740,7 +5740,14 @@ harness は実 resolved source・symbols・中立 typed node と明示的 Synony
 
 ## Distinct-loci overload admission
 
-advanced-semantics runner は異なる引数型の overload 正常系の厳密な行だけを `overload_resolution` で追加受理する。ID、ソース・sidecar パス、stage、phase、pass 結果、空の診断・キーペイロード、唯一の active tag を認証する。曖昧性の行と別 stage の別名は予約し、無効のまま維持する。実際の resolved source、symbol environment、typed projection を checker へ渡して既存出力を観測し、候補の型検査・選択・承認は行わない。対応行の欠落・重複、メタデータ・phase の不一致は受理せず、従来 registration 経路の要件を保持する。
+advanced-semantics runner は異なる引数型の overload 正常系の厳密な行だけを `overload_resolution` で追加受理する。ID、ソース・sidecar パス、stage、phase、pass 結果、空の診断・キーペイロード、唯一の active tag を認証する。別 stage の別名は拒否し、曖昧性の受理は後述の continuation が所有する。実際の resolved source、symbol environment、typed projection を checker へ渡して既存出力を観測し、候補の型検査・選択・承認は行わない。対応行の欠落・重複、メタデータ・phase の不一致は受理せず、従来 registration 経路の要件を保持する。
+
+### Attributed ambiguity admission
+
+実装した continuation は `fail_advanced_semantics_overload_ambiguous_candidates_001` だけを advanced_semantics/overload_resolution に追加し、固定した fail 結果、overload_error category、ambiguity detail key、元の spec ref、空の他診断/snapshot payload と唯一の active_advanced_semantics tag を要求する。source・expectation 意味・trace 順序/status・activation map は固定し、実 pipeline 完成後にだけ tag/note を有効化する。
+frontend/source 認証後、現行 release verifier policy で3登録の fresh proof facade を呼び、同じ不変入力と当該 local database を直ちに属性付き checker profile へ渡す。public database、accepted-status 入力、callback、receipt による fresh producer の迂回を認めない。
+認証した適合する別 root と完全な比較を持つ両 call の実 `Ambiguous` だけを `overload.resolution.ambiguous_candidates` に写像する。下位段階・gate・body・evidence・無関係なエラーは infrastructure failure とする。従来正常系は正常 resolution を要求し、各対応行は正確に1件とする。予約 ID/path と全 metadata を stage 横断で保護する。
+実 source と改名・singleton actual の control をこの順で実行し、checker 出力、各登録/gate/candidate/comparison の失敗、陳腐化入力、行の欠落/重複、metadata・他 stage の別名を検査する。theorem と記述された coherence 節に証明受理を与えない。
 
 ## Static algorithm admission
 

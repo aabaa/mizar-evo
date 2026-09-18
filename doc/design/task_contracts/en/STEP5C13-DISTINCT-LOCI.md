@@ -6,7 +6,7 @@ Owning plans: [checker](../../mizar-checker/en/00.crate_plan.md#task-index),
 
 ## Frozen assignment
 
-- Status: partial; bounded distinct-loci increment; full tier; checker owns typing and overload selection.
+- Status: implemented; bounded distinct-loci and attributed-ambiguity profiles; full tier; checker owns typing and overload selection.
 - Dependencies: bounded 5A.2/5C.5 plus the source formal lookup introduced by 5C.12.
 - Authority: [spec19](../../../spec/en/19.overload_resolution.md) §§19.4.1–3,19.6.3;
   [spec3](../../../spec/en/03.type_system.md) builtin/structure types;
@@ -14,7 +14,7 @@ Owning plans: [checker](../../mizar-checker/en/00.crate_plan.md#task-index),
   [spec10](../../../spec/en/10.functors.md) equals bodies; spec17 §§17.3/17.3.4/17.9.1 existential proof, full-pattern and constructor inhabitation.
 - Case: pass_advanced_semantics_overload_distinct_loci_001, unchanged overload_resolution endpoint.
 - Classification: source signature/binding/type/overload producer and execution gaps.
-- Attributed ambiguity remains inactive; the implemented OA/OB/OAB source-proof prerequisite supplies no overload credit.
+- The attributed consumer uses the implemented OA/OB/OAB prerequisite and actual overload results.
 
 ## Retained distinct-loci runner
 
@@ -38,13 +38,15 @@ Activate only the positive; beyond those witness insertions preserve .miz/expect
 Owner APIs/tests: [type checker](../../mizar-checker/en/type_checker.md#distinct-loci-overload-source-checking),
 [overload](../../mizar-checker/en/overload_resolution.md), [names](../../mizar-resolve/en/names.md#unbounded-template-formal-resolution),
 [harness](../../mizar-test/en/harness.md#distinct-loci-overload-admission).
-Audit impact: Chapter19 gains bounded source-derived distinct-loci selection; ambiguity remains deferred.
+Audit impact: Chapter19 retains distinct-loci selection and tracks the bounded attributed continuation below.
 
-## Source-proof prerequisite
+## Source-proof and attributed continuation
 
 Use unchanged `tests/miz/fail/overload/fail_advanced_semantics_overload_ambiguous_candidates_001.miz` to authenticate and prove its three original registrations through existing checker/Core/VC/proof signatures.
 [Proof status](../../mizar-proof/en/status.md#three-registration-source-proof-extension) requires six fresh normal-kernel leaves, three independent nonempty seeds and exact same-source full-pattern activation; OAB retains both guarded definitions and substitutions; the [harness](../../mizar-test/en/harness.md#three-registration-source-proof-prerequisite) owns its controls.
-Preserve the original R profile, source/sidecar/trace/map, positive C13 outcome and pending attributed-consumer/ambiguity boundary. No general Task274/import, closure, callback, receipt or Step6/MVM scope.
+Preserve the original R profile, source/expectation semantics/trace/map and positive C13 outcome. No general Task274/import, closure, callback, receipt or Step6/MVM scope.
+The [attributed checker consumer](../../mizar-checker/en/type_checker.md#attributed-set-overload-consumer) owns binding gates, return/argument widening and actual root comparison; [harness admission](../../mizar-test/en/harness.md#attributed-ambiguity-admission) owns fresh same-input proof orchestration and exact failure mapping.
+Only completion of that pipeline may activate the existing ambiguity tag/note; no lower-stage or missing-evidence failure earns its expected key.
 
 ## Exit
 
@@ -54,4 +56,4 @@ wrong owner/binder/member/callee/type/order, missing or duplicate candidates and
 A structure-argument source variation must select the other genuine root without changing the oracle.
 The retained distinct-loci runner requires deterministic existing outputs, no accepted effects and exact admission/cross-stage/missing-row checks.
 Run focused tests and corpus, fmt, warnings-denied full Clippy and cargo test; commit this bounded increment.
-Keep 5C.13 partial until its ambiguity oracle executes at the frozen endpoint.
+The bounded 5C.13 profiles execute both original oracles at their frozen endpoint; broader overload semantics remain deferred.

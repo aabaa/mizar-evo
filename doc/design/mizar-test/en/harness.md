@@ -6306,7 +6306,14 @@ The type-elaboration runner admits only the exact unbounded type-parameter funct
 
 ## Distinct-loci overload admission
 
-The advanced-semantics runner additionally admits only the exact positive distinct-loci overload row at `overload_resolution`. It authenticates IDs, source/sidecar paths, stage, phase, pass outcome, empty diagnostic/key payloads and the sole active tag; the ambiguity row and cross-stage aliases remain reserved and inactive. The harness passes real resolved source, symbol environment and typed projection to the checker and observes existing outputs. It performs no candidate typing, selection or acceptance. Missing/duplicate mapped rows and all metadata/phase drift fail admission; prior registration routes retain their own requirements.
+The advanced-semantics runner additionally admits only the exact positive distinct-loci overload row at `overload_resolution`. It authenticates IDs, source/sidecar paths, stage, phase, pass outcome, empty diagnostic/key payloads and the sole active tag; cross-stage aliases remain rejected and the continuation below owns ambiguity admission. The harness passes real resolved source, symbol environment and typed projection to the checker and observes existing outputs. It performs no candidate typing, selection or acceptance. Missing/duplicate mapped rows and all metadata/phase drift fail admission; prior registration routes retain their own requirements.
+
+### Attributed ambiguity admission
+
+The implemented continuation additionally admits only `fail_advanced_semantics_overload_ambiguous_candidates_001` at advanced_semantics/overload_resolution with its frozen fail outcome, overload_error category, ambiguity detail key, original spec ref, empty other diagnostic/snapshot payloads and sole active_advanced_semantics tag. Source, expectation semantics, trace order/status and activation map stay fixed; tag/note activation waits for the actual pipeline.
+After frontend/source authentication, call the fresh three-registration proof facade under the current release verifier policy and immediately pass its local database with the same immutable inputs to the attributed checker profile. No public database, accepted-status input, callback or receipt may bypass the fresh producer.
+Map only both actual `Ambiguous` results over their authenticated viable distinct roots and complete comparisons to `overload.resolution.ambiguous_candidates`; lower-stage, gate, body, evidence or unrelated errors remain infrastructure failures. The existing positive requires successful resolution, and each mapped row must occur exactly once; reserved IDs/paths and all metadata remain guarded across stages.
+Tests run the real source and renamed/singleton-actual controls through this sequence, inspect checker outputs, reject each registration/gate/candidate/comparison failure and stale inputs, and cover missing/duplicate rows, metadata and cross-stage aliases. The theorem and written coherence clauses are not accepted proofs.
 
 ## Static algorithm admission
 

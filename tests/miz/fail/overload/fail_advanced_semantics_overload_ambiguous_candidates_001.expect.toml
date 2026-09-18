@@ -12,4 +12,5 @@ diagnostic_codes = []
 spec_refs = [
   "spec.en.19.overload.resolution.ambiguity",
 ]
-notes = "Audit-1 semantic-bridge inactive oracle seed (September 2026 audit wave): binding expectation for the Step-5 semantic bridge; no active runner tag, earns no current credit. Two overload candidates on independent attributed types are ambiguous for an argument carrying both attributes (spec 19.4)."
+tags = ["active_advanced_semantics"]
+notes = "Fresh local registration proofs establish all four attributed binder gates; six derived widenings and explicit incomparable parameter relations retain both ordinary roots at each real call, yielding ambiguity without theorem or coherence acceptance."

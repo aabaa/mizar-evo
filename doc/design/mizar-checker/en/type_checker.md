@@ -3177,10 +3177,10 @@ The explicit Synonym profile preserves the functor behavior above. Antonym inste
 
 ## Distinct-loci overload source checking
 
-`check_source_distinct_loci_overloads(&SurfaceResolvedArena, &SymbolEnv, &TypedArena, single_structure_candidate: bool)` returns the existing `(TypeNormalizationOutput, OverloadCollectionOutput, TemplateExpansionOutput, CandidateViabilityOutput, SpecificityGraphOutput, OverloadSelectionOutput)` in `Result<_, String>`. It authenticates complete source/environment/typed correspondence, resolves ordinary parameters and theorem/proof binders, checks the set identity and structure selector definitions, and normalizes all signatures and actual types in one table. Definition-only structure checking authenticates members; the source intake checks the required field is builtin set and applies §17.3.4’s constructor-witness rule. It invents neither variable symbols nor accepted registrations.
+`check_source_distinct_loci_overloads(&SurfaceResolvedArena, &SymbolEnv, &TypedArena, single_structure_candidate: bool, registrations: Option<&RegistrationDatabase>)` returns the existing `(TypeNormalizationOutput, OverloadCollectionOutput, TemplateExpansionOutput, CandidateViabilityOutput, SpecificityGraphOutput, OverloadSelectionOutput, Option<(ExistentialGateOutput, CoercionCheckingOutput)>)` in `Result<_, String>`. It authenticates complete source/environment/typed correspondence, resolves ordinary parameters and theorem/proof binders, checks the set identity and structure selector definitions, and normalizes all signatures and actual types in one table. Definition-only structure checking authenticates members; the source intake checks the required field is builtin set and applies §17.3.4’s constructor-witness rule. It invents neither variable symbols nor accepted registrations.
 In the strict profile, both source applications collect both visible ordinary roots and consume the unchanged overload stages. Viability follows actual argument types; exposed result types follow selected declarations. Expected theorem types and citations cannot choose a root. Unsupported profiles, attributed actuals, templates, redefinitions and ambiguity inputs fail closed; no proof, registration acceptance, views or Core/VC credit follows. Existing explicit-payload overload boundaries and syntax-import restrictions remain intact. Tests inspect all existing outputs, both roots/sites, the other-root structure-argument variation, renaming, owner/binder/member/type/order corruption and complete source provenance.
 
-C13 passes `false`, preserving its two-root profile and successful selection requirement. C3 passes
+The positive C13 profile passes `(false, None)`, preserving its two roots and successful selection requirement. C3 passes
 `true` only for one ordinary structure-selector functor and both theorem/proof-local calls, without
 requiring a citation. This profile retains all declaration/member/binder/type authentication and
 builtin-field constructor inhabitation, and permits genuine `NoMatch` in the existing output tables.
@@ -3189,6 +3189,17 @@ actual authenticated structure may yield `types.application.argument_type_mismat
 `MissingEvidence`, empty graphs or unrelated diagnostics are insufficient. Every call is accounted
 for, including valid controls; no selected root or exposed result is fabricated for rejected calls.
 Neither profile admits attributed/inherited/imported targets, synthetic accepted facts or proof credit.
+
+### Attributed-set overload consumer
+
+The implemented `(false, Some(registrations))` profile admits the same two-attribute/three-registration source authenticated by [registration intake](./registration_resolution.md#three-registration-source-proof-extension); other profiles pass `None` and retain their behavior.
+The caller must run the [fresh proof facade](../../mizar-proof/en/status.md#three-registration-source-proof-extension) immediately before this call on the same immutable source, typed arena and environment. Database/source matching is structural validation, never proof authentication or a transferable receipt.
+Authenticate both actual ordinary declarations, separate parameters/header/proof bindings, every term/type owner and complete-registration-before-use order. Normalize all signatures and actuals in one table; compare attribute identities and arguments independently of spelling and source ranges.
+Evaluate each attributed binder's exact full-pattern gate against its genuine same-source registration: both functor parameters and the theorem/proof-local binders. No bare-set witness or union of singleton registrations may license a conjunction binder.
+Check both written identity bodies against their bare-set returns and each call against each parameter using the actual shared radix, normalized arguments and attribute inclusion. Only successful source-derived relations may enter existing widening/coercion checking; generic BuiltinRadix evidence alone does not establish compatibility. Retain actual sites, source/target types, available coercions and Known support facts; no pending, degraded or assumed evidence is consumable.
+This profile has no conditional registrations, so the declared attribute sets are their closures. Derive each parameter comparison from those sets, then consume collection, expansion, viability, specificity and selection without changing their explicit-payload boundary. Missing comparisons are blocked, not incomparable.
+The unchanged ambiguity source yields both viable distinct roots, their actual incomparability and `Ambiguous` at both calls. Singleton-actual controls yield real rejection and unique selection. Expected result types, equal bodies/returns, names and source order cannot break the tie; ambiguous calls expose no selected result.
+The appended output is `Some((ExistentialGateOutput, CoercionCheckingOutput))` for this profile and `None` otherwise; all coercion/type references use the returned normalization's table. No theorem/coherence acceptance, general closure/imports, C3 widening or Step6/MVM follows.
 
 ## Static source algorithm checking
 

@@ -227,7 +227,7 @@ policy は追加しない。
 
 返却 database は当該呼出しの module-local 出力であり transferable proof receipt ではない。後続 consumer は同じ認証済み source
 orchestration 内で producer を使い、任意の public database を証明権威にしない。item-order visibility と非遡及性を保ち、限定 C3 widening runner はその場で fresh local 出力を消費できる。
-C5/C13・広域 Task274・artifact publication・cluster/reduction 効果は保留する。
+限定 C13 consumer は [harness orchestration](../../mizar-test/ja/harness.md#attributed-ambiguity-admission) が所有し、C5・広域 Task274・artifact publication・cluster/reduction 効果は保留する。
 
 ## Three-registration source-proof extension
 

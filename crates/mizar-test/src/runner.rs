@@ -1854,22 +1854,50 @@ fn is_step5c13_overload_candidate(case: &TestCase) -> bool {
 }
 
 fn step5c13_overload_admitted(root: &Path, case: &TestCase) -> bool {
-    let id = STEP5C13_OVERLOAD_IDS[0];
-    let path = format!("tests/miz/pass/overload/{id}.miz");
+    let negative = case.id.0 == STEP5C13_OVERLOAD_IDS[1];
+    let id = STEP5C13_OVERLOAD_IDS[usize::from(negative)];
+    let directory = if negative { "fail" } else { "pass" };
+    let path = format!("tests/miz/{directory}/overload/{id}.miz");
     case.id.0 == id
+        && case.expectation.schema_version == 1
+        && case.expectation.domain == "overload.resolution"
+        && case.expectation.profiles.as_slice() == ["fast"]
+        && case.expectation.spec_refs.len() == 1
+        && case.expectation.spec_refs[0].0
+            == if negative {
+                "spec.en.19.overload.resolution.ambiguity"
+            } else {
+                "spec.en.19.overload.resolution.distinct_loci"
+            }
+        && case.expectation.ast_profile.is_none()
+        && case.expectation.snapshot_profiles.is_empty()
+        && case.expectation.tokens.is_empty()
+        && case.expectation.origin.is_none()
+        && case.expectation.architecture22.is_none()
         && case.expectation.id == case.id
         && workspace_relative_source(root, &case.source_path).as_deref() == Some(path.as_str())
         && workspace_relative_source(root, &case.expectation_path).is_some_and(|actual| {
             Path::new(&actual) == Path::new(&path).with_extension("expect.toml")
         })
         && case.expectation.source == Path::new(&path).file_name().unwrap()
-        && case.expectation.kind == crate::expectation::TestKind::Pass
+        && case.expectation.kind
+            == if negative {
+                crate::expectation::TestKind::Fail
+            } else {
+                crate::expectation::TestKind::Pass
+            }
         && case.expectation.stage == Stage::AdvancedSemantics
         && case.expectation.expected_phase == Some(PipelinePhase::OverloadResolution)
-        && case.expectation.expected_outcome == ExpectedOutcome::Pass
-        && case.expectation.failure_category.is_none()
+        && case.expectation.expected_outcome
+            == if negative {
+                ExpectedOutcome::Fail
+            } else {
+                ExpectedOutcome::Pass
+            }
+        && case.expectation.failure_category.as_deref() == negative.then_some("overload_error")
         && case.expectation.rejection_reason.is_none()
-        && case.expectation.stable_detail_key.is_none()
+        && case.expectation.stable_detail_key.as_deref()
+            == negative.then_some("overload.resolution.ambiguous_candidates")
         && case.expectation.diagnostic_codes.is_empty()
         && case.expectation.diagnostic_payloads.is_empty()
         && case.expectation.declaration_symbol_payloads.is_empty()
@@ -2009,24 +2037,26 @@ fn validate_step5c11_registration_inventory(
             ));
         }
     }
-    if plan
-        .cases
-        .iter()
-        .filter(|case| step5c13_overload_admitted(root, case))
-        .count()
-        != 1
-    {
-        diagnostics.push(ValidationDiagnostic::error(
-            root,
-            "advanced_semantics",
-            "E-ADVANCED-SEMANTICS-INVENTORY",
-            "advanced_semantics.inventory.overload_distinct_loci",
-            "the mapped distinct-loci overload must have exactly one admitted source/sidecar pair",
-        ));
+    for id in STEP5C13_OVERLOAD_IDS {
+        if plan
+            .cases
+            .iter()
+            .filter(|case| case.id.0 == id && step5c13_overload_admitted(root, case))
+            .count()
+            != 1
+        {
+            diagnostics.push(ValidationDiagnostic::error(
+                root,
+                "advanced_semantics",
+                "E-ADVANCED-SEMANTICS-INVENTORY",
+                format!("advanced_semantics.inventory.{id}"),
+                "each mapped overload must have exactly one admitted source/sidecar pair",
+            ));
+        }
     }
     for case in &plan.cases {
         if (is_step5c11_registration_candidate(case)
-            || case.id.0 == STEP5C13_OVERLOAD_IDS[0]
+            || STEP5C13_OVERLOAD_IDS.contains(&case.id.0.as_str())
             || (is_step5c13_overload_candidate(case) && !case.expectation.tags.is_empty())
             || case
                 .expectation
@@ -2068,29 +2098,36 @@ pub fn run_advanced_semantics_corpus(
         {
             let result = run_frontend(&root, case, ordinal).and_then(|output| {
                 if step5c13_overload_admitted(&root, case) {
-                    let (source, nodes, symbols) = source_registration_inputs(&root, case, output)?;
-                    mizar_checker::type_checker::check_source_distinct_loci_overloads(
-                        &source, &symbols, &nodes, false,
-                    )
-                    .map(|_| ())
-                } else {
-                    source_registration_intake(&root, case, output).map(|_| ())
-                }
+                    let (source,nodes,symbols)=source_registration_inputs(&root,case,output)?;
+                    let database=if case.id.0==STEP5C13_OVERLOAD_IDS[1] {
+                        Some(mizar_proof::status::prove_source_existential_registration(&source,&nodes,&symbols,shared::snapshot_id(0),&mizar_proof::policy::VerifierPolicy::release())?)
+                    } else {None};
+                    let (_,_,_,_,_,selection,_)=mizar_checker::type_checker::check_source_distinct_loci_overloads(&source,&symbols,&nodes,false,database.as_ref())?;
+                    Ok(if database.is_some() && selection.results().len()==2 && selection.results().iter().all(|(_,result)|matches!(result.status,mizar_checker::overload_resolution::OverloadResultStatus::Ambiguous{..})) {vec!["overload.resolution.ambiguous_candidates".to_owned()]} else {Vec::new()})
+                } else {source_registration_intake(&root,case,output).map(|_|Vec::new())}
             });
-            let actual_detail_keys = result.err().into_iter().collect::<Vec<_>>();
-            if !actual_detail_keys.is_empty() {
+            let infrastructure_failure = result.is_err();
+            let actual_detail_keys = result.unwrap_or_else(|error| vec![error]);
+            let expected = case
+                .expectation
+                .stable_detail_key
+                .iter()
+                .cloned()
+                .collect::<Vec<_>>();
+            let passed = !infrastructure_failure && actual_detail_keys == expected;
+            if !passed {
                 report.diagnostics.push(ValidationDiagnostic::error(
                     &case.expectation_path,
                     "advanced_semantics",
                     "E-ADVANCED-SEMANTICS-FAILURE",
                     format!("advanced_semantics.failure.{}", case.id.0),
-                    actual_detail_keys.join(", "),
+                    format!("actual={actual_detail_keys:?}, expected={expected:?}"),
                 ));
             }
             report.results.push(TypeElaborationCaseResult {
                 id: case.id.clone(),
                 expectation_path: case.expectation_path.clone(),
-                status: if actual_detail_keys.is_empty() {
+                status: if passed {
                     TypeElaborationCaseStatus::Passed
                 } else {
                     TypeElaborationCaseStatus::Failed

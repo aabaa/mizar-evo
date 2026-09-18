@@ -2998,16 +2998,27 @@ collection の arguments は元 constructor 順の実 occurrence site とし、�
 
 ## Distinct-loci overload source checking
 
-`check_source_distinct_loci_overloads(&SurfaceResolvedArena, &SymbolEnv, &TypedArena, single_structure_candidate: bool)` は既存の `(TypeNormalizationOutput, OverloadCollectionOutput, TemplateExpansionOutput, CandidateViabilityOutput, SpecificityGraphOutput, OverloadSelectionOutput)` を `Result<_, String>` として返す。ソース・環境・typed arena の完全な対応を認証し、通常の仮引数と定理・証明の束縛を解決し、set の恒等定義と構造体 selector の定義を検査し、全シグネチャと実引数型を同じ表で正規化する。定義だけを構造体 checker に渡して実際のメンバー同一性を認証する。source intake が必須フィールドの builtin set 型を確認して §17.3.4 の constructor-witness 規則を適用する。変数シンボルや承認済み登録を捏造しない。
+`check_source_distinct_loci_overloads(&SurfaceResolvedArena, &SymbolEnv, &TypedArena, single_structure_candidate: bool, registrations: Option<&RegistrationDatabase>)` は既存の `(TypeNormalizationOutput, OverloadCollectionOutput, TemplateExpansionOutput, CandidateViabilityOutput, SpecificityGraphOutput, OverloadSelectionOutput, Option<(ExistentialGateOutput, CoercionCheckingOutput)>)` を `Result<_, String>` として返す。ソース・環境・typed arena の完全な対応を認証し、通常の仮引数と定理・証明の束縛を解決し、set の恒等定義と構造体 selector の定義を検査し、全シグネチャと実引数型を同じ表で正規化する。定義だけを構造体 checker に渡して実際のメンバー同一性を認証する。source intake が必須フィールドの builtin set 型を確認して §17.3.4 の constructor-witness 規則を適用する。変数シンボルや承認済み登録を捏造しない。
 strict profile ではソースの両呼出しで可視な両 ordinary root を収集し、既存 overload 段階を変更せず消費する。実引数型で適合性を判断し、選択された宣言から結果型を導く。定理の期待型や引用は root を選択しない。未対応 profile、属性付き実引数、template、再定義、曖昧性入力を拒否し、証明・登録承認・view・Core/VC の実績を与えない。明示ペイロード境界と構文 import 制限を維持する。テストは全既存出力、両 root と呼出し、構造体引数による別 root 選択、改名、所有者・束縛・メンバー・型・順序の変異、完全な由来を検査する。
 
-C13 は `false` で従来の2 root と正常 selection を要求する。C3 は `true` で通常の structure-selector
+C13 正常系は `(false, None)` で従来の2 root と正常 selection を要求する。C3 は `true` で通常の structure-selector
 functor 1個と theorem/proof-local の両 call だけを検査し、citation を要求しない。宣言・member・binder・型の
 認証と builtin-field constructor の存在性を維持し、既存出力 table の真の `NoMatch` を許す。
 Known builtin set actual と実際に認証された structure parameter の viability rejection だけを
 `types.application.argument_type_mismatch` に写像できる。汎用 `MissingEvidence`、空 graph、無関係な診断では不足する。
 正常 control を含め全 call を照合し、拒否 call に selected root/exposed result を創作しない。
 両 profile とも属性付き・継承・import target、synthetic accepted fact、証明の受理は対象外とする。
+
+### Attributed-set overload consumer
+
+実装した `(false, Some(registrations))` profile は [registration intake](./registration_resolution.md#three-registration-source-proof-extension) が認証する同じ属性2件・登録3件の source を受理する。他 profile は `None` を渡し、従来の動作を維持する。
+呼出側は同一の不変 source・typed arena・environment に対し [fresh proof facade](../../mizar-proof/ja/status.md#three-registration-source-proof-extension) を直前に実行する。database と source の照合は構造検証であり、証明の認証や譲渡可能な receipt ではない。
+実際の ordinary 宣言2件、別々の仮引数・header・proof 束縛、全 term/type owner と登録完了後の使用順序を認証する。全 signature と actual を同じ表で正規化し、属性の同一性と引数を spelling・source range とは独立に比較する。
+各属性付き binder の完全な pattern を同一 source の実登録で gate 検査する。対象は両 functor 仮引数と theorem/proof-local binder であり、bare-set witness や singleton 登録の併合では conjunction binder を認めない。
+両 identity 本体から bare-set return への関係と、各 call から各 parameter への関係を実際の共通 radix・正規化引数・属性包含で検査する。source から導いた成功関係だけを既存 widening/coercion checker に渡し、汎用 BuiltinRadix 指定だけを互換性の根拠にしない。実 site、source/target 型、利用可能 coercion と Known support fact を保ち、pending・degraded・assumed evidence を使わない。
+この profile は conditional registration を持たず、宣言属性集合がその closure となる。実集合から parameter 比較を導き、既存 collection・expansion・viability・specificity・selection の明示ペイロード境界を維持する。比較の欠落は blocked であり incomparable ではない。
+変更しない ambiguity source は両 call で適合する別々の root、その実際の比較不能性と `Ambiguous` を返す。singleton actual の control は実際の拒否と一意選択を返す。期待結果型・同じ本体や return・名称・ソース順序で同率を解消せず、曖昧 call に選択結果を作らない。
+追加出力はこの profile で `Some((ExistentialGateOutput, CoercionCheckingOutput))`、他では `None` とし、coercion/type 参照は返却 normalization と同じ表に属する。theorem/coherence 受理、汎用 closure/import、C3 widening、Step6/MVM は対象外。
 
 ## Static source algorithm checking
 
