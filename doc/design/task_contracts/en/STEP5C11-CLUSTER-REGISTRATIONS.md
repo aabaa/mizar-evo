@@ -15,8 +15,6 @@ Owning plans: [checker](../../mizar-checker/en/00.crate_plan.md#task-index),
 - Cases: the seven 5C.11 rows in the [activation map](../../../../tests/coverage/step5_activation_map.tsv).
   Parser rejection and four pending-intake rows are active; next is only functorial false coherence at proof_verification/verification.
 - Classification: source/Core correctness-checking drift and executable test gap.
-  False reducibility still awaits real source/Core correctness checking; the reduction
-  negative also awaits reconciliation with §17.6.4's strict size decrease.
 
 ## Scope and boundaries
 

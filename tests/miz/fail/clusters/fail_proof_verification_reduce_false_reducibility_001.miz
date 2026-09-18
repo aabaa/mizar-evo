@@ -6,7 +6,7 @@ end;
 
 registration
   let X be set;
-  reduce CRed2: cbox4 X to {X};
+  reduce CRed2: cbox4 (cbox4 X) to {X};
   reducibility
   proof
     thus thesis;
