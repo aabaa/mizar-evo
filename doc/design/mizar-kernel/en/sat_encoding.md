@@ -105,7 +105,7 @@ are a kernel-derived diagnostic/check-trace encoding containing the schema
 version, target VC, atom-variable manifest, derived formula instances, and CNF
 clauses.
 
-The task-26 canonical SAT bytes use domain `MIZAR_KERNEL_SAT_PROBLEM\0`,
+The original task-26 canonical SAT bytes use domain `MIZAR_KERNEL_SAT_PROBLEM\0`,
 schema version `1`, encoding version `1`, target fingerprint, a sorted
 atom-variable manifest, sorted assertion records, and CNF clauses. SAT
 variables are positive `u32` ids starting at `1`; atom variables are assigned
@@ -131,6 +131,13 @@ only through read-only accessors, so downstream callers cannot mutate the
 target binding, assertions, atom manifest, clauses, or canonical bytes before
 SAT checking. These artifacts may be recorded as diagnostic check traces, but
 they are never trusted input fields.
+
+## Equality Reflexivity
+
+For each manifest-validated Equality atom of arity two whose two canonical term trees are identical, the kernel adds its positive unit clause in canonical atom order before assertion encoding.
+This derives a logical equality law inside the existing checker; it neither changes the supplied formula nor trusts a caller-provided reflexivity premise, TRUE replacement or SAT clause.
+Unequal operands remain propositional; ordinary predicates and other symbol kinds receive no reflexivity rule. There is no congruence, equality search or quantified encoding.
+Derived clauses use existing clause/literal/byte limits and canonical hashing. The derived SAT encoding version is 2; the formula/substitution input envelope and SAT schema remain version 1.
 
 ## Rejections
 

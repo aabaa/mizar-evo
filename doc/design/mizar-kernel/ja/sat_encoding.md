@@ -97,7 +97,7 @@ Canonical SAT bytes は DIMACS ではなく、caller-supplied trusted payload �
 これは schema version、target VC、atom-variable manifest、derived formula instances、
 CNF clauses を含む kernel-derived diagnostic/check-trace encoding である。
 
-Task-26 canonical SAT bytes は domain `MIZAR_KERNEL_SAT_PROBLEM\0`、schema version
+元の Task-26 canonical SAT bytes は domain `MIZAR_KERNEL_SAT_PROBLEM\0`、schema version
 `1`、encoding version `1`、target fingerprint、sorted atom-variable manifest、
 sorted assertion records、CNF clauses を使う。SAT variable は `1` から始まる
 positive `u32` id である。Atom variable は sorted canonical atom bytes によって
@@ -122,6 +122,13 @@ Instantiated formulas と SAT clauses は kernel-derived artifacts である。
 だけで expose されるため、downstream caller は SAT checking 前に target binding、
 assertions、atom manifest、clauses、canonical bytes を mutate できない。これらは
 diagnostic check trace として記録できるが、trusted input field ではない。
+
+## Equality Reflexivity
+
+manifest 検証済みの arity 2 Equality atom で二つの canonical term tree が等しい場合、kernel が canonical atom 順に正の unit clause を assertion encoding の前へ追加する。
+これは既存 checker 内で導く論理的等号法則であり、入力 formula を変えず、caller の反射性 premise・TRUE 置換・SAT clause を信用しない。
+異なる operand は命題 atom のままで、通常 predicate や他の symbol kind に反射性規則を適用しない。congruence・等式探索・量化 encoding は扱わない。
+導出 clause に既存 clause/literal/byte 制限と canonical hash を適用する。導出 SAT encoding version は 2、formula/substitution 入力 envelope と SAT schema は 1 のままとする。
 
 ## Rejections
 

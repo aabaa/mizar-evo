@@ -3,8 +3,8 @@ use std::collections::{BTreeMap, BTreeSet};
 use crate::{
     certificate_parser::{ClauseTautologyPolicy, Fingerprint},
     clause::{
-        Atom, Clause, ClauseError, ClauseProfile, ClauseValidationContext, Literal, Polarity, Term,
-        VariableId,
+        Atom, Clause, ClauseError, ClauseProfile, ClauseValidationContext, Literal, Polarity,
+        SymbolKind, Term, VariableId,
     },
     formula_evidence::{
         FinalGoalEvidence, Formula, FormulaEvidenceEntry, FormulaEvidenceError,
@@ -18,7 +18,7 @@ use crate::{
 };
 
 pub const SAT_PROBLEM_SCHEMA_VERSION: u16 = 1;
-pub const SAT_PROBLEM_ENCODING_VERSION: u16 = 1;
+pub const SAT_PROBLEM_ENCODING_VERSION: u16 = 2;
 pub const ASSERTION_KIND_PREMISE: u8 = 1;
 pub const ASSERTION_KIND_SUBSTITUTION_INSTANCE: u8 = 2;
 pub const ASSERTION_KIND_FINAL_GOAL: u8 = 3;
@@ -261,6 +261,17 @@ pub fn encode_formula_evidence(
     })?;
 
     let mut builder = EncodingBuilder::new(&target, context, atom_count, atom_lookup);
+    for entry in &atom_variables {
+        if entry.atom.symbol.kind == SymbolKind::Equality
+            && entry.atom.arity == 2
+            && matches!(entry.atom.arguments.as_slice(), [left, right] if left == right)
+        {
+            builder.push_clause(
+                vec![SatLiteral::positive(entry.variable)],
+                RejectionLocation::new().with_field_path("sat_encoding.equality_reflexivity"),
+            )?;
+        }
+    }
     for assertion in &assertions {
         let literal = builder.encode_formula(&assertion.formula, 0)?;
         let asserted_literal = if assertion.asserted_true {

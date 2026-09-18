@@ -193,9 +193,9 @@ findings section.
 - I2. SAT variable assignment is deterministic: atom variables by sorted
   canonical atom bytes, Tseitin auxiliaries in deterministic traversal order.
   Equivalent caller order produces identical canonical SAT bytes.
-- I3. The encoded problem asserts exactly: all premise formulas, all derived
-  instantiations, and the standalone goal with the polarity checked by B4. The
-  goal is never also asserted as a premise, and never feeds `used_axioms`.
+- I3. The problem asserts exactly premises, substitution instances, the B4-polarized
+  standalone goal, and kernel-derived [logical equality clauses](./sat_encoding.md#equality-reflexivity).
+  The goal and equality clauses are not caller premises or `used_axioms` facts.
 - I4. Canonical SAT bytes are a diagnostic/check-trace artifact, not trusted
   input; encoded-problem fields are read-only outside the module.
 

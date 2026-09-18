@@ -182,9 +182,9 @@
 - I2. SAT 変数割り当ては決定的: atom 変数はソート済み正準 atom バイト順、
   Tseitin 補助変数は決定的走査順。等価な呼び出し順は同一の正準 SAT バイトを
   生成する。
-- I3. エンコードされた問題が主張するのは正確に: 全 premise formula、全導出
-  instantiation、および B4 で検査された polarity での standalone goal。goal
-  は premise として重ねて主張されず、`used_axioms` にも寄与しない。
+- I3. 問題は正確に premise、substitution instance、B4 検証済み polarity の
+  standalone goal、および kernel 導出の[論理的等号 clause](./sat_encoding.md#equality-reflexivity)を主張する。
+  goal と等号 clause は caller premise や `used_axioms` fact ではない。
 - I4. 正準 SAT バイトは診断/検査トレース成果物であり trusted input ではない。
   エンコード済み問題のフィールドはモジュール外では読み取り専用。
 

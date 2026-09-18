@@ -4227,7 +4227,14 @@ fn parsed_formula_evidence_with_substitutions(
     substitutions: Vec<Vec<u8>>,
     goal: Vec<u8>,
 ) -> ParsedKernelEvidence {
-    let bytes = formula_evidence_bytes_with_parts(target, variables, formulas, substitutions, goal);
+    let bytes = formula_evidence_bytes_with_parts(
+        target,
+        variables,
+        formulas,
+        substitutions,
+        goal,
+        formula_symbol_items(&[]),
+    );
     parse_formula_evidence(
         &bytes,
         &FormulaEvidenceParseContext::v1(target.clone(), formula_profile()),
@@ -4436,7 +4443,14 @@ fn formula_imported_fact_with_identity(
 }
 
 fn formula_evidence_bytes(target: &Fingerprint, formulas: Vec<Vec<u8>>, goal: Vec<u8>) -> Vec<u8> {
-    formula_evidence_bytes_with_parts(target, Vec::new(), formulas, Vec::new(), goal)
+    formula_evidence_bytes_with_parts(
+        target,
+        Vec::new(),
+        formulas,
+        Vec::new(),
+        goal,
+        formula_symbol_items(&[]),
+    )
 }
 
 fn formula_evidence_bytes_with_parts(
@@ -4445,6 +4459,7 @@ fn formula_evidence_bytes_with_parts(
     formulas: Vec<Vec<u8>>,
     substitutions: Vec<Vec<u8>>,
     goal: Vec<u8>,
+    symbols: Vec<Vec<u8>>,
 ) -> Vec<u8> {
     let mut provenance = Vec::new();
     for formula in &formulas {
@@ -4474,10 +4489,7 @@ fn formula_evidence_bytes_with_parts(
     formula_envelope(
         target,
         vec![
-            (
-                FormulaEvidenceSectionTag::SymbolManifest,
-                formula_symbol_items(),
-            ),
+            (FormulaEvidenceSectionTag::SymbolManifest, symbols),
             (FormulaEvidenceSectionTag::VariableManifest, variables),
             (FormulaEvidenceSectionTag::Formulas, formulas),
             (FormulaEvidenceSectionTag::Substitutions, substitutions),
@@ -4526,13 +4538,19 @@ fn formula_envelope(
     bytes
 }
 
-fn formula_symbol_items() -> Vec<Vec<u8>> {
-    [1u32, 2u32]
+fn formula_symbol_items(extra: &[SymbolKey]) -> Vec<Vec<u8>> {
+    let mut symbols = [1u32, 2u32]
         .into_iter()
-        .map(|id| {
+        .map(|id| SymbolKey::new(SymbolKind::Predicate, id))
+        .chain(extra.iter().copied())
+        .collect::<Vec<_>>();
+    symbols.sort();
+    symbols
+        .into_iter()
+        .map(|symbol| {
             let mut item = Vec::new();
-            item.push(symbol_kind_tag(SymbolKind::Predicate));
-            put_u32(id, &mut item);
+            item.push(symbol_kind_tag(symbol.kind));
+            put_u32(symbol.id.0, &mut item);
             item
         })
         .collect()
@@ -4925,5 +4943,384 @@ fn required_status_tag(status: RequiredProofStatus) -> u8 {
         RequiredProofStatus::KernelVerified => 1,
         RequiredProofStatus::DischargedBuiltin => 2,
         RequiredProofStatus::ExternallyAttestedPolicyPermitted => 3,
+    }
+}
+
+#[test]
+fn equality_reflexivity_checks_complete_terms_and_real_evidence_polarity() {
+    let target = formula_target(81);
+    let target_vc = TargetVcFingerprint::from_certificate_fingerprint(&target);
+    let equality = SymbolKey::new(SymbolKind::Equality, 7);
+    let functor = SymbolKey::new(SymbolKind::FunctorPredicate, 8);
+    let other_functor = SymbolKey::new(SymbolKind::FunctorPredicate, 9);
+    let builtin = SymbolKey::new(SymbolKind::BuiltinRelation, 10);
+    let nested = Term::Application {
+        symbol: functor,
+        arguments: vec![Term::Application {
+            symbol: other_functor,
+            arguments: vec![var(1)],
+        }],
+    };
+    let different_symbol = Term::Application {
+        symbol: functor,
+        arguments: vec![Term::Application {
+            symbol: functor,
+            arguments: vec![var(1)],
+        }],
+    };
+    let bound = Term::BinderNormalized {
+        binder_id: 1,
+        body: Box::new(var(1)),
+    };
+    let different_binder = Term::BinderNormalized {
+        binder_id: 2,
+        body: Box::new(var(1)),
+    };
+    let cases = [
+        (equality, vec![var(1), var(1)], true),
+        (equality, vec![nested.clone(), nested.clone()], true),
+        (equality, vec![bound.clone(), bound], true),
+        (equality, vec![var(1), var(2)], false),
+        (equality, vec![nested, different_symbol], false),
+        (
+            equality,
+            vec![
+                Term::BinderNormalized {
+                    binder_id: 1,
+                    body: Box::new(var(1)),
+                },
+                different_binder,
+            ],
+            false,
+        ),
+        (equality, vec![var(1)], false),
+        (
+            SymbolKey::new(SymbolKind::Predicate, 1),
+            vec![var(1), var(1)],
+            false,
+        ),
+        (functor, vec![var(1), var(1)], false),
+        (builtin, vec![var(1), var(1)], false),
+    ];
+    for (symbol, arguments, reflexive) in cases {
+        let atom = Formula::Atom(Atom::new(symbol, arguments));
+        for (negative, consistency) in [(false, false), (true, false), (false, true), (true, true)]
+        {
+            let goal = if negative {
+                Formula::Not(Box::new(atom.clone()))
+            } else {
+                atom.clone()
+            };
+            let polarity = if consistency {
+                GoalPolarity::AssertTrueForConsistency
+            } else {
+                GoalPolarity::AssertFalseForRefutation
+            };
+            let kind = if consistency {
+                KernelEvidenceCheckKind::ConsistencyCheck
+            } else {
+                KernelEvidenceCheckKind::ProofObligation
+            };
+            let bytes = formula_evidence_bytes_with_parts(
+                &target,
+                vec![variable_item(1), variable_item(2)],
+                Vec::new(),
+                Vec::new(),
+                goal_item_with_polarity(20, polarity, &goal),
+                formula_symbol_items(&[equality, functor, other_functor, builtin]),
+            );
+            let parsed = parse_formula_evidence(
+                &bytes,
+                &FormulaEvidenceParseContext::v1(target.clone(), formula_profile()),
+            )
+            .unwrap();
+            let original = parsed.final_goal().formula_fingerprint.clone();
+            let result = check_kernel_evidence(evidence_input_with_check_kind(
+                &target_vc, &parsed, None, kind,
+            ));
+            let accepted = reflexive && negative == consistency;
+            assert_eq!(
+                result.status(),
+                if accepted {
+                    KernelCheckStatus::Accepted
+                } else {
+                    KernelCheckStatus::Rejected
+                },
+                "{goal:?}, {kind:?}"
+            );
+            assert_eq!(result.evidence_check_kind(), Some(kind));
+            assert_eq!(result.sat_check_report().is_some(), accepted);
+            assert!(!result.policy_taint());
+            assert!(result.used_axioms().is_empty());
+            assert!(result.checked_derived_facts().is_empty());
+            assert_eq!(original, formula_fingerprint(&goal));
+            if !accepted {
+                assert_eq!(
+                    result.rejections()[0].detail(),
+                    RejectionDetail::InvalidSatRefutation
+                );
+            }
+            let wrong_kind = if consistency {
+                KernelEvidenceCheckKind::ProofObligation
+            } else {
+                KernelEvidenceCheckKind::ConsistencyCheck
+            };
+            assert_goal_polarity_mismatch(&check_kernel_evidence(evidence_input_with_check_kind(
+                &target_vc, &parsed, None, wrong_kind,
+            )));
+        }
+    }
+    for (symbol, arity, manifest) in [(equality, 3, vec![equality]), (equality, 2, Vec::new())] {
+        let goal = Formula::Atom(Atom::with_arity(symbol, arity, vec![var(1), var(1)]));
+        let bytes = formula_evidence_bytes_with_parts(
+            &target,
+            vec![variable_item(1)],
+            Vec::new(),
+            Vec::new(),
+            goal_item(20, &goal),
+            formula_symbol_items(&manifest),
+        );
+        assert!(
+            parse_formula_evidence(
+                &bytes,
+                &FormulaEvidenceParseContext::v1(target.clone(), formula_profile())
+            )
+            .is_err()
+        );
+    }
+}
+
+#[test]
+fn equality_reflexivity_uses_actual_substitution_instance_without_extra_axioms() {
+    use crate::sat_encoding::{
+        ASSERTION_KIND_SUBSTITUTION_INSTANCE, SatEncodingContext, encode_formula_evidence,
+    };
+    let target = formula_target(82);
+    let target_vc = TargetVcFingerprint::from_certificate_fingerprint(&target);
+    let equality = SymbolKey::new(SymbolKind::Equality, 7);
+    let source = Formula::Or(vec![
+        Formula::Not(Box::new(Formula::Atom(Atom::new(
+            equality,
+            vec![var(1), var(2)],
+        )))),
+        formula_atom(1),
+    ]);
+    for actual in [None, Some(1), Some(2), Some(3)] {
+        let substitutions = actual
+            .map(|id| vec![formula_substitution_item(2, 1, 11, 1, &var(id))])
+            .unwrap_or_default();
+        let bytes = formula_evidence_bytes_with_parts(
+            &target,
+            vec![variable_item(1), variable_item(2), variable_item(3)],
+            vec![formula_item(1, 10, &source)],
+            substitutions,
+            goal_item(20, &formula_atom(1)),
+            formula_symbol_items(&[equality]),
+        );
+        let parsed = parse_formula_evidence(
+            &bytes,
+            &FormulaEvidenceParseContext::v1(target.clone(), formula_profile()),
+        )
+        .unwrap();
+        let context = formula_evidence_context_with_identity(&target_vc, &parsed);
+        let result = check_kernel_evidence(evidence_input(&target_vc, &parsed, Some(&context)));
+        assert_eq!(
+            result.status(),
+            if actual == Some(2) {
+                KernelCheckStatus::Accepted
+            } else {
+                KernelCheckStatus::Rejected
+            }
+        );
+        assert!(result.used_axioms().is_empty());
+        assert!(!result.policy_taint());
+        let problem = encode_formula_evidence(&parsed, &SatEncodingContext::v1()).unwrap();
+        assert!(
+            problem
+                .assertions()
+                .iter()
+                .any(|assertion| assertion.formula == source
+                    && assertion.formula_fingerprint == formula_fingerprint(&source))
+        );
+        if let Some(actual) = actual {
+            let instance = problem
+                .assertions()
+                .iter()
+                .find(|assertion| assertion.assertion_kind == ASSERTION_KIND_SUBSTITUTION_INSTANCE)
+                .unwrap();
+            let expected = Formula::Or(vec![
+                Formula::Not(Box::new(Formula::Atom(Atom::new(
+                    equality,
+                    vec![var(actual), var(2)],
+                )))),
+                formula_atom(1),
+            ]);
+            assert_eq!(instance.formula, expected);
+            assert_eq!(instance.formula_fingerprint, formula_fingerprint(&expected));
+        }
+    }
+}
+
+#[test]
+fn equality_reflexivity_has_canonical_unique_clauses_and_existing_budget_gates() {
+    use crate::sat_encoding::{
+        SatEncodingContext, SatEncodingLimits, SatLiteral, encode_formula_evidence,
+    };
+    let target = formula_target(83);
+    let target_vc = TargetVcFingerprint::from_certificate_fingerprint(&target);
+    let equality = SymbolKey::new(SymbolKind::Equality, 7);
+    let goal = Formula::Atom(Atom::new(equality, vec![var(1), var(1)]));
+    for reverse in [false, true] {
+        let mut premises = vec![
+            formula_item(1, 10, &goal),
+            formula_item(2, 11, &formula_atom(1)),
+        ];
+        if reverse {
+            premises.reverse();
+        }
+        let bytes = formula_evidence_bytes_with_parts(
+            &target,
+            vec![variable_item(1)],
+            premises,
+            Vec::new(),
+            goal_item(20, &goal),
+            formula_symbol_items(&[equality]),
+        );
+        let parsed = parse_formula_evidence(
+            &bytes,
+            &FormulaEvidenceParseContext::v1(target.clone(), formula_profile()),
+        );
+        if reverse {
+            let error = parsed.expect_err("formula record order is authenticated before encoding");
+            assert_eq!(error.detail(), RejectionDetail::MalformedWitnessData);
+            assert_eq!(error.location().field_path, Some("formula"));
+            continue;
+        }
+        let parsed = parsed.unwrap();
+        assert_eq!(parsed.schema_version(), 1);
+        assert_eq!(parsed.encoding_version(), 1);
+        let problem = encode_formula_evidence(&parsed, &SatEncodingContext::v1()).unwrap();
+        assert_eq!(problem.schema_version(), 1);
+        assert_eq!(problem.encoding_version(), 2);
+        let final_assertion = problem
+            .assertions()
+            .iter()
+            .find(|assertion| {
+                assertion.assertion_kind == crate::sat_encoding::ASSERTION_KIND_FINAL_GOAL
+            })
+            .unwrap();
+        assert_eq!(final_assertion.formula, goal);
+        assert_eq!(
+            final_assertion.formula_fingerprint,
+            formula_fingerprint(&goal)
+        );
+        assert!(!final_assertion.asserted_true);
+        let variable = problem
+            .atom_variables()
+            .iter()
+            .find(|entry| entry.atom.symbol == equality)
+            .unwrap()
+            .variable;
+        assert_eq!(
+            problem.clauses()[0].literals,
+            vec![SatLiteral::positive(variable)]
+        );
+        assert_eq!(problem.clauses().len(), 4);
+        assert_eq!(
+            problem
+                .clauses()
+                .iter()
+                .filter(|clause| clause.literals == [SatLiteral::positive(variable)])
+                .count(),
+            2,
+            "one logical clause plus one caller premise, despite repeated atom"
+        );
+        let context = formula_evidence_context_with_identity(&target_vc, &parsed);
+        assert_eq!(
+            check_kernel_evidence(evidence_input(&target_vc, &parsed, Some(&context))).status(),
+            KernelCheckStatus::Accepted
+        );
+        let replay = parse_formula_evidence(
+            &bytes,
+            &FormulaEvidenceParseContext::v1(target.clone(), formula_profile()),
+        )
+        .unwrap();
+        assert_eq!(
+            problem.canonical_bytes(),
+            encode_formula_evidence(&replay, &SatEncodingContext::v1())
+                .unwrap()
+                .canonical_bytes()
+        );
+    }
+    let bytes = formula_evidence_bytes_with_parts(
+        &target,
+        vec![variable_item(1)],
+        Vec::new(),
+        Vec::new(),
+        goal_item(20, &goal),
+        formula_symbol_items(&[equality]),
+    );
+    let parsed = parse_formula_evidence(
+        &bytes,
+        &FormulaEvidenceParseContext::v1(target.clone(), formula_profile()),
+    )
+    .unwrap();
+    let problem = encode_formula_evidence(&parsed, &SatEncodingContext::v1()).unwrap();
+    assert_eq!(problem.clauses().len(), 2);
+    let defaults = SatEncodingLimits::default();
+    for (limits, location) in [
+        (
+            SatEncodingLimits {
+                max_clauses: 0,
+                ..defaults
+            },
+            "sat_encoding.equality_reflexivity",
+        ),
+        (
+            SatEncodingLimits {
+                max_clauses: 1,
+                ..defaults
+            },
+            "sat_encoding.assertion",
+        ),
+        (
+            SatEncodingLimits {
+                max_literals: 0,
+                ..defaults
+            },
+            "sat_encoding.equality_reflexivity",
+        ),
+        (
+            SatEncodingLimits {
+                max_literals: 1,
+                ..defaults
+            },
+            "sat_encoding.assertion",
+        ),
+        (
+            SatEncodingLimits {
+                max_literals_per_clause: 0,
+                ..defaults
+            },
+            "sat_encoding.equality_reflexivity",
+        ),
+        (
+            SatEncodingLimits {
+                max_canonical_bytes: problem.canonical_bytes().len() - 1,
+                ..defaults
+            },
+            "sat_encoding.canonical_bytes",
+        ),
+    ] {
+        let mut input = evidence_input(&target_vc, &parsed, None);
+        input.limits.sat_encoding = limits;
+        let result = check_kernel_evidence(input);
+        assert_eq!(result.status(), KernelCheckStatus::Rejected);
+        assert_eq!(
+            result.rejections()[0].detail(),
+            RejectionDetail::ResourceExhaustion
+        );
+        assert_eq!(result.rejections()[0].location().field_path, Some(location));
+        assert!(result.sat_check_report().is_none());
     }
 }
