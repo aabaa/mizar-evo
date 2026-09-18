@@ -10,6 +10,7 @@ use super::super::syntax_smoke::workspace_relative_source;
 const ACTIVE_TYPE_ELABORATION_TAG: &str = "active_type_elaboration";
 const STEP5C5_ARGUMENT_ID: &str = "fail_type_elaboration_pred_argument_type_mismatch_001";
 const STEP5C5_PROPERTY_ID: &str = "pass_type_elaboration_func_commutativity_property_001";
+const STEP5C5_DEPENDENT_ID: &str = "pass_type_elaboration_func_dependent_return_type_001";
 const STEP5C3_ARGUMENT_ID: &str = "fail_type_elaboration_argument_type_mismatch_functor_001";
 const STEP5C3_WIDENING_ID: &str = "pass_type_elaboration_argument_attribute_widening_001";
 const STEP5C4_DEPENDENT_ID: &str = "pass_type_elaboration_mode_dependent_of_params_001";
@@ -21,21 +22,26 @@ const STEP5C6_ALIAS_IDS: [&str; 3] = [
 ];
 
 pub(in crate::runner) fn is_step5c5_argument_candidate(case: &TestCase) -> bool {
-    [STEP5C5_ARGUMENT_ID, STEP5C5_PROPERTY_ID]
-        .into_iter()
-        .any(|id| {
-            case.id.0 == id
-                || case.expectation.id.0 == id
-                || case.source_path.file_stem().is_some_and(|stem| stem == id)
-                || case
-                    .expectation_path
-                    .file_name()
-                    .is_some_and(|name| name == format!("{id}.expect.toml").as_str())
-        })
+    [
+        STEP5C5_ARGUMENT_ID,
+        STEP5C5_PROPERTY_ID,
+        STEP5C5_DEPENDENT_ID,
+    ]
+    .into_iter()
+    .any(|id| {
+        case.id.0 == id
+            || case.expectation.id.0 == id
+            || case.source_path.file_stem().is_some_and(|stem| stem == id)
+            || case
+                .expectation_path
+                .file_name()
+                .is_some_and(|name| name == format!("{id}.expect.toml").as_str())
+    })
 }
 
 pub(in crate::runner) fn step5c5_argument_admitted(root: Option<&Path>, case: &TestCase) -> bool {
-    let property = case.id.0 == STEP5C5_PROPERTY_ID;
+    let dependent = case.id.0 == STEP5C5_DEPENDENT_ID;
+    let property = case.id.0 == STEP5C5_PROPERTY_ID || dependent;
     if !property && case.id.0 != STEP5C5_ARGUMENT_ID {
         return false;
     }
@@ -77,14 +83,18 @@ pub(in crate::runner) fn step5c5_argument_admitted(root: Option<&Path>, case: &T
         && case.expectation.stable_detail_key.as_deref()
             == (!property).then_some("predicates.application.argument_type_mismatch")
         && case.expectation.domain
-            == if property {
+            == if dependent {
+                "functors.dependent_return"
+            } else if property {
                 "functors.properties"
             } else {
                 "predicates.application"
             }
         && case.expectation.spec_refs.len() == 1
         && case.expectation.spec_refs[0].0
-            == if property {
+            == if dependent {
+                "spec.en.10.functors.dependent_return.semantic"
+            } else if property {
                 "spec.en.10.functors.properties.declaration"
             } else {
                 "spec.en.09.predicates.application.typing"
@@ -470,7 +480,7 @@ pub(in crate::runner) fn step5c14_static_admitted(root: Option<&Path>, case: &Te
         && case.expectation.tags.as_slice() == [ACTIVE_TYPE_ELABORATION_TAG]
 }
 
-const STEP5C5_CASES: [(&str, &str, PipelinePhase, ExpectedOutcome); 10] = [
+const STEP5C5_CASES: [(&str, &str, PipelinePhase, ExpectedOutcome); 11] = [
     (
         "fail_type_elaboration_pred_property_arity_mismatch_001",
         "tests/miz/fail/predicates/fail_type_elaboration_pred_property_arity_mismatch_001.miz",
@@ -531,14 +541,19 @@ const STEP5C5_CASES: [(&str, &str, PipelinePhase, ExpectedOutcome); 10] = [
         PipelinePhase::TypeCheck,
         ExpectedOutcome::Pass,
     ),
+    (
+        STEP5C5_DEPENDENT_ID,
+        "tests/miz/pass/functors/pass_type_elaboration_func_dependent_return_type_001.miz",
+        PipelinePhase::TypeCheck,
+        ExpectedOutcome::Pass,
+    ),
 ];
 
-const STEP5C5_BLOCKED_CASE_IDS: [&str; 7] = [
+const STEP5C5_BLOCKED_CASE_IDS: [&str; 6] = [
     "pass_formula_statement_pred_negated_application_001",
     "pass_proof_verification_pred_phrase_identifier_001",
     "pass_proof_verification_pred_symbolic_infix_001",
     "pass_type_elaboration_pred_redefine_narrower_loci_001",
-    "pass_type_elaboration_func_dependent_return_type_001",
     "pass_proof_verification_func_equals_infix_operator_001",
     "pass_proof_verification_func_means_prefix_001",
 ];
@@ -1681,14 +1696,14 @@ mod tests {
 
     #[test]
     fn step5c5_inventory_admission_and_blocked_rows_are_exact() {
-        assert_eq!(STEP5C5_CASES.len(), 10);
+        assert_eq!(STEP5C5_CASES.len(), 11);
         assert_eq!(
             STEP5C5_CASES
                 .iter()
                 .map(|(id, source, _, _)| (*id, *source))
                 .collect::<BTreeSet<_>>()
                 .len(),
-            10
+            11
         );
         let root = workspace_root();
         let mut plan = build_test_plan(&config()).unwrap();
@@ -1927,7 +1942,11 @@ mod tests {
         use crate::staged_model::Stage;
         let root = workspace_root();
         let plan = build_test_plan(&config()).unwrap();
-        for id in [super::STEP5C5_ARGUMENT_ID, super::STEP5C5_PROPERTY_ID] {
+        for id in [
+            super::STEP5C5_ARGUMENT_ID,
+            super::STEP5C5_PROPERTY_ID,
+            super::STEP5C5_DEPENDENT_ID,
+        ] {
             let original = plan.cases.iter().find(|case| case.id.0 == id).unwrap();
             assert!(super::step5c5_argument_admitted(Some(&root), original));
             assert!(validate_active_type_elaboration_tags(&root, &plan).is_empty());

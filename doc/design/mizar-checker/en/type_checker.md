@@ -3203,3 +3203,22 @@ At both actual quantifier/proof-let attributed type sites, derive the complete n
 Authenticate both actual `wbox X` applications and their one local functor candidate, real bare-set locus/result and equality RHS. Before deriving support, require each actual singleton-attribute set to differ from its target only by dropping that attribute, with the same radix/arguments. Existing coercion checking supplies Known builtin support and obligation/diagnostic-free Candidate coercions; candidate status is not accepted proof evidence.
 Use those support facts as `ArgumentViabilityEvidence::FactWidening`, retaining both non-Exact views. All actual/target/candidate IDs use the coercion output's normalized table; any separate inference table is compared by authenticated structure/site, never coincident IDs. Existing expansion/viability and ordinary term/formula inference must cover both calls/results/equality operands without proving either equality or coherence.
 Controls inspect complete outputs, both actual gates/calls, renames, separate binder/type/callee mutations, source/recovery/owner corruption, missing/pending/wrong-pattern registrations, source order and missing/degraded/wrong-type support. Positive source controls always run fresh proof status; preserve its kernel/policy rejection controls. Reject extra/unaccounted calls, declarations, candidates and unsupported conversions. Keep C13/negative-C3 profiles, general Task274/import, cluster/reduction, final overload selection and theorem acceptance outside this operation.
+
+## Source dependent functor return typing
+
+`TermFormulaChecker::check_source_dependent_functor_types(&SurfaceResolvedArena, &SymbolEnv, &TypedArena)` returns existing `(BindingEnv, TermFormulaInferenceOutput, InitialObligationTable)` in `Result<_, String>`.
+It authenticates complete source/environment/neutral-typed correspondence for two ordered definition blocks:
+a unary builtin-set mode with constant plain-set RHS, then a unary `means` functor returning that mode applied to its own formal.
+Separate definition contexts retain both actual declaration identities even when their spellings agree.
+Resolve the mode/formal and functor/formal owners, each return argument and each body occurrence independently;
+check the ordered mode-formal BindingId to functor-actual BindingId substitution before instantiating the formal-free RHS.
+The actual argument is a Variable TermInput whose Known type must explicitly satisfy the mode-formal guard;
+term-valued arguments never become TypeExpressionInput.args or fabricated SymbolIds. The instantiated full RHS
+normalizes to builtin set and obtains declaration inhabitation only from the existing builtin rule.
+The actual `it` uses TermKind::It with this authenticated current return type, never a synthetic binder;
+existing inference checks the actual ordered equality operands, including an independently sourced `it = it` body.
+Exactly two source-owned FunctorExistence/FunctorUniqueness requests remain Pending at the actual clauses.
+Their existing goal/provenance keys retain the functor, guarded formal, return application/substitution and body owner;
+empty assumptions publish no accepted facts. No canonical goal, proof, Task260 installation, Task274 acceptance,
+call-site result, rewrite, Core/VC or Step6/MVM behavior follows.
+Attributed/nonconstant RHS, multiple parameters and general dependent substitution remain unsupported.

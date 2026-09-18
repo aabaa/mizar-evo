@@ -2645,7 +2645,11 @@ fn type_elaboration_detail_keys(
         }
         return source_registration_inputs(workspace_root, case, output)
             .and_then(|(source, typed, symbols)| {
-                if case.expectation.domain == "functors.properties" {
+                if case.expectation.domain == "functors.dependent_return" {
+                    mizar_checker::type_checker::TermFormulaChecker::check_source_dependent_functor_types(
+                        &source, &symbols, &typed,
+                    ).map(|_| Vec::new())
+                } else if case.expectation.domain == "functors.properties" {
                     mizar_checker::type_checker::TermFormulaChecker::check_source_functor_property(
                         &source, &symbols, &typed,
                     )

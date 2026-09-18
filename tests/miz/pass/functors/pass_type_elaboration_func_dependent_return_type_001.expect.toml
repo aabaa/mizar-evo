@@ -10,4 +10,5 @@ diagnostic_codes = []
 spec_refs = [
   "spec.en.10.functors.dependent_return.semantic",
 ]
-notes = "Audit-1 semantic-bridge inactive oracle seed (September 2026 audit wave): binding expectation for the Step-5 semantic bridge; no active runner tag, earns no current credit. A functor return type may depend on a locus through a dependent mode (spec 10.5)."
+tags = ["active_type_elaboration"]
+notes = "The bounded declaration profile checks the actual dependent mode argument and instantiated plain-set return type; actual existence and uniqueness clauses remain pending correctness requests without proof acceptance."

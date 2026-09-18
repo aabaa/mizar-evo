@@ -3022,3 +3022,22 @@ database は確立済み typing premise であり、自身の kernel authenticit
 実 `wbox X` 二呼出し、各一 local candidate、bare-set locus/result、等式 RHS を認証する。実 singleton-attribute set から属性だけを除き radix/arguments を保つことを検査してから既存 coercion checker の Known builtin support と義務・診断なし Candidate coercion を作る。Candidate は受理済み証明ではない。
 両 call の support は `ArgumentViabilityEvidence::FactWidening` とし non-Exact view を維持する。actual/target/candidate ID は同じ coercion 出力の正規化表を使い、別 inference 表とは認証済み構造/site で比較する。既存 expansion/viability と通常の項・式推論で両 call/result/equality operand を検査し、等式や coherence を証明しない。
 全出力・両 gate/call・改名・独立 binder/type/callee 変異、source/recovery/owner、欠落/pending/異 pattern 登録、順序、欠落/degraded/異型 support を検査する。positive は必ず fresh proof status を経由し既存 kernel/policy 拒否を保つ。余分な call/宣言/候補/変換は拒否し、C13・negative C3・general Task274/import・cluster/reduction・最終 overload selection・定理受理は対象外とする。
+
+## Source dependent functor return typing
+
+`TermFormulaChecker::check_source_dependent_functor_types(&SurfaceResolvedArena, &SymbolEnv, &TypedArena)` は既存 `(BindingEnv, TermFormulaInferenceOutput, InitialObligationTable)` を `Result<_, String>` で返す。
+順序付き2 definition block の完全な source/environment/neutral-typed 対応を認証する。
+builtin-set 単項 mode の定数 plain-set RHS に続き、単項 `means` functor が自身の formal を mode に適用した返却型を持つ。
+同名でも定義ごとの context を分離し、実 declaration identity を維持する。
+mode/formal、functor/formal、返却型引数、全 body occurrence を個別解決し、
+mode-formal BindingId → functor-actual BindingId の順序付き代入を検査してから formal を含まない RHS を具体化する。
+実引数は Variable TermInput とし、Known 型が mode-formal guard を満たすことを明示検査する。
+項引数を TypeExpressionInput.args や架空 SymbolId に変換しない。具体化した完全 RHS は builtin set に正規化し、
+既存 builtin 規則だけで宣言の inhabitation を検査する。
+実 `it` は認証済の現在返却型を持つ TermKind::It とし、合成 binder を作らず、
+別 occurrence の `it = it` も含めて実等式の順序付き両辺を既存 inference で検査する。
+実 clause に対応する FunctorExistence/FunctorUniqueness request 2件を Pending として返す。
+既存 goal/provenance key は functor、guard 付き formal、返却型適用・代入、body owner を保持する。
+空 assumptions は承認済事実を公開しない。canonical goal、証明、Task260 installation、Task274 acceptance、
+call-site result、rewrite、Core/VC、Step6/MVM の動作は追加しない。
+属性付き・非定数 RHS、複数 parameter、一般の依存代入は未対応のままとする。

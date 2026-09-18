@@ -267,3 +267,5 @@ active source bridgeはfunctor declarationを認証してから既存source/type
 `means`はexistence/uniqueness、`equals` definiensはdeclared result typeとの一致、
 commutativityはbinary arityを要求する。builtin bracket pairに新しいterm表現は追加せず、
 duplicate signatureはresolver ownerのままとする。[property checker](./type_checker.md#source-functor-property-typing) は commutativity 宣言の型検査成功前に実際の集合列挙 definiens も検査する。obligation は未証明とし、固定された Task260 transport は変更しない。
+
+[dependent-return checker](./type_checker.md#source-dependent-functor-return-typing) は宣言内の mode 代入、`it`・本体の型検査と pending correctness request を所有する。Task260 transport と証明・呼出しの意味は変更しない。

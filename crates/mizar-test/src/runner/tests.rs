@@ -10491,3 +10491,367 @@ fn step5c13_source_registration_rejects_shared_conjunct_and_parent_corruption() 
         }
     }
 }
+
+fn step5c5_dependent_return_case() -> (crate::harness::TestCase, String) {
+    let case = build_test_plan(&step5c11_config())
+        .unwrap()
+        .cases
+        .into_iter()
+        .find(|case| case.id.0 == "pass_type_elaboration_func_dependent_return_type_001")
+        .unwrap();
+    let text = std::fs::read_to_string(&case.source_path).unwrap();
+    (case, text)
+}
+
+#[test]
+fn step5c5_dependent_return_tracks_actual_substitution_body_and_pending_clauses() {
+    use mizar_checker::{binding_env::BindingKind, type_checker::*, typed_ast::*};
+    let (case, text) = step5c5_dependent_return_case();
+    let (first, second) = text.split_once("\n\ndefinition\n").unwrap();
+    for variant in [
+        text.clone(),
+        text.replace("MemberKind5Def", "ModeLabel"),
+        text.replace("MemberKind5 of", "ResultKind of"),
+        text.replace("IdemDef", "FunctorLabel"),
+        text.replace("idembox", "copybox"),
+        format!("{}\n\ndefinition\n{second}", first.replace("X", "Formal")),
+        format!("{first}\n\ndefinition\n{}", second.replace("X", "Actual")),
+        text.replace("it = X", "it = it"),
+    ] {
+        let frontend = super::formula_statement::step5c8_test_frontend(&variant);
+        assert!(
+            frontend.diagnostics.is_empty(),
+            "{:?}",
+            frontend.diagnostics
+        );
+        let (source, nodes, symbols) =
+            super::source_registration_inputs(&step5c11_config().workspace_root, &case, frontend)
+                .unwrap();
+        let output =
+            TermFormulaChecker::check_source_dependent_functor_types(&source, &symbols, &nodes)
+                .unwrap();
+        assert_eq!(
+            output,
+            TermFormulaChecker::check_source_dependent_functor_types(&source, &symbols, &nodes)
+                .unwrap()
+        );
+        let (bindings, inference, requests) = output;
+        let formals = bindings
+            .bindings()
+            .iter()
+            .map(|(_, entry)| entry)
+            .collect::<Vec<_>>();
+        assert_eq!(formals.len(), 2);
+        assert_ne!(formals[0].identity, formals[1].identity);
+        assert_ne!(formals[0].owner_context, formals[1].owner_context);
+        for formal in &formals {
+            assert_eq!(formal.kind, BindingKind::DefinitionParameter);
+            assert_eq!(
+                &variant[formal.declaration_range.start..formal.declaration_range.end],
+                formal.spelling
+            );
+        }
+        assert!(
+            inference.diagnostics().is_empty()
+                && inference.facts().is_empty()
+                && inference.candidate_sets().is_empty()
+        );
+        assert_eq!(inference.terms().len(), 3);
+        assert_eq!(inference.formulas().len(), 1);
+        let terms = inference
+            .terms()
+            .iter()
+            .map(|(_, term)| term)
+            .collect::<Vec<_>>();
+        let (_, formula) = inference.formulas().iter().next().unwrap();
+        assert_eq!(formula.kind, FormulaKind::Equality);
+        assert_eq!(formula.status, FormulaStatus::Checked);
+        assert_ne!(formula.terms[0], formula.terms[1]);
+        let left = terms
+            .iter()
+            .find(|term| term.site == formula.terms[0])
+            .unwrap();
+        let right = terms
+            .iter()
+            .find(|term| term.site == formula.terms[1])
+            .unwrap();
+        let argument = terms
+            .iter()
+            .find(|term| !formula.terms.contains(&term.site))
+            .unwrap();
+        assert_eq!(left.kind, TermKind::It);
+        assert_eq!(
+            argument.reference,
+            Some(TermReference::Binding(formals[1].id))
+        );
+        let repeated_it = variant.contains("it = it");
+        assert_eq!(
+            right.kind,
+            if repeated_it {
+                TermKind::It
+            } else {
+                TermKind::Variable
+            }
+        );
+        assert_eq!(
+            right.reference,
+            (!repeated_it).then_some(TermReference::Binding(formals[1].id))
+        );
+        for term in &terms {
+            assert_eq!(term.context, formals[1].owner_context);
+            assert_eq!(term.status, TermStatus::Inferred);
+            let entry = inference.type_entries().get(term.type_entry).unwrap();
+            let TypeEntryActual::Known(actual) = entry.actual else {
+                panic!("known")
+            };
+            assert_eq!(entry.status, TypeStatus::Known);
+            let ty = inference.normalized_types().get(actual).unwrap();
+            assert_eq!(ty.status, NormalizedTypeStatus::Known);
+            assert_eq!(ty.head, TypeHeadRef::BuiltinSet);
+            assert!(
+                ty.args.is_empty()
+                    && ty.attributes.positive().is_empty()
+                    && ty.attributes.negative().is_empty()
+            );
+            if term.site == argument.site {
+                assert_eq!(entry.expected, Some(actual));
+            }
+            let node = nodes.node(term.site.node()).unwrap();
+            assert_eq!(
+                node.kind.as_str(),
+                if term.kind == TermKind::It {
+                    "ItTerm"
+                } else {
+                    "TermReference"
+                }
+            );
+        }
+        assert_eq!(requests.len(), 2);
+        for ((_, request), (spelling, kind)) in requests.iter().zip([
+            ("existence", InitialObligationKind::FunctorExistence),
+            ("uniqueness", InitialObligationKind::FunctorUniqueness),
+        ]) {
+            assert_eq!(request.status, InitialObligationStatus::Pending);
+            assert_eq!(request.kind, kind);
+            assert!(request.assumptions.is_empty());
+            assert_eq!(
+                &variant[request.source_range.start..request.source_range.end],
+                format!("{spelling};")
+            );
+            assert_eq!(
+                nodes.node(request.owner.node()).unwrap().anchor,
+                SourceAnchor::Range(request.source_range)
+            );
+            assert!(request.goal.as_str().contains(&format!(
+                "substitution={}->{}",
+                formals[0].id.index(),
+                formals[1].id.index()
+            )));
+            assert!(
+                request
+                    .goal
+                    .as_str()
+                    .contains(&format!("body={}", formula.site.node().index()))
+            );
+            assert!(
+                request
+                    .provenance
+                    .as_str()
+                    .contains(&format!("kind={spelling}"))
+            );
+        }
+        assert!(
+            TypedAst::try_new(TypedAstParts {
+                source_id: source.source_id(),
+                module_id: source.module().clone(),
+                resolved_root: Some(source.arena().root()),
+                source_context: None,
+                source_type: None,
+                source_attribute: None,
+                nodes,
+                contexts: LocalTypeContextTable::new(),
+                types: TypeTable::new(),
+                facts: TypeFactTable::new(),
+                coercions: CoercionTable::new(),
+                initial_obligations: requests,
+                diagnostics: TypeDiagnosticTable::new()
+            })
+            .is_err(),
+            "generic installation must retain its functor-family boundary"
+        );
+    }
+}
+
+#[test]
+fn step5c5_dependent_return_rejects_guard_and_unsupported_source_shapes() {
+    use mizar_checker::type_checker::*;
+    let (case, text) = step5c5_dependent_return_case();
+    let (first, second) = text.split_once("\n\ndefinition\n").unwrap();
+    let object = format!(
+        "{first}\n\ndefinition\n{}",
+        second.replace("let X be set", "let X be object")
+    );
+    let frontend = super::formula_statement::step5c8_test_frontend(&object);
+    assert!(
+        frontend.diagnostics.is_empty(),
+        "object is a well-formed guard mismatch"
+    );
+    let (source, nodes, symbols) =
+        super::source_registration_inputs(&step5c11_config().workspace_root, &case, frontend)
+            .unwrap();
+    let object_token=source.arena().iter().find(|(_,node)|matches!(node.kind(),mizar_syntax::SurfaceNodeKind::Token(token) if token.text.as_ref()=="object")).unwrap();
+    let SourceAnchor::Range(range) = object_token.1.origin().anchor() else {
+        panic!("source range")
+    };
+    let known = TypeNormalizer::default().normalize(
+        &symbols,
+        [TypeExpressionInput::new(
+            mizar_checker::typed_ast::TypedSiteRef::Node(
+                mizar_checker::typed_ast::TypedNodeId::new(object_token.0.index()),
+            ),
+            *range,
+            "object",
+            TypeHeadInput::BuiltinObject,
+        )],
+    );
+    assert!(known.diagnostics().is_empty());
+    assert!(
+        known
+            .normalized_types()
+            .iter()
+            .all(|(_, ty)| ty.status == NormalizedTypeStatus::Known
+                && ty.head == TypeHeadRef::BuiltinObject)
+    );
+    assert!(
+        TermFormulaChecker::check_source_dependent_functor_types(&source, &symbols, &nodes)
+            .is_err()
+    );
+    for (from, to) in [
+        ("-> MemberKind5 of X", "-> Missing of X"),
+        ("-> MemberKind5 of X", "-> set"),
+        ("-> MemberKind5 of X", "-> MemberKind5"),
+        ("-> MemberKind5 of X", "-> MemberKind5 of X, X"),
+        ("-> MemberKind5 of X", "-> MemberKind5 of Missing"),
+        ("it = X", "it = Missing"),
+        ("it = X", "X = X"),
+        ("it = X", "it = the set"),
+        ("idembox X ->", "idembox Missing ->"),
+        ("MemberKind5 of X is set", "MemberKind5 of Missing is set"),
+        ("MemberKind5 of X is set", "MemberKind5 of X is object"),
+        ("means it = X", "equals X"),
+        ("  existence;\n", ""),
+        ("  uniqueness;\n", ""),
+        ("existence;\n  uniqueness;", "uniqueness;\n  existence;"),
+        ("uniqueness;", "uniqueness; uniqueness;"),
+        ("existence;", "existence proof thus thesis; end;"),
+        ("func IdemDef:", "assume X = X; func IdemDef:"),
+        ("it = X", "it ="),
+        ("let X be set;\n  func", "let X,Y be set;\n  func"),
+    ] {
+        let changed = text.replacen(from, to, 1);
+        assert_ne!(changed, text, "missing mutation {from}");
+        let result = super::source_registration_inputs(
+            &step5c11_config().workspace_root,
+            &case,
+            super::formula_statement::step5c8_test_frontend(&changed),
+        )
+        .and_then(|(source, nodes, symbols)| {
+            TermFormulaChecker::check_source_dependent_functor_types(&source, &symbols, &nodes)
+        });
+        assert!(result.is_err(), "accepted {from} -> {to}");
+    }
+    for changed in [
+        format!("definition\n{second}\n{first}"),
+        format!("{text}\n{text}"),
+    ] {
+        let result = super::source_registration_inputs(
+            &step5c11_config().workspace_root,
+            &case,
+            super::formula_statement::step5c8_test_frontend(&changed),
+        )
+        .and_then(|(source, nodes, symbols)| {
+            TermFormulaChecker::check_source_dependent_functor_types(&source, &symbols, &nodes)
+        });
+        assert!(result.is_err(), "forward mode or extra definitions");
+    }
+}
+
+#[test]
+fn step5c5_dependent_return_rejects_foreign_source_environment_and_neutral_nodes() {
+    use mizar_checker::{type_checker::TermFormulaChecker, typed_ast::*};
+    use mizar_resolve::{env::SymbolEnv, resolved_ast::SurfaceResolvedArena};
+    let (case, text) = step5c5_dependent_return_case();
+    let inputs = |text: &str| {
+        super::source_registration_inputs(
+            &step5c11_config().workspace_root,
+            &case,
+            super::formula_statement::step5c8_test_frontend(text),
+        )
+        .unwrap()
+    };
+    let (source, nodes, symbols) = inputs(&text);
+    let (other, _, foreign) = inputs(&text.replace("IdemDef", "ForeignLabel"));
+    assert!(
+        TermFormulaChecker::check_source_dependent_functor_types(&other, &symbols, &nodes).is_err()
+    );
+    assert!(
+        TermFormulaChecker::check_source_dependent_functor_types(&source, &foreign, &nodes)
+            .is_err()
+    );
+    let ast = super::formula_statement::step5c8_test_frontend(&text)
+        .ast
+        .unwrap();
+    let module = ResolverModuleId::new(PackageId::new("foreign"), ModulePath::new("dependent"));
+    assert!(
+        TermFormulaChecker::check_source_dependent_functor_types(
+            &SurfaceResolvedArena::lower(&ast, &module).unwrap(),
+            &symbols,
+            &nodes
+        )
+        .is_err()
+    );
+    for mutation in 0..3 {
+        let mut indexes = super::import_fixtures::clone_symbol_env_indexes(&symbols);
+        match mutation {
+            0 => indexes.definitions = Default::default(),
+            1 => indexes.symbols = Default::default(),
+            _ => indexes.contributions = Default::default(),
+        }
+        assert!(
+            TermFormulaChecker::check_source_dependent_functor_types(
+                &source,
+                &SymbolEnv::new(symbols.module_id().clone(), indexes),
+                &nodes
+            )
+            .is_err()
+        );
+    }
+    for (target, _) in nodes.iter().filter(|(_, node)| {
+        matches!(
+            node.kind.as_str(),
+            "ItTerm" | "TypeArguments" | "FunctorPattern" | "CorrectnessCondition"
+        )
+    }) {
+        for mutation in 0..5 {
+            let mut raw = nodes
+                .iter()
+                .map(|(_, node)| node.clone())
+                .collect::<Vec<_>>();
+            match mutation {
+                0 => raw[target.index()].kind = "ForeignOwner".into(),
+                1 => raw[target.index()].recovery = NodeRecoveryState::Recovered,
+                2 => raw[target.index()].children.clear(),
+                3 => raw[target.index()].resolved_node = None,
+                _ => raw[target.index()].anchor = raw[nodes.root().unwrap().index()].anchor.clone(),
+            }
+            let changed = TypedArena::try_new(nodes.root(), raw).unwrap();
+            assert!(
+                TermFormulaChecker::check_source_dependent_functor_types(
+                    &source, &symbols, &changed
+                )
+                .is_err(),
+                "{target:?}/{mutation}"
+            );
+        }
+    }
+}

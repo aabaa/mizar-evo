@@ -704,3 +704,5 @@ The active source bridge authenticates functor declarations before checking exis
 payloads. A `means` definition requires existence and uniqueness, an `equals` definiens must match
 the declared result type, and commutativity requires binary arity. Builtin bracket pairs add no new
 term representation, and duplicate signatures remain resolver-owned. The [property checker](./type_checker.md#source-functor-property-typing) additionally checks the actual set-enumeration definiens before the commutativity declaration can type-check; its obligation remains unproved and the frozen Task260 transport is unchanged.
+
+The [dependent-return checker](./type_checker.md#source-dependent-functor-return-typing) owns declaration-local mode substitution, `it`/body typing and pending correctness requests; Task260 transport and proof/call semantics remain unchanged.

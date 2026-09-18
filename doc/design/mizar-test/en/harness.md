@@ -6263,12 +6263,18 @@ The harness retains nine predicate/functor rows and adds only functor commutativ
 authenticating exact source/sidecar metadata. For the retained predicate duplicate, collector replay binds the sole existing signature
 conflict to both actual predicate declarations and their stored conflict metadata; labels, bodies
 and raw locus spellings are not the oracle. Extra resolver errors fail closed, and the other
-six other G1/G2/G6/G9 rows remain ineligible even if tagged. Reserved identities cannot fall through other stages; no predicate/functor proof credit follows.
+five G1/G2/G9 rows remain ineligible even if tagged. Reserved identities cannot fall through other stages; no predicate/functor proof credit follows.
 The predicate argument row authenticates both ids, exact paths, stage/phase/key/domain/spec ref, sole tag and absent payloads before calling the shared source checker. Only source-linked predicate-kind rejections of actual set arguments against the real structure loci map to its key; both calls and every diagnostic are accounted for, while valid controls yield no negative key.
 The commutativity pass binds both ids, exact source/sidecar paths, pass/type_check, functors.properties, sole spec.en.10.functors.properties.declaration ref, sole active tag and empty failure/payload fields. The direct checker must return checked body types and exactly one source-owned Pending functor-property obligation; the runner never infers symmetry or proof, and either id or filename reserves cross-stage admission.
 
 The exact negated-predicate row alone additionally enters formula_statement/statement_check with pass, predicates.negation, sole spec.en.09.predicates.application.negation ref and active_formula_statement, exact ids/paths and empty diagnostic/failure/payload/snapshot fields. Either id or filename reserves it against every other stage; duplicate/missing inventory entries fail.
 The runner passes authenticated source/environment/neutral typed nodes to the direct predicate-statement checker and requires its actual type and atomic-identity/polarity outputs. It grants no theorem/proof result and rejects unrelated lower-stage errors; source-body or call polarity cannot be used as a truth oracle.
+
+The dependent-return row alone enters type_elaboration/type_check with pass, functors.dependent_return,
+sole spec.en.10.functors.dependent_return.semantic ref and active_type_elaboration, exact ids/source/sidecar paths
+and empty diagnostic/failure/payload/snapshot fields. Either id or filename reserves every other stage; missing/duplicate inventory rows fail.
+The runner invokes the [direct checker](../../mizar-checker/en/type_checker.md#source-dependent-functor-return-typing)
+and compares actual declaration bindings, argument/body Known types, checked equality and both source-owned Pending clauses.
 
 ## Module declaration corpus bridge
 

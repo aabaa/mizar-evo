@@ -4395,6 +4395,537 @@ pub struct TermFormulaChecker {
 }
 
 impl TermFormulaChecker {
+    /// Checks the bounded dependent-return declaration and retains pending correctness requests.
+    pub fn check_source_dependent_functor_types(
+        source: &SurfaceResolvedArena,
+        symbols: &SymbolEnv,
+        typed: &crate::typed_ast::TypedArena,
+    ) -> Result<
+        (
+            BindingEnv,
+            TermFormulaInferenceOutput,
+            InitialObligationTable,
+        ),
+        String,
+    > {
+        use crate::binding_env::{BindingLookupResult, BindingLookupSite};
+        let invalid = || "functors.dependent_return.unsupported_source_types".to_owned();
+        mizar_resolve::symbols::validate_source_symbol_env(source, symbols)?;
+        let node = |id| source.arena().node(id).ok_or_else(invalid);
+        let range = |id| match node(id)?.origin().anchor() {
+            SourceAnchor::Range(range) => Ok(*range),
+            _ => Err(invalid()),
+        };
+        let root = source.arena().root();
+        if typed.len() != source.arena().len()
+            || typed.root() != Some(TypedNodeId::new(root.index()))
+        {
+            return Err(invalid());
+        }
+        let mut parents = BTreeMap::new();
+        for (id, current) in source.arena().iter() {
+            let span = range(id)?;
+            let expected = crate::typed_ast::TypedNode::new(
+                format!("{:?}", current.kind()),
+                current.origin().anchor().clone(),
+            )
+            .with_resolved_node(id)
+            .with_children(
+                current
+                    .children()
+                    .iter()
+                    .map(|child| TypedNodeId::new(child.index()))
+                    .collect(),
+            );
+            if typed.node(TypedNodeId::new(id.index())) != Some(&expected)
+                || current.origin().source_id() != source.source_id()
+                || current.origin().module_id() != source.module()
+                || current.origin().is_recovered()
+                || matches!(current.kind(), K::ErrorRecovery(_))
+                || span.source_id != source.source_id()
+                || span.start > span.end
+                || matches!(current.kind(), K::Root) != (id == root)
+            {
+                return Err(invalid());
+            }
+            let mut end = span.start;
+            for child in current.children() {
+                let child_span = range(*child)?;
+                if child_span.start < span.start
+                    || child_span.end > span.end
+                    || (id != root && child_span.start < end)
+                {
+                    return Err(invalid());
+                }
+                end = child_span.end;
+                if !(id == root && matches!(node(*child)?.kind(), K::Token(_)))
+                    && parents.insert(*child, id).is_some()
+                {
+                    return Err(invalid());
+                }
+            }
+        }
+        if source
+            .arena()
+            .iter()
+            .any(|(id, _)| id != root && !parents.contains_key(&id))
+        {
+            return Err(invalid());
+        }
+        let parts = |id, kind: &K| {
+            let current = node(id)?;
+            if current.kind() != kind {
+                return Err(invalid());
+            }
+            Ok(current.children())
+        };
+        let only = |id, kind: &K| {
+            let [child] = parts(id, kind)? else {
+                return Err(invalid());
+            };
+            Ok(*child)
+        };
+        let identifier = |id| match node(id)?.kind() {
+            K::Token(token) if token.kind == SurfaceTokenKind::Identifier => {
+                Ok(token.text.as_ref())
+            }
+            _ => Err(invalid()),
+        };
+        let name = |id| match node(id)?.kind() {
+            K::Token(token)
+                if matches!(
+                    token.kind,
+                    SurfaceTokenKind::Identifier | SurfaceTokenKind::UserSymbol
+                ) =>
+            {
+                Ok(token.text.as_ref())
+            }
+            _ => Err(invalid()),
+        };
+        let tokens = |pairs: &[(ResolvedNodeId, &str)]| {
+            for (id, expected) in pairs {
+                let kind = if expected.chars().all(char::is_alphabetic) {
+                    SurfaceTokenKind::ReservedWord
+                } else {
+                    SurfaceTokenKind::ReservedSymbol
+                };
+                if !matches!(node(*id)?.kind(), K::Token(token) if token.kind == kind && token.text.as_ref() == *expected)
+                {
+                    return Err(invalid());
+                }
+            }
+            Ok(())
+        };
+        let site = |id: ResolvedNodeId| TypedSiteRef::Node(TypedNodeId::new(id.index()));
+        let role = |id: ResolvedNodeId, name: &str| TypedSiteRef::Role {
+            node: TypedNodeId::new(id.index()),
+            role: name.into(),
+        };
+        let builtin = |id, owner| -> Result<TypeExpressionInput, String> {
+            let token = only(only(id, &K::TypeExpression)?, &K::TypeHead)?;
+            let head = match node(token)?.kind() {
+                K::Token(token) if token.kind == SurfaceTokenKind::ReservedWord => {
+                    match token.text.as_ref() {
+                        "set" => TypeHeadInput::BuiltinSet,
+                        "object" => TypeHeadInput::BuiltinObject,
+                        _ => return Err(invalid()),
+                    }
+                }
+                _ => return Err(invalid()),
+            };
+            Ok(TypeExpressionInput::new(
+                owner,
+                range(id)?,
+                if head == TypeHeadInput::BuiltinSet {
+                    "set"
+                } else {
+                    "object"
+                },
+                head,
+            ))
+        };
+        let structural = node(root)?
+            .children()
+            .iter()
+            .copied()
+            .filter(|id| {
+                !matches!(
+                    source.arena().node(*id).map(|n| n.kind()),
+                    Some(K::Token(_))
+                )
+            })
+            .collect::<Vec<_>>();
+        let [unit] = structural.as_slice() else {
+            return Err(invalid());
+        };
+        let [mode_block, functor_block] = parts(only(*unit, &K::CompilationUnit)?, &K::ItemList)?
+        else {
+            return Err(invalid());
+        };
+        if range(*mode_block)?.end > range(*functor_block)?.start {
+            return Err(invalid());
+        }
+        let mut parameters = Vec::new();
+        let mut definitions = Vec::new();
+        let mut clauses = Vec::new();
+        for (index, block) in [*mode_block, *functor_block].into_iter().enumerate() {
+            let children = parts(block, &K::DefinitionBlockItem)?;
+            let (definition_kw, parameter, definition, end, semi) = match (index, children) {
+                (0, [keyword, parameter, definition, end, semi]) => {
+                    (*keyword, *parameter, *definition, *end, *semi)
+                }
+                (
+                    1,
+                    [
+                        keyword,
+                        parameter,
+                        definition,
+                        existence,
+                        uniqueness,
+                        end,
+                        semi,
+                    ],
+                ) => {
+                    clauses.extend([
+                        (
+                            *existence,
+                            "existence",
+                            InitialObligationKind::FunctorExistence,
+                        ),
+                        (
+                            *uniqueness,
+                            "uniqueness",
+                            InitialObligationKind::FunctorUniqueness,
+                        ),
+                    ]);
+                    (*keyword, *parameter, *definition, *end, *semi)
+                }
+                _ => return Err(invalid()),
+            };
+            tokens(&[(definition_kw, "definition"), (end, "end"), (semi, ";")])?;
+            let [let_kw, segment, semi] = parts(parameter, &K::DefinitionParameter)? else {
+                return Err(invalid());
+            };
+            tokens(&[(*let_kw, "let"), (*semi, ";")])?;
+            let [binder, be, ty] = parts(*segment, &K::QualifiedVariableSegment)? else {
+                return Err(invalid());
+            };
+            tokens(&[(*be, "be")])?;
+            parameters.push((*binder, *ty, parameter, block));
+            definitions.push(definition);
+        }
+        let [mode_kw, mode_label, colon, pattern, is_kw, rhs, semi] =
+            parts(definitions[0], &K::ModeDefinition)?
+        else {
+            return Err(invalid());
+        };
+        identifier(*mode_label)?;
+        tokens(&[
+            (*mode_kw, "mode"),
+            (*colon, ":"),
+            (*is_kw, "is"),
+            (*semi, ";"),
+        ])?;
+        let [mode_name, of_kw, mode_formal] = parts(*pattern, &K::ModePattern)? else {
+            return Err(invalid());
+        };
+        tokens(&[(*of_kw, "of")])?;
+        if builtin(parameters[0].1, site(parameters[0].1))?.head != TypeHeadInput::BuiltinSet
+            || builtin(*rhs, site(*rhs))?.head != TypeHeadInput::BuiltinSet
+        {
+            return Err(invalid());
+        }
+        let [
+            func,
+            label,
+            colon,
+            pattern,
+            arrow,
+            result_type,
+            means,
+            body,
+            semi,
+        ] = parts(definitions[1], &K::FunctorDefinition)?
+        else {
+            return Err(invalid());
+        };
+        identifier(*label)?;
+        tokens(&[
+            (*func, "func"),
+            (*colon, ":"),
+            (*arrow, "->"),
+            (*means, "means"),
+            (*semi, ";"),
+        ])?;
+        let [functor_name, functor_formal] = parts(*pattern, &K::FunctorPattern)? else {
+            return Err(invalid());
+        };
+        name(*functor_name)?;
+        if resolve_template_formal(source, *functor_formal).map_err(|_| invalid())?
+            != parameters[1].0
+        {
+            return Err(invalid());
+        }
+        for (clause, spelling, _) in &clauses {
+            let [keyword, semi] = parts(*clause, &K::CorrectnessCondition)? else {
+                return Err(invalid());
+            };
+            tokens(&[(*keyword, spelling), (*semi, ";")])?;
+        }
+        let mut owners = Vec::new();
+        for (definition, symbol_kind, definition_kind) in [
+            (definitions[0], SymbolKind::Mode, DefinitionKind::Mode),
+            (definitions[1], SymbolKind::Functor, DefinitionKind::Functor),
+        ] {
+            let entries = symbols
+                .symbols()
+                .iter()
+                .filter(|entry| entry.kind() == symbol_kind)
+                .collect::<Vec<_>>();
+            let [owner] = entries.as_slice() else {
+                return Err(invalid());
+            };
+            let defined = symbols
+                .definitions()
+                .by_symbol(owner.symbol())
+                .ok_or_else(invalid)?;
+            if owner.origin().anchor()!=node(definition)?.origin().anchor() || defined.kind()!=definition_kind
+                || defined.conflict().is_some() || defined.origin()!=owner.origin() || defined.contribution()!=owner.contribution()
+                || !symbols.contributions().get(owner.contribution()).is_some_and(|entry| entry.module()==source.module() && matches!(entry.kind(), ContributionKind::LocalSource{source_id} if *source_id==source.source_id())) { return Err(invalid()); }
+            owners.push(*owner);
+        }
+        let [head, arguments] = parts(only(*result_type, &K::TypeExpression)?, &K::TypeHead)?
+        else {
+            return Err(invalid());
+        };
+        let head = only(only(*head, &K::QualifiedSymbol)?, &K::PathSegment)?;
+        let projection = NameSymbolProjection::current_module(
+            owners[0].symbol().clone(),
+            owners[0].namespace().clone(),
+            name(*mode_name)?,
+            owners[0].kind(),
+            owners[0].visibility(),
+            range(definitions[0])?,
+            range(*mode_block)?.end,
+        );
+        let resolved = SymbolNameResolver::new(&[projection], &[]).resolve(
+            source.module(),
+            owners[1].namespace(),
+            &[NameReferenceCandidate::unqualified(
+                ReferenceSite::new(head, range(head)?, name(head)?),
+                node(head)?.origin().clone(),
+                range(head)?.start,
+            )],
+        );
+        if !matches!(resolved.table().iter().next().map(|(_,entry)|entry.resolution()),Some(NameResolution::Resolved(reference)) if reference.symbol()==owners[0].symbol())
+        {
+            return Err(invalid());
+        }
+        let [of_kw, argument] = parts(*arguments, &K::TypeArguments)? else {
+            return Err(invalid());
+        };
+        tokens(&[(*of_kw, "of")])?;
+        let argument = only(*argument, &K::TermExpression)?;
+        let argument_token = only(argument, &K::TermReference)?;
+        if resolve_template_formal(source, argument_token).map_err(|_| invalid())?
+            != parameters[1].0
+        {
+            return Err(invalid());
+        }
+        let equality = only(only(*body, &K::FormulaDefiniens)?, &K::FormulaExpression)?;
+        let [left, equals, right] = parts(equality, &K::BuiltinPredicateApplication)? else {
+            return Err(invalid());
+        };
+        tokens(&[(*equals, "=")])?;
+        let left = only(*left, &K::TermExpression)?;
+        let right = only(*right, &K::TermExpression)?;
+        tokens(&[(only(left, &K::ItTerm)?, "it")])?;
+        let mut contexts = BindingContextTable::new();
+        contexts.insert(BindingContextDraft {
+            owner: BindingContextOwner::Module,
+            parent: None,
+            layer: BindingContextLayer::Module,
+            lexical_scope: None,
+            bindings: Vec::new(),
+            visible_bindings: Vec::new(),
+            recovery: BindingContextRecovery::Normal,
+        });
+        let mut table = BindingTable::new();
+        let mut locals = Vec::new();
+        for (index, (binder, ty, declaration, block)) in parameters.iter().enumerate() {
+            let context = BindingContextId::new(index + 1);
+            let scope =
+                LocalTermScope::new(vec![u32::try_from(block.index()).map_err(|_| invalid())?]);
+            let local = LocalTermBinding::new(
+                identifier(*binder)?,
+                scope.clone(),
+                range(*binder)?,
+                range(*declaration)?.end,
+            );
+            let mut draft =
+                BindingDraft::from_local_term(context, BindingKind::DefinitionParameter, &local);
+            draft.type_site = BindingTypeSite::Source(range(*ty)?);
+            let binding = table.insert(draft);
+            contexts.insert(BindingContextDraft {
+                owner: BindingContextOwner::SourceStatement {
+                    source_range: range(*block)?,
+                },
+                parent: Some(BindingContextId::new(0)),
+                layer: BindingContextLayer::Declaration,
+                lexical_scope: Some(scope),
+                bindings: vec![binding],
+                visible_bindings: vec![binding],
+                recovery: BindingContextRecovery::Normal,
+            });
+            locals.push(binding);
+        }
+        let bindings = BindingEnv::try_new(BindingEnvParts {
+            source_id: source.source_id(),
+            module_id: source.module().clone(),
+            contexts,
+            bindings: table,
+            diagnostics: BindingDiagnosticTable::new(),
+        })
+        .map_err(|_| invalid())?;
+        let lookup = |token, index: usize| -> Result<BindingId, String> {
+            let context = BindingContextId::new(index + 1);
+            let scope = bindings
+                .contexts()
+                .get(context)
+                .ok_or_else(invalid)?
+                .lexical_scope
+                .clone();
+            let BindingLookupResult::Local(binding) = bindings
+                .lookup(&BindingLookupSite::new(
+                    identifier(token)?,
+                    context,
+                    scope,
+                    range(token)?.start,
+                ))
+                .map_err(|_| invalid())?
+            else {
+                return Err(invalid());
+            };
+            Ok(binding)
+        };
+        let substitution = [(lookup(*mode_formal, 0)?, lookup(argument_token, 1)?)];
+        if substitution != [(locals[0], locals[1])] || locals[0] == locals[1] {
+            return Err(invalid());
+        }
+        let context = BindingContextId::new(2);
+        let mut terms = vec![
+            TermInput::new(
+                site(argument),
+                context,
+                range(argument)?,
+                TermKind::Variable,
+            )
+            .with_reference(TermReference::Binding(substitution[0].1))
+            .with_result_type(builtin(
+                parameters[1].1,
+                role(argument, "dependent-return.actual"),
+            )?)
+            .with_expected_type(builtin(
+                parameters[0].1,
+                role(argument, "dependent-return.guard"),
+            )?),
+        ];
+        // The authenticated RHS contains no formal occurrence; substitution preserves its full set type.
+        for term in [left, right] {
+            let (kind, reference) = match node(term)?.kind() {
+                K::ItTerm => {
+                    tokens(&[(only(term, &K::ItTerm)?, "it")])?;
+                    (TermKind::It, None)
+                }
+                K::TermReference if term == right => {
+                    let token = only(term, &K::TermReference)?;
+                    if resolve_template_formal(source, token).map_err(|_| invalid())?
+                        != parameters[1].0
+                        || lookup(token, 1)? != substitution[0].1
+                    {
+                        return Err(invalid());
+                    }
+                    (
+                        TermKind::Variable,
+                        Some(TermReference::Binding(substitution[0].1)),
+                    )
+                }
+                _ => return Err(invalid()),
+            };
+            let ty = if kind == TermKind::It {
+                *rhs
+            } else {
+                parameters[1].1
+            };
+            let mut input = TermInput::new(site(term), context, range(term)?, kind)
+                .with_result_type(builtin(ty, role(term, "dependent-return.result"))?);
+            input.reference = reference;
+            terms.push(input);
+        }
+        let inference = Self::default().infer(
+            symbols,
+            &bindings,
+            terms,
+            [FormulaInput::new(
+                site(equality),
+                context,
+                range(equality)?,
+                FormulaKind::Equality,
+            )
+            .with_terms(vec![site(left), site(right)])],
+        );
+        if !inference.diagnostics().is_empty()
+            || !inference.facts().is_empty()
+            || inference.terms().len() != 3
+            || inference.formulas().len() != 1
+        {
+            return Err(invalid());
+        }
+        for (_, term) in inference.terms().iter() {
+            let entry = inference
+                .type_entries()
+                .get(term.type_entry)
+                .ok_or_else(invalid)?;
+            let TypeEntryActual::Known(actual) = entry.actual else {
+                return Err(invalid());
+            };
+            let ty = inference
+                .normalized_types()
+                .get(actual)
+                .ok_or_else(invalid)?;
+            // Spec17.3.4 supplies builtin inhabitation only for this fully normalized plain set RHS.
+            if term.status != TermStatus::Inferred
+                || !term.deferred.is_empty()
+                || term.candidate_set.is_some()
+                || entry.status != TypeStatus::Known
+                || ty.status != NormalizedTypeStatus::Known
+                || ty.head != TypeHeadRef::BuiltinSet
+                || !ty.args.is_empty()
+                || ty.attributes != AttributeSet::empty()
+                || (term.site == site(argument) && entry.expected != Some(actual))
+            {
+                return Err(invalid());
+            }
+        }
+        if inference.formulas().iter().any(|(_, formula)| {
+            formula.status != FormulaStatus::Checked
+                || formula.kind != FormulaKind::Equality
+                || formula.terms != [site(left), site(right)]
+                || !formula.deferred.is_empty()
+                || !formula.facts.is_empty()
+                || formula.candidate_set.is_some()
+        }) {
+            return Err(invalid());
+        }
+        let mut obligations = InitialObligationTable::new();
+        for (clause, spelling, kind) in clauses {
+            obligations.insert(InitialObligationDraft { kind, owner:site(clause),source_range:range(clause)?,assumptions:Vec::new(),
+                goal:InitialObligationGoal::new(format!("source.functor.dependent-return.request:functor={}:guard={}:application={}:substitution={}->{}:rhs={}:body={}:clause={}",owners[1].symbol().fqn().as_str(),parameters[0].1.index(),result_type.index(),substitution[0].0.index(),substitution[0].1.index(),rhs.index(),equality.index(),clause.index())),
+                provenance:InitialObligationProvenance::new(format!("source.functor.dependent-return:owner={}:kind={spelling}:node={}",owners[1].symbol().fqn().as_str(),clause.index())),status:InitialObligationStatus::Pending });
+        }
+        Ok((bindings, inference, obligations))
+    }
+
     /// Checks the bounded local binary predicate applications without proof credit.
     pub fn check_source_predicate_statements(
         source: &SurfaceResolvedArena,
