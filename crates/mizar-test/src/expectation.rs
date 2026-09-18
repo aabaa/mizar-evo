@@ -1330,6 +1330,14 @@ pub fn validate_expectation_path(
                 .any(|spec_ref| spec_ref.0 == EXACT_TASK31_VC_SNAPSHOT_SPEC_REF);
         let exact_source_vc_snapshot = [
             (
+                "fail_proof_verification_algorithm_assert_unprovable_001",
+                "fail/algorithms",
+                "algorithms.assertions",
+                "spec.en.20.algorithms.state.var_const_assert",
+                "spec.en.mizar_vc.vc_ir.algorithm_assert_failure_snapshot",
+                Some("algorithms.assert.unprovable"),
+            ),
+            (
                 "pass_proof_verification_algorithm_ensures_return_001",
                 "pass/algorithms",
                 "algorithms.contracts",
@@ -1390,7 +1398,7 @@ pub fn validate_expectation_path(
                     }
                 && expectation.domain == domain
                 && expectation.tags.as_slice() == ["active_proof_verification"]
-                && (domain != "algorithms.claim"
+                && (!matches!(domain, "algorithms.claim" | "algorithms.assertions")
                     || expectation.schema_version == 1
                         && expectation.profiles.as_slice() == ["fast"]
                         && expectation.ast_profile.is_none()

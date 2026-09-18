@@ -1594,7 +1594,7 @@ fn task260_route_publishes_no_proof_fact_acceptance_or_vc() {
     assert_eq!(active_type_consumer_counts, [261, 261, 261, 248, 261, 261]);
     assert_eq!(
         (plan.cases.len(), plan.manifest.requirements.len()),
-        (558, 503)
+        (558, 504)
     );
     assert_eq!(
         plan.cases.iter().fold((0, 0), |(pass, fail), case| {
@@ -1613,7 +1613,7 @@ fn task260_route_publishes_no_proof_fact_acceptance_or_vc() {
             active_type_elaboration_cases(&plan).count(),
             crate::active_proof_verification_cases(&plan).count(),
         ),
-        (113, 11, 261, 14)
+        (113, 11, 261, 15)
     );
     let type_stage = plan
         .coverage_report

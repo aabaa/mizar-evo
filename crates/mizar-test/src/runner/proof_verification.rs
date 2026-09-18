@@ -113,7 +113,15 @@ pub(super) fn step5c11_proof_admitted(root: Option<&Path>, case: &TestCase) -> b
         && case.expectation.tags.as_slice() == [ACTIVE_PROOF_VERIFICATION_TAG]
 }
 
-const STEP5C14_VC_CASES: [(&str, &str, &str, &str, &str, &str); 3] = [
+const STEP5C14_VC_CASES: [(&str, &str, &str, &str, &str, &str); 4] = [
+    (
+        "fail_proof_verification_algorithm_assert_unprovable_001",
+        "tests/miz/fail/algorithms/fail_proof_verification_algorithm_assert_unprovable_001.miz",
+        "algorithms.assertions",
+        "spec.en.20.algorithms.state.var_const_assert",
+        "spec.en.mizar_vc.vc_ir.algorithm_assert_failure_snapshot",
+        "snapshots/vc/fail_proof_verification_algorithm_assert_unprovable_001.vc_ir.snap",
+    ),
     (
         "pass_proof_verification_algorithm_ensures_return_001",
         "tests/miz/pass/algorithms/pass_proof_verification_algorithm_ensures_return_001.miz",
@@ -156,6 +164,7 @@ pub(super) fn step5c14_return_admitted(root: Option<&Path>, case: &TestCase) -> 
     else {
         return false;
     };
+    let failure = domain == "algorithms.assertions";
     case.expectation.id == case.id
         && case.source_path.ends_with(source)
         && case
@@ -168,7 +177,7 @@ pub(super) fn step5c14_return_admitted(root: Option<&Path>, case: &TestCase) -> 
                 })
         })
         && case.expectation.source == Path::new(source).file_name().unwrap()
-        && (domain != "algorithms.claim"
+        && (!matches!(domain, "algorithms.claim" | "algorithms.assertions")
             || case.expectation.schema_version == 1
                 && case.expectation.profiles.as_slice() == ["fast"]
                 && case.expectation.ast_profile.is_none()
@@ -176,13 +185,29 @@ pub(super) fn step5c14_return_admitted(root: Option<&Path>, case: &TestCase) -> 
                 && case.expectation.tokens.is_empty()
                 && case.expectation.origin.is_none()
                 && case.expectation.architecture22.is_none())
-        && case.expectation.kind == crate::expectation::TestKind::Pass
+        && case.expectation.kind
+            == if failure {
+                crate::expectation::TestKind::Fail
+            } else {
+                crate::expectation::TestKind::Pass
+            }
         && case.expectation.stage == Stage::ProofVerification
         && case.expectation.domain == domain
-        && case.expectation.expected_phase == Some(PipelinePhase::VcGeneration)
-        && case.expectation.expected_outcome == ExpectedOutcome::Pass
-        && case.expectation.failure_category.is_none()
-        && case.expectation.stable_detail_key.is_none()
+        && case.expectation.expected_phase
+            == Some(if failure {
+                PipelinePhase::Verification
+            } else {
+                PipelinePhase::VcGeneration
+            })
+        && case.expectation.expected_outcome
+            == if failure {
+                ExpectedOutcome::Fail
+            } else {
+                ExpectedOutcome::Pass
+            }
+        && case.expectation.failure_category.as_deref() == failure.then_some("proof_failure")
+        && case.expectation.stable_detail_key.as_deref()
+            == failure.then_some("algorithms.assert.unprovable")
         && case.expectation.rejection_reason.is_none()
         && case.expectation.diagnostic_codes.is_empty()
         && case.expectation.diagnostic_payloads.is_empty()
@@ -715,7 +740,7 @@ pub(super) fn run_proof_verification_case(
                 return Err("invalid algorithm contract admission".into());
             }
             // Snapshot identity is independent of the active corpus ordering.
-            let build = || -> Result<VcSet, String> {
+            let build = || -> Result<(Option<mizar_core::core_ir::CoreIr>, VcSet), String> {
                 let frontend = run_frontend(workspace_root, case, 0)?;
                 let claim = (case.expectation.domain == "algorithms.claim")
                     .then(|| frontend.ast.clone())
@@ -735,26 +760,31 @@ pub(super) fn run_proof_verification_case(
                         Some(&checked),
                     )?
                     .1
+                    .map(|vcs| (None, vcs))
                     .ok_or_else(|| "claim theorem VC missing".into());
                 }
                 let core = mizar_core::elaborator::lower_source_algorithms(&checked)?;
-                let profile = if case.expectation.domain == "algorithms.state" {
+                let profile = if case.expectation.domain == "algorithms.assertions" {
+                    "assert-failure"
+                } else if case.expectation.domain == "algorithms.state" {
                     "state"
                 } else {
                     "return"
                 };
-                mizar_vc::generator::generate_source_algorithm_postconditions(
+                let vcs = mizar_vc::generator::generate_source_algorithm_postconditions(
                     &core,
                     snapshot_id(0),
                     &GenerationSchemaVersion::new(format!(
                         "mizar-vc-generation-step5c14-{profile}-v1"
                     )),
                     &VcSchemaVersion::new(format!("mizar-vc-vcset-step5c14-{profile}-v1")),
-                )
+                )?;
+                Ok((Some(core), vcs))
             };
-            let first = build()?;
-            let second = build()?;
-            if first != second || first.debug_text() != second.debug_text() {
+            let (core, first) = build()?;
+            let (replayed_core, second) = build()?;
+            if core != replayed_core || first != second || first.debug_text() != second.debug_text()
+            {
                 return Err("algorithm source-to-VC rerun was nondeterministic".into());
             }
             let expected =
@@ -762,6 +792,15 @@ pub(super) fn run_proof_verification_case(
                     .map_err(|error| format!("algorithm VC snapshot could not be read: {error}"))?;
             if first.debug_text() != expected {
                 return Err("algorithm VC snapshot differed".into());
+            }
+            if case.expectation.domain == "algorithms.assertions"
+                && mizar_vc::discharge::failed_source_algorithm_assertion(
+                    core.as_ref().ok_or("assertion Core missing")?,
+                    &first,
+                )?
+                .is_none()
+            {
+                return Err("algorithms.assert.unprovable was not observed".into());
             }
             Ok(())
         };

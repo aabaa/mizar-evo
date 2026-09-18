@@ -255,7 +255,7 @@ Fields:
 | `rejection_reason` | conditional | Certificate and kernel rejection では必須。それ以外では optional. |
 | `diagnostic_codes` | yes | Deterministic order の stable diagnostic codes. |
 | `diagnostic_payloads` | no | Deterministic order の machine-readable diagnostic payload summaries. |
-| `snapshots` | no | transitional parse-only `SurfaceAst` baseline path、または `verification` の[厳密な簡約失敗 VcIr baseline](harness.md)。Core Task-31 exception は pass-only のまま。 |
+| `snapshots` | no | transitional parse-only `SurfaceAst` baseline path、または `verification` の[厳密な簡約失敗 VcIr baseline](harness.md) または [矛盾 assertion baseline](harness.md#contradictory-assertion-admission)。Core Task-31 exception は pass-only のまま。 |
 | `stable_detail_key` | yes | Diagnostic wording から独立した stable detail identity. |
 
 Fail test が成功した場合は harness failure である。Expected より早い phase で fail した場合も、その earlier sound boundary に expectation を意図的に更新しない限り harness failure である。

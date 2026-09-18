@@ -3164,7 +3164,7 @@ fn active_runner_reports_are_byte_stable_across_repeated_runs() {
     let root = config.workspace_root.clone();
     let plan = build_test_plan(&config).unwrap();
 
-    assert_eq!(active_proof_verification_cases(&plan).count(), 14);
+    assert_eq!(active_proof_verification_cases(&plan).count(), 15);
 
     let parse_first = canonical_parse_only_report(&run_parse_only_corpus(&config).unwrap(), &root);
     let parse_second = canonical_parse_only_report(&run_parse_only_corpus(&config).unwrap(), &root);
@@ -4036,6 +4036,11 @@ fn repository_corpus_plan_succeeds() {
     assert!(vc_task31_coverage.missing_shapes.is_empty());
     let source_snapshot_refs = [
         (
+            "spec.en.mizar_vc.vc_ir.algorithm_assert_failure_snapshot",
+            "fail_proof_verification_algorithm_assert_unprovable_001",
+            "fail/algorithms",
+        ),
+        (
             "spec.en.mizar_vc.vc_ir.algorithm_ensures_return_snapshot",
             "pass_proof_verification_algorithm_ensures_return_001",
             "pass/algorithms",
@@ -4073,14 +4078,22 @@ fn repository_corpus_plan_succeeds() {
                 "tests/miz/{directory}/{id}.expect.toml"
             ))]
         );
-        if snapshot_ref == "spec.en.mizar_vc.vc_ir.algorithm_void_claim_snapshot" {
+        if matches!(
+            snapshot_ref,
+            "spec.en.mizar_vc.vc_ir.algorithm_void_claim_snapshot"
+                | "spec.en.mizar_vc.vc_ir.algorithm_assert_failure_snapshot"
+        ) {
             assert_eq!(
                 requirement.source,
                 PathBuf::from("doc/design/mizar-vc/en/source_vc_decomposition.md")
             );
             assert_eq!(
                 requirement.section,
-                "VC Task 54; bounded void-algorithm claim VcIr snapshot"
+                if directory == "fail/algorithms" {
+                    "VC Task 43; bounded contradictory assertion VcIr snapshot"
+                } else {
+                    "VC Task 54; bounded void-algorithm claim VcIr snapshot"
+                }
             );
             let backlinks = plan
                 .cases
@@ -10623,8 +10636,8 @@ fn proof_verification_cli_reports_task180_and_step5c2_summary() {
         String::from_utf8_lossy(&output.stderr)
     );
     let stdout = String::from_utf8_lossy(&output.stdout);
-    assert!(stdout.contains("proof-verification cases: 14"));
-    assert!(stdout.contains("passed: 14"));
+    assert!(stdout.contains("proof-verification cases: 15"));
+    assert!(stdout.contains("passed: 15"));
     assert!(stdout.contains("failed: 0"));
 }
 

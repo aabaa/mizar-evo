@@ -7057,6 +7057,19 @@ deferred_reason = "Task 15 records this broad corpus obligation as an external_d
 tests = []
 
 [[requirement]]
+id = "spec.en.mizar_vc.vc_ir.algorithm_assert_failure_snapshot"
+source = "doc/design/mizar-vc/en/source_vc_decomposition.md"
+section = "VC Task 43; bounded contradictory assertion VcIr snapshot"
+stage = "proof_verification"
+status = "covered"
+required = true
+coverage = "snapshot"
+notes = "The complete open Not(Eq) assertion VC and termination accounting precede bounded failure observation; proof and termination acceptance remain deferred."
+tests = [
+  "tests/miz/fail/algorithms/fail_proof_verification_algorithm_assert_unprovable_001.expect.toml",
+]
+
+[[requirement]]
 id = "spec.en.mizar_vc.vc_ir.algorithm_ensures_return_snapshot"
 source = "doc/design/mizar-vc/en/source_vc_decomposition.md"
 section = "VC Task 43; bounded source ensures-return open VcIr snapshot"

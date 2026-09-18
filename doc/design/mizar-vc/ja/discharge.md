@@ -4,6 +4,9 @@
 簡約では実際の透過的な恒等関数適用と同じ束縛の単元集合から `forall X:set. X={X}` が得られ、ガードは bare set のみ、追加仮定は存在しないことを要する。builtin の空集合とその空でない単元集合がこの全称等式を反証する（仕様 §§13.4.1,13.8.6,17.3.4,17.9.4）。
 内部の意味上の証人は実際に失敗した VcId の観測にのみ用い、ソースの証人・反例成果物・受理済み事実・kernel 根拠を生成しない。反射的な右辺は失敗にならず、未対応または NeedsAtp の目標も失敗とは扱わない。
 
+`failed_source_algorithm_assertion(&CoreIr, &VcSet) -> Result<Option<VcId>, String>` は source algorithm generator の完全な結果を再生成・照合し、実際の不変 object 仮引数一つに対する Open な assertion `not a=a` だけを観測する。元の Core Not/Equals graph、両出現、変数・書込み世代、FlowDerived algorithm/statement 所有者、唯一の整合した仮引数型ガード文脈を認証する。
+この矛盾だけが実 VcId を返し、通常の等式は失敗にせず open に留める。局所変数・書込み・契約・未証明 assertion 仮定・hint・偽の前提・無関係なエラー・改変した accounting は失敗の根拠にならない。status 変更、一般的な Unknown/NeedsAtp から失敗への変換、受理証拠、Task274、terminating 昇格は導入しない。
+
 > 正本は英語です。英語版:
 > [../en/discharge.md](../en/discharge.md)。
 

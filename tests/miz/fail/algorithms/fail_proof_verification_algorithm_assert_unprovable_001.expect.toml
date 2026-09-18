@@ -11,5 +11,9 @@ stable_detail_key = "algorithms.assert.unprovable"
 diagnostic_codes = []
 spec_refs = [
   "spec.en.20.algorithms.state.var_const_assert",
+  "spec.en.mizar_vc.vc_ir.algorithm_assert_failure_snapshot",
 ]
-notes = "Audit-1 semantic-bridge inactive oracle seed (September 2026 audit wave): binding expectation for the Step-5 semantic bridge; no active runner tag, earns no current credit. An assert whose formula is unsatisfiable in the current state must fail its obligation (spec 20.4)."
+snapshots = "snapshots/vc/fail_proof_verification_algorithm_assert_unprovable_001.vc_ir.snap"
+profiles = ["fast"]
+tags = ["active_proof_verification"]
+notes = "The real contradictory assertion remains an open VC and is observed only after authenticated whole-result replay; termination and proof acceptance remain deferred."

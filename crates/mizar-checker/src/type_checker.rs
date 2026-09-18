@@ -557,7 +557,26 @@ pub fn check_source_algorithm_types<'a>(
         }
     }
     for (expression, context) in equality_sites {
-        let equality = only(expression, &K::FormulaExpression)?;
+        let outer = only(expression, &K::FormulaExpression)?;
+        let equality = if typed
+            .node(TypedNodeId::new(outer.index()))
+            .is_some_and(|node| node.kind.as_str() == "PrefixFormula(Not)")
+            && context == body_context
+        {
+            let [not, child] = node(outer)?.children() else {
+                return Err(invalid());
+            };
+            tokens(&[(*not, "not")])?;
+            formulas.push(FormulaInput::new(
+                TypedSiteRef::Node(TypedNodeId::new(outer.index())),
+                context,
+                range(outer)?,
+                FormulaKind::Negation,
+            ));
+            *child
+        } else {
+            outer
+        };
         let [left, equals, right] = parts(equality, &K::BuiltinPredicateApplication)? else {
             return Err(invalid());
         };
@@ -741,9 +760,10 @@ pub fn check_source_algorithm_types<'a>(
         }
     }
     if inference.formulas().iter().any(|(_, formula)| {
-        formula.kind != FormulaKind::Equality
-            || formula.status != FormulaStatus::Checked
-            || formula.terms.len() != 2
+        !matches!(
+            (formula.kind, formula.terms.len()),
+            (FormulaKind::Equality, 2) | (FormulaKind::Negation, 0)
+        ) || formula.status != FormulaStatus::Checked
             || !formula.deferred.is_empty()
             || formula.candidate_set.is_some()
             || !formula.facts.is_empty()

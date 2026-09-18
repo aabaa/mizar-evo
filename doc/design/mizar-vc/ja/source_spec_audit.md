@@ -126,7 +126,7 @@ literal top-level public item:
   `DischargeEvidenceInputs`, `DischargePolicyEvidence`,
   `DischargeComputationEvidence`, `DischargeEvidenceReplay`,
   `DischargeExplanation`, `DischargeExplanationCategory`, `DischargeRule`,
-  `try_discharge`
+  `try_discharge`, `failed_source_algorithm_assertion`
 
 Correspondence:
 

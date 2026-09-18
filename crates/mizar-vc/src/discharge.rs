@@ -19,6 +19,91 @@ pub const DEFAULT_COMPUTATION_LIMIT_POLICY: &str = "task-11-computation-step-lim
 pub const DEFINITIONAL_REDUCTION_POLICY: &str = "task-11-definitional-reduction";
 pub const DEFINITIONAL_REDUCTION_ALLOW: &str = "allow";
 
+/// Observes a contradictory source assertion without accepting or discharging a proof.
+pub fn failed_source_algorithm_assertion(
+    core: &mizar_core::core_ir::CoreIr,
+    vcs: &VcSet,
+) -> Result<Option<VcId>, String> {
+    use crate::vc_ir::{VcGeneratedFormulaKind, VcKind, VcProgramValue};
+    use mizar_core::core_ir::{CoreAlgorithmStmtKind as S, CoreFormulaKind as F, CoreTermKind};
+    let invalid = || "unsupported or unauthenticated algorithm assertion".to_owned();
+    let Some(vc) = vcs.vcs().first() else {
+        return Ok(None);
+    };
+    let replay = crate::generator::generate_source_algorithm_postconditions(
+        core,
+        vcs.snapshot(),
+        &vc.anchor.generation_schema_version,
+        vcs.schema_version(),
+    )?;
+    if &replay != vcs {
+        return Err(invalid());
+    }
+    let (_, algorithm) = core.algorithms().iter().next().ok_or_else(invalid)?;
+    let [assertion, returned] = algorithm.statements.as_slice() else {
+        return Ok(None);
+    };
+    let parameter = &algorithm.params[0];
+    let S::Assert { formula } = core
+        .algorithm_statements()
+        .get(*assertion)
+        .ok_or_else(invalid)?
+        .kind
+    else {
+        return Ok(None);
+    };
+    let F::Not(inner) = core.formulas().get(formula).ok_or_else(invalid)?.kind else {
+        return Ok(None);
+    };
+    let F::Equals { left, right } = core.formulas().get(inner).ok_or_else(invalid)?.kind else {
+        return Ok(None);
+    };
+    let S::Return(Some(value)) = core
+        .algorithm_statements()
+        .get(*returned)
+        .ok_or_else(invalid)?
+        .kind
+    else {
+        return Ok(None);
+    };
+    let [equality, negation] = vcs.generated_formulas() else {
+        return Ok(None);
+    };
+    let [guard] = vc.local_context.entries() else {
+        return Ok(None);
+    };
+    let parameter_value = VcProgramValue {
+        var: parameter.var,
+        definition: None,
+    };
+    if !algorithm.contracts.ensures.is_empty()
+        || vcs.vcs().len() != 1
+        || vc.kind != VcKind::AlgorithmAssertion
+        || vc.status != VcStatus::Open
+        || vc.proof_hint.is_some()
+        || guard.kind != ContextEntryKind::CheckerFact
+        || guard.formula != parameter.ty_guard.map(VcFormulaRef::Core)
+        || vc.premises != [PremiseRef::LocalContext(guard.id)]
+        || [left, right, value].iter().any(|id| {
+            core.terms()
+                .get(*id)
+                .is_none_or(|term| term.kind != CoreTermKind::Var(parameter.var))
+        })
+        || equality.kind != VcGeneratedFormulaKind::AlgorithmAssertion
+        || negation.kind != VcGeneratedFormulaKind::AlgorithmAssertion
+        || equality.shape
+            != (VcGeneratedFormulaShape::ProgramEquals {
+                left: parameter_value,
+                right: parameter_value,
+            })
+        || negation.shape != VcGeneratedFormulaShape::Not(VcFormulaRef::Generated(equality.id))
+        || vc.goal != VcFormulaRef::Generated(negation.id)
+    {
+        return Ok(None);
+    }
+    Ok(Some(vc.id))
+}
+
 /// Detects bounded source functorial/reduction failures without accepting a proof.
 pub fn failed_functorial_coherence(
     core: &mizar_core::core_ir::CoreIr,

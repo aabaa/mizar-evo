@@ -601,13 +601,27 @@ pub fn generate_source_algorithm_postconditions(
                 vec![*value]
             }
             CoreAlgorithmStmtKind::Assert { formula } => {
-                let entry = core.formulas().get(*formula).ok_or_else(invalid)?;
+                let outer = core.formulas().get(*formula).ok_or_else(invalid)?;
+                let outer_span = range(&outer.source)?;
+                let entry = if let CoreFormulaKind::Not(child) = outer.kind {
+                    let inner = core.formulas().get(child).ok_or_else(invalid)?;
+                    let inner_span = range(&inner.source)?;
+                    if !used_formulas.insert(child)
+                        || inner_span.start <= outer_span.start
+                        || inner_span.end != outer_span.end
+                    {
+                        return Err(invalid());
+                    }
+                    inner
+                } else {
+                    outer
+                };
                 let CoreFormulaKind::Equals { left, right } = entry.kind else {
                     return Err(invalid());
                 };
                 let span = range(&entry.source)?;
-                if span.start <= current_range.start
-                    || span.end >= current_range.end
+                if outer_span.start <= current_range.start
+                    || outer_span.end >= current_range.end
                     || !used_formulas.insert(*formula)
                     || range(&core.terms().get(left).ok_or_else(invalid)?.source)?.start
                         != span.start
@@ -865,12 +879,17 @@ pub fn generate_source_algorithm_postconditions(
                     new_fact = Some((lhs, rhs, guard));
                 }
                 CoreAlgorithmStmtKind::Assert { formula } => {
-                    let CoreFormulaKind::Equals { left, right } =
-                        core.formulas().get(*formula).ok_or_else(invalid)?.kind
-                    else {
+                    let outer = &core.formulas().get(*formula).ok_or_else(invalid)?.kind;
+                    let equality = if let CoreFormulaKind::Not(child) = outer {
+                        &core.formulas().get(*child).ok_or_else(invalid)?.kind
+                    } else {
+                        outer
+                    };
+                    let CoreFormulaKind::Equals { left, right } = *equality else {
                         return Err(invalid());
                     };
-                    let goal = VcFormulaRef::Generated(VcGeneratedFormulaId::new(generated.len()));
+                    let mut goal =
+                        VcFormulaRef::Generated(VcGeneratedFormulaId::new(generated.len()));
                     generated.push(VcGeneratedFormula {
                         id: VcGeneratedFormulaId::new(generated.len()),
                         kind: VcGeneratedFormulaKind::AlgorithmAssertion,
@@ -880,6 +899,16 @@ pub fn generate_source_algorithm_postconditions(
                         },
                         provenance: provenance.clone(),
                     });
+                    if matches!(outer, CoreFormulaKind::Not(_)) {
+                        let id = VcGeneratedFormulaId::new(generated.len());
+                        generated.push(VcGeneratedFormula {
+                            id,
+                            kind: VcGeneratedFormulaKind::AlgorithmAssertion,
+                            shape: VcGeneratedFormulaShape::Not(goal),
+                            provenance: provenance.clone(),
+                        });
+                        goal = VcFormulaRef::Generated(id);
+                    }
                     let (handoff_id, _) = handoff
                         .entries
                         .iter()

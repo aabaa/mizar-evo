@@ -4,6 +4,9 @@
 For reduction, actual transparent identity applications and the singleton of the same binder must yield `forall X:set. X={X}`, with exactly its bare-set guard and no extra assumptions. The builtin empty set refutes this universal equation because its singleton is nonempty (spec §§13.4.1,13.8.6,17.3.4,17.9.4).
 The internal semantic witness yields only the actual failing VcId, never a source witness, countermodel artifact, accepted fact or kernel evidence; a reflexive RHS yields no failure, and unsupported or NeedsAtp goals earn no failure observation.
 
+`failed_source_algorithm_assertion(&CoreIr, &VcSet) -> Result<Option<VcId>, String>` replays the complete source algorithm generator result before observing only an Open assertion `not a=a` over one actual immutable object parameter. It authenticates the original Core Not/Equals graph, both occurrences, variable/write identity, FlowDerived algorithm/statement owner and the sole consistent parameter-guard context.
+Only that contradiction returns its actual VcId; ordinary equality remains open without failure. Locals, writes, contracts, pending assertion assumptions, hints, forged premises, unrelated errors and altered accounting cannot establish this observation. No status mutation, generic Unknown/NeedsAtp-to-failure rule, accepted evidence, Task274 or terminating promotion follows.
+
 > Canonical language: English. Japanese companion:
 > [../ja/discharge.md](../ja/discharge.md).
 

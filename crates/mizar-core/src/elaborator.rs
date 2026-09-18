@@ -15173,7 +15173,11 @@ pub fn lower_source_algorithms(
     ));
     let mut ensures = Vec::new();
     let mut assertion_formulas = BTreeMap::new();
+    let mut formula_ids = BTreeMap::new();
     for (_, formula) in checked.formulas().iter() {
+        if formula.kind == mizar_checker::type_checker::FormulaKind::Negation {
+            continue;
+        }
         let [left, right] = formula.terms.as_slice() else {
             return Err(invalid());
         };
@@ -15181,29 +15185,7 @@ pub fn lower_source_algorithms(
             return Err(invalid());
         }
         let site = formula.site.node();
-        let expression = typed
-            .iter()
-            .find_map(|(id, node)| {
-                (node.kind.as_str() == "FormulaExpression" && node.children.as_slice() == [site])
-                    .then_some(id)
-            })
-            .ok_or_else(invalid)?;
-        let (owner, kind) = typed
-            .iter()
-            .find_map(|(id, node)| {
-                node.children
-                    .contains(&expression)
-                    .then_some((id, node.kind.as_str()))
-            })
-            .ok_or_else(invalid)?;
-        let id = CoreFormulaSeedId::new(formulas.len());
-        match kind {
-            "AlgorithmEnsuresClause" => ensures.push(id),
-            "AssertStatement" => {
-                assertion_formulas.insert(owner, id);
-            }
-            _ => return Err(invalid()),
-        }
+        formula_ids.insert(site, CoreFormulaSeedId::new(formulas.len()));
         formulas.push(CoreFormulaSeed::new(
             CoreFormulaSeedKind::Equals {
                 left: *term_ids.get(&left.node()).ok_or_else(invalid)?,
@@ -15212,6 +15194,43 @@ pub fn lower_source_algorithms(
             CoreSourceRef::direct(range(site)?),
             provenance(site),
         ));
+    }
+    for (_, formula) in checked.formulas().iter() {
+        if formula.kind == mizar_checker::type_checker::FormulaKind::Negation {
+            let site = formula.site.node();
+            let child = only(site, "BuiltinPredicateApplication")?;
+            let inner = *formula_ids.get(&child).ok_or_else(invalid)?;
+            formula_ids.insert(site, CoreFormulaSeedId::new(formulas.len()));
+            formulas.push(CoreFormulaSeed::new(
+                CoreFormulaSeedKind::Not(inner),
+                CoreSourceRef::direct(range(site)?),
+                provenance(site),
+            ));
+        }
+    }
+    for (site, id) in &formula_ids {
+        let Some(expression) = typed.iter().find_map(|(id, node)| {
+            (node.kind.as_str() == "FormulaExpression" && node.children.as_slice() == [*site])
+                .then_some(id)
+        }) else {
+            // The sealed source tree retains an equality nested directly under `not`.
+            continue;
+        };
+        let (owner, kind) = typed
+            .iter()
+            .find_map(|(id, node)| {
+                node.children
+                    .contains(&expression)
+                    .then_some((id, node.kind.as_str()))
+            })
+            .ok_or_else(invalid)?;
+        match kind {
+            "AlgorithmEnsuresClause" => ensures.push(*id),
+            "AssertStatement" => {
+                assertion_formulas.insert(owner, *id);
+            }
+            _ => return Err(invalid()),
+        }
     }
     let context = prepare_core_context(input).map_err(|error| error.to_string())?;
     let owner = context

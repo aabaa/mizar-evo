@@ -1105,7 +1105,7 @@ fn task262_mode_definition_justification_and_semantic_subtrees_are_not_published
     ], [261, 261, 261, 248, 261, 261]);
     assert_eq!(
         (plan.cases.len(), plan.manifest.requirements.len()),
-        (558, 503)
+        (558, 504)
     );
     assert_eq!(
         plan.cases.iter().fold((0, 0), |(pass, fail), case| {
@@ -1124,7 +1124,7 @@ fn task262_mode_definition_justification_and_semantic_subtrees_are_not_published
             active_type_elaboration_cases(&plan).count(),
             crate::active_proof_verification_cases(&plan).count(),
         ),
-        (113, 11, 261, 14)
+        (113, 11, 261, 15)
     );
     let type_stage = plan
         .coverage_report

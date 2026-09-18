@@ -541,7 +541,7 @@ the paired producer tasks.
 42. **Algorithm narrowing and field-update type VCs.** [ ] — Specs
     05.7-05.8/08.2/13.3/19.3/20.1; Core 42/46/48/52-53;
     `MT10-VC-PV/VC42`.
-43. **Algorithm body-contract, return, and assertion VCs.** [~] — [Bounded flat-state contracts](../../task_contracts/en/STEP5C14-ALGORITHM-SEMANTICS.md); Specs
+43. **Algorithm body-contract, return, and assertion VCs.** [~] — [Bounded flat-state contracts and bounded assertion failure](../../task_contracts/en/STEP5C14-ALGORITHM-SEMANTICS.md); Specs
     20.4-20.5/20.13; Core 42-43/46/48/52-53; `MT10-VC-PV/VC43`.
 44. **Call-precondition and concrete substitution VCs.** [ ] — Specs
     20.4.1/20.8/20.13.1; Core 46/48/52-53; `MT10-VC-PV/VC44`.

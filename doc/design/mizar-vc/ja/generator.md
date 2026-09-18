@@ -554,7 +554,7 @@ exhaustive match を壊さず追加できるよう、各 enum は `#[non_exhaust
 
 ## Bounded source return postconditions
 
-`generate_source_algorithm_postconditions(&CoreIr, BuildSnapshotId, &GenerationSchemaVersion, &VcSchemaVersion) -> Result<VcSet, String>` は object 仮引数一つの平坦な profile を検証し、CFG/handoff と既存 intake/normalization を導出する。不変の単一 return は既存 Core 項等式を保持する。初期化 var/const・型付き局所書込み・等式 assert は認証済み program-value 世代を使用し、書込み前に RHS を評価し、古い事実と独立記憶領域を保持して新しい等式・型ガードを追加する。assertion 目標は直前の文脈を使用し、後続には同じ目標を assertion handoff への未証明依存としてのみ渡す。return は現在値で result を置換する。未加工の正規化文脈は非公開とし、ソース・所有者・map・由来・書込み順序・依存リンクを原子的に検証する。assert と ensures は open VC、終了メタデータは元の status の NoConcreteVc とし、obligation がなければ完全なゼロ VC を返す。未対応制御、VC profile 内の ghost、不正・診断付き入力を拒否する。anchor と未解決依存は再利用不可に留め、discharge・承認・terminating 昇格を行わない。
+`generate_source_algorithm_postconditions(&CoreIr, BuildSnapshotId, &GenerationSchemaVersion, &VcSchemaVersion) -> Result<VcSet, String>` は object 仮引数一つの平坦な profile を検証し、CFG/handoff と既存 intake/normalization を導出する。不変の単一 return は既存 Core 項等式を保持する。初期化 var/const・型付き局所書込み・等式 assert は認証済み program-value 世代を使用し、書込み前に RHS を評価し、古い事実と独立記憶領域を保持して新しい等式・型ガードを追加する。prefix 否定一つの等式 assertion は既存 Not(Generated(ProgramEquals)) を使い、実変数・書込み世代と両ソース式の範囲を保持し、全行を計上する。ensures は等式のみとする。assertion 目標は直前の文脈を使用し、後続には同じ目標を assertion handoff への未証明依存としてのみ渡す。return は現在値で result を置換する。未加工の正規化文脈は非公開とし、ソース・所有者・map・由来・書込み順序・依存リンクを原子的に検証する。assert と ensures は open VC、終了メタデータは元の status の NoConcreteVc とし、obligation がなければ完全なゼロ VC を返す。未対応制御、VC profile 内の ghost、不正・診断付き入力を拒否する。anchor と未解決依存は再利用不可に留め、discharge・承認・terminating 昇格を行わない。
 
 ## Bounded void-claim generation
 
