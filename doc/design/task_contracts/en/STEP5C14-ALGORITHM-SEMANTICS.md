@@ -45,7 +45,7 @@ Change existing checker/Core/CFG/VC/runner modules and relevant Rust tests;
 activate only these sidecars without changing their semantic expectations; the return case owns complete generated and zero-VC control baselines and its narrow snapshot trace.
 Maintain paired owning module docs and public-item inventories where needed,
 this EN contract plus JA pointer, owner plan links and Chapter20 audit's partial
-static-source coverage. No spec or existing .miz edit is required.
+static-source coverage. The claim fixture gains only its matching void algorithm declaration (§§20.1.1,20.2.6,20.6.2); claim semantics and activation remain deferred.
 Require real-source outcomes, safe/renamed/reference-mutation controls, source/
 typed/env/owner/binding corruption rejection, exact stage admission, deterministic
 Core/CFG/source mapping, static zero-VC behavior, actual postcondition substitution/context, full deterministic VcSet snapshots and exact seed accounting. No-ensures input retains honest zero-VC accounting; generated equality remains unproved and reuse-ineligible.
