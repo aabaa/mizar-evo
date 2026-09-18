@@ -573,11 +573,11 @@ activation-map ledger; every 5C task also requires 5B.2.
    consistency), dependent bracket parameters, constructors
    (field access, beta projection), selector resolution, and
    `with`-update. Deps: none beyond 5B.2.
-3. [~] **[5C.3 — Attributes and argument widening](./task_contracts/en/STEP5C3-ATTRIBUTE-SEMANTICS.md)** (`mizar-checker`;
+3. [x] **[5C.3 — Attributes and argument widening](./task_contracts/en/STEP5C3-ATTRIBUTE-SEMANTICS.md)** (`mizar-checker`;
    spec ch. 3 and 6). Requirements:
    `spec.en.03.types.widening.argument_position` plus
-   `spec.en.06.attributes.*` (7 ids; 8 in total). Targets: 9 pairs; eight complete and
-   attributed widening inactive; its source-proof prerequisite is implemented. Covers attribute uniqueness, param-prefix
+   `spec.en.06.attributes.*` (7 ids; 8 in total). Targets: 9 pairs; all nine complete with
+   bounded attributed widening through its implemented source-proof prerequisite. Covers attribute uniqueness, param-prefix
    declaration/lexicon rejection, struct-qualified disambiguation,
    redefinition coherence, negated attribute chains, non-attribute
    symbol rejection, and argument-position widening. Deps: 5A.2, 5C.2

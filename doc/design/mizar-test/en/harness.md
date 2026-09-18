@@ -49,23 +49,27 @@ Semantic mismatches fail closed; Task262 transport and prior mode/property outco
 ## Step 5C.3 attribute semantic runner
 
 The private route preserves the original seven rows and adds only the functor argument mismatch
-at `type_elaboration` / `type_check`; the attributed-widening positive remains inactive.
+at `type_elaboration` / `type_check`; the ninth attributed-widening profile is defined below.
 Authenticate both source/sidecar identities and all stage/outcome/category/key/domain/spec-ref/tag metadata
 and auxiliary-payload absence; reserved identities cannot fall through other stages. The new branch uses
 actual source/neutral typed projections and the [checker single-candidate profile](../../mizar-checker/en/type_checker.md#distinct-loci-overload-source-checking).
 Map only an authenticated builtin-set-to-required-structure rejection from its existing viability tables,
 checking both call sites and every candidate/diagnostic. Valid other calls do not hide a mismatch;
 all-valid calls, coarse MissingEvidence/NoMatch and unrelated errors cannot satisfy the negative.
-Prior attribute routes and C13's strict profile remain unchanged; no accepted registration or proof is produced.
+This negative branch preserves prior attribute routes and C13's strict profile; it produces no accepted registration or proof.
 
 The separate source-registration prerequisite runs the unchanged whole C3 widening fixture through
 [proof status](../../mizar-proof/en/status.md#source-existential-registration-proof) in Rust
 integration tests with a test-only `mizar-kernel` dependency for independent normal evidence checks. Complete Core/VC and both handoff baselines retain the original parent, two open
 leaves and explicit builtin nonempty accounting; real kernel and policy checks must produce only the
-matching module-local registration. The widening sidecar, trace/map, stage and all eight active
-outcomes remain unchanged. Renames, source/seal corruption, missing/wrong citation, negative
+matching module-local registration. Preserve its baselines, original trace/map ordering/status, stage and all eight active
+outcomes; only the widening sidecar gains its exact active tag and bounded note after implementation. Renames, source/seal corruption, missing/wrong citation, negative
 definition, choice/gate/owner/accounting mutations, kernel/policy rejection and source-order
 visibility are controls; no fabricated Accepted fixture supplies positive credit.
+
+The positive branch reserves the exact widening id and source/sidecar basenames across aliases/stages, validates pass/type_check, domain types.widening, its sole original semantic ref, sole active tag and absent contradictory payloads, and rejects missing/duplicate mapped rows.
+It obtains real resolved/neutral inputs, freshly calls proof status once with the current snapshot and release policy, then immediately calls the [attributed argument checker](../../mizar-checker/en/type_checker.md#source-attributed-argument-widening) with the same immutable inputs/database. No caller database, activation or kernel result is accepted, and the runner synthesizes no support facts.
+Require both actual attributed gates, separate theorem/proof binders and both actual calls with consumable non-Exact widening support and real bare-set results. Source/profile/support corruption and either kernel/policy failure reject; no coherence/theorem proof, C5/C13 widening, artifact import or new Core/VC baseline follows.
 
 ## Parser Task 46 Operator-Declaration Parse-Only Increment
 

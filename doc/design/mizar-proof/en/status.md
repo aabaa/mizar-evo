@@ -246,8 +246,8 @@ introduced.
 The returned database is this call's module-local output, not a transferable proof receipt. Later
 consumers must use this producer within the same authenticated source orchestration, never accept an
 arbitrary returned/public database as proof authority. Preserve item-order visibility and no
-retroactive facts. C3 widening, C5/C13, broader Task274, artifact publication and cluster/reduction
-effects remain deferred.
+retroactive facts. The bounded C3 widening runner may consume this fresh local output immediately in that orchestration;
+C5/C13, broader Task274, artifact publication and cluster/reduction effects remain deferred.
 
 ## Three-registration source-proof extension
 

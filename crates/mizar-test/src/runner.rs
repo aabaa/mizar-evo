@@ -2664,7 +2664,23 @@ fn type_elaboration_detail_keys(
         }
         return source_registration_inputs(workspace_root, case, output)
             .and_then(|(source, typed, symbols)| {
-                type_elaboration::step5c3_functor_argument_detail_keys(&source, &symbols, &typed)
+                if case.expectation.domain == "types.widening" {
+                    let database = mizar_proof::status::prove_source_existential_registration(
+                        &source,
+                        &typed,
+                        &symbols,
+                        shared::snapshot_id(0),
+                        &mizar_proof::policy::VerifierPolicy::release(),
+                    )?;
+                    mizar_checker::type_checker::check_source_attribute_widening_types(
+                        &source, &typed, &symbols, &database,
+                    )?;
+                    Ok(Vec::new())
+                } else {
+                    type_elaboration::step5c3_functor_argument_detail_keys(
+                        &source, &symbols, &typed,
+                    )
+                }
             })
             .unwrap_or_else(|error| vec![error]);
     }

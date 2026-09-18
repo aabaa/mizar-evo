@@ -8953,6 +8953,322 @@ fn step5c3_registration_vcs(
 }
 
 #[test]
+fn step5c3_widening_checks_both_real_calls_and_gates_after_fresh_proof() {
+    use mizar_checker::{
+        overload_resolution::*, registration_resolution::*, type_checker::*, typed_ast::*,
+    };
+    let original = std::fs::read_to_string(step5c3_registration_case().source_path).unwrap();
+    let renamed = original
+        .replace("WMDef", "MarkDefinition")
+        .replace("wmarked", "tagged")
+        .replace("WMarkedExists", "TaggedExists")
+        .replace("WBoxDef", "BoxDefinition")
+        .replace("wbox", "container")
+        .replace("WidenArg1", "Consumer")
+        .replace("X", "Value");
+    for text in [original, renamed] {
+        let (source, nodes, symbols) = step5c3_registration_inputs(&text).unwrap();
+        let database = mizar_proof::status::prove_source_existential_registration(
+            &source,
+            &nodes,
+            &symbols,
+            super::shared::snapshot_id(0),
+            &mizar_proof::policy::VerifierPolicy::release(),
+        )
+        .unwrap();
+        let output =
+            check_source_attribute_widening_types(&source, &nodes, &symbols, &database).unwrap();
+        assert_eq!(
+            output,
+            check_source_attribute_widening_types(&source, &nodes, &symbols, &database).unwrap()
+        );
+        let (gates, coercions, collection, viability) = output;
+        let active = database.activated().iter().next().unwrap();
+        let gates = gates.iter().collect::<Vec<_>>();
+        assert_eq!(gates.len(), 2);
+        assert_ne!(gates[0].owner(), gates[1].owner());
+        for gate in &gates {
+            assert_eq!(gate.status(), ExistentialGateStatus::Satisfied);
+            assert_eq!(gate.registration(), Some(active.id()));
+            assert_eq!(gate.pattern(), active.pattern());
+            assert!(gate.base_evidence_kind().is_none() && gate.base_evidence_coverage().is_none());
+            assert!(gate.facts().is_empty() && gate.diagnostics().is_empty());
+            let node = nodes.node(gate.owner().node()).unwrap();
+            assert_eq!(node.kind.as_str(), "TypeExpression");
+            assert_eq!(
+                node.anchor,
+                mizar_session::SourceAnchor::Range(gate.source_range())
+            );
+            let spelling = &text[gate.source_range().start..gate.source_range().end];
+            assert!(
+                spelling == "wmarked set" || spelling == "tagged set",
+                "{spelling}"
+            );
+        }
+        assert!(coercions.diagnostics().is_empty() && coercions.initial_obligations().is_empty());
+        assert_eq!(coercions.facts().len(), 2);
+        assert_eq!(collection.sites().len(), 2);
+        assert_eq!(collection.candidates().len(), 2);
+        let mut bindings = std::collections::BTreeSet::new();
+        for ((_, site), (_, decision)) in
+            collection.sites().iter().zip(viability.decisions().iter())
+        {
+            assert_eq!(site.arguments.len(), 1);
+            let arg = &site.arguments[0];
+            let typed_arg = nodes.node(arg.node()).unwrap();
+            let resolved_arg = source
+                .arena()
+                .node(typed_arg.resolved_node.unwrap())
+                .unwrap();
+            bindings.insert(
+                mizar_resolve::names::resolve_template_formal(&source, resolved_arg.children()[0])
+                    .unwrap(),
+            );
+            let row = coercions
+                .coercions()
+                .iter()
+                .find_map(|(_, row)| (&row.site == arg).then_some(row))
+                .unwrap();
+            assert_eq!(row.status, CoercionStatus::Candidate);
+            assert_eq!(row.kind, CoercionKind::Widening);
+            let actual = row.from.unwrap();
+            assert_ne!(actual, row.to);
+            let ty = coercions.normalized_types().get(actual).unwrap();
+            let target = coercions.normalized_types().get(row.to).unwrap();
+            assert_eq!(ty.head, TypeHeadRef::BuiltinSet);
+            assert_eq!(ty.status, NormalizedTypeStatus::Known);
+            assert_eq!(ty.attributes.positive().len(), 1);
+            assert!(ty.attributes.negative().is_empty() && ty.args.is_empty());
+            assert_eq!(target.head, ty.head);
+            assert!(
+                target.attributes.positive().is_empty()
+                    && target.attributes.negative().is_empty()
+                    && target.args.is_empty()
+            );
+            let [fact] = row.supporting_facts.as_slice() else {
+                panic!("one support")
+            };
+            let fact = coercions.facts().get(*fact).unwrap();
+            assert_eq!(&fact.subject, arg);
+            assert_eq!(fact.status, FactStatus::Known);
+            assert!(matches!(fact.provenance, FactProvenance::Builtin(_)));
+            let CandidateViabilityStatus::Viable { views } = &decision.status else {
+                panic!("viable")
+            };
+            assert_eq!(views.len(), 1);
+            assert_eq!(views[0].kind, ArgumentViewKind::FactWidening);
+            assert_eq!((views[0].actual, views[0].target), (actual, row.to));
+            assert_eq!(views[0].facts, row.supporting_facts);
+            let candidate = collection
+                .candidates()
+                .get(decision.source_candidate)
+                .unwrap();
+            assert_eq!(candidate.parameters, [row.to]);
+            assert_eq!(candidate.result, Some(row.to));
+        }
+        assert_eq!(
+            bindings.len(),
+            2,
+            "equal spellings retain distinct resolver binders"
+        );
+        let expansion = TemplateExpansionOutput::expand(&collection);
+        for mutation in 0..6 {
+            let inputs = expansion.candidates().iter().map(|(id, candidate)| {
+                let site = collection.sites().get(candidate.site).unwrap();
+                let row = coercions
+                    .coercions()
+                    .iter()
+                    .find_map(|(_, row)| (row.site == site.arguments[0]).then_some(row))
+                    .unwrap();
+                CandidateViabilityInput {
+                    candidate: id,
+                    arguments: vec![ArgumentViabilityEvidence::FactWidening {
+                        actual: row.from.unwrap(),
+                        target: if mutation == 5 {
+                            row.from.unwrap()
+                        } else {
+                            row.to
+                        },
+                        facts: if mutation == 0 {
+                            Vec::new()
+                        } else {
+                            row.supporting_facts.clone()
+                        },
+                        status: match mutation {
+                            1 => ViabilityFactStatus::PendingObligation,
+                            2 => ViabilityFactStatus::Degraded,
+                            3 => ViabilityFactStatus::Rejected,
+                            4 => ViabilityFactStatus::OutOfScopeAssumption,
+                            _ => ViabilityFactStatus::Consumable,
+                        },
+                    }],
+                }
+            });
+            let rejected = CandidateViabilityOutput::filter(&expansion, inputs);
+            assert!(
+                rejected.decisions().iter().all(|(_, decision)| !matches!(
+                    decision.status,
+                    CandidateViabilityStatus::Viable { .. }
+                )),
+                "mutation {mutation}"
+            );
+        }
+        for mutation in 0..5 {
+            let candidate = ExistentialGateCandidate::new(
+                active.id(),
+                active.pattern().clone(),
+                active.correctness().clone(),
+                active.evidence().clone(),
+                active.trigger().clone(),
+                gates[0].attributes().to_vec(),
+            )
+            .with_fingerprint(active.fingerprint().unwrap().clone());
+            let candidate = match mutation {
+                0 => candidate.with_fingerprint("foreign"),
+                1 => candidate.with_correctness("foreign"),
+                2 => candidate.with_activation_evidence("foreign"),
+                3 => candidate.with_trigger("foreign"),
+                _ => candidate.with_attributes([RegistrationAttributeKey::new("foreign")]),
+            };
+            let input = ExistentialGateInput::new(
+                gates[0].owner().clone(),
+                gates[0].source_range(),
+                active.pattern().clone(),
+                active.trigger().clone(),
+                gates[0].attributes().to_vec(),
+            )
+            .with_candidates([candidate]);
+            let rejected = ExistentialGateOutput::evaluate(&database, [input]);
+            assert!(
+                rejected
+                    .iter()
+                    .all(|gate| gate.status() != ExistentialGateStatus::Satisfied)
+            );
+        }
+    }
+}
+
+#[test]
+fn step5c3_widening_rejects_changed_consumers_and_foreign_inputs() {
+    use mizar_checker::{
+        registration_resolution::*, type_checker::check_source_attribute_widening_types as check,
+        typed_ast::*,
+    };
+    let text = std::fs::read_to_string(step5c3_registration_case().source_path).unwrap();
+    for (from, to) in [
+        ("holds wbox X = X", "holds wbox Missing = X"),
+        ("thus wbox X = X", "thus wbox Missing = X"),
+        ("holds wbox X = X", "holds X = X"),
+        ("thus wbox X = X", "thus X = X"),
+        ("holds wbox X = X", "holds wbox X = wbox X"),
+        ("thus wbox X = X", "thus wbox X = wbox X"),
+        ("holds wbox X = X", "holds missing X = X"),
+        ("thus wbox X = X", "thus missing X = X"),
+        ("for X being wmarked set", "for X being set"),
+        ("let X be wmarked set", "let X be set"),
+        ("for X being wmarked set", "for X being non wmarked set"),
+        ("let X be wmarked set", "let X be non wmarked set"),
+        (
+            "func WBoxDef: wbox X -> set",
+            "func WBoxDef: wbox X -> object",
+        ),
+        ("-> set equals X", "-> set equals the set"),
+        ("func WBoxDef: wbox X", "func WBoxDef: wbox Missing"),
+        ("let X be set;\n  func", "let X be object;\n  func"),
+        ("by WBoxDef;", "by WMDef;"),
+        ("by WBoxDef;", ";"),
+        ("means X = X", "means not X = X"),
+        ("by WMDef;", "by WBoxDef;"),
+        ("take the set;", "take the wmarked set;"),
+        ("by WMDef;", ";"),
+        ("coherence;", "coherence; coherence;"),
+        ("holds wbox X = X", "holds wbox = X"),
+    ] {
+        let changed = text.replacen(from, to, 1);
+        assert_ne!(changed, text, "missing mutation {from}");
+        let result = step5c3_registration_inputs(&changed).and_then(|(source, nodes, symbols)| {
+            let database = mizar_proof::status::prove_source_existential_registration(
+                &source,
+                &nodes,
+                &symbols,
+                super::shared::snapshot_id(0),
+                &mizar_proof::policy::VerifierPolicy::release(),
+            )?;
+            check(&source, &nodes, &symbols, &database)
+        });
+        assert!(result.is_err(), "accepted {from} -> {to}");
+    }
+    let (first, rest) = text.split_once("registration\n").unwrap();
+    let (registration, tail) = rest.split_once("\n\ndefinition\n").unwrap();
+    for changed in [
+        format!("{first}definition\n{tail}\nregistration\n{registration}"),
+        format!("{text}\ntheorem Extra: for X being set holds X = X;\n"),
+    ] {
+        let rejected =
+            step5c3_registration_inputs(&changed).and_then(|(source, nodes, symbols)| {
+                let database = mizar_proof::status::prove_source_existential_registration(
+                    &source,
+                    &nodes,
+                    &symbols,
+                    super::shared::snapshot_id(0),
+                    &mizar_proof::policy::VerifierPolicy::release(),
+                )?;
+                check(&source, &nodes, &symbols, &database)
+            });
+        assert!(rejected.is_err(), "extra item or late registration");
+    }
+    let (source, nodes, symbols) = step5c3_registration_inputs(&text).unwrap();
+    let database = mizar_proof::status::prove_source_existential_registration(
+        &source,
+        &nodes,
+        &symbols,
+        super::shared::snapshot_id(0),
+        &mizar_proof::policy::VerifierPolicy::release(),
+    )
+    .unwrap();
+    let pending = check_source_existential_registration_proof(&source, &nodes, &symbols).unwrap();
+    assert!(check(&source, &nodes, &symbols, pending.database()).is_err());
+    let (foreign_source, foreign_nodes, foreign_symbols) =
+        step5c3_registration_inputs(&text.replace("wmarked", "othermarked")).unwrap();
+    let foreign_database = mizar_proof::status::prove_source_existential_registration(
+        &foreign_source,
+        &foreign_nodes,
+        &foreign_symbols,
+        super::shared::snapshot_id(0),
+        &mizar_proof::policy::VerifierPolicy::release(),
+    )
+    .unwrap();
+    assert!(check(&source, &nodes, &symbols, &foreign_database).is_err());
+    assert!(check(&source, &foreign_nodes, &symbols, &database).is_err());
+    assert!(check(&source, &nodes, &foreign_symbols, &database).is_err());
+    let target = nodes
+        .iter()
+        .find(|(_, node)| node.kind.as_str() == "LetStatement")
+        .unwrap()
+        .0;
+    for mutation in 0..5 {
+        let mut raw = nodes
+            .iter()
+            .map(|(_, node)| node.clone())
+            .collect::<Vec<_>>();
+        match mutation {
+            0 => raw[target.index()].typing = TypingState::Successful,
+            1 => raw[target.index()].recovery = NodeRecoveryState::Recovered,
+            2 => raw[target.index()].children.reverse(),
+            3 => {
+                raw[target.index()].resolved_node = raw[nodes.root().unwrap().index()].resolved_node
+            }
+            _ => raw[target.index()].anchor = raw[nodes.root().unwrap().index()].anchor.clone(),
+        }
+        let altered = TypedArena::try_new(nodes.root(), raw).unwrap();
+        assert!(
+            check(&source, &altered, &symbols, &database).is_err(),
+            "neutral mutation {mutation}"
+        );
+    }
+}
+
+#[test]
 fn step5c3_source_registration_preserves_real_choices_accounting_and_full_baselines() {
     use mizar_checker::registration_resolution::*;
     use mizar_core::core_ir::{
@@ -9549,7 +9865,14 @@ fn step5c3_source_registration_normal_wire_rejects_context_polarity_and_substitu
         .unwrap();
         let result = step5c3_check_registration_handoff(&handoff, "clean").unwrap();
         assert!(result.sat_check_report().is_some());
-        for mutation in ["wire", "goal-bytes", "context", "provenance", "polarity", "resource"] {
+        for mutation in [
+            "wire",
+            "goal-bytes",
+            "context",
+            "provenance",
+            "polarity",
+            "resource",
+        ] {
             assert!(
                 step5c3_check_registration_handoff(&handoff, mutation).is_err(),
                 "leaf {:?}: {mutation}",
@@ -9774,7 +10097,8 @@ fn step5c3_source_registration_rejects_coherent_core_and_vc_corruption() {
                         if matches!(citation, CoreCitation::Label(label)
                             if label.as_str().starts_with("definition:"))
                         {
-                            *citation = CoreCitation::Label(CoreLabelRef::new("definition:foreign"));
+                            *citation =
+                                CoreCitation::Label(CoreLabelRef::new("definition:foreign"));
                         }
                     }
                 }

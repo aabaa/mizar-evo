@@ -1949,6 +1949,571 @@ pub fn check_source_functor_synonym_types(
     Ok((normalization, collection, viability))
 }
 
+/// Checks the two attributed-set arguments using an established local registration database.
+pub fn check_source_attribute_widening_types(
+    source: &SurfaceResolvedArena,
+    nodes: &crate::typed_ast::TypedArena,
+    symbols: &SymbolEnv,
+    database: &crate::registration_resolution::RegistrationDatabase,
+) -> Result<
+    (
+        crate::registration_resolution::ExistentialGateOutput,
+        CoercionCheckingOutput,
+        crate::overload_resolution::OverloadCollectionOutput,
+        crate::overload_resolution::CandidateViabilityOutput,
+    ),
+    String,
+> {
+    use crate::{overload_resolution::*, registration_resolution::*};
+    let invalid = || "types.attribute_widening.unsupported_source".to_owned();
+    // This checks source correspondence, not the authenticity of a public database.
+    let registration = check_source_existential_registration_proof(source, nodes, symbols)?;
+    let [validation] = registration.validations() else {
+        return Err(invalid());
+    };
+    let active = database.activated().iter().next().ok_or_else(invalid)?;
+    let pending = registration
+        .database()
+        .pending()
+        .iter()
+        .next()
+        .ok_or_else(invalid)?;
+    if database.module_id() != source.module()
+        || database.activated().len() != 1
+        || !database.pending().is_empty()
+        || !database.rejected().is_empty()
+        || !database.diagnostics().is_empty()
+        || active.source() != pending.source()
+        || active.resolver_registration() != validation.resolver_registration()
+        || active.validation_kind() != Some(RegistrationValidationKind::Existential)
+        || active.pattern().as_str() != format!("{:?}", validation.pattern())
+        || active.correctness().as_str() != validation.correctness_provenance().as_str()
+        || active.fingerprint().is_none()
+        || !active.parameters().is_empty()
+    {
+        return Err(invalid());
+    }
+    let node = |id| source.arena().node(id).ok_or_else(invalid);
+    let parts = |id, kind: &K| {
+        let current = node(id)?;
+        if current.kind() != kind {
+            return Err(invalid());
+        }
+        Ok(current.children())
+    };
+    let only = |id, kind: &K| {
+        let [child] = parts(id, kind)? else {
+            return Err(invalid());
+        };
+        Ok(*child)
+    };
+    let text = |id| match node(id)?.kind() {
+        K::Token(token) => Ok(token.text.as_ref()),
+        _ => Err(invalid()),
+    };
+    let tokens = |pairs: &[(ResolvedNodeId, &str)]| {
+        for (id, expected) in pairs {
+            let kind = if expected.chars().all(char::is_alphabetic) {
+                SurfaceTokenKind::ReservedWord
+            } else {
+                SurfaceTokenKind::ReservedSymbol
+            };
+            if !matches!(node(*id)?.kind(), K::Token(token) if token.kind == kind && token.text.as_ref() == *expected)
+            {
+                return Err(invalid());
+            }
+        }
+        Ok(())
+    };
+    let range = |id| match node(id)?.origin().anchor() {
+        SourceAnchor::Range(range) => Ok(*range),
+        _ => Err(invalid()),
+    };
+    let site = |id: ResolvedNodeId| TypedSiteRef::Node(TypedNodeId::new(id.index()));
+    let formal = |id| resolve_template_formal(source, id).map_err(|_| invalid());
+    let root_children = node(source.arena().root())?
+        .children()
+        .iter()
+        .copied()
+        .filter(|id| {
+            !matches!(
+                source.arena().node(*id).map(|n| n.kind()),
+                Some(K::Token(_))
+            )
+        })
+        .collect::<Vec<_>>();
+    let [unit] = root_children.as_slice() else {
+        return Err(invalid());
+    };
+    let items = parts(only(*unit, &K::CompilationUnit)?, &K::ItemList)?;
+    let [attribute_block, registration_block, functor_block, theorem] = items else {
+        return Err(invalid());
+    };
+    if node(*attribute_block)?.kind() != &K::DefinitionBlockItem
+        || node(*registration_block)?.kind() != &K::RegistrationBlockItem
+        || range(*attribute_block)?.end >= range(*registration_block)?.start
+        || range(*registration_block)?.end >= range(*functor_block)?.start
+        || range(*functor_block)?.end >= range(*theorem)?.start
+    {
+        return Err(invalid());
+    }
+    let attribute = symbols
+        .symbols()
+        .iter()
+        .filter(|entry| entry.kind() == SymbolKind::Attribute)
+        .collect::<Vec<_>>();
+    let [attribute] = attribute.as_slice() else {
+        return Err(invalid());
+    };
+    let attribute_key = RegistrationAttributeKey::new(format!("{:?}", attribute.symbol()));
+    let pattern = RegistrationValidationPattern::Existential {
+        type_head: "builtin.set".into(),
+        attributes: vec![attribute_key.clone()],
+    };
+    if validation.pattern() != &pattern {
+        return Err(invalid());
+    }
+    let [definition_kw, parameter, definition, coherence, end, semi] =
+        parts(*functor_block, &K::DefinitionBlockItem)?
+    else {
+        return Err(invalid());
+    };
+    tokens(&[(*definition_kw, "definition"), (*end, "end"), (*semi, ";")])?;
+    let [let_kw, segment, semi] = parts(*parameter, &K::DefinitionParameter)? else {
+        return Err(invalid());
+    };
+    tokens(&[(*let_kw, "let"), (*semi, ";")])?;
+    let [locus, be, parameter_type] = parts(*segment, &K::QualifiedVariableSegment)? else {
+        return Err(invalid());
+    };
+    tokens(&[(*be, "be")])?;
+    let [
+        func,
+        label,
+        colon,
+        functor_pattern,
+        arrow,
+        result_type,
+        equals,
+        body,
+        semi,
+    ] = parts(*definition, &K::FunctorDefinition)?
+    else {
+        return Err(invalid());
+    };
+    tokens(&[
+        (*func, "func"),
+        (*colon, ":"),
+        (*arrow, "->"),
+        (*equals, "equals"),
+        (*semi, ";"),
+    ])?;
+    let [name, argument] = parts(*functor_pattern, &K::FunctorPattern)? else {
+        return Err(invalid());
+    };
+    if formal(*argument)? != *locus {
+        return Err(invalid());
+    }
+    let body = only(only(*body, &K::TermDefiniens)?, &K::TermExpression)?;
+    if formal(only(body, &K::TermReference)?)? != *locus {
+        return Err(invalid());
+    }
+    let [keyword, semi] = parts(*coherence, &K::CorrectnessCondition)? else {
+        return Err(invalid());
+    };
+    tokens(&[(*keyword, "coherence"), (*semi, ";")])?;
+    let functors = symbols
+        .symbols()
+        .iter()
+        .filter(|entry| entry.kind() == SymbolKind::Functor)
+        .collect::<Vec<_>>();
+    let [functor] = functors.as_slice() else {
+        return Err(invalid());
+    };
+    if functor.origin().anchor() != node(*definition)?.origin().anchor() {
+        return Err(invalid());
+    }
+    let bare_type = |id| -> Result<TypeExpressionInput, String> {
+        tokens(&[(only(only(id, &K::TypeExpression)?, &K::TypeHead)?, "set")])?;
+        Ok(TypeExpressionInput::new(
+            site(id),
+            range(id)?,
+            "set",
+            TypeHeadInput::BuiltinSet,
+        ))
+    };
+    let parameter_type = bare_type(*parameter_type)?;
+    let result_type = bare_type(*result_type)?;
+    let [theorem_kw, _, colon, formula, proof, semi] = parts(*theorem, &K::TheoremItem)? else {
+        return Err(invalid());
+    };
+    tokens(&[(*theorem_kw, "theorem"), (*colon, ":"), (*semi, ";")])?;
+    let quantified = only(*formula, &K::FormulaExpression)?;
+    if format!("{:?}", node(quantified)?.kind()) != "QuantifiedFormula(Universal)" {
+        return Err(invalid());
+    }
+    let [for_kw, segment, holds, equality] = node(quantified)?.children() else {
+        return Err(invalid());
+    };
+    tokens(&[(*for_kw, "for"), (*holds, "holds")])?;
+    let [proof_kw, local, conclusion, end] = parts(*proof, &K::ProofBlock)? else {
+        return Err(invalid());
+    };
+    tokens(&[(*proof_kw, "proof"), (*end, "end")])?;
+    let [let_kw, local_segment, semi] = parts(*local, &K::LetStatement)? else {
+        return Err(invalid());
+    };
+    tokens(&[(*let_kw, "let"), (*semi, ";")])?;
+    let [thus, proposition, justification, semi] = parts(*conclusion, &K::ConclusionStatement)?
+    else {
+        return Err(invalid());
+    };
+    tokens(&[(*thus, "thus"), (*semi, ";")])?;
+    let [by, references] = parts(*justification, &K::JustificationClause)? else {
+        return Err(invalid());
+    };
+    tokens(&[(*by, "by")])?;
+    if text(only(only(*references, &K::ReferenceList)?, &K::Reference)?)? != text(*label)? {
+        return Err(invalid());
+    }
+    let proof_equality = only(only(*proposition, &K::Proposition)?, &K::FormulaExpression)?;
+    let mut calls = Vec::new();
+    let mut gates = Vec::new();
+    for (segment, kind, keyword, equality, owner) in [
+        (
+            *segment,
+            K::QuantifierVariableSegment,
+            "being",
+            *equality,
+            quantified,
+        ),
+        (
+            *local_segment,
+            K::QualifiedVariableSegment,
+            "be",
+            proof_equality,
+            *proof,
+        ),
+    ] {
+        let [binder, be, ty] = parts(segment, &kind)? else {
+            return Err(invalid());
+        };
+        tokens(&[(*be, keyword)])?;
+        let [attribute_chain, head] = parts(*ty, &K::TypeExpression)? else {
+            return Err(invalid());
+        };
+        tokens(&[(only(*head, &K::TypeHead)?, "set")])?;
+        let attribute_ref = only(*attribute_chain, &K::AttributeChain)?;
+        let attr_name = only(
+            only(only(attribute_ref, &K::AttributeRef)?, &K::QualifiedSymbol)?,
+            &K::PathSegment,
+        )?;
+        if text(attr_name)? != attribute.primary_spelling()
+            || range(*ty)?.start <= range(*registration_block)?.end
+        {
+            return Err(invalid());
+        }
+        let actual = TypeExpressionInput::new(
+            site(*ty),
+            range(*ty)?,
+            format!("{} set", text(attr_name)?),
+            TypeHeadInput::BuiltinSet,
+        )
+        .with_attributes(vec![AttributeInput::new(
+            attribute.symbol().clone(),
+            AttributePolarity::Positive,
+            range(attribute_ref)?,
+            text(attr_name)?,
+        )]);
+        let [left, equal, right] = parts(equality, &K::BuiltinPredicateApplication)? else {
+            return Err(invalid());
+        };
+        tokens(&[(*equal, "=")])?;
+        let call = only(*left, &K::TermExpression)?;
+        let [callee, argument] = node(call)?.children() else {
+            return Err(invalid());
+        };
+        let right = only(*right, &K::TermExpression)?;
+        if !matches!(node(call)?.kind(), K::PrefixExpression(operator) if operator.spelling.as_ref() == text(*callee)?)
+            || text(*callee)? != text(*name)?
+            || formal(only(*argument, &K::TermReference)?)? != *binder
+            || formal(only(right, &K::TermReference)?)? != *binder
+            || *binder == *locus
+        {
+            return Err(invalid());
+        }
+        let candidate = ExistentialGateCandidate::new(
+            active.id(),
+            active.pattern().clone(),
+            active.correctness().clone(),
+            active.evidence().clone(),
+            active.trigger().clone(),
+            [attribute_key.clone()],
+        )
+        .with_fingerprint(active.fingerprint().ok_or_else(invalid)?.clone());
+        gates.push(
+            ExistentialGateInput::new(
+                site(*ty),
+                range(*ty)?,
+                format!("{pattern:?}"),
+                active.trigger().clone(),
+                [attribute_key.clone()],
+            )
+            .with_candidates([candidate]),
+        );
+        calls.push((call, *argument, right, equality, *binder, actual, owner));
+    }
+    if calls[0].4 == calls[1].4 {
+        return Err(invalid());
+    }
+    let gates = ExistentialGateOutput::evaluate(database, gates);
+    if gates
+        .iter()
+        .any(|gate| gate.status() != ExistentialGateStatus::Satisfied)
+    {
+        return Err(invalid());
+    }
+    let mut contexts = BindingContextTable::new();
+    contexts.insert(BindingContextDraft {
+        owner: BindingContextOwner::Module,
+        parent: None,
+        layer: BindingContextLayer::Module,
+        lexical_scope: None,
+        bindings: Vec::new(),
+        visible_bindings: Vec::new(),
+        recovery: BindingContextRecovery::Normal,
+    });
+    let mut bindings = BindingTable::new();
+    let mut terms = Vec::new();
+    let mut formulas = Vec::new();
+    for (ordinal, (binder, actual, owner, occurrences)) in
+        std::iter::once((*locus, &parameter_type, *functor_block, vec![body]))
+            .chain(
+                calls
+                    .iter()
+                    .map(|call| (call.4, &call.5, call.6, vec![call.1, call.2])),
+            )
+            .enumerate()
+    {
+        let context = BindingContextId::new(contexts.len());
+        let local = LocalTermBinding::new(
+            text(binder)?,
+            LocalTermScope::new(vec![u32::try_from(owner.index()).map_err(|_| invalid())?]),
+            range(binder)?,
+            ordinal,
+        );
+        let kind = match ordinal {
+            0 => BindingKind::DefinitionParameter,
+            1 => BindingKind::QuantifierBinder,
+            _ => BindingKind::LetBinding,
+        };
+        let mut draft = BindingDraft::from_local_term(context, kind, &local);
+        draft.type_site = BindingTypeSite::Source(actual.source_range);
+        let binding = bindings.insert(draft);
+        contexts.insert(BindingContextDraft {
+            owner: BindingContextOwner::SourceStatement {
+                source_range: range(owner)?,
+            },
+            parent: Some(BindingContextId::new(0)),
+            layer: BindingContextLayer::Block,
+            lexical_scope: Some(local.scope().clone()),
+            bindings: vec![binding],
+            visible_bindings: vec![binding],
+            recovery: BindingContextRecovery::Normal,
+        });
+        for occurrence in occurrences {
+            let mut ty = actual.clone();
+            ty.site = TypedSiteRef::Role {
+                node: site(occurrence).node(),
+                role: "attribute-widening.actual".into(),
+            };
+            terms.push(
+                TermInput::new(
+                    site(occurrence),
+                    context,
+                    range(occurrence)?,
+                    TermKind::Variable,
+                )
+                .with_reference(TermReference::Binding(binding))
+                .with_result_type(ty),
+            );
+        }
+        if ordinal > 0 {
+            let call = &calls[ordinal - 1];
+            let mut result = result_type.clone();
+            result.site = TypedSiteRef::Role {
+                node: site(call.0).node(),
+                role: "attribute-widening.result".into(),
+            };
+            terms.push(
+                TermInput::new(
+                    site(call.0),
+                    context,
+                    range(call.0)?,
+                    TermKind::FunctorApplication,
+                )
+                .with_reference(TermReference::Symbol(functor.symbol().clone()))
+                .with_result_type(result),
+            );
+            formulas.push(
+                FormulaInput::new(site(call.3), context, range(call.3)?, FormulaKind::Equality)
+                    .with_terms(vec![site(call.0), site(call.2)]),
+            );
+        }
+    }
+    let bindings = BindingEnv::try_new(BindingEnvParts {
+        source_id: source.source_id(),
+        module_id: source.module().clone(),
+        contexts,
+        bindings,
+        diagnostics: BindingDiagnosticTable::new(),
+    })
+    .map_err(|_| invalid())?;
+    let inference = TermFormulaChecker::default().infer(symbols, &bindings, terms, formulas);
+    if !inference.diagnostics().is_empty()
+        || inference
+            .terms()
+            .iter()
+            .any(|(_, term)| term.status != TermStatus::Inferred)
+        || inference
+            .formulas()
+            .iter()
+            .any(|(_, formula)| formula.status != FormulaStatus::Checked)
+    {
+        return Err(invalid());
+    }
+    let coercions = CoercionObligationChecker::default().check(
+        symbols,
+        &TypeFactTable::new(),
+        calls.iter().map(|call| {
+            let mut target = parameter_type.clone();
+            target.site = TypedSiteRef::Role {
+                node: target.site.node(),
+                role: format!("attribute-widening.parameter:{}", call.1.index()).into(),
+            };
+            CoercionInput::new(
+                site(call.1),
+                range(call.1).expect("authenticated argument"),
+                CoercionRequestKind::Widening,
+                target,
+            )
+            .with_from_type(call.5.clone())
+            .with_evidence(CoercionEvidence::BuiltinRadix)
+        }),
+        [],
+    );
+    if !coercions.diagnostics().is_empty()
+        || !coercions.initial_obligations().is_empty()
+        || coercions.coercions().len() != 2
+    {
+        return Err(invalid());
+    }
+    let mut sites = Vec::new();
+    let mut candidates = Vec::new();
+    let mut support = BTreeMap::new();
+    for call in &calls {
+        let coercion = coercions
+            .coercions()
+            .iter()
+            .find_map(|(_, row)| (row.site == site(call.1)).then_some(row))
+            .ok_or_else(invalid)?;
+        let from = coercion.from.ok_or_else(invalid)?;
+        let actual = coercions.normalized_types().get(from).ok_or_else(invalid)?;
+        let target = coercions
+            .normalized_types()
+            .get(coercion.to)
+            .ok_or_else(invalid)?;
+        let [attr] = actual.attributes.positive() else {
+            return Err(invalid());
+        };
+        if from == coercion.to
+            || actual.head != TypeHeadRef::BuiltinSet
+            || target.head != actual.head
+            || !actual.args.is_empty()
+            || !target.args.is_empty()
+            || !target.attributes.is_empty()
+            || !actual.attributes.negative().is_empty()
+            || attr.symbol != *attribute.symbol()
+            || !attr.args.is_empty()
+            || actual.status != NormalizedTypeStatus::Known
+            || target.status != NormalizedTypeStatus::Known
+            || coercion.status != CoercionStatus::Candidate
+            || coercion.obligation.is_some()
+            || coercion.supporting_facts.len() != 1
+            || coercion.supporting_facts.iter().any(|id| {
+                coercions.facts().get(*id).is_none_or(|fact| {
+                    fact.status != FactStatus::Known
+                        || fact.subject != site(call.1)
+                        || !matches!(fact.provenance, FactProvenance::Builtin(_))
+                })
+            })
+        {
+            return Err(invalid());
+        }
+        let key = OverloadSiteKey::new(format!("source-widening:{}", call.0.index()));
+        sites.push(OverloadSiteInput {
+            key: key.clone(),
+            owner: site(call.0),
+            source_range: range(call.0)?,
+            kind: OverloadSiteKind::FunctorApplication,
+            name: OverloadNameKey::new(text(*name)?),
+            arguments: vec![site(call.1)],
+            expected: None,
+            source_qua: Vec::new(),
+            recovery: OverloadSiteRecovery::Normal,
+        });
+        candidates.push(OverloadCandidateInput {
+            site: key,
+            symbol: functor.symbol().clone(),
+            ordinary_root: functor.symbol().clone(),
+            declaration_kind: CandidateDeclarationKind::Functor,
+            parameters: vec![coercion.to],
+            result: Some(coercion.to),
+            origin: CandidateOrigin::Ordinary,
+            template: None,
+            coherence: None,
+            provenance: CandidateProvenance {
+                stable_key: CandidateProvenanceKey::new(format!(
+                    "source-declaration:{}",
+                    range(*definition)?.start
+                )),
+                source_range: Some(range(*definition)?),
+                scope: CandidateScope::Local,
+                declaration_order: 0,
+            },
+        });
+        support.insert(
+            site(call.0),
+            (from, coercion.to, coercion.supporting_facts.clone()),
+        );
+    }
+    let collection = OverloadCollectionOutput::collect(sites, candidates);
+    let expansion = TemplateExpansionOutput::expand(&collection);
+    let mut inputs = Vec::new();
+    for (id, candidate) in expansion.candidates().iter() {
+        let owner = &collection
+            .sites()
+            .get(candidate.site)
+            .ok_or_else(invalid)?
+            .owner;
+        let (actual, target, facts) = support.get(owner).ok_or_else(invalid)?;
+        inputs.push(CandidateViabilityInput {
+            candidate: id,
+            arguments: vec![ArgumentViabilityEvidence::FactWidening {
+                actual: *actual,
+                target: *target,
+                facts: facts.clone(),
+                status: ViabilityFactStatus::Consumable,
+            }],
+        });
+    }
+    let viability = CandidateViabilityOutput::filter(&expansion, inputs);
+    if !collection.diagnostics().is_empty() || !expansion.diagnostics().is_empty() || !viability.diagnostics().is_empty()
+        || viability.decisions().len() != 2 || viability.decisions().iter().any(|(_, candidate)| !matches!(&candidate.status, CandidateViabilityStatus::Viable { views } if views.len() == 1 && views[0].kind == ArgumentViewKind::FactWidening))
+    { return Err(invalid()); }
+    Ok((gates, coercions, collection, viability))
+}
+
 /// Checks source-derived signatures and actuals in the bounded ordinary overload profiles.
 /// The single-structure profile also returns genuine no-match results; the two-root profile requires selection.
 pub fn check_source_distinct_loci_overloads(

@@ -40,20 +40,24 @@ source/sidecar 同一性、全 stage/outcome・domain/spec-ref/tag metadata と�
 ## Step 5C.3 attribute semantic runner
 
 private route は従来7行を維持し、functor argument mismatch だけを `type_elaboration` / `type_check` に追加する。
-属性付き widening positive は inactive のまま、両 source/sidecar 同一性、全 stage/outcome/category/key/domain/
+属性付き widening positive の第九 profile は後述する。両 source/sidecar 同一性、全 stage/outcome/category/key/domain/
 spec-ref/tag metadata と補助 payload 不在を照合し、予約した同一性を他 stage に流さない。
 実際の source/neutral typed projection を [checker 単一候補 profile](../../mizar-checker/ja/type_checker.md#distinct-loci-overload-source-checking) に渡し、
 既存 viability table の認証済み builtin-set-to-required-structure rejection だけを写像する。
 両 call site と全 candidate/diagnostic を照合し、他の正常 call は不一致を隠さない。全 call 正常、
 汎用 MissingEvidence/NoMatch、無関係な error では negative を満たせない。
-既存 attribute route と C13 strict profile を維持し、accepted registration や証明を生成しない。
+この negative 分岐は既存 attribute route と C13 strict profile を維持し、accepted registration や証明を生成しない。
 
 独立 source-registration 前提工程では、不変の C3 widening 全 source を Rust integration test から [proof
 status](../../mizar-proof/ja/status.md#source-existential-registration-proof) に渡し、テスト専用 `mizar-kernel` 依存で通常証拠を独立検査する。完全な Core/VC と 両
 handoff baseline は元の親目標、二つの open leaf、明示的 builtin nonempty accounting を保持し、実 kernel/policy 検査から一致する
-module-local 登録だけを生成する。widening sidecar・trace/map・stage・既存八 outcome
-は変更しない。改名、source/seal・citation・負の定義・choice/gate/owner/accounting の改変、kernel/policy 拒否、source-order
+module-local 登録だけを生成する。baseline・元の trace/map 順序/status・stage・既存八 outcome
+を保ち、実装後に widening sidecar の exact active tag と限定 note だけを加える。改名、source/seal・citation・負の定義・choice/gate/owner/accounting の改変、kernel/policy 拒否、source-order
 visibility を検査し、偽 Accepted fixture で positive credit を作らない。
+
+positive 分岐は widening の exact id と source/sidecar basename を alias/stage を跨いで予約し、pass/type_check・types.widening・元の唯一 semantic ref・唯一 active tag・矛盾 payload 不在を照合し、mapped row の欠落/重複を拒否する。
+実 resolved/neutral 入力で現在の snapshot と release policy の proof status を毎回一度実行し、直後に同じ不変入力/database を [attributed argument checker](../../mizar-checker/ja/type_checker.md#source-attributed-argument-widening) に渡す。caller database/activation/kernel result を受け取らず support fact を捏造しない。
+実 attributed gate 二つ、独立した定理/証明 binder、non-Exact widening support を消費する実 call 二つと bare-set result を要求する。source/profile/support 改変、どちらかの kernel/policy 失敗で拒否し、coherence/定理証明・C5/C13 widening・artifact import・新 Core/VC baseline は与えない。
 
 ## Parser Task 46 operator-declaration parse-only increment
 
