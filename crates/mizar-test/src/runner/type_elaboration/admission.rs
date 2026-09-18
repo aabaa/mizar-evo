@@ -753,6 +753,9 @@ const STEP5C2_STRUCTURE_CASES: [(&str, &str, PipelinePhase, ExpectedOutcome); 12
 ];
 
 pub(in crate::runner) fn is_active_type_elaboration(case: &TestCase) -> bool {
+    if super::super::formula_statement::is_step5c5_negated_candidate(case) {
+        return false;
+    }
     if is_step5c5_argument_candidate(case) {
         return step5c5_argument_admitted(None, case);
     }

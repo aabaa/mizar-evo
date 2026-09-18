@@ -5687,10 +5687,13 @@ route は duplicate frontend/checker handshake を要求し、type route は leg
 
 harness は既存9行を維持し、source/sidecar metadata を厳密に照合して functor commutativity typing だけを type_check に追加する。
 既存 predicate duplicate の collector replay は signature conflict 1件を実際の両 predicate 宣言と保存された conflict metadata に結び付け、
-label・本体・生の locus 名を判定根拠にしない。追加 resolver error は拒否し、残る G1/G2/G6/G9 の7行は
+label・本体・生の locus 名を判定根拠にしない。追加 resolver error は拒否し、残る別の G1/G2/G6/G9 の6行は
 tag があっても未対応とする。予約した case 同一性を他 stage にフォールバックさせず、predicate の証明受理は与えない。
 predicate argument 行は両 id、厳密な path・stage/phase/key/domain/spec ref、唯一の tag と追加 payload 不在を認証して共有 source checker に渡す。実際の set 引数と実 structure loci に結び付く predicate-kind rejection だけを写像し、両 call と全診断を照合する。正常 control は負例 key を得ない。
 commutativity 正例は両 id、厳密な source/sidecar path、pass/type_check、functors.properties、唯一の spec.en.10.functors.properties.declaration ref と active tag、failure/payload 空欄を認証する。直接 checker が検査済本体型と実 source 所有の Pending functor-property obligation 1件を返す必要があり、runner は対称性や証明を判定しない。いずれかの id または filename で他 stage への admission を予約する。
+
+否定 predicate の exact 1行だけを formula_statement/statement_check に追加し、pass・predicates.negation・唯一の spec.en.09.predicates.application.negation ref と active_formula_statement・厳密な両 id/path・空の diagnostic/failure/payload/snapshot を認証する。いずれかの id または filename で全他 stage を予約し、inventory の重複・欠落を拒否する。
+runner は認証済 source/environment/neutral typed node を直接 predicate-statement checker に渡し、実型と atomic identity/polarity の出力を要求する。theorem/proof 結果を与えず無関係の lower-stage error を拒否し、本体や call の否定を真偽判定の代用にしない。
 
 ## Module declaration corpus bridge
 

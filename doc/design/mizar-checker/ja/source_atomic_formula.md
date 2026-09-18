@@ -95,6 +95,11 @@ authenticated attribute row を要求し、attribute ごとに admissibility
 request 1件を持つ。request は intent だけで、answer、selected candidate、
 type、fact、truth を含まない。
 
+binary application 1件は segment・head/candidate/request 各1件と直接 edge 2件でも表現でき、positive または source の否定極性を保持する。既存の unsegmented application と複数 segment chain の規則は維持する。
+この local 単一 segment だけは実 symbol/definition が保持する相異なる3 identifier の同一 pattern の中央を head として認める。primary/notation 一致・kind・namespace・先行 local origin・candidate ownership を維持し、signature typing や架空 symbol を与えない。
+この単一 segment のみ formula と同一 range を許すが、別個の実 source node・operand/head/否定 token の順序・arena identity・他の全 ownership 検査を要求する。架空の wrapper や segment は認めない。
+[直接 statement checker](./type_checker.md#ordinary-predicate-application-checking) が別途 declaration・binding・引数互換性を検査する。この transport は未解決 request を持つ不変 source 記述であり、selection・式の真偽・証明受理を与えない。
+
 ## AST installation
 
 `TypedAst::with_source_atomic_formula` は one-shot で、targeted lower-family
@@ -109,13 +114,14 @@ obligation、diagnostic、expression metadata、cluster fact を追加しない�
 
 ## Private source consumer
 
-raw `SurfaceAst`、source node ID、syntax kind は
+従来 route の raw `SurfaceAst`、source node ID、syntax kind は
 `mizar-test::runner::type_elaboration::source_atomic_formula`だけに置く。
 production は unchanged Task-256 base fixture 8件、すなわち numeral
 equality、inequality、membership、bare builtin type assertion、imported
 predicate/functor、positive/negative imported attribute assertion、
 set-enumeration equality と、exact Task-257C1 two-segment imported
 predicate-chain fixture を select する。
+限定 local-predicate continuation は[直接 checker](./type_checker.md#ordinary-predicate-application-checking)が実 resolved node から構成し、これら fixture 選択 producer に入れず既存 profile を維持する。
 
 8 transaction の Task-256 formula/wrapper/predicate-head/candidate/type-site/
 attribute/edge/request aggregate は `8/0/1/1/1/2/13/11` である。shared

@@ -3159,6 +3159,11 @@ The sole initial obligation is Pending FunctorPropertyCorrectness, tied to the a
 The single-candidate profile of `check_source_distinct_loci_overloads` also checks one binary predicate over a bare local structure with a required builtin-set field. It authenticates ordered loci, actual bindings, selector-equality body, segment polarity and both calls; predicate candidates have no term result.
 Only actual Known set-to-structure viability rejections at authenticated argument indices yield `predicates.application.argument_type_mismatch`; coarse MissingEvidence/NoMatch or unrelated diagnostics cannot. No proof, unfolding or acceptance follows; C13/C3 profiles and atomic-formula transport stay bounded.
 
+`TermFormulaChecker::check_source_predicate_statements(&SurfaceResolvedArena, &SymbolEnv, &TypedArena)` returns existing `(BindingEnv, TermFormulaInferenceOutput, TypedAst)` after authenticating one local binary builtin-set predicate and its theorem/header and proof-local calls.
+It replays source/environment identity, checks the real declaration, ordered loci, body equality or negated equality, and distinct quantified/proof bindings; existing inference must establish Known actual and expected argument types with identical normalized identities. Open predicate candidates are never treated as complete checking.
+The returned AST installs existing primary and atomic handoffs: each call retains the same actual predicate identity and its own positive or `does not` polarity sites. The body polarity cannot cancel call polarity; header/proof agreement or theorem truth is not checked here.
+Only the direct operation grants this bounded statement-check result; transport requests stay unresolved data. No unfolding, facts, proof acceptance, Task274, Core/VC or new source-family installation authority follows.
+
 ## Source functor synonym typing
 
 `check_source_functor_synonym_types(&SurfaceResolvedArena, &SymbolEnv, &TypedArena, RelationKind)` returns existing `(TypeNormalizationOutput, OverloadCollectionOutput, CandidateViabilityOutput)` in `Result<_, String>`. It authenticates a two-locus builtin-set functor returning a parameter, actual synonym-target relation and locus bijection, then checks both theorem/proof-local calls, arguments, return and equality operand types.

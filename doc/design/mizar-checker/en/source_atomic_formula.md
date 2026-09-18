@@ -100,6 +100,11 @@ authenticated attribute rows and one admissibility request per attribute.
 Requests publish intent only; they contain no answer, selected candidate,
 type, fact, or truth.
 
+One binary application may instead carry one segment, one head/candidate/request and two direct edges, retaining positive or source-written negative polarity. Existing unsegmented applications and multi-segment chains retain their rules.
+For this local single-segment case, the head may be the middle token of the same three-distinct-identifier pattern stored by the real symbol and definition; primary/notation agreement, kind, namespace, earlier local origin and candidate ownership remain mandatory. This supplies no signature typing or invented symbol.
+Only this single segment may equal its formula's range; its distinct real source node, ordered operands/head/negation tokens, arena identity and all other ownership checks remain required. No synthetic wrapper or segment is admitted.
+The [direct statement checker](./type_checker.md#ordinary-predicate-application-checking) separately checks declaration, bindings and argument compatibility. This transport remains an immutable source description with unresolved requests, not selection, formula truth or proof acceptance.
+
 ## AST Installation
 
 `TypedAst::with_source_atomic_formula` is one-shot and requires every targeted
@@ -115,13 +120,14 @@ fact, coercion, obligation, diagnostic, expression metadata, or cluster fact.
 
 ## Private Source Consumer
 
-Raw `SurfaceAst`, source node IDs, and syntax kinds remain in
+For the legacy routes, raw `SurfaceAst`, source node IDs, and syntax kinds remain in
 `mizar-test::runner::type_elaboration::source_atomic_formula`. Production
 selects the eight unchanged Task-256 base fixtures—numeral equality,
 inequality, membership, bare builtin type assertion, imported
 predicate/functor, positive and negative imported attribute assertions, and
 set-enumeration equality—plus the exact Task-257C1 two-segment imported
 predicate-chain fixture.
+The bounded local-predicate continuation is composed by the [direct checker](./type_checker.md#ordinary-predicate-application-checking) from actual resolved nodes; it does not enter these fixture-selected producers or change their profiles.
 
 Across the eight transactions the Task-256
 formula/wrapper/predicate-head/candidate/type-site/attribute/edge/request

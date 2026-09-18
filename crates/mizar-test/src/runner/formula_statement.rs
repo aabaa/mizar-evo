@@ -19,6 +19,26 @@ const ACTIVE_FORMULA_STATEMENT_TAG: &str = "active_formula_statement";
 const DUPLICATE_BINDING_FRONTEND_KEY: &str = "frontend:lexing:ScopeSkeleton(DuplicateBindingName)";
 const DUPLICATE_GENERALIZATION_KEY: &str = "variables.let.duplicate_generalization";
 
+const STEP5C5_NEGATED_CASE: (&str, Stage, Option<&str>) = (
+    "pass_formula_statement_pred_negated_application_001",
+    Stage::FormulaStatement,
+    None,
+);
+
+pub(super) fn is_step5c5_negated_candidate(case: &TestCase) -> bool {
+    let id = STEP5C5_NEGATED_CASE.0;
+    case.id.0 == id
+        || case.expectation.id.0 == id
+        || case
+            .source_path
+            .file_name()
+            .is_some_and(|name| name == format!("{id}.miz").as_str())
+        || case
+            .expectation_path
+            .file_name()
+            .is_some_and(|name| name == format!("{id}.expect.toml").as_str())
+}
+
 const STEP5C8_CASES: [(&str, Stage, Option<&str>); 7] = [
     (
         "pass_formula_statement_connective_precedence_001",
@@ -181,6 +201,7 @@ pub(super) fn step5_formula_admitted(root: Option<&Path>, case: &TestCase) -> bo
         .iter()
         .chain(STEP5C9_CASES.iter())
         .chain(STEP5C10_CASES.iter())
+        .chain(std::iter::once(&STEP5C5_NEGATED_CASE))
         .find(|(id, _, _)| case.id.0 == *id)
     else {
         return false;
@@ -191,7 +212,9 @@ pub(super) fn step5_formula_admitted(root: Option<&Path>, case: &TestCase) -> bo
         ExpectedOutcome::Pass
     };
     let directory = if key.is_some() { "fail" } else { "pass" };
-    let folder = if STEP5C9_CASES
+    let folder = if *id == STEP5C5_NEGATED_CASE.0 {
+        "predicates"
+    } else if STEP5C9_CASES
         .iter()
         .chain(STEP5C10_CASES.iter())
         .any(|(candidate, _, _)| candidate == id)
@@ -211,11 +234,21 @@ pub(super) fn step5_formula_admitted(root: Option<&Path>, case: &TestCase) -> bo
         _ => PipelinePhase::StatementCheck,
     };
     case.expectation.id == case.id
-        && (*id != STEP5C9_CASES[7].0
+        && ((*id != STEP5C9_CASES[7].0 && *id != STEP5C5_NEGATED_CASE.0)
             || (case.expectation.kind == crate::expectation::TestKind::Pass
-                && case.expectation.domain == "theorems.linking"
+                && case.expectation.domain
+                    == if *id == STEP5C5_NEGATED_CASE.0 {
+                        "predicates.negation"
+                    } else {
+                        "theorems.linking"
+                    }
                 && case.expectation.spec_refs.len() == 1
-                && case.expectation.spec_refs[0].0 == "spec.en.15.statements.linking.then_hence"
+                && case.expectation.spec_refs[0].0
+                    == if *id == STEP5C5_NEGATED_CASE.0 {
+                        "spec.en.09.predicates.application.negation"
+                    } else {
+                        "spec.en.15.statements.linking.then_hence"
+                    }
                 && case.expectation.failure_category.is_none()
                 && case.expectation.rejection_reason.is_none()
                 && case.expectation.declaration_symbol_payloads.is_empty()
@@ -298,7 +331,11 @@ pub(super) fn is_active_formula_statement(workspace_root: &Path, case: &TestCase
     if super::parse_only::is_step5c11_parse_candidate(case) {
         return false;
     }
-    if is_step5c8_candidate(case) || is_step5c9_candidate(case) || is_step5c10_candidate(case) {
+    if is_step5c5_negated_candidate(case)
+        || is_step5c8_candidate(case)
+        || is_step5c9_candidate(case)
+        || is_step5c10_candidate(case)
+    {
         return case.expectation.stage == Stage::FormulaStatement
             && step5_formula_admitted(Some(workspace_root), case);
     }
@@ -318,13 +355,18 @@ pub(super) fn validate_step5_formula_admission(
 ) -> Vec<ValidationDiagnostic> {
     let mut diagnostics = Vec::new();
     for (task, rows) in [
+        (5, std::slice::from_ref(&STEP5C5_NEGATED_CASE)),
         (8, STEP5C8_CASES.as_slice()),
         (9, STEP5C9_CASES.as_slice()),
         (10, STEP5C10_CASES.as_slice()),
     ] {
         for (id, _, key) in rows {
             let directory = if key.is_some() { "fail" } else { "pass" };
-            let folder = if task == 8 { "formulas" } else { "theorems" };
+            let folder = match task {
+                5 => "predicates",
+                8 => "formulas",
+                _ => "theorems",
+            };
             let source = format!("tests/miz/{directory}/{folder}/{id}.miz");
             if workspace_root.join(&source).is_file()
                 && plan
@@ -340,6 +382,7 @@ pub(super) fn validate_step5_formula_admission(
                     Path::new(&source),
                     "formula_statement",
                     match task {
+                        5 => "E-FORMULAS-STEP5C5-INVENTORY",
                         10 => "E-FORMULAS-STEP5C10-INVENTORY",
                         9 => "E-FORMULAS-STEP5C9-INVENTORY",
                         _ => "E-FORMULAS-STEP5C8-INVENTORY",
@@ -351,10 +394,15 @@ pub(super) fn validate_step5_formula_admission(
         }
     }
     for case in plan.cases.iter().filter(|case| {
-        is_step5c8_candidate(case) || is_step5c9_candidate(case) || is_step5c10_candidate(case)
+        is_step5c5_negated_candidate(case)
+            || is_step5c8_candidate(case)
+            || is_step5c9_candidate(case)
+            || is_step5c10_candidate(case)
     }) {
         if !step5_formula_admitted(Some(workspace_root), case) {
-            let task = if is_step5c10_candidate(case) {
+            let task = if is_step5c5_negated_candidate(case) {
+                5
+            } else if is_step5c10_candidate(case) {
                 10
             } else if is_step5c9_candidate(case) {
                 9
@@ -365,6 +413,7 @@ pub(super) fn validate_step5_formula_admission(
                 &case.expectation_path,
                 "formula_statement",
                 match task {
+                    5 => "E-FORMULAS-STEP5C5-ADMISSION",
                     10 => "E-FORMULAS-STEP5C10-ADMISSION",
                     9 => "E-FORMULAS-STEP5C9-ADMISSION",
                     _ => "E-FORMULAS-STEP5C8-ADMISSION",
@@ -383,7 +432,8 @@ pub(super) fn validate_active_formula_statement_tags(
 ) -> Vec<ValidationDiagnostic> {
     let mut diagnostics = validate_step5_formula_admission(workspace_root, plan);
     for case in plan.cases.iter().filter(|case| {
-        !is_step5c8_candidate(case)
+        !is_step5c5_negated_candidate(case)
+            && !is_step5c8_candidate(case)
             && !is_step5c9_candidate(case)
             && !is_step5c10_candidate(case)
             && (active_tag_count(case) > 0
@@ -485,6 +535,21 @@ fn formula_statement_detail_keys(
     case: &TestCase,
     output: FrontendRun,
 ) -> Vec<String> {
+    if is_step5c5_negated_candidate(case) {
+        if !step5_formula_admitted(Some(workspace_root), case) {
+            return vec!["formulas.invalid_admission".to_owned()];
+        }
+        return super::source_registration_inputs(workspace_root, case, output)
+            .and_then(|(source, typed, symbols)| {
+                mizar_checker::type_checker::TermFormulaChecker::check_source_predicate_statements(
+                    &source, &symbols, &typed,
+                )
+                .map(|_| ())
+            })
+            .err()
+            .into_iter()
+            .collect();
+    }
     let frontend_keys = frontend_detail_keys(case, &output.diagnostics);
     let Some(ast) = output.ast else {
         return if frontend_keys.is_empty() {
@@ -774,6 +839,7 @@ mod tests {
             .into_iter()
             .chain(super::STEP5C9_CASES)
             .chain(super::STEP5C10_CASES)
+            .chain(std::iter::once(super::STEP5C5_NEGATED_CASE))
         {
             let original = plan.cases.iter().find(|case| case.id.0 == id).unwrap();
             assert!(super::step5_formula_admitted(Some(&root), original), "{id}");
@@ -805,7 +871,8 @@ mod tests {
                 let mut case = original.clone();
                 mutate(&mut case);
                 assert!(
-                    super::is_step5c8_candidate(&case)
+                    super::is_step5c5_negated_candidate(&case)
+                        || super::is_step5c8_candidate(&case)
                         || super::is_step5c9_candidate(&case)
                         || super::is_step5c10_candidate(&case)
                 );
@@ -824,7 +891,9 @@ mod tests {
                 .join(original.source_path.strip_prefix(&root).unwrap());
             assert!(!super::step5_formula_admitted(Some(&root), &wrong_root));
             let mut missing = plan.clone();
-            let task = if super::is_step5c10_candidate(original) {
+            let task = if super::is_step5c5_negated_candidate(original) {
+                5
+            } else if super::is_step5c10_candidate(original) {
                 10
             } else if super::is_step5c9_candidate(original) {
                 9
@@ -1497,7 +1566,7 @@ mod tests {
     #[test]
     fn corpus_executes_exact_seven_and_preserves_checker_keys() {
         let report = super::super::run_formula_statement_corpus(&config()).unwrap();
-        assert_eq!(report.results.len(), 22);
+        assert_eq!(report.results.len(), 23);
         assert_eq!(report.error_count(), 0, "{:?}", report.diagnostics);
         assert!(
             report.results.iter().all(|result| {
@@ -1577,5 +1646,414 @@ mod tests {
             .parent()
             .unwrap()
             .to_path_buf()
+    }
+
+    #[test]
+    fn step5c5_negated_predicate_retains_independent_source_bindings_and_polarity() {
+        use mizar_checker::source_atomic_formula::SourcePredicateSegmentPolarityInput as Polarity;
+        use mizar_checker::type_checker::{
+            TermFormulaChecker, TermReference, TermStatus, TypeHeadRef,
+        };
+        use mizar_checker::typed_ast::TypeEntryActual;
+        let root = workspace_root();
+        let case = build_test_plan(&config())
+            .unwrap()
+            .cases
+            .into_iter()
+            .find(|case| case.id.0 == super::STEP5C5_NEGATED_CASE.0)
+            .unwrap();
+        let text = std::fs::read_to_string(&case.source_path).unwrap();
+        for variant in [
+            text.clone(),
+            text.replace("StrangerDef", "DefinitionName")
+                .replace("NotStranger1", "TheoremName")
+                .replace("strangerto", "apartfrom")
+                .replace("X", "A")
+                .replace("Y", "B"),
+            text.replace(
+                "for X being set holds X does not strangerto X",
+                "for Header being set holds Header does not strangerto Header",
+            )
+            .replace("let X be set;", "let Local be set;")
+            .replace(
+                "thus X does not strangerto X",
+                "thus Local does not strangerto Local",
+            ),
+        ] {
+            for body_negated in [false, true] {
+                for (header_negative, proof_negative) in
+                    [(true, true), (false, true), (true, false), (false, false)]
+                {
+                    let mut source_text = variant.clone();
+                    if !body_negated {
+                        source_text = source_text.replace("means not ", "means ");
+                    }
+                    let (header, proof) = source_text.split_once("\nproof\n").unwrap();
+                    source_text = format!(
+                        "{}\nproof\n{}",
+                        if header_negative {
+                            header.to_owned()
+                        } else {
+                            header.replace("does not ", "")
+                        },
+                        if proof_negative {
+                            proof.to_owned()
+                        } else {
+                            proof.replace("does not ", "")
+                        }
+                    );
+                    let frontend = super::step5c8_test_frontend(&source_text);
+                    assert!(
+                        frontend.diagnostics.is_empty(),
+                        "{source_text}: {:?}",
+                        frontend.diagnostics
+                    );
+                    let (source, nodes, symbols) =
+                        super::super::source_registration_inputs(&root, &case, frontend).unwrap();
+                    let result = TermFormulaChecker::check_source_predicate_statements(
+                        &source, &symbols, &nodes,
+                    )
+                    .unwrap();
+                    assert_eq!(
+                        result,
+                        TermFormulaChecker::check_source_predicate_statements(
+                            &source, &symbols, &nodes
+                        )
+                        .unwrap()
+                    );
+                    let (bindings, inferred, typed) = result;
+                    assert_eq!(bindings.bindings().len(), 4);
+                    assert_eq!(inferred.terms().len(), 6);
+                    assert!(inferred.facts().is_empty() && inferred.diagnostics().is_empty());
+                    assert!(typed.facts().is_empty() && typed.initial_obligations().is_empty());
+                    assert!(typed.source_statement().is_none());
+                    let terms = inferred
+                        .terms()
+                        .iter()
+                        .map(|(_, term)| term)
+                        .collect::<Vec<_>>();
+                    let sites = terms
+                        .iter()
+                        .map(|term| term.site.clone())
+                        .collect::<BTreeSet<_>>();
+                    assert_eq!(sites.len(), 6);
+                    let mut references = Vec::new();
+                    for term in terms {
+                        assert_eq!(term.status, TermStatus::Inferred);
+                        let Some(TermReference::Binding(binding)) = term.reference else {
+                            panic!("real source binding")
+                        };
+                        references.push(binding);
+                        let TypeEntryActual::Known(ty) =
+                            inferred.type_entries().get(term.type_entry).unwrap().actual
+                        else {
+                            panic!("known type")
+                        };
+                        assert_eq!(
+                            inferred.normalized_types().get(ty).unwrap().head,
+                            TypeHeadRef::BuiltinSet
+                        );
+                    }
+                    assert_ne!(references[0], references[1]);
+                    assert_eq!(references[2], references[3]);
+                    assert_eq!(references[4], references[5]);
+                    assert_ne!(references[2], references[4]);
+                    assert!(
+                        !references[..2].contains(&references[2])
+                            && !references[..2].contains(&references[4])
+                    );
+                    let atomic = typed.source_atomic_formula().unwrap();
+                    assert_eq!(typed.source_term().unwrap().terms().len(), 6);
+                    assert_eq!(atomic.formulas().len(), 3);
+                    assert_eq!(atomic.edges().len(), 6);
+                    assert_eq!(atomic.predicate_segments().len(), 2);
+                    assert_eq!(atomic.candidates().len(), 2);
+                    let predicate = symbols
+                        .symbols()
+                        .iter()
+                        .find(|entry| entry.kind() == mizar_resolve::env::SymbolKind::Predicate)
+                        .unwrap();
+                    for (_, candidate) in atomic.candidates().iter() {
+                        assert_eq!(candidate.symbol(), predicate.symbol());
+                    }
+                    let mut token_sites = BTreeSet::new();
+                    for ((_, segment), negative) in atomic
+                        .predicate_segments()
+                        .iter()
+                        .zip([header_negative, proof_negative])
+                    {
+                        match segment.polarity() {
+                            Polarity::Positive => assert!(!negative),
+                            Polarity::Negative {
+                                verb_site,
+                                verb_range,
+                                not_site,
+                                not_range,
+                                ..
+                            } => {
+                                assert!(negative);
+                                assert_eq!(&source_text[verb_range.start..verb_range.end], "does");
+                                assert_eq!(&source_text[not_range.start..not_range.end], "not");
+                                assert!(
+                                    token_sites.insert(verb_site.clone())
+                                        && token_sites.insert(not_site.clone())
+                                );
+                            }
+                            _ => panic!("unsupported polarity"),
+                        }
+                    }
+                }
+            }
+        }
+        let result = super::run_formula_statement_case(&root, &case, 0);
+        assert_eq!(
+            result.status,
+            super::super::FormulaStatementCaseStatus::Passed
+        );
+    }
+
+    #[test]
+    fn step5c5_negated_predicate_rejects_each_call_type_and_source_authentication_failure() {
+        use mizar_checker::type_checker::TermFormulaChecker;
+        use mizar_checker::typed_ast::{TypedArena, TypedNodeKind, TypingState};
+        let root = workspace_root();
+        let case = build_test_plan(&config())
+            .unwrap()
+            .cases
+            .into_iter()
+            .find(|case| case.id.0 == super::STEP5C5_NEGATED_CASE.0)
+            .unwrap();
+        let text = std::fs::read_to_string(&case.source_path).unwrap();
+        for (from, to) in [
+            ("for X being set", "for X being object"),
+            ("let X be set;", "let X be object;"),
+            ("holds X does", "holds Missing does"),
+            ("thus X does", "thus Missing does"),
+            (
+                "holds X does not strangerto X",
+                "holds X does not strangerto Missing",
+            ),
+            (
+                "thus X does not strangerto X",
+                "thus X does not strangerto Missing",
+            ),
+            ("means not X = Y", "means not Missing = Y"),
+            ("means not X = Y", "means not X = Missing"),
+            (
+                "pred StrangerDef: X strangerto Y",
+                "pred StrangerDef: X strangerto X",
+            ),
+        ] {
+            let changed = text.replace(from, to);
+            assert_ne!(changed, text);
+            let frontend = super::step5c8_test_frontend(&changed);
+            assert!(
+                frontend.diagnostics.is_empty(),
+                "{from}: {:?}",
+                frontend.diagnostics
+            );
+            let result = super::super::source_registration_inputs(&root, &case, frontend).and_then(
+                |(source, nodes, symbols)| {
+                    TermFormulaChecker::check_source_predicate_statements(&source, &symbols, &nodes)
+                },
+            );
+            assert!(result.is_err(), "accepted {from} -> {to}");
+        }
+        for prefix in ["holds", "thus"] {
+            let changed = text.replace(
+                &format!("{prefix} X does not strangerto X"),
+                &format!("{prefix} X does not missinghead X"),
+            );
+            assert_ne!(changed, text);
+            let frontend = super::step5c8_test_frontend(&changed);
+            assert!(!frontend.diagnostics.is_empty());
+            assert!(super::super::source_registration_inputs(&root, &case, frontend).is_err());
+        }
+        let inputs = |source_text: &str| {
+            super::super::source_registration_inputs(
+                &root,
+                &case,
+                super::step5c8_test_frontend(source_text),
+            )
+            .unwrap()
+        };
+        let (source, nodes, symbols) = inputs(&text);
+        let (_, _, foreign) = inputs(&text.replace("strangerto", "foreignhead"));
+        assert!(
+            TermFormulaChecker::check_source_predicate_statements(&source, &foreign, &nodes)
+                .is_err()
+        );
+        for (id, node) in nodes
+            .iter()
+            .filter(|(_, node)| node.kind.as_str() == "TermReference")
+        {
+            for mutation in 0..3 {
+                let mut changed = nodes
+                    .iter()
+                    .map(|(_, node)| node.clone())
+                    .collect::<Vec<_>>();
+                match mutation {
+                    0 => {
+                        changed[id.index()].resolved_node =
+                            nodes.node(nodes.root().unwrap()).unwrap().resolved_node
+                    }
+                    1 => changed[id.index()].kind = TypedNodeKind::new("Forged"),
+                    2 => changed[id.index()].typing = TypingState::Successful,
+                    _ => unreachable!(),
+                }
+                assert!(
+                    TermFormulaChecker::check_source_predicate_statements(
+                        &source,
+                        &symbols,
+                        &TypedArena::try_new(nodes.root(), changed).unwrap()
+                    )
+                    .is_err(),
+                    "{node:?}/{mutation}"
+                );
+            }
+        }
+        for changed in [
+            format!("{text}\ntheorem Extra: contradiction;"),
+            text.replace("thus X does", "thus @ does"),
+            text.replace("  thus X does", "  let X be set;\n  thus X does"),
+        ] {
+            assert!(
+                !super::formula_statement_detail_keys(
+                    &root,
+                    &case,
+                    super::step5c8_test_frontend(&changed)
+                )
+                .is_empty()
+            );
+        }
+    }
+
+    #[test]
+    fn step5c5_negated_predicate_admission_authenticates_all_fields_and_reserved_identities() {
+        let root = workspace_root();
+        let plan = build_test_plan(&config()).unwrap();
+        let original = plan
+            .cases
+            .iter()
+            .find(|case| case.id.0 == super::STEP5C5_NEGATED_CASE.0)
+            .unwrap();
+        let mutations: &[fn(&mut crate::harness::TestCase)] = &[
+            |c| c.expectation.kind = crate::expectation::TestKind::Fail,
+            |c| c.expectation.domain = "other".into(),
+            |c| c.expectation.spec_refs[0].0 = "other".into(),
+            |c| {
+                c.expectation
+                    .spec_refs
+                    .push(c.expectation.spec_refs[0].clone())
+            },
+            |c| c.expectation.failure_category = Some("other".into()),
+            |c| c.expectation.stable_detail_key = Some("other".into()),
+            |c| c.expectation.tags = vec!["active_type_elaboration".into()],
+        ];
+        for mutate in mutations {
+            let mut changed = original.clone();
+            mutate(&mut changed);
+            assert!(!super::step5_formula_admitted(Some(&root), &changed));
+        }
+        for keep in 0..4 {
+            let mut changed = original.clone();
+            if keep != 0 {
+                changed.id.0 = "other".into();
+            }
+            if keep != 1 {
+                changed.expectation.id.0 = "other".into();
+            }
+            if keep != 2 {
+                changed.source_path = root.join("other.miz");
+            }
+            if keep != 3 {
+                changed.expectation_path = root.join("other.expect.toml");
+            }
+            assert!(super::is_step5c5_negated_candidate(&changed));
+            for stage in [
+                crate::staged_model::Stage::ParseOnly,
+                crate::staged_model::Stage::DeclarationSymbol,
+                crate::staged_model::Stage::TypeElaboration,
+                crate::staged_model::Stage::ProofVerification,
+            ] {
+                changed.expectation.stage = stage;
+                changed.expectation.tags = vec![format!("active_{}", stage.as_str())];
+                assert!(!super::super::is_active_parse_only(&changed));
+                assert!(!super::super::is_active_declaration_symbol(&changed));
+                assert!(!super::super::is_active_type_elaboration(&changed));
+                assert!(!super::super::is_active_proof_verification(&changed));
+            }
+        }
+        let mut cancellation = plan.clone();
+        cancellation.cases.retain(|case| case.id != original.id);
+        let other = cancellation.cases[0].clone();
+        cancellation.cases.push(other);
+        assert!(
+            super::validate_step5_formula_admission(&root, &cancellation)
+                .iter()
+                .any(|diagnostic| diagnostic.detail_key.contains("step5c5_inventory"))
+        );
+    }
+    #[test]
+    fn step5c5_predicate_rejects_coherent_source_geometry_corruption() {
+        use mizar_checker::type_checker::TermFormulaChecker;
+        use mizar_syntax::ast::{SurfaceAstBuilder, SurfaceNodeKind as K};
+        let root = workspace_root();
+        let case = build_test_plan(&config())
+            .unwrap()
+            .cases
+            .into_iter()
+            .find(|case| case.id.0 == super::STEP5C5_NEGATED_CASE.0)
+            .unwrap();
+        let text = std::fs::read_to_string(&case.source_path).unwrap();
+        let ast = super::step5c8_test_frontend(&text).ast.unwrap();
+        let not = ast
+            .nodes()
+            .iter()
+            .find(|node| matches!(node.kind, K::PrefixFormula(_)))
+            .unwrap()
+            .children[0]
+            .index();
+        let formal_type = ast
+            .nodes()
+            .iter()
+            .position(|node| node.kind == K::TypeExpression)
+            .unwrap();
+        let outside_definition = ast
+            .nodes()
+            .iter()
+            .find(|node| node.kind == K::TheoremItem)
+            .unwrap()
+            .range
+            .start;
+        for target in [not, formal_type] {
+            let mut builder = SurfaceAstBuilder::new(ast.source_id);
+            let mut rebuilt = Vec::new();
+            for (index, node) in ast.nodes().iter().enumerate() {
+                let mut range = node.range;
+                if index == target {
+                    range.end = outside_definition + range.end - range.start;
+                    range.start = outside_definition;
+                    assert_ne!(range, node.range);
+                }
+                let children = node.children.iter().map(|id| rebuilt[id.index()]).collect();
+                rebuilt.push(match &node.kind {
+                    K::Token(token) => builder.add_token(token.kind, token.text.clone(), range),
+                    kind => builder.add_node(kind.clone(), range, children),
+                });
+            }
+            let changed = builder.finish(Some(rebuilt[ast.root().unwrap().index()]), None);
+            let mut frontend = super::step5c8_test_frontend(&text);
+            assert!(frontend.diagnostics.is_empty());
+            frontend.ast = Some(changed);
+            // Rebuild both companions from the changed AST; neutral mismatch cannot reject it.
+            let (source, nodes, symbols) =
+                super::super::source_registration_inputs(&root, &case, frontend).unwrap();
+            mizar_resolve::symbols::validate_source_symbol_env(&source, &symbols).unwrap();
+            let error =
+                TermFormulaChecker::check_source_predicate_statements(&source, &symbols, &nodes)
+                    .unwrap_err();
+            assert_eq!(error, "predicates.statement.unsupported_source_types");
+        }
     }
 }

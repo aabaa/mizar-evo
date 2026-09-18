@@ -2035,11 +2035,6 @@ fn validate_predicate_segments(
             }
             continue;
         }
-        if !group.is_empty() && group.len() < 2 {
-            return Err(SourceAtomicFormulaError::InvalidPredicateSegment {
-                segment: SourcePredicateSegmentId::new(group[0]),
-            });
-        }
         let mut previous_range = None;
         for segment_index in group {
             let id = SourcePredicateSegmentId::new(*segment_index);
@@ -2047,7 +2042,8 @@ fn validate_predicate_segments(
             if segment.context != formula.context
                 || segment.recovery != formula.recovery
                 || !valid_range(input.source_id, segment.source_range)
-                || !properly_contains(formula.source_range, segment.source_range)
+                || !(properly_contains(formula.source_range, segment.source_range)
+                    || (group.len() == 1 && formula.source_range == segment.source_range))
                 || !canonical_spelling(&segment.spelling)
                 || previous_range
                     .is_some_and(|previous: SourceRange| previous.end > segment.source_range.start)
@@ -2238,6 +2234,49 @@ fn validate_candidates(
                 return Err(SourceAtomicFormulaError::InvalidCandidate { candidate: id });
             }
             if let Some(symbols) = symbols {
+                let single = input
+                    .predicate_segments
+                    .iter()
+                    .filter(|segment| segment.formula == head.formula)
+                    .count()
+                    == 1;
+                let mut spelling = head.spelling.as_str();
+                if single {
+                    let invalid = || SourceAtomicFormulaError::InvalidCandidate { candidate: id };
+                    let entry = symbols
+                        .symbols()
+                        .get(&candidate.symbol)
+                        .ok_or_else(invalid)?;
+                    let definition = symbols
+                        .definitions()
+                        .by_symbol(&candidate.symbol)
+                        .ok_or_else(invalid)?;
+                    let pattern = entry.primary_spelling().split(' ').collect::<Vec<_>>();
+                    let [left, name, right] = pattern.as_slice() else {
+                        return Err(invalid());
+                    };
+                    if group.len() != 1
+                        || head.left_arity != 1
+                        || head.right_arity != 1
+                        || *name != spelling
+                        || left == right
+                        || left == name
+                        || right == name
+                        || pattern.iter().any(|part| !identifier_spelling(part))
+                        || entry.notation_spelling() != Some(entry.primary_spelling())
+                        || definition.notation_shape() != Some(entry.primary_spelling())
+                        || !matches!(
+                            symbols
+                                .contributions()
+                                .get(candidate.contribution)
+                                .map(|row| row.kind()),
+                            Some(ContributionKind::LocalSource { .. })
+                        )
+                    {
+                        return Err(invalid());
+                    }
+                    spelling = entry.primary_spelling();
+                }
                 validate_symbol(
                     input,
                     symbols,
@@ -2245,7 +2284,7 @@ fn validate_candidates(
                     candidate.contribution,
                     SymbolKind::Predicate,
                     DefinitionKind::Predicate,
-                    &head.spelling,
+                    spelling,
                     input.formulas[formula].source_range,
                 )
                 .map_err(|()| SourceAtomicFormulaError::InvalidCandidate { candidate: id })?;
@@ -6922,6 +6961,214 @@ pub(crate) mod tests {
                 .recovery(),
             SourceAtomicFormulaRecovery::Degraded
         );
+    }
+
+    #[test]
+    fn single_predicate_segments_preserve_polarity_and_authenticate_pattern_heads() {
+        for negative in [false, true] {
+            let mut fixture = predicate_chain_fixture();
+            let end = if negative { 97 } else { 86 };
+            let head_start = if negative { 88 } else { 77 };
+            let right_start = end - 1;
+            let span = range(fixture.source, 75, end);
+            let mut nodes = fixture
+                .arena
+                .iter()
+                .map(|(_, node)| node.clone())
+                .collect::<Vec<_>>();
+            for (id, start, end) in [
+                (1, right_start, end),
+                (3, 75, end),
+                (4, 75, end),
+                (6, head_start, head_start + 7),
+                (8, 77, 81),
+                (9, 82, 85),
+            ] {
+                nodes[id].anchor = SourceAnchor::Range(range(fixture.source, start, end));
+            }
+            fixture.arena = TypedArena::try_new(None, nodes).unwrap();
+            fixture.primary = primary_handoff(
+                fixture.source,
+                &fixture.module,
+                &fixture.bindings,
+                &fixture.arena,
+                &[(0, 75, 76, "1"), (1, right_start, end, "2")],
+            );
+            fixture.input.predicate_segments.truncate(1);
+            fixture.input.predicate_heads.truncate(1);
+            fixture.input.candidates.truncate(1);
+            fixture.input.edges.truncate(2);
+            fixture.input.edges[1].role = SourceAtomicEdgeRole::PredicateRightArgument;
+            fixture.input.requests.truncate(1);
+            let spelling = if negative {
+                "1 does not divides 2"
+            } else {
+                "1 divides 2"
+            };
+            fixture.input.formulas[0].source_range = span;
+            fixture.input.formulas[0].spelling = spelling.into();
+            fixture.input.predicate_segments[0].source_range = span;
+            fixture.input.predicate_segments[0].spelling = spelling.into();
+            fixture.input.predicate_heads[0].source_range =
+                range(fixture.source, head_start, head_start + 7);
+            if negative {
+                fixture.input.predicate_segments[0].polarity =
+                    SourcePredicateSegmentPolarityInput::Negative {
+                        verb_site: node(8),
+                        verb_range: range(fixture.source, 77, 81),
+                        verb_spelling: "does".into(),
+                        verb_recovery: SourceAtomicFormulaRecovery::Normal,
+                        not_site: node(9),
+                        not_range: range(fixture.source, 82, 85),
+                        not_spelling: "not".into(),
+                        not_recovery: SourceAtomicFormulaRecovery::Normal,
+                    };
+            }
+            let source = fixture.source;
+            let module = fixture.module.clone();
+            let symbol = fixture.input.candidates[0].symbol.clone();
+            let symbols = |primary: &str, notation: &str, shape: &str| {
+                let mut indexes = SymbolEnvIndexes::default();
+                let contribution = indexes.contributions.insert(
+                    module.clone(),
+                    ContributionKind::LocalSource { source_id: source },
+                    SourceAnchor::Range(range(source, 1, 2)),
+                );
+                let origin = SemanticOrigin::new(
+                    source,
+                    module.clone(),
+                    SourceAnchor::Range(range(source, 3, 4)),
+                    vec![0],
+                );
+                indexes.symbols.insert(
+                    SymbolEntry::new(
+                        symbol.clone(),
+                        SymbolKind::Predicate,
+                        NamespacePath::new(module.path().as_str()),
+                        primary,
+                        origin.clone(),
+                        contribution,
+                    )
+                    .with_notation_spelling(notation),
+                );
+                indexes
+                    .contributions
+                    .add_symbol(contribution, symbol.clone());
+                let definition = indexes.definitions.insert(
+                    DefinitionShell::new(
+                        symbol.clone(),
+                        DefinitionKind::Predicate,
+                        origin,
+                        contribution,
+                    )
+                    .with_notation_shape(shape),
+                );
+                indexes
+                    .contributions
+                    .add_definition(contribution, definition);
+                SymbolEnv::new(module.clone(), indexes)
+            };
+            fixture.symbols = symbols("X divides Y", "X divides Y", "X divides Y");
+            let handoff = build(&fixture).expect("one actual binary segment");
+            assert_eq!(handoff.predicate_segments().len(), 1);
+            assert_eq!(
+                handoff
+                    .predicate_segments()
+                    .get(SourcePredicateSegmentId::new(0))
+                    .unwrap()
+                    .polarity(),
+                &fixture.input.predicate_segments[0].polarity
+            );
+            typed_ast(&fixture)
+                .with_source_atomic_formula(handoff)
+                .expect("same-range distinct-node installation");
+            for (primary, notation, shape) in [
+                ("X missing Y", "X missing Y", "X missing Y"),
+                ("X divides X", "X divides X", "X divides X"),
+                ("X divides Y", "X divides Z", "X divides Y"),
+                ("X divides Y", "X divides Y", "X missing Y"),
+            ] {
+                fixture.symbols = symbols(primary, notation, shape);
+                assert_build_rejects(&fixture);
+            }
+            fixture.symbols = symbols("X divides Y", "X divides Y", "X divides Y");
+            let valid = fixture.input.clone();
+            for corruption in 0..10 {
+                fixture.input = valid.clone();
+                match corruption {
+                    0 => {
+                        fixture.input.predicate_segments[0].site =
+                            fixture.input.formulas[0].site.clone()
+                    }
+                    1 => fixture.input.predicate_segments[0].source_range.start += 1,
+                    2 => fixture.input.predicate_heads[0].spelling = "missing".into(),
+                    3 => fixture.input.predicate_heads[0].left_arity = 2,
+                    4 => fixture.input.edges.swap(0, 1),
+                    5 => {
+                        fixture.input.predicate_segments[0].right_edge = SourceAtomicEdgeId::new(0)
+                    }
+                    6 => {
+                        let mut contributions = fixture.symbols.contributions().clone();
+                        fixture.input.candidates[0].contribution = contributions.insert(
+                            module.clone(),
+                            ContributionKind::LocalSource { source_id: source },
+                            SourceAnchor::Range(range(source, 5, 6)),
+                        );
+                    }
+                    7 => fixture.input.requests.clear(),
+                    8 => fixture
+                        .input
+                        .predicate_segments
+                        .push(fixture.input.predicate_segments[0].clone()),
+                    _ => fixture.input.predicate_heads[0].source_range.end += 1,
+                }
+                assert_build_rejects(&fixture);
+            }
+            if negative {
+                for corruption in 0..3 {
+                    fixture.input = valid.clone();
+                    let SourcePredicateSegmentPolarityInput::Negative {
+                        verb_range,
+                        not_spelling,
+                        not_recovery,
+                        ..
+                    } = &mut fixture.input.predicate_segments[0].polarity
+                    else {
+                        unreachable!()
+                    };
+                    match corruption {
+                        0 => verb_range.start += 1,
+                        1 => *not_spelling = "missing".into(),
+                        _ => *not_recovery = SourceAtomicFormulaRecovery::Degraded,
+                    }
+                    assert_build_rejects(&fixture);
+                }
+            }
+            fixture.input = valid;
+            if negative {
+                for id in [8, 9] {
+                    let valid_arena = fixture.arena.clone();
+                    let mut nodes = valid_arena
+                        .iter()
+                        .map(|(_, row)| row.clone())
+                        .collect::<Vec<_>>();
+                    nodes[id].kind = "wrong-polarity-token".into();
+                    fixture.arena = TypedArena::try_new(None, nodes).unwrap();
+                    assert_build_rejects(&fixture);
+                    fixture.arena = valid_arena;
+                }
+            }
+        }
+        let mut chain = predicate_chain_fixture();
+        chain.input.predicate_segments[0].source_range = chain.input.formulas[0].source_range;
+        let mut nodes = chain
+            .arena
+            .iter()
+            .map(|(_, row)| row.clone())
+            .collect::<Vec<_>>();
+        nodes[4].anchor = SourceAnchor::Range(chain.input.formulas[0].source_range);
+        chain.arena = TypedArena::try_new(None, nodes).unwrap();
+        assert_build_rejects(&chain);
     }
 
     #[test]
