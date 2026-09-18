@@ -10,4 +10,4 @@ diagnostic_codes = []
 spec_refs = [
   "spec.en.18.templates.type_parameter.extends_bound",
 ]
-notes = "Audit-1 semantic-bridge inactive oracle seed (September 2026 audit wave): binding expectation for the Step-5 semantic bridge; no active runner tag, earns no current credit. A template type parameter with an extends bound admits widening its instances to the bound (spec 18.x; A.18 bound_type)."
+notes = "Audit-1 semantic-bridge inactive oracle seed (September 2026 audit wave): binding expectation for the Step-5 semantic bridge; no active runner tag, earns no current credit. A structure-bound type parameter exposes the bound selectors; T.carrier has declared type set (spec 18.2.2, 18.10.2)."

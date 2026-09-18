@@ -14,7 +14,7 @@ Owning plans: [checker](../../mizar-checker/en/00.crate_plan.md#task-index),
   pass_type_elaboration_template_pred_param_001 and fail_type_elaboration_template_arity_mismatch_001.
   Each retains type_elaboration/type_check and its existing outcome/key.
 - Classification: source/formal-use resolution and symbolic/concrete typing gaps.
-- Both extends-set cases await human reconciliation of the bound specification and remain inactive.
+- Both structure-bound cases remain inactive pending source binding and type checking.
 
 ## Scope and boundaries
 

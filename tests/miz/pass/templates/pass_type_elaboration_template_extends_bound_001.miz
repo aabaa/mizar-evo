@@ -1,6 +1,12 @@
 definition
-  let T be type extends set;
+  struct BoundBox where
+    field carrier -> set;
+  end;
+end;
+
+definition
+  let T be type extends BoundBox;
   let x be T;
-  func TId2Def: tid2[T] x -> set equals x;
+  func TId2Def: tid2[T] x -> set equals T.carrier;
   coherence;
 end;
