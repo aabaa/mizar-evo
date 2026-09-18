@@ -5712,7 +5712,7 @@ harness は実 resolved source・symbols・中立 typed node を source synonym 
 
 ## Unbounded template type admission
 
-型 elaboration runner は activation map の上界なし型パラメータ関手、述語パラメータ定理、引数個数不一致の厳密な行だけを受理する。ID、ソース・sidecar パス、stage、type-check phase、結果、診断ペイロード、キー、唯一の active tag を dispatch 前に認証し、予約された同一性が別 stage や従来 profile へ迂回することを防ぐ。実際の resolved source と symbols を checker へ渡して結果を観測し、仮引数同一性・個数・型代入を harness で判断しない。構造上界の両行は無効のまま保持し、Task277A/277B の transport profile と意味論実績なしの境界を維持する。テストはソース由来の検査に加えて欠落・重複行、メタデータ、stage 間の変異を対象とする。
+型 elaboration runner は activation map の上界なし型パラメータ関手、述語パラメータ定理、引数個数不一致と修正済み構造上界2行だけを受理する。ID、ソース・sidecar パス、stage、type-check phase、結果、診断ペイロード、キー、唯一の active tag を dispatch 前に認証し、予約された同一性が別 stage や従来 profile へ迂回することを防ぐ。実際の resolved source と symbols を checker へ渡して結果を観測し、仮引数同一性・個数・型代入を harness で判断しない。構造上界2行は宣言の型検査と実際の上界違反キーを区別し、Task277A/277B の transport profile と意味論実績なしの境界を維持する。テストはソース由来の検査に加えて欠落・重複行、メタデータ、stage 間の変異を対象とする。
 
 ## Distinct-loci overload admission
 

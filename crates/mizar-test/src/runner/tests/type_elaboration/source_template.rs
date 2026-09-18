@@ -361,6 +361,11 @@ fn step5c12_real_templates_check_symbolic_formals_and_concrete_uses() {
             Ok(()),
         ),
         ("pass_type_elaboration_template_pred_param_001", Ok(())),
+        ("pass_type_elaboration_template_extends_bound_001", Ok(())),
+        (
+            "fail_type_elaboration_template_bound_violation_001",
+            Err("templates.argument.bound_violation".into()),
+        ),
         (
             "fail_type_elaboration_template_arity_mismatch_001",
             Err("templates.argument.arity_mismatch".into()),
@@ -380,7 +385,8 @@ fn step5c12_real_templates_check_symbolic_formals_and_concrete_uses() {
             .replace('T', "U")
             .replace('P', "Q")
             .replace('A', "B")
-            .replace('x', "y");
+            .replace(" x", " y")
+            .replace("(x)", "(y)");
         assert_eq!(step5c12_check(&case, &renamed), expected, "renamed {id}");
         let result = super::run_type_elaboration_case(
             &step5c11_config().workspace_root,
@@ -496,121 +502,153 @@ fn step5c12_predicate_formals_check_each_domain_and_quantified_argument() {
 fn step5c12_admission_reserves_all_template_rows_and_exact_endpoints() {
     let config = step5c11_config();
     let plan = build_test_plan(&config).unwrap();
-    let (original, _) = step5c12_case("fail_type_elaboration_template_arity_mismatch_001");
-    assert!(super::step5c12_admitted(
-        Some(&config.workspace_root),
-        &original
-    ));
-    for mutation in 0..14 {
-        let mut case = original.clone();
-        match mutation {
-            0 => case.id.0.push_str("_alias"),
-            1 => case.expectation.id.0.push_str("_alias"),
-            2 => {
-                case.source_path = config.workspace_root.join("alias").join(
-                    case.source_path
-                        .strip_prefix(&config.workspace_root)
-                        .unwrap(),
-                )
+    for original in plan
+        .cases
+        .iter()
+        .filter(|case| super::is_step5c12_candidate(case))
+    {
+        assert!(super::step5c12_admitted(
+            Some(&config.workspace_root),
+            original
+        ));
+        for mutation in 0..25 {
+            let mut case = (*original).clone();
+            match mutation {
+                0 => case.id.0.push_str("_alias"),
+                1 => case.expectation.id.0.push_str("_alias"),
+                2 => {
+                    case.source_path = config.workspace_root.join("alias").join(
+                        case.source_path
+                            .strip_prefix(&config.workspace_root)
+                            .unwrap(),
+                    )
+                }
+                3 => {
+                    case.expectation_path =
+                        case.expectation_path.with_file_name("wrong.expect.toml")
+                }
+                4 => case.expectation.expected_phase = Some(crate::PipelinePhase::Resolve),
+                5 => {
+                    case.expectation.expected_outcome =
+                        if original.expectation.expected_outcome == crate::ExpectedOutcome::Pass {
+                            crate::ExpectedOutcome::Fail
+                        } else {
+                            crate::ExpectedOutcome::Pass
+                        }
+                }
+                6 => {
+                    case.expectation.failure_category =
+                        if original.expectation.failure_category.is_some() {
+                            None
+                        } else {
+                            Some("type_error".into())
+                        }
+                }
+                7 => case.expectation.stable_detail_key = Some("wrong".into()),
+                8 => case.expectation.tags.clear(),
+                9 => case.expectation.tags.push("extra".into()),
+                10 => case.expectation.snapshots = Some("wrong".into()),
+                11 => case.expectation.rejection_reason = Some("wrong".into()),
+                12 => case.expectation.diagnostic_codes.push("E-WRONG".into()),
+                13 => case
+                    .expectation
+                    .declaration_symbol_payloads
+                    .push("wrong".into()),
+                14 => case.expectation.domain.push_str("_wrong"),
+                15 => case.expectation.spec_refs[0].0.push_str("_wrong"),
+                16 => case
+                    .expectation
+                    .spec_refs
+                    .push(case.expectation.spec_refs[0].clone()),
+                17 => case.expectation.source = "wrong.miz".into(),
+                18 => {
+                    case.expectation.kind =
+                        if original.expectation.kind == crate::expectation::TestKind::Pass {
+                            crate::expectation::TestKind::Fail
+                        } else {
+                            crate::expectation::TestKind::Pass
+                        }
+                }
+                19 => case.expectation.stage = crate::Stage::AdvancedSemantics,
+                20 => case.expectation.profiles.push("extra".into()),
+                21 => case.expectation.schema_version = 2,
+                22 => case.expectation.ast_profile = Some("wrong".into()),
+                23 => case.expectation.snapshot_profiles.push("wrong".into()),
+                24 => case.expectation.diagnostic_payloads.push("wrong".into()),
+                _ => unreachable!(),
             }
-            3 => case.expectation_path = case.expectation_path.with_file_name("wrong.expect.toml"),
-            4 => case.expectation.expected_phase = Some(crate::PipelinePhase::Resolve),
-            5 => case.expectation.expected_outcome = crate::ExpectedOutcome::Pass,
-            6 => case.expectation.failure_category = None,
-            7 => case.expectation.stable_detail_key = Some("wrong".into()),
-            8 => case.expectation.tags.clear(),
-            9 => case.expectation.tags.push("extra".into()),
-            10 => case.expectation.snapshots = Some("wrong".into()),
-            11 => case.expectation.rejection_reason = Some("wrong".into()),
-            12 => case.expectation.diagnostic_codes.push("E-WRONG".into()),
-            13 => case
-                .expectation
-                .declaration_symbol_payloads
-                .push("wrong".into()),
-            _ => unreachable!(),
+            assert!(
+                !super::step5c12_admitted(Some(&config.workspace_root), &case),
+                "mutation {mutation}"
+            );
+        }
+        for (stage, phase, tag) in [
+            (
+                crate::Stage::ParseOnly,
+                crate::PipelinePhase::Parse,
+                "active_parse_only",
+            ),
+            (
+                crate::Stage::DeclarationSymbol,
+                crate::PipelinePhase::Resolve,
+                "active_declaration_symbol",
+            ),
+            (
+                crate::Stage::FormulaStatement,
+                crate::PipelinePhase::StatementCheck,
+                "active_formula_statement",
+            ),
+            (
+                crate::Stage::ProofVerification,
+                crate::PipelinePhase::Verification,
+                "active_proof_verification",
+            ),
+            (
+                crate::Stage::AdvancedSemantics,
+                crate::PipelinePhase::OverloadResolution,
+                "active_advanced_semantics",
+            ),
+        ] {
+            let mut case = (*original).clone();
+            case.expectation.stage = stage;
+            case.expectation.expected_phase = Some(phase);
+            case.expectation.tags = vec![tag.into()];
+            for only_expectation_identity in [false, true] {
+                if only_expectation_identity {
+                    case.id.0 = "alias".into();
+                    case.source_path = config.workspace_root.join("alias.miz");
+                    case.expectation_path = config.workspace_root.join("alias.expect.toml");
+                }
+                assert!(!super::is_active_type_elaboration(&case));
+                assert!(!super::is_active_parse_only(&case));
+                assert!(!super::is_active_declaration_symbol(&case));
+                assert!(!super::is_active_proof_verification(&case));
+                assert!(!super::formula_statement::is_active_formula_statement(
+                    &config.workspace_root,
+                    &case
+                ));
+                assert!(!super::step5c11_registration_admitted(
+                    &config.workspace_root,
+                    &case
+                ));
+            }
         }
         assert!(
-            !super::step5c12_admitted(Some(&config.workspace_root), &case),
-            "mutation {mutation}"
+            super::validate_active_type_elaboration_tags(&config.workspace_root, &plan).is_empty()
         );
-    }
-    for id in [
-        "pass_type_elaboration_template_extends_bound_001",
-        "fail_type_elaboration_template_bound_violation_001",
-    ] {
-        let mut case = plan
-            .cases
-            .iter()
-            .find(|case| case.id.0 == id)
-            .unwrap()
-            .clone();
-        case.expectation.tags = vec!["active_type_elaboration".into()];
-        assert!(!super::is_active_type_elaboration(&case));
-    }
-    for (stage, phase, tag) in [
-        (
-            crate::Stage::ParseOnly,
-            crate::PipelinePhase::Parse,
-            "active_parse_only",
-        ),
-        (
-            crate::Stage::DeclarationSymbol,
-            crate::PipelinePhase::Resolve,
-            "active_declaration_symbol",
-        ),
-        (
-            crate::Stage::FormulaStatement,
-            crate::PipelinePhase::StatementCheck,
-            "active_formula_statement",
-        ),
-        (
-            crate::Stage::ProofVerification,
-            crate::PipelinePhase::Verification,
-            "active_proof_verification",
-        ),
-        (
-            crate::Stage::AdvancedSemantics,
-            crate::PipelinePhase::OverloadResolution,
-            "active_advanced_semantics",
-        ),
-    ] {
-        let mut case = original.clone();
-        case.expectation.stage = stage;
-        case.expectation.expected_phase = Some(phase);
-        case.expectation.tags = vec![tag.into()];
-        for only_expectation_identity in [false, true] {
-            if only_expectation_identity {
-                case.id.0 = "alias".into();
-                case.source_path = config.workspace_root.join("alias.miz");
-                case.expectation_path = config.workspace_root.join("alias.expect.toml");
+        for duplicate in [false, true] {
+            let mut changed = plan.clone();
+            if duplicate {
+                changed.cases.push((*original).clone());
+            } else {
+                changed.cases.retain(|case| case.id != original.id);
             }
-            assert!(!super::is_active_type_elaboration(&case));
-            assert!(!super::is_active_parse_only(&case));
-            assert!(!super::is_active_declaration_symbol(&case));
-            assert!(!super::is_active_proof_verification(&case));
-            assert!(!super::formula_statement::is_active_formula_statement(
-                &config.workspace_root,
-                &case
-            ));
-            assert!(!super::step5c11_registration_admitted(
-                &config.workspace_root,
-                &case
-            ));
+            assert!(
+                super::validate_active_type_elaboration_tags(&config.workspace_root, &changed)
+                    .iter()
+                    .any(|diagnostic| diagnostic.code.0 == "E-TYPE-ELABORATION-STEP5C12-INVENTORY")
+            );
         }
-    }
-    assert!(super::validate_active_type_elaboration_tags(&config.workspace_root, &plan).is_empty());
-    for duplicate in [false, true] {
-        let mut changed = plan.clone();
-        if duplicate {
-            changed.cases.push(original.clone());
-        } else {
-            changed.cases.retain(|case| case.id != original.id);
-        }
-        assert!(
-            super::validate_active_type_elaboration_tags(&config.workspace_root, &changed)
-                .iter()
-                .any(|diagnostic| diagnostic.code.0 == "E-TYPE-ELABORATION-STEP5C12-INVENTORY")
-        );
     }
     let mut empty = plan;
     empty.cases.clear();
@@ -728,79 +766,309 @@ fn step5c12_direct_resolution_rejects_illegal_owners_and_application_identities(
         }).unwrap();
         assert!(resolve_template_formal(&source, reference).is_err());
     }
-    let (source, _) = step5c12_inputs(&case, &text);
-    let ast = super::formula_statement::step5c8_test_frontend(&text)
-        .ast
-        .unwrap();
-    for target in [1, 2] {
-        let mut builder = SurfaceAstBuilder::new(ast.source_id);
-        let mut rebuilt = Vec::new();
-        let mut occurrence = 0;
-        let mut changed_callee = None;
-        for (index, node) in ast.nodes().iter().enumerate() {
-            let children = node
-                .children
-                .iter()
-                .map(|child| rebuilt[child.index()])
-                .collect();
-            let id = match &node.kind {
-                K::Token(token) => {
-                    let changed = token.text.as_ref() == "tid4" && {
-                        occurrence += 1;
-                        occurrence - 1 == target
-                    };
-                    if changed {
-                        changed_callee = Some(index);
-                    }
-                    builder.add_token(
-                        token.kind,
+    for (id, callee, failure_key) in [
+        (
+            "fail_type_elaboration_template_arity_mismatch_001",
+            "tid4",
+            "templates.argument.arity_mismatch",
+        ),
+        (
+            "fail_type_elaboration_template_bound_violation_001",
+            "tid3",
+            "templates.argument.bound_violation",
+        ),
+    ] {
+        let (case, text) = step5c12_case(id);
+        let (source, _) = step5c12_inputs(&case, &text);
+        let ast = super::formula_statement::step5c8_test_frontend(&text)
+            .ast
+            .unwrap();
+        for target in [1, 2] {
+            let mut builder = SurfaceAstBuilder::new(ast.source_id);
+            let mut rebuilt = Vec::new();
+            let mut occurrence = 0;
+            let mut changed_callee = None;
+            for (index, node) in ast.nodes().iter().enumerate() {
+                let children = node
+                    .children
+                    .iter()
+                    .map(|child| rebuilt[child.index()])
+                    .collect();
+                let id = match &node.kind {
+                    K::Token(token) => {
+                        let changed = token.text.as_ref() == callee && {
+                            occurrence += 1;
+                            occurrence - 1 == target
+                        };
                         if changed {
-                            "bad4".into()
-                        } else {
-                            token.text.clone()
-                        },
-                        node.range,
-                    )
-                }
-                K::PrefixExpression(operator)
-                    if node.children.first().map(|id| id.index()) == changed_callee =>
-                {
-                    let mut operator = operator.clone();
-                    operator.spelling = "bad4".into();
-                    builder.add_node(K::PrefixExpression(operator), node.range, children)
-                }
-                kind => builder.add_node(kind.clone(), node.range, children),
-            };
-            rebuilt.push(id);
+                            changed_callee = Some(index);
+                        }
+                        builder.add_token(
+                            token.kind,
+                            if changed {
+                                "badc".into()
+                            } else {
+                                token.text.clone()
+                            },
+                            node.range,
+                        )
+                    }
+                    K::PrefixExpression(operator)
+                        if node.children.first().map(|id| id.index()) == changed_callee =>
+                    {
+                        let mut operator = operator.clone();
+                        operator.spelling = "badc".into();
+                        builder.add_node(K::PrefixExpression(operator), node.range, children)
+                    }
+                    kind => builder.add_node(kind.clone(), node.range, children),
+                };
+                rebuilt.push(id);
+            }
+            assert_eq!(occurrence, 3);
+            let changed = builder.finish(Some(rebuilt[ast.root().unwrap().index()]), None);
+            let changed_env = super::resolver_symbol_collection(
+                &step5c11_config().workspace_root,
+                &case,
+                &changed,
+            );
+            assert!(changed_env.detail_keys.is_empty());
+            let changed = SurfaceResolvedArena::lower(&changed, source.module()).unwrap();
+            let symbols = changed_env.env;
+            mizar_resolve::symbols::validate_source_symbol_env(&changed, &symbols).unwrap();
+            let error = mizar_checker::type_checker::check_source_unbounded_template_types(
+                &changed, &symbols,
+            )
+            .unwrap_err();
+            assert_ne!(error, failure_key, "callee {target}");
         }
-        assert_eq!(occurrence, 3);
-        let changed = builder.finish(Some(rebuilt[ast.root().unwrap().index()]), None);
-        let changed_env =
-            super::resolver_symbol_collection(&step5c11_config().workspace_root, &case, &changed);
-        assert!(changed_env.detail_keys.is_empty());
-        let changed = SurfaceResolvedArena::lower(&changed, source.module()).unwrap();
-        let symbols = changed_env.env;
-        mizar_resolve::symbols::validate_source_symbol_env(&changed, &symbols).unwrap();
-        let error =
-            mizar_checker::type_checker::check_source_unbounded_template_types(&changed, &symbols)
-                .unwrap_err();
-        assert_ne!(
-            error, "templates.argument.arity_mismatch",
-            "callee {target}"
+        let (definition, theorem) = text.split_once("\ntheorem").unwrap();
+        let before = format!("theorem{theorem}\n{definition}\n");
+        let keys = super::type_elaboration_detail_keys(
+            &step5c11_config().workspace_root,
+            &case,
+            super::formula_statement::step5c8_test_frontend(&before),
+            &mut None,
+        );
+        assert!(!keys.is_empty());
+        assert!(!keys.iter().any(|key| key == failure_key));
+    }
+}
+
+#[test]
+fn step5c12_structure_bound_resolves_real_schema_and_member_identities() {
+    use mizar_resolve::{env::SymbolKind, names::resolve_template_formal};
+    use mizar_syntax::SurfaceNodeKind as K;
+    let (case, text) = step5c12_case("pass_type_elaboration_template_extends_bound_001");
+    let renamed = text
+        .replace("BoundBox", "Container")
+        .replace("carrier", "payload")
+        .replace("TId2Def", "ExtractDef")
+        .replace("tid2", "extract")
+        .replace("let T ", "let Schema ")
+        .replace("be T;", "be Schema;")
+        .replace("[T]", "[Schema]")
+        .replace("T.", "Schema.")
+        .replace("let x ", "let element ")
+        .replace("] x", "] element");
+    for (text, ty, value, structure, member) in [
+        (&text, "T", "x", "BoundBox", "carrier"),
+        (&renamed, "Schema", "element", "Container", "payload"),
+    ] {
+        assert_eq!(step5c12_check(&case, text), Ok(()));
+        let (source, env) = step5c12_inputs(&case, text);
+        for (spelling, expected_count) in [(ty, 4), (value, 2)] {
+            let tokens = source
+                .arena()
+                .iter()
+                .filter_map(|(id, node)| {
+                    matches!(node.kind(), K::Token(token) if token.text.as_ref() == spelling)
+                        .then_some(id)
+                })
+                .collect::<Vec<_>>();
+            assert_eq!(tokens.len(), expected_count);
+            for reference in &tokens[1..] {
+                assert_eq!(
+                    resolve_template_formal(&source, *reference).unwrap(),
+                    tokens[0]
+                );
+            }
+            assert!(resolve_template_formal(&source, tokens[0]).is_err());
+        }
+        for (kind, spelling, node_kind) in [
+            (SymbolKind::Structure, structure, K::StructureDefinition),
+            (SymbolKind::Selector, member, K::StructureField),
+        ] {
+            let declaration = source
+                .arena()
+                .iter()
+                .find(|(_, node)| node.kind() == &node_kind)
+                .unwrap()
+                .1;
+            let entries = env
+                .symbols()
+                .iter()
+                .filter(|entry| {
+                    entry.kind() == kind && entry.origin().anchor() == declaration.origin().anchor()
+                })
+                .collect::<Vec<_>>();
+            assert_eq!(entries.len(), 1);
+            assert_eq!(entries[0].symbol().module(), source.module());
+            assert!(entries[0].primary_spelling().contains(spelling));
+        }
+    }
+    let collision = text
+        .replace("let x ", "let carrier ")
+        .replace("] x", "] carrier");
+    assert_eq!(step5c12_check(&case, &collision), Ok(()));
+    let (source, _) = step5c12_inputs(&case, &collision);
+    let declaration_start = collision.find("let carrier").unwrap() + 4;
+    let declaration = source
+        .arena()
+        .iter()
+        .find_map(|(id, node)| {
+            matches!(node.kind(), K::Token(token) if token.text.as_ref() == "carrier")
+                .then_some((id, node.origin().anchor()))
+                .and_then(|(id, anchor)| match anchor {
+                    mizar_session::SourceAnchor::Range(range)
+                        if range.start == declaration_start =>
+                    {
+                        Some(id)
+                    }
+                    _ => None,
+                })
+        })
+        .unwrap();
+    let pattern = source
+        .arena()
+        .iter()
+        .find(|(_, node)| node.kind() == &K::FunctorPattern)
+        .unwrap()
+        .1;
+    let selector = source
+        .arena()
+        .iter()
+        .find(|(_, node)| node.kind() == &K::SelectorAccess)
+        .unwrap()
+        .1;
+    assert_eq!(
+        resolve_template_formal(&source, *pattern.children().last().unwrap()).unwrap(),
+        declaration
+    );
+    assert!(resolve_template_formal(&source, selector.children()[2]).is_err());
+    assert_ne!(selector.children()[2], declaration);
+    let (original, env) = step5c12_inputs(&case, &text);
+    let (changed, _) = step5c12_inputs(&case, &renamed);
+    assert!(
+        mizar_checker::type_checker::check_source_unbounded_template_types(&changed, &env).is_err()
+    );
+    let frontend =
+        super::formula_statement::step5c8_test_frontend(&text.replace("T.carrier", "T."));
+    assert!(!frontend.diagnostics.is_empty());
+    if let Some(ast) = frontend.ast {
+        let recovered =
+            mizar_resolve::resolved_ast::SurfaceResolvedArena::lower(&ast, original.module())
+                .unwrap();
+        assert!(
+            mizar_checker::type_checker::check_source_unbounded_template_types(&recovered, &env)
+                .is_err()
         );
     }
-    let (definition, theorem) = text.split_once("\ntheorem").unwrap();
-    let before = format!("theorem{theorem}\n{definition}\n");
-    let keys = super::type_elaboration_detail_keys(
-        &step5c11_config().workspace_root,
-        &case,
-        super::formula_statement::step5c8_test_frontend(&before),
-        &mut None,
-    );
-    assert!(!keys.is_empty());
-    assert!(
-        !keys
+}
+
+#[test]
+fn step5c12_structure_bound_rejects_definition_and_selector_near_misses() {
+    let (case, text) = step5c12_case("pass_type_elaboration_template_extends_bound_001");
+    for (old, new) in [
+        ("T.carrier", "x"),
+        ("T.carrier", "x.carrier"),
+        ("T.carrier", "T.unknown"),
+        ("field carrier -> set;", "field carrier -> object;"),
+        ("-> set equals", "-> object equals"),
+        ("tid2[T]", "tid2[x]"),
+        ("let x be T;", "let x be object;"),
+        ("extends BoundBox", "extends object"),
+        ("extends BoundBox", "extends Missing"),
+        (
+            "field carrier -> set;",
+            "field carrier -> set; field extra -> set;",
+        ),
+        ("let x be T;", "let U be type; let x be T;"),
+        ("coherence;", "coherence; coherence;"),
+    ] {
+        let changed = text.replace(old, new);
+        assert_ne!(changed, text);
+        let error = step5c12_check(&case, &changed).expect_err("unsupported bounded declaration");
+        assert_ne!(
+            error, "templates.argument.bound_violation",
+            "{old} => {new}"
+        );
+        assert_ne!(error, "templates.argument.arity_mismatch", "{old} => {new}");
+    }
+}
+
+#[test]
+fn step5c12_bound_violation_requires_both_actual_calls_and_their_bindings() {
+    use mizar_resolve::names::resolve_template_formal;
+    use mizar_syntax::SurfaceNodeKind as K;
+    let (case, text) = step5c12_case("fail_type_elaboration_template_bound_violation_001");
+    let failure = "templates.argument.bound_violation";
+    for text in [
+        text.clone(),
+        text.replace("object", "set"),
+        text.replace(
+            "for a being object holds tid3[object]",
+            "for a being set holds tid3[set]",
+        ),
+    ] {
+        assert_eq!(step5c12_check(&case, &text), Err(failure.into()));
+        let (source, _) = step5c12_inputs(&case, &text);
+        let uses = source.arena().iter().filter_map(|(_, node)| {
+            if node.kind() != &K::TermReference { return None; }
+            let reference = node.children()[0];
+            matches!(source.arena().node(reference).unwrap().kind(), K::Token(token) if token.text.as_ref() == "a").then_some(reference)
+        }).collect::<Vec<_>>();
+        assert_eq!(uses.len(), 4);
+        let binders = uses
             .iter()
-            .any(|key| key == "templates.argument.arity_mismatch")
-    );
+            .map(|id| resolve_template_formal(&source, *id).unwrap())
+            .collect::<Vec<_>>();
+        assert_eq!(binders[0], binders[1]);
+        assert_eq!(binders[2], binders[3]);
+        assert_ne!(binders[0], binders[2]);
+    }
+    let call = "tid3[object] a = a";
+    let occurrences = text
+        .match_indices(call)
+        .map(|(offset, _)| offset)
+        .collect::<Vec<_>>();
+    assert_eq!(occurrences.len(), 2);
+    for offset in occurrences {
+        for replacement in [
+            "tid3[object] T = a",
+            "tid3[object] a = b",
+            "tid3[set] a = a",
+            "tid3[object, object] a = a",
+            "tid3[BoundBox] a = a",
+            "tid3 a = a",
+        ] {
+            let mut changed = text.clone();
+            changed.replace_range(offset..offset + call.len(), replacement);
+            let error = step5c12_check(&case, &changed).expect_err("unsupported independent call");
+            assert_ne!(error, failure, "call offset{offset}: {replacement}");
+            assert_ne!(error, "templates.argument.arity_mismatch");
+        }
+    }
+    for (old, new) in [
+        ("for a being object", "for a being set"),
+        ("let a be object", "let a be set"),
+        ("by TId3Def", "by MissingDef"),
+    ] {
+        let changed = text.replace(old, new);
+        let error = step5c12_check(&case, &changed).expect_err("unsupported binder/citation");
+        assert_ne!(error, failure, "{old} => {new}");
+    }
+    let matching = text.replace("object", "BoundBox");
+    let error =
+        step5c12_check(&case, &matching).expect_err("matching bound instantiation is deferred");
+    assert_ne!(error, failure);
 }

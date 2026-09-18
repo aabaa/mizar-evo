@@ -7,7 +7,8 @@ source = "pass_type_elaboration_template_extends_bound_001.miz"
 expected_outcome = "pass"
 expected_phase = "type_check"
 diagnostic_codes = []
+tags = ["active_type_elaboration"]
 spec_refs = [
   "spec.en.18.templates.type_parameter.extends_bound",
 ]
-notes = "Audit-1 semantic-bridge inactive oracle seed (September 2026 audit wave): binding expectation for the Step-5 semantic bridge; no active runner tag, earns no current credit. A structure-bound type parameter exposes the bound selectors; T.carrier has declared type set (spec 18.2.2, 18.10.2)."
+notes = "Source checking authenticates the real structure bound, schema-object selector and declared set result; no concrete instantiation or proof acceptance is claimed."

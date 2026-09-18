@@ -2395,11 +2395,15 @@ pub fn check_source_distinct_loci_overloads(
     ))
 }
 
-/// Checks the bounded unbounded-template profiles without accepting proof results.
+/// Checks the bounded template profiles without accepting proof results.
 pub fn check_source_unbounded_template_types(
     source: &SurfaceResolvedArena,
     symbols: &SymbolEnv,
 ) -> Result<(), String> {
+    use crate::source_structure_semantics::{
+        SourceStructureDefinitionInput, SourceStructureMemberInput, SourceStructureMemberKind,
+        SourceStructureProgramInput, SourceStructureSemanticsChecker, SourceStructureType,
+    };
     let invalid = || "templates.unsupported_source_types".to_owned();
     mizar_resolve::symbols::validate_source_symbol_env(source, symbols)?;
     let node = |id| source.arena().node(id).ok_or_else(invalid);
@@ -2438,6 +2442,18 @@ pub fn check_source_unbounded_template_types(
         SourceAnchor::Range(range) => Ok(*range),
         _ => Err(invalid()),
     };
+    let symbol = |id, kind| {
+        let anchor = node(id)?.origin().anchor();
+        let mut entries = symbols
+            .symbols()
+            .iter()
+            .filter(|entry| entry.kind() == kind && entry.origin().anchor() == anchor);
+        let entry = entries.next().ok_or_else(invalid)?;
+        if entries.next().is_some() {
+            return Err(invalid());
+        }
+        Ok(entry)
+    };
     let type_token = |id| only(only(id, &K::TypeExpression)?, &K::TypeHead);
     let term_token = |id| only(only(id, &K::TermExpression)?, &K::TermReference);
     let formal = |id| resolve_template_formal(source, id).map_err(|_| invalid());
@@ -2460,16 +2476,35 @@ pub fn check_source_unbounded_template_types(
         return Err(invalid());
     }
     let items = parts(only(unit, &K::CompilationUnit)?, &K::ItemList)?;
+    let (structure_block, items) = if items.first().is_some_and(|id| {
+        node(*id).is_ok_and(|block| {
+            block
+                .children()
+                .iter()
+                .any(|child| node(*child).is_ok_and(|node| node.kind() == &K::StructureDefinition))
+        })
+    }) {
+        (Some(items[0]), &items[1..])
+    } else {
+        (None, items)
+    };
     let block = *items.first().ok_or_else(invalid)?;
     let block_parts = parts(block, &K::DefinitionBlockItem)?;
     let [start, type_parameter, parameter, rest @ .., end, semi] = block_parts else {
         return Err(invalid());
     };
     tokens(&[(*start, "definition"), (*end, "end"), (*semi, ";")])?;
-    let [let_kw, abstract_type, be, type_kw, semi] = parts(*type_parameter, &K::TemplateParameter)?
-    else {
-        return Err(invalid());
-    };
+    let (let_kw, abstract_type, be, type_kw, bound, semi) =
+        match parts(*type_parameter, &K::TemplateParameter)? {
+            [let_kw, binder, be, type_kw, semi] if structure_block.is_none() => {
+                (let_kw, binder, be, type_kw, None, semi)
+            }
+            [let_kw, binder, be, type_kw, extends, bound, semi] if structure_block.is_some() => {
+                tokens(&[(*extends, "extends")])?;
+                (let_kw, binder, be, type_kw, Some(*bound), semi)
+            }
+            _ => return Err(invalid()),
+        };
     tokens(&[
         (*let_kw, "let"),
         (*be, "be"),
@@ -2481,18 +2516,22 @@ pub fn check_source_unbounded_template_types(
     let predicate_profile =
         matches!(rest, [theorem] if node(*theorem).is_ok_and(|n| n.kind() == &K::TheoremItem));
     let theorem_owner = if predicate_profile {
-        rest[0]
+        Some(rest[0])
     } else {
-        *items.get(1).ok_or_else(invalid)?
+        items.get(1).copied()
     };
-    let theorem_anchor = node(theorem_owner)?.origin().anchor();
-    if !symbols.symbols().iter().any(|entry| {
-        entry.kind() == SymbolKind::Theorem && entry.origin().anchor() == theorem_anchor
-    }) {
+    if let Some(theorem) = theorem_owner {
+        let theorem_anchor = node(theorem)?.origin().anchor();
+        if !symbols.symbols().iter().any(|entry| {
+            entry.kind() == SymbolKind::Theorem && entry.origin().anchor() == theorem_anchor
+        }) {
+            return Err(invalid());
+        }
+    } else if bound.is_none() {
         return Err(invalid());
     }
     if predicate_profile {
-        if items != [block] {
+        if items != [block] || bound.is_some() {
             return Err(invalid());
         }
         let [let_kw, predicate, be, pred, open, domain, close, semi] = parameter_parts else {
@@ -2590,12 +2629,20 @@ pub fn check_source_unbounded_template_types(
     };
     tokens(&[(*open, "["), (*close, "]")])?;
     let locus = formal(only(*locus, &K::TemplateLocus)?)?;
-    let result_type = formal(type_token(*result_type)?)?;
+    let symbolic_result = if bound.is_none() {
+        let result = formal(type_token(*result_type)?)?;
+        if result != abstract_type
+            || formal(term_token(only(*body, &K::TermDefiniens)?)?)? != *value_parameter
+        {
+            return Err(invalid());
+        }
+        Some(result)
+    } else {
+        None
+    };
     if parameter_type != abstract_type
         || locus != abstract_type
-        || result_type != abstract_type
         || formal(*argument)? != *value_parameter
-        || formal(term_token(only(*body, &K::TermDefiniens)?)?)? != *value_parameter
     {
         return Err(invalid());
     }
@@ -2603,14 +2650,7 @@ pub fn check_source_unbounded_template_types(
         return Err(invalid());
     };
     tokens(&[(*coherence_kw, "coherence"), (*semi, ";")])?;
-    let definition_anchor = node(*definition)?.origin().anchor();
-    let declaration = symbols
-        .symbols()
-        .iter()
-        .find(|entry| {
-            entry.kind() == SymbolKind::Functor && entry.origin().anchor() == definition_anchor
-        })
-        .ok_or_else(invalid)?;
+    let declaration = symbol(*definition, SymbolKind::Functor)?;
     let projection = NameSymbolProjection::current_module(
         declaration.symbol().clone(),
         declaration.namespace().clone(),
@@ -2620,6 +2660,217 @@ pub fn check_source_unbounded_template_types(
         range(*definition)?,
         range(block)?.end,
     );
+    let bounded_type = if let (Some(structure_block), Some(bound)) = (structure_block, bound) {
+        let [definition_kw, structure, end, semi] =
+            parts(structure_block, &K::DefinitionBlockItem)?
+        else {
+            return Err(invalid());
+        };
+        tokens(&[(*definition_kw, "definition"), (*end, "end"), (*semi, ";")])?;
+        let [struct_kw, pattern, where_kw, field, end, semi] =
+            parts(*structure, &K::StructureDefinition)?
+        else {
+            return Err(invalid());
+        };
+        tokens(&[
+            (*struct_kw, "struct"),
+            (*where_kw, "where"),
+            (*end, "end"),
+            (*semi, ";"),
+        ])?;
+        let structure_name = only(*pattern, &K::StructurePattern)?;
+        let [field_kw, field_name, arrow, field_type, semi] = parts(*field, &K::StructureField)?
+        else {
+            return Err(invalid());
+        };
+        tokens(&[
+            (*field_kw, "field"),
+            (*arrow, "->"),
+            (*semi, ";"),
+            (type_token(*field_type)?, "set"),
+            (type_token(*result_type)?, "set"),
+        ])?;
+        let structure_symbol = symbol(*structure, SymbolKind::Structure)?;
+        let field_symbol = symbol(*field, SymbolKind::Selector)?;
+        let bound_name = only(
+            only(type_token(bound)?, &K::QualifiedSymbol)?,
+            &K::PathSegment,
+        )?;
+        if text(bound_name)? != text(structure_name)?
+            || range(bound)?.start < range(structure_block)?.end
+            || structure_symbol.namespace() != declaration.namespace()
+        {
+            return Err(invalid());
+        }
+        // The actual required set field supplies the bare constructor witness.
+        let structures = SourceStructureSemanticsChecker::check(
+            SourceStructureProgramInput::new(
+                source.source_id(),
+                source.module().clone(),
+                vec![SourceStructureDefinitionInput::new(
+                    structure_symbol.symbol().clone(),
+                    text(structure_name)?,
+                    Vec::new(),
+                    vec![SourceStructureMemberInput::new(
+                        field_symbol.symbol().clone(),
+                        text(*field_name)?,
+                        field_symbol.primary_spelling(),
+                        SourceStructureMemberKind::Field,
+                        SourceStructureType::Set,
+                        range(*field)?,
+                        0,
+                        false,
+                    )],
+                    range(*structure)?,
+                    0,
+                    false,
+                )],
+                Vec::new(),
+                Vec::new(),
+                Vec::new(),
+                Vec::new(),
+            ),
+            symbols,
+        )
+        .map_err(|_| invalid())?;
+        let [structure] = structures.structures() else {
+            return Err(invalid());
+        };
+        let member = structure
+            .member(field_symbol.symbol())
+            .ok_or_else(invalid)?;
+        if !structures.diagnostics().is_empty() || member.ty() != &SourceStructureType::Set {
+            return Err(invalid());
+        }
+        let selector = only(only(*body, &K::TermDefiniens)?, &K::TermExpression)?;
+        let [base, dot, selected] = parts(selector, &K::SelectorAccess)? else {
+            return Err(invalid());
+        };
+        tokens(&[(*dot, ".")])?;
+        if formal(only(*base, &K::TermReference)?)? != abstract_type
+            || text(*selected)? != member.spelling()
+        {
+            return Err(invalid());
+        }
+        let bound_type = TypeExpressionInput::new(
+            site(bound),
+            range(bound)?,
+            text(bound_name)?,
+            TypeHeadInput::Symbol(structure_symbol.symbol().clone()),
+        );
+        // T is the schema structure object here. x:T retains only its symbolic
+        // element-type identity above and never becomes a concrete structure value.
+        let context = BindingContextId::new(1);
+        let local = LocalTermBinding::new(
+            text(abstract_type)?,
+            LocalTermScope::new(vec![block.index() as u32]),
+            range(abstract_type)?,
+            abstract_type.index(),
+        );
+        let mut bindings = BindingTable::new();
+        let mut draft =
+            BindingDraft::from_local_term(context, BindingKind::DefinitionParameter, &local);
+        draft.type_site = BindingTypeSite::Source(range(bound)?);
+        let binding = bindings.insert(draft);
+        let mut contexts = BindingContextTable::new();
+        contexts.insert(BindingContextDraft {
+            owner: BindingContextOwner::Module,
+            parent: None,
+            layer: BindingContextLayer::Module,
+            lexical_scope: None,
+            bindings: Vec::new(),
+            visible_bindings: Vec::new(),
+            recovery: BindingContextRecovery::Normal,
+        });
+        contexts.insert(BindingContextDraft {
+            owner: BindingContextOwner::SourceStatement {
+                source_range: range(block)?,
+            },
+            parent: Some(BindingContextId::new(0)),
+            layer: BindingContextLayer::Block,
+            lexical_scope: Some(local.scope().clone()),
+            bindings: vec![binding],
+            visible_bindings: vec![binding],
+            recovery: BindingContextRecovery::Normal,
+        });
+        let bindings = BindingEnv::try_new(BindingEnvParts {
+            source_id: source.source_id(),
+            module_id: source.module().clone(),
+            contexts,
+            bindings,
+            diagnostics: BindingDiagnosticTable::new(),
+        })
+        .map_err(|_| invalid())?;
+        let output = TermFormulaChecker::default().infer(
+            symbols,
+            &bindings,
+            [
+                TermInput::new(site(*base), context, range(*base)?, TermKind::Variable)
+                    .with_reference(TermReference::Binding(binding))
+                    .with_result_type(bound_type.clone()),
+                TermInput::new(
+                    site(selector),
+                    context,
+                    range(selector)?,
+                    TermKind::SelectorAccess,
+                )
+                .with_reference(TermReference::Symbol(member.symbol().clone()))
+                .with_result_type(TypeExpressionInput::new(
+                    site(*field_type),
+                    range(*field_type)?,
+                    "set",
+                    TypeHeadInput::BuiltinSet,
+                ))
+                .with_expected_type(TypeExpressionInput::new(
+                    site(*result_type),
+                    range(*result_type)?,
+                    "set",
+                    TypeHeadInput::BuiltinSet,
+                )),
+            ],
+            [],
+        );
+        if !output.diagnostics().is_empty()
+            || !output.candidate_sets().is_empty()
+            || !output.facts().is_empty()
+        {
+            return Err(invalid());
+        }
+        for (_, term) in output.terms().iter() {
+            let entry = output
+                .type_entries()
+                .get(term.type_entry)
+                .ok_or_else(invalid)?;
+            let TypeEntryActual::Known(actual) = entry.actual else {
+                return Err(invalid());
+            };
+            let ty = output.normalized_types().get(actual).ok_or_else(invalid)?;
+            let expected = if term.site == site(*base) {
+                TypeHeadRef::Structure(structure_symbol.symbol().clone())
+            } else if term.site == site(selector) {
+                TypeHeadRef::BuiltinSet
+            } else {
+                return Err(invalid());
+            };
+            if term.status != TermStatus::Inferred
+                || !term.deferred.is_empty()
+                || term.candidate_set.is_some()
+                || entry.expected.is_some_and(|expected| expected != actual)
+                || ty.head != expected
+                || ty.status != NormalizedTypeStatus::Known
+                || !ty.args.is_empty()
+                || !ty.attributes.is_empty()
+            {
+                return Err(invalid());
+            }
+        }
+        Some(bound_type)
+    } else {
+        None
+    };
+    if bounded_type.is_some() && items == [block] {
+        return Ok(());
+    }
     let [_, theorem] = items else {
         return Err(invalid());
     };
@@ -2628,6 +2879,10 @@ pub fn check_source_unbounded_template_types(
     };
     tokens(&[(*theorem_kw, "theorem"), (*colon, ":"), (*semi, ";")])?;
     let quantified = only(*formula, &K::FormulaExpression)?;
+    let universal = node(quantified)?.kind();
+    if bounded_type.is_some() && format!("{universal:?}") != "QuantifiedFormula(Universal)" {
+        return Err(invalid());
+    }
     if !matches!(node(quantified)?.kind(), K::QuantifiedFormula(_)) {
         return Err(invalid());
     }
@@ -2658,6 +2913,7 @@ pub fn check_source_unbounded_template_types(
     }
     let proof_equality = only(only(*proposition, &K::Proposition)?, &K::FormulaExpression)?;
     let mut arity_mismatch = false;
+    let mut bound_pairs = Vec::new();
     for (segment, segment_kind, binder_keyword, equality, owner, binding_kind) in [
         (
             *segment,
@@ -2679,10 +2935,14 @@ pub fn check_source_unbounded_template_types(
         let [binder, keyword, binder_type] = parts(segment, &segment_kind)? else {
             return Err(invalid());
         };
-        tokens(&[
-            (*keyword, binder_keyword),
-            (type_token(*binder_type)?, "set"),
-        ])?;
+        tokens(&[(*keyword, binder_keyword)])?;
+        let binder_spelling = text(type_token(*binder_type)?)?;
+        let binder_head = match binder_spelling {
+            "set" => TypeHeadInput::BuiltinSet,
+            "object" if bounded_type.is_some() => TypeHeadInput::BuiltinObject,
+            _ => return Err(invalid()),
+        };
+        tokens(&[(type_token(*binder_type)?, binder_spelling)])?;
         let [left, equals, right] = parts(equality, &K::BuiltinPredicateApplication)? else {
             return Err(invalid());
         };
@@ -2717,11 +2977,17 @@ pub fn check_source_unbounded_template_types(
         if actuals.is_empty() || actuals.len() % 2 == 0 {
             return Err(invalid());
         }
+        if bounded_type.is_some() && actuals.len() != 1 {
+            return Err(invalid());
+        }
         for (index, actual) in actuals.iter().enumerate() {
             if index % 2 == 1 {
                 tokens(&[(*actual, ",")])?;
             } else {
-                tokens(&[(type_token(only(*actual, &K::TemplateArgument)?)?, "set")])?;
+                tokens(&[(
+                    type_token(only(*actual, &K::TemplateArgument)?)?,
+                    binder_spelling,
+                )])?;
             }
         }
         arity_mismatch |= actuals.len().div_ceil(2) != 1;
@@ -2730,9 +2996,52 @@ pub fn check_source_unbounded_template_types(
         if formal(argument_token)? != *binder || formal(right_token)? != *binder {
             return Err(invalid());
         }
-        // The symbolic signature was checked above. Only actual arguments supply
-        // concrete types; abstract T never entered the builtin type table.
-        let substitution = BTreeMap::from([(abstract_type, TypeHeadInput::BuiltinSet)]);
+        // Bounded actuals are checked against the structure before any substitution.
+        if let Some(bound) = &bounded_type {
+            let actual = only(actuals[0], &K::TemplateArgument)?;
+            let normalized = TypeNormalizer::default().normalize(
+                symbols,
+                [
+                    bound.clone(),
+                    TypeExpressionInput::new(
+                        site(actual),
+                        range(actual)?,
+                        binder_spelling,
+                        binder_head.clone(),
+                    ),
+                ],
+            );
+            let mut pair = Vec::new();
+            for (_, entry) in normalized.type_entries().iter() {
+                let TypeEntryActual::Known(id) = entry.actual else {
+                    return Err(invalid());
+                };
+                let ty = normalized.normalized_types().get(id).ok_or_else(invalid)?;
+                if ty.status != NormalizedTypeStatus::Known
+                    || !ty.args.is_empty()
+                    || !ty.attributes.is_empty()
+                {
+                    return Err(invalid());
+                }
+                pair.push((entry.owner.clone(), ty.head.clone()));
+            }
+            if !normalized.diagnostics().is_empty() || pair.len() != 2 {
+                return Err(invalid());
+            }
+            let bound_head = pair
+                .iter()
+                .find(|(owner, _)| owner == &bound.site)
+                .ok_or_else(invalid)?
+                .1
+                .clone();
+            let actual_head = pair
+                .iter()
+                .find(|(owner, _)| owner == &site(actual))
+                .ok_or_else(invalid)?
+                .1
+                .clone();
+            bound_pairs.push((actual_head, bound_head));
+        }
         let concrete_type = |id: ResolvedNodeId, role: &str, head: TypeHeadInput| {
             Ok::<_, String>(TypeExpressionInput::new(
                 TypedSiteRef::Role {
@@ -2740,7 +3049,7 @@ pub fn check_source_unbounded_template_types(
                     role: role.into(),
                 },
                 range(id)?,
-                "set",
+                binder_spelling,
                 head,
             ))
         };
@@ -2792,40 +3101,48 @@ pub fn check_source_unbounded_template_types(
                     .with_result_type(concrete_type(
                         token,
                         "template.actual",
-                        TypeHeadInput::BuiltinSet,
+                        binder_head.clone(),
                     )?),
             );
         }
-        terms[0].expected_type = Some(concrete_type(
-            argument_token,
-            "template.expected",
-            substitution
-                .get(&parameter_type)
-                .ok_or_else(invalid)?
-                .clone(),
-        )?);
-        terms.push(
-            TermInput::new(
-                site(application),
+        let mut formulas = Vec::new();
+        if bounded_type.is_none() {
+            let substitution = BTreeMap::from([(abstract_type, TypeHeadInput::BuiltinSet)]);
+            terms[0].expected_type = Some(concrete_type(
+                argument_token,
+                "template.expected",
+                substitution
+                    .get(&parameter_type)
+                    .ok_or_else(invalid)?
+                    .clone(),
+            )?);
+            terms.push(
+                TermInput::new(
+                    site(application),
+                    context,
+                    range(application)?,
+                    TermKind::FunctorApplication,
+                )
+                .with_reference(TermReference::Symbol(declaration.symbol().clone()))
+                .with_result_type(concrete_type(
+                    application,
+                    "template.result",
+                    substitution
+                        .get(&symbolic_result.ok_or_else(invalid)?)
+                        .ok_or_else(invalid)?
+                        .clone(),
+                )?),
+            );
+            let formula = FormulaInput::new(
+                site(equality),
                 context,
-                range(application)?,
-                TermKind::FunctorApplication,
+                range(equality)?,
+                FormulaKind::Equality,
             )
-            .with_reference(TermReference::Symbol(declaration.symbol().clone()))
-            .with_result_type(concrete_type(
-                application,
-                "template.result",
-                substitution.get(&result_type).ok_or_else(invalid)?.clone(),
-            )?),
-        );
-        let formula = FormulaInput::new(
-            site(equality),
-            context,
-            range(equality)?,
-            FormulaKind::Equality,
-        )
-        .with_terms(vec![site(application), site(right_token)]);
-        let output = TermFormulaChecker::default().infer(symbols, &binding_env, terms, [formula]);
+            .with_terms(vec![site(application), site(right_token)]);
+            formulas.push(formula);
+        }
+        let output = TermFormulaChecker::default().infer(symbols, &binding_env, terms, formulas);
         let mut concrete = None;
         for (_, term) in output.terms().iter() {
             let entry = output
@@ -2855,7 +3172,22 @@ pub fn check_source_unbounded_template_types(
             return Err(invalid());
         }
     }
-    if arity_mismatch {
+    if bounded_type.is_some() {
+        if bound_pairs.len() != 2
+            || bound_pairs.iter().any(|(actual, bound)| {
+                !matches!(
+                    (actual, bound),
+                    (
+                        TypeHeadRef::BuiltinObject | TypeHeadRef::BuiltinSet,
+                        TypeHeadRef::Structure(_)
+                    )
+                )
+            })
+        {
+            return Err(invalid());
+        }
+        Err("templates.argument.bound_violation".to_owned())
+    } else if arity_mismatch {
         Err("templates.argument.arity_mismatch".to_owned())
     } else {
         Ok(())

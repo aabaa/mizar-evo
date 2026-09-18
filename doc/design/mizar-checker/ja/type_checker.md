@@ -2965,6 +2965,10 @@ binding identity で簡約し、recursive inline definition は cycle guard で 
 述語の各量化引数は実際の `pred(T)` の定義域に照合し、結合子と量化の型も検査するが、真理・証明の承認は与えない。明示引数の個数不一致だけが `templates.argument.arity_mismatch` を返す。省略引数の推論は未対応で、このキーには分類しない。未対応のシグネチャ・本体・スコープ・上界・実引数は拒否する。この resolved-shape reader は checker が所有し、registration intake と同様に厳密な `use mizar_syntax::ast::{SurfaceNodeKind as K, SurfaceTokenKind};` のみ許す。他の構文 import・依存制限は維持する。承認済み事実、集合性、Core/VC、Task277B の実績は生成しない。
 テストは実ソースの抽象・具体型判断、両呼出し、改名、別由来・重複・回復済み所有者、仮引数・本体・定義域の変異、省略と明示引数の区別を対象とする。
 
+同じ操作は、先行する必須 builtin-set field 一つの bare structure、その実際の構造を上界とする型仮引数、selector を本体とする set 結果の関手も受理する。既存の定義専用 structure checker が構築子・member・必須 field の witness を認証し、ソース仮引数の同一性と global symbol を区別する。
+実際の T トークンは schema 構造 object の definition-parameter binding を与える。T.carrier は実際の member を参照し、宣言どおり set 型でなければならない。x:T と関手 locus は symbolic element-type identity のままで構造自体へ正規化せず、架空の SymbolId(T)、生成 object 同一性、集合性の事実を作らない。
+定理・証明の両呼出しを認証した後でのみ、対応する builtin 実引数が実際の構造上界を持たない場合に templates.argument.bound_violation を返す。宣言のみの正しい本体は架空のインスタンス化なしに成功する。その他の実引数・view・継承・属性 profile は上界違反ではなく未対応とし、証明・coherence 承認・Task277B の実績を与えない。
+
 ## Ordinary predicate application checking
 
 `check_source_distinct_loci_overloads` の single-candidate profile は必須 builtin-set field を持つ bare local structure 上の binary predicate も検査する。順序付き loci、実際の束縛、selector 等式の本体、segment 極性と両 call を認証し、predicate candidate に項の結果型を付けない。

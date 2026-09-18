@@ -312,6 +312,13 @@ pub fn resolve_template_formal(
                         {
                             false
                         }
+                        [ty, extends, bound]
+                            if text(*ty, "type")
+                                && text(*extends, "extends")
+                                && node(*bound)?.kind() == &SurfaceNodeKind::TypeExpression =>
+                        {
+                            false
+                        }
                         [pred, open, ty, close]
                             if text(*pred, "pred")
                                 && text(*open, "(")

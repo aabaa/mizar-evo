@@ -636,9 +636,9 @@ activation-map ledger; every 5C task also requires 5B.2.
     registrations, reduction registrations, false
     coherence/reducibility rejection, and restricted adjective forms.
     Deps: 5A.2, 5C.3, 5C.10.
-12. [~] **[5C.12 — Templates](./task_contracts/en/STEP5C12-UNBOUNDED-TEMPLATES.md)** (`mizar-core`, `mizar-checker`; spec
+12. [x] **[5C.12 — Templates](./task_contracts/en/STEP5C12-UNBOUNDED-TEMPLATES.md)** (`mizar-core`, `mizar-checker`; spec
     ch. 18). Requirements: `spec.en.18.templates.*` (4 ids). Targets: 5
-    pairs (4 blocked by G1). Covers type-parameter bounds
+    pairs. Covers type-parameter bounds
     (`extends`, violation rejection), predicate/functor template
     parameters, and instantiation arity. Deps: 5A.2, 5C.5.
 13. [~] **[5C.13 — Overload resolution](./task_contracts/en/STEP5C13-DISTINCT-LOCI.md)** (`mizar-checker`; spec ch. 19).

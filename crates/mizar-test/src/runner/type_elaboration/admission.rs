@@ -268,10 +268,38 @@ pub(in crate::runner) fn is_step5c12_candidate(case: &TestCase) -> bool {
 
 pub(in crate::runner) fn step5c12_admitted(root: Option<&Path>, case: &TestCase) -> bool {
     use crate::expectation::TestKind;
-    let Some(index) = STEP5C12_IDS[..3].iter().position(|id| *id == case.id.0) else {
+    let Some(index) = STEP5C12_IDS.iter().position(|id| *id == case.id.0) else {
         return false;
     };
-    let negative = index == 2;
+    let (domain, spec_ref, detail) = match index {
+        0 => (
+            "templates.type_parameter",
+            "spec.en.18.templates.type_parameter.functor",
+            None,
+        ),
+        1 => (
+            "templates.predicate_parameter",
+            "spec.en.18.templates.predicate_parameter.declaration",
+            None,
+        ),
+        2 => (
+            "templates.instantiation",
+            "spec.en.18.templates.instantiation.arity",
+            Some("templates.argument.arity_mismatch"),
+        ),
+        3 => (
+            "templates.bounded_parameter",
+            "spec.en.18.templates.type_parameter.extends_bound",
+            None,
+        ),
+        4 => (
+            "templates.bounded_parameter",
+            "spec.en.18.templates.type_parameter.extends_bound",
+            Some("templates.argument.bound_violation"),
+        ),
+        _ => unreachable!(),
+    };
+    let negative = detail.is_some();
     let kind = if negative { "fail" } else { "pass" };
     let path = format!("tests/miz/{kind}/templates/{}.miz", case.id.0);
     let sidecar = Path::new(&path).with_extension("expect.toml");
@@ -282,6 +310,7 @@ pub(in crate::runner) fn step5c12_admitted(root: Option<&Path>, case: &TestCase)
         None => actual.ends_with(expected),
     };
     case.expectation.id == case.id
+        && case.expectation.schema_version == 1
         && exact_path(&case.source_path, Path::new(&path))
         && exact_path(&case.expectation_path, &sidecar)
         && case.expectation.source == Path::new(&path).file_name().unwrap()
@@ -300,13 +329,21 @@ pub(in crate::runner) fn step5c12_admitted(root: Option<&Path>, case: &TestCase)
                 ExpectedOutcome::Pass
             }
         && case.expectation.failure_category.as_deref() == negative.then_some("type_error")
-        && case.expectation.stable_detail_key.as_deref()
-            == negative.then_some("templates.argument.arity_mismatch")
+        && case.expectation.stable_detail_key.as_deref() == detail
+        && case.expectation.domain == domain
+        && case.expectation.spec_refs.len() == 1
+        && case.expectation.spec_refs[0].0 == spec_ref
+        && case.expectation.profiles.as_slice() == ["fast"]
         && case.expectation.rejection_reason.is_none()
         && case.expectation.diagnostic_codes.is_empty()
         && case.expectation.diagnostic_payloads.is_empty()
         && case.expectation.declaration_symbol_payloads.is_empty()
         && case.expectation.snapshots.is_none()
+        && case.expectation.ast_profile.is_none()
+        && case.expectation.snapshot_profiles.is_empty()
+        && case.expectation.tokens.is_empty()
+        && case.expectation.origin.is_none()
+        && case.expectation.architecture22.is_none()
         && case.expectation.tags.as_slice() == [ACTIVE_TYPE_ELABORATION_TAG]
 }
 
@@ -898,7 +935,7 @@ pub(in crate::runner) fn validate_active_type_elaboration_tags(
         .is_file()
         || plan.cases.iter().any(is_step5c12_candidate)
     {
-        for id in &STEP5C12_IDS[..3] {
+        for id in &STEP5C12_IDS {
             if plan
                 .cases
                 .iter()
@@ -907,9 +944,11 @@ pub(in crate::runner) fn validate_active_type_elaboration_tags(
                 != 1
             {
                 diagnostics.push(ValidationDiagnostic::error(
-                    workspace_root, "type_elaboration", "E-TYPE-ELABORATION-STEP5C12-INVENTORY",
+                    workspace_root,
+                    "type_elaboration",
+                    "E-TYPE-ELABORATION-STEP5C12-INVENTORY",
                     format!("type_elaboration.step5c12_inventory.{id}"),
-                    "each unbounded template row must have exactly one admitted source/sidecar pair",
+                    "each template row must have exactly one admitted source/sidecar pair",
                 ));
             }
         }

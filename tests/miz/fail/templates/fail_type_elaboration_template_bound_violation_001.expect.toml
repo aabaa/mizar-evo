@@ -9,7 +9,8 @@ expected_phase = "type_check"
 failure_category = "type_error"
 stable_detail_key = "templates.argument.bound_violation"
 diagnostic_codes = []
+tags = ["active_type_elaboration"]
 spec_refs = [
   "spec.en.18.templates.type_parameter.extends_bound",
 ]
-notes = "Audit-1 semantic-bridge inactive oracle seed (September 2026 audit wave): binding expectation for the Step-5 semantic bridge; no active runner tag, earns no current credit. A template argument must satisfy the declared structure bound; object supplies no BoundBox structure view (spec 18.2.2, 18.10.2)."
+notes = "Source checking rejects both authenticated builtin-object actuals against the actual structure bound; unsupported or malformed calls cannot supply this diagnostic."
