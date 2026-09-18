@@ -1328,34 +1328,45 @@ pub fn validate_expectation_path(
                 .spec_refs
                 .iter()
                 .any(|spec_ref| spec_ref.0 == EXACT_TASK31_VC_SNAPSHOT_SPEC_REF);
-        let exact_algorithm_return_snapshot = expectation.id.0
-            == "pass_proof_verification_algorithm_ensures_return_001"
-            && path.strip_prefix(tests_root).ok()
-                == Some(Path::new(
-                    "miz/pass/algorithms/pass_proof_verification_algorithm_ensures_return_001.expect.toml",
-                ))
-            && expectation.source
-                == Path::new("pass_proof_verification_algorithm_ensures_return_001.miz")
-            && expectation.kind == TestKind::Pass
-            && expectation.stage == Stage::ProofVerification
-            && expectation.expected_phase == Some(PipelinePhase::VcGeneration)
-            && expectation.expected_outcome == ExpectedOutcome::Pass
-            && expectation.domain == "algorithms.contracts"
-            && expectation.tags.as_slice() == ["active_proof_verification"]
-            && expectation.failure_category.is_none()
-            && expectation.stable_detail_key.is_none()
-            && expectation.rejection_reason.is_none()
-            && expectation.diagnostic_codes.is_empty()
-            && expectation.diagnostic_payloads.is_empty()
-            && expectation.declaration_symbol_payloads.is_empty()
-            && snapshot_path
-                == Path::new(
-                    "snapshots/vc/pass_proof_verification_algorithm_ensures_return_001.vc_ir.snap",
-                )
-            && expectation.spec_refs.iter().map(|id| id.0.as_str()).eq([
+        let exact_algorithm_return_snapshot = [
+            (
+                "pass_proof_verification_algorithm_ensures_return_001",
+                "algorithms.contracts",
                 "spec.en.20.algorithms.contracts.ensures",
                 "spec.en.mizar_vc.vc_ir.algorithm_ensures_return_snapshot",
-            ]);
+            ),
+            (
+                "pass_proof_verification_algorithm_var_const_assert_001",
+                "algorithms.state",
+                "spec.en.20.algorithms.state.var_const_assert",
+                "spec.en.mizar_vc.vc_ir.algorithm_var_const_assert_snapshot",
+            ),
+        ]
+        .into_iter()
+        .any(|(id, domain, spec_ref, snapshot_ref)| {
+            expectation.id.0 == id
+                && path.strip_prefix(tests_root).ok()
+                    == Some(Path::new(&format!("miz/pass/algorithms/{id}.expect.toml")))
+                && expectation.source == Path::new(&format!("{id}.miz"))
+                && expectation.kind == TestKind::Pass
+                && expectation.stage == Stage::ProofVerification
+                && expectation.expected_phase == Some(PipelinePhase::VcGeneration)
+                && expectation.expected_outcome == ExpectedOutcome::Pass
+                && expectation.domain == domain
+                && expectation.tags.as_slice() == ["active_proof_verification"]
+                && expectation.failure_category.is_none()
+                && expectation.stable_detail_key.is_none()
+                && expectation.rejection_reason.is_none()
+                && expectation.diagnostic_codes.is_empty()
+                && expectation.diagnostic_payloads.is_empty()
+                && expectation.declaration_symbol_payloads.is_empty()
+                && snapshot_path == Path::new(&format!("snapshots/vc/{id}.vc_ir.snap"))
+                && expectation
+                    .spec_refs
+                    .iter()
+                    .map(|id| id.0.as_str())
+                    .eq([spec_ref, snapshot_ref])
+        });
         if !active_parse_only
             && !exact_task31_core_snapshot
             && !exact_task31_vc_snapshot

@@ -645,6 +645,8 @@ impl<'a> SliceBuilder<'a> {
                     VcGeneratedFormulaShape::True
                     | VcGeneratedFormulaShape::False
                     | VcGeneratedFormulaShape::Equals { .. }
+                    | VcGeneratedFormulaShape::ProgramEquals { .. }
+                    | VcGeneratedFormulaShape::ProgramTypePredicate { .. }
                     | VcGeneratedFormulaShape::Diagnostic(_) => {}
                     VcGeneratedFormulaShape::Ref(inner) | VcGeneratedFormulaShape::Not(inner) => {
                         self.collect_formula_inner(*inner, active_formulas, active_context);
@@ -738,6 +740,17 @@ impl<'a> SliceBuilder<'a> {
                 DependencyUnknownFamily::UpstreamPayload,
                 "context:binder-declaration",
                 "binder declaration payload is unavailable",
+            );
+        }
+
+        if matches!(
+            entry.kind,
+            crate::vc_ir::ContextEntryKind::PendingAlgorithmAssertion { .. }
+        ) {
+            self.add_unknown(
+                DependencyUnknownFamily::UpstreamPayload,
+                "context:pending-algorithm-assertion",
+                "earlier assertion obligation is unresolved",
             );
         }
 
@@ -1269,7 +1282,10 @@ fn formula_shape_fingerprint_payload(
     match shape {
         VcGeneratedFormulaShape::True => Some("shape=true".to_owned()),
         VcGeneratedFormulaShape::False => Some("shape=false".to_owned()),
-        VcGeneratedFormulaShape::Equals { .. } | VcGeneratedFormulaShape::Diagnostic(_) => None,
+        VcGeneratedFormulaShape::Equals { .. }
+        | VcGeneratedFormulaShape::ProgramEquals { .. }
+        | VcGeneratedFormulaShape::ProgramTypePredicate { .. }
+        | VcGeneratedFormulaShape::Diagnostic(_) => None,
         VcGeneratedFormulaShape::Ref(formula) => {
             formula_fingerprint_payload_inner(vc_set, *formula, active)
                 .map(|inner| format!("shape=ref({inner})"))
@@ -2491,6 +2507,23 @@ mod tests {
     #[test]
     fn unresolved_generated_payloads_are_independently_incomplete() {
         for shape in [
+            VcGeneratedFormulaShape::ProgramEquals {
+                left: crate::vc_ir::VcProgramValue {
+                    var: CoreVarId::new(0),
+                    definition: None,
+                },
+                right: crate::vc_ir::VcProgramValue {
+                    var: CoreVarId::new(0),
+                    definition: None,
+                },
+            },
+            VcGeneratedFormulaShape::ProgramTypePredicate {
+                subject: crate::vc_ir::VcProgramValue {
+                    var: CoreVarId::new(0),
+                    definition: None,
+                },
+                ty: mizar_core::core_ir::CoreTypePredicate::new("object"),
+            },
             VcGeneratedFormulaShape::Diagnostic(CoreDiagnosticId::new(0)),
             VcGeneratedFormulaShape::Equals {
                 left: mizar_core::core_ir::CoreTermId::new(0),

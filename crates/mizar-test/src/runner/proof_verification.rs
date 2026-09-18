@@ -79,41 +79,56 @@ pub(super) fn step5c11_proof_admitted(root: Option<&Path>, case: &TestCase) -> b
         && case.expectation.tags.as_slice() == [ACTIVE_PROOF_VERIFICATION_TAG]
 }
 
-const STEP5C14_RETURN_ID: &str = "pass_proof_verification_algorithm_ensures_return_001";
-const STEP5C14_RETURN_SOURCE: &str =
-    "tests/miz/pass/algorithms/pass_proof_verification_algorithm_ensures_return_001.miz";
-const STEP5C14_RETURN_SNAPSHOT: &str =
-    "snapshots/vc/pass_proof_verification_algorithm_ensures_return_001.vc_ir.snap";
+const STEP5C14_VC_CASES: [(&str, &str, &str, &str, &str, &str); 2] = [
+    (
+        "pass_proof_verification_algorithm_ensures_return_001",
+        "tests/miz/pass/algorithms/pass_proof_verification_algorithm_ensures_return_001.miz",
+        "algorithms.contracts",
+        "spec.en.20.algorithms.contracts.ensures",
+        "spec.en.mizar_vc.vc_ir.algorithm_ensures_return_snapshot",
+        "snapshots/vc/pass_proof_verification_algorithm_ensures_return_001.vc_ir.snap",
+    ),
+    (
+        "pass_proof_verification_algorithm_var_const_assert_001",
+        "tests/miz/pass/algorithms/pass_proof_verification_algorithm_var_const_assert_001.miz",
+        "algorithms.state",
+        "spec.en.20.algorithms.state.var_const_assert",
+        "spec.en.mizar_vc.vc_ir.algorithm_var_const_assert_snapshot",
+        "snapshots/vc/pass_proof_verification_algorithm_var_const_assert_001.vc_ir.snap",
+    ),
+];
 
 pub(super) fn is_step5c14_return_candidate(case: &TestCase) -> bool {
-    case.id.0 == STEP5C14_RETURN_ID
-        || case.expectation.id.0 == STEP5C14_RETURN_ID
-        || case.source_path.file_name() == Path::new(STEP5C14_RETURN_SOURCE).file_name()
-        || case.expectation_path.file_name()
-            == Path::new(STEP5C14_RETURN_SOURCE)
-                .with_extension("expect.toml")
-                .file_name()
+    STEP5C14_VC_CASES.iter().any(|(id, source, ..)| {
+        case.id.0 == *id
+            || case.expectation.id.0 == *id
+            || case.source_path.file_name() == Path::new(source).file_name()
+            || case.expectation_path.file_name()
+                == Path::new(source).with_extension("expect.toml").file_name()
+    })
 }
 
 pub(super) fn step5c14_return_admitted(root: Option<&Path>, case: &TestCase) -> bool {
-    case.id.0 == STEP5C14_RETURN_ID
-        && case.expectation.id == case.id
-        && case.source_path.ends_with(STEP5C14_RETURN_SOURCE)
+    let Some(&(_, source, domain, spec_ref, snapshot_ref, snapshot)) =
+        STEP5C14_VC_CASES.iter().find(|(id, ..)| case.id.0 == *id)
+    else {
+        return false;
+    };
+    case.expectation.id == case.id
+        && case.source_path.ends_with(source)
         && case
             .expectation_path
-            .ends_with(Path::new(STEP5C14_RETURN_SOURCE).with_extension("expect.toml"))
+            .ends_with(Path::new(source).with_extension("expect.toml"))
         && root.is_none_or(|root| {
-            workspace_relative_source(root, &case.source_path).as_deref()
-                == Some(STEP5C14_RETURN_SOURCE)
+            workspace_relative_source(root, &case.source_path).as_deref() == Some(source)
                 && workspace_relative_source(root, &case.expectation_path).is_some_and(|path| {
-                    Path::new(&path)
-                        == Path::new(STEP5C14_RETURN_SOURCE).with_extension("expect.toml")
+                    Path::new(&path) == Path::new(source).with_extension("expect.toml")
                 })
         })
-        && case.expectation.source == Path::new(STEP5C14_RETURN_SOURCE).file_name().unwrap()
+        && case.expectation.source == Path::new(source).file_name().unwrap()
         && case.expectation.kind == crate::expectation::TestKind::Pass
         && case.expectation.stage == Stage::ProofVerification
-        && case.expectation.domain == "algorithms.contracts"
+        && case.expectation.domain == domain
         && case.expectation.expected_phase == Some(PipelinePhase::VcGeneration)
         && case.expectation.expected_outcome == ExpectedOutcome::Pass
         && case.expectation.failure_category.is_none()
@@ -122,17 +137,14 @@ pub(super) fn step5c14_return_admitted(root: Option<&Path>, case: &TestCase) -> 
         && case.expectation.diagnostic_codes.is_empty()
         && case.expectation.diagnostic_payloads.is_empty()
         && case.expectation.declaration_symbol_payloads.is_empty()
-        && case.expectation.snapshots.as_deref() == Some(Path::new(STEP5C14_RETURN_SNAPSHOT))
+        && case.expectation.snapshots.as_deref() == Some(Path::new(snapshot))
         && case.expectation.tags.as_slice() == [ACTIVE_PROOF_VERIFICATION_TAG]
         && case
             .expectation
             .spec_refs
             .iter()
             .map(|id| id.0.as_str())
-            .eq([
-                "spec.en.20.algorithms.contracts.ensures",
-                "spec.en.mizar_vc.vc_ir.algorithm_ensures_return_snapshot",
-            ])
+            .eq([spec_ref, snapshot_ref])
 }
 
 const GENERATION_SCHEMA: &str = "mizar-vc-generation-task31-v1";
@@ -559,23 +571,28 @@ pub(super) fn validate_active_proof_verification_tags(
             ));
         }
     }
-    if (workspace_root
+    if workspace_root
         .join("tests/coverage/step5_activation_map.tsv")
         .is_file()
-        || plan.cases.iter().any(is_step5c14_return_candidate))
-        && plan
-            .cases
-            .iter()
-            .filter(|case| step5c14_return_admitted(Some(workspace_root), case))
-            .count()
-            != 1
+        || plan.cases.iter().any(is_step5c14_return_candidate)
     {
-        diagnostics.push(ValidationDiagnostic::error(
-            Path::new(STEP5C14_RETURN_SOURCE), "proof_verification",
-            "E-PROOF-VERIFICATION-STEP5C14-INVENTORY",
-            "proof_verification.step5c14_return_inventory",
-            "the algorithm return-contract row must occur exactly once with its authenticated snapshot",
-        ));
+        for (id, source, ..) in STEP5C14_VC_CASES {
+            let count = plan
+                .cases
+                .iter()
+                .filter(|case| {
+                    case.id.0 == id && step5c14_return_admitted(Some(workspace_root), case)
+                })
+                .count();
+            if count != 1 {
+                diagnostics.push(ValidationDiagnostic::error(
+                    Path::new(source), "proof_verification",
+                    "E-PROOF-VERIFICATION-STEP5C14-INVENTORY",
+                    "proof_verification.step5c14_return_inventory",
+                    format!("algorithm VC row {id} must occur exactly once with its authenticated snapshot; found {count}"),
+                ));
+            }
+        }
     }
     diagnostics
 }
@@ -628,7 +645,7 @@ pub(super) fn run_proof_verification_case(
     if is_step5c14_return_candidate(case) {
         let check = || -> Result<(), String> {
             if !step5c14_return_admitted(Some(workspace_root), case) {
-                return Err("invalid algorithm return-contract admission".into());
+                return Err("invalid algorithm contract admission".into());
             }
             // Snapshot identity is independent of the active corpus ordering.
             let build = || -> Result<VcSet, String> {
@@ -641,11 +658,18 @@ pub(super) fn run_proof_verification_case(
                     &source, &typed, &symbols,
                 )?;
                 let core = mizar_core::elaborator::lower_source_algorithms(&checked)?;
+                let profile = if case.expectation.domain == "algorithms.state" {
+                    "state"
+                } else {
+                    "return"
+                };
                 mizar_vc::generator::generate_source_algorithm_postconditions(
                     &core,
                     snapshot_id(0),
-                    &GenerationSchemaVersion::new("mizar-vc-generation-step5c14-return-v1"),
-                    &VcSchemaVersion::new("mizar-vc-vcset-step5c14-return-v1"),
+                    &GenerationSchemaVersion::new(format!(
+                        "mizar-vc-generation-step5c14-{profile}-v1"
+                    )),
+                    &VcSchemaVersion::new(format!("mizar-vc-vcset-step5c14-{profile}-v1")),
                 )
             };
             let first = build()?;
@@ -653,8 +677,9 @@ pub(super) fn run_proof_verification_case(
             if first != second || first.debug_text() != second.debug_text() {
                 return Err("algorithm source-to-VC rerun was nondeterministic".into());
             }
-            let expected = fs::read_to_string(tests_root.join(STEP5C14_RETURN_SNAPSHOT))
-                .map_err(|error| format!("algorithm VC snapshot could not be read: {error}"))?;
+            let expected =
+                fs::read_to_string(tests_root.join(case.expectation.snapshots.as_ref().unwrap()))
+                    .map_err(|error| format!("algorithm VC snapshot could not be read: {error}"))?;
             if first.debug_text() != expected {
                 return Err("algorithm VC snapshot differed".into());
             }

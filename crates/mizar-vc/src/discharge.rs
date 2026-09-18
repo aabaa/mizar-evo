@@ -961,6 +961,8 @@ fn collect_generated_formula_refs_inner(
             VcGeneratedFormulaShape::True
             | VcGeneratedFormulaShape::False
             | VcGeneratedFormulaShape::Equals { .. }
+            | VcGeneratedFormulaShape::ProgramEquals { .. }
+            | VcGeneratedFormulaShape::ProgramTypePredicate { .. }
             | VcGeneratedFormulaShape::Diagnostic(_) => {}
             VcGeneratedFormulaShape::Ref(inner) | VcGeneratedFormulaShape::Not(inner) => {
                 collect_generated_formula_refs_inner(vc_set, *inner, generated_formulas, active);
@@ -1000,6 +1002,12 @@ fn has_local_contradiction(vc: &VcIr, vc_set: &VcSet) -> bool {
     vc.local_context
         .entries()
         .iter()
+        .filter(|entry| {
+            !matches!(
+                entry.kind,
+                ContextEntryKind::PendingAlgorithmAssertion { .. }
+            )
+        })
         .filter_map(|entry| entry.formula)
         .any(|formula| formula_truth(vc_set, formula) == FormulaTruth::False)
         || vc
@@ -1041,6 +1049,12 @@ fn premise_is_false(premise: &PremiseRef, context: &LocalContext, vc_set: &VcSet
             formula_truth(vc_set, *formula) == FormulaTruth::False
         }
         PremiseRef::LocalContext(id) => context_entry(context, *id)
+            .filter(|entry| {
+                !matches!(
+                    entry.kind,
+                    ContextEntryKind::PendingAlgorithmAssertion { .. }
+                )
+            })
             .and_then(|entry| entry.formula)
             .is_some_and(|formula| formula_truth(vc_set, formula) == FormulaTruth::False),
         PremiseRef::LocalLabel { .. }
@@ -1206,6 +1220,8 @@ fn formula_truth_inner(
             } => implies_truth(vc_set, *premise, *conclusion, active),
             VcGeneratedFormulaShape::Quantified { .. }
             | VcGeneratedFormulaShape::Equals { .. }
+            | VcGeneratedFormulaShape::ProgramEquals { .. }
+            | VcGeneratedFormulaShape::ProgramTypePredicate { .. }
             | VcGeneratedFormulaShape::Diagnostic(_) => FormulaTruth::Unknown,
         });
 
@@ -1371,6 +1387,37 @@ mod tests {
         BuildSnapshotId, Hash, InMemorySessionIdAllocator, SessionIdAllocator, SourceId,
         SourceRange,
     };
+
+    #[test]
+    fn pending_assertion_is_neither_direct_nor_false_premise() {
+        let goal = VcFormulaRef::Generated(VcGeneratedFormulaId::new(0));
+        let set = fixture_set(fixture_parts(
+            VcStatus::NeedsAtp,
+            goal,
+            vec![generated_formula(0, VcGeneratedFormulaShape::False)],
+        ));
+        let context = LocalContext::try_new(
+            vec![crate::vc_ir::ContextEntry {
+                id: ContextEntryId::new(0),
+                sort_key: "pending".into(),
+                kind: ContextEntryKind::PendingAlgorithmAssertion {
+                    handoff: ObligationHandoffId::new(1),
+                },
+                formula: Some(goal),
+                provenance: vec![],
+            }],
+            vec![],
+        )
+        .unwrap();
+        let premise = PremiseRef::LocalContext(ContextEntryId::new(0));
+        assert!(!premise_is_false(&premise, &context, &set));
+        assert!(!premise_matches_goal(&premise, &context, &set, goal));
+        let mut vc = set.vcs()[0].clone();
+        vc.local_context = context;
+        vc.premises = vec![premise];
+        assert!(!has_local_contradiction(&vc, &set));
+        assert!(!has_direct_local_fact(&vc, &set));
+    }
 
     #[test]
     fn generated_core_equality_stays_unknown_even_for_equal_ids() {

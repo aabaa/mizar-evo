@@ -9,10 +9,10 @@ use mizar_core::{
         ObligationHandoffOrigin, ObligationSeedHandoff,
     },
     core_ir::{
-        CoreAlgorithmId, CoreDefinitionId, CoreDiagnosticId, CoreFormulaId, CoreItemId,
-        CoreLabelRef, CoreProvenance, CoreSourceRef, CoreTermId, CoreVarId,
-        LocalProofOrProgramPath, NormalizedSemanticOrigin, ObligationSeedCanonicalKey,
-        ObligationSeedId, ObligationSeedKind, ObligationSeedStatus,
+        CoreAlgorithmId, CoreAlgorithmStmtId, CoreDefinitionId, CoreDiagnosticId, CoreFormulaId,
+        CoreItemId, CoreLabelRef, CoreProvenance, CoreSourceAnchor, CoreSourceRef, CoreTermId,
+        CoreTypePredicate, CoreVarId, LocalProofOrProgramPath, NormalizedSemanticOrigin,
+        ObligationSeedCanonicalKey, ObligationSeedId, ObligationSeedKind, ObligationSeedStatus,
     },
 };
 use mizar_session::{BuildSnapshotId, Hash, SourceId, SourceRange};
@@ -326,12 +326,29 @@ pub enum VcGeneratedFormulaKind {
     GeneratedTypeObligation,
     AlgorithmPathCondition,
     AlgorithmPostcondition,
+    AlgorithmStateFact,
+    AlgorithmAssertion,
     PolicyMarker,
+}
+
+/// A variable's immutable value at entry or after one actual local write.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
+pub struct VcProgramValue {
+    pub var: CoreVarId,
+    pub definition: Option<CoreAlgorithmStmtId>,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 #[non_exhaustive]
 pub enum VcGeneratedFormulaShape {
+    ProgramEquals {
+        left: VcProgramValue,
+        right: VcProgramValue,
+    },
+    ProgramTypePredicate {
+        subject: VcProgramValue,
+        ty: CoreTypePredicate,
+    },
     Equals {
         left: CoreTermId,
         right: CoreTermId,
@@ -357,7 +374,12 @@ pub enum VcGeneratedFormulaShape {
 impl VcGeneratedFormulaShape {
     fn referenced_formulas(&self) -> Vec<VcFormulaRef> {
         match self {
-            Self::True | Self::False | Self::Equals { .. } | Self::Diagnostic(_) => Vec::new(),
+            Self::True
+            | Self::False
+            | Self::Equals { .. }
+            | Self::ProgramEquals { .. }
+            | Self::ProgramTypePredicate { .. }
+            | Self::Diagnostic(_) => Vec::new(),
             Self::Ref(formula) | Self::Not(formula) => vec![*formula],
             Self::And(formulas) | Self::Or(formulas) => formulas.clone(),
             Self::Implies {
@@ -494,6 +516,7 @@ pub struct ContextEntry {
 #[derive(Debug, Clone, PartialEq, Eq)]
 #[non_exhaustive]
 pub enum ContextEntryKind {
+    PendingAlgorithmAssertion { handoff: ObligationHandoffId },
     BinderDeclaration { var: CoreVarId, role: VcText },
     TypePredicate,
     SethoodFact,
@@ -1043,6 +1066,10 @@ pub(crate) fn local_context_hash_marker(context: &LocalContext) -> HashMarker {
 #[derive(Debug, Clone, PartialEq, Eq)]
 #[non_exhaustive]
 pub enum VcIrError {
+    InvalidPendingAlgorithmAssertion {
+        vc: VcId,
+        handoff: ObligationHandoffId,
+    },
     NonDenseVcId {
         expected: VcId,
         actual: VcId,
@@ -1156,6 +1183,9 @@ pub enum VcIrError {
 impl fmt::Display for VcIrError {
     fn fmt(&self, formatter: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
+            Self::InvalidPendingAlgorithmAssertion { vc, handoff } => {
+                write!(formatter, "invalid pending assertion {handoff:?} in {vc:?}")
+            }
             Self::NonDenseVcId { expected, actual } => write!(
                 formatter,
                 "VC ids must be dense and sorted; expected {expected:?}, found {actual:?}"
@@ -1299,7 +1329,59 @@ impl Error for VcIrError {}
 fn validate_vc_set_parts(parts: &VcSetParts) -> Result<(), VcIrError> {
     validate_generated_formulas(&parts.generated_formulas)?;
     validate_vcs(&parts.vcs, &parts.generated_formulas)?;
-    validate_seed_accounting(&parts.seed_accounting, &parts.vcs)
+    validate_seed_accounting(&parts.seed_accounting, &parts.vcs)?;
+    for vc in &parts.vcs {
+        for entry in vc.local_context.entries() {
+            let ContextEntryKind::PendingAlgorithmAssertion { handoff } = entry.kind else {
+                continue;
+            };
+            let invalid = || VcIrError::InvalidPendingAlgorithmAssertion { vc: vc.id, handoff };
+            let row = parts
+                .seed_accounting
+                .iter()
+                .find(|row| row.handoff == handoff)
+                .ok_or_else(invalid)?;
+            let SeedVcMapping::One { vc: target } = row.mapping else {
+                return Err(invalid());
+            };
+            let target = parts.vcs.get(target.index()).ok_or_else(invalid)?;
+            let own_row = parts
+                .seed_accounting
+                .iter()
+                .find(|row| row.handoff == vc.seed.handoff)
+                .ok_or_else(invalid)?;
+            let source_range =
+                |vc: &VcIr| match vc.source.related.last().map(|source| &source.anchor) {
+                    Some(CoreSourceAnchor::SourceRange(range)) => Some(*range),
+                    _ => None,
+                };
+            let (Some(earlier), Some(later)) = (source_range(target), source_range(vc)) else {
+                return Err(invalid());
+            };
+            if target.id == vc.id
+                || target.kind != VcKind::AlgorithmAssertion
+                || !matches!(
+                    vc.kind,
+                    VcKind::AlgorithmAssertion | VcKind::AlgorithmPostcondition
+                )
+                || row.origin != own_row.origin
+                || !matches!(row.origin, SeedOriginRef::FlowDerived { algorithm, .. }
+                    if target.anchor.owner == AnchorOwner::Algorithm(algorithm)
+                        && vc.anchor.owner == AnchorOwner::Algorithm(algorithm))
+                || entry.formula != Some(target.goal)
+                || [target, vc].iter().any(|vc| !matches!(vc.source.primary.anchor,
+                    CoreSourceAnchor::SourceRange(range) if range.source_id == parts.source && range.start < range.end))
+                || earlier.source_id != parts.source
+                || later.source_id != parts.source
+                || earlier.start >= earlier.end
+                || earlier.end > later.start
+                || later.start >= later.end
+            {
+                return Err(invalid());
+            }
+        }
+    }
+    Ok(())
 }
 
 fn validate_status_overrides(overrides: &[VcStatusOverride]) -> Result<(), VcIrError> {
@@ -1985,7 +2067,11 @@ fn write_context_entry_payload(
     entry: &ContextEntry,
     generated_formulas: &BTreeMap<VcGeneratedFormulaId, &VcGeneratedFormula>,
 ) -> bool {
-    let mut available = !matches!(entry.kind, ContextEntryKind::BinderDeclaration { .. });
+    let mut available = !matches!(
+        entry.kind,
+        ContextEntryKind::BinderDeclaration { .. }
+            | ContextEntryKind::PendingAlgorithmAssertion { .. }
+    );
     writeln!(
         output,
         "context sort={:?}; kind={:?}",
@@ -2048,6 +2134,15 @@ fn write_formula_shape_payload(
     active_generated: &mut BTreeSet<VcGeneratedFormulaId>,
 ) -> bool {
     match shape {
+        VcGeneratedFormulaShape::ProgramEquals { .. }
+        | VcGeneratedFormulaShape::ProgramTypePredicate { .. } => {
+            writeln!(
+                output,
+                "shape: program-value core-payload-unresolved {shape:?}"
+            )
+            .expect("write string");
+            false
+        }
         VcGeneratedFormulaShape::Equals { left, right } => {
             writeln!(
                 output,
@@ -2332,6 +2427,136 @@ mod tests {
         GeneratedOriginKind, ObligationSeed, ObligationSeedKind,
     };
     use mizar_session::{InMemorySessionIdAllocator, SessionIdAllocator};
+
+    #[test]
+    fn pending_algorithm_assertions_require_earlier_same_owner_exact_goals() {
+        let mut parts = fixture_parts(VcStatus::Open);
+        let value = VcProgramValue {
+            var: CoreVarId::new(0),
+            definition: None,
+        };
+        parts.generated_formulas[0].kind = VcGeneratedFormulaKind::AlgorithmAssertion;
+        parts.generated_formulas[0].shape = VcGeneratedFormulaShape::ProgramEquals {
+            left: value,
+            right: value,
+        };
+        let mut later = parts.vcs[0].clone();
+        later.kind = VcKind::AlgorithmPostcondition;
+        later.anchor.owner = AnchorOwner::Algorithm(CoreAlgorithmId::new(0));
+        later.anchor.kind = later.kind.clone();
+        later.source.related = vec![CoreSourceRef::direct(SourceRange {
+            source_id: parts.source,
+            start: 30,
+            end: 40,
+        })];
+        later.proof_hint = None;
+        later.local_context = LocalContext::try_new(
+            vec![ContextEntry {
+                id: ContextEntryId::new(0),
+                sort_key: "state-0".into(),
+                kind: ContextEntryKind::PendingAlgorithmAssertion {
+                    handoff: ObligationHandoffId::new(1),
+                },
+                formula: Some(later.goal),
+                provenance: vec![],
+            }],
+            vec![],
+        )
+        .unwrap();
+        later.premises = vec![PremiseRef::LocalContext(ContextEntryId::new(0))];
+        let mut earlier = later.clone();
+        earlier.id = VcId::new(1);
+        earlier.seed.handoff = ObligationHandoffId::new(1);
+        earlier.kind = VcKind::AlgorithmAssertion;
+        earlier.anchor.kind = earlier.kind.clone();
+        earlier.local_context = LocalContext::try_new(vec![], vec![]).unwrap();
+        earlier.premises.clear();
+        earlier.source.related = vec![CoreSourceRef::direct(SourceRange {
+            source_id: parts.source,
+            start: 10,
+            end: 20,
+        })];
+        parts.vcs = vec![later, earlier];
+        parts.seed_accounting = (0..2)
+            .map(|index| SeedAccounting {
+                handoff: ObligationHandoffId::new(index),
+                origin: SeedOriginRef::FlowDerived {
+                    flow: ControlFlowId::new(0),
+                    algorithm: CoreAlgorithmId::new(0),
+                },
+                seed_status: ObligationSeedStatus::Deferred,
+                mapping: SeedVcMapping::One {
+                    vc: VcId::new(index),
+                },
+            })
+            .collect();
+        let valid = VcSet::try_new(parts.clone()).unwrap();
+        assert!(valid.canonical_vc_fingerprint(VcId::new(0)).is_none());
+        assert!(valid.local_context_fingerprint(VcId::new(0)).is_none());
+        let slices = crate::dependency_slice::try_compute_dependency_slices(
+            crate::dependency_slice::DependencySliceInput {
+                vc_set: &valid,
+                discharge_output: None,
+            },
+        )
+        .unwrap();
+        assert!(
+            slices
+                .slices()
+                .iter()
+                .all(|slice| !slice.unknowns().is_empty())
+        );
+        let discharge = crate::discharge::try_discharge(crate::discharge::DischargeInput {
+            vc_set: &valid,
+            policy: &crate::discharge::DischargePolicy::default(),
+        })
+        .unwrap();
+        assert!(discharge.evidence_records().is_empty());
+        for mutation in 0..11 {
+            let mut changed = parts.clone();
+            match mutation {
+                0 => {
+                    changed.vcs[0].local_context.entries[0].kind =
+                        ContextEntryKind::PendingAlgorithmAssertion {
+                            handoff: ObligationHandoffId::new(0),
+                        }
+                }
+                1 => {
+                    changed.vcs[0].local_context.entries[0].formula =
+                        Some(VcFormulaRef::Core(CoreFormulaId::new(99)))
+                }
+                2 => changed.vcs[1].kind = VcKind::AlgorithmPostcondition,
+                3 => changed.vcs[1].anchor.owner = AnchorOwner::Algorithm(CoreAlgorithmId::new(1)),
+                4 => {
+                    changed.seed_accounting[1].origin = SeedOriginRef::FlowDerived {
+                        flow: ControlFlowId::new(1),
+                        algorithm: CoreAlgorithmId::new(1),
+                    }
+                }
+                5 => changed.vcs[1].source.related = changed.vcs[0].source.related.clone(),
+                6 => changed.vcs[0].source.related.clear(),
+                7 => changed.vcs[1].source.primary = generated_source_ref(),
+                8 => changed.vcs[1].local_context = changed.vcs[0].local_context.clone(),
+                9 => {
+                    for vc in &mut changed.vcs {
+                        vc.anchor.owner = AnchorOwner::Algorithm(CoreAlgorithmId::new(1));
+                    }
+                }
+                _ => {
+                    for vc in &mut changed.vcs {
+                        vc.anchor.owner = AnchorOwner::Theorem(CoreItemId::new(0));
+                    }
+                }
+            }
+            assert!(
+                matches!(
+                    VcSet::try_new(changed),
+                    Err(VcIrError::InvalidPendingAlgorithmAssertion { .. })
+                ),
+                "{mutation}"
+            );
+        }
+    }
 
     #[test]
     fn constructs_minimal_vc_set_with_symbolic_refs() {

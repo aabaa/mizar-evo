@@ -658,6 +658,10 @@ pub enum CoreAlgorithmStmtKind {
         target: CorePlace,
         value: CoreTermId,
     },
+    AssignLocal {
+        target: CoreVarId,
+        value: CoreTermId,
+    },
     Assert {
         formula: CoreFormulaId,
     },
@@ -1455,6 +1459,7 @@ fn normalize_algorithm_statement(kind: &mut CoreAlgorithmStmtKind) {
             normalize_binder(binder);
         }
         CoreAlgorithmStmtKind::Assign { .. }
+        | CoreAlgorithmStmtKind::AssignLocal { .. }
         | CoreAlgorithmStmtKind::Assert { .. }
         | CoreAlgorithmStmtKind::If { .. }
         | CoreAlgorithmStmtKind::While { .. }
@@ -1947,6 +1952,36 @@ fn validate_algorithm_statement(
         }
         CoreAlgorithmStmtKind::Assign { value, .. } => {
             validate_index("term", value.index(), parts.terms.len())?;
+        }
+        CoreAlgorithmStmtKind::AssignLocal { target, value } => {
+            validate_index("term", value.index(), parts.terms.len())?;
+            let algorithm = parts
+                .algorithms
+                .get(owner)
+                .ok_or(CoreIrError::InvalidReference {
+                    table: "algorithm",
+                    index: owner.index(),
+                    len: parts.algorithms.len(),
+                })?;
+            let declared = algorithm
+                .params
+                .iter()
+                .chain(algorithm.result.iter())
+                .any(|binder| binder.var == *target)
+                || parts.algorithm_statements.iter().any(|(_, statement)| {
+                    statement.owner == owner
+                        && matches!(&statement.kind, CoreAlgorithmStmtKind::Let { binder, .. }
+                        | CoreAlgorithmStmtKind::Pick { binder, .. } if binder.var == *target)
+                });
+            if !declared {
+                return Err(CoreIrError::InvalidReference {
+                    table: "algorithm assignment binder",
+                    index: target.index(),
+                    len: algorithm.params.len()
+                        + usize::from(algorithm.result.is_some())
+                        + algorithm.statements.len(),
+                });
+            }
         }
         CoreAlgorithmStmtKind::Assert { formula } => {
             validate_index("formula", formula.index(), parts.formulas.len())?;

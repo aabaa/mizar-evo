@@ -7,7 +7,10 @@ source = "pass_proof_verification_algorithm_var_const_assert_001.miz"
 expected_outcome = "pass"
 expected_phase = "vc_generation"
 diagnostic_codes = []
+tags = ["active_proof_verification"]
+snapshots = "snapshots/vc/pass_proof_verification_algorithm_var_const_assert_001.vc_ir.snap"
 spec_refs = [
   "spec.en.20.algorithms.state.var_const_assert",
+  "spec.en.mizar_vc.vc_ir.algorithm_var_const_assert_snapshot",
 ]
-notes = "Audit-1 semantic-bridge inactive oracle seed (September 2026 audit wave): binding expectation for the Step-5 semantic bridge; no active runner tag, earns no current credit. var and const declarations, assignment, and an assert obligation compose inside an algorithm body (spec 20.1, 20.4)."
+notes = "Source checking and Core lowering preserve actual local bindings, immutable copies, typed assignments and assertion/return formulas. The complete open VcSet preserves write identities, pre-assert contexts, pending assertion dependencies and honest seed accounting. No proof, termination or algorithm acceptance is claimed."

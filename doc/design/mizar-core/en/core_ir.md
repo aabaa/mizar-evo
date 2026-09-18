@@ -532,6 +532,7 @@ struct CoreAlgorithmStmt {
 enum CoreAlgorithmStmtKind {
     Let { binder: CoreBinder, value: Option<CoreTermId>, ghost: bool },
     Assign { target: CorePlace, value: CoreTermId },
+    AssignLocal { target: CoreVarId, value: CoreTermId },
     Assert { formula: CoreFormulaId },
     If { condition: CoreFormulaId, then_body: Vec<CoreAlgorithmStmtId>, else_body: Vec<CoreAlgorithmStmtId> },
     While { condition: CoreFormulaId, invariants: Vec<CoreFormulaId>, decreasing: Vec<CoreTermId>, body: Vec<CoreAlgorithmStmtId> },

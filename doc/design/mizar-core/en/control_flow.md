@@ -402,6 +402,7 @@ enum ControlFlowDiagnosticKind {
     IllegalBreak,
     IllegalContinue,
     GhostIsolationViolation { local: LocalId, var: CoreVarId },
+    ImmutableAssignment { local: LocalId, var: CoreVarId },
     Phase9Error,
     FlowDiagnostic,
 }
@@ -514,12 +515,7 @@ diagnostic catalog is:
 - malformed or missing algorithm statement carried from phase 9;
 - unsupported aliasing/lvalue metadata.
 
-Assignment to immutable parameter/const locals, ghost leakage at sinks beyond runtime
-initializers/returns (including assignments, conditions and calls), call/contract instantiation errors, unsupported pattern payloads,
-snapshot/claim payloads, and alias/lvalue precision require checker-owned
-target/payload metadata that the current `CoreAlgorithmStmtKind` and `CorePlace`
-surface do not expose. They remain deferred and must not be inferred from source
-spelling.
+Typed AssignLocal supplies actual local identity for immutable-write and assignment ghost checks. Opaque CorePlace writes, ghost leakage through conditions/calls, call/contract instantiation errors, unsupported patterns, snapshot/claim payloads and richer alias/lvalue precision remain deferred pending checker-owned metadata; source spelling grants no authority.
 
 Diagnostics are sorted by source order, then algorithm id, then block id, then
 diagnostic class. A diagnostic may mark an algorithm as partial/error for
@@ -669,4 +665,4 @@ checks. Rust implementation and tests are deferred to tasks 15-18.
 
 ## Source static algorithm observations
 
-Source Let/Return/Break statements use existing CFG construction and `IllegalBreak`. `GhostIsolationViolation { local, var }` records actual ghost dependencies of runtime initializers and returns, with deterministic statement/use provenance; existing recursive term-use collection supplies those identities. Ghost initializers may read runtime or ghost values. Check static sinks even when unreachable; the later `UnreachableStatement` after illegal break remains a collateral diagnostic. This bounded path creates no obligation or VC and does not claim assignment/condition/call ghost checks or the complete diagnostic family.
+Source Let/Return/Break statements retain existing construction and IllegalBreak behavior. Typed AssignLocal resolves the actual local identity and records AssignmentEffectTarget::Local; missing destinations fail closed, and ImmutableAssignment {local,var} rejects const, parameter and result writes. GhostIsolationViolation {local,var} records actual ghost dependencies of runtime initializers, typed assignments and returns using recursive term-use collection and deterministic statement/use provenance, including unreachable sinks. Ghost targets retain their declaration visibility; opaque Assign place keys are not resolved from names. Illegal-break unreachable diagnostics remain collateral. CFG assertion facts describe successor placement, not permission to assume an assertion in its own VC; concrete pre-state/versioned contexts remain VC-owned. No condition/call ghost checking, proof or complete diagnostic-family claim follows.

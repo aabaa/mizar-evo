@@ -68,7 +68,7 @@ literal top-level public item:
 - `VcSet`, `VcSetParts`, `VcStatusPlan`, `VcStatusOverride`,
   `VcStatusAction`, `CanonicalVcFingerprint`, `LocalContextFingerprint`,
   `VcIr`, `VcSourceRef`, `SeedVcRef`,
-  `VcGeneratedFormula`, `VcGeneratedFormulaKind`, `VcGeneratedFormulaShape`,
+  `VcGeneratedFormula`, `VcGeneratedFormulaKind`, `VcGeneratedFormulaShape`, `VcProgramValue`,
   `QuantifierKind`, `VcFormulaRef`, `VcKind`,
   `RegistrationCorrectnessKind`, `LoopInvariantPhase`, `RangeLoopObligation`,
   `CollectionLoopObligation`, `LocalContext`, `ContextEntry`,

@@ -371,6 +371,7 @@ enum ControlFlowDiagnosticKind {
     IllegalBreak,
     IllegalContinue,
     GhostIsolationViolation { local: LocalId, var: CoreVarId },
+    ImmutableAssignment { local: LocalId, var: CoreVarId },
     Phase9Error,
     FlowDiagnostic,
 }
@@ -467,11 +468,7 @@ structural diagnostic をすでに emit している。より広い diagnostic c
 - phase 9 から持ち越された malformed / missing algorithm statement。
 - unsupported aliasing / lvalue metadata。
 
-immutable parameter / const local への assignment、runtime 初期化子・return 以外（代入・条件・呼出しを含む）への ghost value の流入、
-call / contract instantiation error、unsupported pattern payload、snapshot / claim payload、
-alias / lvalue precision は、現在の `CoreAlgorithmStmtKind` と `CorePlace` surface が公開していない
-checker-owned target / payload metadata を必要とする。これらは deferred のままであり、source spelling から
-推測してはならない。
+型付き AssignLocal は immutable 書込み・代入 ghost 検査の実際の local 同一性を与える。opaque CorePlace 書込み、条件・呼出し経由の ghost 流入、call/contract 実体化エラー、未対応 pattern、snapshot/claim、より広い alias/lvalue 精度は checker-owned メタデータを待つ保留とし、source spelling から権限を推測しない。
 
 diagnostic は source order、algorithm id、block id、diagnostic class の順に sort する。
 diagnostic は downstream consumer 向けに algorithm を partial/error と印付けてよいが、
@@ -609,4 +606,4 @@ task 15-18 に deferred する。
 
 ## Source static algorithm observations
 
-ソースの Let/Return/Break は既存 CFG 構築と `IllegalBreak` を使用する。`GhostIsolationViolation { local, var }` は runtime 初期化子と return の実際の ghost 依存を、決定的な statement/use 由来とともに記録し、既存の再帰的な項使用収集から同一性を得る。ghost 初期化子は runtime/ghost 値を読める。到達不能でも静的な参照先を検査し、不正 break 後の `UnreachableStatement` は付随診断として保持する。この限定経路は obligation・VC を作らず、代入・条件・呼出しの ghost 検査や診断群全体の完了を主張しない。
+ソース Let/Return/Break は既存構築と IllegalBreak を維持する。型付き AssignLocal は実際の local 同一性を解決して AssignmentEffectTarget::Local を記録し、不明な代入先を拒否し、ImmutableAssignment {local,var} で const・仮引数・result への書込みを拒否する。GhostIsolationViolation {local,var} は runtime 初期化子・型付き代入・return の実際の ghost 依存を、再帰的な項使用収集と決定的な statement/use 由来から記録し、到達不能な参照先も検査する。ghost 代入先は宣言の可視性を保持し、opaque Assign place key を名前から解決しない。不正 break 後の到達不能診断は付随診断のままとする。CFG の assertion fact は後続への配置を表し、その assertion 自身の VC で仮定する権限ではない。代入前の世代付き具体文脈は VC が所有し、条件・呼出しの ghost 検査、証明、診断群全体の完了は主張しない。

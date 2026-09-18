@@ -2020,8 +2020,8 @@ fn step5c14_static_ghost_checks_actual_sinks_and_preserves_shadowing() {
         ("var g := a", "var g := g"),
         ("var x := g", "var x := x"),
         ("return x", "return absent"),
-        ("var x := g", "const x := g"),
-        ("return x;", "x := a;\n return x;"),
+        ("var x := g", "const x, y := g"),
+        ("return x;", "x.field := a;\n return x;"),
         ("return x;", "while a = a do break; end; return x;"),
         ("let a be object", "let a be set"),
         ("-> object", "-> set"),
@@ -2527,9 +2527,9 @@ fn step5c14_return_no_contract_is_zero_vc_and_unsupported_source_is_rejected() {
         text.replace("result = a", "not result = a"),
         text.replace("result = a", "result = a ensures result = a"),
         text.replace("    ensures", "    requires a = a\n    ensures"),
-        text.replace("return a;", "var x := a; return x;"),
+        text.replace("return a;", "var x := missing; return x;"),
         text.replace("return a;", "return a; return a;"),
-        text.replace("return a;", "assert a = a; return a;"),
+        text.replace("return a;", "assert a in a; return a;"),
         text.replace("return a;", "return missing;"),
         text.replace("-> object", "-> set"),
     ] {
@@ -2771,186 +2771,191 @@ fn step5c14_return_admission_requires_exact_snapshot_trace_and_stage() {
     use crate::staged_model::Stage;
     let config = step5c11_config();
     let plan = build_test_plan(&config).unwrap();
-    let original = step5c14_return_case();
-    assert!(super::proof_verification::step5c14_return_admitted(
-        Some(&config.workspace_root),
-        &original
-    ));
-    assert!(
-        crate::expectation::validate_expectation_path(
-            &original.expectation_path,
-            &original.expectation,
-            &config.workspace_root.join("tests")
-        )
-        .is_empty()
-    );
-    for mutation in 0..21 {
-        let mut case = original.clone();
-        match mutation {
-            0 => case.id.0.push_str("_extra"),
-            1 => case.expectation.id.0.push_str("_extra"),
-            2 => case.source_path = case.source_path.with_file_name("wrong.miz"),
-            3 => case.expectation_path = case.expectation_path.with_file_name("wrong.expect.toml"),
-            4 => case.expectation.source = PathBuf::from("wrong.miz"),
-            5 => case.expectation.stage = Stage::TypeElaboration,
-            6 => case.expectation.expected_phase = Some(PipelinePhase::Verification),
-            7 => case.expectation.expected_outcome = ExpectedOutcome::Fail,
-            8 => case.expectation.tags.clear(),
-            9 => case.expectation.tags.push("extra".into()),
-            10 => case.expectation.diagnostic_codes.push("E-UNRELATED".into()),
-            11 => case.expectation.stable_detail_key = Some("wrong.key".into()),
-            12 => case.expectation.kind = TestKind::Fail,
-            13 => case.expectation.rejection_reason = Some("wrong.reason".into()),
-            14 => case.expectation.failure_category = Some("proof_failure".into()),
-            15 => case.expectation.snapshots = None,
-            16 => case.expectation.snapshots = Some(PathBuf::from("snapshots/wrong.snap")),
-            17 => {
-                case.expectation.spec_refs.pop();
-            }
-            18 => case.expectation.spec_refs[1].0.push_str("_wrong"),
-            19 => case.expectation.spec_refs.reverse(),
-            20 => case.expectation.domain = "wrong.domain".into(),
-            _ => unreachable!(),
-        }
+    for original in [step5c14_return_case(), step5c14_state_case()] {
+        assert!(super::proof_verification::step5c14_return_admitted(
+            Some(&config.workspace_root),
+            &original
+        ));
         assert!(
-            !super::proof_verification::step5c14_return_admitted(
-                Some(&config.workspace_root),
-                &case
-            ),
-            "mutation {mutation}"
+            crate::expectation::validate_expectation_path(
+                &original.expectation_path,
+                &original.expectation,
+                &config.workspace_root.join("tests")
+            )
+            .is_empty()
         );
-        if !matches!(mutation, 0 | 2 | 15) {
+        for mutation in 0..21 {
+            let mut case = original.clone();
+            match mutation {
+                0 => case.id.0.push_str("_extra"),
+                1 => case.expectation.id.0.push_str("_extra"),
+                2 => case.source_path = case.source_path.with_file_name("wrong.miz"),
+                3 => {
+                    case.expectation_path =
+                        case.expectation_path.with_file_name("wrong.expect.toml")
+                }
+                4 => case.expectation.source = PathBuf::from("wrong.miz"),
+                5 => case.expectation.stage = Stage::TypeElaboration,
+                6 => case.expectation.expected_phase = Some(PipelinePhase::Verification),
+                7 => case.expectation.expected_outcome = ExpectedOutcome::Fail,
+                8 => case.expectation.tags.clear(),
+                9 => case.expectation.tags.push("extra".into()),
+                10 => case.expectation.diagnostic_codes.push("E-UNRELATED".into()),
+                11 => case.expectation.stable_detail_key = Some("wrong.key".into()),
+                12 => case.expectation.kind = TestKind::Fail,
+                13 => case.expectation.rejection_reason = Some("wrong.reason".into()),
+                14 => case.expectation.failure_category = Some("proof_failure".into()),
+                15 => case.expectation.snapshots = None,
+                16 => case.expectation.snapshots = Some(PathBuf::from("snapshots/wrong.snap")),
+                17 => {
+                    case.expectation.spec_refs.pop();
+                }
+                18 => case.expectation.spec_refs[1].0.push_str("_wrong"),
+                19 => case.expectation.spec_refs.reverse(),
+                20 => case.expectation.domain = "wrong.domain".into(),
+                _ => unreachable!(),
+            }
             assert!(
-                crate::expectation::validate_expectation_path(
-                    &case.expectation_path,
-                    &case.expectation,
-                    &config.workspace_root.join("tests")
-                )
-                .iter()
-                .any(|diagnostic| diagnostic.code.0 == "E-EXPECT-SNAPSHOT-SCOPE"),
-                "snapshot scope mutation {mutation}"
+                !super::proof_verification::step5c14_return_admitted(
+                    Some(&config.workspace_root),
+                    &case
+                ),
+                "mutation {mutation}"
+            );
+            if !matches!(mutation, 0 | 2 | 15) {
+                assert!(
+                    crate::expectation::validate_expectation_path(
+                        &case.expectation_path,
+                        &case.expectation,
+                        &config.workspace_root.join("tests")
+                    )
+                    .iter()
+                    .any(|diagnostic| diagnostic.code.0 == "E-EXPECT-SNAPSHOT-SCOPE"),
+                    "snapshot scope mutation {mutation}"
+                );
+            }
+        }
+        for (stage, phase, tag) in [
+            (Stage::ParseOnly, PipelinePhase::Parse, "active_parse_only"),
+            (
+                Stage::DeclarationSymbol,
+                PipelinePhase::Resolve,
+                "active_declaration_symbol",
+            ),
+            (
+                Stage::TypeElaboration,
+                PipelinePhase::TypeCheck,
+                "active_type_elaboration",
+            ),
+            (
+                Stage::FormulaStatement,
+                PipelinePhase::StatementCheck,
+                "active_formula_statement",
+            ),
+            (
+                Stage::AdvancedSemantics,
+                PipelinePhase::ClusterResolution,
+                "active_advanced_semantics",
+            ),
+        ] {
+            for alias in [false, true] {
+                let mut case = original.clone();
+                case.expectation.stage = stage;
+                case.expectation.expected_phase = Some(phase);
+                case.expectation.tags = vec![tag.into()];
+                if alias {
+                    case.id.0 = "unrelated".into();
+                    case.source_path = case.source_path.with_file_name("unrelated.miz");
+                    case.expectation_path = case
+                        .expectation_path
+                        .with_file_name("unrelated.expect.toml");
+                }
+                assert!(!super::is_active_parse_only(&case));
+                assert!(!super::is_active_declaration_symbol(&case));
+                assert!(!super::is_active_type_elaboration(&case));
+                assert!(!super::formula_statement::is_active_formula_statement(
+                    &config.workspace_root,
+                    &case
+                ));
+                assert!(!super::is_active_proof_verification(&case));
+                assert!(!super::step5c11_registration_admitted(
+                    &config.workspace_root,
+                    &case
+                ));
+                assert!(!super::step5c13_overload_admitted(
+                    &config.workspace_root,
+                    &case
+                ));
+            }
+        }
+        let run = super::proof_verification::run_proof_verification_case(
+            &config.workspace_root,
+            &config.workspace_root.join(&config.tests_root),
+            &original,
+            999,
+        );
+        assert_eq!(
+            run.status,
+            super::ProofVerificationCaseStatus::Passed,
+            "{:?}",
+            run.failure
+        );
+        let temporary = std::process::Command::new("mktemp")
+            .arg("-d")
+            .output()
+            .unwrap();
+        assert!(temporary.status.success());
+        let root = PathBuf::from(String::from_utf8(temporary.stdout).unwrap().trim());
+        let missing_snapshot = super::proof_verification::run_proof_verification_case(
+            &config.workspace_root,
+            &root,
+            &original,
+            0,
+        );
+        assert_eq!(
+            missing_snapshot.status,
+            super::ProofVerificationCaseStatus::Failed
+        );
+        assert!(
+            missing_snapshot
+                .failure
+                .unwrap()
+                .contains("could not be read")
+        );
+        let snapshot = root.join(original.expectation.snapshots.as_ref().unwrap());
+        std::fs::create_dir_all(snapshot.parent().unwrap()).unwrap();
+        std::fs::write(&snapshot, "incorrect snapshot").unwrap();
+        let wrong_snapshot = super::proof_verification::run_proof_verification_case(
+            &config.workspace_root,
+            &root,
+            &original,
+            0,
+        );
+        assert_eq!(
+            wrong_snapshot.status,
+            super::ProofVerificationCaseStatus::Failed
+        );
+        assert!(
+            wrong_snapshot
+                .failure
+                .unwrap()
+                .contains("snapshot differed")
+        );
+        std::fs::remove_dir_all(&root).unwrap();
+        let mut missing = plan.clone();
+        missing.cases.retain(|case| case.id != original.id);
+        let mut duplicate = plan.clone();
+        duplicate.cases.push(original);
+        for invalid in [missing, duplicate] {
+            assert!(
+                super::validate_active_proof_verification_tags(&config.workspace_root, &invalid)
+                    .iter()
+                    .any(|d| d.code.0 == "E-PROOF-VERIFICATION-STEP5C14-INVENTORY")
             );
         }
     }
-    for (stage, phase, tag) in [
-        (Stage::ParseOnly, PipelinePhase::Parse, "active_parse_only"),
-        (
-            Stage::DeclarationSymbol,
-            PipelinePhase::Resolve,
-            "active_declaration_symbol",
-        ),
-        (
-            Stage::TypeElaboration,
-            PipelinePhase::TypeCheck,
-            "active_type_elaboration",
-        ),
-        (
-            Stage::FormulaStatement,
-            PipelinePhase::StatementCheck,
-            "active_formula_statement",
-        ),
-        (
-            Stage::AdvancedSemantics,
-            PipelinePhase::ClusterResolution,
-            "active_advanced_semantics",
-        ),
-    ] {
-        for alias in [false, true] {
-            let mut case = original.clone();
-            case.expectation.stage = stage;
-            case.expectation.expected_phase = Some(phase);
-            case.expectation.tags = vec![tag.into()];
-            if alias {
-                case.id.0 = "unrelated".into();
-                case.source_path = case.source_path.with_file_name("unrelated.miz");
-                case.expectation_path = case
-                    .expectation_path
-                    .with_file_name("unrelated.expect.toml");
-            }
-            assert!(!super::is_active_parse_only(&case));
-            assert!(!super::is_active_declaration_symbol(&case));
-            assert!(!super::is_active_type_elaboration(&case));
-            assert!(!super::formula_statement::is_active_formula_statement(
-                &config.workspace_root,
-                &case
-            ));
-            assert!(!super::is_active_proof_verification(&case));
-            assert!(!super::step5c11_registration_admitted(
-                &config.workspace_root,
-                &case
-            ));
-            assert!(!super::step5c13_overload_admitted(
-                &config.workspace_root,
-                &case
-            ));
-        }
-    }
-    let run = super::proof_verification::run_proof_verification_case(
-        &config.workspace_root,
-        &config.workspace_root.join(&config.tests_root),
-        &original,
-        999,
-    );
-    assert_eq!(
-        run.status,
-        super::ProofVerificationCaseStatus::Passed,
-        "{:?}",
-        run.failure
-    );
-    let temporary = std::process::Command::new("mktemp")
-        .arg("-d")
-        .output()
-        .unwrap();
-    assert!(temporary.status.success());
-    let root = PathBuf::from(String::from_utf8(temporary.stdout).unwrap().trim());
-    let missing_snapshot = super::proof_verification::run_proof_verification_case(
-        &config.workspace_root,
-        &root,
-        &original,
-        0,
-    );
-    assert_eq!(
-        missing_snapshot.status,
-        super::ProofVerificationCaseStatus::Failed
-    );
-    assert!(
-        missing_snapshot
-            .failure
-            .unwrap()
-            .contains("could not be read")
-    );
-    let snapshot = root.join(original.expectation.snapshots.as_ref().unwrap());
-    std::fs::create_dir_all(snapshot.parent().unwrap()).unwrap();
-    std::fs::write(&snapshot, "incorrect snapshot").unwrap();
-    let wrong_snapshot = super::proof_verification::run_proof_verification_case(
-        &config.workspace_root,
-        &root,
-        &original,
-        0,
-    );
-    assert_eq!(
-        wrong_snapshot.status,
-        super::ProofVerificationCaseStatus::Failed
-    );
-    assert!(
-        wrong_snapshot
-            .failure
-            .unwrap()
-            .contains("snapshot differed")
-    );
-    std::fs::remove_dir_all(&root).unwrap();
-    let mut missing = plan.clone();
-    missing.cases.retain(|case| case.id != original.id);
-    let mut duplicate = plan.clone();
-    duplicate.cases.push(original);
-    for invalid in [missing, duplicate] {
-        assert!(
-            super::validate_active_proof_verification_tags(&config.workspace_root, &invalid)
-                .iter()
-                .any(|d| d.code.0 == "E-PROOF-VERIFICATION-STEP5C14-INVENTORY")
-        );
-    }
 }
+
 #[test]
 fn step5c4_dependent_mode_preserves_actual_parameter_bindings_and_checked_types() {
     use mizar_checker::binding_env::{
@@ -4963,6 +4968,846 @@ fn step5c6_functor_synonym_relation_selects_actual_target_and_rejects_unsupporte
             last_alias.relations().is_empty(),
             "{variant}: {:?}",
             last_alias.relations()
+        );
+    }
+}
+
+
+fn step5c14_state_case() -> crate::harness::TestCase {
+    build_test_plan(&step5c11_config())
+        .unwrap()
+        .cases
+        .into_iter()
+        .find(|case| case.id.0 == "pass_proof_verification_algorithm_var_const_assert_001")
+        .unwrap()
+}
+
+fn step5c14_state_vcs(
+    core: &mizar_core::core_ir::CoreIr,
+) -> Result<mizar_vc::vc_ir::VcSet, String> {
+    mizar_vc::generator::generate_source_algorithm_postconditions(
+        core,
+        super::shared::snapshot_id(0),
+        &mizar_vc::vc_ir::GenerationSchemaVersion::new("mizar-vc-generation-step5c14-state-v1"),
+        &mizar_vc::vc_ir::VcSchemaVersion::new("mizar-vc-vcset-step5c14-state-v1"),
+    )
+}
+
+#[test]
+fn step5c14_state_source_preserves_write_values_and_pending_assertion() {
+    use mizar_core::core_ir::{
+        CoreAlgorithmStmtKind as S, CoreTermKind as T, ObligationSeedStatus,
+    };
+    use mizar_vc::vc_ir::{
+        ContextEntryKind as C, SeedVcMapping, VcFormulaRef, VcGeneratedFormulaKind as K,
+        VcGeneratedFormulaShape as F, VcKind, VcProgramValue as V, VcStatus,
+    };
+    let case = step5c14_state_case();
+    let text = std::fs::read_to_string(&case.source_path).unwrap();
+    let renamed = text
+        .replace("swapalgo", "copyalgo")
+        .replace("let a be", "let input be")
+        .replace("(a)", "(input)")
+        .replace("= a", "= input")
+        .replace(":= a", ":= input")
+        .replace(" x", " local")
+        .replace("const c", "const saved")
+        .replace(":= c;", ":= saved;");
+    for source in [&text, &renamed] {
+        let core = step5c14_static_core(&case, source).unwrap();
+        let replay = step5c14_static_core(&case, source).unwrap();
+        assert_eq!(core, replay);
+        assert!(core.diagnostics().is_empty() && core.proofs().is_empty());
+        let (_, algorithm) = core.algorithms().iter().next().unwrap();
+        let [x_decl, c_decl, assignment, assertion, returned] = algorithm.statements.as_slice()
+        else {
+            panic!("five actual statements")
+        };
+        let param = V {
+            var: algorithm.params[0].var,
+            definition: None,
+        };
+        let S::Let {
+            binder: x,
+            value: Some(x_initial),
+            ghost: false,
+        } = &core.algorithm_statements().get(*x_decl).unwrap().kind
+        else {
+            panic!("var declaration")
+        };
+        let S::Let {
+            binder: c,
+            value: Some(c_initial),
+            ghost: false,
+        } = &core.algorithm_statements().get(*c_decl).unwrap().kind
+        else {
+            panic!("const declaration")
+        };
+        assert_eq!(x.role.as_str(), "local:var");
+        assert_eq!(c.role.as_str(), "local:const");
+        assert_ne!(x.var, c.var);
+        assert_ne!(x.var, param.var);
+        assert_ne!(c.var, param.var);
+        for initial in [x_initial, c_initial] {
+            assert_eq!(core.terms().get(*initial).unwrap().kind, T::Var(param.var));
+        }
+        let S::AssignLocal { target, value } =
+            core.algorithm_statements().get(*assignment).unwrap().kind
+        else {
+            panic!("typed assignment")
+        };
+        assert_eq!(target, x.var);
+        assert_eq!(core.terms().get(value).unwrap().kind, T::Var(c.var));
+        let S::Assert { formula: asserted } =
+            core.algorithm_statements().get(*assertion).unwrap().kind
+        else {
+            panic!("actual assertion")
+        };
+        assert!(!algorithm.contracts.ensures.contains(&asserted));
+        assert_eq!(algorithm.contracts.ensures.len(), 1);
+        let S::Return(Some(value)) = core.algorithm_statements().get(*returned).unwrap().kind
+        else {
+            panic!("return")
+        };
+        assert_eq!(core.terms().get(value).unwrap().kind, T::Var(x.var));
+        let flow = mizar_core::control_flow::build_control_flow_ir(&core);
+        assert!(
+            flow.flows
+                .iter()
+                .all(|(_, flow)| flow.diagnostics.is_empty())
+        );
+        let handoff = mizar_core::control_flow::build_obligation_seed_handoff(&core, &flow);
+        let x0 = V {
+            var: x.var,
+            definition: Some(*x_decl),
+        };
+        let c0 = V {
+            var: c.var,
+            definition: Some(*c_decl),
+        };
+        let x1 = V {
+            var: x.var,
+            definition: Some(*assignment),
+        };
+        let vcs = step5c14_state_vcs(&core).unwrap();
+        assert_eq!(vcs, step5c14_state_vcs(&replay).unwrap());
+        assert_eq!(
+            vcs.debug_text(),
+            step5c14_state_vcs(&replay).unwrap().debug_text()
+        );
+        let actual_equations = vcs
+            .generated_formulas()
+            .iter()
+            .filter_map(|formula| {
+                if formula.kind != K::AlgorithmStateFact {
+                    return None;
+                }
+                match formula.shape {
+                    F::ProgramEquals { left, right } => Some((left, right)),
+                    _ => None,
+                }
+            })
+            .collect::<std::collections::BTreeSet<_>>();
+        assert_eq!(
+            actual_equations,
+            std::collections::BTreeSet::from([(x0, param), (c0, param), (x1, c0)])
+        );
+        assert_eq!(vcs.vcs().len(), 2);
+        let assertion_vc = vcs
+            .vcs()
+            .iter()
+            .find(|vc| vc.kind == VcKind::AlgorithmAssertion)
+            .unwrap();
+        let return_vc = vcs
+            .vcs()
+            .iter()
+            .find(|vc| vc.kind == VcKind::AlgorithmPostcondition)
+            .unwrap();
+        for vc in [assertion_vc, return_vc] {
+            assert_eq!(vc.status, VcStatus::Open);
+            assert!(!vc.anchor.is_complete());
+            let VcFormulaRef::Generated(id) = vc.goal else {
+                panic!("generated state goal")
+            };
+            assert_eq!(
+                vcs.generated_formula(id).unwrap().shape,
+                F::ProgramEquals {
+                    left: x1,
+                    right: param
+                }
+            );
+            for fact in &actual_equations {
+                assert!(vc.local_context.entries().iter().any(|entry| {
+                    let Some(VcFormulaRef::Generated(id)) = entry.formula else {
+                        return false;
+                    };
+                    vcs.generated_formula(id).is_some_and(|f| {
+                        f.kind == K::AlgorithmStateFact
+                            && f.shape
+                                == F::ProgramEquals {
+                                    left: fact.0,
+                                    right: fact.1,
+                                }
+                    })
+                }));
+            }
+        }
+        assert!(
+            assertion_vc
+                .local_context
+                .entries()
+                .iter()
+                .all(|entry| entry.formula != Some(assertion_vc.goal)
+                    && !matches!(entry.kind, C::PendingAlgorithmAssertion { .. }))
+        );
+        let pending = return_vc
+            .local_context
+            .entries()
+            .iter()
+            .filter_map(|entry| {
+                if let C::PendingAlgorithmAssertion { handoff } = entry.kind {
+                    Some((handoff, entry.formula))
+                } else {
+                    None
+                }
+            })
+            .collect::<Vec<_>>();
+        let [(assertion_handoff, assertion_formula)] = pending.as_slice() else {
+            panic!("one pending assertion dependency")
+        };
+        assert_eq!(*assertion_formula, Some(assertion_vc.goal));
+        assert!(
+            matches!(vcs.seed_accounting_for(*assertion_handoff).unwrap().mapping, SeedVcMapping::One { vc } if vc == assertion_vc.id)
+        );
+        assert_eq!(
+            handoff.entries.get(*assertion_handoff).unwrap().seed.goal,
+            Some(asserted)
+        );
+        assert_eq!(vcs.seed_accounting().len(), 3);
+        assert_eq!(
+            vcs.seed_accounting()
+                .iter()
+                .filter(|r| matches!(r.mapping, SeedVcMapping::One { .. }))
+                .count(),
+            2
+        );
+        assert_eq!(
+            vcs.seed_accounting()
+                .iter()
+                .filter(|r| matches!(r.mapping, SeedVcMapping::NoConcreteVc { .. }))
+                .count(),
+            1
+        );
+        assert!(
+            vcs.seed_accounting()
+                .iter()
+                .all(|r| r.seed_status == ObligationSeedStatus::Deferred)
+        );
+        if source == &text {
+            assert_eq!(
+                vcs.debug_text(),
+                std::fs::read_to_string(
+                    step5c11_config()
+                        .workspace_root
+                        .join("tests")
+                        .join(case.expectation.snapshots.as_ref().unwrap())
+                )
+                .unwrap()
+            );
+        }
+    }
+}
+
+#[test]
+fn step5c14_state_near_misses_keep_real_goals_and_zero_vc_accounting() {
+    use mizar_vc::vc_ir::{SeedVcMapping, VcKind};
+    let case = step5c14_state_case();
+    let text = std::fs::read_to_string(&case.source_path).unwrap();
+    for (source, expected) in [
+        (
+            text.replace("    assert x = a;\n", ""),
+            vec![VcKind::AlgorithmPostcondition],
+        ),
+        (
+            text.replace("    ensures result = a\n", ""),
+            vec![VcKind::AlgorithmAssertion],
+        ),
+        (
+            text.replace("    assert x = a;\n", "")
+                .replace("    ensures result = a\n", ""),
+            vec![],
+        ),
+    ] {
+        let core = step5c14_static_core(&case, &source).unwrap();
+        let vcs = step5c14_state_vcs(&core).unwrap();
+        assert_eq!(
+            vcs,
+            step5c14_state_vcs(&step5c14_static_core(&case, &source).unwrap()).unwrap()
+        );
+        assert_eq!(
+            vcs.vcs()
+                .iter()
+                .map(|vc| vc.kind.clone())
+                .collect::<Vec<_>>(),
+            expected
+        );
+        assert_eq!(vcs.seed_accounting().len(), expected.len() + 1);
+        assert_eq!(
+            vcs.seed_accounting()
+                .iter()
+                .filter(|r| matches!(r.mapping, SeedVcMapping::NoConcreteVc { .. }))
+                .count(),
+            1
+        );
+        if expected.is_empty() {
+            assert!(vcs.generated_formulas().is_empty());
+            assert_eq!(
+                vcs.debug_text(),
+                std::fs::read_to_string(
+                    step5c11_config()
+                        .workspace_root
+                        .join("tests/snapshots/vc/step5c14_algorithm_state_no_contract.vc_ir.snap")
+                )
+                .unwrap()
+            );
+        }
+    }
+    for (from, to) in [
+        ("x := c;", "missing := c;"),
+        ("x := c;", "x := missing;"),
+        ("x := c;", "x.field := c;"),
+        ("var x := a;", "var x := x;"),
+        ("var x := a;", "var x := c;"),
+        ("const c := a;", "const x := a;"),
+        ("assert x = a;", "assert x in a;"),
+        ("assert x = a;", "assert result = a;"),
+        ("assert x = a;", "assert x = a by Missing;"),
+        ("return x;", "return result;"),
+        ("return x;", "return x; x := a;"),
+    ] {
+        let changed = text.replace(from, to);
+        assert_ne!(changed, text);
+        assert!(
+            step5c14_static_core(&case, &changed).is_err(),
+            "{from} -> {to}"
+        );
+    }
+}
+
+#[test]
+fn step5c14_state_rejects_actual_immutable_and_ghost_writes() {
+    use mizar_core::{
+        control_flow::{ControlFlowDiagnosticKind as D, build_control_flow_ir},
+        core_ir::CoreAlgorithmStmtKind as S,
+    };
+    let case = step5c14_state_case();
+    let text = std::fs::read_to_string(&case.source_path).unwrap();
+    for target in ["c", "a"] {
+        let source = text.replace("x := c;", &format!("{target} := x;"));
+        let core = step5c14_static_core(&case, &source).unwrap();
+        let (_, algorithm) = core.algorithms().iter().next().unwrap();
+        let S::AssignLocal { target: actual, .. } = core
+            .algorithm_statements()
+            .get(algorithm.statements[2])
+            .unwrap()
+            .kind
+        else {
+            panic!("typed destination")
+        };
+        let flows = build_control_flow_ir(&core);
+        assert!(flows.flows.iter().any(|(_, flow)| {
+            flow.diagnostics
+                .iter()
+                .any(|(_, d)| matches!(d.kind, D::ImmutableAssignment { var, .. } if var == actual))
+        }));
+        assert!(step5c14_state_vcs(&core).is_err());
+    }
+    let diagnostic_only = text
+        .replace("    ensures result = a\n", "")
+        .replace("    assert x = a;\n", "");
+    for unreachable in [false, true] {
+        let source = diagnostic_only
+            .replace("const c := a;", "ghost var c := a;")
+            .replace(
+                "x := c;",
+                if unreachable {
+                    "return a; x := c;"
+                } else {
+                    "x := c;"
+                },
+            );
+        let core = step5c14_static_core(&case, &source).unwrap();
+        assert!(build_control_flow_ir(&core).flows.iter().any(|(_, f)| {
+            f.diagnostics
+                .iter()
+                .any(|(_, d)| matches!(d.kind, D::GhostIsolationViolation { .. }))
+        }));
+        assert!(step5c14_state_vcs(&core).is_err());
+    }
+    let shadowed = text
+        .replace("var x := a;", "var a := a;")
+        .replace("x := c;", "a := c;")
+        .replace("assert x = a;", "assert a = c;")
+        .replace("return x;", "return a;");
+    let core = step5c14_static_core(&case, &shadowed).unwrap();
+    let (_, algorithm) = core.algorithms().iter().next().unwrap();
+    let S::Let {
+        binder,
+        value: Some(value),
+        ..
+    } = &core
+        .algorithm_statements()
+        .get(algorithm.statements[0])
+        .unwrap()
+        .kind
+    else {
+        panic!("shadow declaration")
+    };
+    assert_ne!(binder.var, algorithm.params[0].var);
+    assert_eq!(
+        core.terms().get(*value).unwrap().kind,
+        mizar_core::core_ir::CoreTermKind::Var(algorithm.params[0].var)
+    );
+    assert_eq!(step5c14_state_vcs(&core).unwrap().vcs().len(), 2);
+}
+
+#[test]
+fn step5c14_state_changed_source_references_reach_each_generated_formula() {
+    use mizar_core::core_ir::CoreAlgorithmStmtKind as S;
+    use mizar_vc::vc_ir::{
+        VcFormulaRef, VcGeneratedFormulaKind as K, VcGeneratedFormulaShape as F, VcKind,
+        VcProgramValue as V,
+    };
+    let case = step5c14_state_case();
+    let text = std::fs::read_to_string(&case.source_path).unwrap();
+    for (index, source) in [
+        text.replace("x := c;", "x := a;"),
+        text.replace("assert x = a;", "assert c = x;"),
+        text.replace("return x;", "return c;"),
+        text.replace("x := c;", "x := x;"),
+    ]
+    .into_iter()
+    .enumerate()
+    {
+        assert_ne!(source, text);
+        let core = step5c14_static_core(&case, &source).unwrap();
+        let (_, algorithm) = core.algorithms().iter().next().unwrap();
+        let S::Let { binder: x, .. } = &core
+            .algorithm_statements()
+            .get(algorithm.statements[0])
+            .unwrap()
+            .kind
+        else {
+            panic!("x")
+        };
+        let S::Let { binder: c, .. } = &core
+            .algorithm_statements()
+            .get(algorithm.statements[1])
+            .unwrap()
+            .kind
+        else {
+            panic!("c")
+        };
+        let param = V {
+            var: algorithm.params[0].var,
+            definition: None,
+        };
+        let x0 = V {
+            var: x.var,
+            definition: Some(algorithm.statements[0]),
+        };
+        let c0 = V {
+            var: c.var,
+            definition: Some(algorithm.statements[1]),
+        };
+        let x1 = V {
+            var: x.var,
+            definition: Some(algorithm.statements[2]),
+        };
+        let rhs = match index {
+            0 => param,
+            3 => x0,
+            _ => c0,
+        };
+        let vcs = step5c14_state_vcs(&core).unwrap();
+        assert!(vcs.generated_formulas().iter().any(|formula| formula.kind
+            == K::AlgorithmStateFact
+            && formula.shape
+                == F::ProgramEquals {
+                    left: x1,
+                    right: rhs
+                }));
+        for (kind, operands) in [
+            (
+                VcKind::AlgorithmAssertion,
+                if index == 1 { (c0, x1) } else { (x1, param) },
+            ),
+            (
+                VcKind::AlgorithmPostcondition,
+                (if index == 2 { c0 } else { x1 }, param),
+            ),
+        ] {
+            let vc = vcs.vcs().iter().find(|vc| vc.kind == kind).unwrap();
+            let VcFormulaRef::Generated(id) = vc.goal else {
+                panic!("state goal")
+            };
+            assert_eq!(
+                vcs.generated_formula(id).unwrap().shape,
+                F::ProgramEquals {
+                    left: operands.0,
+                    right: operands.1
+                },
+                "mutation {index}"
+            );
+        }
+    }
+}
+
+#[test]
+fn step5c14_state_earlier_assertion_excludes_later_writes_and_keeps_its_goal() {
+    use mizar_core::core_ir::CoreAlgorithmStmtKind as S;
+    use mizar_vc::vc_ir::{
+        ContextEntryKind as C, VcFormulaRef, VcGeneratedFormulaKind as K,
+        VcGeneratedFormulaShape as F, VcKind, VcProgramValue as V,
+    };
+    let case = step5c14_state_case();
+    let text = std::fs::read_to_string(&case.source_path).unwrap();
+    let source = text
+        .replace("const c := a;", "const c := x;\n    assert x = a;")
+        .replace(
+            "    assert x = a;\n    return x;",
+            "    assert x = c;\n    return x;",
+        );
+    let core = step5c14_static_core(&case, &source).unwrap();
+    let (_, algorithm) = core.algorithms().iter().next().unwrap();
+    let [xd, cd, first_assert, assignment, second_assert, _] = algorithm.statements.as_slice()
+    else {
+        panic!("two assertions")
+    };
+    let S::Let { binder: x, .. } = &core.algorithm_statements().get(*xd).unwrap().kind else {
+        panic!("x")
+    };
+    let S::Let { binder: c, .. } = &core.algorithm_statements().get(*cd).unwrap().kind else {
+        panic!("c")
+    };
+    let x0 = V {
+        var: x.var,
+        definition: Some(*xd),
+    };
+    let c0 = V {
+        var: c.var,
+        definition: Some(*cd),
+    };
+    let x1 = V {
+        var: x.var,
+        definition: Some(*assignment),
+    };
+    let param = V {
+        var: algorithm.params[0].var,
+        definition: None,
+    };
+    let vcs = step5c14_state_vcs(&core).unwrap();
+    assert_eq!(
+        vcs,
+        step5c14_state_vcs(&step5c14_static_core(&case, &source).unwrap()).unwrap()
+    );
+    assert_eq!(vcs.vcs().len(), 3);
+    let shape = |reference| {
+        let VcFormulaRef::Generated(id) = reference else {
+            panic!("generated formula")
+        };
+        &vcs.generated_formula(id).unwrap().shape
+    };
+    let first = vcs
+        .vcs()
+        .iter()
+        .find(|vc| {
+            vc.kind == VcKind::AlgorithmAssertion
+                && shape(vc.goal)
+                    == &F::ProgramEquals {
+                        left: x0,
+                        right: param,
+                    }
+        })
+        .unwrap();
+    let second = vcs
+        .vcs()
+        .iter()
+        .find(|vc| {
+            vc.kind == VcKind::AlgorithmAssertion
+                && shape(vc.goal)
+                    == &F::ProgramEquals {
+                        left: x1,
+                        right: c0,
+                    }
+        })
+        .unwrap();
+    let returned = vcs
+        .vcs()
+        .iter()
+        .find(|vc| vc.kind == VcKind::AlgorithmPostcondition)
+        .unwrap();
+    assert_eq!(
+        shape(returned.goal),
+        &F::ProgramEquals {
+            left: x1,
+            right: param
+        }
+    );
+    assert!(
+        first
+            .local_context
+            .entries()
+            .iter()
+            .all(|entry| !matches!(entry.kind, C::PendingAlgorithmAssertion { .. }))
+    );
+    for entry in first.local_context.entries() {
+        if let Some(VcFormulaRef::Generated(id)) = entry.formula {
+            match &vcs.generated_formula(id).unwrap().shape {
+                F::ProgramEquals { left, right } => {
+                    assert_ne!(left.definition, Some(*assignment));
+                    assert_ne!(right.definition, Some(*assignment));
+                }
+                F::ProgramTypePredicate { subject, .. } => {
+                    assert_ne!(subject.definition, Some(*assignment))
+                }
+                other => panic!("unexpected state premise {other:?}"),
+            }
+        }
+        assert_ne!(entry.formula, Some(first.goal));
+    }
+    for vc in [first, second, returned] {
+        assert!(vc.local_context.entries().iter().any(|entry| {
+            let Some(VcFormulaRef::Generated(id)) = entry.formula else {
+                return false;
+            };
+            let formula = vcs.generated_formula(id).unwrap();
+            formula.kind == K::AlgorithmStateFact
+                && formula.shape
+                    == F::ProgramEquals {
+                        left: c0,
+                        right: x0,
+                    }
+        }));
+    }
+    let handoff = mizar_core::control_flow::build_obligation_seed_handoff(
+        &core,
+        &mizar_core::control_flow::build_control_flow_ir(&core),
+    );
+    for (vc, count) in [(second, 1), (returned, 2)] {
+        let pending = vc
+            .local_context
+            .entries()
+            .iter()
+            .filter(|entry| matches!(entry.kind, C::PendingAlgorithmAssertion { .. }))
+            .collect::<Vec<_>>();
+        assert_eq!(pending.len(), count);
+        let entry = pending
+            .iter()
+            .find(|entry| entry.formula == Some(first.goal))
+            .unwrap();
+        let C::PendingAlgorithmAssertion { handoff: id } = entry.kind else {
+            unreachable!()
+        };
+        let S::Assert { formula } = core.algorithm_statements().get(*first_assert).unwrap().kind
+        else {
+            unreachable!()
+        };
+        assert_eq!(handoff.entries.get(id).unwrap().seed.goal, Some(formula));
+        assert_eq!(
+            shape(entry.formula.unwrap()),
+            &F::ProgramEquals {
+                left: x0,
+                right: param
+            }
+        );
+        if count == 2 {
+            let entry = pending
+                .iter()
+                .find(|entry| entry.formula == Some(second.goal))
+                .unwrap();
+            let C::PendingAlgorithmAssertion { handoff: id } = entry.kind else {
+                unreachable!()
+            };
+            let S::Assert { formula } = core
+                .algorithm_statements()
+                .get(*second_assert)
+                .unwrap()
+                .kind
+            else {
+                unreachable!()
+            };
+            assert_eq!(handoff.entries.get(id).unwrap().seed.goal, Some(formula));
+        }
+    }
+}
+
+#[test]
+fn step5c14_state_rejects_corrupt_core_write_formula_and_source_ownership() {
+    use mizar_core::core_ir::*;
+    let case = step5c14_state_case();
+    let core =
+        step5c14_static_core(&case, &std::fs::read_to_string(&case.source_path).unwrap()).unwrap();
+    let (algorithm_id, algorithm) = core.algorithms().iter().next().unwrap();
+    let [xd, cd, assignment, assertion, returned] = algorithm.statements.as_slice() else {
+        panic!("state statements")
+    };
+    let CoreAlgorithmStmtKind::Let {
+        value: Some(initial),
+        ..
+    } = core.algorithm_statements().get(*xd).unwrap().kind
+    else {
+        panic!("initial")
+    };
+    let CoreAlgorithmStmtKind::Let { binder: c, .. } =
+        &core.algorithm_statements().get(*cd).unwrap().kind
+    else {
+        panic!("const")
+    };
+    let CoreAlgorithmStmtKind::Assert { formula: asserted } =
+        core.algorithm_statements().get(*assertion).unwrap().kind
+    else {
+        panic!("assert")
+    };
+    let CoreAlgorithmStmtKind::AssignLocal { target, value } =
+        core.algorithm_statements().get(*assignment).unwrap().kind
+    else {
+        panic!("write")
+    };
+    let ensure = algorithm.contracts.ensures[0];
+    for mutation in 0..12 {
+        let mut parts = CoreIrParts {
+            source_id: core.source_id(),
+            module_id: core.module_id().clone(),
+            items: core.items().clone(),
+            terms: core.terms().clone(),
+            formulas: core.formulas().clone(),
+            definitions: core.definitions().clone(),
+            proofs: core.proofs().clone(),
+            proof_nodes: core.proof_nodes().clone(),
+            algorithms: core.algorithms().clone(),
+            algorithm_statements: core.algorithm_statements().clone(),
+            generated: core.generated().clone(),
+            obligation_seeds: core.obligation_seeds().clone(),
+            source_map: core.source_map().clone(),
+            diagnostics: core.diagnostics().clone(),
+        };
+        match mutation {
+            0 => {
+                parts
+                    .algorithm_statements
+                    .get_mut(*assignment)
+                    .unwrap()
+                    .kind = CoreAlgorithmStmtKind::AssignLocal {
+                    target,
+                    value: initial,
+                }
+            }
+            1 => {
+                parts
+                    .algorithm_statements
+                    .get_mut(*assignment)
+                    .unwrap()
+                    .kind = CoreAlgorithmStmtKind::AssignLocal {
+                    target: c.var,
+                    value,
+                }
+            }
+            2 => {
+                parts.algorithm_statements.get_mut(*assertion).unwrap().kind =
+                    CoreAlgorithmStmtKind::Assert { formula: ensure }
+            }
+            3 => {
+                parts
+                    .algorithms
+                    .get_mut(algorithm_id)
+                    .unwrap()
+                    .contracts
+                    .ensures[0] = asserted
+            }
+            4 => {
+                let CoreAlgorithmStmtKind::Let { binder, .. } =
+                    &mut parts.algorithm_statements.get_mut(*cd).unwrap().kind
+                else {
+                    unreachable!()
+                };
+                binder.role = "unknown-local".into();
+            }
+            5 => {
+                let CoreAlgorithmStmtKind::Let { binder, .. } =
+                    &mut parts.algorithm_statements.get_mut(*xd).unwrap().kind
+                else {
+                    unreachable!()
+                };
+                binder.ty_guard = algorithm.params[0].ty_guard;
+            }
+            6 => parts
+                .algorithm_statements
+                .get_mut(*assignment)
+                .unwrap()
+                .source
+                .provenance
+                .pop()
+                .map(|_| ())
+                .unwrap(),
+            7 => {
+                parts
+                    .algorithm_statements
+                    .get_mut(*assignment)
+                    .unwrap()
+                    .source
+                    .anchor = core
+                    .algorithm_statements()
+                    .get(*assertion)
+                    .unwrap()
+                    .source
+                    .anchor
+                    .clone()
+            }
+            8 => parts
+                .algorithms
+                .get_mut(algorithm_id)
+                .unwrap()
+                .statements
+                .swap(2, 3),
+            9 => {
+                parts.algorithm_statements.get_mut(*returned).unwrap().kind =
+                    CoreAlgorithmStmtKind::Return(Some(initial))
+            }
+            10 => {
+                let id = parts
+                    .formulas
+                    .insert(core.formulas().get(asserted).unwrap().clone());
+                parts
+                    .source_map
+                    .formula_sources
+                    .insert(id, parts.formulas.get(id).unwrap().source.clone());
+            }
+            11 => {
+                let id = parts.terms.insert(core.terms().get(value).unwrap().clone());
+                parts
+                    .source_map
+                    .term_sources
+                    .insert(id, parts.terms.get(id).unwrap().source.clone());
+            }
+            _ => unreachable!(),
+        }
+        if matches!(mutation, 6 | 7) {
+            parts.source_map.algorithm_sources.insert(
+                *assignment,
+                parts
+                    .algorithm_statements
+                    .get(*assignment)
+                    .unwrap()
+                    .source
+                    .clone(),
+            );
+        }
+        let corrupt = CoreIr::try_new(parts)
+            .unwrap_or_else(|error| panic!("structural state probe {mutation}: {error}"));
+        assert!(
+            step5c14_state_vcs(&corrupt).is_err(),
+            "state corruption {mutation}"
         );
     }
 }

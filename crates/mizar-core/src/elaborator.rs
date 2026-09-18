@@ -14832,6 +14832,7 @@ pub fn lower_source_algorithms(
     let mut terms = Vec::new();
     let mut term_ids = BTreeMap::new();
     let mut type_predicates = BTreeMap::new();
+    let mut destinations = BTreeMap::new();
     for (_, term) in checked.terms().iter() {
         let Some(TermReference::Binding(binding)) = term.reference else {
             return Err(invalid());
@@ -14849,6 +14850,10 @@ pub fn lower_source_algorithms(
             _ => return Err(invalid()),
         };
         let site = term.site.node();
+        if node(site)?.kind.as_str() == "Lvalue" {
+            destinations.insert(site, CoreVarId::new(binding.index()));
+            continue;
+        }
         type_predicates.insert(site, predicate);
         term_ids.insert(site, CoreTermSeedId::new(terms.len()));
         terms.push(CoreTermSeed::new(
@@ -14894,7 +14899,24 @@ pub fn lower_source_algorithms(
                         .then_some(id)
                     })
                     .ok_or_else(invalid)?;
-                ("local:var", term_node(variable)?)
+                let declaration = typed
+                    .iter()
+                    .find_map(|(_, node)| {
+                        (node.kind.as_str() == "VariableDeclaration"
+                            && node.children.contains(&variable))
+                        .then_some(node)
+                    })
+                    .ok_or_else(invalid)?;
+                let constant = declaration.children.iter().any(|id| {
+                    typed.node(*id).is_some_and(|node| {
+                        node.kind.as_str()
+                            == "Token(SurfaceToken { kind: ReservedWord, text: \"const\" })"
+                    })
+                });
+                (
+                    if constant { "local:const" } else { "local:var" },
+                    term_node(variable)?,
+                )
             }
             _ => return Err(invalid()),
         };
@@ -14984,6 +15006,7 @@ pub fn lower_source_algorithms(
         provenance(result_node),
     ));
     let mut ensures = Vec::new();
+    let mut assertion_formulas = BTreeMap::new();
     for (_, formula) in checked.formulas().iter() {
         let [left, right] = formula.terms.as_slice() else {
             return Err(invalid());
@@ -14992,7 +15015,29 @@ pub fn lower_source_algorithms(
             return Err(invalid());
         }
         let site = formula.site.node();
-        ensures.push(CoreFormulaSeedId::new(formulas.len()));
+        let expression = typed
+            .iter()
+            .find_map(|(id, node)| {
+                (node.kind.as_str() == "FormulaExpression" && node.children.as_slice() == [site])
+                    .then_some(id)
+            })
+            .ok_or_else(invalid)?;
+        let (owner, kind) = typed
+            .iter()
+            .find_map(|(id, node)| {
+                node.children
+                    .contains(&expression)
+                    .then_some((id, node.kind.as_str()))
+            })
+            .ok_or_else(invalid)?;
+        let id = CoreFormulaSeedId::new(formulas.len());
+        match kind {
+            "AlgorithmEnsuresClause" => ensures.push(id),
+            "AssertStatement" => {
+                assertion_formulas.insert(owner, id);
+            }
+            _ => return Err(invalid()),
+        }
         formulas.push(CoreFormulaSeed::new(
             CoreFormulaSeedKind::Equals {
                 left: *term_ids.get(&left.node()).ok_or_else(invalid)?,
@@ -15059,6 +15104,25 @@ pub fn lower_source_algorithms(
                     provenance,
                 }
             }
+            "AssignmentStatement" => {
+                let target_node = only(*statement, "Lvalue")?;
+                AlgorithmStmtSeed::AssignLocal {
+                    target: destinations.remove(&target_node).ok_or_else(invalid)?,
+                    value: lowered.term_map
+                        [term_ids.get(&term_node(*statement)?).ok_or_else(invalid)?],
+                    source: source.with_provenance(vec![CoreProvenance::new(
+                        CoreProvenancePhase::Checker,
+                        format!("algorithm/source-node#{}", target_node.index()),
+                    )]),
+                    provenance,
+                }
+            }
+            "AssertStatement" => AlgorithmStmtSeed::Assert {
+                formula: lowered.formula_map
+                    [&assertion_formulas.remove(statement).ok_or_else(invalid)?],
+                source,
+                provenance,
+            },
             "ReturnStatement" => AlgorithmStmtSeed::Return {
                 value: Some(
                     lowered.term_map[term_ids.get(&term_node(*statement)?).ok_or_else(invalid)?],
@@ -15069,6 +15133,9 @@ pub fn lower_source_algorithms(
             "BreakStatement" => AlgorithmStmtSeed::Break { source, provenance },
             _ => return Err(invalid()),
         });
+    }
+    if !destinations.is_empty() || !assertion_formulas.is_empty() || !local_binders.is_empty() {
+        return Err(invalid());
     }
     let definitions = lower_definition_inputs(&context, &lowered, DefinitionLoweringInput::new())
         .map_err(|error| error.to_string())?;
@@ -16462,6 +16529,12 @@ pub enum AlgorithmStmtSeed {
         source: CoreSourceRef,
         provenance: CheckerOwnedProvenance,
     },
+    AssignLocal {
+        target: CoreVarId,
+        value: CoreTermId,
+        source: CoreSourceRef,
+        provenance: CheckerOwnedProvenance,
+    },
     Assert {
         formula: CoreFormulaId,
         source: CoreSourceRef,
@@ -16762,6 +16835,27 @@ fn validate_algorithm_statement_seed(
             validate_algorithm_target(target)?;
             validate_algorithm_term(term_formula, *value)?;
         }
+        AlgorithmStmtSeed::AssignLocal {
+            target,
+            value,
+            provenance,
+            ..
+        } => {
+            validate_checker_owned_provenance("algorithm local assignment", provenance.as_slice())?;
+            match context.binder_context().variable_sorts.get(target) {
+                Some(NormalizedVarSort::Term) => {}
+                Some(sort) => {
+                    return Err(AlgorithmLoweringError::NonTermAlgorithmBinder {
+                        var: *target,
+                        sort: *sort,
+                    });
+                }
+                None => {
+                    return Err(AlgorithmLoweringError::UndeclaredAlgorithmBinder { var: *target });
+                }
+            }
+            validate_algorithm_term(term_formula, *value)?;
+        }
         AlgorithmStmtSeed::Assert {
             formula,
             provenance,
@@ -16953,6 +17047,20 @@ fn lower_algorithm_statement(
             source_with_provenance(source.clone(), provenance),
             Vec::new(),
         )),
+        AlgorithmStmtSeed::AssignLocal {
+            target,
+            value,
+            source,
+            provenance,
+        } => Ok(state.insert_statement(
+            owner,
+            CoreAlgorithmStmtKind::AssignLocal {
+                target: *target,
+                value: *value,
+            },
+            source_with_provenance(source.clone(), provenance),
+            Vec::new(),
+        )),
         AlgorithmStmtSeed::Assert {
             formula,
             source,
@@ -17121,6 +17229,7 @@ fn collect_algorithm_statement_diagnostics_into(
             }
             CoreAlgorithmStmtKind::Let { .. }
             | CoreAlgorithmStmtKind::Assign { .. }
+            | CoreAlgorithmStmtKind::AssignLocal { .. }
             | CoreAlgorithmStmtKind::Assert { .. }
             | CoreAlgorithmStmtKind::Return(_)
             | CoreAlgorithmStmtKind::Break

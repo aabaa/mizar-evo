@@ -630,6 +630,7 @@ pub enum ControlFlowDiagnosticKind {
     UnreachableStatement { block: BasicBlockId },
     UseBeforeAssignment { local: LocalId, var: CoreVarId },
     GhostIsolationViolation { local: LocalId, var: CoreVarId },
+    ImmutableAssignment { local: LocalId, var: CoreVarId },
     FlowDiagnostic,
 }
 
@@ -1372,6 +1373,79 @@ impl<'a> FlowBuilder<'a> {
                 });
                 let mut context = self.context(cursor.context).clone();
                 push_unique(&mut context.maybe_assigned, target.clone());
+                push_unique(&mut context.assignment_effects, effect);
+                let context = self.add_context(context);
+                Some(BlockCursor { context, ..cursor })
+            }
+            CoreAlgorithmStmtKind::AssignLocal { target, value } => {
+                self.flow.source_map.statement_placements.insert(
+                    statement_id,
+                    ControlFlowStatementPlacement::Block {
+                        block: cursor.block,
+                    },
+                );
+                self.append_statement(cursor.block, statement_id);
+                let Some(local) = self.local_for_var(*target) else {
+                    self.add_diagnostic(ControlFlowDiagnostic {
+                        kind: ControlFlowDiagnosticKind::FlowDiagnostic,
+                        algorithm: self.algorithm_id,
+                        statement: Some(statement_id),
+                        source: statement.source.clone(),
+                        carried_core_diagnostic: None,
+                    });
+                    return Some(cursor);
+                };
+                let destination = self
+                    .flow
+                    .locals
+                    .get(local)
+                    .expect("resolved assignment local");
+                let ghost = destination.ghost;
+                if destination.mutability != LocalMutability::Mutable {
+                    self.add_diagnostic(ControlFlowDiagnostic {
+                        kind: ControlFlowDiagnosticKind::ImmutableAssignment {
+                            local,
+                            var: *target,
+                        },
+                        algorithm: self.algorithm_id,
+                        statement: Some(statement_id),
+                        source: statement.source.clone(),
+                        carried_core_diagnostic: None,
+                    });
+                }
+                if !ghost {
+                    let mut uses = Vec::new();
+                    self.collect_term_uses(*value, &BTreeSet::new(), &mut uses);
+                    for usage in uses {
+                        if self
+                            .flow
+                            .locals
+                            .get(usage.local)
+                            .is_some_and(|local| local.ghost)
+                        {
+                            self.add_diagnostic(ControlFlowDiagnostic {
+                                kind: ControlFlowDiagnosticKind::GhostIsolationViolation {
+                                    local: usage.local,
+                                    var: usage.var,
+                                },
+                                algorithm: self.algorithm_id,
+                                statement: Some(statement_id),
+                                source: usage.source,
+                                carried_core_diagnostic: None,
+                            });
+                        }
+                    }
+                }
+                if cursor.reachable == Reachability::Reachable {
+                    self.check_term_uses(*value, cursor.context, statement_id);
+                }
+                let effect = self.add_assignment_effect(AssignmentEffect {
+                    statement: statement_id,
+                    target: AssignmentEffectTarget::Local(local),
+                    source: statement.source.clone(),
+                });
+                let mut context = self.context(cursor.context).clone();
+                push_unique(&mut context.definitely_initialized, local);
                 push_unique(&mut context.assignment_effects, effect);
                 let context = self.add_context(context);
                 Some(BlockCursor { context, ..cursor })
@@ -2937,6 +3011,7 @@ const fn diagnostic_class_rank(kind: &ControlFlowDiagnosticKind) -> u8 {
         ControlFlowDiagnosticKind::UseBeforeAssignment { .. } => 5,
         ControlFlowDiagnosticKind::GhostIsolationViolation { .. } => 6,
         ControlFlowDiagnosticKind::FlowDiagnostic => 7,
+        ControlFlowDiagnosticKind::ImmutableAssignment { .. } => 8,
     }
 }
 
@@ -2968,10 +3043,11 @@ mod tests {
     use super::*;
     use crate::core_ir::{
         CoreAlgorithmTable, CoreContractSet, CoreDiagnostic, CoreDiagnosticClass,
-        CoreDiagnosticTable, CoreFormula, CoreFormulaKind, CoreFormulaTable, CoreIrParts, CoreItem,
-        CoreItemKind, CoreItemTable, CoreLabelRef, CoreNodeRef, CoreSourceMap, CoreTerm,
-        CoreTermKind, CoreTermTable, CoreVarId, CoreVisibility, GeneratedOrigin, GeneratedOriginId,
-        GeneratedOriginKey, GeneratedOriginKind, GeneratedOriginTable, ObligationSeedTable,
+        CoreDiagnosticTable, CoreFormula, CoreFormulaKind, CoreFormulaTable, CoreIrError,
+        CoreIrParts, CoreItem, CoreItemKind, CoreItemTable, CoreLabelRef, CoreNodeRef,
+        CoreSourceMap, CoreTerm, CoreTermKind, CoreTermTable, CoreVarId, CoreVisibility,
+        GeneratedOrigin, GeneratedOriginId, GeneratedOriginKey, GeneratedOriginKind,
+        GeneratedOriginTable, ObligationSeedTable,
     };
     use mizar_resolve::resolved_ast::{FullyQualifiedName, LocalSymbolId, ModuleId};
     use mizar_session::{
@@ -6172,6 +6248,179 @@ mod tests {
                 assert_eq!(flow.diagnostics.len(), if unreachable { 3 } else { 1 });
             }
         }
+    }
+
+    #[test]
+    fn typed_local_assignments_check_mutability_ghosts_and_record_actual_effects() {
+        for (role, target, target_ghost) in [
+            ("local:var", 2, false),
+            ("local:const", 2, false),
+            ("local:var", 0, false),
+            ("local:var", 3, false),
+            ("local:var", 2, true),
+        ] {
+            for ghost_rhs in [false, true] {
+                for unreachable in [false, true] {
+                    let mut fixture = CoreFixture::new();
+                    let parameter = fixture.binder(0, "parameter", 1);
+                    let result = fixture.binder(3, "result", 2);
+                    let parameter_use = fixture.term_var(0, 11);
+                    let ghost = fixture.stmt(
+                        CoreAlgorithmStmtKind::Let {
+                            binder: fixture.binder(1, "local:var", 10),
+                            value: Some(parameter_use),
+                            ghost: true,
+                        },
+                        12,
+                    );
+                    let local = fixture.stmt(
+                        CoreAlgorithmStmtKind::Let {
+                            binder: fixture.binder(2, role, 20),
+                            value: Some(parameter_use),
+                            ghost: target_ghost,
+                        },
+                        22,
+                    );
+                    let value = fixture.term_var(usize::from(ghost_rhs), 31);
+                    let assignment = fixture.stmt(
+                        CoreAlgorithmStmtKind::AssignLocal {
+                            target: CoreVarId::new(target),
+                            value,
+                        },
+                        32,
+                    );
+                    let mut statements = vec![ghost, local];
+                    if unreachable {
+                        statements.push(
+                            fixture.stmt(CoreAlgorithmStmtKind::Return(Some(parameter_use)), 25),
+                        );
+                    }
+                    statements.push(assignment);
+                    let mut corrupt = fixture.parts.clone();
+                    let core = fixture.finish(vec![parameter], Some(result), statements);
+                    let output = build_control_flow_ir(&core);
+                    assert_eq!(output, build_control_flow_ir(&core));
+                    let flow = only_flow(&output);
+                    let effects = flow
+                        .assignment_effects
+                        .iter()
+                        .filter_map(|(_, effect)| {
+                            (effect.statement == assignment).then_some(effect)
+                        })
+                        .collect::<Vec<_>>();
+                    let [effect] = effects.as_slice() else {
+                        panic!("one typed write effect");
+                    };
+                    let AssignmentEffectTarget::Local(local) = effect.target else {
+                        panic!("actual local destination");
+                    };
+                    assert_eq!(
+                        flow.locals.get(local).unwrap().binder.var,
+                        CoreVarId::new(target)
+                    );
+                    assert_eq!(
+                        effect.source,
+                        core.algorithm_statements().get(assignment).unwrap().source
+                    );
+                    let immutable = flow
+                        .diagnostics
+                        .iter()
+                        .filter_map(|(_, diagnostic)| {
+                            matches!(
+                                diagnostic.kind,
+                                ControlFlowDiagnosticKind::ImmutableAssignment { .. }
+                            )
+                            .then_some(diagnostic)
+                        })
+                        .collect::<Vec<_>>();
+                    assert_eq!(
+                        immutable.len(),
+                        usize::from(role == "local:const" || target != 2)
+                    );
+                    if let Some(diagnostic) = immutable.first() {
+                        assert_eq!(
+                            diagnostic.kind,
+                            ControlFlowDiagnosticKind::ImmutableAssignment {
+                                local,
+                                var: CoreVarId::new(target)
+                            }
+                        );
+                        assert_eq!(diagnostic.statement, Some(assignment));
+                    }
+                    let ghosts = flow
+                        .diagnostics
+                        .iter()
+                        .filter_map(|(_, diagnostic)| {
+                            matches!(
+                                diagnostic.kind,
+                                ControlFlowDiagnosticKind::GhostIsolationViolation { .. }
+                            )
+                            .then_some(diagnostic)
+                        })
+                        .collect::<Vec<_>>();
+                    assert_eq!(
+                        ghosts.len(),
+                        usize::from(ghost_rhs && !(target == 2 && target_ghost))
+                    );
+                    if let Some(diagnostic) = ghosts.first() {
+                        assert_eq!(diagnostic.statement, Some(assignment));
+                        assert_eq!(diagnostic.source, core.terms().get(value).unwrap().source);
+                    }
+                    corrupt.algorithms = core.algorithms().clone();
+                    corrupt
+                        .algorithm_statements
+                        .get_mut(assignment)
+                        .unwrap()
+                        .kind = CoreAlgorithmStmtKind::AssignLocal {
+                        target: CoreVarId::new(99),
+                        value,
+                    };
+                    assert!(matches!(
+                        CoreIr::try_new(corrupt),
+                        Err(CoreIrError::InvalidReference {
+                            table: "algorithm assignment binder",
+                            ..
+                        })
+                    ));
+                }
+            }
+        }
+    }
+
+    #[test]
+    fn typed_local_assignment_before_declaration_fails_closed() {
+        let mut fixture = CoreFixture::new();
+        let parameter = fixture.binder(0, "parameter", 1);
+        let value = fixture.term_var(0, 11);
+        let assignment = fixture.stmt(
+            CoreAlgorithmStmtKind::AssignLocal {
+                target: CoreVarId::new(1),
+                value,
+            },
+            12,
+        );
+        let declaration = fixture.stmt(
+            CoreAlgorithmStmtKind::Let {
+                binder: fixture.binder(1, "local:var", 20),
+                value: Some(value),
+                ghost: false,
+            },
+            22,
+        );
+        let core = fixture.finish(vec![parameter], None, vec![assignment, declaration]);
+        let output = build_control_flow_ir(&core);
+        let flow = only_flow(&output);
+        assert!(
+            flow.diagnostics
+                .iter()
+                .any(|(_, diagnostic)| diagnostic.statement == Some(assignment)
+                    && diagnostic.kind == ControlFlowDiagnosticKind::FlowDiagnostic)
+        );
+        assert!(
+            flow.assignment_effects
+                .iter()
+                .all(|(_, effect)| effect.statement != assignment)
+        );
     }
 
     #[test]

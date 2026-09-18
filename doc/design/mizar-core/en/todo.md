@@ -745,7 +745,7 @@ IR264. **Authenticated structure-property definition owner.** [x]
 51. **Snapshot and claim flow state.** [ ]
 52. **Contract, call, ghost, and termination CFG attachment.** [~]
 53. **Complete source-derived flow diagnostics.** [~]
-    - [Step 5C.14](../../task_contracts/en/STEP5C14-ALGORITHM-SEMANTICS.md) owns bounded header/local/return/break lowering, static break/ghost observations, and ensures metadata with return-site attachment; the complete families and CFG snapshot baseline remain deferred.
+    - [Step 5C.14](../../task_contracts/en/STEP5C14-ALGORITHM-SEMANTICS.md) owns bounded header/local/typed-assignment/assert/return/break lowering, static break/ghost/immutable-write observations, and contract placement; the complete families and CFG snapshot baseline remain deferred.
     - Tasks 48-53 are separate phase-10 tasks paired with `MT10-CFG-PV`.
       Task 48 adds `SnapshotKind::ControlFlowIr` only with its first real
       baseline. Concrete substitution/VCs, public-code invention, proof/artifact

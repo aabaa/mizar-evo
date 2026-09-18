@@ -256,11 +256,26 @@ pub fn check_source_algorithm_types<'a>(
         [ensures] if node(*ensures)?.kind() == &K::AlgorithmEnsuresClause => Some(*ensures),
         _ => return Err(invalid()),
     };
-    if ensures.is_some()
-        && (identifier(*binder)? == "result"
-            || !matches!(parts(*statements, &K::AlgorithmStatementList)?, [statement] if node(*statement)?.kind() == &K::ReturnStatement))
-    {
+    let body_statements = parts(*statements, &K::AlgorithmStatementList)?;
+    let contract_profile = ensures.is_some()
+        || body_statements
+            .iter()
+            .any(|statement| node(*statement).is_ok_and(|node| node.kind() == &K::AssertStatement));
+    if ensures.is_some() && identifier(*binder)? == "result" {
         return Err(invalid());
+    }
+    if contract_profile {
+        let Some((last, preceding)) = body_statements.split_last() else {
+            return Err(invalid());
+        };
+        if node(*last)?.kind() != &K::ReturnStatement
+            || preceding.iter().any(|statement| {
+                node(*statement)
+                    .is_ok_and(|node| matches!(node.kind(), K::ReturnStatement | K::BreakStatement))
+            })
+        {
+            return Err(invalid());
+        }
     }
     let algorithm_anchor = node(*algorithm)?.origin().anchor();
     let mut owners = symbols.symbols().iter().filter(|entry| {
@@ -308,42 +323,14 @@ pub fn check_source_algorithm_types<'a>(
         false,
     )];
     let mut formulas = Vec::new();
+    let mut equality_sites = Vec::new();
+    let mut assignment_targets = BTreeMap::new();
     let result_binding = if let Some(ensures) = ensures {
         let [ensures_kw, expression] = parts(ensures, &K::AlgorithmEnsuresClause)? else {
             return Err(invalid());
         };
         tokens(&[(*ensures_kw, "ensures")])?;
-        let equality = only(*expression, &K::FormulaExpression)?;
-        let [left, equals, right] = parts(equality, &K::BuiltinPredicateApplication)? else {
-            return Err(invalid());
-        };
-        tokens(&[(*equals, "=")])?;
-        let operands = [
-            only(*left, &K::TermExpression)?,
-            only(*right, &K::TermExpression)?,
-        ];
-        for term in operands {
-            uses.push((
-                term,
-                only(term, &K::TermReference)?,
-                ensures_context,
-                None,
-                false,
-            ));
-        }
-        formulas.push(
-            FormulaInput::new(
-                TypedSiteRef::Node(TypedNodeId::new(equality.index())),
-                ensures_context,
-                range(equality)?,
-                FormulaKind::Equality,
-            )
-            .with_terms(
-                operands
-                    .map(|id| TypedSiteRef::Node(TypedNodeId::new(id.index())))
-                    .to_vec(),
-            ),
-        );
+        equality_sites.push((*expression, ensures_context));
         Some(bindings.insert(BindingDraft {
             spelling: "result".into(),
             kind: BindingKind::Generated,
@@ -368,6 +355,7 @@ pub fn check_source_algorithm_types<'a>(
         match node(*statement)?.kind() {
             K::VariableDeclaration => {
                 let declaration = node(*statement)?.children();
+                let ghost = declaration.len() == 4;
                 let declaration = if let [ghost, rest @ ..] = declaration
                     && matches!(node(*ghost)?.kind(), K::Token(token) if token.text.as_ref() == "ghost")
                 {
@@ -379,7 +367,16 @@ pub fn check_source_algorithm_types<'a>(
                 let [var, binding, semi] = declaration else {
                     return Err(invalid());
                 };
-                tokens(&[(*var, "var"), (*semi, ";")])?;
+                let keyword = match node(*var)?.kind() {
+                    K::Token(token) if matches!(token.text.as_ref(), "var" | "const") => {
+                        token.text.as_ref()
+                    }
+                    _ => return Err(invalid()),
+                };
+                tokens(&[(*var, keyword), (*semi, ";")])?;
+                if ghost && keyword == "const" {
+                    return Err(invalid());
+                }
                 let [binder, assign, initializer] = parts(*binding, &K::VariableBinding)? else {
                     return Err(invalid());
                 };
@@ -407,6 +404,30 @@ pub fn check_source_algorithm_types<'a>(
                     false,
                 ));
             }
+            K::AssignmentStatement => {
+                let [target, assign, value, semi] = node(*statement)?.children() else {
+                    return Err(invalid());
+                };
+                tokens(&[(*assign, ":="), (*semi, ";")])?;
+                let target_token = only(*target, &K::Lvalue)?;
+                let term = only(*value, &K::TermExpression)?;
+                uses.push((*target, target_token, body_context, None, false));
+                uses.push((
+                    term,
+                    only(term, &K::TermReference)?,
+                    body_context,
+                    None,
+                    false,
+                ));
+                assignment_targets.insert(term, *target);
+            }
+            K::AssertStatement => {
+                let [assert, expression, semi] = node(*statement)?.children() else {
+                    return Err(invalid());
+                };
+                tokens(&[(*assert, "assert"), (*semi, ";")])?;
+                equality_sites.push((*expression, body_context));
+            }
             K::ReturnStatement => {
                 let [return_kw, value, semi] = node(*statement)?.children() else {
                     return Err(invalid());
@@ -430,6 +451,38 @@ pub fn check_source_algorithm_types<'a>(
             _ => return Err(invalid()),
         }
     }
+    for (expression, context) in equality_sites {
+        let equality = only(expression, &K::FormulaExpression)?;
+        let [left, equals, right] = parts(equality, &K::BuiltinPredicateApplication)? else {
+            return Err(invalid());
+        };
+        tokens(&[(*equals, "=")])?;
+        let operands = [
+            only(*left, &K::TermExpression)?,
+            only(*right, &K::TermExpression)?,
+        ];
+        for term in operands {
+            uses.push((term, only(term, &K::TermReference)?, context, None, false));
+        }
+        formulas.push(
+            FormulaInput::new(
+                TypedSiteRef::Node(TypedNodeId::new(equality.index())),
+                context,
+                range(equality)?,
+                FormulaKind::Equality,
+            )
+            .with_terms(
+                operands
+                    .map(|id| TypedSiteRef::Node(TypedNodeId::new(id.index())))
+                    .to_vec(),
+            ),
+        );
+    }
+    let mut uses = uses
+        .into_iter()
+        .map(|usage| Ok((range(usage.1)?.start, usage)))
+        .collect::<Result<Vec<_>, String>>()?;
+    uses.sort_by_key(|(ordinal, _)| *ordinal);
     let all_bindings = bindings
         .iter()
         .filter_map(|(id, entry)| (entry.kind != BindingKind::Generated).then_some(id))
@@ -502,7 +555,8 @@ pub fn check_source_algorithm_types<'a>(
         binding_types.insert(result, *return_type);
     }
     let mut terms = Vec::new();
-    for (term, token, context, initialized_binding, is_return) in uses {
+    let mut lvalue_types = BTreeMap::new();
+    for (_, (term, token, context, initialized_binding, is_return)) in uses {
         let scope = if context != body_context {
             &definition_scope
         } else {
@@ -542,6 +596,12 @@ pub fn check_source_algorithm_types<'a>(
         .with_result_type(type_input(ty, "algorithm.actual")?);
         if is_return {
             input = input.with_expected_type(type_input(*return_type, "algorithm.return")?);
+        } else if let Some(target) = assignment_targets.get(&term) {
+            let expected = *lvalue_types.get(target).ok_or_else(invalid)?;
+            input = input.with_expected_type(type_input(expected, "algorithm.assignment")?);
+        }
+        if node(term)?.kind() == &K::Lvalue {
+            lvalue_types.insert(term, ty);
         }
         terms.push(input);
         if let Some(local) = initialized_binding {
