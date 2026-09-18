@@ -113,7 +113,7 @@ pub(super) fn step5c11_proof_admitted(root: Option<&Path>, case: &TestCase) -> b
         && case.expectation.tags.as_slice() == [ACTIVE_PROOF_VERIFICATION_TAG]
 }
 
-const STEP5C14_VC_CASES: [(&str, &str, &str, &str, &str, &str); 2] = [
+const STEP5C14_VC_CASES: [(&str, &str, &str, &str, &str, &str); 3] = [
     (
         "pass_proof_verification_algorithm_ensures_return_001",
         "tests/miz/pass/algorithms/pass_proof_verification_algorithm_ensures_return_001.miz",
@@ -129,6 +129,14 @@ const STEP5C14_VC_CASES: [(&str, &str, &str, &str, &str, &str); 2] = [
         "spec.en.20.algorithms.state.var_const_assert",
         "spec.en.mizar_vc.vc_ir.algorithm_var_const_assert_snapshot",
         "snapshots/vc/pass_proof_verification_algorithm_var_const_assert_001.vc_ir.snap",
+    ),
+    (
+        "pass_proof_verification_claim_block_theorem_001",
+        "tests/miz/pass/algorithms/pass_proof_verification_claim_block_theorem_001.miz",
+        "algorithms.claim",
+        "spec.en.20.algorithms.claim.block",
+        "spec.en.mizar_vc.vc_ir.algorithm_void_claim_snapshot",
+        "snapshots/vc/pass_proof_verification_claim_block_theorem_001.vc_ir.snap",
     ),
 ];
 
@@ -160,6 +168,14 @@ pub(super) fn step5c14_return_admitted(root: Option<&Path>, case: &TestCase) -> 
                 })
         })
         && case.expectation.source == Path::new(source).file_name().unwrap()
+        && (domain != "algorithms.claim"
+            || case.expectation.schema_version == 1
+                && case.expectation.profiles.as_slice() == ["fast"]
+                && case.expectation.ast_profile.is_none()
+                && case.expectation.snapshot_profiles.is_empty()
+                && case.expectation.tokens.is_empty()
+                && case.expectation.origin.is_none()
+                && case.expectation.architecture22.is_none())
         && case.expectation.kind == crate::expectation::TestKind::Pass
         && case.expectation.stage == Stage::ProofVerification
         && case.expectation.domain == domain
@@ -282,6 +298,7 @@ pub(super) fn theorem_ast_output(
     symbols: &mizar_resolve::env::SymbolEnv,
     phase: PipelinePhase,
     snapshot: mizar_session::BuildSnapshotId,
+    algorithm: Option<&mizar_checker::type_checker::SourceAlgorithmCheck<'_>>,
 ) -> Result<
     (
         Vec<mizar_proof::policy::CandidatePolicyClass>,
@@ -330,7 +347,7 @@ pub(super) fn theorem_ast_output(
     let resolved =
         LabelResolver::new(labels.projections()).resolve(module, &namespace, labels.references());
     let checked = SourceVariableSemanticsChecker::check_theorem_skeletons(
-        &typed, &scope, symbols, &labels, &resolved,
+        &typed, &scope, symbols, &labels, &resolved, algorithm,
     )?;
     let policy = ProofPolicyEvaluator::new(VerifierPolicy::development());
     let mut classes = Vec::new();
@@ -361,8 +378,18 @@ pub(super) fn theorem_ast_output(
         PipelinePhase::VcGeneration if classes.is_empty() => {}
         _ => return Err("unsupported theorem phase/status".into()),
     }
-    let core = mizar_core::elaborator::lower_source_theorem_skeletons(&checked)?;
-    Ok((classes, Some(generate_core_vcs(&core, snapshot)?)))
+    let core = mizar_core::elaborator::lower_source_theorem_skeletons(&checked, algorithm)?;
+    let vcs = if algorithm.is_some() {
+        mizar_vc::generator::generate_source_void_claim(
+            &core,
+            snapshot,
+            &GenerationSchemaVersion::new("mizar-vc-generation-step5c14-claim-v1"),
+            &VcSchemaVersion::new("mizar-vc-vcset-step5c14-claim-v1"),
+        )?
+    } else {
+        generate_core_vcs(&core, snapshot)?
+    };
+    Ok((classes, Some(vcs)))
 }
 
 pub(super) fn generate_core_vcs(
@@ -689,14 +716,27 @@ pub(super) fn run_proof_verification_case(
             }
             // Snapshot identity is independent of the active corpus ordering.
             let build = || -> Result<VcSet, String> {
-                let (source, typed, symbols) = super::source_registration_inputs(
-                    workspace_root,
-                    case,
-                    run_frontend(workspace_root, case, 0)?,
-                )?;
+                let frontend = run_frontend(workspace_root, case, 0)?;
+                let claim = (case.expectation.domain == "algorithms.claim")
+                    .then(|| frontend.ast.clone())
+                    .flatten();
+                let (source, typed, symbols) =
+                    super::source_registration_inputs(workspace_root, case, frontend)?;
                 let checked = mizar_checker::type_checker::check_source_algorithm_types(
                     &source, &typed, &symbols,
                 )?;
+                if let Some(ast) = claim {
+                    return theorem_ast_output(
+                        &ast,
+                        source.module(),
+                        &symbols,
+                        PipelinePhase::VcGeneration,
+                        snapshot_id(0),
+                        Some(&checked),
+                    )?
+                    .1
+                    .ok_or_else(|| "claim theorem VC missing".into());
+                }
                 let core = mizar_core::elaborator::lower_source_algorithms(&checked)?;
                 let profile = if case.expectation.domain == "algorithms.state" {
                     "state"
@@ -816,6 +856,7 @@ pub(super) fn run_proof_verification_case(
                 &resolver.env,
                 phase,
                 snapshot_id(ordinal),
+                None,
             )?;
             match (phase, vcs) {
                 (PipelinePhase::VcGeneration, Some(vcs))
@@ -1204,6 +1245,7 @@ mod term_proof_tests {
                 &resolver.env,
                 phase,
                 snapshot_id(ordinal),
+                None,
             );
             if let Some(key) = key {
                 assert_eq!(result.unwrap_err(), key, "{id}");
@@ -1246,7 +1288,8 @@ mod term_proof_tests {
                             &resolver.module,
                             &resolver.env,
                             phase,
-                            snapshot_id(ordinal)
+                            snapshot_id(ordinal),
+                            None,
                         )
                         .unwrap()
                         .1,
@@ -1298,6 +1341,7 @@ mod term_proof_tests {
             &resolver.env,
             phase,
             snapshot_id(777),
+            None,
         )
     }
 
@@ -1497,6 +1541,7 @@ mod term_proof_tests {
                 &resolver.env,
                 &labels,
                 &genuine,
+                None,
             )
             .unwrap_err(),
             "theorems.reference.unknown_label"
@@ -1538,6 +1583,7 @@ mod term_proof_tests {
                 &resolver.env,
                 &labels,
                 &substituted,
+                None,
             )
             .unwrap_err(),
             "theorems.source.invalid"
@@ -1565,7 +1611,8 @@ mod term_proof_tests {
                 &resolver.module,
                 &resolver.env,
                 PipelinePhase::VcGeneration,
-                snapshot_id(777)
+                snapshot_id(777),
+                None,
             )
             .is_err()
         );

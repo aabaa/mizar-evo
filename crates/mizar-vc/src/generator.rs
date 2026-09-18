@@ -40,6 +40,351 @@ mod task180;
 
 pub use task180::{ExactTask180VcError, ExactTask180VcInput, generate_exact_task180_vc};
 
+/// Generates the open theorem obligation of an authenticated void-algorithm claim.
+pub fn generate_source_void_claim(
+    core: &mizar_core::core_ir::CoreIr,
+    snapshot: BuildSnapshotId,
+    generation_schema: &GenerationSchemaVersion,
+    vc_schema: &VcSchemaVersion,
+) -> Result<VcSet, String> {
+    use mizar_core::{
+        control_flow::{build_control_flow_ir, build_obligation_seed_handoff},
+        core_ir::{
+            CoreAlgorithmStmtKind, CoreContractSet, CoreFormulaKind, CoreItemKind, CoreItemStatus,
+            CoreProofNodeKind, CoreProofStatus, CoreProvenance, CoreProvenancePhase, CoreTermKind,
+        },
+    };
+    let invalid = || "algorithms.claim.unsupported_core".to_owned();
+    let range = |source: &CoreSourceRef| match source.anchor {
+        CoreSourceAnchor::SourceRange(range)
+            if range.source_id == core.source_id() && range.start < range.end =>
+        {
+            Ok(range)
+        }
+        _ => Err(invalid()),
+    };
+    let contains = |outer: SourceRange, inner: SourceRange| {
+        outer.start <= inner.start && inner.end <= outer.end
+    };
+    if core.items().len() != 2
+        || core.algorithms().len() != 1
+        || core.algorithm_statements().len() != 1
+        || core.proofs().len() != 1
+        || core.proof_nodes().len() != 2
+        || core.obligation_seeds().len() != 1
+        || core.terms().len() != 6
+        || core.formulas().len() != 5
+        || !core.definitions().is_empty()
+        || !core.generated().is_empty()
+        || !core.diagnostics().is_empty()
+    {
+        return Err(invalid());
+    }
+    let (algorithm_id, algorithm) = core.algorithms().iter().next().ok_or_else(invalid)?;
+    let algorithm_item = core.items().get(algorithm.item).ok_or_else(invalid)?;
+    let [statement_id] = algorithm.statements.as_slice() else {
+        return Err(invalid());
+    };
+    let statement = core
+        .algorithm_statements()
+        .get(*statement_id)
+        .ok_or_else(invalid)?;
+    let (proof_id, proof) = core.proofs().iter().next().ok_or_else(invalid)?;
+    let theorem = core.items().get(proof.item).ok_or_else(invalid)?;
+    let root = core.proof_nodes().get(proof.root).ok_or_else(invalid)?;
+    let CoreProofNodeKind::IntroduceBinder {
+        binder: local,
+        child,
+    } = &root.kind
+    else {
+        return Err(invalid());
+    };
+    let terminal = core.proof_nodes().get(*child).ok_or_else(invalid)?;
+    let CoreProofNodeKind::TerminalGoal {
+        obligation,
+        citations,
+    } = &terminal.kind
+    else {
+        return Err(invalid());
+    };
+    let seed = core
+        .obligation_seeds()
+        .get(*obligation)
+        .ok_or_else(invalid)?;
+    let proposition = core.formulas().get(proof.proposition).ok_or_else(invalid)?;
+    let CoreFormulaKind::Forall { binders, body } = &proposition.kind else {
+        return Err(invalid());
+    };
+    let [quantifier] = binders.as_slice() else {
+        return Err(invalid());
+    };
+    let guard = quantifier.ty_guard.ok_or_else(invalid)?;
+    let local_guard = local.ty_guard.ok_or_else(invalid)?;
+    let goal = seed.goal.ok_or_else(invalid)?;
+    if algorithm_item.kind != CoreItemKind::Algorithm
+        || algorithm_item.symbol != algorithm.symbol
+        || algorithm.symbol.module() != core.module_id()
+        || algorithm_item.status != CoreItemStatus::Valid
+        || algorithm_item.visibility.as_str() != "public"
+        || !algorithm_item.dependencies.is_empty()
+        || !algorithm_item.diagnostics.is_empty()
+        || !theorem.diagnostics.is_empty()
+        || !algorithm.params.is_empty()
+        || algorithm.result.is_some()
+        || algorithm.contracts != CoreContractSet::default()
+        || !algorithm.ghost_effects.is_empty()
+        || !algorithm.diagnostics.is_empty()
+        || statement.owner != algorithm_id
+        || statement.kind != CoreAlgorithmStmtKind::Return(None)
+        || !statement.diagnostics.is_empty()
+        || theorem.kind != CoreItemKind::Theorem
+        || theorem.status != CoreItemStatus::Valid
+        || theorem.visibility.as_str() != "public"
+        || theorem.symbol.module() != core.module_id()
+        || theorem.dependencies != [algorithm.item]
+        || proof.status != CoreProofStatus::PendingAutomaticProof
+        || proof.root == *child
+        || !root.diagnostics.is_empty()
+        || !terminal.diagnostics.is_empty()
+        || !citations.is_empty()
+        || seed.owner != proof.item
+        || seed.kind != ObligationSeedKind::TheoremProof
+        || seed.status != ObligationSeedStatus::Active
+        || seed.context != [local_guard]
+        || seed.label.is_some()
+        || !seed.diagnostics.is_empty()
+        || quantifier.var == local.var
+        || quantifier.role.as_str() != "quantifier"
+        || local.role.as_str() != "proof-let"
+        || quantifier.source_name.as_ref().is_none_or(String::is_empty)
+        || local.source_name.as_ref().is_none_or(String::is_empty)
+    {
+        return Err(invalid());
+    }
+    let key = format!("checker/theorem/{}", theorem.symbol.fqn().as_str());
+    let skeleton = format!("{key}/skeleton");
+    let checker =
+        |suffix: &str| CoreProvenance::new(CoreProvenancePhase::Checker, format!("{key}/{suffix}"));
+    let terminal_provenance = checker("skeleton/terminal");
+    let mut terminal_sources = vec![
+        terminal_provenance.clone(),
+        CoreProvenance::new(CoreProvenancePhase::ProofSkeleton, skeleton.clone()),
+    ];
+    terminal_sources.sort();
+    let mut theorem_sources = vec![
+        checker("owner"),
+        CoreProvenance::new(
+            CoreProvenancePhase::Resolver,
+            format!("resolver/theorem/{}", theorem.symbol.fqn().as_str()),
+        ),
+    ];
+    theorem_sources.sort();
+    if theorem.source.provenance != theorem_sources
+        || proof.source.provenance != [checker("skeleton/proof")]
+        || proposition.source.provenance != [checker("proposition")]
+        || quantifier.source.provenance != [checker("quantifier")]
+        || !local.source.provenance.is_empty()
+        || root.source.provenance != [checker("skeleton/let")]
+        || terminal.source.provenance != terminal_sources
+        || seed.source.provenance != terminal_sources
+        || seed.provenance != [terminal_provenance]
+        || !algorithm_item.source.provenance.is_empty()
+        || seed.local_path.as_str() != format!("proof/{}", theorem.symbol.fqn().as_str())
+        || seed.semantic_origin.as_str() != format!("{}.proof", theorem.symbol.fqn().as_str())
+    {
+        return Err(invalid());
+    }
+    for source in [&algorithm.source, &statement.source] {
+        let [provenance] = source.provenance.as_slice() else {
+            return Err(invalid());
+        };
+        if provenance.phase != CoreProvenancePhase::Checker
+            || !provenance
+                .key
+                .as_str()
+                .strip_prefix("algorithm/source-node#")
+                .is_some_and(|id| id.parse::<usize>().is_ok())
+        {
+            return Err(invalid());
+        }
+    }
+    let algorithm_range = range(&algorithm.source)?;
+    let claim_range = range(&seed.source)?;
+    let theorem_range = range(&theorem.source)?;
+    let quantifier_range = range(&quantifier.source)?;
+    let local_range = range(&local.source)?;
+    let terminal_range = range(&terminal.source)?;
+    let return_range = range(&statement.source)?;
+    if range(&algorithm_item.source)? != algorithm_range
+        || return_range.start <= algorithm_range.start
+        || return_range.end >= algorithm_range.end
+        || algorithm_range.end >= claim_range.start
+        || claim_range.start >= theorem_range.start
+        || theorem_range.end >= claim_range.end
+        || range(&proof.source)? != theorem_range
+        || range(&proposition.source)? != theorem_range
+        || !contains(theorem_range, quantifier_range)
+        || !contains(theorem_range, terminal_range)
+        || quantifier_range.end >= local_range.start
+        || local_range.end >= terminal_range.start
+        || range(&root.source)? != local_range
+    {
+        return Err(invalid());
+    }
+    let mut used_terms = BTreeSet::new();
+    let mut used_formulas = BTreeSet::from([proof.proposition]);
+    for (binder, equality_id, guard_id, suffix, outer) in [
+        (quantifier, *body, guard, "binder", theorem_range),
+        (local, goal, local_guard, "proof-let", terminal_range),
+    ] {
+        let equality = core.formulas().get(equality_id).ok_or_else(invalid)?;
+        let type_guard = core.formulas().get(guard_id).ok_or_else(invalid)?;
+        let CoreFormulaKind::Equals { left, right } = equality.kind else {
+            return Err(invalid());
+        };
+        let CoreFormulaKind::TypePred { subject, ref ty } = type_guard.kind else {
+            return Err(invalid());
+        };
+        let equality_range = range(&equality.source)?;
+        let binder_range = range(&binder.source)?;
+        let guard_range = range(&type_guard.source)?;
+        if !used_formulas.insert(equality_id)
+            || !used_formulas.insert(guard_id)
+            || ty.as_str() != "set"
+            || equality.source.provenance != [checker("equality")]
+            || type_guard.source.provenance != [checker(suffix)]
+            || !contains(outer, equality_range)
+            || !contains(binder_range, guard_range)
+            || (suffix == "binder"
+                && (equality_range.start <= quantifier_range.end
+                    || equality_range.end >= local_range.start))
+            || (suffix == "binder"
+                && (guard_range.start != quantifier_range.start
+                    || guard_range.end >= quantifier_range.end))
+            || (suffix == "proof-let" && guard_range != local_range)
+        {
+            return Err(invalid());
+        }
+        for (id, term_suffix, term_outer) in [
+            (left, "term", equality_range),
+            (right, "term", equality_range),
+            (subject, suffix, guard_range),
+        ] {
+            let term = core.terms().get(id).ok_or_else(invalid)?;
+            if !used_terms.insert(id)
+                || term.kind != CoreTermKind::Var(binder.var)
+                || term.source.provenance != [checker(term_suffix)]
+                || !contains(term_outer, range(&term.source)?)
+                || (id == subject && range(&term.source)? != guard_range)
+            {
+                return Err(invalid());
+            }
+        }
+        let left_range = range(&core.terms().get(left).ok_or_else(invalid)?.source)?;
+        let right_range = range(&core.terms().get(right).ok_or_else(invalid)?.source)?;
+        if equality_range.start != left_range.start
+            || equality_range.end != right_range.end
+            || (suffix == "proof-let"
+                && (equality_range.start <= outer.start || equality_range.end >= outer.end))
+            || left_range.end >= right_range.start
+        {
+            return Err(invalid());
+        }
+    }
+    let mut references = vec![
+        CoreNodeRef::Item(algorithm.item),
+        CoreNodeRef::Item(proof.item),
+        CoreNodeRef::Algorithm(algorithm_id),
+        CoreNodeRef::Proof(proof_id),
+        CoreNodeRef::ProofNode(*child),
+        CoreNodeRef::Formula(goal),
+        CoreNodeRef::Formula(local_guard),
+    ];
+    references.sort();
+    if seed.core_refs != references
+        || used_terms.len() != core.terms().len()
+        || used_formulas.len() != core.formulas().len()
+    {
+        return Err(invalid());
+    }
+    let flow = build_control_flow_ir(core);
+    let (flow_id, cfg) = flow.flows.iter().next().ok_or_else(invalid)?;
+    if flow.flows.len() != 1
+        || cfg.algorithm != algorithm_id
+        || cfg.item != algorithm.item
+        || !cfg.diagnostics.is_empty()
+    {
+        return Err(invalid());
+    }
+    let handoff = build_obligation_seed_handoff(core, &flow);
+    if handoff.entries.len() != 2 {
+        return Err(invalid());
+    }
+    for (_, entry) in handoff.entries.iter() {
+        match entry.origin {
+            ObligationHandoffOrigin::ExistingCore { seed: id }
+                if id == *obligation && entry.seed == *seed && entry.flow_site.is_none() => {}
+            ObligationHandoffOrigin::FlowDerived { flow, algorithm }
+                if flow == flow_id
+                    && algorithm == algorithm_id
+                    && entry.seed.kind == ObligationSeedKind::AlgorithmTermination
+                    && entry.seed.owner == cfg.item
+                    && entry.seed.status == ObligationSeedStatus::Deferred
+                    && entry.seed.goal.is_none()
+                    && entry.seed.context.is_empty()
+                    && entry.seed.diagnostics.is_empty()
+                    && entry.flow_site.as_ref().is_some_and(|site| {
+                        site.kind == ControlFlowObligationSiteKind::PartialTermination
+                    }) => {}
+            _ => return Err(invalid()),
+        }
+    }
+    let intake = SeedIntakeTable::try_from_handoff(&handoff).map_err(|error| error.to_string())?;
+    let package = core.module_id().package().as_str();
+    let path = core.module_id().path().as_str();
+    let module = VcModuleRef::new(format!(
+        "package={}:{};module={}:{}",
+        package.len(),
+        package,
+        path.len(),
+        path
+    ));
+    let candidates = CoreGenerationCandidateSet::try_from_seed_intake(CoreGenerationInput {
+        schema_version: generation_schema,
+        module: &module,
+        intake: &intake,
+        handoff: &handoff,
+        flow_output: Some(&flow),
+    })
+    .map_err(|error| error.to_string())?;
+    let raw = CoreGenerationCandidateSet::try_normalize(VcNormalizationInput {
+        schema_version: vc_schema,
+        snapshot,
+        source: core.source_id(),
+        candidates: &candidates,
+    })
+    .map_err(|error| error.to_string())?;
+    let [vc] = raw.vcs() else {
+        return Err(invalid());
+    };
+    let mut vc = vc.clone();
+    vc.source.related = vec![
+        algorithm.source.clone(),
+        theorem.source.clone(),
+        terminal.source.clone(),
+    ];
+    VcSet::try_new(VcSetParts {
+        schema_version: vc_schema.clone(),
+        snapshot,
+        source: core.source_id(),
+        module,
+        generated_formulas: Vec::new(),
+        vcs: vec![vc],
+        seed_accounting: raw.seed_accounting().to_vec(),
+    })
+    .map_err(|error| error.to_string())
+}
+
 /// Generates open return and assertion obligations for authenticated flat object-state algorithms.
 pub fn generate_source_algorithm_postconditions(
     core: &mizar_core::core_ir::CoreIr,

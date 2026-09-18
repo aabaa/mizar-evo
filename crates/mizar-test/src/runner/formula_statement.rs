@@ -512,6 +512,7 @@ fn formula_statement_detail_keys(
                 &resolver.env,
                 PipelinePhase::StatementCheck,
                 super::shared::snapshot_id(0),
+                None,
             )
             .map(|_| ())
         } else if is_step5c9_candidate(case) {

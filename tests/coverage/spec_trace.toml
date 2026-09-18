@@ -7083,6 +7083,20 @@ tests = [
 ]
 
 [[requirement]]
+id = "spec.en.mizar_vc.vc_ir.algorithm_void_claim_snapshot"
+source = "doc/design/mizar-vc/en/source_vc_decomposition.md"
+section = "VC Task 54; bounded void-algorithm claim VcIr snapshot"
+stage = "proof_verification"
+status = "covered"
+required = true
+coverage = "snapshot"
+notes = "Only the actual void-algorithm dependency, quantified claim theorem and open proof-local VC with complete seed accounting are covered; proof, execution and termination acceptance remain uncredited."
+tests = [
+  "tests/miz/pass/algorithms/pass_proof_verification_claim_block_theorem_001.expect.toml",
+]
+
+
+[[requirement]]
 id = "spec.en.mizar_vc.vc_ir.reduce_false_reducibility_snapshot"
 source = "doc/design/mizar-vc/en/source_vc_decomposition.md"
 section = "VC Task 39; bounded identity-singleton reduction VcIr snapshot"

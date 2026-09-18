@@ -4,12 +4,12 @@
 The reduction profile retains nested identity applications, a singleton or variable RHS, distinct definition/registration binders and the actual registration-owned `thus thesis` proof linked to its goal; its guard is bare set with no additional assumptions.
 Both uncited profiles retain registration identity in the item/path and omit a seed premise-label; the actual reducibility seed carries `vc-registration-style:reduction`, selecting the existing `RegistrationStyleCorrectness` / `Reduction` VC family.
 
-`lower_source_theorem_skeletons` consumes only the opaque checker `SourceTheoremCheck` and lowers
+`lower_source_theorem_skeletons` consumes opaque checker `SourceTheoremCheck` plus an optional `&SourceAlgorithmCheck` and lowers
 existing source owner/formula identities through Core item, formula and proof
 seeds. Source ranges, binder correspondence, citation targets and obligation
 provenance are preserved. This lowering admits only unmodified proof-bearing
 owners; open/assumed registration stays in checker/policy. This seam admits no resolver
-environment/Visibility and does not extend the Task-31 exception or generic checked-proof installation.
+environment/Visibility and does not extend the Task-31 exception or generic checked-proof installation. Seal matching preserves the checker-owned variable/equality kind mapping and optional resolved-link convention, with exact node identity, children, anchors and recovery. With matching seals it lowers the exact void algorithm and claim theorem in one Core context: theorem item dependencies and seed CoreNodeRefs retain the actual algorithm, the obligation source anchors the claim wrapper, and theorem/proof rows retain their own sources and quantified proposition. No seal admits no claim wrapper; no empty execution tuple or target is invented.
 
 `normalize_source_membership_proof` consumes only the checked borrowed source transaction.
 It reconciles proof-local bindings and discharges enumeration membership or identity-mapper

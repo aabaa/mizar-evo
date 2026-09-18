@@ -3,14 +3,14 @@
 `check_source_dependent_mode_types` implements the [bounded dependent-mode owner](./source_mode_definition.md#step-5c4-mode-semantics) using existing binding, declaration and inference tables.
 
 `SourceVariableSemanticsChecker::check_theorem_skeletons` consumes the existing typed
-arena, occurrence scope, symbols and sealed label inputs, returning an opaque borrowed
+arena, occurrence scope, symbols, sealed label inputs and an optional `&SourceAlgorithmCheck`, returning an opaque borrowed
 `SourceTheoremCheck`. It authenticates theorem/lemma role and status,
 builtin universal/equality shapes, ordered generalization, pending conclusions and
 module-local citation provenance. Skeleton errors remain distinct from malformed inputs.
 The seal exposes `Vec<(SourceTheoremOwnerInput, &'static str)>` by shared slice:
 visibility is checker-projected `"public"`/`"private"`; unsupported visibility fails closed.
 Read-only typed/scope/label receipts accompany it, never SymbolEnv or resolver Visibility.
-This bridge does not trust proofs.
+With no algorithm seal, only the existing top-level theorem/lemma profile is admitted. Projection matching preserves node identity, children, anchors and recovery; only receipt-owned variable-reference and actual equality nodes may use their existing semantic kind tags, and an optional resolved link must match the neutral node. The optional seal admits one unmodified set-equality theorem inside the matching later void-algorithm claim, after complete source-projection, target, wrapper and proof authentication; it adds no trusted proof or execution fact.
 
 `SourceVariableSemanticsChecker::check_proof_organization` takes the same inputs as
 `check_formula_statements` and returns `Result<bool, String>` after bounded builtin typing,
@@ -3176,4 +3176,4 @@ Neither profile admits attributed/inherited/imported targets, synthetic accepted
 
 ## Static source algorithm checking
 
-`check_source_algorithm_types(&SurfaceResolvedArena, &TypedArena, &SymbolEnv)` returns opaque borrowed `SourceAlgorithmCheck` after complete source/environment/neutral-typed and algorithm-owner authentication. Existing BindingEnv and term/formula inference preserve the object parameter, sequential initialized var/const/ghost-var bindings, declaration/use identity, inferred types and expected return type. The flat contract profile additionally admits direct-variable assignment, equality assertions and a final return; destination references carry actual BindingIds without reading their values, and result is visible only in optional equality ensures. Declaration ordinals govern shadowing and forward references; formula ownership distinguishes assertions from ensures without assuming either. The seal exposes immutable typed/binding/inference/owner data, never raw resolver authority. Dotted destinations, annotations, justifications, other contracts, nested control flow, snapshots/claim, calls and literals remain unsupported; no proof, totality or registration approval follows.
+`check_source_algorithm_types(&SurfaceResolvedArena, &TypedArena, &SymbolEnv)` returns opaque borrowed `SourceAlgorithmCheck` after complete source/environment/neutral-typed and algorithm-owner authentication. Existing BindingEnv and term/formula inference preserve the object parameter, sequential initialized var/const/ghost-var bindings, declaration/use identity, inferred types and expected return type. The flat contract profile additionally admits direct-variable assignment, equality assertions and a final return; destination references carry actual BindingIds without reading their values, and result is visible only in optional equality ensures. Declaration ordinals govern shadowing and forward references; formula ownership distinguishes assertions from ensures without assuming either. The seal exposes immutable typed/binding/inference/owner data, never raw resolver authority. Dotted destinations, annotations, justifications, other contracts, nested control flow, snapshots, calls and literals remain unsupported. A separate empty-interface profile authenticates an earlier zero-parameter void algorithm with bare return and the later claim target through the actual local algorithm symbol; its empty binding/inference tables describe only that algorithm. The nested theorem remains owned by `check_theorem_skeletons`; no proof, totality or registration approval follows.

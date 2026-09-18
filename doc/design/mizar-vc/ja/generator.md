@@ -555,3 +555,7 @@ exhaustive match を壊さず追加できるよう、各 enum は `#[non_exhaust
 ## Bounded source return postconditions
 
 `generate_source_algorithm_postconditions(&CoreIr, BuildSnapshotId, &GenerationSchemaVersion, &VcSchemaVersion) -> Result<VcSet, String>` は object 仮引数一つの平坦な profile を検証し、CFG/handoff と既存 intake/normalization を導出する。不変の単一 return は既存 Core 項等式を保持する。初期化 var/const・型付き局所書込み・等式 assert は認証済み program-value 世代を使用し、書込み前に RHS を評価し、古い事実と独立記憶領域を保持して新しい等式・型ガードを追加する。assertion 目標は直前の文脈を使用し、後続には同じ目標を assertion handoff への未証明依存としてのみ渡す。return は現在値で result を置換する。未加工の正規化文脈は非公開とし、ソース・所有者・map・由来・書込み順序・依存リンクを原子的に検証する。assert と ensures は open VC、終了メタデータは元の status の NoConcreteVc とし、obligation がなければ完全なゼロ VC を返す。未対応制御、VC profile 内の ghost、不正・診断付き入力を拒否する。anchor と未解決依存は再利用不可に留め、discharge・承認・terminating 昇格を行わない。
+
+## Bounded void-claim generation
+
+`generate_source_void_claim(&CoreIr, BuildSnapshotId, &GenerationSchemaVersion, &VcSchemaVersion) -> Result<VcSet, String>` は先行する仮引数なし void algorithm の bare return、claim を source とする theorem seed、型付き algorithm 依存、実際の全称命題と proof-local 汎化・目標を認証する。空 interface は実行変数 binder や状態前提を追加しない。新鮮な CFG/handoff と既存 intake/normalization により open theorem-proof VC 一つと正直な終了メタデータ accounting を生成する。VC は ExistingCore seed 依存と theorem・terminal・algorithm の関連 source を保持し、所有者不整合、wrapper・依存の欠落、空でない実行 interface、不完全な source/map を拒否する。実行・定理受理・再利用適格性・Task274 証拠を推測せず、状態・snapshot claim は保留する。

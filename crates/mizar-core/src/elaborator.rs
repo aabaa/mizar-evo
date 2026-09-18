@@ -15357,6 +15357,7 @@ pub fn lower_source_algorithms(
 /// Lowers the authenticated bounded source theorem/lemma skeleton profile.
 pub fn lower_source_theorem_skeletons(
     check: &mizar_checker::type_checker::SourceTheoremCheck<'_>,
+    algorithm: Option<&mizar_checker::type_checker::SourceAlgorithmCheck<'_>>,
 ) -> Result<CoreIr, String> {
     let typed = check.typed_ast();
     let scope = check.scope();
@@ -15391,6 +15392,74 @@ pub fn lower_source_theorem_skeletons(
                 .collect(),
         )
     };
+    let primary = typed.source_term().ok_or_else(invalid)?;
+    let atomic = typed.source_atomic_formula().ok_or_else(invalid)?;
+    let claims = typed
+        .nodes()
+        .iter()
+        .filter_map(|(id, node)| (node.kind.as_str() == "ClaimBlockItem").then_some(id))
+        .collect::<Vec<_>>();
+    let claim = if let Some(algorithm) = algorithm {
+        if algorithm.bindings().source_id() != typed.source_id()
+            || algorithm.bindings().module_id() != typed.module_id()
+            || !algorithm.bindings().bindings().is_empty()
+            || algorithm.typed().root() != typed.nodes().root()
+            || algorithm.typed().len() != typed.nodes().len()
+            || algorithm.typed().iter().any(|(id, source)| {
+                typed.nodes().node(id).is_none_or(|node| {
+                    let owned_kind = match (source.kind.as_str(), node.kind.as_str()) {
+                        ("TermReference", "source.term.variable-reference") => {
+                            primary.terms().iter().any(|(term_id, term)| {
+                                term.site().node() == id
+                                    && primary.references().iter().any(|(_, reference)| {
+                                        reference.term() == term_id
+                                    })
+                            })
+                        }
+                        ("BuiltinPredicateApplication", "source.formula.atomic.equality") => {
+                            let operator = match source.children.as_slice() {
+                                [_, operator, _] => algorithm.typed().node(*operator),
+                                _ => None,
+                            };
+                            atomic.formulas().iter().any(|(_, formula)| {
+                                formula.site().node() == id
+                                    && formula.kind() == mizar_checker::source_atomic_formula::SourceAtomicFormulaKind::Equality
+                            }) && operator.is_some_and(|token| {
+                                token.kind.as_str()
+                                    == r#"Token(SurfaceToken { kind: ReservedSymbol, text: "=" })"#
+                            })
+                        }
+                        _ => node.kind == source.kind,
+                    };
+                    !owned_kind
+                        || node.resolved_node.is_some_and(|resolved| {
+                            Some(resolved) != source.resolved_node
+                        })
+                        || node.anchor != source.anchor
+                        || node.children != source.children
+                        || node.recovery != source.recovery
+                })
+            })
+        {
+            return Err(invalid());
+        }
+        let [claim] = claims.as_slice() else {
+            return Err(invalid());
+        };
+        let nested = children(*claim).ok_or_else(invalid)?;
+        let [theorem] = nested.as_slice() else {
+            return Err(invalid());
+        };
+        if owners.len() != 1 || range(*theorem) != Some(owners[0].0.source_range) {
+            return Err(invalid());
+        }
+        Some(*claim)
+    } else {
+        if !claims.is_empty() {
+            return Err(invalid());
+        }
+        None
+    };
     let unwrap = |mut id: TypedNodeId| -> Option<TypedNodeId> {
         while matches!(kind(id), Some("Proposition" | "FormulaExpression")) {
             let nested = children(id)?;
@@ -15404,8 +15473,6 @@ pub fn lower_source_theorem_skeletons(
     let contains = |outer: SourceRange, inner: SourceRange| {
         outer.source_id == inner.source_id && outer.start <= inner.start && outer.end >= inner.end
     };
-    let primary = typed.source_term().ok_or_else(invalid)?;
-    let atomic = typed.source_atomic_formula().ok_or_else(invalid)?;
     let binding_for_target =
         |target: mizar_checker::source_atomic_formula::SourceAtomicTermTarget| {
             let mizar_checker::source_atomic_formula::SourceAtomicTermTarget::Primary(term) =
@@ -15683,6 +15750,22 @@ pub fn lower_source_theorem_skeletons(
         typed.source_id(),
         typed.module_id().clone(),
     ));
+    let algorithm_provenance = |node: TypedNodeId| {
+        CheckerOwnedProvenance::checker(format!("algorithm/source-node#{}", node.index()))
+    };
+    if let Some(algorithm) = algorithm {
+        let (node, symbol) = algorithm.algorithm();
+        context_input.item_seeds.push(
+            CoreItemSeed::new(
+                symbol.clone(),
+                CoreItemKind::Algorithm,
+                "public",
+                CoreSourceRef::direct(range(*node).ok_or_else(invalid)?),
+                algorithm_provenance(*node),
+            )
+            .with_definition_boundary(DefinitionBoundaryKind::Algorithm),
+        );
+    }
     for (owner, _, proof) in &owner_records {
         let (item_kind, boundary) = match owner.role {
             SourceTheoremRole::Theorem => (CoreItemKind::Theorem, DefinitionBoundaryKind::Theorem),
@@ -15695,11 +15778,14 @@ pub fn lower_source_theorem_skeletons(
                 (candidate.symbol == owner.symbol).then_some(*visibility)
             })
             .ok_or_else(invalid)?;
-        let dependencies = proof
+        let mut dependencies = proof
             .4
             .as_ref()
             .map(|(symbol, _)| vec![symbol.clone()])
             .unwrap_or_default();
+        if let Some(algorithm) = algorithm {
+            dependencies.push(algorithm.algorithm().1.clone());
+        }
         let provenance = CheckerOwnedProvenance::try_new(vec![
             CoreProvenance::new(
                 CoreProvenancePhase::Resolver,
@@ -15841,7 +15927,7 @@ pub fn lower_source_theorem_skeletons(
             provenance: CheckerOwnedProvenance::checker(format!("{skeleton_key}/proof")),
         });
     }
-    let proofs = lower_proof_inputs(
+    let mut proofs = lower_proof_inputs(
         &context,
         &term_formula,
         &definitions,
@@ -15850,6 +15936,65 @@ pub fn lower_source_theorem_skeletons(
         },
     )
     .map_err(|error| error.to_string())?;
+    let mut algorithm_input = AlgorithmLoweringInput::new();
+    if let Some(algorithm) = algorithm {
+        let (node, symbol) = algorithm.algorithm();
+        let owner = context
+            .item_registry()
+            .id_for_symbol(symbol)
+            .ok_or_else(invalid)?;
+        let nested = children(*node).ok_or_else(invalid)?;
+        let [_, body] = nested.as_slice() else {
+            return Err(invalid());
+        };
+        let body_children = children(*body).ok_or_else(invalid)?;
+        let [statements] = body_children.as_slice() else {
+            return Err(invalid());
+        };
+        let statement_children = children(*statements).ok_or_else(invalid)?;
+        let [statement] = statement_children.as_slice() else {
+            return Err(invalid());
+        };
+        algorithm_input.algorithms.push(AlgorithmSeed {
+            owner,
+            symbol: symbol.clone(),
+            params: Vec::new(),
+            result: None,
+            contracts: CoreContractSet::default(),
+            payload: AlgorithmPayloadSeed::Statements(vec![AlgorithmStmtSeed::Return {
+                value: None,
+                source: CoreSourceRef::direct(range(*statement).ok_or_else(invalid)?),
+                provenance: algorithm_provenance(*statement),
+            }]),
+            ghost_effects: Vec::new(),
+            source: CoreSourceRef::direct(range(*node).ok_or_else(invalid)?),
+            provenance: algorithm_provenance(*node),
+        });
+    }
+    let mut algorithms = lower_algorithm_inputs(&context, &term_formula, &proofs, algorithm_input)
+        .map_err(|error| error.to_string())?;
+    if let Some(claim) = claim {
+        let algorithm_rows = algorithms.algorithms.iter().collect::<Vec<_>>();
+        let [(algorithm_id, algorithm)] = algorithm_rows.as_slice() else {
+            return Err(invalid());
+        };
+        if proofs.obligation_seeds.len() != 1 {
+            return Err(invalid());
+        }
+        for (id, seed) in proofs.obligation_seeds.iter_mut() {
+            seed.core_refs.extend([
+                CoreNodeRef::Item(algorithm.item),
+                CoreNodeRef::Algorithm(*algorithm_id),
+            ]);
+            seed.core_refs.sort();
+            seed.core_refs.dedup();
+            seed.source.anchor = CoreSourceAnchor::SourceRange(range(claim).ok_or_else(invalid)?);
+            algorithms
+                .source_map
+                .obligation_sources
+                .insert(id, seed.source.clone());
+        }
+    }
     CoreIr::try_new(CoreIrParts {
         source_id: context.source_id(),
         module_id: context.module_id().clone(),
@@ -15859,12 +16004,12 @@ pub fn lower_source_theorem_skeletons(
         definitions: definitions.definitions,
         proofs: proofs.proofs,
         proof_nodes: proofs.proof_nodes,
-        algorithms: CoreAlgorithmTable::new(),
-        algorithm_statements: CoreAlgorithmStmtTable::new(),
+        algorithms: algorithms.algorithms,
+        algorithm_statements: algorithms.algorithm_statements,
         generated: term_formula.generated,
         obligation_seeds: proofs.obligation_seeds,
-        source_map: proofs.source_map,
-        diagnostics: proofs.diagnostics,
+        source_map: algorithms.source_map,
+        diagnostics: algorithms.diagnostics,
     })
     .map_err(|error| error.to_string())
 }

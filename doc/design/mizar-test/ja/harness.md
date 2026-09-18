@@ -5728,3 +5728,7 @@ algorithm の break-outside-loop と ghost-isolation の厳密な行は type_ela
 ## Algorithm return-contract admission
 
 厳密な ensures-return と var-const-assert の algorithm 行だけを proof_verification/vc_generation で受理し、既存 outcome/domain、唯一の active tag、元の意味 spec ref と対応する限定 snapshot ref を要求する。状態行は `spec.en.mizar_vc.vc_ir.algorithm_var_const_assert_snapshot` と `snapshots/vc/pass_proof_verification_algorithm_var_const_assert_001.vc_ir.snap` を要求し、return 行は既存の厳密な ref/path を維持する。ID、ソース・sidecar パスと矛盾する payload を封印 checker/Core/VC 処理前に認証し、VcSet 全体と完全 debug baseline を決定的に比較する。メモリ上の契約なし対照は追加 active 行なしで `snapshots/vc/step5c14_algorithm_no_ensures.vc_ir.snap` と `snapshots/vc/step5c14_algorithm_state_no_contract.vc_ir.snap` を所有する。静的観測は別のゼロ VC 経路を維持し、別 stage、不正入力、未対応ソースに pass 実績を与えない。
+
+## Void-claim admission
+
+`pass_proof_verification_claim_block_theorem_001` だけを proof_verification/vc_generation に追加し、既存 algorithms.claim domain/pass 結果、唯一の active tag、元の `spec.en.20.algorithms.claim.block` に続く `spec.en.mizar_vc.vc_ir.algorithm_void_claim_snapshot`、厳密な `snapshots/vc/pass_proof_verification_claim_block_theorem_001.vc_ir.snap` を要求する。admission と snapshot scope 検証は ID・source/sidecar path・ref 順序・矛盾 payload の不在を認証し、別名と他 stage を拒否する。実 checker seal、統一 Core の theorem/algorithm 依存、VC 生成の成功を要求し、Core/CFG/VcSet 全体の再実行と完全 VC debug baseline で wrapper・target・全称命題・proof-local 目標・accounting 2行を保持する。通常 theorem への迂回、名前による近道、証明受理、追加 active 行を許さず、既存 static/return/state 経路を維持する。

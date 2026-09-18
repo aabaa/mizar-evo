@@ -2840,7 +2840,7 @@ fn step5c14_return_admission_requires_exact_snapshot_trace_and_stage() {
     use crate::staged_model::Stage;
     let config = step5c11_config();
     let plan = build_test_plan(&config).unwrap();
-    for original in [step5c14_return_case(), step5c14_state_case()] {
+    for original in [step5c14_return_case(), step5c14_state_case(), step5c14_claim_case()] {
         assert!(super::proof_verification::step5c14_return_admitted(
             Some(&config.workspace_root),
             &original
@@ -6401,4 +6401,957 @@ fn step5c11_reduce_runner_requires_the_complete_committed_baseline() {
     assert_eq!(corrupt.status, super::ProofVerificationCaseStatus::Failed);
     assert!(corrupt.failure.unwrap().contains("snapshot differed"));
     std::fs::remove_dir_all(root).unwrap();
+}
+
+fn step5c14_claim_case() -> crate::harness::TestCase {
+    build_test_plan(&step5c11_config())
+        .unwrap()
+        .cases
+        .into_iter()
+        .find(|case| case.id.0 == "pass_proof_verification_claim_block_theorem_001")
+        .unwrap()
+}
+
+fn step5c14_claim_core(
+    case: &crate::harness::TestCase,
+    text: &str,
+) -> Result<mizar_core::core_ir::CoreIr, String> {
+    use mizar_checker::type_checker::SourceVariableSemanticsChecker;
+    use mizar_resolve::{
+        labels::{LabelResolver, ProofLabelSourceCollector},
+        names::{SourceVariableScopeInput, SourceVariableScopeResolver},
+    };
+    let frontend = super::formula_statement::step5c8_test_frontend(text);
+    let ast = frontend.ast.clone().ok_or("missing AST")?;
+    let (source, nodes, symbols) =
+        super::source_registration_inputs(&step5c11_config().workspace_root, case, frontend)?;
+    let algorithm =
+        mizar_checker::type_checker::check_source_algorithm_types(&source, &nodes, &symbols)?;
+    let scope = SourceVariableScopeResolver::resolve_proof_occurrences(
+        SourceVariableScopeInput::new(&ast, source.module(), &symbols),
+    )
+    .map_err(|error| format!("scope: {error:?}"))?;
+    let bindings = SourceVariableSemanticsChecker::occurrence_binding_env(&scope);
+    let typed = super::type_elaboration::step5c8_formula_typed_ast(
+        &ast,
+        source.module(),
+        &symbols,
+        &scope,
+        &bindings,
+        true,
+    )?;
+    let owner = symbols
+        .symbols()
+        .iter()
+        .find(|entry| entry.kind() == mizar_resolve::env::SymbolKind::Theorem)
+        .ok_or("theorem missing")?;
+    let namespace = mizar_resolve::env::NamespacePath::new(source.module().path().as_str());
+    let labels = ProofLabelSourceCollector::new(
+        &ast,
+        source.module(),
+        namespace.clone(),
+        owner.contribution(),
+        &source,
+    )
+    .and_then(|collector| collector.collect_with_theorem_owners(&symbols))
+    .map_err(|error| error.to_string())?;
+    let resolved = LabelResolver::new(labels.projections()).resolve(
+        source.module(),
+        &namespace,
+        labels.references(),
+    );
+    let checked = SourceVariableSemanticsChecker::check_theorem_skeletons(
+        &typed,
+        &scope,
+        &symbols,
+        &labels,
+        &resolved,
+        Some(&algorithm),
+    )?;
+    assert!(
+        SourceVariableSemanticsChecker::check_theorem_skeletons(
+            &typed, &scope, &symbols, &labels, &resolved, None
+        )
+        .is_err()
+    );
+    assert!(mizar_core::elaborator::lower_source_theorem_skeletons(&checked, None).is_err());
+    mizar_core::elaborator::lower_source_theorem_skeletons(&checked, Some(&algorithm))
+}
+
+fn step5c14_claim_vcs(
+    core: &mizar_core::core_ir::CoreIr,
+) -> Result<mizar_vc::vc_ir::VcSet, String> {
+    mizar_vc::generator::generate_source_void_claim(
+        core,
+        super::shared::snapshot_id(0),
+        &mizar_vc::vc_ir::GenerationSchemaVersion::new("mizar-vc-generation-step5c14-claim-v1"),
+        &mizar_vc::vc_ir::VcSchemaVersion::new("mizar-vc-vcset-step5c14-claim-v1"),
+    )
+}
+
+#[test]
+fn step5c14_claim_retains_target_quantification_local_goal_and_handoff() {
+    use mizar_core::control_flow::{
+        ControlFlowObligationSiteKind, ObligationHandoffOrigin, build_control_flow_ir,
+        build_obligation_seed_handoff,
+    };
+    use mizar_core::core_ir::{
+        CoreFormulaKind as F, CoreNodeRef as R, CoreProofNodeKind as P, CoreTermKind as T,
+    };
+    use mizar_vc::vc_ir::{ContextEntryKind, SeedVcMapping, VcFormulaRef, VcStatus};
+    let case = step5c14_claim_case();
+    let text = std::fs::read_to_string(&case.source_path).unwrap();
+    for (source, expected_algorithm) in [
+        (text.clone(), "Cl1"),
+        (
+            text.replace("Cl1", "EmptyRun")
+                .replace("CT1", "ReflexiveClaim")
+                .replace("X", "Y"),
+            "EmptyRun",
+        ),
+        (
+            text.replace(
+                "let X be set;\n    thus X = X",
+                "let Z be set;\n    thus Z = Z",
+            ),
+            "Cl1",
+        ),
+    ] {
+        let core = step5c14_claim_core(&case, &source).unwrap();
+        let replay = step5c14_claim_core(&case, &source).unwrap();
+        assert_eq!(core, replay);
+        let (algorithm_id, algorithm) = core.algorithms().iter().next().unwrap();
+        let (_, proof) = core.proofs().iter().next().unwrap();
+        let item = core.items().get(proof.item).unwrap();
+        let ast = super::formula_statement::step5c8_test_frontend(&source)
+            .ast
+            .unwrap();
+        let resolver =
+            super::resolver_symbol_collection(&step5c11_config().workspace_root, &case, &ast);
+        let expected_symbol = resolver
+            .env
+            .symbols()
+            .iter()
+            .find(|entry| {
+                entry.kind() == mizar_resolve::env::SymbolKind::Algorithm
+                    && entry.primary_spelling() == expected_algorithm
+            })
+            .unwrap();
+        assert_eq!(&algorithm.symbol, expected_symbol.symbol());
+        assert_eq!(item.dependencies, [algorithm.item]);
+        let F::Forall { binders, body } = &core.formulas().get(proof.proposition).unwrap().kind
+        else {
+            panic!("actual universal theorem")
+        };
+        let P::IntroduceBinder { binder, child } =
+            &core.proof_nodes().get(proof.root).unwrap().kind
+        else {
+            panic!("actual proof let")
+        };
+        assert_eq!(binders.len(), 1);
+        assert_ne!(binders[0].var, binder.var);
+        let P::TerminalGoal {
+            obligation,
+            citations,
+        } = &core.proof_nodes().get(*child).unwrap().kind
+        else {
+            panic!("actual terminal")
+        };
+        assert!(citations.is_empty());
+        let seed = core.obligation_seeds().get(*obligation).unwrap();
+        assert!(seed.core_refs.contains(&R::Item(algorithm.item)));
+        assert!(seed.core_refs.contains(&R::Algorithm(algorithm_id)));
+        assert_eq!(seed.context, [binder.ty_guard.unwrap()]);
+        assert!(seed.label.is_none());
+        for (formula, variable, guard) in [
+            (*body, binders[0].var, binders[0].ty_guard.unwrap()),
+            (seed.goal.unwrap(), binder.var, binder.ty_guard.unwrap()),
+        ] {
+            let F::Equals { left, right } = core.formulas().get(formula).unwrap().kind else {
+                panic!("written equality")
+            };
+            assert_ne!(left, right);
+            for term in [left, right] {
+                assert_eq!(core.terms().get(term).unwrap().kind, T::Var(variable));
+            }
+            let F::TypePred { subject, ref ty } = core.formulas().get(guard).unwrap().kind else {
+                panic!("set guard")
+            };
+            assert_eq!(ty.as_str(), "set");
+            assert_eq!(core.terms().get(subject).unwrap().kind, T::Var(variable));
+        }
+        let mizar_core::core_ir::CoreSourceAnchor::SourceRange(claim_range) = seed.source.anchor
+        else {
+            panic!("source range")
+        };
+        assert!(source[claim_range.start..claim_range.end].starts_with("claim "));
+        let flow = build_control_flow_ir(&core);
+        assert_eq!(flow, build_control_flow_ir(&replay));
+        let handoff = build_obligation_seed_handoff(&core, &flow);
+        let vcs = step5c14_claim_vcs(&core).unwrap();
+        assert_eq!(vcs, step5c14_claim_vcs(&replay).unwrap());
+        assert_eq!(
+            vcs.debug_text(),
+            step5c14_claim_vcs(&replay).unwrap().debug_text()
+        );
+        assert_eq!(vcs.vcs().len(), 1);
+        assert_eq!(vcs.seed_accounting().len(), 2);
+        assert!(vcs.generated_formulas().is_empty());
+        let vc = &vcs.vcs()[0];
+        assert_eq!(vc.status, VcStatus::Open);
+        assert_eq!(vc.goal, VcFormulaRef::Core(seed.goal.unwrap()));
+        assert_eq!(vc.source.primary, seed.source);
+        assert_eq!(
+            vc.source.related,
+            [
+                algorithm.source.clone(),
+                item.source.clone(),
+                core.proof_nodes().get(*child).unwrap().source.clone()
+            ]
+        );
+        assert_eq!(vc.local_context.entries().len(), 1);
+        assert_eq!(
+            vc.local_context.entries()[0].kind,
+            ContextEntryKind::ProofAssumption
+        );
+        assert_eq!(
+            vc.local_context.entries()[0].formula,
+            Some(VcFormulaRef::Core(binder.ty_guard.unwrap()))
+        );
+        assert_eq!(
+            vc.premises,
+            [mizar_vc::vc_ir::PremiseRef::LocalContext(
+                vc.local_context.entries()[0].id
+            )]
+        );
+        assert!(vc.proof_hint.is_none());
+        for row in vcs.seed_accounting() {
+            let entry = handoff.entries.get(row.handoff).unwrap();
+            match entry.origin {
+                ObligationHandoffOrigin::ExistingCore { seed: id } => {
+                    assert_eq!(id, *obligation);
+                    assert_eq!(row.mapping, SeedVcMapping::One { vc: vc.id });
+                    assert_eq!(
+                        row.seed_status,
+                        mizar_core::core_ir::ObligationSeedStatus::Active
+                    );
+                }
+                ObligationHandoffOrigin::FlowDerived { algorithm, .. } => {
+                    assert_eq!(algorithm, algorithm_id);
+                    assert_eq!(
+                        entry.flow_site.as_ref().unwrap().kind,
+                        ControlFlowObligationSiteKind::PartialTermination
+                    );
+                    assert_eq!(
+                        row.seed_status,
+                        mizar_core::core_ir::ObligationSeedStatus::Deferred
+                    );
+                    assert!(matches!(row.mapping, SeedVcMapping::NoConcreteVc { .. }));
+                }
+                _ => panic!("unexpected origin"),
+            }
+        }
+    }
+}
+
+#[test]
+fn step5c14_claim_rejects_unsupported_source_without_partial_output() {
+    let case = step5c14_claim_case();
+    let source = std::fs::read_to_string(&case.source_path).unwrap();
+    for (from, to) in [
+        ("claim Cl1", "claim Missing"),
+        ("claim Cl1", "claim CT1"),
+        ("algorithm Cl1()", "algorithm Cl1(X)"),
+        ("algorithm Cl1()", "algorithm Cl1() -> set"),
+        ("  do\n", "  requires contradiction\n  do\n"),
+        ("return;", "var X as object; return;"),
+        ("return;", "snapshot S; return;"),
+        ("return;", "return Cl1();"),
+        ("return;", "return 0;"),
+        ("theorem CT1", "open theorem CT1"),
+        ("theorem CT1", "assumed theorem CT1"),
+        ("thus X = X;", "thus X = X by CT1;"),
+        (
+            "  theorem CT1",
+            "  theorem Extra: for Z being set holds Z = Z proof let Z be set; thus Z = Z; end;\n  theorem CT1",
+        ),
+        ("    thus X = X;", ""),
+        ("for X being set", "for X being object"),
+        ("    let X be set;", "    let X be object;"),
+    ] {
+        let changed = source.replacen(from, to, 1);
+        assert_ne!(changed, source);
+        let frontend = super::formula_statement::step5c8_test_frontend(&changed);
+        assert!(
+            frontend.diagnostics.is_empty(),
+            "semantic control {from} -> {to}: {:?}",
+            frontend.diagnostics
+        );
+        assert!(
+            step5c14_claim_core(&case, &changed).is_err(),
+            "accepted {from} -> {to}"
+        );
+    }
+    let (algorithm, claim) = source.split_once("claim Cl1").unwrap();
+    for changed in [
+        format!("claim Cl1{claim}\n{algorithm}"),
+        algorithm.to_owned(),
+        format!("{algorithm}\nclaim Cl1 do end;"),
+        format!("{source}\n theorem Extra: contradiction;"),
+        source.replace("  proof\n    let X be set;\n    thus X = X;\n  end;", ";"),
+    ] {
+        let frontend = super::formula_statement::step5c8_test_frontend(&changed);
+        assert!(
+            frontend.diagnostics.is_empty(),
+            "semantic control {changed}: {:?}",
+            frontend.diagnostics
+        );
+        assert!(
+            step5c14_claim_core(&case, &changed).is_err(),
+            "accepted {changed}"
+        );
+    }
+    let malformed = source.replace("return;", "return @;");
+    let frontend = super::formula_statement::step5c8_test_frontend(&malformed);
+    assert!(!frontend.diagnostics.is_empty());
+    let error = step5c14_claim_core(&case, &malformed).unwrap_err();
+    assert!(
+        error == "registration.frontend_diagnostics" || error == "missing AST",
+        "{error}"
+    );
+    let duplicate = format!("{algorithm}\n{source}");
+    assert!(
+        super::formula_statement::step5c8_test_frontend(&duplicate)
+            .diagnostics
+            .is_empty()
+    );
+    assert_eq!(
+        step5c14_claim_core(&case, &duplicate).unwrap_err(),
+        "registration.resolver_diagnostics"
+    );
+}
+
+#[test]
+fn step5c14_claim_rejects_coherent_core_corruption_and_unused_rows() {
+    use mizar_core::core_ir::{
+        CoreAlgorithmStmtKind as S, CoreFormulaKind as F, CoreIr, CoreIrParts, CoreNodeRef as R,
+        CoreProofNodeKind as P, CoreSourceAnchor, CoreTermKind as T,
+    };
+    let case = step5c14_claim_case();
+    let text = std::fs::read_to_string(&case.source_path).unwrap();
+    let core = step5c14_claim_core(&case, &text).unwrap();
+    let (algorithm_id, algorithm) = core.algorithms().iter().next().unwrap();
+    let (proof_id, proof) = core.proofs().iter().next().unwrap();
+    let P::IntroduceBinder { binder, child } = &core.proof_nodes().get(proof.root).unwrap().kind
+    else {
+        panic!("proof let")
+    };
+    let P::TerminalGoal { obligation, .. } = &core.proof_nodes().get(*child).unwrap().kind else {
+        panic!("terminal")
+    };
+    let seed = core.obligation_seeds().get(*obligation).unwrap();
+    let F::Forall { binders, body } = &core.formulas().get(proof.proposition).unwrap().kind else {
+        panic!("forall")
+    };
+    let F::Equals { left, .. } = core.formulas().get(*body).unwrap().kind else {
+        panic!("equality")
+    };
+    for mutation in 0..33 {
+        let mut parts = CoreIrParts {
+            source_id: core.source_id(),
+            module_id: core.module_id().clone(),
+            items: core.items().clone(),
+            terms: core.terms().clone(),
+            formulas: core.formulas().clone(),
+            definitions: core.definitions().clone(),
+            proofs: core.proofs().clone(),
+            proof_nodes: core.proof_nodes().clone(),
+            algorithms: core.algorithms().clone(),
+            algorithm_statements: core.algorithm_statements().clone(),
+            generated: core.generated().clone(),
+            obligation_seeds: core.obligation_seeds().clone(),
+            source_map: core.source_map().clone(),
+            diagnostics: core.diagnostics().clone(),
+        };
+        match mutation {
+            0 => parts
+                .items
+                .get_mut(proof.item)
+                .unwrap()
+                .dependencies
+                .clear(),
+            1 => {
+                parts.algorithms.get_mut(algorithm_id).unwrap().symbol =
+                    core.items().get(proof.item).unwrap().symbol.clone()
+            }
+            2 => parts.algorithms.get_mut(algorithm_id).unwrap().item = proof.item,
+            3 => {
+                parts
+                    .obligation_seeds
+                    .get_mut(*obligation)
+                    .unwrap()
+                    .source
+                    .anchor = proof.source.anchor.clone()
+            }
+            4 => {
+                parts
+                    .obligation_seeds
+                    .get_mut(*obligation)
+                    .unwrap()
+                    .source
+                    .anchor = algorithm.source.anchor.clone()
+            }
+            5 => parts.obligation_seeds.get_mut(*obligation).unwrap().owner = algorithm.item,
+            6 => parts
+                .obligation_seeds
+                .get_mut(*obligation)
+                .unwrap()
+                .core_refs
+                .retain(|reference| reference != &R::Algorithm(algorithm_id)),
+            7 => {
+                parts.obligation_seeds.get_mut(*obligation).unwrap().context =
+                    vec![binders[0].ty_guard.unwrap()]
+            }
+            8 => {
+                parts.obligation_seeds.get_mut(*obligation).unwrap().goal = Some(proof.proposition)
+            }
+            9 => {
+                parts.proofs.get_mut(proof_id).unwrap().status =
+                    mizar_core::core_ir::CoreProofStatus::Open
+            }
+            10 => {
+                parts.obligation_seeds.get_mut(*obligation).unwrap().status =
+                    mizar_core::core_ir::ObligationSeedStatus::Skipped
+            }
+            11 => {
+                let F::Forall { binders, .. } =
+                    &mut parts.formulas.get_mut(proof.proposition).unwrap().kind
+                else {
+                    unreachable!()
+                };
+                binders[0].var = binder.var;
+            }
+            12 => {
+                let P::IntroduceBinder { binder: local, .. } =
+                    &mut parts.proof_nodes.get_mut(proof.root).unwrap().kind
+                else {
+                    unreachable!()
+                };
+                local.var = binders[0].var;
+            }
+            13 => {
+                let F::TypePred { ty, .. } = &mut parts
+                    .formulas
+                    .get_mut(binder.ty_guard.unwrap())
+                    .unwrap()
+                    .kind
+                else {
+                    unreachable!()
+                };
+                *ty = mizar_core::core_ir::CoreTypePredicate::new("object");
+            }
+            14 => {
+                let P::TerminalGoal { citations, .. } =
+                    &mut parts.proof_nodes.get_mut(*child).unwrap().kind
+                else {
+                    unreachable!()
+                };
+                citations.push(mizar_core::core_ir::CoreCitation::Symbol(
+                    core.items().get(proof.item).unwrap().symbol.clone(),
+                ));
+            }
+            15 => {
+                parts.terms.insert(core.terms().get(left).unwrap().clone());
+            }
+            16 => {
+                parts
+                    .formulas
+                    .insert(core.formulas().get(*body).unwrap().clone());
+            }
+            17 => {
+                parts
+                    .algorithm_statements
+                    .get_mut(algorithm.statements[0])
+                    .unwrap()
+                    .kind = S::Return(Some(left))
+            }
+            18 => {
+                let other = parts.algorithms.insert(algorithm.clone());
+                parts
+                    .algorithm_statements
+                    .get_mut(algorithm.statements[0])
+                    .unwrap()
+                    .owner = other;
+            }
+            19 => {
+                parts.proofs.get_mut(proof_id).unwrap().source.anchor =
+                    algorithm.source.anchor.clone()
+            }
+            20 => {
+                parts.proof_nodes.get_mut(*child).unwrap().source.anchor =
+                    proof.source.anchor.clone()
+            }
+            21 => {
+                parts.proof_nodes.get_mut(proof.root).unwrap().source.anchor =
+                    proof.source.anchor.clone()
+            }
+            22 => parts.terms.get_mut(left).unwrap().kind = T::Var(binder.var),
+            23 => {
+                parts.obligation_seeds.get_mut(*obligation).unwrap().label =
+                    Some(mizar_core::core_ir::CoreLabelRef::new("CT1"))
+            }
+            24 => parts
+                .obligation_seeds
+                .get_mut(*obligation)
+                .unwrap()
+                .core_refs
+                .push(R::Formula(proof.proposition)),
+            25 => parts
+                .obligation_seeds
+                .get_mut(*obligation)
+                .unwrap()
+                .source
+                .provenance
+                .clear(),
+            26 => parts
+                .algorithms
+                .get_mut(algorithm_id)
+                .unwrap()
+                .contracts
+                .requires
+                .push(*body),
+            27 => {
+                parts
+                    .algorithm_statements
+                    .get_mut(algorithm.statements[0])
+                    .unwrap()
+                    .source
+                    .anchor = proof.source.anchor.clone()
+            }
+            28 => {
+                let CoreSourceAnchor::SourceRange(mut source) =
+                    parts.terms.get(left).unwrap().source.anchor
+                else {
+                    unreachable!()
+                };
+                source.start = 0;
+                parts.terms.get_mut(left).unwrap().source.anchor =
+                    CoreSourceAnchor::SourceRange(source);
+            }
+            29 => parts
+                .items
+                .get_mut(proof.item)
+                .unwrap()
+                .source
+                .provenance
+                .clear(),
+            30 => {
+                parts
+                    .algorithm_statements
+                    .get_mut(algorithm.statements[0])
+                    .unwrap()
+                    .source
+                    .anchor = algorithm.source.anchor.clone()
+            }
+            31 => {
+                parts
+                    .formulas
+                    .get_mut(seed.goal.unwrap())
+                    .unwrap()
+                    .source
+                    .anchor = core
+                    .proof_nodes()
+                    .get(*child)
+                    .unwrap()
+                    .source
+                    .anchor
+                    .clone()
+            }
+            32 => {
+                let guard = binders[0].ty_guard.unwrap();
+                let F::TypePred { subject, .. } = parts.formulas.get(guard).unwrap().kind else {
+                    unreachable!()
+                };
+                parts.formulas.get_mut(guard).unwrap().source.anchor =
+                    binders[0].source.anchor.clone();
+                parts.terms.get_mut(subject).unwrap().source.anchor =
+                    binders[0].source.anchor.clone();
+            }
+            _ => unreachable!(),
+        }
+        // Keep source maps coherent so these controls reach the semantic owner.
+        parts.source_map.item_sources = parts
+            .items
+            .iter()
+            .map(|(id, row)| (id, row.source.clone()))
+            .collect();
+        parts.source_map.term_sources = parts
+            .terms
+            .iter()
+            .map(|(id, row)| (id, row.source.clone()))
+            .collect();
+        parts.source_map.formula_sources = parts
+            .formulas
+            .iter()
+            .map(|(id, row)| (id, row.source.clone()))
+            .collect();
+        parts.source_map.proof_sources = parts
+            .proof_nodes
+            .iter()
+            .map(|(id, row)| (id, row.source.clone()))
+            .collect();
+        parts.source_map.algorithm_sources = parts
+            .algorithm_statements
+            .iter()
+            .map(|(id, row)| (id, row.source.clone()))
+            .collect();
+        parts.source_map.obligation_sources = parts
+            .obligation_seeds
+            .iter()
+            .map(|(id, row)| (id, row.source.clone()))
+            .collect();
+        if mutation == 18 {
+            assert!(matches!(
+                CoreIr::try_new(parts),
+                Err(mizar_core::core_ir::CoreIrError::StatementOwnerMismatch { .. })
+            ));
+            continue;
+        }
+        let changed =
+            CoreIr::try_new(parts).unwrap_or_else(|error| panic!("mutation {mutation}: {error}"));
+        assert!(
+            step5c14_claim_vcs(&changed).is_err(),
+            "accepted mutation {mutation}; original goal {:?}",
+            seed.goal
+        );
+    }
+}
+
+#[test]
+fn step5c14_claim_admission_rejects_auxiliary_payload_and_identity_hijacking() {
+    let config = step5c11_config();
+    let plan = build_test_plan(&config).unwrap();
+    let original = step5c14_claim_case();
+    for mutation in 0..11 {
+        let mut case = original.clone();
+        let expected = &mut case.expectation;
+        match mutation {
+            0 => expected.schema_version = 2,
+            1 => expected.profiles.push("stress".into()),
+            2 => expected.ast_profile = Some("unrelated".into()),
+            3 => expected.snapshot_profiles.push("unrelated".into()),
+            4 => {
+                expected.tokens = plan
+                    .cases
+                    .iter()
+                    .find(|case| !case.expectation.tokens.is_empty())
+                    .unwrap()
+                    .expectation
+                    .tokens
+                    .clone()
+            }
+            5 => {
+                expected.origin = Some(crate::expectation::OriginMetadata {
+                    schema_version: 1,
+                    kind: expected.kind,
+                    generator: "test".into(),
+                    generator_version: "1".into(),
+                    seed: "0".into(),
+                    profile: "fast".into(),
+                    expected_outcome: expected.expected_outcome,
+                    minimized: false,
+                    original_failure_category: None,
+                })
+            }
+            6 => {
+                expected.architecture22 = Some(crate::expectation::Architecture22Metadata {
+                    scenarios: vec!["cache_hit_miss_timing".into()],
+                    equivalence_class: Some("observable_outputs_equal".into()),
+                    gate: crate::expectation::Architecture22Gate::Planned,
+                })
+            }
+            7 => expected.diagnostic_payloads.push("unrelated".into()),
+            8 => expected
+                .declaration_symbol_payloads
+                .push("unrelated".into()),
+            9 => expected.spec_refs.push(expected.spec_refs[1].clone()),
+            10 => {
+                expected.spec_refs.remove(0);
+            }
+            _ => unreachable!(),
+        }
+        assert!(
+            !super::proof_verification::step5c14_return_admitted(
+                Some(&config.workspace_root),
+                &case
+            ),
+            "mutation {mutation}"
+        );
+        assert!(!super::is_active_proof_verification(&case));
+        assert!(
+            crate::expectation::validate_expectation_path(
+                &case.expectation_path,
+                &case.expectation,
+                &config.workspace_root.join("tests")
+            )
+            .iter()
+            .any(|diagnostic| diagnostic.code.0 == "E-EXPECT-SNAPSHOT-SCOPE"),
+            "snapshot mutation {mutation}"
+        );
+    }
+    for donor in [
+        "pass_proof_verification_algorithm_ensures_return_001",
+        "pass_proof_verification_contradiction_formula_constant_001",
+    ] {
+        for alias in 0..4 {
+            let mut case = plan
+                .cases
+                .iter()
+                .find(|case| case.id.0 == donor)
+                .unwrap()
+                .clone();
+            match alias {
+                0 => case.id = original.id.clone(),
+                1 => case.expectation.id = original.id.clone(),
+                2 => case.source_path = original.source_path.clone(),
+                3 => case.expectation_path = original.expectation_path.clone(),
+                _ => unreachable!(),
+            }
+            assert!(
+                !super::is_active_proof_verification(&case),
+                "{donor} alias {alias}"
+            );
+            let run = super::proof_verification::run_proof_verification_case(
+                &config.workspace_root,
+                &config.workspace_root.join("tests"),
+                &case,
+                0,
+            );
+            assert_eq!(run.status, super::ProofVerificationCaseStatus::Failed);
+        }
+    }
+}
+#[test]
+fn step5c14_claim_rejects_genuine_foreign_and_stale_algorithm_seals() {
+    use mizar_checker::type_checker::{
+        SourceVariableSemanticsChecker, check_source_algorithm_types,
+    };
+    use mizar_resolve::{
+        labels::{LabelResolver, ProofLabelSourceCollector},
+        names::{SourceVariableScopeInput, SourceVariableScopeResolver},
+    };
+    let root = step5c11_config().workspace_root;
+    let case = step5c14_claim_case();
+    let text = std::fs::read_to_string(&case.source_path).unwrap();
+    let frontend = super::formula_statement::step5c8_test_frontend(&text);
+    let ast = frontend.ast.clone().unwrap();
+    let (source, nodes, symbols) =
+        super::source_registration_inputs(&root, &case, frontend).unwrap();
+    let algorithm = check_source_algorithm_types(&source, &nodes, &symbols).unwrap();
+    let scope = SourceVariableScopeResolver::resolve_proof_occurrences(
+        SourceVariableScopeInput::new(&ast, source.module(), &symbols),
+    )
+    .unwrap();
+    let bindings = SourceVariableSemanticsChecker::occurrence_binding_env(&scope);
+    let typed = super::type_elaboration::step5c8_formula_typed_ast(
+        &ast,
+        source.module(),
+        &symbols,
+        &scope,
+        &bindings,
+        true,
+    )
+    .unwrap();
+    let owner = symbols
+        .symbols()
+        .iter()
+        .find(|entry| entry.kind() == mizar_resolve::env::SymbolKind::Theorem)
+        .unwrap();
+    let namespace = mizar_resolve::env::NamespacePath::new(source.module().path().as_str());
+    let labels = ProofLabelSourceCollector::new(
+        &ast,
+        source.module(),
+        namespace.clone(),
+        owner.contribution(),
+        &source,
+    )
+    .unwrap()
+    .collect_with_theorem_owners(&symbols)
+    .unwrap();
+    let resolved = LabelResolver::new(labels.projections()).resolve(
+        source.module(),
+        &namespace,
+        labels.references(),
+    );
+    let checked = SourceVariableSemanticsChecker::check_theorem_skeletons(
+        &typed,
+        &scope,
+        &symbols,
+        &labels,
+        &resolved,
+        Some(&algorithm),
+    )
+    .unwrap();
+    mizar_core::elaborator::lower_source_theorem_skeletons(&checked, Some(&algorithm)).unwrap();
+    for variant in ["module", "source", "owner_tree"] {
+        let mut alternate_case = case.clone();
+        if variant == "module" {
+            alternate_case.source_path =
+                root.join("tests/miz/pass/algorithms/foreign_claim_module.miz");
+        }
+        let alternate_text = if variant == "owner_tree" {
+            text.replace("Cl1", "Cl2")
+        } else {
+            text.clone()
+        };
+        let frontend = if variant == "source" {
+            use mizar_frontend::{
+                orchestration::Frontend,
+                parsing::MizarParserSeam,
+                source::{FrontendSourceLoader, SourceUnitRequest},
+            };
+            use mizar_session::{
+                DiskSourceLoader, Edition, InMemorySessionIdAllocator, ModulePath, PackageId,
+                SessionIdAllocator, SourceInput, SourceOriginInput,
+            };
+            let temporary = std::process::Command::new("mktemp")
+                .arg("-d")
+                .output()
+                .unwrap();
+            assert!(temporary.status.success());
+            let directory =
+                std::path::PathBuf::from(String::from_utf8(temporary.stdout).unwrap().trim());
+            std::fs::create_dir(directory.join("src")).unwrap();
+            let path = directory.join("src/foreign_source.miz");
+            std::fs::write(&path, &alternate_text).unwrap();
+            let ids = InMemorySessionIdAllocator::new();
+            let snapshot = super::shared::snapshot_id(5814);
+            ids.next_source_id(snapshot).unwrap();
+            let output = Frontend::new(
+                FrontendSourceLoader::new(DiskSourceLoader::new(&directory)),
+                super::ParseOnlyImportProvider,
+                MizarParserSeam,
+            )
+            .run(
+                SourceUnitRequest {
+                    snapshot,
+                    input: SourceInput {
+                        package_id: PackageId::new("claim-seal"),
+                        module_path: ModulePath::new("foreign_source"),
+                        normalized_path: mizar_session::normalize_path(&directory, &path).unwrap(),
+                        edition: Edition::new("2026"),
+                        origin: SourceOriginInput::Disk { path: path.clone() },
+                    },
+                },
+                &ids,
+            )
+            .unwrap();
+            std::fs::remove_dir_all(directory).unwrap();
+            super::shared::FrontendRun {
+                source_text: alternate_text.clone().into(),
+                ast: output.ast,
+                ast_snapshot: None,
+                diagnostics: output.diagnostics,
+            }
+        } else {
+            super::formula_statement::step5c8_test_frontend(&alternate_text)
+        };
+        let alternate_ast = frontend.ast.clone().unwrap();
+        let (alternate_source, alternate_nodes, alternate_symbols) =
+            super::source_registration_inputs(&root, &alternate_case, frontend).unwrap();
+        match variant {
+            "module" => {
+                assert_ne!(alternate_source.module(), source.module());
+                assert_eq!(alternate_source.source_id(), source.source_id());
+            }
+            "source" => {
+                assert_eq!(alternate_source.module(), source.module());
+                assert_ne!(alternate_source.source_id(), source.source_id());
+            }
+            "owner_tree" => {
+                assert_eq!(alternate_source.module(), source.module());
+                assert_eq!(alternate_source.source_id(), source.source_id());
+                assert_eq!(alternate_nodes.len(), nodes.len());
+                assert_ne!(alternate_nodes, nodes);
+            }
+            _ => unreachable!(),
+        }
+        let alternate_algorithm =
+            check_source_algorithm_types(&alternate_source, &alternate_nodes, &alternate_symbols)
+                .unwrap();
+        let alternate_scope =
+            SourceVariableScopeResolver::resolve_proof_occurrences(SourceVariableScopeInput::new(
+                &alternate_ast,
+                alternate_source.module(),
+                &alternate_symbols,
+            ))
+            .unwrap();
+        let alternate_bindings =
+            SourceVariableSemanticsChecker::occurrence_binding_env(&alternate_scope);
+        let alternate_typed = super::type_elaboration::step5c8_formula_typed_ast(
+            &alternate_ast,
+            alternate_source.module(),
+            &alternate_symbols,
+            &alternate_scope,
+            &alternate_bindings,
+            true,
+        )
+        .unwrap();
+        let alternate_owner = alternate_symbols
+            .symbols()
+            .iter()
+            .find(|entry| entry.kind() == mizar_resolve::env::SymbolKind::Theorem)
+            .unwrap();
+        let alternate_namespace =
+            mizar_resolve::env::NamespacePath::new(alternate_source.module().path().as_str());
+        let alternate_labels = ProofLabelSourceCollector::new(
+            &alternate_ast,
+            alternate_source.module(),
+            alternate_namespace.clone(),
+            alternate_owner.contribution(),
+            &alternate_source,
+        )
+        .unwrap()
+        .collect_with_theorem_owners(&alternate_symbols)
+        .unwrap();
+        let alternate_resolved = LabelResolver::new(alternate_labels.projections()).resolve(
+            alternate_source.module(),
+            &alternate_namespace,
+            alternate_labels.references(),
+        );
+        let alternate_checked = SourceVariableSemanticsChecker::check_theorem_skeletons(
+            &alternate_typed,
+            &alternate_scope,
+            &alternate_symbols,
+            &alternate_labels,
+            &alternate_resolved,
+            Some(&alternate_algorithm),
+        )
+        .unwrap();
+        mizar_core::elaborator::lower_source_theorem_skeletons(
+            &alternate_checked,
+            Some(&alternate_algorithm),
+        )
+        .unwrap();
+        assert!(
+            SourceVariableSemanticsChecker::check_theorem_skeletons(
+                &typed,
+                &scope,
+                &symbols,
+                &labels,
+                &resolved,
+                Some(&alternate_algorithm)
+            )
+            .is_err(),
+            "checker accepted {variant} seal"
+        );
+        assert!(
+            mizar_core::elaborator::lower_source_theorem_skeletons(
+                &checked,
+                Some(&alternate_algorithm)
+            )
+            .is_err(),
+            "Core accepted {variant} seal"
+        );
+    }
 }

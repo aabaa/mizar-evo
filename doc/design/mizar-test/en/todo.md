@@ -7,7 +7,7 @@
 > Every heading, every registered ledger redirect line, and every section
 > with open work remains below.
 
-- [~] [Step 5C.14: algorithms](../../task_contracts/en/STEP5C14-ALGORITHM-SEMANTICS.md); static diagnostics and bounded flat-state return/assertion VCs; other control-flow/VC slices remain deferred.
+- [~] [Step 5C.14: algorithms](../../task_contracts/en/STEP5C14-ALGORITHM-SEMANTICS.md); static diagnostics and bounded flat-state return/assertion VCs; bounded void-claim VCs active, other control-flow/VC slices remain deferred.
 - [~] [Step 5C.13: distinct loci](../../task_contracts/en/STEP5C13-DISTINCT-LOCI.md); bare set/structure overload selection; attributed ambiguity remains deferred.
 - [x] [Step 5C.12: unbounded templates](../../task_contracts/en/STEP5C12-UNBOUNDED-TEMPLATES.md); explicit identity-functor/predicate-formal checking and bare structure-bound selector typing with builtin actual-bound rejection; general bounded instantiation remains deferred.
 - [x] [Step 5C.11: cluster registrations](../../task_contracts/en/STEP5C11-CLUSTER-REGISTRATIONS.md); parser admission, pending intake and bounded false-coherence/false-reducibility verification are active; accepted effects remain pending.

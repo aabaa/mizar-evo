@@ -568,7 +568,7 @@ the paired producer tasks.
     producer, reference identity/schema, authentication rules, and owning tests
     before this non-VC admission task can execute. It emits no
     `PartialTermination` VC.
-54. **Snapshot/claim theorem VCs.** [ ] — Specs 20.6/20.13; Core 47/51-53;
+54. **Snapshot/claim theorem VCs.** [~] — bounded void-claim VCs active; Specs 20.6/20.13; Core 47/51-53;
     `MT10-VC-PV/VC54`.
 55. **Ghost-isolation zero-VC integration.** [ ] — Specs
     20.1.3/20.3/20.13.5; Core 46/52-53; `MT10-VC-PV/VC55`. It validates

@@ -3,11 +3,11 @@
 `check_source_dependent_mode_types` は既存 binding・declaration・inference table を使い、[限定 dependent-mode owner](./source_mode_definition.md#step-5c4-mode-semantics) の検査を実装する。
 
 `SourceVariableSemanticsChecker::check_theorem_skeletons` は既存の typed arena、
-occurrence scope、symbol、label 入力を検証し、不透明な借用 `SourceTheoremCheck` を返す。
+occurrence scope、symbol、label と任意の `&SourceAlgorithmCheck` を検証し、不透明な借用 `SourceTheoremCheck` を返す。
 theorem/lemma と status、組込み全称・等式、順序付き汎化、残存 thesis、引用 provenance を検査する。
 seal は `Vec<(SourceTheoremOwnerInput, &'static str)>` の共有 slice と typed/scope/label 参照だけを公開する。
 visibility は checker が `"public"`/`"private"` に射影し、未対応値は拒否する。SymbolEnv や resolver Visibility は渡さない。
-骨格エラーと不正入力を区別し、statement の登録・検査を信頼済み証明へ昇格させない。
+algorithm seal なしでは既存の最上位 theorem/lemma profile のみを認める。射影の照合は node ID・子辺・anchor・recovery を保持し、既存 receipt が所有する変数参照・実等式だけは意味 kind tag を認め、resolved link があれば neutral node と一致させる。seal がある場合は同一ソース射影・実 target・wrapper・proof を完全に認証し、先行する void algorithm の後続 claim 内にある修飾なし set 等式 theorem 一つを認める。骨格エラーと不正入力を区別し、証明・実行事実の信頼を追加しない。
 
 `SourceVariableSemanticsChecker::check_proof_organization` は `check_formula_statements` と同じ入力を取り、
 組込み型、存在例化、ブロック・分岐の目標と実際の引用 ID を検査して `Result<bool, String>` を返す。
@@ -2994,4 +2994,4 @@ Known builtin set actual と実際に認証された structure parameter の via
 
 ## Static source algorithm checking
 
-`check_source_algorithm_types(&SurfaceResolvedArena, &TypedArena, &SymbolEnv)` はソース・環境・中立 typed 表と algorithm 所有者の完全な対応を認証し、借用型の opaque `SourceAlgorithmCheck` を返す。既存 BindingEnv と項・式推論で object 仮引数、順序付き初期化 var/const/ghost-var、宣言・使用同一性、推論型と期待 return 型を保持する。平坦な契約 profile は直接変数への代入、等式 assert、末尾 return も受理し、代入先には値を読み出さず実際の BindingId を渡す。result は任意の等式 ensures だけに可視とし、宣言順序で shadowing・前方参照を判定し、assert と ensures の所有者を区別してどちらも仮定しない。封印は不変の typed・binding・inference・owner データだけを公開し、生の resolver 権限を渡さない。field 代入先、注釈、justification、他の契約、入れ子制御、snapshot/claim、呼出し、リテラルは未対応とし、証明・全域性・登録承認を与えない。
+`check_source_algorithm_types(&SurfaceResolvedArena, &TypedArena, &SymbolEnv)` はソース・環境・中立 typed 表と algorithm 所有者の完全な対応を認証し、借用型の opaque `SourceAlgorithmCheck` を返す。既存 BindingEnv と項・式推論で object 仮引数、順序付き初期化 var/const/ghost-var、宣言・使用同一性、推論型と期待 return 型を保持する。平坦な契約 profile は直接変数への代入、等式 assert、末尾 return も受理し、代入先には値を読み出さず実際の BindingId を渡す。result は任意の等式 ensures だけに可視とし、宣言順序で shadowing・前方参照を判定し、assert と ensures の所有者を区別してどちらも仮定しない。封印は不変の typed・binding・inference・owner データだけを公開し、生の resolver 権限を渡さない。field 代入先、注釈、justification、他の契約、入れ子制御、snapshot、呼出し、リテラルは未対応とする。別の空 interface profile は、仮引数なし・bare return の先行 void algorithm と後続 claim target を実 local algorithm symbol により認証し、空 binding/inference table はその algorithm のみを表す。入れ子 theorem は `check_theorem_skeletons` が所有し、証明・全域性・登録承認を与えない。

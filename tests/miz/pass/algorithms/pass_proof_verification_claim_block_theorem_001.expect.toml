@@ -9,5 +9,8 @@ expected_phase = "vc_generation"
 diagnostic_codes = []
 spec_refs = [
   "spec.en.20.algorithms.claim.block",
+  "spec.en.mizar_vc.vc_ir.algorithm_void_claim_snapshot",
 ]
-notes = "Audit-1 semantic-bridge inactive oracle seed (September 2026 audit wave): binding expectation for the Step-5 semantic bridge; no active runner tag, earns no current credit. A claim block groups theorem items about algorithms or terms into one named unit (spec 20.6; A.20 claim_block)."
+snapshots = "snapshots/vc/pass_proof_verification_claim_block_theorem_001.vc_ir.snap"
+tags = ["active_proof_verification"]
+notes = "The actual earlier void algorithm and claim theorem produce one open theorem VC with the algorithm dependency and deferred termination accounting; no theorem or execution acceptance."

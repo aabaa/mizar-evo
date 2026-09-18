@@ -189,7 +189,112 @@ pub fn check_source_algorithm_types<'a>(
     let [unit] = structural.as_slice() else {
         return Err(invalid());
     };
-    let block = only(only(*unit, &K::CompilationUnit)?, &K::ItemList)?;
+    let items = parts(only(*unit, &K::CompilationUnit)?, &K::ItemList)?;
+    if let [block, claim] = items {
+        let [definition, algorithm, end, semi] = parts(*block, &K::DefinitionBlockItem)? else {
+            return Err(invalid());
+        };
+        tokens(&[(*definition, "definition"), (*end, "end"), (*semi, ";")])?;
+        let [keyword, name, parameters, body, semi] = parts(*algorithm, &K::AlgorithmDefinition)?
+        else {
+            return Err(invalid());
+        };
+        tokens(&[(*keyword, "algorithm"), (*semi, ";")])?;
+        let [open, close] = parts(*parameters, &K::AlgorithmParameters)? else {
+            return Err(invalid());
+        };
+        tokens(&[(*open, "("), (*close, ")")])?;
+        let [do_kw, statements, end] = parts(*body, &K::AlgorithmBody)? else {
+            return Err(invalid());
+        };
+        tokens(&[(*do_kw, "do"), (*end, "end")])?;
+        let statement = only(*statements, &K::AlgorithmStatementList)?;
+        let [return_kw, semi] = parts(statement, &K::ReturnStatement)? else {
+            return Err(invalid());
+        };
+        tokens(&[(*return_kw, "return"), (*semi, ";")])?;
+        let [claim_kw, target, do_kw, theorem, end, semi] = parts(*claim, &K::ClaimBlockItem)?
+        else {
+            return Err(invalid());
+        };
+        tokens(&[
+            (*claim_kw, "claim"),
+            (*do_kw, "do"),
+            (*end, "end"),
+            (*semi, ";"),
+        ])?;
+        if node(*theorem)?.kind() != &K::TheoremItem {
+            return Err(invalid());
+        }
+        let algorithm_anchor = node(*algorithm)?.origin().anchor();
+        let mut owners = symbols.symbols().iter().filter(|entry| {
+            entry.kind() == SymbolKind::Algorithm && entry.origin().anchor() == algorithm_anchor
+        });
+        let owner = owners.next().ok_or_else(invalid)?;
+        let declaration = symbols
+            .definitions()
+            .by_symbol(owner.symbol())
+            .ok_or_else(invalid)?;
+        if owners.next().is_some() || owner.visibility() != Visibility::Public
+            || owner.primary_spelling() != identifier(*name)?
+            || declaration.kind() != DefinitionKind::Algorithm || declaration.conflict().is_some()
+            || declaration.origin() != owner.origin() || declaration.contribution() != owner.contribution()
+            || declaration.visibility() != owner.visibility()
+            || !symbols.contributions().get(owner.contribution()).is_some_and(|entry| entry.module() == source.module() && matches!(entry.kind(), ContributionKind::LocalSource { source_id } if *source_id == source.source_id()))
+        { return Err(invalid()); }
+        let projection = NameSymbolProjection::current_module(
+            owner.symbol().clone(),
+            owner.namespace().clone(),
+            identifier(*name)?,
+            owner.kind(),
+            owner.visibility(),
+            range(*algorithm)?,
+            range(*block)?.end,
+        );
+        let resolution = SymbolNameResolver::new(&[projection], &[]).resolve(
+            source.module(),
+            owner.namespace(),
+            &[NameReferenceCandidate::unqualified(
+                ReferenceSite::new(*target, range(*target)?, identifier(*target)?),
+                node(*target)?.origin().clone(),
+                range(*target)?.start,
+            )],
+        );
+        if resolution.ids().len() != 1
+            || !matches!(resolution.table().iter().next().map(|(_, entry)| entry.resolution()), Some(NameResolution::Resolved(reference)) if reference.symbol() == owner.symbol())
+        {
+            return Err(invalid());
+        }
+        let mut contexts = BindingContextTable::new();
+        contexts.insert(BindingContextDraft {
+            owner: BindingContextOwner::Module,
+            parent: None,
+            layer: BindingContextLayer::Module,
+            lexical_scope: None,
+            bindings: Vec::new(),
+            visible_bindings: Vec::new(),
+            recovery: BindingContextRecovery::Normal,
+        });
+        let bindings = BindingEnv::try_new(BindingEnvParts {
+            source_id: source.source_id(),
+            module_id: source.module().clone(),
+            contexts,
+            bindings: BindingTable::new(),
+            diagnostics: BindingDiagnosticTable::new(),
+        })
+        .map_err(|_| invalid())?;
+        let inference = TermFormulaChecker::default().infer(symbols, &bindings, [], []);
+        return Ok(SourceAlgorithmCheck {
+            typed,
+            bindings,
+            inference,
+            algorithm: (TypedNodeId::new(algorithm.index()), owner.symbol().clone()),
+        });
+    }
+    let [block] = items else {
+        return Err(invalid());
+    };
+    let block = *block;
     let [definition, parameter, algorithm, end, semi] = parts(block, &K::DefinitionBlockItem)?
     else {
         return Err(invalid());
@@ -10201,6 +10306,7 @@ impl SourceVariableSemanticsChecker {
         symbols: &SymbolEnv,
         labels: &'a mizar_resolve::labels::ProofLabelSourceCollection,
         resolved: &'a mizar_resolve::labels::LabelResolutionResult,
+        algorithm: Option<&SourceAlgorithmCheck<'_>>,
     ) -> Result<SourceTheoremCheck<'a>, String> {
         use crate::source_statement::{
             SourceStatementRecovery, SourceTheoremOwnerInput, SourceTheoremRole,
@@ -10261,7 +10367,76 @@ impl SourceVariableSemanticsChecker {
         let [items] = items.as_slice() else {
             return Err(invalid());
         };
-        let items = step5c8_children(typed, *items).ok_or_else(invalid)?;
+        let mut items = step5c8_children(typed, *items).ok_or_else(invalid)?;
+        if let Some(algorithm) = algorithm {
+            if algorithm.bindings().source_id() != typed.source_id()
+                || algorithm.bindings().module_id() != typed.module_id()
+                || !algorithm.bindings().bindings().is_empty()
+                || algorithm.typed().root() != typed.nodes().root()
+                || algorithm.typed().len() != typed.nodes().len()
+                || algorithm.typed().iter().any(|(id, source)| {
+                    typed.nodes().node(id).is_none_or(|node| {
+                        let owned_kind = match (source.kind.as_str(), node.kind.as_str()) {
+                            ("TermReference", "source.term.variable-reference") => {
+                                primary.terms().iter().any(|(term_id, term)| {
+                                    term.site().node() == id
+                                        && primary.references().iter().any(|(_, reference)| {
+                                            reference.term() == term_id
+                                        })
+                                })
+                            }
+                            ("BuiltinPredicateApplication", "source.formula.atomic.equality") => {
+                                let operator = match source.children.as_slice() {
+                                    [_, operator, _] => algorithm.typed().node(*operator),
+                                    _ => None,
+                                };
+                                atomic.formulas().iter().any(|(_, formula)| {
+                                    formula.site().node() == id
+                                        && formula.kind() == crate::source_atomic_formula::SourceAtomicFormulaKind::Equality
+                                }) && operator.is_some_and(|token| {
+                                    token.kind.as_str()
+                                        == r#"Token(SurfaceToken { kind: ReservedSymbol, text: "=" })"#
+                                })
+                            }
+                            _ => node.kind == source.kind,
+                        };
+                        !owned_kind
+                            || node.resolved_node.is_some_and(|resolved| {
+                                Some(resolved) != source.resolved_node
+                            })
+                            || node.anchor != source.anchor
+                            || node.children != source.children
+                            || node.recovery != source.recovery
+                    })
+                })
+            {
+                return Err(invalid());
+            }
+            let [block, claim] = items.as_slice() else {
+                return Err(invalid());
+            };
+            if step5c8_kind(typed, *claim) != Some("ClaimBlockItem")
+                || step5c8_children(typed, *block) != Some(vec![algorithm.algorithm().0])
+            {
+                return Err(invalid());
+            }
+            items = step5c8_children(typed, *claim).ok_or_else(invalid)?;
+            if items.len() != 1
+                || !labels.references().is_empty()
+                || scope.bindings().len() != 2
+                || scope.bindings().iter().any(|binding| {
+                    !matches!(
+                        binding.kind(),
+                        SourceVariableBindingKind::Quantifier | SourceVariableBindingKind::Let
+                    ) || binding.declared_type().is_none_or(|ty| {
+                        !ty.attributes().is_empty() || ty.radix() != SourceVariableTypeRadix::Set
+                    })
+                })
+            {
+                return Err(invalid());
+            }
+        }
+
         if items.is_empty()
             || items
                 .iter()
@@ -10284,6 +10459,12 @@ impl SourceVariableSemanticsChecker {
             } else {
                 SourceTheoremStatus::Unmodified
             };
+            if algorithm.is_some()
+                && (status != SourceTheoremStatus::Unmodified
+                    || step5c8_kind(typed, item) != Some("TheoremItem"))
+            {
+                return Err(invalid());
+            }
             let (role, symbol_kind, definition_kind, keyword) =
                 if step5c8_kind(typed, item) == Some("LemmaItem") {
                     (

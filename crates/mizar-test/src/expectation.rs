@@ -1346,6 +1346,14 @@ pub fn validate_expectation_path(
                 None,
             ),
             (
+                "pass_proof_verification_claim_block_theorem_001",
+                "pass/algorithms",
+                "algorithms.claim",
+                "spec.en.20.algorithms.claim.block",
+                "spec.en.mizar_vc.vc_ir.algorithm_void_claim_snapshot",
+                None,
+            ),
+            (
                 "fail_proof_verification_reduce_false_reducibility_001",
                 "fail/clusters",
                 "clusters.reduction",
@@ -1382,6 +1390,14 @@ pub fn validate_expectation_path(
                     }
                 && expectation.domain == domain
                 && expectation.tags.as_slice() == ["active_proof_verification"]
+                && (domain != "algorithms.claim"
+                    || expectation.schema_version == 1
+                        && expectation.profiles.as_slice() == ["fast"]
+                        && expectation.ast_profile.is_none()
+                        && expectation.snapshot_profiles.is_empty()
+                        && expectation.tokens.is_empty()
+                        && expectation.origin.is_none()
+                        && expectation.architecture22.is_none())
                 && expectation.failure_category.as_deref() == failure.then_some("proof_failure")
                 && expectation.stable_detail_key.as_deref() == detail
                 && expectation.rejection_reason.is_none()

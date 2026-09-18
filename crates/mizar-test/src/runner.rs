@@ -2823,6 +2823,7 @@ fn type_elaboration_detail_keys(
             &symbols,
             PipelinePhase::Resolve,
             shared::snapshot_id(0),
+            None,
         )
         .err()
         .into_iter()

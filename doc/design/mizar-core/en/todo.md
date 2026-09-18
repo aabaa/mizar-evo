@@ -733,7 +733,7 @@ IR264. **Authenticated structure-property definition owner.** [x]
 44. **Range and collection loop CoreIr.** [ ]
 45. **Match pattern, capture, and exhaustiveness CoreIr.** [ ]
 46. **Algorithm contract, call-request, recursion, and termination metadata.** [~]
-47. **Snapshot and claim CoreIr.** [ ]
+47. **Snapshot and claim CoreIr.** [~] — bounded void-claim profile implemented; broader captured state deferred.
     - Tasks 42-47 are separate Chapter-20 joint vertical tasks from mizar-test
       AST extraction through syntax-free checker projection and Core lowering,
       each paired with `MT10-CIR-ALG`. Actual call/result substitution, VCs,
@@ -742,7 +742,7 @@ IR264. **Authenticated structure-property definition owner.** [x]
 48. **Basic source-derived ControlFlowIr.** [~]
 49. **Range and collection-loop CFG attachment.** [ ]
 50. **Match CFG attachment.** [ ]
-51. **Snapshot and claim flow state.** [ ]
+51. **Snapshot and claim flow state.** [~] — bounded empty-interface claim CFG implemented; snapshot capture deferred.
 52. **Contract, call, ghost, and termination CFG attachment.** [~]
 53. **Complete source-derived flow diagnostics.** [~]
     - [Step 5C.14](../../task_contracts/en/STEP5C14-ALGORITHM-SEMANTICS.md) owns bounded header/local/typed-assignment/assert/return/break lowering, static break/ghost/immutable-write observations, and contract placement; the complete families and CFG snapshot baseline remain deferred.
