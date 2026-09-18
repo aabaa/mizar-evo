@@ -4,6 +4,24 @@ definition
   attr OBBDef: X is obmarked means X = X;
 end;
 
+registration
+  cluster OAExists: oamarked set;
+  existence proof
+    take the set;
+    thus the set is oamarked by OAADef;
+  end;
+  cluster OBExists: obmarked set;
+  existence proof
+    take the set;
+    thus the set is obmarked by OBBDef;
+  end;
+  cluster OABExists: oamarked obmarked set;
+  existence proof
+    take the set;
+    thus the set is oamarked obmarked by OAADef, OBBDef;
+  end;
+end;
+
 definition
   let X be oamarked set;
   func Ov3Def: ovpick X -> set equals X;

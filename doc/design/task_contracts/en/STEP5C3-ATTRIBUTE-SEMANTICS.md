@@ -15,7 +15,6 @@ Owning plans: [mizar-checker](../../mizar-checker/en/00.crate_plan.md#task-index
 | Tier | Full: semantic-credit and expectation-tag changes |
 | Owner / consumer | `mizar-checker` owns attribute and argument typing; `mizar-resolve` retains symbol identity and duplicate rejection; `mizar-test` extracts, invokes, and compares |
 | Dependencies | Step 5A.2 and Step 5C.2 complete |
-| Classification | `source_drift` and executable `test_gap`; no specification or test-intent change |
 | Audit impact | Retain prior Chapter 3/6 coverage; update both chapters for the argument continuation; do not edit `doc/spec` |
 
 Authority is [Chapter 3 §3.5](../../../spec/en/03.type_system.md#35-subtyping-and-widening),
@@ -36,7 +35,7 @@ expectations, [trace records](../../../../tests/coverage/spec_trace.toml), and t
 | `pass_formula_statement_attr_negated_chain_assertion_001` | `active_formula_statement` / `statement_check` |
 | `fail_type_elaboration_argument_type_mismatch_functor_001` | `active_type_elaboration` / `type_check`; `types.application.argument_type_mismatch` |
 
-The attributed-widening positive remains inactive with unchanged source/intent; no missing registration is synthesized.
+The attributed-widening positive remains inactive after the approved WMarkedExists witness registration; authentic accepted existential evidence remains deferred.
 
 ## Boundary and exit
 
@@ -49,7 +48,7 @@ lower-stage behavior. Authenticate both actual set-to-structure applications and
 Private admission binds all source/sidecar metadata; reserved identities cannot fall through other stages;
 its [runner and test design](../../mizar-test/en/harness.md#step-5c3-attribute-semantic-runner)
 keeps metadata from selecting semantics. Preserve expectation outcome/phase/key, trace status/order,
-all `.miz`, proof/soundness policy, the 23-case rejection corpus, and Task 277B zero credit.
+all other `.miz`, proof/soundness policy, the 23-case rejection corpus, and Task 277B zero credit.
 
 Required reviews are specification/documentation, test sufficiency, implementation, volume/scope,
 and source/document consistency. Run focused corpus tests, then workspace format, warnings-denied

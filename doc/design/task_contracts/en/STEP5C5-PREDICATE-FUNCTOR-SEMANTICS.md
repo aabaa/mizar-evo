@@ -14,7 +14,6 @@ Owning plans: [mizar-checker](../../mizar-checker/en/00.crate_plan.md#task-index
 | Tier | Full: semantic-credit and expectation-tag changes |
 | Owner / consumer | `mizar-checker` owns definition/type checks; `mizar-resolve` owns identities and ordinary functor/predicate signature conflicts; `mizar-test` admits, extracts, invokes, and compares |
 | Dependencies | Step 5A.2, 5A.3, 5A.6, and 5A.7 complete |
-| Classification | `source_drift` and executable `test_gap`; no specification or test-intent change |
 | Audit impact | Retain Chapters 9/10/19 coverage; update Chapters 3/9/19 for argument typing; do not edit `doc/spec` |
 
 Authority is [§§9.4–9.5.1](../../../spec/en/09.predicates.md#94-dependent-and-typed-parameters), [§§3.4–3.5](../../../spec/en/03.type_system.md#34-built-in-types), [§10.3](../../../spec/en/10.functors.md#103-definition-styles-equals-vs-means),
@@ -52,7 +51,7 @@ return type; the builtin two-argument bracket term is well typed. Predicate dupl
 [resolver](../../mizar-resolve/en/symbols.md) bounded builtin-locus key; labels/bodies and locus renaming cannot change that conflict.
 The [application checker](../../mizar-checker/en/type_checker.md#ordinary-predicate-application-checking) owns actual ordered argument rejection and builtin-field inhabitation; [formal lookup](../../mizar-resolve/en/names.md) preserves grouped-locus identity.
 Add no parallel IR, public type/code, proof acceptance, unfolding or unrelated lower-stage behavior.
-Preserve every `.miz`, expectation outcome/phase/key, trace status/order, activation map, oracle
+Except for the approved N2MarkedExists witness registration, preserve `.miz`, expectation outcome/phase/key, trace status/order, activation map, oracle
 scope, soundness policy, 23-case certificate rejection corpus, Task 277B state, and archive.
 Required reviews are specification/documentation, test sufficiency, implementation, volume/scope,
 and source/document consistency. Run focused corpus tests, then workspace format,

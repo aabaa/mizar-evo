@@ -3,6 +3,15 @@ definition
   attr N2Def: X is n2marked means X = X;
 end;
 
+registration
+  cluster N2MarkedExists: n2marked set;
+  existence
+  proof
+    take the set;
+    thus the set is n2marked by N2Def;
+  end;
+end;
+
 definition
   let X, Y be set;
   pred EqvDef: X eqv Y means X = Y;

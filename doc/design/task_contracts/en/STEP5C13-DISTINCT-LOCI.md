@@ -14,8 +14,7 @@ Owning plans: [checker](../../mizar-checker/en/00.crate_plan.md#task-index),
   [spec10](../../../spec/en/10.functors.md) equals bodies; spec17 §17.3.4 constructor inhabitation.
 - Case: pass_advanced_semantics_overload_distinct_loci_001, unchanged overload_resolution endpoint.
 - Classification: source signature/binding/type/overload producer and execution gaps.
-- Attributed ambiguity remains excluded pending existential-registration test reconciliation and
-  actual accepted-status availability; no Task274 acceptance may be synthesized.
+- Attributed ambiguity remains inactive after approved OA/OB/OAB witness registrations; authentic accepted status remains deferred, with no synthesized Task274 evidence.
 
 ## Scope and boundaries
 
@@ -35,7 +34,7 @@ Source intake belongs to type_checker.rs under its existing exact syntax-enum im
 Minimally extend resolver formal lookup to ordinary DefinitionParameter and functor-pattern roles;
 retain prior template/registration lookup, scope, recovery and ordering boundaries.
 The harness owns exact id/source/sidecar/stage/phase/pass/tags and consumes checker outputs only.
-Activate only this sidecar; preserve the negative row, .miz/expectation intent, trace and activation map.
+Activate only the positive; beyond those witness insertions preserve .miz/expectation intent, trace and activation map.
 Owner APIs/tests: [type checker](../../mizar-checker/en/type_checker.md#distinct-loci-overload-source-checking),
 [overload](../../mizar-checker/en/overload_resolution.md), [names](../../mizar-resolve/en/names.md#unbounded-template-formal-resolution),
 [harness](../../mizar-test/en/harness.md#distinct-loci-overload-admission).

@@ -3,6 +3,15 @@ definition
   attr WMDef: X is wmarked means X = X;
 end;
 
+registration
+  cluster WMarkedExists: wmarked set;
+  existence
+  proof
+    take the set;
+    thus the set is wmarked by WMDef;
+  end;
+end;
+
 definition
   let X be set;
   func WBoxDef: wbox X -> set equals X;
