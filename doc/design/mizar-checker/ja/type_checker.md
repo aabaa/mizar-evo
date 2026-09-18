@@ -3058,3 +3058,12 @@ call-site result、rewrite、Core/VC、Step6/MVM の動作は追加しない。
 実装済みの平坦 snapshot 拡張は `snapshot name;` と algorithm 内の名前の一意性を認証する。ソース順序と BindingEnv lookup で ghost・仮引数の shadowing を含む可視宣言を求め、result・後続宣言を除く。
 `SourceAlgorithmCheck::snapshots()` は既存 seal 内の非公開 `BTreeMap<TypedNodeId, (String, Vec<BindingId>)>` を借用する。捕捉順序は実宣言同一性を保持し、推定値や受理済み事実を作らず、Core は既存変数対応で変換する。
 不正所有者・重複名・回復 node・未対応の入れ子 snapshot を拒否し、ghost から runtime への流出制限を保つ。
+
+## Source phrase predicate theorem checking
+
+限定 phrase 経路は `check_source_predicate_statements` を再利用し、実際の二つの set 引数を持つ等式定義と二箇所の正の自己適用を検査する。
+`SourceVariableSemanticsChecker::check_theorem_skeletons` は借用した中立ソースと resolver 環境から同じ producer を再実行し、TypedAst 全体の一致を確認して封印する。receipt フィールドやシグネチャは追加しない。
+その厳密な再実行の場合に限り producer 所有の predicate/formula/head/segment 種別写像を認め、全ノード、辺、anchor、recovery、token 検査を維持する。
+定義の二仮引数、量化変数、証明局所変数を四つの別 binding とし、定理 scope と producer binding は数値 index の一致でなく実際の出現と宣言の同一性で対応させる。
+一つの完了済み predicate 定義、set 上の全称定理、局所 set binder と引用のない正の終端呼出しだけを扱い、property、他の本体や guard、引用、algorithm wrapper は除外する。
+[Core consumer](../../mizar-core/ja/elaborator.md#source-phrase-predicate-theorem) が guard 付き定義と open obligation を所有し、この seal は証明や大域的な accepted-definition 効果を与えない。

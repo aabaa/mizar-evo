@@ -5782,3 +5782,11 @@ admission と snapshot scope が厳密な ID・path・ref 順序・矛盾 payloa
 実装済みの `pass_proof_verification_algorithm_ghost_snapshot_001` 活性化は pass/proof_verification/vc_generation、`algorithms.ghost`、元の `spec.en.20.algorithms.ghost.snapshot`、単一 active tag、正確な source/sidecar path を保つ。実生成後にのみ `spec.en.mizar_vc.vc_ir.algorithm_ghost_snapshot` と `snapshots/vc/pass_proof_verification_algorithm_ghost_snapshot_001.vc_ir.snap` を追加する。
 checker seal・実 Core/CFG 捕捉・完全な再現 VcSet/baseline 比較を要求し、ID または basename を全 stage で予約して inventory の欠落・重複と矛盾 payload を拒否する。trace section は `VC Task 43; bounded ghost snapshot return VcIr snapshot` とする。
 改名・完全可視集合・仮引数 shadowing・捕捉前後の宣言と書込み・独立記憶・不正所有者・ghost 流出を検査する。既存 C14 結果を保ち、snapshot claim・verification・終了・MVM の credit を与えない。
+
+## Source phrase predicate VC admission
+
+`pass_proof_verification_pred_phrase_identifier_001` のみを `proof_verification` / `vc_generation` で受理し、source/sidecar identity、pass outcome、phrase domain、canonical/snapshot reference、単独 active tag、snapshot path、補助 payload 不在を厳密に検査する。
+各 identity または source/sidecar basename を全 stage で予約し、既存ソースと意味的 expectation を保持する。
+既存 predicate typing、封印済み theorem checker、Core lowering、既存 control-flow/handoff/seed-intake VC generation を順に呼び、実際の guard 付き定義、predicate goal、一つの Open terminal VC を必須とする。
+Core/VcSet 全体の不変再実行と [VcSet 全体の snapshot](../../mizar-vc/ja/source_vc_decomposition.md#bounded-phrase-predicate-snapshot) を比較し、baseline や metadata の欠落・破損を拒否する。
+この経路は generation のみを評価し、他の C5 activation を維持して symbolic predicate、equals-infix、means-prefix、narrower-loci registration は延期する。

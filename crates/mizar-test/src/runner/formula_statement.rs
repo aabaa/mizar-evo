@@ -315,6 +315,7 @@ const EXACT_FORMULA_STATEMENT_CASES: [(&str, &str, ExpectedOutcome); 7] = [
 
 pub(super) fn is_active_formula_statement(workspace_root: &Path, case: &TestCase) -> bool {
     if super::proof_verification::is_step5c14_return_candidate(case)
+        || super::proof_verification::is_step5c5_phrase_candidate(case)
         || super::type_elaboration::is_step5c5_predicate_duplicate_candidate(case)
         || super::type_elaboration::is_step5c5_argument_candidate(case)
         || super::type_elaboration::is_step5c3_argument_candidate(case)

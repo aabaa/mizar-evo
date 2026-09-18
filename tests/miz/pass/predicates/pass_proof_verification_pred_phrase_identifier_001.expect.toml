@@ -9,5 +9,8 @@ expected_phase = "vc_generation"
 diagnostic_codes = []
 spec_refs = [
   "spec.en.09.predicates.definition.phrase",
+  "spec.en.mizar_vc.vc_ir.phrase_predicate_snapshot",
 ]
-notes = "Audit-1 semantic-bridge inactive oracle seed (September 2026 audit wave): binding expectation for the Step-5 semantic bridge; no active runner tag, earns no current credit. An identifier-spelled phrase predicate with left and right loci is defined and applied (spec 9.3, A.9 pred_pattern)."
+tags = ["active_proof_verification"]
+snapshots = "snapshots/vc/pass_proof_verification_pred_phrase_identifier_001.vc_ir.snap"
+notes = "The source phrase predicate definition and actual self-application generate one Open terminal VC with local set guard and guarded definition context; generation only, without proof acceptance."

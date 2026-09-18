@@ -7136,6 +7136,19 @@ tests = [
 ]
 
 [[requirement]]
+id = "spec.en.mizar_vc.vc_ir.phrase_predicate_snapshot"
+source = "doc/design/mizar-vc/en/source_vc_decomposition.md"
+section = "Bounded phrase predicate snapshot"
+stage = "proof_verification"
+status = "covered"
+required = true
+coverage = "snapshot"
+notes = "The exact source phrase predicate retains one Open terminal goal and its local guard and guarded definition; no proof acceptance or general unfolding."
+tests = [
+  "tests/miz/pass/predicates/pass_proof_verification_pred_phrase_identifier_001.expect.toml",
+]
+
+[[requirement]]
 id = "spec.en.mizar_vc.vc_ir.reduce_false_reducibility_snapshot"
 source = "doc/design/mizar-vc/en/source_vc_decomposition.md"
 section = "VC Task 39; bounded identity-singleton reduction VcIr snapshot"

@@ -13178,6 +13178,176 @@ impl SourceVariableSemanticsChecker {
         {
             return Err(invalid());
         }
+        // Predicate semantics are admitted only by replaying the existing source producer.
+        let phrase = if source
+            .arena()
+            .iter()
+            .any(|(_, node)| matches!(node.kind(), K::PredicateDefinition))
+        {
+            use crate::typed_ast::{TypedArena, TypedNode};
+            let neutral = TypedArena::try_new(
+                Some(TypedNodeId::new(source.arena().root().index())),
+                source
+                    .arena()
+                    .iter()
+                    .map(|(id, node)| {
+                        TypedNode::new(format!("{:?}", node.kind()), node.origin().anchor().clone())
+                            .with_resolved_node(id)
+                            .with_children(
+                                node.children()
+                                    .iter()
+                                    .map(|id| TypedNodeId::new(id.index()))
+                                    .collect(),
+                            )
+                    })
+                    .collect(),
+            )
+            .map_err(|_| invalid())?;
+            let (bindings, inference, replayed) =
+                TermFormulaChecker::check_source_predicate_statements(source, symbols, &neutral)?;
+            if replayed != *typed
+                || algorithm.is_some()
+                || computation
+                || bindings.bindings().len() != 4
+                || inference.formulas().iter().count() != 1
+                || source
+                    .arena()
+                    .iter()
+                    .any(|(_, node)| matches!(node.kind(), K::PrefixFormula(_)))
+                || atomic.predicate_segments().iter().any(|(_, segment)| {
+                    !matches!(
+                        segment.polarity(),
+                        crate::source_atomic_formula::SourcePredicateSegmentPolarityInput::Positive
+                    )
+                })
+                || scope.source_id() != source.source_id()
+                || scope.module_id() != source.module()
+                || scope.bindings().len() != 2
+                || scope.references().len() != 4
+                || !labels.references().is_empty()
+                || !resolved.ids().is_empty()
+            {
+                return Err(invalid());
+            }
+            // Scope IDs and producer IDs belong to different tables. Join by declarations
+            // and actual occurrence nodes; never compare their numeric indices.
+            for binding in scope.bindings() {
+                let expected_kind = match binding.kind() {
+                    SourceVariableBindingKind::Quantifier => BindingKind::QuantifierBinder,
+                    SourceVariableBindingKind::Let => BindingKind::LetBinding,
+                    _ => return Err(invalid()),
+                };
+                let producer = bindings
+                    .bindings()
+                    .iter()
+                    .find(|(_, row)| row.declaration_range == binding.range())
+                    .ok_or_else(invalid)?
+                    .1;
+                if producer.kind != expected_kind
+                    || producer.spelling != binding.spelling()
+                    || step5c8_range(typed, TypedNodeId::new(binding.node().index()))
+                        != Some(binding.range())
+                    || binding.declared_type().is_none_or(|ty| {
+                        ty.radix() != SourceVariableTypeRadix::Set || !ty.attributes().is_empty()
+                    })
+                {
+                    return Err(invalid());
+                }
+            }
+            for reference in scope.references() {
+                let (term_id, term) = primary
+                    .terms()
+                    .iter()
+                    .find(|(_, row)| row.site().node().index() == reference.node().index())
+                    .ok_or_else(invalid)?;
+                let binding = primary
+                    .references()
+                    .iter()
+                    .find(|(_, row)| row.term() == term_id)
+                    .ok_or_else(invalid)?
+                    .1
+                    .binding();
+                let producer = bindings.bindings().get(binding).ok_or_else(invalid)?;
+                let scoped = scope
+                    .bindings()
+                    .get(reference.binding().index())
+                    .ok_or_else(invalid)?;
+                if term.source_range() != reference.range()
+                    || term.spelling() != reference.spelling()
+                    || producer.declaration_range != scoped.range()
+                    || producer.spelling != scoped.spelling()
+                {
+                    return Err(invalid());
+                }
+            }
+            let formals = bindings
+                .bindings()
+                .iter()
+                .filter(|(_, row)| row.kind == BindingKind::DefinitionParameter)
+                .map(|(id, _)| id)
+                .collect::<Vec<_>>();
+            let (body, _) = atomic
+                .formulas()
+                .iter()
+                .find(|(_, row)| {
+                    row.kind() == crate::source_atomic_formula::SourceAtomicFormulaKind::Equality
+                })
+                .ok_or_else(invalid)?;
+            let operands = atomic
+                .edges()
+                .iter()
+                .filter(|(_, edge)| edge.formula() == body)
+                .map(|(_, edge)| {
+                    let crate::source_atomic_formula::SourceAtomicTermTarget::Primary(term) =
+                        edge.target()
+                    else {
+                        return Err(invalid());
+                    };
+                    primary
+                        .references()
+                        .iter()
+                        .find(|(_, row)| row.term() == term)
+                        .map(|(_, row)| row.binding())
+                        .ok_or_else(invalid)
+                })
+                .collect::<Result<Vec<_>, _>>()?;
+            if operands != formals {
+                return Err(invalid());
+            }
+            let pattern = source
+                .arena()
+                .iter()
+                .find(|(_, node)| matches!(node.kind(), K::PredicatePattern))
+                .ok_or_else(invalid)?
+                .1;
+            let [left, head, right] = pattern.children() else {
+                return Err(invalid());
+            };
+            if !matches!(source.arena().node(*head).map(|node| node.kind()), Some(K::Token(token)) if token.kind == SurfaceTokenKind::Identifier)
+            {
+                return Err(invalid());
+            }
+            for (node, formal) in [left, right].into_iter().zip(formals) {
+                let declaration = resolve_template_formal(source, *node).map_err(|_| invalid())?;
+                if source
+                    .arena()
+                    .node(declaration)
+                    .map(|node| node.origin().anchor())
+                    != Some(&SourceAnchor::Range(
+                        bindings
+                            .bindings()
+                            .get(formal)
+                            .ok_or_else(invalid)?
+                            .declaration_range,
+                    ))
+                {
+                    return Err(invalid());
+                }
+            }
+            true
+        } else {
+            false
+        };
         let mut parents = BTreeMap::new();
         for (id, neutral) in source.arena().iter() {
             let node_id = TypedNodeId::new(id.index());
@@ -13190,6 +13360,9 @@ impl SourceVariableSemanticsChecker {
                 (K::NumeralTerm, "source.term.numeral") if computation => primary.terms().iter().any(|(_, term)| term.site().node() == node_id && term.spelling() == "0"),
                 (K::BuiltinPredicateApplication, "source.formula.atomic.equality") => atomic.formulas().iter().any(|(_, atom)| atom.site().node() == node_id)
                     && neutral.children().get(1).and_then(|id| source.arena().node(*id)).is_some_and(|node| matches!(node.kind(), K::Token(token) if token.text.as_ref() == "=" && token.kind == SurfaceTokenKind::ReservedSymbol)),
+                (K::PredicateApplication, "source.formula.atomic.predicate")
+                | (K::PredicateSegment, "source.formula.atomic.predicate-segment")
+                | (K::PredicateHead, "source.formula.atomic.predicate-head") if phrase => true,
                 _ => node.kind.as_str() == format!("{:?}", neutral.kind()),
             };
             if !owned_kind
@@ -13328,7 +13501,7 @@ impl SourceVariableSemanticsChecker {
             {
                 return Err(invalid());
             }
-        } else {
+        } else if !phrase {
             Self::check_formula_statements_mode(typed, scope, symbols, labels, resolved, true)?;
         }
         let primary = typed.source_term().ok_or_else(invalid)?;
@@ -13336,6 +13509,7 @@ impl SourceVariableSemanticsChecker {
         if typed.source_set_term().is_some()
             || atomic.formulas().iter().any(|(_, row)| {
                 row.kind() != crate::source_atomic_formula::SourceAtomicFormulaKind::Equality
+                    && !phrase
             })
             || *resolved
                 != mizar_resolve::labels::LabelResolver::new(labels.projections()).resolve(
@@ -13451,6 +13625,18 @@ impl SourceVariableSemanticsChecker {
             {
                 return Err(invalid());
             }
+        }
+
+        if phrase {
+            let [block, theorem] = items.as_slice() else {
+                return Err(invalid());
+            };
+            if step5c8_kind(typed, *block) != Some("DefinitionBlockItem")
+                || step5c8_kind(typed, *theorem) != Some("TheoremItem")
+            {
+                return Err(invalid());
+            }
+            items = vec![*theorem];
         }
 
         if items.is_empty()
@@ -13579,6 +13765,24 @@ impl SourceVariableSemanticsChecker {
                 },
                 visibility,
             ));
+            if phrase {
+                if status != SourceTheoremStatus::Unmodified
+                    || role != SourceTheoremRole::Theorem
+                    || labels.projections().len() != 1
+                    || labels.projections().iter().any(|projection| {
+                        projection.module() != typed.module_id()
+                            || projection.contribution() != entry.contribution()
+                            || projection.primary_spelling() != entry.primary_spelling()
+                            || !step5c8_contains(range, projection.declaration_range())
+                            || projection.origin().source_id() != typed.source_id()
+                            || projection.origin().import_edge().is_some()
+                            || projection.origin().is_recovered()
+                    })
+                {
+                    return Err(invalid());
+                }
+                continue;
+            }
             if computation {
                 if status != SourceTheoremStatus::Unmodified
                     || role != SourceTheoremRole::Theorem

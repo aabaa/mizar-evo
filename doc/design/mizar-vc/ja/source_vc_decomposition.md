@@ -248,3 +248,10 @@ recommended continuation で、その後に Core 33 と descendant が続く。t
 parser Tasks 47-48 と resolver Task 31 も独立に authorize しているため、どの continuation
 でも unique priority を主張せず fresh global inventory が必要である。Steps 6/7 は
 deferred のままである。
+
+## Bounded phrase predicate snapshot
+
+phrase source profile は既存 Core/control-flow/obligation intake と normalization により、実際の predicate goal と順序付き local-guard/guarded-definition context を持つ実際の TerminalGoal から一つの Open TheoremProofStep VC を保持する。
+`spec.en.mizar_vc.vc_ir.phrase_predicate_snapshot` を限定 snapshot trace とし、唯一の fixture を `tests/miz/pass/predicates/pass_proof_verification_pred_phrase_identifier_001.expect.toml` とする。
+`snapshots/vc/pass_proof_verification_pred_phrase_identifier_001.vc_ir.snap` は決定的な `VcSet::debug_text()` 全出力を記録し、Core/VcSet 全体の不変比較で formula、symbol、binder、context、provenance も保護する。
+canonical predicate trace の status と広域 proof-family の延期を維持し、discharge、accepted theorem、proof reuse、definition installation、新規 VC generator API は導入しない。

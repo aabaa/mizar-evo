@@ -6348,3 +6348,11 @@ Admission and snapshot scope authenticate exact IDs, paths, ordered refs and abs
 The implemented `pass_proof_verification_algorithm_ghost_snapshot_001` activation preserves pass/proof_verification/vc_generation, `algorithms.ghost`, original `spec.en.20.algorithms.ghost.snapshot`, sole active tag and exact source/sidecar paths; append only `spec.en.mizar_vc.vc_ir.algorithm_ghost_snapshot` and `snapshots/vc/pass_proof_verification_algorithm_ghost_snapshot_001.vc_ir.snap` after genuine generation.
 Require sealed checker, actual Core/CFG captures and complete deterministic VcSet/baseline comparisons; reserve either ID or basename across stages and reject missing/duplicate inventory or contradictory payloads. The snapshot trace section is `VC Task 43; bounded ghost snapshot return VcIr snapshot`.
 Controls cover renaming, complete visible captures, parameter shadowing, declarations and writes before/after capture, independent storage, malformed owners and ghost-to-runtime leaks. Preserve existing C14 outcomes; no snapshot-claim, verification, termination or MVM credit follows.
+
+## Source phrase predicate VC admission
+
+Admit only `pass_proof_verification_pred_phrase_identifier_001` at `proof_verification` / `vc_generation`, with exact source/sidecar identity, pass outcome, phrase domain, canonical and snapshot references, sole active tag, snapshot path and absent auxiliary payloads.
+Reserve either identity or source/sidecar basename across all stages; the existing source and semantic expectation remain unchanged.
+Invoke existing predicate typing, the sealed theorem checker and Core lowering, then existing control-flow/handoff/seed-intake VC generation; require the actual guarded definition, predicate goal and one Open terminal VC.
+Compare complete immutable Core/VcSet reruns and the [whole VcSet snapshot](../../mizar-vc/en/source_vc_decomposition.md#bounded-phrase-predicate-snapshot); missing or corrupted baselines and metadata fail closed.
+This route earns generation credit only, preserves all other C5 activations and leaves symbolic predicates, equals-infix, means-prefix and narrower-loci registration deferred.

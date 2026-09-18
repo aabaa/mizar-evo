@@ -3239,3 +3239,12 @@ Attributed/nonconstant RHS, multiple parameters and general dependent substituti
 The implemented flat snapshot extension authenticates `snapshot name;` and unique algorithm-local names; source order and BindingEnv lookup determine every visible declaration, including ghost bindings and parameter shadowing, excluding result and future declarations.
 `SourceAlgorithmCheck::snapshots()` borrows `BTreeMap<TypedNodeId, (String, Vec<BindingId>)>` retained privately in the existing seal. Ordered captures are actual declaration identities, not inferred values or accepted facts; the Core consumer translates them through its existing variable mapping.
 Malformed owners, duplicate names, recovery and unsupported nested snapshots fail closed; existing ghost-to-runtime restrictions remain.
+
+## Source phrase predicate theorem checking
+
+The bounded phrase route reuses `check_source_predicate_statements` for the actual binary set-parameter equality definition and both positive self-applications.
+`SourceVariableSemanticsChecker::check_theorem_skeletons` replays that producer from its borrowed neutral source and resolver environment before sealing the complete matching TypedAst; no receipt field or signature is added.
+Only that exact replay permits the producer-owned predicate/formula/head/segment kind mappings, with all node, edge, anchor, recovery and token checks retained.
+Definition formals, quantified variable and proof-local variable remain four distinct bindings; source occurrence/declaration identity links the theorem scope to producer bindings, never equal numeric indices.
+The profile has one completed predicate definition, one universally quantified set theorem and one local set binder with an uncited positive terminal call; properties, other bodies/guards, citations and algorithm wrappers are excluded.
+The [Core consumer](../../mizar-core/en/elaborator.md#source-phrase-predicate-theorem) owns guarded definition encoding and open obligations; this seal grants no proof or global accepted-definition effects.

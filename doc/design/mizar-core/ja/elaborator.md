@@ -920,3 +920,12 @@ environment・checker 再評価・受理状態は追加しない。
 ## Flat snapshot lowering
 
 実装済みの `lower_source_algorithms` 拡張は seal の名前・BindingId を `AlgorithmStmtSeed::Snapshot { name, captures, source, provenance }` で [既存 statement table](./core_ir.md#flat-snapshot-statement) へ渡す。source node を漏れなく対応させ、捕捉宣言を同じ algorithm の実変数割当で変換する。snapshot は binder・項・式・証明 seed を追加しない。
+
+## Source phrase predicate theorem
+
+`lower_source_theorem_skeletons` の厳密な phrase 分岐は checker が封印した source receipt のみを消費し、resolver 環境や型の再検査を持ち込まない。
+実際の predicate item/symbol、順序付き仮引数 binder、等式本体の `CoreDefinition` と `ExpansionPolicy::Transparent` を保持し、この宣言は correctness や accepted-proof receipt を持たない。
+定義由来の context は既存 Core formula 種別と実際の仮引数 identity による `forall x,y ((set(x) & set(y)) -> (P(x,y) iff x=y))` とする。
+定理命題は `forall q (set(q) -> P(q,q))` を保持し、別の局所 binder `l` の終端は実際の goal `P(l,l)` と順序付き context `[set(l), guarded definition]` を持つ。
+出現と宣言の対応で producer binding と定理 scope を結び、数値 ID を混同しない。source map、definition/formula/term backref、依存と証明 provenance を完全に保つ。
+Active TheoremProof seed は一つで、定理は `PendingAutomaticProof` のままとし、定理 fact、証明 discharge、大域的な定義 installation、Task274 acceptance、一般 predicate unfolding は行わない。

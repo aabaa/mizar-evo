@@ -1330,6 +1330,14 @@ pub fn validate_expectation_path(
                 .any(|spec_ref| spec_ref.0 == EXACT_TASK31_VC_SNAPSHOT_SPEC_REF);
         let exact_source_vc_snapshot = [
             (
+                "pass_proof_verification_pred_phrase_identifier_001",
+                "pass/predicates",
+                "predicates.phrase_definition",
+                "spec.en.09.predicates.definition.phrase",
+                "spec.en.mizar_vc.vc_ir.phrase_predicate_snapshot",
+                None,
+            ),
+            (
                 "pass_proof_verification_computation_justification_001",
                 "pass/algorithms",
                 "algorithms.computation",
@@ -1420,6 +1428,7 @@ pub fn validate_expectation_path(
                         | "algorithms.assertions"
                         | "algorithms.computation"
                         | "algorithms.ghost"
+                        | "predicates.phrase_definition"
                 ) || expectation.schema_version == 1
                     && expectation.profiles.as_slice() == ["fast"]
                     && expectation.ast_profile.is_none()

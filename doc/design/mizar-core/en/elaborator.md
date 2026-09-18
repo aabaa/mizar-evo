@@ -1064,3 +1064,12 @@ Existing tables carry all three proofs; no new public record, callback or copied
 ## Flat snapshot lowering
 
 The implemented extension to `lower_source_algorithms` consumes the seal's snapshot names and BindingIds through `AlgorithmStmtSeed::Snapshot { name, captures, source, provenance }`, producing the [existing statement table](./core_ir.md#flat-snapshot-statement). Require exact source-node coverage and map each capture through the same algorithm's real variable allocation; snapshot adds no binder, term, formula or proof seed.
+
+## Source phrase predicate theorem
+
+The exact phrase branch of `lower_source_theorem_skeletons` consumes only checker-sealed source receipts, without a resolver environment or repeated type checking.
+It retains the actual predicate item/symbol, ordered formal binders and equality-body `CoreDefinition` with `ExpansionPolicy::Transparent`; this declaration carries no correctness or accepted-proof receipt.
+Its source-owned definition context is `forall x,y ((set(x) & set(y)) -> (P(x,y) iff x=y))`, using existing Core formula kinds and actual formal identities.
+The theorem proposition remains `forall q (set(q) -> P(q,q))`; its distinct local binder `l` ends with the actual goal `P(l,l)` and ordered context `[set(l), guarded definition]`.
+Occurrence/declaration correspondence connects the producer bindings and theorem scope without conflating their numeric IDs; source maps, definition/formula/term backrefs, dependencies and proof provenance remain complete.
+Exactly one Active TheoremProof seed belongs to a `PendingAutomaticProof` theorem; no theorem fact, proof discharge, global definition installation, Task274 acceptance or general predicate unfolding follows.

@@ -2321,6 +2321,7 @@ pub fn active_proof_verification_cases(plan: &TestPlan) -> impl Iterator<Item = 
 
 fn is_active_parse_only(case: &TestCase) -> bool {
     if proof_verification::is_step5c14_return_candidate(case)
+        || proof_verification::is_step5c5_phrase_candidate(case)
         || type_elaboration::is_step5c5_predicate_duplicate_candidate(case)
         || type_elaboration::is_step5c5_argument_candidate(case)
         || formula_statement::is_step5c5_negated_candidate(case)
@@ -2375,6 +2376,7 @@ fn is_active_parse_only(case: &TestCase) -> bool {
 
 fn is_active_declaration_symbol(case: &TestCase) -> bool {
     if proof_verification::is_step5c14_return_candidate(case)
+        || proof_verification::is_step5c5_phrase_candidate(case)
         || type_elaboration::is_step5c5_predicate_duplicate_candidate(case)
         || type_elaboration::is_step5c5_argument_candidate(case)
         || formula_statement::is_step5c5_negated_candidate(case)

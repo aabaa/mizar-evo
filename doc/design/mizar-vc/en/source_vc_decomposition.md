@@ -264,3 +264,10 @@ and resolver Task 31, so every continuation still requires a fresh global
 inventory rather than a unique-priority claim. Steps 6/7 remain deferred.
 
 The source existential-proof prerequisite exercises bounded VC36/37 semantics in real-source Rust tests with complete Core/VC/handoff baselines. It retains the nonempty seed with explicit builtin accounting and expands the original registration parent into both actual witness/body leaves. It adds no mapped pipeline case, MT10 trace activation, VC40 trace context, imported acceptance or broader family completion; the final source-to-accepted association is proof-owned.
+
+## Bounded phrase predicate snapshot
+
+The phrase source profile uses existing Core/control-flow/obligation intake and normalization to retain one Open TheoremProofStep VC from the actual TerminalGoal with the actual predicate goal and ordered local-guard/guarded-definition context.
+`spec.en.mizar_vc.vc_ir.phrase_predicate_snapshot` is the narrow snapshot trace; its sole fixture is `tests/miz/pass/predicates/pass_proof_verification_pred_phrase_identifier_001.expect.toml`.
+`snapshots/vc/pass_proof_verification_pred_phrase_identifier_001.vc_ir.snap` records complete deterministic `VcSet::debug_text()` output; immutable whole-Core/whole-VcSet assertions also protect formulas, symbols, binders, context and provenance.
+Canonical predicate trace status and broad proof-family deferrals remain unchanged; no discharge, accepted theorem, proof reuse, definition installation or new VC generator API follows.
