@@ -598,11 +598,11 @@ activation-map ledger; every 5C task also requires 5B.2.
    unfolding, dependent return types, bracket application, properties
    declarations and arity checks, duplicate-signature rejection, and
    redefinition coherence. Deps: 5A.2, 5A.3, 5A.6, 5A.7.
-6. [~] **[5C.6 — Notation and modules](./task_contracts/en/STEP5C6-MODULE-SEMANTICS.md)** (`mizar-resolve`,
+6. [x] **[5C.6 — Notation and modules](./task_contracts/en/STEP5C6-MODULE-SEMANTICS.md)** (`mizar-resolve`,
    `mizar-frontend`; spec ch. 11 and 12). Requirements:
    `spec.en.11.symbols.*` (2 ids) plus `spec.en.12.modules.*` (4 ids).
    Targets: 7 pairs; six outcomes complete,
-   predicate antonym inactive. Covers loci checks, branch-form imports, duplicate alias
+   plus predicate-antonym typing complete. Covers loci checks, branch-form imports, duplicate alias
    and unknown-module rejection, and private visibility. Deeper import
    matrices stay owned by the resolver crate corpus. Deps: 5A.1, 5A.5,
    5A.7.

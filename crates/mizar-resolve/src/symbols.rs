@@ -950,7 +950,7 @@ impl<'a> SignatureProjectionExtractor<'a> {
         }
     }
 
-    /// Collects source symbols, bounded synonym relations and locus mismatches.
+    /// Collects source symbols, bounded synonym/antonym relations and synonym locus mismatches.
     #[must_use]
     pub fn collect(&self, module: &ModuleId) -> SymbolCollectionResult {
         let projections = self.extract();
@@ -977,11 +977,16 @@ impl<'a> SignatureProjectionExtractor<'a> {
             .declarations()
             .iter()
             .filter_map(|shell| {
-                if shell.kind() != DeclarationShellKind::FunctorDefinition {
-                    return None;
-                }
                 let view = self.ast.node_view(shell.node_id())?;
-                let pattern = first_child_matching(view, is_functor_pattern)?;
+                let pattern = match shell.kind() {
+                    DeclarationShellKind::FunctorDefinition => {
+                        first_child_matching(view, is_functor_pattern)?
+                    }
+                    DeclarationShellKind::PredicateDefinition => {
+                        first_child_matching(view, is_predicate_pattern)?
+                    }
+                    _ => return None,
+                };
                 let key = self.bound_pattern_key(shell, view, pattern, true)?;
                 Some((shell, key))
             })
@@ -1000,8 +1005,22 @@ impl<'a> SignatureProjectionExtractor<'a> {
             let [synonym, alternate, separator, original, terminator] = children.as_slice() else {
                 continue;
             };
-            if !matches!(synonym.as_token(), Some(token) if token.kind == SurfaceTokenKind::ReservedWord && token.text.as_ref() == "synonym")
-                || !matches!(separator.as_token(), Some(token) if token.kind == SurfaceTokenKind::ReservedWord && token.text.as_ref() == "for")
+            let relation = match synonym.as_token() {
+                Some(token) if token.kind == SurfaceTokenKind::ReservedWord => {
+                    match token.text.as_ref() {
+                        "synonym" => RelationKind::Synonym,
+                        "antonym" => RelationKind::Antonym,
+                        _ => continue,
+                    }
+                }
+                _ => continue,
+            };
+            let target_kind = if relation == RelationKind::Synonym {
+                DeclarationShellKind::FunctorDefinition
+            } else {
+                DeclarationShellKind::PredicateDefinition
+            };
+            if !matches!(separator.as_token(), Some(token) if token.kind == SurfaceTokenKind::ReservedWord && token.text.as_ref() == "for")
                 || !matches!(terminator.as_token(), Some(token) if token.kind == SurfaceTokenKind::ReservedSymbol && token.text.as_ref() == ";")
                 || alternate.kind() != &SurfaceNodeKind::NotationPattern
                 || original.kind() != &SurfaceNodeKind::NotationPattern
@@ -1021,7 +1040,8 @@ impl<'a> SignatureProjectionExtractor<'a> {
             let candidates = originals
                 .iter()
                 .filter(|(target, (key, _))| {
-                    target.range().end <= shell.range().start
+                    target.kind() == target_kind
+                        && target.range().end <= shell.range().start
                         && self
                             .definition_context_block(target)
                             .is_some_and(|block| block.range().end <= shell.range().start)
@@ -1039,9 +1059,16 @@ impl<'a> SignatureProjectionExtractor<'a> {
                     && self
                         .ast
                         .node_view(target.node_id())
-                        .and_then(|target| first_child_matching(target, is_functor_pattern))
+                        .and_then(|target| {
+                            first_child_matching(target, |node| {
+                                is_functor_pattern(node) || is_predicate_pattern(node)
+                            })
+                        })
                         .is_some_and(|pattern| pattern.children().len() == 3);
-                if bijective || alternate_key.arity != original_key.arity {
+                if bijective
+                    || (relation == RelationKind::Synonym
+                        && alternate_key.arity != original_key.arity)
+                {
                     synonym_candidates.push((shell.id(), target.id(), bijective));
                 }
             }
@@ -1714,17 +1741,39 @@ impl<'a> SymbolCollector<'a> {
             else {
                 continue;
             };
+            let (
+                relation,
+                alias_definition,
+                original_kind,
+                original_definition,
+                original_shell_kind,
+            ) = match alias.projection.symbol_kind() {
+                SymbolKind::Synonym => (
+                    RelationKind::Synonym,
+                    DefinitionKind::Synonym,
+                    SymbolKind::Functor,
+                    DefinitionKind::Functor,
+                    DeclarationShellKind::FunctorDefinition,
+                ),
+                SymbolKind::Antonym if *bijective => (
+                    RelationKind::Antonym,
+                    DefinitionKind::Antonym,
+                    SymbolKind::Predicate,
+                    DefinitionKind::Predicate,
+                    DeclarationShellKind::PredicateDefinition,
+                ),
+                _ => continue,
+            };
             if alias.recovered
                 || original.recovered
                 || conflicts.contains_key(&alias.symbol)
                 || conflicts.contains_key(&original.symbol)
-                || alias.projection.symbol_kind() != SymbolKind::Synonym
-                || alias.projection.definition_kind() != Some(DefinitionKind::Synonym)
-                || original.projection.symbol_kind() != SymbolKind::Functor
-                || original.projection.definition_kind() != Some(DefinitionKind::Functor)
+                || alias.projection.definition_kind() != Some(alias_definition)
+                || original.projection.symbol_kind() != original_kind
+                || original.projection.definition_kind() != Some(original_definition)
                 || alias.projection.namespace() != original.projection.namespace()
                 || alias.shell.kind() != DeclarationShellKind::NotationAlias
-                || original.shell.kind() != DeclarationShellKind::FunctorDefinition
+                || original.shell.kind() != original_shell_kind
                 || [alias, original].iter().any(|item| {
                     item.origin.source_id() != self.source_id
                         || item.origin.module_id() != self.module
@@ -1735,7 +1784,7 @@ impl<'a> SymbolCollector<'a> {
                 continue;
             }
             if *bijective {
-                synonym_targets.insert(alias.symbol.clone(), original.symbol.clone());
+                synonym_targets.insert(alias.symbol.clone(), (relation, original.symbol.clone()));
                 continue;
             }
             diagnostic_drafts.push(DiagnosticDraft {
@@ -1796,7 +1845,7 @@ impl<'a> SymbolCollector<'a> {
         item: &CollectedProjection,
         conflict: Option<&DeclarationConflictClass>,
         target: Option<DeclarationShellId>,
-        synonym_target: Option<&SymbolId>,
+        synonym_target: Option<&(RelationKind, SymbolId)>,
     ) -> Option<OwnerAllocation> {
         let signature = item.signature.clone();
         let mut symbol_entry = SymbolEntry::new(
@@ -1813,11 +1862,9 @@ impl<'a> SymbolCollector<'a> {
         if let Some(notation) = &item.projection.notation_spelling {
             symbol_entry = symbol_entry.with_notation_spelling(notation.clone());
         }
-        if let Some(target) = synonym_target {
-            symbol_entry = symbol_entry.with_relations(vec![RelationMetadata::new(
-                RelationKind::Synonym,
-                target.clone(),
-            )]);
+        if let Some((relation, target)) = synonym_target {
+            symbol_entry =
+                symbol_entry.with_relations(vec![RelationMetadata::new(*relation, target.clone())]);
         }
         indexes.symbols.insert(symbol_entry);
         indexes

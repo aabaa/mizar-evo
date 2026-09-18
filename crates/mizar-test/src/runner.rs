@@ -2686,7 +2686,14 @@ fn type_elaboration_detail_keys(
             return source_registration_inputs(workspace_root, case, output)
                 .and_then(|(source, typed, symbols)| {
                     mizar_checker::type_checker::check_source_functor_synonym_types(
-                        &source, &symbols, &typed,
+                        &source,
+                        &symbols,
+                        &typed,
+                        if case.expectation.domain == "notation.antonym" {
+                            mizar_resolve::env::RelationKind::Antonym
+                        } else {
+                            mizar_resolve::env::RelationKind::Synonym
+                        },
                     )
                 })
                 .err()

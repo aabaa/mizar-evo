@@ -817,6 +817,105 @@ fn source_synonym_diagnostic_uses_original_identity_and_normal_contribution() {
 }
 
 #[test]
+fn antonym_finalization_keeps_inversion_and_rejects_wrong_family_or_nonbijection() {
+    let source = source_id();
+    let module = module_id();
+    let shells = shells_for(
+        source,
+        vec![
+            test_item(0, SurfaceNodeKind::PredicateDefinition),
+            test_item(10, SurfaceNodeKind::NotationAlias),
+        ],
+    );
+    let original = &shells.declarations()[0];
+    let alias = &shells.declarations()[1];
+    let projections = [
+        (
+            original.id(),
+            "base",
+            SymbolKind::Predicate,
+            DefinitionKind::Predicate,
+        ),
+        (
+            alias.id(),
+            "alternate",
+            SymbolKind::Antonym,
+            DefinitionKind::Antonym,
+        ),
+    ]
+    .map(|(shell, spelling, kind, definition)| {
+        projection(
+            shell,
+            NamespacePath::new(module.path().as_str()),
+            spelling,
+            kind,
+            definition,
+        )
+    });
+    let pairs = [(alias.id(), original.id(), true)];
+    let opaque = SymbolCollector::new(source, &module, &shells, &projections).collect();
+    assert!(
+        opaque
+            .env()
+            .symbols()
+            .iter()
+            .all(|entry| entry.relations().is_empty())
+    );
+    let related = SymbolCollector::new(source, &module, &shells, &projections)
+        .collect_targeted(None, &pairs)
+        .0;
+    assert!(related.diagnostics().is_empty());
+    let target = related
+        .env()
+        .symbols()
+        .iter()
+        .find(|entry| entry.kind() == SymbolKind::Predicate)
+        .unwrap();
+    let antonym = related
+        .env()
+        .symbols()
+        .iter()
+        .find(|entry| entry.kind() == SymbolKind::Antonym)
+        .unwrap();
+    assert_eq!(
+        antonym.relations(),
+        &[RelationMetadata::new(
+            RelationKind::Antonym,
+            target.symbol().clone()
+        )]
+    );
+    assert_eq!(antonym.contribution(), target.contribution());
+    for change in 0..6 {
+        let mut invalid = projections.clone();
+        let mut pairs = pairs;
+        match change {
+            0 => invalid[0].symbol_kind = SymbolKind::Functor,
+            1 => invalid[0].definition_kind = Some(DefinitionKind::Functor),
+            2 => invalid[1].symbol_kind = SymbolKind::Synonym,
+            3 => invalid[1].definition_kind = Some(DefinitionKind::Synonym),
+            4 => invalid[0].namespace = NamespacePath::new("foreign"),
+            _ => pairs[0].2 = false,
+        }
+        let result = SymbolCollector::new(source, &module, &shells, &invalid)
+            .collect_targeted(None, &pairs)
+            .0;
+        assert!(
+            result
+                .env()
+                .symbols()
+                .iter()
+                .all(|entry| entry.relations().is_empty())
+        );
+        assert!(
+            result
+                .diagnostics()
+                .iter()
+                .all(|diagnostic| diagnostic.class() != SymbolDiagnosticClass::SynonymLociMismatch)
+        );
+    }
+}
+
+#[test]
 fn predicate_signatures_canonicalize_actual_loci_and_keep_conflict_metadata() {
     for parameters in [
         vec![("A", "set"), ("B", "object")],

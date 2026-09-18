@@ -2981,8 +2981,10 @@ binding identity で簡約し、recursive inline definition は cycle guard で 
 
 ## Source functor synonym typing
 
-`check_source_functor_synonym_types(&SurfaceResolvedArena, &SymbolEnv, &TypedArena)` は既存 `(TypeNormalizationOutput, OverloadCollectionOutput, CandidateViabilityOutput)` を `Result<_, String>` で返す。builtin-set 2 loci の引数を返す関手、実際の synonym-target relation と locus 全単射を認証し、定理と証明内の両 call・引数・返却型・等式オペランド型を検査する。
+`check_source_functor_synonym_types(&SurfaceResolvedArena, &SymbolEnv, &TypedArena, RelationKind)` は既存 `(TypeNormalizationOutput, OverloadCollectionOutput, CandidateViabilityOutput)` を `Result<_, String>` で返す。builtin-set 2 loci の引数を返す関手、実際の synonym-target relation と locus 全単射を認証し、定理と証明内の両 call・引数・返却型・等式オペランド型を検査する。
 collection の arguments は元 constructor 順の実 occurrence site とし、ソースの綴りと束縛同一性を維持する。全 actual viability 判定の成功後だけ出力を返す。展開・定理/coherence 証明・登録承認・一般 overload 選択を与えず、C3/C13 profile と source-application transport は変更しない。
+
+明示的 Synonym profile は上記 functor 動作を維持する。Antonym は builtin-set 二項述語の実否定等式本体と2つの正の predicate segment を認証し、candidate は result=None と元 root 順の実引数を保持する。既存 RelationMetadata(Antonym, target) で本体の否定と別に反転を保持し、逆 fact や canonical formula を創作しない。他 relation kind と符号付き・連鎖 segment は拒否する。
 
 ## Distinct-loci overload source checking
 

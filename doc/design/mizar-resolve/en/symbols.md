@@ -407,8 +407,8 @@ functor in an earlier completed definition block by namespace, notation shape an
 labels and bodies do not define constructor identity. Parenthesized argument lists are allowed;
 repeated/unbound loci, recovery, ambiguous or unsupported targets cannot supply this diagnostic.
 The diagnostic anchors the actual alias shell/range, identifies the original constructor SymbolId,
-and belongs to the source contribution. Unequal locus counts still reject the alias. A plain binary synonym with the same bound-locus set and unique earlier target may publish existing `RelationMetadata(Synonym, target)`; count equality alone is insufficient.
-This records constructor identity, not proof acceptance; the checker replays ordered source loci at each application. Source collection/replay authenticate the relation, while explicit opaque collection, numeric codes, antonyms and unsupported aliases retain their boundaries.
+and belongs to the source contribution. Unequal synonym locus counts still reject the alias. A plain binary functor synonym or predicate antonym with the same bound-locus set and a unique same-source local target of the matching constructor kind and namespace in an earlier completed definition block may publish existing RelationMetadata(Synonym/Antonym, target); count equality alone is insufficient.
+This records original-constructor identity and antonym inversion, not proof acceptance; checker replays ordered source loci at each application. Source collection/replay authenticate the relation; opaque collection, numeric codes, predicate synonyms, alias chains and unsupported targets retain their boundaries. Antonym mismatch supplies no synonym-loci diagnostic.
 
 ## Determinism
 

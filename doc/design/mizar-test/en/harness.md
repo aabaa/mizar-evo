@@ -6275,8 +6275,8 @@ Authenticate all source/sidecar identity and metadata; reserved identities canno
 After clean frontend processing, fresh source-aware resolver replay must reproduce every shell/environment
 index and the sole synonym-loci diagnostic, anchored to the actual alias and earlier original functor.
 Only that diagnostic maps to the frozen key; unrelated errors, stale inputs and unsupported shapes fail closed.
-The four module outcomes and synonym negative stay intact. Only the exact functor-synonym positive additionally enters type_check after the same full metadata/cross-stage authentication with no failure key/category; antonym remains inactive.
-The harness passes actual resolved source, symbols and neutral typed nodes to the source synonym checker and requires successful authenticated type results. It never derives a mapping or treats absence of the resolver mismatch as pass; malformed relations, unrelated diagnostics and lower-stage failures cannot earn positive credit.
+The four module outcomes and synonym negative stay intact. The exact functor-synonym and predicate-antonym positives enter type_check after full metadata/cross-stage authentication with no failure key/category; each binds its notation.synonym/notation.antonym domain and sole canonical ref.
+The harness passes actual resolved source, symbols, neutral typed nodes and explicit Synonym/Antonym profile to the existing source checker. It requires authenticated body/call typing and both viable original-root applications, never derives a locus map/inverse fact or treats absence of resolver mismatch as pass; malformed relations, unrelated diagnostics and lower-stage failures earn no credit.
 
 ## Unbounded template type admission
 

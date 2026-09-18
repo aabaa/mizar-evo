@@ -228,7 +228,7 @@ pub(in crate::runner) fn step5c6_synonym_admitted(root: Option<&Path>, case: &Te
             Some("resolve_error"),
             Some("notation.synonym.loci_mismatch"),
         )
-    } else if case.id.0 == STEP5C6_ALIAS_IDS[1] {
+    } else if STEP5C6_ALIAS_IDS[1..].contains(&case.id.0.as_str()) {
         (
             "pass",
             TestKind::Pass,
@@ -261,9 +261,19 @@ pub(in crate::runner) fn step5c6_synonym_admitted(root: Option<&Path>, case: &Te
         && case.expectation.expected_outcome == outcome
         && case.expectation.failure_category.as_deref() == category
         && case.expectation.stable_detail_key.as_deref() == detail
-        && case.expectation.domain == "notation.synonym"
+        && case.expectation.domain
+            == if case.id.0 == STEP5C6_ALIAS_IDS[2] {
+                "notation.antonym"
+            } else {
+                "notation.synonym"
+            }
         && case.expectation.spec_refs.len() == 1
-        && case.expectation.spec_refs[0].0 == "spec.en.11.symbols.synonym.functor"
+        && case.expectation.spec_refs[0].0
+            == if case.id.0 == STEP5C6_ALIAS_IDS[2] {
+                "spec.en.11.symbols.antonym.predicate"
+            } else {
+                "spec.en.11.symbols.synonym.functor"
+            }
         && case.expectation.profiles.as_slice() == ["fast"]
         && case.expectation.rejection_reason.is_none()
         && case.expectation.diagnostic_codes.is_empty()
@@ -884,7 +894,7 @@ pub(in crate::runner) fn validate_active_type_elaboration_tags(
         .join("tests/coverage/step5_activation_map.tsv")
         .is_file()
     {
-        for id in &STEP5C6_ALIAS_IDS[..2] {
+        for id in &STEP5C6_ALIAS_IDS {
             if plan
                 .cases
                 .iter()
@@ -899,7 +909,7 @@ pub(in crate::runner) fn validate_active_type_elaboration_tags(
                     "type_elaboration",
                     "E-TYPE-ELABORATION-STEP5C6-INVENTORY",
                     "type_elaboration.step5c6_inventory.synonym",
-                    "each frozen synonym case must have exactly one admitted source/sidecar pair",
+                    "each frozen alias case must have exactly one admitted source/sidecar pair",
                 ));
             }
         }
@@ -2414,7 +2424,12 @@ mod tests {
             .iter()
             .find(|case| case.id.0 == super::STEP5C6_ALIAS_IDS[1])
             .unwrap();
-        let originals = [original, positive];
+        let antonym = plan
+            .cases
+            .iter()
+            .find(|case| case.id.0 == super::STEP5C6_ALIAS_IDS[2])
+            .unwrap();
+        let originals = [original, positive, antonym];
         assert!(validate_active_type_elaboration_tags(&root, &plan).is_empty());
         for original in originals {
             assert!(super::step5c6_synonym_admitted(Some(&root), original));
@@ -2548,16 +2563,6 @@ mod tests {
         for original in originals {
             legacy.expectation.id = original.expectation.id.clone();
             rejected(&legacy);
-        }
-        for id in &super::STEP5C6_ALIAS_IDS[2..] {
-            let mut positive = plan
-                .cases
-                .iter()
-                .find(|case| case.id.0 == *id)
-                .unwrap()
-                .clone();
-            positive.expectation.tags = vec![ACTIVE_TYPE_ELABORATION_TAG.into()];
-            rejected(&positive);
         }
         for (stage, phase, tag) in [
             (Stage::ParseOnly, PipelinePhase::Parse, "active_parse_only"),

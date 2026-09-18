@@ -1413,12 +1413,13 @@ pub fn check_source_dependent_mode_types(
     Ok((bindings, checked, inference))
 }
 
-/// Checks the bounded binary set-functor synonym profile using real alias-locus identities.
+/// Checks bounded binary set-functor synonyms and predicate antonyms using actual locus identities.
 /// Returns original-root applications and argument viability, without unfolding or proof credit.
 pub fn check_source_functor_synonym_types(
     source: &SurfaceResolvedArena,
     symbols: &SymbolEnv,
     typed: &crate::typed_ast::TypedArena,
+    profile: mizar_resolve::env::RelationKind,
 ) -> Result<
     (
         TypeNormalizationOutput,
@@ -1430,6 +1431,11 @@ pub fn check_source_functor_synonym_types(
     use crate::overload_resolution::*;
     use mizar_resolve::env::RelationKind;
     let invalid = || "notation.synonym.unsupported_source_types".to_owned();
+    let antonym = match profile {
+        RelationKind::Synonym => false,
+        RelationKind::Antonym => true,
+        _ => return Err(invalid()),
+    };
     mizar_resolve::symbols::validate_source_symbol_env(source, symbols)?;
     if typed.len() != source.arena().len()
         || typed.root() != Some(TypedNodeId::new(source.arena().root().index()))
@@ -1503,17 +1509,25 @@ pub fn check_source_functor_synonym_types(
         Ok(entry)
     };
     let grouped = |id, kind: &K, keyword| {
-        let [left, comma, right, be, ty] = parts(id, kind)? else {
-            return Err(invalid());
+        let (binders, be, ty) = match parts(id, kind)? {
+            [left, comma, right, be, ty] => {
+                tokens(&[(*comma, ",")])?;
+                if text(*left)? == text(*right)? {
+                    return Err(invalid());
+                }
+                (vec![*left, *right], *be, *ty)
+            }
+            [binder, be, ty] if antonym => (vec![*binder], *be, *ty),
+            _ => return Err(invalid()),
         };
-        tokens(&[(*comma, ","), (*be, keyword)])?;
-        if !matches!(node(*left)?.kind(), K::Token(token) if token.kind == SurfaceTokenKind::Identifier)
-            || !matches!(node(*right)?.kind(), K::Token(token) if token.kind == SurfaceTokenKind::Identifier)
-            || text(*left)? == text(*right)?
-        {
-            return Err(invalid());
+        tokens(&[(be, keyword)])?;
+        for binder in &binders {
+            if !matches!(node(*binder)?.kind(), K::Token(token) if token.kind == SurfaceTokenKind::Identifier)
+            {
+                return Err(invalid());
+            }
         }
-        Ok(([*left, *right], *ty))
+        Ok((binders, ty))
     };
     let structural = node(source.arena().root())?
         .children()
@@ -1534,11 +1548,16 @@ pub fn check_source_functor_synonym_types(
     else {
         return Err(invalid());
     };
-    let [definition_kw, parameter, definition, coherence, end, semi] =
-        parts(*definition_block, &K::DefinitionBlockItem)?
-    else {
-        return Err(invalid());
-    };
+    let (definition_kw, parameter, definition, coherence, end, semi) =
+        match parts(*definition_block, &K::DefinitionBlockItem)? {
+            [kw, parameter, definition, coherence, end, semi] if !antonym => {
+                (kw, parameter, definition, Some(coherence), end, semi)
+            }
+            [kw, parameter, definition, end, semi] if antonym => {
+                (kw, parameter, definition, None, end, semi)
+            }
+            _ => return Err(invalid()),
+        };
     tokens(&[(*definition_kw, "definition"), (*end, "end"), (*semi, ";")])?;
     let [let_kw, segment, semi] = parts(*parameter, &K::DefinitionParameter)? else {
         return Err(invalid());
@@ -1546,28 +1565,52 @@ pub fn check_source_functor_synonym_types(
     tokens(&[(*let_kw, "let"), (*semi, ";")])?;
     let (definition_binders, parameter_type) =
         grouped(*segment, &K::QualifiedVariableSegment, "be")?;
-    let [
-        func,
-        label,
-        colon,
-        pattern,
-        arrow,
-        result_type,
-        equals,
-        body,
-        semi,
-    ] = parts(*definition, &K::FunctorDefinition)?
-    else {
-        return Err(invalid());
+    let (label, pattern, result_type, body) = if antonym {
+        let [pred, label, colon, pattern, means, body, semi] =
+            parts(*definition, &K::PredicateDefinition)?
+        else {
+            return Err(invalid());
+        };
+        tokens(&[
+            (*pred, "pred"),
+            (*colon, ":"),
+            (*means, "means"),
+            (*semi, ";"),
+        ])?;
+        (label, pattern, None, body)
+    } else {
+        let [
+            func,
+            label,
+            colon,
+            pattern,
+            arrow,
+            result_type,
+            equals,
+            body,
+            semi,
+        ] = parts(*definition, &K::FunctorDefinition)?
+        else {
+            return Err(invalid());
+        };
+        tokens(&[
+            (*func, "func"),
+            (*colon, ":"),
+            (*arrow, "->"),
+            (*equals, "equals"),
+            (*semi, ";"),
+        ])?;
+        (label, pattern, Some(result_type), body)
     };
-    tokens(&[
-        (*func, "func"),
-        (*colon, ":"),
-        (*arrow, "->"),
-        (*equals, "equals"),
-        (*semi, ";"),
-    ])?;
-    let [left, original_name, right] = parts(*pattern, &K::FunctorPattern)? else {
+    let [left, original_name, right] = parts(
+        *pattern,
+        if antonym {
+            &K::PredicatePattern
+        } else {
+            &K::FunctorPattern
+        },
+    )?
+    else {
         return Err(invalid());
     };
     let original_formals = [formal(*left)?, formal(*right)?];
@@ -1578,11 +1621,20 @@ pub fn check_source_functor_synonym_types(
     {
         return Err(invalid());
     }
-    let [coherence_kw, semi] = parts(*coherence, &K::CorrectnessCondition)? else {
-        return Err(invalid());
-    };
-    tokens(&[(*coherence_kw, "coherence"), (*semi, ";")])?;
-    let original = symbol(*definition, SymbolKind::Functor)?;
+    if let Some(coherence) = coherence {
+        let [coherence_kw, semi] = parts(*coherence, &K::CorrectnessCondition)? else {
+            return Err(invalid());
+        };
+        tokens(&[(*coherence_kw, "coherence"), (*semi, ";")])?;
+    }
+    let original = symbol(
+        *definition,
+        if antonym {
+            SymbolKind::Predicate
+        } else {
+            SymbolKind::Functor
+        },
+    )?;
     let [definition_kw, alias_parameter, alias, end, semi] =
         parts(*alias_block, &K::DefinitionBlockItem)?
     else {
@@ -1597,7 +1649,11 @@ pub fn check_source_functor_synonym_types(
     let [synonym_kw, alternate, for_kw, target, semi] = parts(*alias, &K::NotationAlias)? else {
         return Err(invalid());
     };
-    tokens(&[(*synonym_kw, "synonym"), (*for_kw, "for"), (*semi, ";")])?;
+    tokens(&[
+        (*synonym_kw, if antonym { "antonym" } else { "synonym" }),
+        (*for_kw, "for"),
+        (*semi, ";"),
+    ])?;
     let [alt_left, alias_name, alt_right] = parts(*alternate, &K::NotationPattern)? else {
         return Err(invalid());
     };
@@ -1617,11 +1673,18 @@ pub fn check_source_functor_synonym_types(
     {
         return Err(invalid());
     }
-    let alias_symbol = symbol(*alias, SymbolKind::Synonym)?;
+    let alias_symbol = symbol(
+        *alias,
+        if antonym {
+            SymbolKind::Antonym
+        } else {
+            SymbolKind::Synonym
+        },
+    )?;
     let [relation] = alias_symbol.relations() else {
         return Err(invalid());
     };
-    if relation.kind() != RelationKind::Synonym || relation.target() != original.symbol() {
+    if relation.kind() != profile || relation.target() != original.symbol() {
         return Err(invalid());
     }
     let permutation = if target_formals == alternate_formals {
@@ -1665,18 +1728,41 @@ pub fn check_source_functor_synonym_types(
             })
             .ok_or_else(invalid)
     };
-    let result = normalized(*result_type)?;
+    let result = result_type.map(|id| normalized(*id)).transpose()?;
     let mut bindings = BTreeMap::new();
-    for binder in definition_binders {
-        bindings.insert(binder, normalized(parameter_type)?);
+    for binder in &definition_binders {
+        bindings.insert(*binder, normalized(parameter_type)?);
     }
-    let body = only(
-        only(only(*body, &K::TermDefiniens)?, &K::TermExpression)?,
-        &K::TermReference,
-    )?;
-    let body_binder = formal(body)?;
-    if !definition_binders.contains(&body_binder) || bindings.get(&body_binder) != Some(&result) {
-        return Err(invalid());
+    if antonym {
+        let negation = only(only(*body, &K::FormulaDefiniens)?, &K::FormulaExpression)?;
+        if format!("{:?}", node(negation)?.kind()) != "PrefixFormula(Not)" {
+            return Err(invalid());
+        }
+        let [not, equality] = node(negation)?.children() else {
+            return Err(invalid());
+        };
+        tokens(&[(*not, "not")])?;
+        let [left, equals, right] = parts(*equality, &K::BuiltinPredicateApplication)? else {
+            return Err(invalid());
+        };
+        tokens(&[(*equals, "=")])?;
+        for operand in [*left, *right] {
+            let binder = formal(only(only(operand, &K::TermExpression)?, &K::TermReference)?)?;
+            if !definition_binders.contains(&binder) {
+                return Err(invalid());
+            }
+        }
+    } else {
+        let body = only(
+            only(only(*body, &K::TermDefiniens)?, &K::TermExpression)?,
+            &K::TermReference,
+        )?;
+        let body_binder = formal(body)?;
+        if !definition_binders.contains(&body_binder)
+            || bindings.get(&body_binder).copied() != result
+        {
+            return Err(invalid());
+        }
     }
     let [theorem_kw, _, colon, formula, proof, semi] = parts(*theorem, &K::TheoremItem)? else {
         return Err(invalid());
@@ -1700,17 +1786,23 @@ pub fn check_source_functor_synonym_types(
         return Err(invalid());
     };
     tokens(&[(*let_kw, "let"), (*semi, ";")])?;
-    let [thus, proposition, justification, semi] = parts(*conclusion, &K::ConclusionStatement)?
-    else {
-        return Err(invalid());
-    };
+    let (thus, proposition, justification, semi) =
+        match parts(*conclusion, &K::ConclusionStatement)? {
+            [thus, proposition, justification, semi] if !antonym => {
+                (thus, proposition, Some(justification), semi)
+            }
+            [thus, proposition, semi] if antonym => (thus, proposition, None, semi),
+            _ => return Err(invalid()),
+        };
     tokens(&[(*thus, "thus"), (*semi, ";")])?;
-    let [by, references] = parts(*justification, &K::JustificationClause)? else {
-        return Err(invalid());
-    };
-    tokens(&[(*by, "by")])?;
-    if text(only(only(*references, &K::ReferenceList)?, &K::Reference)?)? != text(*label)? {
-        return Err(invalid());
+    if let Some(justification) = justification {
+        let [by, references] = parts(*justification, &K::JustificationClause)? else {
+            return Err(invalid());
+        };
+        tokens(&[(*by, "by")])?;
+        if text(only(only(*references, &K::ReferenceList)?, &K::Reference)?)? != text(*label)? {
+            return Err(invalid());
+        }
     }
     let proof_equality = only(only(*proposition, &K::Proposition)?, &K::FormulaExpression)?;
     let mut sites = Vec::new();
@@ -1731,24 +1823,51 @@ pub fn check_source_functor_synonym_types(
         ),
     ] {
         let (local_binders, ty) = grouped(segment, &kind, keyword)?;
-        for binder in local_binders {
-            bindings.insert(binder, normalized(ty)?);
+        for binder in &local_binders {
+            bindings.insert(*binder, normalized(ty)?);
         }
-        let [left, equals, right] = parts(equality, &K::BuiltinPredicateApplication)? else {
-            return Err(invalid());
+        let (application, arguments) = if antonym {
+            let segment = only(equality, &K::PredicateApplication)?;
+            let [left, head, right] = parts(segment, &K::PredicateSegment)? else {
+                return Err(invalid());
+            };
+            let head = only(
+                only(only(*head, &K::PredicateHead)?, &K::QualifiedSymbol)?,
+                &K::PathSegment,
+            )?;
+            if text(head)? != text(*alias_name)? {
+                return Err(invalid());
+            }
+            (
+                equality,
+                [
+                    only(*left, &K::TermExpression)?,
+                    only(*right, &K::TermExpression)?,
+                ],
+            )
+        } else {
+            let [left, equals, right] = parts(equality, &K::BuiltinPredicateApplication)? else {
+                return Err(invalid());
+            };
+            tokens(&[(*equals, "=")])?;
+            let application = only(*left, &K::TermExpression)?;
+            let [left, head, right_argument] = node(application)?.children() else {
+                return Err(invalid());
+            };
+            if !matches!(node(application)?.kind(), K::InfixExpression(operator) if operator.spelling.as_ref() == text(*head)?)
+                || text(*head)? != text(*alias_name)?
+            {
+                return Err(invalid());
+            }
+            let rhs = formal(only(only(*right, &K::TermExpression)?, &K::TermReference)?)?;
+            if !local_binders.contains(&rhs) || bindings.get(&rhs).copied() != result {
+                return Err(invalid());
+            }
+            (application, [*left, *right_argument])
         };
-        tokens(&[(*equals, "=")])?;
-        let application = only(*left, &K::TermExpression)?;
-        let [left, head, right_argument] = node(application)?.children() else {
-            return Err(invalid());
-        };
-        if !matches!(node(application)?.kind(), K::InfixExpression(operator) if operator.spelling.as_ref() == text(*head)?)
-            || text(*head)? != text(*alias_name)?
-            || range(*alias_block)?.end > range(application)?.start
-        {
+        if range(*alias_block)?.end > range(application)?.start {
             return Err(invalid());
         }
-        let arguments = [*left, *right_argument];
         let mut argument_types = Vec::new();
         for argument in arguments {
             let binder = formal(only(argument, &K::TermReference)?)?;
@@ -1757,16 +1876,16 @@ pub fn check_source_functor_synonym_types(
             }
             argument_types.push(*bindings.get(&binder).ok_or_else(invalid)?);
         }
-        let rhs = formal(only(only(*right, &K::TermExpression)?, &K::TermReference)?)?;
-        if !local_binders.contains(&rhs) || bindings.get(&rhs) != Some(&result) {
-            return Err(invalid());
-        }
         let key = OverloadSiteKey::new(format!("source-synonym:{}", application.index()));
         sites.push(OverloadSiteInput {
             key: key.clone(),
             owner: site(application),
             source_range: range(application)?,
-            kind: OverloadSiteKind::FunctorApplication,
+            kind: if antonym {
+                OverloadSiteKind::PredicateApplication
+            } else {
+                OverloadSiteKind::FunctorApplication
+            },
             name: OverloadNameKey::new(text(*alias_name)?),
             arguments: permutation.map(|index| site(arguments[index])).to_vec(),
             expected: None,
@@ -1777,9 +1896,13 @@ pub fn check_source_functor_synonym_types(
             site: key,
             symbol: original.symbol().clone(),
             ordinary_root: original.symbol().clone(),
-            declaration_kind: CandidateDeclarationKind::Functor,
+            declaration_kind: if antonym {
+                CandidateDeclarationKind::Predicate
+            } else {
+                CandidateDeclarationKind::Functor
+            },
             parameters: original_formals.iter().map(|id| bindings[id]).collect(),
-            result: Some(result),
+            result,
             origin: CandidateOrigin::Ordinary,
             template: None,
             coherence: None,

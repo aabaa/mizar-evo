@@ -3161,8 +3161,10 @@ Only actual Known set-to-structure viability rejections at authenticated argumen
 
 ## Source functor synonym typing
 
-`check_source_functor_synonym_types(&SurfaceResolvedArena, &SymbolEnv, &TypedArena)` returns existing `(TypeNormalizationOutput, OverloadCollectionOutput, CandidateViabilityOutput)` in `Result<_, String>`. It authenticates a two-locus builtin-set functor returning a parameter, actual synonym-target relation and locus bijection, then checks both theorem/proof-local calls, arguments, return and equality operand types.
+`check_source_functor_synonym_types(&SurfaceResolvedArena, &SymbolEnv, &TypedArena, RelationKind)` returns existing `(TypeNormalizationOutput, OverloadCollectionOutput, CandidateViabilityOutput)` in `Result<_, String>`. It authenticates a two-locus builtin-set functor returning a parameter, actual synonym-target relation and locus bijection, then checks both theorem/proof-local calls, arguments, return and equality operand types.
 Collection arguments are the actual occurrence sites in original-constructor order; source spelling and binding identities remain intact. Every actual viability decision must succeed before results are returned. The direct checker operation grants no unfolding, theorem/coherence proof, registration acceptance or general overload selection; C3/C13 profiles and source-application transport are unchanged.
+
+The explicit Synonym profile preserves the functor behavior above. Antonym instead authenticates a binary builtin-set predicate with its actual negated-equality body and two positive predicate segments; candidates have result=None and retain original-root ordered arguments. Existing RelationMetadata(Antonym, target) preserves inversion separately from body negation; no inverse fact or canonical formula is invented. Other relation kinds and signed/chained segments fail closed.
 
 ## Distinct-loci overload source checking
 

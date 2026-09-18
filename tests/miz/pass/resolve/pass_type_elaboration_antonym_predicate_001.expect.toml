@@ -10,4 +10,5 @@ diagnostic_codes = []
 spec_refs = [
   "spec.en.11.symbols.antonym.predicate",
 ]
-notes = "Audit-1 semantic-bridge inactive oracle seed (September 2026 audit wave): binding expectation for the Step-5 semantic bridge; no active runner tag, earns no current credit. A predicate antonym introduces the negated notation for an existing predicate constructor (spec 11.x antonym; A.11)."
+tags = ["active_type_elaboration"]
+notes = "Checks the actual predicate antonym target, inversion and ordered argument types at both source calls; grants no theorem or proof acceptance."

@@ -369,8 +369,8 @@ synonym と一意に束縛された bare builtin loci に限り `SymbolDiagnosti
 両 pattern と、先行する完了済み definition block 内の functor 1個を namespace・notation shape・順序付き locus type で照合し、
 binder 名・label・本体を constructor 同一性にしない。括弧付き引数列も対象だが、locus 重複・未束縛・
 recovery・曖昧または未対応 target はこの診断を生成しない。診断は実際の alias shell/range、元 constructor の
-SymbolId、source contribution を保持する。locus 数の不一致は引き続き拒否する。plain binary synonym で束縛 locus 集合が一致し、先行 target が一意な場合だけ既存 `RelationMetadata(Synonym, target)` を生成でき、同数だけでは不足する。
-これは constructor 同一性であり証明承認ではない。checker は各 application で順序付き source loci を再照合する。source collection/replay が relation を認証し、opaque collection・数値 code・antonym・未対応 alias の境界は維持する。
+SymbolId、source contribution を保持する。synonym の locus 数不一致は引き続き拒否する。plain binary functor synonym / predicate antonym で束縛 locus 集合が一致し、同じソース内で先に完結した definition block に属する同 namespace・対応 constructor kind の local target が一意な場合だけ既存 RelationMetadata(Synonym/Antonym, target) を生成でき、同数だけでは不足する。
+これは元 constructor 同一性と antonym 反転であり証明承認ではない。checker は各 application で順序付き source loci を再照合する。source collection/replay が relation を認証し、opaque collection・数値 code・predicate synonym・alias chain・未対応 target の境界を維持する。antonym 不一致には synonym-loci 診断を与えない。
 
 ## Determinism
 
