@@ -228,3 +228,10 @@ policy は追加しない。
 返却 database は当該呼出しの module-local 出力であり transferable proof receipt ではない。後続 consumer は同じ認証済み source
 orchestration 内で producer を使い、任意の public database を証明権威にしない。item-order visibility と非遡及性を保ち、C3
 widening・C5/C13・広域 Task274・artifact publication・cluster/reduction 効果は保留する。
+
+## Three-registration source-proof extension
+
+実装した追加 source profile は既存 prove_source_existential_registration signature のまま C13 の記述された全登録3件について checker/Core/VC 全 graph を新たに構成する。
+現在の policy による通常 Formula-v1 leaf 6件の検査が全て成功してから、同一環境の full pattern 3件だけを含む database を構成する。失敗時に部分 activation や先行 pending 入力の変更を返さない。
+各 association は各自の registration・parent・独立 nonempty seed・両 leaf・実定義依存・handoff hash・source/module/snapshot を結ぶ。callback・呼出側 receipt・別登録の受理で代替しない。
+単一登録の挙動と database の非譲渡性を維持する。この prerequisite は C13 overload/属性付き consumer、C3 widening、汎用 Task274/import、cluster closure、publication を実行しない。

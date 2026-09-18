@@ -1049,3 +1049,10 @@ CurrentGoal/Step/Sequence/TerminalGoal and typed CoreNodeRefs connect both seeds
 type step and cited terminal. Validate complete formula/term/source maps, order, reachability and
 owners; provenance text is no gate receipt. No Take DTO, raw environment, repeated checker
 evaluation or accepted status.
+
+## Three-registration source-proof extension
+
+The implemented aggregate profile retains two actual definitions and three original existential parents through the existing lower_source_existential_registration signature; the single-registration graph remains unchanged.
+Each parent owns a separate stable-choice origin, two actual occurrence ranges and an independent active bare-set nonempty seed. Formal, existential and nonempty binders retain their actual identity and capture boundaries.
+The conjunctive registration retains both attribute predicates on the same witness and both exact canonical definition citations, with typed definition/backreferences and source maps. Never infer one conjunct from the other.
+Existing tables carry all three proofs; no new public record, callback or copied source is introduced. [VC generation](../../mizar-vc/en/generator.md#three-registration-source-proof-extension) owns per-parent expansion, not Core acceptance.

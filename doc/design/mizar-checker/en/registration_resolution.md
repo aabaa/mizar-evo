@@ -725,3 +725,10 @@ never uses the target registration; no ActivationInput is produced.
 Task251 transport and pending intake remain unchanged. The bounded accepted association belongs to
 [proof status](../../mizar-proof/en/status.md#source-existential-registration-proof); general
 Task274/artifact import stays deferred.
+
+## Three-registration source-proof extension
+
+The implemented second profile authenticates the unchanged C13 two-attribute, three-registration source in one SourceRegistrationCheck; existing signatures and the single-registration profile remain unchanged.
+Retain three actual full-pattern validations, six distinct written choice sites, their independent builtin-set gates and both definition bodies. Each terminal attribute/citation set must exactly match its registration. Only the actual existence-proof terminal may interpret TypeExpression(AttributeChain, bare TypeHead) as this chain through distinct preceding Attribute identities and the exact ordered pattern/citations; qualifiers, arguments, negation, real radices and other type occurrences retain their existing boundary.
+Replay the complete source, retaining both visible later functor roots without choosing one; authenticate every later term, attribute, citation and source-order relation. No reconstructed mini-source or skipped consumer supplies authority.
+The seal grants no activation or overload result. [Proof status](../../mizar-proof/en/status.md#three-registration-source-proof-extension) owns fresh kernel checking and same-environment activation; attributed consumer gates remain separate.

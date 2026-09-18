@@ -9352,6 +9352,17 @@ fn step5c3_check_registration_handoff(
     if mutation == "missing-substitution" {
         sections[3].clear();
     }
+    if mutation == "missing-second-substitution" {
+        assert_eq!(sections[3].len(), 2);
+        sections[3].pop();
+    }
+    if mutation == "swapped-substitution-source" {
+        assert_eq!(sections[3].len(), 2);
+        let first = sections[3][0][4..8].to_vec();
+        let second = sections[3][1][4..8].to_vec();
+        sections[3][0][4..8].copy_from_slice(&second);
+        sections[3][1][4..8].copy_from_slice(&first);
+    }
     for row in envelope.provenance() {
         let mut item = row.provenance_id.to_be_bytes().to_vec();
         fingerprint(&row.target_vc, &mut item);
@@ -9838,5 +9849,275 @@ fn step5c3_source_registration_rejects_coherent_core_and_vc_corruption() {
             .is_err(),
             "accepted VC mutation {mutation}"
         );
+    }
+}
+
+
+fn step5c13_registration_case() -> crate::harness::TestCase {
+    build_test_plan(&step5c11_config()).unwrap().cases.into_iter()
+        .find(|case| case.id.0 == "fail_advanced_semantics_overload_ambiguous_candidates_001")
+        .unwrap()
+}
+
+fn step5c13_registration_inputs(text: &str) -> Result<(
+    mizar_resolve::resolved_ast::SurfaceResolvedArena,
+    mizar_checker::typed_ast::TypedArena,
+    mizar_resolve::env::SymbolEnv,
+), String> {
+    super::source_registration_inputs(
+        &step5c11_config().workspace_root,
+        &step5c13_registration_case(),
+        super::formula_statement::step5c8_test_frontend(text),
+    )
+}
+
+#[test]
+fn step5c13_source_registration_proves_three_full_patterns_atomically() {
+    use mizar_checker::registration_resolution::*;
+    use mizar_core::core_ir::{CoreTermKind, ObligationSeedKind};
+    use mizar_vc::vc_ir::{SeedNoVcReason, SeedVcMapping, VcStatus};
+    let original = std::fs::read_to_string(step5c13_registration_case().source_path).unwrap();
+    let renamed = original.replace("OAADef", "LeftDefinition")
+        .replace("OBBDef", "RightDefinition").replace("oamarked", "leftmarked")
+        .replace("obmarked", "rightmarked").replace("OAExists", "LeftExists")
+        .replace("OBExists", "RightExists").replace("OABExists", "BothExist")
+        .replace("Ov3Def", "FirstOverload").replace("Ov4Def", "SecondOverload")
+        .replace("ovpick", "selectvalue").replace("OvBad1", "LaterTheorem")
+        .replace("X", "Value");
+    for (index, text) in [original, renamed].into_iter().enumerate() {
+        let (source, nodes, symbols) = step5c13_registration_inputs(&text).unwrap();
+        let checked = check_source_existential_registration_proof(&source, &nodes, &symbols).unwrap();
+        assert_eq!(checked.validations().len(), 3);
+        assert_eq!(checked.database().pending().len(), 3);
+        assert!(checked.database().activated().is_empty());
+        let choices = checked.choice_terms().unwrap();
+        assert_eq!(choices.terms().len(), 6);
+        assert_eq!(choices.type_sites().len(), 6);
+        assert_eq!(choices.requests().len(), 12);
+        let gates = checked.choice_gates().unwrap();
+        assert_eq!(gates.len(), 6);
+        for ((_, choice), gate) in choices.terms().iter().zip(gates.iter()) {
+            assert_eq!(gate.owner(), choice.site());
+            assert_eq!(gate.source_range(), choice.source_range());
+            assert_eq!(gate.status(), ExistentialGateStatus::Satisfied);
+            assert_eq!(gate.base_evidence_kind(), Some(ExistentialGateBaseEvidenceKind::BuiltinSet));
+            assert_eq!(gate.base_evidence_coverage(), Some(ExistentialGateBaseEvidenceCoverage::Builtin));
+            assert!(gate.registration().is_none());
+            assert!(gate.attributes().is_empty() && gate.facts().is_empty());
+        }
+        let core = mizar_core::elaborator::lower_source_existential_registration(&checked).unwrap();
+        assert_eq!(core.definitions().len(), 2);
+        assert_eq!(core.proofs().len(), 3);
+        assert_eq!(core.generated().len(), 3);
+        assert_eq!(core.obligation_seeds().len(), 6);
+        let witnesses = core.terms().iter().filter(|(_, t)| matches!(t.kind, CoreTermKind::Apply { .. }))
+            .collect::<Vec<_>>();
+        assert_eq!(witnesses.len(), 6);
+        for pair in witnesses.as_chunks::<2>().0 {
+            assert_eq!(pair[0].1.kind, pair[1].1.kind);
+            assert_ne!(pair[0].1.source, pair[1].1.source);
+        }
+        assert_ne!(witnesses[0].1.kind, witnesses[2].1.kind);
+        assert_ne!(witnesses[2].1.kind, witnesses[4].1.kind);
+        assert_ne!(witnesses[0].1.kind, witnesses[4].1.kind);
+        assert_eq!(core.obligation_seeds().iter().filter(|(_, s)| s.kind == ObligationSeedKind::GeneratedNonEmptiness).count(), 3);
+        let vcs = step5c3_registration_vcs(&core).unwrap();
+        assert_eq!(vcs.vcs().len(), 6);
+        assert!(vcs.vcs().iter().all(|v| v.status == VcStatus::Open));
+        assert_eq!(vcs.seed_accounting().len(), 6);
+        assert_eq!(vcs.seed_accounting().iter().filter(|r| matches!(&r.mapping,
+            SeedVcMapping::Expanded { vcs, .. } if vcs.len() == 2 && vcs[0].expansion_index == 0 && vcs[1].expansion_index == 1)).count(), 3);
+        let builtin_origins = vcs.seed_accounting().iter().filter_map(|r| match r.mapping {
+            SeedVcMapping::NoConcreteVc { reason: SeedNoVcReason::BuiltinSetInhabitation { origin } } => Some(origin),
+            _ => None,
+        }).collect::<std::collections::BTreeSet<_>>();
+        assert_eq!(builtin_origins.len(), 3);
+        let mut handoff_text = String::new();
+        for (vc, substitution_count) in vcs.vcs().iter().zip([0, 1, 0, 1, 0, 2]) {
+            let handoff = mizar_vc::kernel_evidence_handoff::build_source_existential_kernel_handoff(&core, &vcs, vc.id).unwrap();
+            handoff_text.push_str(&handoff.debug_text());
+            assert!(handoff.targets_vc(&vcs, vc.id).unwrap());
+            assert_eq!(handoff.canonical_evidence().substitutions().len(), substitution_count);
+            assert!(step5c3_check_registration_handoff(&handoff, "clean").unwrap().sat_check_report().is_some());
+            for mutation in ["wire", "goal-bytes", "context", "provenance", "polarity", "resource"] {
+                assert!(step5c3_check_registration_handoff(&handoff, mutation).is_err(), "{:?}: {mutation}", vc.id);
+            }
+            if substitution_count > 0 {
+                for mutation in ["missing-substitution", "substitution-source", "substitution-actual"] {
+                    assert!(step5c3_check_registration_handoff(&handoff, mutation).is_err(), "{:?}: {mutation}", vc.id);
+                }
+            }
+            if substitution_count == 2 {
+                for mutation in ["missing-second-substitution", "swapped-substitution-source"] {
+                    assert!(step5c3_check_registration_handoff(&handoff, mutation).is_err(), "{mutation}");
+                }
+            }
+        }
+        if index == 0 {
+            for (path, actual) in [
+                ("core/step5c13_source_registration.core_ir.snap", core.debug_text()),
+                ("vc/step5c13_source_registration.vc_ir.snap", vcs.debug_text()),
+                ("vc/step5c13_source_registration.kernel_handoff.snap", handoff_text),
+            ] {
+                assert_eq!(actual, std::fs::read_to_string(step5c11_config().workspace_root.join("tests/snapshots").join(path)).unwrap(), "{path}");
+            }
+        }
+        let database = mizar_proof::status::prove_source_existential_registration(&source, &nodes, &symbols,
+            super::shared::snapshot_id(0), &mizar_proof::policy::VerifierPolicy::release()).unwrap();
+        assert_eq!(database.activated().len(), 3);
+        assert!(database.pending().is_empty() && database.rejected().is_empty());
+        for validation in checked.validations() {
+            let active = database.activated().iter().find(|entry| entry.pattern().as_str() == format!("{:?}", validation.pattern())).unwrap();
+            assert_eq!(active.correctness().as_str(), validation.correctness_provenance().as_str());
+            let source_entry = symbols.registrations().iter().find(|entry|
+                entry.origin().anchor() == &nodes.node(validation.owner().node()).unwrap().anchor).unwrap();
+            assert_eq!(active.source().origin(), source_entry.origin());
+            assert!(active.fingerprint().is_some());
+        }
+        assert!(checked.database().activated().is_empty());
+        assert_eq!(checked.database().pending().len(), 3);
+        let policy = mizar_proof::policy::VerifierPolicy::release().with_kernel_evidence_formats([]);
+        assert!(mizar_proof::status::prove_source_existential_registration(&source, &nodes, &symbols,
+            super::shared::snapshot_id(0), &policy).is_err());
+    }
+}
+
+#[test]
+fn step5c13_source_registration_rejects_partial_foreign_and_malformed_proofs() {
+    use mizar_checker::registration_resolution::check_source_existential_registration_proof as check;
+    let text = std::fs::read_to_string(step5c13_registration_case().source_path).unwrap();
+    for (from, to) in [
+        ("by OAADef, OBBDef;", "by OAADef;"),
+        ("by OAADef, OBBDef;", "by OBBDef, OAADef;"),
+        ("by OAADef, OBBDef;", "by OAADef, OAADef;"),
+        ("by OAADef;", "by OBBDef;"),
+        ("by OAADef;", "by Missing;"),
+        ("thus the set is oamarked obmarked", "thus the set is oamarked"),
+        ("thus the set is oamarked obmarked", "thus the set is oamarked set"),
+        ("thus the set is oamarked obmarked", "thus the set is obmarked oamarked"),
+        ("thus the set is oamarked obmarked", "thus the set is oamarked oamarked"),
+        ("for X being oamarked obmarked set", "for X being oamarked obmarked"),
+        ("cluster OABExists: oamarked obmarked set", "cluster OABExists: oamarked set"),
+        ("take the set;", "take the oamarked set;"),
+        ("holds ovpick X = X", "holds ovpick Absent = X"),
+    ] {
+        let changed = text.replacen(from, to, 1);
+        assert_ne!(changed, text);
+        assert!(super::formula_statement::step5c8_test_frontend(&changed).diagnostics.is_empty(), "semantic control: {from} -> {to}");
+        let (source, nodes, symbols) = step5c13_registration_inputs(&changed).unwrap();
+        assert!(check(&source, &nodes, &symbols).is_err(), "{from} -> {to}");
+    }
+    for changed in [text.replacen("take the set;", "take ;", 1), text.replacen("holds ovpick X = X", "holds missing X = X", 1)] {
+        assert!(!super::formula_statement::step5c8_test_frontend(&changed).diagnostics.is_empty());
+        assert!(step5c13_registration_inputs(&changed).is_err());
+    }
+    let (source, nodes, symbols) = step5c13_registration_inputs(&text).unwrap();
+    let other = text.replace("oamarked", "foreignmarked");
+    let (foreign_source, foreign_nodes, foreign_symbols) = step5c13_registration_inputs(&other).unwrap();
+    assert!(check(&source, &nodes, &foreign_symbols).is_err());
+    assert!(check(&source, &foreign_nodes, &symbols).is_err());
+    assert!(check(&foreign_source, &nodes, &symbols).is_err());
+    for definition in ["oamarked", "obmarked"] {
+        let changed = text.replace(&format!("X is {definition} means X = X"), &format!("X is {definition} means not X = X"));
+        assert_ne!(changed, text);
+        let (source, nodes, symbols) = step5c13_registration_inputs(&changed).unwrap();
+        let pending = check(&source, &nodes, &symbols).unwrap();
+        assert_eq!(pending.database().pending().len(), 3);
+        assert!(mizar_proof::status::prove_source_existential_registration(&source, &nodes, &symbols,
+            super::shared::snapshot_id(0), &mizar_proof::policy::VerifierPolicy::release()).is_err());
+        assert!(pending.database().activated().is_empty());
+    }
+}
+
+#[test]
+fn step5c13_source_registration_rejects_shared_conjunct_and_parent_corruption() {
+    use mizar_core::core_ir::*;
+    use mizar_vc::vc_ir::*;
+    let text = std::fs::read_to_string(step5c13_registration_case().source_path).unwrap();
+    let (source, nodes, symbols) = step5c13_registration_inputs(&text).unwrap();
+    let checked = mizar_checker::registration_resolution::check_source_existential_registration_proof(&source, &nodes, &symbols).unwrap();
+    let core = mizar_core::elaborator::lower_source_existential_registration(&checked).unwrap();
+    let parents = core.obligation_seeds().iter().filter(|(_, row)| row.kind == ObligationSeedKind::CheckerInitial).collect::<Vec<_>>();
+    let definitions = core.definitions().iter().collect::<Vec<_>>();
+    let origins = core.generated().iter().collect::<Vec<_>>();
+    let CoreFormulaKind::Exists { body: union, .. } = core.formulas().get(parents[2].1.goal.unwrap()).unwrap().kind else { panic!("union") };
+    let CoreFormulaKind::And(conjuncts) = &core.formulas().get(union).unwrap().kind else { panic!("conjuncts") };
+    for mutation in 0..8 {
+        let mut parts = CoreIrParts {
+            source_id: core.source_id(),
+            module_id: core.module_id().clone(),
+            items: core.items().clone(),
+            terms: core.terms().clone(),
+            formulas: core.formulas().clone(),
+            definitions: core.definitions().clone(),
+            proofs: core.proofs().clone(),
+            proof_nodes: core.proof_nodes().clone(),
+            algorithms: core.algorithms().clone(),
+            algorithm_statements: core.algorithm_statements().clone(),
+            generated: core.generated().clone(),
+            obligation_seeds: core.obligation_seeds().clone(),
+            source_map: core.source_map().clone(),
+            diagnostics: core.diagnostics().clone(),
+        };
+
+        match mutation {
+            0 => parts.formulas.get_mut(union).unwrap().kind = CoreFormulaKind::And(vec![conjuncts[0], conjuncts[1], conjuncts[1]]),
+            1 => parts.definitions.get_mut(definitions[1].0).unwrap().params[0].var = CoreVarId::new(999),
+            2 => parts.generated.get_mut(origins[2].0).unwrap().functor = origins[0].1.functor.clone(),
+            3 => parts.obligation_seeds.get_mut(parents[2].0).unwrap().core_refs.retain(|r| *r != CoreNodeRef::Definition(definitions[1].0)),
+            4 => {
+                for (_, node) in parts.proof_nodes.iter_mut() {
+                    match &mut node.kind {
+                        CoreProofNodeKind::Step { justification, .. } => justification.citations.reverse(),
+                        CoreProofNodeKind::TerminalGoal { citations, .. } => citations.reverse(),
+                        _ => (),
+                    }
+                }
+            }
+            5 => parts.obligation_seeds.get_mut(parents[2].0).unwrap().goal = parents[0].1.goal,
+            6 => parts.definitions.get_mut(definitions[1].0).unwrap().source = definitions[0].1.source.clone(),
+            7 => {
+                let foreign = parents[0].1.core_refs.iter().find(|r| matches!(r, CoreNodeRef::ObligationSeed(_))).unwrap();
+                let own = parts.obligation_seeds.get_mut(parents[2].0).unwrap().core_refs.iter_mut().find(|r| matches!(r, CoreNodeRef::ObligationSeed(_))).unwrap();
+                *own = foreign.clone();
+            }
+            _ => unreachable!(),
+        }
+        parts.source_map.formula_sources = parts.formulas.iter().map(|(id, row)| (id, row.source.clone())).collect();
+        parts.source_map.generated_sources = parts.generated.iter().map(|(id, row)| (id, row.source.clone())).collect();
+        parts.source_map.obligation_sources = parts.obligation_seeds.iter().map(|(id, row)| (id, row.source.clone())).collect();
+        parts.source_map.definition_sources = parts.definitions.iter().map(|(id, row)| (id, row.source.clone())).collect();
+        let altered = CoreIr::try_new(parts).unwrap_or_else(|error| panic!("Core mutation {mutation} must remain structurally valid: {error}"));
+        assert!(step5c3_registration_vcs(&altered).is_err(), "Core mutation {mutation}");
+    }
+    let vcs = step5c3_registration_vcs(&core).unwrap();
+    for mutation in 0..4 {
+        let mut parts = VcSetParts {
+            schema_version: vcs.schema_version().clone(), snapshot: vcs.snapshot(), source: vcs.source(), module: vcs.module().clone(),
+            generated_formulas: vcs.generated_formulas().to_vec(), vcs: vcs.vcs().to_vec(), seed_accounting: vcs.seed_accounting().to_vec(),
+        };
+        match mutation {
+            0 => { parts.vcs[5].premises.pop(); }
+            1 => parts.vcs[5].goal = parts.vcs[1].goal,
+            2 => {
+                let rows = parts.seed_accounting.iter_mut().filter(|row| matches!(row.mapping, SeedVcMapping::Expanded { .. })).collect::<Vec<_>>();
+                let mut rows = rows.into_iter();
+                let first = rows.next().unwrap().mapping.clone();
+                rows.next_back().unwrap().mapping = first;
+            }
+            3 => parts.vcs[5].premises.swap(1, 2),
+            _ => unreachable!(),
+        }
+        if mutation == 2 {
+            let actual_handoff = parts.seed_accounting.iter().rfind(|row| matches!(row.mapping, SeedVcMapping::Expanded { .. })).unwrap().handoff;
+            assert_eq!(VcSet::try_new(parts).unwrap_err(), VcIrError::VcMappedFromWrongSeed {
+                vc: vcs.vcs()[0].id, expected_handoff: vcs.vcs()[0].seed.handoff, actual_handoff,
+            });
+            continue;
+        }
+        let altered = VcSet::try_new(parts).unwrap_or_else(|error| panic!("VC mutation {mutation} must remain structurally valid: {error}"));
+        for vc in altered.vcs() {
+            assert!(mizar_vc::kernel_evidence_handoff::build_source_existential_kernel_handoff(&core, &altered, vc.id).is_err(), "VC mutation {mutation}");
+        }
     }
 }

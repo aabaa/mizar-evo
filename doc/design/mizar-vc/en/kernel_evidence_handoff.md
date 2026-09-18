@@ -391,3 +391,10 @@ identity, original goal and substitution provenance; generic fingerprints remain
 handoff envelope/hash-input text is not binary kernel evidence. [Proof
 status](../../mizar-proof/en/status.md#source-existential-registration-proof) owns wire
 serialization, actual checks and source-bound activation.
+
+## Three-registration source-proof extension
+
+The implemented extension selects a leaf's actual proof/definition dependencies through parent accounting after whole-generator replay; VC indices or the first definition/origin cannot choose evidence.
+Project each distinct actual attribute and choice identity into the normal manifest, reject numeric collisions, and preserve coherent formal identity across the two guarded definitions. Existing single-registration encodings remain unchanged.
+The conjunctive leaf retains both definition premises and two independently linked substitutions of the same closed witness; missing either rejects. Existing generated And and Formula-v1 encoding need no kernel or wire-format extension.
+Context identity binds the actual complete envelope and producer entries; provenance is metadata, not acceptance. [Proof status](../../mizar-proof/en/status.md#three-registration-source-proof-extension) freshly parses and checks every leaf under the existing policy.

@@ -905,3 +905,10 @@ proof 所有 StableChoice は実 bare-set 正規化 key・generated functor・�
 range であり、空集合に置換しない。既存 CurrentGoal/Step/Sequence/TerminalGoal と型付き CoreNodeRef が両 seed・origin・term・型
 step・引用終端を結ぶ。全 formula/term/source map・順序・到達性・所有者を検証し、provenance 文字列を gate receipt としない。Take DTO・raw
 environment・checker 再評価・受理状態は追加しない。
+
+## Three-registration source-proof extension
+
+実装した集約 profile は既存 lower_source_existential_registration signature で実定義2件と元の存在目標3件を保持する。単一登録の graph は変えない。
+各親は独立 stable-choice origin、実出現 range 2件、active な bare-set nonempty seed を持つ。formal・存在・nonempty 束縛の実同一性と capture 境界を保つ。
+連言登録は同じ証人上の両属性述語、両定義の正確な canonical citation、型付き definition/backreference と source map を保持し、一方の conjunct から他方を推測しない。
+既存 table に全証明を格納し、新しい公開 record・callback・部分ソースを追加しない。[VC generation](../../mizar-vc/ja/generator.md#three-registration-source-proof-extension) が親ごとの展開を所有し、Core は受理しない。

@@ -643,7 +643,7 @@ activation-map ledger; every 5C task also requires 5B.2.
     parameters, and instantiation arity. Deps: 5A.2, 5C.5.
 13. [~] **[5C.13 — Overload resolution](./task_contracts/en/STEP5C13-DISTINCT-LOCI.md)** (`mizar-checker`; spec ch. 19).
     Requirements: `spec.en.19.overload.*` (2 ids). Targets: 2 pairs
-    (distinct-loci active; ambiguity deferred). Covers distinct-loci resolution and ambiguity
+    (distinct-loci active; ambiguity deferred; three-registration source-proof prerequisite implemented). Covers distinct-loci resolution and ambiguity
     rejection. Deps: 5A.2, 5C.5.
 14. [~] **[5C.14 — Algorithm verification](./task_contracts/en/STEP5C14-ALGORITHM-SEMANTICS.md)** (`mizar-checker`,
     `mizar-core`, `mizar-vc`; spec ch. 20, verification constructs

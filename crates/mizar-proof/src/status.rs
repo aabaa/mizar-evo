@@ -66,7 +66,7 @@ pub fn prove_source_existential_registration(
         &GenerationSchemaVersion::new("source-existential-registration-v1"),
         &VcSchemaVersion::new("vc-v1"),
     )?;
-    if vcs.vcs().len() != 2 {
+    if vcs.vcs().len() != 2 * check.validations().len() {
         return Err(invalid());
     }
     let evaluator = ProofPolicyEvaluator::new(policy.clone());
@@ -273,40 +273,41 @@ pub fn prove_source_existential_registration(
         }
         hashes.push(handoff.canonical_hash());
     }
-    let [validation] = check.validations() else {
-        return Err(invalid());
-    };
-    let entry = symbols
-        .registrations()
-        .iter()
-        .find(|entry| entry.id() == validation.resolver_registration())
-        .ok_or_else(invalid)?;
-    let pattern = format!("{:?}", validation.pattern());
-    let association = format!(
-        "source-existential-registration-v1;source={:?};module={:?};snapshot={snapshot:?};validation={validation:?};core={core:?};vcs={vcs:?};handoffs={hashes:?};policy={:?}",
-        source.source_id(),
-        source.module(),
-        policy.policy_fingerprint()
-    );
-    let mut fingerprint = StableHasher::new("source-existential-registration-v1");
-    fingerprint.field_str("association", &association);
-    let fingerprint = fingerprint.finalize();
-    let activation = ActivationInput::accepted(
-        entry.id(),
-        entry.kind(),
-        pattern.clone(),
-        pattern,
-        validation.correctness_provenance().as_str(),
-        association,
-    )
-    .with_validation_kind(validation.pattern().kind())
-    .with_fingerprint(format!("{fingerprint:?}"));
+    let mut activations = Vec::new();
+    for validation in check.validations() {
+        let entry = symbols
+            .registrations()
+            .iter()
+            .find(|entry| entry.id() == validation.resolver_registration())
+            .ok_or_else(invalid)?;
+        let pattern = format!("{:?}", validation.pattern());
+        let association = format!(
+            "source-existential-registration-v1;source={:?};module={:?};snapshot={snapshot:?};validation={validation:?};core={core:?};vcs={vcs:?};handoffs={hashes:?};policy={:?}",
+            source.source_id(),
+            source.module(),
+            policy.policy_fingerprint()
+        );
+        let mut fingerprint = StableHasher::new("source-existential-registration-v1");
+        fingerprint.field_str("association", &association);
+        let fingerprint = fingerprint.finalize();
+        let activation = ActivationInput::accepted(
+            entry.id(),
+            entry.kind(),
+            pattern.clone(),
+            pattern,
+            validation.correctness_provenance().as_str(),
+            association,
+        )
+        .with_validation_kind(validation.pattern().kind())
+        .with_fingerprint(format!("{fingerprint:?}"));
+        activations.push(activation);
+    }
     let database = RegistrationDatabase::from_symbol_env_with_validation(
         symbols,
-        [validation.clone()],
-        [activation],
+        check.validations().to_vec(),
+        activations,
     );
-    if database.activated().len() != 1
+    if database.activated().len() != check.validations().len()
         || !database.pending().is_empty()
         || !database.rejected().is_empty()
         || !database.diagnostics().is_empty()

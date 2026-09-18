@@ -644,3 +644,10 @@ row. Generic intake still considers that active goal eligible for a VC. Independ
 inhabitation licenses the generated choice-type fact; the attributed goal is never assumed.
 Missing/extra seeds, terms, formulas, leaves, source maps or owner links reject; no public reason/ID
 or provenance text certifies acceptance.
+
+## Three-registration source-proof extension
+
+The implemented aggregate profile authenticates the whole Core graph and maps each original parent to ordered witness-type and complete attributed-goal leaves, yielding six Open VCs without changing the existing generator signature.
+Retain three independently replayed active nonempty seeds and their own BuiltinSetInhabitation accounting; generic intake keeps its existing behavior. Shared type spelling or another parent's proof cannot satisfy a gate.
+The conjunctive leaf uses an existing generated And over both witness attributes and both real guarded definition premises. Canonical labels alone supply no premise; no selected conjunct or theorem truth replaces the goal.
+Resolve each VC through its actual parent, proof, origin and typed references; reject omitted/extra/cross-parent evidence. Preserve all original single-registration outputs and [handoff](./kernel_evidence_handoff.md#three-registration-source-proof-extension) replay.

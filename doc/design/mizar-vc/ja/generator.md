@@ -571,3 +571,10 @@ capture-safe 束縛置換に従い、証人型と属性本体の二つの open l
 に対応させ、実 Exists-set 目標と行を保持する。汎用 intake は active goal を VC 候補のままとする。独立 base inhabitation により choice
 型事実を生成し、属性目標を仮定しない。seed/term/formula/leaf/source map/owner の不足・余剰を拒否し、公開 reason/ID や provenance text
 を受理証拠にしない。
+
+## Three-registration source-proof extension
+
+実装した集約 profile は Core 全 graph を認証し、各元親を証人型と完全な属性目標の順序付き leaf に対応させる。既存 generator signature のまま Open VC 6件を生成する。
+独立に再照合する active nonempty seed 3件と各自の BuiltinSetInhabitation accounting を保持し、汎用 intake は変えない。同じ型名や別の親の証明で gate を満たさない。
+連言 leaf は両証人属性の既存 generated And と実際の両ガード付き定義前提を使う。canonical label だけを前提にせず、一方の conjunct や theorem の真偽で目標を置換しない。
+各 VC を実 parent・proof・origin・型付き参照から対応付け、証拠の不足・余剰・親の混同を拒否する。元の単一登録出力と [handoff](./kernel_evidence_handoff.md#three-registration-source-proof-extension) 再照合を維持する。

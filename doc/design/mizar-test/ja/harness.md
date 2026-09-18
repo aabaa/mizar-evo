@@ -5747,3 +5747,10 @@ algorithm の break-outside-loop と ghost-isolation の厳密な行は type_ela
 ## Contradictory assertion admission
 
 `fail_proof_verification_algorithm_assert_unprovable_001` だけを proof_verification/verification/fail、domain `algorithms.assertions`、category `proof_failure`、key `algorithms.assert.unprovable`、空の公開 code、唯一の active tag で admit する。元の `spec.en.20.algorithms.state.var_const_assert` に続けて `spec.en.mizar_vc.vc_ir.algorithm_assert_failure_snapshot`、正確な `snapshots/vc/fail_proof_verification_algorithm_assert_unprovable_001.vc_ir.snap` を指定し、admission と snapshot scope の両方で全 ID・path・stage・ref 順序・矛盾 payload の不在を検証する。完全な未加工 Open VcSet を比較してから再生成で認証した失敗 VcId だけを key に写し、未対応 source や根拠不足を失敗としない。同じ source の正等式は active 行なしの完全な one-open-VC control `snapshots/vc/step5c14_algorithm_assert_reflexive.vc_ir.snap` を所有する。両 baseline は実 object ガード・生成式・Deferred 終了 accounting を保持し、source 本文・他の C14 profile・受理境界は不変とする。
+
+## Three-registration source-proof prerequisite
+
+Rust 統合テストは変更しない C13 ambiguity 全ソースを新鮮な proof facade に渡す。この prerequisite では既存 sidecar・trace/map・advanced-semantics admission を inactive に保つ。
+完全 Core/VC/handoff baseline は親/nonempty 各3件、Open leaf 6件、別々の symbol と連言の両置換を保持する。正例は実 kernel を通し、元の R baseline を維持する。
+各登録・conjunct・引用・置換・親対応を独立に破壊し、foreign/missing evidence と kernel/policy 失敗を検査する。単独属性の証明で連言を activate しない。
+後続の同名関手 root は選択せず候補として認証する。属性付き consumer gate 4件と実 overload ambiguity は別の [checker 境界](../../mizar-checker/ja/type_checker.md#distinct-loci-overload-source-checking) に残す。

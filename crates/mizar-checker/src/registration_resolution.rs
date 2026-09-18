@@ -226,7 +226,45 @@ fn check_source_registration_profile<'a>(
                     };
                     mizar_resolve::names::resolve_template_formal(source, *locus)?;
                 }
-                K::PrefixExpression(_) | K::AttributeRef => {
+                K::PrefixExpression(_) | K::AttributeRef | K::TypeHead
+                    if node.kind() != &K::TypeHead
+                        || intake
+                            .children(id)
+                            .iter()
+                            .any(|child| intake.node(*child).kind() == &K::QualifiedSymbol) =>
+                {
+                    if node.kind() == &K::TypeHead {
+                        if symbols.registrations().len() != 3 {
+                            return Err(invalid());
+                        }
+                        let expression = intake.parent(id)?;
+                        let [chain, head] = intake.children(expression) else {
+                            return Err(invalid());
+                        };
+                        if *head != id
+                            || intake.node(*chain).kind() != &K::AttributeChain
+                            || intake.children(*chain).len() != 1
+                            || intake.node(intake.children(*chain)[0]).kind() != &K::AttributeRef
+                        {
+                            return Err(invalid());
+                        }
+                        let mut ancestor = id;
+                        for expected in [
+                            K::TypeExpression,
+                            K::IsAssertion,
+                            K::FormulaExpression,
+                            K::Proposition,
+                            K::ConclusionStatement,
+                            K::ProofBlock,
+                            K::CorrectnessCondition,
+                            K::ExistentialRegistration,
+                        ] {
+                            ancestor = intake.parent(ancestor)?;
+                            if intake.node(ancestor).kind() != &expected {
+                                return Err(invalid());
+                            }
+                        }
+                    }
                     let (token, expected) = match node.kind() {
                         K::PrefixExpression(operator) => {
                             let [token, _] = intake.children(id) else {
@@ -261,9 +299,31 @@ fn check_source_registration_profile<'a>(
                         &namespace,
                         &[candidate],
                     );
-                    if !matches!(resolution.table().iter().next().map(|(_, entry)| entry.resolution()),
-                        Some(NameResolution::Resolved(reference)) if symbols.symbols().get(reference.symbol()).is_some_and(|entry| entry.kind() == expected))
+                    let resolved = match resolution
+                        .table()
+                        .iter()
+                        .next()
+                        .map(|(_, entry)| entry.resolution())
                     {
+                        Some(NameResolution::Resolved(reference)) => symbols
+                            .symbols()
+                            .get(reference.symbol())
+                            .is_some_and(|entry| entry.kind() == expected),
+                        Some(NameResolution::Ambiguous(group))
+                            if expected == SymbolKind::Functor
+                                && symbols.registrations().len() == 3 =>
+                        {
+                            group.candidates().len() == 2
+                                && group.candidates().iter().all(|candidate| {
+                                    symbols
+                                        .symbols()
+                                        .get(candidate.symbol())
+                                        .is_some_and(|entry| entry.kind() == SymbolKind::Functor)
+                                })
+                        }
+                        _ => false,
+                    };
+                    if !resolved {
                         return Err(invalid());
                     }
                 }
@@ -350,7 +410,9 @@ fn check_source_registration_profile<'a>(
             return Err(invalid());
         }
     }
-    if registrations.len() != 1 || registrations.len() != symbols.registrations().len() {
+    if !(registrations.len() == 1 || source_proof && registrations.len() == 3)
+        || registrations.len() != symbols.registrations().len()
+    {
         return Err(invalid());
     }
     let mut validations = Vec::new();
@@ -418,12 +480,13 @@ fn check_source_registration_profile<'a>(
                         .filter(|id| intake.node(*id).kind() == &K::AttributeRef)
                         .collect()
                 };
-                if attrs.len()
-                    != if kind == K::ExistentialRegistration {
+                if !(attrs.len()
+                    == if kind == K::ExistentialRegistration {
                         1
                     } else {
                         2
                     }
+                    || source_proof && kind == K::ExistentialRegistration && attrs.len() == 2)
                     || structural.len()
                         != if kind == K::ExistentialRegistration {
                             2
@@ -696,7 +759,7 @@ fn check_source_registration_profile<'a>(
                 ))
             }),
         );
-        if gates.len() != 2
+        if gates.len() != 2 * validations.len()
             || !gates.diagnostics().is_empty()
             || gates.iter().any(|gate| {
                 gate.status() != ExistentialGateStatus::Satisfied
@@ -785,115 +848,42 @@ impl SourceRegistrationIntake<'_> {
     ) -> Result<crate::source_set_term::SourceSetTermHandoffInput, String> {
         use crate::source_set_term::*;
         let invalid = || "registration.source_existential_proof_invalid".to_owned();
-        let [validation] = validations else {
-            return Err(invalid());
-        };
-        let registration = self
-            .source
-            .arena()
-            .iter()
-            .find(|(id, _)| id.index() == validation.owner.node().index())
-            .map(|(id, _)| id)
-            .ok_or_else(invalid)?;
-        if self.node(registration).kind() != &K::ExistentialRegistration
-            || self.definitions.len() != 1
+        if !matches!((validations.len(), self.definitions.len()), (1, 1) | (3, 2))
             || self.parameters.len() != 1
-            || !validation.parameters.is_empty()
-            || !validation.assumptions.is_empty()
         {
             return Err(invalid());
         }
-        let (attribute, (definition, _, _)) = self.definitions.iter().next().ok_or_else(invalid)?;
-        let attribute = attribute.clone();
-        let definition = *definition;
-        if self.node(definition).kind() != &K::AttributeDefinition
-            || self.range(definition).end >= self.range(registration).start
-        {
-            return Err(invalid());
+        let mut patterns = std::collections::BTreeSet::new();
+        for validation in validations {
+            let RegistrationValidationPattern::Existential {
+                type_head,
+                attributes,
+            } = &validation.pattern
+            else {
+                return Err(invalid());
+            };
+            let keys = attributes
+                .iter()
+                .cloned()
+                .collect::<std::collections::BTreeSet<_>>();
+            if type_head.as_str() != "builtin.set"
+                || keys.len() != attributes.len()
+                || !patterns.insert(keys)
+            {
+                return Err(invalid());
+            }
         }
-        let correctness = self.only(registration, &K::CorrectnessCondition)?;
-        let proof = self.only(correctness, &K::ProofBlock)?;
-        let proof_children = self.children(proof).to_vec();
-        let [proof_kw, take, conclusion, end] = proof_children.as_slice() else {
-            return Err(invalid());
-        };
-        if self.text(*proof_kw)? != "proof"
-            || self.text(*end)? != "end"
-            || self.node(*take).kind() != &K::TakeStatement
-            || self.node(*conclusion).kind() != &K::ConclusionStatement
-        {
-            return Err(invalid());
-        }
-        let take_children = self.children(*take).to_vec();
-        let [take_kw, witness, take_semi] = take_children.as_slice() else {
-            return Err(invalid());
-        };
-        if self.text(*take_kw)? != "take"
-            || self.text(*take_semi)? != ";"
-            || self.node(*witness).kind() != &K::Witness
-        {
-            return Err(invalid());
-        }
-        let witness_children = self.children(*witness).to_vec();
-        let [first] = witness_children.as_slice() else {
-            return Err(invalid());
-        };
-        let conclusion_children = self.children(*conclusion).to_vec();
-        let [thus, proposition, justification, semi] = conclusion_children.as_slice() else {
-            return Err(invalid());
-        };
-        if self.text(*thus)? != "thus"
-            || self.text(*semi)? != ";"
-            || self.node(*proposition).kind() != &K::Proposition
-            || self.node(*justification).kind() != &K::JustificationClause
-        {
-            return Err(invalid());
-        }
-        let proposition_children = self.children(*proposition).to_vec();
-        let [formula] = proposition_children.as_slice() else {
-            return Err(invalid());
-        };
-        let assertion = self.only(*formula, &K::IsAssertion)?;
-        if self.node(*formula).kind() != &K::FormulaExpression
-            || self.children(*formula) != [assertion]
-        {
-            return Err(invalid());
-        }
-        let assertion_children = self.children(assertion).to_vec();
-        let [second, is_kw, chain] = assertion_children.as_slice() else {
-            return Err(invalid());
-        };
-        if self.text(*is_kw)? != "is" || self.node(*chain).kind() != &K::AttributeTestChain {
-            return Err(invalid());
-        }
-        let written_attr = self.only(*chain, &K::AttributeRef)?;
-        if self.children(*chain) != [written_attr] {
-            return Err(invalid());
-        }
-        let target = self.only(registration, &K::TypeExpression)?;
-        let domain = self.only(target, &K::TypeHead)?;
-        if self.attribute(written_attr, domain)? != attribute {
-            return Err(invalid());
-        }
-        let justification_children = self.children(*justification).to_vec();
-        let [by, references] = justification_children.as_slice() else {
-            return Err(invalid());
-        };
-        let citation = self.only(*references, &K::Reference)?;
-        let citation_children = self.children(citation).to_vec();
-        let [label] = citation_children.as_slice() else {
-            return Err(invalid());
-        };
-        if self.text(*by)? != "by"
-            || self.node(*references).kind() != &K::ReferenceList
-            || self.children(*references) != [citation]
-        {
-            return Err(invalid());
-        }
-        let definition_label = *self.children(definition).get(1).ok_or_else(invalid)?;
-        if self.text(*label)? != self.text(definition_label)?
-            || self.range(definition).end >= self.range(*label).start
-        {
+        let full = self
+            .definitions
+            .keys()
+            .map(|symbol| RegistrationAttributeKey::new(format!("{symbol:?}")))
+            .collect::<std::collections::BTreeSet<_>>();
+        let mut expected = full
+            .iter()
+            .map(|key| [key.clone()].into_iter().collect())
+            .collect::<std::collections::BTreeSet<_>>();
+        expected.insert(full);
+        if patterns != expected {
             return Err(invalid());
         }
         let mut input = SourceSetTermHandoffInput {
@@ -907,76 +897,217 @@ impl SourceRegistrationIntake<'_> {
             edges: Vec::new(),
             requests: Vec::new(),
         };
-        for (ordinal, expression) in [*first, *second].into_iter().enumerate() {
-            let choice = self.only(expression, &K::ChoiceTerm)?;
-            if self.node(expression).kind() != &K::TermExpression
-                || self.children(expression) != [choice]
+        for validation in validations {
+            let registration = self
+                .source
+                .arena()
+                .iter()
+                .find(|(id, _)| id.index() == validation.owner.node().index())
+                .map(|(id, _)| id)
+                .ok_or_else(invalid)?;
+            if self.node(registration).kind() != &K::ExistentialRegistration
+                || !validation.parameters.is_empty()
+                || !validation.assumptions.is_empty()
             {
                 return Err(invalid());
             }
-            let choice_children = self.children(choice).to_vec();
-            let [the, ty] = choice_children.as_slice() else {
+            let definitions = validation
+                .referenced_symbols
+                .iter()
+                .map(|reference| {
+                    let symbol = reference.symbol().ok_or_else(invalid)?;
+                    let (definition, _, _) = self.definitions.get(symbol).ok_or_else(invalid)?;
+                    if self.node(*definition).kind() != &K::AttributeDefinition
+                        || self.range(*definition).end >= self.range(registration).start
+                    {
+                        return Err(invalid());
+                    }
+                    Ok((symbol.clone(), *definition))
+                })
+                .collect::<Result<Vec<_>, String>>()?;
+            let correctness = self.only(registration, &K::CorrectnessCondition)?;
+            let proof = self.only(correctness, &K::ProofBlock)?;
+            let proof_children = self.children(proof).to_vec();
+            let [proof_kw, take, conclusion, end] = proof_children.as_slice() else {
                 return Err(invalid());
             };
-            let head = self.only(*ty, &K::TypeHead)?;
-            if self.text(*the)? != "the"
-                || self.node(*ty).kind() != &K::TypeExpression
-                || self.children(*ty) != [head]
+            if self.text(*proof_kw)? != "proof"
+                || self.text(*end)? != "end"
+                || self.node(*take).kind() != &K::TakeStatement
+                || self.node(*conclusion).kind() != &K::ConclusionStatement
             {
                 return Err(invalid());
             }
-            let builtin = self.set_type(head)?;
-            let term = SourceSetTermId::new(ordinal);
-            input.terms.push(SourceSetTermInput {
-                site: self.site(choice),
-                source_range: self.range(choice),
-                source_ordinal: ordinal,
-                context: BindingContextId::new(0),
-                recovery: SourceSetTermRecovery::Normal,
-                spelling: "the set".into(),
-                kind: SourceSetTermKind::Choice,
-            });
-            input.type_sites.push(SourceSetTypeSiteInput {
-                owner: SourceSetTypeOwner::Term {
-                    term,
-                    role: SourceSetTypeRole::ChoiceTarget,
-                },
-                site: self.site(*ty),
-                source_range: self.range(*ty),
-                spelling: "set".into(),
-                head_site: self.site(head),
-                head_range: self.range(head),
-                head_spelling: "set".into(),
-                context: BindingContextId::new(0),
-                recovery: SourceSetTermRecovery::Normal,
-                head: SourceSetTypeHead::BuiltinSet,
-            });
-            for (request_ordinal, kind, type_site) in [
-                (
-                    0,
-                    SourceSetRequestKind::ChoiceNonempty,
-                    Some(SourceSetTypeSiteId::new(ordinal)),
-                ),
-                (1, SourceSetRequestKind::ResultType, None),
-            ] {
-                input.requests.push(SourceSetRequestInput {
-                    term,
-                    ordinal: request_ordinal,
-                    kind,
-                    generator: None,
-                    type_site,
-                });
+            let take_children = self.children(*take).to_vec();
+            let [take_kw, witness, take_semi] = take_children.as_slice() else {
+                return Err(invalid());
+            };
+            if self.text(*take_kw)? != "take"
+                || self.text(*take_semi)? != ";"
+                || self.node(*witness).kind() != &K::Witness
+            {
+                return Err(invalid());
             }
-            self.terms.insert(
-                self.site(choice),
-                TermInput::new(
+            let witness_children = self.children(*witness).to_vec();
+            let [first] = witness_children.as_slice() else {
+                return Err(invalid());
+            };
+            let conclusion_children = self.children(*conclusion).to_vec();
+            let [thus, proposition, justification, semi] = conclusion_children.as_slice() else {
+                return Err(invalid());
+            };
+            if self.text(*thus)? != "thus"
+                || self.text(*semi)? != ";"
+                || self.node(*proposition).kind() != &K::Proposition
+                || self.node(*justification).kind() != &K::JustificationClause
+            {
+                return Err(invalid());
+            }
+            let proposition_children = self.children(*proposition).to_vec();
+            let [formula] = proposition_children.as_slice() else {
+                return Err(invalid());
+            };
+            let assertion = self.only(*formula, &K::IsAssertion)?;
+            if self.node(*formula).kind() != &K::FormulaExpression
+                || self.children(*formula) != [assertion]
+            {
+                return Err(invalid());
+            }
+            let assertion_children = self.children(assertion).to_vec();
+            let [second, is_kw, chain] = assertion_children.as_slice() else {
+                return Err(invalid());
+            };
+            if self.text(*is_kw)? != "is" {
+                return Err(invalid());
+            }
+            let written_attributes = match self.node(*chain).kind() {
+                K::AttributeTestChain => self.children(*chain).to_vec(),
+                K::TypeExpression if validations.len() == 3 && definitions.len() == 2 => {
+                    let [prefix, head] = self.children(*chain) else {
+                        return Err(invalid());
+                    };
+                    if self.node(*prefix).kind() != &K::AttributeChain
+                        || self.node(*head).kind() != &K::TypeHead
+                    {
+                        return Err(invalid());
+                    }
+                    let [attribute] = self.children(*prefix) else {
+                        return Err(invalid());
+                    };
+                    if self.node(*attribute).kind() != &K::AttributeRef {
+                        return Err(invalid());
+                    }
+                    vec![*attribute, *head]
+                }
+                _ => return Err(invalid()),
+            };
+            let target = self.only(registration, &K::TypeExpression)?;
+            let domain = self.only(target, &K::TypeHead)?;
+            if written_attributes.len() != definitions.len() {
+                return Err(invalid());
+            }
+            for (written, (attribute, _)) in written_attributes.iter().zip(&definitions) {
+                if self.attribute(*written, domain)? != *attribute {
+                    return Err(invalid());
+                }
+            }
+            let justification_children = self.children(*justification).to_vec();
+            let [by, references] = justification_children.as_slice() else {
+                return Err(invalid());
+            };
+            if self.text(*by)? != "by" || self.node(*references).kind() != &K::ReferenceList {
+                return Err(invalid());
+            }
+            let citations = self.children(*references).to_vec();
+            if citations.len() != 2 * definitions.len() - 1 {
+                return Err(invalid());
+            }
+            for (index, (_, definition)) in definitions.iter().enumerate() {
+                let citation = citations[2 * index];
+                let [label] = self.children(citation) else {
+                    return Err(invalid());
+                };
+                let definition_label = *self.children(*definition).get(1).ok_or_else(invalid)?;
+                if self.node(citation).kind() != &K::Reference
+                    || self.text(*label)? != self.text(definition_label)?
+                    || self.range(*definition).end >= self.range(*label).start
+                    || index > 0 && self.text(citations[2 * index - 1])? != ","
+                {
+                    return Err(invalid());
+                }
+            }
+            for expression in [*first, *second] {
+                let ordinal = input.terms.len();
+                let choice = self.only(expression, &K::ChoiceTerm)?;
+                if self.node(expression).kind() != &K::TermExpression
+                    || self.children(expression) != [choice]
+                {
+                    return Err(invalid());
+                }
+                let choice_children = self.children(choice).to_vec();
+                let [the, ty] = choice_children.as_slice() else {
+                    return Err(invalid());
+                };
+                let head = self.only(*ty, &K::TypeHead)?;
+                if self.text(*the)? != "the"
+                    || self.node(*ty).kind() != &K::TypeExpression
+                    || self.children(*ty) != [head]
+                {
+                    return Err(invalid());
+                }
+                let builtin = self.set_type(head)?;
+                let term = SourceSetTermId::new(ordinal);
+                input.terms.push(SourceSetTermInput {
+                    site: self.site(choice),
+                    source_range: self.range(choice),
+                    source_ordinal: ordinal,
+                    context: BindingContextId::new(0),
+                    recovery: SourceSetTermRecovery::Normal,
+                    spelling: "the set".into(),
+                    kind: SourceSetTermKind::Choice,
+                });
+                input.type_sites.push(SourceSetTypeSiteInput {
+                    owner: SourceSetTypeOwner::Term {
+                        term,
+                        role: SourceSetTypeRole::ChoiceTarget,
+                    },
+                    site: self.site(*ty),
+                    source_range: self.range(*ty),
+                    spelling: "set".into(),
+                    head_site: self.site(head),
+                    head_range: self.range(head),
+                    head_spelling: "set".into(),
+                    context: BindingContextId::new(0),
+                    recovery: SourceSetTermRecovery::Normal,
+                    head: SourceSetTypeHead::BuiltinSet,
+                });
+                for (request_ordinal, kind, type_site) in [
+                    (
+                        0,
+                        SourceSetRequestKind::ChoiceNonempty,
+                        Some(SourceSetTypeSiteId::new(ordinal)),
+                    ),
+                    (1, SourceSetRequestKind::ResultType, None),
+                ] {
+                    input.requests.push(SourceSetRequestInput {
+                        term,
+                        ordinal: request_ordinal,
+                        kind,
+                        generator: None,
+                        type_site,
+                    });
+                }
+                self.terms.insert(
                     self.site(choice),
-                    BindingContextId::new(0),
-                    self.range(choice),
-                    TermKind::Choice,
-                )
-                .with_result_type(builtin),
-            );
+                    TermInput::new(
+                        self.site(choice),
+                        BindingContextId::new(0),
+                        self.range(choice),
+                        TermKind::Choice,
+                    )
+                    .with_result_type(builtin),
+                );
+            }
         }
         Ok(input)
     }
@@ -1343,7 +1474,9 @@ impl SourceRegistrationIntake<'_> {
         node: ResolvedNodeId,
         domain: ResolvedNodeId,
     ) -> Result<SymbolId, String> {
-        if self.node(node).kind() != &K::AttributeRef {
+        if self.node(node).kind() != &K::AttributeRef
+            && !(self.symbols.registrations().len() == 3 && self.node(node).kind() == &K::TypeHead)
+        {
             return Err("registration.attribute_required".into());
         }
         let mut token = node;
@@ -1364,10 +1497,38 @@ impl SourceRegistrationIntake<'_> {
             .get(&symbol)
             .ok_or("registration.attribute_definition")?;
         let expected = self.set_type(domain)?;
-        self.terms
-            .get_mut(&self.site(subject))
-            .ok_or("registration.attribute_signature")?
-            .expected_type = Some(expected);
+        if self.symbols.registrations().len() == 3 {
+            if !self.formulas.iter().any(|formula| {
+                formula
+                    .expected_types
+                    .iter()
+                    .any(|row| row.expected.site == expected.site)
+            }) {
+                let definition = self.definitions[&symbol].0;
+                let range = self.range(definition);
+                let formula = self
+                    .formulas
+                    .iter_mut()
+                    .find(|formula| {
+                        formula.kind == FormulaKind::Equality
+                            && range.start <= formula.source_range.start
+                            && formula.source_range.end <= range.end
+                    })
+                    .ok_or("registration.attribute_signature")?;
+                formula
+                    .expected_types
+                    .push(crate::type_checker::ExpectedTypeInput::new(
+                        formula.terms[0].clone(),
+                        expected,
+                        range,
+                    ));
+            }
+        } else {
+            self.terms
+                .get_mut(&self.site(subject))
+                .ok_or("registration.attribute_signature")?
+                .expected_type = Some(expected);
+        }
         Ok(symbol)
     }
     fn term(

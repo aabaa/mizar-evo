@@ -248,3 +248,10 @@ consumers must use this producer within the same authenticated source orchestrat
 arbitrary returned/public database as proof authority. Preserve item-order visibility and no
 retroactive facts. C3 widening, C5/C13, broader Task274, artifact publication and cluster/reduction
 effects remain deferred.
+
+## Three-registration source-proof extension
+
+The implemented additional source profile uses the unchanged prove_source_existential_registration signature and freshly reconstructs the complete checker/Core/VC graph for all three authored C13 registrations.
+All six ordinary Formula-v1 leaf checks must succeed under the current policy before constructing one same-environment database containing exactly the three full patterns. Failure returns no partial activation or mutation of earlier pending inputs.
+Each association binds its own registration, parent, independent nonempty seed, both leaves, actual definition dependencies, handoff hashes and source/module/snapshot. No callback, caller receipt or another registration's acceptance substitutes.
+Retain the single-registration behavior and all non-transferable-database restrictions. This prerequisite provides no C13 overload/inhabitation-consumer credit, C3 widening, general Task274/import, cluster closure or publication.
