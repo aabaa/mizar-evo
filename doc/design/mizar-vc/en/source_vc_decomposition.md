@@ -271,3 +271,7 @@ The phrase source profile uses existing Core/control-flow/obligation intake and 
 `spec.en.mizar_vc.vc_ir.phrase_predicate_snapshot` is the narrow snapshot trace; its sole fixture is `tests/miz/pass/predicates/pass_proof_verification_pred_phrase_identifier_001.expect.toml`.
 `snapshots/vc/pass_proof_verification_pred_phrase_identifier_001.vc_ir.snap` records complete deterministic `VcSet::debug_text()` output; immutable whole-Core/whole-VcSet assertions also protect formulas, symbols, binders, context and provenance.
 Canonical predicate trace status and broad proof-family deferrals remain unchanged; no discharge, accepted theorem, proof reuse, definition installation or new VC generator API follows.
+
+## Bounded symbolic predicate snapshot
+
+The symbolic predicate uses unchanged `generate_core_vcs` intake and normalization: one Open TheoremProofStep from the authentic Core TerminalGoal, actual predicate goal and ordered local-guard/guarded-definition context. Add only `spec.en.mizar_vc.vc_ir.symbolic_predicate_snapshot` for `tests/miz/pass/predicates/pass_proof_verification_pred_symbolic_infix_001.expect.toml` and `snapshots/vc/pass_proof_verification_pred_symbolic_infix_001.vc_ir.snap`; the trace section is `VC Task 6; bounded symbolic predicate VcIr snapshot`. Whole-Core controls inspect the quantified definition and membership edges because a VcSet alone retains Core references. No marker, generator API, proof acceptance or general membership reasoning is added.

@@ -357,6 +357,10 @@ pub enum CoreFormulaKind {
         left: CoreTermId,
         right: CoreTermId,
     },
+    Membership {
+        element: CoreTermId,
+        set: CoreTermId,
+    },
     TypePred {
         subject: CoreTermId,
         ty: CoreTypePredicate,
@@ -1824,7 +1828,11 @@ fn validate_formula(
                 validate_index("term", arg.index(), parts.terms.len())?;
             }
         }
-        CoreFormulaKind::Equals { left, right } => {
+        CoreFormulaKind::Equals { left, right }
+        | CoreFormulaKind::Membership {
+            element: left,
+            set: right,
+        } => {
             validate_index("term", left.index(), parts.terms.len())?;
             validate_index("term", right.index(), parts.terms.len())?;
         }

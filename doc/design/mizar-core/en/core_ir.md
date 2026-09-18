@@ -928,3 +928,7 @@ decomposition.
 
 The implemented `CoreAlgorithmStmtKind::Snapshot { name: String, captures: Vec<CoreVarId> }` preserves source name, exact visible declaration order and statement identity without copying bindings or encoding values. Validate unique names and complete same-algorithm captures at the statement; result, future, hidden, duplicate and foreign declarations are invalid.
 Snapshot shells retain normal source maps and provenance; CFG owns capture-point context, while snapshot claims and value substitution remain separate.
+
+## Primitive membership formula
+
+`CoreFormulaKind::Membership { element: CoreTermId, set: CoreTermId }` represents the primitive membership relation; the corresponding `CoreFormulaSeedKind::Membership { element: CoreTermSeedId, set: CoreTermSeedId }` lowers through the existing term/formula path. Validate both terms and same-owner source references; preserve operand order in traversal, remapping, source maps and deterministic debug output. This is neither Equals nor a fabricated user-symbol Atom. Existing conservative VC transport grants no membership proof or truth. Alpha-normalizer conversion remains fail-closed for membership; Core seed guard normalization and operand traversal retain it.

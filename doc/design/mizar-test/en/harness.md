@@ -6355,4 +6355,8 @@ Admit only `pass_proof_verification_pred_phrase_identifier_001` at `proof_verifi
 Reserve either identity or source/sidecar basename across all stages; the existing source and semantic expectation remain unchanged.
 Invoke existing predicate typing, the sealed theorem checker and Core lowering, then existing control-flow/handoff/seed-intake VC generation; require the actual guarded definition, predicate goal and one Open terminal VC.
 Compare complete immutable Core/VcSet reruns and the [whole VcSet snapshot](../../mizar-vc/en/source_vc_decomposition.md#bounded-phrase-predicate-snapshot); missing or corrupted baselines and metadata fail closed.
-This route earns generation credit only, preserves all other C5 activations and leaves symbolic predicates, equals-infix, means-prefix and narrower-loci registration deferred.
+This route earns generation credit only, preserves all other C5 activations and leaves equals-infix, means-prefix and narrower-loci registration deferred; symbolic generation is specified below.
+
+## Bounded symbolic predicate admission
+
+Admit only `pass_proof_verification_pred_symbolic_infix_001` with unchanged pass/proof_verification/vc_generation, predicates.symbolic_definition and original semantic reference, sole active_proof_verification tag and the symbolic snapshot reference/path. Authenticate exact source/sidecar identities, missing/duplicate inventory, aliases, wrong stages and absent auxiliary payloads. Compare complete deterministic Core/VcSet reruns and baseline; preserve every predecessor. Controls independently rename all five binders and the symbolic head, swap membership containers, and reject unbound/ill-typed or forged scope/owner inputs. This is generation-only credit.

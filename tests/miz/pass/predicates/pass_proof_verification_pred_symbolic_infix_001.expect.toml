@@ -9,5 +9,8 @@ expected_phase = "vc_generation"
 diagnostic_codes = []
 spec_refs = [
   "spec.en.09.predicates.definition.symbolic",
+  "spec.en.mizar_vc.vc_ir.symbolic_predicate_snapshot",
 ]
 notes = "Audit-1 semantic-bridge inactive oracle seed (September 2026 audit wave): binding expectation for the Step-5 semantic bridge; no active runner tag, earns no current credit. A symbolic infix predicate defined by means unfolds at a use site (spec 9.1, 9.3)."
+tags = ["active_proof_verification"]
+snapshots = "snapshots/vc/pass_proof_verification_pred_symbolic_infix_001.vc_ir.snap"

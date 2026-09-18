@@ -96,7 +96,7 @@ request 1件を持つ。request は intent だけで、answer、selected candida
 type、fact、truth を含まない。
 
 binary application 1件は segment・head/candidate/request 各1件と直接 edge 2件でも表現でき、positive または source の否定極性を保持する。既存の unsegmented application と複数 segment chain の規則は維持する。
-この local 単一 segment だけは実 symbol/definition が保持する相異なる3 identifier の同一 pattern の中央を head として認める。primary/notation 一致・kind・namespace・先行 local origin・candidate ownership を維持し、signature typing や架空 symbol を与えない。
+この local 単一 segment だけは実 symbol/definition が保持する相異なる identifier loci と、それらと異なる identifier または有効な非予約 user-symbol head からなる同一 binary pattern の中央を head として認める。primary/notation 一致・kind・namespace・先行 local origin・candidate ownership を維持し、signature typing や架空 symbol を与えない。
 この単一 segment のみ formula と同一 range を許すが、別個の実 source node・operand/head/否定 token の順序・arena identity・他の全 ownership 検査を要求する。架空の wrapper や segment は認めない。
 [直接 statement checker](./type_checker.md#ordinary-predicate-application-checking) が別途 declaration・binding・引数互換性を検査する。この transport は未解決 request を持つ不変 source 記述であり、selection・式の真偽・証明受理を与えない。
 

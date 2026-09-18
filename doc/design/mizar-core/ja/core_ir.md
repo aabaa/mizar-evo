@@ -880,3 +880,7 @@ adapterにbroader source coverageを与えない。
 
 実装済みの `CoreAlgorithmStmtKind::Snapshot { name: String, captures: Vec<CoreVarId> }` は名前・可視宣言順序・文同一性を保持し、binding の複製や値の符号化をしない。文の位置で名前の一意性と同じ algorithm の完全な捕捉集合を検証し、result・後続・隠蔽・重複・外部宣言を拒否する。
 shell は通常の source map・由来を保持し、捕捉点の文脈は CFG が所有する。snapshot claim と値置換は別境界に留める。
+
+## 原始 membership 式
+
+`CoreFormulaKind::Membership { element: CoreTermId, set: CoreTermId }` は原始 membership 関係を表し、対応する `CoreFormulaSeedKind::Membership { element: CoreTermSeedId, set: CoreTermSeedId }` は既存 term/formula 経路で lowering する。両項と同一所有者 source 参照を検証し、走査・再配置・source map・決定的 debug 出力でオペランド順序を保つ。Equals や捏造 user-symbol Atom で代用しない。既存の保守的 VC transport は membership の証明・真理を付与しない。 alpha-normalizer への membership 変換は未対応として拒否し、Core seed の guard 正規化とオペランド走査では保持する。

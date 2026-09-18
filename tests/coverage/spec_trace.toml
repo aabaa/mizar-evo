@@ -7162,6 +7162,19 @@ tests = [
 ]
 
 [[requirement]]
+id = "spec.en.mizar_vc.vc_ir.symbolic_predicate_snapshot"
+source = "doc/design/mizar-vc/en/source_vc_decomposition.md"
+section = "VC Task 6; bounded symbolic predicate VcIr snapshot"
+stage = "proof_verification"
+status = "covered"
+required = true
+coverage = "snapshot"
+notes = "Actual quantified membership definition and guarded predicate goal remain Open; no proof or definition acceptance."
+tests = [
+  "tests/miz/pass/predicates/pass_proof_verification_pred_symbolic_infix_001.expect.toml",
+]
+
+[[requirement]]
 id = "spec.en.mizar_vc.vc_ir.task180_proof_verification_snapshot"
 source = "doc/design/mizar-vc/en/source_vc_decomposition.md"
 section = "VC Task 31; exact Task-180 open VcIr proof-verification snapshot"

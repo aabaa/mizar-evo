@@ -2804,7 +2804,11 @@ impl<'a> FlowBuilder<'a> {
                     self.collect_term_uses(*arg, bound_vars, uses);
                 }
             }
-            CoreFormulaKind::Equals { left, right } => {
+            CoreFormulaKind::Equals { left, right }
+            | CoreFormulaKind::Membership {
+                element: left,
+                set: right,
+            } => {
                 self.collect_term_uses(*left, bound_vars, uses);
                 self.collect_term_uses(*right, bound_vars, uses);
             }

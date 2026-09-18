@@ -101,7 +101,7 @@ Requests publish intent only; they contain no answer, selected candidate,
 type, fact, or truth.
 
 One binary application may instead carry one segment, one head/candidate/request and two direct edges, retaining positive or source-written negative polarity. Existing unsegmented applications and multi-segment chains retain their rules.
-For this local single-segment case, the head may be the middle token of the same three-distinct-identifier pattern stored by the real symbol and definition; primary/notation agreement, kind, namespace, earlier local origin and candidate ownership remain mandatory. This supplies no signature typing or invented symbol.
+For this local single-segment case, the head may be the middle token of the same binary pattern with distinct identifier loci and a distinct identifier or valid non-reserved user-symbol head stored by the real symbol and definition; primary/notation agreement, kind, namespace, earlier local origin and candidate ownership remain mandatory. This supplies no signature typing or invented symbol.
 Only this single segment may equal its formula's range; its distinct real source node, ordered operands/head/negation tokens, arena identity and all other ownership checks remain required. No synthetic wrapper or segment is admitted.
 The [direct statement checker](./type_checker.md#ordinary-predicate-application-checking) separately checks declaration, bindings and argument compatibility. This transport remains an immutable source description with unresolved requests, not selection, formula truth or proof acceptance.
 

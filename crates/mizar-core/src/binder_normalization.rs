@@ -951,6 +951,9 @@ impl<'a> RawNormalizationState<'a> {
                     args: self.normalize_terms(&args)?,
                 }))
             }
+            CoreFormulaKind::Membership { .. } => {
+                Err(self.malformed("unsupported-core-membership"))
+            }
             CoreFormulaKind::Equals { left, right } => {
                 Ok(NormalizedFormula::new(NormalizedFormulaKind::Equals {
                     left: self.normalize_term(left)?,
@@ -1263,10 +1266,12 @@ fn core_formula_mentions_vars(
     match &formula.kind {
         CoreFormulaKind::True | CoreFormulaKind::False | CoreFormulaKind::Error(_) => Ok(false),
         CoreFormulaKind::Atom { args, .. } => core_terms_mention_vars(core, args, vars, state),
-        CoreFormulaKind::Equals { left, right } => {
-            Ok(core_term_mentions_vars(core, *left, vars, state)?
-                || core_term_mentions_vars(core, *right, vars, state)?)
-        }
+        CoreFormulaKind::Equals { left, right }
+        | CoreFormulaKind::Membership {
+            element: left,
+            set: right,
+        } => Ok(core_term_mentions_vars(core, *left, vars, state)?
+            || core_term_mentions_vars(core, *right, vars, state)?),
         CoreFormulaKind::TypePred { subject, .. } => {
             core_term_mentions_vars(core, *subject, vars, state)
         }
@@ -5653,6 +5658,40 @@ mod tests {
             canonical_formula(&first, &context, &source()).unwrap(),
             canonical_formula(&second, &context, &source()).unwrap()
         );
+    }
+
+    #[test]
+    fn primitive_membership_keeps_operands_but_alpha_conversion_is_unsupported() {
+        let mut parts = core_parts();
+        let element = push_term(&mut parts, CoreTermKind::Var(CoreVarId::new(0)));
+        let set = push_term(&mut parts, CoreTermKind::Var(CoreVarId::new(1)));
+        let formula = push_formula(&mut parts, CoreFormulaKind::Membership { element, set });
+        let core = CoreIr::try_new(parts.clone()).unwrap();
+        let error =
+            normalize_core_formula(&core, formula, &BinderContext::new(), &source()).unwrap_err();
+        assert_eq!(error.class, BinderDiagnosticClass::MalformedEvidence);
+        assert!(
+            error
+                .message_key
+                .as_str()
+                .contains("unsupported-core-membership")
+        );
+        for missing_element in [false, true] {
+            let mut invalid = parts.clone();
+            invalid.formulas.get_mut(formula).unwrap().kind = CoreFormulaKind::Membership {
+                element: if missing_element {
+                    CoreTermId::new(99)
+                } else {
+                    element
+                },
+                set: if missing_element {
+                    set
+                } else {
+                    CoreTermId::new(99)
+                },
+            };
+            assert!(CoreIr::try_new(invalid).is_err());
+        }
     }
 
     #[test]

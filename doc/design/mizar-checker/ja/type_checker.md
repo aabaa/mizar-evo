@@ -3067,3 +3067,5 @@ call-site result、rewrite、Core/VC、Step6/MVM の動作は追加しない。
 定義の二仮引数、量化変数、証明局所変数を四つの別 binding とし、定理 scope と producer binding は数値 index の一致でなく実際の出現と宣言の同一性で対応させる。
 一つの完了済み predicate 定義、set 上の全称定理、局所 set binder と引用のない正の終端呼出しだけを扱い、property、他の本体や guard、引用、algorithm wrapper は除外する。
 [Core consumer](../../mizar-core/ja/elaborator.md#source-phrase-predicate-theorem) が guard 付き定義と open obligation を所有し、この seal は証明や大域的な accepted-definition 効果を与えない。
+
+**限定 symbolic 拡張。** 既存 predicate producer と theorem seal replay を拡張し、set 二引数 predicate の本体として object 量化一つと membership 前件・後件を扱う。実 symbolic head、入れ子束縛子と formal 参照、quantifier/st/holds 構造、object/set オペランド推論、二つの正の自己適用を認証する。入れ子文脈は両 definition formal を継承し、theorem・proof 束縛子は独立とする。宣言・出現対応から body binding を導出し、引数順や同じ数値 ID で代用しない。追加量化・結合子・property・citation・外部参照は未対応とし、seal field や公開 API は増やさない。

@@ -255,3 +255,7 @@ phrase source profile は既存 Core/control-flow/obligation intake と normaliz
 `spec.en.mizar_vc.vc_ir.phrase_predicate_snapshot` を限定 snapshot trace とし、唯一の fixture を `tests/miz/pass/predicates/pass_proof_verification_pred_phrase_identifier_001.expect.toml` とする。
 `snapshots/vc/pass_proof_verification_pred_phrase_identifier_001.vc_ir.snap` は決定的な `VcSet::debug_text()` 全出力を記録し、Core/VcSet 全体の不変比較で formula、symbol、binder、context、provenance も保護する。
 canonical predicate trace の status と広域 proof-family の延期を維持し、discharge、accepted theorem、proof reuse、definition installation、新規 VC generator API は導入しない。
+
+## 限定 symbolic predicate snapshot
+
+symbolic predicate は既存 `generate_core_vcs` intake/normalization を使い、実 Core TerminalGoal から実 predicate goal と順序付き local-guard/guarded-definition 文脈を持つ Open TheoremProofStep 一つを生成する。`tests/miz/pass/predicates/pass_proof_verification_pred_symbolic_infix_001.expect.toml` に `spec.en.mizar_vc.vc_ir.symbolic_predicate_snapshot` と `snapshots/vc/pass_proof_verification_pred_symbolic_infix_001.vc_ir.snap` だけを追加し、trace section は `VC Task 6; bounded symbolic predicate VcIr snapshot` とする。VcSet は Core 参照を保持するため、Core 全体の対照で量化定義と membership 辺を検査する。marker・generator API・証明受理・一般 membership 推論は追加しない。

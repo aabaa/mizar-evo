@@ -10577,6 +10577,10 @@ pub enum CoreFormulaSeedKind {
         left: CoreTermSeedId,
         right: CoreTermSeedId,
     },
+    Membership {
+        element: CoreTermSeedId,
+        set: CoreTermSeedId,
+    },
     TypePred {
         subject: CoreTermSeedId,
         ty: CoreTypePredicate,
@@ -11317,6 +11321,10 @@ impl TermAndFormulaLoweringState {
                 left: self.lower_term_seed(input, left)?,
                 right: self.lower_term_seed(input, right)?,
             },
+            CoreFormulaSeedKind::Membership { element, set } => CoreFormulaKind::Membership {
+                element: self.lower_term_seed(input, element)?,
+                set: self.lower_term_seed(input, set)?,
+            },
             CoreFormulaSeedKind::TypePred { subject, ty } => CoreFormulaKind::TypePred {
                 subject: self.lower_term_seed(input, subject)?,
                 ty,
@@ -11725,6 +11733,7 @@ fn validate_formula_seed_kind(
         | CoreFormulaSeedKind::False
         | CoreFormulaSeedKind::Atom { .. }
         | CoreFormulaSeedKind::Equals { .. }
+        | CoreFormulaSeedKind::Membership { .. }
         | CoreFormulaSeedKind::TypePred { .. }
         | CoreFormulaSeedKind::Not(_)
         | CoreFormulaSeedKind::And(_)
@@ -11877,7 +11886,11 @@ fn seed_formula_free_variables_inner(
                 vars.extend(seed_term_free_variables(input, *arg)?);
             }
         }
-        CoreFormulaSeedKind::Equals { left, right } => {
+        CoreFormulaSeedKind::Equals { left, right }
+        | CoreFormulaSeedKind::Membership {
+            element: left,
+            set: right,
+        } => {
             vars.extend(seed_term_free_variables(input, *left)?);
             vars.extend(seed_term_free_variables(input, *right)?);
         }
@@ -12787,7 +12800,11 @@ fn collect_reachable_formula_refs(
                 collect_reachable_term_refs(term_formula, *arg, refs);
             }
         }
-        CoreFormulaKind::Equals { left, right } => {
+        CoreFormulaKind::Equals { left, right }
+        | CoreFormulaKind::Membership {
+            element: left,
+            set: right,
+        } => {
             collect_reachable_term_refs(term_formula, *left, refs);
             collect_reachable_term_refs(term_formula, *right, refs);
         }
@@ -16089,39 +16106,76 @@ pub fn lower_source_theorem_skeletons(
             let [left, _, right, _, _] = raw.as_slice() else {
                 return Err(invalid());
             };
-            let (body, row) = atomic
-                .formulas()
-                .iter()
-                .find(|(_, row)| {
-                    row.kind()
-                        == mizar_checker::source_atomic_formula::SourceAtomicFormulaKind::Equality
-                })
+            let definition_children = children(node).ok_or_else(invalid)?;
+            let definiens = definition_children
+                .into_iter()
+                .find(|id| kind(*id) == Some("FormulaDefiniens"))
                 .ok_or_else(invalid)?;
-            let mut formals = Vec::new();
-            for (edge, declaration) in atomic
-                .edges()
-                .iter()
-                .filter(|(_, edge)| edge.formula() == body)
-                .map(|(_, edge)| edge)
-                .zip([*left, *right])
-            {
-                let mizar_checker::source_atomic_formula::SourceAtomicTermTarget::Primary(term) =
-                    edge.target()
-                else {
-                    return Err(invalid());
-                };
-                let binding = primary
-                    .references()
-                    .iter()
-                    .find(|(_, row)| row.term() == term)
-                    .ok_or_else(invalid)?
-                    .1
-                    .binding();
-                formals.push((binding, declaration));
-            }
-            Ok((node, symbol, row.site().node(), formals))
+            let body = children(definiens)
+                .and_then(|ids| ids.first().copied())
+                .and_then(unwrap)
+                .ok_or_else(invalid)?;
+            Ok((node, symbol, body, vec![*left, *right]))
         })
         .transpose()?;
+    let nested_binder = phrase.as_ref().and_then(|(_, _, body, _)| {
+        (kind(*body) == Some("QuantifiedFormula(Universal)"))
+            .then(|| {
+                let segment = children(*body)?.first().copied()?;
+                typed.nodes().node(segment)?.children.first().copied()
+            })
+            .flatten()
+    });
+    let declaration_spelling = |id| {
+        kind(id)?
+            .strip_prefix("Token(SurfaceToken { kind: Identifier, text: \"")?
+            .strip_suffix("\" })")
+    };
+    let mut definition_bindings = BTreeMap::new();
+    if let Some((_, _, body, formals)) = &phrase {
+        let lexical_owner = typed
+            .nodes()
+            .iter()
+            .find(|(_, node)| node.kind.as_str() == "DefinitionBlockItem")
+            .ok_or_else(invalid)?
+            .0;
+        let mut owner_path = vec![u32::try_from(lexical_owner.index()).map_err(|_| invalid())?];
+        if nested_binder.is_some() {
+            owner_path.push(u32::try_from(body.index()).map_err(|_| invalid())?);
+        }
+        let body_range = range(*body).ok_or_else(invalid)?;
+        for (_, reference) in primary.references().iter() {
+            let term = primary.terms().get(reference.term()).ok_or_else(invalid)?;
+            if !contains(body_range, term.source_range()) {
+                continue;
+            }
+            if range(term.site().node()) != Some(term.source_range())
+                || reference.lexical_scope().map(|scope| scope.path())
+                    != Some(owner_path.as_slice())
+            {
+                return Err(invalid());
+            }
+            let declaration = nested_binder
+                .filter(|id| declaration_spelling(*id) == Some(term.spelling()))
+                .or_else(|| {
+                    formals
+                        .iter()
+                        .copied()
+                        .find(|id| declaration_spelling(*id) == Some(term.spelling()))
+                })
+                .ok_or_else(invalid)?;
+            if range(declaration).is_none_or(|span| span.end > term.source_range().start)
+                || definition_bindings.iter().any(|(binding, previous)| {
+                    *binding != reference.binding() && *previous == declaration
+                })
+                || definition_bindings
+                    .insert(reference.binding(), declaration)
+                    .is_some_and(|previous| previous != declaration)
+            {
+                return Err(invalid());
+            }
+        }
+    }
     let binding_for_target =
         |target: mizar_checker::source_atomic_formula::SourceAtomicTermTarget| {
             let mizar_checker::source_atomic_formula::SourceAtomicTermTarget::Primary(term) =
@@ -16143,9 +16197,13 @@ pub fn lower_source_theorem_skeletons(
                     .find(|(_, reference)| reference.term() == term)?
                     .1
                     .binding();
+                let declaration = *definition_bindings.get(&binding)?;
+                if nested_binder == Some(declaration) {
+                    return Some(CoreVarId::new(scope.bindings().len() + formals.len()));
+                }
                 return formals
                     .iter()
-                    .position(|(formal, _)| *formal == binding)
+                    .position(|formal| *formal == declaration)
                     .map(|index| CoreVarId::new(scope.bindings().len() + index));
             }
             primary
@@ -16172,9 +16230,11 @@ pub fn lower_source_theorem_skeletons(
                            owner: &SourceTheoremOwnerInput,
                            formula_node: TypedNodeId|
      -> Result<CoreFormulaSeedId, String> {
-        let predicate_body = phrase
-            .as_ref()
-            .filter(|(_, _, body, _)| *body == formula_node);
+        let predicate_body = phrase.as_ref().filter(|(_, _, body, _)| {
+            range(*body)
+                .zip(range(formula_node))
+                .is_some_and(|(outer, inner)| contains(outer, inner))
+        });
         let provenance = |suffix: &str| {
             CheckerOwnedProvenance::checker(if let Some((_, symbol, _, _)) = predicate_body {
                 format!("checker/predicate/{}/{suffix}", symbol.fqn().as_str())
@@ -16225,11 +16285,13 @@ pub fn lower_source_theorem_skeletons(
         formula_seeds.push(CoreFormulaSeed::new(
             if formula.1.kind() == mizar_checker::source_atomic_formula::SourceAtomicFormulaKind::PredicateApplication {
                 CoreFormulaSeedKind::Atom { predicate: phrase.as_ref().ok_or_else(invalid)?.1.clone(), args: terms }
+            } else if formula.1.kind() == mizar_checker::source_atomic_formula::SourceAtomicFormulaKind::Membership {
+                CoreFormulaSeedKind::Membership { element: terms[0], set: terms[1] }
             } else {
                 CoreFormulaSeedKind::Equals { left: terms[0], right: terms[1] }
             },
             CoreSourceRef::direct(source),
-            provenance(if formula.1.kind() == mizar_checker::source_atomic_formula::SourceAtomicFormulaKind::PredicateApplication { "atom" } else { "equality" }),
+            provenance(if formula.1.kind() == mizar_checker::source_atomic_formula::SourceAtomicFormulaKind::PredicateApplication { "atom" } else if formula.1.kind() == mizar_checker::source_atomic_formula::SourceAtomicFormulaKind::Membership { "membership" } else { "equality" }),
         ));
         Ok(CoreFormulaSeedId::new(formula_seeds.len() - 1))
     };
@@ -16239,11 +16301,79 @@ pub fn lower_source_theorem_skeletons(
     let mut phrase_axiom = None;
     if let Some((definition, symbol, body, formals)) = &phrase {
         let owner = &owners[0].0;
-        let equality = append_equality(&mut term_seeds, &mut formula_seeds, owner, *body)?;
+        let equality = if let Some(declaration) = nested_binder {
+            let nodes = children(*body).ok_or_else(invalid)?;
+            let [_, premise, conclusion] = nodes.as_slice() else {
+                return Err(invalid());
+            };
+            let premise = append_equality(
+                &mut term_seeds,
+                &mut formula_seeds,
+                owner,
+                unwrap(*premise).ok_or_else(invalid)?,
+            )?;
+            let conclusion = append_equality(
+                &mut term_seeds,
+                &mut formula_seeds,
+                owner,
+                unwrap(*conclusion).ok_or_else(invalid)?,
+            )?;
+            let source = CoreSourceRef::direct(range(*body).ok_or_else(invalid)?);
+            let binder_source = CoreSourceRef::direct(range(declaration).ok_or_else(invalid)?);
+            let provenance = CheckerOwnedProvenance::checker(format!(
+                "checker/predicate/{}/body",
+                symbol.fqn().as_str()
+            ));
+            let implication = CoreFormulaSeedId::new(formula_seeds.len());
+            formula_seeds.push(CoreFormulaSeed::new(
+                CoreFormulaSeedKind::Implies {
+                    premise,
+                    conclusion,
+                },
+                source.clone(),
+                provenance.clone(),
+            ));
+            let var = CoreVarId::new(scope.bindings().len() + formals.len());
+            let term = CoreTermSeedId::new(term_seeds.len());
+            term_seeds.push(CoreTermSeed::new(
+                CoreTermSeedKind::Var(var),
+                binder_source.clone(),
+                provenance.clone(),
+            ));
+            let guard = CoreFormulaSeedId::new(formula_seeds.len());
+            formula_seeds.push(CoreFormulaSeed::new(
+                CoreFormulaSeedKind::TypePred {
+                    subject: term,
+                    ty: CoreTypePredicate::new("object"),
+                },
+                binder_source.clone(),
+                provenance.clone(),
+            ));
+            let forall = CoreFormulaSeedId::new(formula_seeds.len());
+            formula_seeds.push(CoreFormulaSeed::new(
+                CoreFormulaSeedKind::Forall {
+                    binders: vec![
+                        QuantifierBinderSeed::new(
+                            var,
+                            "quantifier",
+                            binder_source,
+                            provenance.clone(),
+                        )
+                        .with_guard(guard, vec![var]),
+                    ],
+                    body: implication,
+                },
+                source,
+                provenance,
+            ));
+            forall
+        } else {
+            append_equality(&mut term_seeds, &mut formula_seeds, owner, *body)?
+        };
         phrase_body = Some(equality);
         let mut args = Vec::new();
         let mut binders = Vec::new();
-        for (index, (_, declaration)) in formals.iter().enumerate() {
+        for (index, declaration) in formals.iter().enumerate() {
             let var = CoreVarId::new(scope.bindings().len() + index);
             let source = CoreSourceRef::direct(range(*declaration).ok_or_else(invalid)?);
             let provenance = CheckerOwnedProvenance::checker(format!(
@@ -16563,7 +16693,7 @@ pub fn lower_source_theorem_skeletons(
             )
             .with_definition_boundary(DefinitionBoundaryKind::DefinitionalItem),
         );
-        for (index, (_, declaration)) in formals.iter().enumerate() {
+        for (index, declaration) in formals.iter().enumerate() {
             let var = CoreVarId::new(scope.bindings().len() + index);
             let provenance = CheckerOwnedProvenance::checker(format!(
                 "checker/predicate/{}/formal/{index}",
@@ -16582,6 +16712,25 @@ pub fn lower_source_theorem_skeletons(
                 provenance,
             ));
         }
+    }
+    if let Some(declaration) = nested_binder {
+        let var = CoreVarId::new(scope.bindings().len() + 2);
+        let provenance = CheckerOwnedProvenance::checker(format!(
+            "checker/predicate/{}/body-binder",
+            phrase.as_ref().ok_or_else(invalid)?.1.fqn().as_str()
+        ));
+        context_input.variable_seeds.push(CoreVariableSeed::new(
+            var,
+            NormalizedVarClass::Free,
+            "quantifier",
+            NormalizedVarSort::Term,
+            provenance.clone(),
+        ));
+        context_input.binder_seeds.push(CoreBinderSeed::new(
+            var,
+            CoreSourceRef::direct(range(declaration).ok_or_else(invalid)?),
+            provenance,
+        ));
     }
     if let Some(algorithm) = algorithm {
         let (node, symbol) = algorithm.algorithm();
@@ -16691,7 +16840,7 @@ pub fn lower_source_theorem_skeletons(
         let params = formals
             .iter()
             .enumerate()
-            .map(|(index, (_, declaration))| {
+            .map(|(index, declaration)| {
                 Ok(CoreBinder {
                     var: CoreVarId::new(scope.bindings().len() + index),
                     role: "definition-parameter".into(),
@@ -22332,6 +22481,60 @@ mod tests {
             CoreTermKind::SetEnum(args) if args == &vec![term_id(1), term_id(4)]
         ));
         assert_step3_delta_valid(&context, &output);
+    }
+
+    #[test]
+    fn membership_lowering_preserves_remapped_operands_and_rejects_missing_refs() {
+        let (context, owner) = context_with_var(CoreVarId::new(0));
+        let mut input = TermAndFormulaLoweringInput::new(owner);
+        input.terms = vec![
+            term_seed(
+                CoreTermSeedKind::Apply {
+                    functor: symbol("F"),
+                    args: vec![CoreTermSeedId::new(1)],
+                },
+                70,
+            ),
+            term_seed(CoreTermSeedKind::Var(CoreVarId::new(0)), 71),
+        ];
+        input.formulas = vec![formula_seed(
+            CoreFormulaSeedKind::Membership {
+                element: CoreTermSeedId::new(1),
+                set: CoreTermSeedId::new(0),
+            },
+            72,
+        )];
+        let output = lower_term_and_formula_inputs(&context, input.clone()).unwrap();
+        assert_eq!(output.term_map[&CoreTermSeedId::new(0)], CoreTermId::new(1));
+        let formula = output.formula_map[&CoreFormulaSeedId::new(0)];
+        assert_eq!(
+            output.formulas.get(formula).unwrap().kind,
+            CoreFormulaKind::Membership {
+                element: CoreTermId::new(0),
+                set: CoreTermId::new(1)
+            }
+        );
+        let mut refs = DefinitionBodyRefs::default();
+        collect_reachable_formula_refs(&output, formula, &mut refs);
+        assert_eq!(refs.terms, [CoreTermId::new(0), CoreTermId::new(1)].into());
+        assert_step3_delta_valid(&context, &output);
+        assert_eq!(
+            output.source_map.formula_sources[&formula],
+            output.formulas.get(formula).unwrap().source
+        );
+        for missing_element in [false, true] {
+            let mut bad = input.clone();
+            bad.formulas[0].kind = CoreFormulaSeedKind::Membership {
+                element: CoreTermSeedId::new(if missing_element { 99 } else { 1 }),
+                set: CoreTermSeedId::new(if missing_element { 0 } else { 99 }),
+            };
+            assert!(lower_term_and_formula_inputs(&context, bad).is_err());
+        }
+        input.owner = CoreItemId::new(99);
+        assert!(matches!(
+            lower_term_and_formula_inputs(&context, input),
+            Err(TermAndFormulaLoweringError::MissingOwnerItem { .. })
+        ));
     }
 
     #[test]

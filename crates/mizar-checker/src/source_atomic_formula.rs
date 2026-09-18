@@ -2262,7 +2262,13 @@ fn validate_candidates(
                         || left == right
                         || left == name
                         || right == name
-                        || pattern.iter().any(|part| !identifier_spelling(part))
+                        || !identifier_spelling(left)
+                        || !identifier_spelling(right)
+                        || !(identifier_spelling(name)
+                            || mizar_lexer::is_user_symbol_spelling(name)
+                                && !mizar_lexer::is_reserved_symbol(name)
+                                && !mizar_lexer::is_reserved_word(name)
+                                && !mizar_lexer::is_numeral(name))
                         || entry.notation_spelling() != Some(entry.primary_spelling())
                         || definition.notation_shape() != Some(entry.primary_spelling())
                         || !matches!(
@@ -6552,6 +6558,24 @@ pub(crate) mod tests {
             build(&fixture),
             Err(SourceAtomicFormulaError::InvalidRequest { .. })
         ));
+
+        let mut fixture = make_fixture(SourceAtomicFormulaKind::Membership);
+        fixture.input.edges[0].role = SourceAtomicEdgeRole::BuiltinRightOperand;
+        assert_eq!(
+            build(&fixture).unwrap_err(),
+            SourceAtomicFormulaError::InvalidFormula {
+                formula: SourceAtomicFormulaId::new(0)
+            }
+        );
+
+        let mut fixture = make_fixture(SourceAtomicFormulaKind::Membership);
+        fixture.input.edges[0].ordinal = 1;
+        assert_eq!(
+            build(&fixture).unwrap_err(),
+            SourceAtomicFormulaError::ReorderedEdge {
+                edge: SourceAtomicEdgeId::new(0)
+            }
+        );
     }
 
     #[test]
@@ -7082,9 +7106,22 @@ pub(crate) mod tests {
             typed_ast(&fixture)
                 .with_source_atomic_formula(handoff)
                 .expect("same-range distinct-node installation");
+            let phrase_input = fixture.input.clone();
+            for (head, supported) in [("<<=====", true), ("=", false)] {
+                fixture.input = phrase_input.clone();
+                fixture.input.predicate_heads[0].spelling = head.into();
+                fixture.input.formulas[0].spelling = spelling.replace("divides", head);
+                fixture.input.predicate_segments[0].spelling = spelling.replace("divides", head);
+                let pattern = format!("X {head} Y");
+                fixture.symbols = symbols(&pattern, &pattern, &pattern);
+                assert_eq!(build(&fixture).is_ok(), supported, "head {head}");
+            }
+            fixture.input = phrase_input;
             for (primary, notation, shape) in [
                 ("X missing Y", "X missing Y", "X missing Y"),
                 ("X divides X", "X divides X", "X divides X"),
+                ("1 divides Y", "1 divides Y", "1 divides Y"),
+                ("X divides 2", "X divides 2", "X divides 2"),
                 ("X divides Y", "X divides Z", "X divides Y"),
                 ("X divides Y", "X divides Y", "X missing Y"),
             ] {

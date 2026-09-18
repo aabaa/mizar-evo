@@ -1073,3 +1073,7 @@ Its source-owned definition context is `forall x,y ((set(x) & set(y)) -> (P(x,y)
 The theorem proposition remains `forall q (set(q) -> P(q,q))`; its distinct local binder `l` ends with the actual goal `P(l,l)` and ordered context `[set(l), guarded definition]`.
 Occurrence/declaration correspondence connects the producer bindings and theorem scope without conflating their numeric IDs; source maps, definition/formula/term backrefs, dependencies and proof provenance remain complete.
 Exactly one Active TheoremProof seed belongs to a `PendingAutomaticProof` theorem; no theorem fact, proof discharge, global definition installation, Task274 acceptance or general predicate unfolding follows.
+
+## Bounded symbolic predicate theorem
+
+The existing sealed `lower_source_theorem_skeletons` route additionally lowers the actual body `forall z (object(z) -> (z in X -> z in Y))` inside the guarded predicate biconditional. Use existing Forall/Implies/Iff and primitive Membership seeds; retain five distinct declaration identities for the two formals, body binder, theorem binder and proof-local binder. Source/formula/term maps and definition-owned provenance authenticate both membership edges and capture boundaries; do not infer formals by zipping body operands with declarations. The actual user-symbol predicate goal, ordered local-set-guard/definition context and pending terminal proof remain unchanged in kind. No unfolding, correctness proof or accepted fact follows.

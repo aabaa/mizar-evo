@@ -5789,4 +5789,8 @@ checker seal・実 Core/CFG 捕捉・完全な再現 VcSet/baseline 比較を要
 各 identity または source/sidecar basename を全 stage で予約し、既存ソースと意味的 expectation を保持する。
 既存 predicate typing、封印済み theorem checker、Core lowering、既存 control-flow/handoff/seed-intake VC generation を順に呼び、実際の guard 付き定義、predicate goal、一つの Open terminal VC を必須とする。
 Core/VcSet 全体の不変再実行と [VcSet 全体の snapshot](../../mizar-vc/ja/source_vc_decomposition.md#bounded-phrase-predicate-snapshot) を比較し、baseline や metadata の欠落・破損を拒否する。
-この経路は generation のみを評価し、他の C5 activation を維持して symbolic predicate、equals-infix、means-prefix、narrower-loci registration は延期する。
+この経路は generation のみを評価し、他の C5 activation を維持して equals-infix、means-prefix、narrower-loci registration は延期する。 symbolic generation は下記の限定拡張で規定する。
+
+## 限定 symbolic predicate admission
+
+`pass_proof_verification_pred_symbolic_infix_001` だけを既存 pass/proof_verification/vc_generation、predicates.symbolic_definition、元 semantic ref、唯一の active_proof_verification tag、symbolic snapshot ref/path で受理する。厳密な source/sidecar identity、欠落・重複 inventory、alias、誤 stage、補助 payload 不在を認証する。Core/VcSet 全体の決定的再実行と baseline を比較し、先行 outcome を維持する。五束縛子と symbolic head の独立改名、membership container 交換、未束縛・型違反・偽 scope/owner の拒否を検査する。credit は生成に限る。

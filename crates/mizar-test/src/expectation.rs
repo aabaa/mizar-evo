@@ -1338,6 +1338,14 @@ pub fn validate_expectation_path(
                 None,
             ),
             (
+                "pass_proof_verification_pred_symbolic_infix_001",
+                "pass/predicates",
+                "predicates.symbolic_definition",
+                "spec.en.09.predicates.definition.symbolic",
+                "spec.en.mizar_vc.vc_ir.symbolic_predicate_snapshot",
+                None,
+            ),
+            (
                 "pass_proof_verification_computation_justification_001",
                 "pass/algorithms",
                 "algorithms.computation",
@@ -1429,6 +1437,7 @@ pub fn validate_expectation_path(
                         | "algorithms.computation"
                         | "algorithms.ghost"
                         | "predicates.phrase_definition"
+                        | "predicates.symbolic_definition"
                 ) || expectation.schema_version == 1
                     && expectation.profiles.as_slice() == ["fast"]
                     && expectation.ast_profile.is_none()

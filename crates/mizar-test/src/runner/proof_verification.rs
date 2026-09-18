@@ -117,52 +117,68 @@ const STEP5C5_PHRASE_ID: &str = "pass_proof_verification_pred_phrase_identifier_
 const STEP5C5_PHRASE_SOURCE: &str =
     "tests/miz/pass/predicates/pass_proof_verification_pred_phrase_identifier_001.miz";
 
+const STEP5C5_SYMBOLIC_ID: &str = "pass_proof_verification_pred_symbolic_infix_001";
+const STEP5C5_PREDICATE_CASES: [(&str, &str, &str, &str, &str); 2] = [
+    (
+        STEP5C5_PHRASE_ID,
+        STEP5C5_PHRASE_SOURCE,
+        "predicates.phrase_definition",
+        "spec.en.09.predicates.definition.phrase",
+        "spec.en.mizar_vc.vc_ir.phrase_predicate_snapshot",
+    ),
+    (
+        STEP5C5_SYMBOLIC_ID,
+        "tests/miz/pass/predicates/pass_proof_verification_pred_symbolic_infix_001.miz",
+        "predicates.symbolic_definition",
+        "spec.en.09.predicates.definition.symbolic",
+        "spec.en.mizar_vc.vc_ir.symbolic_predicate_snapshot",
+    ),
+];
+
 pub(super) fn is_step5c5_phrase_candidate(case: &TestCase) -> bool {
-    case.id.0 == STEP5C5_PHRASE_ID
-        || case.expectation.id.0 == STEP5C5_PHRASE_ID
-        || case.source_path.file_name() == Path::new(STEP5C5_PHRASE_SOURCE).file_name()
-        || case.expectation_path.file_name()
-            == Path::new(STEP5C5_PHRASE_SOURCE)
-                .with_extension("expect.toml")
-                .file_name()
+    STEP5C5_PREDICATE_CASES.iter().any(|(id, source, ..)| {
+        case.id.0 == *id
+            || case.expectation.id.0 == *id
+            || case.source_path.file_name() == Path::new(source).file_name()
+            || case.expectation_path.file_name()
+                == Path::new(source).with_extension("expect.toml").file_name()
+    })
 }
 
 fn step5c5_phrase_admitted(root: Option<&Path>, case: &TestCase) -> bool {
-    case.id.0 == STEP5C5_PHRASE_ID
-        && case.expectation.id == case.id
-        && case.source_path.ends_with(STEP5C5_PHRASE_SOURCE)
+    let Some((id, source, domain, semantic_ref, snapshot_ref)) = STEP5C5_PREDICATE_CASES
+        .iter()
+        .find(|(id, ..)| case.id.0 == *id)
+    else {
+        return false;
+    };
+    case.expectation.id == case.id
+        && case.source_path.ends_with(source)
         && case
             .expectation_path
-            .ends_with(Path::new(STEP5C5_PHRASE_SOURCE).with_extension("expect.toml"))
+            .ends_with(Path::new(source).with_extension("expect.toml"))
         && root.is_none_or(|root| {
-            workspace_relative_source(root, &case.source_path).as_deref()
-                == Some(STEP5C5_PHRASE_SOURCE)
+            workspace_relative_source(root, &case.source_path).as_deref() == Some(*source)
                 && workspace_relative_source(root, &case.expectation_path).is_some_and(|path| {
-                    Path::new(&path)
-                        == Path::new(STEP5C5_PHRASE_SOURCE).with_extension("expect.toml")
+                    Path::new(&path) == Path::new(source).with_extension("expect.toml")
                 })
         })
-        && case.expectation.source == Path::new(STEP5C5_PHRASE_SOURCE).file_name().unwrap()
+        && case.expectation.source == Path::new(source).file_name().unwrap()
         && case.expectation.schema_version == 1
         && case.expectation.profiles.as_slice() == ["fast"]
         && case.expectation.kind == crate::expectation::TestKind::Pass
         && case.expectation.stage == Stage::ProofVerification
         && case.expectation.expected_phase == Some(PipelinePhase::VcGeneration)
         && case.expectation.expected_outcome == ExpectedOutcome::Pass
-        && case.expectation.domain == "predicates.phrase_definition"
+        && case.expectation.domain == *domain
         && case
             .expectation
             .spec_refs
             .iter()
             .map(|id| id.0.as_str())
-            .eq([
-                "spec.en.09.predicates.definition.phrase",
-                "spec.en.mizar_vc.vc_ir.phrase_predicate_snapshot",
-            ])
+            .eq([*semantic_ref, *snapshot_ref])
         && case.expectation.snapshots.as_deref()
-            == Some(Path::new(
-                "snapshots/vc/pass_proof_verification_pred_phrase_identifier_001.vc_ir.snap",
-            ))
+            == Some(Path::new(&format!("snapshots/vc/{id}.vc_ir.snap")))
         && case.expectation.tags.as_slice() == [ACTIVE_PROOF_VERIFICATION_TAG]
         && case.expectation.failure_category.is_none()
         && case.expectation.stable_detail_key.is_none()
@@ -839,19 +855,23 @@ pub(super) fn validate_active_proof_verification_tags(
         .is_file()
         || plan.cases.iter().any(is_step5c5_phrase_candidate)
     {
-        let count = plan
-            .cases
-            .iter()
-            .filter(|case| step5c5_phrase_admitted(Some(workspace_root), case))
-            .count();
-        if count != 1 {
-            diagnostics.push(ValidationDiagnostic::error(
-                Path::new(STEP5C5_PHRASE_SOURCE),
-                "proof_verification",
-                "E-PROOF-VERIFICATION-STEP5C5-INVENTORY",
-                "proof_verification.step5c5_phrase_inventory",
-                format!("phrase predicate VC row must occur exactly once; found {count}"),
-            ));
+        for (id, source, ..) in STEP5C5_PREDICATE_CASES {
+            let count = plan
+                .cases
+                .iter()
+                .filter(|case| {
+                    case.id.0 == id && step5c5_phrase_admitted(Some(workspace_root), case)
+                })
+                .count();
+            if count != 1 {
+                diagnostics.push(ValidationDiagnostic::error(
+                    Path::new(source),
+                    "proof_verification",
+                    "E-PROOF-VERIFICATION-STEP5C5-INVENTORY",
+                    "proof_verification.step5c5_phrase_inventory",
+                    format!("predicate VC row {id} must occur exactly once; found {count}"),
+                ));
+            }
         }
     }
     diagnostics
@@ -1540,211 +1560,439 @@ mod term_proof_tests {
         use mizar_core::core_ir::*;
         let config = config();
         let plan = crate::harness::build_test_plan(&config).unwrap();
-        let case = plan
+        for case in plan
             .cases
             .iter()
-            .find(|case| case.id.0 == STEP5C5_PHRASE_ID)
-            .unwrap();
-        let build = || {
-            phrase_theorem_output(
-                &config.workspace_root,
-                case,
-                run_frontend(&config.workspace_root, case, 0).unwrap(),
-            )
-            .unwrap()
-        };
-        let (core, vcs) = build();
-        assert_eq!((core.clone(), vcs.clone()), build());
-        assert_eq!(core.items().len(), 2);
-        assert_eq!(core.definitions().len(), 1);
-        assert_eq!(core.proofs().len(), 1);
-        assert_eq!(core.proof_nodes().len(), 2);
-        assert_eq!(core.obligation_seeds().len(), 1);
-        let (_, definition) = core.definitions().iter().next().unwrap();
-        assert_eq!(definition.params.len(), 2);
-        assert_eq!(definition.expansion, ExpansionPolicy::Transparent);
-        assert!(definition.correctness.is_empty());
-        let DefinitionBody::Formula(equality) = definition.body else {
-            panic!("definition body")
-        };
-        let variable = |id| match core.terms().get(id).unwrap().kind {
-            CoreTermKind::Var(var) => var,
-            _ => panic!("variable term"),
-        };
-        let CoreFormulaKind::Equals { left, right } = core.formulas().get(equality).unwrap().kind
-        else {
-            panic!("ordered equality body")
-        };
-        assert_eq!(
-            [variable(left), variable(right)],
-            [definition.params[0].var, definition.params[1].var]
-        );
-        assert_ne!(
-            core.terms().get(left).unwrap().source,
-            core.terms().get(right).unwrap().source
-        );
-        for source in [
-            &core.formulas().get(equality).unwrap().source,
-            &core.terms().get(left).unwrap().source,
-            &core.terms().get(right).unwrap().source,
-        ] {
-            assert!(
-                source
-                    .provenance
-                    .iter()
-                    .any(|row| row.key.as_str().starts_with("checker/predicate/"))
-            );
-            assert!(
-                !source
-                    .provenance
-                    .iter()
-                    .any(|row| row.key.as_str().starts_with("checker/theorem/"))
-            );
-        }
+            .filter(|case| [STEP5C5_PHRASE_ID, STEP5C5_SYMBOLIC_ID].contains(&case.id.0.as_str()))
+        {
+            let symbolic = case.id.0 == STEP5C5_SYMBOLIC_ID;
+            let build = || {
+                phrase_theorem_output(
+                    &config.workspace_root,
+                    case,
+                    run_frontend(&config.workspace_root, case, 0).unwrap(),
+                )
+                .unwrap()
+            };
+            let (core, vcs) = build();
+            assert_eq!((core.clone(), vcs.clone()), build());
+            assert_eq!(core.items().len(), 2);
+            assert_eq!(core.definitions().len(), 1);
+            assert_eq!(core.proofs().len(), 1);
+            assert_eq!(core.proof_nodes().len(), 2);
+            assert_eq!(core.obligation_seeds().len(), 1);
+            let (_, definition) = core.definitions().iter().next().unwrap();
+            assert_eq!(definition.params.len(), 2);
+            assert_eq!(definition.expansion, ExpansionPolicy::Transparent);
+            assert!(definition.correctness.is_empty());
+            let DefinitionBody::Formula(equality) = definition.body else {
+                panic!("definition body")
+            };
+            let variable = |id| match core.terms().get(id).unwrap().kind {
+                CoreTermKind::Var(var) => var,
+                _ => panic!("variable term"),
+            };
+            let nested = if symbolic {
+                let CoreFormulaKind::Forall { binders, body } =
+                    &core.formulas().get(equality).unwrap().kind
+                else {
+                    panic!("quantified membership body")
+                };
+                assert_eq!(binders.len(), 1);
+                let nested = &binders[0];
+                let CoreFormulaKind::TypePred { subject, ty } =
+                    &core.formulas().get(nested.ty_guard.unwrap()).unwrap().kind
+                else {
+                    panic!("object guard")
+                };
+                assert_eq!(ty.as_str(), "object");
+                assert_eq!(variable(*subject), nested.var);
+                let CoreFormulaKind::Implies {
+                    premise,
+                    conclusion,
+                } = core.formulas().get(*body).unwrap().kind
+                else {
+                    panic!("source membership implication")
+                };
+                for (formula, container) in [
+                    (premise, definition.params[0].var),
+                    (conclusion, definition.params[1].var),
+                ] {
+                    let CoreFormulaKind::Membership { element, set } =
+                        core.formulas().get(formula).unwrap().kind
+                    else {
+                        panic!("primitive membership")
+                    };
+                    assert_eq!(variable(element), nested.var);
+                    assert_eq!(variable(set), container);
+                    assert_ne!(
+                        core.terms().get(element).unwrap().source,
+                        core.terms().get(set).unwrap().source
+                    );
+                    for source in [
+                        &core.formulas().get(formula).unwrap().source,
+                        &core.terms().get(element).unwrap().source,
+                        &core.terms().get(set).unwrap().source,
+                    ] {
+                        assert!(
+                            source
+                                .provenance
+                                .iter()
+                                .any(|row| row.key.as_str().starts_with("checker/predicate/"))
+                        );
+                    }
+                }
+                Some(nested.var)
+            } else {
+                let CoreFormulaKind::Equals { left, right } =
+                    core.formulas().get(equality).unwrap().kind
+                else {
+                    panic!("ordered equality body")
+                };
+                assert_eq!(
+                    [variable(left), variable(right)],
+                    [definition.params[0].var, definition.params[1].var]
+                );
+                assert_ne!(
+                    core.terms().get(left).unwrap().source,
+                    core.terms().get(right).unwrap().source
+                );
+                for source in [
+                    &core.formulas().get(equality).unwrap().source,
+                    &core.terms().get(left).unwrap().source,
+                    &core.terms().get(right).unwrap().source,
+                ] {
+                    assert!(
+                        source
+                            .provenance
+                            .iter()
+                            .any(|row| row.key.as_str().starts_with("checker/predicate/"))
+                    );
+                    assert!(
+                        !source
+                            .provenance
+                            .iter()
+                            .any(|row| row.key.as_str().starts_with("checker/theorem/"))
+                    );
+                }
+                None
+            };
 
-        let (_, proof) = core.proofs().iter().next().unwrap();
-        assert_eq!(proof.status, CoreProofStatus::PendingAutomaticProof);
-        let CoreFormulaKind::Forall {
-            binders: header,
-            body: header_goal,
-        } = &core.formulas().get(proof.proposition).unwrap().kind
-        else {
-            panic!("universal theorem")
-        };
-        let CoreProofNodeKind::IntroduceBinder {
-            binder: local,
-            child,
-        } = &core.proof_nodes().get(proof.root).unwrap().kind
-        else {
-            panic!("local binder")
-        };
-        let CoreProofNodeKind::TerminalGoal {
-            obligation,
-            citations,
-        } = &core.proof_nodes().get(*child).unwrap().kind
-        else {
-            panic!("terminal goal")
-        };
-        assert!(citations.is_empty());
-        let seed = core.obligation_seeds().get(*obligation).unwrap();
-        assert_eq!(seed.status, ObligationSeedStatus::Active);
-        assert_eq!(seed.kind, ObligationSeedKind::TheoremProof);
-        assert_eq!(seed.owner, proof.item);
-        assert_eq!(seed.context.len(), 2);
-        assert_eq!(seed.context[0], local.ty_guard.unwrap());
-        assert_eq!(
-            [
-                definition.params[0].var,
-                definition.params[1].var,
-                header[0].var,
-                local.var
-            ]
-            .into_iter()
-            .collect::<std::collections::BTreeSet<_>>()
-            .len(),
-            4
-        );
-        for (formula, var) in [
-            (*header_goal, header[0].var),
-            (seed.goal.unwrap(), local.var),
-        ] {
-            let CoreFormulaKind::Atom { predicate, args } =
-                &core.formulas().get(formula).unwrap().kind
+            let (_, proof) = core.proofs().iter().next().unwrap();
+            assert_eq!(proof.status, CoreProofStatus::PendingAutomaticProof);
+            let CoreFormulaKind::Forall {
+                binders: header,
+                body: header_goal,
+            } = &core.formulas().get(proof.proposition).unwrap().kind
             else {
-                panic!("actual predicate goal")
+                panic!("universal theorem")
+            };
+            let CoreProofNodeKind::IntroduceBinder {
+                binder: local,
+                child,
+            } = &core.proof_nodes().get(proof.root).unwrap().kind
+            else {
+                panic!("local binder")
+            };
+            let CoreProofNodeKind::TerminalGoal {
+                obligation,
+                citations,
+            } = &core.proof_nodes().get(*child).unwrap().kind
+            else {
+                panic!("terminal goal")
+            };
+            assert!(citations.is_empty());
+            let seed = core.obligation_seeds().get(*obligation).unwrap();
+            assert_eq!(seed.status, ObligationSeedStatus::Active);
+            assert_eq!(seed.kind, ObligationSeedKind::TheoremProof);
+            assert_eq!(seed.owner, proof.item);
+            assert_eq!(seed.context.len(), 2);
+            assert_eq!(seed.context[0], local.ty_guard.unwrap());
+            assert_eq!(
+                [
+                    definition.params[0].var,
+                    definition.params[1].var,
+                    header[0].var,
+                    local.var
+                ]
+                .into_iter()
+                .collect::<std::collections::BTreeSet<_>>()
+                .len(),
+                4
+            );
+            if let Some(nested) = nested {
+                assert!(
+                    ![
+                        definition.params[0].var,
+                        definition.params[1].var,
+                        header[0].var,
+                        local.var
+                    ]
+                    .contains(&nested)
+                );
+            }
+            for (formula, var) in [
+                (*header_goal, header[0].var),
+                (seed.goal.unwrap(), local.var),
+            ] {
+                let CoreFormulaKind::Atom { predicate, args } =
+                    &core.formulas().get(formula).unwrap().kind
+                else {
+                    panic!("actual predicate goal")
+                };
+                assert_eq!(predicate, &definition.symbol);
+                assert_eq!(
+                    args.iter().map(|id| variable(*id)).collect::<Vec<_>>(),
+                    [var, var]
+                );
+                assert_ne!(
+                    core.terms().get(args[0]).unwrap().source,
+                    core.terms().get(args[1]).unwrap().source
+                );
+            }
+            let CoreFormulaKind::Forall {
+                binders: formals,
+                body: biconditional,
+            } = &core.formulas().get(seed.context[1]).unwrap().kind
+            else {
+                panic!("guarded definition")
+            };
+            assert_eq!(
+                formals.iter().map(|binder| binder.var).collect::<Vec<_>>(),
+                definition
+                    .params
+                    .iter()
+                    .map(|binder| binder.var)
+                    .collect::<Vec<_>>()
+            );
+            for binder in formals.iter().chain(header).chain([local]) {
+                let CoreFormulaKind::TypePred { subject, ty } =
+                    &core.formulas().get(binder.ty_guard.unwrap()).unwrap().kind
+                else {
+                    panic!("set guard")
+                };
+                assert_eq!(ty.as_str(), "set");
+                assert_eq!(variable(*subject), binder.var);
+            }
+            let CoreFormulaKind::Iff {
+                left: atom,
+                right: body,
+            } = core.formulas().get(*biconditional).unwrap().kind
+            else {
+                panic!("biconditional")
+            };
+            assert_eq!(body, equality);
+            let CoreFormulaKind::Atom { predicate, args } =
+                &core.formulas().get(atom).unwrap().kind
+            else {
+                panic!("definition atom")
             };
             assert_eq!(predicate, &definition.symbol);
             assert_eq!(
                 args.iter().map(|id| variable(*id)).collect::<Vec<_>>(),
-                [var, var]
+                formals.iter().map(|binder| binder.var).collect::<Vec<_>>()
             );
-            assert_ne!(
-                core.terms().get(args[0]).unwrap().source,
-                core.terms().get(args[1]).unwrap().source
+            let [vc] = vcs.vcs() else { panic!("one VC") };
+            assert_eq!(vc.kind, mizar_vc::vc_ir::VcKind::TheoremProofStep);
+            assert_eq!(vc.status, mizar_vc::vc_ir::VcStatus::Open);
+            assert_eq!(
+                vc.goal,
+                mizar_vc::vc_ir::VcFormulaRef::Core(seed.goal.unwrap())
+            );
+            assert_eq!(
+                vc.local_context
+                    .entries()
+                    .iter()
+                    .filter_map(|entry| entry.formula)
+                    .collect::<Vec<_>>(),
+                seed.context
+                    .iter()
+                    .copied()
+                    .map(mizar_vc::vc_ir::VcFormulaRef::Core)
+                    .collect::<Vec<_>>()
+            );
+            assert_eq!(
+                fs::read_to_string(
+                    config
+                        .workspace_root
+                        .join("tests")
+                        .join(case.expectation.snapshots.as_ref().unwrap())
+                )
+                .unwrap(),
+                vcs.debug_text()
+            );
+            let result = run_proof_verification_case(
+                &config.workspace_root,
+                &config.workspace_root.join("tests"),
+                case,
+                333,
+            );
+            assert_eq!(
+                result.status,
+                ProofVerificationCaseStatus::Passed,
+                "{:?}",
+                result.failure
             );
         }
-        let CoreFormulaKind::Forall {
-            binders: formals,
-            body: biconditional,
-        } = &core.formulas().get(seed.context[1]).unwrap().kind
-        else {
-            panic!("guarded definition")
+    }
+
+    #[test]
+    fn step5c5_symbolic_source_operands_and_scopes_are_exact() {
+        use mizar_core::core_ir::*;
+        let config = config();
+        let plan = crate::harness::build_test_plan(&config).unwrap();
+        let case = plan
+            .cases
+            .iter()
+            .find(|case| case.id.0 == STEP5C5_SYMBOLIC_ID)
+            .unwrap();
+        let text = fs::read_to_string(&case.source_path).unwrap();
+        let check = |text: &str| {
+            phrase_theorem_output(
+                &config.workspace_root,
+                case,
+                super::super::formula_statement::step5c8_test_frontend(text),
+            )
         };
-        assert_eq!(
-            formals.iter().map(|binder| binder.var).collect::<Vec<_>>(),
-            definition
+        for renamed in [
+            text.clone(),
+            text.replace("SubsetLikeDef", "OtherDefinition"),
+            text.replace("SubsetRefl1", "OtherTheorem"),
+            text.replace("<<=", ">>="),
+            text.replace("X, Y", "First, Y")
+                .replace("X <<= Y means", "First <<= Y means")
+                .replace("z in X", "z in First"),
+            text.replace("X, Y", "X, Second")
+                .replace("X <<= Y means", "X <<= Second means")
+                .replace("z in Y", "z in Second"),
+            text.replace(
+                "for z being object st z in X holds z in Y",
+                "for Element being object st Element in X holds Element in Y",
+            ),
+            text.replace(
+                "for X being set holds X <<= X",
+                "for Header being set holds Header <<= Header",
+            ),
+            text.replace("let X be set;", "let Local be set;")
+                .replace("thus X <<= X", "thus Local <<= Local"),
+            text.replace(
+                "for X being set holds X <<= X",
+                "for z being set holds z <<= z",
+            )
+            .replace("let X be set;", "let z be set;")
+            .replace("thus X <<= X", "thus z <<= z"),
+        ] {
+            assert!(
+                check(&renamed).is_ok(),
+                "{renamed}: {:?}",
+                check(&renamed).err()
+            );
+        }
+        let baseline = check(&text).unwrap();
+        for (changed, indices) in [
+            (
+                text.replace("z in X holds z in Y", "z in Y holds z in X"),
+                [1, 0],
+            ),
+            (
+                text.replace("z in X holds z in Y", "z in X holds z in X"),
+                [0, 0],
+            ),
+            (
+                text.replace(
+                    "for z being object st z in X holds z in Y",
+                    "for X being object st X in Y holds X in Y",
+                ),
+                [1, 1],
+            ),
+        ] {
+            let output = check(&changed).unwrap();
+            assert_ne!(output.0, baseline.0);
+            assert_eq!(output, check(&changed).unwrap());
+            let core = &output.0;
+            let (_, definition) = core.definitions().iter().next().unwrap();
+            assert_eq!(definition.params.len(), 2);
+            assert_ne!(definition.params[0].var, definition.params[1].var);
+            assert!(
+                definition
+                    .params
+                    .iter()
+                    .all(|binder| binder.ty_guard.is_some())
+            );
+            let DefinitionBody::Formula(body) = definition.body else {
+                panic!()
+            };
+            let CoreFormulaKind::Forall { binders, body } =
+                &core.formulas().get(body).unwrap().kind
+            else {
+                panic!()
+            };
+            assert!(binders[0].ty_guard.is_some());
+            assert!(
+                definition
+                    .params
+                    .iter()
+                    .all(|formal| formal.var != binders[0].var)
+            );
+            let mut variables = definition
                 .params
                 .iter()
                 .map(|binder| binder.var)
-                .collect::<Vec<_>>()
-        );
-        for binder in formals.iter().chain(header).chain([local]) {
-            let CoreFormulaKind::TypePred { subject, ty } =
-                &core.formulas().get(binder.ty_guard.unwrap()).unwrap().kind
+                .collect::<std::collections::BTreeSet<_>>();
+            variables.insert(binders[0].var);
+            for (_, proof_node) in core.proof_nodes().iter() {
+                if let CoreProofNodeKind::IntroduceBinder { binder, .. } = &proof_node.kind {
+                    variables.insert(binder.var);
+                }
+            }
+            for (_, formula) in core.formulas().iter() {
+                if let CoreFormulaKind::Forall { binders, .. } = &formula.kind {
+                    variables.extend(binders.iter().map(|binder| binder.var));
+                }
+            }
+            assert_eq!(variables.len(), 5);
+            let CoreFormulaKind::Implies {
+                premise,
+                conclusion,
+            } = core.formulas().get(*body).unwrap().kind
             else {
-                panic!("set guard")
+                panic!()
             };
-            assert_eq!(ty.as_str(), "set");
-            assert_eq!(variable(*subject), binder.var);
+            for (formula, index) in [premise, conclusion].into_iter().zip(indices) {
+                let CoreFormulaKind::Membership { element, set } =
+                    core.formulas().get(formula).unwrap().kind
+                else {
+                    panic!()
+                };
+                assert_eq!(
+                    core.terms().get(element).unwrap().kind,
+                    CoreTermKind::Var(binders[0].var)
+                );
+                assert_eq!(
+                    core.terms().get(set).unwrap().kind,
+                    CoreTermKind::Var(definition.params[index].var)
+                );
+            }
         }
-        let CoreFormulaKind::Iff {
-            left: atom,
-            right: body,
-        } = core.formulas().get(*biconditional).unwrap().kind
-        else {
-            panic!("biconditional")
-        };
-        assert_eq!(body, equality);
-        let CoreFormulaKind::Atom { predicate, args } = &core.formulas().get(atom).unwrap().kind
-        else {
-            panic!("definition atom")
-        };
-        assert_eq!(predicate, &definition.symbol);
-        assert_eq!(
-            args.iter().map(|id| variable(*id)).collect::<Vec<_>>(),
-            formals.iter().map(|binder| binder.var).collect::<Vec<_>>()
-        );
-        let [vc] = vcs.vcs() else { panic!("one VC") };
-        assert_eq!(vc.kind, mizar_vc::vc_ir::VcKind::TheoremProofStep);
-        assert_eq!(vc.status, mizar_vc::vc_ir::VcStatus::Open);
-        assert_eq!(
-            vc.goal,
-            mizar_vc::vc_ir::VcFormulaRef::Core(seed.goal.unwrap())
-        );
-        assert_eq!(
-            vc.local_context
-                .entries()
-                .iter()
-                .filter_map(|entry| entry.formula)
-                .collect::<Vec<_>>(),
-            seed.context
-                .iter()
-                .copied()
-                .map(mizar_vc::vc_ir::VcFormulaRef::Core)
-                .collect::<Vec<_>>()
-        );
-        assert_eq!(
-            fs::read_to_string(
-                config
-                    .workspace_root
-                    .join("tests")
-                    .join(case.expectation.snapshots.as_ref().unwrap())
-            )
-            .unwrap(),
-            vcs.debug_text()
-        );
-        let result = run_proof_verification_case(
-            &config.workspace_root,
-            &config.workspace_root.join("tests"),
-            case,
-            333,
-        );
-        assert_eq!(
-            result.status,
-            ProofVerificationCaseStatus::Passed,
-            "{:?}",
-            result.failure
-        );
+        for changed in [
+            text.replace("z in Y", "z in Missing"),
+            text.replace("z in Y", "z in z"),
+            text.replace(
+                "for z being object st z in X holds z in Y",
+                "for X being object st X in X holds X in Y",
+            ),
+            text.replace("for z being object", "for z being set"),
+            text.replace("holds z in Y", "holds not z in Y"),
+            text.replace("holds z in Y", "holds z in Y & z in X"),
+            text.replace("holds z in Y", "holds for w being object holds w in Y"),
+            text.replace("thus X <<= X;", "thus X <<= X by SubsetRefl1;"),
+            text.replace("thus X <<= X", "thus not X <<= X"),
+            text.replace("z in Y;", "z in Y; symmetry;"),
+            text.replace("let X be set", "let X be object"),
+        ] {
+            assert_ne!(changed, text);
+            assert!(check(&changed).is_err(), "accepted {changed}");
+        }
     }
 
     #[test]
@@ -1826,104 +2074,129 @@ mod term_proof_tests {
         };
         let config = config();
         let plan = crate::harness::build_test_plan(&config).unwrap();
-        let case = plan
+        for case in plan
             .cases
             .iter()
-            .find(|case| case.id.0 == STEP5C5_PHRASE_ID)
-            .unwrap();
-        let frontend = run_frontend(&config.workspace_root, case, 0).unwrap();
-        let ast = frontend.ast.clone().unwrap();
-        let (source, neutral, symbols) =
-            super::super::source_registration_inputs(&config.workspace_root, case, frontend)
-                .unwrap();
-        let (bindings, inference, typed) =
-            TermFormulaChecker::check_source_predicate_statements(&source, &symbols, &neutral)
-                .unwrap();
-        assert_eq!(bindings.bindings().len(), 4);
-        assert_eq!(
-            bindings
-                .bindings()
-                .iter()
-                .map(|(_, row)| (row.declaration_range.start, row.declaration_range.end))
-                .collect::<std::collections::BTreeSet<_>>()
-                .len(),
-            4
-        );
-        assert_eq!(inference.terms().len(), 6);
-        assert!(
-            inference
-                .type_entries()
-                .iter()
-                .all(|(_, entry)| entry.status == TypeStatus::Known)
-        );
-        let primary = typed.source_term().unwrap();
-        let atomic = typed.source_atomic_formula().unwrap();
-        assert_eq!(primary.terms().len(), 6);
-        assert_eq!(
-            primary
-                .terms()
-                .iter()
-                .map(|(_, term)| (term.source_range().start, term.source_range().end))
-                .collect::<std::collections::BTreeSet<_>>()
-                .len(),
-            6
-        );
-        assert_eq!(atomic.candidates().len(), 2);
-        assert_eq!(atomic.predicate_segments().len(), 2);
-        let scope = SourceVariableScopeResolver::resolve_proof_occurrences(
-            SourceVariableScopeInput::new(&ast, source.module(), &symbols),
-        )
-        .unwrap();
-        assert_eq!(scope.bindings().len(), 2);
-        let owner = symbols
-            .symbols()
-            .iter()
-            .find(|entry| entry.kind() == mizar_resolve::env::SymbolKind::Theorem)
-            .unwrap();
-        let namespace = mizar_resolve::env::NamespacePath::new(source.module().path().as_str());
-        let labels = ProofLabelSourceCollector::new(
-            &ast,
-            source.module(),
-            namespace.clone(),
-            owner.contribution(),
-            &source,
-        )
-        .unwrap()
-        .collect_with_theorem_owners(&symbols)
-        .unwrap();
-        let resolved = LabelResolver::new(labels.projections()).resolve(
-            source.module(),
-            &namespace,
-            labels.references(),
-        );
-        let check = |typed: &TypedAst| {
-            SourceVariableSemanticsChecker::check_theorem_skeletons(
-                &source, typed, &scope, &symbols, &labels, &resolved, None,
-            )
-            .map(|_| ())
-        };
-        assert!(check(&typed).is_ok());
-        for (_, entry) in inference.type_entries().iter() {
-            let TypeEntryActual::Known(ty) = entry.actual else {
-                panic!("known set type")
-            };
+            .filter(|case| [STEP5C5_PHRASE_ID, STEP5C5_SYMBOLIC_ID].contains(&case.id.0.as_str()))
+        {
+            let symbolic = case.id.0 == STEP5C5_SYMBOLIC_ID;
+            let frontend = run_frontend(&config.workspace_root, case, 0).unwrap();
+            let ast = frontend.ast.clone().unwrap();
+            let (source, neutral, symbols) =
+                super::super::source_registration_inputs(&config.workspace_root, case, frontend)
+                    .unwrap();
+            let (bindings, inference, typed) =
+                TermFormulaChecker::check_source_predicate_statements(&source, &symbols, &neutral)
+                    .unwrap();
+            assert_eq!(bindings.bindings().len(), if symbolic { 5 } else { 4 });
             assert_eq!(
-                inference.normalized_types().get(ty).unwrap().head,
-                mizar_checker::type_checker::TypeHeadRef::BuiltinSet
+                bindings
+                    .bindings()
+                    .iter()
+                    .map(|(_, row)| (row.declaration_range.start, row.declaration_range.end))
+                    .collect::<std::collections::BTreeSet<_>>()
+                    .len(),
+                if symbolic { 5 } else { 4 }
             );
-        }
-        let predicate = symbols
-            .symbols()
-            .iter()
-            .find(|entry| entry.kind() == mizar_resolve::env::SymbolKind::Predicate)
+            assert_eq!(inference.terms().len(), if symbolic { 8 } else { 6 });
+            assert!(
+                inference
+                    .type_entries()
+                    .iter()
+                    .all(|(_, entry)| entry.status == TypeStatus::Known)
+            );
+            let primary = typed.source_term().unwrap();
+            let atomic = typed.source_atomic_formula().unwrap();
+            assert_eq!(primary.terms().len(), if symbolic { 8 } else { 6 });
+            assert_eq!(
+                primary
+                    .terms()
+                    .iter()
+                    .map(|(_, term)| (term.source_range().start, term.source_range().end))
+                    .collect::<std::collections::BTreeSet<_>>()
+                    .len(),
+                if symbolic { 8 } else { 6 }
+            );
+            assert_eq!(atomic.candidates().len(), 2);
+            for (formula, row) in atomic.formulas().iter() {
+                use mizar_checker::source_atomic_formula::{
+                    SourceAtomicEdgeRole, SourceAtomicFormulaKind, SourceAtomicRequestKind,
+                };
+                if row.kind() == SourceAtomicFormulaKind::Membership {
+                    let requests = atomic
+                        .requests()
+                        .iter()
+                        .filter(|(_, request)| request.formula() == formula)
+                        .map(|(_, request)| request)
+                        .collect::<Vec<_>>();
+                    assert_eq!(requests.len(), 1);
+                    assert_eq!(requests[0].ordinal(), 0);
+                    assert_eq!(
+                        requests[0].kind(),
+                        SourceAtomicRequestKind::OperandExpectedType
+                    );
+                    let edge = atomic.edges().get(requests[0].edge().unwrap()).unwrap();
+                    assert_eq!(edge.ordinal(), 1);
+                    assert_eq!(edge.role(), SourceAtomicEdgeRole::BuiltinRightOperand);
+                }
+            }
+            assert_eq!(atomic.predicate_segments().len(), 2);
+            let scope = SourceVariableScopeResolver::resolve_proof_occurrences(
+                SourceVariableScopeInput::new(&ast, source.module(), &symbols),
+            )
             .unwrap();
-        assert!(
-            atomic
-                .candidates()
+            assert_eq!(scope.bindings().len(), 2);
+            let owner = symbols
+                .symbols()
                 .iter()
-                .all(|(_, candidate)| candidate.symbol() == predicate.symbol())
-        );
-        let assemble = |nodes, primary: &mizar_checker::source_term::SourcePrimaryTermHandoff, atomic: &mizar_checker::source_atomic_formula::SourceAtomicFormulaHandoff| {
+                .find(|entry| entry.kind() == mizar_resolve::env::SymbolKind::Theorem)
+                .unwrap();
+            let namespace = mizar_resolve::env::NamespacePath::new(source.module().path().as_str());
+            let labels = ProofLabelSourceCollector::new(
+                &ast,
+                source.module(),
+                namespace.clone(),
+                owner.contribution(),
+                &source,
+            )
+            .unwrap()
+            .collect_with_theorem_owners(&symbols)
+            .unwrap();
+            let resolved = LabelResolver::new(labels.projections()).resolve(
+                source.module(),
+                &namespace,
+                labels.references(),
+            );
+            let check = |typed: &TypedAst| {
+                SourceVariableSemanticsChecker::check_theorem_skeletons(
+                    &source, typed, &scope, &symbols, &labels, &resolved, None,
+                )
+                .map(|_| ())
+            };
+            assert!(check(&typed).is_ok());
+            for (_, entry) in inference.type_entries().iter() {
+                let TypeEntryActual::Known(ty) = entry.actual else {
+                    panic!("known set type")
+                };
+                let head = &inference.normalized_types().get(ty).unwrap().head;
+                assert!(
+                    head == &mizar_checker::type_checker::TypeHeadRef::BuiltinSet
+                        || symbolic
+                            && head == &mizar_checker::type_checker::TypeHeadRef::BuiltinObject
+                );
+            }
+            let predicate = symbols
+                .symbols()
+                .iter()
+                .find(|entry| entry.kind() == mizar_resolve::env::SymbolKind::Predicate)
+                .unwrap();
+            assert!(
+                atomic
+                    .candidates()
+                    .iter()
+                    .all(|(_, candidate)| candidate.symbol() == predicate.symbol())
+            );
+            let assemble = |nodes, primary: &mizar_checker::source_term::SourcePrimaryTermHandoff, atomic: &mizar_checker::source_atomic_formula::SourceAtomicFormulaHandoff| {
             TypedAst::try_new(TypedAstParts {
                 source_id: typed.source_id(), module_id: typed.module_id().clone(), resolved_root: Some(source.arena().root()),
                 source_context: None, source_type: None, source_attribute: None, nodes,
@@ -1932,116 +2205,182 @@ mod term_proof_tests {
             }).and_then(|ast| ast.with_source_term(primary.clone())).and_then(|ast| ast.with_source_atomic_formula(atomic.clone()))
         };
 
-        let target = atomic
-            .predicate_heads()
-            .iter()
-            .next()
-            .unwrap()
-            .1
-            .site()
-            .node();
-        for mutation in 0..5 {
-            let mut nodes = typed
-                .nodes()
+            let target = atomic
+                .predicate_heads()
                 .iter()
-                .map(|(_, node)| node.clone())
-                .collect::<Vec<_>>();
-            match mutation {
-                0 => nodes[target.index()].kind = "PredicateHead".into(),
-                1 => nodes[target.index()].children.clear(),
-                2 => nodes[target.index()].recovery = NodeRecoveryState::Recovered,
-                3 => nodes[target.index()].anchor = nodes[0].anchor.clone(),
-                4 => nodes[target.index()].resolved_node = Some(source.arena().root()),
-                _ => unreachable!(),
+                .next()
+                .unwrap()
+                .1
+                .site()
+                .node();
+            for mutation in 0..5 {
+                let mut nodes = typed
+                    .nodes()
+                    .iter()
+                    .map(|(_, node)| node.clone())
+                    .collect::<Vec<_>>();
+                match mutation {
+                    0 => nodes[target.index()].kind = "PredicateHead".into(),
+                    1 => nodes[target.index()].children.clear(),
+                    2 => nodes[target.index()].recovery = NodeRecoveryState::Recovered,
+                    3 => nodes[target.index()].anchor = nodes[0].anchor.clone(),
+                    4 => nodes[target.index()].resolved_node = Some(source.arena().root()),
+                    _ => unreachable!(),
+                }
+                let changed = TypedArena::try_new(typed.nodes().root(), nodes).unwrap();
+                match assemble(changed, primary, atomic) {
+                    Ok(changed) => assert!(check(&changed).is_err(), "mutation {mutation}"),
+                    Err(error) => assert_eq!(
+                        error,
+                        TypedAstError::InvalidSourceAtomicFormula,
+                        "mutation {mutation}"
+                    ),
+                }
             }
-            let changed = TypedArena::try_new(typed.nodes().root(), nodes).unwrap();
-            match assemble(changed, primary, atomic) {
-                Ok(changed) => assert!(check(&changed).is_err(), "mutation {mutation}"),
-                Err(error) => assert_eq!(
-                    error,
-                    TypedAstError::InvalidSourceAtomicFormula,
-                    "mutation {mutation}"
-                ),
+            if symbolic {
+                let quantifiers = typed
+                    .nodes()
+                    .iter()
+                    .filter(|(_, node)| node.kind.as_str() == "QuantifiedFormula(Universal)")
+                    .map(|(id, _)| id)
+                    .collect::<Vec<_>>();
+                let nested = quantifiers[0];
+                let segment = typed.nodes().node(nested).unwrap().children[1];
+                let declaration = typed.nodes().node(segment).unwrap().children[0];
+                let parent = typed
+                    .nodes()
+                    .iter()
+                    .find(|(_, node)| node.children.contains(&nested))
+                    .unwrap()
+                    .0;
+                let membership = atomic.formulas().iter().find(|(_, row)| row.kind() == mizar_checker::source_atomic_formula::SourceAtomicFormulaKind::Membership).unwrap().1.site().node();
+                for mutation in 0..5 {
+                    let mut nodes = typed
+                        .nodes()
+                        .iter()
+                        .map(|(_, node)| node.clone())
+                        .collect::<Vec<_>>();
+                    match mutation {
+                        0 => nodes[nested.index()].children.swap(3, 5),
+                        1 => nodes[declaration.index()].anchor = nodes[0].anchor.clone(),
+                        2 => nodes[nested.index()].resolved_node = Some(source.arena().root()),
+                        3 => {
+                            let child = nodes[parent.index()]
+                                .children
+                                .iter_mut()
+                                .find(|id| **id == nested)
+                                .unwrap();
+                            *child = quantifiers[1];
+                        }
+                        4 => nodes[membership.index()].children.swap(0, 2),
+                        _ => unreachable!(),
+                    }
+                    let changed = assemble(
+                        TypedArena::try_new(typed.nodes().root(), nodes).unwrap(),
+                        primary,
+                        atomic,
+                    )
+                    .expect("structurally valid hostile graph reaches replay seal");
+                    assert_eq!(
+                        check(&changed),
+                        Err("theorems.source.invalid".to_owned()),
+                        "nested mutation {mutation}"
+                    );
+                }
             }
-        }
-        let text = fs::read_to_string(&case.source_path).unwrap();
-        // Graft independently valid semantic receipts onto the unchanged original
-        // graph: this isolates candidate-symbol and operand-binding authentication.
-        for text in [
-            text.replace("likes", "hates"),
-            text.replace("means X = Y", "means Y = X"),
-        ] {
-            let (foreign, nodes, env) = super::super::source_registration_inputs(
-                &config.workspace_root,
-                case,
-                super::super::formula_statement::step5c8_test_frontend(&text),
-            )
-            .unwrap();
-            let (_, _, foreign_typed) =
-                TermFormulaChecker::check_source_predicate_statements(&foreign, &env, &nodes)
-                    .unwrap();
-            let grafted = assemble(
-                typed.nodes().clone(),
-                foreign_typed.source_term().unwrap(),
-                foreign_typed.source_atomic_formula().unwrap(),
-            )
-            .unwrap();
-            assert!(check(&grafted).is_err());
-        }
-        for changed in [
-            text.replace("likes", "hates")
-                .replace("LikesSelf1", "OtherOwner"),
-            text.replace("LikesSelf1", "OtherOwner"),
-            text.replace("let X be set;", "let Z be set;")
-                .replace("thus X likes X", "thus Z likes Z")
-                .replace("LikesSelf1", "OtherOwner"),
-        ] {
-            let frontend = super::super::formula_statement::step5c8_test_frontend(&changed);
-            let ast = frontend.ast.clone().unwrap();
-            let (foreign, nodes, env) =
-                super::super::source_registration_inputs(&config.workspace_root, case, frontend)
-                    .unwrap();
-            assert!(
-                TermFormulaChecker::check_source_predicate_statements(&source, &env, &neutral)
-                    .is_err()
-            );
-            assert!(
-                TermFormulaChecker::check_source_predicate_statements(&source, &symbols, &nodes)
-                    .is_err()
-            );
-            let (_, _, foreign_typed) =
-                TermFormulaChecker::check_source_predicate_statements(&foreign, &env, &nodes)
-                    .unwrap();
-            assert!(check(&foreign_typed).is_err());
-            let foreign_scope = SourceVariableScopeResolver::resolve_proof_occurrences(
-                SourceVariableScopeInput::new(&ast, foreign.module(), &env),
-            )
-            .unwrap();
-            let owner = env
-                .symbols()
-                .iter()
-                .find(|entry| entry.kind() == mizar_resolve::env::SymbolKind::Theorem)
+            let text = fs::read_to_string(&case.source_path).unwrap();
+            // Graft independently valid semantic receipts onto the unchanged original
+            // graph: this isolates candidate-symbol and operand-binding authentication.
+            let head = if symbolic { "<<=" } else { "likes" };
+            let renamed_head = if symbolic { ">>=" } else { "hates" };
+            let theorem = if symbolic {
+                "SubsetRefl1"
+            } else {
+                "LikesSelf1"
+            };
+            let swapped = if symbolic {
+                text.replace("z in X holds z in Y", "z in Y holds z in X")
+            } else {
+                text.replace("means X = Y", "means Y = X")
+            };
+            for text in [text.replace(head, renamed_head), swapped] {
+                let (foreign, nodes, env) = super::super::source_registration_inputs(
+                    &config.workspace_root,
+                    case,
+                    super::super::formula_statement::step5c8_test_frontend(&text),
+                )
                 .unwrap();
-            let foreign_labels = ProofLabelSourceCollector::new(
-                &ast,
-                foreign.module(),
-                namespace.clone(),
-                owner.contribution(),
-                &foreign,
-            )
-            .unwrap()
-            .collect_with_theorem_owners(&env)
-            .unwrap();
-            let result = SourceVariableSemanticsChecker::check_theorem_skeletons(
-                &source,
-                &typed,
-                &foreign_scope,
-                &symbols,
-                &foreign_labels,
-                &resolved,
-                None,
-            );
-            assert!(result.is_err(), "foreign ownership admitted: {changed}");
+                let (_, _, foreign_typed) =
+                    TermFormulaChecker::check_source_predicate_statements(&foreign, &env, &nodes)
+                        .unwrap();
+                let grafted = assemble(
+                    typed.nodes().clone(),
+                    foreign_typed.source_term().unwrap(),
+                    foreign_typed.source_atomic_formula().unwrap(),
+                )
+                .unwrap();
+                assert!(check(&grafted).is_err());
+            }
+            for changed in [
+                text.replace(head, renamed_head)
+                    .replace(theorem, "OtherOwner"),
+                text.replace(theorem, "OtherOwner"),
+                text.replace("let X be set;", "let Z be set;")
+                    .replace(&format!("thus X {head} X"), &format!("thus Z {head} Z"))
+                    .replace(theorem, "OtherOwner"),
+            ] {
+                let frontend = super::super::formula_statement::step5c8_test_frontend(&changed);
+                let ast = frontend.ast.clone().unwrap();
+                let (foreign, nodes, env) = super::super::source_registration_inputs(
+                    &config.workspace_root,
+                    case,
+                    frontend,
+                )
+                .unwrap();
+                assert!(
+                    TermFormulaChecker::check_source_predicate_statements(&source, &env, &neutral)
+                        .is_err()
+                );
+                assert!(
+                    TermFormulaChecker::check_source_predicate_statements(
+                        &source, &symbols, &nodes
+                    )
+                    .is_err()
+                );
+                let (_, _, foreign_typed) =
+                    TermFormulaChecker::check_source_predicate_statements(&foreign, &env, &nodes)
+                        .unwrap();
+                assert!(check(&foreign_typed).is_err());
+                let foreign_scope = SourceVariableScopeResolver::resolve_proof_occurrences(
+                    SourceVariableScopeInput::new(&ast, foreign.module(), &env),
+                )
+                .unwrap();
+                let owner = env
+                    .symbols()
+                    .iter()
+                    .find(|entry| entry.kind() == mizar_resolve::env::SymbolKind::Theorem)
+                    .unwrap();
+                let foreign_labels = ProofLabelSourceCollector::new(
+                    &ast,
+                    foreign.module(),
+                    namespace.clone(),
+                    owner.contribution(),
+                    &foreign,
+                )
+                .unwrap()
+                .collect_with_theorem_owners(&env)
+                .unwrap();
+                let result = SourceVariableSemanticsChecker::check_theorem_skeletons(
+                    &source,
+                    &typed,
+                    &foreign_scope,
+                    &symbols,
+                    &foreign_labels,
+                    &resolved,
+                    None,
+                );
+                assert!(result.is_err(), "foreign ownership admitted: {changed}");
+            }
         }
     }
 
@@ -2049,190 +2388,192 @@ mod term_proof_tests {
     fn step5c5_phrase_metadata_inventory_and_cross_stage_aliases() {
         let config = config();
         let plan = crate::harness::build_test_plan(&config).unwrap();
-        let case = plan
+        for case in plan
             .cases
             .iter()
-            .find(|case| case.id.0 == STEP5C5_PHRASE_ID)
-            .unwrap();
-        assert!(step5c5_phrase_admitted(Some(&config.workspace_root), case));
-        assert!(
-            crate::expectation::validate_expectation_path(
-                &case.expectation_path,
-                &case.expectation,
-                &config.workspace_root.join("tests")
-            )
-            .is_empty()
-        );
-        for mutation in 0..28 {
-            let mut changed = case.clone();
-            match mutation {
-                0 => changed.id.0.push('_'),
-                1 => changed.expectation.id.0.push('_'),
-                2 => changed.source_path = changed.source_path.with_file_name("other.miz"),
-                3 => {
-                    changed.expectation_path =
-                        changed.expectation_path.with_file_name("other.expect.toml")
-                }
-                4 => changed.expectation.source = "other.miz".into(),
-                5 => changed.expectation.domain.push('_'),
-                6 => changed.expectation.expected_phase = Some(PipelinePhase::Verification),
-                7 => changed.expectation.expected_outcome = ExpectedOutcome::Fail,
-                8 => changed.expectation.spec_refs.reverse(),
-                9 => changed.expectation.spec_refs.pop().map(|_| ()).unwrap(),
-                10 => changed
-                    .expectation
-                    .tags
-                    .push(ACTIVE_PROOF_VERIFICATION_TAG.into()),
-                11 => changed.expectation.snapshots = None,
-                12 => changed.expectation.snapshots = Some("snapshots/vc/other.snap".into()),
-                13 => changed.expectation.stable_detail_key = Some("unrelated".into()),
-                14 => changed.expectation.failure_category = Some("proof_failure".into()),
-                15 => changed.expectation.schema_version += 1,
-                16 => changed.expectation.profiles.push("other".into()),
-                17 => changed.expectation.kind = crate::expectation::TestKind::Fail,
-                18 => changed.expectation.rejection_reason = Some("other".into()),
-                19 => changed
-                    .expectation
-                    .diagnostic_codes
-                    .push("E-UNRELATED".into()),
-                20 => changed
-                    .expectation
-                    .diagnostic_payloads
-                    .push("unrelated".into()),
-                21 => changed
-                    .expectation
-                    .declaration_symbol_payloads
-                    .push("unrelated".into()),
-                22 => changed.expectation.ast_profile = Some("unrelated".into()),
-                23 => changed
-                    .expectation
-                    .snapshot_profiles
-                    .push("unrelated".into()),
-                24 => {
-                    changed.expectation.tokens = plan
-                        .cases
-                        .iter()
-                        .find(|row| !row.expectation.tokens.is_empty())
-                        .unwrap()
-                        .expectation
-                        .tokens
-                        .clone()
-                }
-                25 => {
-                    changed.expectation.origin = Some(crate::expectation::OriginMetadata {
-                        schema_version: 1,
-                        kind: changed.expectation.kind,
-                        generator: "test".into(),
-                        generator_version: "1".into(),
-                        seed: "0".into(),
-                        profile: "fast".into(),
-                        expected_outcome: changed.expectation.expected_outcome,
-                        minimized: false,
-                        original_failure_category: None,
-                    })
-                }
-                26 => {
-                    changed.expectation.architecture22 =
-                        Some(crate::expectation::Architecture22Metadata {
-                            scenarios: vec!["cache_hit_miss_timing".into()],
-                            equivalence_class: Some("observable_outputs_equal".into()),
-                            gate: crate::expectation::Architecture22Gate::Planned,
-                        })
-                }
-                27 => changed
-                    .expectation
-                    .spec_refs
-                    .push(changed.expectation.spec_refs[0].clone()),
-                _ => unreachable!(),
-            }
-            assert!(is_step5c5_phrase_candidate(&changed));
+            .filter(|case| [STEP5C5_PHRASE_ID, STEP5C5_SYMBOLIC_ID].contains(&case.id.0.as_str()))
+        {
+            assert!(step5c5_phrase_admitted(Some(&config.workspace_root), case));
             assert!(
-                !step5c5_phrase_admitted(Some(&config.workspace_root), &changed),
-                "mutation {mutation}"
+                crate::expectation::validate_expectation_path(
+                    &case.expectation_path,
+                    &case.expectation,
+                    &config.workspace_root.join("tests")
+                )
+                .is_empty()
             );
-            if !matches!(mutation, 0 | 2 | 11) {
-                assert!(
-                    crate::expectation::validate_expectation_path(
-                        &changed.expectation_path,
-                        &changed.expectation,
-                        &config.workspace_root.join("tests")
-                    )
-                    .iter()
-                    .any(|diagnostic| diagnostic.code.0 == "E-EXPECT-SNAPSHOT-SCOPE"),
-                    "snapshot metadata mutation {mutation}"
-                );
-            }
-        }
-        for (stage, tag, phase) in [
-            (Stage::ParseOnly, "active_parse_only", PipelinePhase::Parse),
-            (
-                Stage::DeclarationSymbol,
-                "active_declaration_symbol",
-                PipelinePhase::Resolve,
-            ),
-            (
-                Stage::TypeElaboration,
-                "active_type_elaboration",
-                PipelinePhase::TypeCheck,
-            ),
-            (
-                Stage::FormulaStatement,
-                "active_formula_statement",
-                PipelinePhase::StatementCheck,
-            ),
-            (
-                Stage::AdvancedSemantics,
-                "active_advanced_semantics",
-                PipelinePhase::ClusterResolution,
-            ),
-        ] {
-            for alias in 0..4 {
+            for mutation in 0..28 {
                 let mut changed = case.clone();
-                changed.expectation.stage = stage;
-                changed.expectation.tags = vec![tag.into()];
-                changed.expectation.expected_phase = Some(phase);
-                if alias > 0 {
-                    changed.id.0 = "alias".into();
-                }
-                if alias > 1 {
-                    changed.expectation.id.0 = "alias".into();
-                }
-                if alias > 2 {
-                    changed.source_path = changed.source_path.with_file_name("alias.miz");
+                match mutation {
+                    0 => changed.id.0.push('_'),
+                    1 => changed.expectation.id.0.push('_'),
+                    2 => changed.source_path = changed.source_path.with_file_name("other.miz"),
+                    3 => {
+                        changed.expectation_path =
+                            changed.expectation_path.with_file_name("other.expect.toml")
+                    }
+                    4 => changed.expectation.source = "other.miz".into(),
+                    5 => changed.expectation.domain.push('_'),
+                    6 => changed.expectation.expected_phase = Some(PipelinePhase::Verification),
+                    7 => changed.expectation.expected_outcome = ExpectedOutcome::Fail,
+                    8 => changed.expectation.spec_refs.reverse(),
+                    9 => changed.expectation.spec_refs.pop().map(|_| ()).unwrap(),
+                    10 => changed
+                        .expectation
+                        .tags
+                        .push(ACTIVE_PROOF_VERIFICATION_TAG.into()),
+                    11 => changed.expectation.snapshots = None,
+                    12 => changed.expectation.snapshots = Some("snapshots/vc/other.snap".into()),
+                    13 => changed.expectation.stable_detail_key = Some("unrelated".into()),
+                    14 => changed.expectation.failure_category = Some("proof_failure".into()),
+                    15 => changed.expectation.schema_version += 1,
+                    16 => changed.expectation.profiles.push("other".into()),
+                    17 => changed.expectation.kind = crate::expectation::TestKind::Fail,
+                    18 => changed.expectation.rejection_reason = Some("other".into()),
+                    19 => changed
+                        .expectation
+                        .diagnostic_codes
+                        .push("E-UNRELATED".into()),
+                    20 => changed
+                        .expectation
+                        .diagnostic_payloads
+                        .push("unrelated".into()),
+                    21 => changed
+                        .expectation
+                        .declaration_symbol_payloads
+                        .push("unrelated".into()),
+                    22 => changed.expectation.ast_profile = Some("unrelated".into()),
+                    23 => changed
+                        .expectation
+                        .snapshot_profiles
+                        .push("unrelated".into()),
+                    24 => {
+                        changed.expectation.tokens = plan
+                            .cases
+                            .iter()
+                            .find(|row| !row.expectation.tokens.is_empty())
+                            .unwrap()
+                            .expectation
+                            .tokens
+                            .clone()
+                    }
+                    25 => {
+                        changed.expectation.origin = Some(crate::expectation::OriginMetadata {
+                            schema_version: 1,
+                            kind: changed.expectation.kind,
+                            generator: "test".into(),
+                            generator_version: "1".into(),
+                            seed: "0".into(),
+                            profile: "fast".into(),
+                            expected_outcome: changed.expectation.expected_outcome,
+                            minimized: false,
+                            original_failure_category: None,
+                        })
+                    }
+                    26 => {
+                        changed.expectation.architecture22 =
+                            Some(crate::expectation::Architecture22Metadata {
+                                scenarios: vec!["cache_hit_miss_timing".into()],
+                                equivalence_class: Some("observable_outputs_equal".into()),
+                                gate: crate::expectation::Architecture22Gate::Planned,
+                            })
+                    }
+                    27 => changed
+                        .expectation
+                        .spec_refs
+                        .push(changed.expectation.spec_refs[0].clone()),
+                    _ => unreachable!(),
                 }
                 assert!(is_step5c5_phrase_candidate(&changed));
-                assert!(!is_active_proof_verification(&changed));
-                assert!(!super::super::step5c11_registration_admitted(
-                    &config.workspace_root,
-                    &changed
-                ));
-                assert!(!super::super::step5c13_overload_admitted(
-                    &config.workspace_root,
-                    &changed
-                ));
-                assert!(!super::super::is_active_parse_only(&changed));
-                assert!(!super::super::is_active_declaration_symbol(&changed));
-                assert!(!super::super::is_active_type_elaboration(&changed));
                 assert!(
-                    !super::super::formula_statement::is_active_formula_statement(
+                    !step5c5_phrase_admitted(Some(&config.workspace_root), &changed),
+                    "mutation {mutation}"
+                );
+                if !matches!(mutation, 0 | 2 | 11) {
+                    assert!(
+                        crate::expectation::validate_expectation_path(
+                            &changed.expectation_path,
+                            &changed.expectation,
+                            &config.workspace_root.join("tests")
+                        )
+                        .iter()
+                        .any(|diagnostic| diagnostic.code.0 == "E-EXPECT-SNAPSHOT-SCOPE"),
+                        "snapshot metadata mutation {mutation}"
+                    );
+                }
+            }
+            for (stage, tag, phase) in [
+                (Stage::ParseOnly, "active_parse_only", PipelinePhase::Parse),
+                (
+                    Stage::DeclarationSymbol,
+                    "active_declaration_symbol",
+                    PipelinePhase::Resolve,
+                ),
+                (
+                    Stage::TypeElaboration,
+                    "active_type_elaboration",
+                    PipelinePhase::TypeCheck,
+                ),
+                (
+                    Stage::FormulaStatement,
+                    "active_formula_statement",
+                    PipelinePhase::StatementCheck,
+                ),
+                (
+                    Stage::AdvancedSemantics,
+                    "active_advanced_semantics",
+                    PipelinePhase::ClusterResolution,
+                ),
+            ] {
+                for alias in 0..4 {
+                    let mut changed = case.clone();
+                    changed.expectation.stage = stage;
+                    changed.expectation.tags = vec![tag.into()];
+                    changed.expectation.expected_phase = Some(phase);
+                    if alias > 0 {
+                        changed.id.0 = "alias".into();
+                    }
+                    if alias > 1 {
+                        changed.expectation.id.0 = "alias".into();
+                    }
+                    if alias > 2 {
+                        changed.source_path = changed.source_path.with_file_name("alias.miz");
+                    }
+                    assert!(is_step5c5_phrase_candidate(&changed));
+                    assert!(!is_active_proof_verification(&changed));
+                    assert!(!super::super::step5c11_registration_admitted(
                         &config.workspace_root,
                         &changed
-                    )
+                    ));
+                    assert!(!super::super::step5c13_overload_admitted(
+                        &config.workspace_root,
+                        &changed
+                    ));
+                    assert!(!super::super::is_active_parse_only(&changed));
+                    assert!(!super::super::is_active_declaration_symbol(&changed));
+                    assert!(!super::super::is_active_type_elaboration(&changed));
+                    assert!(
+                        !super::super::formula_statement::is_active_formula_statement(
+                            &config.workspace_root,
+                            &changed
+                        )
+                    );
+                }
+            }
+            for duplicate in [false, true] {
+                let mut changed = plan.clone();
+                if duplicate {
+                    changed.cases.push(case.clone());
+                } else {
+                    changed.cases.retain(|row| row.id != case.id);
+                }
+                assert!(
+                    validate_active_proof_verification_tags(&config.workspace_root, &changed)
+                        .iter()
+                        .any(|diagnostic| diagnostic.code.0
+                            == "E-PROOF-VERIFICATION-STEP5C5-INVENTORY")
                 );
             }
-        }
-        for duplicate in [false, true] {
-            let mut changed = plan.clone();
-            if duplicate {
-                changed.cases.push(case.clone());
-            } else {
-                changed.cases.retain(|row| row.id.0 != STEP5C5_PHRASE_ID);
-            }
-            assert!(
-                validate_active_proof_verification_tags(&config.workspace_root, &changed)
-                    .iter()
-                    .any(|diagnostic| diagnostic.code.0 == "E-PROOF-VERIFICATION-STEP5C5-INVENTORY")
-            );
         }
     }
 
@@ -2241,111 +2582,113 @@ mod term_proof_tests {
         use mizar_core::core_ir::*;
         let config = config();
         let plan = crate::harness::build_test_plan(&config).unwrap();
-        let case = plan
+        for case in plan
             .cases
             .iter()
-            .find(|case| case.id.0 == STEP5C5_PHRASE_ID)
+            .filter(|case| [STEP5C5_PHRASE_ID, STEP5C5_SYMBOLIC_ID].contains(&case.id.0.as_str()))
+        {
+            let (core, vcs) = phrase_theorem_output(
+                &config.workspace_root,
+                case,
+                run_frontend(&config.workspace_root, case, 0).unwrap(),
+            )
             .unwrap();
-        let (core, vcs) = phrase_theorem_output(
-            &config.workspace_root,
-            case,
-            run_frontend(&config.workspace_root, case, 0).unwrap(),
-        )
-        .unwrap();
-        let (seed_id, seed) = core.obligation_seeds().iter().next().unwrap();
-        let (proof_id, proof) = core.proofs().iter().next().unwrap();
-        let (definition_id, definition) = core.definitions().iter().next().unwrap();
-        assert!(
-            seed.core_refs
-                .contains(&CoreNodeRef::Definition(definition_id))
-        );
-        assert!(
-            seed.core_refs
-                .contains(&CoreNodeRef::Item(definition.owner.anchor_item()))
-        );
-        assert!(
-            core.terms()
-                .iter()
-                .all(|(id, _)| seed.core_refs.contains(&CoreNodeRef::Term(id)))
-        );
-        assert!(
-            core.formulas()
-                .iter()
-                .all(|(id, _)| seed.core_refs.contains(&CoreNodeRef::Formula(id)))
-        );
-        for mutation in 0..11 {
-            let mut parts = CoreIrParts {
-                source_id: core.source_id(),
-                module_id: core.module_id().clone(),
-                items: core.items().clone(),
-                terms: core.terms().clone(),
-                formulas: core.formulas().clone(),
-                definitions: core.definitions().clone(),
-                proofs: core.proofs().clone(),
-                proof_nodes: core.proof_nodes().clone(),
-                algorithms: core.algorithms().clone(),
-                algorithm_statements: core.algorithm_statements().clone(),
-                generated: core.generated().clone(),
-                obligation_seeds: core.obligation_seeds().clone(),
-                source_map: core.source_map().clone(),
-                diagnostics: core.diagnostics().clone(),
-            };
-            let changed = parts.obligation_seeds.get_mut(seed_id).unwrap();
-            match mutation {
-                0 => {
-                    changed.context.remove(0);
-                }
-                1 => changed.context.push(seed.goal.unwrap()),
-                2 => changed.context.reverse(),
-                3 => changed.goal = Some(proof.proposition),
-                4 => changed.local_path = "".into(),
-                5 => changed.status = ObligationSeedStatus::Skipped,
-                6 => changed.owner = definition.owner.anchor_item(),
-                7 => changed.core_refs.clear(),
-                8 => parts.proofs.get_mut(proof_id).unwrap().status = CoreProofStatus::Open,
-                9 => {
-                    parts.definitions.get_mut(definition_id).unwrap().owner =
-                        CoreDefinitionOwner::for_item(proof.item)
-                }
-                10 => {
-                    let CoreProofNodeKind::IntroduceBinder { binder, .. } =
-                        &mut parts.proof_nodes.get_mut(proof.root).unwrap().kind
-                    else {
-                        panic!()
-                    };
-                    binder.var = definition.params[0].var;
-                }
-                _ => unreachable!(),
-            }
-            // Core-only fields such as Pending status need complete Core comparison:
-            // generic seed intake does not authenticate a detached graph as source.
-            let changed = CoreIr::try_new(parts)
-                .unwrap_or_else(|error| panic!("Core mutation {mutation}: {error}"));
-            let actual = generate_core_vcs(&changed, snapshot_id(0))
-                .unwrap_or_else(|error| panic!("VC mutation {mutation}: {error}"));
-            assert_ne!(
-                (changed, actual),
-                (core.clone(), vcs.clone()),
-                "mutation {mutation}"
+            let (seed_id, seed) = core.obligation_seeds().iter().next().unwrap();
+            let (proof_id, proof) = core.proofs().iter().next().unwrap();
+            let (definition_id, definition) = core.definitions().iter().next().unwrap();
+            assert!(
+                seed.core_refs
+                    .contains(&CoreNodeRef::Definition(definition_id))
             );
-        }
-        let temporary = std::process::Command::new("mktemp")
-            .arg("-d")
-            .output()
-            .unwrap();
-        assert!(temporary.status.success());
-        let root = std::path::PathBuf::from(String::from_utf8(temporary.stdout).unwrap().trim());
-        let path = root.join(case.expectation.snapshots.as_ref().unwrap());
-        fs::create_dir_all(path.parent().unwrap()).unwrap();
-        for contents in [None, Some("corrupt VC baseline")] {
-            if let Some(contents) = contents {
-                fs::write(&path, contents).unwrap();
+            assert!(
+                seed.core_refs
+                    .contains(&CoreNodeRef::Item(definition.owner.anchor_item()))
+            );
+            assert!(
+                core.terms()
+                    .iter()
+                    .all(|(id, _)| seed.core_refs.contains(&CoreNodeRef::Term(id)))
+            );
+            assert!(
+                core.formulas()
+                    .iter()
+                    .all(|(id, _)| seed.core_refs.contains(&CoreNodeRef::Formula(id)))
+            );
+            for mutation in 0..11 {
+                let mut parts = CoreIrParts {
+                    source_id: core.source_id(),
+                    module_id: core.module_id().clone(),
+                    items: core.items().clone(),
+                    terms: core.terms().clone(),
+                    formulas: core.formulas().clone(),
+                    definitions: core.definitions().clone(),
+                    proofs: core.proofs().clone(),
+                    proof_nodes: core.proof_nodes().clone(),
+                    algorithms: core.algorithms().clone(),
+                    algorithm_statements: core.algorithm_statements().clone(),
+                    generated: core.generated().clone(),
+                    obligation_seeds: core.obligation_seeds().clone(),
+                    source_map: core.source_map().clone(),
+                    diagnostics: core.diagnostics().clone(),
+                };
+                let changed = parts.obligation_seeds.get_mut(seed_id).unwrap();
+                match mutation {
+                    0 => {
+                        changed.context.remove(0);
+                    }
+                    1 => changed.context.push(seed.goal.unwrap()),
+                    2 => changed.context.reverse(),
+                    3 => changed.goal = Some(proof.proposition),
+                    4 => changed.local_path = "".into(),
+                    5 => changed.status = ObligationSeedStatus::Skipped,
+                    6 => changed.owner = definition.owner.anchor_item(),
+                    7 => changed.core_refs.clear(),
+                    8 => parts.proofs.get_mut(proof_id).unwrap().status = CoreProofStatus::Open,
+                    9 => {
+                        parts.definitions.get_mut(definition_id).unwrap().owner =
+                            CoreDefinitionOwner::for_item(proof.item)
+                    }
+                    10 => {
+                        let CoreProofNodeKind::IntroduceBinder { binder, .. } =
+                            &mut parts.proof_nodes.get_mut(proof.root).unwrap().kind
+                        else {
+                            panic!()
+                        };
+                        binder.var = definition.params[0].var;
+                    }
+                    _ => unreachable!(),
+                }
+                // Core-only fields such as Pending status need complete Core comparison:
+                // generic seed intake does not authenticate a detached graph as source.
+                let changed = CoreIr::try_new(parts)
+                    .unwrap_or_else(|error| panic!("Core mutation {mutation}: {error}"));
+                let actual = generate_core_vcs(&changed, snapshot_id(0))
+                    .unwrap_or_else(|error| panic!("VC mutation {mutation}: {error}"));
+                assert_ne!(
+                    (changed, actual),
+                    (core.clone(), vcs.clone()),
+                    "mutation {mutation}"
+                );
             }
-            let run = run_proof_verification_case(&config.workspace_root, &root, case, 0);
-            assert_eq!(run.status, ProofVerificationCaseStatus::Failed);
-            assert!(run.failure.unwrap().contains("snapshot"));
+            let temporary = std::process::Command::new("mktemp")
+                .arg("-d")
+                .output()
+                .unwrap();
+            assert!(temporary.status.success());
+            let root =
+                std::path::PathBuf::from(String::from_utf8(temporary.stdout).unwrap().trim());
+            let path = root.join(case.expectation.snapshots.as_ref().unwrap());
+            fs::create_dir_all(path.parent().unwrap()).unwrap();
+            for contents in [None, Some("corrupt VC baseline")] {
+                if let Some(contents) = contents {
+                    fs::write(&path, contents).unwrap();
+                }
+                let run = run_proof_verification_case(&config.workspace_root, &root, case, 0);
+                assert_eq!(run.status, ProofVerificationCaseStatus::Failed);
+                assert!(run.failure.unwrap().contains("snapshot"));
+            }
+            fs::remove_dir_all(root).unwrap();
         }
-        fs::remove_dir_all(root).unwrap();
     }
 
     #[test]

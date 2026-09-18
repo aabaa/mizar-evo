@@ -929,3 +929,7 @@ environment・checker 再評価・受理状態は追加しない。
 定理命題は `forall q (set(q) -> P(q,q))` を保持し、別の局所 binder `l` の終端は実際の goal `P(l,l)` と順序付き context `[set(l), guarded definition]` を持つ。
 出現と宣言の対応で producer binding と定理 scope を結び、数値 ID を混同しない。source map、definition/formula/term backref、依存と証明 provenance を完全に保つ。
 Active TheoremProof seed は一つで、定理は `PendingAutomaticProof` のままとし、定理 fact、証明 discharge、大域的な定義 installation、Task274 acceptance、一般 predicate unfolding は行わない。
+
+## 限定 symbolic predicate theorem
+
+既存の封印済み `lower_source_theorem_skeletons` は実 body `forall z (object(z) -> (z in X -> z in Y))` を guard 付き predicate 双条件内に lowering する。既存 Forall/Implies/Iff と primitive Membership seed を使い、formal 二つ・body 束縛子・theorem 束縛子・proof-local 束縛子の五宣言を区別する。source/formula/term map と definition 所有 provenance で両 membership 辺と capture 境界を認証し、body オペランドと宣言の zip から formal を推測しない。実 user-symbol predicate goal、順序付き local-set-guard/definition 文脈、未解決 terminal proof の種類は維持する。unfolding・correctness 証明・受理済み事実を付与しない。
