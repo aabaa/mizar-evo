@@ -1,7 +1,7 @@
 # Task STEP5C14-ALGORITHM-SEMANTICS: bounded algorithm observations
 
 Canonical language: English; [Japanese pointer](../ja/STEP5C14-ALGORITHM-SEMANTICS.md).
-Status: partial; static/state and bounded void-claim VCs active; contradictory-assertion failure active; tier: full. Primary owner: mizar-core; consumers: mizar-vc, mizar-test;
+Status: partial; static/state and bounded void-claim VCs active; contradictory-assertion failure active; computation request active; tier: full. Primary owner: mizar-core; consumers: mizar-vc, mizar-test;
 checker owns authenticated binding/type intake. Dependencies: existing parser,
 resolver replay, BindingEnv, term/formula inference, Core/CFG and VC seed accounting.
 Owner plans: [Core](../../mizar-core/en/00.crate_plan.md),
@@ -11,8 +11,9 @@ Owner plans: [Core](../../mizar-core/en/00.crate_plan.md),
 ## Purpose and authority
 Activate the existing algorithm break-outside-loop and ghost-isolation
 type-elaboration failures through source -> checker -> Core -> CFG; additionally activate the existing `pass_proof_verification_algorithm_ensures_return_001.miz` and `pass_proof_verification_algorithm_var_const_assert_001.miz` and `pass_proof_verification_claim_block_theorem_001.miz` at proof_verification/vc_generation.
-Authority: [14](../../../spec/en/14.formulas.md) §§14.3.5,14.5.2; spec [20](../../../spec/en/20.algorithm_and_verification.md)
-§§20.1.1–4, 20.2.6, 20.4.1–3, 20.6.2 and 20.13.1/3/5; tests/miz/{pass,fail}/algorithms/
+The existing `pass_proof_verification_computation_justification_001.miz` additionally targets its frozen pass/vc_generation phase through source-owned literal/request transport only.
+Authority: [2](../../../spec/en/02.lexical_structure.md) §2.7, [3](../../../spec/en/03.type_system.md) §3.4, [16](../../../spec/en/16.theorems_and_proofs.md) §§16.1–2; [14](../../../spec/en/14.formulas.md) §§14.3.5,14.5.2; spec [20](../../../spec/en/20.algorithm_and_verification.md)
+§§20.1.1–4, 20.2.6, 20.4.1–3, 20.6.2, 20.9.2 and 20.13.1/3/5; tests/miz/{pass,fail}/algorithms/
 `fail_type_elaboration_algorithm_break_outside_loop_001.miz` and
 `fail_type_elaboration_algorithm_ghost_isolation_001.miz`, with existing sidecars.
 Both observations remain type_elaboration / elaboration / fail / type_error;
@@ -38,16 +39,16 @@ Graph boundaries: [source families](../../mizar-core/en/source_family_decomposit
 No semantic blocker remains. Raw SymbolEnv and unresolved syntax stay outside
 Core; no parallel AST, accepted algorithm fact or fabricated type evidence.
 Exclude field assignment, nested flow, calls, other contracts, loop havoc,
-snapshots, broader claims, computation, termination proof/promotion, MVM and Step6.
+snapshots, broader claims, computation execution/acceptance, termination proof/promotion, MVM and Step6. The [bounded request producer](../../mizar-vc/en/generator.md#bounded-computation-request-generation) retains the actual zero equality and explicit steps digits as an Open theorem-proof VC; other literal/options profiles remain unsupported.
 This is partial Core42/43/46/47/48/51/52/53 source/diagnostic coverage, not completion or a
-CFG snapshot baseline; bounded postconditions/assertions are partial VC43 and void claims partial VC54. Task274 and later C14 slices remain deferred.
+CFG snapshot baseline; bounded postconditions/assertions are partial VC43 and void claims partial VC54, and computation requests partial VC32. Task274 and later C14 slices remain deferred.
 
 ## Artifacts and exit
 Change existing checker/Core/CFG/VC/runner modules and relevant Rust tests;
-activate only these sidecars without changing semantic expectations; return/state cases retain generated/zero-VC baselines; the void claim adds its full generated VcSet baseline and narrow snapshot trace. The contradictory-assertion row adds complete raw-negative and positive-equality control baselines.
+activate only these sidecars without changing semantic expectations; return/state cases retain generated/zero-VC baselines; the void claim adds its full generated VcSet baseline and narrow snapshot trace. The contradictory-assertion row adds complete raw-negative and positive-equality control baselines; the computation row adds one full request-preserving VcIr baseline and narrow trace.
 Maintain paired owning module docs and public-item inventories where needed,
 this EN contract plus JA pointer, owner plan links and Chapter20 audit's partial
-static-source coverage and Chapter14's bounded negated-reflexive failure coverage. Preserve the repaired claim fixture and all other source/semantic expectations; no execution, theorem acceptance or Task274 credit follows.
+static-source coverage, symbolic computation requests and Chapter14's bounded negated-reflexive failure coverage. Preserve the repaired claim fixture and all other source/semantic expectations; no execution, theorem acceptance or Task274 credit follows.
 Require real-source outcomes, safe/renamed/reference-mutation controls, source/
 typed/env/owner/binding corruption rejection, exact stage admission, deterministic
 Core/CFG/source mapping, static zero-VC behavior, actual return/state formulas, pre-assert contexts and pending dependency links, full deterministic VcSet snapshots and exact seed accounting. Two independent Core parameter values test copy, old-state and self-assignment behavior without broadening source admission; no-contract controls retain honest accounting.
@@ -55,5 +56,5 @@ Run specification/documentation, test-sufficiency, implementation, volume/scope
 and source/documentation consistency reviews; resolve findings and repeat.
 Run narrow checker/Core/runner tests, cargo fmt --check,
 cargo clippy --all-targets --all-features -- -D warnings, and cargo test.
-Exit with authentic static observations and open return/assertion/claim VCs plus bounded assertion failure observations, preserved boundaries,
+Exit with authentic static observations and open return/assertion/claim/computation VCs plus bounded assertion failure observations, preserved boundaries,
 unchanged later-slice deferrals, and a task-only commit.

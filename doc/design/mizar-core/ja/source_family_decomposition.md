@@ -159,7 +159,7 @@ semantic edit 前に確認する。
 | 46 | `requires`/`ensures`/`assert`、invariant/decreasing、call target/actual/result binder/substitution-request metadata、recursive group、declared terminating intent、measure availability。 | Specs 20.4-20.5/20.7-20.8/20.13、Core 34-35/42-45、`MT10-CIR-ALG`。 | Request/metadata 搬送のみ。call/result substitution の生成・適用・検証は VC Task-30 descendant。contract axiom、VC、termination proof/promotion/recursive encoding は作らない。 |
 | 47 | Snapshot/claim shell、snapshot identity、captured algorithm context request、visible runtime/ghost locals、hidden-loop-value ref、claim body/order、missing/unsupported state。 | Spec 20.6、Core 37 theorem shellとCore 42-46、`MT10-CIR-ALG`。 | Claimは既にlower済みのCore-37 theorem/statement shellだけへlinkする。Source reconstruction、context fact、old-state substitution、claim proof、CFG capture、VC、acceptance は扱わない。 [限定 void claim](elaborator.md) は先行する空 interface algorithm への依存と実 theorem/proof source を保持し、状態 capture のある claim は保留する。 |
 
-Chapter 20.9 MVM/`by computation`/runtime/gas と 20.10 extraction は parked
+[限定 computation 要求](elaborator.md) は source 所有の open goal を保持する。Chapter 20.9 MVM/計算証明受理/runtime/gas と 20.10 extraction は parked
 downstream work のまま。20.13 formula は VC authority であり、Core 46 は later
 owner が必要とする authenticated metadata だけを記録する。
 

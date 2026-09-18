@@ -607,3 +607,5 @@ task 15-18 に deferred する。
 ## Source static algorithm observations
 
 ソース Let/Return/Break は既存構築と IllegalBreak を維持する。型付き AssignLocal は実際の local 同一性を解決して AssignmentEffectTarget::Local を記録し、不明な代入先を拒否し、ImmutableAssignment {local,var} で const・仮引数・result への書込みを拒否する。GhostIsolationViolation {local,var} は runtime 初期化子・型付き代入・return の実際の ghost 依存を、再帰的な項使用収集と決定的な statement/use 由来から記録し、到達不能な参照先も検査する。ghost 代入先は宣言の可視性を保持し、opaque Assign place key を名前から解決しない。不正 break 後の到達不能診断は付随診断のままとする。CFG の assertion fact は後続への配置を表し、その assertion 自身の VC で仮定する権限ではない。代入前の世代付き具体文脈は VC が所有し、条件・呼出しの ghost 検査、証明、診断群全体の完了は主張しない。
+
+`build_obligation_seed_handoff` は computation 終端の seed 参照・source を保持するが、seed-only consumer が要求を保持できないため handoff の複製だけを Deferred にする。元 Core seed は Active のままで、source-aware computation generator が要求を含む完全な射影を所有する。

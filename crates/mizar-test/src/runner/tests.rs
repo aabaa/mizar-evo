@@ -515,9 +515,15 @@ fn step5c11_correctness_requests_bind_actual_owners_guards_and_checked_operands(
         let site = |id: mizar_resolve::resolved_ast::ResolvedNodeId| {
             TypedSiteRef::Node(TypedNodeId::new(id.index()))
         };
-        let correctness = registration.children().iter().map(|id| source.arena().node(*id).unwrap())
-            .find(|node| node.kind() == &SurfaceNodeKind::CorrectnessCondition).unwrap();
-        let SourceAnchor::Range(correctness_range) = correctness.origin().anchor() else { panic!("correctness range") };
+        let correctness = registration
+            .children()
+            .iter()
+            .map(|id| source.arena().node(*id).unwrap())
+            .find(|node| node.kind() == &SurfaceNodeKind::CorrectnessCondition)
+            .unwrap();
+        let SourceAnchor::Range(correctness_range) = correctness.origin().anchor() else {
+            panic!("correctness range")
+        };
         let in_registration = |node: &mizar_resolve::resolved_ast::ResolvedNode| {
             matches!(node.origin().anchor(), SourceAnchor::Range(range)
                 if range.start >= registration_range.start && range.end <= correctness_range.start)
@@ -648,7 +654,9 @@ fn step5c11_functorial_core(
         case,
         super::formula_statement::step5c8_test_frontend(text),
     )?;
-    let checked = mizar_checker::registration_resolution::check_source_registration_intake(&source, &nodes, &symbols)?;
+    let checked = mizar_checker::registration_resolution::check_source_registration_intake(
+        &source, &nodes, &symbols,
+    )?;
     mizar_core::elaborator::lower_source_functorial_registration(&checked)
 }
 
@@ -729,7 +737,11 @@ fn step5c11_false_coherence_executes_real_guarded_goal_and_definition_polarity()
             super::proof_verification::generate_core_vcs(&core, super::shared::snapshot_id(5800))
                 .unwrap()
         );
-        assert!(core.obligation_seeds().iter().all(|(_, seed)| seed.label.is_none()));
+        assert!(
+            core.obligation_seeds()
+                .iter()
+                .all(|(_, seed)| seed.label.is_none())
+        );
         assert!(vcs.vcs()[0].premises.is_empty());
         assert!(vcs.vcs()[0].proof_hint.is_none());
         assert_eq!(
@@ -919,12 +931,21 @@ fn step5c11_false_coherence_consumer_rejects_core_and_vc_corruption() {
             }
             10 => {
                 let (id, proof) = core.proofs().iter().next().unwrap();
-                parts.proofs.get_mut(id).unwrap().source = core.items().get(proof.item).unwrap().source.clone();
+                parts.proofs.get_mut(id).unwrap().source =
+                    core.items().get(proof.item).unwrap().source.clone();
             }
             11 => {
                 let root = core.proofs().iter().next().unwrap().1.root;
-                let CoreProofNodeKind::Step { ref mut justification, .. } = parts.proof_nodes.get_mut(root).unwrap().kind else { unreachable!() };
-                justification.citations.push(CoreCitation::Label("injected".into()));
+                let CoreProofNodeKind::Step {
+                    ref mut justification,
+                    ..
+                } = parts.proof_nodes.get_mut(root).unwrap().kind
+                else {
+                    unreachable!()
+                };
+                justification
+                    .citations
+                    .push(CoreCitation::Label("injected".into()));
             }
             12 => {
                 parts.proofs = CoreProofTable::new();
@@ -932,8 +953,9 @@ fn step5c11_false_coherence_consumer_rejects_core_and_vc_corruption() {
                 parts.source_map.proof_sources.clear();
             }
             13 => {
-                parts.obligation_seeds.get_mut(seed_id).unwrap().label =
-                    Some(CoreLabelRef::new(core.items().get(seed.owner).unwrap().symbol.fqn().as_str()));
+                parts.obligation_seeds.get_mut(seed_id).unwrap().label = Some(CoreLabelRef::new(
+                    core.items().get(seed.owner).unwrap().symbol.fqn().as_str(),
+                ));
             }
             _ => unreachable!(),
         }
@@ -950,7 +972,10 @@ fn step5c11_false_coherence_consumer_rejects_core_and_vc_corruption() {
                 assert!(outcome.is_err(), "accepted Core mutation {mutation}");
             }
         } else {
-            assert!(!matches!(mutation, 0 | 7..=13), "valid modified Core must generate VCs");
+            assert!(
+                !matches!(mutation, 0 | 7..=13),
+                "valid modified Core must generate VCs"
+            );
         }
         if mutation != 0 {
             assert!(failed_functorial_coherence(&changed, &original_vcs).is_err());
@@ -2845,6 +2870,11 @@ fn step5c14_return_admission_requires_exact_snapshot_trace_and_stage() {
         step5c14_state_case(),
         step5c14_claim_case(),
         step5c14_assert_failure_case(),
+        plan.cases
+            .iter()
+            .find(|case| case.id.0 == "pass_proof_verification_computation_justification_001")
+            .unwrap()
+            .clone(),
     ] {
         assert!(super::proof_verification::step5c14_return_admitted(
             Some(&config.workspace_root),
@@ -3944,7 +3974,11 @@ fn step5c3_functor_argument_mismatch_never_credits_unsupported_source_or_forged_
     let theorem_start = text.find("theorem WidenBad1:").unwrap();
     let unrelated = format!("{text}\n{}", &text[theorem_start..]);
     let frontend = super::formula_statement::step5c8_test_frontend(&unrelated);
-    assert!(frontend.diagnostics.is_empty(), "{:?}", frontend.diagnostics);
+    assert!(
+        frontend.diagnostics.is_empty(),
+        "{:?}",
+        frontend.diagnostics
+    );
     let result = super::resolver_symbol_collection(
         &config.workspace_root,
         case,
@@ -6570,6 +6604,7 @@ fn step5c14_claim_core(
         labels.references(),
     );
     let checked = SourceVariableSemanticsChecker::check_theorem_skeletons(
+        &source,
         &typed,
         &scope,
         &symbols,
@@ -6579,7 +6614,7 @@ fn step5c14_claim_core(
     )?;
     assert!(
         SourceVariableSemanticsChecker::check_theorem_skeletons(
-            &typed, &scope, &symbols, &labels, &resolved, None
+            &source, &typed, &scope, &symbols, &labels, &resolved, None
         )
         .is_err()
     );
@@ -7140,7 +7175,15 @@ fn step5c14_claim_rejects_coherent_core_corruption_and_unused_rows() {
 fn step5c14_claim_admission_rejects_auxiliary_payload_and_identity_hijacking() {
     let config = step5c11_config();
     let plan = build_test_plan(&config).unwrap();
-    for original in [step5c14_claim_case(), step5c14_assert_failure_case()] {
+    for original in [
+        step5c14_claim_case(),
+        step5c14_assert_failure_case(),
+        plan.cases
+            .iter()
+            .find(|case| case.id.0 == "pass_proof_verification_computation_justification_001")
+            .unwrap()
+            .clone(),
+    ] {
         for mutation in 0..11 {
             let mut case = original.clone();
             let expected = &mut case.expectation;
@@ -7294,6 +7337,7 @@ fn step5c14_claim_rejects_genuine_foreign_and_stale_algorithm_seals() {
         labels.references(),
     );
     let checked = SourceVariableSemanticsChecker::check_theorem_skeletons(
+        &source,
         &typed,
         &scope,
         &symbols,
@@ -7430,6 +7474,7 @@ fn step5c14_claim_rejects_genuine_foreign_and_stale_algorithm_seals() {
             alternate_labels.references(),
         );
         let alternate_checked = SourceVariableSemanticsChecker::check_theorem_skeletons(
+            &alternate_source,
             &alternate_typed,
             &alternate_scope,
             &alternate_symbols,
@@ -7445,6 +7490,7 @@ fn step5c14_claim_rejects_genuine_foreign_and_stale_algorithm_seals() {
         .unwrap();
         assert!(
             SourceVariableSemanticsChecker::check_theorem_skeletons(
+                &source,
                 &typed,
                 &scope,
                 &symbols,

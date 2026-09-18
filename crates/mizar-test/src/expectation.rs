@@ -1330,6 +1330,14 @@ pub fn validate_expectation_path(
                 .any(|spec_ref| spec_ref.0 == EXACT_TASK31_VC_SNAPSHOT_SPEC_REF);
         let exact_source_vc_snapshot = [
             (
+                "pass_proof_verification_computation_justification_001",
+                "pass/algorithms",
+                "algorithms.computation",
+                "spec.en.20.algorithms.computation.justification",
+                "spec.en.mizar_vc.vc_ir.computation_request_snapshot",
+                None,
+            ),
+            (
                 "fail_proof_verification_algorithm_assert_unprovable_001",
                 "fail/algorithms",
                 "algorithms.assertions",
@@ -1398,14 +1406,16 @@ pub fn validate_expectation_path(
                     }
                 && expectation.domain == domain
                 && expectation.tags.as_slice() == ["active_proof_verification"]
-                && (!matches!(domain, "algorithms.claim" | "algorithms.assertions")
-                    || expectation.schema_version == 1
-                        && expectation.profiles.as_slice() == ["fast"]
-                        && expectation.ast_profile.is_none()
-                        && expectation.snapshot_profiles.is_empty()
-                        && expectation.tokens.is_empty()
-                        && expectation.origin.is_none()
-                        && expectation.architecture22.is_none())
+                && (!matches!(
+                    domain,
+                    "algorithms.claim" | "algorithms.assertions" | "algorithms.computation"
+                ) || expectation.schema_version == 1
+                    && expectation.profiles.as_slice() == ["fast"]
+                    && expectation.ast_profile.is_none()
+                    && expectation.snapshot_profiles.is_empty()
+                    && expectation.tokens.is_empty()
+                    && expectation.origin.is_none()
+                    && expectation.architecture22.is_none())
                 && expectation.failure_category.as_deref() == failure.then_some("proof_failure")
                 && expectation.stable_detail_key.as_deref() == detail
                 && expectation.rejection_reason.is_none()

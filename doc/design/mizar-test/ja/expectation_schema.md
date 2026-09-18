@@ -229,7 +229,7 @@ Fields:
 |---|---:|---|
 | `expected_phase` | yes | Harness がこの test で実行すべき latest phase. |
 | `diagnostic_codes` | yes | Expected diagnostics。Empty は diagnostics なしを意味する。 |
-| `snapshots` | no | transitional parse-only `SurfaceAst` baseline path、exact Core Task-31 `CoreIr` baseline 1件、exact VC Task-31 VcIr baseline 1件、または [限定 algorithm return/state baseline](harness.md#algorithm-return-contract-admission) または [void-claim baseline](harness.md#void-claim-admission)。該当する場合のみ。 |
+| `snapshots` | no | transitional parse-only `SurfaceAst` baseline path、exact Core Task-31 `CoreIr` baseline 1件、exact VC Task-31 VcIr baseline 1件、または [限定 algorithm return/state baseline](harness.md#algorithm-return-contract-admission) または [void-claim baseline](harness.md#void-claim-admission)、[computation request baseline](harness.md#computation-request-admission)。該当する場合のみ。 |
 
 Expectation で明示的に許可されていない error diagnostic が出た場合、pass test は fail する。
 

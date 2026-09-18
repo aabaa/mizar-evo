@@ -9,6 +9,8 @@ normative for tasks 5 and 6. It refines
 core terms and formulas and uses [core_ir.md](./core_ir.md) as its data-shape
 input.
 
+Raw `CoreTermKind::Numeral` is explicitly rejected by term/formula normalization as `MalformedEvidence`; it has no normalized substitute or numeric proof meaning. Variable-mention traversal treats it as a closed leaf.
+
 ## Scope
 
 `binder_normalization` owns deterministic binding behavior over `CoreIr`

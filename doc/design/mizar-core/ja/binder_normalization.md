@@ -8,6 +8,8 @@
 [architecture 16](../../architecture/ja/16.substitution_and_binding.md) を精緻化し、
 data-shape input として [core_ir.md](./core_ir.md) を使う。
 
+raw `CoreTermKind::Numeral` は term/formula 正規化で `MalformedEvidence` として明示的に拒否し、代替正規化表現や数値証明の意味を与えない。変数出現 traversal では閉じた葉として扱う。
+
 ## scope
 
 `binder_normalization` は `CoreIr` の項、論理式、binder、証明骨格断片、アルゴリズム

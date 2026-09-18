@@ -695,11 +695,16 @@ pub fn build_obligation_seed_handoff(
     let mut entries = Vec::new();
 
     for seed_id in core.obligation_seeds().canonical_order() {
-        let seed = core
+        let mut seed = core
             .obligation_seeds()
             .get(seed_id)
             .expect("canonical seed id")
             .clone();
+        if core.proof_nodes().iter().any(|(_, node)| {
+            matches!(node.kind, crate::core_ir::CoreProofNodeKind::ComputationGoal { obligation, .. } if obligation == seed_id)
+        }) {
+            seed.status = ObligationSeedStatus::Deferred;
+        }
         entries.push(ObligationHandoffEntry {
             seed,
             origin: ObligationHandoffOrigin::ExistingCore { seed: seed_id },
@@ -2821,7 +2826,7 @@ impl<'a> FlowBuilder<'a> {
                     });
                 }
             }
-            CoreTermKind::Const(_) | CoreTermKind::Error(_) => {}
+            CoreTermKind::Numeral(_) | CoreTermKind::Const(_) | CoreTermKind::Error(_) => {}
             CoreTermKind::Apply { args, .. }
             | CoreTermKind::Tuple(args)
             | CoreTermKind::SetEnum(args)

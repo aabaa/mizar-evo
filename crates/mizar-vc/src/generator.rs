@@ -40,6 +40,197 @@ mod task180;
 
 pub use task180::{ExactTask180VcError, ExactTask180VcInput, generate_exact_task180_vc};
 
+/// Generates one open symbolic request from the bounded source computation theorem.
+pub fn generate_source_computation_request(
+    core: &mizar_core::core_ir::CoreIr,
+    snapshot: BuildSnapshotId,
+    generation_schema: &GenerationSchemaVersion,
+    vc_schema: &VcSchemaVersion,
+) -> Result<VcSet, String> {
+    use mizar_core::{
+        control_flow::{ObligationHandoffEntry, ObligationHandoffTable},
+        core_ir::{
+            CoreFormulaKind, CoreItemKind, CoreItemStatus, CoreProofNodeKind, CoreProofStatus,
+            CoreProvenance, CoreProvenancePhase, CoreTermKind,
+        },
+    };
+    let invalid = || "computation.unsupported_core_request".to_owned();
+    let range = |source: &CoreSourceRef| match source.anchor {
+        CoreSourceAnchor::SourceRange(range)
+            if range.source_id == core.source_id() && range.start < range.end =>
+        {
+            Ok(range)
+        }
+        _ => Err(invalid()),
+    };
+    if core.items().len() != 1
+        || core.terms().len() != 2
+        || core.formulas().len() != 1
+        || core.proofs().len() != 1
+        || core.proof_nodes().len() != 1
+        || core.obligation_seeds().len() != 1
+        || !core.algorithms().is_empty()
+        || !core.algorithm_statements().is_empty()
+        || !core.definitions().is_empty()
+        || !core.generated().is_empty()
+        || !core.diagnostics().is_empty()
+    {
+        return Err(invalid());
+    }
+    let (proof_id, proof) = core.proofs().iter().next().ok_or_else(invalid)?;
+    let theorem = core.items().get(proof.item).ok_or_else(invalid)?;
+    let terminal = core.proof_nodes().get(proof.root).ok_or_else(invalid)?;
+    let CoreProofNodeKind::ComputationGoal { obligation, steps } = &terminal.kind else {
+        return Err(invalid());
+    };
+    let seed = core
+        .obligation_seeds()
+        .get(*obligation)
+        .ok_or_else(invalid)?;
+    let formula = core.formulas().get(proof.proposition).ok_or_else(invalid)?;
+    let CoreFormulaKind::Equals { left, right } = formula.kind else {
+        return Err(invalid());
+    };
+    let left_term = core.terms().get(left).ok_or_else(invalid)?;
+    let right_term = core.terms().get(right).ok_or_else(invalid)?;
+    let mut refs = vec![
+        CoreNodeRef::Item(proof.item),
+        CoreNodeRef::Proof(proof_id),
+        CoreNodeRef::ProofNode(proof.root),
+        CoreNodeRef::Formula(proof.proposition),
+    ];
+    refs.sort();
+    if theorem.kind != CoreItemKind::Theorem
+        || theorem.status != CoreItemStatus::Valid
+        || theorem.visibility.as_str() != "public"
+        || theorem.symbol.module() != core.module_id()
+        || !theorem.dependencies.is_empty()
+        || !theorem.diagnostics.is_empty()
+        || proof.status != CoreProofStatus::PendingAutomaticProof
+        || !terminal.diagnostics.is_empty()
+        || seed.owner != proof.item
+        || seed.kind != ObligationSeedKind::TheoremProof
+        || seed.status != ObligationSeedStatus::Active
+        || seed.goal != Some(proof.proposition)
+        || !seed.context.is_empty()
+        || seed.label.is_some()
+        || !seed.diagnostics.is_empty()
+        || seed.core_refs != refs
+        || left == right
+        || left_term.kind != CoreTermKind::Numeral("0".into())
+        || right_term.kind != CoreTermKind::Numeral("0".into())
+        || steps.is_empty()
+        || !steps.bytes().all(|byte| byte.is_ascii_digit())
+    {
+        return Err(invalid());
+    }
+    let key = format!("checker/theorem/{}", theorem.symbol.fqn().as_str());
+    let checker =
+        |suffix: &str| CoreProvenance::new(CoreProvenancePhase::Checker, format!("{key}/{suffix}"));
+    let mut owner_provenance = vec![
+        checker("owner"),
+        CoreProvenance::new(
+            CoreProvenancePhase::Resolver,
+            format!("resolver/theorem/{}", theorem.symbol.fqn().as_str()),
+        ),
+    ];
+    owner_provenance.sort();
+    let mut terminal_provenance = vec![
+        checker("skeleton/terminal"),
+        CoreProvenance::new(
+            CoreProvenancePhase::ProofSkeleton,
+            format!("{key}/skeleton"),
+        ),
+    ];
+    terminal_provenance.sort();
+    if theorem.source.provenance != owner_provenance
+        || proof.source.provenance != [checker("skeleton/proof")]
+        || formula.source.provenance != [checker("equality")]
+        || left_term.source.provenance != [checker("term")]
+        || right_term.source.provenance != [checker("term")]
+        || terminal.source.provenance != terminal_provenance
+        || seed.source != terminal.source
+        || seed.provenance != [checker("skeleton/terminal")]
+        || seed.local_path.as_str() != format!("proof/{}", theorem.symbol.fqn().as_str())
+        || seed.semantic_origin.as_str() != format!("{}.proof", theorem.symbol.fqn().as_str())
+    {
+        return Err(invalid());
+    }
+    let owner_range = range(&theorem.source)?;
+    let goal_range = range(&formula.source)?;
+    let left_range = range(&left_term.source)?;
+    let right_range = range(&right_term.source)?;
+    let request_range = range(&terminal.source)?;
+    if range(&proof.source)? != owner_range
+        || goal_range.start <= owner_range.start
+        || request_range.end >= owner_range.end
+        || goal_range.end >= request_range.start
+        || goal_range.start != left_range.start
+        || goal_range.end != right_range.end
+        || left_range.end >= right_range.start
+        || left_range.end - left_range.start != 1
+        || right_range.end - right_range.start != 1
+    {
+        return Err(invalid());
+    }
+    let mut entries = ObligationHandoffTable::new();
+    let id = entries.insert(ObligationHandoffEntry {
+        seed: seed.clone(),
+        origin: ObligationHandoffOrigin::ExistingCore { seed: *obligation },
+        flow_site: None,
+    });
+    let handoff = ObligationSeedHandoff {
+        entries,
+        source_map: BTreeMap::from([(id, seed.source.clone())]),
+    };
+    let intake = SeedIntakeTable::try_from_handoff(&handoff).map_err(|error| error.to_string())?;
+    let package = core.module_id().package().as_str();
+    let path = core.module_id().path().as_str();
+    let module = VcModuleRef::new(format!(
+        "package={}:{};module={}:{}",
+        package.len(),
+        package,
+        path.len(),
+        path
+    ));
+    let mut candidates = CoreGenerationCandidateSet::try_from_seed_intake(CoreGenerationInput {
+        schema_version: generation_schema,
+        module: &module,
+        intake: &intake,
+        handoff: &handoff,
+        flow_output: None,
+    })
+    .map_err(|error| error.to_string())?;
+    let [candidate] = candidates.candidates.as_mut_slice() else {
+        return Err(invalid());
+    };
+    candidate.proof_hint = Some(ProofHint {
+        citations: Vec::new(),
+        unfold_requests: Vec::new(),
+        premise_restrictions: Vec::new(),
+        solver: None,
+        max_axioms: None,
+        timeout: None,
+        computation: Some(crate::vc_ir::ComputationHint::SymbolicRequest(
+            crate::vc_ir::ProofHintKey::new(format!("by-computation(steps:{steps})")),
+        )),
+        provenance: source_provenance(seed, &terminal.source),
+    });
+    candidate.source.related = vec![
+        theorem.source.clone(),
+        formula.source.clone(),
+        left_term.source.clone(),
+        right_term.source.clone(),
+    ];
+    CoreGenerationCandidateSet::try_normalize(VcNormalizationInput {
+        schema_version: vc_schema,
+        snapshot,
+        source: core.source_id(),
+        candidates: &candidates,
+    })
+    .map_err(|error| error.to_string())
+}
+
 /// Expands an authenticated local existential registration and its independent set gate.
 pub fn generate_source_existential_registration(
     core: &mizar_core::core_ir::CoreIr,

@@ -314,6 +314,7 @@ impl CoreTerm {
 pub enum CoreTermKind {
     Var(CoreVarId),
     Const(SymbolId),
+    Numeral(String),
     Apply {
         functor: SymbolId,
         args: Vec<CoreTermId>,
@@ -586,6 +587,10 @@ pub enum CoreProofNodeKind {
     Branch {
         kind: ProofBranchKind,
         children: Vec<CoreProofNodeId>,
+    },
+    ComputationGoal {
+        obligation: ObligationSeedId,
+        steps: String,
     },
     TerminalGoal {
         obligation: ObligationSeedId,
@@ -1164,6 +1169,12 @@ impl ObligationSeedTable {
 #[derive(Debug, Clone, PartialEq, Eq)]
 #[non_exhaustive]
 pub enum CoreIrError {
+    InvalidNumeral {
+        term: CoreTermId,
+    },
+    InvalidComputationGoal {
+        node: CoreProofNodeId,
+    },
     InvalidReference {
         table: &'static str,
         index: usize,
@@ -1234,6 +1245,14 @@ pub enum CoreIrError {
 impl fmt::Display for CoreIrError {
     fn fmt(&self, formatter: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
+            Self::InvalidNumeral { term } => {
+                write!(formatter, "invalid numeral at term {}", term.index())
+            }
+            Self::InvalidComputationGoal { node } => write!(
+                formatter,
+                "invalid computation goal at proof node {}",
+                node.index()
+            ),
             Self::InvalidReference { table, index, len } => {
                 write!(
                     formatter,
@@ -1448,6 +1467,7 @@ fn normalize_proof_node(kind: &mut CoreProofNodeKind) {
         | CoreProofNodeKind::CurrentGoal { .. }
         | CoreProofNodeKind::Sequence { .. }
         | CoreProofNodeKind::Branch { .. }
+        | CoreProofNodeKind::ComputationGoal { .. }
         | CoreProofNodeKind::TerminalGoal { .. }
         | CoreProofNodeKind::Error(_) => {}
     }
@@ -1742,6 +1762,11 @@ fn validate_definition_owner(
 
 fn validate_term(id: CoreTermId, term: &CoreTerm, parts: &CoreIrParts) -> Result<(), CoreIrError> {
     match &term.kind {
+        CoreTermKind::Numeral(digits) => {
+            if digits.is_empty() || !digits.bytes().all(|byte| byte.is_ascii_digit()) {
+                return Err(CoreIrError::InvalidNumeral { term: id });
+            }
+        }
         CoreTermKind::Var(_) | CoreTermKind::Const(_) => {}
         CoreTermKind::Apply { args, .. }
         | CoreTermKind::Tuple(args)
@@ -1907,6 +1932,19 @@ fn validate_proof_node(
         CoreProofNodeKind::Branch { children, .. } => {
             for child in children {
                 validate_index("proof node", child.index(), parts.proof_nodes.len())?;
+            }
+        }
+        CoreProofNodeKind::ComputationGoal { obligation, steps } => {
+            if steps.is_empty()
+                || !steps.bytes().all(|byte| byte.is_ascii_digit())
+                || parts.obligation_seeds.get(*obligation).is_none_or(|seed| {
+                    seed.kind != ObligationSeedKind::TheoremProof
+                        || seed.status != ObligationSeedStatus::Active
+                        || seed.goal.is_none()
+                        || !seed.core_refs.contains(&CoreNodeRef::ProofNode(id))
+                })
+            {
+                return Err(CoreIrError::InvalidComputationGoal { node: id });
             }
         }
         CoreProofNodeKind::TerminalGoal {
@@ -2564,6 +2602,98 @@ mod tests {
             source_map,
             diagnostics: CoreDiagnosticTable::new(),
         }
+    }
+
+    #[test]
+    fn computation_literals_and_terminals_validate_without_claiming_source_bytes() {
+        let term = CoreTermId::new(0);
+        let node = CoreProofNodeId::new(0);
+        let obligation = ObligationSeedId::new(0);
+        for digits in ["", "-1", "+1", "1a", "１"] {
+            let mut parts = minimal_parts();
+            parts.terms.get_mut(term).unwrap().kind = CoreTermKind::Numeral(digits.into());
+            assert_eq!(
+                CoreIr::try_new(parts),
+                Err(CoreIrError::InvalidNumeral { term })
+            );
+        }
+        for digits in ["0", "0008", "18446744073709551616000000000"] {
+            let mut parts = minimal_parts();
+            parts.terms.get_mut(term).unwrap().kind = CoreTermKind::Numeral(digits.into());
+            let core = CoreIr::try_new(parts).unwrap();
+            assert_eq!(
+                core.terms().get(term).unwrap().kind,
+                CoreTermKind::Numeral(digits.into())
+            );
+            assert!(core.debug_text().contains(digits));
+        }
+        let mut valid = minimal_parts();
+        valid.proof_nodes.get_mut(node).unwrap().kind = CoreProofNodeKind::ComputationGoal {
+            obligation,
+            steps: "8".into(),
+        };
+        valid
+            .obligation_seeds
+            .get_mut(obligation)
+            .unwrap()
+            .core_refs
+            .push(CoreNodeRef::ProofNode(node));
+        assert!(CoreIr::try_new(valid.clone()).is_ok());
+        for mutation in 0..8 {
+            let mut parts = valid.clone();
+            match mutation {
+                0 => {
+                    parts.proof_nodes.get_mut(node).unwrap().kind =
+                        CoreProofNodeKind::ComputationGoal {
+                            obligation,
+                            steps: String::new(),
+                        }
+                }
+                1 => {
+                    parts.proof_nodes.get_mut(node).unwrap().kind =
+                        CoreProofNodeKind::ComputationGoal {
+                            obligation,
+                            steps: "８".into(),
+                        }
+                }
+                2 => {
+                    parts.proof_nodes.get_mut(node).unwrap().kind =
+                        CoreProofNodeKind::ComputationGoal {
+                            obligation: ObligationSeedId::new(99),
+                            steps: "8".into(),
+                        }
+                }
+                3 => {
+                    parts.obligation_seeds.get_mut(obligation).unwrap().status =
+                        ObligationSeedStatus::Deferred
+                }
+                4 => parts.obligation_seeds.get_mut(obligation).unwrap().goal = None,
+                5 => {
+                    parts.obligation_seeds.get_mut(obligation).unwrap().kind =
+                        ObligationSeedKind::AlgorithmContract
+                }
+                6 => parts
+                    .obligation_seeds
+                    .get_mut(obligation)
+                    .unwrap()
+                    .core_refs
+                    .clear(),
+                7 => {
+                    parts.source_map.proof_sources.remove(&node);
+                }
+                _ => unreachable!(),
+            }
+            assert!(CoreIr::try_new(parts).is_err(), "mutation {mutation}");
+        }
+        let mut changed = valid.clone();
+        changed.proof_nodes.get_mut(node).unwrap().kind = CoreProofNodeKind::ComputationGoal {
+            obligation,
+            steps: "9".into(),
+        };
+        assert_ne!(
+            CoreIr::try_new(valid).unwrap().debug_text(),
+            CoreIr::try_new(changed).unwrap().debug_text()
+        );
     }
 
     fn assert_invalid_reference(parts: CoreIrParts, table: &'static str, index: usize) {

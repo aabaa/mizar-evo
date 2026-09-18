@@ -7,7 +7,10 @@ source = "pass_proof_verification_computation_justification_001.miz"
 expected_outcome = "pass"
 expected_phase = "vc_generation"
 diagnostic_codes = []
+tags = ["active_proof_verification"]
+snapshots = "snapshots/vc/pass_proof_verification_computation_justification_001.vc_ir.snap"
 spec_refs = [
   "spec.en.20.algorithms.computation.justification",
+  "spec.en.mizar_vc.vc_ir.computation_request_snapshot",
 ]
-notes = "Audit-1 semantic-bridge inactive oracle seed (September 2026 audit wave): binding expectation for the Step-5 semantic bridge; no active runner tag, earns no current credit. by computation with bounded options justifies a ground equation through the computation checker (spec 20.9; A.20 computation_proof)."
+notes = "Active bounded source computation request: preserves the actual zero equality and explicit steps digits in one Open VC; no computation execution or proof acceptance."

@@ -9,6 +9,10 @@ seal は `Vec<(SourceTheoremOwnerInput, &'static str)>` の共有 slice と type
 visibility は checker が `"public"`/`"private"` に射影し、未対応値は拒否する。SymbolEnv や resolver Visibility は渡さない。
 algorithm seal なしでは既存の最上位 theorem/lemma profile のみを認める。射影の照合は node ID・子辺・anchor・recovery を保持し、既存 receipt が所有する変数参照・実等式だけは意味 kind tag を認め、resolved link があれば neutral node と一致させる。seal がある場合は同一ソース射影・実 target・wrapper・proof を完全に認証し、先行する void algorithm の後続 claim 内にある修飾なし set 等式 theorem 一つを認める。骨格エラーと不正入力を区別し、証明・実行事実の信頼を追加しない。
 
+最上位 theorem profile は実際の `0 = 0 by computation(steps: n)` と明示的な自然数桁列 option 一つも認める。
+`check_theorem_skeletons` は呼出元の不変 `&SurfaceResolvedArena` も借用し、neutral/typed の全対応と resolver 環境を認証して既存形式の seal を返す。二つの数値出現は Known builtin `object` と推論し、option の桁列は metadata のままとする。この限定されたゼロの項だけに receipt 所有の `source.term.numeral` tag を認める。
+数値 `0` だけを認め、他の数値・option、recovery・余分な構文・異なる receipt は拒否し、証明受理を追加しない。
+
 `SourceVariableSemanticsChecker::check_proof_organization` は `check_formula_statements` と同じ入力を取り、
 組込み型、存在例化、ブロック・分岐の目標と実際の引用 ID を検査して `Result<bool, String>` を返す。
 bool は場合分けの網羅性義務を反射等式・相補的条件で満たせたかを示し、未対応義務はエラーになる。

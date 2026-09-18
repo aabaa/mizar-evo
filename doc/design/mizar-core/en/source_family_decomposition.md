@@ -206,7 +206,7 @@ before editing semantic behavior.
 | 46 | `requires`/`ensures`/`assert`, loop invariants/decreasing terms, call target/actual/result-binder and substitution-request metadata, recursive-group membership, declared terminating intent, and termination-measure availability. | Specs 20.4-20.5, 20.7-20.8, and 20.13; Core 34-35 and 42-45; `MT10-CIR-ALG`. | Transport requests and metadata only. Actual call/result substitution generation, application, and validation belong to VC Task-30 descendants. No contract axiom, VC, termination proof, promotion, or recursive encoding is emitted. |
 | 47 | Snapshot and claim shells, snapshot identity, captured algorithm context request, visible runtime/ghost locals, hidden-loop-value references, claim body/order, and missing/unsupported state. | Spec 20.6; Core 37 theorem shells and Core 42-46; `MT10-CIR-ALG`. | Claim links only to already-lowered Core-37 theorem/statement shells. No source-text reconstruction, context fact invention, old-state substitution, claim proof, CFG capture, VC, or acceptance. The [bounded void claim](elaborator.md) retains an earlier empty-interface algorithm dependency and its real theorem/proof sources; captured-state claims remain deferred. |
 
-Chapter 20.9 MVM execution, `by computation`, runtime failures/gas, and 20.10
+The [bounded computation request](elaborator.md) retains a source-owned open goal. Chapter 20.9 MVM execution, computation proof acceptance, runtime failures/gas, and 20.10
 code extraction remain parked downstream work. Chapter 20.13 formulas are VC
 authority; Core 46 records only authenticated metadata needed by later owners.
 

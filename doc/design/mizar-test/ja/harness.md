@@ -5754,3 +5754,8 @@ Rust 統合テストは変更しない C13 ambiguity 全ソースを新鮮な pr
 完全 Core/VC/handoff baseline は親/nonempty 各3件、Open leaf 6件、別々の symbol と連言の両置換を保持する。正例は実 kernel を通し、元の R baseline を維持する。
 各登録・conjunct・引用・置換・親対応を独立に破壊し、foreign/missing evidence と kernel/policy 失敗を検査する。単独属性の証明で連言を activate しない。
 後続の同名関手 root は選択せず候補として認証する。属性付き consumer gate 4件と実 overload ambiguity は別の [checker 境界](../../mizar-checker/ja/type_checker.md#distinct-loci-overload-source-checking) に残す。
+
+## Computation request admission
+
+`pass_proof_verification_computation_justification_001` のみ proof_verification/vc_generation/pass に入り、`algorithms.computation`、空診断 payload、唯一の active tag、元 semantic ref に続く `spec.en.mizar_vc.vc_ir.computation_request_snapshot`、`snapshots/vc/pass_proof_verification_computation_justification_001.vc_ir.snap` を要求する。
+admission と snapshot scope が厳密な ID・path・ref 順序・矛盾 payload 不在を認証し、予約 alias や別 stage を拒否する。source 所有の checker/Core/request generation 成功を要求し、完全な VcSet 再実行/debug baseline で Open equality・computation hint・accounting を保持する。

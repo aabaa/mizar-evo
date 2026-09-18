@@ -7110,6 +7110,19 @@ tests = [
 
 
 [[requirement]]
+id = "spec.en.mizar_vc.vc_ir.computation_request_snapshot"
+source = "doc/design/mizar-vc/en/source_vc_decomposition.md"
+section = "VC Task 32; bounded source computation request VcIr snapshot"
+stage = "proof_verification"
+status = "covered"
+required = true
+coverage = "snapshot"
+notes = "Only the actual source zero equality and symbolic steps request in one Open VC are covered; computation execution and proof acceptance remain deferred."
+tests = [
+  "tests/miz/pass/algorithms/pass_proof_verification_computation_justification_001.expect.toml",
+]
+
+[[requirement]]
 id = "spec.en.mizar_vc.vc_ir.reduce_false_reducibility_snapshot"
 source = "doc/design/mizar-vc/en/source_vc_decomposition.md"
 section = "VC Task 39; bounded identity-singleton reduction VcIr snapshot"

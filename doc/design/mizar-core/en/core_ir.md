@@ -150,6 +150,7 @@ struct CoreTermNode {
 enum CoreTermKind {
     Var(CoreVarId),
     Const(SymbolId),
+    Numeral(String),
     Apply { functor: SymbolId, args: Vec<CoreTermId> },
     Select { selector: SymbolId, base: CoreTermId },
     Tuple(Vec<CoreTermId>),
@@ -162,6 +163,8 @@ enum CoreTermKind {
 Rules:
 
 - `Var` uses canonical core variable ids, not display names.
+- `Numeral` preserves a nonempty ASCII digit spelling and its occurrence source, without fixed-width conversion or numeric canonicalization. Raw validation rejects invalid spelling with `CoreIrError::InvalidNumeral`; closed-leaf traversals add no variable uses.
+- Numeral arithmetic, normalized binder representation and proof evidence remain unsupported; the bounded source producer admits only `0`.
 - `Apply` functors and `Const` symbols are canonical `SymbolId`s.
 - Stable choice terms such as `the T` are represented as ordinary `Apply`
   nodes whose functor is the generated `choice_T` symbol and whose arguments
@@ -333,6 +336,7 @@ enum CoreProofNodeKind {
     Sequence { children: Vec<CoreProofNodeId> },
     Branch { kind: ProofBranchKind, children: Vec<CoreProofNodeId> },
     TerminalGoal { obligation: ObligationSeedId, citations: Vec<CoreCitation> },
+    ComputationGoal { obligation: ObligationSeedId, steps: String },
     Error(CoreDiagnosticId),
 }
 ```
@@ -352,12 +356,13 @@ Rules:
   in the item table; external dependency-symbol citation kinds are guaranteed
   by elaborator/context validation before Core IR construction and remain
   symbolic in this table set.
+- `ComputationGoal` is a terminal request, not an established step: its source anchors the actual computation justification, and `steps` preserves the explicit natural-digit spelling. Raw validation rejects malformed steps or an absent/inactive/non-TheoremProof/goal-less seed or missing node backref with `CoreIrError::InvalidComputationGoal`; source authenticity is established by the checker/elaborator, not by ranges alone.
 - Terminal goals store their durable citation list on the terminal proof node
   as well as referencing the generated theorem-proof obligation seed.
 - `open`, `assumed`, and `conditional` statuses are preserved as policy input.
   Core does not accept or reject the proof.
 - `pending-automatic-proof` is a processing state for an ordinary, unmodified
-  theorem whose omitted justification has not yet been attempted. It is not
+  theorem whose automatic proof has not yet been attempted, including an explicit computation request. It is not
   the source-policy state `open` and does not make the theorem accepted.
 - `error` is a recovery status only; it records malformed proof skeleton input
   without accepting or rejecting the proof.

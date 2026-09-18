@@ -578,3 +578,10 @@ capture-safe 束縛置換に従い、証人型と属性本体の二つの open l
 独立に再照合する active nonempty seed 3件と各自の BuiltinSetInhabitation accounting を保持し、汎用 intake は変えない。同じ型名や別の親の証明で gate を満たさない。
 連言 leaf は両証人属性の既存 generated And と実際の両ガード付き定義前提を使う。canonical label だけを前提にせず、一方の conjunct や theorem の真偽で目標を置換しない。
 各 VC を実 parent・proof・origin・型付き参照から対応付け、証拠の不足・余剰・親の混同を拒否する。元の単一登録出力と [handoff](./kernel_evidence_handoff.md#three-registration-source-proof-extension) 再照合を維持する。
+
+## Bounded computation request generation
+
+`generate_source_computation_request(&CoreIr, BuildSnapshotId, &GenerationSchemaVersion, &VcSchemaVersion) -> Result<VcSet, String>` は唯一の source 付き theorem、別々の zero 出現二つ、等式、終端 computation 要求、active theorem-proof seed/backref を検証する。
+既存 intake/candidate/normalization で実 Core goal と厳密な seed accounting を保ち、正規化前に実要求由来の `ComputationHint::SymbolicRequest(ProofHintKey("by-computation(steps:<digits>)"))` を付ける。
+steps 表記と source provenance を保持し、`0` は実行主張なしの無制限要求のままとする。VC は前提・discharge・policy 置換・反射等式受理なしで Open に留める。
+Core goal hash は保守的なままで、dependency slicing は opaque computation dependency を残し、discharge/reuse evidence にはしない。source 経路は検証済み Core seed から active handoff を直接構築し、汎用 Core-aware handoff は要求を捨てず computation 終端を明示的に deferred にする。

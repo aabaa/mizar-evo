@@ -12,6 +12,10 @@ visibility is checker-projected `"public"`/`"private"`; unsupported visibility f
 Read-only typed/scope/label receipts accompany it, never SymbolEnv or resolver Visibility.
 With no algorithm seal, only the existing top-level theorem/lemma profile is admitted. Projection matching preserves node identity, children, anchors and recovery; only receipt-owned variable-reference and actual equality nodes may use their existing semantic kind tags, and an optional resolved link must match the neutral node. The optional seal admits one unmodified set-equality theorem inside the matching later void-algorithm claim, after complete source-projection, target, wrapper and proof authentication; it adds no trusted proof or execution fact.
 
+The top-level theorem profile also admits the actual `0 = 0 by computation(steps: n)` shape, with one explicit natural-digit option.
+`check_theorem_skeletons` additionally borrows the caller’s immutable `&SurfaceResolvedArena` to authenticate full neutral/typed correspondence and the resolver environment before issuing its unchanged seal; both numeral occurrences infer Known builtin `object`, and option digits remain metadata; receipt-owned `source.term.numeral` tags are allowed only for these bounded zero operands.
+Only this bounded producer admits numeral `0`; other numerals/options, recovered or extra syntax and foreign receipts fail closed, without proof acceptance.
+
 `SourceVariableSemanticsChecker::check_proof_organization` takes the same inputs as
 `check_formula_statements` and returns `Result<bool, String>` after bounded builtin typing,
 existential instantiation, block/branch goal checks and source-identity-based citations.

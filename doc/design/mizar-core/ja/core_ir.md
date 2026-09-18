@@ -140,6 +140,7 @@ struct CoreTermNode {
 enum CoreTermKind {
     Var(CoreVarId),
     Const(SymbolId),
+    Numeral(String),
     Apply { functor: SymbolId, args: Vec<CoreTermId> },
     Select { selector: SymbolId, base: CoreTermId },
     Tuple(Vec<CoreTermId>),
@@ -152,6 +153,8 @@ enum CoreTermKind {
 規則:
 
 - `Var` は display name ではなく canonical core variable id を使う。
+- `Numeral` は空でない ASCII 桁列と出現 source を固定幅変換・数値正規化なしで保持する。不正表記は `CoreIrError::InvalidNumeral` で拒否し、閉じた葉として変数 use を追加しない。
+- 数値演算・binder 正規化表現・証明 evidence は未対応で、限定 source producer は `0` のみを認める。
 - `Apply` の functor と `Const` の symbol は canonical `SymbolId`。
 - `the T` のような stable choice term は、functor が generated `choice_T` symbol、
   argument が captured free parameter である通常の `Apply` node として表現する。
@@ -315,6 +318,7 @@ enum CoreProofNodeKind {
     Sequence { children: Vec<CoreProofNodeId> },
     Branch { kind: ProofBranchKind, children: Vec<CoreProofNodeId> },
     TerminalGoal { obligation: ObligationSeedId, citations: Vec<CoreCitation> },
+    ComputationGoal { obligation: ObligationSeedId, steps: String },
     Error(CoreDiagnosticId),
 }
 ```
@@ -331,11 +335,12 @@ enum CoreProofNodeKind {
   proof citation として valid ではない。raw `CoreIr` validation は item table に存在する local symbol の
   kind を検証する。external dependency-symbol citation の kind は Core IR 構築前の elaborator/context
   validation が保証し、この table set では symbolic なまま保持する。
+- `ComputationGoal` は確立済み step ではなく終端要求であり、source は実 computation justification、`steps` は明示的な自然数桁列表記を保持する。不正 steps、存在しない・inactive・非 TheoremProof・goal なしの seed、node backref 欠落は `CoreIrError::InvalidComputationGoal` で拒否する。source の真正性は range 単独ではなく checker/elaborator が保証する。
 - terminal goal は生成された theorem-proof obligation seed を参照し、durable な citation list を
   terminal proof node にも保存する。
 - `open`、`assumed`、`conditional` status は policy input として保持する。core は proof
   を accept/reject しない。
-- `pending-automatic-proof` は justification が省略された ordinary unmodified
+- `pending-automatic-proof` は明示的な computation 要求も含む ordinary unmodified
   theorem の automatic proof が未実行である processing state である。source
   policy の `open` ではなく、theorem を accepted にしない。
 - `error` は recovery status に限る。malformed proof skeleton input を記録するが、

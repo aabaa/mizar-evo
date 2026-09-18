@@ -651,3 +651,10 @@ The implemented aggregate profile authenticates the whole Core graph and maps ea
 Retain three independently replayed active nonempty seeds and their own BuiltinSetInhabitation accounting; generic intake keeps its existing behavior. Shared type spelling or another parent's proof cannot satisfy a gate.
 The conjunctive leaf uses an existing generated And over both witness attributes and both real guarded definition premises. Canonical labels alone supply no premise; no selected conjunct or theorem truth replaces the goal.
 Resolve each VC through its actual parent, proof, origin and typed references; reject omitted/extra/cross-parent evidence. Preserve all original single-registration outputs and [handoff](./kernel_evidence_handoff.md#three-registration-source-proof-extension) replay.
+
+## Bounded computation request generation
+
+`generate_source_computation_request(&CoreIr, BuildSnapshotId, &GenerationSchemaVersion, &VcSchemaVersion) -> Result<VcSet, String>` validates the sole source-linked theorem, two separate zero occurrences, equality, terminal computation request and active theorem-proof seed/backrefs.
+It retains the real Core goal and exact seed accounting through existing intake/candidates/normalization, attaching `ComputationHint::SymbolicRequest(ProofHintKey("by-computation(steps:<digits>)"))` from the actual request before normalization.
+Steps spelling and source provenance are preserved; `0` remains an unlimited request, with no execution claim. The VC stays Open, without premises, discharge, policy substitution or reflexivity acceptance.
+Core goal hashes stay conservative, dependency slicing retains an opaque computation dependency, and the request is ineligible as discharge/reuse evidence. The source route builds its active handoff directly from the validated Core seed; the generic Core-aware handoff explicitly defers computation terminals instead of dropping their request.

@@ -11585,6 +11585,7 @@ pub struct SourceVariableSemanticsChecker;
 impl SourceVariableSemanticsChecker {
     /// Checks the bounded theorem/lemma skeletons without accepting proofs.
     pub fn check_theorem_skeletons<'a>(
+        source: &SurfaceResolvedArena,
         typed: &'a crate::typed_ast::TypedAst,
         scope: &'a ResolvedVariableScope,
         symbols: &SymbolEnv,
@@ -11598,7 +11599,173 @@ impl SourceVariableSemanticsChecker {
         };
         use mizar_resolve::resolved_ast::LabelResolution;
         let invalid = || "theorems.source.invalid".to_owned();
-        Self::check_formula_statements_mode(typed, scope, symbols, labels, resolved, true)?;
+        mizar_resolve::symbols::validate_source_symbol_env(source, symbols)?;
+        let computation = source
+            .arena()
+            .iter()
+            .any(|(_, node)| matches!(node.kind(), K::ComputationJustification));
+        let primary = typed.source_term().ok_or_else(invalid)?;
+        let atomic = typed.source_atomic_formula().ok_or_else(invalid)?;
+        if source.source_id() != typed.source_id()
+            || source.module() != typed.module_id()
+            || source.arena().len() != typed.nodes().len()
+            || typed.nodes().root() != Some(TypedNodeId::new(source.arena().root().index()))
+        {
+            return Err(invalid());
+        }
+        let mut parents = BTreeMap::new();
+        for (id, neutral) in source.arena().iter() {
+            let node_id = TypedNodeId::new(id.index());
+            let node = typed.nodes().node(node_id).ok_or_else(invalid)?;
+            let SourceAnchor::Range(span) = neutral.origin().anchor() else {
+                return Err(invalid());
+            };
+            let owned_kind = match (neutral.kind(), node.kind.as_str()) {
+                (K::TermReference, "source.term.variable-reference") => primary.terms().iter().any(|(_, term)| term.site().node() == node_id),
+                (K::NumeralTerm, "source.term.numeral") if computation => primary.terms().iter().any(|(_, term)| term.site().node() == node_id && term.spelling() == "0"),
+                (K::BuiltinPredicateApplication, "source.formula.atomic.equality") => atomic.formulas().iter().any(|(_, atom)| atom.site().node() == node_id)
+                    && neutral.children().get(1).and_then(|id| source.arena().node(*id)).is_some_and(|node| matches!(node.kind(), K::Token(token) if token.text.as_ref() == "=" && token.kind == SurfaceTokenKind::ReservedSymbol)),
+                _ => node.kind.as_str() == format!("{:?}", neutral.kind()),
+            };
+            if !owned_kind
+                || node.anchor != *neutral.origin().anchor()
+                || node.resolved_node.is_some_and(|resolved| resolved != id)
+                || node.children
+                    != neutral
+                        .children()
+                        .iter()
+                        .map(|id| TypedNodeId::new(id.index()))
+                        .collect::<Vec<_>>()
+                || node.recovery != NodeRecoveryState::Normal
+                || neutral.origin().is_recovered()
+                || neutral.origin().source_id() != typed.source_id()
+                || neutral.origin().module_id() != typed.module_id()
+                || span.source_id != typed.source_id()
+                || span.start > span.end
+                || matches!(neutral.kind(), K::ErrorRecovery(_))
+            {
+                return Err(invalid());
+            }
+            let mut end = span.start;
+            for child in neutral.children() {
+                let child_node = source.arena().node(*child).ok_or_else(invalid)?;
+                let SourceAnchor::Range(child_span) = child_node.origin().anchor() else {
+                    return Err(invalid());
+                };
+                if child_span.start < span.start
+                    || child_span.end > span.end
+                    || (id != source.arena().root() && child_span.start < end)
+                    || (!(id == source.arena().root() && matches!(child_node.kind(), K::Token(_)))
+                        && parents.insert(*child, id).is_some())
+                {
+                    return Err(invalid());
+                }
+                end = child_span.end;
+            }
+        }
+        if source
+            .arena()
+            .iter()
+            .any(|(id, _)| id != source.arena().root() && !parents.contains_key(&id))
+        {
+            return Err(invalid());
+        }
+        if computation {
+            if algorithm.is_some()
+                || !scope.bindings().is_empty()
+                || !scope.references().is_empty()
+                || primary.terms().len() != 2
+                || !primary.references().is_empty()
+                || primary.numeric_type_requests().len() != 2
+                || atomic.formulas().len() != 1
+                || primary.source_id() != typed.source_id()
+                || primary.module_id() != typed.module_id()
+                || atomic.source_id() != typed.source_id()
+                || atomic.module_id() != typed.module_id()
+                || scope.source_id() != typed.source_id()
+                || scope.module_id() != typed.module_id()
+                || !typed.diagnostics().is_empty()
+                || !labels.references().is_empty()
+            {
+                return Err(invalid());
+            }
+            let mut terms = Vec::new();
+            for (_, term) in primary.terms().iter() {
+                let node = typed.nodes().node(term.site().node()).ok_or_else(invalid)?;
+                if term.kind() != crate::source_term::SourcePrimaryTermKind::Numeral
+                    || term.spelling() != "0"
+                    || term.recovery() != crate::source_term::SourcePrimaryTermRecovery::Normal
+                    || node.children.len() != 1
+                    || step5c8_range(typed, term.site().node()) != Some(term.source_range())
+                    || !step5c10_token(typed, node.children.first().copied(), "Numeral", "0")
+                {
+                    return Err(invalid());
+                }
+                terms.push(
+                    TermInput::new(
+                        term.site().clone(),
+                        term.context(),
+                        term.source_range(),
+                        TermKind::Numeral,
+                    )
+                    .with_result_type(TypeExpressionInput::new(
+                        term.site().clone(),
+                        term.source_range(),
+                        "object",
+                        TypeHeadInput::BuiltinObject,
+                    )),
+                );
+            }
+            let (id, atom) = atomic.formulas().iter().next().ok_or_else(invalid)?;
+            let operands = atomic
+                .edges()
+                .iter()
+                .filter(|(_, edge)| edge.formula() == id)
+                .map(|(_, edge)| {
+                    let crate::source_atomic_formula::SourceAtomicTermTarget::Primary(term) =
+                        edge.target()
+                    else {
+                        return Err(invalid());
+                    };
+                    Ok(primary
+                        .terms()
+                        .get(term)
+                        .ok_or_else(invalid)?
+                        .site()
+                        .clone())
+                })
+                .collect::<Result<Vec<_>, String>>()?;
+            if operands.len() != 2 || operands[0] == operands[1] {
+                return Err(invalid());
+            }
+            let formula = FormulaInput::new(
+                atom.site().clone(),
+                atom.context(),
+                atom.source_range(),
+                FormulaKind::Equality,
+            )
+            .with_terms(operands);
+            let inference = TermFormulaChecker::default().infer(
+                symbols,
+                &Self::occurrence_binding_env(scope),
+                terms,
+                vec![formula],
+            );
+            if !inference.diagnostics.is_empty()
+                || inference
+                    .terms
+                    .iter()
+                    .any(|(_, term)| term.status != TermStatus::Inferred)
+                || inference
+                    .formulas
+                    .iter()
+                    .any(|(_, formula)| formula.status != FormulaStatus::Checked)
+            {
+                return Err(invalid());
+            }
+        } else {
+            Self::check_formula_statements_mode(typed, scope, symbols, labels, resolved, true)?;
+        }
         let primary = typed.source_term().ok_or_else(invalid)?;
         let atomic = typed.source_atomic_formula().ok_or_else(invalid)?;
         if typed.source_set_term().is_some()
@@ -11728,6 +11895,9 @@ impl SourceVariableSemanticsChecker {
         {
             return Err(invalid());
         }
+        if computation && items.len() != 1 {
+            return Err(invalid());
+        }
         let mut owners = Vec::new();
         let mut facts = BTreeMap::new();
         for item in items {
@@ -11826,6 +11996,67 @@ impl SourceVariableSemanticsChecker {
                 return Err(invalid());
             };
             let formula = step5c8_unwrap(typed, written).ok_or_else(invalid)?;
+            let visibility = match entry.visibility() {
+                Visibility::Public => "public",
+                Visibility::Private => "private",
+                _ => return Err("theorems.source.invalid_visibility".to_owned()),
+            };
+            owners.push((
+                SourceTheoremOwnerInput {
+                    symbol: entry.symbol().clone(),
+                    contribution: entry.contribution(),
+                    site: TypedSiteRef::Node(item),
+                    source_range: range,
+                    spelling: entry.primary_spelling().to_owned(),
+                    role,
+                    status,
+                    recovery: SourceStatementRecovery::Normal,
+                },
+                visibility,
+            ));
+            if computation {
+                if status != SourceTheoremStatus::Unmodified
+                    || role != SourceTheoremRole::Theorem
+                    || step5c8_kind(typed, formula) != Some("source.formula.atomic.equality")
+                {
+                    return Err(invalid());
+                }
+                let [_, justification] = children.as_slice() else {
+                    return Err(invalid());
+                };
+                let clause = typed.nodes().node(*justification).ok_or_else(invalid)?;
+                let [by, request] = clause.children.as_slice() else {
+                    return Err(invalid());
+                };
+                let request_node = typed.nodes().node(*request).ok_or_else(invalid)?;
+                let [keyword, open, option, close] = request_node.children.as_slice() else {
+                    return Err(invalid());
+                };
+                let option_node = typed.nodes().node(*option).ok_or_else(invalid)?;
+                let [steps, colon, digits] = option_node.children.as_slice() else {
+                    return Err(invalid());
+                };
+                let digit_node = source
+                    .arena()
+                    .iter()
+                    .find_map(|(id, node)| (id.index() == digits.index()).then_some(node))
+                    .ok_or_else(invalid)?;
+                if step5c8_kind(typed, *justification) != Some("JustificationClause")
+                    || step5c8_kind(typed, *request) != Some("ComputationJustification")
+                    || step5c8_kind(typed, *option) != Some("ComputationOption")
+                    || !step5c10_token(typed, Some(*by), "ReservedWord", "by")
+                    || !step5c10_token(typed, Some(*keyword), "ReservedWord", "computation")
+                    || !step5c10_token(typed, Some(*open), "ReservedSymbol", "(")
+                    || !step5c10_token(typed, Some(*close), "ReservedSymbol", ")")
+                    || !(step5c10_token(typed, Some(*steps), "ReservedWord", "steps")
+                        || step5c10_token(typed, Some(*steps), "Identifier", "steps"))
+                    || !step5c10_token(typed, Some(*colon), "ReservedSymbol", ":")
+                    || !matches!(digit_node.kind(), K::Token(token) if token.kind == SurfaceTokenKind::Numeral && !token.text.is_empty() && token.text.bytes().all(|byte| byte.is_ascii_digit()))
+                {
+                    return Err(invalid());
+                }
+                continue;
+            }
             if step5c8_kind(typed, formula) != Some("QuantifiedFormula(Universal)") {
                 return Err(invalid());
             }
@@ -11980,24 +12211,6 @@ impl SourceVariableSemanticsChecker {
                 }
                 facts.insert(item, formula);
             }
-            let visibility = match entry.visibility() {
-                Visibility::Public => "public",
-                Visibility::Private => "private",
-                _ => return Err("theorems.source.invalid_visibility".to_owned()),
-            };
-            owners.push((
-                SourceTheoremOwnerInput {
-                    symbol: entry.symbol().clone(),
-                    contribution: entry.contribution(),
-                    site: TypedSiteRef::Node(item),
-                    source_range: range,
-                    spelling: entry.primary_spelling().to_owned(),
-                    role,
-                    status,
-                    recovery: SourceStatementRecovery::Normal,
-                },
-                visibility,
-            ));
         }
         Ok(SourceTheoremCheck {
             typed,

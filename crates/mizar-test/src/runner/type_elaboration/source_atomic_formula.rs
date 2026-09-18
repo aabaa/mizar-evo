@@ -1094,7 +1094,75 @@ pub(in crate::runner) fn step5c8_formula_typed_ast(
     proof_organization: bool,
 ) -> Result<TypedAst, String> {
     let mut source_arena = membership_typed_arena(ast)?;
-    let primary = membership_primary_terms(ast, module, scope, binding_env, &source_arena)?;
+    let primary = if proof_organization
+        && ast
+            .node_views()
+            .any(|view| matches!(view.kind(), SurfaceNodeKind::ComputationJustification))
+    {
+        let mut terms = Vec::new();
+        let mut nodes = source_arena
+            .iter()
+            .map(|(_, node)| node.clone())
+            .collect::<Vec<_>>();
+        for atom in ast
+            .node_views()
+            .filter(|view| matches!(view.kind(), SurfaceNodeKind::BuiltinPredicateApplication))
+        {
+            for operand in structural_child_ids(ast, ast.node(atom.id()).ok_or("missing equality")?)
+            {
+                let wrapper = ast.node(operand).ok_or("missing operand")?;
+                let children = structural_child_ids(ast, wrapper);
+                let [id] = children.as_slice() else {
+                    return Err("unsupported computation operand".into());
+                };
+                let node = ast.node(*id).ok_or("missing numeral")?;
+                if !matches!(node.kind, SurfaceNodeKind::NumeralTerm) {
+                    return Err("unsupported computation term".into());
+                }
+                nodes[id.index()].kind = "source.term.numeral".into();
+                terms.push(SourcePrimaryTermInput {
+                    site: surface_site(*id),
+                    source_range: node.range,
+                    source_ordinal: terms.len(),
+                    context: BindingContextId::new(0),
+                    recovery: SourcePrimaryTermRecovery::Normal,
+                    spelling: surface_text(ast, node),
+                    kind: SourcePrimaryTermKind::Numeral,
+                    role: SourcePrimaryTermRole::Value,
+                    parent: None,
+                });
+            }
+        }
+        source_arena =
+            TypedArena::try_new(source_arena.root(), nodes).map_err(|error| error.to_string())?;
+        let numeric_type_requests = terms
+            .iter()
+            .enumerate()
+            .map(
+                |(index, term)| mizar_checker::source_term::SourceNumericTypeRequestInput {
+                    term: SourcePrimaryTermId::new(index),
+                    owner: term.site.clone(),
+                    source_range: term.source_range,
+                    spelling: term.spelling.clone(),
+                    request_ordinal: index,
+                },
+            )
+            .collect();
+        SourcePrimaryTermProducer::build(
+            SourcePrimaryTermHandoffInput {
+                source_id: ast.source_id,
+                module_id: module.clone(),
+                terms,
+                references: Vec::new(),
+                numeric_type_requests,
+            },
+            binding_env,
+            &source_arena,
+        )
+        .map_err(|error| error.to_string())?
+    } else {
+        membership_primary_terms(ast, module, scope, binding_env, &source_arena)?
+    };
     let mut sets = None;
     if proof_organization {
         let roots = ast
@@ -1369,7 +1437,9 @@ fn step5c8_primary_operand(
         .node(*child)
         .ok_or_else(|| "formula operand disappeared".to_owned())?;
     match node.kind {
-        SurfaceNodeKind::TermReference => primary_target(primary, node.range),
+        SurfaceNodeKind::TermReference | SurfaceNodeKind::NumeralTerm => {
+            primary_target(primary, node.range)
+        }
         _ => Err("formula atom requires an authenticated variable operand".to_owned()),
     }
 }

@@ -899,6 +899,7 @@ impl<'a> RawNormalizationState<'a> {
         let kind = term.kind.clone();
         match kind {
             CoreTermKind::Var(var) => Ok(NormalizedTerm::var(self.normalize_var(var))),
+            CoreTermKind::Numeral(_) => Err(self.malformed("unsupported-core-numeral")),
             CoreTermKind::Const(symbol) => {
                 Ok(NormalizedTerm::new(NormalizedTermKind::Const(symbol)))
             }
@@ -1329,7 +1330,7 @@ fn core_term_mentions_vars(
         .ok_or_else(|| state.malformed("missing-core-term"))?;
     match &term.kind {
         CoreTermKind::Var(var) => Ok(vars.contains(var)),
-        CoreTermKind::Const(_) | CoreTermKind::Error(_) => Ok(false),
+        CoreTermKind::Numeral(_) | CoreTermKind::Const(_) | CoreTermKind::Error(_) => Ok(false),
         CoreTermKind::Apply { args, .. }
         | CoreTermKind::Tuple(args)
         | CoreTermKind::SetEnum(args) => core_terms_mention_vars(core, args, vars, state),

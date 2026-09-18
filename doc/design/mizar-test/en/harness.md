@@ -6320,3 +6320,8 @@ Rust integration tests run the unchanged whole C13 ambiguity source through the 
 Full Core/VC/handoff baselines retain all three parents/nonempty rows, six Open leaves, distinct symbols and both conjunction substitutions; every positive path uses real kernel checking and preserves the original R baselines.
 Controls independently corrupt each registration, conjunct, citation, substitution and parent association, including foreign/missing evidence and failed kernel/policy checks; no singleton proof may activate the conjunction.
 Later same-spelling functor roots remain authenticated candidates without selection. Four attributed consumer gates and actual overload ambiguity remain a separate [checker boundary](../../mizar-checker/en/type_checker.md#distinct-loci-overload-source-checking).
+
+## Computation request admission
+
+Only `pass_proof_verification_computation_justification_001` enters proof_verification/vc_generation/pass with unchanged `algorithms.computation`, empty diagnostic payloads, sole active tag, its original semantic ref followed by `spec.en.mizar_vc.vc_ir.computation_request_snapshot`, and `snapshots/vc/pass_proof_verification_computation_justification_001.vc_ir.snap`.
+Admission and snapshot scope authenticate exact IDs, paths, ordered refs and absent contradictory payloads; reserved aliases and other stages fail closed. Source-owned checker/Core/request generation must succeed, and complete rerun VcSets/debug baselines retain the Open equality, computation hint and accounting.

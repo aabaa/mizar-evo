@@ -10,6 +10,10 @@ binder 対応、引用先、証明義務 provenance を保持する。修飾な�
 open/assumed の登録は checker/policy に留める。resolver 環境/Visibility を受け取らず、
 Task-31 例外や汎用 checked-proof installation は拡張しない。 seal の照合は checker 所有の変数・等式 kind 対応と任意 resolved link の規約を保ち、node ID・子辺・anchor・recovery は完全一致させる。両 seal が一致する場合は厳密な void algorithm と claim theorem を一つの Core context で lower し、theorem item dependency と seed CoreNodeRef に実 algorithm を残す。義務 source は claim wrapper、theorem/proof 行は各 source と全称命題を保持する。seal なしでは claim wrapper を認めず、空実行 tuple や target を創作しない。
 
+限定 computation theorem では `CoreTermSeedKind::Numeral(String)` が認証済み source zero の各出現を別々の `CoreTermKind::Numeral` に lower し、不正な桁列 seed は `TermAndFormulaLoweringError::InvalidNumeral` で拒否する。
+既存 terminal lowering が実等式の義務と backref を作り、Core 検証前に node を認証済み steps 表記と computation justification source を持つ `ComputationGoal` にする。
+theorem は `PendingAutomaticProof` のままで、途中の証明事実・引用・新しい proof seed 形状・raw source 解析は追加しない。
+
 `normalize_source_membership_proof` は検査済みの借用 source transaction だけを受け取り、proof-local 束縛を対応させる。
 列挙集合への所属、または引用された直接上界からの恒等 mapper への所属を簡約し、generic IR・空の VC receipt・kernel evidence は作らない。
 

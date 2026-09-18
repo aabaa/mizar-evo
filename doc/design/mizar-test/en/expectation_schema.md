@@ -237,7 +237,7 @@ Fields:
 |---|---:|---|
 | `expected_phase` | yes | Latest phase the harness must execute for this test. |
 | `diagnostic_codes` | yes | Expected diagnostics. Empty means no diagnostics. |
-| `snapshots` | no | Transitional parse-only `SurfaceAst` baseline path, the one exact Core Task-31 `CoreIr` baseline, the one exact VC Task-31 VcIr baseline, or the [bounded algorithm return/state baselines](harness.md#algorithm-return-contract-admission) or [void-claim baseline](harness.md#void-claim-admission), when applicable. |
+| `snapshots` | no | Transitional parse-only `SurfaceAst` baseline path, the one exact Core Task-31 `CoreIr` baseline, the one exact VC Task-31 VcIr baseline, or the [bounded algorithm return/state baselines](harness.md#algorithm-return-contract-admission) or [void-claim baseline](harness.md#void-claim-admission) or [computation request baseline](harness.md#computation-request-admission), when applicable. |
 
 The harness fails a pass test if an error diagnostic is emitted unless that
 diagnostic is explicitly allowed by the expectation.

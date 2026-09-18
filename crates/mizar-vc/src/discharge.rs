@@ -1649,6 +1649,16 @@ impl DischargeRule {
 #[cfg(test)]
 mod tests {
     use super::*;
+    #[test]
+    fn symbolic_computation_request_is_not_execution_evidence() {
+        assert!(!supported_computation_hint(
+            &crate::vc_ir::ComputationHint::SymbolicRequest(crate::vc_ir::ProofHintKey::new(
+                "by-computation(steps:8)"
+            )),
+            &PolicyKey::new("active")
+        ));
+    }
+
     use crate::vc_ir::{
         AnchorCompleteness, AnchorIngredient, AnchorLabel, AnchorLabelRole, AnchorOwner,
         AnchorUnavailableReason, CanonicalSortKey, ComputationHint, DefinitionUnfoldRequest,

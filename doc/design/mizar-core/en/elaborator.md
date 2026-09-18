@@ -11,6 +11,10 @@ provenance are preserved. This lowering admits only unmodified proof-bearing
 owners; open/assumed registration stays in checker/policy. This seam admits no resolver
 environment/Visibility and does not extend the Task-31 exception or generic checked-proof installation. Seal matching preserves the checker-owned variable/equality kind mapping and optional resolved-link convention, with exact node identity, children, anchors and recovery. With matching seals it lowers the exact void algorithm and claim theorem in one Core context: theorem item dependencies and seed CoreNodeRefs retain the actual algorithm, the obligation source anchors the claim wrapper, and theorem/proof rows retain their own sources and quantified proposition. No seal admits no claim wrapper; no empty execution tuple or target is invented.
 
+For the bounded computation theorem, `CoreTermSeedKind::Numeral(String)` lowers each authenticated source zero to a separate `CoreTermKind::Numeral`; malformed digit seeds yield `TermAndFormulaLoweringError::InvalidNumeral`.
+The existing terminal lowering creates the real equality obligation and backrefs; before Core validation, its node becomes `ComputationGoal` with the authenticated steps spelling and computation-justification source.
+The theorem remains `PendingAutomaticProof`; there is no intermediate proof fact, citation, new proof-seed shape or raw-source parsing.
+
 `normalize_source_membership_proof` consumes only the checked borrowed source transaction.
 It reconciles proof-local bindings and discharges enumeration membership or identity-mapper
 membership from the cited direct bound; it creates no generic IR, empty VC receipt, or kernel evidence.

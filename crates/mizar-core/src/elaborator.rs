@@ -10248,6 +10248,7 @@ pub enum TemplateSethoodRecordErrorKind {
 #[derive(Debug, Clone, PartialEq, Eq)]
 #[non_exhaustive]
 pub enum TermAndFormulaLoweringError {
+    InvalidNumeral,
     MissingOwnerItem {
         owner: CoreItemId,
     },
@@ -10311,6 +10312,7 @@ pub enum TermAndFormulaLoweringError {
 impl fmt::Display for TermAndFormulaLoweringError {
     fn fmt(&self, formatter: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
+            Self::InvalidNumeral => formatter.write_str("invalid numeral spelling"),
             Self::MissingOwnerItem { owner } => {
                 write!(formatter, "missing core item owner {}", owner.index())
             }
@@ -10504,6 +10506,7 @@ pub struct TemplateFraenkelSethoodEvidenceSeed {
 pub enum CoreTermSeedKind {
     Var(CoreVarId),
     Const(SymbolId),
+    Numeral(String),
     Apply {
         functor: SymbolId,
         args: Vec<CoreTermSeedId>,
@@ -11108,6 +11111,9 @@ impl TermAndFormulaLoweringState {
 
         match seed.kind {
             CoreTermSeedKind::Var(var) => self.insert_declared_var_term(var, source),
+            CoreTermSeedKind::Numeral(digits) => {
+                Ok(self.insert_term(CoreTermKind::Numeral(digits), source))
+            }
             CoreTermSeedKind::Const(symbol) => {
                 Ok(self.insert_term(CoreTermKind::Const(symbol), source))
             }
@@ -11632,6 +11638,13 @@ fn validate_term_seed_kind(
 ) -> TermAndFormulaResult<()> {
     match kind {
         CoreTermSeedKind::Var(var) => ensure_declared_term_variable(context, *var),
+        CoreTermSeedKind::Numeral(digits) => {
+            if digits.is_empty() || !digits.bytes().all(|byte| byte.is_ascii_digit()) {
+                Err(TermAndFormulaLoweringError::InvalidNumeral)
+            } else {
+                Ok(())
+            }
+        }
         CoreTermSeedKind::StableChoice {
             params, evidence, ..
         } => {
@@ -11814,7 +11827,7 @@ fn seed_term_free_variables_inner(
         CoreTermSeedKind::Var(var) => {
             vars.insert(*var);
         }
-        CoreTermSeedKind::Const(_) | CoreTermSeedKind::Error(_) => {}
+        CoreTermSeedKind::Numeral(_) | CoreTermSeedKind::Const(_) | CoreTermSeedKind::Error(_) => {}
         CoreTermSeedKind::Apply { args, .. }
         | CoreTermSeedKind::Tuple(args)
         | CoreTermSeedKind::SetEnum(args) => {
@@ -12734,7 +12747,10 @@ fn collect_reachable_term_refs(
         return;
     };
     match &term_row.kind {
-        CoreTermKind::Var(_) | CoreTermKind::Const(_) | CoreTermKind::Error(_) => {}
+        CoreTermKind::Numeral(_)
+        | CoreTermKind::Var(_)
+        | CoreTermKind::Const(_)
+        | CoreTermKind::Error(_) => {}
         CoreTermKind::Apply { args, .. }
         | CoreTermKind::Tuple(args)
         | CoreTermKind::SetEnum(args) => {
@@ -16072,19 +16088,27 @@ pub fn lower_source_theorem_skeletons(
         }
         let mut terms = Vec::new();
         for edge in &edges {
-            let binding = binding_for_target(edge.target()).ok_or_else(invalid)?;
             let mizar_checker::source_atomic_formula::SourceAtomicTermTarget::Primary(term) =
                 edge.target()
             else {
                 return Err(invalid());
             };
-            let source = primary
-                .terms()
-                .get(term)
-                .map(|row| row.source_range())
-                .ok_or_else(invalid)?;
+            let row = primary.terms().get(term).ok_or_else(invalid)?;
+            let source = row.source_range();
+            let term_kind = if row.kind()
+                == mizar_checker::source_term::SourcePrimaryTermKind::Numeral
+                && row.spelling() == "0"
+            {
+                CoreTermSeedKind::Numeral(row.spelling().to_owned())
+            } else {
+                CoreTermSeedKind::Var(CoreVarId::new(
+                    binding_for_target(edge.target())
+                        .ok_or_else(invalid)?
+                        .index(),
+                ))
+            };
             term_seeds.push(CoreTermSeed::new(
-                CoreTermSeedKind::Var(CoreVarId::new(binding.index())),
+                term_kind,
                 CoreSourceRef::direct(source),
                 CheckerOwnedProvenance::checker(checker_key(owner, "term")),
             ));
@@ -16104,6 +16128,7 @@ pub fn lower_source_theorem_skeletons(
 
     let mut owner_formula_seeds = BTreeMap::new();
     let mut owner_records = Vec::new();
+    let mut computation = None;
     for (owner, _) in owners {
         let owner_node = owner.site.node();
         let owner_children = children(owner_node).ok_or_else(invalid)?;
@@ -16111,6 +16136,38 @@ pub fn lower_source_theorem_skeletons(
             return Err(invalid());
         };
         let formula_node = unwrap(written).ok_or_else(invalid)?;
+        if kind(formula_node) == Some("source.formula.atomic.equality") {
+            let [_, justification] = owner_children.as_slice() else {
+                return Err(invalid());
+            };
+            let clause = typed.nodes().node(*justification).ok_or_else(invalid)?;
+            let [_, request] = clause.children.as_slice() else {
+                return Err(invalid());
+            };
+            let request = typed.nodes().node(*request).ok_or_else(invalid)?;
+            let [_, _, option, _] = request.children.as_slice() else {
+                return Err(invalid());
+            };
+            let option = typed.nodes().node(*option).ok_or_else(invalid)?;
+            let [_, _, digits] = option.children.as_slice() else {
+                return Err(invalid());
+            };
+            let spelling = kind(*digits)
+                .and_then(|kind| kind.strip_prefix("Token(SurfaceToken { kind: Numeral, text: \""))
+                .and_then(|kind| kind.strip_suffix("\" })"))
+                .ok_or_else(invalid)?;
+            if spelling.is_empty() || !spelling.bytes().all(|byte| byte.is_ascii_digit()) {
+                return Err(invalid());
+            }
+            let proposition =
+                append_equality(&mut term_seeds, &mut formula_seeds, owner, formula_node)?;
+            computation = Some((
+                range(*justification).ok_or_else(invalid)?,
+                spelling.to_owned(),
+            ));
+            owner_records.push((owner.clone(), proposition, None));
+            continue;
+        }
         if kind(formula_node) != Some("QuantifiedFormula(Universal)") {
             return Err(invalid());
         }
@@ -16299,7 +16356,7 @@ pub fn lower_source_theorem_skeletons(
             )
         };
         owner_formula_seeds.insert(owner_node, proposition);
-        owner_records.push((owner.clone(), proposition, proof));
+        owner_records.push((owner.clone(), proposition, Some(proof)));
     }
 
     let mut context_input = CoreContextInput::new(ResolvedTypedAstSummary::new(
@@ -16335,8 +16392,8 @@ pub fn lower_source_theorem_skeletons(
             })
             .ok_or_else(invalid)?;
         let mut dependencies = proof
-            .4
             .as_ref()
+            .and_then(|proof| proof.4.as_ref())
             .map(|(symbol, _)| vec![symbol.clone()])
             .unwrap_or_default();
         if let Some(algorithm) = algorithm {
@@ -16414,7 +16471,45 @@ pub fn lower_source_theorem_skeletons(
             .map_err(|error| error.to_string())?;
     let mut proof_seeds = Vec::new();
     for (source_owner, proposition_seed, proof) in owner_records {
-        let (local, local_guard_seed, local_goal_seed, conclusion_range, cited) = proof;
+        let Some((local, local_guard_seed, local_goal_seed, conclusion_range, cited)) = proof
+        else {
+            let (justification, _) = computation.as_ref().ok_or_else(invalid)?;
+            let item = context
+                .item_registry()
+                .id_for_symbol(&source_owner.symbol)
+                .ok_or_else(invalid)?;
+            let proposition = *term_formula
+                .formula_map
+                .get(&proposition_seed)
+                .ok_or_else(invalid)?;
+            let skeleton_key = format!(
+                "checker/theorem/{}/skeleton",
+                source_owner.symbol.fqn().as_str()
+            );
+            proof_seeds.push(ProofSeed {
+                owner: item,
+                symbol: source_owner.symbol.clone(),
+                proposition,
+                status: CoreProofStatus::PendingAutomaticProof,
+                skeleton: ProofSkeletonSeed::Node(ProofNodeSeed::TerminalGoal(
+                    ProofTerminalGoalSeed::active(
+                        proposition,
+                        format!("proof/{}", source_owner.symbol.fqn().as_str()),
+                        format!("{}.proof", source_owner.symbol.fqn().as_str()),
+                        CoreSourceRef::direct(*justification).with_provenance(vec![
+                            CoreProvenance::new(
+                                CoreProvenancePhase::ProofSkeleton,
+                                skeleton_key.clone(),
+                            ),
+                        ]),
+                        CheckerOwnedProvenance::checker(format!("{skeleton_key}/terminal")),
+                    ),
+                )),
+                source: CoreSourceRef::direct(source_owner.source_range),
+                provenance: CheckerOwnedProvenance::checker(format!("{skeleton_key}/proof")),
+            });
+            continue;
+        };
         let item = context
             .item_registry()
             .id_for_symbol(&source_owner.symbol)
@@ -16492,6 +16587,26 @@ pub fn lower_source_theorem_skeletons(
         },
     )
     .map_err(|error| error.to_string())?;
+    if let Some((_, steps)) = computation {
+        if proofs.proof_nodes.len() != 1 {
+            return Err(invalid());
+        }
+        let (_, node) = proofs.proof_nodes.iter_mut().next().ok_or_else(invalid)?;
+        let CoreProofNodeKind::TerminalGoal {
+            obligation,
+            citations,
+        } = &node.kind
+        else {
+            return Err(invalid());
+        };
+        if !citations.is_empty() {
+            return Err(invalid());
+        }
+        node.kind = CoreProofNodeKind::ComputationGoal {
+            obligation: *obligation,
+            steps,
+        };
+    }
     let mut algorithm_input = AlgorithmLoweringInput::new();
     if let Some(algorithm) = algorithm {
         let (node, symbol) = algorithm.algorithm();
@@ -21804,6 +21919,39 @@ mod tests {
             Err(TypeAndFactLoweringError::ClusterFactMissingCheckerFact { cluster_fact })
                 if cluster_fact == ClusterFactId::new(9)
         ));
+    }
+
+    #[test]
+    fn numeral_seed_spelling_is_preserved_and_invalid_digits_rejected() {
+        let (context, owner) = context_with_var(CoreVarId::new(0));
+        for digits in [
+            "0",
+            "0008",
+            "18446744073709551616000000000",
+            "",
+            "-1",
+            "+1",
+            "a",
+            "１",
+        ] {
+            let mut input = TermAndFormulaLoweringInput::new(owner);
+            input
+                .terms
+                .push(term_seed(CoreTermSeedKind::Numeral(digits.into()), 60));
+            let output = lower_term_and_formula_inputs(&context, input);
+            if !digits.is_empty() && digits.bytes().all(|byte| byte.is_ascii_digit()) {
+                let output = output.unwrap();
+                assert_eq!(
+                    output.terms.get(CoreTermId::new(0)).unwrap().kind,
+                    CoreTermKind::Numeral(digits.into())
+                );
+            } else {
+                assert!(matches!(
+                    output,
+                    Err(TermAndFormulaLoweringError::InvalidNumeral)
+                ));
+            }
+        }
     }
 
     #[test]
