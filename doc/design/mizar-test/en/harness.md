@@ -6342,3 +6342,9 @@ Later same-spelling functor roots remain authenticated candidates without select
 
 Only `pass_proof_verification_computation_justification_001` enters proof_verification/vc_generation/pass with unchanged `algorithms.computation`, empty diagnostic payloads, sole active tag, its original semantic ref followed by `spec.en.mizar_vc.vc_ir.computation_request_snapshot`, and `snapshots/vc/pass_proof_verification_computation_justification_001.vc_ir.snap`.
 Admission and snapshot scope authenticate exact IDs, paths, ordered refs and absent contradictory payloads; reserved aliases and other stages fail closed. Source-owned checker/Core/request generation must succeed, and complete rerun VcSets/debug baselines retain the Open equality, computation hint and accounting.
+
+## Flat snapshot admission
+
+The implemented `pass_proof_verification_algorithm_ghost_snapshot_001` activation preserves pass/proof_verification/vc_generation, `algorithms.ghost`, original `spec.en.20.algorithms.ghost.snapshot`, sole active tag and exact source/sidecar paths; append only `spec.en.mizar_vc.vc_ir.algorithm_ghost_snapshot` and `snapshots/vc/pass_proof_verification_algorithm_ghost_snapshot_001.vc_ir.snap` after genuine generation.
+Require sealed checker, actual Core/CFG captures and complete deterministic VcSet/baseline comparisons; reserve either ID or basename across stages and reject missing/duplicate inventory or contradictory payloads. The snapshot trace section is `VC Task 43; bounded ghost snapshot return VcIr snapshot`.
+Controls cover renaming, complete visible captures, parameter shadowing, declarations and writes before/after capture, independent storage, malformed owners and ghost-to-runtime leaks. Preserve existing C14 outcomes; no snapshot-claim, verification, termination or MVM credit follows.

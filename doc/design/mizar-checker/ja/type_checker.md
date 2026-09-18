@@ -3022,7 +3022,7 @@ Known builtin set actual と実際に認証された structure parameter の via
 
 ## Static source algorithm checking
 
-`check_source_algorithm_types(&SurfaceResolvedArena, &TypedArena, &SymbolEnv)` はソース・環境・中立 typed 表と algorithm 所有者の完全な対応を認証し、借用型の opaque `SourceAlgorithmCheck` を返す。既存 BindingEnv と項・式推論で object 仮引数、順序付き初期化 var/const/ghost-var、宣言・使用同一性、推論型と期待 return 型を保持する。平坦な契約 profile は直接変数への代入、等式または prefix not 一つで否定した等式 assert、末尾 return も受理し、代入先には値を読み出さず実際の BindingId を渡す。result は任意の等式 ensures だけに可視とし、宣言順序で shadowing・前方参照を判定し、assert と ensures の所有者を区別してどちらも仮定しない。prefix 否定は assert に限定し、実 node・等式の子・個別に検査した項出現を保持する。否定した ensures/requires や式の置換による近道は認めない。封印は不変の typed・binding・inference・owner データだけを公開し、生の resolver 権限を渡さない。field 代入先、注釈、justification、他の契約、入れ子制御、snapshot、呼出し、リテラルは未対応とする。別の空 interface profile は、仮引数なし・bare return の先行 void algorithm と後続 claim target を実 local algorithm symbol により認証し、空 binding/inference table はその algorithm のみを表す。入れ子 theorem は `check_theorem_skeletons` が所有し、証明・全域性・登録承認を与えない。
+`check_source_algorithm_types(&SurfaceResolvedArena, &TypedArena, &SymbolEnv)` はソース・環境・中立 typed 表と algorithm 所有者の完全な対応を認証し、借用型の opaque `SourceAlgorithmCheck` を返す。既存 BindingEnv と項・式推論で object 仮引数、順序付き初期化 var/const/ghost-var、宣言・使用同一性、推論型と期待 return 型を保持する。平坦な契約 profile は直接変数への代入、等式または prefix not 一つで否定した等式 assert、末尾 return も受理し、代入先には値を読み出さず実際の BindingId を渡す。result は任意の等式 ensures だけに可視とし、宣言順序で shadowing・前方参照を判定し、assert と ensures の所有者を区別してどちらも仮定しない。prefix 否定は assert に限定し、実 node・等式の子・個別に検査した項出現を保持する。否定した ensures/requires や式の置換による近道は認めない。封印は不変の typed・binding・inference・owner データだけを公開し、生の resolver 権限を渡さない。field 代入先、注釈、justification、他の契約、入れ子制御、入れ子 snapshot、呼出し、リテラルは未対応とする。別の空 interface profile は、仮引数なし・bare return の先行 void algorithm と後続 claim target を実 local algorithm symbol により認証し、空 binding/inference table はその algorithm のみを表す。入れ子 theorem は `check_theorem_skeletons` が所有し、証明・全域性・登録承認を与えない。
 
 ## Source attributed argument widening
 
@@ -3052,3 +3052,9 @@ mode-formal BindingId → functor-actual BindingId の順序付き代入を検�
 空 assumptions は承認済事実を公開しない。canonical goal、証明、Task260 installation、Task274 acceptance、
 call-site result、rewrite、Core/VC、Step6/MVM の動作は追加しない。
 属性付き・非定数 RHS、複数 parameter、一般の依存代入は未対応のままとする。
+
+## Flat snapshot capture
+
+実装済みの平坦 snapshot 拡張は `snapshot name;` と algorithm 内の名前の一意性を認証する。ソース順序と BindingEnv lookup で ghost・仮引数の shadowing を含む可視宣言を求め、result・後続宣言を除く。
+`SourceAlgorithmCheck::snapshots()` は既存 seal 内の非公開 `BTreeMap<TypedNodeId, (String, Vec<BindingId>)>` を借用する。捕捉順序は実宣言同一性を保持し、推定値や受理済み事実を作らず、Core は既存変数対応で変換する。
+不正所有者・重複名・回復 node・未対応の入れ子 snapshot を拒否し、ghost から runtime への流出制限を保つ。

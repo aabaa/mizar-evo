@@ -1342,7 +1342,8 @@ pub fn generate_source_algorithm_postconditions(
     };
     use mizar_core::{
         control_flow::{
-            ControlFlowTerminator, LocalKind, LocalMutability, Reachability, build_control_flow_ir,
+            AssignmentEffectTarget, ControlFlowStatementPlacement, ControlFlowTerminator,
+            LocalKind, LocalMutability, Reachability, build_control_flow_ir,
             build_obligation_seed_handoff,
         },
         core_ir::{
@@ -1455,7 +1456,7 @@ pub fn generate_source_algorithm_postconditions(
         if let CoreAlgorithmStmtKind::Let {
             binder,
             value: Some(_),
-            ghost: false,
+            ghost: _,
         } = &statement.kind
         {
             if !matches!(binder.role.as_str(), "local:var" | "local:const")
@@ -1498,6 +1499,8 @@ pub fn generate_source_algorithm_postconditions(
     }
     let mut available = BTreeSet::from([parameter.var]);
     let mut assertions = BTreeMap::new();
+    let mut visible = vec![parameter];
+    let mut snapshot_names = BTreeSet::new();
     let mut previous_end = result_range.end;
     for id in &algorithm.statements {
         let current = core.algorithm_statements().get(*id).ok_or_else(invalid)?;
@@ -1524,7 +1527,7 @@ pub fn generate_source_algorithm_postconditions(
             CoreAlgorithmStmtKind::Let {
                 binder,
                 value: Some(value),
-                ghost: false,
+                ghost: _,
             } => {
                 let declaration = range(&binder.source)?;
                 if declaration.start <= current_range.start
@@ -1543,6 +1546,22 @@ pub fn generate_source_algorithm_postconditions(
                     && available.contains(target) =>
             {
                 vec![*value]
+            }
+            CoreAlgorithmStmtKind::Snapshot { name, captures } => {
+                let expected = visible
+                    .iter()
+                    .enumerate()
+                    .filter_map(|(index, binder)| {
+                        (!visible[index + 1..]
+                            .iter()
+                            .any(|later| later.source_name == binder.source_name))
+                        .then_some(binder.var)
+                    })
+                    .collect::<Vec<_>>();
+                if name.is_empty() || !snapshot_names.insert(name) || *captures != expected {
+                    return Err(invalid());
+                }
+                Vec::new()
             }
             CoreAlgorithmStmtKind::Assert { formula } => {
                 let outer = core.formulas().get(*formula).ok_or_else(invalid)?;
@@ -1594,6 +1613,7 @@ pub fn generate_source_algorithm_postconditions(
         }
         if let CoreAlgorithmStmtKind::Let { binder, .. } = &current.kind {
             available.insert(binder.var);
+            visible.push(binder);
         }
     }
     let mut substituted = None;
@@ -1695,7 +1715,9 @@ pub fn generate_source_algorithm_postconditions(
         return Err(invalid());
     }
     let handoff = build_obligation_seed_handoff(core, &flow_output);
-    if handoff.entries.len() != 1 + contracts.ensures.len() + assertions.len() {
+    let ghost_effects = &flow.ghost_effects.ghost_assignment_effects;
+    if handoff.entries.len() != 1 + contracts.ensures.len() + assertions.len() + ghost_effects.len()
+    {
         return Err(invalid());
     }
     for (_, entry) in handoff.entries.iter() {
@@ -1726,6 +1748,22 @@ pub fn generate_source_algorithm_postconditions(
                     && entry.seed.kind == ObligationSeedKind::AlgorithmContract
                     && site.block == Some(flow.entry)
                     && site.exit.is_none() => {}
+            ControlFlowObligationSiteKind::GhostAssignment
+                if entry.seed.kind == ObligationSeedKind::GhostErasure
+                    && entry.seed.goal.is_none()
+                    && site.exit.is_none()
+                    && site.block == Some(flow.entry)
+                    && ghost_effects.get(site.ordinal).copied() == site.assignment_effect
+                    && site.assignment_effect.and_then(|id| flow.assignment_effects.get(id)).is_some_and(|effect| {
+                        let mut provenance = effect.source.provenance.clone();
+                        provenance.push(mizar_core::core_ir::CoreProvenance::new(
+                            CoreProvenancePhase::Generated,
+                            format!("flow-handoff:ghost-assignment:{}", site.ordinal),
+                        ));
+                        Some(effect.statement) == site.statement
+                            && entry.seed.source == effect.source.clone().with_provenance(provenance)
+                            && matches!(effect.target, AssignmentEffectTarget::Local(local) if Some(local) == site.local && flow.locals.get(local).is_some_and(|local| local.ghost && local.algorithm == algorithm_id))
+                    }) => {}
             ControlFlowObligationSiteKind::PartialTermination
                 if entry.seed.kind == ObligationSeedKind::AlgorithmTermination
                     && entry.seed.goal.is_none()
@@ -1761,14 +1799,26 @@ pub fn generate_source_algorithm_postconditions(
     .map_err(|error| error.to_string())?;
     if raw.vcs().len() != contracts.ensures.len() + assertions.len()
         || raw.seed_accounting().len() != handoff.entries.len()
-        || candidates.no_candidates().len() != 1
+        || candidates
+            .no_candidates()
+            .iter()
+            .map(|row| row.handoff)
+            .collect::<BTreeSet<_>>()
+            != handoff
+                .entries
+                .iter()
+                .filter_map(|(id, entry)| {
+                    matches!(
+                        entry.seed.kind,
+                        ObligationSeedKind::AlgorithmTermination | ObligationSeedKind::GhostErasure
+                    )
+                    .then_some(id)
+                })
+                .collect::<BTreeSet<_>>()
     {
         return Err(invalid());
     }
     if stateful {
-        if raw.vcs().is_empty() {
-            return Ok(raw);
-        }
         let mut generated = Vec::new();
         let mut values = BTreeMap::from([(
             parameter.var,
@@ -1786,6 +1836,7 @@ pub fn generate_source_algorithm_postconditions(
         }];
         let mut projected = BTreeMap::new();
         let mut goals = BTreeMap::new();
+        let mut preceding = BTreeSet::new();
         for id in &algorithm.statements {
             let current = core.algorithm_statements().get(*id).ok_or_else(invalid)?;
             let provenance = current
@@ -1804,7 +1855,7 @@ pub fn generate_source_algorithm_postconditions(
                 CoreAlgorithmStmtKind::Let {
                     binder,
                     value: Some(value),
-                    ghost: false,
+                    ghost: _,
                 } => {
                     let rhs =
                         source_program_value(core, *value, &mut values, Some((binder.var, *id)))?;
@@ -1821,6 +1872,67 @@ pub fn generate_source_algorithm_postconditions(
                         .and_then(|binder| binder.ty_guard)
                         .ok_or_else(invalid)?;
                     new_fact = Some((lhs, rhs, guard));
+                }
+                CoreAlgorithmStmtKind::Snapshot { captures, .. } => {
+                    let Some(ControlFlowStatementPlacement::Snapshot {
+                        block,
+                        context: saved,
+                        captures: locals,
+                    }) = flow.source_map.statement_placements.get(id)
+                    else {
+                        return Err(invalid());
+                    };
+                    let saved = flow.contexts.get(*saved).ok_or_else(invalid)?;
+                    let expected_locals = captures
+                        .iter()
+                        .map(|var| {
+                            flow.locals
+                                .iter()
+                                .find(|(_, local)| {
+                                    local.binder.var == *var && local.algorithm == algorithm_id
+                                })
+                                .map(|(id, _)| id)
+                                .ok_or_else(invalid)
+                        })
+                        .collect::<Result<Vec<_>, _>>()?;
+                    let effects = flow
+                        .assignment_effects
+                        .iter()
+                        .filter_map(|(id, effect)| {
+                            preceding.contains(&effect.statement).then_some(id)
+                        })
+                        .collect::<Vec<_>>();
+                    let initialized = flow
+                        .locals
+                        .iter()
+                        .filter_map(|(id, local)| {
+                            values.contains_key(&local.binder.var).then_some(id)
+                        })
+                        .collect::<Vec<_>>();
+                    let facts = flow
+                        .context_facts
+                        .iter()
+                        .filter_map(|(id, fact)| {
+                            preceding
+                                .iter()
+                                .any(|statement| assertions.get(statement) == Some(&fact.formula))
+                                .then_some(id)
+                        })
+                        .collect::<Vec<_>>();
+                    if *block != flow.entry
+                        || *locals != expected_locals
+                        || captures.iter().any(|var| !values.contains_key(var))
+                        || saved.assignment_effects != effects
+                        || saved.definitely_initialized != initialized
+                        || saved.available_facts != facts
+                        || !saved.path_conditions.is_empty()
+                        || !saved.maybe_assigned.is_empty()
+                        || !saved.call_effects.is_empty()
+                        || !saved.active_invariants.is_empty()
+                        || !saved.loop_stack.is_empty()
+                    {
+                        return Err(invalid());
+                    }
                 }
                 CoreAlgorithmStmtKind::Assert { formula } => {
                     let outer = &core.formulas().get(*formula).ok_or_else(invalid)?.kind;
@@ -1905,6 +2017,7 @@ pub fn generate_source_algorithm_postconditions(
                 }
                 _ => return Err(invalid()),
             }
+            preceding.insert(*id);
             if let Some((left, right, guard)) = new_fact {
                 let CoreFormulaKind::TypePred { ty, .. } =
                     &core.formulas().get(guard).ok_or_else(invalid)?.kind
@@ -1936,6 +2049,9 @@ pub fn generate_source_algorithm_postconditions(
                     });
                 }
             }
+        }
+        if raw.vcs().is_empty() {
+            return Ok(raw);
         }
         let mut vcs = raw.vcs().to_vec();
         for vc in &mut vcs {
@@ -3364,6 +3480,7 @@ mod tests {
     #[test]
     fn state_value_projection_preserves_copies_old_values_and_self_assignment() {
         use crate::vc_ir::VcProgramValue;
+        use mizar_core::control_flow::{ControlFlowStatementPlacement, build_control_flow_ir};
         use mizar_core::core_ir::*;
         let source_id = sample_source_id();
         let module = ModuleId::new(PackageId::new("state"), ModulePath::new("values"));
@@ -3427,6 +3544,10 @@ mod tests {
                 target: CoreVarId::new(2),
                 value: b,
             },
+            CoreAlgorithmStmtKind::Snapshot {
+                name: "after_b".into(),
+                captures: (0..4).map(CoreVarId::new).collect(),
+            },
             CoreAlgorithmStmtKind::Let {
                 binder: binder(4, "local:var"),
                 value: Some(x),
@@ -3440,6 +3561,10 @@ mod tests {
             CoreAlgorithmStmtKind::AssignLocal {
                 target: CoreVarId::new(2),
                 value: saved,
+            },
+            CoreAlgorithmStmtKind::Snapshot {
+                name: "after_saved".into(),
+                captures: (0..5).map(CoreVarId::new).collect(),
             },
             CoreAlgorithmStmtKind::Return(Some(x)),
         ] {
@@ -3502,6 +3627,10 @@ mod tests {
             (CoreVarId::new(0), v(0, None)),
             (CoreVarId::new(1), v(1, None)),
         ]);
+        let output = build_control_flow_ir(&core);
+        let (_, flow) = output.flows.iter().next().unwrap();
+        assert!(flow.diagnostics.is_empty());
+        let mut snapshots = Vec::new();
         let mut writes = Vec::new();
         let mut assertions = Vec::new();
         for (id, statement) in core.algorithm_statements().iter() {
@@ -3532,9 +3661,44 @@ mod tests {
                         source_program_value(&core, right, &mut values, None).unwrap(),
                     ));
                 }
+                CoreAlgorithmStmtKind::Snapshot { captures, .. } => {
+                    let ControlFlowStatementPlacement::Snapshot {
+                        context,
+                        captures: locals,
+                        ..
+                    } = &flow.source_map.statement_placements[&id]
+                    else {
+                        panic!()
+                    };
+                    let context = flow.contexts.get(*context).unwrap();
+                    assert_eq!(
+                        *captures,
+                        locals
+                            .iter()
+                            .map(|local| flow.locals.get(*local).unwrap().binder.var)
+                            .collect::<Vec<_>>()
+                    );
+                    assert!(
+                        locals
+                            .iter()
+                            .all(|local| context.definitely_initialized.contains(local))
+                    );
+                    assert_eq!(
+                        context
+                            .assignment_effects
+                            .iter()
+                            .map(|effect| flow.assignment_effects.get(*effect).unwrap().statement)
+                            .collect::<Vec<_>>(),
+                        writes
+                            .iter()
+                            .map(|(lhs, _)| lhs.definition.unwrap())
+                            .collect::<Vec<_>>()
+                    );
+                    snapshots.push(captures.iter().map(|var| values[var]).collect::<Vec<_>>());
+                }
                 CoreAlgorithmStmtKind::Return(Some(term)) => assert_eq!(
                     source_program_value(&core, *term, &mut values, None).unwrap(),
-                    v(2, Some(7))
+                    v(2, Some(8))
                 ),
                 _ => panic!(),
             }
@@ -3545,9 +3709,9 @@ mod tests {
                 (v(2, Some(0)), v(0, None)),
                 (v(3, Some(1)), v(2, Some(0))),
                 (v(2, Some(3)), v(1, None)),
-                (v(4, Some(4)), v(2, Some(3))),
-                (v(2, Some(5)), v(2, Some(3))),
-                (v(2, Some(7)), v(3, Some(1)))
+                (v(4, Some(5)), v(2, Some(3))),
+                (v(2, Some(6)), v(2, Some(3))),
+                (v(2, Some(8)), v(3, Some(1)))
             ]
         );
         assert_eq!(
@@ -3556,8 +3720,22 @@ mod tests {
         );
         assert_eq!(
             source_program_value(&core, y, &mut values, None).unwrap(),
-            v(4, Some(4))
+            v(4, Some(5))
         );
+        assert_eq!(
+            snapshots,
+            vec![
+                vec![v(0, None), v(1, None), v(2, Some(3)), v(3, Some(1))],
+                vec![
+                    v(0, None),
+                    v(1, None),
+                    v(2, Some(8)),
+                    v(3, Some(1)),
+                    v(4, Some(5))
+                ],
+            ]
+        );
+        assert_ne!(snapshots[0][2], values[&CoreVarId::new(2)]);
         values.remove(&CoreVarId::new(4));
         assert!(source_program_value(&core, y, &mut values, None).is_err());
     }

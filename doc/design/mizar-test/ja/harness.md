@@ -5776,3 +5776,9 @@ Rust 統合テストは変更しない C13 ambiguity 全ソースを新鮮な pr
 
 `pass_proof_verification_computation_justification_001` のみ proof_verification/vc_generation/pass に入り、`algorithms.computation`、空診断 payload、唯一の active tag、元 semantic ref に続く `spec.en.mizar_vc.vc_ir.computation_request_snapshot`、`snapshots/vc/pass_proof_verification_computation_justification_001.vc_ir.snap` を要求する。
 admission と snapshot scope が厳密な ID・path・ref 順序・矛盾 payload 不在を認証し、予約 alias や別 stage を拒否する。source 所有の checker/Core/request generation 成功を要求し、完全な VcSet 再実行/debug baseline で Open equality・computation hint・accounting を保持する。
+
+## Flat snapshot admission
+
+実装済みの `pass_proof_verification_algorithm_ghost_snapshot_001` 活性化は pass/proof_verification/vc_generation、`algorithms.ghost`、元の `spec.en.20.algorithms.ghost.snapshot`、単一 active tag、正確な source/sidecar path を保つ。実生成後にのみ `spec.en.mizar_vc.vc_ir.algorithm_ghost_snapshot` と `snapshots/vc/pass_proof_verification_algorithm_ghost_snapshot_001.vc_ir.snap` を追加する。
+checker seal・実 Core/CFG 捕捉・完全な再現 VcSet/baseline 比較を要求し、ID または basename を全 stage で予約して inventory の欠落・重複と矛盾 payload を拒否する。trace section は `VC Task 43; bounded ghost snapshot return VcIr snapshot` とする。
+改名・完全可視集合・仮引数 shadowing・捕捉前後の宣言と書込み・独立記憶・不正所有者・ghost 流出を検査する。既存 C14 結果を保ち、snapshot claim・verification・終了・MVM の credit を与えない。

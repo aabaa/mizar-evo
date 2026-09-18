@@ -7,7 +7,10 @@ source = "pass_proof_verification_algorithm_ghost_snapshot_001.miz"
 expected_outcome = "pass"
 expected_phase = "vc_generation"
 diagnostic_codes = []
+tags = ["active_proof_verification"]
+snapshots = "snapshots/vc/pass_proof_verification_algorithm_ghost_snapshot_001.vc_ir.snap"
 spec_refs = [
   "spec.en.20.algorithms.ghost.snapshot",
+  "spec.en.mizar_vc.vc_ir.algorithm_ghost_snapshot",
 ]
-notes = "Audit-1 semantic-bridge inactive oracle seed (September 2026 audit wave): binding expectation for the Step-5 semantic bridge; no active runner tag, earns no current credit. Ghost state and snapshot markers are verification-only constructs that never influence real control flow (spec 20.6; ghost isolation)."
+notes = "The flat snapshot captures visible parameter and initialized ghost storage identities at its actual program context. The complete Open return VcSet preserves ghost-erasure and unresolved termination accounting; state claims, proof and algorithm acceptance remain deferred."

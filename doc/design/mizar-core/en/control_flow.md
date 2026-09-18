@@ -54,10 +54,7 @@ Task 14 classifications:
   payloads and parser task 32-34 source-derived coverage remain outside this
   task. The implementation tasks use explicit core/Rust fixtures until the
   upstream payload bridge exists.
-- `external_dependency_gap`: snapshot and claim payloads from specification
-  chapter 20 are not present in the task-13 `CoreAlgorithmStmtKind` surface.
-  They must not be silently dropped; future checker-owned shells must carry
-  explicit snapshot-site metadata before phase 10 can lower them.
+- `external_dependency_gap`: nested snapshot and state-claim payloads remain outside the [flat capture profile](#flat-snapshot-flow); missing payloads must not be dropped.
 - `external_dependency_gap`: `mizar-vc`, `mizar-kernel`, and `mizar-proof`
   are not implemented as downstream consumers in this crate task. Do not
   fabricate APIs for them.
@@ -452,13 +449,7 @@ Rules:
   include the direction (`to` or `downto`), the hidden positive-`Nat` step value
   obligation, direction-specific `next(i)` expression, and `past_end(i_exit)`
   exit predicate required by specification 20.13.3.
-- `Snapshot` and claim-related algorithm statements from specification chapter
-  20 are not present in the current core statement shell. Until checker payload
-  extraction provides explicit snapshot shells, phase 10 must not reconstruct
-  snapshots from source text. A future `Snapshot` shell records a
-  source-mapped snapshot site that captures the current `ProgramContextId`, all
-  visible runtime and ghost locals, and any hidden loop values needed by claim
-  blocks. Missing snapshot payloads are diagnostics, not silently erased.
+- [Flat snapshots](#flat-snapshot-flow) retain explicit checker-owned shells; nested/claim capture must not be reconstructed from source text or silently erased.
 - `Return` closes the current block with a return terminator and attaches
   postcondition sites.
 - `Break` and `Continue` resolve to the innermost active loop. Outside a loop
@@ -515,7 +506,7 @@ diagnostic catalog is:
 - malformed or missing algorithm statement carried from phase 9;
 - unsupported aliasing/lvalue metadata.
 
-Typed AssignLocal supplies actual local identity for immutable-write and assignment ghost checks. Opaque CorePlace writes, ghost leakage through conditions/calls, call/contract instantiation errors, unsupported patterns, snapshot/claim payloads and richer alias/lvalue precision remain deferred pending checker-owned metadata; source spelling grants no authority.
+Typed AssignLocal supplies actual local identity for immutable-write and assignment ghost checks. Opaque CorePlace writes, ghost leakage through conditions/calls, call/contract instantiation errors, unsupported patterns, nested snapshot/state-claim payloads and richer alias/lvalue precision remain deferred pending checker-owned metadata; source spelling grants no authority.
 
 Diagnostics are sorted by source order, then algorithm id, then block id, then
 diagnostic class. A diagnostic may mark an algorithm as partial/error for
@@ -668,3 +659,8 @@ checks. Rust implementation and tests are deferred to tasks 15-18.
 Source Let/Return/Break statements retain existing construction and IllegalBreak behavior. Typed AssignLocal resolves the actual local identity and records AssignmentEffectTarget::Local; missing destinations fail closed, and ImmutableAssignment {local,var} rejects const, parameter and result writes. GhostIsolationViolation {local,var} records actual ghost dependencies of runtime initializers, typed assignments and returns using recursive term-use collection and deterministic statement/use provenance, including unreachable sinks. Ghost targets retain their declaration visibility; opaque Assign place keys are not resolved from names. Illegal-break unreachable diagnostics remain collateral. CFG assertion facts describe successor placement, not permission to assume an assertion in its own VC; concrete pre-state/versioned contexts remain VC-owned. No condition/call ghost checking, proof or complete diagnostic-family claim follows.
 
 `build_obligation_seed_handoff` preserves computation-terminal seed references and sources but marks their handoff copies Deferred, since seed-only consumers cannot retain the request. Original Core seeds stay Active; the source-aware computation generator owns their complete request-bearing projection.
+
+## Flat snapshot flow
+
+The implemented `ControlFlowStatementPlacement::Snapshot { block, context, captures: Vec<LocalId> }` records the actual pre-statement ProgramContextId and exact visible locals, using the Core statement as snapshot identity. Validate source order, same-owner local mapping and initialized captures; visibility follows source-name shadowing, not the entire definitely-initialized set.
+Capture neither writes state nor adds facts, obligations or termination credit. Context assignment effects retain earlier value/write identities; later writes cannot replace the saved context. Nested snapshots and claim links remain unsupported.

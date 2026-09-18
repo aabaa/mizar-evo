@@ -514,6 +514,7 @@ enum CoreAlgorithmStmtKind {
     Assign { target: CorePlace, value: CoreTermId },
     AssignLocal { target: CoreVarId, value: CoreTermId },
     Assert { formula: CoreFormulaId },
+    Snapshot { name: String, captures: Vec<CoreVarId> },
     If { condition: CoreFormulaId, then_body: Vec<CoreAlgorithmStmtId>, else_body: Vec<CoreAlgorithmStmtId> },
     While { condition: CoreFormulaId, invariants: Vec<CoreFormulaId>, decreasing: Vec<CoreTermId>, body: Vec<CoreAlgorithmStmtId> },
     Match { scrutinee: CoreTermId, arms: Vec<CoreAlgorithmMatchArm> },
@@ -874,3 +875,8 @@ adapterにbroader source coverageを与えない。
 - artifact schema、ATP encoding、proof certificate、cache record、public diagnostic code を
   emit すること。
 - generated display name や source spelling を semantic identity として扱うこと。
+
+## Flat snapshot statement
+
+実装済みの `CoreAlgorithmStmtKind::Snapshot { name: String, captures: Vec<CoreVarId> }` は名前・可視宣言順序・文同一性を保持し、binding の複製や値の符号化をしない。文の位置で名前の一意性と同じ algorithm の完全な捕捉集合を検証し、result・後続・隠蔽・重複・外部宣言を拒否する。
+shell は通常の source map・由来を保持し、捕捉点の文脈は CFG が所有する。snapshot claim と値置換は別境界に留める。

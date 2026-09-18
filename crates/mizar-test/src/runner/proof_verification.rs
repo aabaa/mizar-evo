@@ -113,7 +113,7 @@ pub(super) fn step5c11_proof_admitted(root: Option<&Path>, case: &TestCase) -> b
         && case.expectation.tags.as_slice() == [ACTIVE_PROOF_VERIFICATION_TAG]
 }
 
-const STEP5C14_VC_CASES: [(&str, &str, &str, &str, &str, &str); 5] = [
+const STEP5C14_VC_CASES: [(&str, &str, &str, &str, &str, &str); 6] = [
     (
         "pass_proof_verification_computation_justification_001",
         "tests/miz/pass/algorithms/pass_proof_verification_computation_justification_001.miz",
@@ -137,6 +137,14 @@ const STEP5C14_VC_CASES: [(&str, &str, &str, &str, &str, &str); 5] = [
         "spec.en.20.algorithms.contracts.ensures",
         "spec.en.mizar_vc.vc_ir.algorithm_ensures_return_snapshot",
         "snapshots/vc/pass_proof_verification_algorithm_ensures_return_001.vc_ir.snap",
+    ),
+    (
+        "pass_proof_verification_algorithm_ghost_snapshot_001",
+        "tests/miz/pass/algorithms/pass_proof_verification_algorithm_ghost_snapshot_001.miz",
+        "algorithms.ghost",
+        "spec.en.20.algorithms.ghost.snapshot",
+        "spec.en.mizar_vc.vc_ir.algorithm_ghost_snapshot",
+        "snapshots/vc/pass_proof_verification_algorithm_ghost_snapshot_001.vc_ir.snap",
     ),
     (
         "pass_proof_verification_algorithm_var_const_assert_001",
@@ -187,7 +195,10 @@ pub(super) fn step5c14_return_admitted(root: Option<&Path>, case: &TestCase) -> 
         && case.expectation.source == Path::new(source).file_name().unwrap()
         && (!matches!(
             domain,
-            "algorithms.claim" | "algorithms.assertions" | "algorithms.computation"
+            "algorithms.claim"
+                | "algorithms.assertions"
+                | "algorithms.computation"
+                | "algorithms.ghost"
         ) || case.expectation.schema_version == 1
             && case.expectation.profiles.as_slice() == ["fast"]
             && case.expectation.ast_profile.is_none()
@@ -804,8 +815,63 @@ pub(super) fn run_proof_verification_case(
                     .ok_or_else(|| "claim theorem VC missing".into());
                 }
                 let core = mizar_core::elaborator::lower_source_algorithms(&checked)?;
+                if case.expectation.domain == "algorithms.ghost" {
+                    use mizar_core::control_flow::{
+                        ControlFlowStatementPlacement, build_control_flow_ir,
+                    };
+                    use mizar_core::core_ir::CoreAlgorithmStmtKind;
+                    let flow_output = build_control_flow_ir(&core);
+                    let (_, flow) = flow_output
+                        .flows
+                        .iter()
+                        .next()
+                        .ok_or("snapshot flow missing")?;
+                    let captures = checked.snapshots().values().collect::<Vec<_>>();
+                    let [(_, sealed)] = captures.as_slice() else {
+                        return Err("snapshot seal missing".into());
+                    };
+                    let statements = core
+                        .algorithm_statements()
+                        .iter()
+                        .filter_map(|(id, statement)| {
+                            if let CoreAlgorithmStmtKind::Snapshot { name, captures } =
+                                &statement.kind
+                            {
+                                Some((id, name, captures))
+                            } else {
+                                None
+                            }
+                        })
+                        .collect::<Vec<_>>();
+                    let [(id, name, captured)] = statements.as_slice() else {
+                        return Err("snapshot statement missing".into());
+                    };
+                    let Some(ControlFlowStatementPlacement::Snapshot {
+                        context,
+                        captures: locals,
+                        ..
+                    }) = flow.source_map.statement_placements.get(id)
+                    else {
+                        return Err("snapshot placement missing".into());
+                    };
+                    if sealed.len() != 2 || captured.len() != 2 || captured[0] == captured[1]
+                        || checked.snapshots().values().next().map(|(name, _)| name) != Some(*name)
+                        || !sealed.iter().zip(captured.iter()).all(|(binding, var)| {
+                            checked.bindings().bindings().get(*binding).is_some_and(|binding|
+                                flow.locals.iter().any(|(_, local)| local.binder.var == *var
+                                    && local.binder.source.anchor == mizar_core::core_ir::CoreSourceAnchor::SourceRange(binding.declaration_range)))
+                        })
+                        || locals.len() != captured.len()
+                        || !locals.iter().zip(captured.iter()).all(|(local, var)| flow.locals.get(*local).is_some_and(|local| local.binder.var == *var))
+                        || flow.contexts.get(*context).is_none_or(|context| !locals.iter().all(|local| context.definitely_initialized.contains(local)))
+                        || flow.ghost_effects.ghost_assignment_effects.len() != 1
+                    { return Err("snapshot capture correspondence differed".into()); }
+                }
+
                 let profile = if case.expectation.domain == "algorithms.assertions" {
                     "assert-failure"
+                } else if case.expectation.domain == "algorithms.ghost" {
+                    "ghost-snapshot"
                 } else if case.expectation.domain == "algorithms.state" {
                     "state"
                 } else {
@@ -823,6 +889,15 @@ pub(super) fn run_proof_verification_case(
             };
             let (core, first) = build()?;
             let (replayed_core, second) = build()?;
+            if core
+                .as_ref()
+                .map(mizar_core::control_flow::build_control_flow_ir)
+                != replayed_core
+                    .as_ref()
+                    .map(mizar_core::control_flow::build_control_flow_ir)
+            {
+                return Err("algorithm CFG rerun was nondeterministic".into());
+            }
             if core != replayed_core || first != second || first.debug_text() != second.debug_text()
             {
                 return Err("algorithm source-to-VC rerun was nondeterministic".into());

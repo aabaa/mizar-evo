@@ -570,6 +570,11 @@ pub struct ControlFlowSourceMap {
 #[derive(Debug, Clone, PartialEq, Eq)]
 #[non_exhaustive]
 pub enum ControlFlowStatementPlacement {
+    Snapshot {
+        block: BasicBlockId,
+        context: ProgramContextId,
+        captures: Vec<LocalId>,
+    },
     Block {
         block: BasicBlockId,
     },
@@ -600,7 +605,8 @@ pub enum ControlFlowStatementPlacement {
 impl ControlFlowStatementPlacement {
     const fn block(&self) -> BasicBlockId {
         match self {
-            Self::Block { block }
+            Self::Snapshot { block, .. }
+            | Self::Block { block }
             | Self::Terminator { block }
             | Self::LoopHeader { header: block, .. }
             | Self::SwitchArm { block, .. }
@@ -1355,6 +1361,39 @@ impl<'a> FlowBuilder<'a> {
     ) -> Option<BlockCursor> {
         let statement = self.statement(statement_id).clone();
         match &statement.kind {
+            CoreAlgorithmStmtKind::Snapshot { captures, .. } => {
+                let locals = captures
+                    .iter()
+                    .filter_map(|var| self.local_for_var(*var))
+                    .collect::<Vec<_>>();
+                if locals.len() != captures.len()
+                    || locals.iter().any(|local| {
+                        !self
+                            .context(cursor.context)
+                            .definitely_initialized
+                            .contains(local)
+                    })
+                    || !loop_stack.is_empty()
+                {
+                    self.add_diagnostic(ControlFlowDiagnostic {
+                        kind: ControlFlowDiagnosticKind::FlowDiagnostic,
+                        algorithm: self.algorithm_id,
+                        statement: Some(statement_id),
+                        source: statement.source.clone(),
+                        carried_core_diagnostic: None,
+                    });
+                }
+                self.flow.source_map.statement_placements.insert(
+                    statement_id,
+                    ControlFlowStatementPlacement::Snapshot {
+                        block: cursor.block,
+                        context: cursor.context,
+                        captures: locals,
+                    },
+                );
+                self.append_statement(cursor.block, statement_id);
+                Some(cursor)
+            }
             CoreAlgorithmStmtKind::Let {
                 binder,
                 value,
@@ -6388,6 +6427,109 @@ mod tests {
                         })
                     ));
                 }
+            }
+        }
+    }
+
+    #[test]
+    fn snapshots_reject_corrupt_captures_and_uninitialized_storage() {
+        for initialized in [false, true] {
+            let mut fixture = CoreFixture::new();
+            let parameter = fixture.binder(10, "parameter", 1);
+            let result = fixture.binder(30, "result", 2);
+            let value = fixture.term_var(10, 3);
+            let local = fixture.stmt(
+                CoreAlgorithmStmtKind::Let {
+                    binder: fixture.binder(20, "local:var", 4),
+                    value: initialized.then_some(value),
+                    ghost: true,
+                },
+                5,
+            );
+            let snapshot = fixture.stmt(
+                CoreAlgorithmStmtKind::Snapshot {
+                    name: "saved".into(),
+                    captures: vec![CoreVarId::new(10), CoreVarId::new(20)],
+                },
+                6,
+            );
+            let future = fixture.stmt(
+                CoreAlgorithmStmtKind::Let {
+                    binder: fixture.binder(40, "local:var", 7),
+                    value: Some(value),
+                    ghost: false,
+                },
+                8,
+            );
+            let mut parts = fixture.parts.clone();
+            let core = fixture.finish(vec![parameter], Some(result), vec![local, snapshot, future]);
+            parts.algorithms = core.algorithms().clone();
+            let output = build_control_flow_ir(&core);
+            let flow = only_flow(&output);
+            let placement = &flow.source_map.statement_placements[&snapshot];
+            let ControlFlowStatementPlacement::Snapshot {
+                captures, context, ..
+            } = placement
+            else {
+                panic!()
+            };
+            assert_eq!(
+                captures
+                    .iter()
+                    .map(|id| flow.locals.get(*id).unwrap().binder.var)
+                    .collect::<Vec<_>>(),
+                vec![CoreVarId::new(10), CoreVarId::new(20)]
+            );
+            assert!(
+                captures
+                    .iter()
+                    .all(|id| id.index() != flow.locals.get(*id).unwrap().binder.var.index())
+            );
+            assert_eq!(
+                flow.contexts
+                    .get(*context)
+                    .unwrap()
+                    .assignment_effects
+                    .len(),
+                usize::from(initialized)
+            );
+            assert_eq!(
+                flow.diagnostics
+                    .iter()
+                    .filter(|(_, diagnostic)| diagnostic.statement == Some(snapshot))
+                    .count(),
+                usize::from(!initialized)
+            );
+            for mutation in 0..8 {
+                let mut corrupt = parts.clone();
+                let CoreAlgorithmStmtKind::Snapshot { name, captures } =
+                    &mut corrupt.algorithm_statements.get_mut(snapshot).unwrap().kind
+                else {
+                    panic!()
+                };
+                match mutation {
+                    0 => {
+                        captures.pop();
+                    }
+                    1 => captures.push(CoreVarId::new(30)),
+                    2 => captures.push(CoreVarId::new(40)),
+                    3 => captures.push(CoreVarId::new(999)),
+                    4 => captures.push(captures[0]),
+                    5 => captures.reverse(),
+                    6 => name.clear(),
+                    7 => {
+                        corrupt
+                            .algorithms
+                            .get_mut(CoreAlgorithmId::new(0))
+                            .unwrap()
+                            .statements = vec![snapshot, local, future];
+                    }
+                    _ => unreachable!(),
+                }
+                assert!(
+                    CoreIr::try_new(corrupt).is_err(),
+                    "capture mutation {mutation}"
+                );
             }
         }
     }

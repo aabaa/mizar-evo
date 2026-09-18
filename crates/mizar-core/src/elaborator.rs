@@ -15816,6 +15816,7 @@ pub fn lower_source_algorithms(
         "AlgorithmStatementList",
     )?;
     let mut statements = Vec::new();
+    let mut snapshots = check.snapshots().clone();
     for statement in &node(statement_list)?.children {
         let source = CoreSourceRef::direct(range(*statement)?);
         let provenance = provenance(*statement);
@@ -15838,6 +15839,18 @@ pub fn lower_source_algorithms(
                             [term_ids.get(&term_node(variable)?).ok_or_else(invalid)?],
                     ),
                     ghost,
+                    source,
+                    provenance,
+                }
+            }
+            "SnapshotStatement" => {
+                let (name, captures) = snapshots.remove(statement).ok_or_else(invalid)?;
+                AlgorithmStmtSeed::Snapshot {
+                    name,
+                    captures: captures
+                        .into_iter()
+                        .map(|id| CoreVarId::new(id.index()))
+                        .collect(),
                     source,
                     provenance,
                 }
@@ -15872,7 +15885,11 @@ pub fn lower_source_algorithms(
             _ => return Err(invalid()),
         });
     }
-    if !destinations.is_empty() || !assertion_formulas.is_empty() || !local_binders.is_empty() {
+    if !destinations.is_empty()
+        || !assertion_formulas.is_empty()
+        || !local_binders.is_empty()
+        || !snapshots.is_empty()
+    {
         return Err(invalid());
     }
     let definitions = lower_definition_inputs(&context, &lowered, DefinitionLoweringInput::new())
@@ -17498,6 +17515,12 @@ pub enum AlgorithmPayloadSeed {
 #[derive(Debug, Clone, PartialEq, Eq)]
 #[non_exhaustive]
 pub enum AlgorithmStmtSeed {
+    Snapshot {
+        name: String,
+        captures: Vec<CoreVarId>,
+        source: CoreSourceRef,
+        provenance: CheckerOwnedProvenance,
+    },
     Let {
         binder: CoreBinder,
         value: Option<CoreTermId>,
@@ -17795,6 +17818,20 @@ fn validate_algorithm_statement_seed(
     statement: &AlgorithmStmtSeed,
 ) -> AlgorithmLoweringResult<()> {
     match statement {
+        AlgorithmStmtSeed::Snapshot {
+            captures,
+            provenance,
+            ..
+        } => {
+            validate_checker_owned_provenance("algorithm snapshot", provenance.as_slice())?;
+            for var in captures {
+                if context.binder_context().variable_sorts.get(var)
+                    != Some(&NormalizedVarSort::Term)
+                {
+                    return Err(AlgorithmLoweringError::UndeclaredAlgorithmBinder { var: *var });
+                }
+            }
+        }
         AlgorithmStmtSeed::Let {
             binder,
             value,
@@ -17999,6 +18036,20 @@ fn lower_algorithm_statement(
     statement: &AlgorithmStmtSeed,
 ) -> AlgorithmLoweringResult<CoreAlgorithmStmtId> {
     match statement {
+        AlgorithmStmtSeed::Snapshot {
+            name,
+            captures,
+            source,
+            provenance,
+        } => Ok(state.insert_statement(
+            owner,
+            CoreAlgorithmStmtKind::Snapshot {
+                name: name.clone(),
+                captures: captures.clone(),
+            },
+            source_with_provenance(source.clone(), provenance),
+            Vec::new(),
+        )),
         AlgorithmStmtSeed::Let {
             binder,
             value,
@@ -18209,7 +18260,8 @@ fn collect_algorithm_statement_diagnostics_into(
                     );
                 }
             }
-            CoreAlgorithmStmtKind::Let { .. }
+            CoreAlgorithmStmtKind::Snapshot { .. }
+            | CoreAlgorithmStmtKind::Let { .. }
             | CoreAlgorithmStmtKind::Assign { .. }
             | CoreAlgorithmStmtKind::AssignLocal { .. }
             | CoreAlgorithmStmtKind::Assert { .. }

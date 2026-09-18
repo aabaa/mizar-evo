@@ -1060,3 +1060,7 @@ The implemented aggregate profile retains two actual definitions and three origi
 Each parent owns a separate stable-choice origin, two actual occurrence ranges and an independent active bare-set nonempty seed. Formal, existential and nonempty binders retain their actual identity and capture boundaries.
 The conjunctive registration retains both attribute predicates on the same witness and both exact canonical definition citations, with typed definition/backreferences and source maps. Never infer one conjunct from the other.
 Existing tables carry all three proofs; no new public record, callback or copied source is introduced. [VC generation](../../mizar-vc/en/generator.md#three-registration-source-proof-extension) owns per-parent expansion, not Core acceptance.
+
+## Flat snapshot lowering
+
+The implemented extension to `lower_source_algorithms` consumes the seal's snapshot names and BindingIds through `AlgorithmStmtSeed::Snapshot { name, captures, source, provenance }`, producing the [existing statement table](./core_ir.md#flat-snapshot-statement). Require exact source-node coverage and map each capture through the same algorithm's real variable allocation; snapshot adds no binder, term, formula or proof seed.

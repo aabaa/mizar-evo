@@ -916,3 +916,7 @@ environment・checker 再評価・受理状態は追加しない。
 各親は独立 stable-choice origin、実出現 range 2件、active な bare-set nonempty seed を持つ。formal・存在・nonempty 束縛の実同一性と capture 境界を保つ。
 連言登録は同じ証人上の両属性述語、両定義の正確な canonical citation、型付き definition/backreference と source map を保持し、一方の conjunct から他方を推測しない。
 既存 table に全証明を格納し、新しい公開 record・callback・部分ソースを追加しない。[VC generation](../../mizar-vc/ja/generator.md#three-registration-source-proof-extension) が親ごとの展開を所有し、Core は受理しない。
+
+## Flat snapshot lowering
+
+実装済みの `lower_source_algorithms` 拡張は seal の名前・BindingId を `AlgorithmStmtSeed::Snapshot { name, captures, source, provenance }` で [既存 statement table](./core_ir.md#flat-snapshot-statement) へ渡す。source node を漏れなく対応させ、捕捉宣言を同じ algorithm の実変数割当で変換する。snapshot は binder・項・式・証明 seed を追加しない。

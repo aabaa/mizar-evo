@@ -539,6 +539,7 @@ enum CoreAlgorithmStmtKind {
     Assign { target: CorePlace, value: CoreTermId },
     AssignLocal { target: CoreVarId, value: CoreTermId },
     Assert { formula: CoreFormulaId },
+    Snapshot { name: String, captures: Vec<CoreVarId> },
     If { condition: CoreFormulaId, then_body: Vec<CoreAlgorithmStmtId>, else_body: Vec<CoreAlgorithmStmtId> },
     While { condition: CoreFormulaId, invariants: Vec<CoreFormulaId>, decreasing: Vec<CoreTermId>, body: Vec<CoreAlgorithmStmtId> },
     Match { scrutinee: CoreTermId, arms: Vec<CoreAlgorithmMatchArm> },
@@ -922,3 +923,8 @@ decomposition.
 - emit artifact schemas, ATP encodings, proof certificates, cache records, or
   public diagnostic codes;
 - treat generated display names or source spelling as semantic identity.
+
+## Flat snapshot statement
+
+The implemented `CoreAlgorithmStmtKind::Snapshot { name: String, captures: Vec<CoreVarId> }` preserves source name, exact visible declaration order and statement identity without copying bindings or encoding values. Validate unique names and complete same-algorithm captures at the statement; result, future, hidden, duplicate and foreign declarations are invalid.
+Snapshot shells retain normal source maps and provenance; CFG owns capture-point context, while snapshot claims and value substitution remain separate.

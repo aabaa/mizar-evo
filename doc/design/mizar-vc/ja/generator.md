@@ -554,7 +554,7 @@ exhaustive match を壊さず追加できるよう、各 enum は `#[non_exhaust
 
 ## Bounded source return postconditions
 
-`generate_source_algorithm_postconditions(&CoreIr, BuildSnapshotId, &GenerationSchemaVersion, &VcSchemaVersion) -> Result<VcSet, String>` は object 仮引数一つの平坦な profile を検証し、CFG/handoff と既存 intake/normalization を導出する。不変の単一 return は既存 Core 項等式を保持する。初期化 var/const・型付き局所書込み・等式 assert は認証済み program-value 世代を使用し、書込み前に RHS を評価し、古い事実と独立記憶領域を保持して新しい等式・型ガードを追加する。prefix 否定一つの等式 assertion は既存 Not(Generated(ProgramEquals)) を使い、実変数・書込み世代と両ソース式の範囲を保持し、全行を計上する。ensures は等式のみとする。assertion 目標は直前の文脈を使用し、後続には同じ目標を assertion handoff への未証明依存としてのみ渡す。return は現在値で result を置換する。未加工の正規化文脈は非公開とし、ソース・所有者・map・由来・書込み順序・依存リンクを原子的に検証する。assert と ensures は open VC、終了メタデータは元の status の NoConcreteVc とし、obligation がなければ完全なゼロ VC を返す。未対応制御、VC profile 内の ghost、不正・診断付き入力を拒否する。anchor と未解決依存は再利用不可に留め、discharge・承認・terminating 昇格を行わない。
+`generate_source_algorithm_postconditions(&CoreIr, BuildSnapshotId, &GenerationSchemaVersion, &VcSchemaVersion) -> Result<VcSet, String>` は object 仮引数一つの平坦な profile を検証し、CFG/handoff と既存 intake/normalization を導出する。不変の単一 return は既存 Core 項等式を保持する。初期化 var/const・型付き局所書込み・等式 assert は認証済み program-value 世代を使用し、書込み前に RHS を評価し、古い事実と独立記憶領域を保持して新しい等式・型ガードを追加する。prefix 否定一つの等式 assertion は既存 Not(Generated(ProgramEquals)) を使い、実変数・書込み世代と両ソース式の範囲を保持し、全行を計上する。ensures は等式のみとする。assertion 目標は直前の文脈を使用し、後続には同じ目標を assertion handoff への未証明依存としてのみ渡す。return は現在値で result を置換する。未加工の正規化文脈は非公開とし、ソース・所有者・map・由来・書込み順序・依存リンクを原子的に検証する。assert と ensures は open VC、終了メタデータは元の status の NoConcreteVc とし、obligation がなければ完全なゼロ VC を返す。未対応制御、ghost pick・未対応 ghost flow、不正・診断付き入力を拒否する。anchor と未解決依存は再利用不可に留め、discharge・承認・terminating 昇格を行わない。
 
 ## Bounded void-claim generation
 
@@ -585,3 +585,8 @@ capture-safe 束縛置換に従い、証人型と属性本体の二つの open l
 既存 intake/candidate/normalization で実 Core goal と厳密な seed accounting を保ち、正規化前に実要求由来の `ComputationHint::SymbolicRequest(ProofHintKey("by-computation(steps:<digits>)"))` を付ける。
 steps 表記と source provenance を保持し、`0` は実行主張なしの無制限要求のままとする。VC は前提・discharge・policy 置換・反射等式受理なしで Open に留める。
 Core goal hash は保守的なままで、dependency slicing は opaque computation dependency を残し、discharge/reuse evidence にはしない。source 経路は検証済み Core seed から active handoff を直接構築し、汎用 Core-aware handoff は要求を捨てず computation 終端を明示的に deferred にする。
+
+## Flat snapshot postconditions
+
+実装済みの snapshot 拡張は Core/CFG 捕捉を完全検証して既存 `generate_source_algorithm_postconditions` を使う。初期化 ghost var/const は既存 program-value 世代を使い、runtime sink の ghost 依存拒否を保つ。捕捉は状態・仮定を変更せず、通常の返却 postcondition は Open に留める。
+全 handoff 行を保持し、ghost 初期化は既存 GhostErasure/NoConcreteVc、終了は元の未解決 status を残す。捕捉は証明や ghost-erasure 証明書ではなく、snapshot claim 置換・loop・false-ensures 検証は未対応とする。

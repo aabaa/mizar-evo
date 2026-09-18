@@ -3164,7 +3164,7 @@ fn active_runner_reports_are_byte_stable_across_repeated_runs() {
     let root = config.workspace_root.clone();
     let plan = build_test_plan(&config).unwrap();
 
-    assert_eq!(active_proof_verification_cases(&plan).count(), 16);
+    assert_eq!(active_proof_verification_cases(&plan).count(), 17);
 
     let parse_first = canonical_parse_only_report(&run_parse_only_corpus(&config).unwrap(), &root);
     let parse_second = canonical_parse_only_report(&run_parse_only_corpus(&config).unwrap(), &root);
@@ -4046,6 +4046,11 @@ fn repository_corpus_plan_succeeds() {
             "pass/algorithms",
         ),
         (
+            "spec.en.mizar_vc.vc_ir.algorithm_ghost_snapshot",
+            "pass_proof_verification_algorithm_ghost_snapshot_001",
+            "pass/algorithms",
+        ),
+        (
             "spec.en.mizar_vc.vc_ir.algorithm_var_const_assert_snapshot",
             "pass_proof_verification_algorithm_var_const_assert_001",
             "pass/algorithms",
@@ -4087,6 +4092,7 @@ fn repository_corpus_plan_succeeds() {
             snapshot_ref,
             "spec.en.mizar_vc.vc_ir.algorithm_void_claim_snapshot"
                 | "spec.en.mizar_vc.vc_ir.algorithm_assert_failure_snapshot"
+                | "spec.en.mizar_vc.vc_ir.algorithm_ghost_snapshot"
                 | "spec.en.mizar_vc.vc_ir.computation_request_snapshot"
         ) {
             assert_eq!(
@@ -4097,6 +4103,8 @@ fn repository_corpus_plan_succeeds() {
                 requirement.section,
                 if snapshot_ref == "spec.en.mizar_vc.vc_ir.computation_request_snapshot" {
                     "VC Task 32; bounded source computation request VcIr snapshot"
+                } else if snapshot_ref == "spec.en.mizar_vc.vc_ir.algorithm_ghost_snapshot" {
+                    "VC Task 43; bounded ghost snapshot return VcIr snapshot"
                 } else if directory == "fail/algorithms" {
                     "VC Task 43; bounded contradictory assertion VcIr snapshot"
                 } else {
@@ -10644,8 +10652,8 @@ fn proof_verification_cli_reports_task180_and_step5c2_summary() {
         String::from_utf8_lossy(&output.stderr)
     );
     let stdout = String::from_utf8_lossy(&output.stdout);
-    assert!(stdout.contains("proof-verification cases: 16"));
-    assert!(stdout.contains("passed: 16"));
+    assert!(stdout.contains("proof-verification cases: 17"));
+    assert!(stdout.contains("passed: 17"));
     assert!(stdout.contains("failed: 0"));
 }
 

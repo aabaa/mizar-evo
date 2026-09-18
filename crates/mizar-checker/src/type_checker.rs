@@ -50,6 +50,7 @@ pub struct SourceAlgorithmCheck<'a> {
     bindings: BindingEnv,
     inference: TermFormulaInferenceOutput,
     algorithm: (TypedNodeId, SymbolId),
+    snapshots: BTreeMap<TypedNodeId, (String, Vec<BindingId>)>,
 }
 
 impl SourceAlgorithmCheck<'_> {
@@ -66,6 +67,11 @@ impl SourceAlgorithmCheck<'_> {
     /// Returns checked variable uses and their inferred types.
     pub const fn inference(&self) -> &TermFormulaInferenceOutput {
         &self.inference
+    }
+
+    /// Returns source-ordered visible binding identities at each flat snapshot.
+    pub const fn snapshots(&self) -> &BTreeMap<TypedNodeId, (String, Vec<BindingId>)> {
+        &self.snapshots
     }
 
     /// Returns the actual algorithm source node and resolver identity.
@@ -289,6 +295,7 @@ pub fn check_source_algorithm_types<'a>(
             bindings,
             inference,
             algorithm: (TypedNodeId::new(algorithm.index()), owner.symbol().clone()),
+            snapshots: BTreeMap::new(),
         });
     }
     let [block] = items else {
@@ -363,9 +370,10 @@ pub fn check_source_algorithm_types<'a>(
     };
     let body_statements = parts(*statements, &K::AlgorithmStatementList)?;
     let contract_profile = ensures.is_some()
-        || body_statements
-            .iter()
-            .any(|statement| node(*statement).is_ok_and(|node| node.kind() == &K::AssertStatement));
+        || body_statements.iter().any(|statement| {
+            node(*statement)
+                .is_ok_and(|node| matches!(node.kind(), K::AssertStatement | K::SnapshotStatement))
+        });
     if ensures.is_some() && identifier(*binder)? == "result" {
         return Err(invalid());
     }
@@ -456,11 +464,12 @@ pub fn check_source_algorithm_types<'a>(
         None
     };
     let mut local_names = BTreeSet::new();
+    let mut snapshots = BTreeMap::new();
+    let mut snapshot_names = BTreeSet::new();
     for statement in parts(*statements, &K::AlgorithmStatementList)? {
         match node(*statement)?.kind() {
             K::VariableDeclaration => {
                 let declaration = node(*statement)?.children();
-                let ghost = declaration.len() == 4;
                 let declaration = if let [ghost, rest @ ..] = declaration
                     && matches!(node(*ghost)?.kind(), K::Token(token) if token.text.as_ref() == "ghost")
                 {
@@ -479,9 +488,6 @@ pub fn check_source_algorithm_types<'a>(
                     _ => return Err(invalid()),
                 };
                 tokens(&[(*var, keyword), (*semi, ";")])?;
-                if ghost && keyword == "const" {
-                    return Err(invalid());
-                }
                 let [binder, assign, initializer] = parts(*binding, &K::VariableBinding)? else {
                     return Err(invalid());
                 };
@@ -508,6 +514,17 @@ pub fn check_source_algorithm_types<'a>(
                     Some(binding),
                     false,
                 ));
+            }
+            K::SnapshotStatement => {
+                let [keyword, name, semi] = node(*statement)?.children() else {
+                    return Err(invalid());
+                };
+                tokens(&[(*keyword, "snapshot"), (*semi, ";")])?;
+                let name = identifier(*name)?.to_owned();
+                if !snapshot_names.insert(name.clone()) {
+                    return Err(invalid());
+                }
+                snapshots.insert(TypedNodeId::new(statement.index()), (name, Vec::new()));
             }
             K::AssignmentStatement => {
                 let [target, assign, value, semi] = node(*statement)?.children() else {
@@ -674,6 +691,28 @@ pub fn check_source_algorithm_types<'a>(
         diagnostics: BindingDiagnosticTable::new(),
     })
     .map_err(|_| invalid())?;
+    for (site, (_, captures)) in &mut snapshots {
+        let SourceAnchor::Range(snapshot_range) = typed.node(*site).ok_or_else(invalid)?.anchor
+        else {
+            return Err(invalid());
+        };
+        let ordinal = snapshot_range.start;
+        for (id, entry) in bindings.bindings().iter() {
+            if entry.kind == BindingKind::Generated {
+                continue;
+            }
+            let lookup = BindingLookupSite::new(
+                &entry.spelling,
+                body_context,
+                Some(body_scope.clone()),
+                ordinal,
+            );
+            if matches!(bindings.lookup(&lookup).map_err(|_| invalid())?, BindingLookupResult::Local(found) if found == id)
+            {
+                captures.push(id);
+            }
+        }
+    }
     let mut binding_types = BTreeMap::from([(parameter_binding, *parameter_type)]);
     if let Some(result) = result_binding {
         binding_types.insert(result, *return_type);
@@ -775,6 +814,7 @@ pub fn check_source_algorithm_types<'a>(
         bindings,
         inference,
         algorithm: (TypedNodeId::new(algorithm.index()), owner.symbol().clone()),
+        snapshots,
     })
 }
 

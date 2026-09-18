@@ -1354,6 +1354,14 @@ pub fn validate_expectation_path(
                 None,
             ),
             (
+                "pass_proof_verification_algorithm_ghost_snapshot_001",
+                "pass/algorithms",
+                "algorithms.ghost",
+                "spec.en.20.algorithms.ghost.snapshot",
+                "spec.en.mizar_vc.vc_ir.algorithm_ghost_snapshot",
+                None,
+            ),
+            (
                 "pass_proof_verification_algorithm_var_const_assert_001",
                 "pass/algorithms",
                 "algorithms.state",
@@ -1408,7 +1416,10 @@ pub fn validate_expectation_path(
                 && expectation.tags.as_slice() == ["active_proof_verification"]
                 && (!matches!(
                     domain,
-                    "algorithms.claim" | "algorithms.assertions" | "algorithms.computation"
+                    "algorithms.claim"
+                        | "algorithms.assertions"
+                        | "algorithms.computation"
+                        | "algorithms.ghost"
                 ) || expectation.schema_version == 1
                     && expectation.profiles.as_slice() == ["fast"]
                     && expectation.ast_profile.is_none()

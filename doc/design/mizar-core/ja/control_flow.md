@@ -47,9 +47,7 @@ task 14 の分類:
 - `external_dependency_gap`: full algorithm payload の source-to-checker extraction と
   parser task 32-34 の source-derived coverage はこの task の外に残る。upstream payload
   bridge ができるまで、実装 task は explicit core/Rust fixture を使う。
-- `external_dependency_gap`: 仕様 20 章の snapshot / claim payload は task 13 の
-  `CoreAlgorithmStmtKind` surface には存在しない。これらは silently drop してはならない。
-  将来 checker-owned shell が explicit snapshot-site metadata を運ぶまで、phase 10 は lower しない。
+- `external_dependency_gap`: 入れ子 snapshot・state claim は [平坦捕捉](#flat-snapshot-flow) の範囲外に留め、payload の欠落を黙って消さない。
 - `external_dependency_gap`: `mizar-vc`、`mizar-kernel`、`mizar-proof` はこの crate
   task で downstream consumer として実装しない。それらの API を仮実装してはならない。
 - `deferred`: Rust data structure、CFG construction、contract/ghost/termination
@@ -414,12 +412,7 @@ composition は `Normal` からだけ継続する。
   loop record として表現する。`ForRange` metadata は、direction (`to` または `downto`)、
   hidden positive-`Nat` step value obligation、direction-specific `next(i)` expression、
   仕様 20.13.3 が要求する `past_end(i_exit)` exit predicate を含めなければならない。
-- 仕様 20 章の `Snapshot` と claim 関連 algorithm statement は、現在の core statement shell には
-  存在しない。checker payload extraction が explicit snapshot shell を提供するまで、phase 10 は
-  source text から snapshot を再構築してはならない。将来の `Snapshot` shell は、現在の
-  `ProgramContextId`、visible runtime / ghost local、claim block が必要とする hidden loop value を
-  capture する source-mapped snapshot site を記録する。missing snapshot payload は diagnostic であり、
-  silently erase してはならない。
+- [平坦 snapshot](#flat-snapshot-flow) は明示的な checker-owned shell を保持する。入れ子・claim 捕捉を source text から再構築したり黙って消したりしない。
 - `Return` は現在 block を return terminator で閉じ、postcondition site を取り付ける。
 - `Break` と `Continue` は innermost active loop に解決する。loop の外では diagnostic になり、
   error terminator を作る。
@@ -468,7 +461,7 @@ structural diagnostic をすでに emit している。より広い diagnostic c
 - phase 9 から持ち越された malformed / missing algorithm statement。
 - unsupported aliasing / lvalue metadata。
 
-型付き AssignLocal は immutable 書込み・代入 ghost 検査の実際の local 同一性を与える。opaque CorePlace 書込み、条件・呼出し経由の ghost 流入、call/contract 実体化エラー、未対応 pattern、snapshot/claim、より広い alias/lvalue 精度は checker-owned メタデータを待つ保留とし、source spelling から権限を推測しない。
+型付き AssignLocal は immutable 書込み・代入 ghost 検査の実際の local 同一性を与える。opaque CorePlace 書込み、条件・呼出し経由の ghost 流入、call/contract 実体化エラー、未対応 pattern、入れ子 snapshot/state claim、より広い alias/lvalue 精度は checker-owned メタデータを待つ保留とし、source spelling から権限を推測しない。
 
 diagnostic は source order、algorithm id、block id、diagnostic class の順に sort する。
 diagnostic は downstream consumer 向けに algorithm を partial/error と印付けてよいが、
@@ -609,3 +602,8 @@ task 15-18 に deferred する。
 ソース Let/Return/Break は既存構築と IllegalBreak を維持する。型付き AssignLocal は実際の local 同一性を解決して AssignmentEffectTarget::Local を記録し、不明な代入先を拒否し、ImmutableAssignment {local,var} で const・仮引数・result への書込みを拒否する。GhostIsolationViolation {local,var} は runtime 初期化子・型付き代入・return の実際の ghost 依存を、再帰的な項使用収集と決定的な statement/use 由来から記録し、到達不能な参照先も検査する。ghost 代入先は宣言の可視性を保持し、opaque Assign place key を名前から解決しない。不正 break 後の到達不能診断は付随診断のままとする。CFG の assertion fact は後続への配置を表し、その assertion 自身の VC で仮定する権限ではない。代入前の世代付き具体文脈は VC が所有し、条件・呼出しの ghost 検査、証明、診断群全体の完了は主張しない。
 
 `build_obligation_seed_handoff` は computation 終端の seed 参照・source を保持するが、seed-only consumer が要求を保持できないため handoff の複製だけを Deferred にする。元 Core seed は Active のままで、source-aware computation generator が要求を含む完全な射影を所有する。
+
+## Flat snapshot flow
+
+実装済みの `ControlFlowStatementPlacement::Snapshot { block, context, captures: Vec<LocalId> }` は Core 文を snapshot 同一性とし、実際の直前 ProgramContextId と可視 local 集合を保持する。ソース順序・同一所有者・初期化を検証し、可視性は definitely-initialized 全体でなく名前の shadowing に従う。
+捕捉は書込み・事実・義務・終了承認を作らない。保存文脈の assignment effect は以前の値・書込み同一性を保持し、後続書込みで置換しない。入れ子 snapshot・claim link は未対応とする。

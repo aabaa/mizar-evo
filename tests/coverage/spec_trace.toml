@@ -7083,6 +7083,19 @@ tests = [
 ]
 
 [[requirement]]
+id = "spec.en.mizar_vc.vc_ir.algorithm_ghost_snapshot"
+source = "doc/design/mizar-vc/en/source_vc_decomposition.md"
+section = "VC Task 43; bounded ghost snapshot return VcIr snapshot"
+stage = "proof_verification"
+status = "covered"
+required = true
+coverage = "snapshot"
+notes = "Flat visible-storage capture adds no assumption; the Open return VC preserves ghost-erasure and unresolved termination accounting. State claims and algorithm acceptance remain deferred."
+tests = [
+  "tests/miz/pass/algorithms/pass_proof_verification_algorithm_ghost_snapshot_001.expect.toml",
+]
+
+[[requirement]]
 id = "spec.en.mizar_vc.vc_ir.algorithm_var_const_assert_snapshot"
 source = "doc/design/mizar-vc/en/source_vc_decomposition.md"
 section = "VC Task 43; bounded straight-line state and assertion VcIr snapshot"

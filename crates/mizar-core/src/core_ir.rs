@@ -654,6 +654,10 @@ pub struct CoreAlgorithmStmt {
 #[derive(Debug, Clone, PartialEq, Eq)]
 #[non_exhaustive]
 pub enum CoreAlgorithmStmtKind {
+    Snapshot {
+        name: String,
+        captures: Vec<CoreVarId>,
+    },
     Let {
         binder: CoreBinder,
         value: Option<CoreTermId>,
@@ -1478,7 +1482,8 @@ fn normalize_algorithm_statement(kind: &mut CoreAlgorithmStmtKind) {
         CoreAlgorithmStmtKind::Let { binder, .. } | CoreAlgorithmStmtKind::Pick { binder, .. } => {
             normalize_binder(binder);
         }
-        CoreAlgorithmStmtKind::Assign { .. }
+        CoreAlgorithmStmtKind::Snapshot { .. }
+        | CoreAlgorithmStmtKind::Assign { .. }
         | CoreAlgorithmStmtKind::AssignLocal { .. }
         | CoreAlgorithmStmtKind::Assert { .. }
         | CoreAlgorithmStmtKind::If { .. }
@@ -1982,6 +1987,54 @@ fn validate_algorithm_statement(
     parts: &CoreIrParts,
 ) -> Result<(), CoreIrError> {
     match statement {
+        CoreAlgorithmStmtKind::Snapshot { name, captures } => {
+            let invalid = || CoreIrError::InvalidReference {
+                table: "algorithm snapshot capture",
+                index: id.index(),
+                len: parts.algorithm_statements.len(),
+            };
+            let algorithm = parts.algorithms.get(owner).ok_or_else(invalid)?;
+            let position = algorithm
+                .statements
+                .iter()
+                .position(|statement| *statement == id)
+                .ok_or_else(invalid)?;
+            if name.is_empty() || parts.algorithm_statements.iter().any(|(other, statement)| {
+                other != id && statement.owner == owner
+                    && matches!(&statement.kind, CoreAlgorithmStmtKind::Snapshot { name: other, .. } if other == name)
+            }) {
+                return Err(invalid());
+            }
+            let mut visible = algorithm.params.iter().collect::<Vec<_>>();
+            for previous in &algorithm.statements[..position] {
+                let statement = parts
+                    .algorithm_statements
+                    .get(*previous)
+                    .ok_or_else(invalid)?;
+                match &statement.kind {
+                    CoreAlgorithmStmtKind::Let { binder, .. } => visible.push(binder),
+                    CoreAlgorithmStmtKind::Snapshot { .. }
+                    | CoreAlgorithmStmtKind::AssignLocal { .. }
+                    | CoreAlgorithmStmtKind::Assert { .. } => {}
+                    _ => return Err(invalid()),
+                }
+            }
+            let expected = visible
+                .iter()
+                .enumerate()
+                .filter_map(|(index, binder)| {
+                    let shadowed = binder.source_name.as_ref().is_some_and(|name| {
+                        visible[index + 1..]
+                            .iter()
+                            .any(|later| later.source_name.as_ref() == Some(name))
+                    });
+                    (!shadowed).then_some(binder.var)
+                })
+                .collect::<Vec<_>>();
+            if *captures != expected {
+                return Err(invalid());
+            }
+        }
         CoreAlgorithmStmtKind::Let { binder, value, .. } => {
             validate_binder(binder, parts)?;
             if let Some(value) = value {

@@ -2187,6 +2187,7 @@ fn step5c14_static_seal_rejects_projection_environment_and_owner_corruption() {
     use mizar_resolve::resolved_ast::SurfaceResolvedArena;
     let case = step5c14_static_case("ghost_isolation");
     let text = std::fs::read_to_string(&case.source_path).unwrap();
+    for text in [text, "definition let a be object; terminating algorithm ghostalgo(a) -> object ensures result = a do ghost var g := a; snapshot s0; return a; end; end;".to_owned()] {
     let frontend = super::formula_statement::step5c8_test_frontend(&text);
     let ast = frontend.ast.clone().unwrap();
     let (source, typed, symbols) =
@@ -2197,15 +2198,16 @@ fn step5c14_static_seal_rejects_projection_environment_and_owner_corruption() {
         .iter()
         .map(|(_, node)| node.clone())
         .collect::<Vec<_>>();
+    let target = raw.iter().position(|node| node.kind.as_str() == "SnapshotStatement").unwrap_or(0);
     for mutation in 0..7 {
         let mut nodes = raw.clone();
         let mut root = typed.root();
         match mutation {
-            0 => nodes[0].kind = "Unrelated".into(),
-            1 => nodes[0].resolved_node = nodes[1].resolved_node,
-            2 => nodes[0].anchor = nodes[1].anchor.clone(),
-            3 => nodes[0].recovery = NodeRecoveryState::Recovered,
-            4 => nodes[0].typing = TypingState::Successful,
+            0 => nodes[target].kind = "Unrelated".into(),
+            1 => nodes[target].resolved_node = nodes[1].resolved_node,
+            2 => nodes[target].anchor = nodes[1].anchor.clone(),
+            3 => nodes[target].recovery = NodeRecoveryState::Recovered,
+            4 => nodes[target].typing = TypingState::Successful,
             5 => nodes.last_mut().unwrap().children.clear(),
             6 => root = None,
             _ => unreachable!(),
@@ -2226,7 +2228,7 @@ fn step5c14_static_seal_rejects_projection_environment_and_owner_corruption() {
         .is_err()
     );
     let changed = super::formula_statement::step5c8_test_frontend(
-        &text.replace("ghostleak", "other_algorithm"),
+        &text.replace("ghostleak", "other_algorithm").replace("ghostalgo", "other_algorithm"),
     )
     .ast
     .unwrap();
@@ -2234,6 +2236,8 @@ fn step5c14_static_seal_rejects_projection_environment_and_owner_corruption() {
         super::resolver_symbol_collection(&step5c11_config().workspace_root, &case, &changed);
     assert!(check_source_algorithm_types(&source, &typed, &wrong.env).is_err());
     assert!(step5c14_static_core(&case, &format!("{text}\n{text}")).is_err());
+    assert!(step5c14_static_core(&case, &format!("{text} snapshot outside;")).is_err());
+    }
 }
 
 #[test]
@@ -2367,6 +2371,348 @@ fn step5c14_return_vcs(
         &mizar_vc::vc_ir::GenerationSchemaVersion::new("mizar-vc-generation-step5c14-return-v1"),
         &mizar_vc::vc_ir::VcSchemaVersion::new("mizar-vc-vcset-step5c14-return-v1"),
     )
+}
+
+#[test]
+fn step5c14_snapshot_preserves_visible_storage_and_capture_point() {
+    use mizar_core::control_flow::{ControlFlowStatementPlacement as P, build_control_flow_ir};
+    use mizar_core::core_ir::{
+        CoreAlgorithmStmtKind as S, CoreFormulaKind as F, CoreTermKind as T, ObligationSeedKind,
+        ObligationSeedStatus,
+    };
+    let config = step5c11_config();
+    let case = step5c14_return_case();
+    for declaration in ["var", "const", "ghost var", "ghost const"] {
+        for shadow in [false, true] {
+            let local = if shadow { "a" } else { "g" };
+            let writes = if declaration.ends_with("var") {
+                format!("{local} := a;")
+            } else {
+                String::new()
+            };
+            let text = format!(
+                "definition let a be object; terminating algorithm renamed(a) -> object ensures result = a do {declaration} {local} := a; {writes} snapshot before; var later := a; {writes} snapshot after; return a; end; end;"
+            );
+            let (source, typed, symbols) = super::source_registration_inputs(
+                &config.workspace_root,
+                &case,
+                super::formula_statement::step5c8_test_frontend(&text),
+            )
+            .unwrap();
+            let checked = mizar_checker::type_checker::check_source_algorithm_types(
+                &source, &typed, &symbols,
+            )
+            .unwrap();
+            assert_eq!(checked.snapshots().len(), 2);
+            let core = mizar_core::elaborator::lower_source_algorithms(&checked).unwrap();
+            assert_eq!(core, step5c14_static_core(&case, &text).unwrap());
+            let output = build_control_flow_ir(&core);
+            assert_eq!(output, build_control_flow_ir(&core));
+            let (_, flow) = output.flows.iter().next().unwrap();
+            let mut snapshots = Vec::new();
+            for (id, stmt) in core.algorithm_statements().iter() {
+                if let S::Snapshot { name, captures } = &stmt.kind {
+                    let (site, (_, bindings)) = checked
+                        .snapshots()
+                        .iter()
+                        .find(|(_, (n, _))| n == name)
+                        .unwrap();
+                    assert_eq!(
+                        stmt.source.anchor,
+                        mizar_core::core_ir::CoreSourceAnchor::SourceRange(
+                            match typed.node(*site).unwrap().anchor {
+                                mizar_session::SourceAnchor::Range(range) => range,
+                                _ => panic!(),
+                            }
+                        )
+                    );
+                    assert_eq!(captures.len(), bindings.len());
+                    for (var, binding) in captures.iter().zip(bindings) {
+                        let declaration = &checked
+                            .bindings()
+                            .bindings()
+                            .get(*binding)
+                            .unwrap()
+                            .declaration_range;
+                        let local = flow
+                            .locals
+                            .iter()
+                            .find(|(_, local)| local.binder.var == *var)
+                            .unwrap()
+                            .1;
+                        assert_eq!(
+                            local.binder.source.anchor,
+                            mizar_core::core_ir::CoreSourceAnchor::SourceRange(*declaration)
+                        );
+                    }
+                    let P::Snapshot {
+                        block,
+                        context,
+                        captures: locals,
+                    } = &flow.source_map.statement_placements[&id]
+                    else {
+                        panic!()
+                    };
+                    assert!(flow.blocks.get(*block).unwrap().statements.contains(&id));
+                    assert_eq!(
+                        *captures,
+                        locals
+                            .iter()
+                            .map(|id| flow.locals.get(*id).unwrap().binder.var)
+                            .collect::<Vec<_>>()
+                    );
+                    let names = locals
+                        .iter()
+                        .map(|id| {
+                            flow.locals
+                                .get(*id)
+                                .unwrap()
+                                .binder
+                                .source_name
+                                .as_ref()
+                                .unwrap()
+                                .as_str()
+                        })
+                        .collect::<Vec<_>>();
+                    let expected = match (name.as_str(), shadow) {
+                        ("before", false) => vec!["a", "g"],
+                        ("before", true) => vec!["a"],
+                        ("after", false) => vec!["a", "g", "later"],
+                        ("after", true) => vec!["a", "later"],
+                        _ => panic!(),
+                    };
+                    assert_eq!(names, expected);
+                    let (_, algorithm) = core.algorithms().iter().next().unwrap();
+                    let parameter = algorithm.params[0].var;
+                    let F::Equals { right, .. } = core
+                        .formulas()
+                        .get(algorithm.contracts.ensures[0])
+                        .unwrap()
+                        .kind
+                    else {
+                        panic!()
+                    };
+                    assert_eq!(core.terms().get(right).unwrap().kind, T::Var(parameter));
+                    if shadow {
+                        let S::Let { binder, .. } = &core
+                            .algorithm_statements()
+                            .get(algorithm.statements[0])
+                            .unwrap()
+                            .kind
+                        else {
+                            panic!()
+                        };
+                        assert_ne!(binder.var, parameter);
+                        assert_eq!(captures[0], binder.var);
+                        assert!(!captures.contains(&parameter));
+                        assert!(
+                            flow.locals
+                                .iter()
+                                .any(|(_, local)| local.binder.var == parameter)
+                        );
+                    }
+
+                    let saved = flow.contexts.get(*context).unwrap();
+                    assert!(
+                        locals
+                            .iter()
+                            .all(|local| saved.definitely_initialized.contains(local))
+                    );
+                    snapshots.push((
+                        *context,
+                        saved.assignment_effects.clone(),
+                        saved.available_facts.clone(),
+                    ));
+                }
+            }
+            assert_eq!(snapshots.len(), 2);
+            assert_ne!(snapshots[0].0, snapshots[1].0);
+            let before_count = 1 + usize::from(!writes.is_empty());
+            assert_eq!(snapshots[0].1.len(), before_count);
+            assert_eq!(
+                snapshots[1].1.len(),
+                before_count + 1 + usize::from(!writes.is_empty())
+            );
+            assert_eq!(snapshots[1].1[..before_count], snapshots[0].1);
+            if shadow && declaration.starts_with("ghost") {
+                assert!(!flow.diagnostics.is_empty());
+                assert!(step5c14_return_vcs(&core).is_err());
+            } else {
+                assert!(flow.diagnostics.is_empty());
+                let vcs = step5c14_return_vcs(&core).unwrap();
+                assert_eq!(vcs, step5c14_return_vcs(&core).unwrap());
+            }
+        }
+    }
+    let original = "definition let a be object; terminating algorithm ghostalgo(a) -> object ensures result = a do ghost var g := a; snapshot s0; return a; end; end;";
+    let captured = step5c14_static_core(&case, original).unwrap();
+    let uncaptured = step5c14_static_core(&case, &original.replace("snapshot s0;", "")).unwrap();
+    assert_eq!(captured.terms().len(), uncaptured.terms().len());
+    assert_eq!(captured.formulas().len(), uncaptured.formulas().len());
+    let vcs = step5c14_return_vcs(&captured).unwrap();
+    let without_snapshot = step5c14_return_vcs(&uncaptured).unwrap();
+    assert_eq!(vcs.vcs().len(), 1);
+    assert_eq!(vcs.vcs()[0].status, mizar_vc::vc_ir::VcStatus::Open);
+    assert_eq!(vcs.seed_accounting().len(), 3);
+    let output = build_control_flow_ir(&captured);
+    let handoff = mizar_core::control_flow::build_obligation_seed_handoff(&captured, &output);
+    let (_, algorithm) = captured.algorithms().iter().next().unwrap();
+    let initializer = algorithm.statements[0];
+    for row in vcs.seed_accounting() {
+        let entry = handoff.entries.get(row.handoff).unwrap();
+        assert_eq!(entry.seed.owner, algorithm.item);
+        assert_eq!(entry.seed.status, ObligationSeedStatus::Deferred);
+        assert_eq!(row.seed_status, entry.seed.status);
+        match entry.flow_site.as_ref().unwrap().kind {
+            mizar_core::control_flow::ControlFlowObligationSiteKind::GhostAssignment => {
+                assert_eq!(entry.seed.kind, ObligationSeedKind::GhostErasure);
+                assert_eq!(
+                    entry.flow_site.as_ref().unwrap().statement,
+                    Some(initializer)
+                );
+                let source = &captured
+                    .algorithm_statements()
+                    .get(initializer)
+                    .unwrap()
+                    .source;
+                let mut provenance = source.provenance.clone();
+                provenance.push(mizar_core::core_ir::CoreProvenance::new(
+                    mizar_core::core_ir::CoreProvenancePhase::Generated,
+                    "flow-handoff:ghost-assignment:0",
+                ));
+                assert_eq!(
+                    entry.seed.source,
+                    source.clone().with_provenance(provenance)
+                );
+                assert!(matches!(
+                    row.mapping,
+                    mizar_vc::vc_ir::SeedVcMapping::NoConcreteVc { .. }
+                ));
+            }
+            mizar_core::control_flow::ControlFlowObligationSiteKind::PartialTermination => {
+                assert_eq!(entry.seed.kind, ObligationSeedKind::AlgorithmTermination);
+                assert!(matches!(
+                    row.mapping,
+                    mizar_vc::vc_ir::SeedVcMapping::NoConcreteVc { .. }
+                ));
+            }
+            mizar_core::control_flow::ControlFlowObligationSiteKind::Ensures => {
+                assert_eq!(entry.seed.kind, ObligationSeedKind::AlgorithmContract)
+            }
+            _ => panic!("invented snapshot obligation"),
+        }
+    }
+
+    assert_eq!(
+        vcs.seed_accounting()
+            .iter()
+            .filter(|row| matches!(
+                row.mapping,
+                mizar_vc::vc_ir::SeedVcMapping::NoConcreteVc { .. }
+            ))
+            .count(),
+        2
+    );
+    assert_eq!(
+        vcs.generated_formulas().len(),
+        without_snapshot.generated_formulas().len()
+    );
+    assert_eq!(
+        vcs.vcs()[0].local_context.entries().len(),
+        without_snapshot.vcs()[0].local_context.entries().len()
+    );
+    for text in [
+        original.replace("ghostalgo", "renamed"),
+        original
+            .replace("let a be", "let parameter be")
+            .replace("(a)", "(parameter)")
+            .replace("= a", "= parameter")
+            .replace("return a;", "return parameter;"),
+        original.replace("g :=", "hidden :="),
+        original.replace("s0", "state"),
+    ] {
+        let core = step5c14_static_core(&case, &text).unwrap();
+        assert!(step5c14_return_vcs(&core).is_ok());
+    }
+    for (old, new) in [
+        ("snapshot s0;", "snapshot s0; snapshot s0;"),
+        ("snapshot s0;", "snapshot ;"),
+        ("snapshot s0;", "snapshot s0"),
+        ("snapshot s0;", "while a = a do snapshot s0; end;"),
+        ("return a;", "return s0.a;"),
+    ] {
+        assert!(
+            step5c14_static_core(&case, &original.replace(old, new)).is_err(),
+            "{new}"
+        );
+    }
+}
+
+#[test]
+fn step5c14_snapshot_rejects_source_owner_and_hidden_storage_corruption() {
+    use mizar_core::core_ir::*;
+    let core = step5c14_static_core(&step5c14_return_case(), "definition let a be object; terminating algorithm snap(a) -> object ensures result = a do var a := a; snapshot here; return a; end; end;").unwrap();
+    let (_, algorithm) = core.algorithms().iter().next().unwrap();
+    let snapshot = algorithm.statements[1];
+    assert!(step5c14_return_vcs(&core).is_ok());
+    for mutation in 0..4 {
+        let mut parts = CoreIrParts {
+            source_id: core.source_id(),
+            module_id: core.module_id().clone(),
+            items: core.items().clone(),
+            terms: core.terms().clone(),
+            formulas: core.formulas().clone(),
+            definitions: core.definitions().clone(),
+            proofs: core.proofs().clone(),
+            proof_nodes: core.proof_nodes().clone(),
+            algorithms: core.algorithms().clone(),
+            algorithm_statements: core.algorithm_statements().clone(),
+            generated: core.generated().clone(),
+            obligation_seeds: core.obligation_seeds().clone(),
+            source_map: core.source_map().clone(),
+            diagnostics: core.diagnostics().clone(),
+        };
+        let statement = parts.algorithm_statements.get_mut(snapshot).unwrap();
+        match mutation {
+            0 => statement.source.provenance.clear(),
+            1 => {
+                statement.source.anchor = core
+                    .algorithm_statements()
+                    .get(algorithm.statements[2])
+                    .unwrap()
+                    .source
+                    .anchor
+                    .clone()
+            }
+            2 => statement.owner = CoreAlgorithmId::new(999),
+            3 => {
+                let CoreAlgorithmStmtKind::Snapshot { captures, .. } = &mut statement.kind else {
+                    panic!()
+                };
+                captures.insert(0, algorithm.params[0].var);
+            }
+            _ => unreachable!(),
+        }
+        parts
+            .source_map
+            .algorithm_sources
+            .insert(snapshot, statement.source.clone());
+        let changed = CoreIr::try_new(parts);
+        if mutation < 2 {
+            let changed = changed.unwrap_or_else(|error| {
+                panic!("valid enclosing snapshot source probe {mutation}: {error}")
+            });
+            assert!(
+                step5c14_return_vcs(&changed).is_err(),
+                "snapshot source mutation {mutation}"
+            );
+        } else {
+            assert!(
+                changed.is_err(),
+                "snapshot owner/hidden storage mutation {mutation}"
+            );
+        }
+    }
 }
 
 #[test]
@@ -2911,6 +3257,11 @@ fn step5c14_return_admission_requires_exact_snapshot_trace_and_stage() {
         step5c14_state_case(),
         step5c14_claim_case(),
         step5c14_assert_failure_case(),
+        plan.cases
+            .iter()
+            .find(|case| case.id.0 == "pass_proof_verification_algorithm_ghost_snapshot_001")
+            .unwrap()
+            .clone(),
         plan.cases
             .iter()
             .find(|case| case.id.0 == "pass_proof_verification_computation_justification_001")
