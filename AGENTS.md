@@ -83,6 +83,9 @@ and committing. Give each sub-agent a compact self-contained packet (protocol:
 desired conclusion. Model and reasoning routing is defined in the protocol
 section "Delegation And Model Routing".
 
+After each task commit, save a concise resume checkpoint and compact context
+when supported by the environment. Avoid reloading completed-task history.
+
 ## Verification
 
 ```sh
