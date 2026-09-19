@@ -3077,3 +3077,7 @@ call-site result、rewrite、Core/VC、Step6/MVM の動作は追加しない。
 ## 限定 means-prefix functor theorem 検査
 
 既存 source-statement producer と theorem replay を、set 一引数 functor の `means it = X`、空の existence/uniqueness 節、量化・証明局所 prefix 適用へ拡張する。実 symbol、宣言・出現同一性、`it` role、戻り型、節所有者、適用の引数・結果型を認証し、Core obligation lowering に渡す sealed source tree 内に二つの未証明 correctness 節を保持する。primary/application/equality graph と順序付き節所有者を replay し、raw typed obligation table は空に保ち、public constructor の guard を変更しない。型検査と未解決 goal のみを与え、節を証明受理せず、定義等式を定理の前提にしない。
+
+## 限定された実行位置の set choice
+
+object を返す return のみの algorithm では、等式 ensures と `return the set` を扱う。実際の ChoiceExpression、bare builtin target、return 文の所有、source/environment/typed の完全な対応を認証する。既存 Choice typing と builtin-set existential gate で inhabited set の許可を確認し、実際の set から object への返却互換性を検査する。既存 seal に choice 出現を保持し、仮引数参照・registration・stable-choice origin を捏造しない。他の choice target、実行位置、追加契約・文はこの profile の範囲外とする。

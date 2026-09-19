@@ -19,7 +19,7 @@ pub const DEFAULT_COMPUTATION_LIMIT_POLICY: &str = "task-11-computation-step-lim
 pub const DEFINITIONAL_REDUCTION_POLICY: &str = "task-11-definitional-reduction";
 pub const DEFINITIONAL_REDUCTION_ALLOW: &str = "allow";
 
-/// Observes a contradictory source assertion without accepting or discharging a proof.
+/// Observes bounded source assertion or Pick-postcondition failure without accepting a proof.
 pub fn failed_source_algorithm_assertion(
     core: &mizar_core::core_ir::CoreIr,
     vcs: &VcSet,
@@ -44,6 +44,69 @@ pub fn failed_source_algorithm_assertion(
         return Ok(None);
     };
     let parameter = &algorithm.params[0];
+    if let S::Pick {
+        binder,
+        witness_ty: Some(_),
+        ghost: false,
+    } = &core
+        .algorithm_statements()
+        .get(*assertion)
+        .ok_or_else(invalid)?
+        .kind
+    {
+        let Some(post) = vcs
+            .vcs()
+            .iter()
+            .find(|vc| vc.kind == VcKind::AlgorithmPostcondition)
+        else {
+            return Ok(None);
+        };
+        let [set_fact, equality] = vcs.generated_formulas() else {
+            return Ok(None);
+        };
+        let [object, selected] = post.local_context.entries() else {
+            return Ok(None);
+        };
+        let p = VcProgramValue {
+            var: binder.var,
+            definition: Some(*assertion),
+        };
+        let a = VcProgramValue {
+            var: parameter.var,
+            definition: None,
+        };
+        if vcs.vcs().len() != 2
+            || vcs.seed_accounting().len() != 3
+            || vcs
+                .vcs()
+                .iter()
+                .any(|vc| vc.status != VcStatus::Open || vc.proof_hint.is_some())
+            || object.kind != ContextEntryKind::CheckerFact
+            || object.formula != parameter.ty_guard.map(VcFormulaRef::Core)
+            || selected.kind != ContextEntryKind::GeneratedFact
+            || selected.formula != Some(VcFormulaRef::Generated(set_fact.id))
+            || post.premises
+                != [
+                    PremiseRef::LocalContext(object.id),
+                    PremiseRef::LocalContext(selected.id),
+                ]
+            || set_fact.kind != VcGeneratedFormulaKind::AlgorithmStateFact
+            || set_fact.shape
+                != (VcGeneratedFormulaShape::ProgramTypePredicate {
+                    subject: p,
+                    ty: mizar_core::core_ir::CoreTypePredicate::new("set"),
+                })
+            || equality.kind != VcGeneratedFormulaKind::AlgorithmPostcondition
+            || !matches!(equality.shape, VcGeneratedFormulaShape::ProgramEquals { left, right } if (left == p && right == a) || (left == a && right == p))
+            || post.goal != VcFormulaRef::Generated(equality.id)
+        {
+            return Ok(None);
+        }
+        // In the specified foundation interpret a as {} and the allowed runtime choice p as {{}}.
+        // Both satisfy the complete context. The singleton contains {}, unlike {}, so extensionality
+        // refutes this universal equality guarantee. Distinct variable IDs alone supply no evidence.
+        return Ok(Some(post.id));
+    }
     let S::Assert { formula } = core
         .algorithm_statements()
         .get(*assertion)

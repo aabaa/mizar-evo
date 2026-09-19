@@ -80,7 +80,7 @@ impl SourceAlgorithmCheck<'_> {
     }
 }
 
-/// Checks the bounded flat object-variable algorithm profile without proof credit.
+/// Checks bounded object-result algorithms, including bare set return choices, without proof credit.
 pub fn check_source_algorithm_types<'a>(
     source: &SurfaceResolvedArena,
     typed: &'a crate::typed_ast::TypedArena,
@@ -463,6 +463,7 @@ pub fn check_source_algorithm_types<'a>(
     } else {
         None
     };
+    let mut runtime_choice = None;
     let mut local_names = BTreeSet::new();
     let mut snapshots = BTreeMap::new();
     let mut snapshot_names = BTreeSet::new();
@@ -607,13 +608,32 @@ pub fn check_source_algorithm_types<'a>(
                 };
                 tokens(&[(*return_kw, "return"), (*semi, ";")])?;
                 let term = only(*value, &K::TermExpression)?;
-                uses.push((
-                    term,
-                    only(term, &K::TermReference)?,
-                    body_context,
-                    None,
-                    true,
-                ));
+                if node(term)?.kind() == &K::ChoiceTerm {
+                    let [the, target] = parts(term, &K::ChoiceTerm)? else {
+                        return Err(invalid());
+                    };
+                    tokens(&[
+                        (*the, "the"),
+                        (
+                            only(only(*target, &K::TypeExpression)?, &K::TypeHead)?,
+                            "set",
+                        ),
+                    ])?;
+                    if body_statements.len() != 1
+                        || ensures.is_none()
+                        || runtime_choice.replace((term, *target)).is_some()
+                    {
+                        return Err(invalid());
+                    }
+                } else {
+                    uses.push((
+                        term,
+                        only(term, &K::TermReference)?,
+                        body_context,
+                        None,
+                        true,
+                    ));
+                }
             }
             K::BreakStatement => {
                 let [break_kw, semi] = node(*statement)?.children() else {
@@ -822,6 +842,104 @@ pub fn check_source_algorithm_types<'a>(
             binding_types.insert(local, ty);
         }
     }
+    if let Some((choice, target)) = runtime_choice {
+        use crate::registration_resolution::{
+            ExistentialGateBaseEvidence, ExistentialGateBaseEvidenceCoverage,
+            ExistentialGateBaseEvidenceKind, ExistentialGateInput, ExistentialGateOutput,
+            ExistentialGateStatus,
+        };
+        let site = TypedSiteRef::Node(TypedNodeId::new(choice.index()));
+        let actual = TypeExpressionInput::new(
+            TypedSiteRef::Role {
+                node: site.node(),
+                role: "algorithm.actual".into(),
+            },
+            range(target)?,
+            "set",
+            TypeHeadInput::BuiltinSet,
+        );
+        let expected = TypeExpressionInput::new(
+            TypedSiteRef::Role {
+                node: site.node(),
+                role: "algorithm.return".into(),
+            },
+            range(*return_type)?,
+            "object",
+            TypeHeadInput::BuiltinObject,
+        );
+        let database =
+            crate::registration_resolution::RegistrationDatabase::from_symbol_env(symbols, []);
+        let gates = ExistentialGateOutput::evaluate(
+            &database,
+            [ExistentialGateInput::new(
+                site.clone(),
+                range(choice)?,
+                "builtin.set",
+                "builtin.set",
+                [],
+            )
+            .with_base_evidence(ExistentialGateBaseEvidence::new(
+                ExistentialGateBaseEvidenceKind::BuiltinSet,
+                "builtin.set",
+                ExistentialGateBaseEvidenceCoverage::Builtin,
+            ))],
+        );
+        if gates.len() != 1
+            || !gates.diagnostics().is_empty()
+            || gates.iter().any(|gate| {
+                gate.status() != ExistentialGateStatus::Satisfied
+                    || gate.registration().is_some()
+                    || !gate.facts().is_empty()
+            })
+        {
+            return Err(invalid());
+        }
+        let coercion = CoercionObligationChecker::default().check(
+            symbols,
+            &TypeFactTable::new(),
+            [CoercionInput::new(
+                site.clone(),
+                range(choice)?,
+                CoercionRequestKind::Widening,
+                expected.clone(),
+            )
+            .with_from_type(actual.clone())
+            .with_evidence(CoercionEvidence::BuiltinRadix)],
+            [],
+        );
+        if !coercion.diagnostics().is_empty()
+            || !coercion.initial_obligations().is_empty()
+            || coercion.coercions().len() != 1
+            || coercion.coercions().iter().any(|(_, row)| {
+                row.site != site
+                    || row.kind != CoercionKind::Widening
+                    || row.status != CoercionStatus::Candidate
+                    || row.obligation.is_some()
+                    || row
+                        .from
+                        .and_then(|id| coercion.normalized_types().get(id))
+                        .is_none_or(|ty| ty.head != TypeHeadRef::BuiltinSet)
+                    || coercion
+                        .normalized_types()
+                        .get(row.to)
+                        .is_none_or(|ty| ty.head != TypeHeadRef::BuiltinObject)
+                    || row.supporting_facts.len() != 1
+                    || row.supporting_facts.iter().any(|id| {
+                        coercion.facts().get(*id).is_none_or(|fact| {
+                            fact.status != FactStatus::Known
+                                || !matches!(fact.provenance, FactProvenance::Builtin(_))
+                        })
+                    })
+            })
+        {
+            return Err(invalid());
+        }
+        terms.push(
+            TermInput::new(site, body_context, range(choice)?, TermKind::Choice)
+                .with_result_type(actual)
+                .with_expected_type(expected),
+        );
+    }
     let inference = TermFormulaChecker::default().infer(symbols, &bindings, terms, formulas);
     if !inference.diagnostics().is_empty()
         || !inference.facts().is_empty()
@@ -840,11 +958,26 @@ pub fn check_source_algorithm_types<'a>(
         if term.status != TermStatus::Inferred
             || !term.deferred.is_empty()
             || term.candidate_set.is_some()
-            || entry.expected.is_some_and(|expected| expected != actual)
-            || inference
-                .normalized_types()
-                .get(actual)
-                .is_none_or(|ty| ty.head != TypeHeadRef::BuiltinObject)
+            || if term.kind == TermKind::Choice {
+                runtime_choice
+                    .is_none_or(|(site, _)| term.site.node() != TypedNodeId::new(site.index()))
+                    || term.reference.is_some()
+                    || inference.normalized_types().get(actual).is_none_or(|ty| {
+                        ty.head != TypeHeadRef::BuiltinSet
+                            || !ty.args.is_empty()
+                            || !ty.attributes.is_empty()
+                    })
+                    || entry
+                        .expected
+                        .and_then(|id| inference.normalized_types().get(id))
+                        .is_none_or(|ty| ty.head != TypeHeadRef::BuiltinObject)
+            } else {
+                entry.expected.is_some_and(|expected| expected != actual)
+                    || inference
+                        .normalized_types()
+                        .get(actual)
+                        .is_none_or(|ty| ty.head != TypeHeadRef::BuiltinObject)
+            }
         {
             return Err(invalid());
         }

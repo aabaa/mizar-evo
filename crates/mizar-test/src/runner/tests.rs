@@ -3445,6 +3445,7 @@ fn step5c14_return_admission_requires_exact_snapshot_trace_and_stage() {
         step5c14_state_case(),
         step5c14_claim_case(),
         step5c14_assert_failure_case(),
+        plan.cases.iter().find(|case| case.id.0 == "fail_proof_verification_algorithm_ensures_unprovable_001").unwrap().clone(),
         plan.cases
             .iter()
             .find(|case| case.id.0 == "pass_proof_verification_algorithm_ghost_snapshot_001")
@@ -11954,5 +11955,209 @@ fn step5c5_dependent_return_rejects_foreign_source_environment_and_neutral_nodes
                 "{target:?}/{mutation}"
             );
         }
+    }
+}
+
+#[test]
+fn step5c14_pick_source_context_and_foundational_failure() {
+    use mizar_core::{core_ir::{CoreAlgorithmStmtKind as S, CoreFormulaKind as F, CoreTermKind as T, ObligationSeedKind, ObligationSeedStatus}, control_flow::{build_control_flow_ir, build_obligation_seed_handoff, LocalDeclaration, LocalMutability}};
+    use mizar_vc::{discharge::failed_source_algorithm_assertion, vc_ir::{VcKind, VcStatus, VcFormulaRef, VcGeneratedFormulaShape as G, VcProgramValue}};
+    let config = step5c11_config();
+    let case = build_test_plan(&config).unwrap().cases.into_iter().find(|c| c.id.0 == "fail_proof_verification_algorithm_ensures_unprovable_001").unwrap();
+    let text = std::fs::read_to_string(&case.source_path).unwrap();
+    for text in [text.clone(), text.replace("badalgo", "selectset").replace("let a be", "let x be").replace("result = a", "result = x").replace("(a)", "(x)")] {
+        let (source, typed, symbols) = super::source_registration_inputs(&config.workspace_root, &case, super::formula_statement::step5c8_test_frontend(&text)).unwrap();
+        let checked = mizar_checker::type_checker::check_source_algorithm_types(&source, &typed, &symbols).unwrap();
+        let choice = checked.inference().terms().iter().find(|(_, t)| t.kind == mizar_checker::type_checker::TermKind::Choice).unwrap().1;
+        assert!(choice.reference.is_none());
+        let entry = checked.inference().type_entries().get(choice.type_entry).unwrap();
+        let mizar_checker::typed_ast::TypeEntryActual::Known(actual) = entry.actual else { panic!() };
+        assert_eq!(checked.inference().normalized_types().get(actual).unwrap().head, mizar_checker::type_checker::TypeHeadRef::BuiltinSet);
+        assert_eq!(checked.inference().normalized_types().get(entry.expected.unwrap()).unwrap().head, mizar_checker::type_checker::TypeHeadRef::BuiltinObject);
+        for kind in ["ChoiceTerm", "TypeExpression", "ReturnStatement"] {
+            let mut nodes = typed.iter().map(|(_, n)| n.clone()).collect::<Vec<_>>();
+            let index = nodes.iter().position(|n| n.kind.as_str() == kind).unwrap();
+            nodes[index].kind = "TermReference".into();
+            let forged = mizar_checker::typed_ast::TypedArena::try_new(typed.root(), nodes).unwrap();
+            assert!(mizar_checker::type_checker::check_source_algorithm_types(&source, &forged, &symbols).is_err());
+        }
+        let core = mizar_core::elaborator::lower_source_algorithms(&checked).unwrap();
+        assert_eq!(core, step5c14_static_core(&case, &text).unwrap());
+        assert!(core.generated().is_empty());
+        let (_, algorithm) = core.algorithms().iter().next().unwrap();
+        let [pick, returned] = algorithm.statements.as_slice() else { panic!() };
+        let pick_row = core.algorithm_statements().get(*pick).unwrap();
+        let S::Pick { binder, witness_ty, ghost: false } = &pick_row.kind else { panic!() };
+        assert!(binder.source_name.is_none());
+        assert_eq!(binder.ty_guard, *witness_ty);
+        let S::Return(Some(value)) = core.algorithm_statements().get(*returned).unwrap().kind else { panic!() };
+        assert_eq!(core.terms().get(value).unwrap().kind, T::Var(binder.var));
+        assert_eq!(core.terms().get(value).unwrap().source, pick_row.source);
+        let seed = core.obligation_seeds().iter().next().unwrap().1;
+        assert_eq!(seed.kind, ObligationSeedKind::GeneratedNonEmptiness);
+        assert_eq!(seed.status, ObligationSeedStatus::Active);
+        assert!(seed.context.is_empty());
+        let F::Exists { binders, body } = &core.formulas().get(seed.goal.unwrap()).unwrap().kind else { panic!() };
+        assert_eq!(binders.len(), 1);
+        let q = &binders[0];
+        assert_ne!(q.var, binder.var);
+        assert_ne!(q.var, algorithm.params[0].var);
+        assert_ne!(q.var, algorithm.result.as_ref().unwrap().var);
+        let F::TypePred { subject, ty } = &core.formulas().get(*body).unwrap().kind else { panic!() };
+        assert_eq!(ty.as_str(), "set");
+        assert_eq!(core.terms().get(*subject).unwrap().kind, T::Var(q.var));
+        let flow = build_control_flow_ir(&core);
+        assert_eq!(flow, build_control_flow_ir(&core));
+        let (_, cfg) = flow.flows.iter().next().unwrap();
+        assert_eq!(cfg.blocks.len(), 1);
+        assert_eq!(cfg.assignment_effects.len(), 1);
+        let local = cfg.locals.iter().find(|(_, l)| l.binder.var == binder.var).unwrap().1;
+        assert_eq!(local.declaration, LocalDeclaration::PickRuntime);
+        assert_eq!(local.mutability, LocalMutability::Immutable);
+        assert!(!local.ghost);
+        assert_eq!(local.initialized_at, Some(*pick));
+        assert_eq!(build_obligation_seed_handoff(&core, &flow).entries.len(), 3);
+        let vcs = step5c14_return_vcs(&core).unwrap();
+        assert_eq!(vcs.vcs().len(), 2);
+        assert_eq!(vcs.seed_accounting().len(), 3);
+        assert!(vcs.vcs().iter().all(|v| v.status == VcStatus::Open));
+        let nonempty = vcs.vcs().iter().find(|v| v.goal == VcFormulaRef::Core(seed.goal.unwrap())).unwrap();
+        assert!(nonempty.local_context.entries().is_empty());
+        assert!(nonempty.premises.is_empty());
+        let post = vcs.vcs().iter().find(|v| v.kind == VcKind::AlgorithmPostcondition).unwrap();
+        assert_eq!(post.local_context.entries().len(), 2);
+        assert_eq!(post.premises.len(), 2);
+        assert_eq!(post.local_context.entries()[0].formula, algorithm.params[0].ty_guard.map(VcFormulaRef::Core));
+        assert!(matches!(&vcs.generated_formulas()[0].shape, G::ProgramTypePredicate { subject, ty } if subject.var == binder.var && subject.definition == Some(*pick) && ty.as_str() == "set"));
+        assert_eq!(vcs.generated_formulas()[1].shape, G::ProgramEquals {
+            left: VcProgramValue { var: binder.var, definition: Some(*pick) }, right: VcProgramValue { var: algorithm.params[0].var, definition: None }
+        });
+        let before = vcs.clone();
+        assert_eq!(failed_source_algorithm_assertion(&core, &vcs).unwrap(), Some(post.id));
+        assert_eq!(vcs, before);
+        assert_eq!(vcs, step5c14_return_vcs(&core).unwrap());
+    }
+    for control in [text.clone(), text.replace("the set", "a"), text.replace("result = a", "result = result"), text.replace("result = a", "a = a")] {
+        use mizar_core::core_ir::*;
+        let core = step5c14_static_core(&case, &control).unwrap();
+        let observed = failed_source_algorithm_assertion(&core, &step5c14_return_vcs(&core).unwrap()).unwrap();
+        assert_eq!(observed.is_some(), control == text);
+        let mut p = CoreIrParts { source_id: core.source_id(), module_id: core.module_id().clone(), items: core.items().clone(), terms: core.terms().clone(), formulas: core.formulas().clone(), definitions: core.definitions().clone(), proofs: core.proofs().clone(), proof_nodes: core.proof_nodes().clone(), algorithms: core.algorithms().clone(), algorithm_statements: core.algorithm_statements().clone(), generated: core.generated().clone(), obligation_seeds: core.obligation_seeds().clone(), source_map: core.source_map().clone(), diagnostics: core.diagnostics().clone() };
+        let renumber = |var: &mut CoreVarId| *var = CoreVarId::new(var.index() + 100);
+        for (id, _) in core.terms().iter() { if let T::Var(var) = &mut p.terms.get_mut(id).unwrap().kind { renumber(var); } }
+        for (id, _) in core.algorithms().iter() {
+            let algorithm = p.algorithms.get_mut(id).unwrap();
+            for binder in &mut algorithm.params { renumber(&mut binder.var); }
+            renumber(&mut algorithm.result.as_mut().unwrap().var);
+        }
+        for (id, _) in core.algorithm_statements().iter() {
+            if let S::Pick { binder, .. } = &mut p.algorithm_statements.get_mut(id).unwrap().kind { renumber(&mut binder.var); }
+        }
+        for (id, _) in core.formulas().iter() {
+            if let F::Exists { binders, .. } = &mut p.formulas.get_mut(id).unwrap().kind { for binder in binders { renumber(&mut binder.var); } }
+        }
+        let renumbered = CoreIr::try_new(p).unwrap();
+        assert_eq!(failed_source_algorithm_assertion(&renumbered, &step5c14_return_vcs(&renumbered).unwrap()).unwrap().is_some(), observed.is_some());
+    }
+    for unsupported in [text.replace("the set", "the object"), text.replace("the set", "the empty set"), text.replace("return the set;", "assert a = a; return the set;"), text.replace("ensures result = a", "requires a = a ensures result = a"), format!("environ vocabularies X; begin {text}"), text.replace("end;\n", "end;\ntheorem a = a;\n")] {
+        assert!(step5c14_static_core(&case, &unsupported).is_err(), "{unsupported}");
+    }
+}
+
+#[test]
+fn step5c14_pick_rejects_core_forgery_and_replays_complete_vcs() {
+    use mizar_core::core_ir::*;
+    use mizar_vc::{discharge::failed_source_algorithm_assertion, vc_ir::*};
+    let case = step5c14_return_case();
+    let text = "definition let a be object; terminating algorithm choose(a) -> object ensures result = a do return the set; end; end;";
+    let core = step5c14_static_core(&case, text).unwrap();
+    let vcs = step5c14_return_vcs(&core).unwrap();
+    let (algorithm_id, algorithm) = core.algorithms().iter().next().unwrap();
+    let pick = algorithm.statements[0];
+    let returned = algorithm.statements[1];
+    let CoreAlgorithmStmtKind::Pick { binder, .. } = &core.algorithm_statements().get(pick).unwrap().kind else { panic!() };
+    let CoreAlgorithmStmtKind::Return(Some(value)) = core.algorithm_statements().get(returned).unwrap().kind else { panic!() };
+    let (seed_id, seed) = core.obligation_seeds().iter().next().unwrap();
+    let exists = seed.goal.unwrap();
+    let CoreFormulaKind::Exists { body, .. } = core.formulas().get(exists).unwrap().kind else { panic!() };
+    let mut constructor_rejections = 0;
+    let mut generator_rejections = 0;
+    for mutation in 0..19 {
+        let mut p = CoreIrParts { source_id: core.source_id(), module_id: core.module_id().clone(), items: core.items().clone(), terms: core.terms().clone(), formulas: core.formulas().clone(), definitions: core.definitions().clone(), proofs: core.proofs().clone(), proof_nodes: core.proof_nodes().clone(), algorithms: core.algorithms().clone(), algorithm_statements: core.algorithm_statements().clone(), generated: core.generated().clone(), obligation_seeds: core.obligation_seeds().clone(), source_map: core.source_map().clone(), diagnostics: core.diagnostics().clone() };
+        match mutation {
+            0 => p.algorithms.get_mut(algorithm_id).unwrap().statements.remove(0),
+            1 => { p.algorithms.get_mut(algorithm_id).unwrap().statements.insert(0, pick); pick },
+            2 => { p.algorithm_statements.get_mut(pick).unwrap().owner = CoreAlgorithmId::new(99); pick },
+            3 => { let CoreAlgorithmStmtKind::Pick { ghost, .. } = &mut p.algorithm_statements.get_mut(pick).unwrap().kind else { panic!() }; *ghost = true; pick },
+            4 => { let CoreAlgorithmStmtKind::Pick { witness_ty, .. } = &mut p.algorithm_statements.get_mut(pick).unwrap().kind else { panic!() }; *witness_ty = algorithm.params[0].ty_guard; pick },
+            5 => { p.terms.get_mut(value).unwrap().kind = CoreTermKind::Var(algorithm.params[0].var); pick },
+            6 => { let CoreFormulaKind::Exists { binders, .. } = &mut p.formulas.get_mut(exists).unwrap().kind else { panic!() }; binders[0].var = binder.var; pick },
+            7 => { p.formulas.get_mut(body).unwrap().kind = CoreFormulaKind::True; pick },
+            8 => { let CoreFormulaKind::TypePred { ty, .. } = &mut p.formulas.get_mut(binder.ty_guard.unwrap()).unwrap().kind else { panic!() }; *ty = CoreTypePredicate::new("object"); pick },
+            9 => { p.obligation_seeds = ObligationSeedTable::new(); p.source_map.obligation_sources.clear(); pick },
+            10 => { let id = p.obligation_seeds.insert(seed.clone()); p.source_map.obligation_sources.insert(id, seed.source.clone()); pick },
+            11 => { p.obligation_seeds.get_mut(seed_id).unwrap().core_refs.clear(); pick },
+            12 => { p.obligation_seeds.get_mut(seed_id).unwrap().context.push(algorithm.params[0].ty_guard.unwrap()); pick },
+            13 => { p.obligation_seeds.get_mut(seed_id).unwrap().status = ObligationSeedStatus::Deferred; pick },
+            14 => { p.obligation_seeds.get_mut(seed_id).unwrap().source = algorithm.source.clone(); pick },
+            15 => { let row = p.algorithm_statements.get_mut(pick).unwrap(); row.source = core.algorithm_statements().get(returned).unwrap().source.clone(); p.source_map.algorithm_sources.insert(pick, row.source.clone()); pick },
+            16 => { let CoreAlgorithmStmtKind::Pick { binder, .. } = &mut p.algorithm_statements.get_mut(pick).unwrap().kind else { panic!() }; binder.var = algorithm.params[0].var; pick },
+            17 => { p.source_map.formula_sources.remove(&exists); pick },
+            18 => {
+                let source = core.terms().get(value).unwrap().source.clone();
+                let origin = p.generated.insert(GeneratedOrigin { owner: algorithm.item, kind: GeneratedOriginKind::StableChoice, key: GeneratedOriginKey::new("choice:builtin.set"), functor: Some(algorithm.symbol.clone()), params: vec![], evidence: source.provenance.clone(), source: source.clone() });
+                p.source_map.generated_sources.insert(origin, source);
+                p.terms.get_mut(value).unwrap().kind = CoreTermKind::Generated { origin, args: vec![] };
+                pick
+            },
+            _ => unreachable!(),
+        };
+        match CoreIr::try_new(p) {
+            Err(_) => constructor_rejections += 1,
+            Ok(changed) => {
+                assert!(step5c14_return_vcs(&changed).is_err(), "core mutation {mutation}");
+                assert!(failed_source_algorithm_assertion(&changed, &vcs).is_err());
+                generator_rejections += 1;
+            }
+        }
+    }
+    assert!(constructor_rejections > 0 && generator_rejections > 0);
+    let post = vcs.vcs().iter().position(|vc| vc.kind == VcKind::AlgorithmPostcondition).unwrap();
+    for mutation in 0..17 {
+        let mut p = VcSetParts { schema_version: vcs.schema_version().clone(), snapshot: vcs.snapshot(), source: vcs.source(), module: vcs.module().clone(), generated_formulas: vcs.generated_formulas().to_vec(), vcs: vcs.vcs().to_vec(), seed_accounting: vcs.seed_accounting().to_vec() };
+        match mutation {
+            0 => p.vcs[post].status = VcStatus::NeedsAtp,
+            1 => p.vcs[post].premises.clear(),
+            2 => p.vcs[post].source.related.clear(),
+            3 => p.vcs[post].source.primary = algorithm.source.clone(),
+            4 => p.vcs[post].anchor.owner = AnchorOwner::Algorithm(CoreAlgorithmId::new(99)),
+            5 => p.vcs[post].goal = VcFormulaRef::Core(algorithm.params[0].ty_guard.unwrap()),
+            6 => p.generated_formulas[0].provenance.clear(),
+            7 => { let shape @ VcGeneratedFormulaShape::ProgramTypePredicate { .. } = &mut p.generated_formulas[0].shape else { panic!() }; *shape = VcGeneratedFormulaShape::ProgramTypePredicate { subject: VcProgramValue { var: binder.var, definition: None }, ty: CoreTypePredicate::new("set") }; },
+            8..=10 => {
+                let mut entries = p.vcs[post].local_context.entries().to_vec();
+                if mutation == 8 { entries.pop(); } else if mutation == 9 { entries[1].formula = entries[0].formula; } else { let mut extra = entries[1].clone(); extra.id = ContextEntryId::new(2); extra.sort_key = "algorithm-state-00000002".into(); entries.push(extra); }
+                p.vcs[post].local_context = LocalContext::try_new(entries, vec![]).unwrap();
+                p.vcs[post].premises = p.vcs[post].local_context.entries().iter().map(|e| PremiseRef::LocalContext(e.id)).collect();
+            }
+            11 => p.seed_accounting[0].seed_status = if p.seed_accounting[0].seed_status == ObligationSeedStatus::Deferred { ObligationSeedStatus::Active } else { ObligationSeedStatus::Deferred },
+            12 => p.vcs[post].proof_hint = Some(ProofHint { citations: vec![], unfold_requests: vec![], premise_restrictions: vec![], solver: None, max_axioms: None, timeout: None, computation: None, provenance: vec![] }),
+            13 => { let nonempty = 1 - post; p.vcs[nonempty].status = VcStatus::NeedsAtp; },
+            14 => {
+                let removed = p.vcs.pop().unwrap();
+                p.seed_accounting.iter_mut().find(|row| row.handoff == removed.seed.handoff).unwrap().mapping = SeedVcMapping::NoConcreteVc { reason: SeedNoVcReason::DeferredExternal("removed".into()) };
+            },
+            15 => {
+                let mut extra = p.vcs.last().unwrap().clone();
+                let original = extra.id;
+                extra.id = VcId::new(p.vcs.len());
+                p.seed_accounting.iter_mut().find(|row| row.handoff == extra.seed.handoff).unwrap().mapping = SeedVcMapping::Expanded { vcs: vec![ExpandedVcRef { expansion_index: 0, vc: original }, ExpandedVcRef { expansion_index: 1, vc: extra.id }], expansion_schema: ExpansionSchemaVersion::new("test-extra-vc") };
+                p.vcs.push(extra);
+            },
+            16 => p.seed_accounting[0].origin = SeedOriginRef::ExistingCore { seed: ObligationSeedId::new(99) },
+            _ => unreachable!(),
+        }
+        let changed = VcSet::try_new(p).unwrap_or_else(|e| panic!("vc mutation {mutation}: {e}"));
+        assert!(failed_source_algorithm_assertion(&core, &changed).is_err(), "vc mutation {mutation}");
     }
 }

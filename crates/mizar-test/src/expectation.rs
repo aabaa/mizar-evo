@@ -1370,6 +1370,14 @@ pub fn validate_expectation_path(
                 Some("algorithms.assert.unprovable"),
             ),
             (
+                "fail_proof_verification_algorithm_ensures_unprovable_001",
+                "fail/algorithms",
+                "algorithms.contracts",
+                "spec.en.20.algorithms.contracts.ensures",
+                "spec.en.mizar_vc.vc_ir.algorithm_ensures_failure_snapshot",
+                Some("algorithms.ensures.unprovable"),
+            ),
+            (
                 "pass_proof_verification_algorithm_ensures_return_001",
                 "pass/algorithms",
                 "algorithms.contracts",
@@ -1446,22 +1454,24 @@ pub fn validate_expectation_path(
                     }
                 && expectation.domain == domain
                 && expectation.tags.as_slice() == ["active_proof_verification"]
-                && (!matches!(
-                    domain,
-                    "algorithms.claim"
-                        | "algorithms.assertions"
-                        | "algorithms.computation"
-                        | "algorithms.ghost"
-                        | "predicates.phrase_definition"
-                        | "predicates.symbolic_definition"
-                        | "functors.means_definition"
-                ) || expectation.schema_version == 1
-                    && expectation.profiles.as_slice() == ["fast"]
-                    && expectation.ast_profile.is_none()
-                    && expectation.snapshot_profiles.is_empty()
-                    && expectation.tokens.is_empty()
-                    && expectation.origin.is_none()
-                    && expectation.architecture22.is_none())
+                && (!(failure && domain == "algorithms.contracts")
+                    && !matches!(
+                        domain,
+                        "algorithms.claim"
+                            | "algorithms.assertions"
+                            | "algorithms.computation"
+                            | "algorithms.ghost"
+                            | "predicates.phrase_definition"
+                            | "predicates.symbolic_definition"
+                            | "functors.means_definition"
+                    )
+                    || expectation.schema_version == 1
+                        && expectation.profiles.as_slice() == ["fast"]
+                        && expectation.ast_profile.is_none()
+                        && expectation.snapshot_profiles.is_empty()
+                        && expectation.tokens.is_empty()
+                        && expectation.origin.is_none()
+                        && expectation.architecture22.is_none())
                 && expectation.failure_category.as_deref() == failure.then_some("proof_failure")
                 && expectation.stable_detail_key.as_deref() == detail
                 && expectation.rejection_reason.is_none()

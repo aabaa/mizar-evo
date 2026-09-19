@@ -533,7 +533,7 @@ task 17 は `vc_ir` の public enum をすべて downstream forward-compatible A
 
 `VcGeneratedFormulaKind::AlgorithmPostcondition` と `VcGeneratedFormulaShape::Equals { left: CoreTermId, right: CoreTermId }` は既存の不変 Core 項上の実際の置換済み等式を保持する。generator が両参照と所有者を Core に照合し、別の項表現や文字列式を導入しない。debug bytes は両オペランドの順序を保持する。Core payload がなければ canonical identity・依存・再利用解析は未解決とし、discharge は Unknown を返す。数値 ID の一致だけでは証明しない。
 
-`VcProgramValue { var: CoreVarId, definition: Option<CoreAlgorithmStmtId> }` は None で不変仮引数、Some で実際の宣言・書込み直後の値を識別する。Some(ループ文) は認証済み MayWrite ローカルの任意 cutpoint 値も識別し、代入等式を意味しない。generator が所有者・代入先・ソース順序・定義後使用を Core に照合する。
+`VcProgramValue { var: CoreVarId, definition: Option<CoreAlgorithmStmtId> }` は None で不変仮引数、Some で実際の宣言・書込み・runtime Pick 直後の値を識別する。Some(ループ文) は認証済み MayWrite ローカルの任意 cutpoint 値も識別し、代入等式を意味しない。generator が所有者・代入先・ソース順序・定義後使用を Core に照合する。
 `ProgramEquals` と `ProgramTypePredicate` はこの値と実際の検査済み述語を保持し、AlgorithmStateFact が宣言・書込み文脈を AlgorithmAssertion 目標と区別する。Core は不変とし、Core payload が不明なら真偽・fingerprint・再利用を保守的に扱う。
 `ContextEntryKind::PendingAlgorithmAssertion { handoff }` は One seed accounting を通じて後続の仮定を厳密な先行 assertion 目標へ結び付け、所有者・目標の不一致、自己依存、循環を拒否する。未解決の証明依存であり、直接・偽の承認済み前提や再利用可能な証拠にはしない。
 

@@ -7070,6 +7070,19 @@ tests = [
 ]
 
 [[requirement]]
+id = "spec.en.mizar_vc.vc_ir.algorithm_ensures_failure_snapshot"
+source = "doc/design/mizar-vc/en/source_vc_decomposition.md"
+section = "VC Tasks 43/50; bounded runtime Pick false-postcondition VcIr snapshot"
+stage = "proof_verification"
+status = "covered"
+required = true
+coverage = "snapshot"
+notes = "Runtime Pick inhabitation and substituted equality remain Open; complete replay precedes the bounded foundational counterexample, with termination unresolved."
+tests = [
+  "tests/miz/fail/algorithms/fail_proof_verification_algorithm_ensures_unprovable_001.expect.toml",
+]
+
+[[requirement]]
 id = "spec.en.mizar_vc.vc_ir.algorithm_ensures_return_snapshot"
 source = "doc/design/mizar-vc/en/source_vc_decomposition.md"
 section = "VC Task 43; bounded source ensures-return open VcIr snapshot"

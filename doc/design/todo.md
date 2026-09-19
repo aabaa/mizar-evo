@@ -648,7 +648,7 @@ activation-map ledger; every 5C task also requires 5B.2.
 14. [~] **[5C.14 — Algorithm verification](./task_contracts/en/STEP5C14-ALGORITHM-SEMANTICS.md)** (`mizar-checker`,
     `mizar-core`, `mizar-vc`; spec ch. 20, verification constructs
     only). Requirements: `spec.en.20.algorithms.*` (8 ids). Targets: 10
-    pairs (nine active; bounded while generation complete; false ensures deferred). Covers `var`/`const`/`assert`, contracts
+    pairs (all active; bounded while generation and return-Pick failure covered). Covers `var`/`const`/`assert`, contracts
     (`requires`/`ensures`), while-loop invariants, break-outside-loop
     rejection, ghost isolation and snapshots, claim blocks, and
     computation justifications. MVM *execution* stays excluded. Deps:

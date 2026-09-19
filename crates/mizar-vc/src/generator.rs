@@ -1329,7 +1329,7 @@ pub fn generate_source_void_claim(
     .map_err(|error| error.to_string())
 }
 
-/// Generates open return and assertion obligations for authenticated flat object-state algorithms.
+/// Generates open contract and inhabitation obligations for authenticated bounded algorithms.
 pub fn generate_source_algorithm_postconditions(
     core: &mizar_core::core_ir::CoreIr,
     snapshot: BuildSnapshotId,
@@ -1343,12 +1343,12 @@ pub fn generate_source_algorithm_postconditions(
     use mizar_core::{
         control_flow::{
             AssignmentEffectTarget, ControlFlowStatementPlacement, ControlFlowTerminator,
-            LocalKind, LocalMutability, Reachability, build_control_flow_ir,
+            LocalDeclaration, LocalKind, LocalMutability, Reachability, build_control_flow_ir,
             build_obligation_seed_handoff,
         },
         core_ir::{
-            CoreAlgorithmStmtKind, CoreFormulaKind, CoreItemKind, CoreItemStatus,
-            CoreProvenancePhase, CoreTermKind,
+            CoreAlgorithmStmtKind, CoreFormulaKind, CoreItemKind, CoreItemStatus, CoreNodeRef,
+            CoreProvenancePhase, CoreSourceMap, CoreTermKind,
         },
     };
     let invalid = || "algorithms.postcondition.unsupported_core".to_owned();
@@ -1382,7 +1382,6 @@ pub fn generate_source_algorithm_postconditions(
         || !core.proofs().is_empty()
         || !core.proof_nodes().is_empty()
         || !core.generated().is_empty()
-        || !core.obligation_seeds().is_empty()
         || !core.diagnostics().is_empty()
     {
         return Err(invalid());
@@ -1515,6 +1514,55 @@ pub fn generate_source_algorithm_postconditions(
     for (_, formula) in core.formulas().iter() {
         checked_source(&formula.source)?;
     }
+    let pick = match algorithm.statements.as_slice() {
+        [id, _] => match &core
+            .algorithm_statements()
+            .get(*id)
+            .ok_or_else(invalid)?
+            .kind
+        {
+            CoreAlgorithmStmtKind::Pick {
+                binder,
+                witness_ty: Some(guard),
+                ghost: false,
+            } if binder.role.as_str() == "pick"
+                && binder.source_name.is_none()
+                && binder.ty_guard == Some(*guard)
+                && binder.source.provenance.is_empty()
+                && contracts.ensures.len() == 1 =>
+            {
+                Some((*id, binder))
+            }
+            _ => None,
+        },
+        _ => None,
+    };
+    if core.obligation_seeds().len() != usize::from(pick.is_some()) {
+        return Err(invalid());
+    }
+    let mut sources = CoreSourceMap::new();
+    sources
+        .item_sources
+        .extend(core.items().iter().map(|(id, n)| (id, n.source.clone())));
+    sources
+        .term_sources
+        .extend(core.terms().iter().map(|(id, n)| (id, n.source.clone())));
+    sources
+        .formula_sources
+        .extend(core.formulas().iter().map(|(id, n)| (id, n.source.clone())));
+    sources.algorithm_sources.extend(
+        core.algorithm_statements()
+            .iter()
+            .map(|(id, n)| (id, n.source.clone())),
+    );
+    sources.obligation_sources.extend(
+        core.obligation_seeds()
+            .iter()
+            .map(|(id, n)| (id, n.source.clone())),
+    );
+    if &sources != core.source_map() {
+        return Err(invalid());
+    }
     let mut binders = vec![parameter, result];
     for id in &algorithm.statements {
         let statement = core.algorithm_statements().get(*id).ok_or_else(invalid)?;
@@ -1531,6 +1579,9 @@ pub fn generate_source_algorithm_postconditions(
             }
             binders.push(binder);
         }
+    }
+    if let Some((_, binder)) = pick {
+        binders.push(binder);
     }
     if binders
         .iter()
@@ -1551,7 +1602,12 @@ pub fn generate_source_algorithm_postconditions(
             return Err(invalid());
         };
         let term = core.terms().get(*subject).ok_or_else(invalid)?;
-        if ty.as_str() != "object"
+        if ty.as_str()
+            != if pick.is_some_and(|(_, p)| p.var == binder.var) {
+                "set"
+            } else {
+                "object"
+            }
             || term.kind != CoreTermKind::Var(binder.var)
             || term.source != formula.source
             || term.source.anchor != binder.source.anchor
@@ -1562,6 +1618,72 @@ pub fn generate_source_algorithm_postconditions(
             return Err(invalid());
         }
     }
+    let inhabitation = if let Some((pick_id, binder)) = pick {
+        let pick_row = core
+            .algorithm_statements()
+            .get(pick_id)
+            .ok_or_else(invalid)?;
+        let choice_range = range(&pick_row.source)?;
+        if choice_range.start <= return_range.start
+            || choice_range.end >= return_range.end
+            || binder.source.anchor != pick_row.source.anchor
+            || core.terms().get(returned).is_none_or(|term| {
+                term.kind != CoreTermKind::Var(binder.var) || term.source != pick_row.source
+            })
+        {
+            return Err(invalid());
+        }
+        let (seed_id, seed) = core.obligation_seeds().iter().next().ok_or_else(invalid)?;
+        let goal = seed.goal.ok_or_else(invalid)?;
+        let formula = core.formulas().get(goal).ok_or_else(invalid)?;
+        let CoreFormulaKind::Exists { binders: qs, body } = &formula.kind else {
+            return Err(invalid());
+        };
+        let [q] = qs.as_slice() else {
+            return Err(invalid());
+        };
+        let body_row = core.formulas().get(*body).ok_or_else(invalid)?;
+        let CoreFormulaKind::TypePred { subject, ty } = &body_row.kind else {
+            return Err(invalid());
+        };
+        let q_term = core.terms().get(*subject).ok_or_else(invalid)?;
+        if binders.iter().any(|binder| binder.var == q.var)
+            || q.role.as_str() != "term-binder"
+            || q.ty_guard.is_some()
+            || q.source_name.is_some()
+            || q.source != pick_row.source
+            || q_term.kind != CoreTermKind::Var(q.var)
+            || ty.as_str() != "set"
+            || q_term.source != pick_row.source
+            || body_row.source != pick_row.source
+            || formula.source != pick_row.source
+            || !used_terms.insert(*subject)
+            || !used_formulas.insert(*body)
+            || !used_formulas.insert(goal)
+            || seed.owner != algorithm.item
+            || seed.kind != ObligationSeedKind::GeneratedNonEmptiness
+            || seed.status != ObligationSeedStatus::Active
+            || !seed.context.is_empty()
+            || seed.label.is_some()
+            || !seed.diagnostics.is_empty()
+            || seed.local_path.as_str() != "algorithm/pick-nonempty"
+            || seed.semantic_origin.as_str() != "algorithm/runtime-pick"
+            || seed.source != pick_row.source
+            || seed.provenance != pick_row.source.provenance
+            || seed.core_refs
+                != [
+                    CoreNodeRef::Item(algorithm.item),
+                    CoreNodeRef::Algorithm(algorithm_id),
+                    CoreNodeRef::AlgorithmStmt(pick_id),
+                    CoreNodeRef::Formula(goal),
+                ]
+        {
+            return Err(invalid());
+        }
+        Some((seed_id, seed))
+    } else {
+        None
+    };
     let mut available = BTreeSet::from([parameter.var]);
     let mut assertions = BTreeMap::new();
     let mut visible = vec![parameter];
@@ -1570,7 +1692,9 @@ pub fn generate_source_algorithm_postconditions(
     for id in &statement_order {
         let current = core.algorithm_statements().get(*id).ok_or_else(invalid)?;
         let current_range = range(&current.source)?;
-        if current_range.start < previous_end || current_range.end > owner_range.end {
+        if (current_range.start < previous_end && !(pick.is_some() && id == statement_id))
+            || current_range.end > owner_range.end
+        {
             return Err(invalid());
         }
         previous_end = current_range.end;
@@ -1589,6 +1713,12 @@ pub fn generate_source_algorithm_postconditions(
             checked_source(&current.source)?;
         }
         let terms = match &current.kind {
+            CoreAlgorithmStmtKind::Pick { binder, .. }
+                if pick.is_some_and(|(pick_id, _)| pick_id == *id) =>
+            {
+                available.insert(binder.var);
+                Vec::new()
+            }
             CoreAlgorithmStmtKind::Let {
                 binder,
                 value: Some(value),
@@ -1859,10 +1989,39 @@ pub fn generate_source_algorithm_postconditions(
     {
         return Err(invalid());
     }
+    if let Some((pick_id, binder)) = pick {
+        let (local_id, local) = flow
+            .locals
+            .iter()
+            .find(|(_, local)| local.binder.var == binder.var)
+            .ok_or_else(invalid)?;
+        let mut effects = flow.assignment_effects.iter();
+        let (_, effect) = effects.next().ok_or_else(invalid)?;
+        if effects.next().is_some() {
+            return Err(invalid());
+        }
+        if local.declaration != LocalDeclaration::PickRuntime
+            || local.binder != *binder
+            || local.kind
+                != (LocalKind::Pick {
+                    witness_ty: binder.ty_guard,
+                })
+            || local.mutability != LocalMutability::Immutable
+            || local.ghost
+            || local.initialized_at != Some(pick_id)
+            || effect.statement != pick_id
+            || effect.target != AssignmentEffectTarget::Local(local_id)
+            || !flow.context_facts.is_empty()
+            || !flow.ghost_effects.ghost_assignment_effects.is_empty()
+        {
+            return Err(invalid());
+        }
+    }
     let handoff = build_obligation_seed_handoff(core, &flow_output);
     let ghost_effects = &flow.ghost_effects.ghost_assignment_effects;
     if handoff.entries.len()
-        != 1 + contracts.ensures.len()
+        != 1 + usize::from(pick.is_some())
+            + contracts.ensures.len()
             + assertions.len()
             + ghost_effects.len()
             + if source_loop.is_some() { 3 } else { 0 }
@@ -1870,6 +2029,14 @@ pub fn generate_source_algorithm_postconditions(
         return Err(invalid());
     }
     for (_, entry) in handoff.entries.iter() {
+        if let ObligationHandoffOrigin::ExistingCore { seed } = entry.origin {
+            if inhabitation.is_none_or(|(id, row)| id != seed || row != &entry.seed)
+                || entry.flow_site.is_some()
+            {
+                return Err(invalid());
+            }
+            continue;
+        }
         let site = entry.flow_site.as_ref().ok_or_else(invalid)?;
         if entry.origin
             != (ObligationHandoffOrigin::FlowDerived {
@@ -1951,7 +2118,10 @@ pub fn generate_source_algorithm_postconditions(
     })
     .map_err(|error| error.to_string())?;
     if raw.vcs().len()
-        != contracts.ensures.len() + assertions.len() + if source_loop.is_some() { 2 } else { 0 }
+        != usize::from(pick.is_some())
+            + contracts.ensures.len()
+            + assertions.len()
+            + if source_loop.is_some() { 2 } else { 0 }
         || raw.seed_accounting().len() != handoff.entries.len()
         || candidates
             .no_candidates()
@@ -2006,6 +2176,37 @@ pub fn generate_source_algorithm_postconditions(
                 .collect::<Vec<_>>();
             let mut new_fact = None;
             match &current.kind {
+                CoreAlgorithmStmtKind::Pick { binder, .. } if pick.is_some() => {
+                    let subject = VcProgramValue {
+                        var: binder.var,
+                        definition: Some(*id),
+                    };
+                    values.insert(binder.var, subject);
+                    let guard = binder.ty_guard.ok_or_else(invalid)?;
+                    let CoreFormulaKind::TypePred { ty, .. } =
+                        &core.formulas().get(guard).ok_or_else(invalid)?.kind
+                    else {
+                        return Err(invalid());
+                    };
+                    let formula = VcGeneratedFormulaId::new(generated.len());
+                    generated.push(VcGeneratedFormula {
+                        id: formula,
+                        kind: VcGeneratedFormulaKind::AlgorithmStateFact,
+                        shape: VcGeneratedFormulaShape::ProgramTypePredicate {
+                            subject,
+                            ty: ty.clone(),
+                        },
+                        provenance: provenance.clone(),
+                    });
+                    let index = entries.len();
+                    entries.push(ContextEntry {
+                        id: ContextEntryId::new(index),
+                        sort_key: format!("algorithm-state-{index:08}").into(),
+                        kind: ContextEntryKind::GeneratedFact,
+                        formula: Some(VcFormulaRef::Generated(formula)),
+                        provenance: provenance.clone(),
+                    });
+                }
                 CoreAlgorithmStmtKind::Let {
                     binder,
                     value: Some(value),
@@ -2396,6 +2597,18 @@ pub fn generate_source_algorithm_postconditions(
                 .candidate_for_handoff(vc.seed.handoff)
                 .ok_or_else(invalid)?;
             let entry = handoff.entries.get(vc.seed.handoff).ok_or_else(invalid)?;
+            if let ObligationHandoffOrigin::ExistingCore { seed } = entry.origin {
+                if inhabitation.is_none_or(|(id, row)| {
+                    id != seed || vc.goal != VcFormulaRef::Core(row.goal.unwrap())
+                }) || vc.status != VcStatus::Open
+                    || !vc.local_context.entries().is_empty()
+                    || !vc.premises.is_empty()
+                    || vc.proof_hint.is_some()
+                {
+                    return Err(invalid());
+                }
+                continue;
+            }
             let site = entry.flow_site.as_ref().ok_or_else(invalid)?;
             let consuming_statement = site
                 .statement

@@ -589,8 +589,12 @@ Core goal hash は保守的なままで、dependency slicing は opaque computat
 ## Flat snapshot postconditions
 
 実装済みの snapshot 拡張は Core/CFG 捕捉を完全検証して既存 `generate_source_algorithm_postconditions` を使う。初期化 ghost var/const は既存 program-value 世代を使い、runtime sink の ghost 依存拒否を保つ。捕捉は状態・仮定を変更せず、通常の返却 postcondition は Open に留める。
-全 handoff 行を保持し、ghost 初期化は既存 GhostErasure/NoConcreteVc、終了は元の未解決 status を残す。捕捉は証明や ghost-erasure 証明書ではなく、snapshot claim 置換・限定 while 以外の loop・false-ensures 検証は未対応とする。
+全 handoff 行を保持し、ghost 初期化は既存 GhostErasure/NoConcreteVc、終了は元の未解決 status を残す。捕捉は証明や ghost-erasure 証明書ではなく、snapshot claim 置換・限定 while 以外の loop・限定 return Pick 以外の事後条件失敗は未対応とする。
 
 ## 限定 while 事後条件
 
 `generate_source_algorithm_postconditions` は一ループ Core グラフと新規 CFG/handoff、ループ所有の入口・後退辺 site、実際の最終 return を検証する。認証済み本体の代入先から MayWrite を計算し、そのローカルだけを cutpoint で freshen して不変仮引数を保つ。初期化事実は入口だけに残す。入口・保存 invariant と return の Open VC を生成する。保存は havoc 後の invariant・guard に実際の旧状態代入を適用し、return は cutpoint invariant と guard の否定を使い、本体代入事実を使わない。この source generator 内で両 invariant handoff と具体化した出口要約を認証する。出口仮定は既存 LoopInvariantAvailable、未解決依存は PremiseRef::ConservativeUnknown とし、実 dependency slice を再利用不可に保つ。型付き依存リンクや単独 VcSet のソース認証は約束しない。本体 invariant は帰納仮定であり受理済み証明や自己依存ではない。全 handoff 行と未解決の termination metadata を保持し、decreasing VC・実行・discharge・昇格を追加しない。
+
+## 限定 runtime Pick 事後条件
+
+`generate_source_algorithm_postconditions` は、ソース由来 Pick/Return の完全な組、範囲包含、相異なる parameter/result/Pick/logical binder、bare-set predicate、一つの ExistingCore inhabitation seed、新規 CFG/handoff を認証する。選択値を仮定せず、実際の `exists q. is_set(q)` を Open `GeneratedNonEmptiness` VC として生成し、実 Pick 文で識別する p と厳密な object(a), set(p) 文脈から Open 事後条件を生成する。result を p で置換し、型互換性から p=a、ID の違いから不等性を導かない。未解決の algorithm termination accounting を保持し、builtin 抑制、StableChoice origin、Discharged 根拠、汎用 CFG 再設計を行わない。意味上の認証は結果全体の replay が所有し、依存・再利用は保守的に扱う。

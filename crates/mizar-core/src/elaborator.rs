@@ -15514,7 +15514,7 @@ pub fn lower_source_functorial_registration(
     .map_err(|error| error.to_string())
 }
 
-/// Lowers checker-authenticated flat object algorithms into existing Core statements.
+/// Lowers checker-authenticated bounded algorithms into existing Core statements.
 pub fn lower_source_algorithms(
     check: &mizar_checker::type_checker::SourceAlgorithmCheck<'_>,
 ) -> Result<CoreIr, String> {
@@ -15550,7 +15550,13 @@ pub fn lower_source_algorithms(
             _ => Err(invalid()),
         }
     };
-    let term_node = |id| only(only(id, "TermExpression")?, "TermReference");
+    let term_node = |id| {
+        let expression = only(id, "TermExpression")?;
+        let [term] = node(expression)?.children.as_slice() else {
+            return Err(invalid());
+        };
+        Ok(*term)
+    };
     let mut input = CoreContextInput::new(ResolvedTypedAstSummary::new(
         checked.source_id(),
         checked.module_id().clone(),
@@ -15569,7 +15575,22 @@ pub fn lower_source_algorithms(
     let mut term_ids = BTreeMap::new();
     let mut type_predicates = BTreeMap::new();
     let mut destinations = BTreeMap::new();
+    let choice_var = CoreVarId::new(check.bindings().bindings().len() + 1);
+    let mut choice_site = None;
     for (_, term) in checked.terms().iter() {
+        if term.kind == mizar_checker::type_checker::TermKind::Choice {
+            let site = term.site.node();
+            if choice_site.replace(site).is_some() {
+                return Err(invalid());
+            }
+            term_ids.insert(site, CoreTermSeedId::new(terms.len()));
+            terms.push(CoreTermSeed::new(
+                CoreTermSeedKind::Var(choice_var),
+                CoreSourceRef::direct(range(site)?),
+                provenance(site),
+            ));
+            continue;
+        }
         let Some(TermReference::Binding(binding)) = term.reference else {
             return Err(invalid());
         };
@@ -15806,6 +15827,70 @@ pub fn lower_source_algorithms(
             _ => return Err(invalid()),
         }
     }
+    let choice = if let Some(site) = choice_site {
+        let source = CoreSourceRef::direct(range(site)?);
+        let q = CoreVarId::new(choice_var.index() + 1);
+        for (var, role) in [(choice_var, "pick"), (q, "term-binder")] {
+            input.variable_seeds.push(CoreVariableSeed::new(
+                var,
+                NormalizedVarClass::Generated,
+                role,
+                NormalizedVarSort::Term,
+                provenance(site),
+            ));
+            input
+                .binder_seeds
+                .push(CoreBinderSeed::new(var, source.clone(), provenance(site)));
+        }
+        // A separate occurrence supplies the type guard; the returned occurrence retains its own identity.
+        let p_term = CoreTermSeedId::new(terms.len());
+        terms.push(CoreTermSeed::new(
+            CoreTermSeedKind::Var(choice_var),
+            source.clone(),
+            provenance(site),
+        ));
+        let guard = CoreFormulaSeedId::new(formulas.len());
+        formulas.push(CoreFormulaSeed::new(
+            CoreFormulaSeedKind::TypePred {
+                subject: p_term,
+                ty: CoreTypePredicate::new("set"),
+            },
+            source.clone(),
+            provenance(site),
+        ));
+        let q_term = CoreTermSeedId::new(terms.len());
+        terms.push(CoreTermSeed::new(
+            CoreTermSeedKind::Var(q),
+            source.clone(),
+            provenance(site),
+        ));
+        let body = CoreFormulaSeedId::new(formulas.len());
+        formulas.push(CoreFormulaSeed::new(
+            CoreFormulaSeedKind::TypePred {
+                subject: q_term,
+                ty: CoreTypePredicate::new("set"),
+            },
+            source.clone(),
+            provenance(site),
+        ));
+        let exists = CoreFormulaSeedId::new(formulas.len());
+        formulas.push(CoreFormulaSeed::new(
+            CoreFormulaSeedKind::Exists {
+                binders: vec![QuantifierBinderSeed::new(
+                    q,
+                    "term-binder",
+                    source.clone(),
+                    provenance(site),
+                )],
+                body,
+            },
+            source,
+            provenance(site),
+        ));
+        Some((site, guard, exists))
+    } else {
+        None
+    };
     let context = prepare_core_context(input).map_err(|error| error.to_string())?;
     let owner = context
         .item_registry()
@@ -15840,6 +15925,24 @@ pub fn lower_source_algorithms(
     let mut snapshots = check.snapshots().clone();
     for statement in &node(statement_list)?.children {
         let source = CoreSourceRef::direct(range(*statement)?);
+        if node(*statement)?.kind.as_str() == "ReturnStatement"
+            && let Some((site, guard, _)) = choice
+        {
+            let choice_source = CoreSourceRef::direct(range(site)?);
+            statements.push(AlgorithmStmtSeed::Pick {
+                binder: CoreBinder {
+                    var: choice_var,
+                    role: "pick".into(),
+                    ty_guard: Some(lowered.formula_map[&guard]),
+                    source_name: None,
+                    source: choice_source.clone(),
+                },
+                witness_ty: Some(lowered.formula_map[&guard]),
+                ghost: false,
+                source: choice_source,
+                provenance: provenance(site),
+            });
+        }
         let provenance = provenance(*statement);
         statements.push(match node(*statement)?.kind.as_str() {
             "VariableDeclaration" => {
@@ -15954,7 +16057,7 @@ pub fn lower_source_algorithms(
         .map_err(|error| error.to_string())?;
     let proofs = lower_proof_inputs(&context, &lowered, &definitions, ProofLoweringInput::new())
         .map_err(|error| error.to_string())?;
-    let algorithms = lower_algorithm_inputs(
+    let mut algorithms = lower_algorithm_inputs(
         &context,
         &lowered,
         &proofs,
@@ -15982,6 +16085,32 @@ pub fn lower_source_algorithms(
         },
     )
     .map_err(|error| error.to_string())?;
+    let mut obligation_seeds = proofs.obligation_seeds;
+    if let Some((site, _, exists)) = choice {
+        let (algorithm, row) = algorithms.algorithms.iter().next().ok_or_else(invalid)?;
+        let goal = lowered.formula_map[&exists];
+        let source = source_with_provenance(CoreSourceRef::direct(range(site)?), &provenance(site));
+        let id = obligation_seeds.insert(ObligationSeed {
+            owner,
+            kind: ObligationSeedKind::GeneratedNonEmptiness,
+            goal: Some(goal),
+            context: Vec::new(),
+            local_path: "algorithm/pick-nonempty".into(),
+            label: None,
+            semantic_origin: "algorithm/runtime-pick".into(),
+            provenance: source.provenance.clone(),
+            source: source.clone(),
+            core_refs: vec![
+                CoreNodeRef::Item(owner),
+                CoreNodeRef::Algorithm(algorithm),
+                CoreNodeRef::AlgorithmStmt(row.statements[0]),
+                CoreNodeRef::Formula(goal),
+            ],
+            status: ObligationSeedStatus::Active,
+            diagnostics: Vec::new(),
+        });
+        algorithms.source_map.obligation_sources.insert(id, source);
+    }
     CoreIr::try_new(CoreIrParts {
         source_id: checked.source_id(),
         module_id: checked.module_id().clone(),
@@ -15994,7 +16123,7 @@ pub fn lower_source_algorithms(
         algorithms: algorithms.algorithms,
         algorithm_statements: algorithms.algorithm_statements,
         generated: lowered.generated,
-        obligation_seeds: proofs.obligation_seeds,
+        obligation_seeds,
         source_map: algorithms.source_map,
         diagnostics: algorithms.diagnostics,
     })

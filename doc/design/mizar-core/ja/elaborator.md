@@ -941,3 +941,7 @@ Active TheoremProof seed は一つで、定理は `PendingAutomaticProof` のま
 ## 限定 means-prefix functor theorem
 
 封印済み source-theorem 経路は実 user-functor 適用と Opaque な式定義を保持する。source `it` を適用に置換するが、その等式を前提として公開しない。既存 definition-correctness seed は guard 付き存在 `forall x:set exists r:set r=x` と一意性 `forall x:set forall r1,r2:set ((r1=x & r2=x) -> r1=r2)` を別の生成結果束縛子・節由来で表す。定理は `forall q:set F(q)=q` のまま、別の局所束縛子は set guard だけの下で `F(l)=l` を終端とする。二つの active definition seed と PendingAutomaticProof 定理に属する一つの Active TheoremProof seed の所有者・source map・backref を保持する。定義登録・unfolding・受理済み事実・新 Core 表現は追加しない。
+
+## 限定 return Pick lowering
+
+封印済み `return the set` は既存 runtime `Pick` 一つと、その新しい hidden binder を返す `Return` に lower し、実際の set predicate を保持する。Pick のソースは所有 return 範囲内の choice 出現とし、この組だけは平坦な非重複範囲検査に代えて認証済み包含関係を検査する。別の新しい論理 binder で `exists q. is_set(q)` を構築し、この Pick と algorithm への既存 Core 参照および完全な source map を持つ Active `GeneratedNonEmptiness` seed にする。既存の項・式・seed を使い、hidden binder をソース契約に公開せず、StableChoice origin・証人・受理済み inhabitation 証明・停止性昇格を生成しない。

@@ -3164,7 +3164,7 @@ fn active_runner_reports_are_byte_stable_across_repeated_runs() {
     let root = config.workspace_root.clone();
     let plan = build_test_plan(&config).unwrap();
 
-    assert_eq!(active_proof_verification_cases(&plan).count(), 21);
+    assert_eq!(active_proof_verification_cases(&plan).count(), 22);
 
     let parse_first = canonical_parse_only_report(&run_parse_only_corpus(&config).unwrap(), &root);
     let parse_second = canonical_parse_only_report(&run_parse_only_corpus(&config).unwrap(), &root);
@@ -4041,6 +4041,11 @@ fn repository_corpus_plan_succeeds() {
             "fail/algorithms",
         ),
         (
+            "spec.en.mizar_vc.vc_ir.algorithm_ensures_failure_snapshot",
+            "fail_proof_verification_algorithm_ensures_unprovable_001",
+            "fail/algorithms",
+        ),
+        (
             "spec.en.mizar_vc.vc_ir.algorithm_ensures_return_snapshot",
             "pass_proof_verification_algorithm_ensures_return_001",
             "pass/algorithms",
@@ -4112,6 +4117,7 @@ fn repository_corpus_plan_succeeds() {
             snapshot_ref,
             "spec.en.mizar_vc.vc_ir.algorithm_void_claim_snapshot"
                 | "spec.en.mizar_vc.vc_ir.algorithm_assert_failure_snapshot"
+                | "spec.en.mizar_vc.vc_ir.algorithm_ensures_failure_snapshot"
                 | "spec.en.mizar_vc.vc_ir.algorithm_ghost_snapshot"
                 | "spec.en.mizar_vc.vc_ir.algorithm_while_invariant"
                 | "spec.en.mizar_vc.vc_ir.computation_request_snapshot"
@@ -4134,6 +4140,10 @@ fn repository_corpus_plan_succeeds() {
                     "Bounded phrase predicate snapshot"
                 } else if snapshot_ref == "spec.en.mizar_vc.vc_ir.symbolic_predicate_snapshot" {
                     "VC Task 6; bounded symbolic predicate VcIr snapshot"
+                } else if snapshot_ref
+                    == "spec.en.mizar_vc.vc_ir.algorithm_ensures_failure_snapshot"
+                {
+                    "VC Tasks 43/50; bounded runtime Pick false-postcondition VcIr snapshot"
                 } else if directory == "fail/algorithms" {
                     "VC Task 43; bounded contradictory assertion VcIr snapshot"
                 } else {
@@ -10681,8 +10691,8 @@ fn proof_verification_cli_reports_task180_and_step5c2_summary() {
         String::from_utf8_lossy(&output.stderr)
     );
     let stdout = String::from_utf8_lossy(&output.stdout);
-    assert!(stdout.contains("proof-verification cases: 21"));
-    assert!(stdout.contains("passed: 21"));
+    assert!(stdout.contains("proof-verification cases: 22"));
+    assert!(stdout.contains("passed: 22"));
     assert!(stdout.contains("failed: 0"));
 }
 

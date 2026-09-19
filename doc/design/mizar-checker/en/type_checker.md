@@ -3258,3 +3258,7 @@ The while extension of `check_source_algorithm_types` admits one initialized run
 ## Bounded means-prefix functor theorem checking
 
 Extend the existing source-statement producer and theorem replay for one unary set functor with `means it = X`, explicit empty existence/uniqueness clauses, and quantified/proof-local prefix applications. Authenticate the actual symbol, declaration/occurrence identities, `it` role, return type, clause owners and application argument/result types; retain both unproved correctness clauses in the sealed source tree for Core obligation lowering. Replay the complete primary/application/equality graph and ordered clause ownership; keep the raw typed obligation table empty and its public constructor guard unchanged. This grants source typing and pending goals only; neither clause is an accepted proof and the defining equation is unavailable as a theorem premise.
+
+## Bounded executable set choice
+
+The return-only object algorithm may use `return the set` with an equality ensures. Authenticate the actual ChoiceExpression and bare builtin target, its return-statement ownership and complete source/environment/typed correspondence. Existing Choice typing and the builtin-set existential gate establish inhabited-set admission; check the actual set-to-object return compatibility. Preserve the choice occurrence in the existing seal, without inventing a parameter reference, registration or stable-choice origin. Other choice targets, executable choice sites and extra contracts/statements remain outside this profile.

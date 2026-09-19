@@ -4,8 +4,8 @@
 For reduction, actual transparent identity applications and the singleton of the same binder must yield `forall X:set. X={X}`, with exactly its bare-set guard and no extra assumptions. The builtin empty set refutes this universal equation because its singleton is nonempty (spec §§13.4.1,13.8.6,17.3.4,17.9.4).
 The internal semantic witness yields only the actual failing VcId, never a source witness, countermodel artifact, accepted fact or kernel evidence; a reflexive RHS yields no failure, and unsupported or NeedsAtp goals earn no failure observation.
 
-`failed_source_algorithm_assertion(&CoreIr, &VcSet) -> Result<Option<VcId>, String>` replays the complete source algorithm generator result before observing only an Open assertion `not a=a` over one actual immutable object parameter. It authenticates the original Core Not/Equals graph, both occurrences, variable/write identity, FlowDerived algorithm/statement owner and the sole consistent parameter-guard context.
-Only that contradiction returns its actual VcId; ordinary equality remains open without failure. Locals, writes, contracts, pending assertion assumptions, hints, forged premises, unrelated errors and altered accounting cannot establish this observation. No status mutation, generic Unknown/NeedsAtp-to-failure rule, accepted evidence, Task274 or terminating promotion follows.
+`failed_source_algorithm_assertion(&CoreIr, &VcSet) -> Result<Option<VcId>, String>` replays the complete source algorithm generator result before observing an Open assertion `not a=a` over one actual immutable object parameter. It authenticates the original Core Not/Equals graph, both occurrences, variable/write identity, FlowDerived algorithm/statement owner and the sole consistent parameter-guard context.
+Only that contradiction returns its actual VcId; ordinary equality remains open without failure. Locals, writes, contracts, pending assertion assumptions, hints, forged premises, unrelated errors and altered accounting cannot establish the assertion observation. No status mutation, generic Unknown/NeedsAtp-to-failure rule, accepted evidence, Task274 or terminating promotion follows.
 
 > Canonical language: English. Japanese companion:
 > [../ja/discharge.md](../ja/discharge.md).
@@ -251,3 +251,7 @@ discharge rules can be added without breaking downstream exhaustive matches.
 No exhaustive public enum exceptions are owned by this module. Internal
 `mizar-vc` matches that intentionally enumerate current variants may remain
 exhaustive.
+
+## Bounded Pick postcondition failure
+
+The existing `failed_source_algorithm_assertion` signature also serves the bounded return-Pick postcondition profile, preserving its assertion branch. Only exact whole-generator replay, the actual runtime set Pick, the authentic inhabitation obligation and complete context object(a), set(p) may qualify the Open goal p=a. In the specified set foundation take a={} and p={{}}: both are sets and hence objects, while {} has no members and {{}} contains {}, so extensionality gives p≠a. This allowed input/choice pair refutes the universal Pick contract, not every execution; it is not a finite universe model or an inference from unequal IDs. Return only the actual postcondition VcId; leave both VCs Open. Extra assumptions/hints, changed goals/accounting, stable choice, unsupported inputs, timeout and NeedsAtp never establish failure. Tests require renamed-source replay, return-a and reflexive-ensures nonfailure, and coherent source/Core/VC/context/accounting corruption rejection; no generic countermodel interface or kernel acceptance is added.
