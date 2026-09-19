@@ -5726,8 +5726,8 @@ fn repository_type_elaboration_runner_executes_active_source_derived_seeds() {
     let report = run_type_elaboration_corpus(&config).unwrap();
 
     assert_eq!(report.error_count(), 0, "{:#?}", report.diagnostics);
-    assert_eq!(report.results.len(), 265);
-    assert_eq!(report.passed_count(), 265);
+    assert_eq!(report.results.len(), 266);
+    assert_eq!(report.passed_count(), 266);
     assert_eq!(report.failed_count(), 0);
     let task31_result = report
         .results
@@ -10678,8 +10678,8 @@ fn type_elaboration_cli_reports_active_runner_summary() {
         String::from_utf8_lossy(&output.stderr)
     );
     let stdout = String::from_utf8_lossy(&output.stdout);
-    assert!(stdout.contains("type-elaboration cases: 265"));
-    assert!(stdout.contains("passed: 265"));
+    assert!(stdout.contains("type-elaboration cases: 266"));
+    assert!(stdout.contains("passed: 266"));
     assert!(stdout.contains("failed: 0"));
 }
 

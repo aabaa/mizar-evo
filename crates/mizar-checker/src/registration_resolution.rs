@@ -174,6 +174,193 @@ fn check_source_registration_profile<'a>(
         recovery: BindingContextRecovery::Normal,
     });
     if source_proof {
+        if source
+            .arena()
+            .iter()
+            .any(|(_, node)| node.kind() == &K::PredicateRedefinition)
+        {
+            // Authenticate later declarations without adding their bodies to proof premises.
+            let parts = |id, kind: &K| {
+                (intake.node(id).kind() == kind)
+                    .then(|| intake.children(id))
+                    .ok_or_else(invalid)
+            };
+            let tokens = |expected: &[(ResolvedNodeId, &str)]| {
+                for (id, spelling) in expected {
+                    let kind = if matches!(*spelling, ":" | ";" | "," | "=") {
+                        SurfaceTokenKind::ReservedSymbol
+                    } else {
+                        SurfaceTokenKind::ReservedWord
+                    };
+                    if !matches!(intake.node(*id).kind(), K::Token(token)
+                        if token.kind == kind && token.text.as_ref() == *spelling)
+                    {
+                        return Err(invalid());
+                    }
+                }
+                Ok(())
+            };
+            let identifier = |id| {
+                if !matches!(intake.node(id).kind(), K::Token(token)
+                    if token.kind == SurfaceTokenKind::Identifier)
+                {
+                    return Err(invalid());
+                }
+                intake.text(id)
+            };
+            let unit = intake.only(source.arena().root(), &K::CompilationUnit)?;
+            let items = intake.only(unit, &K::ItemList)?;
+            let [attribute, registration, trailing @ ..] = intake.children(items) else {
+                return Err(invalid());
+            };
+            if intake.node(*attribute).kind() != &K::DefinitionBlockItem
+                || intake.node(*registration).kind() != &K::RegistrationBlockItem
+                || trailing.is_empty()
+            {
+                return Err(invalid());
+            }
+            let mut redefinitions = 0;
+            for block in trailing {
+                let [keyword, parameter, declaration, end, semi] =
+                    parts(*block, &K::DefinitionBlockItem)?
+                else {
+                    return Err(invalid());
+                };
+                tokens(&[(*keyword, "definition"), (*end, "end"), (*semi, ";")])?;
+                let [let_kw, segment, semi] = parts(*parameter, &K::DefinitionParameter)? else {
+                    return Err(invalid());
+                };
+                tokens(&[(*let_kw, "let"), (*semi, ";")])?;
+                let [left, comma, right, be, ty] = parts(*segment, &K::QualifiedVariableSegment)?
+                else {
+                    return Err(invalid());
+                };
+                tokens(&[(*comma, ","), (*be, "be")])?;
+                if identifier(*left)? == identifier(*right)? {
+                    return Err(invalid());
+                }
+                let head = match parts(*ty, &K::TypeExpression)? {
+                    [head] => *head,
+                    [chain, head] => {
+                        let [attribute] = parts(*chain, &K::AttributeChain)? else {
+                            return Err(invalid());
+                        };
+                        parts(*attribute, &K::AttributeRef)?;
+                        *head
+                    }
+                    _ => return Err(invalid()),
+                };
+                intake.set_type(head)?;
+                tokens(&[(intake.children(head)[0], "set")])?;
+                let (pred, label, colon, pattern, means, body, semi) = match (
+                    intake.node(*declaration).kind(),
+                    intake.children(*declaration),
+                ) {
+                    (K::PredicateDefinition, [pred, label, colon, pattern, means, body, semi]) => {
+                        (*pred, *label, *colon, *pattern, *means, *body, *semi)
+                    }
+                    (
+                        K::PredicateRedefinition,
+                        [
+                            redefine,
+                            pred,
+                            label,
+                            colon,
+                            pattern,
+                            means,
+                            body,
+                            semi,
+                            coherence,
+                        ],
+                    ) => {
+                        redefinitions += 1;
+                        tokens(&[(*redefine, "redefine")])?;
+                        let [keyword, proof, coherence_semi] =
+                            parts(*coherence, &K::CoherenceCondition)?
+                        else {
+                            return Err(invalid());
+                        };
+                        tokens(&[(*keyword, "coherence"), (*coherence_semi, ";")])?;
+                        let [keyword, conclusion, end] = parts(*proof, &K::ProofBlock)? else {
+                            return Err(invalid());
+                        };
+                        tokens(&[(*keyword, "proof"), (*end, "end")])?;
+                        let [thus, proposition, conclusion_semi] =
+                            parts(*conclusion, &K::ConclusionStatement)?
+                        else {
+                            return Err(invalid());
+                        };
+                        tokens(&[(*thus, "thus"), (*conclusion_semi, ";")])?;
+                        let [formula] = parts(*proposition, &K::Proposition)? else {
+                            return Err(invalid());
+                        };
+                        let [constant] = parts(*formula, &K::FormulaExpression)? else {
+                            return Err(invalid());
+                        };
+                        if format!("{:?}", intake.node(*constant).kind())
+                            != "FormulaConstant(Thesis)"
+                        {
+                            return Err(invalid());
+                        }
+                        let [thesis] = intake.children(*constant) else {
+                            return Err(invalid());
+                        };
+                        tokens(&[(*thesis, "thesis")])?;
+                        (*pred, *label, *colon, *pattern, *means, *body, *semi)
+                    }
+                    _ => return Err(invalid()),
+                };
+                tokens(&[(pred, "pred"), (colon, ":"), (means, "means"), (semi, ";")])?;
+                identifier(label)?;
+                let kind = if intake.node(*declaration).kind() == &K::PredicateRedefinition {
+                    SymbolKind::Redefinition
+                } else {
+                    SymbolKind::Predicate
+                };
+                if !symbols.symbols().iter().any(|entry| {
+                    entry.kind() == kind
+                        && entry.origin().anchor() == intake.node(*declaration).origin().anchor()
+                }) {
+                    return Err(invalid());
+                }
+                let [left_use, name, right_use] = parts(pattern, &K::PredicatePattern)? else {
+                    return Err(invalid());
+                };
+                if !matches!(intake.node(*name).kind(), K::Token(token)
+                    if matches!(token.kind, SurfaceTokenKind::Identifier | SurfaceTokenKind::UserSymbol))
+                    || mizar_resolve::names::resolve_template_formal(source, *left_use)? != *left
+                    || mizar_resolve::names::resolve_template_formal(source, *right_use)? != *right
+                {
+                    return Err(invalid());
+                }
+                let [formula] = parts(body, &K::FormulaDefiniens)? else {
+                    return Err(invalid());
+                };
+                let [equality] = parts(*formula, &K::FormulaExpression)? else {
+                    return Err(invalid());
+                };
+                let [lhs, equals, rhs] = parts(*equality, &K::BuiltinPredicateApplication)? else {
+                    return Err(invalid());
+                };
+                tokens(&[(*equals, "=")])?;
+                for operand in [lhs, rhs] {
+                    let [reference] = parts(*operand, &K::TermExpression)? else {
+                        return Err(invalid());
+                    };
+                    let [token] = parts(*reference, &K::TermReference)? else {
+                        return Err(invalid());
+                    };
+                    if ![*left, *right].contains(&mizar_resolve::names::resolve_template_formal(
+                        source, *token,
+                    )?) {
+                        return Err(invalid());
+                    }
+                }
+            }
+            if redefinitions != 1 {
+                return Err(invalid());
+            }
+        }
         // Replay names throughout the source, including consumers not elaborated below.
         let mut projections = Vec::new();
         let mut labels = Vec::new();
@@ -5124,6 +5311,7 @@ fn initial_obligation_kind_name(kind: InitialObligationKind) -> &'static str {
         InitialObligationKind::Narrowing => "narrowing",
         InitialObligationKind::RegistrationCorrectness => "registration_correctness",
         InitialObligationKind::PredicatePropertyCorrectness => "predicate_property_correctness",
+        InitialObligationKind::PredicateRedefinitionCoherence => "predicate_redefinition_coherence",
         InitialObligationKind::FunctorPropertyCorrectness => "functor_property_correctness",
         InitialObligationKind::FunctorExistence => "functor_existence",
         InitialObligationKind::FunctorUniqueness => "functor_uniqueness",

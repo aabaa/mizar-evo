@@ -4105,6 +4105,7 @@ pub enum InitialObligationKind {
     Narrowing,
     RegistrationCorrectness,
     PredicatePropertyCorrectness,
+    PredicateRedefinitionCoherence,
     FunctorPropertyCorrectness,
     FunctorExistence,
     FunctorUniqueness,
@@ -5087,6 +5088,19 @@ fn validate_initial_obligations(parts: &TypedAstParts) -> Result<(), TypedAstErr
                 obligation: obligation_id,
             }
         })?;
+        if obligation.kind == InitialObligationKind::PredicateRedefinitionCoherence
+            && parts
+                .nodes
+                .node(obligation.owner.node())
+                .is_none_or(|node| {
+                    node.kind.as_str() != "CoherenceCondition"
+                        || node.anchor != SourceAnchor::Range(obligation.source_range)
+                })
+        {
+            return Err(TypedAstError::InvalidObligationOwner {
+                obligation: obligation_id,
+            });
+        }
         for fact in &obligation.assumptions {
             if parts.facts.get(*fact).is_none() {
                 return Err(TypedAstError::InvalidObligationFact {
@@ -5854,6 +5868,7 @@ fn initial_obligation_kind_name(kind: InitialObligationKind) -> &'static str {
         InitialObligationKind::Narrowing => "narrowing",
         InitialObligationKind::RegistrationCorrectness => "registration_correctness",
         InitialObligationKind::PredicatePropertyCorrectness => "predicate_property_correctness",
+        InitialObligationKind::PredicateRedefinitionCoherence => "predicate_redefinition_coherence",
         InitialObligationKind::FunctorPropertyCorrectness => "functor_property_correctness",
         InitialObligationKind::FunctorExistence => "functor_existence",
         InitialObligationKind::FunctorUniqueness => "functor_uniqueness",

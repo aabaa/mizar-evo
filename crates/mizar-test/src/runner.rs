@@ -2684,7 +2684,15 @@ fn type_elaboration_detail_keys(
         }
         return source_registration_inputs(workspace_root, case, output)
             .and_then(|(source, typed, symbols)| {
-                if case.expectation.domain == "functors.dependent_return" {
+                if case.expectation.domain == "predicates.redefinition" {
+                    let database = mizar_proof::status::prove_source_existential_registration(
+                        &source, &typed, &symbols, shared::snapshot_id(0),
+                        &mizar_proof::policy::VerifierPolicy::release(),
+                    )?;
+                    mizar_checker::type_checker::check_source_predicate_redefinition_types(
+                        &source, &typed, &symbols, &database,
+                    ).map(|_| Vec::new())
+                } else if case.expectation.domain == "functors.dependent_return" {
                     mizar_checker::type_checker::TermFormulaChecker::check_source_dependent_functor_types(
                         &source, &symbols, &typed,
                     ).map(|_| Vec::new())

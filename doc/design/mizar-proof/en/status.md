@@ -247,7 +247,7 @@ The returned database is this call's module-local output, not a transferable pro
 consumers must use this producer within the same authenticated source orchestration, never accept an
 arbitrary returned/public database as proof authority. Preserve item-order visibility and no
 retroactive facts. The bounded C3 widening runner may consume this fresh local output immediately in that orchestration;
-the bounded C13 consumer belongs to [harness orchestration](../../mizar-test/en/harness.md#attributed-ambiguity-admission); C5, broader Task274, artifact publication and cluster/reduction effects remain deferred.
+the bounded C13 consumer belongs to [harness orchestration](../../mizar-test/en/harness.md#attributed-ambiguity-admission); the bounded C5 narrower-loci consumer may likewise immediately consume the single-registration output with the same immutable inputs; broader Task274, artifact publication and cluster/reduction effects remain deferred.
 
 ## Three-registration source-proof extension
 

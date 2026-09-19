@@ -5801,12 +5801,16 @@ Core/VcSet 全体の不変再実行と [VcSet 全体の snapshot](../../mizar-vc
 
 ## 限定 means-prefix functor admission
 
-`pass_proof_verification_func_means_prefix_001` だけを元の pass/proof_verification/vc_generation、functors.means_definition、semantic ref、唯一の active_proof_verification tag、追加 means-functor snapshot ref/path で受理する。全 stage で厳密な source/sidecar 同一性を予約し、inventory の欠落・重複と補助 payload を拒否する。実 Pending existence/uniqueness、実 application equality 定理、Core/VcSet 全体の再実行と固定 snapshot を必須とする。空の correctness 節を受理済みとせず、未解決の定義等式を定理へ供給しない。narrower-loci registration は延期する。
+`pass_proof_verification_func_means_prefix_001` だけを元の pass/proof_verification/vc_generation、functors.means_definition、semantic ref、唯一の active_proof_verification tag、追加 means-functor snapshot ref/path で受理する。全 stage で厳密な source/sidecar 同一性を予約し、inventory の欠落・重複と補助 payload を拒否する。実 Pending existence/uniqueness、実 application equality 定理、Core/VcSet 全体の再実行と固定 snapshot を必須とする。空の correctness 節を受理済みとせず、未解決の定義等式を定理へ供給しない。
 
 ## 限定 equals-infix functor admission
 
-`pass_proof_verification_func_equals_infix_operator_001` だけを既存 pass/proof_verification/vc_generation、functors.equals_definition、元の semantic ref、唯一の active_proof_verification tag、追加 equals-functor snapshot ref/path で受理する。厳密な source/sidecar 同一性、inventory の欠落・重複、alias、補助 payload は引き続き fail-closed とする。Core/VcSet 全体の決定的再実行と固定 baseline、実 RHS coherence・適用定理 graph、独立した束縛子・演算子改名、敵対的 replay control を必須とする。未解決 goal 生成のみを扱い、narrower-loci registration は延期する。
+`pass_proof_verification_func_equals_infix_operator_001` だけを既存 pass/proof_verification/vc_generation、functors.equals_definition、元の semantic ref、唯一の active_proof_verification tag、追加 equals-functor snapshot ref/path で受理する。厳密な source/sidecar 同一性、inventory の欠落・重複、alias、補助 payload は引き続き fail-closed とする。Core/VcSet 全体の決定的再実行と固定 baseline、実 RHS coherence・適用定理 graph、独立した束縛子・演算子改名、敵対的 replay control を必須とする。未解決 goal 生成のみを扱う。
 
 ## 限定 false-postcondition admission
 
 `fail_proof_verification_algorithm_ensures_unprovable_001` だけを既存 fail/proof_verification/verification、proof_failure、algorithms.contracts、algorithms.ensures.unprovable、空 diagnostics で有効化する。元の ensures 参照を先頭に保ち、`spec.en.mizar_vc.vc_ir.algorithm_ensures_failure_snapshot` と `snapshots/vc/fail_proof_verification_algorithm_ensures_unprovable_001.vc_ir.snap` を追加し、source_vc_decomposition の trace section は `VC Tasks 43/50; bounded runtime Pick false-postcondition VcIr snapshot` とする。厳密な admission と完全な Core/CFG/VcSet の決定的 replay を必須とし、baseline 比較後に既存 negative observer が実際の事後条件 VcId を返す必要がある。未対応 generation や observer エラーは oracle を満たさない。inhabitation VC は Open、停止性は未解決に保ち、metadata・baseline 破損の controls と既存 activation を維持する。
+
+## Narrower-loci predicate admission
+
+narrower-loci の正確な source/sidecar identity、変更しない pass/type_elaboration/type_check oracle、唯一の semantic ref と active tag を予約する。一つの immutable source orchestration 内で、記述された登録を既存 checker/Core/VC/kernel/policy 経路で新たに証明し、その局所出力で [declaration checker](../../mizar-checker/ja/type_checker.md#narrower-loci-predicate-declaration-checking) を呼ぶ。共有の記述 type gate と両 formal binding、実際に狭い root 対応、型検査済みの逆順等式本体、pending coherence request 一つを要求する。source・registration/choice/citation・policy・binding・正規化 signature・root 順序/曖昧性・coherence owner の変異は拒否、または正しく変更された pending goal の保持を確認する。caller acceptance・偽造 database・証明成功・新規 VC snapshot は認めない。

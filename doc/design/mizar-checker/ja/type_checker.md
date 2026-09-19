@@ -3085,3 +3085,7 @@ object を返す return のみの algorithm では、等式 ensures と `return 
 ## 限定 equals-infix functor theorem 検査
 
 既存 statement producer と theorem replay を、新規の二引数 set functor、仮引数参照の equals RHS、空の coherence 節一つ、実 left 結合・優先度80の infix 宣言、二つの二項適用へ拡張する。宣言・出現対応、引数順序、結果型、演算子の綴り・token、既存 infix 結合情報と left 宣言の一致、独立した仮引数・定理・局所の六束縛を認証する。term/application/equality graph 全体と節所有者を replay する。既存 seal で節を Core へ運び、registration/narrowing 義務への誤分類や public initial-obligation kind の追加をしない。RHS の静的型検査は coherence 証明・定義等式の前提・定義受理を与えない。
+
+## Narrower-loci predicate declaration checking
+
+限定 source producer は [proof status](../../mizar-proof/ja/status.md#source-existential-registration-proof) の同一呼出し由来 registration database を受け、source-local full pattern を認証し、両 grouped formal が共有する実際の属性付き type site に既存 inhabitation gate を適用する。既存 radix/属性 closure 関係で元と限定後の順序付き signature を正規化し、両 loci が広がらず少なくとも一つが真に狭い場合だけ、同一 predicate head/arity の可視な先行 ordinary root 一つを推論する。独立の宣言 binding で実際の両等式本体を型検査し、限定 guard 下の同値性について root・新宣言・完全な coherence 節に結ぶ Pending PredicateRedefinitionCoherence request 一つを保持する。記述された `thus thesis` は受理を与えず、use-site refinement・定義公理・theorem/Core/VC credit・汎用 Task274 import は行わない。

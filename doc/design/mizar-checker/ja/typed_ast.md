@@ -412,6 +412,8 @@ obligation にだけ公開する。`Blocked` と `Invalidated` obligation は、
 
 `FunctorPropertyCorrectness` は checker-local な未証明関手 property request であり、owner/range と goal/provenance key が実宣言と property を識別する。PredicatePropertyCorrectness と区別し、canonical VC goal・証明・受理済 property・汎用 TypedAst installation 権限を与えない。
 
+`PredicateRedefinitionCoherence` は実際の限定 parameter guard 下の宣言同値性を求める pending request であり、owner/range と goal/provenance key が両定義の同一性・source 本体・宣言と出現の置換対応を結ぶ。property・narrowing cast・登録証明・canonical VC ではなく、accepted refinement を与えない。
+
 必須 obligation kind:
 
 - type expression と witness を導入する構文が必要とする sethood obligation

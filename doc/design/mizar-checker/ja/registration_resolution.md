@@ -670,3 +670,7 @@ Task274/artifact import は保留する。
 実 full-pattern validation 3件、別々の記述 choice site 6件、独立 builtin-set gate と両定義本体を保持し、各終端の属性・引用集合を登録と厳密に一致させる。 実 existence-proof 終端に限り、TypeExpression(AttributeChain, bare TypeHead) を異なる先行 Attribute identity と厳密な順序付き pattern・引用によって属性列と解釈する。修飾・引数・否定・実 radix・他の型出現は既存境界を維持する。
 全ソースを再照合し、後続関手の可視 root 2件を選択せず保持する。後続 term・属性・引用・source 順序を認証し、再構築した部分ソースや consumer の省略を根拠にしない。
 seal は activation や overload 結果を与えない。[Proof status](../../mizar-proof/ja/status.md#three-registration-source-proof-extension) が新鮮な kernel 検査と同一環境の activation を所有し、属性付き consumer gate は別途必要である。
+
+## Narrower-predicate source-proof profile
+
+単一の局所等式属性・登録に通常の二項 predicate と narrower-loci 再定義が続く source 全体の replay を拡張する。後続両宣言・formal 参照・属性付き head・coherence/proof owner を認証し、ここでは root 選択や coherence 証明を行わない。既存の単一登録 seal は実際の属性依存、記述された二つの bare-set choice、独立 builtin gate のみを保持し、切り出した source・後続 predicate の前提・新たな accepted 入力を登録証明に使わない。

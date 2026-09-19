@@ -2173,6 +2173,553 @@ pub fn check_source_functor_synonym_types(
     Ok((normalization, collection, viability))
 }
 
+/// Checks a narrower predicate declaration against a freshly matched local registration.
+/// The database is correspondence data; its producer must establish proof acceptance.
+pub fn check_source_predicate_redefinition_types(
+    source: &SurfaceResolvedArena,
+    typed: &crate::typed_ast::TypedArena,
+    symbols: &SymbolEnv,
+    database: &crate::registration_resolution::RegistrationDatabase,
+) -> Result<
+    (
+        BindingEnv,
+        TermFormulaInferenceOutput,
+        crate::registration_resolution::ExistentialGateOutput,
+        crate::typed_ast::TypedAst,
+    ),
+    String,
+> {
+    use crate::typed_ast::{TypedArena, TypedAst, TypedAstParts};
+    use crate::{registration_resolution::*, source_atomic_formula::*, source_term::*};
+    let invalid = || "predicates.redefinition.unsupported_source_types".to_owned();
+    // The fresh seal authenticates the entire source, including later declarations
+    // and the coherence proof shape; those declarations are not proof premises.
+    let checked = check_source_existential_registration_proof(source, typed, symbols)?;
+    let [validation] = checked.validations() else {
+        return Err(invalid());
+    };
+    let active = database.activated().iter().next().ok_or_else(invalid)?;
+    let pending = checked
+        .database()
+        .pending()
+        .iter()
+        .next()
+        .ok_or_else(invalid)?;
+    if database.module_id() != source.module()
+        || database.activated().len() != 1
+        || !database.pending().is_empty()
+        || !database.rejected().is_empty()
+        || !database.diagnostics().is_empty()
+        || active.source() != pending.source()
+        || active.resolver_registration() != validation.resolver_registration()
+        || active.validation_kind() != Some(RegistrationValidationKind::Existential)
+        || active.pattern().as_str() != format!("{:?}", validation.pattern())
+        || active.trigger().as_str() != format!("{:?}", validation.pattern())
+        || active.correctness().as_str() != validation.correctness_provenance().as_str()
+        || active.fingerprint().is_none()
+        || !active.parameters().is_empty()
+    {
+        return Err(invalid());
+    }
+    let node = |id| source.arena().node(id).ok_or_else(invalid);
+    let parts = |id, kind: &K| {
+        let current = node(id)?;
+        if current.kind() != kind {
+            return Err(invalid());
+        }
+        Ok(current.children())
+    };
+    let only = |id, kind: &K| {
+        let [child] = parts(id, kind)? else {
+            return Err(invalid());
+        };
+        Ok(*child)
+    };
+    let range = |id| match node(id)?.origin().anchor() {
+        SourceAnchor::Range(range) => Ok(*range),
+        _ => Err(invalid()),
+    };
+    let text = |id| match node(id)?.kind() {
+        K::Token(token) => Ok(token.text.as_ref()),
+        _ => Err(invalid()),
+    };
+    let site = |id: ResolvedNodeId| TypedSiteRef::Node(TypedNodeId::new(id.index()));
+    let formal = |id| resolve_template_formal(source, id).map_err(|_| invalid());
+    let attributes = symbols
+        .symbols()
+        .iter()
+        .filter(|entry| entry.kind() == SymbolKind::Attribute)
+        .collect::<Vec<_>>();
+    let [attribute] = attributes.as_slice() else {
+        return Err(invalid());
+    };
+    let attribute_key = RegistrationAttributeKey::new(format!("{:?}", attribute.symbol()));
+    if validation.pattern()
+        != &(RegistrationValidationPattern::Existential {
+            type_head: "builtin.set".into(),
+            attributes: vec![attribute_key.clone()],
+        })
+    {
+        return Err(invalid());
+    }
+    let registration_end = source
+        .arena()
+        .iter()
+        .filter(|(_, n)| n.kind() == &K::RegistrationBlockItem)
+        .map(|(id, _)| range(id).map(|span| span.end))
+        .collect::<Result<Vec<_>, _>>()?;
+    let [registration_end] = registration_end.as_slice() else {
+        return Err(invalid());
+    };
+    let mut declarations = Vec::new();
+    let mut type_inputs = Vec::new();
+    for (definition, current) in source
+        .arena()
+        .iter()
+        .filter(|(_, n)| matches!(n.kind(), K::PredicateDefinition | K::PredicateRedefinition))
+    {
+        let redefined = current.kind() == &K::PredicateRedefinition;
+        let (pattern, body, coherence) = match current.children() {
+            [_, _, _, pattern, _, body, _] if !redefined => (*pattern, *body, None),
+            [_, _, _, _, pattern, _, body, _, coherence] if redefined => {
+                (*pattern, *body, Some(*coherence))
+            }
+            _ => return Err(invalid()),
+        };
+        let owners = source
+            .arena()
+            .iter()
+            .filter(|(_, n)| {
+                n.kind() == &K::DefinitionBlockItem && n.children().contains(&definition)
+            })
+            .map(|(id, _)| id)
+            .collect::<Vec<_>>();
+        let [owner] = owners.as_slice() else {
+            return Err(invalid());
+        };
+        let [_, parameter, _, _, _] = parts(*owner, &K::DefinitionBlockItem)? else {
+            return Err(invalid());
+        };
+        let [_, segment, _] = parts(*parameter, &K::DefinitionParameter)? else {
+            return Err(invalid());
+        };
+        let [first, _, second, _, ty] = parts(*segment, &K::QualifiedVariableSegment)? else {
+            return Err(invalid());
+        };
+        if first == second || text(*first)? == text(*second)? {
+            return Err(invalid());
+        }
+        let [left, head, right] = parts(pattern, &K::PredicatePattern)? else {
+            return Err(invalid());
+        };
+        let formals = [formal(*left)?, formal(*right)?];
+        if formals[0] == formals[1] || formals.iter().any(|id| ![*first, *second].contains(id)) {
+            return Err(invalid());
+        }
+        let entries = symbols
+            .symbols()
+            .iter()
+            .filter(|entry| {
+                entry.origin().anchor() == current.origin().anchor()
+                    && entry.kind()
+                        == if redefined {
+                            SymbolKind::Redefinition
+                        } else {
+                            SymbolKind::Predicate
+                        }
+            })
+            .collect::<Vec<_>>();
+        let [entry] = entries.as_slice() else {
+            return Err(invalid());
+        };
+        let (head_type, attribute_ref) = match parts(*ty, &K::TypeExpression)? {
+            [head] => (*head, None),
+            [chain, head] => (*head, Some(only(*chain, &K::AttributeChain)?)),
+            _ => return Err(invalid()),
+        };
+        if text(only(head_type, &K::TypeHead)?)? != "set" {
+            return Err(invalid());
+        }
+        let mut input =
+            TypeExpressionInput::new(site(*ty), range(*ty)?, "set", TypeHeadInput::BuiltinSet);
+        if let Some(reference) = attribute_ref {
+            let token = only(
+                only(only(reference, &K::AttributeRef)?, &K::QualifiedSymbol)?,
+                &K::PathSegment,
+            )?;
+            if text(token)? != attribute.primary_spelling()
+                || range(*ty)?.start <= *registration_end
+            {
+                return Err(invalid());
+            }
+            input = input.with_attributes(vec![AttributeInput::new(
+                attribute.symbol().clone(),
+                AttributePolarity::Positive,
+                range(reference)?,
+                text(token)?,
+            )]);
+        }
+        type_inputs.push(input);
+        let equality = only(only(body, &K::FormulaDefiniens)?, &K::FormulaExpression)?;
+        let [left, equals, right] = parts(equality, &K::BuiltinPredicateApplication)? else {
+            return Err(invalid());
+        };
+        if text(*equals)? != "=" {
+            return Err(invalid());
+        }
+        let operands = [
+            only(*left, &K::TermExpression)?,
+            only(*right, &K::TermExpression)?,
+        ];
+        for operand in operands {
+            if !formals.contains(&formal(only(operand, &K::TermReference)?)?) {
+                return Err(invalid());
+            }
+        }
+        declarations.push((
+            definition,
+            *owner,
+            [*first, *second],
+            formals,
+            *ty,
+            text(*head)?.to_owned(),
+            *entry,
+            equality,
+            operands,
+            coherence,
+        ));
+    }
+    declarations.sort_by_key(|row| range(row.0).map(|span| span.start).unwrap_or_default());
+    let redefinitions = declarations
+        .iter()
+        .filter(|row| row.9.is_some())
+        .collect::<Vec<_>>();
+    let [new] = redefinitions.as_slice() else {
+        return Err(invalid());
+    };
+    let normalization = TypeNormalizer::default().normalize(symbols, type_inputs.clone());
+    if !normalization.diagnostics().is_empty() {
+        return Err(invalid());
+    }
+    let normalized = |id| {
+        normalization
+            .type_entries()
+            .iter()
+            .find_map(|(_, entry)| match entry.actual {
+                TypeEntryActual::Known(ty) if entry.owner == site(id) => {
+                    normalization.normalized_types().get(ty)
+                }
+                _ => None,
+            })
+            .ok_or_else(invalid)
+    };
+    // No conditional clusters occur in the sealed profile: closure is precisely
+    // the normalized positive attribute set, not consequences of the definition.
+    let closure = |id| {
+        let ty = normalized(id)?;
+        if ty.status != NormalizedTypeStatus::Known
+            || ty.head != TypeHeadRef::BuiltinSet
+            || !ty.args.is_empty()
+            || !ty.attributes.negative().is_empty()
+            || ty.attributes.positive().iter().any(|a| !a.args.is_empty())
+        {
+            return Err(invalid());
+        }
+        Ok(ty
+            .attributes
+            .positive()
+            .iter()
+            .map(|a| a.symbol.clone())
+            .collect::<BTreeSet<_>>())
+    };
+    let new_closure = closure(new.4)?;
+    if new_closure != BTreeSet::from([attribute.symbol().clone()]) {
+        return Err(invalid());
+    }
+    let binder_types = declarations
+        .iter()
+        .flat_map(|row| row.2.map(|binder| (binder, row.4)))
+        .collect::<BTreeMap<_, _>>();
+    let mut roots = Vec::new();
+    for root in &declarations {
+        if root.9.is_some() || root.5 != new.5 || range(root.0)?.end >= range(new.0)?.start {
+            continue;
+        }
+        let mut strict = false;
+        let mut compatible = true;
+        for (old, narrower) in root.3.iter().zip(new.3) {
+            let original = closure(binder_types[old])?;
+            let actual = closure(binder_types[&narrower])?;
+            compatible &= original.is_subset(&actual);
+            strict |= original != actual;
+        }
+        if compatible && strict {
+            roots.push(root);
+        }
+    }
+    let [original] = roots.as_slice() else {
+        return Err(invalid());
+    };
+    let gates = ExistentialGateOutput::evaluate(
+        database,
+        [ExistentialGateInput::new(
+            site(new.4),
+            range(new.4)?,
+            active.pattern().clone(),
+            active.trigger().clone(),
+            [attribute_key.clone()],
+        )
+        .with_candidates([ExistentialGateCandidate::new(
+            active.id(),
+            active.pattern().clone(),
+            active.correctness().clone(),
+            active.evidence().clone(),
+            active.trigger().clone(),
+            [attribute_key],
+        )
+        .with_fingerprint(active.fingerprint().ok_or_else(invalid)?.clone())])],
+    );
+    if !gates.diagnostics().is_empty()
+        || gates.iter().any(|gate| {
+            gate.status() != ExistentialGateStatus::Satisfied
+                || gate.registration() != Some(active.id())
+                || gate.base_evidence_kind().is_some()
+        })
+    {
+        return Err(invalid());
+    }
+    let mut table = BindingTable::new();
+    let mut contexts = BindingContextTable::new();
+    contexts.insert(BindingContextDraft {
+        owner: BindingContextOwner::Module,
+        parent: None,
+        layer: BindingContextLayer::Module,
+        lexical_scope: None,
+        bindings: Vec::new(),
+        visible_bindings: Vec::new(),
+        recovery: BindingContextRecovery::Normal,
+    });
+    let mut identities = BTreeMap::new();
+    for (index, declaration) in declarations.iter().enumerate() {
+        let context = BindingContextId::new(index + 1);
+        let scope = LocalTermScope::new(vec![
+            u32::try_from(declaration.1.index()).map_err(|_| invalid())?,
+        ]);
+        let mut owned = Vec::new();
+        for binder in declaration.2 {
+            let local =
+                LocalTermBinding::new(text(binder)?, scope.clone(), range(binder)?, table.len());
+            let mut draft =
+                BindingDraft::from_local_term(context, BindingKind::DefinitionParameter, &local);
+            draft.type_site = BindingTypeSite::Source(range(declaration.4)?);
+            let binding = table.insert(draft);
+            owned.push(binding);
+            identities.insert(binder, (binding, context));
+        }
+        contexts.insert(BindingContextDraft {
+            owner: BindingContextOwner::SourceStatement {
+                source_range: range(declaration.1)?,
+            },
+            parent: Some(BindingContextId::new(0)),
+            layer: BindingContextLayer::Declaration,
+            lexical_scope: Some(scope),
+            bindings: owned.clone(),
+            visible_bindings: owned,
+            recovery: BindingContextRecovery::Normal,
+        });
+    }
+    let bindings = BindingEnv::try_new(BindingEnvParts {
+        source_id: source.source_id(),
+        module_id: source.module().clone(),
+        contexts,
+        bindings: table,
+        diagnostics: BindingDiagnosticTable::new(),
+    })
+    .map_err(|_| invalid())?;
+    let mut primary = SourcePrimaryTermHandoffInput {
+        source_id: source.source_id(),
+        module_id: source.module().clone(),
+        terms: Vec::new(),
+        references: Vec::new(),
+        numeric_type_requests: Vec::new(),
+    };
+    let mut atomic = SourceAtomicFormulaHandoffInput {
+        source_id: source.source_id(),
+        module_id: source.module().clone(),
+        formulas: Vec::new(),
+        wrappers: Vec::new(),
+        predicate_segments: Vec::new(),
+        predicate_heads: Vec::new(),
+        candidates: Vec::new(),
+        type_sites: Vec::new(),
+        attributes: Vec::new(),
+        edges: Vec::new(),
+        requests: Vec::new(),
+    };
+    let mut arena = typed
+        .iter()
+        .map(|(_, node)| node.clone())
+        .collect::<Vec<_>>();
+    let mut term_inputs = Vec::new();
+    let mut formula_inputs = Vec::new();
+    let mut formula_ids = BTreeMap::new();
+    for declaration in &declarations {
+        let context = identities[&declaration.2[0]].1;
+        let formula = SourceAtomicFormulaId::new(atomic.formulas.len());
+        formula_ids.insert(declaration.0, formula);
+        let mut operand_sites = Vec::new();
+        let mut spellings = Vec::new();
+        for (ordinal, term) in declaration.8.into_iter().enumerate() {
+            let token = only(term, &K::TermReference)?;
+            let binder = formal(token)?;
+            let (binding, binding_context) = identities[&binder];
+            if context != binding_context {
+                return Err(invalid());
+            }
+            let source_ordinal = primary.terms.len();
+            let term_id = SourcePrimaryTermId::new(source_ordinal);
+            primary.terms.push(SourcePrimaryTermInput {
+                site: site(term),
+                source_range: range(term)?,
+                source_ordinal,
+                context,
+                recovery: SourcePrimaryTermRecovery::Normal,
+                spelling: text(token)?.into(),
+                kind: SourcePrimaryTermKind::VariableReference,
+                role: SourcePrimaryTermRole::Value,
+                parent: None,
+            });
+            primary.references.push(SourcePrimaryTermReferenceInput {
+                term: term_id,
+                binding,
+                role: SourcePrimaryTermReferenceRole::Variable,
+            });
+            let mut result_type = type_inputs
+                .iter()
+                .find(|input| input.site == site(declaration.4))
+                .ok_or_else(invalid)?
+                .clone();
+            result_type.site = site(term);
+            result_type.source_range = range(term)?;
+            term_inputs.push(
+                TermInput::new(site(term), context, range(term)?, TermKind::Variable)
+                    .with_reference(TermReference::Binding(binding))
+                    .with_result_type(result_type),
+            );
+            arena[term.index()].kind = "source.term.variable-reference".into();
+            let edge = SourceAtomicEdgeId::new(atomic.edges.len());
+            atomic.edges.push(SourceAtomicEdgeInput {
+                formula,
+                ordinal,
+                role: if ordinal == 0 {
+                    SourceAtomicEdgeRole::BuiltinLeftOperand
+                } else {
+                    SourceAtomicEdgeRole::BuiltinRightOperand
+                },
+                target: SourceAtomicTermTarget::Primary(term_id),
+            });
+            atomic.requests.push(SourceAtomicRequestInput {
+                formula,
+                ordinal,
+                kind: SourceAtomicRequestKind::OperandExpectedType,
+                edge: Some(edge),
+                candidate: None,
+                type_site: None,
+                attribute: None,
+            });
+            operand_sites.push(site(term));
+            spellings.push(text(token)?);
+        }
+        formula_inputs.push(
+            FormulaInput::new(
+                site(declaration.7),
+                context,
+                range(declaration.7)?,
+                FormulaKind::Equality,
+            )
+            .with_terms(operand_sites),
+        );
+        atomic.formulas.push(SourceAtomicFormulaInput {
+            site: site(declaration.7),
+            source_range: range(declaration.7)?,
+            source_ordinal: formula.index(),
+            context,
+            recovery: SourceAtomicFormulaRecovery::Normal,
+            spelling: format!("{} = {}", spellings[0], spellings[1]),
+            kind: SourceAtomicFormulaKind::Equality,
+        });
+        arena[declaration.7.index()].kind = "source.formula.atomic.equality".into();
+    }
+    let inference =
+        TermFormulaChecker::default().infer(symbols, &bindings, term_inputs, formula_inputs);
+    if !inference.diagnostics().is_empty()
+        || !inference.facts().is_empty()
+        || !inference.candidate_sets().is_empty()
+        || inference
+            .terms()
+            .iter()
+            .any(|(_, term)| term.status != TermStatus::Inferred || !term.deferred.is_empty())
+        || inference
+            .formulas()
+            .iter()
+            .any(|(_, formula)| formula.status != FormulaStatus::Checked)
+    {
+        return Err(invalid());
+    }
+    let arena = TypedArena::try_new(typed.root(), arena).map_err(|_| invalid())?;
+    let primary = SourcePrimaryTermProducer::build(primary, &bindings, &arena)
+        .map_err(|error| format!("{error:?}"))?;
+    let atomic = SourceAtomicFormulaProducer::build(
+        atomic, &bindings, symbols, &primary, None, None, None, &arena,
+    )
+    .map_err(|error| format!("{error:?}"))?;
+    let clause = new.9.ok_or_else(invalid)?;
+    let substitution = original
+        .3
+        .iter()
+        .zip(new.3)
+        .map(|(old, new)| (identities[old].0, identities[&new].0))
+        .collect::<Vec<_>>();
+    let old_operands = original
+        .8
+        .map(|term| formal(only(term, &K::TermReference)?).map(|binder| identities[&binder].0))
+        .into_iter()
+        .collect::<Result<Vec<_>, _>>()?;
+    let new_operands = new
+        .8
+        .map(|term| formal(only(term, &K::TermReference)?).map(|binder| identities[&binder].0))
+        .into_iter()
+        .collect::<Result<Vec<_>, _>>()?;
+    let guard_type = normalized(new.4)?;
+    let mut obligations = InitialObligationTable::new();
+    obligations.insert(InitialObligationDraft { kind: InitialObligationKind::PredicateRedefinitionCoherence,
+        owner: site(clause), source_range: range(clause)?, assumptions: Vec::new(),
+        goal: InitialObligationGoal::new(format!("source.predicate.redefinition.request:root={}:new={}:original-body={}:{old_operands:?}:new-body={}:{new_operands:?}:substitution={substitution:?}:guards={:?}",
+            original.6.symbol().fqn().as_str(), new.6.symbol().fqn().as_str(), formula_ids[&original.0].index(), formula_ids[&new.0].index(),
+            new.3.map(|binder| (identities[&binder].0, &guard_type.head, &new_closure)))),
+        provenance: InitialObligationProvenance::new(format!("source.predicate.redefinition:root-node={}:new-node={}:coherence={}", original.0.index(), new.0.index(), clause.index())),
+        status: InitialObligationStatus::Pending });
+    let ast = TypedAst::try_new(TypedAstParts {
+        source_id: source.source_id(),
+        module_id: source.module().clone(),
+        resolved_root: Some(source.arena().root()),
+        source_context: None,
+        source_type: None,
+        source_attribute: None,
+        nodes: arena,
+        contexts: LocalTypeContextTable::new(),
+        types: TypeTable::new(),
+        facts: TypeFactTable::new(),
+        coercions: CoercionTable::new(),
+        initial_obligations: obligations,
+        diagnostics: TypeDiagnosticTable::new(),
+    })
+    .and_then(|ast| ast.with_source_term(primary))
+    .and_then(|ast| ast.with_source_atomic_formula(atomic))
+    .map_err(|error| format!("{error:?}"))?;
+    Ok((bindings, inference, gates, ast))
+}
+
 /// Checks the two attributed-set arguments using an established local registration database.
 pub fn check_source_attribute_widening_types(
     source: &SurfaceResolvedArena,
@@ -13483,6 +14030,7 @@ fn initial_obligation_kind_name(kind: InitialObligationKind) -> &'static str {
         InitialObligationKind::Narrowing => "narrowing",
         InitialObligationKind::RegistrationCorrectness => "registration_correctness",
         InitialObligationKind::PredicatePropertyCorrectness => "predicate_property_correctness",
+        InitialObligationKind::PredicateRedefinitionCoherence => "predicate_redefinition_coherence",
         InitialObligationKind::FunctorPropertyCorrectness => "functor_property_correctness",
         InitialObligationKind::FunctorExistence => "functor_existence",
         InitialObligationKind::FunctorUniqueness => "functor_uniqueness",

@@ -8,6 +8,7 @@ use crate::staged_model::Stage;
 use super::super::syntax_smoke::workspace_relative_source;
 
 const ACTIVE_TYPE_ELABORATION_TAG: &str = "active_type_elaboration";
+const STEP5C5_NARROWER_ID: &str = "pass_type_elaboration_pred_redefine_narrower_loci_001";
 const STEP5C5_ARGUMENT_ID: &str = "fail_type_elaboration_pred_argument_type_mismatch_001";
 const STEP5C5_PROPERTY_ID: &str = "pass_type_elaboration_func_commutativity_property_001";
 const STEP5C5_DEPENDENT_ID: &str = "pass_type_elaboration_func_dependent_return_type_001";
@@ -26,6 +27,7 @@ pub(in crate::runner) fn is_step5c5_argument_candidate(case: &TestCase) -> bool 
         STEP5C5_ARGUMENT_ID,
         STEP5C5_PROPERTY_ID,
         STEP5C5_DEPENDENT_ID,
+        STEP5C5_NARROWER_ID,
     ]
     .into_iter()
     .any(|id| {
@@ -41,11 +43,14 @@ pub(in crate::runner) fn is_step5c5_argument_candidate(case: &TestCase) -> bool 
 
 pub(in crate::runner) fn step5c5_argument_admitted(root: Option<&Path>, case: &TestCase) -> bool {
     let dependent = case.id.0 == STEP5C5_DEPENDENT_ID;
-    let property = case.id.0 == STEP5C5_PROPERTY_ID || dependent;
+    let narrower = case.id.0 == STEP5C5_NARROWER_ID;
+    let property = case.id.0 == STEP5C5_PROPERTY_ID || dependent || narrower;
     if !property && case.id.0 != STEP5C5_ARGUMENT_ID {
         return false;
     }
-    let directory = if property {
+    let directory = if narrower {
+        "pass/predicates"
+    } else if property {
         "pass/functors"
     } else {
         "fail/predicates"
@@ -83,7 +88,9 @@ pub(in crate::runner) fn step5c5_argument_admitted(root: Option<&Path>, case: &T
         && case.expectation.stable_detail_key.as_deref()
             == (!property).then_some("predicates.application.argument_type_mismatch")
         && case.expectation.domain
-            == if dependent {
+            == if narrower {
+                "predicates.redefinition"
+            } else if dependent {
                 "functors.dependent_return"
             } else if property {
                 "functors.properties"
@@ -92,7 +99,9 @@ pub(in crate::runner) fn step5c5_argument_admitted(root: Option<&Path>, case: &T
             }
         && case.expectation.spec_refs.len() == 1
         && case.expectation.spec_refs[0].0
-            == if dependent {
+            == if narrower {
+                "spec.en.09.predicates.redefine.coherence"
+            } else if dependent {
                 "spec.en.10.functors.dependent_return.semantic"
             } else if property {
                 "spec.en.10.functors.properties.declaration"
@@ -480,7 +489,7 @@ pub(in crate::runner) fn step5c14_static_admitted(root: Option<&Path>, case: &Te
         && case.expectation.tags.as_slice() == [ACTIVE_TYPE_ELABORATION_TAG]
 }
 
-const STEP5C5_CASES: [(&str, &str, PipelinePhase, ExpectedOutcome); 11] = [
+const STEP5C5_CASES: [(&str, &str, PipelinePhase, ExpectedOutcome); 12] = [
     (
         "fail_type_elaboration_pred_property_arity_mismatch_001",
         "tests/miz/fail/predicates/fail_type_elaboration_pred_property_arity_mismatch_001.miz",
@@ -547,13 +556,18 @@ const STEP5C5_CASES: [(&str, &str, PipelinePhase, ExpectedOutcome); 11] = [
         PipelinePhase::TypeCheck,
         ExpectedOutcome::Pass,
     ),
+    (
+        STEP5C5_NARROWER_ID,
+        "tests/miz/pass/predicates/pass_type_elaboration_pred_redefine_narrower_loci_001.miz",
+        PipelinePhase::TypeCheck,
+        ExpectedOutcome::Pass,
+    ),
 ];
 
-const STEP5C5_BLOCKED_CASE_IDS: [&str; 6] = [
+const STEP5C5_BLOCKED_CASE_IDS: [&str; 5] = [
     "pass_formula_statement_pred_negated_application_001",
     "pass_proof_verification_pred_phrase_identifier_001",
     "pass_proof_verification_pred_symbolic_infix_001",
-    "pass_type_elaboration_pred_redefine_narrower_loci_001",
     "pass_proof_verification_func_equals_infix_operator_001",
     "pass_proof_verification_func_means_prefix_001",
 ];
@@ -1697,14 +1711,14 @@ mod tests {
 
     #[test]
     fn step5c5_inventory_admission_and_blocked_rows_are_exact() {
-        assert_eq!(STEP5C5_CASES.len(), 11);
+        assert_eq!(STEP5C5_CASES.len(), 12);
         assert_eq!(
             STEP5C5_CASES
                 .iter()
                 .map(|(id, source, _, _)| (*id, *source))
                 .collect::<BTreeSet<_>>()
                 .len(),
-            11
+            12
         );
         let root = workspace_root();
         let mut plan = build_test_plan(&config()).unwrap();
@@ -1947,6 +1961,7 @@ mod tests {
             super::STEP5C5_ARGUMENT_ID,
             super::STEP5C5_PROPERTY_ID,
             super::STEP5C5_DEPENDENT_ID,
+            super::STEP5C5_NARROWER_ID,
         ] {
             let original = plan.cases.iter().find(|case| case.id.0 == id).unwrap();
             assert!(super::step5c5_argument_admitted(Some(&root), original));

@@ -421,6 +421,8 @@ diagnostic state until the owning later task changes them.
 
 `FunctorPropertyCorrectness` is a checker-local pending functor-property request; its owner/range and goal/provenance keys identify the actual declaration and property. It is distinct from PredicatePropertyCorrectness and grants no canonical VC goal, proof, accepted property or generic TypedAst installation authority.
 
+`PredicateRedefinitionCoherence` identifies a pending declaration-equivalence request under the actual narrower parameter guards; owner/range and goal/provenance keys bind both definition identities, source bodies and declaration-to-occurrence substitution. It is not a property, narrowing cast, registration proof or canonical VC; no accepted refinement follows.
+
 Required obligation kinds include:
 
 - sethood obligations for type expressions and constructs that introduce
