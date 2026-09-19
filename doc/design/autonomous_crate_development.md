@@ -8,6 +8,37 @@ The goal is to keep human review focused on the language specification and
 `.miz` tests while allowing agents to maintain derived design documents, source,
 expectation files, and traceability metadata.
 
+## Task Workflow
+
+1. Specify. A small localized change is specified in chat. A change to
+   documented behavior, architecture, or language semantics updates the
+   owning file under `doc/` (protocol: authority order, test-first `.miz`
+   additions, task contracts, gate tiering).
+2. Specification/documentation review; fix and repeat until no findings.
+3. Implement.
+4. Test-sufficiency review against the specification; fix and repeat.
+5. Implementation review for bugs, regressions, and design mismatches; fix and
+   repeat.
+6. Volume and scope review (protocol section "Volume And Scope Review"). The
+   reviewer returns only removable lines, files, types, tests, and paragraphs.
+   Anything not required by `doc/spec`, a `.miz` test, or the frozen contract is
+   a blocking finding. Remove and repeat.
+7. Source/documentation consistency review, including whether
+   `doc/design/spec_coverage_audit.md` coverage, owner, or deferral changed.
+   If nothing changed, leave it untouched and write no note.
+8. Run verification from `AGENTS.md`.
+9. Commit when authorized by `AGENTS.md`. The next-task handoff, with its
+   recommended reasoning setting, goes in the final response only.
+
+## Review Standards
+
+Review-only sub-agents lead with findings ordered by severity, cite file and
+line, state "no findings" explicitly, and report optional polish separately.
+Excess is a finding of the same rank as a gap. "No findings" means no
+unresolved blocking or high finding; medium findings are fixed or deferred with
+a reason. Repeat a review phase after fixes until it reports no findings or the
+user accepts a remaining issue.
+
 ## Authority Order
 
 For language behavior, use this authority order:
@@ -335,8 +366,9 @@ paired migration contract freezes:
 
 Replace only mapped shared evidence with links. Current-state plans, TODOs, and
 audits remain concise replace-in-place summaries; module documents remain
-durable product contracts rather than task diaries. Record final task-local
-measurements once in the historical task contract or required exit report.
+durable product contracts rather than task diaries. Record new task-local
+measurements in the commit body and final response; preserve frozen historical
+evidence under the existing migration rules.
 The batch must be behavior- and coverage-neutral, separately reviewed and
 committed, and bounded enough that every removed fact has a live owner. It does
 not authorize a wholesale repository history rewrite or let semantic work
@@ -378,9 +410,12 @@ contains:
   verification status
 - the single review question and, for a re-review, the prior finding ids
 
-Prefer independent no-history review agents with self-contained packets. Do
-not include the implementer's conclusion or unrelated historical narrative.
-Use a finding-specific follow-up review after fixes. Any authority ambiguity,
+Prefer independent no-history review agents when supported, with self-contained
+packets and an explicit read-only or bounded write scope. Exclude implementer
+conclusions and unrelated history. Point to exact source sections and diffs;
+reviewers may expand to dependencies and authorities.
+Use a finding-specific follow-up after fixes, including the new diff and any
+newly affected requirements. Any authority ambiguity,
 semantic choice, public-API expansion, lower-stage change, or soundness issue
 returns to the parent agent at the user's requested reasoning setting.
 

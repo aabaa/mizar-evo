@@ -26,24 +26,21 @@ if it turns out to touch a protected surface.
 
 ### Rule 1 — Single ownership of status facts
 
-A task's status, completion evidence, measured counts, and review
-outcomes live in exactly one place: the paired task contract (the EN/JA
-pair counts as one logical owner; post-policy status documents are
-EN-only). Every other document — crate plans, todos, module docs, audits,
-harness docs — links to the contract instead of restating status. In
-particular:
-
-- per-task completion narratives in crate todos are replaced by one
-  sequencing row plus a contract link;
-- "NO FINDINGS" and equivalent review-outcome boilerplate is recorded
-  once in the contract's review section and nowhere else;
-- roadmap files record ordering and open/closed state only.
+Task contracts own orchestration; owner documents retain durable design facts.
+Follow the protocol's [single-owner rule](autonomous_crate_development.md#single-owner-documentation-rule)
+for contract links: only the main todo, crate plans, crate todos, and coverage
+audit link back to contracts. Module, harness, and other audit documents do not.
+Record new completion evidence, measured verification counts, and review
+outcomes in the commit body and final response, never in task contracts.
+Preserve frozen historical evidence through the protocol's migration rules.
+Crate todos retain concise sequencing rows; roadmaps retain ordering and state.
 
 ### Rule 2 — Tabular ledgers for mechanical measurements
 
-Mechanical, regenerable measurements (case totals, requirement counts,
-line counts, hashes, per-case activation state) are kept in versioned
-TSV/table ledgers, one ledger per measurement family, not in prose.
+Existing machine-consumed coverage and migration ledgers retain their schema
+and authority; they do not authorize new completion evidence in contracts.
+Record new task-local verification measurements in the commit body and final
+response. Do not repeat ledger values in prose.
 Existing precedents:
 [`tests/coverage/audit1_frontend_gaps.tsv`](../../tests/coverage/audit1_frontend_gaps.tsv),
 [`tests/coverage/step5_activation_map.tsv`](../../tests/coverage/step5_activation_map.tsv),
@@ -110,8 +107,8 @@ Batch constraints (all batches):
 - every removed fact retains one live owner or an archive location;
 - local link/fragment checks and `cargo test --workspace` pass after
   every batch;
-- measured baselines (line counts before/after) are recorded in the
-  batch contract, not fanned out.
+- new measured baselines (line counts before/after) are recorded in the
+  commit body and final response, not in the batch contract.
 
 ## Measured Baseline (2026-09-02)
 

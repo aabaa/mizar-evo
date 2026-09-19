@@ -46,34 +46,13 @@ semantic decisions or approvals required by user constraints or the protocol.
 
 ## Task Workflow
 
-1. Specify. A small localized change is specified in chat. A change to
-   documented behavior, architecture, or language semantics updates the
-   owning file under `doc/` (protocol: authority order, test-first `.miz`
-   additions, task contracts, gate tiering).
-2. Specification/documentation review; fix and repeat until no findings.
-3. Implement.
-4. Test-sufficiency review against the specification; fix and repeat.
-5. Implementation review for bugs, regressions, and design mismatches; fix and
-   repeat.
-6. Volume and scope review (protocol section "Volume And Scope Review"). The
-   reviewer returns only removable lines, files, types, tests, and paragraphs.
-   Anything not required by `doc/spec`, a `.miz` test, or the frozen contract is
-   a blocking finding. Remove and repeat.
-7. Source/documentation consistency review, including whether
-   `doc/design/spec_coverage_audit.md` coverage, owner, or deferral changed.
-   If nothing changed, leave it untouched and write no note.
-8. Run verification (below).
-9. Commit (below). The next-task handoff, with its recommended reasoning
-   setting, goes in the final response only.
-
-## Review Standards
-
-Review-only sub-agents lead with findings ordered by severity, cite file and
-line, state "no findings" explicitly, and report optional polish separately.
-Excess is a finding of the same rank as a gap. "No findings" means no
-unresolved blocking or high finding; medium findings are fixed or deferred with
-a reason. Repeat a review phase after fixes until it reports no findings or the
-user accepts a remaining issue.
+Follow the canonical [Task Workflow](doc/design/autonomous_crate_development.md#task-workflow)
+and [Review Standards](doc/design/autonomous_crate_development.md#review-standards).
+Read the specification, tests, and owner documents relevant to the task; expand
+when dependencies or findings require it. Do not load a full repository map or
+completed-task history by default. Use the protocol's authority, contract, and
+gate sections for changes; crate kickoff/exit sections for crate-wide work;
+and migration rules plus `documentation_compaction_rules.md` for migrations.
 
 ## Delegation
 
@@ -84,7 +63,9 @@ desired conclusion. Model and reasoning routing is defined in the protocol
 section "Delegation And Model Routing".
 
 After each task commit, save a concise resume checkpoint and compact context
-when supported by the environment. Avoid reloading completed-task history.
+when supported by the environment. Include the commit, uncommitted changes,
+next scope, authority/contract paths, unresolved issues, and verification state.
+Reference completed work instead of copying its history.
 
 ## Verification
 
@@ -96,7 +77,12 @@ cargo test
 
 Run narrow tests first when clearly sufficient, then the full set before
 finalizing Rust changes. If a command cannot run, say why and state the
-remaining risk.
+remaining risk. The parent owns final verification; reviewers use its command,
+checked revision and working-tree state, exit status, and log location instead
+of repeating the full suite. Rerun affected checks after changes or environment
+differences invalidate a result, or when a finding needs reproduction. Preserve
+full logs outside `doc/`; return concise success summaries and relevant failure
+output. This does not waive any required command or independent review.
 
 ## Documentation
 
