@@ -206,7 +206,7 @@ cache key を構築したり、output handle を mint したり、publication to
    readiness、dependency ordering、resource admission、cache-decision consumption、
    cancellation semantics を複製してはならない。
 10. driver は default completed output を含む scheduler synthetic output を real
-    `mizar-ir` phase output と扱ってはならない。real `PhaseResult` output references、
+    `mizar-ir` phase output と扱ってはならない。real `PhaseResult` output references は IR publisher で検証し、
     producer outputs、artifact tokens は owner seams のままである。
 11. result、diagnostic、artifact-boundary handoff を current として公開する前に、
     `request.md` の combined request publication guard を呼ぶ。
@@ -229,8 +229,17 @@ type を使ってはならない。
   resource telemetry、scheduler diagnostic。
 
 D-008 は raw `SchedulerRun` を内部で消費するが、public な `BuildSubmission` surface には
-output-free な driver scheduler summary（task state、scheduler event、scheduler diagnostic）
-だけを公開する。`SchedulerResult.output_refs` や `SyntheticOutputRef` は公開しない。
+driver scheduler summary（task state、scheduler event、scheduler diagnostic）と
+`DriverSchedulerRun.phase_results` の実 `PhaseResult` を task id / 呼出順で公開する。
+`SchedulerResult.output_refs` や `SyntheticOutputRef` は公開しない。
+`CompilerDriver::with_output_publisher` は所有者の `Arc<PhaseOutputPublisher>` を共有する。
+snapshot と work unit の登録権限は所有者に残る。返された handle は同じ publisher の
+current package output / snapshot として検証する。publisher 不在で返された handle、foreign/stale handle、
+異なる snapshot の診断 batch は dispatch を失敗させ、不正 result を保存しない。
+Complete 以外は診断のみ保持し、output handle を公開しない。session publication guard が
+obsolete と判定した場合（same-snapshot supersession を含む）は phase results 全体を抑制する。
+公開前に IR snapshot/output validity も再検証する。保持した handle は内部結果であり、
+artifact publication 権限ではない。consumer は公開時に再検証する。
 
 driver は scheduler record を build event と session status へ map してよい。次は禁止:
 

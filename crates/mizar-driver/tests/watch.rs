@@ -607,7 +607,7 @@ fn watch_source_keeps_watcher_lsp_artifact_proof_and_cache_authority_out() {
         "CacheCompatibility",
         "cache_key_for_phase",
         "SyntheticOutputRef",
-        ".output_refs",
+        "scheduler_run.results",
     ] {
         assert!(
             !source.contains(forbidden),

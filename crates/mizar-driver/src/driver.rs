@@ -1,4 +1,7 @@
-use std::collections::{BTreeMap, HashMap};
+use std::{
+    collections::{BTreeMap, HashMap},
+    sync::Arc,
+};
 
 use mizar_build::{
     cache_seam::CacheSchedulingPlan,
@@ -18,7 +21,7 @@ use mizar_build::{
     },
     task_graph::{
         BuildTask, ModuleDependencyOverlay, PipelinePhase, TaskGraph, TaskGraphDiagnostics,
-        TaskGraphInput, TaskGraphProfile, VcTaskDescriptor, build_task_graph,
+        TaskGraphInput, TaskGraphProfile, TaskId, VcTaskDescriptor, build_task_graph,
     },
 };
 pub use mizar_ir::dispatch_input::PhaseDispatchInputProvider;
@@ -29,7 +32,7 @@ use mizar_session::{
 
 use crate::{
     events::{BuildEventStream, OwnerGapClassification, PlanningEventStatus},
-    registry::{PhaseRegistry, PhaseRegistryError, PhaseServiceAvailability},
+    registry::{PhaseRegistry, PhaseRegistryError, PhaseResult, PhaseServiceAvailability},
     request::{
         BuildRequestDraft, BuildRequestOrigin, BuildSession, BuildSessionOutcome,
         BuildSessionState, CaptureSnapshotError, DriverLanes, PublicationDecision,
@@ -91,6 +94,7 @@ pub struct CompilerDriver {
     sessions: HashMap<BuildSessionId, DriverSessionRecord>,
     lanes: DriverLanes,
     registry: PhaseRegistry,
+    output_publisher: Option<Arc<PhaseOutputPublisher>>,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -206,6 +210,7 @@ struct DriverSessionRecord {
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct DriverSchedulerRun {
+    pub phase_results: BTreeMap<TaskId, Vec<PhaseResult>>,
     pub task_states: Vec<TaskStateRecord>,
     pub events: Vec<SchedulerEvent>,
     pub diagnostics: Vec<SchedulerDiagnostic>,
@@ -278,7 +283,14 @@ impl CompilerDriver {
             sessions: HashMap::new(),
             lanes: DriverLanes::default(),
             registry,
+            output_publisher: None,
         }
+    }
+
+    /// Supplies the owner-managed publisher shared by scheduled phase services.
+    pub fn with_output_publisher(mut self, publisher: Arc<PhaseOutputPublisher>) -> Self {
+        self.output_publisher = Some(publisher);
+        self
     }
 
     pub fn registry(&self) -> &PhaseRegistry {
@@ -546,8 +558,11 @@ impl CompilerDriver {
         scheduler_input.cancellation = cancellation.clone();
         scheduler_input.worker_count = worker_count.max(1);
         scheduler_input.completion_order = completion_order;
-        let mut dispatcher =
-            RegistrySchedulerDispatcher::new(&self.registry, phase_dispatch_inputs.as_deref());
+        let mut dispatcher = RegistrySchedulerDispatcher::new(
+            &self.registry,
+            phase_dispatch_inputs.as_deref(),
+            self.output_publisher.as_ref(),
+        );
         let scheduler_run = match run_scheduler_with_dispatcher(scheduler_input, &mut dispatcher) {
             Ok(scheduler_run) => scheduler_run,
             Err(diagnostics) => {
@@ -578,7 +593,27 @@ impl CompilerDriver {
             } else {
                 DriverSubmissionStatus::SchedulerValidated
             };
-        let driver_scheduler_run = DriverSchedulerRun::from_scheduler_run(scheduler_run);
+        let mut phase_results = dispatcher.phase_results;
+        let publisher_current = self.output_publisher.as_ref().is_none_or(|publisher| {
+            publisher
+                .validate_current_snapshot(session.captured.snapshot.id)
+                .is_ok()
+                && phase_results.values().flatten().all(|result| {
+                    result.output_refs.iter().all(|output| {
+                        publisher
+                            .validate_current_output(session.captured.snapshot.id, output)
+                            .is_ok()
+                            && publisher.storage().validate_handle(output).is_ok()
+                    })
+                })
+        });
+        if !publisher_current
+            || self.lanes.publication_decision(snapshots, &session) != PublicationDecision::Current
+        {
+            phase_results.clear();
+        }
+        let mut driver_scheduler_run = DriverSchedulerRun::from_scheduler_run(scheduler_run);
+        driver_scheduler_run.phase_results = phase_results;
         session.finish(outcome);
         let publication_decision = self.lanes.publication_decision(snapshots, &session);
         let events = submission_events(

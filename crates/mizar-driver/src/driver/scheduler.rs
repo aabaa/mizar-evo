@@ -1,18 +1,25 @@
-use std::collections::{BTreeMap, BTreeSet};
+use std::{
+    collections::{BTreeMap, BTreeSet},
+    sync::Arc,
+};
 
 use mizar_build::{
     scheduler::{
         SchedulerDiagnosticRef, SchedulerDispatchOutcome, SchedulerDispatchTask, SchedulerRun,
         SchedulerTaskDispatcher, TaskState,
     },
-    task_graph::{BuildTask, PipelinePhase, TaskGraph},
+    task_graph::{BuildTask, PipelinePhase, TaskGraph, TaskId},
 };
-use mizar_ir::dispatch_input::{PhaseDispatchInputProvider, PhaseDispatchInputRequest};
+use mizar_ir::{
+    dispatch_input::{PhaseDispatchInputProvider, PhaseDispatchInputRequest},
+    publisher::PhaseOutputPublisher,
+};
 
 use crate::{
     driver::DriverSchedulerRun,
     registry::{
-        PhaseExecutionResources, PhaseInput, PhaseRegistry, PhaseRegistryError, PhaseStatus,
+        PhaseExecutionResources, PhaseInput, PhaseRegistry, PhaseRegistryError, PhaseResult,
+        PhaseStatus,
     },
     request::BuildSessionOutcome,
 };
@@ -20,6 +27,7 @@ use crate::{
 impl DriverSchedulerRun {
     pub(super) fn from_scheduler_run(run: SchedulerRun) -> Self {
         Self {
+            phase_results: BTreeMap::new(),
             task_states: run.task_states,
             events: run.events,
             diagnostics: run.diagnostics,
@@ -54,23 +62,34 @@ pub(super) fn scheduler_outcome(run: &SchedulerRun) -> BuildSessionOutcome {
 pub(super) struct RegistrySchedulerDispatcher<'a> {
     registry: &'a PhaseRegistry,
     phase_inputs: Option<&'a dyn PhaseDispatchInputProvider<BuildTask>>,
+    publisher: Option<&'a Arc<PhaseOutputPublisher>>,
+    pub(super) phase_results: BTreeMap<TaskId, Vec<PhaseResult>>,
 }
 
 impl<'a> RegistrySchedulerDispatcher<'a> {
     pub(super) const fn new(
         registry: &'a PhaseRegistry,
         phase_inputs: Option<&'a dyn PhaseDispatchInputProvider<BuildTask>>,
+        publisher: Option<&'a Arc<PhaseOutputPublisher>>,
     ) -> Self {
         Self {
             registry,
             phase_inputs,
+            publisher,
+            phase_results: BTreeMap::new(),
         }
     }
 }
 
 impl SchedulerTaskDispatcher for RegistrySchedulerDispatcher<'_> {
     fn dispatch(&mut self, task: SchedulerDispatchTask<'_>) -> SchedulerDispatchOutcome {
-        dispatch_registry_phase(self.registry, self.phase_inputs, task)
+        dispatch_registry_phase(
+            self.registry,
+            self.phase_inputs,
+            self.publisher,
+            &mut self.phase_results,
+            task,
+        )
     }
 }
 
@@ -106,6 +125,8 @@ pub(super) fn dispatch_gap_phases(
 fn dispatch_registry_phase(
     registry: &PhaseRegistry,
     phase_inputs: Option<&dyn PhaseDispatchInputProvider<BuildTask>>,
+    publisher: Option<&Arc<PhaseOutputPublisher>>,
+    phase_results: &mut BTreeMap<TaskId, Vec<PhaseResult>>,
     task: SchedulerDispatchTask<'_>,
 ) -> SchedulerDispatchOutcome {
     if task.task.phases.is_empty() {
@@ -201,11 +222,44 @@ fn dispatch_registry_phase(
             input,
             PhaseExecutionResources {
                 cancellation: task.cancellation.clone(),
+                output_publisher: publisher.cloned(),
                 ..PhaseExecutionResources::default()
             },
         ) {
             Ok(result) => {
-                let status = result.result.status;
+                let mut result = result.result;
+                let status = result.status;
+                let valid_outputs = result.output_refs.iter().all(|output| {
+                    publisher.is_some_and(|publisher| {
+                        publisher
+                            .validate_current_output(task.snapshot, output)
+                            .is_ok()
+                            && publisher.storage().validate_handle(output).is_ok()
+                    })
+                });
+                let valid_snapshot = publisher.is_none_or(|publisher| {
+                    publisher.validate_current_snapshot(task.snapshot).is_ok()
+                });
+                if !valid_outputs
+                    || !valid_snapshot
+                    || result
+                        .diagnostics
+                        .iter()
+                        .any(|batch| batch.scope().source_snapshot() != task.snapshot)
+                {
+                    return SchedulerDispatchOutcome::failed(vec![dispatch_diagnostic(
+                        task.task,
+                        "invalid_phase_result",
+                        "phase result failed snapshot or sealed-output validation",
+                    )]);
+                }
+                if status != PhaseStatus::Complete {
+                    result.output_refs.clear();
+                }
+                phase_results
+                    .entry(task.task.id.clone())
+                    .or_default()
+                    .push(result);
                 let diagnostic = phase_status_diagnostic(task.task, status);
                 match status {
                     PhaseStatus::Complete => {}

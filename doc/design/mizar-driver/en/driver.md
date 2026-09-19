@@ -216,7 +216,8 @@ publication tokens.
    admission, cache-decision consumption, or cancellation semantics.
 10. The driver must not treat scheduler synthetic outputs, including default
     completed outputs, as real `mizar-ir` phase outputs. Real `PhaseResult`
-    output references, producer outputs, and artifact tokens remain owner seams.
+    output references are validated through the supplied IR publisher; producer
+    adapters and artifact tokens remain owner seams.
 11. Before any result, diagnostic, or artifact-boundary handoff is exposed as
     current, call the combined request publication guard from `request.md`.
 12. Finish the session as succeeded, failed, blocked, cancelled, or superseded
@@ -237,10 +238,20 @@ types to pretend that an absent phase produced output.
   failure records, blocked records, resource telemetry, and scheduler
   diagnostics as authoritative scheduler output.
 
-D-008 consumes the raw `SchedulerRun` internally, but its public
-`BuildSubmission` surface exposes only an output-free driver scheduler summary:
-task states, scheduler events, and scheduler diagnostics. It does not expose
-`SchedulerResult.output_refs` or any `SyntheticOutputRef`.
+`BuildSubmission` exposes scheduler task states, events, and diagnostics plus
+`DriverSchedulerRun.phase_results`, ordered by task id and service invocation.
+These are actual `PhaseResult` values, never `SchedulerResult.output_refs` or
+`SyntheticOutputRef`. `CompilerDriver::with_output_publisher` shares an existing
+`Arc<PhaseOutputPublisher>` with scheduled services. The owner registers snapshots
+and allowed work units; the driver does not mint or register publication rights.
+Returned handles must validate as current package outputs in that publisher and
+snapshot. Returned handles without a supplied publisher, foreign/stale handles,
+or wrong-snapshot diagnostic batches fail dispatch without retaining the invalid result. Non-complete results
+retain diagnostics but no output handles. The session publication guard suppresses
+all phase results when the submission is obsolete, including same-snapshot
+supersession. IR snapshot/output validity is rechecked before result exposure.
+Retained handles are internal
+results, not artifact publication authority; consumers revalidate at publication.
 
 The driver may map scheduler records into build events and session status. It
 must not:

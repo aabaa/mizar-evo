@@ -82,6 +82,7 @@ fn submit_bootstraps_phase_zero_and_consumes_modeled_scheduler() {
     let expected_run =
         run_scheduler(expected_input).expect("direct mizar-build scheduler run succeeds");
     let driver_run = submission.scheduler_run.as_ref().unwrap();
+    assert!(driver_run.phase_results.is_empty());
     assert_eq!(driver_run.task_states, expected_run.task_states);
     assert_eq!(driver_run.events, expected_run.events);
     assert_eq!(driver_run.diagnostics, expected_run.diagnostics);
@@ -384,6 +385,14 @@ fn cache_hit_tasks_do_not_require_phase_dispatch_inputs() {
     );
     assert!(submission.scheduler_run.is_some());
     assert_eq!(state_for_task(&submission, &source), TaskState::CacheHit);
+    assert!(
+        !submission
+            .scheduler_run
+            .as_ref()
+            .unwrap()
+            .phase_results
+            .contains_key(&source)
+    );
     assert!(
         !submission
             .dispatch_gap_phases
@@ -697,7 +706,7 @@ fn driver_source_does_not_claim_diagnostics_artifact_or_lsp_authority() {
         "VerifiedArtifact",
         "mizar_frontend",
         "SyntheticOutputRef",
-        ".output_refs",
+        "scheduler_run.results",
         "AnyPhaseOutputRef",
         "SchedulerResult",
         "cache_key_for_phase",
@@ -746,7 +755,7 @@ fn driver_scheduler_helper_does_not_claim_phase_output_or_cache_authority() {
         "VerifiedArtifact",
         "mizar_frontend",
         "SyntheticOutputRef",
-        ".output_refs",
+        "scheduler_run.results",
         "AnyPhaseOutputRef",
         "cache_key_for_phase",
         "PhaseCacheIntent",
@@ -1137,5 +1146,354 @@ impl PhaseService for ExecutableFixtureService {
             status: self.status,
             ..PhaseResult::complete()
         }
+    }
+}
+
+// This service tests transport only; it is not a frontend or semantic producer.
+struct PublicationFixtureService {
+    descriptor: PhaseDescriptor,
+    publisher: Arc<PhaseOutputPublisher>,
+    mode: &'static str,
+    status: PhaseStatus,
+}
+
+impl PhaseService for PublicationFixtureService {
+    fn phase(&self) -> PhaseDescriptor {
+        self.descriptor.clone()
+    }
+
+    fn cache_key(&self, _: &PhaseInput, _: &PhaseCacheContext) -> PhaseCacheIntent {
+        panic!("publication transport does not decide cache compatibility")
+    }
+
+    fn execute(&self, input: PhaseInput, context: PhaseExecutionContext) -> PhaseResult {
+        use mizar_diagnostics::{
+            failure_record::PipelinePhase as DiagnosticPhase,
+            sink::{DiagnosticProducerScope, DiagnosticSink},
+        };
+        if self.mode.starts_with("foreign") {
+            context
+                .output_publisher
+                .as_ref()
+                .unwrap()
+                .register_current_snapshot(input.snapshot);
+        }
+        let publisher = if self.mode.starts_with("foreign") || self.mode == "missing" {
+            self.publisher.clone()
+        } else {
+            let supplied = context.output_publisher.expect("driver supplies publisher");
+            assert!(Arc::ptr_eq(&supplied, &self.publisher));
+            supplied
+        };
+        publisher.register_current_snapshot(input.snapshot);
+        let phase = IrPipelinePhase::new(&self.descriptor.service_name);
+        let kind = OutputKind::new(&self.descriptor.output_kind);
+        let unit = IrWorkUnit::new(format!(
+            "{:?}/{:?}",
+            input.work_unit,
+            input.identities().input_hash()
+        ));
+        publisher.allow_work_unit(AllowedWorkUnit::new(
+            phase.clone(),
+            kind.clone(),
+            unit.clone(),
+        ));
+        let handle = publisher
+            .publish(PublishOutputInput {
+                slot: publisher.allocate(
+                    input.snapshot,
+                    phase.clone(),
+                    unit.clone(),
+                    kind.clone(),
+                    SchemaVersion::new(1),
+                ),
+                snapshot: input.snapshot,
+                phase,
+                work_unit: unit,
+                output_kind: kind,
+                schema_version: SchemaVersion::new(1),
+                payload: "transport fixture".to_owned(),
+                canonical_payload: Some(b"transport fixture".to_vec()),
+                decode: BlobDecoder::new(|bytes| {
+                    String::from_utf8(bytes.to_vec())
+                        .map_err(|error| BlobDecodeError::new(error.to_string()))
+                }),
+                parents: Vec::new(),
+                named_input_hashes: vec![NamedInputHash {
+                    name: "dispatch".into(),
+                    domain: "transport-fixture".into(),
+                    digest: input.identities().input_hash(),
+                }],
+                side_tables: IrSideTables::default(),
+                origin: if self.mode == "open" {
+                    OutputOrigin::OpenBuffer
+                } else {
+                    OutputOrigin::PackageSource
+                },
+                target: if self.mode == "open" {
+                    PublicationTarget::InternalOnly
+                } else {
+                    PublicationTarget::CurrentPackage
+                },
+            })
+            .unwrap();
+        if self.mode == "stale"
+            || (self.mode == "late_stale"
+                && self
+                    .descriptor
+                    .phases
+                    .contains(&PipelinePhase::ArtifactCommit))
+        {
+            publisher.mark_obsolete(input.snapshot).unwrap();
+        }
+        if self.mode == "collected" {
+            publisher
+                .storage()
+                .collect(mizar_ir::storage::CollectInput {
+                    snapshot: input.snapshot,
+                    protected_outputs: Vec::new(),
+                });
+        }
+        let diagnostic_snapshot = if self.mode == "wrong_batch" {
+            snapshot(0xef)
+        } else {
+            input.snapshot
+        };
+        PhaseResult {
+            status: self.status,
+            diagnostics: vec![
+                DiagnosticSink::new(DiagnosticProducerScope::new(
+                    DiagnosticPhase::Build,
+                    diagnostic_snapshot,
+                    "transport-fixture",
+                ))
+                .into_batch(),
+            ],
+            output_refs: vec![handle.erase()],
+            cache_observation: None,
+        }
+    }
+}
+
+#[test]
+fn scheduled_publication_preserves_real_outputs_and_rejects_invalid_results() {
+    let mut canonical_results = None;
+    for mode in [
+        "valid",
+        "valid_forward",
+        "missing",
+        "foreign",
+        "foreign_noncomplete",
+        "stale",
+        "late_stale",
+        "collected",
+        "open",
+        "wrong_batch",
+    ] {
+        let publisher = Arc::new(PhaseOutputPublisher::new(
+            Arc::new(IrStorageService::new()),
+            Arc::new(SnapshotHandleRegistry::new()),
+        ));
+        let mut builder = PhaseRegistryBuilder::new();
+        for requirement in required_phase_services() {
+            builder.register(PublicationFixtureService {
+                descriptor: PhaseDescriptor::new(
+                    requirement.service_name,
+                    requirement.owner,
+                    requirement.phases.to_vec(),
+                    "transport-v1",
+                    requirement.service_name,
+                )
+                .unwrap(),
+                publisher: publisher.clone(),
+                mode,
+                status: if mode == "foreign_noncomplete" {
+                    PhaseStatus::Fatal
+                } else {
+                    PhaseStatus::Complete
+                },
+            });
+        }
+        let mut driver = CompilerDriver::new(builder.build().unwrap());
+        if mode != "missing" {
+            let supplied = if mode.starts_with("foreign") {
+                Arc::new(PhaseOutputPublisher::new(
+                    Arc::new(IrStorageService::new()),
+                    Arc::new(SnapshotHandleRegistry::new()),
+                ))
+            } else {
+                publisher.clone()
+            };
+            driver = driver.with_output_publisher(supplied);
+        }
+        let mut input = submit_input(vec![WorkspaceSourceFile::new("src/main.miz", "main.miz")]);
+        input.phase_dispatch_inputs = Some(Box::new(FixturePhaseInputs));
+        if mode == "valid_forward" {
+            input.completion_order = CompletionOrder::Canonical;
+        }
+        let ids = InMemorySessionIdAllocator::new();
+        let snapshots = SnapshotRegistry::new();
+        let submission = driver
+            .submit(
+                request_with_lane_generation(
+                    81,
+                    BuildLaneId::new(81),
+                    BuildRequestGeneration::new(1),
+                ),
+                &ids,
+                &snapshots,
+                input,
+            )
+            .unwrap();
+        let run = submission.scheduler_run.unwrap();
+        if mode.starts_with("valid") {
+            assert_eq!(
+                submission.session.state,
+                BuildSessionState::Finished(BuildSessionOutcome::Succeeded)
+            );
+            assert!(run.phase_results.len() > 1);
+            let ordered: Vec<_> = run
+                .phase_results
+                .iter()
+                .map(|(task, results)| {
+                    let graph_task = submission
+                        .task_graph
+                        .as_ref()
+                        .unwrap()
+                        .tasks()
+                        .iter()
+                        .find(|candidate| &candidate.id == task)
+                        .unwrap();
+                    let expected: Vec<_> = required_phase_services()
+                        .iter()
+                        .filter(|requirement| {
+                            requirement
+                                .phases
+                                .iter()
+                                .any(|phase| graph_task.phases.contains(phase))
+                        })
+                        .map(|requirement| requirement.service_name)
+                        .collect();
+                    let actual: Vec<_> = results
+                        .iter()
+                        .map(|result| result.output_refs[0].phase().as_str())
+                        .collect();
+                    assert_eq!(actual, expected, "service order for {task:?}");
+                    (
+                        task.clone(),
+                        results
+                            .iter()
+                            .map(|result| {
+                                (
+                                    result.output_refs[0].phase().clone(),
+                                    result.output_refs[0].content_hash(),
+                                )
+                            })
+                            .collect::<Vec<_>>(),
+                    )
+                })
+                .collect();
+            if let Some(expected) = &canonical_results {
+                assert_eq!(&ordered, expected);
+            } else {
+                canonical_results = Some(ordered);
+            }
+            // submit borrows the driver mutably: same-lane supersession is observed
+            // at entry, not concurrently in the synchronous dispatch call.
+            let mut stale_input =
+                submit_input(vec![WorkspaceSourceFile::new("src/main.miz", "main.miz")]);
+            stale_input.phase_dispatch_inputs = Some(Box::new(FixturePhaseInputs));
+            let stale = driver
+                .submit(request(81), &ids, &snapshots, stale_input)
+                .unwrap();
+            assert_eq!(
+                stale.session.captured.snapshot.id,
+                submission.session.captured.snapshot.id
+            );
+            assert_eq!(
+                stale.status,
+                DriverSubmissionStatus::SupersededBeforeSubmission
+            );
+            assert!(matches!(
+                stale.publication_decision,
+                PublicationDecision::Suppressed(_)
+            ));
+            assert!(stale.scheduler_run.is_none());
+            publisher
+                .validate_current_snapshot(submission.session.captured.snapshot.id)
+                .unwrap();
+            for result in run.phase_results.values().flatten() {
+                assert_eq!(result.diagnostics.len(), 1);
+                assert_eq!(result.output_refs.len(), 1);
+                let output = &result.output_refs[0];
+                publisher
+                    .validate_current_output(submission.session.captured.snapshot.id, output)
+                    .unwrap();
+                let typed = publisher
+                    .storage()
+                    .typed_handle::<String>(output, output.output_kind())
+                    .unwrap();
+                assert_eq!(
+                    &*publisher.storage().get(&typed).unwrap(),
+                    "transport fixture"
+                );
+            }
+        } else {
+            assert_eq!(
+                submission.session.state,
+                BuildSessionState::Finished(BuildSessionOutcome::Failed),
+                "{mode}"
+            );
+            assert!(run.phase_results.is_empty(), "{mode}");
+        }
+    }
+}
+
+#[test]
+fn noncomplete_publication_retains_batches_without_outputs() {
+    for status in [
+        PhaseStatus::Recoverable,
+        PhaseStatus::Blocking,
+        PhaseStatus::Fatal,
+        PhaseStatus::Cancelled,
+    ] {
+        let publisher = Arc::new(PhaseOutputPublisher::new(
+            Arc::new(IrStorageService::new()),
+            Arc::new(SnapshotHandleRegistry::new()),
+        ));
+        let mut builder = PhaseRegistryBuilder::new();
+        for requirement in required_phase_services() {
+            builder.register(PublicationFixtureService {
+                descriptor: PhaseDescriptor::new(
+                    requirement.service_name,
+                    requirement.owner,
+                    requirement.phases.to_vec(),
+                    "transport-v1",
+                    requirement.service_name,
+                )
+                .unwrap(),
+                publisher: publisher.clone(),
+                mode: "valid",
+                status,
+            });
+        }
+        let mut driver =
+            CompilerDriver::new(builder.build().unwrap()).with_output_publisher(publisher);
+        let mut input = submit_input(vec![WorkspaceSourceFile::new("src/main.miz", "main.miz")]);
+        input.phase_dispatch_inputs = Some(Box::new(FixturePhaseInputs));
+        let submission = driver
+            .submit(
+                request(82),
+                &InMemorySessionIdAllocator::new(),
+                &SnapshotRegistry::new(),
+                input,
+            )
+            .unwrap();
+        let run = submission.scheduler_run.unwrap();
+        assert_eq!(run.phase_results.len(), 1);
+        let result = &run.phase_results.values().next().unwrap()[0];
+        assert_eq!(result.status, status);
+        assert_eq!(result.diagnostics.len(), 1);
+        assert!(result.output_refs.is_empty());
     }
 }

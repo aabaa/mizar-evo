@@ -195,7 +195,7 @@ struct PhaseExecutionContext {
     common: PhaseContext,
     cancellation: Option<CancellationToken>,
     diagnostics: Option<DiagnosticSink>,
-    output_publisher: Option<PhaseOutputPublisher>,
+    output_publisher: Option<Arc<PhaseOutputPublisher>>,
     parent_outputs: Vec<SealedParentOutputHandle>,
 }
 ```

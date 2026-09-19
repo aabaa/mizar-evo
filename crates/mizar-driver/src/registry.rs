@@ -61,7 +61,7 @@ pub struct PhaseExecutionContext {
     pub common: PhaseContext,
     pub cancellation: Option<CancellationToken>,
     pub diagnostics: Option<DiagnosticSink>,
-    pub output_publisher: Option<PhaseOutputPublisher>,
+    pub output_publisher: Option<Arc<PhaseOutputPublisher>>,
     pub parent_outputs: Vec<SealedParentOutputHandle>,
 }
 
@@ -69,7 +69,7 @@ pub struct PhaseExecutionContext {
 pub struct PhaseExecutionResources {
     pub cancellation: Option<CancellationToken>,
     pub diagnostics: Option<DiagnosticSink>,
-    pub output_publisher: Option<PhaseOutputPublisher>,
+    pub output_publisher: Option<Arc<PhaseOutputPublisher>>,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]

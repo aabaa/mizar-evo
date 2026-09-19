@@ -666,7 +666,7 @@ stages, gaps G1-G9 are closed (G7 by the recorded 5A.8 spec decision), and
 the corpus-wide syntax smoke guard (5A.9) is green. MVM/algorithm
 execution remains excluded and parked.
 
-### Step 6 — Phase-output publication and orchestration [ ]
+### Step 6 — Phase-output publication and orchestration [~]
 
 Wire real phase-service and publication seams once source-derived semantic
 outputs exist. Keep absent producer outputs classified rather than adding
@@ -674,10 +674,11 @@ placeholder adapters. Pre-audit 5B.3 and Gate S1 remain prerequisites only
 for consumers requiring their outputs; they do not block independent
 publication work.
 
-1. [ ] Real phase services and producer publication among `mizar-ir`,
+1. [~] Real phase services and producer publication among `mizar-ir`,
    `mizar-driver`, and `mizar-build` (their current
    `external_dependency_gap` records become owner tasks here; IV-007
-   snapshot-freshness obligations apply).
+   snapshot-freshness obligations apply). First prerequisite:
+   [dispatch publication transport](./task_contracts/en/STEP6A1-DISPATCH-PUBLICATION.md).
 2. [ ] [mizar-artifact task 17](./mizar-artifact/en/todo.md) — phase-15
    emission from real producer projections (see
    [phase15_emission_reevaluation.md](./mizar-artifact/en/phase15_emission_reevaluation.md)).
