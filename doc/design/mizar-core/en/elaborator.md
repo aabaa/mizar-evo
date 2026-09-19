@@ -1081,3 +1081,7 @@ The existing sealed `lower_source_theorem_skeletons` route additionally lowers t
 ## Bounded while lowering
 
 `lower_source_algorithms` consumes the existing seal and emits existing `AlgorithmStmtSeed::While` with the actual condition, invariant, empty decreasing list and nested `AssignLocal`; the loop annotation is not an assertion or algorithm-wide invariant. Authenticate each nested source node exactly once and preserve all formula, statement and owner maps. No parallel syntax representation or synthesized proof is introduced.
+
+## Bounded means-prefix functor theorem
+
+The sealed source-theorem route retains the actual user-functor applications and an Opaque formula definition: substitute the application for source `it` in the body, without publishing that equation as a premise. Existing definition-correctness seeds encode guarded existence `forall x:set exists r:set r=x` and uniqueness `forall x:set forall r1,r2:set ((r1=x & r2=x) -> r1=r2)` with distinct generated result binders and clause provenance. The theorem remains `forall q:set F(q)=q`; its separate local binder ends at `F(l)=l` under only its set guard. Two active definition seeds and one Active TheoremProof seed for a PendingAutomaticProof theorem retain complete owners, source maps and backrefs. No definition registration, unfolding, accepted fact or new Core representation follows.

@@ -16159,6 +16159,54 @@ pub fn lower_source_theorem_skeletons(
             Ok((node, symbol, body, vec![*left, *right]))
         })
         .transpose()?;
+    let means = typed
+        .nodes()
+        .iter()
+        .find(|(_, node)| node.kind.as_str() == "FunctorDefinition")
+        .map(|(definition, node)| {
+            let application = typed.source_application().ok_or_else(invalid)?;
+            let symbol = application
+                .candidates()
+                .iter()
+                .next()
+                .ok_or_else(invalid)?
+                .1
+                .symbol()
+                .clone();
+            let parameter = typed
+                .nodes()
+                .iter()
+                .find(|(_, node)| node.kind.as_str() == "DefinitionParameter")
+                .ok_or_else(invalid)?
+                .0;
+            let segment = children(parameter)
+                .and_then(|nodes| nodes.first().copied())
+                .ok_or_else(invalid)?;
+            let formal = *typed
+                .nodes()
+                .node(segment)
+                .and_then(|node| node.children.first())
+                .ok_or_else(invalid)?;
+            let [_, _, _, _, _, return_type, _, body, _] = node.children.as_slice() else {
+                return Err(invalid());
+            };
+            let body = children(*body)
+                .and_then(|nodes| nodes.first().copied())
+                .and_then(unwrap)
+                .ok_or_else(invalid)?;
+            let clauses = typed
+                .nodes()
+                .iter()
+                .filter_map(|(id, node)| {
+                    (node.kind.as_str() == "CorrectnessCondition").then_some(id)
+                })
+                .collect::<Vec<_>>();
+            if clauses.len() != 2 {
+                return Err(invalid());
+            }
+            Ok((definition, symbol, body, formal, *return_type, clauses))
+        })
+        .transpose()?;
     let nested_binder = phrase.as_ref().and_then(|(_, _, body, _)| {
         (kind(*body) == Some("QuantifiedFormula(Universal)"))
             .then(|| {
@@ -16224,6 +16272,17 @@ pub fn lower_source_theorem_skeletons(
             else {
                 return None;
             };
+            if means.is_some() {
+                let row = primary.terms().get(term)?;
+                return scope
+                    .references()
+                    .iter()
+                    .find(|reference| {
+                        reference.node().index() == row.site().node().index()
+                            && reference.range() == row.source_range()
+                    })
+                    .map(|reference| CoreVarId::new(reference.binding().index()));
+            }
             if let Some((_, _, _, formals)) = &phrase {
                 let row = primary.terms().get(term)?;
                 if let Some(reference) = scope.references().iter().find(|reference| {
@@ -16300,6 +16359,52 @@ pub fn lower_source_theorem_skeletons(
         }
         let mut terms = Vec::new();
         for edge in &edges {
+            if let mizar_checker::source_atomic_formula::SourceAtomicTermTarget::Application(id) =
+                edge.target()
+            {
+                let applications = typed.source_application().ok_or_else(invalid)?;
+                let application = applications.applications().get(id).ok_or_else(invalid)?;
+                let candidate = applications
+                    .candidates()
+                    .iter()
+                    .find(|(_, row)| row.application() == id)
+                    .ok_or_else(invalid)?
+                    .1;
+                let mut args = Vec::new();
+                for (_, argument) in applications
+                    .arguments()
+                    .iter()
+                    .filter(|(_, row)| row.application() == id)
+                {
+                    let mizar_checker::source_application::SourceFunctorArgumentTarget::Primary(
+                        term,
+                    ) = argument.target()
+                    else {
+                        return Err(invalid());
+                    };
+                    let row = primary.terms().get(term).ok_or_else(invalid)?;
+                    let var = binding_for_target(
+                        mizar_checker::source_atomic_formula::SourceAtomicTermTarget::Primary(term),
+                    )
+                    .ok_or_else(invalid)?;
+                    args.push(CoreTermSeedId::new(term_seeds.len()));
+                    term_seeds.push(CoreTermSeed::new(
+                        CoreTermSeedKind::Var(var),
+                        CoreSourceRef::direct(row.source_range()),
+                        provenance("argument"),
+                    ));
+                }
+                terms.push(CoreTermSeedId::new(term_seeds.len()));
+                term_seeds.push(CoreTermSeed::new(
+                    CoreTermSeedKind::Apply {
+                        functor: candidate.symbol().clone(),
+                        args,
+                    },
+                    CoreSourceRef::direct(application.source_range()),
+                    provenance("application"),
+                ));
+                continue;
+            }
             let mizar_checker::source_atomic_formula::SourceAtomicTermTarget::Primary(term) =
                 edge.target()
             else {
@@ -16471,6 +16576,187 @@ pub fn lower_source_theorem_skeletons(
             source,
             provenance,
         ));
+    }
+
+    let mut means_formulas = None;
+    if let Some((_, symbol, body, formal, return_type, clauses)) = &means {
+        let provenance = |suffix: &str| {
+            CheckerOwnedProvenance::checker(format!(
+                "checker/functor/{}/{suffix}",
+                symbol.fqn().as_str()
+            ))
+        };
+        let formal_source = CoreSourceRef::direct(range(*formal).ok_or_else(invalid)?);
+        let body_source = CoreSourceRef::direct(range(*body).ok_or_else(invalid)?);
+        let mut push_formula = |kind, source: CoreSourceRef, suffix: &str| {
+            let id = CoreFormulaSeedId::new(formula_seeds.len());
+            formula_seeds.push(CoreFormulaSeed::new(kind, source, provenance(suffix)));
+            id
+        };
+        let formal_var = CoreVarId::new(scope.bindings().len());
+        let formal_term = CoreTermSeedId::new(term_seeds.len());
+        term_seeds.push(CoreTermSeed::new(
+            CoreTermSeedKind::Var(formal_var),
+            formal_source.clone(),
+            provenance("formal"),
+        ));
+        let formal_guard = push_formula(
+            CoreFormulaSeedKind::TypePred {
+                subject: formal_term,
+                ty: CoreTypePredicate::new("set"),
+            },
+            formal_source.clone(),
+            "formal-guard",
+        );
+        let formal_binder = QuantifierBinderSeed::new(
+            formal_var,
+            "definition-parameter",
+            formal_source,
+            provenance("formal"),
+        )
+        .with_guard(formal_guard, vec![formal_var]);
+        let body_row = atomic
+            .formulas()
+            .iter()
+            .find(|(_, row)| row.site().node() == *body)
+            .ok_or_else(invalid)?;
+        let mut edges = atomic
+            .edges()
+            .iter()
+            .filter(|(_, edge)| edge.formula() == body_row.0)
+            .map(|(_, edge)| edge)
+            .collect::<Vec<_>>();
+        edges.sort_by_key(|edge| edge.ordinal());
+        let mut relations = Vec::new();
+        let mut result_binders = Vec::new();
+        let mut result_terms = Vec::new();
+        for index in 0..4 {
+            let clause = clauses[usize::from(index > 1)];
+            let suffix = format!("result/{index}");
+            let source =
+                CoreSourceRef::direct(range(clause).ok_or_else(invalid)?).with_provenance(vec![
+                    CoreProvenance::new(
+                        CoreProvenancePhase::Generated,
+                        format!("checker/functor/{}/{suffix}", symbol.fqn().as_str()),
+                    ),
+                ]);
+            let var = CoreVarId::new(scope.bindings().len() + index);
+            let mut operands = Vec::new();
+            for edge in &edges {
+                let mizar_checker::source_atomic_formula::SourceAtomicTermTarget::Primary(id) =
+                    edge.target()
+                else {
+                    return Err(invalid());
+                };
+                let row = primary.terms().get(id).ok_or_else(invalid)?;
+                let term = CoreTermSeedId::new(term_seeds.len());
+                let is_it = row.kind() == mizar_checker::source_term::SourcePrimaryTermKind::It;
+                let kind = if is_it && index == 0 {
+                    CoreTermSeedKind::Apply {
+                        functor: symbol.clone(),
+                        args: vec![formal_term],
+                    }
+                } else {
+                    CoreTermSeedKind::Var(if is_it { var } else { formal_var })
+                };
+                term_seeds.push(CoreTermSeed::new(
+                    kind,
+                    CoreSourceRef::direct(row.source_range())
+                        .with_provenance(source.provenance.clone()),
+                    provenance(&suffix),
+                ));
+                operands.push(term);
+                if is_it && index > 0 {
+                    result_terms.push(term);
+                }
+            }
+            if operands.len() != 2 {
+                return Err(invalid());
+            }
+            relations.push(push_formula(
+                CoreFormulaSeedKind::Equals {
+                    left: operands[0],
+                    right: operands[1],
+                },
+                body_source.clone(),
+                &suffix,
+            ));
+            if index > 0 {
+                let guard = push_formula(
+                    CoreFormulaSeedKind::TypePred {
+                        subject: *result_terms.last().ok_or_else(invalid)?,
+                        ty: CoreTypePredicate::new("set"),
+                    },
+                    CoreSourceRef::direct(range(*return_type).ok_or_else(invalid)?),
+                    &suffix,
+                );
+                result_binders.push(
+                    QuantifierBinderSeed::new(
+                        var,
+                        "definition-result",
+                        source,
+                        provenance(&suffix),
+                    )
+                    .with_guard(guard, vec![var]),
+                );
+            }
+        }
+        let existence_source = CoreSourceRef::direct(range(clauses[0]).ok_or_else(invalid)?);
+        let existence = push_formula(
+            CoreFormulaSeedKind::Exists {
+                binders: vec![result_binders[0].clone()],
+                body: relations[1],
+            },
+            existence_source.clone(),
+            "existence",
+        );
+        let existence = push_formula(
+            CoreFormulaSeedKind::Forall {
+                binders: vec![formal_binder.clone()],
+                body: existence,
+            },
+            existence_source,
+            "existence",
+        );
+        let uniqueness_source = CoreSourceRef::direct(range(clauses[1]).ok_or_else(invalid)?);
+        let premise = push_formula(
+            CoreFormulaSeedKind::And(vec![relations[2], relations[3]]),
+            uniqueness_source.clone(),
+            "uniqueness",
+        );
+        let conclusion = push_formula(
+            CoreFormulaSeedKind::Equals {
+                left: result_terms[1],
+                right: result_terms[2],
+            },
+            uniqueness_source.clone(),
+            "uniqueness",
+        );
+        let implication = push_formula(
+            CoreFormulaSeedKind::Implies {
+                premise,
+                conclusion,
+            },
+            uniqueness_source.clone(),
+            "uniqueness",
+        );
+        let uniqueness = push_formula(
+            CoreFormulaSeedKind::Forall {
+                binders: result_binders[1..].to_vec(),
+                body: implication,
+            },
+            uniqueness_source.clone(),
+            "uniqueness",
+        );
+        let uniqueness = push_formula(
+            CoreFormulaSeedKind::Forall {
+                binders: vec![formal_binder],
+                body: uniqueness,
+            },
+            uniqueness_source,
+            "uniqueness",
+        );
+        means_formulas = Some((relations[0], formal_guard, [existence, uniqueness]));
     }
 
     let mut owner_formula_seeds = BTreeMap::new();
@@ -16754,6 +17040,55 @@ pub fn lower_source_theorem_skeletons(
             ));
         }
     }
+    if let Some((definition, symbol, _, formal, _, clauses)) = &means {
+        context_input.item_seeds.push(
+            CoreItemSeed::new(
+                symbol.clone(),
+                CoreItemKind::Functor,
+                "public",
+                CoreSourceRef::direct(range(*definition).ok_or_else(invalid)?),
+                CheckerOwnedProvenance::checker(format!(
+                    "checker/functor/{}/owner",
+                    symbol.fqn().as_str()
+                )),
+            )
+            .with_definition_boundary(DefinitionBoundaryKind::DefinitionalItem),
+        );
+        for index in 0..4 {
+            let var = CoreVarId::new(scope.bindings().len() + index);
+            let role = if index == 0 {
+                "definition-parameter"
+            } else {
+                "definition-result"
+            };
+            let provenance = CheckerOwnedProvenance::checker(format!(
+                "checker/functor/{}/{role}/{index}",
+                symbol.fqn().as_str()
+            ));
+            let node = if index == 0 {
+                *formal
+            } else {
+                clauses[usize::from(index > 1)]
+            };
+            let mut source = CoreSourceRef::direct(range(node).ok_or_else(invalid)?);
+            if index > 0 {
+                source = source.with_provenance(vec![CoreProvenance::new(
+                    CoreProvenancePhase::Generated,
+                    format!("checker/functor/{}/result/{index}", symbol.fqn().as_str()),
+                )]);
+            }
+            context_input.variable_seeds.push(CoreVariableSeed::new(
+                var,
+                NormalizedVarClass::Free,
+                role,
+                NormalizedVarSort::Term,
+                provenance.clone(),
+            ));
+            context_input
+                .binder_seeds
+                .push(CoreBinderSeed::new(var, source, provenance));
+        }
+    }
     if let Some(declaration) = nested_binder {
         let var = CoreVarId::new(scope.bindings().len() + 2);
         let provenance = CheckerOwnedProvenance::checker(format!(
@@ -16807,6 +17142,9 @@ pub fn lower_source_theorem_skeletons(
             dependencies.push(algorithm.algorithm().1.clone());
         }
         if let Some((_, symbol, _, _)) = &phrase {
+            dependencies.push(symbol.clone());
+        }
+        if let Some((_, symbol, _, _, _, _)) = &means {
             dependencies.push(symbol.clone());
         }
         let provenance = CheckerOwnedProvenance::try_new(vec![
@@ -16911,8 +17249,73 @@ pub fn lower_source_theorem_skeletons(
             )),
         });
     }
-    let definitions = lower_definition_inputs(&context, &term_formula, definition_input)
+    if let Some((definition, symbol, _, formal, _, clauses)) = &means {
+        let (body, guard, goals) = means_formulas.ok_or_else(invalid)?;
+        let correctness = goals
+            .iter()
+            .enumerate()
+            .map(|(index, goal)| {
+                let role = if index == 0 {
+                    "existence"
+                } else {
+                    "uniqueness"
+                };
+                Ok(DefinitionCorrectnessSeed::New(Box::new(
+                    DefinitionObligationSeed::active(
+                        term_formula.formula_map[goal],
+                        format!("definition/{}/{role}", symbol.fqn().as_str()),
+                        format!("{}.{role}", symbol.fqn().as_str()),
+                        CoreSourceRef::direct(range(clauses[index]).ok_or_else(invalid)?),
+                        CheckerOwnedProvenance::checker(format!(
+                            "checker/functor/{}/{role}",
+                            symbol.fqn().as_str()
+                        )),
+                    ),
+                )))
+            })
+            .collect::<Result<Vec<_>, String>>()?;
+        definition_input.definitions.push(DefinitionSeed {
+            owner: context
+                .item_registry()
+                .id_for_symbol(symbol)
+                .ok_or_else(invalid)?,
+            symbol: symbol.clone(),
+            params: vec![CoreBinder {
+                var: CoreVarId::new(scope.bindings().len()),
+                role: "definition-parameter".into(),
+                ty_guard: Some(term_formula.formula_map[&guard]),
+                source_name: None,
+                source: CoreSourceRef::direct(range(*formal).ok_or_else(invalid)?),
+            }],
+            body: DefinitionBodySeed::Formula(term_formula.formula_map[&body]),
+            expansion: ExpansionPolicy::Opaque,
+            correctness,
+            generated_dependencies: Vec::new(),
+            source: CoreSourceRef::direct(range(*definition).ok_or_else(invalid)?),
+            provenance: CheckerOwnedProvenance::checker(format!(
+                "checker/functor/{}/definition",
+                symbol.fqn().as_str()
+            )),
+        });
+    }
+    let mut definitions = lower_definition_inputs(&context, &term_formula, definition_input)
         .map_err(|error| error.to_string())?;
+    if means.is_some() {
+        for (_, seed) in definitions.obligation_seeds.iter_mut() {
+            let mut refs = DefinitionBodyRefs::default();
+            collect_reachable_formula_refs(
+                &term_formula,
+                seed.goal.ok_or_else(invalid)?,
+                &mut refs,
+            );
+            seed.core_refs
+                .extend(refs.terms.into_iter().map(CoreNodeRef::Term));
+            seed.core_refs
+                .extend(refs.formulas.into_iter().map(CoreNodeRef::Formula));
+            seed.core_refs.sort();
+            seed.core_refs.dedup();
+        }
+    }
     let mut proof_seeds = Vec::new();
     for (source_owner, proposition_seed, proof) in owner_records {
         let Some((local, local_guard_seed, local_goal_seed, conclusion_range, cited)) = proof

@@ -275,3 +275,7 @@ Canonical predicate trace status and broad proof-family deferrals remain unchang
 ## Bounded symbolic predicate snapshot
 
 The symbolic predicate uses unchanged `generate_core_vcs` intake and normalization: one Open TheoremProofStep from the authentic Core TerminalGoal, actual predicate goal and ordered local-guard/guarded-definition context. Add only `spec.en.mizar_vc.vc_ir.symbolic_predicate_snapshot` for `tests/miz/pass/predicates/pass_proof_verification_pred_symbolic_infix_001.expect.toml` and `snapshots/vc/pass_proof_verification_pred_symbolic_infix_001.vc_ir.snap`; the trace section is `VC Task 6; bounded symbolic predicate VcIr snapshot`. Whole-Core controls inspect the quantified definition and membership edges because a VcSet alone retains Core references. No marker, generator API, proof acceptance or general membership reasoning is added.
+
+## Bounded means-prefix functor snapshot
+
+Use unchanged generic Core seed intake to retain two Open DefinitionCorrectness VCs and one Open TheoremProofStep, with exact seed accounting and pending correctness excluded from theorem premises. Add only `spec.en.mizar_vc.vc_ir.means_functor_snapshot`, section `VC Task 6; bounded means-prefix functor VcIr snapshot`, for `tests/miz/pass/functors/pass_proof_verification_func_means_prefix_001.expect.toml` and `snapshots/vc/pass_proof_verification_func_means_prefix_001.vc_ir.snap`. Whole-Core controls inspect actual result substitutions, binder guards, opaque body and source ownership; no generator marker, discharge, unfolding or acceptance is added.

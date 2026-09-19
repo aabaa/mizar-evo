@@ -3073,3 +3073,7 @@ call-site result、rewrite、Core/VC、Step6/MVM の動作は追加しない。
 ## 限定 while 検査
 
 `check_source_algorithm_types` は初期化済み実行時ローカル一つ、while 一つ、等式 invariant 一つ、否定等式 guard、ローカル代入一つ、最後の return を扱う。注釈・本体の所有者、入れ子文の完全な対応、出現スコープと BindingId を認証し、result は ensures 内に限る。既存推論でオペランドと代入型を検査する。入れ子は不変 typed node に保持し seal のフィールドを増やさない。入れ子ループ、追加注釈、decreasing、break/continue、ghost オペランド、追加本体文は拒否する。
+
+## 限定 means-prefix functor theorem 検査
+
+既存 source-statement producer と theorem replay を、set 一引数 functor の `means it = X`、空の existence/uniqueness 節、量化・証明局所 prefix 適用へ拡張する。実 symbol、宣言・出現同一性、`it` role、戻り型、節所有者、適用の引数・結果型を認証し、Core obligation lowering に渡す sealed source tree 内に二つの未証明 correctness 節を保持する。primary/application/equality graph と順序付き節所有者を replay し、raw typed obligation table は空に保ち、public constructor の guard を変更しない。型検査と未解決 goal のみを与え、節を証明受理せず、定義等式を定理の前提にしない。

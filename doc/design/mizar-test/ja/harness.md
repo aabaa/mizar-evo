@@ -5798,3 +5798,7 @@ Core/VcSet 全体の不変再実行と [VcSet 全体の snapshot](../../mizar-vc
 ## 限定 while admission
 
 `pass_proof_verification_algorithm_while_invariant_001` のみを既存 pass/proof_verification/vc_generation、algorithms.loops、while_invariant semantic ref で有効化する。`spec.en.mizar_vc.vc_ir.algorithm_while_invariant` と `snapshots/vc/pass_proof_verification_algorithm_while_invariant_001.vc_ir.snap` を追加し、trace section は `VC Task 47; bounded while invariant VcIr snapshot` とする。厳密な source/sidecar identity、唯一の active tag、矛盾 payload の不在、完全な決定的 VcSet 比較を要求する。三目標、cutpoint・書込み identity、未解決依存と seed accounting を検査し、改名および代入・invariant オペランド変更を実グラフに反映する。証明検証成功・停止性の credit は付与しない。
+
+## 限定 means-prefix functor admission
+
+`pass_proof_verification_func_means_prefix_001` だけを元の pass/proof_verification/vc_generation、functors.means_definition、semantic ref、唯一の active_proof_verification tag、追加 means-functor snapshot ref/path で受理する。全 stage で厳密な source/sidecar 同一性を予約し、inventory の欠落・重複と補助 payload を拒否する。実 Pending existence/uniqueness、実 application equality 定理、Core/VcSet 全体の再実行と固定 snapshot を必須とする。空の correctness 節を受理済みとせず、未解決の定義等式を定理へ供給しない。equals-infix と narrower-loci registration は延期する。

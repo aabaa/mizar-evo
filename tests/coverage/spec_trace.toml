@@ -7149,6 +7149,19 @@ tests = [
 ]
 
 [[requirement]]
+id = "spec.en.mizar_vc.vc_ir.means_functor_snapshot"
+source = "doc/design/mizar-vc/en/source_vc_decomposition.md"
+section = "VC Task 6; bounded means-prefix functor VcIr snapshot"
+stage = "proof_verification"
+status = "covered"
+required = true
+coverage = "snapshot"
+notes = "Actual existence, uniqueness and functor equality goals remain Open; the opaque defining equation is not an available premise."
+tests = [
+  "tests/miz/pass/functors/pass_proof_verification_func_means_prefix_001.expect.toml",
+]
+
+[[requirement]]
 id = "spec.en.mizar_vc.vc_ir.phrase_predicate_snapshot"
 source = "doc/design/mizar-vc/en/source_vc_decomposition.md"
 section = "Bounded phrase predicate snapshot"

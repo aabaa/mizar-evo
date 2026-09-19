@@ -259,3 +259,7 @@ canonical predicate trace の status と広域 proof-family の延期を維持�
 ## 限定 symbolic predicate snapshot
 
 symbolic predicate は既存 `generate_core_vcs` intake/normalization を使い、実 Core TerminalGoal から実 predicate goal と順序付き local-guard/guarded-definition 文脈を持つ Open TheoremProofStep 一つを生成する。`tests/miz/pass/predicates/pass_proof_verification_pred_symbolic_infix_001.expect.toml` に `spec.en.mizar_vc.vc_ir.symbolic_predicate_snapshot` と `snapshots/vc/pass_proof_verification_pred_symbolic_infix_001.vc_ir.snap` だけを追加し、trace section は `VC Task 6; bounded symbolic predicate VcIr snapshot` とする。VcSet は Core 参照を保持するため、Core 全体の対照で量化定義と membership 辺を検査する。marker・generator API・証明受理・一般 membership 推論は追加しない。
+
+## 限定 means-prefix functor snapshot
+
+既存 generic Core seed intake で Open DefinitionCorrectness VC 二つと Open TheoremProofStep 一つを保持し、seed accounting を厳密に対応させ、未解決 correctness を定理の前提から除外する。`tests/miz/pass/functors/pass_proof_verification_func_means_prefix_001.expect.toml` と `snapshots/vc/pass_proof_verification_func_means_prefix_001.vc_ir.snap` に `spec.en.mizar_vc.vc_ir.means_functor_snapshot`、section `VC Task 6; bounded means-prefix functor VcIr snapshot` だけを追加する。Core 全体の対照で実 result 置換・binder guard・opaque body・source 所有関係を検査する。generator marker・discharge・unfolding・受理は追加しない。

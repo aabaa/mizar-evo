@@ -3164,7 +3164,7 @@ fn active_runner_reports_are_byte_stable_across_repeated_runs() {
     let root = config.workspace_root.clone();
     let plan = build_test_plan(&config).unwrap();
 
-    assert_eq!(active_proof_verification_cases(&plan).count(), 20);
+    assert_eq!(active_proof_verification_cases(&plan).count(), 21);
 
     let parse_first = canonical_parse_only_report(&run_parse_only_corpus(&config).unwrap(), &root);
     let parse_second = canonical_parse_only_report(&run_parse_only_corpus(&config).unwrap(), &root);
@@ -4069,6 +4069,11 @@ fn repository_corpus_plan_succeeds() {
             "spec.en.mizar_vc.vc_ir.computation_request_snapshot",
             "pass_proof_verification_computation_justification_001",
             "pass/algorithms",
+        ),
+        (
+            "spec.en.mizar_vc.vc_ir.means_functor_snapshot",
+            "pass_proof_verification_func_means_prefix_001",
+            "pass/functors",
         ),
         (
             "spec.en.mizar_vc.vc_ir.phrase_predicate_snapshot",
@@ -10676,8 +10681,8 @@ fn proof_verification_cli_reports_task180_and_step5c2_summary() {
         String::from_utf8_lossy(&output.stderr)
     );
     let stdout = String::from_utf8_lossy(&output.stdout);
-    assert!(stdout.contains("proof-verification cases: 20"));
-    assert!(stdout.contains("passed: 20"));
+    assert!(stdout.contains("proof-verification cases: 21"));
+    assert!(stdout.contains("passed: 21"));
     assert!(stdout.contains("failed: 0"));
 }
 

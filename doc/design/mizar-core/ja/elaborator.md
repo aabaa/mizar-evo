@@ -937,3 +937,7 @@ Active TheoremProof seed は一つで、定理は `PendingAutomaticProof` のま
 ## 限定 while lowering
 
 `lower_source_algorithms` は既存 seal から実際の条件・invariant・空の decreasing と入れ子 `AssignLocal` を持つ既存 `AlgorithmStmtSeed::While` を生成する。注釈は assert やアルゴリズム全体の invariant に変換しない。入れ子ソースノードを過不足なく認証し、式・文・所有者の対応を保つ。並行構文表現や証明を生成しない。
+
+## 限定 means-prefix functor theorem
+
+封印済み source-theorem 経路は実 user-functor 適用と Opaque な式定義を保持する。source `it` を適用に置換するが、その等式を前提として公開しない。既存 definition-correctness seed は guard 付き存在 `forall x:set exists r:set r=x` と一意性 `forall x:set forall r1,r2:set ((r1=x & r2=x) -> r1=r2)` を別の生成結果束縛子・節由来で表す。定理は `forall q:set F(q)=q` のまま、別の局所束縛子は set guard だけの下で `F(l)=l` を終端とする。二つの active definition seed と PendingAutomaticProof 定理に属する一つの Active TheoremProof seed の所有者・source map・backref を保持する。定義登録・unfolding・受理済み事実・新 Core 表現は追加しない。

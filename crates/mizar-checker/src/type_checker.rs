@@ -5446,7 +5446,7 @@ impl TermFormulaChecker {
         Ok((bindings, inference, obligations))
     }
 
-    /// Checks the bounded local binary predicate applications without proof credit.
+    /// Checks bounded predicate and means-functor statements without proof credit.
     pub fn check_source_predicate_statements(
         source: &SurfaceResolvedArena,
         symbols: &SymbolEnv,
@@ -5459,6 +5459,7 @@ impl TermFormulaChecker {
         ),
         String,
     > {
+        use crate::source_application::*;
         use crate::source_atomic_formula::*;
         use crate::source_term::*;
         use crate::typed_ast::{TypedArena, TypedAst, TypedAstParts, TypedNode};
@@ -5550,48 +5551,119 @@ impl TermFormulaChecker {
         let [block, theorem] = parts(only(*unit, &K::CompilationUnit)?, &K::ItemList)? else {
             return Err(invalid());
         };
-        let [definition_kw, parameter, definition, end, semi] =
-            parts(*block, &K::DefinitionBlockItem)?
-        else {
-            return Err(invalid());
-        };
+        let means_functor = source
+            .arena()
+            .iter()
+            .any(|(_, node)| matches!(node.kind(), K::FunctorDefinition));
+        let (definition_kw, parameter, definition, end, semi, clauses) =
+            match parts(*block, &K::DefinitionBlockItem)? {
+                [kw, parameter, definition, end, semi] if !means_functor => {
+                    (kw, parameter, definition, end, semi, Vec::new())
+                }
+                [kw, parameter, definition, existence, uniqueness, end, semi] if means_functor => (
+                    kw,
+                    parameter,
+                    definition,
+                    end,
+                    semi,
+                    vec![(*existence, "existence"), (*uniqueness, "uniqueness")],
+                ),
+                _ => return Err(invalid()),
+            };
         tokens(&[(*definition_kw, "definition"), (*end, "end"), (*semi, ";")])?;
+        for (clause, spelling) in &clauses {
+            let [keyword, semi] = parts(*clause, &K::CorrectnessCondition)? else {
+                return Err(invalid());
+            };
+            tokens(&[(*keyword, spelling), (*semi, ";")])?;
+        }
         let [let_kw, segment, semi] = parts(*parameter, &K::DefinitionParameter)? else {
             return Err(invalid());
         };
         tokens(&[(*let_kw, "let"), (*semi, ";")])?;
-        let [first, comma, second, be, parameter_type] =
-            parts(*segment, &K::QualifiedVariableSegment)?
-        else {
-            return Err(invalid());
+        let (parameters, parameter_type) = match parts(*segment, &K::QualifiedVariableSegment)? {
+            [first, comma, second, be, ty] if !means_functor => {
+                tokens(&[(*comma, ","), (*be, "be")])?;
+                if text(*first)? == text(*second)? {
+                    return Err(invalid());
+                }
+                (vec![*first, *second], ty)
+            }
+            [first, be, ty] if means_functor => {
+                tokens(&[(*be, "be")])?;
+                (vec![*first], ty)
+            }
+            _ => return Err(invalid()),
         };
-        tokens(&[(*comma, ","), (*be, "be")])?;
-        for binder in [*first, *second] {
-            identifier(binder)?;
+        for binder in &parameters {
+            identifier(*binder)?;
         }
-        if text(*first)? == text(*second)? {
-            return Err(invalid());
-        }
-        let [pred, label, colon, pattern, means, body, semi] =
-            parts(*definition, &K::PredicateDefinition)?
-        else {
-            return Err(invalid());
+        let (label, pattern, body, result_type) = if means_functor {
+            let [
+                func,
+                label,
+                colon,
+                pattern,
+                arrow,
+                result,
+                means,
+                body,
+                semi,
+            ] = parts(*definition, &K::FunctorDefinition)?
+            else {
+                return Err(invalid());
+            };
+            tokens(&[
+                (*func, "func"),
+                (*colon, ":"),
+                (*arrow, "->"),
+                (*means, "means"),
+                (*semi, ";"),
+            ])?;
+            (*label, *pattern, body, Some(*result))
+        } else {
+            let [pred, label, colon, pattern, means, body, semi] =
+                parts(*definition, &K::PredicateDefinition)?
+            else {
+                return Err(invalid());
+            };
+            tokens(&[
+                (*pred, "pred"),
+                (*colon, ":"),
+                (*means, "means"),
+                (*semi, ";"),
+            ])?;
+            (*label, *pattern, body, None)
         };
-        tokens(&[
-            (*pred, "pred"),
-            (*colon, ":"),
-            (*means, "means"),
-            (*semi, ";"),
-        ])?;
-        identifier(*label)?;
-        let [left, head, right] = parts(*pattern, &K::PredicatePattern)? else {
-            return Err(invalid());
+        identifier(label)?;
+        let (head, loci, full_pattern) = if means_functor {
+            let [head, arg] = parts(pattern, &K::FunctorPattern)? else {
+                return Err(invalid());
+            };
+            if !matches!(node(*head)?.kind(), K::Token(token) if matches!(token.kind, SurfaceTokenKind::Identifier | SurfaceTokenKind::UserSymbol))
+            {
+                return Err(invalid());
+            }
+            (
+                *head,
+                vec![formal(*arg)?],
+                format!("{} {}", text(*head)?, text(*arg)?),
+            )
+        } else {
+            let [left, head, right] = parts(pattern, &K::PredicatePattern)? else {
+                return Err(invalid());
+            };
+            (
+                *head,
+                vec![formal(*left)?, formal(*right)?],
+                format!("{} {} {}", text(*left)?, text(*head)?, text(*right)?),
+            )
         };
-        let loci = [formal(*left)?, formal(*right)?];
-        if loci[0] == loci[1]
-            || loci.iter().any(|locus| ![*first, *second].contains(locus))
-            || text(*head)? == text(*first)?
-            || text(*head)? == text(*second)?
+        if loci.iter().collect::<BTreeSet<_>>().len() != loci.len()
+            || loci.iter().any(|locus| !parameters.contains(locus))
+            || parameters
+                .iter()
+                .any(|binder| text(*binder).ok() == text(head).ok())
         {
             return Err(invalid());
         }
@@ -5600,7 +5672,12 @@ impl TermFormulaChecker {
             .symbols()
             .iter()
             .find(|entry| {
-                entry.kind() == SymbolKind::Predicate
+                entry.kind()
+                    == if means_functor {
+                        SymbolKind::Functor
+                    } else {
+                        SymbolKind::Predicate
+                    }
                     && entry.origin().anchor() == definition_anchor
             })
             .ok_or_else(invalid)?;
@@ -5608,10 +5685,14 @@ impl TermFormulaChecker {
             .definitions()
             .by_symbol(predicate.symbol())
             .ok_or_else(invalid)?;
-        let full_pattern = format!("{} {} {}", text(*left)?, text(*head)?, text(*right)?);
         if symbols.symbols().iter().count() != 2
             || symbols.definitions().iter().count() != 2
-            || declared.kind() != DefinitionKind::Predicate
+            || declared.kind()
+                != if means_functor {
+                    DefinitionKind::Functor
+                } else {
+                    DefinitionKind::Predicate
+                }
             || declared.origin() != predicate.origin()
             || declared.contribution() != predicate.contribution()
             || declared.conflict().is_some()
@@ -5718,6 +5799,20 @@ impl TermFormulaChecker {
         {
             return Err(invalid());
         }
+        if means_functor
+            && (nested.is_some()
+                || negation.is_some()
+                || builtin(
+                    result_type.ok_or_else(invalid)?,
+                    site(result_type.ok_or_else(invalid)?),
+                )?
+                .head
+                    != TypeHeadInput::BuiltinSet
+                || builtin(*header_type, site(*header_type))?.head != TypeHeadInput::BuiltinSet
+                || builtin(*proof_type, site(*proof_type))?.head != TypeHeadInput::BuiltinSet)
+        {
+            return Err(invalid());
+        }
         let mut table = BindingTable::new();
         let mut contexts = BindingContextTable::new();
         contexts.insert(BindingContextDraft {
@@ -5732,7 +5827,7 @@ impl TermFormulaChecker {
         let mut identities = BTreeMap::new();
         for (index, (binders, ty, owner, kind, layer)) in [
             (
-                vec![*first, *second],
+                parameters.clone(),
                 *parameter_type,
                 *block,
                 BindingKind::DefinitionParameter,
@@ -5809,7 +5904,7 @@ impl TermFormulaChecker {
                 u32::try_from(body_root.index()).map_err(|_| invalid())?,
             ]);
             let binding = identities[&binder].0;
-            let mut visible = vec![identities[first].0, identities[second].0];
+            let mut visible = vec![identities[&parameters[0]].0, identities[&parameters[1]].0];
             visible.retain(|id| {
                 table
                     .get(*id)
@@ -5856,6 +5951,15 @@ impl TermFormulaChecker {
             edges: Vec::new(),
             requests: Vec::new(),
         };
+        let mut applications = SourceFunctorApplicationHandoffInput {
+            source_id: source.source_id(),
+            module_id: source.module().clone(),
+            applications: Vec::new(),
+            wrappers: Vec::new(),
+            candidates: Vec::new(),
+            arguments: Vec::new(),
+            type_requests: Vec::new(),
+        };
         let mut arena = typed
             .iter()
             .map(|(_, node)| node.clone())
@@ -5882,7 +5986,7 @@ impl TermFormulaChecker {
                 formula
             };
             let formula_id = SourceAtomicFormulaId::new(ordinal);
-            let (operands, call) = if ordinal < body_count {
+            let (operands, call) = if ordinal < body_count || means_functor {
                 let [left, operator, right] = parts(formula, &K::BuiltinPredicateApplication)?
                 else {
                     return Err(invalid());
@@ -5904,7 +6008,7 @@ impl TermFormulaChecker {
                     only(only(call_head, &K::PredicateHead)?, &K::QualifiedSymbol)?,
                     &K::PathSegment,
                 )?;
-                if text(token)? != text(*head)? || range(*definition)?.end > range(formula)?.start {
+                if text(token)? != text(head)? || range(*definition)?.end > range(formula)?.start {
                     return Err(invalid());
                 }
                 ([left, right], Some((segment, call_head, negative)))
@@ -5913,14 +6017,44 @@ impl TermFormulaChecker {
             let mut operand_sites = Vec::new();
             let edge_start = atomic.edges.len();
             for (argument, expression) in operands.into_iter().enumerate() {
-                let term = only(expression, &K::TermExpression)?;
-                let token = only(term, &K::TermReference)?;
-                let declaration = formal(token)?;
-                let (binding, binding_context, ty) =
-                    identities.get(&declaration).ok_or_else(invalid)?;
-                if *binding_context != context
+                let expression_term = only(expression, &K::TermExpression)?;
+                let application = if means_functor
+                    && ordinal >= body_count
+                    && matches!(node(expression_term)?.kind(), K::PrefixExpression(_))
+                {
+                    let [callee, arg] = node(expression_term)?.children() else {
+                        return Err(invalid());
+                    };
+                    if !matches!(node(expression_term)?.kind(), K::PrefixExpression(operator) if operator.spelling.as_ref() == text(head)?)
+                        || text(*callee)? != text(head)?
+                    {
+                        return Err(invalid());
+                    }
+                    if !matches!(node(*callee)?.kind(), K::Token(token) if matches!(token.kind, SurfaceTokenKind::Identifier | SurfaceTokenKind::UserSymbol))
+                    {
+                        return Err(invalid());
+                    }
+                    Some((expression_term, *callee, *arg))
+                } else {
+                    None
+                };
+                let term = application.map_or(expression_term, |(_, _, arg)| arg);
+                let is_it = means_functor
+                    && ordinal < body_count
+                    && matches!(node(term)?.kind(), K::ItTerm);
+                let token = only(term, if is_it { &K::ItTerm } else { &K::TermReference })?;
+                let (binding, binding_context, ty) = if is_it {
+                    tokens(&[(token, "it")])?;
+                    (None, context, result_type.ok_or_else(invalid)?)
+                } else {
+                    let declaration = formal(token)?;
+                    let (binding, binding_context, ty) =
+                        identities.get(&declaration).ok_or_else(invalid)?;
+                    (Some(*binding), *binding_context, *ty)
+                };
+                if binding_context != context
                     && !(context == BindingContextId::new(4)
-                        && *binding_context == BindingContextId::new(1))
+                        && binding_context == BindingContextId::new(1))
                 {
                     return Err(invalid());
                 }
@@ -5933,25 +6067,57 @@ impl TermFormulaChecker {
                     context,
                     recovery: SourcePrimaryTermRecovery::Normal,
                     spelling: text(token)?.into(),
-                    kind: SourcePrimaryTermKind::VariableReference,
-                    role: SourcePrimaryTermRole::Value,
+                    kind: if is_it {
+                        SourcePrimaryTermKind::It
+                    } else {
+                        SourcePrimaryTermKind::VariableReference
+                    },
+                    role: if is_it {
+                        SourcePrimaryTermRole::CurrentDefinitionResult
+                    } else {
+                        SourcePrimaryTermRole::Value
+                    },
                     parent: None,
                 });
-                primary.references.push(SourcePrimaryTermReferenceInput {
-                    term: term_id,
-                    binding: *binding,
-                    role: SourcePrimaryTermReferenceRole::Variable,
-                });
-                arena[term.index()].kind = "source.term.variable-reference".into();
-                let mut input =
-                    TermInput::new(site(term), context, range(term)?, TermKind::Variable)
-                        .with_reference(TermReference::Binding(*binding))
-                        .with_result_type(builtin(*ty, site(term))?);
+                if let Some(binding) = binding {
+                    primary.references.push(SourcePrimaryTermReferenceInput {
+                        term: term_id,
+                        binding,
+                        role: SourcePrimaryTermReferenceRole::Variable,
+                    });
+                }
+                arena[term.index()].kind = if is_it {
+                    "source.term.it"
+                } else {
+                    "source.term.variable-reference"
+                }
+                .into();
+                let mut input = TermInput::new(
+                    site(term),
+                    context,
+                    range(term)?,
+                    if is_it {
+                        TermKind::It
+                    } else {
+                        TermKind::Variable
+                    },
+                )
+                .with_result_type(builtin(ty, site(term))?);
+                input.reference = binding.map(TermReference::Binding);
                 if ordinal >= body_count {
-                    let expected = identities.get(&loci[argument]).ok_or_else(invalid)?.2;
+                    let expected = if means_functor {
+                        *parameter_type
+                    } else {
+                        identities.get(&loci[argument]).ok_or_else(invalid)?.2
+                    };
                     let target = TypedSiteRef::Role {
                         node: TypedNodeId::new(term.index()),
-                        role: "predicate.formal-type".into(),
+                        role: if means_functor {
+                            "functor.formal-type"
+                        } else {
+                            "predicate.formal-type"
+                        }
+                        .into(),
                     };
                     input = input.with_expected_type(builtin(expected, target)?);
                 }
@@ -5971,19 +6137,108 @@ impl TermFormulaChecker {
                     ));
                 }
                 term_inputs.push(input);
+                let (target, spelling, operand_site) = if let Some((call, callee, _)) = application
+                {
+                    let id = SourceFunctorApplicationId::new(applications.applications.len());
+                    let candidate = SourceFunctorCandidateId::new(applications.candidates.len());
+                    let spelling = format!("{} {}", text(head)?, text(token)?);
+                    applications
+                        .applications
+                        .push(SourceFunctorApplicationInput {
+                            site: site(call),
+                            source_range: range(call)?,
+                            source_ordinal: id.index(),
+                            context,
+                            recovery: SourceFunctorApplicationRecovery::Normal,
+                            spelling: spelling.clone(),
+                            kind: SourceFunctorApplicationKind::Symbolic,
+                            form: SourceFunctorApplicationForm::Prefix,
+                            head_ordinal: 0,
+                            head: SourceFunctorHeadSite::Single {
+                                site: site(callee),
+                                source_range: range(callee)?,
+                                spelling: text(head)?.into(),
+                            },
+                        });
+                    applications.candidates.push(SourceFunctorCandidateInput {
+                        application: id,
+                        ordinal: 0,
+                        symbol: predicate.symbol().clone(),
+                        contribution: predicate.contribution(),
+                    });
+                    applications.arguments.push(SourceFunctorArgumentInput {
+                        application: id,
+                        ordinal: 0,
+                        target: SourceFunctorArgumentTarget::Primary(term_id),
+                    });
+                    for (request_ordinal, kind) in [
+                        SourceFunctorTypeRequestKind::CandidateSignature,
+                        SourceFunctorTypeRequestKind::ApplicationResultType,
+                    ]
+                    .into_iter()
+                    .enumerate()
+                    {
+                        applications
+                            .type_requests
+                            .push(SourceFunctorTypeRequestInput {
+                                application: id,
+                                candidate: (kind
+                                    == SourceFunctorTypeRequestKind::CandidateSignature)
+                                    .then_some(candidate),
+                                request_ordinal,
+                                kind,
+                            });
+                    }
+                    arena[call.index()].kind = "source.term.functor-application.symbolic".into();
+                    arena[callee.index()].kind = "source.term.functor-head.single".into();
+                    term_inputs.push(
+                        TermInput::new(
+                            site(call),
+                            context,
+                            range(call)?,
+                            TermKind::FunctorApplication,
+                        )
+                        .with_reference(TermReference::Symbol(predicate.symbol().clone()))
+                        .with_result_type(builtin(result_type.ok_or_else(invalid)?, site(call))?),
+                    );
+                    (
+                        SourceAtomicTermTarget::Application(id),
+                        spelling,
+                        site(call),
+                    )
+                } else {
+                    (
+                        SourceAtomicTermTarget::Primary(term_id),
+                        text(token)?.to_owned(),
+                        site(term),
+                    )
+                };
                 atomic.edges.push(SourceAtomicEdgeInput {
                     formula: formula_id,
                     ordinal: argument,
-                    role: match (ordinal < body_count, argument) {
+                    role: match (ordinal < body_count || means_functor, argument) {
                         (true, 0) => SourceAtomicEdgeRole::BuiltinLeftOperand,
                         (true, _) => SourceAtomicEdgeRole::BuiltinRightOperand,
                         (false, 0) => SourceAtomicEdgeRole::PredicateLeftArgument,
                         (false, _) => SourceAtomicEdgeRole::PredicateRightArgument,
                     },
-                    target: SourceAtomicTermTarget::Primary(term_id),
+                    target,
                 });
-                spellings.push(text(token)?.to_owned());
-                operand_sites.push(site(term));
+                spellings.push(spelling);
+                operand_sites.push(operand_site);
+            }
+            if means_functor {
+                let edges = &atomic.edges[edge_start..];
+                if ordinal < body_count {
+                    if edges.iter().filter(|edge| matches!(edge.target, SourceAtomicTermTarget::Primary(id) if primary.terms[id.index()].kind == SourcePrimaryTermKind::It)).count() != 1 { return Err(invalid()); }
+                } else if edges
+                    .iter()
+                    .filter(|edge| matches!(edge.target, SourceAtomicTermTarget::Application(_)))
+                    .count()
+                    != 1
+                {
+                    return Err(invalid());
+                }
             }
             let spelling = if let Some((segment, call_head, negative)) = call {
                 let head_id = SourcePredicateHeadId::new(atomic.predicate_heads.len());
@@ -6009,7 +6264,7 @@ impl TermFormulaChecker {
                     "{} {}{} {}",
                     spellings[0],
                     if negative.is_some() { "does not " } else { "" },
-                    text(*head)?,
+                    text(head)?,
                     spellings[1]
                 );
                 atomic.predicate_segments.push(SourcePredicateSegmentInput {
@@ -6031,7 +6286,7 @@ impl TermFormulaChecker {
                     source_range: range(call_head)?,
                     context,
                     recovery: SourceAtomicFormulaRecovery::Normal,
-                    spelling: text(*head)?.into(),
+                    spelling: text(head)?.into(),
                     left_arity: 1,
                     right_arity: 1,
                 });
@@ -6107,7 +6362,7 @@ impl TermFormulaChecker {
                 context,
                 recovery: SourceAtomicFormulaRecovery::Normal,
                 spelling,
-                kind: if ordinal < body_count {
+                kind: if ordinal < body_count || means_functor {
                     if nested.is_some() {
                         SourceAtomicFormulaKind::Membership
                     } else {
@@ -6122,7 +6377,7 @@ impl TermFormulaChecker {
         if !inference.diagnostics().is_empty()
             || !inference.facts().is_empty()
             || !inference.candidate_sets().is_empty()
-            || inference.terms().iter().count() != 2 * (body_count + 2)
+            || inference.terms().iter().count() != 2 * (body_count + 2) + if means_functor { 2 } else { 0 }
             || inference.terms().iter().any(|(_, term)| {
                 term.status != TermStatus::Inferred
                     || !term.deferred.is_empty()
@@ -6132,7 +6387,7 @@ impl TermFormulaChecker {
                         .is_none_or(|entry| {
                             entry.status != TypeStatus::Known
                                 || !matches!(entry.actual, TypeEntryActual::Known(actual)
-                                    if term.context == BindingContextId::new(1)
+                                    if term.context == BindingContextId::new(1) || term.kind == TermKind::FunctorApplication
                                         || entry.expected == Some(actual)
                                         || term.context == BindingContextId::new(4)
                                             && inference.normalized_types().get(actual).is_some_and(|ty| ty.head == TypeHeadRef::BuiltinSet)
@@ -6149,8 +6404,29 @@ impl TermFormulaChecker {
         let arena = TypedArena::try_new(typed.root(), arena).map_err(|_| invalid())?;
         let primary = SourcePrimaryTermProducer::build(primary, &bindings, &arena)
             .map_err(|error| format!("{error:?}"))?;
+        let applications = if means_functor {
+            Some(
+                SourceFunctorApplicationProducer::build(
+                    applications,
+                    symbols,
+                    &bindings,
+                    &primary,
+                    &arena,
+                )
+                .map_err(|error| format!("{error:?}"))?,
+            )
+        } else {
+            None
+        };
         let atomic = SourceAtomicFormulaProducer::build(
-            atomic, &bindings, symbols, &primary, None, None, None, &arena,
+            atomic,
+            &bindings,
+            symbols,
+            &primary,
+            applications.as_ref(),
+            None,
+            None,
+            &arena,
         )
         .map_err(|error| format!("{error:?}"))?;
         let ast = TypedAst::try_new(TypedAstParts {
@@ -6169,6 +6445,13 @@ impl TermFormulaChecker {
             diagnostics: TypeDiagnosticTable::new(),
         })
         .and_then(|ast| ast.with_source_term(primary))
+        .and_then(|ast| {
+            if let Some(applications) = applications {
+                ast.with_source_application(applications)
+            } else {
+                Ok(ast)
+            }
+        })
         .and_then(|ast| ast.with_source_atomic_formula(atomic))
         .map_err(|error| format!("{error:?}"))?;
         Ok((bindings, inference, ast))
@@ -13342,11 +13625,15 @@ impl SourceVariableSemanticsChecker {
         {
             return Err(invalid());
         }
-        // Predicate semantics are admitted only by replaying the existing source producer.
+        let means_functor = source
+            .arena()
+            .iter()
+            .any(|(_, node)| matches!(node.kind(), K::FunctorDefinition));
+        // Definition semantics are admitted only by replaying the existing source producer.
         let phrase = if source
             .arena()
             .iter()
-            .any(|(_, node)| matches!(node.kind(), K::PredicateDefinition))
+            .any(|(_, node)| matches!(node.kind(), K::PredicateDefinition | K::FunctorDefinition))
         {
             use crate::typed_ast::{TypedArena, TypedNode};
             let neutral = TypedArena::try_new(
@@ -13375,8 +13662,22 @@ impl SourceVariableSemanticsChecker {
             if replayed != *typed
                 || algorithm.is_some()
                 || computation
-                || bindings.bindings().len() != if symbolic { 5 } else { 4 }
-                || inference.formulas().iter().count() != if symbolic { 2 } else { 1 }
+                || bindings.bindings().len()
+                    != if means_functor {
+                        3
+                    } else if symbolic {
+                        5
+                    } else {
+                        4
+                    }
+                || inference.formulas().iter().count()
+                    != if means_functor {
+                        3
+                    } else if symbolic {
+                        2
+                    } else {
+                        1
+                    }
                 || source
                     .arena()
                     .iter()
@@ -13453,7 +13754,7 @@ impl SourceVariableSemanticsChecker {
                 .filter(|(_, row)| row.kind == BindingKind::DefinitionParameter)
                 .map(|(id, _)| id)
                 .collect::<Vec<_>>();
-            if !symbolic {
+            if !symbolic && !means_functor {
                 let (body, _) = atomic
                     .formulas()
                     .iter()
@@ -13484,34 +13785,37 @@ impl SourceVariableSemanticsChecker {
                     return Err(invalid());
                 }
             }
-            let pattern = source
-                .arena()
-                .iter()
-                .find(|(_, node)| matches!(node.kind(), K::PredicatePattern))
-                .ok_or_else(invalid)?
-                .1;
-            let [left, head, right] = pattern.children() else {
-                return Err(invalid());
-            };
-            if !matches!(source.arena().node(*head).map(|node| node.kind()), Some(K::Token(token)) if token.kind == if symbolic { SurfaceTokenKind::UserSymbol } else { SurfaceTokenKind::Identifier })
-            {
-                return Err(invalid());
-            }
-            for (node, formal) in [left, right].into_iter().zip(formals) {
-                let declaration = resolve_template_formal(source, *node).map_err(|_| invalid())?;
-                if source
+            if !means_functor {
+                let pattern = source
                     .arena()
-                    .node(declaration)
-                    .map(|node| node.origin().anchor())
-                    != Some(&SourceAnchor::Range(
-                        bindings
-                            .bindings()
-                            .get(formal)
-                            .ok_or_else(invalid)?
-                            .declaration_range,
-                    ))
+                    .iter()
+                    .find(|(_, node)| matches!(node.kind(), K::PredicatePattern))
+                    .ok_or_else(invalid)?
+                    .1;
+                let [left, head, right] = pattern.children() else {
+                    return Err(invalid());
+                };
+                if !matches!(source.arena().node(*head).map(|node| node.kind()), Some(K::Token(token)) if token.kind == if symbolic { SurfaceTokenKind::UserSymbol } else { SurfaceTokenKind::Identifier })
                 {
                     return Err(invalid());
+                }
+                for (node, formal) in [left, right].into_iter().zip(formals) {
+                    let declaration =
+                        resolve_template_formal(source, *node).map_err(|_| invalid())?;
+                    if source
+                        .arena()
+                        .node(declaration)
+                        .map(|node| node.origin().anchor())
+                        != Some(&SourceAnchor::Range(
+                            bindings
+                                .bindings()
+                                .get(formal)
+                                .ok_or_else(invalid)?
+                                .declaration_range,
+                        ))
+                    {
+                        return Err(invalid());
+                    }
                 }
             }
             true
@@ -13526,6 +13830,7 @@ impl SourceVariableSemanticsChecker {
                 return Err(invalid());
             };
             let owned_kind = match (neutral.kind(), node.kind.as_str()) {
+                (K::ItTerm, "source.term.it") | (K::PrefixExpression(_), "source.term.functor-application.symbolic") | (K::Token(_), "source.term.functor-head.single") if means_functor => true,
                 (K::TermReference, "source.term.variable-reference") => primary.terms().iter().any(|(_, term)| term.site().node() == node_id),
                 (K::NumeralTerm, "source.term.numeral") if computation => primary.terms().iter().any(|(_, term)| term.site().node() == node_id && term.spelling() == "0"),
                 (K::BuiltinPredicateApplication, "source.formula.atomic.equality") => atomic.formulas().iter().any(|(_, atom)| atom.site().node() == node_id)

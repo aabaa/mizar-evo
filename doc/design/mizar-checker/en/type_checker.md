@@ -3254,3 +3254,7 @@ The [Core consumer](../../mizar-core/en/elaborator.md#source-phrase-predicate-th
 ## Bounded while checking
 
 The while extension of `check_source_algorithm_types` admits one initialized runtime local, one while, one equality invariant, a negated-equality guard, one direct local assignment and final return. Authenticate actual annotation/body ownership, complete nested statement coverage, occurrence scopes and BindingIds; result remains ensures-only. Existing inference checks both operands and write types. No new seal field is needed: immutable typed nodes retain nesting. Nested loops, extra annotations, decreasing, break/continue, ghost operands and additional body statements fail closed.
+
+## Bounded means-prefix functor theorem checking
+
+Extend the existing source-statement producer and theorem replay for one unary set functor with `means it = X`, explicit empty existence/uniqueness clauses, and quantified/proof-local prefix applications. Authenticate the actual symbol, declaration/occurrence identities, `it` role, return type, clause owners and application argument/result types; retain both unproved correctness clauses in the sealed source tree for Core obligation lowering. Replay the complete primary/application/equality graph and ordered clause ownership; keep the raw typed obligation table empty and its public constructor guard unchanged. This grants source typing and pending goals only; neither clause is an accepted proof and the defining equation is unavailable as a theorem premise.
