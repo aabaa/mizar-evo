@@ -9,5 +9,8 @@ expected_phase = "vc_generation"
 diagnostic_codes = []
 spec_refs = [
   "spec.en.10.functors.equals.definitional_unfolding",
+  "spec.en.mizar_vc.vc_ir.equals_functor_snapshot",
 ]
 notes = "Audit-1 semantic-bridge inactive oracle seed (September 2026 audit wave): binding expectation for the Step-5 semantic bridge; no active runner tag, earns no current credit. An equals-form infix functor with an operator precedence declaration unfolds definitionally at a use site (spec 10.3, 10.9)."
+tags = ["active_proof_verification"]
+snapshots = "snapshots/vc/pass_proof_verification_func_equals_infix_operator_001.vc_ir.snap"

@@ -7162,6 +7162,19 @@ tests = [
 ]
 
 [[requirement]]
+id = "spec.en.mizar_vc.vc_ir.equals_functor_snapshot"
+source = "doc/design/mizar-vc/en/source_vc_decomposition.md"
+section = "VC Task 6; bounded equals-infix functor VcIr snapshot"
+stage = "proof_verification"
+status = "covered"
+required = true
+coverage = "snapshot"
+notes = "Actual RHS coherence and the written infix theorem remain Open; the stored definition is Opaque and supplies no equation premise."
+tests = [
+  "tests/miz/pass/functors/pass_proof_verification_func_equals_infix_operator_001.expect.toml",
+]
+
+[[requirement]]
 id = "spec.en.mizar_vc.vc_ir.means_functor_snapshot"
 source = "doc/design/mizar-vc/en/source_vc_decomposition.md"
 section = "VC Task 6; bounded means-prefix functor VcIr snapshot"

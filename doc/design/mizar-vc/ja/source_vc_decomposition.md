@@ -263,3 +263,7 @@ symbolic predicate は既存 `generate_core_vcs` intake/normalization を使い�
 ## 限定 means-prefix functor snapshot
 
 既存 generic Core seed intake で Open DefinitionCorrectness VC 二つと Open TheoremProofStep 一つを保持し、seed accounting を厳密に対応させ、未解決 correctness を定理の前提から除外する。`tests/miz/pass/functors/pass_proof_verification_func_means_prefix_001.expect.toml` と `snapshots/vc/pass_proof_verification_func_means_prefix_001.vc_ir.snap` に `spec.en.mizar_vc.vc_ir.means_functor_snapshot`、section `VC Task 6; bounded means-prefix functor VcIr snapshot` だけを追加する。Core 全体の対照で実 result 置換・binder guard・opaque body・source 所有関係を検査する。generator marker・discharge・unfolding・受理は追加しない。
+
+## 限定 equals-infix functor snapshot
+
+既存 generic Core intake で一つの Open DefinitionCorrectness VC と一つの Open TheoremProofStep、厳密な seed accounting を保持し、未解決定義を前提にしない。`tests/miz/pass/functors/pass_proof_verification_func_equals_infix_operator_001.expect.toml` に `spec.en.mizar_vc.vc_ir.equals_functor_snapshot`、section `VC Task 6; bounded equals-infix functor VcIr snapshot`、`snapshots/vc/pass_proof_verification_func_equals_infix_operator_001.vc_ir.snap` だけを追加する。Core 全体の control は実 RHS の結果型、全仮引数・局所 guard、六束縛同一性、Opaque term body、適用順序、source/goal backref を検査する。generator marker・discharge・受理済み等式・unfolding は追加しない。

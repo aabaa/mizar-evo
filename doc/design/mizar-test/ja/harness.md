@@ -5801,7 +5801,11 @@ Core/VcSet 全体の不変再実行と [VcSet 全体の snapshot](../../mizar-vc
 
 ## 限定 means-prefix functor admission
 
-`pass_proof_verification_func_means_prefix_001` だけを元の pass/proof_verification/vc_generation、functors.means_definition、semantic ref、唯一の active_proof_verification tag、追加 means-functor snapshot ref/path で受理する。全 stage で厳密な source/sidecar 同一性を予約し、inventory の欠落・重複と補助 payload を拒否する。実 Pending existence/uniqueness、実 application equality 定理、Core/VcSet 全体の再実行と固定 snapshot を必須とする。空の correctness 節を受理済みとせず、未解決の定義等式を定理へ供給しない。equals-infix と narrower-loci registration は延期する。
+`pass_proof_verification_func_means_prefix_001` だけを元の pass/proof_verification/vc_generation、functors.means_definition、semantic ref、唯一の active_proof_verification tag、追加 means-functor snapshot ref/path で受理する。全 stage で厳密な source/sidecar 同一性を予約し、inventory の欠落・重複と補助 payload を拒否する。実 Pending existence/uniqueness、実 application equality 定理、Core/VcSet 全体の再実行と固定 snapshot を必須とする。空の correctness 節を受理済みとせず、未解決の定義等式を定理へ供給しない。narrower-loci registration は延期する。
+
+## 限定 equals-infix functor admission
+
+`pass_proof_verification_func_equals_infix_operator_001` だけを既存 pass/proof_verification/vc_generation、functors.equals_definition、元の semantic ref、唯一の active_proof_verification tag、追加 equals-functor snapshot ref/path で受理する。厳密な source/sidecar 同一性、inventory の欠落・重複、alias、補助 payload は引き続き fail-closed とする。Core/VcSet 全体の決定的再実行と固定 baseline、実 RHS coherence・適用定理 graph、独立した束縛子・演算子改名、敵対的 replay control を必須とする。未解決 goal 生成のみを扱い、narrower-loci registration は延期する。
 
 ## 限定 false-postcondition admission
 

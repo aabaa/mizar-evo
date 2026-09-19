@@ -6367,7 +6367,11 @@ Activate only `pass_proof_verification_algorithm_while_invariant_001` at unchang
 
 ## Bounded means-prefix functor admission
 
-Admit only `pass_proof_verification_func_means_prefix_001` with its original pass/proof_verification/vc_generation, functors.means_definition and semantic reference, sole active_proof_verification tag and additive means-functor snapshot reference/path. Reserve exact source/sidecar identities across stages and reject missing/duplicate inventory or auxiliary payloads. Require authentic pending existence/uniqueness, the actual application equality theorem, complete Core/VcSet reruns and fixed snapshot. Generation never treats an empty correctness clause as accepted or supplies its pending defining equation to the theorem; equals-infix and narrower-loci registration remain deferred.
+Admit only `pass_proof_verification_func_means_prefix_001` with its original pass/proof_verification/vc_generation, functors.means_definition and semantic reference, sole active_proof_verification tag and additive means-functor snapshot reference/path. Reserve exact source/sidecar identities across stages and reject missing/duplicate inventory or auxiliary payloads. Require authentic pending existence/uniqueness, the actual application equality theorem, complete Core/VcSet reruns and fixed snapshot. Generation never treats an empty correctness clause as accepted or supplies its pending defining equation to the theorem; narrower-loci registration remains deferred.
+
+## Bounded equals-infix functor admission
+
+Admit only `pass_proof_verification_func_equals_infix_operator_001` at unchanged pass/proof_verification/vc_generation, functors.equals_definition and original semantic reference, with sole active_proof_verification tag and additive equals-functor snapshot reference/path. Exact source/sidecar identities, missing/duplicate inventory, aliases and auxiliary payloads remain fail-closed. Require complete deterministic Core/VcSet reruns and fixed baseline, actual RHS coherence and application theorem graphs, independent binder/operator renaming and hostile replay controls. This is pending-goal generation only; narrower-loci registration remains deferred.
 
 ## Bounded false-postcondition admission
 

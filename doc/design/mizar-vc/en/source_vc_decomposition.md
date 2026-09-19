@@ -279,3 +279,7 @@ The symbolic predicate uses unchanged `generate_core_vcs` intake and normalizati
 ## Bounded means-prefix functor snapshot
 
 Use unchanged generic Core seed intake to retain two Open DefinitionCorrectness VCs and one Open TheoremProofStep, with exact seed accounting and pending correctness excluded from theorem premises. Add only `spec.en.mizar_vc.vc_ir.means_functor_snapshot`, section `VC Task 6; bounded means-prefix functor VcIr snapshot`, for `tests/miz/pass/functors/pass_proof_verification_func_means_prefix_001.expect.toml` and `snapshots/vc/pass_proof_verification_func_means_prefix_001.vc_ir.snap`. Whole-Core controls inspect actual result substitutions, binder guards, opaque body and source ownership; no generator marker, discharge, unfolding or acceptance is added.
+
+## Bounded equals-infix functor snapshot
+
+Use unchanged generic Core intake for one Open DefinitionCorrectness VC and one Open TheoremProofStep with exact seed accounting and no pending-definition premises. Add only `spec.en.mizar_vc.vc_ir.equals_functor_snapshot`, section `VC Task 6; bounded equals-infix functor VcIr snapshot`, for `tests/miz/pass/functors/pass_proof_verification_func_equals_infix_operator_001.expect.toml` and `snapshots/vc/pass_proof_verification_func_equals_infix_operator_001.vc_ir.snap`. Whole-Core controls inspect actual RHS result typing, all formal/local guards, six binder identities, opaque term body, application order and source/goal backrefs. No generator marker, discharge, accepted equation or unfolding is added.

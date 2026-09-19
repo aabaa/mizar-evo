@@ -945,3 +945,7 @@ Active TheoremProof seed は一つで、定理は `PendingAutomaticProof` のま
 ## 限定 return Pick lowering
 
 封印済み `return the set` は既存 runtime `Pick` 一つと、その新しい hidden binder を返す `Return` に lower し、実際の set predicate を保持する。Pick のソースは所有 return 範囲内の choice 出現とし、この組だけは平坦な非重複範囲検査に代えて認証済み包含関係を検査する。別の新しい論理 binder で `exists q. is_set(q)` を構築し、この Pick と algorithm への既存 Core 参照および完全な source map を持つ Active `GeneratedNonEmptiness` seed にする。既存の項・式・seed を使い、hidden binder をソース契約に公開せず、StableChoice origin・証人・受理済み inhabitation 証明・停止性昇格を生成しない。
+
+## 限定 equals-infix functor theorem
+
+既存 sealed 経路は実仮引数参照 RHS を、二つの set 仮引数を持つ Opaque な term 定義として保存する。§16.6.2 に従い、実 RHS t と宣言結果型による `forall x,y ((set(x) & set(y)) -> set(t))` を一つの Active DefinitionCorrectness seed にし、節・source provenance と body/goal の完全な backref を保持する。定理 `forall q1,q2:set F(q1,q2)=q1` と二局所 IntroduceBinder の連鎖を保ち、set guard のみの下で `F(l1,l2)=l1` を終端とする。一つの Active TheoremProof seed は PendingAutomaticProof 定理に属する。演算子・引数順序と六つの別々の束縛同一性を保つ。未解決の定義等式・coherence goal・静的結果型を受理済み前提にせず、unfolding・登録・新 Core 表現を追加しない。

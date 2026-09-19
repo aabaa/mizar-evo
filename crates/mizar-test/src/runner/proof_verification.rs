@@ -119,7 +119,8 @@ const STEP5C5_PHRASE_SOURCE: &str =
 
 const STEP5C5_SYMBOLIC_ID: &str = "pass_proof_verification_pred_symbolic_infix_001";
 const STEP5C5_MEANS_ID: &str = "pass_proof_verification_func_means_prefix_001";
-const STEP5C5_PREDICATE_CASES: [(&str, &str, &str, &str, &str); 3] = [
+const STEP5C5_EQUALS_ID: &str = "pass_proof_verification_func_equals_infix_operator_001";
+const STEP5C5_PREDICATE_CASES: [(&str, &str, &str, &str, &str); 4] = [
     (
         STEP5C5_PHRASE_ID,
         STEP5C5_PHRASE_SOURCE,
@@ -133,6 +134,13 @@ const STEP5C5_PREDICATE_CASES: [(&str, &str, &str, &str, &str); 3] = [
         "predicates.symbolic_definition",
         "spec.en.09.predicates.definition.symbolic",
         "spec.en.mizar_vc.vc_ir.symbolic_predicate_snapshot",
+    ),
+    (
+        STEP5C5_EQUALS_ID,
+        "tests/miz/pass/functors/pass_proof_verification_func_equals_infix_operator_001.miz",
+        "functors.equals_definition",
+        "spec.en.10.functors.equals.definitional_unfolding",
+        "spec.en.mizar_vc.vc_ir.equals_functor_snapshot",
     ),
     (
         STEP5C5_MEANS_ID,
@@ -1596,6 +1604,562 @@ mod term_proof_tests {
     }
 
     #[test]
+    fn step5c5_equals_preserves_rhs_scopes_and_two_open_goals() {
+        use mizar_core::core_ir::*;
+        fn term(core: &CoreIr, id: CoreTermId) -> String {
+            match &core.terms().get(id).unwrap().kind {
+                CoreTermKind::Var(var) => format!("v{}", var.index()),
+                CoreTermKind::Apply { functor, args } => {
+                    assert_eq!(functor, &core.definitions().iter().next().unwrap().1.symbol);
+                    format!(
+                        "F({})",
+                        args.iter()
+                            .map(|id| term(core, *id))
+                            .collect::<Vec<_>>()
+                            .join(",")
+                    )
+                }
+                other => panic!("unexpected term {other:?}"),
+            }
+        }
+        fn formula(core: &CoreIr, id: CoreFormulaId) -> String {
+            match &core.formulas().get(id).unwrap().kind {
+                CoreFormulaKind::Equals { left, right } => {
+                    format!("{}={}", term(core, *left), term(core, *right))
+                }
+                CoreFormulaKind::TypePred { subject, ty } => {
+                    format!("{}({})", ty.as_str(), term(core, *subject))
+                }
+                CoreFormulaKind::Forall { binders, body } => format!(
+                    "forall[{}]({})",
+                    binders
+                        .iter()
+                        .map(|b| format!(
+                            "v{}:{}",
+                            b.var.index(),
+                            formula(core, b.ty_guard.unwrap())
+                        ))
+                        .collect::<Vec<_>>()
+                        .join(","),
+                    formula(core, *body)
+                ),
+                other => panic!("unexpected formula {other:?}"),
+            }
+        }
+        let config = config();
+        let plan = crate::harness::build_test_plan(&config).unwrap();
+        let case = plan
+            .cases
+            .iter()
+            .find(|case| case.id.0 == STEP5C5_EQUALS_ID)
+            .unwrap();
+        let text = fs::read_to_string(&case.source_path).unwrap();
+        let validate = |core: &CoreIr,
+                        vcs: &VcSet,
+                        source: &str,
+                        rhs: usize,
+                        swap_args: bool,
+                        swap_equality: bool| {
+            assert_eq!(
+                (
+                    core.definitions().len(),
+                    core.proofs().len(),
+                    core.proof_nodes().len(),
+                    core.obligation_seeds().len()
+                ),
+                (1, 1, 3, 2)
+            );
+            let (definition_id, definition) = core.definitions().iter().next().unwrap();
+            assert_eq!(definition.expansion, ExpansionPolicy::Opaque);
+            assert_eq!(
+                definition
+                    .params
+                    .iter()
+                    .map(|b| b.var.index())
+                    .collect::<Vec<_>>(),
+                [4, 5]
+            );
+            assert_eq!(
+                definition
+                    .params
+                    .iter()
+                    .map(|b| formula(core, b.ty_guard.unwrap()))
+                    .collect::<Vec<_>>(),
+                ["set(v4)", "set(v5)"]
+            );
+            let DefinitionBody::Term(body) = definition.body else {
+                panic!("actual RHS term");
+            };
+            assert_eq!(term(core, body), format!("v{rhs}"));
+            assert_eq!(definition.correctness.len(), 1);
+            let seed_id = definition.correctness[0];
+            let seed = core.obligation_seeds().get(seed_id).unwrap();
+            assert_eq!(seed.kind, ObligationSeedKind::DefinitionCorrectness);
+            assert_eq!(seed.status, ObligationSeedStatus::Active);
+            assert_eq!(seed.owner, definition.owner.anchor_item());
+            assert!(seed.context.is_empty());
+            assert_eq!(
+                formula(core, seed.goal.unwrap()),
+                format!("forall[v4:set(v4),v5:set(v5)](set(v{rhs}))")
+            );
+            assert!(
+                seed.core_refs
+                    .contains(&CoreNodeRef::Definition(definition_id))
+            );
+            assert!(seed.core_refs.contains(&CoreNodeRef::Term(body)));
+            assert!(
+                seed.core_refs
+                    .contains(&CoreNodeRef::Formula(seed.goal.unwrap()))
+            );
+            let CoreFormulaKind::Forall {
+                binders,
+                body: consequent,
+            } = &core.formulas().get(seed.goal.unwrap()).unwrap().kind
+            else {
+                unreachable!()
+            };
+            for id in binders
+                .iter()
+                .map(|binder| binder.ty_guard.unwrap())
+                .chain(std::iter::once(*consequent))
+            {
+                assert!(seed.core_refs.contains(&CoreNodeRef::Formula(id)));
+                let CoreFormulaKind::TypePred { subject, .. } =
+                    core.formulas().get(id).unwrap().kind
+                else {
+                    unreachable!()
+                };
+                assert!(seed.core_refs.contains(&CoreNodeRef::Term(subject)));
+            }
+            let CoreSourceAnchor::SourceRange(result_span) =
+                core.formulas().get(*consequent).unwrap().source.anchor
+            else {
+                panic!("declared result source");
+            };
+            assert_eq!(&source[result_span.start..result_span.end], "set");
+            let CoreSourceAnchor::SourceRange(rhs_span) =
+                core.terms().get(body).unwrap().source.anchor
+            else {
+                panic!("RHS source");
+            };
+            assert_eq!(
+                &source[rhs_span.start..rhs_span.end],
+                definition.params[rhs - 4].source_name.as_deref().unwrap()
+            );
+            let CoreSourceAnchor::SourceRange(span) = seed.source.anchor else {
+                panic!("coherence source");
+            };
+            assert_eq!(&source[span.start..span.end], "coherence;");
+            let (_, proof) = core.proofs().iter().next().unwrap();
+            assert_eq!(proof.status, CoreProofStatus::PendingAutomaticProof);
+            let goal = |first: usize, second: usize| {
+                let call = if swap_args {
+                    format!("F(v{second},v{first})")
+                } else {
+                    format!("F(v{first},v{second})")
+                };
+                if swap_equality {
+                    format!("v{first}={call}")
+                } else {
+                    format!("{call}=v{first}")
+                }
+            };
+            assert_eq!(
+                formula(core, proof.proposition),
+                format!("forall[v0:set(v0),v1:set(v1)]({})", goal(0, 1))
+            );
+            let mut current = proof.root;
+            let mut guards = Vec::new();
+            for expected in [2, 3] {
+                let CoreProofNodeKind::IntroduceBinder { binder, child } =
+                    &core.proof_nodes().get(current).unwrap().kind
+                else {
+                    panic!("local binder");
+                };
+                assert_eq!(binder.var.index(), expected);
+                assert_eq!(
+                    formula(core, binder.ty_guard.unwrap()),
+                    format!("set(v{expected})")
+                );
+                guards.push(binder.ty_guard.unwrap());
+                current = *child;
+            }
+            let CoreProofNodeKind::TerminalGoal {
+                obligation,
+                citations,
+            } = &core.proof_nodes().get(current).unwrap().kind
+            else {
+                panic!("terminal");
+            };
+            assert!(citations.is_empty());
+            let terminal = core.obligation_seeds().get(*obligation).unwrap();
+            assert_eq!(terminal.kind, ObligationSeedKind::TheoremProof);
+            assert_eq!(terminal.status, ObligationSeedStatus::Active);
+            assert_eq!(terminal.owner, proof.item);
+            assert_eq!(terminal.context, guards);
+            assert_eq!(formula(core, terminal.goal.unwrap()), goal(2, 3));
+            assert_ne!(terminal.local_path, seed.local_path);
+            assert_eq!(
+                core.terms()
+                    .iter()
+                    .filter_map(|(_, row)| if let CoreTermKind::Var(var) = row.kind {
+                        Some(var.index())
+                    } else {
+                        None
+                    })
+                    .collect::<std::collections::BTreeSet<_>>(),
+                (0..6).collect()
+            );
+            for (id, row) in core.terms().iter() {
+                assert_eq!(core.source_map().term_sources.get(&id), Some(&row.source));
+            }
+            for (id, row) in core.formulas().iter() {
+                assert_eq!(
+                    core.source_map().formula_sources.get(&id),
+                    Some(&row.source)
+                );
+            }
+            assert_eq!(vcs.vcs().len(), 2);
+            assert!(
+                vcs.vcs()
+                    .iter()
+                    .all(|vc| vc.status == mizar_vc::vc_ir::VcStatus::Open)
+            );
+            for (id, seed) in core.obligation_seeds().iter() {
+                assert_eq!(
+                    core.source_map().obligation_sources.get(&id),
+                    Some(&seed.source)
+                );
+                let vc = vcs
+                    .vcs()
+                    .iter()
+                    .find(|vc| vc.goal == mizar_vc::vc_ir::VcFormulaRef::Core(seed.goal.unwrap()))
+                    .unwrap();
+                assert_eq!(
+                    vc.kind,
+                    if seed.kind == ObligationSeedKind::DefinitionCorrectness {
+                        mizar_vc::vc_ir::VcKind::DefinitionCorrectness
+                    } else {
+                        mizar_vc::vc_ir::VcKind::TheoremProofStep
+                    }
+                );
+            }
+        };
+        let sources = [
+            (text.clone(), 4, false, false),
+            (text.replace("equals X", "equals Y"), 5, false, false),
+            (
+                text.replace("FirstOfDef", "DifferentDefinition")
+                    .replace("FirstOf1", "DifferentTheorem")
+                    .replace("+", "*"),
+                4,
+                false,
+                false,
+            ),
+            (
+                text.replace("let X, Y be set;\n  func", "let A, B be set;\n  func")
+                    .replace("X \\+\\ Y -> set equals X", "A \\+\\ B -> set equals A"),
+                4,
+                false,
+                false,
+            ),
+            (
+                text.replace(
+                    "for X, Y being set holds X \\+\\ Y = X",
+                    "for C, D being set holds C \\+\\ D = C",
+                ),
+                4,
+                false,
+                false,
+            ),
+            (
+                text.replace(
+                    "proof\n  let X, Y be set;\n  thus X \\+\\ Y = X",
+                    "proof\n  let E, F be set;\n  thus E \\+\\ F = E",
+                ),
+                4,
+                false,
+                false,
+            ),
+            (
+                text.replace("holds X \\+\\ Y = X", "holds Y \\+\\ X = X")
+                    .replace("thus X \\+\\ Y = X", "thus Y \\+\\ X = X"),
+                4,
+                true,
+                false,
+            ),
+            (
+                text.replace("holds X \\+\\ Y = X", "holds X = X \\+\\ Y")
+                    .replace("thus X \\+\\ Y = X", "thus X = X \\+\\ Y"),
+                4,
+                false,
+                true,
+            ),
+        ];
+        for (source, rhs, swap_args, swap_equality) in sources {
+            let build = || {
+                phrase_theorem_output(
+                    &config.workspace_root,
+                    case,
+                    super::super::formula_statement::step5c8_test_frontend(&source),
+                )
+                .unwrap()
+            };
+            let (core, vcs) = build();
+            assert_eq!((core.clone(), vcs.clone()), build());
+            validate(&core, &vcs, &source, rhs, swap_args, swap_equality);
+            if source == text {
+                for mutation in 0..8 {
+                    let mut parts = CoreIrParts {
+                        source_id: core.source_id(),
+                        module_id: core.module_id().clone(),
+                        items: core.items().clone(),
+                        terms: core.terms().clone(),
+                        formulas: core.formulas().clone(),
+                        definitions: core.definitions().clone(),
+                        proofs: core.proofs().clone(),
+                        proof_nodes: core.proof_nodes().clone(),
+                        algorithms: core.algorithms().clone(),
+                        algorithm_statements: core.algorithm_statements().clone(),
+                        generated: core.generated().clone(),
+                        obligation_seeds: core.obligation_seeds().clone(),
+                        source_map: core.source_map().clone(),
+                        diagnostics: core.diagnostics().clone(),
+                    };
+                    let (definition_id, definition) = core.definitions().iter().next().unwrap();
+                    let seed = definition.correctness[0];
+                    let goal = core.obligation_seeds().get(seed).unwrap().goal.unwrap();
+                    let CoreFormulaKind::Forall {
+                        body: consequent, ..
+                    } = core.formulas().get(goal).unwrap().kind
+                    else {
+                        unreachable!()
+                    };
+                    let (call_id, _) = core
+                        .terms()
+                        .iter()
+                        .find(|(_, row)| matches!(row.kind, CoreTermKind::Apply { .. }))
+                        .unwrap();
+                    match mutation {
+                        0 => {
+                            parts.definitions.get_mut(definition_id).unwrap().expansion =
+                                ExpansionPolicy::Transparent
+                        }
+                        1 => parts
+                            .definitions
+                            .get_mut(definition_id)
+                            .unwrap()
+                            .correctness
+                            .clear(),
+                        2 => parts
+                            .definitions
+                            .get_mut(definition_id)
+                            .unwrap()
+                            .correctness
+                            .push(seed),
+                        3 => {
+                            parts.definitions.get_mut(definition_id).unwrap().params[1].ty_guard =
+                                None
+                        }
+                        4 => {
+                            let CoreFormulaKind::TypePred { subject, .. } =
+                                &mut parts.formulas.get_mut(consequent).unwrap().kind
+                            else {
+                                unreachable!()
+                            };
+                            *subject = call_id;
+                        }
+                        5 => {
+                            parts.definitions.get_mut(definition_id).unwrap().params[1].var =
+                                definition.params[0].var
+                        }
+                        6 => {
+                            let CoreTermKind::Apply { args, .. } =
+                                &mut parts.terms.get_mut(call_id).unwrap().kind
+                            else {
+                                unreachable!()
+                            };
+                            args.swap(0, 1);
+                        }
+                        7 => {
+                            let (terminal, _) = core
+                                .obligation_seeds()
+                                .iter()
+                                .find(|(_, row)| row.kind == ObligationSeedKind::TheoremProof)
+                                .unwrap();
+                            parts
+                                .obligation_seeds
+                                .get_mut(terminal)
+                                .unwrap()
+                                .context
+                                .push(goal);
+                        }
+                        _ => unreachable!(),
+                    }
+                    // Detached Core validation is structural; source agreement is checked by the graph oracle.
+                    let hostile = CoreIr::try_new(parts).unwrap_or_else(|error| {
+                        panic!("structurally valid graph mutation {mutation}: {error:?}")
+                    });
+                    let changed_vcs =
+                        generate_core_vcs(&hostile, snapshot_id(0)).unwrap_or_else(|error| {
+                            panic!("generatable graph mutation {mutation}: {error}")
+                        });
+                    assert!(
+                        std::panic::catch_unwind(|| validate(
+                            &hostile,
+                            &changed_vcs,
+                            &source,
+                            rhs,
+                            swap_args,
+                            swap_equality
+                        ))
+                        .is_err(),
+                        "undetected graph mutation {mutation}"
+                    );
+                }
+            }
+            if source == text {
+                let (_, actual) = phrase_theorem_output(
+                    &config.workspace_root,
+                    case,
+                    run_frontend(&config.workspace_root, case, 0).unwrap(),
+                )
+                .unwrap();
+                assert_eq!(fs::read_to_string(config.workspace_root.join("tests/snapshots/vc/pass_proof_verification_func_equals_infix_operator_001.vc_ir.snap")).unwrap(), actual.debug_text());
+            }
+        }
+    }
+
+    #[test]
+    fn step5c5_equals_authenticates_infix_association_payload() {
+        use mizar_checker::type_checker::TermFormulaChecker;
+        use mizar_syntax::ast::{
+            SurfaceAstBuilder, SurfaceNodeKind as K, SurfaceOperatorAssociativity,
+        };
+        let config = config();
+        let plan = crate::harness::build_test_plan(&config).unwrap();
+        let case = plan
+            .cases
+            .iter()
+            .find(|case| case.id.0 == STEP5C5_EQUALS_ID)
+            .unwrap();
+        let text = fs::read_to_string(&case.source_path).unwrap();
+        let ast = super::super::formula_statement::step5c8_test_frontend(&text)
+            .ast
+            .unwrap();
+        let targets = ast
+            .nodes()
+            .iter()
+            .enumerate()
+            .filter_map(|(index, node)| matches!(node.kind, K::InfixExpression(_)).then_some(index))
+            .collect::<Vec<_>>();
+        assert_eq!(targets.len(), 2);
+        for target in targets {
+            for association in [
+                SurfaceOperatorAssociativity::Right,
+                SurfaceOperatorAssociativity::NonAssociative,
+            ] {
+                let mut builder = SurfaceAstBuilder::new(ast.source_id);
+                let mut rebuilt = Vec::new();
+                for (index, node) in ast.nodes().iter().enumerate() {
+                    let children = node.children.iter().map(|id| rebuilt[id.index()]).collect();
+                    let mut kind = node.kind.clone();
+                    if index == target {
+                        let K::InfixExpression(operator) = &mut kind else {
+                            unreachable!()
+                        };
+                        assert_eq!(operator.associativity, SurfaceOperatorAssociativity::Left);
+                        operator.associativity = association;
+                    }
+                    rebuilt.push(match kind {
+                        K::Token(token) => builder.add_token(token.kind, token.text, node.range),
+                        kind => builder.add_node(kind, node.range, children),
+                    });
+                }
+                let changed = builder.finish(Some(rebuilt[ast.root().unwrap().index()]), None);
+                let mut frontend = super::super::formula_statement::step5c8_test_frontend(&text);
+                assert!(frontend.diagnostics.is_empty());
+                frontend.ast = Some(changed);
+                // Both source and neutral receipts share the hostile payload, so equality cannot reject it.
+                let (source, nodes, symbols) = super::super::source_registration_inputs(
+                    &config.workspace_root,
+                    case,
+                    frontend,
+                )
+                .unwrap();
+                mizar_resolve::symbols::validate_source_symbol_env(&source, &symbols).unwrap();
+                assert_eq!(
+                    TermFormulaChecker::check_source_predicate_statements(
+                        &source, &symbols, &nodes
+                    )
+                    .unwrap_err(),
+                    "predicates.statement.unsupported_source_types"
+                );
+            }
+        }
+    }
+
+    #[test]
+    fn step5c5_equals_requires_exact_source_types_clause_and_operator() {
+        let config = config();
+        let plan = crate::harness::build_test_plan(&config).unwrap();
+        let case = plan
+            .cases
+            .iter()
+            .find(|case| case.id.0 == STEP5C5_EQUALS_ID)
+            .unwrap();
+        let text = fs::read_to_string(&case.source_path).unwrap();
+        for (index, changed) in [
+            text.replace("X \\+\\ Y ->", "Y \\+\\ X ->"),
+            text.replace("equals X", "equals Unknown"),
+            text.replace("equals X", "equals it"),
+            text.replace("-> set", "-> object"),
+            text.replace("let X, Y be set;\n  func", "let X, Y be object;\n  func"),
+            text.replace("for X, Y being set", "for X, Y being object"),
+            text.replace("proof\n  let X, Y be set", "proof\n  let X, Y be object"),
+            text.replace("holds X \\+\\ Y", "holds Unknown \\+\\ Y"),
+            text.replace("thus X \\+\\ Y", "thus X \\+\\ Unknown"),
+            text.replace("let X, Y be set;\n  func", "let X, Y, Z be set;\n  func"),
+            text.replace("for X, Y being set", "for X, Y, Z being set"),
+            text.replace("  coherence;\n", ""),
+            text.replace("  coherence;", "  coherence; coherence;"),
+            text.replace("  coherence;", "  existence;"),
+            text.replace("  coherence;", "  coherence proof thus X = X; end;"),
+            text.replace("  coherence;", "  symmetry; coherence;"),
+            text.replace("func FirstOfDef", "redefine func FirstOfDef"),
+            text.replace(r#""\\+\\""#, r#""\\*\\""#),
+            text.replace("left, 80", "right, 80"),
+            text.replace("left, 80", "left, 90"),
+            text.replace("left, 80", "left, \"80\""),
+            text.replace("infix_operator", "prefix_operator"),
+            text.lines()
+                .filter(|line| !line.starts_with("infix_operator"))
+                .collect::<Vec<_>>()
+                .join("\n"),
+            text.replace(
+                "\ntheorem",
+                "\ninfix_operator(\"\\\\+\\\\\", left, 80);\ntheorem",
+            ),
+            text.replace("holds X \\+\\ Y = X", "holds X \\+\\ Y = X & X = X"),
+            text.replace("thus X \\+\\ Y = X;", "thus X \\+\\ Y = X by FirstOfDef;"),
+        ]
+        .into_iter()
+        .enumerate()
+        {
+            assert_ne!(changed, text, "unchanged control {index}");
+            assert!(
+                phrase_theorem_output(
+                    &config.workspace_root,
+                    case,
+                    super::super::formula_statement::step5c8_test_frontend(&changed)
+                )
+                .is_err(),
+                "accepted source mutation {index}"
+            );
+        }
+    }
+
+    #[test]
     fn step5c5_means_preserves_opaque_body_and_three_open_goals() {
         use mizar_core::core_ir::*;
         fn term(core: &CoreIr, id: CoreTermId) -> String {
@@ -2104,249 +2668,249 @@ mod term_proof_tests {
     }
 
     #[test]
-    fn step5c5_means_authenticates_application_it_and_clause_receipts() {
+    fn step5c5_means_and_equals_authenticate_application_and_clause_receipts() {
         use mizar_checker::{source_application::*, source_term::*, type_checker::*, typed_ast::*};
         use mizar_resolve::{labels::*, names::*};
         let config = config();
         let plan = crate::harness::build_test_plan(&config).unwrap();
-        let case = plan
-            .cases
-            .iter()
-            .find(|case| case.id.0 == STEP5C5_MEANS_ID)
-            .unwrap();
-        let frontend = run_frontend(&config.workspace_root, case, 0).unwrap();
-        let ast = frontend.ast.clone().unwrap();
-        let (source, neutral, symbols) =
-            super::super::source_registration_inputs(&config.workspace_root, case, frontend)
-                .unwrap();
-        let (bindings, _, typed) =
-            TermFormulaChecker::check_source_predicate_statements(&source, &symbols, &neutral)
-                .unwrap();
-        let scope = SourceVariableScopeResolver::resolve_proof_occurrences(
-            SourceVariableScopeInput::new(&ast, source.module(), &symbols),
-        )
-        .unwrap();
-        assert_eq!(scope.bindings().len(), 2);
-        let owner = symbols
-            .symbols()
-            .iter()
-            .find(|entry| entry.kind() == mizar_resolve::env::SymbolKind::Theorem)
-            .unwrap();
-        let namespace = mizar_resolve::env::NamespacePath::new(source.module().path().as_str());
-        let labels = ProofLabelSourceCollector::new(
-            &ast,
-            source.module(),
-            namespace.clone(),
-            owner.contribution(),
-            &source,
-        )
-        .unwrap()
-        .collect_with_theorem_owners(&symbols)
-        .unwrap();
-        let resolved = LabelResolver::new(labels.projections()).resolve(
-            source.module(),
-            &namespace,
-            labels.references(),
-        );
-        let check = |typed: &TypedAst| {
-            SourceVariableSemanticsChecker::check_theorem_skeletons(
-                &source, typed, &scope, &symbols, &labels, &resolved, None,
+        for id in [STEP5C5_MEANS_ID, STEP5C5_EQUALS_ID] {
+            let equals = id == STEP5C5_EQUALS_ID;
+            let case = plan.cases.iter().find(|case| case.id.0 == id).unwrap();
+            let frontend = run_frontend(&config.workspace_root, case, 0).unwrap();
+            let ast = frontend.ast.clone().unwrap();
+            let (source, neutral, symbols) =
+                super::super::source_registration_inputs(&config.workspace_root, case, frontend)
+                    .unwrap();
+            let (bindings, _, typed) =
+                TermFormulaChecker::check_source_predicate_statements(&source, &symbols, &neutral)
+                    .unwrap();
+            let scope = SourceVariableScopeResolver::resolve_proof_occurrences(
+                SourceVariableScopeInput::new(&ast, source.module(), &symbols),
             )
-            .map(|_| ())
-        };
-        assert!(check(&typed).is_ok());
-        let primary = typed.source_term().unwrap();
-        let application = typed.source_application().unwrap();
-        let application_input = SourceFunctorApplicationHandoffInput {
-            source_id: typed.source_id(),
-            module_id: typed.module_id().clone(),
-            wrappers: Vec::new(),
-            applications: application
-                .applications()
+            .unwrap();
+            assert_eq!(scope.bindings().len(), if equals { 4 } else { 2 });
+            assert_eq!(bindings.bindings().len(), if equals { 6 } else { 3 });
+            assert!(typed.initial_obligations().is_empty());
+            let owner = symbols
+                .symbols()
                 .iter()
-                .map(|(_, row)| SourceFunctorApplicationInput {
-                    site: row.site().clone(),
-                    source_range: row.source_range(),
-                    source_ordinal: row.source_ordinal(),
-                    context: row.context(),
-                    recovery: row.recovery(),
-                    spelling: row.spelling().into(),
-                    kind: row.kind(),
-                    form: row.form(),
-                    head_ordinal: row.head_ordinal(),
-                    head: row.head().clone(),
-                })
-                .collect(),
-            candidates: application
-                .candidates()
-                .iter()
-                .map(|(_, row)| SourceFunctorCandidateInput {
-                    application: row.application(),
-                    ordinal: row.ordinal(),
-                    symbol: row.symbol().clone(),
-                    contribution: row.contribution(),
-                })
-                .collect(),
-            arguments: application
-                .arguments()
-                .iter()
-                .map(|(_, row)| SourceFunctorArgumentInput {
-                    application: row.application(),
-                    ordinal: row.ordinal(),
-                    target: row.target(),
-                })
-                .collect(),
-            type_requests: application
-                .type_requests()
-                .iter()
-                .map(|(_, row)| SourceFunctorTypeRequestInput {
-                    application: row.application(),
-                    candidate: row.candidate(),
-                    request_ordinal: row.request_ordinal(),
-                    kind: row.kind(),
-                })
-                .collect(),
-        };
-        assert_eq!(
-            SourceFunctorApplicationProducer::build(
-                application_input.clone(),
-                &symbols,
-                &bindings,
-                primary,
-                typed.nodes()
+                .find(|entry| entry.kind() == mizar_resolve::env::SymbolKind::Theorem)
+                .unwrap();
+            let namespace = mizar_resolve::env::NamespacePath::new(source.module().path().as_str());
+            let labels = ProofLabelSourceCollector::new(
+                &ast,
+                source.module(),
+                namespace.clone(),
+                owner.contribution(),
+                &source,
             )
-            .unwrap(),
-            *application
-        );
-        for mutation in 0..5 {
-            let mut input = application_input.clone();
-            let expected = match mutation {
-                0 => {
-                    input.candidates[0].symbol = owner.symbol().clone();
-                    SourceFunctorApplicationError::InvalidCandidate {
-                        candidate: SourceFunctorCandidateId::new(0),
-                    }
-                }
-                1 => {
-                    input.arguments[0].ordinal = 1;
-                    SourceFunctorApplicationError::ReorderedArgument {
-                        argument: SourceFunctorArgumentId::new(0),
-                    }
-                }
-                2 => {
-                    input.type_requests[1].candidate = Some(SourceFunctorCandidateId::new(0));
-                    SourceFunctorApplicationError::InvalidTypeRequest {
-                        request: SourceFunctorTypeRequestId::new(1),
-                    }
-                }
-                3 => {
-                    input.applications[0].form = SourceFunctorApplicationForm::Infix;
-                    SourceFunctorApplicationError::InvalidForm {
-                        application: SourceFunctorApplicationId::new(0),
-                    }
-                }
-                4 => {
-                    input.arguments[0].target =
-                        SourceFunctorArgumentTarget::Primary(SourcePrimaryTermId::new(3));
-                    SourceFunctorApplicationError::InvalidArgument {
-                        argument: SourceFunctorArgumentId::new(0),
-                    }
-                }
-                _ => unreachable!(),
+            .unwrap()
+            .collect_with_theorem_owners(&symbols)
+            .unwrap();
+            let resolved = LabelResolver::new(labels.projections()).resolve(
+                source.module(),
+                &namespace,
+                labels.references(),
+            );
+            let check = |typed: &TypedAst| {
+                SourceVariableSemanticsChecker::check_theorem_skeletons(
+                    &source, typed, &scope, &symbols, &labels, &resolved, None,
+                )
+                .map(|_| ())
+            };
+            assert!(check(&typed).is_ok());
+            let primary = typed.source_term().unwrap();
+            let application = typed.source_application().unwrap();
+            let application_input = SourceFunctorApplicationHandoffInput {
+                source_id: typed.source_id(),
+                module_id: typed.module_id().clone(),
+                wrappers: Vec::new(),
+                applications: application
+                    .applications()
+                    .iter()
+                    .map(|(_, row)| SourceFunctorApplicationInput {
+                        site: row.site().clone(),
+                        source_range: row.source_range(),
+                        source_ordinal: row.source_ordinal(),
+                        context: row.context(),
+                        recovery: row.recovery(),
+                        spelling: row.spelling().into(),
+                        kind: row.kind(),
+                        form: row.form(),
+                        head_ordinal: row.head_ordinal(),
+                        head: row.head().clone(),
+                    })
+                    .collect(),
+                candidates: application
+                    .candidates()
+                    .iter()
+                    .map(|(_, row)| SourceFunctorCandidateInput {
+                        application: row.application(),
+                        ordinal: row.ordinal(),
+                        symbol: row.symbol().clone(),
+                        contribution: row.contribution(),
+                    })
+                    .collect(),
+                arguments: application
+                    .arguments()
+                    .iter()
+                    .map(|(_, row)| SourceFunctorArgumentInput {
+                        application: row.application(),
+                        ordinal: row.ordinal(),
+                        target: row.target(),
+                    })
+                    .collect(),
+                type_requests: application
+                    .type_requests()
+                    .iter()
+                    .map(|(_, row)| SourceFunctorTypeRequestInput {
+                        application: row.application(),
+                        candidate: row.candidate(),
+                        request_ordinal: row.request_ordinal(),
+                        kind: row.kind(),
+                    })
+                    .collect(),
             };
             assert_eq!(
                 SourceFunctorApplicationProducer::build(
-                    input,
+                    application_input.clone(),
                     &symbols,
                     &bindings,
                     primary,
                     typed.nodes()
                 )
-                .unwrap_err(),
-                expected
+                .unwrap(),
+                *application
             );
-        }
-        let mut primary_input = SourcePrimaryTermHandoffInput {
-            source_id: typed.source_id(),
-            module_id: typed.module_id().clone(),
-            numeric_type_requests: Vec::new(),
-            terms: primary
-                .terms()
-                .iter()
-                .map(|(_, row)| SourcePrimaryTermInput {
-                    site: row.site().clone(),
-                    source_range: row.source_range(),
-                    source_ordinal: row.source_ordinal(),
-                    context: row.context(),
-                    recovery: row.recovery(),
-                    spelling: row.spelling().into(),
-                    kind: row.kind(),
-                    role: row.role(),
-                    parent: row.parent(),
-                })
-                .collect(),
-            references: primary
-                .references()
-                .iter()
-                .map(|(_, row)| SourcePrimaryTermReferenceInput {
-                    term: row.term(),
-                    binding: row.binding(),
-                    role: row.role(),
-                })
-                .collect(),
-        };
-        let mut wrong_formal = primary_input.clone();
-        wrong_formal.references[0].binding = bindings.bindings().iter().nth(1).unwrap().0;
-        assert_eq!(
-            SourcePrimaryTermProducer::build(wrong_formal, &bindings, typed.nodes()).unwrap_err(),
-            SourcePrimaryTermError::InvalidReference {
-                reference: SourcePrimaryTermReferenceId::new(0)
+            for mutation in 0..5 {
+                let mut input = application_input.clone();
+                let expected = match mutation {
+                    0 => {
+                        input.candidates[0].symbol = owner.symbol().clone();
+                        SourceFunctorApplicationError::InvalidCandidate {
+                            candidate: SourceFunctorCandidateId::new(0),
+                        }
+                    }
+                    1 => {
+                        input.arguments[0].ordinal = 1;
+                        SourceFunctorApplicationError::ReorderedArgument {
+                            argument: SourceFunctorArgumentId::new(0),
+                        }
+                    }
+                    2 => {
+                        input.type_requests[1].candidate = Some(SourceFunctorCandidateId::new(0));
+                        SourceFunctorApplicationError::InvalidTypeRequest {
+                            request: SourceFunctorTypeRequestId::new(1),
+                        }
+                    }
+                    3 => {
+                        input.applications[0].form = if equals {
+                            SourceFunctorApplicationForm::Prefix
+                        } else {
+                            SourceFunctorApplicationForm::Infix
+                        };
+                        SourceFunctorApplicationError::InvalidForm {
+                            application: SourceFunctorApplicationId::new(0),
+                        }
+                    }
+                    4 => {
+                        input.arguments[0].target = SourceFunctorArgumentTarget::Primary(
+                            SourcePrimaryTermId::new(if equals { 4 } else { 3 }),
+                        );
+                        if equals {
+                            SourceFunctorApplicationError::DuplicateArgumentTarget {
+                                argument: SourceFunctorArgumentId::new(0),
+                            }
+                        } else {
+                            SourceFunctorApplicationError::InvalidArgument {
+                                argument: SourceFunctorArgumentId::new(0),
+                            }
+                        }
+                    }
+                    _ => unreachable!(),
+                };
+                assert_eq!(
+                    SourceFunctorApplicationProducer::build(
+                        input,
+                        &symbols,
+                        &bindings,
+                        primary,
+                        typed.nodes()
+                    )
+                    .unwrap_err(),
+                    expected
+                );
             }
-        );
-        primary_input.terms[0].role = SourcePrimaryTermRole::Value;
-        assert_eq!(
-            SourcePrimaryTermProducer::build(primary_input, &bindings, typed.nodes()).unwrap_err(),
-            SourcePrimaryTermError::InvalidTerm {
-                term: SourcePrimaryTermId::new(0)
-            }
-        );
-        let clauses = source
-            .arena()
-            .iter()
-            .filter(|(_, node)| {
-                matches!(
-                    node.kind(),
-                    mizar_syntax::SurfaceNodeKind::CorrectnessCondition
-                )
-            })
-            .map(|(id, _)| id)
-            .collect::<Vec<_>>();
-        for mutation in 0..6 {
-            let mut nodes = typed
-                .nodes()
-                .iter()
-                .map(|(_, row)| row.clone())
-                .collect::<Vec<_>>();
-            let first = clauses[0];
-            let second = clauses[1];
-            match mutation {
-                0 => nodes[first.index()].children = nodes[second.index()].children.clone(),
-                1 => nodes[first.index()].anchor = nodes[second.index()].anchor.clone(),
-                2 => nodes[first.index()].resolved_node = Some(second),
-                3 => {
-                    nodes[primary
-                        .terms()
-                        .iter()
-                        .next()
-                        .unwrap()
-                        .1
-                        .site()
-                        .node()
-                        .index()]
-                    .resolved_node = Some(source.arena().root())
+            let mut primary_input = SourcePrimaryTermHandoffInput {
+                source_id: typed.source_id(),
+                module_id: typed.module_id().clone(),
+                numeric_type_requests: Vec::new(),
+                terms: primary
+                    .terms()
+                    .iter()
+                    .map(|(_, row)| SourcePrimaryTermInput {
+                        site: row.site().clone(),
+                        source_range: row.source_range(),
+                        source_ordinal: row.source_ordinal(),
+                        context: row.context(),
+                        recovery: row.recovery(),
+                        spelling: row.spelling().into(),
+                        kind: row.kind(),
+                        role: row.role(),
+                        parent: row.parent(),
+                    })
+                    .collect(),
+                references: primary
+                    .references()
+                    .iter()
+                    .map(|(_, row)| SourcePrimaryTermReferenceInput {
+                        term: row.term(),
+                        binding: row.binding(),
+                        role: row.role(),
+                    })
+                    .collect(),
+            };
+            let mut wrong_formal = primary_input.clone();
+            wrong_formal.references[0].binding = bindings.bindings().iter().nth(1).unwrap().0;
+            assert_eq!(
+                SourcePrimaryTermProducer::build(wrong_formal, &bindings, typed.nodes())
+                    .unwrap_err(),
+                SourcePrimaryTermError::InvalidReference {
+                    reference: SourcePrimaryTermReferenceId::new(0)
                 }
-                4 => {
-                    let id = source
+            );
+            primary_input.terms[0].role = if equals {
+                SourcePrimaryTermRole::CurrentDefinitionResult
+            } else {
+                SourcePrimaryTermRole::Value
+            };
+            assert_eq!(
+                SourcePrimaryTermProducer::build(primary_input, &bindings, typed.nodes())
+                    .unwrap_err(),
+                SourcePrimaryTermError::InvalidTerm {
+                    term: SourcePrimaryTermId::new(0)
+                }
+            );
+            let clauses = source
+                .arena()
+                .iter()
+                .filter(|(_, node)| {
+                    matches!(
+                        node.kind(),
+                        mizar_syntax::SurfaceNodeKind::CorrectnessCondition
+                    )
+                })
+                .map(|(id, _)| id)
+                .collect::<Vec<_>>();
+            for mutation in 0..6 {
+                let mut nodes = typed
+                    .nodes()
+                    .iter()
+                    .map(|(_, row)| row.clone())
+                    .collect::<Vec<_>>();
+                let first = clauses[0];
+                let second = if equals {
+                    source
                         .arena()
                         .iter()
                         .find(|(_, node)| {
@@ -2356,68 +2920,109 @@ mod term_proof_tests {
                             )
                         })
                         .unwrap()
-                        .0;
-                    nodes[id.index()].children.reverse();
+                        .0
+                } else {
+                    clauses[1]
+                };
+                match mutation {
+                    0 if equals => nodes[first.index()].children.reverse(),
+                    0 => nodes[first.index()].children = nodes[second.index()].children.clone(),
+                    1 => nodes[first.index()].anchor = nodes[second.index()].anchor.clone(),
+                    2 => nodes[first.index()].resolved_node = Some(second),
+                    3 => {
+                        nodes[primary
+                            .terms()
+                            .iter()
+                            .next()
+                            .unwrap()
+                            .1
+                            .site()
+                            .node()
+                            .index()]
+                        .resolved_node = Some(source.arena().root())
+                    }
+                    4 => {
+                        let id = source
+                            .arena()
+                            .iter()
+                            .find(|(_, node)| {
+                                matches!(
+                                    node.kind(),
+                                    mizar_syntax::SurfaceNodeKind::DefinitionParameter
+                                )
+                            })
+                            .unwrap()
+                            .0;
+                        nodes[id.index()].children.reverse();
+                    }
+                    5 => {
+                        let definition = source
+                            .arena()
+                            .iter()
+                            .find(|(_, node)| {
+                                matches!(
+                                    node.kind(),
+                                    mizar_syntax::SurfaceNodeKind::FunctorDefinition
+                                )
+                            })
+                            .unwrap()
+                            .1;
+                        let ty = definition.children()[5];
+                        let head = source.arena().node(ty).unwrap().children()[0];
+                        let token = source.arena().node(head).unwrap().children()[0];
+                        nodes[token.index()].kind =
+                            r#"Token(SurfaceToken { kind: ReservedWord, text: "object" })"#.into();
+                    }
+                    _ => unreachable!(),
                 }
-                5 => {
-                    let definition = source
-                        .arena()
-                        .iter()
-                        .find(|(_, node)| {
-                            matches!(
-                                node.kind(),
-                                mizar_syntax::SurfaceNodeKind::FunctorDefinition
-                            )
-                        })
-                        .unwrap()
-                        .1;
-                    let ty = definition.children()[5];
-                    let head = source.arena().node(ty).unwrap().children()[0];
-                    let token = source.arena().node(head).unwrap().children()[0];
-                    nodes[token.index()].kind =
-                        r#"Token(SurfaceToken { kind: ReservedWord, text: "object" })"#.into();
-                }
-                _ => unreachable!(),
+                let changed = TypedAst::try_new(TypedAstParts {
+                    source_id: typed.source_id(),
+                    module_id: typed.module_id().clone(),
+                    resolved_root: Some(source.arena().root()),
+                    source_context: None,
+                    source_type: None,
+                    source_attribute: None,
+                    nodes: TypedArena::try_new(typed.nodes().root(), nodes).unwrap(),
+                    contexts: LocalTypeContextTable::new(),
+                    types: TypeTable::new(),
+                    facts: TypeFactTable::new(),
+                    coercions: CoercionTable::new(),
+                    initial_obligations: InitialObligationTable::new(),
+                    diagnostics: TypeDiagnosticTable::new(),
+                })
+                .unwrap()
+                .with_source_term(primary.clone())
+                .unwrap()
+                .with_source_application(application.clone())
+                .unwrap()
+                .with_source_atomic_formula(typed.source_atomic_formula().unwrap().clone())
+                .unwrap();
+                assert_eq!(check(&changed).unwrap_err(), "theorems.source.invalid");
             }
-            let changed = TypedAst::try_new(TypedAstParts {
-                source_id: typed.source_id(),
-                module_id: typed.module_id().clone(),
-                resolved_root: Some(source.arena().root()),
-                source_context: None,
-                source_type: None,
-                source_attribute: None,
-                nodes: TypedArena::try_new(typed.nodes().root(), nodes).unwrap(),
-                contexts: LocalTypeContextTable::new(),
-                types: TypeTable::new(),
-                facts: TypeFactTable::new(),
-                coercions: CoercionTable::new(),
-                initial_obligations: InitialObligationTable::new(),
-                diagnostics: TypeDiagnosticTable::new(),
-            })
-            .unwrap()
-            .with_source_term(primary.clone())
-            .unwrap()
-            .with_source_application(application.clone())
-            .unwrap()
-            .with_source_atomic_formula(typed.source_atomic_formula().unwrap().clone())
-            .unwrap();
-            assert_eq!(check(&changed).unwrap_err(), "theorems.source.invalid");
-        }
-        let text = fs::read_to_string(&case.source_path).unwrap();
-        for foreign in [
-            text.replace("choicebox", "foreignbox"),
-            text.replace("means it = X", "means X = it"),
-        ] {
-            let (other, nodes, env) = super::super::source_registration_inputs(
-                &config.workspace_root,
-                case,
-                super::super::formula_statement::step5c8_test_frontend(&foreign),
-            )
-            .unwrap();
-            let (_, _, other_typed) =
-                TermFormulaChecker::check_source_predicate_statements(&other, &env, &nodes)
-                    .unwrap();
-            assert!(check(&other_typed).is_err());
+            let text = fs::read_to_string(&case.source_path).unwrap();
+            for foreign in [
+                if equals {
+                    text.replace("+", "*")
+                } else {
+                    text.replace("choicebox", "foreignbox")
+                },
+                if equals {
+                    text.replace("equals X", "equals Y")
+                } else {
+                    text.replace("means it = X", "means X = it")
+                },
+            ] {
+                let (other, nodes, env) = super::super::source_registration_inputs(
+                    &config.workspace_root,
+                    case,
+                    super::super::formula_statement::step5c8_test_frontend(&foreign),
+                )
+                .unwrap();
+                let (_, _, other_typed) =
+                    TermFormulaChecker::check_source_predicate_statements(&other, &env, &nodes)
+                        .unwrap();
+                assert!(check(&other_typed).is_err());
+            }
         }
     }
 
@@ -3350,7 +3955,13 @@ mod term_proof_tests {
         let config = config();
         let plan = crate::harness::build_test_plan(&config).unwrap();
         for case in plan.cases.iter().filter(|case| {
-            [STEP5C5_PHRASE_ID, STEP5C5_SYMBOLIC_ID, STEP5C5_MEANS_ID].contains(&case.id.0.as_str())
+            [
+                STEP5C5_PHRASE_ID,
+                STEP5C5_SYMBOLIC_ID,
+                STEP5C5_MEANS_ID,
+                STEP5C5_EQUALS_ID,
+            ]
+            .contains(&case.id.0.as_str())
         }) {
             assert!(step5c5_phrase_admitted(Some(&config.workspace_root), case));
             assert!(

@@ -103,7 +103,11 @@ fn checker_source_syntax_import_is_limited_to_registration_intake() {
         let source = if path == root.join("src/registration_resolution.rs")
             || path == root.join("src/type_checker.rs")
         {
-            let permitted = "use mizar_syntax::ast::{SurfaceNodeKind as K, SurfaceTokenKind};";
+            let permitted = if path == root.join("src/type_checker.rs") {
+                "use mizar_syntax::ast::{SurfaceNodeKind as K, SurfaceOperatorAssociativity, SurfaceTokenKind};"
+            } else {
+                "use mizar_syntax::ast::{SurfaceNodeKind as K, SurfaceTokenKind};"
+            };
             assert_eq!(source.matches(permitted).count(), 1);
             source.replace(permitted, "")
         } else {

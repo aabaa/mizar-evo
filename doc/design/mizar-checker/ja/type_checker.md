@@ -3081,3 +3081,7 @@ call-site result、rewrite、Core/VC、Step6/MVM の動作は追加しない。
 ## 限定された実行位置の set choice
 
 object を返す return のみの algorithm では、等式 ensures と `return the set` を扱う。実際の ChoiceExpression、bare builtin target、return 文の所有、source/environment/typed の完全な対応を認証する。既存 Choice typing と builtin-set existential gate で inhabited set の許可を確認し、実際の set から object への返却互換性を検査する。既存 seal に choice 出現を保持し、仮引数参照・registration・stable-choice origin を捏造しない。他の choice target、実行位置、追加契約・文はこの profile の範囲外とする。
+
+## 限定 equals-infix functor theorem 検査
+
+既存 statement producer と theorem replay を、新規の二引数 set functor、仮引数参照の equals RHS、空の coherence 節一つ、実 left 結合・優先度80の infix 宣言、二つの二項適用へ拡張する。宣言・出現対応、引数順序、結果型、演算子の綴り・token、既存 infix 結合情報と left 宣言の一致、独立した仮引数・定理・局所の六束縛を認証する。term/application/equality graph 全体と節所有者を replay する。既存 seal で節を Core へ運び、registration/narrowing 義務への誤分類や public initial-obligation kind の追加をしない。RHS の静的型検査は coherence 証明・定義等式の前提・定義受理を与えない。

@@ -1330,6 +1330,14 @@ pub fn validate_expectation_path(
                 .any(|spec_ref| spec_ref.0 == EXACT_TASK31_VC_SNAPSHOT_SPEC_REF);
         let exact_source_vc_snapshot = [
             (
+                "pass_proof_verification_func_equals_infix_operator_001",
+                "pass/functors",
+                "functors.equals_definition",
+                "spec.en.10.functors.equals.definitional_unfolding",
+                "spec.en.mizar_vc.vc_ir.equals_functor_snapshot",
+                None,
+            ),
+            (
                 "pass_proof_verification_func_means_prefix_001",
                 "pass/functors",
                 "functors.means_definition",
@@ -1464,6 +1472,7 @@ pub fn validate_expectation_path(
                             | "predicates.phrase_definition"
                             | "predicates.symbolic_definition"
                             | "functors.means_definition"
+                            | "functors.equals_definition"
                     )
                     || expectation.schema_version == 1
                         && expectation.profiles.as_slice() == ["fast"]
