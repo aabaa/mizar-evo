@@ -20,7 +20,7 @@ resolve imports, or assign `SourceId` / `SourceVersion` identity by itself.
 `mizar-frontend` consumes a `mizar_session::LoadedSource` and reshapes it into
 the `SourceUnit` defined by
 [architecture/en/02.source_and_frontend.md](../../architecture/en/02.source_and_frontend.md)
-"Step 1: Load SourceUnit". This module never re-hashes or re-normalizes text
+"Step 1: Load SourceUnit". The loader bridge never re-hashes or re-normalizes text
 that `mizar-session` already loaded.
 
 ## Public API
@@ -39,6 +39,13 @@ pub struct SourceUnit {
     pub loading_map: Option<LoadingMap>,
     pub origin: SourceOrigin,
     pub generated_anchor: Option<SourceAnchor>,
+}
+
+impl SourceUnit {
+    pub fn canonical_disk_bytes(&self) -> Option<Vec<u8>>;
+    pub fn from_canonical_disk_bytes(
+        bytes: &[u8], source_id: SourceId, input: &SourceInput,
+    ) -> Option<Self>;
 }
 
 pub struct SourceUnitRequest {
@@ -117,9 +124,9 @@ consumers that need a `SourceUnit` for a single file.
 generated source fragment. Callers treat a constructed `SourceUnit` as immutable
 pipeline input. `source_text` is the validated,
 source-loading-normalized text exactly as `mizar-session` produced it.
-`source_hash`, `line_map`, `loading_map`, `normalized_path`, `edition`,
-`origin`, and `generated_anchor` are the session values, copied without
-recomputation. `file_path` is a local display path for diagnostics; published
+On loading, `source_hash`, `line_map`, `loading_map`, `normalized_path`,
+`edition`, `origin`, and `generated_anchor` are the session values, copied
+without recomputation. `file_path` is a local display path for diagnostics; published
 identity uses `normalized_path`, not `file_path`.
 
 `SourceUnit` is the loaded content anchor for Step 1 in
@@ -158,9 +165,36 @@ Orchestration calls `register_source_unit` immediately after loading and before
 preprocessing to record the loaded `LineMap` / `LoadingMap` with the mutable
 `SpanBridge` registry. Source loading itself does not mutate bridge state.
 
-The frontend performs no encoding work of its own here. Code-region ASCII
+Source loading performs no encoding work of its own here. Code-region ASCII
 validation is deferred to preprocessing; this module only carries the
 session-validated encoding and identity forward.
+
+## Canonical Disk Payload
+
+`canonical_disk_bytes` encodes disk sources only. The version domain is
+`mizar-frontend-source-disk-v1`; fields are u64 little-endian length followed by
+bytes: package, module, normalized path, edition, UTF-8 text, source hash, and
+loading map. The hash is exactly 32 raw bytes. The map starts with presence byte 0/1; present segments use a tag
+(0 original, 1 removed BOM, 2 normalized newline) and four u64 little-endian
+loaded/original range bounds; BOM loaded bounds are zero. Only complete 33-byte
+records are allowed through the map field end. Order is preserved.
+Allocator-local source ids and diagnostic filesystem paths are never encoded.
+These storage bytes include maps and must not be used directly as IR semantic
+content-hash input; publication must preserve the separate source-map side-table
+hash required by the IR publisher. That integration remains a dependency.
+
+`from_canonical_disk_bytes` accepts the current session SourceId and validated
+disk SourceInput. SourceInput is not a validation token: the caller must validate
+its metadata through the session loader. The codec performs no filesystem
+validation, path normalization or loader calls; it checks Disk origin and stable
+field equality only. Encoding requires Disk origin, no generated anchor and a
+DiskBytes map origin matching normalized_path; decoding reconstructs that origin
+from the request. It reconstructs maps through session
+constructors, and uses the input's local path. Neither codec loads or parses
+source. Invalid schema, UTF-8, lengths, trailing bytes, mismatched hashes or map
+metadata/ranges, unsupported origins and generated anchors return `None`.
+This is local payload rejection, not a language diagnostic or cache acceptance.
+Loading projection remains unchanged.
 
 ## Error Handling
 
@@ -181,6 +215,9 @@ and stops the pipeline for that file before preprocessing.
 ## Tests
 
 Key scenarios:
+
+- real disk codec roundtrips preserve BOM/CRLF maps, rebind local identity/path,
+  retain canonical bytes and reject corrupt/incompatible/unsupported inputs;
 
 - a disk `LoadedSource` projects to a `SourceUnit` with identical
   `source_id`, `normalized_path`, `edition`, `source_hash`, `line_map`, and
@@ -203,8 +240,8 @@ Key scenarios:
 
 - This module does not read or normalize bytes itself; it delegates to
   `mizar-session` and only reshapes the result.
-- `source_hash`, `line_map`, and `loading_map` are never recomputed by the
-  frontend.
+- Loading preserves `source_hash`, `line_map`, and `loading_map`; blob decoding
+  reconstructs maps through session constructors and checks the stored hash.
 - `normalized_path` and `edition` are retained from `LoadedSource` because
   parser inputs, lexical-environment requests, cache keys, and diagnostics need
   them later.

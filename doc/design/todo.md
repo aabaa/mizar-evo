@@ -678,7 +678,8 @@ publication work.
    `mizar-driver`, and `mizar-build` (their current
    `external_dependency_gap` records become owner tasks here; IV-007
    snapshot-freshness obligations apply). First prerequisite:
-   [dispatch publication transport](./task_contracts/en/STEP6A1-DISPATCH-PUBLICATION.md).
+   [dispatch publication transport](./task_contracts/en/STEP6A1-DISPATCH-PUBLICATION.md), followed by
+   [package source payload](./task_contracts/en/STEP6A2-PACKAGE-SOURCE-CODEC.md).
 2. [ ] [mizar-artifact task 17](./mizar-artifact/en/todo.md) — phase-15
    emission from real producer projections (see
    [phase15_emission_reevaluation.md](./mizar-artifact/en/phase15_emission_reevaluation.md)).
