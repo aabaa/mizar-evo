@@ -14,7 +14,7 @@ Owning plans: [mizar-lexer](../../mizar-lexer/en/00.crate_plan.md) and
 | Tier | Full: production tokenization, parser-visible behavior, token-cache identity, and test-first `.miz` |
 | Owner / consumers | `mizar-lexer` owns final disambiguation; `mizar-frontend` owns the token-cache namespace; `mizar-parser` consumes the result |
 | Dependencies | Step 5A frozen order selects 5A.3 after completed 5A.2; no semantic dependency |
-| Authority | Ch. [§2.3](../../../spec/en/02.lexical_structure.md#23-tokens-and-lexicon), [§2.5.1](../../../spec/en/02.lexical_structure.md#251-reserved-special-symbols), and [§2.5.2](../../../spec/en/02.lexical_structure.md#252-user-defined-symbolic-names); Appendix [A.2](../../../spec/en/appendix_a.grammar_summary.md#a2-lexical-structure); and [Step 5A](../../todo.md#step-5a--frontend-gap-closure--) |
+| Authority | Ch. [§2.3](../../../spec/en/02.lexical_structure.md#23-tokens-and-lexicon), [§2.5.1](../../../spec/en/02.lexical_structure.md#251-reserved-special-symbols), and [§2.5.2](../../../spec/en/02.lexical_structure.md#252-user-defined-symbolic-names); Appendix [A.2](../../../spec/en/appendix_a.grammar_summary.md#a2-lexical-structure); and [Step 5A](../../todo.md#step-5a--frontend-gap-closure-x) |
 | Classification | `source_drift`, `test_gap`; no `spec_gap` |
 | Semantic-credit throughput | `0 tasks/week`; G2 closes a syntax blocker and activates no semantic oracle |
 

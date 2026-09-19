@@ -17,7 +17,7 @@ identity.
 | Tier | Full: parser-visible tokenization, AST/diagnostic output, token-cache identity, and test-first `.miz` |
 | Owner / consumers | `mizar-lexer` owns local alias spelling, kind, arity, fixity, and activation; `mizar-parser` consumes the tokens through its existing `NotationAlias` grammar; `mizar-frontend` owns token-cache identity |
 | Dependencies | Completed 5A.3/G2; Step 5A frozen order selects 5A.5 after completed 5A.4 |
-| Authority | Chapter [§11.1](../../../spec/en/11.symbol_management.md#111-synonyms-and-antonyms), [§11.2](../../../spec/en/11.symbol_management.md#112-scope-and-visibility), and [§11.6](../../../spec/en/11.symbol_management.md#116-complete-syntax-ebnf); Appendix [A.11](../../../spec/en/appendix_a.grammar_summary.md#a11-symbol-management) and [A.12](../../../spec/en/appendix_a.grammar_summary.md#a12-modules-and-namespaces); [Step 5A](../../todo.md#step-5a--frontend-gap-closure--) |
+| Authority | Chapter [§11.1](../../../spec/en/11.symbol_management.md#111-synonyms-and-antonyms), [§11.2](../../../spec/en/11.symbol_management.md#112-scope-and-visibility), and [§11.6](../../../spec/en/11.symbol_management.md#116-complete-syntax-ebnf); Appendix [A.11](../../../spec/en/appendix_a.grammar_summary.md#a11-symbol-management) and [A.12](../../../spec/en/appendix_a.grammar_summary.md#a12-modules-and-namespaces); [Step 5A](../../todo.md#step-5a--frontend-gap-closure-x) |
 | Classification | `source_drift`, `design_drift`, `test_gap`; no `spec_gap` |
 | Semantic-credit throughput | `0 tasks/week`; G4 closes a syntax blocker and activates no semantic oracle |
 

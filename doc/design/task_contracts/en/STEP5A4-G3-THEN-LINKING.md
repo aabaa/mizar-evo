@@ -15,7 +15,7 @@ cache namespace.
 | Tier | Full: parser-visible grammar, AST/diagnostic output, parser-cache identity, and test-first `.miz` |
 | Owner / consumers | `mizar-parser` owns statement recognition and `ThenStatement`/`CompactStatement`; `mizar-frontend` owns the real-parser cache-key version; later statement checking consumes the AST |
 | Dependencies | Step 5A frozen order selects 5A.4 after completed 5A.3; no semantic dependency |
-| Authority | Chapter [§15.9.1](../../../spec/en/15.statements.md#1591-sequential-modifier-then) and [§15.12](../../../spec/en/15.statements.md#1512-complete-syntax-ebnf); Appendix [A.15](../../../spec/en/appendix_a.grammar_summary.md#a15-statements-proofs-and-references); [Step 5A](../../todo.md#step-5a--frontend-gap-closure--) |
+| Authority | Chapter [§15.9.1](../../../spec/en/15.statements.md#1591-sequential-modifier-then) and [§15.12](../../../spec/en/15.statements.md#1512-complete-syntax-ebnf); Appendix [A.15](../../../spec/en/appendix_a.grammar_summary.md#a15-statements-proofs-and-references); [Step 5A](../../todo.md#step-5a--frontend-gap-closure-x) |
 | Classification | `source_drift`, `design_drift`, `test_gap`; no `spec_gap` |
 | Semantic-credit throughput | `0 tasks/week`; G3 closes a syntax blocker and activates no semantic oracle |
 

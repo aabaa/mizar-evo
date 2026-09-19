@@ -66,7 +66,7 @@ still agree with the resulting behavior.
 
 | Gate | Completion condition | Plan steps | Primary owners |
 |---|---|---|---|
-| Source-to-semantics bridge | Real `.miz` inputs pass from frontend output through resolver and checker-owned payload extraction into `ResolvedTypedAst`, with active semantic corpus coverage instead of extraction-gap sentinels. The reserve-only builtin declaration slice is active; AST-wide declarations, attributes, terms, formulas, proof, and broader checker payload extraction remain open. | 2, 4, 5 | `mizar-test`, `mizar-resolve`, `mizar-checker` |
+| Source-to-semantics bridge | Real `.miz` inputs pass from frontend output through resolver and checker-owned payload extraction into `ResolvedTypedAst`, with active semantic corpus coverage instead of extraction-gap sentinels. The audit-1 corpus is active at its sidecar-defined stages; bounded VC generation and Pending coherence do not imply proof acceptance or unrestricted payload extraction. | 2, 4, 5 | `mizar-test`, `mizar-resolve`, `mizar-checker` |
 | Core and VC bridge | Checker-derived payloads lower into `CoreIr`, `ControlFlowIr`, and source-derived VC inputs without reconstructing missing source or fabricating registration/proof facts. | 4, 5 | `mizar-checker`, `mizar-core`, `mizar-vc`, `mizar-test` |
 | Proof and algorithm verification | Source-derived proof and algorithm obligations flow through VC generation, ATP candidate production, kernel checking, proof policy/status projection, and proof-reuse metadata with active `proof_verification` coverage. | 1, 3, 7 | `mizar-vc`, `mizar-atp`, `mizar-kernel`, `mizar-proof`, `mizar-cache`, `mizar-test` |
 | Artifact publication | Verified module, registration, proof-witness, and diagnostic projections are emitted through real `mizar-artifact` store/manifest transactions from producer-owned outputs. | 6 | `mizar-artifact`, `mizar-ir`, `mizar-driver`, producer crates |
@@ -97,11 +97,11 @@ is its task 1). "Next work" points into the
 | mizar-syntax | Rowan-backed `SurfaceAst`, trivia, recovery, typed views | [x] historical milestone plus parser Tasks 48/46 increments, S-026 dense views, and Step 5A.1 complete | S-021 remains the sole deferred syntax task | [todo](./mizar-syntax/en/todo.md) |
 | mizar-parser | Grammar, Pratt parsing, syntax recovery, parse-only corpus | [x] Tasks 1-48 plus bounded `PARSER-RECOVERY-B1B1P-P1` and Step 5A.4-5A.8 complete | No inferred Task 49; human-owned P-265-47D remains separate | [todo](./mizar-parser/en/todo.md) |
 | mizar-frontend | Source loading and phase 1-3 orchestration | [x] prior milestone plus Step 5A.2/5A.3/5A.6/5A.8 increments | — | [todo](./mizar-frontend/en/todo.md) |
-| mizar-resolve | Module graph, namespaces, symbols, labels, signatures | [~] prior milestone plus [Step 5C.1](./task_contracts/en/STEP5C1-VARIABLE-SEMANTICS.md) variable resolution and [Step 5C.6](./task_contracts/en/STEP5C6-MODULE-SEMANTICS.md) module activation plus [Step 5C.7](./task_contracts/en/STEP5C7-TERM-SEMANTICS.md) occurrence resolution and [Step 5C.9](./task_contracts/en/STEP5C9-PROOF-ORGANIZATION.md) proof-local bindings/labels and [Step 5C.10](./task_contracts/en/STEP5C10-THEOREM-SKELETONS.md) theorem/lemma labels | Preserve owner boundaries; next Step 5C resolver work follows the activation map | [todo](./mizar-resolve/en/todo.md) |
-| mizar-test | Corpus discovery, expectations, staged model, traceability, harness | [~] prior milestone plus [Step 5C.1](./task_contracts/en/STEP5C1-VARIABLE-SEMANTICS.md), [Step 5C.2](./task_contracts/en/STEP5C2-STRUCTURE-SEMANTICS.md), [Step 5C.3](./task_contracts/en/STEP5C3-ATTRIBUTE-SEMANTICS.md), [Step 5C.4](./task_contracts/en/STEP5C4-MODE-SEMANTICS.md), [Step 5C.5](./task_contracts/en/STEP5C5-PREDICATE-FUNCTOR-SEMANTICS.md), [Step 5C.6](./task_contracts/en/STEP5C6-MODULE-SEMANTICS.md), [Step 5C.7](./task_contracts/en/STEP5C7-TERM-SEMANTICS.md), [Step 5C.8](./task_contracts/en/STEP5C8-FORMULA-SEMANTICS.md), [Step 5C.9](./task_contracts/en/STEP5C9-PROOF-ORGANIZATION.md), and [Step 5C.10](./task_contracts/en/STEP5C10-THEOREM-SKELETONS.md) semantic activations | Continue bounded Step 5C.14 in activation-map order | [todo](./mizar-test/en/todo.md) |
-| mizar-checker | Type checking, cluster/registration resolution, overload resolution | [~] prior milestone plus [Step 5C.1](./task_contracts/en/STEP5C1-VARIABLE-SEMANTICS.md), [Step 5C.2](./task_contracts/en/STEP5C2-STRUCTURE-SEMANTICS.md), [Step 5C.3](./task_contracts/en/STEP5C3-ATTRIBUTE-SEMANTICS.md), [Step 5C.4](./task_contracts/en/STEP5C4-MODE-SEMANTICS.md), [Step 5C.5](./task_contracts/en/STEP5C5-PREDICATE-FUNCTOR-SEMANTICS.md), [Step 5C.7](./task_contracts/en/STEP5C7-TERM-SEMANTICS.md), [Step 5C.8](./task_contracts/en/STEP5C8-FORMULA-SEMANTICS.md), [Step 5C.9](./task_contracts/en/STEP5C9-PROOF-ORGANIZATION.md), and [Step 5C.10](./task_contracts/en/STEP5C10-THEOREM-SKELETONS.md) semantics | Continue bounded Step 5C.14; Task 277B remains not-ready/zero-credit | [todo](./mizar-checker/en/todo.md) |
-| mizar-core | Elaboration, binder-normalized core logic, control-flow preparation | [x] core/control-flow milestone, tasks 27-32, plus [Step 5C.2](./task_contracts/en/STEP5C2-STRUCTURE-SEMANTICS.md) and [Step 5C.7](./task_contracts/en/STEP5C7-TERM-SEMANTICS.md) bounded normalization and [Step 5C.10](./task_contracts/en/STEP5C10-THEOREM-SKELETONS.md) theorem-skeleton lowering | step-5 Tasks 33-53 under the Task-32 graph | [todo](./mizar-core/en/todo.md) |
-| mizar-vc | VC IR, VC generation, deterministic pre-ATP discharge | [x] exact source-derived contradiction VC integration complete through task 31 | dependency-paced VC Tasks 32-55; VC 40/53 and S1 gates remain explicit | [todo](./mizar-vc/en/todo.md) |
+| mizar-resolve | Module graph, namespaces, symbols, labels, signatures | [~] prior milestone plus [Step 5C.1](./task_contracts/en/STEP5C1-VARIABLE-SEMANTICS.md) variable resolution and [Step 5C.6](./task_contracts/en/STEP5C6-MODULE-SEMANTICS.md) module activation plus [Step 5C.7](./task_contracts/en/STEP5C7-TERM-SEMANTICS.md) occurrence resolution and [Step 5C.9](./task_contracts/en/STEP5C9-PROOF-ORGANIZATION.md) proof-local bindings/labels and [Step 5C.10](./task_contracts/en/STEP5C10-THEOREM-SKELETONS.md) theorem/lemma labels | Step 6 publication seams and deferred imported-module payloads under their existing owners | [todo](./mizar-resolve/en/todo.md) |
+| mizar-test | Corpus discovery, expectations, staged model, traceability, harness | [~] prior milestone plus [Step 5C.1](./task_contracts/en/STEP5C1-VARIABLE-SEMANTICS.md), [Step 5C.2](./task_contracts/en/STEP5C2-STRUCTURE-SEMANTICS.md), [Step 5C.3](./task_contracts/en/STEP5C3-ATTRIBUTE-SEMANTICS.md), [Step 5C.4](./task_contracts/en/STEP5C4-MODE-SEMANTICS.md), [Step 5C.5](./task_contracts/en/STEP5C5-PREDICATE-FUNCTOR-SEMANTICS.md), [Step 5C.6](./task_contracts/en/STEP5C6-MODULE-SEMANTICS.md), [Step 5C.7](./task_contracts/en/STEP5C7-TERM-SEMANTICS.md), [Step 5C.8](./task_contracts/en/STEP5C8-FORMULA-SEMANTICS.md), [Step 5C.9](./task_contracts/en/STEP5C9-PROOF-ORGANIZATION.md), and [Step 5C.10](./task_contracts/en/STEP5C10-THEOREM-SKELETONS.md) semantic activations | Step 6 integration; pre-audit Task 49 remains gated by 5B.3 | [todo](./mizar-test/en/todo.md) |
+| mizar-checker | Type checking, cluster/registration resolution, overload resolution | [~] prior milestone plus [Step 5C.1](./task_contracts/en/STEP5C1-VARIABLE-SEMANTICS.md), [Step 5C.2](./task_contracts/en/STEP5C2-STRUCTURE-SEMANTICS.md), [Step 5C.3](./task_contracts/en/STEP5C3-ATTRIBUTE-SEMANTICS.md), [Step 5C.4](./task_contracts/en/STEP5C4-MODE-SEMANTICS.md), [Step 5C.5](./task_contracts/en/STEP5C5-PREDICATE-FUNCTOR-SEMANTICS.md), [Step 5C.7](./task_contracts/en/STEP5C7-TERM-SEMANTICS.md), [Step 5C.8](./task_contracts/en/STEP5C8-FORMULA-SEMANTICS.md), [Step 5C.9](./task_contracts/en/STEP5C9-PROOF-ORGANIZATION.md), and [Step 5C.10](./task_contracts/en/STEP5C10-THEOREM-SKELETONS.md) semantics | Remaining producer tasks under existing dependencies; Task 277B remains not-ready/zero-credit | [todo](./mizar-checker/en/todo.md) |
+| mizar-core | Elaboration, binder-normalized core logic, control-flow preparation | [x] core/control-flow milestone, tasks 27-32, plus [Step 5C.2](./task_contracts/en/STEP5C2-STRUCTURE-SEMANTICS.md) and [Step 5C.7](./task_contracts/en/STEP5C7-TERM-SEMANTICS.md) bounded normalization and [Step 5C.10](./task_contracts/en/STEP5C10-THEOREM-SKELETONS.md) theorem-skeleton lowering | Broader producer Tasks 33-53 beyond the Step 5 alpha corpus, under the Task-32 graph | [todo](./mizar-core/en/todo.md) |
+| mizar-vc | VC IR, VC generation, deterministic pre-ATP discharge | [x] exact source-derived contradiction VC integration complete through task 31 | Broader producer Tasks 32-55 beyond the Step 5 alpha corpus; VC 40/53 and S1 gates remain explicit | [todo](./mizar-vc/en/todo.md) |
 | mizar-kernel | Trusted certificate parsing and checking | [x] SAT-backed kernel milestone complete | step 4 task 35 resolved; task 32 parked; tasks 30-34 resolved | [todo](./mizar-kernel/en/todo.md) |
 | mizar-atp | ATP encoding, backend execution, portfolio candidates | [x] candidate-evidence milestone complete through task 29 | step 7 | [todo](./mizar-atp/en/todo.md) |
 | mizar-proof | Proof policy evaluation, status projection, witness selection | [x] policy/status/witness milestone complete through task 21 | step 7 | [todo](./mizar-proof/en/todo.md) |
@@ -310,7 +310,7 @@ semantic and coverage surface is unchanged, and the clean post-closeout
 inventory can select the next Step 5 task without competing documentation
 owners.
 
-### Step 5 — Source-derived semantic bridge [~]
+### Step 5 — Source-derived semantic bridge [x]
 
 Widen real `.miz` source-derived payload extraction, elaboration, and
 verification beyond the active reserve/local-mode/formula slices until the
@@ -323,6 +323,10 @@ reports active coverage — grammar-complete extraction, elaboration, and
 verification. Algorithm *execution* (MVM, spec chapter 20 sections
 20.9-20.10) stays excluded and parked (see
 [Parked and trigger-based work](#parked-and-trigger-based-work)).
+This boundary is limited to the mapped corpus and its expected phases; Open
+VCs and Pending coherence retain their existing acceptance boundaries.
+Pre-audit 5B.3 and broader producer tasks remain with their existing owners
+and dependency gates beyond this alpha corpus boundary.
 
 **Binding inputs.** The corpus map above, the frontend gap inventory
 ([semantic_bridge_frontend_gaps.md](./mizar-test/en/semantic_bridge_frontend_gaps.md)
@@ -331,7 +335,7 @@ the audit-1 requirement rows in
 [`tests/coverage/spec_trace.toml`](../../tests/coverage/spec_trace.toml), and
 the activation-map ledger
 [`tests/coverage/step5_activation_map.tsv`](../../tests/coverage/step5_activation_map.tsv)
-binding each of the 120 inactive oracle pairs to its owner task below. Tests
+binding each of the 120 oracle pairs to its owner task below. Tests
 are binding per the AGENTS.md authority order: no oracle case may be
 activated, and no gap closed, by matching expectations to current behavior.
 The 5A.9 smoke guard remains the owner of the eventual all-source parse claim;
@@ -379,7 +383,7 @@ and a crate-TODO row when started, per
 tier is marked per that protocol's Gate Tiering section; unmarked tasks
 are full-gate.
 
-#### Step 5A — Frontend gap closure [ ]
+#### Step 5A — Frontend gap closure [x]
 
 Close the audit-1 frontend gaps in the frozen order below. A gap-closure
 task grants no semantic oracle credit itself: it turns blocked committed
@@ -432,7 +436,7 @@ stay binding and must not be weakened.
    fail-closed ledger rows. Evidence and deferrals:
    [STEP5A9-CORPUS-SYNTAX-SMOKE](./task_contracts/en/STEP5A9-CORPUS-SYNTAX-SMOKE.md).
 
-#### Step 5B — Consolidation and pending prerequisites [ ]
+#### Step 5B — Consolidation and pending prerequisites [~]
 
 1. [x] **5B.1** — `mizar-checker`/`mizar-test`: the task-74 structural
    product now has one live owner; completed point matrices are regression-only
@@ -541,11 +545,11 @@ proof acceptance, terminal goals, Core/VC payloads, or runner success.
     through `declaration_symbol`. The already active different-return conflict
     is outside the set and is not reactivated or double-counted.
 
-#### Step 5C — Semantic bridge waves (bounded owner tasks) [ ]
+#### Step 5C — Semantic bridge waves (bounded owner tasks) [x]
 
 Each task below is bound to concrete audit-1 requirement ids in
 [`tests/coverage/spec_trace.toml`](../../tests/coverage/spec_trace.toml);
-its activation targets among the 120 inactive oracle pairs are enumerated
+its activation targets among the 120 oracle pairs are enumerated
 per case, with blocking gaps, in the `owner_task` column of
 [`tests/coverage/step5_activation_map.tsv`](../../tests/coverage/step5_activation_map.tsv).
 A 5C task is complete when every one of its listed pairs is active at its
@@ -590,7 +594,7 @@ activation-map ledger; every 5C task also requires 5B.2.
    correctness), and the unprovable-sethood boundary. Deps: 5A.6, and
    5C.2 for struct radixes; the 5A.8 decision informs but does not block
    (the corpus uses explicit proof blocks).
-5. [~] **[5C.5 — Predicates and functors](./task_contracts/en/STEP5C5-PREDICATE-FUNCTOR-SEMANTICS.md)** (`mizar-checker`; spec ch. 9
+5. [x] **[5C.5 — Predicates and functors](./task_contracts/en/STEP5C5-PREDICATE-FUNCTOR-SEMANTICS.md)** (`mizar-checker`; spec ch. 9
    and 10). Requirements: `spec.en.09.predicates.*` (7 ids) plus
    `spec.en.10.functors.*` (8 ids). Targets: 17 pairs; phrase/symbolic predicate VC generation complete; means-prefix generation complete;
    equals-infix generation complete with pending coherence; narrower-loci declaration typing complete with Pending coherence. Covers
@@ -645,7 +649,7 @@ activation-map ledger; every 5C task also requires 5B.2.
     Requirements: `spec.en.19.overload.*` (2 ids). Targets: 2 pairs
     (distinct-loci and attributed ambiguity active). Covers distinct-loci resolution and ambiguity
     rejection. Deps: 5A.2, 5C.5.
-14. [~] **[5C.14 — Algorithm verification](./task_contracts/en/STEP5C14-ALGORITHM-SEMANTICS.md)** (`mizar-checker`,
+14. [x] **[5C.14 — Algorithm verification](./task_contracts/en/STEP5C14-ALGORITHM-SEMANTICS.md)** (`mizar-checker`,
     `mizar-core`, `mizar-vc`; spec ch. 20, verification constructs
     only). Requirements: `spec.en.20.algorithms.*` (8 ids). Targets: 10
     pairs (all active; bounded while generation and return-Pick failure covered). Covers `var`/`const`/`assert`, contracts
@@ -666,7 +670,9 @@ execution remains excluded and parked.
 
 Wire real phase-service and publication seams once source-derived semantic
 outputs exist. Keep absent producer outputs classified rather than adding
-placeholder adapters.
+placeholder adapters. Pre-audit 5B.3 and Gate S1 remain prerequisites only
+for consumers requiring their outputs; they do not block independent
+publication work.
 
 1. [ ] Real phase services and producer publication among `mizar-ir`,
    `mizar-driver`, and `mizar-build` (their current

@@ -13,7 +13,7 @@ Owning plan: [mizar-syntax](../../mizar-syntax/en/00.crate_plan.md).
 | Tier | Full: production syntax trust path plus test-first `.miz` |
 | Owner / consumers | `mizar-syntax::SurfaceAstBuilder::finish` / parser, frontend, parse-only runner |
 | Dependencies | None; Step 5A frozen order selects 5A.1 first |
-| Authority | [§13.6](../../../spec/en/13.term_expression.md#136-type-qualification-qua), Appendix [A.3](../../../spec/en/appendix_a.grammar_summary.md#a3-type-expressions)/[A.13](../../../spec/en/appendix_a.grammar_summary.md#a13-term-expressions), [Step 5A](../../todo.md#step-5a--frontend-gap-closure--) |
+| Authority | [§13.6](../../../spec/en/13.term_expression.md#136-type-qualification-qua), Appendix [A.3](../../../spec/en/appendix_a.grammar_summary.md#a3-type-expressions)/[A.13](../../../spec/en/appendix_a.grammar_summary.md#a13-term-expressions), [Step 5A](../../todo.md#step-5a--frontend-gap-closure-x) |
 | Classification | `source_drift`, `test_gap`, bounded `design_drift`; no `spec_gap` |
 | Semantic-credit throughput | `0 tasks/week`; 5A.1 closes a parse blocker but activates no semantic oracle |
 

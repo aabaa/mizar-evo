@@ -17,7 +17,7 @@ and [mizar-test](../../mizar-test/en/00.crate_plan.md#task-index).
 | Dependencies | Step 5A.1-5A.9 and Step 5B.1 complete; temporary-gate items 1-5 complete |
 | Readiness / blockers | Ready: every listed dependency is complete; no blocker is repaired or waived here |
 | Authority | [protocol authority order and task selection](../../autonomous_crate_development.md), [temporary gate item 6 and Step 5B.2](../../todo.md#temporary-gate--checkertest-design-evidence-consolidation-x), [Chapter 4](../../../spec/en/04.variables_and_constants.md), and the [activation map](../../../../tests/coverage/step5_activation_map.tsv) |
-| Classification / evidence | `design_drift`: the [crate-status rows](../../todo.md#crate-status), [temporary-gate item 6](../../todo.md#temporary-gate--checkertest-design-evidence-consolidation-x), and [Step 5B.2](../../todo.md#step-5b--consolidation-and-pending-prerequisites--) still point to incomplete re-inventory; C4C8R also retains stale precommit lifecycle wording; no `spec_gap`, `test_gap`, or `repo_metadata_conflict` is repaired here |
+| Classification / evidence | `design_drift`: the [crate-status rows](../../todo.md#crate-status), [temporary-gate item 6](../../todo.md#temporary-gate--checkertest-design-evidence-consolidation-x), and [Step 5B.2](../../todo.md#step-5b--consolidation-and-pending-prerequisites-) still point to incomplete re-inventory; C4C8R also retains stale precommit lifecycle wording; no `spec_gap`, `test_gap`, or `repo_metadata_conflict` is repaired here |
 | Semantic-credit throughput | `0 tasks/week`; no semantic owner is activated by this inventory |
 
 ## Fresh inventory and selection oracle

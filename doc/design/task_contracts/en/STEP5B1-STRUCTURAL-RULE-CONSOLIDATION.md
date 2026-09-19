@@ -14,7 +14,7 @@ and [mizar-test](../../mizar-test/en/00.crate_plan.md#task-index).
 | Tier | Light: zero-credit structural documentation transport |
 | Owner / consumers | `mizar-checker` [type checker design](../../mizar-checker/en/type_checker.md) solely owns the Task-74 structural rule; `mizar-test` consumes it |
 | Dependencies | Step 5A.1-5A.9 complete; Step 5 decomposition rule frozen |
-| Authority | [Step 5 decomposition rule](../../todo.md#step-5--source-derived-semantic-bridge-) and [Step 5B.1](../../todo.md#step-5b--consolidation-and-pending-prerequisites--) |
+| Authority | [Step 5 decomposition rule](../../todo.md#step-5--source-derived-semantic-bridge-x) and [Step 5B.1](../../todo.md#step-5b--consolidation-and-pending-prerequisites-) |
 | Classification | `design_drift`; no `spec_gap`, `test_gap`, or `repo_metadata_conflict` |
 | Semantic-credit throughput | `0 tasks/week`; no requirement or oracle changes |
 
