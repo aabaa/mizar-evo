@@ -181,7 +181,7 @@ records are allowed through the map field end. Order is preserved.
 Allocator-local source ids and diagnostic filesystem paths are never encoded.
 These storage bytes include maps and must not be used directly as IR semantic
 content-hash input; publication must preserve the separate source-map side-table
-hash required by the IR publisher. That integration remains a dependency.
+hash required by the IR publisher, as defined below.
 
 `from_canonical_disk_bytes` accepts the current session SourceId and validated
 disk SourceInput. SourceInput is not a validation token: the caller must validate
@@ -248,3 +248,11 @@ Key scenarios:
 - `file_path` is local diagnostic metadata, excluded from published identity.
 - A `SourceUnit` is treated as immutable after construction and may be retained
   by snapshot leases, LSP views, or downstream phase outputs.
+
+## SourceUnit Publication
+
+The output kind is `SourceUnit`, descriptor schema `mizar-frontend/source-unit-publication/v1`, IR SchemaVersion 1, phase `SourceLoad`. Semantic bytes are the 32 bytes of `SourceUnitCacheKey::stable_hash()`; storage bytes are `canonical_disk_bytes()`. Neither current SourceId nor absolute diagnostic path enters either hash stream.
+The IR work-unit label is `format!("{:?}:{:?}", package_id.as_str(), module_path.as_str())`. The sole named input is `source`, domain `SOURCE_UNIT_CACHE_KEY_VERSION`, with that source key digest; no parent or dependency hashes are required for source loading.
+The source-map side table has one record: kind `source-storage`, key normalized package-relative path, digest BLAKE3 derive-key with context `mizar-frontend/source-unit-storage-side-table/v1` over the full storage bytes. This conservative side identity includes the actual loading maps while semantic content remains map-independent. Other side tables are empty.
+
+Disk publication uses `OutputOrigin::PackageSource` and `PublicationTarget::CurrentPackage`.

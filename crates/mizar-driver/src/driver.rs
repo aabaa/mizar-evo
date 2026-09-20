@@ -562,6 +562,12 @@ impl CompilerDriver {
             &self.registry,
             phase_dispatch_inputs.as_deref(),
             self.output_publisher.as_ref(),
+            Some(crate::registry::SourceLoadInputs {
+                snapshot: &session.captured.snapshot,
+                build_plan: &build_plan,
+                module_index: &module_index,
+                allocator,
+            }),
         );
         let scheduler_run = match run_scheduler_with_dispatcher(scheduler_input, &mut dispatcher) {
             Ok(scheduler_run) => scheduler_run,

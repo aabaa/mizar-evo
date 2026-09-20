@@ -50,7 +50,7 @@ source behavior や language semantics を変更しない。
 | `driver.md` | `driver.md` | paired。Driver front-door ownership、public API、submit flow、scheduler boundary、cancellation、artifact/diagnostics boundary、test、public enum policy は aligned。 |
 | `events.md` | `events.md` | paired。Protocol-agnostic event shape、freshness/suppression、deterministic ordering、diagnostics/artifact event、consumer rule、test、public enum policy は aligned。 |
 | `cli.md` | `cli.md` | paired。Batch command surface、request mapping、progress/diagnostics rendering、exit code、owner-gap handling、test、public enum policy は aligned。 |
-| `frontend_adapter.md` | `frontend_adapter.md` | paired。D-006 `SourceFrontend` readiness inventory と `external_dependency_gap` decision は aligned。 |
+| `frontend_adapter.md` | `frontend_adapter.md` | paired。実 `SourceLoad` publication と残る `Frontend` dependency gap は aligned。 |
 | `source_spec_correspondence.md` | `source_spec_correspondence.md` | paired。D-018 public API、public method surface、promised behavior、gap record、docs-only verification path は aligned。 |
 | `bilingual_documentation_sync.md` | `bilingual_documentation_sync.md` | この task で paired。 |
 | `architecture_22_follow_up_audit.md` | `architecture_22_follow_up_audit.md` | D-020 で paired。Architecture-22 query-boundary、stale-output、diagnostics、artifact-publication、determinism classification は aligned。 |
@@ -61,13 +61,15 @@ source behavior や language semantics を変更しない。
 
 新しい blocking/high bilingual documentation drift は見つからなかった。
 
-既存の分類済み record は変更しない:
+現在の分類済み record:
 
 - `DRIVER-G-001` と `DRIVER-G-009` は artifact metadata に関する report-only
   `repo_metadata_conflict` のまま。この task では `mizar-artifact` metadata を修復しない。
-- `DRIVER-G-010` から `DRIVER-G-014` は frontend、scheduler dispatch、watch/LSP
-  bridge、semantic/proof/artifact adapter、document extraction に対する現在の owner-seam
-  `external_dependency_gap` または `deferred` record のまま。
+- `DRIVER-G-010` は partial: 実 `SourceLoad` publication は利用可能であり、
+  `Frontend` は external dependency gap のまま。
+- `DRIVER-G-011` から `DRIVER-G-014` は scheduler dispatch、watch/LSP bridge、
+  semantic/proof/artifact adapter、document extraction に対する owner-seam
+  `external_dependency_gap` または `deferred` 分類を維持する。
 - real producer/cache/artifact/proof seam を伴う full clean/incremental/parallel equivalence は、
   対応する owner seam が存在するまで deferred のまま。
 

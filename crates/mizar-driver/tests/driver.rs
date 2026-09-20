@@ -207,7 +207,8 @@ fn registered_services_execute_from_scheduler_selected_dispatch() {
     );
     let calls = calls.lock().expect("calls lock is not poisoned");
     assert!(
-        calls.iter().any(|service| service == "SourceFrontend"),
+        calls.iter().any(|service| service == "SourceLoad")
+            && calls.iter().any(|service| service == "Frontend"),
         "source/frontend service should execute from scheduler-selected callback"
     );
     assert!(
@@ -772,7 +773,12 @@ fn driver_scheduler_helper_does_not_claim_phase_output_or_cache_authority() {
 fn assert_missing(submission: &BuildSubmission, phase: PipelinePhase) {
     assert!(submission.missing_services.iter().any(|missing| {
         missing.phase == phase
-            && missing.availability == PhaseServiceAvailability::ExternalDependencyGap
+            && missing.availability
+                == if phase == PipelinePhase::SourceLoad {
+                    PhaseServiceAvailability::AvailableOwner
+                } else {
+                    PhaseServiceAvailability::ExternalDependencyGap
+                }
     }));
 }
 

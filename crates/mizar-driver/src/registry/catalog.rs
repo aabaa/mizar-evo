@@ -13,7 +13,7 @@ pub(super) enum QueryAdapterKind {
     Execute,
 }
 
-pub(super) const PHASE_REQUIREMENTS: [PhaseRequirement; 10] = [
+pub(super) const PHASE_REQUIREMENTS: [PhaseRequirement; 11] = [
     PhaseRequirement {
         service_name: "WorkspacePlanner",
         owner: PhaseOwner::MizarBuild,
@@ -21,9 +21,15 @@ pub(super) const PHASE_REQUIREMENTS: [PhaseRequirement; 10] = [
         availability: PhaseServiceAvailability::AvailableOwner,
     },
     PhaseRequirement {
-        service_name: "SourceFrontend",
+        service_name: "SourceLoad",
         owner: PhaseOwner::MizarFrontend,
-        phases: &[PipelinePhase::SourceLoad, PipelinePhase::Frontend],
+        phases: &[PipelinePhase::SourceLoad],
+        availability: PhaseServiceAvailability::AvailableOwner,
+    },
+    PhaseRequirement {
+        service_name: "Frontend",
+        owner: PhaseOwner::MizarFrontend,
+        phases: &[PipelinePhase::Frontend],
         availability: PhaseServiceAvailability::ExternalDependencyGap,
     },
     PhaseRequirement {

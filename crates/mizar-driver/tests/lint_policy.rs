@@ -75,6 +75,8 @@ fn driver_dependency_boundary_is_exact_for_scaffold_task() {
     let dependencies = section(&manifest, "dependencies");
     let actual = dependency_names(&dependencies);
     let expected = BTreeSet::from([
+        "blake3".to_owned(),
+        "mizar-frontend".to_owned(),
         "mizar-build".to_owned(),
         "mizar-diagnostics".to_owned(),
         "mizar-ir".to_owned(),
@@ -85,14 +87,14 @@ fn driver_dependency_boundary_is_exact_for_scaffold_task() {
     assert_eq!(
         dependency_sections,
         expected_sections,
-        "{} must keep D-001 dependencies only in [dependencies]; \
+        "{} must keep owner dependencies only in [dependencies]; \
          dev/build/target-specific dependency tables are later-task scope",
         manifest_path.display()
     );
     assert_eq!(
         actual,
         expected,
-        "{} must keep D-001 dependencies limited to the real owner seams \
+        "{} must keep dependencies limited to the real owner seams \
          named by the crate plan",
         manifest_path.display()
     );
@@ -107,6 +109,12 @@ fn driver_dependency_boundary_is_exact_for_scaffold_task() {
         &manifest_path,
         "mizar-diagnostics",
         "../mizar-diagnostics",
+    );
+    assert_dependency_path(
+        &dependencies,
+        &manifest_path,
+        "mizar-frontend",
+        "../mizar-frontend",
     );
     assert_dependency_path(&dependencies, &manifest_path, "mizar-ir", "../mizar-ir");
     assert_dependency_path(
@@ -164,6 +172,7 @@ fn driver_source_surface_matches_completed_tasks() {
         root.join("src/driver/watch.rs"),
         root.join("src/driver.rs"),
         root.join("src/events.rs"),
+        root.join("src/frontend_adapter.rs"),
         root.join("src/lib.rs"),
         root.join("src/registry/catalog.rs"),
         root.join("src/registry.rs"),
@@ -201,6 +210,7 @@ fn driver_lib_exposes_only_completed_modules() {
 fn driver_private_helper_modules_stay_private() {
     let root = crate_root();
     let helper_modules = [
+        ("src/lib.rs", "frontend_adapter"),
         ("src/cli.rs", "output"),
         ("src/driver.rs", "event_log"),
         ("src/driver.rs", "scheduler"),
@@ -271,6 +281,7 @@ fn lib_code_line_detector_blocks_unexpected_item_forms() {
         "pub mod cli;",
         "pub mod driver;",
         "pub mod events;",
+        "mod frontend_adapter;",
         "pub mod request;",
         "pub mod registry;",
     ] {
@@ -602,6 +613,7 @@ fn lib_has_unexpected_code_line(line: &str) -> bool {
         && line != "pub mod cli;"
         && line != "pub mod driver;"
         && line != "pub mod events;"
+        && line != "mod frontend_adapter;"
         && line != "pub mod registry;"
         && !line.is_empty()
         && !ignored_prefixes

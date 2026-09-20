@@ -121,7 +121,7 @@ BOM の loaded 境界はゼロとし、map フィールド末尾まで完全な 
 と診断用 filesystem path は符号化しない。
 この保存用バイト列は map を含むため、IR の意味内容 hash 入力に直接使用しない。
 publication は IR publisher が規定する source-map の side-table hash 分離を
-保持する必要がある。この接続は後続の依存作業である。
+保持する必要がある。publication 表現は下記で定義する。
 
 `from_canonical_disk_bytes` は現在の session SourceId と検証済み disk SourceInput
 を受け取る。SourceInput は検証 token ではなく、呼び出し側が session loader により
@@ -163,3 +163,11 @@ cache 受理ではない。読み込み射影は変更しない。
 - `normalized_path` と `edition` は、後続の parser inputs、lexical-environment request、cache key、診断で必要になるため、`LoadedSource` から保持する。
 - `file_path` はローカル診断メタデータであり、公開同一性からは除外される。
 - `SourceUnit` は構築後は不変なものとして扱われ、スナップショットリース・LSP ビュー・下流フェーズ出力に保持されうる。
+
+## SourceUnit Publication
+
+output kind は `SourceUnit`、descriptor schema は `mizar-frontend/source-unit-publication/v1`、IR SchemaVersion は 1、phase は `SourceLoad`。semantic bytes は `SourceUnitCacheKey::stable_hash()` の 32 bytes、storage bytes は `canonical_disk_bytes()`。current SourceId と絶対診断 path はどちらの hash stream にも含めない。
+IR work-unit label は `format!("{:?}:{:?}", package_id.as_str(), module_path.as_str())`。唯一の named input は `source`、domain は `SOURCE_UNIT_CACHE_KEY_VERSION`、digest は source key。source loading は parent/dependency hash を要求しない。
+source-map side table は kind `source-storage`、key normalized package-relative path の一行。digest は context `mizar-frontend/source-unit-storage-side-table/v1` の BLAKE3 derive-key を full storage bytes に適用する。実 loading map を保守的に side identity に含め、semantic content は map に依存させない。他の side table は空。
+
+disk publication は `OutputOrigin::PackageSource` と `PublicationTarget::CurrentPackage` を使用する。

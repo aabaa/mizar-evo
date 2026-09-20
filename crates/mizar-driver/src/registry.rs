@@ -2,6 +2,8 @@ use std::{collections::BTreeMap, error::Error, fmt, sync::Arc};
 
 use mizar_build::{
     cancel::CancellationToken,
+    module_index::ModuleIndex,
+    planner::BuildPlan,
     task_graph::{PipelinePhase, WorkUnit},
 };
 use mizar_diagnostics::sink::{DiagnosticBatch, DiagnosticSink};
@@ -10,7 +12,7 @@ use mizar_ir::{
     publisher::PhaseOutputPublisher,
     storage::AnyPhaseOutputRef,
 };
-use mizar_session::{BuildSnapshotId, Hash};
+use mizar_session::{BuildSnapshot, BuildSnapshotId, Hash, SessionIdAllocator};
 
 mod catalog;
 
@@ -56,20 +58,41 @@ pub struct PhaseCacheContext {
     pub input_identities: PhaseInputIdentities,
 }
 
+#[derive(Clone, Copy)]
+pub struct SourceLoadInputs<'a> {
+    pub snapshot: &'a BuildSnapshot,
+    pub build_plan: &'a BuildPlan,
+    pub module_index: &'a ModuleIndex,
+    pub allocator: &'a dyn SessionIdAllocator,
+}
+
+impl fmt::Debug for SourceLoadInputs<'_> {
+    fn fmt(&self, formatter: &mut fmt::Formatter<'_>) -> fmt::Result {
+        formatter
+            .debug_struct("SourceLoadInputs")
+            .field("snapshot", &self.snapshot.id)
+            .field("build_plan", &self.build_plan.workspace_root)
+            .field("module_index", &self.module_index.modules.len())
+            .finish_non_exhaustive()
+    }
+}
+
 #[derive(Debug)]
-pub struct PhaseExecutionContext {
+pub struct PhaseExecutionContext<'a> {
     pub common: PhaseContext,
     pub cancellation: Option<CancellationToken>,
     pub diagnostics: Option<DiagnosticSink>,
     pub output_publisher: Option<Arc<PhaseOutputPublisher>>,
     pub parent_outputs: Vec<SealedParentOutputHandle>,
+    pub source_load: Option<SourceLoadInputs<'a>>,
 }
 
 #[derive(Debug, Default)]
-pub struct PhaseExecutionResources {
+pub struct PhaseExecutionResources<'a> {
     pub cancellation: Option<CancellationToken>,
     pub diagnostics: Option<DiagnosticSink>,
     pub output_publisher: Option<Arc<PhaseOutputPublisher>>,
+    pub source_load: Option<SourceLoadInputs<'a>>,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -313,7 +336,10 @@ impl PhaseInput {
         }
     }
 
-    fn execution_context(&self, resources: PhaseExecutionResources) -> PhaseExecutionContext {
+    fn execution_context<'a>(
+        &self,
+        resources: PhaseExecutionResources<'a>,
+    ) -> PhaseExecutionContext<'a> {
         PhaseExecutionContext {
             common: PhaseContext {
                 snapshot: self.snapshot,
@@ -323,6 +349,7 @@ impl PhaseInput {
             diagnostics: resources.diagnostics,
             output_publisher: resources.output_publisher,
             parent_outputs: self.parent_outputs.clone(),
+            source_load: resources.source_load,
         }
     }
 }
@@ -359,6 +386,10 @@ impl PhaseRegistryBuilder {
     pub fn register_arc(&mut self, service: Arc<dyn PhaseService>) -> &mut Self {
         self.services.push(service);
         self
+    }
+
+    pub fn register_source_load(&mut self) -> &mut Self {
+        self.register(crate::frontend_adapter::SourceLoadService)
     }
 
     pub fn build(self) -> Result<PhaseRegistry, PhaseRegistryError> {

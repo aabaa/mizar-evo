@@ -120,7 +120,8 @@ their real owning crate exposes an adapter seam.
 | Service | Phases | Owner seam | Registry status |
 |---|---:|---|---|
 | `WorkspacePlanner` | 0 | `mizar-build` planner | Real bootstrap owner exists; driver task 8 wires it without duplicating planner semantics. |
-| `SourceFrontend` | 1-3 | `mizar-frontend` | D-006 records the adapter as `external_dependency_gap`; a real adapter requires future producer/diagnostic/input seams. |
+| `SourceLoad` | 1 | `mizar-frontend` | Disk source service; see [source services](frontend_adapter.md). |
+| `Frontend` | 2-3 | `mizar-frontend` | `external_dependency_gap`: full payload and diagnostic mapping remain pending. |
 | `ModuleResolver` | 4-5 | `mizar-resolve` | `external_dependency_gap` until the resolver exposes a service surface. |
 | `SemanticChecker` | 6-8 | `mizar-checker` | `external_dependency_gap` until checker services expose real typed outputs. |
 | `Elaborator` | 9-10 | `mizar-core` | `external_dependency_gap` until core/elaboration services land. |
@@ -152,7 +153,7 @@ parameters or object-safe adapters that fit the available owner APIs.
 trait PhaseService {
     fn phase(&self) -> PhaseDescriptor;
     fn cache_key(&self, input: &PhaseInput, context: &PhaseCacheContext) -> PhaseCacheIntent;
-    fn execute(&self, input: PhaseInput, context: PhaseExecutionContext) -> PhaseResult;
+    fn execute(&self, input: PhaseInput, context: PhaseExecutionContext<'_>) -> PhaseResult;
 }
 ```
 
@@ -191,12 +192,13 @@ struct PhaseCacheContext {
     input_identities: PhaseInputIdentities,
 }
 
-struct PhaseExecutionContext {
+struct PhaseExecutionContext<'a> {
     common: PhaseContext,
     cancellation: Option<CancellationToken>,
     diagnostics: Option<DiagnosticSink>,
     output_publisher: Option<Arc<PhaseOutputPublisher>>,
     parent_outputs: Vec<SealedParentOutputHandle>,
+    source_load: Option<SourceLoadInputs<'a>>,
 }
 ```
 

@@ -24,10 +24,9 @@ per the ownership map of
 | events | `events.md` (task 9) | `src/events.rs` | [x] |
 | cli | `cli.md` (task 12) | `src/cli.rs`; private rendering helpers in `src/cli/output.rs` | [x] |
 
-Task D-006 records the `SourceFrontend` adapter readiness decision in
-[frontend_adapter.md](frontend_adapter.md). It is not a module source surface;
-the registry continues to classify that real adapter as an external dependency
-gap until owner seams exist.
+The private `src/frontend_adapter.rs` implements real `SourceLoad` publication.
+[frontend_adapter.md](frontend_adapter.md) defines its boundary and the remaining
+`Frontend` external dependency gap.
 
 `mizar-driver` is the front door for all build modes: it maps CLI/watch/LSP
 requests into `BuildRequestDraft`s, bootstraps phase 0 through the `mizar-build`

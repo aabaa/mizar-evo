@@ -78,7 +78,7 @@ cache, artifact, or LSP authority.
 
 | Gap | Classification | Driver disposition |
 |---|---|---|
-| `SourceFrontend` cannot yet publish canonical frontend payloads or diagnostics drafts. | `external_dependency_gap` | Keep the registry missing-service classification from [frontend_adapter.md](frontend_adapter.md); do not synthesize frontend outputs. |
+| `Frontend` still lacks its complete canonical payload and shared diagnostics bridge; disk SourceLoad is separately available. | `external_dependency_gap` | Keep missing-service blocking for Frontend and later owners; see [source services](frontend_adapter.md). |
 | Semantic/proof/artifact/doc phase adapters are not all available. | `external_dependency_gap` / `deferred` | A submit call may report the missing owner seam as blocked or unavailable; it must not mark the phase complete. |
 | Real cache lookup/compatibility is not wired through `mizar-cache` yet. | `external_dependency_gap` | Use disabled/unavailable cache scheduling unless a real cache decision is supplied by the owner seam. |
 | Real artifact publication tokens and phase-15 producer emission are unavailable. | `external_dependency_gap` | Do not emit committed-artifact events or manifest publication records from driver-owned code. |

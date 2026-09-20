@@ -54,7 +54,7 @@ semantics.
 | `driver.md` | `driver.md` | Paired. Driver front-door ownership, public API, submit flow, scheduler boundary, cancellation, artifact/diagnostics boundaries, tests, and public enum policy are aligned. |
 | `events.md` | `events.md` | Paired. Protocol-agnostic event shape, freshness/suppression, deterministic ordering, diagnostics/artifact events, consumer rules, tests, and public enum policy are aligned. |
 | `cli.md` | `cli.md` | Paired. Batch command surface, request mapping, progress/diagnostics rendering, exit codes, owner-gap handling, tests, and public enum policy are aligned. |
-| `frontend_adapter.md` | `frontend_adapter.md` | Paired. D-006 `SourceFrontend` readiness inventory and `external_dependency_gap` decision are aligned. |
+| `frontend_adapter.md` | `frontend_adapter.md` | Paired. Real `SourceLoad` publication and the remaining `Frontend` dependency gap are aligned. |
 | `source_spec_correspondence.md` | `source_spec_correspondence.md` | Paired. D-018 public API, public method surface, promised behavior, gap records, and docs-only verification path are aligned. |
 | `bilingual_documentation_sync.md` | `bilingual_documentation_sync.md` | Paired by this task. |
 | `architecture_22_follow_up_audit.md` | `architecture_22_follow_up_audit.md` | Paired by D-020. Architecture-22 query-boundary, stale-output, diagnostics, artifact-publication, and determinism classifications are aligned. |
@@ -65,15 +65,16 @@ semantics.
 
 No new blocking/high bilingual documentation drift was found.
 
-Existing classified records remain unchanged:
+Current classified records:
 
 - `DRIVER-G-001` and `DRIVER-G-009` remain report-only
   `repo_metadata_conflict` items for artifact metadata; this task does not
   repair `mizar-artifact` metadata.
-- `DRIVER-G-010` through `DRIVER-G-014` remain the current owner-seam
-  `external_dependency_gap` or `deferred` records for frontend, scheduler
-  dispatch, watch/LSP bridge, semantic/proof/artifact adapters, and document
-  extraction.
+- `DRIVER-G-010` is partial: real `SourceLoad` publication is available;
+  `Frontend` remains an external dependency gap.
+- `DRIVER-G-011` through `DRIVER-G-014` retain their owner-seam
+  `external_dependency_gap` or `deferred` classifications for scheduler dispatch,
+  watch/LSP bridge, semantic/proof/artifact adapters, and document extraction.
 - Full clean/incremental/parallel equivalence with real producer/cache/artifact
   and proof seams remains deferred until the corresponding owner seams exist.
 

@@ -502,8 +502,10 @@ dependencies = [
 name = "mizar-driver"
 version = "0.1.0"
 dependencies = [
+ "blake3",
  "mizar-build",
  "mizar-diagnostics",
+ "mizar-frontend",
  "mizar-ir",
  "mizar-session",
  "salsa",

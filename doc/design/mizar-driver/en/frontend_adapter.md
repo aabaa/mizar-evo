@@ -1,74 +1,30 @@
-# SourceFrontend Adapter Readiness
+# Source Services
 
-> Canonical language: English. Japanese companion:
-> [../ja/frontend_adapter.md](../ja/frontend_adapter.md).
+> Canonical language: English. [Japanese companion](../ja/frontend_adapter.md).
 
-Status: task D-006 classified as `external_dependency_gap`. No adapter source is
-implemented in this task.
+## Disk SourceLoad service
 
-## Scope
+`PhaseRegistryBuilder::register_source_load()` registers the real disk-only service named `SourceLoad`, owned by `mizar-frontend`, covering only `PipelinePhase::SourceLoad`. The zero-argument registration method fixes the single-phase descriptor/catalog identity without exposing a second public service type. Frontend remains an external dependency gap: its complete payload and shared diagnostic mapping are not supplied by SourceLoad.
+`SourceLoadInputs<'a>` borrows the captured `BuildSnapshot`, `BuildPlan`, `ModuleIndex`, and caller `SessionIdAllocator`. `PhaseExecutionResources<'a>` and `PhaseExecutionContext<'a>` carry optional source inputs; real submission wires them into the scheduler dispatcher. This transport remains dormant under the default graph while later services are missing; A5 validates execution directly through the registry, without a new graph/profile. No allocator or payload is captured in the registered service.
 
-Task D-006 checked whether `mizar-driver` can register a real `SourceFrontend`
-`PhaseService` for `mizar-frontend` phases 1-3.
+## Binding and execution
 
-The adapter is allowed only when all of these owner seams exist:
+Require a module work unit and exactly one matching disk SourceVersion, workspace package plan, package index entry, and workspace module entry. Match package/module/path/edition, package root/source root/manifest, and snapshot/workspace root across owners; reject duplicate or conflicting entries. The module source-relative path must agree with its package-relative path and source root. Reject unsafe workspace-relative plan roots rather than resolving them outside the captured workspace.
+Canonical package roots must remain inside the canonical captured workspace; use the bound canonical root for loading. Unavailable roots still reach the loader for its real diagnostics, but successful publication requires proven root containment.
+Derive a Disk SourceInput from the captured typed normalized path and source metadata. Resolve the package root from the captured workspace and workspace package plan; let the session loader own filesystem canonicalization and source acceptance.
+The dispatch input hash must equal the SourceUnitCacheKey for the captured version; SourceLoad consumes no output parents or dependency hashes. Missing owner dispatch identities remain blocked; this service does not invent planner output handles.
+Require a current supplied publisher and an empty, unsealed diagnostic sink scoped to SourceLoad and the same snapshot. Missing/mismatched resources, invalid bindings/identities, publication failure, or source changes after capture return Blocking without output. A successful load whose hash differs from the captured version is rejected as an obsolete dispatch result under architecture 22, not classified as a loader failure or assigned a new E0600 cause. A matching cancellation token returns Cancelled; a foreign token returns Blocking.
+Call `FrontendSourceLoader<DiskSourceLoader>::load_source_unit` with the caller allocator. Validate loaded metadata, Disk origin and normalized text hash against the captured version. Use the disk codec to rebind the actual loaded payload/maps to the captured SourceId, then publish it through the supplied publisher. The service never registers/revives publisher snapshots or grants work-unit permission.
+Use the [frontend-owned publication representation](../../mizar-frontend/en/source.md#sourceunit-publication). Decoder closures capture current request metadata, SourceId and expected source hash only; they decode bytes, never retain the produced payload or reload/reparse a file.
+Return Complete with the actual sealed output only after successful publication. The full driver submission still refuses graphs with missing later services. Direct SourceLoad execution is not full build completion.
 
-- `mizar-frontend` provides the real source-to-syntax phase behavior;
-- `mizar-ir` can seal the produced frontend payload through a real producer
-  contract, including canonical payload bytes and a decoder for the stored type;
-- `mizar-diagnostics` can accept frontend diagnostics as validated
-  `DiagnosticDraft` values without using diagnostic message text as identity;
-- the driver can translate a build-plan work slice into frontend source requests
-  without duplicating planner or source-loading authority.
+## Diagnostics and cache boundary
 
-## Inventory Result
+Real loader errors emit validated shared drafts with the request's package/path location, SourceLoad phase/category, current snapshot, and no fabricated range, then return Fatal without output. Map InvalidUtf8 to E0601, UnreadableSourceFile to E0602, and SourcePathOutsidePackageRoot to E0603. For E0601–E0603, use the allocated semantic name as the stable detail key. Other variants map to E0600, with stable detail keys `source.` plus the variant name in snake_case; unknown future variants remain an unsupported integration gap and return Blocking without a fabricated diagnostic. Message text is display-only. Failure to construct/emit a draft returns Blocking.
+`cache_key` returns NoKey: normalized source hashes cannot prove that cached raw loading maps match the current file. Every execution loads the real source. The codec supports storage placement, not cache-hit scheduling or cross-snapshot reuse credit.
 
-`mizar-frontend` exposes a real `Frontend<L, P, PS>::run` API that returns
-`FrontendOutput<PS::Ast>`, including source, preprocessing, token, optional AST,
-diagnostic, and frontend content-cache-key data.
+## Tests and remaining ownership
 
-`mizar-ir::publisher::PhaseOutputPublisher` is also real, but publishing requires
-producer-supplied canonical payload bytes, a typed decoder, side tables, parent
-handles, named input hashes, and explicit allowed work-unit context. The current
-frontend surface does not define canonical serialization or a stable producer
-payload schema for `FrontendOutput`.
-
-`mizar-diagnostics::sink::DiagnosticSink` accepts already validated
-`DiagnosticDraft` values. The current frontend surface does not provide a
-driver-facing conversion from `FrontendDiagnostic` to diagnostic registry codes,
-structured detail fields, freshness, and draft inputs. The driver must not use
-frontend message text as diagnostic identity.
-
-The driver core and scheduler submission specs are not yet in place, so there is
-no stable driver-owned build-plan slice to `SourceUnitRequest` mapping for a
-real adapter invocation.
-
-## Classification
-
-| ID | Class | Disposition | Evidence | Required owner seam |
-|---|---|---|---|---|
-| DRIVER-G-010 | `design_drift` | `external_dependency_gap` | `SourceFrontend` has real in-memory frontend output, but no canonical frontend producer payload, no diagnostics-draft bridge, and no driver build-plan input mapping. | Frontend/IR/diagnostics/driver integration must define the producer payload schema, diagnostic draft conversion, and request mapping. |
-
-## Decision
-
-Do not add a `SourceFrontend` adapter in D-006. The registry table continues to
-classify `SourceFrontend` as `external_dependency_gap`.
-
-When the missing owner seams exist, a future implementation may add a real
-adapter with these minimum properties:
-
-- it invokes `mizar-frontend` rather than reimplementing source, preprocessing,
-  lexing, parsing, or parser recovery;
-- it publishes only owner-defined canonical frontend payloads through
-  `PhaseOutputPublisher`;
-- it emits only validated diagnostics through `DiagnosticSink`;
-- it reports missing payload/diagnostic/publisher context as a blocking adapter
-  result rather than fabricating an output handle;
-- it leaves LSP conversion, cache compatibility decisions, and artifact
-  publication outside `mizar-driver`.
-
-## Verification
-
-D-006 is documentation-only. Use diff checks and review-only agents for the
-classification. No Rust verification is required unless a later change adds
-source code.
+Use real temporary source files and actual planner/index/snapshot outputs. Exercise valid resident/blob publication, current SourceId/map rebinding, equal normalized text with distinct raw maps, changed text after capture, failed request/resource binding, cancellation, stale publisher and work-unit denial.
+Exercise real invalid UTF-8, deleted/unreadable files, symlink escape where supported, and allocator failure through the shared diagnostic sink. Preserve absent later-service blocking and existing registry tests.
+Preprocessing, lexing, parsing, recovery, full Frontend serialization and its diagnostic conversion remain frontend-owner integration work. Cache compatibility, LSP conversion, artifact publication and later semantic/proof phases stay with their existing owners.

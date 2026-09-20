@@ -19,7 +19,7 @@ use crate::{
     driver::DriverSchedulerRun,
     registry::{
         PhaseExecutionResources, PhaseInput, PhaseRegistry, PhaseRegistryError, PhaseResult,
-        PhaseStatus,
+        PhaseStatus, SourceLoadInputs,
     },
     request::BuildSessionOutcome,
 };
@@ -63,6 +63,7 @@ pub(super) struct RegistrySchedulerDispatcher<'a> {
     registry: &'a PhaseRegistry,
     phase_inputs: Option<&'a dyn PhaseDispatchInputProvider<BuildTask>>,
     publisher: Option<&'a Arc<PhaseOutputPublisher>>,
+    source_load: Option<SourceLoadInputs<'a>>,
     pub(super) phase_results: BTreeMap<TaskId, Vec<PhaseResult>>,
 }
 
@@ -71,11 +72,13 @@ impl<'a> RegistrySchedulerDispatcher<'a> {
         registry: &'a PhaseRegistry,
         phase_inputs: Option<&'a dyn PhaseDispatchInputProvider<BuildTask>>,
         publisher: Option<&'a Arc<PhaseOutputPublisher>>,
+        source_load: Option<SourceLoadInputs<'a>>,
     ) -> Self {
         Self {
             registry,
             phase_inputs,
             publisher,
+            source_load,
             phase_results: BTreeMap::new(),
         }
     }
@@ -87,6 +90,7 @@ impl SchedulerTaskDispatcher for RegistrySchedulerDispatcher<'_> {
             self.registry,
             self.phase_inputs,
             self.publisher,
+            self.source_load,
             &mut self.phase_results,
             task,
         )
@@ -126,6 +130,7 @@ fn dispatch_registry_phase(
     registry: &PhaseRegistry,
     phase_inputs: Option<&dyn PhaseDispatchInputProvider<BuildTask>>,
     publisher: Option<&Arc<PhaseOutputPublisher>>,
+    source_load: Option<SourceLoadInputs<'_>>,
     phase_results: &mut BTreeMap<TaskId, Vec<PhaseResult>>,
     task: SchedulerDispatchTask<'_>,
 ) -> SchedulerDispatchOutcome {
@@ -223,7 +228,16 @@ fn dispatch_registry_phase(
             PhaseExecutionResources {
                 cancellation: task.cancellation.clone(),
                 output_publisher: publisher.cloned(),
-                ..PhaseExecutionResources::default()
+                source_load,
+                diagnostics: (*phase == PipelinePhase::SourceLoad).then(|| {
+                    mizar_diagnostics::sink::DiagnosticSink::new(
+                        mizar_diagnostics::sink::DiagnosticProducerScope::new(
+                            mizar_diagnostics::failure_record::PipelinePhase::SourceLoad,
+                            task.snapshot,
+                            "SourceLoad",
+                        ),
+                    )
+                }),
             },
         ) {
             Ok(result) => {

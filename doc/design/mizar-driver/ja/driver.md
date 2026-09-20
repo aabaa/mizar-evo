@@ -76,7 +76,7 @@ Downstream crate はこれらの enum を match するとき wildcard arm を持
 
 | Gap | Classification | Driver disposition |
 |---|---|---|
-| `SourceFrontend` はまだ canonical frontend payload や diagnostics draft を publish できない。 | `external_dependency_gap` | [frontend_adapter.md](frontend_adapter.md) の registry missing-service classification を維持する。frontend output を synthesize しない。 |
+| `Frontend` は完全な canonical payload と shared diagnostics bridge が未実装。disk SourceLoad は別途利用可能。 | `external_dependency_gap` | Frontend と後続 owner の missing-service blocking を維持する。[source services](frontend_adapter.md) を参照。 |
 | semantic / proof / artifact / doc phase adapter がすべて利用可能ではない。 | `external_dependency_gap` / `deferred` | submit call は missing owner seam を blocked または unavailable として報告してよい。phase complete と mark してはならない。 |
 | real cache lookup / compatibility はまだ `mizar-cache` 経由で結線されていない。 | `external_dependency_gap` | real cache decision が owner seam から供給されるまで、disabled / unavailable cache scheduling を使う。 |
 | real artifact publication token と phase-15 producer emission が利用できない。 | `external_dependency_gap` | driver-owned code から committed-artifact event や manifest publication record を emit しない。 |

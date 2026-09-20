@@ -24,10 +24,9 @@
 | events | `events.md`（task 9） | `src/events.rs` | [x] |
 | cli | `cli.md`（task 12） | `src/cli.rs`; private rendering helper は `src/cli/output.rs` | [x] |
 
-Task D-006 は `SourceFrontend` adapter readiness decision を
-[frontend_adapter.md](frontend_adapter.md) に記録する。これは module source surface
-ではない。owner seam が存在するまで、registry はその real adapter を external
-dependency gap と分類し続ける。
+private `src/frontend_adapter.rs` は実 `SourceLoad` publication を実装する。
+[frontend_adapter.md](frontend_adapter.md) はその境界と、残る `Frontend`
+external dependency gap を定義する。
 
 `mizar-driver` はすべてのビルドモードの正面玄関である: CLI/watch/LSP の
 リクエストを `BuildRequestDraft` へ map し、`mizar-build` の planner を

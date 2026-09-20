@@ -13,5 +13,6 @@
 pub mod cli;
 pub mod driver;
 pub mod events;
+mod frontend_adapter;
 pub mod registry;
 pub mod request;
