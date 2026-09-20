@@ -23,6 +23,8 @@ See
 [architecture/en/02.source_and_frontend.md](../../architecture/en/02.source_and_frontend.md)
 "Frontend Pipeline", "Error Recovery", "Diagnostics", and "FrontendOutput".
 
+`run_loaded` consumes an already loaded `SourceUnit` without filesystem access or source-id allocation; `run` delegates to it after normal loading. The caller validates snapshot binding. Both entries share preprocessing, provider/parser invocation, diagnostics and cache keys; tests cover output parity (including recovery), deleted files and unchanged failures.
+
 ## Public API
 
 ```rust
@@ -56,6 +58,7 @@ where
         request: SourceUnitRequest,
         ids: &dyn SessionIdAllocator,
     ) -> Result<FrontendOutput<PS::Ast>, FrontendError>;
+    pub fn run_loaded(&self, source: SourceUnit) -> Result<FrontendOutput<PS::Ast>, FrontendError>;
 }
 
 pub struct FrontendDiagnostic {

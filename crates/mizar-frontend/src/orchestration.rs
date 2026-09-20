@@ -91,6 +91,17 @@ where
                 source: Box::new(source),
             })?;
 
+        self.run_loaded(source)
+    }
+
+    /// Runs the existing frontend pipeline on an already loaded source.
+    /// Preserves its identity and maps without loading or allocating source ids.
+    /// The caller is responsible for validating the source's snapshot binding.
+    ///
+    /// Span-map and lexical-provider failures are returned unchanged.
+    /// Recoverable diagnostics remain in the output even when no AST is produced.
+    /// Source-loading failures are exclusive to [`Self::run`].
+    pub fn run_loaded(&self, source: SourceUnit) -> Result<FrontendOutput<PS::Ast>, FrontendError> {
         let mut bridge = SpanBridge::new();
         register_source_unit(&mut bridge, &source)
             .map_err(|source| FrontendError::SpanBridge { source })?;
@@ -835,6 +846,59 @@ mod tests {
 
         assert!(output.ast.is_some());
         assert!(output.diagnostics.is_empty());
+    }
+
+    #[test]
+    fn loaded_frontend_preserves_full_output_after_source_file_is_deleted() {
+        let fixture = PackageFixture::new();
+        let frontend = frontend_for_fixture(&fixture, MizarParserSeam);
+        let ids = InMemorySessionIdAllocator::new();
+        for (text, recovered) in [
+            ("\u{feff}definition\r\nend;\r\n", false),
+            ("definition\n", true),
+        ] {
+            fixture.write("src/loaded.miz", text);
+            let request = fixture.request("src/loaded.miz");
+            let expected = frontend.run(request.clone(), &ids).unwrap();
+            assert!(expected.ast.is_some());
+            assert_eq!(!expected.diagnostics.is_empty(), recovered);
+            fs::remove_file(fixture.path("src/loaded.miz")).unwrap();
+            let actual = frontend.run_loaded(expected.source.clone()).unwrap();
+            assert_eq!(actual, expected);
+            assert!(matches!(
+                frontend.run(request, &ids),
+                Err(FrontendError::SourceLoad { .. })
+            ));
+        }
+    }
+
+    #[test]
+    fn loaded_frontend_preserves_provider_and_span_failures() {
+        let fixture = PackageFixture::new();
+        fixture.write("src/loaded_failures.miz", "definition\nend;\n");
+        let ids = InMemorySessionIdAllocator::new();
+        let source = FrontendSourceLoader::new(DiskSourceLoader::new(fixture.root()))
+            .load_source_unit(fixture.request("src/loaded_failures.miz"), &ids)
+            .unwrap();
+        let failing =
+            frontend_for_fixture_with_provider(&fixture, FailingProvider, MizarParserSeam);
+        assert!(matches!(
+            failing.run_loaded(source.clone()),
+            Err(FrontendError::LexicalEnvironment {
+                source: crate::lexical_env::FrontendLexicalEnvironmentError::ProviderUnavailable { .. }
+            })
+        ));
+        let mut invalid = source;
+        invalid.line_map = LineMap::new(ids.next_source_id(snapshot_id(1)).unwrap(), "");
+        let frontend = frontend_for_fixture(&fixture, MizarParserSeam);
+        assert!(matches!(
+            frontend.run_loaded(invalid),
+            Err(FrontendError::SpanBridge {
+                source: SpanBridgeError::SourceMap {
+                    source: SourceMapError::UnknownSourceId { .. }
+                }
+            })
+        ));
     }
 
     #[test]

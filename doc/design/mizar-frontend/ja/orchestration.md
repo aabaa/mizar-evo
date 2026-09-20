@@ -12,6 +12,8 @@
 
 [architecture/ja/02.source_and_frontend.md](../../architecture/ja/02.source_and_frontend.md) の「フロントエンドパイプライン」「エラーリカバリ」「診断」「FrontendOutput」を参照。
 
+`run_loaded` は filesystem access や source-id allocation を行わずロード済み `SourceUnit` を消費し、`run` は通常のロード後にこれを呼ぶ。snapshot binding は呼び出し側が検証する。両入口は前処理、provider/parser 呼び出し、診断、cache key を共有し、回復を含む出力同値性、ファイル削除、既存の失敗経路をテストする。
+
 ## 公開 API
 
 ```rust
@@ -45,6 +47,7 @@ where
         request: SourceUnitRequest,
         ids: &dyn SessionIdAllocator,
     ) -> Result<FrontendOutput<PS::Ast>, FrontendError>;
+    pub fn run_loaded(&self, source: SourceUnit) -> Result<FrontendOutput<PS::Ast>, FrontendError>;
 }
 
 pub struct FrontendDiagnostic {
