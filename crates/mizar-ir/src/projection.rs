@@ -1329,6 +1329,7 @@ mod tests {
                 output_kind: output_kind(),
                 schema_version: storage_schema(),
                 payload: String::from_utf8(bytes.clone()).expect("fixture bytes are utf8"),
+                storage_payload: Some(bytes.clone()),
                 canonical_payload: Some(bytes),
                 decode: BlobDecoder::new(|bytes| {
                     String::from_utf8(bytes.to_vec())

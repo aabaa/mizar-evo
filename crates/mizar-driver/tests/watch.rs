@@ -835,6 +835,7 @@ fn publish_text(
             output_kind: output_kind(),
             schema_version: SchemaVersion::new(1),
             payload: payload.to_owned(),
+            storage_payload: Some(payload.as_bytes().to_vec()),
             canonical_payload: Some(payload.as_bytes().to_vec()),
             decode: BlobDecoder::new(|bytes| {
                 String::from_utf8(bytes.to_vec())

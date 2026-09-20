@@ -510,6 +510,7 @@ fn parent_handle(snapshot_seed: u8, seed: u8) -> SealedParentOutputHandle {
             output_kind,
             schema_version: SchemaVersion::new(1),
             payload: payload.clone(),
+            storage_payload: Some(payload.as_bytes().to_vec()),
             canonical_payload: Some(payload.into_bytes()),
             decode: BlobDecoder::new(|bytes| {
                 String::from_utf8(bytes.to_vec())

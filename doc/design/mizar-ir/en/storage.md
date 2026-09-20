@@ -119,21 +119,31 @@ The resident-set rule is:
 - collection removes unreferenced payload storage without changing published
   artifacts or source-level semantics.
 
-The default spill threshold is **64 KiB of canonical payload bytes**. Payloads
-whose canonical byte length is greater than 64 KiB are blob-backed by default;
+The default spill threshold is **64 KiB of storage payload bytes**. Payloads
+whose storage byte length is greater than 64 KiB are blob-backed by default;
 payloads at or below 64 KiB remain resident by default. The threshold is a
 performance and memory policy, not an identity rule. Changing it must not
 change `PhaseOutputId`, content hash, proof status, or artifact projection.
 
 Task 6 implements the policy with an explicit `StoragePolicy` so tests and
 future build profiles can choose a lower or higher threshold. Producers that
-already have canonical bytes use the blob-aware sealing path; storage spills
+already have storage bytes use the blob-aware sealing path; storage spills
 those bytes when they exceed the threshold and decodes them only through the
 registered runtime kind/schema binding. Producers that do not yet have
-canonical bytes use the resident sealing path until the later publisher
-integration supplies canonical encodings. The crate must not expose blob paths
+storage bytes use the resident sealing path until the later publisher
+integration supplies storage encodings. The crate must not expose blob paths
 as artifact data. Blob references are internal content-addressed references
 keyed by payload hash and schema version.
+
+Publisher `storage_payload` becomes `SealCanonicalOutputInput::canonical_bytes`;
+spill threshold, blob encoding/decoding and fingerprinting use only this stream.
+The fingerprint is exactly `content_blob_id(schema_version, storage_payload)`
+with the existing `mizar-ir/content-blob/v1` domain and length framing. It is
+internal integrity metadata, not semantic content hash, cache key or artifact id.
+Canonical sealing retains this private fingerprint for both
+resident and blob placement. The cache adapter authenticates supplied storage
+bytes against that fingerprint after handle validation. A resident seal without
+storage bytes has no fingerprint and cannot be encoded as a cache record.
 
 ## Side Tables
 
@@ -227,6 +237,9 @@ exception; `mizar-ir` internal matches may remain exhaustive where they are
 crate-local checks.
 
 ## Tests
+
+- canonical resident/blob fingerprints bind cache bytes; noncanonical resident
+  seals lack a fingerprint and remain uncached.
 
 Tasks 5 and 6 must cover:
 

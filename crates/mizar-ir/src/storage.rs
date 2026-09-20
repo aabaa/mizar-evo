@@ -209,6 +209,7 @@ pub struct AnyPhaseOutputRef {
     schema_version: SchemaVersion,
     generation: StorageGeneration,
     placement: StoragePlacement,
+    storage_fingerprint: Option<ContentBlobId>,
 }
 
 /// Typed immutable phase-output handle.
@@ -280,7 +281,10 @@ type ErasedBlobDecoder =
 type TypedBlobDecoder<T> = Arc<dyn Fn(&[u8]) -> Result<T, BlobDecodeError> + Send + Sync>;
 
 enum PendingPayload {
-    Resident(Arc<dyn Any + Send + Sync>),
+    Resident {
+        value: Arc<dyn Any + Send + Sync>,
+        storage_fingerprint: Option<ContentBlobId>,
+    },
     BlobCandidate {
         canonical_bytes: Vec<u8>,
         decode: ErasedBlobDecoder,
@@ -437,7 +441,10 @@ impl IrStorageService {
             input.slot,
             input.lineage,
             input.side_tables,
-            PendingPayload::Resident(Arc::new(input.payload)),
+            PendingPayload::Resident {
+                value: Arc::new(input.payload),
+                storage_fingerprint: None,
+            },
         )
     }
 
@@ -463,11 +470,16 @@ impl IrStorageService {
                     return Err(error);
                 }
             };
+            let storage_fingerprint =
+                content_blob_id(input.slot.schema_version, &input.canonical_bytes);
             return self.seal_with_payload(
                 input.slot,
                 input.lineage,
                 input.side_tables,
-                PendingPayload::Resident(payload),
+                PendingPayload::Resident {
+                    value: payload,
+                    storage_fingerprint: Some(storage_fingerprint),
+                },
             );
         }
 
@@ -491,11 +503,16 @@ impl IrStorageService {
         T: Send + Sync + 'static,
     {
         if input.canonical_bytes.len() <= self.policy.blob_spill_threshold {
+            let storage_fingerprint =
+                content_blob_id(input.slot.schema_version, &input.canonical_bytes);
             return self.seal_with_payload(
                 input.slot,
                 input.lineage,
                 input.side_tables,
-                PendingPayload::Resident(Arc::new(input.payload)),
+                PendingPayload::Resident {
+                    value: Arc::new(input.payload),
+                    storage_fingerprint: Some(storage_fingerprint),
+                },
             );
         }
 
@@ -568,7 +585,8 @@ impl IrStorageService {
             });
         }
 
-        let (payload, placement) = build_payload_storage(&mut state, slot.schema_version, payload);
+        let (payload, placement, storage_fingerprint) =
+            build_payload_storage(&mut state, slot.schema_version, payload);
         let generation = StorageGeneration(*state.output_generations.entry(output).or_insert(0));
         record.generation = generation;
         let handle = AnyPhaseOutputRef {
@@ -576,6 +594,7 @@ impl IrStorageService {
             schema_version: slot.schema_version,
             generation,
             placement,
+            storage_fingerprint,
         };
         let typed = PhaseOutputRef {
             inner: handle.clone(),
@@ -1088,6 +1107,10 @@ impl AnyPhaseOutputRef {
         &self.placement
     }
 
+    pub(crate) fn storage_fingerprint(&self) -> Option<Hash> {
+        self.storage_fingerprint.map(ContentBlobId::hash)
+    }
+
     /// Returns output lineage.
     pub const fn lineage(&self) -> &PhaseOutputLineage {
         &self.lineage
@@ -1354,11 +1377,16 @@ fn build_payload_storage(
     state: &mut StorageState,
     schema_version: SchemaVersion,
     payload: PendingPayload,
-) -> (PayloadStorage, StoragePlacement) {
+) -> (PayloadStorage, StoragePlacement, Option<ContentBlobId>) {
     match payload {
-        PendingPayload::Resident(value) => {
-            (PayloadStorage::Resident(value), StoragePlacement::Resident)
-        }
+        PendingPayload::Resident {
+            value,
+            storage_fingerprint,
+        } => (
+            PayloadStorage::Resident(value),
+            StoragePlacement::Resident,
+            storage_fingerprint,
+        ),
         PendingPayload::BlobCandidate {
             canonical_bytes,
             decode,
@@ -1375,6 +1403,7 @@ fn build_payload_storage(
                     decoder: decode,
                 },
                 StoragePlacement::Blob { blob, len },
+                Some(blob),
             )
         }
     }
@@ -1433,7 +1462,7 @@ fn run_decoder(
         .map_err(|_| BlobDecodeError::new("blob decoder panicked"))?
 }
 
-fn content_blob_id(schema_version: SchemaVersion, bytes: &[u8]) -> ContentBlobId {
+pub(crate) fn content_blob_id(schema_version: SchemaVersion, bytes: &[u8]) -> ContentBlobId {
     let mut hasher = blake3::Hasher::new();
     write_blob_field(&mut hasher, "mizar-ir/content-blob/v1");
     hasher.update(&schema_version.get().to_le_bytes());

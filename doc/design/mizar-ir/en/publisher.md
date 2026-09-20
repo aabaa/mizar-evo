@@ -25,8 +25,8 @@ A publish request contains:
 - the target `BuildSnapshotId`;
 - the producing `PipelinePhase`, `WorkUnit`, and `OutputKind`;
 - the payload and its schema version;
-- a canonical payload byte sequence for content hashing and optional blob
-  placement;
+- `canonical_payload` semantic bytes for content hashing and separate
+  `storage_payload` bytes for lossless storage placement and decoding;
 - parent `PhaseOutputId`s and named non-output input hashes;
 - side-table records for source maps, diagnostics, explanations, and
   documentation attachments;
@@ -34,6 +34,11 @@ A publish request contains:
   input, validated cache input, or open-buffer/editor-only input.
 - a publication target: current/package output or retained internal-only
   output.
+
+Both byte streams are required, even when equal. Missing either fails before
+lineage registration. The producer owns coherence among the typed payload,
+semantic bytes, storage bytes and side tables. Storage bytes may include maps;
+they are not semantic hash inputs.
 
 The payload must already be complete. The publisher never accepts task-local
 builders, mutable ASTs, partially generated VC sets, partial ATP problems, or
@@ -142,7 +147,7 @@ that change.
 The publisher rejects:
 
 - missing or empty phase, work unit, or output kind labels;
-- missing canonical payload bytes;
+- missing semantic or storage payload bytes;
 - payloads whose runtime output kind does not match the pending slot;
 - parent outputs from incompatible snapshots;
 - obsolete-snapshot publication as current output;
@@ -186,7 +191,7 @@ they are crate-local checks.
 | open-buffer/editor-only output requested as current/package output | Reject as `OpenBufferOutput`. |
 | wrong phase/work-unit/output-kind/slot metadata | Reject before sealing and abandon the pending slot. |
 | incompatible parent snapshot | Reject before storage handle reconstruction. |
-| missing canonical payload bytes | Reject as `MissingCanonicalPayload`. |
+| missing semantic or storage payload bytes | Reject as `MissingCanonicalPayload`. |
 | side-table hash mismatch or invalid side-table record | Reject before sealing. |
 | storage seal error | Propagate the storage error without publishing a handle. |
 
@@ -195,6 +200,9 @@ does not make the output visible to dependent tasks, cache writers, projection,
 or current publication.
 
 ## Tests
+
+- equal semantic bytes with distinct storage/side-table bytes preserve content hash;
+  differing stream lengths use storage length for placement, and missing streams fail.
 
 Task 8 must cover:
 

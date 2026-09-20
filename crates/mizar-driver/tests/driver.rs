@@ -1090,6 +1090,7 @@ fn fixture_parent_handle(snapshot: BuildSnapshotId, seed: u8) -> SealedParentOut
             output_kind,
             schema_version: SchemaVersion::new(1),
             payload: payload.clone(),
+            storage_payload: Some(payload.as_bytes().to_vec()),
             canonical_payload: Some(payload.into_bytes()),
             decode: BlobDecoder::new(|bytes| {
                 String::from_utf8(bytes.to_vec())
@@ -1213,6 +1214,7 @@ impl PhaseService for PublicationFixtureService {
                 output_kind: kind,
                 schema_version: SchemaVersion::new(1),
                 payload: "transport fixture".to_owned(),
+                storage_payload: Some(b"transport fixture".to_vec()),
                 canonical_payload: Some(b"transport fixture".to_vec()),
                 decode: BlobDecoder::new(|bytes| {
                     String::from_utf8(bytes.to_vec())

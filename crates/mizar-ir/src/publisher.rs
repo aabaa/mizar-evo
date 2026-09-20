@@ -89,9 +89,11 @@ pub struct PublishOutputInput<T> {
     pub schema_version: SchemaVersion,
     /// Complete payload.
     pub payload: T,
-    /// Canonical payload bytes used for hashing and storage placement.
+    /// Semantic payload bytes used for content hashing.
     pub canonical_payload: Option<Vec<u8>>,
-    /// Decoder for canonical payload bytes.
+    /// Storage payload bytes used for lossless placement and decoding.
+    pub storage_payload: Option<Vec<u8>>,
+    /// Decoder for storage payload bytes.
     pub decode: BlobDecoder<T>,
     /// Parent sealed outputs.
     pub parents: Vec<AnyPhaseOutputRef>,
@@ -198,7 +200,7 @@ pub enum PublishError {
         /// Output id.
         output: PhaseOutputId,
     },
-    /// Canonical payload bytes were missing.
+    /// Semantic or storage payload bytes were missing.
     MissingCanonicalPayload,
     /// Invalid side-table record.
     InvalidSideTable {
@@ -408,7 +410,11 @@ impl PhaseOutputPublisher {
             return Err(error);
         }
 
-        let Some(canonical_payload) = input.canonical_payload.clone() else {
+        let Some(canonical_payload) = input.canonical_payload else {
+            self.storage.abandon(slot_for_abandon);
+            return Err(PublishError::MissingCanonicalPayload);
+        };
+        let Some(storage_payload) = input.storage_payload else {
             self.storage.abandon(slot_for_abandon);
             return Err(PublishError::MissingCanonicalPayload);
         };
@@ -467,7 +473,7 @@ impl PhaseOutputPublisher {
             lineage: lineage.clone(),
             side_tables: input.side_tables,
             payload: input.payload,
-            canonical_bytes: canonical_payload,
+            canonical_bytes: storage_payload,
             decode: input.decode,
         }) {
             Ok(handle) => {
@@ -608,7 +614,9 @@ impl fmt::Display for PublishError {
                     "output `{output:?}` was not published as current/package output for `{snapshot:?}`"
                 )
             }
-            Self::MissingCanonicalPayload => formatter.write_str("missing canonical payload bytes"),
+            Self::MissingCanonicalPayload => {
+                formatter.write_str("missing semantic or storage payload bytes")
+            }
             Self::InvalidSideTable { field } => {
                 write!(formatter, "invalid publisher side-table field `{field}`")
             }
@@ -875,6 +883,7 @@ fn finish_hash(hasher: blake3::Hasher) -> Hash {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::identity::PhaseOutputLineage;
 
     fn hash(seed: u8) -> Hash {
         Hash::from_bytes([seed; Hash::BYTE_LEN])
@@ -967,6 +976,7 @@ mod tests {
             output_kind: output_kind(),
             schema_version: SchemaVersion::new(1),
             payload: payload.to_owned(),
+            storage_payload: Some(payload.as_bytes().to_vec()),
             canonical_payload: Some(payload.as_bytes().to_vec()),
             decode: BlobDecoder::new(|bytes| {
                 String::from_utf8(bytes.to_vec())
@@ -1019,6 +1029,118 @@ mod tests {
             right_handle.side_table_hash()
         );
         assert_eq!(left_handle.output(), right_handle.output());
+    }
+
+    #[test]
+    fn semantic_and_storage_streams_are_separate_for_hashing_and_placement() {
+        let snapshot = snapshot(30);
+        let publisher = publisher(snapshot);
+        let storage_a = vec![1; crate::storage::DEFAULT_BLOB_SPILL_THRESHOLD + 1];
+        let storage_b = vec![2; crate::storage::DEFAULT_BLOB_SPILL_THRESHOLD + 1];
+        let publish = |unit: &str, storage_payload: Vec<u8>, side_tables| {
+            let payload = String::from_utf8_lossy(&storage_payload).into_owned();
+            publisher
+                .publish(PublishOutputInput {
+                    slot: publisher.allocate(
+                        snapshot,
+                        phase(),
+                        work_unit(unit),
+                        output_kind(),
+                        SchemaVersion::new(1),
+                    ),
+                    snapshot,
+                    phase: phase(),
+                    work_unit: work_unit(unit),
+                    output_kind: output_kind(),
+                    schema_version: SchemaVersion::new(1),
+                    payload,
+                    canonical_payload: Some(b"same semantic bytes".to_vec()),
+                    storage_payload: Some(storage_payload),
+                    decode: BlobDecoder::new(|bytes| {
+                        Ok(String::from_utf8_lossy(bytes).into_owned())
+                    }),
+                    parents: Vec::new(),
+                    named_input_hashes: Vec::new(),
+                    side_tables,
+                    origin: OutputOrigin::PackageSource,
+                    target: PublicationTarget::CurrentPackage,
+                })
+                .expect("publication succeeds")
+        };
+        let left = publish("unit", storage_a.clone(), side_tables(1));
+        let right = publish("parent", storage_b, side_tables(2));
+
+        assert_eq!(left.content_hash(), right.content_hash());
+        assert_ne!(left.side_table_hash(), right.side_table_hash());
+        assert_ne!(left.output(), right.output());
+        assert_eq!(
+            &*publisher
+                .storage()
+                .get(&left)
+                .expect("left storage payload decodes"),
+            &String::from_utf8_lossy(&storage_a).into_owned()
+        );
+        assert!(matches!(
+            left.placement(),
+            crate::storage::StoragePlacement::Blob { len, .. }
+                if *len == storage_a.len()
+        ));
+    }
+
+    #[test]
+    fn missing_streams_fail_before_identity_registration() {
+        let snapshot = snapshot(31);
+        let publisher = publisher(snapshot);
+        for (canonical_payload, storage_payload) in [
+            (None, Some(b"storage".to_vec())),
+            (Some(b"semantic".to_vec()), None),
+        ] {
+            let error = publisher
+                .publish(PublishOutputInput {
+                    slot: publisher.allocate(
+                        snapshot,
+                        phase(),
+                        work_unit("unit"),
+                        output_kind(),
+                        SchemaVersion::new(1),
+                    ),
+                    snapshot,
+                    phase: phase(),
+                    work_unit: work_unit("unit"),
+                    output_kind: output_kind(),
+                    schema_version: SchemaVersion::new(1),
+                    payload: "payload".to_owned(),
+                    canonical_payload,
+                    storage_payload,
+                    decode: BlobDecoder::new(|bytes| {
+                        Ok(String::from_utf8_lossy(bytes).into_owned())
+                    }),
+                    parents: Vec::new(),
+                    named_input_hashes: Vec::new(),
+                    side_tables: IrSideTables::default(),
+                    origin: OutputOrigin::PackageSource,
+                    target: PublicationTarget::CurrentPackage,
+                })
+                .expect_err("both payload streams are required");
+            assert_eq!(error, PublishError::MissingCanonicalPayload);
+        }
+        let expected = PhaseOutputLineage::from_input(OutputIdentityInput {
+            snapshot,
+            phase: phase(),
+            work_unit: work_unit("unit"),
+            output_kind: output_kind(),
+            content_hash: content_hash(b"semantic", &[], Vec::new()).expect("hash derives"),
+            side_table_hash: side_table_hash(&IrSideTables::default()).expect("hash derives"),
+            parents: Vec::new(),
+            named_input_hashes: Vec::new(),
+        })
+        .expect("lineage derives");
+        assert!(
+            publisher
+                .registry()
+                .output_lineage(expected.output)
+                .is_none()
+        );
     }
 
     #[test]
@@ -1739,6 +1861,7 @@ mod tests {
                 output_kind: output_kind(),
                 schema_version: SchemaVersion::new(1),
                 payload: "payload".to_owned(),
+                storage_payload: Some(b"payload".to_vec()),
                 canonical_payload: Some(b"payload".to_vec()),
                 decode: BlobDecoder::new(|bytes| {
                     String::from_utf8(bytes.to_vec())
@@ -1799,6 +1922,7 @@ mod tests {
                 output_kind: output_kind(),
                 schema_version: SchemaVersion::new(1),
                 payload: "payload".to_owned(),
+                storage_payload: Some(b"payload".to_vec()),
                 canonical_payload: Some(b"payload".to_vec()),
                 decode: BlobDecoder::new(|bytes| {
                     String::from_utf8(bytes.to_vec())

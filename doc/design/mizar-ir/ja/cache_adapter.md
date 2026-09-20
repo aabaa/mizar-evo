@@ -30,7 +30,8 @@ seal 済み output を encode するには以下が必要である:
 
 - この `IrStorageService` から得た seal 済み `PhaseOutputRef<T>`。
 - supported `OutputKind` と payload schema version。
-- その output kind と schema 用の phase serializer が生成した canonical payload bytes。
+- その output kind と schema 用の phase serializer が生成した意味バイト列
+  (`canonical_payload`) と保存用バイト列 (`storage_payload`)。
 - seal 済み output にすでに添付された side table。
 - dependency footprint が complete かつ cacheable であることを示す
   producer/cache boundary 由来の cacheability decision。
@@ -68,7 +69,7 @@ output が cacheable であるためには、以下すべてが真でなけれ�
 - output が package/current build work に属する、または validated current cache input
   を再 encode するものである。
 - output kind と payload schema に adapter-owned codec がある。
-- canonical payload bytes を決定的に導出できる。
+- 意味バイト列と保存用バイト列の両方を決定的に導出できる。
 - side-table record が妥当で serialize 可能である。
 - producer/cache boundary が、その phase の dependency footprint は complete であると
   報告している。
@@ -102,17 +103,22 @@ outcome、rehydration outcome、fail-closed miss reason を、外部の exhausti
 ## Record payload shape
 
 adapter-owned payload は内部 cache data である。cache record は published artifact
-ではないため、canonical internal IR bytes を含んでよい。
+ではないため、意味・保存用の IR byte stream を含んでよい。
 
 cache record payload が含んでよいものは多くても以下である:
 
 - output kind と payload schema version。
 - payload content hash と side-table hash。
-- canonical payload bytes、または cache store が供給する `mizar-cache` blob reference。
+- 意味バイト列、保存用バイト列、および schema に結び付く保存用 fingerprint。
 - seal 済み output を再構築するために必要な side-table record。
 - current-snapshot lineage を導出するために必要な parent content-hash summary と
   named input hash。
 - producer phase と work-unit label などの非権威 provenance。
+
+内部 envelope format は version 2 とし、version 1 は推測して復元せず拒否する。
+符号化は保存用バイト列と seal 済み output の fingerprint の一致を要求する。復元は意味・
+保存 hash を検証してから保存用バイト列を decode し、両バイト列を再 publish する。
+validated cache-hit の authority は mizar-cache に維持する。
 
 record payload は以下を含んではならない:
 
@@ -138,7 +144,7 @@ artifact projection boundary から返したり、published `*.mizir.json` artif
    source/dependency hash、cache record integrity、該当する場合の proof-reuse
    metadata が含まれる。
 2. `mizar-ir` が、record payload を target snapshot の seal 済み output にできるかを
-   検証する。これには output kind と schema support、payload hash match、
+   検証する。これには output kind と schema support、意味・保存 hash match、
    side-table hash match、current-snapshot parent handle validation、deterministic
    lineage derivation、storage sealing が含まれる。
 
@@ -229,7 +235,7 @@ Task 10 は以下を cover しなければならない:
 - missing、incomplete dependency footprint、unknown compatibility、`uncacheable`、
   incompatible、corrupt、unsupported schema、bad proof validation state がすべて
   handle reconstruction 前に miss になること。
-- 改ざんされた payload bytes/content hash と改ざんされた side-table records/hash が、
+- 意味・保存バイト列、保存 fingerprint、旧 envelope、side-table records/hash の独立した改ざんが、
   handle を seal せず registered lineage も残さず miss になること。
 - rehydrated handle が seal 済み・typed・current-snapshot handle であり、その
   content hash、side-table hash、payload、side table が original output と一致すること。

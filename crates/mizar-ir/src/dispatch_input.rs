@@ -635,6 +635,7 @@ mod tests {
                 output_kind: output_kind(),
                 schema_version: SchemaVersion::new(1),
                 payload: payload.to_owned(),
+                storage_payload: Some(payload.as_bytes().to_vec()),
                 canonical_payload: Some(payload.as_bytes().to_vec()),
                 decode: string_decoder(),
                 parents: Vec::new(),

@@ -24,12 +24,12 @@ use crate::{
     },
     storage::{
         AnyPhaseOutputRef, BlobDecodeError, BlobDecoder, IrSideTables, PhaseOutputRef,
-        SchemaVersion, SideTableRecord, StorageError,
+        SchemaVersion, SideTableRecord, StorageError, content_blob_id,
     },
 };
 
 const PAYLOAD_MAGIC: &[u8] = b"MIZAR-IR-CACHE-PAYLOAD\0";
-const PAYLOAD_FORMAT_VERSION: u32 = 1;
+const PAYLOAD_FORMAT_VERSION: u32 = 2;
 
 /// Cache adapter over a phase-output publisher.
 #[derive(Debug)]
@@ -63,8 +63,10 @@ pub struct EncodeCacheRecordInput<T> {
     pub cache_key: CacheKey,
     /// Toolchain/producer compatibility fields supplied by the cache owner.
     pub produced_by: Vec<CompatibilityField>,
-    /// Canonical payload bytes for this output.
+    /// Semantic canonical payload bytes for this output.
     pub canonical_payload: Vec<u8>,
+    /// Storage payload bytes for this output.
+    pub storage_payload: Vec<u8>,
     /// Cacheability decision from the producer/cache boundary.
     pub cacheability: CacheAdapterCacheability,
 }
@@ -161,6 +163,8 @@ struct CachedIrRecordPayload {
     named_input_hashes: Vec<NamedInputHash>,
     side_tables: IrSideTables,
     canonical_payload: Vec<u8>,
+    storage_payload: Vec<u8>,
+    storage_hash: Hash,
 }
 
 impl IrCacheAdapter {
@@ -215,11 +219,15 @@ impl IrCacheAdapter {
             }
         };
 
-        let payload =
-            match self.payload_from_handle(&input.handle, input.canonical_payload, side_tables) {
-                Ok(payload) => payload,
-                Err(miss) => return EncodeCacheRecordOutcome::Skipped(miss),
-            };
+        let payload = match self.payload_from_handle(
+            &input.handle,
+            input.canonical_payload,
+            input.storage_payload,
+            side_tables,
+        ) {
+            Ok(payload) => payload,
+            Err(miss) => return EncodeCacheRecordOutcome::Skipped(miss),
+        };
         let bytes = encode_cached_payload(&payload);
         EncodeCacheRecordOutcome::Encoded(Box::new(CacheRecord::new_inline(
             input.cache_key,
@@ -274,9 +282,15 @@ impl IrCacheAdapter {
         ) {
             return CacheRehydrateOutcome::Miss(CacheAdapterMiss::PayloadHashMismatch);
         }
+        if content_blob_id(cached.schema_version, &cached.storage_payload).hash()
+            != cached.storage_hash
+        {
+            return CacheRehydrateOutcome::Miss(CacheAdapterMiss::PayloadHashMismatch);
+        }
 
         let canonical_payload = cached.canonical_payload;
-        let payload = match decode_payload(&input.decode, &canonical_payload) {
+        let storage_payload = cached.storage_payload;
+        let payload = match decode_payload(&input.decode, &storage_payload) {
             Ok(payload) => payload,
             Err(error) => {
                 return CacheRehydrateOutcome::Miss(CacheAdapterMiss::Decode {
@@ -301,6 +315,7 @@ impl IrCacheAdapter {
             schema_version: input.schema_version,
             payload,
             canonical_payload: Some(canonical_payload),
+            storage_payload: Some(storage_payload),
             decode: input.decode,
             parents: input.parents,
             named_input_hashes: input.named_input_hashes,
@@ -325,6 +340,7 @@ impl IrCacheAdapter {
         &self,
         handle: &PhaseOutputRef<T>,
         canonical_payload: Vec<u8>,
+        storage_payload: Vec<u8>,
         side_tables: IrSideTables,
     ) -> Result<CachedIrRecordPayload, CacheAdapterMiss> {
         let mut parent_summaries = Vec::new();
@@ -347,6 +363,12 @@ impl IrCacheAdapter {
         ) {
             return Err(CacheAdapterMiss::PayloadHashMismatch);
         }
+        let Some(storage_hash) = handle.any().storage_fingerprint() else {
+            return Err(CacheAdapterMiss::PayloadHashMismatch);
+        };
+        if content_blob_id(handle.schema_version(), &storage_payload).hash() != storage_hash {
+            return Err(CacheAdapterMiss::PayloadHashMismatch);
+        }
 
         let actual_side_table_hash =
             side_table_hash(&side_tables).map_err(|_| CacheAdapterMiss::SideTableHashMismatch)?;
@@ -363,6 +385,8 @@ impl IrCacheAdapter {
             named_input_hashes: handle.lineage().named_input_hashes.clone(),
             side_tables,
             canonical_payload,
+            storage_payload,
+            storage_hash,
         })
     }
 
@@ -458,10 +482,12 @@ fn encode_cached_payload(payload: &CachedIrRecordPayload) -> Vec<u8> {
     writer.u32(payload.schema_version.get());
     writer.hash(payload.content_hash);
     writer.hash(payload.side_table_hash);
+    writer.hash(payload.storage_hash);
     writer.parent_summaries(&payload.parent_summaries);
     writer.named_inputs(&payload.named_input_hashes);
     writer.side_tables(&payload.side_tables);
     writer.byte_vec(&payload.canonical_payload);
+    writer.byte_vec(&payload.storage_payload);
     writer.finish()
 }
 
@@ -475,10 +501,12 @@ fn decode_cached_payload(bytes: &[u8]) -> Result<CachedIrRecordPayload, ()> {
     let schema_version = SchemaVersion::new(reader.u32()?);
     let content_hash = reader.hash()?;
     let side_table_hash = reader.hash()?;
+    let storage_hash = reader.hash()?;
     let parent_summaries = reader.parent_summaries()?;
     let named_input_hashes = reader.named_inputs()?;
     let side_tables = reader.side_tables()?;
     let canonical_payload = reader.byte_vec()?;
+    let storage_payload = reader.byte_vec()?;
     if !reader.is_empty() {
         return Err(());
     }
@@ -491,6 +519,8 @@ fn decode_cached_payload(bytes: &[u8]) -> Result<CachedIrRecordPayload, ()> {
         named_input_hashes,
         side_tables,
         canonical_payload,
+        storage_hash,
+        storage_payload,
     })
 }
 
@@ -696,11 +726,15 @@ mod tests {
         PipelinePhase as CachePipelinePhase, PolicyFingerprint,
         SchemaVersion as CacheSchemaVersion, WorkUnit as CacheWorkUnit,
     };
+    use std::sync::atomic::{AtomicUsize, Ordering};
 
     use crate::{
         identity::{OutputIdentityInput, PhaseOutputLineage, SnapshotHandleRegistry},
         publisher::AllowedWorkUnit,
-        storage::{BlobDecodeError, CollectInput, IrStorageService, StorageError},
+        storage::{
+            BlobDecodeError, CollectInput, IrStorageService, SealOutputInput, StorageError,
+            StoragePolicy,
+        },
     };
 
     fn hash(seed: u8) -> Hash {
@@ -763,8 +797,15 @@ mod tests {
     }
 
     fn publisher(snapshot: BuildSnapshotId) -> Arc<PhaseOutputPublisher> {
+        publisher_with_storage(snapshot, IrStorageService::new())
+    }
+
+    fn publisher_with_storage(
+        snapshot: BuildSnapshotId,
+        storage: IrStorageService,
+    ) -> Arc<PhaseOutputPublisher> {
         let publisher = Arc::new(PhaseOutputPublisher::new(
-            Arc::new(IrStorageService::new()),
+            Arc::new(storage),
             Arc::new(SnapshotHandleRegistry::new()),
         ));
         publisher.register_current_snapshot(snapshot);
@@ -816,6 +857,7 @@ mod tests {
                 output_kind: output_kind(),
                 schema_version: schema(),
                 payload: payload.to_owned(),
+                storage_payload: Some(payload.as_bytes().to_vec()),
                 canonical_payload: Some(payload.as_bytes().to_vec()),
                 decode: string_decoder(),
                 parents,
@@ -841,7 +883,7 @@ mod tests {
             schema_versions: vec![NamedSchemaVersion {
                 schema_family: "mizar-ir".to_owned(),
                 name: "cache-adapter-payload".to_owned(),
-                version: CacheSchemaVersion::new("mizar-ir/cache-adapter-payload/v1"),
+                version: CacheSchemaVersion::new("mizar-ir/cache-adapter-payload/v2"),
             }],
             policy_fingerprint: PolicyFingerprint::new(hash(seed + 1)),
             validation_inputs: CacheValidationInputs {
@@ -891,6 +933,7 @@ mod tests {
             cache_key: cache_key(10),
             produced_by: produced_by(),
             canonical_payload: payload.as_bytes().to_vec(),
+            storage_payload: payload.as_bytes().to_vec(),
             cacheability: CacheAdapterCacheability::Cacheable,
         }) {
             EncodeCacheRecordOutcome::Encoded(record) => *record,
@@ -988,6 +1031,104 @@ mod tests {
             &side_tables(20)
         );
         assert_eq!(target_adapter.successful_rehydrations(), 1);
+    }
+
+    #[test]
+    fn resident_and_blob_round_trips_rehydrate_storage_stream() {
+        for (old_seed, current_seed, threshold, blob_backed) in
+            [(32, 33, usize::MAX, false), (34, 35, 3, true)]
+        {
+            let old_snapshot = snapshot(old_seed);
+            let current_snapshot = snapshot(current_seed);
+            let source_publisher = publisher_with_storage(
+                old_snapshot,
+                IrStorageService::with_policy(StoragePolicy::with_blob_spill_threshold(threshold)),
+            );
+            let target_publisher = publisher_with_storage(
+                current_snapshot,
+                IrStorageService::with_policy(StoragePolicy::with_blob_spill_threshold(threshold)),
+            );
+            let source_adapter = IrCacheAdapter::new(source_publisher.clone());
+            let target_adapter = IrCacheAdapter::new(target_publisher.clone());
+            let semantic_payload = b"semantic bytes".to_vec();
+            let storage_payload = b"decoded storage bytes".to_vec();
+            let storage_len = storage_payload.len();
+            let original = source_publisher
+                .publish(PublishOutputInput {
+                    slot: source_publisher.allocate(
+                        old_snapshot,
+                        phase(),
+                        work_unit(),
+                        output_kind(),
+                        schema(),
+                    ),
+                    snapshot: old_snapshot,
+                    phase: phase(),
+                    work_unit: work_unit(),
+                    output_kind: output_kind(),
+                    schema_version: schema(),
+                    payload: String::from_utf8(storage_payload.clone()).expect("storage is utf8"),
+                    canonical_payload: Some(semantic_payload.clone()),
+                    storage_payload: Some(storage_payload.clone()),
+                    decode: string_decoder(),
+                    parents: Vec::new(),
+                    named_input_hashes: vec![named(1)],
+                    side_tables: side_tables(21),
+                    origin: OutputOrigin::PackageSource,
+                    target: PublicationTarget::CurrentPackage,
+                })
+                .expect("source publication succeeds");
+            assert_eq!(
+                matches!(
+                    original.placement(),
+                    crate::storage::StoragePlacement::Blob { .. }
+                ),
+                blob_backed
+            );
+            let record = match source_adapter.encode(EncodeCacheRecordInput {
+                handle: original.clone(),
+                cache_key: cache_key(26),
+                produced_by: produced_by(),
+                canonical_payload: semantic_payload,
+                storage_payload,
+                cacheability: CacheAdapterCacheability::Cacheable,
+            }) {
+                EncodeCacheRecordOutcome::Encoded(record) => *record,
+                other => panic!("expected encoded record, got {other:?}"),
+            };
+
+            let CacheRehydrateOutcome::Rehydrated(rehydrated) =
+                target_adapter.rehydrate(RehydrateCacheHitInput {
+                    lookup: CacheLookupOutcome::Hit(Box::new(record)),
+                    snapshot: current_snapshot,
+                    phase: phase(),
+                    work_unit: work_unit(),
+                    output_kind: output_kind(),
+                    schema_version: schema(),
+                    parents: Vec::new(),
+                    named_input_hashes: vec![named(1)],
+                    decode: string_decoder(),
+                })
+            else {
+                panic!("validated cache hit should rehydrate");
+            };
+            assert_eq!(rehydrated.content_hash(), original.content_hash());
+            assert_eq!(rehydrated.side_table_hash(), original.side_table_hash());
+            assert!(
+                matches!(
+                    rehydrated.placement(),
+                    crate::storage::StoragePlacement::Blob { len, .. }
+                        if *len == storage_len
+                ) == blob_backed
+            );
+            assert_eq!(
+                &*target_publisher
+                    .storage()
+                    .get(&rehydrated)
+                    .expect("rehydrated payload is readable"),
+                "decoded storage bytes"
+            );
+        }
     }
 
     #[test]
@@ -1356,36 +1497,67 @@ mod tests {
     }
 
     #[test]
-    fn tampered_payload_misses_without_sealing_or_lineage() {
-        let old_snapshot = snapshot(4);
-        let current_snapshot = snapshot(5);
+    fn tampered_streams_fingerprint_and_legacy_format_miss_closed() {
+        let old_snapshot = snapshot(35);
+        let current_snapshot = snapshot(36);
         let source_publisher = publisher(old_snapshot);
         let target_publisher = publisher(current_snapshot);
         let source_adapter = IrCacheAdapter::new(source_publisher.clone());
         let target_adapter = IrCacheAdapter::new(target_publisher.clone());
-        let original = publish_text(&source_publisher, old_snapshot, "payload", side_tables(30));
-        let mut record = encode_record(&source_adapter, &original, "payload");
-        let mut cached = decode_cached_payload(&record.output).expect("payload decodes");
-        cached.canonical_payload = b"tampered".to_vec();
-        record.output = encode_cached_payload(&cached);
-        let expected = expected_lineage(
+        let original = publish_text(&source_publisher, old_snapshot, "payload", side_tables(31));
+        let valid_record = encode_record(&source_adapter, &original, "payload");
+        let valid_cached = decode_cached_payload(&valid_record.output).expect("payload decodes");
+        let expected_output = expected_lineage(
             current_snapshot,
-            cached.content_hash,
-            cached.side_table_hash,
-        );
-
-        let outcome = rehydrate(&target_adapter, record, current_snapshot);
-
-        assert!(matches!(
-            outcome,
-            CacheRehydrateOutcome::Miss(CacheAdapterMiss::PayloadHashMismatch)
-        ));
-        assert!(
-            target_publisher
-                .registry()
-                .output_lineage(expected.output)
-                .is_none()
-        );
+            valid_cached.content_hash,
+            valid_cached.side_table_hash,
+        )
+        .output;
+        let decode_calls = Arc::new(AtomicUsize::new(0));
+        for case in 0..4 {
+            let mut record = valid_record.clone();
+            let mut cached = valid_cached.clone();
+            match case {
+                0 => cached.canonical_payload = b"tampered semantic".to_vec(),
+                1 => cached.storage_payload = b"tampered storage".to_vec(),
+                2 => cached.storage_hash = hash(224),
+                _ => {}
+            }
+            record.output = encode_cached_payload(&cached);
+            if case == 3 {
+                let version_start = PAYLOAD_MAGIC.len();
+                record.output[version_start..version_start + 4]
+                    .copy_from_slice(&1_u32.to_le_bytes());
+            }
+            let decoder_calls = decode_calls.clone();
+            let outcome = target_adapter.rehydrate(RehydrateCacheHitInput {
+                lookup: CacheLookupOutcome::Hit(Box::new(record)),
+                snapshot: current_snapshot,
+                phase: phase(),
+                work_unit: work_unit(),
+                output_kind: output_kind(),
+                schema_version: schema(),
+                parents: Vec::new(),
+                named_input_hashes: vec![named(1)],
+                decode: BlobDecoder::<String>::new(move |_| {
+                    decoder_calls.fetch_add(1, Ordering::SeqCst);
+                    Err(BlobDecodeError::new("decoder must not run"))
+                }),
+            });
+            assert!(matches!(
+                outcome,
+                CacheRehydrateOutcome::Miss(miss)
+                    if miss == if case == 3 { CacheAdapterMiss::CorruptRecord }
+                        else { CacheAdapterMiss::PayloadHashMismatch }
+            ));
+            assert_eq!(decode_calls.load(Ordering::SeqCst), 0);
+            assert!(
+                target_publisher
+                    .registry()
+                    .output_lineage(expected_output)
+                    .is_none()
+            );
+        }
     }
 
     #[test]
@@ -1491,10 +1663,121 @@ mod tests {
                 cache_key: cache_key(20),
                 produced_by: produced_by(),
                 canonical_payload: b"payload".to_vec(),
+                storage_payload: b"payload".to_vec(),
                 cacheability,
             });
             assert!(matches!(outcome, EncodeCacheRecordOutcome::Skipped(_)));
         }
+
+        let outcome = adapter.encode(EncodeCacheRecordInput {
+            handle,
+            cache_key: cache_key(23),
+            produced_by: produced_by(),
+            canonical_payload: b"payload".to_vec(),
+            storage_payload: b"different storage".to_vec(),
+            cacheability: CacheAdapterCacheability::Cacheable,
+        });
+        assert!(matches!(
+            outcome,
+            EncodeCacheRecordOutcome::Skipped(CacheAdapterMiss::PayloadHashMismatch)
+        ));
+    }
+
+    #[test]
+    fn raw_resident_seals_without_storage_fingerprint_skip_encoding() {
+        let snapshot = snapshot(34);
+        let publisher = publisher(snapshot);
+        let lineage = publisher
+            .registry()
+            .register_output(OutputIdentityInput {
+                snapshot,
+                phase: phase(),
+                work_unit: work_unit(),
+                output_kind: output_kind(),
+                content_hash: content_hash_from_parent_summaries(b"payload", &[], vec![named(1)])
+                    .expect("content hash derives"),
+                side_table_hash: side_table_hash(&IrSideTables::default())
+                    .expect("side-table hash derives"),
+                parents: Vec::new(),
+                named_input_hashes: vec![named(1)],
+            })
+            .expect("raw lineage registers");
+        let handle = publisher
+            .storage()
+            .seal(SealOutputInput {
+                slot: publisher.allocate(snapshot, phase(), work_unit(), output_kind(), schema()),
+                lineage,
+                side_tables: IrSideTables::default(),
+                payload: "payload".to_owned(),
+            })
+            .expect("raw resident seal succeeds");
+        let adapter = IrCacheAdapter::new(publisher);
+
+        let outcome = adapter.encode(EncodeCacheRecordInput {
+            handle,
+            cache_key: cache_key(22),
+            produced_by: produced_by(),
+            canonical_payload: b"payload".to_vec(),
+            storage_payload: b"payload".to_vec(),
+            cacheability: CacheAdapterCacheability::Cacheable,
+        });
+        assert!(matches!(
+            outcome,
+            EncodeCacheRecordOutcome::Skipped(CacheAdapterMiss::PayloadHashMismatch)
+        ));
+    }
+
+    #[test]
+    fn encode_rejects_foreign_and_collected_handles() {
+        let foreign_snapshot = snapshot(37);
+        let local_snapshot = snapshot(38);
+        let foreign_publisher = publisher(foreign_snapshot);
+        let local_publisher = publisher(local_snapshot);
+        let foreign_handle = publish_text(
+            &foreign_publisher,
+            foreign_snapshot,
+            "foreign",
+            side_tables(32),
+        );
+        let adapter = IrCacheAdapter::new(local_publisher.clone());
+
+        let foreign_outcome = adapter.encode(EncodeCacheRecordInput {
+            handle: foreign_handle,
+            cache_key: cache_key(24),
+            produced_by: produced_by(),
+            canonical_payload: b"foreign".to_vec(),
+            storage_payload: b"foreign".to_vec(),
+            cacheability: CacheAdapterCacheability::Cacheable,
+        });
+        assert!(matches!(
+            foreign_outcome,
+            EncodeCacheRecordOutcome::Skipped(CacheAdapterMiss::Storage { error })
+                if matches!(*error, StorageError::UnknownOutput { .. })
+        ));
+
+        let collected_handle = publish_text(
+            &local_publisher,
+            local_snapshot,
+            "collected",
+            side_tables(33),
+        );
+        local_publisher.storage().collect(CollectInput {
+            snapshot: local_snapshot,
+            protected_outputs: Vec::new(),
+        });
+        let collected_outcome = adapter.encode(EncodeCacheRecordInput {
+            handle: collected_handle,
+            cache_key: cache_key(25),
+            produced_by: produced_by(),
+            canonical_payload: b"collected".to_vec(),
+            storage_payload: b"collected".to_vec(),
+            cacheability: CacheAdapterCacheability::Cacheable,
+        });
+        assert!(matches!(
+            collected_outcome,
+            EncodeCacheRecordOutcome::Skipped(CacheAdapterMiss::Storage { error })
+                if matches!(*error, StorageError::CollectedOutput { .. })
+        ));
     }
 
     #[test]
@@ -1518,6 +1801,7 @@ mod tests {
             cache_key: cache_key(21),
             produced_by: produced_by(),
             canonical_payload: b"payload".to_vec(),
+            storage_payload: b"payload".to_vec(),
             cacheability: CacheAdapterCacheability::Cacheable,
         });
         assert!(matches!(outcome, EncodeCacheRecordOutcome::Encoded(_)));

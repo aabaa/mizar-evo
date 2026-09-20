@@ -24,12 +24,17 @@ publish request は以下を含む:
 - target `BuildSnapshotId`。
 - producing `PipelinePhase`、`WorkUnit`、`OutputKind`。
 - payload とその schema version。
-- content hashing と任意の blob placement に使う canonical payload byte sequence。
+- content hashing 用の `canonical_payload` 意味バイト列と、lossless な保存・復元用の
+  独立した `storage_payload` バイト列。
 - parent `PhaseOutputId` と named non-output input hash。
 - source map、diagnostic、explanation、documentation attachment の side-table record。
 - output origin classification: package source、retained stale snapshot input、validated cache
   input、または open-buffer/editor-only input。
 - publication target: current/package output または retained internal-only output。
+
+両バイト列は等しい場合も必須であり、欠落時は lineage 登録前に拒否する。typed payload、
+意味バイト列、保存用バイト列、side table の整合性は producer が所有する。保存用バイト列は
+map を含んでよいが、意味 hash の入力ではない。
 
 payload はすでに complete でなければならない。publisher は task-local builder、mutable AST、
 部分生成された VC set、部分的な ATP problem、kernel-internal mutable state を受け取らない。
@@ -164,7 +169,7 @@ crate-local check では必要に応じて exhaustive match を保ってよい�
 | open-buffer/editor-only output requested as current/package output | `OpenBufferOutput` として拒否する。 |
 | wrong phase/work-unit/output-kind/slot metadata | seal 前に拒否し、pending slot を abandon する。 |
 | incompatible parent snapshot | storage handle reconstruction の前に拒否する。 |
-| missing canonical payload bytes | `MissingCanonicalPayload` として拒否する。 |
+| missing semantic or storage payload bytes | `MissingCanonicalPayload` として拒否する。 |
 | side-table hash mismatch または invalid side-table record | seal 前に拒否する。 |
 | storage seal error | handle を publish せず storage error を伝搬する。 |
 
@@ -172,6 +177,9 @@ publisher error はすべて fail closed である。失敗した publish attemp
 dependent task、cache writer、projection、current publication から output を見えるようにしない。
 
 ## Tests
+
+- 意味バイト列が等しく保存・side-table バイト列が異なる場合の content hash 不変性、
+  保存長に基づく配置、および stream 欠落の拒否。
 
 Task 8 は以下を cover しなければならない:
 

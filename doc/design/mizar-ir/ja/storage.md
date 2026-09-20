@@ -112,19 +112,28 @@ resident-set rule は次の通り:
 - collection は unreferenced payload storage を消すが、published artifact や
   source-level semantics は変えない。
 
-既定の spill threshold は **canonical payload bytes で 64 KiB** とする。canonical byte
+既定の spill threshold は **storage payload bytes で 64 KiB** とする。storage byte
 length が 64 KiB を超える payload は既定で blob-backed になり、64 KiB 以下の payload は
 既定で resident に残る。この threshold は性能と memory の policy であり、identity rule
 ではない。変更しても `PhaseOutputId`、content hash、proof status、artifact projection は
 変わってはならない。
 
 Task 6 は明示的な `StoragePolicy` でこの policy を実装し、test や将来の build profile が
-より低い、または高い threshold を選べるようにする。すでに canonical bytes を持つ producer は
+より低い、または高い threshold を選べるようにする。すでに storage bytes を持つ producer は
 blob-aware sealing path を使う。storage はそれらの byte が threshold を超える場合に spill し、
-registered runtime kind/schema binding だけを通じて decode する。canonical bytes をまだ持たない
-producer は、後続の publisher integration が canonical encoding を供給するまで resident sealing
+registered runtime kind/schema binding だけを通じて decode する。storage bytes をまだ持たない
+producer は、後続の publisher integration が storage encoding を供給するまで resident sealing
 path を使う。この crate は blob path を artifact data として公開してはならない。blob reference は
 payload hash と schema version を key とする internal content-addressed reference である。
+
+publisher の `storage_payload` は `SealCanonicalOutputInput::canonical_bytes` となり、
+spill threshold、blob の符号化・復元、fingerprint はこの stream のみを使用する。
+fingerprint は既存の `mizar-ir/content-blob/v1` domain と length framing による
+`content_blob_id(schema_version, storage_payload)` と一致する。内部 integrity metadata であり、
+意味 content hash、cache key、artifact id ではない。canonical seal は resident/blob の両配置で
+この fingerprint を内部保持する。
+cache adapter は handle 検証後、その fingerprint と保存用バイト列を照合する。
+storage bytes なしの resident seal は fingerprint を持たず、cache record に符号化できない。
 
 ## Side tables
 
@@ -214,6 +223,9 @@ module には意図的に exhaustive とする public enum 例外はない。`mi
 crate-local check では必要に応じて exhaustive match を保ってよい。
 
 ## Tests
+
+- canonical resident/blob fingerprint と cache bytes の対応、および fingerprint
+  のない noncanonical resident seal の cache 書込み拒否。
 
 Task 5 と 6 は以下を cover しなければならない:
 

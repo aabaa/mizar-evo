@@ -101,6 +101,7 @@ fn try_publish_text(
         output_kind: output_kind(),
         schema_version: schema(),
         payload: payload.to_owned(),
+        storage_payload: Some(payload.as_bytes().to_vec()),
         canonical_payload: Some(payload.as_bytes().to_vec()),
         decode: string_decoder(),
         parents,

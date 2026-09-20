@@ -31,8 +31,8 @@ Encoding a sealed output requires:
 
 - a sealed `PhaseOutputRef<T>` from this `IrStorageService`;
 - a supported `OutputKind` and payload schema version;
-- canonical payload bytes produced by the phase serializer for that output
-  kind and schema;
+- separate semantic (`canonical_payload`) and storage (`storage_payload`)
+  bytes produced by the phase serializer for that output kind and schema;
 - side tables already attached to the sealed output;
 - a cacheability decision supplied by the producer/cache boundary that says
   the dependency footprint is complete and cacheable;
@@ -70,7 +70,7 @@ An output is cacheable only when all of the following are true:
 - the output belongs to package/current build work or to a validated current
   cache input being re-encoded;
 - the output kind and payload schema have an adapter-owned codec;
-- canonical payload bytes can be derived deterministically;
+- semantic and storage bytes can both be derived deterministically;
 - side-table records are valid and serializable;
 - the producer/cache boundary reports a complete dependency footprint for the
   phase;
@@ -104,19 +104,23 @@ they are crate-local checks.
 
 ## Record Payload Shape
 
-The adapter-owned payload is internal cache data. It may contain canonical
-internal IR bytes because cache records are not published artifacts.
+The adapter-owned payload is internal cache data. It may contain semantic and storage
+IR byte streams because cache records are not published artifacts.
 
 A cache record payload contains at most:
 
 - output kind and payload schema version;
 - payload content hash and side-table hash;
-- canonical payload bytes or a `mizar-cache` blob reference supplied by the
-  cache store;
+- semantic and storage byte streams plus the schema-bound storage fingerprint;
 - side-table records needed to reconstruct the sealed output;
 - parent content-hash summaries and named input hashes needed to derive
   current-snapshot lineage;
 - non-authoritative provenance such as producer phase and work-unit labels.
+
+The internal envelope format is version 2; version 1 is rejected, not inferred.
+Encoding requires the storage stream to match the sealed output fingerprint.
+Rehydration validates semantic and storage hashes before decoding storage bytes,
+then republishes both streams. Validated cache-hit authority stays in mizar-cache.
 
 The record payload must not contain:
 
@@ -143,7 +147,7 @@ Rehydration is a two-stage fail-closed process:
    proof-reuse metadata when applicable.
 2. `mizar-ir` validates that the record payload can become a sealed output in
    the target snapshot. This includes output kind and schema support, payload
-   hash match, side-table hash match, current-snapshot parent handle
+   semantic/storage hash match, side-table hash match, current-snapshot parent handle
    validation, deterministic lineage derivation, and storage sealing.
 
 The adapter treats every non-validated state as a miss:
@@ -237,7 +241,8 @@ Task 10 must cover:
 - missing, incomplete dependency footprint, unknown compatibility,
   `uncacheable`, incompatible, corrupt, unsupported schema, and bad proof
   validation states all miss before handle reconstruction;
-- tampered payload bytes/content hash and tampered side-table records/hash miss
+- independently tampered semantic/storage bytes, storage fingerprint, legacy
+  envelope and side-table records/hash miss
   without sealing a handle or leaving registered lineage behind;
 - rehydrated handles are sealed, typed, current-snapshot handles whose content
   hash, side-table hash, payload, and side tables match the original output;
