@@ -4,7 +4,8 @@ use mizar_session::{LineColumnRange, SourceId, SourceRange};
 
 use crate::{
     failure_record::{
-        DiagnosticRecord, DiagnosticSpan, DiagnosticSpanRole, SpanFreshness, ZeroWidthSpanIntent,
+        DiagnosticPrimaryLocation, DiagnosticRecord, DiagnosticSpan, DiagnosticSpanRole,
+        SpanFreshness, ZeroWidthSpanIntent,
     },
     registry::DiagnosticSeverity,
 };
@@ -130,13 +131,18 @@ fn render_record(
 ) -> String {
     let mut lines = Vec::new();
     lines.push(render_header(record, options.style));
-    lines.extend(render_span_block(
-        record.primary_span(),
-        context,
-        '^',
-        label_or_message(record.primary_span(), record.message()),
-        options,
-    ));
+    match record.primary_location() {
+        DiagnosticPrimaryLocation::Span(span) => lines.extend(render_span_block(
+            span,
+            context,
+            '^',
+            label_or_message(span, record.message()),
+            options,
+        )),
+        DiagnosticPrimaryLocation::SourceLoad { path, .. } => {
+            lines.push(format!("  --> {}", path.as_str()));
+        }
+    }
 
     for span in record.secondary_spans() {
         lines.extend(render_span_block(

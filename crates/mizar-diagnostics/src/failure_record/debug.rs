@@ -6,8 +6,8 @@ use crate::{explain::ExplanationHandle, fix::FixSuggestion};
 
 use super::{
     DiagnosticDetailValue, DiagnosticDetails, DiagnosticDraft, DiagnosticFreshness,
-    DiagnosticHandle, DiagnosticNote, DiagnosticRecord, DiagnosticSpan, SpanFreshness,
-    ZeroWidthSpanIntent, source_id_debug,
+    DiagnosticHandle, DiagnosticNote, DiagnosticPrimaryLocation, DiagnosticRecord, DiagnosticSpan,
+    SpanFreshness, ZeroWidthSpanIntent, source_id_debug,
 };
 
 pub(super) enum DebugSnapshot<'a> {
@@ -33,7 +33,10 @@ pub(super) fn render_debug_snapshot(snapshot: DebugSnapshot<'_>) -> String {
                 render_snapshot(draft.source_snapshot)
             ));
             lines.push("freshness=draft".to_owned());
-            lines.push(format!("primary={}", render_span(&draft.primary_span)));
+            lines.push(format!(
+                "primary={}",
+                render_primary_location(&draft.primary_location)
+            ));
             lines.push(format!(
                 "secondary={}",
                 render_spans(&draft.secondary_spans)
@@ -65,7 +68,10 @@ pub(super) fn render_debug_snapshot(snapshot: DebugSnapshot<'_>) -> String {
                 render_snapshot(record.freshness.source_snapshot())
             ));
             lines.push(format!("freshness={}", render_freshness(&record.freshness)));
-            lines.push(format!("primary={}", render_span(&record.primary_span)));
+            lines.push(format!(
+                "primary={}",
+                render_primary_location(&record.primary_location)
+            ));
             lines.push(format!(
                 "secondary={}",
                 render_spans(&record.secondary_spans)
@@ -153,6 +159,17 @@ fn render_span(span: &DiagnosticSpan) -> String {
         render_zero_width(span.zero_width),
         render_optional_string(span.label.as_deref())
     )
+}
+
+fn render_primary_location(location: &DiagnosticPrimaryLocation) -> String {
+    match location {
+        DiagnosticPrimaryLocation::Span(span) => render_span(span),
+        DiagnosticPrimaryLocation::SourceLoad { package_id, path } => format!(
+            "source_load(package={:?},path={:?})",
+            package_id.as_str(),
+            path.as_str()
+        ),
+    }
 }
 
 fn render_span_freshness(freshness: SpanFreshness) -> String {

@@ -276,6 +276,7 @@ fn public_forward_compatible_enums_are_marked_non_exhaustive() {
         ("src/failure_record.rs", "DiagnosticDetailValue"),
         ("src/failure_record.rs", "DiagnosticFreshness"),
         ("src/failure_record.rs", "DiagnosticNoteKind"),
+        ("src/failure_record.rs", "DiagnosticPrimaryLocation"),
         ("src/failure_record.rs", "DiagnosticRecordError"),
         ("src/failure_record.rs", "DiagnosticSpanRole"),
         ("src/failure_record.rs", "FailureCategory"),

@@ -40,7 +40,7 @@ Both drafts and records carry these fields:
 | `category` | `FailureCategory` | yes | Stable machine-readable failure class. |
 | `stable_detail_key` | `String` | yes | Deterministic key for deduplication and sorting. It must not contain localized text. |
 | `message` | `String` | yes | Human-facing primary message. It may change across versions and is never identity. |
-| `primary_span` | `DiagnosticSpan` | yes | Main location. Must reference a `SourceId`. |
+| `primary_location` | `DiagnosticPrimaryLocation` | yes | Main span or source-loading request location. |
 | `secondary_spans` | `Vec<DiagnosticSpan>` | yes, may be empty | Supporting locations, sorted by producer when naturally ordered and normalized by the aggregator. |
 | `notes` | `Vec<DiagnosticNote>` | yes, may be empty | Human-facing note/help text plus optional source anchors. |
 | `details` | `DiagnosticDetails` | yes, may be empty | Machine-readable payload map. |
@@ -61,7 +61,7 @@ struct DiagnosticDraft {
     category: FailureCategory,
     stable_detail_key: String,
     message: String,
-    primary_span: DiagnosticSpan,
+    primary_location: DiagnosticPrimaryLocation,
     secondary_spans: Vec<DiagnosticSpan>,
     notes: Vec<DiagnosticNote>,
     details: DiagnosticDetails,
@@ -101,7 +101,7 @@ struct DiagnosticRecord {
     category: FailureCategory,
     stable_detail_key: String,
     message: String,
-    primary_span: DiagnosticSpan,
+    primary_location: DiagnosticPrimaryLocation,
     secondary_spans: Vec<DiagnosticSpan>,
     notes: Vec<DiagnosticNote>,
     details: DiagnosticDetails,
@@ -180,7 +180,7 @@ enum StaleDiagnosticReason {
 
 `DiagnosticId` is deterministic within one `BuildSnapshotId`; it is not globally
 meaningful. The aggregator derives it from source identity, diagnostic code,
-phase, primary span, stable detail key, normalized details, canonical fix
+phase, primary location, stable detail key, normalized details, canonical fix
 payloads, explanation handle identity, and the deduplicated ordinal.
 
 `Current` records are eligible for CLI output, artifact projection, and semantic
@@ -230,8 +230,7 @@ enum ZeroWidthSpanIntent {
 UTF-16 offsets, context snippets, and rendered underlines are projections owned
 by render or LSP consumers.
 
-Task 5 span constructors must enforce `start <= end`, `primary_span.role ==
-Primary`, and no `secondary_spans` entry with `role == Primary`. They do not
+Task 5 span constructors must enforce `start <= end`, `Span` primary locations with `role == Primary`, and no `secondary_spans` entry with `role == Primary`. They do not
 validate file length or line-map membership; that remains a source-map consumer
 responsibility. Zero-width ranges are allowed only when `zero_width` is
 `Some(Eof)` or `Some(InsertionPoint)`. Non-zero ranges must use `zero_width ==
@@ -384,6 +383,7 @@ downstream forward compatibility:
 - `FailureCategory`;
 - `StaleDiagnosticReason`;
 - `DiagnosticFreshness`;
+- `DiagnosticPrimaryLocation`;
 - `DiagnosticSpanRole`;
 - `SpanFreshness`;
 - `ZeroWidthSpanIntent`;
@@ -405,6 +405,12 @@ exhaustive where the crate needs deliberate review.
   kernel component owns that decision.
 - A freshness state does not mutate snapshots or artifacts; aggregation and
   consumer layers decide publication.
-- Records store `SourceRange`, not LSP UTF-16 positions.
+- Records store primary locations and real secondary `SourceRange`s, not LSP UTF-16 positions.
 - Records store compact structured details, not artifact manifests or cache
   mutation instructions.
+
+## Source-loading primary locations
+
+`DiagnosticPrimaryLocation` is non-exhaustive: `Span(DiagnosticSpan)` or `SourceLoad { package_id: PackageId, path: NormalizedPath }`. Draft input and immutable records use `primary_location`; accessors return that sum. Source-loading descriptors (currently E0600–E0603) require the latter, `PipelinePhase::SourceLoad`, and `FailureCategory::SourceLoadError` (`source_load`, `source_load_error`). Other codes require a span and cannot use these phase/category values. Empty package identities are invalid. Secondary spans retain their role validation for either primary variant. Debug output retains existing span formatting and renders source-load package/path as escaped strings.
+
+For E0600, `stable_detail_key` names the structured failure reason; no duplicate reason field is required. Source-load primary debug text is `source_load(package={package:?},path={path:?})` using the underlying strings. Validation rejects mismatches without promising precedence among multiple invalid fields.

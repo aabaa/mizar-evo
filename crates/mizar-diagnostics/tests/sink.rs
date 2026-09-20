@@ -6,7 +6,8 @@ use mizar_diagnostics::{
     },
     failure_record::{
         DiagnosticDetailValue, DiagnosticDetails, DiagnosticDraft, DiagnosticDraftInput,
-        DiagnosticNote, DiagnosticNoteKind, DiagnosticSpan, FailureCategory, PipelinePhase,
+        DiagnosticNote, DiagnosticNoteKind, DiagnosticPrimaryLocation, DiagnosticSpan,
+        FailureCategory, PipelinePhase,
     },
     fix::{FixSuggestion, FixSuggestionId},
     registry::DiagnosticCode,
@@ -257,15 +258,17 @@ fn draft(
         category: FailureCategory::ParseError,
         stable_detail_key: "syntax.unexpected_token".to_owned(),
         message: message.to_owned(),
-        primary_span: DiagnosticSpan::primary(
-            SourceRange {
-                source_id,
-                start,
-                end,
-            },
-            None,
-        )
-        .expect("valid primary span"),
+        primary_location: DiagnosticPrimaryLocation::Span(
+            DiagnosticSpan::primary(
+                SourceRange {
+                    source_id,
+                    start,
+                    end,
+                },
+                None,
+            )
+            .expect("valid primary span"),
+        ),
         secondary_spans: vec![],
         notes: vec![],
         details: DiagnosticDetails::from_entries([(
@@ -297,15 +300,17 @@ fn rich_draft(snapshot: BuildSnapshotId, source_id: SourceId) -> DiagnosticDraft
         category: FailureCategory::ParseError,
         stable_detail_key: "syntax.unexpected_token".to_owned(),
         message: "rich".to_owned(),
-        primary_span: DiagnosticSpan::primary(
-            SourceRange {
-                source_id,
-                start: 0,
-                end: 1,
-            },
-            Some("unexpected token".to_owned()),
-        )
-        .expect("valid primary span"),
+        primary_location: DiagnosticPrimaryLocation::Span(
+            DiagnosticSpan::primary(
+                SourceRange {
+                    source_id,
+                    start: 0,
+                    end: 1,
+                },
+                Some("unexpected token".to_owned()),
+            )
+            .expect("valid primary span"),
+        ),
         secondary_spans: vec![secondary_span.clone()],
         notes: vec![DiagnosticNote::new(
             DiagnosticNoteKind::Help,

@@ -68,7 +68,7 @@ struct BuildDiagnosticIndex {
 }
 ```
 
-`records` は canonical publication order である。`by_source` は primary span source ごとに
+`records` は canonical publication order である。`by_source` は primary location source ごとに
 handle を index する。`by_id` は snapshot-local id から canonical record position へ map
 する。具体実装は `SourceKey` を method の背後に隠してよいが、lookup behavior は
 deterministic でなければならない。
@@ -106,7 +106,7 @@ deduplication は stable machine-readable field を key にする。
 1. `DiagnosticCode`。
 2. `PipelinePhase`。
 3. `FailureCategory`。
-4. primary span の source key、start、end、role、freshness、zero-width intent。
+4. 主位置の variant と identity: span の source key、offset、role、freshness、zero-width intent、または読込み要求の package/path。
 5. `stable_detail_key`。
 6. canonical order の structured details。
 7. ordered canonical fix payload: suggestion id、producer key、applicability、
@@ -118,7 +118,7 @@ message text、localized text、rendered label、terminal styling、LSP range、
 producer order は identity ではない。message を変更しても、2 つの diagnostic が
 deduplicate されるかどうかを変えてはならない。
 
-aggregator は primary span、structured detail、canonical fix payload、canonical
+aggregator は primary location、structured detail、canonical fix payload、canonical
 explanation handle identity が異なる diagnostic を merge してはならない。fix title、
 diagnostic message、rendered help、localized text、rendered explanation preview は
 presentation であり identity ではない。secondary span と note は canonical representative
@@ -192,3 +192,9 @@ Task 18 は `DiagnosticAggregationError` を downstream forward compatibility �
   stub API を追加してはならない。
 - driver、LSP、artifact、resolver adoption は external dependency である。準備ができていない
   場合は gap を記録し、`mizar-diagnostics` を独立に保つ。
+
+## Source-loading locations
+
+範囲付き診断のソースキーと順序は維持する。読込み位置のキーは独立した `source-load:` 接頭辞に、debug エスケープした package と正規化パスを `:` 区切りで連結し、`by_source`・順序・重複除去に使用する。範囲なし位置の順序比較用 offset はゼロとするが、スパンを捏造しない。重複除去は位置の variant と package/path 全体を含む。鮮度抑制、詳細・fix・explanation の区別、代表選択は維持する。
+
+読込みキーの厳密な形式は基底文字列に対する `source-load:{package:?}:{path:?}`（Rust debug の引用符・エスケープを含む）。既存 `by_source()` で公開し、`handles_for_source(SourceId)` は範囲付き診断専用のままとする。新しい公開 lookup API は不要。

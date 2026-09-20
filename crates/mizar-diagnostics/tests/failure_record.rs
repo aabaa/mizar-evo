@@ -1,4 +1,4 @@
-use std::str::FromStr;
+use std::{fs, str::FromStr};
 
 use mizar_diagnostics::{
     explain::{
@@ -9,9 +9,9 @@ use mizar_diagnostics::{
     failure_record::{
         DiagnosticDetailValue, DiagnosticDetails, DiagnosticDraft, DiagnosticDraftInput,
         DiagnosticFreshness, DiagnosticHandle, DiagnosticId, DiagnosticNote, DiagnosticNoteKind,
-        DiagnosticRecord, DiagnosticRecordError, DiagnosticSpan, DiagnosticSpanRole,
-        FailureCategory, PipelinePhase, SpanFreshness, StaleDiagnosticReason, ZeroWidthSpanIntent,
-        is_valid_detail_key,
+        DiagnosticPrimaryLocation, DiagnosticRecord, DiagnosticRecordError, DiagnosticSpan,
+        DiagnosticSpanRole, FailureCategory, PipelinePhase, SpanFreshness, StaleDiagnosticReason,
+        ZeroWidthSpanIntent, is_valid_detail_key,
     },
     fix::{FixSuggestion, FixSuggestionError, FixSuggestionId},
     registry::{
@@ -20,7 +20,8 @@ use mizar_diagnostics::{
     },
 };
 use mizar_session::{
-    BuildSnapshotId, InMemorySessionIdAllocator, SessionIdAllocator, SourceId, SourceRange,
+    BuildSnapshotId, InMemorySessionIdAllocator, NormalizedPath, PackageId, SessionIdAllocator,
+    SourceId, SourceRange, normalize_source_path,
 };
 
 #[test]
@@ -69,7 +70,7 @@ fn draft_and_record_round_trip_through_descriptor_metadata() {
         category: FailureCategory::ParseError,
         stable_detail_key: "syntax.unexpected_token".to_owned(),
         message: "unexpected token".to_owned(),
-        primary_span: primary_span.clone(),
+        primary_location: DiagnosticPrimaryLocation::Span(primary_span.clone()),
         secondary_spans: vec![secondary_span.clone()],
         notes: vec![note.clone()],
         details: details.clone(),
@@ -98,7 +99,7 @@ fn draft_and_record_round_trip_through_descriptor_metadata() {
     assert_eq!(record.category(), draft.category());
     assert_eq!(record.stable_detail_key(), draft.stable_detail_key());
     assert_eq!(record.message(), draft.message());
-    assert_eq!(record.primary_span(), draft.primary_span());
+    assert_eq!(record.primary_location(), draft.primary_location());
     assert_eq!(record.secondary_spans(), draft.secondary_spans());
     assert_eq!(record.notes(), draft.notes());
     assert_eq!(record.details(), draft.details());
@@ -127,11 +128,11 @@ fn drafts_and_records_require_registry_allocated_codes() {
         .expect("valid primary span"),
         vec![],
     );
-    input.code = DiagnosticCode::from_str("E0600").expect("well-formed unallocated code");
+    input.code = DiagnosticCode::from_str("E0700").expect("well-formed unallocated code");
     assert!(matches!(
         DiagnosticDraft::new(input),
         Err(DiagnosticRecordError::UnknownDiagnosticCode { code })
-            if code == DiagnosticCode::from_str("E0600").expect("well-formed unallocated code")
+            if code == DiagnosticCode::from_str("E0700").expect("well-formed unallocated code")
     ));
 
     let code = DiagnosticCode::from_str("E0001").expect("allocated code");
@@ -158,6 +159,176 @@ fn drafts_and_records_require_registry_allocated_codes() {
         Err(DiagnosticRecordError::RetiredDescriptorForDraft { code: retired_code })
             if retired_code == code
     ));
+}
+
+#[test]
+fn source_load_locations_require_allocated_code_and_matching_provenance() {
+    let snapshot = snapshot_id(10);
+    let path = normalized_path("src/missing.miz");
+    let valid = source_load_input(
+        snapshot,
+        "E0602",
+        PipelinePhase::SourceLoad,
+        FailureCategory::SourceLoadError,
+        PackageId::new("demo"),
+        path.clone(),
+        "source.unreadable_file",
+    );
+    let draft = DiagnosticDraft::new(valid).expect("valid source-load draft");
+    assert_eq!(
+        draft.primary_location(),
+        &DiagnosticPrimaryLocation::SourceLoad {
+            package_id: PackageId::new("demo"),
+            path: path.clone(),
+        }
+    );
+    assert!(
+        draft
+            .debug_snapshot()
+            .contains("source_load(package=\"demo\",path=\"src/missing.miz\")")
+    );
+    let record = DiagnosticRecord::from_draft(
+        draft,
+        DiagnosticHandle::new(snapshot, DiagnosticId::new(0)),
+        DiagnosticFreshness::Current {
+            source_snapshot: snapshot,
+        },
+        vec![],
+    )
+    .expect("valid source-load record");
+    assert!(
+        record
+            .debug_snapshot()
+            .contains("source_load(package=\"demo\",path=\"src/missing.miz\")")
+    );
+
+    let span = DiagnosticSpan::primary(
+        SourceRange {
+            source_id: source_id(snapshot),
+            start: 0,
+            end: 1,
+        },
+        None,
+    )
+    .expect("valid primary span");
+    let mut wrong_location = source_load_input(
+        snapshot,
+        "E0602",
+        PipelinePhase::SourceLoad,
+        FailureCategory::SourceLoadError,
+        PackageId::new("demo"),
+        path.clone(),
+        "source.unreadable_file",
+    );
+    wrong_location.primary_location = DiagnosticPrimaryLocation::Span(span.clone());
+    assert!(matches!(
+        DiagnosticDraft::new(wrong_location),
+        Err(DiagnosticRecordError::SourceLoadCodeRequiresSourceLoadLocation { .. })
+    ));
+
+    let mut wrong_code = source_load_input(
+        snapshot,
+        "E0001",
+        PipelinePhase::Parser,
+        FailureCategory::ParseError,
+        PackageId::new("demo"),
+        path.clone(),
+        "syntax.unexpected_token",
+    );
+    assert!(matches!(
+        DiagnosticDraft::new(wrong_code.clone()),
+        Err(DiagnosticRecordError::NonSourceLoadCodeRequiresSpan { .. })
+    ));
+    wrong_code.primary_location = DiagnosticPrimaryLocation::Span(span);
+    wrong_code.phase = PipelinePhase::SourceLoad;
+    wrong_code.category = FailureCategory::SourceLoadError;
+    assert!(matches!(
+        DiagnosticDraft::new(wrong_code),
+        Err(DiagnosticRecordError::NonSourceLoadMetadata { .. })
+    ));
+
+    let mut wrong_phase = source_load_input(
+        snapshot,
+        "E0602",
+        PipelinePhase::Parser,
+        FailureCategory::SourceLoadError,
+        PackageId::new("demo"),
+        path.clone(),
+        "source.unreadable_file",
+    );
+    assert!(matches!(
+        DiagnosticDraft::new(wrong_phase.clone()),
+        Err(DiagnosticRecordError::SourceLoadMetadataMismatch { .. })
+    ));
+    wrong_phase.phase = PipelinePhase::SourceLoad;
+    wrong_phase.category = FailureCategory::ParseError;
+    assert!(matches!(
+        DiagnosticDraft::new(wrong_phase),
+        Err(DiagnosticRecordError::SourceLoadMetadataMismatch { .. })
+    ));
+
+    let empty_package = source_load_input(
+        snapshot,
+        "E0602",
+        PipelinePhase::SourceLoad,
+        FailureCategory::SourceLoadError,
+        PackageId::new(""),
+        path.clone(),
+        "source.unreadable_file",
+    );
+    assert!(matches!(
+        DiagnosticDraft::new(empty_package),
+        Err(DiagnosticRecordError::EmptySourceLoadPackageId)
+    ));
+
+    let secondary_primary = DiagnosticSpan::primary(
+        SourceRange {
+            source_id: source_id(snapshot),
+            start: 2,
+            end: 3,
+        },
+        None,
+    )
+    .expect("valid secondary fixture span");
+    let mut invalid_secondary = source_load_input(
+        snapshot,
+        "E0602",
+        PipelinePhase::SourceLoad,
+        FailureCategory::SourceLoadError,
+        PackageId::new("demo"),
+        path,
+        "source.unreadable_file",
+    );
+    invalid_secondary.secondary_spans = vec![secondary_primary];
+    assert!(matches!(
+        DiagnosticDraft::new(invalid_secondary),
+        Err(DiagnosticRecordError::SecondarySpanMustNotUsePrimaryRole { index: 0 })
+    ));
+}
+
+#[test]
+fn every_allocated_source_load_code_accepts_a_source_request_location() {
+    let snapshot = snapshot_id(11);
+    let path = normalized_path("src/request.miz");
+    for (code, stable_detail_key) in [
+        ("E0600", "source.unmapped_buffer"),
+        ("E0601", "source.invalid_utf8"),
+        ("E0602", "source.unreadable_file"),
+        ("E0603", "source.outside_package_root"),
+    ] {
+        let draft = DiagnosticDraft::new(source_load_input(
+            snapshot,
+            code,
+            PipelinePhase::SourceLoad,
+            FailureCategory::SourceLoadError,
+            PackageId::new("demo"),
+            path.clone(),
+            stable_detail_key,
+        ))
+        .expect("allocated source-load code accepts source request");
+        assert_eq!(draft.phase(), PipelinePhase::SourceLoad);
+        assert_eq!(draft.category(), FailureCategory::SourceLoadError);
+    }
 }
 
 #[test]
@@ -537,7 +708,7 @@ fn debug_rendering_is_byte_stable_and_sorts_details() {
         category: FailureCategory::ParseError,
         stable_detail_key: "syntax.unexpected_token".to_owned(),
         message: "unexpected token".to_owned(),
-        primary_span: primary,
+        primary_location: DiagnosticPrimaryLocation::Span(primary),
         secondary_spans: vec![],
         notes: vec![],
         details,
@@ -849,7 +1020,7 @@ fn draft_input(
         category: FailureCategory::ParseError,
         stable_detail_key: "syntax.unexpected_token".to_owned(),
         message: "unexpected token".to_owned(),
-        primary_span,
+        primary_location: DiagnosticPrimaryLocation::Span(primary_span),
         secondary_spans,
         notes: vec![],
         details: DiagnosticDetails::from_entries([(
@@ -864,6 +1035,47 @@ fn draft_input(
         fixes: vec![],
         explanation: None,
     }
+}
+
+fn source_load_input(
+    snapshot: BuildSnapshotId,
+    code: &str,
+    phase: PipelinePhase,
+    category: FailureCategory,
+    package_id: PackageId,
+    path: NormalizedPath,
+    stable_detail_key: &str,
+) -> DiagnosticDraftInput {
+    DiagnosticDraftInput {
+        source_snapshot: snapshot,
+        code: DiagnosticCode::from_str(code).expect("allocated code"),
+        phase,
+        category,
+        stable_detail_key: stable_detail_key.to_owned(),
+        message: "source load failed".to_owned(),
+        primary_location: DiagnosticPrimaryLocation::SourceLoad { package_id, path },
+        secondary_spans: vec![],
+        notes: vec![],
+        details: DiagnosticDetails::new(),
+        fixes: vec![],
+        explanation: None,
+    }
+}
+
+fn normalized_path(path: &str) -> NormalizedPath {
+    static NEXT: std::sync::atomic::AtomicU64 = std::sync::atomic::AtomicU64::new(0);
+    let root = std::env::temp_dir().join(format!(
+        "mizar-diagnostics-source-load-{}-{}",
+        std::process::id(),
+        NEXT.fetch_add(1, std::sync::atomic::Ordering::Relaxed)
+    ));
+    fs::create_dir(&root).expect("create isolated fixture root");
+    let full_path = root.join(path);
+    fs::create_dir_all(full_path.parent().expect("source path parent")).expect("create source dir");
+    fs::write(&full_path, b"source fixture\n").expect("write source fixture");
+    let normalized = normalize_source_path(&root, &full_path).expect("normalize source path");
+    fs::remove_dir_all(&root).expect("remove fixture root");
+    normalized
 }
 
 fn informational_fix(identity: &str, title: &str) -> FixSuggestion {

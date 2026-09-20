@@ -4,12 +4,12 @@ use mizar_session::{BuildSnapshotId, SourceRange};
 
 use crate::{
     explain::{ExplanationHandle, ExplanationSubject},
-    registry::DiagnosticCode,
+    registry::{DiagnosticCode, PhaseFamily},
 };
 
 use super::{
-    DiagnosticFreshness, DiagnosticHandle, DiagnosticRecordError, DiagnosticSpan,
-    DiagnosticSpanRole,
+    DiagnosticFreshness, DiagnosticHandle, DiagnosticPrimaryLocation, DiagnosticRecordError,
+    DiagnosticSpan, DiagnosticSpanRole, FailureCategory, PipelinePhase,
 };
 
 pub(super) fn validate_detail_key(key: &str) -> Result<(), ()> {
@@ -61,15 +61,55 @@ pub(super) fn validate_source_range(range: SourceRange) -> Result<(), Diagnostic
     Ok(())
 }
 
-pub(super) fn validate_primary_and_secondary_spans(
-    primary_span: &DiagnosticSpan,
+pub(super) fn validate_primary_location(
+    code: DiagnosticCode,
+    phase: PipelinePhase,
+    category: FailureCategory,
+    primary_location: &DiagnosticPrimaryLocation,
     secondary_spans: &[DiagnosticSpan],
 ) -> Result<(), DiagnosticRecordError> {
-    if primary_span.role != DiagnosticSpanRole::Primary {
-        return Err(DiagnosticRecordError::PrimarySpanMustUsePrimaryRole {
-            actual: primary_span.role,
+    let is_source_load_code = code.phase_family() == Some(PhaseFamily::SourceLoad);
+    match (is_source_load_code, primary_location) {
+        (true, DiagnosticPrimaryLocation::Span(_)) => {
+            return Err(DiagnosticRecordError::SourceLoadCodeRequiresSourceLoadLocation { code });
+        }
+        (false, DiagnosticPrimaryLocation::SourceLoad { .. }) => {
+            return Err(DiagnosticRecordError::NonSourceLoadCodeRequiresSpan { code });
+        }
+        (_, DiagnosticPrimaryLocation::SourceLoad { package_id, .. })
+            if package_id.as_str().is_empty() =>
+        {
+            return Err(DiagnosticRecordError::EmptySourceLoadPackageId);
+        }
+        (false, DiagnosticPrimaryLocation::Span(primary_span)) => {
+            if primary_span.role != DiagnosticSpanRole::Primary {
+                return Err(DiagnosticRecordError::PrimarySpanMustUsePrimaryRole {
+                    actual: primary_span.role,
+                });
+            }
+        }
+        (_, DiagnosticPrimaryLocation::SourceLoad { .. }) => {}
+    }
+
+    if is_source_load_code
+        && (phase != PipelinePhase::SourceLoad || category != FailureCategory::SourceLoadError)
+    {
+        return Err(DiagnosticRecordError::SourceLoadMetadataMismatch {
+            code,
+            phase,
+            category,
         });
     }
+    if !is_source_load_code
+        && (phase == PipelinePhase::SourceLoad || category == FailureCategory::SourceLoadError)
+    {
+        return Err(DiagnosticRecordError::NonSourceLoadMetadata {
+            code,
+            phase,
+            category,
+        });
+    }
+
     for (index, span) in secondary_spans.iter().enumerate() {
         if span.role == DiagnosticSpanRole::Primary {
             return Err(DiagnosticRecordError::SecondarySpanMustNotUsePrimaryRole { index });

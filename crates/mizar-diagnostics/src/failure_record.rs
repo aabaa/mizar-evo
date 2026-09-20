@@ -2,7 +2,7 @@
 
 use std::{cmp::Ordering, collections::BTreeMap, error::Error, fmt};
 
-use mizar_session::{BuildSnapshotId, SourceRange};
+use mizar_session::{BuildSnapshotId, NormalizedPath, PackageId, SourceRange};
 
 use crate::registry::{DiagnosticCode, DiagnosticRegistry, DiagnosticSeverity, DiagnosticStatus};
 use crate::{explain::ExplanationHandle, fix::FixSuggestion};
@@ -13,8 +13,7 @@ mod validation;
 use debug::{DebugSnapshot, render_debug_snapshot};
 use validation::{
     validate_detail_key, validate_draft_freshness, validate_explanation_attachment,
-    validate_freshness, validate_primary_and_secondary_spans, validate_related_handles,
-    validate_source_range,
+    validate_freshness, validate_primary_location, validate_related_handles, validate_source_range,
 };
 
 /// Pipeline phase that produced a diagnostic.
@@ -24,6 +23,8 @@ use validation::{
 #[derive(Clone, Copy, Debug, Eq, Ord, PartialEq, PartialOrd)]
 #[non_exhaustive]
 pub enum PipelinePhase {
+    /// Source path and file loading.
+    SourceLoad,
     /// Lexical preprocessing or tokenization.
     Lexer,
     /// Concrete syntax parsing and recovery.
@@ -56,6 +57,7 @@ impl PipelinePhase {
     /// Stable lowercase rendering for debug/test snapshots.
     pub const fn as_str(self) -> &'static str {
         match self {
+            Self::SourceLoad => "source_load",
             Self::Lexer => "lexer",
             Self::Parser => "parser",
             Self::Frontend => "frontend",
@@ -83,6 +85,8 @@ impl fmt::Display for PipelinePhase {
 #[derive(Clone, Copy, Debug, Eq, Ord, PartialEq, PartialOrd)]
 #[non_exhaustive]
 pub enum FailureCategory {
+    /// Source path, bytes, or file loading failure.
+    SourceLoadError,
     /// Lexical, syntactic, or parse-recovery failure.
     ParseError,
     /// Name, import, namespace, or symbol resolution failure.
@@ -113,6 +117,7 @@ impl FailureCategory {
     /// Stable lowercase rendering for debug/test snapshots.
     pub const fn as_str(self) -> &'static str {
         match self {
+            Self::SourceLoadError => "source_load_error",
             Self::ParseError => "parse_error",
             Self::ResolveError => "resolve_error",
             Self::TypeError => "type_error",
@@ -415,6 +420,21 @@ impl DiagnosticSpan {
     }
 }
 
+/// Primary diagnostic location, either a loaded-source span or a source-load request.
+#[derive(Clone, Debug, Eq, PartialEq)]
+#[non_exhaustive]
+pub enum DiagnosticPrimaryLocation {
+    /// A validated span grounded in a loaded source.
+    Span(DiagnosticSpan),
+    /// A source request that failed before a `SourceId` could be allocated.
+    SourceLoad {
+        /// Package identity that owns the requested source.
+        package_id: PackageId,
+        /// Normalized package-relative source path.
+        path: NormalizedPath,
+    },
+}
+
 /// Human-facing note attached to a diagnostic.
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct DiagnosticNote {
@@ -584,8 +604,8 @@ pub struct DiagnosticDraftInput {
     pub stable_detail_key: String,
     /// Human-facing message.
     pub message: String,
-    /// Primary source span.
-    pub primary_span: DiagnosticSpan,
+    /// Primary source span or source-loading request.
+    pub primary_location: DiagnosticPrimaryLocation,
     /// Secondary source spans.
     pub secondary_spans: Vec<DiagnosticSpan>,
     /// Human-facing notes.
@@ -607,7 +627,7 @@ pub struct DiagnosticDraft {
     category: FailureCategory,
     stable_detail_key: String,
     message: String,
-    primary_span: DiagnosticSpan,
+    primary_location: DiagnosticPrimaryLocation,
     secondary_spans: Vec<DiagnosticSpan>,
     notes: Vec<DiagnosticNote>,
     details: DiagnosticDetails,
@@ -637,7 +657,13 @@ impl DiagnosticDraft {
                 key: input.stable_detail_key.clone(),
             }
         })?;
-        validate_primary_and_secondary_spans(&input.primary_span, &input.secondary_spans)?;
+        validate_primary_location(
+            input.code,
+            input.phase,
+            input.category,
+            &input.primary_location,
+            &input.secondary_spans,
+        )?;
         validate_explanation_attachment(
             input.explanation.as_ref(),
             input.source_snapshot,
@@ -652,7 +678,7 @@ impl DiagnosticDraft {
             category: input.category,
             stable_detail_key: input.stable_detail_key,
             message: input.message,
-            primary_span: input.primary_span,
+            primary_location: input.primary_location,
             secondary_spans: input.secondary_spans,
             notes: input.notes,
             details: input.details,
@@ -691,9 +717,9 @@ impl DiagnosticDraft {
         &self.message
     }
 
-    /// Returns the primary source span.
-    pub const fn primary_span(&self) -> &DiagnosticSpan {
-        &self.primary_span
+    /// Returns the primary diagnostic location.
+    pub const fn primary_location(&self) -> &DiagnosticPrimaryLocation {
+        &self.primary_location
     }
 
     /// Returns secondary source spans.
@@ -738,7 +764,7 @@ pub struct DiagnosticRecord {
     category: FailureCategory,
     stable_detail_key: String,
     message: String,
-    primary_span: DiagnosticSpan,
+    primary_location: DiagnosticPrimaryLocation,
     secondary_spans: Vec<DiagnosticSpan>,
     notes: Vec<DiagnosticNote>,
     details: DiagnosticDetails,
@@ -794,7 +820,7 @@ impl DiagnosticRecord {
             category: draft.category,
             stable_detail_key: draft.stable_detail_key,
             message: draft.message,
-            primary_span: draft.primary_span,
+            primary_location: draft.primary_location,
             secondary_spans: draft.secondary_spans,
             notes: draft.notes,
             details: draft.details,
@@ -845,9 +871,9 @@ impl DiagnosticRecord {
         &self.message
     }
 
-    /// Returns the primary source span.
-    pub const fn primary_span(&self) -> &DiagnosticSpan {
-        &self.primary_span
+    /// Returns the primary diagnostic location.
+    pub const fn primary_location(&self) -> &DiagnosticPrimaryLocation {
+        &self.primary_location
     }
 
     /// Returns secondary source spans.
@@ -940,6 +966,36 @@ pub enum DiagnosticRecordError {
     PrimarySpanMustUsePrimaryRole {
         /// Observed role.
         actual: DiagnosticSpanRole,
+    },
+    /// A source-loading code used a range-backed primary location.
+    SourceLoadCodeRequiresSourceLoadLocation {
+        /// Source-loading diagnostic code.
+        code: DiagnosticCode,
+    },
+    /// A non-source-loading code used a source-loading primary location.
+    NonSourceLoadCodeRequiresSpan {
+        /// Diagnostic code.
+        code: DiagnosticCode,
+    },
+    /// A source-loading location omitted its package identity.
+    EmptySourceLoadPackageId,
+    /// A source-loading code used a non-source-loading phase or category.
+    SourceLoadMetadataMismatch {
+        /// Source-loading diagnostic code.
+        code: DiagnosticCode,
+        /// Observed pipeline phase.
+        phase: PipelinePhase,
+        /// Observed failure category.
+        category: FailureCategory,
+    },
+    /// A non-source-loading code used source-loading provenance metadata.
+    NonSourceLoadMetadata {
+        /// Diagnostic code.
+        code: DiagnosticCode,
+        /// Observed pipeline phase.
+        phase: PipelinePhase,
+        /// Observed failure category.
+        category: FailureCategory,
     },
     /// Secondary spans must not use the primary role.
     SecondarySpanMustNotUsePrimaryRole {
@@ -1053,6 +1109,32 @@ impl fmt::Display for DiagnosticRecordError {
             Self::PrimarySpanMustUsePrimaryRole { actual } => {
                 write!(formatter, "primary span used {actual} role")
             }
+            Self::SourceLoadCodeRequiresSourceLoadLocation { code } => write!(
+                formatter,
+                "source-loading diagnostic code {code} requires a source-loading location"
+            ),
+            Self::NonSourceLoadCodeRequiresSpan { code } => {
+                write!(formatter, "diagnostic code {code} requires a source span")
+            }
+            Self::EmptySourceLoadPackageId => {
+                formatter.write_str("source-loading location requires a nonempty package id")
+            }
+            Self::SourceLoadMetadataMismatch {
+                code,
+                phase,
+                category,
+            } => write!(
+                formatter,
+                "source-loading diagnostic code {code} used phase {phase} and category {category}"
+            ),
+            Self::NonSourceLoadMetadata {
+                code,
+                phase,
+                category,
+            } => write!(
+                formatter,
+                "diagnostic code {code} used source-loading phase {phase} or category {category}"
+            ),
             Self::SecondarySpanMustNotUsePrimaryRole { index } => {
                 write!(formatter, "secondary span {index} used primary role")
             }

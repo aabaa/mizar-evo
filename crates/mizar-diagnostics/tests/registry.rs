@@ -10,9 +10,9 @@ const EXPECTED_BUILTIN_CODES: &[&str] = &[
     "E0001", "E0002", "E0003", "E0010", "E0011", "E0012", "E0101", "E0102", "E0103", "E0110",
     "E0120", "E0121", "E0122", "E0201", "E0202", "E0203", "E0204", "E0301", "E0302", "E0303",
     "E0310", "E0320", "E0321", "E0350", "E0351", "E0352", "E0353", "E0401", "E0410", "E0411",
-    "E0420", "E0421", "E0422", "E0423", "E0424", "E0425", "E0426", "E0430", "W0001", "W0002",
-    "W0003", "W0010", "W0101", "W0102", "W0103", "W0201", "W0202", "W0210", "W0301", "W0302",
-    "W0303", "W0304", "W0305",
+    "E0420", "E0421", "E0422", "E0423", "E0424", "E0425", "E0426", "E0430", "E0600", "E0601",
+    "E0602", "E0603", "W0001", "W0002", "W0003", "W0010", "W0101", "W0102", "W0103", "W0201",
+    "W0202", "W0210", "W0301", "W0302", "W0303", "W0304", "W0305",
 ];
 
 const E0002: DiagnosticCode = match DiagnosticCode::from_parts(DiagnosticSeverity::Error, 2) {
@@ -34,7 +34,7 @@ fn diagnostic_code_parsing_and_ranges_are_stable() {
     assert_eq!(info.phase_family(), Some(PhaseFamily::Info));
     assert_eq!(info.default_severity(), Some(DiagnosticSeverity::Info));
 
-    let out_of_range = DiagnosticCode::from_str("E0600").expect("well-formed code");
+    let out_of_range = DiagnosticCode::from_str("E0700").expect("well-formed code");
     assert_eq!(out_of_range.phase_family(), None);
     assert!(DiagnosticCode::from_str("E01").is_err());
     assert!(DiagnosticCode::from_str("X0101").is_err());
@@ -58,6 +58,42 @@ fn builtin_registry_locks_allocated_codes() {
             .lookup(DiagnosticCode::from_str("I0001").expect("valid info code"))
             .is_none()
     );
+}
+
+#[test]
+fn source_load_descriptors_lock_codes_metadata_and_family() {
+    let registry = DiagnosticRegistry::builtin();
+    for (code, name, summary) in [
+        (
+            "E0600",
+            "source.load_failed",
+            "Other source-loading failure",
+        ),
+        (
+            "E0601",
+            "source.invalid_utf8",
+            "Source bytes are not valid UTF-8",
+        ),
+        (
+            "E0602",
+            "source.unreadable_file",
+            "Source file cannot be read",
+        ),
+        (
+            "E0603",
+            "source.outside_package_root",
+            "Source path escapes the package root",
+        ),
+    ] {
+        let code = DiagnosticCode::from_str(code).expect("allocated source-load code");
+        let descriptor = registry.lookup(code).expect("source-load descriptor");
+        assert_eq!(descriptor.meaning_key, name);
+        assert_eq!(descriptor.semantic_name, name);
+        assert_eq!(descriptor.summary, summary);
+        assert_eq!(descriptor.default_severity, DiagnosticSeverity::Error);
+        assert_eq!(descriptor.phase_family, PhaseFamily::SourceLoad);
+        assert_eq!(descriptor.since, "spec-22-source-load-v1");
+    }
 }
 
 #[test]
@@ -125,13 +161,13 @@ fn lookup_metadata_round_trips_without_message_text_identity() {
 fn descriptor_validation_rejects_range_severity_and_alias_gaps() {
     assert_eq!(
         validate_descriptors(&[descriptor(
-            "E0600",
+            "E0700",
             "unknown.future",
             PhaseFamily::Algorithm,
             DiagnosticSeverity::Error,
         )]),
         Err(RegistryValidationError::CodeOutsideDefinedRange {
-            code: DiagnosticCode::from_str("E0600").expect("valid code"),
+            code: DiagnosticCode::from_str("E0700").expect("valid code"),
         })
     );
     assert_eq!(

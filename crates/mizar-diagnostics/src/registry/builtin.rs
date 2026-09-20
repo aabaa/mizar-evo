@@ -10,6 +10,9 @@ const INITIAL_DOC_URL: &str =
 
 macro_rules! builtin_descriptor {
     ($severity:ident, $number:literal, $name:literal, $family:ident, $summary:literal) => {
+        builtin_descriptor!($severity, $number, $name, $family, $summary, INITIAL_SINCE)
+    };
+    ($severity:ident, $number:literal, $name:literal, $family:ident, $summary:literal, $since:expr) => {
         DiagnosticDescriptor {
             code: DiagnosticCode::from_parts_unchecked(DiagnosticSeverity::$severity, $number),
             meaning_key: $name,
@@ -19,7 +22,7 @@ macro_rules! builtin_descriptor {
             summary: $summary,
             doc_url: INITIAL_DOC_URL,
             status: DiagnosticStatus::Active,
-            since: INITIAL_SINCE,
+            since: $since,
             retired_since: None,
             replacement_codes: &[],
             aliases: &[],
@@ -294,6 +297,38 @@ pub const BUILTIN_DESCRIPTORS: &[DiagnosticDescriptor] = &[
         "logic.cluster.inconsistency",
         Logic,
         "Cluster registration creates contradiction"
+    ),
+    builtin_descriptor!(
+        Error,
+        600,
+        "source.load_failed",
+        SourceLoad,
+        "Other source-loading failure",
+        "spec-22-source-load-v1"
+    ),
+    builtin_descriptor!(
+        Error,
+        601,
+        "source.invalid_utf8",
+        SourceLoad,
+        "Source bytes are not valid UTF-8",
+        "spec-22-source-load-v1"
+    ),
+    builtin_descriptor!(
+        Error,
+        602,
+        "source.unreadable_file",
+        SourceLoad,
+        "Source file cannot be read",
+        "spec-22-source-load-v1"
+    ),
+    builtin_descriptor!(
+        Error,
+        603,
+        "source.outside_package_root",
+        SourceLoad,
+        "Source path escapes the package root",
+        "spec-22-source-load-v1"
     ),
     builtin_descriptor!(
         Warning,

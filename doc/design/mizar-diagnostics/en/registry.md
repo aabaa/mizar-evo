@@ -45,6 +45,7 @@ table are the canonical registry vocabulary used by descriptors and tests.
 | `E0300`-`E0399` | `Proof` | Proof and ATP diagnostics | Error |
 | `E0400`-`E0499` | `Logic` | Logical consistency and verification-condition diagnostics | Error |
 | `E0500`-`E0599` | `Algorithm` | Algorithm verification diagnostics | Error |
+| `E0600`-`E0699` | `SourceLoad` | Source loading errors | Error |
 | `W0001`-`W0099` | `StructuralWarning` | Structural warnings | Warning |
 | `W0100`-`W0199` | `ProofWarning` | Proof and ATP warnings | Warning |
 | `W0200`-`W0299` | `AlgorithmWarning` | Algorithm and contract warnings | Warning |
@@ -272,3 +273,5 @@ is registry lifecycle metadata; it does not decide artifact mutation or
 publication. The `#[non_exhaustive]` marker is for external matching
 compatibility only; internal validation may keep exhaustive matches where
 deliberate review is required.
+
+Source-loading allocations E0600–E0603 follow spec 22.1.2/22.7; their `since` value is `spec-22-source-load-v1`. Existing code meanings and metadata remain unchanged.

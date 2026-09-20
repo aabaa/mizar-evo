@@ -174,3 +174,7 @@ conversion boundary を変えてはならない。
   できない。
 - rendering は LSP diagnostics や code action を作れない。LSP conversion は `mizar-lsp` が
   所有する。
+
+## Source-loading locations
+
+範囲なし主位置は `  --> {normalized_path}` と表示し、`DiagnosticSourceContext` 参照、座標、下線、ソース抜粋を追加しない。ヘッダー、note、実在する副スパン、fix、explanation の表示は維持する。

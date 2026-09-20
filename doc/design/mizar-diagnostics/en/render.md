@@ -179,3 +179,7 @@ record ordering, or LSP conversion boundaries.
   kernel acceptance.
 - Rendering cannot create LSP diagnostics or code actions. LSP conversion is
   owned by `mizar-lsp`.
+
+## Source-loading locations
+
+A non-range primary location renders `  --> {normalized_path}` without consulting `DiagnosticSourceContext`, adding coordinates, underlines, or a source excerpt. Header, notes, real secondary spans, fixes, and explanation rendering retain their existing behavior.

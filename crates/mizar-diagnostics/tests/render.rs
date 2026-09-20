@@ -1,6 +1,7 @@
-use std::{collections::HashMap, str::FromStr};
+use std::{collections::HashMap, fs, str::FromStr};
 
 use mizar_diagnostics::{
+    aggregator::BuildDiagnosticIndex,
     explain::{
         ExplanationHandle, ExplanationHandleId, ExplanationHandleInput, ExplanationKind,
         ExplanationPreview, ExplanationPreviewFormat, ExplanationSourceRef, ExplanationSubject,
@@ -8,8 +9,8 @@ use mizar_diagnostics::{
     failure_record::{
         DiagnosticDetailValue, DiagnosticDetails, DiagnosticDraft, DiagnosticDraftInput,
         DiagnosticFreshness, DiagnosticHandle, DiagnosticId, DiagnosticNote, DiagnosticNoteKind,
-        DiagnosticSpan, DiagnosticSpanRole, FailureCategory, PipelinePhase, SpanFreshness,
-        ZeroWidthSpanIntent,
+        DiagnosticPrimaryLocation, DiagnosticSpan, DiagnosticSpanRole, FailureCategory,
+        PipelinePhase, SpanFreshness, ZeroWidthSpanIntent,
     },
     fix::{
         FixApplicability, FixCommandRef, FixEdit, FixSafety, FixSuggestion, FixSuggestionId,
@@ -20,10 +21,11 @@ use mizar_diagnostics::{
         DiagnosticRenderInput, DiagnosticSourceContext, RenderOptions, RenderStyle,
         render_diagnostics,
     },
+    sink::{DiagnosticProducerScope, DiagnosticSink},
 };
 use mizar_session::{
-    BuildSnapshotId, Hash, InMemorySessionIdAllocator, LineColumn, LineColumnRange,
-    SessionIdAllocator, SourceId, SourceRange,
+    BuildSnapshotId, Hash, InMemorySessionIdAllocator, LineColumn, LineColumnRange, NormalizedPath,
+    PackageId, SessionIdAllocator, SourceId, SourceRange, normalize_source_path,
 };
 
 #[test]
@@ -96,6 +98,116 @@ fn plain_rendering_is_byte_stable_for_primary_secondary_notes_and_refs() {
             "   = help: qualify one candidate\n",
             "   = help: fix suggestion `render.qualify`: qualify one candidate\n",
             "   = explain: `render.explain`: show overload candidates",
+        )
+    );
+}
+
+#[test]
+fn source_load_rendering_uses_request_path_without_source_context() {
+    let snapshot = snapshot_id(21);
+    let path = normalized_path("src/missing.miz");
+    let draft = DiagnosticDraft::new(DiagnosticDraftInput {
+        source_snapshot: snapshot,
+        code: DiagnosticCode::from_str("E0602").expect("allocated code"),
+        phase: PipelinePhase::SourceLoad,
+        category: FailureCategory::SourceLoadError,
+        stable_detail_key: "source.unreadable_file".to_owned(),
+        message: "cannot read source".to_owned(),
+        primary_location: DiagnosticPrimaryLocation::SourceLoad {
+            package_id: PackageId::new("demo"),
+            path,
+        },
+        secondary_spans: vec![],
+        notes: vec![],
+        details: DiagnosticDetails::new(),
+        fixes: vec![],
+        explanation: None,
+    })
+    .expect("valid source-load draft");
+    let mut sink = DiagnosticSink::new(DiagnosticProducerScope::new(
+        PipelinePhase::SourceLoad,
+        snapshot,
+        "source-loader",
+    ));
+    sink.emit(draft).expect("source-load draft enters sink");
+    let index = BuildDiagnosticIndex::from_batches(snapshot, vec![sink.into_batch()])
+        .expect("source-load batch aggregates");
+
+    let rendered = render_diagnostics(DiagnosticRenderInput::new(
+        index.records(),
+        &PanicSourceContext,
+        RenderOptions::plain(),
+    ));
+    assert_eq!(
+        rendered,
+        concat!(
+            "error[E0602]: cannot read source (source.unreadable_file)\n",
+            "  --> src/missing.miz"
+        )
+    );
+}
+
+#[test]
+fn source_load_primary_keeps_real_secondary_span_rendering() {
+    let snapshot = snapshot_id(22);
+    let secondary_source = source_id(snapshot);
+    let context = TestSourceContext::new().with_source(
+        secondary_source,
+        "src/related.miz",
+        "related-source",
+        "abc\n",
+    );
+    let draft = DiagnosticDraft::new(DiagnosticDraftInput {
+        source_snapshot: snapshot,
+        code: DiagnosticCode::from_str("E0600").expect("allocated code"),
+        phase: PipelinePhase::SourceLoad,
+        category: FailureCategory::SourceLoadError,
+        stable_detail_key: "source.unmapped_buffer".to_owned(),
+        message: "source request failed".to_owned(),
+        primary_location: DiagnosticPrimaryLocation::SourceLoad {
+            package_id: PackageId::new("demo"),
+            path: normalized_path("src/requested.miz"),
+        },
+        secondary_spans: vec![
+            DiagnosticSpan::secondary(
+                SourceRange {
+                    source_id: secondary_source,
+                    start: 0,
+                    end: 3,
+                },
+                Some("related source".to_owned()),
+            )
+            .expect("valid secondary span"),
+        ],
+        notes: vec![],
+        details: DiagnosticDetails::new(),
+        fixes: vec![],
+        explanation: None,
+    })
+    .expect("valid source-load draft");
+    let mut sink = DiagnosticSink::new(DiagnosticProducerScope::new(
+        PipelinePhase::SourceLoad,
+        snapshot,
+        "source-loader",
+    ));
+    sink.emit(draft).expect("source-load draft enters sink");
+    let index = BuildDiagnosticIndex::from_batches(snapshot, vec![sink.into_batch()])
+        .expect("source-load batch aggregates");
+
+    let rendered = render_diagnostics(DiagnosticRenderInput::new(
+        index.records(),
+        &context,
+        RenderOptions::plain(),
+    ));
+    assert_eq!(
+        rendered,
+        concat!(
+            "error[E0600]: source request failed (source.load_failed)\n",
+            "  --> src/requested.miz\n",
+            "  --> src/related.miz:1:1\n",
+            "   |\n",
+            " 1 | abc\n",
+            "   | --- related source"
         )
     );
 }
@@ -502,6 +614,26 @@ struct TestSourceContext {
     sources: HashMap<SourceId, TestSource>,
 }
 
+struct PanicSourceContext;
+
+impl DiagnosticSourceContext for PanicSourceContext {
+    fn path_for(&self, _: SourceId) -> Option<&str> {
+        panic!("source-load rendering must not query source paths")
+    }
+
+    fn source_key_for(&self, _: SourceId) -> String {
+        panic!("source-load rendering must not query source keys")
+    }
+
+    fn line_text(&self, _: SourceId, _: u32) -> Option<&str> {
+        panic!("source-load rendering must not query source text")
+    }
+
+    fn line_column(&self, _: SourceRange) -> Option<LineColumnRange> {
+        panic!("source-load rendering must not query source coordinates")
+    }
+}
+
 impl TestSourceContext {
     fn new() -> Self {
         Self::default()
@@ -693,17 +825,19 @@ fn record(fixture: RecordFixture) -> mizar_diagnostics::failure_record::Diagnost
         category: fixture.category,
         stable_detail_key: fixture.stable_detail_key.to_owned(),
         message: fixture.message.to_owned(),
-        primary_span: fixture.primary_span.unwrap_or_else(|| {
-            DiagnosticSpan::primary(
-                SourceRange {
-                    source_id: fixture.source_id,
-                    start: fixture.start,
-                    end: fixture.end,
-                },
-                None,
-            )
-            .expect("valid primary span")
-        }),
+        primary_location: DiagnosticPrimaryLocation::Span(fixture.primary_span.unwrap_or_else(
+            || {
+                DiagnosticSpan::primary(
+                    SourceRange {
+                        source_id: fixture.source_id,
+                        start: fixture.start,
+                        end: fixture.end,
+                    },
+                    None,
+                )
+                .expect("valid primary span")
+            },
+        )),
         secondary_spans: fixture.secondary_spans,
         notes: fixture.notes,
         details: DiagnosticDetails::from_entries([(
@@ -724,6 +858,22 @@ fn record(fixture: RecordFixture) -> mizar_diagnostics::failure_record::Diagnost
         vec![],
     )
     .expect("valid record")
+}
+
+fn normalized_path(path: &str) -> NormalizedPath {
+    static NEXT: std::sync::atomic::AtomicU64 = std::sync::atomic::AtomicU64::new(0);
+    let root = std::env::temp_dir().join(format!(
+        "mizar-diagnostics-source-load-{}-{}",
+        std::process::id(),
+        NEXT.fetch_add(1, std::sync::atomic::Ordering::Relaxed)
+    ));
+    fs::create_dir(&root).expect("create isolated fixture root");
+    let full_path = root.join(path);
+    fs::create_dir_all(full_path.parent().expect("source path parent")).expect("create source dir");
+    fs::write(&full_path, b"source fixture\n").expect("write source fixture");
+    let normalized = normalize_source_path(&root, &full_path).expect("normalize source path");
+    fs::remove_dir_all(&root).expect("remove fixture root");
+    normalized
 }
 
 fn informational_fix(identity: &str, title: &str) -> FixSuggestion {

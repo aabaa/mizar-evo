@@ -1,4 +1,4 @@
-use std::str::FromStr;
+use std::{fs, str::FromStr};
 
 use mizar_diagnostics::{
     aggregator::{BuildDiagnosticIndex, DiagnosticAggregationInput},
@@ -8,7 +8,8 @@ use mizar_diagnostics::{
     },
     failure_record::{
         DiagnosticDetailValue, DiagnosticDetails, DiagnosticDraft, DiagnosticDraftInput,
-        DiagnosticFreshness, DiagnosticSpan, FailureCategory, PipelinePhase,
+        DiagnosticFreshness, DiagnosticPrimaryLocation, DiagnosticSpan, FailureCategory,
+        PipelinePhase,
     },
     fix::{
         FixApplicability, FixCommandRef, FixEdit, FixSafety, FixSuggestion, FixSuggestionId,
@@ -18,7 +19,8 @@ use mizar_diagnostics::{
     sink::{DiagnosticBatch, DiagnosticProducerScope, DiagnosticSink},
 };
 use mizar_session::{
-    BuildSnapshotId, Hash, InMemorySessionIdAllocator, SessionIdAllocator, SourceId, SourceRange,
+    BuildSnapshotId, Hash, InMemorySessionIdAllocator, NormalizedPath, PackageId,
+    SessionIdAllocator, SourceId, SourceRange, normalize_source_path,
 };
 
 #[test]
@@ -124,6 +126,138 @@ fn aggregation_is_independent_of_batch_and_production_order() {
         multi_forward.debug_snapshot(),
         multi_reversed.debug_snapshot()
     );
+}
+
+#[test]
+fn source_load_locations_have_stable_keys_identity_order_and_stale_filtering() {
+    let snapshot = snapshot_id(30);
+    let first = source_load_draft(
+        snapshot,
+        "alpha",
+        "src/a.miz",
+        "E0602",
+        "source.unreadable_file",
+        "unreadable source",
+    );
+    let first_variant = source_load_draft(
+        snapshot,
+        "alpha",
+        "src/a.miz",
+        "E0602",
+        "source.unreadable_file",
+        "zeta wording",
+    );
+    let second = source_load_draft(
+        snapshot,
+        "alpha",
+        "src/a.miz",
+        "E0600",
+        "source.unmapped_buffer",
+        "generic source-loading failure",
+    );
+    let other_reason = source_load_draft(
+        snapshot,
+        "alpha",
+        "src/a.miz",
+        "E0600",
+        "source.unsupported_extension",
+        "unsupported source extension",
+    );
+    let third = source_load_draft(
+        snapshot,
+        "beta",
+        "src/a.miz",
+        "E0602",
+        "source.unreadable_file",
+        "foreign unreadable source",
+    );
+    let fourth = source_load_draft(
+        snapshot,
+        "alpha",
+        "src/b.miz",
+        "E0602",
+        "source.unreadable_file",
+        "another unreadable source",
+    );
+    let first_batch = batch(
+        snapshot,
+        PipelinePhase::SourceLoad,
+        "source-loader-a",
+        vec![
+            third.clone(),
+            first_variant.clone(),
+            fourth.clone(),
+            first.clone(),
+        ],
+    );
+    let first_batch_reversed = batch(
+        snapshot,
+        PipelinePhase::SourceLoad,
+        "source-loader-a",
+        vec![first, fourth, first_variant, third],
+    );
+    let second_batch = batch(
+        snapshot,
+        PipelinePhase::SourceLoad,
+        "source-loader-b",
+        vec![second.clone(), other_reason.clone()],
+    );
+    let second_batch_reversed = batch(
+        snapshot,
+        PipelinePhase::SourceLoad,
+        "source-loader-b",
+        vec![other_reason, second],
+    );
+    let forward = BuildDiagnosticIndex::from_batches(
+        snapshot,
+        vec![first_batch.clone(), second_batch.clone()],
+    )
+    .expect("source-load aggregation succeeds");
+    let reversed = BuildDiagnosticIndex::from_batches(
+        snapshot,
+        vec![second_batch_reversed, first_batch_reversed],
+    )
+    .expect("reversed source-load aggregation succeeds");
+
+    assert_eq!(forward.debug_snapshot(), reversed.debug_snapshot());
+    assert_eq!(forward.len(), 5);
+    let keys = forward
+        .by_source()
+        .keys()
+        .map(|key| key.as_str())
+        .collect::<Vec<_>>();
+    assert!(keys.contains(&"source-load:\"alpha\":\"src/a.miz\""));
+    assert!(keys.contains(&"source-load:\"alpha\":\"src/b.miz\""));
+    assert!(keys.contains(&"source-load:\"beta\":\"src/a.miz\""));
+    assert_eq!(
+        forward.records()[0].message(),
+        "generic source-loading failure"
+    );
+    assert_eq!(
+        forward.records()[1].stable_detail_key(),
+        "source.unsupported_extension"
+    );
+    assert_eq!(forward.records()[2].message(), "unreadable source");
+
+    let stale_snapshot = snapshot_id(31);
+    let stale = source_load_draft(
+        stale_snapshot,
+        "alpha",
+        "src/stale.miz",
+        "E0603",
+        "source.outside_package_root",
+        "outside package root",
+    );
+    let stale_batch = batch(
+        stale_snapshot,
+        PipelinePhase::SourceLoad,
+        "source-loader-stale",
+        vec![stale],
+    );
+    let current = BuildDiagnosticIndex::from_batches(snapshot, vec![stale_batch])
+        .expect("stale source-load batch is accounted for");
+    assert!(current.records().is_empty());
+    assert_eq!(current.obsolete_drafts().len(), 1);
 }
 
 #[test]
@@ -1256,15 +1390,17 @@ fn draft(fixture: DraftFixture) -> DiagnosticDraft {
         category: fixture.category,
         stable_detail_key: fixture.stable_detail_key.to_owned(),
         message: fixture.message.to_owned(),
-        primary_span: DiagnosticSpan::primary(
-            SourceRange {
-                source_id: fixture.source_id,
-                start: fixture.start,
-                end: fixture.end,
-            },
-            None,
-        )
-        .expect("valid primary span"),
+        primary_location: DiagnosticPrimaryLocation::Span(
+            DiagnosticSpan::primary(
+                SourceRange {
+                    source_id: fixture.source_id,
+                    start: fixture.start,
+                    end: fixture.end,
+                },
+                None,
+            )
+            .expect("valid primary span"),
+        ),
         secondary_spans: vec![],
         notes: vec![],
         details: DiagnosticDetails::from_entries(fixture.details).expect("valid details"),
@@ -1272,6 +1408,50 @@ fn draft(fixture: DraftFixture) -> DiagnosticDraft {
         explanation: fixture.explanation,
     })
     .expect("valid draft")
+}
+
+fn source_load_draft(
+    snapshot: BuildSnapshotId,
+    package: &str,
+    path: &str,
+    code: &str,
+    stable_detail_key: &str,
+    message: &str,
+) -> DiagnosticDraft {
+    DiagnosticDraft::new(DiagnosticDraftInput {
+        source_snapshot: snapshot,
+        code: DiagnosticCode::from_str(code).expect("allocated source-load code"),
+        phase: PipelinePhase::SourceLoad,
+        category: FailureCategory::SourceLoadError,
+        stable_detail_key: stable_detail_key.to_owned(),
+        message: message.to_owned(),
+        primary_location: DiagnosticPrimaryLocation::SourceLoad {
+            package_id: PackageId::new(package),
+            path: normalized_path(path),
+        },
+        secondary_spans: vec![],
+        notes: vec![],
+        details: DiagnosticDetails::new(),
+        fixes: vec![],
+        explanation: None,
+    })
+    .expect("valid source-load draft")
+}
+
+fn normalized_path(path: &str) -> NormalizedPath {
+    static NEXT: std::sync::atomic::AtomicU64 = std::sync::atomic::AtomicU64::new(0);
+    let root = std::env::temp_dir().join(format!(
+        "mizar-diagnostics-source-load-{}-{}",
+        std::process::id(),
+        NEXT.fetch_add(1, std::sync::atomic::Ordering::Relaxed)
+    ));
+    fs::create_dir(&root).expect("create isolated fixture root");
+    let full_path = root.join(path);
+    fs::create_dir_all(full_path.parent().expect("source path parent")).expect("create source dir");
+    fs::write(&full_path, b"source fixture\n").expect("write source fixture");
+    let normalized = normalize_source_path(&root, &full_path).expect("normalize source path");
+    fs::remove_dir_all(&root).expect("remove fixture root");
+    normalized
 }
 
 fn batch(

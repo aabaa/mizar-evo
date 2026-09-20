@@ -40,7 +40,7 @@ draft と record は次の field を共有する。
 | `category` | `FailureCategory` | yes | 安定した machine-readable failure class。 |
 | `stable_detail_key` | `String` | yes | deduplication と sorting のための deterministic key。localized text を含めてはならない。 |
 | `message` | `String` | yes | 人間向け primary message。version 間で変わってよく、identity ではない。 |
-| `primary_span` | `DiagnosticSpan` | yes | 主 location。必ず `SourceId` を参照する。 |
+| `primary_location` | `DiagnosticPrimaryLocation` | yes | 主スパンまたはソース読込み要求の位置。 |
 | `secondary_spans` | `Vec<DiagnosticSpan>` | yes, may be empty | 補助 location。自然な順序がある場合は producer が並べ、aggregator が normalize する。 |
 | `notes` | `Vec<DiagnosticNote>` | yes, may be empty | 人間向け note/help text と任意の source anchor。 |
 | `details` | `DiagnosticDetails` | yes, may be empty | machine-readable payload map。 |
@@ -61,7 +61,7 @@ struct DiagnosticDraft {
     category: FailureCategory,
     stable_detail_key: String,
     message: String,
-    primary_span: DiagnosticSpan,
+    primary_location: DiagnosticPrimaryLocation,
     secondary_spans: Vec<DiagnosticSpan>,
     notes: Vec<DiagnosticNote>,
     details: DiagnosticDetails,
@@ -100,7 +100,7 @@ struct DiagnosticRecord {
     category: FailureCategory,
     stable_detail_key: String,
     message: String,
-    primary_span: DiagnosticSpan,
+    primary_location: DiagnosticPrimaryLocation,
     secondary_spans: Vec<DiagnosticSpan>,
     notes: Vec<DiagnosticNote>,
     details: DiagnosticDetails,
@@ -227,7 +227,7 @@ enum ZeroWidthSpanIntent {
 conversion、UTF-16 offset、context snippet、rendered underline は render または LSP
 consumer が所有する projection である。
 
-task 5 の span constructor は `start <= end`、`primary_span.role == Primary`、および
+task 5 の span constructor は `start <= end`、`Span` 主位置の `role == Primary`、および
 `secondary_spans` に `role == Primary` の entry が無いことを強制しなければならない。
 file length や line-map membership は validate しない。それは source-map consumer の
 責務である。zero-width range は `zero_width` が `Some(Eof)` または
@@ -377,6 +377,7 @@ Task 18 はすべての failure-record public enums を downstream forward compa
 - `FailureCategory`;
 - `StaleDiagnosticReason`;
 - `DiagnosticFreshness`;
+- `DiagnosticPrimaryLocation`;
 - `DiagnosticSpanRole`;
 - `SpanFreshness`;
 - `ZeroWidthSpanIntent`;
@@ -398,6 +399,12 @@ trap になることを防ぐ。crate 内部の match は deliberate review が�
   kernel component がその decision を所有する。
 - freshness state は snapshot や artifact を mutate しない。aggregation と consumer
   layer が publication を決定する。
-- record は LSP UTF-16 position ではなく `SourceRange` を保存する。
+- record は主位置と実在する副 `SourceRange` を保存し、LSP UTF-16 position は保存しない。
 - record は compact structured detail を保存し、artifact manifest や cache mutation
   instruction は保存しない。
+
+## Source-loading primary locations
+
+`DiagnosticPrimaryLocation` は non-exhaustive な `Span(DiagnosticSpan)` または `SourceLoad { package_id: PackageId, path: NormalizedPath }`。draft 入力と record は `primary_location` を使用し、accessor はこの列挙型を返す。ソース読込み descriptor（現在 E0600–E0603）は後者と `PipelinePhase::SourceLoad`、`FailureCategory::SourceLoadError`（`source_load`、`source_load_error`）を必須とする。他コードはスパンを必須とし、この phase/category を使えない。空の package 識別子は不正。どちらの主位置でも副スパンの role 検証を維持する。debug は既存スパン表示を維持し、読込み位置の package/path をエスケープした文字列で表示する。
+
+E0600 の構造化された失敗理由は `stable_detail_key` で表し、重複する reason field は要求しない。読込み主位置の debug 表示は基底文字列に対する `source_load(package={package:?},path={path:?})`。複数フィールドが不正な場合、拒否するが検証エラーの優先順位は規定しない。

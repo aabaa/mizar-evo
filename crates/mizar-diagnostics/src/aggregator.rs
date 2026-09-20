@@ -8,8 +8,8 @@ use crate::{
     explain::ExplanationHandleKey,
     failure_record::{
         DiagnosticDetailValue, DiagnosticDraft, DiagnosticFreshness, DiagnosticHandle,
-        DiagnosticId, DiagnosticRecord, DiagnosticRecordError, DiagnosticSpan, FailureCategory,
-        PipelinePhase, SpanFreshness,
+        DiagnosticId, DiagnosticPrimaryLocation, DiagnosticRecord, DiagnosticRecordError,
+        DiagnosticSpan, FailureCategory, PipelinePhase, SpanFreshness,
     },
     fix::FixSuggestionKey,
     registry::{DiagnosticCode, DiagnosticRegistry, DiagnosticSeverity},
@@ -55,6 +55,17 @@ impl DiagnosticSourceKey {
                 .to_published_schema_string()
                 .unwrap_or_else(|_| format!("{source_id:?}")),
         )
+    }
+
+    fn from_primary_location(location: &DiagnosticPrimaryLocation) -> Self {
+        match location {
+            DiagnosticPrimaryLocation::Span(span) => Self::from_source_id(span.range().source_id),
+            DiagnosticPrimaryLocation::SourceLoad { package_id, path } => Self(format!(
+                "source-load:{:?}:{:?}",
+                package_id.as_str(),
+                path.as_str()
+            )),
+        }
     }
 
     /// Returns the rendered source key.
@@ -174,9 +185,8 @@ impl BuildDiagnosticIndex {
                 u64::try_from(ordinal).expect("diagnostic ordinal fits into u64"),
             );
             let handle = DiagnosticHandle::new(publication_snapshot, id);
-            let source_key = DiagnosticSourceKey::from_source_id(
-                candidate.draft.primary_span().range().source_id,
-            );
+            let source_key =
+                DiagnosticSourceKey::from_primary_location(candidate.draft.primary_location());
             let code = candidate.draft.code();
             let record = DiagnosticRecord::from_draft_with_registry(
                 candidate.draft,
@@ -405,11 +415,25 @@ impl AggregationSortKey {
         dedup_key: DedupKey,
         presentation_key: String,
     ) -> Self {
-        let primary_range = draft.primary_span().range();
+        let (primary_source, primary_start, primary_end) = match draft.primary_location() {
+            DiagnosticPrimaryLocation::Span(span) => {
+                let range = span.range();
+                (
+                    DiagnosticSourceKey::from_source_id(range.source_id),
+                    range.start,
+                    range.end,
+                )
+            }
+            DiagnosticPrimaryLocation::SourceLoad { .. } => (
+                DiagnosticSourceKey::from_primary_location(draft.primary_location()),
+                0,
+                0,
+            ),
+        };
         Self {
-            primary_source: DiagnosticSourceKey::from_source_id(primary_range.source_id),
-            primary_start: primary_range.start,
-            primary_end: primary_range.end,
+            primary_source,
+            primary_start,
+            primary_end,
             phase: draft.phase(),
             severity,
             code: draft.code(),
@@ -426,7 +450,7 @@ struct DedupKey {
     code: DiagnosticCode,
     phase: PipelinePhase,
     category: FailureCategory,
-    primary_span: SpanIdentityKey,
+    primary_location: PrimaryLocationIdentityKey,
     stable_detail_key: String,
     details: Vec<(String, DiagnosticDetailValue)>,
     fixes: Vec<FixSuggestionKey>,
@@ -439,7 +463,7 @@ impl DedupKey {
             code: draft.code(),
             phase: draft.phase(),
             category: draft.category(),
-            primary_span: SpanIdentityKey::from_span(draft.primary_span()),
+            primary_location: PrimaryLocationIdentityKey::from_location(draft.primary_location()),
             stable_detail_key: draft.stable_detail_key().to_owned(),
             details: draft
                 .details()
@@ -467,6 +491,24 @@ struct SpanIdentityKey {
     role: &'static str,
     freshness: SpanFreshnessKey,
     zero_width: &'static str,
+}
+
+#[derive(Clone, Debug, Eq, Ord, PartialEq, PartialOrd)]
+enum PrimaryLocationIdentityKey {
+    Span(SpanIdentityKey),
+    SourceLoad { package_id: String, path: String },
+}
+
+impl PrimaryLocationIdentityKey {
+    fn from_location(location: &DiagnosticPrimaryLocation) -> Self {
+        match location {
+            DiagnosticPrimaryLocation::Span(span) => Self::Span(SpanIdentityKey::from_span(span)),
+            DiagnosticPrimaryLocation::SourceLoad { package_id, path } => Self::SourceLoad {
+                package_id: package_id.as_str().to_owned(),
+                path: path.as_str().to_owned(),
+            },
+        }
+    }
 }
 
 impl SpanIdentityKey {

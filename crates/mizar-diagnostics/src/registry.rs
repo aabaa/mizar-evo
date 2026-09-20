@@ -64,6 +64,8 @@ pub enum PhaseFamily {
     Logic,
     /// Algorithm verification diagnostics.
     Algorithm,
+    /// Source loading diagnostics.
+    SourceLoad,
     /// Structural warnings.
     StructuralWarning,
     /// Proof and ATP warnings.
@@ -85,7 +87,8 @@ impl PhaseFamily {
             | Self::Resolution
             | Self::Proof
             | Self::Logic
-            | Self::Algorithm => DiagnosticSeverity::Error,
+            | Self::Algorithm
+            | Self::SourceLoad => DiagnosticSeverity::Error,
             Self::StructuralWarning
             | Self::ProofWarning
             | Self::AlgorithmWarning
@@ -104,6 +107,7 @@ impl fmt::Display for PhaseFamily {
             Self::Proof => "Proof",
             Self::Logic => "Logic",
             Self::Algorithm => "Algorithm",
+            Self::SourceLoad => "SourceLoad",
             Self::StructuralWarning => "StructuralWarning",
             Self::ProofWarning => "ProofWarning",
             Self::AlgorithmWarning => "AlgorithmWarning",
@@ -155,6 +159,7 @@ impl DiagnosticCode {
             (DiagnosticSeverity::Error, 300..=399) => Some(PhaseFamily::Proof),
             (DiagnosticSeverity::Error, 400..=499) => Some(PhaseFamily::Logic),
             (DiagnosticSeverity::Error, 500..=599) => Some(PhaseFamily::Algorithm),
+            (DiagnosticSeverity::Error, 600..=699) => Some(PhaseFamily::SourceLoad),
             (DiagnosticSeverity::Warning, 1..=99) => Some(PhaseFamily::StructuralWarning),
             (DiagnosticSeverity::Warning, 100..=199) => Some(PhaseFamily::ProofWarning),
             (DiagnosticSeverity::Warning, 200..=299) => Some(PhaseFamily::AlgorithmWarning),

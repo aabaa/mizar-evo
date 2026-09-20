@@ -8,7 +8,8 @@ use mizar_diagnostics::{
     },
     failure_record::{
         DiagnosticDetailValue, DiagnosticDetails, DiagnosticDraft, DiagnosticDraftInput,
-        DiagnosticNote, DiagnosticNoteKind, DiagnosticSpan, FailureCategory, PipelinePhase,
+        DiagnosticNote, DiagnosticNoteKind, DiagnosticPrimaryLocation, DiagnosticSpan,
+        FailureCategory, PipelinePhase,
     },
     fix::{
         FixApplicability, FixEdit, FixSafety, FixSuggestion, FixSuggestionId, FixSuggestionInput,
@@ -195,7 +196,7 @@ fn parser_draft(snapshot: BuildSnapshotId, source_id: SourceId) -> DiagnosticDra
         category: FailureCategory::ParseError,
         stable_detail_key: "syntax.unexpected_token".to_owned(),
         message: "unexpected token".to_owned(),
-        primary_span,
+        primary_location: DiagnosticPrimaryLocation::Span(primary_span),
         secondary_spans: vec![secondary_span],
         notes: vec![DiagnosticNote::new(
             DiagnosticNoteKind::Note,
@@ -233,7 +234,7 @@ fn resolver_draft(snapshot: BuildSnapshotId, source_id: SourceId) -> DiagnosticD
         category: FailureCategory::ResolveError,
         stable_detail_key: "resolve.ambiguous_symbol".to_owned(),
         message: "ambiguous symbol".to_owned(),
-        primary_span,
+        primary_location: DiagnosticPrimaryLocation::Span(primary_span),
         secondary_spans: vec![],
         notes: vec![],
         details: DiagnosticDetails::from_entries([

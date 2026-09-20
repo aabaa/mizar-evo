@@ -73,7 +73,7 @@ struct BuildDiagnosticIndex {
 ```
 
 `records` is the canonical publication order. `by_source` indexes handles by
-the primary span source. `by_id` maps snapshot-local ids to canonical record
+the primary location source. `by_id` maps snapshot-local ids to canonical record
 positions. The concrete implementation may hide `SourceKey` behind methods, but
 lookup behavior must be deterministic.
 
@@ -113,7 +113,7 @@ Deduplication is keyed on stable machine-readable fields:
 1. `DiagnosticCode`.
 2. `PipelinePhase`.
 3. `FailureCategory`.
-4. Primary span source key, start, end, role, freshness, and zero-width intent.
+4. Primary location variant and identity: span source key, offsets, role, freshness and zero-width intent, or source-load package/path.
 5. `stable_detail_key`.
 6. Canonically ordered structured details.
 7. Ordered canonical fix payloads: suggestion id, producer key,
@@ -125,7 +125,7 @@ Message text, localized text, rendered labels, terminal styling, LSP ranges,
 source excerpts, and producer order are not identity. Changing a message must
 not change whether two diagnostics deduplicate.
 
-The aggregator must not merge diagnostics with different primary spans,
+The aggregator must not merge diagnostics with different primary locations,
 different structured details, different canonical fix payloads, or different
 canonical explanation handle identities. Fix titles, diagnostic messages,
 rendered help, localized text, and rendered explanation previews are
@@ -203,3 +203,9 @@ and this spec; downstream consumers must keep wildcard handling.
   placeholder adapters or stub APIs for those crates.
 - Driver, LSP, artifact, and resolver adoption are external dependencies. If
   they are not ready, record the gap and keep `mizar-diagnostics` independent.
+
+## Source-loading locations
+
+Range-backed source keys and ordering remain unchanged. Source-load keys use a disjoint `source-load:` prefix followed by debug-escaped package and normalized path strings separated by `:`; these keys are used in `by_source`, ordering, and deduplication. Offset ordering slots are zero for a non-range location only, never a fabricated span. Deduplication includes the location variant and full package/path identity. Snapshot suppression, detail/fix/explanation distinctions, and representative selection apply unchanged.
+
+The exact source-load key is `source-load:{package:?}:{path:?}` over the underlying strings (including Rust debug quotes/escapes). Existing `by_source()` exposes it; `handles_for_source(SourceId)` remains for span-backed records only. No new public lookup API is needed.
