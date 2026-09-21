@@ -683,7 +683,8 @@ publication work.
    [IR storage payload separation](./task_contracts/en/STEP6A3-IR-STORAGE-PAYLOAD.md), then
    [source diagnostic prerequisites](./task_contracts/en/STEP6A4-SOURCE-DIAGNOSTICS.md) and
    [real disk source service](./task_contracts/en/STEP6A5-SOURCE-SERVICE.md), then [loaded-source frontend entry](./task_contracts/en/STEP6A6-LOADED-FRONTEND.md), then
-   [syntax storage](./task_contracts/en/STEP6A7-SURFACE-AST-CODEC.md).
+   [syntax storage](./task_contracts/en/STEP6A7-SURFACE-AST-CODEC.md), then
+   [lexical contribution storage](./task_contracts/en/STEP6A8-LEXICAL-SYMBOL-CODEC.md).
 2. [ ] [mizar-artifact task 17](./mizar-artifact/en/todo.md) — phase-15
    emission from real producer projections (see
    [phase15_emission_reevaluation.md](./mizar-artifact/en/phase15_emission_reevaluation.md)).

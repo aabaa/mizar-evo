@@ -397,3 +397,38 @@ imported originals remain unsupported and punctuation-shaped imported originals
 retain only the prior syntactic fallback. Semantic alias identity,
 equivalence/negation, loci compatibility, overload selection, export/import
 propagation, diagnostics, and checking remain outside this collector.
+
+## Exported-symbol storage
+
+`ExportedSymbolShape::canonical_bytes(&self) -> Option<Vec<u8>>` and
+`ExportedSymbolShape::from_canonical_bytes(bytes: &[u8]) -> Option<Self>` own
+lossless producer payload storage for artifact lexical contributions.
+The canonical UTF-8 JSON is `["mizar-lexer/exported-symbol/v1", shape]`.
+`shape` is an object containing, in the following exact key order, `spelling`, `symbol_id`, `source_module`,
+`export_rank`, `kind`, `arity`, `operator`. String/rank newtypes encode as their
+underlying values. Enum tags and named fields use existing Rust spellings;
+arity is an object ordered `minimum`, `maximum`; operator is null or an object
+ordered `fixity`, `precedence`. `maximum` is null or a u16; `minimum` is u16,
+`export_rank` is u32, and `precedence` is u8. `kind` is a string: `Functor`,
+`Predicate`, `Mode`, `Attribute`, `Structure`, `Selector`, or `Constructor`.
+`fixity` is `"Prefix"`, `"Postfix"`, or `{"Infix":"Left"}` (also `"Right"` or
+`"NonAssociative"`). No fields may be omitted, including null-valued fields.
+For example, the exact canonical bytes for one shape are:
+```json
+["mizar-lexer/exported-symbol/v1",{"spelling":"+","symbol_id":"m#plus","source_module":"m","export_rank":0,"kind":"Functor","arity":{"minimum":2,"maximum":2},"operator":{"fixity":{"Infix":"Left"},"precedence":10}}]
+```
+Serde's compact JSON encoding is canonical: decode must re-encode byte-for-byte.
+Unknown/missing/duplicate fields, invalid tags/types or numbers outside their Rust integer representation, extra data,
+noncanonical JSON encoding and unsupported versions return `None`.
+Both directions reject payloads exceeding 1 MiB, a storage limit only.
+All current kinds, arities, operator forms and string identities are preserved,
+including minimum greater than maximum or incompatible kind/arity/operator
+combinations. Lexical validity is still checked by environment construction, including its
+existing errors. No source/session identities are allocated or serialized.
+Opaque module/symbol strings are producer inputs, not proof of stable provenance.
+The caller owns artifact schema/key binding, identity authentication, export
+selection, summary ordering/fingerprints and cache validity. No artifact envelope
+or import-resolution policy is introduced here.
+Tests in `crates/mizar-lexer/src/tests/lexical_environment.rs` cover the golden
+bytes above, full value roundtrips, canonical and size rejection, and real
+lexical-environment result/error parity after reconstruction.

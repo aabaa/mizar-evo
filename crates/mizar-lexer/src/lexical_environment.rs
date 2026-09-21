@@ -8,11 +8,13 @@ use crate::tables::{
     RESERVED_SYMBOLS, RESERVED_WORDS, ReservedSymbolTable, ReservedWordTable, is_reserved_symbol,
     is_reserved_word,
 };
+use serde::{Deserialize, Serialize};
 use std::collections::{BTreeMap, BTreeSet};
 use std::error::Error;
 use std::fmt;
 
-#[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Hash)]
+#[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Hash, Serialize, Deserialize)]
+#[serde(transparent)]
 pub struct ModuleId(pub String);
 
 impl ModuleId {
@@ -25,7 +27,8 @@ impl ModuleId {
     }
 }
 
-#[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Hash)]
+#[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Hash, Serialize, Deserialize)]
+#[serde(transparent)]
 pub struct SymbolId(pub String);
 
 impl SymbolId {
@@ -38,7 +41,8 @@ impl SymbolId {
     }
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, Serialize, Deserialize)]
+#[serde(transparent)]
 pub struct ExportRank(pub u32);
 
 impl ExportRank {
@@ -51,7 +55,7 @@ impl ExportRank {
     }
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, Serialize, Deserialize)]
 #[non_exhaustive]
 pub enum UserSymbolKind {
     Functor,
@@ -63,7 +67,8 @@ pub enum UserSymbolKind {
     Constructor,
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
 pub struct UserSymbolArity {
     pub minimum: u16,
     pub maximum: Option<u16>,
@@ -110,7 +115,8 @@ pub struct ModuleLexicalSummary {
     pub fingerprint: LexicalSummaryFingerprint,
 }
 
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
 pub struct ExportedSymbolShape {
     pub spelling: String,
     pub symbol_id: SymbolId,
@@ -119,6 +125,32 @@ pub struct ExportedSymbolShape {
     pub kind: UserSymbolKind,
     pub arity: UserSymbolArity,
     pub operator: Option<ExportedOperatorMetadata>,
+}
+
+const EXPORTED_SYMBOL_STORAGE_SCHEMA: &str = "mizar-lexer/exported-symbol/v1";
+const EXPORTED_SYMBOL_STORAGE_MAX_BYTES: usize = 1024 * 1024;
+
+impl ExportedSymbolShape {
+    /// Encodes bounded producer storage; lexical validity is checked elsewhere.
+    pub fn canonical_bytes(&self) -> Option<Vec<u8>> {
+        let bytes = serde_json::to_vec(&(EXPORTED_SYMBOL_STORAGE_SCHEMA, self)).ok()?;
+        (bytes.len() <= EXPORTED_SYMBOL_STORAGE_MAX_BYTES).then_some(bytes)
+    }
+
+    /// Decodes only bounded, byte-for-byte canonical storage; lexical validity is checked elsewhere.
+    pub fn from_canonical_bytes(bytes: &[u8]) -> Option<Self> {
+        if bytes.len() > EXPORTED_SYMBOL_STORAGE_MAX_BYTES {
+            return None;
+        }
+        let (schema, shape) = serde_json::from_slice::<(String, Self)>(bytes).ok()?;
+        if schema != EXPORTED_SYMBOL_STORAGE_SCHEMA {
+            return None;
+        }
+        if shape.canonical_bytes()?.as_slice() != bytes {
+            return None;
+        }
+        Some(shape)
+    }
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -191,20 +223,21 @@ pub struct UserSymbolCandidate {
     pub operator: Option<ExportedOperatorMetadata>,
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
 pub struct ExportedOperatorMetadata {
     pub fixity: ExportedOperatorFixity,
     pub precedence: u8,
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 pub enum ExportedOperatorFixity {
     Prefix,
     Infix(ExportedOperatorAssociativity),
     Postfix,
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 pub enum ExportedOperatorAssociativity {
     Left,
     Right,

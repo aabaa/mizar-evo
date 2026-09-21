@@ -369,3 +369,8 @@ constructor-mode shape のままにします。imported summary は参照しな�
 imported original は未対応で、句読点形の imported original は従来の syntactic fallback
 だけを保持します。意味論的 alias identity、equivalence/negation、loci compatibility、
 overload selection、export/import propagation、diagnostics、checking は collector の範囲外です。
+
+## Exported-symbol storage
+
+既存 `ExportedSymbolShape` の保存 API と形式は [英語正本](../en/lexical_environment.md#exported-symbol-storage)を参照。全フィールドを保持し、正規 JSON の完全一致と 1 MiB 上限を検証する。字句の妥当性、公開可否、出自、summary 順序・fingerprint の責務は変更しない。
+表現範囲内の意味的に不正な値も保持する。具体的な object/enum/null の形式と golden bytes は英語正本が所有する。

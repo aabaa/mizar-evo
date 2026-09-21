@@ -1,0 +1,13 @@
+# Task STEP6A8-LEXICAL-SYMBOL-CODEC: lexical contribution storage
+Canonical language: English; [Japanese pointer](../ja/STEP6A8-LEXICAL-SYMBOL-CODEC.md).
+Status: implemented. Tier: full. Owner: [lexer plan](../../mizar-lexer/en/00.crate_plan.md); consumer: real Frontend lexical-summary provider and producer publication in Step 6.
+Dependencies: existing lexer exported-symbol model and artifact [lexical payload boundary](../../mizar-artifact/en/module_summary.md#lexical-summary); A7 syntax storage is complete.
+Authority: [spec 11.2.1–4](../../../spec/en/11.symbol_management.md#112-scope-and-visibility), [spec 23.4](../../../spec/en/23.package_management_and_build_system.md#234-build-lifecycle-and-reproducibility) and [23.5](../../../spec/en/23.package_management_and_build_system.md#235-verifier-artifacts-and-build-output), and [lexical environment](../../mizar-lexer/en/lexical_environment.md).
+Gap: artifact contributions carry producer-owned strings but lexer symbol shapes have no reconstructible payload codec; this is a derived transport prerequisite, not a new lexical rule.
+Scope: existing lexer lexical_environment source/tests, Cargo dependencies/lockfile, paired module documents and plan links, global todo and this contract. Reuse existing types; no new files for code, wire types, adapters or artifact dependency.
+API, exact format and failure boundaries: [exported-symbol storage](../../mizar-lexer/en/lexical_environment.md#exported-symbol-storage).
+Preserve every field, including opaque string identities and currently rejected lexical shapes; existing environment construction retains validation/diagnostic authority. Codec success grants no export, import, identity, cache or semantic validity.
+Tests: existing `crates/mizar-lexer/src/tests/lexical_environment.rs`; owner-defined golden bytes, full field/enum roundtrip and byte stability, escaping/Unicode/numeric edges, canonical schema and malformed/unknown/duplicate/trailing/noncanonical data rejection, storage-size boundary, and unchanged real environment results/errors after roundtrip.
+Forbidden: language/spec/public diagnostic changes, existing corpus/expectation edits, export discovery, summary sorting/fingerprint derivation, artifact envelope/provider wiring, phase service activation, task17, Step7/MVM. No coverage or publication completion credit.
+Require independent specification, test-sufficiency, implementation, volume/scope and consistency reviews; cargo fmt --check, cargo clippy --all-targets --all-features -- -D warnings, cargo test.
+Exit: bounded canonical payloads reconstruct actual exported-symbol values; artifact conversion, real producer/provider and Frontend diagnostic/service work remain explicit dependencies.

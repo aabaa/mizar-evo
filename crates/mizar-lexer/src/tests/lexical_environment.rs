@@ -2216,3 +2216,259 @@ fn lexical_environment_treats_summary_order_as_canonical_input() {
 
     assert_ne!(canonical_env.fingerprint, reordered_env.fingerprint);
 }
+
+#[test]
+fn exported_symbol_codec_preserves_all_fields_and_variants() {
+    let kinds = [
+        (UserSymbolKind::Functor, "Functor"),
+        (UserSymbolKind::Predicate, "Predicate"),
+        (UserSymbolKind::Mode, "Mode"),
+        (UserSymbolKind::Attribute, "Attribute"),
+        (UserSymbolKind::Structure, "Structure"),
+        (UserSymbolKind::Selector, "Selector"),
+        (UserSymbolKind::Constructor, "Constructor"),
+    ];
+    let fixities = [
+        (ExportedOperatorFixity::Prefix, r#""Prefix""#),
+        (ExportedOperatorFixity::Postfix, r#""Postfix""#),
+        (
+            ExportedOperatorFixity::Infix(ExportedOperatorAssociativity::Left),
+            r#"{"Infix":"Left"}"#,
+        ),
+        (
+            ExportedOperatorFixity::Infix(ExportedOperatorAssociativity::Right),
+            r#"{"Infix":"Right"}"#,
+        ),
+        (
+            ExportedOperatorFixity::Infix(ExportedOperatorAssociativity::NonAssociative),
+            r#"{"Infix":"NonAssociative"}"#,
+        ),
+    ];
+    for (index, (kind, kind_json)) in kinds.into_iter().enumerate() {
+        let (fixity, fixity_json) = fixities[index.saturating_sub(1) % fixities.len()];
+        let maximum = [None, Some(0), Some(u16::MAX)][index % 3];
+        let mut shape = exported_with_metadata(
+            "\"\\\n\0記号",
+            "opaque#\r\t識別子",
+            "module.出自",
+            u32::MAX,
+            kind,
+            UserSymbolArity {
+                minimum: u16::MAX,
+                maximum,
+            },
+        );
+        shape.operator = (index != 0).then_some(ExportedOperatorMetadata {
+            fixity,
+            precedence: u8::MAX,
+        });
+        let bytes = shape.canonical_bytes().unwrap();
+        let json = std::str::from_utf8(&bytes).unwrap();
+        assert!(json.contains(&format!("\"kind\":\"{kind_json}\"")));
+        if shape.operator.is_some() {
+            assert!(json.contains(&format!("\"fixity\":{fixity_json}")));
+        } else {
+            assert!(json.contains("\"operator\":null"));
+        }
+        if maximum.is_none() {
+            assert!(json.contains("\"maximum\":null"));
+        }
+        let decoded = ExportedSymbolShape::from_canonical_bytes(&bytes).unwrap();
+        assert_eq!(decoded, shape);
+        assert_eq!(decoded.canonical_bytes().unwrap(), bytes);
+    }
+    let empty = exported_with_metadata(
+        "",
+        "",
+        "",
+        0,
+        UserSymbolKind::Constructor,
+        UserSymbolArity::exact(0),
+    );
+    assert_eq!(
+        ExportedSymbolShape::from_canonical_bytes(&empty.canonical_bytes().unwrap()),
+        Some(empty)
+    );
+}
+
+#[test]
+fn exported_symbol_codec_golden_and_malformed_payloads() {
+    let shape = exported_with_operator_metadata(
+        "+",
+        "m#plus",
+        "m",
+        0,
+        ExportedOperatorMetadata {
+            fixity: ExportedOperatorFixity::Infix(ExportedOperatorAssociativity::Left),
+            precedence: 10,
+        },
+    );
+    let golden = r#"["mizar-lexer/exported-symbol/v1",{"spelling":"+","symbol_id":"m#plus","source_module":"m","export_rank":0,"kind":"Functor","arity":{"minimum":2,"maximum":2},"operator":{"fixity":{"Infix":"Left"},"precedence":10}}]"#;
+    assert_eq!(shape.canonical_bytes().unwrap(), golden.as_bytes());
+    assert_eq!(
+        ExportedSymbolShape::from_canonical_bytes(golden.as_bytes()),
+        Some(shape)
+    );
+    let malformed = [
+        String::new(),
+        "null".to_owned(),
+        "[]".to_owned(),
+        golden.replace("/v1", "/v2"),
+        golden.replace("\"Functor\"", "\"Unknown\""),
+        golden.replace("\"Infix\"", "\"Unknown\""),
+        golden.replace("\"Left\"", "\"Unknown\""),
+        golden.replace("\"spelling\":\"+\",", ""),
+        golden.replace(
+            "\"spelling\":\"+\",",
+            "\"spelling\":\"+\",\"spelling\":\"+\",",
+        ),
+        golden.replace("\"spelling\":\"+\",", "\"extra\":0,\"spelling\":\"+\","),
+        golden.replace("\"export_rank\":0", "\"export_rank\":4294967296"),
+        golden.replace("\"export_rank\":0", "\"export_rank\":-1"),
+        golden.replace("\"export_rank\":0", "\"export_rank\":0.0"),
+        golden.replace("\"minimum\":2", "\"minimum\":65536"),
+        golden.replace("\"maximum\":2", "\"maximum\":65536"),
+        golden.replace("\"maximum\":2", "\"maximum\":true"),
+        golden.replace("\"minimum\":2,", "\"minimum\":2,\"minimum\":2,"),
+        golden.replace("\"minimum\":2,", "\"extra\":0,\"minimum\":2,"),
+        golden.replace("\"minimum\":2,", ""),
+        golden.replace(",\"maximum\":2", ""),
+        golden.replace("\"precedence\":10", "\"precedence\":256"),
+        golden.replace("\"precedence\":10", "\"precedence\":10,\"precedence\":10"),
+        golden.replace("\"precedence\":10", "\"precedence\":10,\"extra\":0"),
+        golden.replace(",\"precedence\":10", ""),
+        golden.replace("\"symbol_id\":\"m#plus\"", "\"symbol_id\":3"),
+        golden.replace("\"spelling\":\"+\"", "\"spelling\":\"\\u002b\""),
+        golden.replace(
+            "\"spelling\":\"+\",\"symbol_id\":\"m#plus\"",
+            "\"symbol_id\":\"m#plus\",\"spelling\":\"+\"",
+        ),
+        format!(" {golden}"),
+        format!("{golden}\n"),
+        format!("{golden}null"),
+        golden[..golden.len() - 1].to_owned(),
+    ];
+    for bytes in malformed {
+        assert!(
+            ExportedSymbolShape::from_canonical_bytes(bytes.as_bytes()).is_none(),
+            "accepted {bytes}"
+        );
+    }
+    assert!(ExportedSymbolShape::from_canonical_bytes(&[0xff]).is_none());
+    let no_operator = exported("+", "m#plus", "m", 0).canonical_bytes().unwrap();
+    let missing_operator = String::from_utf8(no_operator)
+        .unwrap()
+        .replace(",\"operator\":null", "");
+    assert!(ExportedSymbolShape::from_canonical_bytes(missing_operator.as_bytes()).is_none());
+}
+
+#[test]
+fn exported_symbol_codec_enforces_exact_storage_size_boundary() {
+    let mut shape = exported("", "s", "m", 0);
+    let overhead = shape.canonical_bytes().unwrap().len();
+    shape.spelling = "a".repeat(1024 * 1024 - overhead);
+    let bytes = shape.canonical_bytes().unwrap();
+    assert_eq!(bytes.len(), 1024 * 1024);
+    assert_eq!(
+        ExportedSymbolShape::from_canonical_bytes(&bytes),
+        Some(shape.clone())
+    );
+    shape.spelling.push('a');
+    assert!(shape.canonical_bytes().is_none());
+    let mut oversized = bytes;
+    let position = oversized
+        .windows(b"\"spelling\":\"".len())
+        .position(|part| part == b"\"spelling\":\"")
+        .unwrap()
+        + b"\"spelling\":\"".len();
+    oversized.insert(position, b'a');
+    assert!(ExportedSymbolShape::from_canonical_bytes(&oversized).is_none());
+}
+
+#[test]
+fn exported_symbol_codec_preserves_real_environment_results_and_errors() {
+    let valid = exported_with_operator_metadata(
+        "+",
+        "m#plus",
+        "m",
+        0,
+        ExportedOperatorMetadata {
+            fixity: ExportedOperatorFixity::Infix(ExportedOperatorAssociativity::Left),
+            precedence: 10,
+        },
+    );
+    for (shape, succeeds) in [
+        (valid.clone(), true),
+        (
+            ExportedSymbolShape {
+                spelling: "theorem".to_owned(),
+                ..valid.clone()
+            },
+            false,
+        ),
+        (
+            ExportedSymbolShape {
+                arity: UserSymbolArity {
+                    minimum: 2,
+                    maximum: Some(1),
+                },
+                ..valid.clone()
+            },
+            false,
+        ),
+        (
+            ExportedSymbolShape {
+                arity: UserSymbolArity::exact(1),
+                ..valid.clone()
+            },
+            false,
+        ),
+        (
+            ExportedSymbolShape {
+                kind: UserSymbolKind::Predicate,
+                ..valid.clone()
+            },
+            false,
+        ),
+        (
+            ExportedSymbolShape {
+                spelling: "bad symbol".to_owned(),
+                ..valid.clone()
+            },
+            false,
+        ),
+        (
+            ExportedSymbolShape {
+                spelling: "bad name".to_owned(),
+                kind: UserSymbolKind::Mode,
+                ..valid.clone()
+            },
+            false,
+        ),
+        (
+            ExportedSymbolShape {
+                spelling: ":=".to_owned(),
+                ..valid.clone()
+            },
+            false,
+        ),
+        (
+            ExportedSymbolShape {
+                kind: UserSymbolKind::Selector,
+                ..valid
+            },
+            false,
+        ),
+    ] {
+        let reconstructed =
+            ExportedSymbolShape::from_canonical_bytes(&shape.canonical_bytes().unwrap()).unwrap();
+        let original =
+            build_lexical_environment(&[resolved_import("m")], &[summary("m", 47, &[shape])]);
+        let restored = build_lexical_environment(
+            &[resolved_import("m")],
+            &[summary("m", 47, &[reconstructed])],
+        );
+        assert_eq!(original.is_ok(), succeeds);
+        assert_eq!(restored, original);
+    }
+}

@@ -548,6 +548,8 @@ version = "0.1.0"
 dependencies = [
  "criterion",
  "mizar-test",
+ "serde",
+ "serde_json",
 ]
 
 [[package]]
