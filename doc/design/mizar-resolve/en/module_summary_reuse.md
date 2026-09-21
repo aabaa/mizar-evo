@@ -81,7 +81,9 @@ known private labels remain local-only, and unknown visibility values produce
   label semantics for artifact-only strings.
 
 Lexical contributions are lowered into `ModuleLexicalSummaryIndex` entries only
-when they can be paired with an exported summary symbol. Unpaired lexical
+when their key matches the origin id or fully qualified name of exactly one exported row.
+Equal aliases within one row count once; cross-row aliases stay ambiguous regardless of order; private rows do not participate.
+Missing or ambiguous keys use `UnpairedLexicalContribution` without inserting an entry; payload/schema interpretation remains producer-owned. Unpaired lexical
 contributions remain represented by deterministic fallback records so the
 resolver does not fabricate symbol identities.
 

@@ -389,11 +389,18 @@ fn project_summary(
             ));
         };
         if symbol_entry.export_status() != ExportStatus::LocalOnly {
-            symbols_by_key.insert(symbol.origin_id.clone(), symbol_entry.symbol().clone());
-            symbols_by_key.insert(
-                symbol.fully_qualified_name.clone(),
-                symbol_entry.symbol().clone(),
+            // Count rows, not aliases: one row may use the same origin and name.
+            let aliases = std::iter::once(&symbol.origin_id).chain(
+                (symbol.fully_qualified_name != symbol.origin_id)
+                    .then_some(&symbol.fully_qualified_name),
             );
+            for key in aliases {
+                symbols_by_key
+                    .entry(key.clone())
+                    // Once ambiguous, later rows must not restore a winner.
+                    .and_modify(|entry| *entry = None)
+                    .or_insert_with(|| Some(symbol_entry.symbol().clone()));
+            }
         }
         indexes
             .contributions
@@ -428,7 +435,7 @@ fn project_summary(
             ));
             continue;
         };
-        let Some(symbol) = symbols_by_key.get(&lexical.key).cloned() else {
+        let Some(symbol) = symbols_by_key.get(&lexical.key).and_then(Clone::clone) else {
             diagnostics.push(ModuleSummaryReuseDiagnostic::new(
                 context.module.clone(),
                 context.artifact.clone(),
@@ -1101,6 +1108,132 @@ mod tests {
             Some("dep/core.summary.json")
         );
         assert_eq!(first.env().unwrap().lexical_summaries().len(), 0);
+    }
+
+    #[test]
+    fn lexical_keys_require_one_exported_row() {
+        let cases = [
+            (
+                "origin",
+                &[("shared", "dep::core::One", "public")][..],
+                Some("dep::core::One"),
+            ),
+            ("name", &[("one", "shared", "public")], Some("shared")),
+            (
+                "same row",
+                &[("shared", "shared", "public")],
+                Some("shared"),
+            ),
+            (
+                "shared origin",
+                &[
+                    ("shared", "dep::core::One", "public"),
+                    ("shared", "dep::core::Two", "public"),
+                ],
+                None,
+            ),
+            (
+                "shared name",
+                &[("one", "shared", "public"), ("two", "shared", "public")],
+                None,
+            ),
+            (
+                "cross alias",
+                &[
+                    ("shared", "dep::core::One", "public"),
+                    ("two", "shared", "public"),
+                ],
+                None,
+            ),
+            (
+                "persistent ambiguity",
+                &[
+                    ("shared", "dep::core::One", "public"),
+                    ("shared", "dep::core::Two", "public"),
+                    ("three", "shared", "public"),
+                ],
+                None,
+            ),
+            (
+                "private collision",
+                &[
+                    ("shared", "dep::core::One", "public"),
+                    ("two", "shared", "private"),
+                ],
+                Some("dep::core::One"),
+            ),
+        ];
+        let (provider, indexed_module) = provider_fixture();
+        let source_id = source_id(10);
+        for (case, rows, expected) in &cases {
+            let mut summary = sample_summary();
+            let template = summary.exported_symbols[0].clone();
+            summary.exported_symbols = rows
+                .iter()
+                .map(|(origin, name, visibility)| {
+                    let mut symbol = template.clone();
+                    symbol.origin_id = (*origin).to_owned();
+                    symbol.fully_qualified_name = (*name).to_owned();
+                    symbol.visibility = (*visibility).to_owned();
+                    symbol
+                })
+                .collect();
+            // A separate unique contribution must survive an ambiguous key.
+            summary.exported_symbols.push(template);
+            let mut lexical = summary.lexical_summary.contributions[0].clone();
+            lexical.key = "shared".to_owned();
+            summary.lexical_summary.contributions.push(lexical);
+            summary.refresh_interface_hash().unwrap();
+            let mut previous = None;
+            for _ in 0..2 {
+                let result = ModuleSummaryReuse::new(ModuleIndexInput::new(&provider))
+                    .read_and_project(
+                        ModuleSummaryReuseRequest::new(
+                            &indexed_module,
+                            SourceAnchor::Range(range(source_id, 0, 1)),
+                        ),
+                        &module_summary_json(&summary).unwrap(),
+                    );
+                assert!(
+                    result.reused_summary(),
+                    "{case}: {:?}",
+                    result.diagnostics()
+                );
+                let entries = lexical_summaries(result.env().unwrap());
+                assert_eq!(entries.len(), 1 + usize::from(expected.is_some()), "{case}");
+                assert!(
+                    entries.contains(&(
+                        "dep::core::T1".to_owned(),
+                        LexicalSummaryKind::Notation,
+                        "dep::core::T1".to_owned()
+                    )),
+                    "{case}"
+                );
+                if let Some(name) = expected {
+                    assert!(
+                        entries.contains(&(
+                            "shared".to_owned(),
+                            LexicalSummaryKind::Notation,
+                            (*name).to_owned()
+                        )),
+                        "{case}"
+                    );
+                    assert!(result.diagnostics().is_empty(), "{case}");
+                } else {
+                    assert_eq!(result.diagnostics().len(), 1, "{case}");
+                    assert_eq!(
+                        result.diagnostics()[0].reason(),
+                        ModuleSummaryReuseReason::UnpairedLexicalContribution,
+                        "{case}"
+                    );
+                }
+                if let Some(previous) = previous.replace(result.clone()) {
+                    assert_eq!(result, previous, "{case}");
+                }
+                summary.exported_symbols.reverse();
+                summary.lexical_summary.contributions.reverse();
+            }
+        }
     }
 
     #[test]

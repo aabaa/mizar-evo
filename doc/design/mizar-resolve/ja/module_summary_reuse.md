@@ -74,7 +74,9 @@ private label は local-only に留まる。未知の visibility value は deter
 生成する。未知の serialized label target kind も、artifact-only string に proof または label
 semantics を捏造しないよう fallback record を生成する。
 
-lexical contribution は exported summary symbol と対応付けられる場合に限り
+key がただ一つの exported row の origin id または完全修飾名と一致する場合に限り lexical contribution を対応付ける。
+同一 row の同じ alias は一回と数え、異なる row 間の重複は順序によらず曖昧とする。private row は対象外とする。
+欠落・曖昧な key は `UnpairedLexicalContribution` を使い entry を挿入しない。payload/schema の解釈は producer が所有する。この規則に従う場合に限り
 `ModuleLexicalSummaryIndex` entry に lowered する。対応付けられない lexical contribution は
 deterministic fallback record として表現し、resolver が symbol identity を捏造しないようにする。
 
