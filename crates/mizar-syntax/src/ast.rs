@@ -3,13 +3,24 @@ mod snapshot;
 
 use crate::recovery::SyntaxRecoveryKind;
 use crate::trivia::{
-    SurfaceTrivia, TriviaAttachmentTarget, TriviaNodeTarget, write_trivia_snapshot,
+    SkippedTokenReason, SurfaceTrivia, SurfaceTriviaBuilder, TriviaAttachmentTarget,
+    TriviaNodeTarget, TriviaPlacement, WhitespaceHintKind, write_trivia_snapshot,
 };
-use mizar_session::{SourceId, SourceRange};
+use mizar_session::{
+    CommentKind, GeneratedSpanAnchor, GeneratedSpanOrigin, SourceAnchor, SourceId, SourceRange,
+};
+use serde::{Deserialize, Serialize};
+use serde_json::Value;
 use std::sync::Arc;
 use std::sync::atomic::{AtomicU64, Ordering};
 
 static NEXT_BUILDER_ID: AtomicU64 = AtomicU64::new(1);
+
+const SURFACE_AST_STORAGE_SCHEMA: &str = "mizar-syntax/surface-ast/v1";
+const SURFACE_AST_STORAGE_MAX_BYTES: usize = 16 * 1024 * 1024;
+const SURFACE_AST_STORAGE_MAX_DEPTH: u16 = 128;
+const SURFACE_AST_STORAGE_MAX_TEXT: usize = 16 * 1024 * 1024;
+const SURFACE_AST_STORAGE_MAX_WORK: usize = 64 * 1024 * 1024;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub enum MizarLanguage {}
@@ -840,6 +851,631 @@ impl SurfaceAst {
                 .is_some_and(|child| contains_range(parent.range, child.range))
         }))
     }
+
+    /// Returns the canonical source-free storage representation of this AST.
+    pub fn canonical_bytes(&self) -> Option<Vec<u8>> {
+        if !validate_storage_ast(self) {
+            return None;
+        }
+
+        let value = storage_ast_value(self)?;
+        let bytes = serde_json::to_vec(&value).ok()?;
+        (bytes.len() <= SURFACE_AST_STORAGE_MAX_BYTES).then_some(bytes)
+    }
+
+    /// Reconstructs an AST from canonical storage bytes and the current source id.
+    pub fn from_canonical_bytes(bytes: &[u8], source_id: SourceId) -> Option<Self> {
+        if bytes.len() > SURFACE_AST_STORAGE_MAX_BYTES {
+            return None;
+        }
+        let value = serde_json::from_slice::<Value>(bytes).ok()?;
+        if serde_json::to_vec(&value).ok()?.as_slice() != bytes {
+            return None;
+        }
+
+        let fields = storage_array(&value, 8)?;
+        if fields[0].as_str()? != SURFACE_AST_STORAGE_SCHEMA {
+            return None;
+        }
+        let node_values = fields[1].as_array()?;
+        let mut nodes = Vec::with_capacity(node_values.len());
+        for (index, value) in node_values.iter().enumerate() {
+            let fields = storage_array(value, 5)?;
+            let kind = serde_json::from_value::<SurfaceNodeKind>(fields[0].clone()).ok()?;
+            let range = storage_range_offsets(
+                storage_index(&fields[1])?,
+                storage_index(&fields[2])?,
+                source_id,
+            )?;
+            let children = fields[3]
+                .as_array()?
+                .iter()
+                .map(storage_index)
+                .collect::<Option<Vec<_>>>()?;
+            if children.iter().any(|child| *child >= index) {
+                return None;
+            }
+            if matches!(kind, SurfaceNodeKind::Token(_)) && !children.is_empty() {
+                return None;
+            }
+            nodes.push(SurfaceNode {
+                kind,
+                range,
+                children: children.into_iter().map(SurfaceNodeId::new).collect(),
+                recovered: fields[4].as_bool()?,
+            });
+        }
+
+        let root = storage_optional_index(&fields[2], nodes.len())?;
+        let expression_root = storage_optional_index(&fields[3], nodes.len())?;
+        let token_nodes = nodes
+            .iter()
+            .enumerate()
+            .filter_map(|(index, node)| {
+                matches!(node.kind, SurfaceNodeKind::Token(_)).then_some(SurfaceNodeId::new(index))
+            })
+            .collect::<Vec<_>>();
+        if !validate_storage_topology(&nodes, root, expression_root)
+            || !validate_storage_depth(&nodes)
+            || !validate_storage_resources(&nodes, root)
+        {
+            return None;
+        }
+
+        let trivia = storage_trivia(
+            &fields[4], &fields[5], &fields[6], &fields[7], source_id, &nodes,
+        )?;
+        let ast = SurfaceAst::new(
+            source_id,
+            nodes,
+            root.map(SurfaceNodeId::new),
+            token_nodes,
+            expression_root.map(SurfaceNodeId::new),
+        )
+        .with_trivia(trivia);
+        (ast.canonical_bytes()?.as_slice() == bytes).then_some(ast)
+    }
+}
+
+fn storage_ast_value(ast: &SurfaceAst) -> Option<Value> {
+    let nodes = ast
+        .nodes
+        .iter()
+        .map(|node| {
+            let kind = serde_json::to_value(&node.kind).ok()?;
+            let children = node
+                .children
+                .iter()
+                .map(|child| storage_number(child.index()))
+                .collect();
+            Some(Value::Array(vec![
+                kind,
+                storage_number(node.range.start),
+                storage_number(node.range.end),
+                Value::Array(children),
+                Value::Bool(node.recovered),
+            ]))
+        })
+        .collect::<Option<Vec<_>>>()?;
+    let comments = ast
+        .trivia
+        .comments()
+        .iter()
+        .map(|comment| {
+            Some(Value::Array(vec![
+                Value::String(format!("{:?}", comment.kind)),
+                storage_range_value(comment.range, ast.source_id)?,
+            ]))
+        })
+        .collect::<Option<Vec<_>>>()?;
+    let docs = ast
+        .trivia
+        .doc_comment_attachments()
+        .iter()
+        .map(|attachment| {
+            Some(Value::Array(vec![
+                storage_range_value(attachment.range, ast.source_id)?,
+                storage_target_value(&attachment.target, ast.source_id, &ast.nodes)?,
+                Value::String(format!("{:?}", attachment.placement)),
+            ]))
+        })
+        .collect::<Option<Vec<_>>>()?;
+    let skipped = ast
+        .trivia
+        .skipped_token_ranges()
+        .iter()
+        .map(|entry| {
+            Some(Value::Array(vec![
+                storage_range_value(entry.range, ast.source_id)?,
+                match entry.owner.as_ref() {
+                    Some(owner) => storage_target_value(owner, ast.source_id, &ast.nodes)?,
+                    None => Value::Null,
+                },
+                Value::String(format!("{:?}", entry.reason)),
+            ]))
+        })
+        .collect::<Option<Vec<_>>>()?;
+    let space = ast
+        .trivia
+        .whitespace_hints()
+        .iter()
+        .map(|hint| {
+            Some(Value::Array(vec![
+                Value::String(format!("{:?}", hint.kind)),
+                storage_range_value(hint.range, ast.source_id)?,
+            ]))
+        })
+        .collect::<Option<Vec<_>>>()?;
+
+    Some(Value::Array(vec![
+        Value::String(SURFACE_AST_STORAGE_SCHEMA.to_owned()),
+        Value::Array(nodes),
+        storage_optional_index_value(ast.root),
+        storage_optional_index_value(ast.expression_root),
+        Value::Array(comments),
+        Value::Array(docs),
+        Value::Array(skipped),
+        Value::Array(space),
+    ]))
+}
+
+fn validate_storage_ast(ast: &SurfaceAst) -> bool {
+    if ast.trivia.source_id() != ast.source_id {
+        return false;
+    }
+    let token_nodes = ast
+        .nodes
+        .iter()
+        .enumerate()
+        .filter_map(|(index, node)| {
+            matches!(node.kind, SurfaceNodeKind::Token(_)).then_some(SurfaceNodeId::new(index))
+        })
+        .collect::<Vec<_>>();
+    if ast.token_nodes != token_nodes {
+        return false;
+    }
+    if ast
+        .nodes
+        .iter()
+        .any(|node| !storage_range_is_valid(node.range, ast.source_id))
+    {
+        return false;
+    }
+    if !validate_storage_topology(
+        &ast.nodes,
+        ast.root.map(SurfaceNodeId::index),
+        ast.expression_root.map(SurfaceNodeId::index),
+    ) || !validate_storage_depth(&ast.nodes)
+        || !validate_storage_resources(&ast.nodes, ast.root.map(SurfaceNodeId::index))
+    {
+        return false;
+    }
+    true
+}
+
+fn validate_storage_topology(
+    nodes: &[SurfaceNode],
+    root: Option<usize>,
+    expression_root: Option<usize>,
+) -> bool {
+    if root.is_some_and(|index| index >= nodes.len())
+        || expression_root.is_some_and(|index| index >= nodes.len())
+    {
+        return false;
+    }
+    for (index, node) in nodes.iter().enumerate() {
+        if node.children.iter().any(|child| child.index() >= index) {
+            return false;
+        }
+        if matches!(node.kind, SurfaceNodeKind::Token(_)) && !node.children.is_empty() {
+            return false;
+        }
+    }
+
+    let mut reachable = vec![false; nodes.len()];
+    if let Some(root) = root {
+        let mut pending = vec![root];
+        if let Some(expression_root) = expression_root {
+            pending.push(expression_root);
+        }
+        while let Some(index) = pending.pop() {
+            if reachable[index] {
+                continue;
+            }
+            reachable[index] = true;
+            pending.extend(nodes[index].children.iter().map(|child| child.index()));
+        }
+    }
+
+    let mut parent_counts = vec![0_u8; nodes.len()];
+    for (parent, node) in nodes.iter().enumerate() {
+        if root.is_some() && (!reachable[parent] || Some(parent) == root) {
+            continue;
+        }
+        for child in &node.children {
+            let count = &mut parent_counts[child.index()];
+            *count = count.saturating_add(1);
+            if *count > 1 {
+                return false;
+            }
+        }
+    }
+    if let Some(root) = root {
+        for child in &nodes[root].children {
+            if nodes[child.index()].kind.is_structural() && parent_counts[child.index()] > 0 {
+                return false;
+            }
+        }
+    }
+    true
+}
+
+fn validate_storage_depth(nodes: &[SurfaceNode]) -> bool {
+    let mut depths = vec![0_u16; nodes.len()];
+    for (index, node) in nodes.iter().enumerate() {
+        let child_depth = node
+            .children
+            .iter()
+            .map(|child| depths[child.index()])
+            .max()
+            .unwrap_or(0);
+        let depth = child_depth.saturating_add(1);
+        if depth > SURFACE_AST_STORAGE_MAX_DEPTH {
+            return false;
+        }
+        depths[index] = depth;
+    }
+    true
+}
+
+fn validate_storage_resources(nodes: &[SurfaceNode], root: Option<usize>) -> bool {
+    let Some(root) = root else {
+        return true;
+    };
+    let root_children = &nodes[root].children;
+    if root_children.is_empty() {
+        return true;
+    }
+
+    let mut reachable = vec![false; nodes.len()];
+    let mut pending = root_children
+        .iter()
+        .map(|child| child.index())
+        .collect::<Vec<_>>();
+    while let Some(index) = pending.pop() {
+        if reachable[index] {
+            continue;
+        }
+        reachable[index] = true;
+        pending.extend(nodes[index].children.iter().map(|child| child.index()));
+    }
+
+    let mut sizes = vec![0_usize; nodes.len()];
+    let mut texts = vec![0_usize; nodes.len()];
+    for (index, node) in nodes.iter().enumerate() {
+        if !reachable[index] {
+            continue;
+        }
+        let mut size = 1_usize;
+        let mut text = match &node.kind {
+            SurfaceNodeKind::Token(token) => token.text.len(),
+            _ => 0,
+        };
+        for child in &node.children {
+            size = match size.checked_add(sizes[child.index()]) {
+                Some(value) => value,
+                None => return false,
+            };
+            text = match text.checked_add(texts[child.index()]) {
+                Some(value) => value,
+                None => return false,
+            };
+            if size > SURFACE_AST_STORAGE_MAX_WORK || text > SURFACE_AST_STORAGE_MAX_TEXT {
+                return false;
+            }
+        }
+        sizes[index] = size;
+        texts[index] = text;
+    }
+
+    let width = root_children.len();
+    let mut subtree_sum = 0_usize;
+    let mut max_text = 0_usize;
+    for child in root_children {
+        subtree_sum = match subtree_sum.checked_add(sizes[child.index()]) {
+            Some(value) => value,
+            None => return false,
+        };
+        max_text = max_text.max(texts[child.index()]);
+    }
+    let text_bound = match width.checked_mul(max_text) {
+        Some(value) => value,
+        None => return false,
+    };
+    let width_plus_one = match width.checked_add(1) {
+        Some(value) => value,
+        None => return false,
+    };
+    let work = match subtree_sum
+        .checked_add(width_plus_one)
+        .and_then(|value| width_plus_one.checked_mul(value))
+        .and_then(|value| value.checked_mul(4))
+    {
+        Some(value) => value,
+        None => return false,
+    };
+    text_bound <= SURFACE_AST_STORAGE_MAX_TEXT && work <= SURFACE_AST_STORAGE_MAX_WORK
+}
+
+fn storage_array(value: &Value, length: usize) -> Option<&[Value]> {
+    let array = value.as_array()?;
+    (array.len() == length).then_some(array.as_slice())
+}
+
+fn storage_number(value: usize) -> Value {
+    Value::from(value as u64)
+}
+
+fn storage_index(value: &Value) -> Option<usize> {
+    usize::try_from(value.as_u64()?).ok()
+}
+
+fn storage_optional_index(value: &Value, node_count: usize) -> Option<Option<usize>> {
+    if value.is_null() {
+        return Some(None);
+    }
+    let index = storage_index(value)?;
+    (index < node_count).then_some(Some(index))
+}
+
+fn storage_optional_index_value(index: Option<SurfaceNodeId>) -> Value {
+    index.map_or(Value::Null, |index| storage_number(index.index()))
+}
+
+fn storage_range_is_valid(range: SourceRange, source_id: SourceId) -> bool {
+    range.source_id == source_id && range.start <= range.end
+}
+
+fn storage_range_value(range: SourceRange, source_id: SourceId) -> Option<Value> {
+    storage_range_is_valid(range, source_id)
+        .then(|| Value::Array(vec![storage_number(range.start), storage_number(range.end)]))
+}
+
+fn storage_range(value: &Value, source_id: SourceId) -> Option<SourceRange> {
+    let fields = storage_array(value, 2)?;
+    storage_range_offsets(
+        storage_index(&fields[0])?,
+        storage_index(&fields[1])?,
+        source_id,
+    )
+}
+
+fn storage_range_offsets(start: usize, end: usize, source_id: SourceId) -> Option<SourceRange> {
+    (start <= end).then_some(SourceRange {
+        source_id,
+        start,
+        end,
+    })
+}
+
+fn storage_target_value(
+    target: &TriviaAttachmentTarget,
+    source_id: SourceId,
+    nodes: &[SurfaceNode],
+) -> Option<Value> {
+    match target {
+        TriviaAttachmentTarget::Node(target) => {
+            let node = nodes.get(target.id.index())?;
+            if matches!(node.kind, SurfaceNodeKind::Token(_)) || node.range != target.range {
+                return None;
+            }
+            Some(Value::Array(vec![
+                Value::String("node".to_owned()),
+                storage_number(target.id.index()),
+                storage_range_value(target.range, source_id)?,
+            ]))
+        }
+        TriviaAttachmentTarget::Token(target) => {
+            let node = nodes.get(target.id.index())?;
+            if !matches!(node.kind, SurfaceNodeKind::Token(_)) || node.range != target.range {
+                return None;
+            }
+            Some(Value::Array(vec![
+                Value::String("token".to_owned()),
+                storage_number(target.id.index()),
+                storage_range_value(target.range, source_id)?,
+            ]))
+        }
+        TriviaAttachmentTarget::Detached(anchor) => storage_anchor_value(anchor, source_id),
+    }
+}
+
+fn storage_anchor_value(anchor: &SourceAnchor, source_id: SourceId) -> Option<Value> {
+    match anchor {
+        SourceAnchor::Range(range) => Some(Value::Array(vec![
+            Value::String("range".to_owned()),
+            storage_range_value(*range, source_id)?,
+        ])),
+        SourceAnchor::Point {
+            source_id: anchor_source,
+            offset,
+        } if *anchor_source == source_id => Some(Value::Array(vec![
+            Value::String("point".to_owned()),
+            storage_number(*offset),
+        ])),
+        SourceAnchor::Generated(origin) => {
+            if origin.reason().trim().is_empty() {
+                return None;
+            }
+            let anchor = storage_generated_anchor_value(origin.anchor(), source_id)?;
+            Some(Value::Array(vec![
+                Value::String("generated".to_owned()),
+                anchor,
+                Value::String(origin.reason().to_owned()),
+            ]))
+        }
+        _ => None,
+    }
+}
+
+fn storage_generated_anchor_value(
+    anchor: GeneratedSpanAnchor,
+    source_id: SourceId,
+) -> Option<Value> {
+    match anchor {
+        GeneratedSpanAnchor::Range(range) => Some(Value::Array(vec![
+            Value::String("range".to_owned()),
+            storage_range_value(range, source_id)?,
+        ])),
+        GeneratedSpanAnchor::Point {
+            source_id: anchor_source,
+            offset,
+        } if anchor_source == source_id => Some(Value::Array(vec![
+            Value::String("point".to_owned()),
+            storage_number(offset),
+        ])),
+        _ => None,
+    }
+}
+
+fn storage_anchor(value: &Value, source_id: SourceId) -> Option<SourceAnchor> {
+    let fields = value.as_array()?;
+    match fields.first()?.as_str()? {
+        "range" => {
+            let fields = storage_array(value, 2)?;
+            Some(SourceAnchor::Range(storage_range(&fields[1], source_id)?))
+        }
+        "point" => {
+            let fields = storage_array(value, 2)?;
+            Some(SourceAnchor::Point {
+                source_id,
+                offset: storage_index(&fields[1])?,
+            })
+        }
+        "generated" => {
+            let fields = storage_array(value, 3)?;
+            let anchor = storage_generated_anchor(&fields[1], source_id)?;
+            let reason = fields[2].as_str()?;
+            Some(SourceAnchor::Generated(
+                GeneratedSpanOrigin::new(anchor, reason).ok()?,
+            ))
+        }
+        _ => None,
+    }
+}
+
+fn storage_generated_anchor(value: &Value, source_id: SourceId) -> Option<GeneratedSpanAnchor> {
+    let fields = storage_array(value, 2)?;
+    match fields[0].as_str()? {
+        "range" => Some(GeneratedSpanAnchor::Range(storage_range(
+            &fields[1], source_id,
+        )?)),
+        "point" => Some(GeneratedSpanAnchor::Point {
+            source_id,
+            offset: storage_index(&fields[1])?,
+        }),
+        _ => None,
+    }
+}
+
+fn storage_target(
+    value: &Value,
+    source_id: SourceId,
+    nodes: &[SurfaceNode],
+) -> Option<TriviaAttachmentTarget> {
+    let fields = value.as_array()?;
+    match fields.first()?.as_str()? {
+        "node" | "token" => {
+            let fields = storage_array(value, 3)?;
+            let index = storage_index(&fields[1])?;
+            let node = nodes.get(index)?;
+            let range = storage_range(&fields[2], source_id)?;
+            if node.range != range {
+                return None;
+            }
+            let target = TriviaNodeTarget::new(SurfaceNodeId::new(index), range);
+            match fields[0].as_str()? {
+                "node" if !matches!(node.kind, SurfaceNodeKind::Token(_)) => {
+                    Some(TriviaAttachmentTarget::Node(target))
+                }
+                "token" if matches!(node.kind, SurfaceNodeKind::Token(_)) => {
+                    Some(TriviaAttachmentTarget::Token(target))
+                }
+                _ => None,
+            }
+        }
+        "range" | "point" | "generated" => Some(TriviaAttachmentTarget::Detached(storage_anchor(
+            value, source_id,
+        )?)),
+        _ => None,
+    }
+}
+
+fn storage_trivia(
+    comments: &Value,
+    docs: &Value,
+    skipped: &Value,
+    space: &Value,
+    source_id: SourceId,
+    nodes: &[SurfaceNode],
+) -> Option<SurfaceTrivia> {
+    let mut builder = SurfaceTriviaBuilder::new(source_id);
+    for value in comments.as_array()? {
+        let fields = storage_array(value, 2)?;
+        builder.add_comment(
+            match fields[0].as_str()? {
+                "SingleLine" => CommentKind::SingleLine,
+                "MultiLine" => CommentKind::MultiLine,
+                "Documentation" => CommentKind::Documentation,
+                _ => return None,
+            },
+            storage_range(&fields[1], source_id)?,
+        );
+    }
+    for value in docs.as_array()? {
+        let fields = storage_array(value, 3)?;
+        builder.add_doc_comment_attachment(
+            storage_range(&fields[0], source_id)?,
+            storage_target(&fields[1], source_id, nodes)?,
+            match fields[2].as_str()? {
+                "Leading" => TriviaPlacement::Leading,
+                "Trailing" => TriviaPlacement::Trailing,
+                _ => return None,
+            },
+        );
+    }
+    for value in skipped.as_array()? {
+        let fields = storage_array(value, 3)?;
+        let owner = if fields[1].is_null() {
+            None
+        } else {
+            Some(storage_target(&fields[1], source_id, nodes)?)
+        };
+        builder.add_skipped_token_range(
+            storage_range(&fields[0], source_id)?,
+            owner,
+            match fields[2].as_str()? {
+                "Recovery" => SkippedTokenReason::Recovery,
+                "MalformedAnnotation" => SkippedTokenReason::MalformedAnnotation,
+                "UnexpectedToken" => SkippedTokenReason::UnexpectedToken,
+                _ => return None,
+            },
+        );
+    }
+    for value in space.as_array()? {
+        let fields = storage_array(value, 2)?;
+        builder.add_whitespace_hint(
+            match fields[0].as_str()? {
+                "RequiresSeparation" => WhitespaceHintKind::RequiresSeparation,
+                "LineBreakBefore" => WhitespaceHintKind::LineBreakBefore,
+                "LineBreakAfter" => WhitespaceHintKind::LineBreakAfter,
+                "SyntheticBoundary" => WhitespaceHintKind::SyntheticBoundary,
+                _ => return None,
+            },
+            storage_range(&fields[1], source_id)?,
+        );
+    }
+    Some(builder.finish())
 }
 
 pub struct SurfaceAstBuilder {
@@ -2503,7 +3139,7 @@ impl SurfaceNode {
     }
 }
 
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[non_exhaustive]
 pub enum SurfaceNodeKind {
     Root,
@@ -2885,7 +3521,8 @@ impl SurfaceNodeKind {
     }
 }
 
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
 pub struct SurfaceToken {
     pub kind: SurfaceTokenKind,
     pub text: Arc<str>,
@@ -2900,7 +3537,7 @@ impl SurfaceToken {
     }
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 #[non_exhaustive]
 pub enum SurfaceTokenKind {
     Identifier,
@@ -2947,26 +3584,29 @@ impl SurfaceTokenKind {
     }
 }
 
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
 pub struct SurfaceInfixOperator {
     pub spelling: Arc<str>,
     pub precedence: u8,
     pub associativity: SurfaceOperatorAssociativity,
 }
 
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
 pub struct SurfacePrefixOperator {
     pub spelling: Arc<str>,
     pub precedence: u8,
 }
 
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
 pub struct SurfacePostfixOperator {
     pub spelling: Arc<str>,
     pub precedence: u8,
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 pub enum SurfaceOperatorAssociativity {
     Left,
     Right,
@@ -2983,7 +3623,7 @@ impl SurfaceOperatorAssociativity {
     }
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 pub enum SurfaceFormulaPrefixOperator {
     Not,
 }
@@ -2996,7 +3636,7 @@ impl SurfaceFormulaPrefixOperator {
     }
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 pub enum SurfaceFormulaConnective {
     And,
     Or,
@@ -3015,13 +3655,14 @@ impl SurfaceFormulaConnective {
     }
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
 pub struct SurfaceFormulaBinaryOperator {
     pub connective: SurfaceFormulaConnective,
     pub repeated: bool,
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 pub enum SurfaceQuantifierKind {
     Universal,
     Existential,
@@ -3036,7 +3677,7 @@ impl SurfaceQuantifierKind {
     }
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 pub enum SurfaceFormulaConstant {
     Thesis,
     Contradiction,

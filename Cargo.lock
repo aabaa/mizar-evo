@@ -604,6 +604,8 @@ version = "0.1.0"
 dependencies = [
  "mizar-session",
  "rowan",
+ "serde",
+ "serde_json",
 ]
 
 [[package]]

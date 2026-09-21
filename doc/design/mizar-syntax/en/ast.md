@@ -58,6 +58,53 @@ green tree.
 
 `SurfaceNodeId`, rowan text ranges, compatibility node ids, and green-node identities are not `ObligationAnchor` and must not be used for proof-result reuse across edits. `SurfaceAst` must preserve syntactic anchor ingredients such as labels, item kinds, proof-step structure, algorithm statement structure, registration/redefinition nodes, source ranges, trivia, and recovery markers. `mizar-syntax` may expose semantic-free accessors for these ingredients, but it must not compute owner origin ids, `ObligationAnchor`, `DependencySlice`, or proof obligations.
 
+### Publication Storage
+
+`SurfaceAst::canonical_bytes() -> Option<Vec<u8>>` and
+`SurfaceAst::from_canonical_bytes(bytes: &[u8], source_id: SourceId) -> Option<Self>`
+provide compiler-internal versioned storage for real Frontend publication.
+The compact JSON array envelope starts with `mizar-syntax/surface-ast/v1` and
+contains nodes, root, expression root, and the four trivia tables. Each node
+stores its existing kind/payload, range offsets, child ordinals and recovered
+flag; token indices are derived from token nodes in arena order. All source ids
+are omitted and rebound to the caller's id. Green storage is rebuilt only after
+validation. Kind/payload serde support encodes existing source-free types;
+there is no second AST model. Format changes require a schema-version change.
+The envelope is `[schema,nodes,root,expression_root,comments,docs,skipped,space]`;
+roles/owners use `null` for absence, otherwise an ordinal/target. Nodes use
+`[kind,start,end,children,recovered]`, ranges `[start,end]`, comments/space
+`[kind,range]`, docs `[range,target,placement]`, skipped `[range,owner,reason]`.
+Targets are `["node"|"token",ordinal,range]`, `["range",range]`, `["point",offset]`,
+or `["generated",range-or-point-target,reason]`. Kind payloads use existing Rust
+variant/field names through serde; trivia enums use their Rust variant names.
+Canonical JSON uses compact serde_json Value encoding (object keys sorted),
+with no prefix outside the envelope. Decode must re-encode and compare exact
+bytes, rejecting unknown/duplicate fields, whitespace and alternate encodings.
+
+Ordinals are payload-local topology, not cross-run identities. Validate ranges,
+backward child references, optional roles, token leaves, recovery flags, existing
+builder parent-sharing rules, and exact trivia target kind/range. With a root,
+parent counts include only the root/expression-root reachable union, excluding
+the root itself; disconnected sharing/duplicate edges remain valid. Without a
+root, count all parents. Structural root children cannot have non-root parents.
+Preserve valid disconnected nodes, root-listing duplicates and all trivia anchors,
+including generated reasons. Reject invalid UTF-8, unknown tags/fields, missing
+or surplus entries, trailing/noncanonical bytes and unsupported schema versions.
+Encoding also rejects source-id inconsistencies in the supplied AST. Decoding
+must not assert, load files, allocate source ids, or rerun parsing.
+
+The storage domain is at most 16 MiB of encoded bytes, compatibility depth 128,
+and a conservative green token-text bound of 16 MiB: root width times the
+maximum expanded token-text length among its children (zero for no children).
+A conservative green-work estimate is limited to 64 Mi node visits: with root
+width W and sum S of expanded subtree sizes for root children, use
+`4 * (W + 1) * (S + W + 1)` (zero for no root), using checked arithmetic.
+Reject out-of-domain inputs with `None` before green construction; these are
+storage limits, not parser or language acceptance limits. The caller owns
+source/snapshot validation, cache keys and publication failures. Unit tests
+cover exact structural/trivia/green roundtrip, id rebinding, canonical stability,
+all payload families and malformed/resource-limit rejection.
+
 ### Source Layout
 
 The public `ast` module remains `crates/mizar-syntax/src/ast.rs`. Private

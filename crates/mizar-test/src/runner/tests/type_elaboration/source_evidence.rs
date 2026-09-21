@@ -89,7 +89,7 @@ fn task251_real_routes_publish_exact_missing_requests_and_preserve_outcomes() {
             .typed_ast
             .source_evidence()
             .expect("Task 251 handoff should be installed");
-        assert_eq!(handoff.requests().len(), kinds.iter().sum(), "{id}");
+        assert_eq!(handoff.requests().len(), kinds.iter().sum::<usize>(), "{id}");
         assert!(handoff.responses().is_empty(), "{id}");
         let mut actual_kinds = [0_usize; 3];
         for (_, request) in handoff.requests().iter() {

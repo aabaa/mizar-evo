@@ -1,5 +1,5 @@
 use super::{
-    SurfaceAstBuilder, SurfaceFormulaBinaryOperator, SurfaceFormulaConnective,
+    SurfaceAst, SurfaceAstBuilder, SurfaceFormulaBinaryOperator, SurfaceFormulaConnective,
     SurfaceFormulaConstant, SurfaceFormulaPrefixOperator, SurfaceInfixOperator, SurfaceNodeKind,
     SurfaceNodeView, SurfaceOperatorAssociativity, SurfacePostfixOperator, SurfacePrefixOperator,
     SurfaceQuantifierKind, SurfaceTokenKind, SyntaxKind,
@@ -10,8 +10,8 @@ use crate::{
     TriviaPlacement, WhitespaceHintKind,
 };
 use mizar_session::{
-    BuildSnapshotId, CommentKind, Hash, InMemorySessionIdAllocator, SessionIdAllocator,
-    SourceAnchor, SourceId, SourceRange,
+    BuildSnapshotId, CommentKind, GeneratedSpanAnchor, GeneratedSpanOrigin, Hash,
+    InMemorySessionIdAllocator, SessionIdAllocator, SourceAnchor, SourceId, SourceRange,
 };
 
 #[test]
@@ -11491,4 +11491,646 @@ fn snapshot_id(byte: u8) -> BuildSnapshotId {
     let hex = format!("{byte:02x}").repeat(Hash::BYTE_LEN);
     BuildSnapshotId::from_published_schema_str(&format!("mizar-session-build-snapshot-v1:{hex}"))
         .unwrap()
+}
+
+fn assert_surface_codec_roundtrip(ast: &SurfaceAst) {
+    let bytes = ast
+        .canonical_bytes()
+        .expect("supported AST should have a canonical representation");
+    let restored = SurfaceAst::from_canonical_bytes(&bytes, ast.source_id)
+        .expect("canonical bytes should decode with the original source id");
+    assert_eq!(restored, *ast);
+    assert_eq!(restored.canonical_bytes(), Some(bytes.clone()));
+
+    let ids = InMemorySessionIdAllocator::new();
+    ids.next_source_id(snapshot_id(250)).unwrap();
+    let rebound_source = ids.next_source_id(snapshot_id(250)).unwrap();
+    assert_ne!(rebound_source, ast.source_id);
+    let rebound = SurfaceAst::from_canonical_bytes(&bytes, rebound_source)
+        .expect("canonical bytes should decode with a new source id");
+    assert_eq!(rebound.source_id, rebound_source);
+    assert_eq!(rebound.root(), ast.root());
+    assert_eq!(rebound.expression_root(), ast.expression_root());
+    assert_eq!(rebound.token_nodes(), ast.token_nodes());
+    assert_eq!(rebound.green_node(), ast.green_node());
+    assert_eq!(
+        rebound.snapshot_text_with_trivia(),
+        ast.snapshot_text_with_trivia()
+    );
+    assert_eq!(rebound.canonical_bytes(), Some(bytes));
+    assert_eq!(rebound.nodes().len(), ast.nodes().len());
+    for (original, rebound) in ast.nodes().iter().zip(rebound.nodes()) {
+        assert_eq!(rebound.kind, original.kind);
+        assert_eq!(rebound.children, original.children);
+        assert_eq!(rebound.recovered, original.recovered);
+        assert_eq!(rebound.range.start, original.range.start);
+        assert_eq!(rebound.range.end, original.range.end);
+        assert_eq!(rebound.range.source_id, rebound_source);
+    }
+    assert_eq!(rebound.trivia().source_id(), rebound_source);
+    let assert_target_source = |target: &TriviaAttachmentTarget| match target {
+        TriviaAttachmentTarget::Node(target) | TriviaAttachmentTarget::Token(target) => {
+            assert_eq!(target.range.source_id, rebound_source);
+        }
+        TriviaAttachmentTarget::Detached(anchor) => match anchor {
+            SourceAnchor::Range(range) => assert_eq!(range.source_id, rebound_source),
+            SourceAnchor::Point { source_id, .. } => assert_eq!(*source_id, rebound_source),
+            SourceAnchor::Generated(origin) => match origin.anchor() {
+                GeneratedSpanAnchor::Range(range) => assert_eq!(range.source_id, rebound_source),
+                GeneratedSpanAnchor::Point { source_id, .. } => {
+                    assert_eq!(source_id, rebound_source)
+                }
+                _ => {}
+            },
+            _ => {}
+        },
+    };
+    for comment in rebound.trivia().comments() {
+        assert_eq!(comment.range.source_id, rebound_source);
+    }
+    for attachment in rebound.trivia().doc_comment_attachments() {
+        assert_eq!(attachment.range.source_id, rebound_source);
+        assert_target_source(&attachment.target);
+    }
+    for skipped in rebound.trivia().skipped_token_ranges() {
+        assert_eq!(skipped.range.source_id, rebound_source);
+        if let Some(owner) = &skipped.owner {
+            assert_target_source(owner);
+        }
+    }
+    for hint in rebound.trivia().whitespace_hints() {
+        assert_eq!(hint.range.source_id, rebound_source);
+    }
+}
+
+#[test]
+fn canonical_codec_round_trips_all_payloads_and_trivia() {
+    let ids = InMemorySessionIdAllocator::new();
+    ids.next_source_id(snapshot_id(251)).unwrap();
+    let rebound_source = ids.next_source_id(snapshot_id(251)).unwrap();
+    let source_id = source_id(201);
+    let ast = codec_full_payload_ast(source_id);
+    let bytes = ast.canonical_bytes().unwrap();
+    let expected_rebound = codec_full_payload_ast(rebound_source);
+    let rebound = SurfaceAst::from_canonical_bytes(&bytes, rebound_source).unwrap();
+    assert_eq!(rebound, expected_rebound);
+    assert_ne!(ast.source_id, rebound_source);
+    let mut mismatched = ast.clone();
+    mismatched.source_id = rebound_source;
+    assert!(mismatched.canonical_bytes().is_none());
+    assert_surface_codec_roundtrip(&ast);
+}
+
+fn codec_full_payload_ast(source_id: SourceId) -> SurfaceAst {
+    let expression_ast = current_vocabulary_snapshot_ast(source_id);
+    let expression = expression_ast.expression_root().unwrap();
+    let token = expression_ast.token_nodes()[0];
+    let mut trivia = scrambled_trivia(source_id);
+    trivia.add_comment(CommentKind::Documentation, range(source_id, 316, 327));
+    trivia.add_doc_comment_attachment(
+        range(source_id, 0, 6),
+        TriviaAttachmentTarget::Node(TriviaNodeTarget::new(expression, range(source_id, 0, 21))),
+        TriviaPlacement::Leading,
+    );
+    trivia.add_skipped_token_range(
+        range(source_id, 328, 329),
+        Some(TriviaAttachmentTarget::Token(TriviaNodeTarget::new(
+            token,
+            range(source_id, 0, 2),
+        ))),
+        SkippedTokenReason::Recovery,
+    );
+    let generated = GeneratedSpanOrigin::new(
+        GeneratedSpanAnchor::Point {
+            source_id,
+            offset: 330,
+        },
+        "codec generated anchor",
+    )
+    .unwrap();
+    trivia.add_doc_comment_attachment(
+        range(source_id, 330, 338),
+        TriviaAttachmentTarget::Detached(SourceAnchor::Generated(generated)),
+        TriviaPlacement::Trailing,
+    );
+    let generated_range = GeneratedSpanOrigin::new(
+        GeneratedSpanAnchor::Range(range(source_id, 340, 342)),
+        "codec generated range",
+    )
+    .unwrap();
+    trivia.add_doc_comment_attachment(
+        range(source_id, 342, 350),
+        TriviaAttachmentTarget::Detached(SourceAnchor::Generated(generated_range)),
+        TriviaPlacement::Leading,
+    );
+    expression_ast.with_trivia(trivia.finish())
+}
+
+#[test]
+fn canonical_codec_round_trips_operator_and_recovery_payloads() {
+    let source_id = source_id(202);
+    for associativity in [
+        SurfaceOperatorAssociativity::Left,
+        SurfaceOperatorAssociativity::Right,
+        SurfaceOperatorAssociativity::NonAssociative,
+    ] {
+        assert_surface_codec_roundtrip(&expression_ast_with_associativity(
+            source_id,
+            associativity,
+        ));
+    }
+    for ast in [
+        prefix_postfix_expression_ast(source_id),
+        atomic_formula_nodes_ast(source_id),
+        formula_surface_nodes_ast(source_id),
+    ] {
+        assert_surface_codec_roundtrip(&ast);
+    }
+    for recovery_kind in all_recovery_kinds() {
+        assert_surface_codec_roundtrip(&recovery_ast(source_id, recovery_kind));
+    }
+}
+
+#[test]
+fn canonical_codec_preserves_empty_disconnected_and_overlapping_roles() {
+    let source_id = source_id(203);
+    let empty = SurfaceAstBuilder::new(source_id).finish(None, None);
+    assert_surface_codec_roundtrip(&empty);
+
+    let mut builder = SurfaceAstBuilder::new(source_id);
+    let disconnected = builder.add_node(
+        SurfaceNodeKind::PlaceholderItem,
+        range(source_id, 0, 1),
+        Vec::new(),
+    );
+    let recovered_token =
+        builder.add_recovered_token(SurfaceTokenKind::ErrorRecovery, "?", range(source_id, 2, 3));
+    let expression = builder.add_node(
+        SurfaceNodeKind::TermExpression,
+        range(source_id, 2, 3),
+        vec![recovered_token],
+    );
+    let root = builder.add_node(
+        SurfaceNodeKind::Root,
+        range(source_id, 2, 3),
+        vec![recovered_token, expression, recovered_token],
+    );
+    let ast = builder.finish(Some(root), Some(expression));
+    assert_surface_codec_roundtrip(&ast);
+    assert_eq!(
+        ast.nodes()[disconnected.index()].kind,
+        SurfaceNodeKind::PlaceholderItem
+    );
+    assert_eq!(ast.root_view().unwrap().children().len(), 3);
+    assert_eq!(
+        ast.root_view().unwrap().children()[0],
+        ast.root_view().unwrap().children()[2]
+    );
+    assert_eq!(
+        ast.expression_root(),
+        Some(ast.root_view().unwrap().children()[1])
+    );
+
+    let mut shared_role_builder = SurfaceAstBuilder::new(source_id);
+    let shared_token =
+        shared_role_builder.add_token(SurfaceTokenKind::Identifier, "x", range(source_id, 4, 5));
+    let shared_role = shared_role_builder.add_node(
+        SurfaceNodeKind::Root,
+        range(source_id, 4, 5),
+        vec![shared_token],
+    );
+    let shared_role_ast = shared_role_builder.finish(Some(shared_role), Some(shared_role));
+    assert_surface_codec_roundtrip(&shared_role_ast);
+
+    let mut rootless_builder = SurfaceAstBuilder::new(source_id);
+    let rootless_token =
+        rootless_builder.add_token(SurfaceTokenKind::Identifier, "y", range(source_id, 6, 7));
+    let rootless_expression = rootless_builder.add_node(
+        SurfaceNodeKind::TermExpression,
+        range(source_id, 6, 7),
+        vec![rootless_token],
+    );
+    let rootless_ast = rootless_builder.finish(None, Some(rootless_expression));
+    assert_surface_codec_roundtrip(&rootless_ast);
+}
+
+#[test]
+fn canonical_codec_preserves_disconnected_dag_without_expanding_it() {
+    let source_id = source_id(204);
+    let mut builder = SurfaceAstBuilder::new(source_id);
+    let selected = builder.add_token(SurfaceTokenKind::Identifier, "x", range(source_id, 0, 1));
+    let root = builder.add_node(
+        SurfaceNodeKind::Root,
+        range(source_id, 0, 1),
+        vec![selected],
+    );
+    let mut shared = builder.add_token(SurfaceTokenKind::Identifier, "d", range(source_id, 0, 1));
+    for _ in 0..96 {
+        shared = builder.add_node(
+            SurfaceNodeKind::TermExpression,
+            range(source_id, 0, 1),
+            vec![shared, shared],
+        );
+    }
+    let ast = builder.finish(Some(root), None);
+    assert_surface_codec_roundtrip(&ast);
+}
+
+#[test]
+fn canonical_codec_rejects_malformed_envelopes_and_references() {
+    let source_id = source_id(205);
+    let ast = current_vocabulary_snapshot_ast(source_id);
+    let bytes = ast.canonical_bytes().unwrap();
+    let value: serde_json::Value = serde_json::from_slice(&bytes).unwrap();
+    let node_count = ast.nodes().len();
+    let root_index = ast.root().unwrap().index();
+    let mut malformed = vec![
+        ("invalid UTF-8", vec![0xff]),
+        ("truncated JSON", bytes[..bytes.len() - 1].to_vec()),
+        ("trailing bytes", {
+            let mut bytes = bytes.clone();
+            bytes.push(b' ');
+            bytes
+        }),
+        ("invalid JSON", b"[".to_vec()),
+        (
+            "internal whitespace",
+            serde_json::to_vec_pretty(&value).unwrap(),
+        ),
+        (
+            "duplicate object field",
+            String::from_utf8(bytes.clone())
+                .unwrap()
+                .replacen("\"text\":", "\"text\":\"ignored\",\"text\":", 1)
+                .into_bytes(),
+        ),
+    ];
+
+    let mut missing_envelope = value.clone();
+    missing_envelope.as_array_mut().unwrap().pop();
+    malformed.push((
+        "missing envelope entry",
+        serde_json::to_vec(&missing_envelope).unwrap(),
+    ));
+    let mut invalid_expression = value.clone();
+    invalid_expression[3] = serde_json::json!(node_count);
+    malformed.push((
+        "out of range expression root",
+        serde_json::to_vec(&invalid_expression).unwrap(),
+    ));
+    let mut invalid_child = value.clone();
+    invalid_child[1][root_index][3][0] = serde_json::json!(node_count);
+    malformed.push((
+        "out of range child",
+        serde_json::to_vec(&invalid_child).unwrap(),
+    ));
+    let mut unknown_schema = value.clone();
+    unknown_schema[0] = serde_json::json!("mizar-syntax/surface-ast/v2");
+    malformed.push((
+        "unsupported schema",
+        serde_json::to_vec(&unknown_schema).unwrap(),
+    ));
+
+    let mut surplus_envelope = value.clone();
+    surplus_envelope
+        .as_array_mut()
+        .unwrap()
+        .push(serde_json::Value::Null);
+    malformed.push((
+        "surplus envelope entry",
+        serde_json::to_vec(&surplus_envelope).unwrap(),
+    ));
+
+    let mut invalid_range = value.clone();
+    invalid_range[1][0][1] = serde_json::json!(2);
+    invalid_range[1][0][2] = serde_json::json!(1);
+    malformed.push((
+        "reversed range",
+        serde_json::to_vec(&invalid_range).unwrap(),
+    ));
+
+    let mut forward_child = value.clone();
+    forward_child[1][root_index][3][0] = serde_json::json!(root_index);
+    malformed.push((
+        "forward child reference",
+        serde_json::to_vec(&forward_child).unwrap(),
+    ));
+
+    let mut token_with_child = value.clone();
+    token_with_child[1][1][3] = serde_json::json!([0]);
+    malformed.push((
+        "token child reference",
+        serde_json::to_vec(&token_with_child).unwrap(),
+    ));
+
+    let mut missing_node_field = value.clone();
+    missing_node_field[1][0].as_array_mut().unwrap().pop();
+    malformed.push((
+        "missing node field",
+        serde_json::to_vec(&missing_node_field).unwrap(),
+    ));
+
+    let mut surplus_node_field = value.clone();
+    surplus_node_field[1][0]
+        .as_array_mut()
+        .unwrap()
+        .push(serde_json::json!(null));
+    malformed.push((
+        "surplus node field",
+        serde_json::to_vec(&surplus_node_field).unwrap(),
+    ));
+
+    let mut invalid_recovery_flag = value.clone();
+    invalid_recovery_flag[1][0][4] = serde_json::json!(null);
+    malformed.push((
+        "invalid recovery flag",
+        serde_json::to_vec(&invalid_recovery_flag).unwrap(),
+    ));
+
+    let mut unknown_kind = value.clone();
+    unknown_kind[1][0][0] = serde_json::json!({"UnknownNode": null});
+    malformed.push((
+        "unknown node tag",
+        serde_json::to_vec(&unknown_kind).unwrap(),
+    ));
+
+    let mut unknown_payload_field = value.clone();
+    let token_payload = unknown_payload_field[1][0][0]
+        .as_object_mut()
+        .and_then(|kind| kind.values_mut().next())
+        .and_then(serde_json::Value::as_object_mut)
+        .expect("token payload should be an object");
+    token_payload.insert("unknown".to_owned(), serde_json::json!(true));
+    malformed.push((
+        "unknown payload field",
+        serde_json::to_vec(&unknown_payload_field).unwrap(),
+    ));
+
+    let mut invalid_root = value.clone();
+    invalid_root[2] = serde_json::json!(node_count);
+    malformed.push((
+        "out of range root",
+        serde_json::to_vec(&invalid_root).unwrap(),
+    ));
+
+    let full = codec_full_payload_ast(source_id).canonical_bytes().unwrap();
+    let full: serde_json::Value = serde_json::from_slice(&full).unwrap();
+    let generated = full[5]
+        .as_array()
+        .unwrap()
+        .iter()
+        .position(|row| row[1][0] == "generated")
+        .unwrap();
+    let mut invalid_anchor = full.clone();
+    invalid_anchor[5][generated][1][1][0] = serde_json::json!("unknown");
+    malformed.push((
+        "invalid generated anchor",
+        serde_json::to_vec(&invalid_anchor).unwrap(),
+    ));
+    let mut empty_reason = full.clone();
+    empty_reason[5][generated][1][2] = serde_json::json!(" ");
+    malformed.push((
+        "empty generated reason",
+        serde_json::to_vec(&empty_reason).unwrap(),
+    ));
+
+    for (name, bytes) in malformed {
+        assert!(
+            SurfaceAst::from_canonical_bytes(&bytes, source_id).is_none(),
+            "{name} must be rejected"
+        );
+    }
+
+    let trivia_ast = {
+        let expression = ast.expression_root().unwrap();
+        let mut trivia = SurfaceTriviaBuilder::new(source_id);
+        trivia.add_doc_comment_attachment(
+            range(source_id, 0, 1),
+            TriviaAttachmentTarget::Node(TriviaNodeTarget::new(
+                expression,
+                ast.node(expression).unwrap().range,
+            )),
+            TriviaPlacement::Leading,
+        );
+        ast.clone().with_trivia(trivia.finish())
+    };
+    let trivia_bytes = trivia_ast.canonical_bytes().unwrap();
+    let mut invalid_trivia_target: serde_json::Value =
+        serde_json::from_slice(&trivia_bytes).unwrap();
+    let docs = invalid_trivia_target[5].as_array_mut().unwrap();
+    let target = docs[0][1].as_array_mut().unwrap();
+    target[0] = serde_json::json!("token");
+    assert!(
+        SurfaceAst::from_canonical_bytes(
+            &serde_json::to_vec(&invalid_trivia_target).unwrap(),
+            source_id,
+        )
+        .is_none()
+    );
+
+    let mut invalid_trivia_range: serde_json::Value =
+        serde_json::from_slice(&trivia_bytes).unwrap();
+    let target = invalid_trivia_range[5][0][1].as_array_mut().unwrap();
+    target[2] = serde_json::json!([999, 1000]);
+    assert!(
+        SurfaceAst::from_canonical_bytes(
+            &serde_json::to_vec(&invalid_trivia_range).unwrap(),
+            source_id,
+        )
+        .is_none()
+    );
+}
+
+#[test]
+fn canonical_codec_rejects_storage_resource_limits() {
+    let source_id = source_id(206);
+
+    let mut work_builder = SurfaceAstBuilder::new(source_id);
+    let work_token =
+        work_builder.add_token(SurfaceTokenKind::Identifier, "x", range(source_id, 0, 1));
+    let work_root = work_builder.add_node(
+        SurfaceNodeKind::Root,
+        range(source_id, 0, 1),
+        vec![work_token; 3_000],
+    );
+    let work_ast = work_builder.finish(Some(work_root), None);
+    assert!(work_ast.canonical_bytes().is_none());
+
+    let text = "x".repeat(9_000);
+    let mut text_builder = SurfaceAstBuilder::new(source_id);
+    let text_token = text_builder.add_token(
+        SurfaceTokenKind::StringLiteral,
+        text,
+        range(source_id, 0, 9_000),
+    );
+    let text_root = text_builder.add_node(
+        SurfaceNodeKind::Root,
+        range(source_id, 0, 9_000),
+        vec![text_token; 2_000],
+    );
+    let text_ast = text_builder.finish(Some(text_root), None);
+    assert!(text_ast.canonical_bytes().is_none());
+
+    let mut depth_builder = SurfaceAstBuilder::new(source_id);
+    let mut depth =
+        depth_builder.add_token(SurfaceTokenKind::Identifier, "x", range(source_id, 0, 1));
+    for _ in 0..126 {
+        depth = depth_builder.add_node(
+            SurfaceNodeKind::TermExpression,
+            range(source_id, 0, 1),
+            vec![depth],
+        );
+    }
+    let depth_root =
+        depth_builder.add_node(SurfaceNodeKind::Root, range(source_id, 0, 1), vec![depth]);
+    let depth_128 = depth_builder.finish(Some(depth_root), None);
+    let depth_bytes = depth_128
+        .canonical_bytes()
+        .expect("compatibility depth 128 should be supported");
+    assert!(SurfaceAst::from_canonical_bytes(&depth_bytes, source_id).is_some());
+
+    let mut too_deep_value: serde_json::Value = serde_json::from_slice(&depth_bytes).unwrap();
+    let nodes = too_deep_value[1].as_array_mut().unwrap();
+    let old_root = depth_128.root().unwrap().index();
+    let old_root_value = nodes[old_root].clone();
+    let old_child = old_root_value[3][0].clone();
+    nodes.insert(
+        old_root,
+        serde_json::json!([
+            serde_json::to_value(SurfaceNodeKind::TermExpression).unwrap(),
+            0,
+            1,
+            [old_child],
+            false
+        ]),
+    );
+    too_deep_value[2] = serde_json::json!(old_root + 1);
+    too_deep_value[1][old_root + 1][3] = serde_json::json!([old_root]);
+    assert!(
+        SurfaceAst::from_canonical_bytes(&serde_json::to_vec(&too_deep_value).unwrap(), source_id,)
+            .is_none()
+    );
+
+    let mut too_deep_builder = SurfaceAstBuilder::new(source_id);
+    let mut too_deep =
+        too_deep_builder.add_token(SurfaceTokenKind::Identifier, "x", range(source_id, 0, 1));
+    for _ in 0..127 {
+        too_deep = too_deep_builder.add_node(
+            SurfaceNodeKind::TermExpression,
+            range(source_id, 0, 1),
+            vec![too_deep],
+        );
+    }
+    let too_deep_root = too_deep_builder.add_node(
+        SurfaceNodeKind::Root,
+        range(source_id, 0, 1),
+        vec![too_deep],
+    );
+    let too_deep_ast = too_deep_builder.finish(Some(too_deep_root), None);
+    assert!(too_deep_ast.canonical_bytes().is_none());
+
+    let mut bounded_builder = SurfaceAstBuilder::new(source_id);
+    let bounded_token =
+        bounded_builder.add_token(SurfaceTokenKind::Identifier, "x", range(source_id, 0, 1));
+    let bounded_root = bounded_builder.add_node(
+        SurfaceNodeKind::Root,
+        range(source_id, 0, 1),
+        vec![bounded_token],
+    );
+    let bounded_ast = bounded_builder.finish(Some(bounded_root), None);
+    let bounded_bytes = bounded_ast.canonical_bytes().unwrap();
+    let mut excessive_work: serde_json::Value = serde_json::from_slice(&bounded_bytes).unwrap();
+    excessive_work[1][bounded_root.index()][3] =
+        serde_json::Value::Array(vec![serde_json::json!(0); 3_000]);
+    assert!(
+        SurfaceAst::from_canonical_bytes(&serde_json::to_vec(&excessive_work).unwrap(), source_id,)
+            .is_none()
+    );
+
+    let mut excessive_text: serde_json::Value = serde_json::from_slice(&bounded_bytes).unwrap();
+    excessive_text[1][0][0] = serde_json::json!({
+        "Token": {
+            "kind": "StringLiteral",
+            "text": "x".repeat(9_000)
+        }
+    });
+    excessive_text[1][bounded_root.index()][3] =
+        serde_json::Value::Array(vec![serde_json::json!(0); 2_000]);
+    assert!(
+        SurfaceAst::from_canonical_bytes(&serde_json::to_vec(&excessive_text).unwrap(), source_id,)
+            .is_none()
+    );
+
+    // A rootless token has no projected green work/text: only bytes exceed the limit.
+    let text = "x".repeat(16 * 1024 * 1024 + 1);
+    let oversized = serde_json::to_vec(&serde_json::json!([
+        "mizar-syntax/surface-ast/v1",
+        [[{"Token": {"kind": "Identifier", "text": text}}, 0, text.len(), [], false]],
+        null, null, [], [], [], []
+    ]))
+    .unwrap();
+    assert!(SurfaceAst::from_canonical_bytes(&oversized, source_id).is_none());
+    let mut builder = SurfaceAstBuilder::new(source_id);
+    builder.add_token(
+        SurfaceTokenKind::Identifier,
+        text.as_str(),
+        range(source_id, 0, text.len()),
+    );
+    assert!(builder.finish(None, None).canonical_bytes().is_none());
+}
+
+#[test]
+fn canonical_codec_checks_selected_union_and_rootless_parents() {
+    let source_id = source_id(207);
+    let mut builder = SurfaceAstBuilder::new(source_id);
+    let x = builder.add_token(SurfaceTokenKind::Identifier, "x", range(source_id, 0, 1));
+    let term = builder.add_node(
+        SurfaceNodeKind::TermExpression,
+        range(source_id, 0, 1),
+        vec![x],
+    );
+    let y = builder.add_token(SurfaceTokenKind::Identifier, "y", range(source_id, 2, 3));
+    let expression = builder.add_node(
+        SurfaceNodeKind::TermExpression,
+        range(source_id, 2, 3),
+        vec![y],
+    );
+    let disconnected = builder.add_node(
+        SurfaceNodeKind::TermExpression,
+        range(source_id, 2, 3),
+        vec![y, y],
+    );
+    let root = builder.add_node(SurfaceNodeKind::Root, range(source_id, 0, 1), vec![term]);
+    let ast = builder.finish(Some(root), Some(expression));
+    assert_surface_codec_roundtrip(&ast);
+    let value: serde_json::Value = serde_json::from_slice(&ast.canonical_bytes().unwrap()).unwrap();
+    for case in [
+        "expression duplicate",
+        "selected sharing",
+        "rootless duplicate",
+        "nested structural root child",
+    ] {
+        let mut malformed = value.clone();
+        match case {
+            "expression duplicate" => {
+                malformed[1][expression.index()][3] = serde_json::json!([y.index(), y.index()])
+            }
+            "selected sharing" => {
+                malformed[1][disconnected.index()][3] = serde_json::json!([y.index()]);
+                malformed[1][root.index()][3] =
+                    serde_json::json!([term.index(), disconnected.index()]);
+            }
+            "rootless duplicate" => malformed[2] = serde_json::Value::Null,
+            _ => {
+                malformed[1][expression.index()][3] = serde_json::json!([term.index()]);
+                malformed[1][root.index()][3] =
+                    serde_json::json!([term.index(), expression.index()]);
+            }
+        }
+        assert!(
+            SurfaceAst::from_canonical_bytes(&serde_json::to_vec(&malformed).unwrap(), source_id)
+                .is_none(),
+            "{case}"
+        );
+    }
 }

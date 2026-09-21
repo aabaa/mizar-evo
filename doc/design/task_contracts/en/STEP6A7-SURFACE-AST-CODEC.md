@@ -1,0 +1,13 @@
+# Task STEP6A7-SURFACE-AST-CODEC: reconstructible syntax storage
+Canonical language: English; [Japanese pointer](../ja/STEP6A7-SURFACE-AST-CODEC.md).
+Status: implemented. Tier: full. Owner: [syntax plan](../../mizar-syntax/en/00.crate_plan.md); consumer: real Frontend publication; dependencies: STEP6A3 and STEP6A6.
+Authority: [frontend architecture](../../architecture/en/02.source_and_frontend.md#surfaceast), [spec 23.4](../../../spec/en/23.package_management_and_build_system.md), [AST storage boundary](../../mizar-syntax/en/ast.md#storage-boundary), and [trivia](../../mizar-syntax/en/trivia.md).
+Gap: actual SurfaceAst has no lossless storage decoder; publication cannot recover real syntax from blobs. This is a derived implementation gap, not new syntax or recovery semantics.
+Scope: syntax AST/recovery source, existing AST tests, syntax Cargo dependencies/lockfile, paired AST owner documents and plan links, global todo. No new wire AST/type/file or consumer adapter. The downstream `mizar-test` source-evidence Rust assertion may name its existing `usize` sum explicitly where serde_json trait unification makes inference ambiguous; test intent is unchanged.
+API and format/validation ownership: [AST publication storage](../../mizar-syntax/en/ast.md#publication-storage). Encode all current node kinds/payloads, topology, roles, recovery and trivia; omit session SourceIds and derived green, then rebuild with caller SourceId.
+Preserve disconnected nodes and permitted root listings. Payload-local ordinals are topology only; never cross-run semantic or proof identities. Caller owns source/snapshot binding and cache validity.
+Storage resource bounds return None without changing parser/source acceptance. No filesystem access, parser replay, retained original-payload closure, or unvalidated green reconstruction.
+Tests: extend existing AST vocabulary/operator/recovery/trivia and builder-invariant tests with exact full roundtrip, source rebinding, canonical-byte stability, empty/disconnected/role-overlap cases, malformed bytes/tags/ranges/topology/trivia and resource bounds. Existing corpus/expectations remain frozen.
+Forbidden: language/spec/diagnostic changes, phase registration, lexical provider synthesis, artifact task17, Step7/MVM. No publication/equivalence completion credit; coverage audit remains partial.
+Require independent specification, test sufficiency, implementation, volume/scope and consistency reviews; cargo fmt --check, cargo clippy --all-targets --all-features -- -D warnings, cargo test.
+Exit: bounded fail-closed codec reconstructs the existing syntax output without loss for its supported storage domain; deferred Frontend provider/diagnostic/service integration remains explicit.

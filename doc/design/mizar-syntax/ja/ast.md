@@ -54,6 +54,45 @@ node は cross-run identity として serialize してはならず、consumer �
 
 `SurfaceNodeId`、rowan text range、compatibility node id、green-node identity は `ObligationAnchor` ではなく、編集をまたぐ proof-result reuse に使ってはならない。`SurfaceAst` は label、item kind、proof-step structure、algorithm statement structure、registration/redefinition node、source range、trivia、recovery marker といった syntactic anchor ingredient を保持しなければならない。`mizar-syntax` はこれらの ingredient に対する semantic-free accessor を公開してよいが、owner origin id、`ObligationAnchor`、`DependencySlice`、proof obligation を計算してはならない。
 
+### Publication Storage
+
+`SurfaceAst::canonical_bytes() -> Option<Vec<u8>>` と
+`SurfaceAst::from_canonical_bytes(bytes: &[u8], source_id: SourceId) -> Option<Self>`
+は Frontend 公開用のコンパイラ内部保存形式を提供する。
+JSON 配列の先頭は `mizar-syntax/surface-ast/v1` とし、node、root、expression root、
+4 種の trivia 表を保存する。node は既存 kind/payload、範囲 offset、子の局所序数、
+recovered を保持し、token index は arena 順から復元する。SourceId は保存せず、
+呼出側の id に再束縛する。green は検証後に再構築する。source id を持たない
+既存 kind/payload 型に serde を適用し、重複 AST 表現は追加しない。形式変更は版を上げる。
+envelope は `[schema,nodes,root,expression_root,comments,docs,skipped,space]`。
+role/owner の不在は null、存在時は序数/target。node は `[kind,start,end,children,recovered]`、
+range は `[start,end]`、comments/space は `[kind,range]`、docs は `[range,target,placement]`、
+skipped は `[range,owner,reason]`。target は `["node"|"token",ordinal,range]`、
+`["range",range]`、`["point",offset]`、`["generated",range-or-point-target,reason]`。
+kind payload は既存 Rust variant/field 名の serde 表現、trivia enum は Rust variant 名。
+正規 JSON は object key を整列した compact serde_json Value 表現で、外部 prefix はない。
+decode 後の再 encode と bytes の完全一致で未知/重複 field、空白、別表現を拒否する。
+
+序数は payload 内の位相関係であり、実行間の意味的 identity ではない。
+範囲、後方 child 参照、root 等の役割、token leaf、recovery flag、既存 builder の
+親共有規則、trivia target の kind と範囲を検証する。root がある場合、親数は
+root/expression root から到達可能な和集合のみ（root 自身を除外）で数え、
+非接続 node の共有/重複辺を保持する。root がなければ全親を数える。
+構造 root child は非 root 親を持てない。許容される非接続 node、
+root listing の重複、generated reason を含む anchor を保持する。不正 UTF-8、
+未知 tag/field、欠落・余剰項目、末尾データ、非正規 bytes、未対応版を拒否する。
+encode は SourceId の不整合も拒否する。decode は assert、ファイル読取、id 採番、再 parse を行わない。
+
+保存領域は bytes 最大 16 MiB、互換 node 深さ 128 とする。green token text の
+保守的上界は root の子数と子の展開 token-text 長の最大値との積（子なしは 0）
+で最大 16 MiB とし、超過時は green 構築前に None を返す。
+green 作業量の保守的見積りは最大 64 Mi node visit とし、root の子数 W と
+各子の展開 subtree size の和 S から `4 * (W + 1) * (S + W + 1)` を
+checked arithmetic で計算する（root がなければ 0）。
+これは保存制限であり言語や parser の受理制限ではない。source/snapshot の検証、
+cache key、公開失敗処理は呼出側が所有する。テストは完全復元、再束縛、正規 bytes、
+payload 各種、不正入力と制限超過を扱う。
+
 ### Source layout
 
 公開 `ast` module は `crates/mizar-syntax/src/ast.rs` のままである。private な

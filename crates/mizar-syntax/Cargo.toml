@@ -15,3 +15,5 @@ workspace = true
 [dependencies]
 mizar-session = { path = "../mizar-session" }
 rowan = "0.16.1"
+serde = { version = "1", features = ["derive", "rc"] }
+serde_json = "1"
