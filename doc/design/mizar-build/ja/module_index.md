@@ -12,6 +12,22 @@
 source/artifact location に対応付ける。resolver はこの索引を provider input として
 消費し、自力で workspace root を再発見したり package identity を創作したりしない。
 
+## Manifest メタデータの射影
+
+`DependencyArtifactIndex::from_manifest(package, value, namespace_bindings)` は
+`PackagePlan`、正準 manifest JSON、呼出側所有の名前空間情報を受け、`Option<Self>` を返す。
+artifact reader がスキーマ、順序、パス、型付きハッシュ、sidecar の項目組を検証する。
+manifest と全 module の package id・明示的 version・edition を計画に照合し、
+module の lock identity は manifest の package identity と一致させる。
+存在する module summary 参照は現行スキーマに限定し、module・ファイル・
+`module_summary_hash.digest` に対応付ける。全項目 null の sidecar は行を生成しない。
+ハッシュは store の artifact hash であり、interface hash やファイル生バイトの hash ではない。
+名前空間情報は変更せず渡し、名前空間と module path の言語上の妥当性は既存の
+module-index 構築で検証する。欠落 summary を合成しない。
+これはメタデータ射影のみであり、ファイル到達性、artifact root 選択、現在のビルドとの
+lockfile 照合、toolchain/cache 互換性、証明受理は各所有者・呼出側の責任に残す。
+既存索引は lock identity と hash schema version を保持できず、このメソッドは再利用を認可しない。
+
 ## スコープ
 
 `mizar-build` が所有するもの:

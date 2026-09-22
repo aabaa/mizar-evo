@@ -8,6 +8,17 @@ use crate::planner::{
     BuildConfig, BuildPlan, DependencyGraph, Lockfile, PackagePlan, PackagePlanSource,
     VerifierConfig, WorkspaceBuildConfig, WorkspaceVerifierConfig,
 };
+use mizar_artifact::{
+    manifest::{
+        ArtifactManifest, ManifestProvenance, ModuleArtifactEntry, PackageIdentity,
+        artifact_manifest_json, artifact_manifest_path, current_schema_version,
+        write_manifest_file,
+    },
+    module_summary::{MODULE_SUMMARY_SCHEMA_FAMILY, ModuleSummaryIdentity},
+    registration_summary::{ArtifactHashClass, ArtifactHashRef},
+    store::{CanonicalJson, PublishedArtifactReadOptions, SchemaVersion, read_published_artifact},
+    verified_artifact::VERIFIED_ARTIFACT_SCHEMA_FAMILY,
+};
 use mizar_session::{Edition, Hash, ModulePath, PackageId, ToolchainInfo, WorkspaceRoot};
 use semver::Version;
 
@@ -526,6 +537,269 @@ fn namespace_binding_conflicts_are_rejected() {
             ModuleIndexDiagnosticKind::DuplicateNamespaceBinding
         )
     }));
+}
+
+#[test]
+fn manifest_dependency_index_projects_stored_metadata_and_rejects_invalid_shapes() {
+    let plan = build_plan(vec![registry_package("registry_dep", "1.0.0")]);
+    let package = &plan.packages[0];
+    let manifest_schema = current_schema_version();
+    let summary_schema = mizar_artifact::module_summary::current_schema_version();
+    let hash_ref = |class, family: &str, seed, schema| {
+        ArtifactHashRef::new(
+            class,
+            family,
+            schema,
+            Hash::from_bytes([seed; Hash::BYTE_LEN]),
+        )
+    };
+    let entry = |module_path: &str, seed: u8, with_summary: bool| ModuleArtifactEntry {
+        module: ModuleSummaryIdentity {
+            package_id: "registry_dep".to_owned(),
+            package_version: Some("1.0.0".to_owned()),
+            lockfile_identity: Some("lock".to_owned()),
+            module_path: module_path.to_owned(),
+            language_edition: "2025".to_owned(),
+        },
+        source_file: format!("src/{module_path}.miz"),
+        source_hash: Hash::from_bytes([seed; Hash::BYTE_LEN]),
+        artifact_file: format!("artifacts/{module_path}.mizir.json"),
+        artifact_hash: hash_ref(
+            ArtifactHashClass::Artifact,
+            VERIFIED_ARTIFACT_SCHEMA_FAMILY,
+            seed,
+            manifest_schema,
+        ),
+        interface_hash: hash_ref(
+            ArtifactHashClass::Interface,
+            VERIFIED_ARTIFACT_SCHEMA_FAMILY,
+            seed + 1,
+            manifest_schema,
+        ),
+        implementation_hash: hash_ref(
+            ArtifactHashClass::Implementation,
+            VERIFIED_ARTIFACT_SCHEMA_FAMILY,
+            seed + 2,
+            manifest_schema,
+        ),
+        module_summary_file: with_summary.then(|| format!("summaries/{module_path}.json")),
+        module_summary_hash: with_summary.then(|| {
+            hash_ref(
+                ArtifactHashClass::Artifact,
+                MODULE_SUMMARY_SCHEMA_FAMILY,
+                seed + 3,
+                summary_schema,
+            )
+        }),
+        module_summary_interface_hash: with_summary.then(|| {
+            hash_ref(
+                ArtifactHashClass::Interface,
+                MODULE_SUMMARY_SCHEMA_FAMILY,
+                seed + 4,
+                summary_schema,
+            )
+        }),
+        registration_summary_file: None,
+        registration_summary_hash: None,
+        registration_interface_hash: None,
+        proof_witnesses: Vec::new(),
+        diagnostics_hash: None,
+    };
+    let manifest = ArtifactManifest {
+        schema_version: manifest_schema,
+        package: PackageIdentity {
+            package_id: "registry_dep".to_owned(),
+            package_version: Some("1.0.0".to_owned()),
+            lockfile_identity: Some("lock".to_owned()),
+        },
+        artifact_root: "build".to_owned(),
+        lockfile_hash: hash_ref(
+            ArtifactHashClass::Artifact,
+            "mizar-build/lockfile",
+            30,
+            manifest_schema,
+        ),
+        toolchain: "mizar-evo-test".to_owned(),
+        language_edition: "2025".to_owned(),
+        verifier_config_hash: hash_ref(
+            ArtifactHashClass::Interface,
+            "mizar-build/verifier-config",
+            31,
+            manifest_schema,
+        ),
+        modules: vec![entry("alpha", 1, true), entry("beta", 10, false)],
+        development_artifacts: Vec::new(),
+        provenance: ManifestProvenance {
+            generated_by: "mizar-build-test".to_owned(),
+            manifest_policy: "test-policy".to_owned(),
+            transaction_format: "manifest-transaction-v1".to_owned(),
+        },
+    };
+    let namespace_bindings = vec![ArtifactNamespaceBinding::new(
+        NamespaceRoot::Pkg,
+        vec!["dep_alias".to_owned()],
+    )];
+    let root = std::env::temp_dir().join(format!(
+        "mizar-build-module-index-manifest-{}-{}",
+        std::process::id(),
+        std::time::SystemTime::now()
+            .duration_since(std::time::UNIX_EPOCH)
+            .expect("clock")
+            .as_nanos()
+    ));
+    std::fs::create_dir_all(&root).expect("manifest test root");
+    let raw_index = |value: CanonicalJson| {
+        DependencyArtifactIndex::from_manifest(package, &value, namespace_bindings.clone())
+    };
+
+    write_manifest_file(&root, &manifest).expect("manifest write");
+    let path = artifact_manifest_path();
+    let stored = read_published_artifact(&root, &path, PublishedArtifactReadOptions::default())
+        .expect("stored manifest read");
+    let projected =
+        DependencyArtifactIndex::from_manifest(package, &stored.value, namespace_bindings.clone())
+            .expect("known package manifest");
+    assert_eq!(projected.namespace_bindings, namespace_bindings);
+    assert_eq!(projected.summaries.len(), 1, "all-null sidecar is omitted");
+    assert_eq!(projected.summaries[0].artifact, "summaries/alpha.json");
+    assert_eq!(
+        projected.summaries[0].content_hash,
+        Hash::from_bytes([4; Hash::BYTE_LEN])
+    );
+    let index = build_module_index(
+        &plan,
+        &StaticSourceLayout::default(),
+        std::slice::from_ref(&projected),
+    )
+    .expect("manifest projection enters the existing index");
+    let alpha = ModuleId::new(PackageId::new("registry_dep"), ModulePath::new("alpha"));
+    assert!(matches!(
+        &index.module(&alpha).expect("alpha module").location,
+        ModuleIndexLocation::DependencySummary { artifact, content_hash }
+            if artifact == "summaries/alpha.json"
+                && *content_hash == Hash::from_bytes([4; Hash::BYTE_LEN])
+    ));
+    assert!(index.namespace_bindings().iter().any(|binding| {
+        binding.root == NamespaceRoot::Pkg && binding.prefix == vec!["dep_alias".to_owned()]
+    }));
+
+    let mut empty = manifest.clone();
+    empty.modules.remove(0);
+    assert!(
+        raw_index(artifact_manifest_json(&empty).expect("empty manifest JSON"))
+            .expect("empty sidecar projection")
+            .summaries
+            .is_empty()
+    );
+
+    let reject_manifest = |mut value: ArtifactManifest, update: fn(&mut ArtifactManifest)| {
+        update(&mut value);
+        raw_index(artifact_manifest_json(&value).expect("mutated manifest JSON")).is_none()
+    };
+    let identity_mutations: [fn(&mut ArtifactManifest); 9] = [
+        |value| value.package.package_id = "other_dep".to_owned(),
+        |value| value.package.package_version = None,
+        |value| value.package.package_version = Some("9.0.0".to_owned()),
+        |value| value.language_edition = "2026".to_owned(),
+        |value| value.modules[1].module.package_id = "other_dep".to_owned(),
+        |value| value.modules[1].module.package_version = None,
+        |value| value.modules[1].module.package_version = Some("9.0.0".to_owned()),
+        |value| value.modules[1].module.language_edition = "2026".to_owned(),
+        |value| value.modules[1].module.lockfile_identity = Some("other-lock".to_owned()),
+    ];
+    for update in identity_mutations {
+        assert!(reject_manifest(manifest.clone(), update));
+    }
+    assert!(reject_manifest(manifest.clone(), |value| {
+        value.modules[0]
+            .module_summary_hash
+            .as_mut()
+            .expect("summary hash")
+            .schema_version = SchemaVersion::new(2, 0);
+        value.modules[0]
+            .module_summary_interface_hash
+            .as_mut()
+            .expect("summary interface hash")
+            .schema_version = SchemaVersion::new(2, 0);
+    }));
+
+    let mutate_first = |mut value: CanonicalJson, field: &str, replacement: CanonicalJson| {
+        let CanonicalJson::Object(fields) = &mut value else {
+            panic!("manifest JSON object")
+        };
+        let CanonicalJson::Array(modules) = fields.get_mut("modules").expect("modules") else {
+            panic!("manifest modules array")
+        };
+        let CanonicalJson::Object(entry) = modules.first_mut().expect("first module") else {
+            panic!("manifest module object")
+        };
+        entry.insert(field.to_owned(), replacement);
+        value
+    };
+    let value = artifact_manifest_json(&manifest).expect("path JSON");
+    assert!(
+        raw_index(mutate_first(
+            value,
+            "module_summary_file",
+            CanonicalJson::string("../summary.json")
+        ))
+        .is_none()
+    );
+    let value = artifact_manifest_json(&manifest).expect("hash JSON");
+    let wrong_class = hash_ref(
+        ArtifactHashClass::Interface,
+        MODULE_SUMMARY_SCHEMA_FAMILY,
+        4,
+        summary_schema,
+    )
+    .to_artifact_hash_string();
+    assert!(
+        raw_index(mutate_first(
+            value,
+            "module_summary_hash",
+            CanonicalJson::string(wrong_class)
+        ))
+        .is_none()
+    );
+    let value = artifact_manifest_json(&manifest).expect("group JSON");
+    assert!(
+        raw_index(mutate_first(
+            value,
+            "module_summary_hash",
+            CanonicalJson::null()
+        ))
+        .is_none()
+    );
+    let mut value = artifact_manifest_json(&manifest).expect("order JSON");
+    let CanonicalJson::Object(fields) = &mut value else {
+        panic!("manifest JSON object")
+    };
+    let CanonicalJson::Array(modules) = fields.get_mut("modules").expect("modules") else {
+        panic!("manifest modules array")
+    };
+    modules.reverse();
+    assert!(raw_index(value).is_none());
+
+    let bad_namespace = vec![ArtifactNamespaceBinding::new(
+        NamespaceRoot::Pkg,
+        vec!["bad-name".to_owned()],
+    )];
+    let bad = DependencyArtifactIndex::from_manifest(package, &stored.value, bad_namespace.clone())
+        .expect("namespace metadata is caller-owned");
+    assert_eq!(bad.namespace_bindings, bad_namespace);
+    let diagnostics = build_module_index(
+        &plan,
+        &StaticSourceLayout::default(),
+        std::slice::from_ref(&bad),
+    )
+    .expect_err("existing namespace validator rejects bad prefix");
+    assert!(diagnostics.diagnostics().iter().any(|diagnostic| {
+        matches!(
+            diagnostic.kind,
+            ModuleIndexDiagnosticKind::InvalidNamespacePrefix
+        )
+    }));
+    let _ = std::fs::remove_dir_all(root);
 }
 
 fn build_plan(packages: Vec<PackagePlan>) -> BuildPlan {

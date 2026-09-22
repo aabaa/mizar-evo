@@ -206,6 +206,55 @@ impl ModuleId {
 }
 
 impl DependencyArtifactIndex {
+    /// Projects canonical manifest metadata bound to a planned package.
+    /// Does not validate referenced files or grant cache/proof reuse credit.
+    pub fn from_manifest(
+        package: &PackagePlan,
+        value: &mizar_artifact::store::CanonicalJson,
+        namespace_bindings: Vec<ArtifactNamespaceBinding>,
+    ) -> Option<Self> {
+        use mizar_artifact::manifest::{ArtifactManifestReadOptions, read_artifact_manifest};
+
+        let manifest =
+            read_artifact_manifest(value, ArtifactManifestReadOptions::default()).ok()?;
+        let version = package.version.to_string();
+        if manifest.package.package_id != package.package_id.as_str()
+            || manifest.package.package_version.as_deref() != Some(version.as_str())
+            || manifest.language_edition != package.edition.as_str()
+            || manifest.modules.iter().any(|entry| {
+                entry.module.package_id != package.package_id.as_str()
+                    || entry.module.package_version.as_deref() != Some(version.as_str())
+                    || entry.module.language_edition != package.edition.as_str()
+                    || entry.module.lockfile_identity != manifest.package.lockfile_identity
+            })
+        {
+            return None;
+        }
+        let mut summaries = Vec::new();
+        for entry in manifest.modules {
+            if let (Some(artifact), Some(hash)) =
+                (entry.module_summary_file, entry.module_summary_hash)
+            {
+                if hash.schema_version != mizar_artifact::module_summary::current_schema_version() {
+                    return None;
+                }
+                summaries.push(DependencyModuleSummaryRef {
+                    module: ModuleId::new(
+                        package.package_id.clone(),
+                        ModulePath::new(entry.module.module_path),
+                    ),
+                    artifact,
+                    content_hash: hash.digest,
+                });
+            }
+        }
+        Some(Self::new(
+            package.package_id.clone(),
+            namespace_bindings,
+            summaries,
+        ))
+    }
+
     #[must_use]
     pub fn new(
         package_id: PackageId,

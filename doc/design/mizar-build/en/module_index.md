@@ -12,6 +12,25 @@ module index maps planned packages to canonical module identities and source or
 artifact locations. The resolver consumes this index as a provider input; it
 does not rediscover workspace roots or invent package identity on its own.
 
+## Manifest Metadata Projection
+
+`DependencyArtifactIndex::from_manifest(package, value, namespace_bindings)`
+accepts a `PackagePlan`, canonical manifest JSON and caller-owned namespace
+bindings. It returns `Option<Self>` after the artifact manifest reader validates
+schema, ordering, paths, typed hashes and complete optional sidecar groups.
+Manifest and every module must match the plan's package id, explicit version
+and edition; module lock identities must match the manifest package identity.
+Present module-summary references must use the current summary schema version.
+They become `(module, module_summary_file, module_summary_hash.digest)` entries;
+all-null sidecars produce no entry. The digest is the store-level artifact hash,
+never the interface hash or raw file-byte hash. No missing summary is invented.
+Namespace metadata passes unchanged; namespace and language module-path
+validation remain with existing module-index construction.
+This is metadata projection only: file reachability, artifact-root selection,
+lockfile binding to the current build, toolchain/cache compatibility and proof
+acceptance remain caller/owner work. The existing index cannot retain lock
+identity or hash schema versions, so this method grants no reuse credit.
+
 ## Scope
 
 `mizar-build` owns:
