@@ -28,3 +28,36 @@ Real loader errors emit validated shared drafts with the request's package/path 
 Use real temporary source files and actual planner/index/snapshot outputs. Exercise valid resident/blob publication, current SourceId/map rebinding, equal normalized text with distinct raw maps, changed text after capture, failed request/resource binding, cancellation, stale publisher and work-unit denial.
 Exercise real invalid UTF-8, deleted/unreadable files, symlink escape where supported, and allocator failure through the shared diagnostic sink. Preserve absent later-service blocking and existing registry tests.
 Preprocessing, lexing, parsing, recovery, full Frontend serialization and its diagnostic conversion remain frontend-owner integration work. Cache compatibility, LSP conversion, artifact publication and later semantic/proof phases stay with their existing owners.
+
+## Dependency lexical provider
+
+The provider adds the `mizar-resolve` production dependency; `mizar-artifact` is the sole dev dependency for real publication fixtures. The exact dependency-boundary lint admits these owner seams only.
+
+`SourceLoadInputs::dependency_lexical_provider(artifact_roots)` returns a private
+implementation of the actual frontend `LexicalSummaryProvider` contract. Roots
+are borrowed `(PackageId, PathBuf)` bindings supplied by the caller; no registry
+installation path is guessed and no root is retained in a new public resource.
+The caller supplies a build-validated module index and stubs from the source
+version represented by the request SourceId; the request carries no source hash.
+Require exactly one captured source for that SourceId, matching request and
+indexed module editions, and matching indexed package/module metadata.
+Map stubs with the resolver's provisional frontend mapper and resolve paths
+through its existing index-backed import resolver. This is not AST import validation.
+For each resolved dependency target, require matching module/reference artifact
+path and hash plus a unique explicit root. Read through the build-owned indexed
+summary reader, then the resolver's canonical lexical-summary consumer.
+Successful entries retain the summary's full artifact module identity, with the
+original stub ordinal/span. Each successful `ResolvedImportEntry.import.module_id`
+must equal the A15 `ModuleLexicalSummary.module_id` exactly. Duplicate imports remain in provenance; frontend
+canonicalization owns their active-environment deduplication.
+A file-read rejection retains a resolved entry but no summary, so the frontend
+owns its existing `MissingSummary` recovery. Its diagnostic-only module ID is
+`format!("{:?}:{:?}", package_id, module_path)` over the indexed string parts;
+it asserts only known package/path identity and never reaches the lexer.
+Unresolved paths remain absent for existing `UnresolvedImport` recovery.
+Malformed request/index/root bindings, unsupported source-backed targets, or a
+rejected lexical payload return `ProviderUnavailable`, without partial output.
+No empty source summary is fabricated. Existing frontend environment assembly
+owns conflict recovery; shared diagnostic conversion, full Frontend publication,
+complete source export producers and current-build lock/cache/proof acceptance
+remain outside this provider.

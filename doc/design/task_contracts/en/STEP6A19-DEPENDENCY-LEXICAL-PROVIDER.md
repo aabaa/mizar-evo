@@ -1,0 +1,12 @@
+# Task STEP6A19-DEPENDENCY-LEXICAL-PROVIDER: real dependency lexical provider
+Canonical language: English; [Japanese pointer](../ja/STEP6A19-DEPENDENCY-LEXICAL-PROVIDER.md).
+Status: implemented. Tier: full. Owner: [driver plan](../../mizar-driver/en/00.crate_plan.md).
+Authority: [provider boundary](../../mizar-driver/en/frontend_adapter.md#dependency-lexical-provider), [frontend recovery](../../mizar-frontend/en/lexical_env.md), [summary reuse](../../mizar-resolve/en/module_summary_reuse.md).
+Gap: external dependency/design gap and stale dependency-boundary test infrastructure; real import candidates, file reads and canonical lexical summaries are not connected to the frontend provider.
+Scope: existing driver source adapter and SourceLoadInputs method, resolver dependency and artifact test dependency, existing source_load integration tests and exact dependency-boundary lint, paired owners/plans, contracts and global todo. No public type or resource field.
+Contract: borrow explicit typed package/root bindings; uniquely bind request SourceId and edition to captured source and indexed module; resolve trusted A16 stubs, read indexed dependency summaries through A18 and consume A15 lexical summaries. Successful import.module_id equals the A15 summary.module_id exactly, with exact stub provenance.
+Failures: malformed source/stub/root/index bindings and unsupported source-backed targets are hard provider failures; unresolved paths remain unresolved; unavailable A18 files retain resolved provenance without a summary for existing MissingSummary recovery; A15 rejection is hard. No empty substitute summary.
+Tests: real loaded/preprocessed source, published nonempty dependency artifact and active frontend environment; aliases/branch provenance, duplicate import determinism, unresolved/missing/corrupt artifacts, invalid payload, foreign/duplicate source identity, edition/root/index mismatches and source-backed target rejection.
+Forbidden: root discovery, dependency source loading, producer stand-ins, new diagnostics/recovery semantics, full phase registration/publication, cache/proof acceptance, spec/corpus/language-expectation/trace/audit changes, artifact task17 and Step7/MVM.
+Require independent specification, test-sufficiency, implementation, volume/scope and consistency reviews; cargo fmt --check, cargo clippy --all-targets --all-features -- -D warnings, cargo test.
+Exit: the actual dependency provider supplies validated lexical imports to the frontend; complete source producers and full Frontend publication remain subsequent work.

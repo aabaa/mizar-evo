@@ -28,3 +28,29 @@ publication 成功時だけ実 sealed output を持つ Complete を返す。後�
 実 temporary file と planner/index/snapshot の出力を使い、resident/blob publication、current SourceId/map、同じ normalized text の異なる raw map、capture 後の text 変更、binding/resource 不正、cancel、stale publisher、work-unit 不許可を検証する。
 実 invalid UTF-8、削除・読取不可 file、対応環境での symlink escape、allocator failure を shared sink 経由で検証する。後続 service 不足の blocking と既存 registry test を維持する。
 preprocess/lex/parse/recovery、Frontend 全体の serialization と診断変換は frontend integration に残す。cache compatibility、LSP、artifact と後続 semantic/proof phase は既存 owner に残す。
+
+## Dependency lexical provider
+
+provider は本体依存 `mizar-resolve` を追加し、実 publication fixture 用の唯一の dev 依存を `mizar-artifact` とする。依存境界 lint はこの所有者接続だけを追加許可する。
+
+`SourceLoadInputs::dependency_lexical_provider(artifact_roots)` は実 frontend
+`LexicalSummaryProvider` の非公開実装を返す。root は呼出し側が渡す
+`(PackageId, PathBuf)` の借用であり、registry の配置先を推測しない。
+公開 resource に field を追加しない。呼出し側は build 検証済み module index と、
+request の SourceId が表す source version からの stub を供給する。request に source hash はない。
+SourceId に一致する captured source は一つで、request・index の edition と
+index の package/module metadata が一致することを要求する。
+resolver の provisional frontend mapper と既存 import resolver で path を解決する。
+これは AST の import 検証ではない。依存 target の module/reference の artifact path・hash と
+一意な明示 root を確認し、build の indexed reader と resolver の lexical summary consumer を呼ぶ。
+成功時は実 summary の完全な artifact module identity と元の stub ordinal/span を保持する。
+成功した `ResolvedImportEntry.import.module_id` は A15 の `ModuleLexicalSummary.module_id` と完全一致させる。
+重複 import の provenance は残し、active environment の重複排除は frontend に任せる。
+ファイル読込み失敗時は summary のない resolved entry を残し、既存 `MissingSummary` 回復を使う。
+この診断専用 module ID は index の文字列成分に対する
+`format!("{:?}:{:?}", package_id, module_path)` で、既知の package/path だけを表し lexer に渡らない。
+未解決 path は既存 `UnresolvedImport` 回復に委ねる。
+不正な request/index/root 対応、未対応 source-backed target、lexical payload の拒否は
+部分出力なしの `ProviderUnavailable` とする。空の source summary を捏造しない。
+競合回復は既存 frontend が所有する。共有診断変換、完全な Frontend publication、
+完全な source export producer、current-build lock/cache/proof acceptance は本 provider の範囲外とする。

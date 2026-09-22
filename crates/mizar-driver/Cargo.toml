@@ -18,5 +18,9 @@ mizar-build = { path = "../mizar-build" }
 mizar-diagnostics = { path = "../mizar-diagnostics" }
 mizar-frontend = { path = "../mizar-frontend" }
 mizar-ir = { path = "../mizar-ir" }
+mizar-resolve = { path = "../mizar-resolve" }
 mizar-session = { path = "../mizar-session" }
 salsa = "0.27.2"
+
+[dev-dependencies]
+mizar-artifact = { path = "../mizar-artifact" }

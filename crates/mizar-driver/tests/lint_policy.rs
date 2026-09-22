@@ -71,7 +71,7 @@ fn driver_dependency_boundary_is_exact_for_scaffold_task() {
     let manifest_path = crate_root().join("Cargo.toml");
     let manifest = read_to_string(&manifest_path);
     let dependency_sections = dependency_section_names(&manifest);
-    let expected_sections = vec!["dependencies".to_owned()];
+    let expected_sections = vec!["dependencies".to_owned(), "dev-dependencies".to_owned()];
     let dependencies = section(&manifest, "dependencies");
     let actual = dependency_names(&dependencies);
     let expected = BTreeSet::from([
@@ -80,6 +80,7 @@ fn driver_dependency_boundary_is_exact_for_scaffold_task() {
         "mizar-build".to_owned(),
         "mizar-diagnostics".to_owned(),
         "mizar-ir".to_owned(),
+        "mizar-resolve".to_owned(),
         "mizar-session".to_owned(),
         "salsa".to_owned(),
     ]);
@@ -87,8 +88,8 @@ fn driver_dependency_boundary_is_exact_for_scaffold_task() {
     assert_eq!(
         dependency_sections,
         expected_sections,
-        "{} must keep owner dependencies only in [dependencies]; \
-         dev/build/target-specific dependency tables are later-task scope",
+        "{} must keep exact production and fixture dependency tables; \
+         build/target-specific dependency tables remain outside scope",
         manifest_path.display()
     );
     assert_eq!(
@@ -117,6 +118,24 @@ fn driver_dependency_boundary_is_exact_for_scaffold_task() {
         "../mizar-frontend",
     );
     assert_dependency_path(&dependencies, &manifest_path, "mizar-ir", "../mizar-ir");
+    assert_dependency_path(
+        &dependencies,
+        &manifest_path,
+        "mizar-resolve",
+        "../mizar-resolve",
+    );
+    let fixture_dependencies = section(&manifest, "dev-dependencies");
+    assert_eq!(
+        dependency_names(&fixture_dependencies),
+        BTreeSet::from(["mizar-artifact".to_owned()]),
+        "only the real artifact publication fixture owner is a dev dependency"
+    );
+    assert_dependency_path(
+        &fixture_dependencies,
+        &manifest_path,
+        "mizar-artifact",
+        "../mizar-artifact",
+    );
     assert_dependency_path(
         &dependencies,
         &manifest_path,

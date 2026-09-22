@@ -1,4 +1,4 @@
-//! Real disk source loading and publication.
+//! Real disk source publication and dependency lexical input.
 //! See [the source service contract](../../../../doc/design/mizar-driver/en/frontend_adapter.md).
 use std::{path::PathBuf, sync::Arc};
 
@@ -33,6 +33,145 @@ use crate::registry::{
     PhaseCacheContext, PhaseCacheIntent, PhaseDescriptor, PhaseExecutionContext, PhaseInput,
     PhaseOwner, PhaseResult, PhaseService, PhaseStatus,
 };
+
+impl<'a> crate::registry::SourceLoadInputs<'a> {
+    /// Resolves real dependency lexical summaries under explicit caller-owned roots.
+    /// Requires build-validated indexes and stubs from the captured source version.
+    pub fn dependency_lexical_provider(
+        self,
+        artifact_roots: &'a [(mizar_session::PackageId, PathBuf)],
+    ) -> impl mizar_frontend::lexical_env::LexicalSummaryProvider + 'a {
+        DependencyLexicalProvider {
+            inputs: self,
+            artifact_roots,
+        }
+    }
+}
+
+struct DependencyLexicalProvider<'a> {
+    inputs: crate::registry::SourceLoadInputs<'a>,
+    artifact_roots: &'a [(mizar_session::PackageId, PathBuf)],
+}
+
+impl mizar_frontend::lexical_env::LexicalSummaryProvider for DependencyLexicalProvider<'_> {
+    fn resolve_imports(
+        &self,
+        request: &mizar_frontend::lexical_env::LexicalEnvironmentRequest<'_>,
+    ) -> Result<
+        mizar_frontend::lexical_env::ResolvedImports,
+        mizar_frontend::lexical_env::FrontendLexicalEnvironmentError,
+    > {
+        use mizar_frontend::lexical_env::{
+            FrontendLexicalEnvironmentError, ModuleId, ResolvedImport, ResolvedImportEntry,
+            ResolvedImports,
+        };
+        use mizar_resolve::{
+            imports::{ImportPathCandidate, ImportPathResolver},
+            module_index::{IndexedModuleId, ModuleIndexInput},
+            module_summary_reuse::{ModuleSummaryReuse, ModuleSummaryReuseRequest},
+        };
+        let unavailable = || FrontendLexicalEnvironmentError::ProviderUnavailable {
+            message: "dependency lexical provider binding or payload unavailable".to_owned(),
+        };
+        let version = unique(
+            self.inputs
+                .snapshot
+                .source_versions
+                .iter()
+                .filter(|version| version.source_id == request.source_id),
+        )
+        .ok_or_else(unavailable)?;
+        let current = unique(self.inputs.module_index.modules.iter().filter(|entry| {
+            entry.module.package == version.package_id && entry.module.path == version.module_path
+        }))
+        .ok_or_else(unavailable)?;
+        if version.edition != request.edition
+            || current.edition != request.edition
+            || current.package_id != version.package_id
+            || current.module_path != version.module_path
+        {
+            return Err(unavailable());
+        }
+        let index = ModuleIndexInput::new(self.inputs.module_index);
+        let candidates =
+            ImportPathCandidate::from_frontend_imports(request).ok_or_else(unavailable)?;
+        let resolution = ImportPathResolver::new(index)
+            .resolve(&index.resolver_module_id(&current.module), &candidates);
+        let mut result = ResolvedImports {
+            imports: Vec::new(),
+            summaries: Vec::new(),
+            diagnostics: Vec::new(),
+        };
+        for import in resolution.resolved() {
+            let module = IndexedModuleId::new(
+                import.target().package().clone(),
+                import.target().path().clone(),
+            );
+            let entry = unique(
+                self.inputs
+                    .module_index
+                    .modules
+                    .iter()
+                    .filter(|entry| entry.module == module),
+            )
+            .ok_or_else(unavailable)?;
+            let ModuleIndexLocation::DependencySummary {
+                artifact,
+                content_hash,
+            } = &entry.location
+            else {
+                return Err(unavailable());
+            };
+            let reference = unique(
+                self.inputs
+                    .module_index
+                    .dependency_summaries
+                    .iter()
+                    .filter(|reference| reference.module == module),
+            )
+            .ok_or_else(unavailable)?;
+            if entry.package_id != module.package
+                || entry.module_path != module.path
+                || artifact != &reference.artifact
+                || content_hash != &reference.content_hash
+            {
+                return Err(unavailable());
+            }
+            let (_, root) = unique(
+                self.artifact_roots
+                    .iter()
+                    .filter(|(package, _)| package == &module.package),
+            )
+            .ok_or_else(unavailable)?;
+            let module_id = if let Some(value) = reference.read_current_summary(root) {
+                let summary = ModuleSummaryReuse::new(index)
+                    .read_lexical_summary(
+                        ModuleSummaryReuseRequest::new(
+                            &module,
+                            mizar_session::SourceAnchor::Range(import.range()),
+                        ),
+                        &value,
+                    )
+                    .ok_or_else(unavailable)?;
+                let id = summary.module_id.clone();
+                result.summaries.push(summary);
+                id
+            } else {
+                ModuleId::new(format!(
+                    "{:?}:{:?}",
+                    module.package.as_str(),
+                    module.path.as_str()
+                ))
+            };
+            result.imports.push(ResolvedImportEntry {
+                stub_ordinal: import.ordinal(),
+                stub_span: import.range(),
+                import: ResolvedImport { module_id },
+            });
+        }
+        Ok(result)
+    }
+}
 
 pub(crate) struct SourceLoadService;
 
