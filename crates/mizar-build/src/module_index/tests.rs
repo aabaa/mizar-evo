@@ -540,6 +540,119 @@ fn namespace_binding_conflicts_are_rejected() {
 }
 
 #[test]
+fn indexed_summary_read_validates_real_files_hashes_and_known_identity() {
+    use mizar_artifact::{
+        module_summary::{
+            ModuleLexicalSummary, ModuleSummary, current_schema_version as summary_schema,
+            module_summary_json,
+        },
+        store::{
+            PublishedArtifactPath, artifact_hash_domain, canonical_json_bytes,
+            write_published_artifact,
+        },
+    };
+
+    let root = std::env::temp_dir().join(format!(
+        "mizar-build-indexed-summary-{}-{}",
+        std::process::id(),
+        std::time::SystemTime::now()
+            .duration_since(std::time::UNIX_EPOCH)
+            .unwrap()
+            .as_nanos()
+    ));
+    std::fs::create_dir_all(&root).unwrap();
+    // Storage fixture only; no source export or proof producer is substituted.
+    let mut summary = ModuleSummary {
+        schema_version: summary_schema(),
+        module: ModuleSummaryIdentity {
+            package_id: "dep".into(),
+            package_version: Some("1.0.0".into()),
+            lockfile_identity: Some("dependency-lock".into()),
+            module_path: "core".into(),
+            language_edition: "2026".into(),
+        },
+        source_hash: Hash::from_bytes([1; Hash::BYTE_LEN]),
+        interface_hash: Hash::from_bytes([0; Hash::BYTE_LEN]),
+        exported_symbols: Vec::new(),
+        exported_labels: Vec::new(),
+        lexical_summary: ModuleLexicalSummary {
+            schema_version: "mizar-resolve/exported-lexical/v1".into(),
+            fingerprint: None,
+            contributions: Vec::new(),
+        },
+        reexports: Vec::new(),
+        dependency_interfaces: Vec::new(),
+    };
+    summary.refresh_interface_hash().unwrap();
+    let value = module_summary_json(&summary).unwrap();
+    let path = PublishedArtifactPath::new("summary.json").unwrap();
+    let domain = artifact_hash_domain(MODULE_SUMMARY_SCHEMA_FAMILY, summary_schema());
+    let publish = |value: &CanonicalJson| {
+        write_published_artifact(&root, &path, value, &domain, &[])
+            .unwrap()
+            .artifact_hash
+    };
+    let reference = DependencyModuleSummaryRef {
+        module: ModuleId::new(PackageId::new("dep"), ModulePath::new("core")),
+        artifact: path.as_str().into(),
+        content_hash: publish(&value),
+    };
+    let read = reference.read_current_summary(&root).unwrap();
+    assert_eq!(read, value);
+    assert_eq!(
+        canonical_json_bytes(&read),
+        std::fs::read(root.join(path.as_str())).unwrap()
+    );
+    assert_ne!(reference.content_hash, summary.interface_hash);
+    let mut invalid = reference.clone();
+    invalid.content_hash = summary.interface_hash;
+    assert!(invalid.read_current_summary(&root).is_none());
+    for module in [
+        ModuleId::new(PackageId::new("other"), ModulePath::new("core")),
+        ModuleId::new(PackageId::new("dep"), ModulePath::new("other")),
+    ] {
+        let mut invalid = reference.clone();
+        invalid.module = module;
+        assert!(invalid.read_current_summary(&root).is_none());
+    }
+    let mut invalid = reference.clone();
+    invalid.artifact = "../summary.json".into();
+    assert!(invalid.read_current_summary(&root).is_none());
+    #[cfg(unix)]
+    {
+        std::os::unix::fs::symlink(root.join(path.as_str()), root.join("link.json")).unwrap();
+        invalid.artifact = "link.json".into();
+        assert!(invalid.read_current_summary(&root).is_none());
+    }
+    for schema_failure in [false, true] {
+        let mut corrupt = value.clone();
+        let CanonicalJson::Object(fields) = &mut corrupt else {
+            panic!("summary object")
+        };
+        if schema_failure {
+            fields.insert("schema_version".into(), CanonicalJson::string("2.0"));
+        } else {
+            let CanonicalJson::String(hash) = fields.get_mut("interface_hash").unwrap() else {
+                panic!("interface hash string")
+            };
+            let last = hash.pop().unwrap();
+            hash.push(if last == '0' { '1' } else { '0' });
+        }
+        // The store hash matches: rejection must come from the summary reader.
+        let mut invalid = reference.clone();
+        invalid.content_hash = publish(&corrupt);
+        assert!(invalid.read_current_summary(&root).is_none());
+    }
+    assert_eq!(publish(&value), reference.content_hash);
+    assert_eq!(reference.read_current_summary(&root), Some(value));
+    std::fs::remove_file(root.join(path.as_str())).unwrap();
+    assert!(reference.read_current_summary(&root).is_none());
+    std::fs::write(root.join(path.as_str()), b"not JSON").unwrap();
+    assert!(reference.read_current_summary(&root).is_none());
+    std::fs::remove_dir_all(root).unwrap();
+}
+
+#[test]
 fn manifest_dependency_index_projects_stored_metadata_and_rejects_invalid_shapes() {
     let plan = build_plan(vec![registry_package("registry_dep", "1.0.0")]);
     let package = &plan.packages[0];

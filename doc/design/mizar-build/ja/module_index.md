@@ -12,6 +12,19 @@
 source/artifact location に対応付ける。resolver はこの索引を provider input として
 消費し、自力で workspace root を再発見したり package identity を創作したりしない。
 
+## 索引付き summary ファイルの読込み
+
+`DependencyModuleSummaryRef::read_current_summary(artifact_root)` は、呼出側が
+明示する artifact root から `Option<CanonicalJson>` を返す。移植可能なパス・root の
+安全性、正準 JSON 解析、現行 module-summary の store artifact hash ドメインにおける
+`content_hash` 照合（除外なし）は artifact store が担当する。その後 summary reader が
+スキーマ・形状・内部 interface hash を検証し、現行スキーマと参照が保持する
+`ModuleId` の package ID・module path の完全一致を要求して、JSON 値を変更せず返す。
+欠落・破損・危険なパス・古い hash・不一致はソース読込みや代替なしで `None` を返す。
+root 探索、manifest 到達性の再検証、現在の build の lock identity 照合、cache/proof
+認可は行わない。参照が保持しない version・edition・期待 interface hash の照合は
+利用側に残し、resolver の既存 identity 検証と store I/O の責任分離を維持する。
+
 ## Manifest メタデータの射影
 
 `DependencyArtifactIndex::from_manifest(package, value, namespace_bindings)` は

@@ -12,6 +12,22 @@ module index maps planned packages to canonical module identities and source or
 artifact locations. The resolver consumes this index as a provider input; it
 does not rediscover workspace roots or invent package identity on its own.
 
+## Indexed Summary File Read
+
+`DependencyModuleSummaryRef::read_current_summary(artifact_root)` returns
+`Option<CanonicalJson>` using the caller's explicit artifact root. The artifact
+store owns portable-path/root safety, canonical JSON parsing and verification of
+`content_hash` in the current module-summary store-level artifact hash domain
+with no exclusions. The artifact summary reader then validates schema, shape
+and the internal interface hash. Require current schema and exact known
+`ModuleId` package ID and module path before returning the unchanged JSON value.
+Missing, corrupt, unsafe, stale or mismatched input returns `None` without
+source loading or fallback. This does not discover roots, revalidate manifest
+reachability, bind current-build lock identity or grant cache/proof credit.
+Package version, edition and any expected interface hash remain consumer-owned
+checks; the reference does not carry them. Resolver consumers retain their
+existing known-identity validation and do not acquire store I/O ownership.
+
 ## Manifest Metadata Projection
 
 `DependencyArtifactIndex::from_manifest(package, value, namespace_bindings)`

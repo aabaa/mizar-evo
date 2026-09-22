@@ -205,6 +205,50 @@ impl ModuleId {
     }
 }
 
+impl DependencyModuleSummaryRef {
+    /// Reads a current-schema summary under the caller's explicit artifact root.
+    /// Checks the store hash and known module identity, not cache/proof acceptance.
+    pub fn read_current_summary(
+        &self,
+        artifact_root: &std::path::Path,
+    ) -> Option<mizar_artifact::store::CanonicalJson> {
+        use mizar_artifact::{
+            module_summary::{
+                MODULE_SUMMARY_SCHEMA_FAMILY, ModuleSummaryReadOptions, current_schema_version,
+                read_module_summary,
+            },
+            store::{
+                PublishedArtifactPath, PublishedArtifactReadOptions, artifact_hash_domain,
+                read_published_artifact,
+            },
+        };
+        let path = PublishedArtifactPath::new(&self.artifact).ok()?;
+        let domain = artifact_hash_domain(MODULE_SUMMARY_SCHEMA_FAMILY, current_schema_version());
+        let read = read_published_artifact(
+            artifact_root,
+            &path,
+            PublishedArtifactReadOptions {
+                artifact_hash_domain: Some(&domain),
+                expected_artifact_hash: Some(self.content_hash),
+                hash_excluded_paths: &[],
+            },
+        )
+        .ok()?;
+        let summary = read_module_summary(
+            &read.value,
+            ModuleSummaryReadOptions {
+                artifact_path: Some(path.as_str()),
+                ..ModuleSummaryReadOptions::default()
+            },
+        )
+        .ok()?;
+        (summary.schema_version == current_schema_version()
+            && summary.module.package_id == self.module.package.as_str()
+            && summary.module.module_path == self.module.path.as_str())
+        .then_some(read.value)
+    }
+}
+
 impl DependencyArtifactIndex {
     /// Projects canonical manifest metadata bound to a planned package.
     /// Does not validate referenced files or grant cache/proof reuse credit.
