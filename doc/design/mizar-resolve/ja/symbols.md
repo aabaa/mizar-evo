@@ -541,3 +541,23 @@ AST から宣言 shell と signature を再収集し、この collection との�
 統合テストは import や合成意味 projection を使わず、実 disk frontend/parser と
 ソース由来 collection でコメントによる座標移動、公開・非公開宣言、メタデータ保持、
 反復性、不一致・古い入力を検証する。テスト専用 provider は本番 provider ではない。
+
+### ソース字句 contribution producer
+
+`SymbolCollectionResult::export_frontend_lexical_contributions(frontend, identity)`
+は frontend に結び付いた直接宣言ペアから `Option<Vec<LexicalContributionSummary>>`
+を返す。build 所有の `ModuleSummaryIdentity` を呼出側が渡し、package/module path/
+edition は保持ソースと一致する必要がある。identity の検証・JSON 正規化は artifact の
+`ModuleSummaryIdentity::canonical_json` が所有し、version/lockfile の出所は呼出側が担う。
+standalone operator 宣言、AST notation alias、identity 不一致、frontend 対応付け失敗、
+A8 encode 失敗を拒否し、部分的な vector は返さない。各ペアは schema
+`mizar-resolve/exported-lexical/v1` の kind `exported-symbol` contribution になる。
+key は `entry.symbol().local().as_str()` であり、対応する exported symbol producer は
+同じ `origin_id` を使う。spelling/rank/kind/arity/operator は保持し、module/symbol
+identity は A10 の envelope 対応文字列に置換する。artifact の JSON と canonical string
+writer を用い、末尾改行も保持する。ペア順序、非公開除外による rank の隙間、同一 origin
+の複数表記を保持し、key による重複除去や notation からのメタデータ推測はしない。
+これは contribution の生成であり、exported symbol 行、完全な module/lexical summary、
+fingerprint、import provider、publication ではない。未対応 prepass family と export 方針は
+既存所有者に残す。実 frontend の複数表記・非公開・既定 operator payload、identity の
+変化と拒否、alias/operator 拒否、codec 上限、決定性をテストする。

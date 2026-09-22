@@ -20,6 +20,7 @@ mizar-syntax = { path = "../mizar-syntax" }
 mizar-vc = { path = "../mizar-vc" }
 
 [dev-dependencies]
+mizar-artifact = { path = "../mizar-artifact" }
 mizar-kernel = { path = "../mizar-kernel" }
 
 [lints]

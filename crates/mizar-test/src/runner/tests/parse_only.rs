@@ -789,3 +789,227 @@ fn frontend_lexical_binding_rejects_stale_or_inconsistent_inputs() {
             .is_none()
     );
 }
+
+#[test]
+fn source_lexical_contributions_encode_actual_pairs_and_identity() {
+    use mizar_artifact::module_summary::ModuleSummaryIdentity;
+    use mizar_artifact::store::{CanonicalJson, canonical_json_string};
+    use mizar_resolve::declarations::DeclarationShellCollector;
+    use mizar_resolve::symbols::SignatureProjectionExtractor;
+    let text = "definition\n\
+        let x, y be set;\n\
+        private pred Hidden: x hidden y means thesis;\n\
+        public func Pair: |. x .| -> set equals x;\n\
+        func Infix: x combine y -> set equals x;\n\
+        mode Visible: Carrier is set;\nend;\n";
+    let output = task257c4c1_frontend_output(text, 614);
+    assert!(output.diagnostics.is_empty(), "{:?}", output.diagnostics);
+    assert!(output.preprocessed.import_stubs.is_empty());
+    let ast = output.ast.as_ref().unwrap();
+    let module = ResolverModuleId::new(
+        output.source.package_id.clone(),
+        output.source.module_path.clone(),
+    );
+    let shells = DeclarationShellCollector::new(ast, &module).collect();
+    let collection =
+        SignatureProjectionExtractor::new(ast, &shells, NamespacePath::new(module.path().as_str()))
+            .collect(&module);
+    assert!(collection.diagnostics().is_empty());
+    let identity = ModuleSummaryIdentity {
+        package_id: output.source.package_id.as_str().to_owned(),
+        package_version: Some("1.2.3".to_owned()),
+        lockfile_identity: Some("lock-v1".to_owned()),
+        module_path: output.source.module_path.as_str().to_owned(),
+        language_edition: output.source.edition.as_str().to_owned(),
+    };
+    let pairs = collection
+        .pair_frontend_lexical_declarations(&output)
+        .unwrap();
+    assert_eq!(
+        pairs
+            .iter()
+            .map(|(_, local)| local.spelling.as_str())
+            .collect::<Vec<_>>(),
+        ["|.", ".|", "combine", "Carrier"]
+    );
+    assert_eq!(
+        pairs
+            .iter()
+            .map(|(_, local)| local.export_rank.get())
+            .collect::<Vec<_>>(),
+        [1, 2, 3, 4]
+    );
+    assert!(std::ptr::eq(pairs[0].0, pairs[1].0));
+    assert!(pairs[2].1.operator.is_some());
+    let contributions = collection
+        .export_frontend_lexical_contributions(&output, &identity)
+        .unwrap();
+    assert_eq!(
+        contributions,
+        collection
+            .export_frontend_lexical_contributions(&output, &identity)
+            .unwrap()
+    );
+    assert_eq!(contributions.len(), pairs.len());
+    let identity_json = identity.canonical_json().unwrap();
+    let identity_text = canonical_json_string(&identity_json);
+    assert!(identity_text.ends_with('\n'));
+    for ((entry, local), contribution) in pairs.iter().zip(&contributions) {
+        assert_eq!(contribution.kind, "exported-symbol");
+        assert_eq!(contribution.key, entry.symbol().local().as_str());
+        let shape = mizar_frontend::lexical_env::ExportedSymbolShape::from_canonical_bytes(
+            contribution.payload.as_bytes(),
+        )
+        .unwrap();
+        assert_eq!(
+            shape.canonical_bytes().unwrap(),
+            contribution.payload.as_bytes()
+        );
+        assert_eq!(shape.spelling, local.spelling);
+        assert_eq!(shape.export_rank, local.export_rank);
+        assert_eq!(shape.kind, local.kind);
+        assert_eq!(shape.arity, local.arity);
+        assert_eq!(shape.operator, local.operator);
+        assert_eq!(shape.source_module.as_str(), identity_text);
+        assert_eq!(
+            shape.symbol_id.as_str(),
+            canonical_json_string(&CanonicalJson::array([
+                identity_json.clone(),
+                CanonicalJson::string(entry.symbol().local().as_str()),
+            ]))
+        );
+    }
+}
+
+#[test]
+fn source_lexical_contributions_reject_identity_bounds_and_unsupported_forms() {
+    use mizar_artifact::module_summary::ModuleSummaryIdentity;
+    use mizar_resolve::declarations::DeclarationShellCollector;
+    use mizar_resolve::symbols::SignatureProjectionExtractor;
+    let collect = |output: &mizar_frontend::orchestration::FrontendOutput<SurfaceAst>| {
+        let ast = output.ast.as_ref().unwrap();
+        let module = ResolverModuleId::new(
+            output.source.package_id.clone(),
+            output.source.module_path.clone(),
+        );
+        let shells = DeclarationShellCollector::new(ast, &module).collect();
+        SignatureProjectionExtractor::new(ast, &shells, NamespacePath::new(module.path().as_str()))
+            .collect(&module)
+    };
+    let output = task257c4c1_frontend_output(
+        "definition\n  public mode Visible: Carrier is set;\nend;\n",
+        615,
+    );
+    assert!(output.diagnostics.is_empty());
+    let collection = collect(&output);
+    let identity = ModuleSummaryIdentity {
+        package_id: output.source.package_id.as_str().to_owned(),
+        package_version: None,
+        lockfile_identity: None,
+        module_path: output.source.module_path.as_str().to_owned(),
+        language_edition: output.source.edition.as_str().to_owned(),
+    };
+    let absent = collection
+        .export_frontend_lexical_contributions(&output, &identity)
+        .unwrap();
+    for (version, lockfile) in [(Some("1.2.3"), None), (None, Some("lock-v1"))] {
+        let mut present = identity.clone();
+        present.package_version = version.map(str::to_owned);
+        present.lockfile_identity = lockfile.map(str::to_owned);
+        let changed = collection
+            .export_frontend_lexical_contributions(&output, &present)
+            .unwrap();
+        assert_eq!(changed[0].key, absent[0].key);
+        assert_ne!(changed[0].payload, absent[0].payload);
+    }
+    for (package_id, module_path, language_edition) in [
+        (
+            "foreign".to_owned(),
+            identity.module_path.clone(),
+            identity.language_edition.clone(),
+        ),
+        (
+            identity.package_id.clone(),
+            "foreign".to_owned(),
+            identity.language_edition.clone(),
+        ),
+        (
+            identity.package_id.clone(),
+            identity.module_path.clone(),
+            "2025".to_owned(),
+        ),
+    ] {
+        let changed = ModuleSummaryIdentity {
+            package_id,
+            module_path,
+            language_edition,
+            ..identity.clone()
+        };
+        assert!(
+            collection
+                .export_frontend_lexical_contributions(&output, &changed)
+                .is_none()
+        );
+    }
+    for optional in [0, 1] {
+        let mut invalid = identity.clone();
+        if optional == 0 {
+            invalid.package_version = Some(String::new());
+        } else {
+            invalid.lockfile_identity = Some(String::new());
+        }
+        assert!(invalid.canonical_json().is_err());
+        assert!(
+            collection
+                .export_frontend_lexical_contributions(&output, &invalid)
+                .is_none()
+        );
+    }
+    let mut oversized = identity.clone();
+    oversized.package_version = Some("x".repeat(1024 * 1024 + 1));
+    assert!(
+        collection
+            .export_frontend_lexical_contributions(&output, &oversized)
+            .is_none()
+    );
+
+    let alias = task257c4c1_frontend_output(
+        "definition\n  let X, Y be set;\n  func Base: X \\+\\ Y -> set equals X;\n  synonym X <+> Y for X \\+\\ Y;\nend;\n",
+        615,
+    );
+    assert!(alias.diagnostics.is_empty(), "{:?}", alias.diagnostics);
+    assert!(
+        alias
+            .ast
+            .as_ref()
+            .unwrap()
+            .node_views()
+            .any(|node| matches!(node.kind(), SurfaceNodeKind::NotationAlias))
+    );
+    assert!(
+        collect(&alias)
+            .export_frontend_lexical_contributions(&alias, &identity)
+            .is_none()
+    );
+    let operator = task257c4c1_frontend_output(
+        "definition\n  infix_operator(\"+\", left, 80);\nend;\n",
+        615,
+    );
+    assert!(
+        operator.diagnostics.is_empty(),
+        "{:?}",
+        operator.diagnostics
+    );
+    assert!(
+        !operator
+            .tokens
+            .local_declarations()
+            .operator_declarations
+            .is_empty()
+    );
+    assert!(
+        collect(&operator)
+            .export_frontend_lexical_contributions(&operator, &identity)
+            .is_none()
+    );
+}

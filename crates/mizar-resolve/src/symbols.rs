@@ -532,6 +532,59 @@ impl SymbolCollectionResult {
         })
     }
 
+    /// Produces direct source lexical payloads, not a complete module summary.
+    /// The caller owns build identity provenance and matching exported origin rows.
+    pub fn export_frontend_lexical_contributions(
+        &self,
+        frontend: &mizar_frontend::orchestration::FrontendOutput<SurfaceAst>,
+        identity: &mizar_artifact::module_summary::ModuleSummaryIdentity,
+    ) -> Option<Vec<mizar_artifact::module_summary::LexicalContributionSummary>> {
+        use mizar_artifact::{
+            module_summary::LexicalContributionSummary,
+            store::{CanonicalJson, canonical_json_string},
+        };
+        if identity.package_id != frontend.source.package_id.as_str()
+            || identity.module_path != frontend.source.module_path.as_str()
+            || identity.language_edition != frontend.source.edition.as_str()
+            || !frontend
+                .tokens
+                .local_declarations()
+                .operator_declarations
+                .is_empty()
+            || frontend
+                .ast
+                .as_ref()?
+                .node_views()
+                .any(|node| matches!(node.kind(), SurfaceNodeKind::NotationAlias))
+        {
+            return None;
+        }
+        let module_json = identity.canonical_json().ok()?;
+        let source_module = canonical_json_string(&module_json);
+        self.pair_frontend_lexical_declarations(frontend)?
+            .into_iter()
+            .map(|(entry, local)| {
+                let origin = entry.symbol().local().as_str();
+                let shape = mizar_lexer::ExportedSymbolShape {
+                    spelling: local.spelling.clone(),
+                    symbol_id: mizar_lexer::SymbolId::new(canonical_json_string(
+                        &CanonicalJson::array([module_json.clone(), CanonicalJson::string(origin)]),
+                    )),
+                    source_module: mizar_lexer::ModuleId::new(&source_module),
+                    export_rank: local.export_rank,
+                    kind: local.kind,
+                    arity: local.arity,
+                    operator: local.operator,
+                };
+                Some(LexicalContributionSummary {
+                    kind: "exported-symbol".to_owned(),
+                    key: origin.to_owned(),
+                    payload: String::from_utf8(shape.canonical_bytes()?).ok()?,
+                })
+            })
+            .collect()
+    }
+
     /// Consumes this result and returns its symbol environment.
     #[must_use]
     pub fn into_env(self) -> SymbolEnv {

@@ -1,0 +1,10 @@
+# Task STEP6A13-SOURCE-LEXICAL-CONTRIBUTIONS: direct source lexical payload production
+Canonical language: English; [Japanese pointer](../ja/STEP6A13-SOURCE-LEXICAL-CONTRIBUTIONS.md).
+Status: implemented. Tier: full. Owner: [resolver plan](../../mizar-resolve/en/00.crate_plan.md).
+Authority: [spec 11.4](../../../spec/en/11.symbol_management.md#114-public-and-private-symbols), [A8 storage](../../mizar-lexer/en/lexical_environment.md#exported-symbol-storage), [A10 binding](../../mizar-resolve/en/module_summary_reuse.md), [artifact identity](../../mizar-artifact/en/module_summary.md#module-identity).
+Gap: external dependency/design gap; actual frontend-bound pairs have no artifact lexical contribution producer and artifact-owned identity JSON is private.
+Scope: existing SymbolCollectionResult contribution method and ModuleSummaryIdentity canonical JSON method; shared existing identity renderer and A10 reader reuse, paired owners, existing artifact/frontend tests with artifact test dependency, contract/index links. No new type, field, adapter or code file.
+Contract/test intent: [source producer owner](../../mizar-resolve/en/symbols.md#source-lexical-contribution-producer) defines identity/source binding, local origin convention, one payload per pair, exclusions and negative cases; artifact tests require exact writer/interface identity parity including optional fields and invalid identity rejection.
+Forbidden: complete summary/fingerprint/provider/publication claims, invented alias/operator export semantics, fake summary carriers, proof/acceptance credit, spec/corpus/expectation/trace/audit changes, task17 and Step7/MVM.
+Require independent specification, test-sufficiency, implementation, volume/scope and consistency reviews; cargo fmt --check, cargo clippy --all-targets --all-features -- -D warnings, cargo test.
+Exit: supported actual source pairs produce canonical A8 contributions with A10-bound identities, or fail closed; complete exported rows and publication remain subsequent tasks.

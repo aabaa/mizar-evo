@@ -64,6 +64,12 @@ proof-body-only、diagnostic-only、comment-only の source change は、exporte
 
 ## Module Identity
 
+`ModuleSummaryIdentity::canonical_json()` は既存 identity フィールドを検証し、
+summary writer と interface projection が使う同じ JSON object を返す。省略可能な
+フィールドの null も含む。build の出所は認証しない。producer/consumer は仮の summary
+を作らずこの入口を再利用し、文字列化と末尾改行は store writer が所有する。
+既存 summary writer/interface 入口の検証・エラー動作は変更しない。
+
 `ModuleSummaryIdentity` は、下流 tool から visible な stable package/module identity を含む。
 
 - package id。

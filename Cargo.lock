@@ -616,6 +616,7 @@ dependencies = [
 name = "mizar-test"
 version = "0.1.0"
 dependencies = [
+ "mizar-artifact",
  "mizar-checker",
  "mizar-core",
  "mizar-frontend",

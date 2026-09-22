@@ -324,6 +324,15 @@ pub fn read_module_summary(
     Ok(summary)
 }
 
+impl ModuleSummaryIdentity {
+    /// Validates and renders the artifact-owned identity object for producer bindings.
+    /// Does not authenticate build provenance or change summary entry-point validation.
+    pub fn canonical_json(&self) -> Result<CanonicalJson, ModuleSummaryError> {
+        validate_identity(self, "$.module")?;
+        identity_json(self)
+    }
+}
+
 impl ModuleSummary {
     /// Computes the dependency-facing interface hash for this summary.
     pub fn compute_interface_hash(&self) -> Result<Hash, ModuleSummaryError> {

@@ -253,13 +253,8 @@ impl<'a> ModuleSummaryReuse<'a> {
         {
             return None;
         }
-        // Normalize optional identity fields through their artifact-owned writer.
-        let CanonicalJson::Object(fields) = artifact_summary::module_summary_json(&summary).ok()?
-        else {
-            return None;
-        };
-        let identity = fields.get("module")?;
-        let source_module = canonical_json_string(identity);
+        let identity = summary.module.canonical_json().ok()?;
+        let source_module = canonical_json_string(&identity);
         let mut exports = BTreeMap::new();
         for symbol in &summary.exported_symbols {
             exports

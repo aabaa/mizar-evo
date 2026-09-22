@@ -71,6 +71,13 @@ changes must not invalidate importers when the exported interface is unchanged.
 
 ## Module Identity
 
+`ModuleSummaryIdentity::canonical_json()` validates the existing identity fields
+and returns the same JSON object used by the summary writer and interface
+projection, including null optional fields. It does not verify build provenance.
+Producers and consumers reuse this entry without constructing dummy summaries;
+canonical string/newline encoding remains with the store writer. Existing summary
+writer/interface entry-point validation and error behavior are unchanged.
+
 `ModuleSummaryIdentity` contains the stable package and module identity visible
 to downstream tools:
 

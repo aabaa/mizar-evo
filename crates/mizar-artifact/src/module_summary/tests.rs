@@ -12,6 +12,49 @@ use crate::store::{
 use mizar_session::Hash;
 
 #[test]
+fn identity_json_entry_matches_summary_writer_and_interface_projection() {
+    let mut summary = sample_summary();
+    for (version, lockfile) in [
+        (None, None),
+        (Some("1.2.3"), None),
+        (None, Some("lock\n\"日本語\"")),
+        (Some("1.2.3"), Some("lock")),
+    ] {
+        summary.module.package_version = version.map(str::to_owned);
+        summary.module.lockfile_identity = lockfile.map(str::to_owned);
+        summary.refresh_interface_hash().unwrap();
+        let identity = summary.module.canonical_json().unwrap();
+        let CanonicalJson::Object(writer) = module_summary_json(&summary).unwrap() else {
+            panic!("summary object")
+        };
+        let CanonicalJson::Object(interface) = interface_projection_json(&summary).unwrap() else {
+            panic!("interface object")
+        };
+        assert_eq!(writer.get("module"), Some(&identity));
+        assert_eq!(interface.get("module"), Some(&identity));
+        assert!(canonical_json_string(&identity).ends_with('\n'));
+        assert_eq!(summary.module.canonical_json().unwrap(), identity);
+    }
+    for field in 0..5 {
+        let mut changed = summary.clone();
+        match field {
+            0 => changed.module.package_id.clear(),
+            1 => changed.module.package_version = Some(String::new()),
+            2 => changed.module.lockfile_identity = Some(String::new()),
+            3 => changed.module.module_path.clear(),
+            4 => changed.module.language_edition.clear(),
+            _ => unreachable!(),
+        }
+        assert_eq!(
+            changed.module.canonical_json().unwrap_err(),
+            module_summary_json(&changed).unwrap_err()
+        );
+        // The pre-existing interface projection does not validate these fields.
+        assert!(interface_projection_json(&changed).is_ok());
+    }
+}
+
+#[test]
 fn module_summary_round_trips_through_canonical_json() {
     let summary = sample_summary();
     let json = module_summary_json(&summary).expect("canonical module summary JSON");

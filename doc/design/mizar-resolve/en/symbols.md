@@ -612,3 +612,29 @@ collection, with no imports or synthetic semantic projections. They exercise
 comment-shifted coordinates, public/private declarations, retained metadata,
 repeatability and mismatched or stale inputs. Test-only provider plumbing does
 not implement a production lexical-summary provider.
+
+### Source lexical contribution producer
+
+`SymbolCollectionResult::export_frontend_lexical_contributions(frontend, identity)`
+returns `Option<Vec<LexicalContributionSummary>>` for the frontend-bound direct
+pairs. The caller supplies build-owned `ModuleSummaryIdentity`; package, module
+path and edition must match the retained source. Artifact identity validation and
+JSON normalization stay with `ModuleSummaryIdentity::canonical_json`. Version
+and lockfile provenance remain the caller's responsibility.
+
+Reject any standalone operator declarations or AST notation aliases, identity
+mismatch, failed frontend correspondence or A8 encoding failure; never return a
+partial vector. Each pair emits kind `exported-symbol` under producer schema
+`mizar-resolve/exported-lexical/v1`. Its key is `entry.symbol().local().as_str()`;
+the corresponding exported symbol producer must use that same `origin_id`.
+Construct A8 shapes from unchanged local spelling, rank, kind, arity and operator,
+with A10 envelope-bound module/symbol identity strings (including their canonical
+newlines). Use the artifact-owned identity JSON and canonical string writer.
+Preserve pair order, private-filter rank gaps and multiple spellings per origin;
+do not deduplicate by key or infer metadata from normalized resolver notation.
+
+This produces contributions, not exported symbol rows, a complete module/lexical
+summary, lexical fingerprint, import provider or publication. Missing source
+prepass families and export policy remain with their owners. Tests cover actual
+frontend multi-piece/private/default-operator payloads, identity changes and
+rejections, unsupported aliases/operators, codec bounds and deterministic output.
