@@ -62,10 +62,14 @@ and committing. Give each sub-agent a compact self-contained packet (protocol:
 desired conclusion. Model and reasoning routing is defined in the protocol
 section "Delegation And Model Routing".
 
-After each task commit, save a concise resume checkpoint and compact context
-when supported by the environment. Include the commit, uncommitted changes,
-next scope, authority/contract paths, unresolved issues, and verification state.
+After each task commit, save a concise resume checkpoint. Include the commit,
+uncommitted changes, next scope, authority/contract paths, unresolved issues,
+and verification state.
 Reference completed work instead of copying its history.
+Rely on the environment's automatic context compaction; do not stop after each
+task to request manual compaction or a resume instruction. After automatic
+compaction, read the checkpoint and continue authorized work. User-directed
+stops, usage-limit thresholds, and protocol stop conditions still apply.
 
 ## Verification
 
