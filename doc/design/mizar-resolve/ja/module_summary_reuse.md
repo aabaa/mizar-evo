@@ -84,6 +84,25 @@ re-export と dependency-interface reference は generated anchor を持つ decl
 edge として保存する。それらは dependency-facing fact に限られ、export legality、proof status、
 cache reuse を検証しない。
 
+## Typed Lexical Payload Binding
+
+`ModuleSummaryReuse::read_lexical_shapes(request, value)` は実 artifact reader と
+`read_and_project` と同じ module-index/request hash 検査を通し、
+`Option<Vec<mizar_lexer::ExportedSymbolShape>>` を返す。
+producer-owned schema は `mizar-resolve/exported-lexical/v1`、kind は
+`exported-symbol`、key は exported origin id、payload は A8 canonical UTF-8 bytes とする。
+key は visibility に関係なく唯一の exported row を選び、その row は既知の public
+visibility を持つ必要がある。FQN alias は使わない。
+shape の source_module は null optionals を含む完全な module identity object の
+末尾改行を含む artifact canonical JSON string、symbol_id は `[module identity object, origin id]`
+の artifact canonical JSON string とする。これは envelope との対応であり、外部 provenance
+の認証ではない。module-index の lockfile 認証は既存入力契約の範囲外に留まる。
+schema/kind/origin/visibility/identity/codec の不一致は全体を `None` とし、部分結果を返さない。
+その他の shape field は lexical に不正な値も保持し、lexical 検査は environment が所有する。
+declaration kind の意味や re-export provenance は推論しない。結果は artifact contribution
+順であり、lexer summary 順ではない。summary の順序・fingerprint、実 source export producer、
+import resolution と publication は後続の前提とする。既存 resolver index と診断は変えない。
+
 ## Fallback と diagnostic
 
 summary reuse は fail-closed である。resolver は次の場合に source-backed resolution へ

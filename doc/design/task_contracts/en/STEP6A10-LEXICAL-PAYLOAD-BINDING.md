@@ -1,0 +1,11 @@
+# Task STEP6A10-LEXICAL-PAYLOAD-BINDING: artifact lexical payload binding
+Canonical language: English; [Japanese pointer](../ja/STEP6A10-LEXICAL-PAYLOAD-BINDING.md).
+Status: implemented. Tier: full. Owner: [resolver plan](../../mizar-resolve/en/00.crate_plan.md).
+Authority: [spec 11.2](../../../spec/en/11.symbol_management.md#112-scope-and-visibility), [spec 23.4](../../../spec/en/23.package_management_and_build_system.md#234-build-lifecycle-and-reproducibility), [artifact lexical boundary](../../mizar-artifact/en/module_summary.md#lexical-summary).
+Gap: external dependency/design gap; artifact lexical strings have no producer-owned binding to A8 shapes. Existing resolver lexical indexes cannot supply complete lexer shapes.
+Scope: existing resolver summary-reuse module and inline tests, lexer dependency, paired owner documents/plan links and todo. Add a method on the existing reuse object; no new type or code file.
+Contract: [typed lexical payload binding](../../mizar-resolve/en/module_summary_reuse.md#typed-lexical-payload-binding); [A8 storage](../../mizar-lexer/en/lexical_environment.md#exported-symbol-storage) remains the sole shape codec.
+Tests: existing [A8 codec tests](../../../../crates/mizar-lexer/src/tests/lexical_environment.rs) and `typed_lexical_shapes_bind_to_artifact_exports` / `typed_lexical_shapes_reject_mismatched_envelopes` in [resolver inline tests](../../../../crates/mizar-resolve/src/module_summary_reuse.rs) use the real artifact reader and cover exact field preservation, schema/kind/key/identity/visibility rejection, ambiguous origins, optional identity fields, malformed payloads, artifact hash/request rejection and deterministic order.
+Forbidden: fabricated export producer/provider, export discovery, lexical validity or acceptance decisions, public diagnostics, spec/corpus/expectation changes, summary fingerprint policy, task17, Step7/MVM. No coverage credit changes.
+Require independent specification, test-sufficiency, implementation, volume/scope and consistency reviews; cargo fmt --check, cargo clippy --all-targets --all-features -- -D warnings, cargo test.
+Exit: canonical producer payloads bound to one public exported origin decode losslessly; unavailable or mismatched inputs fail closed. Real producers and provider publication remain subsequent owner tasks.

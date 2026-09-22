@@ -15,6 +15,7 @@ workspace = true
 [dependencies]
 mizar-artifact = { path = "../mizar-artifact" }
 mizar-build = { path = "../mizar-build" }
+mizar-lexer = { path = "../mizar-lexer" }
 mizar-session = { path = "../mizar-session" }
 mizar-syntax = { path = "../mizar-syntax" }
 
