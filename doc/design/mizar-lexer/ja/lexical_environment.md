@@ -370,6 +370,23 @@ imported original は未対応で、句読点形の imported original は従来�
 だけを保持します。意味論的 alias identity、equivalence/negation、loci compatibility、
 overload selection、export/import propagation、diagnostics、checking は collector の範囲外です。
 
+## Producer Summary Construction
+
+`ModuleLexicalSummary::from_exported_symbols(module_id, exported_symbols)` は
+既存の字句検証と上限付き A8 保存形式を使い `Option<Self>` を返す。不正入力は全体を
+拒否する。spelling、source module、symbol id、kind、arity、export rank、最後に optional
+operator metadata で整列する。operator は None、既存 tag の prefix/infix/postfix、
+left/right/non-associative、precedence の順、他の key は既存 Rust 値順を用いる。
+同じ entry の重複と同一 symbol の複数
+spelling は保持し、export 可否や provenance は推論しない。既存の安定 FNV byte hasher に
+長さ付き domain `mizar-lexer.module-lexical-summary.v1`、module id、entry 数、整列済み
+各 shape の長さ付き A8 canonical bytes を渡す。長さと個数は既存の little-endian u64
+framing を用いる。空 summary は有効であり、source range、body、semantic/proof fact、
+外部 fingerprint は計算に入れない。字句の変更検知であり artifact 完全性や cache hit の
+認可ではない。既存の active environment algorithm と直接構築 summary の挙動は維持する。
+テストは順序不変性、全 field、同順位・重複、既存字句エラーと保存上限、実 source 由来
+shape の消費を扱う。
+
 ## Exported-symbol storage
 
 既存 `ExportedSymbolShape` の保存 API と形式は [英語正本](../en/lexical_environment.md#exported-symbol-storage)を参照。全フィールドを保持し、正規 JSON の完全一致と 1 MiB 上限を検証する。字句の妥当性、公開可否、出自、summary 順序・fingerprint の責務は変更しない。

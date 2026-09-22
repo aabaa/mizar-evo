@@ -22,6 +22,7 @@ mizar-vc = { path = "../mizar-vc" }
 [dev-dependencies]
 mizar-artifact = { path = "../mizar-artifact" }
 mizar-kernel = { path = "../mizar-kernel" }
+mizar-lexer = { path = "../mizar-lexer" }
 
 [lints]
 workspace = true

@@ -111,9 +111,23 @@ mismatch with `None`, never a partial vector. It preserves all other shape
 fields, including lexically invalid values; environment construction retains
 lexical validation. Declaration-kind semantics and re-export provenance are
 not inferred. Results follow artifact contribution order, not the lexer module
-summary order. Caller-owned summary ordering/fingerprints, source export
-production, import resolution and publication are separate prerequisites.
+summary order. The canonical summary entry below supplies ordering/fingerprints;
+complete source export production, import resolution and publication remain separate.
 The legacy resolver index projection and its diagnostics remain unchanged.
+
+## Canonical Lexical Summary
+
+`ModuleSummaryReuse::read_lexical_summary(request, value)` first applies all
+`read_lexical_shapes` checks, then constructs the lexer summary with
+`ModuleLexicalSummary::from_exported_symbols`. The module id is the canonical
+JSON string of the validated artifact module object, including for zero shapes.
+Any lexical/storage failure returns `None`, without a partial summary. The raw
+shape reader remains lossless and retains its existing artifact-order behavior.
+Artifact `lexical_summary.fingerprint` is not reinterpreted as the lexer u64
+fingerprint. Complete source export production, import resolution, provider I/O,
+proof acceptance and cache/publication policy remain outside this method.
+Tests cover valid/empty artifacts, canonical reordering, invalid lexical shapes
+accepted by the raw reader but rejected here, and existing envelope/request checks.
 
 ## Fallback And Diagnostics
 

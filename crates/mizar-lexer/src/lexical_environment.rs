@@ -115,6 +115,52 @@ pub struct ModuleLexicalSummary {
     pub fingerprint: LexicalSummaryFingerprint,
 }
 
+impl ModuleLexicalSummary {
+    /// Validates and canonicalizes lexical shapes, retaining duplicates and provenance.
+    /// Computes lexical change detection only, not export or cache acceptance.
+    pub fn from_exported_symbols(
+        module_id: ModuleId,
+        mut exported_symbols: Vec<ExportedSymbolShape>,
+    ) -> Option<Self> {
+        exported_symbols.sort_by(|left, right| {
+            let operator_key = |operator: Option<ExportedOperatorMetadata>| {
+                operator.map(|operator| {
+                    (
+                        operator_fixity_tag(operator.fixity),
+                        operator_associativity_sort_key(operator.fixity),
+                        operator.precedence,
+                    )
+                })
+            };
+            left.spelling
+                .cmp(&right.spelling)
+                .then_with(|| left.source_module.cmp(&right.source_module))
+                .then_with(|| left.symbol_id.cmp(&right.symbol_id))
+                .then_with(|| left.kind.cmp(&right.kind))
+                .then_with(|| left.arity.cmp(&right.arity))
+                .then_with(|| left.export_rank.cmp(&right.export_rank))
+                .then_with(|| operator_key(left.operator).cmp(&operator_key(right.operator)))
+        });
+        let mut fingerprint = StableFingerprint::new();
+        fingerprint.write_str("mizar-lexer.module-lexical-summary.v1");
+        fingerprint.write_str(module_id.as_str());
+        fingerprint.write_usize(exported_symbols.len());
+        for shape in &exported_symbols {
+            validate_exported_symbol_shape(shape).ok()?;
+            let bytes = shape.canonical_bytes()?;
+            fingerprint.write_usize(bytes.len());
+            for byte in bytes {
+                fingerprint.write_byte(byte);
+            }
+        }
+        Some(Self {
+            module_id,
+            exported_symbols,
+            fingerprint: LexicalSummaryFingerprint(fingerprint.finish()),
+        })
+    }
+}
+
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
 pub struct ExportedSymbolShape {

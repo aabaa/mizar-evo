@@ -879,6 +879,37 @@ fn source_lexical_contributions_encode_actual_pairs_and_identity() {
             ]))
         );
     }
+    let mut shapes = contributions
+        .iter()
+        .map(|entry| {
+            mizar_lexer::ExportedSymbolShape::from_canonical_bytes(entry.payload.as_bytes())
+                .unwrap()
+        })
+        .collect::<Vec<_>>();
+    let lexical = mizar_lexer::ModuleLexicalSummary::from_exported_symbols(
+        mizar_lexer::ModuleId::new(&identity_text),
+        shapes.clone(),
+    )
+    .unwrap();
+    shapes.reverse();
+    assert_eq!(
+        mizar_lexer::ModuleLexicalSummary::from_exported_symbols(lexical.module_id.clone(), shapes,),
+        Some(lexical.clone())
+    );
+    let environment = mizar_lexer::build_lexical_environment(
+        &[mizar_lexer::ResolvedImport {
+            module_id: lexical.module_id.clone(),
+        }],
+        &[lexical],
+    )
+    .unwrap();
+    for (_, local) in pairs {
+        let candidate = environment.user_symbol(&local.spelling).unwrap();
+        assert_eq!(candidate.source_module.as_str(), identity_text);
+        assert_eq!(candidate.kind, local.kind);
+        assert_eq!(candidate.arity, local.arity);
+        assert_eq!(candidate.operator, local.operator);
+    }
 }
 
 #[test]

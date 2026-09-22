@@ -398,6 +398,27 @@ retain only the prior syntactic fallback. Semantic alias identity,
 equivalence/negation, loci compatibility, overload selection, export/import
 propagation, diagnostics, and checking remain outside this collector.
 
+## Producer Summary Construction
+
+`ModuleLexicalSummary::from_exported_symbols(module_id, exported_symbols)` returns
+`Option<Self>` using existing lexical validation and bounded A8 shape storage.
+Failure rejects the whole input. It sorts by spelling, source module, symbol id,
+kind, arity, export rank, then optional operator metadata as the final tie-breaker
+(None first; then fixity prefix/infix/postfix, associativity left/right/non-associative,
+and precedence, using existing operator tags). Other keys use Rust value ordering.
+It retains duplicate entries and multiple
+spellings for one symbol; it does not infer export eligibility or provenance.
+The existing stable FNV byte hasher computes the summary fingerprint from the
+length-framed domain `mizar-lexer.module-lexical-summary.v1`, module id, entry
+count, then length-framed A8 canonical bytes for each sorted shape. String/byte
+lengths and counts use the existing little-endian u64 framing. Empty summaries
+are valid. No source range, body, semantic/proof fact or external supplied
+fingerprint enters this calculation. This is lexical change detection, not
+artifact integrity or cache-hit authorization; the active environment algorithm
+and manually constructed summaries keep their existing behavior.
+Tests cover order independence, all fields, ties/duplicates, existing lexical
+errors and storage limits, plus consumption of real source-produced shapes.
+
 ## Exported-symbol storage
 
 `ExportedSymbolShape::canonical_bytes(&self) -> Option<Vec<u8>>` and

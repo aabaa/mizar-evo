@@ -2472,3 +2472,225 @@ fn exported_symbol_codec_preserves_real_environment_results_and_errors() {
         assert_eq!(restored, original);
     }
 }
+
+#[test]
+fn module_lexical_summary_constructor_orders_all_keys_and_permutations() {
+    let operator = |fixity, precedence| {
+        exported_with_operator_metadata(
+            "+",
+            "operator",
+            "source-a",
+            0,
+            ExportedOperatorMetadata { fixity, precedence },
+        )
+    };
+    let shape = |spelling, symbol, source, rank, kind, arity| {
+        exported_with_metadata(
+            spelling,
+            symbol,
+            source,
+            rank,
+            kind,
+            UserSymbolArity::exact(arity),
+        )
+    };
+    let prefix = operator(ExportedOperatorFixity::Prefix, 4);
+    let no_operator = exported("+", "operator", "source-a", 0);
+    let infix_left_low = operator(
+        ExportedOperatorFixity::Infix(ExportedOperatorAssociativity::Left),
+        2,
+    );
+    let infix_left_high = operator(
+        ExportedOperatorFixity::Infix(ExportedOperatorAssociativity::Left),
+        10,
+    );
+    let infix_right = operator(
+        ExportedOperatorFixity::Infix(ExportedOperatorAssociativity::Right),
+        10,
+    );
+    let infix_non_associative = operator(
+        ExportedOperatorFixity::Infix(ExportedOperatorAssociativity::NonAssociative),
+        10,
+    );
+    let postfix = operator(ExportedOperatorFixity::Postfix, 10);
+    let functor_one = shape("A", "a", "source-a", 0, UserSymbolKind::Functor, 1);
+    let functor_one_later = shape("A", "a", "source-a", 1, UserSymbolKind::Functor, 1);
+    let functor_two = shape("A", "a", "source-a", 0, UserSymbolKind::Functor, 2);
+    let predicate = shape("A", "a", "source-a", 0, UserSymbolKind::Predicate, 1);
+    let mode = shape("A", "a", "source-a", 0, UserSymbolKind::Mode, 1);
+    let attribute = shape("A", "a", "source-a", 0, UserSymbolKind::Attribute, 1);
+    let structure = shape("A", "a", "source-a", 0, UserSymbolKind::Structure, 1);
+    let other_symbol = exported("A", "b", "source-a", 0);
+    let other_source = exported("A", "a", "source-b", 0);
+    let other_spelling = exported("B", "a", "source-a", 0);
+    let expected = vec![
+        prefix.clone(),
+        postfix.clone(),
+        no_operator.clone(),
+        infix_left_low.clone(),
+        infix_left_high.clone(),
+        infix_right.clone(),
+        infix_non_associative.clone(),
+        functor_one.clone(),
+        functor_one_later.clone(),
+        functor_two.clone(),
+        predicate.clone(),
+        mode.clone(),
+        attribute.clone(),
+        structure.clone(),
+        other_symbol.clone(),
+        other_source.clone(),
+        other_spelling.clone(),
+    ];
+    let canonical = ModuleLexicalSummary::from_exported_symbols(
+        module_id("owner"),
+        expected.iter().cloned().rev().collect(),
+    )
+    .expect("valid shapes should produce a summary");
+    assert_eq!(canonical.exported_symbols, expected);
+    assert_eq!(
+        ModuleLexicalSummary::from_exported_symbols(module_id("owner"), expected),
+        Some(canonical)
+    );
+}
+
+#[test]
+fn module_lexical_summary_constructor_retains_duplicates_and_fingerprints_fields() {
+    let opening = exported("|.", "circumfix", "pieces", 0);
+    let closing = exported(".|", "circumfix", "pieces", 1);
+    let duplicated = ModuleLexicalSummary::from_exported_symbols(
+        module_id("pieces"),
+        vec![opening.clone(), closing.clone(), opening.clone()],
+    )
+    .unwrap();
+    assert_eq!(
+        duplicated.exported_symbols,
+        vec![closing, opening.clone(), opening]
+    );
+
+    let base = exported("name", "symbol", "source", 3);
+    let original =
+        ModuleLexicalSummary::from_exported_symbols(module_id("owner"), vec![base.clone()])
+            .unwrap();
+    for field in 0..9 {
+        let mut changed = base.clone();
+        match field {
+            0 => changed.spelling = "other".into(),
+            1 => changed.symbol_id = symbol_id("other"),
+            2 => changed.source_module = module_id("other"),
+            3 => changed.export_rank = ExportRank(4),
+            4 => changed.kind = UserSymbolKind::Predicate,
+            5 => changed.arity.minimum = 1,
+            6 => changed.arity.maximum = Some(3),
+            7 => changed.arity.maximum = None,
+            8 => {
+                changed.operator = Some(ExportedOperatorMetadata {
+                    fixity: ExportedOperatorFixity::Infix(ExportedOperatorAssociativity::Left),
+                    precedence: 10,
+                })
+            }
+            _ => unreachable!(),
+        }
+        let summary =
+            ModuleLexicalSummary::from_exported_symbols(module_id("owner"), vec![changed]).unwrap();
+        assert_ne!(summary.fingerprint, original.fingerprint, "field {field}");
+    }
+    let mut with_duplicate = original.exported_symbols.clone();
+    with_duplicate.push(base.clone());
+    assert_ne!(
+        ModuleLexicalSummary::from_exported_symbols(module_id("owner"), with_duplicate)
+            .unwrap()
+            .fingerprint,
+        original.fingerprint
+    );
+    for (left, right, precedence) in [
+        (
+            ExportedOperatorFixity::Prefix,
+            ExportedOperatorFixity::Postfix,
+            10,
+        ),
+        (
+            ExportedOperatorFixity::Infix(ExportedOperatorAssociativity::Left),
+            ExportedOperatorFixity::Infix(ExportedOperatorAssociativity::Right),
+            10,
+        ),
+        (
+            ExportedOperatorFixity::Infix(ExportedOperatorAssociativity::Left),
+            ExportedOperatorFixity::Infix(ExportedOperatorAssociativity::Left),
+            11,
+        ),
+    ] {
+        let fingerprints = [(left, 10), (right, precedence)].map(|(fixity, precedence)| {
+            let shape = exported_with_operator_metadata(
+                "+",
+                "symbol",
+                "source",
+                3,
+                ExportedOperatorMetadata { fixity, precedence },
+            );
+            ModuleLexicalSummary::from_exported_symbols(module_id("owner"), vec![shape])
+                .unwrap()
+                .fingerprint
+        });
+        assert_ne!(fingerprints[0], fingerprints[1]);
+    }
+    let other_module =
+        ModuleLexicalSummary::from_exported_symbols(module_id("other"), vec![base]).unwrap();
+    assert_ne!(original.fingerprint, other_module.fingerprint);
+}
+
+#[test]
+fn module_lexical_summary_constructor_rejects_invalid_and_oversized_shapes_and_accepts_empty() {
+    let valid = exported("name", "symbol", "source", 0);
+    for invalid in [
+        ExportedSymbolShape {
+            spelling: "theorem".to_owned(),
+            ..valid.clone()
+        },
+        ExportedSymbolShape {
+            arity: UserSymbolArity::range(2, 1),
+            ..valid.clone()
+        },
+        ExportedSymbolShape {
+            kind: UserSymbolKind::Selector,
+            ..valid.clone()
+        },
+        ExportedSymbolShape {
+            arity: UserSymbolArity::exact(1),
+            operator: Some(ExportedOperatorMetadata {
+                fixity: ExportedOperatorFixity::Infix(ExportedOperatorAssociativity::Left),
+                precedence: 10,
+            }),
+            ..valid.clone()
+        },
+    ] {
+        assert!(
+            ModuleLexicalSummary::from_exported_symbols(module_id("owner"), vec![invalid])
+                .is_none()
+        );
+    }
+
+    let overhead = valid.canonical_bytes().unwrap().len() - valid.spelling.len();
+    let mut bounded = ExportedSymbolShape {
+        spelling: "x".repeat(1024 * 1024 - overhead),
+        ..valid
+    };
+    assert_eq!(bounded.canonical_bytes().unwrap().len(), 1024 * 1024);
+    assert!(
+        ModuleLexicalSummary::from_exported_symbols(module_id("owner"), vec![bounded.clone()])
+            .is_some()
+    );
+    bounded.spelling.push('x');
+    assert!(
+        ModuleLexicalSummary::from_exported_symbols(module_id("owner"), vec![bounded]).is_none()
+    );
+
+    let first =
+        ModuleLexicalSummary::from_exported_symbols(module_id("empty"), Vec::new()).unwrap();
+    let second =
+        ModuleLexicalSummary::from_exported_symbols(module_id("empty"), Vec::new()).unwrap();
+    assert!(first.exported_symbols.is_empty());
+    // Independent FNV golden for the documented domain, module "empty", and zero count.
+    assert_eq!(first.fingerprint.get(), 0xcd7e_3e97_b942_3d31);
+    assert_eq!(first, second);
+}

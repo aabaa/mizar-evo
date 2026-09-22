@@ -100,8 +100,20 @@ shape の source_module は null optionals を含む完全な module identity ob
 schema/kind/origin/visibility/identity/codec の不一致は全体を `None` とし、部分結果を返さない。
 その他の shape field は lexical に不正な値も保持し、lexical 検査は environment が所有する。
 declaration kind の意味や re-export provenance は推論しない。結果は artifact contribution
-順であり、lexer summary 順ではない。summary の順序・fingerprint、実 source export producer、
-import resolution と publication は後続の前提とする。既存 resolver index と診断は変えない。
+順であり、lexer summary 順ではない。後述の canonical summary entry が順序・fingerprint を供給する。
+完全な source export、import resolution と publication は後続とし、既存 resolver index と診断は変えない。
+
+## Canonical Lexical Summary
+
+`ModuleSummaryReuse::read_lexical_summary(request, value)` は先に全
+`read_lexical_shapes` 検査を行い、`ModuleLexicalSummary::from_exported_symbols` で
+lexer summary を構築する。module id は検証済み artifact module object の canonical
+JSON string であり、shape が空でも同じ規則を使う。字句・保存形式が不正なら部分結果を
+返さず `None` とする。raw shape reader の情報保持と artifact 順は変えない。
+artifact の `lexical_summary.fingerprint` を lexer の u64 fingerprint に読み替えない。
+完全な source export、import resolution、provider I/O、proof acceptance、cache・publication
+policy は範囲外。テストは有効・空 artifact、整列、raw reader が保持する不正字句の拒否、
+既存 envelope/request 検査を扱う。
 
 ## Fallback と diagnostic
 

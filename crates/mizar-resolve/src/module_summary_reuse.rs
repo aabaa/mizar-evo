@@ -228,6 +228,24 @@ impl<'a> ModuleSummaryReuse<'a> {
         }
     }
 
+    /// Validates an artifact-bound payload and produces a canonical lexer summary.
+    /// Does not reinterpret the artifact lexical fingerprint or authorize import/cache reuse.
+    #[must_use]
+    pub fn read_lexical_summary(
+        self,
+        request: ModuleSummaryReuseRequest<'_>,
+        value: &CanonicalJson,
+    ) -> Option<mizar_lexer::ModuleLexicalSummary> {
+        let shapes = self.read_lexical_shapes(request, value)?;
+        let CanonicalJson::Object(fields) = value else {
+            return None;
+        };
+        let module = mizar_lexer::ModuleId::new(mizar_artifact::store::canonical_json_string(
+            fields.get("module")?,
+        ));
+        mizar_lexer::ModuleLexicalSummary::from_exported_symbols(module, shapes)
+    }
+
     /// Decodes envelope-bound A8 shapes, without lexical validation or summary construction.
     /// Returns no partial result when any producer payload or binding is unsupported.
     #[must_use]
@@ -813,6 +831,143 @@ mod tests {
         SurfaceAstBuilder, SurfaceBuilderNodeId, SurfaceNodeKind, SurfaceTokenKind,
     };
     use semver::Version;
+
+    #[test]
+    fn canonical_lexical_summary_binds_artifacts_and_validates_shapes() {
+        use mizar_artifact::store::canonical_json_string;
+        use mizar_lexer::{ExportRank, ExportedSymbolShape, UserSymbolArity, UserSymbolKind};
+        let (provider, module) = provider_fixture();
+        let reuse = ModuleSummaryReuse::new(ModuleIndexInput::new(&provider));
+        let request =
+            ModuleSummaryReuseRequest::new(&module, SourceAnchor::Range(range(source_id(2), 0, 1)));
+        let mut summary = sample_summary();
+        summary.lexical_summary.schema_version = "mizar-resolve/exported-lexical/v1".into();
+        summary.lexical_summary.contributions.clear();
+        let identity = summary.module.canonical_json().unwrap();
+        let module_text = canonical_json_string(&identity);
+        // Artifact origin order deliberately opposes lexical spelling order.
+        let mut second = summary.exported_symbols[0].clone();
+        summary.exported_symbols[0].origin_id = "a".into();
+        second.origin_id = "z".into();
+        second.fully_qualified_name.push_str("Other");
+        summary.exported_symbols.truncate(1);
+        summary.exported_symbols.push(second);
+        for (row, spelling) in summary.exported_symbols.iter().zip(["zeta", "alpha"]) {
+            let shape = ExportedSymbolShape {
+                spelling: spelling.into(),
+                symbol_id: mizar_lexer::SymbolId::new(canonical_json_string(
+                    &CanonicalJson::array([
+                        identity.clone(),
+                        CanonicalJson::string(&row.origin_id),
+                    ]),
+                )),
+                source_module: mizar_lexer::ModuleId::new(&module_text),
+                export_rank: ExportRank::new(7),
+                kind: UserSymbolKind::Functor,
+                arity: UserSymbolArity::exact(2),
+                operator: None,
+            };
+            summary
+                .lexical_summary
+                .contributions
+                .push(LexicalContributionSummary {
+                    kind: "exported-symbol".into(),
+                    key: row.origin_id.clone(),
+                    payload: String::from_utf8(shape.canonical_bytes().unwrap()).unwrap(),
+                });
+        }
+        summary.refresh_interface_hash().unwrap();
+        let json = module_summary_json(&summary).unwrap();
+        let raw = reuse.read_lexical_shapes(request.clone(), &json).unwrap();
+        assert_eq!(
+            raw.iter()
+                .map(|shape| shape.spelling.as_str())
+                .collect::<Vec<_>>(),
+            ["zeta", "alpha"]
+        );
+        let lexical = reuse.read_lexical_summary(request.clone(), &json).unwrap();
+        assert_eq!(lexical.module_id.as_str(), module_text);
+        assert_eq!(
+            lexical
+                .exported_symbols
+                .iter()
+                .map(|shape| shape.spelling.as_str())
+                .collect::<Vec<_>>(),
+            ["alpha", "zeta"]
+        );
+        for fingerprint in [None, Some(Hash::from_bytes([91; Hash::BYTE_LEN]))] {
+            summary.lexical_summary.fingerprint = fingerprint;
+            summary.lexical_summary.contributions.reverse();
+            summary.refresh_interface_hash().unwrap();
+            assert_eq!(
+                reuse
+                    .read_lexical_summary(request.clone(), &module_summary_json(&summary).unwrap()),
+                Some(lexical.clone())
+            );
+        }
+        let mut invalid = summary.clone();
+        let mut bad_shape = raw[0].clone();
+        bad_shape.spelling = "theorem".into();
+        let bad_entry = invalid
+            .lexical_summary
+            .contributions
+            .iter_mut()
+            .find(|entry| entry.key == "a")
+            .unwrap();
+        bad_entry.payload = String::from_utf8(bad_shape.canonical_bytes().unwrap()).unwrap();
+        invalid.refresh_interface_hash().unwrap();
+        let bad_json = module_summary_json(&invalid).unwrap();
+        assert_eq!(
+            reuse
+                .read_lexical_shapes(request.clone(), &bad_json)
+                .unwrap()
+                .len(),
+            2
+        );
+        assert!(
+            reuse
+                .read_lexical_summary(request.clone(), &bad_json)
+                .is_none()
+        );
+        for field in 0..3 {
+            let mut changed = summary.clone();
+            match field {
+                0 => changed.module.module_path.push_str("Other"),
+                1 => changed.lexical_summary.schema_version.push_str("-future"),
+                2 => changed.lexical_summary.contributions[0].payload.push(' '),
+                _ => unreachable!(),
+            }
+            changed.refresh_interface_hash().unwrap();
+            assert!(
+                reuse
+                    .read_lexical_summary(request.clone(), &module_summary_json(&changed).unwrap())
+                    .is_none()
+            );
+        }
+        assert!(
+            reuse
+                .read_lexical_summary(
+                    request
+                        .clone()
+                        .with_expected_interface_hash(Hash::from_bytes([99; Hash::BYTE_LEN])),
+                    &json
+                )
+                .is_none()
+        );
+        assert!(
+            reuse
+                .read_lexical_summary(request.clone(), &CanonicalJson::Null)
+                .is_none()
+        );
+        summary.exported_symbols.clear();
+        summary.lexical_summary.contributions.clear();
+        summary.refresh_interface_hash().unwrap();
+        let empty = reuse
+            .read_lexical_summary(request, &module_summary_json(&summary).unwrap())
+            .unwrap();
+        assert_eq!(empty.module_id.as_str(), module_text);
+        assert!(empty.exported_symbols.is_empty());
+    }
 
     #[test]
     fn typed_lexical_shapes_bind_to_artifact_exports() {
