@@ -149,6 +149,20 @@ source_range = {
 reader は start が end より大きい range を拒否する。`interface_fingerprint` は、下記の
 `interface_hash` と同じ serialized hash construction を使う。
 
+## Exported Element Fingerprint
+
+`ExportedSymbolSummary::compute_interface_fingerprint(schema_version, module)` は
+対応する module-summary version、完全な module identity、既存の exported row 形式を
+検証し、`{ "module": identity, "symbol": fields }` を当該 version の
+module-summary `HashClass::Interface` domain で hash 化する。`fields` は既存の
+exported-symbol interface projection から `interface_fingerprint` を除いたもの。
+診断用 `source_range` は元から含まれない。有効な range の移動と保存済み fingerprint は
+結果に影響せず、nullable proof status を含む他の row field と全 identity field は
+そのまま参加する。計算は値を変更せず、producer signature の正規化、identity の認証、
+宣言の証明、acceptance の導出は行わない。既存の summary reader、writer、module
+interface hash の動作は維持し、既存の要素 fingerprint に新計算を強制しない。
+テストは field の変化と除外、canonical 一致、不正入力、既存形式の互換性を扱う。
+
 ## Exported Labels
 
 `exported_labels` は、下流 module が引用できる label を記録する。各 entry は次を記録する。

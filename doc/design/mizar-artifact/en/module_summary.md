@@ -165,6 +165,21 @@ Readers reject ranges whose start is greater than their end. The
 `interface_fingerprint` uses the same serialized hash construction as
 `interface_hash` below.
 
+## Exported Element Fingerprint
+
+`ExportedSymbolSummary::compute_interface_fingerprint(schema_version, module)`
+validates the supported module-summary version, full module identity and existing
+exported-row shape, then hashes `{ "module": identity, "symbol": fields }` in the
+module-summary `HashClass::Interface` domain for that version. `fields` are the
+existing exported-symbol interface projection with `interface_fingerprint`
+removed; diagnostic `source_range` is excluded. All other row fields,
+including nullable proof status, and all identity fields participate verbatim.
+The method is pure; it neither normalizes producer signatures nor authenticates
+identity, proves declarations, or derives acceptance. Existing summary readers,
+writers and module interface hashes retain their behavior and do not enforce this
+new calculation on previously supplied element fingerprints.
+Tests cover field sensitivity/exclusions, canonical parity, invalid inputs and legacy compatibility.
+
 ## Exported Labels
 
 `exported_labels` records labels that downstream modules may cite. Each entry

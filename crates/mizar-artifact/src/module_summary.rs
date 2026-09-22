@@ -333,6 +333,34 @@ impl ModuleSummaryIdentity {
     }
 }
 
+impl ExportedSymbolSummary {
+    /// Computes an element fingerprint bound to the supplied module identity.
+    /// Excludes diagnostic ranges and the stored fingerprint; validates row shape
+    /// but does not authenticate producer signatures or proof acceptance.
+    pub fn compute_interface_fingerprint(
+        &self,
+        schema_version: SchemaVersion,
+        module: &ModuleSummaryIdentity,
+    ) -> Result<Hash, ModuleSummaryError> {
+        schema_version_support().check(Some(&schema_version.to_string()))?;
+        let module = module.canonical_json()?;
+        validate_exported_symbol(self, "$.symbol")?;
+        let symbol = exported_symbol_interface_json(self, schema_version)?;
+        let mut fields = expect_object(&symbol, "$.symbol")?.clone();
+        fields.remove("interface_fingerprint");
+        let projection = json_object([
+            ("module", module),
+            ("symbol", CanonicalJson::Object(fields)),
+        ])?;
+        let domain = CanonicalHashDomain::new(
+            HashClass::Interface,
+            MODULE_SUMMARY_SCHEMA_FAMILY,
+            schema_version,
+        );
+        Ok(domain.hash(&projection, &[]))
+    }
+}
+
 impl ModuleSummary {
     /// Computes the dependency-facing interface hash for this summary.
     pub fn compute_interface_hash(&self) -> Result<Hash, ModuleSummaryError> {

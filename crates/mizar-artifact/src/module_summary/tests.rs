@@ -12,6 +12,181 @@ use crate::store::{
 use mizar_session::Hash;
 
 #[test]
+fn element_fingerprint_tracks_public_fields_and_excludes_diagnostic_state() {
+    let mut summary = sample_summary();
+    let version = summary.schema_version;
+    let row = &summary.exported_symbols[0];
+    let fingerprint = row
+        .compute_interface_fingerprint(version, &summary.module)
+        .unwrap();
+    assert_eq!(
+        row.compute_interface_fingerprint(version, &summary.module)
+            .unwrap(),
+        fingerprint
+    );
+    // Independent field list fixes the canonical input, including null proof status below.
+    let symbol = CanonicalJson::object([
+        ("origin_id", CanonicalJson::string(&row.origin_id)),
+        (
+            "fully_qualified_name",
+            CanonicalJson::string(&row.fully_qualified_name),
+        ),
+        (
+            "namespace_path",
+            CanonicalJson::array(row.namespace_path.iter().map(CanonicalJson::string)),
+        ),
+        ("visibility", CanonicalJson::string(&row.visibility)),
+        (
+            "declaration_kind",
+            CanonicalJson::string(&row.declaration_kind),
+        ),
+        (
+            "rendered_signature",
+            CanonicalJson::string(&row.rendered_signature),
+        ),
+        ("proof_status", CanonicalJson::string("accepted")),
+    ])
+    .unwrap();
+    let projection = CanonicalJson::object([
+        ("module", summary.module.canonical_json().unwrap()),
+        ("symbol", symbol),
+    ])
+    .unwrap();
+    assert_eq!(
+        fingerprint,
+        CanonicalHashDomain::new(HashClass::Interface, MODULE_SUMMARY_SCHEMA_FAMILY, version,)
+            .hash(&projection, &[])
+    );
+    for field in 0..9 {
+        let mut changed = row.clone();
+        match field {
+            0 => changed.origin_id.push_str("-other"),
+            1 => changed.fully_qualified_name.push_str("Other"),
+            2 => changed.namespace_path.push("Nested".to_owned()),
+            3 => changed.visibility = "private".to_owned(),
+            4 => changed.declaration_kind = "predicate".to_owned(),
+            5 => changed.rendered_signature = "日本語\n\"signature\"".to_owned(),
+            6 => changed.proof_status = None,
+            7 => changed.proof_status = Some(ProofStatusSummary::NotAccepted),
+            8 => changed.proof_status = Some(ProofStatusSummary::NotRequired),
+            _ => unreachable!(),
+        }
+        assert_ne!(
+            changed
+                .compute_interface_fingerprint(version, &summary.module)
+                .unwrap(),
+            fingerprint,
+            "row field {field}"
+        );
+    }
+    for field in 0..7 {
+        let mut module = summary.module.clone();
+        match field {
+            0 => module.package_id.push_str("-other"),
+            1 => module.module_path.push_str(".Other"),
+            2 => module.language_edition = "2027".to_owned(),
+            3 => module.package_version = Some("2.0.0".to_owned()),
+            4 => module.lockfile_identity = Some("lock:other".to_owned()),
+            5 => module.package_version = None,
+            6 => module.lockfile_identity = None,
+            _ => unreachable!(),
+        }
+        assert_ne!(
+            row.compute_interface_fingerprint(version, &module).unwrap(),
+            fingerprint,
+            "module field {field}"
+        );
+    }
+    let mut moved = row.clone();
+    moved.source_range = SourceRangeSummary {
+        start_byte: 1000,
+        end_byte: 2000,
+    };
+    assert_eq!(
+        moved
+            .compute_interface_fingerprint(version, &summary.module)
+            .unwrap(),
+        fingerprint
+    );
+    moved.interface_fingerprint = hash(99);
+    assert_eq!(
+        moved
+            .compute_interface_fingerprint(version, &summary.module)
+            .unwrap(),
+        fingerprint
+    );
+    // Legacy fingerprints remain caller-supplied: the new helper adds no reader gate.
+    assert_ne!(row.interface_fingerprint, fingerprint);
+    summary.exported_symbols[0] = moved;
+    summary.refresh_interface_hash().unwrap();
+    let json = module_summary_json(&summary).unwrap();
+    assert_eq!(
+        read_module_summary(&json, ModuleSummaryReadOptions::default()).unwrap(),
+        summary
+    );
+    assert_eq!(
+        write_module_summary(&summary).unwrap(),
+        canonical_json_string(&json).into_bytes()
+    );
+}
+
+#[test]
+fn element_fingerprint_rejects_invalid_version_identity_and_row_shape() {
+    let summary = sample_summary();
+    let row = &summary.exported_symbols[0];
+    for version in [
+        crate::store::SchemaVersion::new(2, 0),
+        crate::store::SchemaVersion::new(1, 1),
+    ] {
+        assert!(matches!(
+            row.compute_interface_fingerprint(version, &summary.module),
+            Err(ModuleSummaryError::SchemaVersion(_))
+        ));
+    }
+    for field in 0..5 {
+        let mut module = summary.module.clone();
+        match field {
+            0 => module.package_id.clear(),
+            1 => module.module_path.clear(),
+            2 => module.language_edition.clear(),
+            3 => module.package_version = Some(String::new()),
+            4 => module.lockfile_identity = Some(String::new()),
+            _ => unreachable!(),
+        }
+        assert!(
+            row.compute_interface_fingerprint(summary.schema_version, &module)
+                .is_err(),
+            "module field {field}"
+        );
+    }
+    for field in 0..8 {
+        let mut changed = row.clone();
+        match field {
+            0 => changed.origin_id.clear(),
+            1 => changed.fully_qualified_name.clear(),
+            2 => changed.namespace_path.push(String::new()),
+            3 => changed.visibility.clear(),
+            4 => changed.declaration_kind.clear(),
+            5 => changed.rendered_signature.clear(),
+            6 => {
+                changed.source_range = SourceRangeSummary {
+                    start_byte: 2,
+                    end_byte: 1,
+                }
+            }
+            7 => changed.source_range.end_byte = u64::MAX,
+            _ => unreachable!(),
+        }
+        assert!(
+            changed
+                .compute_interface_fingerprint(summary.schema_version, &summary.module)
+                .is_err(),
+            "row field {field}"
+        );
+    }
+}
+
+#[test]
 fn identity_json_entry_matches_summary_writer_and_interface_projection() {
     let mut summary = sample_summary();
     for (version, lockfile) in [
