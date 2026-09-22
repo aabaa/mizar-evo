@@ -522,3 +522,22 @@ collection 診断があれば全体を `None` とする。参照を返すため�
 別名・独立した演算子宣言・prepass 未対応の種別・完全性・ソースの真正性・artifact
 origin の直列化は後続 producer の責務。本メソッドは `locals.user_symbols` のみを
 対象とし、他の字句効果を省略した要約の publication を許可しない。
+
+### Frontend 出力に結び付いた対応付け
+
+`SymbolCollectionResult::pair_frontend_lexical_declarations(frontend)` は信頼された
+変更のない frontend 実行の `FrontendOutput<SurfaceAst>` を受け取り、下位メソッドと
+同じ借用ペアを返す。ソースの package/module、source id、保持された前処理・ローカル
+宣言、実 AST 由来の resolver collection の一致を確認する。任意に構築された出力の
+認証や意味的な受理は行わない。
+AST 欠落、frontend 診断、source id/module 不一致、テキスト・hash・line map の
+不整合、マップ登録失敗は拒否する。保持ソースを再前処理して保持結果との等価性を
+要求し、字句テキストの再走査から収集した locals と保持宣言も比較する。
+公開 raw 走査は frontend の非公開 parser 計画付き走査を再現しないため、
+それに起因する不一致も未対応として拒否する。
+AST から宣言 shell と signature を再収集し、この collection との等価性を要求する。
+ロード、provider 呼出し、parser 再実行は行わない。復元 bridge の字句マッピングを
+下位対応付けへ渡し、マッピング状態と既存の除外範囲を維持する。
+統合テストは import や合成意味 projection を使わず、実 disk frontend/parser と
+ソース由来 collection でコメントによる座標移動、公開・非公開宣言、メタデータ保持、
+反復性、不一致・古い入力を検証する。テスト専用 provider は本番 provider ではない。

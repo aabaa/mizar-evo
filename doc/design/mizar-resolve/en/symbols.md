@@ -586,3 +586,29 @@ Aliases, standalone operator declarations, absent prepass families, completeness
 source authentication and artifact origin serialization remain producer work.
 This method considers `locals.user_symbols` only; it cannot authorize publication
 of a summary that omits other lexical effects.
+
+### Frontend-bound correspondence
+
+`SymbolCollectionResult::pair_frontend_lexical_declarations(frontend)` accepts
+`FrontendOutput<SurfaceAst>` from a trusted, unchanged frontend run and returns
+the same borrowed pairs as the lower correspondence method. It binds the source
+package/module, source ids, retained preprocessing and local declarations, and
+the exact parser-backed resolver collection; it does not authenticate arbitrary
+constructed frontend outputs or grant semantic acceptance.
+
+Reject absent ASTs, any frontend diagnostics, mismatched source ids or module,
+source text/hash/line-map inconsistency, and failed source-map registration.
+Re-run preprocessing on the retained source and require equality with the retained
+preprocessed output; re-scan that lexical text and require equality of collected
+locals. This public raw rescan does not reproduce the frontend's private
+parser-planned scanner; any resulting mismatch is unsupported and rejects.
+Recollect declaration shells and signatures from the supplied AST and
+require equality with this collection. No source loading, provider call or parser
+replay occurs. Delegate through the reconstructed bridge's lexical mapping,
+preserving mapping status and all existing correspondence exclusions.
+
+Integration tests use the real disk frontend/parser and source-derived resolver
+collection, with no imports or synthetic semantic projections. They exercise
+comment-shifted coordinates, public/private declarations, retained metadata,
+repeatability and mismatched or stale inputs. Test-only provider plumbing does
+not implement a production lexical-summary provider.

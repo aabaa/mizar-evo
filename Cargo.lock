@@ -588,6 +588,7 @@ version = "0.1.0"
 dependencies = [
  "mizar-artifact",
  "mizar-build",
+ "mizar-frontend",
  "mizar-lexer",
  "mizar-session",
  "mizar-syntax",

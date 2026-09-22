@@ -476,6 +476,62 @@ impl SymbolCollectionResult {
         Some(pairs)
     }
 
+    /// Binds lexical correspondence to a trusted, unchanged frontend run.
+    /// Revalidates source maps, locals and the exact AST-derived collection.
+    /// Does not authenticate fabricated outputs or produce a complete summary.
+    pub fn pair_frontend_lexical_declarations<'a>(
+        &'a self,
+        frontend: &'a mizar_frontend::orchestration::FrontendOutput<SurfaceAst>,
+    ) -> Option<Vec<(&'a SymbolEntry, &'a mizar_lexer::LocalUserSymbolDeclaration)>> {
+        use mizar_frontend::{
+            preprocess::preprocess, source::register_source_unit, span_bridge::SpanBridge,
+        };
+        let source = &frontend.source;
+        let ast = frontend.ast.as_ref()?;
+        let module = self.env.module_id();
+        if !frontend.diagnostics.is_empty()
+            || source.package_id != *module.package()
+            || source.module_path != *module.path()
+            || ast.source_id != source.source_id
+            || frontend.tokens.source_id != source.source_id
+            || source.line_map.source_id() != source.source_id
+            || source.line_map.source() != source.source_text.as_ref()
+            || source.line_map.text_hash() != source.source_hash
+        {
+            return None;
+        }
+        let mut bridge = SpanBridge::new();
+        register_source_unit(&mut bridge, source).ok()?;
+        let preprocessed = preprocess(source, &mut bridge).ok()?;
+        if preprocessed != frontend.preprocessed {
+            return None;
+        }
+        let raw = mizar_lexer::scan_raw(preprocessed.lexical_text.as_str()).ok()?;
+        let locals = mizar_lexer::collect_local_lexical_declarations(
+            &raw,
+            mizar_lexer::ModuleId::new(source.module_path.as_str()),
+        );
+        if locals != *frontend.tokens.local_declarations() {
+            return None;
+        }
+        let shells = DeclarationShellCollector::new(ast, module).collect();
+        let collected = SignatureProjectionExtractor::new(
+            ast,
+            &shells,
+            NamespacePath::new(module.path().as_str()),
+        )
+        .collect(module);
+        if collected != *self {
+            return None;
+        }
+        self.pair_exported_lexical_declarations(frontend.tokens.local_declarations(), |span| {
+            preprocessed
+                .source_map
+                .lexical_span(&bridge, span.into())
+                .ok()
+        })
+    }
+
     /// Consumes this result and returns its symbol environment.
     #[must_use]
     pub fn into_env(self) -> SymbolEnv {

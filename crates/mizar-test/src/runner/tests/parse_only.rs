@@ -623,3 +623,169 @@
         .iter()
         .any(|diagnostic| diagnostic.code.0 == "E-PARSE-ONLY-STEP5C4-INVENTORY"));
     }
+
+#[test]
+fn frontend_lexical_binding_uses_actual_source_maps_and_collection() {
+    use mizar_resolve::declarations::DeclarationShellCollector;
+    use mizar_resolve::symbols::SignatureProjectionExtractor;
+    let text = "\u{feff}:: removed 日本語 comment\r\ndefinition\r\n\
+        let x, y be set;\r\n\
+        public pred P: x relates y means thesis;\r\n\
+        ::= removed before the functor =::\r\n\
+        func F: x combine y -> set equals x;\r\n\
+        private mode H: Hidden is set;\r\n\
+        mode M: CarrierMode is set;\r\n\
+        attr A: x is flagged means thesis;\r\n\
+        struct Carrier where field carrier -> set; end;\r\nend;\r\n";
+    let output = task257c4c1_frontend_output(text, 612);
+    assert!(output.diagnostics.is_empty(), "{:?}", output.diagnostics);
+    assert!(output.preprocessed.import_stubs.is_empty());
+    assert!(output.source.loading_map.is_some());
+    let ast = output.ast.as_ref().unwrap();
+    let module = ResolverModuleId::new(
+        output.source.package_id.clone(),
+        output.source.module_path.clone(),
+    );
+    let shells = DeclarationShellCollector::new(ast, &module).collect();
+    let collection =
+        SignatureProjectionExtractor::new(ast, &shells, NamespacePath::new(module.path().as_str()))
+            .collect(&module);
+    assert!(collection.diagnostics().is_empty());
+    let pairs = collection
+        .pair_frontend_lexical_declarations(&output)
+        .unwrap();
+    assert_eq!(
+        pairs
+            .iter()
+            .map(|(_, local)| local.spelling.as_str())
+            .collect::<Vec<_>>(),
+        ["relates", "combine", "CarrierMode", "flagged", "Carrier"]
+    );
+    assert_eq!(output.tokens.local_declarations().user_symbols.len(), 6);
+    assert!(pairs[1].1.operator.is_some());
+    for (entry, local) in &pairs {
+        assert!(
+            output
+                .tokens
+                .local_declarations()
+                .user_symbols
+                .iter()
+                .any(|candidate| std::ptr::eq(candidate, *local))
+        );
+        assert!(
+            collection
+                .env()
+                .symbols()
+                .iter()
+                .any(|candidate| std::ptr::eq(candidate, *entry))
+        );
+        let SourceAnchor::Range(range) = entry.origin().anchor() else {
+            panic!("source origin")
+        };
+        assert_eq!(range.source_id, output.source.source_id);
+        assert!(
+            range.start > local.declared_at.start,
+            "comments must shift coordinates"
+        );
+        assert!(output.source.source_text[range.start..range.end].contains(&local.spelling));
+    }
+    assert_eq!(
+        collection
+            .pair_frontend_lexical_declarations(&output)
+            .unwrap(),
+        pairs
+    );
+    assert!(
+        collection
+            .pair_exported_lexical_declarations(output.tokens.local_declarations(), |span| Some(
+                mizar_session::MappedSourceRange {
+                    primary: SourceRange {
+                        source_id: output.source.source_id,
+                        start: span.start,
+                        end: span.end
+                    },
+                    secondary: Vec::new(),
+                    original_input: None,
+                    kind: mizar_session::MappedSourceRangeKind::Exact,
+                }
+            ),)
+            .is_none(),
+        "lexical offsets must not be treated as loaded offsets"
+    );
+}
+
+#[test]
+fn frontend_lexical_binding_rejects_stale_or_inconsistent_inputs() {
+    use mizar_resolve::declarations::DeclarationShellCollector;
+    use mizar_resolve::symbols::SignatureProjectionExtractor;
+    let text = "\u{feff}definition mode M: Visible is set; end;\r\n";
+    let output = task257c4c1_frontend_output(text, 613);
+    assert!(output.diagnostics.is_empty());
+    let collect = |output: &mizar_frontend::orchestration::FrontendOutput<SurfaceAst>| {
+        let ast = output.ast.as_ref().unwrap();
+        let module = ResolverModuleId::new(
+            output.source.package_id.clone(),
+            output.source.module_path.clone(),
+        );
+        let shells = DeclarationShellCollector::new(ast, &module).collect();
+        SignatureProjectionExtractor::new(ast, &shells, NamespacePath::new(module.path().as_str()))
+            .collect(&module)
+    };
+    let collection = collect(&output);
+    assert!(
+        collection
+            .pair_frontend_lexical_declarations(&output)
+            .is_some()
+    );
+    let ids = InMemorySessionIdAllocator::new();
+    let snapshot = super::shared::snapshot_id(612);
+    let _ = ids.next_source_id(snapshot).unwrap();
+    let foreign_id = ids.next_source_id(snapshot).unwrap();
+    assert_ne!(foreign_id, output.source.source_id);
+    for case in 0..15 {
+        let mut changed = output.clone();
+        match case {
+            0 => changed.ast = None,
+            1 => changed.source.package_id = PackageId::new("foreign"),
+            2 => changed.source.module_path = ModulePath::new("foreign"),
+            3 => changed.source.source_id = foreign_id,
+            4 => changed.tokens.source_id = foreign_id,
+            5 => changed.ast.as_mut().unwrap().source_id = foreign_id,
+            6 => changed.preprocessed.source_id = foreign_id,
+            7 => changed.preprocessed.source_map.source_id = foreign_id,
+            8 => changed.preprocessed.source_map.lexical_text_len += 1,
+            9 => changed.source.source_text = "different source".into(),
+            10 => changed.source.source_hash = mizar_session::hash_text("different"),
+            11 => changed.tokens.local_declarations.user_symbols[0].spelling = "forged".into(),
+            12 => changed.preprocessed.lexical_text.text = "different lexical text".into(),
+            13 => changed.source.line_map = mizar_session::LineMap::new(foreign_id, text),
+            14 => changed.source.loading_map.as_mut().unwrap().loaded_text_len += 1,
+            _ => unreachable!(),
+        }
+        assert!(
+            collection
+                .pair_frontend_lexical_declarations(&changed)
+                .is_none(),
+            "case {case}"
+        );
+    }
+    let changed = task257c4c1_frontend_output(&text.replace("Visible", "Changed"), 613);
+    assert!(changed.diagnostics.is_empty());
+    assert!(
+        collect(&changed)
+            .pair_frontend_lexical_declarations(&changed)
+            .is_some()
+    );
+    assert!(
+        collection
+            .pair_frontend_lexical_declarations(&changed)
+            .is_none()
+    );
+    let recovered = task257c4c1_frontend_output("definition mode M: Visible is ; end;", 613);
+    assert!(!recovered.diagnostics.is_empty());
+    assert!(
+        collect(&recovered)
+            .pair_frontend_lexical_declarations(&recovered)
+            .is_none()
+    );
+}
