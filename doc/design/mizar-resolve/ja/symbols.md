@@ -497,3 +497,28 @@ origin、diagnostic、active route、coverage credit、Task277B readinessは追�
 Public-enum policy registrationには次も追加する:
 
 - `SourceNestedFraenkelFunctorOwnerError`
+
+## ソース字句宣言と公開シンボルの対応付け
+
+`SymbolCollectionResult::pair_exported_lexical_declarations(locals, map_span)` は
+`Option<Vec<(&SymbolEntry, &LocalUserSymbolDeclaration)>>` を返す。呼出側は
+同一 frontend ソースの字句宣言を渡し、その前処理マップで字句座標の
+`declared_at` を `Option<MappedSourceRange>` に変換する。`Exact` のロード済み
+`primary` 範囲のみを使い、Composite/Degraded は全体を拒否する。これは対応関係の
+検査であり、ソースの真正性検証・完全なモジュール要約・artifact identity の束縛ではない。
+
+空でない変換済み範囲を包含するシンボル出自範囲は、可視性で絞る前に一意でなければ
+ならない。出自と `ContributionKind::LocalSource { source_id }` contribution の
+SourceId・モジュールの一致を検査し、
+回復済み出自を拒否する。字句側モジュール名は既存 frontend と同様に resolver の
+module path と一致させる。種別は predicate・functor・mode・attribute・structure の
+同種対応のみ。`Visibility::Public` + `ExportStatus::Exported` は保持し、
+`Visibility::Private` + `ExportStatus::LocalOnly` は除外する。
+`ReExported` およびその他の組合せ・未対応または欠落した所有者・曖昧さ・変換失敗・不正な範囲・
+collection 診断があれば全体を `None` とする。参照を返すため全フィールドと入力順を
+保持し、複数の字句片が同一シンボルに対応してもよい。診断がなく入力が空なら空の
+ベクトルを返す。resolver の notation から字句情報を推測しない。
+
+別名・独立した演算子宣言・prepass 未対応の種別・完全性・ソースの真正性・artifact
+origin の直列化は後続 producer の責務。本メソッドは `locals.user_symbols` のみを
+対象とし、他の字句効果を省略した要約の publication を許可しない。

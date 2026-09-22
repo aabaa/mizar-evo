@@ -1,7 +1,8 @@
 use super::*;
 use crate::declarations::DeclarationShellCollector;
 use mizar_session::{
-    BuildSnapshotId, Hash, InMemorySessionIdAllocator, ModulePath, PackageId, SessionIdAllocator,
+    BuildSnapshotId, Hash, InMemorySessionIdAllocator, MappedSourceRange, MappedSourceRangeKind,
+    ModulePath, PackageId, SessionIdAllocator, SourceAnchor, SourceRange,
 };
 use mizar_syntax::{
     SurfaceAstBuilder, SurfaceBuilderNodeId, SurfaceNodeKind, SurfaceTokenKind, SyntaxRecoveryKind,
@@ -425,6 +426,360 @@ fn registers_opaque_symbols_definitions_and_contribution_effects() {
     let effects = env.contributions().iter().next().unwrap().effects();
     assert_eq!(effects.symbols().len(), 3);
     assert_eq!(effects.definitions().len(), 3);
+}
+
+#[test]
+fn source_lexical_pairing_preserves_mapped_owner_order_and_fields() {
+    let rows = [
+        (
+            SurfaceNodeKind::PredicateDefinition,
+            SymbolKind::Predicate,
+            DefinitionKind::Predicate,
+            "pred P: x + y * z means x = y;\n",
+        ),
+        (
+            SurfaceNodeKind::FunctorDefinition,
+            SymbolKind::Functor,
+            DefinitionKind::Functor,
+            "func F: x + y -> set;\n",
+        ),
+        (
+            SurfaceNodeKind::ModeDefinition,
+            SymbolKind::Mode,
+            DefinitionKind::Mode,
+            "mode M: SharedMode is set;\n",
+        ),
+        (
+            SurfaceNodeKind::AttributeDefinition,
+            SymbolKind::Attribute,
+            DefinitionKind::Attribute,
+            "attr A: x is SharedAttr means x = x;\n",
+        ),
+        (
+            SurfaceNodeKind::StructureDefinition,
+            SymbolKind::Structure,
+            DefinitionKind::Structure,
+            "struct S where field member -> set; end;\n",
+        ),
+        (
+            SurfaceNodeKind::ModeDefinition,
+            SymbolKind::Mode,
+            DefinitionKind::Mode,
+            "private mode H: HiddenMode is set;\n",
+        ),
+    ];
+    let source = rows.iter().map(|row| row.3).collect::<String>();
+    let locals = mizar_lexer::collect_local_lexical_declarations(
+        &mizar_lexer::scan_raw(&source).unwrap(),
+        mizar_lexer::ModuleId::new("main"),
+    );
+    assert_eq!(locals.user_symbols.len(), 7);
+    assert!(locals.user_symbols[2].operator.is_some());
+    let source_id = source_id();
+    let mut builder = SurfaceAstBuilder::new(source_id);
+    let mut start = 100;
+    let mut items = Vec::new();
+    for (kind, _, _, text) in &rows {
+        let end = start + text.len();
+        let item = if text.starts_with("private") {
+            let marker = visibility_marker(&mut builder, source_id, start, "private");
+            let target = node(
+                &mut builder,
+                kind.clone(),
+                source_id,
+                start + 8,
+                end,
+                vec![],
+            );
+            node(
+                &mut builder,
+                SurfaceNodeKind::VisibleItem,
+                source_id,
+                start,
+                end,
+                vec![marker, target],
+            )
+        } else {
+            node(&mut builder, kind.clone(), source_id, start, end, vec![])
+        };
+        items.push(item);
+        start = end;
+    }
+    let root = node(
+        &mut builder,
+        SurfaceNodeKind::Root,
+        source_id,
+        0,
+        start,
+        items,
+    );
+    let ast = builder.finish(Some(root), None);
+    let shells = DeclarationShellCollector::new(&ast, &module_id()).collect();
+    assert_eq!(shells.declarations().len(), rows.len());
+    let projections = shells
+        .declarations()
+        .iter()
+        .zip(&rows)
+        .enumerate()
+        .map(|(index, (shell, row))| {
+            projection(
+                shell.id(),
+                NamespacePath::new("main"),
+                &format!("whole notation {index}"),
+                row.1,
+                row.2,
+            )
+        })
+        .collect::<Vec<_>>();
+    let result = collect(source_id, &shells, &projections);
+    assert!(result.diagnostics().is_empty());
+    let map = |span: mizar_lexer::SourceSpan| {
+        Some(exact_mapped(range(
+            source_id,
+            span.start + 100,
+            span.end + 100,
+        )))
+    };
+    let pairs = result
+        .pair_exported_lexical_declarations(&locals, map)
+        .unwrap();
+    assert_eq!(pairs.len(), 6);
+    assert!(std::ptr::eq(pairs[0].0, pairs[1].0));
+    assert_ne!(pairs[0].0.symbol(), pairs[2].0.symbol());
+    for ((entry, local), original) in pairs.iter().zip(&locals.user_symbols) {
+        assert!(std::ptr::eq(*local, original));
+        assert_eq!(entry.visibility(), Visibility::Public);
+        assert_eq!(entry.export_status(), ExportStatus::Exported);
+        assert!(entry.primary_spelling().starts_with("whole notation"));
+    }
+    let mut reversed = locals.clone();
+    reversed.user_symbols.reverse();
+    assert_eq!(
+        result
+            .pair_exported_lexical_declarations(&reversed, map)
+            .unwrap(),
+        pairs.into_iter().rev().collect::<Vec<_>>()
+    );
+    assert_eq!(
+        result.pair_exported_lexical_declarations(
+            &mizar_lexer::LocalLexicalDeclarations::empty(),
+            |_| None
+        ),
+        Some(vec![])
+    );
+}
+
+#[test]
+fn source_lexical_pairing_rejects_incomplete_or_ambiguous_correspondence() {
+    let source_id = source_id();
+    let shells = shells_for(
+        source_id,
+        vec![test_item(0, SurfaceNodeKind::PredicateDefinition)],
+    );
+    let base = projection(
+        shells.declarations()[0].id(),
+        NamespacePath::new("main"),
+        "P",
+        SymbolKind::Predicate,
+        DefinitionKind::Predicate,
+    );
+    let result = collect(source_id, &shells, std::slice::from_ref(&base));
+    let locals = mizar_lexer::collect_local_lexical_declarations(
+        &mizar_lexer::scan_raw("pred P: x R y means x = y;").unwrap(),
+        mizar_lexer::ModuleId::new("main"),
+    );
+    let mapped = exact_mapped(range(source_id, 1, 2));
+    assert_eq!(
+        result
+            .pair_exported_lexical_declarations(&locals, |_| Some(mapped.clone()))
+            .unwrap()
+            .len(),
+        1
+    );
+    let mut foreign = mapped.clone();
+    let snapshot = BuildSnapshotId::from_published_schema_str(&format!(
+        "mizar-session-build-snapshot-v1:{}",
+        "05".repeat(Hash::BYTE_LEN)
+    ))
+    .unwrap();
+    let ids = InMemorySessionIdAllocator::new();
+    ids.next_source_id(snapshot).unwrap();
+    foreign.primary.source_id = ids.next_source_id(snapshot).unwrap();
+    let entry = result.env().symbols().iter().next().unwrap();
+    for mutation in 0..10 {
+        let mut indexes = SymbolEnvIndexes::default();
+        let contribution_module = if mutation == 2 {
+            ModuleId::new(PackageId::new("other"), ModulePath::new("main"))
+        } else {
+            module_id()
+        };
+        let kind = match mutation {
+            0 => ContributionKind::ImportedSource { source_id },
+            1 => ContributionKind::LocalSource {
+                source_id: foreign.primary.source_id,
+            },
+            _ => ContributionKind::LocalSource { source_id },
+        };
+        let contribution = indexes.contributions.insert(
+            contribution_module,
+            kind,
+            entry.origin().anchor().clone(),
+        );
+        let foreign_module = ModuleId::new(PackageId::new("other"), ModulePath::new("main"));
+        let origin = SemanticOrigin::new(
+            if mutation == 7 {
+                foreign.primary.source_id
+            } else {
+                source_id
+            },
+            if mutation == 6 {
+                foreign_module.clone()
+            } else {
+                module_id()
+            },
+            entry.origin().anchor().clone(),
+            vec![],
+        );
+        let symbol = if mutation == 8 {
+            SymbolId::new(
+                foreign_module,
+                entry.symbol().local().clone(),
+                entry.symbol().fqn().clone(),
+            )
+        } else {
+            entry.symbol().clone()
+        };
+        indexes.symbols.insert(
+            SymbolEntry::new(
+                symbol,
+                entry.kind(),
+                entry.namespace().clone(),
+                entry.primary_spelling(),
+                origin,
+                contribution,
+            )
+            .with_visibility(if mutation == 5 {
+                Visibility::Private
+            } else {
+                Visibility::Public
+            })
+            .with_export_status(match mutation {
+                3 => ExportStatus::ReExported,
+                4 => ExportStatus::LocalOnly,
+                _ => ExportStatus::Exported,
+            }),
+        );
+        let constructed = SymbolCollectionResult {
+            env: SymbolEnv::new(module_id(), indexes),
+            diagnostics: vec![],
+        };
+        assert_eq!(
+            constructed
+                .pair_exported_lexical_declarations(&locals, |_| Some(mapped.clone()))
+                .is_some(),
+            mutation == 9,
+            "mutation {mutation}"
+        );
+    }
+    for rejected in [
+        None,
+        Some(MappedSourceRange {
+            kind: MappedSourceRangeKind::Composite,
+            ..mapped.clone()
+        }),
+        Some(MappedSourceRange {
+            kind: MappedSourceRangeKind::Degraded,
+            ..mapped.clone()
+        }),
+        Some(exact_mapped(range(source_id, 2, 2))),
+        Some(exact_mapped(range(source_id, 3, 2))),
+        Some(exact_mapped(range(source_id, 10, 11))),
+        Some(foreign),
+    ] {
+        assert!(
+            result
+                .pair_exported_lexical_declarations(&locals, |_| rejected.clone())
+                .is_none()
+        );
+    }
+    for mutation in 0..5 {
+        let mut changed = locals.clone();
+        let local = &mut changed.user_symbols[0];
+        match mutation {
+            0 => local.source_module = mizar_lexer::ModuleId::new("other"),
+            1 => local.kind = mizar_lexer::UserSymbolKind::Functor,
+            2 => local.kind = mizar_lexer::UserSymbolKind::Constructor,
+            3 => local.declared_at.end = local.declared_at.start,
+            _ => local.declared_at.end = local.declared_at.start - 1,
+        }
+        assert!(
+            result
+                .pair_exported_lexical_declarations(&changed, |_| Some(mapped.clone()))
+                .is_none()
+        );
+    }
+    let mut partial = locals.clone();
+    partial.user_symbols.push(locals.user_symbols[0].clone());
+    let mut count = 0;
+    assert!(
+        result
+            .pair_exported_lexical_declarations(&partial, |_| {
+                count += 1;
+                (count == 1).then(|| mapped.clone())
+            })
+            .is_none()
+    );
+    let other = projection(
+        shells.declarations()[0].id(),
+        NamespacePath::new("main"),
+        "Q",
+        SymbolKind::Predicate,
+        DefinitionKind::Predicate,
+    );
+    let ambiguous = collect(source_id, &shells, &[base.clone(), other]);
+    assert!(ambiguous.diagnostics().is_empty());
+    assert!(
+        ambiguous
+            .pair_exported_lexical_declarations(&locals, |_| Some(mapped.clone()))
+            .is_none()
+    );
+    let overlap = shells_for(
+        source_id,
+        vec![
+            visible_test_item(0, "private", SurfaceNodeKind::PredicateDefinition),
+            test_item(10, SurfaceNodeKind::PredicateDefinition),
+        ],
+    );
+    let projections = overlap
+        .declarations()
+        .iter()
+        .enumerate()
+        .map(|(index, shell)| {
+            projection(
+                shell.id(),
+                NamespacePath::new("main"),
+                &format!("P{index}"),
+                SymbolKind::Predicate,
+                DefinitionKind::Predicate,
+            )
+        })
+        .collect::<Vec<_>>();
+    let overlap = collect(source_id, &overlap, &projections);
+    assert!(overlap.diagnostics().is_empty());
+    assert!(
+        overlap
+            .pair_exported_lexical_declarations(&locals, |_| Some(exact_mapped(range(
+                source_id, 10, 11
+            ))))
+            .is_none()
+    );
+    let conflict = collect(source_id, &shells, &[base.clone(), base]);
+    assert!(!conflict.diagnostics().is_empty());
+    assert!(
+        conflict
+            .pair_exported_lexical_declarations(&locals, |_| Some(mapped.clone()))
+            .is_none()
+    );
 }
 
 #[test]
@@ -1973,6 +2328,17 @@ fn recovered_shells_stay_local_and_malformed_without_panicking() {
         Some(&DeclarationConflictClass::RecoveredShell)
     );
     assert!(result.env().lexical_summaries().is_empty());
+    let locals = mizar_lexer::collect_local_lexical_declarations(
+        &mizar_lexer::scan_raw("pred P: x R y means x = y;").unwrap(),
+        mizar_lexer::ModuleId::new("main"),
+    );
+    assert!(
+        result
+            .pair_exported_lexical_declarations(&locals, |_| Some(exact_mapped(range(
+                source_id, 1, 2
+            ))))
+            .is_none()
+    );
 }
 
 #[test]
@@ -3962,6 +4328,15 @@ const fn range(source_id: SourceId, start: usize, end: usize) -> SourceRange {
         source_id,
         start,
         end,
+    }
+}
+
+fn exact_mapped(primary: SourceRange) -> MappedSourceRange {
+    MappedSourceRange {
+        primary,
+        secondary: Vec::new(),
+        original_input: None,
+        kind: MappedSourceRangeKind::Exact,
     }
 }
 

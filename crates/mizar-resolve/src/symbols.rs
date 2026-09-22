@@ -413,6 +413,69 @@ impl SymbolCollectionResult {
         &self.diagnostics
     }
 
+    /// Pairs same-source lexical declarations with direct public source symbols.
+    /// The caller supplies the actual frontend locals and their preprocess mapping.
+    /// This checks correspondence, not source authenticity or summary completeness.
+    pub fn pair_exported_lexical_declarations<'a>(
+        &'a self,
+        locals: &'a mizar_lexer::LocalLexicalDeclarations,
+        mut map_span: impl FnMut(mizar_lexer::SourceSpan) -> Option<mizar_session::MappedSourceRange>,
+    ) -> Option<Vec<(&'a SymbolEntry, &'a mizar_lexer::LocalUserSymbolDeclaration)>> {
+        use mizar_lexer::UserSymbolKind;
+        if !self.diagnostics.is_empty() {
+            return None;
+        }
+        let module = self.env.module_id();
+        let mut pairs = Vec::new();
+        for local in &locals.user_symbols {
+            if local.declared_at.start >= local.declared_at.end
+                || local.source_module.as_str() != module.path().as_str()
+            {
+                return None;
+            }
+            let mapped = map_span(local.declared_at)?;
+            if mapped.kind != mizar_session::MappedSourceRangeKind::Exact
+                || mapped.primary.start >= mapped.primary.end
+            {
+                return None;
+            }
+            let mut candidates = self.env.symbols().iter().filter(|entry| {
+                matches!(entry.origin().anchor(), SourceAnchor::Range(range)
+                    if source_range_contains(*range, mapped.primary))
+            });
+            let entry = candidates.next()?;
+            if candidates.next().is_some() {
+                return None;
+            }
+            let origin = entry.origin();
+            let contribution = self.env.contributions().get(entry.contribution())?;
+            if origin.is_recovered()
+                || origin.source_id() != mapped.primary.source_id
+                || origin.module_id() != module
+                || entry.symbol().module() != module
+                || contribution.module() != module
+                || !matches!(contribution.kind(), ContributionKind::LocalSource { source_id }
+                    if *source_id == mapped.primary.source_id)
+                || !matches!(
+                    (local.kind, entry.kind()),
+                    (UserSymbolKind::Predicate, SymbolKind::Predicate)
+                        | (UserSymbolKind::Functor, SymbolKind::Functor)
+                        | (UserSymbolKind::Mode, SymbolKind::Mode)
+                        | (UserSymbolKind::Attribute, SymbolKind::Attribute)
+                        | (UserSymbolKind::Structure, SymbolKind::Structure)
+                )
+            {
+                return None;
+            }
+            match (entry.visibility(), entry.export_status()) {
+                (Visibility::Public, ExportStatus::Exported) => pairs.push((entry, local)),
+                (Visibility::Private, ExportStatus::LocalOnly) => {}
+                _ => return None,
+            }
+        }
+        Some(pairs)
+    }
+
     /// Consumes this result and returns its symbol environment.
     #[must_use]
     pub fn into_env(self) -> SymbolEnv {

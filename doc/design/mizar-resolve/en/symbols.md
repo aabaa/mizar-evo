@@ -556,3 +556,33 @@ readiness.
 The public-enum policy registration additionally includes:
 
 - `SourceNestedFraenkelFunctorOwnerError`
+
+## Source lexical export correspondence
+
+`SymbolCollectionResult::pair_exported_lexical_declarations(locals, map_span)`
+returns `Option<Vec<(&SymbolEntry, &LocalUserSymbolDeclaration)>>`. The caller
+must supply locals from the same frontend source as the collection and map
+lexical `declared_at` spans through that source's preprocess map. The mapper
+returns `Option<MappedSourceRange>`; only `Exact` mappings are supported, using
+their loaded `primary` range. Composite/degraded mappings reject the result. This operation checks correspondence, not source authenticity.
+It does not produce a complete module summary or bind artifact identities.
+
+Each nonempty mapped span must be contained by exactly one symbol origin range
+before visibility filtering. Its source id and module must agree
+with the origin and `ContributionKind::LocalSource { source_id }` contribution;
+recovered origins are rejected. Local lexer module names must equal
+the resolver module path (the existing frontend convention). Supported exact
+kind pairs are predicate, functor, mode, attribute and structure. Only
+`Visibility::Public` + `ExportStatus::Exported` pairs are retained;
+`Visibility::Private` + `ExportStatus::LocalOnly` pairs are omitted.
+`ReExported` and all other combinations,
+unsupported or missing owners, ambiguity, invalid/missing mappings, malformed
+lexical spans or collection diagnostics reject the entire result with `None`.
+Borrowed declarations preserve every field and input order; several lexical
+pieces may pair with the same symbol. Empty input yields an empty vector when
+collection diagnostics are empty. No metadata is inferred from resolver notation.
+
+Aliases, standalone operator declarations, absent prepass families, completeness,
+source authentication and artifact origin serialization remain producer work.
+This method considers `locals.user_symbols` only; it cannot authorize publication
+of a summary that omits other lexical effects.

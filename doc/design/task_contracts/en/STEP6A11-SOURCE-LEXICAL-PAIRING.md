@@ -1,0 +1,11 @@
+# Task STEP6A11-SOURCE-LEXICAL-PAIRING: source lexical export correspondence
+Canonical language: English; [Japanese pointer](../ja/STEP6A11-SOURCE-LEXICAL-PAIRING.md).
+Status: implemented. Tier: full. Owner: [resolver plan](../../mizar-resolve/en/00.crate_plan.md).
+Authority: [spec 11.4](../../../spec/en/11.symbol_management.md#114-public-and-private-symbols), [source lexical declarations](../../mizar-lexer/en/lexical_environment.md), [resolver symbols](../../mizar-resolve/en/symbols.md#source-lexical-export-correspondence).
+Gap: external dependency/design gap; source lexical metadata and resolver export ownership have no explicit correspondence, and their source coordinates differ after preprocessing.
+Scope: one method on existing SymbolCollectionResult, existing symbols tests and paired owner documents, contract/plan/todo links. No new type, field, adapter or code file.
+Contract: the linked symbols owner defines mapped-range correspondence, exact supported kinds, visibility filtering, fail-closed cases and caller provenance obligations. Return borrowed existing objects; do not derive lexer metadata from notation strings.
+Tests: `source_lexical_pairing_*` and the extended recovery case in [symbols tests](../../../../crates/mizar-resolve/src/symbols/tests.rs) use real lexer local collection and cover public/private matching, same-spelling distinct owners, multi-piece preservation, exact/non-exact mappings and source mismatch, missing/ambiguous/unsupported owners, recovery, collection diagnostics and deterministic input order. Empty input produces an empty vector when collection has no diagnostics.
+Forbidden: source authenticity or complete-summary claims, artifact identity/payload construction, alias/standalone-operator export policy, fake producers/providers, public diagnostics, spec/corpus/expectation/trace changes, task17, Step7/MVM. No semantic coverage credit.
+Require independent specification, test-sufficiency, implementation, volume/scope and consistency reviews; cargo fmt --check, cargo clippy --all-targets --all-features -- -D warnings, cargo test.
+Exit: supplied source lexical declarations either pair losslessly with unique direct public source symbols or fail closed; real frontend provenance binding and complete producer publication remain subsequent tasks.
