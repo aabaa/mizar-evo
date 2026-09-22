@@ -18,6 +18,7 @@ mizar-lexer = { path = "../mizar-lexer" }
 mizar-parser = { path = "../mizar-parser" }
 mizar-session = { path = "../mizar-session" }
 mizar-syntax = { path = "../mizar-syntax" }
+serde_json = "1"
 
 [dev-dependencies]
 criterion = "0.7"

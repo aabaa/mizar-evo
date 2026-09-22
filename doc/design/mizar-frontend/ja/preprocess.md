@@ -164,3 +164,36 @@ Step 2 の診断は、致命的エラーとして送出せず、`PreprocessedSou
 - 注釈構文はパーサー所有のため、字句テキストに残る。前処理は注釈を別個のメタデータチャネルに集約しない。task 20 により、ASCII 前提診断より前に、認識された単一行 string argument span を保持できるため、その span 内の Unicode と comment marker は受理される。コメントおよび string argument の外側にある非 ASCII は、引き続き字句前提診断である。
 - 合成空白は、厳密で第一のユーザー向けソース範囲にはならない。アンカーへのフォールバックで縮退したものは、session の `MappedSourceRange` の形を満たすためだけに許可される。
 - `PreprocessedSource` の生成は、`source_hash` とフロントエンドバージョンでキー付けされる。下流のトークン化と構文再利用は `lexical_hash` を使うので、字句テキストが変わらないコメントのみの編集では、後続成果物を保持できる。
+
+## PreprocessedSource storage
+
+`PreprocessedSource::canonical_bytes()` と `from_canonical_bytes(bytes, source_id)` は
+`FrontendOutput` の前処理結果を保持する compiler-internal 保存形式である。
+完全な phase publication や cache reuse を提供しない。
+schema は `mizar-frontend/preprocessed-source/v1`、上限 16 MiB の canonical UTF-8 JSON 配列とする。
+外側は schema、lexical text、comments、doc comments、import stubs、map segments、diagnostics の順とする。
+list 順序と全 metadata を保持し、range は `[start, end]`、offset は非負 `usize` 整数とする。文字列内容を保持し、空 list は `[]`、次の二つの optional 形式だけが `null` を使う。
+
+| 値 | Wire form |
+|---|---|
+| Comment kind | `"single_line"` / `"multi_line"` / `"documentation"` |
+| Comment / documentation | `[kind, range]` / `[range, raw_body]` |
+| Relative prefix / alias | `null` または `"current"`/`"parent"`; `null` または `[spelling, range]` |
+| Import path / stub | `[spelling, relative, components, source_segments, range]` / `[path, alias, range]` |
+| Original / removed-comment map | `["original", lexical_range, source_range]` / `["removed_comment", source_range, kind]` |
+| Synthetic-whitespace map | `["synthetic_whitespace", lexical_range, anchor_range]` |
+| Range / point anchor | `["range", range]` / `["point", offset]` |
+| Generated anchor | `["generated", range_or_point_anchor, reason]`（generated の入れ子なし） |
+| Diagnostic | `[kind, message, primary_range, secondary_anchors]` |
+
+診断 kind は `source.carriage_return`、`source.non_ascii_code`、`source.unterminated_multi_line_comment`、`import.missing_module_path`、`import.empty_module_path_component`、`import.missing_alias`、`import.missing_semicolon`、`import.unexpected_token`、`raw_import_scan` とする。
+未知の tag/field、不正な UTF-8、非 canonical bytes、上限超過、不正な record は部分結果なしの `None` とする。
+全 `SourceId` を保存対象から除外する。encode は source-map/range/anchor の ID が所有 source と一致することを要求し、
+decode は generated diagnostic anchor を含め全箇所に呼出し側の現在 ID を設定する。
+generated anchor の reason は元の bytes と既存の非 blank 条件（`trim().is_empty()` は拒否）を保つ。range は start <= end、
+lexical map 座標は lexical text 内の UTF-8 境界を要求する。
+encode は `PreprocessedSource.lexical_hash` と `LexicalSourceMap.lexical_text_len` の一致も検査する。省略する冗長 field はこの二つだけで、Hash は保存せず既存 hash 関数と byte length から復元する。
+再 encode は入力 bytes と一致しなければならない。decode で source loading・前処理・parse を再実行しない。
+source 内容の認証、loaded-text 境界、comment text、import の合法性、map の完全な被覆は検証しない。
+利用側は対応 source と preprocess map を `SpanBridge` に登録する。source production・診断・回復の所有者は維持する。
+直接依存 `serde_json` を使う。TokenStream と aggregate の保存は、完全な frontend 状態を引き渡すための後続課題とする。

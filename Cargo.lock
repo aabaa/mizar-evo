@@ -523,6 +523,7 @@ dependencies = [
  "mizar-parser",
  "mizar-session",
  "mizar-syntax",
+ "serde_json",
 ]
 
 [[package]]

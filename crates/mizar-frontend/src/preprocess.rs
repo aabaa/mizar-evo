@@ -10,17 +10,23 @@ use mizar_lexer::{
     ImportStub as LexerImportStub, RawModuleAlias as LexerRawModuleAlias,
     RawModulePath as LexerRawModulePath, RawModuleRelativePrefix as LexerRawModuleRelativePrefix,
     RawScanDiagnostic, RawScanDiagnosticCode, RawToken, RawTokenKind, RawTokenStream,
-    RecoverableRawTokenStream, SourcePreprocessMap, SourceSpan as LexerSourceSpan,
-    preprocess_source_for_lexing, scan_import_prelude, scan_raw_recoverable,
+    RecoverableRawTokenStream, SourcePreprocessMap, SourcePreprocessMapSegment,
+    SourceSpan as LexerSourceSpan, preprocess_source_for_lexing, scan_import_prelude,
+    scan_raw_recoverable,
 };
 /// Re-exported import pre-scan diagnostic codes from the lexer crate.
 pub use mizar_lexer::{ImportPrescanDiagnosticCode, SourcePreprocessDiagnosticCode};
 /// Re-exported comment classification shared with session source maps.
 pub use mizar_session::CommentKind;
-use mizar_session::{Hash, MappedSourceRange, SourceAnchor, SourceId, SourceRange};
+use mizar_session::{
+    GeneratedSpanAnchor, GeneratedSpanOrigin, Hash, MappedSourceRange, SourceAnchor, SourceId,
+    SourceRange,
+};
 use std::sync::Arc;
 
 const LEXICAL_HASH_DOMAIN: &[u8] = b"mizar-frontend/preprocess/lexical-text/v1";
+const PREPROCESSED_SOURCE_SCHEMA: &str = "mizar-frontend/preprocessed-source/v1";
+const PREPROCESSED_SOURCE_MAX_BYTES: usize = 16 * 1024 * 1024;
 
 /// Preprocessed source text and metadata passed to later frontend phases.
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -41,6 +47,531 @@ pub struct PreprocessedSource {
     pub source_map: LexicalSourceMap,
     /// Recoverable diagnostics produced during preprocessing.
     pub diagnostics: Vec<PreprocessDiagnostic>,
+}
+
+impl PreprocessedSource {
+    /// Returns the canonical compiler-internal storage representation.
+    ///
+    /// The bytes preserve preprocessing output but do not publish a frontend
+    /// phase or grant cache reuse. Session source IDs are omitted and will be
+    /// rebound by [`Self::from_canonical_bytes`].
+    pub fn canonical_bytes(&self) -> Option<Vec<u8>> {
+        if self.source_map.source_id != self.source_id
+            || self.source_map.lexical_text_len != self.lexical_text.text.len()
+            || self.lexical_hash != lexical_hash(&self.lexical_text)
+        {
+            return None;
+        }
+
+        let comments = self
+            .comments
+            .iter()
+            .map(|comment| {
+                let kind = match comment.kind {
+                    CommentKind::SingleLine => "single_line",
+                    CommentKind::MultiLine => "multi_line",
+                    CommentKind::Documentation => "documentation",
+                    _ => return None,
+                };
+                Some(serde_json::json!([
+                    kind,
+                    encode_source_range(comment.source_range, self.source_id)?
+                ]))
+            })
+            .collect::<Option<Vec<_>>>()?;
+        let doc_comments = self
+            .doc_comments
+            .iter()
+            .map(|comment| {
+                Some(serde_json::json!([
+                    encode_source_range(comment.source_range, self.source_id)?,
+                    comment.raw_body.as_ref()
+                ]))
+            })
+            .collect::<Option<Vec<_>>>()?;
+        let import_stubs = self
+            .import_stubs
+            .iter()
+            .map(|stub| {
+                let relative = match stub.path.relative {
+                    Some(ImportStubRelativePrefix::Current) => serde_json::json!("current"),
+                    Some(ImportStubRelativePrefix::Parent) => serde_json::json!("parent"),
+                    None => serde_json::Value::Null,
+                };
+                let components = stub
+                    .path
+                    .components
+                    .iter()
+                    .map(|component| serde_json::json!(component.as_ref()))
+                    .collect::<Vec<_>>();
+                let source_segments = stub
+                    .path
+                    .source_segments
+                    .iter()
+                    .map(|range| encode_source_range(*range, self.source_id))
+                    .collect::<Option<Vec<_>>>()?;
+                let path = serde_json::json!([
+                    stub.path.spelling.as_ref(),
+                    relative,
+                    components,
+                    source_segments,
+                    encode_source_range(stub.path.span, self.source_id)?
+                ]);
+                let alias = match &stub.alias {
+                    Some(alias) => serde_json::json!([
+                        alias.spelling.as_ref(),
+                        encode_source_range(alias.span, self.source_id)?
+                    ]),
+                    None => serde_json::Value::Null,
+                };
+                Some(serde_json::json!([
+                    path,
+                    alias,
+                    encode_source_range(stub.span, self.source_id)?
+                ]))
+            })
+            .collect::<Option<Vec<_>>>()?;
+        let map_segments = self
+            .source_map
+            .preprocess_map
+            .segments
+            .iter()
+            .map(|segment| match segment {
+                SourcePreprocessMapSegment::Original { lexical, source }
+                    if valid_lexical_range(lexical.start, lexical.end, &self.lexical_text.text) =>
+                {
+                    Some(serde_json::json!([
+                        "original",
+                        encode_offsets(lexical.start, lexical.end)?,
+                        encode_offsets(source.start, source.end)?
+                    ]))
+                }
+                SourcePreprocessMapSegment::RemovedComment { source, kind } => {
+                    let kind = match kind {
+                        LexerCommentKind::SingleLine => "single_line",
+                        LexerCommentKind::MultiLine => "multi_line",
+                        LexerCommentKind::Documentation => "documentation",
+                        _ => return None,
+                    };
+                    Some(serde_json::json!([
+                        "removed_comment",
+                        encode_offsets(source.start, source.end)?,
+                        kind
+                    ]))
+                }
+                SourcePreprocessMapSegment::SyntheticWhitespace { lexical, anchor }
+                    if valid_lexical_range(lexical.start, lexical.end, &self.lexical_text.text) =>
+                {
+                    Some(serde_json::json!([
+                        "synthetic_whitespace",
+                        encode_offsets(lexical.start, lexical.end)?,
+                        encode_offsets(anchor.start, anchor.end)?
+                    ]))
+                }
+                _ => None,
+            })
+            .collect::<Option<Vec<_>>>()?;
+        let diagnostics = self
+            .diagnostics
+            .iter()
+            .map(|diagnostic| {
+                let kind = match diagnostic.kind {
+                    PreprocessDiagnosticKind::SourcePrecondition(code) => match code {
+                        SourcePreprocessDiagnosticCode::CarriageReturn => "source.carriage_return",
+                        SourcePreprocessDiagnosticCode::NonAsciiCode => "source.non_ascii_code",
+                        SourcePreprocessDiagnosticCode::UnterminatedMultiLineComment => {
+                            "source.unterminated_multi_line_comment"
+                        }
+                        _ => return None,
+                    },
+                    PreprocessDiagnosticKind::ImportPrescan(code) => match code {
+                        ImportPrescanDiagnosticCode::MissingModulePath => {
+                            "import.missing_module_path"
+                        }
+                        ImportPrescanDiagnosticCode::EmptyModulePathComponent => {
+                            "import.empty_module_path_component"
+                        }
+                        ImportPrescanDiagnosticCode::MissingAlias => "import.missing_alias",
+                        ImportPrescanDiagnosticCode::MissingSemicolon => "import.missing_semicolon",
+                        ImportPrescanDiagnosticCode::UnexpectedToken => "import.unexpected_token",
+                        _ => return None,
+                    },
+                    PreprocessDiagnosticKind::RawImportScan => "raw_import_scan",
+                };
+                let secondary = diagnostic
+                    .secondary
+                    .iter()
+                    .map(|anchor| match anchor {
+                        SourceAnchor::Range(range) => Some(serde_json::json!([
+                            "range",
+                            encode_source_range(*range, self.source_id)?
+                        ])),
+                        SourceAnchor::Point { source_id, offset }
+                            if *source_id == self.source_id =>
+                        {
+                            Some(serde_json::json!(["point", offset]))
+                        }
+                        SourceAnchor::Generated(origin) => {
+                            let inner = match origin.anchor() {
+                                GeneratedSpanAnchor::Range(range) => serde_json::json!([
+                                    "range",
+                                    encode_source_range(range, self.source_id)?
+                                ]),
+                                GeneratedSpanAnchor::Point { source_id, offset }
+                                    if source_id == self.source_id =>
+                                {
+                                    serde_json::json!(["point", offset])
+                                }
+                                _ => return None,
+                            };
+                            if origin.reason().trim().is_empty() {
+                                return None;
+                            }
+                            Some(serde_json::json!(["generated", inner, origin.reason()]))
+                        }
+                        _ => None,
+                    })
+                    .collect::<Option<Vec<_>>>()?;
+                Some(serde_json::json!([
+                    kind,
+                    diagnostic.message.as_ref(),
+                    encode_source_range(diagnostic.primary, self.source_id)?,
+                    secondary
+                ]))
+            })
+            .collect::<Option<Vec<_>>>()?;
+
+        let value = serde_json::json!([
+            PREPROCESSED_SOURCE_SCHEMA,
+            self.lexical_text.text.as_ref(),
+            comments,
+            doc_comments,
+            import_stubs,
+            map_segments,
+            diagnostics
+        ]);
+        let bytes = serde_json::to_vec(&value).ok()?;
+        (bytes.len() <= PREPROCESSED_SOURCE_MAX_BYTES).then_some(bytes)
+    }
+
+    /// Decodes canonical compiler-internal storage and rebinds every retained
+    /// source range and anchor to `source_id` for the current session.
+    ///
+    /// This does not load source text, rerun preprocessing, or register the
+    /// decoded map with a [`SpanBridge`]. Consumers must register the matching
+    /// source and map before using source mappings.
+    pub fn from_canonical_bytes(bytes: &[u8], source_id: SourceId) -> Option<Self> {
+        if bytes.len() > PREPROCESSED_SOURCE_MAX_BYTES {
+            return None;
+        }
+        let value: serde_json::Value = serde_json::from_slice(bytes).ok()?;
+        let [
+            schema,
+            lexical_text,
+            comments,
+            doc_comments,
+            import_stubs,
+            map_segments,
+            diagnostics,
+        ] = value.as_array()?.as_slice()
+        else {
+            return None;
+        };
+        if schema.as_str()? != PREPROCESSED_SOURCE_SCHEMA {
+            return None;
+        }
+
+        let lexical_text = LexicalText {
+            text: Arc::<str>::from(lexical_text.as_str()?),
+        };
+        let comments = comments
+            .as_array()?
+            .iter()
+            .map(|value| {
+                let [kind, range] = value.as_array()?.as_slice() else {
+                    return None;
+                };
+                let kind = match kind.as_str()? {
+                    "single_line" => CommentKind::SingleLine,
+                    "multi_line" => CommentKind::MultiLine,
+                    "documentation" => CommentKind::Documentation,
+                    _ => return None,
+                };
+                Some(Comment {
+                    kind,
+                    source_range: decode_source_range(range, source_id)?,
+                })
+            })
+            .collect::<Option<Vec<_>>>()?;
+        let doc_comments = doc_comments
+            .as_array()?
+            .iter()
+            .map(|value| {
+                let [range, raw_body] = value.as_array()?.as_slice() else {
+                    return None;
+                };
+                Some(DocComment {
+                    source_range: decode_source_range(range, source_id)?,
+                    raw_body: Arc::<str>::from(raw_body.as_str()?),
+                })
+            })
+            .collect::<Option<Vec<_>>>()?;
+        let import_stubs = import_stubs
+            .as_array()?
+            .iter()
+            .map(|value| {
+                let [path, alias, span] = value.as_array()?.as_slice() else {
+                    return None;
+                };
+                let [spelling, relative, components, source_segments, path_span] =
+                    path.as_array()?.as_slice()
+                else {
+                    return None;
+                };
+                let relative = match relative {
+                    serde_json::Value::Null => None,
+                    serde_json::Value::String(tag) if tag == "current" => {
+                        Some(ImportStubRelativePrefix::Current)
+                    }
+                    serde_json::Value::String(tag) if tag == "parent" => {
+                        Some(ImportStubRelativePrefix::Parent)
+                    }
+                    _ => return None,
+                };
+                let components = components
+                    .as_array()?
+                    .iter()
+                    .map(|component| Some(Arc::<str>::from(component.as_str()?)))
+                    .collect::<Option<Vec<_>>>()?;
+                let source_segments = source_segments
+                    .as_array()?
+                    .iter()
+                    .map(|range| decode_source_range(range, source_id))
+                    .collect::<Option<Vec<_>>>()?;
+                let alias = if alias.is_null() {
+                    None
+                } else {
+                    let [spelling, span] = alias.as_array()?.as_slice() else {
+                        return None;
+                    };
+                    Some(ImportStubAlias {
+                        spelling: Arc::<str>::from(spelling.as_str()?),
+                        span: decode_source_range(span, source_id)?,
+                    })
+                };
+                Some(ImportStub {
+                    path: ImportStubPath {
+                        spelling: Arc::<str>::from(spelling.as_str()?),
+                        relative,
+                        components,
+                        source_segments,
+                        span: decode_source_range(path_span, source_id)?,
+                    },
+                    alias,
+                    span: decode_source_range(span, source_id)?,
+                })
+            })
+            .collect::<Option<Vec<_>>>()?;
+        let map_segments = map_segments
+            .as_array()?
+            .iter()
+            .map(|value| {
+                let values = value.as_array()?;
+                match values.first()?.as_str()? {
+                    "original" => {
+                        let [_, lexical, source] = values.as_slice() else {
+                            return None;
+                        };
+                        let (start, end) = decode_offsets(lexical)?;
+                        if !valid_lexical_range(start, end, &lexical_text.text) {
+                            return None;
+                        }
+                        let (source_start, source_end) = decode_offsets(source)?;
+                        Some(SourcePreprocessMapSegment::Original {
+                            lexical: LexerSourceSpan { start, end },
+                            source: LexerSourceSpan {
+                                start: source_start,
+                                end: source_end,
+                            },
+                        })
+                    }
+                    "removed_comment" => {
+                        let [_, source, kind] = values.as_slice() else {
+                            return None;
+                        };
+                        let (start, end) = decode_offsets(source)?;
+                        let kind = match kind.as_str()? {
+                            "single_line" => LexerCommentKind::SingleLine,
+                            "multi_line" => LexerCommentKind::MultiLine,
+                            "documentation" => LexerCommentKind::Documentation,
+                            _ => return None,
+                        };
+                        Some(SourcePreprocessMapSegment::RemovedComment {
+                            source: LexerSourceSpan { start, end },
+                            kind,
+                        })
+                    }
+                    "synthetic_whitespace" => {
+                        let [_, lexical, anchor] = values.as_slice() else {
+                            return None;
+                        };
+                        let (start, end) = decode_offsets(lexical)?;
+                        if !valid_lexical_range(start, end, &lexical_text.text) {
+                            return None;
+                        }
+                        let (anchor_start, anchor_end) = decode_offsets(anchor)?;
+                        Some(SourcePreprocessMapSegment::SyntheticWhitespace {
+                            lexical: LexerSourceSpan { start, end },
+                            anchor: LexerSourceSpan {
+                                start: anchor_start,
+                                end: anchor_end,
+                            },
+                        })
+                    }
+                    _ => None,
+                }
+            })
+            .collect::<Option<Vec<_>>>()?;
+        let diagnostics = diagnostics
+            .as_array()?
+            .iter()
+            .map(|value| {
+                let [kind, message, primary, secondary] = value.as_array()?.as_slice() else {
+                    return None;
+                };
+                let kind = match kind.as_str()? {
+                    "source.carriage_return" => PreprocessDiagnosticKind::SourcePrecondition(
+                        SourcePreprocessDiagnosticCode::CarriageReturn,
+                    ),
+                    "source.non_ascii_code" => PreprocessDiagnosticKind::SourcePrecondition(
+                        SourcePreprocessDiagnosticCode::NonAsciiCode,
+                    ),
+                    "source.unterminated_multi_line_comment" => {
+                        PreprocessDiagnosticKind::SourcePrecondition(
+                            SourcePreprocessDiagnosticCode::UnterminatedMultiLineComment,
+                        )
+                    }
+                    "import.missing_module_path" => PreprocessDiagnosticKind::ImportPrescan(
+                        ImportPrescanDiagnosticCode::MissingModulePath,
+                    ),
+                    "import.empty_module_path_component" => {
+                        PreprocessDiagnosticKind::ImportPrescan(
+                            ImportPrescanDiagnosticCode::EmptyModulePathComponent,
+                        )
+                    }
+                    "import.missing_alias" => PreprocessDiagnosticKind::ImportPrescan(
+                        ImportPrescanDiagnosticCode::MissingAlias,
+                    ),
+                    "import.missing_semicolon" => PreprocessDiagnosticKind::ImportPrescan(
+                        ImportPrescanDiagnosticCode::MissingSemicolon,
+                    ),
+                    "import.unexpected_token" => PreprocessDiagnosticKind::ImportPrescan(
+                        ImportPrescanDiagnosticCode::UnexpectedToken,
+                    ),
+                    "raw_import_scan" => PreprocessDiagnosticKind::RawImportScan,
+                    _ => return None,
+                };
+                Some(PreprocessDiagnostic {
+                    kind,
+                    message: Arc::<str>::from(message.as_str()?),
+                    primary: decode_source_range(primary, source_id)?,
+                    secondary: secondary
+                        .as_array()?
+                        .iter()
+                        .map(|anchor| {
+                            let (base, reason) = match anchor.as_array()?.as_slice() {
+                                [tag, base, reason] if tag.as_str()? == "generated" => {
+                                    (base, Some(reason.as_str()?))
+                                }
+                                _ => (anchor, None),
+                            };
+                            let fields = base.as_array()?;
+                            let anchor = match fields.as_slice() {
+                                [tag, range] if tag.as_str()? == "range" => {
+                                    SourceAnchor::Range(decode_source_range(range, source_id)?)
+                                }
+                                [tag, offset] if tag.as_str()? == "point" => SourceAnchor::Point {
+                                    source_id,
+                                    offset: usize::try_from(offset.as_u64()?).ok()?,
+                                },
+                                _ => return None,
+                            };
+                            Some(match reason {
+                                Some(reason) => {
+                                    let generated_anchor = match anchor {
+                                        SourceAnchor::Range(range) => {
+                                            GeneratedSpanAnchor::Range(range)
+                                        }
+                                        SourceAnchor::Point { source_id, offset } => {
+                                            GeneratedSpanAnchor::Point { source_id, offset }
+                                        }
+                                        _ => return None,
+                                    };
+                                    SourceAnchor::Generated(
+                                        GeneratedSpanOrigin::new(generated_anchor, reason).ok()?,
+                                    )
+                                }
+                                None => anchor,
+                            })
+                        })
+                        .collect::<Option<Vec<_>>>()?,
+                })
+            })
+            .collect::<Option<Vec<_>>>()?;
+
+        let source = Self {
+            source_id,
+            lexical_hash: lexical_hash(&lexical_text),
+            source_map: LexicalSourceMap {
+                source_id,
+                lexical_text_len: lexical_text.text.len(),
+                preprocess_map: SourcePreprocessMap {
+                    segments: map_segments,
+                },
+            },
+            lexical_text,
+            comments,
+            doc_comments,
+            import_stubs,
+            diagnostics,
+        };
+        (source.canonical_bytes()?.as_slice() == bytes).then_some(source)
+    }
+}
+
+fn encode_offsets(start: usize, end: usize) -> Option<serde_json::Value> {
+    (start <= end).then(|| serde_json::json!([start, end]))
+}
+
+fn decode_offsets(value: &serde_json::Value) -> Option<(usize, usize)> {
+    let [start, end] = value.as_array()?.as_slice() else {
+        return None;
+    };
+    let start = usize::try_from(start.as_u64()?).ok()?;
+    let end = usize::try_from(end.as_u64()?).ok()?;
+    (start <= end).then_some((start, end))
+}
+
+fn encode_source_range(range: SourceRange, source_id: SourceId) -> Option<serde_json::Value> {
+    (range.source_id == source_id)
+        .then(|| encode_offsets(range.start, range.end))
+        .flatten()
+}
+
+fn decode_source_range(value: &serde_json::Value, source_id: SourceId) -> Option<SourceRange> {
+    let (start, end) = decode_offsets(value)?;
+    Some(SourceRange {
+        source_id,
+        start,
+        end,
+    })
+}
+
+fn valid_lexical_range(start: usize, end: usize, lexical_text: &str) -> bool {
+    start <= end
+        && end <= lexical_text.len()
+        && lexical_text.is_char_boundary(start)
+        && lexical_text.is_char_boundary(end)
 }
 
 /// Interned lexical text produced by preprocessing.
@@ -1181,6 +1712,363 @@ open block";
                 .iter()
                 .all(|diagnostic| diagnostic.secondary.is_empty())
         );
+    }
+
+    #[test]
+    fn preprocessing_storage_round_trips_real_outputs_with_fresh_source_ids() {
+        use super::PreprocessedSource;
+        let mut comment_tags = std::collections::BTreeSet::new();
+        let mut map_tags = std::collections::BTreeSet::new();
+        let mut relative_tags = std::collections::BTreeSet::new();
+        let ids = InMemorySessionIdAllocator::new();
+        ids.next_source_id(snapshot_id(2)).unwrap();
+        let fresh_id = ids.next_source_id(snapshot_id(2)).unwrap();
+        for text in [
+            "",
+            "::: doc β\nalpha::=hidden=::beta :: tail\n",
+            "import std.algebra.group, .utils as U, ..common;\nimport algebra.linear.{eigen_value, jordan};\ndefinition\nend;",
+            "import ; import foo..bar; import foo as ; import foo bar;",
+            "import foo",
+            "import foo, §, bar;\nα\r\n::= unfinished",
+            "@latex(\"β :: text\")\nalpha",
+        ] {
+            let (mut source, mut bridge) = registered_source_unit(text);
+            assert_ne!(fresh_id, source.source_id);
+            let original = preprocess(&source, &mut bridge).unwrap();
+            let bytes = original.canonical_bytes().unwrap();
+            let wire: serde_json::Value = serde_json::from_slice(&bytes).unwrap();
+            for comment in wire[2].as_array().unwrap() {
+                comment_tags.insert(comment[0].as_str().unwrap().to_owned());
+            }
+            for segment in wire[5].as_array().unwrap() {
+                map_tags.insert(segment[0].as_str().unwrap().to_owned());
+                if segment[0] == "removed_comment" {
+                    comment_tags.insert(segment[2].as_str().unwrap().to_owned());
+                }
+            }
+            for import in wire[4].as_array().unwrap() {
+                if let Some(tag) = import[0][1].as_str() {
+                    relative_tags.insert(tag.to_owned());
+                }
+            }
+            assert_eq!(
+                PreprocessedSource::from_canonical_bytes(&bytes, source.source_id),
+                Some(original.clone()),
+                "{text:?}"
+            );
+            source.source_id = fresh_id;
+            source.line_map = LineMap::with_source(fresh_id, text);
+            let mut fresh_bridge = SpanBridge::new();
+            register_source_unit(&mut fresh_bridge, &source).unwrap();
+            let expected = preprocess(&source, &mut fresh_bridge).unwrap();
+            let restored = PreprocessedSource::from_canonical_bytes(&bytes, fresh_id).unwrap();
+            assert_eq!(restored, expected, "{text:?}");
+            assert_eq!(restored.canonical_bytes().unwrap(), bytes);
+            if text.is_empty() {
+                assert_eq!(
+                    bytes,
+                    br#"["mizar-frontend/preprocessed-source/v1","",[],[],[],[],[]]"#
+                );
+            }
+        }
+        assert_eq!(
+            comment_tags.into_iter().collect::<Vec<_>>(),
+            ["documentation", "multi_line", "single_line"]
+        );
+        assert_eq!(
+            map_tags.into_iter().collect::<Vec<_>>(),
+            ["original", "removed_comment", "synthetic_whitespace"]
+        );
+        assert_eq!(
+            relative_tags.into_iter().collect::<Vec<_>>(),
+            ["current", "parent"]
+        );
+    }
+
+    #[test]
+    fn preprocessing_storage_preserves_diagnostic_kinds_and_all_anchor_forms() {
+        use super::{PreprocessDiagnostic, PreprocessedSource};
+        use mizar_session::{GeneratedSpanAnchor, GeneratedSpanOrigin, SourceAnchor};
+        let (source, mut bridge) = registered_source_unit("alpha");
+        let mut original = preprocess(&source, &mut bridge).unwrap();
+        let range = SourceRange {
+            source_id: source.source_id,
+            start: 1,
+            end: 3,
+        };
+        let anchors = vec![
+            SourceAnchor::Range(range),
+            SourceAnchor::Point {
+                source_id: source.source_id,
+                offset: 4,
+            },
+            SourceAnchor::Generated(
+                GeneratedSpanOrigin::new(GeneratedSpanAnchor::Range(range), " range β ").unwrap(),
+            ),
+            SourceAnchor::Generated(
+                GeneratedSpanOrigin::new(
+                    GeneratedSpanAnchor::Point {
+                        source_id: source.source_id,
+                        offset: 2,
+                    },
+                    " point ",
+                )
+                .unwrap(),
+            ),
+        ];
+        let kinds = [
+            PreprocessDiagnosticKind::SourcePrecondition(
+                SourcePreprocessDiagnosticCode::CarriageReturn,
+            ),
+            PreprocessDiagnosticKind::SourcePrecondition(
+                SourcePreprocessDiagnosticCode::NonAsciiCode,
+            ),
+            PreprocessDiagnosticKind::SourcePrecondition(
+                SourcePreprocessDiagnosticCode::UnterminatedMultiLineComment,
+            ),
+            PreprocessDiagnosticKind::ImportPrescan(ImportPrescanDiagnosticCode::MissingModulePath),
+            PreprocessDiagnosticKind::ImportPrescan(
+                ImportPrescanDiagnosticCode::EmptyModulePathComponent,
+            ),
+            PreprocessDiagnosticKind::ImportPrescan(ImportPrescanDiagnosticCode::MissingAlias),
+            PreprocessDiagnosticKind::ImportPrescan(ImportPrescanDiagnosticCode::MissingSemicolon),
+            PreprocessDiagnosticKind::ImportPrescan(ImportPrescanDiagnosticCode::UnexpectedToken),
+            PreprocessDiagnosticKind::RawImportScan,
+        ];
+        original.diagnostics = kinds
+            .into_iter()
+            .map(|kind| PreprocessDiagnostic {
+                kind,
+                message: Arc::from("message β\n\"quoted\""),
+                primary: range,
+                secondary: anchors.clone(),
+            })
+            .collect();
+        let bytes = original.canonical_bytes().unwrap();
+        let ids = InMemorySessionIdAllocator::new();
+        ids.next_source_id(snapshot_id(2)).unwrap();
+        let fresh_id = ids.next_source_id(snapshot_id(2)).unwrap();
+        assert_ne!(fresh_id, source.source_id);
+        let restored = PreprocessedSource::from_canonical_bytes(&bytes, fresh_id).unwrap();
+        let mut expected = original.clone();
+        expected.source_id = fresh_id;
+        expected.source_map.source_id = fresh_id;
+        for diagnostic in &mut expected.diagnostics {
+            diagnostic.primary.source_id = fresh_id;
+            for anchor in &mut diagnostic.secondary {
+                match anchor {
+                    SourceAnchor::Range(range) => range.source_id = fresh_id,
+                    SourceAnchor::Point { source_id, .. } => *source_id = fresh_id,
+                    SourceAnchor::Generated(origin) => {
+                        let rebound = match origin.anchor() {
+                            GeneratedSpanAnchor::Range(mut range) => {
+                                range.source_id = fresh_id;
+                                GeneratedSpanAnchor::Range(range)
+                            }
+                            GeneratedSpanAnchor::Point { offset, .. } => {
+                                GeneratedSpanAnchor::Point {
+                                    source_id: fresh_id,
+                                    offset,
+                                }
+                            }
+                            _ => unreachable!(),
+                        };
+                        *origin = GeneratedSpanOrigin::new(rebound, origin.reason()).unwrap();
+                    }
+                    _ => unreachable!(),
+                }
+            }
+        }
+        assert_eq!(restored, expected);
+        assert_eq!(restored.canonical_bytes().unwrap(), bytes);
+        let value: serde_json::Value = serde_json::from_slice(&bytes).unwrap();
+        assert_eq!(
+            value[6]
+                .as_array()
+                .unwrap()
+                .iter()
+                .map(|diagnostic| diagnostic[0].as_str().unwrap())
+                .collect::<Vec<_>>(),
+            vec![
+                "source.carriage_return",
+                "source.non_ascii_code",
+                "source.unterminated_multi_line_comment",
+                "import.missing_module_path",
+                "import.empty_module_path_component",
+                "import.missing_alias",
+                "import.missing_semicolon",
+                "import.unexpected_token",
+                "raw_import_scan",
+            ]
+        );
+        assert_eq!(
+            value[6][0][3],
+            serde_json::json!([
+                ["range", [1, 3]],
+                ["point", 4],
+                ["generated", ["range", [1, 3]], " range β "],
+                ["generated", ["point", 2], " point "]
+            ])
+        );
+        let mut foreign_primary = expected.clone();
+        foreign_primary.diagnostics[0].primary.source_id = source.source_id;
+        assert!(foreign_primary.canonical_bytes().is_none());
+        for (pointer, replacement) in [
+            ("/6/0/0", serde_json::json!("unknown")),
+            ("/6/0/3/0/0", serde_json::json!("unknown")),
+            ("/6/0/3/1/1", serde_json::json!(-1)),
+            (
+                "/6/0/3/2/1",
+                serde_json::json!(["generated", ["point", 0], "nested"]),
+            ),
+            ("/6/0/3/2/2", serde_json::json!(" \t\n")),
+            ("/6/0/3/3/1/1", serde_json::json!(1.5)),
+        ] {
+            let mut invalid = value.clone();
+            *invalid.pointer_mut(pointer).unwrap() = replacement;
+            assert!(
+                PreprocessedSource::from_canonical_bytes(
+                    &serde_json::to_vec(&invalid).unwrap(),
+                    fresh_id
+                )
+                .is_none(),
+                "{pointer}"
+            );
+        }
+        // Each anchor variant must reject an old identity during encoding.
+        for (index, anchor) in anchors.iter().enumerate() {
+            let mut invalid = expected.clone();
+            invalid.diagnostics[0].secondary[index] = anchor.clone();
+            assert!(invalid.canonical_bytes().is_none());
+        }
+    }
+
+    #[test]
+    fn preprocessing_storage_rejects_structural_and_coordinate_corruption() {
+        use super::PreprocessedSource;
+        use serde_json::{Value, json};
+        let (source, mut bridge) =
+            registered_source_unit("::: β\nimport .foo as F;\nalpha::=hidden=::beta :: tail\n");
+        let original = preprocess(&source, &mut bridge).unwrap();
+        let bytes = original.canonical_bytes().unwrap();
+        let value: Value = serde_json::from_slice(&bytes).unwrap();
+        let reject = |bytes: &[u8]| {
+            assert!(PreprocessedSource::from_canonical_bytes(bytes, source.source_id).is_none())
+        };
+        for invalid in [
+            b"".as_slice(),
+            b"null",
+            b"{}",
+            b"\xff",
+            &bytes[..bytes.len() - 1],
+        ] {
+            reject(invalid);
+        }
+        let mut spaced = bytes.clone();
+        spaced.push(b' ');
+        reject(&spaced);
+        reject(&serde_json::to_vec_pretty(&value).unwrap());
+        for (pointer, replacement) in [
+            ("/0", json!("unknown")),
+            ("/1", Value::Null),
+            ("/2/0/0", json!("unknown")),
+            ("/2/0/1", json!([2, 1])),
+            ("/3/0/0/0", json!(-1)),
+            ("/3/0/0/1", json!(1.5)),
+            ("/4/0/0/1", json!("unknown")),
+            ("/4/0/0/2/0", json!(7)),
+            ("/4/0/0/3/0", json!([4, 3])),
+            ("/4/0/1", json!(false)),
+            ("/5/0/0", json!("unknown")),
+        ] {
+            let mut invalid = value.clone();
+            *invalid.pointer_mut(pointer).unwrap() = replacement;
+            reject(&serde_json::to_vec(&invalid).unwrap());
+        }
+        // Every non-list record rejects extra fields, including nested ranges.
+        for pointer in [
+            "", "/2/0", "/2/0/1", "/3/0", "/4/0", "/4/0/0", "/4/0/1", "/5/0",
+        ] {
+            let mut invalid = value.clone();
+            invalid
+                .pointer_mut(pointer)
+                .unwrap()
+                .as_array_mut()
+                .unwrap()
+                .push(Value::Null);
+            reject(&serde_json::to_vec(&invalid).unwrap());
+        }
+        // All map variants have distinct ranges and tags; exercise each directly.
+        for map in [
+            json!(["original", [0, 9999], [0, 1]]),
+            json!(["original", [1, 0], [0, 1]]),
+            json!(["original", [0, 1], [2, 1]]),
+            json!(["removed_comment", [2, 1], "single_line"]),
+            json!(["removed_comment", [0, 1], "unknown"]),
+            json!(["synthetic_whitespace", [0, 9999], [0, 1]]),
+            json!(["synthetic_whitespace", [0, 1], [2, 1]]),
+        ] {
+            let mut invalid = value.clone();
+            invalid[5] = json!([map]);
+            reject(&serde_json::to_vec(&invalid).unwrap());
+        }
+        let mut unicode = value.clone();
+        unicode[1] = json!("β");
+        unicode[5] = json!([["original", [0, 1], [0, 1]]]);
+        reject(&serde_json::to_vec(&unicode).unwrap());
+        let ids = InMemorySessionIdAllocator::new();
+        ids.next_source_id(snapshot_id(2)).unwrap();
+        let foreign_id = ids.next_source_id(snapshot_id(2)).unwrap();
+        assert_ne!(foreign_id, source.source_id);
+        for field in 0..9 {
+            let mut invalid = original.clone();
+            match field {
+                0 => invalid.source_map.source_id = foreign_id,
+                1 => invalid.comments[0].source_range.source_id = foreign_id,
+                2 => invalid.doc_comments[0].source_range.source_id = foreign_id,
+                3 => invalid.import_stubs[0].span.source_id = foreign_id,
+                4 => invalid.import_stubs[0].path.span.source_id = foreign_id,
+                5 => invalid.import_stubs[0].path.source_segments[0].source_id = foreign_id,
+                6 => {
+                    invalid.import_stubs[0]
+                        .alias
+                        .as_mut()
+                        .unwrap()
+                        .span
+                        .source_id = foreign_id
+                }
+                7 => invalid.lexical_hash = Hash::from_bytes([0; Hash::BYTE_LEN]),
+                8 => invalid.source_map.lexical_text_len += 1,
+                _ => unreachable!(),
+            }
+            assert!(invalid.canonical_bytes().is_none(), "field {field}");
+        }
+    }
+
+    #[test]
+    fn preprocessing_storage_enforces_payload_limit() {
+        use super::PreprocessedSource;
+        let (source, mut bridge) = registered_source_unit("");
+        let mut original = preprocess(&source, &mut bridge).unwrap();
+        let overhead = original.canonical_bytes().unwrap().len();
+        original.lexical_text.text = Arc::from("a".repeat(16 * 1024 * 1024 - overhead));
+        original.lexical_hash = lexical_hash(&original.lexical_text);
+        original.source_map.lexical_text_len = original.lexical_text.text.len();
+        let bytes = original.canonical_bytes().unwrap();
+        assert_eq!(bytes.len(), 16 * 1024 * 1024);
+        assert_eq!(
+            PreprocessedSource::from_canonical_bytes(&bytes, source.source_id),
+            Some(original.clone())
+        );
+        let mut oversized = bytes;
+        // Add a byte inside lexical text, preserving canonical JSON.
+        let text_start = br#"["mizar-frontend/preprocessed-source/v1",""#.len();
+        oversized.insert(text_start, b'a');
+        assert!(PreprocessedSource::from_canonical_bytes(&oversized, source.source_id).is_none());
+        original.lexical_text.text = Arc::from(format!("{}a", original.lexical_text.as_str()));
+        original.lexical_hash = lexical_hash(&original.lexical_text);
+        original.source_map.lexical_text_len += 1;
+        assert!(original.canonical_bytes().is_none());
     }
 
     fn source_range_of(

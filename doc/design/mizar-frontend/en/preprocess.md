@@ -285,3 +285,48 @@ Key scenarios:
 - `PreprocessedSource` production is keyed by `source_hash` plus frontend version.
   Downstream tokenization and syntax reuse use `lexical_hash` so comment-only
   edits can preserve later artifacts when the lexical text is unchanged.
+
+## PreprocessedSource storage
+
+`PreprocessedSource::canonical_bytes()` and `from_canonical_bytes(bytes, source_id)`
+provide compiler-internal storage for the retained preprocessing component of
+`FrontendOutput`. They do not publish a complete phase or grant cache reuse.
+The schema is `mizar-frontend/preprocessed-source/v1`, bounded to 16 MiB, using
+canonical UTF-8 JSON arrays with exact schema, tag and record shapes. The outer
+array contains schema, lexical text, comments, documentation comments, import
+stubs, preprocess-map segments and diagnostics, in that order. List order and
+all text, spelling, alias, range, map and diagnostic metadata are retained.
+Nested forms are fixed below; strings retain their contents and offsets are nonnegative `usize` integers. Empty lists use `[]`; only the two optional forms below use `null`.
+
+| Value | Wire form |
+|---|---|
+| Range | `[start, end]` |
+| Comment kind | `"single_line"`, `"multi_line"`, or `"documentation"` |
+| Comment / documentation | `[kind, range]` / `[range, raw_body]` |
+| Relative prefix / alias | `null` or `"current"`/`"parent"`; `null` or `[spelling, range]` |
+| Import path | `[spelling, relative, components, source_segments, range]` |
+| Import stub | `[path, alias, range]` |
+| Original / removed-comment map | `["original", lexical_range, source_range]` / `["removed_comment", source_range, kind]` |
+| Synthetic-whitespace map | `["synthetic_whitespace", lexical_range, anchor_range]` |
+| Range / point anchor | `["range", range]` / `["point", offset]` |
+| Generated anchor | `["generated", range_or_point_anchor, reason]`; no nested generated anchor |
+| Diagnostic | `[kind, message, primary_range, secondary_anchors]` |
+
+Diagnostic kind strings are `source.carriage_return`, `source.non_ascii_code`, `source.unterminated_multi_line_comment`, `import.missing_module_path`, `import.empty_module_path_component`, `import.missing_alias`, `import.missing_semicolon`, `import.unexpected_token`, or `raw_import_scan`.
+Unknown tags/fields, invalid UTF-8, noncanonical bytes, oversized payloads and malformed records yield `None`, never a partial result.
+Every session `SourceId` is omitted. Encoding requires all source-map, range and
+anchor identities to equal the owning source; decoding installs the caller's
+current ID everywhere, including generated diagnostic anchors. Generated-anchor
+reasons retain their bytes and the existing nonblank requirement (`trim().is_empty()` is rejected). Range endpoints must be ordered;
+lexical map coordinates must remain within lexical text on UTF-8 boundaries.
+Encoding also requires `PreprocessedSource.lexical_hash` and
+`LexicalSourceMap.lexical_text_len` to match lexical text. These are the only
+omitted derived fields; no Hash value is serialized. They are reconstructed by the existing hash
+function and byte length on decode. Canonical re-encoding must reproduce the
+input bytes. Decoding performs no source loading, preprocessing or parsing.
+This representation does not authenticate source content or validate loaded-text
+bounds, comment text, import legality or complete map coverage. Consumers still
+register the matching source and preprocess map through `SpanBridge` before
+using mappings. Source production, diagnostics and recovery retain their owners.
+The codec uses `serde_json` directly; TokenStream and aggregate storage remain
+separate prerequisites for carrying the complete retained frontend state.
