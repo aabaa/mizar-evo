@@ -24,6 +24,21 @@ load provisional lexical summaries, but those stubs are not authoritative.
 Semantic import resolution revalidates every import from `SurfaceAst` before it
 publishes resolver output.
 
+## Provisional Frontend Candidates
+
+`ImportPathCandidate::from_frontend_imports(&LexicalEnvironmentRequest)` returns
+`Option<Vec<Self>>` for trusted, unchanged frontend pre-scan stubs. It preserves
+request order as ordinals, components, relative prefixes, aliases and their
+ranges, and each stub's range. One source segment denotes a direct path; two
+retain branch base/member provenance. Other segment counts, mismatched request
+source ids or reversed ranges reject the entire batch; empty input succeeds.
+The method does not authenticate source text or decide import legality.
+The request carries no pre-scan diagnostics or AST recovery markers: partial
+stubs remain provisional and do not assert recovery-free syntax. Existing
+candidate recovery defaults are unchanged. Formal resolver publication must
+recollect and validate imports from `SurfaceAst`; this method neither builds a
+semantic graph nor provides lexical summaries or artifact access.
+
 ## Inputs
 
 - `SurfaceAst` import and export directive nodes, including source ranges,

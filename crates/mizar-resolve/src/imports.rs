@@ -46,6 +46,55 @@ pub struct ImportPathCandidate {
 }
 
 impl ImportPathCandidate {
+    /// Maps trusted frontend stubs for provisional lexical-summary lookup.
+    /// Does not establish recovery-free syntax or replace AST import validation.
+    pub fn from_frontend_imports(
+        request: &mizar_frontend::lexical_env::LexicalEnvironmentRequest<'_>,
+    ) -> Option<Vec<Self>> {
+        use mizar_frontend::preprocess::ImportStubRelativePrefix;
+
+        request
+            .import_stubs
+            .iter()
+            .enumerate()
+            .map(|(ordinal, stub)| {
+                if std::iter::once(&stub.span)
+                    .chain(std::iter::once(&stub.path.span))
+                    .chain(stub.path.source_segments.iter())
+                    .chain(stub.alias.iter().map(|alias| &alias.span))
+                    .any(|range| range.source_id != request.source_id || range.start > range.end)
+                {
+                    return None;
+                }
+                let prefix = match stub.path.relative {
+                    None => ImportPathPrefix::Unprefixed,
+                    Some(ImportStubRelativePrefix::Current) => ImportPathPrefix::Current,
+                    Some(ImportStubRelativePrefix::Parent) => ImportPathPrefix::Parent,
+                };
+                let mut candidate = Self::new(
+                    stub.path
+                        .components
+                        .iter()
+                        .map(ToString::to_string)
+                        .collect(),
+                    prefix,
+                    stub.alias.as_ref().map(|alias| alias.spelling.to_string()),
+                    stub.span,
+                    ordinal,
+                );
+                if let Some(alias) = &stub.alias {
+                    candidate = candidate.with_alias_range(alias.span);
+                }
+                match stub.path.source_segments.as_slice() {
+                    [_] => {}
+                    [base, member] => candidate = candidate.with_branch_provenance(*base, *member),
+                    _ => return None,
+                }
+                Some(candidate)
+            })
+            .collect()
+    }
+
     /// Creates an import path candidate.
     #[must_use]
     pub fn new(

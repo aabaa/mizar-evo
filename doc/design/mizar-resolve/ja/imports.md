@@ -23,6 +23,19 @@ candidate import stub を浅く pre-scan できるが、それらの stub は正
 semantic import resolution は resolver output を公開する前に、`SurfaceAst` から
 すべての import を再検証する。
 
+## 暫定 frontend 候補
+
+`ImportPathCandidate::from_frontend_imports(&LexicalEnvironmentRequest)` は、
+信頼された未変更の事前走査 stub から `Option<Vec<Self>>` を返す。
+要求順を ordinal とし、構成要素、相対接頭辞、別名と範囲、stub 範囲を保持する。
+source segment が一つなら直接パス、二つなら分岐の基底・メンバー範囲を保持する。
+それ以外の個数、要求と異なる source id、逆転範囲では全件を拒否し、空入力は成功する。
+ソース本文の認証や import の適法性判定は行わない。
+要求には事前走査診断や AST 回復マーカーがないため、部分 stub は暫定のままであり、
+回復なしの構文とは主張しない。既存候補の回復既定値は変えない。
+正式な resolver 公開は `SurfaceAst` から import を再収集・検証する必要がある。
+このメソッドは意味グラフ、字句 summary、artifact アクセスを提供しない。
+
 ## 入力
 
 - `SurfaceAst` の import / export directive node。source range、source order、
