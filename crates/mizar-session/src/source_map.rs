@@ -369,7 +369,7 @@ impl GeneratedSpanOrigin {
         Ok(Self { anchor, reason })
     }
 
-    pub fn anchor(&self) -> GeneratedSpanAnchor {
+    pub const fn anchor(&self) -> GeneratedSpanAnchor {
         self.anchor
     }
 

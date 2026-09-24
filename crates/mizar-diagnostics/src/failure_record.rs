@@ -2,7 +2,9 @@
 
 use std::{cmp::Ordering, collections::BTreeMap, error::Error, fmt};
 
-use mizar_session::{BuildSnapshotId, NormalizedPath, PackageId, SourceRange};
+use mizar_session::{
+    BuildSnapshotId, GeneratedSpanAnchor, NormalizedPath, PackageId, SourceAnchor, SourceRange,
+};
 
 use crate::registry::{DiagnosticCode, DiagnosticRegistry, DiagnosticSeverity, DiagnosticStatus};
 use crate::{explain::ExplanationHandle, fix::FixSuggestion};
@@ -324,7 +326,7 @@ impl ZeroWidthSpanIntent {
 /// Source span attached to a diagnostic.
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct DiagnosticSpan {
-    range: SourceRange,
+    anchor: SourceAnchor,
     role: DiagnosticSpanRole,
     label: Option<String>,
     freshness: SpanFreshness,
@@ -358,12 +360,47 @@ impl DiagnosticSpan {
         }
 
         Ok(Self {
-            range,
+            anchor: SourceAnchor::Range(range),
             role,
             label,
             freshness,
             zero_width,
         })
+    }
+
+    /// Creates a span while retaining the source anchor's shape and origin.
+    /// Checks structural bounds and intent, not source binding or text boundaries.
+    pub fn from_anchor(
+        anchor: SourceAnchor,
+        role: DiagnosticSpanRole,
+        label: Option<String>,
+        freshness: SpanFreshness,
+        zero_width: Option<ZeroWidthSpanIntent>,
+    ) -> Result<Self, DiagnosticRecordError> {
+        let range =
+            Self::project_range(&anchor).ok_or(DiagnosticRecordError::UnsupportedSourceAnchor)?;
+        validate_source_range(range)?;
+        if let Some(intent) = zero_width
+            && range.start != range.end
+        {
+            return Err(DiagnosticRecordError::ZeroWidthIntentOnNonZeroRange {
+                start: range.start,
+                end: range.end,
+                intent,
+            });
+        }
+        Ok(Self {
+            anchor,
+            role,
+            label,
+            freshness,
+            zero_width,
+        })
+    }
+
+    /// Returns the original source anchor.
+    pub const fn anchor(&self) -> &SourceAnchor {
+        &self.anchor
     }
 
     /// Creates a current non-zero primary span.
@@ -396,7 +433,31 @@ impl DiagnosticSpan {
 
     /// Returns the source range.
     pub const fn range(&self) -> SourceRange {
-        self.range
+        match Self::project_range(&self.anchor) {
+            Some(range) => range,
+            None => panic!("validated diagnostic anchor"),
+        }
+    }
+
+    const fn project_range(anchor: &SourceAnchor) -> Option<SourceRange> {
+        match anchor {
+            SourceAnchor::Range(range) => Some(*range),
+            SourceAnchor::Point { source_id, offset } => Some(SourceRange {
+                source_id: *source_id,
+                start: *offset,
+                end: *offset,
+            }),
+            SourceAnchor::Generated(origin) => match origin.anchor() {
+                GeneratedSpanAnchor::Range(range) => Some(range),
+                GeneratedSpanAnchor::Point { source_id, offset } => Some(SourceRange {
+                    source_id,
+                    start: offset,
+                    end: offset,
+                }),
+                _ => None,
+            },
+            _ => None,
+        }
     }
 
     /// Returns the span role.
@@ -962,6 +1023,8 @@ pub enum DiagnosticRecordError {
         /// Rejected intent.
         intent: ZeroWidthSpanIntent,
     },
+    /// The anchor has a shape this record cannot project.
+    UnsupportedSourceAnchor,
     /// Primary span did not use the primary role.
     PrimarySpanMustUsePrimaryRole {
         /// Observed role.
@@ -1105,6 +1168,9 @@ impl fmt::Display for DiagnosticRecordError {
                     "non-zero diagnostic span {start}..{end} cannot carry {:?} intent",
                     intent
                 )
+            }
+            Self::UnsupportedSourceAnchor => {
+                formatter.write_str("unsupported diagnostic source anchor")
             }
             Self::PrimarySpanMustUsePrimaryRole { actual } => {
                 write!(formatter, "primary span used {actual} role")

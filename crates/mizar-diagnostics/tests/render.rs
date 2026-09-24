@@ -25,7 +25,7 @@ use mizar_diagnostics::{
 };
 use mizar_session::{
     BuildSnapshotId, Hash, InMemorySessionIdAllocator, LineColumn, LineColumnRange, NormalizedPath,
-    PackageId, SessionIdAllocator, SourceId, SourceRange, normalize_source_path,
+    PackageId, SessionIdAllocator, SourceAnchor, SourceId, SourceRange, normalize_source_path,
 };
 
 #[test]
@@ -527,6 +527,31 @@ fn source_key_missing_text_cause_related_and_zero_width_rendering_are_stable() {
             " 1 | abc\n",
             "   |  ^ insert here",
         )
+    );
+    let point = DiagnosticSpan::from_anchor(
+        SourceAnchor::Point {
+            source_id,
+            offset: 1,
+        },
+        DiagnosticSpanRole::Primary,
+        Some("insert here".to_owned()),
+        SpanFreshness::Current,
+        None,
+    )
+    .expect("point with unspecified intent");
+    let point_record =
+        record(RecordFixture::new(snapshot, source_id, 0, 1, "unused").primary_span(point));
+    assert_eq!(
+        render_diagnostics(DiagnosticRenderInput::new(
+            std::slice::from_ref(&point_record),
+            &context,
+            RenderOptions::plain(),
+        )),
+        render_diagnostics(DiagnosticRenderInput::new(
+            std::slice::from_ref(&zero_width_record),
+            &context,
+            RenderOptions::plain(),
+        ))
     );
 }
 

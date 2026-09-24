@@ -41,7 +41,7 @@ draft と record は次の field を共有する。
 | `stable_detail_key` | `String` | yes | deduplication と sorting のための deterministic key。localized text を含めてはならない。 |
 | `message` | `String` | yes | 人間向け primary message。version 間で変わってよく、identity ではない。 |
 | `primary_location` | `DiagnosticPrimaryLocation` | yes | 主スパンまたはソース読込み要求の位置。 |
-| `secondary_spans` | `Vec<DiagnosticSpan>` | yes, may be empty | 補助 location。自然な順序がある場合は producer が並べ、aggregator が normalize する。 |
+| `secondary_spans` | `Vec<DiagnosticSpan>` | 必須、空を許す | 生成元の順序と重複を保持し、集約は代表payloadを選択する。 |
 | `notes` | `Vec<DiagnosticNote>` | yes, may be empty | 人間向け note/help text と任意の source anchor。 |
 | `details` | `DiagnosticDetails` | yes, may be empty | machine-readable payload map。 |
 | `fixes` | `Vec<FixSuggestion>` | yes, may be empty | structured advisory fix suggestion。canonical payload で normalize され、edit を適用しない。 |
@@ -196,7 +196,7 @@ record は current publication snapshot を持たず、current `BuildDiagnosticI
 
 ```rust
 struct DiagnosticSpan {
-    range: SourceRange,
+    anchor: SourceAnchor,
     role: DiagnosticSpanRole,
     label: Option<String>,
     freshness: SpanFreshness,
@@ -230,7 +230,7 @@ consumer が所有する projection である。
 task 5 の span constructor は `start <= end`、`Span` 主位置の `role == Primary`、および
 `secondary_spans` に `role == Primary` の entry が無いことを強制しなければならない。
 file length や line-map membership は validate しない。それは source-map consumer の
-責務である。zero-width range は `zero_width` が `Some(Eof)` または
+責務である。既存のrange constructorではzero-width range は `zero_width` が `Some(Eof)` または
 `Some(InsertionPoint)` の場合だけ許される。non-zero range は `zero_width == None` を
 使わなければならない。
 
@@ -411,6 +411,7 @@ E0600 の構造化された失敗理由は `stable_detail_key` で表し、重�
 
 ## Frontend anchor adoption
 
-将来のフロントエンド採用では [仕様22.1.2](../../../spec/ja/22.error_handling_and_diagnostics.md#2212-sourceスパンとコンテキストの表示) に従い、既存のsession SourceAnchorをスパンの正本payloadとし、range参照はその幾何的な射影とする。Range/Pointの形状と生成理由を任意の明示EOF・挿入意図と独立に保持し、ゼロ長Rangeを含む報告位置では意図未指定を許す。
-現行DiagnosticSpanコンストラクタと上記Eof/InsertionPoint限定APIは、別途レビューする実装まで変更しない。制限回避のため意図を捏造しない。テキスト検証は変換側・source-map利用側が所有する。個々の副位置列をdraft/recordに保持し、[集約](../en/aggregator.md#deduplication-identity) の同一識別子間の代表選択は維持する。
-採用テストはRange/Point/生成Range/生成Point、理由原文、順序付き重複副位置、明示・未指定意図、不正なソース・範囲・UTF-8・未知アンカー、ソース読込みの分離を検査し、欠落を黙認した変換成功を許さない。
+`DiagnosticSpan::from_anchor` は [仕様22.1.2](../../../spec/ja/22.error_handling_and_diagnostics.md#2212-sourceスパンとコンテキストの表示) に従い既存のsession SourceAnchorを正本payloadとして保持する。`anchor()`で参照し、`range()`はconstな幾何的射影を返す。Range/Point形状と生成理由原文は任意の明示EOF・挿入意図と独立に保持する。rangeを重複保存せず、射影のためsessionの生成アンカー参照をconstにする。
+既存range constructorの検証は維持する。`from_anchor`は生成形式を含むPoint・ゼロ長Rangeの意図未指定を許し、逆転範囲・非ゼロ位置への明示意図・未知アンカー形式を拒否する。GeneratedSpanOriginは既に非空白理由を要求する。ソース結合・本文長・UTF-8検証は後続の変換側・source-map利用側が所有する。
+個々の副位置列の順序と重複をdraft/recordに保持する。debugは既存Range表示を維持し、Point・Generatedのpayloadを区別する。[集約](../en/aggregator.md#deduplication-identity) の幾何的識別子と正準代表選択を維持する。描画は幾何位置を使い、点には単一マーカーを付け、意図を推測しない。
+テスト対象はアンカー各形式・理由原文・順序付き重複副位置・明示と未指定意図・逆転範囲・既存constructorの拒否・点描画。ソース結合済み変換・registry登録・生成元への採用は別作業とする。

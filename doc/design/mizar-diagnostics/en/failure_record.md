@@ -41,7 +41,7 @@ Both drafts and records carry these fields:
 | `stable_detail_key` | `String` | yes | Deterministic key for deduplication and sorting. It must not contain localized text. |
 | `message` | `String` | yes | Human-facing primary message. It may change across versions and is never identity. |
 | `primary_location` | `DiagnosticPrimaryLocation` | yes | Main span or source-loading request location. |
-| `secondary_spans` | `Vec<DiagnosticSpan>` | yes, may be empty | Supporting locations, sorted by producer when naturally ordered and normalized by the aggregator. |
+| `secondary_spans` | `Vec<DiagnosticSpan>` | yes, may be empty | Supporting locations retain producer order and multiplicity; aggregation selects one representative payload. |
 | `notes` | `Vec<DiagnosticNote>` | yes, may be empty | Human-facing note/help text plus optional source anchors. |
 | `details` | `DiagnosticDetails` | yes, may be empty | Machine-readable payload map. |
 | `fixes` | `Vec<FixSuggestion>` | yes, may be empty | Structured advisory fix suggestions. They are normalized by canonical payload and never apply edits. |
@@ -199,7 +199,7 @@ current `BuildDiagnosticIndex`.
 
 ```rust
 struct DiagnosticSpan {
-    range: SourceRange,
+    anchor: SourceAnchor,
     role: DiagnosticSpanRole,
     label: Option<String>,
     freshness: SpanFreshness,
@@ -232,7 +232,7 @@ by render or LSP consumers.
 
 Task 5 span constructors must enforce `start <= end`, `Span` primary locations with `role == Primary`, and no `secondary_spans` entry with `role == Primary`. They do not
 validate file length or line-map membership; that remains a source-map consumer
-responsibility. Zero-width ranges are allowed only when `zero_width` is
+responsibility. The existing range constructors allow zero-width ranges only when `zero_width` is
 `Some(Eof)` or `Some(InsertionPoint)`. Non-zero ranges must use `zero_width ==
 None`.
 
@@ -417,6 +417,7 @@ For E0600, `stable_detail_key` names the structured failure reason; no duplicate
 
 ## Frontend anchor adoption
 
-Future frontend adoption of [specification 22.1.2](../../../spec/en/22.error_handling_and_diagnostics.md#2212-source-span-and-context-display) requires retaining the existing session SourceAnchor as the authoritative span payload; range access remains its geometric projection. Range/Point shape and generated reason must survive independently of optional explicit EOF/insertion intent. Unspecified intent is valid for a reported location, including a zero-length Range.
-Current DiagnosticSpan constructors and the Eof/InsertionPoint-only API above are unchanged until a separately reviewed implementation adds this capability; callers must not fabricate intent to bypass them. Source text validation stays with the converter/source-map consumer. The individual retained secondary sequence survives draft/record creation; [aggregation](./aggregator.md#deduplication-identity) still selects a representative among equal identities.
-Acceptance tests cover range/point/generated range/generated point, exact reasons, repeated ordered secondaries, explicit versus unspecified intent, invalid source/bounds/UTF-8/unknown anchors, and source-load separation; failures must prevent successful conversion without silent payload loss.
+`DiagnosticSpan::from_anchor` retains the existing session SourceAnchor as the authoritative payload for [specification 22.1.2](../../../spec/en/22.error_handling_and_diagnostics.md#2212-source-span-and-context-display); `anchor()` exposes it and `range()` remains a const geometric projection. Range/Point shape and exact generated reason survive independently of optional explicit EOF/insertion intent. No duplicate range payload is stored; the session generated-anchor accessor is const to support projection.
+The existing range constructors retain their validation. `from_anchor` also accepts unspecified intent for Point and zero-length Range, including generated forms; it rejects reversed ranges, explicit intent on nonzero geometry and unknown anchor variants. GeneratedSpanOrigin already requires a nonblank reason. Source binding, text length and UTF-8 validation remain the future converter/source-map consumer's responsibility.
+Individual secondary order and multiplicity survive draft/record creation. Debug snapshots retain legacy Range output and distinguish Point and Generated payloads; [aggregation](./aggregator.md#deduplication-identity) retains its geometric identity and canonical representative selection. Rendering uses geometry, with a single marker at a point and no inferred intent.
+Tests cover anchor forms, exact reasons, repeated ordered secondaries, explicit versus unspecified intent, malformed ranges, legacy constructor rejection and point rendering. Source-bound conversion, registry activation and producer adoption remain separate work.

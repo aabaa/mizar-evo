@@ -8,8 +8,8 @@ use mizar_diagnostics::{
     },
     failure_record::{
         DiagnosticDetailValue, DiagnosticDetails, DiagnosticDraft, DiagnosticDraftInput,
-        DiagnosticFreshness, DiagnosticPrimaryLocation, DiagnosticSpan, FailureCategory,
-        PipelinePhase,
+        DiagnosticFreshness, DiagnosticPrimaryLocation, DiagnosticSpan, DiagnosticSpanRole,
+        FailureCategory, PipelinePhase, SpanFreshness,
     },
     fix::{
         FixApplicability, FixCommandRef, FixEdit, FixSafety, FixSuggestion, FixSuggestionId,
@@ -19,8 +19,9 @@ use mizar_diagnostics::{
     sink::{DiagnosticBatch, DiagnosticProducerScope, DiagnosticSink},
 };
 use mizar_session::{
-    BuildSnapshotId, Hash, InMemorySessionIdAllocator, NormalizedPath, PackageId,
-    SessionIdAllocator, SourceId, SourceRange, normalize_source_path,
+    BuildSnapshotId, GeneratedSpanAnchor, GeneratedSpanOrigin, Hash, InMemorySessionIdAllocator,
+    NormalizedPath, PackageId, SessionIdAllocator, SourceAnchor, SourceId, SourceRange,
+    normalize_source_path,
 };
 
 #[test]
@@ -361,6 +362,85 @@ fn duplicate_representative_choice_is_independent_of_duplicate_order() {
     assert_eq!(forward.debug_snapshot(), reversed.debug_snapshot());
     assert_eq!(forward.len(), 1);
     assert_eq!(forward.records()[0].message(), "alpha wording");
+}
+
+#[test]
+fn duplicate_anchor_shapes_select_the_same_representative_in_both_orders() {
+    let snapshot = snapshot_id(31);
+    let source_id = source_id(snapshot);
+    let zero_range = SourceRange {
+        source_id,
+        start: 3,
+        end: 3,
+    };
+    let make_draft = |anchor| {
+        DiagnosticDraft::new(DiagnosticDraftInput {
+            source_snapshot: snapshot,
+            code: DiagnosticCode::from_str("E0001").unwrap(),
+            phase: PipelinePhase::Parser,
+            category: FailureCategory::ParseError,
+            stable_detail_key: "syntax.unexpected_token".to_owned(),
+            message: "same message".to_owned(),
+            primary_location: DiagnosticPrimaryLocation::Span(
+                DiagnosticSpan::from_anchor(
+                    anchor,
+                    DiagnosticSpanRole::Primary,
+                    None,
+                    SpanFreshness::Current,
+                    None,
+                )
+                .unwrap(),
+            ),
+            secondary_spans: vec![],
+            notes: vec![],
+            details: DiagnosticDetails::new(),
+            fixes: vec![],
+            explanation: None,
+        })
+        .unwrap()
+    };
+    let drafts = vec![
+        make_draft(SourceAnchor::Point {
+            source_id,
+            offset: 3,
+        }),
+        make_draft(SourceAnchor::Generated(
+            GeneratedSpanOrigin::new(GeneratedSpanAnchor::Range(zero_range), "generated").unwrap(),
+        )),
+        make_draft(SourceAnchor::Range(zero_range)),
+    ];
+    let forward = BuildDiagnosticIndex::from_batches(
+        snapshot,
+        vec![batch(
+            snapshot,
+            PipelinePhase::Parser,
+            "parser.recovery",
+            drafts.clone(),
+        )],
+    )
+    .unwrap();
+    let reversed = BuildDiagnosticIndex::from_batches(
+        snapshot,
+        vec![batch(
+            snapshot,
+            PipelinePhase::Parser,
+            "parser.recovery",
+            drafts.into_iter().rev().collect(),
+        )],
+    )
+    .unwrap();
+
+    assert_eq!(forward.len(), 1);
+    assert_eq!(reversed.len(), 1);
+    assert_eq!(forward.debug_snapshot(), reversed.debug_snapshot());
+    assert_eq!(
+        forward.records()[0].debug_snapshot(),
+        reversed.records()[0].debug_snapshot()
+    );
+    let DiagnosticPrimaryLocation::Span(span) = forward.records()[0].primary_location() else {
+        panic!("expected span primary location");
+    };
+    assert_eq!(span.anchor(), &SourceAnchor::Range(zero_range));
 }
 
 #[test]

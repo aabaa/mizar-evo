@@ -1,6 +1,6 @@
 //! Deterministic debug rendering for diagnostic records.
 
-use mizar_session::BuildSnapshotId;
+use mizar_session::{BuildSnapshotId, GeneratedSpanAnchor, SourceAnchor};
 
 use crate::{explain::ExplanationHandle, fix::FixSuggestion};
 
@@ -148,8 +148,8 @@ fn render_spans(spans: &[DiagnosticSpan]) -> String {
 }
 
 fn render_span(span: &DiagnosticSpan) -> String {
-    let range = span.range;
-    format!(
+    let range = span.range();
+    let mut rendered = format!(
         "{}:{}..{}:{}:{}:{}:{}",
         source_id_debug(range),
         range.start,
@@ -158,7 +158,21 @@ fn render_span(span: &DiagnosticSpan) -> String {
         render_span_freshness(span.freshness),
         render_zero_width(span.zero_width),
         render_optional_string(span.label.as_deref())
-    )
+    );
+    match span.anchor() {
+        SourceAnchor::Range(_) => {}
+        SourceAnchor::Point { .. } => rendered.push_str(":point"),
+        SourceAnchor::Generated(origin) => {
+            let shape = match origin.anchor() {
+                GeneratedSpanAnchor::Range(_) => "range",
+                GeneratedSpanAnchor::Point { .. } => "point",
+                _ => unreachable!("validated diagnostic anchor"),
+            };
+            rendered.push_str(&format!(":generated_{shape}(reason={:?})", origin.reason()));
+        }
+        _ => unreachable!("validated diagnostic anchor"),
+    }
+    rendered
 }
 
 fn render_primary_location(location: &DiagnosticPrimaryLocation) -> String {

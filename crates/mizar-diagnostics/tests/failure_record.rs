@@ -20,8 +20,9 @@ use mizar_diagnostics::{
     },
 };
 use mizar_session::{
-    BuildSnapshotId, InMemorySessionIdAllocator, NormalizedPath, PackageId, SessionIdAllocator,
-    SourceId, SourceRange, normalize_source_path,
+    BuildSnapshotId, GeneratedSpanAnchor, GeneratedSpanOrigin, InMemorySessionIdAllocator,
+    NormalizedPath, PackageId, SessionIdAllocator, SourceAnchor, SourceId, SourceRange,
+    normalize_source_path,
 };
 
 #[test]
@@ -484,6 +485,166 @@ fn span_constructors_validate_ranges_roles_and_zero_width_intent() {
         vec![insertion, definition, related],
     ))
     .expect("non-primary secondary roles are valid");
+}
+
+#[test]
+fn anchor_spans_preserve_shape_reason_intent_and_secondary_order() {
+    let snapshot = snapshot_id(20);
+    let source_id = source_id(snapshot);
+    let range = SourceRange {
+        source_id,
+        start: 1,
+        end: 3,
+    };
+    let zero_range = SourceRange {
+        source_id,
+        start: 3,
+        end: 3,
+    };
+    let reason = "  展開 \"quoted\"\nsecond line  ";
+    let anchors = [
+        SourceAnchor::Range(range),
+        SourceAnchor::Range(zero_range),
+        SourceAnchor::Point {
+            source_id,
+            offset: 3,
+        },
+        SourceAnchor::Generated(
+            GeneratedSpanOrigin::new(GeneratedSpanAnchor::Range(range), reason).unwrap(),
+        ),
+        SourceAnchor::Generated(
+            GeneratedSpanOrigin::new(
+                GeneratedSpanAnchor::Point {
+                    source_id,
+                    offset: 3,
+                },
+                reason,
+            )
+            .unwrap(),
+        ),
+    ];
+    let spans = anchors
+        .into_iter()
+        .map(|anchor| {
+            DiagnosticSpan::from_anchor(
+                anchor.clone(),
+                DiagnosticSpanRole::Secondary,
+                Some("label".to_owned()),
+                SpanFreshness::Historical,
+                None,
+            )
+            .inspect(|span| {
+                assert_eq!(span.anchor(), &anchor);
+                assert_eq!(span.label(), Some("label"));
+                assert_eq!(span.freshness(), SpanFreshness::Historical);
+                assert_eq!(span.zero_width(), None);
+            })
+            .unwrap()
+        })
+        .collect::<Vec<_>>();
+    assert_eq!(spans[0].range(), range);
+    assert_eq!(spans[1].range(), zero_range);
+    assert_eq!(spans[2].range(), zero_range);
+    assert_eq!(spans[3].range(), range);
+    assert_eq!(spans[4].range(), zero_range);
+    assert_ne!(spans[1], spans[2]);
+
+    let primary = DiagnosticSpan::primary(range, None).unwrap();
+    let secondary = vec![
+        spans[2].clone(),
+        spans[3].clone(),
+        spans[4].clone(),
+        spans[2].clone(),
+    ];
+    let draft =
+        DiagnosticDraft::new(draft_input(snapshot, source_id, primary, secondary.clone())).unwrap();
+    assert_eq!(draft.secondary_spans(), secondary);
+    let debug = draft.debug_snapshot();
+    assert!(debug.contains(":point"));
+    assert!(debug.contains(&format!("generated_range(reason={reason:?})")));
+    assert!(debug.contains(&format!("generated_point(reason={reason:?})")));
+    let record = DiagnosticRecord::from_draft(
+        draft,
+        DiagnosticHandle::new(snapshot, DiagnosticId::new(1)),
+        DiagnosticFreshness::Current {
+            source_snapshot: snapshot,
+        },
+        vec![],
+    )
+    .unwrap();
+    assert_eq!(record.secondary_spans(), secondary);
+}
+
+#[test]
+fn anchor_spans_validate_bounds_and_explicit_intent() {
+    let snapshot = snapshot_id(21);
+    let source_id = source_id(snapshot);
+    let make = |anchor, intent| {
+        DiagnosticSpan::from_anchor(
+            anchor,
+            DiagnosticSpanRole::Primary,
+            None,
+            SpanFreshness::Current,
+            intent,
+        )
+    };
+    for anchor in [
+        SourceAnchor::Range(SourceRange {
+            source_id,
+            start: 5,
+            end: 2,
+        }),
+        SourceAnchor::Generated(
+            GeneratedSpanOrigin::new(
+                GeneratedSpanAnchor::Range(SourceRange {
+                    source_id,
+                    start: 5,
+                    end: 2,
+                }),
+                "generated",
+            )
+            .unwrap(),
+        ),
+    ] {
+        assert!(matches!(
+            make(anchor, None),
+            Err(DiagnosticRecordError::InvalidRange { start: 5, end: 2 })
+        ));
+    }
+    for anchor in [
+        SourceAnchor::Range(SourceRange {
+            source_id,
+            start: 1,
+            end: 2,
+        }),
+        SourceAnchor::Generated(
+            GeneratedSpanOrigin::new(
+                GeneratedSpanAnchor::Range(SourceRange {
+                    source_id,
+                    start: 1,
+                    end: 2,
+                }),
+                "generated",
+            )
+            .unwrap(),
+        ),
+    ] {
+        assert!(matches!(
+            make(anchor, Some(ZeroWidthSpanIntent::Eof)),
+            Err(DiagnosticRecordError::ZeroWidthIntentOnNonZeroRange { .. })
+        ));
+    }
+    let point = SourceAnchor::Point {
+        source_id,
+        offset: 2,
+    };
+    assert_eq!(make(point.clone(), None).unwrap().zero_width(), None);
+    assert_eq!(
+        make(point, Some(ZeroWidthSpanIntent::InsertionPoint))
+            .unwrap()
+            .zero_width(),
+        Some(ZeroWidthSpanIntent::InsertionPoint)
+    );
 }
 
 #[test]
