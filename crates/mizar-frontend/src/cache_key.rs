@@ -4,7 +4,10 @@
 //! [cache-key design spec](../../../../doc/design/mizar-frontend/en/cache_key.md).
 
 use crate::lexical_env::LexicalEnvironmentFingerprint;
-use crate::lexing::{LexicalByteRange, ParserLexContext, ParserLexMode, ParserLexingPlan};
+use crate::lexing::{
+    LexicalByteRange, ParserLexContext, ParserLexMode, ParserLexingPlan, decode_context,
+    encode_context,
+};
 use crate::parsing::{
     OperatorAssociativity, OperatorFixity, ParserCacheKeyVersion, ParserInputs,
     StringRequiredContext,
@@ -13,7 +16,11 @@ use crate::preprocess::PreprocessedSource;
 use crate::source::SourceUnit;
 use mizar_lexer::UserSymbolKind;
 use mizar_session::{Edition, Hash, ModulePath, NormalizedPath, PackageId};
+use serde_json::{Value, json};
 use std::sync::Arc;
+
+const CACHE_KEYS_SCHEMA: &str = "mizar-frontend/cache-keys/v1";
+const CACHE_KEYS_MAX_BYTES: usize = 16 * 1024 * 1024;
 
 /// Version tag for source-unit cache keys.
 pub const SOURCE_UNIT_CACHE_KEY_VERSION: &str = "mizar-frontend/source-unit-cache-key/v1";
@@ -44,6 +51,181 @@ pub struct FrontendCacheKeys {
     pub tokens: TokenStreamCacheKey,
     /// Surface-AST cache key, absent when parsing produced no AST.
     pub ast: Option<SurfaceAstCacheKey>,
+}
+
+impl FrontendCacheKeys {
+    /// Encodes the complete retained cache-key bundle as bounded canonical JSON.
+    pub fn canonical_bytes(&self) -> Option<Vec<u8>> {
+        let plan = &self.tokens.parser_lexing_plan;
+        let contexts = plan
+            .contexts
+            .iter()
+            .map(|entry| {
+                (entry.range.start <= entry.range.end).then_some(())?;
+                Some(json!([
+                    entry.range.start,
+                    entry.range.end,
+                    encode_context(entry.context)?
+                ]))
+            })
+            .collect::<Option<Vec<_>>>()?;
+        let ast = match &self.ast {
+            Some(ast) => json!([
+                ast.version.as_ref(),
+                ast.token_stream_hash.as_bytes(),
+                ast.parser_version.version.as_ref(),
+                ast.parser_inputs_hash.as_bytes(),
+                ast.edition.as_str()
+            ]),
+            None => Value::Null,
+        };
+        let bytes = serde_json::to_vec(&json!([
+            CACHE_KEYS_SCHEMA,
+            [
+                self.source.version.as_ref(),
+                self.source.package_id.as_str(),
+                self.source.module_path.as_str(),
+                self.source.normalized_path.as_str(),
+                self.source.source_hash.as_bytes(),
+                self.source.edition.as_str()
+            ],
+            [
+                self.preprocessed.version.as_ref(),
+                self.preprocessed.source_hash.as_bytes()
+            ],
+            [
+                self.active_lexical_environment.version.as_ref(),
+                self.active_lexical_environment.fingerprint.get()
+            ],
+            [
+                self.tokens.version.as_ref(),
+                self.tokens.lexical_hash.as_bytes(),
+                self.tokens.active_lexical_environment.get(),
+                encode_context(self.tokens.parser_context)?,
+                [
+                    plan.version.as_ref(),
+                    encode_context(plan.default_context)?,
+                    contexts
+                ]
+            ],
+            ast
+        ]))
+        .ok()?;
+        (bytes.len() <= CACHE_KEYS_MAX_BYTES).then_some(bytes)
+    }
+
+    /// Decodes canonical storage bound to the caller's normalized path.
+    pub fn from_canonical_bytes(bytes: &[u8], normalized_path: &NormalizedPath) -> Option<Self> {
+        if bytes.len() > CACHE_KEYS_MAX_BYTES {
+            return None;
+        }
+        let value: Value = serde_json::from_slice(bytes).ok()?;
+        let [schema, source, preprocessed, active, tokens, ast] = fields::<6>(&value)?;
+        if schema.as_str()? != CACHE_KEYS_SCHEMA {
+            return None;
+        }
+        let [
+            source_version,
+            package_id,
+            module_path,
+            path,
+            source_hash,
+            source_edition,
+        ] = fields::<6>(source)?;
+        if path.as_str()? != normalized_path.as_str() {
+            return None;
+        }
+        let source = SourceUnitCacheKey {
+            version: Arc::from(source_version.as_str()?),
+            package_id: PackageId::new(package_id.as_str()?),
+            module_path: ModulePath::new(module_path.as_str()?),
+            normalized_path: normalized_path.clone(),
+            source_hash: decode_hash(source_hash)?,
+            edition: Edition::new(source_edition.as_str()?),
+        };
+        let [preprocessed_version, preprocessed_hash] = fields::<2>(preprocessed)?;
+        let preprocessed = PreprocessedSourceCacheKey {
+            version: Arc::from(preprocessed_version.as_str()?),
+            source_hash: decode_hash(preprocessed_hash)?,
+        };
+        let [active_version, active_fingerprint] = fields::<2>(active)?;
+        let active_lexical_environment = ActiveLexicalEnvironmentCacheKey {
+            version: Arc::from(active_version.as_str()?),
+            fingerprint: LexicalEnvironmentFingerprint::new(active_fingerprint.as_u64()?),
+        };
+        let [
+            token_version,
+            lexical_hash,
+            token_fingerprint,
+            parser_context,
+            plan,
+        ] = fields::<5>(tokens)?;
+        let [plan_version, default_context, contexts] = fields::<3>(plan)?;
+        let tokens = TokenStreamCacheKey {
+            version: Arc::from(token_version.as_str()?),
+            lexical_hash: decode_hash(lexical_hash)?,
+            active_lexical_environment: LexicalEnvironmentFingerprint::new(
+                token_fingerprint.as_u64()?,
+            ),
+            parser_context: decode_context(parser_context)?,
+            parser_lexing_plan: ParserLexingPlanCacheKey {
+                version: Arc::from(plan_version.as_str()?),
+                default_context: decode_context(default_context)?,
+                contexts: contexts
+                    .as_array()?
+                    .iter()
+                    .map(|entry| {
+                        let [start, end, context] = fields::<3>(entry)?;
+                        let start = usize::try_from(start.as_u64()?).ok()?;
+                        let end = usize::try_from(end.as_u64()?).ok()?;
+                        (start <= end).then_some(ParserLexingPlanContextCacheKey {
+                            range: LexicalByteRange { start, end },
+                            context: decode_context(context)?,
+                        })
+                    })
+                    .collect::<Option<Vec<_>>>()?,
+            },
+        };
+        let ast = if ast.is_null() {
+            None
+        } else {
+            let [
+                version,
+                token_stream_hash,
+                parser_version,
+                parser_inputs_hash,
+                edition,
+            ] = fields::<5>(ast)?;
+            Some(SurfaceAstCacheKey {
+                version: Arc::from(version.as_str()?),
+                token_stream_hash: decode_hash(token_stream_hash)?,
+                parser_version: ParserCacheKeyVersion::new(parser_version.as_str()?),
+                parser_inputs_hash: decode_hash(parser_inputs_hash)?,
+                edition: Edition::new(edition.as_str()?),
+            })
+        };
+        let keys = Self {
+            source,
+            preprocessed,
+            active_lexical_environment,
+            tokens,
+            ast,
+        };
+        (keys.canonical_bytes()?.as_slice() == bytes).then_some(keys)
+    }
+}
+
+fn fields<const N: usize>(value: &Value) -> Option<&[Value; N]> {
+    value.as_array()?.as_slice().try_into().ok()
+}
+
+fn decode_hash(value: &Value) -> Option<Hash> {
+    let values = fields::<{ Hash::BYTE_LEN }>(value)?;
+    let mut bytes = [0; Hash::BYTE_LEN];
+    for (byte, value) in bytes.iter_mut().zip(values) {
+        *byte = u8::try_from(value.as_u64()?).ok()?;
+    }
+    Some(Hash::from_bytes(bytes))
 }
 
 /// Content key for source-unit identity and text.
@@ -398,9 +580,10 @@ fn finish_hash(hasher: blake3::Hasher) -> Hash {
 #[cfg(test)]
 mod tests {
     use super::{
-        ActiveLexicalEnvironmentCacheKey, ParserLexingPlanCacheKey, PreprocessedSourceCacheKey,
-        SourceUnitCacheKey, SurfaceAstCacheKey, TOKEN_STREAM_CACHE_KEY_VERSION,
-        TokenStreamCacheKey, parser_inputs_hash,
+        ActiveLexicalEnvironmentCacheKey, FrontendCacheKeys, ParserLexingPlanCacheKey,
+        ParserLexingPlanContextCacheKey, PreprocessedSourceCacheKey, SourceUnitCacheKey,
+        SurfaceAstCacheKey, TOKEN_STREAM_CACHE_KEY_VERSION, TokenStreamCacheKey,
+        parser_inputs_hash,
     };
     use crate::lexical_env::LexicalEnvironmentFingerprint;
     use crate::lexing::{
@@ -420,6 +603,264 @@ mod tests {
     use std::fs;
     use std::path::PathBuf;
     use std::sync::Arc;
+
+    const RETAINED_KEYS_WIRE: &str = r#"["mizar-frontend/cache-keys/v1",["future/source","pkg-v99","opaque.mod","src/alpha.miz",[1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1],"2099"],["future/preprocess",[2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2]],["future/active",23],["future/tokens",[3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3],29,[5,[0,1,2,3,4,5,6]],["future/plan",[0,[]],[[8,12,[1,[0]]],[2,6,[2,[2]]],[2,6,[2,[2]]],[0,0,[3,[3]]],[5,9,[4,[4]]],[3,7,[5,[5]]]]]],["future/ast",[4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4],"future/parser",[5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5],"2098"]]"#;
+
+    #[test]
+    fn retained_cache_keys_fixed_wire_decodes_every_field_and_reencodes_identically() {
+        use mizar_lexer::{UserSymbolKind, UserSymbolKindSet};
+
+        let path = normalized_path("src/alpha.miz");
+        let all_kinds = UserSymbolKindSet::from_slice(&[
+            UserSymbolKind::Functor,
+            UserSymbolKind::Predicate,
+            UserSymbolKind::Mode,
+            UserSymbolKind::Attribute,
+            UserSymbolKind::Structure,
+            UserSymbolKind::Selector,
+            UserSymbolKind::Constructor,
+        ]);
+        let expected = FrontendCacheKeys {
+            source: SourceUnitCacheKey {
+                version: Arc::from("future/source"),
+                package_id: PackageId::new("pkg-v99"),
+                module_path: ModulePath::new("opaque.mod"),
+                normalized_path: path.clone(),
+                source_hash: hash(1),
+                edition: Edition::new("2099"),
+            },
+            preprocessed: PreprocessedSourceCacheKey {
+                version: Arc::from("future/preprocess"),
+                source_hash: hash(2),
+            },
+            active_lexical_environment: ActiveLexicalEnvironmentCacheKey {
+                version: Arc::from("future/active"),
+                fingerprint: LexicalEnvironmentFingerprint::new(23),
+            },
+            tokens: TokenStreamCacheKey {
+                version: Arc::from("future/tokens"),
+                lexical_hash: hash(3),
+                active_lexical_environment: LexicalEnvironmentFingerprint::new(29),
+                parser_context: ParserLexContext::recovery().with_user_symbol_kinds(all_kinds),
+                parser_lexing_plan: ParserLexingPlanCacheKey {
+                    version: Arc::from("future/plan"),
+                    default_context: ParserLexContext::general()
+                        .with_user_symbol_kinds(UserSymbolKindSet::from_slice(&[])),
+                    contexts: vec![
+                        ParserLexingPlanContextCacheKey {
+                            range: LexicalByteRange::new(8, 12),
+                            context: ParserLexContext::identifier_required()
+                                .with_user_symbol_kinds(UserSymbolKindSet::only(
+                                    UserSymbolKind::Functor,
+                                )),
+                        },
+                        ParserLexingPlanContextCacheKey {
+                            range: LexicalByteRange::new(2, 6),
+                            context: ParserLexContext::symbolic().with_user_symbol_kinds(
+                                UserSymbolKindSet::only(UserSymbolKind::Mode),
+                            ),
+                        },
+                        ParserLexingPlanContextCacheKey {
+                            range: LexicalByteRange::new(2, 6),
+                            context: ParserLexContext::symbolic().with_user_symbol_kinds(
+                                UserSymbolKindSet::only(UserSymbolKind::Mode),
+                            ),
+                        },
+                        ParserLexingPlanContextCacheKey {
+                            range: LexicalByteRange::new(0, 0),
+                            context: ParserLexContext::string_required().with_user_symbol_kinds(
+                                UserSymbolKindSet::only(UserSymbolKind::Attribute),
+                            ),
+                        },
+                        ParserLexingPlanContextCacheKey {
+                            range: LexicalByteRange::new(5, 9),
+                            context: ParserLexContext::namespace_path().with_user_symbol_kinds(
+                                UserSymbolKindSet::only(UserSymbolKind::Structure),
+                            ),
+                        },
+                        ParserLexingPlanContextCacheKey {
+                            range: LexicalByteRange::new(3, 7),
+                            context: ParserLexContext::recovery().with_user_symbol_kinds(
+                                UserSymbolKindSet::only(UserSymbolKind::Selector),
+                            ),
+                        },
+                    ],
+                },
+            },
+            ast: Some(SurfaceAstCacheKey {
+                version: Arc::from("future/ast"),
+                token_stream_hash: hash(4),
+                parser_version: ParserCacheKeyVersion::new("future/parser"),
+                parser_inputs_hash: hash(5),
+                edition: Edition::new("2098"),
+            }),
+        };
+        let decoded = FrontendCacheKeys::from_canonical_bytes(RETAINED_KEYS_WIRE.as_bytes(), &path)
+            .expect("fixed canonical wire must decode");
+        assert_eq!(decoded, expected);
+        assert_eq!(
+            decoded.canonical_bytes().as_deref(),
+            Some(RETAINED_KEYS_WIRE.as_bytes())
+        );
+        assert_eq!(decoded.source.stable_hash(), expected.source.stable_hash());
+        assert_eq!(
+            decoded.preprocessed.stable_hash(),
+            expected.preprocessed.stable_hash()
+        );
+        assert_eq!(
+            decoded.active_lexical_environment.stable_hash(),
+            expected.active_lexical_environment.stable_hash()
+        );
+        assert_eq!(decoded.tokens.stable_hash(), expected.tokens.stable_hash());
+        assert_eq!(
+            decoded.ast.as_ref().unwrap().stable_hash(),
+            expected.ast.as_ref().unwrap().stable_hash()
+        );
+        for (tag, kind) in [
+            (1, UserSymbolKind::Predicate),
+            (6, UserSymbolKind::Constructor),
+        ] {
+            let mut wire: serde_json::Value = serde_json::from_str(RETAINED_KEYS_WIRE).unwrap();
+            wire[4][3] = serde_json::json!([0, [tag]]);
+            let bytes = serde_json::to_vec(&wire).unwrap();
+            let keys = FrontendCacheKeys::from_canonical_bytes(&bytes, &path).unwrap();
+            assert_eq!(
+                keys.tokens.parser_context,
+                ParserLexContext::general().with_user_symbol_kinds(UserSymbolKindSet::only(kind))
+            );
+            assert_eq!(keys.canonical_bytes(), Some(bytes));
+        }
+        assert_ne!(decoded.source.source_hash, decoded.preprocessed.source_hash);
+        assert_ne!(
+            decoded.active_lexical_environment.fingerprint,
+            decoded.tokens.active_lexical_environment
+        );
+        assert_ne!(
+            decoded.ast.as_ref().unwrap().token_stream_hash,
+            decoded.tokens.stable_hash()
+        );
+    }
+
+    #[test]
+    fn retained_cache_keys_absent_ast_and_maximum_integer_round_trip() {
+        let path = normalized_path("src/alpha.miz");
+        let mut value: serde_json::Value = serde_json::from_str(RETAINED_KEYS_WIRE).unwrap();
+        value[5] = serde_json::Value::Null;
+        value[3][1] = serde_json::json!(u64::MAX);
+        value[4][2] = serde_json::json!(u64::MAX);
+        value[4][4][2][0][0] = serde_json::json!(usize::MAX);
+        value[4][4][2][0][1] = serde_json::json!(usize::MAX);
+        let bytes = serde_json::to_vec(&value).unwrap();
+        let decoded = FrontendCacheKeys::from_canonical_bytes(&bytes, &path).unwrap();
+        assert!(decoded.ast.is_none());
+        assert_eq!(
+            decoded.active_lexical_environment.fingerprint.get(),
+            u64::MAX
+        );
+        assert_eq!(decoded.tokens.active_lexical_environment.get(), u64::MAX);
+        assert_eq!(
+            decoded.tokens.parser_lexing_plan.contexts[0].range.start,
+            usize::MAX
+        );
+        assert_eq!(
+            decoded.tokens.parser_lexing_plan.contexts[0].range.end,
+            usize::MAX
+        );
+        assert_eq!(decoded.canonical_bytes(), Some(bytes));
+    }
+
+    #[test]
+    fn retained_cache_keys_reject_bad_shape_width_tags_ranges_and_path() {
+        let path = normalized_path("src/alpha.miz");
+        let base: serde_json::Value = serde_json::from_str(RETAINED_KEYS_WIRE).unwrap();
+        let mut cases = Vec::new();
+        let mut value = base.clone();
+        value[0] = serde_json::json!("other/schema");
+        cases.push(("schema", value));
+        let mut value = base.clone();
+        value[1].as_array_mut().unwrap().pop();
+        cases.push(("source arity", value));
+        let mut value = base.clone();
+        value[2][1].as_array_mut().unwrap().pop();
+        cases.push(("short hash", value));
+        let mut value = base.clone();
+        value[5][1][0] = serde_json::json!(256);
+        cases.push(("hash byte overflow", value));
+        let mut value = base.clone();
+        value[3][1] = serde_json::json!(-1);
+        cases.push(("negative fingerprint", value));
+        let mut value = base.clone();
+        value[4][4][2][0][0] = serde_json::json!(-1);
+        cases.push(("negative range", value));
+        let mut value = base.clone();
+        value[4][3][0] = serde_json::json!(6);
+        cases.push(("unknown parser mode", value));
+        let mut value = base.clone();
+        value[4][3][1] = serde_json::json!([7]);
+        cases.push(("unknown user kind", value));
+        let mut value = base.clone();
+        value[4][3][1] = serde_json::json!([1, 0]);
+        cases.push(("unordered user kinds", value));
+        let mut value = base.clone();
+        value[4][4][1][1] = serde_json::json!([0, 0]);
+        cases.push(("duplicate user kind", value));
+        let mut value = base.clone();
+        value[4][4][2][0][1] = serde_json::json!(7);
+        cases.push(("reversed lexical range", value));
+        let mut value = base.clone();
+        value[1][3] = serde_json::json!("src/other.miz");
+        cases.push(("path mismatch", value));
+        for (label, value) in cases {
+            let bytes = serde_json::to_vec(&value).unwrap();
+            assert!(
+                FrontendCacheKeys::from_canonical_bytes(&bytes, &path).is_none(),
+                "{label}"
+            );
+        }
+        assert!(
+            FrontendCacheKeys::from_canonical_bytes(
+                format!(" {RETAINED_KEYS_WIRE}").as_bytes(),
+                &path
+            )
+            .is_none()
+        );
+        assert!(FrontendCacheKeys::from_canonical_bytes(b"[", &path).is_none());
+        assert!(FrontendCacheKeys::from_canonical_bytes(&[0xff], &path).is_none());
+        let mut invalid_typed =
+            FrontendCacheKeys::from_canonical_bytes(RETAINED_KEYS_WIRE.as_bytes(), &path).unwrap();
+        invalid_typed.tokens.parser_lexing_plan.contexts[0].range =
+            LexicalByteRange { start: 13, end: 12 };
+        assert!(invalid_typed.canonical_bytes().is_none());
+        let too_large_integer = RETAINED_KEYS_WIRE.replacen(
+            "\"future/active\",23",
+            "\"future/active\",18446744073709551616",
+            1,
+        );
+        assert!(
+            FrontendCacheKeys::from_canonical_bytes(too_large_integer.as_bytes(), &path).is_none()
+        );
+    }
+
+    #[test]
+    fn retained_cache_keys_accept_exactly_sixteen_mib_and_reject_more() {
+        let path = normalized_path("src/alpha.miz");
+        let mut value: serde_json::Value = serde_json::from_str(RETAINED_KEYS_WIRE).unwrap();
+        value[1][1] = serde_json::json!("");
+        let overhead = serde_json::to_vec(&value).unwrap().len();
+        let limit = 16 * 1024 * 1024;
+        value[1][1] = serde_json::Value::String("x".repeat(limit - overhead));
+        let exact = serde_json::to_vec(&value).unwrap();
+        assert_eq!(exact.len(), limit);
+        let decoded = FrontendCacheKeys::from_canonical_bytes(&exact, &path).unwrap();
+        assert_eq!(decoded.canonical_bytes(), Some(exact));
+        value[1][1] = serde_json::Value::String("x".repeat(limit - overhead + 1));
+        let oversized = serde_json::to_vec(&value).unwrap();
+        assert_eq!(oversized.len(), limit + 1);
+        assert!(FrontendCacheKeys::from_canonical_bytes(&oversized, &path).is_none());
+        let mut decoded = decoded;
+        decoded.source.package_id = PackageId::new("x".repeat(limit - overhead + 1));
+        assert!(decoded.canonical_bytes().is_none());
+    }
 
     #[test]
     fn source_cache_key_uses_content_identity_not_freshness_metadata() {

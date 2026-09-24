@@ -313,3 +313,35 @@ the AST and diagnostic result for identical token and parser inputs. The token
 namespace, cache-key shape, storage policy, and frontend public API remain
 unchanged. The real frontend seam regression checks a legal omitted-justification
 source, confirms the v7 parser namespace, and compares deterministic replay.
+
+## Retained cache-key storage
+
+`FrontendCacheKeys::canonical_bytes() -> Option<Vec<u8>>` and
+`from_canonical_bytes(bytes: &[u8], normalized_path: &NormalizedPath) -> Option<Self>`
+transport the complete retained bundle without computing new keys or accepting a cache hit.
+The caller supplies the session-owned normalized path; decoding checks its exact wire spelling
+and clones it without filesystem access. Versions, identities, editions and fingerprints are
+opaque retained values, not checked against current producers or one another.
+
+Canonical UTF-8 JSON is bounded to 16 MiB, including the limit; exact re-encoding must equal
+input bytes. The array schema is `["mizar-frontend/cache-keys/v1", source, preprocessed,
+active, tokens, ast]`. Records have these fixed positional fields:
+
+- source: `[version, package_id, module_path, normalized_path, source_hash, edition]`;
+- preprocessed: `[version, source_hash]`; active: `[version, fingerprint]`;
+- tokens: `[version, lexical_hash, active_fingerprint, parser_context, plan]`;
+- plan: `[version, default_context, contexts]`; each ordered context is `[start, end, context]`;
+- ast: null or `[version, token_stream_hash, parser_version, parser_inputs_hash, edition]`.
+
+Strings are preserved exactly. Hashes are arrays of exactly 32 integer bytes, fingerprints
+are u64, and range endpoints are usize with start <= end. Contexts use the existing
+[TokenStream context encoding](./lexing.md#tokenstream-storage), shared by crate-private
+helpers in lexing. Context order, overlaps and duplicates are retained. No plan topology,
+producer version, cross-key relationship, provenance or cache reuse validation is performed.
+Unknown schema/tags, wrong shapes/types/widths, reversed ranges, noncanonical bytes and
+oversized payloads return None. No SourceId allocation, file access, parser, lexer or new public
+type is involved. Existing stable hashes and key version constants do not change.
+
+Inline tests pin fixed wire fields and all context tags independently of the encoder, preserve
+all keys and stable hashes (including absent AST, opaque versions and nonuniform plans), and
+reject malformed, noncanonical, oversized, path-mismatched and out-of-range inputs.

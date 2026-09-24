@@ -243,3 +243,23 @@ token と parser input でも合法的な omitted justification によって AST
 shape、storage policy、frontend public API は不変。real frontend seam regression は合法的な
 omitted-justification source で v7 parser namespace を確認し、deterministic replay を比較
 する。
+
+## 保持済みキャッシュキーの保存
+
+`FrontendCacheKeys::canonical_bytes() -> Option<Vec<u8>>` と
+`from_canonical_bytes(bytes: &[u8], normalized_path: &NormalizedPath) -> Option<Self>` は
+保持済みキー全体を保存・復元する。キー再計算やキャッシュ採用は行わない。
+正規化パスは呼び出し側から受け取り、保存文字列との完全一致を検査して複製する。
+ファイルシステムにはアクセスしない。バージョン、識別子、edition、fingerprint は
+不透明な値として保持し、現在の生成処理やキー相互の関係とは照合しない。
+
+正規 UTF-8 JSON は上限を含む 16 MiB までとし、再符号化が入力バイトと完全一致する。
+配列の厳密なフィールド順は [英語版](../en/cache_key.md#retained-cache-key-storage) に定義する。
+ハッシュは整数バイト32個、fingerprint は u64、範囲端点は usize で start <= end とする。
+コンテキストは [TokenStream 保存形式](./lexing.md#tokenstream-storage) と同じタグを用い、
+lexing の crate 内ヘルパーを共有する。範囲の順序・重複・重なりをそのまま保持する。
+AST キーの欠落は null。不正な形・型・幅・タグ・スキーマ、逆転範囲、非正規形、
+上限超過、パス不一致は None。計画の整合性、生成元、キャッシュ再利用可否は検証しない。
+既存の stable hash とバージョン定数は変更しない。新しい公開型や生成処理は追加しない。
+テストは固定形式、全コンテキストタグ、キーとハッシュの保持、AST キー欠落、
+非一様な計画、不透明なバージョン、拒否条件とサイズ境界を検査する。

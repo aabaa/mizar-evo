@@ -146,7 +146,7 @@ fn decode_list<T>(value: &Value, mut decode: impl FnMut(&Value) -> Option<T>) ->
     value.as_array()?.iter().map(&mut decode).collect()
 }
 
-fn encode_context(context: ParserLexContext) -> Option<Value> {
+pub(crate) fn encode_context(context: ParserLexContext) -> Option<Value> {
     let kinds = USER_KINDS
         .into_iter()
         .filter(|kind| context.user_symbol_kinds().contains(*kind))
@@ -160,7 +160,7 @@ fn encode_context(context: ParserLexContext) -> Option<Value> {
     ]))
 }
 
-fn decode_context(value: &Value) -> Option<ParserLexContext> {
+pub(crate) fn decode_context(value: &Value) -> Option<ParserLexContext> {
     let [mode, kinds] = fields::<2>(value)?;
     let mode = decode_tag(mode, &MODES)?;
     let mut previous = None;
