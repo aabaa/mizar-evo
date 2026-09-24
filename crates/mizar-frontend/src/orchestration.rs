@@ -17,9 +17,16 @@ use crate::lexing::{
     TokenizeRequest, tokenize,
 };
 use crate::parsing::{ParseRequest, ParserInputs, ParserSeam};
-use crate::preprocess::{PreprocessDiagnostic, PreprocessDiagnosticKind, PreprocessedSource};
+use crate::preprocess::{
+    ImportPrescanDiagnosticCode, PreprocessDiagnostic, PreprocessDiagnosticKind,
+    PreprocessedSource, SourcePreprocessDiagnosticCode,
+};
 use crate::source::{SourceUnit, SourceUnitLoader, SourceUnitRequest, register_source_unit};
-use crate::span_bridge::{LexerByteSpan, SpanBridge, SpanBridgeError};
+use crate::span_bridge::{
+    LexerByteSpan, SpanBridge, SpanBridgeError, decode_source_anchor, decode_source_range,
+    encode_source_anchor, encode_source_range,
+};
+use mizar_lexer::{LexDiagnosticCode, ScopeSkeletonDiagnosticCode};
 use mizar_session::{
     DocumentUri, NormalizedPath, SessionIdAllocator, SourceAnchor, SourceId, SourceInput,
     SourceLoadError, SourceOriginInput, SourceRange,
@@ -29,6 +36,86 @@ use std::error::Error;
 use std::fmt;
 use std::path::PathBuf;
 use std::sync::Arc;
+
+const FRONTEND_OUTPUT_DISK_PREFIX: &[u8] = b"mizar-frontend-output-disk-v1";
+const FRONTEND_OUTPUT_DISK_MAX_BYTES: usize = 64 * 1024 * 1024;
+const DIAGNOSTIC_CODES: [DiagnosticCode; 28] = [
+    DiagnosticCode::SourceLoad,
+    DiagnosticCode::Preprocess(PreprocessDiagnosticKind::SourcePrecondition(
+        SourcePreprocessDiagnosticCode::CarriageReturn,
+    )),
+    DiagnosticCode::Preprocess(PreprocessDiagnosticKind::SourcePrecondition(
+        SourcePreprocessDiagnosticCode::NonAsciiCode,
+    )),
+    DiagnosticCode::Preprocess(PreprocessDiagnosticKind::SourcePrecondition(
+        SourcePreprocessDiagnosticCode::UnterminatedMultiLineComment,
+    )),
+    DiagnosticCode::Preprocess(PreprocessDiagnosticKind::ImportPrescan(
+        ImportPrescanDiagnosticCode::MissingModulePath,
+    )),
+    DiagnosticCode::Preprocess(PreprocessDiagnosticKind::ImportPrescan(
+        ImportPrescanDiagnosticCode::EmptyModulePathComponent,
+    )),
+    DiagnosticCode::Preprocess(PreprocessDiagnosticKind::ImportPrescan(
+        ImportPrescanDiagnosticCode::MissingAlias,
+    )),
+    DiagnosticCode::Preprocess(PreprocessDiagnosticKind::ImportPrescan(
+        ImportPrescanDiagnosticCode::MissingSemicolon,
+    )),
+    DiagnosticCode::Preprocess(PreprocessDiagnosticKind::ImportPrescan(
+        ImportPrescanDiagnosticCode::UnexpectedToken,
+    )),
+    DiagnosticCode::Preprocess(PreprocessDiagnosticKind::RawImportScan),
+    DiagnosticCode::LexicalEnvironment(LexicalEnvironmentDiagnosticCode::UnresolvedImport),
+    DiagnosticCode::LexicalEnvironment(LexicalEnvironmentDiagnosticCode::MissingSummary),
+    DiagnosticCode::LexicalEnvironment(LexicalEnvironmentDiagnosticCode::UserSymbolImportConflict),
+    DiagnosticCode::LexicalEnvironment(LexicalEnvironmentDiagnosticCode::InvalidUserSymbolSpelling),
+    DiagnosticCode::LexicalEnvironment(LexicalEnvironmentDiagnosticCode::InvalidUserSymbolArity),
+    DiagnosticCode::LexicalEnvironment(LexicalEnvironmentDiagnosticCode::ReservedWordCollision),
+    DiagnosticCode::LexicalEnvironment(LexicalEnvironmentDiagnosticCode::ReservedSymbolCollision),
+    DiagnosticCode::Lexing(LexingDiagnosticKind::RawScan),
+    DiagnosticCode::Lexing(LexingDiagnosticKind::ScopeSkeleton(
+        ScopeSkeletonDiagnosticCode::MalformedBinderList,
+    )),
+    DiagnosticCode::Lexing(LexingDiagnosticKind::ScopeSkeleton(
+        ScopeSkeletonDiagnosticCode::UnsupportedBinderShape,
+    )),
+    DiagnosticCode::Lexing(LexingDiagnosticKind::ScopeSkeleton(
+        ScopeSkeletonDiagnosticCode::DuplicateBindingName,
+    )),
+    DiagnosticCode::Lexing(LexingDiagnosticKind::ScopeSkeleton(
+        ScopeSkeletonDiagnosticCode::UnmatchedEnd,
+    )),
+    DiagnosticCode::Lexing(LexingDiagnosticKind::ScopeSkeleton(
+        ScopeSkeletonDiagnosticCode::MissingEnd,
+    )),
+    DiagnosticCode::Lexing(LexingDiagnosticKind::Lexer(
+        LexDiagnosticCode::NoValidTokenCandidate,
+    )),
+    DiagnosticCode::Lexing(LexingDiagnosticKind::Lexer(
+        LexDiagnosticCode::ParserContextRejectedCandidate,
+    )),
+    DiagnosticCode::Lexing(LexingDiagnosticKind::Lexer(
+        LexDiagnosticCode::AmbiguousUserSymbol,
+    )),
+    DiagnosticCode::Lexing(LexingDiagnosticKind::Lexer(
+        LexDiagnosticCode::MalformedStringLiteral,
+    )),
+    DiagnosticCode::Lexing(LexingDiagnosticKind::Lexer(
+        LexDiagnosticCode::UnsupportedRawToken,
+    )),
+];
+const DIAGNOSTIC_CLASSES: [DiagnosticClass; 9] = [
+    DiagnosticClass::SourceLoad,
+    DiagnosticClass::LexicalPrecondition,
+    DiagnosticClass::CommentStructure,
+    DiagnosticClass::ImportPrescan,
+    DiagnosticClass::LexicalEnvironment,
+    DiagnosticClass::ScopeSkeleton,
+    DiagnosticClass::Tokenization,
+    DiagnosticClass::Syntax,
+    DiagnosticClass::AnnotationSyntax,
+];
 
 /// Complete frontend output for one source.
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -45,6 +132,176 @@ pub struct FrontendOutput<A> {
     pub diagnostics: Vec<FrontendDiagnostic>,
     /// Layered content cache keys for the output.
     pub cache_keys: FrontendCacheKeys,
+}
+
+impl FrontendOutput<mizar_syntax::SurfaceAst> {
+    /// Encodes a complete disk-source frontend output for retained storage.
+    pub fn canonical_disk_bytes(&self) -> Option<Vec<u8>> {
+        let source_id = self.source.source_id;
+        if self.preprocessed.source_id != source_id || self.tokens.source_id != source_id {
+            return None;
+        }
+        if self
+            .ast
+            .as_ref()
+            .is_some_and(|ast| ast.source_id != source_id)
+            || self.cache_keys.source.normalized_path != self.source.normalized_path
+        {
+            return None;
+        }
+        let diagnostics = self
+            .diagnostics
+            .iter()
+            .map(|diagnostic| {
+                let code = match &diagnostic.code {
+                    DiagnosticCode::Syntax(code) => serde_json::json!([28, code.as_ref()]),
+                    code => serde_json::json!([DIAGNOSTIC_CODES
+                        .iter()
+                        .position(|entry| entry == code)?]),
+                };
+                let class = DIAGNOSTIC_CLASSES
+                    .iter()
+                    .position(|class| *class == diagnostic.class)?;
+                let DiagnosticLocation::SourceRange(primary) = &diagnostic.location else {
+                    return None;
+                };
+                let secondary = diagnostic
+                    .secondary
+                    .iter()
+                    .map(|anchor| encode_source_anchor(anchor, source_id))
+                    .collect::<Option<Vec<_>>>()?;
+                Some(serde_json::json!([
+                    code,
+                    diagnostic.message.as_ref(),
+                    class,
+                    encode_source_range(*primary, source_id)?,
+                    secondary,
+                    diagnostic.recovery_note
+                ]))
+            })
+            .collect::<Option<Vec<_>>>()?;
+        let diagnostic_bytes = serde_json::to_vec(&diagnostics).ok()?;
+        let fields = [
+            self.source.canonical_disk_bytes()?,
+            self.preprocessed.canonical_bytes()?,
+            self.tokens.canonical_bytes()?,
+            match &self.ast {
+                Some(ast) => ast.canonical_bytes()?,
+                None => Vec::new(),
+            },
+            diagnostic_bytes,
+            self.cache_keys.canonical_bytes()?,
+        ];
+        let total = fields
+            .iter()
+            .try_fold(FRONTEND_OUTPUT_DISK_PREFIX.len(), |size, field| {
+                size.checked_add(8)?.checked_add(field.len())
+            })?;
+        if total > FRONTEND_OUTPUT_DISK_MAX_BYTES {
+            return None;
+        }
+        let mut bytes = Vec::with_capacity(total);
+        bytes.extend_from_slice(FRONTEND_OUTPUT_DISK_PREFIX);
+        for field in fields {
+            bytes.extend_from_slice(&u64::try_from(field.len()).ok()?.to_le_bytes());
+            bytes.extend_from_slice(&field);
+        }
+        Some(bytes)
+    }
+
+    /// Restores retained storage with caller-validated disk input and a current source ID.
+    pub fn from_canonical_disk_bytes(
+        bytes: &[u8],
+        source_id: SourceId,
+        input: &SourceInput,
+    ) -> Option<Self> {
+        if bytes.len() > FRONTEND_OUTPUT_DISK_MAX_BYTES {
+            return None;
+        }
+        let mut remaining = bytes.strip_prefix(FRONTEND_OUTPUT_DISK_PREFIX)?;
+        let mut fields = Vec::with_capacity(6);
+        for _ in 0..6 {
+            let (length, rest) = remaining.split_at_checked(8)?;
+            let length = usize::try_from(u64::from_le_bytes(length.try_into().ok()?)).ok()?;
+            let (field, rest) = rest.split_at_checked(length)?;
+            fields.push(field);
+            remaining = rest;
+        }
+        if !remaining.is_empty() {
+            return None;
+        }
+        let [
+            source_bytes,
+            preprocess_bytes,
+            token_bytes,
+            ast_bytes,
+            diagnostic_bytes,
+            key_bytes,
+        ] = fields.try_into().ok()?;
+        let source = SourceUnit::from_canonical_disk_bytes(source_bytes, source_id, input)?;
+        let preprocessed = PreprocessedSource::from_canonical_bytes(preprocess_bytes, source_id)?;
+        let tokens = TokenStream::from_canonical_bytes(token_bytes, source_id)?;
+        let ast = if ast_bytes.is_empty() {
+            None
+        } else {
+            Some(mizar_syntax::SurfaceAst::from_canonical_bytes(
+                ast_bytes, source_id,
+            )?)
+        };
+        let records: serde_json::Value = serde_json::from_slice(diagnostic_bytes).ok()?;
+        let diagnostics = records
+            .as_array()?
+            .iter()
+            .map(|record| {
+                let [code, message, class, primary, secondary, recovery_note] =
+                    record.as_array()?.as_slice()
+                else {
+                    return None;
+                };
+                let code = match code.as_array()?.as_slice() {
+                    [tag] => DIAGNOSTIC_CODES
+                        .get(usize::try_from(tag.as_u64()?).ok()?)?
+                        .clone(),
+                    [tag, syntax] if tag.as_u64()? == 28 => {
+                        DiagnosticCode::Syntax(Arc::from(syntax.as_str()?))
+                    }
+                    _ => return None,
+                };
+                let class = *DIAGNOSTIC_CLASSES.get(usize::try_from(class.as_u64()?).ok()?)?;
+                let secondary = secondary
+                    .as_array()?
+                    .iter()
+                    .map(|anchor| decode_source_anchor(anchor, source_id))
+                    .collect::<Option<Vec<_>>>()?;
+                let recovery_note = if recovery_note.is_null() {
+                    None
+                } else {
+                    Some(recovery_note.as_str()?.to_owned())
+                };
+                Some(FrontendDiagnostic {
+                    code,
+                    message: Arc::from(message.as_str()?),
+                    class,
+                    location: DiagnosticLocation::SourceRange(decode_source_range(
+                        primary, source_id,
+                    )?),
+                    secondary,
+                    recovery_note,
+                })
+            })
+            .collect::<Option<Vec<_>>>()?;
+        let cache_keys =
+            FrontendCacheKeys::from_canonical_bytes(key_bytes, &source.normalized_path)?;
+        let output = Self {
+            source,
+            preprocessed,
+            tokens,
+            ast,
+            diagnostics,
+            cache_keys,
+        };
+        (output.canonical_disk_bytes()?.as_slice() == bytes).then_some(output)
+    }
 }
 
 /// Frontend coordinator parameterized by loader, provider, and parser seam.
@@ -708,6 +965,592 @@ mod tests {
     use std::sync::{Arc, Mutex};
 
     static NEXT_FIXTURE_ID: AtomicUsize = AtomicUsize::new(0);
+
+    use super::FrontendOutput;
+    use crate::preprocess::PreprocessDiagnosticKind;
+    use mizar_session::{GeneratedSpanAnchor, GeneratedSpanOrigin};
+    const A23_PREFIX: &[u8] = b"mizar-frontend-output-disk-v1";
+
+    fn a23_fields(bytes: &[u8]) -> [Vec<u8>; 6] {
+        let mut rest = bytes.strip_prefix(A23_PREFIX).expect("aggregate prefix");
+        let fields = std::array::from_fn(|_| {
+            let length = u64::from_le_bytes(rest[..8].try_into().unwrap()) as usize;
+            rest = &rest[8..];
+            let (field, tail) = rest.split_at(length);
+            rest = tail;
+            field.to_vec()
+        });
+        assert!(rest.is_empty());
+        fields
+    }
+
+    fn a23_join(fields: &[Vec<u8>; 6]) -> Vec<u8> {
+        let mut bytes = A23_PREFIX.to_vec();
+        for field in fields {
+            bytes.extend_from_slice(&(field.len() as u64).to_le_bytes());
+            bytes.extend_from_slice(field);
+        }
+        bytes
+    }
+
+    #[test]
+    fn disk_output_round_trips_real_valid_recovered_and_absent_ast_without_files() {
+        let fixture = PackageFixture::new();
+        let frontend = frontend_for_fixture(&fixture, MizarParserSeam);
+        let ids = InMemorySessionIdAllocator::new();
+        for (name, text, ast_present, diagnostic_present) in [
+            ("src/a23_valid.miz", "definition\nend;\n", true, false),
+            (
+                "src/a23_recovered.miz",
+                full_merge_fixture_text(),
+                true,
+                true,
+            ),
+            ("src/a23_none.miz", "end", false, true),
+        ] {
+            fixture.write(name, text);
+            let request = fixture.request(name);
+            let output = frontend.run(request.clone(), &ids).unwrap();
+            assert_eq!(output.ast.is_some(), ast_present, "{name}");
+            assert_eq!(!output.diagnostics.is_empty(), diagnostic_present, "{name}");
+            let bytes = output.canonical_disk_bytes().unwrap();
+            let fields = a23_fields(&bytes);
+            assert_eq!(fields[0], output.source.canonical_disk_bytes().unwrap());
+            assert_eq!(fields[1], output.preprocessed.canonical_bytes().unwrap());
+            assert_eq!(fields[2], output.tokens.canonical_bytes().unwrap());
+            assert_eq!(
+                fields[3],
+                output
+                    .ast
+                    .as_ref()
+                    .map(|ast| ast.canonical_bytes().unwrap())
+                    .unwrap_or_default()
+            );
+            assert_eq!(fields[5], output.cache_keys.canonical_bytes().unwrap());
+            assert_eq!(a23_join(&fields), bytes);
+            assert_eq!(
+                FrontendOutput::from_canonical_disk_bytes(
+                    &bytes,
+                    output.source.source_id,
+                    &request.input
+                ),
+                Some(output.clone())
+            );
+
+            fs::remove_file(fixture.path(name)).unwrap();
+            let fresh_id = ids.next_source_id(request.snapshot).unwrap();
+            assert_ne!(fresh_id, output.source.source_id);
+            let mut relocated = request.input.clone();
+            relocated.origin = SourceOriginInput::Disk {
+                path: fixture.path("src/not_on_disk.miz"),
+            };
+            let restored =
+                FrontendOutput::from_canonical_disk_bytes(&bytes, fresh_id, &relocated).unwrap();
+            assert_eq!(restored.source.source_id, fresh_id);
+            assert_eq!(
+                restored.source.file_path,
+                fixture.path("src/not_on_disk.miz")
+            );
+            assert_eq!(restored.preprocessed.source_id, fresh_id);
+            assert_eq!(restored.tokens.source_id, fresh_id);
+            assert_eq!(restored.ast.is_some(), ast_present);
+            assert_eq!(restored.diagnostics.len(), output.diagnostics.len());
+            assert_eq!(restored.canonical_disk_bytes().unwrap(), bytes);
+        }
+    }
+
+    #[test]
+    fn disk_output_diagnostic_vocabulary_and_all_anchor_forms_have_typed_oracles() {
+        use mizar_lexer::{
+            ImportPrescanDiagnosticCode as I, LexDiagnosticCode as D,
+            ScopeSkeletonDiagnosticCode as S, SourcePreprocessDiagnosticCode as P,
+        };
+        use serde_json::json;
+
+        let fixture = PackageFixture::new();
+        fixture.write("src/a23_diagnostics.miz", "definition\nend;\n");
+        let request = fixture.request("src/a23_diagnostics.miz");
+        let mut output = frontend_for_fixture(&fixture, MizarParserSeam)
+            .run(request.clone(), &InMemorySessionIdAllocator::new())
+            .unwrap();
+        let codes = [
+            DiagnosticCode::SourceLoad,
+            DiagnosticCode::Preprocess(PreprocessDiagnosticKind::SourcePrecondition(
+                P::CarriageReturn,
+            )),
+            DiagnosticCode::Preprocess(PreprocessDiagnosticKind::SourcePrecondition(
+                P::NonAsciiCode,
+            )),
+            DiagnosticCode::Preprocess(PreprocessDiagnosticKind::SourcePrecondition(
+                P::UnterminatedMultiLineComment,
+            )),
+            DiagnosticCode::Preprocess(PreprocessDiagnosticKind::ImportPrescan(
+                I::MissingModulePath,
+            )),
+            DiagnosticCode::Preprocess(PreprocessDiagnosticKind::ImportPrescan(
+                I::EmptyModulePathComponent,
+            )),
+            DiagnosticCode::Preprocess(PreprocessDiagnosticKind::ImportPrescan(I::MissingAlias)),
+            DiagnosticCode::Preprocess(PreprocessDiagnosticKind::ImportPrescan(
+                I::MissingSemicolon,
+            )),
+            DiagnosticCode::Preprocess(PreprocessDiagnosticKind::ImportPrescan(I::UnexpectedToken)),
+            DiagnosticCode::Preprocess(PreprocessDiagnosticKind::RawImportScan),
+            DiagnosticCode::LexicalEnvironment(LexicalEnvironmentDiagnosticCode::UnresolvedImport),
+            DiagnosticCode::LexicalEnvironment(LexicalEnvironmentDiagnosticCode::MissingSummary),
+            DiagnosticCode::LexicalEnvironment(
+                LexicalEnvironmentDiagnosticCode::UserSymbolImportConflict,
+            ),
+            DiagnosticCode::LexicalEnvironment(
+                LexicalEnvironmentDiagnosticCode::InvalidUserSymbolSpelling,
+            ),
+            DiagnosticCode::LexicalEnvironment(
+                LexicalEnvironmentDiagnosticCode::InvalidUserSymbolArity,
+            ),
+            DiagnosticCode::LexicalEnvironment(
+                LexicalEnvironmentDiagnosticCode::ReservedWordCollision,
+            ),
+            DiagnosticCode::LexicalEnvironment(
+                LexicalEnvironmentDiagnosticCode::ReservedSymbolCollision,
+            ),
+            DiagnosticCode::Lexing(LexingDiagnosticKind::RawScan),
+            DiagnosticCode::Lexing(LexingDiagnosticKind::ScopeSkeleton(S::MalformedBinderList)),
+            DiagnosticCode::Lexing(LexingDiagnosticKind::ScopeSkeleton(
+                S::UnsupportedBinderShape,
+            )),
+            DiagnosticCode::Lexing(LexingDiagnosticKind::ScopeSkeleton(S::DuplicateBindingName)),
+            DiagnosticCode::Lexing(LexingDiagnosticKind::ScopeSkeleton(S::UnmatchedEnd)),
+            DiagnosticCode::Lexing(LexingDiagnosticKind::ScopeSkeleton(S::MissingEnd)),
+            DiagnosticCode::Lexing(LexingDiagnosticKind::Lexer(D::NoValidTokenCandidate)),
+            DiagnosticCode::Lexing(LexingDiagnosticKind::Lexer(
+                D::ParserContextRejectedCandidate,
+            )),
+            DiagnosticCode::Lexing(LexingDiagnosticKind::Lexer(D::AmbiguousUserSymbol)),
+            DiagnosticCode::Lexing(LexingDiagnosticKind::Lexer(D::MalformedStringLiteral)),
+            DiagnosticCode::Lexing(LexingDiagnosticKind::Lexer(D::UnsupportedRawToken)),
+            DiagnosticCode::Syntax(Arc::from("β_syntax")),
+        ];
+        let classes = [
+            DiagnosticClass::SourceLoad,
+            DiagnosticClass::LexicalPrecondition,
+            DiagnosticClass::CommentStructure,
+            DiagnosticClass::ImportPrescan,
+            DiagnosticClass::LexicalEnvironment,
+            DiagnosticClass::ScopeSkeleton,
+            DiagnosticClass::Tokenization,
+            DiagnosticClass::Syntax,
+            DiagnosticClass::AnnotationSyntax,
+        ];
+        let sid = output.source.source_id;
+        let range = SourceRange {
+            source_id: sid,
+            start: 0,
+            end: 10,
+        };
+        let secondary = vec![
+            SourceAnchor::Range(range),
+            SourceAnchor::Point {
+                source_id: sid,
+                offset: 11,
+            },
+            SourceAnchor::Generated(
+                GeneratedSpanOrigin::new(GeneratedSpanAnchor::Range(range), " range β ").unwrap(),
+            ),
+            SourceAnchor::Generated(
+                GeneratedSpanOrigin::new(
+                    GeneratedSpanAnchor::Point {
+                        source_id: sid,
+                        offset: 12,
+                    },
+                    " point ",
+                )
+                .unwrap(),
+            ),
+        ];
+        output.diagnostics = codes
+            .iter()
+            .enumerate()
+            .map(|(index, code)| FrontendDiagnostic {
+                code: code.clone(),
+                message: Arc::from(format!("message β {index}")),
+                class: classes[index % classes.len()],
+                location: DiagnosticLocation::SourceRange(range),
+                secondary: if index == 0 {
+                    secondary.clone()
+                } else {
+                    Vec::new()
+                },
+                recovery_note: (index == 0).then(|| " recovery β ".to_owned()),
+            })
+            .collect();
+        output.diagnostics.push(output.diagnostics[0].clone());
+        let bytes = output.canonical_disk_bytes().unwrap();
+        let fields = a23_fields(&bytes);
+        let wire: serde_json::Value = serde_json::from_slice(&fields[4]).unwrap();
+        assert_eq!(wire.as_array().unwrap().len(), 30);
+        for index in 0..29 {
+            let expected_code = if index == 28 {
+                json!([28, "β_syntax"])
+            } else {
+                json!([index])
+            };
+            assert_eq!(wire[index][0], expected_code, "code {index}");
+            assert_eq!(wire[index][1], json!(format!("message β {index}")));
+            assert_eq!(wire[index][2], json!(index % 9), "class {index}");
+            assert_eq!(wire[index][3], json!([0, 10]));
+        }
+        assert_eq!(
+            wire[0][4],
+            json!([
+                ["range", [0, 10]],
+                ["point", 11],
+                ["generated", ["range", [0, 10]], " range β "],
+                ["generated", ["point", 12], " point "]
+            ])
+        );
+        assert_eq!(wire[0][5], json!(" recovery β "));
+        assert!(wire[1][5].is_null());
+        assert_eq!(wire[29], wire[0]);
+        let ids = InMemorySessionIdAllocator::new();
+        let _old_id = ids.next_source_id(snapshot_id(3)).unwrap();
+        let fresh_id = ids.next_source_id(snapshot_id(4)).unwrap();
+        assert_ne!(fresh_id, sid);
+        let restored =
+            FrontendOutput::from_canonical_disk_bytes(&bytes, fresh_id, &request.input).unwrap();
+        assert_eq!(restored.diagnostics.len(), 30);
+        for (index, expected) in codes.iter().enumerate() {
+            assert_eq!(
+                &restored.diagnostics[index].code, expected,
+                "decoded code {index}"
+            );
+            assert_eq!(
+                restored.diagnostics[index].class,
+                classes[index % classes.len()],
+                "decoded class {index}"
+            );
+        }
+        assert_eq!(
+            restored.diagnostics[0].secondary[0],
+            SourceAnchor::Range(SourceRange {
+                source_id: fresh_id,
+                start: 0,
+                end: 10
+            })
+        );
+        assert_eq!(
+            restored.diagnostics[0].secondary[1],
+            SourceAnchor::Point {
+                source_id: fresh_id,
+                offset: 11
+            }
+        );
+        assert_eq!(
+            restored.diagnostics[0].secondary[2],
+            SourceAnchor::Generated(
+                GeneratedSpanOrigin::new(
+                    GeneratedSpanAnchor::Range(SourceRange {
+                        source_id: fresh_id,
+                        start: 0,
+                        end: 10
+                    }),
+                    " range β "
+                )
+                .unwrap()
+            )
+        );
+        assert_eq!(
+            restored.diagnostics[0].secondary[3],
+            SourceAnchor::Generated(
+                GeneratedSpanOrigin::new(
+                    GeneratedSpanAnchor::Point {
+                        source_id: fresh_id,
+                        offset: 12
+                    },
+                    " point "
+                )
+                .unwrap()
+            )
+        );
+        assert_eq!(restored.canonical_disk_bytes().unwrap(), bytes);
+    }
+
+    #[test]
+    fn disk_output_rejects_bad_framing_nested_records_and_diagnostic_shapes() {
+        use serde_json::{Value, json};
+        let fixture = PackageFixture::new();
+        fixture.write("src/a23_corrupt.miz", "definition\nend;\n");
+        let request = fixture.request("src/a23_corrupt.miz");
+        let mut output = frontend_for_fixture(&fixture, MizarParserSeam)
+            .run(request.clone(), &InMemorySessionIdAllocator::new())
+            .unwrap();
+        let sid = output.source.source_id;
+        output.diagnostics.push(FrontendDiagnostic {
+            code: DiagnosticCode::Syntax(Arc::from("syntax")),
+            message: Arc::from("x"),
+            class: DiagnosticClass::Syntax,
+            location: DiagnosticLocation::SourceRange(SourceRange {
+                source_id: sid,
+                start: 0,
+                end: 1,
+            }),
+            secondary: vec![],
+            recovery_note: None,
+        });
+        let bytes = output.canonical_disk_bytes().unwrap();
+        let fields = a23_fields(&bytes);
+        for end in [0, A23_PREFIX.len() - 1, A23_PREFIX.len(), bytes.len() - 1] {
+            assert!(
+                FrontendOutput::from_canonical_disk_bytes(&bytes[..end], sid, &request.input)
+                    .is_none(),
+                "cut {end}"
+            );
+        }
+        let mut trailing = bytes.clone();
+        trailing.push(0);
+        assert!(
+            FrontendOutput::from_canonical_disk_bytes(&trailing, sid, &request.input).is_none()
+        );
+        let mut unknown = bytes.clone();
+        unknown[0] = b'X';
+        assert!(FrontendOutput::from_canonical_disk_bytes(&unknown, sid, &request.input).is_none());
+        let mut impossible = bytes.clone();
+        impossible[A23_PREFIX.len()..A23_PREFIX.len() + 8].copy_from_slice(&u64::MAX.to_le_bytes());
+        assert!(
+            FrontendOutput::from_canonical_disk_bytes(&impossible, sid, &request.input).is_none()
+        );
+        for index in [0, 1, 2, 3, 5] {
+            let mut bad = fields.clone();
+            bad[index] = b"bad".to_vec();
+            assert!(
+                FrontendOutput::from_canonical_disk_bytes(&a23_join(&bad), sid, &request.input)
+                    .is_none(),
+                "nested {index}"
+            );
+        }
+        let value: Value = serde_json::from_slice(&fields[4]).unwrap();
+        for invalid in [
+            json!(null),
+            json!({}),
+            json!([[[29], "x", 7, [0, 1], [], null]]),
+            json!([[[28], "x", 7, [0, 1], [], null]]),
+            json!([[[28, 1], "x", 7, [0, 1], [], null]]),
+            json!([[[28, "x"], "x", 9, [0, 1], [], null]]),
+            json!([[[28, "x"], "x", 7, [2, 1], [], null]]),
+            json!([[[28, "x"], "x", 7, [-1, 1], [], null]]),
+            json!([[[28, "x"], "x", 7, [0, 1], [["point", -1]], null]]),
+            json!([[
+                [28, "x"],
+                "x",
+                7,
+                [0, 1],
+                [["generated", ["point", 0], "  "]],
+                null
+            ]]),
+            json!([[[28, "x"], "x", 7, [0, 1], [], 7]]),
+            json!([[[28, "x"], "x", 7, [0, 1], [], null, "extra"]]),
+        ] {
+            let mut bad = fields.clone();
+            bad[4] = serde_json::to_vec(&invalid).unwrap();
+            assert!(
+                FrontendOutput::from_canonical_disk_bytes(&a23_join(&bad), sid, &request.input)
+                    .is_none(),
+                "{invalid}"
+            );
+        }
+        let mut bad = fields.clone();
+        bad[4] = serde_json::to_vec_pretty(&value).unwrap();
+        assert!(
+            FrontendOutput::from_canonical_disk_bytes(&a23_join(&bad), sid, &request.input)
+                .is_none()
+        );
+        let mut bad = fields.clone();
+        bad[4] = vec![0xff];
+        assert!(
+            FrontendOutput::from_canonical_disk_bytes(&a23_join(&bad), sid, &request.input)
+                .is_none()
+        );
+        let mut changed = request.input.clone();
+        changed.normalized_path = fixture.request("src/a23_other.miz").input.normalized_path;
+        assert!(FrontendOutput::from_canonical_disk_bytes(&bytes, sid, &changed).is_none());
+        changed = request.input.clone();
+        changed.origin = SourceOriginInput::Generated {
+            generator: GeneratedSourceKind::new("test"),
+            text: Arc::from(""),
+            anchor: None,
+        };
+        assert!(FrontendOutput::from_canonical_disk_bytes(&bytes, sid, &changed).is_none());
+        let ids = InMemorySessionIdAllocator::new();
+        let _old_id = ids.next_source_id(snapshot_id(80)).unwrap();
+        let foreign_id = ids.next_source_id(snapshot_id(81)).unwrap();
+        assert_ne!(foreign_id, sid);
+        for branch in 0..3 {
+            let mut foreign = output.clone();
+            match branch {
+                0 => {
+                    foreign.preprocessed =
+                        crate::preprocess::PreprocessedSource::from_canonical_bytes(
+                            &fields[1], foreign_id,
+                        )
+                        .unwrap()
+                }
+                1 => {
+                    foreign.tokens =
+                        crate::lexing::TokenStream::from_canonical_bytes(&fields[2], foreign_id)
+                            .unwrap()
+                }
+                _ => {
+                    foreign.ast = Some(
+                        mizar_syntax::SurfaceAst::from_canonical_bytes(&fields[3], foreign_id)
+                            .unwrap(),
+                    )
+                }
+            }
+            assert!(foreign.preprocessed.canonical_bytes().is_some());
+            assert!(foreign.tokens.canonical_bytes().is_some());
+            assert!(foreign.ast.as_ref().unwrap().canonical_bytes().is_some());
+            assert!(
+                foreign.canonical_disk_bytes().is_none(),
+                "foreign child {branch}"
+            );
+        }
+        let mut mismatched = output.clone();
+        mismatched.cache_keys.source.normalized_path =
+            fixture.request("src/a23_other.miz").input.normalized_path;
+        assert!(mismatched.canonical_disk_bytes().is_none());
+        let mut non_disk = output.clone();
+        non_disk.source.origin = SourceOrigin::OpenBuffer { version: 1 };
+        assert!(non_disk.canonical_disk_bytes().is_none());
+        let mut foreign = output.clone();
+        foreign.diagnostics[0].location = DiagnosticLocation::SourceRange(SourceRange {
+            source_id: foreign_id,
+            start: 0,
+            end: 1,
+        });
+        assert!(foreign.canonical_disk_bytes().is_none());
+        for anchor in [
+            SourceAnchor::Range(SourceRange {
+                source_id: foreign_id,
+                start: 0,
+                end: 1,
+            }),
+            SourceAnchor::Point {
+                source_id: foreign_id,
+                offset: 0,
+            },
+            SourceAnchor::Generated(
+                GeneratedSpanOrigin::new(
+                    GeneratedSpanAnchor::Range(SourceRange {
+                        source_id: foreign_id,
+                        start: 0,
+                        end: 1,
+                    }),
+                    "foreign",
+                )
+                .unwrap(),
+            ),
+            SourceAnchor::Generated(
+                GeneratedSpanOrigin::new(
+                    GeneratedSpanAnchor::Point {
+                        source_id: foreign_id,
+                        offset: 0,
+                    },
+                    "foreign",
+                )
+                .unwrap(),
+            ),
+        ] {
+            let mut foreign = output.clone();
+            foreign.diagnostics[0].secondary = vec![anchor];
+            assert!(foreign.canonical_disk_bytes().is_none());
+        }
+        let mut load = output.clone();
+        load.diagnostics[0].location = DiagnosticLocation::SourceLoad(SourceLoadLocation::Unknown);
+        assert!(load.canonical_disk_bytes().is_none());
+    }
+
+    #[test]
+    fn disk_output_preserves_opaque_keys_and_out_of_source_diagnostic_range() {
+        let fixture = PackageFixture::new();
+        fixture.write("src/a23_opaque.miz", "definition\nend;\n");
+        let request = fixture.request("src/a23_opaque.miz");
+        let mut output = frontend_for_fixture(&fixture, MizarParserSeam)
+            .run(request.clone(), &InMemorySessionIdAllocator::new())
+            .unwrap();
+        assert!(output.ast.is_some());
+        output.cache_keys.ast = None;
+        output.diagnostics.push(FrontendDiagnostic {
+            code: DiagnosticCode::SourceLoad,
+            message: Arc::from("opaque"),
+            class: DiagnosticClass::AnnotationSyntax,
+            location: DiagnosticLocation::SourceRange(SourceRange {
+                source_id: output.source.source_id,
+                start: 10_000,
+                end: 10_001,
+            }),
+            secondary: vec![],
+            recovery_note: None,
+        });
+        let bytes = output.canonical_disk_bytes().unwrap();
+        let restored = FrontendOutput::from_canonical_disk_bytes(
+            &bytes,
+            output.source.source_id,
+            &request.input,
+        )
+        .unwrap();
+        assert_eq!(restored, output);
+        assert_eq!(restored.canonical_disk_bytes().unwrap(), bytes);
+    }
+
+    #[test]
+    fn disk_output_accepts_exact_64_mib_and_rejects_one_more_byte() {
+        let fixture = PackageFixture::new();
+        fixture.write("src/a23_limit.miz", "definition\nend;\n");
+        let request = fixture.request("src/a23_limit.miz");
+        let mut output = frontend_for_fixture(&fixture, MizarParserSeam)
+            .run(request.clone(), &InMemorySessionIdAllocator::new())
+            .unwrap();
+        output.diagnostics.push(FrontendDiagnostic {
+            code: DiagnosticCode::Syntax(Arc::from("limit")),
+            message: Arc::from(""),
+            class: DiagnosticClass::Syntax,
+            location: DiagnosticLocation::SourceRange(SourceRange {
+                source_id: output.source.source_id,
+                start: 0,
+                end: 0,
+            }),
+            secondary: vec![],
+            recovery_note: None,
+        });
+        let overhead = output.canonical_disk_bytes().unwrap().len();
+        let limit = 64 * 1024 * 1024;
+        assert!(overhead < limit);
+        output.diagnostics[0].message = Arc::from("x".repeat(limit - overhead));
+        let exact = output.canonical_disk_bytes().unwrap();
+        assert_eq!(exact.len(), limit);
+        let restored = FrontendOutput::from_canonical_disk_bytes(
+            &exact,
+            output.source.source_id,
+            &request.input,
+        )
+        .unwrap();
+        assert_eq!(
+            restored.diagnostics[0].message,
+            output.diagnostics[0].message
+        );
+        assert_eq!(restored.canonical_disk_bytes().unwrap(), exact);
+        output.diagnostics[0].message = Arc::from("x".repeat(limit - overhead + 1));
+        assert!(output.canonical_disk_bytes().is_none());
+        let mut too_long = exact;
+        too_long.push(0);
+        assert!(
+            FrontendOutput::from_canonical_disk_bytes(
+                &too_long,
+                output.source.source_id,
+                &request.input
+            )
+            .is_none()
+        );
+    }
 
     #[test]
     fn stub_parser_frontend_returns_artifacts_without_parser_diagnostics() {

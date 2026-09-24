@@ -342,3 +342,57 @@ zero-diagnostic 57-node AST and v3 cache key, and pins the unchanged control's
 seven-node shape/ranges across replay. The test passes. Orchestration remains
 payload-agnostic: no merge-order algorithm, diagnostic class, resolver input,
 or semantic result changes.
+
+## Disk FrontendOutput storage
+
+`FrontendOutput<SurfaceAst>::canonical_disk_bytes() -> Option<Vec<u8>>` and
+`from_canonical_disk_bytes(bytes: &[u8], source_id: SourceId, input: &SourceInput) -> Option<Self>`
+retain the complete disk-source aggregate. This concrete specialization adds no generic codec
+trait. SourceInput is caller-validated current session metadata, as required by the
+[source codec](./source.md); open buffers and generated sources are outside this format.
+No loader, provider, lexer, parser, source-map registration or publication runs on decode.
+
+Wire bytes start with ASCII `mizar-frontend-output-disk-v1`, followed by exactly six fields,
+each prefixed by its byte length as little-endian u64: source, preprocessed, tokens, AST,
+merged diagnostics, cache keys. The fields reuse respectively SourceUnit disk storage,
+[preprocessing storage](./preprocess.md#preprocessedsource-storage),
+[token storage](./lexing.md#tokenstream-storage), SurfaceAst canonical storage, the diagnostic
+array below, and [cache-key storage](./cache_key.md#retained-cache-key-storage).
+An empty AST field means None; a present AST uses its nonempty canonical bytes.
+The entire payload, including framing, is at most 64 MiB. Length arithmetic is checked;
+truncation, trailing bytes, unknown prefix, invalid nested payloads and noncanonical bytes
+return None. Re-encoding must reproduce the exact complete input.
+
+All typed SourceIds must equal output.source.source_id on encoding and become the caller's
+source_id on decoding. Each nested codec applies its own stricter validation. Cache-key path
+must equal source.normalized_path; other retained key versions/relationships and AST-key
+presence remain opaque. No cross-artifact source-text, bounds, provenance, producer legality,
+cache freshness or proof acceptance validation is implied. The driver owns those checks.
+
+Merged diagnostics are canonical UTF-8 JSON: an ordered array preserving duplicates, each
+entry `[code, message, class, primary_range, secondary_anchors, recovery_note]`. Message and
+optional recovery-note strings retain exact text; None is null. Primary locations must be
+SourceRange; SourceLoad locations are rejected because source-load failures have no aggregate.
+Ranges/anchors reuse [span storage](./preprocess.md#preprocessedsource-storage), including
+ordered usize ranges, current-ID checks and nonblank generated reasons. No sorting occurs.
+Diagnostic class tags are zero-based: SourceLoad, LexicalPrecondition, CommentStructure,
+ImportPrescan, LexicalEnvironment, ScopeSkeleton, Tokenization, Syntax, AnnotationSyntax.
+Code is `[tag]` for the following zero-based ordered vocabulary, or `[28, syntax_string]`:
+
+| Tags | Codes in order |
+|---|---|
+| 0 | SourceLoad |
+| 1–3 | Preprocess.SourcePrecondition: CarriageReturn, NonAsciiCode, UnterminatedMultiLineComment |
+| 4–8 | Preprocess.ImportPrescan: MissingModulePath, EmptyModulePathComponent, MissingAlias, MissingSemicolon, UnexpectedToken |
+| 9 | Preprocess.RawImportScan |
+| 10–16 | LexicalEnvironment: UnresolvedImport, MissingSummary, UserSymbolImportConflict, InvalidUserSymbolSpelling, InvalidUserSymbolArity, ReservedWordCollision, ReservedSymbolCollision |
+| 17 | Lexing.RawScan |
+| 18–22 | Lexing.ScopeSkeleton: MalformedBinderList, UnsupportedBinderShape, DuplicateBindingName, UnmatchedEnd, MissingEnd |
+| 23–27 | Lexing.Lexer: NoValidTokenCandidate, ParserContextRejectedCandidate, AmbiguousUserSymbol, MalformedStringLiteral, UnsupportedRawToken |
+
+Tags are independent of Rust discriminants; unknown tags and wrong shapes/types fail closed.
+Code/class combinations are transported without reclassification, including reserved values.
+Tests cover real recovered/valid/absent-AST output, fresh IDs and relocated/deleted source
+files, nested-byte equality, every diagnostic tag with independent typed oracles, all anchor
+forms and text, malformed framing/nested records, foreign IDs, path/origin rejection and
+payload limits. The source and phase codecs retain their existing standalone tests.

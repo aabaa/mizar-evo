@@ -214,3 +214,29 @@ real parser seam を2回実行し、exact complete zero-diagnostic 57-node AST �
 key を観測し、unchanged control の seven-node shape/range を replay 間で固定する。
 test は pass。orchestration は payload-agnostic のままであり、merge algorithm、
 diagnostic class、resolver input、semantic result は変更しない。
+
+## ディスク FrontendOutput の保存
+
+`FrontendOutput<SurfaceAst>::canonical_disk_bytes() -> Option<Vec<u8>>` と
+`from_canonical_disk_bytes(bytes: &[u8], source_id: SourceId, input: &SourceInput) -> Option<Self>`
+はディスク由来の集約出力全体を保存・復元する。汎用 codec trait は追加しない。
+SourceInput は呼び出し側が検証済みの現在のメタデータを渡す。open buffer・生成ソースは対象外。
+ロード、provider、字句解析、構文解析、ソースマップ登録、公開処理は実行しない。
+
+ASCII `mizar-frontend-output-disk-v1` に続く6フィールドは source、preprocessed、tokens、
+AST、統合診断、cache keys の順で、各バイト長を little-endian u64 で前置する。
+既存の各保存形式を再利用し、空 AST フィールドは None とする。全体上限は64 MiBを含む。
+長さ演算、不足・余剰バイト、不明な識別子、内部形式、完全再符号化一致を検査する。
+型付き SourceId は保存時に source の ID と一致させ、復元時には呼び出し側の ID に統一する。
+キャッシュキーのパスも source と一致させる。他のキー相互関係・AST キー有無は保持する。
+ソース内容との整合性・範囲上限・生成元・鮮度・キャッシュ採用・証明採用は検証しない。
+内部 codec の検査条件はそのまま適用し、それ以外の検証はドライバーの責務とする。
+
+統合診断は順序・重複を保つ正規 UTF-8 JSON 配列とし、各要素は
+`[code, message, class, primary_range, secondary_anchors, recovery_note]`。
+メッセージ・任意の回復注記をそのまま保存し、None は null。位置は SourceRange に限定する。
+SourceLoad 位置は集約出力を伴わないエラー用なので拒否する。範囲とアンカーは既存形式を共有。
+タグ、フィールド形状と固定語彙は [英語版](../en/orchestration.md#disk-frontendoutput-storage) を参照。
+code/class の組合せは予約値を含め再分類しない。不明タグや不正な形・型は None。
+テストは実出力、AST の有無、ID 再割当、移動・削除後の復元、内部バイト、診断語彙、
+全アンカー形、保持文字列、不正な長さ・内部データ、外部 ID、パス・由来不一致、上限を検査する。
