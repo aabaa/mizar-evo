@@ -736,14 +736,20 @@ fn dependency_lexical_provider_reads_real_source_and_summary_boundaries() {
             write_published_artifact,
         },
     };
-    use mizar_frontend::lexical_env::{
-        ExportRank, ExportedSymbolShape, ModuleId as LexerModuleId, SymbolId, UserSymbolArity,
-        UserSymbolKind,
+    use mizar_frontend::{
+        lexical_env::{
+            ExportRank, ExportedSymbolShape, ModuleId as LexerModuleId, SymbolId, UserSymbolArity,
+            UserSymbolKind,
+        },
+        lexing::TokenKind,
+        orchestration::{DiagnosticCode, DiagnosticLocation, Frontend, FrontendOutput},
+        parsing::MizarParserSeam,
+        source::FrontendSourceLoader,
     };
     use std::sync::Arc;
 
     let fixture = Fixture::new(
-        b"\xef\xbb\xbfimport dep.core as A, dep.core as B; import dep.{core, absent};\r\ndefinition\r\nend;\r\n",
+        b"\xef\xbb\xbfimport dep.core as A, dep.core as B; import dep.{core, absent};\r\ndefinition\r\nend;\r\ntheorem Combined: combine(x,y) = x;\r\n",
     );
     let ids = InMemorySessionIdAllocator::new();
     let snapshots = SnapshotRegistry::new();
@@ -934,6 +940,87 @@ fn dependency_lexical_provider_reads_real_source_and_summary_boundaries() {
     assert_eq!(resolved, repeat.resolve_imports(&request).unwrap());
     let repeated = build_active_lexical_environment(&request, &repeat).unwrap();
     assert_eq!(active.fingerprint, repeated.fingerprint);
+
+    let frontend_output = Frontend::new(
+        FrontendSourceLoader::new(DiskSourceLoader::new(fixture.root.join("alpha"))),
+        inputs.dependency_lexical_provider(&roots),
+        MizarParserSeam,
+    )
+    .run_loaded(source.as_ref().clone())
+    .unwrap();
+    assert_eq!(frontend_output.source, *source);
+    assert_eq!(frontend_output.preprocessed, preprocessed);
+    assert_eq!(
+        frontend_output
+            .cache_keys
+            .active_lexical_environment
+            .fingerprint,
+        active.fingerprint
+    );
+    let combine = frontend_output
+        .tokens
+        .tokens
+        .iter()
+        .find(|token| token.text.as_ref() == "combine")
+        .unwrap();
+    assert_eq!(combine.kind, TokenKind::UserSymbol);
+    let ast = frontend_output.ast.as_ref().unwrap();
+    assert!(ast.node_views().any(|view| {
+        view.as_theorem_item().is_some()
+            && view.range().start <= combine.span.start
+            && combine.span.end <= view.range().end
+            && !view.is_recovered()
+    }));
+    assert!(ast.node_views().any(|view| {
+        view.as_application_term().is_some()
+            && view.range().start <= combine.span.start
+            && combine.span.end <= view.range().end
+            && !view.is_recovered()
+    }));
+    assert!(ast.node_views().all(|view| !view.is_recovered()));
+    assert_eq!(frontend_output.diagnostics.len(), 1);
+    assert_eq!(
+        frontend_output.diagnostics[0].class,
+        mizar_frontend::orchestration::DiagnosticClass::LexicalEnvironment
+    );
+    assert_eq!(
+        frontend_output.diagnostics[0].code,
+        DiagnosticCode::LexicalEnvironment(
+            mizar_frontend::lexical_env::LexicalEnvironmentDiagnosticCode::UnresolvedImport
+        )
+    );
+    let DiagnosticLocation::SourceRange(primary) = &frontend_output.diagnostics[0].location else {
+        panic!("expected unresolved import source range");
+    };
+    let input = SourceInput {
+        package_id: source.package_id.clone(),
+        module_path: source.module_path.clone(),
+        normalized_path: source.normalized_path.clone(),
+        edition: source.edition.clone(),
+        origin: SourceOriginInput::Disk {
+            path: source.file_path.clone(),
+        },
+    };
+    let bytes = frontend_output.canonical_disk_bytes().unwrap();
+    assert_eq!(
+        FrontendOutput::from_canonical_disk_bytes(&bytes, source.source_id, &input).unwrap(),
+        frontend_output
+    );
+    let fresh_id = ids.next_source_id(inputs.snapshot.id).unwrap();
+    assert_ne!(fresh_id, source.source_id);
+    let rebound = FrontendOutput::from_canonical_disk_bytes(&bytes, fresh_id, &input).unwrap();
+    assert_eq!(rebound.source.source_id, fresh_id);
+    assert_eq!(rebound.preprocessed.source_id, fresh_id);
+    assert_eq!(rebound.tokens.source_id, fresh_id);
+    assert_eq!(rebound.ast.as_ref().unwrap().source_id, fresh_id);
+    assert_eq!(
+        rebound.diagnostics[0].location,
+        DiagnosticLocation::SourceRange(mizar_session::SourceRange {
+            source_id: fresh_id,
+            ..*primary
+        })
+    );
+    assert_eq!(rebound.canonical_disk_bytes().unwrap(), bytes);
 
     for corrupt in [false, true] {
         if corrupt {
