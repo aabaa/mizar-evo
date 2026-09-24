@@ -273,3 +273,8 @@ lifecycle metadata であり、artifact mutation や publication を決定しな
 internal validation は deliberate review のため exhaustive match を続けてよい。
 
 ソース読込みコード E0600–E0603 は仕様 22.1.2/22.7 に従い、`since` は `spec-22-source-load-v1` とする。既存コードの意味とメタデータは維持する。
+
+## Frontend allocations
+
+E0013–E0052は [仕様22.7](../../../spec/ja/22.error_handling_and_diagnostics.md#227-エラーコードのリファレンス) の名前・意味に従い、summaryは英語正本を用いる。`meaning_key = semantic_name`、Syntax family、Error severity、Active descriptor status、`since = spec-22-frontend-v1` とする。既存メタデータは変更せず、上記の初期割当表を補う。
+registry参照と共有draft/record構築を可能にするが、登録だけではfrontend生成元を接続しない。診断発行には仕様22.2.3に従うfrontend所有の分類対応・ソース結合済み変換・生成元テストが引き続き必要である。registryテストは40行を英語仕様と照合し、共有record構築を検査する。

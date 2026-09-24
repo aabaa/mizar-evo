@@ -1,13 +1,23 @@
 use std::str::FromStr;
 
+use mizar_diagnostics::failure_record::{
+    DiagnosticDetails, DiagnosticDraft, DiagnosticDraftInput, DiagnosticFreshness,
+    DiagnosticHandle, DiagnosticId, DiagnosticPrimaryLocation, DiagnosticRecord, DiagnosticSpan,
+    FailureCategory, PipelinePhase,
+};
 use mizar_diagnostics::registry::{
     BUILTIN_DESCRIPTORS, DiagnosticCode, DiagnosticDescriptor, DiagnosticRegistry,
     DiagnosticSeverity, DiagnosticStatus, PhaseFamily, RegistryValidationError,
     validate_descriptors, validate_registry_compatibility,
 };
+use mizar_session::{BuildSnapshotId, InMemorySessionIdAllocator, SessionIdAllocator, SourceRange};
 
 const EXPECTED_BUILTIN_CODES: &[&str] = &[
-    "E0001", "E0002", "E0003", "E0010", "E0011", "E0012", "E0101", "E0102", "E0103", "E0110",
+    "E0001", "E0002", "E0003", "E0010", "E0011", "E0012", "E0013", "E0014", "E0015", "E0016",
+    "E0017", "E0018", "E0019", "E0020", "E0021", "E0022", "E0023", "E0024", "E0025", "E0026",
+    "E0027", "E0028", "E0029", "E0030", "E0031", "E0032", "E0033", "E0034", "E0035", "E0036",
+    "E0037", "E0038", "E0039", "E0040", "E0041", "E0042", "E0043", "E0044", "E0045", "E0046",
+    "E0047", "E0048", "E0049", "E0050", "E0051", "E0052", "E0101", "E0102", "E0103", "E0110",
     "E0120", "E0121", "E0122", "E0201", "E0202", "E0203", "E0204", "E0301", "E0302", "E0303",
     "E0310", "E0320", "E0321", "E0350", "E0351", "E0352", "E0353", "E0401", "E0410", "E0411",
     "E0420", "E0421", "E0422", "E0423", "E0424", "E0425", "E0426", "E0430", "E0600", "E0601",
@@ -93,6 +103,84 @@ fn source_load_descriptors_lock_codes_metadata_and_family() {
         assert_eq!(descriptor.default_severity, DiagnosticSeverity::Error);
         assert_eq!(descriptor.phase_family, PhaseFamily::SourceLoad);
         assert_eq!(descriptor.since, "spec-22-source-load-v1");
+    }
+}
+
+#[test]
+fn frontend_allocations_match_spec_and_construct_shared_records() {
+    let spec = include_str!("../../../doc/spec/en/22.error_handling_and_diagnostics.md");
+    let rows = spec
+        .lines()
+        .filter(|line| line.starts_with("| E00") && line.contains("| §22.2.3 |"))
+        .map(|line| {
+            let columns = line.split('|').map(str::trim).collect::<Vec<_>>();
+            (columns[1], columns[2].trim_matches('`'), columns[4])
+        })
+        .collect::<Vec<_>>();
+    assert_eq!(rows.len(), 40);
+    let registry = DiagnosticRegistry::builtin();
+    let snapshot = BuildSnapshotId::from_published_schema_str(&format!(
+        "mizar-session-build-snapshot-v1:{}",
+        "27".repeat(32)
+    ))
+    .unwrap();
+    let source_id = InMemorySessionIdAllocator::new()
+        .next_source_id(snapshot)
+        .unwrap();
+
+    for (index, (code_text, name, summary)) in rows.into_iter().enumerate() {
+        let code = DiagnosticCode::from_str(code_text).unwrap();
+        assert_eq!(code.number(), index as u16 + 13);
+        let descriptor = registry
+            .lookup(code)
+            .expect("frontend descriptor allocated");
+        assert_eq!(descriptor.semantic_name, name);
+        assert_eq!(descriptor.meaning_key, descriptor.semantic_name);
+        assert_eq!(descriptor.summary, summary);
+        assert_eq!(descriptor.default_severity, DiagnosticSeverity::Error);
+        assert_eq!(descriptor.phase_family, PhaseFamily::Syntax);
+        assert_eq!(descriptor.status, DiagnosticStatus::Active);
+        assert_eq!(descriptor.since, "spec-22-frontend-v1");
+        assert_eq!(
+            descriptor.doc_url,
+            "doc/spec/en/22.error_handling_and_diagnostics.md#227-error-code-reference"
+        );
+        let draft = DiagnosticDraft::new(DiagnosticDraftInput {
+            source_snapshot: snapshot,
+            code,
+            phase: PipelinePhase::Frontend,
+            category: FailureCategory::ParseError,
+            stable_detail_key: name.to_owned(),
+            message: summary.to_owned(),
+            primary_location: DiagnosticPrimaryLocation::Span(
+                DiagnosticSpan::primary(
+                    SourceRange {
+                        source_id,
+                        start: 0,
+                        end: 1,
+                    },
+                    None,
+                )
+                .unwrap(),
+            ),
+            secondary_spans: vec![],
+            notes: vec![],
+            details: DiagnosticDetails::new(),
+            fixes: vec![],
+            explanation: None,
+        })
+        .expect("allocated frontend code creates draft");
+        let record = DiagnosticRecord::from_draft(
+            draft,
+            DiagnosticHandle::new(snapshot, DiagnosticId::new(index as u64)),
+            DiagnosticFreshness::Current {
+                source_snapshot: snapshot,
+            },
+            vec![],
+        )
+        .expect("allocated frontend code creates record");
+        assert_eq!(record.code(), code);
+        assert_eq!(record.semantic_name(), name);
     }
 }
 

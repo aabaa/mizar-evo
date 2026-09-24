@@ -275,3 +275,8 @@ compatibility only; internal validation may keep exhaustive matches where
 deliberate review is required.
 
 Source-loading allocations E0600–E0603 follow spec 22.1.2/22.7; their `since` value is `spec-22-source-load-v1`. Existing code meanings and metadata remain unchanged.
+
+## Frontend allocations
+
+E0013–E0052 use the exact names and summaries in [specification 22.7](../../../spec/en/22.error_handling_and_diagnostics.md#227-error-code-reference), with `meaning_key = semantic_name`, Syntax family, Error severity, Active descriptor status and `since = spec-22-frontend-v1`. Existing descriptor metadata is unchanged. These rows supplement the initial allocation table above.
+Registry lookup and shared draft/record construction are enabled; no frontend producer is connected by allocation alone. The frontend-owned discriminator mapping, source-bound conversion and producer-derived tests remain required before emission under specification 22.2.3. Registry tests compare all forty rows with the canonical specification and exercise shared record construction.
