@@ -12,7 +12,8 @@ use mizar_ir::{
     publisher::PhaseOutputPublisher,
     storage::AnyPhaseOutputRef,
 };
-use mizar_session::{BuildSnapshot, BuildSnapshotId, Hash, SessionIdAllocator};
+use mizar_session::{BuildSnapshot, BuildSnapshotId, Hash, PackageId, SessionIdAllocator};
+use std::path::PathBuf;
 
 mod catalog;
 
@@ -390,6 +391,10 @@ impl PhaseRegistryBuilder {
 
     pub fn register_source_load(&mut self) -> &mut Self {
         self.register(crate::frontend_adapter::SourceLoadService)
+    }
+
+    pub fn register_frontend(&mut self, artifact_roots: Vec<(PackageId, PathBuf)>) -> &mut Self {
+        self.register(crate::frontend_adapter::FrontendService { artifact_roots })
     }
 
     pub fn build(self) -> Result<PhaseRegistry, PhaseRegistryError> {

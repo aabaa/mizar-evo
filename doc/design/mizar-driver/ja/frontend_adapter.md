@@ -4,7 +4,7 @@
 
 ## Disk SourceLoad service
 
-`PhaseRegistryBuilder::register_source_load()` は `mizar-frontend` 所有の実 disk-only service `SourceLoad` を `PipelinePhase::SourceLoad` に登録する。引数なしの登録メソッドは単一 phase の descriptor/catalog identity を固定し、別の public service type を公開しない。Frontend の完全 payload と共有診断 mapping は引き続き外部依存 gap とする。
+`PhaseRegistryBuilder::register_source_load()` は `mizar-frontend` 所有の実 disk-only service `SourceLoad` を `PipelinePhase::SourceLoad` に登録する。引数なしの登録メソッドは単一 phase の descriptor/catalog identity を固定し、別の public service type を公開しない。Frontendは [Disk Frontend service](#disk-frontend-service) として別登録し、SourceLoadは後続phaseを実行しない。
 `SourceLoadInputs<'a>` は capture 済み `BuildSnapshot`、`BuildPlan`、`ModuleIndex`、呼出元 `SessionIdAllocator` を借用する。`PhaseExecutionResources<'a>` と `PhaseExecutionContext<'a>` が optional source inputs を運び、実 submission が scheduler dispatcher に渡す。後続 service がない default graph ではこの経路は未実行となるため、A5 は新しい graph/profile を作らず registry 直接実行を検証する。登録 service は allocator や payload を保持しない。
 
 ## Binding and execution
@@ -27,7 +27,7 @@ publication 成功時だけ実 sealed output を持つ Complete を返す。後�
 
 実 temporary file と planner/index/snapshot の出力を使い、resident/blob publication、current SourceId/map、同じ normalized text の異なる raw map、capture 後の text 変更、binding/resource 不正、cancel、stale publisher、work-unit 不許可を検証する。
 実 invalid UTF-8、削除・読取不可 file、対応環境での symlink escape、allocator failure を shared sink 経由で検証する。後続 service 不足の blocking と既存 registry test を維持する。
-preprocess/lex/parse/recovery、Frontend 全体の serialization と診断変換は frontend integration に残す。cache compatibility、LSP、artifact と後続 semantic/proof phase は既存 owner に残す。
+下記の実Frontendサービスがfrontend所有のpreprocess/lex/parse/recoveryと集約storageを利用する。cache compatibility、LSP、artifact と後続 semantic/proof phase は既存 owner に残す。
 
 ## Dependency lexical provider
 
@@ -52,5 +52,16 @@ resolver の provisional frontend mapper と既存 import resolver で path を�
 未解決 path は既存 `UnresolvedImport` 回復に委ねる。
 不正な request/index/root 対応、未対応 source-backed target、lexical payload の拒否は
 部分出力なしの `ProviderUnavailable` とする。空の source summary を捏造しない。
-競合回復は既存 frontend が所有する。共有診断変換、完全な Frontend publication、
-完全な source export producer、current-build lock/cache/proof acceptance は本 provider の範囲外とする。
+競合回復は既存frontend、共有診断変換とIR公開は下記の実サービスが所有する。完全なsource export producer、current-build lock/cache/proof acceptanceは本providerの範囲外とする。
+
+## Disk Frontend service
+
+`register_frontend(artifact_roots: Vec<(PackageId, PathBuf)>)` は明示的な依存rootを所有する実Frontend専用サービスを登録する。pathを推測せず、execution-resource型を追加しない。既存SourceLoadInputsを借用し、frontend所有の [公開表現](../../mizar-frontend/ja/orchestration.md#frontendoutput-publication) を使う。後段サービス不足による全体graphの停止は維持する。
+SourceLoadと同様にcurrent snapshot/workspace、一意なdisk source/version、workspace package/index/module metadataの一致を要求する。同じwork unitのcurrentなSourceLoad/SourceUnit/schema-1 sealed親をちょうど1個要求し、publisher/storage検証後に型付きSourceUnitを復元する。identity・package/module/path/edition/hashと正準disk metadataを照合し、再読込やSourceId再割当はしない。
+実行前に各indexed DependencySummaryが、そのmoduleの一意なdependency_summaries項目と、同じ `(artifact文字列, content_hash)` の一意なsnapshot artifact refに一致することを要求する。各dependency_summaries項目にも対応するindex moduleと捕捉refを要求する。欠落・同一pair重複・不一致はBlocking。同じ相対名で異なるhashは許し、無関係なsnapshot refは権限根拠にしない。呼出元はmodule-summary pathの正確な綴りを捕捉し、サービスはpackage名前空間を捏造しない。
+dispatch input hashは捕捉versionのSourceUnitCacheKey、dependency hashesは捕捉module indexの全DependencySummary content hashを整列した多重集合とする。親hashはsealed bundleから得る。cache_keyはNoKeyであり、query identityはcache再利用や依存fileの可用性を保証しない。
+同snapshotの空・未sealなFrontend sinkとcurrent publisherを要求し、schedulerはFrontend用sinkを作成する。一致するcancelはCancelled、不一致cancel・不正resource/binding/identity・provider/span/変換/公開失敗は出力なしBlocking。resourceを捏造せずpublisher snapshotを復活させない。
+実dependency lexical providerとMizarParserSeamでrun_loadedする。診断列全体の変換後にsinkを変更する。診断ありSome ASTはRecoverable、診断ありASTなしはFatalで、どちらも出力を公開しない。診断なしASTなし・ASTがあるのに対応keyがない場合・診断を伴わないrecovery nodeはE0052を捏造せずBlocking。ASTありかつ診断・recoveryなしのみComplete出力を公開する。
+変換には仕様22.2.3のfrontend所有のcode/class対応を使い、messageを分類根拠にしない。共有phaseは実coordinatorのFrontend、categoryはParseError、stable_detail_keyはdescriptorのsemantic name。構造化frontend.classはlocal class名のsnake_case、frontend.codeはtyped enum pathの各階層をsnake_caseでドット連結する（Syntaxはsyntax.と正確なkey）。これらの区別をidentityへ反映する。既存共有集約まで生成元の順序を維持する。
+class対応はsource preconditionがlexical-precondition（未終端commentのみcomment-structure）、import/raw-import scanがimport-prescan、environmentがlexical-environment、scopeがscope-skeleton、raw-scan/lexerがtokenization、既知parser keyがsyntaxまたはannotation-syntaxとする。SourceLoad項目、未知code/class/parser文字列、不整合code/class組合せは変換全体を失敗させる。全主範囲・副アンカー射影を所有loaded sourceのidentity/本文に照合し、順序・長さ・UTF-8端点を検証する。共有アンカーは意図未指定で欠落なく保持し、message/生成理由原文、副位置順序・重複を維持する。recovery Noneはnoteなし、Someは空文字列を含め1個のNoteとする。保存復元の成功だけからソース結合を推測しない。
+実clean/imported/失敗経路、blob往復、current親/lineage/hash分離、全mapping、未知・不正入力、アンカー/意図・空note保持、変換失敗の原子性を検査する。実際に生成する分類は実生成元、予約・pass-through分類はtyped retained fixtureを使い、後者で生成可能性を主張しない。全体buildと後段の受理は後続とする。

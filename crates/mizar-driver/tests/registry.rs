@@ -62,6 +62,13 @@ fn phase_service_table_covers_pipeline_phases_with_classified_gaps() {
     assert_eq!(
         requirements
             .iter()
+            .find(|requirement| requirement.service_name == "Frontend")
+            .map(|requirement| requirement.availability),
+        Some(PhaseServiceAvailability::AvailableOwner)
+    );
+    assert_eq!(
+        requirements
+            .iter()
             .find(|requirement| requirement.service_name == "ArtifactService")
             .map(|requirement| requirement.availability),
         Some(PhaseServiceAvailability::ExternalDependencyGap)
@@ -73,6 +80,24 @@ fn phase_service_table_covers_pipeline_phases_with_classified_gaps() {
             .map(|requirement| requirement.availability),
         Some(PhaseServiceAvailability::Deferred)
     );
+}
+
+#[test]
+fn frontend_registration_exposes_the_real_phase_descriptor() {
+    let mut builder = PhaseRegistryBuilder::new();
+    builder.register_frontend(Vec::new());
+    let registry = builder.build().unwrap();
+    let descriptor = registry
+        .descriptor_for_phase(PipelinePhase::Frontend)
+        .unwrap();
+    assert_eq!(descriptor.service_name, "Frontend");
+    assert_eq!(descriptor.phases, [PipelinePhase::Frontend]);
+    assert_eq!(descriptor.owner, PhaseOwner::MizarFrontend);
+    assert_eq!(
+        descriptor.schema_version,
+        "mizar-frontend/output-publication/v1"
+    );
+    assert_eq!(descriptor.output_kind, "FrontendOutput");
 }
 
 #[test]

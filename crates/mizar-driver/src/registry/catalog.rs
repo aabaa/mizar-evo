@@ -30,7 +30,7 @@ pub(super) const PHASE_REQUIREMENTS: [PhaseRequirement; 11] = [
         service_name: "Frontend",
         owner: PhaseOwner::MizarFrontend,
         phases: &[PipelinePhase::Frontend],
-        availability: PhaseServiceAvailability::ExternalDependencyGap,
+        availability: PhaseServiceAvailability::AvailableOwner,
     },
     PhaseRequirement {
         service_name: "ModuleResolver",

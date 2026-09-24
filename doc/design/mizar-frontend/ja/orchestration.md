@@ -241,10 +241,18 @@ code/class の組合せは予約値を含め再分類しない。不明タグや
 テストは実出力、AST の有無、ID 再割当、移動・削除後の復元、内部バイト、診断語彙、
 全アンカー形、保持文字列、不正な長さ・内部データ、外部 ID、パス・由来不一致、上限を検査する。
 
-## 共有診断の採用（仕様のみ、未実装）
+## 共有診断の採用
 
-公開意味と予約コードは [仕様22.2.3](../../../spec/ja/22.error_handling_and_diagnostics.md#2223-フロントエンド診断の採用) が所有する。変換は未有効であり、正確な内部分類対応は [英語版の表](../en/orchestration.md#shared-diagnostic-adoption-specified-not-implemented) を正本とする。
+公開意味と予約コードは [仕様22.2.3](../../../spec/ja/22.error_handling_and_diagnostics.md#2223-フロントエンド診断の採用) が所有する。[driverサービス](../../mizar-driver/ja/frontend_adapter.md#disk-frontend-service) がこの対応を採用する。正確な内部分類対応は [英語版の表](../en/orchestration.md#shared-diagnostic-adoption) を正本とする。
 PreprocessのSourcePreconditionはE0013–E0015、ImportPrescanとRawImportScanはE0016–E0021、LexicalEnvironmentはE0022–E0028、LexingのRawScanとMissingEnd以外のScopeSkeletonはE0029–E0033とする。
 ScopeSkeleton.MissingEndはE0010、Lexer.MalformedStringLiteralはE0002、残るLexer分類はE0034–E0037とする。Syntaxの最初の3分類はE0038–E0040、missing_endはE0010、残る明示分類はE0041–E0052とする。順序は英語表の列挙による。
 Syntaxキーは完全一致の許可リストとし、syntax_diagnosticやその他の文字列は、保存codecが受理しても変換未対応とする。SourceLoadは元の型付きSourceLoadErrorから既存E0600–E0603を選び、集約の分類だけでは変換しない。メッセージから分類しない。
 共有集約前の各診断を保持し、coordinatorの統合順や共有重複排除は変更しない。[共有スパン採用](../../mizar-diagnostics/ja/failure_record.md#frontend-anchor-adoption) を前提とし、保存復元だけではソース結合や公開権限を認めない。
+
+## FrontendOutput publication
+
+実diskサービスは集約 `FrontendOutput<SurfaceAst>` を内部IRのkind `FrontendOutput`、phase `Frontend`、descriptor `mizar-frontend/output-publication/v1`、SchemaVersion 1で公開する。work-unitラベルはSourceUnitと同じ。外部安定artifact schemaや証明結果ではない。
+semantic bytesはdescriptorのUTF-8列、ゼロ1byte、実生成元のSurfaceAstCacheKey digest32byteを連結する。Some ASTと対応keyを要求する。keyは内容・再利用入力の識別であり、任意AST bytesの独立検証ではない。結合済みの実行結果だけを用い、保存から復元した不透明keyを根拠にしない。
+storage bytesは既存の集約disk codec。source-map副表はkind `frontend-storage`、keyはpackage相対正規化path、digestは全文storage bytesをcontext `mizar-frontend/output-storage-side-table/v1` でBLAKE3 derive-keyした1レコード。その他の副表は空で、公開出力に診断は含めない。raw mapや文言をsemantic bytesへ直接入れない。
+単一のsealed SourceUnit親から検証済みcontent hashを得る。named inputsは既存cache-key domain/digestの `active-lexical-environment` と `tokens`、および整列済みdispatch依存hashを `dependency.<ordinal>`、domain `mizar-frontend/dependency-summary/v1` として持つ。originはPackageSource、targetはCurrentPackage。cache互換性やsnapshot間の権限は推論しない。
+blob decoderはsource identity/request metadataと期待source hashのみを捕捉し、集約codecとソース結合を検証する。再読込・再解析・生成ASTの捕捉をしない。結合・失敗処理・診断変換は [実サービス](../../mizar-driver/ja/frontend_adapter.md#disk-frontend-service) が所有する。

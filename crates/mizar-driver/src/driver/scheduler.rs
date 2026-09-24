@@ -229,15 +229,27 @@ fn dispatch_registry_phase(
                 cancellation: task.cancellation.clone(),
                 output_publisher: publisher.cloned(),
                 source_load,
-                diagnostics: (*phase == PipelinePhase::SourceLoad).then(|| {
-                    mizar_diagnostics::sink::DiagnosticSink::new(
-                        mizar_diagnostics::sink::DiagnosticProducerScope::new(
-                            mizar_diagnostics::failure_record::PipelinePhase::SourceLoad,
-                            task.snapshot,
-                            "SourceLoad",
-                        ),
-                    )
-                }),
+                diagnostics: matches!(phase, PipelinePhase::SourceLoad | PipelinePhase::Frontend)
+                    .then(|| {
+                        let (diagnostic_phase, producer) = if *phase == PipelinePhase::SourceLoad {
+                            (
+                                mizar_diagnostics::failure_record::PipelinePhase::SourceLoad,
+                                "SourceLoad",
+                            )
+                        } else {
+                            (
+                                mizar_diagnostics::failure_record::PipelinePhase::Frontend,
+                                "Frontend",
+                            )
+                        };
+                        mizar_diagnostics::sink::DiagnosticSink::new(
+                            mizar_diagnostics::sink::DiagnosticProducerScope::new(
+                                diagnostic_phase,
+                                task.snapshot,
+                                producer,
+                            ),
+                        )
+                    }),
             },
         ) {
             Ok(result) => {

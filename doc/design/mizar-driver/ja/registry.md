@@ -114,7 +114,7 @@ adapter seam を公開するまで absent でよい。
 |---|---:|---|---|
 | `WorkspacePlanner` | 0 | `mizar-build` planner | Real bootstrap owner は存在する。driver task 8 が planner semantics を複製せず結線する。 |
 | `SourceLoad` | 1 | `mizar-frontend` | Disk source service。[source services](frontend_adapter.md) を参照。 |
-| `Frontend` | 2-3 | `mizar-frontend` | `external_dependency_gap`: 完全な payload と diagnostic mapping は未実装。 |
+| `Frontend` | 2-3 | `mizar-frontend` | 実disk frontend。[source services](frontend_adapter.md#disk-frontend-service) を参照。 |
 | `ModuleResolver` | 4-5 | `mizar-resolve` | resolver が service surface を公開するまで `external_dependency_gap`。 |
 | `SemanticChecker` | 6-8 | `mizar-checker` | checker service が real typed output を公開するまで `external_dependency_gap`。 |
 | `Elaborator` | 9-10 | `mizar-core` | core/elaboration service が着地するまで `external_dependency_gap`。 |

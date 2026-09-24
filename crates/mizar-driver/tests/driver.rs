@@ -774,7 +774,7 @@ fn assert_missing(submission: &BuildSubmission, phase: PipelinePhase) {
     assert!(submission.missing_services.iter().any(|missing| {
         missing.phase == phase
             && missing.availability
-                == if phase == PipelinePhase::SourceLoad {
+                == if matches!(phase, PipelinePhase::SourceLoad | PipelinePhase::Frontend) {
                     PhaseServiceAvailability::AvailableOwner
                 } else {
                     PhaseServiceAvailability::ExternalDependencyGap

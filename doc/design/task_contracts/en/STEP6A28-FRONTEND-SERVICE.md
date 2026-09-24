@@ -1,0 +1,13 @@
+# Task STEP6A28-FRONTEND-SERVICE: real disk frontend phase
+Canonical language: English; [Japanese pointer](../ja/STEP6A28-FRONTEND-SERVICE.md).
+Status: frozen. Tier: full. Owner: [driver plan](../../mizar-driver/en/00.crate_plan.md); payload owner: [frontend plan](../../mizar-frontend/en/00.crate_plan.md).
+Authority: specification 22.1.2/22.2.3/22.7 diagnostic rules, specification 23.4 pipeline failure, architecture 02 frontend and 22 snapshot currentness; existing IR publication/dispatch contracts.
+Gaps: driver Frontend external_dependency_gap after aggregate storage, shared anchors and diagnostic registry prerequisites. No language semantics or parser recovery change.
+Scope: [live service/bridge](../../mizar-driver/en/frontend_adapter.md#disk-frontend-service), [publication representation](../../mizar-frontend/en/orchestration.md#frontendoutput-publication), registry registration/catalog, scheduler diagnostic sink and real service tests.
+Consume exactly one current sealed SourceUnit parent; use real run_loaded, dependency lexical provider and parser. Explicit roots belong to registered service configuration; existing captured source resources remain borrowed.
+Freeze descriptor, dispatch identities, semantic/storage/side-table bytes, result policy and diagnostic mapping in owners before implementation. No cache-hit or cross-snapshot reuse claim.
+Tests: real SourceLoad-to-Frontend clean/imported/recovered/unrecoverable paths, resident/blob output and hash separation; every mapped diagnostic category (real emitting producers, retained fixtures only for reserved/pass-through codes), all anchor and optional-note forms; unknown categories, invalid source/UTF-8/bounds/class, captured dependency pair binding (missing/wrong/duplicate and same-path distinct hashes), stale or mismatched parents/identities/resources, cancellation and denied publication. Existing downstream missing-service behavior remains.
+Forbidden: spec or existing corpus/expectation changes, new public diagnostic meanings, fake/clean-only services, unused public converter, source export fabrication, artifact task17, semantic/proof acceptance, downstream phase implementations or cache/LSP policy.
+Coverage audit: chapter22 remains partial with real frontend diagnostic adoption; chapter23 retains later-service and full-build gaps. Update only affected owned status.
+Require independent specification, test-sufficiency, implementation, volume/scope and consistency reviews; cargo fmt --check, cargo clippy --all-targets --all-features -- -D warnings, cargo test.
+Exit: registered real frontend executes from its sealed source parent and emits lossless shared diagnostics or a coherent complete output; absent later services still block full driver submission.

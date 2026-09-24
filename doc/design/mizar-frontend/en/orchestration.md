@@ -397,9 +397,9 @@ files, nested-byte equality, every diagnostic tag with independent typed oracles
 forms and text, malformed framing/nested records, foreign IDs, path/origin rejection and
 payload limits. The source and phase codecs retain their existing standalone tests.
 
-## Shared diagnostic adoption (specified, not implemented)
+## Shared diagnostic adoption
 
-The public meanings and reserved codes are owned by [specification 22.2.3](../../../spec/en/22.error_handling_and_diagnostics.md#2223-frontend-diagnostic-adoption); this bridge is not yet active. The exact frontend discriminator mapping is:
+The public meanings and reserved codes are owned by [specification 22.2.3](../../../spec/en/22.error_handling_and_diagnostics.md#2223-frontend-diagnostic-adoption); the [driver service](../../mizar-driver/en/frontend_adapter.md#disk-frontend-service) adopts this mapping. The exact frontend discriminator mapping is:
 
 | Local discriminator | Public code(s), in listed order |
 |---|---|
@@ -414,3 +414,11 @@ The public meanings and reserved codes are owned by [specification 22.2.3](../..
 
 Syntax keys are an exact allowlist; `syntax_diagnostic` and other strings are unsupported, including values accepted by storage codecs. SourceLoad needs the original typed SourceLoadError for the existing E0600–E0603 mapping; its erased aggregate code alone is insufficient. No message-based classification is permitted.
 The bridge preserves each diagnostic before shared aggregation; it does not change the coordinator's merge order or shared deduplication. [Shared span adoption](../../mizar-diagnostics/en/failure_record.md#frontend-anchor-adoption) is required before conversion, and successful storage decoding alone does not establish source binding or publication authority.
+
+## FrontendOutput publication
+
+The real disk service publishes the aggregate `FrontendOutput<SurfaceAst>` as internal IR kind `FrontendOutput`, phase `Frontend`, descriptor `mizar-frontend/output-publication/v1`, SchemaVersion 1. The work-unit label matches SourceUnit publication. This is an immutable compiler output, not a stable external artifact schema or proof result.
+Semantic bytes are the UTF-8 descriptor string followed by a zero byte and the 32-byte live producer-derived SurfaceAstCacheKey digest. Require Some AST and its key; the key is a content/reuse input identity, not independent validation of arbitrary AST bytes. Only a bound live run supplies this publication, never opaque keys decoded from storage.
+Storage bytes are the existing aggregate canonical disk codec. The sole source-map side record has kind `frontend-storage`, key normalized package-relative path, and a BLAKE3 derive-key digest of full storage bytes under `mizar-frontend/output-storage-side-table/v1`. Other side tables are empty; published outputs contain no diagnostics. Raw maps and wording never enter semantic bytes directly.
+The single sealed SourceUnit parent supplies its validated content hash. Named inputs are `active-lexical-environment` and `tokens`, with their existing cache-key domains/digests, plus sorted dispatch dependency hashes named `dependency.<ordinal>` under `mizar-frontend/dependency-summary/v1`. Output origin is PackageSource and target CurrentPackage. No cache compatibility or cross-snapshot authority is inferred.
+The blob decoder captures source identity/request metadata and expected source hash only, validates the aggregate codec and source binding, and never reloads, reparses or closes over the produced AST. Driver binding, error handling and diagnostic conversion are owned by [the real service](../../mizar-driver/en/frontend_adapter.md#disk-frontend-service).
