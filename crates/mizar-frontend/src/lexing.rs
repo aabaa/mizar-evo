@@ -3,18 +3,27 @@
 //! Canonical behavior is specified in the
 //! [lexing design spec](../../../../doc/design/mizar-frontend/en/lexing.md).
 
-use crate::lexical_env::{ActiveLexicalEnvironment, LocalLexicalDeclarations, ModuleId};
+use crate::lexical_env::{
+    ActiveLexicalEnvironment, ExportRank, ExportedOperatorAssociativity, ExportedOperatorFixity,
+    ExportedOperatorMetadata, LocalLexicalDeclarations, ModuleId, SymbolId, UserSymbolArity,
+    UserSymbolKind, UserSymbolKindSet,
+};
 use crate::preprocess::PreprocessedSource;
-use crate::span_bridge::{LexerByteSpan, SpanBridge, SpanBridgeError};
+use crate::span_bridge::{
+    LexerByteSpan, SpanBridge, SpanBridgeError, decode_offsets, decode_source_anchor,
+    decode_source_range, encode_offsets, encode_source_anchor, encode_source_range,
+};
 use mizar_lexer::{
     LexDiagnostic as LexerDiagnostic, LexDiagnosticPayload as LexerDiagnosticPayload,
-    RawScanDiagnostic, RawScanDiagnosticCode, RawToken, RawTokenStream, RecoverableRawTokenStream,
+    LocalOperatorDeclaration, LocalUserSymbolDeclaration, RawScanDiagnostic, RawScanDiagnosticCode,
+    RawToken, RawTokenStream, RecoverableRawTokenStream,
     RejectedTokenCandidate as LexerRejectedTokenCandidate, ScopeSkeleton, ScopeSkeletonDiagnostic,
     SourceSpan as LexerSourceSpan, Token as LexerToken, TokenStream as LexerTokenStream,
     build_scope_skeleton, collect_local_lexical_declarations, disambiguate_with_local_declarations,
     scan_raw_recoverable,
 };
 use mizar_session::{MappedSourceRange, SourceAnchor, SourceId, SourceRange};
+use serde_json::{Value, json};
 use std::sync::Arc;
 
 /// Re-exported lexer token, context, scope, and diagnostic vocabulary.
@@ -23,6 +32,157 @@ pub use mizar_lexer::{
     MalformedStringLiteralReason, ParserLexContext, ParserLexMode, RawTokenKind,
     ScopeSkeletonDiagnosticCode, TokenKind,
 };
+
+const TOKEN_STREAM_SCHEMA: &str = "mizar-frontend/token-stream/v1";
+const TOKEN_STREAM_MAX_BYTES: usize = 16 * 1024 * 1024;
+const TOKEN_KINDS: [TokenKind; 9] = [
+    TokenKind::Identifier,
+    TokenKind::ReservedWord,
+    TokenKind::ReservedSymbol,
+    TokenKind::Numeral,
+    TokenKind::LexemeRun,
+    TokenKind::UserSymbol,
+    TokenKind::AnnotationMarker,
+    TokenKind::StringLiteral,
+    TokenKind::ErrorRecovery,
+];
+const MODES: [ParserLexMode; 6] = [
+    ParserLexMode::General,
+    ParserLexMode::IdentifierRequired,
+    ParserLexMode::Symbolic,
+    ParserLexMode::StringRequired,
+    ParserLexMode::NamespacePath,
+    ParserLexMode::Recovery,
+];
+const USER_KINDS: [UserSymbolKind; 7] = [
+    UserSymbolKind::Functor,
+    UserSymbolKind::Predicate,
+    UserSymbolKind::Mode,
+    UserSymbolKind::Attribute,
+    UserSymbolKind::Structure,
+    UserSymbolKind::Selector,
+    UserSymbolKind::Constructor,
+];
+const BINDING_KINDS: [BindingShapeKind; 14] = [
+    BindingShapeKind::Let,
+    BindingShapeKind::For,
+    BindingShapeKind::Ex,
+    BindingShapeKind::Reserve,
+    BindingShapeKind::Given,
+    BindingShapeKind::Consider,
+    BindingShapeKind::Set,
+    BindingShapeKind::Reconsider,
+    BindingShapeKind::Take,
+    BindingShapeKind::Deffunc,
+    BindingShapeKind::Defpred,
+    BindingShapeKind::Var,
+    BindingShapeKind::Const,
+    BindingShapeKind::Processed,
+];
+const BLOCK_KINDS: [LexicalBlockKind; 9] = [
+    LexicalBlockKind::Algorithm,
+    LexicalBlockKind::Definition,
+    LexicalBlockKind::Registration,
+    LexicalBlockKind::Proof,
+    LexicalBlockKind::Now,
+    LexicalBlockKind::Case,
+    LexicalBlockKind::Suppose,
+    LexicalBlockKind::Hereby,
+    LexicalBlockKind::Do,
+];
+const STATEMENT_KINDS: [LexicalStatementKind; 2] =
+    [LexicalStatementKind::Binder, LexicalStatementKind::Other];
+const SCOPE_CODES: [ScopeSkeletonDiagnosticCode; 5] = [
+    ScopeSkeletonDiagnosticCode::MalformedBinderList,
+    ScopeSkeletonDiagnosticCode::UnsupportedBinderShape,
+    ScopeSkeletonDiagnosticCode::DuplicateBindingName,
+    ScopeSkeletonDiagnosticCode::UnmatchedEnd,
+    ScopeSkeletonDiagnosticCode::MissingEnd,
+];
+const LEX_CODES: [LexDiagnosticCode; 5] = [
+    LexDiagnosticCode::NoValidTokenCandidate,
+    LexDiagnosticCode::ParserContextRejectedCandidate,
+    LexDiagnosticCode::AmbiguousUserSymbol,
+    LexDiagnosticCode::MalformedStringLiteral,
+    LexDiagnosticCode::UnsupportedRawToken,
+];
+const RAW_KINDS: [RawTokenKind; 5] = [
+    RawTokenKind::LexemeRun,
+    RawTokenKind::NumeralLike,
+    RawTokenKind::AnnotationMarker,
+    RawTokenKind::Layout,
+    RawTokenKind::Error,
+];
+const RECOVERY_HINTS: [LexRecoveryHint; 1] = [LexRecoveryHint::EmitErrorRecoveryToken];
+const FIXITIES: [ExportedOperatorFixity; 5] = [
+    ExportedOperatorFixity::Prefix,
+    ExportedOperatorFixity::Infix(ExportedOperatorAssociativity::Left),
+    ExportedOperatorFixity::Infix(ExportedOperatorAssociativity::Right),
+    ExportedOperatorFixity::Infix(ExportedOperatorAssociativity::NonAssociative),
+    ExportedOperatorFixity::Postfix,
+];
+
+fn encode_tag<T: PartialEq>(item: &T, vocabulary: &[T]) -> Option<Value> {
+    Some(json!(
+        vocabulary.iter().position(|candidate| candidate == item)?
+    ))
+}
+
+fn decode_tag<T: Copy>(value: &Value, vocabulary: &[T]) -> Option<T> {
+    vocabulary
+        .get(usize::try_from(value.as_u64()?).ok()?)
+        .copied()
+}
+
+fn fields<const N: usize>(value: &Value) -> Option<&[Value; N]> {
+    value.as_array()?.as_slice().try_into().ok()
+}
+
+fn encode_list<T>(items: &[T], mut encode: impl FnMut(&T) -> Option<Value>) -> Option<Vec<Value>> {
+    items.iter().map(&mut encode).collect()
+}
+
+fn decode_list<T>(value: &Value, mut decode: impl FnMut(&Value) -> Option<T>) -> Option<Vec<T>> {
+    value.as_array()?.iter().map(&mut decode).collect()
+}
+
+fn encode_context(context: ParserLexContext) -> Option<Value> {
+    let kinds = USER_KINDS
+        .into_iter()
+        .filter(|kind| context.user_symbol_kinds().contains(*kind))
+        .collect::<Vec<_>>();
+    if UserSymbolKindSet::from_slice(&kinds) != context.user_symbol_kinds() {
+        return None;
+    }
+    Some(json!([
+        encode_tag(&context.mode(), &MODES)?,
+        encode_list(&kinds, |kind| encode_tag(kind, &USER_KINDS))?
+    ]))
+}
+
+fn decode_context(value: &Value) -> Option<ParserLexContext> {
+    let [mode, kinds] = fields::<2>(value)?;
+    let mode = decode_tag(mode, &MODES)?;
+    let mut previous = None;
+    let kinds = decode_list(kinds, |kind| {
+        let tag = kind.as_u64()?;
+        if previous.is_some_and(|prior| tag <= prior) {
+            return None;
+        }
+        previous = Some(tag);
+        decode_tag(kind, &USER_KINDS)
+    })?;
+    let context = match mode {
+        ParserLexMode::General => ParserLexContext::general(),
+        ParserLexMode::IdentifierRequired => ParserLexContext::identifier_required(),
+        ParserLexMode::Symbolic => ParserLexContext::symbolic(),
+        ParserLexMode::StringRequired => ParserLexContext::string_required(),
+        ParserLexMode::NamespacePath => ParserLexContext::namespace_path(),
+        ParserLexMode::Recovery => ParserLexContext::recovery(),
+        _ => return None,
+    };
+    Some(context.with_user_symbol_kinds(UserSymbolKindSet::from_slice(&kinds)))
+}
 
 /// Shared interned text used by frontend token and diagnostic payloads.
 pub type InternedText = Arc<str>;
@@ -200,6 +360,416 @@ pub struct TokenStream {
 }
 
 impl TokenStream {
+    /// Decodes canonical storage and rebinds source ranges to this session's source id.
+    pub fn from_canonical_bytes(bytes: &[u8], source_id: SourceId) -> Option<Self> {
+        if bytes.len() > TOKEN_STREAM_MAX_BYTES {
+            return None;
+        }
+        let value: Value = serde_json::from_slice(bytes).ok()?;
+        let [
+            schema,
+            parser_context,
+            plan,
+            tokens,
+            scope,
+            local,
+            diagnostics,
+        ] = fields::<7>(&value)?;
+        if schema.as_str()? != TOKEN_STREAM_SCHEMA {
+            return None;
+        }
+        let parser_context = decode_context(parser_context)?;
+        let [default_context, contexts] = fields::<2>(plan)?;
+        let parser_lexing_plan = ParserLexingPlan {
+            default_context: decode_context(default_context)?,
+            contexts: decode_list(contexts, |entry| {
+                let [range, context] = fields::<2>(entry)?;
+                let (start, end) = decode_offsets(range)?;
+                Some(ParserLexingPlanContext {
+                    range: LexicalByteRange { start, end },
+                    context: decode_context(context)?,
+                })
+            })?,
+        };
+        let tokens = decode_list(tokens, |token| {
+            let [kind, text, span] = fields::<3>(token)?;
+            Some(Token {
+                kind: decode_tag(kind, &TOKEN_KINDS)?,
+                text: Arc::from(text.as_str()?),
+                span: decode_source_range(span, source_id)?,
+            })
+        })?;
+        let [frames, blocks, statements] = fields::<3>(scope)?;
+        let scope_view = ScopeView {
+            source_id,
+            frames: decode_list(frames, |frame| {
+                let [range, bindings] = fields::<2>(frame)?;
+                Some(ScopeFrame {
+                    range: decode_source_range(range, source_id)?,
+                    bindings: decode_list(bindings, |binding| {
+                        let [spelling, introduced_at, kind] = fields::<3>(binding)?;
+                        Some(ScopedBinding {
+                            spelling: Arc::from(spelling.as_str()?),
+                            introduced_at: decode_source_range(introduced_at, source_id)?,
+                            kind: decode_tag(kind, &BINDING_KINDS)?,
+                        })
+                    })?,
+                })
+            })?,
+            blocks: decode_list(blocks, |block| {
+                let [kind, range] = fields::<2>(block)?;
+                Some(ScopeBlock {
+                    kind: decode_tag(kind, &BLOCK_KINDS)?,
+                    range: decode_source_range(range, source_id)?,
+                })
+            })?,
+            statements: decode_list(statements, |statement| {
+                let [kind, range] = fields::<2>(statement)?;
+                Some(ScopeStatement {
+                    kind: decode_tag(kind, &STATEMENT_KINDS)?,
+                    range: decode_source_range(range, source_id)?,
+                })
+            })?,
+        };
+        let [user_symbols, operator_declarations] = fields::<2>(local)?;
+        let local_declarations = LocalLexicalDeclarations {
+            user_symbols: decode_list(user_symbols, |declaration| {
+                let [
+                    spelling,
+                    symbol_id,
+                    source_module,
+                    export_rank,
+                    kind,
+                    arity,
+                    operator,
+                    range,
+                    activation_start,
+                ] = fields::<9>(declaration)?;
+                let [minimum, maximum] = fields::<2>(arity)?;
+                let maximum = if maximum.is_null() {
+                    None
+                } else {
+                    Some(u16::try_from(maximum.as_u64()?).ok()?)
+                };
+                let operator = if operator.is_null() {
+                    None
+                } else {
+                    let [fixity, precedence] = fields::<2>(operator)?;
+                    Some(ExportedOperatorMetadata {
+                        fixity: decode_tag(fixity, &FIXITIES)?,
+                        precedence: u8::try_from(precedence.as_u64()?).ok()?,
+                    })
+                };
+                let (start, end) = decode_offsets(range)?;
+                Some(LocalUserSymbolDeclaration {
+                    spelling: spelling.as_str()?.to_owned(),
+                    symbol_id: SymbolId::new(symbol_id.as_str()?),
+                    source_module: ModuleId::new(source_module.as_str()?),
+                    export_rank: ExportRank::new(u32::try_from(export_rank.as_u64()?).ok()?),
+                    kind: decode_tag(kind, &USER_KINDS)?,
+                    arity: UserSymbolArity {
+                        minimum: u16::try_from(minimum.as_u64()?).ok()?,
+                        maximum,
+                    },
+                    operator,
+                    declared_at: LexerSourceSpan { start, end },
+                    activation_start: usize::try_from(activation_start.as_u64()?).ok()?,
+                })
+            })?,
+            operator_declarations: decode_list(operator_declarations, |declaration| {
+                let [spelling, source_module, range, activation_start, operator] =
+                    fields::<5>(declaration)?;
+                let operator = if operator.is_null() {
+                    None
+                } else {
+                    let [fixity, precedence] = fields::<2>(operator)?;
+                    Some(ExportedOperatorMetadata {
+                        fixity: decode_tag(fixity, &FIXITIES)?,
+                        precedence: u8::try_from(precedence.as_u64()?).ok()?,
+                    })
+                };
+                let (start, end) = decode_offsets(range)?;
+                Some(LocalOperatorDeclaration {
+                    spelling: spelling.as_str()?.to_owned(),
+                    source_module: ModuleId::new(source_module.as_str()?),
+                    declared_at: LexerSourceSpan { start, end },
+                    activation_start: usize::try_from(activation_start.as_u64()?).ok()?,
+                    operator,
+                })
+            })?,
+        };
+        let diagnostics = decode_list(diagnostics, |diagnostic| {
+            let [kind, message, primary, secondary, payload] = fields::<5>(diagnostic)?;
+            let kind = match kind.as_array()?.as_slice() {
+                [tag] if tag.as_u64()? == 0 => LexingDiagnosticKind::RawScan,
+                [tag, code] if tag.as_u64()? == 1 => {
+                    LexingDiagnosticKind::ScopeSkeleton(decode_tag(code, &SCOPE_CODES)?)
+                }
+                [tag, code] if tag.as_u64()? == 2 => {
+                    LexingDiagnosticKind::Lexer(decode_tag(code, &LEX_CODES)?)
+                }
+                _ => return None,
+            };
+            let payload = match payload.as_array()?.as_slice() {
+                [tag] if tag.as_u64()? == 0 => LexingDiagnosticPayload::None,
+                [tag, rejected_lexeme, recovery] if tag.as_u64()? == 1 => {
+                    LexingDiagnosticPayload::NoValidTokenCandidate {
+                        rejected_lexeme: Arc::from(rejected_lexeme.as_str()?),
+                        recovery: decode_tag(recovery, &RECOVERY_HINTS)?,
+                    }
+                }
+                [tag, mode, rejected_lexeme, candidates, recovery] if tag.as_u64()? == 2 => {
+                    LexingDiagnosticPayload::ParserContextRejectedCandidate {
+                        mode: decode_tag(mode, &MODES)?,
+                        rejected_lexeme: Arc::from(rejected_lexeme.as_str()?),
+                        candidates: decode_list(candidates, |candidate| {
+                            let [kind, text, span, secondary] = fields::<4>(candidate)?;
+                            Some(LexingRejectedTokenCandidate {
+                                kind: decode_tag(kind, &TOKEN_KINDS)?,
+                                text: Arc::from(text.as_str()?),
+                                span: decode_source_range(span, source_id)?,
+                                secondary: decode_list(secondary, |anchor| {
+                                    decode_source_anchor(anchor, source_id)
+                                })?,
+                            })
+                        })?,
+                        recovery: decode_tag(recovery, &RECOVERY_HINTS)?,
+                    }
+                }
+                [tag, opening_quote, reason, recovery] if tag.as_u64()? == 3 => {
+                    let quote = opening_quote.as_str()?;
+                    let mut chars = quote.chars();
+                    let opening_quote = chars.next()?;
+                    if chars.next().is_some() {
+                        return None;
+                    }
+                    let reason = match reason.as_array()?.as_slice() {
+                        [tag] if tag.as_u64()? == 0 => {
+                            MalformedStringLiteralReason::MissingClosingQuote
+                        }
+                        [tag, escape] if tag.as_u64()? == 1 => {
+                            let mut chars = escape.as_str()?.chars();
+                            let escape = chars.next()?;
+                            if chars.next().is_some() {
+                                return None;
+                            }
+                            MalformedStringLiteralReason::UnsupportedEscape { escape }
+                        }
+                        [tag] if tag.as_u64()? == 2 => MalformedStringLiteralReason::DanglingEscape,
+                        _ => return None,
+                    };
+                    LexingDiagnosticPayload::MalformedStringLiteral {
+                        opening_quote,
+                        reason,
+                        recovery: decode_tag(recovery, &RECOVERY_HINTS)?,
+                    }
+                }
+                [tag, raw_kind, raw_lexeme, recovery] if tag.as_u64()? == 4 => {
+                    LexingDiagnosticPayload::UnsupportedRawToken {
+                        raw_kind: decode_tag(raw_kind, &RAW_KINDS)?,
+                        raw_lexeme: Arc::from(raw_lexeme.as_str()?),
+                        recovery: decode_tag(recovery, &RECOVERY_HINTS)?,
+                    }
+                }
+                [tag] if tag.as_u64()? == 5 => LexingDiagnosticPayload::UnsupportedLexerPayload,
+                _ => return None,
+            };
+            Some(LexingDiagnostic {
+                kind,
+                message: Arc::from(message.as_str()?),
+                primary: decode_source_range(primary, source_id)?,
+                secondary: decode_list(secondary, |anchor| {
+                    decode_source_anchor(anchor, source_id)
+                })?,
+                payload,
+            })
+        })?;
+        let stream = Self {
+            source_id,
+            parser_context,
+            parser_lexing_plan,
+            tokens,
+            scope_view,
+            local_declarations,
+            diagnostics,
+        };
+        (stream.canonical_bytes()?.as_slice() == bytes).then_some(stream)
+    }
+
+    /// Encodes bounded canonical compiler-internal token stream storage.
+    pub fn canonical_bytes(&self) -> Option<Vec<u8>> {
+        if self.scope_view.source_id != self.source_id {
+            return None;
+        }
+        let source_id = self.source_id;
+        let plan = json!([
+            encode_context(self.parser_lexing_plan.default_context)?,
+            encode_list(&self.parser_lexing_plan.contexts, |entry| Some(json!([
+                encode_offsets(entry.range.start, entry.range.end)?,
+                encode_context(entry.context)?
+            ])))?
+        ]);
+        let tokens = encode_list(&self.tokens, |token| {
+            Some(json!([
+                encode_tag(&token.kind, &TOKEN_KINDS)?,
+                token.text.as_ref(),
+                encode_source_range(token.span, source_id)?
+            ]))
+        })?;
+        let scope = json!([
+            encode_list(&self.scope_view.frames, |frame| Some(json!([
+                encode_source_range(frame.range, source_id)?,
+                encode_list(&frame.bindings, |binding| Some(json!([
+                    binding.spelling.as_ref(),
+                    encode_source_range(binding.introduced_at, source_id)?,
+                    encode_tag(&binding.kind, &BINDING_KINDS)?
+                ])))?
+            ])))?,
+            encode_list(&self.scope_view.blocks, |block| Some(json!([
+                encode_tag(&block.kind, &BLOCK_KINDS)?,
+                encode_source_range(block.range, source_id)?
+            ])))?,
+            encode_list(&self.scope_view.statements, |statement| Some(json!([
+                encode_tag(&statement.kind, &STATEMENT_KINDS)?,
+                encode_source_range(statement.range, source_id)?
+            ])))?
+        ]);
+        let local = json!([
+            encode_list(&self.local_declarations.user_symbols, |declaration| {
+                let operator = match declaration.operator {
+                    Some(operator) => json!([
+                        encode_tag(&operator.fixity, &FIXITIES)?,
+                        operator.precedence
+                    ]),
+                    None => Value::Null,
+                };
+                Some(json!([
+                    declaration.spelling,
+                    declaration.symbol_id.as_str(),
+                    declaration.source_module.as_str(),
+                    declaration.export_rank.get(),
+                    encode_tag(&declaration.kind, &USER_KINDS)?,
+                    [
+                        json!(declaration.arity.minimum),
+                        json!(declaration.arity.maximum)
+                    ],
+                    operator,
+                    encode_offsets(declaration.declared_at.start, declaration.declared_at.end)?,
+                    declaration.activation_start
+                ]))
+            })?,
+            encode_list(
+                &self.local_declarations.operator_declarations,
+                |declaration| {
+                    let operator = match declaration.operator {
+                        Some(operator) => json!([
+                            encode_tag(&operator.fixity, &FIXITIES)?,
+                            operator.precedence
+                        ]),
+                        None => Value::Null,
+                    };
+                    Some(json!([
+                        declaration.spelling,
+                        declaration.source_module.as_str(),
+                        encode_offsets(declaration.declared_at.start, declaration.declared_at.end)?,
+                        declaration.activation_start,
+                        operator
+                    ]))
+                }
+            )?
+        ]);
+        let diagnostics = encode_list(&self.diagnostics, |diagnostic| {
+            let kind = match diagnostic.kind {
+                LexingDiagnosticKind::RawScan => json!([0]),
+                LexingDiagnosticKind::ScopeSkeleton(code) => {
+                    json!([1, encode_tag(&code, &SCOPE_CODES)?])
+                }
+                LexingDiagnosticKind::Lexer(code) => json!([2, encode_tag(&code, &LEX_CODES)?]),
+            };
+            let payload = match &diagnostic.payload {
+                LexingDiagnosticPayload::None => json!([0]),
+                LexingDiagnosticPayload::NoValidTokenCandidate {
+                    rejected_lexeme,
+                    recovery,
+                } => json!([
+                    1,
+                    rejected_lexeme.as_ref(),
+                    encode_tag(recovery, &RECOVERY_HINTS)?
+                ]),
+                LexingDiagnosticPayload::ParserContextRejectedCandidate {
+                    mode,
+                    rejected_lexeme,
+                    candidates,
+                    recovery,
+                } => json!([
+                    2,
+                    encode_tag(mode, &MODES)?,
+                    rejected_lexeme.as_ref(),
+                    encode_list(candidates, |candidate| Some(json!([
+                        encode_tag(&candidate.kind, &TOKEN_KINDS)?,
+                        candidate.text.as_ref(),
+                        encode_source_range(candidate.span, source_id)?,
+                        encode_list(&candidate.secondary, |anchor| encode_source_anchor(
+                            anchor, source_id
+                        ))?
+                    ])))?,
+                    encode_tag(recovery, &RECOVERY_HINTS)?
+                ]),
+                LexingDiagnosticPayload::MalformedStringLiteral {
+                    opening_quote,
+                    reason,
+                    recovery,
+                } => {
+                    let reason = match reason {
+                        MalformedStringLiteralReason::MissingClosingQuote => json!([0]),
+                        MalformedStringLiteralReason::UnsupportedEscape { escape } => {
+                            json!([1, escape.to_string()])
+                        }
+                        MalformedStringLiteralReason::DanglingEscape => json!([2]),
+                        _ => return None,
+                    };
+                    json!([
+                        3,
+                        opening_quote.to_string(),
+                        reason,
+                        encode_tag(recovery, &RECOVERY_HINTS)?
+                    ])
+                }
+                LexingDiagnosticPayload::UnsupportedRawToken {
+                    raw_kind,
+                    raw_lexeme,
+                    recovery,
+                } => json!([
+                    4,
+                    encode_tag(raw_kind, &RAW_KINDS)?,
+                    raw_lexeme.as_ref(),
+                    encode_tag(recovery, &RECOVERY_HINTS)?
+                ]),
+                LexingDiagnosticPayload::UnsupportedLexerPayload => json!([5]),
+            };
+            Some(json!([
+                kind,
+                diagnostic.message.as_ref(),
+                encode_source_range(diagnostic.primary, source_id)?,
+                encode_list(&diagnostic.secondary, |anchor| encode_source_anchor(
+                    anchor, source_id
+                ))?,
+                payload
+            ]))
+        })?;
+        let bytes = serde_json::to_vec(&json!([
+            TOKEN_STREAM_SCHEMA,
+            encode_context(self.parser_context)?,
+            plan,
+            tokens,
+            scope,
+            local,
+            diagnostics
+        ]))
+        .ok()?;
+        (bytes.len() <= TOKEN_STREAM_MAX_BYTES).then_some(bytes)
+    }
+
     /// Returns the tokens in source order.
     pub fn tokens(&self) -> &[Token] {
         &self.tokens
@@ -1032,6 +1602,825 @@ fn lexical_mapping(
 
 #[cfg(test)]
 mod tests {
+    #[test]
+    fn token_stream_storage_round_trips_producer_outputs_with_fresh_id() {
+        use super::TokenStream;
+        use crate::preprocess::preprocess;
+        use mizar_lexer::ModuleId;
+
+        let ids = InMemorySessionIdAllocator::new();
+        ids.next_source_id(snapshot_id(2)).unwrap();
+        let fresh_id = ids.next_source_id(snapshot_id(2)).unwrap();
+        for (text, plan_kind) in [
+            (
+                "func Plus: x + y -> set; :: declaration\ninfix_operator(\"+\", left, 80); :: use\na + b;\n",
+                0,
+            ),
+            ("@[label(\"α::β\", \"γ::δ\")]\n", 1),
+            ("end;\ndefinition\nlet x be set;\n@ ?\n", 0),
+            ("\"alpha\"", 2),
+            ("op op", 3),
+        ] {
+            let (mut source, preprocessed, bridge) = preprocessed_source(text);
+            assert_ne!(source.source_id, fresh_id);
+            let environment = if plan_kind == 3 {
+                environment_with_same_spelling_kind_overloads()
+            } else {
+                empty_environment()
+            };
+            let plan = match plan_kind {
+                1 => ParserLexingPlan::for_lexical_text(preprocessed.lexical_text.as_str()),
+                2 => ParserLexingPlan::uniform(ParserLexContext::identifier_required()),
+                3 => ParserLexingPlan::new(
+                    ParserLexContext::general().with_user_symbol_kinds(
+                        mizar_lexer::UserSymbolKindSet::only(
+                            mizar_lexer::UserSymbolKind::Predicate,
+                        ),
+                    ),
+                    vec![ParserLexingPlanContext::new(
+                        LexicalByteRange::new(3, 5),
+                        ParserLexContext::general().with_user_symbol_kinds(
+                            mizar_lexer::UserSymbolKindSet::only(mizar_lexer::UserSymbolKind::Mode),
+                        ),
+                    )],
+                ),
+                _ => ParserLexingPlan::uniform(ParserLexContext::general()),
+            };
+            let original = tokenize(
+                TokenizeRequest::with_plan(&preprocessed, &environment, plan.clone())
+                    .with_current_module(ModuleId::new("current")),
+                &bridge,
+            )
+            .unwrap();
+            let bytes = original.canonical_bytes().unwrap();
+            assert_eq!(
+                TokenStream::from_canonical_bytes(&bytes, source.source_id),
+                Some(original.clone()),
+                "{text:?}"
+            );
+
+            source.source_id = fresh_id;
+            source.line_map = LineMap::with_source(fresh_id, text);
+            let mut fresh_bridge = SpanBridge::new();
+            register_source_unit(&mut fresh_bridge, &source).unwrap();
+            let fresh_preprocessed = preprocess(&source, &mut fresh_bridge).unwrap();
+            let expected = tokenize(
+                TokenizeRequest::with_plan(&fresh_preprocessed, &environment, plan)
+                    .with_current_module(ModuleId::new("current")),
+                &fresh_bridge,
+            )
+            .unwrap();
+            assert_eq!(
+                TokenStream::from_canonical_bytes(&bytes, fresh_id),
+                Some(expected)
+            );
+            assert_eq!(
+                TokenStream::from_canonical_bytes(&bytes, fresh_id)
+                    .unwrap()
+                    .canonical_bytes()
+                    .unwrap(),
+                bytes
+            );
+            if plan_kind == 0 && text.starts_with("func") {
+                assert!(!original.local_declarations.user_symbols.is_empty());
+                assert!(!original.local_declarations.operator_declarations.is_empty());
+                assert!(
+                    original
+                        .tokens
+                        .iter()
+                        .any(|token| token.kind == TokenKind::UserSymbol)
+                );
+            }
+            if plan_kind == 1 {
+                assert_eq!(original.parser_lexing_plan.contexts.len(), 2);
+                assert!(
+                    original
+                        .tokens
+                        .iter()
+                        .any(|token| token.kind == TokenKind::StringLiteral)
+                );
+            }
+            if text.starts_with("end;") {
+                assert!(
+                    original
+                        .diagnostics
+                        .iter()
+                        .any(|diagnostic| diagnostic.kind == LexingDiagnosticKind::RawScan)
+                );
+                assert!(original.diagnostics.iter().any(|diagnostic| matches!(
+                    diagnostic.kind,
+                    LexingDiagnosticKind::ScopeSkeleton(_)
+                )));
+            }
+            if plan_kind == 2 {
+                assert!(original.diagnostics.iter().any(|diagnostic| matches!(
+                    diagnostic.payload,
+                    LexingDiagnosticPayload::ParserContextRejectedCandidate { .. }
+                )));
+            }
+            if plan_kind == 3 {
+                assert_eq!(
+                    original
+                        .tokens
+                        .iter()
+                        .map(|token| token.kind)
+                        .collect::<Vec<_>>(),
+                    vec![TokenKind::UserSymbol, TokenKind::Identifier]
+                );
+            }
+        }
+    }
+
+    #[test]
+    fn token_stream_storage_fixed_empty_wire_and_canonical_controls() {
+        use super::TokenStream;
+
+        const EMPTY: &[u8] =
+            br#"["mizar-frontend/token-stream/v1",[0,[]],[[0,[]],[]],[],[[],[],[]],[[],[]],[]]"#;
+        let source_id = source_unit("").source_id;
+        let stream = TokenStream::from_canonical_bytes(EMPTY, source_id).unwrap();
+        assert_eq!(stream.source_id, source_id);
+        assert_eq!(stream.scope_view.source_id, source_id);
+        assert_eq!(stream.parser_context.mode(), ParserLexMode::General);
+        assert_eq!(
+            stream.parser_context.user_symbol_kinds(),
+            mizar_lexer::UserSymbolKindSet::empty()
+        );
+        assert_eq!(stream.canonical_bytes().unwrap(), EMPTY);
+        for invalid in [
+            b"".as_slice(),
+            b"null",
+            b"[]",
+            b"{}",
+            b"\xff",
+            b" [\"mizar-frontend/token-stream/v1\",[0,[]],[[0,[]],[]],[],[[],[],[]],[[],[]],[]]",
+        ] {
+            assert!(TokenStream::from_canonical_bytes(invalid, source_id).is_none());
+        }
+        let mut with_newline = EMPTY.to_vec();
+        with_newline.push(b'\n');
+        assert!(TokenStream::from_canonical_bytes(&with_newline, source_id).is_none());
+    }
+
+    #[test]
+    fn token_stream_storage_fixed_vocabulary_and_diagnostic_wire() {
+        use super::TokenStream;
+        use mizar_lexer::{
+            ExportedOperatorAssociativity as Assoc, ExportedOperatorFixity as Fixity,
+            UserSymbolKind, UserSymbolKindSet,
+        };
+        use serde_json::json;
+
+        let source_id = source_unit("").source_id;
+        let value = json!([
+            "mizar-frontend/token-stream/v1",
+            [0, [0, 2, 6]],
+            [
+                [0, [0, 2, 6]],
+                [
+                    [[0, 1], [1, []]],
+                    [[1, 2], [2, [1]]],
+                    [[2, 3], [3, [2]]],
+                    [[3, 4], [4, [3]]],
+                    [[4, 5], [5, [4]]],
+                    [[5, 6], [0, [5]]]
+                ]
+            ],
+            [
+                [0, "id", [0, 1]],
+                [1, "word", [1, 2]],
+                [2, ";", [2, 3]],
+                [3, "2", [3, 4]],
+                [4, "run", [4, 5]],
+                [5, "+", [5, 6]],
+                [6, "@latex", [6, 7]],
+                [7, "\"x\"", [7, 8]],
+                [8, "?", [8, 9]]
+            ],
+            [
+                [[
+                    [0, 20],
+                    [
+                        ["a", [0, 1], 0],
+                        ["b", [1, 2], 1],
+                        ["c", [2, 3], 2],
+                        ["d", [3, 4], 3],
+                        ["e", [4, 5], 4],
+                        ["f", [5, 6], 5],
+                        ["g", [6, 7], 6],
+                        ["h", [7, 8], 7],
+                        ["i", [8, 9], 8],
+                        ["j", [9, 10], 9],
+                        ["k", [10, 11], 10],
+                        ["l", [11, 12], 11],
+                        ["m", [12, 13], 12],
+                        ["n", [13, 14], 13]
+                    ]
+                ]],
+                [
+                    [0, [0, 1]],
+                    [1, [1, 2]],
+                    [2, [2, 3]],
+                    [3, [3, 4]],
+                    [4, [4, 5]],
+                    [5, [5, 6]],
+                    [6, [6, 7]],
+                    [7, [7, 8]],
+                    [8, [8, 9]]
+                ],
+                [[0, [0, 1]], [1, [1, 2]]]
+            ],
+            [
+                [
+                    [
+                        "+",
+                        "current#plus",
+                        "current",
+                        4294967295u32,
+                        0,
+                        [0, null],
+                        [1, 255],
+                        [1, 2],
+                        3
+                    ],
+                    ["P", "current#p", "current", 1, 1, [2, 4], null, [2, 3], 4]
+                ],
+                [
+                    ["pre", "current", [0, 1], 1, [0, 0]],
+                    ["left", "current", [1, 2], 2, [1, 1]],
+                    ["right", "current", [2, 3], 3, [2, 2]],
+                    ["non", "current", [3, 4], 4, [3, 3]],
+                    ["post", "current", [4, 5], 5, [4, 4]]
+                ]
+            ],
+            [
+                [
+                    [0],
+                    "raw",
+                    [0, 1],
+                    [
+                        ["range", [0, 1]],
+                        ["point", 2],
+                        ["generated", ["range", [1, 2]], " range β "],
+                        ["generated", ["point", 3], " point "]
+                    ],
+                    [0]
+                ],
+                [[1, 0], "scope0", [0, 1], [], [0]],
+                [[1, 1], "scope1", [0, 1], [], [0]],
+                [[1, 2], "scope2", [0, 1], [], [0]],
+                [[1, 3], "scope3", [0, 1], [], [0]],
+                [[1, 4], "scope4", [0, 1], [], [0]],
+                [[2, 0], "lex0", [0, 1], [], [1, "?", 0]],
+                [
+                    [2, 1],
+                    "lex1",
+                    [0, 1],
+                    [["point", 7]],
+                    [
+                        2,
+                        1,
+                        "x",
+                        [[
+                            5,
+                            "candidate",
+                            [1, 2],
+                            [["generated", ["point", 8], "candidate"]]
+                        ]],
+                        0
+                    ]
+                ],
+                [[2, 2], "lex2", [0, 1], [], [3, "\"", [0], 0]],
+                [[2, 3], "lex3", [0, 1], [], [3, "'", [1, "β"], 0]],
+                [[2, 3], "lex3b", [0, 1], [], [3, "\"", [2], 0]],
+                [[2, 4], "lex4", [0, 1], [], [4, 0, "run", 0]],
+                [[2, 4], "lex4b", [0, 1], [], [4, 1, "number", 0]],
+                [[2, 4], "lex4c", [0, 1], [], [4, 2, "@", 0]],
+                [[2, 4], "lex4d", [0, 1], [], [4, 3, " ", 0]],
+                [[2, 4], "lex4e", [0, 1], [], [4, 4, "?", 0]],
+                [[2, 4], "unsupported", [0, 1], [], [5]]
+            ]
+        ]);
+        let bytes = serde_json::to_vec(&value).unwrap();
+        let stream = TokenStream::from_canonical_bytes(&bytes, source_id).unwrap();
+        assert_eq!(stream.canonical_bytes().unwrap(), bytes);
+        assert_eq!(stream.parser_context.mode(), ParserLexMode::General);
+        assert_eq!(
+            stream.parser_context.user_symbol_kinds(),
+            UserSymbolKindSet::from_slice(&[
+                UserSymbolKind::Functor,
+                UserSymbolKind::Mode,
+                UserSymbolKind::Constructor,
+            ])
+        );
+        assert_eq!(
+            stream
+                .parser_lexing_plan
+                .contexts
+                .iter()
+                .map(|entry| entry.context.mode())
+                .collect::<Vec<_>>(),
+            vec![
+                ParserLexMode::IdentifierRequired,
+                ParserLexMode::Symbolic,
+                ParserLexMode::StringRequired,
+                ParserLexMode::NamespacePath,
+                ParserLexMode::Recovery,
+                ParserLexMode::General
+            ]
+        );
+        assert_eq!(
+            stream
+                .parser_lexing_plan
+                .contexts
+                .iter()
+                .map(|entry| entry.context.user_symbol_kinds())
+                .collect::<Vec<_>>(),
+            vec![
+                UserSymbolKindSet::empty(),
+                UserSymbolKindSet::only(UserSymbolKind::Predicate),
+                UserSymbolKindSet::only(UserSymbolKind::Mode),
+                UserSymbolKindSet::only(UserSymbolKind::Attribute),
+                UserSymbolKindSet::only(UserSymbolKind::Structure),
+                UserSymbolKindSet::only(UserSymbolKind::Selector),
+            ]
+        );
+        assert_eq!(
+            stream
+                .tokens
+                .iter()
+                .map(|token| token.kind)
+                .collect::<Vec<_>>(),
+            vec![
+                TokenKind::Identifier,
+                TokenKind::ReservedWord,
+                TokenKind::ReservedSymbol,
+                TokenKind::Numeral,
+                TokenKind::LexemeRun,
+                TokenKind::UserSymbol,
+                TokenKind::AnnotationMarker,
+                TokenKind::StringLiteral,
+                TokenKind::ErrorRecovery,
+            ]
+        );
+        assert_eq!(stream.scope_view.frames[0].bindings.len(), 14);
+        assert_eq!(
+            stream.scope_view.frames[0]
+                .bindings
+                .iter()
+                .map(|binding| binding.kind)
+                .collect::<Vec<_>>(),
+            vec![
+                BindingShapeKind::Let,
+                BindingShapeKind::For,
+                BindingShapeKind::Ex,
+                BindingShapeKind::Reserve,
+                BindingShapeKind::Given,
+                BindingShapeKind::Consider,
+                BindingShapeKind::Set,
+                BindingShapeKind::Reconsider,
+                BindingShapeKind::Take,
+                BindingShapeKind::Deffunc,
+                BindingShapeKind::Defpred,
+                BindingShapeKind::Var,
+                BindingShapeKind::Const,
+                BindingShapeKind::Processed,
+            ]
+        );
+        assert_eq!(
+            stream
+                .scope_view
+                .blocks
+                .iter()
+                .map(|block| block.kind)
+                .collect::<Vec<_>>(),
+            vec![
+                LexicalBlockKind::Algorithm,
+                LexicalBlockKind::Definition,
+                LexicalBlockKind::Registration,
+                LexicalBlockKind::Proof,
+                LexicalBlockKind::Now,
+                LexicalBlockKind::Case,
+                LexicalBlockKind::Suppose,
+                LexicalBlockKind::Hereby,
+                LexicalBlockKind::Do,
+            ]
+        );
+        assert_eq!(
+            stream
+                .scope_view
+                .statements
+                .iter()
+                .map(|statement| statement.kind)
+                .collect::<Vec<_>>(),
+            vec![LexicalStatementKind::Binder, LexicalStatementKind::Other]
+        );
+        assert_eq!(
+            stream.local_declarations.user_symbols[0].symbol_id.as_str(),
+            "current#plus"
+        );
+        assert_eq!(
+            stream.local_declarations.user_symbols[0].export_rank.get(),
+            u32::MAX
+        );
+        assert_eq!(
+            stream
+                .local_declarations
+                .user_symbols
+                .iter()
+                .map(|symbol| symbol.kind)
+                .collect::<Vec<_>>(),
+            vec![UserSymbolKind::Functor, UserSymbolKind::Predicate]
+        );
+        assert_eq!(
+            stream
+                .local_declarations
+                .operator_declarations
+                .iter()
+                .map(|entry| entry.operator.unwrap().fixity)
+                .collect::<Vec<_>>(),
+            vec![
+                Fixity::Prefix,
+                Fixity::Infix(Assoc::Left),
+                Fixity::Infix(Assoc::Right),
+                Fixity::Infix(Assoc::NonAssociative),
+                Fixity::Postfix
+            ]
+        );
+        assert_eq!(stream.diagnostics.len(), 17);
+        assert_eq!(stream.diagnostics[0].kind, LexingDiagnosticKind::RawScan);
+        assert_eq!(
+            stream.diagnostics[1..6]
+                .iter()
+                .map(|diag| diag.kind)
+                .collect::<Vec<_>>(),
+            vec![
+                LexingDiagnosticKind::ScopeSkeleton(
+                    ScopeSkeletonDiagnosticCode::MalformedBinderList
+                ),
+                LexingDiagnosticKind::ScopeSkeleton(
+                    ScopeSkeletonDiagnosticCode::UnsupportedBinderShape
+                ),
+                LexingDiagnosticKind::ScopeSkeleton(
+                    ScopeSkeletonDiagnosticCode::DuplicateBindingName
+                ),
+                LexingDiagnosticKind::ScopeSkeleton(ScopeSkeletonDiagnosticCode::UnmatchedEnd),
+                LexingDiagnosticKind::ScopeSkeleton(ScopeSkeletonDiagnosticCode::MissingEnd),
+            ]
+        );
+        assert_eq!(
+            [6, 7, 8, 9, 11].map(|index| stream.diagnostics[index].kind),
+            [
+                LexingDiagnosticKind::Lexer(LexDiagnosticCode::NoValidTokenCandidate),
+                LexingDiagnosticKind::Lexer(LexDiagnosticCode::ParserContextRejectedCandidate),
+                LexingDiagnosticKind::Lexer(LexDiagnosticCode::AmbiguousUserSymbol),
+                LexingDiagnosticKind::Lexer(LexDiagnosticCode::MalformedStringLiteral),
+                LexingDiagnosticKind::Lexer(LexDiagnosticCode::UnsupportedRawToken),
+            ]
+        );
+        assert_eq!(
+            stream.diagnostics[6].payload,
+            LexingDiagnosticPayload::NoValidTokenCandidate {
+                rejected_lexeme: Arc::from("?"),
+                recovery: LexRecoveryHint::EmitErrorRecoveryToken,
+            }
+        );
+        assert!(matches!(stream.diagnostics[7].payload,
+            LexingDiagnosticPayload::ParserContextRejectedCandidate { ref candidates, .. }
+            if candidates[0].secondary.len() == 1
+        ));
+        assert_eq!(stream.diagnostics[0].secondary.len(), 4);
+        assert_eq!(
+            stream.diagnostics[9].payload,
+            LexingDiagnosticPayload::MalformedStringLiteral {
+                opening_quote: '\'',
+                reason: MalformedStringLiteralReason::UnsupportedEscape { escape: 'β' },
+                recovery: LexRecoveryHint::EmitErrorRecoveryToken,
+            }
+        );
+        assert_eq!(
+            stream.diagnostics[8].payload,
+            LexingDiagnosticPayload::MalformedStringLiteral {
+                opening_quote: '"',
+                reason: MalformedStringLiteralReason::MissingClosingQuote,
+                recovery: LexRecoveryHint::EmitErrorRecoveryToken,
+            }
+        );
+        assert_eq!(
+            stream.diagnostics[10].payload,
+            LexingDiagnosticPayload::MalformedStringLiteral {
+                opening_quote: '"',
+                reason: MalformedStringLiteralReason::DanglingEscape,
+                recovery: LexRecoveryHint::EmitErrorRecoveryToken,
+            }
+        );
+        assert_eq!(
+            stream.diagnostics[11..16]
+                .iter()
+                .map(|diag| match &diag.payload {
+                    LexingDiagnosticPayload::UnsupportedRawToken { raw_kind, .. } => *raw_kind,
+                    _ => panic!("expected raw payload"),
+                })
+                .collect::<Vec<_>>(),
+            vec![
+                super::RawTokenKind::LexemeRun,
+                super::RawTokenKind::NumeralLike,
+                super::RawTokenKind::AnnotationMarker,
+                super::RawTokenKind::Layout,
+                super::RawTokenKind::Error,
+            ]
+        );
+        assert_eq!(
+            stream.diagnostics[16].payload,
+            LexingDiagnosticPayload::UnsupportedLexerPayload
+        );
+        for (diagnostic, path, replacement) in [
+            (9, "/4/1", json!("ab")),
+            (9, "/4/2/1", json!("ab")),
+            (9, "/4/2/0", json!(3)),
+            (11, "/4/1", json!(5)),
+        ] {
+            let mut invalid = value.clone();
+            *invalid[6][diagnostic].pointer_mut(path).unwrap() = replacement;
+            assert!(
+                TokenStream::from_canonical_bytes(
+                    &serde_json::to_vec(&invalid).unwrap(),
+                    source_id
+                )
+                .is_none()
+            );
+        }
+
+        let ids = InMemorySessionIdAllocator::new();
+        ids.next_source_id(snapshot_id(3)).unwrap();
+        let fresh_id = ids.next_source_id(snapshot_id(3)).unwrap();
+        assert_ne!(source_id, fresh_id);
+        let rebound = TokenStream::from_canonical_bytes(&bytes, fresh_id).unwrap();
+        assert_eq!(rebound.source_id, fresh_id);
+        assert_eq!(
+            rebound.scope_view.frames[0].bindings[0]
+                .introduced_at
+                .source_id,
+            fresh_id
+        );
+        assert_eq!(rebound.diagnostics[7].primary.source_id, fresh_id);
+        assert_eq!(rebound.canonical_bytes().unwrap(), bytes);
+    }
+
+    #[test]
+    fn token_stream_storage_rejects_corruption_and_foreign_ids() {
+        use super::TokenStream;
+        use serde_json::{Value, json};
+
+        let source_id = source_unit("").source_id;
+        let base = json!([
+            "mizar-frontend/token-stream/v1",
+            [0, [0, 2]],
+            [[0, [0, 2]], [[[0, 1], [1, [1]]]]],
+            [[0, "", [0, 1]]],
+            [[[[0, 2], [["x", [0, 1], 0]]]], [[0, [0, 2]]], [[0, [0, 1]]]],
+            [
+                [[
+                    "+",
+                    "current#plus",
+                    "current",
+                    0,
+                    0,
+                    [1, 2],
+                    [1, 80],
+                    [0, 1],
+                    1
+                ]],
+                [["+", "current", [0, 1], 1, [1, 80]]]
+            ],
+            [[
+                [2, 1],
+                "context",
+                [0, 1],
+                [
+                    ["range", [0, 1]],
+                    ["point", 2],
+                    ["generated", ["range", [0, 1]], "r"],
+                    ["generated", ["point", 2], "p"]
+                ],
+                [
+                    2,
+                    1,
+                    "x",
+                    [[
+                        0,
+                        "x",
+                        [0, 1],
+                        [
+                            ["range", [0, 1]],
+                            ["point", 2],
+                            ["generated", ["range", [0, 1]], "r"],
+                            ["generated", ["point", 2], "p"]
+                        ]
+                    ]],
+                    0
+                ]
+            ]]
+        ]);
+        let bytes = serde_json::to_vec(&base).unwrap();
+        let original = TokenStream::from_canonical_bytes(&bytes, source_id).unwrap();
+        let reject = |value: &Value| {
+            assert!(
+                TokenStream::from_canonical_bytes(&serde_json::to_vec(value).unwrap(), source_id)
+                    .is_none()
+            );
+        };
+        for (pointer, replacement) in [
+            ("/0", json!("unknown")),
+            ("/1/0", json!(6)),
+            ("/1/1", json!([2, 0])),
+            ("/1/1", json!([0, 0])),
+            ("/2/1/0/0", json!([2, 1])),
+            ("/3/0/0", json!(9)),
+            ("/3/0/2", json!([2, 1])),
+            ("/4/0/0/0", json!([2, 1])),
+            ("/4/0/0/1/0/2", json!(14)),
+            ("/4/1/0/0", json!(9)),
+            ("/4/2/0/0", json!(2)),
+            ("/5/0/0/3", json!(4294967296u64)),
+            ("/5/0/0/4", json!(7)),
+            ("/5/0/0/5/0", json!(65536)),
+            ("/5/0/0/6/0", json!(5)),
+            ("/5/0/0/6/1", json!(256)),
+            ("/5/0/0/7", json!([2, 1])),
+            ("/6/0/0", json!([2, 5])),
+            ("/6/0/3/0/0", json!("bad")),
+            ("/6/0/3/1/1", json!(-1)),
+            ("/6/0/3/2/1", json!(["generated", ["point", 0], "nested"])),
+            ("/6/0/3/2/2", json!(" \t\n")),
+            ("/6/0/4/3/0/3/0/0", json!("bad")),
+            ("/6/0/4/3/0/3/2/2", json!("")),
+            ("/6/0/4/4", json!(1)),
+        ] {
+            let mut invalid = base.clone();
+            *invalid.pointer_mut(pointer).unwrap() = replacement;
+            reject(&invalid);
+        }
+        for invalid in [
+            json!(["mizar-frontend/token-stream/v1", [0, [0, 2]]]),
+            json!([
+                "mizar-frontend/token-stream/v1",
+                [0, [0, 2]],
+                [[0, [0, 2]], []],
+                [],
+                [[], [], []],
+                [[], []],
+                [],
+                null
+            ]),
+        ] {
+            reject(&invalid);
+        }
+        let mut invalid = base.clone();
+        invalid[3][0].as_array_mut().unwrap().push(json!("extra"));
+        reject(&invalid);
+        let mut invalid = bytes.clone();
+        invalid.insert(1, b' ');
+        assert!(TokenStream::from_canonical_bytes(&invalid, source_id).is_none());
+
+        let ids = InMemorySessionIdAllocator::new();
+        ids.next_source_id(snapshot_id(4)).unwrap();
+        let foreign_id = ids.next_source_id(snapshot_id(4)).unwrap();
+        assert_ne!(source_id, foreign_id);
+        for field in 0..16 {
+            let mut invalid = original.clone();
+            match field {
+                0 => invalid.scope_view.source_id = foreign_id,
+                1 => invalid.tokens[0].span.source_id = foreign_id,
+                2 => invalid.scope_view.frames[0].range.source_id = foreign_id,
+                3 => {
+                    invalid.scope_view.frames[0].bindings[0]
+                        .introduced_at
+                        .source_id = foreign_id
+                }
+                4 => invalid.scope_view.blocks[0].range.source_id = foreign_id,
+                5 => invalid.scope_view.statements[0].range.source_id = foreign_id,
+                6 => invalid.diagnostics[0].primary.source_id = foreign_id,
+                7 => {
+                    invalid.diagnostics[0].secondary[0] =
+                        SourceAnchor::Range(range(foreign_id, 0, 1))
+                }
+                8 => {
+                    invalid.diagnostics[0].secondary[1] = SourceAnchor::Point {
+                        source_id: foreign_id,
+                        offset: 2,
+                    }
+                }
+                9 => {
+                    invalid.diagnostics[0].payload =
+                        LexingDiagnosticPayload::ParserContextRejectedCandidate {
+                            mode: ParserLexMode::IdentifierRequired,
+                            rejected_lexeme: Arc::from("x"),
+                            candidates: vec![LexingRejectedTokenCandidate {
+                                kind: TokenKind::Identifier,
+                                text: Arc::from("x"),
+                                span: range(foreign_id, 0, 1),
+                                secondary: Vec::new(),
+                            }],
+                            recovery: LexRecoveryHint::EmitErrorRecoveryToken,
+                        }
+                }
+                10 => {
+                    invalid.diagnostics[0].secondary[2] = SourceAnchor::Generated(
+                        mizar_session::GeneratedSpanOrigin::new(
+                            mizar_session::GeneratedSpanAnchor::Range(range(foreign_id, 0, 1)),
+                            "r",
+                        )
+                        .unwrap(),
+                    )
+                }
+                11 => {
+                    invalid.diagnostics[0].secondary[3] = SourceAnchor::Generated(
+                        mizar_session::GeneratedSpanOrigin::new(
+                            mizar_session::GeneratedSpanAnchor::Point {
+                                source_id: foreign_id,
+                                offset: 2,
+                            },
+                            "p",
+                        )
+                        .unwrap(),
+                    )
+                }
+                12..=15 => {
+                    let LexingDiagnosticPayload::ParserContextRejectedCandidate {
+                        candidates, ..
+                    } = &mut invalid.diagnostics[0].payload
+                    else {
+                        unreachable!()
+                    };
+                    candidates[0].secondary[field - 12] = match field {
+                        12 => SourceAnchor::Range(range(foreign_id, 0, 1)),
+                        13 => SourceAnchor::Point {
+                            source_id: foreign_id,
+                            offset: 2,
+                        },
+                        14 => SourceAnchor::Generated(
+                            mizar_session::GeneratedSpanOrigin::new(
+                                mizar_session::GeneratedSpanAnchor::Range(range(foreign_id, 0, 1)),
+                                "r",
+                            )
+                            .unwrap(),
+                        ),
+                        15 => SourceAnchor::Generated(
+                            mizar_session::GeneratedSpanOrigin::new(
+                                mizar_session::GeneratedSpanAnchor::Point {
+                                    source_id: foreign_id,
+                                    offset: 2,
+                                },
+                                "p",
+                            )
+                            .unwrap(),
+                        ),
+                        _ => unreachable!(),
+                    };
+                }
+                _ => unreachable!(),
+            }
+            assert!(invalid.canonical_bytes().is_none(), "foreign field {field}");
+        }
+        assert!(
+            TokenStream::from_canonical_bytes(&vec![b' '; 16 * 1024 * 1024 + 1], source_id)
+                .is_none()
+        );
+    }
+
+    #[test]
+    fn token_stream_storage_enforces_exact_payload_limit() {
+        use super::TokenStream;
+        let source_id = source_unit("").source_id;
+        let value = serde_json::json!([
+            "mizar-frontend/token-stream/v1",
+            [0, []],
+            [[0, []], []],
+            [[0, "", [0, 0]]],
+            [[], [], []],
+            [[], []],
+            []
+        ]);
+        let mut stream =
+            TokenStream::from_canonical_bytes(&serde_json::to_vec(&value).unwrap(), source_id)
+                .unwrap();
+        let overhead = stream.canonical_bytes().unwrap().len();
+        stream.tokens[0].text = Arc::from("x".repeat(16 * 1024 * 1024 - overhead));
+        let exact = stream.canonical_bytes().unwrap();
+        assert_eq!(exact.len(), 16 * 1024 * 1024);
+        assert_eq!(
+            TokenStream::from_canonical_bytes(&exact, source_id),
+            Some(stream.clone())
+        );
+        stream.tokens[0].text = Arc::from(format!("{}x", stream.tokens[0].text));
+        assert!(stream.canonical_bytes().is_none());
+        let mut oversized = exact;
+        let text_start = br#"["mizar-frontend/token-stream/v1",[0,[]],[[0,[]],[]],[[0,""#.len();
+        oversized.insert(text_start, b'x');
+        assert!(TokenStream::from_canonical_bytes(&oversized, source_id).is_none());
+    }
+
     use super::{
         BindingShapeKind, LexDiagnosticCode, LexRecoveryHint, LexicalBlockKind, LexicalByteRange,
         LexicalStatementKind, LexingDiagnosticKind, LexingDiagnosticPayload,

@@ -144,3 +144,7 @@ pub enum SpanBridgeError {
 - `SourceId` ごとに、正準の line／loading／preprocess マップはちょうど 1 つである。
 - すべての座標算術は `mizar-session` の `SourceMapService` に委譲される。橋渡しは、検証済みの `TextRange` / `SourceRange` 要求の構築と重複登録の検出を超えて、オフセット計算を再実装しない。
 - 橋渡しの失敗は内部不変条件の違反であり、ユーザー向け診断ではない。
+
+compiler-internal な座標保存 helper を前処理・字句診断・棄却候補で共有する。
+offset の順序と generated anchor の reason を保持し、所有 SourceId の一致を検査する。
+decode では座標を再束縛するが text の登録・認証は行わない。wire form は各 producer の保存節が所有する。

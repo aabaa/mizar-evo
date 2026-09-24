@@ -268,3 +268,54 @@ lexing wrapper は、回復可能な生スキャン、スコープスケルト�
 - トークンストリームをキャッシュする場合、キャッシュキーは `PreprocessedSource.lexical_hash`、アクティブ字句環境のフィンガープリント、およびその実行で使った `ParserLexContext` ／パーサー支援字句解析プランの安定したエンコードである。
 - active lexical environment、imported lexical summary、parser lexing plan が変わった場合、local source text が不変でも `TokenStream` reuse は無効化される。
 - すべてのトークンスパンは、`span_bridge` を通じて生成された session の `SourceRange` 値である。
+
+## TokenStream storage
+
+`TokenStream::canonical_bytes() -> Option<Vec<u8>>` と
+`TokenStream::from_canonical_bytes(bytes, source_id) -> Option<TokenStream>` は
+compiler-internal な字句解析結果を保持する。字句解析・parse・resolve・map 登録・phase 公開・cache/proof reuse は行わない。
+schema は `mizar-frontend/token-stream/v1`、上限 16 MiB の canonical UTF-8 JSON とする。
+外側は `[schema, parser_context, parser_lexing_plan, tokens, scope_view, local_declarations, diagnostics]`。
+record は次の厳密な形とし、list の順序・重複、文字列、module/symbol 識別文字列、activation 位置、metadata を保持する。
+省略するのは型付き `SourceId` のみで、stream/scope ID、全 source range、診断と候補の anchor は encode 時に stream ID と一致し、decode 時に現在の ID に再束縛する。
+module/symbol 文字列は ID から生成された場合も不透明な値として保持する。実行間比較では安定した module identity を使う。
+range は非負 `usize` の start <= end とする。plan/local declaration の座標は lexical、それ以外は source のまま保持する。
+source/lexical text を含まないため、text 境界・UTF-8 境界・producer の合法性・scope topology・plan の順序・activation の妥当性・provenance は検証しない。
+
+| 値 | Wire form |
+|---|---|
+| Range / source anchor | [前処理の保存形式](./preprocess.md#preprocessedsource-storage)と同じ。generated reason の bytes を保持し `trim().is_empty()` を拒否する。generated の入れ子なし |
+| Context | `[mode, kinds]`。kinds は昇順・重複なしの user-kind tag、空集合は `[]` |
+| Plan / override | `[default_context, overrides]` / `[lexical_range, context]` |
+| Token | `[kind, text, source_range]` |
+| Scope view / frame | `[frames, blocks, statements]` / `[source_range, bindings]` |
+| Binding / block または statement | `[spelling, source_range, kind]` / `[kind, source_range]` |
+| Local declarations | `[user_symbols, operator_declarations]` |
+| Local user symbol | `[spelling, symbol_id, source_module, export_rank, kind, arity, operator, lexical_range, activation_start]` |
+| Local operator declaration | `[spelling, source_module, lexical_range, activation_start, operator]` |
+| Arity / operator | `[minimum_u16, maximum_u16_or_null]` / `null` または `[fixity, precedence_u8]`。export rank は `u32` |
+| Diagnostic | `[kind, message, primary_source_range, secondary_anchors, payload]` |
+| Diagnostic kind | `[0]` raw scan、`[1, scope_code]`、`[2, lexer_code]` |
+| Payload | `[0]` none、`[1, rejected_lexeme, recovery]`、`[2, mode, rejected_lexeme, candidates, recovery]`、`[3, opening_quote, reason, recovery]`、`[4, raw_kind, raw_lexeme, recovery]`、`[5]` unsupported lexer payload |
+| Rejected candidate | `[kind, text, source_range, secondary_anchors]` |
+| String reason | `[0]` missing closing quote、`[1, escape]` unsupported escape、`[2]` dangling escape。quote/escape は Unicode scalar 1 個の文字列 |
+
+語彙 tag は Rust discriminant と独立した、次の固定 list の 0 始まりの index とする。
+
+| 語彙 | Tag 順の variant |
+|---|---|
+| Token kind | Identifier, ReservedWord, ReservedSymbol, Numeral, LexemeRun, UserSymbol, AnnotationMarker, StringLiteral, ErrorRecovery |
+| Parser mode | General, IdentifierRequired, Symbolic, StringRequired, NamespacePath, Recovery |
+| User kind | Functor, Predicate, Mode, Attribute, Structure, Selector, Constructor |
+| Binding kind | Let, For, Ex, Reserve, Given, Consider, Set, Reconsider, Take, Deffunc, Defpred, Var, Const, Processed |
+| Block kind | Algorithm, Definition, Registration, Proof, Now, Case, Suppose, Hereby, Do |
+| Statement kind | Binder, Other |
+| Scope diagnostic code | MalformedBinderList, UnsupportedBinderShape, DuplicateBindingName, UnmatchedEnd, MissingEnd |
+| Lexer diagnostic code | NoValidTokenCandidate, ParserContextRejectedCandidate, AmbiguousUserSymbol, MalformedStringLiteral, UnsupportedRawToken |
+| Raw kind | LexemeRun, NumeralLike, AnnotationMarker, Layout, Error |
+| Recovery | EmitErrorRecoveryToken |
+| Operator fixity | Prefix, Infix(Left), Infix(Right), Infix(NonAssociative), Postfix |
+
+未知の variant/tag/field、不正または非 canonical bytes、不正な整数/char、逆転 range、ID 不一致、上限超過は `None` とする。
+部分 decode は返さず、再 encode が入力 bytes と一致することを要求する。kind 集合の未知要素・非 canonical 順序・重複も拒否する。
+前処理と共有する座標保存 helper は `span_bridge` が所有し、lexer の語彙・公開 API は変更しない。集約状態の保存は別課題とする。

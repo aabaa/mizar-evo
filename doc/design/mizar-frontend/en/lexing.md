@@ -400,3 +400,63 @@ Implemented task-7/8/9 and task-20 scenarios:
   lexing plan invalidates `TokenStream` reuse even when local source text is
   unchanged.
 - All token spans are session `SourceRange` values produced through `span_bridge`.
+
+## TokenStream storage
+
+`TokenStream::canonical_bytes() -> Option<Vec<u8>>` and
+`TokenStream::from_canonical_bytes(bytes, source_id) -> Option<TokenStream>`
+retain compiler-internal lexing output without tokenizing, parsing, resolving,
+registering source maps, publishing a phase, or granting cache/proof reuse.
+Schema `mizar-frontend/token-stream/v1` uses canonical UTF-8 JSON, at most 16 MiB.
+The outer array is `[schema, parser_context, parser_lexing_plan, tokens, scope_view, local_declarations, diagnostics]`.
+Every record has exactly the fields below; lists preserve order and duplicates.
+All text, module/symbol identity strings, activation positions and metadata survive unchanged.
+Only typed `SourceId` fields are omitted: stream/scope IDs, all source ranges and
+all diagnostic/candidate anchors must match the stream ID on encode and receive
+the caller's current ID on decode. Module/symbol strings are opaque, even if a
+producer derived them from an ID; callers use stable module identity when comparing runs.
+Ranges are ordered nonnegative `usize` endpoints. Lexical plan/local-declaration
+coordinates remain lexical; other ranges remain source coordinates. This format
+has no source/lexical text, so it does not check text bounds, UTF-8 boundaries,
+producer legality, scope topology, plan ordering, activation validity or provenance.
+
+| Value | Wire form |
+|---|---|
+| Range / source anchor | Same as [preprocessing storage](./preprocess.md#preprocessedsource-storage); generated reasons retain bytes and reject `trim().is_empty()`; no nested generated anchors |
+| Context | `[mode, kinds]`; kinds are unique ascending user-kind tags, including `[]` for empty |
+| Plan / override | `[default_context, overrides]` / `[lexical_range, context]` |
+| Token | `[kind, text, source_range]` |
+| Scope view / frame | `[frames, blocks, statements]` / `[source_range, bindings]` |
+| Binding / block or statement | `[spelling, source_range, kind]` / `[kind, source_range]` |
+| Local declarations | `[user_symbols, operator_declarations]` |
+| Local user symbol | `[spelling, symbol_id, source_module, export_rank, kind, arity, operator, lexical_range, activation_start]` |
+| Local operator declaration | `[spelling, source_module, lexical_range, activation_start, operator]` |
+| Arity / operator | `[minimum_u16, maximum_u16_or_null]` / `null` or `[fixity, precedence_u8]`; export rank is `u32` |
+| Diagnostic | `[kind, message, primary_source_range, secondary_anchors, payload]` |
+| Diagnostic kind | `[0]` raw scan; `[1, scope_code]`; `[2, lexer_code]` |
+| Payload | `[0]` none; `[1, rejected_lexeme, recovery]`; `[2, mode, rejected_lexeme, candidates, recovery]`; `[3, opening_quote, reason, recovery]`; `[4, raw_kind, raw_lexeme, recovery]`; `[5]` unsupported lexer payload |
+| Rejected candidate | `[kind, text, source_range, secondary_anchors]` |
+| String reason | `[0]` missing closing quote; `[1, escape]` unsupported escape; `[2]` dangling escape; quote/escape are strings with exactly one Unicode scalar |
+
+Vocabulary tags are zero-based indices into these fixed lists, independent of Rust discriminants:
+
+| Vocabulary | Variants in tag order |
+|---|---|
+| Token kind | Identifier, ReservedWord, ReservedSymbol, Numeral, LexemeRun, UserSymbol, AnnotationMarker, StringLiteral, ErrorRecovery |
+| Parser mode | General, IdentifierRequired, Symbolic, StringRequired, NamespacePath, Recovery |
+| User kind | Functor, Predicate, Mode, Attribute, Structure, Selector, Constructor |
+| Binding kind | Let, For, Ex, Reserve, Given, Consider, Set, Reconsider, Take, Deffunc, Defpred, Var, Const, Processed |
+| Block kind | Algorithm, Definition, Registration, Proof, Now, Case, Suppose, Hereby, Do |
+| Statement kind | Binder, Other |
+| Scope diagnostic code | MalformedBinderList, UnsupportedBinderShape, DuplicateBindingName, UnmatchedEnd, MissingEnd |
+| Lexer diagnostic code | NoValidTokenCandidate, ParserContextRejectedCandidate, AmbiguousUserSymbol, MalformedStringLiteral, UnsupportedRawToken |
+| Raw kind | LexemeRun, NumeralLike, AnnotationMarker, Layout, Error |
+| Recovery | EmitErrorRecoveryToken |
+| Operator fixity | Prefix, Infix(Left), Infix(Right), Infix(NonAssociative), Postfix |
+
+Unknown variants/tags/fields, malformed or noncanonical bytes, invalid integer/char
+values, reversed ranges, incoherent source IDs and oversized payloads yield `None`.
+No partial decode is returned; canonical re-encoding must equal the input bytes.
+Context kind sets reject unknown members and noncanonical order/duplicates.
+The coordinate storage helpers shared with preprocessing live in `span_bridge`;
+lexer vocabulary and its public APIs remain unchanged. Aggregate storage is separate.

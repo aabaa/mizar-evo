@@ -4,7 +4,11 @@
 //! [preprocess design spec](../../../../doc/design/mizar-frontend/en/preprocess.md).
 
 use crate::source::SourceUnit;
-use crate::span_bridge::{LexerByteSpan, SpanBridge, SpanBridgeError, comment_kind_from_lexer};
+use crate::span_bridge::{
+    LexerByteSpan, SpanBridge, SpanBridgeError, comment_kind_from_lexer, decode_offsets,
+    decode_source_anchor, decode_source_range, encode_offsets, encode_source_anchor,
+    encode_source_range,
+};
 use mizar_lexer::{
     CommentKind as LexerCommentKind, ImportPrescanDiagnostic as LexerImportPrescanDiagnostic,
     ImportStub as LexerImportStub, RawModuleAlias as LexerRawModuleAlias,
@@ -18,10 +22,7 @@ use mizar_lexer::{
 pub use mizar_lexer::{ImportPrescanDiagnosticCode, SourcePreprocessDiagnosticCode};
 /// Re-exported comment classification shared with session source maps.
 pub use mizar_session::CommentKind;
-use mizar_session::{
-    GeneratedSpanAnchor, GeneratedSpanOrigin, Hash, MappedSourceRange, SourceAnchor, SourceId,
-    SourceRange,
-};
+use mizar_session::{Hash, MappedSourceRange, SourceAnchor, SourceId, SourceRange};
 use std::sync::Arc;
 
 const LEXICAL_HASH_DOMAIN: &[u8] = b"mizar-frontend/preprocess/lexical-text/v1";
@@ -201,36 +202,7 @@ impl PreprocessedSource {
                 let secondary = diagnostic
                     .secondary
                     .iter()
-                    .map(|anchor| match anchor {
-                        SourceAnchor::Range(range) => Some(serde_json::json!([
-                            "range",
-                            encode_source_range(*range, self.source_id)?
-                        ])),
-                        SourceAnchor::Point { source_id, offset }
-                            if *source_id == self.source_id =>
-                        {
-                            Some(serde_json::json!(["point", offset]))
-                        }
-                        SourceAnchor::Generated(origin) => {
-                            let inner = match origin.anchor() {
-                                GeneratedSpanAnchor::Range(range) => serde_json::json!([
-                                    "range",
-                                    encode_source_range(range, self.source_id)?
-                                ]),
-                                GeneratedSpanAnchor::Point { source_id, offset }
-                                    if source_id == self.source_id =>
-                                {
-                                    serde_json::json!(["point", offset])
-                                }
-                                _ => return None,
-                            };
-                            if origin.reason().trim().is_empty() {
-                                return None;
-                            }
-                            Some(serde_json::json!(["generated", inner, origin.reason()]))
-                        }
-                        _ => None,
-                    })
+                    .map(|anchor| encode_source_anchor(anchor, self.source_id))
                     .collect::<Option<Vec<_>>>()?;
                 Some(serde_json::json!([
                     kind,
@@ -478,42 +450,7 @@ impl PreprocessedSource {
                     secondary: secondary
                         .as_array()?
                         .iter()
-                        .map(|anchor| {
-                            let (base, reason) = match anchor.as_array()?.as_slice() {
-                                [tag, base, reason] if tag.as_str()? == "generated" => {
-                                    (base, Some(reason.as_str()?))
-                                }
-                                _ => (anchor, None),
-                            };
-                            let fields = base.as_array()?;
-                            let anchor = match fields.as_slice() {
-                                [tag, range] if tag.as_str()? == "range" => {
-                                    SourceAnchor::Range(decode_source_range(range, source_id)?)
-                                }
-                                [tag, offset] if tag.as_str()? == "point" => SourceAnchor::Point {
-                                    source_id,
-                                    offset: usize::try_from(offset.as_u64()?).ok()?,
-                                },
-                                _ => return None,
-                            };
-                            Some(match reason {
-                                Some(reason) => {
-                                    let generated_anchor = match anchor {
-                                        SourceAnchor::Range(range) => {
-                                            GeneratedSpanAnchor::Range(range)
-                                        }
-                                        SourceAnchor::Point { source_id, offset } => {
-                                            GeneratedSpanAnchor::Point { source_id, offset }
-                                        }
-                                        _ => return None,
-                                    };
-                                    SourceAnchor::Generated(
-                                        GeneratedSpanOrigin::new(generated_anchor, reason).ok()?,
-                                    )
-                                }
-                                None => anchor,
-                            })
-                        })
+                        .map(|anchor| decode_source_anchor(anchor, source_id))
                         .collect::<Option<Vec<_>>>()?,
                 })
             })
@@ -537,34 +474,6 @@ impl PreprocessedSource {
         };
         (source.canonical_bytes()?.as_slice() == bytes).then_some(source)
     }
-}
-
-fn encode_offsets(start: usize, end: usize) -> Option<serde_json::Value> {
-    (start <= end).then(|| serde_json::json!([start, end]))
-}
-
-fn decode_offsets(value: &serde_json::Value) -> Option<(usize, usize)> {
-    let [start, end] = value.as_array()?.as_slice() else {
-        return None;
-    };
-    let start = usize::try_from(start.as_u64()?).ok()?;
-    let end = usize::try_from(end.as_u64()?).ok()?;
-    (start <= end).then_some((start, end))
-}
-
-fn encode_source_range(range: SourceRange, source_id: SourceId) -> Option<serde_json::Value> {
-    (range.source_id == source_id)
-        .then(|| encode_offsets(range.start, range.end))
-        .flatten()
-}
-
-fn decode_source_range(value: &serde_json::Value, source_id: SourceId) -> Option<SourceRange> {
-    let (start, end) = decode_offsets(value)?;
-    Some(SourceRange {
-        source_id,
-        start,
-        end,
-    })
 }
 
 fn valid_lexical_range(start: usize, end: usize, lexical_text: &str) -> bool {

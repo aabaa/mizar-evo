@@ -8,13 +8,114 @@ use mizar_lexer::{
     SourceSpan as LexerSourceSpan,
 };
 use mizar_session::{
-    CommentKind, LineMap, LoadingMap, MappedSourceRange, MappedSourceRangeKind, PreprocessMap,
-    PreprocessSegment, RetainedSourceMapService, SourceAnchor, SourceId, SourceMapError,
-    SourceMapService, SourceRange, TextRange,
+    CommentKind, GeneratedSpanAnchor, GeneratedSpanOrigin, LineMap, LoadingMap, MappedSourceRange,
+    MappedSourceRangeKind, PreprocessMap, PreprocessSegment, RetainedSourceMapService,
+    SourceAnchor, SourceId, SourceMapError, SourceMapService, SourceRange, TextRange,
 };
 use std::collections::HashMap;
 use std::error::Error;
 use std::fmt;
+
+pub(crate) fn encode_offsets(start: usize, end: usize) -> Option<serde_json::Value> {
+    (start <= end).then(|| serde_json::json!([start, end]))
+}
+
+pub(crate) fn decode_offsets(value: &serde_json::Value) -> Option<(usize, usize)> {
+    let [start, end] = value.as_array()?.as_slice() else {
+        return None;
+    };
+    let start = usize::try_from(start.as_u64()?).ok()?;
+    let end = usize::try_from(end.as_u64()?).ok()?;
+    (start <= end).then_some((start, end))
+}
+
+pub(crate) fn encode_source_range(
+    range: SourceRange,
+    source_id: SourceId,
+) -> Option<serde_json::Value> {
+    (range.source_id == source_id)
+        .then(|| encode_offsets(range.start, range.end))
+        .flatten()
+}
+
+pub(crate) fn decode_source_range(
+    value: &serde_json::Value,
+    source_id: SourceId,
+) -> Option<SourceRange> {
+    let (start, end) = decode_offsets(value)?;
+    Some(SourceRange {
+        source_id,
+        start,
+        end,
+    })
+}
+
+pub(crate) fn encode_source_anchor(
+    anchor: &SourceAnchor,
+    source_id: SourceId,
+) -> Option<serde_json::Value> {
+    match anchor {
+        SourceAnchor::Range(range) => Some(serde_json::json!([
+            "range",
+            encode_source_range(*range, source_id)?
+        ])),
+        SourceAnchor::Point {
+            source_id: point_id,
+            offset,
+        } if *point_id == source_id => Some(serde_json::json!(["point", offset])),
+        SourceAnchor::Generated(origin) => {
+            let inner = match origin.anchor() {
+                GeneratedSpanAnchor::Range(range) => {
+                    serde_json::json!(["range", encode_source_range(range, source_id)?])
+                }
+                GeneratedSpanAnchor::Point {
+                    source_id: point_id,
+                    offset,
+                } if point_id == source_id => serde_json::json!(["point", offset]),
+                _ => return None,
+            };
+            (!origin.reason().trim().is_empty())
+                .then(|| serde_json::json!(["generated", inner, origin.reason()]))
+        }
+        _ => None,
+    }
+}
+
+pub(crate) fn decode_source_anchor(
+    value: &serde_json::Value,
+    source_id: SourceId,
+) -> Option<SourceAnchor> {
+    let (base, reason) = match value.as_array()?.as_slice() {
+        [tag, base, reason] if tag.as_str()? == "generated" => (base, Some(reason.as_str()?)),
+        _ => (value, None),
+    };
+    let anchor = match base.as_array()?.as_slice() {
+        [tag, range] if tag.as_str()? == "range" => {
+            SourceAnchor::Range(decode_source_range(range, source_id)?)
+        }
+        [tag, offset] if tag.as_str()? == "point" => SourceAnchor::Point {
+            source_id,
+            offset: usize::try_from(offset.as_u64()?).ok()?,
+        },
+        _ => return None,
+    };
+    Some(match reason {
+        Some(reason) => SourceAnchor::Generated(
+            GeneratedSpanOrigin::new(
+                match anchor {
+                    SourceAnchor::Range(range) => GeneratedSpanAnchor::Range(range),
+                    SourceAnchor::Point { source_id, offset } => {
+                        GeneratedSpanAnchor::Point { source_id, offset }
+                    }
+                    _ => return None,
+                },
+                reason,
+            )
+            .ok()?,
+        ),
+        None => anchor,
+    })
+}
 
 /// Registry-backed converter from frontend/lexer spans to session source ranges.
 #[derive(Debug, Clone, Default)]

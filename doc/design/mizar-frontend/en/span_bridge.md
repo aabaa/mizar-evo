@@ -249,3 +249,8 @@ Key scenarios:
   reimplements offset math beyond constructing checked `TextRange` /
   `SourceRange` request objects and detecting duplicate registration.
 - Bridge failures are internal invariant violations, not user-facing diagnostics.
+
+Compiler-internal coordinate storage helpers are shared by preprocessing, lexing
+diagnostics and rejected candidates. They retain ordered offsets and generated
+anchor reasons, check owning source IDs, and rebind decoded coordinates without
+registering or authenticating text; wire forms belong to the producer storage sections.
