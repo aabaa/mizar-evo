@@ -4,6 +4,10 @@ use std::{
     sync::atomic::{AtomicU64, Ordering},
 };
 
+use mizar_artifact::{
+    module_summary::ModuleSummaryIdentity,
+    store::{CanonicalJson, canonical_json_string},
+};
 use mizar_build::{
     cancel::{CancellationGeneration, CancellationReason, CancellationToken},
     module_index::{
@@ -54,12 +58,16 @@ use mizar_ir::{
     publisher::{AllowedWorkUnit, PhaseOutputPublisher},
     storage::{AnyPhaseOutputRef, IrStorageService, StoragePlacement, StoragePolicy},
 };
+use mizar_resolve::{
+    declarations::DeclarationShellCollector, env::NamespacePath,
+    resolved_ast::ModuleId as ResolverModuleId, symbols::SignatureProjectionExtractor,
+};
 use mizar_session::{
     BuildRequestId, BuildSessionId, BuildSnapshot, BuildSnapshotId, DependencyArtifactRef,
     DiskSourceLoader, Edition, Hash, IdError, InMemorySessionIdAllocator, LineMap, LoadingMap,
-    ModulePath, PackageId, SessionIdAllocator, SnapshotLeaseId, SnapshotRegistry, SourceId,
-    SourceInput, SourceMapId, SourceOrigin, SourceOriginInput, SourceVersion, ToolchainInfo,
-    WorkspaceRoot, normalize_path,
+    ModulePath, PackageId, SessionIdAllocator, SnapshotLeaseId, SnapshotRegistry, SourceAnchor,
+    SourceId, SourceInput, SourceMapId, SourceOrigin, SourceOriginInput, SourceVersion,
+    ToolchainInfo, WorkspaceRoot, normalize_path,
 };
 
 static NEXT_FIXTURE: AtomicU64 = AtomicU64::new(0);
@@ -318,6 +326,125 @@ fn frontend_publishes_only_clean_loaded_source_with_parent_and_storage_maps() {
         );
         assert_eq!(wrong_parent.status, PhaseStatus::Blocking);
         assert!(wrong_parent.output_refs.is_empty());
+    }
+}
+
+#[test]
+fn sealed_frontend_output_feeds_source_lexical_contributions() {
+    let text = b"definition\n\
+        let x, y be set;\n\
+        private pred Hidden: x hidden y means thesis;\n\
+        public func Pair: |. x .| -> set equals x;\n\
+        func Infix: x combine y -> set equals x;\n\
+        mode Visible: Carrier is set;\nend;\n";
+    let mut previous = None;
+    for threshold in [usize::MAX, 3] {
+        let fixture = Fixture::new(text);
+        let ids = InMemorySessionIdAllocator::new();
+        let snapshots = SnapshotRegistry::new();
+        let submission = fixture.submit(&ids, &snapshots);
+        let (source, publisher) = execute(&submission, &ids, threshold);
+        assert_eq!(source.status, PhaseStatus::Complete);
+        let frontend = execute_frontend(
+            &submission,
+            &ids,
+            &publisher,
+            vec![source.output_refs[0].clone()],
+            (source_key(&fixture.version), Vec::new()),
+            Vec::new(),
+            None,
+        );
+        assert_eq!(frontend.status, PhaseStatus::Complete);
+        assert!(frontend.diagnostics.is_empty());
+        let output = frontend
+            .output_refs
+            .first()
+            .expect("sealed frontend output");
+        assert_eq!(frontend.output_refs.len(), 1);
+        assert_eq!(
+            matches!(output.placement(), StoragePlacement::Resident),
+            threshold == usize::MAX
+        );
+        fs::remove_file(fixture.root.join("alpha/src/main.miz")).unwrap();
+        let typed = publisher
+            .storage()
+            .typed_handle::<FrontendOutput<<MizarParserSeam as ParserSeam>::Ast>>(
+                output,
+                &OutputKind::new("FrontendOutput"),
+            )
+            .unwrap();
+        let loaded = publisher.storage().get(&typed).unwrap();
+        assert_eq!(loaded.source.source_id, fixture.version.source_id);
+        assert_eq!(loaded.source.source_hash, fixture.version.source_hash);
+        assert!(loaded.diagnostics.is_empty());
+        let ast = loaded.ast.as_ref().expect("clean frontend AST");
+        let module = ResolverModuleId::new(
+            loaded.source.package_id.clone(),
+            loaded.source.module_path.clone(),
+        );
+        let package = submission
+            .build_plan
+            .as_ref()
+            .unwrap()
+            .packages
+            .iter()
+            .find(|package| package.package_id == *module.package())
+            .expect("planned source package");
+        let identity = ModuleSummaryIdentity {
+            package_id: loaded.source.package_id.as_str().to_owned(),
+            package_version: Some(package.version.to_string()),
+            lockfile_identity: None,
+            module_path: loaded.source.module_path.as_str().to_owned(),
+            language_edition: loaded.source.edition.as_str().to_owned(),
+        };
+        let shells = DeclarationShellCollector::new(ast, &module).collect();
+        let collection = SignatureProjectionExtractor::new(
+            ast,
+            &shells,
+            NamespacePath::new(module.path().as_str()),
+        )
+        .collect(&module);
+        assert!(collection.diagnostics().is_empty());
+        let pairs = collection
+            .pair_frontend_lexical_declarations(&loaded)
+            .expect("sealed source lexical pairs");
+        assert_eq!(
+            pairs
+                .iter()
+                .map(|(_, local)| (local.spelling.as_str(), local.export_rank.get()))
+                .collect::<Vec<_>>(),
+            [("|.", 1), (".|", 2), ("combine", 3), ("Carrier", 4)]
+        );
+        assert_eq!(loaded.tokens.local_declarations().user_symbols.len(), 5);
+        let contributions = collection
+            .export_frontend_lexical_contributions(&loaded, &identity)
+            .expect("sealed source lexical contributions");
+        assert_eq!(contributions.len(), pairs.len());
+        let identity_json = identity.canonical_json().unwrap();
+        let source_module = canonical_json_string(&identity_json);
+        for ((entry, _), contribution) in pairs.iter().zip(&contributions) {
+            assert_eq!(contribution.key, entry.symbol().local().as_str());
+            let SourceAnchor::Range(origin) = entry.origin().anchor() else {
+                panic!("source lexical origin must be a range");
+            };
+            assert_eq!(origin.source_id, loaded.source.source_id);
+            let shape = mizar_frontend::lexical_env::ExportedSymbolShape::from_canonical_bytes(
+                contribution.payload.as_bytes(),
+            )
+            .unwrap();
+            assert_eq!(shape.source_module.as_str(), source_module);
+            assert_eq!(
+                shape.symbol_id.as_str(),
+                canonical_json_string(&CanonicalJson::array([
+                    identity_json.clone(),
+                    CanonicalJson::string(entry.symbol().local().as_str()),
+                ]))
+            );
+        }
+        if let Some(previous) = &previous {
+            assert_eq!(&contributions, previous);
+        }
+        previous = Some(contributions);
     }
 }
 
