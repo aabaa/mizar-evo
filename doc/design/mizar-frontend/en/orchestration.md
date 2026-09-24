@@ -396,3 +396,21 @@ Tests cover real recovered/valid/absent-AST output, fresh IDs and relocated/dele
 files, nested-byte equality, every diagnostic tag with independent typed oracles, all anchor
 forms and text, malformed framing/nested records, foreign IDs, path/origin rejection and
 payload limits. The source and phase codecs retain their existing standalone tests.
+
+## Shared diagnostic adoption (specified, not implemented)
+
+The public meanings and reserved codes are owned by [specification 22.2.3](../../../spec/en/22.error_handling_and_diagnostics.md#2223-frontend-diagnostic-adoption); this bridge is not yet active. The exact frontend discriminator mapping is:
+
+| Local discriminator | Public code(s), in listed order |
+|---|---|
+| Preprocess.SourcePrecondition: CarriageReturn, NonAsciiCode, UnterminatedMultiLineComment | E0013–E0015 |
+| Preprocess.ImportPrescan: MissingModulePath, EmptyModulePathComponent, MissingAlias, MissingSemicolon, UnexpectedToken; Preprocess.RawImportScan | E0016–E0021 |
+| LexicalEnvironment: UnresolvedImport, MissingSummary, UserSymbolImportConflict, InvalidUserSymbolSpelling, InvalidUserSymbolArity, ReservedWordCollision, ReservedSymbolCollision | E0022–E0028 |
+| Lexing.RawScan; Lexing.ScopeSkeleton: MalformedBinderList, UnsupportedBinderShape, DuplicateBindingName, UnmatchedEnd | E0029–E0033 |
+| Lexing.ScopeSkeleton.MissingEnd; Lexing.Lexer.MalformedStringLiteral | E0010; E0002 |
+| Lexing.Lexer: NoValidTokenCandidate, ParserContextRejectedCandidate, AmbiguousUserSymbol, UnsupportedRawToken | E0034–E0037 |
+| Syntax keys unexpected_error_token, dangling_operator, non_associative_operator_chain | E0038–E0040 |
+| Syntax key missing_end; keys missing_semicolon, missing_string_literal, malformed_import, malformed_export, malformed_visibility, malformed_type_expression, malformed_term_expression, malformed_formula_expression, malformed_justification, malformed_annotation, unexpected_top_level_token, unrecoverable_input | E0010; E0041–E0052 |
+
+Syntax keys are an exact allowlist; `syntax_diagnostic` and other strings are unsupported, including values accepted by storage codecs. SourceLoad needs the original typed SourceLoadError for the existing E0600–E0603 mapping; its erased aggregate code alone is insufficient. No message-based classification is permitted.
+The bridge preserves each diagnostic before shared aggregation; it does not change the coordinator's merge order or shared deduplication. [Shared span adoption](../../mizar-diagnostics/en/failure_record.md#frontend-anchor-adoption) is required before conversion, and successful storage decoding alone does not establish source binding or publication authority.

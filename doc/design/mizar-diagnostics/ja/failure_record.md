@@ -408,3 +408,9 @@ trap になることを防ぐ。crate 内部の match は deliberate review が�
 `DiagnosticPrimaryLocation` は non-exhaustive な `Span(DiagnosticSpan)` または `SourceLoad { package_id: PackageId, path: NormalizedPath }`。draft 入力と record は `primary_location` を使用し、accessor はこの列挙型を返す。ソース読込み descriptor（現在 E0600–E0603）は後者と `PipelinePhase::SourceLoad`、`FailureCategory::SourceLoadError`（`source_load`、`source_load_error`）を必須とする。他コードはスパンを必須とし、この phase/category を使えない。空の package 識別子は不正。どちらの主位置でも副スパンの role 検証を維持する。debug は既存スパン表示を維持し、読込み位置の package/path をエスケープした文字列で表示する。
 
 E0600 の構造化された失敗理由は `stable_detail_key` で表し、重複する reason field は要求しない。読込み主位置の debug 表示は基底文字列に対する `source_load(package={package:?},path={path:?})`。複数フィールドが不正な場合、拒否するが検証エラーの優先順位は規定しない。
+
+## Frontend anchor adoption
+
+将来のフロントエンド採用では [仕様22.1.2](../../../spec/ja/22.error_handling_and_diagnostics.md#2212-sourceスパンとコンテキストの表示) に従い、既存のsession SourceAnchorをスパンの正本payloadとし、range参照はその幾何的な射影とする。Range/Pointの形状と生成理由を任意の明示EOF・挿入意図と独立に保持し、ゼロ長Rangeを含む報告位置では意図未指定を許す。
+現行DiagnosticSpanコンストラクタと上記Eof/InsertionPoint限定APIは、別途レビューする実装まで変更しない。制限回避のため意図を捏造しない。テキスト検証は変換側・source-map利用側が所有する。個々の副位置列をdraft/recordに保持し、[集約](../en/aggregator.md#deduplication-identity) の同一識別子間の代表選択は維持する。
+採用テストはRange/Point/生成Range/生成Point、理由原文、順序付き重複副位置、明示・未指定意図、不正なソース・範囲・UTF-8・未知アンカー、ソース読込みの分離を検査し、欠落を黙認した変換成功を許さない。

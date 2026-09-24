@@ -240,3 +240,11 @@ SourceLoad 位置は集約出力を伴わないエラー用なので拒否する
 code/class の組合せは予約値を含め再分類しない。不明タグや不正な形・型は None。
 テストは実出力、AST の有無、ID 再割当、移動・削除後の復元、内部バイト、診断語彙、
 全アンカー形、保持文字列、不正な長さ・内部データ、外部 ID、パス・由来不一致、上限を検査する。
+
+## 共有診断の採用（仕様のみ、未実装）
+
+公開意味と予約コードは [仕様22.2.3](../../../spec/ja/22.error_handling_and_diagnostics.md#2223-フロントエンド診断の採用) が所有する。変換は未有効であり、正確な内部分類対応は [英語版の表](../en/orchestration.md#shared-diagnostic-adoption-specified-not-implemented) を正本とする。
+PreprocessのSourcePreconditionはE0013–E0015、ImportPrescanとRawImportScanはE0016–E0021、LexicalEnvironmentはE0022–E0028、LexingのRawScanとMissingEnd以外のScopeSkeletonはE0029–E0033とする。
+ScopeSkeleton.MissingEndはE0010、Lexer.MalformedStringLiteralはE0002、残るLexer分類はE0034–E0037とする。Syntaxの最初の3分類はE0038–E0040、missing_endはE0010、残る明示分類はE0041–E0052とする。順序は英語表の列挙による。
+Syntaxキーは完全一致の許可リストとし、syntax_diagnosticやその他の文字列は、保存codecが受理しても変換未対応とする。SourceLoadは元の型付きSourceLoadErrorから既存E0600–E0603を選び、集約の分類だけでは変換しない。メッセージから分類しない。
+共有集約前の各診断を保持し、coordinatorの統合順や共有重複排除は変更しない。[共有スパン採用](../../mizar-diagnostics/ja/failure_record.md#frontend-anchor-adoption) を前提とし、保存復元だけではソース結合や公開権限を認めない。
