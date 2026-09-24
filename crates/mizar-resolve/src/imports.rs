@@ -3,14 +3,15 @@
 //! This module resolves source-shaped import path candidates into canonical
 //! module candidates, records path/alias recovery, and builds the deterministic
 //! accepted acyclic graph used by later import, name, and symbol resolution
-//! tasks. Direct `SurfaceAst` collection and export validation feed this layer
-//! in follow-on tasks.
+//! tasks. Parsed import preludes are collected here; full recovered-directive
+//! handling and export validation remain later work.
 
 use crate::module_index::{
     IndexedModuleId, ModuleIndexInput, ModuleIndexProviderError, NamespaceIndexEntry, NamespaceRoot,
 };
 use crate::resolved_ast::ModuleId;
 use mizar_session::{ModulePath, PackageId, SourceRange};
+use mizar_syntax::{SurfaceAst, SurfaceNode, SurfaceNodeId, SurfaceNodeKind, SurfaceTokenKind};
 use std::cmp::Ordering;
 use std::collections::{BTreeMap, BTreeSet};
 
@@ -29,9 +30,8 @@ pub enum ImportPathPrefix {
 /// Source-shaped import path candidate collected before semantic validation.
 ///
 /// Branch imports are represented as one candidate per branch member. The
-/// optional branch provenance fields let a later `SurfaceAst` walker preserve
-/// both the shared base span and the member span without making this resolver
-/// seam own parser syntax.
+/// optional branch provenance fields preserve both the shared base span and
+/// member span from the resolver's parsed-import collector.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct ImportPathCandidate {
     components: Vec<String>,
@@ -46,6 +46,96 @@ pub struct ImportPathCandidate {
 }
 
 impl ImportPathCandidate {
+    /// Collects the represented, unrecovered top-level import prelude.
+    /// The caller supplies a trusted parser output; this does not authenticate source text.
+    pub fn from_surface_ast(ast: &SurfaceAst) -> Option<Vec<Self>> {
+        let root = ast.node(ast.root()?)?;
+        if !matches!(root.kind, SurfaceNodeKind::Root) || root.recovered {
+            return None;
+        }
+        let units = root
+            .children
+            .iter()
+            .map(|id| import_child(ast, root, *id))
+            .collect::<Option<Vec<_>>>()?
+            .into_iter()
+            .filter(|child| matches!(child.kind, SurfaceNodeKind::CompilationUnit))
+            .collect::<Vec<_>>();
+        let [unit] = units.as_slice() else {
+            return None;
+        };
+        if unit.recovered || unit.children.len() != 1 {
+            return None;
+        }
+        let items = import_child(ast, unit, unit.children[0])?;
+        if !matches!(items.kind, SurfaceNodeKind::ItemList) || items.recovered {
+            return None;
+        }
+        let mut candidates = Vec::new();
+        let mut prelude_open = true;
+        let mut previous_end = items.range.start;
+        for id in &items.children {
+            let item = import_child(ast, items, *id)?;
+            if item.range.start < previous_end
+                || item.recovered
+                || matches!(item.kind, SurfaceNodeKind::ErrorRecovery(_))
+            {
+                return None;
+            }
+            previous_end = item.range.end;
+            if matches!(item.kind, SurfaceNodeKind::ImportItem) {
+                if !prelude_open || !valid_import_subtree(ast, item) {
+                    return None;
+                }
+                let children = &item.children;
+                if children.len() < 3
+                    || !import_token(
+                        ast,
+                        item,
+                        children[0],
+                        SurfaceTokenKind::ReservedWord,
+                        "import",
+                    )
+                    || !import_token(
+                        ast,
+                        item,
+                        *children.last()?,
+                        SurfaceTokenKind::ReservedSymbol,
+                        ";",
+                    )
+                    || children.len().is_multiple_of(2)
+                {
+                    return None;
+                }
+                for (index, id) in children[1..children.len() - 1].iter().enumerate() {
+                    if index % 2 == 1 {
+                        if !import_token(ast, item, *id, SurfaceTokenKind::ReservedSymbol, ",") {
+                            return None;
+                        }
+                        continue;
+                    }
+                    let decl = import_child(ast, item, *id)?;
+                    match decl.kind {
+                        SurfaceNodeKind::ImportAliasDecl => {
+                            candidates.push(import_alias_candidate(ast, decl, candidates.len())?);
+                        }
+                        SurfaceNodeKind::ModuleBranchImport => {
+                            candidates.extend(branch_import_candidates(
+                                ast,
+                                decl,
+                                candidates.len(),
+                            )?);
+                        }
+                        _ => return None,
+                    }
+                }
+            } else {
+                prelude_open = false;
+            }
+        }
+        Some(candidates)
+    }
+
     /// Maps trusted frontend stubs for provisional lexical-summary lookup.
     /// Does not establish recovery-free syntax or replace AST import validation.
     pub fn from_frontend_imports(
@@ -206,6 +296,194 @@ impl ImportPathCandidate {
             .clone()
             .or_else(|| self.components.last().cloned())
     }
+}
+
+fn import_child<'a>(
+    ast: &'a SurfaceAst,
+    parent: &SurfaceNode,
+    id: SurfaceNodeId,
+) -> Option<&'a SurfaceNode> {
+    let child = ast.node(id)?;
+    (parent.range.source_id == ast.source_id
+        && child.range.source_id == ast.source_id
+        && parent.range.start <= parent.range.end
+        && child.range.start <= child.range.end
+        && parent.range.start <= child.range.start
+        && child.range.end <= parent.range.end)
+        .then_some(child)
+}
+
+fn valid_import_subtree(ast: &SurfaceAst, node: &SurfaceNode) -> bool {
+    if node.recovered || matches!(node.kind, SurfaceNodeKind::ErrorRecovery(_)) {
+        return false;
+    }
+    let mut previous_end = node.range.start;
+    node.children.iter().all(|id| {
+        let Some(child) = import_child(ast, node, *id) else {
+            return false;
+        };
+        if child.range.start < previous_end || !valid_import_subtree(ast, child) {
+            return false;
+        }
+        previous_end = child.range.end;
+        true
+    })
+}
+
+fn import_token(
+    ast: &SurfaceAst,
+    parent: &SurfaceNode,
+    id: SurfaceNodeId,
+    kind: SurfaceTokenKind,
+    text: &str,
+) -> bool {
+    import_child(ast, parent, id).is_some_and(|child| {
+        matches!(&child.kind, SurfaceNodeKind::Token(token)
+            if token.kind == kind && token.text.as_ref() == text)
+    })
+}
+
+fn import_segment(ast: &SurfaceAst, node: &SurfaceNode) -> Option<String> {
+    if !matches!(node.kind, SurfaceNodeKind::PathSegment) {
+        return None;
+    }
+    let [id] = node.children.as_slice() else {
+        return None;
+    };
+    let token = import_child(ast, node, *id)?;
+    match &token.kind {
+        SurfaceNodeKind::Token(token)
+            if token.kind == SurfaceTokenKind::Identifier && !token.text.is_empty() =>
+        {
+            Some(token.text.to_string())
+        }
+        _ => None,
+    }
+}
+
+fn import_path(ast: &SurfaceAst, node: &SurfaceNode) -> Option<(ImportPathPrefix, Vec<String>)> {
+    if !matches!(node.kind, SurfaceNodeKind::ModulePath) {
+        return None;
+    }
+    let mut index = 0;
+    let prefix = if let Some(first) = node
+        .children
+        .first()
+        .and_then(|id| import_child(ast, node, *id))
+        && matches!(first.kind, SurfaceNodeKind::RelativePrefix)
+    {
+        index = 1;
+        let [prefix_token] = first.children.as_slice() else {
+            return None;
+        };
+        let token = import_child(ast, first, *prefix_token)?;
+        let SurfaceNodeKind::Token(token) = &token.kind else {
+            return None;
+        };
+        if token.kind != SurfaceTokenKind::ReservedSymbol {
+            return None;
+        }
+        match token.text.as_ref() {
+            "." => ImportPathPrefix::Current,
+            ".." => ImportPathPrefix::Parent,
+            _ => return None,
+        }
+    } else {
+        ImportPathPrefix::Unprefixed
+    };
+    let mut components = Vec::new();
+    let first = import_child(ast, node, *node.children.get(index)?)?;
+    components.push(import_segment(ast, first)?);
+    index += 1;
+    while index < node.children.len() {
+        if !import_token(
+            ast,
+            node,
+            node.children[index],
+            SurfaceTokenKind::ReservedSymbol,
+            ".",
+        ) {
+            return None;
+        }
+        let segment = import_child(ast, node, *node.children.get(index + 1)?)?;
+        components.push(import_segment(ast, segment)?);
+        index += 2;
+    }
+    Some((prefix, components))
+}
+
+fn import_alias_candidate(
+    ast: &SurfaceAst,
+    node: &SurfaceNode,
+    ordinal: usize,
+) -> Option<ImportPathCandidate> {
+    let path = import_child(ast, node, *node.children.first()?)?;
+    let (prefix, components) = import_path(ast, path)?;
+    let mut candidate = ImportPathCandidate::new(components, prefix, None, node.range, ordinal);
+    match node.children.as_slice() {
+        [_] => {}
+        [_, as_id, alias_id]
+            if import_token(ast, node, *as_id, SurfaceTokenKind::ReservedWord, "as") =>
+        {
+            let alias = import_child(ast, node, *alias_id)?;
+            candidate.alias = Some(import_segment(ast, alias)?);
+            candidate.alias_range = Some(alias.range);
+        }
+        _ => return None,
+    }
+    Some(candidate)
+}
+
+fn branch_import_candidates(
+    ast: &SurfaceAst,
+    node: &SurfaceNode,
+    ordinal: usize,
+) -> Option<Vec<ImportPathCandidate>> {
+    let path = import_child(ast, node, *node.children.first()?)?;
+    let (prefix, base) = import_path(ast, path)?;
+    let children = &node.children;
+    if children.len() < 4
+        || !children.len().is_multiple_of(2)
+        || !import_token(
+            ast,
+            node,
+            children[1],
+            SurfaceTokenKind::ReservedSymbol,
+            ".{",
+        )
+        || !import_token(
+            ast,
+            node,
+            *children.last()?,
+            SurfaceTokenKind::ReservedSymbol,
+            "}",
+        )
+    {
+        return None;
+    }
+    let mut candidates = Vec::new();
+    for (index, id) in children[2..children.len() - 1].iter().enumerate() {
+        if index % 2 == 1 {
+            if !import_token(ast, node, *id, SurfaceTokenKind::ReservedSymbol, ",") {
+                return None;
+            }
+            continue;
+        }
+        let member = import_child(ast, node, *id)?;
+        let mut components = base.clone();
+        components.push(import_segment(ast, member)?);
+        candidates.push(
+            ImportPathCandidate::new(
+                components,
+                prefix,
+                None,
+                node.range,
+                ordinal + candidates.len(),
+            )
+            .with_branch_provenance(path.range, member.range),
+        );
+    }
+    Some(candidates)
 }
 
 /// Package, namespace, or module candidate found before a path-resolution

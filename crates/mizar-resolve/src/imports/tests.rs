@@ -10,6 +10,236 @@ use mizar_session::{
 };
 use semver::Version;
 
+#[derive(Clone)]
+struct NoImportedSummaries;
+
+impl mizar_frontend::lexical_env::LexicalSummaryProvider for NoImportedSummaries {
+    fn resolve_imports(
+        &self,
+        _request: &mizar_frontend::lexical_env::LexicalEnvironmentRequest<'_>,
+    ) -> Result<
+        mizar_frontend::lexical_env::ResolvedImports,
+        mizar_frontend::lexical_env::FrontendLexicalEnvironmentError,
+    > {
+        Ok(mizar_frontend::lexical_env::ResolvedImports {
+            imports: Vec::new(),
+            summaries: Vec::new(),
+            diagnostics: Vec::new(),
+        })
+    }
+}
+
+fn parsed_import_ast(text: &str) -> mizar_syntax::SurfaceAst {
+    use mizar_frontend::{
+        orchestration::Frontend, parsing::MizarParserSeam, source::FrontendSourceLoader,
+    };
+    use mizar_session::{DiskSourceLoader, SourceInput, SourceOriginInput, normalize_path};
+
+    let root = std::env::temp_dir().join(format!(
+        "mizar-resolve-parsed-imports-{}-{}",
+        std::process::id(),
+        std::time::SystemTime::now()
+            .duration_since(std::time::UNIX_EPOCH)
+            .unwrap()
+            .as_nanos()
+    ));
+    let path = root.join("src/main.miz");
+    std::fs::create_dir_all(path.parent().unwrap()).unwrap();
+    std::fs::write(&path, text).unwrap();
+    let output = Frontend::new(
+        FrontendSourceLoader::new(DiskSourceLoader::new(&root)),
+        NoImportedSummaries,
+        MizarParserSeam,
+    )
+    .run(
+        mizar_frontend::source::SourceUnitRequest {
+            snapshot: BuildSnapshotId::from_published_schema_str(&format!(
+                "mizar-session-build-snapshot-v1:{}",
+                "17".repeat(Hash::BYTE_LEN)
+            ))
+            .unwrap(),
+            input: SourceInput {
+                package_id: PackageId::new("app"),
+                module_path: ModulePath::new("main"),
+                normalized_path: normalize_path(&root, &path).unwrap(),
+                edition: Edition::new("2026"),
+                origin: SourceOriginInput::Disk { path },
+            },
+        },
+        &InMemorySessionIdAllocator::new(),
+    )
+    .unwrap();
+    std::fs::remove_dir_all(root).unwrap();
+    output.ast.expect("represented parser AST")
+}
+
+#[test]
+fn parsed_import_candidates_preserve_real_prelude_order_and_provenance() {
+    let ast = parsed_import_ast(
+        "import dep.logic as L, .sibling, ..common;\nimport app.{alpha, beta};\ndefinition\nend;",
+    );
+    let candidates = ImportPathCandidate::from_surface_ast(&ast).unwrap();
+    assert_eq!(
+        candidates
+            .iter()
+            .map(ImportPathCandidate::spelling)
+            .collect::<Vec<_>>(),
+        ["dep.logic", ".sibling", "..common", "app.alpha", "app.beta"]
+    );
+    assert_eq!(
+        candidates
+            .iter()
+            .map(ImportPathCandidate::ordinal)
+            .collect::<Vec<_>>(),
+        [0, 1, 2, 3, 4]
+    );
+    assert_eq!(candidates[0].alias(), Some("L"));
+    assert_eq!(candidates[0].prefix(), ImportPathPrefix::Unprefixed);
+    assert_eq!(candidates[1].prefix(), ImportPathPrefix::Current);
+    assert_eq!(candidates[2].prefix(), ImportPathPrefix::Parent);
+    assert!(
+        candidates[..3]
+            .iter()
+            .all(|candidate| candidate.branch_base_range().is_none())
+    );
+    for (candidate, member) in candidates[3..].iter().zip(["alpha", "beta"]) {
+        assert_eq!(candidate.components(), ["app", member]);
+        assert_eq!(
+            candidate.branch_base_range(),
+            candidates[3].branch_base_range()
+        );
+        assert!(candidate.branch_member_range().is_some());
+    }
+    assert_eq!(
+        ImportPathCandidate::from_surface_ast(&parsed_import_ast("definition\nend;")),
+        Some(Vec::new())
+    );
+}
+
+#[test]
+fn parsed_import_candidates_reject_real_incomplete_framing_and_late_recovery() {
+    for text in [
+        "import dep.logic",
+        "import dep.logic as ;",
+        "import dep.logic, ;",
+        "import app.{alpha,};",
+        "import app.{alpha;",
+        "import dep.logic;\nimport app.{alpha;",
+        "definition\nend;\nimport dep.logic;",
+    ] {
+        let ast = parsed_import_ast(text);
+        if matches!(
+            text,
+            "import dep.logic"
+                | "import dep.logic as ;"
+                | "import dep.logic, ;"
+                | "import app.{alpha;"
+        ) {
+            assert!(
+                !ast.node_views().any(|node| node.is_recovered()),
+                "parser must expose malformed framing without recovery: {text}"
+            );
+        }
+        assert!(
+            ImportPathCandidate::from_surface_ast(&ast).is_none(),
+            "{text}"
+        );
+    }
+}
+
+fn rebuild_import_ast(
+    ast: &mizar_syntax::SurfaceAst,
+    mut change: impl FnMut(&mut mizar_syntax::SurfaceNode),
+) -> mizar_syntax::SurfaceAst {
+    use mizar_syntax::{SurfaceAstBuilder, SurfaceNodeKind};
+    let mut builder = SurfaceAstBuilder::new(ast.source_id);
+    let mut ids = Vec::new();
+    for original in ast.nodes() {
+        let mut node = original.clone();
+        change(&mut node);
+        let children = node.children.iter().map(|id| ids[id.index()]).collect();
+        let id = match node.kind {
+            SurfaceNodeKind::Token(token) => builder.add_token(token.kind, token.text, node.range),
+            SurfaceNodeKind::ErrorRecovery(kind) => {
+                builder.add_recovery(kind, node.range, children)
+            }
+            kind => builder.add_node(kind, node.range, children),
+        };
+        ids.push(id);
+    }
+    builder.finish(Some(ids[ast.root().unwrap().index()]), None)
+}
+
+#[test]
+fn parsed_import_candidates_reject_structural_and_source_mutations() {
+    use mizar_syntax::SurfaceNodeKind;
+    let ast = parsed_import_ast("import dep.logic as L;\ndefinition\nend;");
+    let candidate = ImportPathCandidate::from_surface_ast(&ast).unwrap();
+    let alias_range = candidate[0].alias_range().unwrap();
+    let snapshot = BuildSnapshotId::from_published_schema_str(&format!(
+        "mizar-session-build-snapshot-v1:{}",
+        "19".repeat(Hash::BYTE_LEN)
+    ))
+    .unwrap();
+    let ids = InMemorySessionIdAllocator::new();
+    let _ = ids.next_source_id(snapshot).unwrap();
+    let foreign = ids.next_source_id(snapshot).unwrap();
+    for change in 0..6 {
+        let changed = rebuild_import_ast(&ast, |node| match change {
+            0 if matches!(node.kind, SurfaceNodeKind::CompilationUnit) => {
+                node.kind = SurfaceNodeKind::PlaceholderItem;
+            }
+            1 if matches!(node.kind, SurfaceNodeKind::ImportItem) => {
+                node.children.pop();
+            }
+            2 if matches!(node.kind, SurfaceNodeKind::ImportAliasDecl) => {
+                node.range.source_id = foreign;
+            }
+            3 if matches!(node.kind, SurfaceNodeKind::ImportAliasDecl) => {
+                node.range.start = node.range.end + 1;
+            }
+            4 if matches!(node.kind, SurfaceNodeKind::PathSegment) && node.range == alias_range => {
+                node.kind = SurfaceNodeKind::RelativePrefix;
+            }
+            5 if matches!(node.kind, SurfaceNodeKind::PathSegment) && node.range == alias_range => {
+                node.range.end += 1;
+            }
+            _ => {}
+        });
+        assert!(
+            ImportPathCandidate::from_surface_ast(&changed).is_none(),
+            "case {change}"
+        );
+    }
+}
+
+#[test]
+fn parsed_import_candidates_ignore_nested_nonimport_recovery_and_imports() {
+    use mizar_syntax::{SurfaceAstBuilder, SurfaceNodeKind, SyntaxRecoveryKind};
+    let source = source_id();
+    let range = SourceRange {
+        source_id: source,
+        start: 0,
+        end: 1,
+    };
+    let mut builder = SurfaceAstBuilder::new(source);
+    let recovery = builder.add_recovery(SyntaxRecoveryKind::SkippedToken, range, Vec::new());
+    let nested_import = builder.add_node(SurfaceNodeKind::ImportItem, range, Vec::new());
+    let item = builder.add_node(
+        SurfaceNodeKind::PlaceholderItem,
+        range,
+        vec![recovery, nested_import],
+    );
+    let items = builder.add_node(SurfaceNodeKind::ItemList, range, vec![item]);
+    let unit = builder.add_node(SurfaceNodeKind::CompilationUnit, range, vec![items]);
+    let root = builder.add_node(SurfaceNodeKind::Root, range, vec![unit]);
+    let ast = builder.finish(Some(root), None);
+    assert_eq!(
+        ImportPathCandidate::from_surface_ast(&ast),
+        Some(Vec::new())
+    );
+}
+
 #[test]
 fn frontend_import_candidates_preserve_real_preprocessed_provenance() {
     use mizar_frontend::{

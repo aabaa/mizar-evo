@@ -479,7 +479,7 @@ fn step5c6_import_candidates_preserve_alias_branch_provenance_and_reject_recover
 
     let branch = run("pass_declaration_symbol_branch_import_form_001");
     let branch_ast = branch.ast.as_ref().expect("branch AST");
-    let branch_candidates = super::declaration_symbol::import_path_candidates(branch_ast)
+    let branch_candidates = mizar_resolve::imports::ImportPathCandidate::from_surface_ast(branch_ast)
         .expect("branch candidates");
     assert_eq!(branch_candidates.len(), 1);
     let candidate = &branch_candidates[0];
@@ -504,7 +504,7 @@ fn step5c6_import_candidates_preserve_alias_branch_provenance_and_reject_recover
 
     let aliases = run("fail_declaration_symbol_import_duplicate_alias_001");
     let aliases_ast = aliases.ast.as_ref().expect("alias AST");
-    let alias_candidates = super::declaration_symbol::import_path_candidates(aliases_ast)
+    let alias_candidates = mizar_resolve::imports::ImportPathCandidate::from_surface_ast(aliases_ast)
         .expect("alias candidates");
     assert_eq!(alias_candidates.len(), 2);
     assert_eq!((alias_candidates[0].alias(), alias_candidates[1].alias()), (Some("dupx"), Some("dupx")));
@@ -523,7 +523,7 @@ fn step5c6_import_candidates_preserve_alias_branch_provenance_and_reject_recover
     );
     assert!(recovered_ast.node_views().any(|node| node.is_recovered()));
     assert!(
-        super::declaration_symbol::import_path_candidates(&recovered_ast).is_none(),
+        mizar_resolve::imports::ImportPathCandidate::from_surface_ast(&recovered_ast).is_none(),
         "recovered import syntax must not reach module resolution"
     );
 }

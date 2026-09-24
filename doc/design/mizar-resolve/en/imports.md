@@ -6,9 +6,9 @@ Status: task R-009 implements canonical import graph construction and cycle
 rejection over already-resolved canonical candidates. Task R-010 implements the
 resolver-owned source-shaped path candidate seam for alias binding,
 relative-prefix interpretation, namespace/package binding, and explicit
-unresolved-import recovery feeding that graph layer. Walking `SurfaceAst`
-directly into these candidates and export validation grow with later import,
-name, label, and symbol tasks that populate the required resolver tables.
+unresolved-import recovery feeding that graph layer. Parsed import collection
+now belongs to the bounded producer below. Full recovered-directive collection
+and export validation remain later resolver work.
 
 ## Purpose
 
@@ -38,6 +38,43 @@ stubs remain provisional and do not assert recovery-free syntax. Existing
 candidate recovery defaults are unchanged. Formal resolver publication must
 recollect and validate imports from `SurfaceAst`; this method neither builds a
 semantic graph nor provides lexical summaries or artifact access.
+
+## Parsed Import Candidates
+
+`ImportPathCandidate::from_surface_ast(&SurfaceAst)` returns `Option<Vec<Self>>`
+from a trusted, unchanged parser output. Walk the represented `Root` →
+`CompilationUnit` → `ItemList` chain and collect its top-level import prelude
+in source order; do not promote nested directives into module imports. A valid
+unit without imports returns an empty vector. A missing or unsupported root
+chain, an import after a non-import item, a recovered top-level item, or a
+malformed/recovered import subtree rejects the whole batch. This includes
+top-level ErrorRecovery nodes: a skipped late import cannot be distinguished
+from other skipped syntax using this AST alone. Recovery nested inside other
+represented non-import items is outside this projection.
+For traversed import nodes and their provenance, require the AST SourceId,
+ordered ranges contained by their parent ranges, and existing child references.
+This checks structural provenance, not source text, UTF-8 positions or arbitrary
+AST authenticity. Source loading, parser recovery and sealed-output binding
+remain with their owners.
+
+Decode represented direct/relative paths, alias declarations and branch members
+using the existing parser shapes. Validate represented token framing as well as
+recovery flags: require the import keyword and final semicolon, complete comma
+separation, completed `as` aliases, and branch punctuation/closing brace. Parser
+diagnostics can omit recovery nodes; missing syntax never becomes a clean
+candidate merely because its remaining structural children look valid.
+Preserve candidate range, raw path components,
+relative prefix, alias and its range, and expanded branch base/member ranges;
+assign consecutive ordinals across the complete prelude. Fail rather than
+invent candidates for unsupported import shapes. Reuse the existing semantic
+path resolver after collection; this method decides no module existence,
+namespace binding, alias legality, export visibility or cycles.
+The active declaration-symbol runner consumes this producer instead of owning
+its AST walker. This clean-import subset does not implement the full Pass A
+recovered-directive representation, public diagnostics or resolver publication.
+Existing branch/alias/recovery source fixtures retain their intent; focused
+producer tests cover empty/mixed preludes, relative forms, top-level boundaries,
+malformed structure and source/range mismatch without new language assertions.
 
 ## Inputs
 

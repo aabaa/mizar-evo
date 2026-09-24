@@ -6,8 +6,8 @@
 construction と cycle rejection を実装する。task R-010 は、alias binding、
 relative-prefix interpretation、namespace/package binding、明示的な unresolved-import
 recovery を graph layer へ供給する resolver-owned source-shaped path candidate seam を
-実装する。`SurfaceAst` を直接 candidate に歩く処理と export validation は、必要な
-resolver table を埋める後続の import、name、label、symbol task とともに成長する。
+実装する。構文木からの import 収集は以下の限定 producer が所有する。
+回復 directive 全体の収集と export validation は後続の resolver 作業に残す。
 
 ## 目的
 
@@ -35,6 +35,36 @@ source segment が一つなら直接パス、二つなら分岐の基底・メ�
 回復なしの構文とは主張しない。既存候補の回復既定値は変えない。
 正式な resolver 公開は `SurfaceAst` から import を再収集・検証する必要がある。
 このメソッドは意味グラフ、字句 summary、artifact アクセスを提供しない。
+
+## 構文木からの import 候補
+
+`ImportPathCandidate::from_surface_ast(&SurfaceAst)` は信頼された未変更の
+parser 出力から `Option<Vec<Self>>` を返す。表現された `Root` →
+`CompilationUnit` → `ItemList` をたどり、直下の import prelude をソース順に
+収集する。入れ子の directive をモジュール import に昇格しない。
+正常な import なしの単位は空ベクターを返す。根の連鎖の欠落・未対応形状、
+非 import 項目より後の import、回復中の最上位項目、不正または回復中の import
+部分木は全件拒否する。最上位の ErrorRecovery ノードも含む。この AST だけでは
+スキップされた遅い import と別のスキップ構文を区別できないためである。
+他の表現された非 import 項目の内部にある回復は射影の対象外とする。
+たどる import ノードと由来には、
+AST と同じ SourceId、順序が正しく親の範囲内にある範囲、実在する子参照を要求する。
+これは構造上の由来の確認であり、本文・UTF-8 位置・任意 AST の認証ではない。
+ソース読込、parser 回復、封印済み出力への束縛は既存の所有者に残す。
+
+既存 parser 形状から直接・相対パス、別名宣言、分岐メンバーを読む。
+回復フラグに加え、import キーワードと終端セミコロン、カンマによる完全な区切り、
+`as` 別名の完結、分岐の記号と閉じ波括弧を確認する。parser 診断が回復ノードを
+残さない場合もあるため、残った構造上の子だけを見て欠落構文を正常な候補にしない。
+候補範囲、生のパス要素、相対接頭辞、別名と範囲、展開した分岐の基底・
+メンバー範囲を保持し、prelude 全体で連続する ordinal を付ける。
+未対応形状から候補を創作せず拒否する。収集後は既存の意味的パス resolver を使い、
+このメソッドでは存在確認、namespace 束縛、別名の適法性、公開範囲、循環を判定しない。
+稼働中の declaration-symbol runner は独自の AST 走査を持たず、この producer を使う。
+これは正常な import の部分集合であり、Pass A 全体の回復 directive 表現、
+公開診断、resolver 出力公開は実装しない。既存の分岐・別名・回復ソース fixture の
+意図は保ち、空・混合 prelude、相対形、最上位境界、不正構造、source/range 不一致を
+言語仕様に新しい主張を加えず producer テストで確認する。
 
 ## 入力
 

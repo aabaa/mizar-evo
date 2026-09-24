@@ -5,9 +5,7 @@ use mizar_resolve::env::{
     ContributionKind, DefinitionKind, ExportStatus, NamespacePath, SourceContributionId, SymbolEnv,
     SymbolKind, Visibility,
 };
-use mizar_resolve::imports::{
-    ImportPathCandidate, ImportPathFailureClass, ImportPathPrefix, ImportPathResolver,
-};
+use mizar_resolve::imports::{ImportPathCandidate, ImportPathFailureClass, ImportPathResolver};
 use mizar_resolve::labels::{
     LabelProjection, LabelProjectionSource, LabelReferenceCandidate, LabelReferenceScope,
     LabelResolutionResult, LabelResolver, ProofLabelSourceCollector,
@@ -249,7 +247,7 @@ fn module_semantics_observation(
             payload_keys: Vec::new(),
         };
     }
-    let Some(candidates) = import_path_candidates(ast) else {
+    let Some(candidates) = ImportPathCandidate::from_surface_ast(ast) else {
         return DeclarationSymbolObservation {
             detail_keys: vec![MODULE_SEMANTICS_INPUT_DETAIL.to_owned()],
             payload_keys: Vec::new(),
@@ -328,135 +326,6 @@ fn fixture_module_index(workspace_root: &Path) -> Option<WorkspaceStubModuleInde
         modules,
         Vec::new(),
     ))
-}
-
-pub(super) fn import_path_candidates(ast: &SurfaceAst) -> Option<Vec<ImportPathCandidate>> {
-    let mut candidates = Vec::new();
-    let mut ordinal = 0;
-    for (_, import) in surface_nodes_with_kind(ast, SurfaceNodeKind::ImportItem) {
-        if subtree_has_recovery(ast, import) {
-            return None;
-        }
-        let import_children = structural_child_ids(ast, import);
-        if import_children.is_empty() {
-            return None;
-        }
-        for child_id in import_children {
-            let child = ast.node(child_id)?;
-            match child.kind {
-                SurfaceNodeKind::ImportAliasDecl => {
-                    let candidate = import_alias_candidate(ast, child, ordinal)?;
-                    candidates.push(candidate);
-                    ordinal += 1;
-                }
-                SurfaceNodeKind::ModuleBranchImport => {
-                    let branch_candidates = module_branch_candidates(ast, child, ordinal)?;
-                    ordinal += branch_candidates.len();
-                    candidates.extend(branch_candidates);
-                }
-                _ => return None,
-            }
-        }
-    }
-    Some(candidates)
-}
-
-fn import_alias_candidate(
-    ast: &SurfaceAst,
-    node: &SurfaceNode,
-    ordinal: usize,
-) -> Option<ImportPathCandidate> {
-    let children = structural_child_ids(ast, node);
-    let module_path_id = *children.first()?;
-    let module_path = ast.node(module_path_id)?;
-    let (prefix, components) = module_path_components(ast, module_path)?;
-    let alias = match children.as_slice() {
-        [_] => None,
-        [_, alias_id] => {
-            let alias = ast.node(*alias_id)?;
-            if !matches!(alias.kind, SurfaceNodeKind::PathSegment) || alias.children.len() != 1 {
-                return None;
-            }
-            Some(direct_segment_text(ast, alias)?)
-        }
-        _ => return None,
-    };
-    let mut candidate = ImportPathCandidate::new(components, prefix, alias, node.range, ordinal);
-    if children.len() == 2 {
-        candidate = candidate.with_alias_range(ast.node(*children.get(1)?)?.range);
-    }
-    Some(candidate)
-}
-
-fn module_branch_candidates(
-    ast: &SurfaceAst,
-    node: &SurfaceNode,
-    ordinal: usize,
-) -> Option<Vec<ImportPathCandidate>> {
-    let children = structural_child_ids(ast, node);
-    let base = ast.node(*children.first()?)?;
-    let (prefix, base_components) = module_path_components(ast, base)?;
-    let members = children[1..]
-        .iter()
-        .filter_map(|child_id| ast.node(*child_id))
-        .filter(|child| matches!(child.kind, SurfaceNodeKind::PathSegment))
-        .collect::<Vec<_>>();
-    if members.is_empty() || members.len() + 1 != children.len() {
-        return None;
-    }
-    members
-        .into_iter()
-        .enumerate()
-        .map(|(index, member)| {
-            let member_name = direct_segment_text(ast, member)?;
-            let mut components = base_components.clone();
-            components.push(member_name);
-            Some(
-                ImportPathCandidate::new(components, prefix, None, node.range, ordinal + index)
-                    .with_branch_provenance(base.range, member.range),
-            )
-        })
-        .collect()
-}
-
-fn module_path_components(
-    ast: &SurfaceAst,
-    node: &SurfaceNode,
-) -> Option<(ImportPathPrefix, Vec<String>)> {
-    if !matches!(node.kind, SurfaceNodeKind::ModulePath) || subtree_has_recovery(ast, node) {
-        return None;
-    }
-    let mut prefix = ImportPathPrefix::Unprefixed;
-    let mut components = Vec::new();
-    for child_id in &node.children {
-        let child = ast.node(*child_id)?;
-        match &child.kind {
-            SurfaceNodeKind::RelativePrefix => {
-                if prefix != ImportPathPrefix::Unprefixed {
-                    return None;
-                }
-                let text = direct_token_text(ast, child)?;
-                prefix = match text.as_str() {
-                    "." => ImportPathPrefix::Current,
-                    ".." => ImportPathPrefix::Parent,
-                    _ => return None,
-                };
-            }
-            SurfaceNodeKind::PathSegment => components.push(direct_segment_text(ast, child)?),
-            SurfaceNodeKind::Token(_) => {}
-            _ => return None,
-        }
-    }
-    (!components.is_empty()).then_some((prefix, components))
-}
-
-fn direct_segment_text(ast: &SurfaceAst, node: &SurfaceNode) -> Option<String> {
-    let [child_id] = node.children.as_slice() else {
-        return None;
-    };
-    ast.node(*child_id)
-        .and_then(SurfaceNode::token_text)
-        .map(str::to_owned)
 }
 
 fn direct_token_text(ast: &SurfaceAst, node: &SurfaceNode) -> Option<String> {
