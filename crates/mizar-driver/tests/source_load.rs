@@ -59,8 +59,12 @@ use mizar_ir::{
     storage::{AnyPhaseOutputRef, IrStorageService, StoragePlacement, StoragePolicy},
 };
 use mizar_resolve::{
-    declarations::DeclarationShellCollector, env::NamespacePath,
-    resolved_ast::ModuleId as ResolverModuleId, symbols::SignatureProjectionExtractor,
+    declarations::DeclarationShellCollector,
+    env::NamespacePath,
+    imports::{ImportPathCandidate, ImportPathResolver},
+    module_index::ModuleIndexInput,
+    resolved_ast::ModuleId as ResolverModuleId,
+    symbols::SignatureProjectionExtractor,
 };
 use mizar_session::{
     BuildRequestId, BuildSessionId, BuildSnapshot, BuildSnapshotId, DependencyArtifactRef,
@@ -644,6 +648,46 @@ fn frontend_imports_require_one_captured_summary_artifact_identity() {
         );
         if expected == PhaseStatus::Complete {
             assert!(result.diagnostics.is_empty());
+            let typed = publisher
+                .storage()
+                .typed_handle::<FrontendOutput<<MizarParserSeam as ParserSeam>::Ast>>(
+                    &result.output_refs[0],
+                    &OutputKind::new("FrontendOutput"),
+                )
+                .unwrap();
+            let loaded = publisher.storage().get(&typed).unwrap();
+            let candidates = ImportPathCandidate::from_surface_ast(
+                loaded.ast.as_ref().expect("sealed import AST"),
+            )
+            .expect("parsed import candidates");
+            let [candidate] = candidates.as_slice() else {
+                panic!("one parsed import candidate");
+            };
+            assert_eq!(candidate.components(), ["dep", "core"]);
+            assert_eq!(candidate.ordinal(), 0);
+            assert_eq!(candidate.range().source_id, loaded.source.source_id);
+            assert_eq!(
+                &loaded.source.source_text[candidate.range().start..candidate.range().end],
+                "dep.core"
+            );
+            let current = ResolverModuleId::new(
+                loaded.source.package_id.clone(),
+                loaded.source.module_path.clone(),
+            );
+            let resolution = ImportPathResolver::new(ModuleIndexInput::new(
+                submission.module_index.as_ref().unwrap(),
+            ))
+            .resolve(&current, &candidates);
+            assert!(resolution.unresolved().is_empty());
+            let [resolved] = resolution.resolved() else {
+                panic!("one resolved import");
+            };
+            assert_eq!(
+                resolved.target(),
+                &ResolverModuleId::new(PackageId::new("dep"), ModulePath::new("core"))
+            );
+            assert_eq!(resolved.range(), candidate.range());
+            assert_eq!(resolved.ordinal(), candidate.ordinal());
             let lineage = publisher
                 .registry()
                 .output_lineage(result.output_refs[0].output())
