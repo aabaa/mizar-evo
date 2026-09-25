@@ -23,7 +23,10 @@ use mizar_build::{
         parse_package_manifest, produce_build_plan,
     },
     scheduler::{CacheSchedulingPolicy, TaskState},
-    task_graph::{BuildTask, ModuleDependencyOverlay, PipelinePhase, TaskKind, WorkUnit},
+    task_graph::{
+        BuildTask, ModuleDependencyEdge, ModuleDependencyKind, ModuleDependencyOverlay,
+        PipelinePhase, TaskKind, WorkUnit,
+    },
 };
 use mizar_diagnostics::{
     failure_record::{
@@ -495,6 +498,45 @@ impl WorkspaceLeafFixture {
             leaf_frontend.output_refs[0].clone(),
         )
     }
+
+    fn scheduled_request(
+        &self,
+        overlay: ModuleDependencyOverlay,
+    ) -> (BuildRequestDraft, DriverSubmitInput<StaticSourceLayout>) {
+        let (mut request, mut input) = self.fixture.submit_request(Vec::new(), Vec::new());
+        request.source_inputs.versions = self
+            .submission
+            .session
+            .request
+            .source_inputs
+            .versions
+            .clone();
+        assert_eq!(request.source_inputs.versions.len(), 2);
+        input.source_layout = StaticSourceLayout::new(vec![WorkspaceSourcePackage {
+            package_id: PackageId::new("alpha"),
+            files: vec![
+                WorkspaceSourceFile::new("src/main.miz", "main.miz"),
+                WorkspaceSourceFile::new("src/leaf.miz", "leaf.miz"),
+            ],
+        }]);
+        input.dependency_overlay = overlay;
+        (request, input)
+    }
+
+    fn scheduled_driver(&self) -> CompilerDriver {
+        let mut builder = PhaseRegistryBuilder::new();
+        builder.register_source_load();
+        builder.register_frontend(Vec::new());
+        CompilerDriver::new(builder.build().unwrap()).with_output_publisher(self.publisher.clone())
+    }
+}
+
+fn complete_leaf_import_overlay() -> ModuleDependencyOverlay {
+    ModuleDependencyOverlay::complete(vec![ModuleDependencyEdge::new(
+        mizar_build::module_index::ModuleId::new(PackageId::new("alpha"), ModulePath::new("main")),
+        mizar_build::module_index::ModuleId::new(PackageId::new("alpha"), ModulePath::new("leaf")),
+        ModuleDependencyKind::ImportSummary,
+    )])
 }
 
 #[test]
@@ -881,23 +923,8 @@ fn workspace_leaf_is_not_injected_by_ordinary_no_provider_submit() {
         None,
         usize::MAX,
     );
-    let (mut request, mut input) = fixture.fixture.submit_request(Vec::new(), Vec::new());
-    request
-        .source_inputs
-        .versions
-        .push(fixture.version("leaf").clone());
-    input.source_layout = StaticSourceLayout::new(vec![WorkspaceSourcePackage {
-        package_id: PackageId::new("alpha"),
-        files: vec![
-            WorkspaceSourceFile::new("src/main.miz", "main.miz"),
-            WorkspaceSourceFile::new("src/leaf.miz", "leaf.miz"),
-        ],
-    }]);
-    let mut builder = PhaseRegistryBuilder::new();
-    builder.register_source_load();
-    builder.register_frontend(Vec::new());
-    let mut driver = CompilerDriver::new(builder.build().unwrap())
-        .with_output_publisher(fixture.publisher.clone());
+    let (request, input) = fixture.scheduled_request(ModuleDependencyOverlay::complete(Vec::new()));
+    let mut driver = fixture.scheduled_driver();
     let submission = driver
         .submit(request, &fixture.ids, &SnapshotRegistry::new(), input)
         .unwrap();
@@ -930,6 +957,216 @@ fn workspace_leaf_is_not_injected_by_ordinary_no_provider_submit() {
         .unwrap()[0];
     assert_eq!(result.status, PhaseStatus::Blocking);
     assert!(result.output_refs.is_empty());
+}
+
+#[test]
+fn scheduled_complete_import_overlay_hands_off_real_leaf_output() {
+    let fixture = WorkspaceLeafFixture::new(
+        b"import alpha.leaf;\ntheorem T: a combine b = a;\n",
+        b"definition\nlet x, y be set;\npublic func Infix: x combine y -> set equals x;\nend;\n",
+        None,
+        usize::MAX,
+    );
+    let (request, mut input) = fixture.scheduled_request(complete_leaf_import_overlay());
+    input.worker_count = 4;
+    let mut driver = fixture.scheduled_driver();
+    let submission = driver
+        .submit(request, &fixture.ids, &SnapshotRegistry::new(), input)
+        .unwrap();
+    assert_eq!(
+        submission.session.captured.snapshot.id,
+        fixture.submission.session.captured.snapshot.id
+    );
+    assert_eq!(
+        submission.status,
+        DriverSubmissionStatus::BlockedByMissingPhaseServices
+    );
+    assert_eq!(
+        submission.session.state,
+        BuildSessionState::Finished(BuildSessionOutcome::Blocked)
+    );
+    let graph = submission.task_graph.as_ref().unwrap();
+    let run = submission.scheduler_run.as_ref().unwrap();
+    let leaf_frontend = graph.tasks().iter().find(|task| task.kind == TaskKind::Frontend
+        && matches!(&task.unit, WorkUnit::Module { module } if module.path.as_str() == "leaf")).unwrap();
+    let importer_frontend = graph.tasks().iter().find(|task| task.kind == TaskKind::Frontend
+        && matches!(&task.unit, WorkUnit::Module { module } if module.path.as_str() == "main")).unwrap();
+    let importer_source = graph
+        .tasks()
+        .iter()
+        .find(|task| task.kind == TaskKind::SourceLoad && task.unit == importer_frontend.unit)
+        .unwrap();
+    assert!(importer_frontend.dependencies.contains(&leaf_frontend.id));
+    for task in [leaf_frontend, importer_frontend] {
+        assert_eq!(
+            run.task_states
+                .iter()
+                .find(|state| state.task_id == task.id)
+                .unwrap()
+                .state,
+            TaskState::Completed
+        );
+        assert_eq!(
+            run.phase_results.get(&task.id).unwrap()[0].status,
+            PhaseStatus::Complete
+        );
+        assert_eq!(
+            run.phase_results.get(&task.id).unwrap()[0]
+                .output_refs
+                .len(),
+            1
+        );
+    }
+    let own = &run.phase_results.get(&importer_source.id).unwrap()[0].output_refs[0];
+    let leaf = &run.phase_results.get(&leaf_frontend.id).unwrap()[0].output_refs[0];
+    let output = &run.phase_results.get(&importer_frontend.id).unwrap()[0].output_refs[0];
+    let lineage = fixture
+        .publisher
+        .registry()
+        .output_lineage(output.output())
+        .unwrap();
+    assert_eq!(lineage.parents.len(), 2);
+    assert!(lineage.parents.contains(&own.output()));
+    assert!(lineage.parents.contains(&leaf.output()));
+    let typed = fixture
+        .publisher
+        .storage()
+        .typed_handle::<FrontendOutput<<MizarParserSeam as ParserSeam>::Ast>>(
+            output,
+            &OutputKind::new("FrontendOutput"),
+        )
+        .unwrap();
+    let loaded = fixture.publisher.storage().get(&typed).unwrap();
+    assert!(
+        loaded.tokens.tokens().iter().any(|token| {
+            token.text.as_ref() == "combine" && token.kind == TokenKind::UserSymbol
+        })
+    );
+}
+
+#[test]
+fn scheduled_import_overlay_cannot_invent_a_source_import() {
+    let fixture = WorkspaceLeafFixture::new(
+        b"definition\nend;\n",
+        b"definition\nend;\n",
+        None,
+        usize::MAX,
+    );
+    let (request, input) = fixture.scheduled_request(complete_leaf_import_overlay());
+    let mut driver = fixture.scheduled_driver();
+    let submission = driver
+        .submit(request, &fixture.ids, &SnapshotRegistry::new(), input)
+        .unwrap();
+    assert_eq!(
+        submission.session.captured.snapshot.id,
+        fixture.submission.session.captured.snapshot.id
+    );
+    let run = submission.scheduler_run.as_ref().unwrap();
+    let leaf = fixture.task(TaskKind::Frontend, "leaf");
+    let importer = fixture.task(TaskKind::Frontend, "main");
+    assert_eq!(
+        run.phase_results.get(&leaf.id).unwrap()[0].status,
+        PhaseStatus::Complete
+    );
+    let result = &run.phase_results.get(&importer.id).unwrap()[0];
+    assert_eq!(result.status, PhaseStatus::Blocking);
+    assert!(result.output_refs.is_empty());
+    assert_eq!(
+        submission.session.state,
+        BuildSessionState::Finished(BuildSessionOutcome::Blocked)
+    );
+}
+
+#[test]
+fn scheduled_import_overlay_does_not_synthesize_a_cached_leaf_output() {
+    let fixture = WorkspaceLeafFixture::new(
+        b"import alpha.leaf;\ntheorem T: a combine b = a;\n",
+        b"definition\nlet x, y be set;\npublic func Infix: x combine y -> set equals x;\nend;\n",
+        None,
+        usize::MAX,
+    );
+    let (request, mut input) = fixture.scheduled_request(complete_leaf_import_overlay());
+    input.cache_policy = CacheSchedulingPolicy::Enabled;
+    input.cache_decisions = CacheSchedulingPlan::new(vec![CacheTaskDecision::new(
+        fixture.task(TaskKind::Frontend, "leaf").id.clone(),
+        CacheSchedulingOutcome::ValidatedHit(ValidatedCacheHit::new(
+            vec![CacheOutputRef::new("leaf", "cached")],
+            Vec::new(),
+        )),
+    )]);
+    let mut driver = fixture.scheduled_driver();
+    let submission = driver
+        .submit(request, &fixture.ids, &SnapshotRegistry::new(), input)
+        .unwrap();
+    assert_eq!(
+        submission.session.captured.snapshot.id,
+        fixture.submission.session.captured.snapshot.id
+    );
+    let run = submission.scheduler_run.as_ref().unwrap();
+    let leaf = fixture.task(TaskKind::Frontend, "leaf");
+    let importer = fixture.task(TaskKind::Frontend, "main");
+    assert_eq!(
+        run.task_states
+            .iter()
+            .find(|state| state.task_id == leaf.id)
+            .unwrap()
+            .state,
+        TaskState::CacheHit
+    );
+    assert!(!run.phase_results.contains_key(&leaf.id));
+    assert_ne!(
+        run.task_states
+            .iter()
+            .find(|state| state.task_id == importer.id)
+            .unwrap()
+            .state,
+        TaskState::Completed
+    );
+    assert!(
+        run.phase_results
+            .get(&importer.id)
+            .is_none_or(|results| { results.iter().all(|result| result.output_refs.is_empty()) })
+    );
+    assert_eq!(
+        submission.session.state,
+        BuildSessionState::Finished(BuildSessionOutcome::Blocked)
+    );
+}
+
+#[test]
+fn scheduled_import_overlay_keeps_supplied_dispatch_provider_authoritative() {
+    let fixture = WorkspaceLeafFixture::new(
+        b"import alpha.leaf;\ntheorem T: a combine b = a;\n",
+        b"definition\nlet x, y be set;\npublic func Infix: x combine y -> set equals x;\nend;\n",
+        None,
+        usize::MAX,
+    );
+    let (request, mut input) = fixture.scheduled_request(complete_leaf_import_overlay());
+    input.phase_dispatch_inputs = Some(Box::new(SuppliedInput::None));
+    let mut driver = fixture.scheduled_driver();
+    let submission = driver
+        .submit(request, &fixture.ids, &SnapshotRegistry::new(), input)
+        .unwrap();
+    assert_eq!(
+        submission.session.captured.snapshot.id,
+        fixture.submission.session.captured.snapshot.id
+    );
+    assert_eq!(
+        submission.status,
+        DriverSubmissionStatus::BlockedByPhaseDispatchGap
+    );
+    assert_eq!(
+        submission.session.state,
+        BuildSessionState::Finished(BuildSessionOutcome::Blocked)
+    );
+    assert!(
+        submission
+            .scheduler_run
+            .as_ref()
+            .unwrap()
+            .phase_results
+            .is_empty()
+    );
 }
 
 #[test]

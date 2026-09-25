@@ -252,6 +252,7 @@ pub enum TaskGraphDiagnosticKind {
 
 #[derive(Clone)]
 struct ModuleTaskIds {
+    frontend: TaskId,
     module_resolve: TaskId,
     vc_generate: TaskId,
     artifact_commit: TaskId,
@@ -721,6 +722,7 @@ impl TaskGraphBuilder {
             self.module_tasks.insert(
                 module_key(&entry.module),
                 ModuleTaskIds {
+                    frontend,
                     module_resolve,
                     vc_generate,
                     artifact_commit,
@@ -778,6 +780,11 @@ impl TaskGraphBuilder {
             let Some(dependency_tasks) = self.module_tasks.get(&dependency_key).cloned() else {
                 continue;
             };
+            if coverage == ModuleDependencyCoverage::Complete
+                && edge.kind == ModuleDependencyKind::ImportSummary
+            {
+                self.add_edge(dependent_tasks.frontend, dependency_tasks.frontend);
+            }
             self.add_edge(
                 dependent_tasks.module_resolve.clone(),
                 dependency_tasks.artifact_commit.clone(),

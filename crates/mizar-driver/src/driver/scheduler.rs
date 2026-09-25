@@ -243,7 +243,7 @@ fn dispatch_registry_phase(
                     module.package.as_str(),
                     module.path.as_str()
                 ));
-                let mut parents = task
+                let parents = task
                     .task
                     .dependencies
                     .iter()
@@ -251,17 +251,32 @@ fn dispatch_registry_phase(
                     .filter(|result| result.status == PhaseStatus::Complete)
                     .flat_map(|result| result.output_refs.iter())
                     .filter(|parent| {
-                        parent.phase() == &IrPhase::new("SourceLoad")
+                        (parent.phase() == &IrPhase::new("SourceLoad")
                             && parent.work_unit() == &unit
-                            && parent.output_kind() == &OutputKind::new("SourceUnit")
-                    });
-                let parent = parents.next()?.clone();
-                if parents.next().is_some() {
+                            && parent.output_kind() == &OutputKind::new("SourceUnit"))
+                            || (parent.phase() == &IrPhase::new("Frontend")
+                                && parent.output_kind() == &OutputKind::new("FrontendOutput"))
+                    })
+                    .collect::<Vec<_>>();
+                if parents
+                    .iter()
+                    .filter(|parent| parent.phase() == &IrPhase::new("SourceLoad"))
+                    .count()
+                    != 1
+                {
                     return None;
                 }
-                let parent =
-                    SealedParentOutputHandle::from_current_output(publisher, task.snapshot, parent)
-                        .ok()?;
+                let parents = parents
+                    .into_iter()
+                    .map(|parent| {
+                        SealedParentOutputHandle::from_current_output(
+                            publisher,
+                            task.snapshot,
+                            parent.clone(),
+                        )
+                        .ok()
+                    })
+                    .collect::<Option<Vec<_>>>()?;
                 let mut dependencies = inputs
                     .module_index
                     .dependency_summaries
@@ -269,7 +284,7 @@ fn dispatch_registry_phase(
                     .map(|summary| summary.content_hash)
                     .collect::<Vec<_>>();
                 dependencies.sort_by(|left, right| left.as_bytes().cmp(right.as_bytes()));
-                PhaseDispatchInputBundle::new(task.snapshot, key, dependencies, vec![parent]).ok()
+                PhaseDispatchInputBundle::new(task.snapshot, key, dependencies, parents).ok()
             })();
             let Some(bundle) = bundle else {
                 return SchedulerDispatchOutcome::blocked(vec![dispatch_diagnostic(

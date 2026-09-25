@@ -391,6 +391,66 @@ fn module_dependency_overlay_edges_gate_dependent_module_resolution() {
         module_task(&graph, TaskKind::ModuleResolve, "app", "main"),
         module_task(&graph, TaskKind::ArtifactCommit, "app", "util"),
     );
+    assert_has_edge(
+        &graph,
+        module_task(&graph, TaskKind::Frontend, "app", "main"),
+        module_task(&graph, TaskKind::Frontend, "app", "util"),
+    );
+}
+
+#[test]
+fn frontend_lexical_edges_require_complete_import_summary_coverage() {
+    for (coverage, kind) in [
+        (
+            ModuleDependencyCoverage::Complete,
+            ModuleDependencyKind::VisibleRegistration,
+        ),
+        (
+            ModuleDependencyCoverage::Complete,
+            ModuleDependencyKind::PackageConservative,
+        ),
+        (
+            ModuleDependencyCoverage::CoveredModules(vec![
+                module_id("app", "main"),
+                module_id("app", "util"),
+            ]),
+            ModuleDependencyKind::ImportSummary,
+        ),
+    ] {
+        let graph = build_task_graph(TaskGraphInput {
+            graph_version: TaskGraphVersion::current(),
+            snapshot: snapshot(3),
+            build_plan: build_plan(vec![workspace_package("app")], Vec::new()),
+            module_index: module_index(vec![
+                workspace_module("app", "main"),
+                workspace_module("app", "util"),
+            ]),
+            dependency_overlay: ModuleDependencyOverlay {
+                coverage,
+                edges: vec![ModuleDependencyEdge::new(
+                    module_id("app", "main"),
+                    module_id("app", "util"),
+                    kind,
+                )],
+            },
+            vc_descriptors: Vec::new(),
+            profile: TaskGraphProfile::default(),
+        })
+        .expect("non-lexical overlay builds");
+        let importer = module_task(&graph, TaskKind::Frontend, "app", "main");
+        let leaf = module_task(&graph, TaskKind::Frontend, "app", "util");
+        assert!(
+            graph
+                .edges()
+                .iter()
+                .all(|edge| { edge.dependent != importer.id || edge.dependency != leaf.id })
+        );
+        assert_has_edge(
+            &graph,
+            module_task(&graph, TaskKind::ModuleResolve, "app", "main"),
+            module_task(&graph, TaskKind::ArtifactCommit, "app", "util"),
+        );
+    }
 }
 
 #[test]

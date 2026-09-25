@@ -290,6 +290,8 @@ coverage として mark するか conservatively gate しなければならな�
 package names、aliases、source paths、local heuristics から import edges を
 創作してはならない。
 
+Complete coverage の場合だけ、workspace module 間の ImportSummary edge により importer の Frontend を import 先の Frontend に依存させる。他の edge kind・coverage に字句処理の順序は追加しない。この scheduling の申告は parsed import や利用可能な字句 summary の証拠ではなく、consumer service が実出力と対応する leaf 形状を検証する。既存 semantic edge と graph の拒否規則は維持する。
+
 ### VC descriptors
 
 VC-level tasks は explicit descriptors からだけ作成する:

@@ -1,0 +1,14 @@
+# Task STEP6A44-SCHEDULED-WORKSPACE-LEAF: scheduled workspace leaf handoff
+Canonical language: English; [Japanese pointer](../ja/STEP6A44-SCHEDULED-WORKSPACE-LEAF.md).
+Status: frozen. Tier: full. Owners: [driver](../../mizar-driver/en/00.crate_plan.md), [build](../../mizar-build/en/00.crate_plan.md).
+Purpose: reach the existing authenticated workspace leaf lexical path through ordinary submit with a caller-supplied complete import overlay.
+Authority: [spec 2 active ranges](../../../spec/en/02.lexical_structure.md), [spec 12.3](../../../spec/en/12.modules_and_namespaces.md#123-import-statements), [task graph](../../mizar-build/en/task_graph.md#moduledependencyoverlay), [scheduled prefix](../../mizar-driver/en/driver.md#scheduled-sourceloadfrontend-prefix), [leaf validation](../../mizar-driver/en/frontend_adapter.md#supplied-workspace-leaf-summaries).
+Gap: external_dependency_gap; the supplied leaf service is live but ordinary scheduling lacks its import ordering and parent handoff.
+Scope: private Frontend task id retention and Complete ImportSummary workspace Frontend dependency edges; preserve existing semantic edges and unknown/self/cycle validation. Other coverage/kinds gain no lexical edge.
+Consumer: no-provider built-in Frontend default bundles retain the unique own completed SourceLoad parent and include current sealed Frontend outputs only from actual completed task dependencies. PackageResolve supplies no parent. Missing retained outputs, including cache hits, never synthesize parents and fail closed through existing dispatch/service checks without prescribing new diagnostics.
+Boundaries: overlay is a scheduling claim only; existing source-authenticated same-package import-free leaf validation and exact parsed import matching remain authoritative. Preserve provider precedence, publication authority, prefix/preflight/cache guards, downstream missing services and blocked/failed outcomes.
+Tests: extend existing complete import graph test; negative kind/coverage cases and existing graph rejection regression; real scheduled public-symbol importer and exact lineage, false extra edge, cached leaf without output and supplied-provider precedence using existing fixtures. Existing omitted-edge and leaf-authentication cases remain.
+Affected: task_graph.rs and its tests, driver/scheduler.rs and source_load.rs tests; paired build/driver owner documents and plans, chapter 2 audit route.
+Forbidden: public API/type, overlay discovery, cross-package/non-leaf lexical acceptance, E0225/new diagnostics, resolver/proof/cache/artifact acceptance, spec or existing .miz/expectation/trace edits.
+Require independent specification, test-sufficiency, implementation, volume/scope and consistency reviews; cargo fmt --check, cargo clippy --all-targets --all-features -- -D warnings, cargo test.
+Exit: the bounded real leaf/importer prefix runs in dependency order with retained parent lineage; later missing services still block full builds.
