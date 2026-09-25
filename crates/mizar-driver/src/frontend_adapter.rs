@@ -815,13 +815,272 @@ impl PhaseService for FrontendService {
             }
         }
         if !output.diagnostics.is_empty() {
+            if publisher.validate_current_output(snapshot, parent).is_err() {
+                return blocking();
+            }
+            let import_batch = (|| {
+                use mizar_diagnostics::sink::{DiagnosticProducerScope, DiagnosticSink};
+                use mizar_resolve::{
+                    imports::{
+                        ImportPathCandidate, ImportPathFailureClass as Failure, ImportPathResolver,
+                    },
+                    module_index::ModuleIndexInput,
+                };
+                if !output.diagnostics.iter().all(|diagnostic| {
+                    diagnostic.code
+                        == FrontendCode::LexicalEnvironment(EnvironmentCode::UnresolvedImport)
+                        && diagnostic.class == DiagnosticClass::LexicalEnvironment
+                }) || output.source != *source
+                    || output.preprocessed.source_id != source.source_id
+                {
+                    return None;
+                }
+                let ast = output.ast.as_ref()?;
+                output.cache_keys.ast.as_ref()?;
+                if ast.source_id != source.source_id
+                    || ast
+                        .node_views()
+                        .any(|view| view.as_recovery().is_some() || view.is_recovered())
+                {
+                    return None;
+                }
+                let candidates = ImportPathCandidate::from_surface_ast(ast)?;
+                let provisional = ImportPathCandidate::from_frontend_imports(
+                    &mizar_frontend::lexical_env::LexicalEnvironmentRequest {
+                        source_id: source.source_id,
+                        import_stubs: &output.preprocessed.import_stubs,
+                        edition: source.edition.clone(),
+                    },
+                )?;
+                if candidates.is_empty() || candidates.len() != provisional.len() {
+                    return None;
+                }
+                for ((candidate, prescan), stub) in candidates
+                    .iter()
+                    .zip(&provisional)
+                    .zip(&output.preprocessed.import_stubs)
+                {
+                    if candidate.components() != prescan.components()
+                        || candidate.prefix() != prescan.prefix()
+                        || candidate.alias() != prescan.alias()
+                        || candidate.alias_range() != prescan.alias_range()
+                        || candidate.branch_base_range() != prescan.branch_base_range()
+                        || candidate.branch_member_range() != prescan.branch_member_range()
+                        || if candidate.branch_member_range().is_some() {
+                            candidate.range().start > prescan.range().start
+                                || candidate.range().end < prescan.range().end
+                        } else {
+                            candidate.range() != prescan.range()
+                        }
+                    {
+                        return None;
+                    }
+                    for range in std::iter::once(candidate.range())
+                        .chain(std::iter::once(stub.span))
+                        .chain(std::iter::once(stub.path.span))
+                        .chain(stub.path.source_segments.iter().copied())
+                        .chain(candidate.alias_range())
+                    {
+                        source.line_map.validate_range(range).ok()?;
+                    }
+                    let prefix = match candidate.prefix() {
+                        mizar_resolve::imports::ImportPathPrefix::Unprefixed => "",
+                        mizar_resolve::imports::ImportPathPrefix::Current => ".",
+                        mizar_resolve::imports::ImportPathPrefix::Parent => "..",
+                        _ => return None,
+                    };
+                    if stub.path.spelling.as_ref()
+                        != format!("{prefix}{}", candidate.components().join("."))
+                    {
+                        return None;
+                    }
+                }
+                // Authenticate the whole import framing, not just path coordinates.
+                for item in ast.node_views().filter_map(|view| view.as_import_item()) {
+                    let range = item.range();
+                    source.line_map.validate_range(range).ok()?;
+                    for view in ast.token_views().filter(|view| {
+                        range.start <= view.range().start && view.range().end <= range.end
+                    }) {
+                        source.line_map.validate_range(view.range()).ok()?;
+                        if source
+                            .source_text
+                            .get(view.range().start..view.range().end)?
+                            != view.as_token()?.text.as_ref()
+                        {
+                            return None;
+                        }
+                    }
+                }
+                let index = ModuleIndexInput::new(inputs.module_index);
+                let current = index.resolver_module_id(module);
+                let resolution = ImportPathResolver::new(index).resolve(&current, &candidates);
+                if resolution.unresolved().is_empty() {
+                    return None;
+                }
+                let registry = mizar_diagnostics::registry::DiagnosticRegistry::builtin();
+                let drafts = resolution
+                    .unresolved()
+                    .iter()
+                    .map(|candidate| {
+                        let number = match candidate.class() {
+                            Failure::UnknownNamespaceOrPackage => 220,
+                            Failure::UnknownModule => 221,
+                            Failure::RelativePathEscapesPackage => 222,
+                            Failure::DuplicateAlias => 223,
+                            Failure::AliasRootConflict => 224,
+                            _ => return None,
+                        };
+                        let alias_range = candidate
+                            .alias_range()
+                            .or(candidate.branch_member_range())
+                            .unwrap_or(candidate.range());
+                        let primary = match number {
+                            220 | 222 => candidate.branch_base_range().unwrap_or(candidate.range()),
+                            221 => candidate.branch_member_range().unwrap_or(candidate.range()),
+                            _ => alias_range,
+                        };
+                        let mut secondary = match number {
+                            220 | 222 => candidate.branch_member_range(),
+                            _ => candidate.branch_base_range(),
+                        }
+                        .into_iter()
+                        .collect::<Vec<_>>();
+                        let mut details = vec![
+                            (
+                                "import.source_module",
+                                DiagnosticDetailValue::List(vec![
+                                    DiagnosticDetailValue::String(
+                                        current.package().as_str().to_owned(),
+                                    ),
+                                    DiagnosticDetailValue::String(
+                                        current.path().as_str().to_owned(),
+                                    ),
+                                ]),
+                            ),
+                            (
+                                "import.ordinal",
+                                DiagnosticDetailValue::Integer(
+                                    i64::try_from(candidate.ordinal()).ok()?,
+                                ),
+                            ),
+                            (
+                                "import.path",
+                                DiagnosticDetailValue::String(candidate.spelling().to_owned()),
+                            ),
+                        ];
+                        if let Some(member) = candidate.branch_member_range() {
+                            details.push((
+                                "import.branch_member",
+                                DiagnosticDetailValue::Source(member),
+                            ));
+                        }
+                        if number == 223 {
+                            secondary.retain(|range| *range != primary);
+                            let alias = candidate
+                                .alias()
+                                .or_else(|| candidate.components().last().map(String::as_str))?;
+                            let target = candidate.candidate_target()?;
+                            details.push((
+                                "import.alias",
+                                DiagnosticDetailValue::String(alias.to_owned()),
+                            ));
+                            details.push((
+                                "import.target",
+                                DiagnosticDetailValue::List(vec![
+                                    DiagnosticDetailValue::String(
+                                        target.package().as_str().to_owned(),
+                                    ),
+                                    DiagnosticDetailValue::String(
+                                        target.path().as_str().to_owned(),
+                                    ),
+                                ]),
+                            ));
+                            let mut peers = resolution
+                                .unresolved()
+                                .iter()
+                                .filter(|peer| {
+                                    peer.class() == Failure::DuplicateAlias
+                                        && peer.ordinal() != candidate.ordinal()
+                                        && peer.alias().or_else(|| {
+                                            peer.components().last().map(String::as_str)
+                                        }) == Some(alias)
+                                })
+                                .map(|peer| {
+                                    Some((
+                                        peer.ordinal(),
+                                        peer.range().start,
+                                        peer.range().end,
+                                        peer.candidate_target()?,
+                                        peer.alias_range()
+                                            .or(peer.branch_member_range())
+                                            .unwrap_or(peer.range()),
+                                    ))
+                                })
+                                .collect::<Option<Vec<_>>>()?;
+                            peers.sort_by(|a, b| {
+                                (&a.0, &a.1, &a.2, &a.3).cmp(&(&b.0, &b.1, &b.2, &b.3))
+                            });
+                            secondary.extend(peers.into_iter().map(|peer| peer.4));
+                        }
+                        let span = |range, role| {
+                            source.line_map.validate_range(range).ok()?;
+                            DiagnosticSpan::from_anchor(
+                                mizar_session::SourceAnchor::Range(range),
+                                role,
+                                None,
+                                SpanFreshness::Current,
+                                None,
+                            )
+                            .ok()
+                        };
+                        let primary = span(primary, DiagnosticSpanRole::Primary)?;
+                        let secondary = secondary
+                            .into_iter()
+                            .map(|range| span(range, DiagnosticSpanRole::Secondary))
+                            .collect::<Option<Vec<_>>>()?;
+                        let descriptor = registry.lookup(
+                            DiagnosticCode::from_parts(DiagnosticSeverity::Error, number).ok()?,
+                        )?;
+                        DiagnosticDraft::new(DiagnosticDraftInput {
+                            source_snapshot: snapshot,
+                            code: descriptor.code,
+                            phase: DiagnosticPhase::Resolver,
+                            category: FailureCategory::ResolveError,
+                            stable_detail_key: descriptor.semantic_name.to_owned(),
+                            message: descriptor.summary.to_owned(),
+                            primary_location: DiagnosticPrimaryLocation::Span(primary),
+                            secondary_spans: secondary,
+                            notes: Vec::new(),
+                            details: DiagnosticDetails::from_entries(details).ok()?,
+                            fixes: Vec::new(),
+                            explanation: None,
+                        })
+                        .ok()
+                    })
+                    .collect::<Option<Vec<_>>>()?;
+                let mut resolver_sink = DiagnosticSink::new(DiagnosticProducerScope::new(
+                    DiagnosticPhase::Resolver,
+                    snapshot,
+                    "frontend.import_continuation",
+                ));
+                for draft in drafts {
+                    resolver_sink.emit(draft).ok()?;
+                }
+                Some(resolver_sink.seal())
+            })();
+            if publisher.validate_current_output(snapshot, parent).is_err() {
+                return blocking();
+            }
+            let mut diagnostics = vec![sink.seal()];
+            diagnostics.extend(import_batch);
             return PhaseResult {
                 status: if output.ast.is_some() {
                     PhaseStatus::Recoverable
                 } else {
                     PhaseStatus::Fatal
                 },
-                diagnostics: vec![sink.seal()],
+                diagnostics,
                 ..blocking()
             };
         }

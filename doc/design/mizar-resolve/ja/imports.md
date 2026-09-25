@@ -284,7 +284,7 @@ unresolved import は first-class な resolver output であり、欠落 entry �
 - failure までに見つかった partial package、namespace、module candidate。
 - 該当する場合、parser から継承した recovery state。
 
-仕様 §22.3.5 は import の意味 6 件に E0220～E0225 を割り当てるが、公開 resolver bridge までは record を crate-local に保つ。E0220～E0224 の descriptor は登録済みで、E0225 の registry 採用は後続とする。
+仕様 §22.3.5 は import の意味 6 件に E0220～E0225 を割り当てるが、driver 所有の E0022-only 診断専用継続による E0220～E0224 射影以外では record を crate-local に保つ。E0225 の registry 採用は後続とする。
 必須 class には unknown namespace/package、unknown module、package root から escape する
 relative import、malformed recovered directive、duplicate alias、alias/root conflict、
 unavailable dependency summary、illegal import candidate state、import cycle が含まれる。
@@ -312,7 +312,7 @@ import/name task と pair する。
 | E0224 | `import dep.logic as mml;`、`dep` 束縛と `dep.logic` を登録 |
 | E0225 | `app.main` が `.util`、`app.util` が `.main` を import。別途 `app.main` が `.main` を import。local module 2 件を登録 |
 
-同じ directive 範囲を共有する不在の `dep` 分岐 member 2 件、別名 peer の重複、source をまたぐ循環の結合、自己循環、入力順の入替えも検査する。comment と複数 byte 文字の後の正確な source slice を確認し、他の SourceId、逆転・範囲外・UTF-8 境界外の range、source 欠落、snapshot 混在、未知・未割当 class、draft 構築失敗では batch の部分発行を拒否する。`mml` seed は仕様 §12.2.1 に従う。既存 source corpus が示すのは E0221/E0223 の意味だけで、公開 code はない。A28 Frontend が封印するのは正常出力だけであり、字句の事前解決が失敗 import AST の封印前に E0022 を発行し得る。公開 negative test には owner 承認済みの真正な意味入力経路、完全な workspace 字句 summary producer、registry/bridge 採用が必要であり、この設計はそれらの挙動を変えない。
+同じ directive 範囲を共有する不在の `dep` 分岐 member 2 件、別名 peer の重複、source をまたぐ循環の結合、自己循環、入力順の入替えも検査する。comment と複数 byte 文字の後の正確な source slice を確認し、他の SourceId、逆転・範囲外・UTF-8 境界外の range、source 欠落、snapshot 混在、未知・未割当 class、draft 構築失敗では batch の部分発行を拒否する。`mml` seed は仕様 §12.2.1 に従う。既存 source corpus が示すのは E0221/E0223 の意味だけで、公開 code はない。A28 Frontend が封印するのは正常出力だけであり、字句の事前解決が失敗 import AST の封印前に E0022 を発行し得る。driver の E0022-only 経路は、失敗出力を封印せず真正な実ソースから E0220～E0224 を射影する。一般の resolver と E0225 のテストには、完全な意味入力/graph 経路、workspace 字句 summary producer、残る registry/bridge 採用が引き続き必要である。
 
 ## determinism
 

@@ -321,7 +321,7 @@ record preserves:
 - recovery state inherited from the parser when applicable.
 
 Spec §22.3.5 assigns E0220–E0225 to six import meanings; records remain
-crate-local until a public resolver bridge exists. E0220–E0224 descriptors are allocated; E0225 registry adoption remains deferred. Required classes include unknown namespace/package, unknown module,
+crate-local outside the driver-owned E0022-only diagnostic continuation, which projects E0220–E0224. E0225 registry adoption remains deferred. Required classes include unknown namespace/package, unknown module,
 relative import escaping the package root, malformed recovered directive,
 duplicate alias, alias/root conflict, unavailable dependency summary, illegal
 import candidate state, and import cycle.
@@ -349,7 +349,7 @@ Lower-stage tests can parse real source with `MizarParserSeam`, collect AST impo
 | E0224 | `import dep.logic as mml;`; bind `dep`, index `dep.logic` |
 | E0225 | `app.main` imports `.util` and `app.util` imports `.main`; separately, `app.main` imports `.main`; index both local modules |
 
-Also exercise two absent `dep` branch members sharing one directive range, alias-peer multiplicity, cross-source cycle binding, self-cycle, and input permutation. Assert exact source slices after comments and multibyte text; reject foreign SourceIds, reversed/out-of-bounds/non-UTF-8 ranges, missing sources, mixed snapshots, unknown/unallocated classes and failed draft construction with no partial batch. The `mml` seeds reflect spec §12.2.1. Existing source corpus covers E0221/E0223 meanings only and no public codes. A28 Frontend seals clean output only, and lexical pre-resolution can emit E0022 before a failed-import AST is sealed. Public negative tests therefore require an owner-approved authentic semantic input route plus a complete workspace lexical-summary producer and registry/bridge adoption; this design changes none of those behaviors.
+Also exercise two absent `dep` branch members sharing one directive range, alias-peer multiplicity, cross-source cycle binding, self-cycle, and input permutation. Assert exact source slices after comments and multibyte text; reject foreign SourceIds, reversed/out-of-bounds/non-UTF-8 ranges, missing sources, mixed snapshots, unknown/unallocated classes and failed draft construction with no partial batch. The `mml` seeds reflect spec §12.2.1. Existing source corpus covers E0221/E0223 meanings only and no public codes. A28 Frontend seals clean output only, and lexical pre-resolution can emit E0022 before a failed-import AST is sealed. The driver E0022-only route projects E0220–E0224 from authentic live source without sealing failed output. Broader resolver and E0225 tests still require a complete semantic input/graph route, workspace lexical-summary production and remaining registry/bridge adoption.
 
 ## Determinism
 

@@ -21,7 +21,10 @@ use mizar_build::{
     task_graph::{ModuleDependencyOverlay, PipelinePhase, TaskKind, WorkUnit},
 };
 use mizar_diagnostics::{
-    failure_record::PipelinePhase as DiagnosticPhase,
+    failure_record::{
+        DiagnosticDetailValue, DiagnosticPrimaryLocation, FailureCategory,
+        PipelinePhase as DiagnosticPhase,
+    },
     sink::{DiagnosticProducerScope, DiagnosticSink},
 };
 use mizar_driver::{
@@ -482,6 +485,374 @@ fn frontend_recovery_and_unrecoverable_input_emit_diagnostics_without_output() {
                 .any(|draft| draft.code().number() == code)
         );
     }
+}
+
+#[test]
+fn frontend_diagnostic_only_import_reports_five_path_failures_from_live_source() {
+    for (text, code, dependency_modules, needs_dependency, paths, primary_text) in [
+        (
+            "import mml.no_such;\ndefinition\nend;\n",
+            220,
+            &[][..],
+            false,
+            &["mml.no_such"][..],
+            "mml.no_such",
+        ),
+        (
+            "import dep.missing;\ndefinition\nend;\n",
+            221,
+            &["present"][..],
+            true,
+            &["dep.missing"][..],
+            "dep.missing",
+        ),
+        (
+            "import ..common;\ndefinition\nend;\n",
+            222,
+            &[][..],
+            false,
+            &["..common"][..],
+            "..common",
+        ),
+        (
+            "import dep.core as shared, dep.core as shared, dep.other as shared;\ndefinition\nend;\n",
+            223,
+            &["core", "other"][..],
+            true,
+            &["dep.core", "dep.core", "dep.other"][..],
+            "shared",
+        ),
+        (
+            "import dep.core as mml;\ndefinition\nend;\n",
+            224,
+            &["core"][..],
+            true,
+            &["dep.core"][..],
+            "mml",
+        ),
+    ] {
+        let fixture = Fixture::new(text.as_bytes());
+        let ids = InMemorySessionIdAllocator::new();
+        let snapshots = SnapshotRegistry::new();
+        let references = dependency_modules
+            .iter()
+            .enumerate()
+            .map(|(ordinal, path)| {
+                let artifact = format!("dep/{path}.summary.json");
+                let digest = hash(0x60 + ordinal as u8);
+                (
+                    DependencyModuleSummaryRef {
+                        module: mizar_build::module_index::ModuleId::new(
+                            PackageId::new("dep"),
+                            ModulePath::new(*path),
+                        ),
+                        artifact: artifact.clone(),
+                        content_hash: digest,
+                    },
+                    DependencyArtifactRef::new(artifact, digest),
+                )
+            })
+            .collect::<Vec<_>>();
+        let mut dependency_hashes = references
+            .iter()
+            .map(|(indexed, _)| indexed.content_hash)
+            .collect::<Vec<_>>();
+        dependency_hashes.sort_by(|left, right| left.as_bytes().cmp(right.as_bytes()));
+        let submission = fixture.submit_with_dependencies(
+            &ids,
+            &snapshots,
+            references
+                .iter()
+                .map(|(_, captured)| captured.clone())
+                .collect(),
+            if needs_dependency {
+                vec![DependencyArtifactIndex::new(
+                    PackageId::new("dep"),
+                    Vec::new(),
+                    references.into_iter().map(|(indexed, _)| indexed).collect(),
+                )]
+            } else {
+                Vec::new()
+            },
+        );
+        let (source, publisher) = execute(&submission, &ids, usize::MAX);
+        assert_eq!(source.status, PhaseStatus::Complete, "{text}");
+        let result = execute_frontend(
+            &submission,
+            &ids,
+            &publisher,
+            vec![source.output_refs[0].clone()],
+            (source_key(&fixture.version), dependency_hashes),
+            Vec::new(),
+            None,
+        );
+        assert_eq!(result.status, PhaseStatus::Recoverable, "{text}");
+        assert!(result.output_refs.is_empty(), "{text}");
+        assert_eq!(result.diagnostics.len(), 2, "{text}");
+        let frontend = &result.diagnostics[0];
+        assert_eq!(frontend.scope().phase(), DiagnosticPhase::Frontend);
+        assert_eq!(frontend.drafts().len(), paths.len());
+        assert!(
+            frontend
+                .drafts()
+                .iter()
+                .all(|draft| draft.code().number() == 22)
+        );
+        let resolver = &result.diagnostics[1];
+        assert_eq!(resolver.scope().phase(), DiagnosticPhase::Resolver);
+        assert_eq!(resolver.drafts().len(), paths.len(), "{text}");
+        assert!(resolver.drafts().iter().all(|draft| {
+            draft.code().number() == code
+                && draft.phase() == DiagnosticPhase::Resolver
+                && draft.category() == FailureCategory::ResolveError
+        }));
+        for (ordinal, draft) in resolver.drafts().iter().enumerate() {
+            assert_eq!(
+                draft.stable_detail_key(),
+                mizar_diagnostics::registry::DiagnosticRegistry::builtin()
+                    .lookup(draft.code())
+                    .unwrap()
+                    .semantic_name
+            );
+            let details = draft.details().entries();
+            assert_eq!(
+                details.get("import.source_module"),
+                Some(&DiagnosticDetailValue::List(vec![
+                    DiagnosticDetailValue::String("alpha".to_owned()),
+                    DiagnosticDetailValue::String("main".to_owned()),
+                ])),
+                "{text}"
+            );
+            assert_eq!(
+                details.get("import.ordinal"),
+                Some(&DiagnosticDetailValue::Integer(ordinal as i64)),
+                "{text}"
+            );
+            assert_eq!(
+                details.get("import.path"),
+                Some(&DiagnosticDetailValue::String(paths[ordinal].to_owned()))
+            );
+            let DiagnosticPrimaryLocation::Span(primary) = draft.primary_location() else {
+                panic!("semantic failure has a loaded-source primary span");
+            };
+            let SourceAnchor::Range(primary_range) = primary.anchor() else {
+                panic!("semantic failure retains Range shape");
+            };
+            assert_eq!(primary_range.source_id, fixture.version.source_id);
+            assert_eq!(&text[primary_range.start..primary_range.end], primary_text);
+            if code == 223 {
+                assert_eq!(
+                    details.get("import.alias"),
+                    Some(&DiagnosticDetailValue::String("shared".to_owned()))
+                );
+                assert_eq!(
+                    details.get("import.target"),
+                    Some(&DiagnosticDetailValue::List(vec![
+                        DiagnosticDetailValue::String("dep".to_owned()),
+                        DiagnosticDetailValue::String(
+                            if ordinal == 2 { "other" } else { "core" }.to_owned(),
+                        ),
+                    ]))
+                );
+                let alias_offsets = text
+                    .match_indices("shared")
+                    .map(|(start, _)| start)
+                    .collect::<Vec<_>>();
+                assert_eq!(primary.range().start, alias_offsets[ordinal]);
+                assert_eq!(
+                    draft
+                        .secondary_spans()
+                        .iter()
+                        .map(|span| match span.anchor() {
+                            SourceAnchor::Range(range) => *range,
+                            _ => panic!("peer retains Range shape"),
+                        })
+                        .collect::<Vec<_>>(),
+                    alias_offsets
+                        .into_iter()
+                        .enumerate()
+                        .filter_map(|(peer, start)| {
+                            (peer != ordinal).then_some(mizar_session::SourceRange {
+                                source_id: fixture.version.source_id,
+                                start,
+                                end: start + "shared".len(),
+                            })
+                        })
+                        .collect::<Vec<_>>()
+                );
+            }
+        }
+    }
+}
+
+#[test]
+fn frontend_diagnostic_only_import_keeps_distinct_branch_members() {
+    let text = "import dep.{missing, absent};\ndefinition\nend;\n";
+    let fixture = Fixture::new(text.as_bytes());
+    let ids = InMemorySessionIdAllocator::new();
+    let snapshots = SnapshotRegistry::new();
+    let digest = hash(0x60);
+    let artifact = "dep/present.summary.json";
+    let submission = fixture.submit_with_dependencies(
+        &ids,
+        &snapshots,
+        vec![DependencyArtifactRef::new(artifact, digest)],
+        vec![DependencyArtifactIndex::new(
+            PackageId::new("dep"),
+            Vec::new(),
+            vec![DependencyModuleSummaryRef {
+                module: mizar_build::module_index::ModuleId::new(
+                    PackageId::new("dep"),
+                    ModulePath::new("present"),
+                ),
+                artifact: artifact.to_owned(),
+                content_hash: digest,
+            }],
+        )],
+    );
+    let (source, publisher) = execute(&submission, &ids, usize::MAX);
+    assert_eq!(source.status, PhaseStatus::Complete);
+    let result = execute_frontend(
+        &submission,
+        &ids,
+        &publisher,
+        vec![source.output_refs[0].clone()],
+        (source_key(&fixture.version), vec![digest]),
+        Vec::new(),
+        None,
+    );
+    assert_eq!(result.status, PhaseStatus::Recoverable);
+    assert!(result.output_refs.is_empty());
+    assert_eq!(result.diagnostics.len(), 2);
+    let [first, second] = result.diagnostics[1].drafts() else {
+        panic!("one E0221 draft per branch member");
+    };
+    for (ordinal, (draft, member)) in [(first, "missing"), (second, "absent")]
+        .into_iter()
+        .enumerate()
+    {
+        assert_eq!(draft.code().number(), 221);
+        let DiagnosticPrimaryLocation::Span(primary) = draft.primary_location() else {
+            panic!("branch member source span");
+        };
+        let SourceAnchor::Range(member_range) = primary.anchor() else {
+            panic!("retained range anchor");
+        };
+        assert_eq!(&text[member_range.start..member_range.end], member);
+        assert_eq!(draft.secondary_spans().len(), 1);
+        assert_eq!(
+            &text[draft.secondary_spans()[0].range().start..draft.secondary_spans()[0].range().end],
+            "dep"
+        );
+        let details = draft.details().entries();
+        assert_eq!(
+            details.get("import.branch_member"),
+            Some(&DiagnosticDetailValue::Source(*member_range))
+        );
+        assert_eq!(
+            details.get("import.path"),
+            Some(&DiagnosticDetailValue::String(format!("dep.{member}")))
+        );
+        assert_eq!(
+            details.get("import.ordinal"),
+            Some(&DiagnosticDetailValue::Integer(ordinal as i64))
+        );
+    }
+}
+
+#[test]
+fn frontend_mixed_or_malformed_import_diagnostics_do_not_continue_resolution() {
+    for text in [
+        "import std., pkg.math as ;\ndefinition\nend;\n",
+        "import mml.no_such;\ndefinition\n",
+    ] {
+        let fixture = Fixture::new(text.as_bytes());
+        let ids = InMemorySessionIdAllocator::new();
+        let snapshots = SnapshotRegistry::new();
+        let submission = fixture.submit(&ids, &snapshots);
+        let (source, publisher) = execute(&submission, &ids, usize::MAX);
+        assert_eq!(source.status, PhaseStatus::Complete);
+        let result = execute_frontend(
+            &submission,
+            &ids,
+            &publisher,
+            vec![source.output_refs[0].clone()],
+            (source_key(&fixture.version), Vec::new()),
+            Vec::new(),
+            None,
+        );
+        assert!(matches!(
+            result.status,
+            PhaseStatus::Recoverable | PhaseStatus::Fatal
+        ));
+        assert!(result.output_refs.is_empty());
+        assert_eq!(result.diagnostics.len(), 1, "{text}");
+        let drafts = result.diagnostics[0].drafts();
+        assert_eq!(
+            result.diagnostics[0].scope().phase(),
+            DiagnosticPhase::Frontend
+        );
+        assert!(
+            drafts.iter().any(|draft| draft.code().number() == 22),
+            "{text}"
+        );
+        assert!(
+            drafts.iter().any(|draft| draft.code().number() != 22),
+            "{text}"
+        );
+    }
+
+    let fixture = Fixture::new(b"import mml.no_such, dep.core;\ndefinition\nend;\n");
+    let ids = InMemorySessionIdAllocator::new();
+    let snapshots = SnapshotRegistry::new();
+    let artifact = "dep/core.summary.json";
+    let digest = hash(0x60);
+    let submission = fixture.submit_with_dependencies(
+        &ids,
+        &snapshots,
+        vec![DependencyArtifactRef::new(artifact, digest)],
+        vec![DependencyArtifactIndex::new(
+            PackageId::new("dep"),
+            Vec::new(),
+            vec![DependencyModuleSummaryRef {
+                module: mizar_build::module_index::ModuleId::new(
+                    PackageId::new("dep"),
+                    ModulePath::new("core"),
+                ),
+                artifact: artifact.to_owned(),
+                content_hash: digest,
+            }],
+        )],
+    );
+    let (source, publisher) = execute(&submission, &ids, usize::MAX);
+    assert_eq!(source.status, PhaseStatus::Complete);
+    let artifact_root = fixture.root.join("dep-artifacts");
+    fs::create_dir_all(&artifact_root).unwrap();
+    let result = execute_frontend(
+        &submission,
+        &ids,
+        &publisher,
+        vec![source.output_refs[0].clone()],
+        (source_key(&fixture.version), vec![digest]),
+        vec![(PackageId::new("dep"), artifact_root)],
+        None,
+    );
+    assert_eq!(result.status, PhaseStatus::Recoverable);
+    assert!(result.output_refs.is_empty());
+    assert_eq!(result.diagnostics.len(), 1);
+    let codes = result.diagnostics[0]
+        .drafts()
+        .iter()
+        .map(|draft| draft.code().number())
+        .collect::<Vec<_>>();
+    assert!(
+        codes.contains(&22),
+        "unresolved path keeps E0022: {codes:?}"
+    );
+    assert!(
+        codes.contains(&23),
+        "missing summary keeps E0023: {codes:?}"
+    );
 }
 
 #[test]

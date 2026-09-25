@@ -470,6 +470,45 @@ fn registry_dispatch_statuses_map_to_scheduler_outcomes_without_publication() {
 }
 
 #[test]
+fn recoverable_frontend_diagnostics_do_not_release_semantic_dependents() {
+    let ids = InMemorySessionIdAllocator::new();
+    let snapshots = SnapshotRegistry::new();
+    let calls = Arc::new(Mutex::new(Vec::new()));
+    let mut driver = CompilerDriver::new(executable_scheduler_fixture_registry_with_statuses(
+        calls.clone(),
+        &[(PipelinePhase::Frontend, PhaseStatus::Recoverable)],
+    ));
+    let mut input = submit_input(vec![WorkspaceSourceFile::new("src/main.miz", "main.miz")]);
+    input.phase_dispatch_inputs = Some(Box::new(FixturePhaseInputs));
+    let submission = driver.submit(request(83), &ids, &snapshots, input).unwrap();
+
+    let frontend = task_id_for_phase(&submission, PipelinePhase::Frontend);
+    let module_resolve = task_id_for_phase(&submission, PipelinePhase::ModuleResolve);
+    let artifact_commit = task_id_for_phase(&submission, PipelinePhase::ArtifactCommit);
+    assert_eq!(state_for_task(&submission, &frontend), TaskState::Failed);
+    assert_eq!(
+        state_for_task(&submission, &module_resolve),
+        TaskState::Blocked
+    );
+    assert_eq!(
+        state_for_task(&submission, &artifact_commit),
+        TaskState::Blocked
+    );
+    assert_eq!(
+        submission.session.state,
+        BuildSessionState::Finished(BuildSessionOutcome::Failed)
+    );
+    let run = submission.scheduler_run.as_ref().unwrap();
+    assert!(run.phase_results[&frontend][0].output_refs.is_empty());
+    assert!(!run.phase_results.contains_key(&module_resolve));
+    assert!(!run.phase_results.contains_key(&artifact_commit));
+    let calls = calls.lock().unwrap();
+    assert!(calls.iter().any(|service| service == "Frontend"));
+    assert!(!calls.iter().any(|service| service == "ModuleResolver"));
+    assert!(!calls.iter().any(|service| service == "ArtifactService"));
+}
+
+#[test]
 fn failed_module_index_submission_is_stored_and_preserves_lane_currentness() {
     let ids = InMemorySessionIdAllocator::new();
     let snapshots = SnapshotRegistry::new();
