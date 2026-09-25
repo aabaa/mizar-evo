@@ -284,7 +284,7 @@ unresolved import は first-class な resolver output であり、欠落 entry �
 - failure までに見つかった partial package、namespace、module candidate。
 - 該当する場合、parser から継承した recovery state。
 
-failure class は public resolver diagnostic code が仕様化されるまで crate-local である。
+仕様 §22.3.5 は import の意味 6 件に E0220～E0225 を割り当てるが、registry 採用と公開 resolver bridge までは record を crate-local に保つ。
 必須 class には unknown namespace/package、unknown module、package root から escape する
 relative import、malformed recovered directive、duplicate alias、alias/root conflict、
 unavailable dependency summary、illegal import candidate state、import cycle が含まれる。
@@ -296,6 +296,23 @@ failure と cycle failure は、別個の後続または graph-layer record に�
 `ResolvedAst` import table は task R-004 由来の最小 unresolved import shape をまだ含む。
 完全な `ResolvedImports` integration は、ここで創作せず、後続の source-walk と
 import/name task と pair する。
+
+## 公開診断射影の前提
+
+[仕様 §22.3.5](../../../spec/ja/22.error_handling_and_diagnostics.md#2235-モジュール-import-解決) が draft 件数、source 範囲、識別、batch 全体の変換規則を所有する。producer は実際の現行 parser 出力を読込み済み本文、snapshot、module 識別子に結合する。`from_surface_ast` は構造を調べるが本文を認証しない。循環射影は参加する全 source と保持済み graph edge も必要とする。builder の既存の offset 優先 cycle 順序は変えない。
+
+下位テストでは実ソースを `MizarParserSeam` で解析し、AST import 収集、型付き module index による解決、graph 構築を検査できるが、driver 公開の証明にはならない。
+
+| 意味 | ソース seed と必要な index 設定 |
+|---|---|
+| E0220 | `import mml.no_such;`、`mml` root 束縛なし |
+| E0221 | `import dep.missing;`、`dep` を package に束縛し `missing` module を登録しない |
+| E0222 | root module `app.main` から `import ..common;` |
+| E0223 | `import dep.logic as shared, .util as shared;`、`dep` 束縛と `dep.logic`・local `app.util` を登録 |
+| E0224 | `import dep.logic as mml;`、`dep` 束縛と `dep.logic` を登録 |
+| E0225 | `app.main` が `.util`、`app.util` が `.main` を import。別途 `app.main` が `.main` を import。local module 2 件を登録 |
+
+同じ directive 範囲を共有する不在の `dep` 分岐 member 2 件、別名 peer の重複、source をまたぐ循環の結合、自己循環、入力順の入替えも検査する。comment と複数 byte 文字の後の正確な source slice を確認し、他の SourceId、逆転・範囲外・UTF-8 境界外の range、source 欠落、snapshot 混在、未知・未割当 class、draft 構築失敗では batch の部分発行を拒否する。`mml` seed は仕様 §12.2.1 に従う。現行 resolver はその予約 root として `mml` ではなく `std` を認識しており、これはテストの `source_drift` 前提であって新しい言語規則ではない。既存 source corpus が示すのは E0221/E0223 の意味だけで、公開 code はない。A28 Frontend が封印するのは正常出力だけであり、字句の事前解決が失敗 import AST の封印前に E0022 を発行し得る。公開 negative test には owner 承認済みの真正な意味入力経路、完全な workspace 字句 summary producer、registry/bridge 採用が必要であり、この設計はそれらの挙動を変えない。
 
 ## determinism
 

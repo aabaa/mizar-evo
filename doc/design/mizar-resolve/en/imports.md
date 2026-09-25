@@ -320,8 +320,8 @@ record preserves:
   failure;
 - recovery state inherited from the parser when applicable.
 
-Failure classes are crate-local until public resolver diagnostic codes are
-specified. Required classes include unknown namespace/package, unknown module,
+Spec §22.3.5 assigns E0220–E0225 to six import meanings; records remain
+crate-local until registry adoption and a public resolver bridge exist. Required classes include unknown namespace/package, unknown module,
 relative import escaping the package root, malformed recovered directive,
 duplicate alias, alias/root conflict, unavailable dependency summary, illegal
 import candidate state, and import cycle.
@@ -333,6 +333,23 @@ Dependency-summary and cycle failures remain separate later/graph-layer records.
 The existing `ResolvedAst` import table still contains the minimal unresolved
 import shape from task R-004; full `ResolvedImports` integration is paired with
 the later source-walk and import/name tasks rather than invented here.
+
+## Public Diagnostic Projection Prerequisites
+
+[Spec §22.3.5](../../../spec/en/22.error_handling_and_diagnostics.md#2235-module-import-resolution) owns draft cardinality, source ranges, identity and atomic conversion policy. The producer must use actual current parser output bound to its loaded source, snapshot and module identity; `from_surface_ast` checks structure but not text authenticity. Cycle projection also needs every participating source and its retained graph edge, while the builder's existing offset-first cycle ordering remains unchanged.
+
+Lower-stage tests can parse real source with `MizarParserSeam`, collect AST imports, resolve them through a typed module index, and build a graph without claiming driver publication:
+
+| Meaning | Source seed and required index setup |
+|---|---|
+| E0220 | `import mml.no_such;`; no `mml` root binding |
+| E0221 | `import dep.missing;`; bind `dep` to a package but omit its `missing` module |
+| E0222 | `import ..common;` from root module `app.main` |
+| E0223 | `import dep.logic as shared, .util as shared;`; bind `dep`, index `dep.logic` and local `app.util` |
+| E0224 | `import dep.logic as mml;`; bind `dep`, index `dep.logic` |
+| E0225 | `app.main` imports `.util` and `app.util` imports `.main`; separately, `app.main` imports `.main`; index both local modules |
+
+Also exercise two absent `dep` branch members sharing one directive range, alias-peer multiplicity, cross-source cycle binding, self-cycle, and input permutation. Assert exact source slices after comments and multibyte text; reject foreign SourceIds, reversed/out-of-bounds/non-UTF-8 ranges, missing sources, mixed snapshots, unknown/unallocated classes and failed draft construction with no partial batch. The `mml` seeds reflect spec §12.2.1; the current resolver recognizes `std` instead of `mml` as that reserved root, a `source_drift` prerequisite to those tests, not a new language rule. Existing source corpus covers E0221/E0223 meanings only and no public codes. A28 Frontend seals clean output only, and lexical pre-resolution can emit E0022 before a failed-import AST is sealed. Public negative tests therefore require an owner-approved authentic semantic input route plus a complete workspace lexical-summary producer and registry/bridge adoption; this design changes none of those behaviors.
 
 ## Determinism
 
