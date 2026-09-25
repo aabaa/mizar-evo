@@ -896,10 +896,17 @@ impl PhaseService for FrontendService {
                     leaf_module.package.as_str(),
                     leaf_module.path.as_str()
                 ));
-                let [source_parent] = leaf.lineage().parents.as_slice() else {
-                    return None;
-                };
-                let source_lineage = publisher.registry().output_lineage(*source_parent)?;
+                let parent_lineages = leaf
+                    .lineage()
+                    .parents
+                    .iter()
+                    .map(|parent| publisher.registry().output_lineage(*parent))
+                    .collect::<Option<Vec<_>>>()?;
+                let source_lineage = unique(
+                    parent_lineages
+                        .iter()
+                        .filter(|parent| parent.phase == IrPipelinePhase::new("SourceLoad")),
+                )?;
                 let leaf_source_key = source_input_hash(leaf_version);
                 if leaf_module.package != module.package
                     || leaf_module == *module
@@ -938,9 +945,86 @@ impl PhaseService for FrontendService {
                     || output.ast.as_ref().is_none_or(|ast| {
                         ast.node_views().any(|view| view.as_export_item().is_some())
                     })
-                    || authenticated_import_candidates(&output, leaf_source)
-                        .is_none_or(|candidates| !candidates.is_empty())
                 {
+                    return None;
+                }
+                let candidates = authenticated_import_candidates(&output, leaf_source)?;
+                let index = mizar_resolve::module_index::ModuleIndexInput::new(inputs.module_index);
+                let resolution = mizar_resolve::imports::ImportPathResolver::new(index)
+                    .resolve(&index.resolver_module_id(&leaf_module), &candidates);
+                if !resolution.unresolved().is_empty() {
+                    return None;
+                }
+                let mut targets = Vec::new();
+                for import in resolution.resolved() {
+                    let target = IndexedModuleId::new(
+                        import.target().package().clone(),
+                        import.target().path().clone(),
+                    );
+                    let entry = unique(
+                        inputs
+                            .module_index
+                            .modules
+                            .iter()
+                            .filter(|entry| entry.module == target),
+                    )?;
+                    if target.package != leaf_module.package
+                        || target == leaf_module
+                        || !matches!(entry.location, ModuleIndexLocation::WorkspaceFile { .. })
+                    {
+                        return None;
+                    }
+                    let unit = IrWorkUnit::new(format!(
+                        "{:?}:{:?}",
+                        target.package.as_str(),
+                        target.path.as_str()
+                    ));
+                    if !targets.contains(&unit) {
+                        targets.push(unit);
+                    }
+                }
+                for parent in &parent_lineages {
+                    if parent.output == source_lineage.output {
+                        continue;
+                    }
+                    if parent.snapshot != snapshot
+                        || parent.phase != IrPipelinePhase::new("Frontend")
+                        || parent.output_kind != OutputKind::new("FrontendOutput")
+                    {
+                        return None;
+                    }
+                    let position = targets.iter().position(|unit| unit == &parent.work_unit)?;
+                    targets.remove(position);
+                }
+                if !targets.is_empty() {
+                    return None;
+                }
+                let mut named_inputs = vec![
+                    NamedInputHash {
+                        name: "active-lexical-environment".to_owned(),
+                        domain: ACTIVE_LEXICAL_ENVIRONMENT_CACHE_KEY_VERSION.to_owned(),
+                        digest: output.cache_keys.active_lexical_environment.stable_hash(),
+                    },
+                    NamedInputHash {
+                        name: "tokens".to_owned(),
+                        domain: TOKEN_STREAM_CACHE_KEY_VERSION.to_owned(),
+                        digest: output.cache_keys.tokens.stable_hash(),
+                    },
+                ];
+                for (ordinal, digest) in dependencies.iter().enumerate() {
+                    named_inputs.push(NamedInputHash {
+                        name: format!("dependency.{ordinal}"),
+                        domain: "mizar-frontend/dependency-summary/v1".to_owned(),
+                        digest: *digest,
+                    });
+                }
+                named_inputs.sort_by(|left, right| {
+                    left.name
+                        .cmp(&right.name)
+                        .then_with(|| left.domain.cmp(&right.domain))
+                        .then_with(|| left.digest.as_bytes().cmp(right.digest.as_bytes()))
+                });
+                if leaf.lineage().named_input_hashes != named_inputs {
                     return None;
                 }
                 let ast = output.ast.as_ref()?;

@@ -285,7 +285,7 @@ and frontend tasks may still exist, but final semantic tasks must be marked
 with missing coverage or conservatively gated. The graph must not invent import
 edges from package names, aliases, source paths, or local heuristics.
 
-For Complete coverage only, each ImportSummary edge between workspace modules also makes the importing Frontend depend on the imported Frontend. Other edge kinds and coverage modes add no lexical ordering. This scheduling claim is not evidence of parsed imports or usable lexical summaries; the consuming service validates actual retained outputs and supported leaf shape. Existing semantic edges and graph rejection rules remain unchanged.
+For Complete coverage only, each ImportSummary edge between workspace modules also makes the importing Frontend depend on the imported Frontend. Other edge kinds and coverage modes add no lexical ordering. This scheduling claim is not evidence of parsed imports or usable lexical summaries; the consuming service validates actual retained outputs and supported source summary profile. Existing semantic edges and graph rejection rules remain unchanged.
 
 ### VC Descriptors
 

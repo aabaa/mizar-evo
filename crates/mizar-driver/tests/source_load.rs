@@ -511,13 +511,22 @@ impl WorkspaceLeafFixture {
             .source_inputs
             .versions
             .clone();
-        assert_eq!(request.source_inputs.versions.len(), 2);
+        assert!(matches!(request.source_inputs.versions.len(), 2 | 3));
+        let mut files = vec![
+            WorkspaceSourceFile::new("src/main.miz", "main.miz"),
+            WorkspaceSourceFile::new("src/leaf.miz", "leaf.miz"),
+        ];
+        if request
+            .source_inputs
+            .versions
+            .iter()
+            .any(|version| version.module_path.as_str() == "base")
+        {
+            files.push(WorkspaceSourceFile::new("src/base.miz", "base.miz"));
+        }
         input.source_layout = StaticSourceLayout::new(vec![WorkspaceSourcePackage {
             package_id: PackageId::new("alpha"),
-            files: vec![
-                WorkspaceSourceFile::new("src/main.miz", "main.miz"),
-                WorkspaceSourceFile::new("src/leaf.miz", "leaf.miz"),
-            ],
+            files,
         }]);
         input.dependency_overlay = overlay;
         (request, input)
@@ -880,39 +889,121 @@ fn supplied_workspace_leaf_rejects_reexports_and_unsupported_lexical_shapes() {
 }
 
 #[test]
-fn supplied_workspace_leaf_rejects_a_clean_leaf_that_imports_another_module() {
-    let fixture = WorkspaceLeafFixture::new(
-        b"import alpha.leaf;\ndefinition\nend;\n",
-        b"import alpha.base;\ndefinition\nend;\n",
-        Some(b"definition\nend;\n"),
-        usize::MAX,
-    );
-    let base_source = fixture.source("base");
-    assert_eq!(base_source.status, PhaseStatus::Complete);
-    let base_frontend = fixture.frontend("base", base_source.output_refs);
-    assert_eq!(base_frontend.status, PhaseStatus::Complete);
-    let leaf_source = fixture.source("leaf");
-    assert_eq!(leaf_source.status, PhaseStatus::Complete);
-    let leaf_frontend = fixture.frontend(
-        "leaf",
-        vec![
-            leaf_source.output_refs[0].clone(),
-            base_frontend.output_refs[0].clone(),
-        ],
-    );
-    assert_eq!(leaf_frontend.status, PhaseStatus::Complete);
-    assert!(leaf_frontend.diagnostics.is_empty());
-    let own_source = fixture.source("main");
-    assert_eq!(own_source.status, PhaseStatus::Complete);
-    let importer = fixture.frontend(
-        "main",
-        vec![
-            own_source.output_refs[0].clone(),
-            leaf_frontend.output_refs[0].clone(),
-        ],
-    );
-    assert_eq!(importer.status, PhaseStatus::Blocking);
-    assert!(importer.output_refs.is_empty());
+fn scheduled_workspace_intermediate_consumes_only_its_own_public_symbols() {
+    let importer = b"import alpha.leaf;\ntheorem T: a arrange b = a;\n";
+    let intermediate = b"import alpha.base;\ndefinition\nlet x, y be set;\npublic func Infix: x arrange y -> set equals x;\nend;\ntheorem U: a combine b = a;\n";
+    let mut lexical_hashes = Vec::new();
+    for ancestor in [
+        b"definition\nlet x, y be set;\npublic func Infix: x combine y -> set equals x;\nend;\n".as_slice(),
+        b"definition\nlet x, y be set;\npublic func Infix: x combine y -> set equals x;\npublic func Spare: x spare y -> set equals x;\nend;\n".as_slice(),
+    ] {
+        let fixture = WorkspaceLeafFixture::new(importer, intermediate, Some(ancestor), usize::MAX);
+        let mut overlay = complete_leaf_import_overlay();
+        overlay.edges.push(ModuleDependencyEdge::new(
+            mizar_build::module_index::ModuleId::new(PackageId::new("alpha"), ModulePath::new("leaf")),
+            mizar_build::module_index::ModuleId::new(PackageId::new("alpha"), ModulePath::new("base")),
+            ModuleDependencyKind::ImportSummary,
+        ));
+        let (request, mut input) = fixture.scheduled_request(overlay);
+        input.worker_count = 4;
+        let mut driver = fixture.scheduled_driver();
+        let submission = driver
+            .submit(request, &fixture.ids, &SnapshotRegistry::new(), input)
+            .unwrap();
+        assert_eq!(
+            submission.session.captured.snapshot.id,
+            fixture.submission.session.captured.snapshot.id
+        );
+        assert_eq!(
+            submission.status,
+            DriverSubmissionStatus::BlockedByMissingPhaseServices
+        );
+        let run = submission.scheduler_run.as_ref().unwrap();
+        for module in ["base", "leaf", "main"] {
+            let task = fixture.task(TaskKind::Frontend, module);
+            assert_eq!(run.phase_results.get(&task.id).unwrap()[0].status, PhaseStatus::Complete, "{module}");
+        }
+        let base = &run.phase_results[&fixture.task(TaskKind::Frontend, "base").id][0].output_refs[0];
+        let leaf = &run.phase_results[&fixture.task(TaskKind::Frontend, "leaf").id][0].output_refs[0];
+        let main = &run.phase_results[&fixture.task(TaskKind::Frontend, "main").id][0].output_refs[0];
+        let leaf_source = &run.phase_results[&fixture.task(TaskKind::SourceLoad, "leaf").id][0].output_refs[0];
+        let main_source = &run.phase_results[&fixture.task(TaskKind::SourceLoad, "main").id][0].output_refs[0];
+        let leaf_lineage = fixture.publisher.registry().output_lineage(leaf.output()).unwrap();
+        assert_eq!(leaf_lineage.parents.len(), 2);
+        assert!(leaf_lineage.parents.contains(&leaf_source.output()));
+        assert!(leaf_lineage.parents.contains(&base.output()));
+        let main_lineage = fixture.publisher.registry().output_lineage(main.output()).unwrap();
+        assert_eq!(main_lineage.parents.len(), 2);
+        assert!(main_lineage.parents.contains(&main_source.output()));
+        assert!(main_lineage.parents.contains(&leaf.output()));
+        assert!(!main_lineage.parents.contains(&base.output()));
+        let mut active_hashes = Vec::new();
+        for (output, spelling) in [(leaf, "combine"), (main, "arrange")] {
+            let typed = fixture.publisher.storage()
+                .typed_handle::<FrontendOutput<<MizarParserSeam as ParserSeam>::Ast>>(
+                    output, &OutputKind::new("FrontendOutput")).unwrap();
+            let loaded = fixture.publisher.storage().get(&typed).unwrap();
+            assert!(loaded.tokens.tokens().iter().any(|token| {
+                token.text.as_ref() == spelling && token.kind == TokenKind::UserSymbol
+            }));
+            active_hashes.push(loaded.cache_keys.active_lexical_environment.stable_hash());
+        }
+        lexical_hashes.push((active_hashes[0], active_hashes[1]));
+    }
+    assert_ne!(lexical_hashes[0].0, lexical_hashes[1].0);
+    assert_eq!(lexical_hashes[0].1, lexical_hashes[1].1);
+}
+
+#[test]
+fn supplied_workspace_intermediate_rejects_reexport_and_changed_captured_import_index() {
+    for mode in ["reexport", "missing_import_index"] {
+        let intermediate = if mode == "reexport" {
+            b"import alpha.base;\nexport alpha.base;\ndefinition\nlet x, y be set;\npublic func Infix: x arrange y -> set equals x;\nend;\ntheorem U: a combine b = a;\n".as_slice()
+        } else {
+            b"import alpha.base;\ndefinition\nlet x, y be set;\npublic func Infix: x arrange y -> set equals x;\nend;\ntheorem U: a combine b = a;\n".as_slice()
+        };
+        let mut fixture = WorkspaceLeafFixture::new(
+            b"import alpha.leaf;\ntheorem T: a arrange b = a;\n",
+            intermediate,
+            Some(b"definition\nlet x, y be set;\npublic func Infix: x combine y -> set equals x;\nend;\n"),
+            usize::MAX,
+        );
+        let base_source = fixture.source("base");
+        assert_eq!(base_source.status, PhaseStatus::Complete);
+        let base_frontend = fixture.frontend("base", base_source.output_refs);
+        assert_eq!(base_frontend.status, PhaseStatus::Complete);
+        let leaf_source = fixture.source("leaf");
+        assert_eq!(leaf_source.status, PhaseStatus::Complete);
+        let leaf_frontend = fixture.frontend(
+            "leaf",
+            vec![
+                leaf_source.output_refs[0].clone(),
+                base_frontend.output_refs[0].clone(),
+            ],
+        );
+        assert_eq!(leaf_frontend.status, PhaseStatus::Complete, "{mode}");
+        assert!(leaf_frontend.diagnostics.is_empty(), "{mode}");
+        let main_source = fixture.source("main");
+        assert_eq!(main_source.status, PhaseStatus::Complete);
+        if mode == "missing_import_index" {
+            fixture
+                .submission
+                .module_index
+                .as_mut()
+                .unwrap()
+                .modules
+                .retain(|entry| entry.module.path.as_str() != "base");
+        }
+        let result = fixture.frontend(
+            "main",
+            vec![
+                main_source.output_refs[0].clone(),
+                leaf_frontend.output_refs[0].clone(),
+            ],
+        );
+        assert_eq!(result.status, PhaseStatus::Blocking, "{mode}");
+        assert!(result.output_refs.is_empty(), "{mode}");
+    }
 }
 
 #[test]
