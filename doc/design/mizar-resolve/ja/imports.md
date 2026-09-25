@@ -312,7 +312,7 @@ import/name task と pair する。
 | E0224 | `import dep.logic as mml;`、`dep` 束縛と `dep.logic` を登録 |
 | E0225 | `app.main` が `.util`、`app.util` が `.main` を import。別途 `app.main` が `.main` を import。local module 2 件を登録 |
 
-同じ directive 範囲を共有する不在の `dep` 分岐 member 2 件、別名 peer の重複、source をまたぐ循環の結合、自己循環、入力順の入替えも検査する。comment と複数 byte 文字の後の正確な source slice を確認し、他の SourceId、逆転・範囲外・UTF-8 境界外の range、source 欠落、snapshot 混在、未知・未割当 class、draft 構築失敗では batch の部分発行を拒否する。`mml` seed は仕様 §12.2.1 に従う。現行 resolver はその予約 root として `mml` ではなく `std` を認識しており、これはテストの `source_drift` 前提であって新しい言語規則ではない。既存 source corpus が示すのは E0221/E0223 の意味だけで、公開 code はない。A28 Frontend が封印するのは正常出力だけであり、字句の事前解決が失敗 import AST の封印前に E0022 を発行し得る。公開 negative test には owner 承認済みの真正な意味入力経路、完全な workspace 字句 summary producer、registry/bridge 採用が必要であり、この設計はそれらの挙動を変えない。
+同じ directive 範囲を共有する不在の `dep` 分岐 member 2 件、別名 peer の重複、source をまたぐ循環の結合、自己循環、入力順の入替えも検査する。comment と複数 byte 文字の後の正確な source slice を確認し、他の SourceId、逆転・範囲外・UTF-8 境界外の range、source 欠落、snapshot 混在、未知・未割当 class、draft 構築失敗では batch の部分発行を拒否する。`mml` seed は仕様 §12.2.1 に従う。既存 source corpus が示すのは E0221/E0223 の意味だけで、公開 code はない。A28 Frontend が封印するのは正常出力だけであり、字句の事前解決が失敗 import AST の封印前に E0022 を発行し得る。公開 negative test には owner 承認済みの真正な意味入力経路、完全な workspace 字句 summary producer、registry/bridge 採用が必要であり、この設計はそれらの挙動を変えない。
 
 ## determinism
 

@@ -193,7 +193,7 @@ namespace candidate は次の順で解決する。
    `UnresolvedImportAlias` dependency、または duplicate import record が複数の
    canonical target を保持する場合は `AmbiguousImportAlias` を記録する。root /
    package / current-package lookup へ fall through しない。
-3. reserved namespace root（`std`、`pub`、`pkg`、`dev`、`ext`）は longest root
+3. reserved namespace root（`mml`、`pub`、`pkg`、`dev`、`ext`）は longest root
    binding で照合する。binding が存在しない場合、root の後の first segment、suffix
    が空の場合は root 自体を failing segment とする。
 4. package-name namespace binding は longest-prefix matching を使い、

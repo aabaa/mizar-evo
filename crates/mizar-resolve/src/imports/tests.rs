@@ -117,6 +117,85 @@ fn parsed_import_candidates_preserve_real_prelude_order_and_provenance() {
 }
 
 #[test]
+fn parsed_imports_reserve_mml_but_leave_std_ordinary() {
+    let packages = vec![
+        package("app"),
+        package("dep"),
+        package("std"),
+        package("mml_pkg"),
+    ];
+    let bindings = vec![
+        namespace(NamespaceRoot::PackageName, &["app"], "app"),
+        namespace(NamespaceRoot::PackageName, &["dep"], "dep"),
+        namespace(NamespaceRoot::PackageName, &["std"], "std"),
+        namespace(NamespaceRoot::Std, &[], "mml_pkg"),
+    ];
+    let modules = vec![
+        workspace_module("app", "main"),
+        workspace_module("app", "mml.core"),
+        workspace_module("app", "std.core"),
+        workspace_module("dep", "logic"),
+        workspace_module("dep", "mml"),
+        workspace_module("std", "core"),
+        workspace_module("mml_pkg", "core"),
+    ];
+    let bound = WorkspaceStubModuleIndexProvider::new(
+        packages.clone(),
+        bindings.clone(),
+        modules.clone(),
+        Vec::new(),
+    );
+    let unbound = WorkspaceStubModuleIndexProvider::new(
+        packages,
+        bindings[..3].to_vec(),
+        modules,
+        Vec::new(),
+    );
+    let resolve = |text: &str, provider: &WorkspaceStubModuleIndexProvider| {
+        let ast = parsed_import_ast(text);
+        let candidates = ImportPathCandidate::from_surface_ast(&ast).unwrap();
+        assert_eq!(candidates.len(), 1);
+        ImportPathResolver::new(ModuleIndexInput::new(provider))
+            .resolve(&module_id("app", "main"), &candidates)
+    };
+
+    let mml = resolve("import mml.core;", &bound);
+    assert_eq!(mml.resolved()[0].target(), &module_id("mml_pkg", "core"));
+    assert_eq!(
+        unresolved_classes(&resolve("import mml.core;", &unbound)),
+        [ImportPathFailureClass::UnknownNamespaceOrPackage]
+    );
+    for text in ["import dep.logic as mml;", "import dep.mml;"] {
+        assert_eq!(
+            unresolved_classes(&resolve(text, &bound)),
+            [ImportPathFailureClass::AliasRootConflict],
+            "{text}"
+        );
+    }
+    let std_package = resolve("import std.core;", &bound);
+    assert_eq!(
+        std_package.resolved()[0].target(),
+        &module_id("std", "core")
+    );
+    let std_alias = resolve("import dep.logic as std;", &bound);
+    assert_eq!(std_alias.resolved()[0].alias(), "std");
+    let local = WorkspaceStubModuleIndexProvider::new(
+        vec![package("app")],
+        vec![namespace(NamespaceRoot::PackageName, &["app"], "app")],
+        vec![
+            workspace_module("app", "main"),
+            workspace_module("app", "std.core"),
+        ],
+        Vec::new(),
+    );
+    let std_local = resolve("import std.core;", &local);
+    assert_eq!(
+        std_local.resolved()[0].target(),
+        &module_id("app", "std.core")
+    );
+}
+
+#[test]
 fn parsed_import_candidates_reject_real_incomplete_framing_and_late_recovery() {
     for text in [
         "import dep.logic",
@@ -719,7 +798,7 @@ fn namespace_bindings_win_over_package_local_fallback() {
                 3,
             ),
             path_candidate(
-                &["std", "missing"],
+                &["mml", "missing"],
                 ImportPathPrefix::Unprefixed,
                 None,
                 50,
@@ -830,7 +909,7 @@ fn duplicate_aliases_and_reserved_aliases_are_unresolved_deterministically() {
             path_candidate(
                 &["dep", "logic"],
                 ImportPathPrefix::Unprefixed,
-                Some("std"),
+                Some("mml"),
                 50,
                 54,
                 4,
@@ -888,7 +967,7 @@ fn duplicate_aliases_and_reserved_aliases_are_unresolved_deterministically() {
         vec![
             (Some("Shared".to_owned()), Some((15, 21)), Some("dep:logic")),
             (Some("Shared".to_owned()), Some((25, 31)), Some("app:util")),
-            (Some("std".to_owned()), Some((55, 58)), None),
+            (Some("mml".to_owned()), Some((55, 58)), None),
         ]
     );
     assert_eq!(
@@ -994,7 +1073,7 @@ fn fixture_provider() -> WorkspaceStubModuleIndexProvider {
             workspace_module("app", "dir.sibling"),
             workspace_module("app", "dep.logic"),
             workspace_module("app", "dep.missing"),
-            workspace_module("app", "std.missing"),
+            workspace_module("app", "mml.missing"),
             workspace_module("app", "facade"),
             workspace_module("app", "alpha"),
             workspace_module("app", "beta"),
@@ -1101,7 +1180,7 @@ fn module_key(module: &ModuleId) -> &str {
         ("app", "dir.sibling") => "app:dir.sibling",
         ("app", "dep.logic") => "app:dep.logic",
         ("app", "dep.missing") => "app:dep.missing",
-        ("app", "std.missing") => "app:std.missing",
+        ("app", "mml.missing") => "app:mml.missing",
         ("app", "facade") => "app:facade",
         ("app", "alpha") => "app:alpha",
         ("app", "beta") => "app:beta",

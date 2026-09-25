@@ -1576,7 +1576,7 @@ fn name_diagnostics_include_reserved_roots_in_normalized_prefixes() {
         &[],
         &[
             candidate(source_id, 0, 10, &["pub", "math", "missing"]),
-            candidate(source_id, 1, 40, &["std", "missing"]),
+            candidate(source_id, 1, 40, &["mml", "missing"]),
         ],
     );
 
@@ -1592,7 +1592,7 @@ fn name_diagnostics_include_reserved_roots_in_normalized_prefixes() {
         prefixes,
         vec![
             vec!["pub".to_owned(), "math".to_owned()],
-            vec!["std".to_owned()],
+            vec!["mml".to_owned()],
         ]
     );
 }
@@ -2106,7 +2106,7 @@ fn resolver_resolves_alias_roots_and_package_names_deterministically() {
         candidate(source_id, 1, 20, &["pub", "math", "algebra", "group"]),
         candidate(source_id, 2, 50, &["dep", "logic"]),
         candidate(source_id, 3, 70, &["util"]),
-        candidate(source_id, 4, 90, &["std", "core"]),
+        candidate(source_id, 4, 90, &["mml", "core"]),
         candidate(source_id, 5, 105, &["pkg", "vendor", "lib"]),
         candidate(source_id, 6, 125, &["dev", "sandbox", "tools"]),
         candidate(source_id, 7, 150, &["ext", "mirror", "logic"]),
@@ -2143,7 +2143,7 @@ fn resolver_resolves_alias_roots_and_package_names_deterministically() {
             ("dep.logic".to_owned(), "dep".to_owned(), "logic".to_owned()),
             ("util".to_owned(), "app".to_owned(), "util".to_owned()),
             (
-                "std.core".to_owned(),
+                "mml.core".to_owned(),
                 "stdpkg".to_owned(),
                 "core".to_owned()
             ),
@@ -2202,6 +2202,109 @@ fn resolver_resolves_alias_roots_and_package_names_deterministically() {
         NamespaceResolutionOrigin::ReservedRoot { root: NamespaceRoot::Ext, matched_prefix, .. }
             if matched_prefix == &vec!["mirror".to_owned()]
     ));
+}
+
+#[test]
+fn namespace_root_spelling_reserves_mml_and_leaves_std_ordinary() {
+    let source_id = source_id();
+    let current = module_id("app", "main");
+    let provider = WorkspaceStubModuleIndexProvider::new(
+        vec![
+            package("app"),
+            package("dep"),
+            package("std"),
+            package("mml_pkg"),
+        ],
+        vec![
+            namespace(NamespaceRoot::PackageName, &["app"], "app"),
+            namespace(NamespaceRoot::PackageName, &["dep"], "dep"),
+            namespace(NamespaceRoot::PackageName, &["std"], "std"),
+            namespace(NamespaceRoot::Std, &[], "mml_pkg"),
+        ],
+        vec![
+            workspace_module("app", "main"),
+            workspace_module("app", "mml.core"),
+            dependency_module("dep", "logic"),
+            dependency_module("std", "core"),
+            dependency_module("mml_pkg", "core"),
+        ],
+        Vec::new(),
+    );
+    let input = ModuleIndexInput::new(&provider);
+    let paths = [
+        candidate(source_id, 0, 0, &["mml", "core"]),
+        candidate(source_id, 1, 20, &["std", "core"]),
+    ];
+    let resolution = NamespaceResolver::new(input).resolve(&current, &[], &[], &paths);
+    assert!(resolution.unresolved().is_empty());
+    assert_eq!(
+        resolution.resolved()[0].target(),
+        &module_id("mml_pkg", "core")
+    );
+    assert_eq!(resolution.resolved()[1].target(), &module_id("std", "core"));
+    assert!(matches!(
+        resolution.resolved()[0].origin(),
+        NamespaceResolutionOrigin::ReservedRoot {
+            root: NamespaceRoot::Std,
+            ..
+        }
+    ));
+
+    let alias_import = ImportPathResolver::new(input).resolve(
+        &current,
+        &[ImportPathCandidate::new(
+            vec!["dep".to_owned(), "logic".to_owned()],
+            ImportPathPrefix::Unprefixed,
+            Some("std".to_owned()),
+            range(source_id, 60, 79),
+            0,
+        )],
+    );
+    assert!(alias_import.unresolved().is_empty());
+    let alias = NamespaceResolver::new(input).resolve(
+        &current,
+        alias_import.resolved(),
+        alias_import.unresolved(),
+        &[candidate(source_id, 0, 80, &["std"])],
+    );
+    assert_eq!(alias.resolved()[0].target(), &module_id("dep", "logic"));
+    assert!(matches!(
+        alias.resolved()[0].origin(),
+        NamespaceResolutionOrigin::ImportAlias { alias, .. } if alias == "std"
+    ));
+
+    let local_provider = WorkspaceStubModuleIndexProvider::new(
+        vec![package("app")],
+        vec![namespace(NamespaceRoot::PackageName, &["app"], "app")],
+        vec![
+            workspace_module("app", "main"),
+            workspace_module("app", "std.local"),
+            workspace_module("app", "mml.core"),
+        ],
+        Vec::new(),
+    );
+    let local = NamespaceResolver::new(ModuleIndexInput::new(&local_provider)).resolve(
+        &current,
+        &[],
+        &[],
+        &[
+            candidate(source_id, 0, 90, &["std", "local"]),
+            candidate(source_id, 1, 110, &["mml", "core"]),
+        ],
+    );
+    assert_eq!(local.resolved().len(), 1);
+    assert_eq!(local.resolved()[0].target(), &module_id("app", "std.local"));
+    assert_eq!(local.unresolved().len(), 1);
+    assert_eq!(
+        local.unresolved()[0].class(),
+        NamespaceFailureClass::UnknownNamespaceSegment
+    );
+    assert_eq!(
+        local.unresolved()[0]
+            .failed_segment()
+            .map(NamespacePathSegment::spelling),
+        Some("core")
+    );
 }
 
 #[test]
@@ -2621,7 +2724,7 @@ fn stale_empty_prefix_reserved_root_bindings_report_the_root_segment() {
     );
     let input = ModuleIndexInput::new(&provider);
     let current = module_id("app", "main");
-    let candidates = vec![candidate(source_id, 0, 0, &["std", "core"])];
+    let candidates = vec![candidate(source_id, 0, 0, &["mml", "core"])];
 
     let resolved = NamespaceResolver::new(input).resolve(&current, &[], &[], &candidates);
 
@@ -2632,7 +2735,7 @@ fn stale_empty_prefix_reserved_root_bindings_report_the_root_segment() {
         unresolved
             .failed_segment()
             .map(NamespacePathSegment::spelling),
-        Some("std")
+        Some("mml")
     );
 }
 

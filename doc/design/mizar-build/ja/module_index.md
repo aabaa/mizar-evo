@@ -116,11 +116,12 @@ module index は surface import path を parse しないが、resolver がそれ
 必要な namespace binding を公開しなければならない。現在の `BuildPlan` data は常に、
 検証済み package id spelling を prefix とする package-name binding を生む。これは仕様第
 23 章の `algebra.groups.basic` のような cross-package import と対応する。dependency
-artifact または registry metadata が仕様第 12 章の言語 root（`std`、`pub`、`pkg`、
+artifact または registry metadata が仕様第 12 章の言語 root（`mml`、`pub`、`pkg`、
 `dev`、`ext`）を宣言している場合、それらを追加の `NamespaceIndexEntry` entry として運ぶ。
 indexer は plan または dependency artifact に存在しない language root を推測してはならない。
 どの binding が surface path に一致するかを選び、未解決の namespace root を報告するのは
 resolver である。
+既存の Rust `NamespaceRoot::Std` variant は論理 `mml` の型付き tag であり、公開名と順序は変更しない。
 
 ## データモデル
 

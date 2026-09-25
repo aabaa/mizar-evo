@@ -124,11 +124,12 @@ namespace bindings the resolver needs to interpret one. Current `BuildPlan`
 data always yields a package-name binding whose prefix is the validated package
 id spelling, matching spec chapter 23 cross-package imports such as
 `algebra.groups.basic`. When dependency artifacts or registry metadata declare
-language roots from spec chapter 12 (`std`, `pub`, `pkg`, `dev`, `ext`), those
+language roots from spec chapter 12 (`mml`, `pub`, `pkg`, `dev`, `ext`), those
 bindings are carried as additional `NamespaceIndexEntry` entries. The indexer must
 not guess a language root that is absent from the plan or dependency artifact.
 The resolver chooses which binding matches a surface path and reports unresolved
-namespace roots.
+namespace roots. The existing Rust `NamespaceRoot::Std` variant is the typed tag
+for logical `mml`; its public name and order remain unchanged.
 
 ## Data Model
 

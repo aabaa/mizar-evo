@@ -4616,7 +4616,7 @@ fn unresolved_with_payload(
 
 fn reserved_namespace_root(value: &str) -> Option<NamespaceRoot> {
     match value {
-        "std" => Some(NamespaceRoot::Std),
+        "mml" => Some(NamespaceRoot::Std),
         "pub" => Some(NamespaceRoot::Pub),
         "pkg" => Some(NamespaceRoot::Pkg),
         "dev" => Some(NamespaceRoot::Dev),

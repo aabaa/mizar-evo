@@ -206,7 +206,7 @@ Namespace candidates are resolved in this order:
    internal `UnresolvedImportAlias` dependency, or `AmbiguousImportAlias` when
    duplicate import records retain multiple canonical targets; it does not fall
    through to root/package/current-package lookup.
-3. Reserved namespace roots (`std`, `pub`, `pkg`, `dev`, `ext`) are matched
+3. Reserved namespace roots (`mml`, `pub`, `pkg`, `dev`, `ext`) are matched
    through the longest root binding. If no binding exists, the first segment
    after the root, or the root itself for an empty suffix, is the failing
    segment.
