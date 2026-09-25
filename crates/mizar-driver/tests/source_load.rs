@@ -502,8 +502,10 @@ impl WorkspaceLeafFixture {
     fn scheduled_request(
         &self,
         overlay: ModuleDependencyOverlay,
+        captured: Vec<DependencyArtifactRef>,
+        indexed: Vec<DependencyArtifactIndex>,
     ) -> (BuildRequestDraft, DriverSubmitInput<StaticSourceLayout>) {
-        let (mut request, mut input) = self.fixture.submit_request(Vec::new(), Vec::new());
+        let (mut request, mut input) = self.fixture.submit_request(captured, indexed);
         request.source_inputs.versions = self
             .submission
             .session
@@ -904,7 +906,7 @@ fn scheduled_workspace_intermediate_consumes_only_its_own_public_symbols() {
             mizar_build::module_index::ModuleId::new(PackageId::new("alpha"), ModulePath::new("base")),
             ModuleDependencyKind::ImportSummary,
         ));
-        let (request, mut input) = fixture.scheduled_request(overlay);
+        let (request, mut input) = fixture.scheduled_request(overlay, Vec::new(), Vec::new());
         input.worker_count = 4;
         let mut driver = fixture.scheduled_driver();
         let submission = driver
@@ -1007,6 +1009,295 @@ fn supplied_workspace_intermediate_rejects_reexport_and_changed_captured_import_
 }
 
 #[test]
+fn scheduled_artifact_importing_intermediate_exports_only_its_own_symbol() {
+    use mizar_artifact::{
+        module_summary::{
+            ExportedSymbolSummary, LexicalContributionSummary, ModuleLexicalSummary, ModuleSummary,
+            SourceRangeSummary, current_schema_version, module_summary_json,
+        },
+        store::{PublishedArtifactPath, artifact_hash_domain, write_published_artifact},
+    };
+    use mizar_frontend::lexical_env::{
+        ExportRank, ExportedSymbolShape, ModuleId as LexerModuleId, SymbolId, UserSymbolArity,
+        UserSymbolKind,
+    };
+
+    let mut lexical_hashes = Vec::new();
+    for mode in ["base", "unused_public_symbol", "missing_core_artifact"] {
+        let mut fixture = WorkspaceLeafFixture::new(
+        b"import alpha.leaf;\ntheorem T: a arrange b = a;\n",
+        b"import dep.core;\ndefinition\nlet x, y be set;\npublic func Infix: x arrange y -> set equals x;\nend;\ntheorem U: combine(a,b) = a;\n",
+        None,
+        usize::MAX,
+    );
+        let root = fixture.fixture.root.join("dep-artifacts");
+        fs::create_dir_all(&root).unwrap();
+        let identity = ModuleSummaryIdentity {
+            package_id: "dep".to_owned(),
+            package_version: Some("1.0.0".to_owned()),
+            lockfile_identity: Some("dependency-lock".to_owned()),
+            module_path: "core".to_owned(),
+            language_edition: "2025".to_owned(),
+        };
+        let origin = "symbol:combine";
+        let shape = ExportedSymbolShape {
+            spelling: "combine".to_owned(),
+            symbol_id: SymbolId::new(canonical_json_string(&CanonicalJson::array([
+                identity.canonical_json().unwrap(),
+                CanonicalJson::string(origin),
+            ]))),
+            source_module: LexerModuleId::new(canonical_json_string(
+                &identity.canonical_json().unwrap(),
+            )),
+            export_rank: ExportRank::new(0),
+            kind: UserSymbolKind::Functor,
+            arity: UserSymbolArity::exact(2),
+            operator: None,
+        };
+        let mut core = ModuleSummary {
+            schema_version: current_schema_version(),
+            module: identity,
+            source_hash: hash(9),
+            interface_hash: hash(0),
+            exported_symbols: vec![ExportedSymbolSummary {
+                origin_id: origin.to_owned(),
+                fully_qualified_name: "core.combine".to_owned(),
+                namespace_path: vec!["core".to_owned()],
+                visibility: "public".to_owned(),
+                declaration_kind: "functor".to_owned(),
+                source_range: SourceRangeSummary {
+                    start_byte: 0,
+                    end_byte: 1,
+                },
+                rendered_signature: "functor core.combine".to_owned(),
+                interface_fingerprint: hash(8),
+                proof_status: None,
+            }],
+            exported_labels: Vec::new(),
+            lexical_summary: ModuleLexicalSummary {
+                schema_version: "mizar-resolve/exported-lexical/v1".to_owned(),
+                fingerprint: None,
+                contributions: vec![LexicalContributionSummary {
+                    kind: "exported-symbol".to_owned(),
+                    key: origin.to_owned(),
+                    payload: String::from_utf8(shape.canonical_bytes().unwrap()).unwrap(),
+                }],
+            },
+            reexports: Vec::new(),
+            dependency_interfaces: Vec::new(),
+        };
+        if mode == "unused_public_symbol" {
+            let origin = "symbol:spare";
+            let shape = ExportedSymbolShape {
+                spelling: "spare".to_owned(),
+                symbol_id: SymbolId::new(canonical_json_string(&CanonicalJson::array([
+                    core.module.canonical_json().unwrap(),
+                    CanonicalJson::string(origin),
+                ]))),
+                source_module: LexerModuleId::new(canonical_json_string(
+                    &core.module.canonical_json().unwrap(),
+                )),
+                export_rank: ExportRank::new(1),
+                kind: UserSymbolKind::Functor,
+                arity: UserSymbolArity::exact(2),
+                operator: None,
+            };
+            core.exported_symbols.push(ExportedSymbolSummary {
+                origin_id: origin.to_owned(),
+                fully_qualified_name: "core.spare".to_owned(),
+                namespace_path: vec!["core".to_owned()],
+                visibility: "public".to_owned(),
+                declaration_kind: "functor".to_owned(),
+                source_range: SourceRangeSummary {
+                    start_byte: 2,
+                    end_byte: 3,
+                },
+                rendered_signature: "functor core.spare".to_owned(),
+                interface_fingerprint: hash(7),
+                proof_status: None,
+            });
+            core.lexical_summary
+                .contributions
+                .push(LexicalContributionSummary {
+                    kind: "exported-symbol".to_owned(),
+                    key: origin.to_owned(),
+                    payload: String::from_utf8(shape.canonical_bytes().unwrap()).unwrap(),
+                });
+        }
+        core.refresh_interface_hash().unwrap();
+        let mut other = core.clone();
+        other.module.module_path = "other".to_owned();
+        other.exported_symbols.clear();
+        other.lexical_summary.contributions.clear();
+        other.refresh_interface_hash().unwrap();
+        let mut references = Vec::new();
+        let mut captured = Vec::new();
+        for summary in [core, other] {
+            let module = summary.module.module_path.as_str();
+            let artifact = format!("dep/{module}.summary.json");
+            let content_hash = write_published_artifact(
+                &root,
+                &PublishedArtifactPath::new(&artifact).unwrap(),
+                &module_summary_json(&summary).unwrap(),
+                &artifact_hash_domain(
+                    mizar_artifact::module_summary::MODULE_SUMMARY_SCHEMA_FAMILY,
+                    summary.schema_version,
+                ),
+                &[],
+            )
+            .unwrap()
+            .artifact_hash;
+            references.push(DependencyModuleSummaryRef {
+                module: mizar_build::module_index::ModuleId::new(
+                    PackageId::new("dep"),
+                    ModulePath::new(module),
+                ),
+                artifact: artifact.clone(),
+                content_hash,
+            });
+            captured.push(DependencyArtifactRef::new(artifact, content_hash));
+        }
+        references.sort_by(|left, right| {
+            right
+                .content_hash
+                .as_bytes()
+                .cmp(left.content_hash.as_bytes())
+        });
+        let indexed = vec![DependencyArtifactIndex::new(
+            PackageId::new("dep"),
+            Vec::new(),
+            references,
+        )];
+        let (request, input) = fixture.scheduled_request(
+            complete_leaf_import_overlay(),
+            captured.clone(),
+            indexed.clone(),
+        );
+        let baseline = CompilerDriver::new(source_registry())
+            .submit(request, &fixture.ids, &SnapshotRegistry::new(), input)
+            .unwrap();
+        fixture
+            .publisher
+            .register_current_snapshot(baseline.session.captured.snapshot.id);
+        fixture.submission = baseline;
+        if mode == "missing_core_artifact" {
+            fs::remove_file(root.join("dep/core.summary.json")).unwrap();
+        }
+        let (request, mut input) =
+            fixture.scheduled_request(complete_leaf_import_overlay(), captured, indexed);
+        input.worker_count = 4;
+        let mut builder = PhaseRegistryBuilder::new();
+        builder.register_source_load();
+        builder.register_frontend(vec![(PackageId::new("dep"), root)]);
+        let mut driver = CompilerDriver::new(builder.build().unwrap())
+            .with_output_publisher(fixture.publisher.clone());
+        let submission = driver
+            .submit(request, &fixture.ids, &SnapshotRegistry::new(), input)
+            .unwrap();
+        assert_eq!(
+            submission.session.captured.snapshot.id,
+            fixture.submission.session.captured.snapshot.id
+        );
+        let run = submission.scheduler_run.as_ref().unwrap();
+        if mode == "missing_core_artifact" {
+            let leaf_result = &run.phase_results[&fixture.task(TaskKind::Frontend, "leaf").id][0];
+            assert_ne!(leaf_result.status, PhaseStatus::Complete);
+            assert!(leaf_result.output_refs.is_empty());
+            assert!(
+                run.phase_results
+                    .get(&fixture.task(TaskKind::Frontend, "main").id)
+                    .is_none_or(|results| results
+                        .iter()
+                        .all(|result| result.output_refs.is_empty()))
+            );
+            continue;
+        }
+        for module in ["leaf", "main"] {
+            let result = &run.phase_results[&fixture.task(TaskKind::Frontend, module).id][0];
+            assert_eq!(
+                result.status,
+                PhaseStatus::Complete,
+                "{module}: {:?}",
+                result.diagnostics
+            );
+        }
+        assert_eq!(
+            submission.status,
+            DriverSubmissionStatus::BlockedByMissingPhaseServices
+        );
+        let leaf =
+            &run.phase_results[&fixture.task(TaskKind::Frontend, "leaf").id][0].output_refs[0];
+        let main =
+            &run.phase_results[&fixture.task(TaskKind::Frontend, "main").id][0].output_refs[0];
+        let leaf_source =
+            &run.phase_results[&fixture.task(TaskKind::SourceLoad, "leaf").id][0].output_refs[0];
+        let main_source =
+            &run.phase_results[&fixture.task(TaskKind::SourceLoad, "main").id][0].output_refs[0];
+        let leaf_lineage = fixture
+            .publisher
+            .registry()
+            .output_lineage(leaf.output())
+            .unwrap();
+        assert_eq!(leaf_lineage.parents, vec![leaf_source.output()]);
+        let main_lineage = fixture
+            .publisher
+            .registry()
+            .output_lineage(main.output())
+            .unwrap();
+        assert_eq!(main_lineage.parents.len(), 2);
+        assert!(main_lineage.parents.contains(&main_source.output()));
+        assert!(main_lineage.parents.contains(&leaf.output()));
+        let hashes = fixture
+            .submission
+            .module_index
+            .as_ref()
+            .unwrap()
+            .dependency_summaries
+            .iter()
+            .map(|reference| reference.content_hash)
+            .collect::<Vec<_>>();
+        assert_eq!(hashes.len(), 2);
+        let mut sorted = hashes.clone();
+        sorted.sort_by(|left, right| left.as_bytes().cmp(right.as_bytes()));
+        assert_ne!(hashes, sorted);
+        assert_eq!(
+            leaf_lineage
+                .named_input_hashes
+                .iter()
+                .map(|input| input.name.as_str())
+                .collect::<Vec<_>>(),
+            [
+                "active-lexical-environment",
+                "dependency.0",
+                "dependency.1",
+                "tokens"
+            ]
+        );
+        assert_eq!(leaf_lineage.named_input_hashes[1].digest, sorted[0]);
+        assert_eq!(leaf_lineage.named_input_hashes[2].digest, sorted[1]);
+        let mut active_hashes = Vec::new();
+        for (output, spelling) in [(leaf, "combine"), (main, "arrange")] {
+            let typed = fixture
+                .publisher
+                .storage()
+                .typed_handle::<FrontendOutput<<MizarParserSeam as ParserSeam>::Ast>>(
+                    output,
+                    &OutputKind::new("FrontendOutput"),
+                )
+                .unwrap();
+            let loaded = fixture.publisher.storage().get(&typed).unwrap();
+            assert!(loaded.tokens.tokens().iter().any(|token| {
+                token.text.as_ref() == spelling && token.kind == TokenKind::UserSymbol
+            }));
+            active_hashes.push(loaded.cache_keys.active_lexical_environment.stable_hash());
+        }
+        lexical_hashes.push((active_hashes[0], active_hashes[1]));
+    }
+    assert_ne!(lexical_hashes[0].0, lexical_hashes[1].0);
+    assert_eq!(lexical_hashes[0].1, lexical_hashes[1].1);
+}
+
+#[test]
 fn workspace_leaf_is_not_injected_by_ordinary_no_provider_submit() {
     let fixture = WorkspaceLeafFixture::new(
         b"import alpha.leaf;\ndefinition\nend;\n",
@@ -1014,7 +1305,11 @@ fn workspace_leaf_is_not_injected_by_ordinary_no_provider_submit() {
         None,
         usize::MAX,
     );
-    let (request, input) = fixture.scheduled_request(ModuleDependencyOverlay::complete(Vec::new()));
+    let (request, input) = fixture.scheduled_request(
+        ModuleDependencyOverlay::complete(Vec::new()),
+        Vec::new(),
+        Vec::new(),
+    );
     let mut driver = fixture.scheduled_driver();
     let submission = driver
         .submit(request, &fixture.ids, &SnapshotRegistry::new(), input)
@@ -1058,7 +1353,8 @@ fn scheduled_complete_import_overlay_hands_off_real_leaf_output() {
         None,
         usize::MAX,
     );
-    let (request, mut input) = fixture.scheduled_request(complete_leaf_import_overlay());
+    let (request, mut input) =
+        fixture.scheduled_request(complete_leaf_import_overlay(), Vec::new(), Vec::new());
     input.worker_count = 4;
     let mut driver = fixture.scheduled_driver();
     let submission = driver
@@ -1143,7 +1439,8 @@ fn scheduled_import_overlay_cannot_invent_a_source_import() {
         None,
         usize::MAX,
     );
-    let (request, input) = fixture.scheduled_request(complete_leaf_import_overlay());
+    let (request, input) =
+        fixture.scheduled_request(complete_leaf_import_overlay(), Vec::new(), Vec::new());
     let mut driver = fixture.scheduled_driver();
     let submission = driver
         .submit(request, &fixture.ids, &SnapshotRegistry::new(), input)
@@ -1176,7 +1473,8 @@ fn scheduled_import_overlay_does_not_synthesize_a_cached_leaf_output() {
         None,
         usize::MAX,
     );
-    let (request, mut input) = fixture.scheduled_request(complete_leaf_import_overlay());
+    let (request, mut input) =
+        fixture.scheduled_request(complete_leaf_import_overlay(), Vec::new(), Vec::new());
     input.cache_policy = CacheSchedulingPolicy::Enabled;
     input.cache_decisions = CacheSchedulingPlan::new(vec![CacheTaskDecision::new(
         fixture.task(TaskKind::Frontend, "leaf").id.clone(),
@@ -1232,7 +1530,8 @@ fn scheduled_import_overlay_keeps_supplied_dispatch_provider_authoritative() {
         None,
         usize::MAX,
     );
-    let (request, mut input) = fixture.scheduled_request(complete_leaf_import_overlay());
+    let (request, mut input) =
+        fixture.scheduled_request(complete_leaf_import_overlay(), Vec::new(), Vec::new());
     input.phase_dispatch_inputs = Some(Box::new(SuppliedInput::None));
     let mut driver = fixture.scheduled_driver();
     let submission = driver

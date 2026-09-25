@@ -968,11 +968,14 @@ impl PhaseService for FrontendService {
                             .iter()
                             .filter(|entry| entry.module == target),
                     )?;
-                    if target.package != leaf_module.package
-                        || target == leaf_module
-                        || !matches!(entry.location, ModuleIndexLocation::WorkspaceFile { .. })
-                    {
-                        return None;
+                    match &entry.location {
+                        ModuleIndexLocation::WorkspaceFile { .. } => {
+                            if target.package != leaf_module.package || target == leaf_module {
+                                return None;
+                            }
+                        }
+                        ModuleIndexLocation::DependencySummary { .. } => continue,
+                        _ => return None,
                     }
                     let unit = IrWorkUnit::new(format!(
                         "{:?}:{:?}",
