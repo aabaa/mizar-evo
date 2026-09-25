@@ -157,10 +157,7 @@ impl mizar_frontend::lexical_env::LexicalSummaryProvider for DependencyLexicalPr
                         .filter(|(target, _)| target == &module),
                 )
                 .ok_or_else(unavailable)?;
-                if module.package != current.module.package
-                    || entry.package_id != module.package
-                    || entry.module_path != module.path
-                {
+                if entry.package_id != module.package || entry.module_path != module.path {
                     return Err(unavailable());
                 }
                 let module_id = summary.module_id.clone();
@@ -907,9 +904,53 @@ impl PhaseService for FrontendService {
                         .iter()
                         .filter(|parent| parent.phase == IrPipelinePhase::new("SourceLoad")),
                 )?;
+                let leaf_package = unique(
+                    inputs
+                        .build_plan
+                        .packages
+                        .iter()
+                        .filter(|package| package.package_id == leaf_module.package),
+                )?;
+                let PackagePlanSource::Workspace {
+                    root: target_root,
+                    source_root: target_source_root,
+                    manifest_path: target_manifest,
+                } = &leaf_package.source
+                else {
+                    return None;
+                };
+                let leaf_index_package = unique(
+                    inputs
+                        .module_index
+                        .packages
+                        .iter()
+                        .filter(|package| package.package_id == leaf_module.package),
+                )?;
+                let mizar_build::module_index::PackageIndexSource::Workspace {
+                    package_root: indexed_root,
+                    source_root: indexed_source_root,
+                    manifest_path: indexed_manifest,
+                } = &leaf_index_package.source
+                else {
+                    return None;
+                };
+                if target_root != indexed_root
+                    || target_source_root != indexed_source_root
+                    || target_manifest != indexed_manifest
+                    || leaf_package.version != leaf_index_package.version
+                    || leaf_package.edition != leaf_version.edition
+                    || leaf_index_package.edition != leaf_version.edition
+                    || !safe_relative(target_root)
+                    || !safe_relative(target_source_root)
+                    || !safe_relative(target_manifest)
+                    || workspace.join(target_source_root) != workspace.join(target_root).join("src")
+                    || workspace.join(target_manifest)
+                        != workspace.join(target_root).join("mizar.pkg")
+                {
+                    return None;
+                }
                 let leaf_source_key = source_input_hash(leaf_version);
-                if leaf_module.package != module.package
-                    || leaf_module == *module
+                if leaf_module == *module
                     || leaf.work_unit() != &leaf_unit
                     || leaf_version.origin != SourceOrigin::Disk
                     || output.canonical_disk_bytes().is_none()
@@ -918,13 +959,12 @@ impl PhaseService for FrontendService {
                     || leaf_source.module_path != leaf_version.module_path
                     || leaf_source.normalized_path != leaf_version.normalized_path
                     || leaf_source.edition != leaf_version.edition
-                    || leaf_version.edition != package.edition
                     || leaf_source.source_hash != leaf_version.source_hash
                     || leaf_source.origin != SourceOrigin::Disk
                     || leaf_entry.package_id != leaf_module.package
                     || leaf_entry.module_path != leaf_module.path
                     || leaf_entry.edition != leaf_version.edition
-                    || leaf_root != source_root
+                    || leaf_root != target_source_root
                     || leaf_path != leaf_version.normalized_path.as_str()
                     || leaf_path != &format!("src/{source_relative_path}")
                     || source_relative_path.is_empty()
@@ -970,7 +1010,7 @@ impl PhaseService for FrontendService {
                     )?;
                     match &entry.location {
                         ModuleIndexLocation::WorkspaceFile { .. } => {
-                            if target.package != leaf_module.package || target == leaf_module {
+                            if target == leaf_module {
                                 return None;
                             }
                         }
@@ -1045,7 +1085,7 @@ impl PhaseService for FrontendService {
                 }
                 let identity = ModuleSummaryIdentity {
                     package_id: leaf_module.package.as_str().to_owned(),
-                    package_version: Some(package.version.to_string()),
+                    package_version: Some(leaf_package.version.to_string()),
                     lockfile_identity: None,
                     module_path: leaf_module.path.as_str().to_owned(),
                     language_edition: leaf_version.edition.as_str().to_owned(),
