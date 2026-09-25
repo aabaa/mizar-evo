@@ -280,3 +280,7 @@ Source-loading allocations E0600–E0603 follow spec 22.1.2/22.7; their `since` 
 
 E0013–E0052 use the exact names and summaries in [specification 22.7](../../../spec/en/22.error_handling_and_diagnostics.md#227-error-code-reference), with `meaning_key = semantic_name`, Syntax family, Error severity, Active descriptor status and `since = spec-22-frontend-v1`. Existing descriptor metadata is unchanged. These rows supplement the initial allocation table above.
 Registry lookup and shared draft/record construction are enabled; no frontend producer is connected by allocation alone. The frontend-owned discriminator mapping, source-bound conversion and producer-derived tests remain required before emission under specification 22.2.3. Registry tests compare all forty rows with the canonical specification and exercise shared record construction.
+
+## Import allocations
+
+E0220–E0224 follow the exact names and summaries in specification 22.7, with `meaning_key = semantic_name`, Resolution family, Error severity, Active status and `since = spec-22-import-v1`; all other metadata uses the initial defaults. Allocation enables shared draft/record construction only. Source-bound driver conversion remains deferred; E0225 is unallocated.

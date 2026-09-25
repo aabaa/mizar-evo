@@ -5,6 +5,7 @@ use super::{
 };
 
 const INITIAL_SINCE: &str = "spec-22.7-v1";
+const IMPORT_SINCE: &str = "spec-22-import-v1";
 const FRONTEND_SINCE: &str = "spec-22-frontend-v1";
 const INITIAL_DOC_URL: &str =
     "doc/spec/en/22.error_handling_and_diagnostics.md#227-error-code-reference";
@@ -471,6 +472,46 @@ pub const BUILTIN_DESCRIPTORS: &[DiagnosticDescriptor] = &[
         "resolve.incompatible_refinement_join",
         Resolution,
         "Same-root redefinitions expose incompatible joined facts"
+    ),
+    builtin_descriptor!(
+        Error,
+        220,
+        "resolve.import.unknown_namespace_or_package",
+        Resolution,
+        "Reserved namespace root or selected package binding unavailable",
+        IMPORT_SINCE
+    ),
+    builtin_descriptor!(
+        Error,
+        221,
+        "resolve.import.unknown_module",
+        Resolution,
+        "Requested module-index path absent or unusable in selected package",
+        IMPORT_SINCE
+    ),
+    builtin_descriptor!(
+        Error,
+        222,
+        "resolve.import.relative_path_escapes_package",
+        Resolution,
+        "Relative import ascends past package root",
+        IMPORT_SINCE
+    ),
+    builtin_descriptor!(
+        Error,
+        223,
+        "resolve.import.duplicate_alias",
+        Resolution,
+        "Alias conflicts across distinct canonical modules",
+        IMPORT_SINCE
+    ),
+    builtin_descriptor!(
+        Error,
+        224,
+        "resolve.import.alias_root_conflict",
+        Resolution,
+        "Alias conflicts with a reserved namespace root",
+        IMPORT_SINCE
     ),
     builtin_descriptor!(
         Error,

@@ -284,7 +284,7 @@ unresolved import は first-class な resolver output であり、欠落 entry �
 - failure までに見つかった partial package、namespace、module candidate。
 - 該当する場合、parser から継承した recovery state。
 
-仕様 §22.3.5 は import の意味 6 件に E0220～E0225 を割り当てるが、registry 採用と公開 resolver bridge までは record を crate-local に保つ。
+仕様 §22.3.5 は import の意味 6 件に E0220～E0225 を割り当てるが、公開 resolver bridge までは record を crate-local に保つ。E0220～E0224 の descriptor は登録済みで、E0225 の registry 採用は後続とする。
 必須 class には unknown namespace/package、unknown module、package root から escape する
 relative import、malformed recovered directive、duplicate alias、alias/root conflict、
 unavailable dependency summary、illegal import candidate state、import cycle が含まれる。

@@ -321,7 +321,7 @@ record preserves:
 - recovery state inherited from the parser when applicable.
 
 Spec §22.3.5 assigns E0220–E0225 to six import meanings; records remain
-crate-local until registry adoption and a public resolver bridge exist. Required classes include unknown namespace/package, unknown module,
+crate-local until a public resolver bridge exists. E0220–E0224 descriptors are allocated; E0225 registry adoption remains deferred. Required classes include unknown namespace/package, unknown module,
 relative import escaping the package root, malformed recovered directive,
 duplicate alias, alias/root conflict, unavailable dependency summary, illegal
 import candidate state, and import cycle.
