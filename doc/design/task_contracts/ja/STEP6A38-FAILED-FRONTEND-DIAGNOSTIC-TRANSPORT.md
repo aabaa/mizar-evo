@@ -1,0 +1,3 @@
+# Task STEP6A38-FAILED-FRONTEND-DIAGNOSTIC-TRANSPORT: 失敗 Frontend 診断の受渡し
+canonical English: [STEP6A38-FAILED-FRONTEND-DIAGNOSTIC-TRANSPORT](../en/STEP6A38-FAILED-FRONTEND-DIAGNOSTIC-TRANSPORT.md).
+所有者: [driver 計画](../../mizar-driver/ja/00.crate_plan.md)。
