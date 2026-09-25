@@ -1,6 +1,6 @@
 # Task STEP6A22-FRONTEND-CACHE-KEYS-CODEC: retained cache-key bundle storage
 Canonical language: English; [Japanese pointer](../ja/STEP6A22-FRONTEND-CACHE-KEYS-CODEC.md).
-Status: frozen. Tier: full. Owner: [frontend plan](../../mizar-frontend/en/00.crate_plan.md).
+Status: implemented. Tier: full. Owner: [frontend plan](../../mizar-frontend/en/00.crate_plan.md).
 Authority: [frontend incrementality](../../architecture/en/02.source_and_frontend.md#incrementality), [aggregate output](../../architecture/en/02.source_and_frontend.md#frontendoutput); [cache-key storage owner](../../mizar-frontend/en/cache_key.md#retained-cache-key-storage).
 Gap: derived storage dependency; FrontendOutput retains cache-key components without a complete codec. Ready after retained token storage; no new language requirement.
 Scope: two methods on FrontendCacheKeys, inline cache_key.rs tests, crate-private sharing of lexing context codecs; paired cache-key owners, contracts, plan indexes and global todo.

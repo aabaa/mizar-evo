@@ -1,6 +1,6 @@
 # Task STEP6A30-AST-IMPORT-CANDIDATES: resolver-owned parsed import collection
 Canonical language: English; [Japanese pointer](../ja/STEP6A30-AST-IMPORT-CANDIDATES.md).
-Status: frozen. Tier: full. Owner: [resolver plan](../../mizar-resolve/en/00.crate_plan.md); consumer: existing declaration-symbol runner.
+Status: implemented. Tier: full. Owner: [resolver plan](../../mizar-resolve/en/00.crate_plan.md); consumer: existing declaration-symbol runner.
 Authority: [spec 12.3](../../../spec/en/12.modules_and_namespaces.md#123-import-statements), [two-pass import contract](../../mizar-resolve/en/imports.md#two-pass-contract), existing branch/alias/recovery source fixtures and runner assertions.
 Gap: boundary/design drift; real AST candidate production resides in the test runner rather than the resolver owner. Existing provisional frontend candidates do not replace parsed imports.
 Scope: method on existing ImportPathCandidate, existing imports source/tests, remove runner walker and route real runner/fixture assertions to owner method; paired import owner, plan and contract links, affected audit ownership. No new type, code file, adapter or dependency.

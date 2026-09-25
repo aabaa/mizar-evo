@@ -1,6 +1,6 @@
 # Task STEP6A45-WORKSPACE-INTERMEDIATE-LEXICAL-HANDOFF: direct lexical exports from workspace intermediates
 Canonical language: English; [Japanese pointer](../ja/STEP6A45-WORKSPACE-INTERMEDIATE-LEXICAL-HANDOFF.md).
-Status: frozen. Tier: full. Owner: [driver plan](../../mizar-driver/en/00.crate_plan.md).
+Status: implemented. Tier: full. Owner: [driver plan](../../mizar-driver/en/00.crate_plan.md).
 Purpose: consume a clean same-package importing Frontend's own public lexical declarations through the existing scheduled parent route.
 Authority: [spec 2 active ranges](../../../spec/en/02.lexical_structure.md), [spec 12.3/12.4](../../../spec/en/12.modules_and_namespaces.md#123-import-statements), [intermediate owner](../../mizar-driver/en/frontend_adapter.md#workspace-intermediate-summaries), [direct source export](../../mizar-resolve/en/symbols.md), [scheduled prefix](../../mizar-driver/en/driver.md#scheduled-sourceloadfrontend-prefix).
 Gap: external_dependency_gap; clean importing outputs are produced and scheduled, but the summary consumer accepts only import-free leaves.

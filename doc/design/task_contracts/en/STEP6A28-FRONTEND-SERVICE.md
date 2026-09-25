@@ -1,6 +1,6 @@
 # Task STEP6A28-FRONTEND-SERVICE: real disk frontend phase
 Canonical language: English; [Japanese pointer](../ja/STEP6A28-FRONTEND-SERVICE.md).
-Status: frozen. Tier: full. Owner: [driver plan](../../mizar-driver/en/00.crate_plan.md); payload owner: [frontend plan](../../mizar-frontend/en/00.crate_plan.md).
+Status: implemented. Tier: full. Owner: [driver plan](../../mizar-driver/en/00.crate_plan.md); payload owner: [frontend plan](../../mizar-frontend/en/00.crate_plan.md).
 Authority: specification 22.1.2/22.2.3/22.7 diagnostic rules, specification 23.4 pipeline failure, architecture 02 frontend and 22 snapshot currentness; existing IR publication/dispatch contracts.
 Gaps: driver Frontend external_dependency_gap after aggregate storage, shared anchors and diagnostic registry prerequisites. No language semantics or parser recovery change.
 Scope: [live service/bridge](../../mizar-driver/en/frontend_adapter.md#disk-frontend-service), [publication representation](../../mizar-frontend/en/orchestration.md#frontendoutput-publication), registry registration/catalog, scheduler diagnostic sink and real service tests.

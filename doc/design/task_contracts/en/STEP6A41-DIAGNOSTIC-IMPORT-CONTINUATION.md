@@ -1,6 +1,6 @@
 # Task STEP6A41-DIAGNOSTIC-IMPORT-CONTINUATION: diagnostic-only import execution
 Canonical language: English; [Japanese pointer](../ja/STEP6A41-DIAGNOSTIC-IMPORT-CONTINUATION.md).
-Status: frozen. Tier: full. Owner: [driver plan](../../mizar-driver/en/00.crate_plan.md); consumes frontend, resolver and shared diagnostics.
+Status: implemented. Tier: full. Owner: [driver plan](../../mizar-driver/en/00.crate_plan.md); consumes frontend, resolver and shared diagnostics.
 Purpose: execute the restricted import continuation without changing failed frontend/build status.
 Authority: [specification 22.3.5](../../../spec/en/22.error_handling_and_diagnostics.md#diagnostic-only-continuation-after-lexical-import-failure), [driver admission/transport owner](../../mizar-driver/en/frontend_adapter.md#diagnostic-only-import-continuation-design), [resolver candidates](../../mizar-resolve/en/imports.md#parsed-import-candidates).
 Dependencies: existing live frontend service, AST candidate collector, captured module index, E0220–E0224 descriptors and shared diagnostic APIs are available.

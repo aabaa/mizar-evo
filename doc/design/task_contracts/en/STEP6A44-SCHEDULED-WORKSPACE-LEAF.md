@@ -1,6 +1,6 @@
 # Task STEP6A44-SCHEDULED-WORKSPACE-LEAF: scheduled workspace leaf handoff
 Canonical language: English; [Japanese pointer](../ja/STEP6A44-SCHEDULED-WORKSPACE-LEAF.md).
-Status: frozen. Tier: full. Owners: [driver](../../mizar-driver/en/00.crate_plan.md), [build](../../mizar-build/en/00.crate_plan.md).
+Status: implemented. Tier: full. Owners: [driver](../../mizar-driver/en/00.crate_plan.md), [build](../../mizar-build/en/00.crate_plan.md).
 Purpose: reach the existing authenticated workspace leaf lexical path through ordinary submit with a caller-supplied complete import overlay.
 Authority: [spec 2 active ranges](../../../spec/en/02.lexical_structure.md), [spec 12.3](../../../spec/en/12.modules_and_namespaces.md#123-import-statements), [task graph](../../mizar-build/en/task_graph.md#moduledependencyoverlay), [scheduled prefix](../../mizar-driver/en/driver.md#scheduled-sourceloadfrontend-prefix), [leaf validation](../../mizar-driver/en/frontend_adapter.md#supplied-workspace-leaf-summaries).
 Gap: external_dependency_gap; the supplied leaf service is live but ordinary scheduling lacks its import ordering and parent handoff.

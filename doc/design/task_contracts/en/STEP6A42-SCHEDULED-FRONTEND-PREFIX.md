@@ -1,6 +1,6 @@
 # Task STEP6A42-SCHEDULED-FRONTEND-PREFIX: scheduled source/frontend execution
 Canonical language: English; [Japanese pointer](../ja/STEP6A42-SCHEDULED-FRONTEND-PREFIX.md).
-Status: frozen. Tier: full. Owner: [driver plan](../../mizar-driver/en/00.crate_plan.md).
+Status: implemented. Tier: full. Owner: [driver plan](../../mizar-driver/en/00.crate_plan.md).
 Purpose: make the real source/frontend services reachable through ordinary submit without granting later-phase success.
 Authority: [spec 22.3.5](../../../spec/en/22.error_handling_and_diagnostics.md#diagnostic-only-continuation-after-lexical-import-failure), [spec 23.4](../../../spec/en/23.package_management_and_build_system.md), [driver owner](../../mizar-driver/en/driver.md#scheduled-sourceloadfrontend-prefix), [source services](../../mizar-driver/en/frontend_adapter.md).
 Dependencies: real SourceLoad/Frontend publication services, A41 diagnostics, existing scheduler results and IR sealed-parent dispatch bundles.

@@ -1,6 +1,6 @@
 # Task STEP6A35-MML-ROOT-SPELLING: canonical reserved root repair
 Canonical language: English; [Japanese pointer](../ja/STEP6A35-MML-ROOT-SPELLING.md).
-Status: frozen. Tier: full. Primary owner: [resolver plan](../../mizar-resolve/en/00.crate_plan.md); build owns the unchanged typed root tag. Consumers: import and namespace resolution.
+Status: implemented. Tier: full. Primary owner: [resolver plan](../../mizar-resolve/en/00.crate_plan.md); build owns the unchanged typed root tag. Consumers: import and namespace resolution.
 Purpose: make spec §12.2.1 `mml` reserved and `std` ordinary without changing the public typed `NamespaceRoot::Std` API.
 Authority: [spec §12.2.1](../../../spec/en/12.modules_and_namespaces.md#1221-logical-namespace-roots), [spec §12.3](../../../spec/en/12.modules_and_namespaces.md#123-import-statements), [spec §23.1](../../../spec/en/23.package_management_and_build_system.md#231-manifest-file-format-mizarpkg) and [§23.3](../../../spec/en/23.package_management_and_build_system.md#233-workspace-layout), [build index owner](../../mizar-build/en/module_index.md), [resolver imports](../../mizar-resolve/en/imports.md), and [resolver names](../../mizar-resolve/en/names.md).
 Gap: `source_drift` in the two resolver source-spelling gates and EN/JA owner root lists; A33 already records the blocked `mml` source seeds. No build typed-root or public diagnostic adoption gap is closed.

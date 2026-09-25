@@ -1,6 +1,6 @@
 # Task STEP6A21-TOKEN-STREAM-CODEC: retained token stream storage
 Canonical language: English; [Japanese pointer](../ja/STEP6A21-TOKEN-STREAM-CODEC.md).
-Status: frozen. Tier: full. Owner: [frontend plan](../../mizar-frontend/en/00.crate_plan.md).
+Status: implemented. Tier: full. Owner: [frontend plan](../../mizar-frontend/en/00.crate_plan.md).
 Authority: [lexical structure](../../../spec/en/02.lexical_structure.md#23-tokens-and-lexicon), [local symbol scope](../../../spec/en/11.symbol_management.md#112-scope-and-visibility), [diagnostic spans](../../../spec/en/22.error_handling_and_diagnostics.md#2212-source-span-and-context-display); [lexing owner](../../mizar-frontend/en/lexing.md#tokenstream-storage), [aggregate consumers](../../mizar-frontend/en/orchestration.md).
 Gap: external dependency/design gap; retained TokenStream state required by FrontendOutput is absent from AST and preprocessing storage. Dependency: [preprocessing storage](./STEP6A20-PREPROCESSED-SOURCE-CODEC.md); ready under existing language semantics.
 Scope: canonical_bytes/from_canonical_bytes methods on existing TokenStream; lexing.rs inline tests; range/anchor storage helpers shared by three actual consumers in span_bridge.rs, with preprocess.rs reusing them; paired lexing/span_bridge owners, frontend plan indexes, contracts and global todo.

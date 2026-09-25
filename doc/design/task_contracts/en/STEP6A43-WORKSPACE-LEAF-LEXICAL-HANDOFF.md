@@ -1,6 +1,6 @@
 # Task STEP6A43-WORKSPACE-LEAF-LEXICAL-HANDOFF: supplied workspace leaf lexical summaries
 Canonical language: English; [Japanese pointer](../ja/STEP6A43-WORKSPACE-LEAF-LEXICAL-HANDOFF.md).
-Status: frozen. Tier: full. Owner: [driver plan](../../mizar-driver/en/00.crate_plan.md).
+Status: implemented. Tier: full. Owner: [driver plan](../../mizar-driver/en/00.crate_plan.md).
 Purpose: consume a real current import-free workspace leaf in an importing Frontend without a speculative summary API.
 Authority: [spec 2 active ranges](../../../spec/en/02.lexical_structure.md), [spec 12.3](../../../spec/en/12.modules_and_namespaces.md#123-import-statements), [driver owner](../../mizar-driver/en/frontend_adapter.md#supplied-workspace-leaf-summaries), [source lexical correspondence](../../mizar-resolve/en/symbols.md).
 Gap: external_dependency_gap; the live lexical provider has only dependency-artifact summaries and rejects workspace targets.

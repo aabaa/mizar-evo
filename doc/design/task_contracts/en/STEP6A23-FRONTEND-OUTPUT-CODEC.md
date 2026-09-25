@@ -1,6 +1,6 @@
 # Task STEP6A23-FRONTEND-OUTPUT-CODEC: retained disk frontend output storage
 Canonical language: English; [Japanese pointer](../ja/STEP6A23-FRONTEND-OUTPUT-CODEC.md).
-Status: frozen. Tier: full. Owner: [frontend plan](../../mizar-frontend/en/00.crate_plan.md).
+Status: implemented. Tier: full. Owner: [frontend plan](../../mizar-frontend/en/00.crate_plan.md).
 Authority: [aggregate architecture](../../architecture/en/02.source_and_frontend.md#frontendoutput), [diagnostic source spans](../../../spec/en/22.error_handling_and_diagnostics.md#2212-source-span-and-context-display); [storage owner](../../mizar-frontend/en/orchestration.md#disk-frontendoutput-storage).
 Gap: derived storage dependency; existing source/AST/preprocessing/token/cache-key codecs omit aggregate composition and merged diagnostics. Ready under current language behavior.
 Scope: two methods on FrontendOutput<SurfaceAst>, inline orchestration.rs implementation/tests, reuse existing phase and span codecs; paired orchestration owners, contracts, plan indexes, global todo.

@@ -1,6 +1,6 @@
 # Task STEP6A32-IMPORT-DIAGNOSTIC-SPEC: semantic import diagnostic allocation
 Canonical language: English; [Japanese pointer](../ja/STEP6A32-IMPORT-DIAGNOSTIC-SPEC.md).
-Status: frozen. Tier: full. Primary owner: [resolver plan](../../mizar-resolve/en/00.crate_plan.md). Consumers: future `mizar-diagnostics` registry and driver resolver service.
+Status: implemented (design only). Tier: full. Primary owner: [resolver plan](../../mizar-resolve/en/00.crate_plan.md). Consumers: future `mizar-diagnostics` registry and driver resolver service.
 Purpose: assign stable public meanings and numbers to six typed semantic import failures before any public resolver diagnostic adoption.
 Authority: [spec §12.3](../../../spec/en/12.modules_and_namespaces.md#123-import-statements), [spec §22.3.5](../../../spec/en/22.error_handling_and_diagnostics.md#2235-module-import-resolution), [resolver import owner](../../mizar-resolve/en/imports.md), and [architecture diagnostics](../../architecture/en/03.module_and_symbol_resolution.md#diagnostics).
 Dependencies/readiness: parsed import candidates and typed path/graph outcomes exist; a complete workspace lexical-summary route, registry descriptors, source-derived public projection, and a resolver service remain later work.

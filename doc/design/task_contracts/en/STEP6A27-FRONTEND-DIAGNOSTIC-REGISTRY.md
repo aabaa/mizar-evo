@@ -1,6 +1,6 @@
 # Task STEP6A27-FRONTEND-DIAGNOSTIC-REGISTRY: frontend diagnostic allocations
 Canonical language: English; [Japanese pointer](../ja/STEP6A27-FRONTEND-DIAGNOSTIC-REGISTRY.md).
-Status: frozen. Tier: full. Owner: [diagnostics plan](../../mizar-diagnostics/en/00.crate_plan.md); consumer: future source-bound frontend diagnostic bridge.
+Status: implemented. Tier: full. Owner: [diagnostics plan](../../mizar-diagnostics/en/00.crate_plan.md); consumer: future source-bound frontend diagnostic bridge.
 Authority: specification 22.2.3 and 22.7; [registry owner](../../mizar-diagnostics/en/registry.md#frontend-allocations); frontend discriminator mapping remains frontend-owned.
 Gap: specified E0013–E0052 cannot yet be referenced by shared drafts/records because descriptors are absent.
 Scope: register exactly the forty approved Syntax/Error codes with canonical names and summaries, and meaning keys equal to semantic names; use a distinct frontend allocation version marker. Preserve all existing metadata and codes.

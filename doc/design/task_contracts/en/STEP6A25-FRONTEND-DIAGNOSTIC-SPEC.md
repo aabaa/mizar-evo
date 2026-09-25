@@ -1,6 +1,6 @@
 # Task STEP6A25-FRONTEND-DIAGNOSTIC-SPEC: frontend public diagnostic specification
 Canonical language: English; [Japanese pointer](../ja/STEP6A25-FRONTEND-DIAGNOSTIC-SPEC.md).
-Status: frozen. Tier: full. Owners: [diagnostics plan](../../mizar-diagnostics/en/00.crate_plan.md), [frontend plan](../../mizar-frontend/en/00.crate_plan.md). Consumer: future driver frontend service.
+Status: implemented (design only). Tier: full. Owners: [diagnostics plan](../../mizar-diagnostics/en/00.crate_plan.md), [frontend plan](../../mizar-frontend/en/00.crate_plan.md). Consumer: future driver frontend service.
 Purpose: resolve public-code and zero-width/generated-anchor specification gaps before shared frontend diagnostics can be adopted; design and review only.
 Authority: paired specification 22 [span rules](../../../spec/en/22.error_handling_and_diagnostics.md#2212-source-span-and-context-display), [frontend adoption](../../../spec/en/22.error_handling_and_diagnostics.md#2223-frontend-diagnostic-adoption) and code reference; existing lexical syntax and diagnostic producer categories.
 Scope: EN/JA specification reservations and preservation rules; [frontend discriminator mapping](../../mizar-frontend/en/orchestration.md#shared-diagnostic-adoption); [shared span adoption](../../mizar-diagnostics/en/failure_record.md#frontend-anchor-adoption); paired plan indexes, global todo and coverage deferral.

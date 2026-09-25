@@ -1,6 +1,6 @@
 # Task STEP6A40-IMPORT-DIAGNOSTIC-REGISTRY: import diagnostic allocations
 Canonical language: English; [Japanese pointer](../ja/STEP6A40-IMPORT-DIAGNOSTIC-REGISTRY.md).
-Status: frozen. Tier: full. Owner: [diagnostics plan](../../mizar-diagnostics/en/00.crate_plan.md); consumer: future driver import continuation.
+Status: implemented. Tier: full. Owner: [diagnostics plan](../../mizar-diagnostics/en/00.crate_plan.md); consumer: future driver import continuation.
 Authority: [specification 22.3.5/22.7](../../../spec/en/22.error_handling_and_diagnostics.md#2235-module-import-resolution); [registry owner](../../mizar-diagnostics/en/registry.md#import-allocations).
 Gap: specified E0220–E0224 lack descriptors required by shared draft construction.
 Scope: allocate those five codes with canonical names/summaries and the owner-defined metadata, preserving every existing descriptor and compatibility rule.
