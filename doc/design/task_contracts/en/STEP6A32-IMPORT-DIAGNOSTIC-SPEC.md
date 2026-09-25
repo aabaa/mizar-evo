@@ -1,0 +1,13 @@
+# Task STEP6A32-IMPORT-DIAGNOSTIC-SPEC: semantic import diagnostic allocation
+Canonical language: English; [Japanese pointer](../ja/STEP6A32-IMPORT-DIAGNOSTIC-SPEC.md).
+Status: frozen. Tier: full. Primary owner: [resolver plan](../../mizar-resolve/en/00.crate_plan.md). Consumers: future `mizar-diagnostics` registry and driver resolver service.
+Purpose: assign stable public meanings and numbers to six typed semantic import failures before any public resolver diagnostic adoption.
+Authority: [spec §12.3](../../../spec/en/12.modules_and_namespaces.md#123-import-statements), [spec §22.3.5](../../../spec/en/22.error_handling_and_diagnostics.md#2235-module-import-resolution), [resolver import owner](../../mizar-resolve/en/imports.md), and [architecture diagnostics](../../architecture/en/03.module_and_symbol_resolution.md#diagnostics).
+Dependencies/readiness: parsed import candidates and typed path/graph outcomes exist; a complete workspace lexical-summary route, registry descriptors, source-derived public projection, and a resolver service remain later work.
+Gap: `spec_gap` for six unassigned import meanings closes in paired spec 22; `external_dependency_gap` for real public adoption remains. E0022 and E0043 retain frontend lexical/syntax meanings; E0221 concerns the module-index path, not summary or artifact reads.
+Scope: paired spec 22 allocation and quick reference, paired spec 23 phase table, paired architecture 03 and resolver readiness, this contract, todo link, and chapter-22 coverage audit. Meanings and exclusions live in §22.3.5.
+Tests: existing [typed resolver tests](../../../../crates/mizar-resolve/src/imports/tests.rs) and [source import fixtures](../../../../tests/miz/fail/resolve/) inform the meanings. Current source corpus supports E0221/E0223 meanings only; public activation requires real source-derived producer fixtures for all six plus registry/bridge checks. No public emission is claimed.
+Forbidden: Rust/registry/API changes, producer activation, public bridge, complete workspace summary claims, corpus/expectation changes, and new codes for other name/label/export or internal invalid-input failures.
+Coverage audit: chapter 22 remains partial; specification allocation does not upgrade source or public-emission coverage.
+Require independent specification/EN-JA, test-intent, implementation, volume/scope, and consistency reviews; link/allocation checks, `cargo fmt --check`, `cargo clippy --all-targets --all-features -- -D warnings`, and `cargo test` before finalization.
+Exit: six meanings are assigned consistently in EN/JA spec and architecture with registry and emission boundaries explicit; no active diagnostic adoption is claimed.
