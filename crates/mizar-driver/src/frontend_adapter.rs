@@ -20,13 +20,16 @@ use mizar_frontend::{
         ACTIVE_LEXICAL_ENVIRONMENT_CACHE_KEY_VERSION, SOURCE_UNIT_CACHE_KEY_VERSION,
         SourceUnitCacheKey, TOKEN_STREAM_CACHE_KEY_VERSION,
     },
-    lexical_env::LexicalEnvironmentDiagnosticCode as EnvironmentCode,
+    lexical_env::{
+        ExportedSymbolShape, LexicalEnvironmentDiagnosticCode as EnvironmentCode,
+        ModuleLexicalSummary,
+    },
     lexing::{LexDiagnosticCode, LexingDiagnosticKind, ScopeSkeletonDiagnosticCode},
     orchestration::{
         DiagnosticClass, DiagnosticCode as FrontendCode, DiagnosticLocation, Frontend,
         FrontendDiagnostic, FrontendOutput,
     },
-    parsing::MizarParserSeam,
+    parsing::{MizarParserSeam, ParserSeam},
     preprocess::{
         ImportPrescanDiagnosticCode, PreprocessDiagnosticKind, SourcePreprocessDiagnosticCode,
     },
@@ -71,6 +74,7 @@ impl<'a> crate::registry::SourceLoadInputs<'a> {
         DependencyLexicalProvider {
             inputs: self,
             artifact_roots,
+            workspace_summaries: &[],
         }
     }
 }
@@ -78,6 +82,10 @@ impl<'a> crate::registry::SourceLoadInputs<'a> {
 struct DependencyLexicalProvider<'a> {
     inputs: crate::registry::SourceLoadInputs<'a>,
     artifact_roots: &'a [(mizar_session::PackageId, PathBuf)],
+    workspace_summaries: &'a [(
+        mizar_resolve::module_index::IndexedModuleId,
+        ModuleLexicalSummary,
+    )],
 }
 
 impl mizar_frontend::lexical_env::LexicalSummaryProvider for DependencyLexicalProvider<'_> {
@@ -142,6 +150,28 @@ impl mizar_frontend::lexical_env::LexicalSummaryProvider for DependencyLexicalPr
                     .filter(|entry| entry.module == module),
             )
             .ok_or_else(unavailable)?;
+            if let ModuleIndexLocation::WorkspaceFile { .. } = &entry.location {
+                let (_, summary) = unique(
+                    self.workspace_summaries
+                        .iter()
+                        .filter(|(target, _)| target == &module),
+                )
+                .ok_or_else(unavailable)?;
+                if module.package != current.module.package
+                    || entry.package_id != module.package
+                    || entry.module_path != module.path
+                {
+                    return Err(unavailable());
+                }
+                let module_id = summary.module_id.clone();
+                result.summaries.push(summary.clone());
+                result.imports.push(ResolvedImportEntry {
+                    stub_ordinal: import.ordinal(),
+                    stub_span: import.range(),
+                    import: ResolvedImport { module_id },
+                });
+                continue;
+            }
             let ModuleIndexLocation::DependencySummary {
                 artifact,
                 content_hash,
@@ -741,22 +771,40 @@ impl PhaseService for FrontendService {
         dependencies.sort_by(|left, right| left.as_bytes().cmp(right.as_bytes()));
         if input.identities().input_hash() != source_key
             || input.identities().dependency_hashes() != dependencies
-            || input.parent_outputs().len() != 1
         {
             return blocking();
         }
-        let parent = input.parent_outputs()[0].as_output_ref();
         let work_unit = IrWorkUnit::new(format!(
             "{:?}:{:?}",
             module.package.as_str(),
             module.path.as_str()
         ));
-        if parent.phase() != &IrPipelinePhase::new("SourceLoad")
-            || parent.work_unit() != &work_unit
-            || parent.output_kind() != &OutputKind::new("SourceUnit")
-            || parent.schema_version() != SchemaVersion::new(1)
-            || publisher.validate_current_output(snapshot, parent).is_err()
-            || publisher.storage().validate_handle(parent).is_err()
+        let Some(parent) = unique(
+            input
+                .parent_outputs()
+                .iter()
+                .map(|handle| handle.as_output_ref())
+                .filter(|handle| {
+                    handle.phase() == &IrPipelinePhase::new("SourceLoad")
+                        && handle.work_unit() == &work_unit
+                        && handle.output_kind() == &OutputKind::new("SourceUnit")
+                        && handle.schema_version() == SchemaVersion::new(1)
+                }),
+        ) else {
+            return blocking();
+        };
+        let parents_current = || {
+            input.parent_outputs().iter().all(|handle| {
+                let handle = handle.as_output_ref();
+                publisher.validate_current_output(snapshot, handle).is_ok()
+                    && publisher.storage().validate_handle(handle).is_ok()
+            })
+        };
+        if !parents_current()
+            || input.parent_outputs().iter().any(|handle| {
+                let handle = handle.as_output_ref();
+                handle.phase() == &IrPipelinePhase::new("SourceLoad") && handle != parent
+            })
         {
             return blocking();
         }
@@ -789,15 +837,166 @@ impl PhaseService for FrontendService {
         {
             return blocking();
         }
+        let Some(workspace_summaries) = (|| {
+            use mizar_artifact::{
+                module_summary::ModuleSummaryIdentity, store::canonical_json_string,
+            };
+            use mizar_resolve::{
+                declarations::DeclarationShellCollector, env::NamespacePath,
+                module_index::IndexedModuleId, resolved_ast::ModuleId,
+                symbols::SignatureProjectionExtractor,
+            };
+            let mut summaries = Vec::new();
+            for handle in input.parent_outputs() {
+                let leaf = handle.as_output_ref();
+                if leaf == parent {
+                    continue;
+                }
+                if leaf.phase() != &IrPipelinePhase::new("Frontend")
+                    || leaf.output_kind() != &OutputKind::new("FrontendOutput")
+                    || leaf.schema_version() != SchemaVersion::new(1)
+                {
+                    return None;
+                }
+                let typed = publisher
+                    .storage()
+                    .typed_handle::<FrontendOutput<<MizarParserSeam as ParserSeam>::Ast>>(
+                        leaf,
+                        &OutputKind::new("FrontendOutput"),
+                    )
+                    .ok()?;
+                let output = publisher.storage().get(&typed).ok()?;
+                let leaf_source = &output.source;
+                let leaf_version =
+                    unique(inputs.snapshot.source_versions.iter().filter(|candidate| {
+                        candidate.package_id == leaf_source.package_id
+                            && candidate.module_path == leaf_source.module_path
+                    }))?;
+                let leaf_module = IndexedModuleId::new(
+                    leaf_source.package_id.clone(),
+                    leaf_source.module_path.clone(),
+                );
+                let leaf_entry = unique(
+                    inputs
+                        .module_index
+                        .modules
+                        .iter()
+                        .filter(|candidate| candidate.module == leaf_module),
+                )?;
+                let ModuleIndexLocation::WorkspaceFile {
+                    source_root: leaf_root,
+                    normalized_path: leaf_path,
+                    source_relative_path,
+                } = &leaf_entry.location
+                else {
+                    return None;
+                };
+                let leaf_unit = IrWorkUnit::new(format!(
+                    "{:?}:{:?}",
+                    leaf_module.package.as_str(),
+                    leaf_module.path.as_str()
+                ));
+                let [source_parent] = leaf.lineage().parents.as_slice() else {
+                    return None;
+                };
+                let source_lineage = publisher.registry().output_lineage(*source_parent)?;
+                let leaf_source_key = source_input_hash(leaf_version);
+                if leaf_module.package != module.package
+                    || leaf_module == *module
+                    || leaf.work_unit() != &leaf_unit
+                    || leaf_version.origin != SourceOrigin::Disk
+                    || output.canonical_disk_bytes().is_none()
+                    || leaf_source.source_id != leaf_version.source_id
+                    || leaf_source.package_id != leaf_version.package_id
+                    || leaf_source.module_path != leaf_version.module_path
+                    || leaf_source.normalized_path != leaf_version.normalized_path
+                    || leaf_source.edition != leaf_version.edition
+                    || leaf_version.edition != package.edition
+                    || leaf_source.source_hash != leaf_version.source_hash
+                    || leaf_source.origin != SourceOrigin::Disk
+                    || leaf_entry.package_id != leaf_module.package
+                    || leaf_entry.module_path != leaf_module.path
+                    || leaf_entry.edition != leaf_version.edition
+                    || leaf_root != source_root
+                    || leaf_path != leaf_version.normalized_path.as_str()
+                    || leaf_path != &format!("src/{source_relative_path}")
+                    || source_relative_path.is_empty()
+                    || index_package.version != package.version
+                    || source_lineage.snapshot != snapshot
+                    || source_lineage.phase != IrPipelinePhase::new("SourceLoad")
+                    || source_lineage.work_unit != leaf_unit
+                    || source_lineage.output_kind != OutputKind::new("SourceUnit")
+                    || !source_lineage.parents.is_empty()
+                    || source_lineage.named_input_hashes.as_slice()
+                        != [NamedInputHash {
+                            name: "source".to_owned(),
+                            domain: SOURCE_UNIT_CACHE_KEY_VERSION.to_owned(),
+                            digest: leaf_source_key,
+                        }]
+                    || output.cache_keys.source.stable_hash() != leaf_source_key
+                    || !output.diagnostics.is_empty()
+                    || output.ast.as_ref().is_none_or(|ast| {
+                        ast.node_views().any(|view| view.as_export_item().is_some())
+                    })
+                    || authenticated_import_candidates(&output, leaf_source)
+                        .is_none_or(|candidates| !candidates.is_empty())
+                {
+                    return None;
+                }
+                let ast = output.ast.as_ref()?;
+                let resolver_module =
+                    ModuleId::new(leaf_module.package.clone(), leaf_module.path.clone());
+                let shells = DeclarationShellCollector::new(ast, &resolver_module).collect();
+                let collection = SignatureProjectionExtractor::new(
+                    ast,
+                    &shells,
+                    NamespacePath::new(resolver_module.path().as_str()),
+                )
+                .collect(&resolver_module);
+                if !collection.diagnostics().is_empty() {
+                    return None;
+                }
+                let identity = ModuleSummaryIdentity {
+                    package_id: leaf_module.package.as_str().to_owned(),
+                    package_version: Some(package.version.to_string()),
+                    lockfile_identity: None,
+                    module_path: leaf_module.path.as_str().to_owned(),
+                    language_edition: leaf_version.edition.as_str().to_owned(),
+                };
+                let module_id = canonical_json_string(&identity.canonical_json().ok()?);
+                let shapes = collection
+                    .export_frontend_lexical_contributions(&output, &identity)?
+                    .into_iter()
+                    .map(|contribution| {
+                        ExportedSymbolShape::from_canonical_bytes(contribution.payload.as_bytes())
+                    })
+                    .collect::<Option<Vec<_>>>()?;
+                let summary = ModuleLexicalSummary::from_exported_symbols(
+                    mizar_frontend::lexical_env::ModuleId::new(module_id),
+                    shapes,
+                )?;
+                summaries.push((leaf_module, summary));
+            }
+            Some(summaries)
+        })() else {
+            return blocking();
+        };
         let frontend = Frontend::new(
             FrontendSourceLoader::new(DiskSourceLoader::new(package_root)),
-            inputs.dependency_lexical_provider(&self.artifact_roots),
+            DependencyLexicalProvider {
+                inputs,
+                artifact_roots: &self.artifact_roots,
+                workspace_summaries: &workspace_summaries,
+            },
             MizarParserSeam,
         );
         let Ok(output) = frontend.run_loaded(source.as_ref().clone()) else {
             return blocking();
         };
         if output.ast.is_some() != output.cache_keys.ast.is_some() {
+            return blocking();
+        }
+        if !parents_current() {
             return blocking();
         }
         let Some(drafts) =
@@ -811,15 +1010,13 @@ impl PhaseService for FrontendService {
             }
         }
         if !output.diagnostics.is_empty() {
-            if publisher.validate_current_output(snapshot, parent).is_err() {
+            if !parents_current() {
                 return blocking();
             }
             let import_batch = (|| {
                 use mizar_diagnostics::sink::{DiagnosticProducerScope, DiagnosticSink};
                 use mizar_resolve::{
-                    imports::{
-                        ImportPathCandidate, ImportPathFailureClass as Failure, ImportPathResolver,
-                    },
+                    imports::{ImportPathFailureClass as Failure, ImportPathResolver},
                     module_index::ModuleIndexInput,
                 };
                 if !output.diagnostics.iter().all(|diagnostic| {
@@ -831,82 +1028,9 @@ impl PhaseService for FrontendService {
                 {
                     return None;
                 }
-                let ast = output.ast.as_ref()?;
-                output.cache_keys.ast.as_ref()?;
-                if ast.source_id != source.source_id
-                    || ast
-                        .node_views()
-                        .any(|view| view.as_recovery().is_some() || view.is_recovered())
-                {
+                let candidates = authenticated_import_candidates(&output, source.as_ref())?;
+                if candidates.is_empty() {
                     return None;
-                }
-                let candidates = ImportPathCandidate::from_surface_ast(ast)?;
-                let provisional = ImportPathCandidate::from_frontend_imports(
-                    &mizar_frontend::lexical_env::LexicalEnvironmentRequest {
-                        source_id: source.source_id,
-                        import_stubs: &output.preprocessed.import_stubs,
-                        edition: source.edition.clone(),
-                    },
-                )?;
-                if candidates.is_empty() || candidates.len() != provisional.len() {
-                    return None;
-                }
-                for ((candidate, prescan), stub) in candidates
-                    .iter()
-                    .zip(&provisional)
-                    .zip(&output.preprocessed.import_stubs)
-                {
-                    if candidate.components() != prescan.components()
-                        || candidate.prefix() != prescan.prefix()
-                        || candidate.alias() != prescan.alias()
-                        || candidate.alias_range() != prescan.alias_range()
-                        || candidate.branch_base_range() != prescan.branch_base_range()
-                        || candidate.branch_member_range() != prescan.branch_member_range()
-                        || if candidate.branch_member_range().is_some() {
-                            candidate.range().start > prescan.range().start
-                                || candidate.range().end < prescan.range().end
-                        } else {
-                            candidate.range() != prescan.range()
-                        }
-                    {
-                        return None;
-                    }
-                    for range in std::iter::once(candidate.range())
-                        .chain(std::iter::once(stub.span))
-                        .chain(std::iter::once(stub.path.span))
-                        .chain(stub.path.source_segments.iter().copied())
-                        .chain(candidate.alias_range())
-                    {
-                        source.line_map.validate_range(range).ok()?;
-                    }
-                    let prefix = match candidate.prefix() {
-                        mizar_resolve::imports::ImportPathPrefix::Unprefixed => "",
-                        mizar_resolve::imports::ImportPathPrefix::Current => ".",
-                        mizar_resolve::imports::ImportPathPrefix::Parent => "..",
-                        _ => return None,
-                    };
-                    if stub.path.spelling.as_ref()
-                        != format!("{prefix}{}", candidate.components().join("."))
-                    {
-                        return None;
-                    }
-                }
-                // Authenticate the whole import framing, not just path coordinates.
-                for item in ast.node_views().filter_map(|view| view.as_import_item()) {
-                    let range = item.range();
-                    source.line_map.validate_range(range).ok()?;
-                    for view in ast.token_views().filter(|view| {
-                        range.start <= view.range().start && view.range().end <= range.end
-                    }) {
-                        source.line_map.validate_range(view.range()).ok()?;
-                        if source
-                            .source_text
-                            .get(view.range().start..view.range().end)?
-                            != view.as_token()?.text.as_ref()
-                        {
-                            return None;
-                        }
-                    }
                 }
                 let index = ModuleIndexInput::new(inputs.module_index);
                 let current = index.resolver_module_id(module);
@@ -1065,7 +1189,7 @@ impl PhaseService for FrontendService {
                 }
                 Some(resolver_sink.seal())
             })();
-            if publisher.validate_current_output(snapshot, parent).is_err() {
+            if !parents_current() {
                 return blocking();
             }
             let mut diagnostics = vec![sink.seal()];
@@ -1080,13 +1204,44 @@ impl PhaseService for FrontendService {
                 ..blocking()
             };
         }
-        let Some(ast) = output.ast.as_ref() else {
+        let Some(candidates) = authenticated_import_candidates(&output, source.as_ref()) else {
             return blocking();
         };
-        if ast
-            .node_views()
-            .any(|view| view.as_recovery().is_some() || view.is_recovered())
-        {
+        let index = mizar_resolve::module_index::ModuleIndexInput::new(inputs.module_index);
+        let resolution = mizar_resolve::imports::ImportPathResolver::new(index)
+            .resolve(&index.resolver_module_id(module), &candidates);
+        if !resolution.unresolved().is_empty() {
+            return blocking();
+        }
+        let mut used = Vec::new();
+        for import in resolution.resolved() {
+            let target = mizar_resolve::module_index::IndexedModuleId::new(
+                import.target().package().clone(),
+                import.target().path().clone(),
+            );
+            let Some(entry) = unique(
+                inputs
+                    .module_index
+                    .modules
+                    .iter()
+                    .filter(|entry| entry.module == target),
+            ) else {
+                return blocking();
+            };
+            if matches!(&entry.location, ModuleIndexLocation::WorkspaceFile { .. })
+                && !workspace_summaries
+                    .iter()
+                    .any(|(module, _)| module == &target)
+            {
+                return blocking();
+            }
+            if matches!(&entry.location, ModuleIndexLocation::WorkspaceFile { .. })
+                && !used.contains(&target)
+            {
+                used.push(target);
+            }
+        }
+        if used.len() != workspace_summaries.len() {
             return blocking();
         }
         let Some(ast_key) = output.cache_keys.ast.as_ref() else {
@@ -1125,6 +1280,9 @@ impl PhaseService for FrontendService {
         let expected_hash = version.source_hash;
         let phase = IrPipelinePhase::new("Frontend");
         let output_kind = OutputKind::new("FrontendOutput");
+        if !parents_current() {
+            return blocking();
+        }
         let handle = publisher.publish(PublishOutputInput {
             slot: publisher.allocate(
                 snapshot,
@@ -1146,7 +1304,11 @@ impl PhaseService for FrontendService {
                     .filter(|output| output.source.source_hash == expected_hash)
                     .ok_or_else(|| BlobDecodeError::new("invalid frontend disk payload"))
             }),
-            parents: vec![parent.clone()],
+            parents: input
+                .parent_outputs()
+                .iter()
+                .map(|handle| handle.as_output_ref().clone())
+                .collect(),
             named_input_hashes,
             side_tables: IrSideTables {
                 source_maps: vec![SideTableRecord::new(
@@ -1167,6 +1329,92 @@ impl PhaseService for FrontendService {
             Err(_) => blocking(),
         }
     }
+}
+
+fn authenticated_import_candidates(
+    output: &FrontendOutput<<MizarParserSeam as ParserSeam>::Ast>,
+    source: &SourceUnit,
+) -> Option<Vec<mizar_resolve::imports::ImportPathCandidate>> {
+    use mizar_resolve::imports::{ImportPathCandidate, ImportPathPrefix};
+    let ast = output.ast.as_ref()?;
+    output.cache_keys.ast.as_ref()?;
+    if output.source != *source
+        || output.preprocessed.source_id != source.source_id
+        || ast.source_id != source.source_id
+        || ast
+            .node_views()
+            .any(|view| view.as_recovery().is_some() || view.is_recovered())
+    {
+        return None;
+    }
+    let candidates = ImportPathCandidate::from_surface_ast(ast)?;
+    let provisional = ImportPathCandidate::from_frontend_imports(
+        &mizar_frontend::lexical_env::LexicalEnvironmentRequest {
+            source_id: source.source_id,
+            import_stubs: &output.preprocessed.import_stubs,
+            edition: source.edition.clone(),
+        },
+    )?;
+    if candidates.len() != provisional.len() {
+        return None;
+    }
+    for ((candidate, prescan), stub) in candidates
+        .iter()
+        .zip(&provisional)
+        .zip(&output.preprocessed.import_stubs)
+    {
+        if candidate.components() != prescan.components()
+            || candidate.prefix() != prescan.prefix()
+            || candidate.alias() != prescan.alias()
+            || candidate.alias_range() != prescan.alias_range()
+            || candidate.branch_base_range() != prescan.branch_base_range()
+            || candidate.branch_member_range() != prescan.branch_member_range()
+            || if candidate.branch_member_range().is_some() {
+                candidate.range().start > prescan.range().start
+                    || candidate.range().end < prescan.range().end
+            } else {
+                candidate.range() != prescan.range()
+            }
+        {
+            return None;
+        }
+        for range in std::iter::once(candidate.range())
+            .chain(std::iter::once(stub.span))
+            .chain(std::iter::once(stub.path.span))
+            .chain(stub.path.source_segments.iter().copied())
+            .chain(candidate.alias_range())
+        {
+            source.line_map.validate_range(range).ok()?;
+        }
+        let prefix = match candidate.prefix() {
+            ImportPathPrefix::Unprefixed => "",
+            ImportPathPrefix::Current => ".",
+            ImportPathPrefix::Parent => "..",
+            _ => return None,
+        };
+        if stub.path.spelling.as_ref() != format!("{prefix}{}", candidate.components().join(".")) {
+            return None;
+        }
+    }
+    // Authenticate the whole import framing, not just path coordinates.
+    for item in ast.node_views().filter_map(|view| view.as_import_item()) {
+        let range = item.range();
+        source.line_map.validate_range(range).ok()?;
+        for view in ast
+            .token_views()
+            .filter(|view| range.start <= view.range().start && view.range().end <= range.end)
+        {
+            source.line_map.validate_range(view.range()).ok()?;
+            if source
+                .source_text
+                .get(view.range().start..view.range().end)?
+                != view.as_token()?.text.as_ref()
+            {
+                return None;
+            }
+        }
+    }
+    Some(candidates)
 }
 
 fn convert_frontend_diagnostics(

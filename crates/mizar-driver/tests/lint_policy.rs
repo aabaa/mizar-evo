@@ -71,11 +71,12 @@ fn driver_dependency_boundary_is_exact_for_scaffold_task() {
     let manifest_path = crate_root().join("Cargo.toml");
     let manifest = read_to_string(&manifest_path);
     let dependency_sections = dependency_section_names(&manifest);
-    let expected_sections = vec!["dependencies".to_owned(), "dev-dependencies".to_owned()];
+    let expected_sections = vec!["dependencies".to_owned()];
     let dependencies = section(&manifest, "dependencies");
     let actual = dependency_names(&dependencies);
     let expected = BTreeSet::from([
         "blake3".to_owned(),
+        "mizar-artifact".to_owned(),
         "mizar-frontend".to_owned(),
         "mizar-build".to_owned(),
         "mizar-diagnostics".to_owned(),
@@ -88,7 +89,7 @@ fn driver_dependency_boundary_is_exact_for_scaffold_task() {
     assert_eq!(
         dependency_sections,
         expected_sections,
-        "{} must keep exact production and fixture dependency tables; \
+        "{} must keep the exact production dependency table; \
          build/target-specific dependency tables remain outside scope",
         manifest_path.display()
     );
@@ -124,14 +125,8 @@ fn driver_dependency_boundary_is_exact_for_scaffold_task() {
         "mizar-resolve",
         "../mizar-resolve",
     );
-    let fixture_dependencies = section(&manifest, "dev-dependencies");
-    assert_eq!(
-        dependency_names(&fixture_dependencies),
-        BTreeSet::from(["mizar-artifact".to_owned()]),
-        "only the real artifact publication fixture owner is a dev dependency"
-    );
     assert_dependency_path(
-        &fixture_dependencies,
+        &dependencies,
         &manifest_path,
         "mizar-artifact",
         "../mizar-artifact",

@@ -31,7 +31,7 @@ publication 成功時だけ実 sealed output を持つ Complete を返す。[sch
 
 ## Dependency lexical provider
 
-provider は本体依存 `mizar-resolve` を追加し、実 publication fixture 用の唯一の dev 依存を `mizar-artifact` とする。依存境界 lint はこの所有者接続だけを追加許可する。
+provider は `mizar-resolve` を利用し、供給された source leaf の canonical identity と lexical payload API 用に `mizar-artifact` を本体依存とする。依存境界 lint はこれらの所有者接続だけを許可し、artifact publication 権限は driver の外に維持する。
 
 `SourceLoadInputs::dependency_lexical_provider(artifact_roots)` は実 frontend
 `LexicalSummaryProvider` の非公開実装を返す。root は呼出し側が渡す
@@ -57,7 +57,7 @@ resolver の provisional frontend mapper と既存 import resolver で path を�
 ## Disk Frontend service
 
 `register_frontend(artifact_roots: Vec<(PackageId, PathBuf)>)` は明示的な依存rootを所有する実Frontend専用サービスを登録する。pathを推測せず、execution-resource型を追加しない。既存SourceLoadInputsを借用し、frontend所有の [公開表現](../../mizar-frontend/ja/orchestration.md#frontendoutput-publication) を使う。後段サービス不足による全体graphの停止は維持する。
-SourceLoadと同様にcurrent snapshot/workspace、一意なdisk source/version、workspace package/index/module metadataの一致を要求する。同じwork unitのcurrentなSourceLoad/SourceUnit/schema-1 sealed親をちょうど1個要求し、publisher/storage検証後に型付きSourceUnitを復元する。identity・package/module/path/edition/hashと正準disk metadataを照合し、再読込やSourceId再割当はしない。
+SourceLoadと同様にcurrent snapshot/workspace、一意なdisk source/version、workspace package/index/module metadataの一致を要求する。同じwork unitのcurrentな自身のSourceLoad/SourceUnit/schema-1 sealed親1個と、下記の[供給済みleaf親](#supplied-workspace-leaf-summaries)だけを許可し、publisher/storage検証後に型付きSourceUnitを復元する。identity・package/module/path/edition/hashと正準disk metadataを照合し、再読込やSourceId再割当はしない。
 実行前に各indexed DependencySummaryが、そのmoduleの一意なdependency_summaries項目と、同じ `(artifact文字列, content_hash)` の一意なsnapshot artifact refに一致することを要求する。各dependency_summaries項目にも対応するindex moduleと捕捉refを要求する。欠落・同一pair重複・不一致はBlocking。同じ相対名で異なるhashは許し、無関係なsnapshot refは権限根拠にしない。呼出元はmodule-summary pathの正確な綴りを捕捉し、サービスはpackage名前空間を捏造しない。
 dispatch input hashは捕捉versionのSourceUnitCacheKey、dependency hashesは捕捉module indexの全DependencySummary content hashを整列した多重集合とする。親hashはsealed bundleから得る。cache_keyはNoKeyであり、query identityはcache再利用や依存fileの可用性を保証しない。
 同snapshotの空・未sealなFrontend sinkとcurrent publisherを要求し、schedulerはFrontend用sinkを作成する。一致するcancelはCancelled、不一致cancel・不正resource/binding/identity・provider/span/変換/公開失敗は出力なしBlocking。resourceを捏造せずpublisher snapshotを復活させない。
@@ -74,3 +74,9 @@ class対応はsource preconditionがlexical-precondition（未終端commentの�
 実 Frontend service はこの限定経路でソース結合済み E0220–E0224 変換を行う。[scheduled prefix](./driver.md#scheduled-sourceloadfrontend-prefix) により `CompilerDriver::submit` からこの経路を実行できるが、session の失敗と通常の後続の遮断を維持する。E0225 と完全な workspace summary は後続とする。
 
 import draft の detail key は `import.source_module`（String list `[package, path]`）、`import.ordinal`（Integer）、`import.path`（resolver spelling String）、`import.branch_member`（branch のみ Source range）とする。E0223 は `import.alias`（String）と `import.target`（String list `[package, path]`）を追加する。stable detail key は registry semantic name、phase は Resolver、category は ResolveError。primary/secondary range は仕様22.3.5に従い anchor intent は未指定とし、この schema で集約時の candidate identity を保持する。
+
+## Supplied workspace leaf summaries
+
+Frontend は自身の SourceLoad/SourceUnit 親1件に加え、同じ package 内の import を持たない workspace leaf の current Frontend/FrontendOutput 親を受け取れる。bundle の位置でなく phase/kind/work-unit identity で選び、重複・無関係・未使用 leaf を拒否する。既存 artifact summary 経路と公開 provider constructor は維持し、service が検証済み leaf を渡さない場合の source-summary slice は空とする。
+各 leaf は一意な捕捉 disk SourceVersion と workspace index/package（source id/hash、package/module、path、edition）に一致し、正しい canonical source metadata と current schema-1 sealed Frontend payload を持つ。登録 lineage は同じ snapshot と leaf work unit の SourceLoad/SourceUnit 親1件でなければならず、親が保持する source input key と leaf の source cache key は捕捉 SourceUnitCacheKey に一致しなければならない。disk を再読込せず埋込 source を検証する。AST/key があり、診断・AST 全体の recovery/error node・parsed/prescan import・reexport がないことを要求する。AST から symbol を収集し、完全な A13 source 対応と対応済み lexical export を検証する。未対応 operator/alias は拒否する。build の package/module/edition identity と package_version Some(一意な workspace PackagePlan.version.to_string()) を使い、PackageIndexEntry.version の一致を要求する（canonical な捕捉 lockfile identity API がないため lockfile_identity は None）と既存 lexical contribution export、canonical lexer constructor を使い、完全な artifact ModuleSummary は合成しない。
+共有する source/import 照合は診断専用継続の exact E0022/class・非空 candidate 条件と元の診断 batch を維持する。既存の private provider は一致する同一 package の workspace target にだけこの summary を使う。成功 publication 前に importer の parsed import を preprocessing/source と照合し、全 leaf が実際の解決済み workspace target であることを確認する。不足・余分な leaf は停止する。消費した全 sealed parent を importer lineage に含め、診断返却・publication 前にも全親の現行性を再確認する。dependency hash は従来どおり捕捉 dependency artifact のみを表す。これは暫定的な import 字句処理であり、意味的 export/import の受理ではない。自動 workspace scheduling、non-leaf 取得、cycle、E0225 は後続とする。
