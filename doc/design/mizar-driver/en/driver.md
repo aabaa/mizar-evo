@@ -78,7 +78,6 @@ cache, artifact, or LSP authority.
 
 | Gap | Classification | Driver disposition |
 |---|---|---|
-| `Frontend` still lacks its complete canonical payload and shared diagnostics bridge; disk SourceLoad is separately available. | `external_dependency_gap` | Keep missing-service blocking for Frontend and later owners; see [source services](frontend_adapter.md). |
 | Semantic/proof/artifact/doc phase adapters are not all available. | `external_dependency_gap` / `deferred` | A submit call may report the missing owner seam as blocked or unavailable; it must not mark the phase complete. |
 | Real cache lookup/compatibility is not wired through `mizar-cache` yet. | `external_dependency_gap` | Use disabled/unavailable cache scheduling unless a real cache decision is supplied by the owner seam. |
 | Real artifact publication tokens and phase-15 producer emission are unavailable. | `external_dependency_gap` | Do not emit committed-artifact events or manifest publication records from driver-owned code. |
@@ -377,3 +376,9 @@ Task D-008 and D-011 source tests must cover:
 If a test needs a phase service, it may use a test-local fixture only for the
 specific implemented behavior under test. Fixture services must not be exported
 or documented as real adapters.
+
+## Scheduled SourceLoad/Frontend prefix
+
+Missing later services do not suppress the scheduler-selected prefix when the registry contains only the existing built-in SourceLoad and Frontend descriptor identities and the caller supplies a publisher current for the captured snapshot. Without these prerequisites, retain missing-service preflight blocking. The driver never registers a snapshot or grants publication rights in this route.
+A supplied dispatch provider remains authoritative, including None/error/invalid bundles. Only with no provider, prepare SourceLoad input from the unique matching captured SourceVersion using the frontend adapter’s shared SourceUnitCacheKey derivation, no dependencies or parents. Frontend uses that same key, the sorted multiset of captured index summary hashes and exactly one completed SourceLoad output from this task's dependencies for the same work unit; validate it through the IR sealed-parent API. A cached task without a real retained output cannot supply a parent. Other phases gain no default inputs.
+For the prefix exception, mark supplied ValidatedHit decisions for tasks with missing services Unavailable while retaining task ids for normal scheduler validation; available-service cache behavior is unchanged. Retain missing-service classifications and events after scheduling. Failed frontend/source tasks keep the session Failed; a clean prefix stays Blocked when downstream services are absent, using BlockedByMissingPhaseServices unless a selected owner-input gap requires BlockedByPhaseDispatchGap. Selected missing services are classified before default input construction. Cancellation, parent validation and final lane/publisher currentness still govern execution/reporting; no semantic/proof/cache/artifact success follows from prefix completion.

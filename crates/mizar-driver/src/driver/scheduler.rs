@@ -182,11 +182,103 @@ fn dispatch_registry_phase(
             }
         }
         None => {
-            return SchedulerDispatchOutcome::blocked(vec![dispatch_diagnostic(
-                task.task,
-                "missing_phase_input_identities",
-                "owner-provided phase input bundle is unavailable",
-            )]);
+            if task.task.phases.iter().any(|phase| {
+                matches!(
+                    registry.descriptor_for_phase(*phase),
+                    Err(PhaseRegistryError::MissingPhaseService { .. })
+                )
+            }) {
+                return SchedulerDispatchOutcome::blocked(vec![dispatch_diagnostic(
+                    task.task,
+                    "missing_phase_service",
+                    "phase service is unavailable at dispatch time",
+                )]);
+            }
+            let bundle = (|| {
+                use crate::{
+                    frontend_adapter::{FrontendService, SourceLoadService},
+                    registry::PhaseService,
+                };
+                use mizar_ir::{
+                    dispatch_input::{PhaseDispatchInputBundle, SealedParentOutputHandle},
+                    identity::{OutputKind, PipelinePhase as IrPhase, WorkUnit as IrWorkUnit},
+                };
+                let expected = match task.task.phases.as_slice() {
+                    [PipelinePhase::SourceLoad] => SourceLoadService.phase(),
+                    [PipelinePhase::Frontend] => FrontendService {
+                        artifact_roots: Vec::new(),
+                    }
+                    .phase(),
+                    _ => return None,
+                };
+                if registry.descriptor_for_phase(task.task.phases[0]).ok()? != &expected {
+                    return None;
+                }
+                let publisher = publisher?;
+                publisher.validate_current_snapshot(task.snapshot).ok()?;
+                let inputs = source_load?;
+                if inputs.snapshot.id != task.snapshot {
+                    return None;
+                }
+                let mizar_build::task_graph::WorkUnit::Module { module } = &task.task.unit else {
+                    return None;
+                };
+                let mut versions = inputs.snapshot.source_versions.iter().filter(|version| {
+                    version.package_id == module.package && version.module_path == module.path
+                });
+                let version = versions.next()?;
+                if versions.next().is_some() {
+                    return None;
+                }
+                let key = crate::frontend_adapter::source_input_hash(version);
+                if task.task.phases == [PipelinePhase::SourceLoad] {
+                    return Some(PhaseDispatchInputBundle::without_parent_outputs(
+                        task.snapshot,
+                        key,
+                        Vec::new(),
+                    ));
+                }
+                let unit = IrWorkUnit::new(format!(
+                    "{:?}:{:?}",
+                    module.package.as_str(),
+                    module.path.as_str()
+                ));
+                let mut parents = task
+                    .task
+                    .dependencies
+                    .iter()
+                    .flat_map(|id| phase_results.get(id).into_iter().flatten())
+                    .filter(|result| result.status == PhaseStatus::Complete)
+                    .flat_map(|result| result.output_refs.iter())
+                    .filter(|parent| {
+                        parent.phase() == &IrPhase::new("SourceLoad")
+                            && parent.work_unit() == &unit
+                            && parent.output_kind() == &OutputKind::new("SourceUnit")
+                    });
+                let parent = parents.next()?.clone();
+                if parents.next().is_some() {
+                    return None;
+                }
+                let parent =
+                    SealedParentOutputHandle::from_current_output(publisher, task.snapshot, parent)
+                        .ok()?;
+                let mut dependencies = inputs
+                    .module_index
+                    .dependency_summaries
+                    .iter()
+                    .map(|summary| summary.content_hash)
+                    .collect::<Vec<_>>();
+                dependencies.sort_by(|left, right| left.as_bytes().cmp(right.as_bytes()));
+                PhaseDispatchInputBundle::new(task.snapshot, key, dependencies, vec![parent]).ok()
+            })();
+            let Some(bundle) = bundle else {
+                return SchedulerDispatchOutcome::blocked(vec![dispatch_diagnostic(
+                    task.task,
+                    "missing_phase_input_identities",
+                    "owner-provided phase input bundle is unavailable",
+                )]);
+            };
+            bundle
         }
     };
 

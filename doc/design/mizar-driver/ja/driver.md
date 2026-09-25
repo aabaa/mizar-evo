@@ -76,7 +76,6 @@ Downstream crate はこれらの enum を match するとき wildcard arm を持
 
 | Gap | Classification | Driver disposition |
 |---|---|---|
-| `Frontend` は完全な canonical payload と shared diagnostics bridge が未実装。disk SourceLoad は別途利用可能。 | `external_dependency_gap` | Frontend と後続 owner の missing-service blocking を維持する。[source services](frontend_adapter.md) を参照。 |
 | semantic / proof / artifact / doc phase adapter がすべて利用可能ではない。 | `external_dependency_gap` / `deferred` | submit call は missing owner seam を blocked または unavailable として報告してよい。phase complete と mark してはならない。 |
 | real cache lookup / compatibility はまだ `mizar-cache` 経由で結線されていない。 | `external_dependency_gap` | real cache decision が owner seam から供給されるまで、disabled / unavailable cache scheduling を使う。 |
 | real artifact publication token と phase-15 producer emission が利用できない。 | `external_dependency_gap` | driver-owned code から committed-artifact event や manifest publication record を emit しない。 |
@@ -353,3 +352,9 @@ Task D-008 と D-011 の source test は次を cover しなければならない
 
 test が phase service を必要とする場合、test 対象の実装済み挙動に限って test-local fixture を
 使ってよい。fixture service は export してはならず、real adapter として文書化してもならない。
+
+## Scheduled SourceLoad/Frontend prefix
+
+registry が既存組込 SourceLoad と Frontend の両 descriptor identity だけを含み、呼出し元が捕捉 snapshot に対して current な publisher を供給するとき、後段 service 不足でも scheduler が選択した prefix を実行する。この前提がなければ従来の missing-service 事前停止を維持する。driver はこの経路で snapshot 登録や publication 権限付与を行わない。
+供給済み dispatch provider は None/error/不正 bundle を含め優先し、fallback しない。provider 自体がない場合だけ、一意に一致する捕捉 SourceVersion の frontend adapter で共用する SourceUnitCacheKey、空の dependency/parent から SourceLoad 入力を作る。Frontend は同じ key、捕捉 index の summary hash のソート済み multiset、当該 task の依存元にある同一 work unit の完了 SourceLoad 出力1件を使い、IR sealed-parent API で検証する。実出力のない cache-hit task は親を供給できない。他 phase の既定入力は作らない。
+prefix の例外経路では service がない task の ValidatedHit を Unavailable に変え、通常の scheduler 検証用の task id は保持する。利用可能 service の cache 動作は維持する。scheduling 後も missing-service 分類と event を保持する。frontend/source の失敗は session Failed のままとし、正常 prefix も後段 service 不足なら Blocked とする。status は BlockedByMissingPhaseServices とし、選択された owner-input 不足がある場合は BlockedByPhaseDispatchGap を優先する。選択された missing service は既定入力の構築前に分類する。取消し、親検証、最終 lane/publisher 現行性を維持し、prefix 完了から semantic/proof/cache/artifact の成功を与えない。

@@ -522,7 +522,34 @@ impl CompilerDriver {
                 });
             }
         };
-        if !missing_services.is_empty() {
+        let built_in_prefix = {
+            use crate::{
+                frontend_adapter::{FrontendService, SourceLoadService},
+                registry::PhaseService,
+            };
+            self.registry.descriptors().len() == 2
+                && self
+                    .registry
+                    .descriptor_for_phase(PipelinePhase::SourceLoad)
+                    .ok()
+                    == Some(&SourceLoadService.phase())
+                && self
+                    .registry
+                    .descriptor_for_phase(PipelinePhase::Frontend)
+                    .ok()
+                    == Some(
+                        &FrontendService {
+                            artifact_roots: Vec::new(),
+                        }
+                        .phase(),
+                    )
+                && self.output_publisher.as_ref().is_some_and(|publisher| {
+                    publisher
+                        .validate_current_snapshot(session.captured.snapshot.id)
+                        .is_ok()
+                })
+        };
+        if !missing_services.is_empty() && !built_in_prefix {
             session.finish(BuildSessionOutcome::Blocked);
             let publication_decision = self.lanes.publication_decision(snapshots, &session);
             let events = submission_events(
@@ -554,6 +581,22 @@ impl CompilerDriver {
         scheduler_input.priority_hints = priority_hints;
         scheduler_input.cache = cache_policy;
         scheduler_input.cache_decisions = cache_decisions;
+        if !missing_services.is_empty() {
+            use mizar_build::cache_seam::{CacheFallbackReason, CacheSchedulingOutcome};
+            for decision in &mut scheduler_input.cache_decisions.decisions {
+                if matches!(decision.outcome, CacheSchedulingOutcome::ValidatedHit(_))
+                    && task_graph.tasks().iter().any(|task| {
+                        task.id == decision.task_id
+                            && missing_services
+                                .iter()
+                                .any(|missing| task.phases.contains(&missing.phase))
+                    })
+                {
+                    decision.outcome =
+                        CacheSchedulingOutcome::Unavailable(CacheFallbackReason::Unavailable);
+                }
+            }
+        }
         scheduler_input.resource_budget = resource_budget;
         scheduler_input.cancellation = cancellation.clone();
         scheduler_input.worker_count = worker_count.max(1);
@@ -593,12 +636,15 @@ impl CompilerDriver {
 
         let outcome = scheduler_outcome(&scheduler_run);
         let dispatch_gap_phases = dispatch_gap_phases(&task_graph, &scheduler_run);
-        let status =
-            if matches!(outcome, BuildSessionOutcome::Blocked) && !dispatch_gap_phases.is_empty() {
-                DriverSubmissionStatus::BlockedByPhaseDispatchGap
-            } else {
-                DriverSubmissionStatus::SchedulerValidated
-            };
+        let status = if matches!(outcome, BuildSessionOutcome::Blocked)
+            && !dispatch_gap_phases.is_empty()
+        {
+            DriverSubmissionStatus::BlockedByPhaseDispatchGap
+        } else if matches!(outcome, BuildSessionOutcome::Blocked) && !missing_services.is_empty() {
+            DriverSubmissionStatus::BlockedByMissingPhaseServices
+        } else {
+            DriverSubmissionStatus::SchedulerValidated
+        };
         let mut phase_results = dispatcher.phase_results;
         let publisher_current = self.output_publisher.as_ref().is_none_or(|publisher| {
             publisher
@@ -627,10 +673,10 @@ impl CompilerDriver {
             publication_decision,
             DriverEventDetails {
                 planning: Some(PlanningEventStatus::Ready),
+                missing_services: &missing_services,
                 dispatch_gap_phases: &dispatch_gap_phases,
                 scheduler_events: &driver_scheduler_run.events,
                 scheduler_task_states: &driver_scheduler_run.task_states,
-                ..DriverEventDetails::default()
             },
         );
         self.store_session(session.clone(), cancellation, events);
@@ -640,7 +686,7 @@ impl CompilerDriver {
             module_index: Some(module_index),
             task_graph: Some(task_graph),
             scheduler_run: Some(driver_scheduler_run),
-            missing_services: Vec::new(),
+            missing_services,
             dispatch_gap_phases,
             status,
             publication_decision,

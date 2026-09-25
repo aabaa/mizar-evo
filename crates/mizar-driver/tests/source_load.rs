@@ -9,6 +9,10 @@ use mizar_artifact::{
     store::{CanonicalJson, canonical_json_string},
 };
 use mizar_build::{
+    cache_seam::{
+        CacheOutputRef, CacheSchedulingOutcome, CacheSchedulingPlan, CacheTaskDecision,
+        ValidatedCacheHit,
+    },
     cancel::{CancellationGeneration, CancellationReason, CancellationToken},
     module_index::{
         DependencyArtifactIndex, DependencyModuleSummaryRef, ModuleIndex, ModuleIndexLocation,
@@ -18,7 +22,8 @@ use mizar_build::{
         BuildPlan, DependencySelection, PlanRequest, WorkspacePackage, parse_lockfile,
         parse_package_manifest, produce_build_plan,
     },
-    task_graph::{ModuleDependencyOverlay, PipelinePhase, TaskKind, WorkUnit},
+    scheduler::{CacheSchedulingPolicy, TaskState},
+    task_graph::{BuildTask, ModuleDependencyOverlay, PipelinePhase, TaskKind, WorkUnit},
 };
 use mizar_diagnostics::{
     failure_record::{
@@ -28,15 +33,18 @@ use mizar_diagnostics::{
     sink::{DiagnosticProducerScope, DiagnosticSink},
 };
 use mizar_driver::{
-    driver::{CompilerDriver, DriverSubmissionStatus, DriverSubmitInput},
+    driver::{
+        CompilerDriver, DriverSubmissionStatus, DriverSubmitInput, PhaseDispatchInputProvider,
+    },
+    events::BuildEventKind,
     registry::{
         PhaseCacheIntent, PhaseExecutionResources, PhaseInput, PhaseRegistryBuilder, PhaseStatus,
         SourceLoadInputs,
     },
     request::{
         BatchInvocation, BatchRequest, BuildLaneId, BuildProfile, BuildRequestDraft,
-        BuildRequestGeneration, BuildRequestOrigin, BuildTargets, DependencyInputSet,
-        SourceInputSet, VerifierConfigInput,
+        BuildRequestGeneration, BuildRequestOrigin, BuildSessionOutcome, BuildSessionState,
+        BuildTargets, DependencyInputSet, SourceInputSet, VerifierConfigInput,
     },
 };
 use mizar_frontend::{
@@ -53,7 +61,7 @@ use mizar_frontend::{
     span_bridge::SpanBridge,
 };
 use mizar_ir::{
-    dispatch_input::PhaseDispatchInputBundle,
+    dispatch_input::{DispatchInputError, PhaseDispatchInputBundle, PhaseDispatchInputRequest},
     identity::{
         OutputKind, PipelinePhase as IrPipelinePhase, SnapshotHandleRegistry,
         WorkUnit as IrWorkUnit,
@@ -158,6 +166,20 @@ impl Fixture {
         builder.register_source_load();
         let registry = builder.build().unwrap();
         let mut driver = CompilerDriver::new(registry);
+        let (request, input) = self.submit_request(captured_artifacts, indexed_artifacts);
+        let submission = driver.submit(request, ids, snapshots, input).unwrap();
+        assert_eq!(
+            submission.status,
+            DriverSubmissionStatus::BlockedByMissingPhaseServices
+        );
+        submission
+    }
+
+    fn submit_request(
+        &self,
+        captured_artifacts: Vec<DependencyArtifactRef>,
+        indexed_artifacts: Vec<DependencyArtifactIndex>,
+    ) -> (BuildRequestDraft, DriverSubmitInput<StaticSourceLayout>) {
         let has_dependency = !indexed_artifacts.is_empty();
         let mut input = DriverSubmitInput::new(
             PlanRequest {
@@ -204,12 +226,7 @@ impl Fixture {
             ),
             verifier_config: VerifierConfigInput::new(hash(2)),
         };
-        let submission = driver.submit(request, ids, snapshots, input).unwrap();
-        assert_eq!(
-            submission.status,
-            DriverSubmissionStatus::BlockedByMissingPhaseServices
-        );
-        submission
+        (request, input)
     }
 }
 
@@ -217,6 +234,631 @@ impl Drop for Fixture {
     fn drop(&mut self) {
         let _ = fs::remove_dir_all(&self.root);
     }
+}
+
+#[test]
+fn scheduled_source_frontend_prefix_publishes_real_parent_and_blocks_later_services() {
+    for (workers, cached_later) in [(1, false), (4, false), (1, true)] {
+        let fixture = Fixture::new(b"definition\nend;\n");
+        let ids = InMemorySessionIdAllocator::new();
+        let snapshots = SnapshotRegistry::new();
+        let second = if workers == 4 {
+            fs::write(
+                fixture.root.join("alpha/src/other.miz"),
+                b"definition\nend;\n",
+            )
+            .unwrap();
+            let package_root = fixture.root.join("alpha");
+            ids.next_source_id(snapshot_id(0x52)).unwrap();
+            let loaded = mizar_session::SourceLoader::load(
+                &DiskSourceLoader::new(&package_root),
+                snapshot_id(0x52),
+                SourceInput {
+                    package_id: PackageId::new("alpha"),
+                    module_path: ModulePath::new("other"),
+                    normalized_path: normalize_path(&package_root, Path::new("src/other.miz"))
+                        .unwrap(),
+                    edition: Edition::new("2025"),
+                    origin: SourceOriginInput::Disk {
+                        path: PathBuf::from("src/other.miz"),
+                    },
+                },
+                &ids,
+            )
+            .unwrap();
+            Some(SourceVersion {
+                source_id: loaded.source_id,
+                package_id: loaded.package_id,
+                module_path: loaded.module_path,
+                normalized_path: loaded.normalized_path,
+                source_hash: loaded.source_hash,
+                edition: loaded.edition,
+                origin: loaded.origin,
+            })
+        } else {
+            None
+        };
+        let make_request = || {
+            let (mut request, mut input) = fixture.submit_request(Vec::new(), Vec::new());
+            if let Some(version) = &second {
+                request.source_inputs.versions.push(version.clone());
+                input.source_layout = StaticSourceLayout::new(vec![WorkspaceSourcePackage {
+                    package_id: PackageId::new("alpha"),
+                    files: vec![
+                        WorkspaceSourceFile::new("src/main.miz", "main.miz"),
+                        WorkspaceSourceFile::new("src/other.miz", "other.miz"),
+                    ],
+                }]);
+            }
+            (request, input)
+        };
+        let (request, input) = make_request();
+        let baseline = CompilerDriver::new(source_registry())
+            .submit(request, &ids, &snapshots, input)
+            .unwrap();
+        assert_eq!(
+            baseline.status,
+            DriverSubmissionStatus::BlockedByMissingPhaseServices
+        );
+        let snapshot = baseline.session.captured.snapshot.id;
+        let source_tasks = baseline
+            .task_graph
+            .as_ref()
+            .unwrap()
+            .tasks()
+            .iter()
+            .filter(|task| task.kind == TaskKind::SourceLoad)
+            .collect::<Vec<_>>();
+        assert_eq!(source_tasks.len(), if workers == 4 { 2 } else { 1 });
+        let publisher = publisher(snapshot, usize::MAX, &source_tasks[0].unit);
+        for source in &source_tasks {
+            let WorkUnit::Module { module } = &source.unit else {
+                unreachable!()
+            };
+            publisher.allow_work_unit(AllowedWorkUnit::new(
+                IrPipelinePhase::new("SourceLoad"),
+                OutputKind::new("SourceUnit"),
+                IrWorkUnit::new(format!(
+                    "{:?}:{:?}",
+                    module.package.as_str(),
+                    module.path.as_str()
+                )),
+            ));
+            allow_frontend(&publisher, &source.unit);
+        }
+        let mut builder = PhaseRegistryBuilder::new();
+        builder.register_source_load();
+        builder.register_frontend(Vec::new());
+        let mut driver =
+            CompilerDriver::new(builder.build().unwrap()).with_output_publisher(publisher.clone());
+        let (request, mut input) = make_request();
+        input.worker_count = workers;
+        if cached_later {
+            input.cache_policy = CacheSchedulingPolicy::Enabled;
+            input.cache_decisions = CacheSchedulingPlan::new(
+                baseline
+                    .task_graph
+                    .as_ref()
+                    .unwrap()
+                    .tasks()
+                    .iter()
+                    .filter(|task| !matches!(task.kind, TaskKind::SourceLoad | TaskKind::Frontend))
+                    .map(|task| {
+                        CacheTaskDecision::new(
+                            task.id.clone(),
+                            CacheSchedulingOutcome::ValidatedHit(ValidatedCacheHit::new(
+                                vec![CacheOutputRef::new(task.id.as_str(), "cached")],
+                                Vec::new(),
+                            )),
+                        )
+                    })
+                    .collect(),
+            );
+        }
+        let submission = driver.submit(request, &ids, &snapshots, input).unwrap();
+        assert_eq!(submission.session.captured.snapshot.id, snapshot);
+        assert_eq!(
+            submission.status,
+            DriverSubmissionStatus::BlockedByMissingPhaseServices
+        );
+        assert_eq!(
+            submission.session.state,
+            BuildSessionState::Finished(BuildSessionOutcome::Blocked)
+        );
+        assert!(
+            submission
+                .missing_services
+                .iter()
+                .any(|missing| { missing.phase == PipelinePhase::ModuleResolve })
+        );
+        assert!(
+            driver
+                .events(submission.session.id)
+                .events()
+                .iter()
+                .any(|event| {
+                    matches!(
+                        event.kind,
+                        BuildEventKind::PhaseServiceGap {
+                            phase: PipelinePhase::ModuleResolve,
+                            ..
+                        }
+                    )
+                })
+        );
+        let graph = submission.task_graph.as_ref().unwrap();
+        let run = submission.scheduler_run.as_ref().unwrap();
+        if cached_later {
+            for task in graph.tasks().iter().filter(|task| {
+                submission
+                    .missing_services
+                    .iter()
+                    .any(|missing| task.phases.contains(&missing.phase))
+            }) {
+                assert_ne!(
+                    run.task_states
+                        .iter()
+                        .find(|state| state.task_id == task.id)
+                        .unwrap()
+                        .state,
+                    TaskState::CacheHit
+                );
+            }
+        }
+        for source in graph
+            .tasks()
+            .iter()
+            .filter(|task| task.kind == TaskKind::SourceLoad)
+        {
+            let frontend = graph
+                .tasks()
+                .iter()
+                .find(|task| task.kind == TaskKind::Frontend && task.unit == source.unit)
+                .unwrap();
+            let resolve = graph
+                .tasks()
+                .iter()
+                .find(|task| task.kind == TaskKind::ModuleResolve && task.unit == source.unit)
+                .unwrap();
+            for task in [source, frontend] {
+                assert_eq!(
+                    run.task_states
+                        .iter()
+                        .find(|state| state.task_id == task.id)
+                        .unwrap()
+                        .state,
+                    TaskState::Completed
+                );
+                assert_eq!(
+                    run.phase_results.get(&task.id).unwrap()[0].status,
+                    PhaseStatus::Complete
+                );
+                assert_eq!(
+                    run.phase_results.get(&task.id).unwrap()[0]
+                        .output_refs
+                        .len(),
+                    1
+                );
+            }
+            assert_eq!(
+                run.task_states
+                    .iter()
+                    .find(|state| state.task_id == resolve.id)
+                    .unwrap()
+                    .state,
+                TaskState::Blocked
+            );
+            let source_output = &run.phase_results.get(&source.id).unwrap()[0].output_refs[0];
+            let frontend_output = &run.phase_results.get(&frontend.id).unwrap()[0].output_refs[0];
+            assert_eq!(source_output.output_kind(), &OutputKind::new("SourceUnit"));
+            assert_eq!(
+                frontend_output.output_kind(),
+                &OutputKind::new("FrontendOutput")
+            );
+            assert_eq!(source_output.snapshot(), snapshot);
+            assert_eq!(frontend_output.snapshot(), snapshot);
+            assert_eq!(
+                publisher
+                    .registry()
+                    .output_lineage(frontend_output.output())
+                    .unwrap()
+                    .parents,
+                vec![source_output.output()]
+            );
+            assert!(publisher.storage().validate_handle(source_output).is_ok());
+            assert!(publisher.storage().validate_handle(frontend_output).is_ok());
+        }
+    }
+}
+
+#[test]
+fn scheduled_frontend_import_failure_retains_diagnostics_and_blocks_dependents() {
+    let fixture = Fixture::new(b"import mml.no_such;\ndefinition\nend;\n");
+    let ids = InMemorySessionIdAllocator::new();
+    let snapshots = SnapshotRegistry::new();
+    let baseline = fixture.submit(&ids, &snapshots);
+    let snapshot = baseline.session.captured.snapshot.id;
+    let source_unit = &source_task(&baseline).unit;
+    let publisher = publisher(snapshot, usize::MAX, source_unit);
+    allow_frontend(&publisher, source_unit);
+    let mut builder = PhaseRegistryBuilder::new();
+    builder.register_source_load();
+    builder.register_frontend(Vec::new());
+    let mut driver = CompilerDriver::new(builder.build().unwrap()).with_output_publisher(publisher);
+    let (request, input) = fixture.submit_request(Vec::new(), Vec::new());
+    let submission = driver.submit(request, &ids, &snapshots, input).unwrap();
+    assert_eq!(submission.session.captured.snapshot.id, snapshot);
+    assert_eq!(
+        submission.status,
+        DriverSubmissionStatus::SchedulerValidated
+    );
+    assert_eq!(
+        submission.session.state,
+        BuildSessionState::Finished(BuildSessionOutcome::Failed)
+    );
+    let graph = submission.task_graph.as_ref().unwrap();
+    let run = submission.scheduler_run.as_ref().unwrap();
+    let source = graph
+        .tasks()
+        .iter()
+        .find(|task| task.kind == TaskKind::SourceLoad)
+        .unwrap();
+    let frontend = graph
+        .tasks()
+        .iter()
+        .find(|task| task.kind == TaskKind::Frontend)
+        .unwrap();
+    let resolve = graph
+        .tasks()
+        .iter()
+        .find(|task| task.kind == TaskKind::ModuleResolve)
+        .unwrap();
+    assert_eq!(
+        run.phase_results.get(&source.id).unwrap()[0].status,
+        PhaseStatus::Complete
+    );
+    assert_eq!(
+        run.phase_results.get(&source.id).unwrap()[0]
+            .output_refs
+            .len(),
+        1
+    );
+    assert_eq!(
+        run.task_states
+            .iter()
+            .find(|state| state.task_id == frontend.id)
+            .unwrap()
+            .state,
+        TaskState::Failed
+    );
+    assert_eq!(
+        run.task_states
+            .iter()
+            .find(|state| state.task_id == resolve.id)
+            .unwrap()
+            .state,
+        TaskState::Blocked
+    );
+    let result = &run.phase_results.get(&frontend.id).unwrap()[0];
+    assert_eq!(result.status, PhaseStatus::Recoverable);
+    assert!(result.output_refs.is_empty());
+    let codes = result
+        .diagnostics
+        .iter()
+        .flat_map(|batch| batch.drafts())
+        .map(|draft| draft.code().number())
+        .collect::<Vec<_>>();
+    assert!(codes.contains(&22), "missing E0022: {codes:?}");
+    assert!(codes.contains(&220), "missing E0220: {codes:?}");
+}
+
+#[test]
+fn scheduled_prefix_requires_current_publisher_and_both_builtin_services() {
+    for mode in [
+        "missing_publisher",
+        "obsolete_publisher",
+        "missing_frontend",
+    ] {
+        let fixture = Fixture::new(b"definition\nend;\n");
+        let ids = InMemorySessionIdAllocator::new();
+        let snapshots = SnapshotRegistry::new();
+        let baseline = fixture.submit(&ids, &snapshots);
+        let snapshot = baseline.session.captured.snapshot.id;
+        let publisher = publisher(snapshot, usize::MAX, &source_task(&baseline).unit);
+        allow_frontend(&publisher, &source_task(&baseline).unit);
+        if mode == "obsolete_publisher" {
+            publisher.mark_obsolete(snapshot).unwrap();
+        }
+        let mut builder = PhaseRegistryBuilder::new();
+        builder.register_source_load();
+        if mode != "missing_frontend" {
+            builder.register_frontend(Vec::new());
+        }
+        let mut driver = CompilerDriver::new(builder.build().unwrap());
+        if mode != "missing_publisher" {
+            driver = driver.with_output_publisher(publisher);
+        }
+        let (request, input) = fixture.submit_request(Vec::new(), Vec::new());
+        let submission = driver.submit(request, &ids, &snapshots, input).unwrap();
+        assert_eq!(submission.session.captured.snapshot.id, snapshot, "{mode}");
+        assert_eq!(
+            submission.status,
+            DriverSubmissionStatus::BlockedByMissingPhaseServices,
+            "{mode}"
+        );
+        assert_eq!(
+            submission.session.state,
+            BuildSessionState::Finished(BuildSessionOutcome::Blocked),
+            "{mode}"
+        );
+        assert!(submission.scheduler_run.is_none(), "{mode}");
+    }
+}
+
+#[test]
+fn scheduled_prefix_respects_source_and_frontend_publication_rights() {
+    for deny_source in [true, false] {
+        let fixture = Fixture::new(b"definition\nend;\n");
+        let ids = InMemorySessionIdAllocator::new();
+        let snapshots = SnapshotRegistry::new();
+        let baseline = fixture.submit(&ids, &snapshots);
+        let snapshot = baseline.session.captured.snapshot.id;
+        let publisher = if deny_source {
+            let publisher = std::sync::Arc::new(PhaseOutputPublisher::new(
+                std::sync::Arc::new(IrStorageService::new()),
+                std::sync::Arc::new(SnapshotHandleRegistry::new()),
+            ));
+            publisher.register_current_snapshot(snapshot);
+            publisher
+        } else {
+            publisher(snapshot, usize::MAX, &source_task(&baseline).unit)
+        };
+        let mut builder = PhaseRegistryBuilder::new();
+        builder.register_source_load();
+        builder.register_frontend(Vec::new());
+        let mut driver =
+            CompilerDriver::new(builder.build().unwrap()).with_output_publisher(publisher);
+        let (request, input) = fixture.submit_request(Vec::new(), Vec::new());
+        let submission = driver.submit(request, &ids, &snapshots, input).unwrap();
+        assert_eq!(submission.session.captured.snapshot.id, snapshot);
+        assert_eq!(
+            submission.session.state,
+            BuildSessionState::Finished(BuildSessionOutcome::Blocked)
+        );
+        let graph = submission.task_graph.as_ref().unwrap();
+        let run = submission.scheduler_run.as_ref().unwrap();
+        let source = graph
+            .tasks()
+            .iter()
+            .find(|task| task.kind == TaskKind::SourceLoad)
+            .unwrap();
+        let frontend = graph
+            .tasks()
+            .iter()
+            .find(|task| task.kind == TaskKind::Frontend)
+            .unwrap();
+        let blocked = if deny_source { source } else { frontend };
+        assert_eq!(
+            run.task_states
+                .iter()
+                .find(|state| state.task_id == blocked.id)
+                .unwrap()
+                .state,
+            TaskState::Blocked
+        );
+        let blocked_result = &run.phase_results.get(&blocked.id).unwrap()[0];
+        assert_eq!(blocked_result.status, PhaseStatus::Blocking);
+        assert!(blocked_result.output_refs.is_empty());
+        if deny_source {
+            assert!(!run.phase_results.contains_key(&frontend.id));
+        } else {
+            assert_eq!(
+                run.phase_results.get(&source.id).unwrap()[0]
+                    .output_refs
+                    .len(),
+                1
+            );
+        }
+    }
+}
+
+#[test]
+fn scheduled_prefix_never_replaces_supplied_dispatch_inputs() {
+    for mode in [
+        SuppliedInput::None,
+        SuppliedInput::Error,
+        SuppliedInput::ForeignSnapshot,
+    ] {
+        let fixture = Fixture::new(b"definition\nend;\n");
+        let ids = InMemorySessionIdAllocator::new();
+        let snapshots = SnapshotRegistry::new();
+        let baseline = fixture.submit(&ids, &snapshots);
+        let snapshot = baseline.session.captured.snapshot.id;
+        let publisher = publisher(snapshot, usize::MAX, &source_task(&baseline).unit);
+        allow_frontend(&publisher, &source_task(&baseline).unit);
+        let mut builder = PhaseRegistryBuilder::new();
+        builder.register_source_load();
+        builder.register_frontend(Vec::new());
+        let mut driver =
+            CompilerDriver::new(builder.build().unwrap()).with_output_publisher(publisher);
+        let (request, mut input) = fixture.submit_request(Vec::new(), Vec::new());
+        input.phase_dispatch_inputs = Some(Box::new(mode));
+        let submission = driver.submit(request, &ids, &snapshots, input).unwrap();
+        assert_eq!(submission.session.captured.snapshot.id, snapshot);
+        let (expected_state, expected_status, expected_task_state) = match mode {
+            SuppliedInput::None => (
+                BuildSessionOutcome::Blocked,
+                DriverSubmissionStatus::BlockedByPhaseDispatchGap,
+                TaskState::Blocked,
+            ),
+            SuppliedInput::Error | SuppliedInput::ForeignSnapshot => (
+                BuildSessionOutcome::Failed,
+                DriverSubmissionStatus::SchedulerValidated,
+                TaskState::Failed,
+            ),
+        };
+        assert_eq!(submission.status, expected_status, "{mode:?}");
+        assert_eq!(
+            submission.session.state,
+            BuildSessionState::Finished(expected_state),
+            "{mode:?}"
+        );
+        let run = submission.scheduler_run.as_ref().unwrap();
+        let source = source_task(&submission);
+        assert_eq!(
+            run.task_states
+                .iter()
+                .find(|state| state.task_id == source.id)
+                .unwrap()
+                .state,
+            expected_task_state,
+            "{mode:?}"
+        );
+        assert!(
+            run.phase_results.is_empty(),
+            "{mode:?} must not fall back to captured source"
+        );
+    }
+}
+
+#[test]
+fn scheduled_frontend_rejects_cache_hit_without_retained_source_parent() {
+    let fixture = Fixture::new(b"definition\nend;\n");
+    let ids = InMemorySessionIdAllocator::new();
+    let snapshots = SnapshotRegistry::new();
+    let baseline = fixture.submit(&ids, &snapshots);
+    let snapshot = baseline.session.captured.snapshot.id;
+    let source = source_task(&baseline);
+    let publisher = publisher(snapshot, usize::MAX, &source.unit);
+    allow_frontend(&publisher, &source.unit);
+    let mut builder = PhaseRegistryBuilder::new();
+    builder.register_source_load();
+    builder.register_frontend(Vec::new());
+    let mut driver = CompilerDriver::new(builder.build().unwrap()).with_output_publisher(publisher);
+    let (request, mut input) = fixture.submit_request(Vec::new(), Vec::new());
+    input.cache_policy = CacheSchedulingPolicy::Enabled;
+    input.cache_decisions = CacheSchedulingPlan::new(vec![CacheTaskDecision::new(
+        source.id.clone(),
+        CacheSchedulingOutcome::ValidatedHit(ValidatedCacheHit::new(
+            vec![CacheOutputRef::new("source", "cached")],
+            Vec::new(),
+        )),
+    )]);
+    let submission = driver.submit(request, &ids, &snapshots, input).unwrap();
+    assert_eq!(submission.session.captured.snapshot.id, snapshot);
+    assert_eq!(
+        submission.status,
+        DriverSubmissionStatus::BlockedByPhaseDispatchGap
+    );
+    assert_eq!(
+        submission.session.state,
+        BuildSessionState::Finished(BuildSessionOutcome::Blocked)
+    );
+    let graph = submission.task_graph.as_ref().unwrap();
+    let run = submission.scheduler_run.as_ref().unwrap();
+    let frontend = graph
+        .tasks()
+        .iter()
+        .find(|task| task.kind == TaskKind::Frontend)
+        .unwrap();
+    assert_eq!(
+        run.task_states
+            .iter()
+            .find(|state| state.task_id == source.id)
+            .unwrap()
+            .state,
+        TaskState::CacheHit
+    );
+    assert_eq!(
+        run.task_states
+            .iter()
+            .find(|state| state.task_id == frontend.id)
+            .unwrap()
+            .state,
+        TaskState::Blocked
+    );
+    assert!(!run.phase_results.contains_key(&source.id));
+    assert!(!run.phase_results.contains_key(&frontend.id));
+    assert!(
+        submission
+            .dispatch_gap_phases
+            .contains(&PipelinePhase::Frontend)
+    );
+}
+
+#[test]
+fn scheduled_frontend_uses_sorted_captured_dependency_summary_hashes() {
+    let fixture = Fixture::new(b"import dep.core;\ndefinition\nend;\n");
+    let references = [("core", hash(0xf0)), ("other", hash(0x10))];
+    let captured = references
+        .iter()
+        .map(|(path, digest)| {
+            DependencyArtifactRef::new(format!("dep/{path}.summary.json"), *digest)
+        })
+        .collect::<Vec<_>>();
+    let indexed = vec![DependencyArtifactIndex::new(
+        PackageId::new("dep"),
+        Vec::new(),
+        references
+            .iter()
+            .map(|(path, digest)| DependencyModuleSummaryRef {
+                module: mizar_build::module_index::ModuleId::new(
+                    PackageId::new("dep"),
+                    ModulePath::new(*path),
+                ),
+                artifact: format!("dep/{path}.summary.json"),
+                content_hash: *digest,
+            })
+            .collect(),
+    )];
+    let ids = InMemorySessionIdAllocator::new();
+    let snapshots = SnapshotRegistry::new();
+    let baseline =
+        fixture.submit_with_dependencies(&ids, &snapshots, captured.clone(), indexed.clone());
+    assert_eq!(
+        baseline
+            .module_index
+            .as_ref()
+            .unwrap()
+            .dependency_summaries
+            .iter()
+            .map(|summary| summary.content_hash)
+            .collect::<Vec<_>>(),
+        vec![hash(0xf0), hash(0x10)]
+    );
+    let snapshot = baseline.session.captured.snapshot.id;
+    let publisher = publisher(snapshot, usize::MAX, &source_task(&baseline).unit);
+    allow_frontend(&publisher, &source_task(&baseline).unit);
+    let artifact_root = fixture.root.join("dep-artifacts");
+    fs::create_dir_all(&artifact_root).unwrap();
+    let mut builder = PhaseRegistryBuilder::new();
+    builder.register_source_load();
+    builder.register_frontend(vec![(PackageId::new("dep"), artifact_root)]);
+    let mut driver = CompilerDriver::new(builder.build().unwrap()).with_output_publisher(publisher);
+    let (request, input) = fixture.submit_request(captured, indexed);
+    let submission = driver.submit(request, &ids, &snapshots, input).unwrap();
+    assert_eq!(submission.session.captured.snapshot.id, snapshot);
+    let graph = submission.task_graph.as_ref().unwrap();
+    let frontend = graph
+        .tasks()
+        .iter()
+        .find(|task| task.kind == TaskKind::Frontend)
+        .unwrap();
+    let run = submission.scheduler_run.as_ref().unwrap();
+    let result = &run.phase_results.get(&frontend.id).unwrap()[0];
+    assert_eq!(result.status, PhaseStatus::Recoverable);
+    assert!(result.output_refs.is_empty());
+    assert!(
+        result
+            .diagnostics
+            .iter()
+            .flat_map(|batch| batch.drafts())
+            .any(|draft| draft.code().number() == 23)
+    );
+    assert_eq!(
+        submission.session.state,
+        BuildSessionState::Finished(BuildSessionOutcome::Failed)
+    );
 }
 
 #[test]
@@ -2622,6 +3264,48 @@ fn publisher(
     publisher.register_current_snapshot(snapshot);
     publisher.allow_work_unit(AllowedWorkUnit::new(phase, kind, ir_unit));
     publisher
+}
+
+fn allow_frontend(publisher: &PhaseOutputPublisher, unit: &WorkUnit) {
+    let WorkUnit::Module { module } = unit else {
+        unreachable!();
+    };
+    publisher.allow_work_unit(AllowedWorkUnit::new(
+        IrPipelinePhase::new("Frontend"),
+        OutputKind::new("FrontendOutput"),
+        IrWorkUnit::new(format!(
+            "{:?}:{:?}",
+            module.package.as_str(),
+            module.path.as_str()
+        )),
+    ));
+}
+
+#[derive(Debug, Clone, Copy)]
+enum SuppliedInput {
+    None,
+    Error,
+    ForeignSnapshot,
+}
+
+impl PhaseDispatchInputProvider<BuildTask> for SuppliedInput {
+    fn dispatch_input_for_task(
+        &self,
+        request: PhaseDispatchInputRequest<'_, BuildTask>,
+    ) -> Result<Option<PhaseDispatchInputBundle>, DispatchInputError> {
+        match self {
+            Self::None => Ok(None),
+            Self::Error => Err(DispatchInputError::DispatchSnapshotMismatch {
+                expected: request.snapshot(),
+                actual: snapshot_id(0xee),
+            }),
+            Self::ForeignSnapshot => Ok(Some(PhaseDispatchInputBundle::without_parent_outputs(
+                snapshot_id(0xef),
+                hash(0xef),
+                Vec::new(),
+            ))),
+        }
+    }
 }
 
 fn source_task(

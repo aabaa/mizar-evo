@@ -410,6 +410,87 @@ fn cache_hit_tasks_do_not_require_phase_dispatch_inputs() {
 }
 
 #[test]
+fn partial_registry_with_extra_or_wrong_service_keeps_missing_service_preflight() {
+    let ids = InMemorySessionIdAllocator::new();
+    let snapshots = SnapshotRegistry::new();
+    let mut baseline_driver = CompilerDriver::default();
+    let baseline = baseline_driver
+        .submit(
+            request(83),
+            &ids,
+            &snapshots,
+            submit_input(vec![WorkspaceSourceFile::new("src/main.miz", "main.miz")]),
+        )
+        .unwrap();
+    let snapshot = baseline.session.captured.snapshot.id;
+    let publisher = Arc::new(PhaseOutputPublisher::new(
+        Arc::new(IrStorageService::new()),
+        Arc::new(SnapshotHandleRegistry::new()),
+    ));
+    publisher.register_current_snapshot(snapshot);
+    for wrong_source_descriptor in [false, true] {
+        let mut builder = PhaseRegistryBuilder::new();
+        if wrong_source_descriptor {
+            let source_load = required_phase_services()
+                .iter()
+                .find(|requirement| requirement.phases.contains(&PipelinePhase::SourceLoad))
+                .unwrap();
+            builder.register(DescriptorOnlyFixtureService {
+                descriptor: PhaseDescriptor::new(
+                    source_load.service_name,
+                    source_load.owner,
+                    source_load.phases.to_vec(),
+                    "wrong-schema-v1",
+                    "SourceUnit",
+                )
+                .unwrap(),
+            });
+        } else {
+            builder.register_source_load();
+        }
+        builder.register_frontend(Vec::new());
+        if !wrong_source_descriptor {
+            let module_resolve = required_phase_services()
+                .iter()
+                .find(|requirement| requirement.phases.contains(&PipelinePhase::ModuleResolve))
+                .unwrap();
+            builder.register(DescriptorOnlyFixtureService {
+                descriptor: PhaseDescriptor::new(
+                    module_resolve.service_name,
+                    module_resolve.owner,
+                    module_resolve.phases.to_vec(),
+                    "driver-fixture-v1",
+                    "driver-fixture-output",
+                )
+                .unwrap(),
+            });
+        }
+        let mut driver =
+            CompilerDriver::new(builder.build().unwrap()).with_output_publisher(publisher.clone());
+        let submission = driver
+            .submit(
+                request(83),
+                &ids,
+                &snapshots,
+                submit_input(vec![WorkspaceSourceFile::new("src/main.miz", "main.miz")]),
+            )
+            .unwrap();
+        assert_eq!(submission.session.captured.snapshot.id, snapshot);
+        assert_eq!(
+            submission.status,
+            DriverSubmissionStatus::BlockedByMissingPhaseServices
+        );
+        assert!(submission.scheduler_run.is_none());
+        assert!(
+            submission
+                .missing_services
+                .iter()
+                .any(|missing| { missing.phase == PipelinePhase::ArtifactCommit })
+        );
+    }
+}
+
+#[test]
 fn registry_dispatch_statuses_map_to_scheduler_outcomes_without_publication() {
     for (status, expected_state, expected_outcome) in [
         (

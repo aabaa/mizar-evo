@@ -49,6 +49,18 @@ use crate::registry::{
     PhaseOwner, PhaseResult, PhaseService, PhaseStatus,
 };
 
+pub(crate) fn source_input_hash(version: &mizar_session::SourceVersion) -> Hash {
+    SourceUnitCacheKey {
+        version: Arc::from(SOURCE_UNIT_CACHE_KEY_VERSION),
+        package_id: version.package_id.clone(),
+        module_path: version.module_path.clone(),
+        normalized_path: version.normalized_path.clone(),
+        source_hash: version.source_hash,
+        edition: version.edition.clone(),
+    }
+    .stable_hash()
+}
+
 impl<'a> crate::registry::SourceLoadInputs<'a> {
     /// Resolves real dependency lexical summaries under explicit caller-owned roots.
     /// Requires build-validated indexes and stubs from the captured source version.
@@ -340,15 +352,7 @@ impl PhaseService for SourceLoadService {
             return blocking();
         }
 
-        let source_key = SourceUnitCacheKey {
-            version: Arc::from(SOURCE_UNIT_CACHE_KEY_VERSION),
-            package_id: version.package_id.clone(),
-            module_path: version.module_path.clone(),
-            normalized_path: version.normalized_path.clone(),
-            source_hash: version.source_hash,
-            edition: version.edition.clone(),
-        }
-        .stable_hash();
+        let source_key = source_input_hash(version);
         if input.identities().input_hash() != source_key {
             return blocking();
         }
@@ -666,15 +670,7 @@ impl PhaseService for FrontendService {
         {
             return blocking();
         }
-        let source_key = SourceUnitCacheKey {
-            version: Arc::from(SOURCE_UNIT_CACHE_KEY_VERSION),
-            package_id: version.package_id.clone(),
-            module_path: version.module_path.clone(),
-            normalized_path: version.normalized_path.clone(),
-            source_hash: version.source_hash,
-            edition: version.edition.clone(),
-        }
-        .stable_hash();
+        let source_key = source_input_hash(version);
         for indexed in &inputs.module_index.modules {
             let ModuleIndexLocation::DependencySummary {
                 artifact,

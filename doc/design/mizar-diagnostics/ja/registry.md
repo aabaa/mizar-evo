@@ -281,4 +281,4 @@ registry参照と共有draft/record構築を可能にするが、登録だけで
 
 ## Import allocations
 
-E0220–E0224 は仕様22.7の名前と英語正本のsummaryを用い、`meaning_key = semantic_name`、Resolution family、Error severity、Active status、`since = spec-22-import-v1` とする。他のメタデータは初期既定値に従う。登録は共有draft/record構築のみを可能にし、ソース結合済みdriver変換は後続作業とする。E0225は未登録のままとする。
+E0220–E0224 は仕様22.7の名前と英語正本のsummaryを用い、`meaning_key = semantic_name`、Resolution family、Error severity、Active status、`since = spec-22-import-v1` とする。他のメタデータは初期既定値に従う。登録は共有draft/record構築のみを可能にし、ソース結合済み発行は[driver の継続境界](../../mizar-driver/ja/frontend_adapter.md#診断専用-import-継続の設計)に従う。E0225は未登録のままとする。
