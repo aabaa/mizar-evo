@@ -967,6 +967,7 @@ fn discovered_imports_discard_all_edges_on_untrusted_source_input() {
         "malformed",
         "unresolved",
         "captured_edition",
+        "missing_capture",
         "unrelated_bad",
     ] {
         let main = match mode {
@@ -993,6 +994,12 @@ fn discovered_imports_discard_all_edges_on_untrusted_source_input() {
                 .find(|version| version.module_path.as_str() == "leaf")
                 .unwrap()
                 .edition = Edition::new("2026");
+        }
+        if mode == "missing_capture" {
+            request
+                .source_inputs
+                .versions
+                .retain(|version| version.module_path.as_str() != "leaf");
         }
         let mut driver = fixture.scheduled_driver();
         let error = driver
