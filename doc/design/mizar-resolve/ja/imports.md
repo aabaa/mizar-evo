@@ -38,6 +38,8 @@ source segment が一つなら直接パス、二つなら分岐の基底・メ�
 
 ## 構文木からの import 候補
 
+`ImportPathResolver::resolve_frontend(&FrontendOutput<SurfaceAst>, &SourceUnit)` は信頼された未変更の frontend 出力と期待する source から `Option<ImportPathResolution>` を返す。source の一致、source identity、AST/key、全体で recovery がないこと、alias/branch の由来と本文の token framing を含む parsed/prescan import 全件の順序付き対応を要求する。source の package/module identity を用いて既存 path resolver で解決し、未解決 path は型付き結果、対応不正は None、空 prelude は空の解決結果とする。AST-key の存在は封印済み由来を証明しない。currentness、親の認証、E0022-only 継続を含む診断 admission は driver/IR に残る。完全な graph、summary readiness、canonical storage や phase 完了の根拠にはしない。
+
 `ImportPathCandidate::from_surface_ast(&SurfaceAst)` は信頼された未変更の
 parser 出力から `Option<Vec<Self>>` を返す。表現された `Root` →
 `CompilationUnit` → `ItemList` をたどり、直下の import prelude をソース順に

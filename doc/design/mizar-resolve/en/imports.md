@@ -41,6 +41,8 @@ semantic graph nor provides lexical summaries or artifact access.
 
 ## Parsed Import Candidates
 
+`ImportPathResolver::resolve_frontend(&FrontendOutput<SurfaceAst>, &SourceUnit)` returns `Option<ImportPathResolution>` for trusted, unchanged frontend output and its expected source. Require source equality, matching source identities, an AST/key, no recovery anywhere, and a complete ordered parsed/prescanned import correspondence including alias/branch provenance and source-valid token framing. Resolve the resulting candidates under the source package/module identity using the existing path resolver. Unresolved paths remain typed results; malformed correspondence returns None, and an empty prelude gives an empty resolution. AST-key presence is not sealed provenance: the driver/IR retain currentness, parent authentication and diagnostic admission, including the E0022-only continuation. No complete graph, summary readiness, canonical storage or phase-completion credit follows.
+
 `ImportPathCandidate::from_surface_ast(&SurfaceAst)` returns `Option<Vec<Self>>`
 from a trusted, unchanged parser output. Walk the represented `Root` →
 `CompilationUnit` → `ItemList` chain and collect its top-level import prelude

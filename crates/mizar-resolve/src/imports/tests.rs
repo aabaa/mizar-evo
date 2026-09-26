@@ -30,6 +30,15 @@ impl mizar_frontend::lexical_env::LexicalSummaryProvider for NoImportedSummaries
 }
 
 fn parsed_import_ast(text: &str) -> mizar_syntax::SurfaceAst {
+    parsed_import_output(text, "main")
+        .ast
+        .expect("represented parser AST")
+}
+
+fn parsed_import_output(
+    text: &str,
+    module_path: &str,
+) -> mizar_frontend::orchestration::FrontendOutput<mizar_syntax::SurfaceAst> {
     use mizar_frontend::{
         orchestration::Frontend, parsing::MizarParserSeam, source::FrontendSourceLoader,
     };
@@ -43,7 +52,7 @@ fn parsed_import_ast(text: &str) -> mizar_syntax::SurfaceAst {
             .unwrap()
             .as_nanos()
     ));
-    let path = root.join("src/main.miz");
+    let path = root.join(format!("src/{}.miz", module_path.replace('.', "/")));
     std::fs::create_dir_all(path.parent().unwrap()).unwrap();
     std::fs::write(&path, text).unwrap();
     let output = Frontend::new(
@@ -60,7 +69,7 @@ fn parsed_import_ast(text: &str) -> mizar_syntax::SurfaceAst {
             .unwrap(),
             input: SourceInput {
                 package_id: PackageId::new("app"),
-                module_path: ModulePath::new("main"),
+                module_path: ModulePath::new(module_path),
                 normalized_path: normalize_path(&root, &path).unwrap(),
                 edition: Edition::new("2026"),
                 origin: SourceOriginInput::Disk { path },
@@ -70,7 +79,7 @@ fn parsed_import_ast(text: &str) -> mizar_syntax::SurfaceAst {
     )
     .unwrap();
     std::fs::remove_dir_all(root).unwrap();
-    output.ast.expect("represented parser AST")
+    output
 }
 
 #[test]
@@ -113,6 +122,147 @@ fn parsed_import_candidates_preserve_real_prelude_order_and_provenance() {
     assert_eq!(
         ImportPathCandidate::from_surface_ast(&parsed_import_ast("definition\nend;")),
         Some(Vec::new())
+    );
+}
+
+#[test]
+fn source_bound_frontend_resolves_real_paths_and_preserves_import_provenance() {
+    let output = parsed_import_output(
+        "import dep.logic as L, .sibling, ..common;\nimport app.{alpha, beta};\ndefinition\nend;",
+        "dir.main",
+    );
+    let provider = fixture_provider();
+    let resolution = ImportPathResolver::new(ModuleIndexInput::new(&provider))
+        .resolve_frontend(&output, &output.source)
+        .unwrap();
+    assert!(!resolution.has_unresolved());
+    assert_eq!(
+        resolved_targets(&resolution),
+        [
+            "dep:logic",
+            "app:dir.sibling",
+            "app:common",
+            "app:alpha",
+            "app:beta"
+        ]
+    );
+    assert_eq!(resolution.resolved()[0].alias(), "L");
+    let candidates = ImportPathCandidate::from_surface_ast(output.ast.as_ref().unwrap()).unwrap();
+    for (resolved, candidate) in resolution.resolved().iter().zip(&candidates) {
+        assert_eq!(resolved.ordinal(), candidate.ordinal());
+        assert_eq!(resolved.range(), candidate.range());
+        assert_eq!(resolved.branch_base_range(), candidate.branch_base_range());
+        assert_eq!(
+            resolved.branch_member_range(),
+            candidate.branch_member_range()
+        );
+    }
+}
+
+#[test]
+fn source_bound_frontend_keeps_empty_and_typed_unresolved_imports_distinct() {
+    let provider = fixture_provider();
+    let resolver = ImportPathResolver::new(ModuleIndexInput::new(&provider));
+    let empty = parsed_import_output("definition\nend;", "main");
+    let result = resolver.resolve_frontend(&empty, &empty.source).unwrap();
+    assert!(result.resolved().is_empty());
+    assert!(result.unresolved().is_empty());
+
+    let missing = parsed_import_output("import dep.absent;\ndefinition\nend;", "main");
+    let result = resolver
+        .resolve_frontend(&missing, &missing.source)
+        .unwrap();
+    assert!(result.resolved().is_empty());
+    assert_eq!(
+        unresolved_classes(&result),
+        [ImportPathFailureClass::UnknownModule]
+    );
+    assert_eq!(result.unresolved()[0].ordinal(), 0);
+    assert_eq!(result.unresolved()[0].spelling(), "dep.absent");
+}
+
+#[test]
+fn source_bound_frontend_rejects_changed_source_ast_key_prescan_and_framing() {
+    use mizar_syntax::{SurfaceNodeKind, SyntaxRecoveryKind};
+
+    let output = parsed_import_output("import dep.logic;\ndefinition\nend;", "main");
+    let provider = fixture_provider();
+    let resolver = ImportPathResolver::new(ModuleIndexInput::new(&provider));
+    assert!(resolver.resolve_frontend(&output, &output.source).is_some());
+
+    let mut wrong_source = output.source.clone();
+    wrong_source.module_path = ModulePath::new("other");
+    assert!(resolver.resolve_frontend(&output, &wrong_source).is_none());
+
+    let mut absent_ast = output.clone();
+    absent_ast.ast = None;
+    assert!(
+        resolver
+            .resolve_frontend(&absent_ast, &absent_ast.source)
+            .is_none()
+    );
+    let mut absent_key = output.clone();
+    absent_key.cache_keys.ast = None;
+    assert!(
+        resolver
+            .resolve_frontend(&absent_key, &absent_key.source)
+            .is_none()
+    );
+
+    let mut mismatched_ast = output.clone();
+    mismatched_ast.ast = Some(rebuild_import_ast(output.ast.as_ref().unwrap(), |node| {
+        if let SurfaceNodeKind::Token(token) = &mut node.kind
+            && token.text.as_ref() == "logic"
+        {
+            token.text = "other".into();
+        }
+    }));
+    assert!(
+        resolver
+            .resolve_frontend(&mismatched_ast, &mismatched_ast.source)
+            .is_none()
+    );
+
+    let mut recovered = output.clone();
+    recovered.ast = Some(rebuild_import_ast(output.ast.as_ref().unwrap(), |node| {
+        if matches!(&node.kind, SurfaceNodeKind::Token(token) if token.text.as_ref() == "end") {
+            node.kind = SurfaceNodeKind::ErrorRecovery(SyntaxRecoveryKind::SkippedToken);
+        }
+    }));
+    assert!(
+        resolver
+            .resolve_frontend(&recovered, &recovered.source)
+            .is_none()
+    );
+
+    let mut mismatched_prescan = output.clone();
+    mismatched_prescan.preprocessed.import_stubs[0]
+        .path
+        .spelling = "dep.other".into();
+    assert!(
+        resolver
+            .resolve_frontend(&mismatched_prescan, &mismatched_prescan.source)
+            .is_none()
+    );
+    let mut invalid_span = output.clone();
+    invalid_span.preprocessed.import_stubs[0].span.end = output.source.source_text.len() + 1;
+    assert!(
+        resolver
+            .resolve_frontend(&invalid_span, &invalid_span.source)
+            .is_none()
+    );
+
+    let mut changed_text = output.clone();
+    changed_text.source.source_text = output
+        .source
+        .source_text
+        .replacen("import", "imporX", 1)
+        .into();
+    let expected_source = changed_text.source.clone();
+    assert!(
+        resolver
+            .resolve_frontend(&changed_text, &expected_source)
+            .is_none()
     );
 }
 

@@ -1159,10 +1159,9 @@ impl PhaseService for FrontendService {
                 {
                     return None;
                 }
-                let candidates = authenticated_import_candidates(&output, leaf_source)?;
                 let index = mizar_resolve::module_index::ModuleIndexInput::new(inputs.module_index);
                 let resolution = mizar_resolve::imports::ImportPathResolver::new(index)
-                    .resolve(&index.resolver_module_id(&leaf_module), &candidates);
+                    .resolve_frontend(&output, leaf_source)?;
                 if !resolution.unresolved().is_empty() {
                     return None;
                 }
@@ -1326,13 +1325,10 @@ impl PhaseService for FrontendService {
                 {
                     return None;
                 }
-                let candidates = authenticated_import_candidates(&output, source.as_ref())?;
-                if candidates.is_empty() {
-                    return None;
-                }
                 let index = ModuleIndexInput::new(inputs.module_index);
                 let current = index.resolver_module_id(module);
-                let resolution = ImportPathResolver::new(index).resolve(&current, &candidates);
+                let resolution =
+                    ImportPathResolver::new(index).resolve_frontend(&output, source.as_ref())?;
                 if resolution.unresolved().is_empty() {
                     return None;
                 }
@@ -1502,12 +1498,12 @@ impl PhaseService for FrontendService {
                 ..blocking()
             };
         }
-        let Some(candidates) = authenticated_import_candidates(&output, source.as_ref()) else {
+        let index = mizar_resolve::module_index::ModuleIndexInput::new(inputs.module_index);
+        let Some(resolution) = mizar_resolve::imports::ImportPathResolver::new(index)
+            .resolve_frontend(&output, source.as_ref())
+        else {
             return blocking();
         };
-        let index = mizar_resolve::module_index::ModuleIndexInput::new(inputs.module_index);
-        let resolution = mizar_resolve::imports::ImportPathResolver::new(index)
-            .resolve(&index.resolver_module_id(module), &candidates);
         if !resolution.unresolved().is_empty() {
             return blocking();
         }
@@ -1627,92 +1623,6 @@ impl PhaseService for FrontendService {
             Err(_) => blocking(),
         }
     }
-}
-
-fn authenticated_import_candidates(
-    output: &FrontendOutput<<MizarParserSeam as ParserSeam>::Ast>,
-    source: &SourceUnit,
-) -> Option<Vec<mizar_resolve::imports::ImportPathCandidate>> {
-    use mizar_resolve::imports::{ImportPathCandidate, ImportPathPrefix};
-    let ast = output.ast.as_ref()?;
-    output.cache_keys.ast.as_ref()?;
-    if output.source != *source
-        || output.preprocessed.source_id != source.source_id
-        || ast.source_id != source.source_id
-        || ast
-            .node_views()
-            .any(|view| view.as_recovery().is_some() || view.is_recovered())
-    {
-        return None;
-    }
-    let candidates = ImportPathCandidate::from_surface_ast(ast)?;
-    let provisional = ImportPathCandidate::from_frontend_imports(
-        &mizar_frontend::lexical_env::LexicalEnvironmentRequest {
-            source_id: source.source_id,
-            import_stubs: &output.preprocessed.import_stubs,
-            edition: source.edition.clone(),
-        },
-    )?;
-    if candidates.len() != provisional.len() {
-        return None;
-    }
-    for ((candidate, prescan), stub) in candidates
-        .iter()
-        .zip(&provisional)
-        .zip(&output.preprocessed.import_stubs)
-    {
-        if candidate.components() != prescan.components()
-            || candidate.prefix() != prescan.prefix()
-            || candidate.alias() != prescan.alias()
-            || candidate.alias_range() != prescan.alias_range()
-            || candidate.branch_base_range() != prescan.branch_base_range()
-            || candidate.branch_member_range() != prescan.branch_member_range()
-            || if candidate.branch_member_range().is_some() {
-                candidate.range().start > prescan.range().start
-                    || candidate.range().end < prescan.range().end
-            } else {
-                candidate.range() != prescan.range()
-            }
-        {
-            return None;
-        }
-        for range in std::iter::once(candidate.range())
-            .chain(std::iter::once(stub.span))
-            .chain(std::iter::once(stub.path.span))
-            .chain(stub.path.source_segments.iter().copied())
-            .chain(candidate.alias_range())
-        {
-            source.line_map.validate_range(range).ok()?;
-        }
-        let prefix = match candidate.prefix() {
-            ImportPathPrefix::Unprefixed => "",
-            ImportPathPrefix::Current => ".",
-            ImportPathPrefix::Parent => "..",
-            _ => return None,
-        };
-        if stub.path.spelling.as_ref() != format!("{prefix}{}", candidate.components().join(".")) {
-            return None;
-        }
-    }
-    // Authenticate the whole import framing, not just path coordinates.
-    for item in ast.node_views().filter_map(|view| view.as_import_item()) {
-        let range = item.range();
-        source.line_map.validate_range(range).ok()?;
-        for view in ast
-            .token_views()
-            .filter(|view| range.start <= view.range().start && view.range().end <= range.end)
-        {
-            source.line_map.validate_range(view.range()).ok()?;
-            if source
-                .source_text
-                .get(view.range().start..view.range().end)?
-                != view.as_token()?.text.as_ref()
-            {
-                return None;
-            }
-        }
-    }
-    Some(candidates)
 }
 
 fn convert_frontend_diagnostics(
