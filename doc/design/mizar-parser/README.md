@@ -10,8 +10,8 @@ Status: Tasks 1-48 remain implemented, and the historical post-Task-46 parser
 milestone met all nine closeout hard gates with a fresh independent score of
 99/100. The bounded `PARSER-RECOVERY-B1B1P-P1` fallback-recovery prerequisite
 and its paired frontend regression are now implemented with independent
-test/implementation reviews reporting no findings. P-265-47D remains a
-nonblocking human-owned wording gap, and
+test/implementation reviews reporting no findings. P-265-47D is closed by the
+Chapter 8 list alignment, and
 the independently classified overbroad frontend string-position heuristic
 remains external to parser scope. This status does not close global Step 5 or
 authorize Task 49 or Steps 6/7.

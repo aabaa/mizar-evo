@@ -14,7 +14,7 @@ independent read-only scoreは99/100である。
 
 依存境界は狭く保つべきである。入力は parser-facing token transfer object、出力は `SurfaceAst` と構文診断とする。パーサー補助付き字句解析は、文字列が必要な位置やシンボル種別フィルタのような、明示的なコンテキストオブジェクトを通じてのみ許可する。
 
-状態: この crate は、session `SourceRange` を持つ frontend 適合済み token transfer object を消費し、`mizar_syntax::SurfaceAst` と構文診断を返す parser entry point を公開している。Tasks 1-48は実装済みである。P-043-01/P-046はTask 46によりclosed、P-265-47Dはnonblocking human-owned wording gapのままである。独立にclassifiedされたoverbroad frontend string-position heuristicはparser scope外に残る。Task 46はglobal Step 5を閉じず、Task 49やSteps 6/7を許可しない。
+状態: この crate は、session `SourceRange` を持つ frontend 適合済み token transfer object を消費し、`mizar_syntax::SurfaceAst` と構文診断を返す parser entry point を公開している。Tasks 1-48は実装済みである。P-043-01/P-046はTask 46によりclosed、P-265-47Dはcloseした。Chapter 8はChapters 4/15とAppendix Aと同じ`type_change_list`を使う。独立にclassifiedされたoverbroad frontend string-position heuristicはparser scope外に残る。Task 46はglobal Step 5を閉じず、Task 49やSteps 6/7を許可しない。
 
 current qualification: [00.crate_plan.md](./00.crate_plan.md)のbounded
 `PARSER-RECOVERY-B1B1P-P1` fallback-ownership prerequisiteは実装済みで、

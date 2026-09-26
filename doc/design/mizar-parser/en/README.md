@@ -30,7 +30,7 @@ coverage, the parser-owned valid-UTF-8 fuzz target, and frontend passthrough
 follow-through audit, plus a private annotation/test module-boundary split.
 Tasks 43-45 and 47-48 are complete, and Task 46 now closes the concrete
 operator-declaration syntax gap. All parser Tasks 1-48 are implemented.
-P-265-47D remains a nonblocking human-owned wording gap. The independently
+P-265-47D is closed: Chapter 8 now uses the `type_change_list` of Chapters 4/15 and Appendix A. The independently
 classified overbroad frontend string-position heuristic remains external to
 parser scope. Global Step 5 is not closed, and Task 49 and Steps 6/7 are not
 authorized.

@@ -124,10 +124,9 @@ parse-only corpus supplies exact backlinks for both newly covered requirements,
 and the historical omitted-tail expectation drift is removed without changing
 an existing `.miz` source.
 
-P-265-47D remains a nonblocking, human-owned `spec_gap`: Chapter 8's compact
-EBNF writes one `reconsider_item`, whereas Chapters 4/15 and Appendix A use a
-list. Task 47 preserves the already implemented source-ordered list and does
-not edit `doc/spec`. P-265-48 is closed by Task 48 and P-046 by Task 46. No
+P-265-47D is closed: by user decision, Chapter 8's compact EBNF now uses the
+same `type_change_list` as Chapters 4/15 and Appendix A, matching the
+already implemented source-ordered list; no parser change was needed. P-265-48 is closed by Task 48 and P-046 by Task 46. No
 `source_undocumented_behavior`, `boundary_violation`, or
 `repo_metadata_conflict` was found.
 

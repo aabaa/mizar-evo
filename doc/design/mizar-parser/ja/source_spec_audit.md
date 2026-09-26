@@ -119,9 +119,9 @@ simple-justification、proof-block tailと一致する。active parse-only corpu
 したrequirement 2件のexact backlinkを持ち、既存`.miz`を変えずにhistorical omitted-tail
 expectation driftを除去した。
 
-P-265-47Dはnonblockingでhuman-ownedの`spec_gap`として残る。Chapter 8のcompact EBNFは
-`reconsider_item` 1件と書く一方、Chapters 4/15とAppendix Aはlistを使う。Task 47は既存の
-source-order listを維持し、`doc/spec`を編集しない。P-265-48はTask 48、P-046は
+P-265-47Dはcloseした。利用者の決定により、Chapter 8のcompact EBNFはChapters 4/15と
+Appendix Aと同じ`type_change_list`を使い、実装済みのsource-order listと一致する。
+parserの変更は不要だった。P-265-48はTask 48、P-046は
 Task 46でcloseする。
 `source_undocumented_behavior`、`boundary_violation`、`repo_metadata_conflict`はない。
 
