@@ -627,6 +627,10 @@ polarity)、F2(非 import ソース束縛)、F6(imported-statement projection)
       この task は fake payload、placeholder runner、expectation rebaseline、
       kernel call、proof policy、witness/cache output、trusted backend material を
       追加しない。
+30. **Untrusted instance finder。** [ ]
+    - 証明できた問題から kernel の根拠を作る (task 15 の取り出しの保留を解消する)。契約: [ATPK-INSTANCE-FINDER](../../task_contracts/ja/ATPK-INSTANCE-FINDER.md)。
+31. **Deterministic premise ranking。** [ ]
+    - 刈り込み・提案・解決できない引用のための `symbol-overlap-v1` (spec §22.4.4)。契約: [ATPK-PREMISE-RANKING](../../task_contracts/ja/ATPK-PREMISE-RANKING.md)。
 
 ## 推奨検証
 

@@ -494,6 +494,8 @@ architecture レベルで修正済みであり、以下のタスクが実装と�
     - 検証: `cargo test -p mizar-kernel`、`cargo test -p mizar-test`。
     - 依存: 外部 — mizar-core の reduct/view lowering タスク; その後 31。
       仕様: spec 05 §5.8.3、13 §13.8.7; template_encoding_audit.md F1/F3。
+36. **Kernel-constructed equality instances。** [ ]
+    - 承認済みの kernel の範囲の拡大 (spec §21.7.5)。契約: [ATPK-KERNEL-EQUALITY-INSTANCES](../../task_contracts/ja/ATPK-KERNEL-EQUALITY-INSTANCES.md)。
 
 ## 推奨検証
 

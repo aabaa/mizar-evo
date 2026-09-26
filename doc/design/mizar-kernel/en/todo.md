@@ -516,6 +516,8 @@ Every finding maps to a task or a recorded disposition:
     - Verify: `cargo test -p mizar-kernel`, `cargo test -p mizar-test`.
     - Deps: external — mizar-core reduct/view lowering task; then 31. Spec:
       spec 05 §5.8.3, 13 §13.8.7; template_encoding_audit.md F1/F3.
+36. **Kernel-constructed equality instances.** [ ]
+    - Approved kernel-scope expansion (spec §21.7.5). Contract: [ATPK-KERNEL-EQUALITY-INSTANCES](../../task_contracts/en/ATPK-KERNEL-EQUALITY-INSTANCES.md).
 
 ## Recommended Verification
 

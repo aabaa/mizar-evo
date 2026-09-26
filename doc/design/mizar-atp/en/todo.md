@@ -682,6 +682,10 @@ candidate evidence through the kernel-owned schema and must not weaken it.
       exists yet, so this task deliberately adds no fake payload,
       placeholder runner, expectation rebaseline, kernel call, proof policy,
       witness/cache output, or trusted backend material.
+30. **Untrusted instance finder.** [ ]
+    - Produces kernel evidence from proved problems (closes the task-15 extraction deferral). Contract: [ATPK-INSTANCE-FINDER](../../task_contracts/en/ATPK-INSTANCE-FINDER.md).
+31. **Deterministic premise ranking.** [ ]
+    - `symbol-overlap-v1` for pruning, suggestions, and unresolved citations (spec §22.4.4). Contract: [ATPK-PREMISE-RANKING](../../task_contracts/en/ATPK-PREMISE-RANKING.md).
 
 ## Recommended Verification
 

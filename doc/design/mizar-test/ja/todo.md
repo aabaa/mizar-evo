@@ -347,6 +347,8 @@ harness 所有の所見 F7 と F8 を報告した。以下は監査由来の最�
     - 有効な意味論ケースすべてについて、意味を保つ変形を検査する。契約: [QUALITY-METAMORPHIC-GUARD](../../task_contracts/ja/QUALITY-METAMORPHIC-GUARD.md)。
 24. **Literal source-offset ratchet。** [ ]
     - 本番コードに数値のソース位置を新たに書かせないリポジトリ lint。契約: [QUALITY-LITERAL-OFFSET-RATCHET](../../task_contracts/ja/QUALITY-LITERAL-OFFSET-RATCHET.md)。
+25. **ATP re-proving benchmark。** [ ]
+    - 条件と分類ごとの backend の成功率と kernel の受理率。契約: [ATPK-BENCHMARK](../../task_contracts/ja/ATPK-BENCHMARK.md)。
 
 ## 推奨検証
 

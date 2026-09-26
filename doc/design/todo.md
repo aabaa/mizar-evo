@@ -708,13 +708,21 @@ cache validation in `mizar-cache`, artifact publication in `mizar-artifact`,
 and registry/orchestration in `mizar-driver`.
 
 1. [ ] Real ATP backend extraction and portfolio execution in `mizar-atp`
-   (policy-deterministic acceptance, IV-004).
+   (policy-deterministic acceptance, IV-004). Evidence is extracted by the
+   [untrusted instance finder](./task_contracts/en/ATPK-INSTANCE-FINDER.md)
+   (mizar-atp 30), which names equality instances that the
+   [kernel constructs](./task_contracts/en/ATPK-KERNEL-EQUALITY-INSTANCES.md)
+   (mizar-kernel 36).
 2. [ ] Proof cache/witness handoffs: `mizar-proof` reuse metadata export into
    `mizar-cache` proof-reuse validation (IV-005, fail-closed IV-002).
 3. [ ] Artifact witness publication from producer outputs in `mizar-artifact`.
 4. [ ] Settle the open discharge-evidence validation scope decision
    ([mizar-proof task 6](./mizar-proof/en/todo.md) with `mizar-kernel` /
    `mizar-vc`).
+5. [ ] [Deterministic premise ranking](./task_contracts/en/ATPK-PREMISE-RANKING.md)
+   (mizar-atp 31) for pruning, lemma suggestions, and unresolved citations.
+6. [ ] [ATP re-proving benchmark](./task_contracts/en/ATPK-BENCHMARK.md)
+   (mizar-test 25), after items 1 and 5.
 
 Exit: the proof-and-algorithm-verification completion gate holds with active
 `proof_verification` coverage.
@@ -869,6 +877,13 @@ Open decisions (block or shape upcoming steps):
   evidence. Owned by [mizar-proof task 6](./mizar-proof/en/todo.md) with
   `mizar-kernel`, and tracked in [mizar-kernel](./mizar-kernel/en/todo.md) and
   [mizar-vc](./mizar-vc/en/todo.md) (plan step 7).
+- **Built-in arithmetic and linear arithmetic evidence: open.** Linear
+  arithmetic enters the kernel only after kernel-constructed equality
+  instances, starting with rationals. It first needs a decision on which
+  symbols are built-in arithmetic (compare the requirements directives of
+  classical Mizar) and a certificate check for linear combinations
+  (architecture 15). Recorded 2026-09-27; kernel-scope expansion requires
+  user consultation.
 
 Resolved decisions (kept for reference; details live in the linked docs):
 
