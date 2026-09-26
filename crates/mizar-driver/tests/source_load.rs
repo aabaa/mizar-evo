@@ -731,6 +731,60 @@ fn discovered_real_frontend_prefix_is_stable_across_replay_capture_order_and_wor
 }
 
 #[test]
+fn discovered_source_import_cycles_fail_graph_validation_without_overlay_fallback() {
+    for (mode, main, leaf, expected) in [
+        (
+            "self",
+            b"import alpha.main;\ndefinition\nend;\n".as_slice(),
+            b"definition\nend;\n".as_slice(),
+            TaskGraphDiagnosticKind::SelfDependency,
+        ),
+        (
+            "pair",
+            b"import alpha.leaf;\ndefinition\nend;\n".as_slice(),
+            b"import alpha.main;\ndefinition\nend;\n".as_slice(),
+            TaskGraphDiagnosticKind::DependencyCycle,
+        ),
+    ] {
+        let fixture = WorkspaceLeafFixture::new(main, leaf, None, usize::MAX);
+        let (request, input) = fixture.scheduled_request(
+            ModuleDependencyOverlay::unavailable(),
+            Vec::new(),
+            Vec::new(),
+        );
+        let mut driver = fixture.scheduled_driver();
+        let error = driver
+            .submit_with_import_discovery(request, &fixture.ids, &SnapshotRegistry::new(), input)
+            .unwrap_err();
+        let DriverSubmitError::TaskGraph {
+            session,
+            diagnostics,
+        } = error
+        else {
+            panic!("{mode}: expected structural import-graph rejection");
+        };
+        assert_eq!(
+            session.state,
+            BuildSessionState::Finished(BuildSessionOutcome::Failed),
+            "{mode}"
+        );
+        assert!(
+            diagnostics
+                .diagnostics()
+                .iter()
+                .any(|diagnostic| diagnostic.kind == expected),
+            "{mode}"
+        );
+        assert!(
+            diagnostics.diagnostics().iter().all(|diagnostic| {
+                diagnostic.kind != TaskGraphDiagnosticKind::MissingModuleDependencyOverlay
+            }),
+            "{mode}: import discovery must not fall back to Unavailable"
+        );
+    }
+}
+
+#[test]
 fn discovered_workspace_leaf_orders_frontend_without_semantic_coverage() {
     let fixture = WorkspaceLeafFixture::new(
         b"import alpha.leaf;\ntheorem T: a combine b = a;\n",
