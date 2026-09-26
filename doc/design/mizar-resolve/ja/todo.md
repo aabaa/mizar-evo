@@ -614,6 +614,8 @@ IR 所有権: [01.ir_layers.md](../../architecture/ja/01.ir_layers.md)。
     - functor の同義語はアルゴリズムを対象にでき、`by` は昇格したアルゴリズムを
       引用できる (spec §11.1.2、§16.5.1)。契約:
       [ALGDEF-RESOLVE33-ALGORITHM-REFERENCES](../../task_contracts/ja/ALGDEF-RESOLVE33-ALGORITHM-REFERENCES.md)。
+34. **Reserve-typed public statements (W0004)。** [ ]
+    - 契約: [AIREV-W0004-RESERVE-TYPED-STATEMENTS](../../task_contracts/ja/AIREV-W0004-RESERVE-TYPED-STATEMENTS.md)。
 
 ## crate close-out
 

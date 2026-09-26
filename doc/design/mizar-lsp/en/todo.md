@@ -251,6 +251,8 @@ Keep `cargo test -p mizar-lsp` green after each task (see
     - Deps: 6-7 and 12-15. Contract: [EDITOR-LSP-COMPLETION](../../task_contracts/en/EDITOR-LSP-COMPLETION.md).
 26. **`mizar lsp` stdio entry (with mizar-driver).** [ ]
     - Deps: 4-5. Contract: [EDITOR-LSP-ENTRY](../../task_contracts/en/EDITOR-LSP-ENTRY.md).
+27. **Statement review aids (consumer).** [ ]
+    - Elaborated-statement hover and make-binders-explicit action ([AIREV-ELABORATED-STATEMENTS](../../task_contracts/en/AIREV-ELABORATED-STATEMENTS.md)); counterexample search action ([AIREV-OPEN-STATEMENT-COUNTEREXAMPLE](../../task_contracts/en/AIREV-OPEN-STATEMENT-COUNTEREXAMPLE.md)).
 
 ## Recommended Verification
 

@@ -692,6 +692,8 @@ implementation commit does not satisfy a producer task.
 - [ ] **Task 281:** retire fixture-shaped exact statement profiles from
   production code. Contract:
   [QUALITY-EXACT-PROFILE-RETIREMENT](../../task_contracts/en/QUALITY-EXACT-PROFILE-RETIREMENT.md).
+- [ ] **Task 282:** elaborated statements for metadata and hover. Contract:
+  [AIREV-ELABORATED-STATEMENTS](../../task_contracts/en/AIREV-ELABORATED-STATEMENTS.md).
 
 ## Task 257B2 Frozen-Contract Addendum
 

@@ -791,6 +791,20 @@ early because its result qualifies what the active corpus demonstrates.
 3. [ ] Checker 281 — [exact-profile retirement](./task_contracts/en/QUALITY-EXACT-PROFILE-RETIREMENT.md);
    deps items 1-2 and checker Task 258.
 
+### Statement review aids (specification amendment) [ ]
+
+The September 2026 amendment to specification chapters 21-23 and Appendix D
+adds review aids for translated or AI-generated statements. Each task starts
+when its dependencies are complete; none blocks Steps 6-8.
+
+1. [ ] Checker 282 — [elaborated statements](./task_contracts/en/AIREV-ELABORATED-STATEMENTS.md)
+   in the artifact and LSP hover; deps checker Task 258 and the artifact writer.
+2. [ ] Resolver 34 — [W0004 reserve-typed public statements](./task_contracts/en/AIREV-W0004-RESERVE-TYPED-STATEMENTS.md).
+3. [ ] mizar-proof 22 — [W0104 vacuous statements](./task_contracts/en/AIREV-W0104-VACUOUS-STATEMENT.md);
+   deps Step 7 accepted evidence.
+4. [ ] mizar-atp 32 — [counterexample search on open statements](./task_contracts/en/AIREV-OPEN-STATEMENT-COUNTEREXAMPLE.md);
+   deps Step 7 item 1.
+
 ### Parked and trigger-based work
 
 Not part of the sequential flow; each row records its re-entry trigger.

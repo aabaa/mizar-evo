@@ -439,6 +439,8 @@ layer consumes both; one alignment task is owned here.
       `doc/design/spec_coverage_audit.md` remains unchanged because spec
       coverage ownership, traceability metadata, owner crates, and deferred
       coverage status did not change.
+22. **Vacuous statement diagnostic (W0104).** [ ]
+    - Diagnostic only; a new kernel entry needs user consultation. Contract: [AIREV-W0104-VACUOUS-STATEMENT](../../task_contracts/en/AIREV-W0104-VACUOUS-STATEMENT.md).
 
 ## Recommended Verification
 

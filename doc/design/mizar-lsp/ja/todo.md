@@ -251,6 +251,8 @@ internal: [03](../../internal/ja/03.diagnostics_model_and_lsp_bridge.md)。
     - 依存: 6-7、12-15。契約: [EDITOR-LSP-COMPLETION](../../task_contracts/ja/EDITOR-LSP-COMPLETION.md)。
 26. **`mizar lsp` の stdio 起動口 (mizar-driver と共同)。** [ ]
     - 依存: 4-5。契約: [EDITOR-LSP-ENTRY](../../task_contracts/ja/EDITOR-LSP-ENTRY.md)。
+27. **命題の確認支援 (consumer)。** [ ]
+    - 展開後の命題のホバーと束縛子を明示する操作 ([AIREV-ELABORATED-STATEMENTS](../../task_contracts/ja/AIREV-ELABORATED-STATEMENTS.md))、反例探索の操作 ([AIREV-OPEN-STATEMENT-COUNTEREXAMPLE](../../task_contracts/ja/AIREV-OPEN-STATEMENT-COUNTEREXAMPLE.md))。
 
 ## 推奨検証
 

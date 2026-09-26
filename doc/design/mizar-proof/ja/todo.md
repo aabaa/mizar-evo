@@ -419,6 +419,8 @@ kernel の拒否語彙と evidence 契約を訂正した。policy 層はその�
       finding なしで、full workspace verification は passed。spec coverage
       ownership、traceability metadata、owner crate、deferred coverage status は
       変わらないため `doc/design/spec_coverage_audit.md` は unchanged。
+22. **Vacuous statement diagnostic (W0104)。** [ ]
+    - 診断専用。kernel に新しい入口が必要なら利用者への相談が要る。契約: [AIREV-W0104-VACUOUS-STATEMENT](../../task_contracts/ja/AIREV-W0104-VACUOUS-STATEMENT.md)。
 
 ## 推奨検証
 

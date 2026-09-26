@@ -668,6 +668,8 @@ runner、docs-only implementation commitはproducer taskを満たさない。
   [ALGDEF-RESOLVE33-ALGORITHM-REFERENCES](../../task_contracts/ja/ALGDEF-RESOLVE33-ALGORITHM-REFERENCES.md)。
 - [ ] **Task 281:** テストファイルの形に合わせた厳密な文プロファイルを本番コードから撤去する。契約:
   [QUALITY-EXACT-PROFILE-RETIREMENT](../../task_contracts/ja/QUALITY-EXACT-PROFILE-RETIREMENT.md)。
+- [ ] **Task 282:** メタデータとホバーのための展開後の命題。契約:
+  [AIREV-ELABORATED-STATEMENTS](../../task_contracts/ja/AIREV-ELABORATED-STATEMENTS.md)。
 
 ## Task 257B2 frozen-contract addendum
 

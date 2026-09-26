@@ -656,6 +656,8 @@ Keep `cargo test -p mizar-resolve` green after each task (see
     - Functor synonyms may target algorithms and `by` may cite promoted
       algorithms (spec §11.1.2, §16.5.1). Contract:
       [ALGDEF-RESOLVE33-ALGORITHM-REFERENCES](../../task_contracts/en/ALGDEF-RESOLVE33-ALGORITHM-REFERENCES.md).
+34. **Reserve-typed public statements (W0004).** [ ]
+    - Contract: [AIREV-W0004-RESERVE-TYPED-STATEMENTS](../../task_contracts/en/AIREV-W0004-RESERVE-TYPED-STATEMENTS.md).
 
 ## Crate Close-Out
 
