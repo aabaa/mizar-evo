@@ -751,8 +751,12 @@ IR264. **Authenticated structure-property definition owner.** [x]
       baseline. Concrete substitution/VCs, public-code invention, proof/artifact
       status, MVM, extraction, and empty infrastructure commits are forbidden.
     - Exact dependencies, payloads, corruption matrices, consumers, and exit
-      boundaries for Tasks 33-53 are canonical in
+      boundaries for Tasks 33-54 are canonical in
       [source_family_decomposition.md](./source_family_decomposition.md).
+    - [ ] Task 54 constructs definitional-algorithm defining equations:
+      [ALGDEF-CORE54-DEFINING-EQUATIONS](../../task_contracts/en/ALGDEF-CORE54-DEFINING-EQUATIONS.md).
+      Task 48 also owns the missing-`return` diagnostic, and Task 46 the
+      contract self-reference rejection.
 
 ## Recommended Verification
 

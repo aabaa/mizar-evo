@@ -542,8 +542,20 @@ kernel 受理境界の監査
 55. **Ghost-isolation zero-VC integration。** [ ] — Specs
     20.1.3/20.3/20.13.5; Core 46/52-53; `MT10-VC-PV/VC55`。no-VC accounting と
     Core-53 rejection を検証し、`GhostErasureSafety` VC は作らない。
+56. **Algorithm induction-hypothesis context。** [ ] — Specs 20.4.1/20.13.4;
+    Core 46/52; `MT10-VC-PV/VC56`。契約:
+    [ALGDEF-VC56-INDUCTION-HYPOTHESIS](../../task_contracts/ja/ALGDEF-VC56-INDUCTION-HYPOTHESIS.md)。
+57. **Module-local promotion axioms as premises。** [ ] — Specs
+    16.5.1/20.7.2/20.13.2; Core 54; VC 52; 限定的な proof status の前例に従う。
+    契約: [ALGDEF-VC57-PROMOTION-FACTS](../../task_contracts/ja/ALGDEF-VC57-PROMOTION-FACTS.md)。
+58. **Computation uniqueness obligation。** [ ] — Specs 20.2.4/20.3/20.9.2;
+    Core 42/44/46; `MT10-VC-PV/VC58`。契約:
+    [ALGDEF-VC58-COMPUTATION-UNIQUENESS](../../task_contracts/ja/ALGDEF-VC58-COMPUTATION-UNIQUENESS.md)。
+59. **Imported promotion axioms as premises。** [ ] blocked-reserved — Specs
+    12/16.5.1/20.13.2/23; VC 57; 持ち運べる受理状態の authority がないため block。契約:
+    [ALGDEF-VC59-IMPORTED-PROMOTION-FACTS](../../task_contracts/ja/ALGDEF-VC59-IMPORTED-PROMOTION-FACTS.md)。
 
-Tasks 32-55 は [source_vc_decomposition.md](./source_vc_decomposition.md) の exact
+Tasks 32-59 は [source_vc_decomposition.md](./source_vc_decomposition.md) の exact
 contract、禁止境界、real-source/corruption requirement を使用する。各 task は
 1 nonempty logical task / 1 commit であり、shared empty infrastructure task は
 認可しない。

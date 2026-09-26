@@ -661,6 +661,12 @@ criteriaは[payload_family_decomposition.md](./payload_family_decomposition.md)
 projectし、実`mizar-test` Task-10 caseがconsumeする。未消費DTO、placeholder
 runner、docs-only implementation commitはproducer taskを満たさない。
 
+- [ ] **Task 280:** 定義の依存の循環の検査 (spec §10.3.3、E0410 の意味論)。
+  payload-family producer ではない。契約:
+  [ALGDEF-CHECKER280-DEFINITION-CYCLES](../../task_contracts/ja/ALGDEF-CHECKER280-DEFINITION-CYCLES.md)。
+- [ ] resolver Task 33 の consumer delta: アルゴリズムの同義語の replay と使用箇所の制限。契約:
+  [ALGDEF-RESOLVE33-ALGORITHM-REFERENCES](../../task_contracts/ja/ALGDEF-RESOLVE33-ALGORITHM-REFERENCES.md)。
+
 ## Task 257B2 frozen-contract addendum
 
 本文は英語正本へ移管: [../en/todo.md](../en/todo.md) / [archive](../../archive/checker_todo_sections.md).

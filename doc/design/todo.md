@@ -735,6 +735,35 @@ diagnostics, metadata, artifacts, and semantic indexes.
 
 Exit: the user-facing-projections completion gate holds.
 
+### Algorithm definitional semantics (specification amendment) [ ]
+
+The September 2026 amendment to specification chapters 10, 11, 16, 20, 22,
+and 23 adds definitional algorithms, measured `ensures` self-reference,
+algorithm synonyms and citations, the computation uniqueness obligation, and
+definition-cycle confinement. These tasks are outside the alpha
+source-to-artifact claim and do not block Steps 6-8; each starts when its
+listed dependencies are complete.
+
+1. [ ] Core 54 — [defining equations](./task_contracts/en/ALGDEF-CORE54-DEFINING-EQUATIONS.md);
+   deps Core 42-43 and 46.
+2. [ ] VC 56 — [induction-hypothesis context](./task_contracts/en/ALGDEF-VC56-INDUCTION-HYPOTHESIS.md);
+   deps Core 46/52 and VC 43-44, 47, and 51-52.
+3. [ ] VC 58 — [computation uniqueness obligation](./task_contracts/en/ALGDEF-VC58-COMPUTATION-UNIQUENESS.md);
+   deps Core 42/44/46 and VC 44.
+4. [ ] Checker 280 — [definition dependency cycles](./task_contracts/en/ALGDEF-CHECKER280-DEFINITION-CYCLES.md);
+   deps resolver declaration dependency edges and algorithm call targets.
+5. [ ] Resolver 33 — [algorithm synonym targets and citations](./task_contracts/en/ALGDEF-RESOLVE33-ALGORITHM-REFERENCES.md).
+6. [ ] VC 57 — [module-local promotion axioms as premises](./task_contracts/en/ALGDEF-VC57-PROMOTION-FACTS.md);
+   deps Core 54, VC 52, and resolver 33; follows the bounded proof-status
+   precedent for module-local acceptance.
+7. [ ] VC 59 — [imported promotion axioms](./task_contracts/en/ALGDEF-VC59-IMPORTED-PROMOTION-FACTS.md);
+   blocked-reserved on the transferable accepted-status authority shared with
+   checker Task 274 and VC 53.
+
+Core 48 additionally owns the missing-`return` diagnostic, and Core 46 the
+contract self-reference rejection. Public codes E0330, E0501, and E0502 stay
+spec-reserved until a separately authorized diagnostics adoption.
+
 ### Parked and trigger-based work
 
 Not part of the sequential flow; each row records its re-entry trigger.

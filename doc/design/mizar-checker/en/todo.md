@@ -683,6 +683,13 @@ and `ResolvedTypedAst` tables and is consumed by a real `mizar-test` Task-10
 case. An unconsumed DTO, placeholder runner, or documentation-only
 implementation commit does not satisfy a producer task.
 
+- [ ] **Task 280:** definition dependency cycle check (spec §10.3.3, E0410
+  semantics); not a payload-family producer. Contract:
+  [ALGDEF-CHECKER280-DEFINITION-CYCLES](../../task_contracts/en/ALGDEF-CHECKER280-DEFINITION-CYCLES.md).
+- [ ] Consumer delta for resolver Task 33: synonym replay and use-site limits
+  for algorithm synonyms. Contract:
+  [ALGDEF-RESOLVE33-ALGORITHM-REFERENCES](../../task_contracts/en/ALGDEF-RESOLVE33-ALGORITHM-REFERENCES.md).
+
 ## Task 257B2 Frozen-Contract Addendum
 
 Details archived: [checker_todo_sections.md](../../archive/checker_todo_sections.md).

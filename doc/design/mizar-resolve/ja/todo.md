@@ -610,6 +610,11 @@ IR 所有権: [01.ir_layers.md](../../architecture/ja/01.ir_layers.md)。
       `b3a7e79a6b60db2974e911c69bb56ff5f4609064`、post-commit fresh inventoryは
       完了済み。
 
+33. **Algorithm synonym targets and citations。** [ ]
+    - functor の同義語はアルゴリズムを対象にでき、`by` は昇格したアルゴリズムを
+      引用できる (spec §11.1.2、§16.5.1)。契約:
+      [ALGDEF-RESOLVE33-ALGORITHM-REFERENCES](../../task_contracts/ja/ALGDEF-RESOLVE33-ALGORITHM-REFERENCES.md)。
+
 ## crate close-out
 
 - 完了: [crate_exit_report.md](./crate_exit_report.md) に、non-deferred task completion、

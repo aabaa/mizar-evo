@@ -652,6 +652,11 @@ Keep `cargo test -p mizar-resolve` green after each task (see
       `b3a7e79a6b60db2974e911c69bb56ff5f4609064`, and post-commit fresh
       inventory are complete.
 
+33. **Algorithm synonym targets and citations.** [ ]
+    - Functor synonyms may target algorithms and `by` may cite promoted
+      algorithms (spec §11.1.2, §16.5.1). Contract:
+      [ALGDEF-RESOLVE33-ALGORITHM-REFERENCES](../../task_contracts/en/ALGDEF-RESOLVE33-ALGORITHM-REFERENCES.md).
+
 ## Crate Close-Out
 
 - Completed: [crate_exit_report.md](./crate_exit_report.md) records

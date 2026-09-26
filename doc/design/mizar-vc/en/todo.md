@@ -573,8 +573,21 @@ the paired producer tasks.
 55. **Ghost-isolation zero-VC integration.** [ ] — Specs
     20.1.3/20.3/20.13.5; Core 46/52-53; `MT10-VC-PV/VC55`. It validates
     no-VC accounting and Core-53 rejection, never a `GhostErasureSafety` VC.
+56. **Algorithm induction-hypothesis context.** [ ] — Specs 20.4.1/20.13.4;
+    Core 46/52; `MT10-VC-PV/VC56`. Contract:
+    [ALGDEF-VC56-INDUCTION-HYPOTHESIS](../../task_contracts/en/ALGDEF-VC56-INDUCTION-HYPOTHESIS.md).
+57. **Module-local promotion axioms as premises.** [ ] — Specs
+    16.5.1/20.7.2/20.13.2; Core 54; VC 52; bounded proof-status precedent.
+    Contract: [ALGDEF-VC57-PROMOTION-FACTS](../../task_contracts/en/ALGDEF-VC57-PROMOTION-FACTS.md).
+58. **Computation uniqueness obligation.** [ ] — Specs 20.2.4/20.3/20.9.2;
+    Core 42/44/46; `MT10-VC-PV/VC58`. Contract:
+    [ALGDEF-VC58-COMPUTATION-UNIQUENESS](../../task_contracts/en/ALGDEF-VC58-COMPUTATION-UNIQUENESS.md).
+59. **Imported promotion axioms as premises.** [ ] blocked-reserved — Specs
+    12/16.5.1/20.13.2/23; VC 57; blocked on transferable accepted-status
+    authority. Contract:
+    [ALGDEF-VC59-IMPORTED-PROMOTION-FACTS](../../task_contracts/en/ALGDEF-VC59-IMPORTED-PROMOTION-FACTS.md).
 
-Tasks 32-55 use the exact contracts, forbidden boundaries, real-source and
+Tasks 32-59 use the exact contracts, forbidden boundaries, real-source and
 corruption requirements in
 [source_vc_decomposition.md](./source_vc_decomposition.md). Each is one
 nonempty logical task and one commit; no shared empty infrastructure task is

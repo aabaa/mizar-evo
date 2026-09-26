@@ -703,8 +703,11 @@ IR264. **Authenticated structure-property definition owner。** [x]
       `SnapshotKind::ControlFlowIr`を最初のreal baselineと同時にだけ追加する。
       concrete substitution/VC、public code、proof/artifact status、MVM、extraction、
       empty infrastructure commitは禁止。
-    - Tasks 33-53のexact dependency/payload/corruption/consumer/exit boundaryは
+    - Tasks 33-54のexact dependency/payload/corruption/consumer/exit boundaryは
       [source_family_decomposition.md](./source_family_decomposition.md)をcanonicalとする。
+    - [ ] Task 54 は定義的アルゴリズムの定義式を構成する:
+      [ALGDEF-CORE54-DEFINING-EQUATIONS](../../task_contracts/ja/ALGDEF-CORE54-DEFINING-EQUATIONS.md)。
+      Task 48 は `return` のない経路の診断も担い、Task 46 は契約の自己参照の拒否も担う。
 
 ## 推奨検証
 
