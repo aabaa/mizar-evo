@@ -9053,6 +9053,98 @@ fn task258b1_real_frontend_freezes_nested_statement_and_resolver_bundle() {
         extracted.proof_ranges.map(|range| (range.start, range.end)),
         [(69, 137), (86, 113)]
     );
+    let mut owners = symbols
+        .symbols()
+        .iter()
+        .filter(|entry| entry.kind() == mizar_resolve::env::SymbolKind::Theorem);
+    let owner = owners.next().expect("B1 theorem symbol");
+    assert!(owners.next().is_none(), "B1 has one theorem owner");
+    let namespace = mizar_resolve::env::NamespacePath::new(module.path().as_str());
+    let lowered = mizar_resolve::resolved_ast::SurfaceResolvedArena::lower(&ast, &module)
+        .expect("B1 source arena");
+    let labels = mizar_resolve::labels::ProofLabelSourceCollector::new(
+        &ast,
+        &module,
+        namespace.clone(),
+        owner.contribution(),
+        &lowered,
+    )
+    .expect("B1 label collector")
+    .collect()
+    .expect("B1 source labels");
+    let [projection] = labels.projections() else {
+        panic!("B1 has one source-collected proof label");
+    };
+    let [reference] = labels.references() else {
+        panic!("B1 has one source-collected citation");
+    };
+    assert_eq!(projection.primary_spelling(), "A");
+    assert_eq!(
+        projection.kind(),
+        mizar_resolve::resolved_ast::LabelKind::ProofStep
+    );
+    assert_eq!(projection.module(), &module);
+    assert_eq!(projection.namespace(), &namespace);
+    assert_eq!(projection.contribution(), owner.contribution());
+    assert_eq!(
+        (
+            projection.declaration_range().start,
+            projection.declaration_range().end
+        ),
+        (77, 78)
+    );
+    assert_eq!(projection.origin().source_id(), ast.source_id);
+    assert_eq!(projection.origin().module_id(), &module);
+    assert_eq!(
+        projection.origin().anchor(),
+        &mizar_session::SourceAnchor::Range(projection.declaration_range())
+    );
+    assert_eq!(projection.origin().structural_path(), [73, 60, 12]);
+    assert!(
+        projection
+            .origin_path()
+            .as_str()
+            .starts_with("proof-step-v1|")
+    );
+    assert!(matches!(
+        projection.source(),
+        mizar_resolve::labels::LabelProjectionSource::CurrentModule {
+            visible_after_ordinal: 2,
+            proof_scope: Some(scope),
+        } if scope.path() == [0]
+    ));
+    assert_eq!(reference.site().spelling(), "A");
+    assert_eq!(reference.site().node().index(), 68);
+    assert_eq!(
+        (reference.site().range().start, reference.site().range().end),
+        (131, 132)
+    );
+    assert_eq!(reference.origin().structural_path(), [73, 71, 68]);
+    assert_eq!(reference.origin().source_id(), ast.source_id);
+    assert_eq!(reference.origin().module_id(), &module);
+    assert_eq!(
+        reference.origin().anchor(),
+        &mizar_session::SourceAnchor::Range(reference.site().range())
+    );
+    assert_eq!(reference.ordinal(), 3);
+    assert!(matches!(
+        reference.scope(),
+        mizar_resolve::labels::LabelReferenceScope::Unqualified {
+            proof_scope: Some(scope),
+        } if scope.path() == [0]
+    ));
+    let resolution = mizar_resolve::labels::LabelResolver::new(labels.projections()).resolve(
+        &module,
+        &namespace,
+        labels.references(),
+    );
+    assert!(resolution.diagnostics().is_empty());
+    assert_eq!(resolution.ids().len(), 1);
+    let entry = resolution.table().get(resolution.ids()[0]).unwrap();
+    let mizar_resolve::resolved_ast::LabelResolution::Resolved(target) = entry.resolution() else {
+        panic!("B1 post-proof citation resolves");
+    };
+    assert_eq!(target.origin(), projection.origin_path());
     let output =
         source_statement_output_with_source(&ast, module, &symbols, SOURCE_STATEMENT_B1_TEXT)
             .expect("Task258B1 selector")
