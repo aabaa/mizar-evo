@@ -6288,8 +6288,8 @@ or imported type/interface credit. Lexical summaries remain syntax-only.
 Unrecovered AST imports retain path, alias, source order, and branch provenance in
 resolver candidates. Existing import resolution decides target existence and alias
 conflicts. Private theorem acceptance requires resolving its actual later citation
-to the same-module private, local-only symbol; proof validity is not checked.
-Proof-local label projections are outside this bridge and are rejected before name lookup.
+through the opt-in theorem-owner collector and LabelResolver to the authenticated private, local-only declaration label origin; proof validity is not checked.
+Proof-local label projections are outside this bridge and are rejected before label lookup.
 
 The exact `fail_type_elaboration_synonym_loci_mismatch_001` row is separately admitted at
 `type_elaboration` / `resolve` with `notation.synonym.loci_mismatch`, empty codes and its sole active tag.

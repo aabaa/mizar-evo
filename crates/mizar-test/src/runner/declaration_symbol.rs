@@ -14,10 +14,9 @@ use mizar_resolve::module_index::{
     IndexedModuleId, ModuleIndexEntry, ModuleIndexInput, ModuleIndexLocation,
     WorkspaceStubModuleIndexProvider,
 };
-use mizar_resolve::names::{NameReferenceCandidate, NameSymbolProjection, SymbolNameResolver};
 use mizar_resolve::resolved_ast::{
-    LabelExpectation, LabelKind, LabelOriginPath, LabelResolution, ModuleId, NameResolution,
-    RecoveryState, ReferenceSite, SemanticOrigin, SurfaceResolvedArena,
+    LabelExpectation, LabelKind, LabelOriginPath, LabelResolution, ModuleId, RecoveryState,
+    ReferenceSite, SemanticOrigin, SurfaceResolvedArena,
 };
 use mizar_session::{Edition, ModulePath, PackageId, SourceAnchor, SourceId, SourceRange};
 use mizar_syntax::{SurfaceAst, SurfaceNode, SurfaceNodeKind};
@@ -425,44 +424,53 @@ pub(super) fn private_theorem_is_valid(
         contribution.id(),
         &resolved,
     )
-    .and_then(|collector| collector.collect()) else {
+    .and_then(|collector| collector.collect_with_theorem_owners(env)) else {
         return false;
     };
     let [reference] = collection.references() else {
         return false;
     };
-    if !collection.projections().is_empty()
+    if collection
+        .projections()
+        .iter()
+        .any(|projection| projection.kind() != LabelKind::Theorem)
         || surface_nodes_with_kind(ast, SurfaceNodeKind::Reference).len() != 1
         || reference.site().spelling() != owner_name
         || theorem.range.end > reference.site().range().start
     {
         return false;
     }
-    let projection = NameSymbolProjection::current_module(
-        symbol.symbol().clone(),
-        symbol.namespace().clone(),
-        symbol.primary_spelling(),
-        SymbolKind::Theorem,
-        symbol.visibility(),
-        theorem.range,
-        theorem.range.end,
-    );
-    let candidate = NameReferenceCandidate::unqualified(
-        reference.site().clone(),
-        reference.origin().clone(),
-        reference.site().range().start,
-    );
-    let resolution = SymbolNameResolver::new(&[projection], &[]).resolve(
+    let mut owners = collection.projections().iter().filter(|projection| {
+        projection.primary_spelling() == owner_name
+            && theorem
+                .children
+                .get(1)
+                .and_then(|id| ast.node(*id))
+                .is_some_and(|name| projection.declaration_range() == name.range)
+            && projection.visibility() == Visibility::Private
+            && projection.export_status() == ExportStatus::LocalOnly
+            && projection.contribution() == symbol.contribution()
+            && projection.origin().source_id() == ast.source_id
+            && projection.origin().module_id() == module
+    });
+    let Some(owner) = owners.next() else {
+        return false;
+    };
+    if owners.next().is_some() {
+        return false;
+    }
+    let resolution = LabelResolver::new(collection.projections()).resolve(
         module,
         &NamespacePath::new(module.path().as_str()),
-        &[candidate],
+        collection.references(),
     );
     let Some((_, entry)) = resolution.table().iter().next() else {
         return false;
     };
     matches!(
         entry.resolution(),
-        NameResolution::Resolved(resolved) if resolved.symbol() == symbol.symbol()
+        LabelResolution::Resolved(resolved) if resolved.kind() == LabelKind::Theorem
+            && resolved.origin() == owner.origin_path()
     )
 }
 

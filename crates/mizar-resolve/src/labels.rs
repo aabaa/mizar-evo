@@ -551,6 +551,28 @@ impl<'a> ProofLabelSourceCollector<'a> {
         };
         let mut state = ProofLabelCollectionState::new(self, include_proof_organization);
         for child in item_list.child_views() {
+            let private =
+                theorem_owners.is_some() && matches!(child.kind(), SurfaceNodeKind::VisibleItem);
+            let child = if private {
+                let children = child.child_views().collect::<Vec<_>>();
+                let [marker, theorem] = children.as_slice() else {
+                    continue;
+                };
+                let marker_tokens = marker.child_views().collect::<Vec<_>>();
+                if child.is_recovered()
+                    || marker.is_recovered()
+                    || !matches!(marker.kind(), SurfaceNodeKind::VisibilityMarker)
+                    || !matches!(theorem.kind(), SurfaceNodeKind::TheoremItem)
+                    || marker_tokens.len() != 1
+                    || marker_tokens[0].is_recovered()
+                    || !token_is(&marker_tokens[0], SurfaceTokenKind::ReservedWord, "private")
+                {
+                    continue;
+                }
+                *theorem
+            } else {
+                child
+            };
             if child.is_recovered()
                 || !(matches!(child.kind(), SurfaceNodeKind::TheoremItem)
                     || theorem_owners.is_some()
@@ -562,8 +584,8 @@ impl<'a> ProofLabelSourceCollector<'a> {
             let Some(owner) = owner else {
                 continue;
             };
-            let owner_projection =
-                theorem_owners.and_then(|symbols| state.push_theorem_owner(child, owner, symbols));
+            let owner_projection = theorem_owners
+                .and_then(|symbols| state.push_theorem_owner(child, owner, symbols, private));
             if theorem_owners.is_some() && owner_projection.is_none() {
                 continue;
             }
@@ -920,6 +942,7 @@ impl<'a, 'collector> ProofLabelCollectionState<'a, 'collector> {
         theorem: SurfaceNodeView<'a>,
         owner: TheoremOwner<'a>,
         symbols: &SymbolEnv,
+        private: bool,
     ) -> Option<usize> {
         if owner
             .proof
@@ -938,6 +961,9 @@ impl<'a, 'collector> ProofLabelCollectionState<'a, 'collector> {
             .iter()
             .filter(|entry| {
                 entry.symbol().module() == module
+                    && (!private
+                        || entry.visibility() == Visibility::Private
+                            && entry.export_status() == ExportStatus::LocalOnly)
                     && entry.kind() == owner_kind
                     && entry.namespace() == &self.collector.namespace
                     && entry.primary_spelling() == owner.spelling

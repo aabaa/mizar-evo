@@ -12,6 +12,361 @@ use mizar_syntax::{
     SurfaceTokenKind, SyntaxRecoveryKind,
 };
 
+struct NoImportedSummaries;
+
+impl mizar_frontend::lexical_env::LexicalSummaryProvider for NoImportedSummaries {
+    fn resolve_imports(
+        &self,
+        _request: &mizar_frontend::lexical_env::LexicalEnvironmentRequest<'_>,
+    ) -> Result<
+        mizar_frontend::lexical_env::ResolvedImports,
+        mizar_frontend::lexical_env::FrontendLexicalEnvironmentError,
+    > {
+        Ok(mizar_frontend::lexical_env::ResolvedImports {
+            imports: Vec::new(),
+            summaries: Vec::new(),
+            diagnostics: Vec::new(),
+        })
+    }
+}
+
+fn parsed_private_theorem_fixture(
+    text: &str,
+) -> (
+    SurfaceAst,
+    ModuleId,
+    NamespacePath,
+    SymbolEnv,
+    SurfaceResolvedArena,
+) {
+    use mizar_frontend::{
+        orchestration::Frontend, parsing::MizarParserSeam, source::FrontendSourceLoader,
+    };
+    use mizar_session::{
+        DiskSourceLoader, Edition, SourceInput, SourceOriginInput, normalize_path,
+    };
+
+    let root = std::env::temp_dir().join(format!(
+        "mizar-resolve-private-theorem-{}-{}",
+        std::process::id(),
+        std::time::SystemTime::now()
+            .duration_since(std::time::UNIX_EPOCH)
+            .unwrap()
+            .as_nanos()
+    ));
+    let path = root.join("src/main.miz");
+    std::fs::create_dir_all(path.parent().unwrap()).unwrap();
+    std::fs::write(&path, text).unwrap();
+    let output = Frontend::new(
+        FrontendSourceLoader::new(DiskSourceLoader::new(&root)),
+        NoImportedSummaries,
+        MizarParserSeam,
+    )
+    .run(
+        mizar_frontend::source::SourceUnitRequest {
+            snapshot: BuildSnapshotId::from_published_schema_str(&format!(
+                "mizar-session-build-snapshot-v1:{}",
+                "31".repeat(Hash::BYTE_LEN)
+            ))
+            .unwrap(),
+            input: SourceInput {
+                package_id: PackageId::new("pkg"),
+                module_path: ModulePath::new("main"),
+                normalized_path: normalize_path(&root, &path).unwrap(),
+                edition: Edition::new("2025"),
+                origin: SourceOriginInput::Disk { path },
+            },
+        },
+        &InMemorySessionIdAllocator::new(),
+    )
+    .unwrap();
+    std::fs::remove_dir_all(root).unwrap();
+    assert!(output.diagnostics.is_empty(), "{:?}", output.diagnostics);
+    let ast = output.ast.expect("private theorem source has a parser AST");
+    let module = module_id("pkg", "main");
+    let namespace = NamespacePath::new("main");
+    let shells = crate::declarations::DeclarationShellCollector::new(&ast, &module).collect();
+    let symbols =
+        crate::symbols::SignatureProjectionExtractor::new(&ast, &shells, namespace.clone())
+            .collect(&module);
+    assert!(symbols.diagnostics().is_empty());
+    let resolved = SurfaceResolvedArena::lower(&ast, &module).unwrap();
+    (ast, module, namespace, symbols.into_env(), resolved)
+}
+
+#[test]
+fn private_theorem_owner_opt_in_collects_real_source_label_and_citation() {
+    let (ast, module, namespace, env, resolved) = parsed_private_theorem_fixture(include_str!(
+        "../../../../tests/miz/pass/resolve/pass_declaration_symbol_private_theorem_visibility_001.miz"
+    ));
+    let private = env
+        .symbols()
+        .iter()
+        .find(|entry| entry.primary_spelling() == "PrivT1")
+        .unwrap();
+    assert_eq!(private.visibility(), Visibility::Private);
+    assert_eq!(private.export_status(), ExportStatus::LocalOnly);
+    let collector = ProofLabelSourceCollector::new(
+        &ast,
+        &module,
+        namespace.clone(),
+        private.contribution(),
+        &resolved,
+    )
+    .unwrap();
+    let collection = collector.collect_with_theorem_owners(&env).unwrap();
+    let projection = collection
+        .projections()
+        .iter()
+        .find(|projection| projection.primary_spelling() == "PrivT1")
+        .unwrap();
+    assert_eq!(projection.visibility(), Visibility::Private);
+    assert_eq!(projection.export_status(), ExportStatus::LocalOnly);
+    assert_eq!(
+        projection.origin_path().as_str(),
+        private.symbol().fqn().as_str()
+    );
+    assert_eq!(projection.origin().source_id(), ast.source_id);
+    assert_eq!(collection.references().len(), 1);
+    assert_eq!(collection.references()[0].site().spelling(), "PrivT1");
+    let result = LabelResolver::new(collection.projections()).resolve(
+        &module,
+        &namespace,
+        collection.references(),
+    );
+    assert_resolved_label(&result, 0, private.symbol().fqn().as_str());
+}
+
+#[test]
+fn private_theorem_owner_requires_private_local_symbol_correspondence() {
+    let (ast, module, namespace, env, resolved) = parsed_private_theorem_fixture(include_str!(
+        "../../../../tests/miz/pass/resolve/pass_declaration_symbol_private_theorem_visibility_001.miz"
+    ));
+    let private = env
+        .symbols()
+        .iter()
+        .find(|entry| entry.primary_spelling() == "PrivT1")
+        .unwrap();
+    for (visibility, export) in [
+        (Visibility::Private, ExportStatus::LocalOnly),
+        (Visibility::Public, ExportStatus::LocalOnly),
+        (Visibility::Private, ExportStatus::Exported),
+    ] {
+        let mut indexes = SymbolEnvIndexes::default();
+        indexes.symbols.insert(
+            private
+                .clone()
+                .with_visibility(visibility)
+                .with_export_status(export),
+        );
+        let checked = SymbolEnv::new(module.clone(), indexes);
+        let collection = ProofLabelSourceCollector::new(
+            &ast,
+            &module,
+            namespace.clone(),
+            private.contribution(),
+            &resolved,
+        )
+        .unwrap()
+        .collect_with_theorem_owners(&checked)
+        .unwrap();
+        assert_eq!(
+            collection
+                .projections()
+                .iter()
+                .any(|projection| projection.primary_spelling() == "PrivT1"),
+            visibility == Visibility::Private && export == ExportStatus::LocalOnly,
+            "{visibility:?}/{export:?}"
+        );
+    }
+}
+
+#[test]
+fn private_theorem_wrapper_remains_opt_in_and_public_wrapper_is_skipped() {
+    let source = include_str!(
+        "../../../../tests/miz/pass/resolve/pass_declaration_symbol_private_theorem_visibility_001.miz"
+    ).replacen("thus X = X;", "Inner: X = X;\n  thus X = X by Inner;", 1);
+    for public in [false, true] {
+        let text = if public {
+            source.replacen("private theorem", "public theorem", 1)
+        } else {
+            source.to_owned()
+        };
+        let (ast, module, namespace, env, resolved) = parsed_private_theorem_fixture(&text);
+        let owner = env
+            .symbols()
+            .iter()
+            .find(|entry| entry.primary_spelling() == "PrivT1")
+            .unwrap();
+        let collector = ProofLabelSourceCollector::new(
+            &ast,
+            &module,
+            namespace,
+            owner.contribution(),
+            &resolved,
+        )
+        .unwrap();
+        for collection in [
+            collector.collect().unwrap(),
+            collector.collect_with_let_conditions().unwrap(),
+            collector.collect_with_proof_organization().unwrap(),
+        ] {
+            assert!(collection.projections().is_empty());
+            assert_eq!(
+                collection
+                    .references()
+                    .iter()
+                    .map(|reference| reference.site().spelling())
+                    .collect::<Vec<_>>(),
+                ["PrivT1"],
+            );
+        }
+        if !public {
+            let collection = collector.collect_with_theorem_owners(&env).unwrap();
+            assert!(
+                collection
+                    .projections()
+                    .iter()
+                    .any(|projection| projection.primary_spelling() == "Inner")
+            );
+            assert_eq!(
+                collection
+                    .references()
+                    .iter()
+                    .map(|reference| reference.site().spelling())
+                    .collect::<Vec<_>>(),
+                ["Inner", "PrivT1"]
+            );
+        }
+        if public {
+            assert_eq!(owner.visibility(), Visibility::Public);
+            let collection = collector.collect_with_theorem_owners(&env).unwrap();
+            assert!(
+                collection
+                    .projections()
+                    .iter()
+                    .all(|projection| !matches!(projection.primary_spelling(), "PrivT1" | "Inner"))
+            );
+            assert_eq!(
+                collection
+                    .references()
+                    .iter()
+                    .map(|reference| reference.site().spelling())
+                    .collect::<Vec<_>>(),
+                ["PrivT1"]
+            );
+        }
+    }
+}
+
+#[test]
+fn private_theorem_owner_rejects_malformed_and_recovered_wrappers() {
+    let source_id = source_id();
+    let module = module_id("pkg", "main");
+    let namespace = NamespacePath::new("main");
+    let mut contributions = SourceContributionIndex::new();
+    let contribution = contribution(&mut contributions, module.clone(), source_id, 0);
+    for shape in 0..9 {
+        let mut builder = CollectorAstBuilder::new(source_id);
+        let marker_token = if shape == 4 {
+            builder.token(SurfaceTokenKind::ReservedWord, "public")
+        } else if shape == 5 {
+            builder.recovered_token(SurfaceTokenKind::ReservedWord, "private")
+        } else {
+            builder.token(SurfaceTokenKind::ReservedWord, "private")
+        };
+        let marker = if shape == 3 {
+            builder.node(SurfaceNodeKind::Annotation, vec![marker_token])
+        } else if shape == 7 {
+            builder.builder.add_recovery(
+                SyntaxRecoveryKind::MissingItem,
+                range(source_id, 0, builder.cursor),
+                vec![marker_token],
+            )
+        } else {
+            builder.node(SurfaceNodeKind::VisibilityMarker, vec![marker_token])
+        };
+        let theorem = if shape == 8 {
+            let role = builder.recovered_token(SurfaceTokenKind::ReservedWord, "theorem");
+            let owner = builder.token(SurfaceTokenKind::Identifier, "PrivateOwner");
+            let colon = builder.token(SurfaceTokenKind::ReservedSymbol, ":");
+            let formula = builder.formula();
+            let proof = builder.proof(vec![], ("proof", false), ("end", false));
+            let semicolon = builder.token(SurfaceTokenKind::ReservedSymbol, ";");
+            builder.node(
+                SurfaceNodeKind::TheoremItem,
+                vec![role, owner, colon, formula, proof, semicolon],
+            )
+        } else {
+            builder.valid_theorem("PrivateOwner", vec![])
+        };
+        let wrapper_children = match shape {
+            1 => vec![theorem],
+            2 => {
+                let extra = builder.node(SurfaceNodeKind::Annotation, vec![]);
+                vec![marker, theorem, extra]
+            }
+            _ => vec![marker, theorem],
+        };
+        let wrapper = if shape == 6 {
+            builder.builder.add_recovery(
+                SyntaxRecoveryKind::MissingItem,
+                range(source_id, 0, builder.cursor),
+                wrapper_children,
+            )
+        } else {
+            builder.node(SurfaceNodeKind::VisibleItem, wrapper_children)
+        };
+        let ast = builder.finish_items(vec![wrapper]);
+        let theorem = ast
+            .node_views()
+            .find(|node| matches!(node.kind(), SurfaceNodeKind::TheoremItem))
+            .unwrap();
+        let mut indexes = SymbolEnvIndexes::default();
+        indexes.symbols.insert(
+            SymbolEntry::new(
+                SymbolId::new(
+                    module.clone(),
+                    LocalSymbolId::new("private-owner"),
+                    FullyQualifiedName::new("pkg::main::private-owner"),
+                ),
+                SymbolKind::Theorem,
+                namespace.clone(),
+                "PrivateOwner",
+                origin(
+                    source_id,
+                    module.clone(),
+                    theorem.range(),
+                    theorem.id().index(),
+                ),
+                contribution,
+            )
+            .with_visibility(Visibility::Private)
+            .with_export_status(ExportStatus::LocalOnly),
+        );
+        let env = SymbolEnv::new(module.clone(), indexes);
+        let resolved = SurfaceResolvedArena::lower(&ast, &module).unwrap();
+        let collection = ProofLabelSourceCollector::new(
+            &ast,
+            &module,
+            namespace.clone(),
+            contribution,
+            &resolved,
+        )
+        .unwrap()
+        .collect_with_theorem_owners(&env)
+        .unwrap();
+        assert_eq!(
+            collection
+                .projections()
+                .iter()
+                .any(|projection| projection.primary_spelling() == "PrivateOwner"),
+            shape == 0,
+            "wrapper shape {shape}"
+        );
+    }
+}
+
 #[test]
 fn unqualified_citation_respects_proof_block_visibility_and_confinement() {
     let source_id = source_id();

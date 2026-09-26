@@ -1,5 +1,7 @@
 # Module: labels
 
+The theorem-owner opt-in also admits exact unrecovered `private` VisibleItem/VisibilityMarker/TheoremItem wrappers only when the source-bound symbol is Private/LocalOnly; other wrappers remain unsupported.
+
 `collect_with_theorem_owners` is an opt-in extension for theorem/lemma declarations
 and proof citations. It projects module-local owners after their declarations and
 retains exact source order, scope, reference site and origin; older collectors

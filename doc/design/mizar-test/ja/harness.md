@@ -5722,9 +5722,9 @@ symbol collection に流さない。private fixture module index は crate testd
 両者とも証明・imported type/interface の検証には使わない。lexical summary は構文専用。
 recovery のない AST import の path・alias・順序・branch provenance を既存 resolver
 candidate へ渡し、module 存在と alias 衝突を解決する。private theorem は実際の後続
-citation が同一 module の private/local-only symbol に解決されることを要求し、
+citation が theorem-owner opt-in collector と LabelResolver を介し、同一 module の認証済み private/local-only 宣言 label origin に解決されることを要求し、
 証明の妥当性は検査しない。
-proof-local label projection は本 bridge の対象外とし、name lookup 前に拒否する。
+proof-local label projection は本 bridge の対象外とし、label lookup 前に拒否する。
 
 `fail_type_elaboration_synonym_loci_mismatch_001` だけを別途 `type_elaboration` / `resolve`、
 `notation.synonym.loci_mismatch`、空の code と単独 active tag で受理する。source/sidecar の同一性と

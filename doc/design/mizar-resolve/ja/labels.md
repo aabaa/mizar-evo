@@ -1,5 +1,7 @@
 # Module: labels
 
+theorem-owner opt-in は正確で recovery のない `private` VisibleItem/VisibilityMarker/TheoremItem wrapper も扱い、source に対応する symbol の Private/LocalOnly を要求する。他の wrapper は対象外。
+
 `collect_with_theorem_owners` は theorem/lemma 宣言と証明内引用の opt-in 収集である。
 宣言後に有効な module-local owner と引用の source 順序・scope・site・origin を保持する。
 旧 collector の受付範囲は維持し、status によって label を検証済み事実にしない。
