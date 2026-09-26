@@ -71,7 +71,7 @@ still agree with the resulting behavior.
 | Proof and algorithm verification | Source-derived proof and algorithm obligations flow through VC generation, ATP candidate production, kernel checking, proof policy/status projection, and proof-reuse metadata with active `proof_verification` coverage. | 1, 3, 7 | `mizar-vc`, `mizar-atp`, `mizar-kernel`, `mizar-proof`, `mizar-cache`, `mizar-test` |
 | Artifact publication | Verified module, registration, proof-witness, and diagnostic projections are emitted through real `mizar-artifact` store/manifest transactions from producer-owned outputs. | 6 | `mizar-artifact`, `mizar-ir`, `mizar-driver`, producer crates |
 | Build orchestration | Clean, incremental, sequential, and parallel driver/build runs agree on externally visible artifacts, proof statuses, cache decisions, and diagnostics for implemented phases. | 6 | `mizar-driver`, `mizar-build`, `mizar-ir`, `mizar-cache`, `mizar-test` |
-| User-facing projections | Public diagnostics, LSP features, and documentation rendering consume stable artifacts, diagnostic records, and metadata without owning semantic or proof authority. | 8 | `mizar-diagnostics`, `mizar-lsp`, `mizar-doc`, producer crates |
+| User-facing projections | Public diagnostics, LSP features, and documentation rendering consume stable artifacts, diagnostic records, and metadata without owning semantic or proof authority. A VS Code user can install the Marketplace extension and start verifying without other manual setup. | 8 | `mizar-diagnostics`, `mizar-lsp`, `mizar-doc`, producer crates |
 
 When all non-parked items in those gates are complete and the relevant broad
 verification commands pass, the roadmap supports claiming a source-to-artifact
@@ -80,6 +80,17 @@ verification: before claiming executable algorithm runtime support, promote the
 currently deferred MVM/code-extraction/backend specification work from
 `spec.en.20.algorithm_and_verification` coverage into explicit owner tasks with
 tests and artifact/build integration.
+
+**Complete processor.** The complete-processor claim covers the whole
+specification (chapters 1-24): the source-to-artifact pipeline above plus MVM
+execution and `by computation`, code extraction and computational export, the
+chapter-23 CLI commands (`explain`, `refine`, `minimize`, `semver-check`), the
+MCP and agent interface, imported-module semantic payloads, editor
+integration (LSP server, VS Code extension, toolchain installation), and
+documentation generation. Items without an owner task must be promoted to
+one before the claim. The port of the Mizar Mathematical Library is a
+separate program that consumes processor features; its progress is part of
+neither claim, and requirements it raises are recorded as processor tasks.
 
 If a future task discovers that a gate cannot be closed by the existing crate
 TODOs, update this roadmap in the same change that records the new gap.
