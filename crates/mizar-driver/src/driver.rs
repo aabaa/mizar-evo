@@ -366,12 +366,42 @@ impl CompilerDriver {
         })
     }
 
+    /// Discovers lexical import ordering only when the supplied overlay is empty and unavailable.
+    pub fn submit_with_import_discovery<A, L>(
+        &mut self,
+        request: BuildRequestDraft,
+        allocator: &A,
+        snapshots: &SnapshotRegistry<A>,
+        input: DriverSubmitInput<L>,
+    ) -> Result<BuildSubmission, DriverSubmitError>
+    where
+        A: SessionIdAllocator,
+        L: SourceLayoutProvider,
+    {
+        self.submit_inner(request, allocator, snapshots, input, true)
+    }
+
     pub fn submit<A, L>(
         &mut self,
         request: BuildRequestDraft,
         allocator: &A,
         snapshots: &SnapshotRegistry<A>,
         input: DriverSubmitInput<L>,
+    ) -> Result<BuildSubmission, DriverSubmitError>
+    where
+        A: SessionIdAllocator,
+        L: SourceLayoutProvider,
+    {
+        self.submit_inner(request, allocator, snapshots, input, false)
+    }
+
+    fn submit_inner<A, L>(
+        &mut self,
+        request: BuildRequestDraft,
+        allocator: &A,
+        snapshots: &SnapshotRegistry<A>,
+        input: DriverSubmitInput<L>,
+        discover_imports: bool,
     ) -> Result<BuildSubmission, DriverSubmitError>
     where
         A: SessionIdAllocator,
@@ -469,6 +499,22 @@ impl CompilerDriver {
                     });
                 }
             };
+        let dependency_overlay = if discover_imports
+            && dependency_overlay.coverage
+                == mizar_build::task_graph::ModuleDependencyCoverage::Unavailable
+            && dependency_overlay.edges.is_empty()
+        {
+            crate::registry::SourceLoadInputs {
+                snapshot: &session.captured.snapshot,
+                build_plan: &build_plan,
+                module_index: &module_index,
+                allocator,
+            }
+            .discover_import_overlay()
+            .unwrap_or(dependency_overlay)
+        } else {
+            dependency_overlay
+        };
         let task_graph = match build_task_graph(TaskGraphInput {
             graph_version: mizar_build::task_graph::TaskGraphVersion::current(),
             snapshot: session.captured.snapshot.id,

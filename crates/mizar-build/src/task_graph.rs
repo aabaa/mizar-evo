@@ -167,6 +167,7 @@ pub struct ModuleDependencyEdge {
 #[non_exhaustive]
 pub enum ModuleDependencyCoverage {
     Complete,
+    ImportsOnly,
     CoveredModules(Vec<ModuleId>),
     PackageOnly,
     Unavailable,
@@ -595,6 +596,17 @@ impl TaskGraphBuilder {
         }
 
         for edge in self.input.dependency_overlay.edges.clone() {
+            if self.input.dependency_overlay.coverage == ModuleDependencyCoverage::ImportsOnly
+                && edge.kind != ModuleDependencyKind::ImportSummary
+            {
+                self.diagnostics.push(TaskGraphDiagnostic::new(
+                    Some(edge.dependent.package.as_str().to_owned()),
+                    Some(edge.dependent.clone()),
+                    None,
+                    TaskGraphDiagnosticKind::BoundaryViolation,
+                    Some("ImportsOnly requires ImportSummary edges".to_owned()),
+                ));
+            }
             if edge.dependent == edge.dependency {
                 self.diagnostics.push(TaskGraphDiagnostic::new(
                     Some(edge.dependent.package.as_str().to_owned()),
@@ -780,15 +792,19 @@ impl TaskGraphBuilder {
             let Some(dependency_tasks) = self.module_tasks.get(&dependency_key).cloned() else {
                 continue;
             };
-            if coverage == ModuleDependencyCoverage::Complete
-                && edge.kind == ModuleDependencyKind::ImportSummary
+            if matches!(
+                coverage,
+                ModuleDependencyCoverage::Complete | ModuleDependencyCoverage::ImportsOnly
+            ) && edge.kind == ModuleDependencyKind::ImportSummary
             {
                 self.add_edge(dependent_tasks.frontend, dependency_tasks.frontend);
             }
-            self.add_edge(
-                dependent_tasks.module_resolve.clone(),
-                dependency_tasks.artifact_commit.clone(),
-            );
+            if coverage != ModuleDependencyCoverage::ImportsOnly {
+                self.add_edge(
+                    dependent_tasks.module_resolve.clone(),
+                    dependency_tasks.artifact_commit.clone(),
+                );
+            }
         }
     }
 
@@ -969,6 +985,9 @@ impl TaskGraphBuilder {
     fn semantic_dependency_coverage(&mut self, module: &ModuleId) -> DependencyCoverage {
         match &self.input.dependency_overlay.coverage {
             ModuleDependencyCoverage::Complete => DependencyCoverage::Complete,
+            ModuleDependencyCoverage::ImportsOnly => {
+                DependencyCoverage::MissingModuleDependencyOverlay
+            }
             ModuleDependencyCoverage::CoveredModules(covered_modules) => {
                 if covered_modules.iter().any(|covered| covered == module) {
                     DependencyCoverage::Complete
@@ -1131,6 +1150,7 @@ impl TaskGraphBuilder {
     fn overlay_covers_module(&self, module: &ModuleId) -> bool {
         match &self.input.dependency_overlay.coverage {
             ModuleDependencyCoverage::Complete => true,
+            ModuleDependencyCoverage::ImportsOnly => true,
             ModuleDependencyCoverage::CoveredModules(covered_modules) => {
                 covered_modules.iter().any(|covered| covered == module)
             }

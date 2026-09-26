@@ -265,6 +265,7 @@ struct ModuleDependencyEdge {
 ```rust
 enum ModuleDependencyCoverage {
     Complete,
+    ImportsOnly,
     CoveredModules(Vec<ModuleId>),
     PackageOnly,
     Unavailable,
@@ -290,7 +291,7 @@ coverage として mark するか conservatively gate しなければならな�
 package names、aliases、source paths、local heuristics から import edges を
 創作してはならない。
 
-Complete coverage の場合だけ、workspace module 間の ImportSummary edge により importer の Frontend を import 先の Frontend に依存させる。他の edge kind・coverage に字句処理の順序は追加しない。この scheduling の申告は parsed import や利用可能な字句 summary の証拠ではなく、consumer service が実出力と対応する source summary profile を検証する。既存 semantic edge と graph の拒否規則は維持する。
+Complete または ImportsOnly coverage の場合、workspace module 間の ImportSummary edge により importer の Frontend を import 先の Frontend に依存させる。他の edge kind・coverage に字句処理の順序は追加しない。この scheduling の申告は parsed import や利用可能な字句 summary の証拠ではなく、consumer service が実出力と対応する source summary profile を検証する。ImportsOnly は semantic edge を追加せず、semantic/artifact task は MissingModuleDependencyOverlay のままとする。意味的 coverage の不足自体は graph 診断を発生させず、字句処理 prefix を実行できる。ImportsOnly に ImportSummary 以外の edge があれば既存の BoundaryViolation graph 診断で拒否する。暫定 prescan の順序だけを表し、既存 coverage の意味と graph の拒否規則は維持する。
 
 ### VC descriptors
 

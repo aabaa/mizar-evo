@@ -454,6 +454,98 @@ fn frontend_lexical_edges_require_complete_import_summary_coverage() {
 }
 
 #[test]
+fn imports_only_orders_frontends_without_semantic_dependency_coverage() {
+    let graph = build_task_graph(TaskGraphInput {
+        graph_version: TaskGraphVersion::current(),
+        snapshot: snapshot(18),
+        build_plan: build_plan(vec![workspace_package("app")], Vec::new()),
+        module_index: module_index(vec![
+            workspace_module("app", "main"),
+            workspace_module("app", "util"),
+        ]),
+        dependency_overlay: ModuleDependencyOverlay {
+            coverage: ModuleDependencyCoverage::ImportsOnly,
+            edges: vec![ModuleDependencyEdge::new(
+                module_id("app", "main"),
+                module_id("app", "util"),
+                ModuleDependencyKind::ImportSummary,
+            )],
+        },
+        vc_descriptors: Vec::new(),
+        profile: TaskGraphProfile::default(),
+    })
+    .expect("imports-only ordering has no graph diagnostic");
+
+    assert_has_edge(
+        &graph,
+        module_task(&graph, TaskKind::Frontend, "app", "main"),
+        module_task(&graph, TaskKind::Frontend, "app", "util"),
+    );
+    let resolve = module_task(&graph, TaskKind::ModuleResolve, "app", "main");
+    let artifact = module_task(&graph, TaskKind::ArtifactCommit, "app", "util");
+    assert!(
+        graph
+            .edges()
+            .iter()
+            .all(|edge| edge.dependent != resolve.id || edge.dependency != artifact.id)
+    );
+    for module in ["main", "util"] {
+        assert_eq!(
+            module_task(&graph, TaskKind::Frontend, "app", module).dependency_coverage,
+            DependencyCoverage::Complete
+        );
+        for kind in [
+            TaskKind::ModuleResolve,
+            TaskKind::CheckAndElaborate,
+            TaskKind::VcGenerate,
+            TaskKind::ArtifactCommit,
+        ] {
+            assert_eq!(
+                module_task(&graph, kind, "app", module).dependency_coverage,
+                DependencyCoverage::MissingModuleDependencyOverlay
+            );
+        }
+    }
+}
+
+#[test]
+fn imports_only_rejects_non_import_overlay_edges() {
+    for kind in [
+        ModuleDependencyKind::VisibleRegistration,
+        ModuleDependencyKind::PackageConservative,
+    ] {
+        let diagnostics = build_task_graph(TaskGraphInput {
+            graph_version: TaskGraphVersion::current(),
+            snapshot: snapshot(19),
+            build_plan: build_plan(vec![workspace_package("app")], Vec::new()),
+            module_index: module_index(vec![
+                workspace_module("app", "main"),
+                workspace_module("app", "util"),
+            ]),
+            dependency_overlay: ModuleDependencyOverlay {
+                coverage: ModuleDependencyCoverage::ImportsOnly,
+                edges: vec![ModuleDependencyEdge::new(
+                    module_id("app", "main"),
+                    module_id("app", "util"),
+                    kind,
+                )],
+            },
+            vc_descriptors: Vec::new(),
+            profile: TaskGraphProfile::default(),
+        })
+        .expect_err("imports-only accepts import-summary edges only");
+        assert_eq!(
+            diagnostics
+                .diagnostics()
+                .iter()
+                .map(|diagnostic| diagnostic.kind)
+                .collect::<Vec<_>>(),
+            vec![TaskGraphDiagnosticKind::BoundaryViolation]
+        );
+    }
+}
+
+#[test]
 fn missing_module_dependency_coverage_is_diagnostic() {
     let missing = module_id("app", "main");
     let covered = module_id("app", "util");

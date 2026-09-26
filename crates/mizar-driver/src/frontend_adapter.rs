@@ -65,6 +65,177 @@ pub(crate) fn source_input_hash(version: &mizar_session::SourceVersion) -> Hash 
 }
 
 impl<'a> crate::registry::SourceLoadInputs<'a> {
+    /// Acquires provisional lexical ordering without publishing source or phase outputs.
+    pub(crate) fn discover_import_overlay(
+        self,
+    ) -> Option<mizar_build::task_graph::ModuleDependencyOverlay> {
+        use mizar_build::{
+            module_index::{ModuleId, ModuleIndexLocation},
+            planner::PackagePlanSource,
+            task_graph::{ModuleDependencyCoverage, ModuleDependencyEdge, ModuleDependencyKind},
+        };
+        use mizar_frontend::{
+            lexical_env::LexicalEnvironmentRequest,
+            preprocess::preprocess,
+            source::{
+                FrontendSourceLoader, SourceUnitLoader, SourceUnitRequest, register_source_unit,
+            },
+            span_bridge::SpanBridge,
+        };
+        use mizar_resolve::{
+            imports::{ImportPathCandidate, ImportPathResolver},
+            module_index::ModuleIndexInput,
+        };
+        use mizar_session::{
+            DiskSourceLoader, InMemorySessionIdAllocator, SourceInput, SourceOrigin,
+            SourceOriginInput,
+        };
+        let snapshot = self.snapshot;
+        let build_plan = self.build_plan;
+        let module_index = self.module_index;
+        if snapshot.workspace_root != build_plan.workspace_root {
+            return None;
+        }
+        let workspace = std::path::Path::new(snapshot.workspace_root.as_str())
+            .canonicalize()
+            .ok()?;
+        let local_ids = InMemorySessionIdAllocator::new();
+        let index = ModuleIndexInput::new(module_index);
+        let mut edges = Vec::new();
+        let mut source_count = 0;
+        for entry in &module_index.modules {
+            let ModuleIndexLocation::WorkspaceFile {
+                source_root,
+                normalized_path,
+                source_relative_path,
+            } = &entry.location
+            else {
+                continue;
+            };
+            source_count += 1;
+            let mut versions = snapshot.source_versions.iter().filter(|version| {
+                version.package_id == entry.module.package
+                    && version.module_path == entry.module.path
+            });
+            let version = versions.next()?;
+            if versions.next().is_some() || version.origin != SourceOrigin::Disk {
+                return None;
+            }
+            let package = build_plan
+                .packages
+                .iter()
+                .find(|package| package.package_id == entry.module.package)?;
+            let PackagePlanSource::Workspace {
+                root,
+                source_root: plan_source_root,
+                ..
+            } = &package.source
+            else {
+                return None;
+            };
+            let package_root = workspace.join(root).canonicalize().ok()?;
+            if !package_root.starts_with(&workspace)
+                || source_root != plan_source_root
+                || workspace.join(source_root) != workspace.join(root).join("src")
+                || entry.package_id != version.package_id
+                || entry.module_path != version.module_path
+                || entry.edition != version.edition
+                || package.edition != version.edition
+                || normalized_path != version.normalized_path.as_str()
+                || normalized_path != &format!("src/{source_relative_path}")
+            {
+                return None;
+            }
+            let loaded = FrontendSourceLoader::new(DiskSourceLoader::new(package_root))
+                .load_source_unit(
+                    SourceUnitRequest {
+                        snapshot: snapshot.id,
+                        input: SourceInput {
+                            package_id: version.package_id.clone(),
+                            module_path: version.module_path.clone(),
+                            normalized_path: version.normalized_path.clone(),
+                            edition: version.edition.clone(),
+                            origin: SourceOriginInput::Disk {
+                                path: normalized_path.into(),
+                            },
+                        },
+                    },
+                    &local_ids,
+                )
+                .ok()?;
+            if loaded.package_id != version.package_id
+                || loaded.module_path != version.module_path
+                || loaded.normalized_path != version.normalized_path
+                || loaded.edition != version.edition
+                || loaded.source_hash != version.source_hash
+                || loaded.origin != version.origin
+            {
+                return None;
+            }
+            let mut bridge = SpanBridge::new();
+            register_source_unit(&mut bridge, &loaded).ok()?;
+            let preprocessed = preprocess(&loaded, &mut bridge).ok()?;
+            if !preprocessed.diagnostics.is_empty() {
+                return None;
+            }
+            let candidates =
+                ImportPathCandidate::from_frontend_imports(&LexicalEnvironmentRequest {
+                    source_id: loaded.source_id,
+                    import_stubs: &preprocessed.import_stubs,
+                    edition: loaded.edition.clone(),
+                })?;
+            let resolution = ImportPathResolver::new(index)
+                .resolve(&index.resolver_module_id(&entry.module), &candidates);
+            if !resolution.unresolved().is_empty() {
+                return None;
+            }
+            for import in resolution.resolved() {
+                let target = ModuleId::new(
+                    import.target().package().clone(),
+                    import.target().path().clone(),
+                );
+                let target_entry = module_index
+                    .modules
+                    .iter()
+                    .find(|candidate| candidate.module == target)?;
+                match &target_entry.location {
+                    ModuleIndexLocation::WorkspaceFile { .. } => {}
+                    ModuleIndexLocation::DependencySummary { .. } => continue,
+                    _ => return None,
+                }
+                let edge = ModuleDependencyEdge::new(
+                    entry.module.clone(),
+                    target,
+                    ModuleDependencyKind::ImportSummary,
+                );
+                if !edges.contains(&edge) {
+                    edges.push(edge);
+                }
+            }
+        }
+        if source_count != snapshot.source_versions.len() {
+            return None;
+        }
+        edges.sort_by(|a, b| {
+            (
+                a.dependent.package.as_str(),
+                a.dependent.path.as_str(),
+                a.dependency.package.as_str(),
+                a.dependency.path.as_str(),
+            )
+                .cmp(&(
+                    b.dependent.package.as_str(),
+                    b.dependent.path.as_str(),
+                    b.dependency.package.as_str(),
+                    b.dependency.path.as_str(),
+                ))
+        });
+        Some(mizar_build::task_graph::ModuleDependencyOverlay {
+            coverage: ModuleDependencyCoverage::ImportsOnly,
+            edges,
+        })
+    }
+
     /// Resolves real dependency lexical summaries under explicit caller-owned roots.
     /// Requires build-validated indexes and stubs from the captured source version.
     pub fn dependency_lexical_provider(

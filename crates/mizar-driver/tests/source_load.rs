@@ -24,8 +24,8 @@ use mizar_build::{
     },
     scheduler::{CacheSchedulingPolicy, TaskState},
     task_graph::{
-        BuildTask, ModuleDependencyEdge, ModuleDependencyKind, ModuleDependencyOverlay,
-        PipelinePhase, TaskKind, WorkUnit,
+        BuildTask, DependencyCoverage, ModuleDependencyEdge, ModuleDependencyKind,
+        ModuleDependencyOverlay, PipelinePhase, TaskGraphDiagnosticKind, TaskKind, WorkUnit,
     },
 };
 use mizar_diagnostics::{
@@ -37,7 +37,8 @@ use mizar_diagnostics::{
 };
 use mizar_driver::{
     driver::{
-        CompilerDriver, DriverSubmissionStatus, DriverSubmitInput, PhaseDispatchInputProvider,
+        CompilerDriver, DriverSubmissionStatus, DriverSubmitError, DriverSubmitInput,
+        PhaseDispatchInputProvider,
     },
     events::BuildEventKind,
     registry::{
@@ -548,6 +549,304 @@ fn complete_leaf_import_overlay() -> ModuleDependencyOverlay {
         mizar_build::module_index::ModuleId::new(PackageId::new("alpha"), ModulePath::new("leaf")),
         ModuleDependencyKind::ImportSummary,
     )])
+}
+
+#[test]
+fn discovered_workspace_leaf_orders_frontend_without_semantic_coverage() {
+    let fixture = WorkspaceLeafFixture::new(
+        b"import alpha.leaf;\ntheorem T: a combine b = a;\n",
+        b"definition\nlet x, y be set;\npublic func Infix: x combine y -> set equals x;\nend;\n",
+        None,
+        usize::MAX,
+    );
+    let (request, mut input) = fixture.scheduled_request(
+        ModuleDependencyOverlay::unavailable(),
+        Vec::new(),
+        Vec::new(),
+    );
+    input.worker_count = 4;
+    let mut driver = fixture.scheduled_driver();
+    let submission = driver
+        .submit_with_import_discovery(request, &fixture.ids, &SnapshotRegistry::new(), input)
+        .unwrap();
+    assert_eq!(
+        submission.session.captured.snapshot.id,
+        fixture.submission.session.captured.snapshot.id
+    );
+    assert_eq!(
+        submission.status,
+        DriverSubmissionStatus::BlockedByMissingPhaseServices
+    );
+    let graph = submission.task_graph.as_ref().unwrap();
+    let run = submission.scheduler_run.as_ref().unwrap();
+    let main = fixture.task(TaskKind::Frontend, "main");
+    let leaf = fixture.task(TaskKind::Frontend, "leaf");
+    assert!(
+        graph
+            .edges()
+            .iter()
+            .any(|edge| edge.dependent == main.id && edge.dependency == leaf.id)
+    );
+    let semantic = graph
+        .tasks()
+        .iter()
+        .find(|task| task.kind == TaskKind::ModuleResolve && task.unit == main.unit)
+        .unwrap();
+    assert_eq!(
+        semantic.dependency_coverage,
+        DependencyCoverage::MissingModuleDependencyOverlay
+    );
+    assert!(graph.diagnostics().is_empty());
+    let leaf_commit = graph
+        .tasks()
+        .iter()
+        .find(|task| task.kind == TaskKind::ArtifactCommit && task.unit == leaf.unit)
+        .unwrap();
+    assert!(
+        !graph
+            .edges()
+            .iter()
+            .any(|edge| { edge.dependent == semantic.id && edge.dependency == leaf_commit.id })
+    );
+    for task in [leaf, main] {
+        assert_eq!(run.phase_results[&task.id][0].status, PhaseStatus::Complete);
+    }
+    let leaf_output = &run.phase_results[&leaf.id][0].output_refs[0];
+    let main_output = &run.phase_results[&main.id][0].output_refs[0];
+    let own = &run.phase_results[&fixture.task(TaskKind::SourceLoad, "main").id][0].output_refs[0];
+    let lineage = fixture
+        .publisher
+        .registry()
+        .output_lineage(main_output.output())
+        .unwrap();
+    assert_eq!(lineage.parents.len(), 2);
+    assert!(lineage.parents.contains(&own.output()));
+    assert!(lineage.parents.contains(&leaf_output.output()));
+    let typed = fixture
+        .publisher
+        .storage()
+        .typed_handle::<FrontendOutput<<MizarParserSeam as ParserSeam>::Ast>>(
+            main_output,
+            &OutputKind::new("FrontendOutput"),
+        )
+        .unwrap();
+    let loaded = fixture.publisher.storage().get(&typed).unwrap();
+    assert!(
+        loaded.tokens.tokens().iter().any(|token| {
+            token.text.as_ref() == "combine" && token.kind == TokenKind::UserSymbol
+        })
+    );
+}
+
+#[test]
+fn discovered_imports_order_intermediates_branches_and_leave_independent_modules_free() {
+    for mode in ["chain", "branch_alias", "independent"] {
+        let (main, leaf, base, main_symbol) = match mode {
+            "chain" => (
+                b"import alpha.leaf;\ntheorem T: a arrange b = a;\n".as_slice(),
+                b"import alpha.base;\ndefinition\nlet x, y be set;\npublic func Infix: x arrange y -> set equals x;\nend;\ntheorem U: a combine b = a;\n".as_slice(),
+                b"definition\nlet x, y be set;\npublic func Infix: x combine y -> set equals x;\nend;\n".as_slice(),
+                "arrange",
+            ),
+            "branch_alias" => (
+                b"import alpha.{leaf, base};\nimport alpha.leaf as L;\ntheorem T: a combine b = a;\ntheorem U: a arrange b = a;\n".as_slice(),
+                b"definition\nlet x, y be set;\npublic func Infix: x combine y -> set equals x;\nend;\n".as_slice(),
+                b"definition\nlet x, y be set;\npublic func Infix: x arrange y -> set equals x;\nend;\n".as_slice(),
+                "arrange",
+            ),
+            "independent" => (
+                b"import alpha.leaf;\ntheorem T: a combine b = a;\n".as_slice(),
+                b"definition\nlet x, y be set;\npublic func Infix: x combine y -> set equals x;\nend;\n".as_slice(),
+                b"definition\nend;\n".as_slice(),
+                "combine",
+            ),
+            _ => unreachable!(),
+        };
+        let fixture = WorkspaceLeafFixture::new(main, leaf, Some(base), usize::MAX);
+        let (request, mut input) = fixture.scheduled_request(
+            ModuleDependencyOverlay::unavailable(),
+            Vec::new(),
+            Vec::new(),
+        );
+        input.worker_count = 4;
+        let mut driver = fixture.scheduled_driver();
+        let submission = driver
+            .submit_with_import_discovery(request, &fixture.ids, &SnapshotRegistry::new(), input)
+            .unwrap();
+        assert_eq!(
+            submission.status,
+            DriverSubmissionStatus::BlockedByMissingPhaseServices,
+            "{mode}"
+        );
+        let graph = submission.task_graph.as_ref().unwrap();
+        let run = submission.scheduler_run.as_ref().unwrap();
+        let main_task = fixture.task(TaskKind::Frontend, "main");
+        let leaf_task = fixture.task(TaskKind::Frontend, "leaf");
+        let base_task = fixture.task(TaskKind::Frontend, "base");
+        let edge_count = |dependent: &BuildTask, dependency: &BuildTask| {
+            graph
+                .edges()
+                .iter()
+                .filter(|edge| edge.dependent == dependent.id && edge.dependency == dependency.id)
+                .count()
+        };
+        assert_eq!(edge_count(main_task, leaf_task), 1, "{mode}");
+        assert_eq!(
+            edge_count(main_task, base_task),
+            usize::from(mode == "branch_alias"),
+            "{mode}"
+        );
+        assert_eq!(
+            edge_count(leaf_task, base_task),
+            usize::from(mode == "chain"),
+            "{mode}"
+        );
+        for task in [base_task, leaf_task, main_task] {
+            assert_eq!(
+                run.phase_results[&task.id][0].status,
+                PhaseStatus::Complete,
+                "{mode}"
+            );
+        }
+        let output = &run.phase_results[&main_task.id][0].output_refs[0];
+        let typed = fixture
+            .publisher
+            .storage()
+            .typed_handle::<FrontendOutput<<MizarParserSeam as ParserSeam>::Ast>>(
+                output,
+                &OutputKind::new("FrontendOutput"),
+            )
+            .unwrap();
+        let loaded = fixture.publisher.storage().get(&typed).unwrap();
+        assert!(
+            loaded.tokens.tokens().iter().any(|token| {
+                token.text.as_ref() == main_symbol && token.kind == TokenKind::UserSymbol
+            }),
+            "{mode}"
+        );
+    }
+}
+
+#[test]
+fn discovered_imports_discard_all_edges_on_untrusted_source_input() {
+    for mode in [
+        "drift",
+        "malformed",
+        "unresolved",
+        "captured_edition",
+        "unrelated_bad",
+    ] {
+        let main = match mode {
+            "malformed" => b"import alpha.;\ndefinition\nend;\n".as_slice(),
+            "unresolved" => b"import alpha.absent;\ndefinition\nend;\n".as_slice(),
+            _ => b"import alpha.leaf;\ndefinition\nend;\n".as_slice(),
+        };
+        let base =
+            (mode == "unrelated_bad").then_some(b"import alpha.;\ndefinition\nend;\n".as_slice());
+        let fixture = WorkspaceLeafFixture::new(main, b"definition\nend;\n", base, usize::MAX);
+        if mode == "drift" {
+            fixture.fixture.write(b"definition\nend;\n");
+        }
+        let (mut request, input) = fixture.scheduled_request(
+            ModuleDependencyOverlay::unavailable(),
+            Vec::new(),
+            Vec::new(),
+        );
+        if mode == "captured_edition" {
+            request
+                .source_inputs
+                .versions
+                .iter_mut()
+                .find(|version| version.module_path.as_str() == "leaf")
+                .unwrap()
+                .edition = Edition::new("2026");
+        }
+        let mut driver = fixture.scheduled_driver();
+        let error = driver
+            .submit_with_import_discovery(request, &fixture.ids, &SnapshotRegistry::new(), input)
+            .unwrap_err();
+        let DriverSubmitError::TaskGraph {
+            session,
+            diagnostics,
+        } = error
+        else {
+            panic!("{mode}: discovery must leave unavailable graph coverage");
+        };
+        assert_eq!(
+            session.state,
+            BuildSessionState::Finished(BuildSessionOutcome::Failed),
+            "{mode}"
+        );
+        assert!(
+            diagnostics.diagnostics().iter().any(|diagnostic| {
+                diagnostic.kind == TaskGraphDiagnosticKind::MissingModuleDependencyOverlay
+            }),
+            "{mode}"
+        );
+    }
+}
+
+#[test]
+fn import_discovery_preserves_legacy_submit_and_supplied_overlay_precedence() {
+    for mode in ["legacy", "complete", "package_only"] {
+        let fixture = WorkspaceLeafFixture::new(
+            b"import alpha.leaf;\ntheorem T: a combine b = a;\n",
+            b"definition\nlet x, y be set;\npublic func Infix: x combine y -> set equals x;\nend;\n",
+            None,
+            usize::MAX,
+        );
+        let overlay = match mode {
+            "complete" => complete_leaf_import_overlay(),
+            "package_only" => ModuleDependencyOverlay::package_only(Vec::new()),
+            _ => ModuleDependencyOverlay::unavailable(),
+        };
+        let (request, input) = fixture.scheduled_request(overlay, Vec::new(), Vec::new());
+        let mut driver = fixture.scheduled_driver();
+        if mode == "legacy" {
+            let error = driver
+                .submit(request, &fixture.ids, &SnapshotRegistry::new(), input)
+                .unwrap_err();
+            assert!(matches!(error, DriverSubmitError::TaskGraph { .. }));
+            continue;
+        }
+        let submission = driver
+            .submit_with_import_discovery(request, &fixture.ids, &SnapshotRegistry::new(), input)
+            .unwrap();
+        let graph = submission.task_graph.as_ref().unwrap();
+        let main = fixture.task(TaskKind::Frontend, "main");
+        let leaf = fixture.task(TaskKind::Frontend, "leaf");
+        let semantic = graph
+            .tasks()
+            .iter()
+            .find(|task| task.kind == TaskKind::ModuleResolve && task.unit == main.unit)
+            .unwrap();
+        assert_eq!(
+            semantic.dependency_coverage,
+            if mode == "complete" {
+                DependencyCoverage::Complete
+            } else {
+                DependencyCoverage::PackageConservative
+            }
+        );
+        assert_eq!(
+            graph
+                .edges()
+                .iter()
+                .filter(|edge| { edge.dependent == main.id && edge.dependency == leaf.id })
+                .count(),
+            usize::from(mode == "complete")
+        );
+        let run = submission.scheduler_run.as_ref().unwrap();
+        let result = &run.phase_results[&main.id][0];
+        assert_eq!(
+            result.status,
+            if mode == "complete" {
+                PhaseStatus::Complete
+            } else {
+                PhaseStatus::Blocking
+            }
+        );
+    }
 }
 
 #[test]

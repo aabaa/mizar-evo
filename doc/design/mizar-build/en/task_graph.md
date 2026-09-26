@@ -263,6 +263,7 @@ run semantic tasks:
 ```rust
 enum ModuleDependencyCoverage {
     Complete,
+    ImportsOnly,
     CoveredModules(Vec<ModuleId>),
     PackageOnly,
     Unavailable,
@@ -285,7 +286,7 @@ and frontend tasks may still exist, but final semantic tasks must be marked
 with missing coverage or conservatively gated. The graph must not invent import
 edges from package names, aliases, source paths, or local heuristics.
 
-For Complete coverage only, each ImportSummary edge between workspace modules also makes the importing Frontend depend on the imported Frontend. Other edge kinds and coverage modes add no lexical ordering. This scheduling claim is not evidence of parsed imports or usable lexical summaries; the consuming service validates actual retained outputs and supported source summary profile. Existing semantic edges and graph rejection rules remain unchanged.
+For Complete or ImportsOnly coverage, each ImportSummary edge between workspace modules also makes the importing Frontend depend on the imported Frontend. Other edge kinds and coverage modes add no lexical ordering. This scheduling claim is not evidence of parsed imports or usable lexical summaries; the consuming service validates actual retained outputs and supported source summary profile. ImportsOnly adds no semantic edges and leaves semantic/artifact tasks MissingModuleDependencyOverlay; it represents provisional prescan ordering only. This missing semantic coverage does not itself emit a graph diagnostic, so the lexical prefix can run; a non-ImportSummary edge under ImportsOnly is rejected with the existing BoundaryViolation graph diagnostic. Existing coverage modes and graph rejection rules remain unchanged.
 
 ### VC Descriptors
 
