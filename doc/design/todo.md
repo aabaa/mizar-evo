@@ -917,13 +917,15 @@ Open decisions (block or shape upcoming steps):
   evidence. Owned by [mizar-proof task 6](./mizar-proof/en/todo.md) with
   `mizar-kernel`, and tracked in [mizar-kernel](./mizar-kernel/en/todo.md) and
   [mizar-vc](./mizar-vc/en/todo.md) (plan step 7).
-- **Built-in arithmetic and linear arithmetic evidence: open.** Linear
-  arithmetic enters the kernel only after kernel-constructed equality
-  instances, starting with rationals. It first needs a decision on which
-  symbols are built-in arithmetic (compare the requirements directives of
-  classical Mizar) and a certificate check for linear combinations
-  (architecture 15). Recorded 2026-09-27; kernel-scope expansion requires
-  user consultation.
+- **Linear arithmetic by reflection: direction decided, details open.** The
+  kernel gains no arithmetic. Linear arithmetic is a library feature: expression
+  trees, `Eval`, and a verified certificate checker evaluated by
+  `by computation` (architecture 15). Decided 2026-09-27: computation results
+  are trusted MVM evaluations by default, with an option to replay them through
+  defining equations and the SAT check. Open: the specification of that
+  computation trust model (a kernel-scope decision, now approved in
+  principle) and of the automatic goal-to-tree step and its invocation, which
+  must not add syntax lightly.
 
 Resolved decisions (kept for reference; details live in the linked docs):
 
