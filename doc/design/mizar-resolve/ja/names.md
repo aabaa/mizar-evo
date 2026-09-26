@@ -1,5 +1,7 @@
 # Module: names
 
+source-variable の境界 path は非境界 wrapper を越えても同じ lexical parent 内で一意とする。未使用の child index を使い、衝突時は検査付きで使用済み最大値に1を加える。lexical prefix 包含を維持し、成分の overflow は InvalidShape で拒否する。
+
 `resolve_registration_parameter` は引数の参照を同じ定義・登録ブロック内の先行宣言へ解決する。
 builtin set の引数を対象とし、字句的な所有関係、順序、回復ノードを検査する。
 新しい束縛・記号表現は生成しない。

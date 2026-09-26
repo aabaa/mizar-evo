@@ -6773,6 +6773,7 @@ fn validate_variable_surface_with_mode(
             LocalTermScope::default(),
             &mut scopes,
             &mut visited,
+            &mut BTreeMap::new(),
             comprehension_scopes,
         )?;
         if visited.len() != ast.nodes().len() {
@@ -6795,6 +6796,7 @@ fn collect_variable_scopes(
     scope: LocalTermScope,
     scopes: &mut BTreeMap<SurfaceNodeId, LocalTermScope>,
     visited: &mut BTreeSet<SurfaceNodeId>,
+    boundary_components: &mut BTreeMap<LocalTermScope, BTreeSet<u32>>,
     comprehension_scopes: bool,
 ) -> Result<(), SourceVariableScopeError> {
     if !visited.insert(node) {
@@ -6820,8 +6822,18 @@ fn collect_variable_scopes(
             || (comprehension_scopes
                 && matches!(child_view.kind(), SurfaceNodeKind::SetComprehension))
         {
+            let used = boundary_components.entry(scope.clone()).or_default();
+            let mut component =
+                u32::try_from(index).map_err(|_| SourceVariableScopeError::InvalidShape)?;
+            if !used.insert(component) {
+                component = used
+                    .last()
+                    .and_then(|last| last.checked_add(1))
+                    .ok_or(SourceVariableScopeError::InvalidShape)?;
+                used.insert(component);
+            }
             let mut path = scope.path().to_vec();
-            path.push(index as u32);
+            path.push(component);
             LocalTermScope::new(path)
         } else {
             scope.clone()
@@ -6832,6 +6844,7 @@ fn collect_variable_scopes(
             child_scope,
             scopes,
             visited,
+            boundary_components,
             comprehension_scopes,
         )?;
     }

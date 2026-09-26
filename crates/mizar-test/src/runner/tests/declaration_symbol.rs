@@ -529,6 +529,132 @@ fn step5c6_import_candidates_preserve_alias_branch_provenance_and_reject_recover
 }
 
 #[test]
+fn private_theorem_source_occurrences_keep_quantifiers_and_proof_lets_separate() {
+    use mizar_resolve::names::{
+        SourceVariableBindingKind as BindingKind, SourceVariableReferenceKind as ReferenceKind,
+        SourceVariableScopeError, SourceVariableScopeInput, SourceVariableScopeResolver,
+    };
+    use mizar_syntax::SurfaceNodeKind;
+
+    let (workspace_root, plan) = step5c6_plan();
+    let (ordinal, case) = plan
+        .cases
+        .iter()
+        .enumerate()
+        .find(|(_, case)| case.id.0 == "pass_declaration_symbol_private_theorem_visibility_001")
+        .expect("private theorem fixture");
+    let output = run_frontend(&workspace_root, case, ordinal).expect("private theorem frontend");
+    assert!(output.diagnostics.is_empty());
+    let ast = output.ast.as_ref().expect("private theorem AST");
+    let resolver = resolver_symbol_collection(&workspace_root, case, ast);
+    assert!(resolver.detail_keys.is_empty());
+    let scope = SourceVariableScopeResolver::resolve_occurrences(SourceVariableScopeInput::new(
+        ast,
+        &resolver.module,
+        &resolver.env,
+    ))
+    .expect("two theorem variable occurrences");
+    let theorems = surface_nodes_with_kind(ast, SurfaceNodeKind::TheoremItem);
+    let proofs = surface_nodes_with_kind(ast, SurfaceNodeKind::ProofBlock);
+    assert_eq!(theorems.len(), 2);
+    assert_eq!(proofs.len(), 2);
+    let mut identities = Vec::new();
+    let mut scopes = Vec::new();
+    for (_, theorem) in theorems {
+        let proof = proofs
+            .iter()
+            .find(|(_, proof)| {
+                theorem.range.start <= proof.range.start && proof.range.end <= theorem.range.end
+            })
+            .expect("theorem's own proof")
+            .1;
+        let inside = |start| theorem.range.start <= start && start < theorem.range.end;
+        let bindings = scope
+            .bindings()
+            .iter()
+            .filter(|binding| binding.spelling() == "X" && inside(binding.range().start))
+            .collect::<Vec<_>>();
+        let quantifier = bindings
+            .iter()
+            .copied()
+            .find(|binding| binding.kind() == BindingKind::Quantifier)
+            .expect("own quantified X");
+        let local = bindings
+            .iter()
+            .copied()
+            .find(|binding| binding.kind() == BindingKind::Let)
+            .expect("own proof-local X");
+        assert_eq!(bindings.len(), 2);
+        assert!(quantifier.range().end <= proof.range.start);
+        assert!(proof.range.start <= local.range().start && local.range().end <= proof.range.end);
+        assert_ne!(quantifier.id(), local.id());
+        let mut formula_uses = 0;
+        let mut proof_uses = 0;
+        for reference in scope.references().iter().filter(|reference| {
+            reference.kind() == ReferenceKind::Term
+                && reference.spelling() == "X"
+                && inside(reference.range().start)
+        }) {
+            if reference.range().start < proof.range.start {
+                assert_eq!(reference.binding(), quantifier.id());
+                formula_uses += 1;
+            } else {
+                assert!(reference.range().end <= proof.range.end);
+                assert_eq!(reference.binding(), local.id());
+                proof_uses += 1;
+            }
+        }
+        assert!(formula_uses > 0, "quantified X must be referenced");
+        assert!(proof_uses > 0, "proof-local X must be referenced");
+        identities.extend([quantifier.id(), local.id()]);
+        scopes.extend([quantifier.scope().clone(), local.scope().clone()]);
+    }
+    identities.sort();
+    identities.dedup();
+    assert_eq!(identities.len(), 4, "sibling theorems must not share bindings");
+
+    scopes.sort();
+    scopes.dedup();
+    assert_eq!(scopes.len(), 4, "distinct lexical boundaries must not share paths");
+
+    let scratch = std::env::temp_dir().join(format!(
+        "mizar-private-scope-{}-{}",
+        std::process::id(),
+        std::time::SystemTime::now()
+            .duration_since(std::time::UNIX_EPOCH)
+            .unwrap()
+            .as_nanos()
+    ));
+    std::fs::create_dir(&scratch).expect("fresh scope workspace");
+    let mut probe = case.clone();
+    probe.source_path = scratch.join("private_scope.miz");
+    let source = output.source_text.as_ref();
+    let split = source.find("theorem UsePriv1:").expect("second theorem");
+    let mutated = format!(
+        "{}{}",
+        &source[..split],
+        source[split..].replacen("let X be set;", "let Y be set;", 1)
+    );
+    assert_ne!(mutated, source);
+    std::fs::write(&probe.source_path, mutated).expect("write scope probe");
+    let changed = run_frontend(&scratch, &probe, ordinal).expect("scope probe frontend");
+    assert!(changed.diagnostics.is_empty());
+    let changed_ast = changed.ast.as_ref().expect("scope probe AST");
+    let changed_resolver = resolver_symbol_collection(&scratch, &probe, changed_ast);
+    assert!(changed_resolver.detail_keys.is_empty());
+    assert_eq!(
+        SourceVariableScopeResolver::resolve_occurrences(SourceVariableScopeInput::new(
+            changed_ast,
+            &changed_resolver.module,
+            &changed_resolver.env,
+        )),
+        Err(SourceVariableScopeError::UnresolvedReference)
+    );
+    std::fs::remove_file(&probe.source_path).expect("remove scope probe");
+    std::fs::remove_dir(&scratch).expect("remove scope workspace");
+}
+
+#[test]
 fn step5c6_fixture_absence_and_private_citation_boundaries_fail_closed() {
     use mizar_resolve::env::{ExportStatus, SymbolEntry, SymbolEnv, SymbolIndex, Visibility};
     use mizar_resolve::resolved_ast::{ModuleId, SemanticOrigin};

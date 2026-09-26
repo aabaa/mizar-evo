@@ -1,5 +1,7 @@
 # Module: names
 
+Source-variable boundary paths are unique within each lexical parent even across non-boundary wrappers. Use an unused child index, or checked maximum-used-plus-one on collision; preserve lexical prefix containment and reject component overflow with InvalidShape.
+
 `resolve_registration_parameter` resolves a parameter use to its actual preceding declaration
 in the same definition or registration block. It admits builtin-set parameters and checks lexical
 ownership, order and recovery; it creates no new binding or symbol representation.
