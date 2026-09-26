@@ -22,7 +22,7 @@ use mizar_build::{
         BuildPlan, DependencySelection, PlanRequest, WorkspacePackage, parse_lockfile,
         parse_package_manifest, produce_build_plan,
     },
-    scheduler::{CacheSchedulingPolicy, TaskState},
+    scheduler::{CacheSchedulingPolicy, CompletionOrder, TaskState},
     task_graph::{
         BuildTask, DependencyCoverage, ModuleDependencyEdge, ModuleDependencyKind,
         ModuleDependencyOverlay, PipelinePhase, TaskGraphDiagnosticKind, TaskKind, WorkUnit,
@@ -549,6 +549,185 @@ fn complete_leaf_import_overlay() -> ModuleDependencyOverlay {
         mizar_build::module_index::ModuleId::new(PackageId::new("alpha"), ModulePath::new("leaf")),
         ModuleDependencyKind::ImportSummary,
     )])
+}
+
+#[test]
+fn discovered_real_frontend_prefix_is_stable_across_replay_capture_order_and_worker_controls() {
+    for mode in ["chain", "independent"] {
+        let (main, leaf, base) = if mode == "chain" {
+            (
+                b"import alpha.leaf;\ntheorem T: a arrange b = a;\n".as_slice(),
+                b"import alpha.base;\ndefinition\nlet x, y be set;\npublic func Infix: x arrange y -> set equals x;\nend;\ntheorem U: a combine b = a;\n".as_slice(),
+                b"definition\nlet x, y be set;\npublic func Infix: x combine y -> set equals x;\nend;\n".as_slice(),
+            )
+        } else {
+            (
+                b"import alpha.leaf;\ntheorem T: a combine b = a;\n".as_slice(),
+                b"definition\nlet x, y be set;\npublic func Infix: x combine y -> set equals x;\nend;\n".as_slice(),
+                b"definition\nend;\n".as_slice(),
+            )
+        };
+        let fixture = WorkspaceLeafFixture::new(main, leaf, Some(base), usize::MAX);
+        let snapshot = fixture.submission.session.captured.snapshot.id;
+        let mut baseline = None;
+        for (workers, order, reverse_capture) in [
+            (1, CompletionOrder::Canonical, false),
+            (1, CompletionOrder::Canonical, false),
+            (4, CompletionOrder::Reverse, false),
+            (4, CompletionOrder::Canonical, true),
+        ] {
+            let (mut request, mut input) = fixture.scheduled_request(
+                ModuleDependencyOverlay::unavailable(),
+                Vec::new(),
+                Vec::new(),
+            );
+            if reverse_capture {
+                request.source_inputs.versions.reverse();
+            }
+            input.worker_count = workers;
+            input.completion_order = order;
+
+            let publisher = publisher(
+                snapshot,
+                usize::MAX,
+                &fixture.task(TaskKind::SourceLoad, "base").unit,
+            );
+            for module in ["leaf", "main"] {
+                let WorkUnit::Module { module: id } =
+                    &fixture.task(TaskKind::SourceLoad, module).unit
+                else {
+                    unreachable!()
+                };
+                publisher.allow_work_unit(AllowedWorkUnit::new(
+                    IrPipelinePhase::new("SourceLoad"),
+                    OutputKind::new("SourceUnit"),
+                    IrWorkUnit::new(format!("{:?}:{:?}", id.package.as_str(), id.path.as_str())),
+                ));
+            }
+            for module in ["base", "leaf", "main"] {
+                allow_frontend(&publisher, &fixture.task(TaskKind::SourceLoad, module).unit);
+            }
+            let mut driver = fixture
+                .scheduled_driver()
+                .with_output_publisher(publisher.clone());
+            let submission = driver
+                .submit_with_import_discovery(
+                    request,
+                    &fixture.ids,
+                    &SnapshotRegistry::new(),
+                    input,
+                )
+                .unwrap();
+            assert_eq!(submission.session.captured.snapshot.id, snapshot, "{mode}");
+            assert_eq!(
+                submission.status,
+                DriverSubmissionStatus::BlockedByMissingPhaseServices,
+                "{mode}"
+            );
+            assert_eq!(
+                submission.session.state,
+                BuildSessionState::Finished(BuildSessionOutcome::Blocked),
+                "{mode}"
+            );
+            let graph = submission.task_graph.as_ref().unwrap();
+            let run = submission.scheduler_run.as_ref().unwrap();
+            let task = |kind: TaskKind, module: &str| {
+                graph
+                    .tasks()
+                    .iter()
+                    .find(|task| {
+                        task.kind == kind
+                            && matches!(&task.unit, WorkUnit::Module { module: id }
+                            if id.path.as_str() == module)
+                    })
+                    .unwrap()
+            };
+            let mut projection = Vec::new();
+            for module in ["base", "leaf", "main"] {
+                let source_task = task(TaskKind::SourceLoad, module);
+                let frontend_task = task(TaskKind::Frontend, module);
+                let semantic = task(TaskKind::ModuleResolve, module);
+                assert_eq!(
+                    semantic.dependency_coverage,
+                    DependencyCoverage::MissingModuleDependencyOverlay,
+                    "{mode}:{module}"
+                );
+                let source_result = &run.phase_results[&source_task.id][0];
+                let frontend_result = &run.phase_results[&frontend_task.id][0];
+                assert_eq!(
+                    source_result.status,
+                    PhaseStatus::Complete,
+                    "{mode}:{module}"
+                );
+                assert_eq!(
+                    frontend_result.status,
+                    PhaseStatus::Complete,
+                    "{mode}:{module}"
+                );
+                let source_ref = &source_result.output_refs[0];
+                let frontend_ref = &frontend_result.output_refs[0];
+                assert!(
+                    publisher
+                        .registry()
+                        .output_lineage(source_ref.output())
+                        .unwrap()
+                        .parents
+                        .is_empty()
+                );
+                let parents = publisher
+                    .registry()
+                    .output_lineage(frontend_ref.output())
+                    .unwrap()
+                    .parents
+                    .iter()
+                    .map(|id| {
+                        let lineage = publisher.registry().output_lineage(*id).unwrap();
+                        (
+                            lineage.phase.as_str().to_owned(),
+                            lineage.work_unit.as_str().to_owned(),
+                        )
+                    })
+                    .collect::<Vec<_>>();
+                let source = publisher
+                    .storage()
+                    .get(
+                        &publisher
+                            .storage()
+                            .typed_handle::<SourceUnit>(source_ref, &OutputKind::new("SourceUnit"))
+                            .unwrap(),
+                    )
+                    .unwrap();
+                let frontend = publisher
+                    .storage()
+                    .get(
+                        &publisher
+                            .storage()
+                            .typed_handle::<FrontendOutput<<MizarParserSeam as ParserSeam>::Ast>>(
+                                frontend_ref,
+                                &OutputKind::new("FrontendOutput"),
+                            )
+                            .unwrap(),
+                    )
+                    .unwrap();
+                projection.push((
+                    module.to_owned(),
+                    source.canonical_disk_bytes().unwrap(),
+                    SourceUnitCacheKey::from_source(&source).stable_hash(),
+                    frontend.canonical_disk_bytes().unwrap(),
+                    frontend.cache_keys.canonical_bytes().unwrap(),
+                    parents,
+                ));
+            }
+            if let Some(expected) = &baseline {
+                assert_eq!(
+                    &projection, expected,
+                    "{mode}: workers={workers}, order={order:?}, reverse_capture={reverse_capture}"
+                );
+            } else {
+                baseline = Some(projection);
+            }
+        }
+    }
 }
 
 #[test]
