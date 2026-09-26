@@ -343,6 +343,10 @@ harness 所有の所見 F7 と F8 を報告した。以下は監査由来の最�
 
 21. **必須ケース registry への訂正後 soundness 語彙(kernel F7)。** [x]
 22. **certificate corpus ルート命名の調停(kernel F8)。** [x]
+23. **Metamorphic generalization guard。** [ ]
+    - 有効な意味論ケースすべてについて、意味を保つ変形を検査する。契約: [QUALITY-METAMORPHIC-GUARD](../../task_contracts/ja/QUALITY-METAMORPHIC-GUARD.md)。
+24. **Literal source-offset ratchet。** [ ]
+    - 本番コードに数値のソース位置を新たに書かせないリポジトリ lint。契約: [QUALITY-LITERAL-OFFSET-RATCHET](../../task_contracts/ja/QUALITY-LITERAL-OFFSET-RATCHET.md)。
 
 ## 推奨検証
 

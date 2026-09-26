@@ -471,6 +471,8 @@ phase service を包み、build scheduler と cache seam へ純粋な入力 / �
       human review surface、test expectation summary、残る分類済み gap、next-phase handoff を
       記録する。この report はすべての non-owner boundary を保ち、real adapter、
       artifact publication、LSP bridge、cache/proof authority を claim しない。
+23. **`mizar lsp` stdio entry point。** [ ]
+    - stdio で mizar-lsp サーバーを起動する。契約: [EDITOR-LSP-ENTRY](../../task_contracts/ja/EDITOR-LSP-ENTRY.md)。
 
 ### 監査レビュー注記(2026-07-06)
 

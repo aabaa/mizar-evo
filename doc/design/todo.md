@@ -691,7 +691,10 @@ publication work.
 3. [ ] Clean/incremental/sequential/parallel equivalence:
    [mizar-build task 24](./mizar-build/en/todo.md),
    [mizar-test task 14](./mizar-test/en/todo.md) regression metadata,
-   [mizar-driver task 16](./mizar-driver/en/todo.md) (IV-002/IV-003).
+   [mizar-driver task 16](./mizar-driver/en/todo.md) (IV-002/IV-003). These
+   cover the implemented seams; the gate over real phase services is
+   [STEP6C-REAL-SERVICE-EQUIVALENCE](./task_contracts/en/STEP6C-REAL-SERVICE-EQUIVALENCE.md)
+   (BUILD-G-017).
 
 Exit: the artifact-publication and build-orchestration completion gates hold
 for implemented phases.
@@ -732,6 +735,11 @@ diagnostics, metadata, artifacts, and semantic indexes.
 3. [ ] [mizar-doc tasks 1-29](./mizar-doc/en/todo.md) — phase-16 rendering
    and extraction over published artifacts, including the focused module
    specs (SCA-002). `mizar-doc` must not re-run semantic analysis.
+4. [ ] [`mizar lsp` stdio entry point](./task_contracts/en/EDITOR-LSP-ENTRY.md)
+   (mizar-driver with mizar-lsp tasks 4-5).
+5. [ ] [Code completion](./task_contracts/en/EDITOR-LSP-COMPLETION.md)
+   (mizar-lsp task 25). An editor extension package is not yet scheduled; its
+   location and publication are pending a user decision.
 
 Exit: the user-facing-projections completion gate holds.
 
@@ -763,6 +771,17 @@ listed dependencies are complete.
 Core 48 additionally owns the missing-`return` diagnostic, and Core 46 the
 contract self-reference rejection. Public codes E0330, E0501, and E0502 stay
 spec-reserved until a separately authorized diagnostics adoption.
+
+### Generalization and quality guards [ ]
+
+These tasks check that producers generalize beyond the corpus files they were
+fitted to. They may run alongside Steps 6-8; the metamorphic guard should run
+early because its result qualifies what the active corpus demonstrates.
+
+1. [ ] mizar-test 23 — [metamorphic generalization guard](./task_contracts/en/QUALITY-METAMORPHIC-GUARD.md).
+2. [ ] mizar-test 24 — [literal source-offset ratchet](./task_contracts/en/QUALITY-LITERAL-OFFSET-RATCHET.md).
+3. [ ] Checker 281 — [exact-profile retirement](./task_contracts/en/QUALITY-EXACT-PROFILE-RETIREMENT.md);
+   deps items 1-2 and checker Task 258.
 
 ### Parked and trigger-based work
 

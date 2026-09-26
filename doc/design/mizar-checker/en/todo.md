@@ -689,6 +689,9 @@ implementation commit does not satisfy a producer task.
 - [ ] Consumer delta for resolver Task 33: synonym replay and use-site limits
   for algorithm synonyms. Contract:
   [ALGDEF-RESOLVE33-ALGORITHM-REFERENCES](../../task_contracts/en/ALGDEF-RESOLVE33-ALGORITHM-REFERENCES.md).
+- [ ] **Task 281:** retire fixture-shaped exact statement profiles from
+  production code. Contract:
+  [QUALITY-EXACT-PROFILE-RETIREMENT](../../task_contracts/en/QUALITY-EXACT-PROFILE-RETIREMENT.md).
 
 ## Task 257B2 Frozen-Contract Addendum
 

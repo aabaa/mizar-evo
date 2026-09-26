@@ -455,6 +455,8 @@ Keep `cargo test -p mizar-build` green after each task (see
       LSP protocol conversion. Missing owner-provided phase inputs, producer
       outputs, artifact tokens, diagnostics bridge, or LSP bridge remain
       `external_dependency_gap` / `deferred`.
+28. **Real-service equivalence (BUILD-G-017).** [ ]
+    - Extends the task-24 gate to every registered real phase service. Contract: [STEP6C-REAL-SERVICE-EQUIVALENCE](../../task_contracts/en/STEP6C-REAL-SERVICE-EQUIVALENCE.md).
 
 ## Recommended Verification
 

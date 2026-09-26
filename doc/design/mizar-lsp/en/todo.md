@@ -247,6 +247,10 @@ Keep `cargo test -p mizar-lsp` green after each task (see
       [21.source_code_annotation_and_atp.md](../../../spec/en/21.source_code_annotation_and_atp.md),
       [12.diagnostics_and_lsp.md](../../architecture/en/12.diagnostics_and_lsp.md),
       [spec_coverage_audit.md](../../spec_coverage_audit.md).
+25. **Code completion.** [ ]
+    - Deps: 6-7 and 12-15. Contract: [EDITOR-LSP-COMPLETION](../../task_contracts/en/EDITOR-LSP-COMPLETION.md).
+26. **`mizar lsp` stdio entry (with mizar-driver).** [ ]
+    - Deps: 4-5. Contract: [EDITOR-LSP-ENTRY](../../task_contracts/en/EDITOR-LSP-ENTRY.md).
 
 ## Recommended Verification
 

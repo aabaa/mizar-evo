@@ -442,6 +442,8 @@ internal: [01](../../internal/ja/01.compiler_driver_and_pipeline_scheduler.md)�
       作らない。owner-provided phase inputs、producer outputs、artifact tokens、
       diagnostics bridge、LSP bridge が欠ける場合は `external_dependency_gap` /
       `deferred` のまま残す。
+28. **Real-service equivalence (BUILD-G-017)。** [ ]
+    - task 24 の gate を、登録済みのすべての実フェーズサービスへ広げる。契約: [STEP6C-REAL-SERVICE-EQUIVALENCE](../../task_contracts/ja/STEP6C-REAL-SERVICE-EQUIVALENCE.md)。
 
 ## 推奨検証
 

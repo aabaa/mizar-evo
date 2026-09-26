@@ -503,6 +503,8 @@ Keep `cargo test -p mizar-driver` green after each task (see
       expectation summary, remaining classified gaps, and next-phase handoff.
       The report preserves all non-owner boundaries and does not claim real
       adapters, artifact publication, LSP bridge, or cache/proof authority.
+23. **`mizar lsp` stdio entry point.** [ ]
+    - Starts the mizar-lsp server over stdio. Contract: [EDITOR-LSP-ENTRY](../../task_contracts/en/EDITOR-LSP-ENTRY.md).
 
 ### Audit review note (2026-07-06)
 
