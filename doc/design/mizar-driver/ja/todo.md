@@ -473,6 +473,12 @@ phase service を包み、build scheduler と cache seam へ純粋な入力 / �
       artifact publication、LSP bridge、cache/proof authority を claim しない。
 23. **`mizar lsp` stdio entry point。** [ ]
     - stdio で mizar-lsp サーバーを起動する。契約: [EDITOR-LSP-ENTRY](../../task_contracts/ja/EDITOR-LSP-ENTRY.md)。
+24. **Toolchain manager。** [ ]
+    - `mizar` と ATP のインストールとバージョン固定。契約: [DIST-TOOLCHAIN-MANAGER](../../task_contracts/ja/DIST-TOOLCHAIN-MANAGER.md)。
+25. **Installers for other editors。** [ ]
+    - 契約: [DIST-INSTALLERS](../../task_contracts/ja/DIST-INSTALLERS.md)。
+26. **Playground のサーバーセッション (mizar-lsp と共同)。** [ ]
+    - 契約: [WEB-PLAYGROUND](../../task_contracts/ja/WEB-PLAYGROUND.md)。
 
 ### 監査レビュー注記(2026-07-06)
 

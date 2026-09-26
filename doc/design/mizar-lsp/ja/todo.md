@@ -253,6 +253,10 @@ internal: [03](../../internal/ja/03.diagnostics_model_and_lsp_bridge.md)。
     - 依存: 4-5。契約: [EDITOR-LSP-ENTRY](../../task_contracts/ja/EDITOR-LSP-ENTRY.md)。
 27. **命題の確認支援 (consumer)。** [ ]
     - 展開後の命題のホバーと束縛子を明示する操作 ([AIREV-ELABORATED-STATEMENTS](../../task_contracts/ja/AIREV-ELABORATED-STATEMENTS.md))、反例探索の操作 ([AIREV-OPEN-STATEMENT-COUNTEREXAMPLE](../../task_contracts/ja/AIREV-OPEN-STATEMENT-COUNTEREXAMPLE.md))。
+28. **VS Code 拡張。** [ ]
+    - `editors/vscode/` の Marketplace パッケージ。契約: [EDITOR-VSCODE-EXTENSION](../../task_contracts/ja/EDITOR-VSCODE-EXTENSION.md)。
+29. **Web playground (mizar-driver と共同)。** [ ]
+    - 契約: [WEB-PLAYGROUND](../../task_contracts/ja/WEB-PLAYGROUND.md)。
 
 ## 推奨検証
 

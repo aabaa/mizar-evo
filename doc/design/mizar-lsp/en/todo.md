@@ -253,6 +253,10 @@ Keep `cargo test -p mizar-lsp` green after each task (see
     - Deps: 4-5. Contract: [EDITOR-LSP-ENTRY](../../task_contracts/en/EDITOR-LSP-ENTRY.md).
 27. **Statement review aids (consumer).** [ ]
     - Elaborated-statement hover and make-binders-explicit action ([AIREV-ELABORATED-STATEMENTS](../../task_contracts/en/AIREV-ELABORATED-STATEMENTS.md)); counterexample search action ([AIREV-OPEN-STATEMENT-COUNTEREXAMPLE](../../task_contracts/en/AIREV-OPEN-STATEMENT-COUNTEREXAMPLE.md)).
+28. **VS Code extension.** [ ]
+    - Marketplace package in `editors/vscode/`. Contract: [EDITOR-VSCODE-EXTENSION](../../task_contracts/en/EDITOR-VSCODE-EXTENSION.md).
+29. **Web playground (with mizar-driver).** [ ]
+    - Contract: [WEB-PLAYGROUND](../../task_contracts/en/WEB-PLAYGROUND.md).
 
 ## Recommended Verification
 

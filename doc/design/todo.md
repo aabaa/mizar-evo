@@ -757,8 +757,10 @@ diagnostics, metadata, artifacts, and semantic indexes.
 4. [ ] [`mizar lsp` stdio entry point](./task_contracts/en/EDITOR-LSP-ENTRY.md)
    (mizar-driver with mizar-lsp tasks 4-5).
 5. [ ] [Code completion](./task_contracts/en/EDITOR-LSP-COMPLETION.md)
-   (mizar-lsp task 25). An editor extension package is not yet scheduled; its
-   location and publication are pending a user decision.
+   (mizar-lsp task 25).
+6. [ ] [VS Code extension](./task_contracts/en/EDITOR-VSCODE-EXTENSION.md)
+   (mizar-lsp task 28), published on the Marketplace from `editors/vscode/`;
+   deps items 4 and the toolchain manager below.
 
 Exit: the user-facing-projections completion gate holds.
 
@@ -790,6 +792,19 @@ listed dependencies are complete.
 Core 48 additionally owns the missing-`return` diagnostic, and Core 46 the
 contract self-reference rejection. Public codes E0330, E0501, and E0502 stay
 spec-reserved until a separately authorized diagnostics adoption.
+
+### Distribution and playground [ ]
+
+Installation and web access for the complete-processor claim. They follow the
+LSP entry point and do not block Steps 6-8.
+
+1. [ ] mizar-driver 24 — [toolchain manager](./task_contracts/en/DIST-TOOLCHAIN-MANAGER.md)
+   for `mizar` and ATP backends; the project version pin needs a
+   specification change, and backend bundling needs a license review.
+2. [ ] mizar-driver 25 — [installers](./task_contracts/en/DIST-INSTALLERS.md)
+   for other editors (install script, Windows installer and winget, Homebrew).
+3. [ ] mizar-lsp 29 / mizar-driver 26 — [web playground](./task_contracts/en/WEB-PLAYGROUND.md)
+   on the Lean 4 web editor model (server sessions; no browser-side WebAssembly).
 
 ### Generalization and quality guards [ ]
 

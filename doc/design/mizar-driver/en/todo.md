@@ -505,6 +505,12 @@ Keep `cargo test -p mizar-driver` green after each task (see
       adapters, artifact publication, LSP bridge, or cache/proof authority.
 23. **`mizar lsp` stdio entry point.** [ ]
     - Starts the mizar-lsp server over stdio. Contract: [EDITOR-LSP-ENTRY](../../task_contracts/en/EDITOR-LSP-ENTRY.md).
+24. **Toolchain manager.** [ ]
+    - Installs and pins `mizar` and ATP backends. Contract: [DIST-TOOLCHAIN-MANAGER](../../task_contracts/en/DIST-TOOLCHAIN-MANAGER.md).
+25. **Installers for other editors.** [ ]
+    - Contract: [DIST-INSTALLERS](../../task_contracts/en/DIST-INSTALLERS.md).
+26. **Playground server sessions (with mizar-lsp).** [ ]
+    - Contract: [WEB-PLAYGROUND](../../task_contracts/en/WEB-PLAYGROUND.md).
 
 ### Audit review note (2026-07-06)
 
