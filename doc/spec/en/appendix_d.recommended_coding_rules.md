@@ -20,6 +20,7 @@ Prefer code whose mathematical intent is visible before the verifier explains it
 | Rule | Recommendation |
 |---|---|
 | Make intent local | Put the type, qualification, citation, or annotation close to the expression it clarifies. |
+| Make public statements self-contained | Bind every variable of a public theorem, lemma, or scheme with an explicit type instead of relying on `reserve`; keep `reserve` for proofs and private items (W0004). The elaborated statement (§23.5.1) shows the explicit form. |
 | Keep proof dependencies explicit | Cite the facts actually needed by a proof step; avoid broad citations once the proof has stabilized. |
 | Prefer stable source over clever source | Avoid depending on fragile overload choices, import order, or implicit cluster chains when a short explicit form is clearer. |
 | Separate specification from execution | State mathematical contracts in `requires`, `ensures`, invariants, and theorems; state reusable inference facts in registrations; keep implementation policy in algorithms or tooling configuration. |
@@ -71,6 +72,7 @@ Proofs should be robust under library growth. A proof that relies on broad searc
 | Parenthesize complex formulas | In long formulas, add parentheses around the intended scope of `not`, `&`, `or`, `implies`, `iff`, `for`, and `ex`. |
 | Treat `open` and `assumed` items visibly | Use theorem statuses deliberately. Do not let ordinary theorems depend on unsettled material. |
 | Keep automation hints advisory | Use `@proof_hint` to control resources or solver choice, not to encode mathematical content. |
+| Validate new statements before proving them | Especially for translated or generated statements, request a counterexample search on the open statement (§22.4.3) and heed W0104, which reports statements that hold only because their hypotheses are contradictory. |
 
 When a proof step succeeds only with a large axiom budget, prefer adding a named lemma or a narrower citation before increasing the budget permanently.
 
