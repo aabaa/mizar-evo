@@ -1299,6 +1299,66 @@ mod tests {
             assert!(resolve(&format!("theorem F: for x being object holds x = x proof let x be object; now {declaration} end; now y = y; end; end;")).is_err(), "sibling leak");
             assert!(resolve(&format!("theorem F: for x being object holds x = x proof let x be object; {declaration} {declaration} end;")).is_err(), "same-scope duplicate");
         }
+        let given = include_str!(
+            "../../../../tests/miz/pass/theorems/pass_formula_statement_given_existential_assumption_001.miz"
+        );
+        let second = given.replacen("theorem Given1:", "theorem Given2:", 1);
+        let source = format!("{given}\n{second}");
+        assert!(super::step5c8_test_frontend(&source).diagnostics.is_empty());
+        let scope = resolve(&source).expect("two genuine given theorem proofs");
+        let split = source.find("theorem Given2:").unwrap();
+        let witnesses = scope
+            .bindings()
+            .iter()
+            .filter(|binding| {
+                binding.kind() == mizar_resolve::names::SourceVariableBindingKind::GivenWitness
+                    && binding.spelling() == "y0"
+            })
+            .collect::<Vec<_>>();
+        assert_eq!(witnesses.len(), 2);
+        assert!(witnesses[0].range().start < split);
+        assert!(witnesses[1].range().start > split);
+        assert_ne!(witnesses[0].id(), witnesses[1].id());
+        assert_ne!(witnesses[0].scope(), witnesses[1].scope());
+        for (index, witness) in witnesses.iter().enumerate() {
+            let (start, end) = if index == 0 {
+                (0, split)
+            } else {
+                (split, source.len())
+            };
+            for marker in ["A1: y0 in A", "take y0;", "thus y0 in A"] {
+                let position = start
+                    + source[start..end].find(marker).expect("own witness use")
+                    + marker.find("y0").unwrap();
+                let reference = scope
+                    .references()
+                    .iter()
+                    .find(|reference| {
+                        reference.spelling() == "y0" && reference.range().start == position
+                    })
+                    .expect("represented witness use");
+                assert_eq!(
+                    reference.binding(),
+                    witness.id(),
+                    "{marker} in theorem {index}"
+                );
+            }
+        }
+        let changed_second = second.replacen(
+            "given y0 being object such that A1: y0 in A;",
+            "given z0 being object such that A1: z0 in A;",
+            1,
+        );
+        let changed = format!("{given}\n{changed_second}");
+        assert!(
+            super::step5c8_test_frontend(&changed)
+                .diagnostics
+                .is_empty()
+        );
+        assert_eq!(
+            resolve(&changed),
+            Err(mizar_resolve::names::SourceVariableScopeError::UnresolvedReference)
+        );
     }
 
     #[test]
