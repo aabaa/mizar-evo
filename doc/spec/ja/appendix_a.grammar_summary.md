@@ -96,7 +96,7 @@ case cases claim cluster coherence commutativity compatibility computation
 conditional connectedness const consider consistency continue contradiction
 decreasing deffunc definition defpred do does downto
 else end ensures equals ex exhaustive existence export extends
-field for from func
+fail field for from func
 ghost given
 hence hereby holds
 idempotence if iff implies import in infix_operator inherit invariant
@@ -817,6 +817,7 @@ algo_statement     ::= var_decl
                      | return_stmt
                      | break_stmt
                      | continue_stmt
+                     | fail_stmt
                      | assert_stmt
                      | snapshot_stmt
                      | standalone_diagnostic_annotation ;
@@ -860,8 +861,8 @@ for_annotation     ::= "invariant" formula [ justification ] ;
 
 match_stmt         ::= "match" term_expression "do"
                        match_case { match_case }
-                       ( "otherwise" algo_statement_list "end" ";"
-                       | exhaustiveness_proof )
+                       [ "otherwise" algo_statement_list "end" ";"
+                       | exhaustiveness_proof ]
                        "end" ";" ;
 match_case         ::= "case" term_pattern "do"
                        algo_statement_list "end" ";" ;
@@ -871,6 +872,7 @@ exhaustiveness_proof ::= "exhaustive" [ justification ] ";" ;
 return_stmt        ::= "return" [ term_expression [ justification ] ] ";" ;
 break_stmt         ::= "break" ";" ;
 continue_stmt      ::= "continue" ";" ;
+fail_stmt          ::= "fail" [ string_literal { "," term_expression } ] ";" ;
 assert_stmt        ::= "assert" formula [ justification ] ";" ;
 snapshot_stmt      ::= "snapshot" identifier ";" ;
 
