@@ -493,9 +493,130 @@ Białystok版の
 
 ---
 
-# 14. Slide 12 — Native hammer: FOL を選んだ利益を回収する
+# 14. Slide 12 — Sledgehammer と正面から比較する
 
-ここで初めて Sledgehammer / MizAR を出す。
+ここは TPP 2026 の重要な対照実験として、Sledgehammer と MizAR を**明示的に比較する**。
+
+比較条件が同一ではないため成功率を単純な勝敗には使わない。しかし、その非対称性自体が重要である。
+
+## Sledgehammer: higher-order ITP から FOL ATP を使う
+
+典型的な経路:
+
+```text
+Isabelle/HOL goal
+  -> relevance filtering / premise selection
+  -> HOL-to-FOL/SMT encoding
+  -> external ATP / SMT
+  -> proof reconstruction / replay
+  -> Isabelle acceptance
+```
+
+代表的な評価:
+
+- Judgment Day は **7つの Isabelle theory から生じる proof goals** を対象にした。
+- 原研究では 1240 goals に対し、E/SPASS/Vampire の並列実行で 30秒 **47%**。
+- 改良後の評価では all provers combined で **63.6%**。
+- ただし選択された Isabelle formalizations の goals の約 **40% は “trivial”**、すなわち引数なしの標準 Isabelle tactic で直接解ける。
+- それらを除いた **1144 nontrivial goals** では、first-order ATPs が **36.8%**、SMTを加えた all provers が **44.3%**。
+- AFP 全体を用いた 2015 年の評価では、各 prover の再構成込み success は概ね **50%前後**、外部 prover を oracle として組み合わせても **60.7%**。
+
+重要なのは「Sledgehammer が弱い」ということではない。
+
+> **Sledgehammer は、HOL から FOL/SMT へ翻訳しながらここまで自動化した。**
+
+その engineering achievement は大きい。
+
+しかし、ここから直ちに
+
+> 「ITP で ATP を使う最適な方法は higher-order logic から翻訳することだ」
+
+とは言えない。
+
+## MizAR: FOL-native library から直接 ATP を使う
+
+MizAR 60 (2023):
+
+- MML 1147 から抽出した 57,897 theorems（unnamed top-level lemmas を含む）。
+- ユーザによる premise 指定なしの hammer setting で **58.4%**。
+- human-written Mizar proof が使った premises のみに制限して prover を助ける条件では **75%超**。
+- strongest single hammer method でも 30秒で約 **40%**。
+- portfolio の時間予算は Sledgehammer benchmark と同一ではないため、数字だけの勝敗には使わない。
+
+しかし問題の粒度はむしろ MizAR 側が厳しい。
+
+```text
+Sledgehammer:
+  theorem
+    -> human-written structured proof
+       -> local goal
+          -> hammer
+
+MizAR:
+  top-level theorem
+       -> hammer
+```
+
+したがって発表では、次を明言する。
+
+> **MizAR が top-level theorem の約60%を自動証明した一方、Sledgehammer の代表的評価は人間が既に分解した proof goals に対するものである。  
+> ベンチマーク条件が異なるため因果関係までは主張できないが、FOL-native architecture を現代的条件で正面から比較していないこと自体が研究上の空白である。**
+
+### 発表の強い問い
+
+> **If first-order ATPs are already this effective behind a higher-order translation layer, what happens when the theorem prover is designed around them natively?**
+
+日本語:
+
+> **高階論理から変換して使ってもこれだけ強いATPを、最初からnativeに使うITPを作ったらどうなるのか。**
+
+この問いこそ Mizar Evolution の研究動機の一つである。
+
+### ここで主張できること / できないこと
+
+**主張できる:**
+
+- Sledgehammer の success rate は modern ATP 自体の上限ではない。
+- Sledgehammer と MizAR は problem granularity が大きく異なる。
+- MizAR は top-level theorem automation が実用的な水準に達し得ることを示した。
+- FOL-native ITP を現代の ATP / premise selection / LLM と組み合わせて再評価する価値がある。
+
+**まだ主張できない:**
+
+- MizAR の高い成功率の原因が FOL foundation だけである。
+- 同じ theorem corpus を用いれば必ず FOL-native が HOL hammer を上回る。
+- 58.4% と 44.3% をそのまま「14.1ポイント差」と解釈できる。
+
+したがって最終的な決着は Mizar Evolution 上での controlled experiment に委ねる。
+
+---
+
+# 15. Slide 13 — Native hammer: FOL を選んだ利益を回収する
+
+高階 hammer:
+
+```text
+HOL goal
+  -> premise selection
+  -> encoding
+  -> FOL ATP
+  -> reconstruction
+```
+
+Mizar Evolution:
+
+```text
+Mizar Evo goal
+  -> first-order obligation
+  -> ATP
+  -> checked evidence
+```
+
+問い:
+
+> **高階 ITP から ATP を使えるか、ではなく、  
+> ATP を native substrate とする ITP はどこまで自動化できるか。**
+
 
 高階 hammer:
 
@@ -523,30 +644,43 @@ Mizar Evo goal
 
 ---
 
-# 15. Slide 13 — MizAR は既に下限を示している
+# 16. Slide 14 — MizAR は「下限」ではなく設計仮説の先行実証
 
-MizAR 60:
+MizAR の結果は単なる historical curiosity ではない。
 
-- MML 1147;
-- 57,897 theorems including unnamed top-level lemmas;
-- hammering mode, no user premise help: **58.4%**;
-- with premise assistance: **>75%**;
-- strongest single method: about **40% in 30 s**;
-- portfolio条件は明記する。
+Mizar Evolution が目指す
 
-重要:
+```text
+large mathematical library
+        +
+first-order logical substrate
+        +
+automatic premise selection
+        +
+strong external ATP
+```
 
-> **これは top-level lemma に対する結果である。**
+という構成のかなりの部分を、MPTP/MizAR は既に実験している。
 
-Sledgehammer の代表的評価にある local goals と成功率を直接比較しない。
+ただし Mizar Evolution ではさらに、
 
-TPPでのメッセージ:
+- language / verifier / ATP interface を最初から同一 architecture として設計;
+- current Vampire / E / learned guidance;
+- package / namespace / incremental artifact;
+- kernel-checkable evidence;
+- LLM による failure recovery / lemma invention;
 
-> **FOL-native large-library ATP は、既に「局所補題を少し手伝う」以上の能力を示している。**
+を統合する。
+
+したがって MizAR 60 の約60%は「完成値」ではなく、
+
+> **古いMizar + 外付けMPTPでもここまで行った**
+
+という出発点として提示する。
 
 ---
 
-# 16. Slide 14 — AI時代の役割分担
+# 17. Slide 15 — AI時代の役割分担
 
 ここで今回の議論を結論として置く。
 
@@ -601,7 +735,7 @@ ATPで閉じない部分にだけ、LLMまたは人間が高水準の分解を�
 
 ---
 
-# 17. Slide 15 — なぜ今この設計なのか
+# 18. Slide 16 — なぜ今この設計なのか
 
 AIが強くなるほど、
 
@@ -620,7 +754,7 @@ AIが強くなるほど、
 
 ---
 
-# 18. Slide 16 — 研究として何を検証するか
+# 19. Slide 17 — 研究として何を検証するか
 
 Mizar Evolution は思想だけではなく、測定可能な仮説として評価する。
 
@@ -657,7 +791,7 @@ template / algorithm / view を使った高水準記述が、FOL core へ安定�
 
 ---
 
-# 19. Slide 17 — Closing
+# 20. Slide 18 — Closing
 
 最終図:
 
@@ -690,7 +824,7 @@ template / algorithm / view を使った高水準記述が、FOL core へ安定�
 
 ---
 
-# 20. 45分版で追加するもの
+# 21. 45分版で追加するもの
 
 45分になった場合でも本編の順序は変えない。
 
@@ -718,7 +852,7 @@ template / algorithm / view を使った高水準記述が、FOL core へ安定�
 
 ---
 
-# 21. 発表で主張しないこと
+# 22. 発表で主張しないこと
 
 - FOL が全数学に最適。
 - HOL / DTT が不要。
@@ -731,7 +865,7 @@ template / algorithm / view を使った高水準記述が、FOL core へ安定�
 
 ---
 
-# 22. 事実確認が必要な項目
+# 23. 事実確認が必要な項目
 
 最終スライド前に一次資料で確認:
 
@@ -747,7 +881,7 @@ template / algorithm / view を使った高水準記述が、FOL core へ安定�
 
 ---
 
-# 23. Codexへの作業指示
+# 24. Codexへの作業指示
 
 このファイルから TPP 2026 スライドを生成するとき:
 
