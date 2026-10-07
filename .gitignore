@@ -7,9 +7,12 @@
 /doc/publications/presentations/*
 !/doc/publications/presentations/2026-09-bialystok/
 !/doc/publications/presentations/2026-09-bialystok/**
+!/doc/publications/presentations/2026-11-tpp2026/
+!/doc/publications/presentations/2026-11-tpp2026/**
 
 # LaTeX/Python build byproducts for tracked publication decks.
 /doc/publications/**/*.aux
+/doc/publications/**/*.dvi
 /doc/publications/**/*.log
 /doc/publications/**/*.nav
 /doc/publications/**/*.out

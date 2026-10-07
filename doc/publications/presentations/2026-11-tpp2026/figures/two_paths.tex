@@ -1,0 +1,44 @@
+% Figure: two paths from an interactive prover to a first-order ATP (part 1).
+% Build: pdflatex two_paths.tex  (run inside figures/)
+\documentclass[tikz,border=6pt]{standalone}
+\usetikzlibrary{positioning,arrows.meta,decorations.pathreplacing}
+\begin{document}
+\begin{tikzpicture}[
+  font=\sffamily,
+  stepbox/.style={draw, rounded corners=2pt, align=center, minimum width=58mm,
+               minimum height=9mm, line width=0.6pt, fill=blue!8,
+               draw=blue!50!black, font=\sffamily\small},
+  gap/.style={stepbox, fill=orange!22, draw=orange!70!black},
+  check/.style={stepbox, fill=green!12, draw=green!45!black},
+  head/.style={font=\sffamily\small\bfseries, text=black!65, align=center},
+  flow/.style={-{Stealth[length=2.6mm]}, line width=0.9pt, black!70},
+  note/.style={font=\sffamily\footnotesize\itshape, text=black!60, align=center},
+  node distance=2.5mm,
+]
+  % Sledgehammer path
+  \node[head] (lh) {Sledgehammer path (Isabelle/HOL)};
+  \node[stepbox, below=3mm of lh] (l1) {higher-order goal\\ \footnotesize as it arises inside a development};
+  \node[stepbox, below=of l1] (l2) {premise selection\\ \footnotesize MePo, MaSh};
+  \node[gap, below=of l2] (l3) {HOL $\to$ FOL / SMT encoding\\ \footnotesize app, lambda lifting, type encoding};
+  \node[stepbox, below=of l3] (l4) {external ATP / SMT\\ \footnotesize E, SPASS, Vampire, Z3, CVC4};
+  \node[gap, below=of l4] (l5) {proof reconstruction\\ \footnotesize metis, smt replay, Isar text};
+  \node[check, below=of l5] (l6) {Isabelle theorem};
+  \foreach \a/\b in {l1/l2,l2/l3,l3/l4,l4/l5,l5/l6} \draw[flow] (\a) -- (\b);
+  \draw[decorate, decoration={brace, amplitude=2mm, mirror}, black!60, line width=0.7pt]
+    ([xshift=-2.5mm]l3.north west) -- ([xshift=-2.5mm]l5.south west)
+    node[midway, left=3.5mm, note, align=right] {logic gap\\ paid here};
+
+  % MizAR path
+  \node[head, right=30mm of lh] (rh) {MizAR path (Mizar / MML)};
+  \node[stepbox, below=3mm of rh] (r1) {top-level theorem\\ \footnotesize first-order logic over set theory};
+  \node[stepbox, below=of r1] (r2) {premise selection\\ \footnotesize learned, over the whole library};
+  \node[stepbox, below=of r2] (r3) {first-order ATP\\ \footnotesize E, Vampire, with learned guidance};
+  \node[stepbox, below=of r3] (r4) {premises used $\to$ Mizar \texttt{by} step};
+  \node[check, below=of r4] (r5) {Mizar checker\\ \footnotesize re-checks the step where it can};
+  \foreach \a/\b in {r1/r2,r2/r3,r3/r4,r4/r5} \draw[flow] (\a) -- (\b);
+  \node[note, right=3mm of r3, align=left]
+    {no logic translation:\\ the problem is\\ already first-order};
+  \node[note, below=3mm of r5, text width=58mm]
+    {Mizar Evo replaces the last step with\\ kernel evidence checking (later slide)};
+\end{tikzpicture}
+\end{document}

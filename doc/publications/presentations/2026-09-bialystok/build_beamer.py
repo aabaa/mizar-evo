@@ -10,6 +10,7 @@ from __future__ import annotations
 
 import re
 import sys
+import unicodedata
 import zlib
 from pathlib import Path
 
@@ -36,6 +37,18 @@ PART_REMAP = {
 
 PART_APPEND_TO: dict[str, str] = {}
 
+# Title-page metadata. Other decks reuse this module as a library and override
+# these (and ROOT, PART_REMAP, FIGURE_HEIGHT_LIMITS) before calling emit_beamer.
+AUTHOR = "Mizar Evo project"
+DATE = "September 2026"
+# Font setup lines of the preamble. A Japanese deck replaces this with
+# Japanese font packages and compiles with the matching engine.
+FONT_SETUP = [r"\usepackage[T1]{fontenc}"]
+# Options of \documentclass (a dvipdfmx deck adds the driver here) and extra
+# preamble lines emitted after hyperref (for packages that must follow it).
+DOCUMENTCLASS_OPTIONS = "aspectratio=169,11pt"
+PREAMBLE_EXTRA: list[str] = []
+
 LABEL_REWRITES = {
     "Bullets": "Key Points",
     "Detailed claim": "Claim",
@@ -46,7 +59,10 @@ LABEL_REWRITES = {
     "Speaker note": "Presenter Note",
 }
 
-SECTION_LABEL_RE = re.compile(r"^(?:\*\*)?[A-Za-z][A-Za-z0-9 *`/'()&.,-]{0,80}:$")
+SECTION_LABEL_RE = re.compile(
+    r"^(?:\*\*)?[A-Za-z\u3000-\u30ff\u4e00-\u9fff\uff00-\uffef]"
+    r"[A-Za-z0-9 *`/'()&.,\u3000-\u30ff\u4e00-\u9fff\uff00-\uffef-]{0,80}:$"
+)
 IMAGE_RE = re.compile(r"^!\[([^\]]*)\]\(([^)]+)\)$")
 DEEP_DIVE_TAG = " [deep dive]"
 FRAME_WEIGHT_LIMIT = 18.5
@@ -145,6 +161,11 @@ def plain_text(text: str) -> str:
     return text.strip()
 
 
+def text_len(text: str) -> float:
+    """Display length: East Asian wide characters count double."""
+    return sum(2.0 if unicodedata.east_asian_width(ch) in ("W", "F") else 1.0 for ch in text)
+
+
 def plain_frame_title(markdown_title: str) -> str:
     title = re.sub(r"^Frame\s+", "", markdown_title.strip())
     title = re.sub(r"^[0-9][0-9A-Za-z.]*\s*-\s*", "", title)
@@ -222,7 +243,7 @@ def flush_paragraph(paragraph: list[str], out: list[str]) -> None:
     paragraph.clear()
     if not text:
         return
-    if text.endswith(":") and len(plain_text(text)) <= 80:
+    if text.endswith(":") and text_len(plain_text(text)) <= 80:
         label = LABEL_REWRITES.get(text[:-1], text[:-1])
         status = CODE_STATUS_RE.match(label)
         out.append(r"\smallskip")
@@ -414,7 +435,7 @@ def split_table_block(block: list[str]) -> list[list[str]]:
     body_rows = rows[2:]
     if body_rows:
         max_row_len = max(
-            sum(len(plain_text(cell)) for cell in split_table_row(row))
+            sum(text_len(plain_text(cell)) for cell in split_table_row(row))
             for row in body_rows
         )
         if max_row_len > 110:
@@ -526,8 +547,8 @@ def block_weight(block: list[str]) -> float:
         weight = 2.2
         for row in body:
             cells = split_table_row(row)
-            text_len = sum(len(plain_text(cell)) for cell in cells)
-            weight += 1.2 + text_len / 82.0
+            cells_len = sum(text_len(plain_text(cell)) for cell in cells)
+            weight += 1.2 + cells_len / 82.0
         return weight
 
     list_items = count_list_items(block)
@@ -550,7 +571,7 @@ def block_weight(block: list[str]) -> float:
         elif stripped.startswith("### ") or SECTION_LABEL_RE.match(stripped):
             weight += 1.0
         else:
-            weight += max(1.0, len(plain_text(stripped)) / 74.0)
+            weight += max(1.0, text_len(plain_text(stripped)) / 74.0)
     return weight
 
 
@@ -583,7 +604,7 @@ def is_key_phrase_block(code_lines: list[str], lang: str) -> bool:
     if lang != "text" or not code_lines or len(code_lines) > 4:
         return False
     for line in code_lines:
-        if "->" in line or line.startswith("  ") or len(plain_text(line)) > 72:
+        if "->" in line or line.startswith("  ") or text_len(plain_text(line)) > 72:
             return False
     return True
 
@@ -972,7 +993,7 @@ def emit_beamer(
     if show_notes:
         subtitle = subtitle + r"\\ \textit{presenter notes edition}" if subtitle else r"\textit{presenter notes edition}"
     out: list[str] = [
-        r"\documentclass[aspectratio=169,11pt]{beamer}",
+        rf"\documentclass[{DOCUMENTCLASS_OPTIONS}]{{beamer}}",
         r"\usetheme{Madrid}",
         r"\usecolortheme{seahorse}",
         r"\setbeamertemplate{navigation symbols}{}",
@@ -987,13 +1008,14 @@ def emit_beamer(
         r"\setbeameroption{show notes}" if show_notes else r"\setbeameroption{hide notes}",
         r"\usepackage{pgfpages}",
         r"\pgfpagesuselayout{resize to}[a4paper,landscape]",
-        r"\usepackage[T1]{fontenc}",
+        *FONT_SETUP,
         r"\usepackage{tabularx}",
         r"\usepackage{array}",
         r"\usepackage{booktabs}",
         r"\usepackage{listings}",
         r"\usepackage{hyperref}",
         r"\usepackage{fancyvrb}",
+        *PREAMBLE_EXTRA,
         r"\lstdefinelanguage{mizar}{morekeywords={definition,end,struct,field,property,inherit,extends,where,from,let,be,being,mode,theorem,proof,thus,hence,by,registration,cluster,coherence,reduce,reducibility,import,for,holds,st,is,func,pred,attribute,algorithm,terminating,requires,ensures,do,while,invariant,decreasing,return,var,const,if,scheme,provided,environ,vocabularies,notations,constructors,registrations,theorems,begin,qua,reconsider,consider,such,that,not,or,and,implies,per,cases,set,thesis},sensitive=true,morecomment=[l]{::}}",
         "\\lstdefinelanguage{toml}{morecomment=[l]{\\#},morestring=[b]\"}",
         r"\lstset{basicstyle=\ttfamily\small,keywordstyle=\color{blue!50!black}\bfseries,commentstyle=\color{green!35!black}\itshape,stringstyle=\color{violet!70!black},showstringspaces=false,columns=fullflexible,keepspaces=true,backgroundcolor=\color{black!4},frame=single,rulecolor=\color{black!20},framesep=0.7mm,framerule=0.3pt,xleftmargin=1mm,xrightmargin=1mm,aboveskip=0.6mm,belowskip=0.8mm}",
@@ -1005,8 +1027,8 @@ def emit_beamer(
         r"\pdfstringdefDisableCommands{\def\translate#1{#1}}",
         rf"\title{{{main_title}}}",
         rf"\subtitle{{{subtitle}}}",
-        r"\author{Mizar Evo project}",
-        r"\date{September 2026}",
+        rf"\author{{{AUTHOR}}}",
+        rf"\date{{{DATE}}}",
         "",
         r"\begin{document}",
         r"\begin{frame}",

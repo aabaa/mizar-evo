@@ -1,0 +1,1347 @@
+\documentclass[dvipdfmx,aspectratio=169,11pt]{beamer}
+\usetheme{Madrid}
+\usecolortheme{seahorse}
+\setbeamertemplate{navigation symbols}{}
+\setbeamertemplate{headline}{}
+\setbeamertemplate{footline}[frame number]
+\setbeamertemplate{frametitle continuation}{}
+\setbeamertemplate{frametitle}{\nointerlineskip\begin{beamercolorbox}[wd=\paperwidth,sep=0.45ex,leftskip=7.5mm,rightskip=7.5mm]{frametitle}\usebeamerfont{frametitle}\insertframetitle\end{beamercolorbox}}
+\setbeamerfont{frametitle}{size=\large}
+\setbeamerfont{normal text}{size=\normalsize}
+\setbeamersize{text margin left=8mm,text margin right=8mm}
+\setbeamercolor{keyphrase}{bg=blue!8,fg=black!85}
+\setbeameroption{hide notes}
+\usepackage{pgfpages}
+\pgfpagesuselayout{resize to}[a4paper,landscape]
+\usepackage[T1]{fontenc}
+\usepackage{tabularx}
+\usepackage{array}
+\usepackage{booktabs}
+\usepackage{listings}
+\usepackage{hyperref}
+\usepackage{fancyvrb}
+\usepackage{bxdpx-beamer}
+\usepackage{pxjahyper}
+\renewcommand{\kanjifamilydefault}{\gtdefault}
+\setbeamertemplate{itemize items}[circle]
+\setbeamertemplate{enumerate items}[default]
+\lstdefinelanguage{mizar}{morekeywords={definition,end,struct,field,property,inherit,extends,where,from,let,be,being,mode,theorem,proof,thus,hence,by,registration,cluster,coherence,reduce,reducibility,import,for,holds,st,is,func,pred,attribute,algorithm,terminating,requires,ensures,do,while,invariant,decreasing,return,var,const,if,scheme,provided,environ,vocabularies,notations,constructors,registrations,theorems,begin,qua,reconsider,consider,such,that,not,or,and,implies,per,cases,set,thesis},sensitive=true,morecomment=[l]{::}}
+\lstdefinelanguage{toml}{morecomment=[l]{\#},morestring=[b]"}
+\lstset{basicstyle=\ttfamily\small,keywordstyle=\color{blue!50!black}\bfseries,commentstyle=\color{green!35!black}\itshape,stringstyle=\color{violet!70!black},showstringspaces=false,columns=fullflexible,keepspaces=true,backgroundcolor=\color{black!4},frame=single,rulecolor=\color{black!20},framesep=0.7mm,framerule=0.3pt,xleftmargin=1mm,xrightmargin=1mm,aboveskip=0.6mm,belowskip=0.8mm}
+\newcommand{\statusbadge}[2]{\colorbox{#1}{\textcolor{white}{\strut\scriptsize\sffamily\bfseries #2}}}
+\newcommand{\badgeMML}{\statusbadge{blue!45!black}{exact MML excerpt}}
+\newcommand{\badgeSpec}{\statusbadge{green!35!black}{specification example}}
+\newcommand{\badgeSketch}{\statusbadge{orange!75!black}{sketch}}
+\newcommand{\deepdivetag}{\hfill\colorbox{black!15}{\textcolor{black!65}{\strut\scriptsize\sffamily deep dive}}}
+\pdfstringdefDisableCommands{\def\translate#1{#1}}
+\title{Mizar Evolution: なぜ今、一階述語論理なのか}
+\subtitle{自動証明・読める数学・検証できる計算を再接続する\\ TPP 2026、理化学研究所 AIP 東京オフィス、2026年11月}
+\author{Mizar Evo project}
+\date{TPP 2026、理化学研究所 AIP 東京オフィス、2026年11月16--17日}
+
+\begin{document}
+\begin{frame}
+\titlepage
+\note{
+\smallskip
+\textbf{Read aloud:}
+\begin{itemize}
+\setlength{\itemsep}{1pt}
+\setlength{\parsep}{0pt}
+\setlength{\parskip}{0pt}
+\item \textcolor{blue!55!black}{\textbf{Mizar は証明検査系です。一階の集合論の上に、人間が読める数学の言葉で書かれた50年分のライブラリを持っています。}}
+\item \textcolor{blue!55!black}{\textbf{Mizar Evolution、略して Mizar Evo は、その言語と道具を設計し直すプロジェクトです。今日は機能を並べません。自動証明器をめぐる一つの謎から始めて、なぜ論理を一階のままにするのかを説明します。}}
+\item 話す内容にはすべて、事実・研究仮説・将来構想のラベルを付けます。
+\end{itemize}
+}
+\end{frame}
+
+\section{Part 0. Opening}
+\begin{frame}[fragile,t]{0.2 - 主張の読み方\deepdivetag}
+\begin{footnotesize}
+\setlength{\tabcolsep}{3pt}
+\renewcommand{\arraystretch}{1.15}
+\begin{tabularx}{\textwidth}{>{\raggedright\arraybackslash}X>{\raggedright\arraybackslash}X>{\raggedright\arraybackslash}X}
+\toprule
+\textbf{レベル} & \textbf{意味} & \textbf{表示} \\
+\midrule
+事実 & 既存システム、公開ベンチマーク、Mizar Evo の仕様と main branch & 無印 \\
+研究仮説 & Mizar Evo が検証するために作られている主張 & 本文中に明記 \\
+将来構想 & 日程も設計もまだ決まっていない目標 & 本文中に明記 \\
+\bottomrule
+\end{tabularx}
+\end{footnotesize}
+
+コード例のラベルは Bia\l{}ystok 資料と同じ: exact MML excerpt、specification example、sketch。
+
+\begin{itemize}
+\setlength{\itemsep}{1pt}
+\setlength{\parsep}{0pt}
+\setlength{\parskip}{0pt}
+\item 仕様と実装は別物です。終盤の一枚でその境界を示します。
+\end{itemize}
+\note{
+\smallskip
+\textbf{Read aloud:}
+\begin{itemize}
+\setlength{\itemsep}{1pt}
+\setlength{\parsep}{0pt}
+\setlength{\parskip}{0pt}
+\item コード例のラベルは Bia\l{}ystok 資料と同じ: exact MML excerpt、specification example、sketch。
+\item 仕様と実装は別物です。終盤の一枚でその境界を示します。
+\end{itemize}
+}
+\end{frame}
+
+\section{Part 1. Two Hammers, Two Numbers}
+\begin{frame}[fragile,t]{1.1 - 似て見える二つの数字}
+\begin{scriptsize}
+\setlength{\tabcolsep}{3pt}
+\renewcommand{\arraystretch}{1.15}
+\begin{tabularx}{\textwidth}{>{\raggedright\arraybackslash}X>{\raggedright\arraybackslash}X>{\raggedright\arraybackslash}X}
+\toprule
+\textbf{} & \textbf{MizAR 60 (ITP 2023)} & \textbf{Sledgehammer on AFP (CICM 2015)} \\
+\midrule
+見出しの数字 & 58.4\% を証明 & 60.7\% を証明 \\
+数える単位 & MML 1147 の top-level theorem と lemma（57,897件） & AFP 開発内部の proof goal（6,934件） \\
+前提 & ライブラリ全体から学習的に選択 & 開発内から MePo フィルタで選択 \\
+時間予算 & ポートフォリオ合計 420 CPU 秒 & 各 prover 30 秒、4 prover \\
+結果の扱い & ATP 証明が見つかった（hammering mode） & union を oracle として信頼。一行再構成は各 prover 約50\% \\
+\bottomrule
+\end{tabularx}
+\end{scriptsize}
+
+\begin{itemize}
+\setlength{\itemsep}{1pt}
+\setlength{\parsep}{0pt}
+\setlength{\parskip}{0pt}
+\item \textcolor{blue!55!black}{\textbf{二つのハンマー、二つの見出しの数字。ほとんど同じに見えます。}}
+\item \textcolor{blue!55!black}{\textbf{一つのベンチマークとして比べてはいけません。単位も、前提も、時間予算も違います。}}
+\end{itemize}
+\note{
+\smallskip
+\textbf{Read aloud:}
+\begin{itemize}
+\setlength{\itemsep}{1pt}
+\setlength{\parsep}{0pt}
+\setlength{\parskip}{0pt}
+\item \textcolor{blue!55!black}{\textbf{二つのハンマー、二つの見出しの数字。ほとんど同じに見えます。}}
+\item \textcolor{blue!55!black}{\textbf{一つのベンチマークとして比べてはいけません。単位も、前提も、時間予算も違います。}}
+\end{itemize}
+\smallskip
+\textbf{Optional notes and sources:}
+\begin{itemize}
+\setlength{\itemsep}{1pt}
+\setlength{\parsep}{0pt}
+\setlength{\parskip}{0pt}
+\item 「ハンマー」は goal を自動証明器に送る道具。「前提」は prover が使ってよい事実。
+\item Source: Jakubův et al. 2023, results 1-3; Blanchette et al. 2015, Section "Proof Automation with Sledgehammer", Figure 13.
+\item MizAR の 75\% は、人または機械がライブラリから前提を選んだ条件。質問用に取っておく。
+\end{itemize}
+}
+\end{frame}
+
+\begin{frame}[fragile,t]{1.2 - それぞれの数字は何を数えているか}
+\begin{center}
+\includegraphics[width=\textwidth,height=0.48\textheight,keepaspectratio]{figures/evaluation_units.pdf}
+\end{center}
+\begin{itemize}
+\setlength{\itemsep}{1pt}
+\setlength{\parsep}{0pt}
+\setlength{\parskip}{0pt}
+\item \textcolor{blue!55!black}{\textbf{MizAR の問い: この定理を丸ごと、著者の助けなしに、ライブラリから機械が証明できるか。}}
+\item \textcolor{blue!55!black}{\textbf{AFP 研究の問い: 現れた場所でこの goal を機械が閉じられるか。多くは人がすでに書いた証明の内側にあります。}}
+\item どちらも正当な問いです。しかし同じ問いではありません。
+\end{itemize}
+\note{
+\smallskip
+\textbf{Read aloud:}
+\begin{itemize}
+\setlength{\itemsep}{1pt}
+\setlength{\parsep}{0pt}
+\setlength{\parskip}{0pt}
+\item \textcolor{blue!55!black}{\textbf{MizAR の問い: この定理を丸ごと、著者の助けなしに、ライブラリから機械が証明できるか。}}
+\item \textcolor{blue!55!black}{\textbf{AFP 研究の問い: 現れた場所でこの goal を機械が閉じられるか。多くは人がすでに書いた証明の内側にあります。}}
+\item どちらも正当な問いです。しかし同じ問いではありません。
+\end{itemize}
+}
+\end{frame}
+
+\begin{frame}[fragile,t]{1.3 - 一階 prover へ至る二つの経路}
+\begin{center}
+\includegraphics[width=\textwidth,height=0.56\textheight,keepaspectratio]{figures/two_paths.pdf}
+\end{center}
+\begin{itemize}
+\setlength{\itemsep}{1pt}
+\setlength{\parsep}{0pt}
+\setlength{\parskip}{0pt}
+\item \textcolor{blue!55!black}{\textbf{Sledgehammer は高階の goal を一階論理か SMT の問題に翻訳します。そのあと証明を Isabelle の内側に組み立て直します。}}
+\item \textcolor{blue!55!black}{\textbf{MizAR は、最初から一階である問題を prover に渡します。検査系と ATP 問題の距離が短いのです。}}
+\end{itemize}
+\note{
+\smallskip
+\textbf{Read aloud:}
+\begin{itemize}
+\setlength{\itemsep}{1pt}
+\setlength{\parsep}{0pt}
+\setlength{\parskip}{0pt}
+\item \textcolor{blue!55!black}{\textbf{Sledgehammer は高階の goal を一階論理か SMT の問題に翻訳します。そのあと証明を Isabelle の内側に組み立て直します。}}
+\item \textcolor{blue!55!black}{\textbf{MizAR は、最初から一階である問題を prover に渡します。検査系と ATP 問題の距離が短いのです。}}
+\end{itemize}
+\smallskip
+\textbf{Optional notes and sources:}
+\begin{itemize}
+\setlength{\itemsep}{1pt}
+\setlength{\parsep}{0pt}
+\setlength{\parskip}{0pt}
+\item どちらも既存システムの説明（Blanchette, Kaliszyk, Paulson, Urban 2016; Jakubův et al. 2023）。オレンジの箱が翻訳と再構成の層。
+\item MizAR の見出しの数字は ATP 証明を数える。Mizar checker は、推論が検査器の強さの範囲なら、得られた \texttt{by} ステップを再検査する。
+\end{itemize}
+}
+\end{frame}
+
+\begin{frame}[fragile,t]{1.4 - 問い}
+\begin{center}
+\begin{beamercolorbox}[rounded=true,sep=2.5mm,wd=0.9\textwidth]{keyphrase}
+\centering\itshape \textcolor{blue!55!black}{\textbf{測り方の違いなのか、設計の帰結なのか}}
+\end{beamercolorbox}
+\end{center}
+\begin{itemize}
+\setlength{\itemsep}{1pt}
+\setlength{\parsep}{0pt}
+\setlength{\parskip}{0pt}
+\item \textcolor{blue!55!black}{\textbf{研究仮説: 一階のライブラリでは、検査系自身の論理と ATP 問題の距離が短い。高階の処理系はその距離を翻訳と再構成で渡る必要があり、そこに代償がある。}}
+\item 事実: Sledgehammer は、高階の処理系が一階 ATP を非常にうまく使えることを示しました。
+\item 研究仮説: 「高階プラス翻訳」が ATP を使う最良の設計かどうかは、まだ分かりません。比較対象になる現代的な一階 ITP がほとんど無いからです。
+\item \textcolor{blue!55!black}{\textbf{Mizar Evo は、現代的な検査系・ライブラリ・prover でこの仮説を試すために作っています。}}
+\end{itemize}
+\note{
+\smallskip
+\textbf{Read aloud:}
+\begin{itemize}
+\setlength{\itemsep}{1pt}
+\setlength{\parsep}{0pt}
+\setlength{\parskip}{0pt}
+\item \textcolor{blue!55!black}{\textbf{測り方の違いなのか、設計の帰結なのか}}
+\item \textcolor{blue!55!black}{\textbf{研究仮説: 一階のライブラリでは、検査系自身の論理と ATP 問題の距離が短い。高階の処理系はその距離を翻訳と再構成で渡る必要があり、そこに代償がある。}}
+\item 事実: Sledgehammer は、高階の処理系が一階 ATP を非常にうまく使えることを示しました。
+\item 研究仮説: 「高階プラス翻訳」が ATP を使う最良の設計かどうかは、まだ分かりません。比較対象になる現代的な一階 ITP がほとんど無いからです。
+\item \textcolor{blue!55!black}{\textbf{Mizar Evo は、現代的な検査系・ライブラリ・prover でこの仮説を試すために作っています。}}
+\end{itemize}
+}
+\end{frame}
+
+\section{Part 2. Where Complexity Lives}
+\begin{frame}[fragile,t]{2.1 - 高階論理における関数}
+\smallskip
+\textbf{HOL の文の概形}~\badgeSketch~{\footnotesize(Isabelle/HOL 風の記法)}
+\begin{lstlisting}[language={},basicstyle=\ttfamily\small]
+f :: 'a => 'b        x :: 'a
+
+P (f x)
+\end{lstlisting}
+\begin{itemize}
+\setlength{\itemsep}{1pt}
+\setlength{\parsep}{0pt}
+\setlength{\parskip}{0pt}
+\item \textcolor{blue!55!black}{\textbf{HOL では、関数型と関数適用が論理そのものの一部です。}}
+\item 関数を引数にする、関数を返す関数、部分適用、ラムダ。すべて直接書けます。
+\item \textcolor{blue!55!black}{\textbf{数学を書く人にとって、これはとても便利です。}}
+\item \textcolor{blue!55!black}{\textbf{しかし E や Vampire は一階の prover です。高階の構造は、prover に見せる前に符号化しなければなりません。}}
+\end{itemize}
+\note{
+\smallskip
+\textbf{Read aloud:}
+\begin{itemize}
+\setlength{\itemsep}{1pt}
+\setlength{\parsep}{0pt}
+\setlength{\parskip}{0pt}
+\item HOL の文の概形.
+\item \textcolor{blue!55!black}{\textbf{HOL では、関数型と関数適用が論理そのものの一部です。}}
+\item 関数を引数にする、関数を返す関数、部分適用、ラムダ。すべて直接書けます。
+\item \textcolor{blue!55!black}{\textbf{数学を書く人にとって、これはとても便利です。}}
+\item \textcolor{blue!55!black}{\textbf{しかし E や Vampire は一階の prover です。高階の構造は、prover に見せる前に符号化しなければなりません。}}
+\end{itemize}
+}
+\end{frame}
+
+\begin{frame}[fragile,t]{2.2 - 代償は ATP との境界で現れる}
+\smallskip
+\textbf{符号化の手順の概形}~\badgeSketch
+\begin{lstlisting}[language={},basicstyle=\ttfamily\footnotesize]
+F X                   ->  app(F, X)
+(%x. t) ...           ->  fresh constant + defining axioms   (lambda lifting)
+polymorphic types     ->  type guards or type tags
+Boolean-valued terms  ->  extra encoding
+\end{lstlisting}
+\begin{itemize}
+\setlength{\itemsep}{1pt}
+\setlength{\parsep}{0pt}
+\setlength{\parskip}{0pt}
+\item \textcolor{blue!55!black}{\textbf{変数である関数の適用は、明示的な \texttt{app} 記号になります。ラムダは外に持ち上げるか、コンビネータにします。型は guard か tag になります。}}
+\item \textcolor{blue!55!black}{\textbf{prover が成功したら、証明を Isabelle に戻さなければなりません。\texttt{metis} の呼び出し、\texttt{smt} の replay、生成した Isar テキスト。この工程が再構成（reconstruction）です。}}
+\item これは優れた工学的成果です。同時に、一階の処理系には不要な層でもあります。
+\item HOL は便利さを先に受け取り、ATP との境界で支払います。
+\end{itemize}
+\note{
+\smallskip
+\textbf{Read aloud:}
+\begin{itemize}
+\setlength{\itemsep}{1pt}
+\setlength{\parsep}{0pt}
+\setlength{\parskip}{0pt}
+\item 符号化の手順の概形.
+\item \textcolor{blue!55!black}{\textbf{変数である関数の適用は、明示的な \texttt{app} 記号になります。ラムダは外に持ち上げるか、コンビネータにします。型は guard か tag になります。}}
+\item \textcolor{blue!55!black}{\textbf{prover が成功したら、証明を Isabelle に戻さなければなりません。\texttt{metis} の呼び出し、\texttt{smt} の replay、生成した Isar テキスト。この工程が再構成（reconstruction）です。}}
+\item これは優れた工学的成果です。同時に、一階の処理系には不要な層でもあります。
+\item HOL は便利さを先に受け取り、ATP との境界で支払います。
+\end{itemize}
+\smallskip
+\textbf{Optional notes and sources:}
+\begin{itemize}
+\setlength{\itemsep}{1pt}
+\setlength{\parsep}{0pt}
+\setlength{\parskip}{0pt}
+\item Source: Meng and Paulson 2008（高階節から一階節への翻訳）; Blanchette, Böhme, Popescu, Smallbone 2016（型の符号化）; Blanchette, Kaliszyk, Paulson, Urban 2016（サーベイ）; Schurr, Fleury, Desharnais 2021（再構成）。
+\item Sledgehammer が実際に使う符号化は prover とオプションで変わる。この枚は概形。
+\end{itemize}
+}
+\end{frame}
+
+\begin{frame}[fragile,t]{2.3 - 集合論における関数: Mizar の基礎}
+\smallskip
+\textbf{関数適用は定義された集合論的関係}~\badgeMML
+\begin{lstlisting}[language={mizar},basicstyle=\ttfamily\small]
+  func f.x -> set means
+  :Def2:
+  [x,it] in f if x in dom f otherwise it = {};
+\end{lstlisting}
+\smallskip
+\textbf{型付き関数は部分関数の上の soft type}~\badgeMML
+\begin{lstlisting}[language={mizar},basicstyle=\ttfamily\small]
+definition
+  let X,Y;
+  mode Function of X,Y is quasi_total PartFunc of X,Y;
+end;
+\end{lstlisting}
+\begin{itemize}
+\setlength{\itemsep}{1pt}
+\setlength{\parsep}{0pt}
+\setlength{\parskip}{0pt}
+\item \textcolor{blue!55!black}{\textbf{ここでは関数は普通の一階の対象、つまり対の集合です。適用は論理に組み込まれているのではなく、定義されています。}}
+\item \textcolor{blue!55!black}{\textbf{基礎の論理に高階である必要はどこにもありません。}}
+\item 代償: 素朴に集合論を書くと、定義域、グラフ、関数性、所属関係がすべて本文に現れます。
+\end{itemize}
+\note{
+\smallskip
+\textbf{Read aloud:}
+\begin{itemize}
+\setlength{\itemsep}{1pt}
+\setlength{\parsep}{0pt}
+\setlength{\parskip}{0pt}
+\item 関数適用は定義された集合論的関係.
+\item 型付き関数は部分関数の上の soft type.
+\item \textcolor{blue!55!black}{\textbf{ここでは関数は普通の一階の対象、つまり対の集合です。適用は論理に組み込まれているのではなく、定義されています。}}
+\item \textcolor{blue!55!black}{\textbf{基礎の論理に高階である必要はどこにもありません。}}
+\item 代償: 素朴に集合論を書くと、定義域、グラフ、関数性、所属関係がすべて本文に現れます。
+\end{itemize}
+\smallskip
+\textbf{Optional notes and sources:}
+\begin{itemize}
+\setlength{\itemsep}{1pt}
+\setlength{\parsep}{0pt}
+\setlength{\parskip}{0pt}
+\item Source: 現行 MML \texttt{funct\_1.miz} 138-140 行（\texttt{FUNCT\_1:def 2}）、\texttt{funct\_2.miz} 87-90 行（2026年10月7日確認）。URL: \url{https://mizar.uwb.edu.pl/version/current/mml/funct\_1.miz}, \url{https://mizar.uwb.edu.pl/version/current/mml/funct\_2.miz}。GPL-3.0-or-later / CC-BY-SA-3.0-or-later。
+\item \texttt{quasi\_total}（FUNCT\_2 の 36-44 行）は、Y が空でなければ定義域が X 全体であることを言う。
+\end{itemize}
+}
+\end{frame}
+
+\begin{frame}[fragile,t]{2.4 - Mizar の50年の答え: 細部を言語に隠す}
+\smallskip
+\textbf{著者が実際に書くもの}~\badgeSketch~{\footnotesize(現行 Mizar と Mizar Evo で有効)}
+\begin{lstlisting}[language={mizar},basicstyle=\ttfamily\small]
+let X, Y be set;
+let f be Function of X, Y;
+let x be Element of X;
+...  f.x  ...
+\end{lstlisting}
+\begin{itemize}
+\setlength{\itemsep}{1pt}
+\setlength{\parsep}{0pt}
+\setlength{\parskip}{0pt}
+\item \textcolor{blue!55!black}{\textbf{同じ集合論的な関数です。しかし著者が書くのは \texttt{Function of X,Y} と \texttt{f.x} であって、対や定義域ではありません。}}
+\item \textcolor{blue!55!black}{\textbf{soft type、mode、attribute、registration、scheme、宣言的証明は、同じものの書きやすい別表記ではありません。一階の集合論を、読める数学へ持ち上げる言語設計です。}}
+\item \textcolor{blue!55!black}{\textbf{Mizar はこの方向に50年歩いてきました。Mizar Evo は歩き続けます。}}
+\end{itemize}
+\note{
+\smallskip
+\textbf{Read aloud:}
+\begin{itemize}
+\setlength{\itemsep}{1pt}
+\setlength{\parsep}{0pt}
+\setlength{\parskip}{0pt}
+\item 著者が実際に書くもの.
+\item \textcolor{blue!55!black}{\textbf{同じ集合論的な関数です。しかし著者が書くのは \texttt{Function of X,Y} と \texttt{f.x} であって、対や定義域ではありません。}}
+\item \textcolor{blue!55!black}{\textbf{soft type、mode、attribute、registration、scheme、宣言的証明は、同じものの書きやすい別表記ではありません。一階の集合論を、読める数学へ持ち上げる言語設計です。}}
+\item \textcolor{blue!55!black}{\textbf{Mizar はこの方向に50年歩いてきました。Mizar Evo は歩き続けます。}}
+\end{itemize}
+}
+\end{frame}
+
+\begin{frame}[fragile,t]{2.5 - どこで払うか}
+\begin{center}
+\includegraphics[width=\textwidth,height=0.34\textheight,keepaspectratio]{figures/where_you_pay.pdf}
+\end{center}
+\begin{center}
+\begin{beamercolorbox}[rounded=true,sep=2.5mm,wd=0.9\textwidth]{keyphrase}
+\centering\itshape \textcolor{blue!55!black}{\textbf{HOL と FOL は複雑さを消してはいない。}}\\ \textcolor{blue!55!black}{\textbf{置く場所が違うだけである。}}
+\end{beamercolorbox}
+\end{center}
+\begin{itemize}
+\setlength{\itemsep}{1pt}
+\setlength{\parsep}{0pt}
+\setlength{\parskip}{0pt}
+\item \textcolor{blue!55!black}{\textbf{HOL は ATP との境界で払う。FOL はキーボードの前で払い、Mizar の言語がその支払いを引き受ける。}}
+\item \textcolor{blue!55!black}{\textbf{Mizar Evo の選択: 基礎の論理は一階のまま保ち、人間向けの複雑さは言語に隠す。}}
+\end{itemize}
+\note{
+\smallskip
+\textbf{Read aloud:}
+\begin{itemize}
+\setlength{\itemsep}{1pt}
+\setlength{\parsep}{0pt}
+\setlength{\parskip}{0pt}
+\item \textcolor{blue!55!black}{\textbf{HOL と FOL は複雑さを消してはいない。}} \textcolor{blue!55!black}{\textbf{置く場所が違うだけである。}}
+\item \textcolor{blue!55!black}{\textbf{HOL は ATP との境界で払う。FOL はキーボードの前で払い、Mizar の言語がその支払いを引き受ける。}}
+\item \textcolor{blue!55!black}{\textbf{Mizar Evo の選択: 基礎の論理は一階のまま保ち、人間向けの複雑さは言語に隠す。}}
+\end{itemize}
+}
+\end{frame}
+
+\begin{frame}[fragile,t]{2.6 - トレードオフを一枚の表で\deepdivetag}
+\begin{scriptsize}
+\setlength{\tabcolsep}{3pt}
+\renewcommand{\arraystretch}{1.15}
+\begin{tabularx}{\textwidth}{>{\raggedright\arraybackslash}X>{\raggedright\arraybackslash}X>{\raggedright\arraybackslash}X}
+\toprule
+\textbf{} & \textbf{HOL ITP + ATP} & \textbf{FOL ITP + ATP} \\
+\midrule
+記述 & 高階の機能、短い本文 & 素朴に書くと長い \\
+関数 & 基本的な高階の対象 & 一階の集合論的対象 \\
+ATP 接続 & 符号化が必要 & 距離が短い \\
+再構成 & 論理のギャップを戻る必要 & 原理的には単純 \\
+言語が提供すべきもの & HOL の抽象 & 一階の細部を隠す抽象 \\
+\bottomrule
+\end{tabularx}
+\end{scriptsize}
+
+\begin{itemize}
+\setlength{\itemsep}{1pt}
+\setlength{\parsep}{0pt}
+\setlength{\parskip}{0pt}
+\item この表は解釈であって、測定ではありません。測定は Mizar Evo が2027年に出すべきものです。
+\end{itemize}
+\note{
+\smallskip
+\textbf{Read aloud:}
+\begin{itemize}
+\setlength{\itemsep}{1pt}
+\setlength{\parsep}{0pt}
+\setlength{\parskip}{0pt}
+\item この表は解釈であって、測定ではありません。測定は Mizar Evo が2027年に出すべきものです。
+\end{itemize}
+}
+\end{frame}
+
+\section{Part 3. Modernizing Mizar's Answer}
+\begin{frame}[fragile,t]{3.1 - 論理は保ち、言語を現代化する}
+\begin{center}
+\begin{beamercolorbox}[rounded=true,sep=2.5mm,wd=0.9\textwidth]{keyphrase}
+\centering\itshape \textcolor{blue!55!black}{\textbf{数学の層は保つ。}}\\ \textcolor{blue!55!black}{\textbf{その下と周りの道具を作り直す。}}
+\end{beamercolorbox}
+\end{center}
+\begin{itemize}
+\setlength{\itemsep}{1pt}
+\setlength{\parsep}{0pt}
+\setlength{\parskip}{0pt}
+\item \textcolor{blue!55!black}{\textbf{Mizar Evo は、一階論理と Tarski-Grothendieck 集合論を基礎の論理として保ちます。}}
+\item soft type、mode、attribute、registration、structure、宣言的証明も保ちます。
+\item \textcolor{blue!55!black}{\textbf{隠れていた選択を明示し、generic な仕組みを統一し、自動化を追跡できるようにし、全体を現代的なコンパイラ構成に載せます。}}
+\item 続く数枚で「言語を現代化する」の中身を示します。template、algorithm、信頼境界、基盤です。
+\end{itemize}
+\note{
+\smallskip
+\textbf{Read aloud:}
+\begin{itemize}
+\setlength{\itemsep}{1pt}
+\setlength{\parsep}{0pt}
+\setlength{\parskip}{0pt}
+\item \textcolor{blue!55!black}{\textbf{数学の層は保つ。}} \textcolor{blue!55!black}{\textbf{その下と周りの道具を作り直す。}}
+\item \textcolor{blue!55!black}{\textbf{Mizar Evo は、一階論理と Tarski-Grothendieck 集合論を基礎の論理として保ちます。}}
+\item soft type、mode、attribute、registration、structure、宣言的証明も保ちます。
+\item \textcolor{blue!55!black}{\textbf{隠れていた選択を明示し、generic な仕組みを統一し、自動化を追跡できるようにし、全体を現代的なコンパイラ構成に載せます。}}
+\item 続く数枚で「言語を現代化する」の中身を示します。template、algorithm、信頼境界、基盤です。
+\end{itemize}
+}
+\end{frame}
+
+\begin{frame}[fragile,t]{3.2 - Template: 高階論理なしの generic な数学}
+\smallskip
+\textbf{\textcolor{blue!55!black}{\textbf{template はパラメータ付きの definition ブロック}}}~\badgeSpec
+\begin{lstlisting}[language={mizar},basicstyle=\ttfamily\small]
+definition
+  let T be type;
+  struct MagmaStr[T] where
+    field carrier -> T;
+    field binop -> BinOp of T;
+  end;
+end;
+\end{lstlisting}
+\begin{itemize}
+\setlength{\itemsep}{1pt}
+\setlength{\parsep}{0pt}
+\setlength{\parskip}{0pt}
+\item \textcolor{blue!55!black}{\textbf{パラメータは型、値、述語、関数子を取れます。古典的な Mizar の scheme は、述語パラメータ付きの定理として同じ仕組みに入ります。}}
+\item \textcolor{blue!55!black}{\textbf{template は論理に無制限の二階量化を追加しません。インスタンス化はそれぞれ検査され、一階の証明義務を生みます。}}
+\item generic な数学は表層言語に住み、基礎の論理には住みません。
+\end{itemize}
+\note{
+\smallskip
+\textbf{Read aloud:}
+\begin{itemize}
+\setlength{\itemsep}{1pt}
+\setlength{\parsep}{0pt}
+\setlength{\parskip}{0pt}
+\item \textcolor{blue!55!black}{\textbf{template はパラメータ付きの definition ブロック}}.
+\item \textcolor{blue!55!black}{\textbf{パラメータは型、値、述語、関数子を取れます。古典的な Mizar の scheme は、述語パラメータ付きの定理として同じ仕組みに入ります。}}
+\item \textcolor{blue!55!black}{\textbf{template は論理に無制限の二階量化を追加しません。インスタンス化はそれぞれ検査され、一階の証明義務を生みます。}}
+\item generic な数学は表層言語に住み、基礎の論理には住みません。
+\end{itemize}
+\smallskip
+\textbf{Optional notes and sources:}
+\begin{itemize}
+\setlength{\itemsep}{1pt}
+\setlength{\parsep}{0pt}
+\setlength{\parskip}{0pt}
+\item Source: \texttt{doc/spec/en/18.templates.md}, sections 18.1-18.2 and 18.8.
+\end{itemize}
+}
+\end{frame}
+
+\begin{frame}[fragile,t]{3.3 - Scheme は普通の template になる\deepdivetag}
+\smallskip
+\textbf{述語パラメータ付き定理としての帰納法}~\badgeSpec
+\begin{lstlisting}[language={mizar},basicstyle=\ttfamily\small]
+definition
+  let P be pred(Nat);
+  theorem NatInduction[P]:
+    P(0) & (for n being Nat st P(n) holds P(n+1))
+    implies for n being Nat holds P(n)
+  proof ... end;
+end;
+\end{lstlisting}
+\begin{itemize}
+\setlength{\itemsep}{1pt}
+\setlength{\parsep}{0pt}
+\setlength{\parskip}{0pt}
+\item 述語パラメータは、代入する述語ごとに一つ、一階の定理の族を与えます。
+\item インスタンス化は明示的です: \texttt{defpred} のあとに \texttt{by NatInduction[P], Base, Step}。
+\item 関数子パラメータは schema レベルの記号であって、集合ではありません。これが論理を一階に保ちます。
+\item 詳細: Bia\l{}ystok 資料 Story 6（\texttt{PermProduct[T]}、\texttt{qua} によるビュー）、および本資料 Backup 4。
+\end{itemize}
+\note{
+\smallskip
+\textbf{Read aloud:}
+\begin{itemize}
+\setlength{\itemsep}{1pt}
+\setlength{\parsep}{0pt}
+\setlength{\parskip}{0pt}
+\item 述語パラメータ付き定理としての帰納法.
+\item 述語パラメータは、代入する述語ごとに一つ、一階の定理の族を与えます。
+\item インスタンス化は明示的です: \texttt{defpred} のあとに \texttt{by NatInduction[P], Base, Step}。
+\item 関数子パラメータは schema レベルの記号であって、集合ではありません。これが論理を一階に保ちます。
+\item 詳細: Bia\l{}ystok 資料 Story 6（\texttt{PermProduct[T]}、\texttt{qua} によるビュー）、および本資料 Backup 4。
+\end{itemize}
+}
+\end{frame}
+
+\begin{frame}[fragile,t]{3.4 - Algorithm は第二の柱}
+\begin{itemize}
+\setlength{\itemsep}{1pt}
+\setlength{\parsep}{0pt}
+\setlength{\parskip}{0pt}
+\item \textcolor{blue!55!black}{\textbf{Mizar Evo の algorithm は、高階関数の代わりではありません。別の必要、つまりアルゴリズムについての推論と、検査できる計算に答えるものです。}}
+\item 歴史的な傾向であって必然ではありません: 一階論理には完全な推論系があり、その周りに resolution から superposition、saturation へと自動探索の文化が育ちました。
+\item LCF と HOL の系統には、プログラムできる証明構成の文化、tactic と tactical が育ちました。
+\item \textcolor{blue!55!black}{\textbf{Mizar は宣言的証明と、処理系に組み込まれた自動化を使ってきました。ユーザがプログラムできる tactic 言語は持ちませんでした。}}
+\item Mizar Evo の algorithm は、上に載せた tactic 言語ではありません。契約を持つ手続きであり、処理系がそれを検証します。
+\end{itemize}
+\note{
+\smallskip
+\textbf{Read aloud:}
+\begin{itemize}
+\setlength{\itemsep}{1pt}
+\setlength{\parsep}{0pt}
+\setlength{\parskip}{0pt}
+\item \textcolor{blue!55!black}{\textbf{Mizar Evo の algorithm は、高階関数の代わりではありません。別の必要、つまりアルゴリズムについての推論と、検査できる計算に答えるものです。}}
+\item 歴史的な傾向であって必然ではありません: 一階論理には完全な推論系があり、その周りに resolution から superposition、saturation へと自動探索の文化が育ちました。
+\item LCF と HOL の系統には、プログラムできる証明構成の文化、tactic と tactical が育ちました。
+\item \textcolor{blue!55!black}{\textbf{Mizar は宣言的証明と、処理系に組み込まれた自動化を使ってきました。ユーザがプログラムできる tactic 言語は持ちませんでした。}}
+\item Mizar Evo の algorithm は、上に載せた tactic 言語ではありません。契約を持つ手続きであり、処理系がそれを検証します。
+\end{itemize}
+}
+\end{frame}
+
+\begin{frame}[fragile,t]{3.5 - Algorithm: 契約、証明、計算}
+\smallskip
+\textbf{\textcolor{blue!55!black}{\textbf{契約付きのユークリッドの互除法}}}~\badgeSpec
+\begin{lstlisting}[language={mizar},basicstyle=\ttfamily\footnotesize]
+terminating algorithm euclid_gcd(a, b) -> Nat
+  requires a >= 1 & b >= 1
+  ensures result = Gcd(a, b)
+do
+  var x := a;  var y := b;
+  while y <> 0 do
+    invariant x >= 1 & y >= 0 & Gcd(a, b) = Gcd(x, y);  decreasing y;
+    const r := x mod y;  x := y;  y := r;
+  end;
+  return x;
+end;
+\end{lstlisting}
+\begin{itemize}
+\setlength{\itemsep}{1pt}
+\setlength{\parsep}{0pt}
+\setlength{\parskip}{0pt}
+\item \textcolor{blue!55!black}{\textbf{契約、不変条件、停止性の測度は一階の証明義務になり、定理と同じように検査されます。}}
+\item \textcolor{blue!55!black}{\textbf{役割は二つ。検証された自動化手続きと、\texttt{by computation} で実行する検査済みの計算。状態: 仕様化済み。MVM による実行とコード抽出は後の作業です。}}
+\end{itemize}
+\note{
+\smallskip
+\textbf{Read aloud:}
+\begin{itemize}
+\setlength{\itemsep}{1pt}
+\setlength{\parsep}{0pt}
+\setlength{\parskip}{0pt}
+\item \textcolor{blue!55!black}{\textbf{契約付きのユークリッドの互除法}}.
+\item \textcolor{blue!55!black}{\textbf{契約、不変条件、停止性の測度は一階の証明義務になり、定理と同じように検査されます。}}
+\item \textcolor{blue!55!black}{\textbf{役割は二つ。検証された自動化手続きと、\texttt{by computation} で実行する検査済みの計算。状態: 仕様化済み。MVM による実行とコード抽出は後の作業です。}}
+\end{itemize}
+\smallskip
+\textbf{Optional notes and sources:}
+\begin{itemize}
+\setlength{\itemsep}{1pt}
+\setlength{\parsep}{0pt}
+\setlength{\parskip}{0pt}
+\item Source: \texttt{doc/spec/en/20.algorithm\_and\_verification.md}, section 20.12（外側の \texttt{definition} ブロックと \texttt{let a, b be Nat;} を省略）。
+\end{itemize}
+}
+\end{frame}
+
+\begin{frame}[fragile,t]{3.6 - Algorithm の将来の対象\deepdivetag}
+\smallskip
+\textbf{将来構想であり、現在の能力ではない:}
+\begin{itemize}
+\setlength{\itemsep}{1pt}
+\setlength{\parsep}{0pt}
+\setlength{\parskip}{0pt}
+\item 整数論・組合せ論のアルゴリズム、記号計算、最適化手続き。
+\item さらに先: 暗号アルゴリズムとプロトコル、量子アルゴリズムと古典・量子ハイブリッド。
+\end{itemize}
+\smallskip
+\textbf{すべてに共通する一つの流れ:}
+\begin{enumerate}
+\setlength{\itemsep}{1pt}
+\setlength{\parsep}{0pt}
+\setlength{\parskip}{0pt}
+\item 手続きを書く。2. 契約を述べる。3. 不変条件と停止性を与える。4. 証明義務を生成する。5. ATP で証明し kernel で検査する。6. 具体的な入力で実行する。7. 将来はコードを抽出する。
+\end{enumerate}
+\begin{itemize}
+\setlength{\itemsep}{1pt}
+\setlength{\parsep}{0pt}
+\setlength{\parskip}{0pt}
+\item \textcolor{blue!55!black}{\textbf{algorithm は tactic と応用アルゴリズムの間のギャップを小さくします。上の対象は将来構想です。}}
+\end{itemize}
+\note{
+\smallskip
+\textbf{Read aloud:}
+\begin{itemize}
+\setlength{\itemsep}{1pt}
+\setlength{\parsep}{0pt}
+\setlength{\parskip}{0pt}
+\item 整数論・組合せ論のアルゴリズム、記号計算、最適化手続き。
+\item さらに先: 暗号アルゴリズムとプロトコル、量子アルゴリズムと古典・量子ハイブリッド。
+\item 手続きを書く。2. 契約を述べる。3. 不変条件と停止性を与える。4. 証明義務を生成する。5. ATP で証明し kernel で検査する。6. 具体的な入力で実行する。7. 将来はコードを抽出する。
+\item \textcolor{blue!55!black}{\textbf{algorithm は tactic と応用アルゴリズムの間のギャップを小さくします。上の対象は将来構想です。}}
+\end{itemize}
+}
+\end{frame}
+
+\begin{frame}[fragile,t]{3.7 - 探索は外、信頼は内}
+\begin{center}
+\includegraphics[width=\textwidth,height=0.5\textheight,keepaspectratio]{../2026-09-bialystok/figures/reasoning_boundary.pdf}
+\end{center}
+\begin{itemize}
+\setlength{\itemsep}{1pt}
+\setlength{\parsep}{0pt}
+\setlength{\parskip}{0pt}
+\item \textcolor{blue!55!black}{\textbf{一階 ATP は強力な探索器です。信頼できる検査器ではありません。}}
+\item \textcolor{blue!55!black}{\textbf{Mizar 側が名前、型、cluster、オーバーロードを受け持ちます。prover は探索を受け持ちます。kernel は受理を受け持ち、渡された論理式と代入を、小さく信頼できる SAT 検査で確かめます。}}
+\item prover の終了コードは証明ではありません。だから一階の自動化を設計原理にしても、信頼基盤は大きくなりません。
+\end{itemize}
+\note{
+\smallskip
+\textbf{Read aloud:}
+\begin{itemize}
+\setlength{\itemsep}{1pt}
+\setlength{\parsep}{0pt}
+\setlength{\parskip}{0pt}
+\item \textcolor{blue!55!black}{\textbf{一階 ATP は強力な探索器です。信頼できる検査器ではありません。}}
+\item \textcolor{blue!55!black}{\textbf{Mizar 側が名前、型、cluster、オーバーロードを受け持ちます。prover は探索を受け持ちます。kernel は受理を受け持ち、渡された論理式と代入を、小さく信頼できる SAT 検査で確かめます。}}
+\item prover の終了コードは証明ではありません。だから一階の自動化を設計原理にしても、信頼基盤は大きくなりません。
+\end{itemize}
+\smallskip
+\textbf{Optional notes and sources:}
+\begin{itemize}
+\setlength{\itemsep}{1pt}
+\setlength{\parsep}{0pt}
+\setlength{\parskip}{0pt}
+\item Source: \texttt{doc/design/architecture/en/08.reasoning\_boundary.md}; Bia\l{}ystok 資料 Story 4; 本資料 Backup 5 に evidence の中身。
+\end{itemize}
+}
+\end{frame}
+
+\begin{frame}[fragile,t]{3.8 - そして Mizar 自身も50年経っている}
+\begin{footnotesize}
+\setlength{\tabcolsep}{3pt}
+\renewcommand{\arraystretch}{1.15}
+\begin{tabularx}{\textwidth}{>{\raggedright\arraybackslash}X>{\raggedright\arraybackslash}X}
+\toprule
+\textbf{MML 50年で見えたこと} & \textbf{Mizar Evo} \\
+\midrule
+article が依存の単位 & 明示的 import を持つモジュール \\
+グローバルな名前管理 & namespace、完全修飾名 \\
+配布とバージョン管理が弱い & package、SemVer、lock file \\
+フルビルド & 依存指紋による差分ビルド \\
+ATP は外付け、自動化が見えにくい & 第一級の ATP パイプライン、解決トレース、kernel evidence \\
+IDE 連携と機械可読な入出力が弱い & LSP、構造化診断、エージェント向けインタフェース \\
+\bottomrule
+\end{tabularx}
+\end{footnotesize}
+
+\begin{itemize}
+\setlength{\itemsep}{1pt}
+\setlength{\parsep}{0pt}
+\setlength{\parskip}{0pt}
+\item \textcolor{blue!55!black}{\textbf{Mizar の数学的な考え方を保つことと、1970年代のソフトウェア構成を保つことは、別のことです。}}
+\item \textcolor{blue!55!black}{\textbf{もちろん開発基盤全体も現代化します。詳細は Bia\l{}ystok 資料にあります。ここでは一枚の表で十分です。}}
+\end{itemize}
+\note{
+\smallskip
+\textbf{Read aloud:}
+\begin{itemize}
+\setlength{\itemsep}{1pt}
+\setlength{\parsep}{0pt}
+\setlength{\parskip}{0pt}
+\item \textcolor{blue!55!black}{\textbf{Mizar の数学的な考え方を保つことと、1970年代のソフトウェア構成を保つことは、別のことです。}}
+\item \textcolor{blue!55!black}{\textbf{もちろん開発基盤全体も現代化します。詳細は Bia\l{}ystok 資料にあります。ここでは一枚の表で十分です。}}
+\end{itemize}
+\smallskip
+\textbf{Optional notes and sources:}
+\begin{itemize}
+\setlength{\itemsep}{1pt}
+\setlength{\parsep}{0pt}
+\setlength{\parskip}{0pt}
+\item 批判ではない。50年前には一般的でなかったソフトウェア工学を、形式数学の環境に持ち込む話。
+\item 詳細: Bia\l{}ystok 資料 Story 1, 3, 5, 8; 本資料 Backup 6-8。
+\end{itemize}
+}
+\end{frame}
+
+\section{Part 4. The AI Era}
+\begin{frame}[fragile,t]{4.1 - 全体像}
+\begin{center}
+\includegraphics[width=\textwidth,height=0.57\textheight,keepaspectratio]{figures/layer_stack.pdf}
+\end{center}
+\begin{center}
+\begin{beamercolorbox}[rounded=true,sep=2.5mm,wd=0.9\textwidth]{keyphrase}
+\centering\itshape \textcolor{blue!55!black}{\textbf{上に豊かな数学。下に小さな一階論理。}}\\ \textcolor{blue!55!black}{\textbf{周りに現代的な基盤。}}
+\end{beamercolorbox}
+\end{center}
+\note{
+\smallskip
+\textbf{Read aloud:}
+\begin{itemize}
+\setlength{\itemsep}{1pt}
+\setlength{\parsep}{0pt}
+\setlength{\parskip}{0pt}
+\item \textcolor{blue!55!black}{\textbf{上に豊かな数学。下に小さな一階論理。}} \textcolor{blue!55!black}{\textbf{周りに現代的な基盤。}}
+\end{itemize}
+}
+\end{frame}
+
+\begin{frame}[fragile,t]{4.2 - LLM が考え、ATP が証明し、Mizar Evo が記憶し検証する}
+\begin{center}
+\includegraphics[width=\textwidth,height=0.36\textheight,keepaspectratio]{figures/llm_atp_loop.pdf}
+\end{center}
+\begin{itemize}
+\setlength{\itemsep}{1pt}
+\setlength{\parsep}{0pt}
+\setlength{\parskip}{0pt}
+\item \textcolor{blue!55!black}{\textbf{LLM: 理論、定義、方針、補題、失敗からの回復。ATP: 安価で反復できる一階の探索。Mizar Evo: 表現、検証済みライブラリ、信頼できる検査、各事実の来歴。}}
+\item 研究仮説: 機械が大量の数学を生成する時代には、ATP による安価な検査の価値が上がる。このループの費用と効果はまだ測られていません。
+\item 現在の仕様: ATP が受け取るのは引用された前提と局所仮定だけです。ライブラリ全体を使うハンマーは2027年の研究です。
+\end{itemize}
+\note{
+\smallskip
+\textbf{Read aloud:}
+\begin{itemize}
+\setlength{\itemsep}{1pt}
+\setlength{\parsep}{0pt}
+\setlength{\parskip}{0pt}
+\item \textcolor{blue!55!black}{\textbf{LLM: 理論、定義、方針、補題、失敗からの回復。ATP: 安価で反復できる一階の探索。Mizar Evo: 表現、検証済みライブラリ、信頼できる検査、各事実の来歴。}}
+\item 研究仮説: 機械が大量の数学を生成する時代には、ATP による安価な検査の価値が上がる。このループの費用と効果はまだ測られていません。
+\item 現在の仕様: ATP が受け取るのは引用された前提と局所仮定だけです。ライブラリ全体を使うハンマーは2027年の研究です。
+\end{itemize}
+\smallskip
+\textbf{Optional notes and sources:}
+\begin{itemize}
+\setlength{\itemsep}{1pt}
+\setlength{\parsep}{0pt}
+\setlength{\parskip}{0pt}
+\item Source: \texttt{doc/spec/en/21.source\_code\_annotation\_and\_atp.md}, section 21.7.2, item 4（グローバルライブラリからの自動前提選択は無し）; \texttt{doc/design/architecture/en/21.ai\_agent\_interface.md}（編集クラス）。
+\end{itemize}
+}
+\end{frame}
+
+\begin{frame}[fragile,t]{4.3 - プロジェクトの現在地（2026年10月）}
+\begin{itemize}
+\setlength{\itemsep}{1pt}
+\setlength{\parsep}{0pt}
+\setlength{\parskip}{0pt}
+\item \textcolor{blue!55!black}{\textbf{仕様: 24章と付録。英語が正典。}}
+\item \textcolor{blue!55!black}{\textbf{main branch に実装済み: Rust フロントエンド（字句解析、構文解析、構文木）。alpha コーパス上の名前解決と型検査。証明義務の生成と決定的な discharge。ATP 問題の符号化と候補 evidence。SAT に基づく kernel の evidence 検査。キャッシュ、指紋、ビルドスケジューリングの各マイルストーン。}}
+\item \textcolor{blue!55!black}{\textbf{進行中: ソースから検証済み成果物までの end-to-end 統合。LSP サーバ。ドキュメント生成。}}
+\item \textcolor{blue!55!black}{\textbf{後の作業: MVM の実行、コード抽出、ライブラリ全体の前提選択、MML の移行。}}
+\item この講演では、外部 prover を使った end-to-end の結果は主張しません。
+\end{itemize}
+\note{
+\smallskip
+\textbf{Read aloud:}
+\begin{itemize}
+\setlength{\itemsep}{1pt}
+\setlength{\parsep}{0pt}
+\setlength{\parskip}{0pt}
+\item \textcolor{blue!55!black}{\textbf{仕様: 24章と付録。英語が正典。}}
+\item \textcolor{blue!55!black}{\textbf{main branch に実装済み: Rust フロントエンド（字句解析、構文解析、構文木）。alpha コーパス上の名前解決と型検査。証明義務の生成と決定的な discharge。ATP 問題の符号化と候補 evidence。SAT に基づく kernel の evidence 検査。キャッシュ、指紋、ビルドスケジューリングの各マイルストーン。}}
+\item \textcolor{blue!55!black}{\textbf{進行中: ソースから検証済み成果物までの end-to-end 統合。LSP サーバ。ドキュメント生成。}}
+\item \textcolor{blue!55!black}{\textbf{後の作業: MVM の実行、コード抽出、ライブラリ全体の前提選択、MML の移行。}}
+\item この講演では、外部 prover を使った end-to-end の結果は主張しません。
+\end{itemize}
+\smallskip
+\textbf{Optional notes and sources:}
+\begin{itemize}
+\setlength{\itemsep}{1pt}
+\setlength{\parsep}{0pt}
+\setlength{\parskip}{0pt}
+\item Source: \texttt{doc/design/todo.md}, Crate Status（2026年10月7日時点）。講演前に再確認。
+\end{itemize}
+}
+\end{frame}
+
+\section{Part 5. Roadmap And Closing}
+\begin{frame}[fragile,t]{5.1 - ロードマップ}
+\begin{center}
+\includegraphics[width=\textwidth,height=0.44\textheight,keepaspectratio]{figures/roadmap_tpp.pdf}
+\end{center}
+\begin{itemize}
+\setlength{\itemsep}{1pt}
+\setlength{\parsep}{0pt}
+\setlength{\parskip}{0pt}
+\item \textcolor{blue!55!black}{\textbf{2026年: 仕様、kernel までの Rust パイプライン、template 処理、alpha の end-to-end 実行を仕上げる。}}
+\item \textcolor{blue!55!black}{\textbf{2027年: 代表的な MML article を移行し、native hammer のベースラインを作り、MizAR と同じ単位、top-level theorem でベンチマークする。}}
+\item 2028年以降: 移行の拡大、学習ベースの前提選択、LLM による失敗回復、MVM と抽出。暗号と量子は将来構想のまま。
+\end{itemize}
+\note{
+\smallskip
+\textbf{Read aloud:}
+\begin{itemize}
+\setlength{\itemsep}{1pt}
+\setlength{\parsep}{0pt}
+\setlength{\parskip}{0pt}
+\item \textcolor{blue!55!black}{\textbf{2026年: 仕様、kernel までの Rust パイプライン、template 処理、alpha の end-to-end 実行を仕上げる。}}
+\item \textcolor{blue!55!black}{\textbf{2027年: 代表的な MML article を移行し、native hammer のベースラインを作り、MizAR と同じ単位、top-level theorem でベンチマークする。}}
+\item 2028年以降: 移行の拡大、学習ベースの前提選択、LLM による失敗回復、MVM と抽出。暗号と量子は将来構想のまま。
+\end{itemize}
+}
+\end{frame}
+
+\begin{frame}[fragile,t]{5.2 - 二つの経路に戻る}
+\begin{center}
+\begin{beamercolorbox}[rounded=true,sep=2.5mm,wd=0.9\textwidth]{keyphrase}
+\centering\itshape \textcolor{blue!55!black}{\textbf{問いは、高階の処理系が一階 ATP を使えるか、ではない。}}\\ \textcolor{blue!55!black}{\textbf{明らかに使える。}}\\ \textcolor{blue!55!black}{\textbf{問いは、一階の自動推論を最初から設計原理にしたとき、}}\\ \textcolor{blue!55!black}{\textbf{何が可能になるか、である。}}
+\end{beamercolorbox}
+\end{center}
+\smallskip
+\textbf{Mizar Evo の答え、六つ:}
+\begin{enumerate}
+\setlength{\itemsep}{1pt}
+\setlength{\parsep}{0pt}
+\setlength{\parskip}{0pt}
+\item 一階論理と集合論を基礎の論理として残す。
+\item Mizar の言語設計で一階の細部を隠す。
+\item template で generic な数学を広げる。
+\item algorithm で検査できる計算を加える。
+\item 50年分のソフトウェア基盤を作り直す。
+\item LLM と ATP を、それぞれが強い場所で組み合わせる。
+\end{enumerate}
+\note{
+\smallskip
+\textbf{Read aloud:}
+\begin{itemize}
+\setlength{\itemsep}{1pt}
+\setlength{\parsep}{0pt}
+\setlength{\parskip}{0pt}
+\item \textcolor{blue!55!black}{\textbf{問いは、高階の処理系が一階 ATP を使えるか、ではない。}} \textcolor{blue!55!black}{\textbf{明らかに使える。}} \textcolor{blue!55!black}{\textbf{問いは、一階の自動推論を最初から設計原理にしたとき、}} \textcolor{blue!55!black}{\textbf{何が可能になるか、である。}}
+\item 一階論理と集合論を基礎の論理として残す。
+\item Mizar の言語設計で一階の細部を隠す。
+\item template で generic な数学を広げる。
+\item algorithm で検査できる計算を加える。
+\item 50年分のソフトウェア基盤を作り直す。
+\item LLM と ATP を、それぞれが強い場所で組み合わせる。
+\end{itemize}
+}
+\end{frame}
+
+\begin{frame}[fragile,t]{5.3 - おわりに}
+\begin{center}
+\begin{beamercolorbox}[rounded=true,sep=2.5mm,wd=0.9\textwidth]{keyphrase}
+\centering\itshape \textcolor{blue!55!black}{\textbf{Keep the foundation small.}}\\ \textcolor{blue!55!black}{\textbf{Keep the mathematics readable.}}\\ \textcolor{blue!55!black}{\textbf{Modernize everything else.}}
+\end{beamercolorbox}
+\end{center}
+\begin{itemize}
+\setlength{\itemsep}{1pt}
+\setlength{\parsep}{0pt}
+\setlength{\parskip}{0pt}
+\item \textcolor{blue!55!black}{\textbf{基盤は小さく。数学は読めるように。それ以外はすべて現代化する。}}
+\item \textcolor{blue!55!black}{\textbf{ありがとうございました。特に、2027年のベンチマークを「同じものを同じ単位で比べる」設計にする方法について、ご意見をいただければ幸いです。}}
+\end{itemize}
+\note{
+\smallskip
+\textbf{Read aloud:}
+\begin{itemize}
+\setlength{\itemsep}{1pt}
+\setlength{\parsep}{0pt}
+\setlength{\parskip}{0pt}
+\item \textcolor{blue!55!black}{\textbf{Keep the foundation small.}} \textcolor{blue!55!black}{\textbf{Keep the mathematics readable.}} \textcolor{blue!55!black}{\textbf{Modernize everything else.}}
+\item \textcolor{blue!55!black}{\textbf{基盤は小さく。数学は読めるように。それ以外はすべて現代化する。}}
+\item \textcolor{blue!55!black}{\textbf{ありがとうございました。特に、2027年のベンチマークを「同じものを同じ単位で比べる」設計にする方法について、ご意見をいただければ幸いです。}}
+\end{itemize}
+}
+\end{frame}
+
+\appendix
+\section{Backup 1. MizAR 60 の詳細}
+\begin{frame}[fragile,t]{Backup 1. MizAR 60 の詳細}
+Source: Jakubův, Chvalovský, Goertzel, Kaliszyk, Olšák, Piotrowski, Schulz, Suda, Urban, MizAR 60 for Mizar 50, ITP 2023.
+
+\begin{itemize}
+\setlength{\itemsep}{1pt}
+\setlength{\parsep}{0pt}
+\setlength{\parskip}{0pt}
+\item データ: MPTP で出力した MML 1147、無名の top-level lemma を含む 57,897 件の定理。MizAR 40 の評価と同じ版なので比較できる。
+\item top-level lemma の 58.4\% を large-theory（hammering）mode で、ユーザの助けなしに、CPU 時間 420 秒に制限したポートフォリオで証明（MizAR 40 は約 40.6\%）。
+\item 人または機械がライブラリから前提を選べる条件では 75\% 超（MizAR 40 は 56\%）。
+\item 最強の単一手法: hammering mode で 30 秒 40\%。人間の前提ありで 120 秒 60\%。
+\item 転移: 最強手法は MML 1382 の新規 242 article、13,370 定理でも動く。
+\item 手法: ENIGMA と Deepire で誘導した E と Vampire、学習ベースの前提選択、数百万の ATP 証明で学習するループ。
+\end{itemize}
+\note{
+\smallskip
+\textbf{Read aloud:}
+\begin{itemize}
+\setlength{\itemsep}{1pt}
+\setlength{\parsep}{0pt}
+\setlength{\parskip}{0pt}
+\item データ: MPTP で出力した MML 1147、無名の top-level lemma を含む 57,897 件の定理。MizAR 40 の評価と同じ版なので比較できる。
+\item top-level lemma の 58.4\% を large-theory（hammering）mode で、ユーザの助けなしに、CPU 時間 420 秒に制限したポートフォリオで証明（MizAR 40 は約 40.6\%）。
+\item 人または機械がライブラリから前提を選べる条件では 75\% 超（MizAR 40 は 56\%）。
+\item 最強の単一手法: hammering mode で 30 秒 40\%。人間の前提ありで 120 秒 60\%。
+\item 転移: 最強手法は MML 1382 の新規 242 article、13,370 定理でも動く。
+\item 手法: ENIGMA と Deepire で誘導した E と Vampire、学習ベースの前提選択、数百万の ATP 証明で学習するループ。
+\end{itemize}
+\smallskip
+\textbf{Optional notes and sources:}
+\begin{itemize}
+\setlength{\itemsep}{1pt}
+\setlength{\parsep}{0pt}
+\setlength{\parskip}{0pt}
+\item Source: Jakubův, Chvalovský, Goertzel, Kaliszyk, Olšák, Piotrowski, Schulz, Suda, Urban, MizAR 60 for Mizar 50, ITP 2023.
+\end{itemize}
+}
+\end{frame}
+
+\section{Backup 2. Sledgehammer 評価の詳細}
+\begin{frame}[fragile,t]{Backup 2. Sledgehammer 評価の詳細}
+\begin{footnotesize}
+\setlength{\tabcolsep}{3pt}
+\renewcommand{\arraystretch}{1.15}
+\begin{tabularx}{\textwidth}{>{\raggedright\arraybackslash}X>{\raggedright\arraybackslash}X}
+\toprule
+\textbf{Prover} & \textbf{One-line / + Isar / + Oracle（6,934 goal に対する \%）} \\
+\midrule
+E & 49.7 / 51.4 / 52.5 \\
+SPASS & 49.4 / 50.5 / 52.0 \\
+Vampire & 49.5 / 51.0 / 51.8 \\
+Z3 & 49.6 / 50.0 / 53.7 \\
+\bottomrule
+\end{tabularx}
+\end{footnotesize}
+
+\begin{itemize}
+\setlength{\itemsep}{1pt}
+\setlength{\parsep}{0pt}
+\setlength{\parskip}{0pt}
+\item 設定: ランダムに選んだ AFP の 128 theory、各 100 goal まで。Isabelle2014。MePo フィルタ。各 prover 30 秒をスライスに分割。再構成は 2 秒以内に成功する必要。
+\item 組み合わせて oracle として信頼すると、goal の 60.7\% を証明。
+\item Judgement Day（2010）: 7 theory の 1,240 subgoal、E・SPASS・Vampire を 30 秒で 46\%。2015年の予備評価では 6 prover で 75\%。
+\item theory ごとの成功率は 10\% から 100\% までばらつく。Sledgehammer は Judgement Day に合わせて調整されてきた。
+\end{itemize}
+\note{
+\smallskip
+\textbf{Read aloud:}
+\begin{itemize}
+\setlength{\itemsep}{1pt}
+\setlength{\parsep}{0pt}
+\setlength{\parskip}{0pt}
+\item 設定: ランダムに選んだ AFP の 128 theory、各 100 goal まで。Isabelle2014。MePo フィルタ。各 prover 30 秒をスライスに分割。再構成は 2 秒以内に成功する必要。
+\item 組み合わせて oracle として信頼すると、goal の 60.7\% を証明。
+\item Judgement Day（2010）: 7 theory の 1,240 subgoal、E・SPASS・Vampire を 30 秒で 46\%。2015年の予備評価では 6 prover で 75\%。
+\item theory ごとの成功率は 10\% から 100\% までばらつく。Sledgehammer は Judgement Day に合わせて調整されてきた。
+\end{itemize}
+\smallskip
+\textbf{Optional notes and sources:}
+\begin{itemize}
+\setlength{\itemsep}{1pt}
+\setlength{\parsep}{0pt}
+\setlength{\parskip}{0pt}
+\item Source: Blanchette, Haslbeck, Matichuk, Nipkow, Mining the Archive of Formal Proofs, CICM 2015, Section "Proof Automation with Sledgehammer", Figure 13; Böhme and Nipkow, IJCAR 2010.
+\end{itemize}
+}
+\end{frame}
+
+\section{Backup 3. HOL から FOL への符号化と再構成}
+\begin{frame}[fragile,t]{Backup 3. HOL から FOL への符号化と再構成}
+\begin{itemize}
+\setlength{\itemsep}{1pt}
+\setlength{\parsep}{0pt}
+\setlength{\parskip}{0pt}
+\item 関数適用: 変数である関数を引数に適用すると \texttt{app(F, X)} になる。定数の適用はカリー化のままか平坦化。
+\item ラムダ抽象: lambda lifting は定義式付きの新しい定数を導入する。コンビネータ変換が代替。
+\item 型: 多相な HOL の型は guard、tag、または単相化で符号化する。選択は健全性、完全性、prover の性能に影響する。
+\item 真偽値: 論理式の中の真偽値を取る項には別の符号化が必要。
+\item 再構成: 使われた補題による \texttt{metis}、SMT 証明の \texttt{smt} replay、生成した Isar テキスト。評価では再構成の失敗を別に数える。
+\end{itemize}
+Source: Meng and Paulson 2008; Blanchette, Böhme, Popescu, Smallbone 2016; Blanchette, Kaliszyk, Paulson, Urban 2016; Schurr, Fleury, Desharnais 2021.
+
+\note{
+\smallskip
+\textbf{Read aloud:}
+\begin{itemize}
+\setlength{\itemsep}{1pt}
+\setlength{\parsep}{0pt}
+\setlength{\parskip}{0pt}
+\item 関数適用: 変数である関数を引数に適用すると \texttt{app(F, X)} になる。定数の適用はカリー化のままか平坦化。
+\item ラムダ抽象: lambda lifting は定義式付きの新しい定数を導入する。コンビネータ変換が代替。
+\item 型: 多相な HOL の型は guard、tag、または単相化で符号化する。選択は健全性、完全性、prover の性能に影響する。
+\item 真偽値: 論理式の中の真偽値を取る項には別の符号化が必要。
+\item 再構成: 使われた補題による \texttt{metis}、SMT 証明の \texttt{smt} replay、生成した Isar テキスト。評価では再構成の失敗を別に数える。
+\end{itemize}
+\smallskip
+\textbf{Optional notes and sources:}
+\begin{itemize}
+\setlength{\itemsep}{1pt}
+\setlength{\parsep}{0pt}
+\setlength{\parskip}{0pt}
+\item Source: Meng and Paulson 2008; Blanchette, Böhme, Popescu, Smallbone 2016; Blanchette, Kaliszyk, Paulson, Urban 2016; Schurr, Fleury, Desharnais 2021.
+\end{itemize}
+}
+\end{frame}
+
+\section{Backup 4. Template のインスタンス化: 一つの証明、多くのビュー}
+\begin{frame}[fragile,t]{Backup 4. Template のインスタンス化: 一つの証明、多くのビュー}
+\smallskip
+\textbf{有界な型パラメータと generic な定理}~\badgeSpec~{\footnotesize(証明は省略)}
+\begin{lstlisting}[language={mizar},basicstyle=\ttfamily\footnotesize]
+definition
+  let T be type extends commutative associative unital Magma;
+  theorem PermProduct[T]:
+    for s being FinSequence of T,
+        p being Permutation of dom s
+    holds Product[T](s) = Product[T](s * p)
+  proof ... end;
+end;
+\end{lstlisting}
+\smallskip
+\textbf{インスタンス化}~\badgeSpec~{\footnotesize(必要な registration がある前提)}
+\begin{lstlisting}[language={mizar},basicstyle=\ttfamily\small]
+PermProduct[commutative associative unital AddMagma]
+PermProduct[commutative associative unital MulMagma]
+let R be commutative Ring;  PermProduct[R qua AddMagma]  :: additive view
+\end{lstlisting}
+\begin{itemize}
+\setlength{\itemsep}{1pt}
+\setlength{\parsep}{0pt}
+\setlength{\parskip}{0pt}
+\item 環は二つの経路で Magma に届く。\texttt{qua} がビューを選び、ビューが記法も決める。
+\end{itemize}
+\note{
+\smallskip
+\textbf{Read aloud:}
+\begin{itemize}
+\setlength{\itemsep}{1pt}
+\setlength{\parsep}{0pt}
+\setlength{\parskip}{0pt}
+\item 有界な型パラメータと generic な定理.
+\item インスタンス化.
+\item 環は二つの経路で Magma に届く。\texttt{qua} がビューを選び、ビューが記法も決める。
+\end{itemize}
+\smallskip
+\textbf{Optional notes and sources:}
+\begin{itemize}
+\setlength{\itemsep}{1pt}
+\setlength{\parsep}{0pt}
+\setlength{\parskip}{0pt}
+\item Source: \texttt{doc/spec/en/18.templates.md}, section 18.2.2.
+\end{itemize}
+}
+\end{frame}
+
+\section{Backup 5. Kernel evidence と信頼できる SAT 検査}
+\begin{frame}[fragile,t]{Backup 5. Kernel evidence と信頼できる SAT 検査}
+\begin{center}
+\includegraphics[width=\textwidth,height=0.52\textheight,keepaspectratio]{../2026-09-bialystok/figures/certificate_replay.pdf}
+\end{center}
+\begin{itemize}
+\setlength{\itemsep}{1pt}
+\setlength{\parsep}{0pt}
+\setlength{\parskip}{0pt}
+\item evidence は元の論理式、明示的な代入、来歴、対象と goal の束縛を持つ。kernel はそれらを検査し、決定的な SAT 問題を作り、信頼できるプロセス内 SAT 検査器に UNSAT を要求する。
+\item バックエンドの証明トレース、SMT の証明オブジェクト、ログ、終了コードは診断用のみ。
+\end{itemize}
+\note{
+\smallskip
+\textbf{Read aloud:}
+\begin{itemize}
+\setlength{\itemsep}{1pt}
+\setlength{\parsep}{0pt}
+\setlength{\parskip}{0pt}
+\item evidence は元の論理式、明示的な代入、来歴、対象と goal の束縛を持つ。kernel はそれらを検査し、決定的な SAT 問題を作り、信頼できるプロセス内 SAT 検査器に UNSAT を要求する。
+\item バックエンドの証明トレース、SMT の証明オブジェクト、ログ、終了コードは診断用のみ。
+\end{itemize}
+\smallskip
+\textbf{Optional notes and sources:}
+\begin{itemize}
+\setlength{\itemsep}{1pt}
+\setlength{\parsep}{0pt}
+\setlength{\parskip}{0pt}
+\item Source: \texttt{doc/design/architecture/en/08.reasoning\_boundary.md}, \texttt{15.kernel\_certificate\_format.md}.
+\end{itemize}
+}
+\end{frame}
+
+\section{Backup 6. ATP の中心経路}
+\begin{frame}[fragile,t]{Backup 6. ATP の中心経路}
+\begin{center}
+\includegraphics[width=\textwidth,height=0.52\textheight,keepaspectratio]{../2026-09-bialystok/figures/pipeline.pdf}
+\end{center}
+\begin{itemize}
+\setlength{\itemsep}{1pt}
+\setlength{\parsep}{0pt}
+\setlength{\parskip}{0pt}
+\item 決定的な discharge のあとも開いている義務だけが ATP に行く。前段の discharge にも再生できる evidence が要る。
+\item 各境界は、誰が事実を所有し、どの成果物が記録し、変更後に何を再検査するかを定める。
+\end{itemize}
+\note{
+\smallskip
+\textbf{Read aloud:}
+\begin{itemize}
+\setlength{\itemsep}{1pt}
+\setlength{\parsep}{0pt}
+\setlength{\parskip}{0pt}
+\item 決定的な discharge のあとも開いている義務だけが ATP に行く。前段の discharge にも再生できる evidence が要る。
+\item 各境界は、誰が事実を所有し、どの成果物が記録し、変更後に何を再検査するかを定める。
+\end{itemize}
+\smallskip
+\textbf{Optional notes and sources:}
+\begin{itemize}
+\setlength{\itemsep}{1pt}
+\setlength{\parsep}{0pt}
+\setlength{\parskip}{0pt}
+\item Source: \texttt{doc/design/architecture/en/00.pipeline\_overview.md}; Bia\l{}ystok 資料 Part 10。
+\end{itemize}
+}
+\end{frame}
+
+\section{Backup 7. 差分検証}
+\begin{frame}[fragile,t]{Backup 7. 差分検証}
+\begin{center}
+\includegraphics[width=\textwidth,height=0.52\textheight,keepaspectratio]{../2026-09-bialystok/figures/fingerprint_graph.pdf}
+\end{center}
+\begin{itemize}
+\setlength{\itemsep}{1pt}
+\setlength{\parsep}{0pt}
+\setlength{\parskip}{0pt}
+\item 証明本体の編集は、公開された主張と受理状態が変わらなければ、importer を再ビルドしない。インタフェースの変更は依存コーンを再検証する。
+\item 関係するキャッシュキーはすべて一致する必要がある。データが無ければキャッシュミス。キャッシュ再利用は証明の権威ではない。クリーンビルドはすべての受理を再現しなければならない。
+\end{itemize}
+\note{
+\smallskip
+\textbf{Read aloud:}
+\begin{itemize}
+\setlength{\itemsep}{1pt}
+\setlength{\parsep}{0pt}
+\setlength{\parskip}{0pt}
+\item 証明本体の編集は、公開された主張と受理状態が変わらなければ、importer を再ビルドしない。インタフェースの変更は依存コーンを再検証する。
+\item 関係するキャッシュキーはすべて一致する必要がある。データが無ければキャッシュミス。キャッシュ再利用は証明の権威ではない。クリーンビルドはすべての受理を再現しなければならない。
+\end{itemize}
+\smallskip
+\textbf{Optional notes and sources:}
+\begin{itemize}
+\setlength{\itemsep}{1pt}
+\setlength{\parsep}{0pt}
+\setlength{\parskip}{0pt}
+\item Source: \texttt{doc/design/architecture/en/11.artifact\_and\_incremental\_build.md}, \texttt{18.dependency\_fingerprint.md}; Bia\l{}ystok 資料 Story 5。
+\end{itemize}
+}
+\end{frame}
+
+\section{Backup 8. Package manifest}
+\begin{frame}[fragile,t]{Backup 8. Package manifest}
+\smallskip
+\textbf{Mizar Evo}~\badgeSpec
+\begin{lstlisting}[language={toml},basicstyle=\ttfamily\footnotesize]
+[package]
+name    = "algebra"
+version = "2.3.1"
+edition = "2025"
+
+[dependencies]
+mml_core = "^1.0"
+topology = { version = "^0.9", features = ["metric"] }
+\end{lstlisting}
+\begin{itemize}
+\setlength{\itemsep}{1pt}
+\setlength{\parsep}{0pt}
+\setlength{\parskip}{0pt}
+\item 再現可能なビルドには、固定したソース、lockfile、ツールチェーン、検査器の設定が要る。決定的な ATP evidence も含む。
+\item バージョン付きの再利用が article 集合間の手作業コピーを置き換える。集約モジュールは一つの import で一分野をまとめて公開できる。
+\end{itemize}
+Source: \texttt{doc/spec/en/23.package\_management\_and\_build\_system.md}; Bia\l{}ystok 資料 Story 1。
+
+\note{
+\smallskip
+\textbf{Read aloud:}
+\begin{itemize}
+\setlength{\itemsep}{1pt}
+\setlength{\parsep}{0pt}
+\setlength{\parskip}{0pt}
+\item 再現可能なビルドには、固定したソース、lockfile、ツールチェーン、検査器の設定が要る。決定的な ATP evidence も含む。
+\item バージョン付きの再利用が article 集合間の手作業コピーを置き換える。集約モジュールは一つの import で一分野をまとめて公開できる。
+\end{itemize}
+\smallskip
+\textbf{Optional notes and sources:}
+\begin{itemize}
+\setlength{\itemsep}{1pt}
+\setlength{\parsep}{0pt}
+\setlength{\parskip}{0pt}
+\item Source: \texttt{doc/spec/en/23.package\_management\_and\_build\_system.md}; Bia\l{}ystok 資料 Story 1。
+\end{itemize}
+}
+\end{frame}
+
+\section{Backup 9. 45分版での追加}
+\begin{frame}[fragile,t]{Backup 9. 45分版での追加}
+\smallskip
+\textbf{物語は変えない。次の順で具体例を深める:}
+\begin{enumerate}
+\setlength{\itemsep}{1pt}
+\setlength{\parsep}{0pt}
+\setlength{\parskip}{0pt}
+\item 一つの goal で HOL から FOL への関数の符号化を追う（\texttt{app}、部分適用、lambda lifting）。
+\item Mizar の関数表現: \texttt{Function of X,Y}、\texttt{f.x}、集合論的対象としての soft type。
+\item Template: 加法と乗法のビューを持つ \texttt{PermProduct[T]}（Backup 4）。
+\item Algorithm: ユークリッドの互除法、\texttt{by computation}、関数子への昇格。
+\item Structure とビュー: \texttt{AddMagma}、\texttt{MulMagma}、\texttt{Magma}（Bia\l{}ystok Story 2）。
+\item 現代的な基盤: \texttt{mizar.pkg}、namespace、指紋グラフ（Backup 7-8）。
+\item 信頼境界: ATP 探索、KernelEvidence、検査された受理（Backup 5）。
+\end{enumerate}
+\note{
+\smallskip
+\textbf{Read aloud:}
+\begin{itemize}
+\setlength{\itemsep}{1pt}
+\setlength{\parsep}{0pt}
+\setlength{\parskip}{0pt}
+\item 一つの goal で HOL から FOL への関数の符号化を追う（\texttt{app}、部分適用、lambda lifting）。
+\item Mizar の関数表現: \texttt{Function of X,Y}、\texttt{f.x}、集合論的対象としての soft type。
+\item Template: 加法と乗法のビューを持つ \texttt{PermProduct[T]}（Backup 4）。
+\item Algorithm: ユークリッドの互除法、\texttt{by computation}、関数子への昇格。
+\item Structure とビュー: \texttt{AddMagma}、\texttt{MulMagma}、\texttt{Magma}（Bia\l{}ystok Story 2）。
+\item 現代的な基盤: \texttt{mizar.pkg}、namespace、指紋グラフ（Backup 7-8）。
+\item 信頼境界: ATP 探索、KernelEvidence、検査された受理（Backup 5）。
+\end{itemize}
+}
+\end{frame}
+
+\section{Backup 10. 出典と帰属}
+\begin{frame}[fragile,t]{Backup 10. 出典と帰属}
+\smallskip
+\textbf{この講演で使う MML の正確な引用:}
+\begin{scriptsize}
+\setlength{\tabcolsep}{3pt}
+\renewcommand{\arraystretch}{1.15}
+\begin{tabularx}{\textwidth}{>{\raggedright\arraybackslash}X>{\raggedright\arraybackslash}X>{\raggedright\arraybackslash}X>{\raggedright\arraybackslash}X}
+\toprule
+\textbf{目的} & \textbf{出典} & \textbf{行} & \textbf{使用箇所} \\
+\midrule
+関数適用 \texttt{f.x} & \texttt{funct\_1.miz} & 138-140 & Frame 2.3 \\
+soft type としての \texttt{Function of X,Y} & \texttt{funct\_2.miz} & 87-90 & Frame 2.3 \\
+\bottomrule
+\end{tabularx}
+\end{scriptsize}
+
+\smallskip
+\textbf{Source URLs:}
+\begin{itemize}
+\setlength{\itemsep}{1pt}
+\setlength{\parsep}{0pt}
+\setlength{\parskip}{0pt}
+\item \texttt{FUNCT\_1}: \url{https://mizar.uwb.edu.pl/version/current/mml/funct\_1.miz}
+\item \texttt{FUNCT\_2}: \url{https://mizar.uwb.edu.pl/version/current/mml/funct\_2.miz}
+\end{itemize}
+\smallskip
+\textbf{帰属についての注記:}
+\begin{itemize}
+\setlength{\itemsep}{1pt}
+\setlength{\parsep}{0pt}
+\setlength{\parskip}{0pt}
+\item MML のテキストは GPL-3.0-or-later / CC-BY-SA-3.0-or-later。article 名、URL、行番号を発表者ノートに残す。
+\item ベンチマークの数字は Backup 1-2 と \texttt{references.bib} を参照。最終版の前に書誌情報を出版社で確認する。
+\end{itemize}
+\note{
+\smallskip
+\textbf{Read aloud:}
+\begin{itemize}
+\setlength{\itemsep}{1pt}
+\setlength{\parsep}{0pt}
+\setlength{\parskip}{0pt}
+\item \texttt{FUNCT\_1}: \url{https://mizar.uwb.edu.pl/version/current/mml/funct\_1.miz}
+\item \texttt{FUNCT\_2}: \url{https://mizar.uwb.edu.pl/version/current/mml/funct\_2.miz}
+\item MML のテキストは GPL-3.0-or-later / CC-BY-SA-3.0-or-later。article 名、URL、行番号を発表者ノートに残す。
+\item ベンチマークの数字は Backup 1-2 と \texttt{references.bib} を参照。最終版の前に書誌情報を出版社で確認する。
+\end{itemize}
+}
+\end{frame}
+
+\end{document}

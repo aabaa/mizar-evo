@@ -1,0 +1,1340 @@
+\documentclass[aspectratio=169,11pt]{beamer}
+\usetheme{Madrid}
+\usecolortheme{seahorse}
+\setbeamertemplate{navigation symbols}{}
+\setbeamertemplate{headline}{}
+\setbeamertemplate{footline}[frame number]
+\setbeamertemplate{frametitle continuation}{}
+\setbeamertemplate{frametitle}{\nointerlineskip\begin{beamercolorbox}[wd=\paperwidth,sep=0.45ex,leftskip=7.5mm,rightskip=7.5mm]{frametitle}\usebeamerfont{frametitle}\insertframetitle\end{beamercolorbox}}
+\setbeamerfont{frametitle}{size=\large}
+\setbeamerfont{normal text}{size=\normalsize}
+\setbeamersize{text margin left=8mm,text margin right=8mm}
+\setbeamercolor{keyphrase}{bg=blue!8,fg=black!85}
+\setbeameroption{show notes}
+\usepackage{pgfpages}
+\pgfpagesuselayout{resize to}[a4paper,landscape]
+\usepackage[T1]{fontenc}
+\usepackage{tabularx}
+\usepackage{array}
+\usepackage{booktabs}
+\usepackage{listings}
+\usepackage{hyperref}
+\usepackage{fancyvrb}
+\lstdefinelanguage{mizar}{morekeywords={definition,end,struct,field,property,inherit,extends,where,from,let,be,being,mode,theorem,proof,thus,hence,by,registration,cluster,coherence,reduce,reducibility,import,for,holds,st,is,func,pred,attribute,algorithm,terminating,requires,ensures,do,while,invariant,decreasing,return,var,const,if,scheme,provided,environ,vocabularies,notations,constructors,registrations,theorems,begin,qua,reconsider,consider,such,that,not,or,and,implies,per,cases,set,thesis},sensitive=true,morecomment=[l]{::}}
+\lstdefinelanguage{toml}{morecomment=[l]{\#},morestring=[b]"}
+\lstset{basicstyle=\ttfamily\small,keywordstyle=\color{blue!50!black}\bfseries,commentstyle=\color{green!35!black}\itshape,stringstyle=\color{violet!70!black},showstringspaces=false,columns=fullflexible,keepspaces=true,backgroundcolor=\color{black!4},frame=single,rulecolor=\color{black!20},framesep=0.7mm,framerule=0.3pt,xleftmargin=1mm,xrightmargin=1mm,aboveskip=0.6mm,belowskip=0.8mm}
+\newcommand{\statusbadge}[2]{\colorbox{#1}{\textcolor{white}{\strut\scriptsize\sffamily\bfseries #2}}}
+\newcommand{\badgeMML}{\statusbadge{blue!45!black}{exact MML excerpt}}
+\newcommand{\badgeSpec}{\statusbadge{green!35!black}{specification example}}
+\newcommand{\badgeSketch}{\statusbadge{orange!75!black}{sketch}}
+\newcommand{\deepdivetag}{\hfill\colorbox{black!15}{\textcolor{black!65}{\strut\scriptsize\sffamily deep dive}}}
+\pdfstringdefDisableCommands{\def\translate#1{#1}}
+\title{Mizar Evolution: Why First-Order Logic, Now}
+\subtitle{Connecting automatic proof, readable mathematics, and checked computation\\ TPP 2026, RIKEN AIP Tokyo Office, November 2026\\ \textit{presenter notes edition}}
+\author{Mizar Evo project}
+\date{TPP 2026, RIKEN AIP Tokyo Office, November 16--17, 2026}
+
+\begin{document}
+\begin{frame}
+\titlepage
+\note{
+\smallskip
+\textbf{Read aloud:}
+\begin{itemize}
+\setlength{\itemsep}{1pt}
+\setlength{\parsep}{0pt}
+\setlength{\parskip}{0pt}
+\item \textcolor{blue!55!black}{\textbf{Mizar is a proof checker. It has a fifty-year-old library, written in a readable mathematical language over first-order set theory.}}
+\item \textcolor{blue!55!black}{\textbf{Mizar Evolution, or Mizar Evo, is a redesign of its language and tools. Today I will not list features. I will start from a puzzle about automatic provers, and use it to explain why we keep the logic first-order.}}
+\item Everything I say has a label: fact, research hypothesis, or future direction.
+\end{itemize}
+}
+\end{frame}
+
+\section{Part 0. Opening}
+\begin{frame}[fragile,t]{0.2 - How To Read The Claims\deepdivetag}
+\begin{footnotesize}
+\setlength{\tabcolsep}{3pt}
+\renewcommand{\arraystretch}{1.15}
+\begin{tabularx}{\textwidth}{>{\raggedright\arraybackslash}X>{\raggedright\arraybackslash}X>{\raggedright\arraybackslash}X}
+\toprule
+\textbf{Level} & \textbf{Meaning} & \textbf{Marked how} \\
+\midrule
+fact & existing systems, published benchmarks, the Mizar Evo specification and main branch & no tag \\
+research hypothesis & a claim that Mizar Evo is built to test & tagged in the text \\
+future direction & a goal with no fixed date or design yet & tagged in the text \\
+\bottomrule
+\end{tabularx}
+\end{footnotesize}
+
+Code labels follow the Bialystok deck: exact MML excerpt, specification example, sketch.
+
+\begin{itemize}
+\setlength{\itemsep}{1pt}
+\setlength{\parsep}{0pt}
+\setlength{\parskip}{0pt}
+\item The specification and the implementation are different things. One frame near the end separates them.
+\end{itemize}
+\note{
+\smallskip
+\textbf{Read aloud:}
+\begin{itemize}
+\setlength{\itemsep}{1pt}
+\setlength{\parsep}{0pt}
+\setlength{\parskip}{0pt}
+\item Code labels follow the Bialystok deck: exact MML excerpt, specification example, sketch.
+\item The specification and the implementation are different things. One frame near the end separates them.
+\end{itemize}
+}
+\end{frame}
+
+\section{Part 1. Two Hammers, Two Numbers}
+\begin{frame}[fragile,t]{1.1 - Two Numbers That Look Alike}
+\begin{scriptsize}
+\setlength{\tabcolsep}{3pt}
+\renewcommand{\arraystretch}{1.15}
+\begin{tabularx}{\textwidth}{>{\raggedright\arraybackslash}X>{\raggedright\arraybackslash}X>{\raggedright\arraybackslash}X}
+\toprule
+\textbf{} & \textbf{MizAR 60 (ITP 2023)} & \textbf{Sledgehammer on the AFP (CICM 2015)} \\
+\midrule
+headline & 58.4\% proved & 60.7\% proved \\
+counts & top-level theorems and lemmas of MML 1147 (57,897) & proof goals inside AFP developments (6,934) \\
+premises & chosen from the whole library by learned methods & chosen from the development by the MePo filter \\
+budget & portfolio limited to 420 CPU seconds & 30 seconds per prover, four provers \\
+status & ATP proof found, hammering mode & union trusted as oracle; about 50\% with one-line replay \\
+\bottomrule
+\end{tabularx}
+\end{scriptsize}
+
+\begin{itemize}
+\setlength{\itemsep}{1pt}
+\setlength{\parsep}{0pt}
+\setlength{\parskip}{0pt}
+\item \textcolor{blue!55!black}{\textbf{Two hammers, two headline numbers, and they look almost the same.}}
+\item \textcolor{blue!55!black}{\textbf{Do not compare them as one benchmark. The units, the premises, and the time budgets are all different.}}
+\end{itemize}
+\note{
+\smallskip
+\textbf{Read aloud:}
+\begin{itemize}
+\setlength{\itemsep}{1pt}
+\setlength{\parsep}{0pt}
+\setlength{\parskip}{0pt}
+\item \textcolor{blue!55!black}{\textbf{Two hammers, two headline numbers, and they look almost the same.}}
+\item \textcolor{blue!55!black}{\textbf{Do not compare them as one benchmark. The units, the premises, and the time budgets are all different.}}
+\end{itemize}
+\smallskip
+\textbf{Optional notes and sources:}
+\begin{itemize}
+\setlength{\itemsep}{1pt}
+\setlength{\parsep}{0pt}
+\setlength{\parskip}{0pt}
+\item A "hammer" is a tool that sends a goal to automatic provers. "Premises" are the facts the prover may use.
+\item Source: Jakubův et al. 2023, results 1-3; Blanchette et al. 2015, Section "Proof Automation with Sledgehammer", Figure 13.
+\item MizAR's 75\% figure uses premises chosen from the library by a human or a machine. Keep it for questions.
+\end{itemize}
+}
+\end{frame}
+
+\begin{frame}[fragile,t]{1.2 - What Each Number Counts}
+\begin{center}
+\includegraphics[width=\textwidth,height=0.5\textheight,keepaspectratio]{figures/evaluation_units.pdf}
+\end{center}
+\begin{itemize}
+\setlength{\itemsep}{1pt}
+\setlength{\parsep}{0pt}
+\setlength{\parskip}{0pt}
+\item \textcolor{blue!55!black}{\textbf{MizAR asks: can the machine prove this whole theorem from the library, with no help from the author?}}
+\item \textcolor{blue!55!black}{\textbf{The AFP study asks: can the machine close this goal where it appears, often inside a proof that a person has already written?}}
+\item Both are fair questions. They are not the same question.
+\end{itemize}
+\note{
+\smallskip
+\textbf{Read aloud:}
+\begin{itemize}
+\setlength{\itemsep}{1pt}
+\setlength{\parsep}{0pt}
+\setlength{\parskip}{0pt}
+\item \textcolor{blue!55!black}{\textbf{MizAR asks: can the machine prove this whole theorem from the library, with no help from the author?}}
+\item \textcolor{blue!55!black}{\textbf{The AFP study asks: can the machine close this goal where it appears, often inside a proof that a person has already written?}}
+\item Both are fair questions. They are not the same question.
+\end{itemize}
+}
+\end{frame}
+
+\begin{frame}[fragile,t]{1.3 - Two Paths To A First-Order Prover}
+\begin{center}
+\includegraphics[width=\textwidth,height=0.58\textheight,keepaspectratio]{figures/two_paths.pdf}
+\end{center}
+\begin{itemize}
+\setlength{\itemsep}{1pt}
+\setlength{\parsep}{0pt}
+\setlength{\parskip}{0pt}
+\item \textcolor{blue!55!black}{\textbf{Sledgehammer translates a higher-order goal into first-order or SMT problems. Then it rebuilds the proof inside Isabelle.}}
+\item \textcolor{blue!55!black}{\textbf{MizAR gives the prover a problem that is already first-order. The gap between the checker and the ATP problem is short.}}
+\end{itemize}
+\note{
+\smallskip
+\textbf{Read aloud:}
+\begin{itemize}
+\setlength{\itemsep}{1pt}
+\setlength{\parsep}{0pt}
+\setlength{\parskip}{0pt}
+\item \textcolor{blue!55!black}{\textbf{Sledgehammer translates a higher-order goal into first-order or SMT problems. Then it rebuilds the proof inside Isabelle.}}
+\item \textcolor{blue!55!black}{\textbf{MizAR gives the prover a problem that is already first-order. The gap between the checker and the ATP problem is short.}}
+\end{itemize}
+\smallskip
+\textbf{Optional notes and sources:}
+\begin{itemize}
+\setlength{\itemsep}{1pt}
+\setlength{\parsep}{0pt}
+\setlength{\parskip}{0pt}
+\item Both paths describe existing systems (Blanchette, Kaliszyk, Paulson, Urban 2016; Jakubův et al. 2023). The orange boxes are the translation and reconstruction layers.
+\item MizAR's headline percentages count ATP proofs. The Mizar checker re-checks the resulting \texttt{by} step when the inference is within its strength.
+\end{itemize}
+}
+\end{frame}
+
+\begin{frame}[fragile,t]{1.4 - The Question}
+\begin{center}
+\begin{beamercolorbox}[rounded=true,sep=2.5mm,wd=0.9\textwidth]{keyphrase}
+\centering\itshape \textcolor{blue!55!black}{\textbf{A result of how we measure, or a result of the design?}}
+\end{beamercolorbox}
+\end{center}
+\begin{itemize}
+\setlength{\itemsep}{1pt}
+\setlength{\parsep}{0pt}
+\setlength{\parskip}{0pt}
+\item \textcolor{blue!55!black}{\textbf{Research hypothesis: in a first-order library, the distance between the checker's own logic and the ATP problem is short. A higher-order system must cross that distance with translation and reconstruction, and that has a cost.}}
+\item Fact: Sledgehammer showed that higher-order systems can use first-order ATPs very well.
+\item Research hypothesis: we do not yet know if "higher-order plus translation" is the best design for using ATPs. There is almost no modern first-order ITP to compare with.
+\item \textcolor{blue!55!black}{\textbf{Mizar Evo is built to test this hypothesis with a modern verifier, library, and provers.}}
+\end{itemize}
+\note{
+\smallskip
+\textbf{Read aloud:}
+\begin{itemize}
+\setlength{\itemsep}{1pt}
+\setlength{\parsep}{0pt}
+\setlength{\parskip}{0pt}
+\item \textcolor{blue!55!black}{\textbf{A result of how we measure, or a result of the design?}}
+\item \textcolor{blue!55!black}{\textbf{Research hypothesis: in a first-order library, the distance between the checker's own logic and the ATP problem is short. A higher-order system must cross that distance with translation and reconstruction, and that has a cost.}}
+\item Fact: Sledgehammer showed that higher-order systems can use first-order ATPs very well.
+\item Research hypothesis: we do not yet know if "higher-order plus translation" is the best design for using ATPs. There is almost no modern first-order ITP to compare with.
+\item \textcolor{blue!55!black}{\textbf{Mizar Evo is built to test this hypothesis with a modern verifier, library, and provers.}}
+\end{itemize}
+}
+\end{frame}
+
+\section{Part 2. Where Complexity Lives}
+\begin{frame}[fragile,t]{2.1 - Functions In Higher-Order Logic}
+\smallskip
+\textbf{Schematic HOL statement}~\badgeSketch~{\footnotesize(Isabelle/HOL-style notation)}
+\begin{lstlisting}[language={},basicstyle=\ttfamily\small]
+f :: 'a => 'b        x :: 'a
+
+P (f x)
+\end{lstlisting}
+\begin{itemize}
+\setlength{\itemsep}{1pt}
+\setlength{\parsep}{0pt}
+\setlength{\parskip}{0pt}
+\item \textcolor{blue!55!black}{\textbf{In HOL, function types and function application are part of the logic itself.}}
+\item Functions as arguments, functions that return functions, partial application, lambda: all can be written directly.
+\item \textcolor{blue!55!black}{\textbf{This is very convenient for the person who writes mathematics.}}
+\item \textcolor{blue!55!black}{\textbf{But E and Vampire are first-order provers. The higher-order structure must be encoded before they can see it.}}
+\end{itemize}
+\note{
+\smallskip
+\textbf{Read aloud:}
+\begin{itemize}
+\setlength{\itemsep}{1pt}
+\setlength{\parsep}{0pt}
+\setlength{\parskip}{0pt}
+\item Schematic HOL statement.
+\item \textcolor{blue!55!black}{\textbf{In HOL, function types and function application are part of the logic itself.}}
+\item Functions as arguments, functions that return functions, partial application, lambda: all can be written directly.
+\item \textcolor{blue!55!black}{\textbf{This is very convenient for the person who writes mathematics.}}
+\item \textcolor{blue!55!black}{\textbf{But E and Vampire are first-order provers. The higher-order structure must be encoded before they can see it.}}
+\end{itemize}
+}
+\end{frame}
+
+\begin{frame}[fragile,t]{2.2 - The Cost Appears At The ATP Boundary}
+\smallskip
+\textbf{Encoding steps, schematic}~\badgeSketch
+\begin{lstlisting}[language={},basicstyle=\ttfamily\footnotesize]
+F X                   ->  app(F, X)
+(%x. t) ...           ->  fresh constant + defining axioms   (lambda lifting)
+polymorphic types     ->  type guards or type tags
+Boolean-valued terms  ->  extra encoding
+\end{lstlisting}
+\begin{itemize}
+\setlength{\itemsep}{1pt}
+\setlength{\parsep}{0pt}
+\setlength{\parskip}{0pt}
+\item \textcolor{blue!55!black}{\textbf{Applying a variable function becomes an explicit \texttt{app} symbol. Lambdas are lifted out or turned into combinators. Types become guards or tags.}}
+\item \textcolor{blue!55!black}{\textbf{After the prover succeeds, the proof must come back into Isabelle: a \texttt{metis} call, an \texttt{smt} replay, or generated Isar text. This step is called reconstruction.}}
+\item This is a great piece of engineering. It is also a layer that a first-order system does not need.
+\item HOL gets the convenience first and pays at the ATP boundary.
+\end{itemize}
+\note{
+\smallskip
+\textbf{Read aloud:}
+\begin{itemize}
+\setlength{\itemsep}{1pt}
+\setlength{\parsep}{0pt}
+\setlength{\parskip}{0pt}
+\item Encoding steps, schematic.
+\item \textcolor{blue!55!black}{\textbf{Applying a variable function becomes an explicit \texttt{app} symbol. Lambdas are lifted out or turned into combinators. Types become guards or tags.}}
+\item \textcolor{blue!55!black}{\textbf{After the prover succeeds, the proof must come back into Isabelle: a \texttt{metis} call, an \texttt{smt} replay, or generated Isar text. This step is called reconstruction.}}
+\item This is a great piece of engineering. It is also a layer that a first-order system does not need.
+\item HOL gets the convenience first and pays at the ATP boundary.
+\end{itemize}
+\smallskip
+\textbf{Optional notes and sources:}
+\begin{itemize}
+\setlength{\itemsep}{1pt}
+\setlength{\parsep}{0pt}
+\setlength{\parskip}{0pt}
+\item Source: Meng and Paulson 2008 (translating higher-order clauses to first-order clauses); Blanchette, Böhme, Popescu, Smallbone 2016 (type encodings); Blanchette, Kaliszyk, Paulson, Urban 2016 (survey); Schurr, Fleury, Desharnais 2021 (reconstruction).
+\item The exact encodings that Sledgehammer uses depend on the prover and the options. This frame is schematic.
+\end{itemize}
+}
+\end{frame}
+
+\begin{frame}[fragile,t]{2.3 - Functions In Set Theory: Mizar's Foundation}
+\smallskip
+\textbf{Function application is a defined set-theoretic relation}~\badgeMML
+\begin{lstlisting}[language={mizar},basicstyle=\ttfamily\small]
+  func f.x -> set means
+  :Def2:
+  [x,it] in f if x in dom f otherwise it = {};
+\end{lstlisting}
+\smallskip
+\textbf{A typed function is a soft type over partial functions}~\badgeMML
+\begin{lstlisting}[language={mizar},basicstyle=\ttfamily\small]
+definition
+  let X,Y;
+  mode Function of X,Y is quasi_total PartFunc of X,Y;
+end;
+\end{lstlisting}
+\begin{itemize}
+\setlength{\itemsep}{1pt}
+\setlength{\parsep}{0pt}
+\setlength{\parskip}{0pt}
+\item \textcolor{blue!55!black}{\textbf{Here a function is an ordinary first-order object: a set of pairs. Application is defined, not built into the logic.}}
+\item \textcolor{blue!55!black}{\textbf{Nothing in the base logic has to be higher-order.}}
+\item The price: if you write raw set theory, the domain, the graph, functionality, and membership all appear in the text.
+\end{itemize}
+\note{
+\smallskip
+\textbf{Read aloud:}
+\begin{itemize}
+\setlength{\itemsep}{1pt}
+\setlength{\parsep}{0pt}
+\setlength{\parskip}{0pt}
+\item Function application is a defined set-theoretic relation.
+\item A typed function is a soft type over partial functions.
+\item \textcolor{blue!55!black}{\textbf{Here a function is an ordinary first-order object: a set of pairs. Application is defined, not built into the logic.}}
+\item \textcolor{blue!55!black}{\textbf{Nothing in the base logic has to be higher-order.}}
+\item The price: if you write raw set theory, the domain, the graph, functionality, and membership all appear in the text.
+\end{itemize}
+\smallskip
+\textbf{Optional notes and sources:}
+\begin{itemize}
+\setlength{\itemsep}{1pt}
+\setlength{\parsep}{0pt}
+\setlength{\parskip}{0pt}
+\item Source: current MML \texttt{funct\_1.miz}, lines 138-140 (\texttt{FUNCT\_1:def 2}), and \texttt{funct\_2.miz}, lines 87-90 (checked October 7, 2026). URLs: \url{https://mizar.uwb.edu.pl/version/current/mml/funct\_1.miz}, \url{https://mizar.uwb.edu.pl/version/current/mml/funct\_2.miz}. GPL-3.0-or-later / CC-BY-SA-3.0-or-later.
+\item \texttt{quasi\_total} (FUNCT\_2, lines 36-44) says the domain is all of X unless Y is empty.
+\end{itemize}
+}
+\end{frame}
+
+\begin{frame}[fragile,t]{2.4 - Mizar's Fifty-Year Answer: Hide The Details In The Language}
+\smallskip
+\textbf{What the author actually writes}~\badgeSketch~{\footnotesize(valid in current Mizar and Mizar Evo)}
+\begin{lstlisting}[language={mizar},basicstyle=\ttfamily\small]
+let X, Y be set;
+let f be Function of X, Y;
+let x be Element of X;
+...  f.x  ...
+\end{lstlisting}
+\begin{itemize}
+\setlength{\itemsep}{1pt}
+\setlength{\parsep}{0pt}
+\setlength{\parskip}{0pt}
+\item \textcolor{blue!55!black}{\textbf{It is the same set-theoretic function. But the author writes \texttt{Function of X,Y} and \texttt{f.x}, not pairs and domains.}}
+\item \textcolor{blue!55!black}{\textbf{Soft types, modes, attributes, registrations, schemes, and declarative proofs are not just a nicer way to write the same thing. They are the language design that lifts first-order set theory up to readable mathematics.}}
+\item \textcolor{blue!55!black}{\textbf{Mizar has walked in this direction for fifty years. Mizar Evo keeps walking.}}
+\end{itemize}
+\note{
+\smallskip
+\textbf{Read aloud:}
+\begin{itemize}
+\setlength{\itemsep}{1pt}
+\setlength{\parsep}{0pt}
+\setlength{\parskip}{0pt}
+\item What the author actually writes.
+\item \textcolor{blue!55!black}{\textbf{It is the same set-theoretic function. But the author writes \texttt{Function of X,Y} and \texttt{f.x}, not pairs and domains.}}
+\item \textcolor{blue!55!black}{\textbf{Soft types, modes, attributes, registrations, schemes, and declarative proofs are not just a nicer way to write the same thing. They are the language design that lifts first-order set theory up to readable mathematics.}}
+\item \textcolor{blue!55!black}{\textbf{Mizar has walked in this direction for fifty years. Mizar Evo keeps walking.}}
+\end{itemize}
+}
+\end{frame}
+
+\begin{frame}[fragile,t]{2.5 - Where You Pay}
+\begin{center}
+\includegraphics[width=\textwidth,height=0.34\textheight,keepaspectratio]{figures/where_you_pay.pdf}
+\end{center}
+\begin{center}
+\begin{beamercolorbox}[rounded=true,sep=2.5mm,wd=0.9\textwidth]{keyphrase}
+\centering\itshape \textcolor{blue!55!black}{\textbf{HOL and FOL do not remove complexity.}}\\ \textcolor{blue!55!black}{\textbf{They put it in different places.}}
+\end{beamercolorbox}
+\end{center}
+\begin{itemize}
+\setlength{\itemsep}{1pt}
+\setlength{\parsep}{0pt}
+\setlength{\parskip}{0pt}
+\item \textcolor{blue!55!black}{\textbf{HOL pays at the ATP boundary. FOL pays at the keyboard, and Mizar's language takes on that payment.}}
+\item \textcolor{blue!55!black}{\textbf{Mizar Evo's choice: keep the base logic first-order, and hide the human-facing complexity in the language.}}
+\end{itemize}
+\note{
+\smallskip
+\textbf{Read aloud:}
+\begin{itemize}
+\setlength{\itemsep}{1pt}
+\setlength{\parsep}{0pt}
+\setlength{\parskip}{0pt}
+\item \textcolor{blue!55!black}{\textbf{HOL and FOL do not remove complexity.}} \textcolor{blue!55!black}{\textbf{They put it in different places.}}
+\item \textcolor{blue!55!black}{\textbf{HOL pays at the ATP boundary. FOL pays at the keyboard, and Mizar's language takes on that payment.}}
+\item \textcolor{blue!55!black}{\textbf{Mizar Evo's choice: keep the base logic first-order, and hide the human-facing complexity in the language.}}
+\end{itemize}
+}
+\end{frame}
+
+\begin{frame}[fragile,t]{2.6 - The Trade-Off In One Table\deepdivetag}
+\begin{scriptsize}
+\setlength{\tabcolsep}{3pt}
+\renewcommand{\arraystretch}{1.15}
+\begin{tabularx}{\textwidth}{>{\raggedright\arraybackslash}X>{\raggedright\arraybackslash}X>{\raggedright\arraybackslash}X}
+\toprule
+\textbf{} & \textbf{HOL ITP + ATP} & \textbf{FOL ITP + ATP} \\
+\midrule
+writing & higher-order features, short text & long text if written raw \\
+functions & basic higher-order objects & first-order set-theoretic objects \\
+ATP connection & encoding needed & short distance \\
+reconstruction & must cross the logic gap back & simpler in principle \\
+the language must provide & HOL abstraction & abstraction that hides first-order details \\
+\bottomrule
+\end{tabularx}
+\end{scriptsize}
+
+\begin{itemize}
+\setlength{\itemsep}{1pt}
+\setlength{\parsep}{0pt}
+\setlength{\parskip}{0pt}
+\item This table is an interpretation, not a measurement. The measurement is what Mizar Evo must produce in 2027.
+\end{itemize}
+\note{
+\smallskip
+\textbf{Read aloud:}
+\begin{itemize}
+\setlength{\itemsep}{1pt}
+\setlength{\parsep}{0pt}
+\setlength{\parskip}{0pt}
+\item This table is an interpretation, not a measurement. The measurement is what Mizar Evo must produce in 2027.
+\end{itemize}
+}
+\end{frame}
+
+\section{Part 3. Modernizing Mizar's Answer}
+\begin{frame}[fragile,t]{3.1 - Keep The Logic, Modernize The Language}
+\begin{center}
+\begin{beamercolorbox}[rounded=true,sep=2.5mm,wd=0.9\textwidth]{keyphrase}
+\centering\itshape \textcolor{blue!55!black}{\textbf{Keep the mathematical layer.}}\\ \textcolor{blue!55!black}{\textbf{Rebuild the tools under it and around it.}}
+\end{beamercolorbox}
+\end{center}
+\begin{itemize}
+\setlength{\itemsep}{1pt}
+\setlength{\parsep}{0pt}
+\setlength{\parskip}{0pt}
+\item \textcolor{blue!55!black}{\textbf{Mizar Evo keeps first-order logic and Tarski-Grothendieck set theory as the base logic.}}
+\item It keeps soft types, modes, attributes, registrations, structures, and declarative proofs.
+\item \textcolor{blue!55!black}{\textbf{It makes hidden choices explicit, unifies the generic mechanisms, makes automation traceable, and puts everything on a modern compiler architecture.}}
+\item The next frames show what "modernize the language" means: templates, algorithms, the trust boundary, and the infrastructure.
+\end{itemize}
+\note{
+\smallskip
+\textbf{Read aloud:}
+\begin{itemize}
+\setlength{\itemsep}{1pt}
+\setlength{\parsep}{0pt}
+\setlength{\parskip}{0pt}
+\item \textcolor{blue!55!black}{\textbf{Keep the mathematical layer.}} \textcolor{blue!55!black}{\textbf{Rebuild the tools under it and around it.}}
+\item \textcolor{blue!55!black}{\textbf{Mizar Evo keeps first-order logic and Tarski-Grothendieck set theory as the base logic.}}
+\item It keeps soft types, modes, attributes, registrations, structures, and declarative proofs.
+\item \textcolor{blue!55!black}{\textbf{It makes hidden choices explicit, unifies the generic mechanisms, makes automation traceable, and puts everything on a modern compiler architecture.}}
+\item The next frames show what "modernize the language" means: templates, algorithms, the trust boundary, and the infrastructure.
+\end{itemize}
+}
+\end{frame}
+
+\begin{frame}[fragile,t]{3.2 - Templates: Generic Mathematics Without Higher-Order Logic}
+\smallskip
+\textbf{\textcolor{blue!55!black}{\textbf{A template is a definition block with parameters}}}~\badgeSpec
+\begin{lstlisting}[language={mizar},basicstyle=\ttfamily\small]
+definition
+  let T be type;
+  struct MagmaStr[T] where
+    field carrier -> T;
+    field binop -> BinOp of T;
+  end;
+end;
+\end{lstlisting}
+\begin{itemize}
+\setlength{\itemsep}{1pt}
+\setlength{\parsep}{0pt}
+\setlength{\parskip}{0pt}
+\item \textcolor{blue!55!black}{\textbf{Parameters can be types, values, predicates, or functors. Classical Mizar schemes become theorems with a predicate parameter, in the same system.}}
+\item \textcolor{blue!55!black}{\textbf{Templates add no unrestricted second-order quantification to the logic. Each instantiation is checked and produces first-order obligations.}}
+\item Generic mathematics lives in the surface language, not in the base logic.
+\end{itemize}
+\note{
+\smallskip
+\textbf{Read aloud:}
+\begin{itemize}
+\setlength{\itemsep}{1pt}
+\setlength{\parsep}{0pt}
+\setlength{\parskip}{0pt}
+\item \textcolor{blue!55!black}{\textbf{A template is a definition block with parameters}}.
+\item \textcolor{blue!55!black}{\textbf{Parameters can be types, values, predicates, or functors. Classical Mizar schemes become theorems with a predicate parameter, in the same system.}}
+\item \textcolor{blue!55!black}{\textbf{Templates add no unrestricted second-order quantification to the logic. Each instantiation is checked and produces first-order obligations.}}
+\item Generic mathematics lives in the surface language, not in the base logic.
+\end{itemize}
+\smallskip
+\textbf{Optional notes and sources:}
+\begin{itemize}
+\setlength{\itemsep}{1pt}
+\setlength{\parsep}{0pt}
+\setlength{\parskip}{0pt}
+\item Source: \texttt{doc/spec/en/18.templates.md}, sections 18.1-18.2 and 18.8.
+\end{itemize}
+}
+\end{frame}
+
+\begin{frame}[fragile,t]{3.3 - Schemes Become Ordinary Templates\deepdivetag}
+\smallskip
+\textbf{Induction as a theorem with a predicate parameter}~\badgeSpec
+\begin{lstlisting}[language={mizar},basicstyle=\ttfamily\small]
+definition
+  let P be pred(Nat);
+  theorem NatInduction[P]:
+    P(0) & (for n being Nat st P(n) holds P(n+1))
+    implies for n being Nat holds P(n)
+  proof ... end;
+end;
+\end{lstlisting}
+\begin{itemize}
+\setlength{\itemsep}{1pt}
+\setlength{\parsep}{0pt}
+\setlength{\parskip}{0pt}
+\item A predicate parameter gives a family of first-order theorems, one for each predicate you put in.
+\item Instantiation is explicit: \texttt{by NatInduction[P], Base, Step} after a \texttt{defpred}.
+\item Functor parameters are schema-level symbols, not sets. This keeps the logic first-order.
+\item Details: Bialystok deck, Story 6 (\texttt{PermProduct[T]}, \texttt{qua} views), and Backup 4 here.
+\end{itemize}
+\note{
+\smallskip
+\textbf{Read aloud:}
+\begin{itemize}
+\setlength{\itemsep}{1pt}
+\setlength{\parsep}{0pt}
+\setlength{\parskip}{0pt}
+\item Induction as a theorem with a predicate parameter.
+\item A predicate parameter gives a family of first-order theorems, one for each predicate you put in.
+\item Instantiation is explicit: \texttt{by NatInduction[P], Base, Step} after a \texttt{defpred}.
+\item Functor parameters are schema-level symbols, not sets. This keeps the logic first-order.
+\item Details: Bialystok deck, Story 6 (\texttt{PermProduct[T]}, \texttt{qua} views), and Backup 4 here.
+\end{itemize}
+}
+\end{frame}
+
+\begin{frame}[fragile,t]{3.4 - Algorithms Are A Second Pillar}
+\begin{itemize}
+\setlength{\itemsep}{1pt}
+\setlength{\parsep}{0pt}
+\setlength{\parskip}{0pt}
+\item \textcolor{blue!55!black}{\textbf{Algorithms in Mizar Evo are not a replacement for higher-order functions. They answer a different need: reasoning about algorithms, and computation you can check.}}
+\item A historical tendency, not a necessity: first-order logic has complete calculi, and a culture of automatic search grew around them, from resolution to superposition and saturation.
+\item The LCF and HOL family grew a culture of programmable proof construction: tactics and tacticals.
+\item \textcolor{blue!55!black}{\textbf{Mizar used declarative proofs and the automation built into the system. It never had a tactic language that users could program.}}
+\item Mizar Evo's algorithm is not a tactic language added on top. It is a procedure with a contract, and the system verifies it.
+\end{itemize}
+\note{
+\smallskip
+\textbf{Read aloud:}
+\begin{itemize}
+\setlength{\itemsep}{1pt}
+\setlength{\parsep}{0pt}
+\setlength{\parskip}{0pt}
+\item \textcolor{blue!55!black}{\textbf{Algorithms in Mizar Evo are not a replacement for higher-order functions. They answer a different need: reasoning about algorithms, and computation you can check.}}
+\item A historical tendency, not a necessity: first-order logic has complete calculi, and a culture of automatic search grew around them, from resolution to superposition and saturation.
+\item The LCF and HOL family grew a culture of programmable proof construction: tactics and tacticals.
+\item \textcolor{blue!55!black}{\textbf{Mizar used declarative proofs and the automation built into the system. It never had a tactic language that users could program.}}
+\item Mizar Evo's algorithm is not a tactic language added on top. It is a procedure with a contract, and the system verifies it.
+\end{itemize}
+}
+\end{frame}
+
+\begin{frame}[fragile,t]{3.5 - Algorithms: Contracts, Proofs, Computation}
+\smallskip
+\textbf{\textcolor{blue!55!black}{\textbf{Euclid's algorithm with a contract}}}~\badgeSpec
+\begin{lstlisting}[language={mizar},basicstyle=\ttfamily\footnotesize]
+terminating algorithm euclid_gcd(a, b) -> Nat
+  requires a >= 1 & b >= 1
+  ensures result = Gcd(a, b)
+do
+  var x := a;  var y := b;
+  while y <> 0 do
+    invariant x >= 1 & y >= 0 & Gcd(a, b) = Gcd(x, y);  decreasing y;
+    const r := x mod y;  x := y;  y := r;
+  end;
+  return x;
+end;
+\end{lstlisting}
+\begin{itemize}
+\setlength{\itemsep}{1pt}
+\setlength{\parsep}{0pt}
+\setlength{\parskip}{0pt}
+\item \textcolor{blue!55!black}{\textbf{Contracts, invariants, and termination measures become first-order proof obligations, checked like theorems.}}
+\item \textcolor{blue!55!black}{\textbf{Two roles: a verified automation procedure, and a checked computation run by \texttt{by computation}. Status: specified. MVM execution and code extraction come later.}}
+\end{itemize}
+\note{
+\smallskip
+\textbf{Read aloud:}
+\begin{itemize}
+\setlength{\itemsep}{1pt}
+\setlength{\parsep}{0pt}
+\setlength{\parskip}{0pt}
+\item \textcolor{blue!55!black}{\textbf{Euclid's algorithm with a contract}}.
+\item \textcolor{blue!55!black}{\textbf{Contracts, invariants, and termination measures become first-order proof obligations, checked like theorems.}}
+\item \textcolor{blue!55!black}{\textbf{Two roles: a verified automation procedure, and a checked computation run by \texttt{by computation}. Status: specified. MVM execution and code extraction come later.}}
+\end{itemize}
+\smallskip
+\textbf{Optional notes and sources:}
+\begin{itemize}
+\setlength{\itemsep}{1pt}
+\setlength{\parsep}{0pt}
+\setlength{\parskip}{0pt}
+\item Source: \texttt{doc/spec/en/20.algorithm\_and\_verification.md}, section 20.12 (condensed: the enclosing \texttt{definition} block and \texttt{let a, b be Nat;} are omitted).
+\end{itemize}
+}
+\end{frame}
+
+\begin{frame}[fragile,t]{3.6 - Future Targets For Algorithms\deepdivetag}
+\smallskip
+\textbf{Future direction, not current capability:}
+\begin{itemize}
+\setlength{\itemsep}{1pt}
+\setlength{\parsep}{0pt}
+\setlength{\parskip}{0pt}
+\item number-theoretic and combinatorial algorithms; symbolic algorithms; optimization procedures;
+\item later: cryptographic algorithms and protocols; quantum and hybrid classical-quantum algorithms.
+\end{itemize}
+\smallskip
+\textbf{One workflow for all of them:}
+\begin{enumerate}
+\setlength{\itemsep}{1pt}
+\setlength{\parsep}{0pt}
+\setlength{\parskip}{0pt}
+\item write the procedure; 2. state the contract; 3. give invariants and termination; 4. generate proof obligations; 5. prove them with ATPs and check them in the kernel; 6. run on concrete inputs; 7. extract code later.
+\end{enumerate}
+\begin{itemize}
+\setlength{\itemsep}{1pt}
+\setlength{\parsep}{0pt}
+\setlength{\parskip}{0pt}
+\item \textcolor{blue!55!black}{\textbf{Algorithms make the gap between tactics and application algorithms smaller. The targets above are future directions.}}
+\end{itemize}
+\note{
+\smallskip
+\textbf{Read aloud:}
+\begin{itemize}
+\setlength{\itemsep}{1pt}
+\setlength{\parsep}{0pt}
+\setlength{\parskip}{0pt}
+\item number-theoretic and combinatorial algorithms; symbolic algorithms; optimization procedures;
+\item later: cryptographic algorithms and protocols; quantum and hybrid classical-quantum algorithms.
+\item write the procedure; 2. state the contract; 3. give invariants and termination; 4. generate proof obligations; 5. prove them with ATPs and check them in the kernel; 6. run on concrete inputs; 7. extract code later.
+\item \textcolor{blue!55!black}{\textbf{Algorithms make the gap between tactics and application algorithms smaller. The targets above are future directions.}}
+\end{itemize}
+}
+\end{frame}
+
+\begin{frame}[fragile,t]{3.7 - Search Outside, Trust Inside}
+\begin{center}
+\includegraphics[width=\textwidth,height=0.52\textheight,keepaspectratio]{../2026-09-bialystok/figures/reasoning_boundary.pdf}
+\end{center}
+\begin{itemize}
+\setlength{\itemsep}{1pt}
+\setlength{\parsep}{0pt}
+\setlength{\parskip}{0pt}
+\item \textcolor{blue!55!black}{\textbf{A first-order ATP is a powerful searcher. It is not a trusted checker.}}
+\item \textcolor{blue!55!black}{\textbf{The Mizar side owns names, types, clusters, and overloads. Provers own search. The kernel owns acceptance: it checks the given formulas and substitutions with a small, trusted SAT check.}}
+\item A prover's exit code is never a proof. This is how first-order automation can be a design principle without making the trusted base bigger.
+\end{itemize}
+\note{
+\smallskip
+\textbf{Read aloud:}
+\begin{itemize}
+\setlength{\itemsep}{1pt}
+\setlength{\parsep}{0pt}
+\setlength{\parskip}{0pt}
+\item \textcolor{blue!55!black}{\textbf{A first-order ATP is a powerful searcher. It is not a trusted checker.}}
+\item \textcolor{blue!55!black}{\textbf{The Mizar side owns names, types, clusters, and overloads. Provers own search. The kernel owns acceptance: it checks the given formulas and substitutions with a small, trusted SAT check.}}
+\item A prover's exit code is never a proof. This is how first-order automation can be a design principle without making the trusted base bigger.
+\end{itemize}
+\smallskip
+\textbf{Optional notes and sources:}
+\begin{itemize}
+\setlength{\itemsep}{1pt}
+\setlength{\parsep}{0pt}
+\setlength{\parskip}{0pt}
+\item Source: \texttt{doc/design/architecture/en/08.reasoning\_boundary.md}; Bialystok deck, Story 4; Backup 5 here shows what the evidence contains.
+\end{itemize}
+}
+\end{frame}
+
+\begin{frame}[fragile,t]{3.8 - And Mizar Itself Is Fifty Years Old}
+\begin{footnotesize}
+\setlength{\tabcolsep}{3pt}
+\renewcommand{\arraystretch}{1.15}
+\begin{tabularx}{\textwidth}{>{\raggedright\arraybackslash}X>{\raggedright\arraybackslash}X}
+\toprule
+\textbf{Seen after fifty years of MML} & \textbf{Mizar Evo} \\
+\midrule
+the article as the unit of dependency & modules with explicit imports \\
+global name management & namespaces, fully qualified names \\
+weak distribution and versioning & packages, SemVer, lock files \\
+full rebuilds & incremental builds with dependency fingerprints \\
+ATP as an add-on, automation hard to see & first-class ATP pipeline, resolution traces, kernel evidence \\
+weak IDE and machine-readable I/O & LSP, structured diagnostics, agent interface \\
+\bottomrule
+\end{tabularx}
+\end{footnotesize}
+
+\begin{itemize}
+\setlength{\itemsep}{1pt}
+\setlength{\parsep}{0pt}
+\setlength{\parskip}{0pt}
+\item \textcolor{blue!55!black}{\textbf{Keeping Mizar's mathematical ideas and keeping 1970s software architecture are two different things.}}
+\item \textcolor{blue!55!black}{\textbf{Of course, we also modernize the whole development infrastructure. The Bialystok deck has the details. Here one table is enough.}}
+\end{itemize}
+\note{
+\smallskip
+\textbf{Read aloud:}
+\begin{itemize}
+\setlength{\itemsep}{1pt}
+\setlength{\parsep}{0pt}
+\setlength{\parskip}{0pt}
+\item \textcolor{blue!55!black}{\textbf{Keeping Mizar's mathematical ideas and keeping 1970s software architecture are two different things.}}
+\item \textcolor{blue!55!black}{\textbf{Of course, we also modernize the whole development infrastructure. The Bialystok deck has the details. Here one table is enough.}}
+\end{itemize}
+\smallskip
+\textbf{Optional notes and sources:}
+\begin{itemize}
+\setlength{\itemsep}{1pt}
+\setlength{\parsep}{0pt}
+\setlength{\parskip}{0pt}
+\item This is not a criticism. It is software engineering that was not common fifty years ago, brought into a formal mathematics environment.
+\item Details: Bialystok deck, Stories 1, 3, 5, 8; Backups 6-8 here.
+\end{itemize}
+}
+\end{frame}
+
+\section{Part 4. The AI Era}
+\begin{frame}[fragile,t]{4.1 - The Whole Picture}
+\begin{center}
+\includegraphics[width=\textwidth,height=0.6\textheight,keepaspectratio]{figures/layer_stack.pdf}
+\end{center}
+\begin{center}
+\begin{beamercolorbox}[rounded=true,sep=2.5mm,wd=0.9\textwidth]{keyphrase}
+\centering\itshape \textcolor{blue!55!black}{\textbf{Rich mathematics above. A small first-order logic below.}}\\ \textcolor{blue!55!black}{\textbf{Modern infrastructure around.}}
+\end{beamercolorbox}
+\end{center}
+\note{
+\smallskip
+\textbf{Read aloud:}
+\begin{itemize}
+\setlength{\itemsep}{1pt}
+\setlength{\parsep}{0pt}
+\setlength{\parskip}{0pt}
+\item \textcolor{blue!55!black}{\textbf{Rich mathematics above. A small first-order logic below.}} \textcolor{blue!55!black}{\textbf{Modern infrastructure around.}}
+\end{itemize}
+}
+\end{frame}
+
+\begin{frame}[fragile,t]{4.2 - LLM Thinks, ATP Proves, Mizar Evo Remembers And Verifies}
+\begin{center}
+\includegraphics[width=\textwidth,height=0.38\textheight,keepaspectratio]{figures/llm_atp_loop.pdf}
+\end{center}
+\begin{itemize}
+\setlength{\itemsep}{1pt}
+\setlength{\parsep}{0pt}
+\setlength{\parskip}{0pt}
+\item \textcolor{blue!55!black}{\textbf{LLMs: theories, definitions, strategy, lemmas, recovery from failure. ATPs: cheap, repeated first-order search. Mizar Evo: representation, verified library, trusted checking, origin of each fact.}}
+\item Research hypothesis: when machines generate a lot of mathematics, cheap ATP checking becomes more valuable. The cost and benefit of this loop are not yet measured.
+\item Current specification: ATPs receive only cited premises and local hypotheses. A library-wide hammer is research for 2027.
+\end{itemize}
+\note{
+\smallskip
+\textbf{Read aloud:}
+\begin{itemize}
+\setlength{\itemsep}{1pt}
+\setlength{\parsep}{0pt}
+\setlength{\parskip}{0pt}
+\item \textcolor{blue!55!black}{\textbf{LLMs: theories, definitions, strategy, lemmas, recovery from failure. ATPs: cheap, repeated first-order search. Mizar Evo: representation, verified library, trusted checking, origin of each fact.}}
+\item Research hypothesis: when machines generate a lot of mathematics, cheap ATP checking becomes more valuable. The cost and benefit of this loop are not yet measured.
+\item Current specification: ATPs receive only cited premises and local hypotheses. A library-wide hammer is research for 2027.
+\end{itemize}
+\smallskip
+\textbf{Optional notes and sources:}
+\begin{itemize}
+\setlength{\itemsep}{1pt}
+\setlength{\parsep}{0pt}
+\setlength{\parskip}{0pt}
+\item Source: \texttt{doc/spec/en/21.source\_code\_annotation\_and\_atp.md}, section 21.7.2, item 4 (no automatic premise selection from the global library); \texttt{doc/design/architecture/en/21.ai\_agent\_interface.md} (edit classes).
+\end{itemize}
+}
+\end{frame}
+
+\begin{frame}[fragile,t]{4.3 - Where The Project Stands (October 2026)}
+\begin{itemize}
+\setlength{\itemsep}{1pt}
+\setlength{\parsep}{0pt}
+\setlength{\parskip}{0pt}
+\item \textcolor{blue!55!black}{\textbf{Specification: 24 chapters plus appendices. English is the canonical language.}}
+\item \textcolor{blue!55!black}{\textbf{Implemented on the main branch: the Rust frontend (lexer, parser, syntax tree); name resolution and type checking on an alpha corpus; proof-obligation generation with deterministic discharge; ATP problem encoding and candidate evidence; SAT-backed kernel evidence checking; cache, fingerprint, and build-scheduling milestones.}}
+\item \textcolor{blue!55!black}{\textbf{In progress: end-to-end integration from source to verified artifact; the LSP server; the documentation generator.}}
+\item \textcolor{blue!55!black}{\textbf{Planned for later: MVM execution, code extraction, library-wide premise selection, MML migration.}}
+\item This talk does not claim any end-to-end results with external provers.
+\end{itemize}
+\note{
+\smallskip
+\textbf{Read aloud:}
+\begin{itemize}
+\setlength{\itemsep}{1pt}
+\setlength{\parsep}{0pt}
+\setlength{\parskip}{0pt}
+\item \textcolor{blue!55!black}{\textbf{Specification: 24 chapters plus appendices. English is the canonical language.}}
+\item \textcolor{blue!55!black}{\textbf{Implemented on the main branch: the Rust frontend (lexer, parser, syntax tree); name resolution and type checking on an alpha corpus; proof-obligation generation with deterministic discharge; ATP problem encoding and candidate evidence; SAT-backed kernel evidence checking; cache, fingerprint, and build-scheduling milestones.}}
+\item \textcolor{blue!55!black}{\textbf{In progress: end-to-end integration from source to verified artifact; the LSP server; the documentation generator.}}
+\item \textcolor{blue!55!black}{\textbf{Planned for later: MVM execution, code extraction, library-wide premise selection, MML migration.}}
+\item This talk does not claim any end-to-end results with external provers.
+\end{itemize}
+\smallskip
+\textbf{Optional notes and sources:}
+\begin{itemize}
+\setlength{\itemsep}{1pt}
+\setlength{\parsep}{0pt}
+\setlength{\parskip}{0pt}
+\item Source: \texttt{doc/design/todo.md}, Crate Status, as of October 7, 2026. Re-check before the talk.
+\end{itemize}
+}
+\end{frame}
+
+\section{Part 5. Roadmap And Closing}
+\begin{frame}[fragile,t]{5.1 - Roadmap}
+\begin{center}
+\includegraphics[width=\textwidth,height=0.46\textheight,keepaspectratio]{figures/roadmap_tpp.pdf}
+\end{center}
+\begin{itemize}
+\setlength{\itemsep}{1pt}
+\setlength{\parsep}{0pt}
+\setlength{\parskip}{0pt}
+\item \textcolor{blue!55!black}{\textbf{2026: finish the specification, the Rust pipeline through the kernel, template processing, and an alpha end-to-end run.}}
+\item \textcolor{blue!55!black}{\textbf{2027: migrate representative MML articles, build a native hammer baseline, and benchmark on top-level theorems, in the same units MizAR uses.}}
+\item 2028 and later: scale up the migration; learned premise selection; LLM-assisted failure recovery; MVM and extraction. Cryptographic and quantum targets stay future directions.
+\end{itemize}
+\note{
+\smallskip
+\textbf{Read aloud:}
+\begin{itemize}
+\setlength{\itemsep}{1pt}
+\setlength{\parsep}{0pt}
+\setlength{\parskip}{0pt}
+\item \textcolor{blue!55!black}{\textbf{2026: finish the specification, the Rust pipeline through the kernel, template processing, and an alpha end-to-end run.}}
+\item \textcolor{blue!55!black}{\textbf{2027: migrate representative MML articles, build a native hammer baseline, and benchmark on top-level theorems, in the same units MizAR uses.}}
+\item 2028 and later: scale up the migration; learned premise selection; LLM-assisted failure recovery; MVM and extraction. Cryptographic and quantum targets stay future directions.
+\end{itemize}
+}
+\end{frame}
+
+\begin{frame}[fragile,t]{5.2 - Back To The Two Paths}
+\begin{center}
+\begin{beamercolorbox}[rounded=true,sep=2.5mm,wd=0.9\textwidth]{keyphrase}
+\centering\itshape \textcolor{blue!55!black}{\textbf{The question is not whether higher-order systems}}\\ \textcolor{blue!55!black}{\textbf{can use first-order ATPs. They clearly can.}}\\ \textcolor{blue!55!black}{\textbf{The question is what becomes possible when automatic first-order}}\\ \textcolor{blue!55!black}{\textbf{reasoning is a design principle from the beginning.}}
+\end{beamercolorbox}
+\end{center}
+\smallskip
+\textbf{Mizar Evo's answer, in six parts:}
+\begin{enumerate}
+\setlength{\itemsep}{1pt}
+\setlength{\parsep}{0pt}
+\setlength{\parskip}{0pt}
+\item Keep first-order logic and set theory as the base logic.
+\item Hide the first-order details with Mizar's language design.
+\item Extend generic mathematics with templates.
+\item Add checked computation with algorithms.
+\item Rebuild fifty years of software infrastructure.
+\item Combine LLMs and ATPs where each is strong.
+\end{enumerate}
+\note{
+\smallskip
+\textbf{Read aloud:}
+\begin{itemize}
+\setlength{\itemsep}{1pt}
+\setlength{\parsep}{0pt}
+\setlength{\parskip}{0pt}
+\item \textcolor{blue!55!black}{\textbf{The question is not whether higher-order systems}} \textcolor{blue!55!black}{\textbf{can use first-order ATPs. They clearly can.}} \textcolor{blue!55!black}{\textbf{The question is what becomes possible when automatic first-order}} \textcolor{blue!55!black}{\textbf{reasoning is a design principle from the beginning.}}
+\item Keep first-order logic and set theory as the base logic.
+\item Hide the first-order details with Mizar's language design.
+\item Extend generic mathematics with templates.
+\item Add checked computation with algorithms.
+\item Rebuild fifty years of software infrastructure.
+\item Combine LLMs and ATPs where each is strong.
+\end{itemize}
+}
+\end{frame}
+
+\begin{frame}[fragile,t]{5.3 - Closing}
+\begin{center}
+\begin{beamercolorbox}[rounded=true,sep=2.5mm,wd=0.9\textwidth]{keyphrase}
+\centering\itshape \textcolor{blue!55!black}{\textbf{Keep the foundation small.}}\\ \textcolor{blue!55!black}{\textbf{Keep the mathematics readable.}}\\ \textcolor{blue!55!black}{\textbf{Modernize everything else.}}
+\end{beamercolorbox}
+\end{center}
+\begin{itemize}
+\setlength{\itemsep}{1pt}
+\setlength{\parsep}{0pt}
+\setlength{\parskip}{0pt}
+\item \textcolor{blue!55!black}{\textbf{Thank you. I welcome your questions, especially on how to design the 2027 benchmark so that it compares like with like.}}
+\end{itemize}
+\note{
+\smallskip
+\textbf{Read aloud:}
+\begin{itemize}
+\setlength{\itemsep}{1pt}
+\setlength{\parsep}{0pt}
+\setlength{\parskip}{0pt}
+\item \textcolor{blue!55!black}{\textbf{Keep the foundation small.}} \textcolor{blue!55!black}{\textbf{Keep the mathematics readable.}} \textcolor{blue!55!black}{\textbf{Modernize everything else.}}
+\item \textcolor{blue!55!black}{\textbf{Thank you. I welcome your questions, especially on how to design the 2027 benchmark so that it compares like with like.}}
+\end{itemize}
+}
+\end{frame}
+
+\appendix
+\section{Backup 1. MizAR 60 In Detail}
+\begin{frame}[fragile,t]{Backup 1. MizAR 60 In Detail}
+Source: Jakubův, Chvalovský, Goertzel, Kaliszyk, Olšák, Piotrowski, Schulz, Suda, Urban, MizAR 60 for Mizar 50, ITP 2023.
+
+\begin{itemize}
+\setlength{\itemsep}{1pt}
+\setlength{\parsep}{0pt}
+\setlength{\parskip}{0pt}
+\item Dataset: MML 1147 exported by MPTP, 57,897 theorems including unnamed top-level lemmas; the same version as the MizAR 40 evaluation, so the results can be compared.
+\item 58.4\% of top-level lemmas proved in the large-theory (hammering) mode, with no user help, by a portfolio limited to 420 s of CPU time (MizAR 40: about 40.6\%).
+\item Over 75\% proved when the premises can be chosen from the library by a human or a machine (MizAR 40: 56\%).
+\item Strongest single method: 40\% in 30 s in hammering mode; 60\% in 120 s with human premises.
+\item Transfer: the strongest method also works on 13,370 new theorems from 242 new articles in MML 1382.
+\item Methods: E and Vampire with ENIGMA and Deepire guidance, learned premise selection, and a loop that trains on millions of ATP proofs.
+\end{itemize}
+\note{
+\smallskip
+\textbf{Read aloud:}
+\begin{itemize}
+\setlength{\itemsep}{1pt}
+\setlength{\parsep}{0pt}
+\setlength{\parskip}{0pt}
+\item Dataset: MML 1147 exported by MPTP, 57,897 theorems including unnamed top-level lemmas; the same version as the MizAR 40 evaluation, so the results can be compared.
+\item 58.4\% of top-level lemmas proved in the large-theory (hammering) mode, with no user help, by a portfolio limited to 420 s of CPU time (MizAR 40: about 40.6\%).
+\item Over 75\% proved when the premises can be chosen from the library by a human or a machine (MizAR 40: 56\%).
+\item Strongest single method: 40\% in 30 s in hammering mode; 60\% in 120 s with human premises.
+\item Transfer: the strongest method also works on 13,370 new theorems from 242 new articles in MML 1382.
+\item Methods: E and Vampire with ENIGMA and Deepire guidance, learned premise selection, and a loop that trains on millions of ATP proofs.
+\end{itemize}
+\smallskip
+\textbf{Optional notes and sources:}
+\begin{itemize}
+\setlength{\itemsep}{1pt}
+\setlength{\parsep}{0pt}
+\setlength{\parskip}{0pt}
+\item Source: Jakubův, Chvalovský, Goertzel, Kaliszyk, Olšák, Piotrowski, Schulz, Suda, Urban, MizAR 60 for Mizar 50, ITP 2023.
+\end{itemize}
+}
+\end{frame}
+
+\section{Backup 2. Sledgehammer Evaluations In Detail}
+\begin{frame}[fragile,t]{Backup 2. Sledgehammer Evaluations In Detail}
+\begin{footnotesize}
+\setlength{\tabcolsep}{3pt}
+\renewcommand{\arraystretch}{1.15}
+\begin{tabularx}{\textwidth}{>{\raggedright\arraybackslash}X>{\raggedright\arraybackslash}X}
+\toprule
+\textbf{Prover} & \textbf{One-line / + Isar / + Oracle (\% of 6,934 goals)} \\
+\midrule
+E & 49.7 / 51.4 / 52.5 \\
+SPASS & 49.4 / 50.5 / 52.0 \\
+Vampire & 49.5 / 51.0 / 51.8 \\
+Z3 & 49.6 / 50.0 / 53.7 \\
+\bottomrule
+\end{tabularx}
+\end{footnotesize}
+
+\begin{itemize}
+\setlength{\itemsep}{1pt}
+\setlength{\parsep}{0pt}
+\setlength{\parskip}{0pt}
+\item Setup: 128 random AFP theories, up to 100 goals each; Isabelle2014; MePo filter; 30 s per prover in slices; replay must succeed within 2 s.
+\item Combined and trusted as oracles, the provers prove 60.7\% of the goals.
+\item Judgement Day (2010): 1,240 subgoals from seven theories, 46\% with E, SPASS, and Vampire in 30 s; a 2015 preliminary run reached 75\% with six provers.
+\item Success per theory varies between 10\% and 100\%; Sledgehammer had been tuned on Judgement Day.
+\end{itemize}
+\note{
+\smallskip
+\textbf{Read aloud:}
+\begin{itemize}
+\setlength{\itemsep}{1pt}
+\setlength{\parsep}{0pt}
+\setlength{\parskip}{0pt}
+\item Setup: 128 random AFP theories, up to 100 goals each; Isabelle2014; MePo filter; 30 s per prover in slices; replay must succeed within 2 s.
+\item Combined and trusted as oracles, the provers prove 60.7\% of the goals.
+\item Judgement Day (2010): 1,240 subgoals from seven theories, 46\% with E, SPASS, and Vampire in 30 s; a 2015 preliminary run reached 75\% with six provers.
+\item Success per theory varies between 10\% and 100\%; Sledgehammer had been tuned on Judgement Day.
+\end{itemize}
+\smallskip
+\textbf{Optional notes and sources:}
+\begin{itemize}
+\setlength{\itemsep}{1pt}
+\setlength{\parsep}{0pt}
+\setlength{\parskip}{0pt}
+\item Source: Blanchette, Haslbeck, Matichuk, Nipkow, Mining the Archive of Formal Proofs, CICM 2015, Section "Proof Automation with Sledgehammer", Figure 13; Böhme and Nipkow, IJCAR 2010.
+\end{itemize}
+}
+\end{frame}
+
+\section{Backup 3. HOL-To-FOL Encodings And Reconstruction}
+\begin{frame}[fragile,t]{Backup 3. HOL-To-FOL Encodings And Reconstruction}
+\begin{itemize}
+\setlength{\itemsep}{1pt}
+\setlength{\parsep}{0pt}
+\setlength{\parskip}{0pt}
+\item Function application: a variable function applied to an argument becomes \texttt{app(F, X)}; applications of constants may stay curried or be flattened.
+\item Lambda abstraction: lambda lifting introduces fresh constants with defining equations; combinator translation is the alternative.
+\item Types: polymorphic HOL types are encoded by guards, tags, or monomorphization; the choice affects soundness, completeness, and prover performance.
+\item Booleans: Boolean-valued terms inside formulas need a separate encoding.
+\item Reconstruction: \texttt{metis} with the used lemmas, \texttt{smt} replay of SMT proofs, or generated Isar text; evaluations count reconstruction failures separately.
+\end{itemize}
+Source: Meng and Paulson 2008; Blanchette, Böhme, Popescu, Smallbone 2016; Blanchette, Kaliszyk, Paulson, Urban 2016; Schurr, Fleury, Desharnais 2021.
+
+\note{
+\smallskip
+\textbf{Read aloud:}
+\begin{itemize}
+\setlength{\itemsep}{1pt}
+\setlength{\parsep}{0pt}
+\setlength{\parskip}{0pt}
+\item Function application: a variable function applied to an argument becomes \texttt{app(F, X)}; applications of constants may stay curried or be flattened.
+\item Lambda abstraction: lambda lifting introduces fresh constants with defining equations; combinator translation is the alternative.
+\item Types: polymorphic HOL types are encoded by guards, tags, or monomorphization; the choice affects soundness, completeness, and prover performance.
+\item Booleans: Boolean-valued terms inside formulas need a separate encoding.
+\item Reconstruction: \texttt{metis} with the used lemmas, \texttt{smt} replay of SMT proofs, or generated Isar text; evaluations count reconstruction failures separately.
+\end{itemize}
+\smallskip
+\textbf{Optional notes and sources:}
+\begin{itemize}
+\setlength{\itemsep}{1pt}
+\setlength{\parsep}{0pt}
+\setlength{\parskip}{0pt}
+\item Source: Meng and Paulson 2008; Blanchette, Böhme, Popescu, Smallbone 2016; Blanchette, Kaliszyk, Paulson, Urban 2016; Schurr, Fleury, Desharnais 2021.
+\end{itemize}
+}
+\end{frame}
+
+\section{Backup 4. Template Instantiation: One Proof, Many Views}
+\begin{frame}[fragile,t]{Backup 4. Template Instantiation: One Proof, Many Views}
+Bounded type parameter and generic theorem (specification example, proof omitted):
+
+\begin{lstlisting}[language={mizar},basicstyle=\ttfamily\footnotesize]
+definition
+  let T be type extends commutative associative unital Magma;
+  theorem PermProduct[T]:
+    for s being FinSequence of T,
+        p being Permutation of dom s
+    holds Product[T](s) = Product[T](s * p)
+  proof ... end;
+end;
+\end{lstlisting}
+\smallskip
+\textbf{Instantiation}~\badgeSpec~{\footnotesize(with the required registrations)}
+\begin{lstlisting}[language={mizar},basicstyle=\ttfamily\small]
+PermProduct[commutative associative unital AddMagma]
+PermProduct[commutative associative unital MulMagma]
+let R be commutative Ring;  PermProduct[R qua AddMagma]  :: additive view
+\end{lstlisting}
+\begin{itemize}
+\setlength{\itemsep}{1pt}
+\setlength{\parsep}{0pt}
+\setlength{\parskip}{0pt}
+\item A ring reaches Magma along two paths; \texttt{qua} selects the view, and the view also sets the notation.
+\end{itemize}
+\note{
+\smallskip
+\textbf{Read aloud:}
+\begin{itemize}
+\setlength{\itemsep}{1pt}
+\setlength{\parsep}{0pt}
+\setlength{\parskip}{0pt}
+\item Bounded type parameter and generic theorem.
+\item A ring reaches Magma along two paths; \texttt{qua} selects the view, and the view also sets the notation.
+\end{itemize}
+\smallskip
+\textbf{Optional notes and sources:}
+\begin{itemize}
+\setlength{\itemsep}{1pt}
+\setlength{\parsep}{0pt}
+\setlength{\parskip}{0pt}
+\item Source: \texttt{doc/spec/en/18.templates.md}, section 18.2.2.
+\end{itemize}
+}
+\end{frame}
+
+\section{Backup 5. Kernel Evidence And The Trusted SAT Check}
+\begin{frame}[fragile,t]{Backup 5. Kernel Evidence And The Trusted SAT Check}
+\begin{center}
+\includegraphics[width=\textwidth,height=0.52\textheight,keepaspectratio]{../2026-09-bialystok/figures/certificate_replay.pdf}
+\end{center}
+\begin{itemize}
+\setlength{\itemsep}{1pt}
+\setlength{\parsep}{0pt}
+\setlength{\parskip}{0pt}
+\item The evidence holds source formulas, explicit substitutions, provenance, and target and goal bindings. The kernel checks them, builds a deterministic SAT problem, and requires UNSAT from its trusted in-process SAT checker.
+\item Backend proof traces, SMT proof objects, logs, and exit codes are for diagnosis only.
+\end{itemize}
+\note{
+\smallskip
+\textbf{Read aloud:}
+\begin{itemize}
+\setlength{\itemsep}{1pt}
+\setlength{\parsep}{0pt}
+\setlength{\parskip}{0pt}
+\item The evidence holds source formulas, explicit substitutions, provenance, and target and goal bindings. The kernel checks them, builds a deterministic SAT problem, and requires UNSAT from its trusted in-process SAT checker.
+\item Backend proof traces, SMT proof objects, logs, and exit codes are for diagnosis only.
+\end{itemize}
+\smallskip
+\textbf{Optional notes and sources:}
+\begin{itemize}
+\setlength{\itemsep}{1pt}
+\setlength{\parsep}{0pt}
+\setlength{\parskip}{0pt}
+\item Source: \texttt{doc/design/architecture/en/08.reasoning\_boundary.md}, \texttt{15.kernel\_certificate\_format.md}.
+\end{itemize}
+}
+\end{frame}
+
+\section{Backup 6. The Core ATP Path}
+\begin{frame}[fragile,t]{Backup 6. The Core ATP Path}
+\begin{center}
+\includegraphics[width=\textwidth,height=0.52\textheight,keepaspectratio]{../2026-09-bialystok/figures/pipeline.pdf}
+\end{center}
+\begin{itemize}
+\setlength{\itemsep}{1pt}
+\setlength{\parsep}{0pt}
+\setlength{\parskip}{0pt}
+\item Only obligations that are still open after deterministic discharge go to ATPs. The earlier discharge also needs replayable evidence.
+\item Each boundary states who owns a fact, which artifact records it, and what must be checked again after a change.
+\end{itemize}
+\note{
+\smallskip
+\textbf{Read aloud:}
+\begin{itemize}
+\setlength{\itemsep}{1pt}
+\setlength{\parsep}{0pt}
+\setlength{\parskip}{0pt}
+\item Only obligations that are still open after deterministic discharge go to ATPs. The earlier discharge also needs replayable evidence.
+\item Each boundary states who owns a fact, which artifact records it, and what must be checked again after a change.
+\end{itemize}
+\smallskip
+\textbf{Optional notes and sources:}
+\begin{itemize}
+\setlength{\itemsep}{1pt}
+\setlength{\parsep}{0pt}
+\setlength{\parskip}{0pt}
+\item Source: \texttt{doc/design/architecture/en/00.pipeline\_overview.md}; Bialystok deck, Part 10.
+\end{itemize}
+}
+\end{frame}
+
+\section{Backup 7. Incremental Verification}
+\begin{frame}[fragile,t]{Backup 7. Incremental Verification}
+\begin{center}
+\includegraphics[width=\textwidth,height=0.52\textheight,keepaspectratio]{../2026-09-bialystok/figures/fingerprint_graph.pdf}
+\end{center}
+\begin{itemize}
+\setlength{\itemsep}{1pt}
+\setlength{\parsep}{0pt}
+\setlength{\parskip}{0pt}
+\item A proof-body edit does not rebuild importers when the exported statement and the accepted status stay the same. An interface change re-verifies the dependency cone.
+\item All relevant cache keys must match; missing data is a cache miss. Cache reuse is never proof authority: a clean build must reproduce every acceptance.
+\end{itemize}
+\note{
+\smallskip
+\textbf{Read aloud:}
+\begin{itemize}
+\setlength{\itemsep}{1pt}
+\setlength{\parsep}{0pt}
+\setlength{\parskip}{0pt}
+\item A proof-body edit does not rebuild importers when the exported statement and the accepted status stay the same. An interface change re-verifies the dependency cone.
+\item All relevant cache keys must match; missing data is a cache miss. Cache reuse is never proof authority: a clean build must reproduce every acceptance.
+\end{itemize}
+\smallskip
+\textbf{Optional notes and sources:}
+\begin{itemize}
+\setlength{\itemsep}{1pt}
+\setlength{\parsep}{0pt}
+\setlength{\parskip}{0pt}
+\item Source: \texttt{doc/design/architecture/en/11.artifact\_and\_incremental\_build.md}, \texttt{18.dependency\_fingerprint.md}; Bialystok deck, Story 5.
+\end{itemize}
+}
+\end{frame}
+
+\section{Backup 8. Package Manifest}
+\begin{frame}[fragile,t]{Backup 8. Package Manifest}
+\smallskip
+\textbf{Mizar Evo}~\badgeSpec
+\begin{lstlisting}[language={toml},basicstyle=\ttfamily\footnotesize]
+[package]
+name    = "algebra"
+version = "2.3.1"
+edition = "2025"
+
+[dependencies]
+mml_core = "^1.0"
+topology = { version = "^0.9", features = ["metric"] }
+\end{lstlisting}
+\begin{itemize}
+\setlength{\itemsep}{1pt}
+\setlength{\parsep}{0pt}
+\setlength{\parskip}{0pt}
+\item Reproducible builds need fixed source, lockfile, toolchain, and verifier settings, including deterministic ATP evidence.
+\item Versioned reuse replaces manual copying between article sets; an aggregate module can export a whole topic through one import.
+\end{itemize}
+Source: \texttt{doc/spec/en/23.package\_management\_and\_build\_system.md}; Bialystok deck, Story 1.
+
+\note{
+\smallskip
+\textbf{Read aloud:}
+\begin{itemize}
+\setlength{\itemsep}{1pt}
+\setlength{\parsep}{0pt}
+\setlength{\parskip}{0pt}
+\item Reproducible builds need fixed source, lockfile, toolchain, and verifier settings, including deterministic ATP evidence.
+\item Versioned reuse replaces manual copying between article sets; an aggregate module can export a whole topic through one import.
+\end{itemize}
+\smallskip
+\textbf{Optional notes and sources:}
+\begin{itemize}
+\setlength{\itemsep}{1pt}
+\setlength{\parsep}{0pt}
+\setlength{\parskip}{0pt}
+\item Source: \texttt{doc/spec/en/23.package\_management\_and\_build\_system.md}; Bialystok deck, Story 1.
+\end{itemize}
+}
+\end{frame}
+
+\section{Backup 9. Forty-Five-Minute Additions}
+\begin{frame}[fragile,t]{Backup 9. Forty-Five-Minute Additions}
+The story does not change. Add depth with these examples, in this order of priority:
+
+\begin{enumerate}
+\setlength{\itemsep}{1pt}
+\setlength{\parsep}{0pt}
+\setlength{\parskip}{0pt}
+\item HOL-to-FOL function encoding worked through on one goal (\texttt{app}, partial application, lambda lifting).
+\item Mizar function representation: \texttt{Function of X,Y}, \texttt{f.x}, soft type as a set-theoretic object.
+\item Template: \texttt{PermProduct[T]} with additive and multiplicative views (Backup 4).
+\item Algorithm: Euclidean GCD plus \texttt{by computation} and the promotion to a functor.
+\item Structures and views: \texttt{AddMagma}, \texttt{MulMagma}, \texttt{Magma} (Bialystok Story 2).
+\item Modern infrastructure: \texttt{mizar.pkg}, namespaces, the fingerprint graph (Backups 7-8).
+\item Trusted boundary: ATP search, KernelEvidence, checked acceptance (Backup 5).
+\end{enumerate}
+\note{
+\smallskip
+\textbf{Read aloud:}
+\begin{itemize}
+\setlength{\itemsep}{1pt}
+\setlength{\parsep}{0pt}
+\setlength{\parskip}{0pt}
+\item The story does not change. Add depth with these examples, in this order of priority:
+\item HOL-to-FOL function encoding worked through on one goal (\texttt{app}, partial application, lambda lifting).
+\item Mizar function representation: \texttt{Function of X,Y}, \texttt{f.x}, soft type as a set-theoretic object.
+\item Template: \texttt{PermProduct[T]} with additive and multiplicative views (Backup 4).
+\item Algorithm: Euclidean GCD plus \texttt{by computation} and the promotion to a functor.
+\item Structures and views: \texttt{AddMagma}, \texttt{MulMagma}, \texttt{Magma} (Bialystok Story 2).
+\item Modern infrastructure: \texttt{mizar.pkg}, namespaces, the fingerprint graph (Backups 7-8).
+\item Trusted boundary: ATP search, KernelEvidence, checked acceptance (Backup 5).
+\end{itemize}
+}
+\end{frame}
+
+\section{Backup 10. Sources And Attribution}
+\begin{frame}[fragile,t]{Backup 10. Sources And Attribution}
+\smallskip
+\textbf{Exact MML excerpts used in this talk:}
+\begin{scriptsize}
+\setlength{\tabcolsep}{3pt}
+\renewcommand{\arraystretch}{1.15}
+\begin{tabularx}{\textwidth}{>{\raggedright\arraybackslash}X>{\raggedright\arraybackslash}X>{\raggedright\arraybackslash}X>{\raggedright\arraybackslash}X}
+\toprule
+\textbf{Purpose} & \textbf{Source} & \textbf{Lines} & \textbf{Used in} \\
+\midrule
+Function application \texttt{f.x} & \texttt{funct\_1.miz} & 138-140 & Frame 2.3 \\
+\texttt{Function of X,Y} as a soft type & \texttt{funct\_2.miz} & 87-90 & Frame 2.3 \\
+\bottomrule
+\end{tabularx}
+\end{scriptsize}
+
+\smallskip
+\textbf{Source URLs:}
+\begin{itemize}
+\setlength{\itemsep}{1pt}
+\setlength{\parsep}{0pt}
+\setlength{\parskip}{0pt}
+\item \texttt{FUNCT\_1}: \url{https://mizar.uwb.edu.pl/version/current/mml/funct\_1.miz}
+\item \texttt{FUNCT\_2}: \url{https://mizar.uwb.edu.pl/version/current/mml/funct\_2.miz}
+\end{itemize}
+\smallskip
+\textbf{Attribution note:}
+\begin{itemize}
+\setlength{\itemsep}{1pt}
+\setlength{\parsep}{0pt}
+\setlength{\parskip}{0pt}
+\item MML plain-text files state GPL-3.0-or-later / CC-BY-SA-3.0-or-later terms; keep article attribution, URLs, and line numbers in speaker notes.
+\item Benchmark figures: see Backups 1-2 and \texttt{references.bib}. Verify bibliographic metadata against publishers before the final deck.
+\end{itemize}
+\note{
+\smallskip
+\textbf{Read aloud:}
+\begin{itemize}
+\setlength{\itemsep}{1pt}
+\setlength{\parsep}{0pt}
+\setlength{\parskip}{0pt}
+\item \texttt{FUNCT\_1}: \url{https://mizar.uwb.edu.pl/version/current/mml/funct\_1.miz}
+\item \texttt{FUNCT\_2}: \url{https://mizar.uwb.edu.pl/version/current/mml/funct\_2.miz}
+\item MML plain-text files state GPL-3.0-or-later / CC-BY-SA-3.0-or-later terms; keep article attribution, URLs, and line numbers in speaker notes.
+\item Benchmark figures: see Backups 1-2 and \texttt{references.bib}. Verify bibliographic metadata against publishers before the final deck.
+\end{itemize}
+}
+\end{frame}
+
+\end{document}
