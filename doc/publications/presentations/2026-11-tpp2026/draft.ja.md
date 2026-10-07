@@ -1,569 +1,765 @@
 # TPP 2026 発表叩き台
 
 > **Status:** working draft  
-> **目的:** TPP 2026 で Mizar Evolution の研究上の狙いを明示するための論旨整理。  
-> **注意:** 本文は言語仕様ではない。事実・解釈・研究仮説を区別して扱う。
+> **講演時間:** 30分を標準。45分版は補助スライドを追加して構成する。  
+> **位置づけ:** Białystok 2026 セミナーを母体とし、TPPでは「なぜ FOL を核に残すのか」を出発点に Mizar Evolution 全体の設計思想を説明する。  
+> **注意:** 本文は言語仕様ではない。確立した事実、設計判断、研究仮説を区別して扱う。
+
+---
 
 ## 仮タイトル
 
-**AI時代の定理証明支援系を再考する  
-— FOL-native ATP と Mizar Evolution —**
+第一候補:
 
-別案:
+**Mizar Evolution: FOLを核にしたAI時代の形式数学**  
+— 強力な自動化、Template、Algorithm、そして大規模ライブラリ —
 
-**LLM Thinks, ATP Proves  
-— Mizar Evolution における native hammer の設計思想 —**
+第二候補:
 
----
+**なぜ今、一階述語論理なのか**  
+— Mizar Evolution の設計思想 —
 
-## 0. 発表の一文
+第三候補:
 
-Mizar Evolution の中心的な研究仮説は、単に「Mizarを現代化する」ことではない。
+**Mizar Evolution: 数学者のための集合論と自動証明を再接続する**
 
-> **LLM や人間は理論構築・証明戦略・補題設計を担い、  
-> 大量の具体的な証明探索は、はるかに軽量な一階自動定理証明器 (ATP) に委ねる。  
-> そのために、FOL ATP を後付けの補助機構ではなく native hammer として持つ
-> 大規模形式数学環境を設計する。**
-
-この仮説を、Mizar/MPTP/MizAR の20年以上の経験と、現在の Mizar Evolution
-アーキテクチャを踏まえて検討する。
+第一候補を推奨する。TPPでは native hammer 単独ではなく、言語・検証・ライブラリを一体として説明する。
 
 ---
 
-## 1. 問題意識: ATP は本当に ITP で十分に使われてきたか
+# 0. 最初に伝えるべきこと: なぜ FOL を残すのか
 
-現在の主要な ITP は、依存型理論や高階論理を基礎とするものが多い。一方、
-Vampire や E に代表される強力な ATP は、長く一階論理を主要な活動領域として
-発展してきた。
+Mizar Evolution は、単に「古い Mizar を現代化する」プロジェクトではない。
 
-Isabelle/Sledgehammer は、この隔たりを越えて ATP を実用的に利用することに
-成功した代表例である。典型的には、
+最初の設計判断は、**証明論理を高階化せず、一階述語論理と集合論を基礎として残す**ことである。
+
+この判断には二つの積極的な理由がある。
+
+## 0.1 LLM に頼らなくても強力な自動化が使える
+
+Vampire、E などの一階自動定理証明器 (ATP) は、長年の研究によって高度に発達している。
+
+- proof search に特化している;
+- LLM よりはるかに軽量に大量の探索を行える;
+- 同じ問題を多数の strategy / prover で反復できる;
+- 結果を独立した検証系で確認できる;
+- LLM の能力や挙動に proof correctness を依存させる必要がない。
+
+したがって Mizar Evolution が FOL を native substrate に持つことは、
+
+> **AIを使わなくても強い自動化を持ち、AIを使う場合にもAIを証明探索の唯一の担い手にしない**
+
+という設計につながる。
+
+これは「FOL は単純だから実装しやすい」という消極的理由ではない。
+
+> **FOL を選ぶこと自体が、軽量で成熟した ATP を最大限利用するための architecture 上の選択である。**
+
+## 0.2 数学者に馴染みのある集合論の上に立つ
+
+Mizar は Tarski–Grothendieck set theory と一階述語論理を基礎とする。
+
+多くの通常の数学では、
+
+- 数;
+- 集合;
+- 写像;
+- 代数構造;
+- 位相空間;
+- 数列;
+- 関数空間;
+
+を集合論的対象として理解できる。
+
+したがって Mizar Evolution は、プログラミング言語的な型理論を先に学ばなければ数学を書けない環境ではなく、
+
+> **数学者が通常の数学で使ってきた集合論的な世界観を、そのまま形式化の基盤にする**
+
+ことを目指す。
+
+ここは「数学者は全員集合論を意識している」という主張ではない。
+
+主張はより限定的である。
+
+> **集合論は数学の標準的な共通基盤として長い実績を持ち、Mizar はその上で大規模な数学ライブラリを構築してきた。**
+
+## 0.3 この二つを同時に取りたい
 
 ```text
-Isabelle/HOL goal
-    -> premise selection
-    -> HOL-to-ATP translation
-    -> external ATP/SMT
-    -> proof reconstruction / replay
-    -> Isabelle acceptance
+mathematician-friendly set-theoretic foundation
+                    +
+mature lightweight first-order ATP ecosystem
+                    =
+          FOL-native formal mathematics
 ```
 
-という経路を取る。
-
-ここで問いたいのは、
-
-> **「高階 ITP から FOL ATP を利用できるか」ではない。  
-> それが可能であることは Sledgehammer が既に示している。  
-> 問題は、これが ATP の能力を利用するための最適なアーキテクチャなのか、である。**
-
-高階表現を必要とする数学は当然存在する。しかし、FOL で自然に扱える大規模な
-数学領域について、最初から ATP-friendly な論理基盤を採用した ITP が十分に
-比較検証されてきたとは言い難い。
-
-### 発表上の注意
-
-Sledgehammer を「失敗」と表現しない。むしろ、
-
-- 高階環境から FOL ATP を利用する技術として大きな成果である;
-- だからこそ、その成功を「FOL ATP 自体の限界」と混同してはいけない;
-- FOL-native な対照系がほぼ存在しなかったため、アーキテクチャ比較が不十分だった;
-
-という順に述べる。
+TPP 2026 の発表は、ここから始める。
 
 ---
 
-## 2. MizAR が与える重要な実証的根拠
+# 1. しかし FOL だけでは足りない
 
-Mizar は集合論・一階述語論理を基礎とし、MPTP は MML を一階論理の大規模
-ATP 問題へ変換する研究基盤を築いた。
+FOL を基礎に残すと、当然代償がある。
 
-2023年の **MizAR 60 for Mizar 50** は、MML 1147 から抽出された
-57,897 個の theorem（unnamed top-level lemmas を含む）を対象に、大規模な
-AI/ATP 実験を行った [1]。
+特に不足するのは次の三つである。
 
-論文の主要結果:
+1. **generic mathematics**  
+   型・述語・関数にパラメータ化された数学を自然に記述したい。
 
-- **58.4%** の Mizar top-level lemmas を、ユーザの premise 指定なしの
-  large-theory / hammering mode で自動証明;
-- 人間の証明で使われた premise、または機械選択された premise を利用できる条件では
-  **75%超**;
-- strongest single method は hammering mode で **30秒以内に40%**;
-- 58.4% は大規模 portfolio（最大420 CPU秒）による値。
+2. **computation**  
+   反復、再帰、有限探索、symbolic procedure を数学の中で扱いたい。
 
-重要なのは、これは **top-level lemma** を単位とした評価であることである。
+3. **large-scale software engineering**  
+   1500篇規模のライブラリを現代的に分割・配布・再検証したい。
 
-### Sledgehammer の成功率との数字の単純比較を避ける
+Mizar Evolution の設計方針は、
 
-Sledgehammer の代表的な大規模評価では、Archive of Formal Proofs 等の
-既存形式証明の途中に現れる **proof goals** を対象とするものがある [2,3]。
-すなわち、人間が既に proof structure を与えた後の局所 goal を含む。
+> **これらを解決するために基盤論理を高階化するのではなく、  
+> FOL core の外側に明示的な言語機構を置く**
 
-したがって、
+ことである。
 
 ```text
-MizAR:       top-level theorem / lemma
-Sledgehammer: goals arising inside existing structured proofs
+        rich mathematical / software surface
+                     |
+          -------------------------
+          |           |           |
+       template    algorithm   modules / packages
+          |           |           |
+          -------- elaboration ----
+                     |
+              first-order core
+                     |
+                 native ATP
 ```
 
-という評価粒度の違いがあり、58% と 50--60% といった数字を直接比較してはならない。
+---
 
-むしろ発表で強調すべき点は:
+# 2. 30分講演の流れ
 
-> **MizAR は、FOL-native な大規模数学ライブラリに対して、top-level theorem を
-> 相当な割合で完全自動化できることを既に示している。**
+| 時間 | 内容 |
+|---:|---|
+| 0–5分 | **なぜ FOL を残すのか** — 集合論と軽量ATP |
+| 5–8分 | FOL の制約と設計方針 |
+| 8–13分 | **Template** — 高階化せず generic mathematics |
+| 13–18分 | **Algorithm** — 論理を拡張せず計算を取り込む |
+| 18–22分 | structure / view / registration — 数学的表現力 |
+| 22–25分 | namespace / package / incremental build — 大規模化 |
+| 25–28分 | **Native hammer + LLM** — 役割分担 |
+| 28–30分 | 全体像・研究課題・結論 |
 
-これは Mizar Evolution の設計仮説に対する強い先行根拠である。
+**30分を標準とする。**
+
+45分版では Białystok 版の具体例を追加する。  
+本編そのものを長くしすぎない。45分版は「別の話を足す」のではなく、各節の例を深くする。
 
 ---
 
-## 3. それでも MizAR は完成形ではない
+# 3. Slide 1 — Title
 
-MizAR/MPTP は非常に重要だが、そのまま「現代的な FOL ITP + native hammer」
-だったわけではない。
+**Mizar Evolution: FOLを核にしたAI時代の形式数学**  
+— 強力な自動化、Template、Algorithm、そして大規模ライブラリ —
 
-少なくとも以下は Mizar Evolution で再設計する余地がある。
+サブタイトル候補:
 
-- 言語・処理系・ATP が最初から同一アーキテクチャとして設計されていない;
-- 現代的な package / namespace / incremental build / machine-readable API がない;
-- ATP 問題生成、backend 実行、検証証拠の管理を、実装上の明確な境界として
-  再設計できる;
-- 現代の premise selection、neural guidance、LLM による高水準推論を統合できる;
-- AI が生成した理論を、そのまま検証済みライブラリへ蓄積する研究環境として設計できる。
-
-したがって Mizar Evolution は、
-
-> **MPTP/MizAR で20年間実験されてきた「Mizar + FOL ATP」を、
-> 後付け bridge ではなく theorem prover architecture の中心原理として設計し直す**
-
-プロジェクトと位置づけられる。
+> A small logical foundation with a rich mathematical environment.
 
 ---
 
-## 4. AI 時代の役割分担
+# 4. Slide 2 — Why FOL? その1: AIなしでも強い
 
-### 4.1 LLM に何をさせるか
+大きく一文:
 
-LLM の強み:
-
-- 問題の意味を理解する;
-- 関連する数学理論を想起する;
-- 定義を設計する;
-- 証明方針を選択する;
-- 中間補題を発明する;
-- 失敗した方針を変更する;
-- 自然言語数学と形式表現を接続する。
-
-これは大域的・意味的・創造的な探索である。
-
-### 4.2 ATP に何をさせるか
-
-ATP の強み:
-
-- 与えられた premise と goal に対し大量の記号的探索を行う;
-- resolution / superposition 等を高速に繰り返す;
-- LLM よりはるかに軽量な計算資源で多数の obligation を処理する;
-- 同じ problem を複数 backend / strategy で独立に探索できる。
-
-局所的な論理探索を毎回 LLM に文章として生成させる必要はない。
-
-### 4.3 基本ループ
-
-```text
-          semantic / global reasoning
-                 LLM
-                  |
-       theorem / definitions / lemmas
-                  v
-        Mizar Evolution library
-                  |
-          native FOL obligations
-                  v
-          Vampire / E / ...
-                  |
-        kernel-checkable evidence
-                  v
-           trusted verifier
-```
-
-より運用的には:
-
-```text
-top-level theorem
-    |
-    +--> cheap ATP first
-            |
-            +--> solved ------> verify / store
-            |
-            +--> failed
-                    |
-                    v
-              ask expensive LLM
-                    |
-          propose decomposition / lemma
-                    |
-                    v
-                 ATP again
-```
-
-つまり **LLM は常時呼ばなくてよい**。
-
-> **LLM thinks. ATP proves. Mizar Evolution remembers and verifies.**
-
-これを発表の中心メッセージ候補とする。
-
----
-
-## 5. 「人間/LLM が証明を書く」の意味を変える
-
-FOL-native hammer が十分に強ければ、人間や LLM が生成すべきものは
-低水準 proof step ではなく、数学的な proof architecture になる。
-
-例:
-
-```text
-Main theorem
-  |
-  +-- Lemma A
-  +-- Lemma B
-  +-- Lemma C
-  |
-  +-- Main follows
-```
-
-A/B/C の内部が数万 inference steps でも、人間や LLM にそれを書かせる必要はない。
-
-成功すれば、形式証明の主な人間可読層は通常の数学に近い:
-
-- 定義;
-- 中間命題;
-- 依存関係;
-- 主要な構成;
-- 失敗時に追加された補題。
-
-これは Mizar の declarative proof tradition と自然に接続する。
-
----
-
-## 6. Mizar Evolution の現在のアーキテクチャとの対応
-
-現行設計では、概略:
-
-```text
-Source
- -> SurfaceAst
- -> Resolved / Typed representations
- -> CoreIr
- -> VcIr
- -> AtpProblem
- -> external ATP
- -> KernelEvidence
- -> trusted kernel check
- -> VerifiedArtifact
-```
-
-となっている。
-
-参照:
-
-- `doc/design/architecture/en/00.pipeline_overview.md`
-- `doc/design/architecture/en/08.reasoning_boundary.md`
-- `doc/design/architecture/en/09.atp_interface_protocol.md`
-- `doc/design/architecture/en/10.atp_backend_integration.md`
-
-ここで重要なのは:
-
-1. **ATP は trusted computing base に入れない。**
-2. proof search と acceptance を分離する。
-3. ATP が成功したという報告自体を信用せず、kernel-checkable evidence を検査する。
-4. surface language の高水準機能は ATP backend に押し付けず、
-   elaboration / VC generation の前段で解決する。
-5. 最終 proof obligation は可能な限り ATP-friendly にする。
-
-この構造に global premise selection / native hammer を追加すれば、
-今回の研究仮説を実験可能にできる。
-
----
-
-## 7. 語彙的意味について
-
-自然言語として意味のある identifier は、proof correctness の根拠にはしない。
-
-`point` を `pencil` に rename しても、形式意味論が同じなら theorem の真偽は
-変わってはならない。
-
-一方で、
-
-> **names do not determine truth, but names may guide search**
-
-という立場は取り得る。
-
-将来的な premise selection では、
-
-- formal dependency;
-- symbol occurrence;
-- definition dependency;
-- natural-language identifier;
-- embedding / LLM prior;
-
-を search guidance として組み合わせることができる。
-
-ただし TPP 2026 では、これは中心主張ではなく将来方向として扱う。
-
----
-
-## 8. 発表で立てる研究質問
-
-### RQ1: Native hammer は top-level theorem をどこまで解けるか
-
-Mizar Evolution へ移行した MML subset で、
-
-- theorem statement のみ;
-- automatic premise selection;
-- fixed ATP portfolio;
-
-から、top-level theorem success rate を測る。
-
-### RQ2: 失敗の主因は何か
-
-失敗を少なくとも以下へ分解する。
-
-- premise selection failure;
-- ATP search failure;
-- missing intermediate lemma;
-- unsupported / expensive encoding;
-- resource limit;
-- implementation limitation.
-
-### RQ3: LLM を failure recovery に限定すると何が起きるか
-
-直接 ATP で失敗した theorem に対してのみ LLM を呼び、
-
-- intermediate lemma generation;
-- premise suggestion;
-- definition unfolding/folding suggestion;
-
-を行う。
-
-評価:
-
-- additional solved rate;
-- LLM calls per theorem;
-- API/GPU cost;
-- ATP CPU cost;
-- wall-clock time.
-
-### RQ4: 人間が proof decomposition を与えなくても実用になるか
-
-主指標を local goal success ではなく、
-
-> **top-level theorem success rate**
-
-とする。
-
-これが Mizar Evolution のユーザ体験を決める。
-
----
-
-## 9. 最初の実験案
-
-MML から比較的小さな依存閉包を選び、各 top-level theorem について次を測る。
-
-### A. Native hammer baseline
-
-- automatic premise selection;
-- Vampire / E;
-- 固定 timeout;
-- LLM 不使用。
-
-### B. Oracle / human-premise baseline
-
-- 元 Mizar proof で使われた premise を利用できる条件;
-- ATP search 自体の能力を見る。
-
-### C. LLM-assisted recovery
-
-A で失敗した theorem のみ、
-
-1. LLM が必要な補題を最大 N 個提案;
-2. 各補題を ATP で検証;
-3. 証明済み補題を context に追加;
-4. 主定理を ATP で再試行。
-
-### 測定値
-
-- top-level theorem solved rate;
-- solved by ATP alone;
-- solved after LLM decomposition;
-- ATP CPU time;
-- LLM token / API cost;
-- generated lemmas per solved theorem;
-- accepted evidence size;
-- premise count;
-- failure categories.
-
-**比較対象の時間予算・problem granularity が異なる場合、Sledgehammer や MizAR の
-公開 success rate と単純な順位比較はしない。**
-
----
-
-## 10. 発表で主張しないこと
-
-### 「FOL がすべての数学に最適」
-
-主張しない。高階論理・依存型理論が自然な領域は存在する。
-
-今回の問いは:
-
-> FOL で自然に扱える大規模形式数学について、FOL-native architecture の潜在能力は
-> 十分に調べられたか。
-
-である。
-
-### 「Sledgehammer は失敗」
-
-主張しない。
-
-Sledgehammer は異なる論理基盤をまたいで強力な ATP を利用する優れた技術である。
-ただし、その成功を native FOL architecture の不要性の根拠にはできない。
-
-### 「MizAR 58.4% と Sledgehammer 54% は直接比較できる」
-
-主張しない。dataset、goal granularity、time budget、premise regime が異なる。
-
-### 「FOL-native にすれば premise selection 問題が消える」
-
-消えない。むしろ大規模ライブラリでは中心課題の一つであり続ける。
-
-### 「LLM が不要」
-
-逆。LLM の役割を、ATP が苦手な高水準 reasoning に集中させる。
-
----
-
-## 11. TPP 2026 スライド案
-
-### Slide 1 — Title
-
-AI時代の定理証明支援系を再考する  
-— FOL-native ATP と Mizar Evolution —
-
-### Slide 2 — The observation
-
-- LLM の数学能力が急上昇
-- しかし formal proof の局所探索まで LLM に任せる必要があるか?
-- 強力かつ軽量な ATP が既に存在
-
-### Slide 3 — Two kinds of reasoning
-
-左: LLM — semantics / theory / strategy  
-右: ATP — exhaustive symbolic proof search
-
-### Slide 4 — Current mainstream architecture
-
-Higher-order / dependent ITP  
-→ translation / hammer  
-→ FOL ATP  
-→ reconstruction
-
-Sledgehammer を代表例として説明。
-
-### Slide 5 — The missing control experiment
-
-**What if ATP were native?**
-
-「高階でも使える」ことと「高階経由が最適」は別問題。
-
-### Slide 6 — Mizar as a natural test bed
-
-- set theory / FOL
-- declarative mathematics
-- MML
-- MPTP
-
-### Slide 7 — MizAR 60
-
-大きく **58.4%** を表示。
-
-- top-level lemmas
-- no user help in hammer setting
-- >75% with premise assistance
-- benchmark conditionsも明記
-
-### Slide 8 — Important caveat
-
-MizAR vs Sledgehammer の success rate を直接比較しない。
+> **Strong automation should not require a large language model.**
 
 図:
 
 ```text
-MizAR        : top-level lemma
-Sledgehammer : proof goals inside structured developments
+                 proof obligation
+                       |
+              +--------+--------+
+              |                 |
+          Vampire              E
+              |                 |
+              +--------+--------+
+                       |
+                  checked result
 ```
 
-### Slide 9 — The architectural hypothesis
+要点:
+
+- ATP は proof search の専用エンジン;
+- LLMより軽量;
+- 多数の obligation を繰り返し解ける;
+- solverを交換・並列化できる;
+- correctness は solver 自身を信頼せず再検査できる。
+
+発表で強調:
+
+> **LLM が非常に強くなっても、論理探索まで毎回 LLM にやらせる必要はない。**
+
+---
+
+# 5. Slide 3 — Why FOL? その2: 数学者の集合論
+
+Mizar の基盤:
 
 ```text
-LLM -> theorem / lemmas -> FOL-native hammer -> checked evidence
+first-order logic
+       +
+Tarski–Grothendieck set theory
 ```
 
-### Slide 10 — Cheap-first cascade
+要点:
 
-ATP first → failure only → LLM → new lemmas → ATP again
+- 数学対象を集合論的に扱う;
+- MML はこの基盤で長期に構築されてきた;
+- mathematical vernacular と相性がよい;
+- foundation と programming language を必要以上に同一化しない。
 
-### Slide 11 — Mizar Evolution pipeline
+ここで Lean / Coq を攻撃しない。
 
-現在の pipeline を簡略化して表示。
+言うべきこと:
 
-trusted / untrusted boundary を色分けする。
-
-### Slide 12 — What changes for the user?
-
-局所 proof step を書くのでなく、定義と重要補題を書く。
-
-ATP が通れば `by` 相当で終了。  
-失敗時のみ decomposition。
-
-### Slide 13 — Evaluation plan
-
-top-level theorem success rate を中心指標にする。
-
-ATP-only / oracle-premise / LLM-recovery を比較。
-
-### Slide 14 — Research claim
-
-**The goal is not a better hammer for a higher-order ITP.  
-The goal is to test an ITP architecture built around automated reasoning from the start.**
-
-### Slide 15 — Closing
-
-**LLM thinks. ATP proves. Mizar Evolution remembers and verifies.**
+> **型理論には型理論の利点がある。Mizar Evolution は別の極として、  
+> 集合論とFOLを基盤とする形式数学環境を現代化する。**
 
 ---
 
-## 12. 発表準備時の要検証事項
+# 6. Slide 4 — FOL の代償
 
-最終スライド作成前に必ず一次資料で確認する。
+ここで初めて弱点を認める。
 
-- [ ] MizAR 60 の 58.4%, >75%, 40%/30 sec, 420 CPU sec の条件
-- [ ] MML 1147 / 57,897 theorem の定義（unnamed top-level lemmas を含む）
-- [ ] Sledgehammer評価で用いる dataset と「goal」の正確な定義
-- [ ] Sledgehammer の特定 success rate を載せる場合は、同一論文内の評価条件を併記
-- [ ] Mizar Evolution の現行 pipeline が発表時点の main branch と一致していること
-- [ ] native hammer / automatic global premise selection の実装済み範囲と将来計画を区別
-- [ ] OpenAI 等の最新AI数学成果を背景として使う場合は、発表直前に公開状況を再確認
+```text
+FOL is a good proof substrate,
+but not by itself a complete modern mathematical language.
+```
+
+不足:
+
+- generic abstraction;
+- recursive / iterative computation;
+- modular library engineering;
+- reusable mathematical views;
+- scalable automation metadata.
+
+そして問い:
+
+> **基盤論理を強くせずに、これらをどこまで表現できるか。**
 
 ---
 
-## 13. Codexへの作業指示案
+# 7. Slide 5 — Template: FOL の弱さを補う
 
-このファイルを入力としてスライドを作る際には、以下を守る。
+Mizar Evolution の template は generics mechanism。
 
-1. 日本語の TPP 研究集会向け。専門家を想定し、背景説明を長くしすぎない。
-2. Mizar Evolution の言語機能紹介ではなく、研究上の architectural hypothesis を主題とする。
-3. MizAR 60 を最重要 empirical evidence として扱う。
-4. Sledgehammer は straw man にしない。
-5. success rate の比較では evaluation granularity を必ず明示する。
-6. 「事実」「本発表の解釈」「今後検証する仮説」をスライド上で混同しない。
-7. 現行実装については main branch の architecture documents を確認し、
-   未実装機能を実装済みと書かない。
-8. 最終的に 15--20 分版と 30--40 分版へ切り分けられる構成にする。
+仕様例:
+
+```mizar
+definition
+  let T be type;
+  struct MagmaStr[T] where
+    field carrier -> T;
+    field binop -> BinOp of T;
+  end;
+end;
+```
+
+template が扱うもの:
+
+- type parameters;
+- predicate parameters;
+- functor parameters;
+- constrained parameters;
+- parameterized definitions;
+- theorem schemas;
+- algorithms.
+
+重要:
+
+> **template は基盤論理をHOLへ変えない。**
+
+template は meta-level schema であり、instance を決めた後に first-order representation へ落とす。
+
+---
+
+# 8. Slide 6 — Scheme も Template に統合する
+
+現行 Mizar の scheme:
+
+- induction;
+- recursion;
+- predicate/function schema.
+
+Evo:
+
+```mizar
+definition
+  let P be pred(Nat);
+
+  theorem NatInduction[P]:
+    P(0) &
+    (for n being Nat st P(n) holds P(n+1))
+    implies
+    for n being Nat holds P(n);
+end;
+```
+
+### 設計上の意味
+
+- 高階的な数学的パターンを surface language では自然に記述;
+- kernel の proof logic は FOL のまま;
+- template instance を artifact / dependency として追跡できる。
+
+一言:
+
+> **High-level abstraction without changing the foundational logic.**
+
+「higher-order abstraction」という表現は誤解を招く場合があるので、発表ではこちらを推奨。
+
+---
+
+# 9. Slide 7 — Algorithm: FOL の弱さを別の方向から補う
+
+もう一つの不足は computation。
+
+仕様例:
+
+```mizar
+terminating algorithm euclid_gcd(a, b) -> Nat
+  requires a >= 1 & b >= 1
+  ensures result = Gcd(a, b)
+do
+  var x := a;
+  var y := b;
+
+  while y <> 0 do
+    invariant Gcd(a,b) = Gcd(x,y);
+    decreasing y;
+    ...
+  end;
+
+  return x;
+end;
+```
+
+algorithm で扱う:
+
+- mutable local state;
+- if / loop / recursion;
+- requires / ensures;
+- invariants;
+- termination;
+- concrete execution;
+- code extraction.
+
+---
+
+# 10. Slide 8 — Algorithm は真理を増やさない
+
+重要な境界:
+
+```text
+algorithm
+   |
+contracts / invariants / termination
+   |
+verification conditions
+   |
+FOL
+   |
+ATP + kernel
+```
+
+したがって:
+
+> **algorithm は計算能力を増やすが、基盤論理を拡張しない。**
+
+- partial correctness by default;
+- termination を証明した algorithm は mathematical functor として利用可能;
+- `by computation` は verified execution;
+- code extraction は受理の下流。
+
+この節は「プログラミング言語化」ではなく、
+
+> **proof と computation の境界を明示する**
+
+ためのものとして説明する。
+
+---
+
+# 11. Slide 9 — 数学的表現力は foundation だけで決まらない
+
+Białystok版の structure / view / registration を1枚に圧縮する。
+
+Mizar Evolution は、
+
+- structure;
+- field / property;
+- mode;
+- attribute;
+- cluster / registration;
+- explicit inheritance / view;
+- overload resolution;
+- reduction;
+
+を高水準の数学言語として持つ。
+
+例:
+
+```mizar
+inherit AddMagma extends Magma where
+  field carrier from carrier;
+  field add from binop;
+end;
+```
+
+意味:
+
+- 同じ構造を異なる数学的 view で再利用;
+- additive / multiplicative duplication を減らす;
+- proof search 前に meaning を確定する;
+- elaboration後は論理的 obligation へ落とす。
+
+中心文:
+
+> **A small foundation does not require a poor surface language.**
+
+---
+
+# 12. Slide 10 — 大規模ライブラリには software engineering が要る
+
+MML 規模では theorem prover は単なるcheckerではない。
+
+必要:
+
+- explicit import;
+- namespaces;
+- packages;
+- semantic versioning;
+- lock file;
+- reproducible build;
+- incremental verification;
+- dependency fingerprints;
+- verified artifacts;
+- diagnostics / LSP;
+- documentation;
+- machine-readable API.
+
+Białystok版の
+
+- Dependencies You Can See;
+- Verification That Scales;
+- A Library You Can Cite;
+
+をここへ統合する。
+
+一言:
+
+> **Once the library is large, theorem proving is also software engineering.**
+
+---
+
+# 13. Slide 11 — ここまでを一枚で
+
+```text
+        Mathematical surface
+  --------------------------------
+  structures   templates   algorithms
+  attributes   views       computation
+  registrations
+  --------------------------------
+                |
+           elaboration
+                |
+          first-order core
+                |
+    verification conditions
+                |
+       native ATP portfolio
+                |
+        checked evidence
+                |
+      verified artifacts
+                |
+ packages / library / IDE / AI
+```
+
+中心文:
+
+> **Richness above, simplicity below.**
+
+このスライドが発表全体の要約。
+
+---
+
+# 14. Slide 12 — Native hammer: FOL を選んだ利益を回収する
+
+ここで初めて Sledgehammer / MizAR を出す。
+
+高階 hammer:
+
+```text
+HOL goal
+  -> premise selection
+  -> encoding
+  -> FOL ATP
+  -> reconstruction
+```
+
+Mizar Evolution:
+
+```text
+Mizar Evo goal
+  -> first-order obligation
+  -> ATP
+  -> checked evidence
+```
+
+問い:
+
+> **高階 ITP から ATP を使えるか、ではなく、  
+> ATP を native substrate とする ITP はどこまで自動化できるか。**
+
+---
+
+# 15. Slide 13 — MizAR は既に下限を示している
+
+MizAR 60:
+
+- MML 1147;
+- 57,897 theorems including unnamed top-level lemmas;
+- hammering mode, no user premise help: **58.4%**;
+- with premise assistance: **>75%**;
+- strongest single method: about **40% in 30 s**;
+- portfolio条件は明記する。
+
+重要:
+
+> **これは top-level lemma に対する結果である。**
+
+Sledgehammer の代表的評価にある local goals と成功率を直接比較しない。
+
+TPPでのメッセージ:
+
+> **FOL-native large-library ATP は、既に「局所補題を少し手伝う」以上の能力を示している。**
+
+---
+
+# 16. Slide 14 — AI時代の役割分担
+
+ここで今回の議論を結論として置く。
+
+LLM / human:
+
+- theory construction;
+- definition design;
+- mathematical semantics;
+- proof strategy;
+- lemma invention;
+- failure diagnosis.
+
+ATP:
+
+- first-order proof search;
+- repeated cheap attempts;
+- large portfolios;
+- proof obligation discharge.
+
+Mizar Evolution:
+
+- mathematical representation;
+- library state;
+- trusted verification;
+- artifacts and provenance.
+
+```text
+             LLM / human
+          theory / strategy
+                 |
+       definitions / lemmas
+                 |
+           Mizar Evolution
+                 |
+            cheap ATP first
+                 |
+        +--------+--------+
+        |                 |
+      solved            failed
+        |                 |
+      verify        ask LLM again
+        |                 |
+       store <--- new lemma
+```
+
+中心メッセージ:
+
+> **LLM thinks. ATP proves. Mizar Evolution remembers and verifies.**
+
+ただし「ATPが全証明を必ず解く」という意味ではない。  
+ATPで閉じない部分にだけ、LLMまたは人間が高水準の分解を追加する。
+
+---
+
+# 17. Slide 15 — なぜ今この設計なのか
+
+AIが強くなるほど、
+
+- theorem / conjecture / proof idea の生成量は増える;
+- verification workload も増える;
+- すべてを大型LLMで再探索するのは高価;
+- independent symbolic verification の価値が上がる;
+- library integration / provenance / dependency management が重要になる。
+
+したがって、
+
+> **LLMの進歩はATPを不要にするのではなく、  
+> むしろ軽量で厳密なATPを大量に使う理由を増やす可能性がある。**
+
+ここを TPP 2026 の新しいメッセージとする。
+
+---
+
+# 18. Slide 16 — 研究として何を検証するか
+
+Mizar Evolution は思想だけではなく、測定可能な仮説として評価する。
+
+## RQ1
+
+**Native hammer は MML の top-level theorem をどこまで解けるか。**
+
+## RQ2
+
+FOL-native でも失敗する原因は何か。
+
+- premise selection;
+- missing lemma;
+- search timeout;
+- encoding;
+- unsupported semantics.
+
+## RQ3
+
+ATP failure の場合だけ LLM を使う cascade は、どれだけ成功率を上げるか。
+
+測る:
+
+- ATP-only success;
+- ATP + oracle premise;
+- ATP + LLM decomposition;
+- wall time;
+- ATP CPU;
+- LLM calls / tokens / cost.
+
+## RQ4
+
+template / algorithm / view を使った高水準記述が、FOL core へ安定して elaboration できるか。
+
+---
+
+# 19. Slide 17 — Closing
+
+最終図:
+
+```text
+              mathematician / LLM
+                     |
+        rich mathematical language
+       /        |          |       \
+ structure   template   algorithm   package
+       \        |          |       /
+                FOL core
+                   |
+             native ATP
+                   |
+           trusted checking
+                   |
+             large library
+```
+
+締め:
+
+> **Mizar Evolution は、FOL の弱さを否定しない。  
+> その代わり、論理を小さく保つことで得られる自動証明と検証の強さを活かし、  
+> 不足する抽象化・計算・大規模開発能力を明示的な言語機構として積み上げる。**
+
+最後の一文:
+
+> **The question is not how expressive the foundational logic can become,  
+> but how much mathematics we can build while keeping the proof substrate small and automatable.**
+
+---
+
+# 20. 45分版で追加するもの
+
+45分になった場合でも本編の順序は変えない。
+
+追加候補:
+
+1. **Structure / view の実例**  
+   Białystok版 AddMagma / MulMagma / Magma の例。
+
+2. **Template の実例**  
+   `PermProduct[T]` と additive / multiplicative view。
+
+3. **Algorithm の実例**  
+   Euclidean GCD と `by computation`。
+
+4. **MizAR / Sledgehammer の評価粒度**  
+   top-level lemma と local proof goal の違いを図示。
+
+5. **trusted boundary**  
+   ATP結果を直接信頼せず KernelEvidence を検査する現行 architecture。
+
+6. **package / incremental build**  
+   manifest / fingerprint graph。
+
+「45分だから新しい機能を増やす」のではなく、**30分版の主張を具体例で深くする**。
+
+---
+
+# 21. 発表で主張しないこと
+
+- FOL が全数学に最適。
+- HOL / DTT が不要。
+- Sledgehammer は失敗。
+- MizAR と Sledgehammer の success rate を直接比較できる。
+- FOL-native なら premise selection が不要。
+- LLM は不要。
+- template は基盤論理に二階量化を追加する。
+- algorithm の実行結果を無条件に theorem として採用する。
+
+---
+
+# 22. 事実確認が必要な項目
+
+最終スライド前に一次資料で確認:
+
+- [ ] Mizar の foundation の表現: FOL + Tarski–Grothendieck set theory
+- [ ] MizAR 60: 58.4%, >75%, strongest method 40% / 30 sec, portfolio budget
+- [ ] MML 1147 / 57,897 theorem の正確な定義
+- [ ] Sledgehammer benchmark における "goal" の定義
+- [ ] template の current semantics と implementation status
+- [ ] algorithm の current semantics と implementation status
+- [ ] view / inheritance の current syntax
+- [ ] Mizar Evolution main branch の実装状況
+- [ ] native global premise selection の実装済み範囲と将来計画
+
+---
+
+# 23. Codexへの作業指示
+
+このファイルから TPP 2026 スライドを生成するとき:
+
+1. **FOLを残す意義を最初の5分で明示する。**
+2. FOLの二つの積極的理由を必ず分けて説明する:
+   - LLMに依存しない強力・軽量なATP;
+   - 数学者に馴染みのある集合論的基盤。
+3. その後に「FOLの不足をどう補うか」として template / algorithm を出す。
+4. Białystok 2026 資料を具体例の主要ソースとして再利用する。
+5. native hammer は全体設計の一部として後半に出す。
+6. 機能カタログにしない。すべてを「small core + rich surface」という一つの原則に結び付ける。
+7. 30分版を先に完成させる。45分版は backup / deep-dive slide を追加して作る。
+8. 現行仕様と実装状況を main branch から再確認し、未実装を実装済みと書かない。
+9. MizAR / Sledgehammer の数字は benchmark 条件を併記し、直接順位づけしない。
+10. 最終スライドは **LLM thinks / ATP proves / Mizar Evolution remembers and verifies** に接続する。
