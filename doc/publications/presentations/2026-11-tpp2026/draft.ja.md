@@ -139,14 +139,16 @@ Mizar Evolution の設計方針は、
 
 | 時間 | 内容 |
 |---:|---|
-| 0–5分 | **なぜ FOL を残すのか** — 集合論と軽量ATP |
-| 5–8分 | FOL の制約と設計方針 |
-| 8–13分 | **Template** — 高階化せず generic mathematics |
-| 13–18分 | **Algorithm** — 論理を拡張せず計算を取り込む |
-| 18–22分 | structure / view / registration — 数学的表現力 |
-| 22–25分 | namespace / package / incremental build — 大規模化 |
-| 25–28分 | **Native hammer + LLM** — 役割分担 |
-| 28–30分 | 全体像・研究課題・結論 |
+| 0–4分 | **なぜ FOL を残すのか** — 集合論と軽量ATP |
+| 4–8分 | **HOL+ATP vs FOL+ATP** — 関数を例に「どこで代償を払うか」 |
+| 8–11分 | FOL の制約と設計方針 |
+| 11–15分 | **Template** — 高階化せず generic mathematics |
+| 15–19分 | **Algorithm** — 論理を拡張せず計算を取り込む |
+| 19–22分 | structure / view / registration — 数学的表現力 |
+| 22–24分 | namespace / package / incremental build — 大規模化 |
+| 24–27分 | **Sledgehammer / MizAR / native hammer** |
+| 27–29分 | **LLM + ATP** — 役割分担 |
+| 29–30分 | 結論 |
 
 **30分を標準とする。**
 
@@ -226,7 +228,181 @@ Tarski–Grothendieck set theory
 
 ---
 
-# 6. Slide 4 — FOL の代償
+# 6. Slide 4 — HOL ITP + ATP と FOL ITP + ATP は何が違うのか
+
+ここは聴衆の理解を揃えるため、**関数**を例に具体的に説明する。
+
+## HOL: 関数は論理の第一級の対象
+
+HOL では関数型が論理に組み込まれており、概念的には次のような式を直接書ける。
+
+```text
+f : α -> β
+x : α
+
+P (f x)
+```
+
+さらに、関数を引数として渡す、関数を返す、部分適用する、lambda abstraction を作る、といった表現も論理の中で自然に扱える。
+
+これは source language として非常に便利である。
+
+しかし E や Vampire のような **first-order ATP** に渡す場合、この高階性をそのまま渡せない。
+
+Sledgehammer / HOLyHammer 系の FOL translation では、例えば variable function application
+
+```text
+F X
+```
+
+を一階論理で扱うために概念的に
+
+```text
+app(F, X)
+```
+
+のような explicit application symbol を導入する。
+
+さらに問題によって、
+
+- higher-order arguments;
+- partial application;
+- lambda abstraction;
+- Boolean terms;
+- polymorphic type information;
+- type classes;
+
+を ATP が扱える表現へ変換する必要がある。
+
+Blanchette らの解説では、`app` のような uninterpreted symbol と auxiliary axioms を導入し、高階 feature を除去する方法が説明されている。また lambda abstraction には lambda lifting や combinator translation 等が使われる。
+
+つまり:
+
+```text
+HOL convenience
+      |
+      |  pay later
+      v
+HOL-to-FOL encoding
+      |
+      v
+first-order ATP
+```
+
+である。
+
+> **HOLでは表現上の便利さを先に得て、FOL ATPへ接続するときにtranslation costを払う。**
+
+## FOL / Mizar: 関数も集合論上の object
+
+一方 Mizar では、関数を集合論上の object として扱う。
+
+source では例えば:
+
+```mizar
+let X, Y be set;
+let f be Function of X, Y;
+let x be Element of X;
+
+... f.x ...
+```
+
+と書ける。
+
+ユーザから見ると普通の数学の「X から Y への関数 f」である。
+
+しかし論理的には、
+
+- `f` は一階量化できる object;
+- `Function of X,Y` は soft type / predicate;
+- 関数適用も集合論的関数の machinery の上で解釈される;
+
+ため、foundation 自体を高階化する必要はない。
+
+素朴な FOL / set theory で全部を書くなら、本来は domain / range / functionality / application relation 等を意識する必要があり、かなりまどろっこしい。
+
+Mizar の重要な役割は、
+
+> **FOL / set theory の論理的な素朴さを保ちながら、そのまどろっこしさを mathematical vernacular と soft typing で隠すこと**
+
+である。
+
+したがって:
+
+```text
+Mizar source
+  "f being Function of X,Y"
+  "f.x"
+       |
+       |  language hides set-theoretic plumbing
+       v
+first-order / set-theoretic meaning
+       |
+       v
+native first-order ATP
+```
+
+となる。
+
+> **FOL ITP は代償を source side で払う。Mizar は、その代償を言語設計で小さくする。**
+
+## 本当に高階的な parameterization は Template に隔離する
+
+ここでさらに区別が必要である。
+
+「関数そのものを数学的 object として量化する」ことは、集合論では一階でできる。
+
+一方、
+
+> 任意の function symbol (F) に対して同じ theorem schema を定義する
+
+という meta-level の parameterization は別である。
+
+Mizar Evolution ではこれを template として明示する。
+
+```mizar
+definition
+  let F be func(T) -> S;
+
+  theorem SomeSchema[F]:
+    ...
+  proof
+    ...
+  end;
+end;
+```
+
+template instance を選んだ後、通常の first-order obligation に落とす。
+
+したがって Mizar Evolution の設計は:
+
+```text
+ordinary function as mathematical object
+    -> set-theoretic FOL
+
+generic theorem over a function/predicate symbol
+    -> template / scheme at meta level
+    -> instantiate
+    -> FOL
+```
+
+である。
+
+### このスライドで伝える一文
+
+> **HOL and FOL do not eliminate complexity; they place it at different layers.  
+> Mizar chooses a first-order proof substrate and compensates at the language level.**
+
+日本語:
+
+> **HOLとFOLの違いは、複雑さが消えるかどうかではなく、どこで代償を払うかである。  
+> Mizarは証明基盤をFOLに保ち、その不便を言語側で吸収する。**
+
+この視点を template / algorithm / native hammer の説明へつなげる。
+
+---
+
+# 7. Slide 5 — FOL の代償
 
 ここで初めて弱点を認める。
 
@@ -249,7 +425,7 @@ but not by itself a complete modern mathematical language.
 
 ---
 
-# 7. Slide 5 — Template: FOL の弱さを補う
+# 8. Slide 6 — Template: FOL の弱さを補う
 
 Mizar Evolution の template は generics mechanism。
 
@@ -283,7 +459,7 @@ template は meta-level schema であり、instance を決めた後に first-ord
 
 ---
 
-# 8. Slide 6 — Scheme も Template に統合する
+# 9. Slide 7 — Scheme も Template に統合する
 
 現行 Mizar の scheme:
 
@@ -319,7 +495,7 @@ end;
 
 ---
 
-# 9. Slide 7 — Algorithm: FOL の弱さを別の方向から補う
+# 10. Slide 8 — Algorithm: FOL の弱さを別の方向から補う
 
 もう一つの不足は computation。
 
@@ -355,7 +531,7 @@ algorithm で扱う:
 
 ---
 
-# 10. Slide 8 — Algorithm は真理を増やさない
+# 11. Slide 9 — Algorithm は真理を増やさない
 
 重要な境界:
 
@@ -388,7 +564,7 @@ ATP + kernel
 
 ---
 
-# 11. Slide 9 — 数学的表現力は foundation だけで決まらない
+# 12. Slide 10 — 数学的表現力は foundation だけで決まらない
 
 Białystok版の structure / view / registration を1枚に圧縮する。
 
@@ -427,7 +603,7 @@ end;
 
 ---
 
-# 12. Slide 10 — 大規模ライブラリには software engineering が要る
+# 13. Slide 11 — 大規模ライブラリには software engineering が要る
 
 MML 規模では theorem prover は単なるcheckerではない。
 
@@ -460,7 +636,7 @@ Białystok版の
 
 ---
 
-# 13. Slide 11 — ここまでを一枚で
+# 14. Slide 12 — ここまでを一枚で
 
 ```text
         Mathematical surface
@@ -493,7 +669,7 @@ Białystok版の
 
 ---
 
-# 14. Slide 12 — Sledgehammer と正面から比較する
+# 15. Slide 13 — Sledgehammer と正面から比較する
 
 ここは TPP 2026 の重要な対照実験として、Sledgehammer と MizAR を**明示的に比較する**。
 
@@ -591,7 +767,7 @@ MizAR:
 
 ---
 
-# 15. Slide 13 — Native hammer: FOL を選んだ利益を回収する
+# 16. Slide 14 — Native hammer: FOL を選んだ利益を回収する
 
 高階 hammer:
 
@@ -644,7 +820,7 @@ Mizar Evo goal
 
 ---
 
-# 16. Slide 14 — MizAR は「下限」ではなく設計仮説の先行実証
+# 17. Slide 15 — MizAR は「下限」ではなく設計仮説の先行実証
 
 MizAR の結果は単なる historical curiosity ではない。
 
@@ -680,7 +856,7 @@ strong external ATP
 
 ---
 
-# 17. Slide 15 — AI時代の役割分担
+# 18. Slide 16 — AI時代の役割分担
 
 ここで今回の議論を結論として置く。
 
@@ -735,7 +911,7 @@ ATPで閉じない部分にだけ、LLMまたは人間が高水準の分解を�
 
 ---
 
-# 18. Slide 16 — なぜ今この設計なのか
+# 19. Slide 17 — なぜ今この設計なのか
 
 AIが強くなるほど、
 
@@ -754,7 +930,7 @@ AIが強くなるほど、
 
 ---
 
-# 19. Slide 17 — 研究として何を検証するか
+# 20. Slide 18 — 研究として何を検証するか
 
 Mizar Evolution は思想だけではなく、測定可能な仮説として評価する。
 
@@ -791,7 +967,7 @@ template / algorithm / view を使った高水準記述が、FOL core へ安定�
 
 ---
 
-# 20. Slide 18 — Closing
+# 21. Slide 19 — Closing
 
 最終図:
 
@@ -824,7 +1000,7 @@ template / algorithm / view を使った高水準記述が、FOL core へ安定�
 
 ---
 
-# 21. 45分版で追加するもの
+# 22. 45分版で追加するもの
 
 45分になった場合でも本編の順序は変えない。
 
@@ -852,7 +1028,7 @@ template / algorithm / view を使った高水準記述が、FOL core へ安定�
 
 ---
 
-# 22. 発表で主張しないこと
+# 23. 発表で主張しないこと
 
 - FOL が全数学に最適。
 - HOL / DTT が不要。
@@ -865,7 +1041,7 @@ template / algorithm / view を使った高水準記述が、FOL core へ安定�
 
 ---
 
-# 23. 事実確認が必要な項目
+# 24. 事実確認が必要な項目
 
 最終スライド前に一次資料で確認:
 
@@ -881,7 +1057,7 @@ template / algorithm / view を使った高水準記述が、FOL core へ安定�
 
 ---
 
-# 24. Codexへの作業指示
+# 25. Codexへの作業指示
 
 このファイルから TPP 2026 スライドを生成するとき:
 
@@ -889,7 +1065,10 @@ template / algorithm / view を使った高水準記述が、FOL core へ安定�
 2. FOLの二つの積極的理由を必ず分けて説明する:
    - LLMに依存しない強力・軽量なATP;
    - 数学者に馴染みのある集合論的基盤。
-3. その後に「FOLの不足をどう補うか」として template / algorithm を出す。
+3. **HOL ITP + FOL ATP と FOL ITP + FOL ATP の違いを、関数を具体例にして説明する。**
+   HOLでは関数型・高階適用が自然だが、first-order ATPへ渡す際に application encoding / lambda translation / type encoding が必要になる。
+   Mizarでは関数を集合論上の object として扱い、soft type と数学的構文で一階表現の煩雑さを隠す。
+4. その後に「FOLの不足をどう補うか」として template / algorithm を出す。
 4. Białystok 2026 資料を具体例の主要ソースとして再利用する。
 5. native hammer は全体設計の一部として後半に出す。
 6. 機能カタログにしない。すべてを「small core + rich surface」という一つの原則に結び付ける。
