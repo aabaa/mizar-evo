@@ -2142,7 +2142,7 @@ impl SessionIdAllocator for LeaseAllocatorFailsAfter {
 
     fn next_lease_id(&self, snapshot: BuildSnapshotId) -> Result<SnapshotLeaseId, IdError> {
         self.successful_lease_allocations_remaining
-            .fetch_update(Ordering::Relaxed, Ordering::Relaxed, |remaining| {
+            .try_update(Ordering::Relaxed, Ordering::Relaxed, |remaining| {
                 remaining.checked_sub(1)
             })
             .map_err(|_| IdError::AllocatorOverflow)?;

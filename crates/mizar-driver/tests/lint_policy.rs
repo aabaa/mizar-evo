@@ -259,11 +259,10 @@ fn driver_does_not_expose_later_task_modules_yet() {
 
     for path in rust_source_files(&root) {
         let source = read_to_string(&path);
-        for forbidden in ["pub mod watch"] {
-            if source.contains(forbidden) {
-                let relative = path.strip_prefix(&root).unwrap_or(&path);
-                violations.push(format!("{} contains {forbidden}", relative.display()));
-            }
+        let forbidden = "pub mod watch";
+        if source.contains(forbidden) {
+            let relative = path.strip_prefix(&root).unwrap_or(&path);
+            violations.push(format!("{} contains {forbidden}", relative.display()));
         }
     }
 

@@ -349,7 +349,7 @@ fn reject_non_persistable_id() -> Result<String, IdError> {
 
 fn allocate_opaque_id(counter: &AtomicU64) -> Result<OpaqueId, IdError> {
     counter
-        .fetch_update(Ordering::Relaxed, Ordering::Relaxed, |current| {
+        .try_update(Ordering::Relaxed, Ordering::Relaxed, |current| {
             current.checked_add(1)
         })
         .map(OpaqueId)
