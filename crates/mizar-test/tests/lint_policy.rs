@@ -419,7 +419,13 @@ fn task_contracts_are_recursively_paired_and_supported_links_resolve() {
                 ));
             }
 
-            validate_crate_plan_backlinks(&path, &links, &mut violations);
+            validate_crate_plan_backlinks(
+                &workspace,
+                &path,
+                &en_root.join(relative_path),
+                &links,
+                &mut violations,
+            );
             validate_local_markdown_links(&path, &document, &mut violations);
         }
     }
@@ -429,6 +435,139 @@ fn task_contracts_are_recursively_paired_and_supported_links_resolve() {
         "task-contract policy violations:\n{}",
         violations.join("\n")
     );
+}
+
+#[test]
+fn task_contract_backlinks_distinguish_consumers_and_existing_todo_owners() {
+    let workspace = std::env::temp_dir().join(format!(
+        "mizar_test_contract_backlinks_{}",
+        std::process::id()
+    ));
+    let canonical_contract = workspace.join("doc/design/task_contracts/en/nested/T.md");
+
+    for (case, owner_file, flags) in [
+        ("consumer reference", "plan", [true, true, false, true]),
+        (
+            "missing owner backlink",
+            "plan",
+            [false, true, false, false],
+        ),
+        ("missing owner link", "plan", [true, false, false, false]),
+        ("indexed consumer", "plan", [true, true, true, true]),
+        ("fenced consumer", "plan", [false, true, true, false]),
+        ("existing TODO owner", "todo.md", [true, true, false, true]),
+        (
+            "missing TODO backlink",
+            "todo.md",
+            [false, true, false, false],
+        ),
+        (
+            "TODO with existing plan",
+            "todo.md",
+            [true, true, false, false],
+        ),
+    ] {
+        let [owner_backlink, owner_link, consumer_backlink, valid] = flags;
+        let owner_file = if owner_file == "plan" {
+            "00.crate_plan.md"
+        } else {
+            owner_file
+        };
+        remove_dir_if_exists(&workspace);
+        for language in ["en", "ja"] {
+            let contract =
+                workspace.join(format!("doc/design/task_contracts/{language}/nested/T.md"));
+            let owner = workspace.join(format!("doc/design/owner/{language}/{owner_file}"));
+            let consumer =
+                workspace.join(format!("doc/design/consumer/{language}/00.crate_plan.md"));
+            create_dir(contract.parent().unwrap());
+            create_dir(owner.parent().unwrap());
+            create_dir(consumer.parent().unwrap());
+            let backlink = format!("[T](../../task_contracts/{language}/nested/T.md)\n");
+            let owner_heading = if owner_file == "todo.md" {
+                "Tasks"
+            } else {
+                "Task Index"
+            };
+            write_test_file(
+                &owner,
+                &format!(
+                    "## {owner_heading}\n{}",
+                    if owner_backlink { &backlink } else { "" }
+                ),
+            );
+            write_test_file(
+                &consumer,
+                &format!(
+                    "## Task Index\n{}",
+                    if consumer_backlink { &backlink } else { "" }
+                ),
+            );
+            if case == "TODO with existing plan" {
+                write_test_file(&owner.with_file_name("00.crate_plan.md"), "## Task Index\n");
+            }
+            let owner_link = if owner_link {
+                format!("[owner](../../../owner/{language}/{owner_file})")
+            } else {
+                "owner".to_owned()
+            };
+            let consumer_link =
+                format!("[consumer](../../../consumer/{language}/00.crate_plan.md)");
+            let mut document = if language == "en" {
+                format!("Owner: {owner_link}; consumers: {consumer_link}.\n")
+            } else {
+                format!("所有者: {owner_link}、{consumer_link}。\n")
+            };
+            if case == "fenced consumer" {
+                document.push_str(&format!("```md\nconsumers: {owner_link}\n```\n"));
+            }
+            if case == "consumer reference" {
+                write_test_file(&workspace.join("doc/design/todo.md"), "## Sequence\n");
+                document.push_str("[sequence](../../../todo.md)\n");
+            }
+            write_test_file(&contract, &document);
+        }
+
+        for language in ["en", "ja"] {
+            let contract =
+                workspace.join(format!("doc/design/task_contracts/{language}/nested/T.md"));
+            let links = markdown_link_destinations(&read_to_string(&contract));
+            let mut violations = Vec::new();
+            validate_crate_plan_backlinks(
+                &workspace,
+                &contract,
+                &canonical_contract,
+                &links,
+                &mut violations,
+            );
+            assert_eq!(
+                violations.is_empty(),
+                valid,
+                "{case} ({language}): {violations:?}"
+            );
+
+            if case == "indexed consumer" {
+                let links = links
+                    .into_iter()
+                    .filter(|link| !link.contains("/consumer/"))
+                    .collect::<Vec<_>>();
+                let mut violations = Vec::new();
+                validate_crate_plan_backlinks(
+                    &workspace,
+                    &contract,
+                    &canonical_contract,
+                    &links,
+                    &mut violations,
+                );
+                assert!(
+                    violations
+                        .iter()
+                        .any(|violation| violation.contains("indexed owning crate plan"))
+                );
+            }
+        }
+    }
+    remove_dir_if_exists(&workspace);
 }
 
 #[test]
@@ -1480,7 +1619,9 @@ fn validate_local_markdown_links(source_path: &Path, document: &str, violations:
 }
 
 fn validate_crate_plan_backlinks(
+    workspace: &Path,
     contract_path: &Path,
+    canonical_contract_path: &Path,
     destinations: &[String],
     violations: &mut Vec<String>,
 ) {
@@ -1490,25 +1631,57 @@ fn validate_crate_plan_backlinks(
             contract_path.display()
         )
     });
+    let canonical_document = read_to_string(canonical_contract_path);
+    let consumer_crates = visible_markdown_lines(&canonical_document)
+        .into_iter()
+        .filter_map(|(_, line)| {
+            let lower = line.to_ascii_lowercase();
+            ["consumers:", "consumer:"]
+                .iter()
+                .find_map(|marker| lower.find(marker).map(|start| start + marker.len()))
+                .map(|start| line[start..].split(';').next().unwrap_or_default())
+        })
+        .flat_map(markdown_link_destinations)
+        .filter_map(|destination| markdown_target_path(canonical_contract_path, &destination))
+        .filter_map(|target| fs::canonicalize(target).ok())
+        .filter(|target| {
+            matches!(
+                target.file_name().and_then(|name| name.to_str()),
+                Some("00.crate_plan.md" | "todo.md")
+            )
+        })
+        .filter_map(|target| {
+            target
+                .parent()
+                .and_then(Path::parent)
+                .map(Path::to_path_buf)
+        })
+        .collect::<BTreeSet<_>>();
+    let plan_paths = crate_plan_paths(&workspace.join("doc/design"));
+    let todo_paths = plan_paths
+        .iter()
+        .filter(|path| path.file_name().and_then(|name| name.to_str()) == Some("todo.md"))
+        .filter_map(|path| fs::canonicalize(path).ok())
+        .collect::<BTreeSet<_>>();
     let linked_plans = destinations
         .iter()
         .filter_map(|destination| markdown_target_path(contract_path, destination))
+        .filter_map(|target| fs::canonicalize(target).ok())
         .filter(|target| {
             target.file_name().and_then(|name| name.to_str()) == Some("00.crate_plan.md")
+                || todo_paths.contains(target)
         })
-        .filter_map(|target| fs::canonicalize(target).ok())
         .collect::<BTreeSet<_>>();
-    if linked_plans.is_empty() {
-        violations.push(format!(
-            "{}: task contract must link at least one owning crate plan",
-            contract_path.display()
-        ));
-    }
-
     let mut indexed_plans = BTreeSet::new();
-    for plan_path in crate_plan_paths(&workspace_root().join("doc/design")) {
+    for plan_path in plan_paths {
         let plan = read_to_string(&plan_path);
-        let Some(task_index) = markdown_h2_section(&plan, "Task Index") else {
+        let task_index = if plan_path.file_name().and_then(|name| name.to_str()) == Some("todo.md")
+        {
+            Some(plan.as_str())
+        } else {
+            markdown_h2_section(&plan, "Task Index")
+        };
+        let Some(task_index) = task_index else {
             continue;
         };
         let has_backlink = markdown_link_destinations(task_index)
@@ -1528,6 +1701,13 @@ fn validate_crate_plan_backlinks(
         }
     }
 
+    if indexed_plans.intersection(&linked_plans).next().is_none() {
+        violations.push(format!(
+            "{}: task contract must link at least one owning crate plan or crate TODO",
+            contract_path.display()
+        ));
+    }
+
     for plan_path in indexed_plans.difference(&linked_plans) {
         violations.push(format!(
             "{}: indexed owning crate plan {} is missing from contract links",
@@ -1536,7 +1716,11 @@ fn validate_crate_plan_backlinks(
         ));
     }
     for plan_path in linked_plans.difference(&indexed_plans) {
-        if plan_path.is_file() {
+        if !plan_path
+            .parent()
+            .and_then(Path::parent)
+            .is_some_and(|crate_path| consumer_crates.contains(crate_path))
+        {
             violations.push(format!(
                 "{}: owning crate plan {} must link back to the contract",
                 contract_path.display(),
@@ -1571,6 +1755,11 @@ fn crate_plan_paths(design_root: &Path) -> Vec<PathBuf> {
         }
         for language in ["en", "ja"] {
             let plan = entry.path().join(language).join("00.crate_plan.md");
+            let plan = if plan.exists() {
+                plan
+            } else {
+                plan.with_file_name("todo.md")
+            };
             let is_regular_file =
                 fs::symlink_metadata(&plan).is_ok_and(|metadata| metadata.file_type().is_file());
             let is_contained = fs::canonicalize(&plan)

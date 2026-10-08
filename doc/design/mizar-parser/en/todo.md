@@ -8,6 +8,8 @@
 - [~] in progress
 - [x] done
 
+- [ ] Algorithm `fail_stmt` parsing and active corpus coverage; see the [reserved-word gap](source_spec_audit.md#reserved-word-coverage).
+
 ## Step 5 Frontend Gap Closure
 
 1. [x] **Step 5A.4 / G3** — complete; see the

@@ -8,6 +8,8 @@
 - [~] 進行中
 - [x] 完了
 
+- [ ] アルゴリズムの `fail_stmt` 構文解析と active corpus カバレッジ。[予約語のギャップ](source_spec_audit.md#予約語カバレッジ)を参照。
+
 ## Step 5 Frontend Gap Closure
 
 1. [x] **Step 5A.4 / G3** — 完了。詳細は

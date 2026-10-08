@@ -287,7 +287,9 @@ doc/design/task_contracts/ja/<task-id>.md
 `<task-id>` must match `[A-Za-z0-9][A-Za-z0-9._-]*` and be identical in both
 trees. The English contract is canonical and at most 60 lines; the Japanese
 companion is a pointer stub (title, canonical link, owner-plan links) created in
-the same change. Both files link to the corresponding owning crate plans. If an owner has no
+the same change. Both files link to the corresponding owning crate plans, or
+the existing crate TODO when that crate has no plan. Consumer references do not
+require reciprocal ownership links. If an owner has no
 Japanese plan under an adapted non-bilingual layout, the Japanese contract
 links the canonical English plan and records that exception. A task contract
 is a derived orchestration record and cannot introduce or override language
