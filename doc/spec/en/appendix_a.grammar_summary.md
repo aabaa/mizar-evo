@@ -187,10 +187,10 @@ param_prefix      ::= parameter "-" | "(" parameter_list ")" "-" ;
 
 radix_type        ::= expr_type | builtin_type | struct_ref_name [ type_args ] ;
 mode_type         ::= mode_ref_name [ type_args ] ;
-type_args         ::= ( "of" | "over" ) argument_list
+type_args         ::= ( "of" | "over" ) type_arg_list
                     | "[" type_arg_list "]" ;
 type_arg_list     ::= type_arg { "," type_arg } ;
-type_arg          ::= type_expression | qua_arg ;
+type_arg          ::= type_expression | term_expression | qua_arg ;
 qua_arg           ::= identifier { "qua" radix_type } ;
 argument_list     ::= term_expression { "," term_expression } ;
 
@@ -914,7 +914,7 @@ computation_option ::= "steps" ":" nat_literal
                      | "nest" ":" nat_literal ;
 
 pick_expr          ::= "the" type_expression ;
-term_size_expr     ::= "term_size" "(" term_expression ")" ;
+expr_size_expr     ::= "expr_size" "(" term_expression ")" ;
 ```
 
 ## A.21 Annotations
