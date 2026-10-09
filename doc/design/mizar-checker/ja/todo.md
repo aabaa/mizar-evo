@@ -1250,3 +1250,5 @@ Completion evidence: [central Task-269SDC historical contract](../../task_contra
 
 本文は英語正本へ移管: [../en/todo.md](../en/todo.md) / [archive](../../archive/checker_todo_sections.md).
 
+
+- [ ] [AST-TYPE](../../task_contracts/ja/AST-TYPE.md).

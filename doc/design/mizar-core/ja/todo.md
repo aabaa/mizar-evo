@@ -744,3 +744,5 @@ cargo test -p mizar-vc
   表現を再生可能に保ち、不変条件をプロパティテストで守る。
 - internal 07 により phase 10 はここに属する。`mizar-vc` は
   `ControlFlowIr` を消費し、決して変更しない。
+
+- [ ] [AST-LOWER](../../task_contracts/ja/AST-LOWER.md).

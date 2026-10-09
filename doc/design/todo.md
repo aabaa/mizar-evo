@@ -802,6 +802,8 @@ Active implementation contracts follow their own dependencies; completed AST-SPE
 
 1. [ ] [AST-PARSE](./task_contracts/en/AST-PARSE.md) — additive syntax; legacy retirement blocked.
 2. [ ] [AST-DIAGNOSTICS](./task_contracts/en/AST-DIAGNOSTICS.md) — descriptor design; emission waits for source-aware producers.
+3. [ ] [AST-TYPE](./task_contracts/en/AST-TYPE.md) — follows syntax and certified library/declaration producers.
+4. [ ] [AST-LOWER](./task_contracts/en/AST-LOWER.md) — follows authentic checked formation.
 
 ### Distribution and playground [ ]
 

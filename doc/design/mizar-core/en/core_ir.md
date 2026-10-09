@@ -932,3 +932,11 @@ Snapshot shells retain normal source maps and provenance; CFG owns capture-point
 ## Primitive membership formula
 
 `CoreFormulaKind::Membership { element: CoreTermId, set: CoreTermId }` represents the primitive membership relation; the corresponding `CoreFormulaSeedKind::Membership { element: CoreTermSeedId, set: CoreTermSeedId }` lowers through the existing term/formula path. Validate both terms and same-owner source references; preserve operand order in traversal, remapping, source maps and deterministic debug output. This is neither Equals nor a fabricated user-symbol Atom. Existing conservative VC transport grants no membership proof or truth. Alpha-normalizer conversion remains fail-closed for membership; Core seed guard normalization and operand traversal retain it.
+
+## Reflected Syntax Handoff
+
+§20.5.3 and architecture 06/16 govern immutable structure, UID equality and complete logical/runtime input including C.
+Consume checked classification/context records; preserve Var/node/opaque/Abs and original conditions, without logical alpha-normalization on retrieval.
+Preserve lowering of ordered child/variable primitives and exact ghost occurrence size; evaluation belongs to execution/proof producers, and sharing/storage cannot change structure.
+Tests inspect duplicate/implicit child and opaque saved-original/FV ordering, empty Binder contexts, UID/display-name identity, sharing-independent unfolded-occurrence size requests and complete-input corruption, rejecting approximate/corrupt handoffs; execution/proof tests own actual size calculation and resource failures.
+Corrupted or missing type/UID/context/C records fail closed before VC/MVM handoff; this boundary creates no acceptance evidence.

@@ -884,3 +884,11 @@ shell は通常の source map・由来を保持し、捕捉点の文脈は CFG �
 ## 原始 membership 式
 
 `CoreFormulaKind::Membership { element: CoreTermId, set: CoreTermId }` は原始 membership 関係を表し、対応する `CoreFormulaSeedKind::Membership { element: CoreTermSeedId, set: CoreTermSeedId }` は既存 term/formula 経路で lowering する。両項と同一所有者 source 参照を検証し、走査・再配置・source map・決定的 debug 出力でオペランド順序を保つ。Equals や捏造 user-symbol Atom で代用しない。既存の保守的 VC transport は membership の証明・真理を付与しない。 alpha-normalizer への membership 変換は未対応として拒否し、Core seed の guard 正規化とオペランド走査では保持する。
+
+## Reflected Syntax Handoff
+
+不変構造、UID 等価性、C を含む完全な論理/実行入力は §20.5.3 と architecture 06/16 に従う。
+検査済み分類/文脈を消費し Var/node/opaque/Abs と元の条件を保つ。取得時に論理 alpha 正規化しない。
+順序付き child/variable primitive と厳密な ghost 出現サイズの lowering を保持する。評価は実行/証明 producer が所有し、共有/保存方法で構造を変えない。
+テストは重複/暗黙 child と opaque 原本/FV 順序、空 Binder 文脈、UID/表示名の同一性、共有に依存しない展開後サイズ request と完全入力の破損を検査し、近似/破損 handoff を拒否する。実際のサイズ計算と資源不足は実行/証明テストが所有する。
+型/UID/文脈/C の欠落・破損は VC/MVM 引渡し前に拒否する。この境界は受理証拠を生成しない。

@@ -2097,3 +2097,11 @@ order sibling or table mismatch. The absent slot preserves old debug bytes; a
 present slot renders the existing C4C5 debug chunk plus one newline immediately
 after the formula-composition position. The owner creates no capture state,
 semantic table, diagnostic, Core payload, or active route.
+
+## Reflected Syntax Formation
+
+§§13.10/19.4.2/20.5.3 own certified classification, R1/R2/R3, valuation and the three Binder modes.
+Consume authentic parser/declaration records and pinned MML identities/proofs; preserve original types/UIDs, finite used conditions KΓ (never all ambient assumptions) and complete context/C for core.
+No certification by spelling, mode fallback, fabricated environment or unsupported carrier/update lowering.
+Tests cover typed R1/R2/R3 mixed construction, covariance/ghost flow, dependent original contexts, guarded valid_at and pre-update values, all-input Binder ranges and empty domains; distinguish used KΓ from unrelated assumptions and one-pass capture-avoiding substitution from re-entering inserted w, including dependent type/domain references.
+Capture tests distinguish the same UID with different C from Var identity, preserve default codomain/free UIDs, and check unchanged reconstruction plus inner collisions.

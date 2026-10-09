@@ -1957,3 +1957,11 @@ exact equalityを要求する。Every existing public source installerはpresent
 installerはreverse-order sibling/table mismatchをrejectする。Absent slotはold debug byteを維持し、
 present slotはformula-composition位置直後にexisting C4C5 debug chunkとnewline 1件をrenderする。
 Capture state、semantic table、diagnostic、Core payload、active routeは作らない。
+
+## Reflected Syntax Formation
+
+認証済み分類、R1/R2/R3、valuation、Binder の三モードは §§13.10/19.4.2/20.5.3 が所有する。
+実際の parser/宣言記録と固定 MML の同一性・証明を消費し、元の型/UID、使用した有限条件 KΓ（周囲の全仮定を含めない）、完全な文脈/C を core に保つ。
+綴りによる認証、モード切替、環境の捏造、未対応 carrier/update lowering を許さない。
+テストは型付き R1/R2/R3 混合構築、共変/ghost flow、依存する元の文脈、guard 付き valid_at と更新前の値、Binder の全入力 range と空 domain を扱う。 使用した KΓ と無関係な仮定を区別し、依存型/domain 参照を含め、捕獲回避の同時一回置換が挿入済み w へ再入しないことを検査する。
+capture テストは同じ UID で異なる C と Var 同一性を分け、既定 codomain/自由 UID、無変更再構築、内側衝突を検査する。

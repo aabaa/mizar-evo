@@ -796,4 +796,4 @@ Check the task off here once tests pass.
 
 ## AST specification implementation follow-up
 
-- [ ] AST-LOWER: immutable typed/UID syntax handoff and complete runtime/logical inputs; no fabricated records; see [§20](../../../spec/en/20.algorithm_and_verification.md) and [§13.10](../../../spec/en/13.term_expression.md).
+- [ ] [AST-LOWER](../../task_contracts/en/AST-LOWER.md).
