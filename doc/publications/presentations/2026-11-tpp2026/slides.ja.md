@@ -110,32 +110,129 @@ let x be Element of X;
 - **soft type、mode、attribute、registration、scheme、宣言的証明は、単なる記法の簡略化を超え、一階の集合論を可読な数学的記述へ結び付ける言語機構。**
 - **新仕様: 数学的な記述を継承・拡張し、型・登録・オーバーロードの暗黙の選択を明示・追跡可能にする。**
 
-### Frame 2.2 - 暗黙の演算選択を明示・追跡する
+### Frame 2.2 - Registration: 自動的な連鎖に名前を付ける
 
-環の二つの演算から、利用するビューを選択 (sketch):
+ラベルを持つ自動適用規則 (specification example):
 
 ```mizar
-let R be commutative Ring;
-f(R);                  :: ambiguous Magma view
-f(R qua AddMagma);      :: use addition
-f(R qua MulMagma);      :: use multiplication
+registration
+  cluster EmptyImpliesFinite: empty -> finite for set;
+  coherence proof ... end;
+  cluster FiniteImpliesCountable: finite -> countable for set;
+  coherence proof ... end;
+end;
 ```
 
-- **課題: 環は加法・乗法の両方で Magma を継承。`f(R)` だけではビューが定まらない。**
-- **新仕様: `qua` で加法・乗法のビューを明示し、曖昧な選択を解消。**
-- 自動適用した登録は適用経路を記録し、依存する規則を追跡可能にする。
+| 出発点 | 自動的に得られる事実 | 記録する規則 |
+|---|---|---|
+| S is empty | S is finite | EmptyImpliesFinite |
+| S is finite | S is countable | FiniteImpliesCountable |
+
+- **連鎖的な自動適用を保ち、各登録項目のラベルを必須にして、適用経路を記録する。**
+- 証明がどの規則に依存するかを説明できる。自動適用のために `by` で明示引用する必要はない。
 
 Speaker note:
 
-- f は Magma の演算を使う functor の概形。必要な定義・継承・登録を前提とした呼出し例。
-- qua は既存 Mizar にもある記法。ここでは新仕様の継承パスの明示と、曖昧性の説明を示す。
-- Source: `doc/spec/en/19.overload_resolution.md` §19.3.1; `17.clusters_and_registrations.md`, Traceability。
+- Source: `doc/spec/en/17.clusters_and_registrations.md` §17.2, 17.7; `23.package_management_and_build_system.md` §23.7.7。表は empty set S の説明用トレース。属性の解決は ATP 探索より前に行う。
+
+### Frame 2.3 - 構造: 格納する field と導出する property
+
+データと標準的な値を分ける (specification example):
+
+```mizar
+definition
+  struct AddLoopStr where
+    field carrier -> set;
+    field add -> BinOp of carrier;
+    property zero -> Element of carrier;
+  end;
+end;
+```
+
+- **field は格納するデータで、構成子の引数。property の一意な値は、別の実装で与える。**
+- `zero` の宣言は型を与える。`means` 実装は存在・一意性を証明し、`equals` 実装は値を表す項を与える。
+
+Speaker note:
+
+- Source: `doc/spec/en/05.structures.md` §5.2; `07.modes.md` §7.4.1, 7.8.2; `sample_codes.md`, AddLoopStr。property の実装が重なる場合は coherence が必要。
+
+### Frame 2.3a - 継承関係を後から宣言する
+
+AddLoopStr の宣言後に、親への対応付けを追加 (specification example):
+
+```mizar
+definition
+  inherit AddLoopStr extends LoopStr where
+    field carrier from carrier;
+    field add from binop;
+    property zero from unit;
+  end;
+end;
+```
+
+- **構造の宣言と継承関係を分離。型を定義した後で Rust の trait を実装する構成に近い。**
+- `from` で親の役割をリネーム: `binop` を `add`、`unit` を `zero` に対応付ける。
+- 親ごとに一つの宣言。同じメンバー型なら証明不要、型を狭める場合は `coherence` を証明する。
+
+Speaker note:
+
+- Source: `doc/spec/en/05.structures.md` §5.3; `sample_codes.md`, AddLoopStr。Rust との類似は宣言の分離を指す。LoopStr の binop は field、unit は property。
+
+### Frame 2.3b - ダイアモンド継承と Group の定理の再利用
+
+同じ階層にある二つの経路 (sketch):
+
+```text
+AddLoopStr -> LoopStr -> Magma
+AddLoopStr -> AddMagma -> Magma
+```
+
+Group の定理を環の加法ビューで利用 (sketch):
+
+```mizar
+definition
+  let T be type extends Group;
+  theorem RightUnit[T]:
+    for x being Element of T.carrier holds T.binop(x,T.unit) = x
+  proof ... end;
+end;
+RightUnit[R qua AddLoopStr]  :: gives R.add(x,R.zero) = x
+```
+
+- **メンバーの起点と継承経路を追跡し、共有を検査。演算のビューは区別したまま保つ。**
+- 環の加法ビューは Group。リネームを通じて定理を再利用する。乗法側に必要なのは monoid の構造。
+
+Speaker note:
+
+- Source: `doc/spec/en/05.structures.md` §5.4; `sample_codes.md`, Group・Ring; `18.templates.md` §18.2.2, 18.10.2。R は Ring、x はその carrier の要素とし、Group・property の定義と必要な登録を仮定。同じ型の共有は自動検査、異なる型には coherence が必要。選択したビューが定理の前提を満たす必要がある。
 
 ## Part 3. Generic Mathematics
 
-### Frame 3.1 - Template: functor の定義と結果型を共通化
+### Frame 3.1 - 現行 MML: 関数の和と結果型
 
 **例: 関数の和。「各点で値を足す」という構成を共通化。**
+
+結果型の登録 (sketch, 複素数値・実数値の別々の入力ブロック):
+
+```mizar
+cluster f1 + f2 -> complex-valued;
+cluster f1 + f2 -> real-valued;
+```
+
+| VALUED_1 の段階 | 型の情報 |
+|---|---|
+| 点ごとの和を一度定義 | 結果は Function |
+| 値域の型を絞る | 複素数・実数それぞれの PartFunc 再定義 |
+| 元の定義域全体を回復 | それぞれの全域性の登録 |
+
+- **数学的な演算は既に共通化されている。結果型の精緻化は値の種類ごとに付随する。**
+
+Speaker note:
+
+- Source: MML [VALUED_1](https://mizar.uwb.edu.pl/version/current/html/valued_1.html), def 1 と後続の結果型の精緻化。表示した各行は別々の registration ブロックからの抜粋で、宣言と coherence 証明は省略。GPL-3.0-or-later / CC-BY-SA-3.0-or-later。
+- VALUED_1:def 1 は入力の定義域の共通部分を使う。次のスケッチは共通の非空定義域 I に限定し、構成全体を置換する例ではない。
+
+### Frame 3.1a - Template: 共通の本体と具体的な結果型
 
 汎用 functor (sketch, 存在・一意性の証明は省略):
 
@@ -143,19 +240,26 @@ Speaker note:
 definition
   let T be type extends non empty AddMagma;
   let I be non empty set;
-  let f, g be Function of I, T;
-  func AddDef: Add[T,I](f,g) -> Function of I,T means
+  let f, g be Function of I, T.carrier;
+  func AddDef: Add[T,I](f,g) -> Function of I,T.carrier means
     for i being Element of I holds it.i = T.add(f.i,g.i);
+  synonym f +[T,I] g for Add[T,I](f,g);
 end;
 ```
 
-- **現行 MML: 実数値・複素数値ごとに、和の結果型の再定義・登録が付随。**
-- **新仕様: 値の型 T をパラメータ化し、同じ構成の定義と結果型を共通化。**
+| 呼び出し（実数 R・複素数 C）[^1] | 結果型 |
+|---|---|
+| `f + g` | `Function of I,R.carrier` |
+| `u + v` | `Function of I,C.carrier` |
+
+- **synonym で中置の `+` を与え、型引数は宣言型から推論する。**
+
+[^1]: 明示形: `f +[R,I] g`、`u +[C,I] v`。省略は宣言型から一意に推論できる場合。継承経路が曖昧なら `qua` を明示。
 
 Speaker note:
 
-- T は加法を持つ型、I は共通の非空添字集合。必要な構造・登録を前提に、本体を一度検査して具体化する。共通化の対象は同じ構成の定義族。
-- Source: `doc/spec/en/18.templates.md` §18.2.2, 18.7, 18.10.1; `sample_codes.md` AddMagma; MML [VALUED_1](https://mizar.uwb.edu.pl/version/current/html/valued_1.html)。
+- `let R be RealAdd; let C be ComplexAdd;` を仮定。non empty AddMagma への継承経路は一意で、必要な登録を持つ。f,g の宣言型は Function of I,R.carrier、u,v は Function of I,C.carrier。正規化した宣言型から T・I が一意に決まる例。
+- Source: `doc/spec/en/11.symbol_management.md` §11.1.2; `18.templates.md` §18.2.2, 18.2.7, 18.7; `19.overload_resolution.md` §19.6.2。値域集合だけから加法構造を選べるとはしない。qua のビューは自動推論しない。
 
 ### Frame 3.2 - Scheme を template に統合 [deep dive]
 
@@ -180,21 +284,26 @@ end;
 
 ### Frame 4.1 - 計算の課題: 検証可能な algorithm
 
-- 現行 Mizar は宣言的証明と組込みの自動化を採用。ユーザ定義の tactic 言語は持たない。
-- **課題: 数学的な証明と実行可能な計算を、一つの検査の枠組みに結び付ける。**
-- **新仕様: algorithm は契約を持つ手続き。正しさ・不変条件・停止性を検査する。**
-- 用途: アルゴリズム自体の検証と、検証済み手続きによる証明支援。
+読みやすい手続きを Hoare 論理で検査する:
+
+```text
+{ requires }  algorithm body  { ensures }
+```
+
+- **代入・`if/else`・`while`・`for`・`return` という馴染みのある擬似コード。契約とループ不変条件で条件を記述する。**
+- **Hoare 論理の規則から一階の証明義務を生成し、正しさと、必要な場合は停止性を検査する。**
+- アルゴリズム自体の検証と、検証済み手続きによる証明支援に用いる。
 
 Speaker note:
 
-- Source: `doc/spec/en/20.algorithm_and_verification.md`, sections 20.1 and 20.12.
+- Source: `doc/spec/en/20.algorithm_and_verification.md` §20.2, 20.3, 20.13.3。既定は部分正当性。terminating は停止性の証明義務を加える。手続きの表記は擬似コードに近く、証明状態を操作する別の tactic 言語ではない。
 
 ### Frame 4.2 - Algorithm: 契約、証明、計算
 
 **契約付きのユークリッドの互除法** (specification example):
 
 ```mizar
-terminating algorithm euclid_gcd(a, b) -> Nat
+terminating algorithm EuclidGcdDef: euclid_gcd(a, b) -> Nat
   requires a >= 1 & b >= 1
   ensures result = Gcd(a, b)
 do
@@ -207,46 +316,106 @@ do
 end;
 ```
 
-- **契約・不変条件・停止性の測度から一階の証明義務を生成し、定理と同じ枠組みで検査する。**
-- **二つの役割: 検証済みの自動化手続きと、`by computation` による検査済みの計算。仕様化済み。MVM 実行とコード抽出は今後の課題。**
+- **`terminating` は requires を満たすすべての入力での停止を要求。不変条件と y の厳密な減少を検査する。**[^1]
+- **検証後は数学的な functor に昇格し、論理式・証明の中で使える。**
+
+[^1]: ループ注釈は Dafny の `invariant` / `decreases` に類似。Evo は `invariant` / `decreasing` を使う。
 
 Speaker note:
 
-- Source: `doc/spec/en/20.algorithm_and_verification.md`, section 20.12（外側の `definition` ブロックと `let a, b be Nat;` を省略）。
+- Source: spec 20、§20.1.1, 20.5, 20.12。外側の definition/let を省略。
+- 比較: [Dafny §8.15](https://dafny.org/latest/DafnyRef/DafnyRef.html#sec-loop-specifications)。
 
-### Frame 4.3 - Algorithm の応用範囲（将来構想） [deep dive]
+### Frame 4.2a - terminating と functor 昇格
 
-将来構想（現在の対応範囲には含まれない）:
+| algorithm の形 | requires の下での意味 |
+|---|---|
+| terminating なし | 呼出しが戻れば契約が成立 |
+| terminating を検証済み | requires の下で全域性。functor として利用 |
 
-- 整数論・組合せ論のアルゴリズム、記号計算、最適化手続き。
-- 長期的な対象: 暗号アルゴリズムとプロトコル、量子アルゴリズムと古典・量子ハイブリッド。
+互除法は契約を通じて推論する (sketch):
 
-共通する検証・実行の流れ:
+```mizar
+let a, b be Nat;
+assume a >= 1 & b >= 1;
+thus euclid_gcd(a,b) = Gcd(a,b) by EuclidGcdDef;
+```
 
-手続き・契約の記述 → 不変条件・停止性の指定 → 証明義務の生成 → ATP による証明と kernel 検査 → 具体的な入力での実行 → コード抽出（将来）。
+- **検証済みの定義的な断片は方程式も与える。ループを持つ互除法では全域性と契約の公理のみを用いる。**
+- `by computation` は別に仕様化。MVM 実行・コード抽出は今後の課題。
 
-- **algorithm は、証明の自動化手続きと応用アルゴリズムの検証を共通の枠組みに結び付ける。対象の拡大は将来構想。**
+Speaker note:
+
+- Source: `doc/spec/en/20.algorithm_and_verification.md` §20.7.2–20.7.3, 20.13.2; `16.theorems_and_proofs.md` §16.5.1。by EuclidGcdDef は検証済みの昇格公理を引用。呼び出す名前だけでは引用にならない。周囲の証明と Gcd の定義を仮定し、保証は requires の下で与える。
+
+### Frame 4.3 - 互除法: 何を証明するのか
+
+1回の反復: 旧状態 `(x,y)`、`y > 0`。`r = x mod y` とすると、新状態 `(x',y') = (y,r)`。
+
+| 証明義務 | 数学的な根拠 |
+|---|---|
+| 不変条件の初期成立 | `x=a`, `y=b`。事前条件から正値性 |
+| 不変条件の保存 | `Gcd(x,y) = Gcd(y,r)`、`y >= 1`、`r >= 0` |
+| Nat 値の測度の減少 | `y' = r`、`0 <= r < y` |
+| 終了時の事後条件 | `y=0`。`Gcd(a,b) = Gcd(x,0) = x` |
+
+- **GCD・剰余の補題をライブラリから用い、定理と同じ枠組みで検査する。SAT 単独が算術を知っているわけではない。**
+- 最後の `y := r` を `y := x` に変えると減少を失う。仕様に基づく説明例。
+
+Speaker note:
+
+- Source: `doc/spec/en/20.algorithm_and_verification.md` §20.5, 20.12, 20.13.3。証明義務の説明例であり、実行結果ではない。
+- 長期的な対象は将来構想: 整数論・組合せ論、記号計算、最適化、暗号、量子アルゴリズム。MVM 実行・コード抽出も今後の課題。
 
 ## Part 5. Development Infrastructure
 
-### Frame 5.1 - 開発基盤の課題と新仕様の対応
+### Frame 5.1 - 環境部: 著者は何を取り込むのか
 
-| MML の50年の蓄積から見えた課題 | Mizar Evo |
+現行 Mizar の環境部、ALGSTR_0 を短縮 (sketch):
+
+```mizar
+environ
+ vocabularies ... STRUCT_0 ...;
+ notations ... STRUCT_0;
+ constructors ... STRUCT_0 ...;
+ registrations ... STRUCT_0;
+ theorems STRUCT_0;
+```
+
+| 一覧 | 取り込むもの |
 |---|---|
-| article が依存の単位 | 明示的 import を持つモジュール |
-| グローバルな名前管理 | namespace、完全修飾名 |
-| 配布とバージョン管理が弱い | package、SemVer、lock file |
-| フルビルド | 依存指紋による差分ビルド |
-| ATP は外付け、自動化が見えにくい | 第一級の ATP パイプライン、解決トレース、kernel evidence |
-| IDE 連携と機械可読な入出力が弱い | LSP、構造化診断、エージェント向けインタフェース |
+| vocabularies / notations | 記号 / 記法 |
+| constructors | 構成子 |
+| registrations / theorems | 自動的な型の事実 / 引用する定理 |
 
-- **Mizar の数学的思想を継承し、ソフトウェア構成は現代の開発要件に合わせて再設計する。**
-- **言語とともに開発基盤全体を現代化。各機能の詳細は Białystok 資料を参照。**
+- **役割別に必要な article を選ぶ。`notations`・`definitions` は article の順序にも意味がある。**
 
 Speaker note:
 
-- 批判ではない。50年前には一般的でなかったソフトウェア工学を、形式数学の環境に持ち込む話。
-- 詳細: Białystok 資料 Story 1, 3, 5, 8; 本資料 Backup 6-8。
+- Source: Białystok `draft.md` Frame 2.1–2.2、ALGSTR_0 の引用。省略記号で一覧を短縮。取り込む登録は暗黙の型推論にも影響し、記号だけでは記法・型の事実は揃わない。
+- 順序の Source: Adam Naumowicz, Towards Standardized Mizar Environments, CICM 2017, slide 13: <https://mizar.uwb.edu.pl/~softadm/imports/slides.pdf>。現行環境部の該当する一覧の話で、すべての import 指令の話ではない。
+
+### Frame 5.1a - import と依存の追跡
+
+新仕様: モジュールの import (specification example):
+
+```mizar
+import .function;
+import mml.algebra.structure.sorted;
+```
+
+| 段階 | 著者が確認できるもの |
+|---|---|
+| import | モジュールの公開された定義・定理・登録 |
+| 解決 | 元の完全修飾名と、登録の解決トレース |
+| 再利用 | 差分ビルドで検証済みの依存指紋 |
+
+- **公開項目をまとめて取り込み、実際に何を使ったかを追跡する。**
+- package・lock file で依存バージョンを固定し、IDE 診断で解決した名前・トレースを確認する設計。
+
+Speaker note:
+
+- Source: `doc/spec/en/12.modules_and_namespaces.md` §12.3、`17.clusters_and_registrations.md`, Traceability、`23.package_management_and_build_system.md`。import 例は一対一の機械的な移行例ではない。詳細: Backup 7–8。
 
 ### Frame 5.2 - 全体像
 
@@ -262,15 +431,29 @@ Speaker note:
 
 ### Frame 6.1 - 自動化の課題: 証明探索と検査の分離
 
-![The reasoning boundary: semantics, untrusted search, trusted checking](../2026-09-bialystok/figures/reasoning_boundary.pdf)
+Isabelle/HOL: Sledgehammer が内部で検証する証明を提案 (sketch):
 
-- **一階 ATP は証明探索を担う。探索結果は、信頼できる検査器による検証を要する。**
-- **Mizar 側: 名前・型・cluster・オーバーロードの解決。ATP: 証明探索。kernel: 論理式と代入を、小規模な信頼できる SAT 検査で検証し、受理を判定。**
-- ATP の終了コードのみでは証明を受理しない。一階自動推論の導入によって信頼基盤を拡大しない設計。
+```text
+have "Q a"
+  sledgehammer
+  by (metis allPQ pa)
+```
+
+Mizar Evo: 引用した前提で宣言的な証明ステップを記述 (sketch):
+
+```mizar
+assume AllPQ: for x being object holds P(x) implies Q(x);
+assume Pa: P(a);
+thus Q(a) by AllPQ, Pa;
+```
+
+- **共通する流れ: ゴールと前提 → 外部探索 → 内側の信頼できる受理判定。prover の成功報告だけでは受理しない。**
+- Isabelle は Metis 等で内部の証明を再構成。Mizar Evo は論理式・置換の evidence をインスタンス化し、SAT で検査する。
 
 Speaker note:
 
-- Source: `doc/design/architecture/en/08.reasoning_boundary.md`; Białystok 資料 Story 4; 本資料 Backup 5 に evidence の中身。
+- Source: [Sledgehammer guide](https://isabelle.in.tum.de/doc/sledgehammer.pdf), §1, 5.2; spec 16; architecture 08, 10, 15。対応する前提を仮定する説明例。
+- Evo は引用前提・局所仮定、Sledgehammer は theory context からの前提選択。共通の探索・検査の流れは evidence の同一性や実証結果を意味しない。
 
 ### Frame 6.2 - ATP の活用: 探索・検査・再利用
 
@@ -285,21 +468,59 @@ Speaker note:
 - 現在の ATP 入力は引用した前提と局所仮定。ライブラリ全体の前提選択と反復の費用対効果は今後の評価対象。
 - Source: `doc/spec/en/21.source_code_annotation_and_atp.md` §21.7.2; `doc/design/architecture/en/21.ai_agent_interface.md`。
 
-### Frame 6.3 - Evidence → インスタンス化 → SAT 検査
+### Frame 6.3 - Resolution 木と置換の抽出
+
+Resolution ログからの候補抽出 (sketch):
 
 ```text
-**evidence → インスタンス化 → SAT 検査**
+F1: forall x. (P(x) implies Q(x)); F2: forall y. (Q(y) implies R(y))
+H: P(a); goal: R(a); refute: F1 & F2 & H & not R(a)
+
+{not P(x), Q(x)}             {not Q(y), R(y)}
+          \                 /
+           sigma1 = {x := y}       :: unify Q(x), Q(y)
+           {not P(y), R(y)}        {P(a)}
+                    \             /
+                     sigma2 = {y := a} :: unify P(y), P(a)
+                     {R(a)}        {not R(a)}
+                          \        /
+                           sigma3 = {}
+                                {}
 ```
 
-1. **Evidence:** 元の論理式・明示的な代入・来歴・対象ゴールを保持。
-2. **Kernel:** 対応関係と代入を検査し、論理式のインスタンスを生成。
-3. **SAT:** インスタンスとゴールの否定を符号化。信頼できる検査器で UNSAT を確認した場合に受理。
+- **非信頼の抽出器が枝上の置換を合成。F1 に `x := a`、F2 に `y := a` を保存する。**
 
 Speaker note:
 
-- UNSAT により、前提からゴールが従うことを確認。インスタンスと SAT 問題は kernel 自身が導出する。
-- バックエンドのトレースと終了コードは診断用。詳細な項目は Backup 5。
-- Source: `doc/design/architecture/en/08.reasoning_boundary.md`, `15.kernel_certificate_format.md`.
+- 節の変数 x/y は別名にしている。Q の単一化で x:=y、P の単一化で y:=a。合成して F1[x:=a] と F2[y:=a] を回収する。
+- ログを使う候補生成案。現行 architecture 10 は独立した instance finder。kernel は evidence を検査し、ログの各推論を信頼しない。
+- Source: architecture 08, 10, 15, 16。スケッチであり、外部 prover の実行例ではない。
+
+### Frame 6.3a - 保存する証拠から具体的な SAT 節へ
+
+保存する候補・kernel の前処理・SAT 入力 (sketch):
+
+```text
+save: F1,F2,H (source bindings); F1[x:=a], F2[y:=a]; goal R(a), refute
+check: source/context, binders, capture avoidance
+instances: P(a) implies Q(a); Q(a) implies R(a); P(a); not R(a)
+atoms: p=P(a)=1, q=Q(a)=2, r=R(a)=3
+logical CNF: (not p or q) & (not q or r) & p & not r
+Tseitin: s=4 iff (not p or q); t=5 iff (not q or r)
+SAT clauses (DIMACS example; 0 ends each clause):
+p cnf 5 10
+1 0       -3 0
+1 4 0     -2 4 0     -1 2 -4 0     4 0
+2 5 0     -3 5 0     -2 3 -5 0     5 0
+```
+
+- **small kernel が検査済み evidence から instance・CNF を生成。自身の SAT 検査器で UNSAT を確認し R(a) を受理する。外部 Resolution の各ステップは replay しない。**
+
+Speaker note:
+
+- 元の式、合成した置換、束縛文脈、対象 VC と反駁の極性を保存。instance と SAT 節は再生成する（Backup 5）。
+- DIMACS: 5変数・10節、負の整数は否定、0 は節の終端。s/t は含意を表す。エンコーダに沿った構成例で、実行ダンプではない。
+- kernel は置換を探索しない。Source: architecture 08, 15, 16。
 
 ## Part Closing. Status And Roadmap
 

@@ -243,22 +243,36 @@ let x be Element of X;
 }
 \end{frame}
 
-\begin{frame}[fragile,t]{2.2 - Make Operation Choices Explicit And Traceable}
+\begin{frame}[fragile,t]{2.2 - Registrations: Give Automatic Chains Names}
 \smallskip
-\textbf{Select one of a ring's two operation views}~\badgeSketch
+\textbf{Named automatic rules}~\badgeSpec
 \begin{lstlisting}[language={mizar},basicstyle=\ttfamily\small]
-let R be commutative Ring;
-f(R);                  :: ambiguous Magma view
-f(R qua AddMagma);      :: use addition
-f(R qua MulMagma);      :: use multiplication
+registration
+  cluster EmptyImpliesFinite: empty -> finite for set;
+  coherence proof ... end;
+  cluster FiniteImpliesCountable: finite -> countable for set;
+  coherence proof ... end;
+end;
 \end{lstlisting}
+\begin{footnotesize}
+\setlength{\tabcolsep}{3pt}
+\renewcommand{\arraystretch}{1.15}
+\begin{tabularx}{\textwidth}{>{\raggedright\arraybackslash}X>{\raggedright\arraybackslash}X>{\raggedright\arraybackslash}X}
+\toprule
+\textbf{Starting fact} & \textbf{Automatically derived fact} & \textbf{Recorded rule} \\
+\midrule
+S is empty & S is finite & EmptyImpliesFinite \\
+S is finite & S is countable & FiniteImpliesCountable \\
+\bottomrule
+\end{tabularx}
+\end{footnotesize}
+
 \begin{itemize}
 \setlength{\itemsep}{1pt}
 \setlength{\parsep}{0pt}
 \setlength{\parskip}{0pt}
-\item \textcolor{blue!55!black}{\textbf{Challenge: a ring has additive and multiplicative Magma views. \texttt{f(R)} is ambiguous.}}
-\item \textcolor{blue!55!black}{\textbf{New specification: \texttt{qua} explicitly selects the additive or multiplicative view.}}
-\item Trace automatically applied registrations and their derivation paths.
+\item \textcolor{blue!55!black}{\textbf{Keep automatic chaining; require a label on every registration item and record the applied path.}}
+\item Labels explain which rule a proof depends on. Explicit \texttt{by} citations remain optional for automatic application.
 \end{itemize}
 \note{
 \smallskip
@@ -267,10 +281,9 @@ f(R qua MulMagma);      :: use multiplication
 \setlength{\itemsep}{1pt}
 \setlength{\parsep}{0pt}
 \setlength{\parskip}{0pt}
-\item Select one of a ring's two operation views.
-\item \textcolor{blue!55!black}{\textbf{Challenge: a ring has additive and multiplicative Magma views. \texttt{f(R)} is ambiguous.}}
-\item \textcolor{blue!55!black}{\textbf{New specification: \texttt{qua} explicitly selects the additive or multiplicative view.}}
-\item Trace automatically applied registrations and their derivation paths.
+\item Named automatic rules.
+\item \textcolor{blue!55!black}{\textbf{Keep automatic chaining; require a label on every registration item and record the applied path.}}
+\item Labels explain which rule a proof depends on. Explicit \texttt{by} citations remain optional for automatic application.
 \end{itemize}
 \smallskip
 \textbf{Optional notes and sources:}
@@ -278,34 +291,172 @@ f(R qua MulMagma);      :: use multiplication
 \setlength{\itemsep}{1pt}
 \setlength{\parsep}{0pt}
 \setlength{\parskip}{0pt}
-\item f uses a Magma operation; definitions, inheritance, and registrations are assumed.
-\item qua already exists in Mizar; this sketch illustrates explicit inheritance-path selection.
-\item Source: \texttt{doc/spec/en/19.overload\_resolution.md} section 19.3.1; \texttt{17.clusters\_and\_registrations.md}, Traceability.
+\item Source: \texttt{doc/spec/en/17.clusters\_and\_registrations.md} sections 17.2, 17.7; \texttt{23.package\_management\_and\_build\_system.md} section 23.7.7. The trace above is illustrative for an empty set S. Attribute resolution precedes ATP search.
 \end{itemize}
 }
 \end{frame}
 
-\section{Part 3. Generic Mathematics}
-\begin{frame}[fragile,t]{3.1 - Templates: Share Functor Definitions And Result Types}
-\textcolor{blue!55!black}{\textbf{Example: the sum of functions. Add their values at each point.}}
-
+\begin{frame}[fragile,t]{2.3 - Structures: Stored Fields And Derived Properties}
 \smallskip
-\textbf{Generic functor}~\badgeSketch~{\footnotesize(existence and uniqueness proofs omitted)}
+\textbf{Data and canonical values have different roles}~\badgeSpec
 \begin{lstlisting}[language={mizar},basicstyle=\ttfamily\small]
 definition
-  let T be type extends non empty AddMagma;
-  let I be non empty set;
-  let f, g be Function of I, T;
-  func AddDef: Add[T,I](f,g) -> Function of I,T means
-    for i being Element of I holds it.i = T.add(f.i,g.i);
+  struct AddLoopStr where
+    field carrier -> set;
+    field add -> BinOp of carrier;
+    property zero -> Element of carrier;
+  end;
 end;
 \end{lstlisting}
 \begin{itemize}
 \setlength{\itemsep}{1pt}
 \setlength{\parsep}{0pt}
 \setlength{\parskip}{0pt}
-\item \textcolor{blue!55!black}{\textbf{Current MML: real and complex result types need separate redefinitions and registrations.}}
-\item \textcolor{blue!55!black}{\textbf{New specification: parameterize the value type T to share the definition and result type.}}
+\item \textcolor{blue!55!black}{\textbf{Fields store data and are constructor arguments. Properties get a uniquely determined value from a separate implementation.}}
+\item The declaration of \texttt{zero} supplies its type. A \texttt{means} implementation proves existence and uniqueness; an \texttt{equals} implementation supplies a term.
+\end{itemize}
+\note{
+\smallskip
+\textbf{Read aloud:}
+\begin{itemize}
+\setlength{\itemsep}{1pt}
+\setlength{\parsep}{0pt}
+\setlength{\parskip}{0pt}
+\item Data and canonical values have different roles.
+\item \textcolor{blue!55!black}{\textbf{Fields store data and are constructor arguments. Properties get a uniquely determined value from a separate implementation.}}
+\item The declaration of \texttt{zero} supplies its type. A \texttt{means} implementation proves existence and uniqueness; an \texttt{equals} implementation supplies a term.
+\end{itemize}
+\smallskip
+\textbf{Optional notes and sources:}
+\begin{itemize}
+\setlength{\itemsep}{1pt}
+\setlength{\parsep}{0pt}
+\setlength{\parskip}{0pt}
+\item Source: \texttt{doc/spec/en/05.structures.md} section 5.2; \texttt{07.modes.md} sections 7.4.1, 7.8.2; \texttt{sample\_codes.md}, AddLoopStr. Overlapping property implementations require coherence.
+\end{itemize}
+}
+\end{frame}
+
+\begin{frame}[fragile,t]{2.3a - Inheritance Can Be Declared Later}
+\smallskip
+\textbf{After declaring AddLoopStr, add a parent mapping}~\badgeSpec
+\begin{lstlisting}[language={mizar},basicstyle=\ttfamily\small]
+definition
+  inherit AddLoopStr extends LoopStr where
+    field carrier from carrier;
+    field add from binop;
+    property zero from unit;
+  end;
+end;
+\end{lstlisting}
+\begin{itemize}
+\setlength{\itemsep}{1pt}
+\setlength{\parsep}{0pt}
+\setlength{\parskip}{0pt}
+\item \textcolor{blue!55!black}{\textbf{Separate the structure declaration from later inheritance declarations, much like implementing a Rust trait after defining a type.}}
+\item \texttt{from} renames the parent roles: \texttt{binop} becomes \texttt{add}, and \texttt{unit} becomes \texttt{zero}.
+\item Each declaration has one parent. Identical member types need no proof; narrower types need a \texttt{coherence} proof.
+\end{itemize}
+\note{
+\smallskip
+\textbf{Read aloud:}
+\begin{itemize}
+\setlength{\itemsep}{1pt}
+\setlength{\parsep}{0pt}
+\setlength{\parskip}{0pt}
+\item After declaring AddLoopStr, add a parent mapping.
+\item \textcolor{blue!55!black}{\textbf{Separate the structure declaration from later inheritance declarations, much like implementing a Rust trait after defining a type.}}
+\item \texttt{from} renames the parent roles: \texttt{binop} becomes \texttt{add}, and \texttt{unit} becomes \texttt{zero}.
+\item Each declaration has one parent. Identical member types need no proof; narrower types need a \texttt{coherence} proof.
+\end{itemize}
+\smallskip
+\textbf{Optional notes and sources:}
+\begin{itemize}
+\setlength{\itemsep}{1pt}
+\setlength{\parsep}{0pt}
+\setlength{\parskip}{0pt}
+\item Source: \texttt{doc/spec/en/05.structures.md} section 5.3; \texttt{sample\_codes.md}, AddLoopStr. The Rust comparison concerns separate declarations, not identical semantics. LoopStr declares binop as a field and unit as a property.
+\end{itemize}
+}
+\end{frame}
+
+\begin{frame}[fragile,t]{2.3b - Checked Diamonds And Reused Group Theorems}
+\smallskip
+\textbf{Two paths in the same hierarchy}~\badgeSketch
+\begin{lstlisting}[language={},basicstyle=\ttfamily\small]
+AddLoopStr -> LoopStr -> Magma
+AddLoopStr -> AddMagma -> Magma
+\end{lstlisting}
+\smallskip
+\textbf{A Group theorem applied to a ring's additive view}~\badgeSketch
+\begin{lstlisting}[language={mizar},basicstyle=\ttfamily\small]
+definition
+  let T be type extends Group;
+  theorem RightUnit[T]:
+    for x being Element of T.carrier holds T.binop(x,T.unit) = x
+  proof ... end;
+end;
+RightUnit[R qua AddLoopStr]  :: gives R.add(x,R.zero) = x
+\end{lstlisting}
+\begin{itemize}
+\setlength{\itemsep}{1pt}
+\setlength{\parsep}{0pt}
+\setlength{\parskip}{0pt}
+\item \textcolor{blue!55!black}{\textbf{Track member roots and inheritance paths; check shared members while keeping the operation views distinct.}}
+\item Ring's additive view is a Group. Reuse its theorem through renamed members; multiplication is only required to be a monoid.
+\end{itemize}
+\note{
+\smallskip
+\textbf{Read aloud:}
+\begin{itemize}
+\setlength{\itemsep}{1pt}
+\setlength{\parsep}{0pt}
+\setlength{\parskip}{0pt}
+\item Two paths in the same hierarchy.
+\item A Group theorem applied to a ring's additive view.
+\item \textcolor{blue!55!black}{\textbf{Track member roots and inheritance paths; check shared members while keeping the operation views distinct.}}
+\item Ring's additive view is a Group. Reuse its theorem through renamed members; multiplication is only required to be a monoid.
+\end{itemize}
+\smallskip
+\textbf{Optional notes and sources:}
+\begin{itemize}
+\setlength{\itemsep}{1pt}
+\setlength{\parsep}{0pt}
+\setlength{\parskip}{0pt}
+\item Source: \texttt{doc/spec/en/05.structures.md} section 5.4; \texttt{sample\_codes.md}, Group and Ring; \texttt{18.templates.md} sections 18.2.2, 18.10.2. Assume R is Ring, x is in its carrier, and the needed Group/property definitions and registrations. Equal member types join automatically; other types need coherence. The selected view must satisfy the theorem's assumptions.
+\end{itemize}
+}
+\end{frame}
+
+\section{Part 3. Generic Mathematics}
+\begin{frame}[fragile,t]{3.1 - Current MML: Result Types For The Sum Of Functions}
+\textcolor{blue!55!black}{\textbf{Example: the sum of functions. Add their values at each point.}}
+
+Result-type registrations (sketch, separate complex-valued and real-valued input blocks):
+
+\begin{lstlisting}[language={mizar},basicstyle=\ttfamily\small]
+cluster f1 + f2 -> complex-valued;
+cluster f1 + f2 -> real-valued;
+\end{lstlisting}
+\begin{footnotesize}
+\setlength{\tabcolsep}{3pt}
+\renewcommand{\arraystretch}{1.15}
+\begin{tabularx}{\textwidth}{>{\raggedright\arraybackslash}X>{\raggedright\arraybackslash}X}
+\toprule
+\textbf{Step in VALUED\_1} & \textbf{Type information} \\
+\midrule
+Define pointwise addition once & The result is a Function \\
+Refine the codomain & Separate complex and real PartFunc redefinitions \\
+Recover the full input domain & Separate totality registrations \\
+\bottomrule
+\end{tabularx}
+\end{footnotesize}
+
+\begin{itemize}
+\setlength{\itemsep}{1pt}
+\setlength{\parsep}{0pt}
+\setlength{\parskip}{0pt}
+\item \textcolor{blue!55!black}{\textbf{The mathematical operation is already shared. The result-type refinements still follow the value types.}}
 \end{itemize}
 \note{
 \smallskip
@@ -315,9 +466,8 @@ end;
 \setlength{\parsep}{0pt}
 \setlength{\parskip}{0pt}
 \item \textcolor{blue!55!black}{\textbf{Example: the sum of functions. Add their values at each point.}}
-\item Generic functor.
-\item \textcolor{blue!55!black}{\textbf{Current MML: real and complex result types need separate redefinitions and registrations.}}
-\item \textcolor{blue!55!black}{\textbf{New specification: parameterize the value type T to share the definition and result type.}}
+\item Result-type registrations.
+\item \textcolor{blue!55!black}{\textbf{The mathematical operation is already shared. The result-type refinements still follow the value types.}}
 \end{itemize}
 \smallskip
 \textbf{Optional notes and sources:}
@@ -325,8 +475,69 @@ end;
 \setlength{\itemsep}{1pt}
 \setlength{\parsep}{0pt}
 \setlength{\parskip}{0pt}
-\item T supplies addition; I is a common nonempty domain. Suitable structures and registrations are assumed.
-\item Source: \texttt{doc/spec/en/18.templates.md} sections 18.2.2, 18.7, 18.10.1; \texttt{sample\_codes.md} AddMagma; MML VALUED\_1 (\url{https://mizar.uwb.edu.pl/version/current/html/valued\_1.html}).
+\item Source: MML VALUED\_1 (\url{https://mizar.uwb.edu.pl/version/current/html/valued\_1.html}), def 1 and the following result-type refinements. Each displayed line is from a separate registration block; declarations and coherence proofs are omitted. GPL-3.0-or-later / CC-BY-SA-3.0-or-later.
+\item VALUED\_1:def 1 uses the intersection of the input domains. The next sketch is limited to a common nonempty domain I; it does not replace the full construction.
+\end{itemize}
+}
+\end{frame}
+
+\begin{frame}[fragile,t]{3.1a - Template: One Body And Concrete Result Types}
+\smallskip
+\textbf{Generic functor}~\badgeSketch~{\footnotesize(existence and uniqueness proofs omitted)}
+\begin{lstlisting}[language={mizar},basicstyle=\ttfamily\footnotesize]
+definition
+  let T be type extends non empty AddMagma;
+  let I be non empty set;
+  let f, g be Function of I, T.carrier;
+  func AddDef: Add[T,I](f,g) -> Function of I,T.carrier means
+    for i being Element of I holds it.i = T.add(f.i,g.i);
+  synonym f +[T,I] g for Add[T,I](f,g);
+end;
+\end{lstlisting}
+\begin{footnotesize}
+\setlength{\tabcolsep}{3pt}
+\renewcommand{\arraystretch}{1.15}
+\begin{tabularx}{\textwidth}{>{\raggedright\arraybackslash}X>{\raggedright\arraybackslash}X}
+\toprule
+\textbf{Call (real R, complex C)\footnotemark[1]} & \textbf{Result type} \\
+\midrule
+\texttt{f + g} & \texttt{Function of I,R.carrier} \\
+\texttt{u + v} & \texttt{Function of I,C.carrier} \\
+\bottomrule
+\end{tabularx}
+\end{footnotesize}
+
+\begin{itemize}
+\setlength{\itemsep}{1pt}
+\setlength{\parsep}{0pt}
+\setlength{\parskip}{0pt}
+\item \textcolor{blue!55!black}{\textbf{A synonym gives infix \texttt{+}; infer template arguments from declared types.}}
+\end{itemize}
+\footnotetext[1]{Explicit: \texttt{f +[R,I] g}, \texttt{u +[C,I] v}. Omit arguments only when declared types determine them uniquely. Write \texttt{qua} for ambiguous inheritance paths.}
+\note{
+\smallskip
+\textbf{Read aloud:}
+\begin{itemize}
+\setlength{\itemsep}{1pt}
+\setlength{\parsep}{0pt}
+\setlength{\parskip}{0pt}
+\item Generic functor.
+\item \textcolor{blue!55!black}{\textbf{A synonym gives infix \texttt{+}; infer template arguments from declared types.}}
+\end{itemize}
+\smallskip
+\textbf{Optional notes and sources:}
+\begin{itemize}
+\setlength{\itemsep}{1pt}
+\setlength{\parsep}{0pt}
+\setlength{\parskip}{0pt}
+\item Assume \texttt{let R be RealAdd; let C be ComplexAdd;}, with unique inheritance to nonempty AddMagma and the needed registrations. f,g have declared type Function of I,R.carrier; u,v have Function of I,C.carrier. Assume their normalized declared types uniquely determine T and I.
+\item Source: \texttt{doc/spec/en/11.symbol\_management.md} section 11.1.2; \texttt{18.templates.md} sections 18.2.2, 18.2.7, 18.7; \texttt{19.overload\_resolution.md} section 19.6.2. A codomain set alone does not select its addition structure. \texttt{qua} views are never inferred.
+\end{itemize}
+\begin{itemize}
+\setlength{\itemsep}{1pt}
+\setlength{\parsep}{0pt}
+\setlength{\parskip}{0pt}
+\item Explicit: \texttt{f +[R,I] g}, \texttt{u +[C,I] v}. Omit arguments only when declared types determine them uniquely. Write \texttt{qua} for ambiguous inheritance paths.
 \end{itemize}
 }
 \end{frame}
@@ -370,14 +581,20 @@ end;
 
 \section{Part 4. Verified Computation}
 \begin{frame}[fragile,t]{4.1 - Computation: Verified Algorithms}
+\smallskip
+\textbf{Hoare-style checking of readable procedures:}
+\begin{center}
+\begin{beamercolorbox}[rounded=true,sep=2.5mm,wd=0.9\textwidth]{keyphrase}
+\centering\itshape \{ requires \}  algorithm body  \{ ensures \}
+\end{beamercolorbox}
+\end{center}
 \begin{itemize}
 \setlength{\itemsep}{1pt}
 \setlength{\parsep}{0pt}
 \setlength{\parskip}{0pt}
-\item Mizar uses declarative proofs and built-in automation. It has no user-programmable tactic language.
-\item \textcolor{blue!55!black}{\textbf{Challenge: connect mathematical proofs and executable computation in one checking framework.}}
-\item \textcolor{blue!55!black}{\textbf{New specification: an algorithm is a procedure with a contract. Its correctness, invariants, and termination are checked.}}
-\item Uses: verify algorithms themselves, and use verified procedures to support proofs.
+\item \textcolor{blue!55!black}{\textbf{Use familiar pseudocode: assignment, \texttt{if/else}, \texttt{while}, \texttt{for}, and \texttt{return}. Contracts and loop invariants state what must hold.}}
+\item \textcolor{blue!55!black}{\textbf{Generate first-order verification conditions using Hoare logic. Verify correctness and, when required, termination.}}
+\item Verify algorithms themselves and use verified procedures to support proofs.
 \end{itemize}
 \note{
 \smallskip
@@ -386,10 +603,10 @@ end;
 \setlength{\itemsep}{1pt}
 \setlength{\parsep}{0pt}
 \setlength{\parskip}{0pt}
-\item Mizar uses declarative proofs and built-in automation. It has no user-programmable tactic language.
-\item \textcolor{blue!55!black}{\textbf{Challenge: connect mathematical proofs and executable computation in one checking framework.}}
-\item \textcolor{blue!55!black}{\textbf{New specification: an algorithm is a procedure with a contract. Its correctness, invariants, and termination are checked.}}
-\item Uses: verify algorithms themselves, and use verified procedures to support proofs.
+\item \{ requires \}  algorithm body  \{ ensures \}
+\item \textcolor{blue!55!black}{\textbf{Use familiar pseudocode: assignment, \texttt{if/else}, \texttt{while}, \texttt{for}, and \texttt{return}. Contracts and loop invariants state what must hold.}}
+\item \textcolor{blue!55!black}{\textbf{Generate first-order verification conditions using Hoare logic. Verify correctness and, when required, termination.}}
+\item Verify algorithms themselves and use verified procedures to support proofs.
 \end{itemize}
 \smallskip
 \textbf{Optional notes and sources:}
@@ -397,7 +614,7 @@ end;
 \setlength{\itemsep}{1pt}
 \setlength{\parsep}{0pt}
 \setlength{\parskip}{0pt}
-\item Source: \texttt{doc/spec/en/20.algorithm\_and\_verification.md}, sections 20.1 and 20.12.
+\item Source: \texttt{doc/spec/en/20.algorithm\_and\_verification.md} sections 20.2, 20.3, 20.13.3. Correctness is partial by default; \texttt{terminating} adds a termination obligation. This is pseudocode-like procedural notation, rather than a separate proof-state tactic language.
 \end{itemize}
 }
 \end{frame}
@@ -406,7 +623,7 @@ end;
 \smallskip
 \textbf{\textcolor{blue!55!black}{\textbf{Euclid's algorithm with a contract}}}~\badgeSpec
 \begin{lstlisting}[language={mizar},basicstyle=\ttfamily\footnotesize]
-terminating algorithm euclid_gcd(a, b) -> Nat
+terminating algorithm EuclidGcdDef: euclid_gcd(a, b) -> Nat
   requires a >= 1 & b >= 1
   ensures result = Gcd(a, b)
 do
@@ -422,9 +639,10 @@ end;
 \setlength{\itemsep}{1pt}
 \setlength{\parsep}{0pt}
 \setlength{\parskip}{0pt}
-\item \textcolor{blue!55!black}{\textbf{Contracts, invariants, and termination measures become first-order proof obligations, checked like theorems.}}
-\item \textcolor{blue!55!black}{\textbf{Two roles: a verified automation procedure, and a checked computation run by \texttt{by computation}. Status: specified. MVM execution and code extraction come later.}}
+\item \textcolor{blue!55!black}{\textbf{\texttt{terminating} requires termination for every input satisfying \texttt{requires}. The verifier checks the invariant and strict decrease of y.}}\footnotemark[1]
+\item \textcolor{blue!55!black}{\textbf{After verification, the algorithm is promoted to a mathematical functor, usable in formulas and proofs.}}
 \end{itemize}
+\footnotetext[1]{Loop annotations resemble Dafny's \texttt{invariant} / \texttt{decreases}; Evo uses \texttt{invariant} / \texttt{decreasing}.}
 \note{
 \smallskip
 \textbf{Read aloud:}
@@ -433,8 +651,8 @@ end;
 \setlength{\parsep}{0pt}
 \setlength{\parskip}{0pt}
 \item \textcolor{blue!55!black}{\textbf{Euclid's algorithm with a contract}}.
-\item \textcolor{blue!55!black}{\textbf{Contracts, invariants, and termination measures become first-order proof obligations, checked like theorems.}}
-\item \textcolor{blue!55!black}{\textbf{Two roles: a verified automation procedure, and a checked computation run by \texttt{by computation}. Status: specified. MVM execution and code extraction come later.}}
+\item \textcolor{blue!55!black}{\textbf{\texttt{terminating} requires termination for every input satisfying \texttt{requires}. The verifier checks the invariant and strict decrease of y.}}\footnotemark[1]
+\item \textcolor{blue!55!black}{\textbf{After verification, the algorithm is promoted to a mathematical functor, usable in formulas and proofs.}}
 \end{itemize}
 \smallskip
 \textbf{Optional notes and sources:}
@@ -442,34 +660,45 @@ end;
 \setlength{\itemsep}{1pt}
 \setlength{\parsep}{0pt}
 \setlength{\parskip}{0pt}
-\item Source: \texttt{doc/spec/en/20.algorithm\_and\_verification.md}, section 20.12 (condensed: the enclosing \texttt{definition} block and \texttt{let a, b be Nat;} are omitted).
+\item Source: spec 20, sections 20.1.1, 20.5, 20.12; outer definition/let omitted.
+\item Compare Dafny §8.15 (\url{https://dafny.org/latest/DafnyRef/DafnyRef.html\#sec-loop-specifications}).
+\end{itemize}
+\begin{itemize}
+\setlength{\itemsep}{1pt}
+\setlength{\parsep}{0pt}
+\setlength{\parskip}{0pt}
+\item Loop annotations resemble Dafny's \texttt{invariant} / \texttt{decreases}; Evo uses \texttt{invariant} / \texttt{decreasing}.
 \end{itemize}
 }
 \end{frame}
 
-\begin{frame}[fragile,t]{4.3 - Future Targets For Algorithms\deepdivetag}
+\begin{frame}[fragile,t]{4.2a - Termination And Functor Promotion}
+\begin{footnotesize}
+\setlength{\tabcolsep}{3pt}
+\renewcommand{\arraystretch}{1.15}
+\begin{tabularx}{\textwidth}{>{\raggedright\arraybackslash}X>{\raggedright\arraybackslash}X}
+\toprule
+\textbf{Algorithm form} & \textbf{Meaning under requires} \\
+\midrule
+Without terminating & If the call returns, its contract holds \\
+Verified terminating & Totality under requires; usable as a functor \\
+\bottomrule
+\end{tabularx}
+\end{footnotesize}
+
 \smallskip
-\textbf{Future direction, not current capability:}
+\textbf{Reason about Euclid through its contract}~\badgeSketch
+\begin{lstlisting}[language={mizar},basicstyle=\ttfamily\small]
+let a, b be Nat;
+assume a >= 1 & b >= 1;
+thus euclid_gcd(a,b) = Gcd(a,b) by EuclidGcdDef;
+\end{lstlisting}
 \begin{itemize}
 \setlength{\itemsep}{1pt}
 \setlength{\parsep}{0pt}
 \setlength{\parskip}{0pt}
-\item number-theoretic and combinatorial algorithms; symbolic algorithms; optimization procedures;
-\item later: cryptographic algorithms and protocols; quantum and hybrid classical-quantum algorithms.
-\end{itemize}
-\smallskip
-\textbf{One workflow for all of them:}
-\begin{enumerate}
-\setlength{\itemsep}{1pt}
-\setlength{\parsep}{0pt}
-\setlength{\parskip}{0pt}
-\item write the procedure; 2. state the contract; 3. give invariants and termination; 4. generate proof obligations; 5. prove them with ATPs and check them in the kernel; 6. run on concrete inputs; 7. extract code later.
-\end{enumerate}
-\begin{itemize}
-\setlength{\itemsep}{1pt}
-\setlength{\parsep}{0pt}
-\setlength{\parskip}{0pt}
-\item \textcolor{blue!55!black}{\textbf{Algorithms make the gap between tactics and application algorithms smaller. The targets above are future directions.}}
+\item \textcolor{blue!55!black}{\textbf{Verified definitional algorithms also give defining equations. Euclid has a loop: use only its totality and contract axioms.}}
+\item \texttt{by computation} is specified separately; MVM execution and code extraction remain future work.
 \end{itemize}
 \note{
 \smallskip
@@ -478,29 +707,35 @@ end;
 \setlength{\itemsep}{1pt}
 \setlength{\parsep}{0pt}
 \setlength{\parskip}{0pt}
-\item number-theoretic and combinatorial algorithms; symbolic algorithms; optimization procedures;
-\item later: cryptographic algorithms and protocols; quantum and hybrid classical-quantum algorithms.
-\item write the procedure; 2. state the contract; 3. give invariants and termination; 4. generate proof obligations; 5. prove them with ATPs and check them in the kernel; 6. run on concrete inputs; 7. extract code later.
-\item \textcolor{blue!55!black}{\textbf{Algorithms make the gap between tactics and application algorithms smaller. The targets above are future directions.}}
+\item Reason about Euclid through its contract.
+\item \textcolor{blue!55!black}{\textbf{Verified definitional algorithms also give defining equations. Euclid has a loop: use only its totality and contract axioms.}}
+\item \texttt{by computation} is specified separately; MVM execution and code extraction remain future work.
+\end{itemize}
+\smallskip
+\textbf{Optional notes and sources:}
+\begin{itemize}
+\setlength{\itemsep}{1pt}
+\setlength{\parsep}{0pt}
+\setlength{\parskip}{0pt}
+\item Source: \texttt{doc/spec/en/20.algorithm\_and\_verification.md} sections 20.7.2-20.7.3, 20.13.2; \texttt{16.theorems\_and\_proofs.md} section 16.5.1. \texttt{by EuclidGcdDef} cites verified promotion axioms. The callable name alone is not a citation. The fragment assumes the surrounding proof and Gcd definition; the guarantee is under requires.
 \end{itemize}
 }
 \end{frame}
 
-\section{Part 5. Development Infrastructure}
-\begin{frame}[fragile,t]{5.1 - Development Problems And The New Design}
+\begin{frame}[fragile,t]{4.3 - Euclid: What Must Be Proved?}
+One loop step: old state \texttt{(x,y)} with \texttt{y > 0}; set \texttt{r = x mod y}; new state \texttt{(x',y') = (y,r)}.
+
 \begin{footnotesize}
 \setlength{\tabcolsep}{3pt}
 \renewcommand{\arraystretch}{1.15}
 \begin{tabularx}{\textwidth}{>{\raggedright\arraybackslash}X>{\raggedright\arraybackslash}X}
 \toprule
-\textbf{Seen after fifty years of MML} & \textbf{Mizar Evo} \\
+\textbf{Obligation} & \textbf{Mathematical reason} \\
 \midrule
-the article as the unit of dependency & modules with explicit imports \\
-global name management & namespaces, fully qualified names \\
-weak distribution and versioning & packages, SemVer, lock files \\
-full rebuilds & incremental builds with dependency fingerprints \\
-ATP as an add-on, automation hard to see & first-class ATP pipeline, resolution traces, kernel evidence \\
-weak IDE and machine-readable I/O & LSP, structured diagnostics, agent interface \\
+Establish the invariant & \texttt{x=a}, \texttt{y=b}; the precondition gives positivity \\
+Preserve the invariant & \texttt{Gcd(x,y) = Gcd(y,r)}, \texttt{y >= 1}, \texttt{r >= 0} \\
+Decrease the Nat measure & \texttt{y' = r}, and \texttt{0 <= r < y} \\
+Establish the postcondition on exit & \texttt{y=0}; \texttt{Gcd(a,b) = Gcd(x,0) = x} \\
 \bottomrule
 \end{tabularx}
 \end{footnotesize}
@@ -509,8 +744,8 @@ weak IDE and machine-readable I/O & LSP, structured diagnostics, agent interface
 \setlength{\itemsep}{1pt}
 \setlength{\parsep}{0pt}
 \setlength{\parskip}{0pt}
-\item \textcolor{blue!55!black}{\textbf{Keeping Mizar's mathematical ideas and keeping 1970s software architecture are two different things.}}
-\item \textcolor{blue!55!black}{\textbf{Of course, we also modernize the whole development infrastructure. The Bialystok deck has the details. Here one table is enough.}}
+\item \textcolor{blue!55!black}{\textbf{The library supplies the GCD and remainder lemmas. These obligations go through theorem checking; SAT alone does not know arithmetic.}}
+\item Replacing the final \texttt{y := r} with \texttt{y := x} loses strict decrease. This is a specification walkthrough.
 \end{itemize}
 \note{
 \smallskip
@@ -519,8 +754,9 @@ weak IDE and machine-readable I/O & LSP, structured diagnostics, agent interface
 \setlength{\itemsep}{1pt}
 \setlength{\parsep}{0pt}
 \setlength{\parskip}{0pt}
-\item \textcolor{blue!55!black}{\textbf{Keeping Mizar's mathematical ideas and keeping 1970s software architecture are two different things.}}
-\item \textcolor{blue!55!black}{\textbf{Of course, we also modernize the whole development infrastructure. The Bialystok deck has the details. Here one table is enough.}}
+\item One loop step: old state \texttt{(x,y)} with \texttt{y > 0}; set \texttt{r = x mod y}; new state \texttt{(x',y') = (y,r)}.
+\item \textcolor{blue!55!black}{\textbf{The library supplies the GCD and remainder lemmas. These obligations go through theorem checking; SAT alone does not know arithmetic.}}
+\item Replacing the final \texttt{y := r} with \texttt{y := x} loses strict decrease. This is a specification walkthrough.
 \end{itemize}
 \smallskip
 \textbf{Optional notes and sources:}
@@ -528,8 +764,112 @@ weak IDE and machine-readable I/O & LSP, structured diagnostics, agent interface
 \setlength{\itemsep}{1pt}
 \setlength{\parsep}{0pt}
 \setlength{\parskip}{0pt}
-\item This is not a criticism. It is software engineering that was not common fifty years ago, brought into a formal mathematics environment.
-\item Details: Bialystok deck, Stories 1, 3, 5, 8; Backups 6-8 here.
+\item Source: \texttt{doc/spec/en/20.algorithm\_and\_verification.md} sections 20.5, 20.12, 20.13.3. This illustrates obligations, not an execution result.
+\item Longer-term targets remain future directions: number theory, combinatorics, symbolic computation, optimization, cryptography, and quantum algorithms. MVM execution and extraction remain future work.
+\end{itemize}
+}
+\end{frame}
+
+\section{Part 5. Development Infrastructure}
+\begin{frame}[fragile,t]{5.1 - Environment: What Must An Author Import?}
+\smallskip
+\textbf{Current Mizar environment, shortened from ALGSTR\_0}~\badgeSketch
+\begin{lstlisting}[language={mizar},basicstyle=\ttfamily\small]
+environ
+ vocabularies ... STRUCT_0 ...;
+ notations ... STRUCT_0;
+ constructors ... STRUCT_0 ...;
+ registrations ... STRUCT_0;
+ theorems STRUCT_0;
+\end{lstlisting}
+\begin{footnotesize}
+\setlength{\tabcolsep}{3pt}
+\renewcommand{\arraystretch}{1.15}
+\begin{tabularx}{\textwidth}{>{\raggedright\arraybackslash}X>{\raggedright\arraybackslash}X}
+\toprule
+\textbf{List} & \textbf{What it supplies} \\
+\midrule
+vocabularies / notations & Symbols / notation \\
+constructors & Constructors \\
+registrations / theorems & Automatic type facts / cited theorems \\
+\bottomrule
+\end{tabularx}
+\end{footnotesize}
+
+\begin{itemize}
+\setlength{\itemsep}{1pt}
+\setlength{\parsep}{0pt}
+\setlength{\parskip}{0pt}
+\item \textcolor{blue!55!black}{\textbf{Choose articles by role; \texttt{notations} and \texttt{definitions} also depend on article order.}}
+\end{itemize}
+\note{
+\smallskip
+\textbf{Read aloud:}
+\begin{itemize}
+\setlength{\itemsep}{1pt}
+\setlength{\parsep}{0pt}
+\setlength{\parskip}{0pt}
+\item Current Mizar environment, shortened from ALGSTR\_0.
+\item \textcolor{blue!55!black}{\textbf{Choose articles by role; \texttt{notations} and \texttt{definitions} also depend on article order.}}
+\end{itemize}
+\smallskip
+\textbf{Optional notes and sources:}
+\begin{itemize}
+\setlength{\itemsep}{1pt}
+\setlength{\parsep}{0pt}
+\setlength{\parskip}{0pt}
+\item Source: Bialystok \texttt{draft.md} frames 2.1-2.2, quoting ALGSTR\_0. Ellipses shorten the lists. Imported registrations can affect implicit type inference; a symbol alone does not supply its notation or type facts.
+\item Source on ordering: Adam Naumowicz, Towards Standardized Mizar Environments, CICM 2017, slide 13: \url{https://mizar.uwb.edu.pl/\textasciitilde{}softadm/imports/slides.pdf}. The claim concerns those current-environment lists, not every import directive.
+\end{itemize}
+}
+\end{frame}
+
+\begin{frame}[fragile,t]{5.1a - Imports And Dependency Tracking}
+\smallskip
+\textbf{New specification: module imports}~\badgeSpec
+\begin{lstlisting}[language={mizar},basicstyle=\ttfamily\small]
+import .function;
+import mml.algebra.structure.sorted;
+\end{lstlisting}
+\begin{footnotesize}
+\setlength{\tabcolsep}{3pt}
+\renewcommand{\arraystretch}{1.15}
+\begin{tabularx}{\textwidth}{>{\raggedright\arraybackslash}X>{\raggedright\arraybackslash}X}
+\toprule
+\textbf{Stage} & \textbf{What the author can inspect} \\
+\midrule
+Import & The module's public definitions, theorems, and registrations \\
+Resolve & Source fully-qualified names and registration traces \\
+Reuse & Validated dependency fingerprints for incremental builds \\
+\bottomrule
+\end{tabularx}
+\end{footnotesize}
+
+\begin{itemize}
+\setlength{\itemsep}{1pt}
+\setlength{\parsep}{0pt}
+\setlength{\parskip}{0pt}
+\item \textcolor{blue!55!black}{\textbf{Bring public items in together, then track what was actually used.}}
+\item Packages and lock files fix dependency versions; IDE diagnostics can expose the resolved names and traces.
+\end{itemize}
+\note{
+\smallskip
+\textbf{Read aloud:}
+\begin{itemize}
+\setlength{\itemsep}{1pt}
+\setlength{\parsep}{0pt}
+\setlength{\parskip}{0pt}
+\item New specification: module imports.
+\item \textcolor{blue!55!black}{\textbf{Bring public items in together, then track what was actually used.}}
+\item Packages and lock files fix dependency versions; IDE diagnostics can expose the resolved names and traces.
+\end{itemize}
+\smallskip
+\textbf{Optional notes and sources:}
+\begin{itemize}
+\setlength{\itemsep}{1pt}
+\setlength{\parsep}{0pt}
+\setlength{\parskip}{0pt}
+\item Source: \texttt{doc/spec/en/12.modules\_and\_namespaces.md} section 12.3; \texttt{17.clusters\_and\_registrations.md}, Traceability; \texttt{23.package\_management\_and\_build\_system.md}. The import example is not a mechanical one-to-one migration. Details: Backups 7-8.
 \end{itemize}
 }
 \end{frame}
@@ -566,16 +906,26 @@ weak IDE and machine-readable I/O & LSP, structured diagnostics, agent interface
 
 \section{Part 6. Checking And Automation}
 \begin{frame}[fragile,t]{6.1 - Automation: Separate Search From Checking}
-\begin{center}
-\includegraphics[width=\textwidth,height=0.52\textheight,keepaspectratio]{../2026-09-bialystok/figures/reasoning_boundary.pdf}
-\end{center}
+\smallskip
+\textbf{Isabelle/HOL: Sledgehammer suggests a locally checked proof}~\badgeSketch
+\begin{lstlisting}[language={},basicstyle=\ttfamily\small]
+have "Q a"
+  sledgehammer
+  by (metis allPQ pa)
+\end{lstlisting}
+\smallskip
+\textbf{Mizar Evo: cited facts justify a declarative step}~\badgeSketch
+\begin{lstlisting}[language={mizar},basicstyle=\ttfamily\small]
+assume AllPQ: for x being object holds P(x) implies Q(x);
+assume Pa: P(a);
+thus Q(a) by AllPQ, Pa;
+\end{lstlisting}
 \begin{itemize}
 \setlength{\itemsep}{1pt}
 \setlength{\parsep}{0pt}
 \setlength{\parskip}{0pt}
-\item \textcolor{blue!55!black}{\textbf{A first-order ATP is a powerful searcher. It is not a trusted checker.}}
-\item \textcolor{blue!55!black}{\textbf{The Mizar side owns names, types, clusters, and overloads. Provers own search. The kernel owns acceptance: it checks the given formulas and substitutions with a small, trusted SAT check.}}
-\item A prover's exit code is never a proof. This is how first-order automation can be a design principle without making the trusted base bigger.
+\item \textcolor{blue!55!black}{\textbf{Shared pattern: goal and facts → external search → local trusted acceptance. A prover's success report alone is insufficient.}}
+\item Isabelle reconstructs a proof, often by local Metis reproof. Mizar Evo checks formula/substitution evidence through instantiation and SAT.
 \end{itemize}
 \note{
 \smallskip
@@ -584,9 +934,10 @@ weak IDE and machine-readable I/O & LSP, structured diagnostics, agent interface
 \setlength{\itemsep}{1pt}
 \setlength{\parsep}{0pt}
 \setlength{\parskip}{0pt}
-\item \textcolor{blue!55!black}{\textbf{A first-order ATP is a powerful searcher. It is not a trusted checker.}}
-\item \textcolor{blue!55!black}{\textbf{The Mizar side owns names, types, clusters, and overloads. Provers own search. The kernel owns acceptance: it checks the given formulas and substitutions with a small, trusted SAT check.}}
-\item A prover's exit code is never a proof. This is how first-order automation can be a design principle without making the trusted base bigger.
+\item Isabelle/HOL: Sledgehammer suggests a locally checked proof.
+\item Mizar Evo: cited facts justify a declarative step.
+\item \textcolor{blue!55!black}{\textbf{Shared pattern: goal and facts → external search → local trusted acceptance. A prover's success report alone is insufficient.}}
+\item Isabelle reconstructs a proof, often by local Metis reproof. Mizar Evo checks formula/substitution evidence through instantiation and SAT.
 \end{itemize}
 \smallskip
 \textbf{Optional notes and sources:}
@@ -594,7 +945,8 @@ weak IDE and machine-readable I/O & LSP, structured diagnostics, agent interface
 \setlength{\itemsep}{1pt}
 \setlength{\parsep}{0pt}
 \setlength{\parskip}{0pt}
-\item Source: \texttt{doc/design/architecture/en/08.reasoning\_boundary.md}; Bialystok deck, Story 4; Backup 5 here shows what the evidence contains.
+\item Source: Sledgehammer guide (\url{https://isabelle.in.tum.de/doc/sledgehammer.pdf}), sections 1, 5.2; spec 16; architecture 08, 10, 15. The sketches assume corresponding hypotheses.
+\item Evo uses cited/local facts; Sledgehammer selects theory facts. Their shared search/check pattern does not imply identical evidence or measured results.
 \end{itemize}
 }
 \end{frame}
@@ -633,20 +985,30 @@ weak IDE and machine-readable I/O & LSP, structured diagnostics, agent interface
 }
 \end{frame}
 
-\begin{frame}[fragile,t]{6.3 - From Evidence To Instances To SAT Checking}
-\begin{center}
-\begin{beamercolorbox}[rounded=true,sep=2.5mm,wd=0.9\textwidth]{keyphrase}
-\centering\itshape \textcolor{blue!55!black}{\textbf{Evidence → Formula instances → SAT check}}
-\end{beamercolorbox}
-\end{center}
-\begin{enumerate}
+\begin{frame}[fragile,t]{6.3 - Resolution Tree And Extracted Substitutions}
+\smallskip
+\textbf{Candidate extraction from a Resolution log}~\badgeSketch
+\begin{lstlisting}[language={},basicstyle=\ttfamily\footnotesize]
+F1: forall x. (P(x) implies Q(x)); F2: forall y. (Q(y) implies R(y))
+H: P(a); goal: R(a); refute: F1 & F2 & H & not R(a)
+
+{not P(x), Q(x)}             {not Q(y), R(y)}
+          \                 /
+           sigma1 = {x := y}       :: unify Q(x), Q(y)
+           {not P(y), R(y)}        {P(a)}
+                    \             /
+                     sigma2 = {y := a} :: unify P(y), P(a)
+                     {R(a)}        {not R(a)}
+                          \        /
+                           sigma3 = {}
+                                {}
+\end{lstlisting}
+\begin{itemize}
 \setlength{\itemsep}{1pt}
 \setlength{\parsep}{0pt}
 \setlength{\parskip}{0pt}
-\item \textcolor{blue!55!black}{\textbf{Evidence:}} source formulas, explicit substitutions, provenance, and the target goal.
-\item \textcolor{blue!55!black}{\textbf{Kernel:}} check the bindings and substitutions, then derive the formula instances.
-\item \textcolor{blue!55!black}{\textbf{SAT:}} encode the instances and the negated goal. Accept only after the trusted checker confirms UNSAT.
-\end{enumerate}
+\item \textcolor{blue!55!black}{\textbf{The untrusted extractor composes substitutions along the branches: save \texttt{x := a} for F1 and \texttt{y := a} for F2.}}
+\end{itemize}
 \note{
 \smallskip
 \textbf{Read aloud:}
@@ -654,10 +1016,8 @@ weak IDE and machine-readable I/O & LSP, structured diagnostics, agent interface
 \setlength{\itemsep}{1pt}
 \setlength{\parsep}{0pt}
 \setlength{\parskip}{0pt}
-\item \textcolor{blue!55!black}{\textbf{Evidence → Formula instances → SAT check}}
-\item \textcolor{blue!55!black}{\textbf{Evidence:}} source formulas, explicit substitutions, provenance, and the target goal.
-\item \textcolor{blue!55!black}{\textbf{Kernel:}} check the bindings and substitutions, then derive the formula instances.
-\item \textcolor{blue!55!black}{\textbf{SAT:}} encode the instances and the negated goal. Accept only after the trusted checker confirms UNSAT.
+\item Candidate extraction from a Resolution log.
+\item \textcolor{blue!55!black}{\textbf{The untrusted extractor composes substitutions along the branches: save \texttt{x := a} for F1 and \texttt{y := a} for F2.}}
 \end{itemize}
 \smallskip
 \textbf{Optional notes and sources:}
@@ -665,9 +1025,54 @@ weak IDE and machine-readable I/O & LSP, structured diagnostics, agent interface
 \setlength{\itemsep}{1pt}
 \setlength{\parsep}{0pt}
 \setlength{\parskip}{0pt}
-\item UNSAT establishes the goal from the premises. The kernel derives the instances and SAT problem itself.
-\item Backend traces and exit codes are diagnostic only. Full evidence fields: Backup 5.
-\item Source: \texttt{doc/design/architecture/en/08.reasoning\_boundary.md}, \texttt{15.kernel\_certificate\_format.md}.
+\item Variables x/y are renamed apart. Q unifies with x:=y; P with y:=a. Compose to obtain F1[x:=a] and F2[y:=a].
+\item This log-assisted producer is a proposal; architecture 10 uses independent instance finding. The kernel checks evidence, not log steps.
+\item Source: architecture 08, 10, 15, 16. Sketch, not an external-prover execution.
+\end{itemize}
+}
+\end{frame}
+
+\begin{frame}[fragile,t]{6.3a - Saved Evidence To Concrete SAT Clauses}
+\smallskip
+\textbf{Saved candidate, kernel preprocessing, and SAT input}~\badgeSketch
+\begin{lstlisting}[language={},basicstyle=\ttfamily\footnotesize]
+save: F1,F2,H (source bindings); F1[x:=a], F2[y:=a]; goal R(a), refute
+check: source/context, binders, capture avoidance
+instances: P(a) implies Q(a); Q(a) implies R(a); P(a); not R(a)
+atoms: p=P(a)=1, q=Q(a)=2, r=R(a)=3
+logical CNF: (not p or q) & (not q or r) & p & not r
+Tseitin: s=4 iff (not p or q); t=5 iff (not q or r)
+SAT clauses (DIMACS example; 0 ends each clause):
+p cnf 5 10
+1 0       -3 0
+1 4 0     -2 4 0     -1 2 -4 0     4 0
+2 5 0     -3 5 0     -2 3 -5 0     5 0
+\end{lstlisting}
+\begin{itemize}
+\setlength{\itemsep}{1pt}
+\setlength{\parsep}{0pt}
+\setlength{\parskip}{0pt}
+\item \textcolor{blue!55!black}{\textbf{The small kernel derives instances and CNF from checked evidence. Its SAT checker finds UNSAT, so accept R(a); external Resolution steps are not replayed.}}
+\end{itemize}
+\note{
+\smallskip
+\textbf{Read aloud:}
+\begin{itemize}
+\setlength{\itemsep}{1pt}
+\setlength{\parsep}{0pt}
+\setlength{\parskip}{0pt}
+\item Saved candidate, kernel preprocessing, and SAT input.
+\item \textcolor{blue!55!black}{\textbf{The small kernel derives instances and CNF from checked evidence. Its SAT checker finds UNSAT, so accept R(a); external Resolution steps are not replayed.}}
+\end{itemize}
+\smallskip
+\textbf{Optional notes and sources:}
+\begin{itemize}
+\setlength{\itemsep}{1pt}
+\setlength{\parsep}{0pt}
+\setlength{\parskip}{0pt}
+\item Save source formulas, composed substitutions, binder contexts, target VC, and refutation polarity. Derived instances and SAT clauses are recomputed (Backup 5).
+\item DIMACS: 5 variables, 10 clauses; negative means negation, 0 ends a clause. s/t encode the implications. This encoder-style construction is not a runtime dump.
+\item The kernel searches no substitutions. Source: architecture 08, 15, 16.
 \end{itemize}
 }
 \end{frame}

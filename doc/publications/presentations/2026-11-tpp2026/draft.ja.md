@@ -35,14 +35,14 @@
 
 | 時間 | 内容 |
 |---:|---|
-| 0–3分 | §0 課題と設計指針を1枚で対応 |
-| 3–6分 | §1 基盤 — 一階論理・集合論・MML の継承 |
-| 6–9分 | §2 記述 — 数学的な抽象化と暗黙の選択 |
-| 9–13分 | §3 汎用化 — functor の template と scheme |
-| 13–19分 | §4 計算 — algorithm の契約・証明・実行 |
-| 19–23分 | §5 開発基盤 — 依存管理・配布・差分検証・IDE |
-| 23–27分 | §6 検査・自動化 — ATP の流れ図、evidence、SAT |
-| 27–30分 | 章番号なし: 実装状況、ロードマップ、結び |
+| 0–2分 | §0 課題と設計指針を1枚で対応 |
+| 2–4分 | §1 基盤 — 一階論理・集合論・MML の継承 |
+| 4–10分 | §2 記述 — 登録の連鎖・構造と継承・定理の再利用 |
+| 10–14分 | §3 汎用化 — template の共通化・記法・型引数推論 |
+| 14–20分 | §4 計算 — Hoare 論理・停止性・functor 昇格 |
+| 20–23分 | §5 開発基盤 — 環境部の役割・順序から import へ |
+| 23–28分 | §6 検査・自動化 — Sledgehammer との共通点・反駁と CNF |
+| 28–30分 | 章番号なし: 実装状況、ロードマップ、結び |
 
 以下の節は説明素材を保持する。実際の順序・番号は `slides.md` と `slides.ja.md` に従う。
 
@@ -325,7 +325,17 @@ Mizar Evolution はこの思想を捨てない。
 - modern compiler architecture に載せ直す。
 
 
-§2 では、数学的な記述の継承に続けて、暗黙の演算選択を明示する例を示す (sketch):
+§2.2 は `EmptyImpliesFinite`・`FiniteImpliesCountable` のラベルを付けた登録で、empty → finite → countable の自動的な連鎖と適用経路の記録を示す。
+ラベルは必須だが、自動適用のための明示引用は不要。暗黙に得られた型の事実を、規則名と経路で説明できることを中心にする。
+Source: `doc/spec/en/17.clusters_and_registrations.md` §17.2, 17.7。
+
+§2.3–2.3b は sample_codes の AddLoopStr・LoopStr・Group・Ring の階層を使う。
+field は格納するデータ、property は別実装で一意な値を与える。後付けの inherit で `field add from binop`・`property zero from unit` を対応付ける。Rust trait との類似は型と実装関係の宣言を分離する構成に限る。
+ダイアモンドのメンバー起点と継承経路を追跡し、型が同じなら共有を自動検査、異なる型には coherence を要求する。ビューは混同しない。
+Group 上の RightUnit の概形を `RightUnit[R qua AddLoopStr]` に適用し、`R.add(x,R.zero)=x` を得る再利用例を示す。選択した環の加法ビューに Group の前提が必要で、乗法側を Group と主張しない。
+Source: `doc/spec/en/05.structures.md` §5.2–5.4; `07.modes.md` §7.8.2; `sample_codes.md`。
+
+演算選択は継承ビューの例として扱う (sketch):
 
 ```mizar
 let R be commutative Ring;
@@ -356,15 +366,20 @@ Source: `doc/spec/en/19.overload_resolution.md`, section 19.3.1;
 definition
   let T be type extends non empty AddMagma;
   let I be non empty set;
-  let f, g be Function of I, T;
-  func AddDef: Add[T,I](f,g) -> Function of I,T means
+  let f, g be Function of I, T.carrier;
+  func AddDef: Add[T,I](f,g) -> Function of I,T.carrier means
     for i being Element of I holds it.i = T.add(f.i,g.i);
+  synonym f +[T,I] g for Add[T,I](f,g);
 end;
 ```
 
 T は加法を持つ型、I は共通の非空添字集合。必要な import・構造・登録を前提とする。
 同じ構成の定義族が対象であり、意味の異なる同名演算は区別する。
 テンプレート本体を制約の下で一度検査し、各用途へ具体化する。
+
+§3.1a では non empty AddMagma を一意に継承する実数・複素数の加法構造 R・C と必要な登録を仮定する。f,g の宣言型は `Function of I,R.carrier`、u,v は `Function of I,C.carrier` とし、正規化した宣言型から T・I が一意に決まる例として `f + g`・`u + v` と具体的な結果型を表に示す。
+本例は共通の非空定義域 I に限定する。VALUED_1:def 1 の異なる定義域の共通部分を扱う構成すべてを置換するとは主張しない。
+synonym で中置表記を与える。明示形 `f +[R,I] g`・`u +[C,I] v` と推論の条件は脚注に収める。値域集合だけから構造・演算を選ぶとは主張せず、継承経路が曖昧な場合の qua は明示する（仕様 §11.1.2, §18.2.7, §19.6.2）。
 
 Source: `doc/spec/en/18.templates.md`, sections 18.2.2, 18.7, 18.10.1;
 `doc/spec/en/sample_codes.md`, AddMagma;
@@ -461,7 +476,7 @@ Mizar Evolution の algorithm は、この歴史に対する単なる「tactic l
 例:
 
 ```mizar
-terminating algorithm euclid_gcd(a, b) -> Nat
+terminating algorithm EuclidGcdDef: euclid_gcd(a, b) -> Nat
   requires a >= 1 & b >= 1
   ensures result = Gcd(a, b)
 do
@@ -479,6 +494,12 @@ end;
 ```
 
 algorithm の役割は二重。
+
+§4.1 は Hoare 論理の契約 `{requires} body {ensures}` と、if/else・while・for・代入・return の擬似コードに近い記述を説明する。
+§4.2–4.2a は terminating が requires を満たすすべての入力での停止を要求し、検証後に functor として使えることを説明する。既定は部分正当性。定義的な断片には定義方程式も生成するが、可変状態・ループを含む互除法には全域性と契約の公理のみを与える。
+定義ラベル EuclidGcdDef と呼び出す名前 euclid_gcd を分け、証明では `by EuclidGcdDef` で検証済み昇格公理を引用する。
+ループ注釈は Dafny の invariant・decreases に類似し、Evo では invariant・decreasing と書く。比較の出典は [Dafny Reference Manual](https://dafny.org/latest/DafnyRef/DafnyRef.html#sec-loop-specifications) §8.15.1–8.15.2。採用元の断定には使わない。
+Source: `doc/spec/en/20.algorithm_and_verification.md` §20.1.1, 20.2–20.3, 20.7.2–20.7.3, 20.13; `16.theorems_and_proofs.md` §16.5.1。
 
 ## A. automation procedure
 
@@ -510,6 +531,10 @@ ATP + kernel
 したがって、
 
 > **automation procedure itself can be specified and verified.**
+
+§4.3 では互除法の1反復を旧状態 `(x,y)` から新状態 `(y,r)`、`r=x mod y` として追う。
+初期成立は事前条件、保存は `Gcd(x,y)=Gcd(y,r)`、停止性は Nat 値の測度と `0<=r<y`、終了時は `Gcd(x,0)=x` から説明する。
+必要な GCD・剰余の補題はライブラリから供給する。SAT 単独が算術を扱うという説明にはしない。仕様の説明例と実行結果を区別する。
 
 ---
 
@@ -598,15 +623,11 @@ Mizar は50年にわたり大規模な数学ライブラリを支えてきた。
 | generic mechanismが分散 | unified template |
 | proofとexecutable procedureが分離 | verified algorithm / MVM |
 
-ここでは個別機能を説明しない。
-
-30分版では、
-
-> **「もちろん、言語だけでなく開発基盤も全部現代化する」**
-
-と理解してもらえれば十分。
-
-Białystok 版の詳細スライドを backup にする。
+§5.1 では ALGSTR_0 の環境部を短縮して、初見の人にも役割別の依存指定を説明する。
+記号・記法・構成子・登録・定理で同じ article が複数回現れ、著者が article と必要な役割を判断する負担を示す。
+現行環境部では、特に notations・definitions の article 順が意味を持つことも述べる。Source: Adam Naumowicz, Towards Standardized Mizar Environments, CICM 2017, slide 13 (<https://mizar.uwb.edu.pl/~softadm/imports/slides.pdf>)。
+続けて仕様の import 例を示す。旧一覧との一対一の翻訳ではなく、モジュールの公開項目を取り込み、完全修飾名・解決トレースで利用項目を追跡する設計として説明する。
+package・バージョン管理・差分検証の詳細は全体像と Backup 7–8 で補足する。
 
 ---
 
@@ -648,6 +669,9 @@ Białystok 版の詳細スライドを backup にする。
 
 # 17. Evidence のインスタンス化と SAT 検査
 
+§6.1 は同じ前提・ゴールを使った Isabelle/HOL の Sledgehammer/Metis と Mizar Evo の by の概形を並べ、外部探索と内側の受理判定を分離する共通点を示す。Metis は内部で再証明し、Mizar Evo は論理式・置換の evidence を検査する。前提選択の範囲は異なる。
+Source: [Sledgehammer user guide](https://isabelle.in.tum.de/doc/sledgehammer.pdf), §1, 5.2; `doc/design/architecture/en/08.reasoning_boundary.md`。
+
 §6 では、ATP の探索・kernel 検査・ライブラリへの保存と再利用・再試行の流れ図を先に示す。
 図は設計意図であり、LLM の提案・修復も示すが、反復の費用対効果は未評価。
 続いて Backup 5 の検査の仕組みを、3段階で示す。
@@ -660,8 +684,13 @@ UNSAT は、前提とゴールの否定が同時には成立しないことを�
 インスタンス化済みの論理式や SAT 問題を外部入力として信頼せず、kernel が生成する。
 バックエンドの証明トレース・ログ・終了コードは診断用であり、受理の根拠にはしない。
 
+§6.3 は F1: `forall x. (P(x) implies Q(x))`、F2: `forall y. (Q(y) implies R(y))`、H: `P(a)` からゴール `R(a)` を反駁する Resolution 木を示す。Q の単一化で `x:=y`、続く P の単一化で `y:=a`、最後は基礎節 R(a) と not R(a) から空節を得る。枝上の置換を合成し、元の F1 に `x:=a`、F2 に `y:=a` を回収する。
+ログから置換を抽出する候補生成案として説明する。現行 architecture 10 の独立 instance finder も同じ受理用 evidence を生成できる。保存するのは元の式への出所の結び付け、置換と束縛文脈、対象 VC と反駁の極性であり、外部の導出ステップを kernel に replay させない。
+§6.3a は来歴・対象・capture avoidance の検査、基礎インスタンスの生成、命題変数への写像、CNF 化を順に示す。`p=P(a)`・`q=Q(a)`・`r=R(a)` に対し、含意を表す補助変数 s・t を導入する Tseitin 符号化を用い、5変数・10節の全節列を DIMACS 表記で示す。s・t と p が真で、not r が要求されるため充足不能。
+現行エンコーダも OR に補助変数を導入する。ここで示すのは solver 入力の具体的な構成例で、実装の実行ダンプや外部 prover の実証結果ではない。instance の不足はゴールが偽であることを意味せず、kernel は置換を探し直さない。
+
 ATP や LLM は探索を支援できるが、受理の境界はこの共通の検査に置く。
-Source: `doc/design/architecture/en/08.reasoning_boundary.md`, `15.kernel_certificate_format.md`。
+Source: `doc/design/architecture/en/08.reasoning_boundary.md`, `10.atp_backend_integration.md`, `15.kernel_certificate_format.md`, `16.substitution_and_binding.md`。
 
 ---
 

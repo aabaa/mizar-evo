@@ -134,7 +134,7 @@ def escape_tex(text: str) -> str:
 def inline_tex(text: str) -> str:
     parts: list[str] = []
     pos = 0
-    for match in re.finditer(r"`([^`]+)`|\[([^\]]+)\]\(([^)]+)\)|<(https?://[^>]+)>|\*\*(.+?)\*\*", text):
+    for match in re.finditer(r"`([^`]+)`|\[([^\]]+)\]\(([^)]+)\)|<(https?://[^>]+)>|\*\*(.+?)\*\*|\[\^(\d+)\]", text):
         parts.append(escape_tex(text[pos : match.start()]))
         if match.group(1) is not None:
             parts.append(rf"\texttt{{{escape_tex(match.group(1))}}}")
@@ -142,6 +142,8 @@ def inline_tex(text: str) -> str:
             parts.append(rf"{inline_tex(match.group(2))} (\url{{{escape_tex(match.group(3))}}})")
         elif match.group(4) is not None:
             parts.append(rf"\url{{{escape_tex(match.group(4))}}}")
+        elif match.group(6) is not None:
+            parts.append(rf"\footnotemark[{match.group(6)}]")
         else:
             parts.append(rf"\textcolor{{blue!55!black}}{{\textbf{{{inline_tex(match.group(5))}}}}}")
         pos = match.end()
@@ -563,7 +565,7 @@ def block_weight(block: list[str]) -> float:
     weight = 0.0
     for line in block:
         stripped = line.strip()
-        if not stripped:
+        if not stripped or re.match(r"^\[\^\d+\]:", stripped):
             continue
         image = IMAGE_RE.match(stripped)
         if image:
@@ -720,6 +722,10 @@ def extract_key_points(lines: list[str]) -> tuple[list[str], list[str]]:
         if code_lang is not None:
             code_lines.append(raw_line)
             continue
+        if re.match(r"^\[\^\d+\]:", stripped):
+            flush_current()
+            sources.append(stripped.split(":", 1)[1].strip())
+            continue
         if stripped in {"Details for later review:", "Questions for later review:"}:
             flush_current()
             optional = True
@@ -795,6 +801,13 @@ def render_frame_body(lines: list[str]) -> list[str]:
 
         if in_code:
             code_lines.append(line)
+            index += 1
+            continue
+
+        footnote = re.match(r"^\[\^(\d+)\]:\s*(.*)$", stripped)
+        if footnote:
+            flush_paragraph(paragraph, out)
+            out.append(rf"\footnotetext[{footnote.group(1)}]{{{inline_tex(footnote.group(2))}}}")
             index += 1
             continue
 

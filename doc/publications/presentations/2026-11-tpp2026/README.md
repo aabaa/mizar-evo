@@ -62,20 +62,30 @@ Sections 1–6 each cover the matching row. Closing frames have no section numbe
 
 | Section | Minutes | Beat | Frames |
 |---|---:|---|---|
-| 0. Introduction | 0-3 | challenges and principles in one table | 0.1-0.3 |
-| 1. Logical foundation | 3-6 | first-order logic, set theory, and MML | 1.1-1.2 |
-| 2. Readable mathematics | 6-9 | abstraction, explicit operation views, registration traces | 2.1-2.2 |
-| 3. Generic mathematics | 9-13 | functor templates and schemes | 3.1-3.2 |
-| 4. Verified computation | 13-19 | algorithm contracts, proofs, and execution | 4.1-4.3 |
-| 5. Development infrastructure | 19-23 | dependencies, tools, and the whole picture | 5.1-5.2 |
-| 6. Checking and automation | 23-27 | ATP flow, evidence instantiation, SAT | 6.1-6.3 |
-| Closing | 27-30 | implementation status, roadmap, and discussion | unnumbered |
+| 0. Introduction | 0-2 | challenges and principles in one table | 0.1-0.3 |
+| 1. Logical foundation | 2-4 | first-order logic, set theory, and MML | 1.1-1.2 |
+| 2. Readable mathematics | 4-10 | named registration chains, inheritance, and theorem reuse | 2.1-2.3b |
+| 3. Generic mathematics | 10-14 | templates, infix notation, and type-argument inference | 3.1-3.2 |
+| 4. Verified computation | 14-20 | Hoare logic, termination, promotion, and Euclid obligations | 4.1-4.3 |
+| 5. Development infrastructure | 20-23 | environment roles and ordering, imports | 5.1-5.2 |
+| 6. Checking and automation | 23-28 | Sledgehammer analogy, refutation, CNF, and SAT | 6.1-6.3a |
+| Closing | 28-30 | implementation status, roadmap, and discussion | unnumbered |
 
-Frames marked `[deep dive]` (0.2, 3.2, 4.3) can be skipped; 0.2 is omitted
+Frames marked `[deep dive]` (0.2, 3.2) can be skipped; 0.2 is omitted
 from the Japanese deck. Backups 1-10 hold benchmark details, template
 instantiation, and infrastructure material; 11-17 hold the benchmark and HOL/FOL
 comparison sequence. Frame 6.2 keeps the ATP flow diagram in the main talk;
-6.3 explains the core content of Backup 5. The closing line is fixed:
+6.3-6.3a show a resolution tree, composed substitutions, kernel preprocessing,
+and all clauses of a Tseitin SAT encoding;
+external resolution steps are not replayed as kernel acceptance evidence.
+Frames 2.2-2.3b explain labeled registration chains, post-declaration
+inheritance, field/property roles, and Group-theorem reuse through ring views.
+Frames 3.1-3.1a contrast current result-type registrations with a generic sum;
+4.2a explains promotion through checked termination; 4.3 follows Euclid's
+establishment, preservation, termination, and exit;
+5.1-5.1a explain the old environment before showing imports. These are explanatory
+sketches and specification examples, not execution or external-prover results.
+The closing line is fixed:
 *Keep the foundation small. Keep the mathematics readable. Modernize everything
 else.*
 
@@ -101,10 +111,9 @@ the implementation.
 
 - Figures reused by relative path: `reasoning_boundary`, `certificate_replay`,
   `pipeline`, `fingerprint_graph`.
-- The Bialystok deck's eight problem-driven stories are the reference material
-  for every feature this talk only names (structures, registrations, packages,
-  incremental verification, publication). Main frames point to them; they are
-  not repeated.
+- The Bialystok deck's problem-driven stories supply the structure and
+  registration examples. It remains the detailed reference for packages,
+  incremental verification, and publication.
 - The Markdown-to-Beamer generator is shared. Its author and date are
   parametrized so this deck can override them; the Bialystok output is
   unchanged.

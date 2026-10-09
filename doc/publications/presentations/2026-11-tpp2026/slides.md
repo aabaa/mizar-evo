@@ -97,14 +97,14 @@ Seventeen backups keep benchmark and HOL/FOL comparison details.
 
 | Section | Minutes | Story beat |
 |---|---:|---|
-| 0. Introduction | 0-3 | challenges and design principles in one table |
-| 1. Logical foundation | 3-6 | retain first-order logic, set theory, and MML |
-| 2. Readable mathematics | 6-9 | abstraction and explicit choices |
-| 3. Generic mathematics | 9-13 | functor templates and schemes |
-| 4. Verified computation | 13-19 | algorithm contracts, proofs, and execution |
-| 5. Development infrastructure | 19-23 | tools, dependencies, and the whole picture |
-| 6. Checking and automation | 23-27 | ATP flow, evidence instantiation, and SAT |
-| Closing | 27-30 | status, roadmap, and discussion |
+| 0. Introduction | 0-2 | challenges and design principles in one table |
+| 1. Logical foundation | 2-4 | retain first-order logic, set theory, and MML |
+| 2. Readable mathematics | 4-10 | named registration chains, inheritance, and theorem reuse |
+| 3. Generic mathematics | 10-14 | templates, infix notation, and type-argument inference |
+| 4. Verified computation | 14-20 | Hoare logic, termination, promotion, and Euclid obligations |
+| 5. Development infrastructure | 20-23 | environment roles and ordering, imports |
+| 6. Checking and automation | 23-28 | Sledgehammer analogy, refutation, CNF, and SAT |
+| Closing | 28-30 | status, roadmap, and discussion |
 
 For a 45-minute slot, add the examples listed in §README.md`.
 
@@ -223,32 +223,129 @@ let x be Element of X;
 - **Soft types, modes, attributes, registrations, schemes, and declarative proofs are not just a nicer way to write the same thing. They are the language design that lifts first-order set theory up to readable mathematics.**
 - **New specification: preserve and extend mathematical writing; make implicit type, registration, and overload choices explicit and traceable.**
 
-### Frame 2.2 - Make Operation Choices Explicit And Traceable
+### Frame 2.2 - Registrations: Give Automatic Chains Names
 
-Select one of a ring's two operation views (sketch):
+Named automatic rules (specification example):
 
 ```mizar
-let R be commutative Ring;
-f(R);                  :: ambiguous Magma view
-f(R qua AddMagma);      :: use addition
-f(R qua MulMagma);      :: use multiplication
+registration
+  cluster EmptyImpliesFinite: empty -> finite for set;
+  coherence proof ... end;
+  cluster FiniteImpliesCountable: finite -> countable for set;
+  coherence proof ... end;
+end;
 ```
 
-- **Challenge: a ring has additive and multiplicative Magma views. `f(R)` is ambiguous.**
-- **New specification: `qua` explicitly selects the additive or multiplicative view.**
-- Trace automatically applied registrations and their derivation paths.
+| Starting fact | Automatically derived fact | Recorded rule |
+|---|---|---|
+| S is empty | S is finite | EmptyImpliesFinite |
+| S is finite | S is countable | FiniteImpliesCountable |
+
+- **Keep automatic chaining; require a label on every registration item and record the applied path.**
+- Labels explain which rule a proof depends on. Explicit `by` citations remain optional for automatic application.
 
 Speaker note:
 
-- f uses a Magma operation; definitions, inheritance, and registrations are assumed.
-- qua already exists in Mizar; this sketch illustrates explicit inheritance-path selection.
-- Source: `doc/spec/en/19.overload_resolution.md` section 19.3.1; `17.clusters_and_registrations.md`, Traceability.
+- Source: `doc/spec/en/17.clusters_and_registrations.md` sections 17.2, 17.7; `23.package_management_and_build_system.md` section 23.7.7. The trace above is illustrative for an empty set S. Attribute resolution precedes ATP search.
+
+### Frame 2.3 - Structures: Stored Fields And Derived Properties
+
+Data and canonical values have different roles (specification example):
+
+```mizar
+definition
+  struct AddLoopStr where
+    field carrier -> set;
+    field add -> BinOp of carrier;
+    property zero -> Element of carrier;
+  end;
+end;
+```
+
+- **Fields store data and are constructor arguments. Properties get a uniquely determined value from a separate implementation.**
+- The declaration of `zero` supplies its type. A `means` implementation proves existence and uniqueness; an `equals` implementation supplies a term.
+
+Speaker note:
+
+- Source: `doc/spec/en/05.structures.md` section 5.2; `07.modes.md` sections 7.4.1, 7.8.2; `sample_codes.md`, AddLoopStr. Overlapping property implementations require coherence.
+
+### Frame 2.3a - Inheritance Can Be Declared Later
+
+After declaring AddLoopStr, add a parent mapping (specification example):
+
+```mizar
+definition
+  inherit AddLoopStr extends LoopStr where
+    field carrier from carrier;
+    field add from binop;
+    property zero from unit;
+  end;
+end;
+```
+
+- **Separate the structure declaration from later inheritance declarations, much like implementing a Rust trait after defining a type.**
+- `from` renames the parent roles: `binop` becomes `add`, and `unit` becomes `zero`.
+- Each declaration has one parent. Identical member types need no proof; narrower types need a `coherence` proof.
+
+Speaker note:
+
+- Source: `doc/spec/en/05.structures.md` section 5.3; `sample_codes.md`, AddLoopStr. The Rust comparison concerns separate declarations, not identical semantics. LoopStr declares binop as a field and unit as a property.
+
+### Frame 2.3b - Checked Diamonds And Reused Group Theorems
+
+Two paths in the same hierarchy (sketch):
+
+```text
+AddLoopStr -> LoopStr -> Magma
+AddLoopStr -> AddMagma -> Magma
+```
+
+A Group theorem applied to a ring's additive view (sketch):
+
+```mizar
+definition
+  let T be type extends Group;
+  theorem RightUnit[T]:
+    for x being Element of T.carrier holds T.binop(x,T.unit) = x
+  proof ... end;
+end;
+RightUnit[R qua AddLoopStr]  :: gives R.add(x,R.zero) = x
+```
+
+- **Track member roots and inheritance paths; check shared members while keeping the operation views distinct.**
+- Ring's additive view is a Group. Reuse its theorem through renamed members; multiplication is only required to be a monoid.
+
+Speaker note:
+
+- Source: `doc/spec/en/05.structures.md` section 5.4; `sample_codes.md`, Group and Ring; `18.templates.md` sections 18.2.2, 18.10.2. Assume R is Ring, x is in its carrier, and the needed Group/property definitions and registrations. Equal member types join automatically; other types need coherence. The selected view must satisfy the theorem's assumptions.
 
 ## Part 3. Generic Mathematics
 
-### Frame 3.1 - Templates: Share Functor Definitions And Result Types
+### Frame 3.1 - Current MML: Result Types For The Sum Of Functions
 
 **Example: the sum of functions. Add their values at each point.**
+
+Result-type registrations (sketch, separate complex-valued and real-valued input blocks):
+
+```mizar
+cluster f1 + f2 -> complex-valued;
+cluster f1 + f2 -> real-valued;
+```
+
+| Step in VALUED_1 | Type information |
+|---|---|
+| Define pointwise addition once | The result is a Function |
+| Refine the codomain | Separate complex and real PartFunc redefinitions |
+| Recover the full input domain | Separate totality registrations |
+
+- **The mathematical operation is already shared. The result-type refinements still follow the value types.**
+
+Speaker note:
+
+- Source: MML [VALUED_1](https://mizar.uwb.edu.pl/version/current/html/valued_1.html), def 1 and the following result-type refinements. Each displayed line is from a separate registration block; declarations and coherence proofs are omitted. GPL-3.0-or-later / CC-BY-SA-3.0-or-later.
+- VALUED_1:def 1 uses the intersection of the input domains. The next sketch is limited to a common nonempty domain I; it does not replace the full construction.
+
+### Frame 3.1a - Template: One Body And Concrete Result Types
 
 Generic functor (sketch, existence and uniqueness proofs omitted):
 
@@ -256,19 +353,26 @@ Generic functor (sketch, existence and uniqueness proofs omitted):
 definition
   let T be type extends non empty AddMagma;
   let I be non empty set;
-  let f, g be Function of I, T;
-  func AddDef: Add[T,I](f,g) -> Function of I,T means
+  let f, g be Function of I, T.carrier;
+  func AddDef: Add[T,I](f,g) -> Function of I,T.carrier means
     for i being Element of I holds it.i = T.add(f.i,g.i);
+  synonym f +[T,I] g for Add[T,I](f,g);
 end;
 ```
 
-- **Current MML: real and complex result types need separate redefinitions and registrations.**
-- **New specification: parameterize the value type T to share the definition and result type.**
+| Call (real R, complex C)[^1] | Result type |
+|---|---|
+| `f + g` | `Function of I,R.carrier` |
+| `u + v` | `Function of I,C.carrier` |
+
+- **A synonym gives infix `+`; infer template arguments from declared types.**
+
+[^1]: Explicit: `f +[R,I] g`, `u +[C,I] v`. Omit arguments only when declared types determine them uniquely. Write `qua` for ambiguous inheritance paths.
 
 Speaker note:
 
-- T supplies addition; I is a common nonempty domain. Suitable structures and registrations are assumed.
-- Source: `doc/spec/en/18.templates.md` sections 18.2.2, 18.7, 18.10.1; `sample_codes.md` AddMagma; MML [VALUED_1](https://mizar.uwb.edu.pl/version/current/html/valued_1.html).
+- Assume `let R be RealAdd; let C be ComplexAdd;`, with unique inheritance to nonempty AddMagma and the needed registrations. f,g have declared type Function of I,R.carrier; u,v have Function of I,C.carrier. Assume their normalized declared types uniquely determine T and I.
+- Source: `doc/spec/en/11.symbol_management.md` section 11.1.2; `18.templates.md` sections 18.2.2, 18.2.7, 18.7; `19.overload_resolution.md` section 19.6.2. A codomain set alone does not select its addition structure. `qua` views are never inferred.
 
 ### Frame 3.2 - Schemes Become Ordinary Templates [deep dive]
 
@@ -293,21 +397,26 @@ end;
 
 ### Frame 4.1 - Computation: Verified Algorithms
 
-- Mizar uses declarative proofs and built-in automation. It has no user-programmable tactic language.
-- **Challenge: connect mathematical proofs and executable computation in one checking framework.**
-- **New specification: an algorithm is a procedure with a contract. Its correctness, invariants, and termination are checked.**
-- Uses: verify algorithms themselves, and use verified procedures to support proofs.
+Hoare-style checking of readable procedures:
+
+```text
+{ requires }  algorithm body  { ensures }
+```
+
+- **Use familiar pseudocode: assignment, `if/else`, `while`, `for`, and `return`. Contracts and loop invariants state what must hold.**
+- **Generate first-order verification conditions using Hoare logic. Verify correctness and, when required, termination.**
+- Verify algorithms themselves and use verified procedures to support proofs.
 
 Speaker note:
 
-- Source: `doc/spec/en/20.algorithm_and_verification.md`, sections 20.1 and 20.12.
+- Source: `doc/spec/en/20.algorithm_and_verification.md` sections 20.2, 20.3, 20.13.3. Correctness is partial by default; `terminating` adds a termination obligation. This is pseudocode-like procedural notation, rather than a separate proof-state tactic language.
 
 ### Frame 4.2 - Algorithms: Contracts, Proofs, Computation
 
 **Euclid's algorithm with a contract** (specification example):
 
 ```mizar
-terminating algorithm euclid_gcd(a, b) -> Nat
+terminating algorithm EuclidGcdDef: euclid_gcd(a, b) -> Nat
   requires a >= 1 & b >= 1
   ensures result = Gcd(a, b)
 do
@@ -320,46 +429,106 @@ do
 end;
 ```
 
-- **Contracts, invariants, and termination measures become first-order proof obligations, checked like theorems.**
-- **Two roles: a verified automation procedure, and a checked computation run by `by computation`. Status: specified. MVM execution and code extraction come later.**
+- **`terminating` requires termination for every input satisfying `requires`. The verifier checks the invariant and strict decrease of y.**[^1]
+- **After verification, the algorithm is promoted to a mathematical functor, usable in formulas and proofs.**
+
+[^1]: Loop annotations resemble Dafny's `invariant` / `decreases`; Evo uses `invariant` / `decreasing`.
 
 Speaker note:
 
-- Source: `doc/spec/en/20.algorithm_and_verification.md`, section 20.12 (condensed: the enclosing `definition` block and `let a, b be Nat;` are omitted).
+- Source: spec 20, sections 20.1.1, 20.5, 20.12; outer definition/let omitted.
+- Compare [Dafny §8.15](https://dafny.org/latest/DafnyRef/DafnyRef.html#sec-loop-specifications).
 
-### Frame 4.3 - Future Targets For Algorithms [deep dive]
+### Frame 4.2a - Termination And Functor Promotion
 
-Future direction, not current capability:
+| Algorithm form | Meaning under requires |
+|---|---|
+| Without terminating | If the call returns, its contract holds |
+| Verified terminating | Totality under requires; usable as a functor |
 
-- number-theoretic and combinatorial algorithms; symbolic algorithms; optimization procedures;
-- later: cryptographic algorithms and protocols; quantum and hybrid classical-quantum algorithms.
+Reason about Euclid through its contract (sketch):
 
-One workflow for all of them:
+```mizar
+let a, b be Nat;
+assume a >= 1 & b >= 1;
+thus euclid_gcd(a,b) = Gcd(a,b) by EuclidGcdDef;
+```
 
-1. write the procedure; 2. state the contract; 3. give invariants and termination; 4. generate proof obligations; 5. prove them with ATPs and check them in the kernel; 6. run on concrete inputs; 7. extract code later.
+- **Verified definitional algorithms also give defining equations. Euclid has a loop: use only its totality and contract axioms.**
+- `by computation` is specified separately; MVM execution and code extraction remain future work.
 
-- **Algorithms make the gap between tactics and application algorithms smaller. The targets above are future directions.**
+Speaker note:
+
+- Source: `doc/spec/en/20.algorithm_and_verification.md` sections 20.7.2-20.7.3, 20.13.2; `16.theorems_and_proofs.md` section 16.5.1. `by EuclidGcdDef` cites verified promotion axioms. The callable name alone is not a citation. The fragment assumes the surrounding proof and Gcd definition; the guarantee is under requires.
+
+### Frame 4.3 - Euclid: What Must Be Proved?
+
+One loop step: old state `(x,y)` with `y > 0`; set `r = x mod y`; new state `(x',y') = (y,r)`.
+
+| Obligation | Mathematical reason |
+|---|---|
+| Establish the invariant | `x=a`, `y=b`; the precondition gives positivity |
+| Preserve the invariant | `Gcd(x,y) = Gcd(y,r)`, `y >= 1`, `r >= 0` |
+| Decrease the Nat measure | `y' = r`, and `0 <= r < y` |
+| Establish the postcondition on exit | `y=0`; `Gcd(a,b) = Gcd(x,0) = x` |
+
+- **The library supplies the GCD and remainder lemmas. These obligations go through theorem checking; SAT alone does not know arithmetic.**
+- Replacing the final `y := r` with `y := x` loses strict decrease. This is a specification walkthrough.
+
+Speaker note:
+
+- Source: `doc/spec/en/20.algorithm_and_verification.md` sections 20.5, 20.12, 20.13.3. This illustrates obligations, not an execution result.
+- Longer-term targets remain future directions: number theory, combinatorics, symbolic computation, optimization, cryptography, and quantum algorithms. MVM execution and extraction remain future work.
 
 ## Part 5. Development Infrastructure
 
-### Frame 5.1 - Development Problems And The New Design
+### Frame 5.1 - Environment: What Must An Author Import?
 
-| Seen after fifty years of MML | Mizar Evo |
+Current Mizar environment, shortened from ALGSTR_0 (sketch):
+
+```mizar
+environ
+ vocabularies ... STRUCT_0 ...;
+ notations ... STRUCT_0;
+ constructors ... STRUCT_0 ...;
+ registrations ... STRUCT_0;
+ theorems STRUCT_0;
+```
+
+| List | What it supplies |
 |---|---|
-| the article as the unit of dependency | modules with explicit imports |
-| global name management | namespaces, fully qualified names |
-| weak distribution and versioning | packages, SemVer, lock files |
-| full rebuilds | incremental builds with dependency fingerprints |
-| ATP as an add-on, automation hard to see | first-class ATP pipeline, resolution traces, kernel evidence |
-| weak IDE and machine-readable I/O | LSP, structured diagnostics, agent interface |
+| vocabularies / notations | Symbols / notation |
+| constructors | Constructors |
+| registrations / theorems | Automatic type facts / cited theorems |
 
-- **Keeping Mizar's mathematical ideas and keeping 1970s software architecture are two different things.**
-- **Of course, we also modernize the whole development infrastructure. The Bialystok deck has the details. Here one table is enough.**
+- **Choose articles by role; `notations` and `definitions` also depend on article order.**
 
 Speaker note:
 
-- This is not a criticism. It is software engineering that was not common fifty years ago, brought into a formal mathematics environment.
-- Details: Bialystok deck, Stories 1, 3, 5, 8; Backups 6-8 here.
+- Source: Bialystok `draft.md` frames 2.1-2.2, quoting ALGSTR_0. Ellipses shorten the lists. Imported registrations can affect implicit type inference; a symbol alone does not supply its notation or type facts.
+- Source on ordering: Adam Naumowicz, Towards Standardized Mizar Environments, CICM 2017, slide 13: <https://mizar.uwb.edu.pl/~softadm/imports/slides.pdf>. The claim concerns those current-environment lists, not every import directive.
+
+### Frame 5.1a - Imports And Dependency Tracking
+
+New specification: module imports (specification example):
+
+```mizar
+import .function;
+import mml.algebra.structure.sorted;
+```
+
+| Stage | What the author can inspect |
+|---|---|
+| Import | The module's public definitions, theorems, and registrations |
+| Resolve | Source fully-qualified names and registration traces |
+| Reuse | Validated dependency fingerprints for incremental builds |
+
+- **Bring public items in together, then track what was actually used.**
+- Packages and lock files fix dependency versions; IDE diagnostics can expose the resolved names and traces.
+
+Speaker note:
+
+- Source: `doc/spec/en/12.modules_and_namespaces.md` section 12.3; `17.clusters_and_registrations.md`, Traceability; `23.package_management_and_build_system.md`. The import example is not a mechanical one-to-one migration. Details: Backups 7-8.
 
 ### Frame 5.2 - The Whole Picture
 
@@ -375,15 +544,29 @@ Speaker note:
 
 ### Frame 6.1 - Automation: Separate Search From Checking
 
-![The reasoning boundary: semantics, untrusted search, trusted checking](../2026-09-bialystok/figures/reasoning_boundary.pdf)
+Isabelle/HOL: Sledgehammer suggests a locally checked proof (sketch):
 
-- **A first-order ATP is a powerful searcher. It is not a trusted checker.**
-- **The Mizar side owns names, types, clusters, and overloads. Provers own search. The kernel owns acceptance: it checks the given formulas and substitutions with a small, trusted SAT check.**
-- A prover's exit code is never a proof. This is how first-order automation can be a design principle without making the trusted base bigger.
+```text
+have "Q a"
+  sledgehammer
+  by (metis allPQ pa)
+```
+
+Mizar Evo: cited facts justify a declarative step (sketch):
+
+```mizar
+assume AllPQ: for x being object holds P(x) implies Q(x);
+assume Pa: P(a);
+thus Q(a) by AllPQ, Pa;
+```
+
+- **Shared pattern: goal and facts → external search → local trusted acceptance. A prover's success report alone is insufficient.**
+- Isabelle reconstructs a proof, often by local Metis reproof. Mizar Evo checks formula/substitution evidence through instantiation and SAT.
 
 Speaker note:
 
-- Source: `doc/design/architecture/en/08.reasoning_boundary.md`; Bialystok deck, Story 4; Backup 5 here shows what the evidence contains.
+- Source: [Sledgehammer guide](https://isabelle.in.tum.de/doc/sledgehammer.pdf), sections 1, 5.2; spec 16; architecture 08, 10, 15. The sketches assume corresponding hypotheses.
+- Evo uses cited/local facts; Sledgehammer selects theory facts. Their shared search/check pattern does not imply identical evidence or measured results.
 
 ### Frame 6.2 - Using ATPs: Search, Check, And Reuse
 
@@ -398,21 +581,59 @@ Speaker note:
 - Current ATP input is cited premises and local hypotheses. Whole-library premise selection and the loop's cost-effectiveness remain evaluation targets.
 - Source: `doc/spec/en/21.source_code_annotation_and_atp.md` section 21.7.2; `doc/design/architecture/en/21.ai_agent_interface.md`.
 
-### Frame 6.3 - From Evidence To Instances To SAT Checking
+### Frame 6.3 - Resolution Tree And Extracted Substitutions
+
+Candidate extraction from a Resolution log (sketch):
 
 ```text
-**Evidence → Formula instances → SAT check**
+F1: forall x. (P(x) implies Q(x)); F2: forall y. (Q(y) implies R(y))
+H: P(a); goal: R(a); refute: F1 & F2 & H & not R(a)
+
+{not P(x), Q(x)}             {not Q(y), R(y)}
+          \                 /
+           sigma1 = {x := y}       :: unify Q(x), Q(y)
+           {not P(y), R(y)}        {P(a)}
+                    \             /
+                     sigma2 = {y := a} :: unify P(y), P(a)
+                     {R(a)}        {not R(a)}
+                          \        /
+                           sigma3 = {}
+                                {}
 ```
 
-1. **Evidence:** source formulas, explicit substitutions, provenance, and the target goal.
-2. **Kernel:** check the bindings and substitutions, then derive the formula instances.
-3. **SAT:** encode the instances and the negated goal. Accept only after the trusted checker confirms UNSAT.
+- **The untrusted extractor composes substitutions along the branches: save `x := a` for F1 and `y := a` for F2.**
 
 Speaker note:
 
-- UNSAT establishes the goal from the premises. The kernel derives the instances and SAT problem itself.
-- Backend traces and exit codes are diagnostic only. Full evidence fields: Backup 5.
-- Source: `doc/design/architecture/en/08.reasoning_boundary.md`, `15.kernel_certificate_format.md`.
+- Variables x/y are renamed apart. Q unifies with x:=y; P with y:=a. Compose to obtain F1[x:=a] and F2[y:=a].
+- This log-assisted producer is a proposal; architecture 10 uses independent instance finding. The kernel checks evidence, not log steps.
+- Source: architecture 08, 10, 15, 16. Sketch, not an external-prover execution.
+
+### Frame 6.3a - Saved Evidence To Concrete SAT Clauses
+
+Saved candidate, kernel preprocessing, and SAT input (sketch):
+
+```text
+save: F1,F2,H (source bindings); F1[x:=a], F2[y:=a]; goal R(a), refute
+check: source/context, binders, capture avoidance
+instances: P(a) implies Q(a); Q(a) implies R(a); P(a); not R(a)
+atoms: p=P(a)=1, q=Q(a)=2, r=R(a)=3
+logical CNF: (not p or q) & (not q or r) & p & not r
+Tseitin: s=4 iff (not p or q); t=5 iff (not q or r)
+SAT clauses (DIMACS example; 0 ends each clause):
+p cnf 5 10
+1 0       -3 0
+1 4 0     -2 4 0     -1 2 -4 0     4 0
+2 5 0     -3 5 0     -2 3 -5 0     5 0
+```
+
+- **The small kernel derives instances and CNF from checked evidence. Its SAT checker finds UNSAT, so accept R(a); external Resolution steps are not replayed.**
+
+Speaker note:
+
+- Save source formulas, composed substitutions, binder contexts, target VC, and refutation polarity. Derived instances and SAT clauses are recomputed (Backup 5).
+- DIMACS: 5 variables, 10 clauses; negative means negation, 0 ends a clause. s/t encode the implications. This encoder-style construction is not a runtime dump.
+- The kernel searches no substitutions. Source: architecture 08, 15, 16.
 
 ## Part Closing. Status And Roadmap
 
