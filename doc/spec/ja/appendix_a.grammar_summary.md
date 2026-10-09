@@ -95,7 +95,7 @@ be being break by
 case cases claim cluster coherence commutativity compatibility computation
 conditional connectedness const consider consistency continue contradiction
 decreasing deffunc definition defpred do does downto
-else end ensures equals ex exhaustive existence export extends
+else end ensures equals ex expr existence export extends
 fail field for from func
 ghost given
 hence hereby holds
@@ -135,7 +135,7 @@ scope-dependent な selector-versus-namespace classification を後で適用し�
 固定 annotation name と option name は文脈限定 spelling であり、その文法位置の
 外では予約識別子ではありません。現在の文脈限定 spelling は `auto`, `cvc5`,
 `e`, `max_axioms`, `solver`, `steps`, `timeout`, `vampire`, `z3`, `result`,
-`term_size` と、A.21 で `@` の後に現れる固定 annotation-name spelling です。
+`expr_size`, `expr_children`, `val`, `val_at`, `valid_at` と、A.21 で `@` の後に現れる固定 annotation-name spelling です。
 `@` marker は annotation のために語彙的に予約されていますが、単独の予約記号
 token ではありません。
 
@@ -171,7 +171,7 @@ attribute_ref     ::= [ param_prefix ] [ struct_ref_name "." ] attribute_ref_nam
                       [ "(" argument_list ")" ] ;
 param_prefix      ::= parameter "-" | "(" parameter_list ")" "-" ;
 
-radix_type        ::= builtin_type | struct_ref_name [ type_args ] ;
+radix_type        ::= expr_type | builtin_type | struct_ref_name [ type_args ] ;
 mode_type         ::= mode_ref_name [ type_args ] ;
 type_args         ::= ( "of" | "over" ) argument_list
                     | "[" type_arg_list "]" ;
@@ -181,6 +181,7 @@ qua_arg           ::= identifier { "qua" radix_type } ;
 argument_list     ::= term_expression { "," term_expression } ;
 
 builtin_type      ::= "object" | "set" ;
+expr_type         ::= "expr" "of" type_expression ;
 attribute_name    ::= attribute_ref_name ;
 mode_name         ::= mode_ref_name ;
 struct_name       ::= struct_ref_name ;
@@ -504,6 +505,7 @@ term_primary         ::= variable_identifier
                        | set_expression
                        | choice_expression
                        | inline_functor_application
+                       | algorithm_application
                        | template_functor_application
                        | bracket_functor_application ;
 
@@ -798,6 +800,10 @@ algorithm_def ::= [ "terminating" ] "algorithm" identifier
                   [ "decreasing" term_list ]
                   algorithm_body ";" ;
 
+algorithm_application ::= identifier [ template_args ] "(" [ algorithm_inputs ] ")" ;
+algorithm_inputs ::= expr_input { "," expr_input } ;
+expr_input ::= term_expression | formula | label_identifier | "thesis" ;
+
 schema_params      ::= identifier { "," identifier } ;
 algorithm_body     ::= "do" algo_statement_list "end" ;
 algo_statement_list ::= { annotated_algo_statement } ;
@@ -861,13 +867,11 @@ for_annotation     ::= "invariant" formula [ justification ] ;
 
 match_stmt         ::= "match" term_expression "do"
                        match_case { match_case }
-                       [ "otherwise" algo_statement_list "end" ";"
-                       | exhaustiveness_proof ]
+                       [ "otherwise" algo_statement_list "end" ";" ]
                        "end" ";" ;
 match_case         ::= "case" term_pattern "do"
                        algo_statement_list "end" ";" ;
-term_pattern       ::= term_expression ;
-exhaustiveness_proof ::= "exhaustive" [ justification ] ";" ;
+term_pattern ::= term_expression | formula ;
 
 return_stmt        ::= "return" [ term_expression [ justification ] ] ";" ;
 break_stmt         ::= "break" ";" ;

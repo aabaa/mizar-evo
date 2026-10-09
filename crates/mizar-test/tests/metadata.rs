@@ -50,7 +50,7 @@ const PROPERTY_IMPLEMENTATIONS_REQUIREMENT_ID: &str =
 const STRUCTURES_REQUIREMENT_ID: &str = "spec.en.05.structures.parser";
 const CORRECTNESS_CONDITIONS_REQUIREMENT_ID: &str = "spec.en.16.correctness_conditions.parser";
 const REGISTRATIONS_REQUIREMENT_ID: &str = "spec.en.17.clusters_and_registrations.parser";
-const PARSER_DEFERRED_RESERVED_WORDS: &[&str] = &["fail", "transitivity"];
+const PARSER_DEFERRED_RESERVED_WORDS: &[&str] = &["expr", "fail", "transitivity"];
 
 #[test]
 fn empty_corpus_succeeds() {

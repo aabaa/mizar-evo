@@ -110,6 +110,7 @@ Current parser-deferred reserved words:
 
 | Word | Reason |
 |---|---|
+| `expr` | `source_drift` / `test_gap`: reflected syntax types and contextual inputs (§3/§20/Appendix A) await lexer/parser/syntax support and active corpus coverage; no credit is activated. |
 | `fail` | `source_drift` / `test_gap`: Chapter 20 §20.2.6 and Appendix A A.20 define `fail_stmt`; parsing, typed syntax, recovery, and active parser corpus coverage remain deferred to a separate parser/syntax increment. |
 | `transitivity` | Reserved by the provisional Appendix A word list, but not part of the canonical implemented property productions; task 28 records the design drift and there is no current parser grammar position. |
 

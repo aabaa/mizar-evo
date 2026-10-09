@@ -106,6 +106,7 @@ active parser corpus source に `ReservedWord` token として出現し始めた
 
 | 予約語 | 理由 |
 |---|---|
+| `expr` | `source_drift` / `test_gap`：構文型と文脈付き入力 (§3/§20/付録A) のlexer/parser/syntax対応とactive corpusは未実装。達成状態は変更しない。 |
 | `fail` | `source_drift` / `test_gap`: 第20章 §20.2.6 と Appendix A A.20 が `fail_stmt` を定義する。構文解析、型付き構文、recovery、active parser corpus のカバレッジは、別の parser/syntax 増分へ延期する。 |
 | `transitivity` | provisional な Appendix A word list では予約済みだが、canonical な実装済み property production には含まれない。task 28 が design drift を記録済みであり、現時点の parser grammar position はない。 |
 
