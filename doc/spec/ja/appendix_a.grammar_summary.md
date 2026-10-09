@@ -803,7 +803,7 @@ algorithm_def ::= ( "terminating" "algorithm" [ label_identifier ":" ] | "algori
                   [ "decreasing" term_list ]
                   algorithm_body ";" ;
 
-algorithm_application ::= identifier [ template_args ] "(" [ algorithm_inputs ] ")" ;
+algorithm_application ::= ( identifier | namespace_path "." identifier ) [ template_args ] "(" [ algorithm_inputs ] ")" ;
 algorithm_inputs ::= expr_input { "," expr_input } ;
 expr_input ::= term_expression | formula | label_identifier | "thesis" ;
 
@@ -839,11 +839,12 @@ const_decl         ::= "const" const_binding { "," const_binding }
                        [ "as" type_expression [ justification ] ] ";" ;
 ghost_const_decl   ::= "ghost" "const" const_binding { "," const_binding }
                        [ "as" type_expression [ justification ] ] ";" ;
-var_binding        ::= identifier [ ":=" term_expression ] ;
-const_binding      ::= identifier ":=" term_expression ;
+var_binding        ::= identifier [ ":=" algorithm_rhs ] ;
+const_binding      ::= identifier ":=" algorithm_rhs ;
+algorithm_rhs      ::= term_expression | formula ;
 
-assignment         ::= lvalue ":=" term_expression ";" ;
-ghost_assignment   ::= "ghost" lvalue ":=" term_expression ";" ;
+assignment         ::= lvalue ":=" algorithm_rhs ";" ;
+ghost_assignment   ::= "ghost" lvalue ":=" algorithm_rhs ";" ;
 lvalue             ::= identifier { "." identifier } ;
 
 if_stmt            ::= "if" formula "do" algo_statement_list if_tail ;
@@ -876,7 +877,7 @@ match_case         ::= "case" term_pattern "do"
                        algo_statement_list "end" ";" ;
 term_pattern ::= term_expression | formula ;
 
-return_stmt        ::= "return" [ term_expression [ justification ] ] ";" ;
+return_stmt        ::= "return" [ algorithm_rhs [ justification ] ] ";" ;
 break_stmt         ::= "break" ";" ;
 continue_stmt      ::= "continue" ";" ;
 fail_stmt          ::= "fail" [ string_literal { "," term_expression } ] ";" ;
