@@ -92,6 +92,10 @@ Algorithm code should make its logical contract and execution assumptions explic
 
 Non-executable mathematical definitions are acceptable, but code intended for extraction should avoid operations that the MVM cannot evaluate.
 
+Begin algorithm names with a verb describing the procedure, for example `differentiate`, `check_occurs` or `step_collatz`; use `try_` when false means unsuccessful search rather than refutation. Wrap internal structural helpers in an external entry whose `val` contract states the mathematical result. For contracts about functions, take function-valued trees; the first differentiation example uses `expr of Function of REAL,REAL` for both input and result (§20.12).
+
+For new Binder proposals, first express the operation through the common function abstraction and ordinary mathematical operators. Make ambiguous whole-Binder views explicit with parentheses and `qua`; preserve the chosen domain, capture context and all-input obligations. Preserve finite-sequence domains when migrating old `n |-> a` notation to `(Seg n) --> a` (§13.10).
+
 ## D.6 Annotations and Documentation
 
 Annotations should clarify source code while remaining erasable metadata.

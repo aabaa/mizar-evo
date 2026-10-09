@@ -375,3 +375,7 @@ end;
 @show_type(euclid_gcd(48, 18))
 @eval(euclid_gcd(48, 18))
 ```
+
+## Structural algorithm examples
+
+[§20.12](./20.algorithm_and_verification.md#structural-proof-search-and-differentiation) owns the order-chain, occurrence-check and full-real-domain differentiation examples and their proof obligations. [§18.8.4](./18.templates.md#1884-algorithm-templates) and [§20.13.4](./20.algorithm_and_verification.md#20134-recursive-algorithm-encoding) own the iteration/Collatz examples. For a legacy constant finite sequence, replace `n |-> a` by `(Seg n) --> a` (§13.10), preserving the finite domain rather than constructing a Nat-domain Binder.

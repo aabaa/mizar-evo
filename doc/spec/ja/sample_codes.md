@@ -375,3 +375,7 @@ end;
 @show_type(euclid_gcd(48, 18))
 @eval(euclid_gcd(48, 18))
 ```
+
+## 構造を扱う algorithm の例
+
+[§20.12](./20.algorithm_and_verification.md#構造的な証明探索と微分) に大小関係の連鎖、出現検査、全実数上の微分の例と証明義務をまとめます。反復・コラッツの例は [§18.8.4](./18.templates.md)・[§20.13.4](./20.algorithm_and_verification.md) を参照します。旧定数有限列 `n |-> a` は `(Seg n) --> a`（§13.10）へ移し、Nat 領域の Binder を作るのではなく有限の領域を保ちます。
