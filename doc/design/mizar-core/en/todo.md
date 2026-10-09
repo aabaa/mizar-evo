@@ -793,3 +793,7 @@ Check the task off here once tests pass.
   invariants property-tested.
 - Phase 10 lives here per internal 07; `mizar-vc` consumes `ControlFlowIr`
   and never mutates it.
+
+## AST specification implementation follow-up
+
+- [ ] AST-LOWER: immutable typed/UID syntax handoff and complete runtime/logical inputs; no fabricated records; see [§20](../../../spec/en/20.algorithm_and_verification.md) and [§13.10](../../../spec/en/13.term_expression.md).

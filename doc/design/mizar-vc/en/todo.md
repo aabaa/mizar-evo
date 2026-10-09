@@ -638,3 +638,7 @@ Check the task off here once tests pass.
 - Kernel evidence handoff records may package formula/substitution evidence
   for checking, but `mizar-vc` must not run SAT solving or encode
   backend-specific proof methods.
+
+## AST specification implementation follow-up
+
+- [ ] AST-CONTRACT: E1 introduction, partial correctness/normal return, invariant/selected-measure obligations and promotion labels; see [§20](../../../spec/en/20.algorithm_and_verification.md) and [§13.10](../../../spec/en/13.term_expression.md).

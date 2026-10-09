@@ -478,3 +478,7 @@ Check the task off here once tests pass.
   cannot win under `require_kernel_certificates`.
 - Witnesses become publication-reachable only after the artifact manifest
   references them; staging alone publishes nothing.
+
+## AST specification implementation follow-up
+
+- [ ] AST-COMPUTE: validated MVM execution, T1–T8 import, all-candidate inspection, replay and computed policy; runtime backend remains deferred; see [§20](../../../spec/en/20.algorithm_and_verification.md) and [§13.10](../../../spec/en/13.term_expression.md).

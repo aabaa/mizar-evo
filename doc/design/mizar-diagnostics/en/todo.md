@@ -507,3 +507,7 @@ Check the task off here once tests pass.
   lives in `mizar-lsp`.
 - Large traces never live inline in diagnostics — compact references and
   bounded previews only.
+
+## AST specification implementation follow-up
+
+- [ ] AST-DIAGNOSTICS: reserved reflection diagnostic codes and source-derived locations/messages; no registry activation in this task; see [§20](../../../spec/en/20.algorithm_and_verification.md) and [§13.10](../../../spec/en/13.term_expression.md).

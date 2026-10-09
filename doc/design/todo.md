@@ -921,9 +921,11 @@ Open decisions (block or shape upcoming steps):
   `expr of T` / ghost `val` and explicit `by computation` decisions;
   the user-defined tree/`Eval` proposal is withdrawn. Binder notation is
   justified as a shared function abstraction, with no kernel lambda.
-  Specification transfer precedes runtime implementation; see
+  Formal rules are now owned by §§13.10/20; runtime implementation follows
+  the AST owner TODOs listed in the coverage audit. See
   [architecture 15](./architecture/en/15.kernel_certificate_format.md).
   Task: [AST-SPEC-00](./task_contracts/en/AST-SPEC-00.md).
+  [AST-SPEC-13](./task_contracts/en/AST-SPEC-13.md).
   [AST-SPEC-12](./task_contracts/en/AST-SPEC-12.md).
   [AST-SPEC-11](./task_contracts/en/AST-SPEC-11.md).
   [AST-SPEC-10](./task_contracts/en/AST-SPEC-10.md).

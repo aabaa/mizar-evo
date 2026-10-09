@@ -1263,3 +1263,6 @@ Details archived: [checker_todo_sections.md](../../archive/checker_todo_sections
 
 Details archived: [checker_todo_sections.md](../../archive/checker_todo_sections.md).
 
+## AST specification implementation follow-up
+
+- [ ] AST-TYPE: pinned library certification, classification/condition records, typed valuation, Binder three modes and C; structure-update reflection remains uncertified; see [§20](../../../spec/en/20.algorithm_and_verification.md) and [§13.10](../../../spec/en/13.term_expression.md).

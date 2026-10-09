@@ -1077,3 +1077,7 @@ Details archived: [test_todo_sections.md](../../archive/test_todo_sections.md).
 ## September 2026 Audit-1 Semantic-Bridge Oracle Corpus Increment
 
 Details archived: [test_todo_sections.md](../../archive/test_todo_sections.md).
+
+## AST specification implementation follow-up
+
+- [ ] AST-CORPUS: test-first G/S/V/K matrices after frozen owner contracts; existing .miz/expectations and coverage credit stay unchanged; see [§20](../../../spec/en/20.algorithm_and_verification.md) and [§13.10](../../../spec/en/13.term_expression.md).

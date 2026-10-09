@@ -376,3 +376,7 @@ Check the task off here once tests pass.
 - Formula/substitution kernel evidence witness refs are defined by task 23.
   Real witness publication remains deferred until producer outputs exist; do
   not add placeholder fields for resolution-trace certificates.
+
+## AST specification implementation follow-up
+
+- [ ] AST-ARTIFACT: complete computation provenance/identity, transitive executable and proof-policy dependency metadata; see [§20](../../../spec/en/20.algorithm_and_verification.md) and [§13.10](../../../spec/en/13.term_expression.md).

@@ -1180,3 +1180,7 @@ Check the task off here once tests pass.
     `stash@{0}=f65cf4a13752ec380710814a9ac6392ccb9d75d4`. This is historical
     evidence, not a current-HEAD claim after the documentation-closure commit.
     The implementation task is closed.
+
+## AST specification implementation follow-up
+
+- [ ] AST-PARSE: expr/contextual inputs, otherwise-only match, Binder grammar and precedence; lexer/frontend/syntax prerequisites; see [§20](../../../spec/en/20.algorithm_and_verification.md) and [§13.10](../../../spec/en/13.term_expression.md).

@@ -84,7 +84,7 @@ Algorithm code should make its logical contract and execution assumptions explic
 |---|---|
 | State contracts first | Use `requires` and `ensures` to describe the externally visible behavior before relying on body details. |
 | Keep invariants semantic | Write loop invariants in terms of mathematical state, not incidental iteration order, unless the algorithm is explicitly order-dependent. |
-| Use `for ... in` only for order-independent loops | If the result depends on traversal order, use an explicitly ordered construct instead. |
+| Use unordered set loops for order-independent results | Ordered finite sequences support for ... in; use sequence order or for ... to when order matters. |
 | Introduce proof-only state for clarity | Use `ghost var` and `ghost const` for proof-only values, and use `snapshot` to name program states at important points without changing runtime behavior. |
 | Give termination measures meaningful names | A `decreasing` expression should be easy to relate to the recursive call or loop progress. |
 | Prefer explicit search for existential computation | For executable witnesses, implement a search algorithm with clear failure behavior rather than relying on non-executable arbitrary choice. |

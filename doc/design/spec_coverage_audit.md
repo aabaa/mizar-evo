@@ -19,7 +19,10 @@ or Rust source. It is a synchronization ledger for design and TODO work.
 
 The AST reflection specification transfer does not activate coverage.
 Parser/checker, core/VC, proof/MVM and artifact/build integration remain
-unimplemented follow-ups sequenced by [the roadmap](./todo.md).
+unimplemented follow-ups sequenced by [the roadmap](./todo.md). Owner TODOs
+now name AST-PARSE, AST-TYPE, AST-LOWER, AST-CONTRACT, AST-COMPUTE,
+AST-ARTIFACT, AST-DIAGNOSTICS and AST-CORPUS. Reflection diagnostic codes
+remain spec-reserved; this transfer activates no runner or semantic credit.
 
 ## Status Legend
 
