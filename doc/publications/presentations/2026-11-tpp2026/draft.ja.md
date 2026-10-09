@@ -12,12 +12,12 @@
 TPP 2026 では、Mizar Evolution の機能を列挙するのではなく、次の問いから始める。
 
 ```text
-MizAR と higher-order hammer benchmark では
-自動証明の強度がなぜこれほど違って見えるのか？
+MizAR と Sledgehammer の評価では
+何をどの条件で計測しているのか？
                    |
                    v
-      単なる benchmark 差だけなのか？
-      それとも architecture の差なのか？
+      記述と証明支援を支える仕組みは何か？
+      一階の基盤でも構成できるのか？
                    |
                    v
       HOL + ATP と FOL + ATP では
@@ -91,7 +91,8 @@ MizAR と higher-order hammer benchmark では
 
 第一候補:
 
-**Mizar Evolution: なぜ今、一階述語論理なのか**  
+**Mizar Evo の設計指針について**
+
 — 自動証明・数学的記述・検証可能な計算を再接続する —
 
 第二候補:
@@ -109,8 +110,8 @@ MizAR と higher-order hammer benchmark では
 MizAR 60 (ITP 2023):
 
 - MML 1147;
-- 57,897 theorems including unnamed top-level lemmas;
-- user premise helpなしの large-theory / hammering modeで **58.4%**;
+- 元コーパスは無名の top-level lemma を含む57,897件。学習・開発・holdout を90:5:5に分割;
+- user premise helpなしの hammering modeで holdout 2,896件中1,690件、**58.4%**;
 - human-written proof が使った premises を利用できる条件では **75%超**;
 - strongest single method は 30秒で約 **40%**;
 - full portfolio は最大 420 CPU秒。
@@ -123,43 +124,41 @@ MizAR 60 (ITP 2023):
 
 代表的な評価では、既存の Isabelle development の途中に生じる **proof goals** を対象とする。
 
-- 既に人間が structured proof を与えた後の局所goalを含む;
-- Judgment Day / AFP 系の評価では、設定やproverにより成功率は概ね40–60%台;
-- AFP 2015 では一行再構成で各 prover 約50%、oracle unionで60.7%。
+- 本文は Seventeen Provers Under the Hammer（ITP 2022）を参照。AFP の50 entry から5,000ゴール;
+- MePo、基準512事実。評価集合から事後選択した greedy 16構成、各30 CPU秒で **68.8%**（3,440 / 5,000）;
+- 外部 prover の探索成功を数え、Isabelle 内での再構成は評価対象外。高階形式を扱う prover も含む;
+- 補足: Magnushammer（2023年公開）では PISA の1,000定理に対し Sledgehammer **38.3%**、Magnushammer **59.5%**。こちらは Isabelle 内での検証済み証明を数える。
 
 重要:
 
-> **58.4% と 60.7% をそのまま数値比較してはいけない。**
+> **58.4% と 68.8% は同一条件の比較ではない。**
 
-time budget、dataset、premise regime、goal granularity が違う。
+time budget、dataset、premise regime、goal granularity、構成選択の方法が違う。
+公表年と実験時期も区別する。MizAR の主要実験は2020–2021年で、AFP 評価は2022年1月の Isabelle と2021年12月の AFP を使用。
 
 しかし、だからこそ次の問いが立つ。
 
 ---
 
-# 4. Slide 3 — なぜこんな差が見えるのか？
+# 4. Slide 3 — 一階の基盤を現代化する設計方針
 
 大きく:
 
-> **Benchmark artifact, or architectural consequence?**
+> **A first-order foundation supports abstraction and modern proof tools.**
 
 日本語:
 
-> **単なるベンチマーク差なのか。  
-> それとも HOL+ATP と FOL+ATP の構成差が効いているのか。**
+> **一階の基盤でも、数学的な抽象化と現代的な証明支援を組み立てられる。**
 
-ここで研究仮説を出す。
+ここで設計方針を示す。
 
-> **FOL-native library では、ITP内部の意味表現と first-order ATP が扱う問題との距離が短い。  
-> Higher-order ITP では、その距離を translation と reconstruction で埋める必要がある。**
+- 関数や構造を集合論で表し、型・言語機構で数学的な抽象化を支援する。
+- 前提選択・ATP による探索・検査系での証明検査という構成は共通。
+- Mizar Evolution は一階の基盤と既存ライブラリを継承し、言語と開発基盤を再整備する。
 
-Mizar Evolution はこの仮説を、現代的な処理系・ライブラリ・ATPで再評価する。
+「仕組みが近い」は数学的な記述と証明支援の構成を指し、論理体系や表現方法の同一性を意味しない。
 
-### 強く言ってよいこと
-
-- Sledgehammer は「HOLでもATPを利用できる」ことを見事に示した。
-- しかし「HOL経由がATPを利用する最適なarchitecture」とはまだ言えない。
-- FOL-native ITP の現代的な対照系がほぼ存在しなかったこと自体が研究上の空白である。
+成功率や再構成の失敗率から一階の性能優位性を主張しない。設計の効果は、記述の利便性・自動証明・証明検査の観点で評価する。
 
 ---
 

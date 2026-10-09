@@ -24,7 +24,7 @@
   \node[big, above=3mm of a] {58.4\%};
   \node[caption, below=5mm of a2]
     {\textbf{MizAR 60 (ITP 2023)} counts \emph{whole top-level theorems and lemmas}\\
-     57{,}897 in MML 1147; premises from the whole library; 420 CPU s portfolio};
+     2{,}896 holdout problems from 57{,}897 in MML 1147; learned premises; 420 CPU s};
 
   % AFP unit: goals as they arise
   \node[root, lo] (b) at (112mm,0) {lemma in a development};
@@ -32,12 +32,12 @@
   \node[leaf, hi, below=8mm of b] (b2) {\textbf{goal}};
   \node[leaf, hi, below right=8mm and 6mm of b] (b3) {\textbf{goal}};
   \foreach \x in {b1,b2,b3} \draw[edge] (b.south) -- (\x.north);
-  \node[big, above=3mm of b] {60.7\%};
+  \node[big, above=3mm of b] {68.8\%};
   \node[caption, below=5mm of b2]
-    {\textbf{Sledgehammer on the AFP (CICM 2015)} counts \emph{proof goals as they arise}\\
-     6{,}934 goals from 128 theories; 30 s per prover; union trusted as oracle};
+    {\textbf{Sledgehammer / AFP (ITP 2022)} counts \emph{proof goals as they arise}\\
+     5{,}000 goals from 50 entries; greedy 16 configurations $\times$ 30 CPU s; no reconstruction};
 
   \node[font=\sffamily\small\itshape, text=black!60, align=center] at (56mm,-50mm)
-    {Same-looking percentages. Different units, different premise regimes, different budgets.};
+    {Different units, premise selection, and budgets.};
 \end{tikzpicture}
 \end{document}

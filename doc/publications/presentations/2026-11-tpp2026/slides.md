@@ -150,23 +150,23 @@ Code labels follow the Bialystok deck: exact MML excerpt, specification example,
 
 ## Part 1. Two Hammers, Two Numbers
 
-### Frame 1.1 - Two Numbers That Look Alike
+### Frame 1.1 - Comparing Evaluation Conditions
 
-| | MizAR 60 (ITP 2023) | Sledgehammer on the AFP (CICM 2015) |
+| | MizAR 60 (ITP 2023) | Sledgehammer / AFP (ITP 2022) |
 |---|---|---|
-| headline | 58.4% proved | 60.7% proved |
-| counts | top-level theorems and lemmas of MML 1147 (57,897) | proof goals inside AFP developments (6,934) |
-| premises | chosen from the whole library by learned methods | chosen from the development by the MePo filter |
-| budget | portfolio limited to 420 CPU seconds | 30 seconds per prover, four provers |
-| status | ATP proof found, hammering mode | union trusted as oracle; about 50% with one-line replay |
+| success | 58.4% (1,690 / 2,896) | 68.8% (3,440 / 5,000) |
+| counts | MML 1147: 2,896 holdout theorems/lemmas (57,897 total) | 5,000 local goals; 50 AFP entries |
+| premises | learned selection from the whole library | MePo; base 512 facts, varied by configuration |
+| budget | portfolio: 420 CPU s | 16 greedy configurations, 30 CPU s each: 480 CPU s |
+| status | ATP proof found (hammering) | external proof found; no Isabelle reconstruction |
 
-- **Two hammers, two headline numbers, and they look almost the same.**
-- **Do not compare them as one benchmark. The units, the premises, and the time budgets are all different.**
+- **Different units, premises, budgets, and configurations; the rates do not rank the designs.**
 
 Speaker note:
 
 - A "hammer" is a tool that sends a goal to automatic provers. "Premises" are the facts the prover may use.
-- Source: Jakubův et al. 2023, results 1-3; Blanchette et al. 2015, Section "Proof Automation with Sledgehammer", Figure 13.
+- Source: Jakubův et al. 2023, sections 6.2, 6.5; Desharnais et al. 2022, sections 5, 5.6, Table 10. The greedy configurations were selected using the evaluation set itself.
+- Publication dates differ from experiment dates. MizAR's main experiments ran in 2020-2021; the AFP study uses Isabelle from January 2022 and AFP from December 2021.
 - MizAR's 75% figure uses premises chosen from the library by a human or a machine. Keep it for questions.
 
 ### Frame 1.2 - What Each Number Counts
@@ -181,24 +181,29 @@ Speaker note:
 
 ![Two paths from an interactive prover to a first-order ATP](figures/two_paths.pdf)
 
-- **Sledgehammer translates a higher-order goal into first-order or SMT problems. Then it rebuilds the proof inside Isabelle.**
+- **In Sledgehammer's first-order and SMT path, a higher-order goal is translated, and the proof is rebuilt inside Isabelle.**
 - **MizAR gives the prover a problem that is already first-order. The gap between the checker and the ATP problem is short.**
 
 Speaker note:
 
 - Both paths describe existing systems (Blanchette, Kaliszyk, Paulson, Urban 2016; Jakubův et al. 2023). The orange boxes are the translation and reconstruction layers.
+- The figure shows the first-order and SMT path. The ITP 2022 evaluation also includes provers using native higher-order formats.
 - MizAR's headline percentages count ATP proofs. The Mizar checker re-checks the resulting `by` step when the inference is within its strength.
 
-### Frame 1.4 - The Question
+### Frame 1.4 - Design Choice: Keep The First-Order Foundation
 
 ```text
-**A result of how we measure, or a result of the design?**
+**A first-order foundation supports abstraction and modern proof tools.**
 ```
 
-- **Research hypothesis: in a first-order library, the distance between the checker's own logic and the ATP problem is short. A higher-order system must cross that distance with translation and reconstruction, and that has a cost.**
-- Fact: Sledgehammer showed that higher-order systems can use first-order ATPs very well.
-- Research hypothesis: we do not yet know if "higher-order plus translation" is the best design for using ATPs. There is almost no modern first-order ITP to compare with.
-- **Mizar Evo is built to test this hypothesis with a modern verifier, library, and provers.**
+- **Mathematical writing: represent functions and structures as sets; use types and language features to support abstraction.**
+- Proof tools share the same broad steps: select premises, search with ATPs, and check proofs.
+- **Mizar Evo keeps its first-order foundation and library, and rebuilds the language and development tools.**
+
+Speaker note:
+
+- The shared structure concerns mathematical writing and proof tools, not identical logics or representations.
+- Neither success rates nor reconstruction failures show a first-order advantage. Evaluate ease of writing, automation, and proof checking.
 
 ## Part 2. Where Complexity Lives
 
@@ -512,10 +517,10 @@ Mizar Evo's answer, in six parts:
 
 ## Backup 1. MizAR 60 In Detail
 
-Source: Jakubův, Chvalovský, Goertzel, Kaliszyk, Olšák, Piotrowski, Schulz, Suda, Urban, MizAR 60 for Mizar 50, ITP 2023.
+Source: Jakubův et al., MizAR 60 for Mizar 50, ITP 2023.
 
 - Dataset: MML 1147 exported by MPTP, 57,897 theorems including unnamed top-level lemmas; the same version as the MizAR 40 evaluation, so the results can be compared.
-- 58.4% of top-level lemmas proved in the large-theory (hammering) mode, with no user help, by a portfolio limited to 420 s of CPU time (MizAR 40: about 40.6%).
+- Holdout: 1,690 / 2,896 (58.4%), without user premise help, 420 CPU s. Training/development/holdout: 90:5:5 (MizAR 40: about 40.6%).
 - Over 75% proved when the premises can be chosen from the library by a human or a machine (MizAR 40: 56%).
 - Strongest single method: 40% in 30 s in hammering mode; 60% in 120 s with human premises.
 - Transfer: the strongest method also works on 13,370 new theorems from 242 new articles in MML 1382.
@@ -523,21 +528,19 @@ Source: Jakubův, Chvalovský, Goertzel, Kaliszyk, Olšák, Piotrowski, Schulz, 
 
 ## Backup 2. Sledgehammer Evaluations In Detail
 
-| Prover | One-line / + Isar / + Oracle (% of 6,934 goals) |
-|---|---|
-| E | 49.7 / 51.4 / 52.5 |
-| SPASS | 49.4 / 50.5 / 52.0 |
-| Vampire | 49.5 / 51.0 / 51.8 |
-| Z3 | 49.6 / 50.0 / 53.7 |
+| Evaluation | Dataset and method | Success |
+|---|---|---|
+| ITP 2022 | 5,000 AFP goals, 16 greedy configurations | 68.8% |
+| Magnushammer (preprint 2023) | 1,000 PISA theorems, Sledgehammer | 38.3% |
+| Same PISA evaluation | Magnushammer with learned premise selection | 59.5% |
 
-- Setup: 128 random AFP theories, up to 100 goals each; Isabelle2014; MePo filter; 30 s per prover in slices; replay must succeed within 2 s.
-- Combined and trusted as oracles, the provers prove 60.7% of the goals.
-- Judgement Day (2010): 1,240 subgoals from seven theories, 46% with E, SPASS, and Vampire in 30 s; a 2015 preliminary run reached 75% with six provers.
-- Success per theory varies between 10% and 100%; Sledgehammer had been tuned on Judgement Day.
+- ITP 2022: 50 entries, 100 goals each; MePo, 512 facts in the base setting, 30 CPU seconds per configuration. Configurations are selected using the evaluation set. Reconstruction is not evaluated.
+- PISA: Isabelle2021-1, Sledgehammer timeout 30 seconds, five local provers, union over several settings. Success requires a proof checked by Isabelle.
+- Close dates do not make local goals and whole theorems, or search success and checked proofs, the same measure.
 
 Speaker note:
 
-- Source: Blanchette, Haslbeck, Matichuk, Nipkow, Mining the Archive of Formal Proofs, CICM 2015, Section "Proof Automation with Sledgehammer", Figure 13; Böhme and Nipkow, IJCAR 2010.
+- Source: Desharnais et al., Seventeen Provers Under the Hammer, ITP 2022, sections 5, 5.6, Table 10; Mikuła et al., Magnushammer, arXiv:2303.04488 (preprint 2023), Table 2, Appendix A.4.
 
 ## Backup 3. HOL-To-FOL Encodings And Reconstruction
 

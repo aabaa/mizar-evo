@@ -1,4 +1,4 @@
-# Mizar Evolution: なぜ今、一階述語論理なのか
+# Mizar Evo の設計指針について
 
 Status: `slides.md`（英語デッキ原稿）の日本語版。英語版のフレーム番号を維持し、Frame 0.2 は省略。
 
@@ -20,7 +20,7 @@ Status: `slides.md`（英語デッキ原稿）の日本語版。英語版のフ�
 Title:
 
 ```text
-Mizar Evolution: なぜ今、一階述語論理なのか
+Mizar Evo の設計指針について
 自動証明・数学的記述・検証可能な計算の再接続
 ```
 
@@ -32,23 +32,23 @@ Speaker note:
 
 ## Part 1. Two Hammers, Two Numbers
 
-### Frame 1.1 - 類似した成功率、異なる評価条件
+### Frame 1.1 - 評価条件の比較
 
-| | MizAR 60 (ITP 2023) | Sledgehammer on AFP (CICM 2015) |
+| | MizAR 60 (ITP 2023) | Sledgehammer / AFP (ITP 2022) |
 |---|---|---|
-| 報告された成功率 | 58.4% を証明 | 60.7% を証明 |
-| 評価単位 | MML 1147 の top-level theorem と lemma（57,897件） | AFP 開発内部の proof goal（6,934件） |
-| 前提 | ライブラリ全体から学習的に選択 | 開発内から MePo フィルタで選択 |
-| 時間予算 | ポートフォリオ合計 420 CPU 秒 | 各 prover 30 秒、4 prover |
-| 成功の判定 | ATP 証明の発見（hammering mode） | union を oracle として信頼。一行再構成は各 prover 約50% |
+| 報告された成功率 | 58.4%（1,690 / 2,896） | 68.8%（3,440 / 5,000） |
+| 評価対象 | MML 1147 の定理・補題。全57,897件のうち holdout 2,896件 | AFP の50 entry から選んだ局所ゴール5,000件 |
+| 前提選択 | ライブラリ全体から学習的に選択 | MePo。基準512事実、構成により増減 |
+| 時間予算 | ポートフォリオ合計 420 CPU 秒 | greedy 16構成 × 各30 CPU 秒 = 480 CPU 秒 |
+| 成功の判定 | ATP 証明の発見（hammering mode） | 外部 prover の証明発見。Isabelle 内の再構成は評価対象外 |
 
-- **報告された成功率は近いが、評価条件は異なる。**
-- **評価単位・前提選択・時間予算が異なるため、成功率の直接比較はできない。**
+- **評価対象・前提選択・時間予算・構成選択が異なる。成功率だけでは設計上の優劣を判定できない。**
 
 Speaker note:
 
 - 「ハンマー」は goal を自動証明器に送る道具。「前提」は prover が使ってよい事実。
-- Source: Jakubův et al. 2023, results 1-3; Blanchette et al. 2015, Section "Proof Automation with Sledgehammer", Figure 13.
+- Source: Jakubův et al. 2023, sections 6.2, 6.5; Desharnais et al. 2022, sections 5, 5.6, Table 10（greedy 構成は同じ評価集合から事後選択）。
+- 公表年と実験時期は異なる。MizAR の主要実験は2020–2021年。AFP 評価は2022年1月の Isabelle と2021年12月の AFP を使用。
 - MizAR の 75% は、人または機械がライブラリから前提を選んだ条件。質問用に取っておく。
 
 ### Frame 1.2 - 評価単位: 定理全体と局所ゴール
@@ -63,24 +63,29 @@ Speaker note:
 
 ![Two paths from an interactive prover to a first-order ATP](figures/two_paths.pdf)
 
-- **Sledgehammer: 高階のゴールを一階論理または SMT の問題へ翻訳し、得られた証明を Isabelle 内で再構成する。**
+- **Sledgehammer の一階・SMT 経路: 高階のゴールを翻訳し、得られた証明を Isabelle 内で再構成する。**
 - **MizAR: 一階の問題を ATP へ送る。検査系の論理と ATP の問題表現との距離が短い。**
 
 Speaker note:
 
 - どちらも既存システムの説明（Blanchette, Kaliszyk, Paulson, Urban 2016; Jakubův et al. 2023）。オレンジの箱が翻訳と再構成の層。
+- 図は一階・SMT 接続の概形。ITP 2022 の評価は、高階形式を直接扱う prover も含む。
 - MizAR の見出しの数字は ATP 証明を数える。Mizar checker は、推論が検査器の強さの範囲なら、得られた `by` ステップを再検査する。
 
-### Frame 1.4 - 研究課題: 評価条件と設計の影響
+### Frame 1.4 - 設計方針: 一階の基盤を現代化する
 
 ```text
-**評価条件の差か、設計上の差か**
+**一階の基盤でも、数学的な抽象化と現代的な証明支援を組み立てられる**
 ```
 
-- **研究仮説: 一階ライブラリでは、検査系の論理と ATP の問題表現との距離が短い。高階処理系では、翻訳と再構成に追加のコストが生じる。**
-- 事実: Sledgehammer は、高階処理系における一階 ATP の有効性を示した。
-- 研究仮説: 高階処理系と翻訳を組み合わせた設計が最適かは未検証。比較対象となる現代的な一階 ITP が少ない。
-- **Mizar Evo: 現代的な検査系・ライブラリ・ATP による仮説検証のための基盤。**
+- **数学的な記述: 関数や構造を集合論で表し、型・言語機構で抽象化を支援。**
+- 証明支援: 前提選択・ATP による探索・検査系での証明検査という構成は共通。
+- **Mizar Evo: 一階の基盤と既存ライブラリを継承し、言語と開発基盤を再整備。**
+
+Speaker note:
+
+- 数学的な記述と証明支援に必要な機能は、一階の基盤の上にも構成できる。「仕組みが近い」はこれらの構成を指し、論理体系や表現方法の同一性を意味しない。
+- 成功率や再構成の失敗率から一階の性能優位性を主張しない。設計の効果は、記述の利便性・自動証明・証明検査の観点で評価する。
 
 ## Part 2. Where Complexity Lives
 
@@ -396,7 +401,7 @@ Mizar Evo の六つの設計方針:
 Source: Jakubův et al., MizAR 60 for Mizar 50, ITP 2023.
 
 - データ: MPTP で出力した MML 1147、無名の top-level lemma を含む 57,897 件の定理。MizAR 40 と同一版を用いた比較。
-- top-level lemma の 58.4% を large-theory（hammering）mode で証明。ユーザの前提指定なし、ポートフォリオ合計 420 CPU 秒（MizAR 40 は約 40.6%）。
+- 学習・開発・holdout を90:5:5に分割。holdout 2,896件中1,690件（58.4%）を hammering mode で証明。ユーザの前提指定なし、420 CPU 秒（MizAR 40 は約40.6%）。
 - 人または機械がライブラリから前提を選べる条件では 75% 超（MizAR 40 は 56%）。
 - 最高性能の単一手法: hammering mode で 30 秒 40%。人間の前提指定ありで 120 秒 60%。
 - 転移: 同手法を MML 1382 の新規 242 article、13,370 定理にも適用。
@@ -404,21 +409,19 @@ Source: Jakubův et al., MizAR 60 for Mizar 50, ITP 2023.
 
 ## Backup 2. Sledgehammer 評価の詳細
 
-| Prover | One-line / + Isar / + Oracle（6,934 goal に対する %） |
-|---|---|
-| E | 49.7 / 51.4 / 52.5 |
-| SPASS | 49.4 / 50.5 / 52.0 |
-| Vampire | 49.5 / 51.0 / 51.8 |
-| Z3 | 49.6 / 50.0 / 53.7 |
+| 評価 | 対象・方式 | 成功率 |
+|---|---|---|
+| ITP 2022 | AFP 5,000ゴール、greedy 16構成 | 68.8% |
+| Magnushammer（2023年公開） | PISA 1,000定理、Sledgehammer | 38.3% |
+| 同じ PISA 評価 | 学習による前提選択を用いる Magnushammer | 59.5% |
 
-- 設定: 無作為に選んだ AFP の 128 theory、各 100 goal まで。Isabelle2014。MePo フィルタ。各 prover 30 秒をスライスに分割。再構成の制限時間は 2 秒。
-- 複数 prover の結果の和集合を oracle として信頼した場合、goal の 60.7% を証明。
-- Judgement Day（2010）: 7 theory の 1,240 subgoal、E・SPASS・Vampire を 30 秒で 46%。2015年の予備評価では 6 prover で 75%。
-- theory ごとの成功率は 10%–100%。Sledgehammer は Judgement Day を用いて調整されてきた。
+- ITP 2022: 50 entry × 100ゴール。MePo、基準512事実、各構成30 CPU 秒。構成は評価集合から事後選択。再構成は評価対象外。
+- PISA: Isabelle2021-1、Sledgehammer の timeout 30秒、ローカル5 prover、複数設定の成功集合を集約。Isabelle 内での検証を成功条件とする。
+- 年代が近くても、局所ゴールと定理全体、探索成功と検証済み証明を混同しない。
 
 Speaker note:
 
-- Source: Blanchette, Haslbeck, Matichuk, Nipkow, Mining the Archive of Formal Proofs, CICM 2015, Section "Proof Automation with Sledgehammer", Figure 13; Böhme and Nipkow, IJCAR 2010.
+- Source: Desharnais et al., Seventeen Provers Under the Hammer, ITP 2022, sections 5, 5.6, Table 10; Mikuła et al., Magnushammer, arXiv:2303.04488（2023年公開）, Table 2, Appendix A.4。
 
 ## Backup 3. HOL から FOL への符号化と再構成
 

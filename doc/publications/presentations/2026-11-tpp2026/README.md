@@ -14,7 +14,7 @@ Reconnecting automated proof, readable mathematics, and verified computation
 
 Japanese title for the program (first candidate in `draft.ja.md`):
 
-**Mizar Evolution: なぜ今、一階述語論理なのか**
+**Mizar Evo の設計指針について**
 — 自動証明・数学的記述・検証可能な計算を再接続する —
 
 ## Purpose
@@ -65,7 +65,7 @@ so that the audience feels the question before hearing the answer.
 
 | Part | Minutes | Beat | Frames |
 |---|---:|---|---|
-| 1. Two hammers, two numbers | 0-6 | the puzzle: 58.4% vs 60.7%, and why they must not be compared; two paths; the research question | 1.1-1.4 |
+| 1. Two hammers, two numbers | 0-6 | 2023 MizAR and 2022 AFP results: 58.4% and 68.8%, with different evaluation conditions; two paths; why retain a first-order foundation | 1.1-1.4 |
 | 2. Where complexity lives | 6-14 | functions in HOL pay at the ATP boundary; functions in set theory pay at the keyboard; Mizar's language absorbs that cost | 2.1-2.6 |
 | 3. Modernizing Mizar's answer | 14-24 | keep the substrate; templates; algorithms as a second pillar; search outside, trust inside; fifty years of infrastructure in one table | 3.1-3.8 |
 | 4. The AI era | 24-28 | the whole picture; LLM thinks, ATP proves, Mizar Evo remembers and verifies; honest implementation status | 4.1-4.3 |
@@ -145,9 +145,6 @@ Verified on October 7, 2026 while designing the deck:
       top-level lemmas; 58.4% in hammering mode with a 420 CPU s portfolio;
       over 75% with library premises chosen by a human or a machine; strongest
       single method 40% in 30 s (arXiv 2303.06686).
-- [x] AFP study conditions: 6,934 goals from 128 theories, 30 s per prover,
-      about 50% one-line replay per prover, 60.7% union as oracle; Judgement
-      Day 46% (2010) and 75% (2015 preliminary) (CICM 2015 paper).
 - [x] Exact MML excerpts: `funct_1.miz` lines 138-140, `funct_2.miz` lines
       87-90.
 - [x] Current specification sends ATPs only cited premises and local
