@@ -1,6 +1,6 @@
 # Mizar Evolution: なぜ今、一階述語論理なのか
 
-Status: `slides.md`（英語デッキ原稿）の日本語版。フレーム番号と構成は英語版と同一。
+Status: `slides.md`（英語デッキ原稿）の日本語版。英語版のフレーム番号を維持し、Frame 0.2 は省略。
 
 対象: TPP 2026（第22回 Theorem Proving and Provers meeting）、理化学研究所 AIP 東京オフィス、2026年11月16-17日。30分枠。
 
@@ -21,13 +21,7 @@ Title:
 
 ```text
 Mizar Evolution: なぜ今、一階述語論理なのか
-自動証明・読める数学・検証できる計算を再接続する
-```
-
-Subtitle:
-
-```text
-TPP 2026、理化学研究所 AIP 東京オフィス、2026年11月
+自動証明・数学的記述・検証可能な計算の再接続
 ```
 
 Speaker note:
@@ -36,32 +30,20 @@ Speaker note:
 - **Mizar Evolution、略して Mizar Evo は、その言語と道具を設計し直すプロジェクトです。今日は機能を並べません。自動証明器をめぐる一つの謎から始めて、なぜ論理を一階のままにするのかを説明します。**
 - 話す内容にはすべて、事実・研究仮説・将来構想のラベルを付けます。
 
-### Frame 0.2 - 主張の読み方 [deep dive]
-
-| レベル | 意味 | 表示 |
-|---|---|---|
-| 事実 | 既存システム、公開ベンチマーク、Mizar Evo の仕様と main branch | 無印 |
-| 研究仮説 | Mizar Evo が検証するために作られている主張 | 本文中に明記 |
-| 将来構想 | 日程も設計もまだ決まっていない目標 | 本文中に明記 |
-
-コード例のラベルは Białystok 資料と同じ: exact MML excerpt、specification example、sketch。
-
-- 仕様と実装は別物です。終盤の一枚でその境界を示します。
-
 ## Part 1. Two Hammers, Two Numbers
 
-### Frame 1.1 - 似て見える二つの数字
+### Frame 1.1 - 類似した成功率、異なる評価条件
 
 | | MizAR 60 (ITP 2023) | Sledgehammer on AFP (CICM 2015) |
 |---|---|---|
-| 見出しの数字 | 58.4% を証明 | 60.7% を証明 |
-| 数える単位 | MML 1147 の top-level theorem と lemma（57,897件） | AFP 開発内部の proof goal（6,934件） |
+| 報告された成功率 | 58.4% を証明 | 60.7% を証明 |
+| 評価単位 | MML 1147 の top-level theorem と lemma（57,897件） | AFP 開発内部の proof goal（6,934件） |
 | 前提 | ライブラリ全体から学習的に選択 | 開発内から MePo フィルタで選択 |
 | 時間予算 | ポートフォリオ合計 420 CPU 秒 | 各 prover 30 秒、4 prover |
-| 結果の扱い | ATP 証明が見つかった（hammering mode） | union を oracle として信頼。一行再構成は各 prover 約50% |
+| 成功の判定 | ATP 証明の発見（hammering mode） | union を oracle として信頼。一行再構成は各 prover 約50% |
 
-- **二つのハンマー、二つの見出しの数字。ほとんど同じに見えます。**
-- **一つのベンチマークとして比べてはいけません。単位も、前提も、時間予算も違います。**
+- **報告された成功率は近いが、評価条件は異なる。**
+- **評価単位・前提選択・時間予算が異なるため、成功率の直接比較はできない。**
 
 Speaker note:
 
@@ -69,36 +51,36 @@ Speaker note:
 - Source: Jakubův et al. 2023, results 1-3; Blanchette et al. 2015, Section "Proof Automation with Sledgehammer", Figure 13.
 - MizAR の 75% は、人または機械がライブラリから前提を選んだ条件。質問用に取っておく。
 
-### Frame 1.2 - それぞれの数字は何を数えているか
+### Frame 1.2 - 評価単位: 定理全体と局所ゴール
 
 ![What each benchmark counts](figures/evaluation_units.pdf)
 
-- **MizAR の問い: この定理を丸ごと、著者の助けなしに、ライブラリから機械が証明できるか。**
-- **AFP 研究の問い: 現れた場所でこの goal を機械が閉じられるか。多くは人がすでに書いた証明の内側にあります。**
-- どちらも正当な問いです。しかし同じ問いではありません。
+- **MizAR: 著者による前提指定なしに、ライブラリから定理全体を自動証明できるか。**
+- **AFP 研究: 証明中の局所ゴールを、その文脈で自動証明できるか。多くは人手で記述された証明の内部に位置する。**
+- いずれも妥当な評価であるが、対象とする課題は異なる。
 
-### Frame 1.3 - 一階 prover へ至る二つの経路
+### Frame 1.3 - 一階 ATP への二つの接続経路
 
 ![Two paths from an interactive prover to a first-order ATP](figures/two_paths.pdf)
 
-- **Sledgehammer は高階の goal を一階論理か SMT の問題に翻訳します。そのあと証明を Isabelle の内側に組み立て直します。**
-- **MizAR は、最初から一階である問題を prover に渡します。検査系と ATP 問題の距離が短いのです。**
+- **Sledgehammer: 高階のゴールを一階論理または SMT の問題へ翻訳し、得られた証明を Isabelle 内で再構成する。**
+- **MizAR: 一階の問題を ATP へ送る。検査系の論理と ATP の問題表現との距離が短い。**
 
 Speaker note:
 
 - どちらも既存システムの説明（Blanchette, Kaliszyk, Paulson, Urban 2016; Jakubův et al. 2023）。オレンジの箱が翻訳と再構成の層。
 - MizAR の見出しの数字は ATP 証明を数える。Mizar checker は、推論が検査器の強さの範囲なら、得られた `by` ステップを再検査する。
 
-### Frame 1.4 - 問い
+### Frame 1.4 - 研究課題: 評価条件と設計の影響
 
 ```text
-**測り方の違いなのか、設計の帰結なのか**
+**評価条件の差か、設計上の差か**
 ```
 
-- **研究仮説: 一階のライブラリでは、検査系自身の論理と ATP 問題の距離が短い。高階の処理系はその距離を翻訳と再構成で渡る必要があり、そこに代償がある。**
-- 事実: Sledgehammer は、高階の処理系が一階 ATP を非常にうまく使えることを示しました。
-- 研究仮説: 「高階プラス翻訳」が ATP を使う最良の設計かどうかは、まだ分かりません。比較対象になる現代的な一階 ITP がほとんど無いからです。
-- **Mizar Evo は、現代的な検査系・ライブラリ・prover でこの仮説を試すために作っています。**
+- **研究仮説: 一階ライブラリでは、検査系の論理と ATP の問題表現との距離が短い。高階処理系では、翻訳と再構成に追加のコストが生じる。**
+- 事実: Sledgehammer は、高階処理系における一階 ATP の有効性を示した。
+- 研究仮説: 高階処理系と翻訳を組み合わせた設計が最適かは未検証。比較対象となる現代的な一階 ITP が少ない。
+- **Mizar Evo: 現代的な検査系・ライブラリ・ATP による仮説検証のための基盤。**
 
 ## Part 2. Where Complexity Lives
 
@@ -112,12 +94,12 @@ f :: 'a => 'b        x :: 'a
 P (f x)
 ```
 
-- **HOL では、関数型と関数適用が論理そのものの一部です。**
-- 関数を引数にする、関数を返す関数、部分適用、ラムダ。すべて直接書けます。
-- **数学を書く人にとって、これはとても便利です。**
-- **しかし E や Vampire は一階の prover です。高階の構造は、prover に見せる前に符号化しなければなりません。**
+- **HOL: 関数型と関数適用を論理に組み込む。**
+- 関数を引数・戻り値とする関数、部分適用、ラムダ抽象を直接記述できる。
+- **高階の構造を用いた簡潔な数学的記述が可能。**
+- **E や Vampire の一階推論を利用するには、高階構造を一階表現へ符号化する必要がある。**
 
-### Frame 2.2 - 代償は ATP との境界で現れる
+### Frame 2.2 - ATP 接続に伴う符号化と再構成
 
 符号化の手順の概形 (sketch):
 
@@ -128,10 +110,10 @@ polymorphic types     ->  type guards or type tags
 Boolean-valued terms  ->  extra encoding
 ```
 
-- **変数である関数の適用は、明示的な `app` 記号になります。ラムダは外に持ち上げるか、コンビネータにします。型は guard か tag になります。**
-- **prover が成功したら、証明を Isabelle に戻さなければなりません。`metis` の呼び出し、`smt` の replay、生成した Isar テキスト。この工程が再構成（reconstruction）です。**
-- これは優れた工学的成果です。同時に、一階の処理系には不要な層でもあります。
-- HOL は便利さを先に受け取り、ATP との境界で支払います。
+- **関数変数の適用は `app` で明示。ラムダ抽象は lambda lifting またはコンビネータで、型は guard または tag で符号化する。**
+- **ATP の証明を Isabelle 内で再構成（reconstruction）: `metis`、`smt` の replay、生成した Isar テキストを利用。**
+- 高階 ITP と一階 ATP の接続を実現する技術。一階の基盤では高階構造の符号化は不要。
+- HOL の記述上の利点に対し、ATP 接続時に符号化・再構成のコストが生じる。
 
 Speaker note:
 
@@ -157,18 +139,18 @@ definition
 end;
 ```
 
-- **ここでは関数は普通の一階の対象、つまり対の集合です。適用は論理に組み込まれているのではなく、定義されています。**
-- **基礎の論理に高階である必要はどこにもありません。**
-- 代償: 素朴に集合論を書くと、定義域、グラフ、関数性、所属関係がすべて本文に現れます。
+- **関数は対の集合として表される一階の対象。関数適用は集合論上で定義する。**
+- **関数の扱いに、基盤論理の高階化は不要。**
+- 記述上の課題: 定義域・グラフ・関数性・所属関係を直接記述すると煩雑。
 
 Speaker note:
 
-- Source: 現行 MML `funct_1.miz` 138-140 行（`FUNCT_1:def 2`）、`funct_2.miz` 87-90 行（2026年10月7日確認）。URL: <https://mizar.uwb.edu.pl/version/current/mml/funct_1.miz>, <https://mizar.uwb.edu.pl/version/current/mml/funct_2.miz>。GPL-3.0-or-later / CC-BY-SA-3.0-or-later。
+- Source（2026年10月7日確認）: <https://mizar.uwb.edu.pl/version/current/mml/funct_1.miz>（138-140 行、`FUNCT_1:def 2`）、<https://mizar.uwb.edu.pl/version/current/mml/funct_2.miz>（87-90 行）。GPL-3.0-or-later / CC-BY-SA-3.0-or-later。
 - `quasi_total`（FUNCT_2 の 36-44 行）は、Y が空でなければ定義域が X 全体であることを言う。
 
-### Frame 2.4 - Mizar の50年の答え: 細部を言語に隠す
+### Frame 2.4 - Mizar の言語設計: 集合論の細部を抽象化
 
-著者が実際に書くもの (sketch, 現行 Mizar と Mizar Evo で有効):
+ソース上の関数表現 (sketch, 現行 Mizar と Mizar Evo で有効):
 
 ```mizar
 let X, Y be set;
@@ -177,49 +159,48 @@ let x be Element of X;
 ...  f.x  ...
 ```
 
-- **同じ集合論的な関数です。しかし著者が書くのは `Function of X,Y` と `f.x` であって、対や定義域ではありません。**
-- **soft type、mode、attribute、registration、scheme、宣言的証明は、同じものの書きやすい別表記ではありません。一階の集合論を、読める数学へ持ち上げる言語設計です。**
-- **Mizar はこの方向に50年歩いてきました。Mizar Evo は歩き続けます。**
+- **集合論的な関数を `Function of X,Y` と `f.x` で記述し、対や定義域の詳細を抽象化する。**
+- **soft type、mode、attribute、registration、scheme、宣言的証明は、単なる記法の簡略化を超え、一階の集合論を可読な数学的記述へ結び付ける言語機構。**
+- **Mizar Evo は、Mizar が50年にわたり蓄積した言語設計を継承・拡張する。**
 
-### Frame 2.5 - どこで払うか
+### Frame 2.5 - 複雑さを担う層の違い
 
 ![Where HOL and FOL systems pay for complexity](figures/where_you_pay.pdf)
 
 ```text
-**HOL と FOL は複雑さを消してはいない。**
-**置く場所が違うだけである。**
+**HOL と FOL では、複雑さを担う層が異なる。**
 ```
 
-- **HOL は ATP との境界で払う。FOL はキーボードの前で払い、Mizar の言語がその支払いを引き受ける。**
-- **Mizar Evo の選択: 基礎の論理は一階のまま保ち、人間向けの複雑さは言語に隠す。**
+- **HOL: ATP 接続時の符号化・再構成。FOL: 集合論の直接記述に伴う煩雑さを、Mizar の言語機構で吸収。**
+- **Mizar Evo の設計方針: 一階の基盤論理を保ち、記述上の複雑さを言語層で抽象化する。**
 
-### Frame 2.6 - トレードオフを一枚の表で [deep dive]
+### Frame 2.6 - 設計上のトレードオフ [deep dive]
 
 | | HOL ITP + ATP | FOL ITP + ATP |
 |---|---|---|
-| 記述 | 高階の機能、短い本文 | 素朴に書くと長い |
+| 記述 | 高階機能による簡潔な記述 | 直接記述すると冗長 |
 | 関数 | 基本的な高階の対象 | 一階の集合論的対象 |
 | ATP 接続 | 符号化が必要 | 距離が短い |
-| 再構成 | 論理のギャップを戻る必要 | 原理的には単純 |
-| 言語が提供すべきもの | HOL の抽象 | 一階の細部を隠す抽象 |
+| 再構成 | 論理表現の差を埋める必要 | 原理的には単純 |
+| 言語層の役割 | HOL の抽象 | 一階の細部の抽象化 |
 
-- この表は解釈であって、測定ではありません。測定は Mizar Evo が2027年に出すべきものです。
+- この表は設計上の解釈を示す。実測による評価は Mizar Evo の2027年の課題。
 
 ## Part 3. Modernizing Mizar's Answer
 
 ### Frame 3.1 - 論理は保ち、言語を現代化する
 
 ```text
-**数学の層は保つ。**
-**その下と周りの道具を作り直す。**
+**数学的記述の層を継承し、**
+**処理系と開発基盤を再構築する。**
 ```
 
-- **Mizar Evo は、一階論理と Tarski-Grothendieck 集合論を基礎の論理として保ちます。**
-- soft type、mode、attribute、registration、structure、宣言的証明も保ちます。
-- **隠れていた選択を明示し、generic な仕組みを統一し、自動化を追跡できるようにし、全体を現代的なコンパイラ構成に載せます。**
-- 続く数枚で「言語を現代化する」の中身を示します。template、algorithm、信頼境界、基盤です。
+- **一階論理と Tarski-Grothendieck 集合論を基盤として維持。**
+- soft type、mode、attribute、registration、structure、宣言的証明を継承。
+- **暗黙の選択を明示化し、汎用化機構を統一。自動化の追跡と、現代的なコンパイラ構成を導入する。**
+- 現代化の要点: template、algorithm、信頼境界、開発基盤。
 
-### Frame 3.2 - Template: 高階論理なしの generic な数学
+### Frame 3.2 - Template: 一階論理上の汎用的な数学的記述
 
 **template はパラメータ付きの definition ブロック** (specification example):
 
@@ -233,15 +214,15 @@ definition
 end;
 ```
 
-- **パラメータは型、値、述語、関数子を取れます。古典的な Mizar の scheme は、述語パラメータ付きの定理として同じ仕組みに入ります。**
-- **template は論理に無制限の二階量化を追加しません。インスタンス化はそれぞれ検査され、一階の証明義務を生みます。**
-- generic な数学は表層言語に住み、基礎の論理には住みません。
+- **型・値・述語・関数子をパラメータとして扱う。従来の Mizar の scheme も、述語パラメータ付き定理として統合する。**
+- **基盤論理に無制限の二階量化は追加しない。各インスタンス化を検査し、一階の証明義務を生成する。**
+- 汎用的な数学的記述は、表層言語の機構として実現する。
 
 Speaker note:
 
 - Source: `doc/spec/en/18.templates.md`, sections 18.1-18.2 and 18.8.
 
-### Frame 3.3 - Scheme は普通の template になる [deep dive]
+### Frame 3.3 - Scheme を template に統合 [deep dive]
 
 述語パラメータ付き定理としての帰納法 (specification example):
 
@@ -255,18 +236,18 @@ definition
 end;
 ```
 
-- 述語パラメータは、代入する述語ごとに一つ、一階の定理の族を与えます。
-- インスタンス化は明示的です: `defpred` のあとに `by NatInduction[P], Base, Step`。
-- 関数子パラメータは schema レベルの記号であって、集合ではありません。これが論理を一階に保ちます。
+- 述語パラメータにより、代入する述語ごとの一階定理の族を表現する。
+- 明示的なインスタンス化: `defpred` に続けて `by NatInduction[P], Base, Step`。
+- 関数子パラメータは集合ではなく schema レベルの記号として扱い、一階論理を維持する。
 - 詳細: Białystok 資料 Story 6（`PermProduct[T]`、`qua` によるビュー）、および本資料 Backup 4。
 
-### Frame 3.4 - Algorithm は第二の柱
+### Frame 3.4 - Algorithm: アルゴリズムの推論と検証可能な計算
 
-- **Mizar Evo の algorithm は、高階関数の代わりではありません。別の必要、つまりアルゴリズムについての推論と、検査できる計算に答えるものです。**
-- 歴史的な傾向であって必然ではありません: 一階論理には完全な推論系があり、その周りに resolution から superposition、saturation へと自動探索の文化が育ちました。
-- LCF と HOL の系統には、プログラムできる証明構成の文化、tactic と tactical が育ちました。
-- **Mizar は宣言的証明と、処理系に組み込まれた自動化を使ってきました。ユーザがプログラムできる tactic 言語は持ちませんでした。**
-- Mizar Evo の algorithm は、上に載せた tactic 言語ではありません。契約を持つ手続きであり、処理系がそれを検証します。
+- **algorithm の目的は、アルゴリズムに関する推論と検証可能な計算。高階関数の代替とは異なる役割を担う。**
+- 一階論理では、完全な推論系を背景に resolution、superposition、saturation による自動探索が発展。これは歴史的傾向であり、論理的必然ではない。
+- LCF/HOL 系では、tactic と tactical によるプログラム可能な証明構成が発展。
+- **Mizar は宣言的証明と組込みの自動化を採用。ユーザ定義の tactic 言語は持たない。**
+- Mizar Evo の algorithm は、処理系が検証する契約付き手続き。単なる tactic 言語の追加ではない。
 
 ### Frame 3.5 - Algorithm: 契約、証明、計算
 
@@ -286,41 +267,41 @@ do
 end;
 ```
 
-- **契約、不変条件、停止性の測度は一階の証明義務になり、定理と同じように検査されます。**
-- **役割は二つ。検証された自動化手続きと、`by computation` で実行する検査済みの計算。状態: 仕様化済み。MVM による実行とコード抽出は後の作業です。**
+- **契約・不変条件・停止性の測度から一階の証明義務を生成し、定理と同じ枠組みで検査する。**
+- **二つの役割: 検証済みの自動化手続きと、`by computation` による検査済みの計算。仕様化済み。MVM 実行とコード抽出は今後の課題。**
 
 Speaker note:
 
 - Source: `doc/spec/en/20.algorithm_and_verification.md`, section 20.12（外側の `definition` ブロックと `let a, b be Nat;` を省略）。
 
-### Frame 3.6 - Algorithm の将来の対象 [deep dive]
+### Frame 3.6 - Algorithm の応用範囲（将来構想） [deep dive]
 
-将来構想であり、現在の能力ではない:
+将来構想（現在の対応範囲には含まれない）:
 
 - 整数論・組合せ論のアルゴリズム、記号計算、最適化手続き。
-- さらに先: 暗号アルゴリズムとプロトコル、量子アルゴリズムと古典・量子ハイブリッド。
+- 長期的な対象: 暗号アルゴリズムとプロトコル、量子アルゴリズムと古典・量子ハイブリッド。
 
-すべてに共通する一つの流れ:
+共通する検証・実行の流れ:
 
-1. 手続きを書く。2. 契約を述べる。3. 不変条件と停止性を与える。4. 証明義務を生成する。5. ATP で証明し kernel で検査する。6. 具体的な入力で実行する。7. 将来はコードを抽出する。
+手続き・契約の記述 → 不変条件・停止性の指定 → 証明義務の生成 → ATP による証明と kernel 検査 → 具体的な入力での実行 → コード抽出（将来）。
 
-- **algorithm は tactic と応用アルゴリズムの間のギャップを小さくします。上の対象は将来構想です。**
+- **algorithm は、証明の自動化手続きと応用アルゴリズムの検証を共通の枠組みに結び付ける。対象の拡大は将来構想。**
 
-### Frame 3.7 - 探索は外、信頼は内
+### Frame 3.7 - 証明探索と信頼できる検査の分離
 
 ![The reasoning boundary: semantics, untrusted search, trusted checking](../2026-09-bialystok/figures/reasoning_boundary.pdf)
 
-- **一階 ATP は強力な探索器です。信頼できる検査器ではありません。**
-- **Mizar 側が名前、型、cluster、オーバーロードを受け持ちます。prover は探索を受け持ちます。kernel は受理を受け持ち、渡された論理式と代入を、小さく信頼できる SAT 検査で確かめます。**
-- prover の終了コードは証明ではありません。だから一階の自動化を設計原理にしても、信頼基盤は大きくなりません。
+- **一階 ATP は証明探索を担う。探索結果は、信頼できる検査器による検証を要する。**
+- **Mizar 側: 名前・型・cluster・オーバーロードの解決。ATP: 証明探索。kernel: 論理式と代入を、小規模な信頼できる SAT 検査で検証し、受理を判定。**
+- ATP の終了コードのみでは証明を受理しない。一階自動推論の導入によって信頼基盤を拡大しない設計。
 
 Speaker note:
 
 - Source: `doc/design/architecture/en/08.reasoning_boundary.md`; Białystok 資料 Story 4; 本資料 Backup 5 に evidence の中身。
 
-### Frame 3.8 - そして Mizar 自身も50年経っている
+### Frame 3.8 - 50年の蓄積を踏まえた開発基盤の現代化
 
-| MML 50年で見えたこと | Mizar Evo |
+| MML の50年の蓄積から見えた課題 | Mizar Evo |
 |---|---|
 | article が依存の単位 | 明示的 import を持つモジュール |
 | グローバルな名前管理 | namespace、完全修飾名 |
@@ -329,8 +310,8 @@ Speaker note:
 | ATP は外付け、自動化が見えにくい | 第一級の ATP パイプライン、解決トレース、kernel evidence |
 | IDE 連携と機械可読な入出力が弱い | LSP、構造化診断、エージェント向けインタフェース |
 
-- **Mizar の数学的な考え方を保つことと、1970年代のソフトウェア構成を保つことは、別のことです。**
-- **もちろん開発基盤全体も現代化します。詳細は Białystok 資料にあります。ここでは一枚の表で十分です。**
+- **Mizar の数学的思想を継承し、ソフトウェア構成は現代の開発要件に合わせて再設計する。**
+- **言語とともに開発基盤全体を現代化。各機能の詳細は Białystok 資料を参照。**
 
 Speaker note:
 
@@ -344,29 +325,29 @@ Speaker note:
 ![Mizar Evo in one picture](figures/layer_stack.pdf)
 
 ```text
-**上に豊かな数学。下に小さな一階論理。**
-**周りに現代的な基盤。**
+**豊かな数学的記述を、**
+**小規模な一階論理の基盤と現代的な開発環境で支える。**
 ```
 
-### Frame 4.2 - LLM が考え、ATP が証明し、Mizar Evo が記憶し検証する
+### Frame 4.2 - LLM・ATP・Mizar Evo の役割分担
 
 ![The LLM, ATP, and Mizar Evo division of labor](figures/llm_atp_loop.pdf)
 
-- **LLM: 理論、定義、方針、補題、失敗からの回復。ATP: 安価で反復できる一階の探索。Mizar Evo: 表現、検証済みライブラリ、信頼できる検査、各事実の来歴。**
-- 研究仮説: 機械が大量の数学を生成する時代には、ATP による安価な検査の価値が上がる。このループの費用と効果はまだ測られていません。
-- 現在の仕様: ATP が受け取るのは引用された前提と局所仮定だけです。ライブラリ全体を使うハンマーは2027年の研究です。
+- **LLM: 理論・定義・証明方針・補題の生成と失敗回復。ATP: 低コストで反復可能な一階証明探索。Mizar Evo: 数学的表現、検証済みライブラリ、信頼できる検査、来歴の管理。**
+- 研究仮説: 数学の大量生成に伴い、ATP による低コストな証明探索の価値が高まる。このループの費用対効果は未評価。
+- 現在の仕様: ATP の入力は引用された前提と局所仮定に限定。ライブラリ全体を対象とするハンマーは2027年の研究課題。
 
 Speaker note:
 
 - Source: `doc/spec/en/21.source_code_annotation_and_atp.md`, section 21.7.2, item 4（グローバルライブラリからの自動前提選択は無し）; `doc/design/architecture/en/21.ai_agent_interface.md`（編集クラス）。
 
-### Frame 4.3 - プロジェクトの現在地（2026年10月）
+### Frame 4.3 - 仕様と実装の状況（2026年10月）
 
 - **仕様: 24章と付録。英語が正典。**
-- **main branch に実装済み: Rust フロントエンド（字句解析、構文解析、構文木）。alpha コーパス上の名前解決と型検査。証明義務の生成と決定的な discharge。ATP 問題の符号化と候補 evidence。SAT に基づく kernel の evidence 検査。キャッシュ、指紋、ビルドスケジューリングの各マイルストーン。**
-- **進行中: ソースから検証済み成果物までの end-to-end 統合。LSP サーバ。ドキュメント生成。**
-- **後の作業: MVM の実行、コード抽出、ライブラリ全体の前提選択、MML の移行。**
-- この講演では、外部 prover を使った end-to-end の結果は主張しません。
+- **main branch に実装済み: Rust フロントエンド（字句解析・構文解析・構文木）、alpha コーパス上の名前解決・型検査、証明義務の生成・決定的な discharge、ATP 問題の符号化・候補 evidence、SAT に基づく kernel の evidence 検査、キャッシュ・指紋・ビルドスケジューリングの各マイルストーン。**
+- **進行中: ソースから検証済み成果物までの end-to-end 統合、LSP サーバ、ドキュメント生成。**
+- **今後の課題: MVM 実行、コード抽出、ライブラリ全体の前提選択、MML 移行。**
+- 本講演の対象範囲に、外部 ATP を用いた end-to-end の実証結果は含めない。
 
 Speaker note:
 
@@ -378,27 +359,26 @@ Speaker note:
 
 ![Roadmap](figures/roadmap_tpp.pdf)
 
-- **2026年: 仕様、kernel までの Rust パイプライン、template 処理、alpha の end-to-end 実行を仕上げる。**
-- **2027年: 代表的な MML article を移行し、native hammer のベースラインを作り、MizAR と同じ単位、top-level theorem でベンチマークする。**
-- 2028年以降: 移行の拡大、学習ベースの前提選択、LLM による失敗回復、MVM と抽出。暗号と量子は将来構想のまま。
+- **2026年: 仕様、kernel までの Rust パイプライン、template 処理、alpha の end-to-end 実行の完成。**
+- **2027年: 代表的な MML article の移行、native hammer のベースライン構築、MizAR と同じ top-level theorem 単位での評価。**
+- 2028年以降: 移行の拡大、学習ベースの前提選択、LLM による失敗回復、MVM・コード抽出。暗号・量子は将来構想。
 
-### Frame 5.2 - 二つの経路に戻る
+### Frame 5.2 - 一階自動推論を設計原理とする意義
 
 ```text
-**問いは、高階の処理系が一階 ATP を使えるか、ではない。**
-**明らかに使える。**
-**問いは、一階の自動推論を最初から設計原理にしたとき、**
-**何が可能になるか、である。**
+**高階処理系での一階 ATP の活用は確立している。**
+**研究課題は、一階自動推論を当初から設計原理とすることで、**
+**何が可能になるか。**
 ```
 
-Mizar Evo の答え、六つ:
+Mizar Evo の六つの設計方針:
 
-1. 一階論理と集合論を基礎の論理として残す。
-2. Mizar の言語設計で一階の細部を隠す。
-3. template で generic な数学を広げる。
-4. algorithm で検査できる計算を加える。
-5. 50年分のソフトウェア基盤を作り直す。
-6. LLM と ATP を、それぞれが強い場所で組み合わせる。
+1. 一階論理と集合論を基盤として維持。
+2. Mizar の言語機構で一階の細部を抽象化。
+3. template により汎用的な数学的記述を拡張。
+4. algorithm により検証可能な計算を統合。
+5. 50年の蓄積を踏まえ、ソフトウェア基盤を再構築。
+6. LLM と ATP を、それぞれの得意分野に応じて連携。
 
 ### Frame 5.3 - おわりに
 
@@ -408,18 +388,18 @@ Mizar Evo の答え、六つ:
 **Modernize everything else.**
 ```
 
-- **基盤は小さく。数学は読めるように。それ以外はすべて現代化する。**
-- **ありがとうございました。特に、2027年のベンチマークを「同じものを同じ単位で比べる」設計にする方法について、ご意見をいただければ幸いです。**
+- **基盤を小さく保ち、数学的記述の可読性を維持し、周辺基盤を現代化する。**
+- **議論したい点: 2027年のベンチマークで、評価対象・単位・条件をそろえた比較をどう設計するか。**
 
 ## Backup 1. MizAR 60 の詳細
 
-Source: Jakubův, Chvalovský, Goertzel, Kaliszyk, Olšák, Piotrowski, Schulz, Suda, Urban, MizAR 60 for Mizar 50, ITP 2023.
+Source: Jakubův et al., MizAR 60 for Mizar 50, ITP 2023.
 
-- データ: MPTP で出力した MML 1147、無名の top-level lemma を含む 57,897 件の定理。MizAR 40 の評価と同じ版なので比較できる。
-- top-level lemma の 58.4% を large-theory（hammering）mode で、ユーザの助けなしに、CPU 時間 420 秒に制限したポートフォリオで証明（MizAR 40 は約 40.6%）。
+- データ: MPTP で出力した MML 1147、無名の top-level lemma を含む 57,897 件の定理。MizAR 40 と同一版を用いた比較。
+- top-level lemma の 58.4% を large-theory（hammering）mode で証明。ユーザの前提指定なし、ポートフォリオ合計 420 CPU 秒（MizAR 40 は約 40.6%）。
 - 人または機械がライブラリから前提を選べる条件では 75% 超（MizAR 40 は 56%）。
-- 最強の単一手法: hammering mode で 30 秒 40%。人間の前提ありで 120 秒 60%。
-- 転移: 最強手法は MML 1382 の新規 242 article、13,370 定理でも動く。
+- 最高性能の単一手法: hammering mode で 30 秒 40%。人間の前提指定ありで 120 秒 60%。
+- 転移: 同手法を MML 1382 の新規 242 article、13,370 定理にも適用。
 - 手法: ENIGMA と Deepire で誘導した E と Vampire、学習ベースの前提選択、数百万の ATP 証明で学習するループ。
 
 ## Backup 2. Sledgehammer 評価の詳細
@@ -431,10 +411,10 @@ Source: Jakubův, Chvalovský, Goertzel, Kaliszyk, Olšák, Piotrowski, Schulz, 
 | Vampire | 49.5 / 51.0 / 51.8 |
 | Z3 | 49.6 / 50.0 / 53.7 |
 
-- 設定: ランダムに選んだ AFP の 128 theory、各 100 goal まで。Isabelle2014。MePo フィルタ。各 prover 30 秒をスライスに分割。再構成は 2 秒以内に成功する必要。
-- 組み合わせて oracle として信頼すると、goal の 60.7% を証明。
+- 設定: 無作為に選んだ AFP の 128 theory、各 100 goal まで。Isabelle2014。MePo フィルタ。各 prover 30 秒をスライスに分割。再構成の制限時間は 2 秒。
+- 複数 prover の結果の和集合を oracle として信頼した場合、goal の 60.7% を証明。
 - Judgement Day（2010）: 7 theory の 1,240 subgoal、E・SPASS・Vampire を 30 秒で 46%。2015年の予備評価では 6 prover で 75%。
-- theory ごとの成功率は 10% から 100% までばらつく。Sledgehammer は Judgement Day に合わせて調整されてきた。
+- theory ごとの成功率は 10%–100%。Sledgehammer は Judgement Day を用いて調整されてきた。
 
 Speaker note:
 
@@ -442,17 +422,17 @@ Speaker note:
 
 ## Backup 3. HOL から FOL への符号化と再構成
 
-- 関数適用: 変数である関数を引数に適用すると `app(F, X)` になる。定数の適用はカリー化のままか平坦化。
+- 関数適用: 関数変数の適用を `app(F, X)` で表現。定数の適用はカリー化を維持、または平坦化。
 - ラムダ抽象: lambda lifting は定義式付きの新しい定数を導入する。コンビネータ変換が代替。
-- 型: 多相な HOL の型は guard、tag、または単相化で符号化する。選択は健全性、完全性、prover の性能に影響する。
-- 真偽値: 論理式の中の真偽値を取る項には別の符号化が必要。
-- 再構成: 使われた補題による `metis`、SMT 証明の `smt` replay、生成した Isar テキスト。評価では再構成の失敗を別に数える。
+- 型: 多相な HOL の型を guard、tag、または単相化で符号化。選択は健全性・完全性・prover 性能に影響する。
+- 真偽値: 論理式中の真偽値を返す項には追加の符号化が必要。
+- 再構成: 使用した補題による `metis`、SMT 証明の `smt` replay、生成した Isar テキスト。再構成の失敗は別途集計。
 
 Source: Meng and Paulson 2008; Blanchette, Böhme, Popescu, Smallbone 2016; Blanchette, Kaliszyk, Paulson, Urban 2016; Schurr, Fleury, Desharnais 2021.
 
 ## Backup 4. Template のインスタンス化: 一つの証明、多くのビュー
 
-有界な型パラメータと generic な定理 (specification example, 証明は省略):
+有界な型パラメータと汎用的な定理 (specification example, 証明は省略):
 
 ```mizar
 definition
@@ -473,7 +453,7 @@ PermProduct[commutative associative unital MulMagma]
 let R be commutative Ring;  PermProduct[R qua AddMagma]  :: additive view
 ```
 
-- 環は二つの経路で Magma に届く。`qua` がビューを選び、ビューが記法も決める。
+- 環から Magma への継承経路は二つ。`qua` によるビューの選択が、記法を決定する。
 
 Speaker note:
 
@@ -483,7 +463,7 @@ Speaker note:
 
 ![KernelEvidence and the kernel's SAT check](../2026-09-bialystok/figures/certificate_replay.pdf)
 
-- evidence は元の論理式、明示的な代入、来歴、対象と goal の束縛を持つ。kernel はそれらを検査し、決定的な SAT 問題を作り、信頼できるプロセス内 SAT 検査器に UNSAT を要求する。
+- evidence は元の論理式・明示的な代入・来歴・対象とゴールの対応を保持。kernel はこれらを検査し、決定的な SAT 問題を生成。信頼できるプロセス内 SAT 検査器で UNSAT を確認する。
 - バックエンドの証明トレース、SMT の証明オブジェクト、ログ、終了コードは診断用のみ。
 
 Speaker note:
@@ -494,8 +474,8 @@ Speaker note:
 
 ![The core ATP path, with responsibility groups](../2026-09-bialystok/figures/pipeline.pdf)
 
-- 決定的な discharge のあとも開いている義務だけが ATP に行く。前段の discharge にも再生できる evidence が要る。
-- 各境界は、誰が事実を所有し、どの成果物が記録し、変更後に何を再検査するかを定める。
+- 決定的な discharge 後の未解決義務のみを ATP に送る。前段の discharge にも再検査可能な evidence が必要。
+- 各境界で、情報の管理主体・記録する成果物・変更後の再検査範囲を定める。
 
 Speaker note:
 
@@ -505,8 +485,8 @@ Speaker note:
 
 ![The fingerprint graph: what a change re-verifies](../2026-09-bialystok/figures/fingerprint_graph.pdf)
 
-- 証明本体の編集は、公開された主張と受理状態が変わらなければ、importer を再ビルドしない。インタフェースの変更は依存コーンを再検証する。
-- 関係するキャッシュキーはすべて一致する必要がある。データが無ければキャッシュミス。キャッシュ再利用は証明の権威ではない。クリーンビルドはすべての受理を再現しなければならない。
+- 証明本体の編集時、公開された主張と受理状態が不変なら、依存側の再ビルドは不要。インタフェース変更時は依存コーンを再検証。
+- キャッシュ再利用には、関連キーの完全一致が必要。データ欠落時はキャッシュミス。再利用自体は証明の正当性を保証せず、クリーンビルドで全受理結果を再現する。
 
 Speaker note:
 
@@ -527,16 +507,16 @@ mml_core = "^1.0"
 topology = { version = "^0.9", features = ["metric"] }
 ```
 
-- 再現可能なビルドには、固定したソース、lockfile、ツールチェーン、検査器の設定が要る。決定的な ATP evidence も含む。
-- バージョン付きの再利用が article 集合間の手作業コピーを置き換える。集約モジュールは一つの import で一分野をまとめて公開できる。
+- 再現可能なビルドの要件: 固定したソース・lockfile・ツールチェーン・検査器設定・決定的な ATP evidence。
+- バージョン管理された再利用により、article 集合間の手作業コピーを解消。集約モジュールで、一分野を一つの import として公開できる。
 
 Source: `doc/spec/en/23.package_management_and_build_system.md`; Białystok 資料 Story 1。
 
 ## Backup 9. 45分版での追加
 
-物語は変えない。次の順で具体例を深める:
+構成を維持し、以下の順で具体例を詳述:
 
-1. 一つの goal で HOL から FOL への関数の符号化を追う（`app`、部分適用、lambda lifting）。
+1. 単一のゴールで HOL から FOL への関数の符号化を説明（`app`、部分適用、lambda lifting）。
 2. Mizar の関数表現: `Function of X,Y`、`f.x`、集合論的対象としての soft type。
 3. Template: 加法と乗法のビューを持つ `PermProduct[T]`（Backup 4）。
 4. Algorithm: ユークリッドの互除法、`by computation`、関数子への昇格。
@@ -546,7 +526,7 @@ Source: `doc/spec/en/23.package_management_and_build_system.md`; Białystok 資�
 
 ## Backup 10. 出典と帰属
 
-この講演で使う MML の正確な引用:
+本講演における MML の原文引用:
 
 | 目的 | 出典 | 行 | 使用箇所 |
 |---|---|---:|---|
@@ -560,5 +540,5 @@ Source URLs:
 
 帰属についての注記:
 
-- MML のテキストは GPL-3.0-or-later / CC-BY-SA-3.0-or-later。article 名、URL、行番号を発表者ノートに残す。
-- ベンチマークの数字は Backup 1-2 と `references.bib` を参照。最終版の前に書誌情報を出版社で確認する。
+- MML のテキストは GPL-3.0-or-later / CC-BY-SA-3.0-or-later。article 名・URL・行番号を発表者ノートに記載。
+- ベンチマークの数値は Backup 1-2 と `references.bib` を参照。最終版の作成前に、出版社の情報で書誌事項を確認。

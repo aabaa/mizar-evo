@@ -38,8 +38,8 @@ The central question is:
   checklist live here.
 - `slides.md` - English deck source, designed from the draft as a story rather
   than slide-by-slide. Slide prose is plain English at CEFR B1 to easy B2.
-- `slides.ja.md` - Japanese deck source with the same frames and numbering,
-  for delivering the talk in Japanese with Japanese slides. Figures are
+- `slides.ja.md` - Japanese deck source using the English frame numbering,
+  with frame 0.2 omitted. Figures are
   shared with the English deck and keep their English labels.
 - `script.ja.md` - Japanese spoken script, frame by frame, with timing and
   claim-level tags, for delivering the talk in Japanese over English slides.
@@ -82,7 +82,7 @@ else.*
 - English slide prose: CEFR B1 to easy B2. Short sentences, common words, one
   idea per sentence. Technical terms stay and are explained in simple words on
   first use. Code, exact MML excerpts, and figure labels are unchanged.
-- Japanese deck: same frames and numbering as the English deck. The spoken
+- Japanese deck: English frame numbering, with frame 0.2 omitted. The spoken
   script `script.ja.md` works with either deck.
 - Keep the two sources aligned when a frame changes: `slides.md` first, then
   `slides.ja.md`.

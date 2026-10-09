@@ -82,8 +82,9 @@ DECKS = {
             # Beamer's shaded "ball" markers do not render under dvipdfmx; use flat ones.
             r"\setbeamertemplate{itemize items}[circle]",
             r"\setbeamertemplate{enumerate items}[default]",
+            r"\institute{岩手県立大学}",
         ],
-        "author": "Mizar Evo project",
+        "author": "中正 和久",
         "date": r"TPP 2026、理化学研究所 AIP 東京オフィス、2026年11月16--17日",
     },
 }
