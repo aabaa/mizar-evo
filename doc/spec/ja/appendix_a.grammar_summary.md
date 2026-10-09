@@ -684,7 +684,8 @@ references                   ::= reference { "," reference } ;
 reference                    ::= label_identifier [ template_args ]
                                | qualified_reference [ template_args ]
                                | grouped_reference
-                               | bulk_reference ;
+                               | bulk_reference
+                               | computation_reference ;
 qualified_reference          ::= namespace_path "." label_identifier ;
 grouped_reference            ::= namespace_path ".{" grouped_item
                                  { "," grouped_item } "}" ;
@@ -793,7 +794,7 @@ scheme_app      ::= "by" scheme_name template_args
 規範参照: [第 20 章 (algorithm と検証)](./20.algorithm_and_verification.md)。
 
 ```ebnf
-algorithm_def ::= [ "terminating" ] "algorithm" identifier
+algorithm_def ::= ( "terminating" "algorithm" [ label_identifier ":" ] | "algorithm" ) identifier
                   [ "[" schema_params "]" ]
                   "(" [ identifier_list ] ")"
                   [ "->" type_expression ]
@@ -886,9 +887,9 @@ claim_block        ::= "claim" identifier "do" { annotated_theorem_item }
                        "end" ";" ;
 annotated_theorem_item ::= { annotation } theorem_item ;
 
-computation_proof  ::= "by" "computation"
-                       [ "(" computation_option
-                         { "," computation_option } ")" ] ;
+computation_proof ::= "by" computation_reference ;
+computation_argument ::= algorithm_application | computation_option ;
+computation_reference ::= "computation" [ "(" computation_argument { "," computation_argument } ")" ] ;
 computation_option ::= "steps" ":" nat_literal
                      | "timeout" ":" nat_literal
                      | "nest" ":" nat_literal ;
