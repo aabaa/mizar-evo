@@ -601,3 +601,7 @@ task の `external_dependency_gap` / `deferred` verification item として分�
 - Kernel evidence handoff record は checking 用の formula/substitution evidence を
   package してよいが、`mizar-vc` は SAT solving を実行したり backend-specific
   proof method を encode したりしてはならない。
+
+- [ ] [AST-CONTRACT](../../task_contracts/ja/AST-CONTRACT.md).
+
+- [ ] [ALG-MVM-EVALUATION](../../task_contracts/ja/ALG-MVM-EVALUATION.md).

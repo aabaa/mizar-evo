@@ -804,6 +804,9 @@ Active implementation contracts follow their own dependencies; completed AST-SPE
 2. [ ] [AST-DIAGNOSTICS](./task_contracts/en/AST-DIAGNOSTICS.md) — descriptor design; emission waits for source-aware producers.
 3. [ ] [AST-TYPE](./task_contracts/en/AST-TYPE.md) — follows syntax and certified library/declaration producers.
 4. [ ] [AST-LOWER](./task_contracts/en/AST-LOWER.md) — follows authentic checked formation.
+5. [ ] [AST-CONTRACT](./task_contracts/en/AST-CONTRACT.md) — complete guarded obligations; earlier ALGDEF owners retain promotion/uniqueness.
+6. [ ] [ALG-MVM-EVALUATION](./task_contracts/en/ALG-MVM-EVALUATION.md) — runtime producer after verified body/export boundaries.
+7. [ ] [AST-COMPUTE](./task_contracts/en/AST-COMPUTE.md) — import/trust/replay after actual normal-return reports.
 
 ### Distribution and playground [ ]
 

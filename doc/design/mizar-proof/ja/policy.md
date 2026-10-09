@@ -380,3 +380,12 @@ kernel failure と policy failure の両方が存在するとき、status projec
   その artifact schema gap が閉じるまで、policy と selection は `discharged_builtin` を
   区別して保ってよいが、その class の witness publication は `external_dependency_gap` であり、
   `kernel_verified` へ潰してはならない。
+
+## Computation Publication Boundary
+
+検証済み E5 入力/結果、有限の認証変換、候補全体検査は §§20.9.2/20.13.7 に従う。
+実際の MVM/artifact/contract/proof 記録を消費し、term/truth、UID 置換、ガード、Binder 構築の後で残存を全体拒否する。
+import 失敗は内部復帰を保ち ensures の一部を公開しない。生成側欠落や未完了は未検査の事実を作らない。
+テストは term/truth/update/opaque 変換と終端 UID 置換を扱う。ensures/等式全体、量化型、annotation、container の残存、循環 requires、更新前置換の誤りを拒否し、実際の未完了段階をそれぞれ区別する。
+明示 reference の replay は既定 false の manifest computation_replay より優先し、全呼出に適用する。既定 computed、全呼出 equation/SAT replay、厳密 cache-mode 同一性、strict の推移的 computed 依存を区別する。
+テストは逆の manifest default に対する明示 replay true/false を直接/推移呼出しで扱い、全呼出し replay の拒否、strict computed 依存、弱い mode の cache 破損を確認する。

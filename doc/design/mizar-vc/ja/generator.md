@@ -597,3 +597,11 @@ Core goal hash は保守的なままで、dependency slicing は opaque computat
 ## 限定 runtime Pick 事後条件
 
 `generate_source_algorithm_postconditions` は、ソース由来 Pick/Return の完全な組、範囲包含、相異なる parameter/result/Pick/logical binder、bare-set predicate、一つの ExistingCore inhabitation seed、新規 CFG/handoff を認証する。選択値を仮定せず、実際の `exists q. is_set(q)` を Open `GeneratedNonEmptiness` VC として生成し、実 Pick 文で識別する p と厳密な object(a), set(p) 文脈から Open 事後条件を生成する。result を p で置換し、型互換性から p=a、ID の違いから不等性を導かない。未解決の algorithm termination accounting を保持し、builtin 抑制、StableChoice origin、Discharged 根拠、汎用 CFG 再設計を行わない。意味上の認証は結果全体の replay が所有し、依存・再利用は保守的に扱う。
+
+## Reflected Algorithm Obligations
+
+§§20.7/20.13.1 は E1 の型/inhabitation/単一値性と検証済み E2 部分正当性を要求する。E4 正常復帰は terminating/昇格の文脈に適用し、すべての部分定義には要求しない。
+C/文脈を含む完全な core/CFG 入力を消費し、Adm/InputOK と適合環境ガードを保つ。宣言を証明にしない。
+子呼出の前提/正常復帰、失敗、範囲、invariant、選択された decreasing measure を義務に含める。
+テストは許される文脈で guarded な open syntax を含む E4 のない guarded 部分正当性を受理する。全入力の結果 inhabitation/単一値性の欠落、継続だけによる子復帰、合法な partial match 終端省略に対する暗黙失敗 handoff の欠落、未検証 promotion/方程式ラベルを拒否する。選択 measure、子 requires/復帰、明示/暗黙失敗の対照例は完全なガードを保つ。
+既存の symbolic computation request は Open な転送に留まり、E5 実行と公開は実際の生成側が所有する。

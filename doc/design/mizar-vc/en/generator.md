@@ -670,3 +670,11 @@ Preserve every handoff row: ghost initialization retains its existing GhostErasu
 ## Bounded runtime Pick postconditions
 
 `generate_source_algorithm_postconditions` additionally authenticates the complete source-derived Pick/Return pair, contained ranges, distinct parameter/result/Pick/logical binders, bare-set predicate, single ExistingCore inhabitation seed and fresh CFG/handoff. Emit an Open `GeneratedNonEmptiness` VC for the actual `exists q. is_set(q)` goal without assuming the selected value, and an Open postcondition over exactly object(a), set(p), where p is keyed by the actual Pick statement. Substitute p for result; never infer p=a from type compatibility or distinctness from IDs. Preserve unresolved algorithm termination accounting; no builtin suppression, StableChoice origin, Discharged evidence or generic CFG redesign. Whole-result replay owns semantic authentication, and dependency/reuse remains conservative.
+
+## Reflected Algorithm Obligations
+
+§§20.7/20.13.1 require E1 typing/inhabitation/single-valuedness and verified E2 partial correctness; E4 normal return applies in terminating/promotion contexts, not to every partial definition.
+Consume complete core/CFG input with context/C; retain Adm/InputOK and compatible-environment guards, never declarations as proof.
+Child preconditions/normal return, failure, ranges, invariants and the selected decreasing measure belong to the generated obligations.
+Tests accept guarded partial correctness without E4 where permitted, including guarded open syntax; reject missing all-input result inhabitation/single-valuedness, continuation-only child return, missing implicit-failure handoffs for legal omitted partial match endings and unverified promotion/equation labels. Selected-measure, child requires/return and explicit/implicit failure controls retain complete guards.
+Existing symbolic computation requests remain Open transport; E5 execution and publication belong to their actual producers.

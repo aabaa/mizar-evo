@@ -402,3 +402,12 @@ distinguishable.
   Until that artifact schema gap is closed, policy and selection may keep
   `discharged_builtin` distinct, but witness publication for that class is an
   `external_dependency_gap` and must not be collapsed into `kernel_verified`.
+
+## Computation Publication Boundary
+
+§§20.9.2/20.13.7 govern validated E5 input/result, finite certified conversion and whole-candidate inspection.
+Consume real MVM/artifact/contract/proof records; term/truth, UID substitution, guards and Binder construction precede complete residual rejection.
+Import failure preserves internal return, never publishes an ensures fragment; missing producers or incomplete stages produce no unchecked facts.
+Tests cover term/truth/update/opaque conversion and terminal UID substitution; reject residual whole ensures/equalities, quantified types, annotations and containers, circular requires and pre-update mistakes, while distinguishing each actual incomplete stage.
+Explicit reference replay overrides default-false manifest computation_replay for all its calls. Default computed, all-call equation/SAT replay, exact cache-mode identity and strict transitive computed dependencies remain distinct.
+Tests exercise explicit replay true/false over opposite manifest defaults through direct/transitive calls, plus all-call replay rejection, strict computed taint and weaker-mode cache corruption.

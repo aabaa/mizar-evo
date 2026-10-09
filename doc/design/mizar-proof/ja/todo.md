@@ -458,3 +458,5 @@ cargo test -p mizar-cache
   `require_kernel_certificates` の下では勝てない。
 - witness は artifact manifest が参照して初めて公開到達可能になる。
   stage だけでは何も公開されない。
+
+- [ ] [AST-COMPUTE](../../task_contracts/ja/AST-COMPUTE.md).

@@ -638,4 +638,6 @@ Check the task off here once tests pass.
 
 ## AST specification implementation follow-up
 
-- [ ] AST-CONTRACT: E1 introduction, partial correctness/normal return, invariant/selected-measure obligations and promotion labels; see [§20](../../../spec/en/20.algorithm_and_verification.md) and [§13.10](../../../spec/en/13.term_expression.md).
+- [ ] [AST-CONTRACT](../../task_contracts/en/AST-CONTRACT.md).
+
+- [ ] [ALG-MVM-EVALUATION](../../task_contracts/en/ALG-MVM-EVALUATION.md).
