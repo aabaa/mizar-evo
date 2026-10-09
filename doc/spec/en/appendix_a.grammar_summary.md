@@ -129,7 +129,7 @@ Reserved special symbols are:
 
 ```text
 ,   .   ..   ;   :   :=   (   )   [   ]   {   }   .{
-=   <>   &   ->   .=   .*   @[   ...
+=   <>   &   ->   |->   .=   .*   @[   ...
 ```
 
 String literals are recognized only at grammar positions that require string
@@ -510,7 +510,9 @@ correctness_condition ::= existence_block
 Normative reference: [Chapter 13 (Term Expressions)](./13.term_expression.md).
 
 ```ebnf
-term_expression      ::= operator_expression { "qua" type_expression } ;
+term_expression ::= binder_expression | qualified_term ;
+binder_expression ::= identifier "|->" term_expression ;
+qualified_term ::= operator_expression { "qua" type_expression } ;
 
 operator_expression  ::= postfix_expression | functor_application ;
 postfix_expression   ::= term_primary { term_postfix } ;

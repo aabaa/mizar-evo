@@ -121,7 +121,7 @@ where while with
 
 ```text
 ,   .   ..   ;   :   :=   (   )   [   ]   {   }   .{
-=   <>   &   ->   .=   .*   @[   ...
+=   <>   &   ->   |->   .=   .*   @[   ...
 ```
 
 文字列リテラルは、文字列引数を要求する文法位置でのみ認識されます。現在は演算子宣言と文字列値 annotation が該当します。それ以外の位置では、引用符は通常の識別子またはユーザーシンボルの字句解析に参加します。
@@ -493,7 +493,9 @@ correctness_condition ::= existence_block
 規範参照: [第 13 章 (項式)](./13.term_expression.md)。
 
 ```ebnf
-term_expression      ::= operator_expression { "qua" type_expression } ;
+term_expression ::= binder_expression | qualified_term ;
+binder_expression ::= identifier "|->" term_expression ;
+qualified_term ::= operator_expression { "qua" type_expression } ;
 
 operator_expression  ::= postfix_expression | functor_application ;
 postfix_expression   ::= term_primary { term_postfix } ;

@@ -57,7 +57,7 @@ conflicts under Chapter 19.
 
 Built-in predicate symbols such as `=`, `<>`, and `in` are declared in the implicitly imported core module. They cannot be overridden by user declarations.
 
-The `qua` type-qualification operator is fixed by the language rather than declared by `infix_operator`. It has the lowest term-level precedence and is left-associative, so `R qua AddGroup qua Magma` parses as `(R qua AddGroup) qua Magma`. Use parentheses when a qualification should apply to only a subterm inside a larger term expression.
+The `qua` type-qualification operator is fixed by the language rather than declared by `infix_operator`. It binds more strongly than Binder and more weakly than ordinary term operators and is left-associative, so `R qua AddGroup qua Magma` parses as `(R qua AddGroup) qua Magma`. Use parentheses when a qualification should apply to only a subterm inside a larger term expression.
 
 Examples:
 
@@ -147,7 +147,7 @@ Recommended implementation outline:
 4. Parse primary term forms: variables, numerals, parenthesized terms, structure constructors, set expressions, and `the` expressions.
 5. Parse term-level prefix and postfix operators using their declared binding powers active at the operator token span.
 6. Parse term-level infix operators by comparing the next operator's active left binding power against the current minimum binding power.
-7. Parse `qua` as the lowest-precedence term-level type qualification.
+7. Parse right-associative Identifier |-> Term below qua; qua remains left-associative below ordinary operators.
 8. Complete an atomic formula by parsing predicate notation, equality, membership, type assertions, or attribute assertions around the parsed term operands. If a parenthesized group at this point contains formula-only syntax, classify it as a parenthesized formula instead of a parenthesized term.
 9. Parse formula-level prefix, infix, and quantifier forms using a separate fixed binding-power table.
 
