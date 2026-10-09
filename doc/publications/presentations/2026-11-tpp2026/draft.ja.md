@@ -2,58 +2,32 @@
 
 > **Status:** working draft  
 > **講演時間:** 30分を標準。45分版は同じ物語に具体例を追加する。  
-> **位置づけ:** Białystok 2026 セミナーを母体に、TPPでは **MizAR と higher-order hammer の自動証明性能の差**を出発点として、Mizar Evolution の設計思想を一本の物語として説明する。  
+> **位置づけ:** Białystok 2026 セミナーを母体に、TPPでは **現行 Mizar の6つの課題と、新仕様の対応**を出発点として、Mizar Evolution の設計指針を説明する。
 > **注意:** 本文は言語仕様ではない。確立した事実、解釈、研究仮説、将来構想を区別する。
 
 ---
 
 # 0. 発表の中心ストーリー
 
-TPP 2026 では、Mizar Evolution の機能を列挙するのではなく、次の問いから始める。
+§0 で現行 Mizar の課題と新仕様の6つの設計指針を1枚に対応させ、各行を §1–§6 で扱う。
 
-```text
-MizAR と Sledgehammer の評価では
-何をどの条件で計測しているのか？
-                   |
-                   v
-      記述と証明支援を支える仕組みは何か？
-      一階の基盤でも構成できるのか？
-                   |
-                   v
-      HOL + ATP と FOL + ATP では
-      複雑さの代償を払う場所が違う
-                   |
-                   v
-  FOL は ATP と近いが、人間が直接書くには冗長
-                   |
-                   v
- Mizar は soft type / mathematical vernacular /
- scheme 等で FOL のまどろっこしさを隠してきた
-                   |
-                   v
- Mizar Evolution はその思想を template 等で現代化
-                   |
-                   +--------------------------+
-                   |                          |
-                   v                          v
-       native FOL automation          verified algorithm
-       をさらに強化                という第二の柱
-                   |                          |
-                   +------------+-------------+
-                                v
-      50年前には無かった software infrastructure
- namespace / package / incremental build / artifact / LSP / AI
-                                |
-                                v
-                         Mizar Evolution
-```
+| 課題 | 新仕様の対応 |
+|---|---|
+| **§1 基盤:** 論理・MML の継承と処理系の刷新の両立 | 一階論理・集合論を維持し、kernel を小さく保つ |
+| **§2 記述:** 暗黙の型・登録・オーバーロードの追跡 | 数学的な抽象化を継承し、暗黙の選択を明示 |
+| **§3 汎用化:** 定義・定理・scheme の共通化 | template による汎用化機構の統一 |
+| **§4 計算:** 証明と実行可能な手続きの接続 | algorithm の契約・不変条件・停止性の検査 |
+| **§5 開発基盤:** 依存管理・配布・差分検証・IDE 連携 | module・namespace・package・差分ビルド・LSP |
+| **§6 検査・自動化:** 外部探索の結果を再検査可能な根拠として受け渡す | evidence → インスタンス化 → SAT 検査 |
 
-発表のメッセージは、
+論理基盤と可読な数学的記述は、継承すべき強みである。
+課題は、その強みを保ちつつ現代化するための設計上の要請として扱う。
 
-> **Mizar の数学的アイデンティティは残す。  
-> しかし、50年前の software engineering と proof infrastructure は残さない。**
+成功率の比較や HOL/FOL の接続経路は補足資料に置く。
+一階の方が ATP に有利だという性能上の主張を、再設計の理由にしない。
+§6 に ATP の探索・検査・保存・再試行の流れ図を置き、その後で evidence のインスタンス化と SAT 検査を説明する。
 
-である。
+> **Mizar の数学的アイデンティティを継承し、処理系と開発基盤を再整備する。**
 
 ---
 
@@ -61,18 +35,16 @@ MizAR と Sledgehammer の評価では
 
 | 時間 | 内容 |
 |---:|---|
-| 0–3分 | **MizAR vs hammer benchmark** — 観察事実 |
-| 3–7分 | **なぜ差が出るのか？** — architecture hypothesis |
-| 7–12分 | **HOL+ATP vs FOL+ATP** — 関数を例に説明 |
-| 12–16分 | **Mizarの役割** — FOLの煩雑さを言語で隠す |
-| 16–20分 | **Template** — FOLのままgeneric mathematics |
-| 20–24分 | **Algorithm** — tacticを越える検証可能な計算 |
-| 24–27分 | **50年分のmodernization** — namespace / package / build / artifact |
-| 27–29分 | **LLM + ATP + Mizar Evolution** |
-| 29–30分 | **Roadmap / Closing** |
+| 0–3分 | §0 課題と設計指針を1枚で対応 |
+| 3–6分 | §1 基盤 — 一階論理・集合論・MML の継承 |
+| 6–9分 | §2 記述 — 数学的な抽象化と暗黙の選択 |
+| 9–13分 | §3 汎用化 — functor の template と scheme |
+| 13–19分 | §4 計算 — algorithm の契約・証明・実行 |
+| 19–23分 | §5 開発基盤 — 依存管理・配布・差分検証・IDE |
+| 23–27分 | §6 検査・自動化 — ATP の流れ図、evidence、SAT |
+| 27–30分 | 章番号なし: 実装状況、ロードマップ、結び |
 
-30分版では「機能紹介」をしない。  
-各機能は、上記ストーリーに必要なものだけ見せる。
+以下の節は説明素材を保持する。実際の順序・番号は `slides.md` と `slides.ja.md` に従う。
 
 45分版では、
 
@@ -87,7 +59,7 @@ MizAR と Sledgehammer の評価では
 
 ---
 
-# 2. Slide 1 — Title
+# 2. Title
 
 第一候補:
 
@@ -101,9 +73,9 @@ MizAR と Sledgehammer の評価では
 
 ---
 
-# 3. Slide 2 — 出発点: MizAR と hammer benchmark
+# 3. 補足: MizAR と hammer benchmark
 
-最初に結論を言わず、数字と評価単位を置く。
+質疑で用いる評価条件。導入の設計動機には使わない。
 
 ## MizAR 60
 
@@ -136,11 +108,11 @@ MizAR 60 (ITP 2023):
 time budget、dataset、premise regime、goal granularity、構成選択の方法が違う。
 公表年と実験時期も区別する。MizAR の主要実験は2020–2021年で、AFP 評価は2022年1月の Isabelle と2021年12月の AFP を使用。
 
-しかし、だからこそ次の問いが立つ。
+異なる条件での公表値であり、一階・高階の基盤の性能優位性は導かない。
 
 ---
 
-# 4. Slide 3 — 一階の基盤を現代化する設計方針
+# 4. 一階の基盤を現代化する設計方針
 
 大きく:
 
@@ -155,6 +127,7 @@ time budget、dataset、premise regime、goal granularity、構成選択の方�
 - 関数や構造を集合論で表し、型・言語機構で数学的な抽象化を支援する。
 - 前提選択・ATP による探索・検査系での証明検査という構成は共通。
 - Mizar Evolution は一階の基盤と既存ライブラリを継承し、言語と開発基盤を再整備する。
+- 証明探索と検査を分離し、受理を小規模な kernel に集約する。§1 で方針を示し、詳細を §6 で説明する。
 
 「仕組みが近い」は数学的な記述と証明支援の構成を指し、論理体系や表現方法の同一性を意味しない。
 
@@ -162,7 +135,7 @@ time budget、dataset、premise regime、goal granularity、構成選択の方�
 
 ---
 
-# 5. Slide 4 — Sledgehammer: HOL + ATP
+# 5. 補足: Sledgehammer の接続経路
 
 典型的な経路:
 
@@ -186,13 +159,11 @@ Isabelle theorem
 - これは大きなengineering achievement。
 - ただし、そのための encoding / reconstruction layer が必要。
 
-問い:
-
-> **What if the theorem prover were first-order from the beginning?**
+符号化と再構成は、HOL のゴールを外部の一階 prover に接続する仕組みとして説明する。
 
 ---
 
-# 6. Slide 5 — 関数を例に HOL と FOL の違いを見る
+# 6. 補足: 関数を例に HOL と FOL の表現を見る
 
 ## HOL
 
@@ -253,7 +224,7 @@ first-order ATP
 
 ---
 
-# 7. Slide 6 — FOL / Set Theory では逆にどこで払うか
+# 7. FOL / Set Theory では逆にどこで払うか
 
 Mizar では関数そのものを集合論上のobjectとして扱う。
 
@@ -305,14 +276,14 @@ first-order ATP
 
 ---
 
-# 8. Slide 7 — HOL と FOL は「代償を払う場所」が違う
+# 8. 補足: HOL と FOL の表現と検査経路
 
 | | HOL ITP + ATP | FOL ITP + ATP |
 |---|---|---|
 | 人間の記述 | 高階機能を直接使えて簡潔 | 素朴には冗長 |
 | 関数 | primitive higher-order object | set-theoretic first-order object |
-| ATP接続 | encodingが必要 | 距離が短い |
-| reconstruction | logic gapを戻す | 原理的に単純化可能 |
+| ATP接続 | HOL-to-FOL / SMT encoding | 一階問題の生成 |
+| reconstruction | Isabelle 内での再構成 | 対応可能な Mizar ステップの再検査 |
 | 言語側の責務 | HOL abstraction | FOLの煩雑さを隠す abstraction |
 
 中心メッセージ:
@@ -325,7 +296,7 @@ Mizar Evolution の選択:
 
 ---
 
-# 9. Slide 8 — Mizar はすでにその方向に50年進んできた
+# 9. Mizar はすでにその方向に50年進んできた
 
 現行 Mizar が持つもの:
 
@@ -353,22 +324,52 @@ Mizar Evolution はこの思想を捨てない。
 - automation trace を可視化;
 - modern compiler architecture に載せ直す。
 
+
+§2 では、数学的な記述の継承に続けて、暗黙の演算選択を明示する例を示す (sketch):
+
+```mizar
+let R be commutative Ring;
+f(R);                  :: ambiguous Magma view
+f(R qua AddMagma);      :: use addition
+f(R qua MulMagma);      :: use multiplication
+```
+
+f は Magma の演算を使う functor の概形。環の加法・乗法という二つの継承パスから、
+利用するビューを qua で明示する。必要な定義・継承・登録を前提とする。
+qua 自体は既存 Mizar にもある記法であり、例は新仕様の継承パス選択と曖昧性説明を示す。
+自動適用した登録は適用経路を記録し、依存する規則を追跡可能にする。
+
+Source: `doc/spec/en/19.overload_resolution.md`, section 19.3.1;
+`17.clusters_and_registrations.md`, Traceability。
+
 ---
 
-# 10. Slide 9 — Template: FOLのまま generic mathematics
+# 10. Template: FOLのまま generic mathematics
 
-Mizar Evolution の template:
+本編では、functor の「関数の和」を例にする。
+現行 MML の VALUED_1 は点ごとの加法を定義し、数の種類ごとに結果型の再定義・登録を持つ。
+新仕様では、値の型と添字集合をパラメータ化し、同じ構成の定義と結果型を共通化する。
+
+構成例 (sketch, 存在・一意性の証明は省略):
 
 ```mizar
 definition
-  let T be type;
-
-  struct MagmaStr[T] where
-    field carrier -> T;
-    field binop -> BinOp of T;
-  end;
+  let T be type extends non empty AddMagma;
+  let I be non empty set;
+  let f, g be Function of I, T;
+  func AddDef: Add[T,I](f,g) -> Function of I,T means
+    for i being Element of I holds it.i = T.add(f.i,g.i);
 end;
 ```
+
+T は加法を持つ型、I は共通の非空添字集合。必要な import・構造・登録を前提とする。
+同じ構成の定義族が対象であり、意味の異なる同名演算は区別する。
+テンプレート本体を制約の下で一度検査し、各用途へ具体化する。
+
+Source: `doc/spec/en/18.templates.md`, sections 18.2.2, 18.7, 18.10.1;
+`doc/spec/en/sample_codes.md`, AddMagma;
+MML VALUED_1:def 1 と結果型の再定義・登録
+(<https://mizar.uwb.edu.pl/version/current/html/valued_1.html>)。
 
 predicate / functor parameterも扱う。
 
@@ -407,7 +408,7 @@ first-order obligation
 
 ---
 
-# 11. Slide 10 — Algorithm は別の柱
+# 11. Algorithm は別の柱
 
 ここで話題を分ける。
 
@@ -419,7 +420,7 @@ algorithm は、
 
 問題は **algorithmic reasoning / computation** である。
 
-## 歴史的背景
+## 歴史的背景（補足）
 
 FOLには完全な推論系があり、
 
@@ -455,7 +456,7 @@ Mizar Evolution の algorithm は、この歴史に対する単なる「tactic l
 
 ---
 
-# 12. Slide 11 — Algorithm: tactic-like automation + verified computation
+# 12. Algorithm: tactic-like automation + verified computation
 
 例:
 
@@ -512,7 +513,7 @@ ATP + kernel
 
 ---
 
-# 13. Slide 12 — Algorithm の長期的な射程
+# 13. Algorithm の長期的な射程
 
 単なる theorem prover の convenience feature ではない。
 
@@ -545,7 +546,7 @@ ATP + kernel
 
 ---
 
-# 14. Slide 13 — そして Mizar 自体も50年分老朽化した
+# 14. そして Mizar 自体も50年分老朽化した
 
 ここで論理・証明の話から software infrastructure へ移る。
 
@@ -579,7 +580,7 @@ Mizar は50年にわたり大規模な数学ライブラリを支えてきた。
 
 ---
 
-# 15. Slide 14 — Old Mizar → Mizar Evolution
+# 15. Old Mizar → Mizar Evolution
 
 一枚の表で highlight のみ。
 
@@ -609,7 +610,7 @@ Białystok 版の詳細スライドを backup にする。
 
 ---
 
-# 16. Slide 15 — Mizar Evolution 全体像
+# 16. Mizar Evolution 全体像
 
 ```text
                 mathematician / LLM
@@ -645,57 +646,26 @@ Białystok 版の詳細スライドを backup にする。
 
 ---
 
-# 17. Slide 16 — AI時代にこの設計がどう効くか
+# 17. Evidence のインスタンス化と SAT 検査
 
-LLM / human:
+§6 では、ATP の探索・kernel 検査・ライブラリへの保存と再利用・再試行の流れ図を先に示す。
+図は設計意図であり、LLM の提案・修復も示すが、反復の費用対効果は未評価。
+続いて Backup 5 の検査の仕組みを、3段階で示す。
 
-- theory construction;
-- definition design;
-- mathematical semantics;
-- proof strategy;
-- intermediate lemma invention;
-- failure recovery.
+1. **Evidence:** 元の論理式、明示的な代入、来歴、対象ゴールを保持する。
+2. **Kernel:** 対象との対応・来歴・代入を検査し、論理式のインスタンスを導出する。
+3. **SAT:** インスタンスとゴールの否定を決定的に符号化し、信頼できる SAT 検査器で UNSAT を確認した場合に受理する。
 
-ATP:
+UNSAT は、前提とゴールの否定が同時には成立しないことを意味する。
+インスタンス化済みの論理式や SAT 問題を外部入力として信頼せず、kernel が生成する。
+バックエンドの証明トレース・ログ・終了コードは診断用であり、受理の根拠にはしない。
 
-- first-order proof search;
-- saturation / superposition;
-- cheap repeated attempts;
-- large portfolios.
-
-Mizar Evolution:
-
-- mathematical representation;
-- verified library state;
-- trusted checking;
-- provenance / dependency;
-- algorithm verification.
-
-```text
-top-level theorem
-      |
-   cheap ATP
-    /     \
-solved   failed
-  |         |
-verify     LLM
-  |         |
-store <- lemma / decomposition
-```
-
-一言:
-
-> **LLM thinks. ATP proves. Mizar Evolution remembers and verifies.**
-
-LLMの進歩はATPを不要にするのではなく、
-
-> **大量に生成される数学を安価に検証するATPの価値をむしろ高める**
-
-可能性がある。
+ATP や LLM は探索を支援できるが、受理の境界はこの共通の検査に置く。
+Source: `doc/design/architecture/en/08.reasoning_boundary.md`, `15.kernel_certificate_format.md`。
 
 ---
 
-# 18. Slide 17 — Roadmap
+# 18. Roadmap
 
 ロードマップは最後の実装メッセージとして簡潔に。
 
@@ -748,42 +718,14 @@ next theory generation
 
 ---
 
-# 19. Slide 18 — Closing
+# 19. Closing
 
-最初の benchmark comparison に戻る。
+冒頭の6つの課題に対する新仕様の対応を振り返る。
+一階の基盤と数学的な言語を継承し、template、algorithm、開発基盤、
+evidence と SAT 検査を通して処理系を再整備する。
 
-```text
-MizAR:
-  top-level theorem
-      -> FOL ATP
-
-Sledgehammer:
-  HOL goal
-      -> translation
-      -> FOL ATP
-      -> reconstruction
-```
-
-最後に:
-
-> **The question is not whether higher-order systems can use first-order ATPs. They clearly can.  
-> The question is what becomes possible when automated first-order reasoning is a design principle from the beginning.**
-
-日本語:
-
-> **高階ITPからFOL ATPを使えるか、ではない。  
-> 一階自動推論を最初から設計原理にしたITPでは、何が可能になるのか。**
-
-そして Mizar Evolution の答え:
-
-1. **FOL / set theory を proof substrate として残す。**
-2. **Mizarの言語設計で、その記述上の不便を隠す。**
-3. **template でgeneric mathematicsを拡張する。**
-4. **algorithmで検証可能な計算を統合する。**
-5. **50年分のsoftware infrastructureを現代的に再構築する。**
-6. **LLMとATPを適材適所で組み合わせる。**
-
-締めの一文:
+討論では MML の移行、記述の利便性、自動化の評価を扱う。
+ベンチマーク比較は、必要に応じて補足資料を参照する。
 
 > **Keep the foundation small. Keep the mathematics readable. Modernize everything else.**
 
@@ -826,7 +768,7 @@ Sledgehammer:
    - KernelEvidence;
    - checked acceptance.
 
-45分だから機能を増やすのではなく、30分版の比較と設計思想を具体例で深くする。
+45分だから機能を増やすのではなく、30分版の課題と設計指針を具体例で深くする。
 
 ---
 
@@ -842,9 +784,9 @@ Sledgehammer:
 
 ## 研究仮説として述べる
 
-- MizAR / hammer の性能差に architecture がどの程度寄与するか;
-- native FOL hammer が現代的条件でどこまで伸びるか;
-- LLM + cheap ATP cascade の費用対効果。
+- native hammer の前提選択と証明探索を、現代的条件でどう評価するか。
+
+これらの実験結果を、現時点の設計動機や既存システムに対する優位性としては扱わない。
 
 ## 将来構想として述べる
 
@@ -877,18 +819,12 @@ Sledgehammer:
 
 TPP 2026 スライドを作成するとき:
 
-1. **冒頭は MizAR vs higher-order hammer benchmark。**
-2. 数字の差を「勝敗」とせず、**なぜ差が出るのか**という研究質問にする。
-3. HOL+ATP / FOL+ATP の違いを関数の具体例で説明する。
-4. Mizarを「FOLのまどろっこしさを隠す言語」と位置づける。
-5. template は、その思想をgeneric mathematicsへ拡張する機構として説明する。
-6. algorithm はFOL/HOL比較から一旦分離し、**tactic-like automation + verified computation**として説明する。
-7. FOL completeness → ATP tradition / LCF-HOL → tactic tradition は歴史的傾向として述べ、必然性とは言わない。
-8. cryptography / quantum は future direction とラベルする。
-9. 最後に **50年分のsoftware engineering modernization** を一枚で示す。
-10. modernization は namespace / package / lockfile / incremental build / artifact / LSP / AI interface を中心にする。
-11. 詳細なBiałystokの機能紹介はbackupへ回す。
-12. 最後は roadmap で、現在・2027・2028+を明示する。
-13. 実装済みと仕様のみの機能を混同しない。
-14. 最終メッセージは:
-    **Keep the foundation small. Keep the mathematics readable. Modernize everything else.**
+1. §0 で課題と設計指針を1枚の表に対応させ、番号を §1–§6 の話題に合わせる。
+2. §1 基盤、§2 記述、§3 汎用化、§4 計算、§5 開発基盤、§6 検査・自動化の順に説明する。
+3. 一階論理・集合論と可読な数学的言語を、継承すべき強みとして扱う。
+4. MizAR / Sledgehammer の評価条件と HOL/FOL 比較は補足に置き、性能優位性を設計動機にしない。
+5. ATP 活用の流れ図を §6 に残し、続けて evidence → インスタンス化 → SAT 検査を示す。
+6. 仕様と実装状況を区別し、将来構想にはラベルを付ける。
+7. 最後に実装状況とロードマップを示し、MML 移行・利便性・自動化の評価を討論する。
+8. 最終メッセージは:
+   **Keep the foundation small. Keep the mathematics readable. Modernize everything else.**

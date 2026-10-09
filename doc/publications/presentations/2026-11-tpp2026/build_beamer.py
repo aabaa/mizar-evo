@@ -27,20 +27,22 @@ ROOT = Path(__file__).resolve().parent
 GENERATOR = ROOT.parent / "2026-09-bialystok" / "build_beamer.py"
 
 PART_REMAP = {
-    "Part 0. Opening": "Part 0. Opening",
-    "Part 1. Two Hammers, Two Numbers": "Part 1. Two Hammers, Two Numbers",
-    "Part 2. Where Complexity Lives": "Part 2. Where Complexity Lives",
-    "Part 3. Modernizing Mizar's Answer": "Part 3. Modernizing Mizar's Answer",
-    "Part 4. The AI Era": "Part 4. The AI Era",
-    "Part 5. Roadmap And Closing": "Part 5. Roadmap And Closing",
+    "Part 0. Introduction": "Part 0. Introduction",
+    "Part 1. Logical Foundation": "Part 1. Logical Foundation",
+    "Part 2. Readable Mathematics": "Part 2. Readable Mathematics",
+    "Part 3. Generic Mathematics": "Part 3. Generic Mathematics",
+    "Part 4. Verified Computation": "Part 4. Verified Computation",
+    "Part 5. Development Infrastructure": "Part 5. Development Infrastructure",
+    "Part 6. Checking And Automation": "Part 6. Checking And Automation",
+    "Part Closing. Status And Roadmap": "Status And Roadmap",
 }
 
 FIGURE_HEIGHT_LIMITS_EN = {
     "two_paths": 0.58,
     "evaluation_units": 0.50,
-    "where_you_pay": 0.34,
-    "layer_stack": 0.60,
-    "llm_atp_loop": 0.38,
+    "where_you_pay": 0.54,
+    "layer_stack": 0.64,
+    "llm_atp_loop": 0.54,
     "roadmap_tpp": 0.46,
     "reasoning_boundary": 0.52,
 }
@@ -49,9 +51,9 @@ FIGURE_HEIGHT_LIMITS_EN = {
 FIGURE_HEIGHT_LIMITS_JA = {
     "two_paths": 0.56,
     "evaluation_units": 0.48,
-    "where_you_pay": 0.34,
-    "layer_stack": 0.57,
-    "llm_atp_loop": 0.36,
+    "where_you_pay": 0.54,
+    "layer_stack": 0.64,
+    "llm_atp_loop": 0.54,
     "roadmap_tpp": 0.44,
     "reasoning_boundary": 0.50,
 }

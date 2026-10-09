@@ -1,35 +1,33 @@
-% Figure: the LLM / ATP / Mizar Evo division of labor (part 4).
+% Figure: the LLM / ATP / Mizar Evo division of labor (section 6).
 % Build: pdflatex llm_atp_loop.tex  (run inside figures/)
 \documentclass[tikz,border=6pt]{standalone}
-\usetikzlibrary{positioning,arrows.meta}
+\usepackage{lmodern}
+\usetikzlibrary{arrows.meta}
 \begin{document}
 \begin{tikzpicture}[
-  font=\sffamily,
-  box/.style={draw, rounded corners=2pt, align=center, minimum width=36mm,
-              minimum height=12mm, line width=0.7pt, font=\sffamily\small},
+  font=\sffamily\fontsize{16}{19}\selectfont,
+  box/.style={draw, rounded corners=2pt, align=center, text width=29mm,
+              minimum height=19mm, line width=1pt, inner sep=1.5mm},
   stmt/.style={box, fill=blue!10, draw=blue!50!black},
   atp/.style={box, fill=orange!18, draw=orange!70!black},
   llm/.style={box, fill=violet!12, draw=violet!60!black},
   ker/.style={box, fill=green!12, draw=green!45!black},
-  flow/.style={-{Stealth[length=2.6mm]}, line width=0.9pt, black!70},
-  lab/.style={font=\sffamily\footnotesize\itshape, text=black!60},
+  flow/.style={-{Stealth[length=3mm]}, line width=1.1pt, black!70},
+  lab/.style={font=\sffamily\fontsize{16}{19}\selectfont, text=black!80},
 ]
-  \node[stmt] (s) {top-level statement\\ \footnotesize from a human or an LLM};
-  \node[atp, right=12mm of s] (a) {cheap first-order ATP\\ \footnotesize many attempts, large portfolio};
-  \node[ker, above right=5mm and 12mm of a] (k) {kernel check\\ \footnotesize trusted, small};
-  \node[ker, right=8mm of k] (st) {store in the\\ verified library};
-  \node[llm, below right=5mm and 12mm of a] (l) {LLM\\ \footnotesize lemma, decomposition,\\ \footnotesize definition, repair};
+  \node[stmt] (s) at (0,0) {{\fontsize{20}{24}\selectfont\textbf{Goal}}\\ Facts};
+  \node[atp] (a) at (47mm,0) {{\fontsize{20}{24}\selectfont\textbf{ATP}}\\ Search};
+  \node[ker] (k) at (94mm,0) {{\fontsize{20}{24}\selectfont\textbf{Kernel}}\\ Check};
+  \node[ker] (st) at (141mm,0) {{\fontsize{20}{24}\selectfont\textbf{Library}}\\ Store};
+  \node[llm, text width=39mm] (l) at (47mm,-30mm)
+    {{\fontsize{20}{24}\selectfont\textbf{LLM}}\\ Propose / repair};
   \draw[flow] (s) -- (a);
-  \draw[flow] (a.east) -- node[lab, above, sloped] {proved} (k.west);
+  \draw[flow] (a) -- node[lab, above=11mm] {evidence} (k);
   \draw[flow] (k) -- (st);
-  \draw[flow] (a.east) -- node[lab, below, sloped] {failed} (l.west);
-  \draw[flow] (l.south) -- ++(0,-5mm) -| (a.south);
-  \node[lab, anchor=east, align=right] at ([xshift=-1.5mm,yshift=-11mm]a.south) {retry with a new lemma\\ or a decomposition};
-  \draw[flow, dashed] (st.north) -- ++(0,5mm) -| node[lab, pos=0.25, above] {feeds the next theory generation} (s.north);
-
-  \node[font=\sffamily\small\bfseries, text=black!75, align=center] at ([xshift=20mm,yshift=-36mm]a.south)
-    {LLM thinks. \quad ATP proves. \quad Mizar Evo remembers and verifies.};
-  \node[lab, align=center] at ([xshift=20mm,yshift=-41mm]a.south)
-    {division of labor: design intent --- cost-effectiveness of the cascade: research hypothesis};
+  \draw[flow] (a) -- node[lab, right] {failed} (l);
+  \draw[flow] (l.west) -- (20mm,-30mm) -- (20mm,0) -- (a.west);
+  \node[lab, anchor=east] at (18mm,-16mm) {retry};
+  \draw[flow, dashed] (st.north) -- (141mm,17mm) --
+    node[lab, above] {reuse} (0,17mm) -- (s.north);
 \end{tikzpicture}
 \end{document}

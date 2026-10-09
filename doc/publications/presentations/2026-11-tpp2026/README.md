@@ -9,7 +9,7 @@ the organizers.
 
 Deck title (English):
 
-**Mizar Evolution: Why First-Order Logic, Now**
+**Mizar Evo: Design Principles**
 Reconnecting automated proof, readable mathematics, and verified computation
 
 Japanese title for the program (first candidate in `draft.ja.md`):
@@ -19,17 +19,15 @@ Japanese title for the program (first candidate in `draft.ja.md`):
 
 ## Purpose
 
-This directory is intentionally a working area rather than part of the language
-specification. The presentation explains the architectural motivation of
-Mizar Evolution, especially the role of first-order automated theorem provers
-(ATPs) in an AI-assisted mathematics workflow.
+The presentation starts with six challenges in modernizing current Mizar
+and maps each to a design principle in the new specification. It explains how
+Mizar Evo preserves the logical foundation and readable mathematical language
+while rebuilding generic mechanisms, verified computation, development tools,
+and evidence checking.
 
-The central question is:
-
-> What becomes possible if a large-scale interactive theorem prover is designed
-> from the outset around a first-order logical substrate and a native hammer,
-> rather than connecting first-order ATPs through a higher-order translation
-> layer?
+Benchmarks and HOL/FOL connections are supplementary context. A first-order
+performance advantage is not the motivation of this talk. The main checking
+story is evidence, formula instantiation, and a trusted SAT check.
 
 ## Files
 
@@ -59,21 +57,25 @@ The central question is:
 
 ## Storyline (Thirty Minutes)
 
-The deck does not follow the chapter order of `draft.ja.md` mechanically. It
-keeps the draft's facts, hypotheses, and future directions, and arranges them
-so that the audience feels the question before hearing the answer.
+Section 0 pairs the six challenges and design principles in one table.
+Sections 1–6 each cover the matching row. Closing frames have no section number.
 
-| Part | Minutes | Beat | Frames |
+| Section | Minutes | Beat | Frames |
 |---|---:|---|---|
-| 1. Two hammers, two numbers | 0-6 | 2023 MizAR and 2022 AFP results: 58.4% and 68.8%, with different evaluation conditions; two paths; why retain a first-order foundation | 1.1-1.4 |
-| 2. Where complexity lives | 6-14 | functions in HOL pay at the ATP boundary; functions in set theory pay at the keyboard; Mizar's language absorbs that cost | 2.1-2.6 |
-| 3. Modernizing Mizar's answer | 14-24 | keep the substrate; templates; algorithms as a second pillar; search outside, trust inside; fifty years of infrastructure in one table | 3.1-3.8 |
-| 4. The AI era | 24-28 | the whole picture; LLM thinks, ATP proves, Mizar Evo remembers and verifies; honest implementation status | 4.1-4.3 |
-| 5. Roadmap and closing | 28-30 | 2026, 2027, 2028+; back to the two paths; closing line | 5.1-5.3 |
+| 0. Introduction | 0-3 | challenges and principles in one table | 0.1-0.3 |
+| 1. Logical foundation | 3-6 | first-order logic, set theory, and MML | 1.1-1.2 |
+| 2. Readable mathematics | 6-9 | abstraction, explicit operation views, registration traces | 2.1-2.2 |
+| 3. Generic mathematics | 9-13 | functor templates and schemes | 3.1-3.2 |
+| 4. Verified computation | 13-19 | algorithm contracts, proofs, and execution | 4.1-4.3 |
+| 5. Development infrastructure | 19-23 | dependencies, tools, and the whole picture | 5.1-5.2 |
+| 6. Checking and automation | 23-27 | ATP flow, evidence instantiation, SAT | 6.1-6.3 |
+| Closing | 27-30 | implementation status, roadmap, and discussion | unnumbered |
 
-Frames marked `[deep dive]` (0.2, 2.6, 3.3, 3.6) can be skipped. Backups 1-10
-hold detailed benchmark conditions, encoding details, template instantiation,
-and the Bialystok infrastructure material. The closing line is fixed:
+Frames marked `[deep dive]` (0.2, 3.2, 4.3) can be skipped; 0.2 is omitted
+from the Japanese deck. Backups 1-10 hold benchmark details, template
+instantiation, and infrastructure material; 11-17 hold the benchmark and HOL/FOL
+comparison sequence. Frame 6.2 keeps the ATP flow diagram in the main talk;
+6.3 explains the core content of Backup 5. The closing line is fixed:
 *Keep the foundation small. Keep the mathematics readable. Modernize everything
 else.*
 
@@ -91,11 +93,9 @@ else.*
 
 Untagged statements are facts about existing systems, published benchmarks,
 the Mizar Evo specification, or the main branch. "Research hypothesis" marks
-what Mizar Evo is built to test (how much of the MizAR / hammer difference is
-architectural; how far a native first-order hammer can go; the LLM plus cheap
-ATP cascade). "Future direction" marks targets with no committed date or
-design (cryptographic protocols, quantum algorithms, autonomous theory
-generation). Frame 4.3 separates the specification from the implementation.
+an evaluation question rather than a result. "Future direction" marks targets
+with no committed date or design. The closing status frame separates the specification from
+the implementation.
 
 ## How The Bialystok Deck Is Used
 
@@ -152,13 +152,13 @@ Verified on October 7, 2026 while designing the deck:
 
 Still to do before the talk:
 
-- [ ] Re-read the HOL-to-FOL encoding frame (2.2) against Meng and Paulson 2008
+- [ ] Re-read the HOL-to-FOL encoding frame (Backup 15) against Meng and Paulson 2008
       and Blanchette et al. 2016; it is schematic.
 - [ ] Check the historical wording: FOL completeness and the ATP tradition,
       LCF tactics, and "Mizar never had a user-programmable tactic language".
 - [ ] Re-check the template and algorithm examples against the current
       `doc/spec/en/` text.
-- [ ] Update frame 4.3 (implementation status) from `doc/design/todo.md`,
+- [ ] Update the closing implementation status frame from `doc/design/todo.md`,
       Crate Status, on the talk date; do not claim end-to-end external-prover
       results unless they exist.
 - [ ] Verify `references.bib` metadata against publishers.
@@ -181,6 +181,7 @@ When revising the slides:
 - do not compare success percentages across MizAR and Sledgehammer as if the
   benchmarks were identical;
 - preserve the distinction between proof search and trusted verification;
-- keep the presentation focused on architecture and research questions, not
-  on attacking other theorem provers;
+- lead with current Mizar's challenges and the new specification's responses;
+- explain evidence instantiation and SAT checking in the main talk;
+- keep benchmarks and HOL/FOL performance questions in the backups;
 - keep `script.ja.md` aligned with the frame numbers in `slides.md`.

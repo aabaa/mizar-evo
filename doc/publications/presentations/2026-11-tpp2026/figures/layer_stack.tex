@@ -1,58 +1,37 @@
 % Figure: Mizar Evo in one picture (part 4).
 % Build: pdflatex layer_stack.tex  (run inside figures/)
 \documentclass[tikz,border=6pt]{standalone}
-\usetikzlibrary{positioning,arrows.meta,decorations.pathreplacing}
+\usepackage{lmodern}
+\usetikzlibrary{arrows.meta}
 \begin{document}
 \begin{tikzpicture}[
-  font=\sffamily,
-  layer/.style={draw, rounded corners=2pt, align=center, minimum width=100mm,
-                minimum height=8mm, line width=0.7pt, font=\sffamily\small},
+  font=\sffamily\fontsize{16}{19}\selectfont,
+  layer/.style={draw, rounded corners=2pt, align=center, text width=162mm,
+                minimum height=19mm, line width=1pt, inner sep=2mm},
   math/.style={layer, fill=blue!10, draw=blue!50!black},
-  core/.style={layer, fill=blue!22, draw=blue!60!black},
-  search/.style={layer, fill=orange!18, draw=orange!70!black},
-  trust/.style={layer, fill=green!12, draw=green!45!black},
+  stage/.style={layer, text width=47mm, minimum height=21mm},
+  core/.style={stage, fill=blue!22, draw=blue!60!black},
+  search/.style={stage, fill=orange!18, draw=orange!70!black},
+  trust/.style={stage, fill=green!12, draw=green!45!black},
   infra/.style={layer, fill=black!5, draw=black!45},
-  cell/.style={draw, rounded corners=1.5pt, align=center, minimum width=22mm,
-               minimum height=9mm, line width=0.5pt, fill=white,
-               draw=blue!50!black, font=\sffamily\footnotesize},
-  flow/.style={-{Stealth[length=2.4mm]}, line width=0.8pt, black!65},
-  side/.style={font=\sffamily\footnotesize\bfseries, align=center},
-  node distance=2.2mm,
+  flow/.style={-{Stealth[length=3.2mm]}, line width=1.1pt, black!70},
 ]
-  \node[infra] (user) {mathematician \quad / \quad LLM};
-  \node[math, below=of user, minimum height=17mm] (vern) {};
-  \node[font=\sffamily\small, anchor=north] at ([yshift=-0.6mm]vern.north) {mathematical vernacular};
-  \node[cell, anchor=south] at ([xshift=-37mm,yshift=1mm]vern.south) {structures, modes,\\ attributes};
-  \node[cell, anchor=south] at ([xshift=-12.5mm,yshift=1mm]vern.south) {templates,\\ schemes};
-  \node[cell, anchor=south] at ([xshift=12.5mm,yshift=1mm]vern.south) {algorithms,\\ computation};
-  \node[cell, anchor=south] at ([xshift=37mm,yshift=1mm]vern.south) {modules,\\ packages};
-  \node[math, below=of vern] (elab) {elaboration};
-  \node[core, below=of elab] (core)
-    {\textbf{small first-order core} \quad {\footnotesize first-order logic, set theory}};
-  \node[search, below=of core] (atp)
-    {native ATP layer \quad {\footnotesize untrusted search: E, Vampire, CVC5, Z3}};
-  \node[trust, below=of atp] (ker)
-    {kernel evidence check \quad {\footnotesize trusted, SAT-backed, small}};
-  \node[trust, below=of ker] (art) {verified artifact};
-  \node[infra, below=of art] (lib) {large versioned library};
-  \node[infra, below=4mm of lib, minimum width=30mm] (ai) {AI agents};
-  \node[infra, left=3mm of ai, minimum width=30mm] (ide) {IDE / LSP};
-  \node[infra, right=3mm of ai, minimum width=30mm] (pub) {publication};
-  \foreach \a/\b in {user/vern, vern/elab, elab/core, core/atp, atp/ker, ker/art, art/lib}
-    \draw[flow] (\a) -- (\b);
-  \draw[flow] (lib.south) -- (ai.north);
-  \draw[flow] (lib.south) -- (ide.north);
-  \draw[flow] (lib.south) -- (pub.north);
+  \node[math] (vern) at (63mm,0)
+    {{\fontsize{18}{22}\selectfont\textbf{Mathematical language}}\\
+     Types \quad Templates \quad Algorithms \quad Modules};
+  \node[core] (core) at (0,-29mm)
+    {{\fontsize{18}{22}\selectfont\textbf{First-order core}}\\ Set theory};
+  \node[search] (atp) at (63mm,-29mm)
+    {{\fontsize{18}{22}\selectfont\textbf{ATP search}}\\ Untrusted};
+  \node[trust] (ker) at (126mm,-29mm)
+    {{\fontsize{18}{22}\selectfont\textbf{Kernel check}}\\ Trusted};
+  \node[infra] (lib) at (63mm,-58mm)
+    {{\fontsize{18}{22}\selectfont\textbf{Verified artifacts and library}}\\
+     Versions \quad IDE / LSP \quad AI agents \quad Publication};
 
-  % side labels
-  \draw[decorate, decoration={brace, amplitude=2mm, mirror}, black!55, line width=0.7pt]
-    ([xshift=-3mm]vern.north west) -- ([xshift=-3mm]elab.south west)
-    node[midway, left=3.5mm, side, text=blue!50!black] {preserve\\ {\footnotesize\mdseries the mathematical layer}};
-  \draw[decorate, decoration={brace, amplitude=2mm, mirror}, black!55, line width=0.7pt]
-    ([xshift=-3mm]core.north west) -- ([xshift=-3mm]core.south west)
-    node[midway, left=3.5mm, side, text=blue!60!black] {keep small};
-  \draw[decorate, decoration={brace, amplitude=2mm}, black!55, line width=0.7pt]
-    ([xshift=3mm]atp.north east) -- ([xshift=3mm]lib.south east)
-    node[midway, right=3.5mm, side, text=black!65] {rebuild\\ {\footnotesize\mdseries fifty years of} \\ {\footnotesize\mdseries infrastructure}};
+  \draw[flow] ([xshift=-63mm]vern.south) -- (core.north);
+  \draw[flow] (core) -- (atp);
+  \draw[flow] (atp) -- (ker);
+  \draw[flow] (ker.south) -- ([xshift=63mm]lib.north);
 \end{tikzpicture}
 \end{document}
