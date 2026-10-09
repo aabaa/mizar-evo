@@ -491,3 +491,5 @@ hard gates、deferred items、verification、human review surface、next-phase h
   を消費する。この crate を CLI とプロトコルの関心事から自由に保つ。
 - キャッシュヒットはクリーンビルドと同じ検証規則を満たさなければなら
   ない（キャッシュは最適化であって権威ではない — `mizar-cache` の契約）。
+
+- [ ] [BUILD-TOOLCHAIN-PIN](../../task_contracts/ja/BUILD-TOOLCHAIN-PIN.md).

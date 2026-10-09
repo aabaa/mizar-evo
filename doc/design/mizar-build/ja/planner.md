@@ -349,3 +349,11 @@ planner test suite は次を covered する。
 | `PackagePlanSource` | `#[non_exhaustive]`; downstream callers は wildcard match arms を含めなければならない。 |
 | `ManifestDiagnosticKind` | `#[non_exhaustive]`; downstream callers は wildcard match arms を含めなければならない。 |
 | `ManifestValidationError` | `#[non_exhaustive]`; downstream callers は wildcard match arms を含めなければならない。 |
+
+## Toolchain Constraint Boundary
+
+planner は任意の package toolchain 制約、workspace/解決済み依存の共通制約、リリース版の厳密な lock 選択、W0306 の不一致方針を所有する (§23.1–23.2/§22.6.6)。
+選択には認証された依存 manifest と release-version 入力が必要で、欠落時に版を推測しない。有効な lock 選択を保ち、installer はそれを消費する。
+開発時の不一致は警告、release 時はエラー。選択した release が backend build を固定し、インストールと再配布は driver が所有する。
+planner テストは省略と既存の制約形式、不正/競合制約、依存/release 入力欠落、pin 維持、利用不能な版を扱い、CLI テストは不一致の両モードと、実行中/lock の版が一致して W0306 やエラーを出さない場合を扱う。
+先送りの境界であり、lock schema/API 形状や実行時の導入済み状態を定めない。

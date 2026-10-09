@@ -2,6 +2,7 @@
 Canonical language: English; [Japanese pointer](../ja/EDITOR-LSP-COMPLETION.md).
 Status: planned. Tier: full. Owner: [lsp todo](../../mizar-lsp/en/todo.md); consumers: editor clients.
 Dependencies: mizar-lsp tasks 6-7 (open-buffer snapshots) and 12-15 (metadata and navigation).
+Readiness: Blocked on the real server, open-buffer snapshots and producer-owned visibility/notation metadata.
 Authority: specification §1 (code completion through LSP), §23.5 and §23.6 (artifacts and hover data); [architecture 12](../../architecture/en/12.diagnostics_and_lsp.md); [internal 03](../../internal/en/03.diagnostics_model_and_lsp_bridge.md).
 Gap: `design_drift`. The specification promises code completion, but no mizar-lsp task owns it.
 

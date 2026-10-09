@@ -802,8 +802,8 @@ Installation and web access for the complete-processor claim. They follow the
 LSP entry point and do not block Steps 6-8.
 
 1. [ ] mizar-driver 24 — [toolchain manager](./task_contracts/en/DIST-TOOLCHAIN-MANAGER.md)
-   for `mizar` and ATP backends; the project version pin needs a
-   specification change, and backend bundling needs a license review.
+   for `mizar` and ATP backends; follows build-owned
+   [manifest/lock pinning](./task_contracts/en/BUILD-TOOLCHAIN-PIN.md); release and redistribution prerequisites remain blocked.
 2. [ ] mizar-driver 25 — [installers](./task_contracts/en/DIST-INSTALLERS.md)
    for other editors (install script, Windows installer and winget, Homebrew).
 3. [ ] mizar-lsp 29 / mizar-driver 26 — [web playground](./task_contracts/en/WEB-PLAYGROUND.md)

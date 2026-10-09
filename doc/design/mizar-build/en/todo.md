@@ -505,3 +505,5 @@ the next-phase handoff.
   keep this crate free of CLI and protocol concerns.
 - Cache hits must satisfy the same validation rules as a clean build
   (cache is optimization, not authority — `mizar-cache`'s contract).
+
+- [ ] [BUILD-TOOLCHAIN-PIN](../../task_contracts/en/BUILD-TOOLCHAIN-PIN.md).

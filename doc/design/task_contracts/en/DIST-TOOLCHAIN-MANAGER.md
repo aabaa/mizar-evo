@@ -1,7 +1,7 @@
 # Task DIST-TOOLCHAIN-MANAGER: toolchain manager for mizar and ATP backends
 Canonical language: English; [Japanese pointer](../ja/DIST-TOOLCHAIN-MANAGER.md).
-Status: planned; bundling needs the license review below. Tier: full. Owner: [driver plan](../../mizar-driver/en/00.crate_plan.md); consumers: [build plan](../../mizar-build/en/00.crate_plan.md) (lock file), [lsp todo](../../mizar-lsp/en/todo.md) (VS Code extension), installers, playground.
-Dependencies: release builds of `mizar` per platform.
+Status: planned; bundling needs the license review below. Tier: full. Owner: [driver plan](../../mizar-driver/en/00.crate_plan.md); consumers: [lsp todo](../../mizar-lsp/en/todo.md) (VS Code extension), installers, playground.
+Dependencies: BUILD-TOOLCHAIN-PIN and release builds of `mizar` per platform. Readiness: blocked on those prerequisites; backend bundling remains blocked on redistribution review.
 Authority: specification §23.1 (`toolchain` constraint), §23.2 (lock file records the toolchain; W0306), §22.6.6, §21.7.3 (ATP backends); [ATP backend integration](../../architecture/en/10.atp_backend_integration.md).
 Gap: `design_drift`. Verification needs the `mizar` binary and external ATP backends, and results depend on their versions, but no component installs or pins them.
 
@@ -10,9 +10,9 @@ Gap: `design_drift`. Verification needs the `mizar` binary and external ATP back
 Provide a small separate binary (working name `mizarup`) that installs
 released `mizar` toolchains and pinned ATP backend builds for the host
 platform, selects the toolchain recorded in the workspace lock file, and
-updates or removes toolchains. The build resolves the `toolchain`
-constraints, records the result in `mizar.lock`, and reports W0306 on a
-mismatch. Before bundling any backend, record the redistribution
+updates or removes toolchains. Consume the build-owned locked selection and
+mismatch policy; BUILD-TOOLCHAIN-PIN owns constraint resolution, lock
+persistence, and W0306. Before bundling any backend, record the redistribution
 terms of each (E is GPL-licensed; Vampire, cvc5, and z3 terms must be checked)
 and choose bundling or download per backend.
 

@@ -2,6 +2,7 @@
 Canonical language: English; [Japanese pointer](../ja/WEB-PLAYGROUND.md).
 Status: planned. Tier: full. Owners: [lsp todo](../../mizar-lsp/en/todo.md) (editor protocol) and [driver plan](../../mizar-driver/en/00.crate_plan.md) (server sessions); the service lives outside the Rust workspace.
 Dependencies: EDITOR-LSP-ENTRY; DIST-TOOLCHAIN-MANAGER for server images; a published standard library.
+Readiness: Blocked on the real LSP server, pinned server toolchain, published standard library and bounded hosting implementation.
 Authority: specification §23.6 (LSP); [architecture 12](../../architecture/en/12.diagnostics_and_lsp.md).
 Gap: `design_drift`; tutorials need a zero-install environment.
 

@@ -2,6 +2,7 @@
 Canonical language: English; [Japanese pointer](../ja/EDITOR-VSCODE-EXTENSION.md).
 Status: planned. Tier: full. Owner: [lsp todo](../../mizar-lsp/en/todo.md); the package lives in `editors/vscode/`, outside the Rust workspace.
 Dependencies: EDITOR-LSP-ENTRY; DIST-TOOLCHAIN-MANAGER for automatic toolchain installation.
+Readiness: Blocked on the stdio server, released toolchain manager and extension release pipeline.
 Authority: specification §1 (editor integration), §2 and Appendix A (lexical syntax for highlighting), §23.6 (LSP features).
 Gap: `design_drift`; the user-facing gate requires that installing the extension is enough to start verifying.
 

@@ -370,3 +370,11 @@ No exhaustive public enum exceptions are owned by this module.
 | `PackagePlanSource` | `#[non_exhaustive]`; downstream callers must include wildcard match arms. |
 | `ManifestDiagnosticKind` | `#[non_exhaustive]`; downstream callers must include wildcard match arms. |
 | `ManifestValidationError` | `#[non_exhaustive]`; downstream callers must include wildcard match arms. |
+
+## Toolchain Constraint Boundary
+
+The planner owns optional package toolchain constraints, their workspace/resolved-dependency intersection, exact released-version lock selection and W0306 mismatch policy (§23.1–23.2/§22.6.6).
+Selection needs authenticated dependency manifests and release-version inputs; absent inputs never authorize a guessed version. Preserve a valid locked selection; installers consume it.
+Development mismatch is a warning, release mismatch an error. The selected release fixes backend builds; installation and redistribution remain driver-owned.
+Planner tests cover omission and existing constraint forms, malformed/conflicting constraints, missing dependency/release inputs, preserved pins and unavailable versions; CLI tests cover both mismatch modes and matching running/locked versions with no W0306 or error.
+This deferred boundary introduces no lock schema/API shape or installed-runtime claim.
