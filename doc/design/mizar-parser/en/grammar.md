@@ -2357,3 +2357,11 @@ The parser still receives a generic `UserSymbol`; it does not resolve a mode,
 check arity, or assign semantics. Existing malformed first/trailing arguments
 and missing commas retain fail-closed diagnostics and recovery nodes. No AST
 kind, public API, or diagnostic vocabulary changes.
+
+## Reflected Syntax Input Boundary
+
+§§3.3/13.10/20.1.1/20.2.5 and Appendix A own expr, Binder, contextual RHS/input, definition-label and computation grammar.
+Produce syntax candidates for checker/RESOLVE33; parser enforces terminating-only labels and thesis positions in reflected/computation inputs, plus call/citation forms, while expected types, identity and reference meaning remain consumers' duties.
+Lexer/frontend/syntax vocabulary extends here; optional terminating labels and replay/call inputs need source-ordered nodes and recovery.
+Tests cover nested expr roles, Binder weakest/right association/whole qua, formula patterns/RHS, explicit mixed call/options, replay and terminating labels; reject malformed expr/Binder heads, non-call arguments, non-boolean replay and partial labels, with recovery controls.
+The protected exhaustive pass fixture blocks retirement until its test intent is authorized; additive syntax does not close that conflict.

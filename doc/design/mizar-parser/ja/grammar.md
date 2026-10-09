@@ -2206,3 +2206,11 @@ term-list boundary、comprehension-generator separator、structure-field opener 
 parser が受け取るのは generic `UserSymbol` のままで、mode resolution、arity check、semantic
 付与は行わない。malformed first/trailing argument と missing comma は既存の fail-closed
 diagnostic / recovery node を維持する。AST kind、public API、diagnostic vocabulary は不変。
+
+## Reflected Syntax Input Boundary
+
+expr、Binder、文脈依存RHS/入力、定義ラベル、計算構文は §§3.3/13.10/20.1.1/20.2.5 と Appendix A に従う。
+構文候補を checker/RESOLVE33 に渡す。parser は terminating 限定ラベル、反射/計算入力の thesis 位置、呼出/引用形式を検査し、期待型、同一性、参照意味は消費側が所有する。
+lexer/frontend/syntax の語彙を拡張し、terminating の任意ラベルと replay/呼出入力のソース順・回復を保つ。
+テストは expr 型引数、Binder の最弱・右結合/全体 qua、式パターン/RHS、呼出とオプション、replay と terminating ラベルを扱う。不正な expr/Binder head、呼出でない引数、真偽値でない replay、partial ラベルを拒否し、回復も検査する。
+保護された exhaustive 成功 fixture の意図変更が許可されるまで廃止は保留し、追加構文だけで解消扱いにしない。

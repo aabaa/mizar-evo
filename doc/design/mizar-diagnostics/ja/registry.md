@@ -282,3 +282,11 @@ registry参照と共有draft/record構築を可能にするが、登録だけで
 ## Import allocations
 
 E0220–E0224 は仕様22.7の名前と英語正本のsummaryを用い、`meaning_key = semantic_name`、Resolution family、Error severity、Active status、`since = spec-22-import-v1` とする。他のメタデータは初期既定値に従う。登録は共有draft/record構築のみを可能にし、ソース結合済み発行は[driver の継続境界](../../mizar-driver/ja/frontend_adapter.md#診断専用-import-継続の設計)に従う。E0225は未登録のままとする。
+
+## Reflection Diagnostic Adoption
+
+§22.4.8 は E0104/E0111/E0112/E0206/E0332/E0333 を予約する。B1-B8 は分類記録でありコードではない。
+採用はソース付きの所有段階記録を消費する。descriptor だけで発行や corpus coverage を有効化しない。
+宣言/使用、欠落する局所条件/モード/C、候補/残存位置、最初の未適用 rule または未完了段階を報告する。
+テストは source 宣言/使用位置、ghost の runtime 流入、Binder/C と valuation 形成、candidate/残留位置、runtime/import/inspection の limit stage を検査する。未証明/偽、fail/未完、guard 付き valid_at、import 拒否後の返却保持を区別する。
+既存の syntax/runtime/verification コードの役割を保ち、推測/新規 ID と未許可の期待値変更を行わない。

@@ -796,6 +796,13 @@ Core 48 additionally owns the missing-`return`-or-`fail` diagnostic, and Core 46
 contract self-reference rejection. Public codes E0330, E0501, and E0502 stay
 spec-reserved until a separately authorized diagnostics adoption.
 
+### Reflected-syntax implementation [ ]
+
+Active implementation contracts follow their own dependencies; completed AST-SPEC records remain specification-transfer history.
+
+1. [ ] [AST-PARSE](./task_contracts/en/AST-PARSE.md) — additive syntax; legacy retirement blocked.
+2. [ ] [AST-DIAGNOSTICS](./task_contracts/en/AST-DIAGNOSTICS.md) — descriptor design; emission waits for source-aware producers.
+
 ### Distribution and playground [ ]
 
 Installation and web access for the complete-processor claim. They follow the

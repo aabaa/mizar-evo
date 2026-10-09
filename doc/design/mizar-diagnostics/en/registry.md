@@ -284,3 +284,11 @@ Registry lookup and shared draft/record construction are enabled; no frontend pr
 ## Import allocations
 
 E0220–E0224 follow the exact names and summaries in specification 22.7, with `meaning_key = semantic_name`, Resolution family, Error severity, Active status and `since = spec-22-import-v1`; all other metadata uses the initial defaults. Allocation enables shared draft/record construction only. Source-bound emission follows the [driver continuation boundary](../../mizar-driver/en/frontend_adapter.md#diagnostic-only-import-continuation-design); E0225 is unallocated.
+
+## Reflection Diagnostic Adoption
+
+§22.4.8 reserves E0104/E0111/E0112/E0206/E0332/E0333; B1-B8 are classification records, not codes.
+Adoption consumes source-aware owning-stage records; descriptors alone activate neither emissions nor corpus coverage.
+Report source declarations/use, missing guarded conditions/mode/C, candidate/residual position and first unavailable rule or incomplete stage.
+Tests cover source declaration/use anchors, ghost runtime flows, Binder/C and valuation formation, candidate/residual positions and runtime/import/inspection limit stages; distinguish unproved/false, fail/incomplete, legal guarded valid_at and return retained after rejected import.
+Existing syntax/runtime/verification codes retain their specified roles; no inferred/new IDs or unauthorized expectation changes.

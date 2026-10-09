@@ -479,3 +479,5 @@ cargo test -p mizar-build
   ロジックは `mizar-lsp` にある。
 - 大きな trace が診断にインラインで置かれることは決してない — コンパクトな
   参照と上限付きプレビューのみ。
+
+- [ ] [AST-DIAGNOSTICS](../../task_contracts/ja/AST-DIAGNOSTICS.md).

@@ -1183,4 +1183,4 @@ Check the task off here once tests pass.
 
 ## AST specification implementation follow-up
 
-- [ ] AST-PARSE: expr/contextual inputs, otherwise-only match, Binder grammar and precedence; lexer/frontend/syntax prerequisites; see [§20](../../../spec/en/20.algorithm_and_verification.md) and [§13.10](../../../spec/en/13.term_expression.md).
+- [ ] [AST-PARSE](../../task_contracts/en/AST-PARSE.md).

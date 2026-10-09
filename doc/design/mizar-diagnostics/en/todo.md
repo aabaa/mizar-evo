@@ -510,4 +510,4 @@ Check the task off here once tests pass.
 
 ## AST specification implementation follow-up
 
-- [ ] AST-DIAGNOSTICS: reserved reflection diagnostic codes and source-derived locations/messages; no registry activation in this task; see [§20](../../../spec/en/20.algorithm_and_verification.md) and [§13.10](../../../spec/en/13.term_expression.md).
+- [ ] [AST-DIAGNOSTICS](../../task_contracts/en/AST-DIAGNOSTICS.md).

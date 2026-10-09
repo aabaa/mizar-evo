@@ -1132,3 +1132,5 @@ cargo test -p mizar-test
     implementation task は closed。
 
 - [ ] [ALGDEF-PARSER-FAIL](../../task_contracts/ja/ALGDEF-PARSER-FAIL.md)。
+
+- [ ] [AST-PARSE](../../task_contracts/ja/AST-PARSE.md).
