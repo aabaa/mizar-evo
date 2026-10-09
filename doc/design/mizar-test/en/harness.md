@@ -6380,3 +6380,13 @@ Activate only `fail_proof_verification_algorithm_ensures_unprovable_001` with un
 ## Narrower-loci predicate admission
 
 Reserve the exact narrower-loci source/sidecar identity and unchanged pass/type_elaboration/type_check oracle with its sole semantic reference and sole active tag. In one immutable source orchestration, freshly prove the authored registration through the existing checker/Core/VC/kernel/policy path, then invoke the [declaration checker](../../mizar-checker/en/type_checker.md#narrower-loci-predicate-declaration-checking) with that local output. Require the shared written type gate and both formal bindings, actual strictly narrower root correspondence, typed swapped equality bodies and one pending coherence request. Source, registration/choice/citation, policy, binding, normalized-signature, root-order/ambiguity and coherence-owner mutations must reject or retain the accurately changed pending goal; no caller acceptance, fabricated database, proof success or new VC snapshot is admitted.
+
+## Reflection Corpus Boundary
+
+Frozen owner contracts and §§13.10/20/22.4.8 govern new test-first reflection matrices; source examples are obligations, not execution results.
+Use real stage-specific producer/consumer routes; parser additions can precede blocked typing/MVM/proof/replay producers.
+Tests cover grammar/position, structure/UIDs, valuation/Binder/C, normal return, complete candidate residuals and strict replay provenance.
+Owner modules retain semantic matrix details; this harness owns private runner inputs, observations and activation pacing only.
+Keep protected exhaustive fixtures and existing semantic expectations fixed; separately authorized trace/activation changes require authentic runnable stages. Open requests never count as computation.
+Semantic matrices: [syntax](../../mizar-parser/en/grammar.md#reflected-syntax-input-boundary), [formation](../../mizar-checker/en/typed_ast.md#reflected-syntax-formation), [structure](../../mizar-core/en/core_ir.md#reflected-syntax-handoff),
+[obligations](../../mizar-vc/en/generator.md#reflected-algorithm-obligations), [import/replay](../../mizar-proof/en/policy.md#computation-publication-boundary), [artifacts](../../mizar-artifact/en/verified_artifact.md#computation-provenance-boundary) and [diagnostics](../../mizar-diagnostics/en/registry.md#reflection-diagnostic-adoption).

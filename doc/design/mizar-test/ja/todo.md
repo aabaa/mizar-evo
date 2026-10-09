@@ -1030,3 +1030,5 @@ Completion evidence: [central Task-269SDC historical contract](../../task_contra
 ## 2026年9月 監査1 意味論ブリッジ・オラクルコーパス増分
 
 本文は英語正本へ移管: [../en/todo.md](../en/todo.md) / [archive](../../archive/test_todo_sections.md).
+
+- [ ] [AST-CORPUS](../../task_contracts/ja/AST-CORPUS.md).

@@ -805,8 +805,11 @@ Active implementation contracts follow their own dependencies; completed AST-SPE
 3. [ ] [AST-TYPE](./task_contracts/en/AST-TYPE.md) — follows syntax and certified library/declaration producers.
 4. [ ] [AST-LOWER](./task_contracts/en/AST-LOWER.md) — follows authentic checked formation.
 5. [ ] [AST-CONTRACT](./task_contracts/en/AST-CONTRACT.md) — complete guarded obligations; earlier ALGDEF owners retain promotion/uniqueness.
-6. [ ] [ALG-MVM-EVALUATION](./task_contracts/en/ALG-MVM-EVALUATION.md) — runtime producer after verified body/export boundaries.
-7. [ ] [AST-COMPUTE](./task_contracts/en/AST-COMPUTE.md) — import/trust/replay after actual normal-return reports.
+6. [ ] [AST-ARTIFACT](./task_contracts/en/AST-ARTIFACT.md) — runtime export stage follows verified executable/body correspondence.
+7. [ ] [ALG-MVM-EVALUATION](./task_contracts/en/ALG-MVM-EVALUATION.md) — runtime producer after verified body/export boundaries.
+8. [ ] [AST-COMPUTE](./task_contracts/en/AST-COMPUTE.md) — import/trust/replay after actual normal-return reports.
+9. [ ] AST-ARTIFACT computation provenance/publication stage follows AST-COMPUTE; it does not block the earlier runtime export.
+10. [ ] [AST-CORPUS](./task_contracts/en/AST-CORPUS.md) — each test stage follows its owner; parser additions can proceed first.
 
 ### Distribution and playground [ ]
 
@@ -855,7 +858,7 @@ Not part of the sequential flow; each row records its re-entry trigger.
 | [mizar-kernel task 32](./mizar-kernel/en/todo.md) — solver step-budget deferral (audit F3) | any pinned `batsat` version change (task-24 audit procedure) |
 | [mizar-parser task 46](./mizar-parser/en/todo.md) — concrete operator declarations | [x] completed after fresh audit confirmed frontend Task 20 had already met the trigger |
 | [mizar-syntax task 21](./mizar-syntax/en/todo.md) — rustdoc summaries | deferred documentation pass |
-| MVM / code-extraction / backend runtime work (spec 20) | promote to owner tasks before claiming algorithm *execution* support (see [Completion Gates](#completion-gates)) |
+| MVM / code-extraction / backend runtime work (spec 20) | MVM follows the active reflected-syntax contracts above; code extraction/backends remain parked before claiming algorithm *execution* support (see [Completion Gates](#completion-gates)) |
 
 ## Appendix A — Incremental Verification Contract Inventory
 

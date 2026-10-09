@@ -379,4 +379,4 @@ Check the task off here once tests pass.
 
 ## AST specification implementation follow-up
 
-- [ ] AST-ARTIFACT: complete computation provenance/identity, transitive executable and proof-policy dependency metadata; see [§20](../../../spec/en/20.algorithm_and_verification.md) and [§13.10](../../../spec/en/13.term_expression.md).
+- [ ] [AST-ARTIFACT](../../task_contracts/en/AST-ARTIFACT.md).

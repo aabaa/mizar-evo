@@ -2,7 +2,8 @@
 Canonical language: English; [Japanese pointer](../ja/AST-COMPUTE.md).
 Status: planned. Tier: full gates. Primary owner: [mizar-proof](../../mizar-proof/en/00.crate_plan.md).
 Consumers: mizar-artifact, mizar-cache, mizar-test and tooling.
-Dependencies: AST-CONTRACT verified contracts/equations, AST-TYPE certification,
+Dependencies: AST-CONTRACT verified contracts (equations when replay applies),
+AST-TYPE certification,
 AST-LOWER complete input and AST-ARTIFACT validated runtime interface.
 Readiness: blocked on MVM/executable correspondence and proof producers;
 ALG-MVM-EVALUATION owns execution and remains dependency-blocked.

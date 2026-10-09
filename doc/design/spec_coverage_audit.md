@@ -21,8 +21,8 @@ The AST reflection specification transfer does not activate coverage.
 Parser/checker, core/VC, proof/MVM and artifact/build integration remain
 unimplemented follow-ups sequenced by [the roadmap](./todo.md). Owner TODOs
 now name [AST-PARSE](./task_contracts/en/AST-PARSE.md), [AST-TYPE](./task_contracts/en/AST-TYPE.md), [AST-LOWER](./task_contracts/en/AST-LOWER.md), [AST-CONTRACT](./task_contracts/en/AST-CONTRACT.md), [AST-COMPUTE](./task_contracts/en/AST-COMPUTE.md),
-AST-ARTIFACT, [AST-DIAGNOSTICS](./task_contracts/en/AST-DIAGNOSTICS.md) and AST-CORPUS. Reflection diagnostic codes
-remain spec-reserved; this transfer activates no runner or semantic credit. Verification-time runtime production is owned by [ALG-MVM-EVALUATION](./task_contracts/en/ALG-MVM-EVALUATION.md); execution formats/correspondence and real runtime inputs remain prerequisite blockers.
+[AST-ARTIFACT](./task_contracts/en/AST-ARTIFACT.md), [AST-DIAGNOSTICS](./task_contracts/en/AST-DIAGNOSTICS.md) and [AST-CORPUS](./task_contracts/en/AST-CORPUS.md). Reflection diagnostic codes
+remain spec-reserved; this transfer activates no runner or semantic credit. Verification-time runtime production is owned by [ALG-MVM-EVALUATION](./task_contracts/en/ALG-MVM-EVALUATION.md); execution formats/correspondence and real runtime inputs remain prerequisite blockers. Runtime export precedes evaluation/import; computation-record publication and runner activation follow their genuine producers.
 
 ## Status Legend
 

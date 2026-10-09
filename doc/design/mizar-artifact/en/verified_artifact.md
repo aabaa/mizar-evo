@@ -557,3 +557,11 @@ canonical interface and implementation hash input helpers. Real producer
 integration remains an `external_dependency_gap` until resolver, checker, VC,
 proof, and kernel crates expose stable projection inputs. Manifest/file I/O and
 atomic publication were completed by tasks 13 and 14.
+
+## Computation Provenance Boundary
+
+§§20.9.1/20.9.2 require executable/verified-algorithm correspondence, public computational interfaces and exact transitive identities.
+Runtime exports consume genuine executable producers first; later computation records bind complete input/context/C, result, VM/rules and replay mode.
+Computable public entries, including default-public declarations, require runtime publication without an opt-in flag or contract-only substitution. Private helper names stay internal, but validated internal calls may execute; every transitive package-boundary call requires a public computable target in a validated artifact, with no dependency-source fallback.
+Tests accept authentic default-public, explicit-public and validated transitive-public entries, including valid internal private helpers. Mutate algorithm/signature/contract/executable, transitive dependency, complete input/context/C, VM/rule-version and effective replay identities; reject missing/stale/corrupt artifacts, weaker-mode cache reuse, direct private cross-package calls and missing required public exports. Preserve computed taint under later kernel evidence; publication is atomic and never releases an unverified candidate.
+Expression metadata alone is not executable content; serialization/loader details remain deferred until a real producer contract exists.

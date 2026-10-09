@@ -511,3 +511,11 @@ helper を確定する。task 16 は canonical interface/implementation hash inp
 real producer integration は、resolver、checker、VC、proof、kernel crate が stable projection input を
 公開するまで `external_dependency_gap` として残る。manifest/file I/O と atomic publication は task 13 と
 14 で完了済み。
+
+## Computation Provenance Boundary
+
+実行内容/検証済み algorithm の対応、公開計算 interface、正確な推移同一性は §§20.9.1/20.9.2 に従う。
+runtime export は先に実際の実行内容生成側を消費し、後の計算記録は完全な入力/文脈/C、結果、VM/rule、replay mode を結ぶ。
+省略時の public 宣言を含め、計算可能な public entry は opt-in flag や契約だけの代替を用いず runtime 公開を要求する。private helper 名は内部に保つが、検証済み内部呼出しは実行できる。すべての推移的 package 境界呼出しは検証済み artifact の public な計算可能対象を要求し、依存ソースへの fallback は認めない。
+テストは実際の証拠に結ばれた既定 public、明示 public、検証済み推移 public entry と正当な内部 private helper を受理する。algorithm/署名/契約/実行内容、推移依存、完全な入力/文脈/C、VM/rule version、実効 replay の同一性を変異させる。欠落/古い/破損 artifact、弱い mode の cache 再利用、直接の private package 境界呼出し、必要な public export の欠落を拒否する。後続 kernel 証拠でも computed 依存を保持する。公開は atomic とし未検証候補を出さない。
+式 metadata だけでは実行内容にならず、serialization/loader の詳細は実際の生成側 contract まで保留する。

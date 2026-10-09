@@ -5814,3 +5814,13 @@ Core/VcSet 全体の不変再実行と [VcSet 全体の snapshot](../../mizar-vc
 ## Narrower-loci predicate admission
 
 narrower-loci の正確な source/sidecar identity、変更しない pass/type_elaboration/type_check oracle、唯一の semantic ref と active tag を予約する。一つの immutable source orchestration 内で、記述された登録を既存 checker/Core/VC/kernel/policy 経路で新たに証明し、その局所出力で [declaration checker](../../mizar-checker/ja/type_checker.md#narrower-loci-predicate-declaration-checking) を呼ぶ。共有の記述 type gate と両 formal binding、実際に狭い root 対応、型検査済みの逆順等式本体、pending coherence request 一つを要求する。source・registration/choice/citation・policy・binding・正規化 signature・root 順序/曖昧性・coherence owner の変異は拒否、または正しく変更された pending goal の保持を確認する。caller acceptance・偽造 database・証明成功・新規 VC snapshot は認めない。
+
+## Reflection Corpus Boundary
+
+固定 owner contract と §§13.10/20/22.4.8 に従い新しい test-first matrix を作る。仕様例は義務であり実行結果ではない。
+実際の段階別 producer/consumer route を用い、parser 追加は未実装 typing/MVM/proof/replay 生成側に先行できる。
+テストは構文/位置、構造/UID、valuation/Binder/C、正常復帰、候補全体残存、strict replay provenance を扱う。
+意味 matrix 詳細は owner module に置き、harness は private runner 入力、観測、activation 順序のみを所有する。
+保護された exhaustive fixture と既存の意味期待値は固定する。別途許可される trace/activation の変更は実際の実行可能な段階を要求する。Open request を計算として数えない。
+意味 matrix: [構文](../../mizar-parser/ja/grammar.md#reflected-syntax-input-boundary)、[形成](../../mizar-checker/ja/typed_ast.md#reflected-syntax-formation)、[構造](../../mizar-core/ja/core_ir.md#reflected-syntax-handoff)、
+[義務](../../mizar-vc/ja/generator.md#reflected-algorithm-obligations)、[import/replay](../../mizar-proof/ja/policy.md#computation-publication-boundary)、[artifact](../../mizar-artifact/ja/verified_artifact.md#computation-provenance-boundary)、[診断](../../mizar-diagnostics/ja/registry.md#reflection-diagnostic-adoption)。

@@ -371,3 +371,5 @@ cargo test -p mizar-checker
 - Formula/substitution kernel evidence witness ref は task 23 で定義された。
   real witness publication は producer output が存在するまで deferred とする。
   resolution-trace certificate 用の placeholder field を追加してはならない。
+
+- [ ] [AST-ARTIFACT](../../task_contracts/ja/AST-ARTIFACT.md).
