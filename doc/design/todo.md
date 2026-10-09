@@ -917,15 +917,13 @@ Open decisions (block or shape upcoming steps):
   evidence. Owned by [mizar-proof task 6](./mizar-proof/en/todo.md) with
   `mizar-kernel`, and tracked in [mizar-kernel](./mizar-kernel/en/todo.md) and
   [mizar-vc](./mizar-vc/en/todo.md) (plan step 7).
-- **Linear arithmetic by reflection: direction decided, details open.** The
-  kernel gains no arithmetic. Linear arithmetic is a library feature: expression
-  trees, `Eval`, and a verified certificate checker evaluated by
-  `by computation` (architecture 15). Decided 2026-09-27: computation results
-  are trusted MVM evaluations by default, with an option to replay them through
-  defining equations and the SAT check. Open: the specification of that
-  computation trust model (a kernel-scope decision, now approved in
-  principle) and of the automatic goal-to-tree step and its invocation, which
-  must not add syntax lightly.
+- **AST reflection specification transfer.** Adopt the 2026-10-09 built-in
+  `expr of T` / ghost `val` and explicit `by computation` decisions;
+  the user-defined tree/`Eval` proposal is withdrawn. Binder notation is
+  justified as a shared function abstraction, with no kernel lambda.
+  Specification transfer precedes runtime implementation; see
+  [architecture 15](./architecture/en/15.kernel_certificate_format.md).
+  Task: [AST-SPEC-00](./task_contracts/en/AST-SPEC-00.md).
 
 Resolved decisions (kept for reference; details live in the linked docs):
 

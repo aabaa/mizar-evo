@@ -17,6 +17,10 @@ This document records whether each canonical specification chapter under
 not change language behavior, `doc/spec`, `.miz` tests, expectation metadata,
 or Rust source. It is a synchronization ledger for design and TODO work.
 
+The AST reflection specification transfer does not activate coverage.
+Parser/checker, core/VC, proof/MVM and artifact/build integration remain
+unimplemented follow-ups sequenced by [the roadmap](./todo.md).
+
 ## Status Legend
 
 - `covered` - design docs describe the implementation boundary at usable
