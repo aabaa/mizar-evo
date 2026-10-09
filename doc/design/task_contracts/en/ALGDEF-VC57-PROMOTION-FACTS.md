@@ -1,19 +1,20 @@
 # Task ALGDEF-VC57-PROMOTION-FACTS: module-local promotion axioms as premises
 Canonical language: English; [Japanese pointer](../ja/ALGDEF-VC57-PROMOTION-FACTS.md).
 Status: planned. Tier: full. Owners: [VC plan](../../mizar-vc/en/00.crate_plan.md) (premise exposure) and [proof plan](../../mizar-proof/en/00.crate_plan.md) (module-local acceptance); consumers: [resolve plan](../../mizar-resolve/en/00.crate_plan.md), [test plan](../../mizar-test/en/00.crate_plan.md).
-Dependencies: ALGDEF-CORE54-DEFINING-EQUATIONS; VC 52 termination obligations; ALGDEF-RESOLVE33-ALGORITHM-REFERENCES.
+Dependencies: ALGDEF-CORE54-DEFINING-EQUATIONS; VC 52 decrease obligations and VC 53 independent normal-return evidence; E1/E2/E4 verification; ALGDEF-RESOLVE33-ALGORITHM-REFERENCES.
+Readiness: dependency-blocked on the listed E1/E2/E4 and module-local acceptance producers.
 Precedent: the bounded [source existential-registration proof](../../mizar-proof/en/status.md#source-existential-registration-proof) freshly proves obligations inside one authenticated source orchestration, checks kernel evidence itself, and activates its result module-locally. Imported (transferable) acceptance is ALGDEF-VC59-IMPORTED-PROMOTION-FACTS.
 Authority: specification §20.7.2 and §20.13.2 promotion axioms, §16.5.1 citation of promoted algorithms, §10.12 definitional facts; [architecture 07](../../architecture/en/07.vc_generation.md#definition-unfolding-is-controlled).
 Gap: `test_gap` and `source_drift`; no producer accepts termination or exposes promotion axioms.
 
 ## Scope
 
-Within one authenticated source orchestration, freshly prove the termination
-obligations of an algorithm declared in the same module, following the
+Within one authenticated source orchestration, freshly prove normal return
+and E1/E2/E4 prerequisites for an algorithm declared in the same module, following the
 precedent, and on genuine acceptance expose its totality, contract, and (for a
 definitional algorithm) defining-equation axioms as premises with provenance,
 under the definition expansion policy, when a later VC cites the algorithm
-name or the policy makes them available. Item order is preserved and no fact
+definition label or the policy makes them available. Item order is preserved and no fact
 is retroactive.
 
 ## Forbidden
@@ -27,7 +28,7 @@ changes made to match behavior.
 ## Tests
 
 Test-first real sources: `FactorialZero` and `FactorialStep` from §20.7.2
-proved `by factorial`; a citation whose termination proof fails, contributing
+proved `by FactorialDef`; failed E1, E2 or E4 prerequisites each contributing
 no premise; a non-definitional algorithm contributing only totality and
 contract. Corruption tests cover forged or stale acceptance, reordered items,
 and mismatched provenance.

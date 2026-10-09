@@ -103,14 +103,15 @@ resolver-owned family:
 | Family | Sources | Visibility surface | Downstream consumers |
 |---|---|---|---|
 | theorem / lemma result | `theorem` and `lemma` items | current module after declaration; exported table when public | citations, artifacts, ATP premise selection |
-| definition | definition and redefinition labels | defining item and source correctness-role provenance | checker, VC generation, diagnostics |
+| definition | definition and redefinition labels, including optional terminating-algorithm definition labels | defining item and source correctness-role provenance | checker, VC generation, diagnostics |
 | proof step | labeled propositions, assumptions, conclusions, cases, `now` blocks, iterative equality chains | enclosing reasoning block and nested child blocks after declaration | proof justification and local context |
 | registration | registration and reduction labels | registration item and registration trace | checker, kernel replay, diagnostics |
 
 The expected label family comes from the use-site syntax. A `by` citation may
-refer to a local proof-step label or a module theorem/lemma label. Definition
-and registration label references are resolved only in syntax positions that
-expect those families, such as correctness or registration trace sites. If a
+refer to a local proof-step label, a module theorem/lemma label, or a definition
+label, including an optional terminating-algorithm definition label (§16.5.1).
+Registration label references are resolved only in syntax positions that expect
+that family, such as registration trace sites. If a
 use site can legally accept multiple families and more than one visible
 candidate remains, the resolver records deterministic ambiguity instead of
 choosing one by source order.

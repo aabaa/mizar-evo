@@ -707,7 +707,7 @@ IR264. **Authenticated structure-property definition owner。** [x]
       [source_family_decomposition.md](./source_family_decomposition.md)をcanonicalとする。
     - [ ] Task 54 は定義的アルゴリズムの定義式を構成する:
       [ALGDEF-CORE54-DEFINING-EQUATIONS](../../task_contracts/ja/ALGDEF-CORE54-DEFINING-EQUATIONS.md)。
-      Task 48 は `return` のない経路の診断も担い、Task 46 は契約の自己参照の拒否も担う。
+      Task 48 は return-or-fail の網羅性、Task 53 は禁止された失敗位置と ghost 報告項、Task 46 は契約の自己参照の拒否を担う。
 
 ## 推奨検証
 

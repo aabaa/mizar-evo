@@ -2,6 +2,7 @@
 Canonical language: English; [Japanese pointer](../ja/ALGDEF-VC59-IMPORTED-PROMOTION-FACTS.md).
 Status: blocked-reserved. Tier: full. Owner: [VC plan](../../mizar-vc/en/00.crate_plan.md); consumers: [proof plan](../../mizar-proof/en/00.crate_plan.md), [test plan](../../mizar-test/en/00.crate_plan.md).
 Dependencies: ALGDEF-VC57-PROMOTION-FACTS; an authenticated, transferable accepted-termination status for an algorithm exported by another module.
+Readiness: dependency-blocked on transferable verified-status authority and authenticated imported inputs.
 Blocker: current canonical authority names no producer, schema, or authentication rules for transferable accepted verification status. This is the general accepted-status import gap recorded for checker Task 274 and VC 53; do not invent it.
 Authority: specification §20.13.2 promotion axioms, §16.5.1 citation, §12 imports, §23 artifacts.
 Gap: `external_dependency_gap`.

@@ -561,13 +561,10 @@ the paired producer tasks.
     46/48-49/52-53; `MT10-VC-PV/VC51`.
 52. **Recursive and mutual-recursion decrease VCs.** [ ] — Specs
     20.7-20.8/20.13.4; Core 46/52-53; `MT10-VC-PV/VC52`.
-53. **Partial-call verified-termination evidence admission boundary.** [blocked] — Specs
-    20.7-20.8/20.13.1; Core 46/52-53; unexecuted `MT10-VC-PV/VC53`. Current
-    canonical authority names no authenticated evidence-reference payload,
-    producer, schema, or authentication contract. Future canonical authority must name the
-    producer, reference identity/schema, authentication rules, and owning tests
-    before this non-VC admission task can execute. It emits no
-    `PartialTermination` VC.
+53. **Terminating-body normal-return evidence admission.** [blocked] — Specs
+    20.7.2/20.13.1; Core 46/52-53; `MT10-VC-PV/VC53`. Authentic call/input and
+    verified evidence producers remain unavailable. VC 44 owns partial body-call
+    continuation facts; those assumptions never prove E4. No `PartialTermination` VC.
 54. **Snapshot/claim theorem VCs.** [~] — bounded void-claim VCs active; Specs 20.6/20.13; Core 47/51-53;
     `MT10-VC-PV/VC54`.
 55. **Ghost-isolation zero-VC integration.** [ ] — Specs

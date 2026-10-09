@@ -755,8 +755,8 @@ IR264. **Authenticated structure-property definition owner.** [x]
       [source_family_decomposition.md](./source_family_decomposition.md).
     - [ ] Task 54 constructs definitional-algorithm defining equations:
       [ALGDEF-CORE54-DEFINING-EQUATIONS](../../task_contracts/en/ALGDEF-CORE54-DEFINING-EQUATIONS.md).
-      Task 48 also owns the missing-`return` diagnostic, and Task 46 the
-      contract self-reference rejection.
+      Task 48 owns return-or-fail exhaustiveness; Task 53 owns forbidden
+      failure placement and ghost reports. Task 46 owns contract self-reference.
 
 ## Recommended Verification
 

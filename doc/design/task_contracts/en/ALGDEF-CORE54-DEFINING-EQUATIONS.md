@@ -2,6 +2,7 @@
 Canonical language: English; [Japanese pointer](../ja/ALGDEF-CORE54-DEFINING-EQUATIONS.md).
 Status: planned. Tier: full. Owner: [Core plan](../../mizar-core/en/00.crate_plan.md); consumers: [VC plan](../../mizar-vc/en/00.crate_plan.md), [test plan](../../mizar-test/en/00.crate_plan.md).
 Dependencies: Core 42, 43, and 46 in the [algorithm task graph](../../mizar-core/en/source_family_decomposition.md#accepted-algorithm-coreir-task-graph). The fragment has no loops, so this task checks exhaustiveness on the statement tree itself; Core 48 keeps the general missing-`return` diagnostic for other bodies.
+Readiness: dependency-blocked on source-authenticated Core 42/43/46 algorithm producers.
 Authority: specification §20.7.3 definitional fragment, §20.13.6 equation construction, §20.2.6 every path returns, §20.8.2 recursive groups, §10.12.2 guarded definiens shape; [architecture 06](../../architecture/en/06.elaboration_and_core_ir.md#algorithms-are-lowered-to-core-items-not-yet-cfg).
 Gap: `test_gap` and `source_drift`; the specification amendment adds equation construction that no Core family owned.
 

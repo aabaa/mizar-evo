@@ -783,13 +783,13 @@ listed dependencies are complete.
    deps resolver declaration dependency edges and algorithm call targets.
 5. [ ] Resolver 33 — [algorithm synonym targets and citations](./task_contracts/en/ALGDEF-RESOLVE33-ALGORITHM-REFERENCES.md).
 6. [ ] VC 57 — [module-local promotion axioms as premises](./task_contracts/en/ALGDEF-VC57-PROMOTION-FACTS.md);
-   deps Core 54, VC 52, and resolver 33; follows the bounded proof-status
+   deps Core 54, VC 52/53, E1/E2/E4 producers and resolver 33; follows the bounded proof-status
    precedent for module-local acceptance.
 7. [ ] VC 59 — [imported promotion axioms](./task_contracts/en/ALGDEF-VC59-IMPORTED-PROMOTION-FACTS.md);
    blocked-reserved on the transferable accepted-status authority shared with
    checker Task 274 and VC 53.
 
-Core 48 additionally owns the missing-`return` diagnostic, and Core 46 the
+Core 48 additionally owns the missing-`return`-or-`fail` diagnostic, and Core 46 the
 contract self-reference rejection. Public codes E0330, E0501, and E0502 stay
 spec-reserved until a separately authorized diagnostics adoption.
 

@@ -204,8 +204,8 @@ generator は language spec の structured Hoare-style schema に従い、source
 - 各 algorithm call の call precondition;
 - すべての return edge と algorithm contract exit の postcondition;
 - assertion obligation;
-- branch/match path context と、source が `exhaustive` を要求する場合だけの explicit
-  match-exhaustiveness proof obligation;
+- 順序付き branch/match context、`otherwise` と partial の暗黙的 fail。
+  match-exhaustiveness VC と旧 `exhaustive` 構文は作らない;
 - while-loop invariant entry、preservation、break、continue、decreasing-measure obligation。
   normal exit は successor context で、exit VC ではない;
 - `to` と `downto` の両方に対する range-loop positive-step、invariant-entry、
@@ -214,8 +214,8 @@ generator は language spec の structured Hoare-style schema に従い、source
   invariant-maintenance、order-independence obligation;
 - call graph component と decreasing measure ごとに grouping された recursive /
   mutually recursive termination obligation;
-- exact call が verified termination evidence を cite または context に持つ場合だけの
-  partial-call postcondition admission。`PartialTermination` VC は emit しない;
+- partial body-call の継続には fresh `returns` と postcondition fact を保持する。
+  terminating caller は正常返却証拠を別に要求する (§20.13.1);
 - ghost-only Pick site を含むすべての set-based / type-based Pick site 向けの Pick
   non-emptiness obligation;
 - ghost-isolation static check と ghost-only `Pick` erasure record。isolation は
@@ -466,8 +466,7 @@ Tasks 32-55 は broader source-derived family をすべて所有する。特に 
 `requires` は callee-body context であり source-generated `AlgorithmPrecondition` proof VC
 ではない。loop normal exit と range hidden/bound value は explicit canonical formula がない限り
 context である。simplification-order/ghost isolation は static check で、source
-`PartialTermination` / `GhostErasureSafety` VC は存在しない。partial call の successor
-postcondition は exact cited/in-context verified termination evidence がある場合だけ利用できる。
+`PartialTermination` / `GhostErasureSafety` VC は存在しない。
 Task 30 は existing `GeneratedSethood` compatibility kind に source-derived family を
 割り当てない。explicit mode-declaration sethood は `DefinitionCorrectness` を使い、
 Fraenkel sethood は VC ではなく accepted prerequisite evidence である。

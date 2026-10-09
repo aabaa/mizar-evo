@@ -95,14 +95,14 @@ label は ordinary symbol ではない。label declaration は resolver-owned fa
 | family | source | visibility surface | downstream consumer |
 |---|---|---|---|
 | theorem / lemma result | `theorem` item と `lemma` item | declaration 後の current module。public の場合は exported table | citation、artifact、ATP premise selection |
-| definition | definition / redefinition label | defining item と source correctness-role provenance | checker、VC generation、diagnostics |
+| definition | definition / redefinition label と terminating アルゴリズムの任意の定義ラベル | defining item と source correctness-role provenance | checker、VC generation、diagnostics |
 | proof step | labeled proposition、assumption、conclusion、case、`now` block、iterative equality chain | declaration 後の enclosing reasoning block と nested child block | proof justification と local context |
 | registration | registration / reduction label | registration item と registration trace | checker、kernel replay、diagnostics |
 
 期待される label family は use-site syntax から来る。`by` citation は local proof-step
-label または module theorem / lemma label を参照できる。Definition と registration の
-label reference は correctness site や registration trace site など、その family を
-期待する syntax position でのみ解決する。ある use site が複数 family を正当に受け入れ、
+label、module theorem / lemma label、または definition label（terminating アルゴリズムの
+任意の定義ラベルを含む、§16.5.1）を参照できる。Registration の label reference は
+registration trace site など、その family を期待する syntax position でのみ解決する。ある use site が複数 family を正当に受け入れ、
 visibility filtering 後も複数候補が残る場合、resolver は source order で選ばず
 deterministic ambiguity を記録する。
 

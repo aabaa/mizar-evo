@@ -223,8 +223,8 @@ The complete algorithm VC model includes these candidate families:
 - call preconditions for each algorithm call;
 - postconditions for every return edge and algorithm contract exit;
 - assertion obligations;
-- branch and match path contexts, plus an explicit match-exhaustiveness proof
-  obligation only when the source requests `exhaustive`;
+- ordered branch/match contexts, `otherwise` and partial implicit failure;
+  no match-exhaustiveness VC or legacy `exhaustive` syntax;
 - while-loop invariant entry, preservation, break, continue, and
   decreasing-measure obligations; normal exit is successor context, not an
   exit VC;
@@ -235,8 +235,8 @@ The complete algorithm VC model includes these candidate families:
   invariant-maintenance, and order-independence obligations;
 - recursive and mutually recursive termination obligations grouped by call
   graph component and decreasing measure;
-- partial-call postcondition admission only when the exact call cites or has in
-  context verified termination evidence; no `PartialTermination` VC is emitted;
+- partial body-call continuations retain fresh `returns` and postcondition facts;
+  terminating callers separately require normal-return evidence (§20.13.1);
 - Pick non-emptiness obligations for every set-based or type-based Pick site,
   including ghost-only Pick sites;
 - ghost-isolation static checking and ghost-only `Pick` erasure records;
@@ -519,8 +519,7 @@ entry `requires` is callee-body context and not a source-generated
 `AlgorithmPrecondition` proof VC; loop normal exit and range hidden/bound values
 are context unless an explicit canonical formula exists; simplification-order
 and ghost isolation are static checks; no source `PartialTermination` or
-`GhostErasureSafety` VC exists. A partial call exposes its successor
-postcondition only with exact cited/in-context verified termination evidence.
+`GhostErasureSafety` VC exists.
 Task 30 assigns no source-derived family to the existing `GeneratedSethood`
 compatibility kind: explicit mode-declaration sethood uses
 `DefinitionCorrectness`, and Fraenkel sethood is accepted prerequisite evidence

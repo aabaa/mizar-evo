@@ -2,6 +2,7 @@
 Canonical language: English; [Japanese pointer](../ja/ALGDEF-VC58-COMPUTATION-UNIQUENESS.md).
 Status: planned. Tier: full. Owner: [VC plan](../../mizar-vc/en/00.crate_plan.md); consumers: [test plan](../../mizar-test/en/00.crate_plan.md).
 Dependencies: the existing [bounded computation request](../../mizar-vc/en/generator.md#bounded-computation-request-generation); Core 42, 44, and 46 (Pick sites, collection loops, resolved calls); VC 44 (call substitution).
+Readiness: dependency-blocked on authentic call-closure, set/sequence and Pick classifications.
 Authority: specification §20.9.2 determinism requirement, §20.3 and §20.2.4 computation restrictions, §22.4.5 E0330; [architecture 07](../../architecture/en/07.vc_generation.md#algorithm-vcs-follow-structured-control-flow).
 Gap: `test_gap` and `source_drift`; no computation step carries the uniqueness obligation.
 
@@ -12,7 +13,7 @@ calls within the same package. An imported callee whose body is available only
 through a computational export (§20.9.1, parked with the MVM) leaves the
 closure unestablished: the step stays open and nothing is guessed. For each
 value-returning algorithm in the closure that contains a non-ghost Pick
-site or a `for ... in` loop, attach the §20.9.2 uniqueness obligation to the
+site or an unordered set `for ... in` loop, attach the §20.9.2 uniqueness obligation to the
 step with provenance. When `ensures` has the form `result = t` or
 `result = true iff φ` with no `result` in `t` or `φ`, record the exemption
 instead of an obligation.
@@ -26,9 +27,9 @@ made to match behavior.
 
 ## Tests
 
-Test-first real sources: `exists_greater` from §20.9.2 (exempt), `find_even`
-from §20.3 (obligation generated and left open), a closure that reaches such
-an algorithm transitively, and a deterministic loop algorithm with no
+Test-first real sources: `exists_greater` from §20.9.2 (exempt), a single-valued Pick algorithm
+with an underdetermining `ensures` (§20.3; obligation generated and left open), a closure that reaches such
+an algorithm transitively, an ordered sequence loop with no Pick and no
 obligation, and an imported callee that leaves the closure unestablished.
 Corruption tests cover a missing callee, a stale closure, and a forged
 exemption.
