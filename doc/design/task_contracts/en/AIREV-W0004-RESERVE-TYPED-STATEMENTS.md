@@ -2,6 +2,7 @@
 Canonical language: English; [Japanese pointer](../ja/AIREV-W0004-RESERVE-TYPED-STATEMENTS.md).
 Status: planned. Tier: full. Owner: [resolve plan](../../mizar-resolve/en/00.crate_plan.md); consumers: [test plan](../../mizar-test/en/00.crate_plan.md); public code registration follows the resolver diagnostics adoption (resolver task 30).
 Dependencies: resolver reserve bindings and theorem visibility.
+Readiness: Blocked on complete public-statement reserve-type provenance and resolver diagnostic adoption; the public W0004 code remains spec-reserved.
 Authority: specification §22.6.7 (W0004), §4.3 (reserve closure and binder typing), §11.4 (visibility).
 Gap: `test_gap`; no producer detects reserve-typed public statements.
 

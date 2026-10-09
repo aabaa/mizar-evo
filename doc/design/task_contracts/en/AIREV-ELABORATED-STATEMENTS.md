@@ -2,6 +2,7 @@
 Canonical language: English; [Japanese pointer](../ja/AIREV-ELABORATED-STATEMENTS.md).
 Status: planned. Tier: full. Owner: [checker plan](../../mizar-checker/en/00.crate_plan.md) (producer); consumers: [artifact plan](../../mizar-artifact/en/00.crate_plan.md) (`statements` array), [lsp todo](../../mizar-lsp/en/todo.md) (hover and code action), [test plan](../../mizar-test/en/00.crate_plan.md).
 Dependencies: real statement producers (checker Task 258) and resolver reserve bindings; the `*.mizir.json` writer for publication; mizar-lsp metadata tasks 12-13 for hover.
+Readiness: Blocked on general producers for all theorem, lemma, scheme and definition items; bounded Task-258 profiles do not supply that scope.
 Authority: specification §21.1.1, §23.5.1 (`statements` array), §23.6.1 (hover and make-binders-explicit action), §4.3 (reserve closure).
 Gap: `test_gap` and `source_drift`; no producer emits elaborated statements.
 

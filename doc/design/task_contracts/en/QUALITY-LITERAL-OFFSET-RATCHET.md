@@ -1,7 +1,8 @@
 # Task QUALITY-LITERAL-OFFSET-RATCHET: no new literal source offsets in production
 Canonical language: English; [Japanese pointer](../ja/QUALITY-LITERAL-OFFSET-RATCHET.md).
-Status: planned. Tier: light. Owner: [test plan](../../mizar-test/en/00.crate_plan.md) (repository lint); consumers: every crate with production `src`.
+Status: planned. Tier: full. Owner: [test plan](../../mizar-test/en/00.crate_plan.md) (repository lint); consumers: every crate with production `src`.
 Dependencies: none.
+Readiness: Ready as repository-lint work; this task adds no producer generality or semantic credit.
 Authority: [autonomous_crate_development.md](../../autonomous_crate_development.md#authority-order); the existing documentation-volume ratchet is the model for baseline handling.
 Gap: `design_drift`. Production code in `mizar-checker` and `mizar-core` compares against source ranges and node indices written as integer literals, which only matches specific corpus files.
 
@@ -22,8 +23,9 @@ body.
 ## Tests and exit
 
 Unit tests cover the counter on literal and non-literal ranges, test-module
-exclusion, and stale or raised baseline rows. Require specification,
-implementation, volume/scope, and consistency reviews; `cargo fmt --check`,
+exclusion, and stale or raised baseline rows. Require independent
+specification, test-sufficiency, implementation, volume/scope, and consistency
+reviews; `cargo fmt --check`,
 `cargo clippy --all-targets --all-features -- -D warnings`, `cargo test`.
 Exit: the lint passes on the current tree, and any new literal offset in
 production code fails it.

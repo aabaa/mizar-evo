@@ -2,6 +2,7 @@
 Canonical language: English; [Japanese pointer](../ja/QUALITY-METAMORPHIC-GUARD.md).
 Status: planned. Tier: full. Owner: [test plan](../../mizar-test/en/00.crate_plan.md); consumers: every producer crate whose active corpus cases it varies.
 Dependencies: the active semantic corpus and its runners; no producer change.
+Readiness: Ready through current real producers; failed variants remain named producer defects rather than expectation changes.
 Authority: the authority order of [autonomous_crate_development.md](../../autonomous_crate_development.md#authority-order) (tests and specification outrank implementation); specification chapter 2 (layout, comments, identifiers) for which rewrites preserve meaning.
 Gap: `test_gap`. Active cases prove behavior only on their exact bytes; nothing shows that producers generalize to sources they were not fitted to.
 

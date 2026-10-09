@@ -3,7 +3,7 @@ Canonical language: English; [Japanese pointer](../ja/AIREV-OPEN-STATEMENT-COUNT
 Status: planned. Tier: full. Owner: [atp plan](../../mizar-atp/en/00.crate_plan.md); consumers: [driver plan](../../mizar-driver/en/00.crate_plan.md) (configuration), [lsp todo](../../mizar-lsp/en/todo.md) (editor action), [test plan](../../mizar-test/en/00.crate_plan.md).
 Dependencies: the real backend runner and its counterexample classification (Step 7 item 1).
 Authority: specification §22.4.3 (search on open or omitted proofs, E0310).
-Gap: `test_gap`; counterexample search runs only after a failed proof step.
+Gap: `source_drift` and `test_gap`; the generic backend runner has no real countermodel extraction or source-level model projection. Readiness: blocked on those producers and source-derived open statements.
 
 ## Scope
 

@@ -2,6 +2,7 @@
 Canonical language: English; [Japanese pointer](../ja/AIREV-W0104-VACUOUS-STATEMENT.md).
 Status: planned. Tier: full. Owner: [proof plan](../../mizar-proof/en/00.crate_plan.md); consumers: [kernel plan](../../mizar-kernel/en/00.crate_plan.md) (read-only check), [test plan](../../mizar-test/en/00.crate_plan.md).
 Dependencies: kernel-accepted evidence for real obligations (Step 7).
+Readiness: Blocked on source-derived accepted evidence and a diagnostic re-check expressible without changing acceptance; the consultation boundary below remains.
 Authority: specification §22.6.2 (W0104), §22.5.1 (E0401 takes precedence), §21.7.5.
 Gap: `test_gap`; no producer detects vacuous statements.
 

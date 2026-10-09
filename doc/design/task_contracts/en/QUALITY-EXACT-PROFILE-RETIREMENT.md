@@ -2,6 +2,7 @@
 Canonical language: English; [Japanese pointer](../ja/QUALITY-EXACT-PROFILE-RETIREMENT.md).
 Status: planned. Tier: full. Owner: [checker plan](../../mizar-checker/en/00.crate_plan.md); consumers: [Core plan](../../mizar-core/en/00.crate_plan.md), [test plan](../../mizar-test/en/00.crate_plan.md).
 Dependencies: QUALITY-LITERAL-OFFSET-RATCHET (baseline to lower) and QUALITY-METAMORPHIC-GUARD (evidence of generality); checker Task 258, which owns the general statement producer.
+Readiness: Blocked on the guard and ratchet plus authenticated handoffs for each affected profile; historical Task-258 completion alone is insufficient.
 Authority: [source statement design](../../mizar-checker/en/source_statement.md); the authority order of [autonomous_crate_development.md](../../autonomous_crate_development.md#authority-order).
 Gap: `design_drift`. `SourceStatementProducer` accepts only the task-named statement profiles, each matching exact byte ranges and node indices of one corpus file; only mizar-test consumes it.
 

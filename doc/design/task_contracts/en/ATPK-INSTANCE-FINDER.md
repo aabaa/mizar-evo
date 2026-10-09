@@ -2,6 +2,7 @@
 Canonical language: English; [Japanese pointer](../ja/ATPK-INSTANCE-FINDER.md).
 Status: planned. Tier: full. Owner: [atp plan](../../mizar-atp/en/00.crate_plan.md); consumers: [kernel plan](../../mizar-kernel/en/00.crate_plan.md), [proof plan](../../mizar-proof/en/00.crate_plan.md), [test plan](../../mizar-test/en/00.crate_plan.md).
 Dependencies: ATPK-KERNEL-EQUALITY-INSTANCES for equality names; the backend runner for used-premise reports (optional: the finder also runs without a backend).
+Readiness: Backend-free search is blocked on named equality evidence; backend-assisted integration also needs real advisory output extraction.
 Authority: specification §21.7.1-§21.7.5; [architecture 10](../../architecture/en/10.atp_backend_integration.md#evidence-extraction-by-instance-finding); [translator](../../mizar-atp/en/translator.md).
 Gap: `external_dependency_gap`; no producer turns a proved problem into formula/substitution evidence (mizar-atp task 15 deferral).
 

@@ -1,8 +1,8 @@
 # Task ATPK-BENCHMARK: re-proving benchmark for ATP effectiveness
 Canonical language: English; [Japanese pointer](../ja/ATPK-BENCHMARK.md).
-Status: planned. Tier: light. Owner: [test plan](../../mizar-test/en/00.crate_plan.md); consumers: [atp plan](../../mizar-atp/en/00.crate_plan.md), [kernel plan](../../mizar-kernel/en/00.crate_plan.md).
-Dependencies: ATPK-INSTANCE-FINDER and a real backend runner; ATPK-PREMISE-RANKING for the suggestion condition.
-Authority: specification §21.7 and §22.4.4.
+Status: planned. Tier: full. Owner: [test plan](../../mizar-test/en/00.crate_plan.md); consumers: [atp plan](../../mizar-atp/en/00.crate_plan.md), [kernel plan](../../mizar-kernel/en/00.crate_plan.md).
+Dependencies: ATPK-INSTANCE-FINDER, a real backend adapter, and a source-derived proved library slice. Readiness: blocked until those producers exist.
+Authority: specification §21.7 and §22.4.4 for evidence; benchmark conditions are derived measurement goals, not processor acceptance requirements.
 Gap: `test_gap`; ATP effectiveness is unmeasured.
 
 ## Scope
@@ -22,7 +22,8 @@ Using results to change expectations or proof status; storing scores in
 ## Tests and exit
 
 The harness is tested on a small fixed slice with known outcomes. Require
-specification, implementation, volume/scope, and consistency reviews;
+independent specification, test-sufficiency, implementation, volume/scope, and
+consistency reviews;
 `cargo fmt --check`, `cargo clippy --all-targets --all-features -- -D warnings`,
 `cargo test`. Exit: the benchmark runs reproducibly and reports both rates for
 every condition and class.
