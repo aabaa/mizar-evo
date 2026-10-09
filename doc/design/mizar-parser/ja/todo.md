@@ -1130,3 +1130,5 @@ cargo test -p mizar-test
     `stash@{0}=f65cf4a13752ec380710814a9ac6392ccb9d75d4` を observe した。これは historical
     evidence であり、documentation-closure commit 後の current-HEAD claim ではない。
     implementation task は closed。
+
+- [ ] [ALGDEF-PARSER-FAIL](../../task_contracts/ja/ALGDEF-PARSER-FAIL.md)。

@@ -8,7 +8,7 @@
 - [~] in progress
 - [x] done
 
-- [ ] Algorithm `fail_stmt` parsing and active corpus coverage; see the [reserved-word gap](source_spec_audit.md#reserved-word-coverage).
+- [ ] [ALGDEF-PARSER-FAIL](../../task_contracts/en/ALGDEF-PARSER-FAIL.md) — bare fail; message forms have a lexical spec_gap, reflected reports also wait for AST-PARSE.
 
 ## Step 5 Frontend Gap Closure
 
