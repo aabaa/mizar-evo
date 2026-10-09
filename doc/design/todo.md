@@ -924,6 +924,7 @@ Open decisions (block or shape upcoming steps):
   Specification transfer precedes runtime implementation; see
   [architecture 15](./architecture/en/15.kernel_certificate_format.md).
   Task: [AST-SPEC-00](./task_contracts/en/AST-SPEC-00.md).
+  [AST-SPEC-12](./task_contracts/en/AST-SPEC-12.md).
   [AST-SPEC-11](./task_contracts/en/AST-SPEC-11.md).
   [AST-SPEC-10](./task_contracts/en/AST-SPEC-10.md).
   [AST-SPEC-09](./task_contracts/en/AST-SPEC-09.md).

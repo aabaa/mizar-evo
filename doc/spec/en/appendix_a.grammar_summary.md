@@ -915,7 +915,9 @@ computation_argument ::= algorithm_application | computation_option ;
 computation_reference ::= "computation" [ "(" computation_argument { "," computation_argument } ")" ] ;
 computation_option ::= "steps" ":" nat_literal
                      | "timeout" ":" nat_literal
-                     | "nest" ":" nat_literal ;
+                     | "nest" ":" nat_literal
+                    | "replay" ":" boolean_option ;
+boolean_option ::= "true" | "false" ;
 
 pick_expr          ::= "the" type_expression ;
 expr_size_expr     ::= "expr_size" "(" term_expression ")" ;
