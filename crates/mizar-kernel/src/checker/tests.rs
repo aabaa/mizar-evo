@@ -5029,11 +5029,18 @@ fn equality_reflexivity_checks_complete_terms_and_real_evidence_polarity() {
                 goal_item_with_polarity(20, polarity, &goal),
                 formula_symbol_items(&[equality, functor, other_functor, builtin]),
             );
-            let parsed = parse_formula_evidence(
-                &bytes,
-                &FormulaEvidenceParseContext::v1(target.clone(), formula_profile()),
-            )
-            .unwrap();
+            let bytes = if reflexive {
+                let Formula::Atom(atom) = &atom else {
+                    unreachable!()
+                };
+                named_equality_bytes(bytes, vec![equality_name(1, 1, &atom.arguments[..1], None)])
+            } else {
+                bytes
+            };
+            let mut parse_context =
+                FormulaEvidenceParseContext::v1(target.clone(), formula_profile());
+            parse_context.accepted_schema_versions.insert(2);
+            let parsed = parse_formula_evidence(&bytes, &parse_context).unwrap();
             let original = parsed.final_goal().formula_fingerprint.clone();
             let result = check_kernel_evidence(evidence_input_with_check_kind(
                 &target_vc, &parsed, None, kind,
@@ -5117,11 +5124,10 @@ fn equality_reflexivity_uses_actual_substitution_instance_without_extra_axioms()
             goal_item(20, &formula_atom(1)),
             formula_symbol_items(&[equality]),
         );
-        let parsed = parse_formula_evidence(
-            &bytes,
-            &FormulaEvidenceParseContext::v1(target.clone(), formula_profile()),
-        )
-        .unwrap();
+        let bytes = named_equality_bytes(bytes, vec![equality_name(1, 1, &[var(2)], None)]);
+        let mut parse_context = FormulaEvidenceParseContext::v1(target.clone(), formula_profile());
+        parse_context.accepted_schema_versions.insert(2);
+        let parsed = parse_formula_evidence(&bytes, &parse_context).unwrap();
         let context = formula_evidence_context_with_identity(&target_vc, &parsed);
         let result = check_kernel_evidence(evidence_input(&target_vc, &parsed, Some(&context)));
         assert_eq!(
@@ -5186,10 +5192,10 @@ fn equality_reflexivity_has_canonical_unique_clauses_and_existing_budget_gates()
             goal_item(20, &goal),
             formula_symbol_items(&[equality]),
         );
-        let parsed = parse_formula_evidence(
-            &bytes,
-            &FormulaEvidenceParseContext::v1(target.clone(), formula_profile()),
-        );
+        let bytes = named_equality_bytes(bytes, vec![equality_name(1, 1, &[var(1)], None)]);
+        let mut parse_context = FormulaEvidenceParseContext::v1(target.clone(), formula_profile());
+        parse_context.accepted_schema_versions.insert(2);
+        let parsed = parse_formula_evidence(&bytes, &parse_context);
         if reverse {
             let error = parsed.expect_err("formula record order is authenticated before encoding");
             assert_eq!(error.detail(), RejectionDetail::MalformedWitnessData);
@@ -5197,11 +5203,11 @@ fn equality_reflexivity_has_canonical_unique_clauses_and_existing_budget_gates()
             continue;
         }
         let parsed = parsed.unwrap();
-        assert_eq!(parsed.schema_version(), 1);
+        assert_eq!(parsed.schema_version(), 2);
         assert_eq!(parsed.encoding_version(), 1);
         let problem = encode_formula_evidence(&parsed, &SatEncodingContext::v1()).unwrap();
         assert_eq!(problem.schema_version(), 1);
-        assert_eq!(problem.encoding_version(), 2);
+        assert_eq!(problem.encoding_version(), 3);
         let final_assertion = problem
             .assertions()
             .iter()
@@ -5240,11 +5246,7 @@ fn equality_reflexivity_has_canonical_unique_clauses_and_existing_budget_gates()
             check_kernel_evidence(evidence_input(&target_vc, &parsed, Some(&context))).status(),
             KernelCheckStatus::Accepted
         );
-        let replay = parse_formula_evidence(
-            &bytes,
-            &FormulaEvidenceParseContext::v1(target.clone(), formula_profile()),
-        )
-        .unwrap();
+        let replay = parse_formula_evidence(&bytes, &parse_context).unwrap();
         assert_eq!(
             problem.canonical_bytes(),
             encode_formula_evidence(&replay, &SatEncodingContext::v1())
@@ -5260,11 +5262,10 @@ fn equality_reflexivity_has_canonical_unique_clauses_and_existing_budget_gates()
         goal_item(20, &goal),
         formula_symbol_items(&[equality]),
     );
-    let parsed = parse_formula_evidence(
-        &bytes,
-        &FormulaEvidenceParseContext::v1(target.clone(), formula_profile()),
-    )
-    .unwrap();
+    let bytes = named_equality_bytes(bytes, vec![equality_name(1, 1, &[var(1)], None)]);
+    let mut parse_context = FormulaEvidenceParseContext::v1(target.clone(), formula_profile());
+    parse_context.accepted_schema_versions.insert(2);
+    let parsed = parse_formula_evidence(&bytes, &parse_context).unwrap();
     let problem = encode_formula_evidence(&parsed, &SatEncodingContext::v1()).unwrap();
     assert_eq!(problem.clauses().len(), 2);
     let defaults = SatEncodingLimits::default();
@@ -5274,7 +5275,7 @@ fn equality_reflexivity_has_canonical_unique_clauses_and_existing_budget_gates()
                 max_clauses: 0,
                 ..defaults
             },
-            "sat_encoding.equality_reflexivity",
+            "sat_encoding.assertion",
         ),
         (
             SatEncodingLimits {
@@ -5288,7 +5289,7 @@ fn equality_reflexivity_has_canonical_unique_clauses_and_existing_budget_gates()
                 max_literals: 0,
                 ..defaults
             },
-            "sat_encoding.equality_reflexivity",
+            "sat_encoding.assertion",
         ),
         (
             SatEncodingLimits {
@@ -5302,7 +5303,7 @@ fn equality_reflexivity_has_canonical_unique_clauses_and_existing_budget_gates()
                 max_literals_per_clause: 0,
                 ..defaults
             },
-            "sat_encoding.equality_reflexivity",
+            "sat_encoding.assertion",
         ),
         (
             SatEncodingLimits {
@@ -5323,4 +5324,373 @@ fn equality_reflexivity_has_canonical_unique_clauses_and_existing_budget_gates()
         assert_eq!(result.rejections()[0].location().field_path, Some(location));
         assert!(result.sat_check_report().is_none());
     }
+}
+
+#[test]
+fn named_function_equality_chain_requires_each_law_and_preserves_used_axioms() {
+    let target = formula_target(84);
+    let target_vc = TargetVcFingerprint::from_certificate_fingerprint(&target);
+    let equality = SymbolKey::new(SymbolKind::Equality, 7);
+    let functor = SymbolKey::new(SymbolKind::FunctorPredicate, 8);
+    let fa = Term::Application {
+        symbol: functor,
+        arguments: vec![var(1)],
+    };
+    let fb = Term::Application {
+        symbol: functor,
+        arguments: vec![var(2)],
+    };
+    let ab = Formula::Atom(Atom::new(equality, vec![var(1), var(2)]));
+    let fac = Formula::Atom(Atom::new(equality, vec![fa.clone(), var(3)]));
+    let goal = Formula::Atom(Atom::new(equality, vec![fb.clone(), var(3)]));
+    let names = [
+        equality_name(1, 2, &[var(1), var(2)], None),
+        equality_name(2, 4, &[var(2)], Some((functor, &[var(1)]))),
+        equality_name(3, 3, &[fb, fa, var(3)], None),
+    ];
+    for missing in [None, Some(0), Some(1), Some(2)] {
+        let bytes = formula_evidence_bytes_with_parts(
+            &target,
+            (1..=3).map(variable_item).collect(),
+            vec![imported_formula_item(1, 10, &ab), formula_item(2, 11, &fac)],
+            Vec::new(),
+            goal_item(20, &goal),
+            formula_symbol_items(&[equality, functor]),
+        );
+        let bytes = named_equality_bytes(
+            bytes,
+            names
+                .iter()
+                .enumerate()
+                .filter(|(index, _)| Some(*index) != missing)
+                .map(|(_, name)| name.clone())
+                .collect(),
+        );
+        let mut parse_context = FormulaEvidenceParseContext::v1(target.clone(), formula_profile());
+        parse_context.accepted_schema_versions.insert(2);
+        let parsed = parse_formula_evidence(&bytes, &parse_context).unwrap();
+        let context = FormulaEvidenceContext::with_context_identity(
+            Some(vec![1]),
+            vec![formula_imported_fact(
+                1,
+                &ab,
+                AcceptedProofStatus::KernelVerified,
+            )],
+            Vec::new(),
+            Some(context_identity_payload(
+                &target_vc,
+                context_identity_entries_for(&parsed),
+            )),
+            ImportedFactContextLimits::default(),
+        )
+        .unwrap();
+        let result = check_kernel_evidence(evidence_input(&target_vc, &parsed, Some(&context)));
+        assert_eq!(
+            result.status(),
+            if missing.is_none() {
+                KernelCheckStatus::Accepted
+            } else {
+                KernelCheckStatus::Rejected
+            },
+            "missing={missing:?}"
+        );
+        if missing.is_none() {
+            assert_eq!(result.used_axioms().len(), 1);
+        } else {
+            assert_eq!(
+                result.rejections()[0].detail(),
+                RejectionDetail::InvalidSatRefutation
+            );
+        }
+    }
+}
+
+#[test]
+fn named_predicate_congruence_checks_both_directions_and_zero_arity() {
+    let target = formula_target(85);
+    let target_vc = TargetVcFingerprint::from_certificate_fingerprint(&target);
+    let equality = SymbolKey::new(SymbolKind::Equality, 7);
+    for kind in [
+        SymbolKind::Predicate,
+        SymbolKind::FunctorPredicate,
+        SymbolKind::BuiltinRelation,
+    ] {
+        let predicate = SymbolKey::new(kind, 8);
+        for reverse in [false, true] {
+            let args = if reverse {
+                [var(2), var(1)]
+            } else {
+                [var(1), var(2)]
+            };
+            let premise = Formula::Atom(Atom::new(predicate, vec![args[0].clone()]));
+            let goal = Formula::Atom(Atom::new(predicate, vec![args[1].clone()]));
+            let eq = Formula::Atom(Atom::new(equality, vec![var(1), var(2)]));
+            for named in [false, true] {
+                let bytes = formula_evidence_bytes_with_parts(
+                    &target,
+                    (1..=2).map(variable_item).collect(),
+                    vec![formula_item(1, 10, &eq), formula_item(2, 11, &premise)],
+                    Vec::new(),
+                    goal_item(20, &goal),
+                    formula_symbol_items(&[equality, predicate]),
+                );
+                let bytes = named_equality_bytes(
+                    bytes,
+                    if named {
+                        vec![equality_name(1, 5, &[var(1)], Some((predicate, &[var(2)])))]
+                    } else {
+                        Vec::new()
+                    },
+                );
+                let mut parse_context =
+                    FormulaEvidenceParseContext::v1(target.clone(), formula_profile());
+                parse_context.accepted_schema_versions.insert(2);
+                let parsed = parse_formula_evidence(&bytes, &parse_context).unwrap();
+                let context = formula_evidence_context_with_identity(&target_vc, &parsed);
+                let result =
+                    check_kernel_evidence(evidence_input(&target_vc, &parsed, Some(&context)));
+                assert_eq!(
+                    result.status(),
+                    if named {
+                        KernelCheckStatus::Accepted
+                    } else {
+                        KernelCheckStatus::Rejected
+                    }
+                );
+                assert!(result.used_axioms().is_empty());
+            }
+        }
+        let goal = Formula::Atom(Atom::new(predicate, Vec::new()));
+        let bytes = formula_evidence_bytes_with_parts(
+            &target,
+            Vec::new(),
+            Vec::new(),
+            Vec::new(),
+            goal_item(20, &goal),
+            formula_symbol_items(&[equality, predicate]),
+        );
+        let bytes = named_equality_bytes(
+            bytes,
+            vec![equality_name(1, 5, &[], Some((predicate, &[])))],
+        );
+        let mut parse_context = FormulaEvidenceParseContext::v1(target.clone(), formula_profile());
+        parse_context.accepted_schema_versions.insert(2);
+        let parsed = parse_formula_evidence(&bytes, &parse_context).unwrap();
+        let result = check_kernel_evidence(evidence_input(&target_vc, &parsed, None));
+        assert_eq!(result.status(), KernelCheckStatus::Rejected);
+        assert_eq!(
+            result.rejections()[0].detail(),
+            RejectionDetail::InvalidSatRefutation
+        );
+    }
+    let functor = SymbolKey::new(SymbolKind::FunctorPredicate, 8);
+    let term = Term::Application {
+        symbol: functor,
+        arguments: Vec::new(),
+    };
+    for named in [false, true] {
+        let goal = Formula::Atom(Atom::new(equality, vec![term.clone(), term.clone()]));
+        let bytes = formula_evidence_bytes_with_parts(
+            &target,
+            Vec::new(),
+            Vec::new(),
+            Vec::new(),
+            goal_item(20, &goal),
+            formula_symbol_items(&[equality, functor]),
+        );
+        let bytes = named_equality_bytes(
+            bytes,
+            if named {
+                vec![equality_name(1, 4, &[], Some((functor, &[])))]
+            } else {
+                Vec::new()
+            },
+        );
+        let mut parse_context = FormulaEvidenceParseContext::v1(target.clone(), formula_profile());
+        parse_context.accepted_schema_versions.insert(2);
+        let parsed = parse_formula_evidence(&bytes, &parse_context).unwrap();
+        let result = check_kernel_evidence(evidence_input(&target_vc, &parsed, None));
+        assert_eq!(
+            result.status(),
+            if named {
+                KernelCheckStatus::Accepted
+            } else {
+                KernelCheckStatus::Rejected
+            }
+        );
+        assert!(result.used_axioms().is_empty());
+    }
+    for schema in [4, 5] {
+        let symbol = SymbolKey::new(
+            if schema == 4 {
+                SymbolKind::FunctorPredicate
+            } else {
+                SymbolKind::Predicate
+            },
+            8,
+        );
+        let left = vec![var(1), var(3)];
+        let right = vec![var(2), var(4)];
+        let goal = if schema == 4 {
+            Formula::Atom(Atom::new(
+                equality,
+                vec![
+                    Term::Application {
+                        symbol,
+                        arguments: left.clone(),
+                    },
+                    Term::Application {
+                        symbol,
+                        arguments: right.clone(),
+                    },
+                ],
+            ))
+        } else {
+            Formula::Atom(Atom::new(symbol, right.clone()))
+        };
+        for missing in [None, Some(0), Some(1)] {
+            let mut formulas = left
+                .iter()
+                .cloned()
+                .zip(right.iter().cloned())
+                .enumerate()
+                .filter(|(index, _)| Some(*index) != missing)
+                .map(|(index, (t, u))| {
+                    formula_item(
+                        index as u32 + 1,
+                        index as u32 + 10,
+                        &Formula::Atom(Atom::new(equality, vec![t, u])),
+                    )
+                })
+                .collect::<Vec<_>>();
+            if schema == 5 {
+                formulas.push(formula_item(
+                    3,
+                    12,
+                    &Formula::Atom(Atom::new(symbol, left.clone())),
+                ));
+            }
+            let bytes = formula_evidence_bytes_with_parts(
+                &target,
+                (1..=4).map(variable_item).collect(),
+                formulas,
+                Vec::new(),
+                goal_item(20, &goal),
+                formula_symbol_items(&[equality, symbol]),
+            );
+            let bytes = named_equality_bytes(
+                bytes,
+                vec![equality_name(1, schema, &left, Some((symbol, &right)))],
+            );
+            let mut parse_context =
+                FormulaEvidenceParseContext::v1(target.clone(), formula_profile());
+            parse_context.accepted_schema_versions.insert(2);
+            let parsed = parse_formula_evidence(&bytes, &parse_context).unwrap();
+            let context = formula_evidence_context_with_identity(&target_vc, &parsed);
+            let result = check_kernel_evidence(evidence_input(&target_vc, &parsed, Some(&context)));
+            assert_eq!(
+                result.status(),
+                if missing.is_none() {
+                    KernelCheckStatus::Accepted
+                } else {
+                    KernelCheckStatus::Rejected
+                },
+                "schema={schema}, missing={missing:?}"
+            );
+            if missing.is_some() {
+                assert_eq!(
+                    result.rejections()[0].detail(),
+                    RejectionDetail::InvalidSatRefutation
+                );
+            }
+            assert!(result.used_axioms().is_empty());
+        }
+    }
+}
+
+#[test]
+fn unnamed_reflexivity_is_not_derived_for_either_schema() {
+    let target = formula_target(86);
+    let target_vc = TargetVcFingerprint::from_certificate_fingerprint(&target);
+    let equality = SymbolKey::new(SymbolKind::Equality, 7);
+    let goal = Formula::Atom(Atom::new(equality, vec![var(1), var(1)]));
+    for version in [1, 2] {
+        let bytes = formula_evidence_bytes_with_parts(
+            &target,
+            vec![variable_item(1)],
+            Vec::new(),
+            Vec::new(),
+            goal_item(20, &goal),
+            formula_symbol_items(&[equality]),
+        );
+        let bytes = if version == 2 {
+            named_equality_bytes(bytes, Vec::new())
+        } else {
+            bytes
+        };
+        let mut parse_context = FormulaEvidenceParseContext::v1(target.clone(), formula_profile());
+        parse_context.accepted_schema_versions.insert(2);
+        let parsed = parse_formula_evidence(&bytes, &parse_context).unwrap();
+        assert!(parsed.equality_instances().is_empty());
+        let result = check_kernel_evidence(evidence_input(&target_vc, &parsed, None));
+        assert_eq!(result.status(), KernelCheckStatus::Rejected);
+        assert_eq!(
+            result.rejections()[0].detail(),
+            RejectionDetail::InvalidSatRefutation
+        );
+    }
+}
+
+fn equality_name(
+    id: u32,
+    schema: u8,
+    left: &[Term],
+    congruence: Option<(SymbolKey, &[Term])>,
+) -> Vec<u8> {
+    let mut bytes = Vec::new();
+    put_u32(id, &mut bytes);
+    bytes.push(schema);
+    put_u32(7, &mut bytes);
+    if let Some((symbol, right)) = congruence {
+        bytes.push(symbol_kind_tag(symbol.kind));
+        put_u32(symbol.id.0, &mut bytes);
+        put_u32(left.len() as u32, &mut bytes);
+        put_u32(left.len() as u32, &mut bytes);
+        for term in left {
+            put_term(term, &mut bytes);
+        }
+        put_u32(right.len() as u32, &mut bytes);
+        for term in right {
+            put_term(term, &mut bytes);
+        }
+    } else {
+        for term in left {
+            put_term(term, &mut bytes);
+        }
+    }
+    bytes
+}
+
+fn named_equality_bytes(mut bytes: Vec<u8>, names: Vec<Vec<u8>>) -> Vec<u8> {
+    let schema_offset = FORMULA_EVIDENCE_DOMAIN_SEPARATOR.len();
+    bytes[schema_offset..schema_offset + 2].copy_from_slice(&2u16.to_be_bytes());
+    let len_offset = schema_offset + 4 + 8 + 1;
+    let digest_len =
+        u32::from_be_bytes(bytes[len_offset..len_offset + 4].try_into().unwrap()) as usize;
+    let count_offset = len_offset + 4 + digest_len;
+    bytes[count_offset..count_offset + 4].copy_from_slice(&7u32.to_be_bytes());
+    let payload = bytes.split_off(count_offset + 4 + 6 * 13);
+    let mut section = Vec::new();
+    for name in &names {
+        section.extend([7, 1]);
+        put_len(name.len(), &mut section);
+        section.extend(name);
+    }
+    bytes.push(7);
+    put_u32(names.len() as u32, &mut bytes);
+    put_u32(payload.len() as u32, &mut bytes);
+    put_u32(section.len() as u32, &mut bytes);
+    bytes.extend(payload);
+    bytes.extend(section);
+    bytes
 }

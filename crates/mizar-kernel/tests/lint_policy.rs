@@ -657,6 +657,7 @@ fn parsed_kernel_evidence_fields_stay_read_only() {
         "substitutions",
         "provenance",
         "final_goal",
+        "equality_instances",
         "canonical_hash_input",
     ]
     .iter()

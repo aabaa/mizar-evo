@@ -215,7 +215,11 @@ manifest write、proof acceptance を行わない。
 BuildSnapshotId, &VerifierPolicy) -> Result<RegistrationDatabase, String>` は
 [checker](../../mizar-checker/ja/registration_resolution.md#source-existential-registration-proof)・Core・VC・両
 handoff を新たに実行する。private serializer は全 term・置換・provenance・context identity・AssertFalseForRefutation
-を含む実 field を不変の六 section Formula v1 binary format にする。既存 parser と check_kernel_evidence を両 leaf
+を含む実 field を六 section Formula v1 として構造検査し、この段階では受理を検査しない。
+その parsed 置換に含まれる実際の閉じた choice term と一意の Equality manifest key から、反射律の名前を明示した
+Formula v2 を作る。term を重複除去して非零の昇順 id を付け、型だけの leaf には名前を付けない。
+この既存 source profile は引数0の FunctorPredicate choice のみを許す。instance formula の入力や汎用等号探索は追加しない。
+既存 parser と check_kernel_evidence を両 leaf
 に自ら適用し、caller Accepted・result summary・cached handoff・diagnostic/hash text を代用しない。
 
 検査前に既存 UncheckedBuiltinDischarge の実行許可を要求し、結果に KernelEvidenceOrigin::BuiltinDischarge を用いる。両 fresh
@@ -232,6 +236,6 @@ orchestration 内で producer を使い、任意の public database を証明権
 ## Three-registration source-proof extension
 
 実装した追加 source profile は既存 prove_source_existential_registration signature のまま C13 の記述された全登録3件について checker/Core/VC 全 graph を新たに構成する。
-現在の policy による通常 Formula-v1 leaf 6件の検査が全て成功してから、同一環境の full pattern 3件だけを含む database を構成する。失敗時に部分 activation や先行 pending 入力の変更を返さない。
+現在の policy による通常 Formula-v2 leaf 6件の検査が全て成功してから、同一環境の full pattern 3件だけを含む database を構成する。失敗時に部分 activation や先行 pending 入力の変更を返さない。
 各 association は各自の registration・parent・独立 nonempty seed・両 leaf・実定義依存・handoff hash・source/module/snapshot を結ぶ。callback・呼出側 receipt・別登録の受理で代替しない。
 単一登録の挙動と database の非譲渡性を維持する。この prerequisite は C13 overload/属性付き consumer、C3 widening、汎用 Task274/import、cluster closure、publication を実行しない。

@@ -66,9 +66,9 @@
 - E1. ドメインセパレータは `MIZAR_KERNEL_EVIDENCE\0`。schema/encoding
   version はサポート対象であること。未知の値は
   `unsupported_certificate_format` として拒否。
-- E2. セクションは固定の v1 順(symbol manifest、variable manifest、formula
-  evidence、substitutions、provenance、final goal)。各セクションは length-
-  framed で、バイト範囲は正確に消費され、trailing bytes は拒否。
+- E2. セクションは schema ごとの固定順とし、v2 は v1 の final goal の後へ
+  名前付き等号 instance を追加する。各セクションは length-framed で、
+  バイト範囲は正確に消費され、trailing bytes は拒否。
 - E3. 各セクション内の id は一意かつソート済み。重複・未ソートは拒否。参照は
   同一 evidence 内で宣言された id(imported fact は呼び出し側コンテキストの
   エントリ)のみ解決される。
@@ -183,8 +183,9 @@
   Tseitin 補助変数は決定的走査順。等価な呼び出し順は同一の正準 SAT バイトを
   生成する。
 - I3. 問題は正確に premise、substitution instance、B4 検証済み polarity の
-  standalone goal、および kernel 導出の[論理的等号 clause](./sat_encoding.md#equality-reflexivity)を主張する。
-  goal と等号 clause は caller premise や `used_axioms` fact ではない。
+  standalone goal、および kernel が構成した[名前付き等号 instance](./sat_encoding.md#equality-reflexivity)を主張する。
+  各 instance は manifest 検証済み term 上の妥当な等号法則であり、供給された formula や
+  名前のない規則ではない。goal と instance は caller premise や `used_axioms` fact ではない。
 - I4. 正準 SAT バイトは診断/検査トレース成果物であり trusted input ではない。
   エンコード済み問題のフィールドはモジュール外では読み取り専用。
 

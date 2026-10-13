@@ -163,6 +163,7 @@ pub struct ParsedKernelEvidence {
     substitutions: Vec<FormulaSubstitutionEvidence>,
     provenance: Vec<FormulaProvenance>,
     final_goal: FinalGoalEvidence,
+    equality_instances: Vec<(u32, Formula)>,
     canonical_hash_input: Vec<u8>,
 }
 
@@ -215,6 +216,11 @@ impl ParsedKernelEvidence {
     #[must_use]
     pub const fn final_goal(&self) -> &FinalGoalEvidence {
         &self.final_goal
+    }
+
+    #[must_use]
+    pub fn equality_instances(&self) -> &[(u32, Formula)] {
+        &self.equality_instances
     }
 
     #[must_use]
@@ -477,7 +483,7 @@ pub fn parse_formula_evidence(
     reader.read_exact(EVIDENCE_DOMAIN_SEPARATOR.len(), "domain_separator")?;
 
     let schema_version = reader.read_u16("schema_version")?;
-    if schema_version != SCHEMA_VERSION_V1
+    if !matches!(schema_version, SCHEMA_VERSION_V1 | 2)
         || !context.accepted_schema_versions.contains(&schema_version)
     {
         return Err(reader.unsupported_at(EVIDENCE_DOMAIN_SEPARATOR.len(), "schema_version"));
@@ -507,12 +513,15 @@ pub fn parse_formula_evidence(
     }
 
     let directory_count = reader.read_u32("directory_entry_count")?;
-    if directory_count as usize != REQUIRED_SECTIONS.len() {
+    let sections = REQUIRED_SECTIONS
+        .into_iter()
+        .chain((schema_version == 2).then_some(EvidenceSectionTag::EqualityInstances));
+    if directory_count as usize != sections.clone().count() {
         return Err(reader.malformed_at(reader.offset().saturating_sub(4), "directory_entry_count"));
     }
 
-    let mut directory = Vec::with_capacity(REQUIRED_SECTIONS.len());
-    for expected in REQUIRED_SECTIONS {
+    let mut directory = Vec::with_capacity(directory_count as usize);
+    for expected in sections {
         let entry_offset = reader.offset();
         let tag_offset = reader.offset();
         let tag_byte = reader.read_u8("directory.section_tag")?;
@@ -593,6 +602,211 @@ pub fn parse_formula_evidence(
         context,
     )?;
 
+    let mut equality_instances = Vec::new();
+    if schema_version == 2 {
+        let entry = &directory[6];
+        let mut previous = 0;
+        let mut node_count = 0usize;
+        let mut byte_count = 0usize;
+        for item in read_section_frames(section_slice(payload_bytes, entry), entry, &target)? {
+            let mut reader = item.reader(&target);
+            let field = "equality_instance";
+            let id = reader.read_u32(field)?;
+            let schema = reader.read_u8(field)?;
+            let equality = SymbolKey::new(SymbolKind::Equality, reader.read_u32(field)?);
+            if id <= previous
+                || !(1..=5).contains(&schema)
+                || !formula_context.known_symbol_ids.contains(&equality)
+            {
+                return Err(reader.malformed_at(item.offset, field));
+            }
+            previous = id;
+            let symbol = if schema >= 4 {
+                let kind = read_symbol_kind(&mut reader, field)?;
+                let symbol = SymbolKey::new(kind, reader.read_u32(field)?);
+                if !formula_context.known_symbol_ids.contains(&symbol)
+                    || if schema == 4 {
+                        kind != SymbolKind::FunctorPredicate
+                    } else {
+                        !matches!(
+                            kind,
+                            SymbolKind::Predicate
+                                | SymbolKind::FunctorPredicate
+                                | SymbolKind::BuiltinRelation
+                        )
+                    }
+                {
+                    return Err(reader.malformed_at(reader.offset(), field));
+                }
+                Some(symbol)
+            } else {
+                None
+            };
+            let arity = if symbol.is_some() {
+                reader.read_u32(field)? as usize
+            } else {
+                schema as usize
+            };
+            if (symbol.is_some() && arity > context.limits.max_formula_children)
+                || arity.checked_add(12).is_none()
+            {
+                return Err(reader.resource_at(reader.offset(), field));
+            }
+            let (nodes, depth, term_depth) = match schema {
+                1 => (1, 0, 1),
+                2 => (4, 2, 3),
+                3 => (6, 3, 4),
+                4 if arity == 0 => (1, 0, 1),
+                4 => (arity + 4, 3, 4),
+                5 if arity == 0 => (9, 3, 0),
+                _ => (arity + 12, 4, 5),
+            };
+            node_count = node_count
+                .checked_add(nodes)
+                .ok_or_else(|| reader.resource_at(reader.offset(), field))?;
+            if node_count > context.limits.max_formula_nodes
+                || depth > context.limits.max_formula_depth
+                || context.limits.max_formula_children < 2
+                || (schema == 4 && arity == 0 && context.limits.max_term_recursion_depth < 1)
+            {
+                return Err(reader.resource_at(reader.offset(), field));
+            }
+            let mut sides = [Vec::new(), Vec::new()];
+            let mut lengths = [0usize; 2];
+            for side in 0..if symbol.is_some() { 2 } else { 1 } {
+                if symbol.is_some() && reader.read_u32(field)? as usize != arity {
+                    return Err(reader.malformed_at(reader.offset(), field));
+                }
+                for _ in 0..arity {
+                    let term =
+                        read_term(&mut reader, &formula_context, context, term_depth, field)?;
+                    let len = term
+                        .canonical_len_for_kernel()
+                        .map_err(|e| clause_error_rejection(&reader, e, field))?;
+                    lengths[side] = lengths[side]
+                        .checked_add(len)
+                        .ok_or_else(|| reader.resource_at(reader.offset(), field))?;
+                    sides[side].push(term);
+                }
+                if schema == 4 {
+                    let empty = Term::Application {
+                        symbol: symbol.unwrap(),
+                        arguments: Vec::new(),
+                    };
+                    let len = empty
+                        .canonical_len_for_kernel()
+                        .map_err(|e| clause_error_rejection(&reader, e, field))?;
+                    if lengths[side]
+                        .checked_add(len)
+                        .is_none_or(|len| len > context.limits.max_term_encoding_bytes)
+                    {
+                        return Err(reader.resource_at(reader.offset(), field));
+                    }
+                }
+            }
+            if reader.remaining() != 0 {
+                return Err(reader.malformed_at(reader.offset(), field));
+            }
+            // Canonical Atom formulas use 25 header bytes; Not uses 6, And/Or 10.
+            // Preflight the expanded tree before cloning any terms into the law.
+            let terms_len = lengths[0]
+                .checked_add(lengths[1])
+                .ok_or_else(|| reader.resource_at(reader.offset(), field))?;
+            let (base, copies, pairs) = match schema {
+                1 => (25usize, 2, 0),
+                2 => (66, 2, 0),
+                3 => (101, 2, 0),
+                4 if arity == 0 => (55, 0, 0),
+                4 => (81, 2, arity),
+                5 if arity == 0 => (142, 0, 0),
+                _ => (168, 3, arity),
+            };
+            let formula_len = pairs
+                .checked_mul(25)
+                .and_then(|len| len.checked_add(base))
+                .and_then(|len| {
+                    terms_len
+                        .checked_mul(copies)
+                        .and_then(|terms| len.checked_add(terms))
+                })
+                .ok_or_else(|| reader.resource_at(reader.offset(), field))?;
+            byte_count = byte_count
+                .checked_add(FORMULA_DOMAIN_SEPARATOR.len())
+                .and_then(|len| len.checked_add(formula_len))
+                .ok_or_else(|| reader.resource_at(reader.offset(), field))?;
+            if byte_count > context.limits.max_section_bytes
+                || byte_count > context.limits.max_evidence_bytes
+            {
+                return Err(reader.resource_at(reader.offset(), field));
+            }
+            let equal = |left, right| Formula::Atom(Atom::new(equality, vec![left, right]));
+            let [mut left, right] = sides;
+            let formula = match schema {
+                1 => {
+                    let t = left.remove(0);
+                    equal(t.clone(), t)
+                }
+                2 => {
+                    let t = left.remove(0);
+                    let u = left.remove(0);
+                    Formula::Or(vec![
+                        Formula::Not(Box::new(equal(t.clone(), u.clone()))),
+                        equal(u, t),
+                    ])
+                }
+                3 => {
+                    let t = left.remove(0);
+                    let u = left.remove(0);
+                    let v = left.remove(0);
+                    Formula::Or(vec![
+                        Formula::Not(Box::new(Formula::And(vec![
+                            equal(t.clone(), u.clone()),
+                            equal(u, v.clone()),
+                        ]))),
+                        equal(t, v),
+                    ])
+                }
+                _ => {
+                    let antecedent = left
+                        .iter()
+                        .cloned()
+                        .zip(right.iter().cloned())
+                        .map(|(t, u)| equal(t, u))
+                        .collect::<Vec<_>>();
+                    let symbol = symbol.unwrap();
+                    let consequent = if schema == 4 {
+                        equal(
+                            Term::Application {
+                                symbol,
+                                arguments: left,
+                            },
+                            Term::Application {
+                                symbol,
+                                arguments: right,
+                            },
+                        )
+                    } else {
+                        let p = Formula::Atom(Atom::new(symbol, left));
+                        let q = Formula::Atom(Atom::new(symbol, right));
+                        Formula::And(vec![
+                            Formula::Or(vec![Formula::Not(Box::new(p.clone())), q.clone()]),
+                            Formula::Or(vec![Formula::Not(Box::new(q)), p]),
+                        ])
+                    };
+                    if arity == 0 {
+                        consequent
+                    } else {
+                        Formula::Or(vec![
+                            Formula::Not(Box::new(Formula::And(antecedent))),
+                            consequent,
+                        ])
+                    }
+                }
+            };
+            equality_instances.push((id, formula));
+        }
+    }
+
     validate_provenance_bindings(
         &target,
         &target_vc,
@@ -613,6 +827,7 @@ pub fn parse_formula_evidence(
         substitutions,
         provenance,
         final_goal,
+        equality_instances,
         canonical_hash_input: bytes.to_vec(),
     })
 }
@@ -625,6 +840,7 @@ enum EvidenceSectionTag {
     Substitutions,
     Provenance,
     FinalGoal,
+    EqualityInstances,
 }
 
 impl EvidenceSectionTag {
@@ -636,6 +852,7 @@ impl EvidenceSectionTag {
             4 => Some(Self::Substitutions),
             5 => Some(Self::Provenance),
             6 => Some(Self::FinalGoal),
+            7 => Some(Self::EqualityInstances),
             _ => None,
         }
     }
@@ -648,6 +865,7 @@ impl EvidenceSectionTag {
             Self::Substitutions => 4,
             Self::Provenance => 5,
             Self::FinalGoal => 6,
+            Self::EqualityInstances => 7,
         }
     }
 }
@@ -679,7 +897,9 @@ fn validate_section_limit(
     let max_count = match entry.section_tag {
         EvidenceSectionTag::SymbolManifest => context.limits.max_symbols,
         EvidenceSectionTag::VariableManifest => context.limits.max_variables,
-        EvidenceSectionTag::Formulas => context.limits.max_formulas,
+        EvidenceSectionTag::Formulas | EvidenceSectionTag::EqualityInstances => {
+            context.limits.max_formulas
+        }
         EvidenceSectionTag::Substitutions => context.limits.max_substitutions,
         EvidenceSectionTag::Provenance => context.limits.max_provenance_entries,
         EvidenceSectionTag::FinalGoal => 1,
@@ -1876,6 +2096,9 @@ fn clause_error_rejection(
     error: ClauseError,
     field: &'static str,
 ) -> Box<RejectionRecord> {
+    if field == "equality_instance" && !is_resource_clause_error(&error) {
+        return reader.malformed_at(reader.offset(), field);
+    }
     let detail = if is_resource_clause_error(&error) {
         RejectionDetail::ResourceExhaustion
     } else {
@@ -2182,7 +2405,11 @@ impl<'a> Reader<'a> {
             return Err(self.resource_at(self.offset(), field));
         };
         if end > self.bytes.len() {
-            return Err(self.malformed_at(self.offset(), field));
+            return Err(certificate_rejection(
+                self.target,
+                RejectionDetail::MalformedWitnessData,
+                self.location(self.offset(), field),
+            ));
         }
         self.cursor = end;
         Ok(&self.bytes[start..end])
@@ -2205,6 +2432,13 @@ impl<'a> Reader<'a> {
     }
 
     fn malformed_at(&self, byte_offset: usize, field: &'static str) -> Box<RejectionRecord> {
+        if field == "equality_instance" {
+            return kernel_rejection(
+                self.target,
+                RejectionDetail::InvalidSubstitution,
+                self.location(byte_offset, field),
+            );
+        }
         certificate_rejection(
             self.target,
             RejectionDetail::MalformedWitnessData,

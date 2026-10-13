@@ -665,6 +665,463 @@ fn oversized_counts_reject_before_unbounded_allocation() {
     );
 }
 
+#[test]
+fn named_equality_schemas_are_derived_and_bound_to_the_manifest() {
+    let terms = [
+        Term::Variable(VariableId(1)),
+        Term::Variable(VariableId(2)),
+        Term::Variable(VariableId(3)),
+    ];
+    for schema in 1..=5 {
+        let congruence = (schema >= 4).then_some((
+            SymbolKey::new(
+                if schema == 4 {
+                    SymbolKind::FunctorPredicate
+                } else {
+                    SymbolKind::Predicate
+                },
+                if schema == 4 { 8 } else { 1 },
+            ),
+            1,
+            &terms[1..2],
+        ));
+        let left = &terms[..if schema >= 4 { 1 } else { schema as usize }];
+        let bytes = equality_evidence(vec![equality_item(1, schema, left, congruence)]);
+        let mut ctx = context();
+        assert_eq!(
+            parse_formula_evidence(&bytes, &ctx).unwrap_err().detail(),
+            RejectionDetail::UnsupportedCertificateFormat
+        );
+        ctx.accepted_schema_versions.insert(2);
+        let parsed = parse_formula_evidence(&bytes, &ctx).unwrap();
+        assert_eq!(parsed.equality_instances().len(), 1);
+        assert_eq!(parsed.equality_instances()[0].0, 1);
+        let expected = match schema {
+            1 => "Equality#7[arity=2](v1,v1)",
+            2 => "or(not(Equality#7[arity=2](v1,v2)),Equality#7[arity=2](v2,v1))",
+            3 => {
+                "or(not(and(Equality#7[arity=2](v1,v2),Equality#7[arity=2](v2,v3))),Equality#7[arity=2](v1,v3))"
+            }
+            4 => {
+                "or(not(and(Equality#7[arity=2](v1,v2))),Equality#7[arity=2](FunctorPredicate#8(v1),FunctorPredicate#8(v2)))"
+            }
+            _ => {
+                "or(not(and(Equality#7[arity=2](v1,v2))),and(or(not(Predicate#1[arity=1](v1)),Predicate#1[arity=1](v2)),or(not(Predicate#1[arity=1](v2)),Predicate#1[arity=1](v1))))"
+            }
+        };
+        assert_eq!(parsed.equality_instances()[0].1.render(), expected);
+        assert_eq!(parsed.canonical_hash_input(), bytes);
+        assert!(parsed.formulas().is_empty());
+        let problem = crate::sat_encoding::encode_formula_evidence(
+            &parsed,
+            &crate::sat_encoding::SatEncodingContext::v1(),
+        )
+        .unwrap();
+        let named = problem
+            .assertions()
+            .iter()
+            .find(|a| a.assertion_kind == 4)
+            .unwrap();
+        assert_eq!(named.equality_instance_id, Some(1));
+        assert_eq!(named.source_formula_id, None);
+        assert_eq!(named.substitution_id, None);
+        assert!(named.asserted_true);
+        assert_eq!(named.formula, parsed.equality_instances()[0].1);
+        assert_eq!(
+            named.formula_fingerprint,
+            formula_fingerprint(&named.formula)
+        );
+        assert_eq!(problem.encoding_version(), 3);
+        assert_eq!(
+            problem.canonical_bytes(),
+            crate::sat_encoding::encode_formula_evidence(
+                &parse_formula_evidence(&bytes, &ctx).unwrap(),
+                &crate::sat_encoding::SatEncodingContext::v1()
+            )
+            .unwrap()
+            .canonical_bytes()
+        );
+    }
+    for schema in [4, 5] {
+        let symbol = SymbolKey::new(
+            if schema == 4 {
+                SymbolKind::FunctorPredicate
+            } else {
+                SymbolKind::BuiltinRelation
+            },
+            if schema == 4 { 8 } else { 9 },
+        );
+        let bytes = equality_evidence(vec![equality_item(1, schema, &[], Some((symbol, 0, &[])))]);
+        let mut ctx = context();
+        ctx.accepted_schema_versions.insert(2);
+        let parsed = parse_formula_evidence(&bytes, &ctx).unwrap();
+        assert!(!parsed.equality_instances()[0].1.render().contains("and()"));
+        if schema == 4 {
+            assert!(matches!(
+                &parsed.equality_instances()[0].1,
+                Formula::Atom(_)
+            ));
+        }
+    }
+}
+
+#[test]
+fn malformed_equality_names_reject_without_reclassifying_envelope_errors() {
+    let t = Term::Variable(VariableId(1));
+    let valid = equality_item(1, 1, std::slice::from_ref(&t), None);
+    let mut invalid = Vec::new();
+    for (offset, value) in [(4, 99), (8, 99), (9, 99), (13, 99)] {
+        let mut item = valid.clone();
+        item[offset] = value;
+        invalid.push(vec![item]);
+    }
+    invalid.push(vec![equality_item(0, 1, std::slice::from_ref(&t), None)]);
+    let mut supplied_formula = valid.clone();
+    put_formula(&atom_formula(1), &mut supplied_formula);
+    invalid.push(vec![supplied_formula]);
+    invalid.push(vec![valid.clone(), valid.clone()]);
+    invalid.push(vec![
+        equality_item(2, 1, std::slice::from_ref(&t), None),
+        valid.clone(),
+    ]);
+    for (symbol, arity, left, right) in [
+        (
+            SymbolKey::new(SymbolKind::Predicate, 1),
+            1,
+            vec![t.clone()],
+            vec![t.clone()],
+        ),
+        (
+            SymbolKey::new(SymbolKind::FunctorPredicate, 99),
+            1,
+            vec![t.clone()],
+            vec![t.clone()],
+        ),
+        (
+            SymbolKey::new(SymbolKind::FunctorPredicate, 8),
+            2,
+            vec![t.clone()],
+            vec![t.clone()],
+        ),
+        (
+            SymbolKey::new(SymbolKind::FunctorPredicate, 8),
+            1,
+            vec![t.clone()],
+            Vec::new(),
+        ),
+    ] {
+        invalid.push(vec![equality_item(
+            1,
+            4,
+            &left,
+            Some((symbol, arity, &right)),
+        )]);
+    }
+    invalid.push(vec![equality_item(
+        1,
+        5,
+        std::slice::from_ref(&t),
+        Some((
+            SymbolKey::new(SymbolKind::Equality, 7),
+            1,
+            std::slice::from_ref(&t),
+        )),
+    )]);
+    for term in [
+        Term::Variable(VariableId(99)),
+        Term::Application {
+            symbol: SymbolKey::new(SymbolKind::FunctorPredicate, 99),
+            arguments: vec![t.clone()],
+        },
+    ] {
+        invalid.push(vec![equality_item(1, 1, &[term], None)]);
+    }
+    let mut ctx = context();
+    ctx.accepted_schema_versions.insert(2);
+    for items in invalid {
+        let error = parse_formula_evidence(&equality_evidence(items), &ctx).unwrap_err();
+        assert_eq!(
+            error.category(),
+            RejectionCategory::KernelRejection,
+            "{error:?}"
+        );
+        assert_eq!(
+            error.detail(),
+            RejectionDetail::InvalidSubstitution,
+            "{error:?}"
+        );
+    }
+    let mut wrong_kind = equality_item(
+        1,
+        4,
+        std::slice::from_ref(&t),
+        Some((
+            SymbolKey::new(SymbolKind::FunctorPredicate, 8),
+            1,
+            std::slice::from_ref(&t),
+        )),
+    );
+    wrong_kind[9] = 99;
+    assert_eq!(
+        parse_formula_evidence(&equality_evidence(vec![wrong_kind]), &ctx)
+            .unwrap_err()
+            .detail(),
+        RejectionDetail::InvalidSubstitution
+    );
+    let mut bad_frame = equality_evidence(vec![valid.clone()]);
+    let frame_offset = bad_frame.len() - valid.len() - 6;
+    bad_frame[frame_offset + 1] = 99;
+    let error = parse_formula_evidence(&bad_frame, &ctx).unwrap_err();
+    assert_eq!(error.category(), RejectionCategory::CertificateRejection);
+    assert_eq!(error.detail(), RejectionDetail::MalformedWitnessData);
+    let mut truncated = valid.clone();
+    truncated.pop();
+    let error = parse_formula_evidence(&equality_evidence(vec![truncated]), &ctx).unwrap_err();
+    assert_eq!(error.category(), RejectionCategory::CertificateRejection);
+    assert_eq!(error.detail(), RejectionDetail::MalformedWitnessData);
+    let mut trailing = equality_evidence(vec![valid]);
+    trailing.push(0);
+    assert_eq!(
+        parse_formula_evidence(&trailing, &ctx)
+            .unwrap_err()
+            .detail(),
+        RejectionDetail::MalformedWitnessData
+    );
+}
+
+#[test]
+fn equality_names_obey_raw_and_constructed_resource_limits() {
+    let t = Term::Variable(VariableId(1));
+    let mut ctx = context();
+    ctx.accepted_schema_versions.insert(2);
+    let defaults = ctx.limits;
+    let application_size = Term::Application {
+        symbol: SymbolKey::new(SymbolKind::FunctorPredicate, 8),
+        arguments: vec![t.clone()],
+    }
+    .canonical_bytes()
+    .unwrap()
+    .len();
+    for (item, limits) in [
+        (
+            equality_item(1, 1, std::slice::from_ref(&t), None),
+            FormulaEvidenceParseLimits {
+                max_formulas: 0,
+                ..defaults
+            },
+        ),
+        (
+            equality_item(1, 2, &[t.clone(), t.clone()], None),
+            FormulaEvidenceParseLimits {
+                max_formula_nodes: 3,
+                ..defaults
+            },
+        ),
+        (
+            equality_item(1, 3, &[t.clone(), t.clone(), t.clone()], None),
+            FormulaEvidenceParseLimits {
+                max_formula_depth: 2,
+                ..defaults
+            },
+        ),
+        (
+            equality_item(1, 2, &[t.clone(), t.clone()], None),
+            FormulaEvidenceParseLimits {
+                max_formula_children: 1,
+                ..defaults
+            },
+        ),
+        (
+            equality_item(1, 1, std::slice::from_ref(&t), None),
+            FormulaEvidenceParseLimits {
+                max_term_encoding_bytes: 9,
+                ..defaults
+            },
+        ),
+        (
+            equality_item(
+                1,
+                4,
+                std::slice::from_ref(&t),
+                Some((
+                    SymbolKey::new(SymbolKind::FunctorPredicate, 8),
+                    1,
+                    std::slice::from_ref(&t),
+                )),
+            ),
+            FormulaEvidenceParseLimits {
+                max_term_encoding_bytes: application_size - 1,
+                ..defaults
+            },
+        ),
+        (
+            equality_item(
+                1,
+                5,
+                std::slice::from_ref(&t),
+                Some((
+                    SymbolKey::new(SymbolKind::Predicate, 1),
+                    1,
+                    std::slice::from_ref(&t),
+                )),
+            ),
+            FormulaEvidenceParseLimits {
+                max_term_recursion_depth: 4,
+                ..defaults
+            },
+        ),
+    ] {
+        ctx.limits = limits;
+        assert_eq!(
+            parse_formula_evidence(&equality_evidence(vec![item]), &ctx)
+                .unwrap_err()
+                .detail(),
+            RejectionDetail::ResourceExhaustion
+        );
+    }
+    ctx.limits = defaults;
+    let predicate = SymbolKey::new(SymbolKind::Predicate, 1);
+    let name = equality_item(
+        1,
+        5,
+        std::slice::from_ref(&t),
+        Some((predicate, 1, std::slice::from_ref(&t))),
+    );
+    let bytes = equality_evidence(vec![name]);
+    let parsed = parse_formula_evidence(&bytes, &ctx).unwrap();
+    let size = parsed.equality_instances()[0]
+        .1
+        .canonical_hash_input()
+        .unwrap()
+        .len();
+    ctx.limits.max_section_bytes = size;
+    assert!(parse_formula_evidence(&bytes, &ctx).is_ok());
+    ctx.limits.max_section_bytes = size - 1;
+    let error = parse_formula_evidence(&bytes, &ctx).unwrap_err();
+    assert_eq!(error.detail(), RejectionDetail::ResourceExhaustion);
+    assert_eq!(error.location().field_path, Some("equality_instance"));
+    ctx.limits = defaults;
+    let bytes = equality_evidence(vec![
+        equality_item(
+            1,
+            5,
+            std::slice::from_ref(&t),
+            Some((predicate, 1, std::slice::from_ref(&t))),
+        ),
+        equality_item(
+            2,
+            5,
+            std::slice::from_ref(&t),
+            Some((predicate, 1, std::slice::from_ref(&t))),
+        ),
+    ]);
+    assert!(bytes.len() < 2 * size);
+    ctx.limits.max_evidence_bytes = 2 * size;
+    assert!(parse_formula_evidence(&bytes, &ctx).is_ok());
+    ctx.limits.max_evidence_bytes -= 1;
+    let error = parse_formula_evidence(&bytes, &ctx).unwrap_err();
+    assert_eq!(error.detail(), RejectionDetail::ResourceExhaustion);
+    assert_eq!(error.location().field_path, Some("equality_instance"));
+    ctx.limits = FormulaEvidenceParseLimits {
+        max_formula_nodes: 7,
+        ..defaults
+    };
+    let bytes = equality_evidence(vec![
+        equality_item(1, 2, &[t.clone(), t.clone()], None),
+        equality_item(2, 2, &[t.clone(), t.clone()], None),
+    ]);
+    assert_eq!(
+        parse_formula_evidence(&bytes, &ctx).unwrap_err().detail(),
+        RejectionDetail::ResourceExhaustion
+    );
+    ctx.limits = FormulaEvidenceParseLimits {
+        max_formula_children: 2,
+        ..defaults
+    };
+    let bytes = equality_evidence(vec![equality_item(
+        1,
+        3,
+        &[t.clone(), t.clone(), t.clone()],
+        None,
+    )]);
+    assert!(parse_formula_evidence(&bytes, &ctx).is_ok());
+    let args = [t.clone(), t.clone(), t];
+    let bytes = equality_evidence(vec![equality_item(
+        1,
+        4,
+        &args,
+        Some((SymbolKey::new(SymbolKind::FunctorPredicate, 8), 3, &args)),
+    )]);
+    assert_eq!(
+        parse_formula_evidence(&bytes, &ctx).unwrap_err().detail(),
+        RejectionDetail::ResourceExhaustion
+    );
+}
+
+fn equality_item(
+    id: u32,
+    schema: u8,
+    left: &[Term],
+    congruence: Option<(SymbolKey, u32, &[Term])>,
+) -> Vec<u8> {
+    let mut bytes = Vec::new();
+    put_u32(id, &mut bytes);
+    bytes.push(schema);
+    put_u32(7, &mut bytes);
+    if let Some((symbol, arity, right)) = congruence {
+        bytes.push(symbol_kind_tag(symbol.kind));
+        put_u32(symbol.id.0, &mut bytes);
+        put_u32(arity, &mut bytes);
+        put_u32(left.len() as u32, &mut bytes);
+        for term in left {
+            put_term(term, &mut bytes);
+        }
+        put_u32(right.len() as u32, &mut bytes);
+        for term in right {
+            put_term(term, &mut bytes);
+        }
+    } else {
+        for term in left {
+            put_term(term, &mut bytes);
+        }
+    }
+    bytes
+}
+
+fn equality_evidence(names: Vec<Vec<u8>>) -> Vec<u8> {
+    let goal = atom_formula(1);
+    let mut sections = base_sections(Vec::new(), Vec::new());
+    let mut symbols = [
+        SymbolKey::new(SymbolKind::Predicate, 1),
+        SymbolKey::new(SymbolKind::Predicate, 2),
+        SymbolKey::new(SymbolKind::Equality, 7),
+        SymbolKey::new(SymbolKind::FunctorPredicate, 8),
+        SymbolKey::new(SymbolKind::BuiltinRelation, 9),
+    ];
+    symbols.sort();
+    sections[0].1 = symbols
+        .iter()
+        .map(|s| {
+            let mut bytes = vec![symbol_kind_tag(s.kind)];
+            put_u32(s.id.0, &mut bytes);
+            bytes
+        })
+        .collect();
+    sections[1].1 = (1..=3)
+        .map(|id| {
+            let mut bytes = Vec::new();
+            put_u32(id, &mut bytes);
+            bytes
+        })
+        .collect();
+    sections[4]
+        .1
+        .push(provenance_item(20, &formula_fingerprint(&goal)));
+    sections[5].1.push(goal_item(20, &goal));
+    sections.push((EvidenceSectionTag::EqualityInstances, names));
+    envelope(sections)
+}
+
 fn assert_rejection(
     record: &RejectionRecord,
     category: RejectionCategory,
@@ -779,7 +1236,7 @@ fn envelope(sections: Vec<(EvidenceSectionTag, Vec<Vec<u8>>)>) -> Vec<u8> {
     }
 
     let mut bytes = Vec::from(EVIDENCE_DOMAIN_SEPARATOR);
-    put_u16(1, &mut bytes);
+    put_u16(if sections.len() == 7 { 2 } else { 1 }, &mut bytes);
     put_u16(1, &mut bytes);
     put_profile(&mut bytes);
     put_fingerprint(&target(), &mut bytes);

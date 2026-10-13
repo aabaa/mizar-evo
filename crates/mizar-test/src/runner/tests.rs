@@ -10200,12 +10200,14 @@ fn step5c3_source_registration_rejects_invalid_source_and_foreign_neutral_inputs
     assert!(checked.database().activated().is_empty());
 }
 
-// Independent test encoder for the normal six-section Formula-v1 wire format.
+// Independent encoder: structurally parse Formula v1, then name actual choices in v2.
 fn step5c3_check_registration_handoff(
     handoff: &mizar_vc::kernel_evidence_handoff::VcKernelEvidenceHandoff,
     mutation: &str,
 ) -> Result<mizar_kernel::checker::KernelCheckResult, String> {
+    use std::collections::BTreeSet;
     use mizar_kernel::{
+        clause::{SymbolKind, Term},
         certificate_parser::{ClauseTautologyPolicy, Fingerprint, KernelProfileRecord},
         checker::{
             FormulaEvidenceContext, ImportedFactContextLimits, KernelCheckPolicy,
@@ -10232,7 +10234,7 @@ fn step5c3_check_registration_handoff(
         bytes(&value.digest, target);
     }
     let envelope = handoff.canonical_evidence();
-    let mut sections: [Vec<Vec<u8>>; 6] = Default::default();
+    let mut sections: [Vec<Vec<u8>>; 7] = Default::default();
     sections[0] = envelope
         .symbol_manifest()
         .iter()
@@ -10258,59 +10260,6 @@ fn step5c3_check_registration_handoff(
         item.extend(formula.formula_bytes());
         sections[2].push(item);
     }
-    for substitution in envelope.substitutions() {
-        let mut item = substitution.substitution_id.to_be_bytes().to_vec();
-        item.extend(
-            if mutation == "substitution-source" {
-                0u32
-            } else {
-                substitution.source_formula_id
-            }
-            .to_be_bytes(),
-        );
-        item.extend(substitution.provenance_id.to_be_bytes());
-        bytes(&substitution.binder_context_encoding, &mut item);
-        if mutation == "substitution-actual" {
-            let mut payload = substitution.payload[..17].to_vec();
-            payload.push(1);
-            payload.extend(&substitution.payload[13..17]);
-            payload.push(1);
-            item.extend(payload);
-        } else {
-            item.extend(&substitution.payload);
-        }
-        item.extend(
-            u32::try_from(substitution.freshness_witnesses.len())
-                .unwrap()
-                .to_be_bytes(),
-        );
-        for row in &substitution.freshness_witnesses {
-            item.extend(row);
-        }
-        item.extend(
-            u32::try_from(substitution.free_variable_constraints.len())
-                .unwrap()
-                .to_be_bytes(),
-        );
-        for row in &substitution.free_variable_constraints {
-            item.extend(row);
-        }
-        sections[3].push(item);
-    }
-    if mutation == "missing-substitution" {
-        sections[3].clear();
-    }
-    if mutation == "missing-second-substitution" {
-        assert_eq!(sections[3].len(), 2);
-        sections[3].pop();
-    }
-    if mutation == "swapped-substitution-source" {
-        assert_eq!(sections[3].len(), 2);
-        let first = sections[3][0][4..8].to_vec();
-        let second = sections[3][1][4..8].to_vec();
-        sections[3][0][4..8].copy_from_slice(&second);
-        sections[3][1][4..8].copy_from_slice(&first);
-    }
     for row in envelope.provenance() {
         let mut item = row.provenance_id.to_be_bytes().to_vec();
         fingerprint(&row.target_vc, &mut item);
@@ -10324,47 +10273,125 @@ fn step5c3_check_registration_handoff(
     item.extend(goal.provenance_id.to_be_bytes());
     item.extend(&goal.formula_bytes);
     sections[5].push(item);
+    if mutation == "goal-bytes" { *sections[5][0].last_mut().unwrap() ^= 1; }
     let profile = envelope.kernel_profile();
-    let mut wire = b"MIZAR_KERNEL_EVIDENCE\0".to_vec();
-    for value in [1u16, 1, profile.profile_id, 1, 1] {
-        wire.extend(value.to_be_bytes());
-    }
-    wire.extend([1, 1]);
-    fingerprint(envelope.target_vc(), &mut wire);
-    wire.extend(6u32.to_be_bytes());
-    let mut payload = Vec::new();
-    for (index, rows) in sections.iter().enumerate() {
-        let tag = u8::try_from(index + 1).unwrap();
-        let start = payload.len();
-        for row in rows {
-            payload.extend([tag, 1]);
-            bytes(row, &mut payload);
-        }
-        wire.push(tag);
-        for value in [rows.len(), start, payload.len() - start] {
-            wire.extend(u32::try_from(value).unwrap().to_be_bytes());
-        }
-    }
-    wire.extend(payload);
-    if mutation == "wire" {
-        wire[0] ^= 1;
-    }
-    if mutation == "goal-bytes" {
-        *wire.last_mut().unwrap() ^= 1;
-    }
     let target = envelope.target_vc();
     let target = TargetVcFingerprint::new(target.algorithm_id, target.digest.clone());
-    let parsed = parse_formula_evidence(
-        &wire,
-        &FormulaEvidenceParseContext::v1(
-            Fingerprint::new(
-                envelope.target_vc().algorithm_id,
-                envelope.target_vc().digest.clone(),
-            ),
-            KernelProfileRecord::v1(profile.profile_id, ClauseTautologyPolicy::Reject),
-        ),
-    )
-    .map_err(|error| format!("{error:?}"))?;
+    let mut schema = 1u16;
+    let parsed = loop {
+        sections[3].clear();
+        for substitution in envelope.substitutions() {
+            let mut item = substitution.substitution_id.to_be_bytes().to_vec();
+            item.extend(
+                if schema == 2 && mutation == "substitution-source" {
+                    0u32
+                } else {
+                    substitution.source_formula_id
+                }
+                .to_be_bytes(),
+            );
+            item.extend(substitution.provenance_id.to_be_bytes());
+            bytes(&substitution.binder_context_encoding, &mut item);
+            if schema == 2 && mutation == "substitution-actual" {
+                let mut payload = substitution.payload[..17].to_vec();
+                payload.push(1);
+                payload.extend(&substitution.payload[13..17]);
+                payload.push(1);
+                item.extend(payload);
+            } else {
+                item.extend(&substitution.payload);
+            }
+            item.extend(
+                u32::try_from(substitution.freshness_witnesses.len())
+                    .unwrap()
+                    .to_be_bytes(),
+            );
+            for row in &substitution.freshness_witnesses {
+                item.extend(row);
+            }
+            item.extend(
+                u32::try_from(substitution.free_variable_constraints.len())
+                    .unwrap()
+                    .to_be_bytes(),
+            );
+            for row in &substitution.free_variable_constraints {
+                item.extend(row);
+            }
+            sections[3].push(item);
+        }
+        if schema == 2 && mutation == "missing-substitution" {
+            sections[3].clear();
+        }
+        if schema == 2 && mutation == "missing-second-substitution" {
+            assert_eq!(sections[3].len(), 2);
+            sections[3].pop();
+        }
+        if schema == 2 && mutation == "swapped-substitution-source" {
+            assert_eq!(sections[3].len(), 2);
+            let first = sections[3][0][4..8].to_vec();
+            let second = sections[3][1][4..8].to_vec();
+            sections[3][0][4..8].copy_from_slice(&second);
+            sections[3][1][4..8].copy_from_slice(&first);
+        }
+        let mut wire = b"MIZAR_KERNEL_EVIDENCE\0".to_vec();
+        for value in [schema, 1, profile.profile_id, 1, 1] {
+            wire.extend(value.to_be_bytes());
+        }
+        wire.extend([1, 1]);
+        fingerprint(envelope.target_vc(), &mut wire);
+        let section_count = if schema == 1 { 6 } else { 7 };
+        wire.extend((section_count as u32).to_be_bytes());
+        let mut payload = Vec::new();
+        for (index, rows) in sections.iter().take(section_count).enumerate() {
+            let tag = u8::try_from(index + 1).unwrap();
+            let start = payload.len();
+            for row in rows {
+                payload.extend([tag, 1]);
+                bytes(row, &mut payload);
+            }
+            wire.push(tag);
+            for value in [rows.len(), start, payload.len() - start] {
+                wire.extend(u32::try_from(value).unwrap().to_be_bytes());
+            }
+        }
+        wire.extend(payload);
+        if mutation == "wire" {
+            wire[0] ^= 1;
+        }
+        let mut parse_context = FormulaEvidenceParseContext::v1(
+                Fingerprint::new(
+                    envelope.target_vc().algorithm_id,
+                    envelope.target_vc().digest.clone(),
+                ),
+                KernelProfileRecord::v1(profile.profile_id, ClauseTautologyPolicy::Reject),
+            );
+        if schema == 2 { parse_context.accepted_schema_versions.insert(2); }
+        let parsed = parse_formula_evidence(&wire, &parse_context).map_err(|error| format!("{error:?}"))?;
+        if schema == 2 { break parsed; }
+        let equalities = parsed.symbol_manifest().iter().filter(|entry| entry.symbol.kind == SymbolKind::Equality).collect::<Vec<_>>();
+        assert_eq!(equalities.len(), 1);
+        let mut choices = BTreeSet::new();
+        for substitution in parsed.substitutions() {
+            if substitution.payload.payload_kind != 1 || !substitution.payload.rewrite_path.segments.is_empty() {
+                return Err("unexpected choice substitution".into());
+            }
+            let [replacement] = substitution.payload.replacements.as_slice() else { return Err("unexpected replacement count".into()); };
+            let Term::Application { symbol, arguments } = &replacement.actual_term else { return Err("expected closed choice".into()); };
+            if symbol.kind != SymbolKind::FunctorPredicate || !arguments.is_empty() || replacement.replacement_role != 1 {
+                return Err("expected closed choice".into());
+            }
+            choices.insert(*symbol);
+        }
+        for (index, choice) in choices.into_iter().enumerate() {
+            let mut item = (index as u32 + 1).to_be_bytes().to_vec();
+            item.push(1);
+            item.extend(equalities[0].symbol.id.0.to_be_bytes());
+            item.extend([2, 2]); item.extend(choice.id.0.to_be_bytes()); item.extend(0u32.to_be_bytes());
+            sections[6].push(item);
+        }
+        if mutation == "missing-equality-instance" { sections[6].clear(); }
+        schema = 2;
+    };
     let entries = handoff
         .context_identity()
         .entries()
@@ -10466,10 +10493,13 @@ fn step5c3_source_registration_normal_wire_rejects_context_polarity_and_substitu
             );
         }
         if vc.id.index() == 1 {
+            let missing = step5c3_check_registration_handoff(&handoff, "missing-equality-instance").unwrap_err();
+            assert!(missing.contains("InvalidSatRefutation"), "{missing}");
+            let changed_actual = step5c3_check_registration_handoff(&handoff, "substitution-actual").unwrap_err();
+            assert!(changed_actual.contains("InvalidSatRefutation"), "{changed_actual}");
             for mutation in [
                 "missing-substitution",
                 "substitution-source",
-                "substitution-actual",
             ] {
                 assert!(
                     step5c3_check_registration_handoff(&handoff, mutation).is_err(),

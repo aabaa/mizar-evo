@@ -369,5 +369,5 @@ wire 化・実検査・source に結び付く活性化を所有する。
 
 実装した拡張は generator 全体の再照合後、親 accounting から各 leaf の実 proof/definition 依存を得る。VC index や最初の definition/origin で証拠を選ばない。
 別々の実属性・choice identity を通常 manifest に写像し数値衝突を拒否する。両ガード付き定義の formal identity を整合させ、既存単一登録 encoding は変えない。
-連言 leaf は両定義前提と同じ閉じた証人の独立に対応付けた置換2件を保持し、一方の欠落も拒否する。既存 generated And と Formula-v1 を使い、kernel・wire format を拡張しない。
+連言 leaf は両定義前提と同じ閉じた証人の独立に対応付けた置換2件を保持し、一方の欠落も拒否する。既存 generated And と VC handoff field は変えず、参照先の Proof が名前付き Formula-v2 binary serialization を所有する。
 context identity は全実 envelope と producer entry を結び、provenance は受理ではなく metadata である。[Proof status](../../mizar-proof/ja/status.md#three-registration-source-proof-extension) が既存 policy で全 leaf を新たに parse・検査する。

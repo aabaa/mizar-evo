@@ -3,8 +3,8 @@ use std::collections::{BTreeMap, BTreeSet};
 use crate::{
     certificate_parser::{ClauseTautologyPolicy, Fingerprint},
     clause::{
-        Atom, Clause, ClauseError, ClauseProfile, ClauseValidationContext, Literal, Polarity,
-        SymbolKind, Term, VariableId,
+        Atom, Clause, ClauseError, ClauseProfile, ClauseValidationContext, Literal, Polarity, Term,
+        VariableId,
     },
     formula_evidence::{
         FinalGoalEvidence, Formula, FormulaEvidenceEntry, FormulaEvidenceError,
@@ -18,7 +18,7 @@ use crate::{
 };
 
 pub const SAT_PROBLEM_SCHEMA_VERSION: u16 = 1;
-pub const SAT_PROBLEM_ENCODING_VERSION: u16 = 2;
+pub const SAT_PROBLEM_ENCODING_VERSION: u16 = 3;
 pub const ASSERTION_KIND_PREMISE: u8 = 1;
 pub const ASSERTION_KIND_SUBSTITUTION_INSTANCE: u8 = 2;
 pub const ASSERTION_KIND_FINAL_GOAL: u8 = 3;
@@ -152,6 +152,7 @@ pub struct EncodedFormulaAssertion {
     pub assertion_kind: u8,
     pub source_formula_id: Option<u32>,
     pub substitution_id: Option<u32>,
+    pub equality_instance_id: Option<u32>,
     pub asserted_true: bool,
     pub formula: Formula,
     pub formula_fingerprint: Fingerprint,
@@ -240,6 +241,31 @@ pub fn encode_formula_evidence(
         context,
     )?);
     assertions.push(final_goal_assertion(evidence.final_goal()));
+    for (id, formula) in evidence.equality_instances() {
+        if assertions.len() >= context.limits.max_assertions {
+            return Err(resource_rejection(
+                &target,
+                RejectionLocation::new().with_field_path("sat_encoding.assertions"),
+            ));
+        }
+        let formula_fingerprint = formula_fingerprint(formula).map_err(|detail| {
+            rejection(
+                &target,
+                RejectionCategory::KernelRejection,
+                detail,
+                RejectionLocation::new().with_field_path("equality_instance"),
+            )
+        })?;
+        assertions.push(EncodedFormulaAssertion {
+            assertion_kind: 4,
+            source_formula_id: None,
+            substitution_id: None,
+            equality_instance_id: Some(*id),
+            asserted_true: true,
+            formula: formula.clone(),
+            formula_fingerprint,
+        });
+    }
     if assertions.len() > context.limits.max_assertions {
         return Err(resource_rejection(
             &target,
@@ -261,17 +287,6 @@ pub fn encode_formula_evidence(
     })?;
 
     let mut builder = EncodingBuilder::new(&target, context, atom_count, atom_lookup);
-    for entry in &atom_variables {
-        if entry.atom.symbol.kind == SymbolKind::Equality
-            && entry.atom.arity == 2
-            && matches!(entry.atom.arguments.as_slice(), [left, right] if left == right)
-        {
-            builder.push_clause(
-                vec![SatLiteral::positive(entry.variable)],
-                RejectionLocation::new().with_field_path("sat_encoding.equality_reflexivity"),
-            )?;
-        }
-    }
     for assertion in &assertions {
         let literal = builder.encode_formula(&assertion.formula, 0)?;
         let asserted_literal = if assertion.asserted_true {
@@ -333,6 +348,7 @@ fn premise_assertions(
                 assertion_kind: ASSERTION_KIND_PREMISE,
                 source_formula_id: Some(entry.formula_id),
                 substitution_id: None,
+                equality_instance_id: None,
                 asserted_true: true,
                 formula: entry.formula.clone(),
                 formula_fingerprint: entry.formula_fingerprint.clone(),
@@ -383,6 +399,7 @@ fn instantiate_substitutions(
             assertion_kind: ASSERTION_KIND_SUBSTITUTION_INSTANCE,
             source_formula_id: Some(source.formula_id),
             substitution_id: Some(substitution.substitution_id),
+            equality_instance_id: None,
             asserted_true: true,
             formula,
             formula_fingerprint,
@@ -564,6 +581,7 @@ fn final_goal_assertion(goal: &FinalGoalEvidence) -> EncodedFormulaAssertion {
         assertion_kind: ASSERTION_KIND_FINAL_GOAL,
         source_formula_id: None,
         substitution_id: None,
+        equality_instance_id: None,
         asserted_true: matches!(goal.polarity, GoalPolarity::AssertTrueForConsistency),
         formula: goal.formula.clone(),
         formula_fingerprint: goal.formula_fingerprint.clone(),
@@ -594,6 +612,7 @@ fn assertion_sort_key(
     bytes.push(u8::from(assertion.asserted_true));
     write_option_u32(assertion.source_formula_id, &mut bytes);
     write_option_u32(assertion.substitution_id, &mut bytes);
+    write_option_u32(assertion.equality_instance_id, &mut bytes);
     bytes.extend(
         fingerprint_bytes(&assertion.formula_fingerprint).map_err(|detail| {
             rejection(
@@ -1635,6 +1654,7 @@ fn canonical_problem_bytes(
         bytes.push(u8::from(assertion.asserted_true));
         write_option_u32(assertion.source_formula_id, &mut bytes);
         write_option_u32(assertion.substitution_id, &mut bytes);
+        write_option_u32(assertion.equality_instance_id, &mut bytes);
         bytes.extend(fingerprint_bytes(&assertion.formula_fingerprint)?);
         let formula_bytes = assertion
             .formula

@@ -557,10 +557,12 @@ fn canonical_sat_bytes_pin_header_assertions_and_clause_encoding() {
     assert_eq!(reader.read_u8(), 1);
     assert_eq!(reader.read_option_u32(), Some(1));
     assert_eq!(reader.read_option_u32(), None);
+    assert_eq!(reader.read_option_u32(), None);
     assert_eq!(reader.read_fingerprint(), formula_fingerprint(&premise));
     assert_eq!(reader.read_bytes(), premise.canonical_hash_input().unwrap());
     assert_eq!(reader.read_u8(), ASSERTION_KIND_FINAL_GOAL);
     assert_eq!(reader.read_u8(), 0);
+    assert_eq!(reader.read_option_u32(), None);
     assert_eq!(reader.read_option_u32(), None);
     assert_eq!(reader.read_option_u32(), None);
     assert_eq!(reader.read_fingerprint(), formula_fingerprint(&premise));
@@ -613,6 +615,7 @@ fn canonical_sat_bytes_include_substitution_assertion_identity() {
     assert_eq!(reader.read_u8(), 1);
     assert_eq!(reader.read_option_u32(), Some(1));
     assert_eq!(reader.read_option_u32(), Some(7));
+    assert_eq!(reader.read_option_u32(), None);
     assert_eq!(reader.read_fingerprint(), formula_fingerprint(&instance));
     assert_eq!(
         reader.read_bytes(),
@@ -1263,6 +1266,7 @@ impl<'a> CanonicalReader<'a> {
     fn skip_assertion(&mut self) {
         self.read_u8();
         self.read_u8();
+        self.read_option_u32();
         self.read_option_u32();
         self.read_option_u32();
         self.read_fingerprint();

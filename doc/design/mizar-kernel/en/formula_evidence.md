@@ -107,6 +107,43 @@ only. They define the `clause::ClauseValidationContext` used to check
 They do not authorize hidden symbol lookup, overload resolution, or source
 loading.
 
+## Named Equality Instances
+
+Schema v2 keeps encoding version 1 and appends section tag 7 after the v1
+sections. The accepted-schema set must explicitly include 2; v1 has no names.
+Each length-framed item is `u32 id, u8 schema, u32 equality_symbol_id`, followed
+by its payload. IDs are nonzero, unique and increasing. The equality key is
+`Equality` plus the supplied manifest id; no symbol is selected implicitly.
+
+| Tag | Payload, using existing term encoding | Kernel-constructed formula |
+|---|---|---|
+| 1 | term `t` | `t = t` |
+| 2 | terms `t, u` | `not(t = u) or u = t` |
+| 3 | terms `t, u, v` | `not(t = u and u = v) or t = v` |
+| 4 | symbol kind/id, arity, counted left/right term lists | Equal arguments imply equal function applications. |
+| 5 | symbol kind/id, arity, counted left/right term lists | Equal arguments imply the two predicate applications are equivalent. |
+
+Function symbols must be `FunctorPredicate`; predicate symbols may be
+`Predicate`, `FunctorPredicate` or `BuiltinRelation`. Every key must be in the
+manifest. Arity must equal both argument counts, following the existing atom
+arity model; manifests gain no arity field. Terms use the existing manifest,
+variable, size and depth validation. Predicate equivalence is
+`(not P(left) or P(right)) and (not P(right) or P(left))`; for positive arity,
+both congruence formulas use `not(and(left_i = right_i)) or consequent`.
+Zero-arity names directly construct `f() = f()` or that predicate equivalence;
+they never create an empty conjunction or an unnamed instance.
+
+Parsed evidence stores only immutable kernel-derived `(id, Formula)` entries,
+exposed by `equality_instances()`. They are not source premises, substitution
+inputs, provenance rows or `used_axioms`. Unknown schemas, malformed name
+contents, keys, arities and terms reject as `invalid_substitution`; envelope
+and resource errors keep their existing categories. Name counts use
+`max_formulas`, argument counts use `max_formula_children`, and constructed
+formulas obey existing formula/term/byte budgets before encoding. Expanded
+nodes and canonical formula bytes are bounded across the named section by
+`max_formula_nodes` and the section/evidence byte limits; each law's depth,
+child counts and generated application terms are checked before cloning.
+
 ## Formula Grammar
 
 The first implementation supports this propositional formula grammar:

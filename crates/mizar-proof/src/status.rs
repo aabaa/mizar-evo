@@ -45,6 +45,7 @@ pub fn prove_source_existential_registration(
             KernelEvidenceCheckInput, KernelEvidenceCheckKind, KernelEvidenceCheckLimits,
             KernelFormulaProducerRef, KernelVcGeneratedFormulaId, check_kernel_evidence,
         },
+        clause::{SymbolKind, Term},
         formula_evidence::{FormulaEvidenceParseContext, parse_formula_evidence},
         rejection::TargetVcFingerprint,
     };
@@ -57,6 +58,7 @@ pub fn prove_source_existential_registration(
         },
         vc_ir::{GenerationSchemaVersion, VcFormulaRef, VcSchemaVersion},
     };
+    use std::collections::BTreeSet;
     let invalid = || "registration.proof.invalid_source_evidence".to_owned();
     let check = check_source_existential_registration_proof(source, nodes, symbols)?;
     let core = mizar_core::elaborator::lower_source_existential_registration(&check)?;
@@ -110,7 +112,7 @@ pub fn prove_source_existential_registration(
             _ => return Err(invalid()),
         };
         let kernel_profile = KernelProfileRecord::v1(profile.profile_id, tautology);
-        let mut sections: [Vec<Vec<u8>>; 6] = std::array::from_fn(|_| Vec::new());
+        let mut sections: [Vec<Vec<u8>>; 7] = std::array::from_fn(|_| Vec::new());
         sections[0] = envelope
             .symbol_manifest()
             .iter()
@@ -165,37 +167,85 @@ pub fn prove_source_existential_registration(
         item.extend_from_slice(&goal.provenance_id.to_be_bytes());
         item.extend_from_slice(&goal.formula_bytes);
         sections[5].push(item);
-        let mut bytes = b"MIZAR_KERNEL_EVIDENCE\0".to_vec();
-        bytes.extend_from_slice(&envelope.schema_version().to_be_bytes());
-        bytes.extend_from_slice(&envelope.encoding_version().to_be_bytes());
-        bytes.extend_from_slice(&profile.profile_id.to_be_bytes());
-        bytes.extend_from_slice(&profile.clause_schema_version.to_be_bytes());
-        bytes.extend_from_slice(&profile.clause_encoding_version.to_be_bytes());
-        bytes.push(kernel_profile.clause_tautology_policy.tag());
-        bytes.push(kernel_profile.certificate_hash_input_algorithm.tag());
-        put_fingerprint(envelope.target_vc(), &mut bytes)?;
-        put_u32(sections.len(), &mut bytes)?;
-        let mut payload = Vec::new();
-        for (index, section) in sections.iter().enumerate() {
-            let tag = u8::try_from(index + 1).map_err(|_| invalid())?;
-            let offset = payload.len();
-            for item in section {
-                payload.extend_from_slice(&[tag, 1]);
-                put_bytes(item, &mut payload)?;
-            }
-            bytes.push(tag);
-            put_u32(section.len(), &mut bytes)?;
-            put_u32(offset, &mut bytes)?;
-            put_u32(payload.len() - offset, &mut bytes)?;
-        }
-        bytes.extend(payload);
         let target = envelope.target_vc();
-        let fingerprint = Fingerprint::new(target.algorithm_id, target.digest.clone());
-        let parsed = parse_formula_evidence(
-            &bytes,
-            &FormulaEvidenceParseContext::v1(fingerprint, kernel_profile),
-        )
-        .map_err(|error| format!("registration.proof.parse:{error:?}"))?;
+        let mut schema = 1u16;
+        let parsed = loop {
+            let mut bytes = b"MIZAR_KERNEL_EVIDENCE\0".to_vec();
+            bytes.extend_from_slice(&schema.to_be_bytes());
+            bytes.extend_from_slice(&envelope.encoding_version().to_be_bytes());
+            bytes.extend_from_slice(&profile.profile_id.to_be_bytes());
+            bytes.extend_from_slice(&profile.clause_schema_version.to_be_bytes());
+            bytes.extend_from_slice(&profile.clause_encoding_version.to_be_bytes());
+            bytes.push(kernel_profile.clause_tautology_policy.tag());
+            bytes.push(kernel_profile.certificate_hash_input_algorithm.tag());
+            put_fingerprint(envelope.target_vc(), &mut bytes)?;
+            let section_count = if schema == 1 { 6 } else { 7 };
+            put_u32(section_count, &mut bytes)?;
+            let mut payload = Vec::new();
+            for (index, section) in sections.iter().take(section_count).enumerate() {
+                let tag = u8::try_from(index + 1).map_err(|_| invalid())?;
+                let offset = payload.len();
+                for item in section {
+                    payload.extend_from_slice(&[tag, 1]);
+                    put_bytes(item, &mut payload)?;
+                }
+                bytes.push(tag);
+                put_u32(section.len(), &mut bytes)?;
+                put_u32(offset, &mut bytes)?;
+                put_u32(payload.len() - offset, &mut bytes)?;
+            }
+            bytes.extend(payload);
+            let fingerprint = Fingerprint::new(target.algorithm_id, target.digest.clone());
+            let mut context = FormulaEvidenceParseContext::v1(fingerprint, kernel_profile.clone());
+            if schema == 2 {
+                context.accepted_schema_versions.insert(2);
+            }
+            let parsed = parse_formula_evidence(&bytes, &context)
+                .map_err(|error| format!("registration.proof.parse:{error:?}"))?;
+            if schema == 2 {
+                break parsed;
+            }
+            let mut equalities = parsed
+                .symbol_manifest()
+                .iter()
+                .filter(|entry| entry.symbol.kind == SymbolKind::Equality);
+            let equality = equalities.next().ok_or_else(invalid)?.symbol;
+            if equalities.next().is_some() {
+                return Err(invalid());
+            }
+            let mut choices = BTreeSet::new();
+            for substitution in parsed.substitutions() {
+                if substitution.payload.payload_kind != 1
+                    || !substitution.payload.rewrite_path.segments.is_empty()
+                {
+                    return Err(invalid());
+                }
+                let [replacement] = substitution.payload.replacements.as_slice() else {
+                    return Err(invalid());
+                };
+                let Term::Application { symbol, arguments } = &replacement.actual_term else {
+                    return Err(invalid());
+                };
+                if symbol.kind != SymbolKind::FunctorPredicate
+                    || !arguments.is_empty()
+                    || replacement.replacement_role != 1
+                {
+                    return Err(invalid());
+                }
+                choices.insert(*symbol);
+            }
+            for (index, choice) in choices.into_iter().enumerate() {
+                let mut item = Vec::new();
+                put_u32(index + 1, &mut item)?;
+                item.push(1);
+                item.extend(equality.id.0.to_be_bytes());
+                item.extend([2, 2]);
+                item.extend(choice.id.0.to_be_bytes());
+                item.extend(0u32.to_be_bytes());
+                sections[6].push(item);
+            }
+            schema = 2;
+        };
         let target = TargetVcFingerprint::new(target.algorithm_id, target.digest.clone());
         let entries = handoff
             .context_identity()

@@ -134,10 +134,17 @@ they are never trusted input fields.
 
 ## Equality Reflexivity
 
-For each manifest-validated Equality atom of arity two whose two canonical term trees are identical, the kernel adds its positive unit clause in canonical atom order before assertion encoding.
-This derives a logical equality law inside the existing checker; it neither changes the supplied formula nor trusts a caller-provided reflexivity premise, TRUE replacement or SAT clause.
-Unequal operands remain propositional; ordinary predicates and other symbol kinds receive no reflexivity rule. There is no congruence, equality search or quantified encoding.
-Derived clauses use existing clause/literal/byte limits and canonical hashing. The derived SAT encoding version is 2; the formula/substitution input envelope and SAT schema remain version 1.
+Equality atoms receive no automatic unit clauses, even for identical terms.
+Only the [named instances](./formula_evidence.md#named-equality-instances)
+constructed by the parser enter the assertion list. Each has assertion kind 4,
+`equality_instance_id = Some(id)`, no source/substitution id, an asserted-true
+formula and its kernel-derived fingerprint. Other assertion kinds have no
+equality id. Sorting and canonical serialization include this separate id
+after the existing source/substitution ids. Names add no premise provenance
+or `used_axioms`, and the kernel searches for no instances.
+Existing assertion/formula/atom/clause/literal/byte limits apply. Derived SAT
+encoding version is 3; SAT schema remains 1. Input schemas v1 and v2 both
+follow this named-only rule. The trusted SAT checker is unchanged.
 
 ## Rejections
 

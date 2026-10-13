@@ -125,10 +125,16 @@ diagnostic check trace として記録できるが、trusted input field では�
 
 ## Equality Reflexivity
 
-manifest 検証済みの arity 2 Equality atom で二つの canonical term tree が等しい場合、kernel が canonical atom 順に正の unit clause を assertion encoding の前へ追加する。
-これは既存 checker 内で導く論理的等号法則であり、入力 formula を変えず、caller の反射性 premise・TRUE 置換・SAT clause を信用しない。
-異なる operand は命題 atom のままで、通常 predicate や他の symbol kind に反射性規則を適用しない。congruence・等式探索・量化 encoding は扱わない。
-導出 clause に既存 clause/literal/byte 制限と canonical hash を適用する。導出 SAT encoding version は 2、formula/substitution 入力 envelope と SAT schema は 1 のままとする。
+等号 atom に自動の unit clause は追加しない。両 term が同一でも名前が必要である。
+parser が構成した[名前付き instance](./formula_evidence.md#named-equality-instances)のみを
+assertion 列へ追加する。assertion kind は 4、`equality_instance_id = Some(id)` とし、
+source/substitution id は持たず、asserted-true formula と kernel 導出 fingerprint を持つ。
+他の assertion kind に equality id はない。sort と canonical serialization は既存
+source/substitution id の後へ独立した equality id を含める。名前は premise provenance や
+`used_axioms` を追加せず、kernel は instance を探索しない。
+既存 assertion/formula/atom/clause/literal/byte 制限を適用する。導出 SAT encoding version は
+3、SAT schema は 1 のままとする。入力 schema v1/v2 の両方がこの名前必須の規則に従う。
+trusted SAT checker は変更しない。
 
 ## Rejections
 

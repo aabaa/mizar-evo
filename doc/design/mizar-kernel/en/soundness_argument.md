@@ -70,10 +70,9 @@ findings section.
 - E1. Domain separator is `MIZAR_KERNEL_EVIDENCE\0`; schema and encoding
   versions are supported. Unknown values reject as
   `unsupported_certificate_format`.
-- E2. Sections appear in the fixed v1 order (symbol manifest, variable
-  manifest, formula evidence, substitutions, provenance, final goal); each
-  section is length-framed; byte ranges are consumed exactly; trailing bytes
-  reject.
+- E2. Sections follow the schema-specific fixed order: v2 appends named
+  equality instances after the v1 final goal. Each section is length-framed;
+  byte ranges are consumed exactly; trailing bytes reject.
 - E3. Ids within each section are unique and sorted; duplicate or unsorted ids
   reject. References resolve only to ids declared in the same evidence object
   (or, for imported facts, to caller context entries).
@@ -194,8 +193,10 @@ findings section.
   canonical atom bytes, Tseitin auxiliaries in deterministic traversal order.
   Equivalent caller order produces identical canonical SAT bytes.
 - I3. The problem asserts exactly premises, substitution instances, the B4-polarized
-  standalone goal, and kernel-derived [logical equality clauses](./sat_encoding.md#equality-reflexivity).
-  The goal and equality clauses are not caller premises or `used_axioms` facts.
+  standalone goal, and kernel-constructed [named equality instances](./sat_encoding.md#equality-reflexivity).
+  Every instance is a valid equality law over manifest-validated terms, never
+  a supplied formula or unnamed rule. The goal and instances are not caller
+  premises or `used_axioms` facts.
 - I4. Canonical SAT bytes are a diagnostic/check-trace artifact, not trusted
   input; encoded-problem fields are read-only outside the module.
 

@@ -101,6 +101,40 @@ Symbol / variable manifest は formula validation のための structural input 
 `clause::ClauseValidationContext` を定義する。Hidden symbol lookup、overload resolution、
 source loading を許可しない。
 
+## Named Equality Instances
+
+schema v2 は encoding version 1 を保ち、v1 の section の後へ tag 7 を追加する。
+accepted-schema set は 2 を明示的に含む必要があり、v1 に名前はない。
+length-framed item は `u32 id, u8 schema, u32 equality_symbol_id` と payload からなる。
+id は非零・一意・昇順とする。等号 key は `Equality` と指定された manifest id であり、
+暗黙の symbol 選択は行わない。
+
+| Tag | 既存 term encoding による payload | kernel が構成する formula |
+|---|---|---|
+| 1 | term `t` | `t = t` |
+| 2 | terms `t, u` | `not(t = u) or u = t` |
+| 3 | terms `t, u, v` | `not(t = u and u = v) or t = v` |
+| 4 | symbol kind/id、arity、個数付き左右 term 列 | 引数の等号から関数適用の等号を導く。 |
+| 5 | symbol kind/id、arity、個数付き左右 term 列 | 引数の等号から述語適用の同値を導く。 |
+
+関数 symbol は `FunctorPredicate`、述語 symbol は `Predicate`、`FunctorPredicate`、
+`BuiltinRelation` とする。各 key は manifest に存在し、arity は左右の引数個数と一致する。
+既存 atom の arity モデルを使い、manifest に arity field は追加しない。
+term に既存 manifest・variable・size・depth 検査を適用する。述語同値は
+`(not P(left) or P(right)) and (not P(right) or P(left))` とし、正の arity では
+両 congruence formula を `not(and(left_i = right_i)) or consequent` とする。
+arity 0 の名前は `f() = f()` または上記述語同値を直接構成し、空の conjunction や
+名前のない instance は作らない。
+
+parsed evidence は kernel が導出した不変の `(id, Formula)` のみを保存し、
+`equality_instances()` で公開する。source premise、substitution input、provenance row、
+`used_axioms` にはならない。未知 schema、不正な名前の内容・key・arity・term は
+`invalid_substitution` とし、envelope/resource error は既存分類を保つ。
+名前の個数に `max_formulas`、引数個数に `max_formula_children` を適用し、構成 formula は
+encoding 前に既存 formula/term/byte budget に従う。名前 section 全体で展開 node 数を
+`max_formula_nodes`、canonical formula bytes を section/evidence byte 制限で抑える。
+各法則の depth・child 個数・生成する application term を clone 前に検査する。
+
 ## Formula grammar
 
 最初の実装は次の propositional formula grammar を support する:
