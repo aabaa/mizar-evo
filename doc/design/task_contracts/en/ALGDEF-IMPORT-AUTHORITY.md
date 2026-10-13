@@ -1,0 +1,20 @@
+# Task ALGDEF-IMPORT-AUTHORITY: imported promotion evidence boundary prerequisite
+Canonical language: English; [Japanese pointer](../ja/ALGDEF-IMPORT-AUTHORITY.md).
+Status: design prerequisite planned; adoption dependency-blocked. Tier: full gates. Owners: Proof and Artifact; consumer: VC59.
+Authority: [§20.13.2–6](../../../spec/en/20.algorithm_and_verification.md#20132-promotion-axioms-for-terminating), [§12 imports](../../../spec/en/12.modules_and_namespaces.md), [§23 artifacts](../../../spec/en/23.package_management_and_build_system.md), [architecture15](../../architecture/en/15.kernel_certificate_format.md).
+Classification: external_dependency_gap/design_drift; runtime artifact validation and module-local acceptance do not supply portable promotion authority.
+Readiness: inventory and producer/consumer authentication-boundary design can start; importing accepted promotion remains blocked until a genuine portable validation path is frozen and implemented.
+Dependencies: ALGDEF-VC57-PROMOTION-FACTS authentic applicable E1/E2/E4/group acceptance; existing Proof/kernel acceptance, artifact publication/loading and imported declaration/projection identity owners.
+Scope: inventory exact accepted evidence and import validators; freeze the smallest portable producer/consumer binding of algorithm/contracts/equations, applicable E1/E2/E4, complete mutual group and dependency/version provenance to genuine proof authority.
+Boundary: Proof/Artifact responsibilities follow the linked owners; VC59 consumes only validated imported promotion facts. Execution-export correspondence remains AST-ARTIFACT/ALG-MVM where runtime publication/computation applies; opaque contract-only promotion import does not load execution artifacts.
+Invariants: use linked owners for portable validation; retain exact source/library binding and whole-group acceptance before any member premise escapes.
+Failure: missing/stale/forged/partial or policy-incompatible evidence keeps imports unaccepted; no re-proving another module as an import substitute. If authority does not fix a required acceptance meaning, record that exact spec_gap and human decision/release condition before designing adoption.
+Forbidden: inventing receipts, wire schemas or authentication rules, inferred acceptance from public summaries/runtime hashes, kernel/trust-policy changes, broad implementation in this prerequisite.
+Owner details/tests: [Proof boundary](../../mizar-proof/en/policy.md#imported-promotion-authority-boundary), [Artifact boundary](../../mizar-artifact/en/manifest.md#imported-promotion-authority-boundary).
+Tests: design genuine accepted import, missing or invalid applicable E1/E2/E4/member evidence, stale contracts/dependencies/group membership and proof-policy mismatch; both ordinary and definitional promoted imports, including genuine accepted non-computable/contract-only imports without runtime loading. Computation still rejects missing/invalid artifacts at its execution owner. Hash/status-only and runtime-only inputs never expose premises.
+Acceptance: reviewed exact existing-authority mapping, named real producers/validators and ordered implementation slices unblock VC59 only after actual authenticated outputs exist; remaining semantic questions have precise spec_gap release conditions.
+Audit: chapter20/23 accepted-status import stays deferred; add producer ownership without acceptance credit.
+Reviews: independent specification, test sufficiency, implementation, volume/scope and source/EN-JA consistency; full protocol gates.
+Verification: cargo fmt --check; cargo clippy --all-targets --all-features -- -D warnings; cargo test.
+Owner indexes: [mizar-proof index](../../mizar-proof/en/00.crate_plan.md), [mizar-artifact index](../../mizar-artifact/en/00.crate_plan.md), [mizar-vc index](../../mizar-vc/en/00.crate_plan.md).
+Existing foundations: [Proof status tests](../../../../crates/mizar-proof/src/status/tests.rs), [artifact witness tests](../../../../crates/mizar-artifact/src/proof_witness/tests.rs) and [summary tests](../../../../crates/mizar-artifact/src/module_summary/tests.rs); these are not portable accepted promotion evidence.

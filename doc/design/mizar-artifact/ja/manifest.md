@@ -391,3 +391,7 @@ task 14 は `src/manifest.rs` に manifest schema、validating reader、writer�
 hash construction と development payload hash recomputation は producer-owned external dependency として残る。
 task 17 は実 producer projection を store と manifest publication へ接続する。より広い determinism coverage は
 task 18 に残る。
+
+## Imported Promotion Authority Boundary
+
+将来の imported promotion publication/loading は真正な Proof-produced evidence と正確な algorithm/contract/equation/group/dependency identity を運び、Proof が acceptance validator のまま。runtime export validation、manifest flag、hash だけでは promoted premise を有効にしない。proof provenance が不足/古い場合、exporting module の再証明で代替せず VC consumer を block する。

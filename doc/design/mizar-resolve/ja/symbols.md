@@ -565,3 +565,7 @@ fingerprint、import provider、publication ではない。未対応 prepass fam
 ## Constructor Actual Roles
 
 将来の constructor-actual resolution は真正な mode/structure signature と順序付き type/value parameter role を消費し、bracket/of/over actual の declaration/scope と expression provenance を保持する。綴りから role を推測せず、型に基づく overload applicability を選ばない。不足/古い declaration input は意味 consumer を block する。
+
+## Planned Algorithm Call Dependencies
+
+既存 signature index は source body-call/definiens graph ではない。将来の真正な call target、完全な definition-block recursive group、source/range/edge provenance を Checker cycle/applicability check と Core lowering へ渡す。Resolver は typed overload winner を選ばず、graph reference を accepted call と扱わない。

@@ -448,3 +448,7 @@ construction and development payload hash recomputation remain
 producer-owned external dependencies. Task 17 connects real producer projections
 to store and manifest publication. Broader determinism coverage remains task 18
 work.
+
+## Imported Promotion Authority Boundary
+
+Future imported promotion publication/loading transports authenticated Proof-produced evidence and exact algorithm/contract/equation/group/dependency identity; Proof remains the acceptance validator. Runtime export validation, manifest flags and hashes alone never enable promoted premises. Missing or stale proof provenance blocks the VC consumer without re-proving the exporting module.

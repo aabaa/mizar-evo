@@ -642,3 +642,7 @@ rejections, unsupported aliases/operators, codec bounds and deterministic output
 ## Constructor Actual Roles
 
 Future constructor-actual resolution consumes real mode/structure signatures and ordered type/value parameter roles, preserving declaration/scope and expression provenance for bracket/of/over actuals. It does not infer roles from spelling or choose typed overload applicability. Missing or stale declaration inputs block the semantic consumer.
+
+## Planned Algorithm Call Dependencies
+
+The existing signature index is not a source body-call/definiens graph. Future authentic call targets, complete definition-block recursive groups and source/range/edge provenance feed Checker cycle/applicability checks and Core lowering; Resolver never chooses typed overload winners or treats graph references as accepted calls.

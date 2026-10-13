@@ -417,3 +417,7 @@ Boolean conversion tests cover B=true/B≠false, B=false/B≠true and B=C/B≠C 
 ## Formation Evidence Boundary
 
 Validate actual pinned library and per-use formation evidence with its precise conditional premises and request identity; no accepted status comes from spelling, Open goals or algorithm contract evidence. Reject stale version/content/UID/context/C and wrong-premise substitutions. Accepted instances re-enter Checker, keeping finite KΓ/Adm equivalence and Binder all-input construction obligations distinct from E1/E2/E4 and execution.
+
+## Imported Promotion Authority Boundary
+
+Portable promoted premises require genuine validated applicable E1/E2/E4 and complete-group evidence, bound to algorithm/contracts/equations and dependency/version/policy provenance. Inventory existing producers/import validators before freezing an implementation path; unknown acceptance meaning stays an explicit spec_gap. Module-local status and runtime/hash metadata cannot supply this authority.

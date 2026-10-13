@@ -395,3 +395,7 @@ boolean conversion test は certified two-valuedness の下で B=true/B≠false�
 ## Formation Evidence Boundary
 
 真正な pinned library/per-use formation evidence を正確な conditional premise と request identity とともに検証する。綴り、Open goal、算法 contract evidence は accepted status を与えない。古い version/content/UID/context/C と誤った premise substitution を拒否する。受理した instance は Checker へ戻し、有限 KΓ/Adm equivalence と Binder all-input construction obligation を E1/E2/E4/execution と区別する。
+
+## Imported Promotion Authority Boundary
+
+移送可能な promoted premise は、algorithm/contracts/equations と dependency/version/policy provenance に結び付いた真正な適用対象 E1/E2/E4 と complete-group evidence の検証を必要とする。実装経路の固定前に既存 producer/import validator を棚卸しし、未確定の acceptance meaning は明示 spec_gap に残す。module-local status と runtime/hash metadata はこの権威を与えない。

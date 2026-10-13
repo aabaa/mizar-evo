@@ -1,7 +1,7 @@
 # Task ALGDEF-CHECKER280-DEFINITION-CYCLES: definition dependency cycles
 Canonical language: English; [Japanese pointer](../ja/ALGDEF-CHECKER280-DEFINITION-CYCLES.md).
 Status: planned. Tier: full. Owner: [checker plan](../../mizar-checker/en/00.crate_plan.md); consumers: [resolve plan](../../mizar-resolve/en/00.crate_plan.md) (dependency edges), [test plan](../../mizar-test/en/00.crate_plan.md).
-Dependencies: completed checker definition producers (Tasks 259-262); resolver declaration dependency edges and resolved algorithm call targets ([architecture 03](../../architecture/en/03.module_and_symbol_resolution.md)). Preflight must confirm that both exist; if either is missing, stop for a named resolver prerequisite instead of reconstructing it.
+Dependencies: completed checker definition producers (Tasks 259-262); ALGDEF-RESOLVE-CALL-EDGES resolver declaration dependency edges and resolved algorithm call targets ([architecture 03](../../architecture/en/03.module_and_symbol_resolution.md)). Preflight must confirm that both exist; if either is missing, stop for a named resolver prerequisite instead of reconstructing it.
 Readiness: dependency-blocked on resolver-owned source-authenticated definiens/body-call dependency edges.
 Authority: specification §10.3.3 recursion confinement, §22.5.2 E0410, §20.8.2 recursive groups.
 Gap: `test_gap`; no owner currently checks `logic.circular_definition`.
