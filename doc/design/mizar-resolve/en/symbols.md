@@ -638,3 +638,7 @@ summary, lexical fingerprint, import provider or publication. Missing source
 prepass families and export policy remain with their owners. Tests cover actual
 frontend multi-piece/private/default-operator payloads, identity changes and
 rejections, unsupported aliases/operators, codec bounds and deterministic output.
+
+## Constructor Actual Roles
+
+Future constructor-actual resolution consumes real mode/structure signatures and ordered type/value parameter roles, preserving declaration/scope and expression provenance for bracket/of/over actuals. It does not infer roles from spelling or choose typed overload applicability. Missing or stale declaration inputs block the semantic consumer.

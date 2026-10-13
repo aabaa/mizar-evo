@@ -2143,3 +2143,9 @@ The exact checker tests are:
 - `task269sdt_dependency_binding_input_and_arena_corruption_fail_closed`
 - `task269sdt_typed_and_resolved_ownership_is_atomic`
 - `task269sdt_generic_neighbor_and_descendant_use_routes_remain_isolated`
+
+## Constructor Actual Typing
+
+Future general constructor applications require resolved ordered type/value roles and complete compound-term source/type provenance, extending the currently identifier-bounded term/qua route only for authenticated inputs. Checker owns role/arity/type/application checks and dependent conditions; preserve binder identity and nested ranges, never reconstruct a compound argument from its spelling.
+Preserve genuine type-actual inhabitation/bounded-qua evidence and constrained value-application discharge (§18.2.2/18.4); tests distinguish accepted evidence from missing, stale or mismatched proofs without making parser success semantic acceptance.
+For an otherwise well-typed compound value, distinguish satisfied versus missing/failed application obligations; reject changed/dropped expression children, reordered actuals and mismatched binder/nested source ranges. Current source-shape tests provide provenance foundations, not general constructor coverage.

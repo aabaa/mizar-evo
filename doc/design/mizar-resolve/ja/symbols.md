@@ -561,3 +561,7 @@ writer を用い、末尾改行も保持する。ペア順序、非公開除外�
 fingerprint、import provider、publication ではない。未対応 prepass family と export 方針は
 既存所有者に残す。実 frontend の複数表記・非公開・既定 operator payload、identity の
 変化と拒否、alias/operator 拒否、codec 上限、決定性をテストする。
+
+## Constructor Actual Roles
+
+将来の constructor-actual resolution は真正な mode/structure signature と順序付き type/value parameter role を消費し、bracket/of/over actual の declaration/scope と expression provenance を保持する。綴りから role を推測せず、型に基づく overload applicability を選ばない。不足/古い declaration input は意味 consumer を block する。

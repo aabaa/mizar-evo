@@ -2365,3 +2365,8 @@ Produce syntax candidates for checker/RESOLVE33; parser enforces terminating-onl
 Lexer/frontend/syntax vocabulary extends here; optional terminating labels and replay/call inputs need source-ordered nodes and recovery.
 Tests cover nested expr roles, Binder weakest/right association/whole qua, formula patterns/RHS, explicit mixed call/options, replay and terminating labels; reject malformed expr/Binder heads, non-call arguments, non-boolean replay and partial labels, with recovery controls.
 The protected exhaustive pass fixture blocks retirement until its test intent is authorized; additive syntax does not close that conflict.
+
+## General Constructor Actual Boundary
+
+The planned general mode/structure bracket slice admits complete term-expression value actuals (§3.3/Appendix A.3), beyond the current identifier/qua fallback. Preserve argument order, ambiguous syntax and delimiter recovery; of/over term parsing already exists. Generic-template bounded qua grammar stays separate. Semantic roles and applicability remain Resolver/Checker-owned.
+Regression controls in [module/tests.rs](../../../../crates/mizar-parser/src/module/tests.rs): parser_preserves_parameter_prefix_and_bracket_qua_arguments, parser_rejects_attribute_bearing_bracket_qua_target_as_radix_only, parser_recovers_missing_type_argument_bracket_close and parser_parses_task31_template_arguments_on_references_and_functors; preserve current primary/operator and of/over parsing.

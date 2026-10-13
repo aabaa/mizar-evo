@@ -1,0 +1,19 @@
+# Task TYPE-CONSTRUCTOR-ACTUALS: general constructor type and value actuals
+Canonical language: English; [Japanese pointer](../ja/TYPE-CONSTRUCTOR-ACTUALS.md).
+Status: planned. Tier: full gates. Owners: mizar-parser (syntax), mizar-resolve (authentic signature/roles), mizar-checker (typed application); consumer: Core and test.
+Authority: [§3.3](../../../spec/en/03.type_system.md#33-type-expressions), [§18.2.2 and §18.4](../../../spec/en/18.templates.md), [Appendix A.3](../../../spec/en/appendix_a.grammar_summary.md).
+Classification: source_drift/test_gap; general bracket fallback is identifier/qua-only; of/over term parsing already exists.
+Readiness: bounded parser general-term bracket slice can start from current syntax producers. Resolver/Checker integration waits for authentic constructor signatures, ordered parameter roles and source-type/expression producers; inventory these before each slice.
+Dependencies: current TypeExpression/TermExpression parsing, AST-PARSE additive syntax where expr is involved; resolved mode/structure declarations with type/value parameters, scope identities and complete compound-term provenance.
+Scope: parse general term-expression value actuals for non-expr mode/structure brackets; retain ordinary of/over parsing. Resolve argument identities and declaration-order type/value roles; Checker validates role/arity, value type and application conditions, preserving type-actual inhabitation evidence, bounded qua applicability and constrained-use discharge (§18.2.2/18.4) across bracket/of/over forms.
+Producer/consumer responsibilities and invariants: use the three linked owner boundaries below; Core consumes checked structure only.
+Failure: malformed delimiters retain existing recovery; absent/stale/recovered signatures or roles block semantic elaboration without invented defaults. Invalid arity/role/type uses existing owned diagnostics, not new numeric codes.
+Forbidden: changing generic-template bounded qua grammar, ordinary recovery or existing fixtures; deciding overloads in Parser/Resolver; assumed parameter roles, invented foundation/type rules, public representation APIs, existing .miz/expectation rebaselining.
+Owner details: [parser boundary](../../mizar-parser/en/grammar.md#general-constructor-actual-boundary), [resolved parameters](../../mizar-resolve/en/symbols.md#constructor-actual-roles), [source typing](../../mizar-checker/en/source_type.md#constructor-actual-typing).
+Tests: mixed type/value brackets, inline/named compound values with equivalent checked meaning, bracket/of/over applications, nested/dependent values, wrong role/arity/type, stale scope/signature and exact malformed recovery. Preserve existing template and of/over regressions.
+Acceptance stages: Parser publishes complete syntax with preserved recovery; Resolver supplies exact roles/identities; Checker accepts only correctly typed applications and genuine application obligations. No later stage is ready merely because parsing succeeds.
+Audit: chapter3/18 follow-up ownership only; tests are designed, not created.
+Reviews: independent specification, test sufficiency, implementation, volume/scope and source/EN-JA consistency; full protocol gates.
+Verification: cargo fmt --check; cargo clippy --all-targets --all-features -- -D warnings; cargo test.
+Owner indexes: [mizar-parser index](../../mizar-parser/en/00.crate_plan.md), [mizar-resolve index](../../mizar-resolve/en/00.crate_plan.md), [mizar-checker index](../../mizar-checker/en/00.crate_plan.md).
+Regression inputs: [parser source](../../../../crates/mizar-parser/src/module.rs), [parser tests](../../../../crates/mizar-parser/src/module/tests.rs), [type expressions](../../../../tests/miz/pass/parser/pass_parser_type_expressions_001.miz), [template arguments](../../../../tests/miz/pass/parser/pass_parser_template_arguments_001.miz), [missing bracket](../../../../tests/miz/fail/parser/fail_parser_type_expression_missing_bracket_001.miz).

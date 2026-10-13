@@ -1523,3 +1523,9 @@ exact checker tests:
 - `task269sdt_dependency_binding_input_and_arena_corruption_fail_closed`
 - `task269sdt_typed_and_resolved_ownership_is_atomic`
 - `task269sdt_generic_neighbor_and_descendant_use_routes_remain_isolated`
+
+## Constructor Actual Typing
+
+将来の一般 constructor application は解決済みの順序付き type/value role と完全な compound-term source/type provenance を必要とする。現在 identifier-bounded の term/qua route は真正な input に限って拡張する。Checker が role/arity/type/application と dependent condition を検査し、binder identity と nested range を保持する。綴りから compound argument を再構築しない。
+真正な type-actual inhabitation/bounded-qua evidence と constrained value-application discharge (§18.2.2/18.4) を保持する。テストは受理可能 evidence と不足/古い/不一致 proof を区別し、parser success を semantic acceptance と扱わない。
+型が適合する compound value でも、満たされた application obligation と不足/失敗 obligation を区別する。変更/欠落 expression child、actual の並べ替え、binder/nested source range の不一致を拒否する。現在の source-shape test は provenance の基礎であり、一般 constructor coverage ではない。
