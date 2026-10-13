@@ -198,6 +198,10 @@ task-5/6 translator observes that proof-hint restrictions cannot be reconciled
 with the immutable premise list, it may emit diagnostics or an unsupported/open
 translation outcome, but it must not mutate the premise set.
 
+## Planned Premise Selection Boundary
+
+Future premise ranking returns an ordered selection to a VC-owned immutable input assembly before translation, preserving the authenticated source VC, selected formula provenance and problem/configuration identity. Diagnostic retries may test additional candidates but cannot accept an unchanged source proof. The translator remains unable to mutate source premises.
+
 ## Goal And Polarity
 
 The VC goal is translated to the `AtpProblem.conjecture` formula. The

@@ -24,7 +24,7 @@ syntax; specification changes.
 ## Tests and exit
 
 Real sources with reserve closure, untyped binders, overloaded and imported
-symbols, and each item kind; a round trip showing that replacing the source
+symbols, and every item kind including private items. Repeated source spellings with different resolved names require scope-correct qualified elaborated rendering (§13.7.3) and unambiguous symbol-map entries keyed by those rendered spellings, without a new schema; a round trip showing that replacing the source
 binders with the elaborated binders leaves the checked statement unchanged.
 Require independent specification, test-sufficiency, implementation,
 volume/scope, and consistency reviews; `cargo fmt --check`,

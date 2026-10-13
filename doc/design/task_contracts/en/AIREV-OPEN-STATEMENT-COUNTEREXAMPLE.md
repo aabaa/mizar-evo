@@ -20,7 +20,7 @@ statement; changing proof status; specification changes.
 ## Tests and exit
 
 A false open statement with a finite counterexample, a true open statement,
-and a request through configuration and through the editor action. Require
+and requests through configuration and the editor action for theorem/lemma/scheme with open and omitted proofs. No request, unknown, timeout, invalid or unmappable model yields no E0310 and preserves proof status; found-model assignments and locations must map precisely to the source. Require
 independent specification, test-sufficiency, implementation, volume/scope,
 and consistency reviews; `cargo fmt --check`,
 `cargo clippy --all-targets --all-features -- -D warnings`, `cargo test`.

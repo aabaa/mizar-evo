@@ -24,7 +24,7 @@ specification changes.
 
 Real sources: a public theorem relying on closure, one relying on an untyped
 binder, an explicitly typed public theorem, a private lemma, and a
-suppressed case. Require independent specification, test-sufficiency,
+suppressed case; public lemma/scheme positives and private/proof-local negatives, with exact reserve secondary locations and explicit-binder fixes. Require independent specification, test-sufficiency,
 implementation, volume/scope, and consistency reviews; `cargo fmt --check`,
 `cargo clippy --all-targets --all-features -- -D warnings`, `cargo test`.
 Exit: exactly the reserve-typed variables of public statements are reported.

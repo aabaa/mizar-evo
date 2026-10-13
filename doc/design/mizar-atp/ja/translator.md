@@ -183,6 +183,10 @@ diagnostic / profile / portfolio metadata のままである。task-5/6 translat
 restriction と immutable premise list を整合できないと観測した場合、diagnostic または
 unsupported/open translation outcome を出してよいが、premise set を mutate してはならない。
 
+## Planned Premise Selection Boundary
+
+将来の前提 ranking は順序付き選択を translation 前の VC-owned immutable input assembly へ返し、真正な source VC、選択した formula provenance、problem/configuration identity を保持する。診断用 retry は追加候補を試せるが、変更されていない source proof を受理しない。translator は source premise を変更できない。
+
 ## goal と polarity
 
 VC goal は `AtpProblem.conjecture` formula に変換される。translator は task-5/6 の全 problem に

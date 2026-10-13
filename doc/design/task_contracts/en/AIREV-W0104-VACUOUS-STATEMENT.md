@@ -28,7 +28,7 @@ contradiction goals; searching for new evidence; specification changes.
 ## Tests and exit
 
 The §22.6.2 example, a non-vacuous theorem with the same shape, a structured
-proof that is skipped, and an axiom contradiction reported as E0401 only.
+proof that is skipped, and an authentic declared-axiom contradiction reported as E0401 only. Cover theorem/lemma/scheme, implication and restricted universal, by and omitted single justification, non-kernel/Open evidence skips, suppression and source locations. Distinguish declared/generated or accepted imported axiom provenance from policy assumptions; no new axiom syntax or acceptance rule.
 Require independent specification, test-sufficiency, implementation,
 volume/scope, and consistency reviews; `cargo fmt --check`,
 `cargo clippy --all-targets --all-features -- -D warnings`, `cargo test`.
