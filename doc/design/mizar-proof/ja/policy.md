@@ -399,3 +399,7 @@ boolean conversion test は certified two-valuedness の下で B=true/B≠false�
 ## Imported Promotion Authority Boundary
 
 移送可能な promoted premise は、algorithm/contracts/equations と dependency/version/policy provenance に結び付いた真正な適用対象 E1/E2/E4 と complete-group evidence の検証を必要とする。実装経路の固定前に既存 producer/import validator を棚卸しし、未確定の acceptance meaning は明示 spec_gap に残す。module-local status と runtime/hash metadata はこの権威を与えない。
+
+## Computation Admission Boundary
+
+MVM evaluation による obligation discharge の前に、完全な真正 computation closure と各必須 ensures uniqueness proof/正確な syntactic exemption を検証する。E1 execution single-valuedness と要求された all-call equation/SAT replay は別 gate。Open/failed/stale/forged/不足 requirement は computation fact を与えない。真正 producer/diagnostic integration が存在するとき、Proof が仕様の E0330 projection を所有する。テストは真正 admission、raw VM return、replay-only evidence、不完全 imported closure、誤った call/contract/exemption provenance を区別し、strict/default/replay policy は維持する。

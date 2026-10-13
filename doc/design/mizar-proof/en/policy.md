@@ -421,3 +421,7 @@ Validate actual pinned library and per-use formation evidence with its precise c
 ## Imported Promotion Authority Boundary
 
 Portable promoted premises require genuine validated applicable E1/E2/E4 and complete-group evidence, bound to algorithm/contracts/equations and dependency/version/policy provenance. Inventory existing producers/import validators before freezing an implementation path; unknown acceptance meaning stays an explicit spec_gap. Module-local status and runtime/hash metadata cannot supply this authority.
+
+## Computation Admission Boundary
+
+Before any MVM evaluation discharges an obligation, validate the complete authenticated computation closure and each required ensures uniqueness proof or exact syntactic exemption. E1 execution single-valuedness and requested all-call equation/SAT replay are separate gates. Open/failed/stale/forged or missing requirements yield no computation fact; Proof owns the specified E0330 projection when real producer/diagnostic integration exists. Tests distinguish genuine admission, raw VM return, replay-only evidence, incomplete imported closure and wrong-call/contract/exemption provenance; strict/default/replay policy remains unchanged.

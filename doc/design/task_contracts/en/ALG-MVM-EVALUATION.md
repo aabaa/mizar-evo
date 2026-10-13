@@ -2,7 +2,7 @@
 Canonical language: English; [Japanese pointer](../ja/ALG-MVM-EVALUATION.md).
 Status: blocked. Tier: full gates. Owner: [VC plan](../../mizar-vc/en/00.crate_plan.md) (verification-time execution producer).
 Consumers: mizar-proof trust/import policy, artifact/build runtime interfaces and cache, mizar-test.
-Dependencies: AST-LOWER complete inputs, verified body/call correspondence, typed computability facts and validating runtime artifacts; exact executable/body and loader boundaries must be frozen before code.
+Dependencies: ALGDEF-COMPUTATION-ADMISSION before any computation-based discharge; AST-LOWER complete inputs, verified body/call correspondence, typed computability facts and validating runtime artifacts; exact executable/body and loader boundaries must be frozen before code.
 Readiness: none of those runtime producers is supplied by an open computation hint; implement only after the chosen source slice has authentic inputs and a reviewed execution-format/correspondence design.
 Authority: [§20.9.1–20.9.4 and E5](../../../spec/en/20.algorithm_and_verification.md); [pre-ATP boundary](../../architecture/en/07.vc_generation.md#pre-atp-discharge-is-deterministic-and-explainable).
 Existing discharge caller-supplied outcomes are not execution evidence or the MVM resource policy.

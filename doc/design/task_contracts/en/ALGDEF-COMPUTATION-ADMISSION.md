@@ -1,0 +1,18 @@
+# Task ALGDEF-COMPUTATION-ADMISSION: full-closure deterministic computation admission
+Canonical language: English; [Japanese pointer](../ja/ALGDEF-COMPUTATION-ADMISSION.md).
+Status: dependency-blocked. Tier: full gates. Owners: VC (closure/goals), Proof (acceptance); consumers: MVM evaluation, Artifact and test.
+Authority: [§20.9.1–2](../../../spec/en/20.algorithm_and_verification.md#2092-by-computation-proof-step), [§22.4.5 E0330](../../../spec/en/22.error_handling_and_diagnostics.md#2245-atp-timeout-and-computation-limit-handling).
+Classification: source_drift/test_gap; VC58 is same-package Open-goal generation, not full-closure accepted admission.
+Dependencies: ALGDEF-VC58-COMPUTATION-UNIQUENESS local generation; ALGDEF-RESOLVE-CALL-EDGES authentic calls and Core typed value/Pick/set-versus-sequence classifications; AST-ARTIFACT validated computational exports with complete execution dependency/body/signature/contract inputs; genuine Proof checks.
+Readiness: closure/input and acceptance design can start; imported closure generation requires real validated export inputs; admission waits for genuine uniqueness proof or validated exact syntactic exemption at every applicable callee.
+Scope: extend closure analysis over every directly/transitively evaluated algorithm, including imported public callees and validated internal private helpers. For applicable value-returning callees, generate or validate uniqueness/exemption requirements and bind accepted results to the complete computation request.
+Boundary: Artifact supplies authenticated runtime/body/call inputs; Resolver/Core supply resolved typed local facts; VC creates full closure and goals; Proof accepts requirements; MVM/AST-COMPUTE cannot discharge obligations before this gate. Raw VM returns do not provide admission evidence.
+Applicability/invariants/tests: [VC closure boundary](../../mizar-vc/en/generator.md#full-computation-closure-admission), [Proof admission](../../mizar-proof/en/policy.md#computation-admission-boundary).
+Failure: missing/stale/forged/partial closure or unaccepted required uniqueness rejects computation discharge (E0330 where the specified failure applies); incomplete transport remains unavailable/Open at its actual stage, never a syntactic exemption. Preserve internal execution reports without publishing unchecked facts.
+Forbidden: accepting from E1 single-valuedness, replay equations/SAT, status flags or obligation presence; canonical unordered iteration; source fallback for imported bodies; changing trust/kernel policy or guessing public diagnostics.
+Acceptance: complete authentic closure and every applicable accepted requirement precede computation-based discharge; local Open-generation work alone grants no runtime/proof acceptance.
+Audit: chapter20/22 full-closure acceptance ownership only; runtime/uniqueness achievement remains deferred.
+Reviews: independent specification, test sufficiency, implementation, volume/scope and source/EN-JA consistency; full protocol gates.
+Verification: cargo fmt --check; cargo clippy --all-targets --all-features -- -D warnings; cargo test.
+Owner indexes: [mizar-vc index](../../mizar-vc/en/00.crate_plan.md), [mizar-proof index](../../mizar-proof/en/00.crate_plan.md), [mizar-artifact index](../../mizar-artifact/en/00.crate_plan.md).
+Existing foundations: [open computation source](../../../../tests/miz/pass/algorithms/pass_proof_verification_computation_justification_001.miz), [generator tests](../../../../crates/mizar-vc/src/generator.rs), [Proof status tests](../../../../crates/mizar-proof/src/status/tests.rs); none establish full-closure admission or MVM execution.

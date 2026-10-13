@@ -2,7 +2,7 @@
 Canonical language: English; [Japanese pointer](../ja/ALGDEF-VC58-COMPUTATION-UNIQUENESS.md).
 Status: planned. Tier: full. Owner: [VC plan](../../mizar-vc/en/00.crate_plan.md); consumers: [test plan](../../mizar-test/en/00.crate_plan.md).
 Dependencies: the existing [bounded computation request](../../mizar-vc/en/generator.md#bounded-computation-request-generation); Core 42, 44, and 46 (Pick sites, collection loops, resolved calls); VC 44 (call substitution).
-Readiness: dependency-blocked on authentic call-closure, set/sequence and Pick classifications.
+Readiness: dependency-blocked on authentic call-closure, set/sequence and Pick classifications. ALGDEF-COMPUTATION-ADMISSION owns the export-fed full-closure successor and genuine acceptance; this stage remains same-package/Open only.
 Authority: specification §20.9.2 determinism requirement, §20.3 and §20.2.4 computation restrictions, §22.4.5 E0330; [architecture 07](../../architecture/en/07.vc_generation.md#algorithm-vcs-follow-structured-control-flow).
 Gap: `test_gap` and `source_drift`; no computation step carries the uniqueness obligation.
 
