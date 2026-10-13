@@ -684,7 +684,8 @@ execution remains excluded and parked.
 ### Step 6 — Phase-output publication and orchestration [~]
 
 The real uncached SourceLoad/Frontend edit/rebuild comparison is implemented.
-Native editor [storage codecs](./mizar-frontend/en/source.md#canonical-openbuffer-payload) are implemented; genuine editor service handoffs remain a Step 8 prerequisite.
+Native editor [storage codecs](./mizar-frontend/en/source.md#canonical-openbuffer-payload) and [captured Driver service handoffs](./mizar-driver/en/request.md#native-source-capture) are implemented.
+Their LSP build bridge and current diagnostic publication remain Step 8 prerequisites.
 Step 7's [instance-finder design](./task_contracts/en/ATPK-INSTANCE-FINDER.md) follows its existing producer dependencies.
 Cache-hit coverage waits for genuine cache producers; later semantic/proof
 services and full artifact emission remain dependency-blocked.

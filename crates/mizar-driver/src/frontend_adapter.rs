@@ -33,7 +33,10 @@ use mizar_frontend::{
     preprocess::{
         ImportPrescanDiagnosticCode, PreprocessDiagnosticKind, SourcePreprocessDiagnosticCode,
     },
-    source::{FrontendSourceLoader, SourceUnit, SourceUnitLoader, SourceUnitRequest},
+    source::{
+        FrontendSourceLoader, SourceUnit, SourceUnitLoader, SourceUnitRequest,
+        diagnostic_file_path, source_unit_from_loaded,
+    },
 };
 use mizar_ir::{
     identity::{
@@ -65,6 +68,110 @@ pub(crate) fn source_input_hash(version: &mizar_session::SourceVersion) -> Hash 
 }
 
 impl<'a> crate::registry::SourceLoadInputs<'a> {
+    fn native_source(
+        self,
+        version: &mizar_session::SourceVersion,
+    ) -> Option<(SourceUnit, SourceInput)> {
+        let captured = self.captured?;
+        if captured.snapshot() != self.snapshot {
+            return None;
+        }
+        let (loader, loaded, input) =
+            unique(captured.native_sources()?.iter().filter(|(_, loaded, _)| {
+                loaded.package_id == version.package_id && loaded.module_path == version.module_path
+            }))?;
+        if loaded.source_id != version.source_id
+            || loaded.normalized_path != version.normalized_path
+            || loaded.edition != version.edition
+            || loaded.source_hash != version.source_hash
+            || loaded.origin != version.origin
+            || input.package_id != loaded.package_id
+            || input.module_path != loaded.module_path
+            || input.normalized_path != loaded.normalized_path
+            || input.edition != loaded.edition
+        {
+            return None;
+        }
+        let package = unique(
+            self.build_plan
+                .packages
+                .iter()
+                .filter(|package| package.package_id == version.package_id),
+        )?;
+        let PackagePlanSource::Workspace {
+            root,
+            source_root,
+            manifest_path,
+        } = &package.source
+        else {
+            return None;
+        };
+        let indexed = unique(
+            self.module_index
+                .packages
+                .iter()
+                .filter(|package| package.package_id == version.package_id),
+        )?;
+        let mizar_build::module_index::PackageIndexSource::Workspace {
+            package_root: index_root,
+            source_root: index_source_root,
+            manifest_path: index_manifest,
+        } = &indexed.source
+        else {
+            return None;
+        };
+        let entry = unique(self.module_index.modules.iter().filter(|entry| {
+            entry.package_id == version.package_id && entry.module_path == version.module_path
+        }))?;
+        let ModuleIndexLocation::WorkspaceFile {
+            source_root: entry_root,
+            normalized_path,
+            source_relative_path,
+        } = &entry.location
+        else {
+            return None;
+        };
+        let workspace = PathBuf::from(self.snapshot.workspace_root.as_str())
+            .canonicalize()
+            .ok()?;
+        let expected_root = workspace.join(root).canonicalize().ok()?;
+        if self.snapshot.workspace_root != self.build_plan.workspace_root
+            || !safe_relative(root)
+            || !safe_relative(source_root)
+            || !safe_relative(manifest_path)
+            || !expected_root.starts_with(&workspace)
+            || loader.package_root().canonicalize().ok()? != expected_root
+            || root != index_root
+            || source_root != index_source_root
+            || manifest_path != index_manifest
+            || package.version != indexed.version
+            || package.edition != version.edition
+            || indexed.edition != version.edition
+            || entry.edition != version.edition
+            || entry.module.package != version.package_id
+            || entry.module.path != version.module_path
+            || entry_root != source_root
+            || normalized_path != version.normalized_path.as_str()
+            || normalized_path != &format!("src/{source_relative_path}")
+            || source_relative_path.is_empty()
+            || workspace.join(source_root) != workspace.join(root).join("src")
+            || workspace.join(manifest_path) != workspace.join(root).join("mizar.pkg")
+        {
+            return None;
+        }
+        let source = source_unit_from_loaded(loaded.clone(), diagnostic_file_path(input));
+        match &input.origin {
+            SourceOriginInput::Disk { .. } => {
+                source.canonical_disk_bytes()?;
+            }
+            SourceOriginInput::OpenBuffer { .. } => {
+                source.canonical_open_buffer_bytes(input)?;
+            }
+            _ => return None,
+        }
+        Some((source, input.clone()))
+    }
+
     /// Acquires provisional lexical ordering without publishing source or phase outputs.
     pub(crate) fn discover_import_overlay(
         self,
@@ -118,7 +225,12 @@ impl<'a> crate::registry::SourceLoadInputs<'a> {
                     && version.module_path == entry.module.path
             });
             let version = versions.next()?;
-            if versions.next().is_some() || version.origin != SourceOrigin::Disk {
+            if versions.next().is_some()
+                || (version.origin != SourceOrigin::Disk
+                    && self
+                        .captured
+                        .is_none_or(|capture| capture.native_sources().is_none()))
+            {
                 return None;
             }
             let package = build_plan
@@ -146,23 +258,30 @@ impl<'a> crate::registry::SourceLoadInputs<'a> {
             {
                 return None;
             }
-            let loaded = FrontendSourceLoader::new(DiskSourceLoader::new(package_root))
-                .load_source_unit(
-                    SourceUnitRequest {
-                        snapshot: snapshot.id,
-                        input: SourceInput {
-                            package_id: version.package_id.clone(),
-                            module_path: version.module_path.clone(),
-                            normalized_path: version.normalized_path.clone(),
-                            edition: version.edition.clone(),
-                            origin: SourceOriginInput::Disk {
-                                path: normalized_path.into(),
+            let loaded = if self
+                .captured
+                .is_some_and(|capture| capture.native_sources().is_some())
+            {
+                self.native_source(version)?.0
+            } else {
+                FrontendSourceLoader::new(DiskSourceLoader::new(package_root))
+                    .load_source_unit(
+                        SourceUnitRequest {
+                            snapshot: snapshot.id,
+                            input: SourceInput {
+                                package_id: version.package_id.clone(),
+                                module_path: version.module_path.clone(),
+                                normalized_path: version.normalized_path.clone(),
+                                edition: version.edition.clone(),
+                                origin: SourceOriginInput::Disk {
+                                    path: normalized_path.into(),
+                                },
                             },
                         },
-                    },
-                    &local_ids,
-                )
-                .ok()?;
+                        &local_ids,
+                    )
+                    .ok()?
+            };
             if loaded.package_id != version.package_id
                 || loaded.module_path != version.module_path
                 || loaded.normalized_path != version.normalized_path
@@ -466,7 +585,11 @@ impl PhaseService for SourceLoadService {
         )) else {
             return blocking();
         };
-        if !matches!(version.origin, SourceOrigin::Disk) {
+        if !matches!(version.origin, SourceOrigin::Disk)
+            && source_inputs
+                .captured
+                .is_none_or(|capture| capture.native_sources().is_none())
+        {
             return blocking();
         }
         let Some(package) = unique(
@@ -554,7 +677,7 @@ impl PhaseService for SourceLoadService {
         if input.identities().input_hash() != source_key {
             return blocking();
         }
-        let source_input = SourceInput {
+        let mut source_input = SourceInput {
             package_id: version.package_id.clone(),
             module_path: version.module_path.clone(),
             normalized_path: version.normalized_path.clone(),
@@ -571,72 +694,85 @@ impl PhaseService for SourceLoadService {
         let loader = FrontendSourceLoader::new(DiskSourceLoader::new(
             bound_root.as_ref().unwrap_or(&package_root),
         ));
-        let loaded = match loader.load_source_unit(
-            SourceUnitRequest {
-                snapshot,
-                input: source_input.clone(),
-            },
-            source_inputs.allocator,
-        ) {
-            Ok(loaded) => loaded,
-            Err(error) => {
-                let (number, name) = match &error {
-                    SourceLoadError::InvalidUtf8 { .. } => (601, "invalid_utf8"),
-                    SourceLoadError::UnreadableSourceFile { .. } => (602, "unreadable_file"),
-                    SourceLoadError::SourcePathOutsidePackageRoot { .. } => {
-                        (603, "outside_package_root")
+        let loaded = if source_inputs
+            .captured
+            .is_some_and(|capture| capture.native_sources().is_some())
+        {
+            let Some((source, input)) = source_inputs.native_source(version) else {
+                return blocking();
+            };
+            source_input = input;
+            source
+        } else {
+            match loader.load_source_unit(
+                SourceUnitRequest {
+                    snapshot,
+                    input: source_input.clone(),
+                },
+                source_inputs.allocator,
+            ) {
+                Ok(loaded) => loaded,
+                Err(error) => {
+                    let (number, name) = match &error {
+                        SourceLoadError::InvalidUtf8 { .. } => (601, "invalid_utf8"),
+                        SourceLoadError::UnreadableSourceFile { .. } => (602, "unreadable_file"),
+                        SourceLoadError::SourcePathOutsidePackageRoot { .. } => {
+                            (603, "outside_package_root")
+                        }
+                        SourceLoadError::UnsupportedFileExtension { .. } => {
+                            (600, "unsupported_file_extension")
+                        }
+                        SourceLoadError::DuplicateModulePath { .. } => {
+                            (600, "duplicate_module_path")
+                        }
+                        SourceLoadError::StaleLspDocumentVersion { .. } => {
+                            (600, "stale_lsp_document_version")
+                        }
+                        SourceLoadError::UnmappedOpenBufferUri { .. } => {
+                            (600, "unmapped_open_buffer_uri")
+                        }
+                        SourceLoadError::GeneratedSourceWithoutMetadata { .. } => {
+                            (600, "generated_source_without_metadata")
+                        }
+                        SourceLoadError::SourceIdAllocation { .. } => (600, "source_id_allocation"),
+                        SourceLoadError::UnsupportedSourceOrigin { .. } => {
+                            (600, "unsupported_source_origin")
+                        }
+                        SourceLoadError::InvalidSourcePath { .. } => (600, "invalid_source_path"),
+                        _ => return blocking(),
+                    };
+                    let detail = format!("source.{name}");
+                    let code = DiagnosticCode::from_parts(DiagnosticSeverity::Error, number)
+                        .expect("source-load diagnostic code is valid");
+                    let draft = DiagnosticDraft::new(DiagnosticDraftInput {
+                        source_snapshot: snapshot,
+                        code,
+                        phase: DiagnosticPhase::SourceLoad,
+                        category: FailureCategory::SourceLoadError,
+                        stable_detail_key: detail,
+                        message: error.to_string(),
+                        primary_location: DiagnosticPrimaryLocation::SourceLoad {
+                            package_id: source_input.package_id.clone(),
+                            path: source_input.normalized_path.clone(),
+                        },
+                        secondary_spans: Vec::new(),
+                        notes: Vec::new(),
+                        details: DiagnosticDetails::new(),
+                        fixes: Vec::new(),
+                        explanation: None,
+                    });
+                    let Ok(draft) = draft else {
+                        return blocking();
+                    };
+                    if diagnostics.emit(draft).is_err() {
+                        return blocking();
                     }
-                    SourceLoadError::UnsupportedFileExtension { .. } => {
-                        (600, "unsupported_file_extension")
-                    }
-                    SourceLoadError::DuplicateModulePath { .. } => (600, "duplicate_module_path"),
-                    SourceLoadError::StaleLspDocumentVersion { .. } => {
-                        (600, "stale_lsp_document_version")
-                    }
-                    SourceLoadError::UnmappedOpenBufferUri { .. } => {
-                        (600, "unmapped_open_buffer_uri")
-                    }
-                    SourceLoadError::GeneratedSourceWithoutMetadata { .. } => {
-                        (600, "generated_source_without_metadata")
-                    }
-                    SourceLoadError::SourceIdAllocation { .. } => (600, "source_id_allocation"),
-                    SourceLoadError::UnsupportedSourceOrigin { .. } => {
-                        (600, "unsupported_source_origin")
-                    }
-                    SourceLoadError::InvalidSourcePath { .. } => (600, "invalid_source_path"),
-                    _ => return blocking(),
-                };
-                let detail = format!("source.{name}");
-                let code = DiagnosticCode::from_parts(DiagnosticSeverity::Error, number)
-                    .expect("source-load diagnostic code is valid");
-                let draft = DiagnosticDraft::new(DiagnosticDraftInput {
-                    source_snapshot: snapshot,
-                    code,
-                    phase: DiagnosticPhase::SourceLoad,
-                    category: FailureCategory::SourceLoadError,
-                    stable_detail_key: detail,
-                    message: error.to_string(),
-                    primary_location: DiagnosticPrimaryLocation::SourceLoad {
-                        package_id: source_input.package_id.clone(),
-                        path: source_input.normalized_path.clone(),
-                    },
-                    secondary_spans: Vec::new(),
-                    notes: Vec::new(),
-                    details: DiagnosticDetails::new(),
-                    fixes: Vec::new(),
-                    explanation: None,
-                });
-                let Ok(draft) = draft else {
-                    return blocking();
-                };
-                if diagnostics.emit(draft).is_err() {
-                    return blocking();
+                    return PhaseResult {
+                        status: PhaseStatus::Fatal,
+                        diagnostics: vec![diagnostics.seal()],
+                        ..blocking()
+                    };
                 }
-                return PhaseResult {
-                    status: PhaseStatus::Fatal,
-                    diagnostics: vec![diagnostics.seal()],
-                    ..blocking()
-                };
             }
         };
         if bound_root.is_none()
@@ -645,16 +781,23 @@ impl PhaseService for SourceLoadService {
             || loaded.normalized_path != version.normalized_path
             || loaded.edition != version.edition
             || loaded.source_hash != version.source_hash
-            || loaded.origin != SourceOrigin::Disk
+            || loaded.origin != version.origin
         {
             return blocking();
         }
-        let Some(storage_bytes) = loaded.canonical_disk_bytes() else {
+        let Some(storage_bytes) = (match &source_input.origin {
+            SourceOriginInput::OpenBuffer { .. } => {
+                loaded.canonical_open_buffer_bytes(&source_input)
+            }
+            _ => loaded.canonical_disk_bytes(),
+        }) else {
             return blocking();
         };
-        let Some(source) =
-            SourceUnit::from_canonical_disk_bytes(&storage_bytes, version.source_id, &source_input)
-        else {
+        let Some(source) = SourceUnit::from_canonical_storage_bytes(
+            &storage_bytes,
+            version.source_id,
+            &source_input,
+        ) else {
             return blocking();
         };
         let semantic_bytes = source_key.as_bytes().to_vec();
@@ -689,7 +832,7 @@ impl PhaseService for SourceLoadService {
             canonical_payload: Some(semantic_bytes),
             storage_payload: Some(storage_bytes),
             decode: BlobDecoder::new(move |bytes| {
-                SourceUnit::from_canonical_disk_bytes(bytes, source_id, &decode_input)
+                SourceUnit::from_canonical_storage_bytes(bytes, source_id, &decode_input)
                     .filter(|source| source.source_hash == expected_hash)
                     .ok_or_else(|| BlobDecodeError::new("invalid source-unit disk payload"))
             }),
@@ -707,8 +850,16 @@ impl PhaseService for SourceLoadService {
                 )],
                 ..IrSideTables::default()
             },
-            origin: OutputOrigin::PackageSource,
-            target: PublicationTarget::CurrentPackage,
+            origin: if matches!(version.origin, SourceOrigin::OpenBuffer { .. }) {
+                OutputOrigin::OpenBuffer
+            } else {
+                OutputOrigin::PackageSource
+            },
+            target: if matches!(version.origin, SourceOrigin::OpenBuffer { .. }) {
+                PublicationTarget::InternalOnly
+            } else {
+                PublicationTarget::CurrentPackage
+            },
         });
         match handle {
             Ok(handle) => PhaseResult {
@@ -786,7 +937,11 @@ impl PhaseService for FrontendService {
         })) else {
             return blocking();
         };
-        if version.origin != SourceOrigin::Disk {
+        if version.origin != SourceOrigin::Disk
+            && inputs
+                .captured
+                .is_none_or(|capture| capture.native_sources().is_none())
+        {
             return blocking();
         }
         let Some(package) = unique(
@@ -964,7 +1119,15 @@ impl PhaseService for FrontendService {
         let parents_current = || {
             input.parent_outputs().iter().all(|handle| {
                 let handle = handle.as_output_ref();
-                publisher.validate_current_output(snapshot, handle).is_ok()
+                (if inputs
+                    .captured
+                    .is_some_and(|capture| capture.native_sources().is_some())
+                {
+                    publisher.validate_published_output(snapshot, handle)
+                } else {
+                    publisher.validate_current_output(snapshot, handle)
+                })
+                .is_ok()
                     && publisher.storage().validate_handle(handle).is_ok()
             })
         };
@@ -994,14 +1157,34 @@ impl PhaseService for FrontendService {
                 path: version.normalized_path.as_str().into(),
             },
         };
-        if source.canonical_disk_bytes().is_none()
+        let source_input = if inputs
+            .captured
+            .is_some_and(|capture| capture.native_sources().is_some())
+        {
+            let Some((expected, input)) = inputs.native_source(version) else {
+                return blocking();
+            };
+            if source.as_ref() != &expected {
+                return blocking();
+            }
+            input
+        } else {
+            source_input
+        };
+        if (match &source_input.origin {
+            SourceOriginInput::OpenBuffer { .. } => {
+                source.canonical_open_buffer_bytes(&source_input)
+            }
+            _ => source.canonical_disk_bytes(),
+        })
+        .is_none()
             || source.source_id != version.source_id
             || source.package_id != version.package_id
             || source.module_path != version.module_path
             || source.normalized_path != version.normalized_path
             || source.edition != version.edition
             || source.source_hash != version.source_hash
-            || source.origin != SourceOrigin::Disk
+            || source.origin != version.origin
         {
             return blocking();
         }
@@ -1121,17 +1304,35 @@ impl PhaseService for FrontendService {
                     return None;
                 }
                 let leaf_source_key = source_input_hash(leaf_version);
+                let native_leaf = if inputs
+                    .captured
+                    .is_some_and(|capture| capture.native_sources().is_some())
+                {
+                    let (expected, raw) = inputs.native_source(leaf_version)?;
+                    if leaf_source != &expected {
+                        return None;
+                    }
+                    Some(raw)
+                } else {
+                    None
+                };
                 if leaf_module == *module
                     || leaf.work_unit() != &leaf_unit
-                    || leaf_version.origin != SourceOrigin::Disk
-                    || output.canonical_disk_bytes().is_none()
+                    || (native_leaf.is_none() && leaf_version.origin != SourceOrigin::Disk)
+                    || (match native_leaf.as_ref().map(|raw| &raw.origin) {
+                        Some(SourceOriginInput::OpenBuffer { .. }) => {
+                            output.canonical_open_buffer_bytes(native_leaf.as_ref()?)
+                        }
+                        _ => output.canonical_disk_bytes(),
+                    })
+                    .is_none()
                     || leaf_source.source_id != leaf_version.source_id
                     || leaf_source.package_id != leaf_version.package_id
                     || leaf_source.module_path != leaf_version.module_path
                     || leaf_source.normalized_path != leaf_version.normalized_path
                     || leaf_source.edition != leaf_version.edition
                     || leaf_source.source_hash != leaf_version.source_hash
-                    || leaf_source.origin != SourceOrigin::Disk
+                    || leaf_source.origin != leaf_version.origin
                     || leaf_entry.package_id != leaf_module.package
                     || leaf_entry.module_path != leaf_module.path
                     || leaf_entry.edition != leaf_version.edition
@@ -1541,7 +1742,12 @@ impl PhaseService for FrontendService {
         let Some(ast_key) = output.cache_keys.ast.as_ref() else {
             return blocking();
         };
-        let Some(storage_bytes) = output.canonical_disk_bytes() else {
+        let Some(storage_bytes) = (match &source_input.origin {
+            SourceOriginInput::OpenBuffer { .. } => {
+                output.canonical_open_buffer_bytes(&source_input)
+            }
+            _ => output.canonical_disk_bytes(),
+        }) else {
             return blocking();
         };
         let mut semantic_bytes = b"mizar-frontend/output-publication/v1\0".to_vec();
@@ -1612,8 +1818,16 @@ impl PhaseService for FrontendService {
                 )],
                 ..IrSideTables::default()
             },
-            origin: OutputOrigin::PackageSource,
-            target: PublicationTarget::CurrentPackage,
+            origin: if matches!(version.origin, SourceOrigin::OpenBuffer { .. }) {
+                OutputOrigin::OpenBuffer
+            } else {
+                OutputOrigin::PackageSource
+            },
+            target: if matches!(version.origin, SourceOrigin::OpenBuffer { .. }) {
+                PublicationTarget::InternalOnly
+            } else {
+                PublicationTarget::CurrentPackage
+            },
         });
         match handle {
             Ok(handle) => PhaseResult {

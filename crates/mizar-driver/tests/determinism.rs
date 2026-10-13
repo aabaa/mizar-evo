@@ -281,7 +281,7 @@ fn direct_driver_projection(
             phase_zero_submit_input(worker_count, completion_order),
         )
         .expect("phase-zero submission succeeds");
-    let stream = driver.events(submission.session.id);
+    let stream = driver.events(submission.session.id());
     submission_projection(&submission, &stream)
 }
 
@@ -300,12 +300,12 @@ fn deferred_multi_task_projection(
             source_module_submit_input(worker_count, completion_order),
         )
         .expect("multi-task submission is classified before scheduler dispatch");
-    let stream = driver.events(submission.session.id);
+    let stream = driver.events(submission.session.id());
     DeferredDriverProjection {
         status: format!("{:?}", submission.status),
-        session_state: format!("{:?}", submission.session.state),
+        session_state: format!("{:?}", submission.session.state()),
         publication: format!("{:?}", submission.publication_decision),
-        snapshot: snapshot_key(submission.session.captured.snapshot.id),
+        snapshot: snapshot_key(submission.session.captured().snapshot().id),
         task_count: submission
             .task_graph
             .as_ref()
@@ -346,9 +346,9 @@ fn submission_projection(
         .expect("determinism fixture reaches scheduler");
     DriverProjection {
         status: format!("{:?}", submission.status),
-        session_state: format!("{:?}", submission.session.state),
+        session_state: format!("{:?}", submission.session.state()),
         publication: format!("{:?}", submission.publication_decision),
-        snapshot: snapshot_key(submission.session.captured.snapshot.id),
+        snapshot: snapshot_key(submission.session.captured().snapshot().id),
         task_count: submission
             .task_graph
             .as_ref()
@@ -603,7 +603,7 @@ fn watch_suppression_projection(seed: u8) -> WatchProjection {
             &ids,
             &snapshots,
             phase_zero_submit_input(4, CompletionOrder::Reverse),
-            watch_control(Some(first.submission.session.id)),
+            watch_control(Some(first.submission.session.id())),
         )
         .expect("superseding watch submission succeeds");
 
@@ -615,7 +615,7 @@ fn watch_suppression_projection(seed: u8) -> WatchProjection {
     assert_gap(&second.gaps, WatchModeGapOwner::LspBridge);
     assert_gap(&second.gaps, WatchModeGapOwner::IrSnapshotReplacement);
 
-    let previous_stream = driver.events(first.submission.session.id);
+    let previous_stream = driver.events(first.submission.session.id());
     assert!(previous_stream.events().iter().all(|event| matches!(
         event.identity.publication,
         PublicationDecision::Suppressed(_)

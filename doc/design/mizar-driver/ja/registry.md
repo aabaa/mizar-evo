@@ -386,3 +386,5 @@ task 5 は focused test を追加しなければならない:
   `mizar-proof`、`mizar-artifact`、`mizar-doc`;
 - registry が cache compatibility、proof acceptance、artifact publication token、LSP
   payload、scheduler readiness semantics を構築しないことを示す boundary guard。
+
+`SourceLoadInputs` は実 `CapturedSnapshot` を任意に借用して[Native service](frontend_adapter.md#native-captured-sources)へ運ぶ。Driver の二つの構築箇所から discovery/SourceLoad/Frontend が同じ捕捉を共有する。summary は Native 承認ではなく、登録 descriptor と owner rank は維持する。

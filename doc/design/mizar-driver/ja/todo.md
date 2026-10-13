@@ -480,8 +480,8 @@ phase service を包み、build scheduler と cache seam へ純粋な入力 / �
 26. **Playground のサーバーセッション (mizar-lsp と共同)。** [ ]
     - 契約: [WEB-PLAYGROUND](../../task_contracts/ja/WEB-PLAYGROUND.md)。
 
-27. **Native 捕捉入力の publication routing。** [ ]
-    - 前提: [IR-OPEN-BUFFER-DISPATCH](../../task_contracts/ja/IR-OPEN-BUFFER-DISPATCH.md)。実 Native 取得と入力束縛後に採用する。summary のみの経路は current/package 検証を維持。
+27. **Native 捕捉入力の publication routing。** [x]
+    - [DRIVER-NATIVE-SOURCE-DISPATCH](../../task_contracts/ja/DRIVER-NATIVE-SOURCE-DISPATCH.md) が実 Native 取得・束縛・条件付き publication routing を担当。前提 IR21 は実装済み。
 
 ### 監査レビュー注記(2026-07-06)
 

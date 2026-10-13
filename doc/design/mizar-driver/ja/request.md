@@ -199,7 +199,7 @@ identity、toolchain identity、verifier configuration identity から
 `mizar-session::SnapshotInput` を組み立てる。snapshot identity と validation は
 `mizar-session` が所有する。
 
-registry snapshot の唯一の public creation path は次である:
+従来の summary 捕捉は次を呼ぶ:
 
 ```rust
 SnapshotRegistry::create_snapshot(request.id, snapshot_input)
@@ -215,6 +215,13 @@ supersession currentness は driver-owned lane table で確認する。
 同一の canonical snapshot input は、別 session に現れても同一の `BuildSnapshotId`
 を生まなければならない。`BuildSnapshotId` の再利用は、allocator-issued な session、
 request、source、source-map、lease id が再利用可能であることを意味しない。
+
+## Native source capture
+
+`BuildRequestDraft::capture_sources(allocator, registry, sources)` は保護された `BuildSession` または `DriverSubmitError` を返す。Native `(DiskSourceLoader, SourceInput)` が入力であり、summary があれば ID 前に draft を保持する `NativeSourceVersionsProvided { request }` で拒否する。同じ generic 型の異なる allocator instance は従来どおり許可する。
+通常の request/session ID 取得後、実 `load_snapshot` を一度だけ呼ぶ。失敗は既存 capture error に元 pending を保持し、再試行用 descriptor clone は caller が保持する。成功は実 summary と元 loader/返された LoadedSource/SourceInput triple を CapturedSnapshot に保持する。source ID/map は registry allocator を使う。
+Session の identity/request/capture/state と捕捉 snapshot/lease は crate 内だけで変更可能。公開 `id()`、`request()`、`captured()`、`state()`、`snapshot()`、`active_snapshot_lease()` は読み取り専用で、raw triple は private。内部 lifecycle と watch 強制 supersession は維持する。clone は実 raw resource を保持し、終了時に lease/buffer を自動解放しない。
+publisher owner が実 snapshot/work unit を承認してから[準備済み submit](driver.md#captured-native-submission)を呼ぶ。捕捉は publication 権限を付与しない。registry 検索や canonical ID 一致では個別の raw/version 捕捉を復元できない。
 
 ## Current-Session Publication Boundary
 

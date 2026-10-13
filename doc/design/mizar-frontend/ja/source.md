@@ -166,7 +166,7 @@ cache 受理ではない。読み込み射影は変更しない。
 
 ## SourceUnit Publication
 
-output kind は `SourceUnit`、descriptor schema は `mizar-frontend/source-unit-publication/v1`、IR SchemaVersion は 1、phase は `SourceLoad`。semantic bytes は `SourceUnitCacheKey::stable_hash()` の 32 bytes、storage bytes は `canonical_disk_bytes()`。current SourceId と絶対診断 path はどちらの hash stream にも含めない。
+output kind は `SourceUnit`、descriptor schema は `mizar-frontend/source-unit-publication/v1`、IR SchemaVersion は 1、phase は `SourceLoad`。semantic bytes は `SourceUnitCacheKey::stable_hash()` の 32 bytes、Disk storage bytes は `canonical_disk_bytes()`、Native Open は束縛済み OpenBuffer codec を使う。current SourceId と絶対診断 path はどちらの hash stream にも含めない。
 IR work-unit label は `format!("{:?}:{:?}", package_id.as_str(), module_path.as_str())`。唯一の named input は `source`、domain は `SOURCE_UNIT_CACHE_KEY_VERSION`、digest は source key。source loading は parent/dependency hash を要求しない。
 source-map side table は kind `source-storage`、key normalized package-relative path の一行。digest は context `mizar-frontend/source-unit-storage-side-table/v1` の BLAKE3 derive-key を full storage bytes に適用する。実 loading map を保守的に side identity に含め、semantic content は map に依存させない。他の side table は空。
 
@@ -189,3 +189,5 @@ generated anchor を拒否し、local SourceId と診断 path を保存しない
 URI/path/metadata の Native 検証は呼出側の取得処理が担当し、codec は I/O・
 loader・source 受理を実行しない。拒否は None。保存形式は editor context を含み、
 semantic hash・currentness・cache 受理・CurrentPackage publication の権限ではない。
+
+`diagnostic_file_path(&SourceInput) -> PathBuf` は既存の純粋な表示 path 方針を Native Driver 投影へ公開する。loader、storage 復元、捕捉投影で共有し、URI 受理は Session が担当する。

@@ -646,6 +646,9 @@ diagnostic ordering, and cache-key checks.
 30. **Native OpenBuffer storage prerequisite.** [x]
     - [FRONTEND-OPEN-BUFFER-STORAGE](../../task_contracts/en/FRONTEND-OPEN-BUFFER-STORAGE.md) owns strict codecs and shared normalization; editor services and snapshot binding follow separately.
 
+31. **Captured native diagnostic-path handoff.** [x]
+    - [DRIVER-NATIVE-SOURCE-DISPATCH](../../task_contracts/en/DRIVER-NATIVE-SOURCE-DISPATCH.md) reuses the existing display-path policy for actual captured source projection.
+
 ## Suggested Verification
 
 After each task, run:

@@ -2,9 +2,10 @@ use std::collections::HashMap;
 use std::fmt;
 
 use mizar_session::{
-    BuildRequestId, BuildSessionId, BuildSnapshot, BuildSnapshotId, DependencyArtifactRef, Hash,
-    IdError, ModulePath, NormalizedPath, PackageId, SessionIdAllocator, SnapshotError,
-    SnapshotInput, SnapshotLease, SnapshotRegistry, SourceVersion, ToolchainInfo, WorkspaceRoot,
+    BuildRequestId, BuildSessionId, BuildSnapshot, BuildSnapshotId, DependencyArtifactRef,
+    DiskSourceLoader, Hash, IdError, LoadedSource, ModulePath, NormalizedPath, PackageId,
+    SessionIdAllocator, SnapshotError, SnapshotInput, SnapshotLease, SnapshotRegistry, SourceInput,
+    SourceVersion, ToolchainInfo, WorkspaceRoot,
 };
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -48,16 +49,17 @@ pub struct CaptureSnapshotError {
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct CapturedSnapshot {
-    pub snapshot: BuildSnapshot,
-    pub active_snapshot_lease: SnapshotLease,
+    pub(crate) snapshot: BuildSnapshot,
+    pub(crate) active_snapshot_lease: SnapshotLease,
+    native_sources: Option<Vec<(DiskSourceLoader, LoadedSource, SourceInput)>>,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct BuildSession {
-    pub id: BuildSessionId,
-    pub request: BuildRequest,
-    pub captured: CapturedSnapshot,
-    pub state: BuildSessionState,
+    pub(crate) id: BuildSessionId,
+    pub(crate) request: BuildRequest,
+    pub(crate) captured: CapturedSnapshot,
+    pub(crate) state: BuildSessionState,
 }
 
 #[derive(Debug, Default, Clone, PartialEq, Eq)]
@@ -230,6 +232,63 @@ impl VerifierConfigInput {
 }
 
 impl BuildRequestDraft {
+    /// Captures native sources once, before the owner authorizes prepared submission.
+    pub fn capture_sources<A: SessionIdAllocator>(
+        self,
+        allocator: &A,
+        registry: &SnapshotRegistry<A>,
+        sources: Vec<(DiskSourceLoader, SourceInput)>,
+    ) -> Result<BuildSession, crate::driver::DriverSubmitError> {
+        use crate::driver::DriverSubmitError;
+        if !self.source_inputs.versions.is_empty() {
+            return Err(DriverSubmitError::NativeSourceVersionsProvided {
+                request: Box::new(self),
+            });
+        }
+        let mut pending = self
+            .allocate(allocator)
+            .map_err(|error| DriverSubmitError::RequestIdAllocation { error })?;
+        let loaders = sources
+            .iter()
+            .map(|(loader, _)| loader.clone())
+            .collect::<Vec<_>>();
+        let result = registry.load_snapshot(
+            pending.request.id,
+            (
+                pending.request.workspace_root.clone(),
+                pending.request.dependency_inputs.artifacts.clone(),
+                pending.request.dependency_inputs.lockfile_hash,
+                pending.request.dependency_inputs.toolchain.clone(),
+                pending.request.verifier_config.hash,
+            ),
+            sources,
+        );
+        let (snapshot, active_snapshot_lease, sources) =
+            result.map_err(|error| DriverSubmitError::SnapshotCapture {
+                error: Box::new(CaptureSnapshotError {
+                    pending: pending.clone(),
+                    error,
+                }),
+            })?;
+        pending.request.source_inputs.versions = snapshot.source_versions.clone();
+        Ok(BuildSession {
+            id: pending.session_id,
+            request: pending.request,
+            captured: CapturedSnapshot {
+                snapshot,
+                active_snapshot_lease,
+                native_sources: Some(
+                    loaders
+                        .into_iter()
+                        .zip(sources)
+                        .map(|(loader, (loaded, input))| (loader, loaded, input))
+                        .collect(),
+                ),
+            },
+            state: BuildSessionState::SnapshotCaptured,
+        })
+    }
+
     pub fn allocate<A: SessionIdAllocator>(
         self,
         allocator: &A,
@@ -288,13 +347,41 @@ impl PendingBuildRequest {
             captured: CapturedSnapshot {
                 snapshot,
                 active_snapshot_lease,
+                native_sources: None,
             },
             state: BuildSessionState::SnapshotCaptured,
         })
     }
 }
 
+impl CapturedSnapshot {
+    pub fn snapshot(&self) -> &BuildSnapshot {
+        &self.snapshot
+    }
+    pub fn active_snapshot_lease(&self) -> &SnapshotLease {
+        &self.active_snapshot_lease
+    }
+    pub(crate) fn native_sources(
+        &self,
+    ) -> Option<&[(DiskSourceLoader, LoadedSource, SourceInput)]> {
+        self.native_sources.as_deref()
+    }
+}
+
 impl BuildSession {
+    pub const fn id(&self) -> BuildSessionId {
+        self.id
+    }
+    pub fn request(&self) -> &BuildRequest {
+        &self.request
+    }
+    pub fn captured(&self) -> &CapturedSnapshot {
+        &self.captured
+    }
+    pub const fn state(&self) -> BuildSessionState {
+        self.state
+    }
+
     pub fn lane_current_session(&self) -> LaneCurrentSession {
         LaneCurrentSession {
             lane: self.request.lane,

@@ -251,7 +251,7 @@ Key scenarios:
 
 ## SourceUnit Publication
 
-The output kind is `SourceUnit`, descriptor schema `mizar-frontend/source-unit-publication/v1`, IR SchemaVersion 1, phase `SourceLoad`. Semantic bytes are the 32 bytes of `SourceUnitCacheKey::stable_hash()`; storage bytes are `canonical_disk_bytes()`. Neither current SourceId nor absolute diagnostic path enters either hash stream.
+The output kind is `SourceUnit`, descriptor schema `mizar-frontend/source-unit-publication/v1`, IR SchemaVersion 1, phase `SourceLoad`. Semantic bytes are the 32 bytes of `SourceUnitCacheKey::stable_hash()`; Disk storage bytes are `canonical_disk_bytes()`; native Open uses the bound OpenBuffer codec. Neither current SourceId nor absolute diagnostic path enters either hash stream.
 The IR work-unit label is `format!("{:?}:{:?}", package_id.as_str(), module_path.as_str())`. The sole named input is `source`, domain `SOURCE_UNIT_CACHE_KEY_VERSION`, with that source key digest; no parent or dependency hashes are required for source loading.
 The source-map side table has one record: kind `source-storage`, key normalized package-relative path, digest BLAKE3 derive-key with context `mizar-frontend/source-unit-storage-side-table/v1` over the full storage bytes. This conservative side identity includes the actual loading maps while semantic content remains map-independent. Other side tables are empty.
 
@@ -278,3 +278,5 @@ Caller native acquisition remains responsible for URI/path/metadata validation;
 no codec performs I/O, loading or source acceptance. Rejection yields None.
 These local storage bytes include editor context and are not semantic hashes,
 currentness, cache acceptance or CurrentPackage publication authority.
+
+`diagnostic_file_path(&SourceInput) -> PathBuf` exposes the existing pure display-path policy to native Driver projection. Loader, storage restoration and captured projection share it; URI acceptance remains with Session.

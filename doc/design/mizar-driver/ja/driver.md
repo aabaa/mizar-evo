@@ -372,3 +372,13 @@ prefix の例外経路では service がない task の ValidatedHit を Unavail
 Native 取得と入力束縛が供給されるまで current/package 検証を維持する。来歴だけで
 summary のみ/Disk の結果を承認しない。物理 storage、現在 snapshot と lane の照合は
 必須。canonical snapshot の一致だけで raw buffer/version の鮮度は証明しない。
+
+## Captured native submission
+
+`submit_captured(session, allocator, snapshots, input)` と `submit_captured_with_import_discovery` は実 Native 捕捉 session を消費する。非 Native/非 SnapshotCaptured、同 Driver に保存済みの session ID、registry request 非 current は lane 変更前に `InvalidCapturedSession { session }` で拒否する。準備済み clone は Driver ごとに一度だけ submit 可能。従来 submit の ID/捕捉経路は維持する。
+caller の publisher owner が実 snapshot/work unit を事前承認する。Driver は再取得、ID 推定、snapshot 登録/復活や権限付与をしない。既存 planning/prefix status、lane/request guard、cancel と resource/error 処理を適用する。
+既存の借用[サービス入力](frontend_adapter.md#native-captured-sources)で Native resource を運ぶ。実 Native dispatch だけが親束縛、結果/Frontend 親検証と最終保持に published 承認を採用し、従来の四つの current/package 検証は維持する。実 source/version/root の完全な束縛は必須。後続 service と LSP current 診断は未対応。
+
+Native 前提拒否は watch の承認済み置換を作らない。CLI は両 error を既存 InternalError envelope の `invalid_native_submission` へ写し、phase 診断や event を作らない。
+
+raw/version 変更は canonical snapshot ID を維持したまま storage 来歴を変え得る。既存 [IR identity](../../mizar-ir/ja/identity.md) の slot 競合拒否は維持し、その成功再実行には新しい owner publisher を使う。旧 handle の物理/source/lane guard は引き続き必要。

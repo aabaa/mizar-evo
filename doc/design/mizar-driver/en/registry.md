@@ -406,3 +406,5 @@ Task 5 must add focused tests for:
 - boundary guards proving the registry does not construct cache compatibility,
   proof acceptance, artifact publication tokens, LSP payloads, or scheduler
   readiness semantics.
+
+`SourceLoadInputs` also borrows optional genuine `CapturedSnapshot` for [native services](frontend_adapter.md#native-captured-sources). Two Driver constructions share capture with discovery, SourceLoad and Frontend; summary metadata grants no native authority. Registered descriptors and owner ranks stay unchanged.

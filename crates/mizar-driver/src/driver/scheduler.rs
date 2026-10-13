@@ -269,11 +269,22 @@ fn dispatch_registry_phase(
                 let parents = parents
                     .into_iter()
                     .map(|parent| {
-                        SealedParentOutputHandle::from_current_output(
-                            publisher,
-                            task.snapshot,
-                            parent.clone(),
-                        )
+                        if inputs
+                            .captured
+                            .is_some_and(|capture| capture.native_sources().is_some())
+                        {
+                            SealedParentOutputHandle::from_published_output(
+                                publisher,
+                                task.snapshot,
+                                parent.clone(),
+                            )
+                        } else {
+                            SealedParentOutputHandle::from_current_output(
+                                publisher,
+                                task.snapshot,
+                                parent.clone(),
+                            )
+                        }
                         .ok()
                     })
                     .collect::<Option<Vec<_>>>()?;
@@ -364,9 +375,16 @@ fn dispatch_registry_phase(
                 let status = result.status;
                 let valid_outputs = result.output_refs.iter().all(|output| {
                     publisher.is_some_and(|publisher| {
-                        publisher
-                            .validate_current_output(task.snapshot, output)
-                            .is_ok()
+                        (if source_load.is_some_and(|inputs| {
+                            inputs
+                                .captured
+                                .is_some_and(|capture| capture.native_sources().is_some())
+                        }) {
+                            publisher.validate_published_output(task.snapshot, output)
+                        } else {
+                            publisher.validate_current_output(task.snapshot, output)
+                        })
+                        .is_ok()
                             && publisher.storage().validate_handle(output).is_ok()
                     })
                 });

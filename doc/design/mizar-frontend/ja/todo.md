@@ -288,6 +288,9 @@
 30. **Native OpenBuffer 保存形式の前提タスク.** [x]
     - [FRONTEND-OPEN-BUFFER-STORAGE](../../task_contracts/ja/FRONTEND-OPEN-BUFFER-STORAGE.md) owns strict codecs and shared normalization; editor services and snapshot binding follow separately.
 
+31. **Native 捕捉 source の診断 path 引渡し。** [x]
+    - [DRIVER-NATIVE-SOURCE-DISPATCH](../../task_contracts/ja/DRIVER-NATIVE-SOURCE-DISPATCH.md) で既存表示 path 方針を実捕捉 source 投影に再利用する。
+
 ## 推奨検証
 
 各タスクの後に実行する。

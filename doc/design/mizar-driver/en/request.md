@@ -204,7 +204,7 @@ versions, dependency artifact references, lockfile identity, toolchain identity,
 and verifier configuration identity. Snapshot identity and validation remain
 owned by `mizar-session`.
 
-The only public creation path for a registry snapshot is:
+Legacy summary capture calls:
 
 ```rust
 SnapshotRegistry::create_snapshot(request.id, snapshot_input)
@@ -222,6 +222,13 @@ Identical canonical snapshot inputs must produce identical `BuildSnapshotId`
 values even when they appear in different sessions. Reusing a
 `BuildSnapshotId` does not imply that allocator-issued session, request, source,
 source-map, or lease ids are reusable.
+
+## Native source capture
+
+`BuildRequestDraft::capture_sources(allocator, registry, sources)` returns protected `BuildSession` or `DriverSubmitError`. Native `(DiskSourceLoader, SourceInput)` descriptors are authoritative; populated summaries fail before IDs with `NativeSourceVersionsProvided { request }`, preserving the draft. Distinct allocator instances of the existing same generic type remain legal.
+After normal request/session allocation, call real `load_snapshot` once. Failure retains original pending context through the capture error; caller retains descriptor clones for retry. Success fills actual summaries and retains original loaders plus returned LoadedSource/SourceInput triples in CapturedSnapshot. Native source IDs/maps use the registry allocator.
+Session identity/request/capture/state and captured snapshot/lease are crate-visible only. Public `id()`, `request()`, `captured()`, `state()`, `snapshot()` and `active_snapshot_lease()` are read-only; raw triples remain private. Internal lifecycle and forced watch supersession stay unchanged. Clones retain raw resources; terminal states do not automatically release leases/buffers.
+The publisher owner authorizes actual snapshot/work units before [prepared submission](driver.md#captured-native-submission). Capture grants no publication permission. Registry lookup or equal canonical IDs cannot recover a particular raw/version capture.
 
 ## Current-Session Publication Boundary
 

@@ -62,6 +62,7 @@ pub struct PhaseCacheContext {
 #[derive(Clone, Copy)]
 pub struct SourceLoadInputs<'a> {
     pub snapshot: &'a BuildSnapshot,
+    pub captured: Option<&'a crate::request::CapturedSnapshot>,
     pub build_plan: &'a BuildPlan,
     pub module_index: &'a ModuleIndex,
     pub allocator: &'a dyn SessionIdAllocator,

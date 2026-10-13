@@ -415,7 +415,8 @@ pub fn register_source_unit(
     )
 }
 
-fn diagnostic_file_path(input: &SourceInput) -> PathBuf {
+/// Returns the native origin's diagnostic display path without reading the filesystem.
+pub fn diagnostic_file_path(input: &SourceInput) -> PathBuf {
     match &input.origin {
         SourceOriginInput::Disk { path } => path.clone(),
         SourceOriginInput::OpenBuffer { uri, .. } => file_path_from_document_uri(uri)

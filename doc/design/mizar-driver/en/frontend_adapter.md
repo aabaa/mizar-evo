@@ -98,3 +98,11 @@ service's already-bound Disk input; this preserves disk-only execution and publi
 
 Parent checks retain current/package authorization until genuine native capture
 and source binding are supplied; OpenBuffer/InternalOnly provenance alone is insufficient.
+
+## Native captured sources
+
+The existing registered services and discovery also consume actual native capture from [request](request.md#native-source-capture). The Disk sections describe the unchanged summary-only route; its Open-result rejection remains mandatory. Optional borrowed CapturedSnapshot supplies protected loader/LoadedSource/SourceInput triples, not caller-created payload attachments.
+Discovery, SourceLoad and Frontend share binding against the whole protected snapshot, unique actual metadata/IDs/hash/origin/raw URI/version/maps and retained loader package root, with all existing plan/index/workspace/source-root guards. Equal canonical IDs alone are insufficient. Generated and Open summaries without genuine capture fail closed.
+Project captured Disk/Open sources with the existing frontend display-path policy; never reload captured text or allocate replacement source IDs. Legacy Disk loading/drift/error diagnostics stay unchanged; native acquisition failures remain typed capture failures, not invented scheduled diagnostics.
+SourceLoad and Frontend use owner Disk/Open codecs and compare complete own/supplied-parent source payloads to capture, including raw loading maps. Existing providers, lexical handoffs/import correspondence, diagnostic conversion, cancellation and publication guards remain required. Discovery still publishes no outputs/diagnostics and rejects partial inferred overlays.
+Open publishes OpenBuffer/InternalOnly; captured Disk keeps PackageSource/CurrentPackage. Only actual native dispatch uses recorded published authorization at the four consumers; summary-only dispatch keeps current/package checks. Both actual cache intents remain NoKey. Later services, LSP current diagnostics, proof/cache/artifact authority and whole build completion stay deferred.

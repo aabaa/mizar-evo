@@ -249,6 +249,12 @@ pub enum DriverCancelReason {
 #[derive(Debug, Clone, PartialEq, Eq)]
 #[non_exhaustive]
 pub enum DriverSubmitError {
+    NativeSourceVersionsProvided {
+        request: Box<BuildRequestDraft>,
+    },
+    InvalidCapturedSession {
+        session: Box<BuildSession>,
+    },
     RequestIdAllocation {
         error: IdError,
     },
@@ -378,7 +384,13 @@ impl CompilerDriver {
         A: SessionIdAllocator,
         L: SourceLayoutProvider,
     {
-        self.submit_inner(request, allocator, snapshots, input, true)
+        let pending = request
+            .allocate(allocator)
+            .map_err(|error| DriverSubmitError::RequestIdAllocation { error })?;
+        let session = pending
+            .capture_snapshot(snapshots)
+            .map_err(|error| DriverSubmitError::SnapshotCapture { error })?;
+        self.submit_inner(session, allocator, snapshots, input, true, false)
     }
 
     pub fn submit<A, L>(
@@ -392,28 +404,59 @@ impl CompilerDriver {
         A: SessionIdAllocator,
         L: SourceLayoutProvider,
     {
-        self.submit_inner(request, allocator, snapshots, input, false)
+        let pending = request
+            .allocate(allocator)
+            .map_err(|error| DriverSubmitError::RequestIdAllocation { error })?;
+        let session = pending
+            .capture_snapshot(snapshots)
+            .map_err(|error| DriverSubmitError::SnapshotCapture { error })?;
+        self.submit_inner(session, allocator, snapshots, input, false, false)
+    }
+
+    pub fn submit_captured<A: SessionIdAllocator, L: SourceLayoutProvider>(
+        &mut self,
+        session: BuildSession,
+        allocator: &A,
+        snapshots: &SnapshotRegistry<A>,
+        input: DriverSubmitInput<L>,
+    ) -> Result<BuildSubmission, DriverSubmitError> {
+        self.submit_inner(session, allocator, snapshots, input, false, true)
+    }
+
+    pub fn submit_captured_with_import_discovery<A: SessionIdAllocator, L: SourceLayoutProvider>(
+        &mut self,
+        session: BuildSession,
+        allocator: &A,
+        snapshots: &SnapshotRegistry<A>,
+        input: DriverSubmitInput<L>,
+    ) -> Result<BuildSubmission, DriverSubmitError> {
+        self.submit_inner(session, allocator, snapshots, input, true, true)
     }
 
     fn submit_inner<A, L>(
         &mut self,
-        request: BuildRequestDraft,
+        mut session: BuildSession,
         allocator: &A,
         snapshots: &SnapshotRegistry<A>,
         input: DriverSubmitInput<L>,
         discover_imports: bool,
+        prepared: bool,
     ) -> Result<BuildSubmission, DriverSubmitError>
     where
         A: SessionIdAllocator,
         L: SourceLayoutProvider,
     {
-        let pending = request
-            .allocate(allocator)
-            .map_err(|error| DriverSubmitError::RequestIdAllocation { error })?;
-        let mut session = pending
-            .capture_snapshot(snapshots)
-            .map_err(|error| DriverSubmitError::SnapshotCapture { error })?;
-
+        if prepared
+            && (session.captured.native_sources().is_none()
+                || session.state != BuildSessionState::SnapshotCaptured
+                || self.sessions.contains_key(&session.id)
+                || !snapshots
+                    .is_current_for_request(session.captured.snapshot.id, session.request.id))
+        {
+            return Err(DriverSubmitError::InvalidCapturedSession {
+                session: Box::new(session),
+            });
+        }
         if !self.lanes.mark_current(&session) {
             session.finish(BuildSessionOutcome::Superseded);
             let publication_decision = self.lanes.publication_decision(snapshots, &session);
@@ -506,6 +549,7 @@ impl CompilerDriver {
         {
             crate::registry::SourceLoadInputs {
                 snapshot: &session.captured.snapshot,
+                captured: Some(&session.captured),
                 build_plan: &build_plan,
                 module_index: &module_index,
                 allocator,
@@ -653,6 +697,7 @@ impl CompilerDriver {
             self.output_publisher.as_ref(),
             Some(crate::registry::SourceLoadInputs {
                 snapshot: &session.captured.snapshot,
+                captured: Some(&session.captured),
                 build_plan: &build_plan,
                 module_index: &module_index,
                 allocator,
@@ -698,9 +743,13 @@ impl CompilerDriver {
                 .is_ok()
                 && phase_results.values().flatten().all(|result| {
                     result.output_refs.iter().all(|output| {
-                        publisher
-                            .validate_current_output(session.captured.snapshot.id, output)
-                            .is_ok()
+                        (if session.captured.native_sources().is_some() {
+                            publisher
+                                .validate_published_output(session.captured.snapshot.id, output)
+                        } else {
+                            publisher.validate_current_output(session.captured.snapshot.id, output)
+                        })
+                        .is_ok()
                             && publisher.storage().validate_handle(output).is_ok()
                     })
                 })

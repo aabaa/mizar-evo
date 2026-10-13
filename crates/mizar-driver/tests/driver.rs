@@ -63,7 +63,7 @@ fn submit_bootstraps_phase_zero_and_consumes_modeled_scheduler() {
         DriverSubmissionStatus::SchedulerValidated
     );
     assert_eq!(
-        submission.session.state,
+        submission.session.state(),
         BuildSessionState::Finished(BuildSessionOutcome::Succeeded)
     );
     assert_eq!(submission.build_plan.as_ref().unwrap().packages.len(), 1);
@@ -88,11 +88,11 @@ fn submit_bootstraps_phase_zero_and_consumes_modeled_scheduler() {
     assert_eq!(driver_run.diagnostics, expected_run.diagnostics);
     assert_eq!(
         driver
-            .session(submission.session.id)
-            .map(|session| session.state),
+            .session(submission.session.id())
+            .map(|session| session.state()),
         Some(BuildSessionState::Finished(BuildSessionOutcome::Succeeded))
     );
-    let stream = driver.events(submission.session.id);
+    let stream = driver.events(submission.session.id());
     let task_progress: Vec<_> = stream
         .events()
         .iter()
@@ -108,10 +108,10 @@ fn submit_bootstraps_phase_zero_and_consumes_modeled_scheduler() {
             .all(|task| !task.task_id.is_empty() && task.state.is_some()),
         "all task-progress events must carry scheduler task identity and state"
     );
-    assert_event(&driver, submission.session.id, |kind| {
+    assert_event(&driver, submission.session.id(), |kind| {
         matches!(kind, BuildEventKind::SessionFinished { .. })
     });
-    assert_no_event(&driver, submission.session.id, |kind| {
+    assert_no_event(&driver, submission.session.id(), |kind| {
         matches!(
             kind,
             BuildEventKind::DiagnosticsReady { .. } | BuildEventKind::ArtifactBoundary { .. }
@@ -152,16 +152,16 @@ fn non_phase_zero_descriptor_fixtures_block_on_dispatch_gap() {
         vec![PipelinePhase::SourceLoad]
     );
     assert_eq!(
-        submission.session.state,
+        submission.session.state(),
         BuildSessionState::Finished(BuildSessionOutcome::Blocked)
     );
-    assert_event(&driver, submission.session.id, |kind| {
+    assert_event(&driver, submission.session.id(), |kind| {
         matches!(kind, BuildEventKind::DispatchGap { .. })
     });
-    assert_event(&driver, submission.session.id, |kind| {
+    assert_event(&driver, submission.session.id(), |kind| {
         matches!(kind, BuildEventKind::TaskProgress { .. })
     });
-    assert_no_event(&driver, submission.session.id, |kind| {
+    assert_no_event(&driver, submission.session.id(), |kind| {
         matches!(
             kind,
             BuildEventKind::DiagnosticsReady { .. } | BuildEventKind::ArtifactBoundary { .. }
@@ -190,7 +190,7 @@ fn registered_services_execute_from_scheduler_selected_dispatch() {
         DriverSubmissionStatus::SchedulerValidated
     );
     assert_eq!(
-        submission.session.state,
+        submission.session.state(),
         BuildSessionState::Finished(BuildSessionOutcome::Succeeded)
     );
     assert!(submission.missing_services.is_empty());
@@ -237,10 +237,10 @@ fn registered_services_execute_from_scheduler_selected_dispatch() {
         module_count,
         "check-and-elaborate task must dispatch the elaboration service span"
     );
-    assert_event(&driver, submission.session.id, |kind| {
+    assert_event(&driver, submission.session.id(), |kind| {
         matches!(kind, BuildEventKind::TaskProgress { .. })
     });
-    assert_no_event(&driver, submission.session.id, |kind| {
+    assert_no_event(&driver, submission.session.id(), |kind| {
         matches!(kind, BuildEventKind::DispatchGap { .. })
     });
 }
@@ -263,7 +263,7 @@ fn invalid_phase_dispatch_bundle_fails_without_dispatch_gap() {
         DriverSubmissionStatus::SchedulerValidated
     );
     assert_eq!(
-        submission.session.state,
+        submission.session.state(),
         BuildSessionState::Finished(BuildSessionOutcome::Failed)
     );
     assert!(submission.dispatch_gap_phases.is_empty());
@@ -271,7 +271,7 @@ fn invalid_phase_dispatch_bundle_fails_without_dispatch_gap() {
         calls.lock().expect("calls lock is not poisoned").is_empty(),
         "invalid dispatch input must fail before phase execution"
     );
-    assert_no_event(&driver, submission.session.id, |kind| {
+    assert_no_event(&driver, submission.session.id(), |kind| {
         matches!(
             kind,
             BuildEventKind::DiagnosticsReady { .. } | BuildEventKind::ArtifactBoundary { .. }
@@ -297,7 +297,7 @@ fn phase_dispatch_provider_error_fails_without_dispatch_gap() {
         DriverSubmissionStatus::SchedulerValidated
     );
     assert_eq!(
-        submission.session.state,
+        submission.session.state(),
         BuildSessionState::Finished(BuildSessionOutcome::Failed)
     );
     assert!(submission.dispatch_gap_phases.is_empty());
@@ -305,7 +305,7 @@ fn phase_dispatch_provider_error_fails_without_dispatch_gap() {
         calls.lock().expect("calls lock is not poisoned").is_empty(),
         "invalid provider result must fail before phase execution"
     );
-    assert_no_event(&driver, submission.session.id, |kind| {
+    assert_no_event(&driver, submission.session.id(), |kind| {
         matches!(
             kind,
             BuildEventKind::DiagnosticsReady { .. } | BuildEventKind::ArtifactBoundary { .. }
@@ -331,7 +331,7 @@ fn phase_dispatch_provider_none_blocks_as_dispatch_gap() {
         DriverSubmissionStatus::BlockedByPhaseDispatchGap
     );
     assert_eq!(
-        submission.session.state,
+        submission.session.state(),
         BuildSessionState::Finished(BuildSessionOutcome::Blocked)
     );
     assert!(
@@ -343,7 +343,7 @@ fn phase_dispatch_provider_none_blocks_as_dispatch_gap() {
         calls.lock().expect("calls lock is not poisoned").is_empty(),
         "missing provider bundle must block before phase execution"
     );
-    assert_event(&driver, submission.session.id, |kind| {
+    assert_event(&driver, submission.session.id(), |kind| {
         matches!(kind, BuildEventKind::DispatchGap { .. })
     });
 }
@@ -404,7 +404,7 @@ fn cache_hit_tasks_do_not_require_phase_dispatch_inputs() {
             .dispatch_gap_phases
             .contains(&PipelinePhase::Frontend)
     );
-    assert_event(&driver, submission.session.id, |kind| {
+    assert_event(&driver, submission.session.id(), |kind| {
         matches!(kind, BuildEventKind::DispatchGap { .. })
     });
 }
@@ -422,7 +422,7 @@ fn partial_registry_with_extra_or_wrong_service_keeps_missing_service_preflight(
             submit_input(vec![WorkspaceSourceFile::new("src/main.miz", "main.miz")]),
         )
         .unwrap();
-    let snapshot = baseline.session.captured.snapshot.id;
+    let snapshot = baseline.session.captured().snapshot().id;
     let publisher = Arc::new(PhaseOutputPublisher::new(
         Arc::new(IrStorageService::new()),
         Arc::new(SnapshotHandleRegistry::new()),
@@ -475,7 +475,7 @@ fn partial_registry_with_extra_or_wrong_service_keeps_missing_service_preflight(
                 submit_input(vec![WorkspaceSourceFile::new("src/main.miz", "main.miz")]),
             )
             .unwrap();
-        assert_eq!(submission.session.captured.snapshot.id, snapshot);
+        assert_eq!(submission.session.captured().snapshot().id, snapshot);
         assert_eq!(
             submission.status,
             DriverSubmissionStatus::BlockedByMissingPhaseServices
@@ -531,7 +531,7 @@ fn registry_dispatch_statuses_map_to_scheduler_outcomes_without_publication() {
         let artifact = task_id_for_phase(&submission, PipelinePhase::ArtifactCommit);
         assert_eq!(state_for_task(&submission, &artifact), expected_state);
         assert_eq!(
-            submission.session.state,
+            submission.session.state(),
             BuildSessionState::Finished(expected_outcome)
         );
         assert_eq!(
@@ -539,7 +539,7 @@ fn registry_dispatch_statuses_map_to_scheduler_outcomes_without_publication() {
             DriverSubmissionStatus::SchedulerValidated
         );
         assert!(submission.dispatch_gap_phases.is_empty());
-        assert_no_event(&driver, submission.session.id, |kind| {
+        assert_no_event(&driver, submission.session.id(), |kind| {
             matches!(
                 kind,
                 BuildEventKind::DiagnosticsReady { .. }
@@ -576,7 +576,7 @@ fn recoverable_frontend_diagnostics_do_not_release_semantic_dependents() {
         TaskState::Blocked
     );
     assert_eq!(
-        submission.session.state,
+        submission.session.state(),
         BuildSessionState::Finished(BuildSessionOutcome::Failed)
     );
     let run = submission.scheduler_run.as_ref().unwrap();
@@ -609,13 +609,13 @@ fn failed_module_index_submission_is_stored_and_preserves_lane_currentness() {
         other => panic!("expected module-index error, got {other:?}"),
     };
     assert_eq!(
-        failed_session.state,
+        failed_session.state(),
         BuildSessionState::Finished(BuildSessionOutcome::Failed)
     );
     assert_eq!(
         driver
-            .session(failed_session.id)
-            .map(|session| session.state),
+            .session(failed_session.id())
+            .map(|session| session.state()),
         Some(BuildSessionState::Finished(BuildSessionOutcome::Failed))
     );
 
@@ -633,7 +633,7 @@ fn failed_module_index_submission_is_stored_and_preserves_lane_currentness() {
         DriverSubmissionStatus::SupersededBeforeSubmission
     );
     assert_eq!(
-        older.session.state,
+        older.session.state(),
         BuildSessionState::Finished(BuildSessionOutcome::Superseded)
     );
     assert!(older.scheduler_run.is_none());
@@ -645,7 +645,7 @@ fn failed_module_index_submission_is_stored_and_preserves_lane_currentness() {
         PublicationDecision::Current => panic!("older request must not become current"),
         _ => panic!("older request must produce a concrete suppression decision"),
     }
-    assert_event(&driver, older.session.id, |kind| {
+    assert_event(&driver, older.session.id(), |kind| {
         matches!(kind, BuildEventKind::PublicationSuppressed)
     });
 }
@@ -680,7 +680,7 @@ fn stale_same_lane_submission_is_suppressed_before_scheduler_submission() {
         DriverSubmissionStatus::SupersededBeforeSubmission
     );
     assert_eq!(
-        stale.session.state,
+        stale.session.state(),
         BuildSessionState::Finished(BuildSessionOutcome::Superseded)
     );
     assert!(stale.build_plan.is_none());
@@ -696,7 +696,7 @@ fn stale_same_lane_submission_is_suppressed_before_scheduler_submission() {
         PublicationDecision::Current => panic!("stale same-lane request must not publish current"),
         _ => panic!("stale same-lane request must produce a concrete suppression decision"),
     }
-    assert_event(&driver, stale.session.id, |kind| {
+    assert_event(&driver, stale.session.id(), |kind| {
         matches!(kind, BuildEventKind::PublicationSuppressed)
     });
 }
@@ -722,7 +722,7 @@ fn missing_phase_services_block_before_scheduler_outputs_are_interpreted() {
     );
     assert!(submission.dispatch_gap_phases.is_empty());
     assert_eq!(
-        submission.session.state,
+        submission.session.state(),
         BuildSessionState::Finished(BuildSessionOutcome::Blocked)
     );
     assert!(submission.scheduler_run.is_none());
@@ -737,10 +737,10 @@ fn missing_phase_services_block_before_scheduler_outputs_are_interpreted() {
             .iter()
             .any(|task| task.phases.contains(&PipelinePhase::SourceLoad))
     );
-    assert_event(&driver, submission.session.id, |kind| {
+    assert_event(&driver, submission.session.id(), |kind| {
         matches!(kind, BuildEventKind::PhaseServiceGap { .. })
     });
-    assert_no_event(&driver, submission.session.id, |kind| {
+    assert_no_event(&driver, submission.session.id(), |kind| {
         matches!(
             kind,
             BuildEventKind::DiagnosticsReady { .. } | BuildEventKind::ArtifactBoundary { .. }
@@ -765,13 +765,13 @@ fn scheduler_cancellation_finishes_without_partial_publication() {
         DriverSubmissionStatus::SchedulerValidated
     );
     assert_eq!(
-        submission.session.state,
+        submission.session.state(),
         BuildSessionState::Finished(BuildSessionOutcome::Cancelled)
     );
     assert_eq!(
         driver
-            .session(submission.session.id)
-            .map(|session| session.state),
+            .session(submission.session.id())
+            .map(|session| session.state()),
         Some(BuildSessionState::Finished(BuildSessionOutcome::Cancelled))
     );
     assert!(submission.scheduler_run.as_ref().is_some_and(|run| {
@@ -779,14 +779,14 @@ fn scheduler_cancellation_finishes_without_partial_publication() {
             .iter()
             .any(|record| record.state == mizar_build::scheduler::TaskState::Cancelled)
     }));
-    assert_event(&driver, submission.session.id, |kind| {
+    assert_event(&driver, submission.session.id(), |kind| {
         matches!(
             kind,
             BuildEventKind::TaskProgress { task }
                 if task.state == Some(mizar_build::scheduler::TaskState::Cancelled)
         )
     });
-    assert_event(&driver, submission.session.id, |kind| {
+    assert_event(&driver, submission.session.id(), |kind| {
         matches!(
             kind,
             BuildEventKind::SessionFinished {
@@ -794,7 +794,7 @@ fn scheduler_cancellation_finishes_without_partial_publication() {
             }
         )
     });
-    assert_no_event(&driver, submission.session.id, |kind| {
+    assert_no_event(&driver, submission.session.id(), |kind| {
         matches!(
             kind,
             BuildEventKind::DiagnosticsReady { .. } | BuildEventKind::ArtifactBoundary { .. }
@@ -1476,7 +1476,7 @@ fn scheduled_publication_preserves_real_outputs_and_rejects_invalid_results() {
         let run = submission.scheduler_run.unwrap();
         if mode.starts_with("valid") {
             assert_eq!(
-                submission.session.state,
+                submission.session.state(),
                 BuildSessionState::Finished(BuildSessionOutcome::Succeeded)
             );
             assert!(run.phase_results.len() > 1);
@@ -1535,8 +1535,8 @@ fn scheduled_publication_preserves_real_outputs_and_rejects_invalid_results() {
                 .submit(request(81), &ids, &snapshots, stale_input)
                 .unwrap();
             assert_eq!(
-                stale.session.captured.snapshot.id,
-                submission.session.captured.snapshot.id
+                stale.session.captured().snapshot().id,
+                submission.session.captured().snapshot().id
             );
             assert_eq!(
                 stale.status,
@@ -1548,14 +1548,14 @@ fn scheduled_publication_preserves_real_outputs_and_rejects_invalid_results() {
             ));
             assert!(stale.scheduler_run.is_none());
             publisher
-                .validate_current_snapshot(submission.session.captured.snapshot.id)
+                .validate_current_snapshot(submission.session.captured().snapshot().id)
                 .unwrap();
             for result in run.phase_results.values().flatten() {
                 assert_eq!(result.diagnostics.len(), 1);
                 assert_eq!(result.output_refs.len(), 1);
                 let output = &result.output_refs[0];
                 publisher
-                    .validate_current_output(submission.session.captured.snapshot.id, output)
+                    .validate_current_output(submission.session.captured().snapshot().id, output)
                     .unwrap();
                 let typed = publisher
                     .storage()
@@ -1568,7 +1568,7 @@ fn scheduled_publication_preserves_real_outputs_and_rejects_invalid_results() {
             }
         } else {
             assert_eq!(
-                submission.session.state,
+                submission.session.state(),
                 BuildSessionState::Finished(BuildSessionOutcome::Failed),
                 "{mode}"
             );

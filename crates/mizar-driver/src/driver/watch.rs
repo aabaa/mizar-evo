@@ -98,7 +98,9 @@ pub(super) fn request_origin_name(origin: &BuildRequestOrigin) -> &'static str {
 
 pub(super) fn submit_error_session(error: &DriverSubmitError) -> Option<&BuildSession> {
     match error {
-        DriverSubmitError::RequestIdAllocation { .. }
+        DriverSubmitError::NativeSourceVersionsProvided { .. }
+        | DriverSubmitError::InvalidCapturedSession { .. }
+        | DriverSubmitError::RequestIdAllocation { .. }
         | DriverSubmitError::SnapshotCapture { .. } => None,
         DriverSubmitError::Planning { session, .. }
         | DriverSubmitError::ModuleIndex { session, .. }

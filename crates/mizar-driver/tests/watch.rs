@@ -62,7 +62,7 @@ fn watch_change_rebuilds_replaces_snapshot_and_suppresses_previous_replay() {
             watch_control(None, Some(&publisher)),
         )
         .expect("initial watch submission succeeds");
-    let first_snapshot = first.submission.session.captured.snapshot.id;
+    let first_snapshot = first.submission.session.captured().snapshot().id;
     let retained = publish_text(&publisher, first_snapshot, "old-output");
 
     assert_eq!(
@@ -79,10 +79,10 @@ fn watch_change_rebuilds_replaces_snapshot_and_suppresses_previous_replay() {
             &ids,
             &snapshots,
             submit_input(),
-            watch_control(Some(first.submission.session.id), Some(&publisher)),
+            watch_control(Some(first.submission.session.id()), Some(&publisher)),
         )
         .expect("changed watch snapshot resubmits");
-    let second_snapshot = second.submission.session.captured.snapshot.id;
+    let second_snapshot = second.submission.session.captured().snapshot().id;
 
     assert_ne!(first_snapshot, second_snapshot);
     assert_eq!(
@@ -99,11 +99,11 @@ fn watch_change_rebuilds_replaces_snapshot_and_suppresses_previous_replay() {
     );
     assert_eq!(
         driver
-            .session(first.submission.session.id)
-            .map(|session| session.state),
+            .session(first.submission.session.id())
+            .map(|session| session.state()),
         Some(BuildSessionState::Finished(BuildSessionOutcome::Superseded))
     );
-    assert_previous_replay_is_superseded(&driver, first.submission.session.id);
+    assert_previous_replay_is_superseded(&driver, first.submission.session.id());
     assert_eq!(
         publisher.storage().get(&retained).unwrap().as_ref(),
         "old-output",
@@ -141,21 +141,21 @@ fn same_snapshot_watch_generation_supersedes_replay_without_ir_replacement() {
             &ids,
             &snapshots,
             submit_input(),
-            watch_control(Some(first.submission.session.id), Some(&publisher)),
+            watch_control(Some(first.submission.session.id()), Some(&publisher)),
         )
         .expect("same snapshot generation resubmits");
 
     assert_eq!(
-        first.submission.session.captured.snapshot.id,
-        second.submission.session.captured.snapshot.id
+        first.submission.session.captured().snapshot().id,
+        second.submission.session.captured().snapshot().id
     );
     assert_eq!(
         second.snapshot_replacement.status,
         WatchSnapshotReplacementStatus::SameSnapshot
     );
-    assert_previous_replay_is_superseded(&driver, first.submission.session.id);
+    assert_previous_replay_is_superseded(&driver, first.submission.session.id());
     publisher
-        .validate_current_snapshot(second.submission.session.captured.snapshot.id)
+        .validate_current_snapshot(second.submission.session.captured().snapshot().id)
         .expect("same snapshot remains publisher-current");
 }
 
@@ -192,13 +192,13 @@ fn omitted_previous_session_uses_lane_current_watch_session() {
             .as_ref()
             .expect("lane-current previous session is superseded")
             .session,
-        first.submission.session.id
+        first.submission.session.id()
     );
     assert_eq!(
         second.snapshot_replacement.status,
         WatchSnapshotReplacementStatus::Replaced
     );
-    assert_previous_replay_is_superseded(&driver, first.submission.session.id);
+    assert_previous_replay_is_superseded(&driver, first.submission.session.id());
 }
 
 #[test]
@@ -224,10 +224,10 @@ fn same_snapshot_replacement_does_not_register_or_revive_publisher_state() {
             &ids,
             &snapshots,
             submit_input(),
-            watch_control(Some(first.submission.session.id), Some(&publisher)),
+            watch_control(Some(first.submission.session.id()), Some(&publisher)),
         )
         .expect("same-snapshot watch generation resubmits");
-    let snapshot = second.submission.session.captured.snapshot.id;
+    let snapshot = second.submission.session.captured().snapshot().id;
 
     assert_eq!(
         second.snapshot_replacement.status,
@@ -298,7 +298,7 @@ fn captured_submit_errors_supersede_previous_and_record_replacement() {
             watch_control(None, Some(&publisher)),
         )
         .expect("initial watch submission succeeds");
-    let first_snapshot = first.submission.session.captured.snapshot.id;
+    let first_snapshot = first.submission.session.captured().snapshot().id;
 
     let error = driver
         .submit_watch_change(
@@ -306,7 +306,7 @@ fn captured_submit_errors_supersede_previous_and_record_replacement() {
             &ids,
             &snapshots,
             invalid_module_index_input(),
-            watch_control(Some(first.submission.session.id), Some(&publisher)),
+            watch_control(Some(first.submission.session.id()), Some(&publisher)),
         )
         .expect_err("module-index diagnostics are returned as a captured submit error");
     let WatchSubmitError::Submit(failure) = error else {
@@ -326,7 +326,7 @@ fn captured_submit_errors_supersede_previous_and_record_replacement() {
             .status,
         WatchSnapshotReplacementStatus::Replaced
     );
-    assert_previous_replay_is_superseded(&driver, first.submission.session.id);
+    assert_previous_replay_is_superseded(&driver, first.submission.session.id());
     assert!(matches!(
         publisher.validate_current_snapshot(first_snapshot),
         Err(PublishError::ObsoleteSnapshot { snapshot }) if snapshot == first_snapshot
@@ -359,7 +359,7 @@ fn snapshot_capture_failure_does_not_supersede_previous_session() {
             &ids,
             &snapshots,
             submit_input(),
-            watch_control(Some(first.submission.session.id), Some(&publisher)),
+            watch_control(Some(first.submission.session.id()), Some(&publisher)),
         )
         .expect_err("snapshot capture fails before supersession");
     let WatchSubmitError::Submit(failure) = error else {
@@ -374,11 +374,11 @@ fn snapshot_capture_failure_does_not_supersede_previous_session() {
     assert!(failure.snapshot_replacement.is_none());
     assert_eq!(
         driver
-            .session(first.submission.session.id)
-            .map(|session| session.state),
+            .session(first.submission.session.id())
+            .map(|session| session.state()),
         Some(BuildSessionState::Finished(BuildSessionOutcome::Succeeded))
     );
-    assert_current_success_replay(&driver, first.submission.session.id);
+    assert_current_success_replay(&driver, first.submission.session.id());
 }
 
 #[test]
@@ -419,10 +419,10 @@ fn previous_watch_session_validation_rejects_wrong_session_inputs() {
             &ids,
             &snapshots,
             submit_input(),
-            watch_control(Some(previous.submission.session.id), None),
+            watch_control(Some(previous.submission.session.id()), None),
         ),
         Err(WatchSubmitError::PreviousSessionLaneMismatch { session })
-            if session == previous.submission.session.id
+            if session == previous.submission.session.id()
     ));
 
     let mut batch_driver = CompilerDriver::default();
@@ -435,9 +435,9 @@ fn previous_watch_session_validation_rejects_wrong_session_inputs() {
             &ids,
             &snapshots,
             submit_input(),
-            watch_control(Some(batch.session.id), None),
+            watch_control(Some(batch.session.id()), None),
         ),
-        Err(WatchSubmitError::PreviousSessionNotWatch { session }) if session == batch.session.id
+        Err(WatchSubmitError::PreviousSessionNotWatch { session }) if session == batch.session.id()
     ));
 
     let mut generation_driver = CompilerDriver::default();
@@ -460,10 +460,10 @@ fn previous_watch_session_validation_rejects_wrong_session_inputs() {
             &ids,
             &snapshots,
             submit_input(),
-            watch_control(Some(previous.submission.session.id), None),
+            watch_control(Some(previous.submission.session.id()), None),
         ),
         Err(WatchSubmitError::NonMonotonicGeneration { session })
-            if session == previous.submission.session.id
+            if session == previous.submission.session.id()
     ));
 
     let mut not_current_driver = CompilerDriver::default();
@@ -482,7 +482,7 @@ fn previous_watch_session_validation_rejects_wrong_session_inputs() {
             &ids,
             &snapshots,
             submit_input(),
-            watch_control(Some(older.submission.session.id), None),
+            watch_control(Some(older.submission.session.id()), None),
         )
         .expect("newer watch submission succeeds");
     assert!(matches!(
@@ -495,10 +495,10 @@ fn previous_watch_session_validation_rejects_wrong_session_inputs() {
             &ids,
             &snapshots,
             submit_input(),
-            watch_control(Some(older.submission.session.id), None),
+            watch_control(Some(older.submission.session.id()), None),
         ),
         Err(WatchSubmitError::PreviousSessionNotCurrent { session, current: lane_current })
-            if session == older.submission.session.id && lane_current == current.submission.session.id
+            if session == older.submission.session.id() && lane_current == current.submission.session.id()
     ));
 
     let mut stale_driver = CompilerDriver::default();
@@ -524,7 +524,7 @@ fn previous_watch_session_validation_rejects_wrong_session_inputs() {
             watch_control(None, None),
         ),
         Err(WatchSubmitError::NonMonotonicGeneration { session })
-            if session == current.submission.session.id
+            if session == current.submission.session.id()
     ));
 }
 
@@ -545,7 +545,7 @@ fn publisher_replacement_failure_is_reported_without_fake_output() {
             watch_control(None, None),
         )
         .expect("initial watch submission can proceed with missing publisher gap");
-    let old_snapshot = first.submission.session.captured.snapshot.id;
+    let old_snapshot = first.submission.session.captured().snapshot().id;
 
     let second = driver
         .submit_watch_change(
@@ -553,7 +553,7 @@ fn publisher_replacement_failure_is_reported_without_fake_output() {
             &ids,
             &snapshots,
             submit_input(),
-            watch_control(Some(first.submission.session.id), Some(&publisher)),
+            watch_control(Some(first.submission.session.id()), Some(&publisher)),
         )
         .expect("driver records publisher rejection in watch result");
 
@@ -562,7 +562,7 @@ fn publisher_replacement_failure_is_reported_without_fake_output() {
         WatchSnapshotReplacementStatus::Failed { ref error }
             if matches!(error.as_ref(), PublishError::UnknownSnapshot { snapshot } if *snapshot == old_snapshot)
     ));
-    assert_previous_replay_is_superseded(&driver, first.submission.session.id);
+    assert_previous_replay_is_superseded(&driver, first.submission.session.id());
 }
 
 #[test]

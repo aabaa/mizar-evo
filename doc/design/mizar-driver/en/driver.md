@@ -397,3 +397,13 @@ consumers retain current/package checks until native capture and input binding
 are supplied; provenance alone never authenticates a summary-only/Disk result.
 Physical storage, current snapshot and lane checks remain required. Canonical
 snapshot equality alone never proves raw-buffer/version freshness.
+
+## Captured native submission
+
+`submit_captured(session, allocator, snapshots, input)` and `submit_captured_with_import_discovery` consume a genuinely native-captured session. Non-native/non-SnapshotCaptured, a session id already stored in this Driver, or a non-current registry request fails with `InvalidCapturedSession { session }` before lane mutation. Prepared clones may be submitted once per Driver; legacy submits keep normal allocation/capture.
+The caller's publisher owner authorizes actual snapshot/work units first; Driver never reacquires, guesses IDs, registers/revives snapshots or grants rights. Existing planning, prefix status, lane/request guards, cancellation and resource/error handling apply.
+Native resources use the existing borrowed [service inputs](frontend_adapter.md#native-captured-sources). Only genuine native dispatch adopts published parent/result/Frontend-parent/final-retention authorization; legacy retains all four current/package checks. Complete captured source/version/root binding remains mandatory. Later services and LSP current diagnostics remain deferred.
+
+Rejected native preconditions produce no accepted watch replacement. CLI maps both errors to its existing InternalError envelope with `invalid_native_submission`, without phase diagnostics or events.
+
+Raw/version changes can retain canonical snapshot identity while changing storage lineage. The existing [IR identity](../../mizar-ir/en/identity.md) conflicting-slot rule still rejects same-owner conflicting publication; fresh owner publishers are required for these positive replays. Old handles remain subject to physical/source/lane guards.

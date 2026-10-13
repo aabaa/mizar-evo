@@ -69,16 +69,18 @@ fn captures_snapshot_through_session_registry_with_active_build_lease() {
         .capture_snapshot(&registry)
         .unwrap();
 
-    assert_eq!(session.state, BuildSessionState::SnapshotCaptured);
+    assert_eq!(session.state(), BuildSessionState::SnapshotCaptured);
     assert_eq!(
-        session.captured.active_snapshot_lease.snapshot,
-        session.captured.snapshot.id
+        session.captured().active_snapshot_lease().snapshot,
+        session.captured().snapshot().id
     );
     assert_eq!(
-        session.captured.active_snapshot_lease.reason,
+        session.captured().active_snapshot_lease().reason,
         RetentionReason::ActiveBuild
     );
-    assert!(registry.is_current_for_request(session.captured.snapshot.id, session.request.id));
+    assert!(
+        registry.is_current_for_request(session.captured().snapshot().id, session.request().id)
+    );
 }
 
 #[test]
@@ -140,9 +142,12 @@ fn identical_snapshot_inputs_reuse_snapshot_id_but_not_request_or_session_ids() 
         .capture_snapshot(&registry)
         .unwrap();
 
-    assert_eq!(first.captured.snapshot.id, second.captured.snapshot.id);
-    assert_ne!(first.id, second.id);
-    assert_ne!(first.request.id, second.request.id);
+    assert_eq!(
+        first.captured().snapshot().id,
+        second.captured().snapshot().id
+    );
+    assert_ne!(first.id(), second.id());
+    assert_ne!(first.request().id, second.request().id);
 }
 
 #[test]
@@ -171,7 +176,10 @@ fn lane_supersession_rejects_older_session_even_for_same_snapshot_id() {
         .capture_snapshot(&registry)
         .unwrap();
 
-    assert_eq!(first.captured.snapshot.id, second.captured.snapshot.id);
+    assert_eq!(
+        first.captured().snapshot().id,
+        second.captured().snapshot().id
+    );
     assert!(lanes.mark_current(&first));
     assert_eq!(
         lanes.publication_decision(&registry, &first),
@@ -261,7 +269,10 @@ fn publication_guard_rejects_stale_request_snapshot_even_when_lane_matches() {
         .capture_snapshot(&registry)
         .unwrap();
     let _newer_same_request = registry
-        .create_snapshot(stale.request.id, snapshot_input_parts(10).snapshot_input())
+        .create_snapshot(
+            stale.request().id,
+            snapshot_input_parts(10).snapshot_input(),
+        )
         .unwrap();
     assert!(lanes.mark_current(&stale));
 
@@ -322,16 +333,16 @@ fn lifecycle_does_not_reactivate_cancelling_or_terminal_sessions() {
         .unwrap();
 
     completed.mark_submitted();
-    assert_eq!(completed.state, BuildSessionState::Submitted);
+    assert_eq!(completed.state(), BuildSessionState::Submitted);
     completed.mark_running();
-    assert_eq!(completed.state, BuildSessionState::Running);
+    assert_eq!(completed.state(), BuildSessionState::Running);
     assert!(completed.finish(BuildSessionOutcome::Succeeded));
     completed.mark_submitted();
     completed.mark_running();
     assert!(!completed.cancel());
     assert!(!completed.finish(BuildSessionOutcome::Cancelled));
     assert_eq!(
-        completed.state,
+        completed.state(),
         BuildSessionState::Finished(BuildSessionOutcome::Succeeded)
     );
 
@@ -340,14 +351,14 @@ fn lifecycle_does_not_reactivate_cancelling_or_terminal_sessions() {
         .unwrap();
     assert!(session.cancel());
     session.mark_submitted();
-    assert_eq!(session.state, BuildSessionState::Cancelling);
+    assert_eq!(session.state(), BuildSessionState::Cancelling);
     session.mark_running();
-    assert_eq!(session.state, BuildSessionState::Cancelling);
+    assert_eq!(session.state(), BuildSessionState::Cancelling);
 
     assert!(session.finish(BuildSessionOutcome::Cancelled));
     assert!(!session.finish(BuildSessionOutcome::Succeeded));
     assert_eq!(
-        session.state,
+        session.state(),
         BuildSessionState::Finished(BuildSessionOutcome::Cancelled)
     );
 }
