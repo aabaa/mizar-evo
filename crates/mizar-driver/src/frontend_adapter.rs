@@ -1594,7 +1594,7 @@ impl PhaseService for FrontendService {
             canonical_payload: Some(semantic_bytes),
             storage_payload: Some(storage_bytes),
             decode: BlobDecoder::new(move |bytes| {
-                FrontendOutput::from_canonical_disk_bytes(bytes, source_id, &decode_input)
+                FrontendOutput::from_canonical_storage_bytes(bytes, source_id, &decode_input)
                     .filter(|output| output.source.source_hash == expected_hash)
                     .ok_or_else(|| BlobDecodeError::new("invalid frontend disk payload"))
             }),

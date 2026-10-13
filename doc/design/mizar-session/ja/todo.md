@@ -458,6 +458,9 @@
 33. **snapshot 内 ID 割り当て前の source 取得。** [x]
     - [SESSION-SOURCE-CAPTURE](../../task_contracts/ja/SESSION-SOURCE-CAPTURE.md) が native 取得、完全な context の検証、実 snapshot のハッシュ化とその後の SourceId 割り当てを所有する。LSP snapshot binding は別の後続作業である。
 
+34. **Native OpenBuffer 保存形式の前提タスク.** [x]
+    - [FRONTEND-OPEN-BUFFER-STORAGE](../../task_contracts/ja/FRONTEND-OPEN-BUFFER-STORAGE.md) owns strict codecs and shared normalization; editor services and snapshot binding follow separately.
+
 ## 推奨検証
 
 各タスクの後に、以下を実行する:

@@ -643,6 +643,9 @@ diagnostic ordering, and cache-key checks.
     - Depends on: 27, 28. Spec: [parsing.md](./parsing.md),
       [orchestration.md](./orchestration.md), [cache_key.md](./cache_key.md).
 
+30. **Native OpenBuffer storage prerequisite.** [x]
+    - [FRONTEND-OPEN-BUFFER-STORAGE](../../task_contracts/en/FRONTEND-OPEN-BUFFER-STORAGE.md) owns strict codecs and shared normalization; editor services and snapshot binding follow separately.
+
 ## Suggested Verification
 
 After each task, run:

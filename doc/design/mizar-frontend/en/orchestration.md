@@ -422,3 +422,16 @@ Semantic bytes are the UTF-8 descriptor string followed by a zero byte and the 3
 Storage bytes are the existing aggregate canonical disk codec. The sole source-map side record has kind `frontend-storage`, key normalized package-relative path, and a BLAKE3 derive-key digest of full storage bytes under `mizar-frontend/output-storage-side-table/v1`. Other side tables are empty; published outputs contain no diagnostics. Raw maps and wording never enter semantic bytes directly.
 One own sealed SourceUnit parent supplies its validated content hash; explicitly [supplied workspace leaf outputs](../../mizar-driver/en/frontend_adapter.md#supplied-workspace-leaf-summaries) consumed for imported lexing are additional sealed parents. Named inputs are `active-lexical-environment` and `tokens`, with their existing cache-key domains/digests, plus sorted dispatch dependency hashes named `dependency.<ordinal>` under `mizar-frontend/dependency-summary/v1`. Output origin is PackageSource and target CurrentPackage. No cache compatibility or cross-snapshot authority is inferred.
 The blob decoder captures source identity/request metadata and expected source hash only, validates the aggregate codec and source binding, and never reloads, reparses or closes over the produced AST. Driver binding, error handling and diagnostic conversion are owned by [the real service](../../mizar-driver/en/frontend_adapter.md#disk-frontend-service).
+
+## OpenBuffer FrontendOutput storage
+
+The [SourceUnit OpenBuffer/storage signatures](./source.md#canonical-openbuffer-payload) also apply to
+`FrontendOutput<SurfaceAst>`. Domain `mizar-frontend-output-open-buffer-v1`
+uses the same six fields, order, length framing, 64 MiB total cap, diagnostics,
+optional AST and nested codec rules as Disk, with the OpenBuffer source field.
+Shared decoding chooses the domain from the captured input origin and requires
+exact aggregate re-encoding; Disk entry points keep rejecting OpenBuffer.
+Native raw-input checks belong to the source codec. All typed SourceIds rebind
+without loader/provider/lexer/parser execution, registration or publication.
+Stored diagnostics retain order, duplicates, substantive fields and anchors;
+this adds no diagnostic adoption, freshness or accepted artifact semantics.

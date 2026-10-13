@@ -8,7 +8,7 @@ use mizar_session::{
     BuildSnapshotId, Edition, Hash, LineMap, LoadedSource, LoadingMap, LoadingMapSegment,
     LoadingOrigin, ModulePath, NormalizedPath, PackageId, SessionIdAllocator, SourceAnchor,
     SourceId, SourceInput, SourceLoadError, SourceLoader, SourceOrigin, SourceOriginInput,
-    TextRange,
+    TextRange, normalize_source_text,
 };
 use std::path::PathBuf;
 use std::sync::Arc;
@@ -46,8 +46,58 @@ impl SourceUnit {
     /// Encodes disk storage bytes, including maps, not IR semantic hash inputs.
     /// Local identities and diagnostic paths are supplied separately on decode.
     pub fn canonical_disk_bytes(&self) -> Option<Vec<u8>> {
-        if self.origin != SourceOrigin::Disk
-            || self.generated_anchor.is_some()
+        if self.origin != SourceOrigin::Disk {
+            return None;
+        }
+        self.canonical_storage_bytes(None)
+    }
+
+    /// Encodes native OpenBuffer storage bound to the captured raw input.
+    pub fn canonical_open_buffer_bytes(&self, input: &SourceInput) -> Option<Vec<u8>> {
+        if !matches!(input.origin, SourceOriginInput::OpenBuffer { .. }) {
+            return None;
+        }
+        self.canonical_storage_bytes(Some(input))
+    }
+
+    fn canonical_storage_bytes(&self, input: Option<&SourceInput>) -> Option<Vec<u8>> {
+        let loading_origin = match input.map(|input| &input.origin) {
+            None | Some(SourceOriginInput::Disk { .. }) if self.origin == SourceOrigin::Disk => {
+                LoadingOrigin::DiskBytes {
+                    normalized_path: self.normalized_path.clone(),
+                }
+            }
+            Some(SourceOriginInput::OpenBuffer {
+                uri,
+                expected_version,
+                actual_version,
+                text,
+            }) => {
+                let input = input?;
+                let (normalized, segments) = normalize_source_text(text);
+                if *expected_version < 0
+                    || expected_version != actual_version
+                    || self.origin
+                        != (SourceOrigin::OpenBuffer {
+                            version: *actual_version,
+                        })
+                    || self.package_id != input.package_id
+                    || self.module_path != input.module_path
+                    || self.normalized_path != input.normalized_path
+                    || self.edition != input.edition
+                    || self.source_text.as_ref() != normalized
+                    || self.loading_map.as_ref().map(|map| &map.segments) != segments.as_ref()
+                {
+                    return None;
+                }
+                LoadingOrigin::OpenBufferText {
+                    uri: uri.clone(),
+                    version: *actual_version,
+                }
+            }
+            _ => return None,
+        };
+        if self.generated_anchor.is_some()
             || self.line_map.source_id() != self.source_id
             || self.line_map.source() != self.source_text.as_ref()
             || self.line_map.text_hash() != self.source_hash
@@ -59,10 +109,7 @@ impl SourceUnit {
             if map.source_id != self.source_id
                 || map.loaded_text_hash != self.source_hash
                 || map.loaded_text_len != self.source_text.len()
-                || map.origin
-                    != (LoadingOrigin::DiskBytes {
-                        normalized_path: self.normalized_path.clone(),
-                    })
+                || map.origin != loading_origin
             {
                 return None;
             }
@@ -106,16 +153,29 @@ impl SourceUnit {
                 return None;
             }
         }
-        let mut bytes = b"mizar-frontend-source-disk-v1".to_vec();
-        for field in [
+        let mut bytes = match &loading_origin {
+            LoadingOrigin::OpenBufferText { .. } => {
+                b"mizar-frontend-source-open-buffer-v1".to_vec()
+            }
+            _ => b"mizar-frontend-source-disk-v1".to_vec(),
+        };
+        let mut fields = vec![
             self.package_id.as_str().as_bytes(),
             self.module_path.as_str().as_bytes(),
             self.normalized_path.as_str().as_bytes(),
             self.edition.as_str().as_bytes(),
+        ];
+        let version_bytes;
+        if let LoadingOrigin::OpenBufferText { uri, version } = &loading_origin {
+            version_bytes = version.to_le_bytes();
+            fields.extend([uri.as_bytes(), &version_bytes]);
+        }
+        fields.extend([
             self.source_text.as_bytes(),
             self.source_hash.as_bytes(),
             &map_bytes,
-        ] {
+        ]);
+        for field in fields {
             bytes.extend_from_slice(&u64::try_from(field.len()).ok()?.to_le_bytes());
             bytes.extend_from_slice(field);
         }
@@ -129,10 +189,56 @@ impl SourceUnit {
         source_id: SourceId,
         input: &SourceInput,
     ) -> Option<Self> {
-        let SourceOriginInput::Disk { path } = &input.origin else {
+        if !matches!(input.origin, SourceOriginInput::Disk { .. }) {
             return None;
+        }
+        Self::from_canonical_storage_bytes(bytes, source_id, input)
+    }
+
+    /// Restores native OpenBuffer storage with the captured raw input and current identity.
+    pub fn from_canonical_open_buffer_bytes(
+        bytes: &[u8],
+        source_id: SourceId,
+        input: &SourceInput,
+    ) -> Option<Self> {
+        if !matches!(input.origin, SourceOriginInput::OpenBuffer { .. }) {
+            return None;
+        }
+        Self::from_canonical_storage_bytes(bytes, source_id, input)
+    }
+
+    /// Restores Disk or OpenBuffer storage without loading or filesystem validation.
+    pub fn from_canonical_storage_bytes(
+        bytes: &[u8],
+        source_id: SourceId,
+        input: &SourceInput,
+    ) -> Option<Self> {
+        let (prefix, origin, loading_origin) = match &input.origin {
+            SourceOriginInput::Disk { .. } => (
+                b"mizar-frontend-source-disk-v1".as_slice(),
+                SourceOrigin::Disk,
+                LoadingOrigin::DiskBytes {
+                    normalized_path: input.normalized_path.clone(),
+                },
+            ),
+            SourceOriginInput::OpenBuffer {
+                uri,
+                expected_version,
+                actual_version,
+                ..
+            } if *expected_version >= 0 && expected_version == actual_version => (
+                b"mizar-frontend-source-open-buffer-v1".as_slice(),
+                SourceOrigin::OpenBuffer {
+                    version: *actual_version,
+                },
+                LoadingOrigin::OpenBufferText {
+                    uri: uri.clone(),
+                    version: *actual_version,
+                },
+            ),
+            _ => return None,
         };
-        let mut remaining = bytes.strip_prefix(b"mizar-frontend-source-disk-v1")?;
+        let mut remaining = bytes.strip_prefix(prefix)?;
         for expected in [
             input.package_id.as_str(),
             input.module_path.as_str(),
@@ -142,6 +248,12 @@ impl SourceUnit {
             if disk_payload_field(&mut remaining)? != expected.as_bytes() {
                 return None;
             }
+        }
+        if let LoadingOrigin::OpenBufferText { uri, version } = &loading_origin
+            && (disk_payload_field(&mut remaining)? != uri.as_bytes()
+                || disk_payload_field(&mut remaining)? != version.to_le_bytes())
+        {
+            return None;
         }
         let source_text: Arc<str> = std::str::from_utf8(disk_payload_field(&mut remaining)?)
             .ok()?
@@ -180,9 +292,7 @@ impl SourceUnit {
                 Some(LoadingMap::new(
                     source_id,
                     &source_text,
-                    LoadingOrigin::DiskBytes {
-                        normalized_path: input.normalized_path.clone(),
-                    },
+                    loading_origin,
                     decoded,
                 ))
             }
@@ -194,17 +304,17 @@ impl SourceUnit {
             module_path: input.module_path.clone(),
             normalized_path: input.normalized_path.clone(),
             edition: input.edition.clone(),
-            file_path: path.clone(),
+            file_path: diagnostic_file_path(input),
             line_map: LineMap::new(source_id, &source_text),
             source_text,
             source_hash,
             loading_map,
-            origin: SourceOrigin::Disk,
+            origin,
             generated_anchor: None,
         };
         // Enforce the same source/map invariants and exact canonical form in
         // both directions; the session constructors own text hashing.
-        (source.canonical_disk_bytes()?.as_slice() == bytes).then_some(source)
+        (source.canonical_storage_bytes(Some(input))?.as_slice() == bytes).then_some(source)
     }
 }
 
@@ -570,6 +680,321 @@ mod tests {
             }
             assert!(changed.canonical_disk_bytes().is_none(), "case {kind}");
         }
+    }
+
+    #[test]
+    fn open_buffer_payload_roundtrips_native_text_maps_and_i64_versions_without_io() {
+        let package = PackageFixture::new();
+        let ids = InMemorySessionIdAllocator::new();
+        for version in [0, i64::from(i32::MAX) + 1, i64::MAX] {
+            for (raw, normalized) in [
+                ("", ""),
+                ("α\nβ", "α\nβ"),
+                ("\u{feff}", ""),
+                ("\u{feff}α\r\nβ\r\n", "α\nβ\n"),
+                ("\r\n\r\n", "\n\n"),
+                ("a\r", "a\r"),
+                ("a\u{feff}b", "a\u{feff}b"),
+            ] {
+                package.write("src/groups/basic.miz", "disk content is different");
+                let uri = package.file_uri("src/groups/basic.miz");
+                let input = source_input(
+                    package.root(),
+                    SourceOriginInput::OpenBuffer {
+                        uri: uri.clone(),
+                        expected_version: version,
+                        actual_version: version,
+                        text: Arc::from(raw),
+                    },
+                );
+                let source = FrontendSourceLoader::new(DiskSourceLoader::new(package.root()))
+                    .load_source_unit(
+                        SourceUnitRequest {
+                            snapshot: snapshot_id(1),
+                            input: input.clone(),
+                        },
+                        &ids,
+                    )
+                    .unwrap();
+                assert_eq!(source.source_text.as_ref(), normalized);
+                assert_eq!(source.source_hash, hash_text(normalized));
+                assert_eq!(source.loading_map.is_some(), raw != normalized);
+                let bytes = source.canonical_open_buffer_bytes(&input).unwrap();
+                let mut remaining = bytes
+                    .strip_prefix(b"mizar-frontend-source-open-buffer-v1")
+                    .expect("literal OpenBuffer domain");
+                let fields: [&[u8]; 9] = std::array::from_fn(|_| {
+                    let length = u64::from_le_bytes(remaining[..8].try_into().unwrap()) as usize;
+                    let (field, rest) = remaining[8..].split_at(length);
+                    remaining = rest;
+                    field
+                });
+                assert!(remaining.is_empty());
+                let version_bytes = version.to_le_bytes();
+                let expected_hash = hash_text(normalized);
+                assert_eq!(
+                    &fields[..8],
+                    &[
+                        b"mml".as_slice(),
+                        b"groups.basic",
+                        b"src/groups/basic.miz",
+                        b"2026",
+                        uri.as_bytes(),
+                        &version_bytes,
+                        normalized.as_bytes(),
+                        expected_hash.as_bytes(),
+                    ]
+                );
+                let mut expected_map = vec![u8::from(source.loading_map.is_some())];
+                if let Some(map) = &source.loading_map {
+                    for segment in &map.segments {
+                        let (tag, loaded, original) = match *segment {
+                            LoadingMapSegment::Original { loaded, original } => {
+                                (0, loaded, original)
+                            }
+                            LoadingMapSegment::RemovedLeadingBom { original } => {
+                                (1, TextRange { start: 0, end: 0 }, original)
+                            }
+                            LoadingMapSegment::NormalizedNewline { loaded, original } => {
+                                (2, loaded, original)
+                            }
+                            _ => panic!("unexpected native loading segment"),
+                        };
+                        expected_map.push(tag);
+                        for bound in [loaded.start, loaded.end, original.start, original.end] {
+                            expected_map.extend_from_slice(&(bound as u64).to_le_bytes());
+                        }
+                    }
+                }
+                assert_eq!(fields[8], expected_map);
+                assert!(source.canonical_disk_bytes().is_none());
+                package.write("src/groups/basic.miz", "edited disk");
+                fs::remove_file(package.path("src/groups/basic.miz")).unwrap();
+                let fresh_id = ids.next_source_id(snapshot_id(2)).unwrap();
+                let mut expected = source.clone();
+                expected.source_id = fresh_id;
+                expected.line_map = LineMap::new(fresh_id, normalized);
+                if let Some(map) = &mut expected.loading_map {
+                    map.source_id = fresh_id;
+                }
+                let restored =
+                    SourceUnit::from_canonical_open_buffer_bytes(&bytes, fresh_id, &input).unwrap();
+                assert_eq!(restored, expected);
+                assert_eq!(
+                    SourceUnit::from_canonical_storage_bytes(&bytes, fresh_id, &input),
+                    Some(expected)
+                );
+                assert_eq!(restored.canonical_open_buffer_bytes(&input).unwrap(), bytes);
+                assert!(SourceUnit::from_canonical_disk_bytes(&bytes, fresh_id, &input).is_none());
+                for end in 0..bytes.len() {
+                    assert!(
+                        SourceUnit::from_canonical_open_buffer_bytes(
+                            &bytes[..end],
+                            fresh_id,
+                            &input
+                        )
+                        .is_none()
+                    );
+                }
+                let mut trailing = bytes.clone();
+                trailing.push(0);
+                assert!(
+                    SourceUnit::from_canonical_storage_bytes(&trailing, fresh_id, &input).is_none()
+                );
+            }
+        }
+    }
+
+    #[test]
+    fn open_buffer_payload_rejects_altered_raw_context_and_noncanonical_maps() {
+        let package = PackageFixture::new();
+        package.write("src/groups/basic.miz", "disk");
+        package.write("src/other.miz", "");
+        let input = source_input(
+            package.root(),
+            SourceOriginInput::OpenBuffer {
+                uri: package.file_uri("src/groups/basic.miz"),
+                expected_version: 7,
+                actual_version: 7,
+                text: Arc::from("\u{feff}α\r\nβ"),
+            },
+        );
+        let source = FrontendSourceLoader::new(DiskSourceLoader::new(package.root()))
+            .load_source_unit(
+                SourceUnitRequest {
+                    snapshot: snapshot_id(1),
+                    input: input.clone(),
+                },
+                &InMemorySessionIdAllocator::new(),
+            )
+            .unwrap();
+        let bytes = source.canonical_open_buffer_bytes(&input).unwrap();
+        let mut cursor = b"mizar-frontend-source-open-buffer-v1".len();
+        let mut fields = Vec::new();
+        for _ in 0..9 {
+            let len = u64::from_le_bytes(bytes[cursor..cursor + 8].try_into().unwrap()) as usize;
+            fields.push(cursor + 8);
+            cursor += 8 + len;
+        }
+        for (offset, value) in [
+            (0, b'x'),
+            (fields[0] - 8, 255),
+            (fields[0], b'x'),
+            (fields[1], b'x'),
+            (fields[2], b'x'),
+            (fields[3], b'x'),
+            (fields[4], b'x'),
+            (fields[5], 8),
+            (fields[6], 255),
+            (fields[7], bytes[fields[7]] ^ 1),
+            (fields[8], 2),
+            (fields[8] + 1, 255),
+            (fields[8] + 2, 1),
+        ] {
+            let mut corrupt = bytes.clone();
+            corrupt[offset] = value;
+            assert!(
+                SourceUnit::from_canonical_storage_bytes(&corrupt, source.source_id, &input)
+                    .is_none(),
+                "offset {offset}"
+            );
+        }
+        for kind in 0..12 {
+            let mut changed = input.clone();
+            match kind {
+                0 => changed.package_id = PackageId::new("other"),
+                1 => changed.module_path = ModulePath::new("other"),
+                2 => changed.edition = Edition::new("other"),
+                3 => {
+                    changed.normalized_path =
+                        normalize_path(package.root(), &package.path("src/other.miz")).unwrap()
+                }
+                4 => {
+                    changed.origin = SourceOriginInput::Disk {
+                        path: package.path("src/groups/basic.miz"),
+                    }
+                }
+                5 => {
+                    changed.origin = SourceOriginInput::Generated {
+                        generator: GeneratedSourceKind::new("test"),
+                        text: Arc::from("ignored"),
+                        anchor: None,
+                    }
+                }
+                _ => {
+                    let SourceOriginInput::OpenBuffer {
+                        uri,
+                        expected_version,
+                        actual_version,
+                        text,
+                    } = &mut changed.origin
+                    else {
+                        unreachable!()
+                    };
+                    match kind {
+                        6 => uri.push('x'),
+                        7 => *expected_version = 8,
+                        8 => {
+                            *expected_version = 8;
+                            *actual_version = 8;
+                        }
+                        9 => {
+                            *expected_version = -1;
+                            *actual_version = -1;
+                        }
+                        10 => *text = Arc::from("α\r\nβ"), // Same loaded text, different raw BOM/map.
+                        _ => *text = Arc::from("\u{feff}γ\r\nβ"), // Same map, different normalized text.
+                    }
+                }
+            }
+            assert!(
+                source.canonical_open_buffer_bytes(&changed).is_none(),
+                "input {kind}"
+            );
+            assert!(
+                SourceUnit::from_canonical_storage_bytes(&bytes, source.source_id, &changed)
+                    .is_none(),
+                "input {kind}"
+            );
+        }
+        for kind in 0..11 {
+            let mut changed = source.clone();
+            match kind {
+                0 => changed.source_hash = Hash::from_bytes([0; 32]),
+                1 => changed.line_map = LineMap::new(source.source_id, "different"),
+                2 => changed.origin = SourceOrigin::Disk,
+                3 => changed.origin = SourceOrigin::OpenBuffer { version: 8 },
+                4 => {
+                    changed.generated_anchor = Some(SourceAnchor::Range(SourceRange {
+                        source_id: source.source_id,
+                        start: 0,
+                        end: 1,
+                    }))
+                }
+                5 => changed.loading_map = None,
+                6 => {
+                    changed.loading_map.as_mut().unwrap().loaded_text_hash =
+                        Hash::from_bytes([0; 32])
+                }
+                7 => {
+                    changed.loading_map.as_mut().unwrap().origin = LoadingOrigin::OpenBufferText {
+                        uri: package.file_uri("src/groups/basic.miz"),
+                        version: 8,
+                    }
+                }
+                8 => changed.loading_map.as_mut().unwrap().segments.reverse(),
+                9 => {
+                    changed.loading_map.as_mut().unwrap().origin = LoadingOrigin::DiskBytes {
+                        normalized_path: source.normalized_path.clone(),
+                    }
+                }
+                _ => {
+                    let map = changed.loading_map.as_mut().unwrap();
+                    let LoadingMapSegment::Original { loaded, original } =
+                        *map.segments.last().unwrap()
+                    else {
+                        unreachable!()
+                    };
+                    map.segments.push(LoadingMapSegment::Original {
+                        loaded: TextRange {
+                            start: loaded.end,
+                            end: loaded.end,
+                        },
+                        original: TextRange {
+                            start: original.end,
+                            end: original.end,
+                        },
+                    }); // Structurally valid extra segment, absent from native normalization.
+                }
+            }
+            assert!(
+                changed.canonical_open_buffer_bytes(&input).is_none(),
+                "source {kind}"
+            );
+        }
+        let disk_input = disk_source_input(package.root(), package.path("src/groups/basic.miz"));
+        let disk = FrontendSourceLoader::new(DiskSourceLoader::new(package.root()))
+            .load_source_unit(
+                SourceUnitRequest {
+                    snapshot: snapshot_id(1),
+                    input: disk_input.clone(),
+                },
+                &InMemorySessionIdAllocator::new(),
+            )
+            .unwrap();
+        let disk_bytes = disk.canonical_disk_bytes().unwrap();
+        assert_eq!(
+            SourceUnit::from_canonical_storage_bytes(&disk_bytes, disk.source_id, &disk_input),
+            Some(disk)
+        );
+        assert!(
+            SourceUnit::from_canonical_open_buffer_bytes(&disk_bytes, source.source_id, &input)
+                .is_none()
+        );
+        assert!(
+            SourceUnit::from_canonical_storage_bytes(&bytes, source.source_id, &disk_input)
+                .is_none()
+        );
     }
 
     #[test]

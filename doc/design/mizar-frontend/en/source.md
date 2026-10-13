@@ -256,3 +256,25 @@ The IR work-unit label is `format!("{:?}:{:?}", package_id.as_str(), module_path
 The source-map side table has one record: kind `source-storage`, key normalized package-relative path, digest BLAKE3 derive-key with context `mizar-frontend/source-unit-storage-side-table/v1` over the full storage bytes. This conservative side identity includes the actual loading maps while semantic content remains map-independent. Other side tables are empty.
 
 Disk publication uses `OutputOrigin::PackageSource` and `PublicationTarget::CurrentPackage`.
+
+## Canonical OpenBuffer Payload
+
+`canonical_open_buffer_bytes(&self, input: &SourceInput)` and
+`from_canonical_open_buffer_bytes(bytes, source_id, input)` return `Option`.
+`from_canonical_storage_bytes(bytes, source_id, input)` also decodes Disk;
+origin-specific entry points still reject the other origin.
+ASCII domain `mizar-frontend-source-open-buffer-v1` precedes nine u64-LE length
+fields: package, module, normalized path, edition, URI, version, normalized
+UTF-8 text, 32-byte source hash, loading map. Version is exactly eight bytes
+of signed i64 little-endian; map encoding matches the Disk map format.
+Nonnegative expected/actual versions must agree with each other and the stored
+version. Package/module/path/edition and URI must match the captured input.
+The shared native normalizer must reproduce the exact text and optional map
+segments from raw input. Line/map identity, hash, length and OpenBufferText
+URI/version must agree; generated anchors are rejected. No local SourceId or
+diagnostic path is encoded. Decode reconstructs maps at the caller identity
+and uses the existing URI diagnostic-path policy, with exact re-encoding.
+Caller native acquisition remains responsible for URI/path/metadata validation;
+no codec performs I/O, loading or source acceptance. Rejection yields None.
+These local storage bytes include editor context and are not semantic hashes,
+currentness, cache acceptance or CurrentPackage publication authority.

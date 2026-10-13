@@ -38,6 +38,7 @@ use std::path::PathBuf;
 use std::sync::Arc;
 
 const FRONTEND_OUTPUT_DISK_PREFIX: &[u8] = b"mizar-frontend-output-disk-v1";
+const FRONTEND_OUTPUT_OPEN_BUFFER_PREFIX: &[u8] = b"mizar-frontend-output-open-buffer-v1";
 const FRONTEND_OUTPUT_DISK_MAX_BYTES: usize = 64 * 1024 * 1024;
 const DIAGNOSTIC_CODES: [DiagnosticCode; 28] = [
     DiagnosticCode::SourceLoad,
@@ -137,6 +138,25 @@ pub struct FrontendOutput<A> {
 impl FrontendOutput<mizar_syntax::SurfaceAst> {
     /// Encodes a complete disk-source frontend output for retained storage.
     pub fn canonical_disk_bytes(&self) -> Option<Vec<u8>> {
+        self.canonical_storage_bytes(None)
+    }
+
+    /// Encodes complete native OpenBuffer output bound to the captured raw input.
+    pub fn canonical_open_buffer_bytes(&self, input: &SourceInput) -> Option<Vec<u8>> {
+        if !matches!(input.origin, SourceOriginInput::OpenBuffer { .. }) {
+            return None;
+        }
+        self.canonical_storage_bytes(Some(input))
+    }
+
+    fn canonical_storage_bytes(&self, input: Option<&SourceInput>) -> Option<Vec<u8>> {
+        let open_input =
+            input.filter(|input| matches!(input.origin, SourceOriginInput::OpenBuffer { .. }));
+        let prefix = if open_input.is_some() {
+            FRONTEND_OUTPUT_OPEN_BUFFER_PREFIX
+        } else {
+            FRONTEND_OUTPUT_DISK_PREFIX
+        };
         let source_id = self.source.source_id;
         if self.preprocessed.source_id != source_id || self.tokens.source_id != source_id {
             return None;
@@ -182,7 +202,10 @@ impl FrontendOutput<mizar_syntax::SurfaceAst> {
             .collect::<Option<Vec<_>>>()?;
         let diagnostic_bytes = serde_json::to_vec(&diagnostics).ok()?;
         let fields = [
-            self.source.canonical_disk_bytes()?,
+            match open_input {
+                Some(input) => self.source.canonical_open_buffer_bytes(input)?,
+                None => self.source.canonical_disk_bytes()?,
+            },
             self.preprocessed.canonical_bytes()?,
             self.tokens.canonical_bytes()?,
             match &self.ast {
@@ -192,16 +215,14 @@ impl FrontendOutput<mizar_syntax::SurfaceAst> {
             diagnostic_bytes,
             self.cache_keys.canonical_bytes()?,
         ];
-        let total = fields
-            .iter()
-            .try_fold(FRONTEND_OUTPUT_DISK_PREFIX.len(), |size, field| {
-                size.checked_add(8)?.checked_add(field.len())
-            })?;
+        let total = fields.iter().try_fold(prefix.len(), |size, field| {
+            size.checked_add(8)?.checked_add(field.len())
+        })?;
         if total > FRONTEND_OUTPUT_DISK_MAX_BYTES {
             return None;
         }
         let mut bytes = Vec::with_capacity(total);
-        bytes.extend_from_slice(FRONTEND_OUTPUT_DISK_PREFIX);
+        bytes.extend_from_slice(prefix);
         for field in fields {
             bytes.extend_from_slice(&u64::try_from(field.len()).ok()?.to_le_bytes());
             bytes.extend_from_slice(&field);
@@ -215,10 +236,39 @@ impl FrontendOutput<mizar_syntax::SurfaceAst> {
         source_id: SourceId,
         input: &SourceInput,
     ) -> Option<Self> {
+        if !matches!(input.origin, SourceOriginInput::Disk { .. }) {
+            return None;
+        }
+        Self::from_canonical_storage_bytes(bytes, source_id, input)
+    }
+
+    /// Restores complete OpenBuffer storage with a captured input and current identity.
+    pub fn from_canonical_open_buffer_bytes(
+        bytes: &[u8],
+        source_id: SourceId,
+        input: &SourceInput,
+    ) -> Option<Self> {
+        if !matches!(input.origin, SourceOriginInput::OpenBuffer { .. }) {
+            return None;
+        }
+        Self::from_canonical_storage_bytes(bytes, source_id, input)
+    }
+
+    /// Restores complete Disk or OpenBuffer storage without executing frontend phases.
+    pub fn from_canonical_storage_bytes(
+        bytes: &[u8],
+        source_id: SourceId,
+        input: &SourceInput,
+    ) -> Option<Self> {
         if bytes.len() > FRONTEND_OUTPUT_DISK_MAX_BYTES {
             return None;
         }
-        let mut remaining = bytes.strip_prefix(FRONTEND_OUTPUT_DISK_PREFIX)?;
+        let prefix = match &input.origin {
+            SourceOriginInput::Disk { .. } => FRONTEND_OUTPUT_DISK_PREFIX,
+            SourceOriginInput::OpenBuffer { .. } => FRONTEND_OUTPUT_OPEN_BUFFER_PREFIX,
+            _ => return None,
+        };
+        let mut remaining = bytes.strip_prefix(prefix)?;
         let mut fields = Vec::with_capacity(6);
         for _ in 0..6 {
             let (length, rest) = remaining.split_at_checked(8)?;
@@ -238,7 +288,7 @@ impl FrontendOutput<mizar_syntax::SurfaceAst> {
             diagnostic_bytes,
             key_bytes,
         ] = fields.try_into().ok()?;
-        let source = SourceUnit::from_canonical_disk_bytes(source_bytes, source_id, input)?;
+        let source = SourceUnit::from_canonical_storage_bytes(source_bytes, source_id, input)?;
         let preprocessed = PreprocessedSource::from_canonical_bytes(preprocess_bytes, source_id)?;
         let tokens = TokenStream::from_canonical_bytes(token_bytes, source_id)?;
         let ast = if ast_bytes.is_empty() {
@@ -300,7 +350,7 @@ impl FrontendOutput<mizar_syntax::SurfaceAst> {
             diagnostics,
             cache_keys,
         };
-        (output.canonical_disk_bytes()?.as_slice() == bytes).then_some(output)
+        (output.canonical_storage_bytes(Some(input))?.as_slice() == bytes).then_some(output)
     }
 }
 
@@ -972,7 +1022,10 @@ mod tests {
     const A23_PREFIX: &[u8] = b"mizar-frontend-output-disk-v1";
 
     fn a23_fields(bytes: &[u8]) -> [Vec<u8>; 6] {
-        let mut rest = bytes.strip_prefix(A23_PREFIX).expect("aggregate prefix");
+        let mut rest = bytes
+            .strip_prefix(A23_PREFIX)
+            .or_else(|| bytes.strip_prefix(b"mizar-frontend-output-open-buffer-v1"))
+            .expect("aggregate prefix");
         let fields = std::array::from_fn(|_| {
             let length = u64::from_le_bytes(rest[..8].try_into().unwrap()) as usize;
             rest = &rest[8..];
@@ -1057,6 +1110,240 @@ mod tests {
             assert_eq!(restored.diagnostics.len(), output.diagnostics.len());
             assert_eq!(restored.canonical_disk_bytes().unwrap(), bytes);
         }
+    }
+
+    #[test]
+    fn open_buffer_output_roundtrips_real_frontend_and_rebinds_without_disk() {
+        let fixture = PackageFixture::new();
+        let frontend = frontend_for_fixture(&fixture, MizarParserSeam);
+        let ids = InMemorySessionIdAllocator::new();
+        for (raw, ast_present, diagnostic_present) in [
+            (
+                "\u{feff}definition\r\nend;\r\n:: α\r\n".to_owned(),
+                true,
+                false,
+            ),
+            (full_merge_fixture_text().replace('\n', "\r\n"), true, true),
+            ("end".to_owned(), false, true),
+        ] {
+            fixture.write("src/editor_codec.miz", "different disk source");
+            let request = fixture.open_buffer_request(
+                "src/editor_codec.miz",
+                &format!("file://{}", fixture.path("src/editor_codec.miz").display()),
+                7,
+                7,
+                &raw,
+            );
+            let output = frontend.run(request.clone(), &ids).unwrap();
+            let expected = frontend.run(request.clone(), &ids).unwrap();
+            assert_eq!(output.ast.is_some(), ast_present);
+            assert_eq!(!output.diagnostics.is_empty(), diagnostic_present);
+            assert_ne!(output.source.source_id, expected.source.source_id);
+            let bytes = output.canonical_open_buffer_bytes(&request.input).unwrap();
+            assert!(bytes.starts_with(b"mizar-frontend-output-open-buffer-v1"));
+            let fields = a23_fields(&bytes);
+            assert_eq!(
+                fields[0],
+                output
+                    .source
+                    .canonical_open_buffer_bytes(&request.input)
+                    .unwrap()
+            );
+            assert_eq!(fields[1], output.preprocessed.canonical_bytes().unwrap());
+            assert_eq!(fields[2], output.tokens.canonical_bytes().unwrap());
+            assert_eq!(
+                fields[3],
+                output
+                    .ast
+                    .as_ref()
+                    .map(|ast| ast.canonical_bytes().unwrap())
+                    .unwrap_or_default()
+            );
+            assert_eq!(fields[5], output.cache_keys.canonical_bytes().unwrap());
+            fixture.write("src/editor_codec.miz", "changed disk source");
+            fs::remove_file(fixture.path("src/editor_codec.miz")).unwrap();
+            let restored = FrontendOutput::from_canonical_open_buffer_bytes(
+                &bytes,
+                expected.source.source_id,
+                &request.input,
+            )
+            .unwrap();
+            assert_eq!(restored, expected); // Full typed AST, diagnostics, anchors, maps and keys.
+            assert_eq!(
+                FrontendOutput::from_canonical_storage_bytes(
+                    &bytes,
+                    expected.source.source_id,
+                    &request.input
+                ),
+                Some(expected)
+            );
+            assert_eq!(
+                restored
+                    .canonical_open_buffer_bytes(&request.input)
+                    .unwrap(),
+                bytes
+            );
+            assert!(output.canonical_disk_bytes().is_none());
+            assert!(
+                FrontendOutput::from_canonical_disk_bytes(
+                    &bytes,
+                    output.source.source_id,
+                    &request.input
+                )
+                .is_none()
+            );
+        }
+    }
+
+    #[test]
+    fn open_buffer_output_rejects_framing_context_and_noncanonical_nested_bytes() {
+        let fixture = PackageFixture::new();
+        fixture.write("src/editor_codec.miz", "disk");
+        let request = fixture.open_buffer_request(
+            "src/editor_codec.miz",
+            &format!("file://{}", fixture.path("src/editor_codec.miz").display()),
+            7,
+            7,
+            "\u{feff}definition\r\nend;\r\n",
+        );
+        let output = frontend_for_fixture(&fixture, MizarParserSeam)
+            .run(request.clone(), &InMemorySessionIdAllocator::new())
+            .unwrap();
+        let bytes = output.canonical_open_buffer_bytes(&request.input).unwrap();
+        let sid = output.source.source_id;
+        let prefix = b"mizar-frontend-output-open-buffer-v1";
+        for end in [0, prefix.len() - 1, prefix.len(), bytes.len() - 1] {
+            assert!(
+                FrontendOutput::from_canonical_storage_bytes(&bytes[..end], sid, &request.input)
+                    .is_none()
+            );
+        }
+        for kind in 0..3 {
+            let mut corrupt = bytes.clone();
+            match kind {
+                0 => corrupt.push(0),
+                1 => corrupt[0] = b'x',
+                _ => {
+                    corrupt[prefix.len()..prefix.len() + 8].copy_from_slice(&u64::MAX.to_le_bytes())
+                }
+            }
+            assert!(
+                FrontendOutput::from_canonical_storage_bytes(&corrupt, sid, &request.input)
+                    .is_none()
+            );
+        }
+        let fields = a23_fields(&bytes);
+        for kind in 0..8 {
+            let mut bad = fields.clone();
+            match kind {
+                0..=5 => bad[kind] = b"bad".to_vec(),
+                6 => bad[4] = b" []".to_vec(), // Valid JSON, noncanonical diagnostic bytes.
+                _ => bad[5].push(0),
+            }
+            let mut corrupt = prefix.to_vec();
+            for field in bad {
+                corrupt.extend_from_slice(&(field.len() as u64).to_le_bytes());
+                corrupt.extend_from_slice(&field);
+            }
+            assert!(
+                FrontendOutput::from_canonical_storage_bytes(&corrupt, sid, &request.input)
+                    .is_none(),
+                "nested {kind}"
+            );
+        }
+        let mut changed = request.input.clone();
+        let SourceOriginInput::OpenBuffer {
+            expected_version,
+            actual_version,
+            ..
+        } = &mut changed.origin
+        else {
+            unreachable!()
+        };
+        *expected_version = 8;
+        *actual_version = 8;
+        assert!(output.canonical_open_buffer_bytes(&changed).is_none());
+        assert!(FrontendOutput::from_canonical_storage_bytes(&bytes, sid, &changed).is_none());
+        let disk_request = fixture.request("src/editor_codec.miz");
+        let disk_output = frontend_for_fixture(&fixture, MizarParserSeam)
+            .run(disk_request.clone(), &InMemorySessionIdAllocator::new())
+            .unwrap();
+        let disk_bytes = disk_output.canonical_disk_bytes().unwrap();
+        assert_eq!(
+            FrontendOutput::from_canonical_storage_bytes(
+                &disk_bytes,
+                disk_output.source.source_id,
+                &disk_request.input
+            ),
+            Some(disk_output)
+        );
+        assert!(
+            FrontendOutput::from_canonical_open_buffer_bytes(&disk_bytes, sid, &request.input)
+                .is_none()
+        );
+        assert!(
+            FrontendOutput::from_canonical_storage_bytes(&bytes, sid, &disk_request.input)
+                .is_none()
+        );
+    }
+
+    #[test]
+    fn open_buffer_output_accepts_exact_64_mib_and_rejects_one_more_byte() {
+        let fixture = PackageFixture::new();
+        fixture.write("src/editor_codec.miz", "disk");
+        let request = fixture.open_buffer_request(
+            "src/editor_codec.miz",
+            &format!("file://{}", fixture.path("src/editor_codec.miz").display()),
+            7,
+            7,
+            "definition\nend;\n",
+        );
+        let mut output = frontend_for_fixture(&fixture, MizarParserSeam)
+            .run(request.clone(), &InMemorySessionIdAllocator::new())
+            .unwrap();
+        output.diagnostics.push(diagnostic(
+            SourceRange {
+                source_id: output.source.source_id,
+                start: 0,
+                end: 0,
+            },
+            "",
+            vec![],
+            None,
+        ));
+        let overhead = output
+            .canonical_open_buffer_bytes(&request.input)
+            .unwrap()
+            .len();
+        let limit = 64 * 1024 * 1024;
+        output.diagnostics[0].message = Arc::from("x".repeat(limit - overhead));
+        let exact = output.canonical_open_buffer_bytes(&request.input).unwrap();
+        assert_eq!(exact.len(), limit);
+        let restored = FrontendOutput::from_canonical_open_buffer_bytes(
+            &exact,
+            output.source.source_id,
+            &request.input,
+        )
+        .unwrap();
+        assert_eq!(restored, output);
+        assert_eq!(
+            restored
+                .canonical_open_buffer_bytes(&request.input)
+                .unwrap(),
+            exact
+        );
+        output.diagnostics[0].message = Arc::from("x".repeat(limit - overhead + 1));
+        assert!(output.canonical_open_buffer_bytes(&request.input).is_none());
+        let mut too_long = exact;
+        too_long.push(0);
+        assert!(
+            FrontendOutput::from_canonical_storage_bytes(
+                &too_long,
+                output.source.source_id,
+                &request.input
+            )
+            .is_none()
+        );
     }
 
     #[test]

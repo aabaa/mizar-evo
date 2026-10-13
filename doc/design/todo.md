@@ -684,7 +684,8 @@ execution remains excluded and parked.
 ### Step 6 — Phase-output publication and orchestration [~]
 
 The real uncached SourceLoad/Frontend edit/rebuild comparison is implemented.
-Next ready work is Step 7's [instance-finder design](./task_contracts/en/ATPK-INSTANCE-FINDER.md).
+Native editor [storage codecs](./mizar-frontend/en/source.md#canonical-openbuffer-payload) are implemented; genuine editor service handoffs remain a Step 8 prerequisite.
+Step 7's [instance-finder design](./task_contracts/en/ATPK-INSTANCE-FINDER.md) follows its existing producer dependencies.
 Cache-hit coverage waits for genuine cache producers; later semantic/proof
 services and full artifact emission remain dependency-blocked.
 Pre-audit 5B.3 and Gate S1 block only consumers requiring their outputs.

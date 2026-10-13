@@ -22,7 +22,7 @@ pub use snapshot::{
 pub use source::{
     DiskSourceLoader, LoadedSource, NormalizedPath, SourceInput, SourceLoadError, SourceLoader,
     SourceOriginInput, SourceOriginKind, SourcePathError, hash_text, normalize_path,
-    normalize_source_path,
+    normalize_source_path, normalize_source_text,
 };
 pub use source_map::{
     CommentKind, DocumentUri, GeneratedSpanAnchor, GeneratedSpanOrigin, LexicalSourceMapping,

@@ -285,6 +285,9 @@
     - `mizar-parser` task 40 と調整する frontend-owned 側は着地済み。parser-owned fuzz target は task 40 で完了済みである。
     - 依存: 27、28。仕様: [parsing.md](./parsing.md)、[orchestration.md](./orchestration.md)、[cache_key.md](./cache_key.md)。
 
+30. **Native OpenBuffer 保存形式の前提タスク.** [x]
+    - [FRONTEND-OPEN-BUFFER-STORAGE](../../task_contracts/ja/FRONTEND-OPEN-BUFFER-STORAGE.md) owns strict codecs and shared normalization; editor services and snapshot binding follow separately.
+
 ## 推奨検証
 
 各タスクの後に実行する。

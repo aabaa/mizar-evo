@@ -280,3 +280,11 @@ still loads a single source at a caller-supplied snapshot id.
 - Source hashes are content hashes, not freshness decisions by themselves.
 - Absolute paths are local diagnostic metadata and are excluded from published source identity.
 - Source text is retained only while snapshots, source maps, diagnostics, LSP views, or downstream consumers hold leases.
+
+## Pure source text normalization
+
+`normalize_source_text(&str) -> (String, Option<Vec<LoadingMapSegment>>)`
+is the shared pure Disk/OpenBuffer BOM-strip and CRLF-to-LF operation.
+It preserves lone CR and existing map rules, performs no I/O, validation,
+hashing or identity allocation, and does not normalize Generated inputs.
+Frontend storage uses it to check captured raw-buffer provenance.

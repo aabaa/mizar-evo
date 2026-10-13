@@ -477,6 +477,9 @@ should keep `cargo test -p mizar-session` green (see [Suggested Verification](#s
 33. **Acquire sources before snapshot-scoped allocation.** [x]
     - [SESSION-SOURCE-CAPTURE](../../task_contracts/en/SESSION-SOURCE-CAPTURE.md) owns native acquisition, complete-context validation, actual snapshot hashing and subsequent SourceId allocation; LSP snapshot binding follows separately.
 
+34. **Native OpenBuffer storage prerequisite.** [x]
+    - [FRONTEND-OPEN-BUFFER-STORAGE](../../task_contracts/en/FRONTEND-OPEN-BUFFER-STORAGE.md) owns strict codecs and shared normalization; editor services and snapshot binding follow separately.
+
 ## Suggested Verification
 
 After each task, run:

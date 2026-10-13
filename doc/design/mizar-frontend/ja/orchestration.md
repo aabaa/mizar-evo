@@ -256,3 +256,15 @@ semantic bytesはdescriptorのUTF-8列、ゼロ1byte、実生成元のSurfaceAst
 storage bytesは既存の集約disk codec。source-map副表はkind `frontend-storage`、keyはpackage相対正規化path、digestは全文storage bytesをcontext `mizar-frontend/output-storage-side-table/v1` でBLAKE3 derive-keyした1レコード。その他の副表は空で、公開出力に診断は含めない。raw mapや文言をsemantic bytesへ直接入れない。
 自身のsealed SourceUnit親1件から検証済みcontent hashを得る。import字句処理で消費した明示的な[workspace leaf出力](../../mizar-driver/ja/frontend_adapter.md#supplied-workspace-leaf-summaries)もsealed親に含める。named inputsは既存cache-key domain/digestの `active-lexical-environment` と `tokens`、および整列済みdispatch依存hashを `dependency.<ordinal>`、domain `mizar-frontend/dependency-summary/v1` として持つ。originはPackageSource、targetはCurrentPackage。cache互換性やsnapshot間の権限は推論しない。
 blob decoderはsource identity/request metadataと期待source hashのみを捕捉し、集約codecとソース結合を検証する。再読込・再解析・生成ASTの捕捉をしない。結合・失敗処理・診断変換は [実サービス](../../mizar-driver/ja/frontend_adapter.md#disk-frontend-service) が所有する。
+
+## OpenBuffer FrontendOutput storage
+
+[SourceUnit の OpenBuffer/storage method](./source.md#canonical-openbuffer-payload) と同じ signature を
+`FrontendOutput<SurfaceAst>` に追加する。domain は
+`mizar-frontend-output-open-buffer-v1`。六 field の順序・長さ framing・64 MiB
+上限・診断・optional AST・nested codec 規則は Disk と同じで、source field は
+OpenBuffer 形式。共有復元は取得済み input origin から domain を選び、完全な
+再符号化一致を要求する。Disk 入口は OpenBuffer を拒否し続ける。
+raw input の検証は source codec が担当し、全 typed SourceId を再束縛する。
+loader/provider/lexer/parser・登録・publication は実行しない。診断の順序・
+重複・各 field・anchor を保ち、診断採用・鮮度・artifact 受理の意味は追加しない。

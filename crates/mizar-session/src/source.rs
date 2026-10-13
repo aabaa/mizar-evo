@@ -468,12 +468,6 @@ pub fn normalize_source_path(
     Ok(NormalizedPath(normalized))
 }
 
-#[derive(Debug, Clone, PartialEq, Eq)]
-struct NormalizedLoadedText {
-    text: String,
-    loading_segments: Option<Vec<LoadingMapSegment>>,
-}
-
 // Reason: reuse source/text/map records without introducing an acquisition DTO.
 #[allow(clippy::type_complexity)]
 pub(crate) fn assemble_loaded_source(
@@ -524,10 +518,7 @@ pub(crate) fn assemble_loaded_source(
             return Ok((input, text, None));
         }
     };
-    let NormalizedLoadedText {
-        text,
-        loading_segments,
-    } = loaded_text;
+    let (text, loading_segments) = loaded_text;
     Ok((input, Arc::from(text), loading_segments))
 }
 
@@ -588,14 +579,16 @@ pub(crate) fn assemble_loaded_source_from_text(
 fn normalize_disk_source_bytes(
     path: &Path,
     bytes: &[u8],
-) -> Result<NormalizedLoadedText, SourceLoadError> {
+) -> Result<(String, Option<Vec<LoadingMapSegment>>), SourceLoadError> {
     let text = std::str::from_utf8(bytes).map_err(|_| SourceLoadError::InvalidUtf8 {
         path: Some(path.to_owned()),
     })?;
     Ok(normalize_source_text(text))
 }
 
-fn normalize_source_text(text: &str) -> NormalizedLoadedText {
+/// Strips a leading BOM and normalizes CRLF, retaining original-text mappings.
+/// Performs no I/O, validation, hashing or identity allocation.
+pub fn normalize_source_text(text: &str) -> (String, Option<Vec<LoadingMapSegment>>) {
     let (source_text, original_base, mut segments) =
         if let Some(stripped) = text.strip_prefix(UTF8_BOM) {
             (
@@ -614,10 +607,7 @@ fn normalize_source_text(text: &str) -> NormalizedLoadedText {
 
     if !source_text.contains("\r\n") {
         if segments.is_empty() {
-            return NormalizedLoadedText {
-                text: text.to_owned(),
-                loading_segments: None,
-            };
+            return (text.to_owned(), None);
         }
         segments.push(LoadingMapSegment::Original {
             loaded: TextRange {
@@ -629,17 +619,11 @@ fn normalize_source_text(text: &str) -> NormalizedLoadedText {
                 end: original_base + source_text.len(),
             },
         });
-        return NormalizedLoadedText {
-            text: source_text.to_owned(),
-            loading_segments: Some(segments),
-        };
+        return (source_text.to_owned(), Some(segments));
     }
 
     let normalized = normalize_crlf_to_lf(source_text, original_base, &mut segments);
-    NormalizedLoadedText {
-        text: normalized,
-        loading_segments: Some(segments),
-    }
+    (normalized, Some(segments))
 }
 
 fn normalize_crlf_to_lf(

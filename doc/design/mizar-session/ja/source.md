@@ -273,3 +273,10 @@ snapshot 取得が返す source 入力記録は、実際の正規化パスに加
 - ソースハッシュはコンテンツハッシュであり、それ自体が鮮度の判断ではない。
 - 絶対パスはローカル診断用のメタデータであり、公開されるソース同一性からは除外される。
 - ソーステキストは、スナップショット・ソースマップ・診断・LSP ビュー・下流の利用側がリースを保持している間だけ保持される。
+
+## Pure source text normalization
+
+`normalize_source_text(&str) -> (String, Option<Vec<LoadingMapSegment>>)` は
+Disk/OpenBuffer の BOM 除去と CRLF→LF の共有純粋処理。単独 CR と既存 map 規則を
+保ち、I/O・検証・hash・ID 割り当てを行わず、Generated input を正規化しない。
+frontend 保存形式が取得済み raw buffer の由来を照合する際にも使う。

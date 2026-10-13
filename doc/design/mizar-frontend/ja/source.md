@@ -171,3 +171,21 @@ IR work-unit label は `format!("{:?}:{:?}", package_id.as_str(), module_path.as
 source-map side table は kind `source-storage`、key normalized package-relative path の一行。digest は context `mizar-frontend/source-unit-storage-side-table/v1` の BLAKE3 derive-key を full storage bytes に適用する。実 loading map を保守的に side identity に含め、semantic content は map に依存させない。他の side table は空。
 
 disk publication は `OutputOrigin::PackageSource` と `PublicationTarget::CurrentPackage` を使用する。
+
+## Canonical OpenBuffer Payload
+
+`canonical_open_buffer_bytes(&self, input: &SourceInput)` と
+`from_canonical_open_buffer_bytes(bytes, source_id, input)` は Option を返す。
+`from_canonical_storage_bytes(bytes, source_id, input)` は Disk も復元する。
+origin 別入口は他 origin を拒否する。ASCII domain は
+`mizar-frontend-source-open-buffer-v1`。u64-LE 長さ付きの九 field は package、
+module、normalized path、edition、URI、version、正規化 UTF-8 text、32-byte hash、
+loading map の順。version は signed i64-LE の八 byte、map は Disk と同じ形式。
+非負 expected/actual version と保存 version、metadata と URI は一致が必須。
+共有 Native 正規化で raw text から同じ text・optional segments を再現し、
+LineMap/LoadingMap の ID・hash・長さと OpenBufferText の URI/version を照合する。
+generated anchor を拒否し、local SourceId と診断 path を保存しない。
+復元は指定 ID と既存 URI 診断 path 方針を使い、完全な再符号化一致を要求する。
+URI/path/metadata の Native 検証は呼出側の取得処理が担当し、codec は I/O・
+loader・source 受理を実行しない。拒否は None。保存形式は editor context を含み、
+semantic hash・currentness・cache 受理・CurrentPackage publication の権限ではない。
