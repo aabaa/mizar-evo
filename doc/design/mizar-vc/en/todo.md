@@ -592,6 +592,8 @@ authorized.
     - [PREATP-FORMULA-EVIDENCE](../../task_contracts/en/PREATP-FORMULA-EVIDENCE.md);
       source integration waits for authentic formula/context/provenance producers.
 
+61. **[Source registration after real Discharge](../../task_contracts/en/VC-SOURCE-REGISTRATION-DISCHARGE-HANDOFF.md).** [x] — Exact default-policy NeedsAtp handoff; ATP projections/consumers remain open.
+
 ## Recommended Verification
 
 Run after each task:

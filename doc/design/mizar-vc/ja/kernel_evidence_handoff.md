@@ -359,6 +359,7 @@ lower reasoning が適切である。
 String>` は全 source VC を再生成・比較してから実 Core symbol・全 term・Boolean formula を canonical manifest・formula
 bytes・algorithm-2 fingerprint に射影する。実引用のガード付き定義、formal、formal-to-choice 置換を保持し、label/debug
 text/unknown Core fingerprint から式を作らない。
+別経路では選択 leaf が NeedsAtp かつ supplied set 全体が元の再生成結果に既定 DischargePolicy を適用した実出力と一致する場合のみ、その set の target/context/provenance を構築する。他の選択 status は拒否し、Discharged sibling は phase-12 marker に留め、元の Open 動作は維持する。
 
 証人型 leaf は独立 gate の choice 型事実、属性 leaf はさらに実定義と K の等式を使う。source/module/snapshot・context
 identity・元の目標・置換 provenance を保持し、汎用 fingerprint は保守的なままとする。handoff envelope/hash-input text は binary

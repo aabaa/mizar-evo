@@ -12556,3 +12556,199 @@ fn step5c5_narrower_rejects_equal_attributed_signatures_and_typed_graph_mutation
         }
     }
 }
+
+#[test]
+fn source_registration_discharge_handoff_replays_actual_default_phase_and_rejects_corruption() {
+    use mizar_core::core_ir::{CoreDiagnosticId, CoreSourceAnchor};
+    use mizar_vc::{
+        discharge::{DischargeInput, DischargePolicy, try_discharge},
+        kernel_evidence_handoff::build_source_existential_kernel_handoff,
+        vc_ir::*,
+    };
+    for (multiple, case) in [
+        (false, step5c3_registration_case()),
+        (true, step5c13_registration_case()),
+    ] {
+        let original = std::fs::read_to_string(case.source_path).unwrap();
+        let renamed = original
+            .replace("wmarked", "retagged")
+            .replace("oamarked", "leftmarked")
+            .replace("obmarked", "rightmarked")
+            .replace("X", "Value");
+        for text in [&original, &renamed] {
+            let (source, nodes, symbols) = if multiple {
+                step5c13_registration_inputs(text)
+            } else {
+                step5c3_registration_inputs(text)
+            }
+            .unwrap();
+            let checked = mizar_checker::registration_resolution::check_source_existential_registration_proof(&source, &nodes, &symbols).unwrap();
+            let core =
+                mizar_core::elaborator::lower_source_existential_registration(&checked).unwrap();
+            let open = step5c3_registration_vcs(&core).unwrap();
+            let registrations = if multiple { 3 } else { 1 };
+            assert_eq!(open.vcs().len(), registrations * 2);
+            let discharge = try_discharge(DischargeInput {
+                vc_set: &open,
+                policy: &DischargePolicy::default(),
+            })
+            .unwrap();
+            let changed = discharge.vc_set();
+            assert_eq!(
+                changed
+                    .vcs()
+                    .iter()
+                    .filter(|vc| vc.status == VcStatus::NeedsAtp)
+                    .count(),
+                registrations
+            );
+            assert_eq!(
+                changed
+                    .vcs()
+                    .iter()
+                    .filter(|vc| matches!(vc.status, VcStatus::Discharged { .. }))
+                    .count(),
+                registrations
+            );
+            assert!(open.vcs().iter().all(|vc| vc.status == VcStatus::Open));
+            assert!(checked.database().activated().is_empty());
+            for before in open.vcs() {
+                let old = build_source_existential_kernel_handoff(&core, &open, before.id).unwrap();
+                assert!(old.targets_vc(&open, before.id).unwrap());
+                assert!(!old.targets_vc(changed, before.id).unwrap());
+                let after = changed.vc(before.id).unwrap();
+                assert_eq!(after.goal, before.goal);
+                assert_eq!(after.premises, before.premises);
+                assert_eq!(after.source, before.source);
+                assert!(after.provenance.starts_with(&before.provenance));
+                if after.status != VcStatus::NeedsAtp {
+                    assert!(
+                        build_source_existential_kernel_handoff(&core, changed, after.id).is_err()
+                    );
+                    continue;
+                }
+                let handoff =
+                    build_source_existential_kernel_handoff(&core, changed, after.id).unwrap();
+                assert!(handoff.targets_vc(changed, after.id).unwrap());
+                assert!(!handoff.targets_vc(&open, after.id).unwrap());
+                assert_ne!(handoff.context_identity_hash(), old.context_identity_hash());
+                assert_eq!(
+                    handoff.canonical_evidence().symbol_manifest(),
+                    old.canonical_evidence().symbol_manifest()
+                );
+                assert_eq!(
+                    handoff.canonical_evidence().variable_manifest(),
+                    old.canonical_evidence().variable_manifest()
+                );
+                assert_eq!(
+                    handoff.canonical_evidence().formula_evidence(),
+                    old.canonical_evidence().formula_evidence()
+                );
+                assert_eq!(
+                    handoff.canonical_evidence().substitutions(),
+                    old.canonical_evidence().substitutions()
+                );
+                assert_eq!(
+                    handoff.canonical_evidence().provenance().len(),
+                    old.canonical_evidence().provenance().len()
+                );
+                for (actual, original) in handoff
+                    .canonical_evidence()
+                    .provenance()
+                    .iter()
+                    .zip(old.canonical_evidence().provenance())
+                {
+                    assert_eq!(actual.provenance_id, original.provenance_id);
+                    assert_eq!(actual.formula_fingerprint, original.formula_fingerprint);
+                    assert_eq!(actual.payload, original.payload);
+                    assert_eq!(&actual.target_vc, handoff.canonical_evidence().target_vc());
+                }
+                assert_eq!(
+                    handoff.canonical_evidence().final_goal(),
+                    old.canonical_evidence().final_goal()
+                );
+            }
+            let selected = changed
+                .vcs()
+                .iter()
+                .find(|vc| vc.status == VcStatus::NeedsAtp)
+                .unwrap()
+                .id;
+            let sibling = changed
+                .vcs()
+                .iter()
+                .find(|vc| matches!(vc.status, VcStatus::Discharged { .. }))
+                .unwrap()
+                .id;
+            for mutation in 0..15 {
+                let mut parts = VcSetParts {
+                    schema_version: changed.schema_version().clone(),
+                    snapshot: changed.snapshot(),
+                    source: changed.source(),
+                    module: changed.module().clone(),
+                    generated_formulas: changed.generated_formulas().to_vec(),
+                    vcs: changed.vcs().to_vec(),
+                    seed_accounting: changed.seed_accounting().to_vec(),
+                };
+                match mutation {
+                    0 => parts.vcs[selected.index()].status = VcStatus::Open,
+                    1 => {
+                        parts.vcs[selected.index()].status =
+                            changed.vc(sibling).unwrap().status.clone()
+                    }
+                    2 => {
+                        parts.vcs[selected.index()].status = VcStatus::PolicyOpen {
+                            policy: PolicyKey::new("test"),
+                        }
+                    }
+                    3 => {
+                        parts.vcs[selected.index()].status = VcStatus::AssumedByPolicy {
+                            policy: PolicyKey::new("test"),
+                            marker: changed.vc(selected).unwrap().premises[0].clone(),
+                        }
+                    }
+                    4 => {
+                        parts.vcs[selected.index()].status = VcStatus::SkippedDueToInvalidInput {
+                            reason: VcText::new("test"),
+                        }
+                    }
+                    5 => {
+                        parts.vcs[selected.index()].status = VcStatus::DeferredExternal {
+                            reason: VcText::new("test"),
+                        }
+                    }
+                    6 => {
+                        parts.vcs[selected.index()].status = VcStatus::Error {
+                            diagnostic: CoreDiagnosticId::new(0),
+                        }
+                    }
+                    7 => {
+                        parts.vcs[selected.index()].provenance.pop();
+                    }
+                    8 => {
+                        parts.vcs[sibling.index()].provenance.pop();
+                    }
+                    9 => parts.vcs[sibling.index()].status = VcStatus::Open,
+                    10 => parts.vcs[sibling.index()].source.related.clear(),
+                    11 => {
+                        let CoreSourceAnchor::SourceRange(range) =
+                            &mut parts.vcs[selected.index()].source.primary.anchor
+                        else {
+                            panic!("actual source range");
+                        };
+                        range.start += 1;
+                    }
+                    12 => parts.generated_formulas[0].provenance.clear(),
+                    13 => parts.generated_formulas[0].shape = VcGeneratedFormulaShape::True,
+                    _ => parts.module = VcModuleRef::new("foreign-module"),
+                }
+                let altered = VcSet::try_new(parts)
+                    .unwrap_or_else(|error| panic!("coherent mutation {mutation}: {error}"));
+                assert!(
+                    build_source_existential_kernel_handoff(&core, &altered, selected).is_err(),
+                    "accepted mutation {mutation}, multiple={multiple}"
+                );
+            }
+        }
+    }
+}

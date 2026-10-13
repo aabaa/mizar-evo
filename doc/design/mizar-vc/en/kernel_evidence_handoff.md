@@ -384,6 +384,7 @@ String>` regenerates and compares the complete source VC set before projecting a
 full terms and Boolean formulas to canonical manifests, formula bytes and algorithm-2 fingerprints.
 Preserve the cited guarded definition, its real formal and explicit formal-to-choice substitution;
 no label/debug text or unknown Core fingerprint supplies formula contents.
+An alternative requires the selected leaf to be NeedsAtp and the whole supplied set to equal the original replay's actual default-policy Discharge result; build its target/context/provenance from that set. Other selected statuses reject, Discharged siblings remain phase-12 markers, and original Open behavior stays unchanged.
 
 The witness-type leaf uses the independently gated choice-type fact; the attributed leaf
 additionally uses the actual definition and K equality. Preserve source/module/snapshot, context

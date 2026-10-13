@@ -558,6 +558,8 @@ contract、禁止境界、real-source/corruption requirement を使用する。�
 1 nonempty logical task / 1 commit であり、shared empty infrastructure task は
 認可しない。
 
+61. **[実 Discharge 後の source registration](../../task_contracts/ja/VC-SOURCE-REGISTRATION-DISCHARGE-HANDOFF.md)。** [x] — 既定方針の完全一致 NeedsAtp のみ。ATP 射影・consumer は未完了。
+
 ## 推奨検証
 
 各タスクの後で実行する:

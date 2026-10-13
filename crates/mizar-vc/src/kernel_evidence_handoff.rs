@@ -978,7 +978,17 @@ pub fn build_source_existential_kernel_handoff(
         vc_set.schema_version(),
     )?;
     if &replay != vc_set {
-        return Err(invalid());
+        if vc.status != crate::vc_ir::VcStatus::NeedsAtp {
+            return Err(invalid());
+        }
+        let discharge = crate::discharge::try_discharge(crate::discharge::DischargeInput {
+            vc_set: &replay,
+            policy: &crate::discharge::DischargePolicy::default(),
+        })
+        .map_err(|error| error.to_string())?;
+        if discharge.vc_set() != vc_set {
+            return Err(invalid());
+        }
     }
     let accounting = vc_set
         .seed_accounting()
