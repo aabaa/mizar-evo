@@ -678,3 +678,7 @@ Consume complete core/CFG input with context/C; retain Adm/InputOK and compatibl
 Child preconditions/normal return, failure, ranges, invariants and the selected decreasing measure belong to the generated obligations.
 Tests accept guarded partial correctness without E4 where permitted, including guarded open syntax; reject missing all-input result inhabitation/single-valuedness, continuation-only child return, missing implicit-failure handoffs for legal omitted partial match endings and unverified promotion/equation labels. Selected-measure, child requires/return and explicit/implicit failure controls retain complete guards.
 Existing symbolic computation requests remain Open transport; E5 execution and publication belong to their actual producers.
+
+## Reflected Formation Requests
+
+Generate source-authenticated conditional library and all-input Binder formation goals from provisional requests, independently of algorithm E1/E2/E4. Retain finite KΓ/Adm equivalence, range/construction/uniqueness, exact premise and UID/context/C bindings; Open goals cannot certify formation. Proof acceptance returns to Checker before the corresponding formation-dependent checked or runtime consumer.

@@ -2,10 +2,8 @@
 Canonical language: English; [Japanese pointer](../ja/AST-LOWER.md).
 Status: planned. Tier: full gates. Primary owner: [mizar-core](../../mizar-core/en/00.crate_plan.md).
 Consumers: mizar-vc, the MVM producer and mizar-proof.
-Dependencies: AST-TYPE authentic checked structure, conditions, UID/context
-correspondence and complete ordinary/syntax/reconstruction inputs.
-Readiness: blocked on checked producer records; SurfaceAst storage and
-logical binder normalization do not satisfy reflected syntax semantics.
+Dependencies: request-only formation transport needs authentic AST-TYPE provisional structure/formulas; final checked handoff needs accepted AST-TYPE structure, conditions, UID/context and complete ordinary/syntax/reconstruction inputs.
+Readiness: request-only transport in AST-FORMATION-PROOFS waits for authentic provisional records, not accepted formation; final checked/runtime handoff waits for AST-TYPE acceptance. SurfaceAst storage/logical normalization supplies neither meaning nor proof.
 Authority: [§20.5.3](../../../spec/en/20.algorithm_and_verification.md#2053-reflected-syntax),
 [§13.10.1](../../../spec/en/13.term_expression.md#13101-capture-reconstruction-and-r2),
 [architecture 06](../../architecture/en/06.elaboration_and_core_ir.md#constraints-and-assumptions),

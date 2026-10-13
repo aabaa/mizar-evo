@@ -1965,3 +1965,4 @@ Capture state、semantic table、diagnostic、Core payload、active routeは作�
 綴りによる認証、モード切替、環境の捏造、未対応 carrier/update lowering を許さない。
 テストは型付き R1/R2/R3 混合構築、共変/ghost flow、依存する元の文脈、guard 付き valid_at と更新前の値、Binder の全入力 range と空 domain を扱う。 使用した KΓ と無関係な仮定を区別し、依存型/domain 参照を含め、捕獲回避の同時一回置換が挿入済み w へ再入しないことを検査する。
 capture テストは同じ UID で異なる C と Var 同一性を分け、既定 codomain/自由 UID、無変更再構築、内側衝突を検査する。
+暫定の source-authenticated formation record は request transport と VC/Proof checking だけに渡す。受理済みの対応する evidence が Checker に戻るまで final checked Core handoff は禁止。library certification/per-use formation は算法 E1/E2/E4 と別責務。分類テストは pure R1/mixed R2/R3、数学的 func head/dynamic・promoted algorithm execution、分類前の template/inline/overload elaboration を区別し、古い T2 tree/UID/context correspondence の再利用を拒否する。

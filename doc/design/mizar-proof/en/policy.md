@@ -411,3 +411,9 @@ Import failure preserves internal return, never publishes an ensures fragment; m
 Tests cover term/truth/update/opaque conversion and terminal UID substitution; reject residual whole ensures/equalities, quantified types, annotations and containers, circular requires and pre-update mistakes, while distinguishing each actual incomplete stage.
 Explicit reference replay overrides default-false manifest computation_replay for all its calls. Default computed, all-call equation/SAT replay, exact cache-mode identity and strict transitive computed dependencies remain distinct.
 Tests exercise explicit replay true/false over opposite manifest defaults through direct/transitive calls, plus all-call replay rejection, strict computed taint and weaker-mode cache corruption.
+
+Boolean conversion tests cover B=true/B≠false, B=false/B≠true and B=C/B≠C polarities with certified two-valuedness, guarded val_at and terminal ordinary b=true without repeated normalization. Truth equivalences cannot fill boolean term-argument or Binder-body slots; uncertified terms stay rejected.
+
+## Formation Evidence Boundary
+
+Validate actual pinned library and per-use formation evidence with its precise conditional premises and request identity; no accepted status comes from spelling, Open goals or algorithm contract evidence. Reject stale version/content/UID/context/C and wrong-premise substitutions. Accepted instances re-enter Checker, keeping finite KΓ/Adm equivalence and Binder all-input construction obligations distinct from E1/E2/E4 and execution.

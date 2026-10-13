@@ -389,3 +389,9 @@ import 失敗は内部復帰を保ち ensures の一部を公開しない。生�
 テストは term/truth/update/opaque 変換と終端 UID 置換を扱う。ensures/等式全体、量化型、annotation、container の残存、循環 requires、更新前置換の誤りを拒否し、実際の未完了段階をそれぞれ区別する。
 明示 reference の replay は既定 false の manifest computation_replay より優先し、全呼出に適用する。既定 computed、全呼出 equation/SAT replay、厳密 cache-mode 同一性、strict の推移的 computed 依存を区別する。
 テストは逆の manifest default に対する明示 replay true/false を直接/推移呼出しで扱い、全呼出し replay の拒否、strict computed 依存、弱い mode の cache 破損を確認する。
+
+boolean conversion test は certified two-valuedness の下で B=true/B≠false、B=false/B≠true、B=C/B≠C の極性、guarded val_at、再正規化しない terminal ordinary b=true を点検する。truth equivalence は boolean term-argument/Binder-body slot を埋めず、未認証 term は拒否する。
+
+## Formation Evidence Boundary
+
+真正な pinned library/per-use formation evidence を正確な conditional premise と request identity とともに検証する。綴り、Open goal、算法 contract evidence は accepted status を与えない。古い version/content/UID/context/C と誤った premise substitution を拒否する。受理した instance は Checker へ戻し、有限 KΓ/Adm equivalence と Binder all-input construction obligation を E1/E2/E4/execution と区別する。

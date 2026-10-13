@@ -892,3 +892,7 @@ shell は通常の source map・由来を保持し、捕捉点の文脈は CFG �
 順序付き child/variable primitive と厳密な ghost 出現サイズの lowering を保持する。評価は実行/証明 producer が所有し、共有/保存方法で構造を変えない。
 テストは重複/暗黙 child と opaque 原本/FV 順序、空 Binder 文脈、UID/表示名の同一性、共有に依存しない展開後サイズ request と完全入力の破損を検査し、近似/破損 handoff を拒否する。実際のサイズ計算と資源不足は実行/証明テストが所有する。
 型/UID/文脈/C の欠落・破損は VC/MVM 引渡し前に拒否する。この境界は受理証拠を生成しない。
+
+## Provisional Formation Transport
+
+request-only formation transport は真正な暫定 structure/formula、source/UID/context/C、正確な premise を VC checking 用に保持する。certified meaning、checked runtime input、execution route を与えない。final checked handoff は真正な formation acceptance 後の Checker re-entry を必要とする。

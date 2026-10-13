@@ -605,3 +605,7 @@ C/文脈を含む完全な core/CFG 入力を消費し、Adm/InputOK と適合�
 子呼出の前提/正常復帰、失敗、範囲、invariant、選択された decreasing measure を義務に含める。
 テストは許される文脈で guarded な open syntax を含む E4 のない guarded 部分正当性を受理する。全入力の結果 inhabitation/単一値性の欠落、継続だけによる子復帰、合法な partial match 終端省略に対する暗黙失敗 handoff の欠落、未検証 promotion/方程式ラベルを拒否する。選択 measure、子 requires/復帰、明示/暗黙失敗の対照例は完全なガードを保つ。
 既存の symbolic computation request は Open な転送に留まり、E5 実行と公開は実際の生成側が所有する。
+
+## Reflected Formation Requests
+
+暫定 request から source-authenticated conditional library/all-input Binder formation goal を生成し、算法 E1/E2/E4 とは独立させる。有限 KΓ/Adm equivalence、range/construction/uniqueness、正確な premise と UID/context/C binding を保持する。Open goal は formation を認証しない。Proof acceptance は対応する formation-dependent checked/runtime consumer より先に Checker に戻す。

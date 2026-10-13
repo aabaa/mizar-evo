@@ -1,0 +1,21 @@
+# Task AST-FORMATION-PROOFS: conditional reflected formation obligations and re-entry
+Canonical language: English; [Japanese pointer](../ja/AST-FORMATION-PROOFS.md).
+Status: dependency-blocked. Tier: full gates. Owners: VC (requests), Proof (acceptance), Checker (adoption); Core transports requests without semantic credit.
+Authority: [§20.5.3 M1–M7 and finite KΓ/Adm](../../../spec/en/20.algorithm_and_verification.md#2053-reflected-syntax), [§13.10 Binder formation](../../../spec/en/13.term_expression.md#1310-function-binder--), [§20.13.7](../../../spec/en/20.algorithm_and_verification.md#20137-certified-computation-import-t1t8).
+Classification: source_drift/test_gap; consuming independent formation evidence does not produce it.
+Readiness: source/dependency inventory and request-only design can start; source generation waits for authentic AST-PARSE/resolved type/signature inputs and AST-LIBRARY-CERTIFICATION. Acceptance/adoption waits for genuine VC/proof validation.
+Stage order: provisional AST-TYPE records -> AST-LOWER request-only transport -> VC formation goals -> Proof validation -> accepted Checker adoption -> final AST-LOWER checked handoff. The provisional route needs no already accepted formation evidence and never authorizes execution or publication as accepted premises.
+Applicability: require only the selected use's stated formation/meaning prerequisites; structural operations do not require a current mathematical variable value or environment beyond their own specified conditions.
+Scope: retain exact finite used conditions, library premise bindings and per-use all-input Binder typing/application/range and construction/uniqueness requests; prove recorded KΓ/Adm equivalence and conditional M1–M7 instances without erasing local guards.
+Boundary: request, transport, validation and adoption responsibilities follow the linked owners. Algorithm E1/E2/E4 remain separate AST-CONTRACT obligations.
+Invariants: use the linked owner boundaries. Universal/empty-domain facts cannot create an environment, domain element or current Binder value.
+Failure: Open/rejected/missing/stale/cross-context evidence prevents checked adoption and runtime/fact publication; regeneration must preserve the exact requested meaning, not weaken it. Unspecified foundational/acceptance meaning stays spec_gap with explicit human release.
+Forbidden: unchecked provisional execution, acceptance from mere request/assumption presence or unrecorded/all-ambient assumptions, fabricated declarations/proofs, new kernel rules/APIs or unsupported syntax carriers.
+Owner details/tests: [formation requests](../../mizar-vc/en/generator.md#reflected-formation-requests), [Proof evidence](../../mizar-proof/en/policy.md#formation-evidence-boundary), [Checker formation](../../mizar-checker/en/typed_ast.md#reflected-syntax-formation).
+Tests: genuine accepted versus Open/failed all-input Binder and empty-domain obligations; KΓ containing only used premises; valid conditional M instances; missing/wrong premise, stale UID/context/C, capture collision, same-name library impostor and swapped evidence rejection. No algorithm contract acceptance from formation alone.
+Acceptance: the full authentic request/goal/proof/adoption route is tested before any checked formation output escapes; stage-only transport grants no semantic acceptance.
+Audit: chapter13/20 producer ownership and deferred implementation only.
+Reviews: independent specification, test sufficiency, implementation, volume/scope and source/EN-JA consistency; full protocol gates.
+Verification: cargo fmt --check; cargo clippy --all-targets --all-features -- -D warnings; cargo test.
+Owner indexes: [mizar-vc index](../../mizar-vc/en/00.crate_plan.md), [mizar-proof index](../../mizar-proof/en/00.crate_plan.md), [mizar-checker index](../../mizar-checker/en/00.crate_plan.md), [mizar-core index](../../mizar-core/en/00.crate_plan.md).
+Existing foundations: [binding identity](../../../../crates/mizar-checker/src/binding_env.rs), [kernel evidence tests](../../../../crates/mizar-kernel/src/formula_evidence/tests.rs), [proof status tests](../../../../crates/mizar-proof/src/status/tests.rs); these provide no reflected certification/formation route.

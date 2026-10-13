@@ -3,7 +3,7 @@ Canonical language: English; [Japanese pointer](../ja/AST-CONTRACT.md).
 Status: planned. Tier: full gates. Primary owner: [mizar-vc](../../mizar-vc/en/00.crate_plan.md).
 Consumers: mizar-kernel, mizar-proof and the MVM producer.
 Dependencies: AST-LOWER complete input/context/C and genuine checked
-algorithm/CFG facts; independent formation and proof producers, ALGDEF-VC53-NORMAL-RETURN; Core54/VC56/VC57/VC58/VC59 retain their separate scopes.
+algorithm/CFG facts; AST-FORMATION-PROOFS accepted independent formation and proof inputs, ALGDEF-VC53-NORMAL-RETURN; Core54/VC56/VC57/VC58/VC59 retain their separate scopes.
 Readiness: blocked on these handoffs; request transport is not normal return.
 Authority: [§20.4](../../../spec/en/20.algorithm_and_verification.md#204-contracts-requires-ensures-assert),
 [§20.7](../../../spec/en/20.algorithm_and_verification.md#207-termination-proofs),

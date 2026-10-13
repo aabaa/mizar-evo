@@ -940,3 +940,7 @@ Consume checked classification/context records; preserve Var/node/opaque/Abs and
 Preserve lowering of ordered child/variable primitives and exact ghost occurrence size; evaluation belongs to execution/proof producers, and sharing/storage cannot change structure.
 Tests inspect duplicate/implicit child and opaque saved-original/FV ordering, empty Binder contexts, UID/display-name identity, sharing-independent unfolded-occurrence size requests and complete-input corruption, rejecting approximate/corrupt handoffs; execution/proof tests own actual size calculation and resource failures.
 Corrupted or missing type/UID/context/C records fail closed before VC/MVM handoff; this boundary creates no acceptance evidence.
+
+## Provisional Formation Transport
+
+Request-only formation transport preserves authentic provisional structure/formulas, source/UID/context/C and exact premises for VC checking. It grants no certified meaning, checked runtime input or execution route; final checked handoff requires Checker re-entry after genuine formation acceptance.

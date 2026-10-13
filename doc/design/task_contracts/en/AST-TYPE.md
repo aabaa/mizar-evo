@@ -3,8 +3,8 @@ Canonical language: English; [Japanese pointer](../ja/AST-TYPE.md).
 Status: planned. Tier: full gates. Primary owner: [mizar-checker](../../mizar-checker/en/00.crate_plan.md).
 Consumers: mizar-core, mizar-vc and mizar-proof.
 Dependencies: AST-PARSE syntax, authentic resolved declaration/type records,
-and the pinned library identities and premise-checked proofs of §20.5.3.
-Readiness: blocked on those producers; no same-spelling certification.
+AST-LIBRARY-CERTIFICATION pinned identities/proofs and AST-FORMATION-PROOFS per-use acceptance for checked output.
+Readiness: provisional request production waits for authentic syntax/resolved inputs; final checked formation additionally waits for library and per-use acceptance. Request-only staging grants no execution/meaning credit.
 Authority: [§3.3](../../../spec/en/03.type_system.md#33-type-expressions),
 [§13.10](../../../spec/en/13.term_expression.md#1310-function-binder--),
 [§19.4.2](../../../spec/en/19.overload_resolution.md#1942-viable-candidates),
