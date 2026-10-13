@@ -255,6 +255,10 @@ Tasks 1–5: [LSP-LIFECYCLE-FOUNDATION](../../task_contracts/ja/LSP-LIFECYCLE-FO
 29. **Web playground (mizar-driver と共同)。** [ ]
     - 契約: [WEB-PLAYGROUND](../../task_contracts/ja/WEB-PLAYGROUND.md)。
 
+30. **Raw OpenBuffer range の算術変換前提。** [x]
+    - [LSP-RAW-OPEN-BUFFER-RANGE](../../task_contracts/ja/LSP-RAW-OPEN-BUFFER-RANGE.md) で実 loaded range を native map により原文 UTF-16 座標へ戻す。
+    - snapshot 束縛・current 診断と task 6–11 は別途担当する。
+
 - [ ] [EDITOR-COMPUTED-RESULTS](../../task_contracts/ja/EDITOR-COMPUTED-RESULTS.md).
 
 ## 推奨検証

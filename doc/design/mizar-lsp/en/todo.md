@@ -256,6 +256,10 @@ Tasks 1–5: [LSP-LIFECYCLE-FOUNDATION](../../task_contracts/en/LSP-LIFECYCLE-FO
 29. **Web playground (with mizar-driver).** [ ]
     - Contract: [WEB-PLAYGROUND](../../task_contracts/en/WEB-PLAYGROUND.md).
 
+30. **Raw OpenBuffer range arithmetic prerequisite.** [x]
+    - [LSP-RAW-OPEN-BUFFER-RANGE](../../task_contracts/en/LSP-RAW-OPEN-BUFFER-RANGE.md) maps genuine loaded ranges through native maps to raw UTF-16 coordinates.
+    - Snapshot binding, current diagnostics and tasks 6–11 remain separate.
+
 - [ ] [EDITOR-COMPUTED-RESULTS](../../task_contracts/en/EDITOR-COMPUTED-RESULTS.md).
 
 ## Recommended Verification

@@ -1,5 +1,8 @@
 use mizar_lexer::SourceSpan as LexerSourceSpan;
-use mizar_session::{LineMap, SourceId, SourceMapError, SourceRange};
+use mizar_session::{
+    LineMap, LoadingMap, LoadingOrigin, SourceId, SourceMapError, SourceOriginInput, SourceRange,
+    TextRange, normalize_source_text,
+};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct LspPosition {
@@ -18,6 +21,7 @@ pub struct LspRange {
 pub enum RangeMapError {
     SourceMap(SourceMapError),
     PositionOverflow,
+    InvalidOpenBufferContext,
 }
 
 const MAX_LSP_POSITION: usize = i32::MAX as usize;
@@ -33,6 +37,88 @@ pub fn lsp_range_from_source_range(
     range: SourceRange,
 ) -> Result<LspRange, RangeMapError> {
     lsp_range_from_source_range_with_max_utf16_column(line_map, range, MAX_LSP_POSITION)
+}
+
+/// Converts loaded bytes to exact raw OpenBuffer UTF-16 coordinates.
+/// The caller owns snapshot, document identity and freshness validation.
+pub fn lsp_range_from_open_buffer(
+    line_map: &LineMap,
+    loading_map: Option<&LoadingMap>,
+    origin: &SourceOriginInput,
+    range: SourceRange,
+) -> Result<LspRange, RangeMapError> {
+    line_map.validate_range(range)?;
+    let SourceOriginInput::OpenBuffer {
+        uri,
+        expected_version,
+        actual_version,
+        text,
+    } = origin
+    else {
+        return Err(RangeMapError::InvalidOpenBufferContext);
+    };
+    if *expected_version < 0 || expected_version != actual_version {
+        return Err(RangeMapError::InvalidOpenBufferContext);
+    }
+    let (normalized, segments) = normalize_source_text(text);
+    let expected_map = segments.map(|segments| {
+        LoadingMap::new(
+            line_map.source_id(),
+            &normalized,
+            LoadingOrigin::OpenBufferText {
+                uri: uri.clone(),
+                version: *actual_version,
+            },
+            segments,
+        )
+    });
+    if line_map.source() != normalized || loading_map != expected_map.as_ref() {
+        return Err(RangeMapError::InvalidOpenBufferContext);
+    }
+    let loaded = TextRange {
+        start: range.start,
+        end: range.end,
+    };
+    let original = match loading_map {
+        Some(map) => {
+            map.original_range_for_loaded(range.source_id, loaded)?
+                .original
+        }
+        None => loaded,
+    };
+    let [start, end] = [original.start, original.end].map(|offset| {
+        let (mut line, mut line_start, mut content_end) = (0, 0, text.len());
+        let mut scalars = text.char_indices().peekable();
+        while let Some((start, scalar)) = scalars.next() {
+            if !matches!(scalar, '\r' | '\n') {
+                continue;
+            }
+            let mut end = start + 1;
+            if scalar == '\r' && scalars.peek().is_some_and(|(_, next)| *next == '\n') {
+                scalars.next();
+                end += 1;
+            }
+            if offset < end {
+                content_end = start;
+                break;
+            }
+            line += 1;
+            line_start = end;
+        }
+        Ok::<_, RangeMapError>(LspPosition {
+            line: u32_lsp_coordinate(line, MAX_LSP_POSITION)?,
+            character: u32_lsp_coordinate(
+                text[line_start..offset.min(content_end)]
+                    .encode_utf16()
+                    .count(),
+                MAX_LSP_POSITION,
+            )?,
+        })
+    });
+    Ok(LspRange {
+        start: start?,
+        end: end?,
+    })
 }
 
 fn lsp_range_from_source_range_with_max_utf16_column(
@@ -559,6 +645,350 @@ mod tests {
                     .unwrap()
                 });
                 assert_eq!(mapped[0], mapped[1]);
+            }
+        }
+        fs::remove_dir_all(root).unwrap();
+    }
+
+    #[test]
+    fn native_open_buffers_map_exact_raw_editor_ranges_and_reject_mismatched_context() {
+        use mizar_session::{
+            DiskSourceLoader, Edition, LoadingMap, LoadingMapSegment, LoadingOrigin, ModulePath,
+            PackageId, SourceInput, SourceLoader, SourceOriginInput, TextRange,
+        };
+        use std::{fs, sync::Arc};
+        let root = std::env::temp_dir().join(format!("mizar-lsp-raw-range-{}", std::process::id()));
+        fs::create_dir_all(root.join("src")).unwrap();
+        let path = root.join("src/input.miz");
+        fs::write(&path, "unrelated disk text").unwrap();
+        let uri = format!(
+            "file:///{}",
+            path.to_str()
+                .unwrap()
+                .replace('\\', "/")
+                .trim_start_matches('/')
+        );
+        let loader = DiskSourceLoader::new(&root);
+        let ids = InMemorySessionIdAllocator::new();
+        let snapshot = BuildSnapshotId::from_published_schema_str(&snapshot_string(1)).unwrap();
+        for (index, (raw, normalized, points)) in [
+            (
+                "a😀e\u{301}",
+                "a😀e\u{301}",
+                vec![(0, 0, 0), (1, 0, 1), (5, 0, 3), (6, 0, 4), (8, 0, 5)],
+            ),
+            ("\u{feff}a😀", "a😀", vec![(0, 0, 1), (1, 0, 2), (5, 0, 4)]),
+            (
+                "a😀\r\nβ\r\n",
+                "a😀\nβ\n",
+                vec![
+                    (0, 0, 0),
+                    (1, 0, 1),
+                    (5, 0, 3),
+                    (6, 1, 0),
+                    (8, 1, 1),
+                    (9, 2, 0),
+                ],
+            ),
+            (
+                "a\rb",
+                "a\rb",
+                vec![(0, 0, 0), (1, 0, 1), (2, 1, 0), (3, 1, 1)],
+            ),
+            (
+                "a\r\nb\rc\n",
+                "a\nb\rc\n",
+                vec![
+                    (0, 0, 0),
+                    (1, 0, 1),
+                    (2, 1, 0),
+                    (3, 1, 1),
+                    (4, 2, 0),
+                    (5, 2, 1),
+                    (6, 3, 0),
+                ],
+            ),
+            (
+                "a\r\n\r\n",
+                "a\n\n",
+                vec![(0, 0, 0), (1, 0, 1), (2, 1, 0), (3, 2, 0)],
+            ),
+            ("a\n", "a\n", vec![(0, 0, 0), (1, 0, 1), (2, 1, 0)]),
+            ("a\r", "a\r", vec![(0, 0, 0), (1, 0, 1), (2, 1, 0)]),
+            (
+                "😀\r\n\u{301}",
+                "😀\n\u{301}",
+                vec![(0, 0, 0), (4, 0, 2), (5, 1, 0), (7, 1, 1)],
+            ),
+            ("", "", vec![(0, 0, 0)]),
+            ("\u{feff}", "", vec![(0, 0, 1)]),
+            ("\r\n", "\n", vec![(0, 0, 0), (1, 1, 0)]),
+            ("\r", "\r", vec![(0, 0, 0), (1, 1, 0)]),
+            (
+                "\u{feff}a\r\nβ",
+                "a\nβ",
+                vec![(0, 0, 1), (1, 0, 2), (2, 1, 0), (4, 1, 1)],
+            ),
+        ]
+        .into_iter()
+        .enumerate()
+        {
+            let version = match index {
+                0 => 0,
+                3 => i64::from(i32::MAX) + 1,
+                4 => i64::MAX,
+                _ => 1,
+            };
+            let origin = SourceOriginInput::OpenBuffer {
+                uri: uri.clone(),
+                expected_version: version,
+                actual_version: version,
+                text: Arc::from(raw),
+            };
+            let loaded = loader
+                .load(
+                    snapshot,
+                    SourceInput {
+                        package_id: PackageId::new("range"),
+                        module_path: ModulePath::new("input"),
+                        normalized_path: mizar_session::normalize_path(&root, &path).unwrap(),
+                        edition: Edition::new("2026"),
+                        origin: origin.clone(),
+                    },
+                    &ids,
+                )
+                .unwrap();
+            assert_eq!(loaded.text.as_ref(), normalized);
+            let mapped = |map: Option<&LoadingMap>, origin: &SourceOriginInput, start, end| {
+                super::lsp_range_from_open_buffer(
+                    &loaded.line_map,
+                    map,
+                    origin,
+                    source_range(&loaded.line_map, start, end),
+                )
+            };
+            for (position, &(start, start_line, start_character)) in points.iter().enumerate() {
+                for &(end, end_line, end_character) in &points[position..] {
+                    assert_eq!(
+                        mapped(loaded.loading_map.as_ref(), &origin, start, end),
+                        Ok(LspRange {
+                            start: LspPosition {
+                                line: start_line,
+                                character: start_character
+                            },
+                            end: LspPosition {
+                                line: end_line,
+                                character: end_character
+                            },
+                        }),
+                        "{raw:?}: {start}..{end}"
+                    );
+                }
+            }
+            let other = ids.next_source_id(snapshot).unwrap();
+            let invalid_origin = SourceOriginInput::Disk { path: path.clone() };
+            for (range, error) in [
+                (
+                    SourceRange {
+                        source_id: other,
+                        start: 0,
+                        end: 0,
+                    },
+                    SourceMapError::UnknownSourceId { source_id: other },
+                ),
+                (
+                    source_range(&loaded.line_map, 1, 0),
+                    SourceMapError::ReversedRange,
+                ),
+                (
+                    source_range(&loaded.line_map, 0, normalized.len() + 1),
+                    SourceMapError::RangeOutsideSourceText {
+                        range: source_range(&loaded.line_map, 0, normalized.len() + 1),
+                        source_len: normalized.len(),
+                    },
+                ),
+            ] {
+                assert_eq!(
+                    super::lsp_range_from_open_buffer(
+                        &loaded.line_map,
+                        loaded.loading_map.as_ref(),
+                        &invalid_origin,
+                        range
+                    ),
+                    Err(RangeMapError::SourceMap(error))
+                );
+            }
+            for offset in
+                (0..normalized.len()).filter(|&offset| !normalized.is_char_boundary(offset))
+            {
+                for (start, end) in [(0, offset), (offset, normalized.len())] {
+                    assert_eq!(
+                        mapped(loaded.loading_map.as_ref(), &invalid_origin, start, end),
+                        Err(RangeMapError::SourceMap(
+                            SourceMapError::OffsetNotUtf8Boundary {
+                                source_id: loaded.source_id,
+                                offset
+                            }
+                        ))
+                    );
+                }
+            }
+            assert_eq!(
+                mapped(loaded.loading_map.as_ref(), &invalid_origin, 0, 0),
+                Err(RangeMapError::InvalidOpenBufferContext)
+            );
+            let generated = SourceOriginInput::Generated {
+                generator: mizar_session::GeneratedSourceKind::new("test"),
+                text: Arc::from(raw),
+                anchor: None,
+            };
+            assert_eq!(
+                mapped(loaded.loading_map.as_ref(), &generated, 0, 0),
+                Err(RangeMapError::InvalidOpenBufferContext)
+            );
+            for change in 0..4 {
+                let mut bad = origin.clone();
+                let SourceOriginInput::OpenBuffer {
+                    expected_version,
+                    actual_version,
+                    text,
+                    ..
+                } = &mut bad
+                else {
+                    unreachable!()
+                };
+                match change {
+                    0 => *expected_version = version - 1,
+                    1 => {
+                        *expected_version = -1;
+                        *actual_version = -1;
+                    }
+                    2 => *text = Arc::from(format!("{raw}x")),
+                    _ => *text = Arc::from(format!("x{raw}")),
+                }
+                assert_eq!(
+                    mapped(loaded.loading_map.as_ref(), &bad, 0, 0),
+                    Err(RangeMapError::InvalidOpenBufferContext)
+                );
+            }
+            let wrong_text = LineMap::new(loaded.source_id, "different loaded text");
+            assert_eq!(
+                super::lsp_range_from_open_buffer(
+                    &wrong_text,
+                    loaded.loading_map.as_ref(),
+                    &origin,
+                    source_range(&wrong_text, 0, 0)
+                ),
+                Err(RangeMapError::InvalidOpenBufferContext)
+            );
+            if let Some(map) = &loaded.loading_map {
+                assert_eq!(
+                    mapped(None, &origin, 0, 0),
+                    Err(RangeMapError::InvalidOpenBufferContext)
+                );
+                for change in 0..8 {
+                    let mut bad = map.clone();
+                    match change {
+                        0 => bad.source_id = other,
+                        1 => bad.loaded_text_hash = Hash::from_bytes([0; Hash::BYTE_LEN]),
+                        2 => bad.loaded_text_len += 1,
+                        3 => bad.origin = LoadingOrigin::Generated,
+                        4 => {
+                            bad.origin = LoadingOrigin::OpenBufferText {
+                                uri: format!("{uri}other"),
+                                version,
+                            }
+                        }
+                        5 => {
+                            bad.origin = LoadingOrigin::OpenBufferText {
+                                uri: uri.clone(),
+                                version: 0,
+                            }
+                        }
+                        6 => {
+                            bad.segments.pop();
+                        }
+                        _ => bad.segments.push(LoadingMapSegment::Original {
+                            loaded: TextRange {
+                                start: 0,
+                                end: normalized.len(),
+                            },
+                            original: TextRange {
+                                start: 0,
+                                end: raw.len(),
+                            },
+                        }),
+                    }
+                    assert_eq!(
+                        mapped(Some(&bad), &origin, 0, 0),
+                        Err(RangeMapError::InvalidOpenBufferContext),
+                        "map mutation {change}: {raw:?}"
+                    );
+                }
+                if index == 2 {
+                    let LoadingMapSegment::NormalizedNewline { loaded, original } =
+                        &map.segments[1]
+                    else {
+                        panic!("native CRLF segment");
+                    };
+                    for change in 0..3 {
+                        let mut bad = map.clone();
+                        match change {
+                            0 => {
+                                bad.segments[1] = LoadingMapSegment::NormalizedNewline {
+                                    loaded: *loaded,
+                                    original: TextRange {
+                                        end: original.end - 1,
+                                        ..*original
+                                    },
+                                }
+                            }
+                            1 => {
+                                bad.segments[1] = LoadingMapSegment::Original {
+                                    loaded: *loaded,
+                                    original: *original,
+                                }
+                            }
+                            _ => bad.segments.swap(2, 3),
+                        }
+                        assert_eq!(
+                            mapped(Some(&bad), &origin, 0, 0),
+                            Err(RangeMapError::InvalidOpenBufferContext),
+                            "in-place native segment mutation {change}"
+                        );
+                    }
+                }
+                let mut wrong_uri = origin.clone();
+                let SourceOriginInput::OpenBuffer { uri, .. } = &mut wrong_uri else {
+                    unreachable!()
+                };
+                uri.push_str("other");
+                assert_eq!(
+                    mapped(Some(map), &wrong_uri, 0, 0),
+                    Err(RangeMapError::InvalidOpenBufferContext)
+                );
+                let mut wrong_raw = origin.clone();
+                let SourceOriginInput::OpenBuffer { text, .. } = &mut wrong_raw else {
+                    unreachable!()
+                };
+                *text = Arc::from(normalized);
+                assert_eq!(
+                    mapped(Some(map), &wrong_raw, 0, 0),
+                    Err(RangeMapError::InvalidOpenBufferContext)
+                );
+            } else {
+                let invented = LoadingMap::identity(
+                    loaded.source_id,
+                    normalized,
+                    LoadingOrigin::OpenBufferText {
+                        uri: uri.clone(),
+                        version,
+                    },
+                );
+                assert_eq!(
+                    mapped(Some(&invented), &origin, 0, 0),
+                    Err(RangeMapError::InvalidOpenBufferContext)
+                );
             }
         }
         fs::remove_dir_all(root).unwrap();
