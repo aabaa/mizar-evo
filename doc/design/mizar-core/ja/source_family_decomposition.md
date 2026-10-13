@@ -156,9 +156,22 @@ semantic edit 前に確認する。
 | 43 | `if`/`while`/`return`/`break`/`continue`/`fail` shell、報告項、owner、child order、condition/value、source/provenance。 | Spec 20.2.1-20.2.2/20.2.6、Core 42、未実装の lexer/parser/syntax の fail/report 射影、`MT10-CIR-ALG`。 | CFG edge/path fact、exit proof、invariant attachment、reachability は扱わない。 |
 | 44 | Range/collection loop shell。direction、bounds/collection、explicit step、binder/body、hidden immutable bound/step を検証し、set の processed-set と順序付き有限 sequence の固定位置 range（重複保持）を分離する。 | Spec 20.2.3-20.2.4、Core 42-43、`MT10-CIR-ALG`。 | Common `for` shell の1 taskだが range/collection contract と negative case は分離。CFG、finiteness/order fact、termination proof、fabricated hidden value は扱わない。 |
 | 45 | `match` subject、ordered case、resolved pattern graph、capture、guard/body owner、otherwise presence/partial implicit-failure state。 | Spec 20.2.5、Core 42-43、`MT10-CIR-ALG`。 | Pattern identity/exhaustiveness/CFG fact/proof acceptance を推測しない。 |
-| 46 | `requires`/`ensures`/`assert`、invariant/decreasing、call target/actual/result binder/substitution-request metadata、recursive group、declared terminating intent、measure availability、child/range normal-return request、契約の自己参照の拒否 (spec 20.4.1: `requires` または `decreasing` による algorithm 自身や再帰グループの適用、`terminating` でない algorithm の `ensures` による適用)。 | Specs 20.4-20.5/20.7-20.8/20.13、Core 34-35/42-45、`MT10-CIR-ALG`。 | Request/metadata 搬送のみ。call/result substitution の生成・適用・検証は VC Task-30 descendant。contract axiom、VC、termination proof/promotion/recursive encoding は作らない。契約の自己参照の拒否は public code を持たない structured local diagnostic とする。 |
+| 46 | `requires`/`ensures`/`assert`、invariant/decreasing、call target/actual/result binder/substitution-request metadata、recursive group、declared terminating intent、measure availability、child/range normal-return request、契約の自己参照の拒否 (spec 20.4.1: `requires` または `decreasing` による algorithm 自身や再帰グループの適用、algorithm 自身と再帰グループの全メンバーが `terminating` と宣言されていない場合の `ensures` による適用)。 | Specs 20.4-20.5/20.7-20.8/20.13、Core 34-35/42-45、`MT10-CIR-ALG`。 | Request/metadata 搬送のみ。call/result substitution の生成・適用・検証は VC Task-30 descendant。contract axiom、VC、termination proof/promotion/recursive encoding は作らない。契約の自己参照の拒否は public code を持たない structured local diagnostic とする。 |
 | 47 | Snapshot/claim shell、snapshot identity、captured algorithm context request、visible runtime/ghost locals、hidden-loop-value ref、claim body/order、missing/unsupported state。 | Spec 20.6、Core 37 theorem shellとCore 42-46、`MT10-CIR-ALG`。 | Claimは既にlower済みのCore-37 theorem/statement shellだけへlinkする。Source reconstruction、context fact、old-state substitution、claim proof、CFG capture、VC、acceptance は扱わない。 [限定 void claim](elaborator.md) は先行する空 interface algorithm への依存と実 theorem/proof source を保持し、状態 capture のある claim は保留する。 |
 | 54 | `terminating` algorithm 本体の定義的断片の分類と、ガード付き定義式の構成: ループのない断片の本体の網羅性、局所ガード、経路条件、`const` の置換、boolean 条件、相互再帰グループの全か無か、抽象のままの template parameter。 | Spec 20.2.6、20.7.3、20.8.2、20.13.6、Core 42-43・46、`MT10-CIR-ALG`。 | 定義式は来歴付きの Core metadata であり、事実ではない。断片外の本体は分類だけを記録し、定義式を持たない。VC、受理、前提としての利用、MVM、extraction は扱わない。 |
+
+### Core46 Contract Applicability
+
+`ensures` の自己・グループ適用について、Core46 は当該 algorithm と全メンバーを、
+真正で完全な group membership と `terminating` 宣言に照合する。partial メンバーが
+あれば適用は不正となり、membership・宣言データの欠落、古さ、不一致は handoff を
+拒否する。この宣言検査は VC56 の文脈構成に先行し、VC57 が後で全メンバーの
+適用される証明義務を受理する段階とは異なる。
+
+将来の実 source ケースでは全員 terminating の `ensures` 適用を受け入れ、同じ
+自己・グループ適用でメンバーまたは当該 owner が partial の場合を拒否する。
+`requires`/`decreasing` の自己・グループ適用は引き続き拒否する。破損ケースは
+member・宣言 identity の欠落や古さを拒否する。
 
 [限定 computation 要求](elaborator.md) は source 所有の open goal を保持する。Chapter 20.9 MVM/計算証明受理/runtime/gas と 20.10 extraction は parked
 downstream work のまま。20.13 formula は VC authority であり、Core 46 は later

@@ -17,8 +17,9 @@ without a header measure.
 
 ## Forbidden
 
-Current-argument hypotheses; hypotheses for algorithms that are not
-`terminating` (their self-reference is rejected upstream by Core 46);
+Current-argument hypotheses; initial body hypotheses for a containing
+algorithm not declared `terminating`; self/group applications in `ensures`
+that bypass [Core46 applicability](../../mizar-core/en/source_family_decomposition.md#core46-contract-applicability);
 termination acceptance; promotion facts (VC 57); discharge, ATP, or kernel
 work; specification, corpus, or expectation changes made to match behavior.
 
@@ -28,7 +29,7 @@ Test-first real sources: `fact_loop` from §20.7.3, whose invariant and return
 VCs carry the hypothesis and never the current-argument contract; a recursive
 algorithm that uses the hypothesis for another group member; a near-miss
 without a header measure that carries no hypothesis. Corruption tests cover a
-wrong measure, owner, or group.
+wrong measure, owner, or group. Also consume the Core46 applicability controls linked above.
 
 ## Coverage, reviews, and exit
 
