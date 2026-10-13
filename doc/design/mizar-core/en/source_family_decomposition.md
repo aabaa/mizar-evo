@@ -300,10 +300,9 @@ applicable exact Core 33-40 rows named in that document; direct VC 41 consumes
 Core 34-38 only, while missing scheme/theorem roles remain outside it behind
 Core 41/S1. VC 40 also requires completed VC 37/39 outputs before it can
 decorate their real registration/cluster/reduction VCs. VC 42-55 depend on the
-exact Core 42-53 algorithm/CFG rows. VC 53 additionally remains blocked because
-current canonical authority does not name the authenticated
-termination-evidence producer, reference schema/identity, authentication gate,
-or tests. Concrete call/result substitution remains VC-owned. Core 40/A1
+exact Core 42-53 algorithm/CFG rows. For the current VC 53 slice, the active normal-return contract supersedes
+Task 30's historical missing-authority blocker; genuine source/evidence and
+proof producers remain prerequisites and imported acceptance stays blocked. Concrete call/result substitution remains VC-owned. Core 40/A1
 remains blocked, and no VC descendant may
 treat any unimplemented Core row, status, trace, formula, or context as
 available. This backlink adds ownership only and no Core/VC coverage.

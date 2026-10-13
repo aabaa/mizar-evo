@@ -33,6 +33,10 @@ key にしなければならない。message text は presentation のままで�
 | `mizar-driver` | `crates/mizar-driver` は現在 scaffold を持ち、diagnostics に依存し得る。ただし driver request/session/event-stream/publication tasks は future work のままである。 | `external_dependency_gap` | `mizar-driver` が diagnostics に driver bridge を所有させずに、phase batches を collect できる real session orchestration と publication boundary を着地させる。 |
 | artifact projection | `mizar-artifact` は artifact mutation、manifest publication、durable projected artifact schema を所有する。 | `external_dependency_gap` | artifact-facing emission が real producer outputs と artifact-owned projection task によって駆動される。 |
 
+## Definition Cycle Adoption
+
+E0410 は `logic.circular_definition` として登録済みだが、登録は source-cycle emission を意味しない。今後の Checker adoption は真正な definiens/body-call provenance を維持し、算法を経由する場合も含め definiens を通る全 cycle (§10.3.3) を対象とする。新番号は割り当てない。
+
 ## Boundary Rules
 
 - placeholder adapter、stub API、fake resolver adoption、provisional conversion

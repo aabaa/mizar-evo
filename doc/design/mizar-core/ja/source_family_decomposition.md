@@ -247,8 +247,9 @@ VC 32-41 は本文書にある applicable exact Core 33-40 row に依存し、di
 Core 34-38 だけを消費する。missing scheme/theorem role はその外で Core 41/S1 の背後に
 残る。VC 40 は real registration/cluster/reduction VC を decorate する前に complete 済み
 VC 37/39 output も必要とする。VC 42-55 は exact Core 42-53 algorithm/CFG row に依存する。
-VC 53 はさらに、current canonical authority が authenticated termination-evidence producer、
-reference schema/identity、authentication gate、test を命名していないため blocked のまま。
+現行 VC 53 slice では normal-return 契約が Task 30 の歴史上の missing-authority
+blocker を置換する。真正な source/evidence と proof producer は先行条件のままで、
+imported acceptance は blocked。
 concrete call/result substitution は VC-owned のまま。Core 40/A1 は blocked のままで、
 どの VC descendant も未実装 Core row、
 status、trace、formula、context を available と扱えない。この backlink は ownership

@@ -16,8 +16,8 @@ algorithm call edges, which form a recursive group.
 
 ## Forbidden
 
-Public diagnostic registration (the E0410 code stays spec-reserved until a
-separately authorized diagnostics adoption); termination checking (VC 52);
+New public diagnostic allocation (E0410/logic.circular_definition is already
+registered; source-cycle emission/adoption remains a separate producer task); termination checking (VC 52);
 treating synonyms or algorithm contracts as definition edges (§10.3.3 names
 definiens and algorithm calls only); specification, corpus, or expectation
 changes made to match behavior.

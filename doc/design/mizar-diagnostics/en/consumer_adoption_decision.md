@@ -33,6 +33,10 @@ fields when adoption happens; message text remains presentation.
 | `mizar-driver` | `crates/mizar-driver` now has a scaffold and may depend on diagnostics, but driver request/session/event-stream/publication tasks are still future work. | `external_dependency_gap` | `mizar-driver` lands real session orchestration and the publication boundary that can collect phase batches without diagnostics owning the driver bridge. |
 | Artifact projection | `mizar-artifact` owns artifact mutation, manifest publication, and durable projected artifact schemas. | `external_dependency_gap` | Artifact-facing emission is driven by real producer outputs and an artifact-owned projection task. |
 
+## Definition Cycle Adoption
+
+E0410 is allocated as `logic.circular_definition`; allocation is not source-cycle emission. Future Checker adoption must preserve authenticated definiens/body-call provenance and cover every cycle through a definiens, including mixed algorithm cycles (§10.3.3), without allocating a new code.
+
 ## Boundary Rules
 
 - Do not add placeholder adapters, stub APIs, fake resolver adoption, or
