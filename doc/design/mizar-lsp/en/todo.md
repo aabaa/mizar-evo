@@ -10,16 +10,15 @@
 
 ## Module Implementation
 
-Module specs do not exist yet; each is written by its own spec task (English
-and Japanese in the same change) before the implementation tasks that cite
-it. The exception is `range`, where code predates the spec and task 2
-retrofits one. The crate refines architecture 12 and 19 and internal 03 per
+Module specs precede implementation in paired English/Japanese documents;
+task 2 retrofits `range`, where code predates its spec. The crate follows
+[its plan](00.crate_plan.md) and refines architecture 12/19 and internal 03 per
 [internal 07](../../internal/en/07.crate_module_layout.md).
 
 | Module | Spec | Source | Status |
 |---|---|---|---|
-| range | `range.md` (task 2) | `src/range_mapper.rs` | [~] conversions exist, spec pending |
-| server | `server.md` (task 4) | `src/server.rs` | [ ] |
+| range | [range.md](range.md) (task 2) | `src/range_mapper.rs` | [x] |
+| server | [server.md](server.md) (task 4) | `src/server.rs` | [x] |
 | snapshot | `snapshot.md` (task 6) | `src/snapshot.rs` | [ ] |
 | diagnostics | `diagnostics.md` (task 8) | `src/diagnostics.rs` | [ ] |
 | build_bridge | `build_bridge.md` (task 10) | `src/build_bridge.rs` | [ ] |
@@ -46,7 +45,7 @@ committed autonomously without holding the rest of the crate in flight.
 
 ## Crate Prerequisites
 
-The crate currently depends on `mizar-session` and `mizar-lexer` (range
+The crate uses serde_json for protocol decoding, `mizar-session` and `mizar-lexer` (range
 conversion). Wave B adds `mizar-diagnostics` (records and indexes),
 `mizar-ir` (snapshot handles), and `mizar-driver` (build requests and
 events); wave C adds `mizar-artifact` (metadata readers). Architecture:
@@ -56,10 +55,7 @@ internal: [03](../../internal/en/03.diagnostics_model_and_lsp_bridge.md).
 
 ## Resolved And Open Decisions
 
-- **LSP transport/protocol library: open, resolved by task 4.** Choose
-  between an existing protocol crate and a minimal in-house JSON-RPC layer,
-  weighing the workspace's external-dependency policy; record the decision
-  and its trust implications in `server.md`.
+- **Transport: resolved by [server.md](server.md).** Minimal JSON-RPC over existing serde_json; compiler authority stays upstream.
 - **Overlay diagnostics: resolved by internal 03.** Open-buffer diagnostics
   for unsaved text reuse the shared record shape but are never published to
   CLI output or `VerifiedArtifact`; `diagnostics.md` restates this.
@@ -73,14 +69,16 @@ internal: [03](../../internal/en/03.diagnostics_model_and_lsp_bridge.md).
 Keep `cargo test -p mizar-lsp` green after each task (see
 [Recommended Verification](#recommended-verification)).
 
+Tasks 1–5: [LSP-LIFECYCLE-FOUNDATION](../../task_contracts/en/LSP-LIFECYCLE-FOUNDATION.md).
+
 ### Wave A: range foundation
 
-1. **Lint-policy guard.** [ ]
+1. **Lint-policy guard.** [x]
    - Add `tests/lint_policy.rs` mirroring the `mizar-frontend` guard.
    - Tests: lint-policy guard passes.
    - Deps: none. Spec: repository conventions.
 
-2. **Spec: `range.md` (retrofit).** [ ]
+2. **Spec: `range.md` (retrofit).** [x]
    - Write the range-conversion spec for the existing `range_mapper`
      (English and Japanese): UTF-16 code-unit rules, surrogate pairs, line
      endings, line-map interaction, and error cases; record any
@@ -88,7 +86,7 @@ Keep `cargo test -p mizar-lsp` green after each task (see
    - Deps: 1. Spec: [internal 03](../../internal/en/03.diagnostics_model_and_lsp_bridge.md)
      "Range Conversion".
 
-3. **Range-conversion hardening.** [ ]
+3. **Range-conversion hardening.** [x]
    - Close the gaps task 2 found and add property tests (round-trips where
      defined, surrogate-pair boundaries, CRLF/LF).
    - Tests: property suite; conversion totality over fixture corpora.
@@ -96,7 +94,7 @@ Keep `cargo test -p mizar-lsp` green after each task (see
 
 ### Wave B: server, snapshots, diagnostics, build bridge
 
-4. **Spec: `server.md`.** [ ]
+4. **Spec: `server.md`.** [x]
    - Write the server-lifecycle spec (English and Japanese, no code):
      initialize/shutdown, capability negotiation, document
      synchronization, request routing, and the transport-library decision
@@ -104,7 +102,7 @@ Keep `cargo test -p mizar-lsp` green after each task (see
    - Deps: 2. Spec: [internal 03](../../internal/en/03.diagnostics_model_and_lsp_bridge.md)
      "LSP Bridge".
 
-5. **Server lifecycle.** [ ]
+5. **Server lifecycle.** [x]
    - Implement initialize/shutdown, capability negotiation, and document
      synchronization over the chosen transport.
    - Tests: lifecycle fixtures over an in-memory transport; malformed

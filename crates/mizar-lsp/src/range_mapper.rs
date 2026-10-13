@@ -20,7 +20,7 @@ pub enum RangeMapError {
     PositionOverflow,
 }
 
-const MAX_LSP_POSITION: usize = u32::MAX as usize;
+const MAX_LSP_POSITION: usize = i32::MAX as usize;
 
 impl From<SourceMapError> for RangeMapError {
     fn from(error: SourceMapError) -> Self {
@@ -79,7 +79,7 @@ fn lsp_position(
         max_utf16_column,
     )?;
     Ok(LspPosition {
-        line: line_column.line - 1,
+        line: u32_lsp_coordinate((line_column.line - 1) as usize, MAX_LSP_POSITION)?,
         character: utf16_column,
     })
 }
@@ -421,6 +421,147 @@ mod tests {
             super::u32_lsp_coordinate(u32::MAX as usize + 1, u32::MAX as usize),
             Err(RangeMapError::PositionOverflow)
         );
+    }
+
+    #[test]
+    fn lsp_coordinates_obey_the_protocol_uinteger_limit() {
+        let max = super::MAX_LSP_POSITION;
+        assert_eq!(max, 2_147_483_647);
+        assert_eq!(super::u32_lsp_coordinate(max, max), Ok(max as u32));
+        assert_eq!(
+            super::u32_lsp_coordinate(max + 1, max),
+            Err(RangeMapError::PositionOverflow)
+        );
+    }
+
+    #[test]
+    fn fixture_ranges_match_independent_utf16_boundary_positions() {
+        for source in [
+            include_str!("../../../tests/miz/pass/parser/pass_parser_module_skeleton_001.miz"),
+            include_str!("../../../tests/miz/pass/parser/pass_parser_atomic_formulas_001.miz"),
+            "",
+            "\n",
+            "a😀β\ne\u{301}漢\n",
+        ] {
+            let line_map = line_map(source);
+            let mut position = LspPosition {
+                line: 0,
+                character: 0,
+            };
+            let mut boundaries = Vec::new();
+            for (offset, scalar) in source.char_indices() {
+                boundaries.push((offset, position));
+                if scalar == '\n' {
+                    position.line += 1;
+                    position.character = 0;
+                } else {
+                    position.character += if scalar as u32 > 0xffff { 2 } else { 1 };
+                }
+            }
+            boundaries.push((source.len(), position));
+            for (index, &(start, expected_start)) in boundaries.iter().enumerate() {
+                for &(end, expected_end) in &boundaries[index..] {
+                    assert_eq!(
+                        lsp_range_from_source_range(&line_map, source_range(&line_map, start, end)),
+                        Ok(LspRange {
+                            start: expected_start,
+                            end: expected_end
+                        }),
+                        "{source:?}: {start}..{end}"
+                    );
+                }
+            }
+        }
+    }
+
+    #[test]
+    fn every_multibyte_interior_is_rejected_at_both_range_endpoints() {
+        let source = "a😀βe\u{301}漢\n";
+        let line_map = line_map(source);
+        for offset in (0..source.len()).filter(|&offset| !source.is_char_boundary(offset)) {
+            let expected = Err(RangeMapError::SourceMap(
+                SourceMapError::OffsetNotUtf8Boundary {
+                    source_id: line_map.source_id(),
+                    offset,
+                },
+            ));
+            for (start, end) in [(0, offset), (offset, source.len())] {
+                assert_eq!(
+                    lsp_range_from_source_range(&line_map, source_range(&line_map, start, end)),
+                    expected
+                );
+            }
+        }
+    }
+
+    #[test]
+    fn actual_loaded_crlf_and_lf_sources_have_equivalent_ranges() {
+        use mizar_session::{
+            DiskSourceLoader, Edition, ModulePath, PackageId, SourceInput, SourceLoader,
+            SourceOriginInput,
+        };
+        use std::{fs, sync::Arc};
+
+        let root = std::env::temp_dir().join(format!("mizar-lsp-range-{}", std::process::id()));
+        fs::create_dir_all(root.join("src")).unwrap();
+        let path = root.join("src/input.miz");
+        fs::write(&path, "disk text").unwrap();
+        let uri = format!(
+            "file:///{}",
+            path.to_str()
+                .unwrap()
+                .replace('\\', "/")
+                .trim_start_matches('/')
+        );
+        let loader = DiskSourceLoader::new(&root);
+        let ids = InMemorySessionIdAllocator::new();
+        let snapshot = BuildSnapshotId::from_published_schema_str(&snapshot_string(1)).unwrap();
+        let sources = ["a😀\r\nβe\u{301}\r\n", "a😀\nβe\u{301}\n"].map(|text| {
+            loader
+                .load(
+                    snapshot,
+                    SourceInput {
+                        package_id: PackageId::new("range"),
+                        module_path: ModulePath::new("input"),
+                        normalized_path: mizar_session::normalize_path(&root, &path).unwrap(),
+                        edition: Edition::new("2026"),
+                        origin: SourceOriginInput::OpenBuffer {
+                            uri: uri.clone(),
+                            expected_version: 1,
+                            actual_version: 1,
+                            text: Arc::from(text),
+                        },
+                    },
+                    &ids,
+                )
+                .unwrap()
+        });
+        assert_eq!(sources[0].text, sources[1].text);
+        assert_ne!(sources[0].source_id, sources[1].source_id);
+        assert!(sources[0].loading_map.is_some());
+        let text = sources[0].text.as_ref();
+        let boundaries = text
+            .char_indices()
+            .map(|(offset, _)| offset)
+            .chain(std::iter::once(text.len()))
+            .collect::<Vec<_>>();
+        for (index, &start) in boundaries.iter().enumerate() {
+            for &end in &boundaries[index..] {
+                let mapped = sources.each_ref().map(|source| {
+                    lsp_range_from_source_range(
+                        &source.line_map,
+                        SourceRange {
+                            source_id: source.source_id,
+                            start,
+                            end,
+                        },
+                    )
+                    .unwrap()
+                });
+                assert_eq!(mapped[0], mapped[1]);
+            }
+        }
+        fs::remove_dir_all(root).unwrap();
     }
 
     #[test]

@@ -1,10 +1,10 @@
 # Task EDITOR-LSP-ENTRY: `mizar lsp` stdio entry point
 Canonical language: English; [Japanese pointer](../ja/EDITOR-LSP-ENTRY.md).
-Status: planned. Tier: full. Owners: [driver plan](../../mizar-driver/en/00.crate_plan.md) (CLI) and [lsp todo](../../mizar-lsp/en/todo.md) (server); consumers: editor clients.
+Status: planned. Tier: full. Owners: [driver plan](../../mizar-driver/en/00.crate_plan.md) (CLI) and [lsp plan](../../mizar-lsp/en/00.crate_plan.md) (server); consumers: editor clients.
 Dependencies: mizar-lsp tasks 4-5 (server lifecycle and the transport decision).
-Readiness: Blocked on the real LSP lifecycle and stdio server; current mizar-lsp exposes only range mapping.
+Readiness: Lifecycle/framing exists; current-build diagnostic transport and driver startup remain required.
 Authority: specification §1 (LSP support for editors), §23.6 (LSP reads build artifacts); [architecture 12](../../architecture/en/12.diagnostics_and_lsp.md); [driver CLI](../../mizar-driver/en/cli.md#command-surface).
-Gap: `design_drift`. The LSP server is planned, but no task defines how an editor starts it; the CLI implements only `mizar build`.
+Gap: `source_gap`. The CLI implements only `mizar build`; lifecycle alone does not supply current-build diagnostics.
 
 ## Scope
 

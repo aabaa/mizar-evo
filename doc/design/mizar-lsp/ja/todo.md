@@ -10,16 +10,14 @@
 
 ## モジュール実装
 
-モジュール仕様はまだ存在しない。各仕様は、それを引用する実装タスクより
-前に、専用の仕様タスクが（英語と日本語を同じ変更で）執筆する。例外は
-`range` で、コードが仕様に先行しているため task 2 が仕様を後付けする。
-この crate は [internal 07](../../internal/ja/07.crate_module_layout.md) に
+モジュール仕様は EN/JA 対で実装より前に作成する。task 2 は先行する range の仕様を後付けする。
+この crate は [crate plan](00.crate_plan.md) と [internal 07](../../internal/ja/07.crate_module_layout.md) に
 従い、アーキテクチャ 12、19 と internal 03 を精緻化する。
 
 | モジュール | 仕様 | ソース | 状態 |
 |---|---|---|---|
-| range | `range.md`（task 2） | `src/range_mapper.rs` | [~] 変換は実装済み、仕様が未着手 |
-| server | `server.md`（task 4） | `src/server.rs` | [ ] |
+| range | [range.md](range.md)（task 2） | `src/range_mapper.rs` | [x] |
+| server | [server.md](server.md)（task 4） | `src/server.rs` | [x] |
 | snapshot | `snapshot.md`（task 6） | `src/snapshot.rs` | [ ] |
 | diagnostics | `diagnostics.md`（task 8） | `src/diagnostics.rs` | [ ] |
 | build_bridge | `build_bridge.md`（task 10） | `src/build_bridge.rs` | [ ] |
@@ -46,7 +44,7 @@ code action、explanation クエリ、compiler driver を通じたビルドの
 
 ## crate の前提条件
 
-この crate は現在 `mizar-session` と `mizar-lexer`（range 変換）に依存
+この crate は serde_json（protocol decoding）、`mizar-session` と `mizar-lexer`（range 変換）に依存
 する。第 B 波で `mizar-diagnostics`（レコードと索引）、`mizar-ir`
 （snapshot ハンドル）、`mizar-driver`（ビルドリクエストとイベント）が
 加わり、第 C 波で `mizar-artifact`（メタデータリーダー）が加わる。
@@ -57,10 +55,7 @@ internal: [03](../../internal/ja/03.diagnostics_model_and_lsp_bridge.md)。
 
 ## 解決済みおよび保留中の決定
 
-- **LSP トランスポート/プロトコルライブラリ: 未解決。task 4 で解決する。**
-  既存のプロトコル crate と最小の自前 JSON-RPC 層のどちらを採るかを、
-  workspace の外部依存ポリシーを勘案して決め、決定とその信頼への含意を
-  `server.md` に記録する。
+- **Transport: [server.md](server.md) で解決。** 既存 serde_json による最小 JSON-RPC とし、compiler 権限は上流に保つ。
 - **オーバーレイ診断: internal 03 により解決済み。** 未保存テキストの
   open バッファ診断は共有レコードの形を再利用するが、CLI 出力や
   `VerifiedArtifact` には決して公開されない。`diagnostics.md` がこれを
@@ -75,14 +70,16 @@ internal: [03](../../internal/ja/03.diagnostics_model_and_lsp_bridge.md)。
 各タスクの後で `cargo test -p mizar-lsp` を成功状態に保つこと
 （[推奨検証](#推奨検証)を参照）。
 
+Tasks 1–5: [LSP-LIFECYCLE-FOUNDATION](../../task_contracts/ja/LSP-LIFECYCLE-FOUNDATION.md)。
+
 ### 第 A 波: range の基盤
 
-1. **lint 方針のガード。** [ ]
+1. **lint 方針のガード。** [x]
    - `mizar-frontend` のガードに倣った `tests/lint_policy.rs` を追加する。
    - テスト: lint 方針ガードが通る。
    - 依存: なし。仕様: リポジトリの慣行。
 
-2. **仕様: `range.md`（後付け）。** [ ]
+2. **仕様: `range.md`（後付け）。** [x]
    - 既存の `range_mapper` に対する range 変換の仕様を執筆する（英語と
      日本語）: UTF-16 コードユニットの規則、サロゲートペア、改行、行
      マップとの相互作用、エラーケース。コードと仕様のギャップを
@@ -90,7 +87,7 @@ internal: [03](../../internal/ja/03.diagnostics_model_and_lsp_bridge.md)。
    - 依存: 1。仕様: [internal 03](../../internal/ja/03.diagnostics_model_and_lsp_bridge.md)
      「Range Conversion」。
 
-3. **range 変換の強化。** [ ]
+3. **range 変換の強化。** [x]
    - task 2 が見つけたギャップを閉じ、プロパティテスト（定義される範囲の
      ラウンドトリップ、サロゲートペア境界、CRLF/LF）を追加する。
    - テスト: プロパティスイート。フィクスチャコーパス上の変換の全域性。
@@ -98,14 +95,14 @@ internal: [03](../../internal/ja/03.diagnostics_model_and_lsp_bridge.md)。
 
 ### 第 B 波: server、snapshot、診断、build bridge
 
-4. **仕様: `server.md`。** [ ]
+4. **仕様: `server.md`。** [x]
    - server ライフサイクルの仕様を執筆する（英語と日本語、コードなし）:
      initialize/shutdown、capability ネゴシエーション、文書同期、
      リクエストルーティング、トランスポートライブラリの決定とその根拠。
    - 依存: 2。仕様: [internal 03](../../internal/ja/03.diagnostics_model_and_lsp_bridge.md)
      「LSP Bridge」。
 
-5. **server ライフサイクル。** [ ]
+5. **server ライフサイクル。** [x]
    - 選択したトランスポート上で initialize/shutdown、capability
      ネゴシエーション、文書同期を実装する。
    - テスト: インメモリトランスポート上のライフサイクルフィクスチャ。

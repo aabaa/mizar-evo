@@ -126,7 +126,7 @@ is its task 1). "Next work" points into the
 | mizar-build | Phase 0 planning, task graph, scheduler, cache seam, commit boundary | [~] scheduler milestone and scheduled lexical-prefix ordering implemented | Step 6 task 28, real-service equivalence | [todo](./mizar-build/en/todo.md) |
 | mizar-driver | Build requests, phase registry, CLI/watch/LSP entry points | [~] scheduled SourceLoad/Frontend and workspace lexical publication implemented | Step 6 real-service equivalence; later services remain producer-blocked | [todo](./mizar-driver/en/todo.md) |
 | mizar-diagnostics | Diagnostic registry, failure records, ordering, rendering | [x] internal milestone and E0220–E0224 import descriptors implemented | Step 8 broader public adoption | [todo](./mizar-diagnostics/en/todo.md) |
-| mizar-lsp | Editor range mapping now; server features later | [~] range-conversion slice only | step 8 (tasks 1-24) | [todo](./mizar-lsp/en/todo.md) |
+| mizar-lsp | Editor protocol and range conversion | [~] range/lifecycle foundation; semantic consumers remain open | Step 8 tasks 6–24 | [todo](./mizar-lsp/en/todo.md) |
 | mizar-doc | Documentation rendering and extraction | [ ] planned | step 8 (tasks 1-29) | [todo](./mizar-doc/en/todo.md) |
 
 ## Sequential Execution Plan
@@ -751,7 +751,7 @@ permit; each source-integration slice waits for its actual upstream outputs.
 Exit: the proof-and-algorithm-verification completion gate holds with active
 `proof_verification` coverage.
 
-### Step 8 — User-facing consumer wave [ ]
+### Step 8 — User-facing consumer wave [~]
 
 Adopt user-facing surfaces only after the owning producers publish stable
 diagnostics, metadata, artifacts, and semantic indexes.
@@ -761,7 +761,7 @@ diagnostics, metadata, artifacts, and semantic indexes.
    (SCA-004; see
    [consumer_adoption_decision.md](./mizar-diagnostics/en/consumer_adoption_decision.md)).
    The SSA-018 `of`/`over` scope-sensitivity lint is recorded for this wave.
-2. [ ] [mizar-lsp tasks 1-24](./mizar-lsp/en/todo.md) — server, snapshots,
+2. [~] [mizar-lsp tasks 1-24](./mizar-lsp/en/todo.md) — server, snapshots,
    diagnostics, build bridge, metadata, navigation, actions, explanations,
    and the `@show_*`/`@eval` projection audit (SCA-003).
 3. [ ] [mizar-doc tasks 1-29](./mizar-doc/en/todo.md) — phase-16 rendering
