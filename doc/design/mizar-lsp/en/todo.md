@@ -258,6 +258,8 @@ Keep `cargo test -p mizar-lsp` green after each task (see
 29. **Web playground (with mizar-driver).** [ ]
     - Contract: [WEB-PLAYGROUND](../../task_contracts/en/WEB-PLAYGROUND.md).
 
+- [ ] [EDITOR-COMPUTED-RESULTS](../../task_contracts/en/EDITOR-COMPUTED-RESULTS.md).
+
 ## Recommended Verification
 
 Run after each task:

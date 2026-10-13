@@ -378,3 +378,7 @@ Selection needs authenticated dependency manifests and release-version inputs; a
 Development mismatch is a warning, release mismatch an error. The selected release fixes backend builds; installation and redistribution remain driver-owned.
 Planner tests cover omission and existing constraint forms, malformed/conflicting constraints, missing dependency/release inputs, preserved pins and unavailable versions; CLI tests cover both mismatch modes and matching running/locked versions with no W0306 or error.
 This deferred boundary introduces no lock schema/API shape or installed-runtime claim.
+
+## Computation Policy Boundary
+
+Build owns the default-false boolean computation_replay setting and package-local manifest configuration (§23.1); the driver carries it to Proof, which owns explicit invocation precedence and release/trust policy. Configuration participates in snapshot/cache identity; dependency defaults cannot replace the referencing package policy. Tests distinguish omission/false/true/nonboolean, workspace packages, config-only invalidation and opposite explicit options across direct/transitive calls.

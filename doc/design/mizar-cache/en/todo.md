@@ -438,6 +438,8 @@ Keep `cargo test -p mizar-cache` green after each task (see
       source runner, placeholder bridge, cache authority, or proof-status
       promotion.
 
+- [ ] [BUILD-COMPUTATION-POLICY](../../task_contracts/en/BUILD-COMPUTATION-POLICY.md).
+
 ## Recommended Verification
 
 Run after each task:

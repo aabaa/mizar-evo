@@ -32,6 +32,8 @@ commands, profiles, message formats, or exit codes may be added without moving
 manifest semantics, diagnostics identity, artifact output authority, or LSP
 protocol conversion into the CLI.
 
+When future refine/minimize tasks land, preserve computed steps with validated executable/dependency, input/result and trust/replay provenance; never replace them with algorithm-name citations or fabricate kernel witnesses/used_axioms (§23.5.2). These commands remain deferred.
+
 ## Command Surface
 
 The binary name is `mizar`. Task D-013 implements only the batch build command:

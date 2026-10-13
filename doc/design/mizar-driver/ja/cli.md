@@ -30,6 +30,8 @@ Downstream crate はこれらの enum を match するとき wildcard arm を持
 将来の command、profile、message format、exit code は、manifest semantics、diagnostics
 identity、artifact output authority、LSP protocol conversion を CLI に移さずに追加できる。
 
+将来 refine/minimize を実装する際は、computed step と検証済み executable/dependency、input/result、trust/replay provenance を保持する。算法名だけの citation へ置換せず、kernel witness/used_axioms を捏造しない (§23.5.2)。両 command は引き続き deferred。
+
 ## Command Surface
 
 binary name は `mizar`。task D-013 が実装するのは batch build command のみである:

@@ -357,3 +357,7 @@ planner は任意の package toolchain 制約、workspace/解決済み依存の�
 開発時の不一致は警告、release 時はエラー。選択した release が backend build を固定し、インストールと再配布は driver が所有する。
 planner テストは省略と既存の制約形式、不正/競合制約、依存/release 入力欠落、pin 維持、利用不能な版を扱い、CLI テストは不一致の両モードと、実行中/lock の版が一致して W0306 やエラーを出さない場合を扱う。
 先送りの境界であり、lock schema/API 形状や実行時の導入済み状態を定めない。
+
+## Computation Policy Boundary
+
+Build は default-false の boolean computation_replay と package-local manifest configuration (§23.1) を所有する。driver が Proof へ渡し、Proof が明示 invocation の優先順位と release/trust policy を所有する。configuration は snapshot/cache identity に参加し、dependency の default は参照元 package policy を置換しない。テストは省略/false/true/nonboolean、workspace package、config-only invalidation、direct/transitive call の逆向き明示 option を区別する。

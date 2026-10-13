@@ -417,6 +417,8 @@ internal: [02](../../internal/ja/02.artifact_store_cache_key_and_manifest.md)、
       owner-provided identity であり、本 task は source runner、placeholder bridge、
       cache authority、proof-status promotion を追加しない。
 
+- [ ] [BUILD-COMPUTATION-POLICY](../../task_contracts/ja/BUILD-COMPUTATION-POLICY.md).
+
 ## 推奨検証
 
 各タスクの後で実行する:

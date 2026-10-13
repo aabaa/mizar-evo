@@ -258,6 +258,8 @@ internal: [03](../../internal/ja/03.diagnostics_model_and_lsp_bridge.md)。
 29. **Web playground (mizar-driver と共同)。** [ ]
     - 契約: [WEB-PLAYGROUND](../../task_contracts/ja/WEB-PLAYGROUND.md)。
 
+- [ ] [EDITOR-COMPUTED-RESULTS](../../task_contracts/ja/EDITOR-COMPUTED-RESULTS.md).
+
 ## 推奨検証
 
 各タスクの後で実行する:
