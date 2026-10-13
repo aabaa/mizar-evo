@@ -1462,8 +1462,8 @@ pub fn validate_expectation_path(
                     }
                 && expectation.domain == domain
                 && expectation.tags.as_slice() == ["active_proof_verification"]
-                && (!(failure && domain == "algorithms.contracts")
-                    && !matches!(
+                && (!(failure && domain == "algorithms.contracts"
+                    || matches!(
                         domain,
                         "algorithms.claim"
                             | "algorithms.assertions"
@@ -1473,7 +1473,7 @@ pub fn validate_expectation_path(
                             | "predicates.symbolic_definition"
                             | "functors.means_definition"
                             | "functors.equals_definition"
-                    )
+                    ))
                     || expectation.schema_version == 1
                         && expectation.profiles.as_slice() == ["fast"]
                         && expectation.ast_profile.is_none()

@@ -1143,11 +1143,11 @@ pub fn generate_source_void_claim(
             return Err(invalid());
         };
         if provenance.phase != CoreProvenancePhase::Checker
-            || !provenance
+            || provenance
                 .key
                 .as_str()
                 .strip_prefix("algorithm/source-node#")
-                .is_some_and(|id| id.parse::<usize>().is_ok())
+                .is_none_or(|id| id.parse::<usize>().is_err())
         {
             return Err(invalid());
         }
@@ -1366,11 +1366,11 @@ pub fn generate_source_algorithm_postconditions(
             return Err(invalid());
         };
         if provenance.phase != CoreProvenancePhase::Checker
-            || !provenance
+            || provenance
                 .key
                 .as_str()
                 .strip_prefix("algorithm/source-node#")
-                .is_some_and(|id| id.parse::<usize>().is_ok())
+                .is_none_or(|id| id.parse::<usize>().is_err())
         {
             return Err(invalid());
         }
