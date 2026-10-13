@@ -185,7 +185,7 @@ unsupported/open translation outcome を出してよいが、premise set を mut
 
 ## Planned Premise Selection Boundary
 
-将来の前提 ranking は順序付き選択を translation 前の VC-owned immutable input assembly へ返し、真正な source VC、選択した formula provenance、problem/configuration identity を保持する。診断用 retry は追加候補を試せるが、変更されていない source proof を受理しない。translator は source premise を変更できない。
+予算に応じた選択は [VC 所有の境界](../../mizar-vc/ja/vc_ir.md#planned-pretranslation-selection-assembly) で組み立てる。translator は渡された immutable input を消費し、source premise を追加・削除・prune しない。
 
 ## goal と polarity
 

@@ -1,8 +1,8 @@
 # Task ATPK-PREMISE-RANKING: deterministic premise ranking
 Canonical language: English; [Japanese pointer](../ja/ATPK-PREMISE-RANKING.md).
-Status: planned. Tier: full. Owner: [atp plan](../../mizar-atp/en/00.crate_plan.md); consumers: [resolve plan](../../mizar-resolve/en/00.crate_plan.md) (unresolved citations), [artifact plan](../../mizar-artifact/en/00.crate_plan.md) (`missing_facts.json`), [test plan](../../mizar-test/en/00.crate_plan.md).
-Dependencies: an index of the facts visible at a goal (module summaries and imports); [VC-owned pretranslation assembly](../../mizar-atp/en/translator.md#planned-premise-selection-boundary).
-Readiness: Ranking over authenticated inputs can start; complete integration is blocked on visible-fact indexes, source obligations and suggestion artifacts.
+Status: planned. Tier: full. Owner: [atp plan](../../mizar-atp/en/00.crate_plan.md); consumers: [VC plan](../../mizar-vc/en/00.crate_plan.md) (selected-input assembly), [resolve plan](../../mizar-resolve/en/00.crate_plan.md) (unresolved citations), [artifact plan](../../mizar-artifact/en/00.crate_plan.md) (`missing_facts.json`), [test plan](../../mizar-test/en/00.crate_plan.md).
+Dependencies: an index of the facts visible at a goal (module summaries and imports); [VC-owned pretranslation assembly and tests](../../mizar-vc/en/vc_ir.md#planned-pretranslation-selection-assembly) for integration.
+Readiness: Ranking over authenticated inputs can start; complete integration is blocked on authentic visible-fact/source/formula/budget inputs, VC selection assembly and suggestion artifacts.
 Authority: specification §22.4.4, §21.4.1 (`max_axioms` pruning), §23.5.2 (`missing_facts.json`, `ranking` field); [architecture 09](../../architecture/en/09.atp_interface_protocol.md).
 Gap: `test_gap` and `source_drift`; no verifier-side ranking exists.
 

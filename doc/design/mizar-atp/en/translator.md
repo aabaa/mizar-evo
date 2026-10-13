@@ -200,7 +200,7 @@ translation outcome, but it must not mutate the premise set.
 
 ## Planned Premise Selection Boundary
 
-Future premise ranking returns an ordered selection to a VC-owned immutable input assembly before translation, preserving the authenticated source VC, selected formula provenance and problem/configuration identity. Diagnostic retries may test additional candidates but cannot accept an unchanged source proof. The translator remains unable to mutate source premises.
+Budget selection is assembled under the [VC-owned boundary](../../mizar-vc/en/vc_ir.md#planned-pretranslation-selection-assembly). The translator consumes the supplied immutable input and cannot add, drop or prune source premises.
 
 ## Goal And Polarity
 

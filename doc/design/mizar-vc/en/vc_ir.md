@@ -26,7 +26,8 @@ Owned by this module:
 - `VcKind`, the verifier-facing category of the obligation;
 - `LocalContext`, the explicit formulas, binders, path conditions, and policy
   inputs available at the obligation site;
-- symbolic `PremiseRef`s that later ATP translation may encode or prune;
+- symbolic `PremiseRef`s encoded by ATP translation; budget selection belongs
+  to the VC-owned pretranslation assembly below;
 - goal formulas as `VcFormulaRef`s into core or VC-local formula tables, not
   backend text;
 - `ProofHint` records that preserve user hints, citations, unfolding requests,
@@ -311,6 +312,37 @@ Required premise reference classes:
 Unknown, incomplete, or unavailable premise data must not be interpreted as an
 empty premise set. It must either make the dependency slice conservative or keep
 the VC in a deferred/error status with diagnostics.
+
+## Planned Pretranslation Selection Assembly
+
+VC owns the immutable input assembly that consumes ATP's ordered budget
+selection (§§21.4.1,22.4.4). Producers must supply an authenticated source
+obligation, eligible local/cited facts and formula projections, visible-fact
+indexes, the effective package/step budget and named ranking configuration.
+The selected translation input must respect effective `max_axioms` across
+the assembled local/cited axioms. The original VC, goal and full source
+context remain unchanged. Selected rows
+retain their formula, source/citation and context bindings; the selected
+problem binds back to that source target and budget/configuration identity.
+Suggestions are not eligible source-proof premises merely because they rank
+well. Imported rows retain the [handoff authority](kernel_evidence_handoff.md#boundary-rules).
+
+Reject over-cap selections, non-member rows, repeated selection of one assembled row, unavailable
+or mismatched formula/provenance/context, and stale target/problem/configuration
+identity before producing translation input. No partial/empty fallback or
+reconstruction from display/backend data. The translator and existing handoff
+builder remain unable to select or mutate premises. The current consumer APIs
+do not yet provide this selected-input relationship; integration is blocked on
+these authentic producers and assembly.
+
+Future source tests compare within-budget and exact-budget inputs with all
+eligible local/cited rows retained; an over-budget input retains the deterministic
+top budget-sized axiom subset, including a cutoff tie, under input permutation. Exercise package
+budget and step override. Compare the unchanged source VC/goal/context and every
+selected binding. Corruption cases include an authentic over-cap selection and change target, row membership/repetition,
+formula payload, provenance, context, imported authority and problem/configuration
+identity one at a time; each rejects before translation. Failed-pruning diagnostics
+and diagnostic retries remain ATP-owned, not proof acceptance by this assembly.
 
 ## Goal Formula
 

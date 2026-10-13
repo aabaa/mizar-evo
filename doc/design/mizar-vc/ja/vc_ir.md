@@ -25,7 +25,8 @@ policy projection は task 9 が実装する。
 - `VcKind`: obligation の verifier-facing category;
 - `LocalContext`: obligation site で利用可能な explicit formula、binder、path
   condition、policy input;
-- symbolic `PremiseRef`: 後続 ATP translation が encode または prune できる参照;
+- symbolic `PremiseRef`: ATP translation が encode する参照。予算に応じた選択は
+  下記の VC-owned pretranslation assembly が所有する;
 - backend text ではなく core または VC-local formula table への `VcFormulaRef` としての
   goal formula;
 - ATP backend を選ばずに user hint、citation、unfold request、computation request
@@ -296,6 +297,30 @@ debug rendering の前に決定的に sort しなければならない。
 
 unknown、不完全、利用不能な premise data は empty premise set と解釈してはならない。dependency
 slice を保守的にするか、diagnostic つき deferred/error status に VC を保つ必要がある。
+
+## Planned Pretranslation Selection Assembly
+
+VC は ATP の予算に応じた順序付き選択を受け取る immutable input assembly を所有する
+（§§21.4.1,22.4.4）。producer は真正な source obligation、適格な局所・引用 fact と
+formula projection、visible-fact index、有効な package/step budget、名前付き ranking
+configuration を供給する。選択した translation input の局所・引用 axiom の総数は
+有効な `max_axioms` を超えてはならない。元の VC、goal、source context 全体は変えない。選択した行は
+formula・source/citation・context の binding を保持し、選択した problem は元の target と
+budget/configuration identity に対応する。高順位の suggestion だけでは source proof の
+適格な前提にならない。import 行は既存の [handoff authority](kernel_evidence_handoff.md#boundary-rules) を保つ。
+
+予算超過の選択、非member行、同じ assembled row の重複選択、formula/provenance/context の欠落・不一致、
+target/problem/configuration identity の古さは translation input の生成前に拒否する。
+部分的・空の fallback や display/backend data からの再構成は行わない。translator と既存
+handoff builder は前提の選択・変更をしない。現行 consumer API はこの selected-input 関係を
+まだ提供せず、統合は上記の真正な producer と assembly に依存する。
+
+将来の source test は予算内・ちょうど予算の入力で適格な局所・引用行をすべて保持し、
+予算超過では cutoff tie と入力順の変更を含めて決定的な上位 budget 件の axiom subset を保持する。
+package budget と step override を試し、元の VC/goal/context の不変性と全選択 binding を
+比較する。破損ケースは真正な行だけの予算超過選択も含め、target、membership/重複、formula payload、provenance、context、
+import authority、problem/configuration identity を一つずつ変え、translation 前の拒否を
+確認する。pruning 失敗の診断と診断用 retry は ATP 所有で、この assembly は証明を受理しない。
 
 ## Goal formula
 

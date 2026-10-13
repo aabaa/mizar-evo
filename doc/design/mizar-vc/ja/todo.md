@@ -605,3 +605,7 @@ task の `external_dependency_gap` / `deferred` verification item として分�
 - [ ] [AST-CONTRACT](../../task_contracts/ja/AST-CONTRACT.md).
 
 - [ ] [ALG-MVM-EVALUATION](../../task_contracts/ja/ALG-MVM-EVALUATION.md).
+
+## Premise ranking integration
+
+- [ ] [ATPK-PREMISE-RANKING](../../task_contracts/ja/ATPK-PREMISE-RANKING.md): VC selection assembly after authentic fact/formula/budget producers.

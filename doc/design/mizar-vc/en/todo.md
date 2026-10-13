@@ -641,3 +641,7 @@ Check the task off here once tests pass.
 - [ ] [AST-CONTRACT](../../task_contracts/en/AST-CONTRACT.md).
 
 - [ ] [ALG-MVM-EVALUATION](../../task_contracts/en/ALG-MVM-EVALUATION.md).
+
+## Premise ranking integration
+
+- [ ] [ATPK-PREMISE-RANKING](../../task_contracts/en/ATPK-PREMISE-RANKING.md): VC selection assembly after authentic fact/formula/budget producers.
