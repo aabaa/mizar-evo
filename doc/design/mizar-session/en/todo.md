@@ -474,6 +474,9 @@ should keep `cargo test -p mizar-session` green (see [Suggested Verification](#s
       coverage that preserves `SourcePathError::MissingSourceRoot` through
       `SourceLoadError::InvalidSourcePath`.
 
+33. **Acquire sources before snapshot-scoped allocation.** [x]
+    - [SESSION-SOURCE-CAPTURE](../../task_contracts/en/SESSION-SOURCE-CAPTURE.md) owns native acquisition, complete-context validation, actual snapshot hashing and subsequent SourceId allocation; LSP snapshot binding follows separately.
+
 ## Suggested Verification
 
 After each task, run:

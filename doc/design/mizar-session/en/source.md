@@ -267,6 +267,13 @@ Key scenarios:
 - generated-source text with a leading `U+FEFF` and CRLF is preserved byte-for-byte, hashes as that exact text, and emits no `LoadingMap`;
 - source hashes do not include absolute paths or document versions.
 
+Captured source inputs returned by snapshot acquisition keep their original
+origin descriptors and raw open-buffer text, alongside the actual normalized
+path. `LoadedSource` and `LoadingMap` alone do not identify that raw text.
+The snapshot registry owns the acquisition ordering described in
+[snapshot.md](snapshot.md#source-acquisition); existing `SourceLoader::load`
+still loads a single source at a caller-supplied snapshot id.
+
 ## Constraints and Assumptions
 
 - This module does not parse, preprocess, or tokenize source text.

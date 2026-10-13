@@ -386,102 +386,15 @@ impl SourceLoader for DiskSourceLoader {
         input: SourceInput,
         ids: &dyn SessionIdAllocator,
     ) -> Result<LoadedSource, SourceLoadError> {
-        let SourceInput {
-            package_id,
-            module_path,
-            normalized_path,
-            edition,
-            origin,
-        } = input;
-        let common = LoadedSourceCommon {
-            package_id,
-            module_path,
-            normalized_path,
-            edition,
-        };
-
-        match origin {
-            SourceOriginInput::Disk { path } => {
-                let normalized_path = self.normalize_path(&self.package_root, &path)?;
-                let read_path = self.package_root.join(normalized_path.as_str());
-                let bytes = fs::read(&read_path).map_err(|error| {
-                    SourceLoadError::UnreadableSourceFile {
-                        path: read_path.clone(),
-                        kind: error.kind(),
-                    }
-                })?;
-                let loaded_text = normalize_disk_source_bytes(&read_path, &bytes)?;
-                let loading_origin = LoadingOrigin::DiskBytes {
-                    normalized_path: normalized_path.clone(),
-                };
-                assemble_loaded_source(
-                    snapshot,
-                    ids,
-                    common.with_normalized_path(normalized_path),
-                    loaded_text,
-                    SourceOrigin::Disk,
-                    Some(loading_origin),
-                    None,
-                )
-            }
-            SourceOriginInput::OpenBuffer {
-                uri,
-                expected_version,
-                actual_version,
-                text,
-            } => {
-                if expected_version < 0 {
-                    return Err(SourceLoadError::StaleLspDocumentVersion {
-                        expected: 0,
-                        actual: expected_version,
-                    });
-                }
-                if actual_version != expected_version {
-                    return Err(SourceLoadError::StaleLspDocumentVersion {
-                        expected: expected_version,
-                        actual: actual_version,
-                    });
-                }
-
-                let normalized_path = self.normalize_open_buffer_uri(&uri)?;
-                let loaded_text = normalize_source_text(&text);
-                assemble_loaded_source(
-                    snapshot,
-                    ids,
-                    common.with_normalized_path(normalized_path),
-                    loaded_text,
-                    SourceOrigin::OpenBuffer {
-                        version: actual_version,
-                    },
-                    Some(LoadingOrigin::OpenBufferText {
-                        uri,
-                        version: actual_version,
-                    }),
-                    None,
-                )
-            }
-            SourceOriginInput::Generated {
-                generator,
-                text,
-                anchor,
-            } => {
-                if generator.as_str().trim().is_empty() {
-                    return Err(SourceLoadError::GeneratedSourceWithoutMetadata {
-                        module_path: common.module_path.clone(),
-                    });
-                }
-
-                assemble_loaded_source_from_text(
-                    snapshot,
-                    ids,
-                    common,
-                    text,
-                    SourceOrigin::Generated { generator },
-                    None,
-                    anchor,
-                )
-            }
-        }
+        let (input, text, loading_segments) = assemble_loaded_source(self, input)?;
+        let source_hash = hash_text(&text);
+        assemble_loaded_source_from_text(
+            snapshot,
+            ids,
+            input,
+            (text, source_hash),
+            loading_segments,
+        )
     }
 }
 
@@ -561,68 +474,110 @@ struct NormalizedLoadedText {
     loading_segments: Option<Vec<LoadingMapSegment>>,
 }
 
-#[derive(Debug, Clone, PartialEq, Eq)]
-struct LoadedSourceCommon {
-    package_id: PackageId,
-    module_path: ModulePath,
-    normalized_path: NormalizedPath,
-    edition: Edition,
-}
-
-impl LoadedSourceCommon {
-    fn with_normalized_path(mut self, normalized_path: NormalizedPath) -> Self {
-        self.normalized_path = normalized_path;
-        self
-    }
-}
-
-fn assemble_loaded_source(
-    snapshot: BuildSnapshotId,
-    ids: &dyn SessionIdAllocator,
-    common: LoadedSourceCommon,
-    loaded_text: NormalizedLoadedText,
-    origin: SourceOrigin,
-    loading_origin: Option<LoadingOrigin>,
-    generated_anchor: Option<SourceAnchor>,
-) -> Result<LoadedSource, SourceLoadError> {
+// Reason: reuse source/text/map records without introducing an acquisition DTO.
+#[allow(clippy::type_complexity)]
+pub(crate) fn assemble_loaded_source(
+    loader: &DiskSourceLoader,
+    mut input: SourceInput,
+) -> Result<(SourceInput, Arc<str>, Option<Vec<LoadingMapSegment>>), SourceLoadError> {
+    let loaded_text = match &input.origin {
+        SourceOriginInput::Disk { path } => {
+            input.normalized_path = loader.normalize_path(&loader.package_root, path)?;
+            let read_path = loader.package_root.join(input.normalized_path.as_str());
+            let bytes =
+                fs::read(&read_path).map_err(|error| SourceLoadError::UnreadableSourceFile {
+                    path: read_path.clone(),
+                    kind: error.kind(),
+                })?;
+            normalize_disk_source_bytes(&read_path, &bytes)?
+        }
+        SourceOriginInput::OpenBuffer {
+            uri,
+            expected_version,
+            actual_version,
+            text,
+        } => {
+            if *expected_version < 0 {
+                return Err(SourceLoadError::StaleLspDocumentVersion {
+                    expected: 0,
+                    actual: *expected_version,
+                });
+            }
+            if actual_version != expected_version {
+                return Err(SourceLoadError::StaleLspDocumentVersion {
+                    expected: *expected_version,
+                    actual: *actual_version,
+                });
+            }
+            input.normalized_path = loader.normalize_open_buffer_uri(uri)?;
+            normalize_source_text(text)
+        }
+        SourceOriginInput::Generated {
+            generator, text, ..
+        } => {
+            if generator.as_str().trim().is_empty() {
+                return Err(SourceLoadError::GeneratedSourceWithoutMetadata {
+                    module_path: input.module_path.clone(),
+                });
+            }
+            let text = Arc::clone(text);
+            return Ok((input, text, None));
+        }
+    };
     let NormalizedLoadedText {
         text,
         loading_segments,
     } = loaded_text;
-    assemble_loaded_source_from_text(
-        snapshot,
-        ids,
-        common,
-        Arc::from(text),
-        origin,
-        loading_origin.zip(loading_segments),
-        generated_anchor,
-    )
+    Ok((input, Arc::from(text), loading_segments))
 }
 
-fn assemble_loaded_source_from_text(
+pub(crate) fn assemble_loaded_source_from_text(
     snapshot: BuildSnapshotId,
     ids: &dyn SessionIdAllocator,
-    common: LoadedSourceCommon,
-    text: Arc<str>,
-    origin: SourceOrigin,
-    loading_map_input: Option<(LoadingOrigin, Vec<LoadingMapSegment>)>,
-    generated_anchor: Option<SourceAnchor>,
+    input: SourceInput,
+    (text, source_hash): (Arc<str>, Hash),
+    loading_segments: Option<Vec<LoadingMapSegment>>,
 ) -> Result<LoadedSource, SourceLoadError> {
-    let source_hash = hash_text(&text);
+    let (origin, loading_origin, generated_anchor) = match input.origin {
+        SourceOriginInput::Disk { .. } => (
+            SourceOrigin::Disk,
+            Some(LoadingOrigin::DiskBytes {
+                normalized_path: input.normalized_path.clone(),
+            }),
+            None,
+        ),
+        SourceOriginInput::OpenBuffer {
+            uri,
+            actual_version,
+            ..
+        } => (
+            SourceOrigin::OpenBuffer {
+                version: actual_version,
+            },
+            Some(LoadingOrigin::OpenBufferText {
+                uri,
+                version: actual_version,
+            }),
+            None,
+        ),
+        SourceOriginInput::Generated {
+            generator, anchor, ..
+        } => (SourceOrigin::Generated { generator }, None, anchor),
+    };
     let source_id = allocate_source_id(snapshot, ids)?;
     let line_map = LineMap::new(source_id, &text);
-    let loading_map = loading_map_input
+    let loading_map = loading_origin
+        .zip(loading_segments)
         .map(|(origin, segments)| LoadingMap::new(source_id, &text, origin, segments));
 
     Ok(LoadedSource {
         source_id,
-        package_id: common.package_id,
-        module_path: common.module_path,
-        normalized_path: common.normalized_path,
+        package_id: input.package_id,
+        module_path: input.module_path,
+        normalized_path: input.normalized_path,
         text,
         source_hash,
-        edition: common.edition,
+        edition: input.edition,
         origin,
         line_map,
         loading_map,

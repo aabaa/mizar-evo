@@ -122,6 +122,12 @@ impl<A: SessionIdAllocator> SnapshotRegistry<A> {
         request: BuildRequestId,
         input: SnapshotInput,
     ) -> Result<(BuildSnapshot, SnapshotLease), SnapshotError>;
+    pub fn load_snapshot(
+        &self,
+        request: BuildRequestId,
+        context: (WorkspaceRoot, Vec<DependencyArtifactRef>, Hash, ToolchainInfo, Hash),
+        sources: Vec<(DiskSourceLoader, SourceInput)>,
+    ) -> Result<(BuildSnapshot, SnapshotLease, Vec<(LoadedSource, SourceInput)>), SnapshotError>;
     pub fn acquire_lease(
         &self,
         snapshot: BuildSnapshotId,
@@ -157,6 +163,7 @@ pub struct SnapshotLease {
 
 #[non_exhaustive]
 pub enum SnapshotError {
+    SourceLoading { error: SourceLoadError },
     InvalidWorkspaceRoot { workspace_root: WorkspaceRoot },
     InvalidPackageId { package_id: PackageId },
     InvalidModulePath { package_id: PackageId, module_path: ModulePath },
@@ -190,13 +197,13 @@ pub enum SnapshotError {
 }
 ```
 
-`SnapshotRegistry::create_snapshot` is the public validated construction path for
+`SnapshotRegistry::create_snapshot` is a public validated construction path for
 registry snapshots. Direct input-to-snapshot and input-to-id helpers are
 crate-private unchecked identity utilities used by `mizar-session` tests and
 internal registry code; they do not validate creation invariants and do not
 insert a snapshot into the registry. Because `BuildSnapshot` fields are public,
 downstream code may assemble detached snapshot records for copying or tests, but
-only snapshots returned by `create_snapshot` are registry snapshots that can be
+only snapshots returned by `create_snapshot` or `load_snapshot` are registry snapshots that can be
 retrieved, reported current, or leased.
 
 The concrete registry may keep snapshots in memory and persist only source/cache-facing fingerprints. Public identifiers are opaque and must not encode paths, timestamps, memory addresses, or task-local counters.
@@ -308,7 +315,7 @@ retention and may hold its own lease back to the snapshot.
 6. Return the snapshot and an active-build lease to the caller.
 
 Disk, open-buffer, and generated-source loading are implemented by the source
-module. This registry records and validates the resulting snapshot input; it
+module. `create_snapshot` records and validates the resulting snapshot input; it
 does not read source text from disk or editor buffers. Expected-vs-actual
 open-buffer staleness is checked by the source-loading layer, which owns
 request document-version metadata.
@@ -317,6 +324,36 @@ Generated-source loading rejects missing generator metadata before allocating a
 inputs so unchecked construction cannot feed blank generated-source metadata into
 snapshot identity. Duplicate module paths are always rechecked here as the final
 whole-snapshot validation boundary before hashing.
+
+### Source Acquisition
+
+`SnapshotRegistry::load_snapshot(request, context, sources)` accepts
+`context: (WorkspaceRoot, Vec<DependencyArtifactRef>, Hash, ToolchainInfo, Hash)`
+(lockfile hash before toolchain, verifier configuration hash last) and
+`sources: Vec<(DiskSourceLoader, SourceInput)>`. The caller supplies complete,
+authentic context and selects one origin per module; duplicate modules are
+rejected rather than implicitly choosing a buffer over disk.
+
+It returns `Result<(BuildSnapshot, SnapshotLease, Vec<(LoadedSource, SourceInput)>), SnapshotError>`.
+The source pairs retain input order. Their captured descriptors use actual
+normalized paths and preserve original origin descriptors, including raw
+open-buffer `Arc<str>`, URI, expected/actual versions and generated anchors.
+
+Acquire and normalize every source once without allocating ids, then validate
+all metadata/context using the existing snapshot rules. Compute canonical
+identity with the same bytes as `create_snapshot`, including edition and
+excluding ids/origin/version. Allocate every SourceId and map at this actual id;
+only then register the snapshot and return an ActiveBuild lease. No provisional
+id, raw-text hash substitute or second source read is permitted.
+
+Native loading/allocation failures retain their `SourceLoadError` under
+`SnapshotError::SourceLoading { error }`, including `Error::source`.
+Any failure leaves registry records, current marks and live leases unchanged;
+consumed allocator counters need not roll back. The caller owns returned text,
+maps and raw-input resources; a registry lease does not store those resources.
+Existing single-source loading, creation validation, negative-version checks,
+normalization and canonical schema remain unchanged. Equal normalized content
+may share an id across raw text/version changes; editor freshness stays separate.
 
 ### Freshness Check
 
@@ -356,7 +393,7 @@ cache data.
 - duplicate lease id allocated by a custom or registry-aware allocator;
 - lease id allocation failure.
 
-Source readability and UTF-8 validation diagnostics are produced by the frontend source-loading flow. This module records the resulting source version only after source loading has produced a valid source identity.
+Source readability and UTF-8 failures originate in source loading. Snapshot acquisition preserves native errors; frontend diagnostics remain separately owned.
 `SnapshotError::InvalidSourcePath` is reserved for snapshot construction paths
 that accept or revalidate raw source path descriptors. The current public
 `SnapshotRegistry::create_snapshot` API consumes already-normalized

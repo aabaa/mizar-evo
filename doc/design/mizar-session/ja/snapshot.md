@@ -122,6 +122,12 @@ impl<A: SessionIdAllocator> SnapshotRegistry<A> {
         request: BuildRequestId,
         input: SnapshotInput,
     ) -> Result<(BuildSnapshot, SnapshotLease), SnapshotError>;
+    pub fn load_snapshot(
+        &self,
+        request: BuildRequestId,
+        context: (WorkspaceRoot, Vec<DependencyArtifactRef>, Hash, ToolchainInfo, Hash),
+        sources: Vec<(DiskSourceLoader, SourceInput)>,
+    ) -> Result<(BuildSnapshot, SnapshotLease, Vec<(LoadedSource, SourceInput)>), SnapshotError>;
     pub fn acquire_lease(
         &self,
         snapshot: BuildSnapshotId,
@@ -157,6 +163,7 @@ pub struct SnapshotLease {
 
 #[non_exhaustive]
 pub enum SnapshotError {
+    SourceLoading { error: SourceLoadError },
     InvalidWorkspaceRoot { workspace_root: WorkspaceRoot },
     InvalidPackageId { package_id: PackageId },
     InvalidModulePath { package_id: PackageId, module_path: ModulePath },
@@ -196,7 +203,7 @@ pub enum SnapshotError {
 です。これらは構築時の不変条件を検証せず、スナップショットをレジストリに挿入しません。
 `BuildSnapshot` のフィールドは公開されているので、下流のコードはコピーやテスト用の
 切り離されたスナップショットレコードを組み立てられます。ただし、取得・現行判定・リースの対象に
-なるレジストリスナップショットは、`create_snapshot` が返したスナップショットだけです。
+なるレジストリスナップショットは、`create_snapshot` または `load_snapshot` が返したものだけです。
 
 具象レジストリは、スナップショットをメモリに保持し、ソース／キャッシュ向けのフィンガープリントだけを永続化してよいものとします。公開される識別子は不透明であり、パス、タイムスタンプ、メモリアドレス、タスクローカルなカウンタをエンコードしてはなりません。
 
@@ -302,7 +309,7 @@ retention モジュールは、同じリース状態を、ソースとソース�
 6. スナップショットと、実行中ビルドのリースを呼び出し側に返す。
 
 ディスク、オープンバッファ、生成ソースの読み込みは source モジュールが実装します。
-このレジストリは、その結果として得られたスナップショット入力を記録・検証するだけで、
+`create_snapshot` は、その結果として得られたスナップショット入力を記録・検証するだけで、
 ディスクやエディタバッファからソーステキストを読み込みません。期待値と実際値を比べる
 オープンバッファの失効判定は、リクエストのドキュメントバージョンメタデータを所有する
 ソース読み込み層で検証します。
@@ -310,6 +317,33 @@ retention モジュールは、同じリース状態を、ソースとソース�
 スナップショット作成は、直接渡された `SourceVersion` 入力に対しても同じ検証を繰り返し、
 未検証の構築が空の生成ソースメタデータをスナップショット同一性へ流し込まないようにします。
 重複するモジュールパスは、ハッシュ化前の最終的なスナップショット全体の検証境界として、常にここで再検査します。
+
+### Source Acquisition
+
+`SnapshotRegistry::load_snapshot(request, context, sources)` は
+`context: (WorkspaceRoot, Vec<DependencyArtifactRef>, Hash, ToolchainInfo, Hash)`
+（toolchain の前が lockfile hash、最後が verifier configuration hash）と
+`sources: Vec<(DiskSourceLoader, SourceInput)>` を受け取る。呼び出し側は完全で
+真正な context を供給し、module ごとに origin を選ぶ。重複 module は拒否し、
+buffer と disk の暗黙の選択は行わない。
+
+戻り値は `Result<(BuildSnapshot, SnapshotLease, Vec<(LoadedSource, SourceInput)>), SnapshotError>`。
+source の組は入力順を保つ。記録のパスは実際の正規化パスになり、元の origin
+記述子（生の open-buffer `Arc<str>`、URI、expected/actual version、生成 anchor）を保持する。
+
+ID を割り当てずに全 source を一度ずつ取得・正規化し、既存の snapshot 規則で
+全 metadata/context を検証する。`create_snapshot` と同じ正準バイト列で identity
+を計算する。edition を含め、ID/origin/version は除外する。この実 ID の下で
+全 SourceId と map を作った後でのみ登録し、ActiveBuild lease を返す。
+仮 ID、生テキストのハッシュへの代替、source の再読み込みは認めない。
+
+native 読み込み・割り当て失敗は `SnapshotError::SourceLoading { error }` の中の
+`SourceLoadError` として保ち、`Error::source` にも渡す。失敗は registry 記録・
+current mark・live lease を変更しない。消費した allocator counter の巻き戻しは
+不要である。返す text/map/生入力の資源は呼び出し側が所有し、registry lease
+自体はそれらを格納しない。既存の単一 source 読み込み、作成検証、負の version
+拒否、正規化、正準 schema は維持する。同じ正規化済み内容は生テキスト/version
+が異なっても同じ ID になり得るため、editor の鮮度は別に扱う。
 
 ### 鮮度チェック
 
@@ -348,7 +382,7 @@ retention モジュールは、次の条件を満たすスナップショット�
 - カスタムまたはレジストリ対応のアロケータにより割り当てられた、重複するリース ID
 - リース ID の割り当て失敗
 
-ソースの可読性と UTF-8 検証の診断は、フロントエンドのソース読み込みフローが生成します。このモジュールは、ソース読み込みが有効なソース同一性を生成した後でのみ、結果のソースバージョンを記録します。
+ソースの可読性と UTF-8 の失敗は source 読み込みに由来する。snapshot 取得は native error を保持し、frontend 診断は別の所有者に属する。
 `SnapshotError::InvalidSourcePath` は、生のソースパス記述子を受け取る、または再検証するスナップショット構築経路のために予約されています。
 現在の公開された `SnapshotRegistry::create_snapshot` API は、すでに正規化済みの
 `SourceVersion` レコードを消費し、公開された呼び出し側は不正な `NormalizedPath` 値を構築できません。

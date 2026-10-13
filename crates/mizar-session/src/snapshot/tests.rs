@@ -3,15 +3,679 @@ use super::{
     RetentionReason, SnapshotError, SnapshotInput, SnapshotRegistry, SnapshotRegistryState,
     SourceOrigin, SourceVersion, ToolchainInfo, WorkspaceRoot, sort_source_versions_canonical,
 };
+use crate::source::hash_text;
 use crate::{
-    BuildRequestId, BuildSessionId, BuildSnapshotId, Hash, IdError, InMemorySessionIdAllocator,
-    NormalizedPath, SessionIdAllocator, SnapshotLeaseId, SourceId, SourceMapId, SourcePathError,
-    normalize_source_path,
+    BuildRequestId, BuildSessionId, BuildSnapshotId, DiskSourceLoader, Hash, IdError,
+    InMemorySessionIdAllocator, NormalizedPath, SessionIdAllocator, SnapshotLeaseId, SourceAnchor,
+    SourceId, SourceInput, SourceLoadError, SourceMapId, SourceOriginInput, SourcePathError,
+    SourceRange, normalize_source_path,
 };
 use std::path::Path;
 use std::sync::atomic::{AtomicPtr, AtomicUsize, Ordering};
+use std::sync::{Arc, Mutex};
 
 static NEXT_FIXTURE_ID: AtomicUsize = AtomicUsize::new(0);
+
+#[test]
+fn capture_binds_all_origins_maps_and_raw_descriptors_to_the_actual_snapshot() {
+    let fixture = SourcePathFixture::new();
+    fixture.write("src/seed.miz", "seed");
+    fixture.write("src/disk.miz", "\u{feff}disk\r\nz\r");
+    fixture.write("src/editor.miz", "disk is overridden");
+    fixture.write("src/generated.miz", "");
+    let registry = SnapshotRegistry::with_allocator(CountingLeaseAllocator::new());
+    let request = request_id();
+    let (seed, _, seed_sources) = registry
+        .load_snapshot(
+            request,
+            fixture.capture_context(),
+            vec![fixture.capture_source(
+                "seed",
+                SourceOriginInput::Disk {
+                    path: "src/seed.miz".into(),
+                },
+            )],
+        )
+        .unwrap();
+    let anchor = SourceAnchor::Range(SourceRange {
+        source_id: seed_sources[0].0.source_id,
+        start: 0,
+        end: 4,
+    });
+    let raw: Arc<str> = Arc::from("\u{feff}open\r\n😀");
+    let generated: Arc<str> = Arc::from("\u{feff}generated\r\n\r");
+    let uri = format!("file://{}", fixture.root().join("src/editor.miz").display());
+    let disk_path = fixture.root().join("src/disk.miz");
+    let mut disk = fixture.capture_source(
+        "disk",
+        SourceOriginInput::Disk {
+            path: disk_path.clone(),
+        },
+    );
+    let mut open = fixture.capture_source(
+        "editor",
+        SourceOriginInput::OpenBuffer {
+            uri: uri.clone(),
+            expected_version: 3,
+            actual_version: 3,
+            text: raw.clone(),
+        },
+    );
+    std::mem::swap(&mut disk.1.normalized_path, &mut open.1.normalized_path);
+    let context = fixture.capture_context();
+    let (snapshot, lease, captured) = registry
+        .load_snapshot(
+            request,
+            context.clone(),
+            vec![
+                fixture.capture_source(
+                    "generated",
+                    SourceOriginInput::Generated {
+                        generator: GeneratedSourceKind::new("macro"),
+                        text: generated.clone(),
+                        anchor: Some(anchor.clone()),
+                    },
+                ),
+                disk,
+                open,
+            ],
+        )
+        .unwrap();
+    assert_eq!(
+        captured
+            .iter()
+            .map(|(source, _)| source.module_path.as_str())
+            .collect::<Vec<_>>(),
+        ["generated", "disk", "editor"]
+    );
+    assert_eq!(
+        registry.allocator.source_targets.lock().unwrap().as_slice(),
+        [seed.id, snapshot.id, snapshot.id, snapshot.id]
+    );
+    assert_eq!(lease.snapshot, snapshot.id);
+    assert_eq!(lease.reason, RetentionReason::ActiveBuild);
+    assert_eq!(
+        registry.lease_count_for_test(snapshot.id, RetentionReason::ActiveBuild),
+        1
+    );
+    assert_eq!(registry.get(snapshot.id), Some(snapshot.clone()));
+    assert!(!registry.is_current_for_request(seed.id, request));
+    assert!(registry.is_current_for_request(snapshot.id, request));
+    for (source, input) in &captured {
+        assert_eq!(source.normalized_path, input.normalized_path);
+        assert_eq!(
+            source.normalized_path.as_str(),
+            format!("src/{}.miz", source.module_path.as_str())
+        );
+        assert_eq!(source.line_map.source_id(), source.source_id);
+        assert_eq!(source.line_map.text_hash(), source.source_hash);
+        assert_eq!(source.source_hash, hash_text(&source.text));
+        if let Some(map) = &source.loading_map {
+            assert_eq!(map.source_id, source.source_id);
+            assert_eq!(map.loaded_text_hash, source.source_hash);
+            assert_eq!(
+                map.original_offset_for_loaded(source.source_id, 0).unwrap(),
+                3
+            );
+        }
+    }
+    assert_eq!(captured[0].0.text.as_ref(), "\u{feff}generated\r\n\r");
+    assert!(Arc::ptr_eq(&captured[0].0.text, &generated));
+    assert_eq!(captured[0].0.generated_anchor, Some(anchor.clone()));
+    assert_eq!(
+        captured[0].0.origin,
+        SourceOrigin::Generated {
+            generator: GeneratedSourceKind::new("macro")
+        }
+    );
+    assert_eq!(captured[0].0.loading_map, None);
+    assert!(
+        matches!(&captured[0].1.origin, SourceOriginInput::Generated { generator, text, anchor: Some(actual) }
+        if generator.as_str() == "macro" && Arc::ptr_eq(text, &generated) && *actual == anchor)
+    );
+    assert_eq!(captured[1].0.text.as_ref(), "disk\nz\r");
+    assert_eq!(captured[1].0.origin, SourceOrigin::Disk);
+    assert_eq!(
+        captured[1].1.origin,
+        SourceOriginInput::Disk { path: disk_path }
+    );
+    assert_eq!(
+        captured[1].0.loading_map.as_ref().unwrap().origin,
+        crate::LoadingOrigin::DiskBytes {
+            normalized_path: captured[1].0.normalized_path.clone()
+        }
+    );
+    assert_eq!(captured[2].0.text.as_ref(), "open\n😀");
+    assert_eq!(
+        captured[2].0.origin,
+        SourceOrigin::OpenBuffer { version: 3 }
+    );
+    assert_eq!(
+        captured[2].0.loading_map.as_ref().unwrap().origin,
+        crate::LoadingOrigin::OpenBufferText {
+            uri: uri.clone(),
+            version: 3
+        }
+    );
+    assert!(
+        matches!(&captured[2].1.origin, SourceOriginInput::OpenBuffer { uri: actual, expected_version: 3, actual_version: 3, text }
+        if *actual == uri && Arc::ptr_eq(text, &raw))
+    );
+    assert_eq!(
+        captured[2]
+            .0
+            .loading_map
+            .as_ref()
+            .unwrap()
+            .original_offset_for_loaded(captured[2].0.source_id, 5)
+            .unwrap(),
+        9
+    );
+    let (equivalent, _) = registry
+        .create_snapshot(
+            request,
+            SnapshotInput {
+                workspace_root: context.0,
+                source_versions: captured
+                    .iter()
+                    .map(|(source, _)| SourceVersion {
+                        source_id: source.source_id,
+                        package_id: source.package_id.clone(),
+                        module_path: source.module_path.clone(),
+                        normalized_path: source.normalized_path.clone(),
+                        source_hash: source.source_hash,
+                        edition: source.edition.clone(),
+                        origin: source.origin.clone(),
+                    })
+                    .collect(),
+                dependency_artifacts: context.1,
+                lockfile_hash: context.2,
+                toolchain: context.3,
+                verifier_config_hash: context.4,
+            },
+        )
+        .unwrap();
+    assert_eq!(equivalent, snapshot);
+}
+
+#[test]
+fn capture_preserves_pair_order_and_uses_every_canonical_context_field_and_edition() {
+    let fixture = SourcePathFixture::new();
+    fixture.write("src/alpha.miz", "alpha\r\n");
+    fixture.write("src/beta.miz", "beta");
+    let sources = vec![
+        fixture.capture_source(
+            "beta",
+            SourceOriginInput::Disk {
+                path: "src/beta.miz".into(),
+            },
+        ),
+        fixture.capture_source(
+            "alpha",
+            SourceOriginInput::Disk {
+                path: "src/alpha.miz".into(),
+            },
+        ),
+    ];
+    let registry = SnapshotRegistry::with_allocator(CountingLeaseAllocator::new());
+    let context = fixture.capture_context();
+    let (original, _, pairs) = registry
+        .load_snapshot(request_id(), context.clone(), sources.clone())
+        .unwrap();
+    assert_eq!(pairs[0].0.module_path.as_str(), "beta");
+    let mut reversed = sources.clone();
+    reversed.reverse();
+    let (same, _, pairs) = registry
+        .load_snapshot(request_id(), context.clone(), reversed)
+        .unwrap();
+    assert_eq!(same.id, original.id);
+    assert_eq!(pairs[0].0.module_path.as_str(), "alpha");
+    for field in 0..7 {
+        let mut changed = context.clone();
+        let mut inputs = sources.clone();
+        match field {
+            0 => {
+                changed.0 =
+                    WorkspaceRoot::new(fixture.root().parent().unwrap().display().to_string())
+            }
+            1 => changed.1[0].content_hash = hash_text("dependency-v2"),
+            2 => changed.1[0].artifact = "renamed-dependency.vo".into(),
+            3 => changed.2 = hash_text("lockfile-v2"),
+            4 => changed.3 = ToolchainInfo::new("toolchain-v2"),
+            5 => changed.4 = hash_text("verifier-v2"),
+            _ => inputs[0].1.edition = Edition::new("2027"),
+        }
+        let (snapshot, _, _) = registry
+            .load_snapshot(request_id(), changed, inputs)
+            .unwrap();
+        assert_ne!(snapshot.id, original.id, "canonical field {field}");
+        let targets = registry.allocator.source_targets.lock().unwrap();
+        assert_eq!(&targets[targets.len() - 2..], [snapshot.id, snapshot.id]);
+    }
+}
+
+#[test]
+fn capture_errors_preflight_the_whole_batch_without_allocating_or_mutating_registry() {
+    let fixture = SourcePathFixture::new();
+    fixture.write("src/good.miz", "good");
+    fixture.write("src/bad.miz", "bad");
+    std::fs::write(fixture.root().join("src/bad.miz"), [0xff]).unwrap();
+    let registry = SnapshotRegistry::with_allocator(CountingLeaseAllocator::new());
+    let good = fixture.capture_source(
+        "good",
+        SourceOriginInput::Disk {
+            path: "src/good.miz".into(),
+        },
+    );
+    let context = fixture.capture_context();
+    let request = request_id();
+    let (previous, lease, _) = registry
+        .load_snapshot(request, context.clone(), vec![good.clone()])
+        .unwrap();
+    let before = {
+        let state = registry.state.lock().unwrap();
+        (
+            state.snapshots.clone(),
+            state.current_by_request.clone(),
+            state.leases.clone(),
+            state.lease_counts.clone(),
+        )
+    };
+    let targets = registry.allocator.source_targets.lock().unwrap().clone();
+    let leases = registry.allocator.lease_allocations.load(Ordering::Relaxed);
+    let uri = format!("file://{}", fixture.root().join("src/bad.miz").display());
+    let mut cases = Vec::new();
+    for (origin, expected) in [
+        (
+            SourceOriginInput::Disk {
+                path: "src/bad.miz".into(),
+            },
+            SourceLoadError::InvalidUtf8 {
+                path: Some(fixture.root().join("src/bad.miz")),
+            },
+        ),
+        (
+            SourceOriginInput::OpenBuffer {
+                uri: uri.clone(),
+                expected_version: 2,
+                actual_version: 1,
+                text: Arc::from("buffer"),
+            },
+            SourceLoadError::StaleLspDocumentVersion {
+                expected: 2,
+                actual: 1,
+            },
+        ),
+        (
+            SourceOriginInput::OpenBuffer {
+                uri: uri.clone(),
+                expected_version: -1,
+                actual_version: -1,
+                text: Arc::from("buffer"),
+            },
+            SourceLoadError::StaleLspDocumentVersion {
+                expected: 0,
+                actual: -1,
+            },
+        ),
+        (
+            SourceOriginInput::OpenBuffer {
+                uri: "untitled:bad".into(),
+                expected_version: 0,
+                actual_version: 0,
+                text: Arc::from("buffer"),
+            },
+            SourceLoadError::UnmappedOpenBufferUri {
+                uri: "untitled:bad".into(),
+            },
+        ),
+        (
+            SourceOriginInput::Generated {
+                generator: GeneratedSourceKind::new(" "),
+                text: Arc::from("generated"),
+                anchor: None,
+            },
+            SourceLoadError::GeneratedSourceWithoutMetadata {
+                module_path: ModulePath::new("bad"),
+            },
+        ),
+    ] {
+        cases.push((
+            context.clone(),
+            vec![good.clone(), fixture.capture_source("bad", origin)],
+            SnapshotError::SourceLoading { error: expected },
+        ));
+    }
+    for field in 0..8 {
+        let mut context = context.clone();
+        let mut input = good.clone();
+        let expected = match field {
+            0 => {
+                context.0 = WorkspaceRoot::new(" ");
+                SnapshotError::InvalidWorkspaceRoot {
+                    workspace_root: context.0.clone(),
+                }
+            }
+            1 => {
+                context.1[0].artifact = " ".into();
+                SnapshotError::MissingDependencyArtifact {
+                    artifact: " ".into(),
+                }
+            }
+            2 => {
+                context.1[0].content_hash = zero_hash();
+                SnapshotError::MissingDependencyArtifact {
+                    artifact: context.1[0].artifact.clone(),
+                }
+            }
+            3 => {
+                context.2 = zero_hash();
+                SnapshotError::UnsupportedLockfileMetadata {
+                    metadata: "missing-lockfile-hash".into(),
+                }
+            }
+            4 => {
+                context.3 = ToolchainInfo::new(" ");
+                SnapshotError::UnsupportedToolchainMetadata {
+                    metadata: " ".into(),
+                }
+            }
+            5 => {
+                input.1.package_id = PackageId::new(" ");
+                SnapshotError::InvalidPackageId {
+                    package_id: input.1.package_id.clone(),
+                }
+            }
+            6 => {
+                input.1.module_path = ModulePath::new("theorem");
+                SnapshotError::InvalidModulePath {
+                    package_id: input.1.package_id.clone(),
+                    module_path: input.1.module_path.clone(),
+                }
+            }
+            _ => {
+                input.1.edition = Edition::new(" ");
+                SnapshotError::InvalidEdition {
+                    package_id: input.1.package_id.clone(),
+                    module_path: input.1.module_path.clone(),
+                    edition: input.1.edition.clone(),
+                }
+            }
+        };
+        let sources = if field >= 5 {
+            vec![good.clone(), input]
+        } else {
+            vec![input]
+        };
+        cases.push((context, sources, expected));
+    }
+    cases.push((
+        context.clone(),
+        vec![good.clone(), good.clone()],
+        SnapshotError::DuplicateSourceVersionIdentity {
+            package_id: good.1.package_id.clone(),
+            module_path: good.1.module_path.clone(),
+            normalized_path: good.1.normalized_path.clone(),
+            source_hash: hash_text("good"),
+        },
+    ));
+    let mut duplicate = good.clone();
+    duplicate.1.origin = SourceOriginInput::Generated {
+        generator: GeneratedSourceKind::new("macro"),
+        text: Arc::from("other content"),
+        anchor: None,
+    };
+    cases.push((
+        context,
+        vec![good, duplicate],
+        SnapshotError::DuplicateModulePath {
+            package_id: PackageId::new("mml"),
+            module_path: ModulePath::new("good"),
+        },
+    ));
+    for (context, sources, expected) in cases {
+        let error = registry
+            .load_snapshot(request, context, sources)
+            .unwrap_err();
+        assert_eq!(error, expected);
+        if let SnapshotError::SourceLoading { error: native } = &error {
+            assert_eq!(
+                std::error::Error::source(&error).unwrap().to_string(),
+                native.to_string()
+            );
+            assert!(error.to_string().contains(&native.to_string()));
+        }
+        assert_eq!(*registry.allocator.source_targets.lock().unwrap(), targets);
+        assert_eq!(
+            registry.allocator.lease_allocations.load(Ordering::Relaxed),
+            leases
+        );
+        let state = registry.state.lock().unwrap();
+        assert_eq!(
+            (
+                state.snapshots.clone(),
+                state.current_by_request.clone(),
+                state.leases.clone(),
+                state.lease_counts.clone()
+            ),
+            before
+        );
+    }
+    registry.release_lease(previous.id, lease.lease_id).unwrap();
+}
+
+#[test]
+fn capture_acquires_later_disk_sources_before_the_first_id_and_next_capture_sees_edit() {
+    let fixture = SourcePathFixture::new();
+    fixture.write("src/alpha.miz", "alpha");
+    fixture.write("src/beta.miz", "\u{feff}before\r\n");
+    let sources = vec![
+        fixture.capture_source(
+            "alpha",
+            SourceOriginInput::Disk {
+                path: "src/alpha.miz".into(),
+            },
+        ),
+        fixture.capture_source(
+            "beta",
+            SourceOriginInput::Disk {
+                path: "src/beta.miz".into(),
+            },
+        ),
+    ];
+    let registry = SnapshotRegistry::with_allocator(CountingLeaseAllocator::new());
+    *registry.allocator.source_mutation.lock().unwrap() =
+        Some((fixture.root().join("src/beta.miz"), "after\r\n".into()));
+    let request = request_id();
+    let (before, _, captured) = registry
+        .load_snapshot(request, fixture.capture_context(), sources.clone())
+        .unwrap();
+    assert_eq!(
+        std::fs::read_to_string(fixture.root().join("src/beta.miz")).unwrap(),
+        "after\r\n"
+    );
+    assert_eq!(captured[1].0.text.as_ref(), "before\n");
+    assert_eq!(captured[1].0.source_hash, hash_text("before\n"));
+    let (after, _, captured) = registry
+        .load_snapshot(request, fixture.capture_context(), sources)
+        .unwrap();
+    assert_eq!(captured[1].0.text.as_ref(), "after\n");
+    assert_ne!(after.id, before.id);
+    assert!(!registry.is_current_for_request(before.id, request));
+    assert!(registry.is_current_for_request(after.id, request));
+    assert_eq!(
+        registry.allocator.source_targets.lock().unwrap().as_slice(),
+        [before.id, before.id, after.id, after.id]
+    );
+}
+
+#[test]
+fn capture_same_normalized_id_keeps_distinct_raw_buffer_and_version_provenance() {
+    let fixture = SourcePathFixture::new();
+    fixture.write("src/buffer.miz", "disk");
+    let registry = SnapshotRegistry::with_allocator(CountingLeaseAllocator::new());
+    let uri = format!("file://{}", fixture.root().join("src/buffer.miz").display());
+    let mut captured = Vec::new();
+    for (version, raw) in [
+        (1, "\u{feff}alpha\r\n"),
+        (2, "alpha\n"),
+        (3, "\u{feff}alpha\n"),
+    ] {
+        let raw: Arc<str> = Arc::from(raw);
+        let (snapshot, lease, sources) = registry
+            .load_snapshot(
+                request_id(),
+                fixture.capture_context(),
+                vec![fixture.capture_source(
+                    "buffer",
+                    SourceOriginInput::OpenBuffer {
+                        uri: uri.clone(),
+                        expected_version: version,
+                        actual_version: version,
+                        text: raw.clone(),
+                    },
+                )],
+            )
+            .unwrap();
+        assert_eq!(sources[0].0.text.as_ref(), "alpha\n");
+        assert_eq!(sources[0].0.origin, SourceOrigin::OpenBuffer { version });
+        assert!(
+            matches!(&sources[0].1.origin, SourceOriginInput::OpenBuffer { text, actual_version, .. } if Arc::ptr_eq(text, &raw) && *actual_version == version)
+        );
+        captured.push((snapshot, lease, sources, raw));
+    }
+    for entry in &captured {
+        assert_eq!(entry.0.id, captured[0].0.id);
+    }
+    assert_ne!(captured[0].2[0].0.source_id, captured[1].2[0].0.source_id);
+    assert_eq!(captured[0].3.as_ref(), "\u{feff}alpha\r\n");
+    assert_eq!(captured[1].3.as_ref(), "alpha\n");
+    assert!(captured[0].2[0].0.loading_map.is_some());
+    assert!(captured[1].2[0].0.loading_map.is_none());
+    assert!(captured[2].2[0].0.loading_map.is_some());
+    assert_eq!(
+        registry.lease_count_for_test(captured[0].0.id, RetentionReason::ActiveBuild),
+        3
+    );
+}
+
+#[test]
+fn capture_partial_source_allocation_failure_preserves_prior_registry_and_leases() {
+    let fixture = SourcePathFixture::new();
+    fixture.write("src/alpha.miz", "alpha");
+    fixture.write("src/beta.miz", "beta");
+    let registry = SnapshotRegistry::with_allocator(CountingLeaseAllocator::new());
+    let request = request_id();
+    let alpha = fixture.capture_source(
+        "alpha",
+        SourceOriginInput::Disk {
+            path: "src/alpha.miz".into(),
+        },
+    );
+    let (previous, lease, _) = registry
+        .load_snapshot(request, fixture.capture_context(), vec![alpha.clone()])
+        .unwrap();
+    let before = {
+        let state = registry.state.lock().unwrap();
+        (
+            state.snapshots.clone(),
+            state.current_by_request.clone(),
+            state.leases.clone(),
+            state.lease_counts.clone(),
+        )
+    };
+    registry
+        .allocator
+        .source_allocations_remaining
+        .store(1, Ordering::Relaxed);
+    let error = registry
+        .load_snapshot(
+            request,
+            fixture.capture_context(),
+            vec![
+                alpha,
+                fixture.capture_source(
+                    "beta",
+                    SourceOriginInput::Disk {
+                        path: "src/beta.miz".into(),
+                    },
+                ),
+            ],
+        )
+        .unwrap_err();
+    assert_eq!(
+        error,
+        SnapshotError::SourceLoading {
+            error: SourceLoadError::SourceIdAllocation {
+                error: IdError::AllocatorOverflow
+            }
+        }
+    );
+    assert_eq!(
+        registry.allocator.lease_allocations.load(Ordering::Relaxed),
+        1
+    );
+    let state = registry.state.lock().unwrap();
+    assert_eq!(
+        (
+            state.snapshots.clone(),
+            state.current_by_request.clone(),
+            state.leases.clone(),
+            state.lease_counts.clone()
+        ),
+        before
+    );
+    drop(state);
+    registry.release_lease(previous.id, lease.lease_id).unwrap();
+}
+
+#[test]
+fn capture_lease_allocation_failure_preserves_prior_registered_snapshot_and_live_lease() {
+    let fixture = SourcePathFixture::new();
+    fixture.write("src/alpha.miz", "alpha");
+    let registry = SnapshotRegistry::with_allocator(LeaseAllocatorFailsAfter::new(1));
+    let source = fixture.capture_source(
+        "alpha",
+        SourceOriginInput::Disk {
+            path: "src/alpha.miz".into(),
+        },
+    );
+    let request = request_id();
+    let (previous, lease, _) = registry
+        .load_snapshot(request, fixture.capture_context(), vec![source.clone()])
+        .unwrap();
+    let before = {
+        let state = registry.state.lock().unwrap();
+        (
+            state.snapshots.clone(),
+            state.current_by_request.clone(),
+            state.leases.clone(),
+            state.lease_counts.clone(),
+        )
+    };
+    fixture.write("src/alpha.miz", "edited");
+    let error = registry
+        .load_snapshot(request, fixture.capture_context(), vec![source])
+        .unwrap_err();
+    assert_eq!(
+        error,
+        SnapshotError::LeaseIdAllocation {
+            error: IdError::AllocatorOverflow
+        }
+    );
+    let state = registry.state.lock().unwrap();
+    assert_eq!(
+        (
+            state.snapshots.clone(),
+            state.current_by_request.clone(),
+            state.leases.clone(),
+            state.lease_counts.clone()
+        ),
+        before
+    );
+    drop(state);
+    registry.release_lease(previous.id, lease.lease_id).unwrap();
+}
 
 #[test]
 fn identical_canonical_snapshot_inputs_produce_identical_ids() {
@@ -1934,6 +2598,9 @@ fn source_version_canonical_order_does_not_require_source_id_ordering() {
 struct CountingLeaseAllocator {
     inner: InMemorySessionIdAllocator,
     lease_allocations: AtomicUsize,
+    source_targets: Mutex<Vec<BuildSnapshotId>>,
+    source_allocations_remaining: AtomicUsize,
+    source_mutation: Mutex<Option<(std::path::PathBuf, String)>>,
 }
 
 impl CountingLeaseAllocator {
@@ -1941,6 +2608,9 @@ impl CountingLeaseAllocator {
         Self {
             inner: InMemorySessionIdAllocator::new(),
             lease_allocations: AtomicUsize::new(0),
+            source_targets: Mutex::new(Vec::new()),
+            source_allocations_remaining: AtomicUsize::new(usize::MAX),
+            source_mutation: Mutex::new(None),
         }
     }
 }
@@ -1955,6 +2625,15 @@ impl SessionIdAllocator for CountingLeaseAllocator {
     }
 
     fn next_source_id(&self, snapshot: BuildSnapshotId) -> Result<SourceId, IdError> {
+        self.source_targets.lock().unwrap().push(snapshot);
+        self.source_allocations_remaining
+            .try_update(Ordering::Relaxed, Ordering::Relaxed, |remaining| {
+                remaining.checked_sub(1)
+            })
+            .map_err(|_| IdError::AllocatorOverflow)?;
+        if let Some((path, text)) = self.source_mutation.lock().unwrap().take() {
+            std::fs::write(path, text).unwrap();
+        }
         self.inner.next_source_id(snapshot)
     }
 
@@ -2307,6 +2986,45 @@ struct SourcePathFixture {
 }
 
 impl SourcePathFixture {
+    fn capture_context(
+        &self,
+    ) -> (
+        WorkspaceRoot,
+        Vec<DependencyArtifactRef>,
+        Hash,
+        ToolchainInfo,
+        Hash,
+    ) {
+        (
+            WorkspaceRoot::new(self.root.display().to_string()),
+            vec![DependencyArtifactRef::new("dependency.vo", hash(23))],
+            hash(24),
+            ToolchainInfo::new("native-capture-test/v1"),
+            hash(25),
+        )
+    }
+
+    fn capture_source(
+        &self,
+        module: &str,
+        origin: SourceOriginInput,
+    ) -> (DiskSourceLoader, SourceInput) {
+        (
+            DiskSourceLoader::new(&self.root),
+            SourceInput {
+                package_id: PackageId::new("mml"),
+                module_path: ModulePath::new(module),
+                normalized_path: normalize_source_path(
+                    &self.root,
+                    Path::new(&format!("src/{module}.miz")),
+                )
+                .unwrap(),
+                edition: Edition::new("2026"),
+                origin,
+            },
+        )
+    }
+
     fn new() -> Self {
         let id = NEXT_FIXTURE_ID.fetch_add(1, Ordering::Relaxed);
         let base = std::env::temp_dir().join(format!(

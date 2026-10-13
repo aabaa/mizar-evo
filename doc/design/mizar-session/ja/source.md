@@ -260,6 +260,13 @@ URI からパスへの対応付けに成功した後のソースパス検証で�
 - 先頭 `U+FEFF` と CRLF を含む生成ソーステキストは 1 バイトもたがえず保持され、その正確なテキストとしてハッシュ化され、`LoadingMap` を出力しない
 - ソースハッシュは、絶対パスやドキュメントバージョンを含まない
 
+snapshot 取得が返す source 入力記録は、実際の正規化パスに加えて元の origin
+記述子と生の open-buffer text を保持する。`LoadedSource` と `LoadingMap`
+だけでは、その生テキストを識別できない。取得順序は snapshot registry が
+[snapshot.md](snapshot.md#source-acquisition) で所有する。
+既存の `SourceLoader::load` は、呼び出し側が指定する snapshot id の下で
+単一 source を読み込む。
+
 ## 制約と前提
 
 - このモジュールは、ソーステキストの構文解析・前処理・トークン化を行わない。

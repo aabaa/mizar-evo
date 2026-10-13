@@ -86,6 +86,10 @@
 //! let _snapshot = input.build_snapshot_unchecked();
 //! ```
 //!
+use crate::source::{
+    DiskSourceLoader, LoadedSource, SourceInput, SourceLoadError, SourceOriginInput,
+    assemble_loaded_source, assemble_loaded_source_from_text, hash_text,
+};
 use crate::{
     BuildRequestId, BuildSnapshotId, Hash, IdError, InMemorySessionIdAllocator, LspDocumentVersion,
     NormalizedPath, SessionIdAllocator, SnapshotLeaseId, SourceId, SourcePathError,
@@ -200,6 +204,9 @@ pub enum SourceOrigin {
 #[derive(Debug, Clone, PartialEq, Eq)]
 #[non_exhaustive]
 pub enum SnapshotError {
+    SourceLoading {
+        error: SourceLoadError,
+    },
     InvalidWorkspaceRoot {
         workspace_root: WorkspaceRoot,
     },
@@ -269,8 +276,8 @@ pub enum SnapshotError {
 pub struct SourceVersionCanonicalKey<'a> {
     package_id: &'a str,
     module_path: &'a str,
-    normalized_path: &'a str,
-    source_hash: &'a [u8; Hash::BYTE_LEN],
+    normalized_path: &'a NormalizedPath,
+    source_hash: &'a Hash,
 }
 
 impl BuildSnapshot {
@@ -279,7 +286,19 @@ impl BuildSnapshot {
     /// This is crate-private so public callers cannot accidentally bypass
     /// `SnapshotRegistry::create_snapshot`.
     pub(crate) fn from_input_unchecked(input: SnapshotInput) -> Self {
-        let id = build_snapshot_id(&input);
+        let id = build_snapshot_id(
+            (
+                &input.workspace_root,
+                &input.dependency_artifacts,
+                input.lockfile_hash,
+                &input.toolchain,
+                input.verifier_config_hash,
+            ),
+            input
+                .source_versions
+                .iter()
+                .map(|version| (version.canonical_sort_key(), &version.edition)),
+        );
         let mut source_versions = input.source_versions;
         let mut dependency_artifacts = input.dependency_artifacts;
 
@@ -307,7 +326,18 @@ impl SnapshotInput {
 
     /// Computes identity bytes without validating creation invariants.
     pub(crate) fn build_snapshot_id_unchecked(&self) -> BuildSnapshotId {
-        build_snapshot_id(self)
+        build_snapshot_id(
+            (
+                &self.workspace_root,
+                &self.dependency_artifacts,
+                self.lockfile_hash,
+                &self.toolchain,
+                self.verifier_config_hash,
+            ),
+            self.source_versions
+                .iter()
+                .map(|version| (version.canonical_sort_key(), &version.edition)),
+        )
     }
 }
 
@@ -333,12 +363,136 @@ impl<A> SnapshotRegistry<A> {
 }
 
 impl<A: SessionIdAllocator> SnapshotRegistry<A> {
+    /// Acquires all native sources before allocating ids at their actual snapshot.
+    // Reason: the frozen API reuses native records instead of introducing a capture DTO.
+    #[allow(clippy::type_complexity)]
+    pub fn load_snapshot(
+        &self,
+        request: BuildRequestId,
+        context: (
+            WorkspaceRoot,
+            Vec<DependencyArtifactRef>,
+            Hash,
+            ToolchainInfo,
+            Hash,
+        ),
+        sources: Vec<(DiskSourceLoader, SourceInput)>,
+    ) -> Result<
+        (
+            BuildSnapshot,
+            SnapshotLease,
+            Vec<(LoadedSource, SourceInput)>,
+        ),
+        SnapshotError,
+    > {
+        let acquired = sources
+            .into_iter()
+            .map(|(loader, input)| assemble_loaded_source(&loader, input))
+            .collect::<Result<Vec<_>, _>>()
+            .map_err(|error| SnapshotError::SourceLoading { error })?;
+        let hashes = acquired
+            .iter()
+            .map(|(_, text, _)| hash_text(text))
+            .collect::<Vec<_>>();
+        let summaries = acquired
+            .iter()
+            .zip(&hashes)
+            .map(|((input, _, _), source_hash)| {
+                let origin = match &input.origin {
+                    SourceOriginInput::Disk { .. } => SourceOrigin::Disk,
+                    SourceOriginInput::OpenBuffer { actual_version, .. } => {
+                        SourceOrigin::OpenBuffer {
+                            version: *actual_version,
+                        }
+                    }
+                    SourceOriginInput::Generated { generator, .. } => SourceOrigin::Generated {
+                        generator: generator.clone(),
+                    },
+                };
+                (
+                    SourceVersionCanonicalKey {
+                        package_id: input.package_id.as_str(),
+                        module_path: input.module_path.as_str(),
+                        normalized_path: &input.normalized_path,
+                        source_hash,
+                    },
+                    &input.edition,
+                    origin,
+                )
+            });
+        let (workspace_root, dependency_artifacts, lockfile_hash, toolchain, verifier_config_hash) =
+            context;
+        let context = (
+            &workspace_root,
+            dependency_artifacts.as_slice(),
+            lockfile_hash,
+            &toolchain,
+            verifier_config_hash,
+        );
+        validate_snapshot_input(context, summaries.clone())?;
+        let id = build_snapshot_id(context, summaries.map(|(key, edition, _)| (key, edition)));
+        let loaded = acquired
+            .into_iter()
+            .zip(hashes)
+            .map(|((input, text, segments), source_hash)| {
+                assemble_loaded_source_from_text(
+                    id,
+                    &self.allocator,
+                    input.clone(),
+                    (text, source_hash),
+                    segments,
+                )
+                .map(|source| (source, input))
+            })
+            .collect::<Result<Vec<_>, _>>()
+            .map_err(|error| SnapshotError::SourceLoading { error })?;
+        let source_versions = loaded
+            .iter()
+            .map(|(source, _)| SourceVersion {
+                source_id: source.source_id,
+                package_id: source.package_id.clone(),
+                module_path: source.module_path.clone(),
+                normalized_path: source.normalized_path.clone(),
+                source_hash: source.source_hash,
+                edition: source.edition.clone(),
+                origin: source.origin.clone(),
+            })
+            .collect();
+        let (snapshot, lease) = self.create_snapshot(
+            request,
+            SnapshotInput {
+                workspace_root,
+                source_versions,
+                dependency_artifacts,
+                lockfile_hash,
+                toolchain,
+                verifier_config_hash,
+            },
+        )?;
+        Ok((snapshot, lease, loaded))
+    }
+
     pub fn create_snapshot(
         &self,
         request: BuildRequestId,
         input: SnapshotInput,
     ) -> Result<(BuildSnapshot, SnapshotLease), SnapshotError> {
-        validate_snapshot_input(&input)?;
+        validate_snapshot_input(
+            (
+                &input.workspace_root,
+                &input.dependency_artifacts,
+                input.lockfile_hash,
+                &input.toolchain,
+                input.verifier_config_hash,
+            ),
+            input.source_versions.iter().map(|version| {
+                (
+                    version.canonical_sort_key(),
+                    &version.edition,
+                    version.origin.clone(),
+                )
+            }),
+        )?;
 
         let snapshot = BuildSnapshot::from_input_unchecked(input);
         let lease = self.allocate_lease(snapshot.id, RetentionReason::ActiveBuild)?;
@@ -580,8 +734,8 @@ impl SourceVersion {
         SourceVersionCanonicalKey {
             package_id: self.package_id.as_str(),
             module_path: self.module_path.as_str(),
-            normalized_path: self.normalized_path.as_str(),
-            source_hash: self.source_hash.as_bytes(),
+            normalized_path: &self.normalized_path,
+            source_hash: &self.source_hash,
         }
     }
 }
@@ -591,15 +745,24 @@ pub fn sort_source_versions_canonical(source_versions: &mut [SourceVersion]) {
         .sort_by(|left, right| left.canonical_sort_key().cmp(&right.canonical_sort_key()));
 }
 
-fn validate_snapshot_input(input: &SnapshotInput) -> Result<(), SnapshotError> {
-    reject_invalid_workspace_root(&input.workspace_root)?;
-    reject_invalid_source_identity_values(&input.source_versions)?;
-    reject_duplicate_source_version_identities(&input.source_versions)?;
-    reject_duplicate_module_paths(&input.source_versions)?;
-    reject_missing_dependency_artifacts(&input.dependency_artifacts)?;
-    reject_unsupported_lockfile_metadata(input.lockfile_hash)?;
-    reject_unsupported_toolchain_metadata(&input.toolchain)?;
-    reject_invalid_open_buffer_versions(&input.source_versions)?;
+fn validate_snapshot_input<'a>(
+    (workspace_root, dependency_artifacts, lockfile_hash, toolchain, _): (
+        &WorkspaceRoot,
+        &[DependencyArtifactRef],
+        Hash,
+        &ToolchainInfo,
+        Hash,
+    ),
+    sources: impl Iterator<Item = (SourceVersionCanonicalKey<'a>, &'a Edition, SourceOrigin)> + Clone,
+) -> Result<(), SnapshotError> {
+    reject_invalid_workspace_root(workspace_root)?;
+    reject_invalid_source_identity_values(sources.clone())?;
+    reject_duplicate_source_version_identities(sources.clone().map(|(key, _, _)| key))?;
+    reject_duplicate_module_paths(sources.clone().map(|(key, _, _)| key))?;
+    reject_missing_dependency_artifacts(dependency_artifacts)?;
+    reject_unsupported_lockfile_metadata(lockfile_hash)?;
+    reject_unsupported_toolchain_metadata(toolchain)?;
+    reject_invalid_open_buffer_versions(sources.map(|(_, _, origin)| origin))?;
     Ok(())
 }
 
@@ -612,64 +775,65 @@ fn reject_invalid_workspace_root(workspace_root: &WorkspaceRoot) -> Result<(), S
     Ok(())
 }
 
-fn reject_invalid_source_identity_values(
-    source_versions: &[SourceVersion],
+fn reject_invalid_source_identity_values<'a>(
+    sources: impl Iterator<Item = (SourceVersionCanonicalKey<'a>, &'a Edition, SourceOrigin)>,
 ) -> Result<(), SnapshotError> {
-    for version in source_versions {
-        if !is_valid_package_id(version.package_id.as_str()) {
+    for (key, edition, origin) in sources {
+        if !is_valid_package_id(key.package_id) {
             return Err(SnapshotError::InvalidPackageId {
-                package_id: version.package_id.clone(),
+                package_id: PackageId::new(key.package_id),
             });
         }
-        if !is_valid_module_path(version.module_path.as_str()) {
+        if !is_valid_module_path(key.module_path) {
             return Err(SnapshotError::InvalidModulePath {
-                package_id: version.package_id.clone(),
-                module_path: version.module_path.clone(),
+                package_id: PackageId::new(key.package_id),
+                module_path: ModulePath::new(key.module_path),
             });
         }
-        if version.edition.as_str().trim().is_empty() {
+        if edition.as_str().trim().is_empty() {
             return Err(SnapshotError::InvalidEdition {
-                package_id: version.package_id.clone(),
-                module_path: version.module_path.clone(),
-                edition: version.edition.clone(),
+                package_id: PackageId::new(key.package_id),
+                module_path: ModulePath::new(key.module_path),
+                edition: edition.clone(),
             });
         }
-        if let SourceOrigin::Generated { generator } = &version.origin
+        if let SourceOrigin::Generated { generator } = origin
             && generator.as_str().trim().is_empty()
         {
             return Err(SnapshotError::GeneratedSourceWithoutMetadata {
-                module_path: version.module_path.clone(),
+                module_path: ModulePath::new(key.module_path),
             });
         }
     }
     Ok(())
 }
 
-fn reject_duplicate_source_version_identities(
-    source_versions: &[SourceVersion],
+fn reject_duplicate_source_version_identities<'a>(
+    sources: impl Iterator<Item = SourceVersionCanonicalKey<'a>>,
 ) -> Result<(), SnapshotError> {
     let mut seen = HashSet::new();
-    for version in source_versions {
-        if !seen.insert(version.canonical_sort_key()) {
+    for key in sources {
+        if !seen.insert(key) {
             return Err(SnapshotError::DuplicateSourceVersionIdentity {
-                package_id: version.package_id.clone(),
-                module_path: version.module_path.clone(),
-                normalized_path: version.normalized_path.clone(),
-                source_hash: version.source_hash,
+                package_id: PackageId::new(key.package_id),
+                module_path: ModulePath::new(key.module_path),
+                normalized_path: key.normalized_path.clone(),
+                source_hash: *key.source_hash,
             });
         }
     }
     Ok(())
 }
 
-fn reject_duplicate_module_paths(source_versions: &[SourceVersion]) -> Result<(), SnapshotError> {
+fn reject_duplicate_module_paths<'a>(
+    sources: impl Iterator<Item = SourceVersionCanonicalKey<'a>>,
+) -> Result<(), SnapshotError> {
     let mut seen = HashSet::new();
-    for version in source_versions {
-        let key = (version.package_id.as_str(), version.module_path.as_str());
-        if !seen.insert(key) {
+    for key in sources {
+        if !seen.insert((key.package_id, key.module_path)) {
             return Err(SnapshotError::DuplicateModulePath {
-                package_id: version.package_id.clone(),
-                module_path: version.module_path.clone(),
+                package_id: PackageId::new(key.package_id),
+                module_path: ModulePath::new(key.module_path),
             });
         }
     }
@@ -708,16 +872,16 @@ fn reject_unsupported_toolchain_metadata(toolchain: &ToolchainInfo) -> Result<()
 }
 
 fn reject_invalid_open_buffer_versions(
-    source_versions: &[SourceVersion],
+    sources: impl Iterator<Item = SourceOrigin>,
 ) -> Result<(), SnapshotError> {
-    for version in source_versions {
+    for origin in sources {
         // Task 11 only has loaded snapshot input; expected-version comparison lives in source loading.
-        if let SourceOrigin::OpenBuffer { version: actual } = &version.origin
-            && *actual < 0
+        if let SourceOrigin::OpenBuffer { version: actual } = origin
+            && actual < 0
         {
             return Err(SnapshotError::StaleOpenBufferVersion {
                 expected: 0,
-                actual: *actual,
+                actual,
             });
         }
     }
@@ -736,65 +900,73 @@ fn is_valid_module_path(value: &str) -> bool {
     !value.is_empty() && value.split('.').all(is_language_identifier)
 }
 
-fn build_snapshot_id(input: &SnapshotInput) -> BuildSnapshotId {
-    let canonical_bytes = encode_snapshot_input_canonical(input);
+fn build_snapshot_id<'a>(
+    context: (
+        &WorkspaceRoot,
+        &[DependencyArtifactRef],
+        Hash,
+        &ToolchainInfo,
+        Hash,
+    ),
+    sources: impl Iterator<Item = (SourceVersionCanonicalKey<'a>, &'a Edition)>,
+) -> BuildSnapshotId {
+    let canonical_bytes = encode_snapshot_input_canonical(context, sources);
     build_snapshot_id_from_sorted_canonical_bytes(
         SNAPSHOT_CANONICAL_SCHEMA_ID,
-        input.toolchain.identity().as_bytes(),
+        context.3.identity().as_bytes(),
         &canonical_bytes,
     )
 }
 
-fn encode_snapshot_input_canonical(input: &SnapshotInput) -> Vec<u8> {
+fn encode_snapshot_input_canonical<'a>(
+    (workspace_root, dependency_artifacts, lockfile_hash, toolchain, verifier_config_hash): (
+        &WorkspaceRoot,
+        &[DependencyArtifactRef],
+        Hash,
+        &ToolchainInfo,
+        Hash,
+    ),
+    sources: impl Iterator<Item = (SourceVersionCanonicalKey<'a>, &'a Edition)>,
+) -> Vec<u8> {
     let mut bytes = Vec::new();
     write_part(
         &mut bytes,
         b"workspace-root",
-        input.workspace_root.as_str().as_bytes(),
+        workspace_root.as_str().as_bytes(),
     );
-    write_hash_part(&mut bytes, b"lockfile-hash", input.lockfile_hash);
+    write_hash_part(&mut bytes, b"lockfile-hash", lockfile_hash);
     write_part(
         &mut bytes,
         b"toolchain-identity",
-        input.toolchain.identity().as_bytes(),
+        toolchain.identity().as_bytes(),
     );
-    write_hash_part(
-        &mut bytes,
-        b"verifier-config-hash",
-        input.verifier_config_hash,
-    );
-    write_source_version_summaries(&mut bytes, &input.source_versions);
-    write_dependency_summaries(&mut bytes, &input.dependency_artifacts);
+    write_hash_part(&mut bytes, b"verifier-config-hash", verifier_config_hash);
+    write_source_version_summaries(&mut bytes, sources);
+    write_dependency_summaries(&mut bytes, dependency_artifacts);
     bytes
 }
 
-fn write_source_version_summaries(bytes: &mut Vec<u8>, source_versions: &[SourceVersion]) {
-    let mut summaries = source_versions.iter().collect::<Vec<_>>();
-    summaries.sort_by(|left, right| compare_source_version_identity(left, right));
+fn write_source_version_summaries<'a>(
+    bytes: &mut Vec<u8>,
+    sources: impl Iterator<Item = (SourceVersionCanonicalKey<'a>, &'a Edition)>,
+) {
+    let mut summaries = sources.collect::<Vec<_>>();
+    summaries.sort_by(|(left, left_edition), (right, right_edition)| {
+        left.cmp(right)
+            .then_with(|| left_edition.as_str().cmp(right_edition.as_str()))
+    });
 
     write_collection_header(bytes, b"source-version-summaries", summaries.len());
-    for version in summaries {
-        write_part(
-            bytes,
-            b"source/package-id",
-            version.package_id.as_str().as_bytes(),
-        );
-        write_part(
-            bytes,
-            b"source/module-path",
-            version.module_path.as_str().as_bytes(),
-        );
+    for (key, edition) in summaries {
+        write_part(bytes, b"source/package-id", key.package_id.as_bytes());
+        write_part(bytes, b"source/module-path", key.module_path.as_bytes());
         write_part(
             bytes,
             b"source/normalized-path",
-            version.normalized_path.as_str().as_bytes(),
+            key.normalized_path.as_str().as_bytes(),
         );
-        write_hash_part(bytes, b"source/source-hash", version.source_hash);
-        write_part(
-            bytes,
-            b"source/edition",
-            version.edition.as_str().as_bytes(),
-        );
+        write_hash_part(bytes, b"source/source-hash", *key.source_hash);
+        write_part(bytes, b"source/edition", edition.as_str().as_bytes());
     }
 }
 
@@ -854,8 +1026,16 @@ impl Ord for SourceVersionCanonicalKey<'_> {
         self.package_id
             .cmp(other.package_id)
             .then_with(|| self.module_path.cmp(other.module_path))
-            .then_with(|| self.normalized_path.cmp(other.normalized_path))
-            .then_with(|| self.source_hash.cmp(other.source_hash))
+            .then_with(|| {
+                self.normalized_path
+                    .as_str()
+                    .cmp(other.normalized_path.as_str())
+            })
+            .then_with(|| {
+                self.source_hash
+                    .as_bytes()
+                    .cmp(other.source_hash.as_bytes())
+            })
     }
 }
 
@@ -904,6 +1084,9 @@ impl fmt::Display for ToolchainInfo {
 impl fmt::Display for SnapshotError {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
+            Self::SourceLoading { error } => {
+                write!(f, "could not acquire snapshot source: {error}")
+            }
             Self::InvalidWorkspaceRoot { workspace_root } => {
                 write!(f, "invalid workspace root `{workspace_root}`")
             }
@@ -1009,6 +1192,7 @@ impl fmt::Display for SnapshotError {
 impl Error for SnapshotError {
     fn source(&self) -> Option<&(dyn Error + 'static)> {
         match self {
+            Self::SourceLoading { error } => Some(error),
             Self::InvalidSourcePath { error } => Some(error),
             Self::LeaseIdAllocation { error } => Some(error),
             _ => None,

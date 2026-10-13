@@ -455,6 +455,9 @@
       `SourcePathError::MissingSourceRoot` を `SourceLoadError::InvalidSourcePath`
       経由で保持する regression coverage がある。
 
+33. **snapshot 内 ID 割り当て前の source 取得。** [x]
+    - [SESSION-SOURCE-CAPTURE](../../task_contracts/ja/SESSION-SOURCE-CAPTURE.md) が native 取得、完全な context の検証、実 snapshot のハッシュ化とその後の SourceId 割り当てを所有する。LSP snapshot binding は別の後続作業である。
+
 ## 推奨検証
 
 各タスクの後に、以下を実行する:
