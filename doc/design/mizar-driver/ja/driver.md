@@ -364,3 +364,11 @@ prefix の例外経路では service がない task の ValidatedHit を Unavail
 `CompilerDriver::submit_with_import_discovery` は plan/index 構築後、graph 構築前の disk source 事前検証を明示的に選択する。空の Unavailable overlay だけを置き換え、他の coverage や供給済み edge は優先する。通常の `submit` は意図的な Unavailable を含め全 overlay を維持する。既存 frontend adapter が source 取得と暫定 path 解決を担当し、driver core はその overlay だけを受け取る。事前検証は phase 実行ではなく、出力・診断を公開しない。allocator と source identity は局所的に保持する。
 全 workspace module に一意な捕捉 disk version と workspace plan/index identity を要求し、安全な package/source path の workspace 内包含と、load 後の package/module/path/edition/hash/origin の捕捉値との一致を確認する。session loader、frontend preprocessing、resolver の暫定 import mapping を使う。読込不能・変更・未対応・重複/欠落・preprocess 診断・未解決があれば推定 edge 全体を破棄して Unavailable を維持し、既存 graph 検証により schedule を停止する。解決済み artifact target に workspace edge は不要。成功時は重複のない workspace ImportSummary edge を ImportsOnly として渡し、意味的 Complete coverage は付与しない。graph の self/cycle/reference 検証は維持する。
 予定された SourceLoad は disk と捕捉値を再照合し、Frontend は実際の parsed import、保持した親と対応済み summary を publication 前に検証する。事前検証は reexport、意味的 import、公開診断、proof/cache/artifact 成功や open-buffer 取得を許可しない。事前検証後の変更を捕捉 key の下で公開できない。
+
+## Published output authorization
+
+[publisher 承認](../../mizar-ir/ja/publisher.md#published-output-authorization)は
+実 OpenBuffer/InternalOnly の publication 来歴を確認できる。Driver の consumer は
+Native 取得と入力束縛が供給されるまで current/package 検証を維持する。来歴だけで
+summary のみ/Disk の結果を承認しない。物理 storage、現在 snapshot と lane の照合は
+必須。canonical snapshot の一致だけで raw buffer/version の鮮度は証明しない。

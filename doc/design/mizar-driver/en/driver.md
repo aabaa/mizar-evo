@@ -388,3 +388,12 @@ For the prefix exception, mark supplied ValidatedHit decisions for tasks with mi
 `CompilerDriver::submit_with_import_discovery` opts into authenticated disk-source preflight after plan/index construction and before graph construction. It replaces only an empty Unavailable overlay; other supplied coverage or edges remain authoritative. Ordinary `submit` retains all supplied overlays, including intentional Unavailable. The existing frontend adapter owns source acquisition and provisional path resolution; the driver core only consumes its overlay. Preflight is not phase execution and publishes no output or diagnostics; its allocator and source identities are private.
 Require every workspace module to have one matching captured disk version and workspace plan/index identity, safe package/source paths contained in the workspace, and loaded package/module/path/edition/hash/origin equal to capture. Use the session loader, frontend preprocessing and resolver provisional import mapping. Reject unreadable, drifted, unsupported, duplicate/missing, preprocessing-diagnostic or unresolved input as a whole, retaining Unavailable rather than partial inferred edges; existing graph rejection then prevents scheduling. Resolved artifact targets need no workspace edge. Otherwise emit deduplicated workspace ImportSummary edges as ImportsOnly, never Complete semantic coverage. Graph self/cycle/reference validation still applies.
 The scheduled SourceLoad rechecks disk content against capture; Frontend authenticates actual parsed imports, retained parents and supported summaries before publication. Preflight cannot authorize reexports, semantic imports, public diagnostics, proof/cache/artifact success or open-buffer acquisition. Changes between preflight and scheduled loading cannot publish altered input under the captured key.
+
+## Published output authorization
+
+[Publisher authorization](../../mizar-ir/en/publisher.md#published-output-authorization)
+can establish genuine OpenBuffer/InternalOnly publication provenance. Driver
+consumers retain current/package checks until native capture and input binding
+are supplied; provenance alone never authenticates a summary-only/Disk result.
+Physical storage, current snapshot and lane checks remain required. Canonical
+snapshot equality alone never proves raw-buffer/version freshness.

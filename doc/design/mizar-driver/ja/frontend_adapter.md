@@ -90,3 +90,6 @@ named-input 全体を IR の name/domain/digest 正規順序で比較する。ac
 
 Frontend blob decoder は既に束縛済みの Disk input で共有 frontend storage
 復元を使う。Disk 限定の実行と publication の規則を維持する。
+
+実 Native 取得と source 束縛が供給されるまで親の current/package 承認を維持する。
+OpenBuffer/InternalOnly の来歴だけでは承認しない。

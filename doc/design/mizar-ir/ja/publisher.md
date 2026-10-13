@@ -192,3 +192,16 @@ Task 8 は以下を cover しなければならない:
 - failed publication 後に partial output が可視にならないこと。
 - publisher-created handle が proof authority、trusted status、cache-key authority、
   dependency-fingerprint ownership を持たないこと。
+
+## Published output authorization
+
+`validate_published_output(snapshot, &AnyPhaseOutputRef) -> Result<(), PublishError>`
+は現在の publisher 状態、output snapshot、当 publisher に記録された正確な
+output/generation を照合する。CurrentPackage 成功は既存 root を維持し、実際に
+seal 成功した OpenBuffer/InternalOnly は別の private publication 記録を持つ。
+current/package root は作らず、他の InternalOnly origin と直接 storage seal は
+承認しない。未承認は `OutputNotPublished { snapshot, output }`。旧 API/error は不変。
+seal 失敗は記録を作らない。物理 handle の有効性は storage が確認し、記録は
+storage を保持せず、回収済み generation を復活させない。これは publisher 由来の
+確認であり、source 正当性・document version 鮮度・cache 受理・proof status・
+artifact 権限ではない。obsolete/superseded snapshot は拒否する。

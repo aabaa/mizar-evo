@@ -169,3 +169,13 @@ graph は、重複 dependency edge を暗黙に潰してはならないからで
 将来の fail-closed dispatch-input validation error を、外部の exhaustive match を
 壊さずに追加できるようにするためである。この module に意図的な exhaustive
 public-enum 例外はない。
+
+## Published parents
+
+`SealedParentOutputHandle::from_published_output(publisher, snapshot, handle)` は
+snapshot 一致、物理 storage 検証、[publisher 承認](publisher.md#published-output-authorization)
+の後に `Result<Self, DispatchInputError>` を返す。current/package または実際の
+current-snapshot OpenBuffer/InternalOnly publication を受け付ける。旧 current 入口は
+internal 出力を拒否し、rehydrated 入口は従来どおり事前の cache-owner 検証を必要とする。
+三つの入口は検証手順だけを共有して error 順序を維持し、editor 鮮度・source 正当性・
+proof 権限・cache 受理を推定しない。

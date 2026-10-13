@@ -160,19 +160,26 @@ impl SealedParentOutputHandle {
         snapshot: BuildSnapshotId,
         handle: AnyPhaseOutputRef,
     ) -> Result<Self, DispatchInputError> {
-        reject_parent_snapshot(snapshot, &handle)?;
-        publisher
-            .storage()
-            .validate_handle(&handle)
-            .map_err(|error| DispatchInputError::Storage {
-                error: Box::new(error),
-            })?;
-        publisher
-            .validate_current_output(snapshot, &handle)
-            .map_err(|error| DispatchInputError::Publisher {
-                error: Box::new(error),
-            })?;
-        Ok(Self { handle })
+        Self::from_sealed_output(
+            publisher.storage(),
+            snapshot,
+            handle,
+            Some((publisher, false)),
+        )
+    }
+
+    /// Validates a current/package or genuine OpenBuffer/InternalOnly published parent.
+    pub fn from_published_output(
+        publisher: &PhaseOutputPublisher,
+        snapshot: BuildSnapshotId,
+        handle: AnyPhaseOutputRef,
+    ) -> Result<Self, DispatchInputError> {
+        Self::from_sealed_output(
+            publisher.storage(),
+            snapshot,
+            handle,
+            Some((publisher, true)),
+        )
     }
 
     /// Validates a sealed handle already rehydrated into the dispatch snapshot.
@@ -181,12 +188,31 @@ impl SealedParentOutputHandle {
         snapshot: BuildSnapshotId,
         handle: AnyPhaseOutputRef,
     ) -> Result<Self, DispatchInputError> {
+        Self::from_sealed_output(storage, snapshot, handle, None)
+    }
+
+    fn from_sealed_output(
+        storage: &IrStorageService,
+        snapshot: BuildSnapshotId,
+        handle: AnyPhaseOutputRef,
+        publisher: Option<(&PhaseOutputPublisher, bool)>,
+    ) -> Result<Self, DispatchInputError> {
         reject_parent_snapshot(snapshot, &handle)?;
         storage
             .validate_handle(&handle)
             .map_err(|error| DispatchInputError::Storage {
                 error: Box::new(error),
             })?;
+        if let Some((publisher, published)) = publisher {
+            let result = if published {
+                publisher.validate_published_output(snapshot, &handle)
+            } else {
+                publisher.validate_current_output(snapshot, &handle)
+            };
+            result.map_err(|error| DispatchInputError::Publisher {
+                error: Box::new(error),
+            })?;
+        }
         Ok(Self { handle })
     }
 
@@ -536,6 +562,49 @@ mod tests {
         .expect_err("foreign-storage current parent fails");
 
         assert!(matches!(error, DispatchInputError::Storage { .. }));
+    }
+
+    #[test]
+    fn published_parent_preserves_snapshot_storage_and_authorization_error_order() {
+        let target = snapshot(11);
+        let owner = publisher(target, &["parent"]);
+        let current = parent(&owner, target, "parent", "payload");
+        assert_eq!(
+            SealedParentOutputHandle::from_published_output(
+                &owner,
+                target,
+                current.as_output_ref().clone()
+            )
+            .unwrap(),
+            current
+        );
+        let foreign = publisher(target, &[]);
+        assert!(matches!(
+            SealedParentOutputHandle::from_published_output(
+                &foreign,
+                snapshot(12),
+                current.as_output_ref().clone()
+            ),
+            Err(DispatchInputError::ParentSnapshotMismatch { .. })
+        ));
+        assert!(matches!(
+            SealedParentOutputHandle::from_published_output(
+                &foreign,
+                target,
+                current.as_output_ref().clone()
+            ),
+            Err(DispatchInputError::Storage { .. })
+        ));
+        let unrecorded =
+            PhaseOutputPublisher::new(owner.storage().clone(), owner.registry().clone());
+        unrecorded.register_current_snapshot(target);
+        assert!(
+            matches!(SealedParentOutputHandle::from_published_output(&unrecorded, target, current.as_output_ref().clone()), Err(DispatchInputError::Publisher { error }) if matches!(*error, PublishError::OutputNotPublished { .. }))
+        );
+        owner.mark_obsolete(target).unwrap();
+        assert!(
+            matches!(SealedParentOutputHandle::from_published_output(&owner, target, current.into_output_ref()), Err(DispatchInputError::Publisher { error }) if matches!(*error, PublishError::ObsoleteSnapshot { .. }))
+        );
     }
 
     #[test]

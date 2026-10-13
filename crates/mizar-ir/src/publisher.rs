@@ -121,6 +121,7 @@ struct PublisherState {
     obsolete_snapshots: HashSet<BuildSnapshotId>,
     superseded_by: HashMap<BuildSnapshotId, BuildSnapshotId>,
     current_outputs: HashSet<CurrentOutputRoot>,
+    open_buffer_outputs: HashSet<CurrentOutputRoot>,
     allowed_work_units: HashSet<AllowedWorkUnit>,
 }
 
@@ -195,6 +196,13 @@ pub enum PublishError {
     },
     /// Output is sealed but was not published as a current/package result.
     OutputNotCurrentPackage {
+        /// Current snapshot.
+        snapshot: BuildSnapshotId,
+        /// Output id.
+        output: PhaseOutputId,
+    },
+    /// Output lacks successful current/package or OpenBuffer/InternalOnly publication.
+    OutputNotPublished {
         /// Current snapshot.
         snapshot: BuildSnapshotId,
         /// Output id.
@@ -342,6 +350,40 @@ impl PhaseOutputPublisher {
         Ok(())
     }
 
+    /// Validates current/package or genuine OpenBuffer/InternalOnly publication.
+    /// Physical handle validity and native source/version binding remain separate checks.
+    pub fn validate_published_output(
+        &self,
+        snapshot: BuildSnapshotId,
+        output: &AnyPhaseOutputRef,
+    ) -> Result<(), PublishError> {
+        let state = self.state.lock().expect("publisher mutex poisoned");
+        validate_snapshot_state(
+            &state,
+            snapshot,
+            OutputOrigin::PackageSource,
+            PublicationTarget::CurrentPackage,
+        )?;
+        if output.snapshot() != snapshot {
+            return Err(PublishError::OutputSnapshotMismatch {
+                snapshot,
+                output: output.output(),
+                output_snapshot: output.snapshot(),
+            });
+        }
+        let root = CurrentOutputRoot {
+            output: output.output(),
+            generation: output.generation(),
+        };
+        if !state.current_outputs.contains(&root) && !state.open_buffer_outputs.contains(&root) {
+            return Err(PublishError::OutputNotPublished {
+                snapshot,
+                output: output.output(),
+            });
+        }
+        Ok(())
+    }
+
     /// Registers an explicit allowed work-unit context.
     pub fn allow_work_unit(&self, allowed: AllowedWorkUnit) {
         self.state
@@ -467,6 +509,8 @@ impl PhaseOutputPublisher {
         let lineage = registration.lineage.clone();
         let output = lineage.output;
         let publishes_current = input.target == PublicationTarget::CurrentPackage;
+        let publishes_open_buffer = input.origin == OutputOrigin::OpenBuffer
+            && input.target == PublicationTarget::InternalOnly;
 
         match self.storage.seal_canonical(SealCanonicalOutputInput {
             slot: input.slot,
@@ -479,6 +523,12 @@ impl PhaseOutputPublisher {
             Ok(handle) => {
                 if publishes_current {
                     state.current_outputs.insert(CurrentOutputRoot {
+                        output,
+                        generation: handle.any().generation(),
+                    });
+                }
+                if publishes_open_buffer {
+                    state.open_buffer_outputs.insert(CurrentOutputRoot {
                         output,
                         generation: handle.any().generation(),
                     });
@@ -612,6 +662,12 @@ impl fmt::Display for PublishError {
                 write!(
                     formatter,
                     "output `{output:?}` was not published as current/package output for `{snapshot:?}`"
+                )
+            }
+            Self::OutputNotPublished { snapshot, output } => {
+                write!(
+                    formatter,
+                    "output `{output:?}` was not published for `{snapshot:?}`"
                 )
             }
             Self::MissingCanonicalPayload => {
@@ -988,6 +1044,202 @@ mod tests {
             origin: mode.0,
             target: mode.1,
         })
+    }
+
+    #[test]
+    fn published_authority_tracks_only_current_and_successful_open_internal_outputs() {
+        let target = snapshot(40);
+        let owner = publisher(target);
+        let foreign = PhaseOutputPublisher::new(owner.storage().clone(), owner.registry().clone());
+        foreign.register_current_snapshot(target);
+        let other = snapshot(41);
+        owner.register_current_snapshot(other);
+        for (ordinal, origin, publication, authorized) in [
+            (
+                0,
+                OutputOrigin::PackageSource,
+                PublicationTarget::CurrentPackage,
+                true,
+            ),
+            (
+                1,
+                OutputOrigin::OpenBuffer,
+                PublicationTarget::InternalOnly,
+                true,
+            ),
+            (
+                2,
+                OutputOrigin::PackageSource,
+                PublicationTarget::InternalOnly,
+                false,
+            ),
+            (
+                3,
+                OutputOrigin::RetainedStaleSnapshot,
+                PublicationTarget::InternalOnly,
+                false,
+            ),
+            (
+                4,
+                OutputOrigin::ValidatedCacheInput,
+                PublicationTarget::InternalOnly,
+                false,
+            ),
+        ] {
+            let unit = format!("case-{ordinal}");
+            owner.allow_work_unit(AllowedWorkUnit::new(
+                phase(),
+                output_kind(),
+                work_unit(&unit),
+            ));
+            let handle = publish_text(
+                &owner,
+                target,
+                &unit,
+                &ordinal.to_string(),
+                vec![],
+                IrSideTables::default(),
+                (origin, publication),
+            )
+            .unwrap();
+            if authorized {
+                assert!(
+                    owner
+                        .validate_published_output(target, handle.any())
+                        .is_ok()
+                );
+            } else {
+                assert!(matches!(
+                    owner.validate_published_output(target, handle.any()),
+                    Err(PublishError::OutputNotPublished { .. })
+                ));
+            }
+            assert!(matches!(
+                foreign.validate_published_output(target, handle.any()),
+                Err(PublishError::OutputNotPublished { .. })
+            ));
+            assert!(matches!(
+                owner.validate_published_output(other, handle.any()),
+                Err(PublishError::OutputSnapshotMismatch { .. })
+            ));
+            assert!(matches!(
+                owner.validate_published_output(snapshot(42), handle.any()),
+                Err(PublishError::UnknownSnapshot { .. })
+            ));
+            if origin == OutputOrigin::OpenBuffer {
+                assert!(matches!(
+                    owner.validate_current_output(target, handle.any()),
+                    Err(PublishError::OutputNotCurrentPackage { .. })
+                ));
+            }
+        }
+        owner.mark_obsolete(target).unwrap();
+        let late = publish_text(
+            &owner,
+            target,
+            "unit",
+            "late",
+            vec![],
+            IrSideTables::default(),
+            (OutputOrigin::OpenBuffer, PublicationTarget::InternalOnly),
+        )
+        .unwrap();
+        assert!(matches!(
+            owner.validate_published_output(target, late.any()),
+            Err(PublishError::ObsoleteSnapshot { .. })
+        ));
+        owner.register_current_snapshot(target);
+        assert!(owner.validate_published_output(target, late.any()).is_ok());
+        owner.replace_current_snapshot(target, other).unwrap();
+        assert!(matches!(
+            owner.validate_published_output(target, late.any()),
+            Err(PublishError::ObsoleteSnapshot { .. })
+        ));
+        owner.register_current_snapshot(target);
+        assert!(owner.validate_published_output(target, late.any()).is_err());
+    }
+
+    #[test]
+    fn collected_direct_resealed_and_failed_open_sealing_do_not_gain_authority() {
+        use crate::dispatch_input::{DispatchInputError, SealedParentOutputHandle};
+        use crate::storage::{CollectInput, SchemaVersion, SealOutputInput};
+        let target = snapshot(43);
+        let owner = publisher(target);
+        let original = publish_text(
+            &owner,
+            target,
+            "unit",
+            "payload",
+            vec![],
+            IrSideTables::default(),
+            (OutputOrigin::OpenBuffer, PublicationTarget::InternalOnly),
+        )
+        .unwrap();
+        let lineage = owner.registry().output_lineage(original.output()).unwrap();
+        owner.storage().collect(CollectInput {
+            snapshot: target,
+            protected_outputs: vec![],
+        });
+        assert!(matches!(
+            SealedParentOutputHandle::from_published_output(&owner, target, original.erase()),
+            Err(DispatchInputError::Storage { .. })
+        ));
+        let direct = owner
+            .storage()
+            .seal(SealOutputInput {
+                slot: owner.allocate(
+                    target,
+                    phase(),
+                    work_unit("unit"),
+                    output_kind(),
+                    SchemaVersion::new(1),
+                ),
+                lineage,
+                side_tables: IrSideTables::default(),
+                payload: "payload".to_owned(),
+            })
+            .unwrap();
+        assert_eq!(original.output(), direct.output());
+        assert_ne!(original.any().generation(), direct.any().generation());
+        assert!(matches!(
+            owner.validate_published_output(target, direct.any()),
+            Err(PublishError::OutputNotPublished { .. })
+        ));
+        let failed = publish_text(
+            &owner,
+            target,
+            "unit",
+            "payload",
+            vec![],
+            IrSideTables::default(),
+            (OutputOrigin::OpenBuffer, PublicationTarget::InternalOnly),
+        );
+        assert!(matches!(failed, Err(PublishError::Storage { .. })));
+        assert!(matches!(
+            owner.validate_published_output(target, direct.any()),
+            Err(PublishError::OutputNotPublished { .. })
+        ));
+        assert!(matches!(
+            SealedParentOutputHandle::from_published_output(&owner, target, direct.erase()),
+            Err(DispatchInputError::Publisher { .. })
+        ));
+        owner.storage().collect(CollectInput {
+            snapshot: target,
+            protected_outputs: vec![],
+        });
+        let fresh = publish_text(
+            &owner,
+            target,
+            "unit",
+            "payload",
+            vec![],
+            IrSideTables::default(),
+            (OutputOrigin::OpenBuffer, PublicationTarget::InternalOnly),
+        )
+        .unwrap();
+        assert!(
+            SealedParentOutputHandle::from_published_output(&owner, target, fresh.erase()).is_ok()
+        );
     }
 
     #[test]

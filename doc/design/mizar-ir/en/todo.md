@@ -258,6 +258,9 @@ Keep `cargo test -p mizar-ir` green after each task (see
       `dispatch_input.md`, mizar-build `phase_dispatch.md`, and mizar-driver
       registry/driver specs.
 
+21. **Genuine OpenBuffer internal output authorization.** [x]
+    - [IR-OPEN-BUFFER-DISPATCH](../../task_contracts/en/IR-OPEN-BUFFER-DISPATCH.md) owns recorded internal publication authorization; native Driver capture, binding and adoption follow separately.
+
 ### Audit review note (2026-07-06)
 
 The July 2026 semantic, kernel-soundness, and template-encoding audits

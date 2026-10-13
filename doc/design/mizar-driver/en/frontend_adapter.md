@@ -95,3 +95,6 @@ Compare its full named-input vector in IR canonical name/domain/digest order: ac
 
 The Frontend blob decoder uses shared frontend storage decoding with the
 service's already-bound Disk input; this preserves disk-only execution and publication.
+
+Parent checks retain current/package authorization until genuine native capture
+and source binding are supplied; OpenBuffer/InternalOnly provenance alone is insufficient.

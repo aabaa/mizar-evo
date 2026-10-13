@@ -215,3 +215,17 @@ Task 8 must cover:
 - no partial output visibility after failed publication;
 - publisher-created handles do not carry proof authority, trusted status,
   cache-key authority, or dependency-fingerprint ownership.
+
+## Published output authorization
+
+`validate_published_output(snapshot, &AnyPhaseOutputRef) -> Result<(), PublishError>`
+checks current publisher state, the output snapshot and an exact output/generation
+record from this publisher. CurrentPackage successes retain their existing roots;
+successfully sealed OpenBuffer/InternalOnly outputs have a separate private
+publication record, never a current/package root. Other InternalOnly origins and
+direct storage sealing are not authorized by this method. Missing authorization
+returns `OutputNotPublished { snapshot, output }`; old APIs/errors stay unchanged.
+Failed sealing records nothing. Physical handle validity remains a storage check;
+records do not pin storage or revive collected generations. This is publisher
+provenance, not source validity, document-version freshness, cache acceptance,
+proof status or artifact authority. Obsolete/superseded snapshots remain rejected.

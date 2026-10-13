@@ -246,6 +246,9 @@ internal: [06](../../internal/ja/06.ir_storage_and_snapshot_handles.md)。
     - 依存: 8、10、19、mizar-build phase dispatch。仕様: `dispatch_input.md`、
       mizar-build `phase_dispatch.md`、mizar-driver registry/driver specs。
 
+21. **実 OpenBuffer InternalOnly 出力の承認.** [x]
+    - [IR-OPEN-BUFFER-DISPATCH](../../task_contracts/ja/IR-OPEN-BUFFER-DISPATCH.md) が記録済み internal publication 承認を担当。Native Driver 取得・束縛・採用は後続。
+
 ### 監査レビュー注記(2026-07-06)
 
 2026 年 7 月の意味論・kernel 健全性・テンプレートエンコーディング監査

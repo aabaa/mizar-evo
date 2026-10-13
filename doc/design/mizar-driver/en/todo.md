@@ -512,6 +512,9 @@ Keep `cargo test -p mizar-driver` green after each task (see
 26. **Playground server sessions (with mizar-lsp).** [ ]
     - Contract: [WEB-PLAYGROUND](../../task_contracts/en/WEB-PLAYGROUND.md).
 
+27. **Native captured-input publication routing.** [ ]
+    - Prerequisite: [IR-OPEN-BUFFER-DISPATCH](../../task_contracts/en/IR-OPEN-BUFFER-DISPATCH.md). Adoption waits for genuine native capture and input binding; summary-only routes retain current/package checks.
+
 ### Audit review note (2026-07-06)
 
 The July 2026 semantic, kernel-soundness, and template-encoding audits

@@ -5550,6 +5550,247 @@ fn dependency_lexical_provider_reads_real_source_and_summary_boundaries() {
     ));
 }
 
+#[test]
+fn native_open_buffer_payloads_publish_internal_blobs_with_genuine_parent_authority() {
+    use mizar_frontend::{
+        cache_key::{ACTIVE_LEXICAL_ENVIRONMENT_CACHE_KEY_VERSION, TOKEN_STREAM_CACHE_KEY_VERSION},
+        orchestration::Frontend,
+        source::{FrontendSourceLoader, source_unit_from_loaded},
+    };
+    use mizar_ir::{
+        dispatch_input::SealedParentOutputHandle,
+        identity::NamedInputHash,
+        publisher::{OutputOrigin, PublicationTarget, PublishError, PublishOutputInput},
+        storage::{BlobDecodeError, BlobDecoder, IrSideTables, SchemaVersion, SideTableRecord},
+    };
+    use std::sync::{Arc, atomic::AtomicUsize};
+    let fixture = Fixture::new(b"definition\nend;\n");
+    let ids = InMemorySessionIdAllocator::new();
+    let snapshots = SnapshotRegistry::new();
+    let disk_submission = fixture.submit(&ids, &snapshots);
+    let disk_context = &disk_submission.session.captured.snapshot;
+    let package_root = fixture.root.join("alpha");
+    let input = SourceInput {
+        package_id: fixture.version.package_id.clone(),
+        module_path: fixture.version.module_path.clone(),
+        normalized_path: fixture.version.normalized_path.clone(),
+        edition: fixture.version.edition.clone(),
+        origin: SourceOriginInput::OpenBuffer {
+            uri: format!("file://{}", package_root.join("src/main.miz").display()),
+            expected_version: 7,
+            actual_version: 7,
+            text: Arc::from("\u{feff}definition\r\nend;\r\n"),
+        },
+    };
+    let (snapshot, _lease, captured) = snapshots
+        .load_snapshot(
+            ids.next_request_id().unwrap(),
+            (
+                disk_context.workspace_root.clone(),
+                disk_context.dependency_artifacts.clone(),
+                disk_context.lockfile_hash,
+                disk_context.toolchain.clone(),
+                disk_context.verifier_config_hash,
+            ),
+            vec![(DiskSourceLoader::new(&package_root), input)],
+        )
+        .unwrap();
+    let (loaded, captured_input) = captured.into_iter().next().unwrap();
+    let source = source_unit_from_loaded(loaded, package_root.join("src/main.miz"));
+    assert_eq!(snapshot.source_versions[0].source_id, source.source_id);
+    assert!(matches!(
+        source.origin,
+        SourceOrigin::OpenBuffer { version: 7 }
+    ));
+    let inputs = SourceLoadInputs {
+        snapshot: &snapshot,
+        build_plan: disk_submission.build_plan.as_ref().unwrap(),
+        module_index: disk_submission.module_index.as_ref().unwrap(),
+        allocator: &ids,
+    };
+    let output = Frontend::new(
+        FrontendSourceLoader::new(DiskSourceLoader::new(&package_root)),
+        inputs.dependency_lexical_provider(&[]),
+        MizarParserSeam,
+    )
+    .run_loaded(source.clone())
+    .unwrap();
+    assert!(output.ast.is_some());
+    assert!(output.diagnostics.is_empty());
+    let unit = &source_task(&disk_submission).unit;
+    let publisher = publisher(snapshot.id, 0, unit);
+    allow_frontend(&publisher, unit);
+    let WorkUnit::Module { module } = unit else {
+        unreachable!()
+    };
+    let ir_unit = IrWorkUnit::new(format!(
+        "{:?}:{:?}",
+        module.package.as_str(),
+        module.path.as_str()
+    ));
+    let source_id = source.source_id;
+    let expected_hash = source.source_hash;
+    let source_key = SourceUnitCacheKey::from_source(&source).stable_hash();
+    let source_bytes = source.canonical_open_buffer_bytes(&captured_input).unwrap();
+    let source_storage_hash = Hash::from_bytes(blake3::derive_key(
+        "mizar-frontend/source-unit-storage-side-table/v1",
+        &source_bytes,
+    ));
+    let source_decodes = Arc::new(AtomicUsize::new(0));
+    let mut source_handle = None;
+    for target in [
+        PublicationTarget::CurrentPackage,
+        PublicationTarget::InternalOnly,
+    ] {
+        let decode_input = captured_input.clone();
+        let decodes = source_decodes.clone();
+        let phase = IrPipelinePhase::new("SourceLoad");
+        let kind = OutputKind::new("SourceUnit");
+        let result = publisher.publish(PublishOutputInput {
+            slot: publisher.allocate(
+                snapshot.id,
+                phase.clone(),
+                ir_unit.clone(),
+                kind.clone(),
+                SchemaVersion::new(1),
+            ),
+            snapshot: snapshot.id,
+            phase,
+            work_unit: ir_unit.clone(),
+            output_kind: kind,
+            schema_version: SchemaVersion::new(1),
+            payload: source.clone(),
+            canonical_payload: Some(source_key.as_bytes().to_vec()),
+            storage_payload: Some(source_bytes.clone()),
+            decode: BlobDecoder::new(move |bytes| {
+                decodes.fetch_add(1, Ordering::SeqCst);
+                SourceUnit::from_canonical_storage_bytes(bytes, source_id, &decode_input)
+                    .filter(|source| source.source_hash == expected_hash)
+                    .ok_or_else(|| BlobDecodeError::new("invalid native OpenBuffer source"))
+            }),
+            parents: vec![],
+            named_input_hashes: vec![NamedInputHash {
+                name: "source".into(),
+                domain: SOURCE_UNIT_CACHE_KEY_VERSION.into(),
+                digest: source_key,
+            }],
+            side_tables: IrSideTables {
+                source_maps: vec![SideTableRecord::new(
+                    "source-storage",
+                    source.normalized_path.as_str(),
+                    source_storage_hash,
+                )],
+                ..IrSideTables::default()
+            },
+            origin: OutputOrigin::OpenBuffer,
+            target,
+        });
+        if target == PublicationTarget::CurrentPackage {
+            assert!(matches!(result, Err(PublishError::OpenBufferOutput { .. })));
+        } else {
+            source_handle = Some(result.unwrap());
+        }
+    }
+    let source_handle = source_handle.unwrap();
+    let source_parent = SealedParentOutputHandle::from_published_output(
+        &publisher,
+        snapshot.id,
+        source_handle.erase(),
+    )
+    .unwrap();
+    let output_bytes = output.canonical_open_buffer_bytes(&captured_input).unwrap();
+    let mut semantic_bytes = b"mizar-frontend/output-publication/v1\0".to_vec();
+    semantic_bytes.extend_from_slice(
+        output
+            .cache_keys
+            .ast
+            .as_ref()
+            .unwrap()
+            .stable_hash()
+            .as_bytes(),
+    );
+    let output_storage_hash = Hash::from_bytes(blake3::derive_key(
+        "mizar-frontend/output-storage-side-table/v1",
+        &output_bytes,
+    ));
+    let output_decodes = Arc::new(AtomicUsize::new(0));
+    let decode_input = captured_input;
+    let decodes = output_decodes.clone();
+    let phase = IrPipelinePhase::new("Frontend");
+    let kind = OutputKind::new("FrontendOutput");
+    let output_handle = publisher
+        .publish(PublishOutputInput {
+            slot: publisher.allocate(
+                snapshot.id,
+                phase.clone(),
+                ir_unit.clone(),
+                kind.clone(),
+                SchemaVersion::new(1),
+            ),
+            snapshot: snapshot.id,
+            phase,
+            work_unit: ir_unit,
+            output_kind: kind,
+            schema_version: SchemaVersion::new(1),
+            payload: output.clone(),
+            canonical_payload: Some(semantic_bytes),
+            storage_payload: Some(output_bytes),
+            decode: BlobDecoder::new(move |bytes| {
+                decodes.fetch_add(1, Ordering::SeqCst);
+                FrontendOutput::from_canonical_storage_bytes(bytes, source_id, &decode_input)
+                    .filter(|output| output.source.source_hash == expected_hash)
+                    .ok_or_else(|| BlobDecodeError::new("invalid native OpenBuffer frontend"))
+            }),
+            parents: vec![source_parent.into_output_ref()],
+            named_input_hashes: vec![
+                NamedInputHash {
+                    name: "active-lexical-environment".into(),
+                    domain: ACTIVE_LEXICAL_ENVIRONMENT_CACHE_KEY_VERSION.into(),
+                    digest: output.cache_keys.active_lexical_environment.stable_hash(),
+                },
+                NamedInputHash {
+                    name: "tokens".into(),
+                    domain: TOKEN_STREAM_CACHE_KEY_VERSION.into(),
+                    digest: output.cache_keys.tokens.stable_hash(),
+                },
+            ],
+            side_tables: IrSideTables {
+                source_maps: vec![SideTableRecord::new(
+                    "frontend-storage",
+                    source.normalized_path.as_str(),
+                    output_storage_hash,
+                )],
+                ..IrSideTables::default()
+            },
+            origin: OutputOrigin::OpenBuffer,
+            target: PublicationTarget::InternalOnly,
+        })
+        .unwrap();
+    for handle in [source_handle.erase(), output_handle.erase()] {
+        assert!(matches!(handle.placement(), StoragePlacement::Blob { .. }));
+        assert!(matches!(
+            publisher.validate_current_output(snapshot.id, &handle),
+            Err(PublishError::OutputNotCurrentPackage { .. })
+        ));
+        assert!(
+            SealedParentOutputHandle::from_current_output(&publisher, snapshot.id, handle.clone())
+                .is_err()
+        );
+        assert!(
+            SealedParentOutputHandle::from_published_output(&publisher, snapshot.id, handle)
+                .is_ok()
+        );
+    }
+    assert_eq!(source_decodes.load(Ordering::SeqCst), 0);
+    assert_eq!(output_decodes.load(Ordering::SeqCst), 0);
+    fixture.write(b"changed disk source");
+    fs::remove_file(package_root.join("src/main.miz")).unwrap();
+    assert_eq!(*publisher.storage().get(&source_handle).unwrap(), source);
+    assert_eq!(*publisher.storage().get(&output_handle).unwrap(), output);
+    assert_eq!(source_decodes.load(Ordering::SeqCst), 1);
+    assert_eq!(output_decodes.load(Ordering::SeqCst), 1);
+}
+
 fn execute(
     submission: &mizar_driver::driver::BuildSubmission,
     ids: &InMemorySessionIdAllocator,
