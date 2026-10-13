@@ -7154,3 +7154,453 @@ fn missing_package_root_retains_real_loader_diagnostic() {
     let (result, _) = execute(&submission, &ids, usize::MAX);
     assert_source_error(&result, &fixture.version, 602, "source.unreadable_file");
 }
+
+#[test]
+fn native_open_edits_match_independent_clean_real_prefixes_across_replay_controls() {
+    let fixture = Fixture::new(b"definition\nend;\n");
+    let leaf =
+        "definition\nlet x, y be set;\npublic func Infix: x combine y -> set equals x;\nend;\n";
+    fs::write(fixture.root.join("alpha/src/leaf.miz"), leaf).unwrap();
+    let mut retained = None;
+    let mut baselines = Vec::new();
+    let mut canonical_ids: Vec<Vec<SourceId>> = Vec::new();
+    for (stage, workers, order, reverse) in [
+        (0, 1, CompletionOrder::Canonical, false),
+        (0, 1, CompletionOrder::Canonical, false),
+        (0, 4, CompletionOrder::Reverse, false),
+        (0, 4, CompletionOrder::Canonical, true),
+        (1, 1, CompletionOrder::Canonical, false),
+        (1, 1, CompletionOrder::Canonical, false),
+        (1, 4, CompletionOrder::Reverse, false),
+        (1, 4, CompletionOrder::Canonical, true),
+        (2, 1, CompletionOrder::Canonical, false),
+        (2, 1, CompletionOrder::Canonical, false),
+        (2, 4, CompletionOrder::Reverse, false),
+        (2, 4, CompletionOrder::Canonical, true),
+    ] {
+        let first = stage == baselines.len();
+        let main = match stage {
+            0 => "import alpha.leaf;\ntheorem T: a combine b = a;\n",
+            1 => "import alpha.leaf;\ntheorem EditedT: a combine b = b;\n",
+            _ => "import alpha.leaf;\ntheorem T: ;\n",
+        };
+        let (mut request, mut input) = fixture.submit_request(vec![], vec![]);
+        request.source_inputs.versions.clear();
+        request.generation = BuildRequestGeneration::new(stage as u64);
+        input.source_layout = StaticSourceLayout::new(vec![WorkspaceSourcePackage {
+            package_id: PackageId::new("alpha"),
+            files: vec![
+                WorkspaceSourceFile::new("src/main.miz", "main.miz"),
+                WorkspaceSourceFile::new("src/leaf.miz", "leaf.miz"),
+            ],
+        }]);
+        input.dependency_overlay = ModuleDependencyOverlay::unavailable();
+        input.worker_count = workers;
+        input.completion_order = order;
+        let mut descriptors = ["leaf", "main"]
+            .map(|module| {
+                let path = format!("src/{module}.miz");
+                let version = if module == "main" {
+                    stage as i64 + 7
+                } else {
+                    7
+                };
+                (
+                    DiskSourceLoader::new(fixture.root.join("alpha")),
+                    SourceInput {
+                        package_id: PackageId::new("alpha"),
+                        module_path: ModulePath::new(module),
+                        normalized_path: normalize_path(
+                            &fixture.root.join("alpha"),
+                            Path::new(&path),
+                        )
+                        .unwrap(),
+                        edition: Edition::new("2025"),
+                        origin: SourceOriginInput::OpenBuffer {
+                            uri: format!(
+                                "file://{}",
+                                fixture.root.join("alpha").join(&path).display()
+                            ),
+                            expected_version: version,
+                            actual_version: version,
+                            text: std::sync::Arc::from(format!(
+                                "\u{feff}{}",
+                                if module == "main" { main } else { leaf }.replace('\n', "\r\n")
+                            )),
+                        },
+                    },
+                )
+            })
+            .to_vec();
+        if reverse {
+            descriptors.reverse();
+        }
+        let (mut driver, ids, snapshots, previous) = if first && stage > 0 {
+            let (driver, ids, snapshots, owner, old_snapshot, output, unused) =
+                retained.take().unwrap();
+            (
+                driver,
+                ids,
+                snapshots,
+                Some((owner, old_snapshot, output, unused)),
+            )
+        } else {
+            let mut builder = PhaseRegistryBuilder::new();
+            builder.register_source_load();
+            builder.register_frontend(vec![]);
+            (
+                CompilerDriver::new(builder.build().unwrap()),
+                InMemorySessionIdAllocator::new(),
+                SnapshotRegistry::new(),
+                None,
+            )
+        };
+        let session = request
+            .clone()
+            .capture_sources(&ids, &snapshots, descriptors.clone())
+            .unwrap();
+        let snapshot = session.captured().snapshot().id;
+        let versions = &session.captured().snapshot().source_versions;
+        let unit = WorkUnit::Module {
+            module: mizar_build::module_index::ModuleId::new(
+                PackageId::new("alpha"),
+                ModulePath::new("main"),
+            ),
+        };
+        let owner = publisher(snapshot, 0, &unit);
+        for module in ["leaf", "main"] {
+            let unit = WorkUnit::Module {
+                module: mizar_build::module_index::ModuleId::new(
+                    PackageId::new("alpha"),
+                    ModulePath::new(module),
+                ),
+            };
+            owner.allow_work_unit(AllowedWorkUnit::new(
+                IrPipelinePhase::new("SourceLoad"),
+                OutputKind::new("SourceUnit"),
+                IrWorkUnit::new(format!("{:?}:{:?}", "alpha", module)),
+            ));
+            allow_frontend(&owner, &unit);
+        }
+        driver = driver.with_output_publisher(owner.clone());
+        let mut obsolete = None;
+        if let Some((old_owner, old_snapshot, old_output, unused)) = previous {
+            let old_owner: std::sync::Arc<PhaseOutputPublisher> = old_owner;
+            let old_output: AnyPhaseOutputRef = old_output;
+            let unused: mizar_driver::request::BuildSession = unused;
+            assert_ne!(snapshot, old_snapshot);
+            old_owner
+                .replace_current_snapshot(old_snapshot, snapshot)
+                .unwrap();
+            assert!(old_owner.validate_current_snapshot(old_snapshot).is_err());
+            for target in [old_snapshot, snapshot] {
+                assert!(
+                    old_owner
+                        .validate_published_output(target, &old_output)
+                        .is_err()
+                );
+                assert!(
+                    SealedParentOutputHandle::from_published_output(
+                        &old_owner,
+                        target,
+                        old_output.clone()
+                    )
+                    .is_err()
+                );
+            }
+            assert_eq!(unused.state(), BuildSessionState::SnapshotCaptured);
+            assert!(driver.session(unused.id()).is_none());
+            assert!(snapshots.is_current_for_request(old_snapshot, unused.request().id));
+            let (_, obsolete_input) = fixture.submit_request(vec![], vec![]);
+            // Submit below, after the edited generation has become current in the same Driver.
+            obsolete = Some((unused, obsolete_input));
+        }
+        if first {
+            canonical_ids.push(
+                ["leaf", "main"]
+                    .map(|module| {
+                        versions
+                            .iter()
+                            .find(|version| version.module_path.as_str() == module)
+                            .unwrap()
+                            .source_id
+                    })
+                    .to_vec(),
+            );
+        }
+        let submission = driver
+            .submit_captured_with_import_discovery(session, &ids, &snapshots, input)
+            .unwrap();
+        assert_eq!(
+            submission.status,
+            if stage == 2 {
+                DriverSubmissionStatus::SchedulerValidated
+            } else {
+                DriverSubmissionStatus::BlockedByMissingPhaseServices
+            }
+        );
+        assert_eq!(
+            submission.session.state(),
+            BuildSessionState::Finished(if stage == 2 {
+                BuildSessionOutcome::Failed
+            } else {
+                BuildSessionOutcome::Blocked
+            })
+        );
+        let snapshot = submission.session.captured().snapshot();
+        let graph = submission.task_graph.as_ref().unwrap();
+        let run = submission.scheduler_run.as_ref().unwrap();
+        for task in graph.tasks().iter().filter(|task| {
+            task.phases.iter().any(|phase| {
+                !matches!(
+                    phase,
+                    PipelinePhase::PackageResolve
+                        | PipelinePhase::SourceLoad
+                        | PipelinePhase::Frontend
+                )
+            })
+        }) {
+            assert_eq!(
+                run.task_states
+                    .iter()
+                    .find(|state| state.task_id == task.id)
+                    .unwrap()
+                    .state,
+                TaskState::Blocked
+            );
+        }
+        let mut projection = Vec::new();
+        for (ordinal, module) in ["leaf", "main"].into_iter().enumerate() {
+            let source_task = graph.tasks().iter().find(|task| task.kind == TaskKind::SourceLoad && matches!(&task.unit, WorkUnit::Module { module: id } if id.path.as_str() == module)).unwrap();
+            let frontend_task = graph
+                .tasks()
+                .iter()
+                .find(|task| task.kind == TaskKind::Frontend && task.unit == source_task.unit)
+                .unwrap();
+            assert_eq!(run.phase_results[&source_task.id].len(), 1);
+            assert_eq!(run.phase_results[&frontend_task.id].len(), 1);
+            let source_result = &run.phase_results[&source_task.id][0];
+            let frontend_result = &run.phase_results[&frontend_task.id][0];
+            let diagnostic_case = stage == 2 && module == "main";
+            assert_eq!(source_result.output_refs.len(), 1);
+            assert_eq!(
+                frontend_result.output_refs.len(),
+                usize::from(!diagnostic_case)
+            );
+            assert_eq!(source_result.status, PhaseStatus::Complete);
+            assert_eq!(
+                frontend_result.status,
+                if diagnostic_case {
+                    PhaseStatus::Recoverable
+                } else {
+                    PhaseStatus::Complete
+                }
+            );
+            let descriptor = &descriptors
+                .iter()
+                .find(|(_, input)| input.module_path.as_str() == module)
+                .unwrap()
+                .1;
+            let version = snapshot
+                .source_versions
+                .iter()
+                .find(|version| version.module_path.as_str() == module)
+                .unwrap();
+            let source_ref = &source_result.output_refs[0];
+            assert!(matches!(
+                source_ref.placement(),
+                StoragePlacement::Blob { .. }
+            ));
+            assert!(source_ref.lineage().parents.is_empty());
+            let source = owner
+                .storage()
+                .get(
+                    &owner
+                        .storage()
+                        .typed_handle::<SourceUnit>(source_ref, &OutputKind::new("SourceUnit"))
+                        .unwrap(),
+                )
+                .unwrap();
+            assert_eq!(source.source_id, version.source_id);
+            assert_eq!(source.source_hash, version.source_hash);
+            assert_eq!(source.origin, version.origin);
+            assert_eq!(
+                source.source_text.as_ref(),
+                if module == "main" { main } else { leaf }
+            );
+            let source_bytes = source.canonical_open_buffer_bytes(descriptor).unwrap();
+            let cache_intents = [PipelinePhase::SourceLoad, PipelinePhase::Frontend].map(|phase| {
+                let parents = if phase == PipelinePhase::Frontend {
+                    frontend_task
+                        .dependencies
+                        .iter()
+                        .flat_map(|id| run.phase_results.get(id).into_iter().flatten())
+                        .filter(|result| result.status == PhaseStatus::Complete)
+                        .flat_map(|result| &result.output_refs)
+                        .map(|parent| {
+                            SealedParentOutputHandle::from_published_output(
+                                &owner,
+                                snapshot.id,
+                                parent.clone(),
+                            )
+                            .unwrap()
+                        })
+                        .collect()
+                } else {
+                    Vec::new()
+                };
+                let input = PhaseInput::new(
+                    source_task.unit.clone(),
+                    PhaseDispatchInputBundle::new(
+                        snapshot.id,
+                        SourceUnitCacheKey::from_source(&source).stable_hash(),
+                        vec![],
+                        parents,
+                    )
+                    .unwrap(),
+                );
+                let intent = driver
+                    .registry()
+                    .cache_key_for_phase(phase, &input)
+                    .unwrap()
+                    .intent;
+                assert!(
+                    matches!(&intent, PhaseCacheIntent::NoKey { reason } if !reason.is_empty())
+                );
+                intent
+            });
+            let frontend = frontend_result.output_refs.first().map(|handle| {
+                assert!(matches!(handle.placement(), StoragePlacement::Blob { .. }));
+                let output = owner
+                    .storage()
+                    .get(
+                        &owner
+                            .storage()
+                            .typed_handle::<FrontendOutput<<MizarParserSeam as ParserSeam>::Ast>>(
+                                handle,
+                                &OutputKind::new("FrontendOutput"),
+                            )
+                            .unwrap(),
+                    )
+                    .unwrap();
+                assert_eq!(output.source, *source);
+                let parents = handle
+                    .lineage()
+                    .parents
+                    .iter()
+                    .map(|parent| {
+                        let parent = owner.registry().output_lineage(*parent).unwrap();
+                        (parent.phase, parent.work_unit, parent.output_kind)
+                    })
+                    .collect::<Vec<_>>();
+                (
+                    output.canonical_open_buffer_bytes(descriptor).unwrap(),
+                    output.cache_keys.canonical_bytes().unwrap(),
+                    parents,
+                )
+            });
+            let diagnostics = source_result
+                .diagnostics
+                .iter()
+                .chain(&frontend_result.diagnostics)
+                .flat_map(|batch| batch.drafts())
+                .map(|draft| {
+                    assert_eq!(draft.source_snapshot(), snapshot.id);
+                    let DiagnosticPrimaryLocation::Span(span) = draft.primary_location() else {
+                        panic!("real parser span");
+                    };
+                    let SourceAnchor::Range(mut range) = *span.anchor() else {
+                        panic!("real parser range");
+                    };
+                    source.line_map.validate_range(range).unwrap();
+                    assert_eq!(range.source_id, version.source_id);
+                    range.source_id = canonical_ids[stage][ordinal];
+                    assert!(draft.secondary_spans().is_empty());
+                    assert!(draft.notes().iter().all(|note| note.span().is_none()));
+                    assert!(
+                        draft
+                            .details()
+                            .entries()
+                            .values()
+                            .all(|value| matches!(value, DiagnosticDetailValue::String(_)))
+                    );
+                    assert!(draft.fixes().is_empty());
+                    assert!(draft.explanation().is_none());
+                    (
+                        draft.source_snapshot(),
+                        draft.code(),
+                        draft.phase(),
+                        draft.category(),
+                        draft.stable_detail_key().to_owned(),
+                        draft.message().to_owned(),
+                        DiagnosticSpan::from_anchor(
+                            SourceAnchor::Range(range),
+                            span.role(),
+                            span.label().map(str::to_owned),
+                            span.freshness(),
+                            span.zero_width(),
+                        )
+                        .unwrap(),
+                        draft.notes().to_vec(),
+                        draft.details().clone(),
+                    )
+                })
+                .collect::<Vec<_>>();
+            assert_eq!(diagnostics.is_empty(), !diagnostic_case);
+            projection.push((
+                module,
+                snapshot.id,
+                source_bytes,
+                SourceUnitCacheKey::from_source(&source).stable_hash(),
+                frontend,
+                (source_result.status, frontend_result.status),
+                diagnostics,
+                cache_intents,
+            ));
+        }
+        if let Some(expected) = baselines.get(stage) {
+            assert_eq!(
+                &projection, expected,
+                "stage={stage}, workers={workers}, order={order:?}, reverse={reverse}"
+            );
+        } else {
+            baselines.push(projection);
+            if stage > 0 {
+                assert_ne!(baselines[stage][1].1, baselines[stage - 1][1].1);
+                assert_ne!(baselines[stage][1].2, baselines[stage - 1][1].2);
+                if stage == 1 {
+                    assert_ne!(baselines[stage][1].4, baselines[stage - 1][1].4);
+                }
+                let (unused, obsolete_input) = obsolete.take().unwrap();
+                let obsolete = driver
+                    .submit_captured(unused, &ids, &snapshots, obsolete_input)
+                    .unwrap();
+                assert_eq!(
+                    obsolete.status,
+                    DriverSubmissionStatus::SupersededBeforeSubmission
+                );
+                assert_eq!(
+                    obsolete.session.state(),
+                    BuildSessionState::Finished(BuildSessionOutcome::Superseded)
+                );
+                assert!(obsolete.scheduler_run.is_none());
+                assert!(matches!(
+                    obsolete.publication_decision,
+                    mizar_driver::request::PublicationDecision::Suppressed(_)
+                ));
+            }
+            let unused = request
+                .capture_sources(&ids, &snapshots, descriptors)
+                .unwrap();
+            let output = run
+                .phase_results
+                .values()
+                .flatten()
+                .flat_map(|result| &result.output_refs)
+                .find(|handle| handle.output_kind() == &OutputKind::new("SourceUnit"))
+                .unwrap()
+                .clone();
+            retained = Some((driver, ids, snapshots, owner, snapshot.id, output, unused));
+        }
+    }
+}
