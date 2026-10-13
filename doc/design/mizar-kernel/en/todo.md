@@ -110,11 +110,10 @@ integration: [internal 04](../../internal/en/04.atp_portfolio_and_kernel_check_i
   revises the policy to allow exactly one audited direct SAT checker dependency
   in addition to `mizar-session` and `mizar-core`; task 27 must encode that
   exact allow-list in `tests/lint_policy.rs` when it edits the manifest.
-- **Discharge-evidence validation scope: open, owned by `mizar-proof`
-  task 6.** Whether `mizar-vc` pre-ATP discharge evidence is
-  kernel-replayed or accepted as policy-level built-in evidence; if
-  replay is chosen, the replay checker lands here as a follow-up task.
-  Tracked at the top level.
+- **Discharge-evidence validation scope: fixed by specification §21.7.1.**
+  Built-in discharge uses the existing formula/substitution checker;
+  VC owns candidate production and Proof/Artifact own acceptance/publication.
+  This requires no new kernel evidence format or primitive.
 
 ## Ordered Task List
 

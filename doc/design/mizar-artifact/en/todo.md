@@ -344,6 +344,11 @@ Keep `cargo test -p mizar-artifact` green after each task (see
       consistency; source-derived producer/publication integration remains an
       `external_dependency_gap`.
 
+25. **Distinct built-in discharge witnesses.** [ ]
+    - Artifact stage of [PROOF-DISCHARGE-ACCEPTANCE](../../task_contracts/en/PROOF-DISCHARGE-ACCEPTANCE.md);
+      status-schema design can start; publication waits for real accepted
+      formula/substitution outputs. Full phase-15 emission remains task 17.
+
 ## Recommended Verification
 
 Run after each task:

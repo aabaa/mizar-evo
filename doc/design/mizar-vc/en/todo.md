@@ -61,11 +61,9 @@ crate ownership: [internal 07](../../internal/en/07.crate_module_layout.md).
   uses deterministic `DischargePolicy` data. The engine default policy key is
   `task-11-computation-step-limit` with `max_steps = 64`; callers may override
   it with another deterministic policy.
-- **Discharge-evidence validation scope: open, owned by `mizar-proof`
-  task 6.** Whether the task-12 discharge evidence is kernel-replayed or
-  accepted as deterministic built-in evidence per policy; this crate
-  guarantees the evidence is replayable either way. Registered at the top
-  level.
+- **Discharge-evidence validation scope: fixed by specification §21.7.1.**
+  Built-in discharge needs kernel-accepted formula/substitution evidence;
+  task 60 owns candidate production, with Proof owning accepted status.
 - **Kernel formula/substitution handoff: task-24 spec and task-25 builder
   complete for explicit producer payloads.** `mizar-kernel` tasks 23-29 now provide the checker-side
   formula/substitution evidence path. `VcIr` remains prover-independent, and
@@ -589,6 +587,10 @@ corruption requirements in
 [source_vc_decomposition.md](./source_vc_decomposition.md). Each is one
 nonempty logical task and one commit; no shared empty infrastructure task is
 authorized.
+
+60. **Built-in formula/substitution evidence candidates.** [ ]
+    - [PREATP-FORMULA-EVIDENCE](../../task_contracts/en/PREATP-FORMULA-EVIDENCE.md);
+      source integration waits for authentic formula/context/provenance producers.
 
 ## Recommended Verification
 

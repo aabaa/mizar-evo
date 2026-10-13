@@ -64,10 +64,9 @@ internal: [04](../../internal/en/04.atp_portfolio_and_kernel_check_integration.m
   Public callers can construct `KernelPolicyInput` from a real
   `KernelCheckResult` plus explicit origin, but trusted selection admits it
   only when that result is accepted, untainted, and proof-obligation evidence.
-  Pre-ATP discharge must therefore be kernel-replayed or represented as
-  accepted proof-obligation kernel primitive evidence; accepted consistency
-  checks and uncheckable discharge remain diagnostic/policy evidence and
-  cannot publish trusted `used_axioms`.
+  Specification §21.7.1 requires formula/substitution evidence accepted for
+  the original proof obligation. Consistency checks and unchecked discharge
+  remain diagnostic/policy evidence and cannot publish trusted `used_axioms`.
 - **Policy fingerprint surface: resolved by task 2, implemented by task 3.**
   `policy.md` defines the settings that enter `PolicyFingerprint`; coordinate
   future cache integration with `mizar-cache` task 2.
@@ -441,6 +440,11 @@ layer consumes both; one alignment task is owned here.
       coverage status did not change.
 22. **Vacuous statement diagnostic (W0104).** [ ]
     - Diagnostic only; a new kernel entry needs user consultation. Contract: [AIREV-W0104-VACUOUS-STATEMENT](../../task_contracts/en/AIREV-W0104-VACUOUS-STATEMENT.md).
+
+23. **Ordinary by/built-in acceptance and witness publication.** [ ]
+    - [PROOF-DISCHARGE-ACCEPTANCE](../../task_contracts/en/PROOF-DISCHARGE-ACCEPTANCE.md);
+      source acceptance follows real candidate producers; Artifact task 25 owns
+      built-in witness support, and full emission remains Artifact task 17.
 
 ## Recommended Verification
 

@@ -727,9 +727,10 @@ and registry/orchestration in `mizar-driver`.
 2. [ ] Proof cache/witness handoffs: `mizar-proof` reuse metadata export into
    `mizar-cache` proof-reuse validation (IV-005, fail-closed IV-002).
 3. [ ] Artifact witness publication from producer outputs in `mizar-artifact`.
-4. [ ] Settle the open discharge-evidence validation scope decision
-   ([mizar-proof task 6](./mizar-proof/en/todo.md) with `mizar-kernel` /
-   `mizar-vc`).
+4. [ ] [Built-in evidence candidates](./task_contracts/en/PREATP-FORMULA-EVIDENCE.md)
+   (VC 60) and [by/built-in acceptance and publication](./task_contracts/en/PROOF-DISCHARGE-ACCEPTANCE.md)
+   (Proof 23 / Artifact 25). Built-in acceptance follows VC 60; ATP acceptance
+   follows its existing candidate producers.
 5. [ ] [Deterministic premise ranking](./task_contracts/en/ATPK-PREMISE-RANKING.md)
    (mizar-atp 31) for pruning, lemma suggestions, and unresolved citations.
 6. [ ] [ATP re-proving benchmark](./task_contracts/en/ATPK-BENCHMARK.md)
@@ -930,11 +931,9 @@ Open decisions (block or shape upcoming steps):
   owns certificate schema types and `mizar-atp` depends on the kernel to
   construct candidates, so the kernel never depends on evidence producers.
   Owned by [mizar-kernel task 4](./mizar-kernel/en/todo.md).
-- **Discharge-evidence validation scope: open.** Decide whether `mizar-vc`
-  pre-ATP discharge evidence is kernel-replayed or accepted as policy-level
-  evidence. Owned by [mizar-proof task 6](./mizar-proof/en/todo.md) with
-  `mizar-kernel`, and tracked in [mizar-kernel](./mizar-kernel/en/todo.md) and
-  [mizar-vc](./mizar-vc/en/todo.md) (plan step 7).
+- **Discharge-evidence validation scope: fixed by specification §21.7.1.**
+  Trusted built-in status requires kernel acceptance of formula/substitution
+  evidence; Step 7 item 4 owns the remaining production/publication integration.
 - **AST reflection specification transfer.** Adopt the 2026-10-09 built-in
   `expr of T` / ghost `val` and explicit `by computation` decisions;
   the user-defined tree/`Eval` proposal is withdrawn. Binder notation is
