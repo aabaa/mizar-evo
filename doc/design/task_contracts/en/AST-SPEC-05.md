@@ -5,7 +5,7 @@ Status: complete. Tier: full gates. Owner: [owner plan](../../mizar-checker/en/0
 Consumers: parser/checker, core/VC, proof/MVM,
 and artifact/build owners as applicable; implementation remains deferred.
 Dependencies: AST-SPEC-04.
-Authority: [2026-10-09 record](../../../spec/temp/algorithm_on_AST.md),
+Authority: [2026-10-09 record](../../archive/ast_spec_decision_source.md),
 unit 2a, decisions 8/13/15–17, A.2 M1–M3/M5–M8, V1–V4/V10/V11/V15/V18, K2/K4–K6; the user's explicit specification-change authorization.
 Classification: spec transfer; existing opposing design is design_drift;
 new behavior's source_drift and test_gap are deferred, without coverage credit.

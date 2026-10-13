@@ -3,7 +3,7 @@
 Canonical language: English; [Japanese pointer](../ja/AST-SPEC-00.md).
 Status: complete. Tier: full gates. Primary owner: [kernel plan](../../mizar-kernel/en/00.crate_plan.md).
 Consumers are architecture 15 and later AST specification tasks. Dependency: user-authorized 2026-10-09 decisions.
-Authority: [decision record](../../../spec/temp/algorithm_on_AST.md), reflection
+Authority: [decision record](../../archive/ast_spec_decision_source.md), reflection
 plan unit 6 prerequisite, decisions 13, 18, 23; AGENTS.md and autonomous protocol.
 Gap: design_drift: architecture 15 and the roadmap still adopt tree/`Eval`.
 Scope: replace only that direction in architecture EN/JA and the roadmap;

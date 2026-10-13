@@ -5,7 +5,7 @@ Status: complete. Tier: full gates. Owner: [owner plan](../../mizar-diagnostics/
 Consumers: parser/checker, core/VC, proof/MVM,
 and artifact/build owners as applicable; implementation remains deferred.
 Dependencies: AST-SPEC-09.
-Authority: [2026-10-09 record](../../../spec/temp/algorithm_on_AST.md),
+Authority: [2026-10-09 record](../../archive/ast_spec_decision_source.md),
 unit 3, A/B diagnostics B1–B8, G/S/V/K, decisions 4/6/10/18/20; the user's explicit specification-change authorization.
 Classification: spec transfer; existing opposing design is design_drift;
 new behavior's source_drift and test_gap are deferred, without coverage credit.
