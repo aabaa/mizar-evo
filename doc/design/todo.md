@@ -15,8 +15,12 @@ and the crate ownership map in
 ## How To Read This Document
 
 - The [Sequential Execution Plan](#sequential-execution-plan) is the single
-  ordering authority: execute steps top to bottom, and tasks inside a step in
-  the listed order unless a task's own `Deps:` line says otherwise.
+  ordering authority. Select the first unfinished task whose owning contract's
+  dependencies and readiness permit the intended slice. The listed order is
+  the default priority; completed tasks and dependency-blocked slices are
+  skipped. A blocked slice blocks its consumers, not independent work in a
+  later step. Recheck readiness before implementation and retain every open
+  completion gate.
 - Each entry names an owner task. For a new non-trivial task, follow the crate
   TODO's link to its paired `doc/design/task_contracts/{en,ja}/` record for
   scope, acceptance criteria, and verification. Crate TODOs retain only concise
@@ -108,20 +112,20 @@ is its task 1). "Next work" points into the
 | mizar-syntax | Rowan-backed `SurfaceAst`, trivia, recovery, typed views | [x] historical milestone plus parser Tasks 48/46 increments, S-026 dense views, and Step 5A.1 complete | S-021 remains the sole deferred syntax task | [todo](./mizar-syntax/en/todo.md) |
 | mizar-parser | Grammar, Pratt parsing, syntax recovery, parse-only corpus | [x] Tasks 1-48 plus bounded `PARSER-RECOVERY-B1B1P-P1` and Step 5A.4-5A.8 complete | No inferred Task 49; P-265-47D closed by the Chapter 8 list alignment | [todo](./mizar-parser/en/todo.md) |
 | mizar-frontend | Source loading and phase 1-3 orchestration | [x] prior milestone plus Step 5A.2/5A.3/5A.6/5A.8 increments | — | [todo](./mizar-frontend/en/todo.md) |
-| mizar-resolve | Module graph, namespaces, symbols, labels, signatures | [~] prior milestone plus [Step 5C.1](./task_contracts/en/STEP5C1-VARIABLE-SEMANTICS.md) variable resolution and [Step 5C.6](./task_contracts/en/STEP5C6-MODULE-SEMANTICS.md) module activation plus [Step 5C.7](./task_contracts/en/STEP5C7-TERM-SEMANTICS.md) occurrence resolution and [Step 5C.9](./task_contracts/en/STEP5C9-PROOF-ORGANIZATION.md) proof-local bindings/labels and [Step 5C.10](./task_contracts/en/STEP5C10-THEOREM-SKELETONS.md) theorem/lemma labels | Step 6 publication seams and deferred imported-module payloads under their existing owners | [todo](./mizar-resolve/en/todo.md) |
-| mizar-test | Corpus discovery, expectations, staged model, traceability, harness | [~] prior milestone plus [Step 5C.1](./task_contracts/en/STEP5C1-VARIABLE-SEMANTICS.md), [Step 5C.2](./task_contracts/en/STEP5C2-STRUCTURE-SEMANTICS.md), [Step 5C.3](./task_contracts/en/STEP5C3-ATTRIBUTE-SEMANTICS.md), [Step 5C.4](./task_contracts/en/STEP5C4-MODE-SEMANTICS.md), [Step 5C.5](./task_contracts/en/STEP5C5-PREDICATE-FUNCTOR-SEMANTICS.md), [Step 5C.6](./task_contracts/en/STEP5C6-MODULE-SEMANTICS.md), [Step 5C.7](./task_contracts/en/STEP5C7-TERM-SEMANTICS.md), [Step 5C.8](./task_contracts/en/STEP5C8-FORMULA-SEMANTICS.md), [Step 5C.9](./task_contracts/en/STEP5C9-PROOF-ORGANIZATION.md), and [Step 5C.10](./task_contracts/en/STEP5C10-THEOREM-SKELETONS.md) semantic activations | Step 6 integration; pre-audit Task 49 remains gated by 5B.3 | [todo](./mizar-test/en/todo.md) |
+| mizar-resolve | Module graph, namespaces, symbols, labels, signatures | [~] alpha semantic slices plus source-bound imports, private theorem labels and distinct variable scopes implemented | Step 6; full ModuleResolver publication remains producer-blocked | [todo](./mizar-resolve/en/todo.md) |
+| mizar-test | Corpus discovery, expectations, staged model, traceability, harness | [~] alpha semantic bridge and source-derived resolver consumer slices implemented | Step 6 integration; pre-audit Task 49 remains gated by 5B.3 | [todo](./mizar-test/en/todo.md) |
 | mizar-checker | Type checking, cluster/registration resolution, overload resolution | [~] prior milestone plus [Step 5C.1](./task_contracts/en/STEP5C1-VARIABLE-SEMANTICS.md), [Step 5C.2](./task_contracts/en/STEP5C2-STRUCTURE-SEMANTICS.md), [Step 5C.3](./task_contracts/en/STEP5C3-ATTRIBUTE-SEMANTICS.md), [Step 5C.4](./task_contracts/en/STEP5C4-MODE-SEMANTICS.md), [Step 5C.5](./task_contracts/en/STEP5C5-PREDICATE-FUNCTOR-SEMANTICS.md), [Step 5C.7](./task_contracts/en/STEP5C7-TERM-SEMANTICS.md), [Step 5C.8](./task_contracts/en/STEP5C8-FORMULA-SEMANTICS.md), [Step 5C.9](./task_contracts/en/STEP5C9-PROOF-ORGANIZATION.md), and [Step 5C.10](./task_contracts/en/STEP5C10-THEOREM-SKELETONS.md) semantics | Remaining producer tasks under existing dependencies; Task 277B remains not-ready/zero-credit | [todo](./mizar-checker/en/todo.md) |
 | mizar-core | Elaboration, binder-normalized core logic, control-flow preparation | [x] core/control-flow milestone, tasks 27-32, plus [Step 5C.2](./task_contracts/en/STEP5C2-STRUCTURE-SEMANTICS.md) and [Step 5C.7](./task_contracts/en/STEP5C7-TERM-SEMANTICS.md) bounded normalization and [Step 5C.10](./task_contracts/en/STEP5C10-THEOREM-SKELETONS.md) theorem-skeleton lowering | Broader producer Tasks 33-53 beyond the Step 5 alpha corpus, under the Task-32 graph | [todo](./mizar-core/en/todo.md) |
-| mizar-vc | VC IR, VC generation, deterministic pre-ATP discharge | [x] exact source-derived contradiction VC integration complete through task 31 | Broader producer Tasks 32-55 beyond the Step 5 alpha corpus; VC 40/53 and S1 gates remain explicit | [todo](./mizar-vc/en/todo.md) |
-| mizar-kernel | Trusted certificate parsing and checking | [x] SAT-backed kernel milestone complete | step 4 task 35 resolved; task 32 parked; tasks 30-34 resolved | [todo](./mizar-kernel/en/todo.md) |
+| mizar-vc | VC IR, VC generation, deterministic pre-ATP discharge | [x] exact source-derived contradiction VC integration complete through task 31 | Broader Tasks 32-55 and Step 7 task 60; VC 40/53 and S1 dependencies remain explicit | [todo](./mizar-vc/en/todo.md) |
+| mizar-kernel | Trusted evidence parsing and checking | [x] SAT-backed kernel milestone complete | Step 7 task 36; task 32 remains parked | [todo](./mizar-kernel/en/todo.md) |
 | mizar-atp | ATP encoding, backend execution, portfolio candidates | [x] candidate-evidence milestone complete through task 29 | step 7 | [todo](./mizar-atp/en/todo.md) |
-| mizar-proof | Proof policy evaluation, status projection, witness selection | [x] policy/status/witness milestone complete through task 21 | step 7 | [todo](./mizar-proof/en/todo.md) |
+| mizar-proof | Proof policy evaluation, status projection, witness selection | [x] policy/status/witness milestone complete through task 21 | Step 7 task 23 and accepted-output reuse integration | [todo](./mizar-proof/en/todo.md) |
 | mizar-cache | Cache keys, fingerprints, proof reuse, cluster-db storage | [x] internal-cache milestone complete through task 24 | step 7 | [todo](./mizar-cache/en/todo.md) |
-| mizar-artifact | Artifact schemas, summaries, store, manifest transactions | [~] schemas/store/manifest complete through task 24 | step 6 (task 17) | [todo](./mizar-artifact/en/todo.md) |
+| mizar-artifact | Artifact schemas, summaries, store, manifest transactions | [~] schemas/store/manifest complete through task 24 | Step 6 task 17 is producer-blocked; Step 7 task 25 owns built-in witnesses | [todo](./mizar-artifact/en/todo.md) |
 | mizar-ir | IR storage, snapshot handles, sealed output blobs, projections | [x] storage/projection milestone complete | step 6 | [todo](./mizar-ir/en/todo.md) |
-| mizar-build | Phase 0 planning, task graph, scheduler, cache seam, commit boundary | [x] milestone complete | step 6 | [todo](./mizar-build/en/todo.md) |
-| mizar-driver | Build requests, phase registry, CLI/watch/LSP entry points | [x] session/registry/event milestone complete | step 6 | [todo](./mizar-driver/en/todo.md) |
-| mizar-diagnostics | Diagnostic registry, failure records, ordering, rendering | [x] internal milestone complete | step 8 | [todo](./mizar-diagnostics/en/todo.md) |
+| mizar-build | Phase 0 planning, task graph, scheduler, cache seam, commit boundary | [~] scheduler milestone and scheduled lexical-prefix ordering implemented | Step 6 task 28, real-service equivalence | [todo](./mizar-build/en/todo.md) |
+| mizar-driver | Build requests, phase registry, CLI/watch/LSP entry points | [~] scheduled SourceLoad/Frontend and workspace lexical publication implemented | Step 6 real-service equivalence; later services remain producer-blocked | [todo](./mizar-driver/en/todo.md) |
+| mizar-diagnostics | Diagnostic registry, failure records, ordering, rendering | [x] internal milestone and E0220–E0224 import descriptors implemented | Step 8 broader public adoption | [todo](./mizar-diagnostics/en/todo.md) |
 | mizar-lsp | Editor range mapping now; server features later | [~] range-conversion slice only | step 8 (tasks 1-24) | [todo](./mizar-lsp/en/todo.md) |
 | mizar-doc | Documentation rendering and extraction | [ ] planned | step 8 (tasks 1-29) | [todo](./mizar-doc/en/todo.md) |
 
@@ -679,62 +683,70 @@ execution remains excluded and parked.
 
 ### Step 6 — Phase-output publication and orchestration [~]
 
-Wire real phase-service and publication seams once source-derived semantic
-outputs exist. Keep absent producer outputs classified rather than adding
-placeholder adapters. Pre-audit 5B.3 and Gate S1 remain prerequisites only
-for consumers requiring their outputs; they do not block independent
-publication work.
+Next ready slice: [STEP6C-REAL-SERVICE-EQUIVALENCE](./task_contracts/en/STEP6C-REAL-SERVICE-EQUIVALENCE.md)
+(mizar-build task 28), comparing edit/rebuild with clean runs of the real
+uncached SourceLoad/Frontend prefix.
+Cache-hit coverage waits for genuine cache producers; later semantic/proof
+services and full artifact emission remain dependency-blocked.
+Pre-audit 5B.3 and Gate S1 block only consumers requiring their outputs.
 
-1. [~] Real phase services and producer publication among `mizar-ir`,
-   `mizar-driver`, and `mizar-build` (their current
-   `external_dependency_gap` records become owner tasks here; IV-007
-   snapshot-freshness obligations apply). First prerequisite:
-   [dispatch publication transport](./task_contracts/en/STEP6A1-DISPATCH-PUBLICATION.md), followed by
-   [package source payload](./task_contracts/en/STEP6A2-PACKAGE-SOURCE-CODEC.md) and
-   [IR storage payload separation](./task_contracts/en/STEP6A3-IR-STORAGE-PAYLOAD.md), then
-   [source diagnostic prerequisites](./task_contracts/en/STEP6A4-SOURCE-DIAGNOSTICS.md) and
-   [real disk source service](./task_contracts/en/STEP6A5-SOURCE-SERVICE.md), then [loaded-source frontend entry](./task_contracts/en/STEP6A6-LOADED-FRONTEND.md), then
-   [syntax storage](./task_contracts/en/STEP6A7-SURFACE-AST-CODEC.md), then
-   [lexical contribution storage](./task_contracts/en/STEP6A8-LEXICAL-SYMBOL-CODEC.md), then [unique lexical key binding](./task_contracts/en/STEP6A9-LEXICAL-KEY-BINDING.md), then [typed lexical payload binding](./task_contracts/en/STEP6A10-LEXICAL-PAYLOAD-BINDING.md), then [source lexical correspondence](./task_contracts/en/STEP6A11-SOURCE-LEXICAL-PAIRING.md), then [frontend lexical binding](./task_contracts/en/STEP6A12-FRONTEND-LEXICAL-BINDING.md), then [source lexical contributions](./task_contracts/en/STEP6A13-SOURCE-LEXICAL-CONTRIBUTIONS.md), then [exported element fingerprints](./task_contracts/en/STEP6A14-EXPORTED-ELEMENT-FINGERPRINT.md), then [canonical lexical summaries](./task_contracts/en/STEP6A15-CANONICAL-LEXICAL-SUMMARY.md), then [provisional frontend imports](./task_contracts/en/STEP6A16-PROVISIONAL-IMPORT-CANDIDATES.md), then [manifest dependency metadata](./task_contracts/en/STEP6A17-MANIFEST-DEPENDENCY-INDEX.md), then [indexed summary file reads](./task_contracts/en/STEP6A18-PUBLISHED-SUMMARY-READ.md), then [dependency lexical provider](./task_contracts/en/STEP6A19-DEPENDENCY-LEXICAL-PROVIDER.md), then [retained preprocessing storage](./task_contracts/en/STEP6A20-PREPROCESSED-SOURCE-CODEC.md), then [retained token stream storage](./task_contracts/en/STEP6A21-TOKEN-STREAM-CODEC.md), then [retained cache-key storage](./task_contracts/en/STEP6A22-FRONTEND-CACHE-KEYS-CODEC.md), then [retained frontend output storage](./task_contracts/en/STEP6A23-FRONTEND-OUTPUT-CODEC.md), then [frontend diagnostic specification](./task_contracts/en/STEP6A25-FRONTEND-DIAGNOSTIC-SPEC.md), then [shared diagnostic anchors](./task_contracts/en/STEP6A26-DIAGNOSTIC-ANCHORS.md), then [frontend diagnostic registry](./task_contracts/en/STEP6A27-FRONTEND-DIAGNOSTIC-REGISTRY.md), then [real frontend service](./task_contracts/en/STEP6A28-FRONTEND-SERVICE.md), then [parsed import candidates](./task_contracts/en/STEP6A30-AST-IMPORT-CANDIDATES.md), then [semantic import diagnostic allocation](./task_contracts/en/STEP6A32-IMPORT-DIAGNOSTIC-SPEC.md), then [semantic import reporting policy](./task_contracts/en/STEP6A33-IMPORT-DIAGNOSTIC-PROJECTION.md), then [canonical MML root spelling](./task_contracts/en/STEP6A35-MML-ROOT-SPELLING.md), then [diagnostic-only import continuation design](./task_contracts/en/STEP6A37-DIAGNOSTIC-IMPORT-CONTINUATION.md).
-2. [ ] [mizar-artifact task 17](./mizar-artifact/en/todo.md) — phase-15
-   emission from real producer projections (see
-   [phase15_emission_reevaluation.md](./mizar-artifact/en/phase15_emission_reevaluation.md)).
-3. [ ] Clean/incremental/sequential/parallel equivalence:
-   [mizar-build task 24](./mizar-build/en/todo.md),
-   [mizar-test task 14](./mizar-test/en/todo.md) regression metadata,
-   [mizar-driver task 16](./mizar-driver/en/todo.md) (IV-002/IV-003). These
-   cover the implemented seams; the gate over real phase services is
-   [STEP6C-REAL-SERVICE-EQUIVALENCE](./task_contracts/en/STEP6C-REAL-SERVICE-EQUIVALENCE.md)
-   (BUILD-G-017).
+1. [~] Real phase services and producer publication, preserving IV-007
+   snapshot freshness. Completed prerequisites
+   are indexed in the [driver](./mizar-driver/en/00.crate_plan.md),
+   [IR](./mizar-ir/en/00.crate_plan.md), and [build](./mizar-build/en/00.crate_plan.md) plans.
+   The supported frontier is:
+
+   - [x] Scheduled SourceLoad/Frontend publication and restricted import
+     diagnostics ([A42](./task_contracts/en/STEP6A42-SCHEDULED-FRONTEND-PREFIX.md)).
+   - [x] Workspace leaf/intermediate and cross-package direct lexical handoffs
+     ([A47](./task_contracts/en/STEP6A47-CROSS-PACKAGE-WORKSPACE-LEXICAL-HANDOFF.md)),
+     plus opt-in pregraph import discovery
+     ([A48](./task_contracts/en/STEP6A48-PREGRAPH-IMPORT-DISCOVERY.md)).
+   - [x] Source-bound parsed import resolution
+     ([A49](./task_contracts/en/STEP6A49-SOURCE-BOUND-IMPORT-RESOLUTION.md)),
+     private theorem labels ([A53](./task_contracts/en/STEP6A53-PRIVATE-THEOREM-LABEL-SOURCE.md))
+     and distinct variable scopes ([A54](./task_contracts/en/STEP6A54-VARIABLE-SCOPE-IDENTITY.md)).
+
+   These slices do not register ModuleResolver or later semantic services;
+   their remaining owner-provided payload/publication prerequisites stay open.
+2. [ ] [Real-service equivalence](./task_contracts/en/STEP6C-REAL-SERVICE-EQUIVALENCE.md)
+   (build 28 / BUILD-G-017), the current next slice under its contract's readiness.
+   Build task 24, test task 14 and driver task 16 remain the existing seam-level
+   guards; they do not establish this real-service gate.
+3. [ ] [Artifact task 17](./mizar-artifact/en/todo.md) — deferred until real
+   VerifiedArtifact projections and accepted witness/manifest publication
+   outputs exist, including applicable Step 7 producers. See
+   [phase-15 prerequisites](./mizar-artifact/en/phase15_emission_reevaluation.md#disposition).
+   This dependency does not block item 2 or independent Step 7 production.
 
 Exit: the artifact-publication and build-orchestration completion gates hold
-for implemented phases.
+for implemented phases; a prefix comparison alone does not complete Step 6.
 
 ### Step 7 — Evidence-pipeline integration [ ]
 
-Wire only task-scoped owner seams among `mizar-atp`, `mizar-proof`,
-`mizar-cache`, and `mizar-artifact`, with `mizar-build`, `mizar-ir`, and
-`mizar-driver` consuming published results. Keep proof policy in `mizar-proof`,
-cache validation in `mizar-cache`, artifact publication in `mizar-artifact`,
-and registry/orchestration in `mizar-driver`.
+Wire task-scoped producer, acceptance and consumer seams. Keep proof policy
+in Proof, cache validation in Cache, artifact publication in Artifact, and
+registry/orchestration in Driver. Designs can start where their contracts
+permit; each source-integration slice waits for its actual upstream outputs.
 
 1. [ ] Real ATP backend extraction and portfolio execution in `mizar-atp`
-   (policy-deterministic acceptance, IV-004). Evidence is extracted by the
-   [untrusted instance finder](./task_contracts/en/ATPK-INSTANCE-FINDER.md)
-   (mizar-atp 30), which names equality instances that the
-   [kernel constructs](./task_contracts/en/ATPK-KERNEL-EQUALITY-INSTANCES.md)
-   (mizar-kernel 36).
-2. [ ] Proof cache/witness handoffs: `mizar-proof` reuse metadata export into
-   `mizar-cache` proof-reuse validation (IV-005, fail-closed IV-002).
-3. [ ] Artifact witness publication from producer outputs in `mizar-artifact`.
-4. [ ] [Built-in evidence candidates](./task_contracts/en/PREATP-FORMULA-EVIDENCE.md)
-   (VC 60) and [by/built-in acceptance and publication](./task_contracts/en/PROOF-DISCHARGE-ACCEPTANCE.md)
-   (Proof 23 / Artifact 25). Built-in acceptance follows VC 60; ATP acceptance
-   follows its existing candidate producers.
+   (IV-004), using the [untrusted instance finder](./task_contracts/en/ATPK-INSTANCE-FINDER.md)
+   (atp 30). Equality slices require the [kernel equality instances](./task_contracts/en/ATPK-KERNEL-EQUALITY-INSTANCES.md)
+   (kernel 36).
+2. [ ] [Built-in evidence candidates](./task_contracts/en/PREATP-FORMULA-EVIDENCE.md)
+   (VC 60); design can start, source integration waits for authentic
+   formula/context/substitution/provenance producers.
+3. [ ] [By/built-in acceptance and witness publication](./task_contracts/en/PROOF-DISCHARGE-ACCEPTANCE.md)
+   (Proof 23 / Artifact 25). ATP acceptance follows item 1; built-in acceptance
+   follows item 2. Each witness requires a matching accepted result; distinct
+   built-in witness support belongs to Artifact 25, full emission to Step 6 item 3.
+4. [ ] Proof cache/witness handoffs: Proof reuse metadata into Cache
+   validation (IV-005, fail-closed IV-002). Source-derived trusted reuse follows
+   the corresponding accepted producer outputs; internal seams remain separate.
 5. [ ] [Deterministic premise ranking](./task_contracts/en/ATPK-PREMISE-RANKING.md)
-   (mizar-atp 31) for pruning, lemma suggestions, and unresolved citations.
+   (atp 31) follows its own producer dependencies.
 6. [ ] [ATP re-proving benchmark](./task_contracts/en/ATPK-BENCHMARK.md)
-   (mizar-test 25), after items 1 and 5.
+   (test 25), after items 1 and 5.
 
 Exit: the proof-and-algorithm-verification completion gate holds with active
 `proof_verification` coverage.
@@ -745,7 +757,7 @@ Adopt user-facing surfaces only after the owning producers publish stable
 diagnostics, metadata, artifacts, and semantic indexes.
 
 1. [ ] [mizar-resolve task 30](./mizar-resolve/en/todo.md) — public resolver
-   diagnostic adoption, the first narrow `mizar-diagnostics` consumer seam
+   diagnostic adoption beyond the implemented E0220–E0224 import subset
    (SCA-004; see
    [consumer_adoption_decision.md](./mizar-diagnostics/en/consumer_adoption_decision.md)).
    The SSA-018 `of`/`over` scope-sensitivity lint is recorded for this wave.
@@ -895,7 +907,7 @@ follow-ups, in roadmap order:
 | SCA-001 | `design_drift` | The top-level design index must stay aligned with this roadmap's workspace-crate statuses. | Docs-only sync of [README.md](./README.md); future roadmap sync tasks must re-check it. |
 | SCA-002 | `todo` | Spec 24 documentation generation has only architecture/internal boundaries and `mizar-doc` TODOs; focused module specs are still unwritten. | [mizar-doc tasks 2, 4, 6, 9, 11, 13, 16, 18, 21, 23, and 29](./mizar-doc/en/todo.md) (plan step 8) |
 | SCA-003 | `todo` | `@show_*` and `@eval` have parser/syntax coverage but need end-to-end display/evaluation projection boundaries. | [mizar-lsp task 24](./mizar-lsp/en/todo.md), plus `mizar-doc` and VC producer tasks as they expose data (plan step 8) |
-| SCA-004 | `external_dependency_gap` | Resolver name/import/label diagnostics remain crate-local/internal until a real public diagnostic adoption task maps them into stable descriptors. | [mizar-resolve task 30](./mizar-resolve/en/todo.md), [mizar-diagnostics consumer adoption](./mizar-diagnostics/en/consumer_adoption_decision.md) (plan step 8) |
+| SCA-004 | `external_dependency_gap` | Remaining resolver name/label and semantic-import diagnostics need public adoption beyond the implemented E0220–E0224 import subset. | [mizar-resolve task 30](./mizar-resolve/en/todo.md), [mizar-diagnostics consumer adoption](./mizar-diagnostics/en/consumer_adoption_decision.md) (plan step 8) |
 | SCA-005 | `source_drift` / `test_gap`; producer dependencies for VC 53 | Algorithm VC/static-safety coverage still lacks source-derived branch/match/range/collection-loop, term-derived/recursive termination, Pick non-emptiness, snapshot/claim, partial-call evidence admission, and ghost-isolation zero-VC integration. | Completed [mizar-vc task 30](./mizar-vc/en/todo.md) is decomposition authority; VC Tasks 42-55 and their `MT10-VC-PV/VC<n>` slices own the bounded families subject to exact Core 42-53 dependencies. Current [ALGDEF-VC53-NORMAL-RETURN](./task_contracts/en/ALGDEF-VC53-NORMAL-RETURN.md) supersedes Task 30's old authority blocker for this slice; authentic source/evidence and proof producers remain prerequisites, and imported evidence remains blocked. Do not invent acceptance or transport inputs. Ghost isolation is a Core-53 static diagnostic/zero-VC boundary, not a proof VC. Task 31 owns only the preceding exact contradiction slice. |
 | SCA-006 | `design_drift` (closed) | Phase-16 architecture/internal docs referenced the historical `mizar-extract` split instead of the current `mizar-doc` module names. | Closed by a docs-only sync of architecture 13 and internal 05 EN/JA. |
 
@@ -920,44 +932,25 @@ lands in their scope.
 
 ## Appendix D — Resolved And Open Decisions
 
-Open decisions (block or shape upcoming steps):
+Resolved decisions (details remain with the linked owners; outstanding
+producer/consumer integration is sequenced above):
 
-- **Registration activation gating: open.** Local registrations must not affect
-  inference until their obligations are accepted by verifier policy. Owned by
-  [mizar-checker task 19](./mizar-checker/en/todo.md); the SSA-006 contract
-  language is [mizar-checker task 40](./mizar-checker/en/todo.md) (plan step
-  2); revisit when `mizar-vc` / `mizar-proof` integration lands (step 7).
-- **Certificate schema ownership: open.** Default candidate: `mizar-kernel`
-  owns certificate schema types and `mizar-atp` depends on the kernel to
-  construct candidates, so the kernel never depends on evidence producers.
-  Owned by [mizar-kernel task 4](./mizar-kernel/en/todo.md).
+- **Registration activation gating: resolved.** Checker tasks 19/40 fix the
+  accepted-obligation requirement. [Checker's gating boundary](./mizar-checker/en/todo.md#resolved-and-open-decisions)
+  retains pending/unverified registrations until real accepted status exists;
+  Step 7 integration and Gate S1 remain prerequisites for their consumers.
+- **Kernel evidence schema ownership: resolved.** [Kernel tasks 4/23](./mizar-kernel/en/todo.md#resolved-and-open-decisions)
+  own legacy certificate and current formula/substitution schemas respectively;
+  evidence producers do not become kernel dependencies.
 - **Discharge-evidence validation scope: fixed by specification §21.7.1.**
   Trusted built-in status requires kernel acceptance of formula/substitution
-  evidence; Step 7 item 4 owns the remaining production/publication integration.
-- **AST reflection specification transfer.** Adopt the 2026-10-09 built-in
-  `expr of T` / ghost `val` and explicit `by computation` decisions;
-  the user-defined tree/`Eval` proposal is withdrawn. Binder notation is
-  justified as a shared function abstraction, with no kernel lambda.
-  Formal rules are now owned by §§13.10/20; runtime implementation follows
-  the AST owner TODOs listed in the coverage audit. See
-  [architecture 15](./architecture/en/15.kernel_certificate_format.md).
-  Task: [AST-SPEC-00](./task_contracts/en/AST-SPEC-00.md).
-  [AST-SPEC-13](./task_contracts/en/AST-SPEC-13.md).
-  [AST-SPEC-12](./task_contracts/en/AST-SPEC-12.md).
-  [AST-SPEC-11](./task_contracts/en/AST-SPEC-11.md).
-  [AST-SPEC-10](./task_contracts/en/AST-SPEC-10.md).
-  [AST-SPEC-09](./task_contracts/en/AST-SPEC-09.md).
-  [AST-SPEC-14](./task_contracts/en/AST-SPEC-14.md).
-  [AST-SPEC-08](./task_contracts/en/AST-SPEC-08.md).
-  [AST-SPEC-07](./task_contracts/en/AST-SPEC-07.md).
-  [AST-SPEC-06](./task_contracts/en/AST-SPEC-06.md).
-  [AST-SPEC-05](./task_contracts/en/AST-SPEC-05.md).
-  [AST-SPEC-04](./task_contracts/en/AST-SPEC-04.md).
-  [AST-SPEC-03](./task_contracts/en/AST-SPEC-03.md).
-  [AST-SPEC-02](./task_contracts/en/AST-SPEC-02.md).
-  [AST-SPEC-01](./task_contracts/en/AST-SPEC-01.md).
-
-Resolved decisions (kept for reference; details live in the linked docs):
+  evidence. [Step 7](#step-7--evidence-pipeline-integration--) sequences the
+  remaining candidate, acceptance and publication tasks.
+- **AST reflection specification transfer: resolved.** Built-in `expr of T`,
+  ghost `val` and explicit `by computation` are formalized in §§13.10/20;
+  the user-defined tree/`Eval` proposal is withdrawn. Binder notation uses
+  shared function abstraction without kernel lambda. See [architecture 15](./architecture/en/15.kernel_certificate_format.md)
+  and the [reflected-syntax implementation sequence](#reflected-syntax-implementation--).
 
 - **Lexer span bridging.** `mizar-lexer` stays decoupled; the frontend maps
   lexer byte spans onto `mizar-session::SourceRange` via
@@ -979,9 +972,12 @@ Resolved decisions (kept for reference; details live in the linked docs):
 - **Salsa query engine timing.** Target for later query/cache orchestration
   only; owned by [mizar-driver tasks 4-5](./mizar-driver/en/todo.md) and
   [mizar-build task 18](./mizar-build/en/todo.md), not a frontend dependency.
-- **`mizar-diagnostics` adoption timing.** Deferred at resolver task 13;
-  resolver failures stay crate-local; E0220–E0225 specify import meanings,
-  while registry adoption and public emission remain deferred (plan step 8).
+- **`mizar-diagnostics` adoption timing.** E0220–E0224 import descriptors
+  and the restricted source-bound continuation are implemented by
+  [A40](./task_contracts/en/STEP6A40-IMPORT-DIAGNOSTIC-REGISTRY.md) /
+  [A41](./task_contracts/en/STEP6A41-DIAGNOSTIC-IMPORT-CONTINUATION.md) /
+  [A49](./task_contracts/en/STEP6A49-SOURCE-BOUND-IMPORT-RESOLUTION.md).
+  Broader resolver diagnostics and semantic E0225 publication remain deferred.
 - **ModuleSummary reuse timing.** Resolved at resolver task 24 via the
   canonical `mizar-artifact` `ModuleSummary` reader.
 

@@ -98,15 +98,17 @@ are companions when both are present.
   staged model, traceability, snapshots, and harness behavior; implementation
   exists and the TODO tracks formal gap-closing work.
 - [mizar-build](./mizar-build/en/todo.md) - workspace planning and scheduling;
-  current milestone complete; full real clean/incremental/parallel equivalence
-  remains an integration gap.
+  scheduler milestone complete; real SourceLoad/Frontend edit/rebuild
+  comparison is next,
+  with cache-producer and later-phase equivalence still integration gaps.
 - [mizar-lsp](./mizar-lsp/en/todo.md) - editor-facing range mapping and future
   server, snapshot, diagnostics, metadata, navigation, code-action, and
   explanation features; range conversion exists and the broader design remains
   planned.
 - [mizar-resolve](./mizar-resolve/en/todo.md) - module graph, namespaces,
-  symbols, labels, signatures, and resolver diagnostics; non-deferred tasks are
-  complete except the resumed R-024 summary-backed reuse integration.
+  symbols, labels, signatures, and resolver diagnostics; bounded semantic,
+  parsed-import and theorem/variable-scope producers are implemented, while
+  full ModuleResolver publication remains an integration gap.
 - [mizar-checker](./mizar-checker/en/todo.md) - type checking,
   cluster/registration resolution, and overload resolution; current
   explicit-payload semantic milestone complete.
@@ -126,8 +128,8 @@ are companions when both are present.
   summaries, and manifest transactions; schemas, store, manifest, and witness
   updates exist, while real phase-15 emission remains deferred.
 - [mizar-driver](./mizar-driver/en/todo.md) - build requests, phase registry,
-  CLI/watch/LSP entry points, and query orchestration; current driver/session
-  milestone complete.
+  CLI/watch/LSP entry points, and query orchestration; scheduled source/frontend
+  and workspace lexical publication are implemented. Later services remain gaps.
 - [mizar-ir](./mizar-ir/en/todo.md) - IR storage, snapshot handles, publishers,
   cache adapters, and artifact projections; current milestone complete.
 - [mizar-proof](./mizar-proof/en/todo.md) - proof policy evaluation, status
@@ -138,7 +140,8 @@ are companions when both are present.
   complete.
 - [mizar-diagnostics](./mizar-diagnostics/en/todo.md) - diagnostic registry,
   failure records, deterministic ordering, and rendering; current internal
-  diagnostics milestone complete.
+  milestone and public E0220–E0224 import descriptors are implemented;
+  broader public adoption remains planned.
 
 ### Planned Crate Roots
 
