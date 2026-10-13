@@ -178,6 +178,22 @@ downstream work のまま。20.13 formula は VC authority であり、Core 46 �
 owner が必要とする authenticated metadata だけを記録する。例外は §20.13.6 の
 定義式であり、Core 54 が未受理の Core formula として構成する。
 
+### Core54 Defining Equation Tests
+
+将来の `MT10-CIR-ALG` source は factorial、fibonacci、相互再帰グループの順序付き定義式
+全体を §§20.13.2/20.13.6 と比較する。§20.7.3 の除外構文ごとの near-miss、断片外の
+メンバーを含むグループ、return のない経路を保ち、いずれも式を生成しないことを確認する。
+return の欠落・重複・順序変更と古い branch ownership の破損ケースも保持する。
+
+非自明な `requires` と依存する parameter-type guard を持ち、連鎖する局所 `const` を
+経路と返値の両方で使う断片に、boolean 項の条件と論理式の boolean 返却を含める。parameter-type/requires/path guard と返値の式全体を比較し、
+局所 const の反復展開、条件と `true` の比較、ガード付き `f(args) = true iff` の返却を
+確認する。同じ表示名を使う量化返値でも [捕獲を避ける置換](binder_normalization.md#capture-avoiding-substitution)
+により自由な宣言 identity を保持する。template source は schema identity と順序を
+抽象のまま保持し、actual へ置換しない。不正な const/schema/binder-context input は拒否する。
+式全体の比較で展開不足、Boolean encoding の誤り、guard の脱落、schema の具体化、
+捕獲・誤束縛を区別する。
+
 ## Accepted Phase-10 ControlFlowIr Task Graph
 
 | Core task | Bounded phase-10 family | Dependencies / prepared consumer | Exit boundary |

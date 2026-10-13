@@ -1,10 +1,10 @@
 # Task ALGDEF-VC56-INDUCTION-HYPOTHESIS: algorithm induction-hypothesis context
 Canonical language: English; [Japanese pointer](../ja/ALGDEF-VC56-INDUCTION-HYPOTHESIS.md).
-Status: planned. Tier: full. Owner: [VC plan](../../mizar-vc/en/00.crate_plan.md); consumers: [test plan](../../mizar-test/en/00.crate_plan.md).
+Status: planned. Tier: full. Owner: [VC plan](../../mizar-vc/en/00.crate_plan.md); consumers: [Proof plan](../../mizar-proof/en/00.crate_plan.md) (future E2 adoption), [test plan](../../mizar-test/en/00.crate_plan.md).
 Dependencies: Core 46 and 52 (terminating intent, header measure, recursive-group membership); VC 43, 47, 51, and 52 (postcondition, invariant, and measure formulas) and VC 44 (call substitution) in the [algorithm VC graph](../../mizar-vc/en/source_vc_decomposition.md#accepted-algorithm-vc-task-graph).
-Readiness: dependency-blocked on authenticated group/measure/call inputs and its listed VC generators.
+Readiness: construction is dependency-blocked on authenticated group/measure/call inputs and its listed VC generators; mixed-group IH-dependent E2 adoption is [spec-gap blocked](../../mizar-vc/en/source_vc_decomposition.md#vc56-mixed-group-admission-gap).
 Authority: specification §20.4.1 self-reference rule, §20.13.4 induction hypothesis, §20.13.1 and §20.13.3 VC schema; [architecture 07](../../architecture/en/07.vc_generation.md#algorithm-vcs-follow-structured-control-flow).
-Gap: `test_gap` and `source_drift`; no VC context carries the induction hypothesis.
+Gap: `test_gap` and `source_drift` in context generation; the linked mixed-group E2 adoption boundary is `spec_gap`.
 
 ## Scope
 
@@ -25,11 +25,8 @@ work; specification, corpus, or expectation changes made to match behavior.
 
 ## Tests
 
-Test-first real sources: `fact_loop` from §20.7.3, whose invariant and return
-VCs carry the hypothesis and never the current-argument contract; a recursive
-algorithm that uses the hypothesis for another group member; a near-miss
-without a header measure that carries no hypothesis. Corruption tests cover a
-wrong measure, owner, or group. Also consume the Core46 applicability controls linked above.
+Owner-local complete-context positive and corruption controls are specified
+in [VC56 hypothesis tests](../../mizar-vc/en/source_vc_decomposition.md#vc56-induction-hypothesis-tests) for `MT10-VC-PV/VC56`.
 
 ## Coverage, reviews, and exit
 

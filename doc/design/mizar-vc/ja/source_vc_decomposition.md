@@ -217,6 +217,34 @@ concrete substitution、old-state/havoc、match nonmatch、term-derived goal の
 row は owning task が exact spec-backed goal を供給した時だけ eligible になり、
 general Deferred-to-Open promotion はない。
 
+### VC56 Induction Hypothesis Tests
+
+`fact_loop` の invariant/return VC、他メンバーの利用、header measure のないケースを
+保持する。異なる member type と非自明な `requires` を持つ真正な group、および同じ
+表示名を使う量化 postcondition を追加する。初期 context 全体を、各 member 固有の型・
+前提 guard、現在の引数に対して厳密に小さい辞書式 measure、正しく束縛した result/call
+引数を持つ postcondition と比較する。[置換](../../mizar-core/ja/binder_normalization.md#capture-avoiding-substitution)
+は自由な宣言 identity と内側の束縛構造を保持する。
+
+wrong-measure/owner/group の破損ケースを保ち、不正な member/formal/result または
+binder-context input を拒否する。context 全体の比較で型・requires guard の脱落・入れ違い、
+他 member の measure、非厳密・現在の引数、誤束縛・捕獲を区別する。当該 body が
+non-terminating または header measure がなければ初期帰納仮説はない。自己・グループの
+`ensures` 利用は [Core46 の適用条件ケース](../../mizar-core/ja/source_family_decomposition.md#core46-contract-applicability) を消費する。
+
+### VC56 Mixed Group Admission Gap
+
+`spec_gap`: §§20.13.1 E2 と20.13.4は terminating/partial 混在 group の全体性・契約の
+仮説を使って証明した個別 E2 を、共同の全体性・契約の帰納法が閉じる前に採用する条件を
+明示していない。この E2 採用は着手可能ではなく、生成した context や局所 proof 成功だけでは
+足りない。Core46 の条項の適用条件、§20.13.4 の body-entry 条件、独立した部分正当性、
+VC57 の後続 promotion barrier は別のまま保持する。
+解除には、未返却の小さい入力で partial member の仮説を正当化する方法と、依存する E2 の
+採用に対応する共同 proof の先行条件を定める正式な権威が必要となる。将来の受理 consumer は
+Proof が所有する。宣言フィルタ、returns guard、新しい proof rule を推測しない。
+混在 group の regression/adoption 期待値はこの権威を待ち、上記の確定した context 構成の
+テストは既存の source 依存関係を保持する。
+
 ## Disagreement classification
 
 以下は Task-30 の歴史的分類である。現在の VC 53 の着手条件は上記の

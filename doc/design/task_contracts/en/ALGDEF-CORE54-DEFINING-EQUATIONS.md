@@ -30,12 +30,8 @@ to match behavior.
 
 ## Tests
 
-Test-first real sources: `factorial`, `fibonacci`, and a mutually recursive
-group whose equations match the §20.13.2 and §20.13.6 examples in the
-`MT10-CIR-ALG` CoreIr baseline; one near-miss per excluded construct showing no
-equation; a group with one non-fragment member; a fragment body that can end
-without `return`. Corruption tests cover missing, duplicate, and
-reordered returns and stale branch ownership.
+Owner-local positive, fragment-negative and corruption controls are specified
+in [Core54 equation tests](../../mizar-core/en/source_family_decomposition.md#core54-defining-equation-tests) for `MT10-CIR-ALG`.
 
 ## Coverage, reviews, and exit
 

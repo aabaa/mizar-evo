@@ -227,6 +227,27 @@ authority; Core 46 records only authenticated metadata needed by later owners.
 The exception is the §20.13.6 defining equations, which Core 54 constructs as
 unaccepted Core formulas.
 
+### Core54 Defining Equation Tests
+
+Future `MT10-CIR-ALG` sources compare complete ordered equations for factorial,
+fibonacci and a mutually recursive group with §§20.13.2/20.13.6. Preserve one
+near-miss per §20.7.3 excluded construct, a group with a non-fragment member,
+and a fragment missing a return path: each produces no equation. Retain
+missing/duplicate/reordered-return and stale branch-ownership corruptions.
+
+A fragment with nontrivial `requires` and a dependent parameter-type guard
+uses chained local `const` bindings in both a path and return; include a
+boolean-term condition and formula-valued boolean return.
+Compare parameter-type/requires/path guards and complete result formulas:
+local const expansion is repeated, the condition is compared with `true`, and
+the formula return uses the guarded `f(args) = true iff` encoding. A quantified
+return with colliding display names preserves the free declaration identity
+through [capture-safe substitution](binder_normalization.md#capture-avoiding-substitution).
+A template source retains abstract schema identities/order rather than actuals.
+Malformed const/schema/binder-context inputs reject; complete-formula comparisons
+distinguish incomplete expansion, wrong Boolean encoding, dropped guards,
+concretized schema parameters and captured/misbound identities.
+
 ## Accepted Phase-10 ControlFlowIr Task Graph
 
 | Core task | Bounded phase-10 family | Dependencies and prepared consumer | Exit boundary |

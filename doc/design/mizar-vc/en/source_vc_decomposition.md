@@ -229,6 +229,39 @@ formula-infrastructure task. Deferred flow rows become eligible only when the
 owning task supplies the exact specification-backed goal; there is no general
 Deferred-to-Open promotion.
 
+### VC56 Induction Hypothesis Tests
+
+Preserve `fact_loop` invariant/return VCs, another-member use and the
+no-header-measure case. Add an authentic group with distinct member types and
+nontrivial `requires`, and a quantified postcondition with colliding display
+names. Compare every complete initial context with each member's own type and
+precondition guards, strictly smaller lexicographic measure against the current
+arguments, and its postcondition with correctly bound result/call arguments.
+[Substitution](../../mizar-core/en/binder_normalization.md#capture-avoiding-substitution)
+preserves free declaration identities and inner binding structure.
+
+Retain wrong-measure/owner/group corruptions; malformed member/formal/result
+or binder-context inputs reject. Full-context comparisons distinguish dropped
+or swapped type/requires guards, another member's measure, non-strict/current
+arguments, wrong bindings and capture. A non-terminating containing body and
+a body without a header measure have no initial induction hypothesis. Consume
+[Core46 applicability controls](../../mizar-core/en/source_family_decomposition.md#core46-contract-applicability) for self/group `ensures` uses.
+
+### VC56 Mixed Group Admission Gap
+
+`spec_gap`: §§20.13.1 E2 and 20.13.4 do not explicitly fix adoption of an
+individual E2 proved using a mixed terminating/partial group's total-contract
+hypothesis before the joint totality-and-contract induction closes. No such
+E2 adoption is ready; a generated context or local proof success is insufficient.
+Core46 clause eligibility, §20.13.4 body-entry conditions, independent partial
+correctness and VC57's later promotion barrier remain separate.
+Release requires canonical authority establishing how the partial member's
+hypothesis is justified at unreturned smaller inputs and which joint proof
+prerequisites bind the dependent E2 adoption. Proof owns that future acceptance
+consumer. Do not infer a declaration filter, returns guard or new proof rule.
+The future mixed-group regression/adoption expectation waits for this authority;
+settled context-construction tests above retain their source dependencies.
+
 ## Disagreement Classification
 
 This is the historical Task-30 classification. Current VC 53 readiness is owned
