@@ -44,10 +44,10 @@ code action、explanation クエリ、compiler driver を通じたビルドの
 
 ## crate の前提条件
 
-この crate は serde_json（protocol decoding）、`mizar-session` と `mizar-lexer`（range 変換）に依存
-する。第 B 波で `mizar-diagnostics`（レコードと索引）、`mizar-ir`
-（snapshot ハンドル）、`mizar-driver`（ビルドリクエストとイベント）が
-加わり、第 C 波で `mizar-artifact`（メタデータリーダー）が加わる。
+この crate は serde_json（protocol decoding）、`mizar-session` と `mizar-lexer`（range 変換）、
+実行ファイル host 用の Driver CLI parser に依存する。第 B 波で
+`mizar-diagnostics`（レコードと索引）、`mizar-ir`（snapshot ハンドル）と
+Driver のビルドリクエスト・イベントを使用し、第 C 波で `mizar-artifact`（メタデータリーダー）が加わる。
 アーキテクチャ:
 [12.diagnostics_and_lsp.md](../../architecture/ja/12.diagnostics_and_lsp.md)、
 [19.failure_semantics.md](../../architecture/ja/19.failure_semantics.md)。
@@ -258,6 +258,9 @@ Tasks 1–5: [LSP-LIFECYCLE-FOUNDATION](../../task_contracts/ja/LSP-LIFECYCLE-FO
 30. **Raw OpenBuffer range の算術変換前提。** [x]
     - [LSP-RAW-OPEN-BUFFER-RANGE](../../task_contracts/ja/LSP-RAW-OPEN-BUFFER-RANGE.md) で実 loaded range を native map により原文 UTF-16 座標へ戻す。
     - snapshot 束縛・current 診断と task 6–11 は別途担当する。
+
+31. **実行ファイル stdio lifecycle の前提 (Driver28 と共同)。** [x]
+    - [EDITOR-LSP-STDIO-LIFECYCLE](../../task_contracts/ja/EDITOR-LSP-STDIO-LIFECYCLE.md)。完全な task26 は current-build 診断待ち。
 
 - [ ] [EDITOR-COMPUTED-RESULTS](../../task_contracts/ja/EDITOR-COMPUTED-RESULTS.md).
 

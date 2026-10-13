@@ -515,6 +515,9 @@ Keep `cargo test -p mizar-driver` green after each task (see
 27. **Native captured-input publication routing.** [x]
     - [DRIVER-NATIVE-SOURCE-DISPATCH](../../task_contracts/en/DRIVER-NATIVE-SOURCE-DISPATCH.md) owns actual native capture, binding and conditional publication routing; prerequisite IR21 is implemented.
 
+28. **Executable stdio lifecycle CLI prerequisite (with LSP31).** [x]
+    - [EDITOR-LSP-STDIO-LIFECYCLE](../../task_contracts/en/EDITOR-LSP-STDIO-LIFECYCLE.md); full task23 waits for current-build diagnostics.
+
 ### Audit review note (2026-07-06)
 
 The July 2026 semantic, kernel-soundness, and template-encoding audits

@@ -769,8 +769,9 @@ diagnostics, metadata, artifacts, and semantic indexes.
 3. [ ] [mizar-doc tasks 1-29](./mizar-doc/en/todo.md) — phase-16 rendering
    and extraction over published artifacts, including the focused module
    specs (SCA-002). `mizar-doc` must not re-run semantic analysis.
-4. [ ] [`mizar lsp` stdio entry point](./task_contracts/en/EDITOR-LSP-ENTRY.md)
-   (mizar-driver with mizar-lsp tasks 4-5).
+4. [~] [`mizar lsp` stdio entry point](./task_contracts/en/EDITOR-LSP-ENTRY.md)
+   has an executable [lifecycle host](./mizar-driver/en/cli.md#stdio-lifecycle-host);
+   workspace/settings, build binding and current-build diagnostics remain open.
 5. [ ] [Code completion](./task_contracts/en/EDITOR-LSP-COMPLETION.md)
    (mizar-lsp task 25).
 6. [ ] [VS Code extension](./task_contracts/en/EDITOR-VSCODE-EXTENSION.md)

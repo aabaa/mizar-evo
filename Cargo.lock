@@ -559,6 +559,7 @@ dependencies = [
 name = "mizar-lsp"
 version = "0.1.0"
 dependencies = [
+ "mizar-driver",
  "mizar-lexer",
  "mizar-session",
  "serde_json",

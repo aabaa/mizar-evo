@@ -46,9 +46,9 @@ committed autonomously without holding the rest of the crate in flight.
 ## Crate Prerequisites
 
 The crate uses serde_json for protocol decoding, `mizar-session` and `mizar-lexer` (range
-conversion). Wave B adds `mizar-diagnostics` (records and indexes),
-`mizar-ir` (snapshot handles), and `mizar-driver` (build requests and
-events); wave C adds `mizar-artifact` (metadata readers). Architecture:
+conversion), and Driver CLI parsing for the executable host. Wave B adds
+`mizar-diagnostics` (records and indexes), `mizar-ir` (snapshot handles) and
+Driver build requests/events; wave C adds `mizar-artifact` (metadata readers). Architecture:
 [12.diagnostics_and_lsp.md](../../architecture/en/12.diagnostics_and_lsp.md),
 [19.failure_semantics.md](../../architecture/en/19.failure_semantics.md);
 internal: [03](../../internal/en/03.diagnostics_model_and_lsp_bridge.md).
@@ -259,6 +259,9 @@ Tasks 1–5: [LSP-LIFECYCLE-FOUNDATION](../../task_contracts/en/LSP-LIFECYCLE-FO
 30. **Raw OpenBuffer range arithmetic prerequisite.** [x]
     - [LSP-RAW-OPEN-BUFFER-RANGE](../../task_contracts/en/LSP-RAW-OPEN-BUFFER-RANGE.md) maps genuine loaded ranges through native maps to raw UTF-16 coordinates.
     - Snapshot binding, current diagnostics and tasks 6–11 remain separate.
+
+31. **Executable stdio lifecycle prerequisite (with Driver28).** [x]
+    - [EDITOR-LSP-STDIO-LIFECYCLE](../../task_contracts/en/EDITOR-LSP-STDIO-LIFECYCLE.md); full task26 waits for current-build diagnostics.
 
 - [ ] [EDITOR-COMPUTED-RESULTS](../../task_contracts/en/EDITOR-COMPUTED-RESULTS.md).
 

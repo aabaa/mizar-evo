@@ -62,6 +62,14 @@ command は spec 23 に仕様があるが、後続 task が CLI module を明示
 source implementation 前にこの文書へ追加された場合に限り、小さな alias を追加してよい。
 未文書化 flag は usage error である。
 
+### Stdio lifecycle host
+
+`mizar` 実行ファイルは `mizar-lsp` に置き Driver に依存する。後続 LSP build bridge から Driver を循環依存なく使用できる。CLI 解析・終了方針は Driver、protocol/framing は LSP が所有する。
+引数が `lsp` 一つだけなら既存 `Server::serve` を locked stdin/stdout で実行する。CLI flag や build context は作らず、initialize の workspace/settings と current-build 診断は別の前提である。
+実 lifecycle の終了コードは 0/1。framing・EOF・I/O の致命的エラーは stderr に出し 1 で終了する。stdout は framed protocol response のみ。
+その他は既存 Driver batch parser を使用し、不正または非 Unicode 引数は 2、正しい build 引数は filesystem bootstrap が未実装のため unavailable-owner 3 で終了する。起動失敗は build/message-format 実行前に stderr へ出し stdout は空とする。
+実行ファイルの root と再利用する process suite は公開 library API や第二の build pipeline を追加しない。
+
 ## Request Mapping
 
 `mizar build` は次を構築する:

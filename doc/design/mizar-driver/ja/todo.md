@@ -483,6 +483,9 @@ phase service を包み、build scheduler と cache seam へ純粋な入力 / �
 27. **Native 捕捉入力の publication routing。** [x]
     - [DRIVER-NATIVE-SOURCE-DISPATCH](../../task_contracts/ja/DRIVER-NATIVE-SOURCE-DISPATCH.md) が実 Native 取得・束縛・条件付き publication routing を担当。前提 IR21 は実装済み。
 
+28. **実行ファイル stdio lifecycle CLI の前提 (LSP31 と共同)。** [x]
+    - [EDITOR-LSP-STDIO-LIFECYCLE](../../task_contracts/ja/EDITOR-LSP-STDIO-LIFECYCLE.md)。完全な task23 は current-build 診断待ち。
+
 ### 監査レビュー注記(2026-07-06)
 
 2026 年 7 月の意味論・kernel 健全性・テンプレートエンコーディング監査
