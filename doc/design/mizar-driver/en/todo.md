@@ -541,6 +541,8 @@ the owning producers when the paired tasks land.
 
 33. **[Explicit native lock content association](../../task_contracts/en/DRIVER-NATIVE-LOCK-CONTENT-BINDING.md).** [x] — Caller-only content comparison; full context/runtime remain open.
 
+34. **[Explicit native configuration content association](../../task_contracts/en/DRIVER-NATIVE-CONFIG-CONTENT-BINDING.md).** [x] — Package-content comparison only; full context/runtime remain open.
+
 ## Recommended Verification
 
 Run after each task:

@@ -106,6 +106,10 @@ Open は OpenBuffer/InternalOnly、捕捉 Disk は PackageSource/CurrentPackage�
 
 `SourceLoadInputs::validate_native_lock_content(self) -> Result<(), String>` は保護された native capture と供給 snapshot 全体の一致、plan/snapshot toolchain の一致を明示的に要求し、snapshot.lockfile_hash を既存 Build [lockfile_content_hash](../../mizar-build/ja/planner.md#lock-content-fingerprint) と比較する。既存 content profile を用い、capture 不足・非 native・foreign・不一致を拒否する。file read と mutation は行わない。caller 限定の前提であり、untagged Hash から profile を選ばず、generic native/cache/submit 経路を変更しない。file freshness、pin/config/toolchain 真正性、retention、scheduler/host 権限は与えない。
 
+## Native config content association
+
+`SourceLoadInputs::validate_native_config_content(self) -> Result<(), String>` は保護 native capture と供給 snapshot 全体、plan/snapshot toolchain の一致を明示的に要求し、snapshot.verifier_config_hash を既存 Build [workspace_config_content_hash](../../mizar-build/ja/planner.md#current-package-configuration-content-fingerprint)（plan の独立 verifier/build aggregate）と比較する。capture 不足・非 native・foreign・context 不一致は digest 比較前に String Err、content 不一致も Err。既存 profile のまま aggregate/coherence 検証・file read・mutation は行わない。caller 限定の package configuration content 選択であり、untagged Hash の profile 推測や generic native/cache/submit 経路変更はしない。一致は full active configuration、policy/pin/toolchain/registry/file 真正性、currentness、retention、scheduler/host 権限を与えない。
+
 ## Native Disk cache preparation
 
 `SourceLoadInputs::prepare_native_disk_cache_request(self, &PhaseInput, &VerifierPolicy) -> Result<CacheKeyRequest, String>` は保護された native Disk capture から Cache owner の通常 request data を準備する。同一 snapshot、一意の束縛 module/version、実 SourceUnitCacheKey dispatch hash、parent/dependency hash なし、plan/snapshot toolchain 一致を要求する。既存 native_source guard を使い、root canonicalization は純粋 registry query の外の filesystem metadata I/O として明記し、source body は再取得しない。capture 不足・曖昧・foreign、Open/Generated、空 policy profile、POLICY_SCHEMA_VERSION 以外の policy schema、DEFAULT_CHECKER_SCHEMA_VERSION 以外の checker schema は拒否する。

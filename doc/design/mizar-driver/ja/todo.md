@@ -509,6 +509,8 @@ artifact/test のフォローアップタスクが所有する。本 crate の�
 
 33. **[明示的 native lock content 対応](../../task_contracts/ja/DRIVER-NATIVE-LOCK-CONTENT-BINDING.md).** [x] — Caller-only content comparison; full context/runtime remain open.
 
+34. **[Explicit native configuration content association](../../task_contracts/ja/DRIVER-NATIVE-CONFIG-CONTENT-BINDING.md).** [x] — Package-content comparison only; full context/runtime remain open.
+
 ## 推奨検証
 
 各タスクの後で実行する:
