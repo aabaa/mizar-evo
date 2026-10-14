@@ -97,7 +97,7 @@ OpenBuffer/InternalOnly の来歴だけでは承認しない。
 ## Native captured sources
 
 既存の登録 service と discovery は[request](request.md#native-source-capture)の実 Native 捕捉も消費する。Disk 節は従来の summary-only 経路を示し、その Open 結果拒否は維持する。任意借用 CapturedSnapshot は保護された loader/LoadedSource/SourceInput triple を供給し、caller 作成 payload 添付ではない。
-discovery/SourceLoad/Frontend は保護 snapshot 全体、一意な実 metadata/ID/hash/origin/raw URI/version/map、保持 loader package root と既存 plan/index/workspace/source-root guard に束縛する。canonical ID 一致だけでは不十分。Generated と実捕捉のない Open summary は拒否する。
+discovery/SourceLoad/Frontend は保護 snapshot 全体、一意な実 metadata/ID/hash/origin/raw URI/version/map、保持 loader package root と既存 plan/index/workspace/source-root guard に束縛する。canonical ID 一致だけでは不十分。Generated と実捕捉のない Open summary は拒否する。 全 native consumer で指定 BuildPlan.toolchain と保護 snapshot toolchain の一致を要求し、不一致は既存 no-source/Blocking または no-overlay 結果とする。opaque identity 一致は released/running 版・制約適合・真正性を示さない。no-capture の従来経路・cache 準備 error・実 NoKey は不変。
 既存 frontend 表示 path 方針で捕捉 Disk/Open を投影し、text 再読込や代替 source ID 取得は行わない。従来 Disk の load/drift/error 診断は不変。Native 取得失敗は型付き capture error であり、scheduled 診断を捏造しない。
 SourceLoad/Frontend は owner の Disk/Open codec を使い、own/供給済み親の source payload 全体と raw loading map を実捕捉へ照合する。provider、lexical handoff/import 対応、診断変換、cancel と publication guard は維持する。discovery は出力/診断を公開せず部分推定 overlay を拒否する。
 Open は OpenBuffer/InternalOnly、捕捉 Disk は PackageSource/CurrentPackage。実 Native dispatch の四 consumer だけが記録済み published 承認を使い、summary-only の current/package 検証は維持する。実 cache intent はともに NoKey。後続 service、LSP current 診断、proof/cache/artifact 権限と全 build 完了は未対応。

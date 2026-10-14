@@ -404,7 +404,9 @@ impl<'a> crate::registry::SourceLoadInputs<'a> {
         version: &mizar_session::SourceVersion,
     ) -> Option<(SourceUnit, SourceInput)> {
         let captured = self.captured?;
-        if captured.snapshot() != self.snapshot {
+        if captured.snapshot() != self.snapshot
+            || self.build_plan.toolchain != self.snapshot.toolchain
+        {
             return None;
         }
         let (loader, loaded, input) =
