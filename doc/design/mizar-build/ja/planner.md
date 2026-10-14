@@ -275,6 +275,13 @@ Snapshot/config hash はこれらの aggregate record、または各 package の
 verifier/build config と等価な canonical encoding を含めなければならない。
 downstream code は package-scoped phase では package-local setting を使う。
 
+## Current package configuration content fingerprint
+
+`workspace_config_content_hash(&WorkspaceVerifierConfig, &WorkspaceBuildConfig) -> mizar_session::Hash` は既存の package 対応付き型付き aggregate 二つの内容を指紋化し、対応の妥当性・metadata 出所・現在のファイル・runtime の完全性を検証しない。両リストを独立に保持し、zip・merge・重複 ID 上書き・欠落 record の推測をしない。ファイルを読まず、parser/planner/runtime policy を変更しない。manifest 表記・コメント・default 省略、package edition/version/path、dependency graph、lock、toolchain、runtime policy/backend/seed/budget/invocation は別入力である。
+既存 Artifact `CanonicalJson` と `canonical_json_string` を使う。root は `[verifier_records, build_records]`、verifier record は `[package_id, max_axioms, atp_timeout, solver, computation_replay, require_kernel_certificates]`、build record は `[package_id, incremental, cache_dir, artifact_dir]`。u32 全値は JSON integer、boolean は JSON boolean、ID/directory は厳密な string とする。既存 solver variant の string は `auto`, `vampire`, `e`, `cvc5`, `z3`。各独立リストを完全な canonical JSON record text で整列し、重複数・空リスト・直接構築された任意の値を保持する。リスト順とリスト間の位置対応は identity に寄与しない。
+厳密な UTF-8 preimage は `mizar-build/package-config-content/v1`、一つの LF、末尾が一つの LF の canonical root JSON text であり、既存 Session `hash_text` の source-text-domain/length/BLAKE3 構成へ渡す。これは Build content profile であり、raw hash primitive・Artifact hash class・Cache key domain・完全な verifier_config_hash producer・Proof policy fingerprint ではない。現在の全 field が参加し、将来の field/solver variant は profile 拡張の review を要する。既存 parser による省略 default と明示 default の実効内容は等しい。
+独立した literal golden が format/frame を固定する。test は各 scalar・solver・u32 全値・曖昧 string・package 対応・独立リスト順・重複数・不一致/空リストを扱う。実 native manifest と clean parsed plan から得る metadata digest を genuine snapshot/config cache carrier に渡し、config-only 変更と実 protected output/NoKey を確認する。他の fixture context に真正性を認めず、registry default metadata は認証済 dependency 設定ではない。完全な active config/context、caller plan/capture/currentness 対応、policy/invocation/replay、toolchain/pin、runtime/cache/Proof 受理、native editor bootstrap は保留する。
+
 ## Planning Algorithm
 
 1. `mizar.workspace` または `mizar.pkg` から workspace mode を発見する。

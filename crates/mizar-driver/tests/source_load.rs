@@ -11577,3 +11577,196 @@ fn lock_content_hash_from_actual_files_feeds_genuine_snapshot_and_source_load_ca
         previous = Some((digest, captured.snapshot().id, source.source_hash, request));
     }
 }
+
+#[test]
+fn config_content_hash_from_native_plans_feeds_genuine_snapshot_and_source_load_carriers() {
+    use mizar_build::planner::{read_native_workspace_inputs, workspace_config_content_hash};
+    use mizar_proof::policy::VerifierPolicy;
+    let fixture = Fixture::new("\u{feff}definition\r\nend;\r\n".as_bytes());
+    fs::write(
+        fixture.root.join("mizar.workspace"),
+        "[workspace]\nmembers = [\"alpha\"]\n",
+    )
+    .unwrap();
+    let lock_text = "schema_version = 1\n[[package]]\nname = \"alpha\"\nversion = \"0.1.0\"\nsource = { kind = \"workspace\", path = \"alpha\" }\ndependencies = []\n";
+    fs::write(fixture.root.join("mizar.lock"), lock_text).unwrap();
+    let mut baseline = None;
+    for (unchanged, suffix) in [
+        (true, ""),
+        (
+            true,
+            "# spelling and omission are outside typed content\n[verifier]\nmax_axioms = 128\natp_timeout = 30\ndefault_solver = \"auto\"\ncomputation_replay = false\nrequire_kernel_certificates = true\n[build]\nincremental = true\ncache_dir = \".mizar-cache\"\nartifact_dir = \"build\"\n",
+        ),
+        (false, "[verifier]\ncomputation_replay = true\n"),
+        (false, "[build]\ncache_dir = \"different-cache\"\n"),
+        (false, "[build]\nincremental = false\n"),
+    ] {
+        fixture.write(&fixture.bytes);
+        let text = format!("[package]\nname = \"alpha\"\nversion = \"0.1.0\"\n{suffix}");
+        fs::write(fixture.root.join("alpha/mizar.pkg"), &text).unwrap();
+        let ids = InMemorySessionIdAllocator::new();
+        let snapshots = SnapshotRegistry::new();
+        let (mut draft, mut input) = fixture.submit_request(vec![], vec![]);
+        let (packages, lock) =
+            read_native_workspace_inputs(&input.plan_request.workspace_root).unwrap();
+        let clean_plan = produce_build_plan(
+            input.plan_request.clone(),
+            vec![WorkspacePackage {
+                member_path: "alpha".into(),
+                manifest: parse_package_manifest(&text).unwrap(),
+            }],
+            parse_lockfile(lock_text).unwrap(),
+        )
+        .unwrap();
+        let plan =
+            produce_build_plan(input.plan_request.clone(), packages.clone(), lock.clone()).unwrap();
+        assert_eq!(plan, clean_plan);
+        let digest = workspace_config_content_hash(&plan.verifier_config, &plan.build_config);
+        assert_eq!(
+            digest,
+            workspace_config_content_hash(&clean_plan.verifier_config, &clean_plan.build_config)
+        );
+        draft.verifier_config = VerifierConfigInput::new(digest);
+        draft.source_inputs.versions.clear();
+        input.source_layout = StaticSourceLayout::from_native_disk(&plan).unwrap();
+        input.workspace_packages = packages;
+        input.lockfile = lock;
+        let session = draft
+            .capture_sources(
+                &ids,
+                &snapshots,
+                vec![(
+                    DiskSourceLoader::new(fixture.root.join("alpha")),
+                    SourceInput {
+                        package_id: fixture.version.package_id.clone(),
+                        module_path: fixture.version.module_path.clone(),
+                        normalized_path: fixture.version.normalized_path.clone(),
+                        edition: fixture.version.edition.clone(),
+                        origin: SourceOriginInput::Disk {
+                            path: "src/main.miz".into(),
+                        },
+                    },
+                )],
+            )
+            .unwrap();
+        assert_eq!(session.captured().snapshot().verifier_config_hash, digest);
+        fs::remove_file(fixture.root.join("alpha/src/main.miz")).unwrap();
+        let unit = WorkUnit::Module {
+            module: mizar_build::module_index::ModuleId::new(
+                PackageId::new("alpha"),
+                ModulePath::new("main"),
+            ),
+        };
+        let owner = publisher(session.captured().snapshot().id, 0, &unit);
+        allow_frontend(&owner, &unit);
+        let mut builder = PhaseRegistryBuilder::new();
+        builder.register_source_load();
+        builder.register_frontend(vec![]);
+        let mut driver =
+            CompilerDriver::new(builder.build().unwrap()).with_output_publisher(owner.clone());
+        let submission = driver
+            .submit_captured(session, &ids, &snapshots, input)
+            .unwrap();
+        assert_eq!(
+            submission.status,
+            DriverSubmissionStatus::BlockedByMissingPhaseServices
+        );
+        assert_eq!(submission.build_plan.as_ref().unwrap(), &clean_plan);
+        let (inputs, phase_input) = native_disk_lookup_context(&submission, &ids);
+        let request = inputs
+            .prepare_native_disk_cache_request(&phase_input, &VerifierPolicy::release())
+            .unwrap();
+        assert_eq!(request.config_hash, digest);
+        let results = submission
+            .scheduler_run
+            .as_ref()
+            .unwrap()
+            .phase_results
+            .values()
+            .flatten()
+            .collect::<Vec<_>>();
+        assert!(results.iter().all(|result| result.diagnostics.is_empty()));
+        let refs = results
+            .iter()
+            .flat_map(|result| &result.output_refs)
+            .collect::<Vec<_>>();
+        assert_eq!(refs.len(), 2);
+        let source_ref = *refs
+            .iter()
+            .find(|output| output.output_kind() == &OutputKind::new("SourceUnit"))
+            .unwrap();
+        let source_handle = owner
+            .storage()
+            .typed_handle::<SourceUnit>(source_ref, &OutputKind::new("SourceUnit"))
+            .unwrap();
+        let source = owner.storage().get(&source_handle).unwrap();
+        let frontend_ref = *refs
+            .iter()
+            .find(|output| output.output_kind() == &OutputKind::new("FrontendOutput"))
+            .unwrap();
+        let frontend_handle = owner
+            .storage()
+            .typed_handle::<FrontendOutput<<MizarParserSeam as ParserSeam>::Ast>>(
+                frontend_ref,
+                &OutputKind::new("FrontendOutput"),
+            )
+            .unwrap();
+        let frontend = owner.storage().get(&frontend_handle).unwrap();
+        let captured = submission.session.captured();
+        assert_eq!(
+            source.source_id,
+            captured.snapshot().source_versions[0].source_id
+        );
+        assert_eq!(
+            source.source_hash,
+            captured.snapshot().source_versions[0].source_hash
+        );
+        assert_eq!(source.source_text.as_ref(), "definition\nend;\n");
+        assert!(source.loading_map.is_some());
+        let source_bytes = source.canonical_disk_bytes().unwrap();
+        let frontend_bytes = frontend.canonical_disk_bytes().unwrap();
+        for phase in [PipelinePhase::SourceLoad, PipelinePhase::Frontend] {
+            assert!(matches!(
+                driver
+                    .registry()
+                    .cache_key_for_phase(phase, &phase_input)
+                    .unwrap()
+                    .intent,
+                PhaseCacheIntent::NoKey { .. }
+            ));
+        }
+        if let Some((
+            prior_digest,
+            prior_snapshot,
+            prior_hash,
+            prior_source,
+            prior_frontend,
+            prior_request,
+        )) = &baseline
+        {
+            assert_eq!(source.source_hash, *prior_hash);
+            assert_eq!(&source_bytes, prior_source);
+            assert_eq!(&frontend_bytes, prior_frontend);
+            if unchanged {
+                assert_eq!(digest, *prior_digest);
+                assert_eq!(captured.snapshot().id, *prior_snapshot);
+                assert_eq!(&request, prior_request);
+            } else {
+                assert_ne!(digest, *prior_digest);
+                assert_ne!(captured.snapshot().id, *prior_snapshot);
+                let mut normalized = request.clone();
+                normalized.config_hash = *prior_digest;
+                assert_eq!(&normalized, prior_request);
+            }
+        } else {
+            baseline = Some((
+                digest,
+                captured.snapshot().id,
+                source.source_hash,
+                source_bytes,
+                frontend_bytes,
+                request,
+            ));
+        }
+    }
+}

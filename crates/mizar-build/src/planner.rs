@@ -397,6 +397,56 @@ pub fn lockfile_content_hash(lockfile: &Lockfile) -> mizar_session::Hash {
     ))
 }
 
+pub fn workspace_config_content_hash(
+    verifier: &WorkspaceVerifierConfig,
+    build: &WorkspaceBuildConfig,
+) -> mizar_session::Hash {
+    use mizar_artifact::store::{
+        CanonicalJson::{Array, Bool, Integer, String},
+        canonical_json_string,
+    };
+    let mut verifier_records = verifier
+        .packages
+        .iter()
+        .map(|package| {
+            let solver = match package.config.default_solver {
+                Solver::Auto => "auto",
+                Solver::Vampire => "vampire",
+                Solver::E => "e",
+                Solver::Cvc5 => "cvc5",
+                Solver::Z3 => "z3",
+            };
+            Array(vec![
+                String(package.package_id.clone()),
+                Integer(i64::from(package.config.max_axioms)),
+                Integer(i64::from(package.config.atp_timeout)),
+                String(solver.into()),
+                Bool(package.config.computation_replay),
+                Bool(package.config.require_kernel_certificates),
+            ])
+        })
+        .collect::<Vec<_>>();
+    let mut build_records = build
+        .packages
+        .iter()
+        .map(|package| {
+            Array(vec![
+                String(package.package_id.clone()),
+                Bool(package.config.incremental),
+                String(package.config.cache_dir.clone()),
+                String(package.config.artifact_dir.clone()),
+            ])
+        })
+        .collect::<Vec<_>>();
+    verifier_records.sort_by_cached_key(canonical_json_string);
+    build_records.sort_by_cached_key(canonical_json_string);
+    let content = Array(vec![Array(verifier_records), Array(build_records)]);
+    mizar_session::hash_text(&format!(
+        "mizar-build/package-config-content/v1\n{}",
+        canonical_json_string(&content)
+    ))
+}
+
 pub fn read_native_workspace_inputs(
     root: &WorkspaceRoot,
 ) -> Result<(Vec<WorkspacePackage>, Lockfile), String> {

@@ -1942,3 +1942,310 @@ fn lock_content_hash_orders_complete_tuples_and_retains_duplicate_multiplicity()
     duplicate.packages[0].dependencies.push(dependency);
     assert_ne!(lockfile_content_hash(&duplicate), baseline);
 }
+
+#[test]
+fn config_content_hash_matches_independent_literal_profile_and_solver_labels() {
+    use super::{
+        PackageBuildConfig, PackageVerifierConfig, WorkspaceBuildConfig, WorkspaceVerifierConfig,
+        workspace_config_content_hash,
+    };
+    let mut verifier = WorkspaceVerifierConfig {
+        packages: vec![PackageVerifierConfig {
+            package_id: "quote\"\\\n😀".into(),
+            config: VerifierConfig {
+                max_axioms: u32::MAX,
+                atp_timeout: 1 << 31,
+                default_solver: Solver::Cvc5,
+                computation_replay: true,
+                require_kernel_certificates: false,
+            },
+        }],
+    };
+    let build = WorkspaceBuildConfig {
+        packages: vec![PackageBuildConfig {
+            package_id: "other".into(),
+            config: BuildConfig {
+                incremental: false,
+                cache_dir: "a\tb\r\0".into(),
+                artifact_dir: "é/\"\\😀".into(),
+            },
+        }],
+    };
+    let json = r#"[[["quote\"\\\n😀",4294967295,2147483648,"cvc5",true,false]],[["other",false,"a\tb\r\u0000","é/\"\\😀"]]]"#;
+    let frame = format!("mizar-build/package-config-content/v1\n{json}\n");
+    let actual = workspace_config_content_hash(&verifier, &build);
+    assert_eq!(actual, mizar_session::hash_text(&frame));
+    verifier.packages[0].package_id = "alpha".into();
+    verifier.packages[0].config = VerifierConfig::default();
+    let empty = WorkspaceBuildConfig { packages: vec![] };
+    for (solver, label) in [
+        (Solver::Auto, "auto"),
+        (Solver::Vampire, "vampire"),
+        (Solver::E, "e"),
+        (Solver::Cvc5, "cvc5"),
+        (Solver::Z3, "z3"),
+    ] {
+        verifier.packages[0].config.default_solver = solver;
+        assert_eq!(
+            workspace_config_content_hash(&verifier, &empty),
+            mizar_session::hash_text(&format!(
+                "mizar-build/package-config-content/v1\n[[[\"alpha\",128,30,\"{label}\",false,true]],[]]\n"
+            ))
+        );
+    }
+    verifier.packages[0].config.default_solver = Solver::Auto;
+    for (max_axioms, atp_timeout) in [(0, 0), (1 << 31, u32::MAX), (u32::MAX, 1 << 31)] {
+        verifier.packages[0].config.max_axioms = max_axioms;
+        verifier.packages[0].config.atp_timeout = atp_timeout;
+        assert_eq!(
+            workspace_config_content_hash(&verifier, &empty),
+            mizar_session::hash_text(&format!(
+                "mizar-build/package-config-content/v1\n[[[\"alpha\",{max_axioms},{atp_timeout},\"auto\",false,true]],[]]\n"
+            ))
+        );
+    }
+}
+
+#[test]
+fn config_content_hash_retains_each_field_and_unambiguous_strings() {
+    use super::{
+        PackageBuildConfig, PackageVerifierConfig, WorkspaceBuildConfig, WorkspaceVerifierConfig,
+        workspace_config_content_hash,
+    };
+    let verifier = WorkspaceVerifierConfig {
+        packages: vec![PackageVerifierConfig {
+            package_id: "alpha".into(),
+            config: VerifierConfig::default(),
+        }],
+    };
+    let build = WorkspaceBuildConfig {
+        packages: vec![PackageBuildConfig {
+            package_id: "alpha".into(),
+            config: BuildConfig::default(),
+        }],
+    };
+    let baseline = workspace_config_content_hash(&verifier, &build);
+    for field in [
+        "verifier-id",
+        "max-zero",
+        "max-high-bit",
+        "max-u32",
+        "timeout-zero",
+        "timeout-high-bit",
+        "timeout-u32",
+        "solver",
+        "replay",
+        "certificates",
+        "build-id",
+        "incremental",
+        "cache-dir",
+        "artifact-dir",
+    ] {
+        let (mut v, mut b) = (verifier.clone(), build.clone());
+        match field {
+            "verifier-id" => v.packages[0].package_id = "quote\"\\\n😀".into(),
+            "max-zero" => v.packages[0].config.max_axioms = 0,
+            "max-high-bit" => v.packages[0].config.max_axioms = 1 << 31,
+            "max-u32" => v.packages[0].config.max_axioms = u32::MAX,
+            "timeout-zero" => v.packages[0].config.atp_timeout = 0,
+            "timeout-high-bit" => v.packages[0].config.atp_timeout = 1 << 31,
+            "timeout-u32" => v.packages[0].config.atp_timeout = u32::MAX,
+            "solver" => v.packages[0].config.default_solver = Solver::Vampire,
+            "replay" => v.packages[0].config.computation_replay = true,
+            "certificates" => v.packages[0].config.require_kernel_certificates = false,
+            "build-id" => b.packages[0].package_id.clear(),
+            "incremental" => b.packages[0].config.incremental = false,
+            "cache-dir" => b.packages[0].config.cache_dir = "quote\"\\\n😀".into(),
+            "artifact-dir" => b.packages[0].config.artifact_dir.clear(),
+            _ => unreachable!(),
+        }
+        assert_ne!(workspace_config_content_hash(&v, &b), baseline, "{field}");
+    }
+    for (left_cache, left_artifact, right_cache, right_artifact) in [
+        ("ab", "c", "a", "bc"),
+        ("a\"b", "c", "a\\\"b", "c"),
+        ("é", "c", "e\u{301}", "c"),
+    ] {
+        let mut first = build.clone();
+        first.packages[0].config.cache_dir = left_cache.into();
+        first.packages[0].config.artifact_dir = left_artifact.into();
+        let mut second = first.clone();
+        second.packages[0].config.cache_dir = right_cache.into();
+        second.packages[0].config.artifact_dir = right_artifact.into();
+        assert_ne!(
+            workspace_config_content_hash(&verifier, &first),
+            workspace_config_content_hash(&verifier, &second)
+        );
+    }
+}
+
+#[test]
+fn config_content_hash_sorts_full_independent_records_and_preserves_association_and_counts() {
+    use super::{
+        PackageBuildConfig, PackageVerifierConfig, WorkspaceBuildConfig, WorkspaceVerifierConfig,
+        workspace_config_content_hash,
+    };
+    let mut verifier = WorkspaceVerifierConfig {
+        packages: [2, 10]
+            .map(|max_axioms| PackageVerifierConfig {
+                package_id: "alpha".into(),
+                config: VerifierConfig {
+                    max_axioms,
+                    ..VerifierConfig::default()
+                },
+            })
+            .into(),
+    };
+    let mut build = WorkspaceBuildConfig {
+        packages: ["z", "a"]
+            .map(|cache_dir| PackageBuildConfig {
+                package_id: "alpha".into(),
+                config: BuildConfig {
+                    cache_dir: cache_dir.into(),
+                    ..BuildConfig::default()
+                },
+            })
+            .into(),
+    };
+    let baseline = workspace_config_content_hash(&verifier, &build);
+    assert_eq!(
+        baseline,
+        mizar_session::hash_text(
+            "mizar-build/package-config-content/v1\n[[[\"alpha\",10,30,\"auto\",false,true],[\"alpha\",2,30,\"auto\",false,true]],[[\"alpha\",true,\"a\",\"build\"],[\"alpha\",true,\"z\",\"build\"]]]\n"
+        )
+    );
+    for reverse_verifier in [false, true] {
+        for reverse_build in [false, true] {
+            let (mut v, mut b) = (verifier.clone(), build.clone());
+            if reverse_verifier {
+                v.packages.reverse();
+            }
+            if reverse_build {
+                b.packages.reverse();
+            }
+            assert_eq!(workspace_config_content_hash(&v, &b), baseline);
+        }
+    }
+    for duplicate_verifier in [false, true] {
+        let (mut v, mut b) = (verifier.clone(), build.clone());
+        if duplicate_verifier {
+            v.packages.push(v.packages[0].clone());
+        } else {
+            b.packages.push(b.packages[0].clone());
+        }
+        assert_ne!(workspace_config_content_hash(&v, &b), baseline);
+    }
+    verifier.packages[1].package_id = "zeta".into();
+    build.packages[1].package_id = "zeta".into();
+    let associated = workspace_config_content_hash(&verifier, &build);
+    for swap_verifier in [false, true] {
+        let (mut v, mut b) = (verifier.clone(), build.clone());
+        if swap_verifier {
+            v.packages.swap(0, 1);
+            v.packages[0].package_id = "alpha".into();
+            v.packages[1].package_id = "zeta".into();
+        } else {
+            b.packages.swap(0, 1);
+            b.packages[0].package_id = "alpha".into();
+            b.packages[1].package_id = "zeta".into();
+        }
+        assert_ne!(workspace_config_content_hash(&v, &b), associated);
+    }
+    let (empty_v, empty_b) = (
+        WorkspaceVerifierConfig { packages: vec![] },
+        WorkspaceBuildConfig { packages: vec![] },
+    );
+    let empty = workspace_config_content_hash(&empty_v, &empty_b);
+    assert_eq!(
+        empty,
+        mizar_session::hash_text("mizar-build/package-config-content/v1\n[[],[]]\n")
+    );
+    let verifier_only = workspace_config_content_hash(&verifier, &empty_b);
+    let build_only = workspace_config_content_hash(&empty_v, &build);
+    assert_ne!(verifier_only, build_only);
+    assert_ne!(verifier_only, empty);
+    assert_ne!(build_only, empty);
+    assert_ne!(verifier_only, associated);
+    assert_ne!(build_only, associated);
+}
+
+#[test]
+fn config_content_hash_uses_effective_plan_defaults_without_other_manifest_identity() {
+    use super::workspace_config_content_hash;
+    let lock = parse_lockfile("schema_version = 1\n[[package]]\nname = \"alpha\"\nversion = \"0.1.0\"\nsource = { kind = \"workspace\", path = \"alpha\" }\ndependencies = []\n").unwrap();
+    for suffix in [
+        "",
+        "[verifier]\nmax_axioms = 128\natp_timeout = 30\ndefault_solver = \"auto\"\ncomputation_replay = false\nrequire_kernel_certificates = true\n[build]\nincremental = true\ncache_dir = \".mizar-cache\"\nartifact_dir = \"build\"\n",
+        "authors = [\"different\"]\nlicense = \"MIT\"\ndescription = \"separate metadata\"\n",
+    ] {
+        let plan = produce_build_plan(
+            plan_request(DependencySelection::Normal),
+            vec![workspace_package(
+                "alpha",
+                &format!("[package]\nname = \"alpha\"\nversion = \"0.1.0\"\n{suffix}"),
+            )],
+            lock.clone(),
+        )
+        .unwrap();
+        let digest = workspace_config_content_hash(&plan.verifier_config, &plan.build_config);
+        assert_eq!(
+            digest,
+            mizar_session::hash_text(
+                "mizar-build/package-config-content/v1\n[[[\"alpha\",128,30,\"auto\",false,true]],[[\"alpha\",true,\".mizar-cache\",\"build\"]]]\n"
+            )
+        );
+    }
+}
+
+#[test]
+fn config_content_hash_orders_ids_before_config_and_complete_tied_tails() {
+    use super::{
+        PackageBuildConfig, PackageVerifierConfig, WorkspaceBuildConfig, WorkspaceVerifierConfig,
+        workspace_config_content_hash,
+    };
+    let verifier = WorkspaceVerifierConfig {
+        packages: [("alpha", 2, 2), ("zeta", 10, 30), ("alpha", 2, 10)]
+            .map(
+                |(package_id, max_axioms, atp_timeout)| PackageVerifierConfig {
+                    package_id: package_id.into(),
+                    config: VerifierConfig {
+                        max_axioms,
+                        atp_timeout,
+                        ..VerifierConfig::default()
+                    },
+                },
+            )
+            .into(),
+    };
+    let build = WorkspaceBuildConfig {
+        packages: [
+            ("alpha", "z", "z"),
+            ("zeta", "a", "build"),
+            ("alpha", "z", "a"),
+        ]
+        .map(|(package_id, cache_dir, artifact_dir)| PackageBuildConfig {
+            package_id: package_id.into(),
+            config: BuildConfig {
+                cache_dir: cache_dir.into(),
+                artifact_dir: artifact_dir.into(),
+                ..BuildConfig::default()
+            },
+        })
+        .into(),
+    };
+    let expected = mizar_session::hash_text(
+        "mizar-build/package-config-content/v1\n[[[\"alpha\",2,10,\"auto\",false,true],[\"alpha\",2,2,\"auto\",false,true],[\"zeta\",10,30,\"auto\",false,true]],[[\"alpha\",true,\"z\",\"a\"],[\"alpha\",true,\"z\",\"z\"],[\"zeta\",true,\"a\",\"build\"]]]\n",
+    );
+    for reverse_verifier in [false, true] {
+        for reverse_build in [false, true] {
+            let (mut v, mut b) = (verifier.clone(), build.clone());
+            if reverse_verifier {
+                v.packages.reverse();
+            }
+            if reverse_build {
+                b.packages.reverse();
+            }
+            assert_eq!(workspace_config_content_hash(&v, &b), expected);
+        }
+    }
+}
