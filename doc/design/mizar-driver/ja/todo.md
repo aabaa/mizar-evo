@@ -505,6 +505,8 @@ artifact/test のフォローアップタスクが所有する。本 crate の�
 
 31. **[束縛 native Disk SourceLoad record encoding](../../task_contracts/ja/DRIVER-NATIVE-DISK-CACHE-ENCODE.md).** [x]
 
+32. **[Current native Disk lookup と typed 再構成](../../task_contracts/ja/DRIVER-NATIVE-DISK-CACHE-REHYDRATE.md).** [x]
+
 ## 推奨検証
 
 各タスクの後で実行する:

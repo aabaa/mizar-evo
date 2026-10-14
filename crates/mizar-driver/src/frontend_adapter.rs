@@ -319,6 +319,86 @@ impl<'a> crate::registry::SourceLoadInputs<'a> {
         }))
     }
 
+    /// Reconstructs an authorized current source from its genuine native Disk key.
+    pub fn rehydrate_native_disk_cache(
+        self,
+        input: &PhaseInput,
+        policy: &mizar_proof::policy::VerifierPolicy,
+        store: &mizar_cache::cache_store::CacheStoreRoot,
+        adapter: &mizar_ir::cache_adapter::IrCacheAdapter,
+    ) -> Result<mizar_ir::cache_adapter::CacheRehydrateOutcome<SourceUnit>, String> {
+        use mizar_cache::{
+            cache_key::{CacheKeyBuildOutcome, CacheKeyBuilder},
+            cache_store::CacheLookupOutcome,
+        };
+        use mizar_ir::cache_adapter::RehydrateCacheHitInput;
+
+        let request = self.prepare_native_disk_cache_request(input, policy)?;
+        let key = match CacheKeyBuilder::new(request.clone()).build() {
+            CacheKeyBuildOutcome::Cacheable(key) => key,
+            _ => return Err("native Disk lookup requires a cacheable key".to_owned()),
+        };
+        adapter
+            .publisher()
+            .validate_current_snapshot(input.snapshot)
+            .map_err(|error| error.to_string())?;
+        let WorkUnit::Module { module } = &input.work_unit else {
+            return Err("native Disk lookup requires a module".to_owned());
+        };
+        let version = unique(self.snapshot.source_versions.iter().filter(|version| {
+            version.package_id == module.package && version.module_path == module.path
+        }))
+        .ok_or_else(|| "native Disk lookup requires one captured source version".to_owned())?;
+        let (source, source_input) = self
+            .native_source(version)
+            .ok_or_else(|| "native Disk lookup capture binding failed".to_owned())?;
+        let storage_input = unique(
+            request
+                .input_hashes
+                .iter()
+                .filter(|entry| entry.name == "source-storage"),
+        )
+        .ok_or_else(|| "native Disk lookup requires source storage identity".to_owned())?;
+        let side_tables = IrSideTables {
+            source_maps: vec![SideTableRecord::new(
+                "source-storage",
+                source.normalized_path.as_str(),
+                storage_input.digest,
+            )],
+            ..IrSideTables::default()
+        };
+        let lookup = store.lookup(&key);
+        if let CacheLookupOutcome::Hit(record) = &lookup
+            && record.header.produced_by != request.validation_inputs.toolchain_compatibility
+        {
+            return Err("native Disk lookup producer binding mismatch".to_owned());
+        }
+        let source_hash = input.identities().input_hash();
+        Ok(adapter.rehydrate_with_expected_payload(
+            RehydrateCacheHitInput {
+                lookup,
+                snapshot: input.snapshot,
+                phase: IrPipelinePhase::new(request.phase.as_str()),
+                work_unit: IrWorkUnit::new(request.work_unit.as_str()),
+                output_kind: OutputKind::new("SourceUnit"),
+                schema_version: SchemaVersion::new(1),
+                parents: Vec::new(),
+                named_input_hashes: vec![NamedInputHash {
+                    name: "source".to_owned(),
+                    domain: SOURCE_UNIT_CACHE_KEY_VERSION.to_owned(),
+                    digest: source_hash,
+                }],
+                decode: BlobDecoder::new(move |bytes| {
+                    SourceUnit::from_canonical_storage_bytes(bytes, source.source_id, &source_input)
+                        .filter(|decoded| decoded.matches_canonical_storage(&source, &source_input))
+                        .ok_or_else(|| BlobDecodeError::new("native Disk lookup storage mismatch"))
+                }),
+            },
+            source_hash.as_bytes(),
+            &side_tables,
+        ))
+    }
+
     fn native_source(
         self,
         version: &mizar_session::SourceVersion,

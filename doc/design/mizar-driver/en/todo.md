@@ -537,6 +537,8 @@ the owning producers when the paired tasks land.
 
 31. **[Bound native Disk SourceLoad record encoding](../../task_contracts/en/DRIVER-NATIVE-DISK-CACHE-ENCODE.md).** [x]
 
+32. **[Current native Disk lookup and typed reconstruction](../../task_contracts/en/DRIVER-NATIVE-DISK-CACHE-REHYDRATE.md).** [x]
+
 ## Recommended Verification
 
 Run after each task:

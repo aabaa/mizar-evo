@@ -688,10 +688,11 @@ Native editor [storage codecs](./mizar-frontend/en/source.md#canonical-openbuffe
 [Current acquired storage comparison](./task_contracts/en/SOURCE-CURRENT-STORAGE-BINDING.md) is a bounded retained-payload prerequisite. [Native Disk request preparation](./task_contracts/en/DRIVER-NATIVE-DISK-CACHE-REQUEST.md) precedes real lookup/retained scheduling.
 [Bound native Disk record encoding](./task_contracts/en/DRIVER-NATIVE-DISK-CACHE-ENCODE.md) is implemented for sealed SourceLoad outputs.
 [IR producer expectations](./task_contracts/en/IR-CURRENT-CACHE-PAYLOAD-BINDING.md) guard cached publication before storage decoding.
+[Current native Disk lookup](./task_contracts/en/DRIVER-NATIVE-DISK-CACHE-REHYDRATE.md) binds caller-invoked typed reconstruction before retained scheduler integration.
 Their LSP build bridge and current diagnostic publication remain Step 8 prerequisites.
 Step 7's [instance-finder design](./task_contracts/en/ATPK-INSTANCE-FINDER.md) follows its existing producer dependencies.
-Cache-hit equivalence waits for current SourceLoad rehydration and retained
-scheduler handoffs; Frontend cache producers, later semantic/proof services
+Cache-hit equivalence waits for active-runtime SourceLoad reconstruction and
+retained scheduler handoffs; Frontend cache producers, later semantic/proof services
 and full artifact emission remain dependency-blocked.
 Pre-audit 5B.3 and Gate S1 block only consumers requiring their outputs.
 

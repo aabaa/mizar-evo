@@ -9541,3 +9541,431 @@ fn native_disk_expected_cache_blob_source_feeds_registered_frontend_like_clean_r
     );
     assert_eq!(replay_handle.lineage().parents, vec![handle.output()]);
 }
+
+fn native_disk_lookup_context<'a>(
+    submission: &'a mizar_driver::driver::BuildSubmission,
+    ids: &'a InMemorySessionIdAllocator,
+) -> (SourceLoadInputs<'a>, PhaseInput) {
+    let captured = submission.session.captured();
+    (
+        SourceLoadInputs {
+            snapshot: captured.snapshot(),
+            captured: Some(captured),
+            build_plan: submission.build_plan.as_ref().unwrap(),
+            module_index: submission.module_index.as_ref().unwrap(),
+            allocator: ids,
+        },
+        PhaseInput::new(
+            source_task(submission).unit.clone(),
+            PhaseDispatchInputBundle::without_parent_outputs(
+                captured.snapshot().id,
+                source_key(&captured.snapshot().source_versions[0]),
+                vec![],
+            ),
+        ),
+    )
+}
+
+#[test]
+fn native_disk_cache_lookup_rebinds_resident_and_blob_for_clean_frontend() {
+    use mizar_cache::cache_store::{CacheInsertOutcome, CacheLookupOutcome, CacheStoreRoot};
+    use mizar_ir::cache_adapter::{
+        CacheRehydrateOutcome, EncodeCacheRecordOutcome, IrCacheAdapter,
+    };
+    for threshold in [usize::MAX, 0] {
+        let fixtures = [
+            Fixture::new("\u{feff}definition\r\nend;\r\n".as_bytes()),
+            Fixture::new("\u{feff}definition\r\nend;\r\n".as_bytes()),
+        ];
+        let ids = InMemorySessionIdAllocator::new();
+        let old_snapshots = SnapshotRegistry::new();
+        let source_ids = InMemorySessionIdAllocator::new();
+        source_ids.next_source_id(snapshot_id(0x62)).unwrap();
+        let current_snapshots = SnapshotRegistry::with_allocator(source_ids);
+        let (_, old_submission, old_owner, _, old_handle) =
+            native_disk_record_submission(&fixtures[0], &ids, &old_snapshots, threshold);
+        let (driver, submission, owner, _, clean_source) =
+            native_disk_record_submission(&fixtures[1], &ids, &current_snapshots, threshold);
+        let (old_inputs, old_input) = native_disk_lookup_context(&old_submission, &ids);
+        let (inputs, input) = native_disk_lookup_context(&submission, &ids);
+        let policy = mizar_proof::policy::VerifierPolicy::release();
+        let EncodeCacheRecordOutcome::Encoded(record) = old_inputs
+            .encode_native_disk_cache_record(
+                &old_input,
+                &policy,
+                &IrCacheAdapter::new(old_owner.clone()),
+                old_handle.clone(),
+            )
+            .unwrap()
+        else {
+            panic!("genuine native producer");
+        };
+        assert_ne!(old_input.snapshot, input.snapshot);
+        assert_ne!(
+            old_inputs.snapshot.source_versions[0].source_id,
+            inputs.snapshot.source_versions[0].source_id
+        );
+        let store = CacheStoreRoot::new(fixtures[1].root.join("cache"));
+        assert_eq!(store.insert(&record).unwrap(), CacheInsertOutcome::Inserted);
+        assert!(matches!(
+            store.lookup(&record.header.key),
+            CacheLookupOutcome::Hit(_)
+        ));
+        let target = publisher(input.snapshot, threshold, &input.work_unit);
+        let adapter = IrCacheAdapter::new(target.clone());
+        let CacheRehydrateOutcome::Rehydrated(handle) = inputs
+            .rehydrate_native_disk_cache(&input, &policy, &store, &adapter)
+            .unwrap()
+        else {
+            panic!("current native source reconstruction");
+        };
+        assert_eq!(handle.snapshot(), input.snapshot);
+        assert_eq!(handle.placement(), clean_source.placement());
+        assert_eq!(
+            handle.lineage().named_input_hashes,
+            clean_source.lineage().named_input_hashes
+        );
+        assert!(handle.lineage().parents.is_empty());
+        assert_eq!(
+            *target.storage().get(&handle).unwrap(),
+            *owner.storage().get(&clean_source).unwrap()
+        );
+        assert_eq!(
+            target.storage().side_tables(&handle).unwrap(),
+            owner.storage().side_tables(&clean_source).unwrap()
+        );
+        assert_eq!(adapter.successful_rehydrations(), 1);
+        for (phase, reason) in [
+            (
+                PipelinePhase::SourceLoad,
+                "current disk source maps require a real source load",
+            ),
+            (
+                PipelinePhase::Frontend,
+                "frontend inputs require a live source and dependency run",
+            ),
+        ] {
+            assert_eq!(
+                driver
+                    .registry()
+                    .cache_key_for_phase(phase, &input)
+                    .unwrap()
+                    .intent,
+                PhaseCacheIntent::NoKey {
+                    reason: reason.into()
+                }
+            );
+        }
+        let frontend_input = PhaseInput::new(
+            input.work_unit.clone(),
+            PhaseDispatchInputBundle::new(
+                input.snapshot,
+                input.identities().input_hash(),
+                vec![],
+                vec![
+                    SealedParentOutputHandle::from_current_output(
+                        &target,
+                        input.snapshot,
+                        handle.erase(),
+                    )
+                    .unwrap(),
+                ],
+            )
+            .unwrap(),
+        );
+        allow_frontend(&target, &frontend_input.work_unit);
+        let replay = driver
+            .registry()
+            .execute_phase_with_resources(
+                PipelinePhase::Frontend,
+                frontend_input,
+                PhaseExecutionResources {
+                    diagnostics: Some(DiagnosticSink::new(DiagnosticProducerScope::new(
+                        DiagnosticPhase::Frontend,
+                        input.snapshot,
+                        "frontend.run_loaded",
+                    ))),
+                    output_publisher: Some(target.clone()),
+                    source_load: Some(inputs),
+                    ..PhaseExecutionResources::default()
+                },
+            )
+            .unwrap()
+            .result;
+        let clean = submission
+            .scheduler_run
+            .as_ref()
+            .unwrap()
+            .phase_results
+            .values()
+            .flatten()
+            .find(|result| {
+                result
+                    .output_refs
+                    .iter()
+                    .any(|output| output.output_kind() == &OutputKind::new("FrontendOutput"))
+            })
+            .unwrap();
+        assert_eq!(replay.status, PhaseStatus::Complete);
+        assert_eq!(replay.diagnostics, clean.diagnostics);
+        assert!(replay.diagnostics.is_empty()); // This valid fixture covers the empty diagnostic case.
+        let replay_handle = target
+            .storage()
+            .typed_handle::<FrontendOutput<<MizarParserSeam as ParserSeam>::Ast>>(
+                &replay.output_refs[0],
+                &OutputKind::new("FrontendOutput"),
+            )
+            .unwrap();
+        let clean_handle = owner
+            .storage()
+            .typed_handle::<FrontendOutput<<MizarParserSeam as ParserSeam>::Ast>>(
+                &clean.output_refs[0],
+                &OutputKind::new("FrontendOutput"),
+            )
+            .unwrap();
+        assert_eq!(
+            *target.storage().get(&replay_handle).unwrap(),
+            *owner.storage().get(&clean_handle).unwrap()
+        );
+        assert_eq!(
+            target.storage().side_tables(&replay_handle).unwrap(),
+            owner.storage().side_tables(&clean_handle).unwrap()
+        );
+        assert_eq!(replay_handle.lineage().parents, vec![handle.output()]);
+    }
+}
+
+#[test]
+fn native_disk_cache_lookup_misses_changed_source_maps_context_and_policy() {
+    use mizar_cache::{
+        cache_key::{CacheKeyBuildOutcome, CacheKeyBuilder},
+        cache_store::{CacheLookupOutcome, CacheStoreRoot},
+    };
+    use mizar_ir::cache_adapter::{
+        CacheAdapterMiss, CacheRehydrateOutcome, EncodeCacheRecordOutcome, IrCacheAdapter,
+    };
+    let old_fixture = Fixture::new(b"definition\nend;\n");
+    let ids = InMemorySessionIdAllocator::new();
+    let snapshots = SnapshotRegistry::new();
+    let (_, old_submission, old_owner, _, old_handle) =
+        native_disk_record_submission(&old_fixture, &ids, &snapshots, usize::MAX);
+    let (old_inputs, old_input) = native_disk_lookup_context(&old_submission, &ids);
+    let baseline_policy = mizar_proof::policy::VerifierPolicy::release();
+    let baseline_request = old_inputs
+        .prepare_native_disk_cache_request(&old_input, &baseline_policy)
+        .unwrap();
+    let EncodeCacheRecordOutcome::Encoded(record) = old_inputs
+        .encode_native_disk_cache_record(
+            &old_input,
+            &baseline_policy,
+            &IrCacheAdapter::new(old_owner),
+            old_handle,
+        )
+        .unwrap()
+    else {
+        panic!("genuine native producer");
+    };
+    let store = CacheStoreRoot::new(old_fixture.root.join("cache"));
+    store.insert(&record).unwrap();
+    for mode in [
+        "source",
+        "maps",
+        "config",
+        "lock",
+        "toolchain",
+        "profile",
+        "settings",
+    ] {
+        let raw = match mode {
+            "source" => "definition\n\nend;\n",
+            "maps" => "\u{feff}definition\r\nend;\r\n",
+            _ => "definition\nend;\n",
+        };
+        let fixture = Fixture::new(raw.as_bytes());
+        let (mut draft, mut submit_input) = fixture.submit_request(vec![], vec![]);
+        draft.source_inputs.versions.clear();
+        match mode {
+            "config" => draft.verifier_config = VerifierConfigInput::new(hash(3)),
+            "lock" => draft.dependency_inputs.lockfile_hash = hash(4),
+            "toolchain" => {
+                draft.dependency_inputs.toolchain = ToolchainInfo::new("different-toolchain");
+                submit_input.plan_request.toolchain = draft.dependency_inputs.toolchain.clone();
+            }
+            _ => {}
+        }
+        let session = draft
+            .capture_sources(
+                &ids,
+                &snapshots,
+                vec![(
+                    DiskSourceLoader::new(fixture.root.join("alpha")),
+                    SourceInput {
+                        package_id: fixture.version.package_id.clone(),
+                        module_path: fixture.version.module_path.clone(),
+                        normalized_path: fixture.version.normalized_path.clone(),
+                        edition: fixture.version.edition.clone(),
+                        origin: SourceOriginInput::Disk {
+                            path: "src/main.miz".into(),
+                        },
+                    },
+                )],
+            )
+            .unwrap();
+        fs::remove_file(fixture.root.join("alpha/src/main.miz")).unwrap();
+        let mut driver = CompilerDriver::new(source_registry());
+        let submission = driver
+            .submit_captured(session, &ids, &snapshots, submit_input)
+            .unwrap();
+        let (inputs, input) = native_disk_lookup_context(&submission, &ids);
+        let policy = match mode {
+            "profile" => baseline_policy.clone().with_profile_id("alternate-release"),
+            "settings" => baseline_policy
+                .clone()
+                .with_require_kernel_certificates(false),
+            _ => baseline_policy.clone(),
+        };
+        let request = inputs
+            .prepare_native_disk_cache_request(&input, &policy)
+            .unwrap();
+        if mode == "config" {
+            assert_ne!(request.config_hash, baseline_request.config_hash);
+            assert_eq!(
+                request.policy_fingerprint,
+                baseline_request.policy_fingerprint
+            );
+        } else if mode == "profile" || mode == "settings" {
+            assert_eq!(request.config_hash, baseline_request.config_hash);
+            assert_ne!(
+                request.policy_fingerprint,
+                baseline_request.policy_fingerprint
+            );
+        } else if mode == "maps" {
+            assert_eq!(request.source_identity, baseline_request.source_identity);
+            assert_ne!(request.input_hashes[1], baseline_request.input_hashes[1]);
+        }
+        let CacheKeyBuildOutcome::Cacheable(key) = CacheKeyBuilder::new(request).build() else {
+            panic!("current native key");
+        };
+        assert_ne!(key, record.header.key, "{mode}");
+        assert!(matches!(store.lookup(&key), CacheLookupOutcome::Miss(_)));
+        let target = publisher(input.snapshot, usize::MAX, &input.work_unit);
+        let adapter = IrCacheAdapter::new(target);
+        assert!(matches!(
+            inputs
+                .rehydrate_native_disk_cache(&input, &policy, &store, &adapter)
+                .unwrap(),
+            CacheRehydrateOutcome::Miss(CacheAdapterMiss::Cache(_))
+        ));
+        assert_eq!(adapter.successful_rehydrations(), 0);
+    }
+}
+
+#[test]
+fn native_disk_cache_lookup_rejects_binding_currentness_and_foreign_producer() {
+    use mizar_cache::cache_store::{CacheLookupOutcome, CacheStoreRoot};
+    use mizar_ir::cache_adapter::{
+        CacheAdapterMiss, CacheRehydrateOutcome, EncodeCacheRecordOutcome, IrCacheAdapter,
+    };
+    let fixtures = [
+        Fixture::new(b"definition\nend;\n"),
+        Fixture::new(b"definition\nend;\n"),
+    ];
+    let ids = InMemorySessionIdAllocator::new();
+    let snapshots = SnapshotRegistry::new();
+    let (_, submission, owner, _, source_handle) =
+        native_disk_record_submission(&fixtures[0], &ids, &snapshots, usize::MAX);
+    let (_, foreign_submission, _, _, _) =
+        native_disk_record_submission(&fixtures[1], &ids, &snapshots, usize::MAX);
+    let (inputs, input) = native_disk_lookup_context(&submission, &ids);
+    let policy = mizar_proof::policy::VerifierPolicy::release();
+    let EncodeCacheRecordOutcome::Encoded(record) = inputs
+        .encode_native_disk_cache_record(
+            &input,
+            &policy,
+            &IrCacheAdapter::new(owner.clone()),
+            source_handle.clone(),
+        )
+        .unwrap()
+    else {
+        panic!("genuine native producer");
+    };
+    let store = CacheStoreRoot::new(fixtures[0].root.join("cache"));
+    store.insert(&record).unwrap();
+    for mode in [
+        "missing",
+        "foreign",
+        "plan",
+        "unregistered",
+        "obsolete",
+        "denied",
+        "producer",
+    ] {
+        let target = if mode == "unregistered" || mode == "denied" {
+            let target = std::sync::Arc::new(PhaseOutputPublisher::new(
+                std::sync::Arc::new(IrStorageService::new()),
+                std::sync::Arc::new(SnapshotHandleRegistry::new()),
+            ));
+            if mode == "denied" {
+                target.register_current_snapshot(input.snapshot);
+            }
+            target
+        } else {
+            publisher(input.snapshot, usize::MAX, &input.work_unit)
+        };
+        if mode == "obsolete" {
+            target.mark_obsolete(input.snapshot).unwrap();
+        }
+        let mut plan = submission.build_plan.as_ref().unwrap().clone();
+        if mode == "plan" {
+            plan.workspace_root = foreign_submission
+                .build_plan
+                .as_ref()
+                .unwrap()
+                .workspace_root
+                .clone();
+        }
+        let bound_inputs = SourceLoadInputs {
+            captured: match mode {
+                "missing" => None,
+                "foreign" => Some(foreign_submission.session.captured()),
+                _ => inputs.captured,
+            },
+            build_plan: &plan,
+            ..inputs
+        };
+        let adversarial_store;
+        let selected_store = if mode == "producer" {
+            let mut modified = record.clone();
+            // Only this negative record changes genuine transport metadata.
+            let other = ToolchainInfo::new("other-native-producer");
+            modified.header.produced_by[0].value = other.identity().to_owned();
+            adversarial_store =
+                CacheStoreRoot::new(fixtures[0].root.join("foreign-producer-cache"));
+            adversarial_store.insert(&modified).unwrap();
+            assert!(matches!(
+                adversarial_store.lookup(&record.header.key),
+                CacheLookupOutcome::Hit(_)
+            ));
+            &adversarial_store
+        } else {
+            &store
+        };
+        let adapter = IrCacheAdapter::new(target.clone());
+        let result =
+            bound_inputs.rehydrate_native_disk_cache(&input, &policy, selected_store, &adapter);
+        if mode == "denied" {
+            assert!(matches!(
+                result.unwrap(),
+                CacheRehydrateOutcome::Miss(CacheAdapterMiss::Publisher { .. })
+            ));
+        } else {
+            assert!(result.is_err(), "{mode}: {result:?}");
+        }
+        assert_eq!(adapter.successful_rehydrations(), 0);
+        assert!(
+            target
+                .validate_current_output(input.snapshot, source_handle.any())
+                .is_err()
+        );
+    }
+}
