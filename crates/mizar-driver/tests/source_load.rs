@@ -11027,7 +11027,7 @@ fn native_workspace_inputs_fail_closed_and_leave_validation_to_existing_owners()
     )
     .unwrap();
     let unbound = read_native_workspace_inputs(&root).unwrap();
-    assert!(produce_build_plan(input.plan_request.clone(), unbound.0, unbound.1).is_ok());
+    assert!(produce_build_plan(input.plan_request.clone(), unbound.0, unbound.1).is_err());
     fs::write(directory.join("mizar.lock"), lock).unwrap();
     #[cfg(unix)]
     {
@@ -11272,6 +11272,149 @@ fn computation_replay_native_inputs_retain_metadata_in_protected_driver_plans() 
             assert_eq!(&actual, expected);
         } else {
             clean = Some(actual);
+        }
+    }
+}
+
+#[test]
+fn workspace_lock_paths_reject_actual_native_inputs_before_source_phases() {
+    use mizar_build::planner::{ManifestDiagnosticKind, read_native_workspace_inputs};
+    use mizar_driver::events::PlanningEventStatus;
+    let fixture = Fixture::new(b"definition\nend;\n");
+    let ids = InMemorySessionIdAllocator::new();
+    let snapshots = SnapshotRegistry::new();
+    let (mut request, clean_input) = fixture.submit_request(vec![], vec![]);
+    fs::write(
+        fixture.root.join("mizar.workspace"),
+        "[workspace]\nmembers = [\"alpha\"]\n",
+    )
+    .unwrap();
+    fs::write(
+        fixture.root.join("alpha/mizar.pkg"),
+        "[package]\nname = \"alpha\"\nversion = \"0.1.0\"\n",
+    )
+    .unwrap();
+    request.source_inputs.versions.clear();
+    let session = request
+        .capture_sources(
+            &ids,
+            &snapshots,
+            vec![(
+                DiskSourceLoader::new(fixture.root.join("alpha")),
+                SourceInput {
+                    package_id: PackageId::new("alpha"),
+                    module_path: ModulePath::new("main"),
+                    normalized_path: normalize_path(
+                        &fixture.root.join("alpha"),
+                        Path::new("src/main.miz"),
+                    )
+                    .unwrap(),
+                    edition: Edition::new("2025"),
+                    origin: SourceOriginInput::Disk {
+                        path: "src/main.miz".into(),
+                    },
+                },
+            )],
+        )
+        .unwrap();
+    let unit = WorkUnit::Module {
+        module: mizar_build::module_index::ModuleId::new(
+            PackageId::new("alpha"),
+            ModulePath::new("main"),
+        ),
+    };
+    for path in ["alpha", "unbound"] {
+        let text = format!(
+            "schema_version = 1\n[[package]]\nname = \"alpha\"\nversion = \"0.1.0\"\nsource = {{ kind = \"workspace\", path = \"{path}\" }}\ndependencies = []\n"
+        );
+        fs::write(fixture.root.join("mizar.lock"), &text).unwrap();
+        let (packages, lock) =
+            read_native_workspace_inputs(&clean_input.plan_request.workspace_root).unwrap();
+        assert_eq!(packages, clean_input.workspace_packages);
+        assert_eq!(lock, parse_lockfile(&text).unwrap());
+        let (_, mut input) = fixture.submit_request(vec![], vec![]);
+        input.workspace_packages = packages;
+        input.lockfile = lock;
+        let owner = publisher(session.captured().snapshot().id, 0, &unit);
+        allow_frontend(&owner, &unit);
+        let mut builder = PhaseRegistryBuilder::new();
+        builder.register_source_load();
+        builder.register_frontend(vec![]);
+        let mut driver =
+            CompilerDriver::new(builder.build().unwrap()).with_output_publisher(owner.clone());
+        let result = driver.submit_captured(session.clone(), &ids, &snapshots, input);
+        if path == "alpha" {
+            let submission = result.unwrap();
+            assert_eq!(
+                submission.status,
+                DriverSubmissionStatus::BlockedByMissingPhaseServices
+            );
+            let plan = produce_build_plan(
+                clean_input.plan_request.clone(),
+                clean_input.workspace_packages.clone(),
+                clean_input.lockfile.clone(),
+            )
+            .unwrap();
+            assert_eq!(submission.build_plan.as_ref().unwrap(), &plan);
+            let results = submission.scheduler_run.unwrap().phase_results;
+            assert!(
+                results
+                    .values()
+                    .flatten()
+                    .all(|result| result.status == PhaseStatus::Complete
+                        && result.diagnostics.is_empty())
+            );
+            let refs = results
+                .values()
+                .flatten()
+                .flat_map(|result| &result.output_refs)
+                .collect::<Vec<_>>();
+            assert_eq!(refs.len(), 2);
+            assert!(
+                refs.iter()
+                    .any(|output| output.output_kind() == &OutputKind::new("FrontendOutput"))
+            );
+            let source_ref = *refs
+                .iter()
+                .find(|output| output.output_kind() == &OutputKind::new("SourceUnit"))
+                .unwrap();
+            let handle = owner
+                .storage()
+                .typed_handle::<SourceUnit>(source_ref, &OutputKind::new("SourceUnit"))
+                .unwrap();
+            assert_eq!(
+                owner.storage().get(&handle).unwrap().source_text.as_ref(),
+                "definition\nend;\n"
+            );
+        } else {
+            let DriverSubmitError::Planning {
+                session,
+                diagnostics,
+            } = result.unwrap_err()
+            else {
+                panic!("expected native coordinate planning failure");
+            };
+            assert_eq!(
+                session.state(),
+                BuildSessionState::Finished(BuildSessionOutcome::Failed)
+            );
+            let actual = diagnostics.diagnostics();
+            assert_eq!(actual.len(), 1);
+            assert_eq!(actual[0].kind, ManifestDiagnosticKind::InvalidLockSource);
+            assert_eq!(actual[0].location.path, "<lockfile>");
+            assert_eq!(actual[0].location.key, "alpha.source.path");
+            assert_eq!(actual[0].value.as_deref(), Some("unbound != alpha"));
+            let events = driver.events(session.id());
+            assert!(events.events().iter().any(|event| matches!(
+                event.kind,
+                BuildEventKind::PlanningReady {
+                    status: PlanningEventStatus::Failed
+                }
+            )));
+            assert!(!events.events().iter().any(|event| matches!(
+                event.kind,
+                BuildEventKind::TaskProgress { .. } | BuildEventKind::PhaseReady { .. }
+            )));
         }
     }
 }

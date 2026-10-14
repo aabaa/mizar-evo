@@ -451,6 +451,8 @@ internal: [01](../../internal/ja/01.compiler_driver_and_pipeline_scheduler.md)�
 
 31. **[Package computation replay metadata](../../task_contracts/ja/BUILD-COMPUTATION-POLICY.md).** [x]
 
+32. **[Workspace lock path binding](../../task_contracts/ja/BUILD-WORKSPACE-LOCK-PATH-BINDING.md).** [x]
+
 ## 推奨検証
 
 各タスクの後で実行する:

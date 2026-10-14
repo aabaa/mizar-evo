@@ -464,6 +464,8 @@ Keep `cargo test -p mizar-build` green after each task (see
 
 31. **[Package computation replay metadata](../../task_contracts/en/BUILD-COMPUTATION-POLICY.md).** [x]
 
+32. **[Workspace lock path binding](../../task_contracts/en/BUILD-WORKSPACE-LOCK-PATH-BINDING.md).** [x]
+
 ## Recommended Verification
 
 Run after each task:

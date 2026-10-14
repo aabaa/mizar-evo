@@ -638,6 +638,23 @@ pub fn produce_build_plan(
     if let Err(errors) = validate_lockfile_for_workspace(&workspace_manifests, &lockfile) {
         diagnostics.extend(errors.into_diagnostics());
     }
+    for package in workspace_by_name.values() {
+        if let Some(locked) = lockfile
+            .packages
+            .iter()
+            .find(|locked| locked.name == package.manifest.name)
+            && locked.version == package.manifest.version
+            && let LockSource::Workspace { path } = &locked.source
+            && path != &package.member_path
+        {
+            diagnostics.push(ManifestDiagnostic::new(
+                "<lockfile>",
+                format!("{}.source.path", package.manifest.name),
+                ManifestDiagnosticKind::InvalidLockSource,
+                Some(format!("{path} != {}", package.member_path)),
+            ));
+        }
+    }
     validate_workspace_package_editions(&workspace_by_name, &mut diagnostics);
 
     let graph = build_dependency_graph(request.dependency_selection, &workspace_by_name, &lockfile);

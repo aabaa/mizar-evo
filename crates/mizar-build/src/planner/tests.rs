@@ -1638,3 +1638,124 @@ fn computation_replay_stays_package_local_and_changes_only_typed_configuration()
         }
     }
 }
+
+#[test]
+fn workspace_lock_paths_bind_root_and_nested_member_coordinates() {
+    for (member, foreign) in [(".", "packages/library"), ("packages/library", ".")] {
+        let package =
+            workspace_package(member, "[package]\nname = \"alpha\"\nversion = \"0.1.0\"\n");
+        for path in [member, foreign] {
+            let lock = parse_lockfile(&format!("schema_version = 1\n[[package]]\nname = \"alpha\"\nversion = \"0.1.0\"\nsource = {{ kind = \"workspace\", path = \"{path}\" }}\ndependencies = []\n")).unwrap();
+            validate_lockfile_for_workspace(std::slice::from_ref(&package.manifest), &lock)
+                .unwrap();
+            let result = produce_build_plan(
+                plan_request(DependencySelection::Normal),
+                vec![package.clone()],
+                lock,
+            );
+            if path == member {
+                let plan = result.unwrap();
+                assert!(
+                    matches!(&plan.packages[0].source, PackagePlanSource::Workspace { root, .. } if root == member)
+                );
+            } else {
+                assert_eq!(
+                    result.unwrap_err().diagnostics(),
+                    &[super::ManifestDiagnostic::new(
+                        "<lockfile>",
+                        "alpha.source.path",
+                        ManifestDiagnosticKind::InvalidLockSource,
+                        Some(format!("{path} != {member}"))
+                    )]
+                );
+            }
+        }
+    }
+}
+
+#[test]
+fn workspace_lock_paths_report_only_mismatched_members_in_canonical_order() {
+    let alpha = workspace_package(
+        "nested/first",
+        "[package]\nname = \"alpha\"\nversion = \"0.1.0\"\n",
+    );
+    let zeta = workspace_package(
+        "nested/second",
+        "[package]\nname = \"zeta\"\nversion = \"0.1.0\"\n",
+    );
+    for (alpha_path, zeta_path, mismatches) in [
+        (
+            "nested/second",
+            "nested/first",
+            vec![
+                ("alpha", "nested/second != nested/first"),
+                ("zeta", "nested/first != nested/second"),
+            ],
+        ),
+        (
+            "nested/first",
+            "other",
+            vec![("zeta", "other != nested/second")],
+        ),
+    ] {
+        let lock = parse_lockfile(&format!("schema_version = 1\n[[package]]\nname = \"zeta\"\nversion = \"0.1.0\"\nsource = {{ kind = \"workspace\", path = \"{zeta_path}\" }}\ndependencies = []\n[[package]]\nname = \"alpha\"\nversion = \"0.1.0\"\nsource = {{ kind = \"workspace\", path = \"{alpha_path}\" }}\ndependencies = []\n")).unwrap();
+        let first = produce_build_plan(
+            plan_request(DependencySelection::Normal),
+            vec![zeta.clone(), alpha.clone()],
+            lock.clone(),
+        )
+        .unwrap_err();
+        let mut reversed_lock = lock;
+        reversed_lock.packages.reverse();
+        let second = produce_build_plan(
+            plan_request(DependencySelection::Normal),
+            vec![alpha.clone(), zeta.clone()],
+            reversed_lock,
+        )
+        .unwrap_err();
+        assert_eq!(first, second);
+        let expected = mismatches
+            .into_iter()
+            .map(|(name, value)| {
+                super::ManifestDiagnostic::new(
+                    "<lockfile>",
+                    format!("{name}.source.path"),
+                    ManifestDiagnosticKind::InvalidLockSource,
+                    Some(value.into()),
+                )
+            })
+            .collect::<Vec<_>>();
+        assert_eq!(first.diagnostics(), expected);
+    }
+}
+
+#[test]
+fn workspace_lock_paths_preserve_missing_version_and_kind_errors() {
+    let package = workspace_package(
+        "actual",
+        "[package]\nname = \"alpha\"\nversion = \"0.1.0\"\n",
+    );
+    for text in [
+        "schema_version = 1\npackage = []\n",
+        "schema_version = 1\n[[package]]\nname = \"alpha\"\nversion = \"0.2.0\"\nsource = { kind = \"workspace\", path = \"different\" }\ndependencies = []\n",
+        "schema_version = 1\n[[package]]\nname = \"alpha\"\nversion = \"0.1.0\"\nsource = { kind = \"registry\", registry = \"default\", checksum = \"sha256:alpha\" }\ndependencies = []\n",
+    ] {
+        let lock = parse_lockfile(text).unwrap();
+        let expected =
+            validate_lockfile_for_workspace(std::slice::from_ref(&package.manifest), &lock)
+                .unwrap_err();
+        let actual = produce_build_plan(
+            plan_request(DependencySelection::Normal),
+            vec![package.clone()],
+            lock,
+        )
+        .unwrap_err();
+        assert_eq!(actual, expected);
+        assert!(
+            !actual
+                .diagnostics()
+                .iter()
+                .any(|diagnostic| diagnostic.location.key.ends_with(".source.path"))
+        );
+    }
+}
