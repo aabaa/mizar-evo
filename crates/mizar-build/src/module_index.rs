@@ -334,6 +334,134 @@ impl WorkspaceSourceFile {
 }
 
 impl StaticSourceLayout {
+    /// Acquires metadata-only workspace layout before source capture and indexing.
+    pub fn from_native_disk(plan: &BuildPlan) -> Result<Self, String> {
+        use std::{fs, path::Path};
+
+        let workspace = Path::new(plan.workspace_root.as_str())
+            .components()
+            .collect::<std::path::PathBuf>();
+        if !fs::symlink_metadata(&workspace)
+            .map_err(|error| error.to_string())?
+            .is_dir()
+        {
+            return Err("workspace root must be an ordinary directory".into());
+        }
+        let workspace = fs::canonicalize(workspace).map_err(|error| error.to_string())?;
+        let mut packages = Vec::new();
+        let mut package_ids = BTreeSet::new();
+        for package in &plan.packages {
+            if !package_ids.insert(package.package_id.as_str()) {
+                return Err("duplicate package ID in source layout plan".into());
+            }
+            let PackagePlanSource::Workspace {
+                root, source_root, ..
+            } = &package.source
+            else {
+                continue;
+            };
+            if root != "." && (!is_normalized_relative_path(root) || Path::new(root).is_absolute())
+            {
+                return Err("package root must be a normalized relative path".into());
+            }
+            let expected_source_root = if root == "." {
+                "src".to_owned()
+            } else {
+                format!("{root}/src")
+            };
+            if source_root != &expected_source_root {
+                return Err("source root must be the planned package src directory".into());
+            }
+            let mut package_root = workspace.clone();
+            if root != "." {
+                for component in Path::new(root).components() {
+                    if !matches!(component, std::path::Component::Normal(_)) {
+                        return Err("unsupported package root component".into());
+                    }
+                    package_root.push(component);
+                    if !fs::symlink_metadata(&package_root)
+                        .map_err(|error| error.to_string())?
+                        .is_dir()
+                    {
+                        return Err("package root must contain only ordinary directories".into());
+                    }
+                }
+            }
+            let package_root = fs::canonicalize(package_root).map_err(|error| error.to_string())?;
+            if !package_root.starts_with(&workspace) {
+                return Err("package root escapes workspace".into());
+            }
+            let source = package_root.join("src");
+            if !fs::symlink_metadata(&source)
+                .map_err(|error| error.to_string())?
+                .is_dir()
+                || fs::canonicalize(&source).map_err(|error| error.to_string())? != source
+            {
+                return Err("source root must be the ordinary package src directory".into());
+            }
+            let mut directories = vec![source.clone()];
+            let mut files = Vec::new();
+            while let Some(directory) = directories.pop() {
+                if !fs::symlink_metadata(&directory)
+                    .map_err(|error| error.to_string())?
+                    .is_dir()
+                {
+                    return Err("source directory changed or is unsupported".into());
+                }
+                for entry in fs::read_dir(directory).map_err(|error| error.to_string())? {
+                    let path = entry.map_err(|error| error.to_string())?.path();
+                    let metadata =
+                        fs::symlink_metadata(&path).map_err(|error| error.to_string())?;
+                    if metadata.is_dir() {
+                        path.to_str()
+                            .ok_or("unsupported source directory encoding")?;
+                        directories.push(path);
+                    } else if metadata.is_file() {
+                        if path.extension() != Some(std::ffi::OsStr::new("miz")) {
+                            continue;
+                        }
+                        let relative = path
+                            .strip_prefix(&source)
+                            .map_err(|error| error.to_string())?
+                            .components()
+                            .map(|component| {
+                                component
+                                    .as_os_str()
+                                    .to_str()
+                                    .ok_or("unsupported source path encoding")
+                            })
+                            .collect::<Result<Vec<_>, _>>()?
+                            .join("/");
+                        let normalized = mizar_session::normalize_source_path(&package_root, &path)
+                            .map_err(|error| error.to_string())?;
+                        let file = WorkspaceSourceFile::new(normalized.as_str(), relative);
+                        let mut diagnostics = Vec::new();
+                        if file.normalized_path != format!("src/{}", file.source_relative_path)
+                            || validate_workspace_source_file(package, &file, &mut diagnostics)
+                                .is_none()
+                        {
+                            return Err(
+                                "source path does not match its lexical src coordinate".into()
+                            );
+                        }
+                        files.push(file);
+                    } else {
+                        return Err("unsupported source tree entry".into());
+                    }
+                }
+            }
+            files.sort_by(|left, right| {
+                (&left.normalized_path, &left.source_relative_path)
+                    .cmp(&(&right.normalized_path, &right.source_relative_path))
+            });
+            packages.push(WorkspaceSourcePackage {
+                package_id: package.package_id.clone(),
+                files,
+            });
+        }
+        Ok(Self::new(packages))
+    }
+
     #[must_use]
     pub fn new(packages: Vec<WorkspaceSourcePackage>) -> Self {
         let files_by_package = packages

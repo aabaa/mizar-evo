@@ -781,6 +781,7 @@ diagnostics, metadata, artifacts, and semantic indexes.
 4. [~] [`mizar lsp` stdio entry point](./task_contracts/en/EDITOR-LSP-ENTRY.md)
    has an executable [lifecycle host](./mizar-driver/en/cli.md#stdio-lifecycle-host);
    workspace/settings, build binding and current-build diagnostics remain open.
+   [Native filesystem source layout](./task_contracts/en/BUILD-NATIVE-SOURCE-LAYOUT.md) is implemented for ordinary workspace trees; native bootstrap/editor source association remains pending.
 5. [ ] [Code completion](./task_contracts/en/EDITOR-LSP-COMPLETION.md)
    (mizar-lsp task 25).
 6. [ ] [VS Code extension](./task_contracts/en/EDITOR-VSCODE-EXTENSION.md)

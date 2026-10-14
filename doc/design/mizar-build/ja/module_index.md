@@ -78,6 +78,16 @@ source-layout reader は filesystem、virtual test fixture、driver が提供す
 snapshot view のいずれを走査してもよいが、等価な source layout から得られる索引は
 byte 単位で同一でなければならない。
 
+## Native filesystem layout
+
+`StaticSourceLayout::from_native_disk(&BuildPlan) -> Result<Self, String>` は index 構築前に通常 layout data を取得し、provider/index query を filesystem I/O に変えない。実 plan workspace_root を host root として既存の通常 directory を要求し canonicalize する。Workspace package のみ列挙し、Registry package は既存 summary 経路に残す。
+workspace root は `.` または既存の normalized relative path、source_root はその正確な root/src 表記、package ID は一意であることを要求する。実 package/source directory は通常 directory とし、canonical workspace 内の package、その package の正確な src directory へ束縛する。symlink root・境界外 root・不整合 plan は foreign file を取得せず Err とする。
+filesystem metadata だけで通常 directory を再帰走査する。lexical extension が正確に .miz の regular file が source 候補で、他の regular file は無視する。directory/file symlink・dangling link・special entry・directory/source path の未対応 encoding と metadata/enumeration/normalization failure はこの限定取得では未対応として Err とする。link をたどったり不明内容を不存在として扱わない。他の input 経路の既存 source/path 意味論は変えない。
+実 candidate を実 package root に対する Session normalize_source_path で正規化し、canonical normalized path が実 lexical src-relative 表記と一致することを要求する。normalized_path は src/foo.miz、source_relative_path は foo.miz とし、workspace member prefix を加えない。既存 path/module 検証を使い、lossy path 変換・別 normalizer は作らない。座標で sort し、全 workspace tree 成功後だけ既存 StaticSourceLayout::new を使う。通常の空 source root は実空 vector とする。
+先行 file/package 取得後も、binding/acquisition failure は layout なしの String Err とし部分成功 tree を公開しない。取得 error は新しい public Mizar 診断でも既存 index 診断の置換でもない。source text を読まず、ID/hash/snapshot を割り当てず、manifest/lock/config/policy/dependency artifact を捏造しない。
+実 native SourceLoad/Frontend と workspace import discovery は実 protected capture と既存 index guard で layout を消費し、明示 layout の clean run と output/diagnostic/実 NoKey を比較する。root/entry/encoding/failure と不正 source-byte control で metadata 完全取得と text load を区別する。旧 constructor/provider/index/Session normalization/試験は不変。
+返却 layout は discovery view であり atomic source snapshot・freshness receipt ではない。caller が実 source capture と検証済み plan/currentness に束縛し、後続取得が missing/drift input を検出する。native manifest/bootstrap・editor URI/version 対応・active cache scheduling・semantic/artifact publication・全 Steps 6–8 は保留する。
+
 ## identity モデル
 
 正準 module identity は package-scoped である:

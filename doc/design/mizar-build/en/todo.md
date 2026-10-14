@@ -458,6 +458,8 @@ Keep `cargo test -p mizar-build` green after each task (see
 28. **Real-service equivalence (BUILD-G-017).** [~]
     - Extends the task-24 gate to every registered real phase service. Contract: [STEP6C-REAL-SERVICE-EQUIVALENCE](../../task_contracts/en/STEP6C-REAL-SERVICE-EQUIVALENCE.md).
 
+29. **[Native filesystem source layout](../../task_contracts/en/BUILD-NATIVE-SOURCE-LAYOUT.md).** [x]
+
 ## Recommended Verification
 
 Run after each task:
