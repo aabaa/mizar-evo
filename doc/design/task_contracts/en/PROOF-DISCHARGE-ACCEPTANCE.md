@@ -15,7 +15,7 @@ Dependencies: PREATP-FORMULA-EVIDENCE for built-in candidates; ATPK-INSTANCE-FIN
 and authentic backend/candidate outputs for the ATP slice; existing kernel
 checks, source VC/citation/context producers and Artifact witness/store boundaries.
 Readiness: acceptance/witness design can start; each source slice waits for its
-actual producers, and full phase-15 emission remains Artifact task 17's work.
+actual producers. Proof 26 owns bounded direct-premise classification; full phase-15 emission remains Artifact task 17's work.
 
 Scope: check genuine candidate evidence for the original proof obligation before
 trusted selection. Preserve accepted untainted proof-obligation binding and

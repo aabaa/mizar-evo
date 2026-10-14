@@ -44,23 +44,15 @@ pub fn check_source_registration_candidate(
     use mizar_checker::registration_resolution::check_source_existential_registration_proof;
     use mizar_kernel::{
         certificate_parser::{ClauseTautologyPolicy, Fingerprint, KernelProfileRecord},
-        checker::{
-            FormulaEvidenceContext, ImportedFactContextLimits, KernelCheckPolicy,
-            KernelContextIdentityEntry, KernelContextIdentityPayload, KernelContextIdentitySource,
-            KernelEvidenceCheckInput, KernelEvidenceCheckKind, KernelEvidenceCheckLimits,
-            KernelFormulaProducerRef, KernelVcGeneratedFormulaId, check_kernel_evidence,
-        },
         formula_evidence::{FormulaEvidenceParseContext, parse_formula_evidence},
-        rejection::TargetVcFingerprint,
     };
     use mizar_vc::{
         discharge::{DischargeInput, DischargePolicy, try_discharge},
         generator::generate_source_existential_registration,
         kernel_evidence_handoff::{
-            KernelClauseTautologyPolicy, KernelContextIdentitySource as SourceContext,
-            build_source_existential_kernel_handoff,
+            KernelClauseTautologyPolicy, build_source_existential_kernel_handoff,
         },
-        vc_ir::{GenerationSchemaVersion, VcFormulaRef, VcSchemaVersion},
+        vc_ir::{GenerationSchemaVersion, VcSchemaVersion},
     };
     let invalid = || "registration.proof.invalid_source_candidate".to_owned();
     let check = check_source_existential_registration_proof(source, nodes, symbols)?;
@@ -110,6 +102,114 @@ pub fn check_source_registration_candidate(
     parse_context.accepted_schema_versions.insert(2);
     let parsed = parse_formula_evidence(bytes, &parse_context)
         .map_err(|error| format!("registration.proof.parse:{error:?}"))?;
+    let result = check_source_kernel_handoff(
+        &handoff,
+        &parsed,
+        "registration.proof.invalid_source_candidate",
+    )?;
+    let input = KernelPolicyInput::from_kernel_result(
+        &result,
+        KernelEvidenceOrigin::AtpFormulaSubstitution,
+    );
+    let decision = evaluator.evaluate_candidate(&PolicyCandidate::KernelResult(input));
+    Ok((result, decision))
+}
+
+/// Freshly checks one authentic direct-premise source discharge candidate.
+/// The returned check and classification do not authorize activation or publication.
+pub fn check_source_registration_discharge_candidate(
+    source: &mizar_resolve::resolved_ast::SurfaceResolvedArena,
+    nodes: &mizar_checker::typed_ast::TypedArena,
+    symbols: &mizar_resolve::env::SymbolEnv,
+    snapshot: mizar_session::BuildSnapshotId,
+    vc_id: VcId,
+    policy: &VerifierPolicy,
+) -> Result<(KernelCheckResult, crate::policy::PolicyDecision), String> {
+    use crate::policy::{PolicyCandidate, ProofPolicyEvaluator};
+    use mizar_kernel::{
+        certificate_parser::{ClauseTautologyPolicy, Fingerprint, KernelProfileRecord},
+        formula_evidence::{FormulaEvidenceParseContext, parse_formula_evidence},
+    };
+    use mizar_vc::{
+        discharge::{DischargeInput, DischargePolicy, try_discharge},
+        generator::generate_source_existential_registration,
+        kernel_evidence_handoff::{
+            KernelClauseTautologyPolicy, build_source_existential_discharge_candidate,
+        },
+        vc_ir::{GenerationSchemaVersion, VcSchemaVersion},
+    };
+    let checked =
+        mizar_checker::registration_resolution::check_source_existential_registration_proof(
+            source, nodes, symbols,
+        )?;
+    let core = mizar_core::elaborator::lower_source_existential_registration(&checked)?;
+    let original = generate_source_existential_registration(
+        &core,
+        snapshot,
+        &GenerationSchemaVersion::new("source-existential-registration-v1"),
+        &VcSchemaVersion::new("vc-v1"),
+    )?;
+    let discharge = try_discharge(DischargeInput {
+        vc_set: &original,
+        policy: &DischargePolicy::default(),
+    })
+    .map_err(|error| format!("registration.proof.discharge:{error:?}"))?;
+    let handoff =
+        build_source_existential_discharge_candidate(&core, &original, vc_id, &discharge)?;
+    let bytes = handoff
+        .encode_local_evidence(None)
+        .map_err(|_| "registration.proof.invalid_source_candidate".to_owned())?;
+    let evaluator = ProofPolicyEvaluator::new(policy.clone());
+    if !evaluator.can_schedule_kernel_check(&PolicyCandidate::UncheckedBuiltinDischarge {
+        has_stable_kernel_representation: !bytes.is_empty()
+            && handoff.context_identity_is_consistent(),
+    }) {
+        return Err("registration.proof.kernel_policy_rejected".into());
+    }
+    let envelope = handoff.canonical_evidence();
+    let profile = envelope.kernel_profile();
+    let tautology = match profile.clause_tautology_policy {
+        KernelClauseTautologyPolicy::Reject => ClauseTautologyPolicy::Reject,
+        KernelClauseTautologyPolicy::Marker => ClauseTautologyPolicy::Marker,
+        _ => return Err("registration.proof.invalid_source_candidate".into()),
+    };
+    let target = envelope.target_vc();
+    let parse_context = FormulaEvidenceParseContext::v1(
+        Fingerprint::new(target.algorithm_id, target.digest.clone()),
+        KernelProfileRecord::v1(profile.profile_id, tautology),
+    );
+    let parsed = parse_formula_evidence(&bytes, &parse_context)
+        .map_err(|error| format!("registration.proof.parse:{error:?}"))?;
+    let result = check_source_kernel_handoff(
+        &handoff,
+        &parsed,
+        "registration.proof.invalid_source_candidate",
+    )?;
+    let input =
+        KernelPolicyInput::from_kernel_result(&result, KernelEvidenceOrigin::BuiltinDischarge);
+    let decision = evaluator.evaluate_candidate(&PolicyCandidate::KernelResult(input));
+    Ok((result, decision))
+}
+
+fn check_source_kernel_handoff(
+    handoff: &mizar_vc::kernel_evidence_handoff::VcKernelEvidenceHandoff,
+    parsed: &mizar_kernel::formula_evidence::ParsedKernelEvidence,
+    invalid: &str,
+) -> Result<KernelCheckResult, String> {
+    use mizar_kernel::{
+        certificate_parser::Fingerprint,
+        checker::{
+            FormulaEvidenceContext, ImportedFactContextLimits, KernelCheckPolicy,
+            KernelContextIdentityEntry, KernelContextIdentityPayload, KernelContextIdentitySource,
+            KernelEvidenceCheckInput, KernelEvidenceCheckKind, KernelEvidenceCheckLimits,
+            KernelFormulaProducerRef, KernelVcGeneratedFormulaId, check_kernel_evidence,
+        },
+        rejection::TargetVcFingerprint,
+    };
+    use mizar_vc::{
+        kernel_evidence_handoff::KernelContextIdentitySource as SourceContext, vc_ir::VcFormulaRef,
+    };
+    let target = handoff.canonical_evidence().target_vc();
     let target = TargetVcFingerprint::new(target.algorithm_id, target.digest.clone());
     let entries = handoff
         .context_identity()
@@ -126,14 +226,14 @@ pub fn check_source_registration_candidate(
                 SourceContext::GeneratedVcFact { vc_fact_id } => {
                     KernelContextIdentitySource::GeneratedVcFact { vc_fact_id }
                 }
-                _ => return Err(invalid()),
+                _ => return Err(invalid.to_owned()),
             };
             let producer = match entry.producer_formula_ref() {
                 VcFormulaRef::Core(id) => KernelFormulaProducerRef::Core(id),
                 VcFormulaRef::Generated(id) => {
                     KernelFormulaProducerRef::Generated(KernelVcGeneratedFormulaId::new(id.index()))
                 }
-                _ => return Err(invalid()),
+                _ => return Err(invalid.to_owned()),
             };
             Ok(KernelContextIdentityEntry::new(
                 source,
@@ -150,7 +250,7 @@ pub fn check_source_registration_candidate(
     if requirements.is_some_and(|context| {
         !context.imported_axioms.is_empty() || !context.imported_theorems.is_empty()
     }) {
-        return Err(invalid());
+        return Err(invalid.to_owned());
     }
     let context = FormulaEvidenceContext::with_context_identity(
         Some(handoff.context_identity_hash().as_bytes().to_vec()),
@@ -167,18 +267,13 @@ pub fn check_source_registration_candidate(
     .map_err(|error| format!("registration.proof.context:{error:?}"))?;
     let result = check_kernel_evidence(KernelEvidenceCheckInput {
         target_vc_fingerprint: &target,
-        evidence: &parsed,
+        evidence: parsed,
         formula_context: Some(&context),
         check_kind: KernelEvidenceCheckKind::ProofObligation,
         policy: KernelCheckPolicy::default(),
         limits: KernelEvidenceCheckLimits::default(),
     });
-    let input = KernelPolicyInput::from_kernel_result(
-        &result,
-        KernelEvidenceOrigin::AtpFormulaSubstitution,
-    );
-    let decision = evaluator.evaluate_candidate(&PolicyCandidate::KernelResult(input));
-    Ok((result, decision))
+    Ok(result)
 }
 
 /// Freshly selects one source-bound candidate under the supplied policy.
@@ -275,22 +370,14 @@ pub fn prove_source_existential_registration(
     };
     use mizar_kernel::{
         certificate_parser::{ClauseTautologyPolicy, Fingerprint, KernelProfileRecord},
-        checker::{
-            FormulaEvidenceContext, ImportedFactContextLimits, KernelCheckPolicy,
-            KernelContextIdentityEntry, KernelContextIdentityPayload, KernelContextIdentitySource,
-            KernelEvidenceCheckInput, KernelEvidenceCheckKind, KernelEvidenceCheckLimits,
-            KernelFormulaProducerRef, KernelVcGeneratedFormulaId, check_kernel_evidence,
-        },
         formula_evidence::{FormulaEvidenceParseContext, parse_formula_evidence},
-        rejection::TargetVcFingerprint,
     };
     use mizar_vc::{
         generator::generate_source_existential_registration,
         kernel_evidence_handoff::{
-            KernelClauseTautologyPolicy, KernelContextIdentitySource as SourceContext,
-            build_source_existential_kernel_handoff,
+            KernelClauseTautologyPolicy, build_source_existential_kernel_handoff,
         },
-        vc_ir::{GenerationSchemaVersion, VcFormulaRef, VcSchemaVersion},
+        vc_ir::{GenerationSchemaVersion, VcSchemaVersion},
     };
     let invalid = || "registration.proof.invalid_source_evidence".to_owned();
     let check = check_source_existential_registration_proof(source, nodes, symbols)?;
@@ -343,69 +430,11 @@ pub fn prove_source_existential_registration(
                     .map_err(|_| invalid())?;
             schema = 2;
         };
-        let target = TargetVcFingerprint::new(target.algorithm_id, target.digest.clone());
-        let entries = handoff
-            .context_identity()
-            .entries()
-            .iter()
-            .map(|entry| {
-                let source = match entry.source() {
-                    SourceContext::LocalHypothesis { local_context_id } => {
-                        KernelContextIdentitySource::LocalHypothesis { local_context_id }
-                    }
-                    SourceContext::CitedPremise { local_context_id } => {
-                        KernelContextIdentitySource::CitedPremise { local_context_id }
-                    }
-                    SourceContext::GeneratedVcFact { vc_fact_id } => {
-                        KernelContextIdentitySource::GeneratedVcFact { vc_fact_id }
-                    }
-                    _ => return Err(invalid()),
-                };
-                let producer = match entry.producer_formula_ref() {
-                    VcFormulaRef::Core(id) => KernelFormulaProducerRef::Core(id),
-                    VcFormulaRef::Generated(id) => KernelFormulaProducerRef::Generated(
-                        KernelVcGeneratedFormulaId::new(id.index()),
-                    ),
-                    _ => return Err(invalid()),
-                };
-                Ok(KernelContextIdentityEntry::new(
-                    source,
-                    entry.formula_id(),
-                    Fingerprint::new(
-                        entry.formula_fingerprint().algorithm_id,
-                        entry.formula_fingerprint().digest.clone(),
-                    ),
-                    producer,
-                ))
-            })
-            .collect::<Result<Vec<_>, String>>()?;
-        let requirements = handoff.formula_context_requirements();
-        if requirements.is_some_and(|context| {
-            !context.imported_axioms.is_empty() || !context.imported_theorems.is_empty()
-        }) {
-            return Err(invalid());
-        }
-        let context = FormulaEvidenceContext::with_context_identity(
-            Some(handoff.context_identity_hash().as_bytes().to_vec()),
-            Vec::new(),
-            Vec::new(),
-            Some(KernelContextIdentityPayload::new(
-                target.clone(),
-                handoff.canonical_hash(),
-                handoff.context_identity_hash(),
-                entries,
-            )),
-            ImportedFactContextLimits::default(),
-        )
-        .map_err(|error| format!("registration.proof.context:{error:?}"))?;
-        let result = check_kernel_evidence(KernelEvidenceCheckInput {
-            target_vc_fingerprint: &target,
-            evidence: &parsed,
-            formula_context: Some(&context),
-            check_kind: KernelEvidenceCheckKind::ProofObligation,
-            policy: KernelCheckPolicy::default(),
-            limits: KernelEvidenceCheckLimits::default(),
-        });
+        let result = check_source_kernel_handoff(
+            &handoff,
+            &parsed,
+            "registration.proof.invalid_source_evidence",
+        )?;
         let input =
             KernelPolicyInput::from_kernel_result(&result, KernelEvidenceOrigin::BuiltinDischarge);
         if input.status() != KernelCheckStatus::Accepted

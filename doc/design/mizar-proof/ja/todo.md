@@ -426,6 +426,8 @@ kernel の拒否語彙と evidence 契約を訂正した。policy 層はその�
 
 25. **[Fresh source-bound winner selection](../../task_contracts/ja/PROOF-SOURCE-CANDIDATE-SELECTION.md).** [x]
 
+26. **[Fresh source discharge checking](../../task_contracts/ja/PROOF-SOURCE-DISCHARGE-CHECK.md).** [x] — direct-premise の分類のみ。汎用受理・公開は未完了。
+
 ## 推奨検証
 
 各タスクの後で実行する:

@@ -450,6 +450,8 @@ layer consumes both; one alignment task is owned here.
 
 25. **[Fresh source-bound winner selection](../../task_contracts/en/PROOF-SOURCE-CANDIDATE-SELECTION.md).** [x]
 
+26. **[Fresh source discharge checking](../../task_contracts/en/PROOF-SOURCE-DISCHARGE-CHECK.md).** [x] — Direct-premise classification only; general acceptance/publication remains open.
+
 ## Recommended Verification
 
 Run after each task:
