@@ -126,6 +126,137 @@ impl VcKernelEvidenceHandoff {
         handoff
     }
 
+    /// Frames untrusted local formula evidence without selecting equality instances.
+    pub fn encode_local_evidence(
+        &self,
+        equality_instances: Option<&[Vec<u8>]>,
+    ) -> Result<Vec<u8>, String> {
+        let invalid = || "kernel_evidence.local_wire.unsupported".to_owned();
+        let envelope = self.canonical_evidence();
+        let profile = envelope.kernel_profile();
+        if envelope.schema_version() != 1
+            || envelope.encoding_version() != 1
+            || profile.clause_schema_version != 1
+            || profile.clause_encoding_version != 1
+            || profile.certificate_hash_input_algorithm
+                != KernelCertificateHashInputAlgorithm::CanonicalEnvelopeV1
+            || envelope.final_goal().polarity != KernelGoalPolarity::AssertFalseForRefutation
+            || !self.context_identity_is_consistent()
+            || self.formula_context_requirements().is_some_and(|context| {
+                !context.imported_axioms.is_empty() || !context.imported_theorems.is_empty()
+            })
+        {
+            return Err(invalid());
+        }
+        let tautology = match profile.clause_tautology_policy {
+            KernelClauseTautologyPolicy::Reject => 1,
+            KernelClauseTautologyPolicy::Marker => 2,
+        };
+        let put_u32 = |value: usize, output: &mut Vec<u8>| -> Result<(), String> {
+            output.extend_from_slice(&u32::try_from(value).map_err(|_| invalid())?.to_be_bytes());
+            Ok(())
+        };
+        let put_bytes = |value: &[u8], output: &mut Vec<u8>| -> Result<(), String> {
+            put_u32(value.len(), output)?;
+            output.extend_from_slice(value);
+            Ok(())
+        };
+        let put_fingerprint =
+            |value: &KernelEvidenceFingerprint, output: &mut Vec<u8>| -> Result<(), String> {
+                output.push(value.algorithm_id);
+                put_bytes(&value.digest, output)
+            };
+        let mut sections: [Vec<Vec<u8>>; 7] = std::array::from_fn(|_| Vec::new());
+        sections[0] = envelope
+            .symbol_manifest()
+            .iter()
+            .map(|entry| entry.payload.clone())
+            .collect();
+        sections[1] = envelope
+            .variable_manifest()
+            .iter()
+            .map(|entry| entry.payload.clone())
+            .collect();
+        for formula in envelope.formula_evidence() {
+            let (tag, context) = match formula.source() {
+                KernelFormulaSource::LocalHypothesis { local_context_id } => (1, *local_context_id),
+                KernelFormulaSource::CitedPremise { local_context_id } => (2, *local_context_id),
+                KernelFormulaSource::GeneratedVcFact { vc_fact_id } => (3, *vc_fact_id),
+                _ => return Err(invalid()),
+            };
+            let mut item = formula.formula_id().to_be_bytes().to_vec();
+            item.push(tag);
+            put_fingerprint(formula.formula_fingerprint(), &mut item)?;
+            item.extend_from_slice(&formula.provenance_id().to_be_bytes());
+            item.extend_from_slice(&context.to_be_bytes());
+            item.extend_from_slice(formula.formula_bytes());
+            sections[2].push(item);
+        }
+        for substitution in envelope.substitutions() {
+            let mut item = substitution.substitution_id.to_be_bytes().to_vec();
+            item.extend_from_slice(&substitution.source_formula_id.to_be_bytes());
+            item.extend_from_slice(&substitution.provenance_id.to_be_bytes());
+            put_bytes(&substitution.binder_context_encoding, &mut item)?;
+            item.extend_from_slice(&substitution.payload);
+            put_u32(substitution.freshness_witnesses.len(), &mut item)?;
+            for witness in &substitution.freshness_witnesses {
+                item.extend_from_slice(witness);
+            }
+            put_u32(substitution.free_variable_constraints.len(), &mut item)?;
+            for constraint in &substitution.free_variable_constraints {
+                item.extend_from_slice(constraint);
+            }
+            sections[3].push(item);
+        }
+        for provenance in envelope.provenance() {
+            let mut item = provenance.provenance_id.to_be_bytes().to_vec();
+            put_fingerprint(&provenance.target_vc, &mut item)?;
+            put_fingerprint(&provenance.formula_fingerprint, &mut item)?;
+            put_bytes(&provenance.payload, &mut item)?;
+            sections[4].push(item);
+        }
+        let goal = envelope.final_goal();
+        let mut item = vec![1];
+        put_fingerprint(&goal.formula_fingerprint, &mut item)?;
+        item.extend_from_slice(&goal.provenance_id.to_be_bytes());
+        item.extend_from_slice(&goal.formula_bytes);
+        sections[5].push(item);
+        if let Some(instances) = equality_instances {
+            sections[6] = instances.to_vec();
+        }
+        let schema = if equality_instances.is_some() {
+            2u16
+        } else {
+            1u16
+        };
+        let mut bytes = b"MIZAR_KERNEL_EVIDENCE\0".to_vec();
+        bytes.extend_from_slice(&schema.to_be_bytes());
+        bytes.extend_from_slice(&envelope.encoding_version().to_be_bytes());
+        bytes.extend_from_slice(&profile.profile_id.to_be_bytes());
+        bytes.extend_from_slice(&profile.clause_schema_version.to_be_bytes());
+        bytes.extend_from_slice(&profile.clause_encoding_version.to_be_bytes());
+        bytes.push(tautology);
+        bytes.push(1);
+        put_fingerprint(envelope.target_vc(), &mut bytes)?;
+        let section_count = if equality_instances.is_some() { 7 } else { 6 };
+        put_u32(section_count, &mut bytes)?;
+        let mut payload = Vec::new();
+        for (index, section) in sections.iter().take(section_count).enumerate() {
+            let tag = u8::try_from(index + 1).map_err(|_| invalid())?;
+            let offset = payload.len();
+            for item in section {
+                payload.extend_from_slice(&[tag, 1]);
+                put_bytes(item, &mut payload)?;
+            }
+            bytes.push(tag);
+            put_u32(section.len(), &mut bytes)?;
+            put_u32(offset, &mut bytes)?;
+            put_u32(payload.len() - offset, &mut bytes)?;
+        }
+        bytes.extend(payload);
+        Ok(bytes)
+    }
+
     pub fn targets_vc(&self, vc_set: &VcSet, vc: VcId) -> Result<bool, KernelEvidenceHandoffError> {
         let target = target_fingerprint(vc_set, vc)?;
         Ok(self.canonical_evidence.target_vc() == &target
@@ -3626,6 +3757,221 @@ mod tests {
             "used_axioms",
         ] {
             assert!(!rendered.contains(prohibited), "{prohibited} leaked");
+        }
+    }
+
+    #[test]
+    fn local_wire_matches_fixed_v1_v2_layouts_and_rejects_unsupported_inputs() {
+        let set = fixture_set(FixtureShape::GeneratedGoalOnly);
+        let mut handoff =
+            build_kernel_evidence_handoff(handoff_input(&set, &[], None, None)).unwrap();
+        let target = fingerprint(18, &[0xab]);
+        handoff.canonical_evidence = KernelEvidenceEnvelope {
+            schema_version: 1,
+            encoding_version: 1,
+            target_vc: target.clone(),
+            kernel_profile: KernelEvidenceProfile::v1(5, KernelClauseTautologyPolicy::Reject),
+            symbol_manifest: vec![KernelManifestEntry {
+                entry_id: 1,
+                payload: vec![0xaa, 0xbb],
+            }],
+            variable_manifest: vec![KernelManifestEntry {
+                entry_id: 2,
+                payload: vec![0xcc],
+            }],
+            formula_evidence: [
+                KernelFormulaSource::LocalHypothesis {
+                    local_context_id: 7,
+                },
+                KernelFormulaSource::CitedPremise {
+                    local_context_id: 8,
+                },
+                KernelFormulaSource::GeneratedVcFact { vc_fact_id: 9 },
+            ]
+            .into_iter()
+            .enumerate()
+            .map(|(index, source)| KernelFormulaEvidenceEntry {
+                formula_id: index as u32 + 1,
+                source,
+                formula_fingerprint: fingerprint(2, &[0xd1 + index as u8]),
+                formula_bytes: vec![0x31 + index as u8],
+                provenance_id: index as u32 + 10,
+                producer_formula_ref: Some(VcFormulaRef::Generated(VcGeneratedFormulaId::new(
+                    index,
+                ))),
+                imported_statement_projection: None,
+            })
+            .collect(),
+            substitutions: vec![KernelSubstitutionEvidence {
+                substitution_id: 4,
+                source_formula_id: 1,
+                provenance_id: 13,
+                binder_context_encoding: vec![0x21, 0x22],
+                payload: vec![0x41],
+                freshness_witnesses: vec![vec![0x51], vec![0x52]],
+                free_variable_constraints: vec![vec![0x61]],
+            }],
+            provenance: (0..5)
+                .map(|index| KernelEvidenceProvenance {
+                    provenance_id: index + 10,
+                    target_vc: target.clone(),
+                    formula_fingerprint: fingerprint(2, &[0xd1 + index as u8]),
+                    payload: vec![0x81 + index as u8],
+                })
+                .collect(),
+            final_goal: KernelFinalGoalEvidence {
+                polarity: KernelGoalPolarity::AssertFalseForRefutation,
+                formula_fingerprint: fingerprint(2, &[0xd5]),
+                formula_bytes: vec![0x71],
+                provenance_id: 14,
+                producer_formula_ref: VcFormulaRef::Generated(VcGeneratedFormulaId::new(3)),
+            },
+        };
+        handoff.canonical_hash_input = canonical_hash_input(&handoff.canonical_evidence);
+        handoff.canonical_hash = stable_fingerprint_hash(
+            "mizar-vc-kernel-evidence-handoff",
+            &handoff.canonical_hash_input,
+        );
+        handoff.context_identity =
+            build_context_identity(&handoff.canonical_evidence, handoff.canonical_hash).unwrap();
+        // Fixed grammar bytes: directories count and offset each section, then literal item fields.
+        // Tiny opaque payloads test transport only; the genuine source tests exercise parser grammar.
+        let payload = concat!(
+            "010100000002aabb020100000001cc",
+            "03010000001400000001010200000001d10000000a0000000731",
+            "03010000001400000002020200000001d20000000b0000000832",
+            "03010000001400000003030200000001d30000000c0000000933",
+            "04010000001e00000004000000010000000d000000022122410000000251520000000161",
+            "0501000000150000000a1200000001ab0200000001d10000000181",
+            "0501000000150000000b1200000001ab0200000001d20000000182",
+            "0501000000150000000c1200000001ab0200000001d30000000183",
+            "0501000000150000000d1200000001ab0200000001d40000000184",
+            "0501000000150000000e1200000001ab0200000001d50000000185",
+            "06010000000c010200000001d50000000e71",
+        );
+        let v1 = concat!(
+            "4d495a41525f4b45524e454c5f45564944454e4345000001000100050001000101011200000001ab00000006",
+            "01000000010000000000000008", "02000000010000000800000007",
+            "03000000030000000f0000004e", "04000000010000005d00000024",
+            "05000000050000008100000087", "06000000010000010800000012",
+        ).to_owned() + payload;
+        assert_eq!(hex(&handoff.encode_local_evidence(None).unwrap()), v1);
+        let v2_directory = concat!(
+            "4d495a41525f4b45524e454c5f45564944454e4345000002000100050001000101011200000001ab00000007",
+            "01000000010000000000000008",
+            "02000000010000000800000007",
+            "03000000030000000f0000004e",
+            "04000000010000005d00000024",
+            "05000000050000008100000087",
+            "06000000010000010800000012",
+        );
+        assert_eq!(
+            hex(&handoff.encode_local_evidence(Some(&[])).unwrap()),
+            v2_directory.to_owned() + "07000000000000011a00000000" + payload
+        );
+        let names = vec![vec![
+            0, 0, 0, 1, 1, 0, 0, 0, 3, 2, 2, 0, 0, 0, 4, 0, 0, 0, 0,
+        ]];
+        let v2 = v2_directory.to_owned()
+            + "07000000010000011a00000019"
+            + payload
+            + "07010000001300000001010000000302020000000400000000";
+        assert_eq!(
+            hex(&handoff.encode_local_evidence(Some(&names)).unwrap()),
+            v2
+        );
+        assert_eq!(
+            hex(&handoff.encode_local_evidence(Some(&[vec![0xff]])).unwrap()),
+            v2_directory.to_owned() + "07000000010000011a00000007" + payload + "070100000001ff"
+        );
+        assert_eq!(
+            handoff.encode_local_evidence(Some(&names)).unwrap(),
+            handoff.encode_local_evidence(Some(&names)).unwrap()
+        );
+        let mut marker = handoff.clone();
+        marker
+            .canonical_evidence
+            .kernel_profile
+            .clause_tautology_policy = KernelClauseTautologyPolicy::Marker;
+        let mut marker_expected = handoff.encode_local_evidence(None).unwrap();
+        marker_expected[32] = 2;
+        assert_eq!(marker.encode_local_evidence(None).unwrap(), marker_expected);
+        for mutation in 0..11 {
+            let mut unsupported = handoff.clone();
+            match mutation {
+                0 => unsupported.canonical_evidence.schema_version = 2,
+                1 => unsupported.canonical_evidence.encoding_version = 2,
+                2 => {
+                    unsupported
+                        .canonical_evidence
+                        .kernel_profile
+                        .clause_schema_version = 2
+                }
+                3 => {
+                    unsupported
+                        .canonical_evidence
+                        .kernel_profile
+                        .clause_encoding_version = 2
+                }
+                4 => {
+                    unsupported.canonical_evidence.final_goal.polarity =
+                        KernelGoalPolarity::AssertTrueForConsistency
+                }
+                5 => unsupported.context_identity.hash_input.push(0),
+                6 => {
+                    unsupported.canonical_evidence.formula_evidence[0].source =
+                        KernelFormulaSource::AcceptedImportedAxiom(
+                            imported_payload(&VcText::new("Imported::A1")).requirement,
+                        )
+                }
+                7 => {
+                    unsupported.canonical_evidence.formula_evidence[0].source =
+                        KernelFormulaSource::AcceptedImportedTheorem(
+                            imported_payload(&VcText::new("Imported::A1")).requirement,
+                        )
+                }
+                8 => {
+                    unsupported.formula_context_requirements =
+                        Some(KernelFormulaContextRequirements {
+                            provenance_fingerprint: fingerprint(2, &[0xfe]),
+                            imported_axioms: vec![
+                                imported_payload(&VcText::new("Imported::A1")).requirement,
+                            ],
+                            imported_theorems: vec![],
+                        })
+                }
+                9 => {
+                    unsupported.canonical_evidence.formula_evidence[0].source =
+                        KernelFormulaSource::PolicyBoundedBuiltin {
+                            built_in_id: vec![1],
+                        }
+                }
+                _ => {
+                    unsupported.formula_context_requirements =
+                        Some(KernelFormulaContextRequirements {
+                            provenance_fingerprint: fingerprint(2, &[0xfe]),
+                            imported_axioms: vec![],
+                            imported_theorems: vec![
+                                imported_payload(&VcText::new("Imported::A1")).requirement,
+                            ],
+                        })
+                }
+            }
+            if matches!(mutation, 6 | 7 | 9) {
+                unsupported.context_identity = build_context_identity(
+                    &unsupported.canonical_evidence,
+                    unsupported.canonical_hash,
+                )
+                .unwrap();
+            }
+            assert!(
+                unsupported.encode_local_evidence(None).is_err(),
+                "mutation {mutation}"
+            );
+            assert!(
+                unsupported.encode_local_evidence(Some(&names)).is_err(),
+                "mutation {mutation}"
+            );
         }
     }
 

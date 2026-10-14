@@ -13010,3 +13010,148 @@ fn source_registration_atp_projections_preserve_structured_input_and_reject_corr
         }
     }
 }
+
+#[test]
+fn source_registration_local_wire_round_trips_and_keeps_fresh_kernel_outcomes() {
+    use std::collections::BTreeSet;
+    use mizar_kernel::{
+        certificate_parser::{ClauseTautologyPolicy, Fingerprint, KernelProfileRecord},
+        checker::{FormulaEvidenceContext, ImportedFactContextLimits, KernelCheckPolicy,
+            KernelCheckStatus, KernelContextIdentityEntry, KernelContextIdentityPayload,
+            KernelContextIdentitySource, KernelEvidenceCheckInput, KernelEvidenceCheckKind,
+            KernelEvidenceCheckLimits, KernelFormulaProducerRef, KernelVcGeneratedFormulaId,
+            check_kernel_evidence},
+        clause::{SymbolKind, Term},
+        formula_evidence::{FormulaEvidenceParseContext, parse_formula_evidence},
+        rejection::TargetVcFingerprint,
+    };
+    use mizar_vc::{
+        discharge::{DischargeInput, DischargePolicy, try_discharge},
+        kernel_evidence_handoff::{KernelContextIdentitySource as VcSource,
+            build_source_existential_kernel_handoff},
+        vc_ir::{VcFormulaRef, VcStatus},
+    };
+    for (multiple, case) in [(false, step5c3_registration_case()), (true, step5c13_registration_case())] {
+        let original = std::fs::read_to_string(case.source_path).unwrap();
+        let renamed = original.replace("wmarked", "retagged").replace("oamarked", "leftmarked")
+            .replace("obmarked", "rightmarked").replace("X", "Value");
+        for (renamed_names, base) in [(false, &original), (true, &renamed)] {
+            for negative in std::iter::once(None).chain((0..if multiple { 2 } else { 1 }).map(Some)) {
+                let text = if let Some(index) = negative {
+                    let attribute = if multiple { ["oamarked", "obmarked"][index] } else { "wmarked" };
+                    let attribute = if renamed_names {
+                        attribute.replace("wmarked", "retagged").replace("oamarked", "leftmarked").replace("obmarked", "rightmarked")
+                    } else { attribute.to_owned() };
+                    let formal = if renamed_names { "Value" } else { "X" };
+                    let changed = base.replace(&format!("{formal} is {attribute} means {formal} = {formal}"),
+                        &format!("{formal} is {attribute} means not {formal} = {formal}"));
+                    assert_ne!(&changed, base);
+                    changed
+                } else { base.clone() };
+                let (source, nodes, symbols) = if multiple {
+                    step5c13_registration_inputs(&text)
+                } else { step5c3_registration_inputs(&text) }.unwrap();
+                let checked = mizar_checker::registration_resolution::check_source_existential_registration_proof(&source, &nodes, &symbols).unwrap();
+                let core = mizar_core::elaborator::lower_source_existential_registration(&checked).unwrap();
+                let open = step5c3_registration_vcs(&core).unwrap();
+                let discharge = try_discharge(DischargeInput { vc_set: &open, policy: &DischargePolicy::default() }).unwrap();
+                for (after_discharge, vcs) in [(false, &open), (true, discharge.vc_set())] {
+                    for vc in vcs.vcs() {
+                        if after_discharge && vc.status != VcStatus::NeedsAtp {
+                            assert!(matches!(vc.status, VcStatus::Discharged { .. }));
+                            assert!(build_source_existential_kernel_handoff(&core, vcs, vc.id).is_err());
+                            continue;
+                        }
+                        assert_eq!(vc.status, if after_discharge { VcStatus::NeedsAtp } else { VcStatus::Open });
+                        let handoff = build_source_existential_kernel_handoff(&core, vcs, vc.id).unwrap();
+                        let envelope = handoff.canonical_evidence();
+                        let target = envelope.target_vc();
+                        let fingerprint = Fingerprint::new(target.algorithm_id, target.digest.clone());
+                        let mut parse_context = FormulaEvidenceParseContext::v1(fingerprint.clone(),
+                            KernelProfileRecord::v1(envelope.kernel_profile().profile_id, ClauseTautologyPolicy::Reject));
+                        let v1 = handoff.encode_local_evidence(None).unwrap();
+                        let parsed = parse_formula_evidence(&v1, &parse_context).unwrap();
+                        assert_eq!(parsed.schema_version(), 1);
+                        assert_eq!(parsed.canonical_hash_input(), v1);
+                        assert!(parsed.equality_instances().is_empty());
+                        let equalities = parsed.symbol_manifest().iter().filter(|row| row.symbol.kind == SymbolKind::Equality).collect::<Vec<_>>();
+                        assert_eq!(equalities.len(), 1);
+                        let mut choices = BTreeSet::new();
+                        for substitution in parsed.substitutions() {
+                            assert_eq!(substitution.payload.payload_kind, 1);
+                            assert!(substitution.payload.rewrite_path.segments.is_empty());
+                            let [replacement] = substitution.payload.replacements.as_slice() else { panic!("one actual replacement") };
+                            let Term::Application { symbol, arguments } = &replacement.actual_term else { panic!("actual closed choice") };
+                            assert_eq!(symbol.kind, SymbolKind::FunctorPredicate);
+                            assert!(arguments.is_empty());
+                            assert_eq!(replacement.replacement_role, 1);
+                            choices.insert(*symbol);
+                        }
+                        let mut names = Vec::new();
+                        for (index, choice) in choices.into_iter().enumerate() {
+                            let mut item = u32::try_from(index + 1).unwrap().to_be_bytes().to_vec();
+                            item.push(1);
+                            item.extend(equalities[0].symbol.id.0.to_be_bytes());
+                            item.extend([2, 2]);
+                            item.extend(choice.id.0.to_be_bytes());
+                            item.extend(0u32.to_be_bytes());
+                            names.push(item);
+                        }
+                        let v2 = handoff.encode_local_evidence(Some(&names)).unwrap();
+                        assert_eq!(v2, handoff.encode_local_evidence(Some(&names)).unwrap());
+                        parse_context.accepted_schema_versions.insert(2);
+                        let parsed_v2 = parse_formula_evidence(&v2, &parse_context).unwrap();
+                        assert_eq!(parsed_v2.schema_version(), 2);
+                        assert_eq!(parsed_v2.canonical_hash_input(), v2);
+                        assert_eq!(parsed_v2.equality_instances().len(), names.len());
+                        assert_eq!(parsed_v2.symbol_manifest(), parsed.symbol_manifest());
+                        assert_eq!(parsed_v2.variable_manifest(), parsed.variable_manifest());
+                        assert_eq!(parsed_v2.formulas(), parsed.formulas());
+                        assert_eq!(parsed_v2.substitutions(), parsed.substitutions());
+                        assert_eq!(parsed_v2.provenance(), parsed.provenance());
+                        assert_eq!(parsed_v2.final_goal(), parsed.final_goal());
+                        assert_eq!(parsed_v2.target_vc(), &fingerprint);
+                        let target = TargetVcFingerprint::new(target.algorithm_id, target.digest.clone());
+                        let entries = handoff.context_identity().entries().iter().map(|entry| {
+                            let source = match entry.source() {
+                                VcSource::LocalHypothesis { local_context_id } => KernelContextIdentitySource::LocalHypothesis { local_context_id },
+                                VcSource::CitedPremise { local_context_id } => KernelContextIdentitySource::CitedPremise { local_context_id },
+                                VcSource::GeneratedVcFact { vc_fact_id } => KernelContextIdentitySource::GeneratedVcFact { vc_fact_id },
+                                _ => panic!("actual local source"),
+                            };
+                            let producer = match entry.producer_formula_ref() {
+                                VcFormulaRef::Core(id) => KernelFormulaProducerRef::Core(id),
+                                VcFormulaRef::Generated(id) => KernelFormulaProducerRef::Generated(KernelVcGeneratedFormulaId::new(id.index())),
+                                _ => panic!("actual local formula"),
+                            };
+                            KernelContextIdentityEntry::new(source, entry.formula_id(),
+                                Fingerprint::new(entry.formula_fingerprint().algorithm_id, entry.formula_fingerprint().digest.clone()), producer)
+                        }).collect();
+                        let context = FormulaEvidenceContext::with_context_identity(
+                            Some(handoff.context_identity_hash().as_bytes().to_vec()), Vec::new(), Vec::new(),
+                            Some(KernelContextIdentityPayload::new(target.clone(), handoff.canonical_hash(), handoff.context_identity_hash(), entries)),
+                            ImportedFactContextLimits::default()).unwrap();
+                        let result = check_kernel_evidence(KernelEvidenceCheckInput {
+                            target_vc_fingerprint: &target, evidence: &parsed_v2, formula_context: Some(&context),
+                            check_kind: KernelEvidenceCheckKind::ProofObligation,
+                            policy: KernelCheckPolicy::default(), limits: KernelEvidenceCheckLimits::default(),
+                        });
+                        let registration = vc.id.index() / 2;
+                        let expected_accepted = vc.id.index() % 2 == 0
+                            || negative.is_none_or(|index| registration != index && registration != 2);
+                        assert_eq!(result.status() == KernelCheckStatus::Accepted, expected_accepted,
+                            "multiple={multiple}, renamed={renamed_names}, negative={negative:?}, after={after_discharge}, vc={:?}", vc.id);
+                        assert_eq!(result.status() == KernelCheckStatus::Accepted,
+                            step5c3_check_registration_handoff(&handoff, "clean").is_ok());
+                        assert!(!result.policy_taint());
+                    }
+                }
+                let proof = mizar_proof::status::prove_source_existential_registration(&source, &nodes, &symbols,
+                    super::shared::snapshot_id(0), &mizar_proof::policy::VerifierPolicy::release());
+                if negative.is_none() {
+                    assert_eq!(proof.unwrap().activated().len(), if multiple { 3 } else { 1 });
+                } else { assert!(proof.is_err()); }
+            }
+        }
+    }
+}

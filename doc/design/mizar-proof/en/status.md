@@ -228,9 +228,9 @@ publish witnesses, write artifact manifests, or accept proofs.
 `prove_source_existential_registration(&SurfaceResolvedArena, &TypedArena, &SymbolEnv,
 BuildSnapshotId, &VerifierPolicy) -> Result<RegistrationDatabase, String>` freshly invokes
 [checker](../../mizar-checker/en/registration_resolution.md#source-existential-registration-proof),
-Core, VC and both source handoffs. Its private serializer first parses their actual six-section
-Formula v1 fields, including full terms, substitutions, provenance, context identity and
-AssertFalseForRefutation, without checking acceptance. It then writes Formula v2 with named
+Core, VC and both source handoffs. The [VC local transport](../../mizar-vc/en/kernel_evidence_handoff.md#local-binary-transport) frames their actual fields; Proof first parses six-section
+Formula v1, including full terms, substitutions, provenance, context identity and
+AssertFalseForRefutation, without checking acceptance. It then supplies Formula v2 names for
 reflexivity for the actual closed-choice terms in the parsed substitutions and the unique Equality
 manifest key. Deduplicate terms and assign increasing nonzero names; the type-only leaf has none.
 The existing source profile permits only zero-argument FunctorPredicate choices here. No supplied

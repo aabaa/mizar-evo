@@ -560,6 +560,8 @@ contract、禁止境界、real-source/corruption requirement を使用する。�
 
 61. **[実 Discharge 後の source registration](../../task_contracts/ja/VC-SOURCE-REGISTRATION-DISCHARGE-HANDOFF.md)。** [x] — 既定方針の完全一致 NeedsAtp のみ。ATP 射影・consumer は未完了。
 
+62. **[Local evidence wire transport](../../task_contracts/ja/VC-LOCAL-EVIDENCE-WIRE.md).** [x] — Shared existing local framing; search and acceptance remain downstream.
+
 ## 推奨検証
 
 各タスクの後で実行する:

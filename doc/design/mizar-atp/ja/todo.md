@@ -628,6 +628,7 @@ polarity)、F2(非 import ソース束縛)、F6(imported-statement projection)
       kernel call、proof policy、witness/cache output、trusted backend material を
       追加しない。
 30. **Untrusted instance finder。** [ ]
+    - ローカル候補 transport 前提: [VC62](../../task_contracts/ja/VC-LOCAL-EVIDENCE-WIRE.md)。抽出・探索は保留。
     - 証明できた問題から kernel の根拠を作る (task 15 の取り出しの保留を解消する)。契約: [ATPK-INSTANCE-FINDER](../../task_contracts/ja/ATPK-INSTANCE-FINDER.md)。
 31. **Deterministic premise ranking。** [ ]
     - 刈り込み・提案・解決できない引用のための `symbol-overlap-v1` (spec §22.4.4)。契約: [ATPK-PREMISE-RANKING](../../task_contracts/ja/ATPK-PREMISE-RANKING.md)。

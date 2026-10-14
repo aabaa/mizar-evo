@@ -214,8 +214,8 @@ manifest write、proof acceptance を行わない。
 `prove_source_existential_registration(&SurfaceResolvedArena, &TypedArena, &SymbolEnv,
 BuildSnapshotId, &VerifierPolicy) -> Result<RegistrationDatabase, String>` は
 [checker](../../mizar-checker/ja/registration_resolution.md#source-existential-registration-proof)・Core・VC・両
-handoff を新たに実行する。private serializer は全 term・置換・provenance・context identity・AssertFalseForRefutation
-を含む実 field を六 section Formula v1 として構造検査し、この段階では受理を検査しない。
+handoff を新たに実行する。[VC local transport](../../mizar-vc/ja/kernel_evidence_handoff.md#local-binary-transport) が実 field を frame 化し、Proof は全 term・置換・provenance・context identity・AssertFalseForRefutation
+を含む六 section Formula v1 を構造検査し、この段階では受理を検査しない。
 その parsed 置換に含まれる実際の閉じた choice term と一意の Equality manifest key から、反射律の名前を明示した
 Formula v2 を作る。term を重複除去して非零の昇順 id を付け、型だけの leaf には名前を付けない。
 この既存 source profile は引数0の FunctorPredicate choice のみを許す。instance formula の入力や汎用等号探索は追加しない。

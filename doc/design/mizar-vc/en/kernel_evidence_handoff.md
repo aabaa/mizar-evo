@@ -390,12 +390,17 @@ The witness-type leaf uses the independently gated choice-type fact; the attribu
 additionally uses the actual definition and K equality. Preserve source/module/snapshot, context
 identity, original goal and substitution provenance; generic fingerprints remain conservative. The
 handoff envelope/hash-input text is not binary kernel evidence. [Proof
-status](../../mizar-proof/en/status.md#source-existential-registration-proof) owns wire
-serialization, actual checks and source-bound activation.
+status](../../mizar-proof/en/status.md#source-existential-registration-proof) owns actual checks and source-bound activation.
 
 ## Three-registration source-proof extension
 
 The implemented extension selects a leaf's actual proof/definition dependencies through parent accounting after whole-generator replay; VC indices or the first definition/origin cannot choose evidence.
 Project each distinct actual attribute and choice identity into the normal manifest, reject numeric collisions, and preserve coherent formal identity across the two guarded definitions. Existing single-registration encodings remain unchanged.
-The conjunctive leaf retains both definition premises and two independently linked substitutions of the same closed witness; missing either rejects. Existing generated And and VC handoff fields remain unchanged; linked Proof owns named Formula-v2 binary serialization.
+The conjunctive leaf retains both definition premises and two independently linked substitutions of the same closed witness; missing either rejects. Existing generated And and VC handoff fields remain unchanged; linked Proof selects the actual named Formula-v2 instances.
 Context identity binds the actual complete envelope and producer entries; provenance is metadata, not acceptance. [Proof status](../../mizar-proof/en/status.md#three-registration-source-proof-extension) freshly parses and checks every leaf under the existing policy.
+
+## Local binary transport
+
+`VcKernelEvidenceHandoff::encode_local_evidence(Option<&[Vec<u8>]>) -> Result<Vec<u8>, String>` frames existing local handoff fields for the Kernel grammar: None selects six-section v1, Some selects v2 with the supplied section-7 item bytes, including an empty section. This method transports untrusted names and never chooses or constructs an equality instance.
+Require a consistent handoff context and the existing envelope/encoding/clause versions, CanonicalEnvelopeV1 profile, supported Reject/Marker tautology policy and AssertFalseForRefutation. Transport only LocalHypothesis, CitedPremise and GeneratedVcFact; imported evidence remains unsupported. Preserve every manifest, formula, substitution, side condition, provenance, target and goal byte in canonical section order; checked u32 lengths fail closed.
+The returned binary differs from the handoff's hash-input text. It carries no accepted result, trusted used_axioms or authority from successful framing; the existing parser and Kernel still validate it. [Proof](../../mizar-proof/en/status.md#source-existential-registration-proof) owns its actual source instance selection and fresh checks. Test fixed binary layouts and genuine source round trips; generic imported transport and ATP search remain deferred.

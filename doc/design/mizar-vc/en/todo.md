@@ -594,6 +594,8 @@ authorized.
 
 61. **[Source registration after real Discharge](../../task_contracts/en/VC-SOURCE-REGISTRATION-DISCHARGE-HANDOFF.md).** [x] — Exact default-policy NeedsAtp handoff; ATP projections/consumers remain open.
 
+62. **[Local evidence wire transport](../../task_contracts/en/VC-LOCAL-EVIDENCE-WIRE.md).** [x] — Shared existing local framing; search and acceptance remain downstream.
+
 ## Recommended Verification
 
 Run after each task:

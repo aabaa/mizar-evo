@@ -364,11 +364,17 @@ text/unknown Core fingerprint から式を作らない。
 証人型 leaf は独立 gate の choice 型事実、属性 leaf はさらに実定義と K の等式を使う。source/module/snapshot・context
 identity・元の目標・置換 provenance を保持し、汎用 fingerprint は保守的なままとする。handoff envelope/hash-input text は binary
 evidence ではない。[Proof status](../../mizar-proof/ja/status.md#source-existential-registration-proof) が
-wire 化・実検査・source に結び付く活性化を所有する。
+実検査・source に結び付く活性化を所有する。
 
 ## Three-registration source-proof extension
 
 実装した拡張は generator 全体の再照合後、親 accounting から各 leaf の実 proof/definition 依存を得る。VC index や最初の definition/origin で証拠を選ばない。
 別々の実属性・choice identity を通常 manifest に写像し数値衝突を拒否する。両ガード付き定義の formal identity を整合させ、既存単一登録 encoding は変えない。
-連言 leaf は両定義前提と同じ閉じた証人の独立に対応付けた置換2件を保持し、一方の欠落も拒否する。既存 generated And と VC handoff field は変えず、参照先の Proof が名前付き Formula-v2 binary serialization を所有する。
+連言 leaf は両定義前提と同じ閉じた証人の独立に対応付けた置換2件を保持し、一方の欠落も拒否する。既存 generated And と VC handoff field は変えず、参照先の Proof が実際の名前付き Formula-v2 instance を選択する。
 context identity は全実 envelope と producer entry を結び、provenance は受理ではなく metadata である。[Proof status](../../mizar-proof/ja/status.md#three-registration-source-proof-extension) が既存 policy で全 leaf を新たに parse・検査する。
+
+## Local binary transport
+
+`VcKernelEvidenceHandoff::encode_local_evidence(Option<&[Vec<u8>]>) -> Result<Vec<u8>, String>` は既存ローカル handoff field を Kernel grammar に従って frame 化する。None は六 section v1、Some は入力 item byte を section 7 に運ぶ v2（空も含む）。untrusted name を運ぶだけで等式 instance を選択・構築しない。
+整合する handoff context、既存 envelope/encoding/clause version、CanonicalEnvelopeV1 profile、Reject/Marker 方針、AssertFalseForRefutation を要求する。LocalHypothesis・CitedPremise・GeneratedVcFact のみを扱い、import は未対応。全 manifest・formula・置換・side condition・provenance・target・goal byte と正準 section 順を保持し、u32 length を検査する。
+返却 binary は handoff hash-input text と異なる。frame 化の成功は受理・trusted used_axioms・権威を意味せず、既存 parser と Kernel が検証する。[Proof](../../mizar-proof/ja/status.md#source-existential-registration-proof) が実 source instance の選択と fresh check を所有する。固定 binary layout と実 source round trip を検査し、汎用 import transport と ATP search は保留する。
