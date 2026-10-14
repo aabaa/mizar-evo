@@ -1021,6 +1021,48 @@ mod tests {
     use mizar_session::{GeneratedSpanAnchor, GeneratedSpanOrigin};
     const A23_PREFIX: &[u8] = b"mizar-frontend-output-disk-v1";
 
+    #[test]
+    fn current_storage_comparison_binds_actual_nested_frontend_source() {
+        let fixture = PackageFixture::new();
+        let frontend = frontend_for_fixture(&fixture, MizarParserSeam);
+        let ids = InMemorySessionIdAllocator::new();
+        fixture.write("src/current.miz", "\u{feff}definition\r\nend;\r\n");
+        let request = fixture.request("src/current.miz");
+        let old = frontend.run(request.clone(), &ids).unwrap();
+        let bytes = old.canonical_disk_bytes().unwrap();
+        fixture.write("src/current.miz", "definition\nend;\n");
+        let current = frontend.run(request.clone(), &ids).unwrap();
+        assert_eq!(old.source.source_hash, current.source.source_hash);
+        assert_eq!(old.cache_keys, current.cache_keys);
+        fs::remove_file(fixture.path("src/current.miz")).unwrap();
+        let mut relocated = request.input.clone();
+        relocated.origin = SourceOriginInput::Disk {
+            path: PathBuf::from("relocated/current.miz"),
+        };
+        let restored = FrontendOutput::from_canonical_storage_bytes(
+            &bytes,
+            current.source.source_id,
+            &relocated,
+        )
+        .unwrap();
+        assert_eq!(restored.canonical_disk_bytes().unwrap(), bytes);
+        assert!(
+            restored
+                .source
+                .matches_canonical_storage(&old.source, &relocated)
+        );
+        assert!(
+            !restored
+                .source
+                .matches_canonical_storage(&current.source, &request.input)
+        );
+        assert!(
+            !current
+                .source
+                .matches_canonical_storage(&restored.source, &request.input)
+        );
+    }
+
     fn a23_fields(bytes: &[u8]) -> [Vec<u8>; 6] {
         let mut rest = bytes
             .strip_prefix(A23_PREFIX)

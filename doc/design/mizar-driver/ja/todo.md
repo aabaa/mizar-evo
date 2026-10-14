@@ -499,6 +499,8 @@ artifact/test のフォローアップタスクが所有する。本 crate の�
 であり、対となるタスクが到着したら owning producer を通じて訂正済み契約を
 消費すること。
 
+29. **[実取得済み source storage の照合](../../task_contracts/ja/SOURCE-CURRENT-STORAGE-BINDING.md).** [x]
+
 ## 推奨検証
 
 各タスクの後で実行する:

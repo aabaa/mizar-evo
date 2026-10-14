@@ -291,6 +291,8 @@
 31. **Native 捕捉 source の診断 path 引渡し。** [x]
     - [DRIVER-NATIVE-SOURCE-DISPATCH](../../task_contracts/ja/DRIVER-NATIVE-SOURCE-DISPATCH.md) で既存表示 path 方針を実捕捉 source 投影に再利用する。
 
+32. **[実取得済み source storage の照合](../../task_contracts/ja/SOURCE-CURRENT-STORAGE-BINDING.md).** [x]
+
 ## 推奨検証
 
 各タスクの後に実行する。

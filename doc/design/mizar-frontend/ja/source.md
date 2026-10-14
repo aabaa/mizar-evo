@@ -134,6 +134,10 @@ schema、UTF-8、長さ、末尾データ、hash、map のメタデータ・範�
 generated anchor は `None` となる。これはローカルな payload 拒否であり、言語診断や
 cache 受理ではない。読み込み射影は変更しない。
 
+## Current source storage comparison
+
+`SourceUnit::matches_canonical_storage(&self, expected: &Self, input: &SourceInput) -> bool` は両方の既存 canonical storage stream が存在して一致する場合だけ true を返す。Driver は SourceLoad の即時復元と保持 SourceLoad/Frontend の decode に実取得・束縛済み source を渡す。normalized hash の一致だけでは loading map を束縛しない。既存の局所 SourceId/path 再束縛と I/O なし decode を保ち、供給 data と boolean は provenance・freshness・cache receipt ではない。Disk では取得済み正規化 text/map を比較し、別途保持していない raw bytes の認証を主張しない。key・schema・limit・NoKey・editor cache 保留を維持する。
+
 ## エラー処理
 
 読み込みは `mizar_session::SourceLoadError` をそのまま表面化する。例として、パッケージルート外のソースパス、未対応拡張子、不正な UTF-8、読み取り不能ファイル、古いオープンバッファバージョン、マップ不能なオープンバッファ URI、メタデータのない生成ソース、重複するモジュールパス、未対応の origin、source-id 割り当ての失敗、およびパス正規化系の変種がある。この一覧は網羅的ではなく、ラップした session ローダーは現在の任意の `SourceLoadError` 変種を返しうる。フロントエンドは、統制層でこれらをファイルレベルの診断へ変換する。`mizar-session` がすでに分類している条件に対して、新しいエラーカテゴリを作らない。

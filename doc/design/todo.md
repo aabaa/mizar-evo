@@ -685,6 +685,7 @@ execution remains excluded and parked.
 
 The real uncached SourceLoad/Frontend edit/rebuild comparison is implemented.
 Native editor [storage codecs](./mizar-frontend/en/source.md#canonical-openbuffer-payload) and [captured Driver service handoffs](./mizar-driver/en/request.md#native-source-capture) are implemented.
+[Current acquired storage comparison](./task_contracts/en/SOURCE-CURRENT-STORAGE-BINDING.md) is a bounded retained-payload prerequisite; genuine cache producers remain pending.
 Their LSP build bridge and current diagnostic publication remain Step 8 prerequisites.
 Step 7's [instance-finder design](./task_contracts/en/ATPK-INSTANCE-FINDER.md) follows its existing producer dependencies.
 Cache-hit coverage waits for genuine cache producers; later semantic/proof

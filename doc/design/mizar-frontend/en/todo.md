@@ -649,6 +649,8 @@ diagnostic ordering, and cache-key checks.
 31. **Captured native diagnostic-path handoff.** [x]
     - [DRIVER-NATIVE-SOURCE-DISPATCH](../../task_contracts/en/DRIVER-NATIVE-SOURCE-DISPATCH.md) reuses the existing display-path policy for actual captured source projection.
 
+32. **[Current acquired source storage comparison](../../task_contracts/en/SOURCE-CURRENT-STORAGE-BINDING.md).** [x]
+
 ## Suggested Verification
 
 After each task, run:

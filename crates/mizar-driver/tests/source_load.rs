@@ -7604,3 +7604,144 @@ fn native_open_edits_match_independent_clean_real_prefixes_across_replay_control
         }
     }
 }
+
+#[test]
+fn current_storage_comparison_binds_native_disk_blob_readbacks_after_removal() {
+    let raw = "\u{feff}definition\r\nend;\r\n";
+    let fixture = Fixture::new(raw.as_bytes());
+    let descriptor = SourceInput {
+        package_id: fixture.version.package_id.clone(),
+        module_path: fixture.version.module_path.clone(),
+        normalized_path: fixture.version.normalized_path.clone(),
+        edition: fixture.version.edition.clone(),
+        origin: SourceOriginInput::Disk {
+            path: "src/main.miz".into(),
+        },
+    };
+    let mut previous: Option<SourceUnit> = None;
+    for text in [raw, "definition\nend;\n"] {
+        fixture.write(text.as_bytes());
+        let ids = InMemorySessionIdAllocator::new();
+        let snapshots = SnapshotRegistry::new();
+        let (mut request, input) = fixture.submit_request(vec![], vec![]);
+        request.source_inputs.versions.clear();
+        let session = request
+            .capture_sources(
+                &ids,
+                &snapshots,
+                vec![(
+                    DiskSourceLoader::new(fixture.root.join("alpha")),
+                    descriptor.clone(),
+                )],
+            )
+            .unwrap();
+        let snapshot = session.captured().snapshot().id;
+        let unit = WorkUnit::Module {
+            module: mizar_build::module_index::ModuleId::new(
+                PackageId::new("alpha"),
+                ModulePath::new("main"),
+            ),
+        };
+        let owner = publisher(snapshot, 0, &unit);
+        allow_frontend(&owner, &unit);
+        let mut builder = PhaseRegistryBuilder::new();
+        builder.register_source_load();
+        builder.register_frontend(vec![]);
+        let mut driver =
+            CompilerDriver::new(builder.build().unwrap()).with_output_publisher(owner.clone());
+        fs::remove_file(fixture.root.join("alpha/src/main.miz")).unwrap();
+        let submission = driver
+            .submit_captured(session, &ids, &snapshots, input)
+            .unwrap();
+        let run = submission.scheduler_run.as_ref().unwrap();
+        let mut source = None;
+        let mut output = None;
+        for result in run.phase_results.values().flatten() {
+            for handle in &result.output_refs {
+                assert_eq!(result.status, PhaseStatus::Complete);
+                assert!(matches!(handle.placement(), StoragePlacement::Blob { .. }));
+                if handle.output_kind() == &OutputKind::new("SourceUnit") {
+                    source = Some(
+                        owner
+                            .storage()
+                            .get(
+                                &owner
+                                    .storage()
+                                    .typed_handle::<SourceUnit>(
+                                        handle,
+                                        &OutputKind::new("SourceUnit"),
+                                    )
+                                    .unwrap(),
+                            )
+                            .unwrap(),
+                    );
+                } else if handle.output_kind() == &OutputKind::new("FrontendOutput") {
+                    output = Some(
+                        owner
+                            .storage()
+                            .get(
+                                &owner
+                                    .storage()
+                                    .typed_handle::<FrontendOutput<<MizarParserSeam as ParserSeam>::Ast>>(
+                                        handle,
+                                        &OutputKind::new("FrontendOutput"),
+                                    )
+                                    .unwrap(),
+                            )
+                            .unwrap(),
+                    );
+                }
+            }
+        }
+        let source = source.unwrap();
+        let output = output.unwrap();
+        assert!(
+            output
+                .source
+                .matches_canonical_storage(&source, &descriptor)
+        );
+        assert_eq!(output.source, *source);
+        if let Some(old) = &previous {
+            assert_eq!(old.source_hash, source.source_hash);
+            assert!(!source.matches_canonical_storage(old, &descriptor));
+            assert!(!output.source.matches_canonical_storage(old, &descriptor));
+            let restored = SourceUnit::from_canonical_storage_bytes(
+                &old.canonical_disk_bytes().unwrap(),
+                source.source_id,
+                &descriptor,
+            )
+            .unwrap();
+            assert!(!restored.matches_canonical_storage(&source, &descriptor));
+        }
+        for (phase, reason) in [
+            (
+                PipelinePhase::SourceLoad,
+                "current disk source maps require a real source load",
+            ),
+            (
+                PipelinePhase::Frontend,
+                "frontend inputs require a live source and dependency run",
+            ),
+        ] {
+            let phase_input = PhaseInput::new(
+                unit.clone(),
+                PhaseDispatchInputBundle::without_parent_outputs(
+                    snapshot,
+                    SourceUnitCacheKey::from_source(&source).stable_hash(),
+                    vec![],
+                ),
+            );
+            assert_eq!(
+                driver
+                    .registry()
+                    .cache_key_for_phase(phase, &phase_input)
+                    .unwrap()
+                    .intent,
+                PhaseCacheIntent::NoKey {
+                    reason: reason.into()
+                }
+            );
+        }
+        previous = Some(source.as_ref().clone());
+    }
+}

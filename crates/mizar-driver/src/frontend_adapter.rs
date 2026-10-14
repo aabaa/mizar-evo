@@ -800,6 +800,9 @@ impl PhaseService for SourceLoadService {
         ) else {
             return blocking();
         };
+        if !source.matches_canonical_storage(&loaded, &source_input) {
+            return blocking();
+        }
         let semantic_bytes = source_key.as_bytes().to_vec();
         let storage_hash = Hash::from_bytes(blake3::derive_key(
             "mizar-frontend/source-unit-storage-side-table/v1",
@@ -814,7 +817,7 @@ impl PhaseService for SourceLoadService {
         let output_kind = OutputKind::new("SourceUnit");
         let decode_input = source_input;
         let source_id = source.source_id;
-        let expected_hash = version.source_hash;
+        let expected_source = source.clone();
         let handle = publisher.publish(PublishOutputInput {
             slot: publisher.allocate(
                 snapshot,
@@ -833,7 +836,9 @@ impl PhaseService for SourceLoadService {
             storage_payload: Some(storage_bytes),
             decode: BlobDecoder::new(move |bytes| {
                 SourceUnit::from_canonical_storage_bytes(bytes, source_id, &decode_input)
-                    .filter(|source| source.source_hash == expected_hash)
+                    .filter(|source| {
+                        source.matches_canonical_storage(&expected_source, &decode_input)
+                    })
                     .ok_or_else(|| BlobDecodeError::new("invalid source-unit disk payload"))
             }),
             parents: Vec::new(),
@@ -1777,7 +1782,7 @@ impl PhaseService for FrontendService {
         }
         let decode_input = source_input;
         let source_id = version.source_id;
-        let expected_hash = version.source_hash;
+        let expected_source = output.source.clone();
         let phase = IrPipelinePhase::new("Frontend");
         let output_kind = OutputKind::new("FrontendOutput");
         if !parents_current() {
@@ -1801,7 +1806,11 @@ impl PhaseService for FrontendService {
             storage_payload: Some(storage_bytes),
             decode: BlobDecoder::new(move |bytes| {
                 FrontendOutput::from_canonical_storage_bytes(bytes, source_id, &decode_input)
-                    .filter(|output| output.source.source_hash == expected_hash)
+                    .filter(|output| {
+                        output
+                            .source
+                            .matches_canonical_storage(&expected_source, &decode_input)
+                    })
                     .ok_or_else(|| BlobDecodeError::new("invalid frontend disk payload"))
             }),
             parents: input

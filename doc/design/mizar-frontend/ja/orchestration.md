@@ -255,7 +255,7 @@ Syntaxキーは完全一致の許可リストとし、syntax_diagnosticやその
 semantic bytesはdescriptorのUTF-8列、ゼロ1byte、実生成元のSurfaceAstCacheKey digest32byteを連結する。Some ASTと対応keyを要求する。keyは内容・再利用入力の識別であり、任意AST bytesの独立検証ではない。結合済みの実行結果だけを用い、保存から復元した不透明keyを根拠にしない。
 storage bytesは既存の集約disk codec。source-map副表はkind `frontend-storage`、keyはpackage相対正規化path、digestは全文storage bytesをcontext `mizar-frontend/output-storage-side-table/v1` でBLAKE3 derive-keyした1レコード。その他の副表は空で、公開出力に診断は含めない。raw mapや文言をsemantic bytesへ直接入れない。
 自身のsealed SourceUnit親1件から検証済みcontent hashを得る。import字句処理で消費した明示的な[workspace leaf出力](../../mizar-driver/ja/frontend_adapter.md#supplied-workspace-leaf-summaries)もsealed親に含める。named inputsは既存cache-key domain/digestの `active-lexical-environment` と `tokens`、および整列済みdispatch依存hashを `dependency.<ordinal>`、domain `mizar-frontend/dependency-summary/v1` として持つ。originはPackageSource、targetはCurrentPackage。cache互換性やsnapshot間の権限は推論しない。
-blob decoderはsource identity/request metadataと期待source hashのみを捕捉し、集約codecとソース結合を検証する。再読込・再解析・生成ASTの捕捉をしない。結合・失敗処理・診断変換は [実サービス](../../mizar-driver/ja/frontend_adapter.md#disk-frontend-service) が所有する。
+blob decoderはsource identity/request metadataと [canonical storage comparison](./source.md#current-source-storage-comparison) 用の束縛済み SourceUnit を捕捉し、集約codecとソース結合を検証する。再読込・再解析・生成ASTの捕捉をしない。結合・失敗処理・診断変換は [実サービス](../../mizar-driver/ja/frontend_adapter.md#disk-frontend-service) が所有する。
 
 ## OpenBuffer FrontendOutput storage
 

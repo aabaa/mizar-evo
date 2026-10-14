@@ -196,6 +196,10 @@ metadata/ranges, unsupported origins and generated anchors return `None`.
 This is local payload rejection, not a language diagnostic or cache acceptance.
 Loading projection remains unchanged.
 
+## Current source storage comparison
+
+`SourceUnit::matches_canonical_storage(&self, expected: &Self, input: &SourceInput) -> bool` compares both existing canonical storage streams, returning true only when both exist and match. Driver supplies its actual acquired/bound source at immediate SourceLoad restoration and retained SourceLoad/Frontend decoding. Equal normalized hashes alone do not bind loading maps. Canonical comparison retains existing local SourceId/path relocation and no-I/O decoding; neither supplied data nor the boolean is a provenance, freshness or cache receipt. Disk comparison covers the acquired normalized text/maps, not separately retained raw bytes. Keys, schemas, limits, NoKey and editor-cache deferrals are unchanged.
+
 ## Error Handling
 
 Loading surfaces `mizar_session::SourceLoadError` unchanged. Examples include

@@ -531,6 +531,8 @@ tasks recorded in those TODOs and in the top-level roadmap. Integration
 ordering for this crate is unchanged; consume the corrected contracts through
 the owning producers when the paired tasks land.
 
+29. **[Current acquired source storage comparison](../../task_contracts/en/SOURCE-CURRENT-STORAGE-BINDING.md).** [x]
+
 ## Recommended Verification
 
 Run after each task:

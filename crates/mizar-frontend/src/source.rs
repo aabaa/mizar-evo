@@ -43,6 +43,18 @@ pub struct SourceUnit {
 }
 
 impl SourceUnit {
+    /// Compares canonical storage, excluding local IDs and diagnostic paths.
+    /// Unsupported or invalid representations do not match, even themselves.
+    pub fn matches_canonical_storage(&self, expected: &Self, input: &SourceInput) -> bool {
+        match (
+            self.canonical_storage_bytes(Some(input)),
+            expected.canonical_storage_bytes(Some(input)),
+        ) {
+            (Some(actual), Some(expected)) => actual == expected,
+            _ => false,
+        }
+    }
+
     /// Encodes disk storage bytes, including maps, not IR semantic hash inputs.
     /// Local identities and diagnostic paths are supplied separately on decode.
     pub fn canonical_disk_bytes(&self) -> Option<Vec<u8>> {
@@ -520,6 +532,171 @@ mod tests {
     use std::sync::atomic::{AtomicUsize, Ordering};
 
     static NEXT_FIXTURE_ID: AtomicUsize = AtomicUsize::new(0);
+
+    #[test]
+    fn current_storage_comparison_binds_acquired_disk_maps_and_stable_metadata() {
+        let package = PackageFixture::new();
+        let ids = InMemorySessionIdAllocator::new();
+        package.write("src/groups/basic.miz", "\u{feff}α\r\nβ\r\n");
+        let input = disk_source_input(package.root(), package.path("src/groups/basic.miz"));
+        package.write("src/other.miz", "");
+        let other_path = normalize_path(package.root(), Path::new("src/other.miz")).unwrap();
+        let loader = FrontendSourceLoader::new(DiskSourceLoader::new(package.root()));
+        let old = loader
+            .load_source_unit(
+                SourceUnitRequest {
+                    snapshot: snapshot_id(1),
+                    input: input.clone(),
+                },
+                &ids,
+            )
+            .unwrap();
+        let bytes = old.canonical_disk_bytes().unwrap();
+        package.write("src/groups/basic.miz", "α\nβ\n");
+        let current = loader
+            .load_source_unit(
+                SourceUnitRequest {
+                    snapshot: snapshot_id(2),
+                    input: input.clone(),
+                },
+                &ids,
+            )
+            .unwrap();
+        package.write("src/groups/basic.miz", "α\r\nβ\r\n");
+        let remapped = loader
+            .load_source_unit(
+                SourceUnitRequest {
+                    snapshot: snapshot_id(3),
+                    input: input.clone(),
+                },
+                &ids,
+            )
+            .unwrap();
+        assert_eq!(old.source_hash, remapped.source_hash);
+        assert_ne!(
+            old.loading_map.as_ref().unwrap().segments,
+            remapped.loading_map.as_ref().unwrap().segments
+        );
+        assert!(remapped.canonical_disk_bytes().is_some());
+        assert!(!old.matches_canonical_storage(&remapped, &input));
+        let mut relocated = input.clone();
+        relocated.origin = SourceOriginInput::Disk {
+            path: PathBuf::from("elsewhere/basic.miz"),
+        };
+        fs::remove_file(package.path("src/groups/basic.miz")).unwrap();
+        let restored =
+            SourceUnit::from_canonical_disk_bytes(&bytes, current.source_id, &relocated).unwrap();
+        assert_ne!(restored.source_id, old.source_id);
+        assert_ne!(restored.file_path, old.file_path);
+        assert_eq!(restored.canonical_disk_bytes().unwrap(), bytes);
+        assert!(restored.matches_canonical_storage(&old, &relocated));
+        assert_eq!(old.source_hash, current.source_hash);
+        assert_ne!(old.loading_map, current.loading_map);
+        assert!(!restored.matches_canonical_storage(&current, &input));
+        assert!(!current.matches_canonical_storage(&restored, &input));
+
+        for variant in 0..9 {
+            let mut changed = old.clone();
+            match variant {
+                0 => changed.package_id = PackageId::new("other"),
+                1 => changed.module_path = ModulePath::new("other"),
+                2 => changed.normalized_path = other_path.clone(),
+                3 => changed.edition = Edition::new("2025"),
+                4 => {
+                    changed.source_text = Arc::from("different\n");
+                    changed.source_hash = hash_text(&changed.source_text);
+                    changed.line_map = LineMap::new(changed.source_id, &changed.source_text);
+                    changed.loading_map = None;
+                }
+                5 => changed.loading_map = None,
+                6 => {
+                    changed.loading_map.as_mut().unwrap().segments.remove(0);
+                }
+                7 => {
+                    changed.origin = SourceOrigin::Generated {
+                        generator: GeneratedSourceKind::new("unsupported"),
+                    }
+                }
+                _ => {
+                    changed.generated_anchor = Some(SourceAnchor::Point {
+                        source_id: old.source_id,
+                        offset: 0,
+                    })
+                }
+            };
+            assert!(
+                !old.matches_canonical_storage(&changed, &input),
+                "variant {variant}"
+            );
+            assert!(
+                !changed.matches_canonical_storage(&old, &input),
+                "variant {variant}"
+            );
+            if variant >= 6 {
+                assert!(!changed.matches_canonical_storage(&changed, &input));
+            }
+        }
+    }
+
+    #[test]
+    fn current_storage_comparison_validates_genuine_open_raw_uri_and_version() {
+        let package = PackageFixture::new();
+        package.write("src/groups/basic.miz", "disk");
+        let input = source_input(
+            package.root(),
+            SourceOriginInput::OpenBuffer {
+                uri: package.file_uri("src/groups/basic.miz"),
+                expected_version: 7,
+                actual_version: 7,
+                text: Arc::from("\u{feff}α\r\nβ"),
+            },
+        );
+        let ids = InMemorySessionIdAllocator::new();
+        let source = FrontendSourceLoader::new(DiskSourceLoader::new(package.root()))
+            .load_source_unit(
+                SourceUnitRequest {
+                    snapshot: snapshot_id(1),
+                    input: input.clone(),
+                },
+                &ids,
+            )
+            .unwrap();
+        let bytes = source.canonical_open_buffer_bytes(&input).unwrap();
+        fs::remove_file(package.path("src/groups/basic.miz")).unwrap();
+        let restored = SourceUnit::from_canonical_storage_bytes(
+            &bytes,
+            ids.next_source_id(snapshot_id(2)).unwrap(),
+            &input,
+        )
+        .unwrap();
+        assert!(restored.matches_canonical_storage(&source, &input));
+        for variant in 0..4 {
+            let mut changed = input.clone();
+            let SourceOriginInput::OpenBuffer {
+                uri,
+                expected_version,
+                actual_version,
+                text,
+            } = &mut changed.origin
+            else {
+                unreachable!()
+            };
+            match variant {
+                0 => uri.push_str("?other"),
+                1 => *expected_version += 1,
+                2 => {
+                    *expected_version += 1;
+                    *actual_version += 1;
+                }
+                _ => *text = Arc::from("α\nβ"),
+            }
+            assert!(
+                SourceUnit::from_canonical_storage_bytes(&bytes, source.source_id, &changed)
+                    .is_none()
+            );
+            assert!(!restored.matches_canonical_storage(&source, &changed));
+        }
+    }
 
     #[test]
     fn disk_payload_roundtrips_loading_maps_and_rebinds_local_identity() {

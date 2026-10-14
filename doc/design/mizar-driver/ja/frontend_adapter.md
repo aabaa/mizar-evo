@@ -15,7 +15,7 @@ capture 済み typed normalized path と metadata から Disk SourceInput を作
 dispatch input hash は capture した version の SourceUnitCacheKey と一致させる。SourceLoad は output parent と dependency hash を消費しない。不足した dispatch identity は blocking のままとし planner output handle を捏造しない。
 current publisher と空かつ未 seal で同一 snapshot/SourceLoad scope の diagnostic sink を要求する。不足・不整合 resource、binding/identity 不正、publication 失敗、capture 後の source 変更は output なしの Blocking。成功した load の hash 不一致は architecture 22 の obsolete dispatch result として拒否し、loader failure や新しい E0600 原因とは扱わない。一致する cancellation token は Cancelled、異なる snapshot の token は Blocking とする。
 呼出元 allocator で `FrontendSourceLoader<DiskSourceLoader>::load_source_unit` を呼ぶ。loaded metadata、Disk origin、normalized text hash を照合し、disk codec で実 payload/map を capture 済み SourceId に結び直して publisher に渡す。snapshot の登録・復活や work-unit 許可は service が行わない。
-publication 表現は [frontend owner](../../mizar-frontend/ja/source.md#sourceunit-publication) に従う。decoder は current request metadata、SourceId、expected source hash だけを捕捉し、bytes を復号する。完成 payload の保持や再読込・再parse はしない。
+publication 表現は [frontend owner](../../mizar-frontend/ja/source.md#sourceunit-publication) に従う。decoder は current request metadata、SourceId、[canonical storage comparison](../../mizar-frontend/ja/source.md#current-source-storage-comparison) 用の束縛済み SourceUnit を捕捉し、再読込・再parse なしで bytes を復号する。
 publication 成功時だけ実 sealed output を持つ Complete を返す。[scheduled prefix](./driver.md#scheduled-sourceloadfrontend-prefix) は後続 service 不足でも実行できるが、full build は完了しない。
 
 ## Diagnostics and cache boundary
