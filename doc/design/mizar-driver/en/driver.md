@@ -346,6 +346,11 @@ The driver may transport diagnostic batches and readiness events. It must not
 allocate diagnostic codes, deduplicate records, render CLI text, publish LSP
 diagnostic payloads, or use message strings as identity.
 
+## Current native Disk diagnostic index
+
+`validate_current_disk_diagnostics(session, snapshots) -> Result<(), String>` reads the Driver's stored session, requiring protected native capture with nonempty all-Disk versions, Finished(Succeeded/Failed/Blocked), the existing live lane/request-snapshot publication guard and a supplied publisher authorizing that snapshot. Missing/unsupported/obsolete state returns Err. It grants no batch/index authenticity, file freshness, source-map retention or future publication receipt.
+`submit_captured_with_diagnostic_index(session, allocator, snapshots, input) -> Result<(BuildSubmission, Option<BuildDiagnosticIndex>), DriverSubmitError>` calls unchanged submit_captured and aggregates only its original actual phase-result batches through Diagnostics from_batches. Require the guard before and after aggregation and an actual scheduler run; otherwise return None without changing the submission. Aggregation failure also returns None; normal submission errors stay unchanged. Failed/blocked real phases may supply diagnostics; clean real runs may supply an empty index. Never infer drafts from scheduler messages or require semantic/proof success. Open/Generated captures, overlays, current LSP publication and later consumers remain deferred. Returned indexes are immutable snapshot data; consumers recheck the live guard before later handoff, and still own file/version/map/routing obligations.
+
 ## Testing Requirements
 
 Task D-008 and D-011 source tests must cover:

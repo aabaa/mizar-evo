@@ -1,0 +1,12 @@
+# Task DRIVER-CURRENT-DISK-DIAGNOSTIC-INDEX: current native Disk diagnostic index handoff
+Canonical language: English; [Japanese pointer](../ja/DRIVER-CURRENT-DISK-DIAGNOSTIC-INDEX.md).
+Status: implemented for the explicit native Disk handoff. Tier: full. Owner: [Driver plan](../../mizar-driver/en/00.crate_plan.md), task 35; consumers: Diagnostics aggregation and later CLI/LSP/artifact projections.
+Authority: spec §§22/23.6.1, architecture12/22, internal03 and existing Driver combined publication boundary.
+Dependencies: actual native SourceLoad/Frontend batches, stored Driver sessions/lanes, SnapshotRegistry, current publisher and existing Diagnostics aggregator; ready for Disk-only handoff.
+Gap: source_gap/test_gap; no original Driver phase-result aggregation through the live current-session boundary.
+Scope: [sole Driver owner](../../mizar-driver/en/driver.md#current-native-disk-diagnostic-index) fixes two existing-type APIs; [Diagnostics owner](../../mizar-diagnostics/en/aggregator.md) retains all identity/dedup/sorting/record authority.
+Write scope: additive methods in existing driver.rs, appended genuine source_load.rs consumers and bounded paired owner/index/TODO/audit/roadmap updates; no field/type/helper/adapter/dependency/module or stored parallel phase-result/index representation.
+Tests: real native Disk SourceLoad publication and reachable Frontend diagnostics/clean empty output, preserving retained captured text after file edits/deletion; genuine owner aggregation oracle plus independent record facts; replay/order/workers, original submission/errors and NoKey; live same-snapshot lane supersession, request invalidation, publisher absence/obsolescence, unknown/foreign session, cancelled/Open exclusion without fake batches/services/indexes.
+Forbidden: trust caller-replaced BuildSubmission fields, stored public publication_decision or scheduler strings; manual diagnostic algorithms/codes, protocol/semantic/proof/expectation/policy changes, synthetic producers or Accepted/Hit, implicit route changes or Open overlay/CLI/artifact promotion.
+Audit/exit: chapters22/23 remain partial; a guarded original Disk phase batch handoff yields the existing immutable index or None while live guard remains separately callable. Full file/version/retention/editor/build/ENTRY/STEP6C/Steps6–8 gates stay open.
+Reviews: independent specification/tests/code/volume/consistency and scoped gates; parent cargo fmt --check, full Clippy -D warnings and cargo test.

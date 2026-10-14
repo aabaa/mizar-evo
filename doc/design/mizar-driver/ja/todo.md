@@ -511,6 +511,8 @@ artifact/test のフォローアップタスクが所有する。本 crate の�
 
 34. **[Explicit native configuration content association](../../task_contracts/ja/DRIVER-NATIVE-CONFIG-CONTENT-BINDING.md).** [x] — Package-content comparison only; full context/runtime remain open.
 
+35. **[Current native Disk 診断 index](../../task_contracts/ja/DRIVER-CURRENT-DISK-DIAGNOSTIC-INDEX.md).** [x]
+
 ## 推奨検証
 
 各タスクの後で実行する:

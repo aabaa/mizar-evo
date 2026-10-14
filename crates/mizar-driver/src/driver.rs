@@ -423,6 +423,83 @@ impl CompilerDriver {
         self.submit_inner(session, allocator, snapshots, input, false, true)
     }
 
+    /// Checks live session currentness for a native Disk diagnostic handoff.
+    /// This does not authenticate caller-owned batches or authorize a later publication.
+    pub fn validate_current_disk_diagnostics<A: SessionIdAllocator>(
+        &self,
+        session: BuildSessionId,
+        snapshots: &SnapshotRegistry<A>,
+    ) -> Result<(), String> {
+        let record = self
+            .sessions
+            .get(&session)
+            .ok_or_else(|| "unknown diagnostic session".to_owned())?;
+        let session = &record.session;
+        let captured = &session.captured;
+        if captured.native_sources().is_none()
+            || captured.snapshot.source_versions.is_empty()
+            || !captured
+                .snapshot
+                .source_versions
+                .iter()
+                .all(|version| matches!(version.origin, mizar_session::SourceOrigin::Disk))
+            || !matches!(
+                session.state,
+                BuildSessionState::Finished(
+                    BuildSessionOutcome::Succeeded
+                        | BuildSessionOutcome::Failed
+                        | BuildSessionOutcome::Blocked
+                )
+            )
+        {
+            return Err("unsupported diagnostic session".into());
+        }
+        if self.lanes.publication_decision(snapshots, session) != PublicationDecision::Current {
+            return Err("obsolete diagnostic session".into());
+        }
+        self.output_publisher
+            .as_ref()
+            .ok_or_else(|| "diagnostic publisher required".to_owned())?
+            .validate_current_snapshot(captured.snapshot.id)
+            .map_err(|error| error.to_string())
+    }
+
+    /// Aggregates only this submission's original phase batches while its session is current.
+    pub fn submit_captured_with_diagnostic_index<A: SessionIdAllocator, L: SourceLayoutProvider>(
+        &mut self,
+        session: BuildSession,
+        allocator: &A,
+        snapshots: &SnapshotRegistry<A>,
+        input: DriverSubmitInput<L>,
+    ) -> Result<
+        (
+            BuildSubmission,
+            Option<mizar_diagnostics::aggregator::BuildDiagnosticIndex>,
+        ),
+        DriverSubmitError,
+    > {
+        let submission = self.submit_captured(session, allocator, snapshots, input)?;
+        let index = submission.scheduler_run.as_ref().and_then(|run| {
+            self.validate_current_disk_diagnostics(submission.session.id, snapshots)
+                .ok()?;
+            let batches = run
+                .phase_results
+                .values()
+                .flatten()
+                .flat_map(|result| result.diagnostics.iter().cloned())
+                .collect();
+            let index = mizar_diagnostics::aggregator::BuildDiagnosticIndex::from_batches(
+                submission.session.captured.snapshot.id,
+                batches,
+            )
+            .ok()?;
+            self.validate_current_disk_diagnostics(submission.session.id, snapshots)
+                .ok()?;
+            Some(index)
+        });
+        Ok((submission, index))
+    }
+
     pub fn submit_captured_with_import_discovery<A: SessionIdAllocator, L: SourceLayoutProvider>(
         &mut self,
         session: BuildSession,

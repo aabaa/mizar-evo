@@ -326,6 +326,11 @@ driver は diagnostic batch と readiness event を transport してよい。dia
 したり、record を deduplicate したり、CLI text を render したり、LSP diagnostic payload を publish
 したり、message string を identity として使ってはならない。
 
+## Current native Disk diagnostic index
+
+`validate_current_disk_diagnostics(session, snapshots) -> Result<(), String>` は Driver 内の session を読み、保護された native capture・非空で全て Disk の version・Finished(Succeeded/Failed/Blocked)・既存の live lane/request-snapshot publication guard・当該 snapshot を認める供給済 publisher を要求する。欠落・未対応・obsolete は Err とする。batch/index の真正性・file freshness・source-map 保持・将来の公開 receipt を与えない。
+`submit_captured_with_diagnostic_index(session, allocator, snapshots, input) -> Result<(BuildSubmission, Option<BuildDiagnosticIndex>), DriverSubmitError>` は既存 submit_captured をそのまま実行し、その元の実 phase-result batch だけを Diagnostics from_batches で集約する。集約の前後で guard と実 scheduler run を要求し、不成立や集約失敗は submission を変えず None、元の提出 error は保持する。実 Failed/Blocked phase の診断と clean run の空 index を許し、scheduler message から draft を推測せず意味・証明成功を要求しない。Open/Generated capture・overlay・current LSP 公開・後続 consumer は保留する。index は immutable snapshot data であり、後の受け渡し前に live guard を再検査し、file/version/map/routing 条件は別途満たす。
+
 ## Testing Requirements
 
 Task D-008 と D-011 の source test は次を cover しなければならない:

@@ -13436,3 +13436,514 @@ fn explicit_native_config_content_association_preserves_real_source_consumers() 
         }
     }
 }
+
+#[test]
+fn current_disk_diagnostic_index_preserves_original_native_runs_and_retained_sources() {
+    use mizar_diagnostics::{
+        aggregator::BuildDiagnosticIndex, failure_record::DiagnosticFreshness,
+    };
+    for text in [
+        "definition\nend;\n",
+        "end",
+        "import mml.no_such;\ndefinition\nend;\n",
+    ] {
+        let fixture = Fixture::new(text.as_bytes());
+        let ids = InMemorySessionIdAllocator::new();
+        let snapshots = SnapshotRegistry::new();
+        let (mut draft, _) = fixture.submit_request(vec![], vec![]);
+        draft.source_inputs.versions.clear();
+        let session = draft
+            .capture_sources(
+                &ids,
+                &snapshots,
+                vec![(
+                    DiskSourceLoader::new(fixture.root.join("alpha")),
+                    SourceInput {
+                        package_id: fixture.version.package_id.clone(),
+                        module_path: fixture.version.module_path.clone(),
+                        normalized_path: fixture.version.normalized_path.clone(),
+                        edition: fixture.version.edition.clone(),
+                        origin: SourceOriginInput::Disk {
+                            path: "src/main.miz".into(),
+                        },
+                    },
+                )],
+            )
+            .unwrap();
+        let snapshot = session.captured().snapshot().id;
+        let unit = WorkUnit::Module {
+            module: mizar_build::module_index::ModuleId::new(
+                PackageId::new("alpha"),
+                ModulePath::new("main"),
+            ),
+        };
+        fs::write(
+            fixture.root.join("alpha/src/main.miz"),
+            b"changed after capture",
+        )
+        .unwrap();
+        fs::remove_file(fixture.root.join("alpha/src/main.miz")).unwrap();
+        let mut replay = None;
+        for workers in [1, 4] {
+            let mut original = None;
+            for indexed in [false, true] {
+                let owner = publisher(snapshot, 0, &unit);
+                allow_frontend(&owner, &unit);
+                let mut builder = PhaseRegistryBuilder::new();
+                builder.register_source_load();
+                builder.register_frontend(vec![]);
+                let mut driver = CompilerDriver::new(builder.build().unwrap())
+                    .with_output_publisher(owner.clone());
+                let (_, mut input) = fixture.submit_request(vec![], vec![]);
+                input.worker_count = workers;
+                input.completion_order = if workers == 1 {
+                    CompletionOrder::Canonical
+                } else {
+                    CompletionOrder::Reverse
+                };
+                let (submission, index) = if indexed {
+                    driver
+                        .submit_captured_with_diagnostic_index(
+                            session.clone(),
+                            &ids,
+                            &snapshots,
+                            input,
+                        )
+                        .unwrap()
+                } else {
+                    (
+                        driver
+                            .submit_captured(session.clone(), &ids, &snapshots, input)
+                            .unwrap(),
+                        None,
+                    )
+                };
+                let run = submission.scheduler_run.as_ref().unwrap();
+                let source = source_task(&submission);
+                let source_result = &run.phase_results[&source.id][0];
+                assert_eq!(source_result.status, PhaseStatus::Complete);
+                let handle = owner
+                    .storage()
+                    .typed_handle::<SourceUnit>(
+                        &source_result.output_refs[0],
+                        &OutputKind::new("SourceUnit"),
+                    )
+                    .unwrap();
+                let loaded = owner.storage().get(&handle).unwrap();
+                assert_eq!(loaded.source_text.as_ref(), text);
+                assert_eq!(
+                    loaded.source_id,
+                    session.captured().snapshot().source_versions[0].source_id
+                );
+                let (_, phase_input) = native_disk_lookup_context(&submission, &ids);
+                for phase in [PipelinePhase::SourceLoad, PipelinePhase::Frontend] {
+                    assert!(matches!(
+                        driver
+                            .registry()
+                            .cache_key_for_phase(phase, &phase_input)
+                            .unwrap()
+                            .intent,
+                        PhaseCacheIntent::NoKey { .. }
+                    ));
+                }
+                assert!(!submission.missing_services.is_empty());
+                let frontend = submission
+                    .task_graph
+                    .as_ref()
+                    .unwrap()
+                    .tasks()
+                    .iter()
+                    .find(|task| task.kind == TaskKind::Frontend)
+                    .unwrap();
+                assert_eq!(
+                    run.phase_results[&frontend.id][0].status,
+                    if text == "end" {
+                        PhaseStatus::Fatal
+                    } else if text.starts_with("import") {
+                        PhaseStatus::Recoverable
+                    } else {
+                        PhaseStatus::Complete
+                    }
+                );
+                assert_eq!(
+                    submission.session.state(),
+                    BuildSessionState::Finished(if text == "definition\nend;\n" {
+                        BuildSessionOutcome::Blocked
+                    } else {
+                        BuildSessionOutcome::Failed
+                    })
+                );
+                if indexed {
+                    assert_eq!(&submission, original.as_ref().unwrap());
+                    assert_eq!(
+                        driver.validate_current_disk_diagnostics(session.id(), &snapshots),
+                        Ok(())
+                    );
+                    let index = index.unwrap();
+                    let batches = run
+                        .phase_results
+                        .values()
+                        .flatten()
+                        .flat_map(|result| result.diagnostics.clone())
+                        .collect();
+                    assert_eq!(
+                        index,
+                        BuildDiagnosticIndex::from_batches(snapshot, batches).unwrap()
+                    );
+                    assert_eq!(index.snapshot(), snapshot);
+                    assert!(index.obsolete_drafts().is_empty());
+                    assert_eq!(index.is_empty(), text == "definition\nend;\n");
+                    let codes = index
+                        .records()
+                        .iter()
+                        .map(|record| record.code().number())
+                        .collect::<Vec<_>>();
+                    if text == "end" {
+                        assert_eq!(codes, vec![33, 52]);
+                    }
+                    if text.starts_with("import") {
+                        assert!(codes.contains(&22));
+                        assert!(codes.contains(&220));
+                    }
+                    for record in index.records() {
+                        assert_eq!(record.handle().snapshot, snapshot);
+                        assert_eq!(index.record_by_id(record.handle().id), Some(record));
+                        assert_eq!(
+                            record.freshness(),
+                            &DiagnosticFreshness::Current {
+                                source_snapshot: snapshot
+                            }
+                        );
+                        assert_eq!(
+                            record.phase(),
+                            if record.code().number() >= 220 {
+                                DiagnosticPhase::Resolver
+                            } else {
+                                DiagnosticPhase::Frontend
+                            }
+                        );
+                        let DiagnosticPrimaryLocation::Span(span) = record.primary_location()
+                        else {
+                            panic!("real loaded-source span")
+                        };
+                        assert_eq!(span.range().source_id, loaded.source_id);
+                        assert!(span.range().end <= text.len());
+                        assert!(
+                            index
+                                .handles_for_source(loaded.source_id)
+                                .unwrap()
+                                .contains(&record.handle())
+                        );
+                    }
+                    if let Some(prior) = &replay {
+                        assert_eq!(&index, prior);
+                    } else {
+                        replay = Some(index);
+                    }
+                } else {
+                    original = Some(submission);
+                }
+            }
+        }
+    }
+}
+
+#[test]
+fn current_disk_diagnostic_guard_reads_live_driver_lane_request_and_publisher() {
+    for mode in [
+        "lane",
+        "request",
+        "publisher",
+        "missing",
+        "cancel",
+        "open",
+        "empty",
+    ] {
+        let fixture = Fixture::new(b"definition\nend;\n");
+        let ids = InMemorySessionIdAllocator::new();
+        let snapshots = SnapshotRegistry::new();
+        let (mut draft, mut input) = fixture.submit_request(vec![], vec![]);
+        draft.source_inputs.versions.clear();
+        let descriptor = SourceInput {
+            package_id: fixture.version.package_id.clone(),
+            module_path: fixture.version.module_path.clone(),
+            normalized_path: fixture.version.normalized_path.clone(),
+            edition: fixture.version.edition.clone(),
+            origin: if mode == "open" {
+                SourceOriginInput::OpenBuffer {
+                    uri: format!(
+                        "file://{}",
+                        fixture.root.join("alpha/src/main.miz").display()
+                    ),
+                    expected_version: 1,
+                    actual_version: 1,
+                    text: std::sync::Arc::from("definition\nend;\n"),
+                }
+            } else {
+                SourceOriginInput::Disk {
+                    path: "src/main.miz".into(),
+                }
+            },
+        };
+        let sources = if mode == "empty" {
+            vec![]
+        } else {
+            vec![(
+                DiskSourceLoader::new(fixture.root.join("alpha")),
+                descriptor,
+            )]
+        };
+        let session = draft
+            .clone()
+            .capture_sources(&ids, &snapshots, sources.clone())
+            .unwrap();
+        let snapshot = session.captured().snapshot().id;
+        let unit = WorkUnit::Module {
+            module: mizar_build::module_index::ModuleId::new(
+                PackageId::new("alpha"),
+                ModulePath::new("main"),
+            ),
+        };
+        let owner = publisher(snapshot, usize::MAX, &unit);
+        allow_frontend(&owner, &unit);
+        let mut builder = PhaseRegistryBuilder::new();
+        builder.register_source_load();
+        builder.register_frontend(vec![]);
+        let mut driver = CompilerDriver::new(builder.build().unwrap());
+        if mode != "missing" {
+            driver = driver.with_output_publisher(owner.clone());
+        }
+        assert!(
+            driver
+                .validate_current_disk_diagnostics(session.id(), &snapshots)
+                .is_err()
+        );
+        if mode == "cancel" {
+            input.cancellation.supersede_snapshot(snapshot);
+        }
+        let (mut submission, index) = driver
+            .submit_captured_with_diagnostic_index(session.clone(), &ids, &snapshots, input)
+            .unwrap();
+        let supported = matches!(mode, "lane" | "request" | "publisher");
+        assert_eq!(index.is_some(), supported, "{mode}");
+        assert_eq!(
+            driver
+                .validate_current_disk_diagnostics(session.id(), &snapshots)
+                .is_ok(),
+            supported,
+            "{mode}"
+        );
+        assert!(
+            CompilerDriver::default()
+                .validate_current_disk_diagnostics(session.id(), &snapshots)
+                .is_err()
+        );
+        if mode == "cancel" {
+            assert_eq!(
+                submission.session.state(),
+                BuildSessionState::Finished(BuildSessionOutcome::Cancelled)
+            );
+        }
+        if !supported {
+            continue;
+        }
+        // Mutating returned carriers cannot alter the live private session guard.
+        submission.publication_decision = mizar_driver::request::PublicationDecision::Suppressed(
+            mizar_driver::request::ObsoletePublication {
+                lane_current: false,
+                request_snapshot_current: false,
+            },
+        );
+        submission.scheduler_run = None;
+        assert!(
+            driver
+                .validate_current_disk_diagnostics(session.id(), &snapshots)
+                .is_ok()
+        );
+        assert!(owner.validate_current_snapshot(snapshot).is_ok());
+        assert!(snapshots.is_current_for_request(snapshot, session.request().id));
+        if mode == "lane" {
+            draft.generation = BuildRequestGeneration::new(1);
+            let next = draft.capture_sources(&ids, &snapshots, sources).unwrap();
+            assert_eq!(next.captured().snapshot().id, snapshot);
+            // Fresh physical owner avoids same-snapshot storage slot conflicts.
+            let fresh = publisher(snapshot, usize::MAX, &unit);
+            allow_frontend(&fresh, &unit);
+            driver = driver.with_output_publisher(fresh.clone());
+            let (_, input) = fixture.submit_request(vec![], vec![]);
+            let (_, next_index) = driver
+                .submit_captured_with_diagnostic_index(next.clone(), &ids, &snapshots, input)
+                .unwrap();
+            assert!(next_index.is_some());
+            assert!(
+                driver
+                    .validate_current_disk_diagnostics(next.id(), &snapshots)
+                    .is_ok()
+            );
+            assert!(fresh.validate_current_snapshot(snapshot).is_ok());
+            assert!(snapshots.is_current_for_request(snapshot, session.request().id));
+            assert!(
+                driver
+                    .validate_current_disk_diagnostics(session.id(), &snapshots)
+                    .is_err()
+            );
+        } else if mode == "request" {
+            fs::write(fixture.root.join("alpha/src/main.miz"), b"end").unwrap();
+            let request = session.request();
+            let (replacement, _, _) = snapshots
+                .load_snapshot(
+                    request.id,
+                    (
+                        request.workspace_root.clone(),
+                        request.dependency_inputs.artifacts.clone(),
+                        request.dependency_inputs.lockfile_hash,
+                        request.dependency_inputs.toolchain.clone(),
+                        request.verifier_config.hash,
+                    ),
+                    sources,
+                )
+                .unwrap();
+            assert_ne!(replacement.id, snapshot);
+            assert!(!snapshots.is_current_for_request(snapshot, request.id));
+            assert!(
+                driver
+                    .validate_current_disk_diagnostics(session.id(), &snapshots)
+                    .is_err()
+            );
+            assert!(owner.validate_current_snapshot(snapshot).is_ok());
+        } else {
+            owner.mark_obsolete(snapshot).unwrap();
+            assert!(snapshots.is_current_for_request(snapshot, session.request().id));
+            assert!(
+                driver
+                    .validate_current_disk_diagnostics(session.id(), &snapshots)
+                    .is_err()
+            );
+        }
+        // The immutable point-in-time index does not turn into a publication token.
+        assert!(index.unwrap().is_empty());
+    }
+
+    let fixture = Fixture::new(b"definition\nend;\n");
+    let ids = InMemorySessionIdAllocator::new();
+    let snapshots = SnapshotRegistry::new();
+    let baseline = fixture.submit(&ids, &snapshots);
+    let snapshot = baseline.session.captured().snapshot().id;
+    let owner = publisher(snapshot, usize::MAX, &source_task(&baseline).unit);
+    allow_frontend(&owner, &source_task(&baseline).unit);
+    let mut builder = PhaseRegistryBuilder::new();
+    builder.register_source_load();
+    builder.register_frontend(vec![]);
+    let mut driver =
+        CompilerDriver::new(builder.build().unwrap()).with_output_publisher(owner.clone());
+    let (request, input) = fixture.submit_request(vec![], vec![]);
+    let legacy = driver.submit(request, &ids, &snapshots, input).unwrap();
+    let stored = driver.session(legacy.session.id()).unwrap();
+    assert_eq!(stored, &legacy.session);
+    assert_eq!(stored.captured().snapshot().id, snapshot);
+    let versions = &stored.captured().snapshot().source_versions;
+    assert!(!versions.is_empty());
+    assert!(
+        versions
+            .iter()
+            .all(|version| version.origin == SourceOrigin::Disk)
+    );
+    assert_eq!(
+        stored.state(),
+        BuildSessionState::Finished(BuildSessionOutcome::Blocked)
+    );
+    assert_eq!(
+        legacy.publication_decision,
+        mizar_driver::request::PublicationDecision::Current
+    );
+    assert!(snapshots.is_current_for_request(snapshot, stored.request().id));
+    assert!(owner.validate_current_snapshot(snapshot).is_ok());
+    let results = &legacy.scheduler_run.as_ref().unwrap().phase_results;
+    assert_eq!(results.len(), 2);
+    assert!(
+        results
+            .values()
+            .flatten()
+            .all(|result| result.status == PhaseStatus::Complete)
+    );
+    assert!(
+        driver
+            .validate_current_disk_diagnostics(stored.id(), &snapshots)
+            .is_err()
+    );
+}
+
+#[test]
+fn current_disk_diagnostic_submission_preserves_captured_precondition_errors() {
+    let fixture = Fixture::new(b"definition\nend;\n");
+    let ids = InMemorySessionIdAllocator::new();
+    let snapshots = SnapshotRegistry::new();
+    let (mut draft, _) = fixture.submit_request(vec![], vec![]);
+    draft.source_inputs.versions.clear();
+    let session = draft
+        .capture_sources(
+            &ids,
+            &snapshots,
+            vec![(
+                DiskSourceLoader::new(fixture.root.join("alpha")),
+                SourceInput {
+                    package_id: fixture.version.package_id.clone(),
+                    module_path: fixture.version.module_path.clone(),
+                    normalized_path: fixture.version.normalized_path.clone(),
+                    edition: fixture.version.edition.clone(),
+                    origin: SourceOriginInput::Disk {
+                        path: "src/main.miz".into(),
+                    },
+                },
+            )],
+        )
+        .unwrap();
+    for mode in ["request", "state", "duplicate", "legacy"] {
+        let selected = if mode == "legacy" {
+            fixture
+                .submit_request(vec![], vec![])
+                .0
+                .allocate(&ids)
+                .unwrap()
+                .capture_snapshot(&snapshots)
+                .unwrap()
+        } else {
+            let mut selected = session.clone();
+            if mode == "state" {
+                selected.cancel();
+            }
+            selected
+        };
+        let invalid_registry = SnapshotRegistry::new();
+        let registry = if mode == "request" {
+            &invalid_registry
+        } else {
+            &snapshots
+        };
+        let mut original = CompilerDriver::new(source_registry());
+        let mut indexed = CompilerDriver::new(source_registry());
+        if mode == "duplicate" {
+            let (_, input) = fixture.submit_request(vec![], vec![]);
+            original
+                .submit_captured(selected.clone(), &ids, registry, input)
+                .unwrap();
+            let (_, input) = fixture.submit_request(vec![], vec![]);
+            indexed
+                .submit_captured(selected.clone(), &ids, registry, input)
+                .unwrap();
+        }
+        let (_, input) = fixture.submit_request(vec![], vec![]);
+        let expected = original
+            .submit_captured(selected.clone(), &ids, registry, input)
+            .unwrap_err();
+        let (_, input) = fixture.submit_request(vec![], vec![]);
+        let actual = indexed
+            .submit_captured_with_diagnostic_index(selected, &ids, registry, input)
+            .unwrap_err();
+        assert_eq!(actual, expected);
+        assert!(matches!(
+            actual,
+            DriverSubmitError::InvalidCapturedSession { .. }
+        ));
+    }
+}
