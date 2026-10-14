@@ -449,6 +449,8 @@ internal: [01](../../internal/ja/01.compiler_driver_and_pipeline_scheduler.md)�
 
 30. **[Native workspace manifest and lock inputs](../../task_contracts/ja/BUILD-NATIVE-WORKSPACE-INPUTS.md).** [x]
 
+31. **[Package computation replay metadata](../../task_contracts/ja/BUILD-COMPUTATION-POLICY.md).** [x]
+
 ## 推奨検証
 
 各タスクの後で実行する:

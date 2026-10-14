@@ -101,6 +101,7 @@ pub struct VerifierConfig {
     pub max_axioms: u32,
     pub atp_timeout: u32,
     pub default_solver: Solver,
+    pub computation_replay: bool,
     pub require_kernel_certificates: bool,
 }
 
@@ -330,6 +331,7 @@ impl Default for VerifierConfig {
             max_axioms: 128,
             atp_timeout: 30,
             default_solver: Solver::Auto,
+            computation_replay: false,
             require_kernel_certificates: true,
         }
     }
@@ -983,6 +985,7 @@ fn parse_verifier_config(
             "max_axioms",
             "atp_timeout",
             "default_solver",
+            "computation_replay",
             "require_kernel_certificates",
         ],
         diagnostics,
@@ -1005,6 +1008,13 @@ fn parse_verifier_config(
         )
         .unwrap_or(default.atp_timeout),
         default_solver: read_solver(table, diagnostics).unwrap_or(default.default_solver),
+        computation_replay: read_optional_bool(
+            "<package manifest>",
+            table,
+            "verifier.computation_replay",
+            diagnostics,
+        )
+        .unwrap_or(default.computation_replay),
         require_kernel_certificates: read_optional_bool(
             "<package manifest>",
             table,

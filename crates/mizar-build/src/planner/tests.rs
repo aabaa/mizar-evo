@@ -1520,3 +1520,121 @@ fn plan_request(selection: DependencySelection) -> PlanRequest {
         toolchain: ToolchainInfo::new("mizar-evo-test"),
     }
 }
+
+#[test]
+fn computation_replay_parsing_preserves_defaults_and_boolean_type_errors() {
+    let package = "[package]\nname = \"alpha\"\nversion = \"0.1.0\"\n";
+    let default = VerifierConfig::default();
+    assert!(!default.computation_replay);
+    assert_eq!(
+        (
+            default.max_axioms,
+            default.atp_timeout,
+            default.default_solver,
+            default.require_kernel_certificates
+        ),
+        (128, 30, Solver::Auto, true)
+    );
+    for (settings, replay) in [
+        ("", false),
+        ("[verifier]\n", false),
+        ("[verifier]\nmax_axioms = 128\n", false),
+        ("[verifier]\ncomputation_replay = false\n", false),
+        ("[verifier]\ncomputation_replay = true\n", true),
+    ] {
+        let manifest = parse_package_manifest(&format!("{package}{settings}")).unwrap();
+        assert_eq!(
+            manifest.verifier,
+            VerifierConfig {
+                computation_replay: replay,
+                ..default.clone()
+            }
+        );
+    }
+    for (value, kind) in [
+        ("1", "integer"),
+        ("\"true\"", "string"),
+        ("[]", "array"),
+        ("{}", "table"),
+    ] {
+        let errors = parse_package_manifest(&format!(
+            "{package}[verifier]\ncomputation_replay = {value}\n"
+        ))
+        .unwrap_err();
+        assert_eq!(
+            errors.diagnostics(),
+            &[super::ManifestDiagnostic::new(
+                "<package manifest>",
+                "verifier.computation_replay",
+                ManifestDiagnosticKind::InvalidType,
+                Some(kind.to_owned()),
+            )]
+        );
+    }
+}
+
+#[test]
+fn computation_replay_stays_package_local_and_changes_only_typed_configuration() {
+    let lock = parse_lockfile("schema_version = 1\n[[package]]\nname = \"app\"\nversion = \"0.1.0\"\nsource = { kind = \"workspace\", path = \"app\" }\ndependencies = [{ name = \"core\", version = \"1.0.0\" }]\n[[package]]\nname = \"core\"\nversion = \"1.0.0\"\nsource = { kind = \"workspace\", path = \"core\" }\ndependencies = []\n").unwrap();
+    let mut clean = None;
+    for (replay, core_replay) in [(false, true), (true, false), (true, true)] {
+        let core = workspace_package(
+            "core",
+            &format!(
+                "[package]\nname = \"core\"\nversion = \"1.0.0\"\n[verifier]\ncomputation_replay = {core_replay}\n"
+            ),
+        );
+        let app = workspace_package(
+            "app",
+            &format!(
+                "[package]\nname = \"app\"\nversion = \"0.1.0\"\n[dependencies]\ncore = \"1.0.0\"\n[verifier]\nmax_axioms = 64\ncomputation_replay = {replay}\n"
+            ),
+        );
+        let plan = produce_build_plan(
+            plan_request(DependencySelection::Normal),
+            vec![app.clone(), core.clone()],
+            lock.clone(),
+        )
+        .unwrap();
+        let reversed = produce_build_plan(
+            plan_request(DependencySelection::Normal),
+            vec![core.clone(), app],
+            lock.clone(),
+        )
+        .unwrap();
+        assert_eq!(plan, reversed);
+        assert_eq!(
+            plan.packages
+                .iter()
+                .map(|package| package.package_id.as_str())
+                .collect::<Vec<_>>(),
+            ["core", "app"]
+        );
+        assert_eq!(plan.verifier_config.packages.len(), plan.packages.len());
+        for (package, aggregate) in plan.packages.iter().zip(&plan.verifier_config.packages) {
+            assert_eq!(package.package_id.as_str(), aggregate.package_id);
+            assert_eq!(package.verifier_config, aggregate.config);
+            assert_eq!(
+                package.verifier_config.computation_replay,
+                if package.package_id.as_str() == "core" {
+                    core_replay
+                } else {
+                    replay
+                }
+            );
+        }
+        assert_eq!(plan.packages[1].verifier_config.max_axioms, 64);
+        let mut normalized = plan;
+        for package in &mut normalized.packages {
+            package.verifier_config.computation_replay = false;
+        }
+        for aggregate in &mut normalized.verifier_config.packages {
+            aggregate.config.computation_replay = false;
+        }
+        if let Some(expected) = &clean {
+            assert_eq!(&normalized, expected);
+        } else {
+            clean = Some(normalized);
+        }
+    }
+}
