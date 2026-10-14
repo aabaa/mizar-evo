@@ -61,6 +61,13 @@ adapter は validation が "validated hit" 状態に到達する前に `PhaseOut
 uncacheable、incompatible、corrupt、policy/proof invalid と分類された record は、
 handle reconstruction 前に miss になる。
 
+## Producer payload expectations
+
+`IrCacheAdapter::rehydrate_with_expected_payload<T>(&self, RehydrateCacheHitInput<T>, &[u8], &IrSideTables) -> CacheRehydrateOutcome<T>` は同じ Send + Sync + 'static bound を使う。追加引数は current producer/caller が供給する期待 semantic canonical bytes と完全な side table であり、hash や validation flag ではない。
+実 Hit は既存 decoder で private envelope を読む。malformed は CorruptRecord、canonical bytes 不一致は PayloadHashMismatch、完全な side table 不一致は SideTableHashMismatch とし、この順で storage decode・slot allocate・publication より前に返す。一致と全 non-Hit outcome は既存 rehydrate の不変な経路に渡し、元の lookup/hash/lineage/decoder/current publisher 検査と成功計数を保つ。decoder を再利用し、envelope/algorithm を公開・重複しない。
+完全一致は caller の期待値・current key/produced_by 対応・policy・lease・retention を認証せず、publication 許可や proof 権限も与えない。Driver は実 native source の期待値、Cache は検証済み lookup を所有する。既存 rehydrate の元の契約は維持し、未対応 Open/editor と runtime scheduler 統合は保留する。
+既存 Driver source_load.rs の三つの異なる SourceLoad consumer は実保護 native capture・束縛 record encoding・実 Store lookup を使い、current resident rebind、decoder/publication 前の期待 bytes/raw-map 拒否、current blob/Frontend と clean output を比較する。local ID/診断 path は別に rebind し、等しい normalized hash だけで異なる raw map を許さない。架空 producer/Hit を達成根拠にせず、直接 rehydration と保持 scheduler equivalence は分ける。
+
 ## Cacheability
 
 output が cacheable であるためには、以下すべてが真でなければならない:

@@ -9002,3 +9002,542 @@ fn native_disk_cache_record_rejects_physical_current_capture_and_output_bindings
             .is_err()
     );
 }
+
+#[test]
+fn native_disk_expected_cache_payload_rebinds_current_resident_source() {
+    use mizar_cache::cache_store::{CacheInsertOutcome, CacheLookupOutcome, CacheStoreRoot};
+    use mizar_ir::{
+        cache_adapter::{
+            CacheAdapterMiss, CacheRehydrateOutcome, EncodeCacheRecordOutcome, IrCacheAdapter,
+            RehydrateCacheHitInput,
+        },
+        publisher::PublishError,
+        storage::{BlobDecodeError, BlobDecoder},
+    };
+    let fixtures = [
+        Fixture::new(b"definition\nend;\n"),
+        Fixture::new(b"definition\nend;\n"),
+    ];
+    let ids = InMemorySessionIdAllocator::new();
+    let old_snapshots = SnapshotRegistry::new();
+    let source_ids = InMemorySessionIdAllocator::new();
+    source_ids.next_source_id(snapshot_id(0x62)).unwrap();
+    let current_snapshots = SnapshotRegistry::with_allocator(source_ids);
+    let (_, old_submission, old_owner, _, old_handle) =
+        native_disk_record_submission(&fixtures[0], &ids, &old_snapshots, usize::MAX);
+    let (driver, current_submission, current_owner, descriptor, current_handle) =
+        native_disk_record_submission(&fixtures[1], &ids, &current_snapshots, usize::MAX);
+    let old_capture = old_submission.session.captured();
+    let current_capture = current_submission.session.captured();
+    let unit = source_task(&current_submission).unit.clone();
+    let policy = mizar_proof::policy::VerifierPolicy::release();
+    let mut records = Vec::new();
+    for (submission, owner, handle) in [
+        (&old_submission, &old_owner, &old_handle),
+        (&current_submission, &current_owner, &current_handle),
+    ] {
+        let captured = submission.session.captured();
+        let input = PhaseInput::new(
+            unit.clone(),
+            PhaseDispatchInputBundle::without_parent_outputs(
+                captured.snapshot().id,
+                source_key(&captured.snapshot().source_versions[0]),
+                vec![],
+            ),
+        );
+        let inputs = SourceLoadInputs {
+            snapshot: captured.snapshot(),
+            captured: Some(captured),
+            build_plan: submission.build_plan.as_ref().unwrap(),
+            module_index: submission.module_index.as_ref().unwrap(),
+            allocator: &ids,
+        };
+        let EncodeCacheRecordOutcome::Encoded(record) = inputs
+            .encode_native_disk_cache_record(
+                &input,
+                &policy,
+                &IrCacheAdapter::new(owner.clone()),
+                handle.clone(),
+            )
+            .unwrap()
+        else {
+            panic!("genuine native record");
+        };
+        records.push(record);
+    }
+    assert_ne!(old_capture.snapshot().id, current_capture.snapshot().id);
+    let old_source = old_owner.storage().get(&old_handle).unwrap();
+    let current_source = current_owner.storage().get(&current_handle).unwrap();
+    assert_ne!(old_source.source_id, current_source.source_id);
+    assert_eq!(records[0], records[1]);
+    let key = records[1].header.key.clone();
+    let store = CacheStoreRoot::new(fixtures[1].root.join("cache"));
+    let expected_bytes = SourceUnitCacheKey::from_source(&current_source)
+        .stable_hash()
+        .as_bytes()
+        .to_vec();
+    let expected_tables = current_owner
+        .storage()
+        .side_tables(&current_handle)
+        .unwrap();
+    let snapshot = current_capture.snapshot().id;
+    for mode in ["miss", "denied", "obsolete", "resident"] {
+        let target = if mode == "denied" {
+            let target = std::sync::Arc::new(PhaseOutputPublisher::new(
+                std::sync::Arc::new(IrStorageService::new()),
+                std::sync::Arc::new(SnapshotHandleRegistry::new()),
+            ));
+            target.register_current_snapshot(snapshot);
+            target
+        } else {
+            publisher(snapshot, usize::MAX, &unit)
+        };
+        if mode == "obsolete" {
+            target.mark_obsolete(snapshot).unwrap();
+        }
+        if mode == "denied" {
+            assert_eq!(
+                store.insert(&records[0]).unwrap(),
+                CacheInsertOutcome::Inserted
+            );
+        }
+        let lookup = store.lookup(&key);
+        if mode == "miss" {
+            assert!(matches!(lookup, CacheLookupOutcome::Miss(_)));
+        } else {
+            assert!(matches!(lookup, CacheLookupOutcome::Hit(_)));
+        }
+        let source = current_source.clone();
+        let descriptor = descriptor.clone();
+        let adapter = IrCacheAdapter::new(target.clone());
+        let outcome = adapter.rehydrate_with_expected_payload(
+            RehydrateCacheHitInput {
+                lookup,
+                snapshot,
+                phase: current_handle.phase().clone(),
+                work_unit: current_handle.work_unit().clone(),
+                output_kind: current_handle.output_kind().clone(),
+                schema_version: current_handle.schema_version(),
+                parents: vec![],
+                named_input_hashes: current_handle.lineage().named_input_hashes.clone(),
+                decode: BlobDecoder::new(move |bytes| {
+                    SourceUnit::from_canonical_storage_bytes(bytes, source.source_id, &descriptor)
+                        .filter(|decoded| decoded.matches_canonical_storage(&source, &descriptor))
+                        .ok_or_else(|| BlobDecodeError::new("current source storage mismatch"))
+                }),
+            },
+            &expected_bytes,
+            &expected_tables,
+        );
+        match mode {
+            "miss" => assert!(matches!(
+                outcome,
+                CacheRehydrateOutcome::Miss(CacheAdapterMiss::Cache(_))
+            )),
+            "denied" => assert!(
+                matches!(outcome, CacheRehydrateOutcome::Miss(CacheAdapterMiss::Publisher { error }) if matches!(*error, PublishError::WorkUnitNotAllowed { .. }))
+            ),
+            "obsolete" => assert!(
+                matches!(outcome, CacheRehydrateOutcome::Miss(CacheAdapterMiss::Publisher { error }) if matches!(*error, PublishError::ObsoleteSnapshot { .. }))
+            ),
+            _ => {
+                let CacheRehydrateOutcome::Rehydrated(handle) = outcome else {
+                    panic!("bound resident rehydration");
+                };
+                assert_eq!(handle.snapshot(), snapshot);
+                assert_ne!(handle.output(), old_handle.output());
+                assert_eq!(handle.placement(), &StoragePlacement::Resident);
+                assert_eq!(*target.storage().get(&handle).unwrap(), *current_source);
+                assert_eq!(
+                    target.storage().side_tables(&handle).unwrap(),
+                    expected_tables
+                );
+                assert!(
+                    target
+                        .validate_current_output(snapshot, handle.any())
+                        .is_ok()
+                );
+            }
+        }
+        assert_eq!(
+            adapter.successful_rehydrations(),
+            u64::from(mode == "resident")
+        );
+    }
+    let input = PhaseInput::new(
+        unit,
+        PhaseDispatchInputBundle::without_parent_outputs(
+            snapshot,
+            source_key(&current_capture.snapshot().source_versions[0]),
+            vec![],
+        ),
+    );
+    for (phase, reason) in [
+        (
+            PipelinePhase::SourceLoad,
+            "current disk source maps require a real source load",
+        ),
+        (
+            PipelinePhase::Frontend,
+            "frontend inputs require a live source and dependency run",
+        ),
+    ] {
+        assert_eq!(
+            driver
+                .registry()
+                .cache_key_for_phase(phase, &input)
+                .unwrap()
+                .intent,
+            PhaseCacheIntent::NoKey {
+                reason: reason.into()
+            }
+        );
+    }
+}
+
+#[test]
+fn native_disk_expected_cache_payload_rejects_current_bytes_and_raw_maps_before_decode() {
+    use mizar_cache::cache_store::{CacheInsertOutcome, CacheLookupOutcome, CacheStoreRoot};
+    use mizar_ir::{
+        cache_adapter::{
+            CacheAdapterMiss, CacheRehydrateOutcome, EncodeCacheRecordOutcome, IrCacheAdapter,
+            RehydrateCacheHitInput,
+        },
+        storage::{BlobDecodeError, BlobDecoder},
+    };
+    use std::sync::{Arc, atomic::AtomicUsize};
+    let ids = InMemorySessionIdAllocator::new();
+    let snapshots = SnapshotRegistry::new();
+    let old_fixture = Fixture::new(b"definition\nend;\n");
+    let (_, old_submission, old_owner, _, old_handle) =
+        native_disk_record_submission(&old_fixture, &ids, &snapshots, usize::MAX);
+    let old_capture = old_submission.session.captured();
+    let unit = source_task(&old_submission).unit.clone();
+    let input = PhaseInput::new(
+        unit.clone(),
+        PhaseDispatchInputBundle::without_parent_outputs(
+            old_capture.snapshot().id,
+            source_key(&old_capture.snapshot().source_versions[0]),
+            vec![],
+        ),
+    );
+    let inputs = SourceLoadInputs {
+        snapshot: old_capture.snapshot(),
+        captured: Some(old_capture),
+        build_plan: old_submission.build_plan.as_ref().unwrap(),
+        module_index: old_submission.module_index.as_ref().unwrap(),
+        allocator: &ids,
+    };
+    let EncodeCacheRecordOutcome::Encoded(record) = inputs
+        .encode_native_disk_cache_record(
+            &input,
+            &mizar_proof::policy::VerifierPolicy::release(),
+            &IrCacheAdapter::new(old_owner.clone()),
+            old_handle.clone(),
+        )
+        .unwrap()
+    else {
+        panic!("genuine native record");
+    };
+    let store = CacheStoreRoot::new(old_fixture.root.join("cache"));
+    assert_eq!(store.insert(&record).unwrap(), CacheInsertOutcome::Inserted);
+    let old_source = old_owner.storage().get(&old_handle).unwrap();
+    for (raw, expected_miss) in [
+        ("definition\nend;\n@", CacheAdapterMiss::PayloadHashMismatch),
+        (
+            "\u{feff}definition\r\nend;\r\n",
+            CacheAdapterMiss::SideTableHashMismatch,
+        ),
+    ] {
+        let fixture = Fixture::new(raw.as_bytes());
+        let (_, _submission, owner, _, handle) =
+            native_disk_record_submission(&fixture, &ids, &snapshots, usize::MAX);
+        let source = owner.storage().get(&handle).unwrap();
+        let expected_bytes = SourceUnitCacheKey::from_source(&source)
+            .stable_hash()
+            .as_bytes()
+            .to_vec();
+        let expected_tables = owner.storage().side_tables(&handle).unwrap();
+        assert_ne!(
+            expected_tables,
+            old_owner.storage().side_tables(&old_handle).unwrap()
+        );
+        if expected_miss == CacheAdapterMiss::SideTableHashMismatch {
+            assert_eq!(source.source_hash, old_source.source_hash);
+            assert_eq!(source.source_text, old_source.source_text);
+        } else {
+            assert_ne!(source.source_hash, old_source.source_hash);
+        }
+        let target = publisher(handle.snapshot(), usize::MAX, &unit);
+        let adapter = IrCacheAdapter::new(target.clone());
+        let decodes = Arc::new(AtomicUsize::new(0));
+        let calls = decodes.clone();
+        // The old-key hit is intentionally offered against different authentic current expectations.
+        let lookup = store.lookup(&record.header.key);
+        assert!(matches!(lookup, CacheLookupOutcome::Hit(_)));
+        let outcome = adapter.rehydrate_with_expected_payload(
+            RehydrateCacheHitInput {
+                lookup,
+                snapshot: handle.snapshot(),
+                phase: handle.phase().clone(),
+                work_unit: handle.work_unit().clone(),
+                output_kind: handle.output_kind().clone(),
+                schema_version: handle.schema_version(),
+                parents: vec![],
+                named_input_hashes: handle.lineage().named_input_hashes.clone(),
+                decode: BlobDecoder::<SourceUnit>::new(move |_| {
+                    calls.fetch_add(1, Ordering::SeqCst);
+                    Err(BlobDecodeError::new("must reject before decoder"))
+                }),
+            },
+            &expected_bytes,
+            &expected_tables,
+        );
+        assert_eq!(outcome, CacheRehydrateOutcome::Miss(expected_miss));
+        assert_eq!(decodes.load(Ordering::SeqCst), 0);
+        assert_eq!(adapter.successful_rehydrations(), 0);
+        assert!(
+            target
+                .validate_current_output(handle.snapshot(), handle.any())
+                .is_err()
+        );
+        // Equal first slot IDs in independent fresh stores detect any hidden allocation.
+        let baseline = publisher(handle.snapshot(), usize::MAX, &unit);
+        assert_eq!(
+            target
+                .allocate::<SourceUnit>(
+                    handle.snapshot(),
+                    handle.phase().clone(),
+                    handle.work_unit().clone(),
+                    handle.output_kind().clone(),
+                    handle.schema_version()
+                )
+                .slot(),
+            baseline
+                .allocate::<SourceUnit>(
+                    handle.snapshot(),
+                    handle.phase().clone(),
+                    handle.work_unit().clone(),
+                    handle.output_kind().clone(),
+                    handle.schema_version()
+                )
+                .slot(),
+        );
+    }
+}
+
+#[test]
+fn native_disk_expected_cache_blob_source_feeds_registered_frontend_like_clean_run() {
+    use mizar_cache::{
+        cache_key::{CacheKeyBuildOutcome, CacheKeyBuilder},
+        cache_store::{CacheInsertOutcome, CacheLookupOutcome, CacheStoreRoot},
+    };
+    use mizar_ir::{
+        cache_adapter::{
+            CacheRehydrateOutcome, EncodeCacheRecordOutcome, IrCacheAdapter, RehydrateCacheHitInput,
+        },
+        storage::{BlobDecodeError, BlobDecoder},
+    };
+    let fixtures = [
+        Fixture::new("\u{feff}definition\r\nend;\r\n".as_bytes()),
+        Fixture::new("\u{feff}definition\r\nend;\r\n".as_bytes()),
+    ];
+    let ids = InMemorySessionIdAllocator::new();
+    let old_snapshots = SnapshotRegistry::new();
+    let source_ids = InMemorySessionIdAllocator::new();
+    source_ids.next_source_id(snapshot_id(0x62)).unwrap();
+    let current_snapshots = SnapshotRegistry::with_allocator(source_ids);
+    let (_, old_submission, old_owner, _, old_handle) =
+        native_disk_record_submission(&fixtures[0], &ids, &old_snapshots, 0);
+    let (driver, submission, owner, descriptor, clean_source_handle) =
+        native_disk_record_submission(&fixtures[1], &ids, &current_snapshots, 0);
+    let unit = source_task(&submission).unit.clone();
+    let policy = mizar_proof::policy::VerifierPolicy::release();
+    let mut records = Vec::new();
+    let mut keys = Vec::new();
+    for (submission, owner, handle) in [
+        (&old_submission, &old_owner, &old_handle),
+        (&submission, &owner, &clean_source_handle),
+    ] {
+        let captured = submission.session.captured();
+        let input = PhaseInput::new(
+            unit.clone(),
+            PhaseDispatchInputBundle::without_parent_outputs(
+                captured.snapshot().id,
+                source_key(&captured.snapshot().source_versions[0]),
+                vec![],
+            ),
+        );
+        let inputs = SourceLoadInputs {
+            snapshot: captured.snapshot(),
+            captured: Some(captured),
+            build_plan: submission.build_plan.as_ref().unwrap(),
+            module_index: submission.module_index.as_ref().unwrap(),
+            allocator: &ids,
+        };
+        let CacheKeyBuildOutcome::Cacheable(key) = CacheKeyBuilder::new(
+            inputs
+                .prepare_native_disk_cache_request(&input, &policy)
+                .unwrap(),
+        )
+        .build() else {
+            panic!("genuine current source key");
+        };
+        keys.push(key);
+        let EncodeCacheRecordOutcome::Encoded(record) = inputs
+            .encode_native_disk_cache_record(
+                &input,
+                &policy,
+                &IrCacheAdapter::new(owner.clone()),
+                handle.clone(),
+            )
+            .unwrap()
+        else {
+            panic!("genuine native blob record");
+        };
+        records.push(record);
+    }
+    assert_eq!(keys[0], keys[1]);
+    assert_eq!(records[0], records[1]);
+    let source = owner.storage().get(&clean_source_handle).unwrap();
+    assert_ne!(
+        source.source_id,
+        old_owner.storage().get(&old_handle).unwrap().source_id
+    );
+    assert_ne!(clean_source_handle.snapshot(), old_handle.snapshot());
+    let expected_bytes = SourceUnitCacheKey::from_source(&source)
+        .stable_hash()
+        .as_bytes()
+        .to_vec();
+    let expected_tables = owner.storage().side_tables(&clean_source_handle).unwrap();
+    let store = CacheStoreRoot::new(fixtures[1].root.join("cache"));
+    assert_eq!(
+        store.insert(&records[0]).unwrap(),
+        CacheInsertOutcome::Inserted
+    );
+    let lookup = store.lookup(&keys[1]);
+    assert!(matches!(lookup, CacheLookupOutcome::Hit(_)));
+    let target = publisher(clean_source_handle.snapshot(), 0, &unit);
+    let adapter = IrCacheAdapter::new(target.clone());
+    let decoded_source = source.clone();
+    let CacheRehydrateOutcome::Rehydrated(handle) = adapter.rehydrate_with_expected_payload(
+        RehydrateCacheHitInput {
+            lookup,
+            snapshot: clean_source_handle.snapshot(),
+            phase: clean_source_handle.phase().clone(),
+            work_unit: clean_source_handle.work_unit().clone(),
+            output_kind: clean_source_handle.output_kind().clone(),
+            schema_version: clean_source_handle.schema_version(),
+            parents: vec![],
+            named_input_hashes: clean_source_handle.lineage().named_input_hashes.clone(),
+            decode: BlobDecoder::new(move |bytes| {
+                SourceUnit::from_canonical_storage_bytes(
+                    bytes,
+                    decoded_source.source_id,
+                    &descriptor,
+                )
+                .filter(|decoded| decoded.matches_canonical_storage(&decoded_source, &descriptor))
+                .ok_or_else(|| BlobDecodeError::new("current source storage mismatch"))
+            }),
+        },
+        &expected_bytes,
+        &expected_tables,
+    ) else {
+        panic!("bound blob rehydration");
+    };
+    assert_eq!(adapter.successful_rehydrations(), 1);
+    assert!(matches!(handle.placement(), StoragePlacement::Blob { .. }));
+    assert_eq!(*target.storage().get(&handle).unwrap(), *source);
+    assert_eq!(
+        target.storage().side_tables(&handle).unwrap(),
+        expected_tables
+    );
+    let snapshot = submission.session.captured().snapshot();
+    let frontend_input = PhaseInput::new(
+        unit,
+        PhaseDispatchInputBundle::new(
+            snapshot.id,
+            source_key(&snapshot.source_versions[0]),
+            vec![],
+            vec![
+                SealedParentOutputHandle::from_current_output(&target, snapshot.id, handle.erase())
+                    .unwrap(),
+            ],
+        )
+        .unwrap(),
+    );
+    allow_frontend(&target, &frontend_input.work_unit);
+    assert_eq!(
+        driver
+            .registry()
+            .cache_key_for_phase(PipelinePhase::Frontend, &frontend_input)
+            .unwrap()
+            .intent,
+        PhaseCacheIntent::NoKey {
+            reason: "frontend inputs require a live source and dependency run".into()
+        }
+    );
+    let replay = driver
+        .registry()
+        .execute_phase_with_resources(
+            PipelinePhase::Frontend,
+            frontend_input,
+            PhaseExecutionResources {
+                diagnostics: Some(DiagnosticSink::new(DiagnosticProducerScope::new(
+                    DiagnosticPhase::Frontend,
+                    snapshot.id,
+                    "frontend.run_loaded",
+                ))),
+                output_publisher: Some(target.clone()),
+                source_load: Some(SourceLoadInputs {
+                    snapshot,
+                    captured: Some(submission.session.captured()),
+                    build_plan: submission.build_plan.as_ref().unwrap(),
+                    module_index: submission.module_index.as_ref().unwrap(),
+                    allocator: &ids,
+                }),
+                ..PhaseExecutionResources::default()
+            },
+        )
+        .unwrap()
+        .result;
+    let clean = submission
+        .scheduler_run
+        .as_ref()
+        .unwrap()
+        .phase_results
+        .values()
+        .flatten()
+        .find(|result| {
+            result
+                .output_refs
+                .iter()
+                .any(|handle| handle.output_kind() == &OutputKind::new("FrontendOutput"))
+        })
+        .unwrap();
+    assert_eq!(replay.status, PhaseStatus::Complete);
+    assert_eq!(replay.diagnostics, clean.diagnostics);
+    let replay_handle = target
+        .storage()
+        .typed_handle::<FrontendOutput<<MizarParserSeam as ParserSeam>::Ast>>(
+            &replay.output_refs[0],
+            &OutputKind::new("FrontendOutput"),
+        )
+        .unwrap();
+    let clean_handle = owner
+        .storage()
+        .typed_handle::<FrontendOutput<<MizarParserSeam as ParserSeam>::Ast>>(
+            &clean.output_refs[0],
+            &OutputKind::new("FrontendOutput"),
+        )
+        .unwrap();
+    assert_eq!(
+        *target.storage().get(&replay_handle).unwrap(),
+        *owner.storage().get(&clean_handle).unwrap()
+    );
+    assert_eq!(
+        target.storage().side_tables(&replay_handle).unwrap(),
+        owner.storage().side_tables(&clean_handle).unwrap()
+    );
+    assert_eq!(replay_handle.lineage().parents, vec![handle.output()]);
+}

@@ -125,9 +125,9 @@ pub enum CacheAdapterMiss {
     Incompatible,
     /// Cache payload bytes are malformed.
     CorruptRecord,
-    /// Canonical payload bytes do not match the recorded content hash.
+    /// Canonical payload bytes do not match the recorded hash or producer expectation.
     PayloadHashMismatch,
-    /// Side-table records do not match the recorded side-table hash.
+    /// Side-table records do not match the recorded hash or complete producer expectation.
     SideTableHashMismatch,
     /// Current parent handles do not match the cache record parent summaries.
     ParentMismatch,
@@ -234,6 +234,34 @@ impl IrCacheAdapter {
             input.produced_by,
             bytes,
         )))
+    }
+
+    /// Checks caller-owned canonical bytes and complete side tables before rehydration.
+    ///
+    /// Expectations grant no publication permission or cache/proof authority.
+    /// Matching data and non-hit outcomes retain all checks in [`Self::rehydrate`].
+    pub fn rehydrate_with_expected_payload<T>(
+        &self,
+        input: RehydrateCacheHitInput<T>,
+        expected_canonical_payload: &[u8],
+        expected_side_tables: &IrSideTables,
+    ) -> CacheRehydrateOutcome<T>
+    where
+        T: Send + Sync + 'static,
+    {
+        if let CacheLookupOutcome::Hit(record) = &input.lookup {
+            let cached = match decode_cached_payload(&record.output) {
+                Ok(payload) => payload,
+                Err(()) => return CacheRehydrateOutcome::Miss(CacheAdapterMiss::CorruptRecord),
+            };
+            if cached.canonical_payload != expected_canonical_payload {
+                return CacheRehydrateOutcome::Miss(CacheAdapterMiss::PayloadHashMismatch);
+            }
+            if &cached.side_tables != expected_side_tables {
+                return CacheRehydrateOutcome::Miss(CacheAdapterMiss::SideTableHashMismatch);
+            }
+        }
+        self.rehydrate(input)
     }
 
     /// Rehydrates a sealed current-snapshot handle from a validated cache hit.

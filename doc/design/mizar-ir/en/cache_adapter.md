@@ -62,6 +62,13 @@ has reached the "validated hit" state. A record classified as missing,
 incomplete, unknown, unsupported, uncacheable, incompatible, corrupt, or
 policy/proof invalid is a miss before handle reconstruction.
 
+## Producer payload expectations
+
+`IrCacheAdapter::rehydrate_with_expected_payload<T>(&self, RehydrateCacheHitInput<T>, &[u8], &IrSideTables) -> CacheRehydrateOutcome<T>` uses the same Send + Sync + 'static bound. The extra arguments are expected semantic canonical bytes and complete side tables supplied by the current producer/caller, not hashes or validation flags.
+For an actual Hit, decode the private envelope with the existing decoder. Malformed data returns CorruptRecord; unequal canonical bytes return PayloadHashMismatch; unequal complete side tables return SideTableHashMismatch, in that order, before invoking storage decoding, allocating a slot or publishing. Matching data and all non-Hit outcomes delegate to the unchanged existing rehydrate path, retaining all original lookup/hash/lineage/decoder/current publisher checks and success counting. Reuse the existing decoder; do not expose or duplicate its envelope/algorithm.
+This exact comparison does not authenticate the caller's expectations, current key/produced_by association, policy, lease or retention, and grants no publication permission or proof authority. Driver owns genuine native source expectations; Cache owns validated lookup. Existing rehydrate remains available with its original contract; unsupported Open/editor and runtime scheduler integration remain deferred.
+Three distinct SourceLoad consumers use actual protected native capture, bound record encoding and real Store lookup in existing Driver source_load.rs: current resident rebinding, expected-byte/raw-map rejection before decoder/publication, and current blob/Frontend versus clean output. Local IDs/diagnostic paths remain separately rebound; equal normalized hashes do not authorize different raw maps. No synthetic producer/Hit establishes credit, and direct rehydration is separate from retained scheduler equivalence.
+
 ## Cacheability
 
 An output is cacheable only when all of the following are true:
