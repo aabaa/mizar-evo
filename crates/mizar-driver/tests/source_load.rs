@@ -7745,3 +7745,761 @@ fn current_storage_comparison_binds_native_disk_blob_readbacks_after_removal() {
         previous = Some(source.as_ref().clone());
     }
 }
+
+#[test]
+fn native_disk_cache_request_projects_real_storage_and_replays_without_local_ids() {
+    use mizar_cache::cache_key::{
+        CACHE_KEY_SCHEMA_VERSION, CacheKeyBuildOutcome, CacheKeyBuilder, FootprintCompleteness,
+    };
+    use mizar_proof::policy::VerifierPolicy;
+    let policy = VerifierPolicy::release();
+    let mut previous = Vec::new();
+    for raw in ["\u{feff}definition\r\nend;\r\n", "definition\nend;\n"] {
+        let mut replays = Vec::new();
+        for replay in 0..2 {
+            let fixture = Fixture::new(raw.as_bytes());
+            let ids = InMemorySessionIdAllocator::new();
+            let source_ids = InMemorySessionIdAllocator::new();
+            for _ in 0..replay {
+                source_ids.next_source_id(snapshot_id(0x62)).unwrap();
+            }
+            let snapshots = SnapshotRegistry::with_allocator(source_ids);
+            let (mut draft, input) = fixture.submit_request(vec![], vec![]);
+            draft.source_inputs.versions.clear();
+            let session = draft
+                .capture_sources(
+                    &ids,
+                    &snapshots,
+                    vec![(
+                        DiskSourceLoader::new(fixture.root.join("alpha")),
+                        SourceInput {
+                            package_id: fixture.version.package_id.clone(),
+                            module_path: fixture.version.module_path.clone(),
+                            normalized_path: fixture.version.normalized_path.clone(),
+                            edition: fixture.version.edition.clone(),
+                            origin: SourceOriginInput::Disk {
+                                path: "src/main.miz".into(),
+                            },
+                        },
+                    )],
+                )
+                .unwrap();
+            let version = session.captured().snapshot().source_versions[0].clone();
+            let unit = WorkUnit::Module {
+                module: mizar_build::module_index::ModuleId::new(
+                    version.package_id.clone(),
+                    version.module_path.clone(),
+                ),
+            };
+            let owner = publisher(session.captured().snapshot().id, 0, &unit);
+            allow_frontend(&owner, &unit);
+            let mut builder = PhaseRegistryBuilder::new();
+            builder.register_source_load();
+            builder.register_frontend(vec![]);
+            let mut driver =
+                CompilerDriver::new(builder.build().unwrap()).with_output_publisher(owner.clone());
+            fs::remove_file(fixture.root.join("alpha/src/main.miz")).unwrap();
+            let submission = driver
+                .submit_captured(session, &ids, &snapshots, input)
+                .unwrap();
+            let captured = submission.session.captured();
+            let phase_input = PhaseInput::new(
+                unit,
+                PhaseDispatchInputBundle::without_parent_outputs(
+                    captured.snapshot().id,
+                    source_key(&version),
+                    vec![],
+                ),
+            );
+            let request = SourceLoadInputs {
+                snapshot: captured.snapshot(),
+                captured: Some(captured),
+                build_plan: submission.build_plan.as_ref().unwrap(),
+                module_index: submission.module_index.as_ref().unwrap(),
+                allocator: &ids,
+            }
+            .prepare_native_disk_cache_request(&phase_input, &policy)
+            .unwrap();
+            let result = submission
+                .scheduler_run
+                .as_ref()
+                .unwrap()
+                .phase_results
+                .values()
+                .flatten()
+                .find(|result| {
+                    result
+                        .output_refs
+                        .iter()
+                        .any(|handle| handle.output_kind() == &OutputKind::new("SourceUnit"))
+                })
+                .unwrap();
+            assert_eq!(result.status, PhaseStatus::Complete);
+            let handle = &result.output_refs[0];
+            let source = owner
+                .storage()
+                .get(
+                    &owner
+                        .storage()
+                        .typed_handle::<SourceUnit>(handle, &OutputKind::new("SourceUnit"))
+                        .unwrap(),
+                )
+                .unwrap();
+            let side = owner.storage().side_tables_by_ref(handle).unwrap();
+            assert_eq!(request.phase.as_str(), handle.phase().as_str());
+            assert_eq!(request.work_unit.as_str(), handle.work_unit().as_str());
+            let identity = request.source_identity.as_ref().unwrap();
+            assert_eq!(identity.package_id, source.package_id);
+            assert_eq!(identity.module_path, source.module_path);
+            assert_eq!(identity.normalized_source_path, source.normalized_path);
+            assert_eq!(identity.source_hash, source.source_hash);
+            assert_eq!(identity.language_edition, source.edition);
+            assert_eq!(request.input_hashes.len(), 3);
+            assert_eq!(request.input_hashes[0].name, "source");
+            assert_eq!(
+                request.input_hashes[0].domain,
+                SOURCE_UNIT_CACHE_KEY_VERSION
+            );
+            assert_eq!(
+                request.input_hashes[0].digest,
+                SourceUnitCacheKey::from_source(&source).stable_hash()
+            );
+            assert_eq!(request.input_hashes[1].name, "source-storage");
+            assert_eq!(
+                request.input_hashes[1].domain,
+                "mizar-frontend/source-unit-storage-side-table/v1"
+            );
+            assert_eq!(request.input_hashes[1].digest, side.source_maps[0].digest);
+            assert_eq!(request.input_hashes[2].name, "captured-lockfile");
+            assert_eq!(
+                request.input_hashes[2].domain,
+                "mizar-driver/captured-lockfile-identity/v1"
+            );
+            assert_eq!(
+                request.input_hashes[2].digest,
+                captured.snapshot().lockfile_hash
+            );
+            assert_eq!(
+                request.config_hash,
+                captured.snapshot().verifier_config_hash
+            );
+            assert_eq!(
+                request.policy_fingerprint.hash(),
+                policy.policy_fingerprint().hash()
+            );
+            assert_ne!(request.config_hash, request.policy_fingerprint.hash());
+            assert_eq!(
+                request.cache_schema_version.as_str(),
+                CACHE_KEY_SCHEMA_VERSION
+            );
+            let descriptor = driver
+                .registry()
+                .descriptor_for_phase(PipelinePhase::SourceLoad)
+                .unwrap();
+            assert_eq!(
+                request
+                    .schema_versions
+                    .iter()
+                    .map(|entry| (
+                        entry.schema_family.as_str(),
+                        entry.name.as_str(),
+                        entry.version.as_str(),
+                    ))
+                    .collect::<Vec<_>>(),
+                vec![
+                    (
+                        "phase-output",
+                        "SourceUnit",
+                        descriptor.schema_version.as_str()
+                    ),
+                    ("source-key", "SourceUnit", SOURCE_UNIT_CACHE_KEY_VERSION),
+                    ("source-storage", "Disk", "mizar-frontend-source-disk-v1"),
+                ]
+            );
+            let validation = &request.validation_inputs;
+            assert_eq!(
+                validation.cache_schema_compatibility.as_str(),
+                CACHE_KEY_SCHEMA_VERSION
+            );
+            assert_eq!(validation.toolchain_compatibility.len(), 1);
+            assert_eq!(
+                validation.toolchain_compatibility[0].family,
+                "mizar-session/toolchain"
+            );
+            assert_eq!(validation.toolchain_compatibility[0].field_name, "identity");
+            assert_eq!(
+                validation.toolchain_compatibility[0].value,
+                captured.snapshot().toolchain.identity()
+            );
+            assert_eq!(
+                validation
+                    .policy_compatibility
+                    .iter()
+                    .map(|field| (
+                        field.family.as_str(),
+                        field.field_name.as_str(),
+                        field.value.clone(),
+                    ))
+                    .collect::<Vec<_>>(),
+                vec![
+                    (
+                        "mizar-proof/verifier-policy",
+                        "schema_version",
+                        policy.schema_version().to_string()
+                    ),
+                    (
+                        "mizar-proof/verifier-policy",
+                        "profile_id",
+                        policy.profile_id().to_owned()
+                    ),
+                    (
+                        "mizar-proof/verifier-policy",
+                        "checker_schema_version",
+                        policy.checker_schema_version().to_string()
+                    ),
+                    (
+                        "mizar-proof/verifier-policy",
+                        "fingerprint",
+                        policy
+                            .policy_fingerprint()
+                            .hash()
+                            .as_bytes()
+                            .iter()
+                            .map(|byte| format!("{byte:02x}"))
+                            .collect::<String>()
+                    ),
+                ]
+            );
+            assert_eq!(
+                validation.footprint_completeness,
+                FootprintCompleteness::Complete
+            );
+            assert!(!validation.uncacheable);
+            assert!(request.dependency_hashes.is_empty() && request.dependency_slices.is_empty());
+            assert!(validation.dependency_artifacts.is_empty());
+            assert!(validation.dependency_slice_fingerprints.is_empty());
+            assert!(validation.proof_reuse_schema_versions.is_empty());
+            assert!(validation.proof_reuse_evidence_identities.is_empty());
+            assert!(validation.diagnostic_refs.is_empty());
+            assert_eq!(validation.canonical_vc_fingerprint, None);
+            assert_eq!(validation.local_context_fingerprint, None);
+            assert_eq!(validation.obligation_anchor_fingerprint, None);
+            assert_eq!(validation.selected_proof_witness_hash, None);
+            assert_eq!(validation.deterministic_discharge_hash, None);
+            assert_eq!(validation.proof_reuse_validation_hash, None);
+            assert_eq!(
+                driver
+                    .registry()
+                    .cache_key_for_phase(PipelinePhase::SourceLoad, &phase_input)
+                    .unwrap()
+                    .intent,
+                PhaseCacheIntent::NoKey {
+                    reason: "current disk source maps require a real source load".into(),
+                }
+            );
+            let CacheKeyBuildOutcome::Cacheable(key) =
+                CacheKeyBuilder::new(request.clone()).build()
+            else {
+                panic!("bound source-only request must construct a cacheable key");
+            };
+            replays.push((request, key.final_hash, source.source_id));
+        }
+        assert_eq!(replays[0].0, replays[1].0);
+        assert_eq!(replays[0].1, replays[1].1);
+        assert_ne!(replays[0].2, replays[1].2);
+        previous.push(replays.remove(0));
+    }
+    assert_eq!(previous[0].0.source_identity, previous[1].0.source_identity);
+    assert_eq!(previous[0].0.input_hashes[0], previous[1].0.input_hashes[0]);
+    assert_ne!(previous[0].0.input_hashes[1], previous[1].0.input_hashes[1]);
+    assert_ne!(previous[0].1, previous[1].1);
+}
+
+#[test]
+fn native_disk_cache_request_keeps_captured_and_explicit_policy_identities_distinct() {
+    use mizar_cache::cache_key::{CacheKeyBuildOutcome, CacheKeyBuilder};
+    use mizar_proof::policy::VerifierPolicy;
+    let fixture = Fixture::new(b"definition\nend;\n");
+    let mut baseline = None;
+    for mode in [
+        "baseline",
+        "text",
+        "config",
+        "lock",
+        "toolchain",
+        "profile",
+        "settings",
+    ] {
+        fixture.write(if mode == "text" {
+            b"definition\n\nend;\n"
+        } else {
+            b"definition\nend;\n"
+        });
+        let ids = InMemorySessionIdAllocator::new();
+        let snapshots = SnapshotRegistry::new();
+        let (mut draft, mut input) = fixture.submit_request(vec![], vec![]);
+        draft.source_inputs.versions.clear();
+        if mode == "config" {
+            draft.verifier_config = VerifierConfigInput::new(hash(3));
+        }
+        if mode == "lock" {
+            draft.dependency_inputs.lockfile_hash = hash(4);
+        }
+        if mode == "toolchain" {
+            draft.dependency_inputs.toolchain = ToolchainInfo::new("different-toolchain");
+            input.plan_request.toolchain = draft.dependency_inputs.toolchain.clone();
+        }
+        let session = draft
+            .capture_sources(
+                &ids,
+                &snapshots,
+                vec![(
+                    DiskSourceLoader::new(fixture.root.join("alpha")),
+                    SourceInput {
+                        package_id: fixture.version.package_id.clone(),
+                        module_path: fixture.version.module_path.clone(),
+                        normalized_path: fixture.version.normalized_path.clone(),
+                        edition: fixture.version.edition.clone(),
+                        origin: SourceOriginInput::Disk {
+                            path: "src/main.miz".into(),
+                        },
+                    },
+                )],
+            )
+            .unwrap();
+        let mut driver = CompilerDriver::new(source_registry());
+        let submission = driver
+            .submit_captured(session, &ids, &snapshots, input)
+            .unwrap();
+        let captured = submission.session.captured();
+        let phase_input = PhaseInput::new(
+            source_task(&submission).unit.clone(),
+            PhaseDispatchInputBundle::without_parent_outputs(
+                captured.snapshot().id,
+                source_key(&captured.snapshot().source_versions[0]),
+                vec![],
+            ),
+        );
+        let policy = match mode {
+            "profile" => VerifierPolicy::release().with_profile_id("alternate-release"),
+            "settings" => VerifierPolicy::release().with_require_kernel_certificates(false),
+            _ => VerifierPolicy::release(),
+        };
+        let request = SourceLoadInputs {
+            snapshot: captured.snapshot(),
+            captured: Some(captured),
+            allocator: &ids,
+            build_plan: submission.build_plan.as_ref().unwrap(),
+            module_index: submission.module_index.as_ref().unwrap(),
+        }
+        .prepare_native_disk_cache_request(&phase_input, &policy)
+        .unwrap();
+        let CacheKeyBuildOutcome::Cacheable(key) = CacheKeyBuilder::new(request.clone()).build()
+        else {
+            panic!("bound native Disk request");
+        };
+        if let Some((old, old_key)) = &baseline {
+            assert_ne!(&request, old, "{mode}");
+            assert_ne!(&key.final_hash, old_key, "{mode}");
+            if mode == "config" {
+                assert_ne!(request.config_hash, old.config_hash);
+                assert_eq!(request.policy_fingerprint, old.policy_fingerprint);
+            } else if mode == "profile" || mode == "settings" {
+                assert_eq!(request.config_hash, old.config_hash);
+                assert_ne!(request.policy_fingerprint, old.policy_fingerprint);
+            } else {
+                assert_eq!(request.config_hash, old.config_hash);
+                assert_eq!(request.policy_fingerprint, old.policy_fingerprint);
+            }
+            match mode {
+                "text" => assert_ne!(request.source_identity, old.source_identity),
+                "lock" => assert_ne!(request.input_hashes[2], old.input_hashes[2]),
+                "toolchain" => assert_ne!(
+                    request.validation_inputs.toolchain_compatibility,
+                    old.validation_inputs.toolchain_compatibility
+                ),
+                "settings" => assert_eq!(
+                    request.validation_inputs.policy_compatibility[1],
+                    old.validation_inputs.policy_compatibility[1]
+                ),
+                _ => {}
+            }
+        } else {
+            baseline = Some((request, key.final_hash));
+        }
+    }
+}
+
+#[test]
+fn native_disk_cache_request_rejects_unbound_dispatch_capture_roots_and_policy_metadata() {
+    use mizar_proof::policy::{
+        DEFAULT_CHECKER_SCHEMA_VERSION, POLICY_SCHEMA_VERSION, VerifierPolicy,
+    };
+    let fixture = Fixture::new(b"definition\nend;\n");
+    let ids = InMemorySessionIdAllocator::new();
+    let snapshots = SnapshotRegistry::new();
+    let (mut draft, input) = fixture.submit_request(vec![], vec![]);
+    draft.source_inputs.versions.clear();
+    let descriptor = SourceInput {
+        package_id: fixture.version.package_id.clone(),
+        module_path: fixture.version.module_path.clone(),
+        normalized_path: fixture.version.normalized_path.clone(),
+        edition: fixture.version.edition.clone(),
+        origin: SourceOriginInput::Disk {
+            path: "src/main.miz".into(),
+        },
+    };
+    let session = draft
+        .clone()
+        .capture_sources(
+            &ids,
+            &snapshots,
+            vec![(
+                DiskSourceLoader::new(fixture.root.join("alpha")),
+                descriptor.clone(),
+            )],
+        )
+        .unwrap();
+    let mut foreign_draft = draft.clone();
+    foreign_draft.verifier_config = VerifierConfigInput::new(hash(9));
+    let foreign = foreign_draft
+        .capture_sources(
+            &ids,
+            &snapshots,
+            vec![(
+                DiskSourceLoader::new(fixture.root.join("alpha")),
+                descriptor.clone(),
+            )],
+        )
+        .unwrap();
+    let mut driver = CompilerDriver::new(source_registry());
+    let submission = driver
+        .submit_captured(session, &ids, &snapshots, input)
+        .unwrap();
+    let captured = submission.session.captured();
+    let phase_input = PhaseInput::new(
+        source_task(&submission).unit.clone(),
+        PhaseDispatchInputBundle::without_parent_outputs(
+            captured.snapshot().id,
+            source_key(&captured.snapshot().source_versions[0]),
+            vec![],
+        ),
+    );
+    let inputs = SourceLoadInputs {
+        snapshot: captured.snapshot(),
+        captured: Some(captured),
+        allocator: &ids,
+        build_plan: submission.build_plan.as_ref().unwrap(),
+        module_index: submission.module_index.as_ref().unwrap(),
+    };
+    let policy = VerifierPolicy::release();
+    assert!(
+        inputs
+            .prepare_native_disk_cache_request(&phase_input, &policy)
+            .is_ok()
+    );
+    for rejected in [
+        SourceLoadInputs {
+            captured: None,
+            ..inputs
+        },
+        SourceLoadInputs {
+            captured: Some(foreign.captured()),
+            ..inputs
+        },
+    ] {
+        assert!(
+            rejected
+                .prepare_native_disk_cache_request(&phase_input, &policy)
+                .is_err()
+        );
+    }
+    let legacy = fixture.submit(&ids, &SnapshotRegistry::new());
+    let legacy_capture = legacy.session.captured();
+    let legacy_input = PhaseInput::new(
+        phase_input.work_unit.clone(),
+        PhaseDispatchInputBundle::without_parent_outputs(
+            legacy_capture.snapshot().id,
+            source_key(&legacy_capture.snapshot().source_versions[0]),
+            vec![],
+        ),
+    );
+    assert!(
+        SourceLoadInputs {
+            snapshot: legacy_capture.snapshot(),
+            captured: Some(legacy_capture),
+            build_plan: legacy.build_plan.as_ref().unwrap(),
+            module_index: legacy.module_index.as_ref().unwrap(),
+            allocator: &ids,
+        }
+        .prepare_native_disk_cache_request(&legacy_input, &policy)
+        .is_err()
+    );
+    for unsupported in [
+        policy.clone().with_profile_id(" \t\n"),
+        policy
+            .clone()
+            .with_schema_version(POLICY_SCHEMA_VERSION + 1),
+        policy
+            .clone()
+            .with_checker_schema_version(DEFAULT_CHECKER_SCHEMA_VERSION + 1),
+    ] {
+        assert!(
+            inputs
+                .prepare_native_disk_cache_request(&phase_input, &unsupported)
+                .is_err()
+        );
+    }
+    for mode in [
+        "missing",
+        "duplicate",
+        "source-id",
+        "source-hash",
+        "origin",
+        "workspace",
+        "config",
+        "lock",
+        "toolchain",
+    ] {
+        let mut snapshot = captured.snapshot().clone();
+        match mode {
+            "missing" => snapshot.source_versions.clear(),
+            "duplicate" => snapshot
+                .source_versions
+                .push(snapshot.source_versions[0].clone()),
+            "source-id" => {
+                ids.next_source_id(snapshot.id).unwrap();
+                snapshot.source_versions[0].source_id = ids.next_source_id(snapshot.id).unwrap();
+            }
+            "source-hash" => snapshot.source_versions[0].source_hash = hash(8),
+            "origin" => {
+                snapshot.source_versions[0].origin = SourceOrigin::OpenBuffer { version: 1 }
+            }
+            "workspace" => snapshot.workspace_root = WorkspaceRoot::new("/foreign"),
+            "config" => snapshot.verifier_config_hash = hash(8),
+            "lock" => snapshot.lockfile_hash = hash(8),
+            "toolchain" => snapshot.toolchain = ToolchainInfo::new("foreign"),
+            _ => unreachable!(),
+        }
+        assert!(
+            SourceLoadInputs {
+                snapshot: &snapshot,
+                ..inputs
+            }
+            .prepare_native_disk_cache_request(&phase_input, &policy)
+            .is_err(),
+            "{mode}"
+        );
+    }
+    for mode in [
+        "duplicate-package",
+        "root",
+        "source-root",
+        "manifest",
+        "edition",
+        "toolchain",
+    ] {
+        let mut plan = inputs.build_plan.clone();
+        match mode {
+            "duplicate-package" => plan.packages.push(plan.packages[0].clone()),
+            "root" | "source-root" | "manifest" => {
+                let mizar_build::planner::PackagePlanSource::Workspace {
+                    root,
+                    source_root,
+                    manifest_path,
+                } = &mut plan.packages[0].source
+                else {
+                    panic!("workspace package");
+                };
+                match mode {
+                    "root" => *root = "..".into(),
+                    "source-root" => *source_root = "foreign/src".into(),
+                    "manifest" => *manifest_path = "foreign/mizar.pkg".into(),
+                    _ => unreachable!(),
+                }
+            }
+            "edition" => plan.packages[0].edition = Edition::new("foreign"),
+            "toolchain" => plan.toolchain = ToolchainInfo::new("foreign"),
+            _ => unreachable!(),
+        }
+        assert!(
+            SourceLoadInputs {
+                build_plan: &plan,
+                ..inputs
+            }
+            .prepare_native_disk_cache_request(&phase_input, &policy)
+            .is_err(),
+            "{mode}"
+        );
+    }
+    for mode in [
+        "missing-module",
+        "duplicate-module",
+        "duplicate-index-package",
+        "path",
+    ] {
+        let mut index = inputs.module_index.clone();
+        match mode {
+            "missing-module" => index.modules.clear(),
+            "duplicate-module" => index.modules.push(index.modules[0].clone()),
+            "duplicate-index-package" => index.packages.push(index.packages[0].clone()),
+            "path" => {
+                let ModuleIndexLocation::WorkspaceFile {
+                    source_relative_path,
+                    ..
+                } = &mut index.modules[0].location
+                else {
+                    panic!("workspace source");
+                };
+                *source_relative_path = "foreign.miz".into();
+            }
+            _ => unreachable!(),
+        }
+        assert!(
+            SourceLoadInputs {
+                module_index: &index,
+                ..inputs
+            }
+            .prepare_native_disk_cache_request(&phase_input, &policy)
+            .is_err(),
+            "{mode}"
+        );
+    }
+    for (snapshot, unit, digest, dependencies) in [
+        (
+            snapshot_id(0x71),
+            phase_input.work_unit.clone(),
+            source_key(&fixture.version),
+            vec![],
+        ),
+        (
+            phase_input.snapshot,
+            WorkUnit::Workspace,
+            source_key(&fixture.version),
+            vec![],
+        ),
+        (
+            phase_input.snapshot,
+            phase_input.work_unit.clone(),
+            hash(9),
+            vec![],
+        ),
+        (
+            phase_input.snapshot,
+            phase_input.work_unit.clone(),
+            source_key(&fixture.version),
+            vec![hash(9)],
+        ),
+        (
+            phase_input.snapshot,
+            WorkUnit::Module {
+                module: mizar_build::module_index::ModuleId::new(
+                    PackageId::new("foreign"),
+                    ModulePath::new("main"),
+                ),
+            },
+            source_key(&fixture.version),
+            vec![],
+        ),
+    ] {
+        let rejected = PhaseInput::new(
+            unit,
+            PhaseDispatchInputBundle::without_parent_outputs(snapshot, digest, dependencies),
+        );
+        assert!(
+            inputs
+                .prepare_native_disk_cache_request(&rejected, &policy)
+                .is_err()
+        );
+    }
+    let owner = publisher(phase_input.snapshot, 0, &phase_input.work_unit);
+    let source_result = driver
+        .registry()
+        .execute_phase_with_resources(
+            PipelinePhase::SourceLoad,
+            phase_input.clone(),
+            PhaseExecutionResources {
+                output_publisher: Some(owner.clone()),
+                source_load: Some(inputs),
+                diagnostics: Some(DiagnosticSink::new(DiagnosticProducerScope::new(
+                    DiagnosticPhase::SourceLoad,
+                    phase_input.snapshot,
+                    "frontend.source_load",
+                ))),
+                ..PhaseExecutionResources::default()
+            },
+        )
+        .unwrap()
+        .result;
+    assert_eq!(source_result.status, PhaseStatus::Complete);
+    let parent = SealedParentOutputHandle::from_published_output(
+        &owner,
+        phase_input.snapshot,
+        source_result.output_refs[0].clone(),
+    )
+    .unwrap();
+    let rejected = PhaseInput::new(
+        phase_input.work_unit.clone(),
+        PhaseDispatchInputBundle::new(
+            phase_input.snapshot,
+            source_key(&captured.snapshot().source_versions[0]),
+            vec![],
+            vec![parent],
+        )
+        .unwrap(),
+    );
+    assert!(
+        inputs
+            .prepare_native_disk_cache_request(&rejected, &policy)
+            .is_err()
+    );
+    for origin in [
+        SourceOriginInput::OpenBuffer {
+            uri: format!(
+                "file://{}",
+                fixture.root.join("alpha/src/main.miz").display()
+            ),
+            expected_version: 1,
+            actual_version: 1,
+            text: std::sync::Arc::from("definition\nend;\n"),
+        },
+        SourceOriginInput::Generated {
+            generator: mizar_session::GeneratedSourceKind::new("cache-request-test"),
+            text: std::sync::Arc::from("definition\nend;\n"),
+            anchor: None,
+        },
+    ] {
+        let native = draft
+            .clone()
+            .capture_sources(
+                &ids,
+                &snapshots,
+                vec![(
+                    DiskSourceLoader::new(fixture.root.join("alpha")),
+                    SourceInput {
+                        origin,
+                        ..descriptor.clone()
+                    },
+                )],
+            )
+            .unwrap();
+        let snapshot = native.captured().snapshot();
+        let rejected = PhaseInput::new(
+            phase_input.work_unit.clone(),
+            PhaseDispatchInputBundle::without_parent_outputs(
+                snapshot.id,
+                source_key(&snapshot.source_versions[0]),
+                vec![],
+            ),
+        );
+        assert!(
+            SourceLoadInputs {
+                snapshot,
+                captured: Some(native.captured()),
+                ..inputs
+            }
+            .prepare_native_disk_cache_request(&rejected, &policy)
+            .is_err()
+        );
+    }
+}

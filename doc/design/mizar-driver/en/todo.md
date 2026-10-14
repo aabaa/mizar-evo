@@ -533,6 +533,8 @@ the owning producers when the paired tasks land.
 
 29. **[Current acquired source storage comparison](../../task_contracts/en/SOURCE-CURRENT-STORAGE-BINDING.md).** [x]
 
+30. **[Native Disk SourceLoad cache request preparation](../../task_contracts/en/DRIVER-NATIVE-DISK-CACHE-REQUEST.md).** [x]
+
 ## Recommended Verification
 
 Run after each task:

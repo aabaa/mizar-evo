@@ -501,6 +501,8 @@ artifact/test のフォローアップタスクが所有する。本 crate の�
 
 29. **[実取得済み source storage の照合](../../task_contracts/ja/SOURCE-CURRENT-STORAGE-BINDING.md).** [x]
 
+30. **[Native Disk SourceLoad cache request の準備](../../task_contracts/ja/DRIVER-NATIVE-DISK-CACHE-REQUEST.md).** [x]
+
 ## 推奨検証
 
 各タスクの後で実行する:

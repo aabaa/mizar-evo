@@ -79,8 +79,10 @@ fn driver_dependency_boundary_is_exact_for_scaffold_task() {
         "mizar-artifact".to_owned(),
         "mizar-frontend".to_owned(),
         "mizar-build".to_owned(),
+        "mizar-cache".to_owned(),
         "mizar-diagnostics".to_owned(),
         "mizar-ir".to_owned(),
+        "mizar-proof".to_owned(),
         "mizar-resolve".to_owned(),
         "mizar-session".to_owned(),
         "salsa".to_owned(),
@@ -119,6 +121,18 @@ fn driver_dependency_boundary_is_exact_for_scaffold_task() {
         "../mizar-frontend",
     );
     assert_dependency_path(&dependencies, &manifest_path, "mizar-ir", "../mizar-ir");
+    assert_dependency_path(
+        &dependencies,
+        &manifest_path,
+        "mizar-cache",
+        "../mizar-cache",
+    );
+    assert_dependency_path(
+        &dependencies,
+        &manifest_path,
+        "mizar-proof",
+        "../mizar-proof",
+    );
     assert_dependency_path(
         &dependencies,
         &manifest_path,

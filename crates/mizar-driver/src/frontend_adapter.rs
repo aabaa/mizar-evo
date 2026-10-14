@@ -1,4 +1,4 @@
-//! Real disk source publication and dependency lexical input.
+//! Real disk source publication, native cache request preparation and dependency lexical input.
 //! See [the source service contract](../../../../doc/design/mizar-driver/en/frontend_adapter.md).
 use std::{path::PathBuf, sync::Arc};
 
@@ -68,6 +68,161 @@ pub(crate) fn source_input_hash(version: &mizar_session::SourceVersion) -> Hash 
 }
 
 impl<'a> crate::registry::SourceLoadInputs<'a> {
+    /// Projects protected native Disk capture into plain cache request data.
+    /// Root binding performs filesystem metadata I/O; no source body is reopened.
+    pub fn prepare_native_disk_cache_request(
+        self,
+        input: &PhaseInput,
+        policy: &mizar_proof::policy::VerifierPolicy,
+    ) -> Result<mizar_cache::cache_key::CacheKeyRequest, String> {
+        use mizar_cache::cache_key::{
+            CACHE_KEY_SCHEMA_VERSION, CacheKeyRequest, CacheValidationInputs, CompatibilityField,
+            FootprintCompleteness, NamedHash, NamedSchemaVersion, PipelinePhase as CachePhase,
+            PolicyFingerprint, SchemaVersion as CacheSchema, SourceIdentity,
+            WorkUnit as CacheWorkUnit,
+        };
+        use mizar_proof::policy::{DEFAULT_CHECKER_SCHEMA_VERSION, POLICY_SCHEMA_VERSION};
+
+        if input.snapshot != self.snapshot.id
+            || self.build_plan.toolchain != self.snapshot.toolchain
+            || !input.parent_outputs().is_empty()
+            || !input.identities().dependency_hashes().is_empty()
+        {
+            return Err("native Disk request context mismatch".to_owned());
+        }
+        let WorkUnit::Module { module } = &input.work_unit else {
+            return Err("native Disk request requires a module".to_owned());
+        };
+        let version = unique(self.snapshot.source_versions.iter().filter(|version| {
+            version.package_id == module.package && version.module_path == module.path
+        }))
+        .ok_or_else(|| "native Disk request requires one captured source version".to_owned())?;
+        if version.origin != SourceOrigin::Disk
+            || input.identities().input_hash() != source_input_hash(version)
+        {
+            return Err("native Disk request source dispatch mismatch".to_owned());
+        }
+        let (source, source_input) = self
+            .native_source(version)
+            .ok_or_else(|| "native Disk request capture binding failed".to_owned())?;
+        if !matches!(source_input.origin, SourceOriginInput::Disk { .. }) {
+            return Err("native Disk request requires Disk capture".to_owned());
+        }
+        let storage = source
+            .canonical_disk_bytes()
+            .ok_or_else(|| "native Disk request storage is unsupported".to_owned())?;
+        if policy.profile_id().trim().is_empty()
+            || policy.schema_version() != POLICY_SCHEMA_VERSION
+            || policy.checker_schema_version() != DEFAULT_CHECKER_SCHEMA_VERSION
+        {
+            return Err("native Disk request policy metadata is unsupported".to_owned());
+        }
+        let fingerprint = policy.policy_fingerprint().hash();
+        let descriptor = SourceLoadService.phase();
+        Ok(CacheKeyRequest {
+            cache_schema_version: CacheSchema::new(CACHE_KEY_SCHEMA_VERSION),
+            phase: CachePhase::new(descriptor.service_name),
+            work_unit: CacheWorkUnit::new(format!(
+                "{:?}:{:?}",
+                source.package_id.as_str(),
+                source.module_path.as_str()
+            )),
+            source_identity: Some(SourceIdentity {
+                package_id: source.package_id,
+                module_path: source.module_path,
+                normalized_source_path: source.normalized_path,
+                source_hash: source.source_hash,
+                language_edition: source.edition,
+            }),
+            input_hashes: vec![
+                NamedHash {
+                    name: "source".to_owned(),
+                    domain: SOURCE_UNIT_CACHE_KEY_VERSION.to_owned(),
+                    digest: source_input_hash(version),
+                },
+                NamedHash {
+                    name: "source-storage".to_owned(),
+                    domain: "mizar-frontend/source-unit-storage-side-table/v1".to_owned(),
+                    digest: Hash::from_bytes(blake3::derive_key(
+                        "mizar-frontend/source-unit-storage-side-table/v1",
+                        &storage,
+                    )),
+                },
+                NamedHash {
+                    name: "captured-lockfile".to_owned(),
+                    domain: "mizar-driver/captured-lockfile-identity/v1".to_owned(),
+                    digest: self.snapshot.lockfile_hash,
+                },
+            ],
+            dependency_hashes: Vec::new(),
+            dependency_slices: Vec::new(),
+            config_hash: self.snapshot.verifier_config_hash,
+            schema_versions: vec![
+                NamedSchemaVersion {
+                    schema_family: "phase-output".to_owned(),
+                    name: descriptor.output_kind,
+                    version: CacheSchema::new(descriptor.schema_version),
+                },
+                NamedSchemaVersion {
+                    schema_family: "source-key".to_owned(),
+                    name: "SourceUnit".to_owned(),
+                    version: CacheSchema::new(SOURCE_UNIT_CACHE_KEY_VERSION),
+                },
+                NamedSchemaVersion {
+                    schema_family: "source-storage".to_owned(),
+                    name: "Disk".to_owned(),
+                    version: CacheSchema::new("mizar-frontend-source-disk-v1"),
+                },
+            ],
+            policy_fingerprint: PolicyFingerprint::new(fingerprint),
+            validation_inputs: CacheValidationInputs {
+                cache_schema_compatibility: CacheSchema::new(CACHE_KEY_SCHEMA_VERSION),
+                toolchain_compatibility: vec![CompatibilityField {
+                    family: "mizar-session/toolchain".to_owned(),
+                    field_name: "identity".to_owned(),
+                    value: self.snapshot.toolchain.identity().to_owned(),
+                }],
+                dependency_artifacts: Vec::new(),
+                footprint_completeness: FootprintCompleteness::Complete,
+                uncacheable: false,
+                policy_compatibility: vec![
+                    CompatibilityField {
+                        family: "mizar-proof/verifier-policy".to_owned(),
+                        field_name: "schema_version".to_owned(),
+                        value: policy.schema_version().to_string(),
+                    },
+                    CompatibilityField {
+                        family: "mizar-proof/verifier-policy".to_owned(),
+                        field_name: "profile_id".to_owned(),
+                        value: policy.profile_id().to_owned(),
+                    },
+                    CompatibilityField {
+                        family: "mizar-proof/verifier-policy".to_owned(),
+                        field_name: "checker_schema_version".to_owned(),
+                        value: policy.checker_schema_version().to_string(),
+                    },
+                    CompatibilityField {
+                        family: "mizar-proof/verifier-policy".to_owned(),
+                        field_name: "fingerprint".to_owned(),
+                        value: blake3::Hash::from(*fingerprint.as_bytes())
+                            .to_hex()
+                            .to_string(),
+                    },
+                ],
+                canonical_vc_fingerprint: None,
+                local_context_fingerprint: None,
+                dependency_slice_fingerprints: Vec::new(),
+                obligation_anchor_fingerprint: None,
+                selected_proof_witness_hash: None,
+                deterministic_discharge_hash: None,
+                proof_reuse_schema_versions: Vec::new(),
+                proof_reuse_validation_hash: None,
+                proof_reuse_evidence_identities: Vec::new(),
+                diagnostic_refs: Vec::new(),
+            },
+        })
+    }
+
     fn native_source(
         self,
         version: &mizar_session::SourceVersion,

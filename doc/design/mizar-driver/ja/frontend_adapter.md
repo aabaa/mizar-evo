@@ -101,3 +101,20 @@ discovery/SourceLoad/Frontend は保護 snapshot 全体、一意な実 metadata/
 既存 frontend 表示 path 方針で捕捉 Disk/Open を投影し、text 再読込や代替 source ID 取得は行わない。従来 Disk の load/drift/error 診断は不変。Native 取得失敗は型付き capture error であり、scheduled 診断を捏造しない。
 SourceLoad/Frontend は owner の Disk/Open codec を使い、own/供給済み親の source payload 全体と raw loading map を実捕捉へ照合する。provider、lexical handoff/import 対応、診断変換、cancel と publication guard は維持する。discovery は出力/診断を公開せず部分推定 overlay を拒否する。
 Open は OpenBuffer/InternalOnly、捕捉 Disk は PackageSource/CurrentPackage。実 Native dispatch の四 consumer だけが記録済み published 承認を使い、summary-only の current/package 検証は維持する。実 cache intent はともに NoKey。後続 service、LSP current 診断、proof/cache/artifact 権限と全 build 完了は未対応。
+
+## Native Disk cache preparation
+
+`SourceLoadInputs::prepare_native_disk_cache_request(self, &PhaseInput, &VerifierPolicy) -> Result<CacheKeyRequest, String>` は保護された native Disk capture から Cache owner の通常 request data を準備する。同一 snapshot、一意の束縛 module/version、実 SourceUnitCacheKey dispatch hash、parent/dependency hash なし、plan/snapshot toolchain 一致を要求する。既存 native_source guard を使い、root canonicalization は純粋 registry query の外の filesystem metadata I/O として明記し、source body は再取得しない。capture 不足・曖昧・foreign、Open/Generated、空 policy profile、POLICY_SCHEMA_VERSION 以外の policy schema、DEFAULT_CHECKER_SCHEMA_VERSION 以外の checker schema は拒否する。
+既存 Cache/Proof metadata API の消費に限って本体 mizar-cache/mizar-proof 依存を許す。明示 policy の policy_fingerprint().hash() をコピーし、config identity と分離する。互換性値は供給された識別を運ぶだけで、active-run 選択・現 lock file 認証・toolchain 互換性を証明しない。
+| Field | Exact projection |
+|---|---|
+| phase/work_unit/source_identity | SourceLoad、既存 IR package/module 表記、実 capture の package/module/path/hash/edition。allocator ID・診断 path を含めない |
+| input_hashes | source / SOURCE_UNIT_CACHE_KEY_VERSION / 実 source-key digest; source-storage / mizar-frontend/source-unit-storage-side-table/v1 / 実 canonical Disk storage derive-key digest; captured-lockfile / mizar-driver/captured-lockfile-identity/v1 / 実 snapshot.lockfile_hash |
+| config_hash / policy_fingerprint | 実 snapshot.verifier_config_hash / Cache PolicyFingerprint::new(policy.policy_fingerprint().hash()) |
+| schema_versions | phase-output/SourceUnit = 実 SourceLoad descriptor schema; source-key/SourceUnit = SOURCE_UNIT_CACHE_KEY_VERSION; source-storage/Disk = mizar-frontend-source-disk-v1 |
+| cache schema / compatibility | key schema と cache_schema_compatibility は共に CACHE_KEY_SCHEMA_VERSION |
+| toolchain_compatibility | family mizar-session/toolchain、field identity、実 snapshot.toolchain.identity() |
+| policy_compatibility | family mizar-proof/verifier-policy: schema_version・profile_id・checker_schema_version は実 public getter、fingerprint は実 policy fingerprint lower hex |
+| footprint / optional inputs | 上の source-only 検査後 Complete、uncacheable=false。消費 dependency/slice/artifact・VC/context/witness/reuse・diagnostic input はなし |
+captured-lockfile domain は保持 digest の派生 identity-carrier namespace であり、上流 digest algorithm や現 lock producer を主張しない。既存 source/storage owner の digest と bytes は保つ。Complete はこの SourceLoad の入力を全て束縛した footprint のみを表し、同 phase は output parent・lexical provider・dependency artifact を読まない。
+lease/currentness・active policy 対応・互換性検証・lookup・保持 output・scheduling は caller/runtime と Cache が所有する。request data/key 構築は hit/publication/proof receipt ではない。両登録 cache intent は NoKey のままとし、summary-only 動作・Open/editor uncacheability・Frontend key producer と Steps 6–8 全体は保留する。
