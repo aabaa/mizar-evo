@@ -14444,3 +14444,192 @@ fn source_registration_local_ranking_preserves_actual_input_and_encodings() {
         }
     }
 }
+
+#[test]
+fn source_local_evidence_component_hashes_bind_actual_needs_atp_and_direct_premise_handoffs() {
+    use mizar_session::hash_text;
+    use mizar_vc::{
+        discharge::{DischargeInput, DischargePolicy, DischargeRule, try_discharge},
+        generator::generate_source_existential_registration,
+        kernel_evidence_handoff::{
+            build_source_existential_discharge_candidate, build_source_existential_kernel_handoff,
+        },
+        vc_ir::{GenerationSchemaVersion, VcSchemaVersion, VcStatus},
+    };
+    let profile_frame = concat!(
+        "mizar-vc/local-evidence-component/v1\nprofile\n",
+        "kernel-profile=KernelEvidenceProfile { profile_id: 1, clause_schema_version: 1, ",
+        "clause_encoding_version: 1, clause_tautology_policy: Reject, ",
+        "certificate_hash_input_algorithm: CanonicalEnvelopeV1 }\n",
+    );
+    let empty_substitutions =
+        hash_text("mizar-vc/local-evidence-component/v1\nsubstitutions\n[substitutions]\n");
+    for (multiple, case) in [
+        (false, step5c3_registration_case()),
+        (true, step5c13_registration_case()),
+    ] {
+        let original = std::fs::read_to_string(case.source_path).unwrap();
+        let renamed = original
+            .replace("wmarked", "retagged")
+            .replace("oamarked", "leftmarked")
+            .replace("obmarked", "rightmarked")
+            .replace("X", "Value");
+        let mut seen =
+            std::collections::BTreeMap::<_, ([mizar_session::Hash; 4], mizar_session::Hash)>::new();
+        for (base_index, (base, formal)) in [(&original, "X"), (&renamed, "Value")]
+            .into_iter()
+            .enumerate()
+        {
+            let false_definitions = base.replace(
+                &format!("means {formal} = {formal}"),
+                &format!("means not {formal} = {formal}"),
+            );
+            assert_ne!(&false_definitions, base);
+            for (negative, text) in [(false, base), (true, &false_definitions)] {
+                let (core, _, _) = source_candidate_core_and_vcs(multiple, text);
+                for snapshot_index in 0..2 {
+                    let snapshot = super::shared::snapshot_id(snapshot_index);
+                    let open = generate_source_existential_registration(
+                        &core,
+                        snapshot,
+                        &GenerationSchemaVersion::new("source-existential-registration-v1"),
+                        &VcSchemaVersion::new("vc-v1"),
+                    )
+                    .unwrap();
+                    let discharge = try_discharge(DischargeInput {
+                        vc_set: &open,
+                        policy: &DischargePolicy::default(),
+                    })
+                    .unwrap();
+                    let needs = discharge
+                        .vc_set()
+                        .vcs()
+                        .iter()
+                        .filter(|vc| vc.status == VcStatus::NeedsAtp)
+                        .collect::<Vec<_>>();
+                    assert_eq!(needs.len(), if multiple { 3 } else { 1 });
+                    assert_eq!(discharge.evidence_records().len(), needs.len());
+                    let mut handoffs = Vec::new();
+                    for (registration, vc) in needs.iter().enumerate() {
+                        let handoff = build_source_existential_kernel_handoff(
+                            &core,
+                            discharge.vc_set(),
+                            vc.id,
+                        )
+                        .unwrap();
+                        assert_eq!(
+                            handoff.canonical_evidence().substitutions().len(),
+                            if registration == 2 { 2 } else { 1 }
+                        );
+                        assert!(handoff.targets_vc(discharge.vc_set(), vc.id).unwrap());
+                        let before =
+                            build_source_existential_kernel_handoff(&core, &open, vc.id).unwrap();
+                        let components = handoff.local_evidence_component_hashes().unwrap();
+                        let prior = before.local_evidence_component_hashes().unwrap();
+                        assert_eq!(&components[..3], &prior[..3]);
+                        assert_ne!(components[3], prior[3]);
+                        assert_ne!(
+                            handoff.context_identity_hash(),
+                            before.context_identity_hash()
+                        );
+                        handoffs.push((false, registration, handoff));
+                    }
+                    for (registration, record) in discharge.evidence_records().iter().enumerate() {
+                        assert_eq!(record.rule, Some(DischargeRule::DirectLocalFact));
+                        let handoff = build_source_existential_discharge_candidate(
+                            &core, &open, record.vc, &discharge,
+                        )
+                        .unwrap();
+                        assert_eq!(
+                            handoff,
+                            build_source_existential_kernel_handoff(&core, &open, record.vc)
+                                .unwrap()
+                        );
+                        assert!(handoff.canonical_evidence().substitutions().is_empty());
+                        assert!(handoff.targets_vc(&open, record.vc).unwrap());
+                        handoffs.push((true, registration, handoff));
+                    }
+                    for (direct, registration, handoff) in handoffs {
+                        let before = handoff.clone();
+                        let wire = handoff.encode_local_evidence(None).unwrap();
+                        let input = handoff.canonical_hash_input().to_vec();
+                        let whole = handoff.canonical_hash();
+                        let context = handoff.context_identity_hash();
+                        let components = handoff.local_evidence_component_hashes().unwrap();
+                        assert_eq!(
+                            components,
+                            handoff.local_evidence_component_hashes().unwrap()
+                        );
+                        assert_eq!(components[0], hash_text(profile_frame));
+                        // Independent line-state oracle preserves every marker and LF.
+                        let mut payloads = [String::new(), String::new(), String::new()];
+                        let mut section = None;
+                        for line in std::str::from_utf8(&input).unwrap().split_inclusive('\n') {
+                            match line {
+                                "[symbol-manifest]\n" | "[final-goal]\n" => section = Some(0),
+                                "[substitutions]\n" => section = Some(1),
+                                "[provenance]\n" => section = Some(2),
+                                _ => {}
+                            }
+                            if let Some(section) = section {
+                                payloads[section].push_str(line);
+                            }
+                        }
+                        for (index, kind) in ["formula", "substitutions", "provenance"]
+                            .iter()
+                            .enumerate()
+                        {
+                            assert_eq!(
+                                components[index + 1],
+                                hash_text(&format!(
+                                    "mizar-vc/local-evidence-component/v1\n{kind}\n{}",
+                                    payloads[index]
+                                ))
+                            );
+                        }
+                        if direct {
+                            assert_eq!(components[2], empty_substitutions);
+                        } else {
+                            assert_ne!(components[2], empty_substitutions);
+                        }
+                        assert!(payloads[0].contains("[variable-manifest]\n"));
+                        assert!(payloads[0].contains("[formula-evidence]\n"));
+                        assert!(
+                            payloads[0]
+                                .contains("[final-goal]\npolarity=AssertFalseForRefutation;")
+                        );
+                        if snapshot_index == 1 {
+                            let (prior, prior_context) =
+                                seen[&(base_index, negative, 0, direct, registration)];
+                            assert_eq!(&components[..3], &prior[..3]);
+                            assert_ne!(components[3], prior[3]);
+                            assert_ne!(context, prior_context);
+                        }
+                        if negative && !direct {
+                            let (positive, _) =
+                                seen[&(base_index, false, snapshot_index, direct, registration)];
+                            assert_ne!(components[1], positive[1]);
+                            assert_ne!(components[3], positive[3]);
+                        }
+                        if base_index == 1 {
+                            let (original, original_context) =
+                                seen[&(0, negative, snapshot_index, direct, registration)];
+                            assert_eq!(components[0], original[0]);
+                            assert_ne!(components[3], original[3]);
+                            assert_ne!(context, original_context);
+                        }
+                        seen.insert(
+                            (base_index, negative, snapshot_index, direct, registration),
+                            (components, context),
+                        );
+                        assert_eq!(handoff, before);
+                        assert_eq!(handoff.canonical_hash_input(), input);
+                        assert_eq!(handoff.canonical_hash(), whole);
+                        assert_eq!(handoff.context_identity_hash(), context);
+                        assert_eq!(handoff.encode_local_evidence(None).unwrap(), wire);
+                    }
+                }
+            }
+        }
+    }
+}

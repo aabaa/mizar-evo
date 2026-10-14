@@ -598,6 +598,8 @@ authorized.
 
 63. **[Source direct-premise candidates](../../task_contracts/en/VC-SOURCE-DIRECT-PREMISE-CANDIDATE.md).** [x] — Original-source association only; general task 60 and acceptance remain open.
 
+64. **[Local evidence component hashes](../../task_contracts/en/VC-LOCAL-EVIDENCE-COMPONENT-HASHES.md).** [x] — Raw component identities only; Proof/Artifact association and publication remain open.
+
 ## Recommended Verification
 
 Run after each task:

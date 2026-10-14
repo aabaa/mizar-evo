@@ -564,6 +564,8 @@ contract、禁止境界、real-source/corruption requirement を使用する。�
 
 63. **[Source direct-premise candidates](../../task_contracts/ja/VC-SOURCE-DIRECT-PREMISE-CANDIDATE.md).** [x] — 元 source の関連付けのみ。汎用 task 60 と受理は未完了。
 
+64. **[Local evidence component hashes](../../task_contracts/ja/VC-LOCAL-EVIDENCE-COMPONENT-HASHES.md).** [x] — Raw component identities only; Proof/Artifact association and publication remain open.
+
 ## 推奨検証
 
 各タスクの後で実行する:

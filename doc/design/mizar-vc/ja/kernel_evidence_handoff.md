@@ -383,3 +383,10 @@ context identity は全実 envelope と producer entry を結び、provenance �
 `VcKernelEvidenceHandoff::encode_local_evidence(Option<&[Vec<u8>]>) -> Result<Vec<u8>, String>` は既存ローカル handoff field を Kernel grammar に従って frame 化する。None は六 section v1、Some は入力 item byte を section 7 に運ぶ v2（空も含む）。untrusted name を運ぶだけで等式 instance を選択・構築しない。
 整合する handoff context、既存 envelope/encoding/clause version、CanonicalEnvelopeV1 profile、Reject/Marker 方針、AssertFalseForRefutation を要求する。LocalHypothesis・CitedPremise・GeneratedVcFact のみを扱い、import は未対応。全 manifest・formula・置換・side condition・provenance・target・goal byte と正準 section 順を保持し、u32 length を検査する。
 返却 binary は handoff hash-input text と異なる。frame 化の成功は受理・trusted used_axioms・権威を意味せず、既存 parser と Kernel が検証する。[Proof](../../mizar-proof/ja/status.md#source-existential-registration-proof) が実 source instance の選択と fresh check を所有する。固定 binary layout と実 source round trip を検査し、汎用 import transport と ATP search は保留する。
+
+## Local evidence component hashes
+
+`local_evidence_component_hashes(&self) -> Result<[Hash; 4], String>` は raw profile/formula/substitutions/provenance の順に返す。最初に既存 `encode_local_evidence(None)` の成功を要求し、unsupported framing・不正・canonical 区間欠落は fallback なしの Err とする。
+既存 UTF-8 `canonical_hash_input()` だけを用いる。profile は LF を含む `kernel-profile=` 行全体。formula は `[symbol-manifest]` から `[substitutions]` 直前までと `[final-goal]` から EOF までの連結。substitutions は自身の marker から `[provenance]` 直前、provenance は自身の marker から `[final-goal]` 直前まで。marker/LF 全体を保持し、構造の再描画や既存 canonical encoding 変更は行わない。
+各 payload は UTF-8 `mizar-vc/local-evidence-component/v1` + LF + kind + LF + payload を既存 Session `hash_text` へ渡す。kind は順に `profile`, `formula`, `substitutions`, `provenance`。producer content profile であり、新暗号 primitive/wire/schema/Artifact class ではない。空 substitutions は実 marker/LF 区間を hash し、formula は明示 goal polarity を含む。別 context/target/result/policy の束縛は consumer 所有。
+既存 v1 profile rendering を含む raw handoff data であり、source currentness/受理権限を与えない。whole-envelope/context identity、通常 bytes、Kernel/Proof 検査、accepted metadata/token producer、Artifact status/version guard と publication は不変または保留。

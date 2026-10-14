@@ -126,6 +126,61 @@ impl VcKernelEvidenceHandoff {
         handoff
     }
 
+    /// Hashes raw local profile, formula, substitutions and provenance components.
+    pub fn local_evidence_component_hashes(&self) -> Result<[Hash; 4], String> {
+        self.encode_local_evidence(None)?;
+        let invalid = || "kernel_evidence.local_components.malformed".to_owned();
+        let text = std::str::from_utf8(self.canonical_hash_input()).map_err(|_| invalid())?;
+        if !text.starts_with("vc-kernel-evidence-handoff-canonical-v1\n")
+            || !text.ends_with('\n')
+            || text.contains('\r')
+        {
+            return Err(invalid());
+        }
+        let markers = [
+            "kernel-profile=",
+            "[symbol-manifest]\n",
+            "[variable-manifest]\n",
+            "[formula-evidence]\n",
+            "[substitutions]\n",
+            "[provenance]\n",
+            "[final-goal]\n",
+        ];
+        let mut offsets = [0; 7];
+        for (index, marker) in markers.iter().enumerate() {
+            let mut matches = text.match_indices(marker);
+            let (offset, _) = matches.next().ok_or_else(invalid)?;
+            if matches.next().is_some()
+                || offset == 0
+                || text.as_bytes()[offset - 1] != b'\n'
+                || (index > 0 && offset <= offsets[index - 1])
+            {
+                return Err(invalid());
+            }
+            offsets[index] = offset;
+        }
+        let profile = &text[offsets[0]..offsets[1]];
+        if profile.matches('\n').count() != 1
+            || profile.len() <= "kernel-profile=\n".len()
+            || text[offsets[6] + markers[6].len()..].matches('\n').count() != 1
+        {
+            return Err(invalid());
+        }
+        let payloads = [
+            profile.to_owned(),
+            format!("{}{}", &text[offsets[1]..offsets[4]], &text[offsets[6]..]),
+            text[offsets[4]..offsets[5]].to_owned(),
+            text[offsets[5]..offsets[6]].to_owned(),
+        ];
+        let kinds = ["profile", "formula", "substitutions", "provenance"];
+        Ok(std::array::from_fn(|index| {
+            mizar_session::hash_text(&format!(
+                "mizar-vc/local-evidence-component/v1\n{}\n{}",
+                kinds[index], payloads[index]
+            ))
+        }))
+    }
+
     /// Frames untrusted local formula evidence without selecting equality instances.
     pub fn encode_local_evidence(
         &self,
@@ -4006,6 +4061,55 @@ mod tests {
                 "mutation {mutation}"
             );
         }
+    }
+
+    #[test]
+    fn local_evidence_component_hashes_reject_unsupported_and_malformed_canonical_input() {
+        let set = fixture_set(FixtureShape::GeneratedGoalOnly);
+        let handoff = build_kernel_evidence_handoff(handoff_input(&set, &[], None, None)).unwrap();
+        let text = std::str::from_utf8(handoff.canonical_hash_input()).unwrap();
+        let mut malformed = vec![
+            vec![0xff],
+            text.trim_end().as_bytes().to_vec(),
+            text.replace('\n', "\r\n").into_bytes(),
+            text.replacen("canonical-v1", "canonical-v2", 1)
+                .into_bytes(),
+            text.replace("[provenance]\n", "[provenance]\n[provenance]\n")
+                .into_bytes(),
+            text.replace("[provenance]", "[final-goal]")
+                .replace("[final-goal]\npolarity", "[provenance]\npolarity")
+                .into_bytes(),
+            text.replace("kernel-profile=", "kernel-profile=\n")
+                .into_bytes(),
+        ];
+        for marker in [
+            "kernel-profile=",
+            "[symbol-manifest]",
+            "[variable-manifest]",
+            "[formula-evidence]",
+            "[substitutions]",
+            "[provenance]",
+            "[final-goal]",
+        ] {
+            malformed.push(text.replace(marker, "missing").into_bytes());
+        }
+        for (index, bytes) in malformed.into_iter().enumerate() {
+            let mut changed = handoff.clone();
+            changed.canonical_hash_input = bytes;
+            assert!(changed.encode_local_evidence(None).is_ok());
+            assert!(
+                changed.local_evidence_component_hashes().is_err(),
+                "canonical mutation {index}"
+            );
+        }
+        let mut unsupported = handoff.clone();
+        unsupported.canonical_evidence.encoding_version = 2;
+        assert!(unsupported.encode_local_evidence(None).is_err());
+        assert!(unsupported.local_evidence_component_hashes().is_err());
+        let mut inconsistent = handoff;
+        inconsistent.context_identity.canonical_evidence_hash =
+            mizar_session::hash_text("different");
+        assert!(inconsistent.local_evidence_component_hashes().is_err());
     }
 
     #[derive(Clone, Copy)]
