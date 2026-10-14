@@ -453,6 +453,8 @@ internal: [01](../../internal/ja/01.compiler_driver_and_pipeline_scheduler.md)�
 
 32. **[Workspace lock path binding](../../task_contracts/ja/BUILD-WORKSPACE-LOCK-PATH-BINDING.md).** [x]
 
+33. **[Current lock content fingerprint](../../task_contracts/ja/BUILD-LOCK-CONTENT-FINGERPRINT.md).** [x]
+
 ## 推奨検証
 
 各タスクの後で実行する:

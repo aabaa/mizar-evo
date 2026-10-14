@@ -162,6 +162,13 @@ The planner validates an existing lockfile. It does not update or rewrite
 `mizar.lock`; lockfile generation and registry solving are future work above
 the same data model.
 
+## Lock content fingerprint
+
+`lockfile_content_hash(&Lockfile) -> mizar_session::Hash` fingerprints every current typed lock field, including arbitrary directly constructed values; it validates neither schema, assignment, provenance nor current files. It reads no files and changes no parser/planner policy. Raw TOML comments/whitespace/order, workspace root/member manifests, source text, toolchain, effective configuration and dependency artifacts are separate inputs.
+Use existing Artifact `CanonicalJson` arrays/strings and `canonical_json_string`: root `[schema, packages]`, package `[name, version, source, dependencies]`, dependency `[name, version]`; source is `["workspace", path]` or `["registry", registry, checksum]`. Schema is the full u64 decimal string; versions are exact SemVer display strings including prerelease/build. Sort dependency and package arrays by their complete canonical JSON tuple text; preserve duplicate multiplicity. All current fields participate, even when arbitrary typed values would be rejected by a parser/validator.
+The preimage is the exact UTF-8 prefix `mizar-build/parsed-lock-content/v1` followed by one LF and the canonical root JSON string (which ends in one LF). Pass that framed text to existing Session `hash_text`, including its source-text-domain/length/BLAKE3 construction; this defines a Build content profile, not a new raw hashing primitive, Artifact hash class or Cache key domain. Future typed lock fields require a reviewed profile extension. No schema integer is truncated and no Debug/raw-TOML encoding is used.
+An independent literal golden pins that frame and field order. Tests retain all scalar/variant/edge fields, full u64 and SemVer content, order independence and duplicates, then use actual native files and produced hashes through genuine snapshot and SourceLoad cache carriers. Those carriers prove transport only; unknown toolchain fields still fail existing parsing, other supplied fixture context earns no authenticity, services retain actual NoKey, and currentness/configuration/toolchain/pin/registry/runtime/Proof/cache acceptance/bootstrap remain deferred.
+
 ## Native workspace input acquisition
 
 `read_native_workspace_inputs(&WorkspaceRoot) -> Result<(Vec<WorkspacePackage>, Lockfile), String>` reads plain existing inputs from the explicit actual root; it never searches parent directories or chooses toolchain/policy/context. Use standard path components for the root metadata query before canonicalization so trailing separators/dot do not bypass final-symlink rejection. Require an ordinary root directory.

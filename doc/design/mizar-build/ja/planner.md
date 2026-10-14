@@ -159,6 +159,13 @@ produce_build_plan では収集済み member の既存相対座標 (root '.' を
 planner は既存 lockfile を検証する。`mizar.lock` の更新や再書き込みは行わない。
 lockfile generation と registry solving は同じ data model の上にある将来作業である。
 
+## Lock content fingerprint
+
+`lockfile_content_hash(&Lockfile) -> mizar_session::Hash` は直接構築した任意の値を含む現行 typed lock の全 field を fingerprint にする。schema・assignment・provenance・現在の file の検証ではなく、file 読み込みや parser/planner policy を変更しない。raw TOML の comment/空白/順序、workspace root/member manifest、source text、toolchain、effective configuration、dependency artifact は別入力である。
+既存 Artifact `CanonicalJson` の array/string と `canonical_json_string` を使う。root は `[schema, packages]`、package は `[name, version, source, dependencies]`、dependency は `[name, version]`、source は `["workspace", path]` または `["registry", registry, checksum]`。schema は full u64 の十進 string、version は prerelease/build を含む exact SemVer display string。dependency/package array は完全な canonical JSON tuple text で整列し、重複数を保持する。parser/validator が拒否する任意 typed 値も全現行 field を保持する。
+preimage は UTF-8 prefix `mizar-build/parsed-lock-content/v1`、1 LF、canonical root JSON string (末尾 1 LF) の順。既存 Session `hash_text` の source-text-domain/length/BLAKE3 処理へ渡す Build content profile であり、新しい raw hash primitive、Artifact hash class、Cache key domain ではない。typed lock field の追加は profile 拡張レビューを必要とする。schema integer の切り捨て、Debug/raw-TOML encoding は使わない。
+独立 literal golden で frame/field 順序を固定する。全 scalar/variant/edge、full u64/SemVer、入力順/重複数を検証し、実 native file と生成 hash を genuine snapshot/SourceLoad cache carrier に渡す。carrier は transport のみを示し、未知 toolchain field は既存 parser で失敗する。残りの fixture context に認証の意味はなく、service は実 NoKey を保ち、currentness/configuration/toolchain/pin/registry/runtime/Proof/cache 受理/bootstrap は依存待ちである。
+
 ## Native workspace input acquisition
 
 `read_native_workspace_inputs(&WorkspaceRoot) -> Result<(Vec<WorkspacePackage>, Lockfile), String>` は明示された実 root から既存 input data を読み、親 directory 探索・toolchain/policy/context 選択を行わない。canonicalization 前の root metadata query に標準 path component を使い、末尾 separator/dot で最終 symlink 判定を回避させない。通常 root directory を要求する。

@@ -1759,3 +1759,186 @@ fn workspace_lock_paths_preserve_missing_version_and_kind_errors() {
         );
     }
 }
+
+#[test]
+fn lock_content_hash_matches_independent_literal_profile_and_frame() {
+    use super::{LockedDependency, LockedPackage, Lockfile, lockfile_content_hash};
+    let lock = Lockfile {
+        schema_version: u64::MAX,
+        packages: vec![
+            LockedPackage {
+                name: "alpha".into(),
+                version: Version::parse("2.0.0+meta").unwrap(),
+                source: LockSource::Registry {
+                    registry: "default".into(),
+                    checksum: "x".into(),
+                },
+                dependencies: vec![],
+            },
+            LockedPackage {
+                name: "alpha".into(),
+                version: Version::parse("10.2.3-rc.1+build.7").unwrap(),
+                source: LockSource::Workspace { path: ".".into() },
+                dependencies: vec![
+                    LockedDependency {
+                        name: "beta".into(),
+                        version: Version::parse("2.4.6-rc.2+edge.9").unwrap(),
+                    },
+                    LockedDependency {
+                        name: "beta".into(),
+                        version: Version::new(10, 0, 0),
+                    },
+                ],
+            },
+        ],
+    };
+    let json = "[\"18446744073709551615\",[[\"alpha\",\"10.2.3-rc.1+build.7\",[\"workspace\",\".\"],[[\"beta\",\"10.0.0\"],[\"beta\",\"2.4.6-rc.2+edge.9\"]]],[\"alpha\",\"2.0.0+meta\",[\"registry\",\"default\",\"x\"],[]]]]\n";
+    let expected = mizar_session::hash_text(
+        "mizar-build/parsed-lock-content/v1\n[\"18446744073709551615\",[[\"alpha\",\"10.2.3-rc.1+build.7\",[\"workspace\",\".\"],[[\"beta\",\"10.0.0\"],[\"beta\",\"2.4.6-rc.2+edge.9\"]]],[\"alpha\",\"2.0.0+meta\",[\"registry\",\"default\",\"x\"],[]]]]\n",
+    );
+    let actual = lockfile_content_hash(&lock);
+    assert_eq!(actual, expected);
+    for wrong_frame in [
+        json.to_owned(),
+        format!("mizar-build/parsed-lock-content/v1{json}"),
+        format!("mizar-build/parsed-lock-content/v1\n{}", json.trim_end()),
+        format!("mizar-build/parsed-lock-content/v2\n{json}"),
+    ] {
+        assert_ne!(actual, mizar_session::hash_text(&wrong_frame));
+    }
+}
+
+#[test]
+fn lock_content_hash_retains_every_typed_field_and_unambiguous_strings() {
+    use super::lockfile_content_hash;
+    let unknown = parse_lockfile("schema_version = 1\ntoolchain = \"unsupported\"\npackage = []\n")
+        .unwrap_err();
+    assert_eq!(
+        unknown.diagnostics(),
+        &[super::ManifestDiagnostic::new(
+            "<lockfile>",
+            "toolchain",
+            ManifestDiagnosticKind::UnknownField,
+            None
+        )]
+    );
+    let base = parse_lockfile("schema_version = 1\n[[package]]\nname = \"alpha\"\nversion = \"1.2.3-rc.1+build.7\"\nsource = { kind = \"workspace\", path = \"actual\" }\ndependencies = [{ name = \"beta\", version = \"2.0.0\" }]\n[[package]]\nname = \"beta\"\nversion = \"2.0.0\"\nsource = { kind = \"registry\", registry = \"default\", checksum = \"x\" }\ndependencies = []\n").unwrap();
+    let baseline = lockfile_content_hash(&base);
+    for field in [
+        "schema",
+        "schema-high-bit",
+        "package-name",
+        "version",
+        "prerelease",
+        "build",
+        "workspace-path",
+        "source-tag",
+        "registry",
+        "checksum",
+        "dependency-name",
+        "dependency-version",
+        "package-count",
+        "dependency-count",
+    ] {
+        let mut changed = base.clone();
+        match field {
+            "schema" => changed.schema_version = u64::MAX,
+            "schema-high-bit" => changed.schema_version = 1 + (1 << 63),
+            "package-name" => changed.packages[0].name = "quote\"\n\\😀".into(),
+            "version" => changed.packages[0].version.major = 3,
+            "prerelease" => {
+                changed.packages[0].version.pre = semver::Prerelease::new("rc.2").unwrap()
+            }
+            "build" => {
+                changed.packages[0].version.build = semver::BuildMetadata::new("build.8").unwrap()
+            }
+            "workspace-path" => {
+                changed.packages[0].source = LockSource::Workspace {
+                    path: "different".into(),
+                }
+            }
+            "source-tag" => {
+                changed.packages[0].source = LockSource::Registry {
+                    registry: "actual".into(),
+                    checksum: "".into(),
+                }
+            }
+            "registry" => {
+                changed.packages[1].source = LockSource::Registry {
+                    registry: "other".into(),
+                    checksum: "x".into(),
+                }
+            }
+            "checksum" => {
+                changed.packages[1].source = LockSource::Registry {
+                    registry: "default".into(),
+                    checksum: "y".into(),
+                }
+            }
+            "dependency-name" => changed.packages[0].dependencies[0].name = "other".into(),
+            "dependency-version" => {
+                changed.packages[0].dependencies[0].version =
+                    Version::parse("2.0.0-rc.1+metadata").unwrap()
+            }
+            "package-count" => {
+                changed.packages.pop();
+            }
+            "dependency-count" => changed.packages[0].dependencies.clear(),
+            _ => unreachable!(),
+        }
+        assert_ne!(lockfile_content_hash(&changed), baseline, "{field}");
+    }
+    let mut left = base.clone();
+    left.packages[1].source = LockSource::Registry {
+        registry: "ab".into(),
+        checksum: "c".into(),
+    };
+    let mut right = left.clone();
+    right.packages[1].source = LockSource::Registry {
+        registry: "a".into(),
+        checksum: "bc".into(),
+    };
+    assert_ne!(lockfile_content_hash(&left), lockfile_content_hash(&right));
+    left.packages[0].name = "a\"b".into();
+    right = left.clone();
+    right.packages[0].name = "a\\\"b".into();
+    assert_ne!(lockfile_content_hash(&left), lockfile_content_hash(&right));
+}
+
+#[test]
+fn lock_content_hash_orders_complete_tuples_and_retains_duplicate_multiplicity() {
+    use super::{LockedDependency, lockfile_content_hash};
+    let mut lock = parse_lockfile("schema_version = 1\n[[package]]\nname = \"alpha\"\nversion = \"1.0.0\"\nsource = { kind = \"workspace\", path = \"actual\" }\ndependencies = []\n").unwrap();
+    lock.packages[0].dependencies = vec![
+        LockedDependency {
+            name: "same".into(),
+            version: Version::new(2, 0, 0),
+        },
+        LockedDependency {
+            name: "same".into(),
+            version: Version::new(10, 0, 0),
+        },
+    ];
+    let mut other = lock.packages[0].clone();
+    other.source = LockSource::Workspace {
+        path: "other".into(),
+    };
+    lock.packages.push(other);
+    let mut edge_only = lock.packages[0].clone();
+    edge_only.dependencies.pop();
+    lock.packages.push(edge_only);
+    let baseline = lockfile_content_hash(&lock);
+    let mut reversed = lock.clone();
+    reversed.packages.reverse();
+    for package in &mut reversed.packages {
+        package.dependencies.reverse();
+    }
+    assert_eq!(lockfile_content_hash(&reversed), baseline);
+    let mut duplicate = lock.clone();
+    duplicate.packages.push(duplicate.packages[0].clone());
+    assert_ne!(lockfile_content_hash(&duplicate), baseline);
+    duplicate = lock.clone();
+    let dependency = duplicate.packages[0].dependencies[0].clone();
+    duplicate.packages[0].dependencies.push(dependency);
+    assert_ne!(lockfile_content_hash(&duplicate), baseline);
+}

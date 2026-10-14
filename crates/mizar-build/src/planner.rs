@@ -347,6 +347,56 @@ impl Default for BuildConfig {
     }
 }
 
+pub fn lockfile_content_hash(lockfile: &Lockfile) -> mizar_session::Hash {
+    use mizar_artifact::store::{
+        CanonicalJson::{Array, String},
+        canonical_json_string,
+    };
+
+    let mut packages = lockfile
+        .packages
+        .iter()
+        .map(|package| {
+            let mut dependencies = package
+                .dependencies
+                .iter()
+                .map(|dependency| {
+                    Array(vec![
+                        String(dependency.name.clone()),
+                        String(dependency.version.to_string()),
+                    ])
+                })
+                .collect::<Vec<_>>();
+            dependencies.sort_by_cached_key(canonical_json_string);
+            let source = match &package.source {
+                LockSource::Workspace { path } => {
+                    Array(vec![String("workspace".into()), String(path.clone())])
+                }
+                LockSource::Registry { registry, checksum } => Array(vec![
+                    String("registry".into()),
+                    String(registry.clone()),
+                    String(checksum.clone()),
+                ]),
+            };
+            Array(vec![
+                String(package.name.clone()),
+                String(package.version.to_string()),
+                source,
+                Array(dependencies),
+            ])
+        })
+        .collect::<Vec<_>>();
+    packages.sort_by_cached_key(canonical_json_string);
+    let content = Array(vec![
+        String(lockfile.schema_version.to_string()),
+        Array(packages),
+    ]);
+    mizar_session::hash_text(&format!(
+        "mizar-build/parsed-lock-content/v1\n{}",
+        canonical_json_string(&content)
+    ))
+}
+
 pub fn read_native_workspace_inputs(
     root: &WorkspaceRoot,
 ) -> Result<(Vec<WorkspacePackage>, Lockfile), String> {

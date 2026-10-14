@@ -11418,3 +11418,162 @@ fn workspace_lock_paths_reject_actual_native_inputs_before_source_phases() {
         }
     }
 }
+
+#[test]
+fn lock_content_hash_from_actual_files_feeds_genuine_snapshot_and_source_load_carriers() {
+    use mizar_build::planner::{lockfile_content_hash, read_native_workspace_inputs};
+    use mizar_proof::policy::VerifierPolicy;
+    let fixture = Fixture::new(b"definition\nend;\n");
+    let manifest =
+        "[package]\nname = \"alpha\"\nversion = \"0.1.0\"\n[dev-dependencies]\ndep = \"^1.0\"\n";
+    fs::write(
+        fixture.root.join("mizar.workspace"),
+        "[workspace]\nmembers = [\"alpha\"]\n",
+    )
+    .unwrap();
+    fs::write(fixture.root.join("alpha/mizar.pkg"), manifest).unwrap();
+    let mut previous = None;
+    for (version, comment) in [
+        ("1.0.0", ""),
+        ("1.0.0", "# only raw formatting changed\n"),
+        ("1.1.0", ""),
+    ] {
+        let text = format!(
+            "{comment}schema_version = 1\n[[package]]\nname = \"alpha\"\nversion = \"0.1.0\"\nsource = {{ kind = \"workspace\", path = \"alpha\" }}\ndependencies = [{{ name = \"dep\", version = \"{version}\" }}]\n[[package]]\nname = \"dep\"\nversion = \"{version}\"\nsource = {{ kind = \"registry\", registry = \"default\", checksum = \"sha256:dep\" }}\ndependencies = []\n"
+        );
+        fs::write(fixture.root.join("mizar.lock"), &text).unwrap();
+        let ids = InMemorySessionIdAllocator::new();
+        let snapshots = SnapshotRegistry::new();
+        let (mut draft, mut input) = fixture.submit_request(vec![], vec![]);
+        let (packages, lock) =
+            read_native_workspace_inputs(&input.plan_request.workspace_root).unwrap();
+        let clean = parse_lockfile(&text).unwrap();
+        assert_eq!(lock, clean);
+        assert_eq!(
+            packages[0].manifest,
+            parse_package_manifest(manifest).unwrap()
+        );
+        let digest = lockfile_content_hash(&lock);
+        assert_eq!(digest, lockfile_content_hash(&clean));
+        draft.dependency_inputs.lockfile_hash = digest;
+        input.workspace_packages = packages;
+        input.lockfile = lock;
+        draft.source_inputs.versions.clear();
+        let session = draft
+            .capture_sources(
+                &ids,
+                &snapshots,
+                vec![(
+                    DiskSourceLoader::new(fixture.root.join("alpha")),
+                    SourceInput {
+                        package_id: fixture.version.package_id.clone(),
+                        module_path: fixture.version.module_path.clone(),
+                        normalized_path: fixture.version.normalized_path.clone(),
+                        edition: fixture.version.edition.clone(),
+                        origin: SourceOriginInput::Disk {
+                            path: "src/main.miz".into(),
+                        },
+                    },
+                )],
+            )
+            .unwrap();
+        assert_eq!(session.captured().snapshot().lockfile_hash, digest);
+        let unit = WorkUnit::Module {
+            module: mizar_build::module_index::ModuleId::new(
+                PackageId::new("alpha"),
+                ModulePath::new("main"),
+            ),
+        };
+        let owner = publisher(session.captured().snapshot().id, 0, &unit);
+        allow_frontend(&owner, &unit);
+        let mut builder = PhaseRegistryBuilder::new();
+        builder.register_source_load();
+        builder.register_frontend(vec![]);
+        let mut driver =
+            CompilerDriver::new(builder.build().unwrap()).with_output_publisher(owner.clone());
+        let submission = driver
+            .submit_captured(session, &ids, &snapshots, input)
+            .unwrap();
+        assert_eq!(
+            submission.status,
+            DriverSubmissionStatus::BlockedByMissingPhaseServices
+        );
+        let captured = submission.session.captured();
+        let actual_version = &captured.snapshot().source_versions[0];
+        let phase_input = PhaseInput::new(
+            unit,
+            PhaseDispatchInputBundle::without_parent_outputs(
+                captured.snapshot().id,
+                source_key(actual_version),
+                vec![],
+            ),
+        );
+        let request = SourceLoadInputs {
+            snapshot: captured.snapshot(),
+            captured: Some(captured),
+            build_plan: submission.build_plan.as_ref().unwrap(),
+            module_index: submission.module_index.as_ref().unwrap(),
+            allocator: &ids,
+        }
+        .prepare_native_disk_cache_request(&phase_input, &VerifierPolicy::release())
+        .unwrap();
+        let lock_input = request
+            .input_hashes
+            .iter()
+            .find(|entry| entry.name == "captured-lockfile")
+            .unwrap();
+        assert_eq!(
+            lock_input.domain,
+            "mizar-driver/captured-lockfile-identity/v1"
+        );
+        assert_eq!(lock_input.digest, digest);
+        let results = &submission.scheduler_run.as_ref().unwrap().phase_results;
+        let refs = results
+            .values()
+            .flatten()
+            .flat_map(|result| &result.output_refs)
+            .collect::<Vec<_>>();
+        assert_eq!(refs.len(), 2);
+        let source_ref = *refs
+            .iter()
+            .find(|output| output.output_kind() == &OutputKind::new("SourceUnit"))
+            .unwrap();
+        let handle = owner
+            .storage()
+            .typed_handle::<SourceUnit>(source_ref, &OutputKind::new("SourceUnit"))
+            .unwrap();
+        let source = owner.storage().get(&handle).unwrap();
+        assert_eq!(source.source_id, actual_version.source_id);
+        assert_eq!(source.source_hash, actual_version.source_hash);
+        for phase in [PipelinePhase::SourceLoad, PipelinePhase::Frontend] {
+            assert!(matches!(
+                driver
+                    .registry()
+                    .cache_key_for_phase(phase, &phase_input)
+                    .unwrap()
+                    .intent,
+                PhaseCacheIntent::NoKey { .. }
+            ));
+        }
+        if let Some((prior_digest, prior_snapshot, prior_source, prior_carrier)) = &previous {
+            assert_eq!(source.source_hash, *prior_source);
+            if version == "1.0.0" {
+                assert_eq!(digest, *prior_digest);
+                assert_eq!(captured.snapshot().id, *prior_snapshot);
+                assert_eq!(&request, prior_carrier);
+            } else {
+                assert_ne!(digest, *prior_digest);
+                assert_ne!(captured.snapshot().id, *prior_snapshot);
+                let mut normalized = request.clone();
+                normalized
+                    .input_hashes
+                    .iter_mut()
+                    .find(|entry| entry.name == "captured-lockfile")
+                    .unwrap()
+                    .digest = *prior_digest;
+                assert_eq!(&normalized, prior_carrier);
+            }
+        }
+        previous = Some((digest, captured.snapshot().id, source.source_hash, request));
+    }
+}

@@ -466,6 +466,8 @@ Keep `cargo test -p mizar-build` green after each task (see
 
 32. **[Workspace lock path binding](../../task_contracts/en/BUILD-WORKSPACE-LOCK-PATH-BINDING.md).** [x]
 
+33. **[Current lock content fingerprint](../../task_contracts/en/BUILD-LOCK-CONTENT-FINGERPRINT.md).** [x]
+
 ## Recommended Verification
 
 Run after each task:
