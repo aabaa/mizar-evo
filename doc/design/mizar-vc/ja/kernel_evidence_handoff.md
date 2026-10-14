@@ -373,6 +373,11 @@ evidence ではない。[Proof status](../../mizar-proof/ja/status.md#source-exi
 連言 leaf は両定義前提と同じ閉じた証人の独立に対応付けた置換2件を保持し、一方の欠落も拒否する。既存 generated And と VC handoff field は変えず、参照先の Proof が実際の名前付き Formula-v2 instance を選択する。
 context identity は全実 envelope と producer entry を結び、provenance は受理ではなく metadata である。[Proof status](../../mizar-proof/ja/status.md#three-registration-source-proof-extension) が既存 policy で全 leaf を新たに parse・検査する。
 
+## Source direct-premise candidate
+
+`build_source_existential_discharge_candidate(&CoreIr, &VcSet, VcId, &DischargeOutput)` は Open target の元 source handoff を返す。source 全体の再生成一致と、入力出力全体（VC graph と記録を含む）が実際の既定 Discharge 出力に一致することを要求し、その NewlyProduced DirectLocalFact / ExplicitInputRefs 記録だけを選択する。元の goal・context・premise・置換・provenance を保持し、異なる snapshot/source/graph/記録や保存済み・未対応の出力は拒否する。
+未検証候補の関連付けであり Kernel 呼出しや受理を行わない。既存 handoff の Discharged target 拒否は維持し、汎用 built-in 証拠・Proof 受理・Artifact 公開は保留する。
+
 ## Local binary transport
 
 `VcKernelEvidenceHandoff::encode_local_evidence(Option<&[Vec<u8>]>) -> Result<Vec<u8>, String>` は既存ローカル handoff field を Kernel grammar に従って frame 化する。None は六 section v1、Some は入力 item byte を section 7 に運ぶ v2（空も含む）。untrusted name を運ぶだけで等式 instance を選択・構築しない。

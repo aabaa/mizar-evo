@@ -399,6 +399,11 @@ Project each distinct actual attribute and choice identity into the normal manif
 The conjunctive leaf retains both definition premises and two independently linked substitutions of the same closed witness; missing either rejects. Existing generated And and VC handoff fields remain unchanged; linked Proof selects the actual named Formula-v2 instances.
 Context identity binds the actual complete envelope and producer entries; provenance is metadata, not acceptance. [Proof status](../../mizar-proof/en/status.md#three-registration-source-proof-extension) freshly parses and checks every leaf under the existing policy.
 
+## Source direct-premise candidate
+
+`build_source_existential_discharge_candidate(&CoreIr, &VcSet, VcId, &DischargeOutput)` returns the existing original-source handoff for an Open target only when whole-source replay matches and the complete supplied output equals the actual default-discharge output, including its VC graph and records; select only its NewlyProduced DirectLocalFact / ExplicitInputRefs record. Preserve original goal, context, premises, substitutions and provenance; differing snapshot/source/graph/records, preserved or unsupported outputs fail closed.
+This is an untrusted candidate association, without Kernel calls or acceptance. The existing handoff continues to reject Discharged targets; general built-in evidence, Proof acceptance and Artifact publication remain deferred.
+
 ## Local binary transport
 
 `VcKernelEvidenceHandoff::encode_local_evidence(Option<&[Vec<u8>]>) -> Result<Vec<u8>, String>` frames existing local handoff fields for the Kernel grammar: None selects six-section v1, Some selects v2 with the supplied section-7 item bytes, including an empty section. This method transports untrusted names and never chooses or constructs an equality instance.

@@ -1091,6 +1091,39 @@ pub enum KernelEvidenceRole {
     Substitution,
 }
 
+/// Associates actual direct-fact discharge with the unchanged original-source candidate.
+pub fn build_source_existential_discharge_candidate(
+    core: &mizar_core::core_ir::CoreIr,
+    original: &VcSet,
+    selected: VcId,
+    discharge: &DischargeOutput,
+) -> Result<VcKernelEvidenceHandoff, String> {
+    use crate::discharge::{DischargeInput, DischargePolicy, DischargeRule, try_discharge};
+    if original
+        .vc(selected)
+        .is_none_or(|vc| vc.status != crate::vc_ir::VcStatus::Open)
+    {
+        return Err("registration.handoff.invalid_projection".to_owned());
+    }
+    let handoff = build_source_existential_kernel_handoff(core, original, selected)?;
+    let expected = try_discharge(DischargeInput {
+        vc_set: original,
+        policy: &DischargePolicy::default(),
+    })
+    .map_err(|error| error.to_string())?;
+    if &expected != discharge
+        || !expected.evidence_records().iter().any(|record| {
+            record.vc == selected
+                && record.source == DischargeEvidenceSource::NewlyProduced
+                && record.rule == Some(DischargeRule::DirectLocalFact)
+                && record.replay == DischargeEvidenceReplay::ExplicitInputRefs
+        })
+    {
+        return Err("registration.handoff.invalid_projection".to_owned());
+    }
+    Ok(handoff)
+}
+
 /// Replays the complete source registration VC graph before projecting normal kernel evidence.
 pub fn build_source_existential_kernel_handoff(
     core: &mizar_core::core_ir::CoreIr,

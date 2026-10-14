@@ -562,6 +562,8 @@ contract、禁止境界、real-source/corruption requirement を使用する。�
 
 62. **[Local evidence wire transport](../../task_contracts/ja/VC-LOCAL-EVIDENCE-WIRE.md).** [x] — Shared existing local framing; search and acceptance remain downstream.
 
+63. **[Source direct-premise candidates](../../task_contracts/ja/VC-SOURCE-DIRECT-PREMISE-CANDIDATE.md).** [x] — 元 source の関連付けのみ。汎用 task 60 と受理は未完了。
+
 ## 推奨検証
 
 各タスクの後で実行する:

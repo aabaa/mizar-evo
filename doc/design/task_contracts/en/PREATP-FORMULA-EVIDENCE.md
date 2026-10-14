@@ -12,7 +12,7 @@ Dependencies: VC tasks 12/25/27-29 and authentic source-derived VC, context,
 formula, substitution and provenance producers for the selected discharge slice.
 Equality slices also require ATPK-KERNEL-EQUALITY-INSTANCES; unsupported
 trace/computation classes retain their existing producer dependencies.
-Readiness: candidate design can start; no source route starts from markers alone.
+Readiness: candidate design can start; task 63 supplies only bounded original-source direct-premise association. General source integration remains blocked; no route starts from markers alone.
 
 Scope: convert supported deterministic discharge steps into the existing
 formula/substitution handoff for the original VC and unchanged local context.

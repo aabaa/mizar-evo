@@ -14001,3 +14001,143 @@ fn source_registration_candidate_selection_rejects_mixed_inputs_and_current_poli
     assert_eq!(selection.reuse_metadata().policy_fingerprint(), formula_only.policy_fingerprint());
     assert!(builtin(&source, &nodes, &symbols, snapshot, &formula_only).is_err());
 }
+
+#[test]
+fn source_direct_premise_candidate_preserves_real_source_handoff_and_fresh_kernel_check() {
+    use mizar_atp::problem::{AtpFingerprint, AtpTargetBinding};
+    use mizar_kernel::checker::KernelCheckStatus;
+    use mizar_vc::{discharge::{DischargeInput, DischargePolicy, DischargeRule, DischargeEvidenceSource,
+        DischargeEvidenceReplay, try_discharge}, kernel_evidence_handoff::{KernelFormulaSource,
+        build_source_existential_discharge_candidate as build, build_source_existential_kernel_handoff}, vc_ir::VcStatus};
+    for (multiple, case) in [(false, step5c3_registration_case()), (true, step5c13_registration_case())] {
+        let original = std::fs::read_to_string(case.source_path).unwrap();
+        let renamed = original.replace("wmarked", "retagged").replace("oamarked", "leftmarked")
+            .replace("obmarked", "rightmarked").replace("X", "Value");
+        for (base, formal) in [(&original, "X"), (&renamed, "Value")] {
+            let false_definitions = base.replace(&format!("means {formal} = {formal}"),
+                &format!("means not {formal} = {formal}"));
+            assert_ne!(&false_definitions, base);
+            for text in [base, &false_definitions] {
+                let (core, open, _) = source_candidate_core_and_vcs(multiple, text);
+                let discharge = try_discharge(DischargeInput { vc_set: &open, policy: &DischargePolicy::default() }).unwrap();
+                let mut contexts = std::collections::BTreeSet::new();
+                for record in discharge.evidence_records() {
+                    assert_eq!(record.source, DischargeEvidenceSource::NewlyProduced);
+                    assert_eq!(record.rule, Some(DischargeRule::DirectLocalFact));
+                    assert_eq!(record.replay, DischargeEvidenceReplay::ExplicitInputRefs);
+                    let before = open.vc(record.vc).unwrap();
+                    assert_eq!(before.status, VcStatus::Open);
+                    let expected = build_source_existential_kernel_handoff(&core, &open, record.vc).unwrap();
+                    let candidate = build(&core, &open, record.vc, &discharge).unwrap();
+                    assert_eq!(candidate, expected);
+                    assert!(candidate.targets_vc(&open, record.vc).unwrap());
+                    assert!(!candidate.targets_vc(discharge.vc_set(), record.vc).unwrap());
+                    assert!(contexts.insert(candidate.context_identity_hash().as_bytes().to_vec()));
+                    let envelope = candidate.canonical_evidence();
+                    assert!(envelope.substitutions().is_empty());
+                    assert_eq!(envelope.formula_evidence().len(), 1);
+                    assert!(matches!(envelope.formula_evidence()[0].source(),
+                        KernelFormulaSource::GeneratedVcFact { .. }));
+                    let fingerprint = envelope.target_vc();
+                    let target = AtpTargetBinding::new(AtpFingerprint::new(fingerprint.algorithm_id,
+                        fingerprint.digest.clone()).unwrap(), format!("{:?}", before.source)).unwrap();
+                    let wire = candidate.encode_local_evidence(None).unwrap();
+                    assert_eq!(source_candidate_check_bytes(&candidate, &wire, &target).unwrap(), KernelCheckStatus::Accepted);
+                    assert!(build_source_existential_kernel_handoff(&core, discharge.vc_set(), record.vc).is_err());
+                    assert!(build(&core, discharge.vc_set(), record.vc, &discharge).is_err());
+                }
+                assert_eq!(contexts.len(), if multiple { 3 } else { 1 });
+                for vc in open.vcs().iter().filter(|vc| !discharge.evidence_records().iter().any(|record| record.vc == vc.id)) {
+                    assert!(build(&core, &open, vc.id, &discharge).is_err(), "correctness leaf {:?}", vc.id);
+                }
+            }
+        }
+    }
+}
+
+#[test]
+fn source_direct_premise_candidate_rejects_actual_mismatched_and_preserved_outputs() {
+    use mizar_core::core_ir::{CoreDiagnosticId, CoreSourceAnchor};
+    use mizar_session::{InMemorySessionIdAllocator, SessionIdAllocator};
+    use mizar_vc::{discharge::{DischargeInput, DischargePolicy, DischargeRule, DischargeEvidenceSource,
+        DischargeEvidenceReplay, try_discharge}, kernel_evidence_handoff::build_source_existential_discharge_candidate as build, vc_ir::*};
+    for (multiple, case) in [(false, step5c3_registration_case()), (true, step5c13_registration_case())] {
+        let text = std::fs::read_to_string(case.source_path).unwrap();
+        let (core, open, _) = source_candidate_core_and_vcs(multiple, &text);
+        let policy = DischargePolicy::default();
+        let discharge = try_discharge(DischargeInput { vc_set: &open, policy: &policy }).unwrap();
+        let selected = discharge.evidence_records().last().unwrap().vc;
+        let unsupported = open.vcs().iter().find(|vc| !discharge.evidence_records().iter().any(|record| record.vc == vc.id)).unwrap().id;
+        for target in [unsupported, VcId::new(open.vcs().len())] {
+            assert!(build(&core, &open, target, &discharge).is_err());
+        }
+        let (foreign, foreign_open, _) = source_candidate_core_and_vcs(multiple, &text.replace("marked", "foreignmarked"));
+        let foreign_output = try_discharge(DischargeInput { vc_set: &foreign_open, policy: &policy }).unwrap();
+        assert!(build(&foreign, &open, selected, &discharge).is_err());
+        assert!(build(&core, &foreign_open, selected, &discharge).is_err());
+        assert!(build(&core, &open, selected, &foreign_output).is_err());
+        let preserved = try_discharge(DischargeInput { vc_set: discharge.vc_set(), policy: &policy }).unwrap();
+        assert!(preserved.evidence_records().iter().all(|record| record.source == DischargeEvidenceSource::PreExistingStatus
+            && matches!(record.replay, DischargeEvidenceReplay::PreservedStatusOnly { .. })));
+        assert!(build(&core, &open, selected, &preserved).is_err());
+        for mutation in 0..19 {
+            let mut parts = VcSetParts { schema_version: open.schema_version().clone(), snapshot: open.snapshot(), source: open.source(),
+                module: open.module().clone(), generated_formulas: open.generated_formulas().to_vec(),
+                vcs: open.vcs().to_vec(), seed_accounting: open.seed_accounting().to_vec() };
+            match mutation {
+                0 => parts.snapshot = super::shared::snapshot_id(1),
+                1 => {
+                    let ids = InMemorySessionIdAllocator::new();
+                    ids.next_source_id(parts.snapshot).unwrap();
+                    parts.source = ids.next_source_id(parts.snapshot).unwrap();
+                    assert_ne!(parts.source, open.source());
+                }
+                2 => parts.module = VcModuleRef::new("foreign-module"),
+                3 => { parts.vcs[unsupported.index()].provenance.pop(); }
+                4 => { parts.vcs[selected.index()].premises.clear(); }
+                5 => parts.vcs[selected.index()].goal = open.vc(unsupported).unwrap().goal,
+                6 => parts.vcs[selected.index()].local_context = LocalContext::try_new(Vec::new(), vec![VerifierPolicyInput {
+                    sort_key: CanonicalSortKey::new("different-policy"), key: PolicyKey::new("different-policy"), value: PolicyValue::new("true") }]).unwrap(),
+                7 => parts.vcs[selected.index()].source.related.clear(),
+                8 => {
+                    let CoreSourceAnchor::SourceRange(range) = &mut parts.vcs[selected.index()].source.primary.anchor else { panic!("actual range") };
+                    range.start += 1;
+                }
+                9 => {
+                    parts.generated_formulas[0].shape = VcGeneratedFormulaShape::True;
+                    parts.vcs[selected.index()].goal = VcFormulaRef::Generated(parts.generated_formulas[0].id);
+                }
+                10 => parts.vcs[selected.index()].status = discharge.vc_set().vc(selected).unwrap().status.clone(),
+                11 => {
+                    parts.vcs[selected.index()].status = discharge.vc_set().vc(selected).unwrap().status.clone();
+                    let VcStatus::Discharged { evidence } = &mut parts.vcs[selected.index()].status else { unreachable!() };
+                    evidence.rule = VcText::new("unsupported-preserved-rule");
+                }
+                12 => parts.vcs[selected.index()].status = VcStatus::NeedsAtp,
+                13 => parts.vcs[selected.index()].status = VcStatus::PolicyOpen { policy: PolicyKey::new("test") },
+                14 => parts.vcs[selected.index()].status = VcStatus::AssumedByPolicy { policy: PolicyKey::new("test"), marker: parts.vcs[selected.index()].premises[0].clone() },
+                15 => parts.vcs[selected.index()].status = VcStatus::SkippedDueToInvalidInput { reason: VcText::new("test") },
+                16 => parts.vcs[selected.index()].status = VcStatus::DeferredExternal { reason: VcText::new("test") },
+                17 => parts.vcs[selected.index()].status = VcStatus::Error { diagnostic: CoreDiagnosticId::new(0) },
+                _ => parts.generated_formulas[0].provenance.clear(),
+            }
+            let changed = VcSet::try_new(parts).unwrap_or_else(|error| panic!("mutation {mutation}: {error}"));
+            let output = try_discharge(DischargeInput { vc_set: &changed, policy: &policy }).unwrap();
+            if mutation != 12 { assert_ne!(output, discharge, "mutation {mutation}"); }
+            if mutation == 0 {
+                assert_eq!(output.evidence_records(), discharge.evidence_records());
+                assert_eq!(output.explanations(), discharge.explanations());
+            }
+            if mutation == 9 {
+                assert_eq!(output.evidence_records().iter().find(|record| record.vc == selected).unwrap().rule, Some(DischargeRule::GeneratedTautology));
+            }
+            if output != discharge {
+                assert!(build(&core, &open, selected, &output).is_err(), "output mutation {mutation}");
+            }
+            assert!(build(&core, &changed, selected, &discharge).is_err(), "original mutation {mutation}");
+            if mutation != 0 {
+                assert!(build(&core, &changed, selected, &output).is_err(), "replayed original mutation {mutation}");
+            }
+        }
+    }
+}

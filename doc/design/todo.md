@@ -743,8 +743,8 @@ permit; each source-integration slice waits for its actual upstream outputs.
    Bounded source [projections](./task_contracts/en/ATP-SOURCE-REGISTRATION-PROJECTIONS.md), [encoded input bindings](./task_contracts/en/ATP-ENCODED-PROBLEM-PRODUCER.md) and shared [local evidence transport](./task_contracts/en/VC-LOCAL-EVIDENCE-WIRE.md) are implemented; candidate extraction and backend execution remain open.
    [Unchecked source candidate inputs](./task_contracts/en/ATP-SOURCE-CANDIDATE-INPUTS.md) supply bound normal wire only; full search/acceptance gates remain open.
 2. [ ] [Built-in evidence candidates](./task_contracts/en/PREATP-FORMULA-EVIDENCE.md)
-   (VC 60); design can start, source integration waits for authentic
-   formula/context/substitution/provenance producers.
+   (VC 60); design can start, general source integration waits for authentic
+   formula/context/substitution/provenance producers. [Original-source direct-premise candidates](./task_contracts/en/VC-SOURCE-DIRECT-PREMISE-CANDIDATE.md) supply only bounded untrusted association.
 3. [ ] [By/built-in acceptance and witness publication](./task_contracts/en/PROOF-DISCHARGE-ACCEPTANCE.md)
    (Proof 23 / Artifact 25). ATP acceptance follows item 1; built-in acceptance
    follows item 2. Each witness requires a matching accepted result; distinct

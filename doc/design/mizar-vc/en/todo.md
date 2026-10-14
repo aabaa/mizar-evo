@@ -596,6 +596,8 @@ authorized.
 
 62. **[Local evidence wire transport](../../task_contracts/en/VC-LOCAL-EVIDENCE-WIRE.md).** [x] — Shared existing local framing; search and acceptance remain downstream.
 
+63. **[Source direct-premise candidates](../../task_contracts/en/VC-SOURCE-DIRECT-PREMISE-CANDIDATE.md).** [x] — Original-source association only; general task 60 and acceptance remain open.
+
 ## Recommended Verification
 
 Run after each task:
