@@ -13494,3 +13494,206 @@ fn source_registration_atp_reflexivity_names_reject_parsed_shapes_and_sort_actua
         }
     }
 }
+
+
+fn source_candidate_core_and_vcs(multiple: bool, text: &str) -> (mizar_core::core_ir::CoreIr, mizar_vc::vc_ir::VcSet, mizar_vc::vc_ir::VcSet) {
+    use mizar_vc::discharge::{DischargeInput, DischargePolicy, try_discharge};
+    let (source, nodes, symbols) = if multiple { step5c13_registration_inputs(text) }
+        else { step5c3_registration_inputs(text) }.unwrap();
+    let checked = mizar_checker::registration_resolution::check_source_existential_registration_proof(&source, &nodes, &symbols).unwrap();
+    let core = mizar_core::elaborator::lower_source_existential_registration(&checked).unwrap();
+    let open = step5c3_registration_vcs(&core).unwrap();
+    let discharge = try_discharge(DischargeInput { vc_set: &open, policy: &DischargePolicy::default() }).unwrap();
+    (core, open, discharge.vc_set().clone())
+}
+
+fn source_candidate_profile(name: &str, format: mizar_atp::problem::ConcreteFormat) -> mizar_atp::problem::LogicProfile {
+    use mizar_atp::problem::*;
+    LogicProfile::try_new(name, if format == ConcreteFormat::Tptp { LogicFragment::Fof }
+        else { LogicFragment::SmtLibUninterpreted }, EqualitySupport::Supported,
+        QuantifierPolicy::FirstOrder, SoftTypeStrategy::GuardPredicates,
+        NativePropertySupport::Unsupported, [format].into_iter().collect()).unwrap()
+}
+
+// Independent names oracle: use actual parsed numeric keys, never ATP names or the factory.
+fn source_candidate_wire(handoff: &mizar_vc::kernel_evidence_handoff::VcKernelEvidenceHandoff) -> Vec<u8> {
+    use mizar_kernel::{certificate_parser::{ClauseTautologyPolicy, Fingerprint, KernelProfileRecord},
+        clause::{SymbolKind, Term}, formula_evidence::{FormulaEvidenceParseContext, parse_formula_evidence}};
+    let envelope = handoff.canonical_evidence();
+    let target = envelope.target_vc();
+    let context = FormulaEvidenceParseContext::v1(Fingerprint::new(target.algorithm_id, target.digest.clone()),
+        KernelProfileRecord::v1(envelope.kernel_profile().profile_id, ClauseTautologyPolicy::Reject));
+    let parsed = parse_formula_evidence(&handoff.encode_local_evidence(None).unwrap(), &context).unwrap();
+    let equality = parsed.symbol_manifest().iter().find(|row| row.symbol.kind == SymbolKind::Equality).unwrap().symbol.id.0;
+    let choices = parsed.substitutions().iter().map(|row| {
+        let [replacement] = row.payload.replacements.as_slice() else { panic!("actual replacement") };
+        let Term::Application { symbol, arguments } = &replacement.actual_term else { panic!("actual closed choice") };
+        assert!(arguments.is_empty());
+        symbol.id.0
+    }).collect::<std::collections::BTreeSet<_>>();
+    let names = choices.into_iter().enumerate().map(|(index, choice)| {
+        let mut item = u32::try_from(index + 1).unwrap().to_be_bytes().to_vec();
+        item.push(1); item.extend(equality.to_be_bytes()); item.extend([2, 2]);
+        item.extend(choice.to_be_bytes()); item.extend(0u32.to_be_bytes()); item
+    }).collect::<Vec<_>>();
+    handoff.encode_local_evidence(Some(&names)).unwrap()
+}
+
+fn source_candidate_check_bytes(
+    handoff: &mizar_vc::kernel_evidence_handoff::VcKernelEvidenceHandoff,
+    bytes: &[u8], target: &mizar_atp::problem::AtpTargetBinding,
+) -> Result<mizar_kernel::checker::KernelCheckStatus, String> {
+    use mizar_kernel::{certificate_parser::{ClauseTautologyPolicy, Fingerprint, KernelProfileRecord},
+        checker::*, formula_evidence::{FormulaEvidenceParseContext, parse_formula_evidence}, rejection::TargetVcFingerprint};
+    use mizar_vc::{kernel_evidence_handoff::KernelContextIdentitySource as VcSource, vc_ir::VcFormulaRef};
+    let fingerprint = target.fingerprint();
+    let target = TargetVcFingerprint::new(fingerprint.algorithm_id(), fingerprint.digest().to_vec());
+    let mut parse_context = FormulaEvidenceParseContext::v1(Fingerprint::new(target.algorithm_id, target.digest.clone()),
+        KernelProfileRecord::v1(handoff.canonical_evidence().kernel_profile().profile_id, ClauseTautologyPolicy::Reject));
+    parse_context.accepted_schema_versions.insert(2);
+    let parsed = parse_formula_evidence(bytes, &parse_context).map_err(|error| format!("{error:?}"))?;
+    let entries = handoff.context_identity().entries().iter().map(|entry| {
+        let source = match entry.source() {
+            VcSource::LocalHypothesis { local_context_id } => KernelContextIdentitySource::LocalHypothesis { local_context_id },
+            VcSource::CitedPremise { local_context_id } => KernelContextIdentitySource::CitedPremise { local_context_id },
+            VcSource::GeneratedVcFact { vc_fact_id } => KernelContextIdentitySource::GeneratedVcFact { vc_fact_id },
+            _ => panic!("actual context source"),
+        };
+        let producer = match entry.producer_formula_ref() {
+            VcFormulaRef::Core(id) => KernelFormulaProducerRef::Core(id),
+            VcFormulaRef::Generated(id) => KernelFormulaProducerRef::Generated(KernelVcGeneratedFormulaId::new(id.index())),
+            _ => panic!("actual producer"),
+        };
+        KernelContextIdentityEntry::new(source, entry.formula_id(),
+            Fingerprint::new(entry.formula_fingerprint().algorithm_id, entry.formula_fingerprint().digest.clone()), producer)
+    }).collect();
+    let context = FormulaEvidenceContext::with_context_identity(Some(handoff.context_identity_hash().as_bytes().to_vec()),
+        Vec::new(), Vec::new(), Some(KernelContextIdentityPayload::new(target.clone(), handoff.canonical_hash(),
+            handoff.context_identity_hash(), entries)), ImportedFactContextLimits::default()).unwrap();
+    let result = check_kernel_evidence(KernelEvidenceCheckInput { target_vc_fingerprint: &target, evidence: &parsed,
+        formula_context: Some(&context), check_kind: KernelEvidenceCheckKind::ProofObligation,
+        policy: KernelCheckPolicy::default(), limits: KernelEvidenceCheckLimits::default() });
+    assert!(!result.policy_taint());
+    Ok(result.status())
+}
+
+#[test]
+fn source_registration_candidate_inputs_bind_encoding_metadata_identity_and_replay() {
+    use mizar_atp::{backend::{BackendCandidatePayload, EncodedBackendProblem, build_source_registration_candidate_inputs as build},
+        problem::ConcreteFormat, translator::translate_source_existential_registration};
+    use mizar_vc::{kernel_evidence_handoff::build_source_existential_kernel_handoff, vc_ir::VcStatus};
+    let original = std::fs::read_to_string(step5c3_registration_case().source_path).unwrap();
+    let renamed = original.replace("wmarked", "retagged").replace("X", "Value");
+    let mut identities = std::collections::BTreeSet::new();
+    for (changed_source, text) in [(false, &original), (true, &renamed)] {
+        let (core, _, vcs) = source_candidate_core_and_vcs(false, text);
+        let vc = vcs.vcs().iter().find(|vc| vc.status == VcStatus::NeedsAtp).unwrap();
+        let handoff = build_source_existential_kernel_handoff(&core, &vcs, vc.id).unwrap();
+        let wire = source_candidate_wire(&handoff);
+        for format in [ConcreteFormat::Tptp, ConcreteFormat::SmtLib] {
+            for name in ["source-candidate", "source-candidate-renamed-profile"] {
+                let profile = source_candidate_profile(name, format);
+                let problem = translate_source_existential_registration(&core, &vcs, vc.id, profile.clone()).unwrap();
+                let expected = EncodedBackendProblem::encode(&problem, format).unwrap();
+                let concrete = match format {
+                    ConcreteFormat::Tptp => mizar_atp::tptp_encoder::encode_tptp(&problem, mizar_atp::tptp_encoder::TptpDialect::Fof).unwrap().text().as_bytes().to_vec(),
+                    ConcreteFormat::SmtLib => mizar_atp::smtlib_encoder::encode_smtlib(&problem, mizar_atp::smtlib_encoder::SmtLibDialect::Uninterpreted).unwrap().text().as_bytes().to_vec(),
+                    _ => panic!("requested concrete format"),
+                };
+                let pair = build(&core, &vcs, vc.id, profile.clone(), format).unwrap();
+                let (encoded, candidate) = &pair;
+                assert_eq!(encoded, &expected);
+                assert_eq!(encoded.input_text(), concrete);
+                assert_eq!(candidate.payload(), &BackendCandidatePayload::FormulaSubstitutionBytes(wire.clone()));
+                assert_eq!(candidate.target_binding(), expected.target_binding());
+                assert_eq!(candidate.encoded_problem_hash(), expected.input_hash());
+                assert_eq!(candidate.provenance_hash(), expected.provenance_hash());
+                assert_eq!(candidate.formula_label_refs(), expected.formula_labels());
+                assert_eq!(candidate.symbol_binding_refs(), expected.symbol_bindings());
+                assert_eq!(pair, build(&core, &vcs, vc.id, profile, format).unwrap());
+                if !changed_source && format == ConcreteFormat::Tptp && name == "source-candidate" {
+                    // Independently computed from the genuine encoded inputs and normal wire.
+                    assert_eq!(candidate.candidate_id(), "source-registration-v1:9ea2cc0c346ed86ff90a864ce7a35b86fadf56b57fa323a76022a361aaff4c74");
+                }
+                assert!(identities.insert(candidate.candidate_id().to_owned()));
+            }
+        }
+    }
+}
+
+#[test]
+fn source_registration_candidate_inputs_supply_independent_wire_and_fresh_kernel_outcomes() {
+    use mizar_atp::{backend::{BackendCandidatePayload, build_source_registration_candidate_inputs as build}, problem::ConcreteFormat};
+    use mizar_kernel::checker::KernelCheckStatus;
+    use mizar_vc::{kernel_evidence_handoff::build_source_existential_kernel_handoff, vc_ir::VcStatus};
+    for (multiple, case) in [(false, step5c3_registration_case()), (true, step5c13_registration_case())] {
+        let original = std::fs::read_to_string(case.source_path).unwrap();
+        for renamed in [false, true] {
+            let base = if renamed { original.replace("marked", "retagged").replace("X", "Value") } else { original.clone() };
+            for negative in [false, true] {
+                let formal = if renamed { "Value" } else { "X" };
+                let text = if negative { base.replacen(&format!("means {formal} = {formal}"), &format!("means not {formal} = {formal}"), 1) } else { base.clone() };
+                let (core, _, vcs) = source_candidate_core_and_vcs(multiple, &text);
+                for vc in vcs.vcs().iter().filter(|vc| vc.status == VcStatus::NeedsAtp) {
+                    let handoff = build_source_existential_kernel_handoff(&core, &vcs, vc.id).unwrap();
+                    let (_, candidate) = build(&core, &vcs, vc.id, source_candidate_profile("source-candidate", ConcreteFormat::Tptp), ConcreteFormat::Tptp).unwrap();
+                    let BackendCandidatePayload::FormulaSubstitutionBytes(bytes) = candidate.payload() else { panic!("actual bytes") };
+                    assert_eq!(bytes, &source_candidate_wire(&handoff));
+                    let expected = if negative && vc.id.index() != 3 { KernelCheckStatus::Rejected } else { KernelCheckStatus::Accepted };
+                    assert_eq!(source_candidate_check_bytes(&handoff, bytes, candidate.target_binding()).unwrap(), expected,
+                        "multiple={multiple}, renamed={renamed}, negative={negative}, vc={:?}", vc.id);
+                }
+            }
+        }
+    }
+}
+
+#[test]
+fn source_registration_candidate_inputs_reject_whole_bindings_and_tampered_transport() {
+    use mizar_atp::{backend::{BackendCandidatePayload, build_source_registration_candidate_inputs as build}, problem::*};
+    use mizar_vc::{kernel_evidence_handoff::build_source_existential_kernel_handoff, vc_ir::*};
+    let text = std::fs::read_to_string(step5c13_registration_case().source_path).unwrap();
+    let (core, open, vcs) = source_candidate_core_and_vcs(true, &text);
+    let profile = source_candidate_profile("source-candidate", ConcreteFormat::Tptp);
+    let selected = vcs.vcs().iter().find(|vc| vc.status == VcStatus::NeedsAtp).unwrap().id;
+    let sibling = vcs.vcs().iter().find(|vc| matches!(vc.status, VcStatus::Discharged { .. })).unwrap().id;
+    assert!(build(&core, &open, selected, profile.clone(), ConcreteFormat::Tptp).is_err());
+    assert!(build(&core, &vcs, sibling, profile.clone(), ConcreteFormat::Tptp).is_err());
+    assert!(build(&core, &vcs, VcId::new(vcs.vcs().len()), profile.clone(), ConcreteFormat::Tptp).is_err());
+    let (foreign, _, _) = source_candidate_core_and_vcs(true, &text.replace("marked", "retagged"));
+    assert!(build(&foreign, &vcs, selected, profile.clone(), ConcreteFormat::Tptp).is_err());
+    for mutation in 0..8 {
+        let mut parts = VcSetParts { schema_version: vcs.schema_version().clone(), snapshot: vcs.snapshot(), source: vcs.source(),
+            module: vcs.module().clone(), generated_formulas: vcs.generated_formulas().to_vec(),
+            vcs: vcs.vcs().to_vec(), seed_accounting: vcs.seed_accounting().to_vec() };
+        match mutation {
+            0 => parts.vcs[selected.index()].status = VcStatus::Open,
+            1 => parts.vcs[selected.index()].status = vcs.vc(sibling).unwrap().status.clone(),
+            2 => { parts.vcs[sibling.index()].provenance.pop(); }
+            3 => parts.vcs[sibling.index()].status = VcStatus::Open,
+            4 => parts.vcs[selected.index()].source.related.clear(),
+            5 => { parts.vcs[selected.index()].premises.pop(); }
+            6 => parts.vcs[selected.index()].goal = vcs.vc(sibling).unwrap().goal,
+            _ => parts.generated_formulas[0].shape = VcGeneratedFormulaShape::True,
+        }
+        let changed = VcSet::try_new(parts).unwrap();
+        assert!(build(&core, &changed, selected, profile.clone(), ConcreteFormat::Tptp).is_err(), "mutation={mutation}");
+    }
+    assert!(build(&core, &vcs, selected, profile.clone(), ConcreteFormat::SmtLib).is_err());
+    let unsupported = LogicProfile::try_new("unsupported", LogicFragment::TffLike, EqualitySupport::Supported,
+        QuantifierPolicy::FirstOrder, SoftTypeStrategy::GuardPredicates, NativePropertySupport::Unsupported,
+        [ConcreteFormat::Tptp].into_iter().collect()).unwrap();
+    assert!(build(&core, &vcs, selected, unsupported, ConcreteFormat::Tptp).is_err());
+    let handoff = build_source_existential_kernel_handoff(&core, &vcs, selected).unwrap();
+    let (_, candidate) = build(&core, &vcs, selected, profile, ConcreteFormat::Tptp).unwrap();
+    let BackendCandidatePayload::FormulaSubstitutionBytes(bytes) = candidate.payload() else { panic!("actual bytes") };
+    assert_eq!(bytes, &source_candidate_wire(&handoff));
+    let mut corrupted = bytes.clone(); corrupted[0] ^= 1;
+    assert!(source_candidate_check_bytes(&handoff, &corrupted, candidate.target_binding()).is_err());
+    let sibling_handoff = build_source_existential_kernel_handoff(&core, &vcs, VcId::new(3)).unwrap();
+    assert_eq!(source_candidate_check_bytes(&sibling_handoff, bytes, candidate.target_binding()).unwrap(),
+        mizar_kernel::checker::KernelCheckStatus::Rejected);
+    let mut digest = candidate.target_binding().fingerprint().digest().to_vec(); digest[0] ^= 1;
+    let foreign_target = AtpTargetBinding::new(AtpFingerprint::new(candidate.target_binding().fingerprint().algorithm_id(), digest).unwrap(), candidate.target_binding().producer_binding().clone()).unwrap();
+    assert!(source_candidate_check_bytes(&handoff, bytes, &foreign_target).is_err());
+}

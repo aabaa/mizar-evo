@@ -736,6 +736,7 @@ permit; each source-integration slice waits for its actual upstream outputs.
    (atp 30). Equality slices require the [kernel equality instances](./task_contracts/en/ATPK-KERNEL-EQUALITY-INSTANCES.md)
    (kernel 36).
    Bounded source [projections](./task_contracts/en/ATP-SOURCE-REGISTRATION-PROJECTIONS.md), [encoded input bindings](./task_contracts/en/ATP-ENCODED-PROBLEM-PRODUCER.md) and shared [local evidence transport](./task_contracts/en/VC-LOCAL-EVIDENCE-WIRE.md) are implemented; candidate extraction and backend execution remain open.
+   [Unchecked source candidate inputs](./task_contracts/en/ATP-SOURCE-CANDIDATE-INPUTS.md) supply bound normal wire only; full search/acceptance gates remain open.
 2. [ ] [Built-in evidence candidates](./task_contracts/en/PREATP-FORMULA-EVIDENCE.md)
    (VC 60); design can start, source integration waits for authentic
    formula/context/substitution/provenance producers.

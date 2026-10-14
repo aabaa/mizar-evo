@@ -107,6 +107,15 @@ schema 1 と一意の Equality manifest key を要求する。各 substitution �
 各 item は既存 Formula-v2 grammar を保持する: big-endian instance ID、reflexivity tag 1、実 equality symbol ID、term/application tag 2/2、実 choice symbol ID、引数数0。通常の VC transport が item を frame 化する。instance formula の入力、探索、SAT 検査、backend 実行、candidate 分類、verifier budget を含まない。
 [Proof の source facade](../../mizar-proof/ja/status.md#source-existential-registration-proof) が fresh v1 parse 後にこの処理を消費する。実 Open/NeedsAtp source caller で byte と未対応 parsed shape を検査し、完全な ATP 抽出と policy 所有の探索上限は保留する。
 
+## Source registration candidate inputs
+
+`build_source_registration_candidate_inputs(&CoreIr, &VcSet, VcId, LogicProfile, ConcreteFormat) -> Result<(EncodedBackendProblem, BackendCandidateEvidence), String>` は結び付けた未信頼輸送のみを作る。既存 [source translator](translator.md#source-registration-projections) と実 encoded factory を実行し、独立に [同じ source handoff](../../mizar-vc/ja/kernel_evidence_handoff.md#source-existential-registration-proof) を再構成する。generator/default-discharge 全体を再実行して選択した NeedsAtp graph を認証し、元の Open、選択した Discharged、未対応・整合的に偽装した入力では pair を返さず error とする。明示した profile/format を保ち、pruning・fallback・reprofile をしない。
+実 handoff を local Formula v1 として frame 化し、実 target と kernel profile/tautology policy を使って既存 Kernel parser を呼ぶ。これは構造検査であって受理ではない。parsed 数値 key を closed-choice name writer に渡し、同じ handoff の Formula v2 に名前を frame 化する。ATP/backend 名から term を復元せず、instance formula を入力しない。元の全 source formula・置換・provenance・refutation goal を保つ。
+既存 FormulaSubstitutionBytes candidate に正確な v2 byte と fresh encoded container の完全な target binding・input hash・provenance hash・全 label・全 symbol mapping を入れる。別の candidate byte・hash・identity・encoded output は入力しない。未対応 source/encoding/framing/parsing/name は部分結果なしで中断する。
+candidate_id は既存 private StableHasher の domain `mizar-atp/source-registration-candidate/v1` から、byte field `encoded-input-hash`、`encoded-metadata-hash`、u64 field `target-fingerprint-algorithm`、byte field `formula-substitution-bytes` の順で作る。実 container hash・target algorithm ID・正確な payload byte を使い、既存小文字 hex と prefix `source-registration-v1:` で表す。metadata は target digest/producer・label・mapping・source provenance を結び、旧 hash を変えず algorithm を明示的に加える。input hash は実 text/format/profile、payload は通常の evidence field を結ぶ。Debug・runtime data・report・caller receipt を hash に入れない。
+pair は未検査の試行であり、fresh Kernel check が拒否する実際の偽の source も含む。backend result や探索成功ではない。caller が現 source/context 認証と独立した通常 [Kernel 検査](../../mizar-kernel/ja/checker.md)、[Proof](../../mizar-proof/ja/selection.md) が受理を所有する。既存 original-Open built-in facade は変えない。探索上限・汎用 finder・advisory 抽出・backend 実行・publication・reuse は保留する。
+異なる実 source 回帰 caller 3箇所で direct concrete encoding/metadata、独立した通常 wire/fresh Kernel outcome、source/context 全体の破損を検査する。両 format、元・改名した正/負の single/aggregate source、決定的 replay/固定 identity、元 Open・選択した Discharged の拒否、破損 output の未信頼性を扱う。既存 manual/producer oracle を維持する。
+
 ## stable hash と fingerprint
 
 Task-14 source は backend metadata 用の private deterministic hash helper を実装しなければならない。

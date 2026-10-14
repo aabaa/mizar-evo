@@ -693,9 +693,11 @@ candidate evidence through the kernel-owned schema and must not weaken it.
 33. **Source registration projections.** [x]
     - Authentic bounded Core/VC-to-ATP producer; [contract](../../task_contracts/en/ATP-SOURCE-REGISTRATION-PROJECTIONS.md). General extraction and ATP30 remain open.
 
-34. **[Genuine encoded input bindings](../../task_contracts/en/ATP-ENCODED-PROBLEM-PRODUCER.md).** [x] — Real encoder/container handoff; candidate production remains open.
+34. **[Genuine encoded input bindings](../../task_contracts/en/ATP-ENCODED-PROBLEM-PRODUCER.md).** [x] — Real encoder/container handoff; general candidate production remains open.
 
 35. **[Closed-choice reflexivity names](../../task_contracts/en/ATP-CLOSED-CHOICE-EQUALITY-NAMES.md).** [x] — Existing untrusted name producer; full finder/search remains open.
+
+36. **[Authentic source candidate inputs](../../task_contracts/en/ATP-SOURCE-CANDIDATE-INPUTS.md).** [x] — Bound unchecked transport; search/acceptance remain open.
 
 ## Recommended Verification
 

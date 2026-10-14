@@ -3,8 +3,8 @@
 //! This module implements the task-14 runner specified in
 //! [backend.md](../../../doc/design/mizar-atp/en/backend.md). It launches
 //! untrusted backend processes, records deterministic run metadata, and offers
-//! a mock classification seam for candidate evidence. It does not parse real
-//! backend proof languages, extract real candidate evidence, invoke kernel checking,
+//! a mock classification seam and bounded source candidate transport. It does not parse
+//! real backend proof languages, extract backend candidate evidence, invoke kernel checking,
 //! check SAT, accept proofs, publish witnesses, or trust backend proof
 //! objects, logs, unsat cores, traces, or used-axiom reports.
 
@@ -25,6 +25,71 @@ use std::{
     thread,
     time::{Duration, Instant, SystemTime, UNIX_EPOCH},
 };
+
+/// Builds bound, unchecked candidate transport from authentic source producers.
+pub fn build_source_registration_candidate_inputs(
+    core: &mizar_core::core_ir::CoreIr,
+    vc_set: &mizar_vc::vc_ir::VcSet,
+    vc_id: mizar_vc::vc_ir::VcId,
+    logic_profile: crate::problem::LogicProfile,
+    concrete_format: ConcreteFormat,
+) -> Result<(EncodedBackendProblem, BackendCandidateEvidence), String> {
+    let problem = crate::translator::translate_source_existential_registration(
+        core,
+        vc_set,
+        vc_id,
+        logic_profile,
+    )?;
+    let encoded = EncodedBackendProblem::encode(&problem, concrete_format)?;
+    let handoff = mizar_vc::kernel_evidence_handoff::build_source_existential_kernel_handoff(
+        core, vc_set, vc_id,
+    )?;
+    let envelope = handoff.canonical_evidence();
+    let target = envelope.target_vc();
+    let profile = envelope.kernel_profile();
+    let tautology = match profile.clause_tautology_policy {
+        mizar_vc::kernel_evidence_handoff::KernelClauseTautologyPolicy::Reject => {
+            mizar_kernel::certificate_parser::ClauseTautologyPolicy::Reject
+        }
+        mizar_vc::kernel_evidence_handoff::KernelClauseTautologyPolicy::Marker => {
+            mizar_kernel::certificate_parser::ClauseTautologyPolicy::Marker
+        }
+        _ => return Err("unsupported source kernel profile".to_owned()),
+    };
+    let context = mizar_kernel::formula_evidence::FormulaEvidenceParseContext::v1(
+        mizar_kernel::certificate_parser::Fingerprint::new(
+            target.algorithm_id,
+            target.digest.clone(),
+        ),
+        mizar_kernel::certificate_parser::KernelProfileRecord::v1(profile.profile_id, tautology),
+    );
+    let parsed = mizar_kernel::formula_evidence::parse_formula_evidence(
+        &handoff.encode_local_evidence(None)?,
+        &context,
+    )
+    .map_err(|error| format!("{error:?}"))?;
+    let names = encode_closed_choice_reflexivity_names(&parsed)?;
+    let bytes = handoff.encode_local_evidence(Some(&names))?;
+    let mut hash = StableHasher::new("mizar-atp/source-registration-candidate/v1");
+    hash.field_bytes("encoded-input-hash", encoded.input_hash().as_bytes());
+    hash.field_bytes("encoded-metadata-hash", encoded.metadata_hash().as_bytes());
+    hash.field_u64(
+        "target-fingerprint-algorithm",
+        u64::from(encoded.target_binding().fingerprint().algorithm_id()),
+    );
+    hash.field_bytes("formula-substitution-bytes", &bytes);
+    let candidate = BackendCandidateEvidence::new(
+        format!("source-registration-v1:{}", hex(hash.finalize().as_bytes())),
+        BackendCandidatePayload::FormulaSubstitutionBytes(bytes),
+        encoded.target_binding().clone(),
+        encoded.input_hash(),
+        encoded.provenance_hash(),
+        encoded.formula_labels().to_vec(),
+        encoded.symbol_bindings().to_vec(),
+    )
+    .map_err(|error| error.to_string())?;
+    Ok((encoded, candidate))
+}
 
 /// Encodes untrusted reflexivity names from the caller's actual parsed v1 evidence.
 pub fn encode_closed_choice_reflexivity_names(

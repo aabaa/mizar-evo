@@ -638,9 +638,11 @@ polarity)、F2(非 import ソース束縛)、F6(imported-statement projection)
 33. **Source registration projections。** [x]
     - 実 bounded Core/VC-to-ATP producer。[契約](../../task_contracts/ja/ATP-SOURCE-REGISTRATION-PROJECTIONS.md)。一般 extraction と ATP30 は未完了。
 
-34. **[Genuine encoded input bindings](../../task_contracts/ja/ATP-ENCODED-PROBLEM-PRODUCER.md).** [x] — Real encoder/container handoff; candidate production remains open.
+34. **[Genuine encoded input bindings](../../task_contracts/ja/ATP-ENCODED-PROBLEM-PRODUCER.md).** [x] — Real encoder/container handoff; general candidate production remains open.
 
 35. **[Closed-choice reflexivity names](../../task_contracts/ja/ATP-CLOSED-CHOICE-EQUALITY-NAMES.md).** [x] — 既存の未信頼 name producer。finder/search 全体は保留。
+
+36. **[Authentic source candidate inputs](../../task_contracts/ja/ATP-SOURCE-CANDIDATE-INPUTS.md).** [x] — 結び付けた未検査輸送。探索/受理は保留。
 
 ## 推奨検証
 
