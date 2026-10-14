@@ -480,6 +480,8 @@ should keep `cargo test -p mizar-session` green (see [Suggested Verification](#s
 34. **Native OpenBuffer storage prerequisite.** [x]
     - [FRONTEND-OPEN-BUFFER-STORAGE](../../task_contracts/en/FRONTEND-OPEN-BUFFER-STORAGE.md) owns strict codecs and shared normalization; editor services and snapshot binding follow separately.
 
+35. **[Explicit native OpenBuffer input](../../task_contracts/en/BUILD-NATIVE-OPEN-BUFFER-INPUT.md).** [x]
+
 ## Suggested Verification
 
 After each task, run:

@@ -1001,3 +1001,280 @@ fn summary(
         content_hash: Hash::from_bytes([hash_seed; Hash::BYTE_LEN]),
     }
 }
+
+#[test]
+fn native_open_buffer_input_preserves_origin_and_rejects_uncertain_coordinates() {
+    use mizar_session::{DiskSourceLoader, SourceOriginInput};
+    let root = std::env::temp_dir().join(format!(
+        "mizar-build-native-open-buffer-{}-{:?}",
+        std::process::id(),
+        std::time::SystemTime::now()
+            .duration_since(std::time::UNIX_EPOCH)
+            .unwrap()
+            .as_nanos()
+    ));
+    std::fs::create_dir_all(root.join("src/groups")).unwrap();
+    std::fs::write(root.join("src/groups/base.miz"), [0xff]).unwrap();
+    let mut package = workspace_package("algebra", "1.0.0");
+    package.source = PackagePlanSource::Workspace {
+        root: ".".into(),
+        source_root: "src".into(),
+        manifest_path: "mizar.pkg".into(),
+    };
+    let mut plan = build_plan(vec![package]);
+    plan.workspace_root = WorkspaceRoot::new(root.to_str().unwrap());
+    let layout = StaticSourceLayout::from_native_disk(&plan).unwrap();
+    let index = build_module_index(&plan, &layout, &[]).unwrap();
+    let loader = DiskSourceLoader::new(&root);
+    let package = PackageId::new("algebra");
+    let text: std::sync::Arc<str> = "\u{feff}definition\r\nend;\r\n".into();
+    let origin = SourceOriginInput::OpenBuffer {
+        uri: format!("file://localhost{}/src/groups/%62ase.miz", root.display()),
+        expected_version: -1,
+        actual_version: 9,
+        text: text.clone(),
+    };
+    let input = index
+        .native_open_buffer_input(&plan.workspace_root, &package, &loader, origin.clone())
+        .unwrap();
+    assert_eq!(input.package_id, package);
+    assert_eq!(input.module_path, ModulePath::new("groups.base"));
+    assert_eq!(input.normalized_path.as_str(), "src/groups/base.miz");
+    assert_eq!(input.edition, Edition::new("2025"));
+    assert_eq!(input.origin, origin);
+    let SourceOriginInput::OpenBuffer { text: retained, .. } = &input.origin else {
+        panic!("open buffer")
+    };
+    assert!(std::sync::Arc::ptr_eq(&text, retained));
+    assert!(matches!(
+        mizar_session::SourceLoader::load(
+            &loader,
+            mizar_session::BuildSnapshotId::from_published_schema_str(&format!(
+                "mizar-session-build-snapshot-v1:{}",
+                "01".repeat(Hash::BYTE_LEN)
+            ))
+            .unwrap(),
+            input,
+            &mizar_session::InMemorySessionIdAllocator::new()
+        ),
+        Err(mizar_session::SourceLoadError::StaleLspDocumentVersion { .. })
+    ));
+    let rejected = |value: super::ModuleIndex| {
+        assert!(
+            value
+                .native_open_buffer_input(&plan.workspace_root, &package, &loader, origin.clone())
+                .is_err()
+        );
+    };
+    let mutations: &[fn(&mut super::ModuleIndex)] = &[
+        |v| v.packages.clear(),
+        |v| v.packages.push(v.packages[0].clone()),
+        |v| v.modules.clear(),
+        |v| v.modules.push(v.modules[0].clone()),
+        |v| {
+            v.packages[0].source = super::PackageIndexSource::RegistryArtifact {
+                registry: "default".into(),
+                checksum: "unused".into(),
+            }
+        },
+        |v| {
+            if let super::PackageIndexSource::Workspace { package_root, .. } =
+                &mut v.packages[0].source
+            {
+                *package_root = "../outside".into();
+            }
+        },
+        |v| {
+            if let super::PackageIndexSource::Workspace { package_root, .. } =
+                &mut v.packages[0].source
+            {
+                *package_root = "src//groups".into();
+            }
+        },
+        |v| {
+            if let super::PackageIndexSource::Workspace { source_root, .. } =
+                &mut v.packages[0].source
+            {
+                *source_root = "other/src".into();
+            }
+        },
+        |v| v.modules[0].module.package = PackageId::new("other"),
+        |v| v.modules[0].module.path = ModulePath::new("other"),
+        |v| v.modules[0].package_id = PackageId::new("other"),
+        |v| v.modules[0].module_path = ModulePath::new("other"),
+        |v| v.modules[0].edition = Edition::new("other"),
+        |v| {
+            v.modules[0].location = ModuleIndexLocation::DependencySummary {
+                artifact: "unused".into(),
+                content_hash: Hash::from_bytes([1; Hash::BYTE_LEN]),
+            }
+        },
+        |v| {
+            if let ModuleIndexLocation::WorkspaceFile { source_root, .. } =
+                &mut v.modules[0].location
+            {
+                *source_root = "other/src".into();
+            }
+        },
+        |v| {
+            if let ModuleIndexLocation::WorkspaceFile {
+                normalized_path, ..
+            } = &mut v.modules[0].location
+            {
+                *normalized_path = "src/base.miz".into();
+            }
+        },
+        |v| {
+            if let ModuleIndexLocation::WorkspaceFile {
+                source_relative_path,
+                ..
+            } = &mut v.modules[0].location
+            {
+                *source_relative_path = "base.miz".into();
+            }
+        },
+        |v| {
+            let mut duplicate = v.modules[0].clone();
+            if let ModuleIndexLocation::WorkspaceFile {
+                normalized_path,
+                source_relative_path,
+                ..
+            } = &mut duplicate.location
+            {
+                *normalized_path = "src/other.miz".into();
+                *source_relative_path = "other.miz".into();
+            }
+            v.modules.push(duplicate);
+        },
+    ];
+    for mutate in mutations {
+        let mut value = index.clone();
+        mutate(&mut value);
+        rejected(value);
+    }
+    let mut drifted = index.clone();
+    drifted.modules[0].module.path = ModulePath::new("other");
+    drifted.modules[0].module_path = ModulePath::new("other");
+    assert!(
+        drifted
+            .native_open_buffer_input(&plan.workspace_root, &package, &loader, origin.clone())
+            .is_err(),
+        "M1: coherent module identity must match the file coordinates"
+    );
+    let mut ambiguous_path = index.clone();
+    let mut duplicate = ambiguous_path.modules[0].clone();
+    duplicate.module.path = ModulePath::new("other");
+    duplicate.module_path = ModulePath::new("other");
+    ambiguous_path.modules.push(duplicate);
+    assert!(
+        ambiguous_path
+            .native_open_buffer_input(&plan.workspace_root, &package, &loader, origin.clone())
+            .is_err(),
+        "M2: selected path must be unique independently of module identity"
+    );
+    for (workspace, package, actual_loader) in [
+        (
+            WorkspaceRoot::new(root.join("missing").to_str().unwrap()),
+            package.clone(),
+            loader.clone(),
+        ),
+        (
+            WorkspaceRoot::new(root.join("src").to_str().unwrap()),
+            package.clone(),
+            loader.clone(),
+        ),
+        (
+            plan.workspace_root.clone(),
+            PackageId::new("missing"),
+            loader.clone(),
+        ),
+        (
+            plan.workspace_root.clone(),
+            package.clone(),
+            DiskSourceLoader::new(root.join("src")),
+        ),
+    ] {
+        assert!(
+            index
+                .native_open_buffer_input(&workspace, &package, &actual_loader, origin.clone())
+                .is_err()
+        );
+    }
+    for unsupported in [
+        SourceOriginInput::Disk {
+            path: "src/groups/base.miz".into(),
+        },
+        SourceOriginInput::Generated {
+            generator: mizar_session::GeneratedSourceKind::new("test"),
+            text: text.clone(),
+            anchor: None,
+        },
+        SourceOriginInput::OpenBuffer {
+            uri: "untitled:base".into(),
+            expected_version: 1,
+            actual_version: 1,
+            text: text.clone(),
+        },
+        SourceOriginInput::OpenBuffer {
+            uri: format!("file://{}/src/missing.miz", root.display()),
+            expected_version: 1,
+            actual_version: 1,
+            text: text.clone(),
+        },
+    ] {
+        assert!(
+            index
+                .native_open_buffer_input(&plan.workspace_root, &package, &loader, unsupported)
+                .is_err()
+        );
+    }
+    #[cfg(unix)]
+    {
+        let external = root.with_extension("external");
+        std::fs::create_dir_all(external.join("src/groups")).unwrap();
+        std::fs::write(external.join("src/groups/base.miz"), [0xff]).unwrap();
+        std::os::unix::fs::symlink(&external, root.join("escape")).unwrap();
+        let external_loader = DiskSourceLoader::new(&external);
+        let external_uri = format!("file://{}/src/groups/base.miz", external.display());
+        assert_eq!(
+            external_loader
+                .normalize_open_buffer_uri(&external_uri)
+                .unwrap()
+                .as_str(),
+            "src/groups/base.miz"
+        );
+        let external_origin = SourceOriginInput::OpenBuffer {
+            uri: external_uri,
+            expected_version: -1,
+            actual_version: 9,
+            text,
+        };
+        let mut outside = index.clone();
+        if let super::PackageIndexSource::Workspace {
+            package_root,
+            source_root,
+            ..
+        } = &mut outside.packages[0].source
+        {
+            *package_root = "escape".into();
+            *source_root = "escape/src".into();
+        }
+        if let ModuleIndexLocation::WorkspaceFile { source_root, .. } =
+            &mut outside.modules[0].location
+        {
+            *source_root = "escape/src".into();
+        }
+        let result = outside.native_open_buffer_input(
+            &plan.workspace_root,
+            &package,
+            &external_loader,
+            external_origin,
+        );
+        std::fs::remove_dir_all(external).unwrap();
+        assert!(
+            result.is_err(),
+            "M3: canonical package root must remain inside workspace"
+        );
+    }
+    std::fs::remove_dir_all(root).unwrap();
+}

@@ -13947,3 +13947,178 @@ fn current_disk_diagnostic_submission_preserves_captured_precondition_errors() {
         ));
     }
 }
+
+#[test]
+fn native_open_buffer_input_feeds_protected_prefix_like_explicit_clean_input() {
+    let fixture = Fixture::new("\u{feff}definition\r\nend;\r\n".as_bytes());
+    let package_root = fixture.root.join("nested/member");
+    fs::create_dir_all(package_root.join("src/groups")).unwrap();
+    fs::write(package_root.join("src/groups/base.miz"), [0xff]).unwrap();
+    let (mut request, mut input) = fixture.submit_request(vec![], vec![]);
+    input.workspace_packages[0].member_path = "nested/member".into();
+    input.lockfile = parse_lockfile("schema_version = 1\n[[package]]\nname = \"alpha\"\nversion = \"0.1.0\"\nsource = { kind = \"workspace\", path = \"nested/member\" }\ndependencies = []\n").unwrap();
+    let plan = produce_build_plan(
+        input.plan_request.clone(),
+        input.workspace_packages.clone(),
+        input.lockfile.clone(),
+    )
+    .unwrap();
+    input.source_layout = StaticSourceLayout::from_native_disk(&plan).unwrap();
+    let index = build_module_index(&plan, &input.source_layout, &[]).unwrap();
+    let loader = DiskSourceLoader::new(&package_root);
+    let raw: std::sync::Arc<str> = "\u{feff}definition\r\nend;\r\n".into();
+    let origin = SourceOriginInput::OpenBuffer {
+        uri: format!(
+            "file://localhost{}/src/groups/%62ase.miz",
+            package_root.display()
+        ),
+        expected_version: 7,
+        actual_version: 7,
+        text: raw.clone(),
+    };
+    let acquired = index
+        .native_open_buffer_input(
+            &plan.workspace_root,
+            &PackageId::new("alpha"),
+            &loader,
+            origin.clone(),
+        )
+        .unwrap();
+    let explicit = SourceInput {
+        package_id: PackageId::new("alpha"),
+        module_path: ModulePath::new("groups.base"),
+        normalized_path: normalize_path(&package_root, Path::new("src/groups/base.miz")).unwrap(),
+        edition: Edition::new("2025"),
+        origin,
+    };
+    assert_eq!(acquired, explicit);
+    let SourceOriginInput::OpenBuffer { text, .. } = &acquired.origin else {
+        panic!("open buffer")
+    };
+    assert!(std::sync::Arc::ptr_eq(text, &raw));
+    request.source_inputs.versions.clear();
+    let mut clean = None;
+    for descriptor in [explicit, acquired] {
+        let ids = InMemorySessionIdAllocator::new();
+        let snapshots = SnapshotRegistry::new();
+        let session = request
+            .clone()
+            .capture_sources(&ids, &snapshots, vec![(loader.clone(), descriptor)])
+            .unwrap();
+        let snapshot = session.captured().snapshot().id;
+        let unit = WorkUnit::Module {
+            module: mizar_build::module_index::ModuleId::new(
+                PackageId::new("alpha"),
+                ModulePath::new("groups.base"),
+            ),
+        };
+        let owner = publisher(snapshot, 0, &unit);
+        allow_frontend(&owner, &unit);
+        let mut builder = PhaseRegistryBuilder::new();
+        builder.register_source_load();
+        builder.register_frontend(vec![]);
+        let mut driver =
+            CompilerDriver::new(builder.build().unwrap()).with_output_publisher(owner.clone());
+        let (_, mut current) = fixture.submit_request(vec![], vec![]);
+        current.workspace_packages = input.workspace_packages.clone();
+        current.lockfile = input.lockfile.clone();
+        current.source_layout = input.source_layout.clone();
+        let submission = driver
+            .submit_captured(session.clone(), &ids, &snapshots, current)
+            .unwrap();
+        assert_eq!(
+            submission.status,
+            DriverSubmissionStatus::BlockedByMissingPhaseServices
+        );
+        let results = submission
+            .scheduler_run
+            .as_ref()
+            .unwrap()
+            .phase_results
+            .values()
+            .flatten()
+            .collect::<Vec<_>>();
+        let refs = results
+            .iter()
+            .flat_map(|result| &result.output_refs)
+            .collect::<Vec<_>>();
+        assert_eq!(refs.len(), 2);
+        assert!(results.iter().all(|result| result.diagnostics.is_empty()));
+        let source_ref = *refs
+            .iter()
+            .find(|output| output.output_kind() == &OutputKind::new("SourceUnit"))
+            .unwrap();
+        let source = owner
+            .storage()
+            .get(
+                &owner
+                    .storage()
+                    .typed_handle::<SourceUnit>(source_ref, &OutputKind::new("SourceUnit"))
+                    .unwrap(),
+            )
+            .unwrap();
+        let frontend_ref = *refs
+            .iter()
+            .find(|output| output.output_kind() == &OutputKind::new("FrontendOutput"))
+            .unwrap();
+        let frontend = owner
+            .storage()
+            .get(
+                &owner
+                    .storage()
+                    .typed_handle::<FrontendOutput<<MizarParserSeam as ParserSeam>::Ast>>(
+                        frontend_ref,
+                        &OutputKind::new("FrontendOutput"),
+                    )
+                    .unwrap(),
+            )
+            .unwrap();
+        assert_eq!(source.source_text.as_ref(), "definition\nend;\n");
+        let map = source.loading_map.as_ref().unwrap();
+        assert_eq!(map.segments, fixture.loading_map.as_ref().unwrap().segments);
+        assert_eq!(
+            map.origin,
+            mizar_session::LoadingOrigin::OpenBufferText {
+                uri: format!(
+                    "file://localhost{}/src/groups/%62ase.miz",
+                    package_root.display()
+                ),
+                version: 7,
+            }
+        );
+        assert_eq!(source.line_map, fixture.line_map);
+        assert_eq!(source.origin, SourceOrigin::OpenBuffer { version: 7 });
+        assert_eq!(
+            source.source_id,
+            session.captured().snapshot().source_versions[0].source_id
+        );
+        let phase_input = PhaseInput::new(
+            unit,
+            PhaseDispatchInputBundle::without_parent_outputs(
+                snapshot,
+                SourceUnitCacheKey::from_source(&source).stable_hash(),
+                vec![],
+            ),
+        );
+        for phase in [PipelinePhase::SourceLoad, PipelinePhase::Frontend] {
+            assert!(matches!(
+                driver
+                    .registry()
+                    .cache_key_for_phase(phase, &phase_input)
+                    .unwrap()
+                    .intent,
+                PhaseCacheIntent::NoKey { .. }
+            ));
+        }
+        let actual = (
+            submission.module_index.unwrap(),
+            source.as_ref().clone(),
+            frontend.as_ref().clone(),
+        );
+        if let Some(expected) = &clean {
+            assert_eq!(&actual, expected);
+        } else {
+            clean = Some(actual);
+        }
+    }
+}

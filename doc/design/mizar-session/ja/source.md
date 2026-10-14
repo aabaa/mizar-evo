@@ -280,3 +280,7 @@ snapshot 取得が返す source 入力記録は、実際の正規化パスに加
 Disk/OpenBuffer の BOM 除去と CRLF→LF の共有純粋処理。単独 CR と既存 map 規則を
 保ち、I/O・検証・hash・ID 割り当てを行わず、Generated input を正規化しない。
 frontend 保存形式が取得済み raw buffer の由来を照合する際にも使う。
+
+### Metadata-only OpenBuffer URI
+
+`DiskSourceLoader::normalize_open_buffer_uri(&DocumentUri) -> Result<NormalizedPath, SourceLoadError>` は既存 URI/path 取得を本文読取りや SourceId 割当なしで公開する。OpenBuffer loading と同じ package root・decode・canonicalize・error 分類を使用する。存在しない対象は従来どおり canonicalize に失敗し、未保存新規 file を有効化しない。文書版の受理や索引 module identity の対応付けは行わず、Build の明示 native 入力対応付けが通常 capture 前に利用する。

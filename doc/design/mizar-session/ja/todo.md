@@ -461,6 +461,8 @@
 34. **Native OpenBuffer 保存形式の前提タスク.** [x]
     - [FRONTEND-OPEN-BUFFER-STORAGE](../../task_contracts/ja/FRONTEND-OPEN-BUFFER-STORAGE.md) owns strict codecs and shared normalization; editor services and snapshot binding follow separately.
 
+35. **[Explicit native OpenBuffer input](../../task_contracts/ja/BUILD-NATIVE-OPEN-BUFFER-INPUT.md).** [x]
+
 ## 推奨検証
 
 各タスクの後に、以下を実行する:

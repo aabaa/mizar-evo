@@ -369,3 +369,12 @@ work は `mizar-resolve` に残す。
 | `ModuleIndexLocation` | `#[non_exhaustive]`; downstream callers は wildcard match arms を含めなければならない。 |
 | `ModuleIndexDiagnosticKind` | `#[non_exhaustive]`; downstream callers は wildcard match arms を含めなければならない。 |
 | `ModuleIndexProviderError` | `#[non_exhaustive]`; downstream callers は wildcard match arms を含めなければならない。 |
+
+## Native OpenBuffer input
+
+`ModuleIndex::native_open_buffer_input(workspace_root, package, loader, origin) -> Result<SourceInput, String>` は呼出側が明示した native メタデータを capture 前に対応付ける。既存 OpenBuffer origin のみを受け付け、URI・expected/actual version・Arc 本文を変更しない。版の受理や本文正規化は行わない。
+package ID に一致する索引 package が一つだけ存在し、Workspace source であることを要求する。package_root は `.` または正規化相対パス、source_root は正確な root/src とする。明示 workspace と package root を canonicalize して包含を確認し、実 loader root が同じ package directory を指すことを要求する。不確かな filesystem、別 package/root への暗黙 fallback は Err とする。
+Session の `normalize_open_buffer_uri` を再利用する。選択 package と正規化 path に一致する WorkspaceFile、およびその package/module identity の出現がそれぞれ一つであることを要求する。ModuleId/package/module の重複フィールド、edition、source_root、normalized_path、source_relative_path と src 相対 module spelling の一致を確認し、既存 module-path 変換・検証を再利用する。別 URI parser や package 名と directory 名の同一視を導入せず、DependencySummary を native file としない。
+既存 SourceInput に索引 identity/edition と実正規化 path を設定して返す。欠落・重複・不整合・非対応・取得失敗は部分入力を返さず String Err とし、新規言語診断、本文読取り、ID/hash 割当、buffer 変更を行わない。
+実 native layout/index と元の raw OpenBuffer を protected SourceLoad/Frontend へ接続するテストで、明示 clean 入力との実出力・診断・NoKey、入れ子 member/module、disk の不正 UTF-8、raw map、不整合や重複、既存の下流版・path 拒否を確認する。decoder/path/protocol の既存テストは変更しない。
+plan/index の由来と明示 root/package は呼出側の責務であり、座標対応は metadata 真正性や完全設定を証明しない。canonicalize は一時点の観測である。protected capture、source lifetime、currentness、実効設定/toolchain/dependency、native host/LSP routing と診断公開は各既存 owner に残す。

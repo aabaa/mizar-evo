@@ -492,6 +492,113 @@ impl SourceLayoutProvider for StaticSourceLayout {
     }
 }
 
+impl ModuleIndex {
+    /// Associates a raw buffer with a unique native indexed file before source capture.
+    pub fn native_open_buffer_input(
+        &self,
+        workspace_root: &mizar_session::WorkspaceRoot,
+        package: &PackageId,
+        loader: &mizar_session::DiskSourceLoader,
+        origin: mizar_session::SourceOriginInput,
+    ) -> Result<mizar_session::SourceInput, String> {
+        use std::{fs, path::Path};
+
+        let mizar_session::SourceOriginInput::OpenBuffer { uri, .. } = &origin else {
+            return Err("native buffer association requires an OpenBuffer origin".into());
+        };
+        let mut packages = self
+            .packages
+            .iter()
+            .filter(|entry| &entry.package_id == package);
+        let indexed = packages.next().ok_or("missing indexed package")?;
+        if packages.next().is_some() {
+            return Err("ambiguous indexed package".into());
+        }
+        let PackageIndexSource::Workspace {
+            package_root,
+            source_root,
+            ..
+        } = &indexed.source
+        else {
+            return Err("native buffer association requires a workspace package".into());
+        };
+        if package_root != "."
+            && (!is_normalized_relative_path(package_root) || Path::new(package_root).is_absolute())
+        {
+            return Err("package root must be a normalized relative path".into());
+        }
+        let expected_source_root = if package_root == "." {
+            "src".to_owned()
+        } else {
+            format!("{package_root}/src")
+        };
+        if source_root != &expected_source_root {
+            return Err("source root must be the indexed package src directory".into());
+        }
+        let workspace =
+            fs::canonicalize(workspace_root.as_str()).map_err(|error| error.to_string())?;
+        let expected_root =
+            fs::canonicalize(workspace.join(package_root)).map_err(|error| error.to_string())?;
+        if !expected_root.starts_with(&workspace)
+            || fs::canonicalize(loader.package_root()).map_err(|error| error.to_string())?
+                != expected_root
+        {
+            return Err("loader root does not match the indexed workspace package".into());
+        }
+        let normalized_path = loader
+            .normalize_open_buffer_uri(uri)
+            .map_err(|error| error.to_string())?;
+        let mut entries = self.modules.iter().filter(|entry| {
+            &entry.package_id == package
+                && matches!(&entry.location, ModuleIndexLocation::WorkspaceFile { normalized_path: path, .. }
+                    if path == normalized_path.as_str())
+        });
+        let entry = entries.next().ok_or("missing indexed native file")?;
+        if entries.next().is_some()
+            || self
+                .modules
+                .iter()
+                .filter(|candidate| {
+                    candidate.module == entry.module
+                        || (candidate.package_id == entry.package_id
+                            && candidate.module_path == entry.module_path)
+                })
+                .count()
+                != 1
+        {
+            return Err("ambiguous indexed native file or module identity".into());
+        }
+        let ModuleIndexLocation::WorkspaceFile {
+            source_root: entry_root,
+            normalized_path: entry_path,
+            source_relative_path,
+        } = &entry.location
+        else {
+            return Err("indexed module is not a native file".into());
+        };
+        let components = module_path_components_from_source_relative_path(source_relative_path)
+            .ok_or("invalid indexed source-relative module path")?;
+        let module_path = components.join(".");
+        if entry.module.package != *package
+            || entry.module.path != entry.module_path
+            || entry.edition != indexed.edition
+            || entry_root != source_root
+            || entry_path != &format!("src/{source_relative_path}")
+            || !is_valid_module_path(&module_path)
+            || entry.module_path.as_str() != module_path
+        {
+            return Err("inconsistent indexed native module coordinates".into());
+        }
+        Ok(mizar_session::SourceInput {
+            package_id: entry.package_id.clone(),
+            module_path: entry.module_path.clone(),
+            normalized_path,
+            edition: entry.edition.clone(),
+            origin,
+        })
+    }
+}
+
 impl ModuleIndexDiagnostics {
     #[must_use]
     pub fn new(mut diagnostics: Vec<ModuleIndexDiagnostic>) -> Self {

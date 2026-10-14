@@ -458,6 +458,8 @@ internal: [01](../../internal/ja/01.compiler_driver_and_pipeline_scheduler.md)�
 34. **[現在の package configuration content fingerprint](../../task_contracts/ja/BUILD-CONFIG-CONTENT-FINGERPRINT.md).** [x]
 35. **[任意 package toolchain 制約 metadata](../../task_contracts/ja/BUILD-PACKAGE-TOOLCHAIN-METADATA.md).** [x]
 
+36. **[Explicit native OpenBuffer input](../../task_contracts/ja/BUILD-NATIVE-OPEN-BUFFER-INPUT.md).** [x]
+
 ## 推奨検証
 
 各タスクの後で実行する:

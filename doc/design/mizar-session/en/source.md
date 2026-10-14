@@ -211,6 +211,10 @@ non-canonical paths, or invalid namespace components report through
 
 Open-buffer text may be newer than the last verified artifact. Consumers must carry freshness metadata rather than silently treating artifact data as current. LSP diagnostics and edits must convert from `LoadedSource.text` offsets through `loading_map` before applying protocol UTF-16 position rules against the editor document.
 
+### Metadata-only OpenBuffer URI
+
+`DiskSourceLoader::normalize_open_buffer_uri(&DocumentUri) -> Result<NormalizedPath, SourceLoadError>` exposes the existing URI/path acquisition without loading a body or allocating source IDs. It uses the same package root, decoding, canonicalization and error categories as OpenBuffer loading. A missing target still fails canonicalization; this does not enable unsaved nonexistent files. It does not accept a document version or bind indexed module identity; Build's explicit native input association consumes it before normal source capture.
+
 ### Generated Source Loading
 
 Generated sources require a non-empty generator kind and, when available, an anchor to original source. Loading rejects blank generator metadata before allocating a `SourceId`, preserves accepted generator metadata in `LoadedSource.origin`, and preserves the optional anchor in `LoadedSource.generated_anchor`.

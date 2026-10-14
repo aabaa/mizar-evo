@@ -1,0 +1,15 @@
+# Task BUILD-NATIVE-OPEN-BUFFER-INPUT: explicit native OpenBuffer source association
+Canonical language: English; [Japanese companion](../ja/BUILD-NATIVE-OPEN-BUFFER-INPUT.md).
+Status: implemented for explicit caller-selected native inputs; full host binding remains deferred. Tier: full. Primary owner: [Build plan](../../mizar-build/en/00.crate_plan.md), task 36; lower owner: [Session plan](../../mizar-session/en/00.crate_plan.md), task 35.
+Consumers: [Driver plan](../../mizar-driver/en/00.crate_plan.md), native editor bootstrap before protected capture; full LSP host binding remains deferred.
+Dependencies: existing native layout/module index, caller-selected workspace/package/actual loader, existing SourceOriginInput and Session URI normalization; ready for bounded association without effective settings.
+Authority: spec §§12.1/12.2.2/23.3/23.6, architecture 12 open-buffer precedence; [Build owner](../../mizar-build/en/module_index.md#native-openbuffer-input), [Session owner](../../mizar-session/en/source.md#metadata-only-openbuffer-uri).
+Gap: source_gap; existing raw OpenBuffer data cannot acquire indexed package/module/edition before SourceInput construction through a public owner-reused URI path.
+Scope: explicit caller-selected workspace/package/root only; construct the existing SourceInput after unique indexed file/identity and native coordinate checks. Preserve original OpenBuffer URI, both versions and Arc text. Owner sections define predicates and residual authority.
+Tests: add test-first distinct seam coverage under the linked owner-local test design; retain all existing tests.
+Write scope: existing Build module_index.rs and tests, Session source.rs visibility, appended Driver source_load.rs consumers; paired Build/Session owners/plans/TODOs, contracts and partial roadmap/audit. No new type/field/helper/source file/dependency or URI decoder.
+Boundary: caller owns actual plan/index provenance, chosen package and active configuration; this is point-in-time metadata association, not a retained source, accepted version, snapshot, authenticated manifest or freshness/publication receipt. Existing protected capture and service checks remain mandatory.
+Forbidden: workspace/package autodiscovery, first/longest-root ownership policy, invented settings/toolchain/IDs/source versions/Accepted/Hit, reopening captured source bodies, changed URI/path/version rules, semantic/proof/cache/artifact/LSP publication, protected specs/.miz/expectations/trace or full ENTRY/Steps6–8 credit.
+Audit: chapter 23 remains partial; map explicit native editor source association as a prerequisite to host/currentness/publication owners. No language or diagnostic producer activation.
+Require independent SPEC/TEST/CODE/VOLUME/CONSISTENCY reviews; parent cargo fmt --check, full all-target/all-feature Clippy -D warnings and cargo test; scoped gates/quality.
+Exit: actual unambiguous indexed native files supply original raw OpenBuffer inputs to genuine protected producers; uncertain correspondence returns Err without partial input or invented identity.

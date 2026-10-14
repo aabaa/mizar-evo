@@ -190,7 +190,7 @@ impl DiskSourceLoader {
         &self.package_root
     }
 
-    fn normalize_open_buffer_uri(
+    pub fn normalize_open_buffer_uri(
         &self,
         uri: &DocumentUri,
     ) -> Result<NormalizedPath, SourceLoadError> {
