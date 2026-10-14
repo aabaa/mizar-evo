@@ -699,6 +699,8 @@ candidate evidence through the kernel-owned schema and must not weaken it.
 
 36. **[Authentic source candidate inputs](../../task_contracts/en/ATP-SOURCE-CANDIDATE-INPUTS.md).** [x] — Bound unchecked transport; search/acceptance remain open.
 
+37. **[Structured local ranking](../../task_contracts/en/ATP-STRUCTURED-LOCAL-RANKING.md).** [x] — Complete candidate ordering only; full task31 integration remains open.
+
 ## Recommended Verification
 
 Run after each task:

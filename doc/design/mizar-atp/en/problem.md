@@ -174,6 +174,12 @@ rendering and stable problem identities. Deterministic ordering applies to:
 Backend completion order, wall-clock time, random state, process ids, stdout,
 stderr, and backend-reported proof order are excluded from semantic identity.
 
+## Structured local ranking
+
+`AtpProblem::rank_axioms()` returns `Result<(&'static str, Vec<&AtpFormula>), String>`: configuration `symbol-overlap-v1` and every original axiom in ranked order. Collect distinct named predicates and functions from structured goal/candidate trees, including nested/zero-argument functions; variables, binders, sorts, equality and logical operators are excluded. Missing trees return an error without text/hash recovery.
+For N supplied axioms, each shared symbol contributes N-df(s)+1, where df(s) counts candidate axioms containing it once. Sum in u128, sort descending score then ascending unique formula ID. Repetition never increases overlap; rarity describes only the supplied set. Returned rows retain their exact provenance and immutable input binding; no conjecture is added or premise dropped.
+This ordering is an untrusted candidate-production prerequisite. Source projection uses existing authenticated inputs; library facts, effective budgets/citations, pruning, suggestions/retry, unresolved labels, publication and proof acceptance remain with their owners. No library-wide rarity or source-currentness receipt follows.
+
 ## Public Enum Forward Compatibility
 
 Task 22 applies the frontend task-25 policy to the `problem` module. All public

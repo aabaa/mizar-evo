@@ -756,7 +756,7 @@ permit; each source-integration slice waits for its actual upstream outputs.
    validation (IV-005, fail-closed IV-002). Source-derived trusted reuse follows
    the corresponding accepted producer outputs; internal seams remain separate.
 5. [ ] [Deterministic premise ranking](./task_contracts/en/ATPK-PREMISE-RANKING.md)
-   (atp 31) follows its own producer dependencies.
+   (atp 31) follows its own producer dependencies. [Structured local ordering](./task_contracts/en/ATP-STRUCTURED-LOCAL-RANKING.md) precedes complete fact/budget assembly.
 6. [ ] [ATP re-proving benchmark](./task_contracts/en/ATPK-BENCHMARK.md)
    (test 25), after items 1 and 5.
 

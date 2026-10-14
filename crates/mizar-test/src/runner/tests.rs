@@ -14309,3 +14309,138 @@ fn source_registration_discharge_results_supply_public_trusted_consumers() {
         }
     }
 }
+
+#[test]
+fn source_registration_local_ranking_preserves_actual_input_and_encodings() {
+    use mizar_atp::{
+        problem::*,
+        smtlib_encoder::{SmtLibDialect, encode_smtlib},
+        tptp_encoder::{TptpDialect, encode_tptp},
+        translator::translate_source_existential_registration as translate,
+    };
+    use mizar_vc::{kernel_evidence_handoff::build_source_existential_kernel_handoff, vc_ir::*};
+    for (multiple, case) in [
+        (false, step5c3_registration_case()),
+        (true, step5c13_registration_case()),
+    ] {
+        let original = std::fs::read_to_string(case.source_path).unwrap();
+        let renamed = original.replace("marked", "retagged").replace("X", "Value");
+        let false_definitions = original.replace("means X = X", "means not X = X");
+        assert_ne!(false_definitions, original);
+        for text in [&original, &renamed, &false_definitions] {
+            let (core, _, vcs) = source_candidate_core_and_vcs(multiple, text);
+            let selected = vcs
+                .vcs()
+                .iter()
+                .filter(|vc| vc.status == VcStatus::NeedsAtp)
+                .collect::<Vec<_>>();
+            assert_eq!(selected.len(), if multiple { 3 } else { 1 });
+            for (registration, vc) in selected.iter().enumerate() {
+                let handoff = build_source_existential_kernel_handoff(&core, &vcs, vc.id).unwrap();
+                for format in [ConcreteFormat::Tptp, ConcreteFormat::SmtLib] {
+                    let profile = source_candidate_profile("source-local-ranking", format);
+                    let problem = translate(&core, &vcs, vc.id, profile.clone()).unwrap();
+                    let before = problem.clone();
+                    let encoded_before = if format == ConcreteFormat::Tptp {
+                        encode_tptp(&problem, TptpDialect::Fof)
+                            .unwrap()
+                            .text()
+                            .to_owned()
+                    } else {
+                        encode_smtlib(&problem, SmtLibDialect::Uninterpreted)
+                            .unwrap()
+                            .text()
+                            .to_owned()
+                    };
+                    let (configuration, ranked) = problem.rank_axioms().unwrap();
+                    assert_eq!(configuration, "symbol-overlap-v1");
+                    let expected = if registration == 2 {
+                        vec![0, 1, 2]
+                    } else {
+                        vec![0, 1]
+                    };
+                    assert_eq!(
+                        ranked
+                            .iter()
+                            .map(|row| row.id().index())
+                            .collect::<Vec<_>>(),
+                        expected
+                    );
+                    assert_eq!(
+                        (configuration, ranked.clone()),
+                        problem.rank_axioms().unwrap()
+                    );
+                    assert_eq!(ranked.len(), problem.axioms().len());
+                    let mut premises = vc.premises.clone();
+                    premises.sort();
+                    assert_eq!(ranked.len(), premises.len());
+                    for (row, premise) in ranked.iter().zip(premises) {
+                        let original = problem
+                            .axioms()
+                            .iter()
+                            .find(|original| original.id() == row.id())
+                            .unwrap();
+                        assert!(std::ptr::eq(*row, original));
+                        let PremiseRef::GeneratedFact {
+                            formula: VcFormulaRef::Generated(id),
+                        } = premise
+                        else {
+                            panic!("actual generated premise")
+                        };
+                        let entry = handoff
+                            .canonical_evidence()
+                            .formula_evidence()
+                            .iter()
+                            .find(|entry| {
+                                entry.producer_formula_ref() == Some(VcFormulaRef::Generated(id))
+                            })
+                            .unwrap();
+                        let anchor = handoff
+                            .canonical_evidence()
+                            .provenance()
+                            .iter()
+                            .find(|anchor| anchor.provenance_id == entry.provenance_id())
+                            .unwrap();
+                        let provenance = &problem.provenance()[row.provenance().index() as usize];
+                        assert_eq!(
+                            provenance.source(),
+                            &AtpSourceRef::GeneratedVcFact(AtpSourceBinding::new(format!(
+                                "generated:{}",
+                                id.index() + 1
+                            )))
+                        );
+                        let payload = anchor
+                            .payload
+                            .iter()
+                            .map(|byte| format!("{byte:02x}"))
+                            .collect::<String>();
+                        assert_eq!(
+                            provenance.payload().as_str(),
+                            format!("mizar-vc-handoff-provenance:{payload}")
+                        );
+                    }
+                    assert_eq!(problem.vc_id(), vc.id);
+                    assert_eq!(problem.logic_profile(), &profile);
+                    let target = handoff.canonical_evidence().target_vc();
+                    assert_eq!(
+                        problem.target_binding().fingerprint(),
+                        &AtpFingerprint::new(target.algorithm_id, target.digest.clone()).unwrap()
+                    );
+                    assert_eq!(problem, before);
+                    let encoded_after = if format == ConcreteFormat::Tptp {
+                        encode_tptp(&problem, TptpDialect::Fof)
+                            .unwrap()
+                            .text()
+                            .to_owned()
+                    } else {
+                        encode_smtlib(&problem, SmtLibDialect::Uninterpreted)
+                            .unwrap()
+                            .text()
+                            .to_owned()
+                    };
+                    assert_eq!(encoded_before, encoded_after);
+                }
+            }
+        }
+    }
+}

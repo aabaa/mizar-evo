@@ -165,6 +165,12 @@ problem identity を生成しなければならない。deterministic ordering �
 backend completion order、wall-clock time、random state、process id、stdout、stderr、
 backend-reported proof order は semantic identity から除外する。
 
+## Structured local ranking
+
+`AtpProblem::rank_axioms()` は `Result<(&'static str, Vec<&AtpFormula>), String>` として設定 `symbol-overlap-v1` と元の全 axiom の順位を返す。構造化 goal/candidate tree の named predicate/function を重複なしで集め、入れ子・零引数 function を含める。variable・binder・sort・equality・論理演算子は除外し、tree 不足は text/hash から復元せず error とする。
+候補 N 件で共有 symbol ごとに N-df(s)+1 を足す。df(s) はその symbol を含む候補数で、反復で増やさない。u128 の和を降順、同点は一意の formula ID 昇順に並べる。希少性は入力集合内だけを表し、元 row の provenance と不変 input 対応を保って conjecture 追加・前提削除を行わない。
+未検証 candidate-production の前提部分であり、source projection は既存の真正な入力を使う。library facts・実 budget/citation・刈り込み・提案/retry・未解決 label・公開・証明受理は担当の依存待ちに留める。library 全体の希少性や source-currentness receipt は得られない。
+
 ## public enum forward compatibility
 
 task 22 は frontend task 25 の方針を `problem` module に適用する。この module が所有する

@@ -644,6 +644,8 @@ polarity)、F2(非 import ソース束縛)、F6(imported-statement projection)
 
 36. **[Authentic source candidate inputs](../../task_contracts/ja/ATP-SOURCE-CANDIDATE-INPUTS.md).** [x] — 結び付けた未検査輸送。探索/受理は保留。
 
+37. **[Structured local ranking](../../task_contracts/ja/ATP-STRUCTURED-LOCAL-RANKING.md).** [x] — 全候補の順序のみ。汎用 task31 integration は未完了。
+
 ## 推奨検証
 
 各タスクの後で実行する:

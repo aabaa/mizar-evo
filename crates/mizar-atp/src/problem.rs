@@ -359,6 +359,79 @@ impl AtpProblem {
         &self.axioms
     }
 
+    pub fn rank_axioms(&self) -> Result<(&'static str, Vec<&AtpFormula>), String> {
+        let mut symbol_sets = Vec::with_capacity(self.axioms.len() + 1);
+        for row in std::iter::once(&self.conjecture).chain(&self.axioms) {
+            let tree = row
+                .formula()
+                .ok_or_else(|| format!("missing formula tree for {}", row.id().index()))?;
+            let mut symbols = BTreeSet::new();
+            let mut formulas = vec![tree];
+            let mut terms = Vec::new();
+            while let Some(formula) = formulas.pop() {
+                match formula {
+                    AtpFormulaTree::True | AtpFormulaTree::False => {}
+                    AtpFormulaTree::Atom(atom) => {
+                        symbols.insert(atom.predicate());
+                        terms.extend(atom.arguments());
+                    }
+                    AtpFormulaTree::Equality { left, right } => terms.extend([left, right]),
+                    AtpFormulaTree::Not(body)
+                    | AtpFormulaTree::Forall { body, .. }
+                    | AtpFormulaTree::Exists { body, .. } => formulas.push(body),
+                    AtpFormulaTree::And(children) | AtpFormulaTree::Or(children) => {
+                        formulas.extend(children);
+                    }
+                    AtpFormulaTree::Implies(left, right) => {
+                        formulas.extend([left.as_ref(), right.as_ref()]);
+                    }
+                }
+            }
+            while let Some(term) = terms.pop() {
+                match term {
+                    AtpTerm::Variable(_) => {}
+                    AtpTerm::Function {
+                        function,
+                        arguments,
+                    } => {
+                        symbols.insert(function);
+                        terms.extend(arguments);
+                    }
+                }
+            }
+            symbol_sets.push(symbols);
+        }
+        let goal = &symbol_sets[0];
+        let candidates = &symbol_sets[1..];
+        let mut frequencies = BTreeMap::new();
+        for symbols in candidates {
+            for symbol in symbols {
+                *frequencies.entry(*symbol).or_insert(0usize) += 1;
+            }
+        }
+        let mut ranked = self
+            .axioms
+            .iter()
+            .zip(candidates)
+            .map(|(row, symbols)| {
+                let score = symbols
+                    .intersection(goal)
+                    .map(|symbol| (self.axioms.len() - frequencies[symbol] + 1) as u128)
+                    .sum::<u128>();
+                (score, row)
+            })
+            .collect::<Vec<_>>();
+        ranked.sort_by(|(left_score, left), (right_score, right)| {
+            right_score
+                .cmp(left_score)
+                .then_with(|| left.id().cmp(&right.id()))
+        });
+        Ok((
+            "symbol-overlap-v1",
+            ranked.into_iter().map(|(_, row)| row).collect(),
+        ))
+    }
+
     pub const fn conjecture(&self) -> &AtpFormula {
         &self.conjecture
     }
@@ -1969,3 +2042,223 @@ fn hex(bytes: &[u8]) -> String {
 
 #[cfg(test)]
 mod tests;
+
+#[cfg(test)]
+#[test]
+fn structured_local_ranking_orders_normalized_data_and_fails_closed() {
+    use AtpFormulaTree as F;
+    use AtpTerm as T;
+    let common = F::Atom(AtpAtom::new("common", vec![]));
+    let rare = F::Atom(AtpAtom::new("rare", vec![]));
+    let left = F::Atom(AtpAtom::new("left", vec![]));
+    let right = F::Atom(AtpAtom::new("right", vec![]));
+    let variable = T::Variable("x".into());
+    let constant = T::Function {
+        function: "z".into(),
+        arguments: vec![],
+    };
+    let nested = T::Function {
+        function: "f".into(),
+        arguments: vec![constant.clone()],
+    };
+    let binder = AtpBinder::new("x", Some("S".into()));
+    let cases = [
+        (
+            F::And(vec![rare.clone(), left.clone(), right.clone()]),
+            vec![
+                (1, rare.clone()),
+                (2, F::And(vec![left.clone(), right.clone()])),
+                (3, F::And(vec![left.clone(), right.clone()])),
+                (4, F::And(vec![left.clone(), right.clone()])),
+                (5, F::True),
+            ],
+            vec![2, 3, 4, 1, 5],
+        ),
+        (
+            F::And(vec![
+                common.clone(),
+                rare.clone(),
+                left.clone(),
+                right.clone(),
+                common.clone(),
+            ]),
+            vec![
+                (10, F::And(vec![common.clone(); 8])),
+                (20, rare),
+                (30, F::And(vec![left, right])),
+                (40, common.clone()),
+                (50, common.clone()),
+                (0, F::True),
+                (60, F::False),
+            ],
+            vec![30, 20, 10, 40, 50, 0, 60],
+        ),
+        (
+            F::Forall {
+                binders: vec![binder.clone()],
+                body: Box::new(F::Implies(
+                    Box::new(F::Equality {
+                        left: variable.clone(),
+                        right: nested.clone(),
+                    }),
+                    Box::new(F::Exists {
+                        binders: vec![binder.clone()],
+                        body: Box::new(F::Or(vec![
+                            F::Not(Box::new(F::Atom(AtpAtom::new("P", vec![variable.clone()])))),
+                            common.clone(),
+                        ])),
+                    }),
+                )),
+            },
+            vec![
+                (
+                    10,
+                    F::Equality {
+                        left: nested,
+                        right: variable.clone(),
+                    },
+                ),
+                (
+                    20,
+                    F::Equality {
+                        left: constant,
+                        right: variable.clone(),
+                    },
+                ),
+                (30, F::Atom(AtpAtom::new("P", vec![variable.clone()]))),
+                (40, common.clone()),
+                (
+                    2,
+                    F::Forall {
+                        binders: vec![binder.clone()],
+                        body: Box::new(F::Equality {
+                            left: variable.clone(),
+                            right: variable,
+                        }),
+                    },
+                ),
+                (
+                    1,
+                    F::Exists {
+                        binders: vec![binder],
+                        body: Box::new(F::True),
+                    },
+                ),
+            ],
+            vec![10, 30, 40, 20, 1, 2],
+        ),
+        (
+            common.clone(),
+            vec![(1, F::False), (0, F::True)],
+            vec![0, 1],
+        ),
+        (common, vec![], vec![]),
+    ];
+    let symbols = [
+        ("common", AtpDeclarationKind::Predicate, 0),
+        ("rare", AtpDeclarationKind::Predicate, 0),
+        ("left", AtpDeclarationKind::Predicate, 0),
+        ("right", AtpDeclarationKind::Predicate, 0),
+        ("P", AtpDeclarationKind::Predicate, 1),
+        ("f", AtpDeclarationKind::Function, 1),
+        ("z", AtpDeclarationKind::Function, 0),
+        ("x", AtpDeclarationKind::GeneratedBinder, 0),
+        ("S", AtpDeclarationKind::Sort, 0),
+    ];
+    for (goal, candidates, expected) in cases {
+        for reverse in [false, true] {
+            // Ordering data only; these bindings make no source or proof claim.
+            let provenance = AtpProvenanceId::new(0);
+            let mut parts = AtpProblemParts {
+                vc_id: VcId::new(0),
+                target_binding: AtpTargetBinding::new(
+                    AtpFingerprint::new(1, b"ordering-data".to_vec()).unwrap(),
+                    "ordering-data",
+                )
+                .unwrap(),
+                logic_profile: LogicProfile::try_new(
+                    "ordering-data",
+                    LogicFragment::Fof,
+                    EqualitySupport::Supported,
+                    QuantifierPolicy::FirstOrder,
+                    SoftTypeStrategy::BackendSorts,
+                    NativePropertySupport::Unsupported,
+                    [ConcreteFormat::Tptp].into_iter().collect(),
+                )
+                .unwrap(),
+                expected_result: ExpectedBackendResult::Unsat,
+                declarations: symbols
+                    .iter()
+                    .enumerate()
+                    .map(|(index, &(name, kind, arity))| {
+                        AtpDeclaration::new(
+                            AtpDeclarationId::new(index as u32),
+                            kind,
+                            name,
+                            arity,
+                            provenance,
+                        )
+                    })
+                    .collect(),
+                axioms: candidates
+                    .iter()
+                    .map(|(id, tree)| {
+                        AtpFormula::new(AtpFormulaId::new(*id), tree.clone(), provenance)
+                    })
+                    .collect(),
+                conjecture: AtpFormula::new(AtpFormulaId::new(100), goal.clone(), provenance),
+                type_context: AtpTypeContext::new(vec![]),
+                properties: vec![],
+                symbol_map: symbols
+                    .iter()
+                    .map(|&(name, _, _)| {
+                        AtpSymbolMapEntry::new(
+                            name,
+                            AtpSymbolSource::MizarSymbol(AtpSourceBinding::new("ordering-data")),
+                        )
+                    })
+                    .collect(),
+                provenance: vec![AtpProvenance::new(
+                    provenance,
+                    AtpSourceRef::LocalHypothesis(AtpSourceBinding::new("ordering-data")),
+                    "ordering-data",
+                )],
+                diagnostics: vec![],
+            };
+            if reverse {
+                parts.axioms.reverse();
+                parts.declarations.reverse();
+                parts.symbol_map.reverse();
+            }
+            let problem = AtpProblem::try_new(parts).unwrap();
+            let before = problem.clone();
+            let (configuration, ranked) = problem.rank_axioms().unwrap();
+            assert_eq!(configuration, "symbol-overlap-v1");
+            assert_eq!(
+                ranked
+                    .iter()
+                    .map(|row| row.id().index())
+                    .collect::<Vec<_>>(),
+                expected
+            );
+            for row in ranked {
+                assert!(
+                    problem
+                        .axioms()
+                        .iter()
+                        .any(|original| std::ptr::eq(row, original))
+                );
+            }
+            assert_eq!(problem, before);
+            // Internal corruption exercises defensive branches, not constructible source input.
+            let mut missing = problem.clone();
+            missing.conjecture.formula = None;
+            assert!(missing.rank_axioms().is_err());
+            for index in 0..problem.axioms().len() {
+                let mut missing = problem.clone();
+                missing.axioms[index].formula = None;
+                assert!(missing.rank_axioms().is_err());
+            }
+        }
+    }
+}
