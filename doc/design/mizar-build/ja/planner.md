@@ -172,7 +172,7 @@ preimage は UTF-8 prefix `mizar-build/parsed-lock-content/v1`、1 LF、canonica
 root/mizar.workspace を symlink をたどらず確認し、NotFound の不存在だけで単一 root package member `.` を選ぶ。他の取得失敗・不正 workspace は fallback なしの Err。存在時は実通常 UTF-8 file を読み parse_workspace_manifest に渡し、root/mizar.pkg が存在しても列挙 member のみを取得する。member normalization/order/duplicate/default 意味論は既存 parser が所有する。
 検証済み member を canonical root の下へ解決し、通常 directory component と canonical containment を要求する。その位置の通常 mizar.pkg だけを取得して parse_package_manifest に渡す。symlink/dangling/special file・未対応 path/text encoding・missing member/file・metadata/read/parse failure は取得/parser String Err。source text は読まない。package name 重複は後続の既存 planner 検証へ残し、合成 merged package を作らない。
 必須の通常 root/mizar.lock を UTF-8 で取得し parse_lockfile に渡す。欠落 lock 生成・dependency version 選択・registry 取得・file 書換えはしない。全取得/parse 成功後だけ既存 WorkspacePackage の member 対応と Lockfile を返し、先行 member 後の失敗も部分 tuple を返さない。String error は input 取得失敗で、新しい public 診断 code・parser/CLI 診断方針の置換ではない。
-tuple は parsed data であり検証済み BuildPlan・認証済み manifest/lock/current snapshot ではない。cross-package/lock assignment は produce_build_plan の責任。実 runtime toolchain・lock/config digest・policy・dependency/capture/currentness 対応は caller/producer 所有で、placeholder identity・受理済み出力は供給しない。package toolchain parser drift は後続 owner task とする。locked workspace path の対応は produce_build_plan のみで検証し、package replay metadata は後述の computation policy boundary に従う。
+tuple は parsed data であり検証済み BuildPlan・認証済み manifest/lock/current snapshot ではない。cross-package/lock assignment は produce_build_plan の責任。実 runtime toolchain・lock/config digest・policy・dependency/capture/currentness 対応は caller/producer 所有で、placeholder identity・受理済み出力は供給しない。package toolchain constraint metadata は後述の境界に従う。locked workspace path の対応は produce_build_plan のみで検証し、package replay metadata は後述の computation policy boundary に従う。
 実単一 package と列挙 multi-member file を既存 plan/layout・保護 native SourceLoad/Frontend/import discovery へ渡し、明示 clean parser input・実 NoKey と比較する。error control は workspace の absence/不正の区別、missing/late member/lock、不正 input、root/member/file link、部分成功なしを調べる。旧 parser/planner/layout/capture/diagnostics/試験は変えない。
 filesystem read は atomic metadata snapshot・fresh hash attestation ではなく、caller が native submit 前に実 canonical context へ束縛する。source ID/hash・registry artifact・native CLI/LSP mapping/settings・digest/toolchain/pin producer・proof/cache/publication・全 Steps 6–8 は保留する。
 
@@ -202,6 +202,7 @@ struct BuildPlan {
 
 struct PackagePlan {
     package_id: PackageId,
+    toolchain_constraint: Option<VersionConstraint>,
     version: Version,
     source: PackagePlanSource,
     edition: Edition,
@@ -383,6 +384,12 @@ planner は任意の package toolchain 制約、workspace/解決済み依存の�
 開発時の不一致は警告、release 時はエラー。選択した release が backend build を固定し、インストールと再配布は driver が所有する。
 planner テストは省略と既存の制約形式、不正/競合制約、依存/release 入力欠落、pin 維持、利用不能な版を扱い、CLI テストは不一致の両モードと、実行中/lock の版が一致して W0306 やエラーを出さない場合を扱う。
 先送りの境界であり、lock schema/API 形状や実行時の導入済み状態を定めない。
+
+## Package toolchain constraint metadata
+
+既存 PackageManifest と PackagePlan に `toolchain_constraint: Option<VersionConstraint>` を追加する。既存 package.toolchain だけを受け入れる。取得済 workspace manifest の省略は None、string は既存 parse_version_constraint の exact/caret/tilde/range・部分版規則へ渡す。read_optional_string を再利用し、不正 TOML 型は内部 InvalidType、不正 string は InvalidVersionConstraint を '<package manifest>', 'package.toolchain' に保持する。既存 diagnostic 集約/順序と error barrier により不正 manifest を成功として返さない。新しい公開 diagnostic・構文/default・版選択・実行中の版との比較は導入しない。
+既存 validated-manifest clone と workspace ごとの PackagePlan は package 固有の型付き制約を保持し、package 間の merge/intersection や指定された BuildPlan.toolchain の置換をしない。registry-only plan の None は制約 metadata 未取得を示し、未認証 dependency に制約がない証拠にはならない。直接構築した値は既存 validation のみを受け、新しい制約 validator・dependency fetch・release producer・lock schema/hash profile・runtime context を加えない。
+test は省略・既存全形式/full SemVer・不正 string/型/diagnostic 位置・validated/native-parser/plan copy・独立した逆向き workspace 制約/順序・registry metadata 不在、実 native input から genuine Driver が保持する plan/protected output/NoKey を扱う。既存 PackagePlan test constructor は意図を変えず None を追加する。native reader の旧 unknown package.toolchain fixture は同じ値の toolchain_extra へ替え、unknown-field/error-agreement control を保持する。unknown lock-toolchain test は変更しない。全 intersection/selection・認証済 dependency/release data・lock pin/W0306/backend identity・caller context/currentness・cache/Proof/editor 連携は前節の境界で保留する。
 
 ## Computation Policy Boundary
 

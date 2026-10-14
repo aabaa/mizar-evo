@@ -2249,3 +2249,217 @@ fn config_content_hash_orders_ids_before_config_and_complete_tied_tails() {
         }
     }
 }
+
+#[test]
+fn package_toolchain_constraint_parses_existing_forms_and_validated_clone() {
+    use super::VersionComparator;
+    let package = "[package]\nname = \"alpha\"\nversion = \"0.1.0\"\n";
+    let full = Version::parse("1.4.2-rc.1+build.7").unwrap();
+    for (text, expected) in [
+        (None, None),
+        (
+            Some("1.4.2"),
+            Some(VersionConstraint::Exact(Version::new(1, 4, 2))),
+        ),
+        (
+            Some("1.4.2-rc.1+build.7"),
+            Some(VersionConstraint::Exact(full.clone())),
+        ),
+        (
+            Some("^1"),
+            Some(VersionConstraint::Caret(Version::new(1, 0, 0))),
+        ),
+        (
+            Some(" ^1.4 "),
+            Some(VersionConstraint::Caret(Version::new(1, 4, 0))),
+        ),
+        (
+            Some("^1.4.2-rc.1+build.7"),
+            Some(VersionConstraint::Caret(full.clone())),
+        ),
+        (
+            Some("~1"),
+            Some(VersionConstraint::Tilde(Version::new(1, 0, 0))),
+        ),
+        (
+            Some("~1.4"),
+            Some(VersionConstraint::Tilde(Version::new(1, 4, 0))),
+        ),
+        (
+            Some("~1.4.2-rc.1+build.7"),
+            Some(VersionConstraint::Tilde(full.clone())),
+        ),
+        (
+            Some(">=1.4, <2, >1.0.0, <=1.4.2-rc.1+build.7"),
+            Some(VersionConstraint::Range(vec![
+                VersionComparator {
+                    op: VersionComparison::GreaterEqual,
+                    version: Version::new(1, 4, 0),
+                },
+                VersionComparator {
+                    op: VersionComparison::Less,
+                    version: Version::new(2, 0, 0),
+                },
+                VersionComparator {
+                    op: VersionComparison::Greater,
+                    version: Version::new(1, 0, 0),
+                },
+                VersionComparator {
+                    op: VersionComparison::LessEqual,
+                    version: full,
+                },
+            ])),
+        ),
+    ] {
+        let suffix = text.map_or_else(String::new, |text| format!("toolchain = {text:?}\n"));
+        let manifest = parse_package_manifest(&format!("{package}{suffix}")).unwrap();
+        assert_eq!(manifest.toolchain_constraint, expected, "{text:?}");
+        let validated = validate_package_manifest(&manifest).unwrap();
+        assert_eq!(validated.manifest, manifest);
+        assert_eq!(validated.manifest.toolchain_constraint, expected);
+        let lock = parse_lockfile("schema_version = 1\n[[package]]\nname = \"alpha\"\nversion = \"0.1.0\"\nsource = { kind = \"workspace\", path = \"alpha\" }\ndependencies = []\n").unwrap();
+        let plan = produce_build_plan(
+            plan_request(DependencySelection::Normal),
+            vec![WorkspacePackage {
+                member_path: "alpha".into(),
+                manifest,
+            }],
+            lock,
+        )
+        .unwrap();
+        assert_eq!(plan.packages[0].toolchain_constraint, expected);
+    }
+}
+
+#[test]
+fn package_toolchain_constraint_errors_preserve_internal_locations_values_and_barrier() {
+    let package = "[package]\nname = \"alpha\"\nversion = \"0.1.0\"\n";
+    for (value, kind, rejected) in [
+        ("\"\"", ManifestDiagnosticKind::InvalidVersionConstraint, ""),
+        (
+            "\"1.4\"",
+            ManifestDiagnosticKind::InvalidVersionConstraint,
+            "1.4",
+        ),
+        (
+            "\"*\"",
+            ManifestDiagnosticKind::InvalidVersionConstraint,
+            "*",
+        ),
+        (
+            "\"^bad\"",
+            ManifestDiagnosticKind::InvalidVersionConstraint,
+            "bad.0.0",
+        ),
+        (
+            "\"~1.2.bad\"",
+            ManifestDiagnosticKind::InvalidVersionConstraint,
+            "1.2.bad",
+        ),
+        (
+            "\">=1.4, wat\"",
+            ManifestDiagnosticKind::InvalidVersionConstraint,
+            "wat",
+        ),
+        (
+            "\">=1.4,\"",
+            ManifestDiagnosticKind::InvalidVersionConstraint,
+            "",
+        ),
+        ("true", ManifestDiagnosticKind::InvalidType, "boolean"),
+        ("1", ManifestDiagnosticKind::InvalidType, "integer"),
+        ("1.4", ManifestDiagnosticKind::InvalidType, "float"),
+        ("[]", ManifestDiagnosticKind::InvalidType, "array"),
+        ("{}", ManifestDiagnosticKind::InvalidType, "table"),
+        (
+            "2025-01-01",
+            ManifestDiagnosticKind::InvalidType,
+            "datetime",
+        ),
+    ] {
+        let error = parse_package_manifest(&format!("{package}toolchain = {value}\n")).unwrap_err();
+        assert_eq!(
+            error.diagnostics(),
+            &[super::ManifestDiagnostic::new(
+                "<package manifest>",
+                "package.toolchain",
+                kind,
+                Some(rejected.into()),
+            )],
+            "{value}"
+        );
+    }
+    let errors = parse_package_manifest(&format!(
+        "{package}toolchain_extra = \"^1.4\"\ntoolchain = false\n"
+    ))
+    .unwrap_err();
+    assert_eq!(
+        errors.diagnostics(),
+        &[
+            super::ManifestDiagnostic::new(
+                "<package manifest>",
+                "package.toolchain",
+                ManifestDiagnosticKind::InvalidType,
+                Some("boolean".into())
+            ),
+            super::ManifestDiagnostic::new(
+                "<package manifest>",
+                "package.toolchain_extra",
+                ManifestDiagnosticKind::UnknownField,
+                None
+            ),
+        ]
+    );
+}
+
+#[test]
+fn package_toolchain_constraints_remain_package_local_with_registry_metadata_absent() {
+    let alpha = workspace_package(
+        "alpha",
+        "[package]\nname = \"alpha\"\nversion = \"0.1.0\"\ntoolchain = \"<1\"\n[dependencies]\ndep = \"1.0.0\"\n",
+    );
+    let beta = workspace_package(
+        "beta",
+        "[package]\nname = \"beta\"\nversion = \"0.1.0\"\ntoolchain = \">=2\"\n",
+    );
+    let lock = parse_lockfile("schema_version = 1\n[[package]]\nname = \"beta\"\nversion = \"0.1.0\"\nsource = { kind = \"workspace\", path = \"beta\" }\ndependencies = []\n[[package]]\nname = \"dep\"\nversion = \"1.0.0\"\nsource = { kind = \"registry\", registry = \"default\", checksum = \"sha256:dep\" }\ndependencies = []\n[[package]]\nname = \"alpha\"\nversion = \"0.1.0\"\nsource = { kind = \"workspace\", path = \"alpha\" }\ndependencies = [{ name = \"dep\", version = \"1.0.0\" }]\n").unwrap();
+    let request = plan_request(DependencySelection::Normal);
+    let plan = produce_build_plan(
+        request.clone(),
+        vec![beta.clone(), alpha.clone()],
+        lock.clone(),
+    )
+    .unwrap();
+    assert_eq!(
+        plan,
+        produce_build_plan(request.clone(), vec![alpha, beta], lock.clone()).unwrap()
+    );
+    assert_eq!(plan.toolchain, request.toolchain);
+    assert_eq!(plan.lockfile, lock);
+    assert_eq!(
+        plan.packages
+            .iter()
+            .map(|package| package.package_id.as_str())
+            .collect::<Vec<_>>(),
+        ["beta", "dep", "alpha"]
+    );
+    assert_eq!(
+        plan.packages[2].toolchain_constraint,
+        Some(VersionConstraint::Range(vec![super::VersionComparator {
+            op: VersionComparison::Less,
+            version: Version::new(1, 0, 0)
+        }]))
+    );
+    assert_eq!(
+        plan.packages[0].toolchain_constraint,
+        Some(VersionConstraint::Range(vec![super::VersionComparator {
+            op: VersionComparison::GreaterEqual,
+            version: Version::new(2, 0, 0)
+        }]))
+    );
+    assert!(matches!(
+        plan.packages[1].source,
+        PackagePlanSource::Registry { .. }
+    ));
+    assert_eq!(plan.packages[1].toolchain_constraint, None);
+}

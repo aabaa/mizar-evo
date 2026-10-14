@@ -456,6 +456,7 @@ internal: [01](../../internal/ja/01.compiler_driver_and_pipeline_scheduler.md)�
 33. **[Current lock content fingerprint](../../task_contracts/ja/BUILD-LOCK-CONTENT-FINGERPRINT.md).** [x]
 
 34. **[現在の package configuration content fingerprint](../../task_contracts/ja/BUILD-CONFIG-CONTENT-FINGERPRINT.md).** [x]
+35. **[任意 package toolchain 制約 metadata](../../task_contracts/ja/BUILD-PACKAGE-TOOLCHAIN-METADATA.md).** [x]
 
 ## 推奨検証
 

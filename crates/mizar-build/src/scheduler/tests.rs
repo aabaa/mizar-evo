@@ -2027,6 +2027,7 @@ fn workspace_package(package_id: &str) -> PackagePlan {
             manifest_path: format!("{package_id}/mizar.pkg"),
         },
         edition: Edition::new("2025"),
+        toolchain_constraint: None,
         dependencies: Vec::new(),
         verifier_config: VerifierConfig::default(),
         build_config: BuildConfig::default(),

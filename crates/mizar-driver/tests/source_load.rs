@@ -10938,7 +10938,7 @@ fn native_workspace_inputs_fail_closed_and_leave_validation_to_existing_owners()
     for text in [
         "",
         "[package]\nname = \"Bad-Name\"\nversion = \"0.1.0\"",
-        "[package]\nname = \"alpha\"\nversion = \"0.1.0\"\ntoolchain = \"^1.4\"",
+        "[package]\nname = \"alpha\"\nversion = \"0.1.0\"\ntoolchain_extra = \"^1.4\"",
         "[package]\nname = \"alpha\"\nversion = \"0.1.0\"\n[verifier]\ncomputation_replay = 1",
     ] {
         fs::write(directory.join("mizar.pkg"), text).unwrap();
@@ -11768,5 +11768,203 @@ fn config_content_hash_from_native_plans_feeds_genuine_snapshot_and_source_load_
                 request,
             ));
         }
+    }
+}
+
+#[test]
+fn package_toolchain_native_inputs_retain_association_in_protected_driver_plans() {
+    use mizar_build::planner::{
+        VersionComparator, VersionComparison, VersionConstraint, read_native_workspace_inputs,
+    };
+    let fixture = Fixture::new("\u{feff}definition\r\nend;\r\n".as_bytes());
+    fs::create_dir_all(fixture.root.join("beta/src")).unwrap();
+    fs::write(
+        fixture.root.join("mizar.workspace"),
+        "[workspace]\nmembers = [\"beta\", \"alpha\"]\n",
+    )
+    .unwrap();
+    let alpha = "[package]\nname = \"alpha\"\nversion = \"0.1.0\"\ntoolchain = \"<1\"\n";
+    let beta = "[package]\nname = \"beta\"\nversion = \"0.1.0\"\ntoolchain = \">=2\"\n";
+    let lock = "schema_version = 1\n[[package]]\nname = \"beta\"\nversion = \"0.1.0\"\nsource = { kind = \"workspace\", path = \"beta\" }\ndependencies = []\n[[package]]\nname = \"alpha\"\nversion = \"0.1.0\"\nsource = { kind = \"workspace\", path = \"alpha\" }\ndependencies = []\n";
+    fs::write(fixture.root.join("alpha/mizar.pkg"), alpha).unwrap();
+    fs::write(fixture.root.join("beta/mizar.pkg"), beta).unwrap();
+    fs::write(fixture.root.join("mizar.lock"), lock).unwrap();
+    let ids = InMemorySessionIdAllocator::new();
+    let snapshots = SnapshotRegistry::new();
+    let (mut draft, input) = fixture.submit_request(vec![], vec![]);
+    let acquired = read_native_workspace_inputs(&input.plan_request.workspace_root).unwrap();
+    let explicit = (
+        [("alpha", alpha), ("beta", beta)]
+            .map(|(member_path, text)| WorkspacePackage {
+                member_path: member_path.into(),
+                manifest: parse_package_manifest(text).unwrap(),
+            })
+            .to_vec(),
+        parse_lockfile(lock).unwrap(),
+    );
+    // Compare canonical plans independently of the native reader's member order.
+    let clean_plan = produce_build_plan(
+        input.plan_request.clone(),
+        explicit.0.clone(),
+        explicit.1.clone(),
+    )
+    .unwrap();
+    let native_plan = produce_build_plan(
+        input.plan_request.clone(),
+        acquired.0.clone(),
+        acquired.1.clone(),
+    )
+    .unwrap();
+    assert_eq!(native_plan, clean_plan);
+    assert_eq!(native_plan.packages[0].package_id.as_str(), "alpha");
+    assert_eq!(native_plan.packages[1].package_id.as_str(), "beta");
+    assert_eq!(
+        native_plan.packages[0].toolchain_constraint,
+        Some(VersionConstraint::Range(vec![VersionComparator {
+            op: VersionComparison::Less,
+            version: "1.0.0".parse().unwrap(),
+        }]))
+    );
+    assert_eq!(
+        native_plan.packages[1].toolchain_constraint,
+        Some(VersionConstraint::Range(vec![VersionComparator {
+            op: VersionComparison::GreaterEqual,
+            version: "2.0.0".parse().unwrap(),
+        }]))
+    );
+    assert_eq!(native_plan.toolchain, input.plan_request.toolchain);
+    let native_layout = StaticSourceLayout::from_native_disk(&native_plan).unwrap();
+    let explicit_layout = StaticSourceLayout::new(vec![
+        WorkspaceSourcePackage {
+            package_id: PackageId::new("alpha"),
+            files: vec![WorkspaceSourceFile::new("src/main.miz", "main.miz")],
+        },
+        WorkspaceSourcePackage {
+            package_id: PackageId::new("beta"),
+            files: vec![],
+        },
+    ]);
+    assert_eq!(native_layout, explicit_layout);
+    draft.source_inputs.versions.clear();
+    let session = draft
+        .capture_sources(
+            &ids,
+            &snapshots,
+            vec![(
+                DiskSourceLoader::new(fixture.root.join("alpha")),
+                SourceInput {
+                    package_id: fixture.version.package_id.clone(),
+                    module_path: fixture.version.module_path.clone(),
+                    normalized_path: fixture.version.normalized_path.clone(),
+                    edition: fixture.version.edition.clone(),
+                    origin: SourceOriginInput::Disk {
+                        path: "src/main.miz".into(),
+                    },
+                },
+            )],
+        )
+        .unwrap();
+    fs::remove_file(fixture.root.join("alpha/src/main.miz")).unwrap();
+    let unit = WorkUnit::Module {
+        module: mizar_build::module_index::ModuleId::new(
+            PackageId::new("alpha"),
+            ModulePath::new("main"),
+        ),
+    };
+    let mut baseline = None;
+    for ((packages, lockfile), layout) in [(explicit, explicit_layout), (acquired, native_layout)] {
+        let (_, mut current) = fixture.submit_request(vec![], vec![]);
+        current.plan_request = input.plan_request.clone();
+        current.workspace_packages = packages;
+        current.lockfile = lockfile;
+        current.source_layout = layout;
+        current.worker_count = 4;
+        current.completion_order = CompletionOrder::Reverse;
+        let owner = publisher(session.captured().snapshot().id, 0, &unit);
+        allow_frontend(&owner, &unit);
+        let mut builder = PhaseRegistryBuilder::new();
+        builder.register_source_load();
+        builder.register_frontend(vec![]);
+        let mut driver =
+            CompilerDriver::new(builder.build().unwrap()).with_output_publisher(owner.clone());
+        let submission = driver
+            .submit_captured(session.clone(), &ids, &snapshots, current)
+            .unwrap();
+        assert_eq!(
+            submission.status,
+            DriverSubmissionStatus::BlockedByMissingPhaseServices
+        );
+        assert_eq!(submission.build_plan.as_ref().unwrap(), &clean_plan);
+        let (_, phase_input) = native_disk_lookup_context(&submission, &ids);
+        for phase in [PipelinePhase::SourceLoad, PipelinePhase::Frontend] {
+            assert!(matches!(
+                driver
+                    .registry()
+                    .cache_key_for_phase(phase, &phase_input)
+                    .unwrap()
+                    .intent,
+                PhaseCacheIntent::NoKey { .. }
+            ));
+        }
+        let results = submission
+            .scheduler_run
+            .as_ref()
+            .unwrap()
+            .phase_results
+            .values()
+            .flatten()
+            .collect::<Vec<_>>();
+        assert!(results.iter().all(|result| result.diagnostics.is_empty()));
+        let refs = results
+            .iter()
+            .flat_map(|result| &result.output_refs)
+            .collect::<Vec<_>>();
+        assert_eq!(refs.len(), 2);
+        let source_ref = *refs
+            .iter()
+            .find(|output| output.output_kind() == &OutputKind::new("SourceUnit"))
+            .unwrap();
+        let source_handle = owner
+            .storage()
+            .typed_handle::<SourceUnit>(source_ref, &OutputKind::new("SourceUnit"))
+            .unwrap();
+        let source = owner.storage().get(&source_handle).unwrap();
+        let frontend_ref = *refs
+            .iter()
+            .find(|output| output.output_kind() == &OutputKind::new("FrontendOutput"))
+            .unwrap();
+        let frontend_handle = owner
+            .storage()
+            .typed_handle::<FrontendOutput<<MizarParserSeam as ParserSeam>::Ast>>(
+                frontend_ref,
+                &OutputKind::new("FrontendOutput"),
+            )
+            .unwrap();
+        let frontend = owner.storage().get(&frontend_handle).unwrap();
+        assert_eq!(source.source_text.as_ref(), "definition\nend;\n");
+        assert!(source.loading_map.is_some());
+        assert_eq!(
+            source.source_id,
+            session.captured().snapshot().source_versions[0].source_id
+        );
+        let actual = (
+            submission.build_plan.unwrap(),
+            submission.module_index.unwrap(),
+            source.as_ref().clone(),
+            frontend.as_ref().clone(),
+        );
+        if let Some(expected) = &baseline {
+            assert_eq!(&actual, expected);
+        } else {
+            baseline = Some(actual);
+        }
+    }
+    for text in ["toolchain = true", "toolchain = \"^bad\""] {
+        let invalid = format!("[package]\nname = \"alpha\"\nversion = \"0.1.0\"\n{text}\n");
+        fs::write(fixture.root.join("alpha/mizar.pkg"), &invalid).unwrap();
+        assert_eq!(
+            read_native_workspace_inputs(&input.plan_request.workspace_root).unwrap_err(),
+            parse_package_manifest(&invalid).unwrap_err().to_string()
+        );
     }
 }

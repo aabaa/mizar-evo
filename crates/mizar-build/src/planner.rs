@@ -19,6 +19,7 @@ pub struct PackageManifest {
     pub license: String,
     pub description: String,
     pub edition: Edition,
+    pub toolchain_constraint: Option<VersionConstraint>,
     pub dependencies: Vec<ManifestDependency>,
     pub dev_dependencies: Vec<ManifestDependency>,
     pub verifier: VerifierConfig,
@@ -159,6 +160,7 @@ pub struct PackagePlan {
     pub version: Version,
     pub source: PackagePlanSource,
     pub edition: Edition,
+    pub toolchain_constraint: Option<VersionConstraint>,
     pub dependencies: Vec<ResolvedPackageDependency>,
     pub verifier_config: VerifierConfig,
     pub build_config: BuildConfig,
@@ -840,6 +842,7 @@ fn parse_package_manifest_from_tables(
             "license",
             "description",
             "edition",
+            "toolchain",
         ],
         diagnostics,
     );
@@ -905,6 +908,21 @@ fn parse_package_manifest_from_tables(
     )
     .unwrap_or_else(|| CURRENT_STABLE_EDITION.to_owned());
 
+    let toolchain_constraint = read_optional_string(
+        "<package manifest>",
+        package_table,
+        "package.toolchain",
+        diagnostics,
+    )
+    .and_then(|value| {
+        parse_version_constraint(
+            "<package manifest>",
+            "package.toolchain",
+            &value,
+            diagnostics,
+        )
+    });
+
     let dependencies = parse_dependency_table(
         document,
         "dependencies",
@@ -928,6 +946,7 @@ fn parse_package_manifest_from_tables(
         license,
         description,
         edition: Edition::new(edition),
+        toolchain_constraint,
         dependencies,
         dev_dependencies,
         verifier,
@@ -1750,6 +1769,7 @@ fn workspace_package_plan(
             manifest_path,
         },
         edition: workspace_package.manifest.edition.clone(),
+        toolchain_constraint: workspace_package.manifest.toolchain_constraint.clone(),
         dependencies: all_manifest_dependencies(&workspace_package.manifest)
             .into_iter()
             .filter_map(|dependency| resolved_manifest_dependency(dependency, lockfile))
@@ -1776,6 +1796,7 @@ fn locked_package_plan(locked: &LockedPackage) -> PackagePlan {
         version: locked.version.clone(),
         source,
         edition: Edition::new(CURRENT_STABLE_EDITION),
+        toolchain_constraint: None,
         dependencies: locked
             .dependencies
             .iter()

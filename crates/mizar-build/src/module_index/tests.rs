@@ -963,6 +963,7 @@ fn package_plan(package_id: &str, version: &str, source: PackagePlanSource) -> P
         version: Version::parse(version).expect("valid version"),
         source,
         edition: Edition::new("2025"),
+        toolchain_constraint: None,
         dependencies: Vec::new(),
         verifier_config: VerifierConfig::default(),
         build_config: BuildConfig::default(),

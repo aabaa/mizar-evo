@@ -469,6 +469,7 @@ Keep `cargo test -p mizar-build` green after each task (see
 33. **[Current lock content fingerprint](../../task_contracts/en/BUILD-LOCK-CONTENT-FINGERPRINT.md).** [x]
 
 34. **[Current package configuration content fingerprint](../../task_contracts/en/BUILD-CONFIG-CONTENT-FINGERPRINT.md).** [x]
+35. **[Optional package toolchain constraint metadata](../../task_contracts/en/BUILD-PACKAGE-TOOLCHAIN-METADATA.md).** [x]
 
 ## Recommended Verification
 
