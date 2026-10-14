@@ -99,6 +99,13 @@ The backend runner records `input_hash` and metadata hashes; it must not
 rewrite the input, normalize backend text, add proof commands, request unsat
 cores as trusted data, or infer a different expected result.
 
+## Genuine encoded input production
+
+`EncodedBackendProblem::encode(&AtpProblem, ConcreteFormat) -> Result<Self, String>` invokes the existing format's actual encoder (TPTP FOF or SMT-LIB Uninterpreted), propagating unsupported-profile errors without reprofiling or text repair. Copy exact returned UTF-8 bytes and raw label tokens; retain the actual problem ID, target, expected Unsat polarity and profile name, with explicit `fof` / `tff-like` / `smtlib-uninterpreted` fragment tags. The existing constructor and hash domains stay unchanged.
+Normalize each actual encoder symbol row to `(ATP name, concrete name, typed source)`, then store a canonical metadata string: `a=<byte-length>:<lowercase-hex>;b=<byte-length>:<lowercase-hex>;s=<source>`. Source is `mizar=<byte-length>:<lowercase-hex>`, `binder=<byte-length>:<lowercase-hex>` or `guard=<decimal-id>` for the existing MizarSymbol, GeneratedBinder or TypeGuard variant. Lengths count UTF-8 bytes. This preserves the complete actual mapping without Debug rendering, delimiter ambiguity or a parallel symbol model.
+Derive provenance_hash with the existing private StableHasher, domain `mizar-atp/backend-source-provenance/v1`, one tagged byte field `source-problem-id` containing the actual problem_id().hash() bytes. This deliberately conservative binding covers the canonical problem's complete typed provenance, formulas, declarations, target, symbol maps and profile; unrelated semantic changes may invalidate it too. Diagnostics remain excluded by the existing neutral identity. It is neither a provenance-only reuse key nor proof evidence; every input/metadata hash is computed from actual content, never a fixture constant or supplied receipt.
+Factory inputs contain no separate encoded output, labels or hashes to mismatch. Concrete encoders own label selection and mangling; backend owns immutable input binding only. Test all typed source classes, fixed canonical mapping bytes, coherent metadata changes, diagnostic neutrality and real source pipelines for both formats. General source/backend integration, instance search/limits, advisory extraction, execution/classification and proof acceptance remain separate dependencies.
+
 ## Stable Hashes And Fingerprints
 
 Task-14 source must implement a private deterministic hash helper for backend

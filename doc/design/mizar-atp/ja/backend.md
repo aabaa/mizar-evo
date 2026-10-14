@@ -93,6 +93,13 @@ backend runner は `input_hash` と metadata hash を記録する。input を書
 normalize したり、proof command を追加したり、unsat core を trusted data として要求したり、別の
 expected result を推論してはならない。
 
+## Genuine encoded input production
+
+`EncodedBackendProblem::encode(&AtpProblem, ConcreteFormat) -> Result<Self, String>` は既存 TPTP FOF / SMT-LIB Uninterpreted encoder を実行する。未対応 profile の error をそのまま伝え、reprofile・本文修復を行わない。返却された UTF-8 byte・raw label、実 problem ID・target・Unsat 方針・profile name と明示的 fragment tag `fof` / `tff-like` / `smtlib-uninterpreted` を保持する。既存 constructor と hash domain は変更しない。
+実 symbol row の ATP name・concrete name・型付き source を `a=<UTF-8 byte長>:<小文字hex>;b=<byte長>:<hex>;s=<source>` に正準化する。source は既存 MizarSymbol / GeneratedBinder / TypeGuard に対応する `mizar=<byte長>:<hex>` / `binder=<byte長>:<hex>` / `guard=<10進id>`。Debug、区切り曖昧性、並行 symbol model を導入しない。
+既存 private StableHasher の domain `mizar-atp/backend-source-provenance/v1`、byte field `source-problem-id` に実 problem_id().hash() を入れて provenance_hash を作る。この保守的 binding は正準問題の全 typed provenance・formula・declaration・target・symbol map・profile を含み、無関係な意味変更でも無効化され得る。既存 identity は diagnostic を除外する。provenance 専用 reuse key や proof evidence ではなく、fixture 定数・入力 receipt を使わない。
+別 encoded output・label・hash を入力せず、実 encoder が label 選択・mangling、backend が不変 input binding のみを所有する。全 source 型・固定 mapping byte・coherent metadata 変更・diagnostic neutrality・両 format の実 source pipeline を検査する。汎用 source/backend integration・instance search/limit・advisory extraction・execution/classification・proof acceptance は別依存として保留する。
+
 ## stable hash と fingerprint
 
 Task-14 source は backend metadata 用の private deterministic hash helper を実装しなければならない。

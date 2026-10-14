@@ -1336,3 +1336,296 @@ impl Drop for TestDir {
         let _ = fs::remove_dir_all(&self.path);
     }
 }
+
+#[test]
+fn genuine_encoded_producer_preserves_real_outputs_and_canonical_binding() {
+    use crate::problem::{
+        AtpBinder, AtpDiagnostic, AtpPropertyId, AtpTerm, AtpTypeGuard, AtpTypeGuardId,
+        EncodedProperty,
+    };
+    use crate::smtlib_encoder::{SmtLibDialect, encode_smtlib};
+    use crate::tptp_encoder::{TptpDialect, encode_tptp};
+    let parts = |fragment, format| {
+        let quantified = AtpFormulaTree::Forall {
+            binders: vec![AtpBinder::new("x:λ", None)],
+            body: Box::new(AtpFormulaTree::Atom(AtpAtom::new(
+                "P;é",
+                vec![AtpTerm::Variable("x:λ".into())],
+            ))),
+        };
+        AtpProblemParts {
+            vc_id: VcId::new(7),
+            target_binding: target_binding("actual:é"),
+            logic_profile: LogicProfile::try_new(
+                "producer:é",
+                fragment,
+                EqualitySupport::Supported,
+                QuantifierPolicy::FirstOrder,
+                SoftTypeStrategy::GuardPredicates,
+                NativePropertySupport::Unsupported,
+                BTreeSet::from([format]),
+            )
+            .unwrap(),
+            expected_result: ExpectedBackendResult::Unsat,
+            declarations: vec![
+                AtpDeclaration::new(
+                    AtpDeclarationId::new(1),
+                    AtpDeclarationKind::Predicate,
+                    "P;é",
+                    1,
+                    AtpProvenanceId::new(1),
+                ),
+                AtpDeclaration::new(
+                    AtpDeclarationId::new(2),
+                    AtpDeclarationKind::GeneratedBinder,
+                    "x:λ",
+                    0,
+                    AtpProvenanceId::new(2),
+                ),
+                AtpDeclaration::new(
+                    AtpDeclarationId::new(3),
+                    AtpDeclarationKind::Predicate,
+                    "G=型",
+                    0,
+                    AtpProvenanceId::new(3),
+                ),
+            ],
+            axioms: vec![
+                AtpFormula::new(
+                    AtpFormulaId::new(4),
+                    quantified.clone(),
+                    AtpProvenanceId::new(4),
+                ),
+                AtpFormula::new(
+                    AtpFormulaId::new(8),
+                    AtpFormulaTree::True,
+                    AtpProvenanceId::new(7),
+                ),
+            ],
+            conjecture: AtpFormula::new(AtpFormulaId::new(5), quantified, AtpProvenanceId::new(5)),
+            type_context: AtpTypeContext::new(vec![AtpTypeGuard::new(
+                AtpTypeGuardId::new(7),
+                AtpFormulaTree::Atom(AtpAtom::new("G=型", vec![])),
+                AtpProvenanceId::new(6),
+            )]),
+            properties: vec![EncodedProperty::axiom(
+                AtpPropertyId::new(9),
+                "P;é",
+                AtpFormulaTree::True,
+                AtpProvenanceId::new(7),
+            )],
+            symbol_map: vec![
+                AtpSymbolMapEntry::new("P;é", AtpSymbolSource::MizarSymbol("m;漢".into())),
+                AtpSymbolMapEntry::new("x:λ", AtpSymbolSource::GeneratedBinder("b;ñ".into())),
+                AtpSymbolMapEntry::new("G=型", AtpSymbolSource::TypeGuard(AtpTypeGuardId::new(7))),
+            ],
+            provenance: (1..=7)
+                .map(|id| {
+                    AtpProvenance::new(
+                        AtpProvenanceId::new(id),
+                        AtpSourceRef::GeneratedVcFact(format!("row:{id}").into()),
+                        "payload:é",
+                    )
+                })
+                .collect(),
+            diagnostics: vec![],
+        }
+    };
+    for (fragment, format, fragment_tag) in [
+        (LogicFragment::Fof, ConcreteFormat::Tptp, "fof"),
+        (
+            LogicFragment::SmtLibUninterpreted,
+            ConcreteFormat::SmtLib,
+            "smtlib-uninterpreted",
+        ),
+    ] {
+        let problem = AtpProblem::try_new(parts(fragment, format)).unwrap();
+        let encoded = EncodedBackendProblem::encode(&problem, format).unwrap();
+        assert_eq!(
+            encoded,
+            EncodedBackendProblem::encode(&problem, format).unwrap()
+        );
+        assert_eq!(encoded.problem_id(), problem.problem_id());
+        assert_eq!(encoded.target_binding(), problem.target_binding());
+        assert_eq!(encoded.expected_result(), ExpectedBackendResult::Unsat);
+        assert_eq!(encoded.concrete_format(), format);
+        assert_eq!(encoded.logic_profile_name(), "producer:é");
+        assert_eq!(encoded.logic_fragment(), fragment_tag);
+        let (text, labels) = match format {
+            ConcreteFormat::Tptp => {
+                let actual = encode_tptp(&problem, TptpDialect::Fof).unwrap();
+                (
+                    actual.text().as_bytes().to_vec(),
+                    actual
+                        .formula_labels()
+                        .iter()
+                        .map(|row| row.label().to_owned())
+                        .collect::<Vec<_>>(),
+                )
+            }
+            ConcreteFormat::SmtLib => {
+                let actual = encode_smtlib(&problem, SmtLibDialect::Uninterpreted).unwrap();
+                (
+                    actual.text().as_bytes().to_vec(),
+                    actual
+                        .assertion_labels()
+                        .iter()
+                        .map(|row| row.label().to_owned())
+                        .collect::<Vec<_>>(),
+                )
+            }
+        };
+        let mut labels = labels;
+        labels.sort();
+        assert_eq!(encoded.input_text(), text);
+        assert_eq!(encoded.formula_labels(), labels);
+        assert_eq!(
+            encoded.formula_labels(),
+            if format == ConcreteFormat::Tptp {
+                vec!["ax_4", "ax_8", "conj_5", "prop_9", "tg_7"]
+            } else {
+                vec!["ax_4", "ax_8", "neg_conj_5", "prop_9", "tg_7"]
+            }
+        );
+        // Independently fixed UTF-8 mappings, including delimiter bytes and every source class.
+        let mut bindings = vec![
+            "a=4:503bc3a9;b=122:6d5f333633613733373936643632366636633362333933613730373236353634363936333631373436353362333133613331336233323334336133313332336136643639376136313732326437333739366436323666366333623335336136643362653662636132336233623334336135303362633361393362;s=mizar=5:6d3be6bca2",
+            "a=5:473de59e8b;b=112:6d5f3336336137333739366436323666366333623339336137303732363536343639363336313734363533623331336133303362333133383361333133303361373437393730363532643637373536313732363433623331336133373362336233353361343733646535396538623362;s=guard=7",
+            if format == ConcreteFormat::Tptp {
+                "a=4:783acebb;b=106:565f3336336136323639366536343635373233623332333733613331333633613637363536653635373236313734363536343264363236393665363436353732336233343361363233626333623133623362333133613332336233313361333033623331336133303362;s=binder=4:623bc3b1"
+            } else {
+                "a=4:783acebb;b=106:765f3336336136323639366536343635373233623332333733613331333633613637363536653635373236313734363536343264363236393665363436353732336233343361363233626333623133623362333133613332336233313361333033623331336133303362;s=binder=4:623bc3b1"
+            },
+        ];
+        bindings.sort();
+        assert_eq!(encoded.symbol_bindings(), bindings);
+        let mut provenance = StableHasher::new("mizar-atp/backend-source-provenance/v1");
+        provenance.field_bytes("source-problem-id", problem.problem_id().hash().as_bytes());
+        assert_eq!(encoded.provenance_hash(), provenance.finalize());
+        assert_eq!(
+            encoded.input_hash(),
+            hash_input(format, "producer:é", fragment_tag, &text)
+        );
+        assert_eq!(
+            encoded.metadata_hash(),
+            hash_metadata(
+                problem.target_binding(),
+                &labels,
+                encoded.symbol_bindings(),
+                encoded.provenance_hash()
+            )
+        );
+        let mut reordered = parts(fragment, format);
+        reordered.declarations.reverse();
+        reordered.axioms.reverse();
+        reordered.symbol_map.reverse();
+        reordered.provenance.reverse();
+        assert_eq!(
+            encoded,
+            EncodedBackendProblem::encode(&AtpProblem::try_new(reordered).unwrap(), format)
+                .unwrap()
+        );
+        let mut diagnostic = parts(fragment, format);
+        diagnostic
+            .diagnostics
+            .push(AtpDiagnostic::new("irrelevant", "診断;=payload"));
+        assert_eq!(
+            encoded,
+            EncodedBackendProblem::encode(&AtpProblem::try_new(diagnostic).unwrap(), format)
+                .unwrap()
+        );
+        for mutation in 0..5 {
+            let mut changed = parts(fragment, format);
+            match mutation {
+                0 => {
+                    changed.provenance[0] = AtpProvenance::new(
+                        AtpProvenanceId::new(1),
+                        changed.provenance[0].source().clone(),
+                        "changed payload",
+                    )
+                }
+                1 => {
+                    changed.provenance[0] = AtpProvenance::new(
+                        AtpProvenanceId::new(1),
+                        AtpSourceRef::CitedPremise("different source".into()),
+                        changed.provenance[0].payload().clone(),
+                    )
+                }
+                2 => {
+                    changed.conjecture = AtpFormula::new(
+                        AtpFormulaId::new(5),
+                        AtpFormulaTree::Not(Box::new(
+                            changed.conjecture.formula().unwrap().clone(),
+                        )),
+                        AtpProvenanceId::new(5),
+                    )
+                }
+                3 => {
+                    changed.logic_profile = LogicProfile::try_new(
+                        "renamed profile",
+                        fragment,
+                        EqualitySupport::Supported,
+                        QuantifierPolicy::FirstOrder,
+                        SoftTypeStrategy::GuardPredicates,
+                        NativePropertySupport::Unsupported,
+                        BTreeSet::from([format]),
+                    )
+                    .unwrap()
+                }
+                _ => changed.target_binding = target_binding("foreign target"),
+            }
+            let changed = AtpProblem::try_new(changed).unwrap();
+            let rebound = EncodedBackendProblem::encode(&changed, format).unwrap();
+            assert_ne!(encoded.problem_id(), rebound.problem_id());
+            assert_ne!(encoded.provenance_hash(), rebound.provenance_hash());
+            assert_ne!(encoded.metadata_hash(), rebound.metadata_hash());
+            if mutation != 2 {
+                assert_eq!(encoded.input_text(), rebound.input_text());
+            }
+        }
+        for unsupported in 0..4 {
+            let mut changed = parts(fragment, format);
+            let (wrong_fragment, soft_types, requested) = match unsupported {
+                0 => (
+                    fragment,
+                    SoftTypeStrategy::GuardPredicates,
+                    if format == ConcreteFormat::Tptp {
+                        ConcreteFormat::SmtLib
+                    } else {
+                        ConcreteFormat::Tptp
+                    },
+                ),
+                1 => (
+                    LogicFragment::TffLike,
+                    SoftTypeStrategy::GuardPredicates,
+                    format,
+                ),
+                2 => (fragment, SoftTypeStrategy::BackendSorts, format),
+                _ => (fragment, SoftTypeStrategy::SortsAndGuards, format),
+            };
+            changed.logic_profile = LogicProfile::try_new(
+                "unsupported",
+                wrong_fragment,
+                EqualitySupport::Supported,
+                QuantifierPolicy::FirstOrder,
+                soft_types,
+                NativePropertySupport::Unsupported,
+                BTreeSet::from([format]),
+            )
+            .unwrap();
+            let changed = AtpProblem::try_new(changed).unwrap();
+            let actual_error = match requested {
+                ConcreteFormat::Tptp => encode_tptp(&changed, TptpDialect::Fof)
+                    .unwrap_err()
+                    .to_string(),
+                ConcreteFormat::SmtLib => encode_smtlib(&changed, SmtLibDialect::Uninterpreted)
+                    .unwrap_err()
+                    .to_string(),
+            };
+            assert_eq!(
+                EncodedBackendProblem::encode(&changed, requested).unwrap_err(),
+                actual_error
+            );
+        }
+    }
+}

@@ -116,6 +116,113 @@ pub struct EncodedBackendProblemParts {
 }
 
 impl EncodedBackendProblem {
+    /// Binds the actual concrete encoder output to its immutable source problem.
+    pub fn encode(
+        problem: &crate::problem::AtpProblem,
+        concrete_format: ConcreteFormat,
+    ) -> Result<Self, String> {
+        use crate::problem::{AtpSymbolSource, LogicFragment};
+        let (input_text, formula_labels, symbol_rows) = match concrete_format {
+            ConcreteFormat::Tptp => {
+                let output = crate::tptp_encoder::encode_tptp(
+                    problem,
+                    crate::tptp_encoder::TptpDialect::Fof,
+                )
+                .map_err(|error| error.to_string())?;
+                (
+                    output.text().as_bytes().to_vec(),
+                    output
+                        .formula_labels()
+                        .iter()
+                        .map(|row| row.label().to_owned())
+                        .collect(),
+                    output
+                        .symbol_bindings()
+                        .iter()
+                        .map(|row| {
+                            (
+                                row.atp_symbol().as_str().to_owned(),
+                                row.tptp_name().to_owned(),
+                                row.source().clone(),
+                            )
+                        })
+                        .collect::<Vec<_>>(),
+                )
+            }
+            ConcreteFormat::SmtLib => {
+                let output = crate::smtlib_encoder::encode_smtlib(
+                    problem,
+                    crate::smtlib_encoder::SmtLibDialect::Uninterpreted,
+                )
+                .map_err(|error| error.to_string())?;
+                (
+                    output.text().as_bytes().to_vec(),
+                    output
+                        .assertion_labels()
+                        .iter()
+                        .map(|row| row.label().to_owned())
+                        .collect(),
+                    output
+                        .symbol_bindings()
+                        .iter()
+                        .map(|row| {
+                            (
+                                row.atp_symbol().as_str().to_owned(),
+                                row.smtlib_symbol().to_owned(),
+                                row.source().clone(),
+                            )
+                        })
+                        .collect::<Vec<_>>(),
+                )
+            }
+        };
+        let symbol_bindings = symbol_rows
+            .into_iter()
+            .map(|(atp, backend, source)| {
+                let source = match source {
+                    AtpSymbolSource::MizarSymbol(binding) => format!(
+                        "mizar={}:{}",
+                        binding.as_str().len(),
+                        hex(binding.as_str().as_bytes()),
+                    ),
+                    AtpSymbolSource::GeneratedBinder(binding) => format!(
+                        "binder={}:{}",
+                        binding.as_str().len(),
+                        hex(binding.as_str().as_bytes()),
+                    ),
+                    AtpSymbolSource::TypeGuard(id) => format!("guard={}", id.index()),
+                };
+                format!(
+                    "a={}:{};b={}:{};s={source}",
+                    atp.len(),
+                    hex(atp.as_bytes()),
+                    backend.len(),
+                    hex(backend.as_bytes())
+                )
+            })
+            .collect();
+        let logic_fragment = match problem.logic_profile().fragment() {
+            LogicFragment::Fof => "fof",
+            LogicFragment::TffLike => "tff-like",
+            LogicFragment::SmtLibUninterpreted => "smtlib-uninterpreted",
+        };
+        let mut provenance = StableHasher::new("mizar-atp/backend-source-provenance/v1");
+        provenance.field_bytes("source-problem-id", problem.problem_id().hash().as_bytes());
+        Self::new(EncodedBackendProblemParts {
+            problem_id: problem.problem_id(),
+            target_binding: problem.target_binding().clone(),
+            expected_result: problem.expected_result(),
+            concrete_format,
+            logic_profile_name: problem.logic_profile().name().as_str().to_owned(),
+            logic_fragment: logic_fragment.to_owned(),
+            input_text,
+            formula_labels,
+            symbol_bindings,
+            provenance_hash: provenance.finalize(),
+        })
+        .map_err(|error| error.to_string())
+    }
+
     pub fn new(parts: EncodedBackendProblemParts) -> Result<Self, BackendConfigError> {
         reject_empty("logic_profile_name", &parts.logic_profile_name)?;
         reject_empty("logic_fragment", &parts.logic_fragment)?;

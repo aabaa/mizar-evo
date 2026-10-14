@@ -13155,3 +13155,96 @@ fn source_registration_local_wire_round_trips_and_keeps_fresh_kernel_outcomes() 
         }
     }
 }
+
+#[test]
+fn source_registration_encoded_producer_binds_real_problem_and_concrete_output() {
+    use mizar_atp::{
+        backend::EncodedBackendProblem,
+        problem::{AtpSymbolSource, ConcreteFormat, EqualitySupport, ExpectedBackendResult,
+            LogicFragment, LogicProfile, NativePropertySupport, QuantifierPolicy, SoftTypeStrategy},
+        smtlib_encoder::{SmtLibDialect, encode_smtlib},
+        tptp_encoder::{TptpDialect, encode_tptp},
+        translator::translate_source_existential_registration,
+    };
+    use mizar_vc::{discharge::{DischargeInput, DischargePolicy, try_discharge}, vc_ir::VcStatus};
+    let hex = |bytes: &[u8]| bytes.iter().map(|byte| format!("{byte:02x}")).collect::<String>();
+    for (multiple, case) in [(false, step5c3_registration_case()), (true, step5c13_registration_case())] {
+        let original = std::fs::read_to_string(case.source_path).unwrap();
+        let renamed = original.replace("wmarked", "retagged").replace("oamarked", "leftmarked")
+            .replace("obmarked", "rightmarked").replace("X", "Value");
+        for (renamed_names, base) in [(false, &original), (true, &renamed)] {
+            for negative in std::iter::once(None).chain((0..if multiple { 2 } else { 1 }).map(Some)) {
+                let text = if let Some(index) = negative {
+                    let attribute = if multiple { ["oamarked", "obmarked"][index] } else { "wmarked" };
+                    let attribute = if renamed_names {
+                        attribute.replace("wmarked", "retagged").replace("oamarked", "leftmarked").replace("obmarked", "rightmarked")
+                    } else { attribute.to_owned() };
+                    let formal = if renamed_names { "Value" } else { "X" };
+                    let changed = base.replace(&format!("{formal} is {attribute} means {formal} = {formal}"),
+                        &format!("{formal} is {attribute} means not {formal} = {formal}"));
+                    assert_ne!(&changed, base);
+                    changed
+                } else { base.clone() };
+                let (source, nodes, symbols) = if multiple {
+                    step5c13_registration_inputs(&text)
+                } else { step5c3_registration_inputs(&text) }.unwrap();
+                let checked = mizar_checker::registration_resolution::check_source_existential_registration_proof(&source, &nodes, &symbols).unwrap();
+                let core = mizar_core::elaborator::lower_source_existential_registration(&checked).unwrap();
+                let open = step5c3_registration_vcs(&core).unwrap();
+                let discharge = try_discharge(DischargeInput { vc_set: &open, policy: &DischargePolicy::default() }).unwrap();
+                let vcs = discharge.vc_set();
+                for vc in vcs.vcs().iter().filter(|vc| vc.status == VcStatus::NeedsAtp) {
+                    for (fragment, format, tag) in [
+                        (LogicFragment::Fof, ConcreteFormat::Tptp, "fof"),
+                        (LogicFragment::SmtLibUninterpreted, ConcreteFormat::SmtLib, "smtlib-uninterpreted"),
+                    ] {
+                        let profile = LogicProfile::try_new(format!("actual-source-{tag}"), fragment,
+                            EqualitySupport::Supported, QuantifierPolicy::FirstOrder, SoftTypeStrategy::GuardPredicates,
+                            NativePropertySupport::Unsupported, [format].into_iter().collect()).unwrap();
+                        let problem = translate_source_existential_registration(&core, vcs, vc.id, profile.clone()).unwrap();
+                        let encoded = EncodedBackendProblem::encode(&problem, format).unwrap();
+                        assert_eq!(encoded, EncodedBackendProblem::encode(&problem, format).unwrap());
+                        assert_eq!(encoded.problem_id(), problem.problem_id());
+                        assert_eq!(encoded.target_binding(), problem.target_binding());
+                        assert_eq!(encoded.expected_result(), ExpectedBackendResult::Unsat);
+                        assert_eq!(encoded.concrete_format(), format);
+                        assert_eq!(encoded.logic_profile_name(), profile.name().as_str());
+                        assert_eq!(encoded.logic_fragment(), tag);
+                        let (bytes, labels, rows) = match format {
+                            ConcreteFormat::Tptp => {
+                                let actual = encode_tptp(&problem, TptpDialect::Fof).unwrap();
+                                (actual.text().as_bytes().to_vec(),
+                                    actual.formula_labels().iter().map(|row| row.label().to_owned()).collect::<Vec<_>>(),
+                                    actual.symbol_bindings().iter().map(|row| (row.atp_symbol().as_str().to_owned(),
+                                        row.tptp_name().to_owned(), row.source().clone())).collect::<Vec<_>>())
+                            }
+                            ConcreteFormat::SmtLib => {
+                                let actual = encode_smtlib(&problem, SmtLibDialect::Uninterpreted).unwrap();
+                                (actual.text().as_bytes().to_vec(),
+                                    actual.assertion_labels().iter().map(|row| row.label().to_owned()).collect::<Vec<_>>(),
+                                    actual.symbol_bindings().iter().map(|row| (row.atp_symbol().as_str().to_owned(),
+                                        row.smtlib_symbol().to_owned(), row.source().clone())).collect::<Vec<_>>())
+                            }
+                            _ => panic!("requested concrete format"),
+                        };
+                        let mut labels = labels;
+                        labels.sort();
+                        assert_eq!(encoded.input_text(), bytes);
+                        assert_eq!(encoded.formula_labels(), labels);
+                        let mut mappings = rows.iter().map(|(atp, backend, source)| {
+                            let source = match source {
+                                AtpSymbolSource::MizarSymbol(binding) => format!("mizar={}:{}", binding.as_str().len(), hex(binding.as_str().as_bytes())),
+                                AtpSymbolSource::GeneratedBinder(binding) => format!("binder={}:{}", binding.as_str().len(), hex(binding.as_str().as_bytes())),
+                                AtpSymbolSource::TypeGuard(id) => format!("guard={}", id.index()),
+                                _ => panic!("actual typed source"),
+                            };
+                            format!("a={}:{};b={}:{};s={source}", atp.len(), hex(atp.as_bytes()), backend.len(), hex(backend.as_bytes()))
+                        }).collect::<Vec<_>>();
+                        mappings.sort();
+                        assert_eq!(encoded.symbol_bindings(), mappings);
+                    }
+                }
+            }
+        }
+    }
+}

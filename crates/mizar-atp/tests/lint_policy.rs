@@ -494,6 +494,7 @@ fn atp_backend_public_api_surface_is_task_fourteen_allowlist() {
             "BackendVersionRecord::stdout",
             "BackendVersionRecord::success",
             "EncodedBackendProblem::concrete_format",
+            "EncodedBackendProblem::encode",
             "EncodedBackendProblem::expected_result",
             "EncodedBackendProblem::formula_labels",
             "EncodedBackendProblem::input_hash",
@@ -511,7 +512,7 @@ fn atp_backend_public_api_surface_is_task_fourteen_allowlist() {
         ],
         "{} public functions and methods must stay limited to task-14 generic \
          runner, task-19 run metadata projection, and mock-classification \
-         construction/accessors",
+         construction/accessors and task-34 genuine encoded input production",
         source_path.display()
     );
 }
