@@ -428,6 +428,8 @@ kernel の拒否語彙と evidence 契約を訂正した。policy 層はその�
 
 26. **[Fresh source discharge checking](../../task_contracts/ja/PROOF-SOURCE-DISCHARGE-CHECK.md).** [x] — direct-premise の分類のみ。汎用受理・公開は未完了。
 
+27. **[Raw source discharge metadata](../../task_contracts/ja/PROOF-SOURCE-DISCHARGE-METADATA.md).** [x] — Same-call data association only; trusted tokens and publication remain open.
+
 ## 推奨検証
 
 各タスクの後で実行する:

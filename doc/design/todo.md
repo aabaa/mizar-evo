@@ -751,7 +751,7 @@ permit; each source-integration slice waits for its actual upstream outputs.
    built-in witness support belongs to Artifact 25, full emission to Step 6 item 3.
    [Fresh source candidate checking](./task_contracts/en/PROOF-SOURCE-CANDIDATE-CHECK.md) is a bounded classification prerequisite; general acceptance/publication remain open.
    [Fresh source-bound selection](./task_contracts/en/PROOF-SOURCE-CANDIDATE-SELECTION.md) is implemented for genuine candidate/check outputs; witness/Artifact publication remains pending.
-   [Direct-premise source checking](./task_contracts/en/PROOF-SOURCE-DISCHARGE-CHECK.md) is a bounded built-in classification prerequisite. [Raw local component hashes](./task_contracts/en/VC-LOCAL-EVIDENCE-COMPONENT-HASHES.md) precede accepted metadata association.
+   [Direct-premise source checking](./task_contracts/en/PROOF-SOURCE-DISCHARGE-CHECK.md) is a bounded built-in classification prerequisite. [Raw local component hashes](./task_contracts/en/VC-LOCAL-EVIDENCE-COMPONENT-HASHES.md) precede accepted metadata association. [Raw same-call metadata](./task_contracts/en/PROOF-SOURCE-DISCHARGE-METADATA.md) precedes trusted witness production.
 4. [ ] Proof cache/witness handoffs: Proof reuse metadata into Cache
    validation (IV-005, fail-closed IV-002). Source-derived trusted reuse follows
    the corresponding accepted producer outputs; internal seams remain separate.

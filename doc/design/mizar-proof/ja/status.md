@@ -231,6 +231,14 @@ fresh target の既存 TargetVcFingerprint::sort_bytes identity、実 encoded in
 `check_source_registration_discharge_candidate(&SurfaceResolvedArena, &TypedArena, &SymbolEnv, BuildSnapshotId, VcId, &VerifierPolicy) -> Result<(KernelCheckResult, PolicyDecision), String>` は元 source graph と実際の既定 Discharge を新たに構成し、VC の関連付けから選択された元 direct-premise handoff を得る。通常のローカル証拠を encode し、既存 BuiltinKernelEvidence の scheduling 許可を要求して元 target/profile で parse・通常の proof-obligation 検査を行う。実結果を BuiltinDischarge origin と供給 policy で分類し、caller 証拠・結果・receipt は受け取らない。
 context 組立と通常 Kernel 呼出しだけを既存 ATP 検査・元 built-in 活性化と private に共有する。既存 parser/schema/instance 選択・error・scheduling・origin・policy・活性化の動作を保つ。未対応・foreign 入力や許可されない format は拒否し、偽定義の direct leaf も不変の premise/goal を証明する。汎用受理・selection・信頼された witness metadata・公開は保留し、caller 所有の source/snapshot freshness は reuse receipt にならない。
 
+## Source discharge metadata
+
+`check_source_registration_discharge_metadata` は既存 discharge facade と同じ六つの source/snapshot/target/policy 入力を取り、既存 Result 内で `(KernelCheckResult, PolicyDecision, Option<KernelAcceptanceMetadata>)` を返す。fresh 再構成・元 direct-premise association・通常 encoding/scheduling/parsing/checking・BuiltinDischarge 評価を一つの pipeline で行い、旧 facade は委譲して metadata だけを捨て、signature と既存結果/error を保つ。
+実際の DischargedBuiltin、untainted Accepted ProofObligation、既存 accepted identity、AssertFalseForRefutation の場合だけ plain metadata を作る。同じ呼出しの元 handoff/check/current policy を結び、不足・未対応の関連付けは fallback hash や分類昇格なしの None。caller evidence/result/receipt は受け取らない。
+全 hash ref は Interface。[VC component profile](../../mizar-vc/ja/kernel_evidence_handoff.md#local-evidence-component-hashes) を profile/formula/substitution/provenance digest に複写し、family は `mizar-vc/local-evidence-component/{profile,formula,substitutions,provenance}`、version は 1.0。target binding は `handoff.canonical_hash()` を `mizar-vc/kernel-evidence-handoff-canonical` 1.0 で複写し、別 context identity と goal-polarity 検査は既存通常 checker が所有する。
+policy は `policy_fingerprint().hash()` と family `mizar-proof/verifier-policy`、version `(policy.schema_version(),0)`。accepted result は BuiltinDischarge KernelPolicyInput の `accepted_evidence_hash()` と `mizar-proof/kernel-accepted-evidence` 1.0。checker/evidence schema version は `(policy.checker_schema_version(),0)` と `(envelope.schema_version(),0)`。checker 値は設定された policy requirement であり、checker 実装や実行中 toolchain version の認証ではない。対応 direct handoff は実 empty substitutions・import 不在なので formula_context_hash は None。
+raw data association であり trusted witness token・composite obligation/current-source receipt・committed reachability ではない。Artifact の既存 Builtin/version guard、source freshness 所有、selection/staging/publication/reuse、全 Proof23/Artifact25 は不変または保留する。
+
 ## Source existential-registration proof
 
 `prove_source_existential_registration(&SurfaceResolvedArena, &TypedArena, &SymbolEnv,

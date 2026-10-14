@@ -452,6 +452,8 @@ layer consumes both; one alignment task is owned here.
 
 26. **[Fresh source discharge checking](../../task_contracts/en/PROOF-SOURCE-DISCHARGE-CHECK.md).** [x] — Direct-premise classification only; general acceptance/publication remains open.
 
+27. **[Raw source discharge metadata](../../task_contracts/en/PROOF-SOURCE-DISCHARGE-METADATA.md).** [x] — Same-call data association only; trusted tokens and publication remain open.
+
 ## Recommended Verification
 
 Run after each task:

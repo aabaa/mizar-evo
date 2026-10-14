@@ -125,7 +125,32 @@ pub fn check_source_registration_discharge_candidate(
     vc_id: VcId,
     policy: &VerifierPolicy,
 ) -> Result<(KernelCheckResult, crate::policy::PolicyDecision), String> {
+    check_source_registration_discharge_metadata(source, nodes, symbols, snapshot, vc_id, policy)
+        .map(|(result, decision, _)| (result, decision))
+}
+
+/// Freshly checks a source discharge candidate and associates raw same-call metadata.
+/// The metadata does not authorize activation, publication, or proof reuse.
+pub fn check_source_registration_discharge_metadata(
+    source: &mizar_resolve::resolved_ast::SurfaceResolvedArena,
+    nodes: &mizar_checker::typed_ast::TypedArena,
+    symbols: &mizar_resolve::env::SymbolEnv,
+    snapshot: mizar_session::BuildSnapshotId,
+    vc_id: VcId,
+    policy: &VerifierPolicy,
+) -> Result<
+    (
+        KernelCheckResult,
+        crate::policy::PolicyDecision,
+        Option<mizar_artifact::proof_witness::KernelAcceptanceMetadata>,
+    ),
+    String,
+> {
     use crate::policy::{PolicyCandidate, ProofPolicyEvaluator};
+    use mizar_artifact::{
+        proof_witness::KernelAcceptanceMetadata,
+        registration_summary::{ArtifactHashClass, ArtifactHashRef},
+    };
     use mizar_kernel::{
         certificate_parser::{ClauseTautologyPolicy, Fingerprint, KernelProfileRecord},
         formula_evidence::{FormulaEvidenceParseContext, parse_formula_evidence},
@@ -187,8 +212,68 @@ pub fn check_source_registration_discharge_candidate(
     )?;
     let input =
         KernelPolicyInput::from_kernel_result(&result, KernelEvidenceOrigin::BuiltinDischarge);
+    let accepted = input.accepted_evidence_hash();
+    let polarity = input.accepted_goal_polarity();
     let decision = evaluator.evaluate_candidate(&PolicyCandidate::KernelResult(input));
-    Ok((result, decision))
+    let metadata = if decision.class == crate::policy::CandidatePolicyClass::DischargedBuiltin
+        && result.status() == KernelCheckStatus::Accepted
+        && !result.policy_taint()
+        && result.evidence_check_kind()
+            == Some(mizar_kernel::checker::KernelEvidenceCheckKind::ProofObligation)
+        && polarity == Some(AcceptedGoalPolarity::AssertFalseForRefutation)
+    {
+        accepted
+            .zip(handoff.local_evidence_component_hashes().ok())
+            .map(|(accepted, components)| {
+                let [
+                    kernel_profile_fingerprint,
+                    formula_evidence_hash,
+                    substitution_evidence_hash,
+                    provenance_hash,
+                ] = [
+                    ("profile", components[0]),
+                    ("formula", components[1]),
+                    ("substitutions", components[2]),
+                    ("provenance", components[3]),
+                ]
+                .map(|(kind, digest)| ArtifactHashRef {
+                    class: ArtifactHashClass::Interface,
+                    schema_family: format!("mizar-vc/local-evidence-component/{kind}"),
+                    schema_version: SchemaVersion::new(1, 0),
+                    digest,
+                });
+                KernelAcceptanceMetadata {
+                    kernel_profile_fingerprint,
+                    verifier_policy_fingerprint: ArtifactHashRef {
+                        class: ArtifactHashClass::Interface,
+                        schema_family: "mizar-proof/verifier-policy".into(),
+                        schema_version: SchemaVersion::new(policy.schema_version(), 0),
+                        digest: policy.policy_fingerprint().hash(),
+                    },
+                    checker_schema_version: SchemaVersion::new(policy.checker_schema_version(), 0),
+                    evidence_schema_version: SchemaVersion::new(envelope.schema_version(), 0),
+                    target_binding_hash: ArtifactHashRef {
+                        class: ArtifactHashClass::Interface,
+                        schema_family: "mizar-vc/kernel-evidence-handoff-canonical".into(),
+                        schema_version: SchemaVersion::new(1, 0),
+                        digest: handoff.canonical_hash(),
+                    },
+                    formula_evidence_hash,
+                    substitution_evidence_hash,
+                    provenance_hash,
+                    formula_context_hash: None,
+                    accepted_result_hash: ArtifactHashRef {
+                        class: ArtifactHashClass::Interface,
+                        schema_family: "mizar-proof/kernel-accepted-evidence".into(),
+                        schema_version: SchemaVersion::new(1, 0),
+                        digest: accepted,
+                    },
+                }
+            })
+    } else {
+        None
+    };
+    Ok((result, decision, metadata))
 }
 
 fn check_source_kernel_handoff(
