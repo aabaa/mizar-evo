@@ -14247,3 +14247,65 @@ fn source_registration_discharge_check_rejects_foreign_targets_and_distinguishes
         assert!(atp(&source, &nodes, &symbols, snapshot, correctness, (profile, format), &neither).is_err());
     }
 }
+
+#[test]
+fn source_registration_discharge_results_supply_public_trusted_consumers() {
+    use mizar_atp::problem::ConcreteFormat;
+    use mizar_kernel::checker::KernelCheckStatus;
+    use mizar_proof::{policy::{AcceptedGoalPolarity, CandidatePolicyClass, KernelEvidenceOrigin, KernelPolicyInput, VerifierPolicy},
+        selection::{ProofWinnerClass, TrustedKernelEvidence}, status::{TrustedUsedAxiomsRef,
+        check_source_registration_discharge_candidate as check, check_source_registration_candidate as atp}};
+    use mizar_vc::vc_ir::VcStatus;
+    let policy = VerifierPolicy::release();
+    for (multiple, case) in [(false, step5c3_registration_case()), (true, step5c13_registration_case())] {
+        let original = std::fs::read_to_string(case.source_path).unwrap();
+        let renamed = original.replace("marked", "retagged").replace("X", "Value");
+        let false_definitions = original.replace("means X = X", "means not X = X");
+        assert_ne!(false_definitions, original);
+        for (text, negative) in [(&original, false), (&renamed, false), (&false_definitions, true)] {
+            let (source, nodes, symbols) = if multiple { step5c13_registration_inputs(text) }
+                else { step5c3_registration_inputs(text) }.unwrap();
+            let (_, _, vcs) = source_candidate_core_and_vcs(multiple, text);
+            let direct = vcs.vcs().iter().filter(|vc| matches!(vc.status, VcStatus::Discharged { .. })).collect::<Vec<_>>();
+            assert_eq!(direct.len(), if multiple { 3 } else { 1 });
+            for vc in direct {
+                let mut outputs = Vec::new();
+                for snapshot in [super::shared::snapshot_id(0), super::shared::snapshot_id(1)] {
+                    let (result, decision) = check(&source, &nodes, &symbols, snapshot, vc.id, &policy).unwrap();
+                    assert_eq!(result.status(), KernelCheckStatus::Accepted);
+                    let input = KernelPolicyInput::from_kernel_result(&result, KernelEvidenceOrigin::BuiltinDischarge);
+                    let trusted = TrustedKernelEvidence::from_policy_input(&input).unwrap();
+                    let used = TrustedUsedAxiomsRef::from_kernel_result(&result, KernelEvidenceOrigin::BuiltinDischarge).unwrap();
+                    assert_eq!(input.origin(), KernelEvidenceOrigin::BuiltinDischarge);
+                    assert_eq!(decision.class, CandidatePolicyClass::DischargedBuiltin);
+                    assert_eq!(trusted.selected_class(), ProofWinnerClass::DischargedBuiltin);
+                    assert_eq!(input.accepted_evidence_hash(), Some(trusted.accepted_evidence_hash()));
+                    assert_eq!(input.accepted_evidence_hash(), Some(used.accepted_evidence_hash()));
+                    assert_eq!(input.accepted_goal_polarity(), Some(AcceptedGoalPolarity::AssertFalseForRefutation));
+                    assert_eq!(trusted.accepted_goal_polarity(), AcceptedGoalPolarity::AssertFalseForRefutation);
+                    assert!(trusted.trusted_used_axioms_available());
+                    assert_eq!(used.used_axiom_count(), result.used_axioms().len());
+                    assert!(result.used_axioms().is_empty());
+                    outputs.push((result, used));
+                }
+                let [first, second] = outputs.as_slice() else { panic!("two actual snapshots") };
+                assert_ne!(first.0.target_vc_fingerprint(), second.0.target_vc_fingerprint());
+                assert_ne!(first.1.accepted_evidence_hash(), second.1.accepted_evidence_hash());
+                assert_eq!(first.0.used_axioms(), second.0.used_axioms());
+                assert_eq!(first.1.used_axioms_hash(), second.1.used_axioms_hash());
+            }
+            if negative {
+                let correctness = vcs.vcs().iter().find(|vc| vc.status == VcStatus::NeedsAtp).unwrap().id;
+                let format = ConcreteFormat::Tptp;
+                let (result, decision) = atp(&source, &nodes, &symbols, super::shared::snapshot_id(0), correctness,
+                    (source_candidate_profile("source-trusted-consumers", format), format), &policy).unwrap();
+                assert_eq!(result.status(), KernelCheckStatus::Rejected);
+                assert_eq!(decision.class, CandidatePolicyClass::KernelRejected);
+                let input = KernelPolicyInput::from_kernel_result(&result, KernelEvidenceOrigin::AtpFormulaSubstitution);
+                assert_eq!(input.origin(), KernelEvidenceOrigin::AtpFormulaSubstitution);
+                assert!(TrustedKernelEvidence::from_policy_input(&input).is_none());
+                assert!(TrustedUsedAxiomsRef::from_kernel_result(&result, KernelEvidenceOrigin::AtpFormulaSubstitution).is_err());
+            }
+        }
+    }
+}
