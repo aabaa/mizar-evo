@@ -11968,3 +11968,354 @@ fn package_toolchain_native_inputs_retain_association_in_protected_driver_plans(
         );
     }
 }
+
+#[test]
+fn native_source_ir_lifetime_published_owners_roots_and_obsolete_reads() {
+    use mizar_ir::{
+        cache_adapter::{EncodeCacheRecordOutcome, IrCacheAdapter},
+        storage::{CollectInput, CollectionSummary, RetainOwner, StorageError},
+    };
+    for threshold in [usize::MAX, 0] {
+        let fixture = Fixture::new("\u{feff}definition\r\nend;\r\n".as_bytes());
+        let ids = InMemorySessionIdAllocator::new();
+        let snapshots = SnapshotRegistry::new();
+        let (_, submission, owner, _, handle) =
+            native_disk_record_submission(&fixture, &ids, &snapshots, threshold);
+        let (inputs, input) = native_disk_lookup_context(&submission, &ids);
+        let storage = owner.storage();
+        let source = storage.get(&handle).unwrap();
+        let maps = storage.side_tables(&handle).unwrap();
+        let adapter = IrCacheAdapter::new(owner.clone());
+        let policy = mizar_proof::policy::VerifierPolicy::release();
+        assert_eq!(
+            matches!(handle.placement(), StoragePlacement::Blob { .. }),
+            threshold == 0
+        );
+        let readers = [RetainOwner::new("diagnostics"), RetainOwner::new("writer")];
+        for reader in [&readers[0], &readers[0], &readers[1]] {
+            storage.retain(handle.output(), reader.clone()).unwrap();
+        }
+        let collect = CollectInput {
+            snapshot: input.snapshot,
+            protected_outputs: vec![],
+        };
+        let retained = CollectionSummary {
+            retained_outputs: 1,
+            ..CollectionSummary::default()
+        };
+        // The genuine fixture also published one unprotected Frontend output.
+        let first = storage.collect(collect.clone());
+        assert_eq!(first.outputs_dropped, 1);
+        assert_eq!(first.retained_outputs, 1);
+        assert_eq!(first.blobs_dropped, usize::from(threshold == 0));
+        assert_eq!(*storage.get(&handle).unwrap(), *source);
+        assert_eq!(storage.side_tables(&handle).unwrap(), maps);
+        assert_eq!(
+            storage
+                .typed_handle::<SourceUnit>(handle.any(), &OutputKind::new("SourceUnit"))
+                .unwrap(),
+            handle
+        );
+        assert!(matches!(
+            inputs
+                .encode_native_disk_cache_record(&input, &policy, &adapter, handle.clone())
+                .unwrap(),
+            EncodeCacheRecordOutcome::Encoded(_)
+        ));
+        assert!(storage.release(handle.output(), &readers[0]).unwrap());
+        assert!(!storage.release(handle.output(), &readers[0]).unwrap());
+        assert_eq!(storage.collect(collect.clone()), retained);
+        owner.mark_obsolete(input.snapshot).unwrap();
+        assert_eq!(storage.collect(collect.clone()), retained);
+        assert_eq!(*storage.get(&handle).unwrap(), *source);
+        assert_eq!(storage.side_tables(&handle).unwrap(), maps);
+        assert!(
+            inputs
+                .encode_native_disk_cache_record(&input, &policy, &adapter, handle.clone())
+                .is_err()
+        );
+        assert!(
+            SealedParentOutputHandle::from_current_output(&owner, input.snapshot, handle.erase())
+                .is_err()
+        );
+        assert!(storage.release(handle.output(), &readers[1]).unwrap());
+        let protected = storage.collect(CollectInput {
+            protected_outputs: vec![handle.output()],
+            ..collect.clone()
+        });
+        assert_eq!(
+            protected,
+            CollectionSummary {
+                protected_outputs: 1,
+                ..CollectionSummary::default()
+            }
+        );
+        assert_eq!(*storage.get(&handle).unwrap(), *source);
+        assert_eq!(storage.side_tables(&handle).unwrap(), maps);
+        assert_eq!(
+            storage.collect(collect.clone()),
+            CollectionSummary {
+                outputs_dropped: 1,
+                blobs_dropped: usize::from(threshold == 0),
+                ..CollectionSummary::default()
+            }
+        );
+        assert!(matches!(
+            storage.get(&handle),
+            Err(StorageError::CollectedOutput { output }) if output == handle.output()
+        ));
+        assert!(matches!(
+            storage.side_tables(&handle),
+            Err(StorageError::CollectedOutput { output }) if output == handle.output()
+        ));
+        assert_eq!(storage.collect(collect), CollectionSummary::default());
+    }
+}
+
+#[test]
+fn native_source_ir_lifetime_reconstructed_owners_keep_real_frontend_inputs() {
+    use mizar_cache::cache_store::{CacheInsertOutcome, CacheStoreRoot};
+    use mizar_ir::{
+        cache_adapter::{CacheRehydrateOutcome, EncodeCacheRecordOutcome, IrCacheAdapter},
+        storage::{CollectInput, CollectionSummary, RetainOwner, StorageError},
+    };
+    for threshold in [usize::MAX, 0] {
+        let fixtures = [
+            Fixture::new("\u{feff}definition\r\nend;\r\n".as_bytes()),
+            Fixture::new("\u{feff}definition\r\nend;\r\n".as_bytes()),
+        ];
+        let ids = InMemorySessionIdAllocator::new();
+        let old_snapshots = SnapshotRegistry::new();
+        let source_ids = InMemorySessionIdAllocator::new();
+        source_ids.next_source_id(snapshot_id(0x62)).unwrap();
+        let current_snapshots = SnapshotRegistry::with_allocator(source_ids);
+        let (_, old_submission, old_owner, _, old_handle) =
+            native_disk_record_submission(&fixtures[0], &ids, &old_snapshots, threshold);
+        let (driver, submission, owner, _, clean_source) =
+            native_disk_record_submission(&fixtures[1], &ids, &current_snapshots, threshold);
+        let (old_inputs, old_input) = native_disk_lookup_context(&old_submission, &ids);
+        let (inputs, input) = native_disk_lookup_context(&submission, &ids);
+        let policy = mizar_proof::policy::VerifierPolicy::release();
+        let EncodeCacheRecordOutcome::Encoded(record) = old_inputs
+            .encode_native_disk_cache_record(
+                &old_input,
+                &policy,
+                &IrCacheAdapter::new(old_owner.clone()),
+                old_handle,
+            )
+            .unwrap()
+        else {
+            panic!("genuine native producer");
+        };
+        assert_ne!(old_input.snapshot, input.snapshot);
+        let store = CacheStoreRoot::new(fixtures[1].root.join("cache"));
+        assert_eq!(store.insert(&record).unwrap(), CacheInsertOutcome::Inserted);
+        let target = publisher(input.snapshot, threshold, &input.work_unit);
+        let adapter = IrCacheAdapter::new(target.clone());
+        let CacheRehydrateOutcome::Rehydrated(handle) = inputs
+            .rehydrate_native_disk_cache(&input, &policy, &store, &adapter)
+            .unwrap()
+        else {
+            panic!("current native reconstruction");
+        };
+        let handle = *handle;
+        assert_eq!(handle.snapshot(), input.snapshot);
+        assert_eq!(handle.placement(), clean_source.placement());
+        let clean = submission
+            .scheduler_run
+            .as_ref()
+            .unwrap()
+            .phase_results
+            .values()
+            .flatten()
+            .find(|result| {
+                result
+                    .output_refs
+                    .iter()
+                    .any(|output| output.output_kind() == &OutputKind::new("FrontendOutput"))
+            })
+            .unwrap();
+        let clean_handle = owner
+            .storage()
+            .typed_handle::<FrontendOutput<<MizarParserSeam as ParserSeam>::Ast>>(
+                &clean.output_refs[0],
+                &OutputKind::new("FrontendOutput"),
+            )
+            .unwrap();
+        assert_eq!(
+            owner.storage().collect(CollectInput {
+                snapshot: input.snapshot,
+                protected_outputs: vec![clean_source.output(), clean_handle.output()],
+            }),
+            CollectionSummary {
+                protected_outputs: 2,
+                ..CollectionSummary::default()
+            }
+        );
+        let storage = target.storage();
+        let readers = [RetainOwner::new("frontend"), RetainOwner::new("observer")];
+        for reader in [&readers[0], &readers[0], &readers[1]] {
+            storage.retain(handle.output(), reader.clone()).unwrap();
+        }
+        let collect = CollectInput {
+            snapshot: input.snapshot,
+            protected_outputs: vec![],
+        };
+        let retained = CollectionSummary {
+            retained_outputs: 1,
+            ..CollectionSummary::default()
+        };
+        assert_eq!(storage.collect(collect.clone()), retained);
+        assert!(storage.release(handle.output(), &readers[0]).unwrap());
+        assert!(!storage.release(handle.output(), &readers[0]).unwrap());
+        assert_eq!(storage.collect(collect.clone()), retained);
+        assert_eq!(
+            *storage.get(&handle).unwrap(),
+            *owner.storage().get(&clean_source).unwrap()
+        );
+        assert_eq!(
+            storage.side_tables(&handle).unwrap(),
+            owner.storage().side_tables(&clean_source).unwrap()
+        );
+        assert_eq!(
+            storage
+                .typed_handle::<SourceUnit>(handle.any(), &OutputKind::new("SourceUnit"))
+                .unwrap(),
+            handle
+        );
+        assert!(matches!(
+            inputs
+                .encode_native_disk_cache_record(&input, &policy, &adapter, handle.clone())
+                .unwrap(),
+            EncodeCacheRecordOutcome::Encoded(_)
+        ));
+        let frontend_input = PhaseInput::new(
+            input.work_unit.clone(),
+            PhaseDispatchInputBundle::new(
+                input.snapshot,
+                input.identities().input_hash(),
+                vec![],
+                vec![
+                    SealedParentOutputHandle::from_current_output(
+                        &target,
+                        input.snapshot,
+                        handle.erase(),
+                    )
+                    .unwrap(),
+                ],
+            )
+            .unwrap(),
+        );
+        allow_frontend(&target, &input.work_unit);
+        let replay = driver
+            .registry()
+            .execute_phase_with_resources(
+                PipelinePhase::Frontend,
+                frontend_input,
+                PhaseExecutionResources {
+                    diagnostics: Some(DiagnosticSink::new(DiagnosticProducerScope::new(
+                        DiagnosticPhase::Frontend,
+                        input.snapshot,
+                        "frontend.run_loaded",
+                    ))),
+                    output_publisher: Some(target.clone()),
+                    source_load: Some(inputs),
+                    ..PhaseExecutionResources::default()
+                },
+            )
+            .unwrap()
+            .result;
+        assert_eq!(replay.status, PhaseStatus::Complete);
+        assert_eq!(replay.diagnostics, clean.diagnostics);
+        let replay_handle = storage
+            .typed_handle::<FrontendOutput<<MizarParserSeam as ParserSeam>::Ast>>(
+                &replay.output_refs[0],
+                &OutputKind::new("FrontendOutput"),
+            )
+            .unwrap();
+        assert_eq!(
+            *storage.get(&replay_handle).unwrap(),
+            *owner.storage().get(&clean_handle).unwrap()
+        );
+        assert_eq!(
+            storage.side_tables(&replay_handle).unwrap(),
+            owner.storage().side_tables(&clean_handle).unwrap()
+        );
+        assert_eq!(replay_handle.lineage().parents, vec![handle.output()]);
+        assert_eq!(
+            submission.status,
+            DriverSubmissionStatus::BlockedByMissingPhaseServices
+        );
+        for phase in [PipelinePhase::SourceLoad, PipelinePhase::Frontend] {
+            assert!(matches!(
+                driver
+                    .registry()
+                    .cache_key_for_phase(phase, &input)
+                    .unwrap()
+                    .intent,
+                PhaseCacheIntent::NoKey { .. }
+            ));
+        }
+        assert!(storage.release(handle.output(), &readers[1]).unwrap());
+        let rooted = CollectInput {
+            protected_outputs: vec![handle.output(), replay_handle.output()],
+            ..collect.clone()
+        };
+        let protected = CollectionSummary {
+            protected_outputs: 2,
+            ..CollectionSummary::default()
+        };
+        assert_eq!(storage.collect(rooted.clone()), protected);
+        assert_eq!(storage.collect(rooted), protected);
+        assert_eq!(
+            *storage.get(&handle).unwrap(),
+            *owner.storage().get(&clean_source).unwrap()
+        );
+        assert_eq!(
+            storage.side_tables(&handle).unwrap(),
+            owner.storage().side_tables(&clean_source).unwrap()
+        );
+        // A rooted child does not implicitly retain its lineage parent.
+        assert_eq!(
+            storage.collect(CollectInput {
+                protected_outputs: vec![replay_handle.output()],
+                ..collect.clone()
+            }),
+            CollectionSummary {
+                outputs_dropped: 1,
+                blobs_dropped: usize::from(threshold == 0),
+                protected_outputs: 1,
+                ..CollectionSummary::default()
+            }
+        );
+        assert!(
+            matches!(storage.get(&handle), Err(StorageError::CollectedOutput { output }) if output == handle.output())
+        );
+        assert!(
+            matches!(storage.side_tables(&handle), Err(StorageError::CollectedOutput { output }) if output == handle.output())
+        );
+        assert!(
+            target
+                .validate_current_output(input.snapshot, handle.any())
+                .is_ok()
+        );
+        assert!(
+            inputs
+                .encode_native_disk_cache_record(&input, &policy, &adapter, handle.clone())
+                .is_err()
+        );
+        assert!(
+            SealedParentOutputHandle::from_current_output(&target, input.snapshot, handle.erase())
+                .is_err()
+        );
+        assert_eq!(
+            storage.collect(collect.clone()),
+            CollectionSummary {
+                outputs_dropped: 1,
+                blobs_dropped: usize::from(threshold == 0),
+                ..CollectionSummary::default()
+            }
+        );
+        assert_eq!(storage.collect(collect), CollectionSummary::default());
+    }
+}
