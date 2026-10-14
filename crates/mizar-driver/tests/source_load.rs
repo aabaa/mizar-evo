@@ -8503,3 +8503,502 @@ fn native_disk_cache_request_rejects_unbound_dispatch_capture_roots_and_policy_m
         );
     }
 }
+
+fn native_disk_record_submission(
+    fixture: &Fixture,
+    ids: &InMemorySessionIdAllocator,
+    snapshots: &SnapshotRegistry<InMemorySessionIdAllocator>,
+    threshold: usize,
+) -> (
+    CompilerDriver,
+    mizar_driver::driver::BuildSubmission,
+    std::sync::Arc<PhaseOutputPublisher>,
+    SourceInput,
+    mizar_ir::storage::PhaseOutputRef<SourceUnit>,
+) {
+    let (mut draft, input) = fixture.submit_request(vec![], vec![]);
+    draft.source_inputs.versions.clear();
+    let descriptor = SourceInput {
+        package_id: fixture.version.package_id.clone(),
+        module_path: fixture.version.module_path.clone(),
+        normalized_path: fixture.version.normalized_path.clone(),
+        edition: fixture.version.edition.clone(),
+        origin: SourceOriginInput::Disk {
+            path: "src/main.miz".into(),
+        },
+    };
+    let session = draft
+        .capture_sources(
+            ids,
+            snapshots,
+            vec![(
+                DiskSourceLoader::new(fixture.root.join("alpha")),
+                descriptor.clone(),
+            )],
+        )
+        .unwrap();
+    let version = session.captured().snapshot().source_versions[0].clone();
+    let snapshot = session.captured().snapshot().id;
+    let unit = WorkUnit::Module {
+        module: mizar_build::module_index::ModuleId::new(
+            version.package_id.clone(),
+            version.module_path.clone(),
+        ),
+    };
+    let owner = publisher(snapshot, threshold, &unit);
+    allow_frontend(&owner, &unit);
+    let mut builder = PhaseRegistryBuilder::new();
+    builder.register_source_load();
+    builder.register_frontend(vec![]);
+    let mut driver =
+        CompilerDriver::new(builder.build().unwrap()).with_output_publisher(owner.clone());
+    fs::remove_file(fixture.root.join("alpha/src/main.miz")).unwrap();
+    let submission = driver
+        .submit_captured(session, ids, snapshots, input)
+        .unwrap();
+    let result = submission
+        .scheduler_run
+        .as_ref()
+        .unwrap()
+        .phase_results
+        .values()
+        .flatten()
+        .find(|result| {
+            result
+                .output_refs
+                .iter()
+                .any(|handle| handle.output_kind() == &OutputKind::new("SourceUnit"))
+        })
+        .unwrap();
+    assert_eq!(result.status, PhaseStatus::Complete);
+    let handle = owner
+        .storage()
+        .typed_handle::<SourceUnit>(&result.output_refs[0], &OutputKind::new("SourceUnit"))
+        .unwrap();
+    (driver, submission, owner, descriptor, handle)
+}
+
+#[test]
+fn native_disk_cache_record_resident_round_trips_real_store_with_owner_bytes() {
+    use mizar_cache::{
+        cache_key::{CacheKeyBuildOutcome, CacheKeyBuilder},
+        cache_store::{CacheInsertOutcome, CacheLookupOutcome, CacheStoreRoot},
+    };
+    use mizar_ir::cache_adapter::{
+        CacheAdapterCacheability, EncodeCacheRecordInput, EncodeCacheRecordOutcome,
+    };
+    let fixture = Fixture::new("\u{feff}definition\r\nend;\r\n".as_bytes());
+    let ids = InMemorySessionIdAllocator::new();
+    let snapshots = SnapshotRegistry::new();
+    let (driver, submission, owner, descriptor, handle) =
+        native_disk_record_submission(&fixture, &ids, &snapshots, usize::MAX);
+    let captured = submission.session.captured();
+    let version = captured.snapshot().source_versions[0].clone();
+    let snapshot = captured.snapshot().id;
+    let unit = WorkUnit::Module {
+        module: mizar_build::module_index::ModuleId::new(
+            version.package_id.clone(),
+            version.module_path.clone(),
+        ),
+    };
+    let phase_input = PhaseInput::new(
+        unit.clone(),
+        PhaseDispatchInputBundle::without_parent_outputs(snapshot, source_key(&version), vec![]),
+    );
+    let inputs = SourceLoadInputs {
+        snapshot: captured.snapshot(),
+        captured: Some(captured),
+        build_plan: submission.build_plan.as_ref().unwrap(),
+        module_index: submission.module_index.as_ref().unwrap(),
+        allocator: &ids,
+    };
+    let source = owner.storage().get(&handle).unwrap();
+    let adapter = mizar_ir::cache_adapter::IrCacheAdapter::new(owner.clone());
+    let policy = mizar_proof::policy::VerifierPolicy::release();
+
+    assert_eq!(handle.any().placement(), &StoragePlacement::Resident);
+    assert_eq!(
+        source.line_map,
+        LineMap::new(source.source_id, "definition\nend;\n")
+    );
+    assert_eq!(source.loading_map, fixture.loading_map);
+    assert_eq!(source.source_id, version.source_id);
+    let request = inputs
+        .prepare_native_disk_cache_request(&phase_input, &policy)
+        .unwrap();
+    let CacheKeyBuildOutcome::Cacheable(key) = CacheKeyBuilder::new(request.clone()).build() else {
+        panic!("genuine source-only key");
+    };
+    let EncodeCacheRecordOutcome::Encoded(record) = inputs
+        .encode_native_disk_cache_record(&phase_input, &policy, &adapter, handle.clone())
+        .unwrap()
+    else {
+        panic!("bound resident encoding");
+    };
+    let disk = source.canonical_disk_bytes().unwrap();
+    assert_eq!(
+        SourceUnit::from_canonical_storage_bytes(&disk, version.source_id, &descriptor).unwrap(),
+        *source
+    );
+    let expected = adapter.encode(EncodeCacheRecordInput {
+        handle: handle.clone(),
+        cache_key: key.clone(),
+        produced_by: request.validation_inputs.toolchain_compatibility.clone(),
+        canonical_payload: SourceUnitCacheKey::from_source(&source)
+            .stable_hash()
+            .as_bytes()
+            .to_vec(),
+        storage_payload: disk,
+        cacheability: CacheAdapterCacheability::Cacheable,
+    });
+    assert_eq!(EncodeCacheRecordOutcome::Encoded(record.clone()), expected);
+    assert_eq!(record.header.key, key);
+    assert_eq!(
+        record.header.produced_by,
+        request.validation_inputs.toolchain_compatibility
+    );
+    assert!(!record.header.uncacheable);
+    let store = CacheStoreRoot::new(fixture.root.join("cache"));
+    assert!(matches!(store.lookup(&key), CacheLookupOutcome::Miss(_)));
+    assert_eq!(store.insert(&record).unwrap(), CacheInsertOutcome::Inserted);
+    let CacheLookupOutcome::Hit(readback) = store.lookup(&key) else {
+        panic!("actual stored hit");
+    };
+    assert_eq!(readback, record);
+    assert_eq!(
+        store.insert(&readback).unwrap(),
+        CacheInsertOutcome::AlreadyPresent
+    );
+    for (phase, reason) in [
+        (
+            PipelinePhase::SourceLoad,
+            "current disk source maps require a real source load",
+        ),
+        (
+            PipelinePhase::Frontend,
+            "frontend inputs require a live source and dependency run",
+        ),
+    ] {
+        assert_eq!(
+            driver
+                .registry()
+                .cache_key_for_phase(phase, &phase_input)
+                .unwrap()
+                .intent,
+            PhaseCacheIntent::NoKey {
+                reason: reason.into()
+            }
+        );
+    }
+}
+
+#[test]
+fn native_disk_cache_record_blob_replay_relocates_ids_and_separates_raw_maps() {
+    use mizar_ir::cache_adapter::EncodeCacheRecordOutcome;
+    let mut formats = Vec::new();
+    for raw in ["\u{feff}definition\r\nend;\r\n", "definition\nend;\n"] {
+        let mut replays = Vec::new();
+        for replay in 0..2 {
+            let fixture = Fixture::new(raw.as_bytes());
+            let ids = InMemorySessionIdAllocator::new();
+            let source_ids = InMemorySessionIdAllocator::new();
+            for _ in 0..replay {
+                source_ids.next_source_id(snapshot_id(0x62)).unwrap();
+            }
+            let snapshots = SnapshotRegistry::with_allocator(source_ids);
+            let (_driver, submission, owner, descriptor, handle) =
+                native_disk_record_submission(&fixture, &ids, &snapshots, 0);
+            let captured = submission.session.captured();
+            let version = captured.snapshot().source_versions[0].clone();
+            let snapshot = captured.snapshot().id;
+            let unit = WorkUnit::Module {
+                module: mizar_build::module_index::ModuleId::new(
+                    version.package_id.clone(),
+                    version.module_path.clone(),
+                ),
+            };
+            let phase_input = PhaseInput::new(
+                unit.clone(),
+                PhaseDispatchInputBundle::without_parent_outputs(
+                    snapshot,
+                    source_key(&version),
+                    vec![],
+                ),
+            );
+            let inputs = SourceLoadInputs {
+                snapshot: captured.snapshot(),
+                captured: Some(captured),
+                build_plan: submission.build_plan.as_ref().unwrap(),
+                module_index: submission.module_index.as_ref().unwrap(),
+                allocator: &ids,
+            };
+            let source = owner.storage().get(&handle).unwrap();
+            let adapter = mizar_ir::cache_adapter::IrCacheAdapter::new(owner.clone());
+            let policy = mizar_proof::policy::VerifierPolicy::release();
+            assert!(matches!(
+                handle.any().placement(),
+                StoragePlacement::Blob { .. }
+            ));
+            assert_eq!(
+                source.line_map,
+                LineMap::new(source.source_id, "definition\nend;\n")
+            );
+            assert_eq!(
+                source.loading_map,
+                fixture
+                    .loading_map
+                    .as_ref()
+                    .map(|expected_map| LoadingMap::new(
+                        source.source_id,
+                        "definition\nend;\n",
+                        expected_map.origin.clone(),
+                        expected_map.segments.clone()
+                    ))
+            );
+            let disk = source.canonical_disk_bytes().unwrap();
+            let relocated = SourceUnit::from_canonical_storage_bytes(
+                &disk,
+                fixture.version.source_id,
+                &descriptor,
+            )
+            .unwrap();
+            assert!(source.matches_canonical_storage(&relocated, &descriptor));
+            let EncodeCacheRecordOutcome::Encoded(record) = inputs
+                .encode_native_disk_cache_record(&phase_input, &policy, &adapter, handle.clone())
+                .unwrap()
+            else {
+                panic!("bound blob encoding");
+            };
+            replays.push((
+                record,
+                source.source_id,
+                source.source_hash,
+                disk,
+                owner.storage().side_tables(&handle).unwrap(),
+            ));
+        }
+        assert_eq!(replays[0].0, replays[1].0);
+        assert_ne!(replays[0].1, replays[1].1);
+        assert_eq!(replays[0].3, replays[1].3);
+        formats.push(replays.remove(0));
+    }
+    assert_eq!(formats[0].2, formats[1].2);
+    assert_eq!(
+        formats[0].0.header.key.source_identity,
+        formats[1].0.header.key.source_identity
+    );
+    assert_ne!(formats[0].3, formats[1].3);
+    assert_ne!(formats[0].4.source_maps, formats[1].4.source_maps);
+    assert_ne!(
+        formats[0].0.header.key.final_hash,
+        formats[1].0.header.key.final_hash
+    );
+    assert_ne!(formats[0].0.output, formats[1].0.output);
+}
+
+#[test]
+fn native_disk_cache_record_rejects_physical_current_capture_and_output_bindings() {
+    use mizar_ir::{
+        cache_adapter::{EncodeCacheRecordOutcome, IrCacheAdapter},
+        storage::CollectInput,
+    };
+    let fixture = Fixture::new(b"definition\nend;\n");
+    let ids = InMemorySessionIdAllocator::new();
+    let snapshots = SnapshotRegistry::new();
+    let (_driver, submission, owner, _descriptor, handle) =
+        native_disk_record_submission(&fixture, &ids, &snapshots, usize::MAX);
+    let captured = submission.session.captured();
+    let version = captured.snapshot().source_versions[0].clone();
+    let snapshot = captured.snapshot().id;
+    let unit = WorkUnit::Module {
+        module: mizar_build::module_index::ModuleId::new(
+            version.package_id.clone(),
+            version.module_path.clone(),
+        ),
+    };
+    let phase_input = PhaseInput::new(
+        unit.clone(),
+        PhaseDispatchInputBundle::without_parent_outputs(snapshot, source_key(&version), vec![]),
+    );
+    let inputs = SourceLoadInputs {
+        snapshot: captured.snapshot(),
+        captured: Some(captured),
+        build_plan: submission.build_plan.as_ref().unwrap(),
+        module_index: submission.module_index.as_ref().unwrap(),
+        allocator: &ids,
+    };
+    let source = owner.storage().get(&handle).unwrap();
+    let adapter = mizar_ir::cache_adapter::IrCacheAdapter::new(owner.clone());
+    let policy = mizar_proof::policy::VerifierPolicy::release();
+
+    assert!(matches!(
+        inputs
+            .encode_native_disk_cache_record(&phase_input, &policy, &adapter, handle.clone())
+            .unwrap(),
+        EncodeCacheRecordOutcome::Encoded(_)
+    ));
+    assert!(
+        SourceLoadInputs {
+            captured: None,
+            ..inputs
+        }
+        .encode_native_disk_cache_record(&phase_input, &policy, &adapter, handle.clone())
+        .is_err()
+    );
+    let foreign = IrCacheAdapter::new(publisher(snapshot, usize::MAX, &unit));
+    assert!(
+        inputs
+            .encode_native_disk_cache_record(&phase_input, &policy, &foreign, handle.clone())
+            .is_err()
+    );
+    let unpublished = IrCacheAdapter::new(std::sync::Arc::new(PhaseOutputPublisher::new(
+        owner.storage().clone(),
+        owner.registry().clone(),
+    )));
+    unpublished.publisher().register_current_snapshot(snapshot);
+    assert!(
+        inputs
+            .encode_native_disk_cache_record(&phase_input, &policy, &unpublished, handle.clone())
+            .is_err()
+    );
+    for (raw, relocate) in [
+        ("definition\nend;\n", true),
+        ("\u{feff}definition\r\nend;\r\n", false),
+    ] {
+        fixture.write(raw.as_bytes());
+        let other_ids = InMemorySessionIdAllocator::new();
+        let source_ids = InMemorySessionIdAllocator::new();
+        if relocate {
+            source_ids.next_source_id(snapshot_id(0x62)).unwrap();
+        }
+        let other_snapshots = SnapshotRegistry::with_allocator(source_ids);
+        let (_, other_submission, other_owner, _, other_handle) =
+            native_disk_record_submission(&fixture, &other_ids, &other_snapshots, usize::MAX);
+        let other_capture = other_submission.session.captured();
+        assert_eq!(other_capture.snapshot().id, snapshot);
+        let other_source = other_owner.storage().get(&other_handle).unwrap();
+        assert_eq!(other_source.source_hash, source.source_hash);
+        if relocate {
+            assert_ne!(other_source.source_id, source.source_id);
+            assert_eq!(
+                other_source.canonical_disk_bytes(),
+                source.canonical_disk_bytes()
+            );
+        } else {
+            assert_eq!(other_source.source_id, source.source_id);
+            assert_ne!(
+                other_source.canonical_disk_bytes(),
+                source.canonical_disk_bytes()
+            );
+        }
+        assert!(
+            other_owner
+                .validate_current_output(snapshot, other_handle.any())
+                .is_ok()
+        );
+        assert!(
+            other_owner
+                .storage()
+                .validate_handle(other_handle.any())
+                .is_ok()
+        );
+        let other_adapter = IrCacheAdapter::new(other_owner);
+        assert!(
+            inputs
+                .encode_native_disk_cache_record(
+                    &phase_input,
+                    &policy,
+                    &other_adapter,
+                    other_handle
+                )
+                .is_err()
+        );
+    }
+    let wrong_dispatch = PhaseInput::new(
+        unit,
+        PhaseDispatchInputBundle::without_parent_outputs(snapshot, hash(9), vec![]),
+    );
+    assert!(
+        inputs
+            .encode_native_disk_cache_record(&wrong_dispatch, &policy, &adapter, handle.clone())
+            .is_err()
+    );
+    owner.mark_obsolete(snapshot).unwrap();
+    assert!(owner.storage().validate_handle(handle.any()).is_ok());
+    assert!(
+        inputs
+            .encode_native_disk_cache_record(&phase_input, &policy, &adapter, handle.clone())
+            .is_err()
+    );
+
+    fixture.write(b"definition\nend;\n");
+    let collected_ids = InMemorySessionIdAllocator::new();
+    let collected_snapshots = SnapshotRegistry::new();
+    let (_, collected_submission, collected_owner, _, collected_handle) =
+        native_disk_record_submission(&fixture, &collected_ids, &collected_snapshots, usize::MAX);
+    let collected_capture = collected_submission.session.captured();
+    let collected_snapshot = collected_capture.snapshot();
+    let collected_input = PhaseInput::new(
+        phase_input.work_unit.clone(),
+        PhaseDispatchInputBundle::without_parent_outputs(
+            collected_snapshot.id,
+            source_key(&collected_snapshot.source_versions[0]),
+            vec![],
+        ),
+    );
+    let collected_inputs = SourceLoadInputs {
+        snapshot: collected_snapshot,
+        captured: Some(collected_capture),
+        build_plan: collected_submission.build_plan.as_ref().unwrap(),
+        module_index: collected_submission.module_index.as_ref().unwrap(),
+        allocator: &collected_ids,
+    };
+    let collected_adapter = IrCacheAdapter::new(collected_owner.clone());
+    assert!(matches!(
+        collected_inputs
+            .encode_native_disk_cache_record(
+                &collected_input,
+                &policy,
+                &collected_adapter,
+                collected_handle.clone()
+            )
+            .unwrap(),
+        EncodeCacheRecordOutcome::Encoded(_)
+    ));
+    assert!(
+        collected_owner
+            .validate_current_output(collected_snapshot.id, collected_handle.any())
+            .is_ok()
+    );
+    assert!(
+        collected_owner
+            .storage()
+            .collect(CollectInput {
+                snapshot: collected_snapshot.id,
+                protected_outputs: vec![]
+            })
+            .outputs_dropped
+            > 0
+    );
+    assert!(
+        collected_owner
+            .validate_current_output(collected_snapshot.id, collected_handle.any())
+            .is_ok()
+    );
+    assert!(
+        collected_owner
+            .storage()
+            .validate_handle(collected_handle.any())
+            .is_err()
+    );
+    assert!(
+        collected_inputs
+            .encode_native_disk_cache_record(
+                &collected_input,
+                &policy,
+                &collected_adapter,
+                collected_handle
+            )
+            .is_err()
+    );
+}

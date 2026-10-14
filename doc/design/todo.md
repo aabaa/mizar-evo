@@ -685,11 +685,13 @@ execution remains excluded and parked.
 
 The real uncached SourceLoad/Frontend edit/rebuild comparison is implemented.
 Native editor [storage codecs](./mizar-frontend/en/source.md#canonical-openbuffer-payload) and [captured Driver service handoffs](./mizar-driver/en/request.md#native-source-capture) are implemented.
-[Current acquired storage comparison](./task_contracts/en/SOURCE-CURRENT-STORAGE-BINDING.md) is a bounded retained-payload prerequisite; genuine cache producers remain pending. [Native Disk request preparation](./task_contracts/en/DRIVER-NATIVE-DISK-CACHE-REQUEST.md) precedes real lookup/retained scheduling.
+[Current acquired storage comparison](./task_contracts/en/SOURCE-CURRENT-STORAGE-BINDING.md) is a bounded retained-payload prerequisite. [Native Disk request preparation](./task_contracts/en/DRIVER-NATIVE-DISK-CACHE-REQUEST.md) precedes real lookup/retained scheduling.
+[Bound native Disk record encoding](./task_contracts/en/DRIVER-NATIVE-DISK-CACHE-ENCODE.md) is implemented for sealed SourceLoad outputs.
 Their LSP build bridge and current diagnostic publication remain Step 8 prerequisites.
 Step 7's [instance-finder design](./task_contracts/en/ATPK-INSTANCE-FINDER.md) follows its existing producer dependencies.
-Cache-hit coverage waits for genuine cache producers; later semantic/proof
-services and full artifact emission remain dependency-blocked.
+Cache-hit equivalence waits for current SourceLoad rehydration and retained
+scheduler handoffs; Frontend cache producers, later semantic/proof services
+and full artifact emission remain dependency-blocked.
 Pre-audit 5B.3 and Gate S1 block only consumers requiring their outputs.
 
 1. [~] Real phase services and producer publication, preserving IV-007

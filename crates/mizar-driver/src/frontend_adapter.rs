@@ -223,6 +223,102 @@ impl<'a> crate::registry::SourceLoadInputs<'a> {
         })
     }
 
+    /// Encodes a current SourceLoad output bound to protected native Disk capture.
+    pub fn encode_native_disk_cache_record(
+        self,
+        input: &PhaseInput,
+        policy: &mizar_proof::policy::VerifierPolicy,
+        adapter: &mizar_ir::cache_adapter::IrCacheAdapter,
+        handle: mizar_ir::storage::PhaseOutputRef<SourceUnit>,
+    ) -> Result<mizar_ir::cache_adapter::EncodeCacheRecordOutcome, String> {
+        use mizar_cache::cache_key::{CacheKeyBuildOutcome, CacheKeyBuilder};
+        use mizar_ir::cache_adapter::{CacheAdapterCacheability, EncodeCacheRecordInput};
+
+        let request = self.prepare_native_disk_cache_request(input, policy)?;
+        let key = match CacheKeyBuilder::new(request.clone()).build() {
+            CacheKeyBuildOutcome::Cacheable(key) => key,
+            _ => return Err("native Disk encoding requires a cacheable key".to_owned()),
+        };
+        let publisher = adapter.publisher();
+        let storage = publisher.storage();
+        storage
+            .validate_handle(handle.any())
+            .map_err(|error| error.to_string())?;
+        publisher
+            .validate_current_output(input.snapshot, handle.any())
+            .map_err(|error| error.to_string())?;
+        if handle.phase().as_str() != request.phase.as_str()
+            || handle.work_unit().as_str() != request.work_unit.as_str()
+            || handle.output_kind() != &OutputKind::new("SourceUnit")
+            || handle.schema_version() != SchemaVersion::new(1)
+        {
+            return Err("native Disk encoding output binding mismatch".to_owned());
+        }
+        let lineage = publisher
+            .registry()
+            .output_lineage(handle.output())
+            .ok_or_else(|| "native Disk encoding requires output lineage".to_owned())?;
+        if !lineage.parents.is_empty()
+            || lineage.named_input_hashes
+                != vec![NamedInputHash {
+                    name: "source".to_owned(),
+                    domain: SOURCE_UNIT_CACHE_KEY_VERSION.to_owned(),
+                    digest: input.identities().input_hash(),
+                }]
+        {
+            return Err("native Disk encoding lineage mismatch".to_owned());
+        }
+        let WorkUnit::Module { module } = &input.work_unit else {
+            return Err("native Disk encoding requires a module".to_owned());
+        };
+        let version = unique(self.snapshot.source_versions.iter().filter(|version| {
+            version.package_id == module.package && version.module_path == module.path
+        }))
+        .ok_or_else(|| "native Disk encoding requires one captured source version".to_owned())?;
+        let (source, source_input) = self
+            .native_source(version)
+            .ok_or_else(|| "native Disk encoding capture binding failed".to_owned())?;
+        let payload = storage.get(&handle).map_err(|error| error.to_string())?;
+        if payload.source_id != version.source_id
+            || !payload.matches_canonical_storage(&source, &source_input)
+        {
+            return Err("native Disk encoding source storage mismatch".to_owned());
+        }
+        let storage_input = unique(
+            request
+                .input_hashes
+                .iter()
+                .filter(|entry| entry.name == "source-storage"),
+        )
+        .ok_or_else(|| "native Disk encoding requires source storage identity".to_owned())?;
+        let side_tables = storage
+            .side_tables(&handle)
+            .map_err(|error| error.to_string())?;
+        if *side_tables
+            != (IrSideTables {
+                source_maps: vec![SideTableRecord::new(
+                    "source-storage",
+                    source.normalized_path.as_str(),
+                    storage_input.digest,
+                )],
+                ..IrSideTables::default()
+            })
+        {
+            return Err("native Disk encoding side tables mismatch".to_owned());
+        }
+        let storage_payload = payload
+            .canonical_disk_bytes()
+            .ok_or_else(|| "native Disk encoding storage is unsupported".to_owned())?;
+        Ok(adapter.encode(EncodeCacheRecordInput {
+            handle,
+            cache_key: key,
+            produced_by: request.validation_inputs.toolchain_compatibility,
+            canonical_payload: source_input_hash(version).as_bytes().to_vec(),
+            storage_payload,
+            cacheability: CacheAdapterCacheability::Cacheable,
+        }))
+    }
+
     fn native_source(
         self,
         version: &mizar_session::SourceVersion,
