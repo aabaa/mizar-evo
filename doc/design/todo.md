@@ -749,7 +749,8 @@ permit; each source-integration slice waits for its actual upstream outputs.
    (Proof 23 / Artifact 25). ATP acceptance follows item 1; built-in acceptance
    follows item 2. Each witness requires a matching accepted result; distinct
    built-in witness support belongs to Artifact 25, full emission to Step 6 item 3.
-   [Fresh source candidate checking](./task_contracts/en/PROOF-SOURCE-CANDIDATE-CHECK.md) is a bounded classification prerequisite; selection/publication remain open.
+   [Fresh source candidate checking](./task_contracts/en/PROOF-SOURCE-CANDIDATE-CHECK.md) is a bounded classification prerequisite; general acceptance/publication remain open.
+   [Fresh source-bound selection](./task_contracts/en/PROOF-SOURCE-CANDIDATE-SELECTION.md) is implemented for genuine candidate/check outputs; witness/Artifact publication remains pending.
 4. [ ] Proof cache/witness handoffs: Proof reuse metadata into Cache
    validation (IV-005, fail-closed IV-002). Source-derived trusted reuse follows
    the corresponding accepted producer outputs; internal seams remain separate.

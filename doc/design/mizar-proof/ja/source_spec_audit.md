@@ -62,7 +62,8 @@ task 15 は未 exercise だった 3 つの validation path に focused unit cove
 
 | Public API group | Spec coverage | Test coverage | Result |
 |---|---|---|---|
-| `check_source_registration_candidate` | [Fresh NeedsAtp 検査/分類](./status.md#source-candidate-checking)、独立 context と既存 ATP-origin policy。 | 実 source 正/負、両 encoding、binding と異なる実行 permission control。 | implemented; selection/publication は保留 |
+| `check_source_registration_candidate` | [Fresh NeedsAtp 検査/分類](./status.md#source-candidate-checking)、独立 context と既存 ATP-origin policy。 | 実 source 正/負、両 encoding、binding と異なる実行 permission control。 | implemented; 分類のみ、publication は保留 |
+| `select_source_registration_candidate` | [Same-source fresh selection](./status.md#source-candidate-selection)、実 candidate/target/policy 対応と既存 winner selector。 | 実単一/aggregate/policy consumer と独立 selector 比較。 | implemented; witness/publication は保留 |
 | `ObligationAnchor`、`ProofObligationIdentity`、`ExplanationRef` | `status.md` の stable obligation identity と explanation reference。 | empty identity checks、projection fixtures、reuse metadata tests。 | consistent |
 | `TrustedUsedAxiomsRef`、`TrustedUsedAxiomsError` | `status.md` の trusted `used_axioms` boundary。 | accepted proof-obligation kernel result constructor、non-accepted/policy-tainted/consistency-check rejection、missing/mismatched evidence hash、non-trusted status rejection tests。 | consistent |
 | `ProofStatusProjectionInput`、`project_status`、`ProofStatusProjection`、`StatusProjectionError` | `status.md` の projection input、stale/mismatched input rejection、final projection shape。 | projection class fixtures、policy-fingerprint mismatch、trusted-axiom validation、explanation/diagnostic metadata tests。 | consistent |

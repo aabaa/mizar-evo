@@ -448,6 +448,8 @@ layer consumes both; one alignment task is owned here.
 
 24. **[Fresh source candidate checking](../../task_contracts/en/PROOF-SOURCE-CANDIDATE-CHECK.md).** [x] — Normal Kernel checking and existing-policy classification; general integration/publication remain open.
 
+25. **[Fresh source-bound winner selection](../../task_contracts/en/PROOF-SOURCE-CANDIDATE-SELECTION.md).** [x]
+
 ## Recommended Verification
 
 Run after each task:

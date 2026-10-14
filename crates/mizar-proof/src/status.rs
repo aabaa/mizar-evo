@@ -181,6 +181,86 @@ pub fn check_source_registration_candidate(
     Ok((result, decision))
 }
 
+/// Freshly selects one source-bound candidate under the supplied policy.
+/// The selection provides no activation, witness or publication authority.
+pub fn select_source_registration_candidate(
+    source: &mizar_resolve::resolved_ast::SurfaceResolvedArena,
+    nodes: &mizar_checker::typed_ast::TypedArena,
+    symbols: &mizar_resolve::env::SymbolEnv,
+    snapshot: mizar_session::BuildSnapshotId,
+    vc_id: VcId,
+    encoding: (
+        mizar_atp::problem::LogicProfile,
+        mizar_atp::problem::ConcreteFormat,
+    ),
+    policy: &VerifierPolicy,
+) -> Result<crate::selection::ProofSelection, String> {
+    use crate::{
+        policy::CandidatePolicyClass,
+        selection::{ProofEvidenceCandidate, ProofEvidenceSet, select_winner},
+    };
+    use mizar_vc::{
+        discharge::{DischargeInput, DischargePolicy, try_discharge},
+        generator::generate_source_existential_registration,
+        vc_ir::{GenerationSchemaVersion, VcSchemaVersion},
+    };
+    let (result, decision) = check_source_registration_candidate(
+        source,
+        nodes,
+        symbols,
+        snapshot,
+        vc_id,
+        encoding.clone(),
+        policy,
+    )?;
+    let checked =
+        mizar_checker::registration_resolution::check_source_existential_registration_proof(
+            source, nodes, symbols,
+        )?;
+    let core = mizar_core::elaborator::lower_source_existential_registration(&checked)?;
+    let original = generate_source_existential_registration(
+        &core,
+        snapshot,
+        &GenerationSchemaVersion::new("source-existential-registration-v1"),
+        &VcSchemaVersion::new("vc-v1"),
+    )?;
+    let discharge = try_discharge(DischargeInput {
+        vc_set: &original,
+        policy: &DischargePolicy::default(),
+    })
+    .map_err(|error| format!("registration.proof.discharge:{error:?}"))?;
+    let (encoded, actual) = mizar_atp::backend::build_source_registration_candidate_inputs(
+        &core,
+        discharge.vc_set(),
+        vc_id,
+        encoding.0,
+        encoding.1,
+    )?;
+    let target = result.target_vc_fingerprint();
+    let fingerprint = encoded.target_binding().fingerprint();
+    if target.algorithm_id != fingerprint.algorithm_id() || target.digest != fingerprint.digest() {
+        return Err("registration.proof.invalid_source_candidate".into());
+    }
+    let id = CandidateSourceId::new(actual.candidate_id()).map_err(|error| error.to_string())?;
+    let candidate = if decision.class == CandidatePolicyClass::KernelVerified {
+        ProofEvidenceCandidate::from_trusted_kernel_input(
+            id,
+            &KernelPolicyInput::from_kernel_result(
+                &result,
+                KernelEvidenceOrigin::AtpFormulaSubstitution,
+            ),
+        )
+        .ok_or_else(|| "registration.proof.invalid_source_candidate".to_owned())?
+    } else {
+        ProofEvidenceCandidate::new(id, decision)
+    }
+    .with_provenance_hash(actual.provenance_hash());
+    Ok(select_winner(
+        &ProofEvidenceSet::new(target.sort_bytes(), encoded.input_hash(), policy.clone())
+            .with_candidates([candidate]),
+    ))
+}
+
 /// Proves the authenticated local existential registration and returns its local database.
 pub fn prove_source_existential_registration(
     source: &mizar_resolve::resolved_ast::SurfaceResolvedArena,

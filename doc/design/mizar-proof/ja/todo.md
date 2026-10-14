@@ -424,6 +424,8 @@ kernel の拒否語彙と evidence 契約を訂正した。policy 層はその�
 
 24. **[Fresh source candidate checking](../../task_contracts/ja/PROOF-SOURCE-CANDIDATE-CHECK.md).** [x] — 通常 Kernel 検査と既存 policy 分類。汎用 integration/publication は保留。
 
+25. **[Fresh source-bound winner selection](../../task_contracts/ja/PROOF-SOURCE-CANDIDATE-SELECTION.md).** [x]
+
 ## 推奨検証
 
 各タスクの後で実行する:
