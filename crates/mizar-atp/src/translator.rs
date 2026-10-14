@@ -444,6 +444,301 @@ pub fn translate_declarations(
     Ok(translation)
 }
 
+/// Builds structured ATP input only for the replayed source-registration discharge profile.
+pub fn translate_source_existential_registration(
+    core: &mizar_core::core_ir::CoreIr,
+    vc_set: &VcSet,
+    vc_id: VcId,
+    logic_profile: LogicProfile,
+) -> Result<AtpProblem, String> {
+    use crate::problem::{AtpAtom, AtpBinder};
+    use mizar_core::core_ir::{CoreFormulaKind, CoreTermKind};
+    use mizar_vc::vc_ir::VcGeneratedFormulaShape;
+    let invalid = || "registration.atp.invalid_projection".to_owned();
+    let format = match logic_profile.fragment() {
+        crate::problem::LogicFragment::Fof => crate::problem::ConcreteFormat::Tptp,
+        crate::problem::LogicFragment::SmtLibUninterpreted => {
+            crate::problem::ConcreteFormat::SmtLib
+        }
+        _ => return Err(invalid()),
+    };
+    if logic_profile.soft_types() != SoftTypeStrategy::GuardPredicates
+        || !logic_profile.concrete_formats().contains(&format)
+    {
+        return Err(invalid());
+    }
+    let vc = vc_set.vc(vc_id).ok_or_else(invalid)?;
+    if vc.status != VcStatus::NeedsAtp {
+        return Err(invalid());
+    }
+    let handoff = mizar_vc::kernel_evidence_handoff::build_source_existential_kernel_handoff(
+        core, vc_set, vc_id,
+    )?;
+    let definition = core.definitions().iter().next().ok_or_else(invalid)?.1;
+    let formal = definition.params.first().ok_or_else(invalid)?;
+    let variable = AtpSymbolName::new(format!(
+        "definition-formal:{:?}:{:?}",
+        definition.symbol, formal.var
+    ));
+    let attributes = core
+        .definitions()
+        .iter()
+        .map(|(_, definition)| {
+            (
+                definition.symbol.clone(),
+                AtpSymbolName::new(format!("attribute:{:?}", definition.symbol)),
+            )
+        })
+        .collect::<BTreeMap<_, _>>();
+    let declare = |symbol: AtpSymbolName, kind, arity, source, payload: String| {
+        let binding = AtpSourceBinding::new(symbol.as_str());
+        AtpDeclarationProjection {
+            key: AtpProjectionKey::new(symbol.as_str()),
+            symbol,
+            kind,
+            arity,
+            provenance: AtpProjectionProvenance::new(source, payload),
+            symbol_source: if kind == AtpDeclarationKind::GeneratedBinder {
+                AtpSymbolSourceProjection::GeneratedBinder(binding)
+            } else {
+                AtpSymbolSourceProjection::MizarSymbol(binding)
+            },
+        }
+    };
+    let mut declarations = Vec::new();
+    for (_, definition) in core.definitions().iter() {
+        declarations.push(declare(
+            attributes[&definition.symbol].clone(),
+            AtpDeclarationKind::Predicate,
+            definition.params.len() as u32,
+            AtpSourceRef::CheckerOwnedFact(AtpSourceBinding::new(format!(
+                "{:?}",
+                definition.symbol
+            ))),
+            format!("{:?}", definition.source),
+        ));
+    }
+    let mut choices = BTreeMap::new();
+    for (_, origin) in core.generated().iter() {
+        let functor = origin.functor.as_ref().ok_or_else(invalid)?;
+        let symbol = AtpSymbolName::new(format!("choice:{functor:?}"));
+        choices.insert(functor.clone(), symbol.clone());
+        declarations.push(declare(
+            symbol,
+            AtpDeclarationKind::Function,
+            0,
+            AtpSourceRef::GeneratedVcFact(AtpSourceBinding::new(format!("{functor:?}"))),
+            format!("{origin:?}"),
+        ));
+    }
+    declarations.push(declare(
+        variable.clone(),
+        AtpDeclarationKind::GeneratedBinder,
+        0,
+        AtpSourceRef::GeneratedVcFact(AtpSourceBinding::new(format!("{:?}", formal.var))),
+        format!("{formal:?}"),
+    ));
+    let guard = core
+        .formulas()
+        .get(formal.ty_guard.ok_or_else(invalid)?)
+        .ok_or_else(invalid)?;
+    declarations.push(declare(
+        AtpSymbolName::new("builtin:set"),
+        AtpDeclarationKind::Predicate,
+        1,
+        AtpSourceRef::TypeFact(AtpSourceBinding::new("builtin.set")),
+        format!("{:?}", guard.source),
+    ));
+    let mut terms = BTreeMap::new();
+    for (id, term) in core.terms().iter() {
+        let pair = match &term.kind {
+            CoreTermKind::Var(var) if *var == formal.var => {
+                (AtpTerm::Variable(variable.clone()), true)
+            }
+            CoreTermKind::Apply { functor, args }
+                if args.is_empty() && choices.contains_key(functor) =>
+            {
+                (
+                    AtpTerm::Function {
+                        function: choices[functor].clone(),
+                        arguments: vec![],
+                    },
+                    false,
+                )
+            }
+            _ => continue,
+        };
+        terms.insert(id, pair);
+    }
+    let mut trees = BTreeMap::new();
+    for (id, formula) in core.formulas().iter() {
+        let (predicate, args) = match &formula.kind {
+            CoreFormulaKind::Atom { predicate, args } if attributes.contains_key(predicate) => {
+                (Some(attributes[predicate].clone()), args.clone())
+            }
+            CoreFormulaKind::Equals { left, right } => (None, vec![*left, *right]),
+            CoreFormulaKind::TypePred { subject, ty } if ty.as_str() == "builtin.set" => {
+                (Some(AtpSymbolName::new("builtin:set")), vec![*subject])
+            }
+            _ => continue,
+        };
+        if args.iter().any(|arg| !terms.contains_key(arg)) {
+            continue;
+        }
+        let contains_formal = args.iter().any(|arg| terms[arg].1);
+        let args = args
+            .iter()
+            .map(|arg| terms[arg].0.clone())
+            .collect::<Vec<_>>();
+        let tree = if let Some(predicate) = predicate {
+            AtpFormulaTree::Atom(AtpAtom::new(predicate, args))
+        } else {
+            AtpFormulaTree::Equality {
+                left: args[0].clone(),
+                right: args[1].clone(),
+            }
+        };
+        trees.insert(VcFormulaRef::Core(id), (tree, contains_formal));
+    }
+    for (id, formula) in core.formulas().iter() {
+        if let CoreFormulaKind::Not(child) = formula.kind {
+            let (tree, contains_formal) =
+                trees.get(&VcFormulaRef::Core(child)).ok_or_else(invalid)?;
+            trees.insert(
+                VcFormulaRef::Core(id),
+                (
+                    AtpFormulaTree::Not(Box::new(tree.clone())),
+                    *contains_formal,
+                ),
+            );
+        }
+    }
+    for formula in vc_set.generated_formulas() {
+        let pair = match &formula.shape {
+            VcGeneratedFormulaShape::Ref(reference) => {
+                trees.get(reference).ok_or_else(invalid)?.clone()
+            }
+            VcGeneratedFormulaShape::Not(reference) => {
+                let (tree, contains_formal) = trees.get(reference).ok_or_else(invalid)?;
+                (
+                    AtpFormulaTree::Not(Box::new(tree.clone())),
+                    *contains_formal,
+                )
+            }
+            VcGeneratedFormulaShape::And(children) | VcGeneratedFormulaShape::Or(children) => {
+                let children = children
+                    .iter()
+                    .map(|child| trees.get(child).ok_or_else(invalid))
+                    .collect::<Result<Vec<_>, _>>()?;
+                let contains_formal = children.iter().any(|child| child.1);
+                let children = children.iter().map(|child| child.0.clone()).collect();
+                (
+                    if matches!(formula.shape, VcGeneratedFormulaShape::And(_)) {
+                        AtpFormulaTree::And(children)
+                    } else {
+                        AtpFormulaTree::Or(children)
+                    },
+                    contains_formal,
+                )
+            }
+            _ => return Err(invalid()),
+        };
+        trees.insert(VcFormulaRef::Generated(formula.id), pair);
+    }
+    let mut projections = Vec::new();
+    let mut soft_types = Vec::new();
+    let mut targets = Vec::new();
+    for premise in &vc.premises {
+        let PremiseRef::GeneratedFact {
+            formula: VcFormulaRef::Generated(id),
+        } = premise
+        else {
+            return Err(invalid());
+        };
+        targets.push((VcFormulaRef::Generated(*id), Some(*id)));
+    }
+    targets.push((vc.goal, None));
+    for (reference, generated) in targets {
+        let (mut tree, contains_formal) = trees.get(&reference).ok_or_else(invalid)?.clone();
+        let (identity, fingerprint, provenance) = if let Some(id) = generated {
+            let entry = handoff
+                .canonical_evidence()
+                .formula_evidence()
+                .iter()
+                .find(|entry| {
+                    entry.producer_formula_ref() == Some(reference)
+                        && kernel_source_matches(
+                            entry.source(),
+                            FormulaSourceExpectation::GeneratedPremise { formula: id },
+                        )
+                })
+                .ok_or_else(invalid)?;
+            (
+                format!("generated:{}", id.index() + 1),
+                entry.formula_fingerprint(),
+                entry.provenance_id(),
+            )
+        } else {
+            if contains_formal {
+                return Err(invalid());
+            }
+            let goal = handoff.canonical_evidence().final_goal();
+            (
+                "goal:1".to_owned(),
+                &goal.formula_fingerprint,
+                goal.provenance_id,
+            )
+        };
+        let payload = handoff_provenance_payload(&handoff, provenance).ok_or_else(invalid)?;
+        let provenance = AtpProjectionProvenance::new(
+            AtpSourceRef::GeneratedVcFact(AtpSourceBinding::new(&identity)),
+            handoff_anchor_payload(payload),
+        );
+        if generated.is_some()
+            && !contains_formal
+            && matches!(&tree, AtpFormulaTree::Atom(atom) if atom.predicate().as_str() == "builtin:set")
+        {
+            soft_types.push(AtpSoftTypeProjection {
+                key: AtpProjectionKey::new(&identity),
+                representation: AtpSoftTypeRepresentation::GuardFormula(tree.clone()),
+                provenance: provenance.clone(),
+            });
+        }
+        if contains_formal {
+            tree = AtpFormulaTree::Forall {
+                binders: vec![AtpBinder::new(variable.clone(), None)],
+                body: Box::new(tree),
+            };
+        }
+        projections.push(AtpFormulaProjection {
+            target: AtpFormulaProjectionTarget::vc_formula(reference),
+            formula: tree,
+            provenance,
+            source_identity: AtpProjectionKey::new(identity),
+            handoff_formula_fingerprint: AtpFingerprint::new(
+                fingerprint.algorithm_id,
+                fingerprint.digest.clone(),
+            )
+            .map_err(|error| error.to_string())?,
+            handoff_provenance_payload: payload.to_vec(),
+        });
+    }
+    if soft_types.len() != 1 {
+        return Err(invalid());
+    }
+    translate_problem(AtpTranslationInput {
+        vc_set,
+        vc: vc_id,
+        kernel_handoff: &handoff,
+        logic_profile,
+        declaration_projections: declarations,
+        soft_type_projections: soft_types,
+        formula_projections: projections,
+        diagnostics: vec![],
+    })
+    .map_err(|error| error.to_string())
+}
+
 pub fn translate_problem(
     input: AtpTranslationInput<'_>,
 ) -> Result<AtpProblem, AtpTranslationError> {

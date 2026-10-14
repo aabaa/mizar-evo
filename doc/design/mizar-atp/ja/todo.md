@@ -634,6 +634,9 @@ polarity)、F2(非 import ソース束縛)、F6(imported-statement projection)
 32. **Counterexample search on open statements。** [ ]
     - 契約: [AIREV-OPEN-STATEMENT-COUNTEREXAMPLE](../../task_contracts/ja/AIREV-OPEN-STATEMENT-COUNTEREXAMPLE.md)。
 
+33. **Source registration projections。** [x]
+    - 実 bounded Core/VC-to-ATP producer。[契約](../../task_contracts/ja/ATP-SOURCE-REGISTRATION-PROJECTIONS.md)。一般 extraction と ATP30 は未完了。
+
 ## 推奨検証
 
 各タスクの後で実行する:

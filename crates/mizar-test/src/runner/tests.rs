@@ -12752,3 +12752,261 @@ fn source_registration_discharge_handoff_replays_actual_default_phase_and_reject
         }
     }
 }
+
+#[test]
+fn source_registration_atp_projections_preserve_structured_input_and_reject_corruption() {
+    use mizar_atp::{
+        problem::*,
+        smtlib_encoder::{SmtLibDialect, encode_smtlib},
+        tptp_encoder::{TptpDialect, encode_tptp},
+        translator::translate_source_existential_registration as translate,
+    };
+    use mizar_core::core_ir::{CoreSourceAnchor, CoreTermKind};
+    use mizar_vc::{
+        discharge::{DischargeInput, DischargePolicy, try_discharge},
+        kernel_evidence_handoff::build_source_existential_kernel_handoff,
+        vc_ir::*,
+    };
+    let profile = |fragment, equality, quantifiers, soft_types, format| {
+        LogicProfile::try_new(
+            "source-registration", fragment, equality, quantifiers, soft_types,
+            NativePropertySupport::Unsupported, [format].into_iter().collect(),
+        ).unwrap()
+    };
+    let fof = profile(LogicFragment::Fof, EqualitySupport::Supported,
+        QuantifierPolicy::FirstOrder, SoftTypeStrategy::GuardPredicates, ConcreteFormat::Tptp);
+    let smt = profile(LogicFragment::SmtLibUninterpreted, EqualitySupport::Supported,
+        QuantifierPolicy::FirstOrder, SoftTypeStrategy::GuardPredicates, ConcreteFormat::SmtLib);
+    let hex = |bytes: &[u8]| bytes.iter().map(|byte| format!("{byte:02x}")).collect::<String>();
+    for (multiple, case) in [(false, step5c3_registration_case()), (true, step5c13_registration_case())] {
+        let original = std::fs::read_to_string(case.source_path).unwrap();
+        let renamed = original.replace("wmarked", "retagged")
+            .replace("oamarked", "leftmarked").replace("obmarked", "rightmarked")
+            .replace("X", "Value");
+        let negative_sources = (0..if multiple { 2 } else { 1 }).map(|index| {
+            let changed = if multiple {
+                let attribute = ["oamarked", "obmarked"][index];
+                original.replace(&format!("X is {attribute} means X = X"), &format!("X is {attribute} means not X = X"))
+            } else { original.replacen("means X = X", "means not X = X", 1) };
+            assert_ne!(changed, original);
+            changed
+        }).collect::<Vec<_>>();
+        let mut variants = vec![(&original, None), (&renamed, None)];
+        variants.extend(negative_sources.iter().enumerate().map(|(index, text)| (text, Some(index))));
+        for (text, negative_definition) in variants {
+            let (source, nodes, symbols) = if multiple {
+                step5c13_registration_inputs(text)
+            } else {
+                step5c3_registration_inputs(text)
+            }.unwrap();
+            let checked = mizar_checker::registration_resolution::check_source_existential_registration_proof(
+                &source, &nodes, &symbols).unwrap();
+            let core = mizar_core::elaborator::lower_source_existential_registration(&checked).unwrap();
+            let open = step5c3_registration_vcs(&core).unwrap();
+            let discharge = try_discharge(DischargeInput {
+                vc_set: &open, policy: &DischargePolicy::default(),
+            }).unwrap();
+            let vcs = discharge.vc_set();
+            for vc in open.vcs() {
+                assert_eq!(vc.status, VcStatus::Open);
+                assert!(translate(&core, &open, vc.id, fof.clone()).is_err());
+            }
+            let definitions = core.definitions().iter().map(|(_, row)| row).collect::<Vec<_>>();
+            let formal = &definitions[0].params[0];
+            assert!(definitions.iter().all(|row| row.params[0].var == formal.var));
+            let variable = AtpSymbolName::new(format!("definition-formal:{:?}:{:?}", definitions[0].symbol, formal.var));
+            let formal_term = AtpTerm::Variable(variable.clone());
+            let attribute = |index: usize, term| AtpFormulaTree::Atom(AtpAtom::new(
+                format!("attribute:{:?}", definitions[index].symbol), vec![term]));
+            let equality = AtpFormulaTree::Equality { left: formal_term.clone(), right: formal_term.clone() };
+            let mut expected_declarations = Vec::new();
+            for row in &definitions {
+                expected_declarations.push((AtpSymbolName::new(format!("attribute:{:?}", row.symbol)),
+                    AtpDeclarationKind::Predicate, 1,
+                    AtpSymbolSource::MizarSymbol(AtpSourceBinding::new(format!("attribute:{:?}", row.symbol))),
+                    AtpSourceRef::CheckerOwnedFact(AtpSourceBinding::new(format!("{:?}", row.symbol))),
+                    format!("{:?}", row.source)));
+            }
+            let origins = core.generated().iter().map(|(_, row)| row).collect::<Vec<_>>();
+            for origin in &origins {
+                let functor = origin.functor.as_ref().unwrap();
+                expected_declarations.push((AtpSymbolName::new(format!("choice:{functor:?}")),
+                    AtpDeclarationKind::Function, 0,
+                    AtpSymbolSource::MizarSymbol(AtpSourceBinding::new(format!("choice:{functor:?}"))),
+                    AtpSourceRef::GeneratedVcFact(AtpSourceBinding::new(format!("{functor:?}"))), format!("{origin:?}")));
+            }
+            expected_declarations.push((variable.clone(), AtpDeclarationKind::GeneratedBinder, 0,
+                AtpSymbolSource::GeneratedBinder(AtpSourceBinding::new(variable.as_str())),
+                AtpSourceRef::GeneratedVcFact(AtpSourceBinding::new(format!("{:?}", formal.var))), format!("{formal:?}")));
+            expected_declarations.push((AtpSymbolName::new("builtin:set"), AtpDeclarationKind::Predicate, 1,
+                AtpSymbolSource::MizarSymbol(AtpSourceBinding::new("builtin:set")),
+                AtpSourceRef::TypeFact(AtpSourceBinding::new("builtin.set")),
+                format!("{:?}", core.formulas().get(formal.ty_guard.unwrap()).unwrap().source)));
+            expected_declarations.sort_by(|left, right| left.0.cmp(&right.0));
+            let selected = vcs.vcs().iter().filter(|vc| vc.status == VcStatus::NeedsAtp).collect::<Vec<_>>();
+            assert_eq!(selected.len(), origins.len());
+            for (registration, vc) in selected.iter().enumerate() {
+                let functor = origins[registration].functor.as_ref().unwrap();
+                let choice = AtpTerm::Function { function: AtpSymbolName::new(format!("choice:{functor:?}")), arguments: vec![] };
+                assert!(core.terms().iter().any(|(_, term)| matches!(&term.kind,
+                    CoreTermKind::Apply { functor: actual, args } if actual == functor && args.is_empty())));
+                let indices = if registration == 2 { vec![0, 1] } else { vec![registration] };
+                let mut expected_axioms = vec![AtpFormulaTree::Atom(AtpAtom::new("builtin:set", vec![choice.clone()]))];
+                // Universally close set(x) -> (attribute(x) <-> the actual equality or negation).
+                expected_axioms.extend(indices.iter().map(|&index| {
+                    let body = if negative_definition == Some(index) {
+                        AtpFormulaTree::Not(Box::new(equality.clone()))
+                    } else { equality.clone() };
+                    AtpFormulaTree::Forall {
+                        binders: vec![AtpBinder::new(variable.clone(), None)],
+                        body: Box::new(AtpFormulaTree::Or(vec![
+                            AtpFormulaTree::Not(Box::new(AtpFormulaTree::Atom(AtpAtom::new("builtin:set", vec![formal_term.clone()])))),
+                            AtpFormulaTree::And(vec![
+                                AtpFormulaTree::Or(vec![AtpFormulaTree::Not(Box::new(attribute(index, formal_term.clone()))), body.clone()]),
+                                AtpFormulaTree::Or(vec![AtpFormulaTree::Not(Box::new(body)), attribute(index, formal_term.clone())]),
+                            ]),
+                        ])),
+                    }
+                }));
+                let goal = if registration == 2 {
+                    AtpFormulaTree::And(indices.iter().map(|index| attribute(*index, choice.clone())).collect())
+                } else { attribute(indices[0], choice.clone()) };
+                let handoff = build_source_existential_kernel_handoff(&core, vcs, vc.id).unwrap();
+                assert!(handoff.targets_vc(vcs, vc.id).unwrap());
+                for caller in [&fof, &smt] {
+                    let problem = translate(&core, vcs, vc.id, caller.clone()).unwrap();
+                    assert_eq!(problem, translate(&core, vcs, vc.id, caller.clone()).unwrap());
+                    assert_eq!(problem.logic_profile(), caller);
+                    let additional_format = LogicProfile::try_new(caller.name().clone(), caller.fragment(),
+                        caller.equality(), caller.quantifiers(), caller.soft_types(), caller.native_properties(),
+                        [ConcreteFormat::Tptp, ConcreteFormat::SmtLib].into_iter().collect()).unwrap();
+                    let additional_problem = translate(&core, vcs, vc.id, additional_format.clone()).unwrap();
+                    assert_eq!(additional_problem.logic_profile(), &additional_format);
+                    assert_eq!(additional_problem.axioms(), problem.axioms());
+                    assert_eq!(additional_problem.conjecture(), problem.conjecture());
+                    assert_eq!(problem.vc_id(), vc.id);
+                    assert_eq!(problem.expected_result(), ExpectedBackendResult::Unsat);
+                    assert!(problem.properties().is_empty() && problem.diagnostics().is_empty());
+                    assert_eq!(problem.axioms().iter().map(|row| row.formula().unwrap()).collect::<Vec<_>>(), expected_axioms.iter().collect::<Vec<_>>());
+                    assert_eq!(problem.conjecture().formula(), Some(&goal));
+                    assert_eq!(problem.type_context().guards().len(), 1);
+                    let guard = &problem.type_context().guards()[0];
+                    assert_eq!(guard.id(), AtpTypeGuardId::new(0));
+                    assert_eq!(guard.formula(), &expected_axioms[0]);
+                    assert_eq!(problem.declarations().len(), expected_declarations.len());
+                    assert_eq!(problem.symbol_map().len(), expected_declarations.len());
+                    for (index, (symbol, kind, arity, source, provenance_source, payload)) in expected_declarations.iter().enumerate() {
+                        let declaration = &problem.declarations()[index];
+                        assert_eq!(declaration.id(), AtpDeclarationId::new(index as u32));
+                        assert_eq!(declaration.symbol(), symbol);
+                        assert_eq!(declaration.kind(), *kind);
+                        assert_eq!(declaration.arity(), *arity);
+                        let binding = &problem.symbol_map()[index];
+                        assert_eq!(binding.backend_symbol(), symbol);
+                        assert_eq!(binding.source(), source);
+                        let provenance = &problem.provenance()[declaration.provenance().index() as usize];
+                        assert_eq!(provenance.source(), provenance_source);
+                        assert_eq!(provenance.payload().as_str(), payload);
+                    }
+                    let target = handoff.canonical_evidence().target_vc();
+                    assert_eq!(problem.target_binding().fingerprint(), &AtpFingerprint::new(target.algorithm_id, target.digest.clone()).unwrap());
+                    assert_eq!(problem.target_binding().producer_binding().as_str(), format!("mizar-vc-kernel-evidence-handoff:{}", hex(handoff.canonical_hash().as_bytes())));
+                    let mut premises = vc.premises.clone();
+                    premises.sort();
+                    assert_eq!(problem.axioms().len(), premises.len());
+                    for (index, (axiom, premise)) in problem.axioms().iter().zip(&premises).enumerate() {
+                        let PremiseRef::GeneratedFact { formula: VcFormulaRef::Generated(id) } = premise else { panic!("actual generated premise") };
+                        let entry = handoff.canonical_evidence().formula_evidence().iter().find(|entry|
+                            entry.producer_formula_ref() == Some(VcFormulaRef::Generated(*id))).unwrap();
+                        let anchor = handoff.canonical_evidence().provenance().iter().find(|row| row.provenance_id == entry.provenance_id()).unwrap();
+                        let provenance = &problem.provenance()[axiom.provenance().index() as usize];
+                        assert_eq!(axiom.id(), AtpFormulaId::new(index as u32));
+                        assert_eq!(provenance.source(), &AtpSourceRef::GeneratedVcFact(AtpSourceBinding::new(format!("generated:{}", id.index() + 1))));
+                        assert_eq!(provenance.payload().as_str(), format!("mizar-vc-handoff-provenance:{}", hex(&anchor.payload)));
+                        if index == 0 {
+                            let guard_provenance = &problem.provenance()[guard.provenance().index() as usize];
+                            assert_eq!(guard_provenance.source(), provenance.source());
+                            assert_eq!(guard_provenance.payload(), provenance.payload());
+                        }
+                    }
+                    let goal_anchor = handoff.canonical_evidence().provenance().iter().find(|row|
+                        row.provenance_id == handoff.canonical_evidence().final_goal().provenance_id).unwrap();
+                    let goal_provenance = &problem.provenance()[problem.conjecture().provenance().index() as usize];
+                    assert_eq!(goal_provenance.source(), &AtpSourceRef::GeneratedVcFact(AtpSourceBinding::new("goal:1")));
+                    assert_eq!(goal_provenance.payload().as_str(), format!("mizar-vc-handoff-provenance:{}", hex(&goal_anchor.payload)));
+                    assert_eq!(problem.conjecture().id(), AtpFormulaId::new(expected_axioms.len() as u32));
+                    assert_eq!(problem.provenance().len(), expected_declarations.len() + expected_axioms.len() + 2);
+                    if caller.fragment() == LogicFragment::Fof {
+                        let encoded = encode_tptp(&problem, TptpDialect::Fof).unwrap();
+                        assert_eq!(encoded, encode_tptp(&problem, TptpDialect::Fof).unwrap());
+                        assert_eq!(encoded.formula_labels().len(), expected_axioms.len() + 2);
+                    } else {
+                        let encoded = encode_smtlib(&problem, SmtLibDialect::Uninterpreted).unwrap();
+                        assert_eq!(encoded, encode_smtlib(&problem, SmtLibDialect::Uninterpreted).unwrap());
+                        assert_eq!(encoded.assertion_labels().len(), expected_axioms.len() + 2);
+                        assert!(encoded.assertion_labels().last().unwrap().is_negated());
+                    }
+                }
+            }
+            for vc in vcs.vcs().iter().filter(|vc| vc.status != VcStatus::NeedsAtp) {
+                assert!(matches!(vc.status, VcStatus::Discharged { .. }));
+                assert!(translate(&core, vcs, vc.id, fof.clone()).is_err());
+            }
+            assert!(translate(&core, vcs, VcId::new(vcs.vcs().len()), fof.clone()).is_err());
+            let chosen = selected[0].id;
+            let sibling = vcs.vcs().iter().find(|vc| matches!(vc.status, VcStatus::Discharged { .. })).unwrap().id;
+            let foreign_text = text.replace("marked", "foreignmarked").replace("retagged", "foreigntagged");
+            let (foreign_source, foreign_nodes, foreign_symbols) = if multiple {
+                step5c13_registration_inputs(&foreign_text)
+            } else {
+                step5c3_registration_inputs(&foreign_text)
+            }.unwrap();
+            let foreign_checked = mizar_checker::registration_resolution::check_source_existential_registration_proof(
+                &foreign_source, &foreign_nodes, &foreign_symbols).unwrap();
+            let foreign = mizar_core::elaborator::lower_source_existential_registration(&foreign_checked).unwrap();
+            assert!(translate(&foreign, vcs, chosen, fof.clone()).is_err());
+            for mutation in 0..14 {
+                let mut parts = VcSetParts {
+                    schema_version: vcs.schema_version().clone(), snapshot: vcs.snapshot(), source: vcs.source(),
+                    module: vcs.module().clone(), generated_formulas: vcs.generated_formulas().to_vec(),
+                    vcs: vcs.vcs().to_vec(), seed_accounting: vcs.seed_accounting().to_vec(),
+                };
+                match mutation {
+                    0 => parts.vcs[chosen.index()].status = VcStatus::Open,
+                    1 => parts.vcs[chosen.index()].status = vcs.vc(sibling).unwrap().status.clone(),
+                    2 => { parts.vcs[chosen.index()].provenance.pop(); }
+                    3 => { parts.vcs[sibling.index()].provenance.pop(); }
+                    4 => parts.vcs[sibling.index()].status = VcStatus::Open,
+                    5 => parts.vcs[sibling.index()].source.related.clear(),
+                    6 => {
+                        let CoreSourceAnchor::SourceRange(range) = &mut parts.vcs[chosen.index()].source.primary.anchor else { panic!("source range") };
+                        range.start += 1;
+                    }
+                    7 => parts.generated_formulas[0].provenance.clear(),
+                    8 => parts.generated_formulas[0].shape = VcGeneratedFormulaShape::True,
+                    9 => parts.module = VcModuleRef::new("foreign-module"),
+                    10 => { parts.vcs[chosen.index()].premises.pop(); }
+                    11 => parts.vcs[chosen.index()].goal = vcs.vc(sibling).unwrap().goal,
+                    12 => {
+                        let SeedVcMapping::Expanded { expansion_schema, .. } = &mut parts.seed_accounting[1].mapping else { panic!("expanded source seed") };
+                        *expansion_schema = ExpansionSchemaVersion::new("foreign-schema");
+                    }
+                    _ => parts.vcs[sibling.index()].goal = vcs.vc(chosen).unwrap().goal,
+                }
+                let altered = VcSet::try_new(parts).unwrap_or_else(|error| panic!("coherent mutation {mutation}: {error}"));
+                assert!(translate(&core, &altered, chosen, fof.clone()).is_err(), "accepted mutation {mutation}, multiple={multiple}");
+            }
+            for unsupported in [
+                profile(LogicFragment::Fof, EqualitySupport::Unsupported, QuantifierPolicy::FirstOrder, SoftTypeStrategy::GuardPredicates, ConcreteFormat::Tptp),
+                profile(LogicFragment::Fof, EqualitySupport::Supported, QuantifierPolicy::PropositionalOnly, SoftTypeStrategy::GuardPredicates, ConcreteFormat::Tptp),
+                profile(LogicFragment::TffLike, EqualitySupport::Supported, QuantifierPolicy::FirstOrder, SoftTypeStrategy::GuardPredicates, ConcreteFormat::Tptp),
+                profile(LogicFragment::Fof, EqualitySupport::Supported, QuantifierPolicy::FirstOrder, SoftTypeStrategy::BackendSorts, ConcreteFormat::Tptp),
+                profile(LogicFragment::Fof, EqualitySupport::Supported, QuantifierPolicy::FirstOrder, SoftTypeStrategy::SortsAndGuards, ConcreteFormat::Tptp),
+                profile(LogicFragment::Fof, EqualitySupport::Supported, QuantifierPolicy::FirstOrder, SoftTypeStrategy::GuardPredicates, ConcreteFormat::SmtLib),
+                profile(LogicFragment::SmtLibUninterpreted, EqualitySupport::Supported, QuantifierPolicy::FirstOrder, SoftTypeStrategy::GuardPredicates, ConcreteFormat::Tptp),
+            ] {
+                assert!(translate(&core, vcs, chosen, unsupported).is_err());
+            }
+        }
+    }
+}

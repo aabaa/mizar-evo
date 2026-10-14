@@ -1025,9 +1025,10 @@ fn atp_translator_public_api_surface_is_task_six_allowlist() {
             "AtpProjectionProvenance::new",
             "translate_declarations",
             "translate_problem",
+            "translate_source_existential_registration",
         ],
         "{} public functions and methods must stay limited to task-5/task-6 \
-         translator construction/accessors; backend runners, proof methods, \
+         translator construction/accessors and task-33 source projections; backend runners, proof methods, \
          SAT/kernel checks, witnesses, and cache APIs require explicit later \
          specs",
         source_path.display()

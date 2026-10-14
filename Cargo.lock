@@ -622,6 +622,7 @@ name = "mizar-test"
 version = "0.1.0"
 dependencies = [
  "mizar-artifact",
+ "mizar-atp",
  "mizar-checker",
  "mizar-core",
  "mizar-frontend",

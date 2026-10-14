@@ -327,3 +327,12 @@ task 5/6 implementation は合わせて Rust coverage を追加し、次を確�
 - goal/conjecture polarity が常に `ExpectedBackendResult::Unsat` を記録すること。
 - translator public API と debug rendering に prohibited backend/kernel/SAT/proof-acceptance
   material が存在しないこと。
+
+## Source registration projections
+
+`translate_source_existential_registration(&CoreIr, &VcSet, VcId, LogicProfile) -> Result<AtpProblem, String>` は既存の単一・3登録 profile の実 structured projection を供給する。選択 VC の `NeedsAtp` と source handoff による全 generator/default-discharge replay を要求し、最終検証と構築は `translate_problem` に委ねる。
+実 Core term/predicate/equality/builtin-set guard と VC Ref/Not/And/Or 木を読む。選択 premise/goal を全て保持し、未対応 node は fail closed。attribute predicate と閉じた stable-choice function は完全な Core symbol identity と役割別 prefix、builtin set は別の unary predicate で命名する。Debug は既存 identity/provenance の命名だけに使い、式内容や numeric kernel name を復元しない。
+共有 definition formal は検証済みの実 Core parameter で、existential/nonempty binder と区別する。出現を構造的に追跡し、その formal を含む premise だけ一つの unsorted ATP binder で全称閉包し、実 type guard を保持する。ground premise は変更せず、自由変数の conjecture は拒否する。これは [§§9.9.3–9.9.4](../../../spec/en/09.predicates.md#993-predicate-definitions-as-bi-conditionals) の引数付き引用 definition の表現であり、premise や任意 substitution を追加しない。
+Declaration kind/arity/source binding は実 definition/origin/guard から得る。式 row は実 producer ref と正確な handoff fingerprint/provenance anchor を保持し、bytes は一致確認の metadata のみとする。caller は指定 profile を供給する。この操作は一致する producer-owned Core/VC input から structured projection を構築し、選択 premise/status を保持する。指定 profile と既存 encoder gate を保持する。source 入口は GuardPredicates と Fof/Tptp または SmtLibUninterpreted/SmtLib の対応 format flag を要求し、他の fragment/soft-type の組合せは局所的に拒否する。追加 format flag は保持し、equality/quantifier の要件は既存 tree validation に委ねる。
+型 context の GuardFormula は選択された ground generated choice-type premise そのもので、実 handoff source/provenance anchor を保持する。同じ選択 axiom を残し、この必要な表現は別の fact を追加しない。独立した formal 型 guard の全称主張や架空の tautology を出さない。各 concrete encoder は GuardPredicates を含む対応する caller profile で検証し、reprofile しない。
+テストは実 Frontend/Resolver/Checker/Core/VC/default discharge と両既存 encoder を通す。一般 source extraction、active ATP runner、instance search、evidence transport、backend 実行、受理は deferred のままとする。
