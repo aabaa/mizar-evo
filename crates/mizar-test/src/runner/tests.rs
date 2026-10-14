@@ -13248,3 +13248,249 @@ fn source_registration_encoded_producer_binds_real_problem_and_concrete_output()
         }
     }
 }
+
+#[test]
+fn source_registration_atp_reflexivity_names_preserve_actual_open_and_needs_atp_wire() {
+    use mizar_atp::backend::encode_closed_choice_reflexivity_names;
+    use mizar_kernel::{
+        certificate_parser::{ClauseTautologyPolicy, Fingerprint, KernelProfileRecord},
+        clause::{SymbolKind, Term},
+        formula_evidence::{FormulaEvidenceParseContext, parse_formula_evidence},
+    };
+    use mizar_vc::{
+        discharge::{DischargeInput, DischargePolicy, try_discharge},
+        kernel_evidence_handoff::build_source_existential_kernel_handoff,
+        vc_ir::VcStatus,
+    };
+    for (multiple, case) in [(false, step5c3_registration_case()), (true, step5c13_registration_case())] {
+        let original = std::fs::read_to_string(case.source_path).unwrap();
+        let renamed = original.replace("wmarked", "retagged").replace("oamarked", "leftmarked")
+            .replace("obmarked", "rightmarked").replace("X", "Value");
+        for (renamed_names, base) in [(false, &original), (true, &renamed)] {
+            for negative in std::iter::once(None).chain((0..if multiple { 2 } else { 1 }).map(Some)) {
+                let text = if let Some(index) = negative {
+                    let attribute = if multiple { ["oamarked", "obmarked"][index] } else { "wmarked" };
+                    let attribute = if renamed_names {
+                        attribute.replace("wmarked", "retagged").replace("oamarked", "leftmarked").replace("obmarked", "rightmarked")
+                    } else { attribute.to_owned() };
+                    let formal = if renamed_names { "Value" } else { "X" };
+                    let changed = base.replace(&format!("{formal} is {attribute} means {formal} = {formal}"),
+                        &format!("{formal} is {attribute} means not {formal} = {formal}"));
+                    assert_ne!(&changed, base);
+                    changed
+                } else { base.clone() };
+                let (source, nodes, symbols) = if multiple {
+                    step5c13_registration_inputs(&text)
+                } else { step5c3_registration_inputs(&text) }.unwrap();
+                let checked = mizar_checker::registration_resolution::check_source_existential_registration_proof(&source, &nodes, &symbols).unwrap();
+                let core = mizar_core::elaborator::lower_source_existential_registration(&checked).unwrap();
+                let open = step5c3_registration_vcs(&core).unwrap();
+                let discharge = try_discharge(DischargeInput { vc_set: &open, policy: &DischargePolicy::default() }).unwrap();
+                for (after_discharge, vcs) in [(false, &open), (true, discharge.vc_set())] {
+                    for vc in vcs.vcs() {
+                        if after_discharge && vc.status != VcStatus::NeedsAtp { continue; }
+                        assert_eq!(vc.status, if after_discharge { VcStatus::NeedsAtp } else { VcStatus::Open });
+                        let handoff = build_source_existential_kernel_handoff(&core, vcs, vc.id).unwrap();
+                        let envelope = handoff.canonical_evidence();
+                        let target = envelope.target_vc();
+                        let mut context = FormulaEvidenceParseContext::v1(
+                            Fingerprint::new(target.algorithm_id, target.digest.clone()),
+                            KernelProfileRecord::v1(envelope.kernel_profile().profile_id, ClauseTautologyPolicy::Reject));
+                        let v1 = handoff.encode_local_evidence(None).unwrap();
+                        let parsed = parse_formula_evidence(&v1, &context).unwrap();
+                        let names = encode_closed_choice_reflexivity_names(&parsed).unwrap();
+                        assert_eq!(names, encode_closed_choice_reflexivity_names(&parsed).unwrap());
+                        assert_eq!(parsed.canonical_hash_input(), v1);
+                        let equalities = parsed.symbol_manifest().iter().filter(|row| row.symbol.kind == SymbolKind::Equality).collect::<Vec<_>>();
+                        assert_eq!(equalities.len(), 1);
+                        let equality = equalities[0].symbol.id.0;
+                        let mut choices = parsed.substitutions().iter().map(|row| {
+                            let [replacement] = row.payload.replacements.as_slice() else { panic!("actual replacement") };
+                            let Term::Application { symbol, arguments } = &replacement.actual_term else { panic!("actual choice") };
+                            assert!(arguments.is_empty());
+                            assert_eq!(symbol.kind, SymbolKind::FunctorPredicate);
+                            symbol.id.0
+                        }).collect::<Vec<_>>();
+                        choices.sort_unstable();
+                        choices.dedup();
+                        let expected = choices.iter().enumerate().map(|(index, choice)| format!(
+                            "{:08x}01{equality:08x}0202{choice:08x}00000000", index + 1)).collect::<Vec<_>>();
+                        let actual = names.iter().map(|item| item.iter().map(|byte| format!("{byte:02x}")).collect::<String>()).collect::<Vec<_>>();
+                        assert_eq!(actual, expected);
+                        if vc.id.index() % 2 == 0 {
+                            assert!(names.is_empty());
+                        } else {
+                            assert_eq!(names.len(), 1);
+                            assert_eq!(parsed.substitutions().len(), if multiple && vc.id.index() == 5 { 2 } else { 1 });
+                            if !renamed_names && negative.is_none() {
+                                let (equality_id, choice_id, bytes) = if multiple {
+                                    match vc.id.index() {
+                                        1 => (0xe11c7f8d, 0x28b19da4, "0000000101e11c7f8d020228b19da400000000"),
+                                        3 => (0xe11c7f8d, 0x86321e50, "0000000101e11c7f8d020286321e5000000000"),
+                                        5 => (0xe11c7f8d, 0x9f34d69e, "0000000101e11c7f8d02029f34d69e00000000"),
+                                        _ => panic!("actual attribute leaf"),
+                                    }
+                                } else { (0x0b38941b, 0x5c51e676, "00000001010b38941b02025c51e67600000000") };
+                                assert_eq!(equality, equality_id);
+                                assert_eq!(choices, [choice_id]);
+                                assert_eq!(actual, [bytes]);
+                            }
+                        }
+                        let v2 = handoff.encode_local_evidence(Some(&names)).unwrap();
+                        context.accepted_schema_versions.insert(2);
+                        let parsed_v2 = parse_formula_evidence(&v2, &context).unwrap();
+                        assert_eq!(parsed_v2.equality_instances().len(), names.len());
+                        assert_eq!(parsed_v2.substitutions(), parsed.substitutions());
+                        assert!(encode_closed_choice_reflexivity_names(&parsed_v2).is_err());
+                        let registration = vc.id.index() / 2;
+                        let accepted = vc.id.index() % 2 == 0 || negative.is_none_or(|index| registration != index && registration != 2);
+                        assert_eq!(step5c3_check_registration_handoff(&handoff, "clean").is_ok(), accepted);
+                    }
+                }
+                let proof = mizar_proof::status::prove_source_existential_registration(&source, &nodes, &symbols,
+                    super::shared::snapshot_id(0), &mizar_proof::policy::VerifierPolicy::release());
+                if negative.is_none() { assert_eq!(proof.unwrap().activated().len(), if multiple { 3 } else { 1 }); }
+                else { assert!(proof.is_err()); }
+            }
+        }
+    }
+}
+
+#[test]
+fn source_registration_atp_reflexivity_names_reject_parsed_shapes_and_sort_actual_keys() {
+    use mizar_atp::backend::encode_closed_choice_reflexivity_names;
+    use mizar_kernel::{
+        certificate_parser::{ClauseTautologyPolicy, Fingerprint, KernelProfileRecord},
+        formula_evidence::{FormulaEvidenceParseContext, parse_formula_evidence},
+    };
+    use mizar_vc::{
+        discharge::{DischargeInput, DischargePolicy, try_discharge},
+        kernel_evidence_handoff::build_source_existential_kernel_handoff,
+        vc_ir::VcStatus,
+    };
+    let text = std::fs::read_to_string(step5c13_registration_case().source_path).unwrap();
+    let (source, nodes, symbols) = step5c13_registration_inputs(&text).unwrap();
+    let checked = mizar_checker::registration_resolution::check_source_existential_registration_proof(&source, &nodes, &symbols).unwrap();
+    let core = mizar_core::elaborator::lower_source_existential_registration(&checked).unwrap();
+    let open = step5c3_registration_vcs(&core).unwrap();
+    let discharge = try_discharge(DischargeInput { vc_set: &open, policy: &DischargePolicy::default() }).unwrap();
+    let vcs = discharge.vc_set();
+    let attribute = vcs.vcs().iter().find(|vc| vc.id.index() == 5).unwrap();
+    assert_eq!(attribute.status, VcStatus::NeedsAtp);
+    // Mutations start from actual authenticated handoffs; only the in-memory wire changes.
+    for (vcs, vc) in [(vcs, attribute), (&open, &open.vcs()[0])] {
+        let handoff = build_source_existential_kernel_handoff(&core, vcs, vc.id).unwrap();
+        let envelope = handoff.canonical_evidence();
+        let target = envelope.target_vc();
+        let context = FormulaEvidenceParseContext::v1(
+            Fingerprint::new(target.algorithm_id, target.digest.clone()),
+            KernelProfileRecord::v1(envelope.kernel_profile().profile_id, ClauseTautologyPolicy::Reject));
+        let wire = handoff.encode_local_evidence(None).unwrap();
+        let read_u32 = |bytes: &[u8]| u32::from_be_bytes(bytes.try_into().unwrap()) as usize;
+        let directory = b"MIZAR_KERNEL_EVIDENCE\0".len() + 12 + 5 + target.digest.len() + 4;
+        let payload = directory + 6 * 13;
+        let sections = (0..6).map(|index| {
+            let entry = directory + index * 13;
+            let mut cursor = payload + read_u32(&wire[entry + 5..entry + 9]);
+            (0..read_u32(&wire[entry + 1..entry + 5])).map(|_| {
+                let length = read_u32(&wire[cursor + 2..cursor + 6]);
+                let row = wire[cursor + 6..cursor + 6 + length].to_vec();
+                cursor += 6 + length;
+                row
+            }).collect::<Vec<_>>()
+        }).collect::<Vec<_>>();
+        let encode = |sections: &[Vec<Vec<u8>>]| {
+            let mut changed = wire[..directory].to_vec();
+            let mut payload = Vec::new();
+            for (index, rows) in sections.iter().enumerate() {
+                let tag = u8::try_from(index + 1).unwrap();
+                let start = payload.len();
+                for row in rows {
+                    payload.extend([tag, 1]);
+                    payload.extend(u32::try_from(row.len()).unwrap().to_be_bytes());
+                    payload.extend(row);
+                }
+                changed.push(tag);
+                for value in [rows.len(), start, payload.len() - start] {
+                    changed.extend(u32::try_from(value).unwrap().to_be_bytes());
+                }
+            }
+            changed.extend(payload);
+            changed
+        };
+        assert_eq!(encode(&sections), wire);
+        if vc.id.index() == 0 {
+            let mut missing = sections.clone();
+            missing[0].retain(|row| row[0] != 3);
+            let parsed = parse_formula_evidence(&encode(&missing), &context).unwrap();
+            assert!(encode_closed_choice_reflexivity_names(&parsed).is_err());
+            continue;
+        }
+        assert_eq!(sections[3].len(), 2);
+        let mut ambiguous = sections.clone();
+        let mut equality = sections[0].iter().find(|row| row[0] == 1).unwrap().clone();
+        equality[0] = 3;
+        ambiguous[0].push(equality);
+        ambiguous[0].sort();
+        let parsed = parse_formula_evidence(&encode(&ambiguous), &context).unwrap();
+        assert!(encode_closed_choice_reflexivity_names(&parsed).is_err());
+        for index in 0..2 {
+            for mutation in ["kind", "rewrite", "empty", "two", "role", "variable", "binder", "symbol", "arguments"] {
+                let mut changed = sections.clone();
+                let row = &mut changed[3][index];
+                let offset = 16 + read_u32(&row[12..16]);
+                let mut replacement = row[offset..offset + 28].to_vec();
+                match mutation {
+                    "kind" => replacement[4] = 2,
+                    "rewrite" => {
+                        replacement[5..9].copy_from_slice(&1u32.to_be_bytes());
+                        replacement.splice(9..9, [1, 0, 0, 0, 0]);
+                    }
+                    "empty" => {
+                        replacement[9..13].copy_from_slice(&0u32.to_be_bytes());
+                        replacement.drain(13..28);
+                    }
+                    "two" => {
+                        replacement[9..13].copy_from_slice(&2u32.to_be_bytes());
+                        let mut second = replacement[13..28].to_vec();
+                        second[..4].copy_from_slice(&sections[3][1][..4]);
+                        replacement.extend(second);
+                    }
+                    "role" => replacement[27] = 2,
+                    "variable" => { replacement.splice(17..27, std::iter::once(1).chain(sections[1][0].iter().copied())); }
+                    "binder" => {
+                        let mut term = vec![3];
+                        term.extend(&sections[3][index][..4]);
+                        term.extend(&replacement[17..27]);
+                        replacement.splice(17..27, term);
+                    }
+                    "symbol" => { replacement[18..23].copy_from_slice(&sections[0][0]); }
+                    "arguments" => {
+                        replacement[23..27].copy_from_slice(&1u32.to_be_bytes());
+                        replacement.splice(27..27, std::iter::once(1).chain(sections[1][0].iter().copied()));
+                    }
+                    _ => unreachable!(),
+                }
+                row.splice(offset..offset + 28, replacement);
+                let parsed = parse_formula_evidence(&encode(&changed), &context).unwrap_or_else(|error| panic!("{mutation}: {error:?}"));
+                assert!(encode_closed_choice_reflexivity_names(&parsed).is_err(), "substitution {index}: {mutation}");
+            }
+        }
+        let choices = sections[0].iter().filter(|row| row[0] == 2).collect::<Vec<_>>();
+        assert_eq!(choices.len(), 3);
+        for ordering in [[2, 0], [0, 2], [2, 2]] {
+            let mut changed = sections.clone();
+            for (row, choice) in changed[3].iter_mut().zip(ordering) {
+                let offset = 16 + read_u32(&row[12..16]);
+                row[offset + 18..offset + 23].copy_from_slice(choices[choice]);
+            }
+            let parsed = parse_formula_evidence(&encode(&changed), &context).unwrap();
+            let names = encode_closed_choice_reflexivity_names(&parsed).unwrap();
+            let actual = names.iter().map(|name| name.iter().map(|byte| format!("{byte:02x}")).collect::<String>()).collect::<Vec<_>>();
+            let expected = if ordering == [2, 2] {
+                vec!["0000000101e11c7f8d02029f34d69e00000000"]
+            } else { vec!["0000000101e11c7f8d020228b19da400000000", "0000000201e11c7f8d02029f34d69e00000000"] };
+            assert_eq!(actual, expected);
+        }
+    }
+}

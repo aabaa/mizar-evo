@@ -12,7 +12,7 @@ timeout/cancellation handling, and policy-neutral backend-result
 classification.
 
 The backend module is still an evidence producer boundary. It does not accept
-proofs, call `mizar-kernel`, run SAT checking, publish witnesses, select
+proofs, invoke Kernel checking/acceptance APIs, run SAT checking, publish witnesses, select
 portfolio winners, update caches, or turn backend proof methods, logs, unsat
 cores, SMT proof objects, TSTP traces, or resolution traces into trusted
 acceptance material.
@@ -105,6 +105,13 @@ cores as trusted data, or infer a different expected result.
 Normalize each actual encoder symbol row to `(ATP name, concrete name, typed source)`, then store a canonical metadata string: `a=<byte-length>:<lowercase-hex>;b=<byte-length>:<lowercase-hex>;s=<source>`. Source is `mizar=<byte-length>:<lowercase-hex>`, `binder=<byte-length>:<lowercase-hex>` or `guard=<decimal-id>` for the existing MizarSymbol, GeneratedBinder or TypeGuard variant. Lengths count UTF-8 bytes. This preserves the complete actual mapping without Debug rendering, delimiter ambiguity or a parallel symbol model.
 Derive provenance_hash with the existing private StableHasher, domain `mizar-atp/backend-source-provenance/v1`, one tagged byte field `source-problem-id` containing the actual problem_id().hash() bytes. This deliberately conservative binding covers the canonical problem's complete typed provenance, formulas, declarations, target, symbol maps and profile; unrelated semantic changes may invalidate it too. Diagnostics remain excluded by the existing neutral identity. It is neither a provenance-only reuse key nor proof evidence; every input/metadata hash is computed from actual content, never a fixture constant or supplied receipt.
 Factory inputs contain no separate encoded output, labels or hashes to mismatch. Concrete encoders own label selection and mangling; backend owns immutable input binding only. Test all typed source classes, fixed canonical mapping bytes, coherent metadata changes, diagnostic neutrality and real source pipelines for both formats. General source/backend integration, instance search/limits, advisory extraction, execution/classification and proof acceptance remain separate dependencies.
+
+## Closed-choice reflexivity names
+
+`encode_closed_choice_reflexivity_names(&ParsedKernelEvidence) -> Result<Vec<Vec<u8>>, String>` reads the actual Kernel-parsed Formula v1 data only. The caller authenticates its source/context; names are untrusted transport, not a proof or complete candidate. ATP owns this deterministic instance selection; Kernel alone decodes names and derives/checks formulas.
+Require schema 1 and exactly one Equality manifest key. Every substitution must have payload kind 1, an empty rewrite path, exactly one replacement with role 1, and a zero-argument FunctorPredicate application as its actual term. Reject unsupported inputs without partial names. Deduplicate actual SymbolKeys in ascending SymbolKey order, then assign checked increasing nonzero u32 instance IDs. No substitutions yields no names; never derive numeric identities from source strings or hashes.
+Each item preserves the existing Formula-v2 grammar: big-endian instance ID, reflexivity tag 1, actual equality symbol ID, term/application tags 2/2, actual choice symbol ID and zero argument count. The normal VC transport frames these items. No supplied instance formula, search, SAT check, backend run, candidate classification or verifier budget is involved.
+[Proof's source facade](../../mizar-proof/en/status.md#source-existential-registration-proof) consumes this operation after its fresh v1 parse. Real Open/NeedsAtp source callers test exact bytes and unsupported parsed shapes; complete ATP extraction and policy-owned search limits remain deferred.
 
 ## Stable Hashes And Fingerprints
 

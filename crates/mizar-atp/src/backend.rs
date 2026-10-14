@@ -4,7 +4,7 @@
 //! [backend.md](../../../doc/design/mizar-atp/en/backend.md). It launches
 //! untrusted backend processes, records deterministic run metadata, and offers
 //! a mock classification seam for candidate evidence. It does not parse real
-//! backend proof languages, extract real candidate evidence, call the kernel,
+//! backend proof languages, extract real candidate evidence, invoke kernel checking,
 //! check SAT, accept proofs, publish witnesses, or trust backend proof
 //! objects, logs, unsat cores, traces, or used-axiom reports.
 
@@ -25,6 +25,62 @@ use std::{
     thread,
     time::{Duration, Instant, SystemTime, UNIX_EPOCH},
 };
+
+/// Encodes untrusted reflexivity names from the caller's actual parsed v1 evidence.
+pub fn encode_closed_choice_reflexivity_names(
+    parsed: &mizar_kernel::formula_evidence::ParsedKernelEvidence,
+) -> Result<Vec<Vec<u8>>, String> {
+    let invalid = || "unsupported closed-choice reflexivity input".to_owned();
+    if parsed.schema_version() != 1 {
+        return Err(invalid());
+    }
+    let mut equalities = parsed
+        .symbol_manifest()
+        .iter()
+        .filter(|entry| entry.symbol.kind == mizar_kernel::clause::SymbolKind::Equality);
+    let equality = equalities.next().ok_or_else(invalid)?.symbol;
+    if equalities.next().is_some() {
+        return Err(invalid());
+    }
+    let mut choices = std::collections::BTreeSet::new();
+    for substitution in parsed.substitutions() {
+        if substitution.payload.payload_kind != 1
+            || !substitution.payload.rewrite_path.segments.is_empty()
+        {
+            return Err(invalid());
+        }
+        let [replacement] = substitution.payload.replacements.as_slice() else {
+            return Err(invalid());
+        };
+        let mizar_kernel::clause::Term::Application { symbol, arguments } =
+            &replacement.actual_term
+        else {
+            return Err(invalid());
+        };
+        if symbol.kind != mizar_kernel::clause::SymbolKind::FunctorPredicate
+            || !arguments.is_empty()
+            || replacement.replacement_role != 1
+        {
+            return Err(invalid());
+        }
+        choices.insert(*symbol);
+    }
+    let mut names = Vec::new();
+    for (index, choice) in choices.into_iter().enumerate() {
+        let id = u32::try_from(index)
+            .ok()
+            .and_then(|index| index.checked_add(1))
+            .ok_or_else(invalid)?;
+        let mut item = id.to_be_bytes().to_vec();
+        item.push(1);
+        item.extend(equality.id.0.to_be_bytes());
+        item.extend([2, 2]);
+        item.extend(choice.id.0.to_be_bytes());
+        item.extend(0u32.to_be_bytes());
+        names.push(item);
+    }
+    Ok(names)
+}
 
 #[cfg(unix)]
 use std::os::unix::fs::{DirBuilderExt, OpenOptionsExt, PermissionsExt};

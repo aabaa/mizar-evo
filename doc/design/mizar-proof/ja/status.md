@@ -216,9 +216,7 @@ BuildSnapshotId, &VerifierPolicy) -> Result<RegistrationDatabase, String>` は
 [checker](../../mizar-checker/ja/registration_resolution.md#source-existential-registration-proof)・Core・VC・両
 handoff を新たに実行する。[VC local transport](../../mizar-vc/ja/kernel_evidence_handoff.md#local-binary-transport) が実 field を frame 化し、Proof は全 term・置換・provenance・context identity・AssertFalseForRefutation
 を含む六 section Formula v1 を構造検査し、この段階では受理を検査しない。
-その parsed 置換に含まれる実際の閉じた choice term と一意の Equality manifest key から、反射律の名前を明示した
-Formula v2 を作る。term を重複除去して非零の昇順 id を付け、型だけの leaf には名前を付けない。
-この既存 source profile は引数0の FunctorPredicate choice のみを許す。instance formula の入力や汎用等号探索は追加しない。
+ATP の [未信頼 name writer](../../mizar-atp/ja/backend.md#closed-choice-reflexivity-names) が、その parsed 入力から Formula v2 の名前を供給する。
 既存 parser と check_kernel_evidence を両 leaf
 に自ら適用し、caller Accepted・result summary・cached handoff・diagnostic/hash text を代用しない。
 

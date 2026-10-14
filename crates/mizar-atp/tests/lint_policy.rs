@@ -272,8 +272,21 @@ fn atp_backend_module_has_paired_specs_and_excludes_trusted_acceptance() {
             crate_root().join("src/backend/tests.rs").display()
         );
     }
+    let mut restricted_source = source.clone();
+    for allowed in [
+        "mizar_kernel::formula_evidence::ParsedKernelEvidence",
+        "mizar_kernel::clause::SymbolKind::Equality",
+        "mizar_kernel::clause::SymbolKind::FunctorPredicate",
+        "mizar_kernel::clause::Term::Application",
+    ] {
+        restricted_source = restricted_source.replace(allowed, "");
+    }
     for prohibited in [
-        "mizar_kernel::",
+        "mizar_kernel",
+        "check_kernel_evidence",
+        "sat_encoding",
+        "sat_check",
+        "use mizar_kernel",
         "kernel_verified",
         "ProofWitness",
         "ProofPolicy",
@@ -283,7 +296,7 @@ fn atp_backend_module_has_paired_specs_and_excludes_trusted_acceptance() {
         "accepted_proof_status",
     ] {
         assert!(
-            !source.contains(prohibited),
+            !restricted_source.contains(prohibited),
             "{} must not expose prohibited trusted/downstream material `{prohibited}`",
             source_path.display()
         );
@@ -508,11 +521,13 @@ fn atp_backend_public_api_surface_is_task_fourteen_allowlist() {
             "EncodedBackendProblem::symbol_bindings",
             "EncodedBackendProblem::target_binding",
             "classify_backend_observation",
+            "encode_closed_choice_reflexivity_names",
             "run_backend",
         ],
         "{} public functions and methods must stay limited to task-14 generic \
          runner, task-19 run metadata projection, and mock-classification \
-         construction/accessors and task-34 genuine encoded input production",
+         construction/accessors, task-34 genuine encoded input production, and \
+         task-35 untrusted reflexivity names",
         source_path.display()
     );
 }

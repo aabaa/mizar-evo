@@ -221,6 +221,7 @@ Public entry functions:
 
 - `run_backend`
 - `classify_backend_observation`
+- `encode_closed_choice_reflexivity_names`
 
 | Spec promise | Source evidence | Test evidence | Status |
 |---|---|---|---|

@@ -11,7 +11,7 @@ metadata、backend version recording、timeout/cancellation の graceful handlin
 backend-result classification を所有する。
 
 backend module は引き続き evidence producer boundary である。proof acceptance、
-`mizar-kernel` 呼び出し、SAT checking、witness publication、portfolio winner selection、
+Kernel checking/acceptance API 呼び出し、SAT checking、witness publication、portfolio winner selection、
 cache update、backend proof method、log、unsat core、SMT proof object、TSTP trace、
 resolution trace を trusted acceptance material に変えることは行わない。
 
@@ -99,6 +99,13 @@ expected result を推論してはならない。
 実 symbol row の ATP name・concrete name・型付き source を `a=<UTF-8 byte長>:<小文字hex>;b=<byte長>:<hex>;s=<source>` に正準化する。source は既存 MizarSymbol / GeneratedBinder / TypeGuard に対応する `mizar=<byte長>:<hex>` / `binder=<byte長>:<hex>` / `guard=<10進id>`。Debug、区切り曖昧性、並行 symbol model を導入しない。
 既存 private StableHasher の domain `mizar-atp/backend-source-provenance/v1`、byte field `source-problem-id` に実 problem_id().hash() を入れて provenance_hash を作る。この保守的 binding は正準問題の全 typed provenance・formula・declaration・target・symbol map・profile を含み、無関係な意味変更でも無効化され得る。既存 identity は diagnostic を除外する。provenance 専用 reuse key や proof evidence ではなく、fixture 定数・入力 receipt を使わない。
 別 encoded output・label・hash を入力せず、実 encoder が label 選択・mangling、backend が不変 input binding のみを所有する。全 source 型・固定 mapping byte・coherent metadata 変更・diagnostic neutrality・両 format の実 source pipeline を検査する。汎用 source/backend integration・instance search/limit・advisory extraction・execution/classification・proof acceptance は別依存として保留する。
+
+## Closed-choice reflexivity names
+
+`encode_closed_choice_reflexivity_names(&ParsedKernelEvidence) -> Result<Vec<Vec<u8>>, String>` は実際の Kernel-parsed Formula v1 data のみを読む。caller が source/context を認証し、名前は未信頼の輸送であって証明や完全な candidate ではない。ATP が決定的な instance 選択を所有し、Kernel だけが名前を decode して formula を導出・検査する。
+schema 1 と一意の Equality manifest key を要求する。各 substitution は payload kind 1、空の rewrite path、role 1 の replacement 1件、その actual term は引数0の FunctorPredicate application でなければならない。未対応入力は部分結果なしで拒否する。実 SymbolKey の昇順で重複除去し、検査した昇順の非零 u32 instance ID を付ける。substitution がなければ名前もなく、source string/hash から数値 identity を導出しない。
+各 item は既存 Formula-v2 grammar を保持する: big-endian instance ID、reflexivity tag 1、実 equality symbol ID、term/application tag 2/2、実 choice symbol ID、引数数0。通常の VC transport が item を frame 化する。instance formula の入力、探索、SAT 検査、backend 実行、candidate 分類、verifier budget を含まない。
+[Proof の source facade](../../mizar-proof/ja/status.md#source-existential-registration-proof) が fresh v1 parse 後にこの処理を消費する。実 Open/NeedsAtp source caller で byte と未対応 parsed shape を検査し、完全な ATP 抽出と policy 所有の探索上限は保留する。
 
 ## stable hash と fingerprint
 

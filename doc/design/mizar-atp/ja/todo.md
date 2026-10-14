@@ -640,6 +640,8 @@ polarity)、F2(非 import ソース束縛)、F6(imported-statement projection)
 
 34. **[Genuine encoded input bindings](../../task_contracts/ja/ATP-ENCODED-PROBLEM-PRODUCER.md).** [x] — Real encoder/container handoff; candidate production remains open.
 
+35. **[Closed-choice reflexivity names](../../task_contracts/ja/ATP-CLOSED-CHOICE-EQUALITY-NAMES.md).** [x] — 既存の未信頼 name producer。finder/search 全体は保留。
+
 ## 推奨検証
 
 各タスクの後で実行する:

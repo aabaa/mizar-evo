@@ -1,0 +1,15 @@
+# Task ATP-CLOSED-CHOICE-EQUALITY-NAMES: untrusted reflexivity name transport
+Canonical language: English; [Japanese pointer](../ja/ATP-CLOSED-CHOICE-EQUALITY-NAMES.md).
+Status: implemented. Tier: full. Owner: [ATP plan](../../mizar-atp/en/00.crate_plan.md), task 35.
+Consumers: [Proof plan](../../mizar-proof/en/00.crate_plan.md), [test plan](../../mizar-test/en/00.crate_plan.md), ATP30.
+Dependencies: existing Kernel Formula v1/v2 names, VC62 local transport and authenticated source handoffs; ready for deterministic name production, not search.
+Authority: spec §§21.7.1/21.7.5; [architecture 10](../../architecture/en/10.atp_backend_integration.md#evidence-extraction-by-instance-finding), [architecture 15](../../architecture/en/15.kernel_certificate_format.md); [backend owner](../../mizar-atp/en/backend.md#closed-choice-reflexivity-names), [Proof source owner](../../mizar-proof/en/status.md#source-existential-registration-proof).
+Gap: source_drift; Proof privately selects and frames existing untrusted reflexivity names, unavailable to the ATP instance producer.
+Scope: move that exact bounded deterministic operation to one function in the existing ATP backend module; Proof consumes it while retaining all fresh source/Kernel/policy/activation checks.
+Source: backend.rs, narrowly extended backend data-read/public-function lint allowance, Proof status.rs; append real-source tests in mizar-test runner/tests.rs. No new source file/type/field/dependency or old test-intent change.
+Tests: distinct genuine Open and default-discharge NeedsAtp callers, original/renamed positive/negative single/aggregate sources, actual parsed numeric keys, independent exact name-byte oracle, replay/dedup/order, empty names for the type leaf, unsupported parsed profiles and v2 inputs; retain old manual wire/corruption oracles and existing fresh Proof outcomes.
+Existing sources: tests/miz/pass/types/pass_type_elaboration_argument_attribute_widening_001.miz and tests/miz/fail/overload/fail_advanced_semantics_overload_ambiguous_candidates_001.miz; unchanged step5c3/step5c13 producer helpers. Corrupt only in-memory evidence derived from their actual handoffs.
+Forbidden: new formulas/facts/substitutions, reconstructed numeric identities, search/SAT/Kernel checks in ATP, invented backend/candidate/accepted states, reclassifying built-ins as ATP, policy/acceptance changes, protected spec/.miz/expectation/trace edits, duplicate representations or single-use helpers.
+Audit: coverage/follow-up ownership unchanged; this shares an existing name producer. Full finder, verifier search limits, encoded-problem candidate binding, real backend extraction and Steps 6–8 remain open.
+Require independent specification/test/implementation/volume/consistency reviews; parent cargo fmt --check, cargo clippy --all-targets --all-features -- -D warnings, cargo test; scoped gates/quality review.
+Exit: actual parsed v1 inputs yield the exact existing untrusted names, unsupported inputs fail closed, and fresh source Proof behavior remains unchanged.

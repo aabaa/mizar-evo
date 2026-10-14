@@ -45,7 +45,6 @@ pub fn prove_source_existential_registration(
             KernelEvidenceCheckInput, KernelEvidenceCheckKind, KernelEvidenceCheckLimits,
             KernelFormulaProducerRef, KernelVcGeneratedFormulaId, check_kernel_evidence,
         },
-        clause::{SymbolKind, Term},
         formula_evidence::{FormulaEvidenceParseContext, parse_formula_evidence},
         rejection::TargetVcFingerprint,
     };
@@ -57,7 +56,6 @@ pub fn prove_source_existential_registration(
         },
         vc_ir::{GenerationSchemaVersion, VcFormulaRef, VcSchemaVersion},
     };
-    use std::collections::BTreeSet;
     let invalid = || "registration.proof.invalid_source_evidence".to_owned();
     let check = check_source_existential_registration_proof(source, nodes, symbols)?;
     let core = mizar_core::elaborator::lower_source_existential_registration(&check)?;
@@ -104,49 +102,9 @@ pub fn prove_source_existential_registration(
             if schema == 2 {
                 break parsed;
             }
-            let mut equalities = parsed
-                .symbol_manifest()
-                .iter()
-                .filter(|entry| entry.symbol.kind == SymbolKind::Equality);
-            let equality = equalities.next().ok_or_else(invalid)?.symbol;
-            if equalities.next().is_some() {
-                return Err(invalid());
-            }
-            let mut choices = BTreeSet::new();
-            for substitution in parsed.substitutions() {
-                if substitution.payload.payload_kind != 1
-                    || !substitution.payload.rewrite_path.segments.is_empty()
-                {
-                    return Err(invalid());
-                }
-                let [replacement] = substitution.payload.replacements.as_slice() else {
-                    return Err(invalid());
-                };
-                let Term::Application { symbol, arguments } = &replacement.actual_term else {
-                    return Err(invalid());
-                };
-                if symbol.kind != SymbolKind::FunctorPredicate
-                    || !arguments.is_empty()
-                    || replacement.replacement_role != 1
-                {
-                    return Err(invalid());
-                }
-                choices.insert(*symbol);
-            }
-            for (index, choice) in choices.into_iter().enumerate() {
-                let mut item = Vec::new();
-                item.extend_from_slice(
-                    &u32::try_from(index + 1)
-                        .map_err(|_| invalid())?
-                        .to_be_bytes(),
-                );
-                item.push(1);
-                item.extend(equality.id.0.to_be_bytes());
-                item.extend([2, 2]);
-                item.extend(choice.id.0.to_be_bytes());
-                item.extend(0u32.to_be_bytes());
-                equality_instances.push(item);
-            }
+            equality_instances =
+                mizar_atp::backend::encode_closed_choice_reflexivity_names(&parsed)
+                    .map_err(|_| invalid())?;
             schema = 2;
         };
         let target = TargetVcFingerprint::new(target.algorithm_id, target.digest.clone());

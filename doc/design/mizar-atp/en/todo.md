@@ -695,6 +695,8 @@ candidate evidence through the kernel-owned schema and must not weaken it.
 
 34. **[Genuine encoded input bindings](../../task_contracts/en/ATP-ENCODED-PROBLEM-PRODUCER.md).** [x] — Real encoder/container handoff; candidate production remains open.
 
+35. **[Closed-choice reflexivity names](../../task_contracts/en/ATP-CLOSED-CHOICE-EQUALITY-NAMES.md).** [x] — Existing untrusted name producer; full finder/search remains open.
+
 ## Recommended Verification
 
 Run after each task:

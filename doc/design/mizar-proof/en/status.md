@@ -230,11 +230,7 @@ BuildSnapshotId, &VerifierPolicy) -> Result<RegistrationDatabase, String>` fresh
 [checker](../../mizar-checker/en/registration_resolution.md#source-existential-registration-proof),
 Core, VC and both source handoffs. The [VC local transport](../../mizar-vc/en/kernel_evidence_handoff.md#local-binary-transport) frames their actual fields; Proof first parses six-section
 Formula v1, including full terms, substitutions, provenance, context identity and
-AssertFalseForRefutation, without checking acceptance. It then supplies Formula v2 names for
-reflexivity for the actual closed-choice terms in the parsed substitutions and the unique Equality
-manifest key. Deduplicate terms and assign increasing nonzero names; the type-only leaf has none.
-The existing source profile permits only zero-argument FunctorPredicate choices here. No supplied
-instance formula or generic equality search is introduced. It runs the parser and check_kernel_evidence
+AssertFalseForRefutation, without checking acceptance. ATP's [untrusted name writer](../../mizar-atp/en/backend.md#closed-choice-reflexivity-names) supplies Formula v2 names from that parsed input. Proof runs the parser and check_kernel_evidence
 itself for both leaves; caller Accepted inputs, kernel-result summaries, cached handoffs and
 diagnostic/hash text cannot substitute.
 
