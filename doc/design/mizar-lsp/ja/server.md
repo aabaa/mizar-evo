@@ -15,6 +15,7 @@ shutdown は null 応答のみで終了せず、exit は shutdown 後0、その�
 整数 ID は i32、文字列 ID は保持し、有効 notification に応答しない。未対応 response と
 $/cancelRequest notification は無視し、$/ request は -32601 とする。request 専用 method の
 notification は無視し、notification 専用 method の request は -32600 とする。
+`initialization_params(&self) -> Option<&serde_json::Value>` は、boolean の代わりに既存の初期化状態に保持した受理済 initialize params 全体を借用する。初期化成功前は None とし、既存の全検査後だけ保持し、重複・不正・shutdown/exit 後の traffic でも最初の受理値を保つ。rootUri・capabilities・options・未知 field の JSON 値を正確に保持する。protocol 応答・検査・buffer 受理・未知 option の解釈を変えず、URI 変換・filesystem access・設定選択・compiler/currentness/publication 操作を行わない。
 
 open は未登録の非空 URI key・string languageId/text・i32 version を要求する。
 change は open key と増加する i32 version を要求し、全 event を先に検査して full text を順に適用する。

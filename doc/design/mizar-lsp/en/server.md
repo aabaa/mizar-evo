@@ -19,6 +19,7 @@ requests get -32601. Invalid envelopes/IDs get -32600, invalid request params
 never receive responses. Unmatched responses and $/cancelRequest notifications
 are ignored; $/ requests get -32601. Request-only methods sent as notifications
 are ignored; notification-only methods sent as requests get -32600.
+`initialization_params(&self) -> Option<&serde_json::Value>` borrows the complete accepted initialize params, retained in the existing initialization state instead of a boolean. Before successful initialization return None; commit only after all existing validation, preserve the first accepted value through duplicate/failed/post-shutdown/post-exit traffic, and retain exact JSON values for rootUri, capabilities, options and unknown fields. Raw retention changes no protocol response, validation, buffer acceptance or unknown-option interpretation, and performs no URI conversion, filesystem access, settings selection or compiler/currentness/publication operation.
 
 Open requires a new nonempty URI key, string languageId/text and i32 version.
 Change requires an open key and a strictly newer i32 version; validate all

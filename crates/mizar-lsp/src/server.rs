@@ -10,13 +10,19 @@ use serde_json::{Value, json};
 /// One LSP connection and its exact client-owned document text.
 #[derive(Default)]
 pub struct Server {
-    initialized: bool,
+    initialized: Option<Value>,
     shutdown: bool,
     exit_code: Option<i32>,
     documents: BTreeMap<String, (i32, String)>,
 }
 
 impl Server {
+    /// Borrows exact raw params from the first successful initialize request.
+    /// These client values are not effective settings or compiler context.
+    pub fn initialization_params(&self) -> Option<&Value> {
+        self.initialized.as_ref()
+    }
+
     /// Borrows the current full-sync document version and text.
     pub fn document(&self, uri: &str) -> Option<(i32, &str)> {
         self.documents
@@ -68,7 +74,7 @@ impl Server {
                 return error(Value::Null, -32600, "Invalid Request");
             }
             let result = if method == "initialize" {
-                if self.initialized {
+                if self.initialized.is_some() {
                     return error(id.clone(), -32600, "Invalid Request");
                 }
                 let Some(params) = params.filter(|params| params.is_object()) else {
@@ -83,11 +89,11 @@ impl Server {
                 {
                     return error(id.clone(), -32602, "Invalid params");
                 }
-                self.initialized = true;
+                self.initialized = Some(params.clone());
                 json!({"capabilities": {"positionEncoding": "utf-16",
                     "textDocumentSync": {"openClose": true, "change": 1}}})
             } else {
-                if !self.initialized {
+                if self.initialized.is_none() {
                     return error(id.clone(), -32002, "Server not initialized");
                 }
                 if self.shutdown {
@@ -127,7 +133,7 @@ impl Server {
             }
             return None;
         }
-        if !self.initialized || self.shutdown {
+        if self.initialized.is_none() || self.shutdown {
             return None;
         }
         let params = params?;
@@ -929,5 +935,168 @@ mod tests {
                 .serve(&mut Cursor::new(bytes), &mut output)
                 .is_err()
         );
+    }
+
+    #[test]
+    fn raw_initialize_params_remain_exact_through_document_and_terminal_traffic() {
+        for (root, options) in [
+            (Value::Null, None),
+            (json!("file:///未変換%20😀"), Some(Value::Null)),
+            (Value::Null, Some(json!(false))),
+            (
+                json!("untouched:ルート"),
+                Some(json!({"nested": [null, 3, "é😀"]})),
+            ),
+        ] {
+            let mut server = Server::default();
+            assert_eq!(server.initialization_params(), None);
+            for invalid in [Value::Null, json!({"processId": null, "rootUri": null})] {
+                assert_error(&mut server, request("initialize", invalid), -32602);
+                assert_eq!(server.initialization_params(), None);
+            }
+            let mut expected = json!({
+                "processId": -1, "rootUri": root,
+                "capabilities": {"unknown": {"array": [true, null, "能力😀"]}},
+                "unknown": [null, false, 1.5, {"raw": "\u{feff}\r\n"}]
+            });
+            if let Some(options) = options {
+                expected["initializationOptions"] = options;
+            }
+            let mut original = expected.clone();
+            assert_eq!(
+                server.handle_message(request("initialize", original.clone())),
+                Some(json!({
+                    "jsonrpc": "2.0", "id": 7, "result": {"capabilities": {
+                        "positionEncoding": "utf-16", "textDocumentSync": {"openClose": true, "change": 1}
+                    }}
+                }))
+            );
+            original["rootUri"] = json!("replaced");
+            original["capabilities"]["unknown"] = Value::Null;
+            assert_eq!(server.initialization_params(), Some(&expected));
+            for params in [original.clone(), Value::Null] {
+                assert_error(&mut server, request("initialize", params), -32600);
+                assert_eq!(server.initialization_params(), Some(&expected));
+            }
+            let uri = "untouched:文書%20😀";
+            let text = "\u{feff}begin\r\n😀\r\n";
+            assert!(server.handle_message(notification("textDocument/didOpen", json!({
+                "textDocument": {"uri": uri, "languageId": "mizar", "version": -1, "text": text}
+            }))).is_none());
+            assert_eq!(server.document(uri), Some((-1, text)));
+            assert_eq!(server.initialization_params(), Some(&expected));
+            let changed = "\u{feff}変更😀\r\n";
+            assert!(server.handle_message(notification("textDocument/didChange", json!({
+                "textDocument": {"uri": uri, "version": 0}, "contentChanges": [{"text": changed}]
+            }))).is_none());
+            assert_eq!(server.document(uri), Some((0, changed)));
+            assert!(
+                server
+                    .handle_message(notification("$/cancelRequest", json!({"id": 7})))
+                    .is_none()
+            );
+            assert_eq!(server.document(uri), Some((0, changed)));
+            assert_eq!(server.initialization_params(), Some(&expected));
+            assert!(
+                server
+                    .handle_message(notification(
+                        "textDocument/didClose",
+                        json!({
+                            "textDocument": {"uri": uri}
+                        })
+                    ))
+                    .is_none()
+            );
+            assert_eq!(server.document(uri), None);
+            assert_eq!(server.initialization_params(), Some(&expected));
+            assert_eq!(
+                server.handle_message(request("shutdown", Value::Null)),
+                Some(json!({"jsonrpc": "2.0", "id": 7, "result": null}))
+            );
+            assert_error(&mut server, request("initialize", original.clone()), -32600);
+            assert_eq!(server.initialization_params(), Some(&expected));
+            assert!(
+                server
+                    .handle_message(notification("exit", Value::Null))
+                    .is_none()
+            );
+            assert!(
+                server
+                    .handle_message(request("initialize", original))
+                    .is_none()
+            );
+            assert_eq!(server.initialization_params(), Some(&expected));
+        }
+    }
+
+    #[test]
+    fn raw_initialize_params_survive_framed_rejection_and_silent_notifications() {
+        let expected = json!({
+            "processId": null, "rootUri": "file:///ルート%20😀", "capabilities": {"future": [null, false]},
+            "initializationOptions": {"raw": ["\u{feff}\r\n", 9]}, "unknown": {"nested": true}
+        });
+        let uri = "file:///文書%20😀.miz";
+        let text = "\u{feff}編集😀\r\n";
+        let mut bytes = Vec::new();
+        for message in [
+            request("initialize", Value::Null),
+            request("initialize", expected.clone()),
+            notification("initialized", json!({"unknown": true})),
+            notification(
+                "textDocument/didOpen",
+                json!({"textDocument": {
+                    "uri": uri, "languageId": "mizar", "version": -2, "text": "initial\r\n"
+                }}),
+            ),
+            notification(
+                "textDocument/didChange",
+                json!({
+                    "textDocument": {"uri": uri, "version": -1}, "contentChanges": [{"text": text}]
+                }),
+            ),
+            notification("$/cancelRequest", json!({"id": 7})),
+            request(
+                "initialize",
+                json!({"processId": 42, "rootUri": null, "capabilities": {}}),
+            ),
+            request("shutdown", Value::Null),
+            notification(
+                "textDocument/didClose",
+                json!({"textDocument": {"uri": uri}}),
+            ),
+            request("initialize", Value::Null),
+            notification("exit", Value::Null),
+            request(
+                "initialize",
+                json!({"processId": 42, "rootUri": null, "capabilities": {}}),
+            ),
+        ] {
+            bytes.extend(frame(message.to_string()));
+        }
+        let mut server = Server::default();
+        let mut output = Vec::new();
+        assert_eq!(
+            server
+                .serve(
+                    &mut BufReader::with_capacity(2, Cursor::new(bytes)),
+                    &mut output
+                )
+                .unwrap(),
+            0
+        );
+        assert_eq!(
+            responses(&output),
+            vec![
+                json!({"jsonrpc": "2.0", "id": 7, "error": {"code": -32602, "message": "Invalid params"}}),
+                json!({"jsonrpc": "2.0", "id": 7, "result": {"capabilities": {
+                    "positionEncoding": "utf-16", "textDocumentSync": {"openClose": true, "change": 1}
+                }}}),
+                json!({"jsonrpc": "2.0", "id": 7, "error": {"code": -32600, "message": "Invalid Request"}}),
+                json!({"jsonrpc": "2.0", "id": 7, "result": null}),
+                json!({"jsonrpc": "2.0", "id": 7, "error": {"code": -32600, "message": "Invalid Request"}}),
+            ]
+        );
+        assert_eq!(server.initialization_params(), Some(&expected));
+        assert_eq!(server.document(uri), Some((-1, text)));
     }
 }

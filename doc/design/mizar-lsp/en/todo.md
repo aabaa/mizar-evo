@@ -263,6 +263,8 @@ Tasks 1–5: [LSP-LIFECYCLE-FOUNDATION](../../task_contracts/en/LSP-LIFECYCLE-FO
 31. **Executable stdio lifecycle prerequisite (with Driver28).** [x]
     - [EDITOR-LSP-STDIO-LIFECYCLE](../../task_contracts/en/EDITOR-LSP-STDIO-LIFECYCLE.md); full task26 waits for current-build diagnostics.
 
+32. **[Raw initialize input handoff](../../task_contracts/en/LSP-RAW-INITIALIZE-HANDOFF.md).** [x]
+
 - [ ] [EDITOR-COMPUTED-RESULTS](../../task_contracts/en/EDITOR-COMPUTED-RESULTS.md).
 
 ## Recommended Verification

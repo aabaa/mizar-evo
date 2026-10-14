@@ -262,6 +262,8 @@ Tasks 1–5: [LSP-LIFECYCLE-FOUNDATION](../../task_contracts/ja/LSP-LIFECYCLE-FO
 31. **実行ファイル stdio lifecycle の前提 (Driver28 と共同)。** [x]
     - [EDITOR-LSP-STDIO-LIFECYCLE](../../task_contracts/ja/EDITOR-LSP-STDIO-LIFECYCLE.md)。完全な task26 は current-build 診断待ち。
 
+32. **[Raw initialize 入力の受け渡し](../../task_contracts/ja/LSP-RAW-INITIALIZE-HANDOFF.md).** [x]
+
 - [ ] [EDITOR-COMPUTED-RESULTS](../../task_contracts/ja/EDITOR-COMPUTED-RESULTS.md).
 
 ## 推奨検証
