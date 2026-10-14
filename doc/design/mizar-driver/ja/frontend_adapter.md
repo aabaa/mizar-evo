@@ -102,6 +102,10 @@ discovery/SourceLoad/Frontend は保護 snapshot 全体、一意な実 metadata/
 SourceLoad/Frontend は owner の Disk/Open codec を使い、own/供給済み親の source payload 全体と raw loading map を実捕捉へ照合する。provider、lexical handoff/import 対応、診断変換、cancel と publication guard は維持する。discovery は出力/診断を公開せず部分推定 overlay を拒否する。
 Open は OpenBuffer/InternalOnly、捕捉 Disk は PackageSource/CurrentPackage。実 Native dispatch の四 consumer だけが記録済み published 承認を使い、summary-only の current/package 検証は維持する。実 cache intent はともに NoKey。後続 service、LSP current 診断、proof/cache/artifact 権限と全 build 完了は未対応。
 
+## Native lock content association
+
+`SourceLoadInputs::validate_native_lock_content(self) -> Result<(), String>` は保護された native capture と供給 snapshot 全体の一致、plan/snapshot toolchain の一致を明示的に要求し、snapshot.lockfile_hash を既存 Build [lockfile_content_hash](../../mizar-build/ja/planner.md#lock-content-fingerprint) と比較する。既存 content profile を用い、capture 不足・非 native・foreign・不一致を拒否する。file read と mutation は行わない。caller 限定の前提であり、untagged Hash から profile を選ばず、generic native/cache/submit 経路を変更しない。file freshness、pin/config/toolchain 真正性、retention、scheduler/host 権限は与えない。
+
 ## Native Disk cache preparation
 
 `SourceLoadInputs::prepare_native_disk_cache_request(self, &PhaseInput, &VerifierPolicy) -> Result<CacheKeyRequest, String>` は保護された native Disk capture から Cache owner の通常 request data を準備する。同一 snapshot、一意の束縛 module/version、実 SourceUnitCacheKey dispatch hash、parent/dependency hash なし、plan/snapshot toolchain 一致を要求する。既存 native_source guard を使い、root canonicalization は純粋 registry query の外の filesystem metadata I/O として明記し、source body は再取得しない。capture 不足・曖昧・foreign、Open/Generated、空 policy profile、POLICY_SCHEMA_VERSION 以外の policy schema、DEFAULT_CHECKER_SCHEMA_VERSION 以外の checker schema は拒否する。

@@ -68,6 +68,25 @@ pub(crate) fn source_input_hash(version: &mizar_session::SourceVersion) -> Hash 
 }
 
 impl<'a> crate::registry::SourceLoadInputs<'a> {
+    /// Explicitly compares protected native capture with Build's typed lock content profile.
+    pub fn validate_native_lock_content(self) -> Result<(), String> {
+        let captured = self
+            .captured
+            .ok_or_else(|| "native lock content requires captured sources".to_owned())?;
+        if captured.snapshot() != self.snapshot
+            || captured.native_sources().is_none()
+            || self.build_plan.toolchain != self.snapshot.toolchain
+        {
+            return Err("native lock content context mismatch".to_owned());
+        }
+        if mizar_build::planner::lockfile_content_hash(&self.build_plan.lockfile)
+            != self.snapshot.lockfile_hash
+        {
+            return Err("native lock content mismatch".to_owned());
+        }
+        Ok(())
+    }
+
     /// Projects protected native Disk capture into plain cache request data.
     /// Root binding performs filesystem metadata I/O; no source body is reopened.
     pub fn prepare_native_disk_cache_request(

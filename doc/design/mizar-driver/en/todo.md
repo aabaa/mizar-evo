@@ -539,6 +539,8 @@ the owning producers when the paired tasks land.
 
 32. **[Current native Disk lookup and typed reconstruction](../../task_contracts/en/DRIVER-NATIVE-DISK-CACHE-REHYDRATE.md).** [x]
 
+33. **[Explicit native lock content association](../../task_contracts/en/DRIVER-NATIVE-LOCK-CONTENT-BINDING.md).** [x] — Caller-only content comparison; full context/runtime remain open.
+
 ## Recommended Verification
 
 Run after each task:

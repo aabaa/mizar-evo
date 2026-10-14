@@ -507,6 +507,8 @@ artifact/test のフォローアップタスクが所有する。本 crate の�
 
 32. **[Current native Disk lookup と typed 再構成](../../task_contracts/ja/DRIVER-NATIVE-DISK-CACHE-REHYDRATE.md).** [x]
 
+33. **[明示的 native lock content 対応](../../task_contracts/ja/DRIVER-NATIVE-LOCK-CONTENT-BINDING.md).** [x] — Caller-only content comparison; full context/runtime remain open.
+
 ## 推奨検証
 
 各タスクの後で実行する:
