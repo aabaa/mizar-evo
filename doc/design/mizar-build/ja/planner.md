@@ -157,6 +157,16 @@ dependency は lockfile 内のちょうど 1 つの package entry に対応し�
 planner は既存 lockfile を検証する。`mizar.lock` の更新や再書き込みは行わない。
 lockfile generation と registry solving は同じ data model の上にある将来作業である。
 
+## Native workspace input acquisition
+
+`read_native_workspace_inputs(&WorkspaceRoot) -> Result<(Vec<WorkspacePackage>, Lockfile), String>` は明示された実 root から既存 input data を読み、親 directory 探索・toolchain/policy/context 選択を行わない。canonicalization 前の root metadata query に標準 path component を使い、末尾 separator/dot で最終 symlink 判定を回避させない。通常 root directory を要求する。
+root/mizar.workspace を symlink をたどらず確認し、NotFound の不存在だけで単一 root package member `.` を選ぶ。他の取得失敗・不正 workspace は fallback なしの Err。存在時は実通常 UTF-8 file を読み parse_workspace_manifest に渡し、root/mizar.pkg が存在しても列挙 member のみを取得する。member normalization/order/duplicate/default 意味論は既存 parser が所有する。
+検証済み member を canonical root の下へ解決し、通常 directory component と canonical containment を要求する。その位置の通常 mizar.pkg だけを取得して parse_package_manifest に渡す。symlink/dangling/special file・未対応 path/text encoding・missing member/file・metadata/read/parse failure は取得/parser String Err。source text は読まない。package name 重複は後続の既存 planner 検証へ残し、合成 merged package を作らない。
+必須の通常 root/mizar.lock を UTF-8 で取得し parse_lockfile に渡す。欠落 lock 生成・dependency version 選択・registry 取得・file 書換えはしない。全取得/parse 成功後だけ既存 WorkspacePackage の member 対応と Lockfile を返し、先行 member 後の失敗も部分 tuple を返さない。String error は input 取得失敗で、新しい public 診断 code・parser/CLI 診断方針の置換ではない。
+tuple は parsed data であり検証済み BuildPlan・認証済み manifest/lock/current snapshot ではない。cross-package/lock assignment は produce_build_plan の責任。実 runtime toolchain・lock/config digest・policy・dependency/capture/currentness 対応は caller/producer 所有で、placeholder identity・受理済み出力は供給しない。現 package.toolchain/computation_replay parser drift と locked workspace path 対応不足は後続 owner task とし、関数で黙って無視しない。
+実単一 package と列挙 multi-member file を既存 plan/layout・保護 native SourceLoad/Frontend/import discovery へ渡し、明示 clean parser input・実 NoKey と比較する。error control は workspace の absence/不正の区別、missing/late member/lock、不正 input、root/member/file link、部分成功なしを調べる。旧 parser/planner/layout/capture/diagnostics/試験は変えない。
+filesystem read は atomic metadata snapshot・fresh hash attestation ではなく、caller が native submit 前に実 canonical context へ束縛する。source ID/hash・registry artifact・native CLI/LSP mapping/settings・digest/toolchain/pin producer・proof/cache/publication・全 Steps 6–8 は保留する。
+
 ## BuildPlan Model
 
 ```rust

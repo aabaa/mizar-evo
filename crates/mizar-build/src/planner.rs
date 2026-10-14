@@ -345,6 +345,81 @@ impl Default for BuildConfig {
     }
 }
 
+pub fn read_native_workspace_inputs(
+    root: &WorkspaceRoot,
+) -> Result<(Vec<WorkspacePackage>, Lockfile), String> {
+    use std::{fs, io::ErrorKind, path::Path};
+
+    let root = Path::new(root.as_str())
+        .components()
+        .collect::<std::path::PathBuf>();
+    if !fs::symlink_metadata(&root)
+        .map_err(|error| error.to_string())?
+        .is_dir()
+    {
+        return Err("workspace root must be an ordinary directory".into());
+    }
+    let root = fs::canonicalize(root).map_err(|error| error.to_string())?;
+    if root.to_str().is_none() {
+        return Err("workspace root must be UTF-8".into());
+    }
+    let workspace_path = root.join("mizar.workspace");
+    let members = match fs::symlink_metadata(&workspace_path) {
+        Err(error) if error.kind() == ErrorKind::NotFound => vec![".".to_owned()],
+        Err(error) => return Err(error.to_string()),
+        Ok(metadata) => {
+            if !metadata.is_file() {
+                return Err("workspace manifest must be an ordinary file".into());
+            }
+            let text = fs::read_to_string(workspace_path).map_err(|error| error.to_string())?;
+            parse_workspace_manifest(&text)
+                .map_err(|error| error.to_string())?
+                .members
+        }
+    };
+    let mut packages = Vec::new();
+    for member_path in members {
+        let mut member_root = root.clone();
+        if member_path != "." {
+            for component in Path::new(&member_path).components() {
+                member_root.push(component);
+                if !fs::symlink_metadata(&member_root)
+                    .map_err(|error| error.to_string())?
+                    .is_dir()
+                {
+                    return Err("workspace member must contain only ordinary directories".into());
+                }
+            }
+        }
+        let member_root = fs::canonicalize(member_root).map_err(|error| error.to_string())?;
+        if !member_root.starts_with(&root) || member_root.to_str().is_none() {
+            return Err("workspace member must remain inside the UTF-8 workspace root".into());
+        }
+        let manifest_path = member_root.join("mizar.pkg");
+        if !fs::symlink_metadata(&manifest_path)
+            .map_err(|error| error.to_string())?
+            .is_file()
+        {
+            return Err("package manifest must be an ordinary file".into());
+        }
+        let text = fs::read_to_string(manifest_path).map_err(|error| error.to_string())?;
+        packages.push(WorkspacePackage {
+            member_path,
+            manifest: parse_package_manifest(&text).map_err(|error| error.to_string())?,
+        });
+    }
+    let lock_path = root.join("mizar.lock");
+    if !fs::symlink_metadata(&lock_path)
+        .map_err(|error| error.to_string())?
+        .is_file()
+    {
+        return Err("workspace lock must be an ordinary file".into());
+    }
+    let text = fs::read_to_string(lock_path).map_err(|error| error.to_string())?;
+    let lockfile = parse_lockfile(&text).map_err(|error| error.to_string())?;
+    Ok((packages, lockfile))
+}
+
 pub fn parse_package_manifest(input: &str) -> Result<PackageManifest, ManifestDiagnostics> {
     let document = parse_toml_document("<package manifest>", input)?;
     let mut diagnostics = Vec::new();

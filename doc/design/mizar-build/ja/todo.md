@@ -447,6 +447,8 @@ internal: [01](../../internal/ja/01.compiler_driver_and_pipeline_scheduler.md)�
 
 29. **[Native filesystem source layout](../../task_contracts/ja/BUILD-NATIVE-SOURCE-LAYOUT.md).** [x]
 
+30. **[Native workspace manifest and lock inputs](../../task_contracts/ja/BUILD-NATIVE-WORKSPACE-INPUTS.md).** [x]
+
 ## 推奨検証
 
 各タスクの後で実行する:

@@ -460,6 +460,8 @@ Keep `cargo test -p mizar-build` green after each task (see
 
 29. **[Native filesystem source layout](../../task_contracts/en/BUILD-NATIVE-SOURCE-LAYOUT.md).** [x]
 
+30. **[Native workspace manifest and lock inputs](../../task_contracts/en/BUILD-NATIVE-WORKSPACE-INPUTS.md).** [x]
+
 ## Recommended Verification
 
 Run after each task:
