@@ -422,6 +422,8 @@ kernel の拒否語彙と evidence 契約を訂正した。policy 層はその�
 22. **Vacuous statement diagnostic (W0104)。** [ ]
     - 診断専用。kernel に新しい入口が必要なら利用者への相談が要る。契約: [AIREV-W0104-VACUOUS-STATEMENT](../../task_contracts/ja/AIREV-W0104-VACUOUS-STATEMENT.md)。
 
+24. **[Fresh source candidate checking](../../task_contracts/ja/PROOF-SOURCE-CANDIDATE-CHECK.md).** [x] — 通常 Kernel 検査と既存 policy 分類。汎用 integration/publication は保留。
+
 ## 推奨検証
 
 各タスクの後で実行する:

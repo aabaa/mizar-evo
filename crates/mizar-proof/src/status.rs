@@ -1,7 +1,7 @@
 //! Artifact- and diagnostics-facing proof status projection.
 //!
-//! This module projects proof outcomes. Its bounded source-registration facade
-//! owns fresh normal kernel checks before constructing a local registration database.
+//! This module projects proof outcomes. Its bounded source-registration facades
+//! own fresh normal kernel checks for classification or a local registration database.
 //! It does not run ATP backends, query caches, or write artifact manifests.
 
 use std::{error::Error, fmt};
@@ -24,6 +24,162 @@ use crate::{
 
 const USED_AXIOMS_HASH_DOMAIN: &str = "mizar-proof-trusted-used-axioms-v1";
 const PROOF_REUSE_VALIDATION_HASH_DOMAIN: &str = "mizar-proof-reuse-validation-v1";
+
+/// Freshly checks one authentic NeedsAtp registration candidate under the current policy.
+/// The returned check and classification do not authorize activation or publication.
+pub fn check_source_registration_candidate(
+    source: &mizar_resolve::resolved_ast::SurfaceResolvedArena,
+    nodes: &mizar_checker::typed_ast::TypedArena,
+    symbols: &mizar_resolve::env::SymbolEnv,
+    snapshot: mizar_session::BuildSnapshotId,
+    vc_id: VcId,
+    encoding: (
+        mizar_atp::problem::LogicProfile,
+        mizar_atp::problem::ConcreteFormat,
+    ),
+    policy: &VerifierPolicy,
+) -> Result<(KernelCheckResult, crate::policy::PolicyDecision), String> {
+    use crate::policy::{PolicyCandidate, ProofPolicyEvaluator};
+    use mizar_atp::backend::{BackendCandidatePayload, build_source_registration_candidate_inputs};
+    use mizar_checker::registration_resolution::check_source_existential_registration_proof;
+    use mizar_kernel::{
+        certificate_parser::{ClauseTautologyPolicy, Fingerprint, KernelProfileRecord},
+        checker::{
+            FormulaEvidenceContext, ImportedFactContextLimits, KernelCheckPolicy,
+            KernelContextIdentityEntry, KernelContextIdentityPayload, KernelContextIdentitySource,
+            KernelEvidenceCheckInput, KernelEvidenceCheckKind, KernelEvidenceCheckLimits,
+            KernelFormulaProducerRef, KernelVcGeneratedFormulaId, check_kernel_evidence,
+        },
+        formula_evidence::{FormulaEvidenceParseContext, parse_formula_evidence},
+        rejection::TargetVcFingerprint,
+    };
+    use mizar_vc::{
+        discharge::{DischargeInput, DischargePolicy, try_discharge},
+        generator::generate_source_existential_registration,
+        kernel_evidence_handoff::{
+            KernelClauseTautologyPolicy, KernelContextIdentitySource as SourceContext,
+            build_source_existential_kernel_handoff,
+        },
+        vc_ir::{GenerationSchemaVersion, VcFormulaRef, VcSchemaVersion},
+    };
+    let invalid = || "registration.proof.invalid_source_candidate".to_owned();
+    let check = check_source_existential_registration_proof(source, nodes, symbols)?;
+    let core = mizar_core::elaborator::lower_source_existential_registration(&check)?;
+    let original = generate_source_existential_registration(
+        &core,
+        snapshot,
+        &GenerationSchemaVersion::new("source-existential-registration-v1"),
+        &VcSchemaVersion::new("vc-v1"),
+    )?;
+    let discharge = try_discharge(DischargeInput {
+        vc_set: &original,
+        policy: &DischargePolicy::default(),
+    })
+    .map_err(|error| format!("registration.proof.discharge:{error:?}"))?;
+    let vcs = discharge.vc_set();
+    let (encoded, candidate) =
+        build_source_registration_candidate_inputs(&core, vcs, vc_id, encoding.0, encoding.1)?;
+    let BackendCandidatePayload::FormulaSubstitutionBytes(bytes) = candidate.payload() else {
+        return Err(invalid());
+    };
+    let encoded_problem_matches = !bytes.is_empty()
+        && candidate.target_binding() == encoded.target_binding()
+        && candidate.encoded_problem_hash() == encoded.input_hash()
+        && candidate.provenance_hash() == encoded.provenance_hash()
+        && candidate.formula_label_refs() == encoded.formula_labels()
+        && candidate.symbol_binding_refs() == encoded.symbol_bindings();
+    let evaluator = ProofPolicyEvaluator::new(policy.clone());
+    if !evaluator.can_schedule_kernel_check(&PolicyCandidate::UncheckedFormulaSubstitution {
+        encoded_problem_matches,
+    }) {
+        return Err("registration.proof.kernel_policy_rejected".into());
+    }
+    let handoff = build_source_existential_kernel_handoff(&core, vcs, vc_id)?;
+    let envelope = handoff.canonical_evidence();
+    let profile = envelope.kernel_profile();
+    let tautology = match profile.clause_tautology_policy {
+        KernelClauseTautologyPolicy::Reject => ClauseTautologyPolicy::Reject,
+        KernelClauseTautologyPolicy::Marker => ClauseTautologyPolicy::Marker,
+        _ => return Err(invalid()),
+    };
+    let target = envelope.target_vc();
+    let mut parse_context = FormulaEvidenceParseContext::v1(
+        Fingerprint::new(target.algorithm_id, target.digest.clone()),
+        KernelProfileRecord::v1(profile.profile_id, tautology),
+    );
+    parse_context.accepted_schema_versions.insert(2);
+    let parsed = parse_formula_evidence(bytes, &parse_context)
+        .map_err(|error| format!("registration.proof.parse:{error:?}"))?;
+    let target = TargetVcFingerprint::new(target.algorithm_id, target.digest.clone());
+    let entries = handoff
+        .context_identity()
+        .entries()
+        .iter()
+        .map(|entry| {
+            let source = match entry.source() {
+                SourceContext::LocalHypothesis { local_context_id } => {
+                    KernelContextIdentitySource::LocalHypothesis { local_context_id }
+                }
+                SourceContext::CitedPremise { local_context_id } => {
+                    KernelContextIdentitySource::CitedPremise { local_context_id }
+                }
+                SourceContext::GeneratedVcFact { vc_fact_id } => {
+                    KernelContextIdentitySource::GeneratedVcFact { vc_fact_id }
+                }
+                _ => return Err(invalid()),
+            };
+            let producer = match entry.producer_formula_ref() {
+                VcFormulaRef::Core(id) => KernelFormulaProducerRef::Core(id),
+                VcFormulaRef::Generated(id) => {
+                    KernelFormulaProducerRef::Generated(KernelVcGeneratedFormulaId::new(id.index()))
+                }
+                _ => return Err(invalid()),
+            };
+            Ok(KernelContextIdentityEntry::new(
+                source,
+                entry.formula_id(),
+                Fingerprint::new(
+                    entry.formula_fingerprint().algorithm_id,
+                    entry.formula_fingerprint().digest.clone(),
+                ),
+                producer,
+            ))
+        })
+        .collect::<Result<Vec<_>, String>>()?;
+    let requirements = handoff.formula_context_requirements();
+    if requirements.is_some_and(|context| {
+        !context.imported_axioms.is_empty() || !context.imported_theorems.is_empty()
+    }) {
+        return Err(invalid());
+    }
+    let context = FormulaEvidenceContext::with_context_identity(
+        Some(handoff.context_identity_hash().as_bytes().to_vec()),
+        Vec::new(),
+        Vec::new(),
+        Some(KernelContextIdentityPayload::new(
+            target.clone(),
+            handoff.canonical_hash(),
+            handoff.context_identity_hash(),
+            entries,
+        )),
+        ImportedFactContextLimits::default(),
+    )
+    .map_err(|error| format!("registration.proof.context:{error:?}"))?;
+    let result = check_kernel_evidence(KernelEvidenceCheckInput {
+        target_vc_fingerprint: &target,
+        evidence: &parsed,
+        formula_context: Some(&context),
+        check_kind: KernelEvidenceCheckKind::ProofObligation,
+        policy: KernelCheckPolicy::default(),
+        limits: KernelEvidenceCheckLimits::default(),
+    });
+    let input = KernelPolicyInput::from_kernel_result(
+        &result,
+        KernelEvidenceOrigin::AtpFormulaSubstitution,
+    );
+    let decision = evaluator.evaluate_candidate(&PolicyCandidate::KernelResult(input));
+    Ok((result, decision))
+}
 
 /// Proves the authenticated local existential registration and returns its local database.
 pub fn prove_source_existential_registration(

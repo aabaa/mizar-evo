@@ -446,6 +446,8 @@ layer consumes both; one alignment task is owned here.
       source acceptance follows real candidate producers; Artifact task 25 owns
       built-in witness support, and full emission remains Artifact task 17.
 
+24. **[Fresh source candidate checking](../../task_contracts/en/PROOF-SOURCE-CANDIDATE-CHECK.md).** [x] — Normal Kernel checking and existing-policy classification; general integration/publication remain open.
+
 ## Recommended Verification
 
 Run after each task:

@@ -13697,3 +13697,134 @@ fn source_registration_candidate_inputs_reject_whole_bindings_and_tampered_trans
     let foreign_target = AtpTargetBinding::new(AtpFingerprint::new(candidate.target_binding().fingerprint().algorithm_id(), digest).unwrap(), candidate.target_binding().producer_binding().clone()).unwrap();
     assert!(source_candidate_check_bytes(&handoff, bytes, &foreign_target).is_err());
 }
+
+#[test]
+fn source_registration_candidate_check_single_uses_fresh_normal_checks_for_both_encodings() {
+    use mizar_atp::problem::ConcreteFormat;
+    use mizar_kernel::{checker::{KernelCheckStatus, KernelEvidenceCheckKind}, rejection::TargetVcFingerprint};
+    use mizar_proof::{policy::{AcceptedGoalPolarity, CandidatePolicyClass, KernelEvidenceOrigin, KernelPolicyInput, VerifierPolicy},
+        status::check_source_registration_candidate as check};
+    use mizar_vc::{kernel_evidence_handoff::build_source_existential_kernel_handoff, vc_ir::VcStatus};
+    let original = std::fs::read_to_string(step5c3_registration_case().source_path).unwrap();
+    let renamed = original.replace("wmarked", "retagged").replace("X", "Value");
+    let mut targets = std::collections::BTreeSet::new();
+    for text in [&original, &renamed] {
+        let (source, nodes, symbols) = step5c3_registration_inputs(text).unwrap();
+        let (core, _, vcs) = source_candidate_core_and_vcs(false, text);
+        let vc = vcs.vcs().iter().find(|vc| vc.status == VcStatus::NeedsAtp).unwrap();
+        let handoff = build_source_existential_kernel_handoff(&core, &vcs, vc.id).unwrap();
+        let target = handoff.canonical_evidence().target_vc();
+        let expected = TargetVcFingerprint::new(target.algorithm_id, target.digest.clone());
+        assert!(targets.insert(expected.clone()));
+        let mut prior = None;
+        for format in [ConcreteFormat::Tptp, ConcreteFormat::SmtLib] {
+            let output = check(&source, &nodes, &symbols, super::shared::snapshot_id(0), vc.id,
+                (source_candidate_profile("source-check", format), format), &VerifierPolicy::release()).unwrap();
+            let (result, decision) = &output;
+            assert_eq!(result.target_vc_fingerprint(), &expected);
+            assert_eq!(result.status(), KernelCheckStatus::Accepted);
+            assert_eq!(result.evidence_check_kind(), Some(KernelEvidenceCheckKind::ProofObligation));
+            assert!(!result.policy_taint());
+            assert!(result.rejections().is_empty());
+            assert!(result.sat_check_report().is_some());
+            let input = KernelPolicyInput::from_kernel_result(result, KernelEvidenceOrigin::AtpFormulaSubstitution);
+            assert_eq!(input.accepted_goal_polarity(), Some(AcceptedGoalPolarity::AssertFalseForRefutation));
+            assert_eq!(decision.class, CandidatePolicyClass::KernelVerified);
+            assert_eq!(decision.kernel_evidence_check_kind, result.evidence_check_kind());
+            assert!(decision.external_admission.is_none());
+            if let Some(previous) = prior { assert_eq!(output, previous); }
+            prior = Some(output);
+        }
+    }
+}
+
+#[test]
+fn source_registration_candidate_check_aggregate_preserves_false_goal_rejection_in_all_modes() {
+    use mizar_atp::problem::ConcreteFormat;
+    use mizar_kernel::{checker::{KernelCheckStatus, KernelEvidenceCheckKind}, rejection::{RejectionDetail, TargetVcFingerprint}};
+    use mizar_proof::{policy::{CandidatePolicyClass, KernelEvidenceOrigin, KernelPolicyInput, VerifierPolicy},
+        status::check_source_registration_candidate as check};
+    use mizar_vc::{kernel_evidence_handoff::build_source_existential_kernel_handoff, vc_ir::VcStatus};
+    let original = std::fs::read_to_string(step5c13_registration_case().source_path).unwrap();
+    for renamed in [false, true] {
+        let base = if renamed { original.replace("marked", "retagged").replace("X", "Value") } else { original.clone() };
+        for negative in [false, true] {
+            let formal = if renamed { "Value" } else { "X" };
+            let text = if negative { base.replacen(&format!("means {formal} = {formal}"), &format!("means not {formal} = {formal}"), 1) } else { base.clone() };
+            let (source, nodes, symbols) = step5c13_registration_inputs(&text).unwrap();
+            let (core, _, vcs) = source_candidate_core_and_vcs(true, &text);
+            let mut rejections = 0;
+            for vc in vcs.vcs().iter().filter(|vc| vc.status == VcStatus::NeedsAtp) {
+                let handoff = build_source_existential_kernel_handoff(&core, &vcs, vc.id).unwrap();
+                let target = handoff.canonical_evidence().target_vc();
+                let expected_target = TargetVcFingerprint::new(target.algorithm_id, target.digest.clone());
+                // The second registration cites the unchanged second attribute; the first and conjunction cite the false definition.
+                let rejected = negative && vc.id.index() != 3;
+                for format in [ConcreteFormat::Tptp, ConcreteFormat::SmtLib] {
+                    for policy in [VerifierPolicy::release(), VerifierPolicy::development(), VerifierPolicy::interactive()] {
+                        let (result, decision) = check(&source, &nodes, &symbols, super::shared::snapshot_id(0), vc.id,
+                            (source_candidate_profile("source-check", format), format), &policy).unwrap();
+                        assert_eq!(result.target_vc_fingerprint(), &expected_target);
+                        assert_eq!(result.evidence_check_kind(), Some(KernelEvidenceCheckKind::ProofObligation));
+                        assert!(!result.policy_taint());
+                        assert_eq!(decision.kernel_evidence_check_kind, result.evidence_check_kind());
+                        assert_eq!(decision.kernel_rejections, result.rejections());
+                        assert!(decision.external_admission.is_none());
+                        if rejected {
+                            assert_eq!(result.status(), KernelCheckStatus::Rejected);
+                            assert_eq!(decision.class, CandidatePolicyClass::KernelRejected);
+                            assert!(result.rejections().iter().any(|record| record.detail() == RejectionDetail::InvalidSatRefutation));
+                            assert!(KernelPolicyInput::from_kernel_result(&result, KernelEvidenceOrigin::AtpFormulaSubstitution).accepted_goal_polarity().is_none());
+                            rejections += 1;
+                        } else {
+                            assert_eq!(result.status(), KernelCheckStatus::Accepted);
+                            assert_eq!(decision.class, CandidatePolicyClass::KernelVerified);
+                        }
+                    }
+                }
+            }
+            assert_eq!(rejections, if negative { 12 } else { 0 });
+        }
+    }
+}
+
+#[test]
+fn source_registration_candidate_check_rejects_foreign_inputs_and_distinguishes_format_permissions() {
+    use mizar_atp::problem::*;
+    use mizar_proof::{policy::{CandidatePolicyClass, KernelEvidenceFormat, VerifierPolicy},
+        status::{check_source_registration_candidate as check, prove_source_existential_registration as builtin}};
+    use mizar_vc::vc_ir::{VcId, VcStatus};
+    let text = std::fs::read_to_string(step5c3_registration_case().source_path).unwrap();
+    let (source, nodes, symbols) = step5c3_registration_inputs(&text).unwrap();
+    let (_, _, vcs) = source_candidate_core_and_vcs(false, &text);
+    let selected = vcs.vcs().iter().find(|vc| vc.status == VcStatus::NeedsAtp).unwrap().id;
+    let discharged = vcs.vcs().iter().find(|vc| matches!(vc.status, VcStatus::Discharged { .. })).unwrap().id;
+    let format = ConcreteFormat::Tptp;
+    let profile = source_candidate_profile("source-check", format);
+    let policy = VerifierPolicy::release();
+    let snapshot = super::shared::snapshot_id(0);
+    let foreign_text = text.replace("wmarked", "foreignmarked");
+    let (foreign_source, foreign_nodes, foreign_symbols) = step5c3_registration_inputs(&foreign_text).unwrap();
+    assert!(check(&foreign_source, &nodes, &symbols, snapshot, selected, (profile.clone(), format), &policy).is_err());
+    assert!(check(&source, &foreign_nodes, &symbols, snapshot, selected, (profile.clone(), format), &policy).is_err());
+    assert!(check(&source, &nodes, &foreign_symbols, snapshot, selected, (profile.clone(), format), &policy).is_err());
+    for target in [discharged, VcId::new(vcs.vcs().len())] {
+        assert!(check(&source, &nodes, &symbols, snapshot, target, (profile.clone(), format), &policy).is_err());
+    }
+    let unsupported_text = text.replacen("take the set;", "take the wmarked set;", 1);
+    assert_ne!(unsupported_text, text);
+    let (unsupported_source, unsupported_nodes, unsupported_symbols) = step5c3_registration_inputs(&unsupported_text).unwrap();
+    assert!(check(&unsupported_source, &unsupported_nodes, &unsupported_symbols, snapshot, selected, (profile.clone(), format), &policy).is_err());
+    assert!(check(&source, &nodes, &symbols, snapshot, selected, (profile.clone(), ConcreteFormat::SmtLib), &policy).is_err());
+    let unsupported = LogicProfile::try_new("unsupported", LogicFragment::TffLike, EqualitySupport::Supported,
+        QuantifierPolicy::FirstOrder, SoftTypeStrategy::GuardPredicates, NativePropertySupport::Unsupported,
+        [format].into_iter().collect()).unwrap();
+    assert!(check(&source, &nodes, &symbols, snapshot, selected, (unsupported, format), &policy).is_err());
+    let builtin_only = policy.clone().with_kernel_evidence_formats([KernelEvidenceFormat::BuiltinKernelEvidence]);
+    assert!(check(&source, &nodes, &symbols, snapshot, selected, (profile.clone(), format), &builtin_only).is_err());
+    assert_eq!(builtin(&source, &nodes, &symbols, snapshot, &builtin_only).unwrap().activated().len(), 1);
+    let formula_only = policy.with_kernel_evidence_formats([KernelEvidenceFormat::FormulaSubstitution]);
+    let (_, decision) = check(&source, &nodes, &symbols, snapshot, selected, (profile, format), &formula_only).unwrap();
+    assert_eq!(decision.class, CandidatePolicyClass::KernelVerified);
+    assert!(builtin(&source, &nodes, &symbols, snapshot, &formula_only).is_err());
+}

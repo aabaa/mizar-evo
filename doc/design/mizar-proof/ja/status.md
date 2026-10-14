@@ -209,6 +209,14 @@ status projection は ATP backend 実行、SAT solving、kernel 呼び出し、s
 invention、premise selection、proof cache query、witness の stage/publish、artifact
 manifest write、proof acceptance を行わない。
 
+## Source candidate checking
+
+`check_source_registration_candidate(&SurfaceResolvedArena, &TypedArena, &SymbolEnv, BuildSnapshotId, VcId, (LogicProfile, ConcreteFormat), &VerifierPolicy) -> Result<(KernelCheckResult, PolicyDecision), String>` は leaf 1件の fresh 検査を所有し、登録活性化や公開を行わない。encoding tuple は既存の明示 profile/format をまとめるだけで型を追加しない。source checker と Core lowering を再実行し、既存 source/VC schema で元 graph を生成して実 default Discharge を適用する。選択 NeedsAtp leaf に [実 source candidate factory](../../mizar-atp/ja/backend.md#source-registration-candidate-inputs) を使う。未対応・foreign input、不正・Discharged target、実行許可のない policy では checked result や fallback なしで error とする。
+candidate の payload kind、完全な target、input/provenance hash、label、symbol mapping を局所的に生成した encoded container と比較する。この比較から UncheckedFormulaSubstitution の encoded_problem_matches を得て、既存 FormulaSubstitution 検査実行許可を要求する。caller の一致 boolean、encoded/candidate pair、context、Accepted result、hash は入力しない。backend observation は作らない。
+fresh Core/default-discharge graph 全体から同じ認証済み source handoff を独立再構成する。実 target/profile を期待値とし、schema 2 を明示許可して返却 v2 byte を parse し、この別 handoff の完全な identity/producer entry から通常の [Kernel context](../../mizar-kernel/ja/checker.md) を構築する。import・未対応 context class は空 context の捏造で補わず拒否する。既存 default policy/limit と ProofObligation で通常 check_kernel_evidence を呼び、legacy audit・過去 result を使わない。
+実 result を KernelPolicyInput::from_kernel_result と明示 AtpFormulaSubstitution origin で包み、既存 evaluator に渡す。実 PolicyDecision と KernelCheckResult を返し、偽の goal の実拒否 detail も保つ。通常 Accepted/untainted proof check は既存 policy により KernelVerified となり、拒否を手動昇格したり Open/Builtin/external evidence へ置換しない。policy criteria/fingerprint を保つ。
+返却値はこの呼出しの検査出力であって selection・source 活性化・witness 公開・artifact status・cache reuse の移転可能な権限ではない。caller が現 source/snapshot freshness を所有する。下の元 Open/Builtin facade は変えない。汎用 by/built-in integration・探索 budget・import context・witness/artifact/cache 公開と全 milestone は保留する。
+
 ## Source existential-registration proof
 
 `prove_source_existential_registration(&SurfaceResolvedArena, &TypedArena, &SymbolEnv,
