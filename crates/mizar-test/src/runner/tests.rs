@@ -15321,3 +15321,438 @@ fn source_registration_discharge_selection_keeps_false_correctness_rejection_and
         );
     }
 }
+#[test]
+fn source_registration_discharge_witness_projects_exact_checked_payload_and_reference() {
+    use mizar_artifact::{
+        proof_witness::{
+            EvidenceKind, ProofStatus, ProofWitnessReadOptions, builtin_proof_witness_ref_json,
+            proof_witness_ref_json, read_builtin_proof_witness_ref, read_proof_witness_ref,
+        },
+        registration_summary::ArtifactHashClass,
+        store::{
+            CanonicalHashDomain, CanonicalJson, HashClass, SchemaVersion, canonical_json_bytes,
+        },
+    };
+    use mizar_proof::{
+        policy::{AcceptedGoalPolarity, VerifierPolicy},
+        selection::{ProofWinnerClass, ProofWitnessPublication},
+        status::{
+            check_source_registration_discharge_metadata as check,
+            project_source_registration_discharge_witness as project,
+            select_source_registration_discharge_candidate as select,
+        },
+    };
+    use mizar_vc::{
+        dependency_slice::{
+            DependencySliceCompleteness, DependencySliceInput, try_compute_dependency_slices,
+        },
+        discharge::{DischargeInput, DischargePolicy, try_discharge},
+        generator::generate_source_existential_registration,
+        kernel_evidence_handoff::build_source_existential_discharge_candidate,
+        vc_ir::{GenerationSchemaVersion, HashMarker, VcSchemaVersion, VcStatus},
+    };
+    for (multiple, case) in [
+        (false, step5c3_registration_case()),
+        (true, step5c13_registration_case()),
+    ] {
+        let original = std::fs::read_to_string(case.source_path).unwrap();
+        let renamed = original.replace("marked", "retagged").replace("X", "Value");
+        let mut contents = std::collections::BTreeSet::new();
+        for text in [&original, &renamed] {
+            let (source, nodes, symbols) = if multiple {
+                step5c13_registration_inputs(text)
+            } else {
+                step5c3_registration_inputs(text)
+            }
+            .unwrap();
+            let before = (source.clone(), nodes.clone(), symbols.clone());
+            let (core, _, _) = source_candidate_core_and_vcs(multiple, text);
+            for snapshot_index in 0..2 {
+                let snapshot = super::shared::snapshot_id(snapshot_index);
+                let open = generate_source_existential_registration(
+                    &core,
+                    snapshot,
+                    &GenerationSchemaVersion::new("source-existential-registration-v1"),
+                    &VcSchemaVersion::new("vc-v1"),
+                )
+                .unwrap();
+                let discharged = try_discharge(DischargeInput {
+                    vc_set: &open,
+                    policy: &DischargePolicy::default(),
+                })
+                .unwrap();
+                let slices = try_compute_dependency_slices(DependencySliceInput {
+                    vc_set: &open,
+                    discharge_output: None,
+                })
+                .unwrap();
+                assert!(slices.slices().iter().all(|slice| slice.completeness()
+                    == DependencySliceCompleteness::IncompleteUncacheable));
+                assert_eq!(
+                    discharged.evidence_records().len(),
+                    if multiple { 3 } else { 1 }
+                );
+                for record in discharged.evidence_records() {
+                    let handoff = build_source_existential_discharge_candidate(
+                        &core,
+                        &open,
+                        record.vc,
+                        &discharged,
+                    )
+                    .unwrap();
+                    let wire = handoff.encode_local_evidence(None).unwrap();
+                    assert!(open.canonical_vc_fingerprint(record.vc).is_none());
+                    let VcStatus::Discharged { evidence, .. } =
+                        &discharged.vc_set().vc(record.vc).unwrap().status
+                    else {
+                        unreachable!()
+                    };
+                    assert!(matches!(
+                        evidence.evidence_hash,
+                        HashMarker::ConservativeUnknown { .. }
+                    ));
+                    let mut prior = None;
+                    for policy in [
+                        VerifierPolicy::release(),
+                        VerifierPolicy::development(),
+                        VerifierPolicy::interactive(),
+                        VerifierPolicy::release().with_schema_version(2),
+                        VerifierPolicy::release().with_checker_schema_version(7),
+                        VerifierPolicy::release().with_profile_id("source-witness-profile"),
+                    ] {
+                        let actual =
+                            project(&source, &nodes, &symbols, snapshot, record.vc, &policy)
+                                .unwrap();
+                        assert_eq!(
+                            actual,
+                            project(&source, &nodes, &symbols, snapshot, record.vc, &policy)
+                                .unwrap()
+                        );
+                        let (selection, reference, bytes) = actual;
+                        assert_eq!(
+                            selection,
+                            select(&source, &nodes, &symbols, snapshot, record.vc, &policy)
+                                .unwrap()
+                        );
+                        let (result, _, raw) =
+                            check(&source, &nodes, &symbols, snapshot, record.vc, &policy).unwrap();
+                        assert_eq!(reference.kernel_acceptance, raw.unwrap());
+                        assert_eq!(bytes, wire);
+                        let target = handoff.canonical_evidence().target_vc();
+                        assert_eq!(
+                            result.target_vc_fingerprint().algorithm_id,
+                            target.algorithm_id
+                        );
+                        assert_eq!(result.target_vc_fingerprint().digest, target.digest);
+                        assert_eq!(
+                            selection.selected_class(),
+                            ProofWinnerClass::DischargedBuiltin
+                        );
+                        let reuse = selection.reuse_metadata();
+                        assert_eq!(
+                            reuse.accepted_goal_polarity(),
+                            Some(AcceptedGoalPolarity::AssertFalseForRefutation)
+                        );
+                        assert_eq!(reuse.encoded_problem_hash(), None);
+                        assert_eq!(reuse.selected_proof_witness_hash(), None);
+                        assert_eq!(reuse.deterministic_discharge_hash(), None);
+                        assert_eq!(
+                            reuse.proof_witness_publication(),
+                            ProofWitnessPublication::ExternalDependencyGap
+                        );
+                        assert_eq!(reference.schema_version, SchemaVersion::new(3, 0));
+                        assert_eq!(reference.proof_status, ProofStatus::DischargedBuiltin);
+                        assert_eq!(
+                            reference.evidence_kind,
+                            EvidenceKind::FormulaSubstitutionKernelEvidence
+                        );
+                        assert_eq!(
+                            reference.obligation_id,
+                            selection.selected_candidate_id().unwrap().as_str()
+                        );
+                        let payload_hex = bytes
+                            .iter()
+                            .map(|byte| format!("{byte:02x}"))
+                            .collect::<String>();
+                        let payload_domain = CanonicalHashDomain::new(
+                            HashClass::Artifact,
+                            "mizar-proof/source-registration-discharge-witness-payload",
+                            SchemaVersion::new(1, 0),
+                        );
+                        assert_eq!(
+                            reference.witness_artifact_hash.class,
+                            ArtifactHashClass::Artifact
+                        );
+                        assert_eq!(
+                            reference.witness_artifact_hash.schema_family,
+                            "mizar-proof/source-registration-discharge-witness-payload"
+                        );
+                        assert_eq!(
+                            reference.witness_artifact_hash.schema_version,
+                            SchemaVersion::new(1, 0)
+                        );
+                        assert_eq!(
+                            reference.witness_artifact_hash.digest,
+                            payload_domain.hash(&CanonicalJson::string(&payload_hex), &[])
+                        );
+                        let m = &reference.kernel_acceptance;
+                        let obligation = CanonicalJson::object([
+                            (
+                                "original_target_bytes",
+                                CanonicalJson::string(
+                                    result
+                                        .target_vc_fingerprint()
+                                        .sort_bytes()
+                                        .iter()
+                                        .map(|b| format!("{b:02x}"))
+                                        .collect::<String>(),
+                                ),
+                            ),
+                            (
+                                "kernel_profile_fingerprint",
+                                CanonicalJson::string(
+                                    m.kernel_profile_fingerprint.to_artifact_hash_string(),
+                                ),
+                            ),
+                            (
+                                "verifier_policy_fingerprint",
+                                CanonicalJson::string(
+                                    m.verifier_policy_fingerprint.to_artifact_hash_string(),
+                                ),
+                            ),
+                            (
+                                "checker_schema_version",
+                                CanonicalJson::string(m.checker_schema_version.to_string()),
+                            ),
+                            (
+                                "evidence_schema_version",
+                                CanonicalJson::string(m.evidence_schema_version.to_string()),
+                            ),
+                            (
+                                "target_binding_hash",
+                                CanonicalJson::string(
+                                    m.target_binding_hash.to_artifact_hash_string(),
+                                ),
+                            ),
+                            (
+                                "formula_evidence_hash",
+                                CanonicalJson::string(
+                                    m.formula_evidence_hash.to_artifact_hash_string(),
+                                ),
+                            ),
+                            (
+                                "substitution_evidence_hash",
+                                CanonicalJson::string(
+                                    m.substitution_evidence_hash.to_artifact_hash_string(),
+                                ),
+                            ),
+                            (
+                                "provenance_hash",
+                                CanonicalJson::string(m.provenance_hash.to_artifact_hash_string()),
+                            ),
+                            ("formula_context_hash", CanonicalJson::null()),
+                            (
+                                "accepted_result_hash",
+                                CanonicalJson::string(
+                                    m.accepted_result_hash.to_artifact_hash_string(),
+                                ),
+                            ),
+                            (
+                                "accepted_goal_polarity",
+                                CanonicalJson::string(
+                                    AcceptedGoalPolarity::AssertFalseForRefutation.as_str(),
+                                ),
+                            ),
+                            (
+                                "witness_artifact_hash",
+                                CanonicalJson::string(
+                                    reference.witness_artifact_hash.to_artifact_hash_string(),
+                                ),
+                            ),
+                        ])
+                        .unwrap();
+                        assert!(m.formula_context_hash.is_none());
+                        let domain = CanonicalHashDomain::new(
+                            HashClass::Interface,
+                            "mizar-proof/source-registration-discharge-obligation",
+                            SchemaVersion::new(1, 0),
+                        );
+                        assert_eq!(
+                            reference.obligation_fingerprint.class,
+                            ArtifactHashClass::Interface
+                        );
+                        assert_eq!(
+                            reference.obligation_fingerprint.schema_family,
+                            "mizar-proof/source-registration-discharge-obligation"
+                        );
+                        assert_eq!(
+                            reference.obligation_fingerprint.schema_version,
+                            SchemaVersion::new(1, 0)
+                        );
+                        assert_eq!(
+                            reference.obligation_fingerprint.digest,
+                            domain.hash(&obligation, &[])
+                        );
+                        assert_eq!(
+                            reference.witness_path,
+                            format!(
+                                "proof-witnesses/source-registration-discharge-v1/{}.bin",
+                                reference
+                                    .witness_artifact_hash
+                                    .digest
+                                    .as_bytes()
+                                    .iter()
+                                    .map(|b| format!("{b:02x}"))
+                                    .collect::<String>()
+                            )
+                        );
+                        let json = builtin_proof_witness_ref_json(&reference).unwrap();
+                        assert_eq!(
+                            read_builtin_proof_witness_ref(
+                                &json,
+                                ProofWitnessReadOptions {
+                                    expected_witness_artifact_hash: Some(
+                                        &reference.witness_artifact_hash
+                                    ),
+                                    ..Default::default()
+                                }
+                            )
+                            .unwrap(),
+                            reference
+                        );
+                        assert_eq!(
+                            canonical_json_bytes(&json),
+                            canonical_json_bytes(
+                                &builtin_proof_witness_ref_json(&reference).unwrap()
+                            )
+                        );
+                        assert!(proof_witness_ref_json(&reference).is_err());
+                        assert!(read_proof_witness_ref(&json, Default::default()).is_err());
+                        let mut corrupt = bytes.clone();
+                        corrupt[0] ^= 1;
+                        let corrupt_hex = corrupt
+                            .iter()
+                            .map(|b| format!("{b:02x}"))
+                            .collect::<String>();
+                        assert_ne!(
+                            payload_domain.hash(&CanonicalJson::string(corrupt_hex), &[]),
+                            reference.witness_artifact_hash.digest
+                        );
+                        if let Some((previous_payload, previous_obligation)) = &prior {
+                            assert_eq!(&reference.witness_artifact_hash, previous_payload);
+                            assert_ne!(&reference.obligation_fingerprint, previous_obligation);
+                        } else {
+                            assert!(
+                                contents.insert(
+                                    reference.witness_artifact_hash.to_artifact_hash_string()
+                                )
+                            );
+                            prior = Some((
+                                reference.witness_artifact_hash,
+                                reference.obligation_fingerprint,
+                            ));
+                        }
+                    }
+                }
+            }
+            assert_eq!((source, nodes, symbols), before);
+        }
+    }
+}
+
+#[test]
+fn source_registration_discharge_witness_preserves_failures_and_false_correctness() {
+    use mizar_proof::{
+        policy::{CandidatePolicyClass, KernelEvidenceFormat, VerifierPolicy},
+        status::{
+            check_source_registration_candidate as atp,
+            check_source_registration_discharge_metadata as check,
+            project_source_registration_discharge_witness as project,
+        },
+    };
+    use mizar_vc::vc_ir::{VcId, VcStatus};
+    for (multiple, case) in [
+        (false, step5c3_registration_case()),
+        (true, step5c13_registration_case()),
+    ] {
+        let original = std::fs::read_to_string(case.source_path).unwrap();
+        let text = original.replace("means X = X", "means not X = X");
+        assert_ne!(text, original);
+        let (source, nodes, symbols) = if multiple {
+            step5c13_registration_inputs(&text)
+        } else {
+            step5c3_registration_inputs(&text)
+        }
+        .unwrap();
+        let (_, open, vcs) = source_candidate_core_and_vcs(multiple, &text);
+        let direct = vcs
+            .vcs()
+            .iter()
+            .find(|vc| matches!(vc.status, VcStatus::Discharged { .. }))
+            .unwrap()
+            .id;
+        let correctness = vcs
+            .vcs()
+            .iter()
+            .find(|vc| vc.status == VcStatus::NeedsAtp)
+            .unwrap()
+            .id;
+        let snapshot = super::shared::snapshot_id(0);
+        let policy = VerifierPolicy::release();
+        assert!(project(&source, &nodes, &symbols, snapshot, direct, &policy).is_ok());
+        let foreign = text.replace("marked", "foreignmarked");
+        let (fs, fnodes, fenv) = if multiple {
+            step5c13_registration_inputs(&foreign)
+        } else {
+            step5c3_registration_inputs(&foreign)
+        }
+        .unwrap();
+        for (s, n, e, target) in [
+            (&fs, &nodes, &symbols, direct),
+            (&source, &fnodes, &symbols, direct),
+            (&source, &nodes, &fenv, direct),
+            (&source, &nodes, &symbols, correctness),
+            (&source, &nodes, &symbols, VcId::new(open.vcs().len())),
+        ] {
+            assert_eq!(
+                project(s, n, e, snapshot, target, &policy).unwrap_err(),
+                check(s, n, e, snapshot, target, &policy).unwrap_err()
+            );
+        }
+        let denied = policy
+            .clone()
+            .with_kernel_evidence_formats([KernelEvidenceFormat::FormulaSubstitution]);
+        assert_eq!(
+            project(&source, &nodes, &symbols, snapshot, direct, &denied).unwrap_err(),
+            check(&source, &nodes, &symbols, snapshot, direct, &denied).unwrap_err()
+        );
+        if !multiple {
+            let unsupported = text.replacen("take the set;", "take the wmarked set;", 1);
+            let (s, n, e) = step5c3_registration_inputs(&unsupported).unwrap();
+            assert_eq!(
+                project(&s, &n, &e, snapshot, direct, &policy).unwrap_err(),
+                check(&s, &n, &e, snapshot, direct, &policy).unwrap_err()
+            );
+        }
+        let format = mizar_atp::problem::ConcreteFormat::Tptp;
+        let (result, decision) = atp(
+            &source,
+            &nodes,
+            &symbols,
+            snapshot,
+            correctness,
+            (
+                source_candidate_profile("source-witness-negative", format),
+                format,
+            ),
+            &policy,
+        )
+        .unwrap();
+        assert_eq!(
+            result.status(),
+            mizar_kernel::checker::KernelCheckStatus::Rejected
+        );
+        assert_eq!(decision.class, CandidatePolicyClass::KernelRejected);
+        assert!(!result.rejections().is_empty());
+    }
+}

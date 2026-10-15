@@ -70,7 +70,8 @@ pub enum ProofStatus {
     KernelVerified,
     /// Legacy schema-1.x built-in discharge status retained for source compatibility.
     ///
-    /// Current trusted readers and writers reject this status.
+    /// Normal schema-2.0 readers and writers reject this status; the explicit
+    /// schema-3.0 built-in reference profile supports it.
     DischargedBuiltin,
 }
 
@@ -157,7 +158,7 @@ pub fn write_proof_witness_ref(reference: &ProofWitnessRef) -> Result<Vec<u8>, P
 pub fn proof_witness_ref_json(
     reference: &ProofWitnessRef,
 ) -> Result<CanonicalJson, ProofWitnessError> {
-    validate_reference(reference)?;
+    validate_reference(reference, false)?;
     proof_witness_ref_json_unchecked(reference)
 }
 
@@ -167,7 +168,7 @@ pub fn read_proof_witness_ref(
     options: ProofWitnessReadOptions<'_>,
 ) -> Result<ProofWitnessRef, ProofWitnessError> {
     let fields = expect_object(value, "$")?;
-    let schema_version = read_schema_version(fields, options.artifact_path)?;
+    let schema_version = read_schema_version(fields, options.artifact_path, false)?;
     reject_unknown_fields(
         fields,
         &[
@@ -207,7 +208,74 @@ pub fn read_proof_witness_ref(
         )?,
     };
 
-    validate_reference(&reference)?;
+    validate_reference(&reference, false)?;
+    if let Some(expected_hash) = options.expected_witness_artifact_hash
+        && expected_hash != &reference.witness_artifact_hash
+    {
+        return Err(ProofWitnessError::WitnessArtifactHashMismatch {
+            expected: artifact_hash_ref_string(expected_hash),
+            actual: artifact_hash_ref_string(&reference.witness_artifact_hash),
+        });
+    }
+
+    Ok(reference)
+}
+
+/// Builds the canonical JSON value for an explicit schema-3.0 built-in reference.
+pub fn builtin_proof_witness_ref_json(
+    reference: &ProofWitnessRef,
+) -> Result<CanonicalJson, ProofWitnessError> {
+    validate_reference(reference, true)?;
+    proof_witness_ref_json_unchecked(reference)
+}
+
+/// Reads and validates an unpublished schema-3.0 built-in witness reference.
+pub fn read_builtin_proof_witness_ref(
+    value: &CanonicalJson,
+    options: ProofWitnessReadOptions<'_>,
+) -> Result<ProofWitnessRef, ProofWitnessError> {
+    let fields = expect_object(value, "$")?;
+    let schema_version = read_schema_version(fields, options.artifact_path, true)?;
+    reject_unknown_fields(
+        fields,
+        &[
+            "schema_version",
+            "obligation_id",
+            "obligation_fingerprint",
+            "proof_status",
+            "evidence_kind",
+            "witness_path",
+            "witness_artifact_hash",
+            "kernel_acceptance",
+        ],
+        "$",
+    )?;
+
+    let reference = ProofWitnessRef {
+        schema_version,
+        obligation_id: read_required_string(fields, "obligation_id", "$")?,
+        obligation_fingerprint: read_required_artifact_hash_ref(
+            fields,
+            "obligation_fingerprint",
+            "$",
+            ArtifactHashClass::Interface,
+        )?,
+        proof_status: read_proof_status(fields, "proof_status", "$")?,
+        evidence_kind: read_evidence_kind(fields, "evidence_kind", "$")?,
+        witness_path: read_required_string(fields, "witness_path", "$")?,
+        witness_artifact_hash: read_required_artifact_hash_ref(
+            fields,
+            "witness_artifact_hash",
+            "$",
+            ArtifactHashClass::Artifact,
+        )?,
+        kernel_acceptance: read_kernel_acceptance(
+            required_field(fields, "kernel_acceptance", "$")?,
+            "$.kernel_acceptance",
+        )?,
+    };
+
+    validate_reference(&reference, true)?;
     if let Some(expected_hash) = options.expected_witness_artifact_hash
         && expected_hash != &reference.witness_artifact_hash
     {
@@ -314,8 +382,18 @@ impl From<SchemaVersionError> for ProofWitnessError {
     }
 }
 
-fn validate_reference(reference: &ProofWitnessRef) -> Result<(), ProofWitnessError> {
-    schema_version_support().check(Some(&reference.schema_version.to_string()))?;
+fn validate_reference(reference: &ProofWitnessRef, builtin: bool) -> Result<(), ProofWitnessError> {
+    let support = if builtin {
+        SchemaVersionSupport::new(
+            PROOF_WITNESS_REF_SCHEMA_FAMILY,
+            3,
+            0,
+            MinorVersionPolicy::UpToSupported,
+        )
+    } else {
+        schema_version_support()
+    };
+    support.check(Some(&reference.schema_version.to_string()))?;
     validate_non_empty(&reference.obligation_id, "$.obligation_id")?;
     validate_artifact_hash_ref(
         &reference.obligation_fingerprint,
@@ -329,7 +407,7 @@ fn validate_reference(reference: &ProofWitnessRef) -> Result<(), ProofWitnessErr
     )?;
     validate_witness_path(&reference.witness_path, "$.witness_path")?;
     validate_kernel_acceptance(&reference.kernel_acceptance, "$.kernel_acceptance")?;
-    validate_status_evidence(reference.proof_status, reference.evidence_kind)?;
+    validate_status_evidence(reference.proof_status, reference.evidence_kind, builtin)?;
     Ok(())
 }
 
@@ -385,14 +463,15 @@ fn validate_kernel_acceptance(
 fn validate_status_evidence(
     proof_status: ProofStatus,
     evidence_kind: EvidenceKind,
+    builtin: bool,
 ) -> Result<(), ProofWitnessError> {
-    let valid = matches!(
-        (proof_status, evidence_kind),
-        (
-            ProofStatus::KernelVerified,
-            EvidenceKind::FormulaSubstitutionKernelEvidence
-        )
-    );
+    let valid = proof_status
+        == if builtin {
+            ProofStatus::DischargedBuiltin
+        } else {
+            ProofStatus::KernelVerified
+        }
+        && evidence_kind == EvidenceKind::FormulaSubstitutionKernelEvidence;
     if !valid {
         return Err(ProofWitnessError::InvalidStatusEvidence {
             proof_status: proof_status.as_str(),
@@ -546,6 +625,7 @@ fn optional_artifact_hash_json(value: Option<&ArtifactHashRef>) -> CanonicalJson
 fn read_schema_version(
     fields: &BTreeMap<String, CanonicalJson>,
     artifact_path: Option<&str>,
+    builtin: bool,
 ) -> Result<SchemaVersion, ProofWitnessError> {
     let value = fields.get("schema_version");
     let version = match value {
@@ -558,7 +638,16 @@ fn read_schema_version(
         }
         None => None,
     };
-    let support = schema_version_support();
+    let support = if builtin {
+        SchemaVersionSupport::new(
+            PROOF_WITNESS_REF_SCHEMA_FAMILY,
+            3,
+            0,
+            MinorVersionPolicy::UpToSupported,
+        )
+    } else {
+        schema_version_support()
+    };
     if let Some(path) = artifact_path {
         support.check_at_path(version, path).map_err(Into::into)
     } else {

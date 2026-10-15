@@ -349,6 +349,8 @@ Keep `cargo test -p mizar-artifact` green after each task (see
       status-schema design can start; publication waits for real accepted
       formula/substitution outputs. Full phase-15 emission remains task 17.
 
+26. **[Explicit source built-in reference profile](../../task_contracts/en/PROOF-SOURCE-DISCHARGE-WITNESS-PROJECTION.md).** [x] — Unpublished projection only; task 25 publication remains open.
+
 ## Recommended Verification
 
 Run after each task:

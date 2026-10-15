@@ -456,6 +456,8 @@ layer consumes both; one alignment task is owned here.
 
 28. **[Source-bound built-in selection](../../task_contracts/en/PROOF-SOURCE-DISCHARGE-SELECTION.md).** [x]
 
+29. **[Unpublished source built-in witness projection](../../task_contracts/en/PROOF-SOURCE-DISCHARGE-WITNESS-PROJECTION.md).** [x]
+
 ## Recommended Verification
 
 Run after each task:

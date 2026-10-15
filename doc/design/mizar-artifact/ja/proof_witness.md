@@ -32,7 +32,7 @@ proof-witness reference schema が所有するもの:
 - manifest transaction や artifact-store file I/O。
 
 reference の schema family は `mizar-artifact/proof-witness-ref` である。version
-`1.0` は初期 certificate-reference version であった。version `2.0` が現在
+`1.0` は初期 certificate-reference version であった。version `2.0` が通常
 support される version であり、formula/substitution kernel evidence reference
 の最初の version である。
 
@@ -195,9 +195,18 @@ proof authority ではない。`mizar-artifact` は kernel が参照 evidence �
 reader は 1 つの verified artifact 内の duplicate `obligation_id` を拒否する。source traversal
 order、ATP completion order、backend runtime、filesystem order は serialized byte に影響してはならない。
 
+## Built-in reference profile
+
+明示的な version 3.0 profile は既存 ProofWitnessRef/KernelAcceptanceMetadata の field と schema family を使い、DischargedBuiltin と FormulaSubstitutionKernelEvidence の組だけを受け付ける。構造投影であり proof 受理操作ではない。
+`builtin_proof_witness_ref_json(&ProofWitnessRef)` は検証済み CanonicalJson、`read_builtin_proof_witness_ref(&CanonicalJson, ProofWitnessReadOptions)` は同じ profile の検証を提供する。bytes 化は既存 canonical_json_bytes を使い、単一用途の byte wrapper/public type/field/adapter は加えない。
+field 解釈より先に major 3/minor 0、UpToSupported を要求する。他 major/新 minor、version 欠落/不正、unknown/legacy field、異なる status/evidence の組を拒否し、既存 hash-class/family/path/metadata 検査と optional expected payload-hash equality を保つ。供給 version を書き換えず、通常 reader のため built-in を kernel_verified に再分類しない。
+通常の current_schema_version/schema_version_support と既存 writer/reader API は 2.0/KernelVerified のまま、拒否条件と canonical bytes を正確に保つ。VerifiedArtifact/Manifest、通常 Proof staging/publication、Cache 規則は変えず、3.0 reference は既存上位 reader を通らない。
+[source projection owner](../../mizar-proof/ja/status.md#source-discharge-witness-projection) が真正な同一呼出し metadata と検査済み payload を供給する。typed reference や構造 read の成功だけでは trusted token、現 source 権限、committed reachability、公開を得られず、main artifact/manifest 統合は保留する。
+試験は実 source reference の明示 API round-trip、決定的 canonical bytes、version/status/evidence/field/hash/path 拒否を検証し、既存通常 codec 試験をすべて保つ。合成 shape mutation は構造試験に限る。
+
 ## Reader And Writer Requirements
 
-writer は `store.md` の正準 UTF-8 JSON rule を使い、current schema version を emit する。
+writer は `store.md` の正準 UTF-8 JSON rule を使い、選択した profile version を emit する。
 reader は store boundary で生成された `CanonicalJson` value を対象に動作する。file
 parsing と duplicate object-key detection は artifact-store I/O が所有する。reader は:
 
@@ -229,13 +238,13 @@ reader は、将来の schema revision と version policy が受け入れ方法�
 unknown serialized enum value を引き続き拒否する。
 
 task 23 は schema version `1.0` 由来の legacy public enum variant を source
-compatibility のため保持するが、現在の trusted schema では unsupported として扱う。
+compatibility のため保持するが、通常の 2.0 trusted schema では unsupported として扱う。
 `DischargedBuiltin`、`AtpCertificate`、`BuiltinCertificate`、`KernelPrimitive` は downstream
-source の match に現れ続けてよいが、現在の writer/reader は status/evidence validation を通じて拒否する。
+source の match に現れ続けてよいが、通常の 2.0 writer/reader は status/evidence validation を通じて拒否する。
 
 | Enum | 前方互換性の判断 |
 |---|---|
-| `ProofStatus` | accepted proof-status category を文書化済み proof/kernel producer policy の下で拡張できるよう non-exhaustive。現在の trusted schema は `KernelVerified` だけを受理し、legacy `DischargedBuiltin` は source-compatible だが unsupported。 |
+| `ProofStatus` | accepted proof-status category を文書化済み proof/kernel producer policy の下で拡張できるよう non-exhaustive。通常の 2.0 schema は `KernelVerified` だけを受理し、legacy `DischargedBuiltin` は source-compatible だが unsupported。 |
 | `EvidenceKind` | accepted evidence class を文書化済み proof/kernel producer policy の下で拡張できるよう non-exhaustive。現在の trusted schema は `FormulaSubstitutionKernelEvidence` だけを受理し、legacy certificate/primitive variant は source-compatible だが unsupported。 |
 | `ProofWitnessError` | proof-witness reference validation diagnostic を拡張できるよう non-exhaustive。 |
 
@@ -253,7 +262,7 @@ context-identity binding は新しい artifact-owned field ではなく owner-pr
 運ばれるため、既存の schema `2.0` reference は同じ reader policy の下で読み取り可能な
 ままである。
 
-concrete witness payload publication、proof producer integration、full phase 15 emission は、
+concrete witness payload publication、完全な producer integration、full phase 15 emission は、
 real producer output が存在するまで `external_dependency_gap` として残る。schema version `1.0`
 の legacy certificate reference との互換性は、通常の trusted reader では保持しない。migration
 reader が必要な場合は、trusted proof acceptance の外にある明示的な audit-only reader でなければ

@@ -125,8 +125,8 @@ pub fn check_source_registration_discharge_candidate(
     vc_id: VcId,
     policy: &VerifierPolicy,
 ) -> Result<(KernelCheckResult, crate::policy::PolicyDecision), String> {
-    check_source_registration_discharge_metadata(source, nodes, symbols, snapshot, vc_id, policy)
-        .map(|(result, decision, _)| (result, decision))
+    check_source_registration_discharge_payload(source, nodes, symbols, snapshot, vc_id, policy)
+        .map(|(result, decision, _, _)| (result, decision))
 }
 
 /// Freshly checks a source discharge candidate and associates raw same-call metadata.
@@ -143,6 +143,26 @@ pub fn check_source_registration_discharge_metadata(
         KernelCheckResult,
         crate::policy::PolicyDecision,
         Option<mizar_artifact::proof_witness::KernelAcceptanceMetadata>,
+    ),
+    String,
+> {
+    check_source_registration_discharge_payload(source, nodes, symbols, snapshot, vc_id, policy)
+        .map(|(result, decision, metadata, _)| (result, decision, metadata))
+}
+
+fn check_source_registration_discharge_payload(
+    source: &mizar_resolve::resolved_ast::SurfaceResolvedArena,
+    nodes: &mizar_checker::typed_ast::TypedArena,
+    symbols: &mizar_resolve::env::SymbolEnv,
+    snapshot: mizar_session::BuildSnapshotId,
+    vc_id: VcId,
+    policy: &VerifierPolicy,
+) -> Result<
+    (
+        KernelCheckResult,
+        crate::policy::PolicyDecision,
+        Option<mizar_artifact::proof_witness::KernelAcceptanceMetadata>,
+        Vec<u8>,
     ),
     String,
 > {
@@ -273,7 +293,7 @@ pub fn check_source_registration_discharge_metadata(
     } else {
         None
     };
-    Ok((result, decision, metadata))
+    Ok((result, decision, metadata, bytes))
 }
 
 fn check_source_kernel_handoff(
@@ -1759,6 +1779,164 @@ pub fn select_source_registration_discharge_candidate(
     Ok(select_winner(
         &ProofEvidenceSet::new(target, None, policy.clone()).with_candidates([candidate]),
     ))
+}
+
+/// Projects fresh source discharge selection, an unpublished reference and checked bytes.
+pub fn project_source_registration_discharge_witness(
+    source: &mizar_resolve::resolved_ast::SurfaceResolvedArena,
+    nodes: &mizar_checker::typed_ast::TypedArena,
+    symbols: &mizar_resolve::env::SymbolEnv,
+    snapshot: mizar_session::BuildSnapshotId,
+    vc_id: VcId,
+    policy: &VerifierPolicy,
+) -> Result<
+    (
+        crate::selection::ProofSelection,
+        mizar_artifact::proof_witness::ProofWitnessRef,
+        Vec<u8>,
+    ),
+    String,
+> {
+    use crate::selection::{ProofEvidenceCandidate, ProofEvidenceSet, select_winner};
+    use mizar_artifact::{
+        proof_witness::{
+            EvidenceKind, ProofStatus, ProofWitnessRef, builtin_proof_witness_ref_json,
+        },
+        registration_summary::{ArtifactHashClass, ArtifactHashRef},
+        store::{CanonicalHashDomain, CanonicalJson, HashClass},
+    };
+    let invalid = || "registration.proof.invalid_source_candidate".to_owned();
+    let (result, decision, metadata, bytes) = check_source_registration_discharge_payload(
+        source, nodes, symbols, snapshot, vc_id, policy,
+    )?;
+    if decision.class != crate::policy::CandidatePolicyClass::DischargedBuiltin {
+        return Err(invalid());
+    }
+    let metadata = metadata.ok_or_else(invalid)?;
+    let input =
+        KernelPolicyInput::from_kernel_result(&result, KernelEvidenceOrigin::BuiltinDischarge);
+    let polarity = input.accepted_goal_polarity().ok_or_else(invalid)?;
+    let target = result.target_vc_fingerprint().sort_bytes();
+    let target_hex = source_discharge_hex(&target);
+    let id = CandidateSourceId::new(format!("source-registration-discharge-v1:{target_hex}"))
+        .map_err(|_| invalid())?;
+    let candidate = ProofEvidenceCandidate::from_trusted_kernel_input(id.clone(), &input)
+        .ok_or_else(invalid)?
+        .with_provenance_hash(metadata.provenance_hash.digest);
+    let selection = select_winner(
+        &ProofEvidenceSet::new(target, None, policy.clone()).with_candidates([candidate]),
+    );
+    let payload_family = "mizar-proof/source-registration-discharge-witness-payload";
+    let witness_artifact_hash = ArtifactHashRef {
+        class: ArtifactHashClass::Artifact,
+        schema_family: payload_family.into(),
+        schema_version: SchemaVersion::new(1, 0),
+        digest: CanonicalHashDomain::new(
+            HashClass::Artifact,
+            payload_family,
+            SchemaVersion::new(1, 0),
+        )
+        .hash(&CanonicalJson::string(source_discharge_hex(&bytes)), &[]),
+    };
+    let obligation = CanonicalJson::object([
+        ("original_target_bytes", CanonicalJson::string(target_hex)),
+        (
+            "kernel_profile_fingerprint",
+            CanonicalJson::string(
+                metadata
+                    .kernel_profile_fingerprint
+                    .to_artifact_hash_string(),
+            ),
+        ),
+        (
+            "verifier_policy_fingerprint",
+            CanonicalJson::string(
+                metadata
+                    .verifier_policy_fingerprint
+                    .to_artifact_hash_string(),
+            ),
+        ),
+        (
+            "checker_schema_version",
+            CanonicalJson::string(metadata.checker_schema_version.to_string()),
+        ),
+        (
+            "evidence_schema_version",
+            CanonicalJson::string(metadata.evidence_schema_version.to_string()),
+        ),
+        (
+            "target_binding_hash",
+            CanonicalJson::string(metadata.target_binding_hash.to_artifact_hash_string()),
+        ),
+        (
+            "formula_evidence_hash",
+            CanonicalJson::string(metadata.formula_evidence_hash.to_artifact_hash_string()),
+        ),
+        (
+            "substitution_evidence_hash",
+            CanonicalJson::string(
+                metadata
+                    .substitution_evidence_hash
+                    .to_artifact_hash_string(),
+            ),
+        ),
+        (
+            "provenance_hash",
+            CanonicalJson::string(metadata.provenance_hash.to_artifact_hash_string()),
+        ),
+        (
+            "formula_context_hash",
+            metadata
+                .formula_context_hash
+                .as_ref()
+                .map_or_else(CanonicalJson::null, |hash| {
+                    CanonicalJson::string(hash.to_artifact_hash_string())
+                }),
+        ),
+        (
+            "accepted_result_hash",
+            CanonicalJson::string(metadata.accepted_result_hash.to_artifact_hash_string()),
+        ),
+        (
+            "accepted_goal_polarity",
+            CanonicalJson::string(polarity.as_str()),
+        ),
+        (
+            "witness_artifact_hash",
+            CanonicalJson::string(witness_artifact_hash.to_artifact_hash_string()),
+        ),
+    ])
+    .map_err(|_| invalid())?;
+    let obligation_family = "mizar-proof/source-registration-discharge-obligation";
+    let reference = ProofWitnessRef {
+        schema_version: SchemaVersion::new(3, 0),
+        obligation_id: id.as_str().into(),
+        obligation_fingerprint: ArtifactHashRef {
+            class: ArtifactHashClass::Interface,
+            schema_family: obligation_family.into(),
+            schema_version: SchemaVersion::new(1, 0),
+            digest: CanonicalHashDomain::new(
+                HashClass::Interface,
+                obligation_family,
+                SchemaVersion::new(1, 0),
+            )
+            .hash(&obligation, &[]),
+        },
+        proof_status: ProofStatus::DischargedBuiltin,
+        evidence_kind: EvidenceKind::FormulaSubstitutionKernelEvidence,
+        witness_path: format!(
+            "proof-witnesses/source-registration-discharge-v1/{}.bin",
+            source_discharge_hex(witness_artifact_hash.digest.as_bytes())
+        ),
+        witness_artifact_hash,
+        kernel_acceptance: metadata,
+    };
+    builtin_proof_witness_ref_json(&reference).map_err(|_| invalid())?;
+    Ok((selection, reference, bytes))
+}
+
+fn source_discharge_hex(bytes: &[u8]) -> String {
+    bytes.iter().map(|byte| format!("{byte:02x}")).collect()
 }
 
 #[cfg(test)]

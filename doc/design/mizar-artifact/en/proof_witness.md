@@ -35,7 +35,7 @@ It does not own:
 
 The schema family for references is `mizar-artifact/proof-witness-ref`.
 Version `1.0` was the initial certificate-reference version. Version `2.0` is
-the current supported version and is the first version for formula/substitution
+the normal supported version and is the first version for formula/substitution
 kernel evidence references.
 
 ## Conceptual Shape
@@ -204,10 +204,19 @@ unless a later schema explicitly supports multiple accepted witnesses for a
 single obligation. Source traversal order, ATP completion order, backend runtime,
 and filesystem order must not affect serialized bytes.
 
+## Built-in reference profile
+
+The explicit version 3.0 profile uses the existing ProofWitnessRef/KernelAcceptanceMetadata fields and schema family, accepting only DischargedBuiltin with FormulaSubstitutionKernelEvidence. It is structural projection, not a proof-acceptance operation.
+`builtin_proof_witness_ref_json(&ProofWitnessRef)` returns validated CanonicalJson; `read_builtin_proof_witness_ref(&CanonicalJson, ProofWitnessReadOptions)` validates the same profile. Use the existing canonical_json_bytes for bytes; add no single-use byte wrapper or public type/field/adapter.
+Require major 3/minor 0 with UpToSupported, before field interpretation. Reject every other major/newer minor, missing/malformed version, unknown/legacy fields and status/evidence pair; retain all existing hash-class/family/path/metadata checks and optional expected payload-hash equality. Never rewrite supplied versions or relabel a built-in as kernel_verified to invoke the normal reader.
+Normal current_schema_version/schema_version_support and existing writer/reader APIs remain 2.0/KernelVerified with their exact rejection and canonical-byte behavior. VerifiedArtifact/Manifest, normal Proof staging/publication and Cache rules remain unchanged. A 3.0 reference cannot pass the existing enclosing readers.
+The [source projection owner](../../mizar-proof/en/status.md#source-discharge-witness-projection) supplies genuine same-call metadata and checked payloads. A typed reference or successful structural read alone grants no trusted token, current-source authority, committed reachability or publication; main artifact/manifest integration remains deferred.
+Tests cover genuine source reference round-trip through these explicit APIs, deterministic canonical bytes and the complete version/status/evidence/field/hash/path rejection matrix while preserving every normal-codec test. Synthetic shape mutations are structural tests only.
+
 ## Reader And Writer Requirements
 
-Writers use the canonical UTF-8 JSON rules from `store.md` and emit the current
-schema version. Readers operate over `CanonicalJson` values
+Writers use the canonical UTF-8 JSON rules from `store.md` and emit the selected
+profile version. Readers operate over `CanonicalJson` values
 produced at the store boundary; file parsing and duplicate object-key detection
 belong to artifact-store I/O. Readers:
 
@@ -244,14 +253,14 @@ schema readers still reject unknown serialized enum values unless a later schema
 revision and version policy explicitly document how to accept them.
 
 Task 23 retains legacy public enum variants from schema version `1.0` for
-source compatibility, but treats them as unsupported in the current trusted
+source compatibility, but treats them as unsupported in the normal 2.0 trusted
 schema. `DischargedBuiltin`, `AtpCertificate`, `BuiltinCertificate`, and
-`KernelPrimitive` may still appear in downstream source matches, but current
-writers/readers reject them through status/evidence validation.
+`KernelPrimitive` may still appear in downstream source matches, but
+normal 2.0 writers/readers reject them through status/evidence validation.
 
 | Enum | Forward-compatibility decision |
 |---|---|
-| `ProofStatus` | Non-exhaustive so accepted proof-status categories can grow under documented proof/kernel producer policy. Current trusted schema accepts only `KernelVerified`; legacy `DischargedBuiltin` is source-compatible but unsupported. |
+| `ProofStatus` | Non-exhaustive so accepted proof-status categories can grow under documented proof/kernel producer policy. Normal 2.0 schema accepts only `KernelVerified`; legacy `DischargedBuiltin` is source-compatible but unsupported. |
 | `EvidenceKind` | Non-exhaustive so accepted evidence classes can grow under documented proof/kernel producer policy. Current trusted schema accepts only `FormulaSubstitutionKernelEvidence`; legacy certificate/primitive variants are source-compatible but unsupported. |
 | `ProofWitnessError` | Non-exhaustive so proof-witness reference validation diagnostics can grow. |
 
@@ -269,7 +278,7 @@ references remain readable under the same reader policy because the corrected
 goal-polarity and context-identity binding is carried by owner-produced hashes,
 not by new artifact-owned fields.
 
-Concrete witness payload publication, proof producer integration, and full phase
+Concrete witness payload publication, complete producer integration, and full phase
 15 emission remain `external_dependency_gap` items until real producer outputs
 exist. Compatibility with schema version `1.0` legacy certificate references is
 not retained in the normal trusted reader; any migration reader must be

@@ -623,3 +623,266 @@ fn object_field_mut<'a>(value: &'a mut CanonicalJson, field: &str) -> &'a mut Ca
     };
     fields.get_mut(field).expect("object field")
 }
+
+#[test]
+fn builtin_reference_profile_rejects_incompatible_and_malformed_shapes() {
+    use super::{builtin_proof_witness_ref_json as write, read_builtin_proof_witness_ref as read};
+    // This seeded reference is only a structural mutation seed, never source acceptance.
+    let mut seed = sample_reference();
+    seed.schema_version = SchemaVersion::new(3, 0);
+    seed.proof_status = ProofStatus::DischargedBuiltin;
+    let json = super::proof_witness_ref_json_unchecked(&seed).unwrap();
+    for version in [
+        SchemaVersion::new(1, 0),
+        SchemaVersion::new(2, 0),
+        SchemaVersion::new(4, 0),
+        SchemaVersion::new(3, 1),
+    ] {
+        let mut bad = seed.clone();
+        bad.schema_version = version;
+        bad.obligation_id.clear();
+        assert!(matches!(
+            write(&bad),
+            Err(ProofWitnessError::SchemaVersion(_))
+        ));
+        let mut value = super::proof_witness_ref_json_unchecked(&bad).unwrap();
+        replace_object_field(&mut value, "kernel_acceptance", CanonicalJson::null());
+        let error = read(
+            &value,
+            ProofWitnessReadOptions {
+                artifact_path: Some("build/builtin.json"),
+                ..Default::default()
+            },
+        )
+        .unwrap_err();
+        assert!(matches!(error, ProofWitnessError::SchemaVersion(_)));
+        assert!(error.to_string().contains("build/builtin.json"));
+    }
+    for version in [
+        None,
+        Some(CanonicalJson::string("bad")),
+        Some(CanonicalJson::null()),
+    ] {
+        let mut value = json.clone();
+        replace_object_field(&mut value, "kernel_acceptance", CanonicalJson::null());
+        if let Some(version) = version {
+            replace_object_field(&mut value, "schema_version", version);
+        } else {
+            remove_object_field(&mut value, "schema_version");
+        }
+        assert!(matches!(
+            read(&value, Default::default()),
+            Err(ProofWitnessError::SchemaVersion(_) | ProofWitnessError::UnexpectedType { .. })
+        ));
+    }
+    for (status, evidence) in [
+        (
+            ProofStatus::KernelVerified,
+            EvidenceKind::FormulaSubstitutionKernelEvidence,
+        ),
+        (ProofStatus::DischargedBuiltin, EvidenceKind::AtpCertificate),
+        (
+            ProofStatus::DischargedBuiltin,
+            EvidenceKind::BuiltinCertificate,
+        ),
+        (
+            ProofStatus::DischargedBuiltin,
+            EvidenceKind::KernelPrimitive,
+        ),
+    ] {
+        let mut bad = seed.clone();
+        bad.proof_status = status;
+        bad.evidence_kind = evidence;
+        assert!(matches!(
+            write(&bad),
+            Err(ProofWitnessError::InvalidStatusEvidence { .. })
+        ));
+        assert!(matches!(
+            read(
+                &super::proof_witness_ref_json_unchecked(&bad).unwrap(),
+                Default::default()
+            ),
+            Err(ProofWitnessError::InvalidStatusEvidence { .. })
+        ));
+    }
+    for field in ["proof_status", "evidence_kind"] {
+        let mut value = json.clone();
+        replace_object_field(&mut value, field, CanonicalJson::string("unknown"));
+        assert!(matches!(
+            read(&value, Default::default()),
+            Err(ProofWitnessError::InvalidField { .. })
+        ));
+    }
+    for (parent, fields) in [
+        (
+            None,
+            vec![
+                "cache_record",
+                "status",
+                "evidence",
+                "backend_method",
+                "resolution_trace",
+                "smt_proof_object",
+                "instantiated_formulas",
+                "sat_problem",
+            ],
+        ),
+        (
+            Some("kernel_acceptance"),
+            vec![
+                "proof_authority",
+                "certificate_format",
+                "backend_log_hash",
+                "used_axioms_hash",
+                "resolution_trace_hash",
+            ],
+        ),
+    ] {
+        for field in fields {
+            let mut value = json.clone();
+            if let Some(parent) = parent {
+                replace_nested_object_field(&mut value, parent, field, CanonicalJson::null());
+            } else {
+                replace_object_field(&mut value, field, CanonicalJson::null());
+            }
+            assert!(matches!(
+                read(&value, Default::default()),
+                Err(ProofWitnessError::UnknownField { .. })
+            ));
+        }
+    }
+    for parent in [None, Some("kernel_acceptance")] {
+        let CanonicalJson::Object(fields) = (if let Some(parent) = parent {
+            let CanonicalJson::Object(root) = &json else {
+                unreachable!()
+            };
+            &root[parent]
+        } else {
+            &json
+        }) else {
+            unreachable!()
+        };
+        for field in fields
+            .keys()
+            .filter(|field| field.as_str() != "schema_version")
+        {
+            let mut value = json.clone();
+            if let Some(parent) = parent {
+                remove_nested_object_field(&mut value, parent, field);
+            } else {
+                remove_object_field(&mut value, field);
+            }
+            assert!(
+                matches!(
+                    read(&value, Default::default()),
+                    Err(ProofWitnessError::MissingField { .. })
+                ),
+                "{parent:?}.{field}"
+            );
+        }
+    }
+    let mut null_context = json.clone();
+    replace_nested_object_field(
+        &mut null_context,
+        "kernel_acceptance",
+        "formula_context_hash",
+        CanonicalJson::null(),
+    );
+    assert!(
+        read(&null_context, Default::default())
+            .unwrap()
+            .kernel_acceptance
+            .formula_context_hash
+            .is_none()
+    );
+    replace_nested_object_field(
+        &mut null_context,
+        "kernel_acceptance",
+        "formula_context_hash",
+        CanonicalJson::bool(false),
+    );
+    assert!(read(&null_context, Default::default()).is_err());
+    let mutations: [fn(&mut ProofWitnessRef); 9] = [
+        |r| r.obligation_id.clear(),
+        |r| r.obligation_fingerprint.class = ArtifactHashClass::Artifact,
+        |r| r.witness_artifact_hash.class = ArtifactHashClass::Interface,
+        |r| r.obligation_fingerprint.schema_family = "mizar-proof//bad".into(),
+        |r| {
+            r.kernel_acceptance
+                .accepted_result_hash
+                .schema_family
+                .clear()
+        },
+        |r| {
+            r.kernel_acceptance
+                .formula_context_hash
+                .as_mut()
+                .unwrap()
+                .class = ArtifactHashClass::Artifact
+        },
+        |r| r.witness_path = "/proof-witnesses/a".into(),
+        |r| r.witness_path = "proof-witnesses/../a".into(),
+        |r| r.witness_path = "proof-witnesses/a\\b".into(),
+    ];
+    for mutate in mutations {
+        let mut bad = seed.clone();
+        mutate(&mut bad);
+        assert!(write(&bad).is_err());
+        assert!(
+            read(
+                &super::proof_witness_ref_json_unchecked(&bad).unwrap(),
+                Default::default()
+            )
+            .is_err()
+        );
+    }
+    for (field, value) in [
+        (
+            "obligation_fingerprint",
+            seed.obligation_fingerprint
+                .to_artifact_hash_string()
+                .replace(":1.0:", ":bad:"),
+        ),
+        (
+            "witness_artifact_hash",
+            seed.witness_artifact_hash
+                .to_artifact_hash_string()
+                .replace("02", "GG"),
+        ),
+        (
+            "obligation_fingerprint",
+            seed.obligation_fingerprint
+                .to_artifact_hash_string()
+                .replace("artifact-framed-hash-text", "other-hash"),
+        ),
+    ] {
+        let mut bad = json.clone();
+        replace_object_field(&mut bad, field, CanonicalJson::string(value));
+        assert!(matches!(
+            read(&bad, Default::default()),
+            Err(ProofWitnessError::InvalidHash { .. })
+        ));
+    }
+    for expected in [
+        hash_ref(
+            ArtifactHashClass::Artifact,
+            "mizar-kernel/formula-evidence-witness",
+            88,
+        ),
+        ArtifactHashRef {
+            schema_family: "mizar-proof/another-payload".into(),
+            ..seed.witness_artifact_hash.clone()
+        },
+    ] {
+        assert!(matches!(
+            read(
+                &json,
+                ProofWitnessReadOptions {
+                    expected_witness_artifact_hash: Some(&expected),
+                    ..Default::default()
+                }
+            ),
+            Err(ProofWitnessError::WitnessArtifactHashMismatch { .. })
+        ));
+    }
+}
