@@ -606,6 +606,8 @@ authorized.
 
 67. **[Source registration source-shape hashes](../../task_contracts/en/VC-SOURCE-REGISTRATION-SOURCE-SHAPE.md).** [x]
 
+68. **[Source registration candidate anchor hashes](../../task_contracts/en/SOURCE-REGISTRATION-CANDIDATE-ANCHORS.md).** [x]
+
 ## Recommended Verification
 
 Run after each task:

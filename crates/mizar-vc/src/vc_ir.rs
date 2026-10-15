@@ -457,6 +457,50 @@ impl VcSet {
         Ok(hashes)
     }
 
+    /// Derives raw cross-edit candidates without conferring proof reuse eligibility.
+    pub fn source_registration_candidate_anchor_hashes(
+        &self,
+        core: &mizar_core::core_ir::CoreIr,
+        formulas: &BTreeMap<CoreFormulaId, Vec<u8>>,
+        syntax: &BTreeMap<CoreItemId, Vec<u8>>,
+        owners: &BTreeMap<CoreItemId, Vec<u8>>,
+    ) -> Result<BTreeMap<VcId, Hash>, String> {
+        let shapes = self.source_registration_source_shape_hashes(core, formulas, syntax)?;
+        let invalid = || "unsupported source registration candidate anchor".to_owned();
+        if owners.keys().ne(syntax.keys())
+            || owners.values().any(Vec::is_empty)
+            || owners.values().collect::<BTreeSet<_>>().len() != owners.len()
+        {
+            return Err(invalid());
+        }
+        let mut hashes = BTreeMap::new();
+        for vc in &self.vcs {
+            let AnchorOwner::Registration(owner) = vc.anchor.owner else {
+                return Err(invalid());
+            };
+            let owner = owners.get(&owner).ok_or_else(invalid)?;
+            let (goal, context) =
+                self.source_registration_canonical_goal_context(vc.id, core, formulas)?;
+            let mut payload = b"mizar-vc/source-registration-candidate-anchor/v1\0".to_vec();
+            for bytes in [
+                self.schema_version.as_str().as_bytes(),
+                vc.anchor.generation_schema_version.as_str().as_bytes(),
+                owner,
+                vc.anchor.local_path.as_str().as_bytes(),
+            ] {
+                source_registration_frame(&mut payload, bytes).map_err(|_| invalid())?;
+            }
+            payload.push(1);
+            for hash in [shapes.get(&vc.id).ok_or_else(invalid)?, &goal, &context] {
+                payload.extend(hash.as_bytes());
+            }
+            let hash =
+                stable_fingerprint_hash("mizar-vc-source-registration-candidate-anchor", &payload);
+            hashes.insert(vc.id, hash);
+        }
+        Ok(hashes)
+    }
+
     pub fn canonical_vc_fingerprint(&self, vc: VcId) -> Option<CanonicalVcFingerprint> {
         let vc = self.vc(vc)?;
         canonical_vc_fingerprint(vc, &generated_formula_map(&self.generated_formulas))

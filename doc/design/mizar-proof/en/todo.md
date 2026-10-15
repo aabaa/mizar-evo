@@ -464,6 +464,8 @@ layer consumes both; one alignment task is owned here.
 
 32. **[Genuine source canonical components](../../task_contracts/en/PROOF-SOURCE-CANONICAL-COMPONENTS.md).** [x]
 
+33. **[Genuine source candidate anchors](../../task_contracts/en/SOURCE-REGISTRATION-CANDIDATE-ANCHORS.md).** [x]
+
 ## Recommended Verification
 
 Run after each task:

@@ -105,6 +105,132 @@ pub fn source_registration_canonical_components(
     Ok((*full, goal, context))
 }
 
+/// Binds genuine source producers into a candidate anchor and canonical content.
+/// Matching this candidate alone does not authorize proof reuse or acceptance.
+pub fn source_registration_candidate_anchor(
+    source: &mizar_resolve::resolved_ast::SurfaceResolvedArena,
+    nodes: &mizar_checker::typed_ast::TypedArena,
+    symbols: &mizar_resolve::env::SymbolEnv,
+    snapshot: mizar_session::BuildSnapshotId,
+    vc_id: VcId,
+) -> Result<
+    (
+        ObligationAnchor,
+        mizar_vc::vc_ir::CanonicalVcFingerprint,
+        Hash,
+        Hash,
+    ),
+    String,
+> {
+    use mizar_vc::vc_ir::{
+        GenerationSchemaVersion, PremiseRef, VcFormulaRef, VcGeneratedFormulaShape, VcSchemaVersion,
+    };
+    use std::collections::BTreeSet;
+
+    const INVALID: &str = "registration.proof.invalid_source_anchor";
+    let check =
+        mizar_checker::registration_resolution::check_source_existential_registration_proof(
+            source, nodes, symbols,
+        )?;
+    let core = mizar_core::elaborator::lower_source_existential_registration(&check)?;
+    let vcs = mizar_vc::generator::generate_source_existential_registration(
+        &core,
+        snapshot,
+        &GenerationSchemaVersion::new("source-existential-registration-v1"),
+        &VcSchemaVersion::new("vc-v1"),
+    )?;
+    let owners =
+        mizar_resolve::symbols::source_registration_owner_payloads_from_arena(source, symbols)?;
+    let mut references = Vec::new();
+    for vc in vcs.vcs() {
+        references.push(vc.goal);
+        for premise in &vc.premises {
+            let PremiseRef::GeneratedFact { formula } = premise else {
+                return Err(INVALID.to_owned());
+            };
+            references.push(*formula);
+        }
+    }
+    let mut roots = BTreeSet::new();
+    let mut visited = BTreeSet::new();
+    while let Some(reference) = references.pop() {
+        match reference {
+            VcFormulaRef::Core(id) => {
+                roots.insert(id);
+            }
+            VcFormulaRef::Generated(id) => {
+                if !visited.insert(id) {
+                    continue;
+                }
+                match &vcs
+                    .generated_formula(id)
+                    .ok_or_else(|| INVALID.to_owned())?
+                    .shape
+                {
+                    VcGeneratedFormulaShape::Ref(child) | VcGeneratedFormulaShape::Not(child) => {
+                        references.push(*child);
+                    }
+                    VcGeneratedFormulaShape::And(children)
+                    | VcGeneratedFormulaShape::Or(children) => {
+                        references.extend(children);
+                    }
+                    _ => return Err(INVALID.to_owned()),
+                }
+            }
+            _ => return Err(INVALID.to_owned()),
+        }
+    }
+    let formulas = mizar_core::elaborator::source_registration_formula_payloads(
+        &check,
+        &core,
+        &owners,
+        &roots.into_iter().collect::<Vec<_>>(),
+    )?;
+    let fingerprints = vcs.source_registration_canonical_fingerprints(&core, &formulas)?;
+    let syntax =
+        mizar_resolve::symbols::source_registration_syntax_payloads_from_arena(source, symbols)?;
+    let mut item_owners = std::collections::BTreeMap::new();
+    let mut item_syntax = std::collections::BTreeMap::new();
+    for (id, item) in core.items().iter() {
+        if item.kind != mizar_core::core_ir::CoreItemKind::Registration {
+            continue;
+        }
+        item_owners.insert(
+            id,
+            owners
+                .get(&item.symbol)
+                .ok_or_else(|| INVALID.to_owned())?
+                .clone(),
+        );
+        item_syntax.insert(
+            id,
+            syntax
+                .get(&item.symbol)
+                .ok_or_else(|| INVALID.to_owned())?
+                .clone(),
+        );
+    }
+    if item_syntax.len() != syntax.len() {
+        return Err(INVALID.to_owned());
+    }
+    let candidates = vcs.source_registration_candidate_anchor_hashes(
+        &core,
+        &formulas,
+        &item_syntax,
+        &item_owners,
+    )?;
+    let candidate = candidates.get(&vc_id).ok_or_else(|| INVALID.to_owned())?;
+    let full = fingerprints.get(&vc_id).ok_or_else(|| INVALID.to_owned())?;
+    let (goal, context) =
+        vcs.source_registration_canonical_goal_context(vc_id, &core, &formulas)?;
+    let anchor = ObligationAnchor::new(format!(
+        "source-registration-candidate-anchor-v1:{}",
+        source_discharge_hex(candidate.as_bytes()),
+    ))
+    .map_err(|_| INVALID.to_owned())?;
+    Ok((anchor, *full, goal, context))
+}
+
 /// Freshly checks one authentic NeedsAtp registration candidate under the current policy.
 /// The returned check and classification do not authorize activation or publication.
 pub fn check_source_registration_candidate(

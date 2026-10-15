@@ -19185,3 +19185,196 @@ fn source_registration_source_shape_refuses_whole_inputs_and_invalid_syntax_maps
     assert_eq!(unsupported, unsupported_before);
     assert_eq!((core, vcs, formulas, syntax), before);
 }
+
+#[test]
+fn source_registration_candidate_anchor_exact_current_leaves_and_producer_equality() {
+    use mizar_proof::status::{source_registration_candidate_anchor as anchor, source_registration_canonical_components as components};
+    use mizar_resolve::symbols::source_registration_owner_payloads_from_arena;
+    use mizar_vc::{discharge::{DischargeInput, DischargePolicy, try_discharge}, generator::generate_source_existential_registration as generate, vc_ir::{GenerationSchemaVersion, VcSchemaVersion}};
+    // Spec 6.2/17.2–17.3; independently frozen before Rust, with existing Proof schemas.
+    let expected = [
+        ("WMarkedExists:0", "source-registration-candidate-anchor-v1:a61a931461b783629037ec7da1d22cc11f4e20d9a38cb82c33e8caba96443b97"),
+        ("WMarkedExists:1", "source-registration-candidate-anchor-v1:e0fbdfe1b0777c0ca9f8db22079af89634455500f11bcec129d65be7aaa4a0d3"),
+        ("OAExists:0", "source-registration-candidate-anchor-v1:2acda8e7312b142d64afd3ceb739ffa3b408be2347daa17ee00621ddd40cdd9f"),
+        ("OAExists:1", "source-registration-candidate-anchor-v1:f90669c4bb9505f540e656f5abc6eb0aad1a4779723572aabc1333a039a3348f"),
+        ("OBExists:0", "source-registration-candidate-anchor-v1:2c00d66e6ac6f4de5ae8d2f0b316f853e9d14e4ed9870d116f57601dd79926aa"),
+        ("OBExists:1", "source-registration-candidate-anchor-v1:20c58bed6ea0c7f9e088509c4d387e845dda890f0498d35f959ca047203b6ac9"),
+        ("OABExists:0", "source-registration-candidate-anchor-v1:719a0eb5e27775666a1621434e5ab91709db050488c16d070f62e8608afde693"),
+        ("OABExists:1", "source-registration-candidate-anchor-v1:27aa46f5336c191e20ee6bb8197f8134b97d04fe2b20bbe87c0458dabb8dd2ef"),
+    ];
+    for (count, case) in [(2, step5c3_registration_case()), (6, step5c13_registration_case())] {
+        let text = std::fs::read_to_string(case.source_path).unwrap();
+        let (core, _, formulas, leaves, syntax) = source_registration_source_shape_inputs(&text, "vc_fingerprints", 0);
+        let (source, nodes, collected, _) = source_registration_formula_inputs(&text, "vc-fingerprint-test", "vc_fingerprints", 0);
+        let actual_owners = source_registration_owner_payloads_from_arena(&source, collected.env()).unwrap();
+        let owners: std::collections::BTreeMap<_, _> = core.items().iter().filter(|(_, item)| item.kind == mizar_core::core_ir::CoreItemKind::Registration)
+            .map(|(id, item)| (id, actual_owners[&item.symbol].clone())).collect();
+        let before = (source.clone(), nodes.clone(), collected.env().clone(), core.clone(), formulas.clone(), syntax.clone(), owners.clone());
+        for snapshot in [super::shared::snapshot_id(0), super::shared::snapshot_id(41)] {
+            let vcs = generate(&core, snapshot, &GenerationSchemaVersion::new("source-existential-registration-v1"), &VcSchemaVersion::new("vc-v1")).unwrap();
+            let original = vcs.clone();
+            let hashes = vcs.source_registration_candidate_anchor_hashes(&core, &formulas, &syntax, &owners).unwrap();
+            let full = vcs.source_registration_canonical_fingerprints(&core, &formulas).unwrap();
+            assert_eq!(hashes.len(), count);
+            assert_eq!(hashes.keys().collect::<Vec<_>>(), leaves.keys().collect::<Vec<_>>());
+            assert_eq!(hashes.values().map(|hash| hash.as_bytes()).collect::<std::collections::BTreeSet<_>>().len(), count);
+            for (id, name) in &leaves {
+                let result = anchor(&source, &nodes, collected.env(), snapshot, *id).unwrap();
+                assert_eq!(result.0.as_str(), expected.iter().find(|(owner, _)| owner == name).unwrap().1);
+                let hex = hashes[id].as_bytes().iter().map(|byte| format!("{byte:02x}")).collect::<String>();
+                assert_eq!(result.0.as_str(), format!("source-registration-candidate-anchor-v1:{hex}"));
+                let pair = vcs.source_registration_canonical_goal_context(*id, &core, &formulas).unwrap();
+                assert_eq!((result.1, result.2, result.3), (full[id], pair.0, pair.1));
+                assert_eq!((result.1, result.2, result.3), components(&source, &nodes, collected.env(), snapshot, *id).unwrap());
+                assert!(vcs.vc(*id).unwrap().anchor.label.is_none());
+            }
+            let discharged = try_discharge(DischargeInput { vc_set: &vcs, policy: &DischargePolicy::default() }).unwrap();
+            let discharged_before = discharged.vc_set().clone();
+            assert_eq!(discharged.vc_set().source_registration_candidate_anchor_hashes(&core, &formulas, &syntax, &owners).unwrap(), hashes);
+            assert_eq!(discharged.vc_set(), &discharged_before);
+            assert_eq!(vcs, original);
+        }
+        assert_eq!((source, nodes, collected.env().clone(), core, formulas, syntax, owners), before);
+    }
+}
+
+#[test]
+fn source_registration_candidate_anchor_neutral_relocation_and_participating_edits() {
+    use mizar_proof::status::{source_registration_candidate_anchor as anchor, source_registration_canonical_components as components};
+    use mizar_vc::{generator::generate_source_existential_registration as generate, vc_ir::{AnchorOwner, GenerationSchemaVersion, VcSchemaVersion}};
+    let text = std::fs::read_to_string(step5c13_registration_case().source_path).unwrap();
+    let a = "  attr OAADef: X is oamarked means X = X;\n";
+    let b = "  attr OBBDef: X is obmarked means X = X;\n";
+    let ra = text.find("  cluster OAExists:").unwrap();
+    let rb = text.find("  cluster OBExists:").unwrap();
+    let rab = text.find("  cluster OABExists:").unwrap();
+    let end = text[rab..].find("end;\nend;").unwrap() + rab + "end;\n".len();
+    let reordered = format!("{}{}{}{}{}", &text[..ra], &text[rab..end], &text[ra..rb], &text[rb..rab], &text[end..]).replace(&format!("{a}{b}"), &format!("{b}{a}"));
+    assert_ne!(reordered, text);
+    let mut baseline = std::collections::BTreeMap::new();
+    for (index, edited, module, skip) in [
+        (0, text.clone(), "vc_fingerprints", 0),
+        (1, format!("\n:: neutral trivia\n{}", text.replace("  ", "    ")), "vc_fingerprints", 0),
+        (2, text.replace('X', "OuterBinder"), "vc_fingerprints", 0),
+        (3, text.clone(), "vc_fingerprints", 7),
+        (4, reordered, "vc_fingerprints", 0),
+        (5, text.replace("OAExists", "RenamedExists"), "vc_fingerprints", 0),
+        (6, text.clone(), "other_module", 0),
+        (7, text.replace("oamarked", "othermarked"), "vc_fingerprints", 0),
+        (8, text.replacen("means X = X", "means not X = X", 1), "vc_fingerprints", 0),
+    ] {
+        let (core, _, formulas, leaves, syntax) = source_registration_source_shape_inputs(&edited, module, skip);
+        let (source, nodes, collected, _) = source_registration_formula_inputs(&edited, "vc-fingerprint-test", module, skip);
+        let actual_owners = mizar_resolve::symbols::source_registration_owner_payloads_from_arena(&source, collected.env()).unwrap();
+        let owners: std::collections::BTreeMap<_, _> = core.items().iter().filter(|(_, item)| item.kind == mizar_core::core_ir::CoreItemKind::Registration)
+            .map(|(id, item)| (id, actual_owners[&item.symbol].clone())).collect();
+        let snapshot = super::shared::snapshot_id(41);
+        let vcs = generate(&core, snapshot, &GenerationSchemaVersion::new("source-existential-registration-v1"), &VcSchemaVersion::new("vc-v1")).unwrap();
+        let before = (source.clone(), nodes.clone(), collected.env().clone(), core.clone(), vcs.clone(), formulas.clone(), syntax.clone(), owners.clone());
+        let hashes = vcs.source_registration_candidate_anchor_hashes(&core, &formulas, &syntax, &owners).unwrap();
+        let shapes = vcs.source_registration_source_shape_hashes(&core, &formulas, &syntax).unwrap();
+        for (id, name) in &leaves {
+            let result = anchor(&source, &nodes, collected.env(), snapshot, *id).unwrap();
+            let triple = components(&source, &nodes, collected.env(), snapshot, *id).unwrap();
+            assert_eq!((result.1, result.2, result.3), triple);
+            let hex = hashes[id].as_bytes().iter().map(|byte| format!("{byte:02x}")).collect::<String>();
+            assert_eq!(result.0.as_str(), format!("source-registration-candidate-anchor-v1:{hex}"));
+            let AnchorOwner::Registration(item) = vcs.vc(*id).unwrap().anchor.owner else { unreachable!() };
+            let current = (result, hashes[id], shapes[id], *id, item, vcs.vc(*id).unwrap().goal, core.source_id());
+            let name = if index == 5 { name.replace("RenamedExists:", "OAExists:") } else { name.clone() };
+            if index == 0 { baseline.insert(name, current); continue; }
+            let old = &baseline[&name];
+            let changed = match index { 5 => name.starts_with("OAExists:"), 6 => true, 7 => !name.starts_with("OBExists:"), 8 => name == "OAExists:1" || name == "OABExists:1", _ => false };
+            assert_eq!(current.0.0 != old.0.0, changed, "anchor {index}: {name}");
+            assert_eq!(current.1 != old.1, changed, "lower {index}: {name}");
+            if index < 5 { assert_eq!(current.0, old.0, "neutral {index}: {name}"); }
+            if index == 3 { assert_ne!(current.6, old.6); }
+            if index == 4 && name == "OABExists:1" {
+                assert_ne!(current.3, old.3);
+                assert_ne!(current.4, old.4);
+                assert_ne!(current.5, old.5);
+            }
+            if index == 8 {
+                assert_eq!(current.2, old.2, "external body leaves local shape: {name}");
+                assert_eq!(current.0.2, old.0.2, "external body leaves goal: {name}");
+                assert_eq!(current.0.3 != old.0.3, changed, "external context: {name}");
+            }
+        }
+        assert_eq!((source, nodes, collected.env().clone(), core, vcs, formulas, syntax, owners), before);
+    }
+}
+
+#[test]
+fn source_registration_candidate_anchor_refuses_whole_inputs_before_selection() {
+    use mizar_checker::registration_resolution::check_source_existential_registration_proof as check;
+    use mizar_proof::status::source_registration_candidate_anchor as anchor;
+    use mizar_vc::{generator::generate_source_existential_registration as generate, vc_ir::{GenerationSchemaVersion, VcId, VcSchemaVersion}};
+    let text = std::fs::read_to_string(step5c13_registration_case().source_path).unwrap();
+    let (core, _, formulas, leaves, syntax) = source_registration_source_shape_inputs(&text, "vc_fingerprints", 0);
+    let (source, nodes, collected, _) = source_registration_formula_inputs(&text, "vc-fingerprint-test", "vc_fingerprints", 0);
+    let actual_owners = mizar_resolve::symbols::source_registration_owner_payloads_from_arena(&source, collected.env()).unwrap();
+    let owners: std::collections::BTreeMap<_, _> = core.items().iter().filter(|(_, item)| item.kind == mizar_core::core_ir::CoreItemKind::Registration)
+        .map(|(id, item)| (id, actual_owners[&item.symbol].clone())).collect();
+    let snapshot = super::shared::snapshot_id(0);
+    let vcs = generate(&core, snapshot, &GenerationSchemaVersion::new("source-existential-registration-v1"), &VcSchemaVersion::new("vc-v1")).unwrap();
+    let before = (source.clone(), nodes.clone(), collected.env().clone(), core.clone(), vcs.clone(), formulas.clone(), syntax.clone(), owners.clone());
+    let valid = vcs.source_registration_candidate_anchor_hashes(&core, &formulas, &syntax, &owners).unwrap();
+    let selected = *leaves.keys().next().unwrap();
+    let absent = VcId::new(vcs.vcs().len());
+    assert_eq!(anchor(&source, &nodes, collected.env(), snapshot, absent).unwrap_err(), "registration.proof.invalid_source_anchor");
+    let first = *owners.keys().next().unwrap();
+    let second = *owners.keys().nth(1).unwrap();
+    let extra = core.items().iter().find(|(_, item)| item.kind != mizar_core::core_ir::CoreItemKind::Registration).unwrap().0;
+    for index in 0..4 {
+        let mut bad = owners.clone();
+        match index {
+            0 => { bad.remove(&first); }
+            1 => { bad.insert(extra, b"extra".to_vec()); }
+            2 => { bad.insert(first, Vec::new()); }
+            _ => { bad.insert(first, owners[&second].clone()); }
+        }
+        let bad_before = bad.clone();
+        assert_eq!(vcs.source_registration_candidate_anchor_hashes(&core, &formulas, &syntax, &bad).unwrap_err(), "unsupported source registration candidate anchor");
+        assert_eq!(bad, bad_before);
+        assert_eq!(vcs.source_registration_candidate_anchor_hashes(&core, &formulas, &syntax, &owners).unwrap(), valid);
+    }
+    let empty = std::collections::BTreeMap::new();
+    let upstream = vcs.source_registration_source_shape_hashes(&core, &formulas, &empty).unwrap_err();
+    assert_eq!(vcs.source_registration_candidate_anchor_hashes(&core, &formulas, &empty, &empty).unwrap_err(), upstream);
+    let empty_formulas = std::collections::BTreeMap::new();
+    let upstream = vcs.source_registration_source_shape_hashes(&core, &empty_formulas, &syntax).unwrap_err();
+    assert_eq!(vcs.source_registration_candidate_anchor_hashes(&core, &empty_formulas, &syntax, &empty).unwrap_err(), upstream);
+    let (foreign_source, foreign_nodes, foreign_env, _) = source_registration_formula_inputs(&text.replace("oamarked", "foreignmarked"), "vc-fingerprint-test", "vc_fingerprints", 0);
+    let foreign_before = (foreign_source.clone(), foreign_nodes.clone(), foreign_env.env().clone());
+    for (s, n, e) in [(&foreign_source, &nodes, collected.env()), (&source, &foreign_nodes, collected.env()), (&source, &nodes, foreign_env.env())] {
+        let upstream = check(s, n, e).unwrap_err();
+        assert_ne!(upstream, "registration.proof.invalid_source_anchor");
+        for id in [selected, absent] { assert_eq!(anchor(s, n, e, snapshot, id).unwrap_err(), upstream); }
+    }
+    assert_eq!((foreign_source, foreign_nodes, foreign_env.env().clone()), foreign_before);
+    let ra = text.find("  cluster OAExists:").unwrap();
+    let rb = text.find("  cluster OBExists:").unwrap();
+    let rab = text.find("  cluster OABExists:").unwrap();
+    let swapped = format!("{}{}{}{}", &text[..ra], &text[rb..rab], &text[ra..rb], &text[rab..]);
+    let malformed = text.replacen("    take the set;\n", "", 1);
+    for (index, edited) in [malformed, swapped].into_iter().enumerate() {
+        assert_ne!(edited, text);
+        let (s, n, e, _) = source_registration_formula_inputs(&edited, "vc-fingerprint-test", "vc_fingerprints", 0);
+        let input_before = (s.clone(), n.clone(), e.env().clone());
+        let upstream = if index == 0 { check(&s, &n, e.env()).unwrap_err() } else {
+            let checked = check(&s, &n, e.env()).unwrap();
+            let unsupported = mizar_core::elaborator::lower_source_existential_registration(&checked).unwrap();
+            let unsupported_before = unsupported.clone();
+            let upstream = vcs.source_registration_source_shape_hashes(&unsupported, &formulas, &syntax).unwrap_err();
+            assert_eq!(vcs.source_registration_candidate_anchor_hashes(&unsupported, &formulas, &syntax, &empty).unwrap_err(), upstream);
+            let failure = generate(&unsupported, snapshot, &GenerationSchemaVersion::new("source-existential-registration-v1"), &VcSchemaVersion::new("vc-v1")).unwrap_err();
+            assert_eq!(failure, upstream);
+            assert_eq!(unsupported, unsupported_before);
+            failure
+        };
+        assert_ne!(upstream, "registration.proof.invalid_source_anchor");
+        for id in [selected, absent] { assert_eq!(anchor(&s, &n, e.env(), snapshot, id).unwrap_err(), upstream); }
+        assert_eq!((s, n, e.env().clone()), input_before);
+    }
+    assert_eq!((source, nodes, collected.env().clone(), core, vcs, formulas, syntax, owners), before);
+}

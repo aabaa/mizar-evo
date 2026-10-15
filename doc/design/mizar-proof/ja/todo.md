@@ -440,6 +440,8 @@ kernel の拒否語彙と evidence 契約を訂正した。policy 層はその�
 
 32. **[実 source の canonical component 組立](../../task_contracts/ja/PROOF-SOURCE-CANONICAL-COMPONENTS.md).** [x]
 
+33. **[Genuine source candidate anchors](../../task_contracts/ja/SOURCE-REGISTRATION-CANDIDATE-ANCHORS.md).** [x]
+
 ## 推奨検証
 
 各タスクの後で実行する:
