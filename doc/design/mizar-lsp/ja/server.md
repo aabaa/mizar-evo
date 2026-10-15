@@ -27,3 +27,10 @@ ASCII HTTP-field CRLF header、一意の Content-Length、UTF-8 JSON byte を要
 application/vscode-jsonrpc と utf-8/旧 utf8 charset を許す。完全 frame の未対応 type/charset・
 不正 JSON は -32700/null を返して継続する。framing 不正・切断・早期 EOF・I/O 失敗は io error。
 応答長は byte 数で、flush し log text を混ぜない。
+
+## Native initialize workspace inputs
+
+`Server::native_workspace_inputs(&self) -> Result<Option<(WorkspaceRoot, Vec<WorkspacePackage>, Lockfile)>, String>` は最初に受理した initialize rootUri から、呼出側が明示的に native metadata を取得する。初期化前または null は Ok(None) とし、cwd・親・rootPath・workspaceFolders・settings へ fallback しない。terminal traffic 後も protocol 検査/応答、保持 params、文書 buffer を変更しない。
+文字列は Session の既存 file_path_from_document_uri で decode する。metadata query 前に標準 Path components を使い、decode 結果が絶対 path かつ通常 directory であることを要求した後 canonicalize し、返す WorkspaceRoot が UTF-8 であることを確認する。非対応 URI/path、取得不能、通常 directory でない root は String Err。Build read_native_workspace_inputs を再利用して実 member manifest と必須 lock を parse し、既存 tuple 全体だけを返す。取得/parser error は部分成功や metadata 補完なしで伝える。
+明示呼出しごとに metadata を再取得し、root/context を保存せず、source 本文読取りや ID 割当を行わない。一時点の可変 record は atomic provenance、実効設定、選択済 toolchain/dependency、snapshot、compiler work、current publication を証明しない。完全 native host binding は別の責務に残す。
+実 initialize と実 root/入れ子 member metadata のテストで既存 parse 座標、raw params/文書と応答の保持、null/初期化前、不正/非 file URI、欠落/file/symlink root、native reader 失敗時の無 fallback を確認する。前回呼出し後の metadata 編集/削除を反映し、既存 decoder/parser/protocol matrix は重複しない。

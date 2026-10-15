@@ -34,3 +34,10 @@ optional; accept application/vscode-jsonrpc with utf-8 or legacy utf8 charset.
 Complete frames with unsupported type/charset or invalid JSON get -32700/null
 and processing continues. Invalid framing, truncation, early EOF and I/O failure
 return io errors. Responses use byte lengths and flush without log text.
+
+## Native initialize workspace inputs
+
+`Server::native_workspace_inputs(&self) -> Result<Option<(WorkspaceRoot, Vec<WorkspacePackage>, Lockfile)>, String>` performs explicit caller-invoked metadata acquisition from the first accepted initialize rootUri. Before initialization or for null return Ok(None); never select cwd, parents, rootPath, workspaceFolders or settings as fallback. Protocol validation/responses, retained params and document buffers stay unchanged, including after terminal traffic.
+Decode a present string with Session's existing file_path_from_document_uri. Require a decoded absolute path and ordinary directory using standard Path components before the metadata query, then canonicalize and require UTF-8 for the returned WorkspaceRoot. Unsupported URI/path, unavailable or nonordinary root is String Err. Reuse Build read_native_workspace_inputs for the actual parsed member manifests and mandatory lock, returning only the complete existing tuple; propagate acquisition/parser errors without partial success or synthesized metadata.
+Each explicit call reacquires metadata; store no root/context and do not read source bodies or allocate IDs. These point-in-time mutable records establish no atomic provenance, effective settings, selected toolchain/dependencies, snapshot, compiler work or current publication. Full native host binding remains separate.
+Tests use actual accepted initialize values and real root/nested-member metadata, compare existing parsed coordinates, preserve raw params/documents and unchanged responses, and distinguish null/uninitialized, malformed/non-file URI, missing/file/symlink roots and native-reader failure without fallback. Metadata edits/deletion after a prior call must be observed; do not repeat the existing decoder/parser/protocol matrices.

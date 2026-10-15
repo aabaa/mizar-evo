@@ -284,3 +284,7 @@ frontend 保存形式が取得済み raw buffer の由来を照合する際に�
 ### Metadata-only OpenBuffer URI
 
 `DiskSourceLoader::normalize_open_buffer_uri(&DocumentUri) -> Result<NormalizedPath, SourceLoadError>` は既存 URI/path 取得を本文読取りや SourceId 割当なしで公開する。OpenBuffer loading と同じ package root・decode・canonicalize・error 分類を使用する。存在しない対象は従来どおり canonicalize に失敗し、未保存新規 file を有効化しない。文書版の受理や索引 module identity の対応付けは行わず、Build の明示 native 入力対応付けが通常 capture 前に利用する。
+
+### File URI decoding
+
+`source::file_path_from_document_uri(&str) -> Option<PathBuf>` は native host root 取得と source loading のため既存 decoder を変更せず公開する。既存の platform/authority/percent-decode 規則を適用するだけで filesystem access、path 種別/包含/namespace 検証、source 割当や identity 権限を持たない。native consumer が directory を確認し、source loading は従来の path 検証を保持する。

@@ -696,7 +696,7 @@ fn allocate_source_id(
         .map_err(|error| SourceLoadError::SourceIdAllocation { error })
 }
 
-fn file_path_from_document_uri(uri: &str) -> Option<PathBuf> {
+pub fn file_path_from_document_uri(uri: &str) -> Option<PathBuf> {
     let rest = uri.strip_prefix("file://")?;
     let (authority, path) = if rest.starts_with('/') {
         ("", rest)

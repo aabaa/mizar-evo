@@ -267,6 +267,8 @@ Tasks 1–5: [LSP-LIFECYCLE-FOUNDATION](../../task_contracts/en/LSP-LIFECYCLE-FO
 
 - [ ] [EDITOR-COMPUTED-RESULTS](../../task_contracts/en/EDITOR-COMPUTED-RESULTS.md).
 
+33. **[Native initialize workspace inputs](../../task_contracts/en/LSP-NATIVE-WORKSPACE-INPUTS.md).** [x]
+
 ## Recommended Verification
 
 Run after each task:

@@ -266,6 +266,8 @@ Tasks 1–5: [LSP-LIFECYCLE-FOUNDATION](../../task_contracts/ja/LSP-LIFECYCLE-FO
 
 - [ ] [EDITOR-COMPUTED-RESULTS](../../task_contracts/ja/EDITOR-COMPUTED-RESULTS.md).
 
+33. **[Native initialize workspace inputs](../../task_contracts/ja/LSP-NATIVE-WORKSPACE-INPUTS.md).** [x]
+
 ## 推奨検証
 
 各タスクの後で実行する:

@@ -292,3 +292,7 @@ is the shared pure Disk/OpenBuffer BOM-strip and CRLF-to-LF operation.
 It preserves lone CR and existing map rules, performs no I/O, validation,
 hashing or identity allocation, and does not normalize Generated inputs.
 Frontend storage uses it to check captured raw-buffer provenance.
+
+### File URI decoding
+
+`source::file_path_from_document_uri(&str) -> Option<PathBuf>` exposes the existing decoder unchanged for native host root acquisition as well as source loading. It applies the existing platform/authority/percent-decoding rules without filesystem access, path-kind/containment/namespace validation, source allocation or identity authority. The native consumer performs its own directory checks; source loading retains its existing path validation.

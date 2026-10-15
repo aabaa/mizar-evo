@@ -482,6 +482,8 @@ should keep `cargo test -p mizar-session` green (see [Suggested Verification](#s
 
 35. **[Explicit native OpenBuffer input](../../task_contracts/en/BUILD-NATIVE-OPEN-BUFFER-INPUT.md).** [x]
 
+36. **[Native initialize workspace inputs](../../task_contracts/en/LSP-NATIVE-WORKSPACE-INPUTS.md).** [x]
+
 ## Suggested Verification
 
 After each task, run:

@@ -23,6 +23,44 @@ impl Server {
         self.initialized.as_ref()
     }
 
+    /// Acquires current native metadata from the explicit initialize root URI.
+    pub fn native_workspace_inputs(
+        &self,
+    ) -> Result<
+        Option<(
+            mizar_session::WorkspaceRoot,
+            Vec<mizar_build::planner::WorkspacePackage>,
+            mizar_build::planner::Lockfile,
+        )>,
+        String,
+    > {
+        let Some(uri) = self
+            .initialization_params()
+            .and_then(|params| params.get("rootUri"))
+            .and_then(Value::as_str)
+        else {
+            return Ok(None);
+        };
+        let path = mizar_session::source::file_path_from_document_uri(uri)
+            .ok_or_else(|| "workspace root must be a supported file URI".to_owned())?
+            .components()
+            .collect::<std::path::PathBuf>();
+        if !path.is_absolute() {
+            return Err("workspace root must be absolute".into());
+        }
+        if !std::fs::symlink_metadata(&path)
+            .map_err(|error| error.to_string())?
+            .is_dir()
+        {
+            return Err("workspace root must be an ordinary directory".into());
+        }
+        let path = std::fs::canonicalize(path).map_err(|error| error.to_string())?;
+        let root =
+            mizar_session::WorkspaceRoot::new(path.to_str().ok_or("workspace root must be UTF-8")?);
+        let (packages, lockfile) = mizar_build::planner::read_native_workspace_inputs(&root)?;
+        Ok(Some((root, packages, lockfile)))
+    }
+
     /// Borrows the current full-sync document version and text.
     pub fn document(&self, uri: &str) -> Option<(i32, &str)> {
         self.documents
@@ -1098,5 +1136,274 @@ mod tests {
         );
         assert_eq!(server.initialization_params(), Some(&expected));
         assert_eq!(server.document(uri), Some((-1, text)));
+    }
+
+    #[test]
+    fn native_workspace_inputs_follow_initialize_and_reacquire_real_metadata() {
+        use std::{fs, time::SystemTime};
+
+        let root = std::env::temp_dir().join(format!(
+            "mizar lsp native inputs {} {}",
+            std::process::id(),
+            SystemTime::now()
+                .duration_since(SystemTime::UNIX_EPOCH)
+                .unwrap()
+                .as_nanos()
+        ));
+        fs::create_dir(&root).unwrap();
+        let uri = format!(
+            "file://{}{}",
+            if cfg!(windows) { "/" } else { "" },
+            root.to_str()
+                .unwrap()
+                .replace('\\', "/")
+                .replace(' ', "%20")
+        );
+        let manifest = "[package]\nname = \"actual_package\"\nversion = \"1.2.3\"\n";
+        let lock = "schema_version = 1\n[[package]]\nname = \"actual_package\"\nversion = \"1.2.3\"\nsource = { kind = \"workspace\", path = \".\" }\ndependencies = []\n";
+        fs::write(root.join("mizar.pkg"), manifest).unwrap();
+        fs::write(root.join("mizar.lock"), lock).unwrap();
+        let params = json!({"processId": null, "rootUri": format!("{uri}/."),
+            "capabilities": {}, "initializationOptions": {"unknown": [1, null]}});
+        let mut server = Server::default();
+        assert_eq!(
+            server.handle_message(request("initialize", params.clone())),
+            Some(
+                json!({"jsonrpc": "2.0", "id": 7, "result": {"capabilities": {
+                    "positionEncoding": "utf-16", "textDocumentSync": {"openClose": true, "change": 1}
+                }}})
+            )
+        );
+        let document_uri = format!("{uri}/unsaved.miz");
+        let text = "\u{feff}editor😀\r\n";
+        assert!(server.handle_message(notification("textDocument/didOpen", json!({
+            "textDocument": {"uri": document_uri, "languageId": "mizar", "version": 3, "text": text}
+        }))).is_none());
+        let (canonical, packages, parsed_lock) = server.native_workspace_inputs().unwrap().unwrap();
+        assert_eq!(
+            canonical.as_str(),
+            fs::canonicalize(&root).unwrap().to_str().unwrap()
+        );
+        assert_eq!(packages.len(), 1);
+        assert_eq!(packages[0].member_path, ".");
+        assert_eq!(
+            packages[0].manifest,
+            mizar_build::planner::parse_package_manifest(manifest).unwrap()
+        );
+        assert_eq!(
+            parsed_lock,
+            mizar_build::planner::parse_lockfile(lock).unwrap()
+        );
+
+        fs::create_dir_all(root.join("members/nested")).unwrap();
+        let changed_manifest = manifest.replace("1.2.3", "2.3.4");
+        let changed_lock = lock
+            .replace("1.2.3", "2.3.4")
+            .replace("path = \".\"", "path = \"members/nested\"");
+        fs::write(root.join("members/nested/mizar.pkg"), &changed_manifest).unwrap();
+        fs::write(
+            root.join("mizar.workspace"),
+            "[workspace]\nmembers = [\"members/nested\"]\n",
+        )
+        .unwrap();
+        fs::write(root.join("mizar.lock"), &changed_lock).unwrap();
+        assert_error(
+            &mut server,
+            request(
+                "initialize",
+                json!({
+                    "processId": null, "rootUri": null, "capabilities": {}
+                }),
+            ),
+            -32600,
+        );
+        assert_eq!(
+            server.handle_message(request("shutdown", Value::Null)),
+            Some(json!({"jsonrpc": "2.0", "id": 7, "result": null}))
+        );
+        assert!(
+            server
+                .handle_message(notification("exit", Value::Null))
+                .is_none()
+        );
+        let (current_root, current_packages, current_lock) =
+            server.native_workspace_inputs().unwrap().unwrap();
+        assert_eq!(current_root, canonical);
+        assert_eq!(current_packages.len(), 1);
+        assert_eq!(current_packages[0].member_path, "members/nested");
+        assert_eq!(
+            current_packages[0].manifest,
+            mizar_build::planner::parse_package_manifest(&changed_manifest).unwrap()
+        );
+        assert_eq!(
+            current_lock,
+            mizar_build::planner::parse_lockfile(&changed_lock).unwrap()
+        );
+        fs::remove_file(root.join("mizar.lock")).unwrap();
+        assert!(server.native_workspace_inputs().is_err());
+        assert_eq!(server.initialization_params(), Some(&params));
+        assert_eq!(server.document(&document_uri), Some((3, text)));
+        fs::remove_dir_all(root).unwrap();
+    }
+
+    #[test]
+    fn native_workspace_inputs_refuse_absent_invalid_roots_and_reader_failures() {
+        use std::{fs, time::SystemTime};
+
+        let root = std::env::temp_dir().join(format!(
+            "mizar-lsp-native-errors-{}-{}",
+            std::process::id(),
+            SystemTime::now()
+                .duration_since(SystemTime::UNIX_EPOCH)
+                .unwrap()
+                .as_nanos()
+        ));
+        fs::create_dir(&root).unwrap();
+        fs::write(
+            root.join("mizar.pkg"),
+            "[package]\nname = \"actual_package\"\nversion = \"1.2.3\"\n",
+        )
+        .unwrap();
+        fs::write(
+            root.join("mizar.lock"),
+            "schema_version = 1\npackage = []\n",
+        )
+        .unwrap();
+        let uri = format!(
+            "file://{}{}",
+            if cfg!(windows) { "/" } else { "" },
+            root.to_str()
+                .unwrap()
+                .replace('\\', "/")
+                .replace(' ', "%20")
+        );
+        let mut server = Server::default();
+        assert_eq!(server.native_workspace_inputs(), Ok(None));
+        let fallback = json!({"processId": null, "rootUri": null, "capabilities": {},
+            "rootPath": root, "workspaceFolders": [{"uri": uri, "name": "actual"}],
+            "initializationOptions": {"rootUri": uri}, "settings": {"rootUri": uri}});
+        assert!(
+            server
+                .handle_message(request("initialize", fallback.clone()))
+                .unwrap()
+                .get("result")
+                .is_some()
+        );
+        assert_eq!(server.native_workspace_inputs(), Ok(None));
+        assert_eq!(server.initialization_params(), Some(&fallback));
+        for invalid in [
+            "https://example.com/workspace".to_owned(),
+            "file:///bad%GG".to_owned(),
+            format!("{uri}/missing"),
+            format!("{uri}/mizar.pkg"),
+        ] {
+            let mut server = Server::default();
+            assert!(server.handle_message(request("initialize", json!({
+                "processId": null, "rootUri": invalid, "capabilities": {}, "rootPath": root,
+                "workspaceFolders": [{"uri": uri, "name": "actual"}]
+            }))).unwrap().get("result").is_some());
+            assert!(server.native_workspace_inputs().is_err(), "{invalid}");
+        }
+        #[cfg(unix)]
+        {
+            std::os::unix::fs::symlink(&root, root.join("linked-root")).unwrap();
+            for suffix in ["/linked-root", "/linked-root/."] {
+                let mut server = Server::default();
+                server.handle_message(request("initialize", json!({
+                    "processId": null, "rootUri": format!("{uri}{suffix}"), "capabilities": {}
+                }))).unwrap();
+                assert!(server.native_workspace_inputs().is_err(), "{suffix}");
+            }
+        }
+        let mut server = Server::default();
+        server
+            .handle_message(request(
+                "initialize",
+                json!({
+                    "processId": null, "rootUri": uri, "capabilities": {}
+                }),
+            ))
+            .unwrap();
+        assert!(server.native_workspace_inputs().unwrap().is_some());
+        fs::write(
+            root.join("mizar.lock"),
+            "schema_version = 0\npackage = []\n",
+        )
+        .unwrap();
+        let canonical =
+            mizar_session::WorkspaceRoot::new(fs::canonicalize(&root).unwrap().to_str().unwrap());
+        assert_eq!(
+            server.native_workspace_inputs().unwrap_err(),
+            mizar_build::planner::read_native_workspace_inputs(&canonical).unwrap_err()
+        );
+        fs::remove_dir_all(root).unwrap();
+    }
+
+    #[cfg(windows)]
+    #[test]
+    fn native_workspace_inputs_refuse_drive_relative_windows_roots() {
+        use std::{
+            fs,
+            path::{Component, Prefix},
+            time::SystemTime,
+        };
+
+        let current = std::env::current_dir().unwrap();
+        let drive = match current.components().next() {
+            Some(Component::Prefix(prefix)) => match prefix.kind() {
+                Prefix::Disk(drive) | Prefix::VerbatimDisk(drive) => drive,
+                _ => {
+                    eprintln!("drive-relative workspace fixture requires a drive-prefixed cwd");
+                    return;
+                }
+            },
+            _ => unreachable!("Windows current directory has a path prefix"),
+        };
+        let name = format!(
+            "mizar-lsp-drive-relative-{}-{}",
+            std::process::id(),
+            SystemTime::now()
+                .duration_since(SystemTime::UNIX_EPOCH)
+                .unwrap()
+                .as_nanos()
+        );
+        let root = current.join(&name);
+        fs::create_dir(&root).unwrap();
+        fs::write(
+            root.join("mizar.pkg"),
+            "[package]\nname = \"actual_package\"\nversion = \"1.2.3\"\n",
+        )
+        .unwrap();
+        fs::write(
+            root.join("mizar.lock"),
+            "schema_version = 1\npackage = []\n",
+        )
+        .unwrap();
+        let uri = format!("file:///{}:{name}", char::from(drive));
+        let decoded = mizar_session::source::file_path_from_document_uri(&uri).unwrap();
+        assert!(!decoded.is_absolute());
+        assert!(fs::symlink_metadata(&decoded).unwrap().is_dir());
+        let canonical = fs::canonicalize(&root).unwrap();
+        assert_eq!(fs::canonicalize(&decoded).unwrap(), canonical);
+        let workspace = mizar_session::WorkspaceRoot::new(canonical.to_str().unwrap());
+        assert!(mizar_build::planner::read_native_workspace_inputs(&workspace).is_ok());
+        let mut server = Server::default();
+        assert!(
+            server
+                .handle_message(request(
+                    "initialize",
+                    json!({
+                        "processId": null, "rootUri": uri, "capabilities": {}
+                    })
+                ))
+                .unwrap()
+                .get("result")
+                .is_some()
+        );
+        assert_eq!(
+            server.native_workspace_inputs().unwrap_err(),
+            "workspace root must be absolute"
+        );
+        fs::remove_dir_all(root).unwrap();
     }
 }

@@ -463,6 +463,8 @@
 
 35. **[Explicit native OpenBuffer input](../../task_contracts/ja/BUILD-NATIVE-OPEN-BUFFER-INPUT.md).** [x]
 
+36. **[Native initialize workspace inputs](../../task_contracts/ja/LSP-NATIVE-WORKSPACE-INPUTS.md).** [x]
+
 ## 推奨検証
 
 各タスクの後に、以下を実行する:

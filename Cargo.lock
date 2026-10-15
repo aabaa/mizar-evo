@@ -561,6 +561,7 @@ dependencies = [
 name = "mizar-lsp"
 version = "0.1.0"
 dependencies = [
+ "mizar-build",
  "mizar-driver",
  "mizar-lexer",
  "mizar-session",

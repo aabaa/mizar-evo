@@ -17,6 +17,7 @@ name = "mizar"
 path = "src/main.rs"
 
 [dependencies]
+mizar-build = { path = "../mizar-build" }
 mizar-driver = { path = "../mizar-driver" }
 mizar-lexer = { path = "../mizar-lexer" }
 mizar-session = { path = "../mizar-session" }
