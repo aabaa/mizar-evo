@@ -1080,3 +1080,125 @@ fn assert_selected(
 fn hash(seed: u8) -> Hash {
     Hash::from_bytes([seed; Hash::BYTE_LEN])
 }
+
+#[test]
+fn encoded_input_presence_preserves_legacy_hashes_and_separates_absence() {
+    let interactive = VerifierPolicy::interactive();
+    let open = ProofPolicyEvaluator::new(interactive.clone())
+        .evaluate_candidate(&PolicyCandidate::OpenObligation);
+    for (policy, candidates, expected_tie, expected_refs) in [
+        (
+            interactive.clone(),
+            vec![candidate("open", open.clone()).with_evidence_hash(hash(124))],
+            "5b7ac252d25fb5e3c6fc4bc10e9874483d5042adab34b14da52a829145129f47",
+            vec![],
+        ),
+        (
+            VerifierPolicy::release(),
+            vec![candidate("rejected", rejected_policy_decision())],
+            "ceeb86ad6636f502dfa112bbcf5aff4f3460018302e82f1246468b8e66f1f9ee",
+            vec![],
+        ),
+        (
+            VerifierPolicy::release(),
+            vec![],
+            "e48fd4bc613b203e06502ac2652b025505bf76465e5c6110773b4f81bd3649b6",
+            vec![],
+        ),
+        (
+            interactive.clone(),
+            vec![
+                candidate("duplicate", open.clone()).with_evidence_hash(hash(50)),
+                candidate("duplicate", open).with_evidence_hash(hash(51)),
+            ],
+            "87bee4abb960d8be45d41f9f59100d4a38f7dbe606a296d676090443f4ea6cb8",
+            vec!["c9a7e382d45c5b13c91b83709319b9bd7ffedbf9e2973a370b6dbce698c31a7a"],
+        ),
+    ] {
+        let present = base_set(policy.clone()).with_candidates(candidates.clone());
+        let legacy = select_winner(&present);
+        assert_eq!(present.encoded_problem_hash(), Some(hash(100)));
+        assert_eq!(
+            legacy.reuse_metadata().encoded_problem_hash(),
+            Some(hash(100))
+        );
+        let observed = std::iter::once(legacy.reuse_metadata().tie_break_key_hash())
+            .chain(
+                legacy
+                    .ordered_diagnostic_refs()
+                    .iter()
+                    .map(|reference| reference.hash()),
+            )
+            .map(|value| {
+                value
+                    .as_bytes()
+                    .iter()
+                    .map(|byte| format!("{byte:02x}"))
+                    .collect::<String>()
+            })
+            .collect::<Vec<_>>();
+        assert_eq!(
+            observed,
+            std::iter::once(expected_tie)
+                .chain(expected_refs)
+                .collect::<Vec<_>>()
+        );
+        let absent = ProofEvidenceSet::new(b"obligation".to_vec(), None, policy.clone())
+            .with_candidates(candidates.clone());
+        let selected = select_winner(&absent);
+        assert_eq!(selected, select_winner(&absent));
+        assert_eq!(absent.encoded_problem_hash(), None);
+        assert_eq!(selected.reuse_metadata().encoded_problem_hash(), None);
+        assert_eq!(selected.selected_class(), legacy.selected_class());
+        assert_eq!(
+            selected.selected_candidate_id(),
+            legacy.selected_candidate_id()
+        );
+        assert_ne!(
+            selected.reuse_metadata().tie_break_key_hash(),
+            legacy.reuse_metadata().tie_break_key_hash()
+        );
+        if candidates.is_empty() {
+            assert_eq!(
+                legacy.diagnostic_result_id(),
+                Some(legacy.reuse_metadata().tie_break_key_hash())
+            );
+            assert_ne!(
+                selected.diagnostic_result_id(),
+                legacy.diagnostic_result_id()
+            );
+            assert_ne!(
+                selected.diagnostic_result_id(),
+                select_winner(&ProofEvidenceSet::new(
+                    b"other".to_vec(),
+                    None,
+                    policy.clone()
+                ))
+                .diagnostic_result_id()
+            );
+        }
+        if candidates.len() == 2 {
+            assert_ne!(
+                selected.ordered_diagnostic_refs(),
+                legacy.ordered_diagnostic_refs()
+            );
+            assert_ne!(
+                selected.ordered_diagnostic_refs(),
+                select_winner(
+                    &ProofEvidenceSet::new(b"other".to_vec(), None, policy)
+                        .with_candidates(candidates)
+                )
+                .ordered_diagnostic_refs()
+            );
+        }
+    }
+    let mut forged = rejected_policy_decision();
+    forged.class = CandidatePolicyClass::DischargedBuiltin;
+    let forged = select_winner(
+        &ProofEvidenceSet::new(b"obligation".to_vec(), None, interactive)
+            .with_candidates([candidate("forged", forged)]),
+    );
+    assert!(!forged.selected_class().is_trusted());
+    assert!(!forged.trusted_used_axioms_available());
+    assert!(OptionalHashKey::from_hash(Some(hash(100))) < OptionalHashKey::from_hash(None));
+}

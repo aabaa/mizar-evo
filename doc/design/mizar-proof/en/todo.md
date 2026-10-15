@@ -454,6 +454,8 @@ layer consumes both; one alignment task is owned here.
 
 27. **[Raw source discharge metadata](../../task_contracts/en/PROOF-SOURCE-DISCHARGE-METADATA.md).** [x] — Same-call data association only; trusted tokens and publication remain open.
 
+28. **[Source-bound built-in selection](../../task_contracts/en/PROOF-SOURCE-DISCHARGE-SELECTION.md).** [x]
+
 ## Recommended Verification
 
 Run after each task:

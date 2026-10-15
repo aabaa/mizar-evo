@@ -17,7 +17,7 @@ projection, witness staging, cache lookup, or artifact commit.
 
 Selection consumes immutable records already produced by earlier stages:
 
-- normalized obligation identity and encoded problem hash;
+- normalized obligation identity and optional encoded problem hash;
 - active `VerifierPolicy` and `PolicyFingerprint`;
 - policy decisions from `ProofPolicyEvaluator`;
 - accepted proof-obligation kernel results paired with explicit kernel
@@ -32,6 +32,13 @@ Inputs must be complete before selection begins. Arrival order, backend
 completion order, runtime duration, wall-clock time, worker id, process id, and
 temporary path are not inputs to winner identity or tie-breaking.
 
+## Encoded input availability
+
+`ProofEvidenceSet::new(identity: impl Into<Vec<u8>>, encoded_problem_hash: impl Into<Option<Hash>>, policy: VerifierPolicy)` keeps existing Hash callers as Some; an actual no-ATP producer supplies None. The existing set and SelectedReuseMetadata fields/getters use Option<Hash>, without another identity type or field. An available encoding may still bind a mixed ATP/built-in set; a target/handoff/discharge hash is never an encoded-problem substitute.
+Reuse existing OptionalHashKey for selectable/rejected tuple ordering. Preserve all present-hash domains, labels, raw bytes and field order exactly, with no added presence tag. At the same field position, absence writes only field_bool("encoded_problem_hash_absent", true), not a placeholder digest; the framing is distinct from every present value. Share this formatting in one private StableHasher method across selectable/rejected keys and empty/conflict diagnostics.
+Obligation bytes still bind diagnostic identity; producer-owned candidate source IDs bind actual selectable targets. Optionality itself authenticates neither binding nor evidence. Existing trusted markers, class/policy ordering, merge and reuse rules remain unchanged.
+Tests preserve existing encoded-path tuple and diagnostic identities, including empty/conflicting candidate sets, and distinguish absent input and diagnostic target binding. Genuine no-ATP source production belongs to the source-discharge selection owner; no canonical VC/discharge hash or publication authority is inferred here.
+
 ## Winner Classes
 
 Selection compares candidates by winner class before applying tie-break keys.
@@ -39,7 +46,7 @@ Selection compares candidates by winner class before applying tie-break keys.
 | Winner class | Eligible candidate | Trusted? | Notes |
 |---|---|---:|---|
 | `KernelVerified` | Accepted proof-obligation kernel result for formula/substitution evidence satisfying the active policy. | yes | Highest class. Trusted `used_axioms` may be copied only from the accepted proof-obligation kernel result. |
-| `DischargedBuiltin` | Accepted proof-obligation `KernelCheckResult` for deterministic built-in evidence, including kernel-owned primitive evidence accepted by the kernel. | yes | Distinct from ATP `KernelVerified`; exports a deterministic discharge hash for reuse validation. |
+| `DischargedBuiltin` | Accepted proof-obligation `KernelCheckResult` for deterministic built-in evidence, including kernel-owned primitive evidence accepted by the kernel. | yes | Distinct from ATP `KernelVerified`; retains a deterministic discharge hash when available. Reuse validation requires that hash. |
 | `PolicyPermittedExternal` | External admission with `may_win_selection = true` and `require_kernel_certificates = false`. | no | Never trusted and never supplies trusted `used_axioms`. |
 | `PolicyAssumed` | Explicit policy assumption admitted by the active policy and not blocked by `require_kernel_certificates`. | no | Non-trusted policy status only; never supplies trusted witness material or `used_axioms`. |
 | `PolicyOpen` | Open obligation allowed by active policy after no schedulable/running better candidate remains. | no | Carries stable explanation refs only. |
@@ -91,7 +98,7 @@ Within the same winner class, candidates are sorted by this stable key tuple:
 1. winner-class rank;
 2. backend profile priority, lower numeric value first;
 3. certificate/evidence-format priority, lower numeric value first;
-4. encoded problem hash bytes;
+4. optional encoded problem hash bytes, present before missing;
 5. policy profile id;
 6. evidence payload hash or deterministic discharge hash;
 7. provenance hash;
@@ -130,7 +137,7 @@ a separate deterministic diagnostic tuple:
 2. architecture-19 failure category rank when available;
 3. stable severity rank;
 4. stable reason code;
-5. encoded problem hash bytes;
+5. optional encoded problem hash bytes, present before missing;
 6. evidence payload hash or deterministic discharge hash;
 7. provenance hash;
 8. stable candidate source id.
@@ -144,7 +151,7 @@ If the candidate set is empty, or if every input is `DiagnosticOnly`, selection
 returns a `NoSelectableEvidence` diagnostic outcome instead of inventing a
 proof winner or choosing by input order. That outcome has no selected candidate
 id, no trusted `used_axioms`, and a stable diagnostic result id derived from
-the obligation identity, encoded problem hash, policy fingerprint, and the
+the obligation identity, optional encoded problem hash, policy fingerprint, and the
 `no_selectable_evidence` reason code. Its diagnostic refs are sorted by stable
 diagnostic ref hash.
 
@@ -157,7 +164,7 @@ publication:
 |---|---|
 | `selected_class` | Winner class selected by the deterministic ordering. |
 | `policy_fingerprint` | Active `PolicyFingerprint`. |
-| `encoded_problem_hash` | Stable hash of the encoded obligation. |
+| `encoded_problem_hash` | Optional genuine encoded-obligation hash; absent when no encoding exists. |
 | `selected_evidence_hash` | Kernel evidence payload hash, external evidence hash, policy-assumption source hash, or open explanation hash, depending on class. |
 | `accepted_goal_polarity` | Kernel-validated accepted proof-obligation goal polarity for trusted kernel selections; currently `assert_false_for_refutation` and absent for non-trusted, rejected, open, policy-tainted, or consistency-check outcomes. |
 | `selected_proof_witness_hash` | Witness payload artifact hash (`witness_artifact_hash`) when the selected `KernelVerified` candidate carries witness metadata that the current artifact schema can reference. It is not a hash of the `ProofWitnessRef` metadata object and does not prove committed manifest reachability. |

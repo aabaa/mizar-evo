@@ -336,7 +336,7 @@ impl ProofEvidenceCandidate {
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct ProofEvidenceSet {
     obligation_identity: Vec<u8>,
-    encoded_problem_hash: Hash,
+    encoded_problem_hash: Option<Hash>,
     policy: VerifierPolicy,
     candidates: Vec<ProofEvidenceCandidate>,
 }
@@ -345,12 +345,12 @@ impl ProofEvidenceSet {
     #[must_use]
     pub fn new(
         obligation_identity: impl Into<Vec<u8>>,
-        encoded_problem_hash: Hash,
+        encoded_problem_hash: impl Into<Option<Hash>>,
         policy: VerifierPolicy,
     ) -> Self {
         Self {
             obligation_identity: obligation_identity.into(),
-            encoded_problem_hash,
+            encoded_problem_hash: encoded_problem_hash.into(),
             policy,
             candidates: Vec::new(),
         }
@@ -375,7 +375,7 @@ impl ProofEvidenceSet {
     }
 
     #[must_use]
-    pub const fn encoded_problem_hash(&self) -> Hash {
+    pub const fn encoded_problem_hash(&self) -> Option<Hash> {
         self.encoded_problem_hash
     }
 
@@ -444,7 +444,7 @@ impl ProofWinnerClass {
 pub struct SelectedReuseMetadata {
     selected_class: ProofWinnerClass,
     policy_fingerprint: PolicyFingerprint,
-    encoded_problem_hash: Hash,
+    encoded_problem_hash: Option<Hash>,
     selected_evidence_hash: Option<Hash>,
     selected_proof_witness_hash: Option<Hash>,
     deterministic_discharge_hash: Option<Hash>,
@@ -468,7 +468,7 @@ impl SelectedReuseMetadata {
     }
 
     #[must_use]
-    pub const fn encoded_problem_hash(&self) -> Hash {
+    pub const fn encoded_problem_hash(&self) -> Option<Hash> {
         self.encoded_problem_hash
     }
 
@@ -1217,7 +1217,9 @@ fn generated_invalid_input_refs(
         .map(|source_id| {
             let mut hash = StableHasher::new(SELECTION_DIAGNOSTIC_HASH_DOMAIN);
             hash.field_bytes("obligation_identity", evidence_set.obligation_identity());
-            hash.field_hash("encoded_problem_hash", evidence_set.encoded_problem_hash());
+            hash.field_encoded_problem_hash(OptionalHashKey::from_hash(
+                evidence_set.encoded_problem_hash(),
+            ));
             hash.field_hash(
                 "policy_fingerprint",
                 evidence_set.policy_fingerprint().hash(),
@@ -1311,7 +1313,9 @@ fn hash_policy_diagnostic(
 fn diagnostic_result_id(evidence_set: &ProofEvidenceSet) -> Hash {
     let mut hash = StableHasher::new(SELECTION_DIAGNOSTIC_HASH_DOMAIN);
     hash.field_bytes("obligation_identity", evidence_set.obligation_identity());
-    hash.field_hash("encoded_problem_hash", evidence_set.encoded_problem_hash());
+    hash.field_encoded_problem_hash(OptionalHashKey::from_hash(
+        evidence_set.encoded_problem_hash(),
+    ));
     hash.field_hash(
         "policy_fingerprint",
         evidence_set.policy_fingerprint().hash(),
@@ -1325,7 +1329,7 @@ fn hash_tie_break_key(key: &TieBreakKey) -> Hash {
     hash.field_u8("winner_rank", key.winner_rank);
     hash.field_u32("backend_profile_priority", key.backend_profile_priority);
     hash.field_u32("evidence_format_priority", key.evidence_format_priority);
-    hash.field_hash_key("encoded_problem_hash", key.encoded_problem_hash);
+    hash.field_encoded_problem_hash(key.encoded_problem_hash);
     hash.field_str("policy_profile_id", &key.policy_profile_id);
     hash.field_optional_hash_key("evidence_hash", key.evidence_hash);
     hash.field_optional_hash_key("provenance_hash", key.provenance_hash);
@@ -1339,7 +1343,7 @@ fn hash_rejected_key(key: &RejectedKey) -> Hash {
     hash.field_u8("failure_category_rank", key.failure_category_rank);
     hash.field_u8("severity_rank", key.severity_rank);
     hash.field_str("reason_code", &key.reason_code);
-    hash.field_hash_key("encoded_problem_hash", key.encoded_problem_hash);
+    hash.field_encoded_problem_hash(key.encoded_problem_hash);
     hash.field_optional_hash_key("evidence_hash", key.evidence_hash);
     hash.field_optional_hash_key("provenance_hash", key.provenance_hash);
     hash.field_str("candidate_source_id", key.candidate_source_id.as_str());
@@ -1423,7 +1427,7 @@ struct TieBreakKey {
     winner_rank: u8,
     backend_profile_priority: u32,
     evidence_format_priority: u32,
-    encoded_problem_hash: HashKey,
+    encoded_problem_hash: OptionalHashKey,
     policy_profile_id: String,
     evidence_hash: OptionalHashKey,
     provenance_hash: OptionalHashKey,
@@ -1444,7 +1448,7 @@ impl TieBreakKey {
             evidence_format_priority: candidate
                 .evidence_format_priority()
                 .unwrap_or(MISSING_PRIORITY_SENTINEL),
-            encoded_problem_hash: HashKey::from(evidence_set.encoded_problem_hash()),
+            encoded_problem_hash: OptionalHashKey::from_hash(evidence_set.encoded_problem_hash()),
             policy_profile_id: evidence_set.policy().profile_id().to_owned(),
             evidence_hash: OptionalHashKey::from_hash(selected_evidence_hash(candidate, class)),
             provenance_hash: OptionalHashKey::from_hash(candidate.provenance_hash()),
@@ -1459,7 +1463,7 @@ struct RejectedKey {
     failure_category_rank: u8,
     severity_rank: u8,
     reason_code: String,
-    encoded_problem_hash: HashKey,
+    encoded_problem_hash: OptionalHashKey,
     evidence_hash: OptionalHashKey,
     provenance_hash: OptionalHashKey,
     candidate_source_id: CandidateSourceId,
@@ -1477,7 +1481,7 @@ impl RejectedKey {
             failure_category_rank: failure_category_rank(candidate, source_rank),
             severity_rank: 0,
             reason_code: reason_code.to_owned(),
-            encoded_problem_hash: HashKey::from(evidence_set.encoded_problem_hash()),
+            encoded_problem_hash: OptionalHashKey::from_hash(evidence_set.encoded_problem_hash()),
             evidence_hash: OptionalHashKey::from_hash(
                 candidate
                     .evidence_hash()
@@ -1607,6 +1611,13 @@ impl StableHasher {
 
     fn field_hash_key(&mut self, label: &str, value: HashKey) {
         self.field_bytes(label, &value.0);
+    }
+
+    fn field_encoded_problem_hash(&mut self, value: OptionalHashKey) {
+        match value {
+            OptionalHashKey::Present(value) => self.field_hash_key("encoded_problem_hash", value),
+            OptionalHashKey::Missing => self.field_bool("encoded_problem_hash_absent", true),
+        }
     }
 
     fn field_optional_hash(&mut self, label: &str, value: Option<Hash>) {

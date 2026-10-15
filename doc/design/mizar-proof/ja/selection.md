@@ -17,7 +17,7 @@ witness staging、cache lookup、artifact commit を実行しない。
 
 selection は、すでに前段が生成した immutable record を消費する:
 
-- 正規化された obligation identity と encoded problem hash;
+- 正規化された obligation identity と optional encoded problem hash;
 - active `VerifierPolicy` と `PolicyFingerprint`;
 - `ProofPolicyEvaluator` から来る policy decision;
 - 明示的な kernel evidence origin と accepted proof-obligation kernel evidence hash に
@@ -31,6 +31,13 @@ selection 開始前に入力は complete でなければならない。arrival o
 completion order、runtime duration、wall-clock time、worker id、process id、
 temporary path は winner identity や tie-break に入らない。
 
+## Encoded input availability
+
+`ProofEvidenceSet::new(identity: impl Into<Vec<u8>>, encoded_problem_hash: impl Into<Option<Hash>>, policy: VerifierPolicy)` は既存 Hash caller を Some とし、実際に ATP encoding がない producer は None を渡す。既存 set と SelectedReuseMetadata の field/getter を Option<Hash> とし、identity 型や field は増やさない。実 encoding がある mixed ATP/built-in set はその hash を使えるが、target/handoff/discharge hash で代用しない。
+selectable/rejected tuple の順序には既存 OptionalHashKey を使う。present hash の domain/label/raw bytes/field order を完全に保ち、presence tag は加えない。同じ field 位置で absent は field_bool("encoded_problem_hash_absent", true) だけを書き、placeholder digest は作らず、全 present value と区別する。selectable/rejected key と empty/conflict 診断で private StableHasher method を共有する。
+diagnostic identity は既存 obligation bytes、実 selectable target は producer 所有の candidate source ID で束縛する。optional 化そのものは binding/evidence を認証せず、既存 trusted marker、class/policy 順序、merge/reuse 規則を保つ。
+試験は empty/conflict を含む既存 encoded 経路の tuple/diagnostic identity を保ち、absent input と診断 target binding を区別する。真正な no-ATP source producer は source-discharge selection owner が所有し、canonical VC/discharge hash や公開権限は得られない。
+
 ## Winner Classes
 
 selection は tie-break key を適用する前に winner class で candidate を比較する。
@@ -38,7 +45,7 @@ selection は tie-break key を適用する前に winner class で candidate を
 | Winner class | Eligible candidate | Trusted? | Notes |
 |---|---|---:|---|
 | `KernelVerified` | active policy を満たす formula/substitution evidence の accepted proof-obligation kernel result。 | yes | 最上位 class。trusted `used_axioms` は accepted proof-obligation kernel result からだけ copy してよい。 |
-| `DischargedBuiltin` | kernel が accept した kernel-owned primitive evidence を含む、deterministic built-in evidence に対する accepted proof-obligation `KernelCheckResult`。 | yes | ATP `KernelVerified` とは別である。reuse validation のため deterministic discharge hash を export する。 |
+| `DischargedBuiltin` | kernel が accept した kernel-owned primitive evidence を含む、deterministic built-in evidence に対する accepted proof-obligation `KernelCheckResult`。 | yes | ATP `KernelVerified` とは別である。利用可能なら deterministic discharge hash を保持し、reuse validation はその hash を要求する。 |
 | `PolicyPermittedExternal` | `may_win_selection = true` かつ `require_kernel_certificates = false` の external admission。 | no | trusted ではなく、trusted `used_axioms` を供給しない。 |
 | `PolicyAssumed` | active policy が許可し、`require_kernel_certificates` に阻止されていない明示的な policy assumption。 | no | non-trusted policy status のみ。trusted witness material や `used_axioms` を供給しない。 |
 | `PolicyOpen` | よりよい candidate を生成できない後に active policy が許す open obligation。 | no | 安定した explanation ref だけを持つ。 |
@@ -88,7 +95,7 @@ context mismatch は ordinary rejected diagnostic のままであり、policy-op
 1. winner-class rank;
 2. backend profile priority（小さい数値を優先）;
 3. certificate/evidence-format priority（小さい数値を優先）;
-4. encoded problem hash bytes;
+4. optional encoded problem hash bytes（present を missing より先にする）;
 5. policy profile id;
 6. evidence payload hash または deterministic discharge hash;
 7. provenance hash;
@@ -127,7 +134,7 @@ result を提供するためだけに rejected candidate を 1 つ選ぶ。rejec
 2. 利用可能な場合は architecture-19 failure category rank;
 3. 安定した severity rank;
 4. 安定した reason code;
-5. encoded problem hash bytes;
+5. optional encoded problem hash bytes（present を missing より先にする）;
 6. evidence payload hash または deterministic discharge hash;
 7. provenance hash;
 8. 安定した candidate source id。
@@ -140,7 +147,7 @@ sort する。ただし、それらは kernel rejection や policy rejection rec
 candidate set が空、またはすべての input が `DiagnosticOnly` の場合、selection は
 proof winner を合成したり input order で選んだりせず、`NoSelectableEvidence`
 diagnostic outcome を返す。この outcome は selected candidate id を持たず、
-trusted `used_axioms` も持たない。obligation identity、encoded problem hash、
+trusted `used_axioms` も持たない。obligation identity、optional encoded problem hash、
 policy fingerprint、`no_selectable_evidence` reason code から導出される安定した
 diagnostic result id を持つ。diagnostic ref は安定した diagnostic ref hash で sort する。
 
@@ -152,7 +159,7 @@ selection は、proof reuse と後段の witness publication が使う安定 met
 |---|---|
 | `selected_class` | deterministic ordering が選んだ winner class。 |
 | `policy_fingerprint` | active `PolicyFingerprint`。 |
-| `encoded_problem_hash` | encoded obligation の安定 hash。 |
+| `encoded_problem_hash` | genuine encoded obligation の optional hash。encoding がなければ absent。 |
 | `selected_evidence_hash` | class に応じた kernel evidence payload hash、external evidence hash、policy-assumption source hash、または open explanation hash。 |
 | `accepted_goal_polarity` | trusted kernel selection に対する kernel-validated accepted proof-obligation goal polarity。現在は `assert_false_for_refutation` であり、non-trusted、rejected、open、policy-tainted、consistency-check outcome では absent。 |
 | `selected_proof_witness_hash` | selected `KernelVerified` candidate が現在の artifact schema で参照できる witness metadata を持つ場合の witness payload artifact hash（`witness_artifact_hash`）。`ProofWitnessRef` metadata object の hash ではなく、committed manifest reachability を証明しない。 |

@@ -430,6 +430,8 @@ kernel の拒否語彙と evidence 契約を訂正した。policy 層はその�
 
 27. **[Raw source discharge metadata](../../task_contracts/ja/PROOF-SOURCE-DISCHARGE-METADATA.md).** [x] — Same-call data association only; trusted tokens and publication remain open.
 
+28. **[実 source の built-in 選択](../../task_contracts/ja/PROOF-SOURCE-DISCHARGE-SELECTION.md).** [x]
+
 ## 推奨検証
 
 各タスクの後で実行する:

@@ -1724,5 +1724,42 @@ impl StableHasher {
     }
 }
 
+/// Selects a freshly checked source discharge candidate without an ATP encoding.
+pub fn select_source_registration_discharge_candidate(
+    source: &mizar_resolve::resolved_ast::SurfaceResolvedArena,
+    nodes: &mizar_checker::typed_ast::TypedArena,
+    symbols: &mizar_resolve::env::SymbolEnv,
+    snapshot: mizar_session::BuildSnapshotId,
+    vc_id: VcId,
+    policy: &VerifierPolicy,
+) -> Result<crate::selection::ProofSelection, String> {
+    use crate::selection::{ProofEvidenceCandidate, ProofEvidenceSet, select_winner};
+    let invalid = || "registration.proof.invalid_source_candidate".to_owned();
+    let (result, decision, metadata) = check_source_registration_discharge_metadata(
+        source, nodes, symbols, snapshot, vc_id, policy,
+    )?;
+    let target = result.target_vc_fingerprint().sort_bytes();
+    let mut id = String::from("source-registration-discharge-v1:");
+    for byte in &target {
+        use std::fmt::Write;
+        write!(id, "{byte:02x}").map_err(|_| invalid())?;
+    }
+    let id = CandidateSourceId::new(id).map_err(|_| invalid())?;
+    let candidate = if decision.class == crate::policy::CandidatePolicyClass::DischargedBuiltin {
+        let metadata = metadata.ok_or_else(invalid)?;
+        ProofEvidenceCandidate::from_trusted_kernel_input(
+            id,
+            &KernelPolicyInput::from_kernel_result(&result, KernelEvidenceOrigin::BuiltinDischarge),
+        )
+        .ok_or_else(invalid)?
+        .with_provenance_hash(metadata.provenance_hash.digest)
+    } else {
+        ProofEvidenceCandidate::new(id, decision)
+    };
+    Ok(select_winner(
+        &ProofEvidenceSet::new(target, None, policy.clone()).with_candidates([candidate]),
+    ))
+}
+
 #[cfg(test)]
 mod tests;
