@@ -460,6 +460,8 @@ layer consumes both; one alignment task is owned here.
 
 30. **[Raw same-call ATP source candidate metadata](../../task_contracts/en/PROOF-SOURCE-CANDIDATE-METADATA.md).** [x]
 
+31. **[Unpublished source ATP witness projection](../../task_contracts/en/PROOF-SOURCE-CANDIDATE-WITNESS-PROJECTION.md).** [x]
+
 ## Recommended Verification
 
 Run after each task:

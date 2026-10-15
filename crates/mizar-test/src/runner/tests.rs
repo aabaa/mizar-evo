@@ -16534,3 +16534,784 @@ fn source_registration_candidate_metadata_rejects_mixed_unsupported_and_denied_i
         }
     }
 }
+#[test]
+fn source_registration_candidate_witness_projects_genuine_payload_selection_and_normal_reference() {
+    use mizar_artifact::{
+        proof_witness::{
+            EvidenceKind, ProofStatus, ProofWitnessReadOptions, builtin_proof_witness_ref_json,
+            proof_witness_ref_json, read_builtin_proof_witness_ref, read_proof_witness_ref,
+        },
+        store::{SchemaVersion, canonical_json_bytes},
+    };
+    use mizar_atp::{
+        backend::{BackendCandidatePayload, build_source_registration_candidate_inputs as build},
+        problem::ConcreteFormat,
+    };
+    use mizar_kernel::checker::KernelCheckStatus;
+    use mizar_proof::{
+        policy::{AcceptedGoalPolarity, VerifierPolicy},
+        selection::{ProofWinnerClass, ProofWitnessPublication},
+        status::{
+            check_source_registration_candidate_metadata as check,
+            project_source_registration_candidate_witness as project,
+            select_source_registration_candidate as select,
+        },
+    };
+    use mizar_vc::{
+        discharge::{DischargeInput, DischargePolicy, try_discharge},
+        generator::generate_source_existential_registration,
+        kernel_evidence_handoff::build_source_existential_kernel_handoff,
+        vc_ir::{GenerationSchemaVersion, VcSchemaVersion, VcStatus},
+    };
+    for (multiple, case) in [
+        (false, step5c3_registration_case()),
+        (true, step5c13_registration_case()),
+    ] {
+        let original = std::fs::read_to_string(case.source_path).unwrap();
+        let renamed = original.replace("marked", "retagged").replace("X", "Value");
+        let mut identities = std::collections::BTreeSet::new();
+        for text in [&original, &renamed] {
+            let (source, nodes, symbols) = if multiple {
+                step5c13_registration_inputs(text)
+            } else {
+                step5c3_registration_inputs(text)
+            }
+            .unwrap();
+            let before = (source.clone(), nodes.clone(), symbols.clone());
+            let (core, _, _) = source_candidate_core_and_vcs(multiple, text);
+            for snapshot_index in 0..2 {
+                let snapshot = super::shared::snapshot_id(snapshot_index);
+                let open = generate_source_existential_registration(
+                    &core,
+                    snapshot,
+                    &GenerationSchemaVersion::new("source-existential-registration-v1"),
+                    &VcSchemaVersion::new("vc-v1"),
+                )
+                .unwrap();
+                let discharged = try_discharge(DischargeInput {
+                    vc_set: &open,
+                    policy: &DischargePolicy::default(),
+                })
+                .unwrap();
+                let vcs = discharged.vc_set();
+                for vc in vcs
+                    .vcs()
+                    .iter()
+                    .filter(|vc| vc.status == VcStatus::NeedsAtp)
+                {
+                    let handoff =
+                        build_source_existential_kernel_handoff(&core, vcs, vc.id).unwrap();
+                    let wire = source_candidate_wire(&handoff);
+                    for format in [ConcreteFormat::Tptp, ConcreteFormat::SmtLib] {
+                        let profile = source_candidate_profile("source-witness", format);
+                        let policy = VerifierPolicy::release();
+                        let (encoded, actual) =
+                            build(&core, vcs, vc.id, profile.clone(), format).unwrap();
+                        assert_eq!(
+                            source_candidate_check_bytes(&handoff, &wire, encoded.target_binding())
+                                .unwrap(),
+                            KernelCheckStatus::Accepted
+                        );
+                        let (_, _, metadata, candidate) = check(
+                            &source,
+                            &nodes,
+                            &symbols,
+                            snapshot,
+                            vc.id,
+                            (profile.clone(), format),
+                            &policy,
+                        )
+                        .unwrap();
+                        assert_eq!(candidate, actual);
+                        let output = project(
+                            &source,
+                            &nodes,
+                            &symbols,
+                            snapshot,
+                            vc.id,
+                            (profile.clone(), format),
+                            &policy,
+                        )
+                        .unwrap();
+                        let (selection, reference, bytes) = &output;
+                        assert_eq!(bytes, &wire);
+                        assert_eq!(
+                            actual.payload(),
+                            &BackendCandidatePayload::FormulaSubstitutionBytes(bytes.clone())
+                        );
+                        assert_eq!(reference.kernel_acceptance, metadata.unwrap());
+                        assert_eq!(
+                            selection,
+                            &select(
+                                &source,
+                                &nodes,
+                                &symbols,
+                                snapshot,
+                                vc.id,
+                                (profile.clone(), format),
+                                &policy
+                            )
+                            .unwrap()
+                        );
+                        assert_eq!(selection.selected_class(), ProofWinnerClass::KernelVerified);
+                        assert_eq!(
+                            selection.selected_candidate_id().unwrap().as_str(),
+                            actual.candidate_id()
+                        );
+                        assert_eq!(reference.obligation_id, actual.candidate_id());
+                        assert!(identities.insert(reference.obligation_id.clone()));
+                        let reuse = selection.reuse_metadata();
+                        assert_eq!(reuse.encoded_problem_hash(), Some(encoded.input_hash()));
+                        assert_eq!(
+                            reuse.selected_candidate_provenance_hash(),
+                            Some(actual.provenance_hash())
+                        );
+                        assert_eq!(
+                            reuse.selected_evidence_hash(),
+                            Some(reference.kernel_acceptance.accepted_result_hash.digest)
+                        );
+                        assert_eq!(
+                            reuse.accepted_goal_polarity(),
+                            Some(AcceptedGoalPolarity::AssertFalseForRefutation)
+                        );
+                        assert_eq!(reuse.selected_proof_witness_hash(), None);
+                        assert_eq!(reuse.deterministic_discharge_hash(), None);
+                        assert_eq!(
+                            reuse.proof_witness_publication(),
+                            ProofWitnessPublication::NotApplicable
+                        );
+                        assert_eq!(reference.schema_version, SchemaVersion::new(2, 0));
+                        assert_eq!(
+                            reference.kernel_acceptance.evidence_schema_version,
+                            SchemaVersion::new(2, 0)
+                        );
+                        assert_eq!(reference.proof_status, ProofStatus::KernelVerified);
+                        assert_eq!(
+                            reference.evidence_kind,
+                            EvidenceKind::FormulaSubstitutionKernelEvidence
+                        );
+                        let json = proof_witness_ref_json(reference).unwrap();
+                        let decoded = read_proof_witness_ref(
+                            &json,
+                            ProofWitnessReadOptions {
+                                expected_witness_artifact_hash: Some(
+                                    &reference.witness_artifact_hash,
+                                ),
+                                ..Default::default()
+                            },
+                        )
+                        .unwrap();
+                        assert_eq!(&decoded, reference);
+                        assert_eq!(
+                            canonical_json_bytes(&json),
+                            canonical_json_bytes(&proof_witness_ref_json(&decoded).unwrap())
+                        );
+                        assert!(builtin_proof_witness_ref_json(reference).is_err());
+                        assert!(read_builtin_proof_witness_ref(&json, Default::default()).is_err());
+                        assert_eq!(
+                            project(
+                                &source,
+                                &nodes,
+                                &symbols,
+                                snapshot,
+                                vc.id,
+                                (profile, format),
+                                &policy
+                            )
+                            .unwrap(),
+                            output
+                        );
+                    }
+                }
+            }
+            assert_eq!((source, nodes, symbols), before);
+        }
+        assert_eq!(identities.len(), if multiple { 24 } else { 8 });
+    }
+}
+
+#[test]
+fn source_registration_candidate_witness_binds_all_seventeen_participants_and_full_name_bytes() {
+    use mizar_artifact::{
+        registration_summary::ArtifactHashClass,
+        store::{CanonicalHashDomain, CanonicalJson, HashClass, SchemaVersion},
+    };
+    use mizar_atp::{
+        backend::build_source_registration_candidate_inputs as build, problem::ConcreteFormat,
+    };
+    use mizar_proof::{
+        policy::{AcceptedGoalPolarity, VerifierPolicy},
+        status::{
+            check_source_registration_candidate_metadata as check,
+            project_source_registration_candidate_witness as project,
+        },
+    };
+    use mizar_vc::{
+        discharge::{DischargeInput, DischargePolicy, try_discharge},
+        generator::generate_source_existential_registration,
+        kernel_evidence_handoff::build_source_existential_kernel_handoff,
+        vc_ir::{GenerationSchemaVersion, VcSchemaVersion, VcStatus},
+    };
+    for (multiple, case) in [
+        (false, step5c3_registration_case()),
+        (true, step5c13_registration_case()),
+    ] {
+        let original = std::fs::read_to_string(case.source_path).unwrap();
+        let renamed = original.replace("marked", "retagged").replace("X", "Value");
+        let mut seen = std::collections::BTreeMap::new();
+        for (source_index, text) in [&original, &renamed].into_iter().enumerate() {
+            let (source, nodes, symbols) = if multiple {
+                step5c13_registration_inputs(text)
+            } else {
+                step5c3_registration_inputs(text)
+            }
+            .unwrap();
+            let (core, _, _) = source_candidate_core_and_vcs(multiple, text);
+            for snapshot_index in 0..2 {
+                let snapshot = super::shared::snapshot_id(snapshot_index);
+                let open = generate_source_existential_registration(
+                    &core,
+                    snapshot,
+                    &GenerationSchemaVersion::new("source-existential-registration-v1"),
+                    &VcSchemaVersion::new("vc-v1"),
+                )
+                .unwrap();
+                let discharged = try_discharge(DischargeInput {
+                    vc_set: &open,
+                    policy: &DischargePolicy::default(),
+                })
+                .unwrap();
+                let vcs = discharged.vc_set();
+                for vc in vcs
+                    .vcs()
+                    .iter()
+                    .filter(|vc| vc.status == VcStatus::NeedsAtp)
+                {
+                    let handoff =
+                        build_source_existential_kernel_handoff(&core, vcs, vc.id).unwrap();
+                    let wire = source_candidate_wire(&handoff);
+                    let without_names = handoff.encode_local_evidence(None).unwrap();
+                    assert_ne!(wire, without_names);
+                    assert_ne!(handoff.context_identity_hash(), handoff.canonical_hash());
+                    for format in [ConcreteFormat::Tptp, ConcreteFormat::SmtLib] {
+                        for (profile_index, name) in ["source-witness", "source-witness-profile"]
+                            .into_iter()
+                            .enumerate()
+                        {
+                            let profile = source_candidate_profile(name, format);
+                            let (encoded, actual) =
+                                build(&core, vcs, vc.id, profile.clone(), format).unwrap();
+                            for (policy_index, policy) in [
+                                VerifierPolicy::release(),
+                                VerifierPolicy::development(),
+                                VerifierPolicy::release().with_schema_version(2),
+                                VerifierPolicy::release().with_checker_schema_version(7),
+                                VerifierPolicy::release()
+                                    .with_profile_id("configured-source-witness"),
+                            ]
+                            .into_iter()
+                            .enumerate()
+                            {
+                                let (result, _, m, _) = check(
+                                    &source,
+                                    &nodes,
+                                    &symbols,
+                                    snapshot,
+                                    vc.id,
+                                    (profile.clone(), format),
+                                    &policy,
+                                )
+                                .unwrap();
+                                let m = m.unwrap();
+                                let (_, reference, bytes) = project(
+                                    &source,
+                                    &nodes,
+                                    &symbols,
+                                    snapshot,
+                                    vc.id,
+                                    (profile.clone(), format),
+                                    &policy,
+                                )
+                                .unwrap();
+                                assert_eq!(bytes, wire);
+                                assert_eq!(reference.kernel_acceptance, m);
+                                assert!(m.formula_context_hash.is_none());
+                                let hex =
+                                    bytes.iter().map(|b| format!("{b:02x}")).collect::<String>();
+                                let payload_domain = CanonicalHashDomain::new(
+                                    HashClass::Artifact,
+                                    "mizar-proof/source-registration-candidate-witness-payload",
+                                    SchemaVersion::new(1, 0),
+                                );
+                                let payload = &reference.witness_artifact_hash;
+                                assert_eq!(payload.class, ArtifactHashClass::Artifact);
+                                assert_eq!(
+                                    payload.schema_family,
+                                    "mizar-proof/source-registration-candidate-witness-payload"
+                                );
+                                assert_eq!(payload.schema_version, SchemaVersion::new(1, 0));
+                                assert_eq!(
+                                    payload.digest,
+                                    payload_domain.hash(&CanonicalJson::string(hex), &[])
+                                );
+                                let fields = [
+                                    (
+                                        "checked_target_bytes",
+                                        CanonicalJson::string(
+                                            result
+                                                .target_vc_fingerprint()
+                                                .sort_bytes()
+                                                .iter()
+                                                .map(|b| format!("{b:02x}"))
+                                                .collect::<String>(),
+                                        ),
+                                    ),
+                                    (
+                                        "local_context_identity_hash",
+                                        CanonicalJson::string(
+                                            handoff
+                                                .context_identity_hash()
+                                                .as_bytes()
+                                                .iter()
+                                                .map(|b| format!("{b:02x}"))
+                                                .collect::<String>(),
+                                        ),
+                                    ),
+                                    ("candidate_id", CanonicalJson::string(actual.candidate_id())),
+                                    (
+                                        "encoded_problem_hash",
+                                        CanonicalJson::string(
+                                            encoded
+                                                .input_hash()
+                                                .as_bytes()
+                                                .iter()
+                                                .map(|b| format!("{b:02x}"))
+                                                .collect::<String>(),
+                                        ),
+                                    ),
+                                    (
+                                        "atp_provenance_hash",
+                                        CanonicalJson::string(
+                                            encoded
+                                                .provenance_hash()
+                                                .as_bytes()
+                                                .iter()
+                                                .map(|b| format!("{b:02x}"))
+                                                .collect::<String>(),
+                                        ),
+                                    ),
+                                    (
+                                        "kernel_profile_fingerprint",
+                                        CanonicalJson::string(
+                                            m.kernel_profile_fingerprint.to_artifact_hash_string(),
+                                        ),
+                                    ),
+                                    (
+                                        "verifier_policy_fingerprint",
+                                        CanonicalJson::string(
+                                            m.verifier_policy_fingerprint.to_artifact_hash_string(),
+                                        ),
+                                    ),
+                                    (
+                                        "checker_schema_version",
+                                        CanonicalJson::string(m.checker_schema_version.to_string()),
+                                    ),
+                                    (
+                                        "evidence_schema_version",
+                                        CanonicalJson::string(
+                                            m.evidence_schema_version.to_string(),
+                                        ),
+                                    ),
+                                    (
+                                        "target_binding_hash",
+                                        CanonicalJson::string(
+                                            m.target_binding_hash.to_artifact_hash_string(),
+                                        ),
+                                    ),
+                                    (
+                                        "formula_evidence_hash",
+                                        CanonicalJson::string(
+                                            m.formula_evidence_hash.to_artifact_hash_string(),
+                                        ),
+                                    ),
+                                    (
+                                        "substitution_evidence_hash",
+                                        CanonicalJson::string(
+                                            m.substitution_evidence_hash.to_artifact_hash_string(),
+                                        ),
+                                    ),
+                                    (
+                                        "provenance_hash",
+                                        CanonicalJson::string(
+                                            m.provenance_hash.to_artifact_hash_string(),
+                                        ),
+                                    ),
+                                    ("formula_context_hash", CanonicalJson::null()),
+                                    (
+                                        "accepted_result_hash",
+                                        CanonicalJson::string(
+                                            m.accepted_result_hash.to_artifact_hash_string(),
+                                        ),
+                                    ),
+                                    (
+                                        "accepted_goal_polarity",
+                                        CanonicalJson::string(
+                                            AcceptedGoalPolarity::AssertFalseForRefutation.as_str(),
+                                        ),
+                                    ),
+                                    (
+                                        "witness_artifact_hash",
+                                        CanonicalJson::string(payload.to_artifact_hash_string()),
+                                    ),
+                                ];
+                                let obligation = CanonicalJson::object(fields).unwrap();
+                                let domain = CanonicalHashDomain::new(
+                                    HashClass::Interface,
+                                    "mizar-proof/source-registration-candidate-obligation",
+                                    SchemaVersion::new(1, 0),
+                                );
+                                assert_eq!(
+                                    reference.obligation_fingerprint.class,
+                                    ArtifactHashClass::Interface
+                                );
+                                assert_eq!(
+                                    reference.obligation_fingerprint.schema_family,
+                                    "mizar-proof/source-registration-candidate-obligation"
+                                );
+                                assert_eq!(
+                                    reference.obligation_fingerprint.schema_version,
+                                    SchemaVersion::new(1, 0)
+                                );
+                                assert_eq!(
+                                    reference.obligation_fingerprint.digest,
+                                    domain.hash(&obligation, &[])
+                                );
+                                assert_eq!(
+                                    reference.witness_path,
+                                    format!(
+                                        "proof-witnesses/source-registration-candidate-v1/{}.bin",
+                                        payload
+                                            .digest
+                                            .as_bytes()
+                                            .iter()
+                                            .map(|b| format!("{b:02x}"))
+                                            .collect::<String>()
+                                    )
+                                );
+                                if policy_index > 0 {
+                                    let prior: &mizar_artifact::proof_witness::ProofWitnessRef =
+                                        &seen[&(
+                                            source_index,
+                                            snapshot_index,
+                                            vc.id.index(),
+                                            format,
+                                            profile_index,
+                                            0,
+                                        )];
+                                    assert_eq!(payload, &prior.witness_artifact_hash);
+                                    assert_ne!(
+                                        reference.obligation_fingerprint,
+                                        prior.obligation_fingerprint
+                                    );
+                                }
+                                if profile_index > 0 {
+                                    let prior = &seen[&(
+                                        source_index,
+                                        snapshot_index,
+                                        vc.id.index(),
+                                        format,
+                                        0,
+                                        policy_index,
+                                    )];
+                                    assert_eq!(payload, &prior.witness_artifact_hash);
+                                    assert_ne!(reference.obligation_id, prior.obligation_id);
+                                    assert_ne!(
+                                        reference.obligation_fingerprint,
+                                        prior.obligation_fingerprint
+                                    );
+                                }
+                                if snapshot_index > 0 {
+                                    let prior = &seen[&(
+                                        source_index,
+                                        0,
+                                        vc.id.index(),
+                                        format,
+                                        profile_index,
+                                        policy_index,
+                                    )];
+                                    assert_ne!(payload, &prior.witness_artifact_hash);
+                                    assert_ne!(
+                                        reference.obligation_fingerprint,
+                                        prior.obligation_fingerprint
+                                    );
+                                }
+                                if source_index > 0 {
+                                    let prior = &seen[&(
+                                        0,
+                                        snapshot_index,
+                                        vc.id.index(),
+                                        format,
+                                        profile_index,
+                                        policy_index,
+                                    )];
+                                    assert_ne!(payload, &prior.witness_artifact_hash);
+                                    assert_ne!(
+                                        reference.obligation_fingerprint,
+                                        prior.obligation_fingerprint
+                                    );
+                                }
+                                seen.insert(
+                                    (
+                                        source_index,
+                                        snapshot_index,
+                                        vc.id.index(),
+                                        format,
+                                        profile_index,
+                                        policy_index,
+                                    ),
+                                    reference,
+                                );
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
+#[test]
+fn source_registration_candidate_witness_preserves_upstream_failures_and_real_rejected_leaves() {
+    use mizar_atp::problem::*;
+    use mizar_kernel::checker::KernelCheckStatus;
+    use mizar_proof::{
+        policy::{CandidatePolicyClass, KernelEvidenceFormat, VerifierPolicy},
+        status::{
+            check_source_registration_candidate_metadata as check,
+            project_source_registration_candidate_witness as project,
+            prove_source_existential_registration as builtin,
+        },
+    };
+    use mizar_vc::vc_ir::{VcId, VcStatus};
+    let snapshot = super::shared::snapshot_id(0);
+    let policy = VerifierPolicy::release();
+    for (multiple, case) in [
+        (false, step5c3_registration_case()),
+        (true, step5c13_registration_case()),
+    ] {
+        let text = std::fs::read_to_string(case.source_path).unwrap();
+        let foreign = text.replace("marked", "foreignmarked");
+        let (source, nodes, symbols) = if multiple {
+            step5c13_registration_inputs(&text)
+        } else {
+            step5c3_registration_inputs(&text)
+        }
+        .unwrap();
+        let (fs, fnodes, fenv) = if multiple {
+            step5c13_registration_inputs(&foreign)
+        } else {
+            step5c3_registration_inputs(&foreign)
+        }
+        .unwrap();
+        let (_, _, vcs) = source_candidate_core_and_vcs(multiple, &text);
+        let target = vcs
+            .vcs()
+            .iter()
+            .find(|vc| vc.status == VcStatus::NeedsAtp)
+            .unwrap()
+            .id;
+        let discharged = vcs
+            .vcs()
+            .iter()
+            .find(|vc| matches!(vc.status, VcStatus::Discharged { .. }))
+            .unwrap()
+            .id;
+        let format = ConcreteFormat::Tptp;
+        let profile = source_candidate_profile("source-witness-negative", format);
+        for (s, n, e, id) in [
+            (&fs, &nodes, &symbols, target),
+            (&source, &fnodes, &symbols, target),
+            (&source, &nodes, &fenv, target),
+            (&source, &nodes, &symbols, discharged),
+            (&source, &nodes, &symbols, VcId::new(vcs.vcs().len())),
+        ] {
+            assert_eq!(
+                project(s, n, e, snapshot, id, (profile.clone(), format), &policy).unwrap_err(),
+                check(s, n, e, snapshot, id, (profile.clone(), format), &policy).unwrap_err()
+            );
+        }
+        let unsupported = LogicProfile::try_new(
+            "unsupported",
+            LogicFragment::TffLike,
+            EqualitySupport::Supported,
+            QuantifierPolicy::FirstOrder,
+            SoftTypeStrategy::GuardPredicates,
+            NativePropertySupport::Unsupported,
+            [format].into_iter().collect(),
+        )
+        .unwrap();
+        for encoding in [
+            (unsupported, format),
+            (profile.clone(), ConcreteFormat::SmtLib),
+        ] {
+            assert_eq!(
+                project(
+                    &source,
+                    &nodes,
+                    &symbols,
+                    snapshot,
+                    target,
+                    encoding.clone(),
+                    &policy
+                )
+                .unwrap_err(),
+                check(
+                    &source, &nodes, &symbols, snapshot, target, encoding, &policy
+                )
+                .unwrap_err()
+            );
+        }
+        for denied in [
+            policy.clone().with_kernel_evidence_formats([]),
+            policy
+                .clone()
+                .with_kernel_evidence_formats([KernelEvidenceFormat::BuiltinKernelEvidence]),
+        ] {
+            let error = project(
+                &source,
+                &nodes,
+                &symbols,
+                snapshot,
+                target,
+                (profile.clone(), format),
+                &denied,
+            )
+            .unwrap_err();
+            assert_eq!(
+                error,
+                check(
+                    &source,
+                    &nodes,
+                    &symbols,
+                    snapshot,
+                    target,
+                    (profile.clone(), format),
+                    &denied
+                )
+                .unwrap_err()
+            );
+            assert_eq!(error, "registration.proof.kernel_policy_rejected");
+        }
+        let builtin_only = policy
+            .clone()
+            .with_kernel_evidence_formats([KernelEvidenceFormat::BuiltinKernelEvidence]);
+        assert_eq!(
+            builtin(&source, &nodes, &symbols, snapshot, &builtin_only)
+                .unwrap()
+                .activated()
+                .len(),
+            if multiple { 3 } else { 1 }
+        );
+        let formula_only = policy
+            .clone()
+            .with_kernel_evidence_formats([KernelEvidenceFormat::FormulaSubstitution]);
+        assert!(
+            project(
+                &source,
+                &nodes,
+                &symbols,
+                snapshot,
+                target,
+                (profile.clone(), format),
+                &formula_only
+            )
+            .is_ok()
+        );
+        assert!(builtin(&source, &nodes, &symbols, snapshot, &formula_only).is_err());
+        if !multiple {
+            let unsupported = text.replacen("take the set;", "take the wmarked set;", 1);
+            assert_ne!(unsupported, text);
+            let (s, n, e) = step5c3_registration_inputs(&unsupported).unwrap();
+            assert_eq!(
+                project(
+                    &s,
+                    &n,
+                    &e,
+                    snapshot,
+                    target,
+                    (profile.clone(), format),
+                    &policy
+                )
+                .unwrap_err(),
+                check(
+                    &s,
+                    &n,
+                    &e,
+                    snapshot,
+                    target,
+                    (profile.clone(), format),
+                    &policy
+                )
+                .unwrap_err()
+            );
+        } else {
+            let negative = text.replacen("means X = X", "means not X = X", 1);
+            assert_ne!(negative, text);
+            let (s, n, e) = step5c13_registration_inputs(&negative).unwrap();
+            let (_, _, vcs) = source_candidate_core_and_vcs(true, &negative);
+            let mut counts = [0, 0];
+            let mut accepted = None;
+            let mut rejected = std::collections::BTreeSet::new();
+            for vc in vcs
+                .vcs()
+                .iter()
+                .filter(|vc| vc.status == VcStatus::NeedsAtp)
+            {
+                let (result, decision, metadata, actual) = check(
+                    &s,
+                    &n,
+                    &e,
+                    snapshot,
+                    vc.id,
+                    (profile.clone(), format),
+                    &policy,
+                )
+                .unwrap();
+                let projected = project(
+                    &s,
+                    &n,
+                    &e,
+                    snapshot,
+                    vc.id,
+                    (profile.clone(), format),
+                    &policy,
+                );
+                if vc.id.index() == 3 {
+                    assert_eq!(result.status(), KernelCheckStatus::Accepted);
+                    assert_eq!(decision.class, CandidatePolicyClass::KernelVerified);
+                    let (selection, reference, _) = projected.unwrap();
+                    assert_eq!(reference.kernel_acceptance, metadata.unwrap());
+                    assert_eq!(reference.obligation_id, actual.candidate_id());
+                    assert_eq!(
+                        selection.selected_candidate_id().unwrap().as_str(),
+                        actual.candidate_id()
+                    );
+                    accepted = Some(reference.obligation_id);
+                    counts[0] += 1;
+                } else {
+                    assert_eq!(result.status(), KernelCheckStatus::Rejected);
+                    assert_eq!(decision.class, CandidatePolicyClass::KernelRejected);
+                    assert!(metadata.is_none());
+                    assert_eq!(
+                        projected.unwrap_err(),
+                        "registration.proof.invalid_source_candidate"
+                    );
+                    rejected.insert(actual.candidate_id().to_owned());
+                    counts[1] += 1;
+                }
+            }
+            assert_eq!(counts, [1, 2]);
+            assert!(!rejected.contains(&accepted.unwrap()));
+        }
+    }
+}
