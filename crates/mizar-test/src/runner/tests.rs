@@ -17562,3 +17562,276 @@ fn source_registration_owner_refuses_foreign_missing_recovered_duplicate_and_uns
         assert_eq!(bad_collected, before);
     }
 }
+
+fn source_registration_formula_inputs(
+    text: &str, package: &str, module: &str, skip: usize,
+) -> (
+    mizar_resolve::resolved_ast::SurfaceResolvedArena,
+    mizar_checker::typed_ast::TypedArena,
+    mizar_resolve::symbols::SymbolCollectionResult,
+    std::collections::BTreeMap<mizar_resolve::resolved_ast::SymbolId, Vec<u8>>,
+) {
+    use mizar_checker::typed_ast::{TypedArena, TypedNode, TypedNodeId};
+    let (frontend, source, collected) = source_registration_owner_inputs(text, package, module, skip);
+    assert!(frontend.diagnostics.is_empty());
+    assert!(collected.diagnostics().is_empty());
+    let nodes = TypedArena::try_new(
+        Some(TypedNodeId::new(source.arena().root().index())),
+        source.arena().iter().map(|(id, node)| {
+            TypedNode::new(format!("{:?}", node.kind()), node.origin().anchor().clone())
+                .with_resolved_node(id)
+                .with_children(node.children().iter().map(|child| TypedNodeId::new(child.index())).collect())
+        }).collect(),
+    ).unwrap();
+    let owners = mizar_resolve::symbols::source_registration_owner_payloads(
+        frontend.ast.as_ref().unwrap(), &source, collected.env(),
+    ).unwrap();
+    (source, nodes, collected, owners)
+}
+
+#[test]
+fn source_registration_formula_exact_current_roots_cover_six_shapes_and_real_choices() {
+    use mizar_core::{core_ir::{CoreFormulaKind as F, CoreTermKind as T, DefinitionBody},
+        elaborator::{lower_source_existential_registration as lower, source_registration_formula_payloads as payloads}};
+    let frame = |value: &[u8]| [u32::try_from(value.len()).unwrap().to_be_bytes().as_slice(), value].concat();
+    let free = b"\x02\0\0\0\0".as_slice();
+    let bound = b"\x01\0\0\0\0".as_slice();
+    let type_prefix = [b"\x03".as_slice(), &frame(b"builtin.set")].concat();
+    let equality = [b"\x02".as_slice(), free, free].concat();
+    for case in [step5c3_registration_case(), step5c13_registration_case()] {
+        let text = std::fs::read_to_string(case.source_path).unwrap();
+        for text in [text.clone(), text.replacen("means X = X", "means not X = X", 1)] {
+            let (source, nodes, collected, owners) = source_registration_formula_inputs(&text, "formula-test", "formulas", 0);
+            let check = mizar_checker::registration_resolution::check_source_existential_registration_proof(&source, &nodes, collected.env()).unwrap_or_else(|error| panic!("{error}: {text}"));
+            let core = lower(&check).unwrap();
+            let before = core.clone();
+            let formal = core.definitions().iter().next().unwrap().1.params[0].var;
+            let mut header = b"mizar-core/source-registration-formula/v1\0".to_vec();
+            header.extend(frame(b"formula-test"));
+            header.extend(frame(b"formulas"));
+            header.extend(frame(b"definition-parameter"));
+            let mut choices = std::collections::BTreeMap::new();
+            for (_, origin) in core.generated().iter() {
+                assert_eq!(origin.kind, mizar_core::core_ir::GeneratedOriginKind::StableChoice);
+                assert!(origin.params.is_empty());
+                assert_eq!(origin.key.as_str(), "choice:builtin.set");
+                let bytes = [b"\x03".as_slice(), &frame(&owners[&core.items().get(origin.owner).unwrap().symbol]), &frame(b"choice:builtin.set")].concat();
+                assert!(choices.insert(origin.functor.as_ref().unwrap(), bytes).is_none());
+            }
+            let term = |id| match &core.terms().get(id).unwrap().kind {
+                T::Var(var) if *var == formal => Some(free.to_vec()),
+                T::Apply { functor, args } => { assert!(args.is_empty()); Some(choices[functor].clone()) },
+                T::Var(_) => None,
+                other => panic!("unexpected genuine term {other:?}"),
+            };
+            let mut expected = std::collections::BTreeMap::new();
+            let mut shapes = std::collections::BTreeSet::new();
+            for (id, row) in core.formulas().iter() {
+                let bytes = match &row.kind {
+                    F::Equals { left, right } => {
+                        assert_eq!(term(*left).unwrap(), free); assert_eq!(term(*right).unwrap(), free);
+                        Some(equality.clone())
+                    }
+                    F::Not(child) => { assert_eq!(expected[child], equality); Some([b"\x04".as_slice(), &equality].concat()) },
+                    F::TypePred { subject, ty } => {
+                        assert_eq!(ty.as_str(), "builtin.set");
+                        term(*subject).map(|subject| [type_prefix.as_slice(), &subject].concat())
+                    }
+                    F::Atom { predicate, args } => {
+                        assert_eq!(args.len(), 1);
+                        term(args[0]).map(|arg| [b"\x01".as_slice(), &frame(&owners[predicate]), b"\0\0\0\x01", &arg].concat())
+                    }
+                    F::And(children) => {
+                        if children.iter().all(|child| expected.contains_key(child)) {
+                            let mut conjunction = vec![5];
+                            conjunction.extend(u32::try_from(children.len()).unwrap().to_be_bytes());
+                            for child in children { conjunction.extend(&expected[child]); }
+                            Some(conjunction)
+                        } else { None }
+                    }
+                    F::Exists { binders, body } => {
+                        assert_eq!(binders.len(), 1); assert!(binders[0].ty_guard.is_none());
+                        let mut existential = b"\x06\0\0\0\x01".to_vec();
+                        let children = match &core.formulas().get(*body).unwrap().kind {
+                            F::TypePred { .. } => {
+                                assert_eq!(binders[0].role.as_str(), "choice-nonempty");
+                                existential.extend(frame(b"choice-nonempty")); existential.push(0);
+                                vec![*body]
+                            }
+                            F::And(children) => {
+                                assert_eq!(binders[0].role.as_str(), "registration-witness");
+                                existential.extend(frame(b"registration-witness")); existential.push(0);
+                                shapes.insert(5); existential.push(5); existential.extend(u32::try_from(children.len()).unwrap().to_be_bytes());
+                                children.clone()
+                            }
+                            other => panic!("unexpected quantified body {other:?}"),
+                        };
+                        for child in children {
+                            match &core.formulas().get(child).unwrap().kind {
+                                F::TypePred { subject, ty } => {
+                                    assert_eq!(ty.as_str(), "builtin.set");
+                                    assert_eq!(core.terms().get(*subject).unwrap().kind, T::Var(binders[0].var));
+                                    existential.extend(&type_prefix); existential.extend(bound);
+                                }
+                                F::Atom { predicate, args } => {
+                                    assert_eq!(args.len(), 1);
+                                    assert_eq!(core.terms().get(args[0]).unwrap().kind, T::Var(binders[0].var));
+                                    existential.push(1); existential.extend(frame(&owners[predicate]));
+                                    existential.extend(b"\0\0\0\x01"); existential.extend(bound);
+                                }
+                                other => panic!("unexpected bound child {other:?}"),
+                            }
+                        }
+                        Some(existential)
+                    }
+                    other => panic!("unexpected genuine formula {other:?}"),
+                };
+                if let Some(bytes) = bytes { shapes.insert(bytes[0]); expected.insert(id, bytes); }
+            }
+            assert_eq!(shapes, if text.contains("means not") { [1,2,3,4,5,6].into_iter().collect() } else { [1,2,3,5,6].into_iter().collect() });
+            let roots = expected.keys().copied().rev().collect::<Vec<_>>();
+            let actual = payloads(&check, &core, &owners, &roots).unwrap();
+            assert_eq!(actual.len(), roots.len());
+            for (id, bytes) in &expected { assert_eq!(actual[id], [header.as_slice(), bytes].concat(), "current root {id:?}"); }
+            assert_eq!(choices.values().collect::<std::collections::BTreeSet<_>>().len(), check.validations().len());
+            for (_, definition) in core.definitions().iter() {
+                let DefinitionBody::Formula(body) = definition.body else { unreachable!() };
+                assert!(actual.contains_key(&body));
+            }
+            assert_eq!(core, before);
+            assert_eq!(lower(&check).unwrap(), before);
+        }
+    }
+}
+
+#[test]
+fn source_registration_formula_relocation_neutral_edits_and_participating_content() {
+    use mizar_core::{core_ir::{CoreProofNodeKind, DefinitionBody, ObligationSeedKind},
+        elaborator::{lower_source_existential_registration as lower, source_registration_formula_payloads as payloads}};
+    let snapshot = |text: &str, package: &str, module: &str, skip| {
+        let (source, nodes, collected, owners) = source_registration_formula_inputs(text, package, module, skip);
+        let check = mizar_checker::registration_resolution::check_source_existential_registration_proof(&source, &nodes, collected.env()).unwrap_or_else(|error| panic!("{error}: {text}"));
+        let core = lower(&check).unwrap();
+        let spelling = |symbol: &mizar_resolve::resolved_ast::SymbolId| collected.env().symbols().iter().find(|entry| entry.symbol() == symbol).unwrap().primary_spelling().replace("renamedmarked", "oamarked").replace("RenamedExists", "OAExists");
+        let mut roots = std::collections::BTreeMap::new();
+        for (_, definition) in core.definitions().iter() {
+            let DefinitionBody::Formula(body) = definition.body else { unreachable!() };
+            let name = spelling(&definition.symbol);
+            roots.insert(format!("{name}:body"), body);
+            roots.insert(format!("{name}:guard"), definition.params[0].ty_guard.unwrap());
+        }
+        for (_, seed) in core.obligation_seeds().iter() {
+            let name = spelling(&core.items().get(seed.owner).unwrap().symbol);
+            let role = if seed.kind == ObligationSeedKind::CheckerInitial { "parent" } else { "nonempty" };
+            roots.insert(format!("{name}:{role}"), seed.goal.unwrap());
+        }
+        for (_, proof) in core.proofs().iter() {
+            let name = spelling(&core.items().get(proof.item).unwrap().symbol);
+            let CoreProofNodeKind::CurrentGoal { child, .. } = core.proof_nodes().get(proof.root).unwrap().kind else { unreachable!() };
+            let CoreProofNodeKind::Sequence { children } = &core.proof_nodes().get(child).unwrap().kind else { unreachable!() };
+            for (index, child) in children.iter().enumerate() {
+                if let CoreProofNodeKind::Step { formula, .. } = core.proof_nodes().get(*child).unwrap().kind {
+                    roots.insert(format!("{name}:step{index}"), formula);
+                }
+            }
+        }
+        let ids = roots.values().copied().collect::<Vec<_>>();
+        let actual = payloads(&check, &core, &owners, &ids).unwrap();
+        let keyed = roots.into_iter().map(|(name, id)| { assert!(core.formulas().get(id).is_some()); (name, (id, actual[&id].clone())) }).collect::<std::collections::BTreeMap<_, _>>();
+        (core.source_id(), keyed)
+    };
+    let text = std::fs::read_to_string(step5c13_registration_case().source_path).unwrap();
+    let baseline = snapshot(&text, "formula-test", "formulas", 0);
+    let a = "  attr OAADef: X is oamarked means X = X;\n";
+    let b = "  attr OBBDef: X is obmarked means X = X;\n";
+    let registration_a = "  cluster OAExists: oamarked set;\n  existence proof\n    take the set;\n    thus the set is oamarked by OAADef;\n  end;\n";
+    let registration_b = "  cluster OBExists: obmarked set;\n  existence proof\n    take the set;\n    thus the set is obmarked by OBBDef;\n  end;\n";
+    let reordered = text.replace(&format!("{a}{b}"), &format!("{b}{a}"))
+        .replace(&format!("{registration_a}{registration_b}"), &format!("{registration_b}{registration_a}"));
+    let consumer_a = "definition\n  let X be oamarked set;\n  func Ov3Def: ovpick X -> set equals X;\n  coherence;\nend;\n";
+    let consumer_b = "definition\n  let X be obmarked set;\n  func Ov4Def: ovpick X -> set equals X;\n  coherence;\nend;\n";
+    let reordered_blocks = text.replace(&format!("{consumer_a}\n{consumer_b}"), &format!("{consumer_b}\n{consumer_a}"));
+    assert_ne!(reordered_blocks, text);
+    for (index, edited) in [format!("\n:: shifted ranges\n{}", text.replace("  ", "    ")), text.replace('X', "Subject"), reordered, reordered_blocks, text.clone()].into_iter().enumerate() {
+        let edited = snapshot(&edited, "formula-test", "formulas", if index == 4 { 7 } else { 0 });
+        assert_eq!(edited.1.keys().collect::<Vec<_>>(), baseline.1.keys().collect::<Vec<_>>());
+        for (name, (_, bytes)) in &baseline.1 { assert_eq!(edited.1[name].1, *bytes, "edit {index}: {name}"); }
+        if index == 2 { assert!(baseline.1.iter().any(|(name, (id, _))| edited.1[name].0 != *id)); }
+        if index == 4 { assert_ne!(edited.0, baseline.0); }
+    }
+    for (index, edited, package, module) in [
+        (0, text.replace("OAADef", "RenamedDef"), "formula-test", "formulas"),
+        (1, text.replace("oamarked", "renamedmarked"), "formula-test", "formulas"),
+        (2, text.replace("OAExists", "RenamedExists"), "formula-test", "formulas"),
+        (3, text.replacen("means X = X", "means not X = X", 1), "formula-test", "formulas"),
+        (4, text.clone(), "formula-test", "other_module"),
+        (5, text.clone(), "other-package", "formulas"),
+    ] {
+        let edited = snapshot(&edited, package, module, 0);
+        assert_eq!(edited.1.len(), baseline.1.len());
+        for (name, (_, bytes)) in &baseline.1 {
+            let changed = match index {
+                0 | 1 => (name.starts_with("OAExists:") || name.starts_with("OABExists:")) && (name.ends_with(":parent") || name.ends_with(":step2")),
+                2 => name.starts_with("OAExists:step"),
+                3 => name == "oamarked:body",
+                _ => true,
+            };
+            assert_eq!(edited.1[name].1 != *bytes, changed, "control {index}: {name}");
+        }
+    }
+}
+
+#[test]
+fn source_registration_formula_refuses_foreign_incomplete_duplicate_and_unbound_inputs() {
+    use mizar_core::{binder_normalization::{canonical_formula, normalize_core_formula, BinderContext,
+        CanonicalFormulaKind, CanonicalTermKind, CanonicalVar, NormalizedVarClass, NormalizedVarSort},
+        core_ir::{CoreFormulaId, CoreFormulaKind, DefinitionBody},
+        elaborator::{lower_source_existential_registration as lower, source_registration_formula_payloads as payloads}};
+    let text = std::fs::read_to_string(step5c3_registration_case().source_path).unwrap();
+    let (source, nodes, collected, owners) = source_registration_formula_inputs(&text, "formula-test", "formulas", 0);
+    let check = mizar_checker::registration_resolution::check_source_existential_registration_proof(&source, &nodes, collected.env()).unwrap_or_else(|error| panic!("{error}: {text}"));
+    let core = lower(&check).unwrap();
+    let before = core.clone();
+    let definition = core.definitions().iter().next().unwrap().1;
+    let DefinitionBody::Formula(root) = definition.body else { unreachable!() };
+    let unsupported = "unsupported source registration formula payload";
+    assert!(payloads(&check, &core, &owners, &[]).unwrap().is_empty());
+    for edited in [text.replace("wmarked", "foreignmarked"), text.replacen("means X = X", "means not X = X", 1), text.clone()] {
+        let skip = usize::from(edited == text);
+        let (s, n, e, o) = source_registration_formula_inputs(&edited, "formula-test", "formulas", skip);
+        let foreign = mizar_checker::registration_resolution::check_source_existential_registration_proof(&s, &n, e.env()).unwrap();
+        let foreign_core = lower(&foreign).unwrap();
+        assert_ne!(foreign_core, core);
+        assert_eq!(payloads(&check, &foreign_core, &owners, &[root]).unwrap_err(), unsupported);
+        assert_eq!(payloads(&foreign, &core, &o, &[root]).unwrap_err(), unsupported);
+    }
+    let first = owners.keys().next().unwrap();
+    let second = owners.keys().nth(1).unwrap();
+    for index in 0..4 {
+        let mut bad = owners.clone();
+        match index {
+            0 => { bad.remove(first); }
+            1 => { let extra = collected.env().symbols().iter().find(|entry| !owners.contains_key(entry.symbol())).unwrap(); bad.insert(extra.symbol().clone(), b"extra".to_vec()); }
+            2 => { bad.insert(first.clone(), Vec::new()); }
+            _ => { bad.insert(first.clone(), owners[second].clone()); }
+        }
+        assert_eq!(payloads(&check, &core, &bad, &[root]).unwrap_err(), unsupported);
+        assert_eq!(payloads(&check, &core, &bad, &[]).unwrap_err(), unsupported);
+    }
+    let unbound = core.formulas().iter().find_map(|(_, row)| match row.kind { CoreFormulaKind::Exists { body, .. } => Some(body), _ => None }).unwrap();
+    for roots in [vec![root, root], vec![root, CoreFormulaId::new(usize::MAX)], vec![root, unbound]] {
+        assert_eq!(payloads(&check, &core, &owners, &roots).unwrap_err(), unsupported);
+    }
+    let mut context = BinderContext::new();
+    let formal = &definition.params[0];
+    context.declare_variable(formal.var, NormalizedVarClass::Free, formal.role.clone(), NormalizedVarSort::Term);
+    let row = core.formulas().get(root).unwrap();
+    let normalized = normalize_core_formula(&core, root, &context, &row.source).unwrap();
+    let canonical = canonical_formula(&normalized, &context, &row.source).unwrap();
+    let CanonicalFormulaKind::Equals { left, right } = canonical.kind() else { unreachable!() };
+    assert_eq!(left.kind(), &CanonicalTermKind::Var(CanonicalVar::Free(formal.var)));
+    assert_eq!(left, right);
+    assert!(canonical_formula(&normalized, &BinderContext::new(), &row.source).is_err());
+    assert_eq!(core, before);
+    assert_eq!(lower(&check).unwrap(), before);
+}

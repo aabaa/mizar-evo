@@ -709,6 +709,8 @@ IR264. **Authenticated structure-property definition owner。** [x]
       [ALGDEF-CORE54-DEFINING-EQUATIONS](../../task_contracts/ja/ALGDEF-CORE54-DEFINING-EQUATIONS.md)。
       Task 48 は return-or-fail の網羅性、Task 53 は禁止された失敗位置と ghost 報告項、Task 46 は契約の自己参照の拒否を担う。
 
+55. **[Source registration formula payloads](../../task_contracts/ja/CORE-SOURCE-REGISTRATION-FORMULA-PAYLOADS.md).** [x]
+
 ## 推奨検証
 
 各タスクの後で実行する:

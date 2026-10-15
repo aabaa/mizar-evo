@@ -758,6 +758,8 @@ IR264. **Authenticated structure-property definition owner.** [x]
       Task 48 owns return-or-fail exhaustiveness; Task 53 owns forbidden
       failure placement and ghost reports. Task 46 owns contract self-reference.
 
+55. **[Source registration formula payloads](../../task_contracts/en/CORE-SOURCE-REGISTRATION-FORMULA-PAYLOADS.md).** [x]
+
 ## Recommended Verification
 
 Run after each task:

@@ -14880,6 +14880,182 @@ pub fn lower_source_existential_registration(
     .map_err(|error| error.to_string())
 }
 
+/// Encodes selected replay-checked registration formulas with caller-supplied owner content.
+/// Owner values must be the unmodified Resolver result from the same source;
+/// coverage checks do not authenticate their provenance or source currentness.
+pub fn source_registration_formula_payloads(
+    check: &mizar_checker::registration_resolution::SourceRegistrationCheck<'_>,
+    core: &CoreIr,
+    owners: &BTreeMap<SymbolId, Vec<u8>>,
+    roots: &[CoreFormulaId],
+) -> Result<BTreeMap<CoreFormulaId, Vec<u8>>, String> {
+    use crate::binder_normalization::{
+        CanonicalFormula, CanonicalFormulaKind as F, CanonicalTerm, CanonicalTermKind as T,
+        CanonicalVar, canonical_formula, normalize_core_formula,
+    };
+    fn frame(bytes: &mut Vec<u8>, value: &[u8]) -> Result<(), ()> {
+        bytes.extend_from_slice(&u32::try_from(value.len()).map_err(|_| ())?.to_be_bytes());
+        bytes.extend_from_slice(value);
+        Ok(())
+    }
+    fn term(
+        bytes: &mut Vec<u8>,
+        value: &CanonicalTerm,
+        core: &CoreIr,
+        owners: &BTreeMap<SymbolId, Vec<u8>>,
+        formal: CoreVarId,
+    ) -> Result<(), ()> {
+        match value.kind() {
+            T::Var(CanonicalVar::Bound(index)) => {
+                bytes.push(1);
+                bytes.extend_from_slice(&index.to_be_bytes());
+            }
+            T::Var(CanonicalVar::Free(var)) if *var == formal => {
+                bytes.push(2);
+                bytes.extend_from_slice(&0u32.to_be_bytes());
+            }
+            T::Apply { functor, args } if args.is_empty() => {
+                let mut matches =
+                    core.generated()
+                        .iter()
+                        .map(|(_, origin)| origin)
+                        .filter(|origin| {
+                            origin.kind == GeneratedOriginKind::StableChoice
+                                && origin.functor.as_ref() == Some(functor)
+                                && origin.params.is_empty()
+                        });
+                let origin = matches.next().ok_or(())?;
+                if matches.next().is_some() {
+                    return Err(());
+                }
+                let owner = core.items().get(origin.owner).ok_or(())?;
+                if owner.kind != CoreItemKind::Registration {
+                    return Err(());
+                }
+                bytes.push(3);
+                frame(bytes, owners.get(&owner.symbol).ok_or(())?)?;
+                frame(bytes, origin.key.as_str().as_bytes())?;
+            }
+            _ => return Err(()),
+        }
+        Ok(())
+    }
+    fn formula(
+        bytes: &mut Vec<u8>,
+        value: &CanonicalFormula,
+        core: &CoreIr,
+        owners: &BTreeMap<SymbolId, Vec<u8>>,
+        formal: CoreVarId,
+    ) -> Result<(), ()> {
+        match value.kind() {
+            F::Atom { predicate, args } => {
+                bytes.push(1);
+                frame(bytes, owners.get(predicate).ok_or(())?)?;
+                bytes.extend_from_slice(&u32::try_from(args.len()).map_err(|_| ())?.to_be_bytes());
+                for arg in args {
+                    term(bytes, arg, core, owners, formal)?;
+                }
+            }
+            F::Equals { left, right } => {
+                bytes.push(2);
+                term(bytes, left, core, owners, formal)?;
+                term(bytes, right, core, owners, formal)?;
+            }
+            F::TypePred { subject, ty } => {
+                bytes.push(3);
+                frame(bytes, ty.as_str().as_bytes())?;
+                term(bytes, subject, core, owners, formal)?;
+            }
+            F::Not(child) => {
+                bytes.push(4);
+                formula(bytes, child, core, owners, formal)?;
+            }
+            F::And(children) => {
+                bytes.push(5);
+                bytes.extend_from_slice(
+                    &u32::try_from(children.len()).map_err(|_| ())?.to_be_bytes(),
+                );
+                for child in children {
+                    formula(bytes, child, core, owners, formal)?;
+                }
+            }
+            F::Exists { binders, body } => {
+                bytes.push(6);
+                bytes.extend_from_slice(
+                    &u32::try_from(binders.len()).map_err(|_| ())?.to_be_bytes(),
+                );
+                for binder in binders {
+                    if binder.ty_guard.is_some() {
+                        return Err(());
+                    }
+                    frame(bytes, binder.role.as_str().as_bytes())?;
+                    bytes.push(0);
+                }
+                formula(bytes, body, core, owners, formal)?;
+            }
+            _ => return Err(()),
+        }
+        Ok(())
+    }
+    let invalid = || "unsupported source registration formula payload".to_owned();
+    let replay = lower_source_existential_registration(check)?;
+    if &replay != core {
+        return Err(invalid());
+    }
+    let keys = core
+        .items()
+        .iter()
+        .filter_map(|(_, item)| {
+            matches!(
+                item.kind,
+                CoreItemKind::Attribute | CoreItemKind::Registration
+            )
+            .then_some(&item.symbol)
+        })
+        .collect::<BTreeSet<_>>();
+    if keys != owners.keys().collect()
+        || owners.values().any(Vec::is_empty)
+        || owners.values().collect::<BTreeSet<_>>().len() != owners.len()
+        || roots.iter().collect::<BTreeSet<_>>().len() != roots.len()
+    {
+        return Err(invalid());
+    }
+    let mut shared = None;
+    for (_, definition) in core.definitions().iter() {
+        let [param] = definition.params.as_slice() else {
+            return Err(invalid());
+        };
+        let current = (param.var, &param.role);
+        if shared.is_some_and(|previous| previous != current) {
+            return Err(invalid());
+        }
+        shared = Some(current);
+    }
+    let (formal, role) = shared.ok_or_else(invalid)?;
+    let mut context = BinderContext::new();
+    context.declare_variable(
+        formal,
+        NormalizedVarClass::Free,
+        role.clone(),
+        NormalizedVarSort::Term,
+    );
+    let mut selected = BTreeMap::new();
+    for root in roots {
+        let row = core.formulas().get(*root).ok_or_else(invalid)?;
+        let normalized =
+            normalize_core_formula(core, *root, &context, &row.source).map_err(|_| invalid())?;
+        let canonical =
+            canonical_formula(&normalized, &context, &row.source).map_err(|_| invalid())?;
+        let mut bytes = b"mizar-core/source-registration-formula/v1\0".to_vec();
+        frame(&mut bytes, core.module_id().package().as_str().as_bytes()).map_err(|_| invalid())?;
+        frame(&mut bytes, core.module_id().path().as_str().as_bytes()).map_err(|_| invalid())?;
+        frame(&mut bytes, role.as_str().as_bytes()).map_err(|_| invalid())?;
+        formula(&mut bytes, &canonical, core, owners, formal).map_err(|_| invalid())?;
+        selected.insert(*root, bytes);
+    }
+    Ok(selected)
+}
+
 /// Lowers checked local set/identity functorial and reduction correctness goals.
 pub fn lower_source_functorial_registration(
     check: &mizar_checker::registration_resolution::SourceRegistrationCheck<'_>,
