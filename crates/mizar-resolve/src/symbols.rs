@@ -39,6 +39,13 @@ pub fn validate_source_symbol_env(
     source: &SurfaceResolvedArena,
     symbols: &SymbolEnv,
 ) -> Result<(), String> {
+    validated_source_symbol_ast(source, symbols).map(|_| ())
+}
+
+fn validated_source_symbol_ast(
+    source: &SurfaceResolvedArena,
+    symbols: &SymbolEnv,
+) -> Result<SurfaceAst, String> {
     let invalid =
         || "source symbol environment does not match its declaration collection".to_owned();
     let mut builder = mizar_syntax::SurfaceAstBuilder::new(source.source_id());
@@ -82,7 +89,16 @@ pub fn validate_source_symbol_env(
     if !collected.diagnostics().is_empty() || collected.env() != symbols {
         return Err(invalid());
     }
-    Ok(())
+    Ok(ast)
+}
+
+/// Derives named owner content from the validated structural source arena.
+pub fn source_registration_owner_payloads_from_arena(
+    source: &SurfaceResolvedArena,
+    symbols: &SymbolEnv,
+) -> Result<BTreeMap<SymbolId, Vec<u8>>, String> {
+    let ast = validated_source_symbol_ast(source, symbols)?;
+    source_registration_owner_payloads(&ast, source, symbols)
 }
 
 /// Derives source-bound named owner content for supported registration declarations.
@@ -94,7 +110,7 @@ pub fn source_registration_owner_payloads(
     source
         .validate_against(ast, source.module())
         .map_err(|error| error.to_string())?;
-    validate_source_symbol_env(source, symbols)?;
+    validated_source_symbol_ast(source, symbols)?;
     let unsupported = || "unsupported source registration owner payload".to_owned();
     let shells = DeclarationShellCollector::new(ast, source.module()).collect();
     let namespace = NamespacePath::new(source.module().path().as_str());

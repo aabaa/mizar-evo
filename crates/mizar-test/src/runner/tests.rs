@@ -17835,3 +17835,144 @@ fn source_registration_formula_refuses_foreign_incomplete_duplicate_and_unbound_
     assert_eq!(core, before);
     assert_eq!(lower(&check).unwrap(), before);
 }
+
+#[test]
+fn arena_registration_owner_exact_current_keys_match_legacy_single_aggregate_and_empty() {
+    use mizar_resolve::{env::SymbolKind, symbols::{source_registration_owner_payloads as raw,
+        source_registration_owner_payloads_from_arena as owners, validate_source_symbol_env}};
+    for (multiple, case) in [(false, step5c3_registration_case()), (true, step5c13_registration_case())] {
+        let text = std::fs::read_to_string(case.source_path).unwrap();
+        let (frontend, source, collected) = source_registration_owner_inputs(&text, "owner-test", "owners", 0);
+        assert!(frontend.diagnostics.is_empty());
+        assert!(collected.diagnostics().is_empty());
+        let before = (source.clone(), collected.clone());
+        validate_source_symbol_env(&source, collected.env()).unwrap();
+        let actual = owners(&source, collected.env()).unwrap();
+        assert_eq!(actual, raw(frontend.ast.as_ref().unwrap(), &source, collected.env()).unwrap());
+        let expected: Vec<(u8, &str, &[u8])> = if multiple {
+            vec![(1, "oamarked", b"\0\0\0\x06OAADef\0\0\0\x08oamarked"),
+                (1, "obmarked", b"\0\0\0\x06OBBDef\0\0\0\x08obmarked"),
+                (2, "OAExists", b"\0\0\0\x08OAExists"),
+                (2, "OBExists", b"\0\0\0\x08OBExists"),
+                (2, "OABExists", b"\0\0\0\x09OABExists")]
+        } else {
+            vec![(1, "wmarked", b"\0\0\0\x05WMDef\0\0\0\x07wmarked"),
+                (2, "WMarkedExists", b"\0\0\0\x0dWMarkedExists")]
+        };
+        assert_eq!(actual.len(), expected.len());
+        for (tag, spelling, tail) in expected {
+            let kind = if tag == 1 { SymbolKind::Attribute } else { SymbolKind::Registration };
+            let entries = collected.env().symbols().iter().filter(|entry|
+                entry.kind() == kind && entry.primary_spelling() == spelling).collect::<Vec<_>>();
+            assert_eq!(entries.len(), 1);
+            let bytes = [b"mizar-resolve/source-registration-owner/v1\0".as_slice(), &[tag],
+                b"\0\0\0\x0aowner-test\0\0\0\x06owners", tail].concat();
+            assert_eq!(actual.get(entries[0].symbol()), Some(&bytes));
+        }
+        assert_eq!((source, collected), before);
+    }
+    for text in ["", "definition\n let X be set;\n func Box: box X -> set equals X;\n coherence;\nend;\n"] {
+        let (frontend, source, collected) = source_registration_owner_inputs(text, "owner-test", "owners", 0);
+        assert!(frontend.diagnostics.is_empty());
+        assert!(collected.diagnostics().is_empty());
+        validate_source_symbol_env(&source, collected.env()).unwrap();
+        let actual = owners(&source, collected.env()).unwrap();
+        assert!(actual.is_empty());
+        assert_eq!(actual, raw(frontend.ast.as_ref().unwrap(), &source, collected.env()).unwrap());
+    }
+}
+
+#[test]
+fn arena_registration_owner_tracks_real_edits_reordering_relocation_and_participants() {
+    use mizar_resolve::{env::SymbolKind, symbols::{source_registration_owner_payloads as raw,
+        source_registration_owner_payloads_from_arena as owners, validate_source_symbol_env}};
+    let text = std::fs::read_to_string(step5c3_registration_case().source_path).unwrap();
+    let (_, source, collected) = source_registration_owner_inputs(&text, "owner-test", "owners", 0);
+    let baseline = owners(&source, collected.env()).unwrap();
+    let functor = "definition\n  let X be set;\n  func WBoxDef: wbox X -> set equals X;\n  coherence;\nend;\n";
+    let reordered = format!("{functor}\n{}", text.replace(functor, ""));
+    assert_ne!(reordered, text);
+    for (index, edited, module, skip) in [
+        (0, format!("\n:: shifted ranges\n{}", text.replace("  ", "    ")), "owners", 0),
+        (1, text.replace('X', "Subject"), "owners", 0),
+        (2, reordered, "owners", 0),
+        (3, text.clone(), "owners", 7),
+        (4, text.replace("WMDef", "RenamedDef"), "owners", 0),
+        (5, text.replace("wmarked", "renamedmarked"), "owners", 0),
+        (6, text.replace("WMarkedExists", "RenamedExists"), "owners", 0),
+        (7, text.clone(), "other_module", 0),
+    ] {
+        let (frontend, current, collected) = source_registration_owner_inputs(&edited, "owner-test", module, skip);
+        assert!(frontend.diagnostics.is_empty(), "edit {index}");
+        assert!(collected.diagnostics().is_empty(), "edit {index}");
+        validate_source_symbol_env(&current, collected.env()).unwrap();
+        let actual = owners(&current, collected.env()).unwrap();
+        assert_eq!(actual, raw(frontend.ast.as_ref().unwrap(), &current, collected.env()).unwrap());
+        assert_eq!(actual.len(), 2);
+        for (kind, spelling, tag, tail) in [
+            (SymbolKind::Attribute, if index == 5 { "renamedmarked" } else { "wmarked" }, 1,
+                match index {
+                    4 => b"\0\0\0\x0aRenamedDef\0\0\0\x07wmarked".as_slice(),
+                    5 => b"\0\0\0\x05WMDef\0\0\0\x0drenamedmarked",
+                    _ => b"\0\0\0\x05WMDef\0\0\0\x07wmarked",
+                }),
+            (SymbolKind::Registration, if index == 6 { "RenamedExists" } else { "WMarkedExists" }, 2,
+                if index == 6 { b"\0\0\0\x0dRenamedExists".as_slice() } else { b"\0\0\0\x0dWMarkedExists" }),
+        ] {
+            let entry = collected.env().symbols().iter().find(|entry|
+                entry.kind() == kind && entry.primary_spelling() == spelling).unwrap();
+            let module_frame = if index == 7 { b"\0\0\0\x0cother_module".as_slice() } else { b"\0\0\0\x06owners" };
+            let bytes = [b"mizar-resolve/source-registration-owner/v1\0".as_slice(), &[tag],
+                b"\0\0\0\x0aowner-test", module_frame, tail].concat();
+            assert_eq!(actual.get(entry.symbol()), Some(&bytes), "edit {index}: {spelling}");
+        }
+        if index == 2 { assert_ne!(actual.keys().collect::<Vec<_>>(), baseline.keys().collect::<Vec<_>>()); }
+        if skip != 0 { assert_ne!(current.source_id(), source.source_id()); }
+    }
+}
+
+#[test]
+fn arena_registration_owner_preserves_foreign_augmented_recovered_and_profile_errors() {
+    use mizar_resolve::symbols::{source_registration_owner_payloads as raw,
+        source_registration_owner_payloads_from_arena as owners, validate_source_symbol_env};
+    let text = std::fs::read_to_string(step5c3_registration_case().source_path).unwrap();
+    let (frontend, source, collected) = source_registration_owner_inputs(&text, "owner-test", "owners", 0);
+    let before = (frontend.ast.clone(), source.clone(), collected.clone());
+    for edited in [text.replace("wmarked", "foreignmarked"),
+        format!("{text}\ndefinition\n let X be set;\n func ExtraDef: extra X -> set equals X;\n coherence;\nend;\n")] {
+        let (foreign_frontend, foreign_source, foreign) = source_registration_owner_inputs(&edited, "owner-test", "owners", 0);
+        assert!(foreign_frontend.diagnostics.is_empty());
+        assert!(foreign.diagnostics().is_empty());
+        validate_source_symbol_env(&foreign_source, foreign.env()).unwrap();
+        let foreign_before = (foreign_frontend.ast.clone(), foreign_source.clone(), foreign.clone());
+        let error = validate_source_symbol_env(&source, foreign.env()).unwrap_err();
+        assert_eq!(owners(&source, foreign.env()).unwrap_err(), error);
+        assert_eq!(raw(frontend.ast.as_ref().unwrap(), &source, foreign.env()).unwrap_err(), error);
+        let mismatch = source.validate_against(foreign_frontend.ast.as_ref().unwrap(), source.module()).unwrap_err();
+        assert_eq!(raw(foreign_frontend.ast.as_ref().unwrap(), &source, foreign.env()).unwrap_err(), mismatch.to_string());
+        let reverse = validate_source_symbol_env(&foreign_source, collected.env()).unwrap_err();
+        assert_eq!(owners(&foreign_source, collected.env()).unwrap_err(), reverse);
+        assert_eq!((foreign_frontend.ast, foreign_source, foreign), foreign_before);
+    }
+    for (edited, unsupported) in [
+        (text.replace("means X = X", "means X ="), false),
+        (format!("{text}\nregistration\n cluster Conditional: wmarked -> wmarked for set;\n coherence;\nend;\n"), true),
+    ] {
+        let (bad_frontend, bad_source, bad) = source_registration_owner_inputs(&edited, "owner-test", "owners", 0);
+        let bad_before = (bad_frontend.ast.clone(), bad_source.clone(), bad.clone());
+        let legacy = validate_source_symbol_env(&bad_source, bad.env());
+        let error = raw(bad_frontend.ast.as_ref().unwrap(), &bad_source, bad.env()).unwrap_err();
+        if unsupported {
+            assert!(bad_frontend.diagnostics.is_empty());
+            assert!(bad.diagnostics().is_empty());
+            legacy.unwrap();
+            assert_eq!(error, "unsupported source registration owner payload");
+        } else {
+            assert!(!bad_frontend.diagnostics.is_empty());
+            assert_eq!(error, legacy.unwrap_err());
+        }
+        assert_eq!(owners(&bad_source, bad.env()).unwrap_err(), error);
+        assert_eq!((bad_frontend.ast, bad_source, bad), bad_before);
+    }
+    assert_eq!((frontend.ast, source, collected), before);
+}

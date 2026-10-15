@@ -619,6 +619,8 @@ IR 所有権: [01.ir_layers.md](../../architecture/ja/01.ir_layers.md)。
 
 35. **[Source registration owner payloads](../../task_contracts/ja/RESOLVE-SOURCE-REGISTRATION-OWNER-PAYLOADS.md).** [x]
 
+36. **[Arena registration owner payloads](../../task_contracts/ja/RESOLVE-ARENA-REGISTRATION-OWNER-PAYLOADS.md).** [x]
+
 ## crate close-out
 
 - 完了: [crate_exit_report.md](./crate_exit_report.md) に、non-deferred task completion、
