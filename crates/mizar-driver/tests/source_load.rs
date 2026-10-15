@@ -16453,3 +16453,476 @@ fn native_disk_frontend_record_rejects_current_physical_parent_capture_and_profi
         );
     }
 }
+
+fn configured_native_cache_case(
+    settings: &[(&str, &str, bool)],
+    typed_cache_path: Option<&str>,
+    threshold: usize,
+    store_path: &str,
+    (cache_policy, insert_records): (CacheSchedulingPolicy, bool),
+    workers: usize,
+    reverse: bool,
+) {
+    use mizar_build::{
+        planner::{lockfile_content_hash, workspace_config_content_hash},
+        scheduler::SchedulerEventKind,
+    };
+    use mizar_cache::cache_store::{CacheInsertOutcome, CacheLookupOutcome, CacheStoreRoot};
+    use mizar_ir::{
+        cache_adapter::{EncodeCacheRecordOutcome, IrCacheAdapter},
+        storage::CollectInput,
+    };
+    let raw = "\u{feff}definition\r\nend;\r\n";
+    let fixture = Fixture::new(raw.as_bytes());
+    let ids = InMemorySessionIdAllocator::new();
+    let snapshots = SnapshotRegistry::new();
+    let policy = mizar_proof::policy::VerifierPolicy::release();
+    let mut warm_versions = Vec::new();
+    let mut replay_session = None;
+    let mut clean = Vec::new();
+    // Warm normally, recapture cleanly, then replay the legacy and configured routes.
+    for route in 0..4 {
+        let (mut request, mut input) = fixture.submit_request(vec![], vec![]);
+        input.workspace_packages = settings
+            .iter()
+            .map(|(name, build, _)| WorkspacePackage {
+                member_path: (*name).into(),
+                manifest: parse_package_manifest(&format!(
+                    "[package]\nname = \"{name}\"\nversion = \"0.1.0\"\n{build}"
+                ))
+                .unwrap(),
+            })
+            .collect();
+        // Direct typed values exercise eligibility without claiming parser acceptance.
+        if let Some(path) = typed_cache_path {
+            input.workspace_packages[0].manifest.build.cache_dir = if path == "$absolute" {
+                fixture.root.join("absolute-cache").to_str().unwrap().into()
+            } else {
+                path.into()
+            };
+        }
+        let store = CacheStoreRoot::new(if store_path == "$configured" {
+            fixture
+                .root
+                .join(settings[0].0)
+                .join(&input.workspace_packages[0].manifest.build.cache_dir)
+        } else {
+            fixture.root.join(store_path)
+        });
+        input.lockfile = parse_lockfile(&format!(
+            "schema_version = 1\n{}",
+            settings
+                .iter()
+                .map(|(name, _, _)| format!(
+                    "[[package]]\nname = \"{name}\"\nversion = \"0.1.0\"\nsource = {{ kind = \"workspace\", path = \"{name}\" }}\ndependencies = []\n"
+                ))
+                .collect::<String>()
+        ))
+        .unwrap();
+        let mut layout = settings
+            .iter()
+            .map(|(name, _, _)| WorkspaceSourcePackage {
+                package_id: PackageId::new(*name),
+                files: vec![WorkspaceSourceFile::new("src/main.miz", "main.miz")],
+            })
+            .collect::<Vec<_>>();
+        if reverse {
+            input.workspace_packages.reverse();
+            layout.reverse();
+        }
+        input.source_layout = StaticSourceLayout::new(layout);
+        input.worker_count = workers;
+        input.completion_order = if reverse {
+            CompletionOrder::Reverse
+        } else {
+            CompletionOrder::Canonical
+        };
+        input.cache_policy = if route == 3 {
+            cache_policy
+        } else {
+            CacheSchedulingPolicy::Enabled
+        };
+        let plan = produce_build_plan(
+            input.plan_request.clone(),
+            input.workspace_packages.clone(),
+            input.lockfile.clone(),
+        )
+        .unwrap();
+        request.source_inputs.versions.clear();
+        request.dependency_inputs.lockfile_hash = lockfile_content_hash(&plan.lockfile);
+        request.verifier_config = VerifierConfigInput::new(workspace_config_content_hash(
+            &plan.verifier_config,
+            &plan.build_config,
+        ));
+        let session = if route < 2 {
+            let mut descriptors = settings
+                .iter()
+                .map(|(name, _, _)| {
+                    let root = fixture.root.join(name);
+                    fs::create_dir_all(root.join("src")).unwrap();
+                    fs::write(root.join("src/main.miz"), raw).unwrap();
+                    (
+                        DiskSourceLoader::new(&root),
+                        SourceInput {
+                            package_id: PackageId::new(*name),
+                            module_path: ModulePath::new("main"),
+                            normalized_path: normalize_path(&root, Path::new("src/main.miz"))
+                                .unwrap(),
+                            edition: Edition::new("2025"),
+                            origin: SourceOriginInput::Disk {
+                                path: "src/main.miz".into(),
+                            },
+                        },
+                    )
+                })
+                .collect::<Vec<_>>();
+            if reverse {
+                descriptors.reverse();
+            }
+            let session = request
+                .capture_sources(&ids, &snapshots, descriptors)
+                .unwrap();
+            for (name, _, _) in settings {
+                fs::remove_file(fixture.root.join(name).join("src/main.miz")).unwrap();
+            }
+            if route == 1 {
+                replay_session = Some(session.clone());
+            }
+            session
+        } else {
+            replay_session.as_ref().unwrap().clone()
+        };
+        let snapshot = session.captured().snapshot().id;
+        let first_unit = WorkUnit::Module {
+            module: mizar_build::module_index::ModuleId::new(
+                PackageId::new(settings[0].0),
+                ModulePath::new("main"),
+            ),
+        };
+        let owner = publisher(snapshot, threshold, &first_unit);
+        for (name, _, _) in settings {
+            let unit = WorkUnit::Module {
+                module: mizar_build::module_index::ModuleId::new(
+                    PackageId::new(*name),
+                    ModulePath::new("main"),
+                ),
+            };
+            owner.allow_work_unit(AllowedWorkUnit::new(
+                IrPipelinePhase::new("SourceLoad"),
+                OutputKind::new("SourceUnit"),
+                IrWorkUnit::new(format!("{name:?}:{:?}", "main")),
+            ));
+            allow_frontend(&owner, &unit);
+        }
+        let mut builder = PhaseRegistryBuilder::new();
+        builder.register_source_load();
+        builder.register_frontend(vec![]);
+        let mut driver =
+            CompilerDriver::new(builder.build().unwrap()).with_output_publisher(owner.clone());
+        let submission = match route {
+            0 | 1 => driver.submit_captured(session, &ids, &snapshots, input),
+            2 => driver.submit_captured_with_native_disk_cache(
+                session, &ids, &snapshots, input, &policy, &store,
+            ),
+            _ => driver.submit_captured_with_configured_native_disk_cache(
+                session, &ids, &snapshots, input, &policy, &store,
+            ),
+        }
+        .unwrap();
+        assert_eq!(
+            submission.status,
+            DriverSubmissionStatus::BlockedByMissingPhaseServices
+        );
+        if !insert_records {
+            assert!(!store.root().exists());
+        }
+        let captured = submission.session.captured();
+        let inputs = SourceLoadInputs {
+            snapshot: captured.snapshot(),
+            captured: Some(captured),
+            build_plan: submission.build_plan.as_ref().unwrap(),
+            module_index: submission.module_index.as_ref().unwrap(),
+            allocator: &ids,
+        };
+        assert_eq!(inputs.validate_native_lock_content(), Ok(()));
+        assert_eq!(inputs.validate_native_config_content(), Ok(()));
+        let graph = submission.task_graph.as_ref().unwrap();
+        let run = submission.scheduler_run.as_ref().unwrap();
+        for (ordinal, (name, _, configured_hit)) in settings.iter().enumerate() {
+            let source_task = graph.tasks().iter().find(|task| task.kind == TaskKind::SourceLoad && matches!(&task.unit, WorkUnit::Module { module } if module.package.as_str() == *name)).unwrap();
+            let frontend_task = graph
+                .tasks()
+                .iter()
+                .find(|task| task.kind == TaskKind::Frontend && task.unit == source_task.unit)
+                .unwrap();
+            let version = captured
+                .snapshot()
+                .source_versions
+                .iter()
+                .find(|version| version.package_id.as_str() == *name)
+                .unwrap();
+            if route == 0 {
+                warm_versions.push(version.source_id);
+            } else {
+                assert_ne!(version.source_id, warm_versions[ordinal]);
+            }
+            let hit = insert_records && (route == 2 || (route == 3 && *configured_hit));
+            let source_result = &run.phase_results[&source_task.id][0];
+            let frontend_result = &run.phase_results[&frontend_task.id][0];
+            for (task, expected, started) in [
+                (
+                    source_task,
+                    if hit {
+                        TaskState::CacheHit
+                    } else {
+                        TaskState::Completed
+                    },
+                    !hit,
+                ),
+                (frontend_task, TaskState::Completed, true),
+            ] {
+                assert_eq!(
+                    run.task_states
+                        .iter()
+                        .find(|state| state.task_id == task.id)
+                        .unwrap()
+                        .state,
+                    expected,
+                    "{name} route {route}"
+                );
+                assert_eq!(
+                    run.events
+                        .iter()
+                        .any(|event| event.task_id.as_ref() == Some(&task.id)
+                            && event.kind == SchedulerEventKind::TaskStarted),
+                    started
+                );
+            }
+            assert_eq!(source_result.cache_observation.is_none(), hit);
+            assert!(frontend_result.cache_observation.is_some());
+            let source_input = PhaseInput::new(
+                source_task.unit.clone(),
+                PhaseDispatchInputBundle::without_parent_outputs(
+                    snapshot,
+                    source_key(version),
+                    vec![],
+                ),
+            );
+            let source_ref = &source_result.output_refs[0];
+            let source_handle = owner
+                .storage()
+                .typed_handle::<SourceUnit>(source_ref, &OutputKind::new("SourceUnit"))
+                .unwrap();
+            let source = owner.storage().get(&source_handle).unwrap();
+            assert_eq!(source.source_id, version.source_id);
+            assert_eq!(source.source_text.as_ref(), "definition\nend;\n");
+            assert!(source.loading_map.is_some());
+            assert!(source_ref.lineage().parents.is_empty());
+            let frontend_ref = &frontend_result.output_refs[0];
+            let frontend_handle = owner
+                .storage()
+                .typed_handle::<FrontendOutput<<MizarParserSeam as ParserSeam>::Ast>>(
+                    frontend_ref,
+                    &OutputKind::new("FrontendOutput"),
+                )
+                .unwrap();
+            let frontend = owner.storage().get(&frontend_handle).unwrap();
+            assert_eq!(frontend.source, *source);
+            assert_eq!(frontend_ref.lineage().parents, vec![source_ref.output()]);
+            let frontend_input = PhaseInput::new(
+                source_task.unit.clone(),
+                PhaseDispatchInputBundle::new(
+                    snapshot,
+                    source_key(version),
+                    vec![],
+                    vec![
+                        SealedParentOutputHandle::from_published_output(
+                            &owner,
+                            snapshot,
+                            source_ref.clone(),
+                        )
+                        .unwrap(),
+                    ],
+                )
+                .unwrap(),
+            );
+            for (phase, input) in [
+                (PipelinePhase::SourceLoad, &source_input),
+                (PipelinePhase::Frontend, &frontend_input),
+            ] {
+                assert!(matches!(
+                    driver
+                        .registry()
+                        .cache_key_for_phase(phase, input)
+                        .unwrap()
+                        .intent,
+                    PhaseCacheIntent::NoKey { .. }
+                ));
+            }
+            for result in [source_result, frontend_result] {
+                assert_eq!(result.status, PhaseStatus::Complete);
+                assert!(result.diagnostics.is_empty());
+                assert_eq!(
+                    matches!(
+                        result.output_refs[0].placement(),
+                        StoragePlacement::Blob { .. }
+                    ),
+                    threshold == 0
+                );
+            }
+            let projection = (
+                source.as_ref().clone(),
+                frontend.as_ref().clone(),
+                owner.storage().side_tables(&source_handle).unwrap(),
+                owner.storage().side_tables(&frontend_handle).unwrap(),
+                source_result.diagnostics.clone(),
+                frontend_result.diagnostics.clone(),
+                source_ref.content_hash(),
+                frontend_ref.content_hash(),
+            );
+            if route == 1 {
+                clean.push(projection);
+            } else if route > 1 {
+                assert_eq!(projection, clean[ordinal]);
+            }
+            if route == 0 && insert_records {
+                let EncodeCacheRecordOutcome::Encoded(record) = inputs
+                    .encode_native_disk_cache_record(
+                        &source_input,
+                        &policy,
+                        &IrCacheAdapter::new(owner.clone()),
+                        source_handle,
+                    )
+                    .unwrap()
+                else {
+                    panic!("real scheduled record");
+                };
+                assert_eq!(store.insert(&record).unwrap(), CacheInsertOutcome::Inserted);
+                assert!(matches!(
+                    store.lookup(&record.header.key),
+                    CacheLookupOutcome::Hit(_)
+                ));
+            }
+        }
+        let collected = owner.storage().collect(CollectInput {
+            snapshot,
+            protected_outputs: vec![],
+        });
+        assert_eq!(collected.retained_outputs, 0);
+        assert_eq!(collected.outputs_dropped, settings.len() * 2);
+    }
+}
+
+#[test]
+fn configured_native_cache_parsed_settings_and_store_fallbacks() {
+    for threshold in [usize::MAX, 0] {
+        for (build, store, policy, insert, hit) in [
+            (
+                "",
+                "alpha/.mizar-cache",
+                CacheSchedulingPolicy::Enabled,
+                true,
+                true,
+            ),
+            (
+                "[build]\ncache_dir = \"nested/cache\"\n",
+                "alpha/nested/cache",
+                CacheSchedulingPolicy::Enabled,
+                true,
+                true,
+            ),
+            (
+                "",
+                "alpha/.mizar-cache",
+                CacheSchedulingPolicy::Disabled,
+                true,
+                false,
+            ),
+            (
+                "",
+                "alpha/.mizar-cache",
+                CacheSchedulingPolicy::Enabled,
+                false,
+                false,
+            ),
+            (
+                "",
+                "foreign-cache",
+                CacheSchedulingPolicy::Enabled,
+                true,
+                false,
+            ),
+        ] {
+            configured_native_cache_case(
+                &[("alpha", build, hit)],
+                None,
+                threshold,
+                store,
+                (policy, insert),
+                1,
+                false,
+            );
+        }
+    }
+}
+
+#[test]
+fn configured_native_cache_opt_out_and_direct_typed_invalid_paths() {
+    configured_native_cache_case(
+        &[("alpha", "[build]\nincremental = false\n", false)],
+        None,
+        usize::MAX,
+        "$configured",
+        (CacheSchedulingPolicy::Enabled, true),
+        1,
+        false,
+    );
+    for path in [
+        "$absolute",
+        "",
+        ".",
+        "..",
+        "../cache",
+        "cache\\nested",
+        #[cfg(not(windows))]
+        "cache:tag",
+        "nested//cache",
+        "nested/./cache",
+        "nested/../cache",
+    ] {
+        configured_native_cache_case(
+            &[("alpha", "", false)],
+            Some(path),
+            usize::MAX,
+            "$configured",
+            (CacheSchedulingPolicy::Enabled, true),
+            1,
+            false,
+        );
+    }
+}
+
+#[test]
+fn configured_native_cache_uses_each_module_package_under_reordering() {
+    for (workers, reverse) in [(1, false), (4, true)] {
+        for (alpha_enabled, beta_enabled, store, alpha_hit, beta_hit) in [
+            (true, true, "alpha/cache/a", true, false),
+            (true, true, "beta/cache/b", false, true),
+            (false, true, "beta/cache/b", false, true),
+            (true, false, "alpha/cache/a", true, false),
+        ] {
+            let alpha =
+                format!("[build]\nincremental = {alpha_enabled}\ncache_dir = \"cache/a\"\n");
+            let beta = format!("[build]\nincremental = {beta_enabled}\ncache_dir = \"cache/b\"\n");
+            configured_native_cache_case(
+                &[("alpha", &alpha, alpha_hit), ("beta", &beta, beta_hit)],
+                None,
+                0,
+                store,
+                (CacheSchedulingPolicy::Enabled, true),
+                workers,
+                reverse,
+            );
+        }
+    }
+}

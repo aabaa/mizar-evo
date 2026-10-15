@@ -553,6 +553,8 @@ the owning producers when the paired tasks land.
 
 39. **[Native leaf Frontend record encoding](../../task_contracts/en/DRIVER-NATIVE-LEAF-FRONTEND-CACHE-ENCODE.md).** [x]
 
+40. **[Package-configured native cache scheduling](../../task_contracts/en/DRIVER-NATIVE-PACKAGE-CACHE-SCHEDULE.md).** [x]
+
 ## Recommended Verification
 
 Run after each task:

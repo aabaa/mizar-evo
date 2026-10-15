@@ -521,6 +521,8 @@ artifact/test のフォローアップタスクが所有する。本 crate の�
 
 39. **[native leaf Frontend record 符号化](../../task_contracts/ja/DRIVER-NATIVE-LEAF-FRONTEND-CACHE-ENCODE.md).** [x]
 
+40. **[package 設定に従う native cache scheduling](../../task_contracts/ja/DRIVER-NATIVE-PACKAGE-CACHE-SCHEDULE.md).** [x]
+
 ## 推奨検証
 
 各タスクの後で実行する:

@@ -2681,7 +2681,7 @@ fn unique<T>(mut items: impl Iterator<Item = T>) -> Option<T> {
     items.next().is_none().then_some(item)
 }
 
-fn safe_relative(path: &str) -> bool {
+pub(crate) fn safe_relative(path: &str) -> bool {
     path == "."
         || (!path.is_empty()
             && !path.contains(['\\', ':'])

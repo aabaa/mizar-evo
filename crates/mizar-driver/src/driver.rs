@@ -442,7 +442,30 @@ impl CompilerDriver {
             snapshots,
             input,
             (false, true),
-            Some((policy, store)),
+            Some((policy, store, false)),
+        )
+    }
+
+    /// Uses package-configured native Disk SourceLoad cache records for scheduling.
+    pub fn submit_captured_with_configured_native_disk_cache<
+        A: SessionIdAllocator,
+        L: SourceLayoutProvider,
+    >(
+        &mut self,
+        session: BuildSession,
+        allocator: &A,
+        snapshots: &SnapshotRegistry<A>,
+        input: DriverSubmitInput<L>,
+        policy: &mizar_proof::policy::VerifierPolicy,
+        store: &mizar_cache::cache_store::CacheStoreRoot,
+    ) -> Result<BuildSubmission, DriverSubmitError> {
+        self.submit_inner(
+            session,
+            allocator,
+            snapshots,
+            input,
+            (false, true),
+            Some((policy, store, true)),
         )
     }
 
@@ -608,6 +631,7 @@ impl CompilerDriver {
         native_disk_cache: Option<(
             &mizar_proof::policy::VerifierPolicy,
             &mizar_cache::cache_store::CacheStoreRoot,
+            bool,
         )>,
     ) -> Result<BuildSubmission, DriverSubmitError>
     where
@@ -876,7 +900,7 @@ impl CompilerDriver {
             }),
         );
         let mut cached_sources = Vec::new();
-        if let Some((policy, store)) = native_disk_cache
+        if let Some((policy, store, configured)) = native_disk_cache
             && cache_policy == CacheSchedulingPolicy::Enabled
             && phase_dispatch_inputs.is_none()
             && built_in_prefix
@@ -933,6 +957,34 @@ impl CompilerDriver {
                     let mizar_build::task_graph::WorkUnit::Module { module } = &task.unit else {
                         continue;
                     };
+                    if configured {
+                        let mut packages = build_plan
+                            .packages
+                            .iter()
+                            .filter(|package| package.package_id == module.package);
+                        let Some(package) = packages.next() else {
+                            continue;
+                        };
+                        if packages.next().is_some() {
+                            continue;
+                        }
+                        let mizar_build::planner::PackagePlanSource::Workspace { root, .. } =
+                            &package.source
+                        else {
+                            continue;
+                        };
+                        let config = &package.build_config;
+                        if !config.incremental
+                            || config.cache_dir == "."
+                            || !crate::frontend_adapter::safe_relative(&config.cache_dir)
+                            || store.root()
+                                != std::path::Path::new(build_plan.workspace_root.as_str())
+                                    .join(root)
+                                    .join(&config.cache_dir)
+                        {
+                            continue;
+                        }
+                    }
                     let mut versions = inputs.snapshot.source_versions.iter().filter(|version| {
                         version.package_id == module.package && version.module_path == module.path
                     });
