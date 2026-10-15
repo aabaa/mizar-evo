@@ -15756,3 +15756,781 @@ fn source_registration_discharge_witness_preserves_failures_and_false_correctnes
         assert!(!result.rejections().is_empty());
     }
 }
+
+#[test]
+fn source_registration_candidate_metadata_single_matches_independent_wire_and_kernel() {
+    use mizar_artifact::{registration_summary::ArtifactHashClass, store::SchemaVersion};
+    use mizar_atp::{
+        backend::{BackendCandidatePayload, build_source_registration_candidate_inputs as build},
+        problem::ConcreteFormat,
+    };
+    use mizar_kernel::{
+        certificate_parser::{ClauseTautologyPolicy, Fingerprint, KernelProfileRecord},
+        checker::*,
+        formula_evidence::{FormulaEvidenceParseContext, parse_formula_evidence},
+        rejection::TargetVcFingerprint,
+    };
+    use mizar_proof::{
+        policy::{
+            AcceptedGoalPolarity, CandidatePolicyClass, KernelEvidenceOrigin, KernelPolicyInput,
+            PolicyCandidate, ProofPolicyEvaluator, VerifierPolicy,
+        },
+        status::{
+            check_source_registration_candidate as old,
+            check_source_registration_candidate_metadata as check,
+        },
+    };
+    use mizar_vc::{
+        kernel_evidence_handoff::{
+            KernelContextIdentitySource as VcSource, build_source_existential_kernel_handoff,
+        },
+        vc_ir::{VcFormulaRef, VcStatus},
+    };
+    let original = std::fs::read_to_string(step5c3_registration_case().source_path).unwrap();
+    let renamed = original
+        .replace("wmarked", "retagged")
+        .replace("X", "Value");
+    let policy = VerifierPolicy::release();
+    let mut identities = std::collections::BTreeSet::new();
+    for text in [&original, &renamed] {
+        let (source, nodes, symbols) = step5c3_registration_inputs(text).unwrap();
+        let before = (source.clone(), nodes.clone(), symbols.clone());
+        let (core, open, vcs) = source_candidate_core_and_vcs(false, text);
+        let vc = vcs
+            .vcs()
+            .iter()
+            .find(|vc| vc.status == VcStatus::NeedsAtp)
+            .unwrap();
+        let handoff = build_source_existential_kernel_handoff(&core, &vcs, vc.id).unwrap();
+        assert_ne!(
+            handoff,
+            build_source_existential_kernel_handoff(&core, &open, vc.id).unwrap()
+        );
+        let envelope = handoff.canonical_evidence();
+        assert_eq!(envelope.schema_version(), 1);
+        let target = envelope.target_vc();
+        let target = TargetVcFingerprint::new(target.algorithm_id, target.digest.clone());
+        let mut parse_context = FormulaEvidenceParseContext::v1(
+            Fingerprint::new(target.algorithm_id, target.digest.clone()),
+            KernelProfileRecord::v1(
+                envelope.kernel_profile().profile_id,
+                ClauseTautologyPolicy::Reject,
+            ),
+        );
+        parse_context.accepted_schema_versions.insert(2);
+        let wire = source_candidate_wire(&handoff);
+        let parsed = parse_formula_evidence(&wire, &parse_context).unwrap();
+        assert_eq!(parsed.schema_version(), 2);
+        assert!(!parsed.equality_instances().is_empty());
+        let v1 = parse_formula_evidence(
+            &handoff.encode_local_evidence(None).unwrap(),
+            &parse_context,
+        )
+        .unwrap();
+        assert!(v1.equality_instances().is_empty());
+        assert_eq!(parsed.formulas(), v1.formulas());
+        assert_eq!(parsed.substitutions(), v1.substitutions());
+        assert_eq!(parsed.provenance(), v1.provenance());
+        // The four canonical-v1 components exclude the actual v2 equality names.
+        let canonical = std::str::from_utf8(handoff.canonical_hash_input()).unwrap();
+        let profile_start = canonical.find("kernel-profile=").unwrap();
+        let symbols_start = canonical.find("[symbol-manifest]\n").unwrap();
+        let substitutions_start = canonical.find("[substitutions]\n").unwrap();
+        let provenance_start = canonical.find("[provenance]\n").unwrap();
+        let goal_start = canonical.find("[final-goal]\n").unwrap();
+        let components = [
+            (
+                "profile",
+                canonical[profile_start..symbols_start].to_owned(),
+            ),
+            (
+                "formula",
+                format!(
+                    "{}{}",
+                    &canonical[symbols_start..substitutions_start],
+                    &canonical[goal_start..]
+                ),
+            ),
+            (
+                "substitutions",
+                canonical[substitutions_start..provenance_start].to_owned(),
+            ),
+            (
+                "provenance",
+                canonical[provenance_start..goal_start].to_owned(),
+            ),
+        ]
+        .map(|(kind, payload)| {
+            mizar_session::hash_text(&format!(
+                "mizar-vc/local-evidence-component/v1\n{kind}\n{payload}"
+            ))
+        });
+        assert_eq!(
+            components,
+            handoff.local_evidence_component_hashes().unwrap()
+        );
+        let entries = handoff
+            .context_identity()
+            .entries()
+            .iter()
+            .map(|entry| {
+                let source = match entry.source() {
+                    VcSource::LocalHypothesis { local_context_id } => {
+                        KernelContextIdentitySource::LocalHypothesis { local_context_id }
+                    }
+                    VcSource::CitedPremise { local_context_id } => {
+                        KernelContextIdentitySource::CitedPremise { local_context_id }
+                    }
+                    VcSource::GeneratedVcFact { vc_fact_id } => {
+                        KernelContextIdentitySource::GeneratedVcFact { vc_fact_id }
+                    }
+                    _ => panic!("actual source context"),
+                };
+                let producer = match entry.producer_formula_ref() {
+                    VcFormulaRef::Core(id) => KernelFormulaProducerRef::Core(id),
+                    VcFormulaRef::Generated(id) => KernelFormulaProducerRef::Generated(
+                        KernelVcGeneratedFormulaId::new(id.index()),
+                    ),
+                    _ => panic!("actual producer"),
+                };
+                KernelContextIdentityEntry::new(
+                    source,
+                    entry.formula_id(),
+                    Fingerprint::new(
+                        entry.formula_fingerprint().algorithm_id,
+                        entry.formula_fingerprint().digest.clone(),
+                    ),
+                    producer,
+                )
+            })
+            .collect();
+        let context = FormulaEvidenceContext::with_context_identity(
+            Some(handoff.context_identity_hash().as_bytes().to_vec()),
+            Vec::new(),
+            Vec::new(),
+            Some(KernelContextIdentityPayload::new(
+                target.clone(),
+                handoff.canonical_hash(),
+                handoff.context_identity_hash(),
+                entries,
+            )),
+            ImportedFactContextLimits::default(),
+        )
+        .unwrap();
+        let independent = check_kernel_evidence(KernelEvidenceCheckInput {
+            target_vc_fingerprint: &target,
+            evidence: &parsed,
+            formula_context: Some(&context),
+            check_kind: KernelEvidenceCheckKind::ProofObligation,
+            policy: KernelCheckPolicy::default(),
+            limits: KernelEvidenceCheckLimits::default(),
+        });
+        assert_eq!(independent.status(), KernelCheckStatus::Accepted);
+        let input = KernelPolicyInput::from_kernel_result(
+            &independent,
+            KernelEvidenceOrigin::AtpFormulaSubstitution,
+        );
+        assert_eq!(
+            input.accepted_goal_polarity(),
+            Some(AcceptedGoalPolarity::AssertFalseForRefutation)
+        );
+        for format in [ConcreteFormat::Tptp, ConcreteFormat::SmtLib] {
+            let profile = source_candidate_profile("source-metadata", format);
+            let (encoded, actual) = build(&core, &vcs, vc.id, profile.clone(), format).unwrap();
+            let output = check(
+                &source,
+                &nodes,
+                &symbols,
+                super::shared::snapshot_id(0),
+                vc.id,
+                (profile.clone(), format),
+                &policy,
+            )
+            .unwrap();
+            let (result, decision, metadata, candidate) = &output;
+            assert_eq!(result, &independent);
+            assert_eq!(
+                *decision,
+                ProofPolicyEvaluator::new(policy.clone())
+                    .evaluate_candidate(&PolicyCandidate::KernelResult(input.clone()))
+            );
+            assert_eq!(decision.class, CandidatePolicyClass::KernelVerified);
+            assert_eq!(candidate, &actual);
+            assert_eq!(
+                candidate.payload(),
+                &BackendCandidatePayload::FormulaSubstitutionBytes(wire.clone())
+            );
+            assert_eq!(candidate.target_binding(), encoded.target_binding());
+            assert_eq!(candidate.encoded_problem_hash(), encoded.input_hash());
+            assert_eq!(candidate.provenance_hash(), encoded.provenance_hash());
+            assert_eq!(candidate.formula_label_refs(), encoded.formula_labels());
+            assert_eq!(candidate.symbol_binding_refs(), encoded.symbol_bindings());
+            assert!(identities.insert(candidate.candidate_id().to_owned()));
+            assert_eq!(
+                source_candidate_check_bytes(&handoff, &wire, encoded.target_binding()).unwrap(),
+                result.status()
+            );
+            assert_eq!(
+                old(
+                    &source,
+                    &nodes,
+                    &symbols,
+                    super::shared::snapshot_id(0),
+                    vc.id,
+                    (profile.clone(), format),
+                    &policy
+                )
+                .unwrap(),
+                (result.clone(), decision.clone())
+            );
+            assert_eq!(
+                check(
+                    &source,
+                    &nodes,
+                    &symbols,
+                    super::shared::snapshot_id(0),
+                    vc.id,
+                    (profile, format),
+                    &policy
+                )
+                .unwrap(),
+                output
+            );
+            let metadata = metadata.as_ref().unwrap();
+            assert_eq!(
+                metadata.checker_schema_version,
+                SchemaVersion::new(policy.checker_schema_version(), 0)
+            );
+            assert_eq!(
+                metadata.evidence_schema_version,
+                SchemaVersion::new(parsed.schema_version(), 0)
+            );
+            assert_eq!(metadata.formula_context_hash, None);
+            for (reference, family, version, digest) in [
+                (
+                    &metadata.kernel_profile_fingerprint,
+                    "mizar-vc/local-evidence-component/profile",
+                    SchemaVersion::new(1, 0),
+                    components[0],
+                ),
+                (
+                    &metadata.formula_evidence_hash,
+                    "mizar-vc/local-evidence-component/formula",
+                    SchemaVersion::new(1, 0),
+                    components[1],
+                ),
+                (
+                    &metadata.substitution_evidence_hash,
+                    "mizar-vc/local-evidence-component/substitutions",
+                    SchemaVersion::new(1, 0),
+                    components[2],
+                ),
+                (
+                    &metadata.provenance_hash,
+                    "mizar-vc/local-evidence-component/provenance",
+                    SchemaVersion::new(1, 0),
+                    components[3],
+                ),
+                (
+                    &metadata.target_binding_hash,
+                    "mizar-vc/kernel-evidence-handoff-canonical",
+                    SchemaVersion::new(1, 0),
+                    handoff.canonical_hash(),
+                ),
+                (
+                    &metadata.verifier_policy_fingerprint,
+                    "mizar-proof/verifier-policy",
+                    SchemaVersion::new(policy.schema_version(), 0),
+                    policy.policy_fingerprint().hash(),
+                ),
+                (
+                    &metadata.accepted_result_hash,
+                    "mizar-proof/kernel-accepted-evidence",
+                    SchemaVersion::new(1, 0),
+                    input.accepted_evidence_hash().unwrap(),
+                ),
+            ] {
+                assert_eq!(reference.class, ArtifactHashClass::Interface);
+                assert_eq!(reference.schema_family, family);
+                assert_eq!(reference.schema_version, version);
+                assert_eq!(reference.digest, digest);
+            }
+        }
+        assert_eq!((source, nodes, symbols), before);
+    }
+}
+
+#[test]
+fn source_registration_candidate_metadata_aggregate_preserves_rejection_snapshot_and_policy_identity()
+ {
+    use mizar_artifact::store::SchemaVersion;
+    use mizar_atp::{
+        backend::{BackendCandidatePayload, build_source_registration_candidate_inputs as build},
+        problem::ConcreteFormat,
+    };
+    use mizar_kernel::{
+        checker::{KernelCheckStatus, KernelEvidenceCheckKind},
+        rejection::RejectionDetail,
+    };
+    use mizar_proof::{
+        policy::{CandidatePolicyClass, KernelEvidenceOrigin, KernelPolicyInput, VerifierPolicy},
+        status::check_source_registration_candidate_metadata as check,
+    };
+    use mizar_vc::{
+        discharge::{DischargeInput, DischargePolicy, try_discharge},
+        generator::generate_source_existential_registration,
+        kernel_evidence_handoff::build_source_existential_kernel_handoff,
+        vc_ir::{GenerationSchemaVersion, VcSchemaVersion, VcStatus},
+    };
+    let original = std::fs::read_to_string(step5c13_registration_case().source_path).unwrap();
+    let renamed = original.replace("marked", "retagged").replace("X", "Value");
+    let mut seen = std::collections::BTreeMap::new();
+    for (variant, base) in [&original, &renamed].into_iter().enumerate() {
+        let formal = if variant == 0 { "X" } else { "Value" };
+        let negative = base.replacen(
+            &format!("means {formal} = {formal}"),
+            &format!("means not {formal} = {formal}"),
+            1,
+        );
+        assert_ne!(&negative, base);
+        for (is_negative, text) in [(false, base), (true, &negative)] {
+            let (source, nodes, symbols) = step5c13_registration_inputs(text).unwrap();
+            let before = (source.clone(), nodes.clone(), symbols.clone());
+            let (core, _, _) = source_candidate_core_and_vcs(true, text);
+            for snapshot_index in 0..2 {
+                let snapshot = super::shared::snapshot_id(snapshot_index);
+                let open = generate_source_existential_registration(
+                    &core,
+                    snapshot,
+                    &GenerationSchemaVersion::new("source-existential-registration-v1"),
+                    &VcSchemaVersion::new("vc-v1"),
+                )
+                .unwrap();
+                let discharge = try_discharge(DischargeInput {
+                    vc_set: &open,
+                    policy: &DischargePolicy::default(),
+                })
+                .unwrap();
+                let vcs = discharge.vc_set();
+                let mut targets = std::collections::BTreeSet::new();
+                let mut counts = [0, 0];
+                for vc in vcs
+                    .vcs()
+                    .iter()
+                    .filter(|vc| vc.status == VcStatus::NeedsAtp)
+                {
+                    let handoff =
+                        build_source_existential_kernel_handoff(&core, vcs, vc.id).unwrap();
+                    assert!(targets.insert(handoff.canonical_hash().as_bytes().to_vec()));
+                    let wire = source_candidate_wire(&handoff);
+                    let components = handoff.local_evidence_component_hashes().unwrap();
+                    let false_goal = is_negative && vc.id.index() != 3;
+                    for format in [ConcreteFormat::Tptp, ConcreteFormat::SmtLib] {
+                        for (profile_index, name) in ["source-metadata", "source-metadata-profile"]
+                            .into_iter()
+                            .enumerate()
+                        {
+                            let profile = source_candidate_profile(name, format);
+                            let (encoded, actual) =
+                                build(&core, vcs, vc.id, profile.clone(), format).unwrap();
+                            let independent_status = source_candidate_check_bytes(
+                                &handoff,
+                                &wire,
+                                encoded.target_binding(),
+                            )
+                            .unwrap();
+                            for (policy_index, policy) in [
+                                VerifierPolicy::release(),
+                                VerifierPolicy::development(),
+                                VerifierPolicy::interactive(),
+                                VerifierPolicy::release().with_schema_version(2),
+                                VerifierPolicy::release().with_checker_schema_version(7),
+                                VerifierPolicy::release()
+                                    .with_profile_id("configured-source-metadata"),
+                            ]
+                            .into_iter()
+                            .enumerate()
+                            {
+                                let (result, decision, metadata, candidate) = check(
+                                    &source,
+                                    &nodes,
+                                    &symbols,
+                                    snapshot,
+                                    vc.id,
+                                    (profile.clone(), format),
+                                    &policy,
+                                )
+                                .unwrap();
+                                assert_eq!(candidate, actual);
+                                assert_eq!(
+                                    candidate.payload(),
+                                    &BackendCandidatePayload::FormulaSubstitutionBytes(
+                                        wire.clone()
+                                    )
+                                );
+                                assert_eq!(result.status(), independent_status);
+                                assert_eq!(
+                                    result.target_vc_fingerprint().algorithm_id,
+                                    encoded.target_binding().fingerprint().algorithm_id()
+                                );
+                                assert_eq!(
+                                    result.target_vc_fingerprint().digest,
+                                    encoded.target_binding().fingerprint().digest()
+                                );
+                                assert_eq!(
+                                    result.evidence_check_kind(),
+                                    Some(KernelEvidenceCheckKind::ProofObligation)
+                                );
+                                assert!(!result.policy_taint());
+                                assert_eq!(decision.kernel_rejections, result.rejections());
+                                let input = KernelPolicyInput::from_kernel_result(
+                                    &result,
+                                    KernelEvidenceOrigin::AtpFormulaSubstitution,
+                                );
+                                if false_goal {
+                                    assert_eq!(result.status(), KernelCheckStatus::Rejected);
+                                    assert_eq!(
+                                        decision.class,
+                                        CandidatePolicyClass::KernelRejected
+                                    );
+                                    assert!(
+                                        result.rejections().iter().any(|record| record.detail()
+                                            == RejectionDetail::InvalidSatRefutation)
+                                    );
+                                    assert!(metadata.is_none());
+                                    assert!(input.accepted_evidence_hash().is_none());
+                                    counts[1] += 1;
+                                } else {
+                                    assert_eq!(result.status(), KernelCheckStatus::Accepted);
+                                    assert_eq!(
+                                        decision.class,
+                                        CandidatePolicyClass::KernelVerified
+                                    );
+                                    let metadata = metadata.unwrap();
+                                    assert_eq!(
+                                        metadata.kernel_profile_fingerprint.digest,
+                                        components[0]
+                                    );
+                                    assert_eq!(
+                                        metadata.formula_evidence_hash.digest,
+                                        components[1]
+                                    );
+                                    assert_eq!(
+                                        metadata.substitution_evidence_hash.digest,
+                                        components[2]
+                                    );
+                                    assert_eq!(metadata.provenance_hash.digest, components[3]);
+                                    assert_eq!(
+                                        metadata.target_binding_hash.digest,
+                                        handoff.canonical_hash()
+                                    );
+                                    assert_eq!(
+                                        metadata.accepted_result_hash.digest,
+                                        input.accepted_evidence_hash().unwrap()
+                                    );
+                                    assert_eq!(
+                                        metadata.verifier_policy_fingerprint.digest,
+                                        policy.policy_fingerprint().hash()
+                                    );
+                                    assert_eq!(
+                                        metadata.verifier_policy_fingerprint.schema_version,
+                                        SchemaVersion::new(policy.schema_version(), 0)
+                                    );
+                                    assert_eq!(
+                                        metadata.checker_schema_version,
+                                        SchemaVersion::new(policy.checker_schema_version(), 0)
+                                    );
+                                    assert_eq!(
+                                        metadata.evidence_schema_version,
+                                        SchemaVersion::new(2, 0)
+                                    );
+                                    assert!(metadata.formula_context_hash.is_none());
+                                    if policy_index > 0 {
+                                        let prior: &mizar_artifact::proof_witness::KernelAcceptanceMetadata = &seen[&(variant, is_negative, snapshot_index, vc.id.index(), format, profile_index, 0)];
+                                        assert_ne!(
+                                            metadata.verifier_policy_fingerprint,
+                                            prior.verifier_policy_fingerprint
+                                        );
+                                        assert_eq!(
+                                            metadata.accepted_result_hash,
+                                            prior.accepted_result_hash
+                                        );
+                                    }
+                                    if snapshot_index > 0 {
+                                        let prior = &seen[&(
+                                            variant,
+                                            is_negative,
+                                            0,
+                                            vc.id.index(),
+                                            format,
+                                            profile_index,
+                                            policy_index,
+                                        )];
+                                        assert_ne!(
+                                            metadata.target_binding_hash,
+                                            prior.target_binding_hash
+                                        );
+                                        assert_ne!(metadata.provenance_hash, prior.provenance_hash);
+                                        assert_ne!(
+                                            metadata.accepted_result_hash,
+                                            prior.accepted_result_hash
+                                        );
+                                    }
+                                    seen.insert(
+                                        (
+                                            variant,
+                                            is_negative,
+                                            snapshot_index,
+                                            vc.id.index(),
+                                            format,
+                                            profile_index,
+                                            policy_index,
+                                        ),
+                                        metadata,
+                                    );
+                                    counts[0] += 1;
+                                }
+                            }
+                        }
+                    }
+                }
+                assert_eq!(targets.len(), 3);
+                assert_eq!(counts, if is_negative { [24, 48] } else { [72, 0] });
+            }
+            assert_eq!((source, nodes, symbols), before);
+        }
+    }
+}
+
+#[test]
+fn source_registration_candidate_metadata_rejects_mixed_unsupported_and_denied_inputs() {
+    use mizar_atp::problem::*;
+    use mizar_proof::{
+        policy::{CandidatePolicyClass, KernelEvidenceFormat, VerifierPolicy},
+        selection::ProofWinnerClass,
+        status::{
+            check_source_registration_candidate as old,
+            check_source_registration_candidate_metadata as check,
+            prove_source_existential_registration as builtin,
+            select_source_registration_candidate as select,
+        },
+    };
+    use mizar_vc::vc_ir::{VcId, VcStatus};
+    for (multiple, case) in [
+        (false, step5c3_registration_case()),
+        (true, step5c13_registration_case()),
+    ] {
+        let text = std::fs::read_to_string(case.source_path).unwrap();
+        let foreign = text.replace("marked", "foreignmarked");
+        let (source, nodes, symbols) = if multiple {
+            step5c13_registration_inputs(&text)
+        } else {
+            step5c3_registration_inputs(&text)
+        }
+        .unwrap();
+        let (fs, fnodes, fenv) = if multiple {
+            step5c13_registration_inputs(&foreign)
+        } else {
+            step5c3_registration_inputs(&foreign)
+        }
+        .unwrap();
+        let (_, _, vcs) = source_candidate_core_and_vcs(multiple, &text);
+        let target = vcs
+            .vcs()
+            .iter()
+            .find(|vc| vc.status == VcStatus::NeedsAtp)
+            .unwrap()
+            .id;
+        let discharged = vcs
+            .vcs()
+            .iter()
+            .find(|vc| matches!(vc.status, VcStatus::Discharged { .. }))
+            .unwrap()
+            .id;
+        let snapshot = super::shared::snapshot_id(0);
+        let policy = VerifierPolicy::release();
+        let format = ConcreteFormat::Tptp;
+        let profile = source_candidate_profile("source-metadata-negative", format);
+        for (s, n, e, selected) in [
+            (&fs, &nodes, &symbols, target),
+            (&source, &fnodes, &symbols, target),
+            (&source, &nodes, &fenv, target),
+            (&source, &nodes, &symbols, discharged),
+            (&source, &nodes, &symbols, VcId::new(vcs.vcs().len())),
+        ] {
+            let error = check(
+                s,
+                n,
+                e,
+                snapshot,
+                selected,
+                (profile.clone(), format),
+                &policy,
+            )
+            .unwrap_err();
+            assert_eq!(
+                error,
+                old(
+                    s,
+                    n,
+                    e,
+                    snapshot,
+                    selected,
+                    (profile.clone(), format),
+                    &policy
+                )
+                .unwrap_err()
+            );
+            assert_eq!(
+                error,
+                select(
+                    s,
+                    n,
+                    e,
+                    snapshot,
+                    selected,
+                    (profile.clone(), format),
+                    &policy
+                )
+                .unwrap_err()
+            );
+        }
+        let unsupported = LogicProfile::try_new(
+            "unsupported",
+            LogicFragment::TffLike,
+            EqualitySupport::Supported,
+            QuantifierPolicy::FirstOrder,
+            SoftTypeStrategy::GuardPredicates,
+            NativePropertySupport::Unsupported,
+            [format].into_iter().collect(),
+        )
+        .unwrap();
+        for encoding in [
+            (unsupported, format),
+            (profile.clone(), ConcreteFormat::SmtLib),
+        ] {
+            assert!(
+                check(
+                    &source,
+                    &nodes,
+                    &symbols,
+                    snapshot,
+                    target,
+                    encoding.clone(),
+                    &policy
+                )
+                .is_err()
+            );
+            assert!(
+                old(
+                    &source, &nodes, &symbols, snapshot, target, encoding, &policy
+                )
+                .is_err()
+            );
+        }
+        for denied in [
+            policy.clone().with_kernel_evidence_formats([]),
+            policy
+                .clone()
+                .with_kernel_evidence_formats([KernelEvidenceFormat::BuiltinKernelEvidence]),
+        ] {
+            assert_eq!(
+                check(
+                    &source,
+                    &nodes,
+                    &symbols,
+                    snapshot,
+                    target,
+                    (profile.clone(), format),
+                    &denied
+                )
+                .unwrap_err(),
+                "registration.proof.kernel_policy_rejected"
+            );
+            assert!(
+                select(
+                    &source,
+                    &nodes,
+                    &symbols,
+                    snapshot,
+                    target,
+                    (profile.clone(), format),
+                    &denied
+                )
+                .is_err()
+            );
+        }
+        let builtin_only = policy
+            .clone()
+            .with_kernel_evidence_formats([KernelEvidenceFormat::BuiltinKernelEvidence]);
+        assert_eq!(
+            builtin(&source, &nodes, &symbols, snapshot, &builtin_only)
+                .unwrap()
+                .activated()
+                .len(),
+            if multiple { 3 } else { 1 }
+        );
+        let formula_only =
+            policy.with_kernel_evidence_formats([KernelEvidenceFormat::FormulaSubstitution]);
+        let (_, decision, metadata, _) = check(
+            &source,
+            &nodes,
+            &symbols,
+            snapshot,
+            target,
+            (profile.clone(), format),
+            &formula_only,
+        )
+        .unwrap();
+        assert_eq!(decision.class, CandidatePolicyClass::KernelVerified);
+        let selected = select(
+            &source,
+            &nodes,
+            &symbols,
+            snapshot,
+            target,
+            (profile, format),
+            &formula_only,
+        )
+        .unwrap();
+        assert_eq!(selected.selected_class(), ProofWinnerClass::KernelVerified);
+        assert_eq!(
+            selected.reuse_metadata().selected_evidence_hash(),
+            Some(metadata.unwrap().accepted_result_hash.digest)
+        );
+        assert!(builtin(&source, &nodes, &symbols, snapshot, &formula_only).is_err());
+        if !multiple {
+            let unsupported = text.replacen("take the set;", "take the wmarked set;", 1);
+            assert_ne!(unsupported, text);
+            let (s, n, e) = step5c3_registration_inputs(&unsupported).unwrap();
+            let encoding = (
+                source_candidate_profile("source-metadata-negative", format),
+                format,
+            );
+            assert!(
+                check(
+                    &s,
+                    &n,
+                    &e,
+                    snapshot,
+                    target,
+                    encoding.clone(),
+                    &VerifierPolicy::release()
+                )
+                .is_err()
+            );
+            assert!(
+                old(
+                    &s,
+                    &n,
+                    &e,
+                    snapshot,
+                    target,
+                    encoding,
+                    &VerifierPolicy::release()
+                )
+                .is_err()
+            );
+        }
+    }
+}

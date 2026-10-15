@@ -1,0 +1,17 @@
+# Task PROOF-SOURCE-CANDIDATE-METADATA: raw same-call ATP source association
+Canonical language: English; [Japanese pointer](../ja/PROOF-SOURCE-CANDIDATE-METADATA.md).
+Status: implemented (bounded raw same-call association). Tier: full. Owner: [Proof plan](../../mizar-proof/en/00.crate_plan.md), task 30; consumer: future source witness production.
+Authority: spec §§16.5/21.7.1/21.7.5/23.5.1; [sole source owner](../../mizar-proof/en/status.md#source-candidate-metadata).
+Dependencies/readiness: actual ATP36 source candidates, Proof24 normal checking and VC64 raw components exist; only bounded NeedsAtp ATP-origin association is ready.
+Gap: source_drift/test_gap; actual source candidate checking discards the checked candidate and raw same-call acceptance association.
+Scope: add check_source_registration_candidate_metadata with the existing seven checker inputs, returning Result<(KernelCheckResult, PolicyDecision, Option<KernelAcceptanceMetadata>, BackendCandidateEvidence), String>.
+Rename the old checker body in place to this entry, retain its actual checked candidate, and have the compatibility checker discard only the two new tuple fields. Preserve signatures, producer/check/scheduling/error order and classifications.
+Use the sole owner's exact existing component/version mapping and actual parsed evidence version. Return metadata only for this call's genuine untainted accepted ProofObligation/ATP result and permitted KernelVerified decision, with real refutation polarity and accepted identity; unavailable association yields None without fallback.
+The returned actual candidate contains the exact checked v2 bytes and real target/input hash/provenance/labels/symbols/id. Existing canonical-v1 component hashes exclude equality-instance names; no complete v2 component/content hash or transferable authority is claimed.
+Tests: append three genuine source families for original/renamed single and aggregate inputs, both encodings, real false-dependent rejection, snapshots/policies/schema/profile variations and unsupported/mixed/permission failures. Compare actual independent candidate/wire/handoff/normal-check identities; preserve old checker/selector behavior and all old tests.
+Write scope: declared status.rs checker region and append-only mizar-test runner/tests.rs; paired status owner/plan/TODO/contracts and one new API row in paired source_spec_audit. No new helper/type/field/adapter/file/dependency/hash/codec/schema or lower-stage change.
+Forbidden: caller evidence/results/metadata, fabricated producer/Accepted/identity/backend run, built-in relabeling, changed policy/acceptance/diagnostics, selector or Builtin body edits, protected spec/.miz/expectation/trace/ledger changes and publication/cache/runtime integration.
+Boundary: raw association only, no trusted witness token, composite obligation, witness reference/content hash, staging/committed reachability or trusted reuse. Caller owns source/snapshot freshness; full Proof23/Artifact25/Artifact17 and Steps6–8 remain open.
+Audit: assess actual coverage/mapping/follow-up owner/deferral impact; no semantic coverage promotion from this raw transport.
+Reviews: independent SPEC/TEST/CODE/VOLUME/CONSISTENCY and scoped full gates; parent cargo fmt --check, cargo clippy --all-targets --all-features -- -D warnings, cargo test.
+Exit: genuine supported checks retain their exact candidate and conditional same-call raw metadata, unsupported/rejected paths remain non-trusted and all existing acceptance/publication boundaries retain intent.

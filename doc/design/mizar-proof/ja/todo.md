@@ -434,6 +434,8 @@ kernel の拒否語彙と evidence 契約を訂正した。policy 層はその�
 
 29. **[実 source の未公開 built-in witness 投影](../../task_contracts/ja/PROOF-SOURCE-DISCHARGE-WITNESS-PROJECTION.md).** [x]
 
+30. **[同一実行の実 ATP source candidate raw metadata](../../task_contracts/ja/PROOF-SOURCE-CANDIDATE-METADATA.md).** [x]
+
 ## 推奨検証
 
 各タスクの後で実行する:

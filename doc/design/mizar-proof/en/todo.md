@@ -458,6 +458,8 @@ layer consumes both; one alignment task is owned here.
 
 29. **[Unpublished source built-in witness projection](../../task_contracts/en/PROOF-SOURCE-DISCHARGE-WITNESS-PROJECTION.md).** [x]
 
+30. **[Raw same-call ATP source candidate metadata](../../task_contracts/en/PROOF-SOURCE-CANDIDATE-METADATA.md).** [x]
+
 ## Recommended Verification
 
 Run after each task:
