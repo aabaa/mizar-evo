@@ -85,6 +85,120 @@ pub fn validate_source_symbol_env(
     Ok(())
 }
 
+/// Derives source-bound named owner content for supported registration declarations.
+pub fn source_registration_owner_payloads(
+    ast: &SurfaceAst,
+    source: &SurfaceResolvedArena,
+    symbols: &SymbolEnv,
+) -> Result<BTreeMap<SymbolId, Vec<u8>>, String> {
+    source
+        .validate_against(ast, source.module())
+        .map_err(|error| error.to_string())?;
+    validate_source_symbol_env(source, symbols)?;
+    let unsupported = || "unsupported source registration owner payload".to_owned();
+    let shells = DeclarationShellCollector::new(ast, source.module()).collect();
+    let namespace = NamespacePath::new(source.module().path().as_str());
+    let projections = SignatureProjectionExtractor::new(ast, &shells, namespace).extract();
+    let mut owners = BTreeMap::new();
+    let mut labels = BTreeSet::new();
+    for shell in shells.declarations() {
+        let (kind, symbol_kind, block_kind) = match shell.kind() {
+            DeclarationShellKind::AttributeDefinition => (
+                1,
+                SymbolKind::Attribute,
+                DeclarationShellKind::DefinitionBlock,
+            ),
+            DeclarationShellKind::ExistentialRegistration => (
+                2,
+                SymbolKind::Registration,
+                DeclarationShellKind::RegistrationBlock,
+            ),
+            _ => continue,
+        };
+        let parent = shell
+            .parent()
+            .and_then(|id| shells.declaration(id))
+            .ok_or_else(unsupported)?;
+        if parent.kind() != block_kind || parent.parent().is_some() {
+            return Err(unsupported());
+        }
+        let view = ast.node_view(shell.node_id()).ok_or_else(unsupported)?;
+        let label = label_before_colon(view).ok_or_else(unsupported)?;
+        if !labels.insert((kind, label.clone())) {
+            return Err(unsupported());
+        }
+        let mut matching = projections.iter().filter(|projection| {
+            projection.shell() == shell.id() && projection.symbol_kind() == symbol_kind
+        });
+        let projection = matching.next().ok_or_else(unsupported)?;
+        if matching.next().is_some() {
+            return Err(unsupported());
+        }
+        if symbol_kind == SymbolKind::Attribute {
+            let pattern =
+                first_child_matching(view, is_attribute_pattern).ok_or_else(unsupported)?;
+            let mut constructors = pattern.children().iter().filter_map(|id| {
+                ast.node_view(*id)
+                    .and_then(SurfaceNodeView::as_token)
+                    .filter(|token| {
+                        matches!(
+                            token.kind,
+                            SurfaceTokenKind::Identifier | SurfaceTokenKind::UserSymbol
+                        )
+                    })
+            });
+            let constructor = constructors.next().ok_or_else(unsupported)?;
+            if constructors.next().is_some()
+                || constructor.text.as_ref() != projection.primary_spelling()
+            {
+                return Err(unsupported());
+            }
+        }
+        let origin = shell_origin(
+            ast.source_id,
+            source.module(),
+            shell,
+            &shell_context(&shells, shell),
+        );
+        let mut entries = symbols.symbols().iter().filter(|entry| {
+            entry.origin() == &origin
+                && entry.kind() == symbol_kind
+                && entry.namespace() == projection.namespace()
+                && entry.primary_spelling() == projection.primary_spelling()
+        });
+        let entry = entries.next().ok_or_else(unsupported)?;
+        if entries.next().is_some() {
+            return Err(unsupported());
+        }
+        let mut payload = b"mizar-resolve/source-registration-owner/v1\0".to_vec();
+        payload.push(kind);
+        for spelling in [
+            source.module().package().as_str(),
+            source.module().path().as_str(),
+            &label,
+        ]
+        .into_iter()
+        .chain((symbol_kind == SymbolKind::Attribute).then_some(projection.primary_spelling()))
+        {
+            let length = u32::try_from(spelling.len()).map_err(|_| unsupported())?;
+            payload.extend_from_slice(&length.to_be_bytes());
+            payload.extend_from_slice(spelling.as_bytes());
+        }
+        if owners.insert(entry.symbol().clone(), payload).is_some() {
+            return Err(unsupported());
+        }
+    }
+    if symbols.symbols().iter().any(|entry| {
+        matches!(
+            entry.kind(),
+            SymbolKind::Attribute | SymbolKind::Registration
+        ) && !owners.contains_key(entry.symbol())
+    }) {
+        return Err(unsupported());
+    }
+    Ok(owners)
+}
+
 /// Duplicate and overload policy for an opaque declaration projection.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
 #[non_exhaustive]

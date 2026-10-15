@@ -617,6 +617,8 @@ IR 所有権: [01.ir_layers.md](../../architecture/ja/01.ir_layers.md)。
 34. **Reserve-typed public statements (W0004)。** [ ]
     - 契約: [AIREV-W0004-RESERVE-TYPED-STATEMENTS](../../task_contracts/ja/AIREV-W0004-RESERVE-TYPED-STATEMENTS.md)。
 
+35. **[Source registration owner payloads](../../task_contracts/ja/RESOLVE-SOURCE-REGISTRATION-OWNER-PAYLOADS.md).** [x]
+
 ## crate close-out
 
 - 完了: [crate_exit_report.md](./crate_exit_report.md) に、non-deferred task completion、

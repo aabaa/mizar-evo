@@ -659,6 +659,8 @@ Keep `cargo test -p mizar-resolve` green after each task (see
 34. **Reserve-typed public statements (W0004).** [ ]
     - Contract: [AIREV-W0004-RESERVE-TYPED-STATEMENTS](../../task_contracts/en/AIREV-W0004-RESERVE-TYPED-STATEMENTS.md).
 
+35. **[Source registration owner payloads](../../task_contracts/en/RESOLVE-SOURCE-REGISTRATION-OWNER-PAYLOADS.md).** [x]
+
 ## Crate Close-Out
 
 - Completed: [crate_exit_report.md](./crate_exit_report.md) records

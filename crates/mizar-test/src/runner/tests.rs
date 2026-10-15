@@ -17315,3 +17315,250 @@ fn source_registration_candidate_witness_preserves_upstream_failures_and_real_re
         }
     }
 }
+
+fn source_registration_owner_inputs(
+    text: &str,
+    package: &str,
+    module: &str,
+    source_skip: usize,
+) -> (
+    super::shared::FrontendRun,
+    mizar_resolve::resolved_ast::SurfaceResolvedArena,
+    mizar_resolve::symbols::SymbolCollectionResult,
+) {
+    use mizar_resolve::{declarations::DeclarationShellCollector, symbols::SignatureProjectionExtractor};
+    use mizar_frontend::{
+        orchestration::Frontend,
+        parsing::MizarParserSeam,
+        source::{FrontendSourceLoader, SourceUnitRequest},
+    };
+    use mizar_session::{DiskSourceLoader, Edition, InMemorySessionIdAllocator, SessionIdAllocator,
+        SourceInput, SourceOriginInput};
+    let temporary = std::process::Command::new("mktemp").arg("-d").output().unwrap();
+    assert!(temporary.status.success());
+    let root = PathBuf::from(String::from_utf8(temporary.stdout).unwrap().trim());
+    std::fs::create_dir(root.join("src")).unwrap();
+    let path = root.join("src").join(format!("{module}.miz"));
+    std::fs::write(&path, text).unwrap();
+    let snapshot = super::shared::snapshot_id(5835);
+    let ids = InMemorySessionIdAllocator::new();
+    for _ in 0..source_skip {
+        ids.next_source_id(snapshot).unwrap();
+    }
+    let output = Frontend::new(FrontendSourceLoader::new(DiskSourceLoader::new(&root)),
+        super::ParseOnlyImportProvider, MizarParserSeam).run(SourceUnitRequest {
+            snapshot,
+            input: SourceInput {
+                package_id: PackageId::new(package),
+                module_path: ModulePath::new(module),
+                normalized_path: mizar_session::normalize_path(&root, &path).unwrap(),
+                edition: Edition::new("2026"),
+                origin: SourceOriginInput::Disk { path: path.clone() },
+            },
+        }, &ids).unwrap();
+    std::fs::remove_dir_all(root).unwrap();
+    let frontend = super::shared::FrontendRun { source_text: output.source.source_text,
+        ast: output.ast, ast_snapshot: None, diagnostics: output.diagnostics };
+    let ast = frontend.ast.as_ref().unwrap();
+    let module = ResolverModuleId::new(PackageId::new(package), ModulePath::new(module));
+    let source = SurfaceResolvedArena::lower(ast, &module).unwrap();
+    let shells = DeclarationShellCollector::new(ast, &module).collect();
+    let collected = SignatureProjectionExtractor::new(ast, &shells,
+        NamespacePath::new(module.path().as_str())).collect(&module);
+    (frontend, source, collected)
+}
+
+#[test]
+fn source_registration_owner_exact_frames_bind_actual_single_and_aggregate_symbols() {
+    use mizar_resolve::{env::SymbolKind, symbols::{source_registration_owner_payloads as owners,
+        validate_source_symbol_env}};
+    for (multiple, case) in [(false, step5c3_registration_case()), (true, step5c13_registration_case())] {
+        let text = std::fs::read_to_string(case.source_path).unwrap();
+        let (frontend, source, collected) = source_registration_owner_inputs(&text, "owner-test", "owners", 0);
+        assert!(frontend.diagnostics.is_empty());
+        assert!(collected.diagnostics().is_empty());
+        let ast = frontend.ast.as_ref().unwrap();
+        let before = collected.clone();
+        validate_source_symbol_env(&source, collected.env()).unwrap();
+        let payloads = owners(ast, &source, collected.env()).unwrap();
+        let expected: Vec<(u8, &str, &[u8])> = if multiple {
+            vec![
+                (1, "oamarked", b"\0\0\0\x06OAADef\0\0\0\x08oamarked"),
+                (1, "obmarked", b"\0\0\0\x06OBBDef\0\0\0\x08obmarked"),
+                (2, "OAExists", b"\0\0\0\x08OAExists"),
+                (2, "OBExists", b"\0\0\0\x08OBExists"),
+                (2, "OABExists", b"\0\0\0\x09OABExists"),
+            ]
+        } else {
+            vec![
+                (1, "wmarked", b"\0\0\0\x05WMDef\0\0\0\x07wmarked"),
+                (2, "WMarkedExists", b"\0\0\0\x0dWMarkedExists"),
+            ]
+        };
+        assert_eq!(payloads.len(), expected.len());
+        for (kind, spelling, tail) in expected {
+            let entry = collected.env().symbols().iter().find(|entry|
+                entry.kind() == if kind == 1 { SymbolKind::Attribute } else { SymbolKind::Registration }
+                && entry.primary_spelling() == spelling).unwrap();
+            let mut bytes = b"mizar-resolve/source-registration-owner/v1\0".to_vec();
+            bytes.push(kind);
+            bytes.extend_from_slice(b"\0\0\0\x0aowner-test\0\0\0\x06owners");
+            bytes.extend_from_slice(tail);
+            assert_eq!(payloads.get(entry.symbol()), Some(&bytes));
+        }
+        assert!(collected.env().symbols().iter().any(|entry| entry.kind() == SymbolKind::Functor));
+        assert_eq!(collected, before);
+        validate_source_symbol_env(&source, collected.env()).unwrap();
+    }
+    for text in ["", "definition\n let X be set;\n func Box: box X -> set equals X;\n coherence;\nend;\n"] {
+        let (frontend, source, collected) = source_registration_owner_inputs(text, "owner-test", "owners", 0);
+        assert!(frontend.diagnostics.is_empty());
+        assert!(collected.diagnostics().is_empty());
+        assert!(owners(frontend.ast.as_ref().unwrap(), &source, collected.env()).unwrap().is_empty());
+    }
+}
+
+#[test]
+fn source_registration_owner_payloads_survive_real_relocation_and_owner_neutral_edits() {
+    use mizar_resolve::{env::SymbolKind, symbols::source_registration_owner_payloads as owners};
+    let attribute_a = "  attr OAADef: X is oamarked means X = X;\n";
+    let attribute_b = "  attr OBBDef: X is obmarked means X = X;\n";
+    let registration_a = "  cluster OAExists: oamarked set;\n  existence proof take the set; thus the set is oamarked by OAADef; end;\n";
+    let registration_b = "  cluster OBExists: obmarked set;\n  existence proof take the set; thus the set is obmarked by OBBDef; end;\n";
+    let definitions = format!("definition\n  let X be set;\n{attribute_a}{attribute_b}end;\n");
+    let registrations = format!("registration\n{registration_a}{registration_b}end;\n");
+    let text = format!("{definitions}\n{registrations}");
+    let (frontend, source, collected) = source_registration_owner_inputs(&text, "owner-test", "owners", 0);
+    assert!(frontend.diagnostics.is_empty());
+    assert!(collected.diagnostics().is_empty());
+    let baseline = owners(frontend.ast.as_ref().unwrap(), &source, collected.env()).unwrap();
+    assert_eq!(baseline.len(), 4);
+    let expected: [(SymbolKind, &str, u8, &[u8]); 4] = [
+        (SymbolKind::Attribute, "oamarked", 1, b"\0\0\0\x06OAADef\0\0\0\x08oamarked"),
+        (SymbolKind::Attribute, "obmarked", 1, b"\0\0\0\x06OBBDef\0\0\0\x08obmarked"),
+        (SymbolKind::Registration, "OAExists", 2, b"\0\0\0\x08OAExists"),
+        (SymbolKind::Registration, "OBExists", 2, b"\0\0\0\x08OBExists"),
+    ];
+    let reordered = format!("definition\n  let X be set;\n{attribute_b}{attribute_a}end;\n\nregistration\n{registration_b}{registration_a}end;\n");
+    let separate_blocks = format!("definition\n let X be set;\n{attribute_b}end;\ndefinition\n let X be set;\n{attribute_a}end;\nregistration\n{registration_b}end;\nregistration\n{registration_a}end;\n");
+    for (index, edited) in [
+        format!("\n:: leading trivia shifts every range\n{}", text.replace("  ", "    ")),
+        text.replace('X', "RenamedBinder"),
+        reordered,
+        format!("definition\n let X be set;\n{attribute_a}end;\ndefinition\n let X be set;\n{attribute_b}end;\nregistration\n{registration_a}end;\nregistration\n{registration_b}end;\n"),
+        separate_blocks,
+        text.clone(),
+    ].into_iter().enumerate() {
+        let skip = if index == 5 { 7 } else { 0 };
+        let (edited_frontend, edited_source, edited_collected) = source_registration_owner_inputs(&edited, "owner-test", "owners", skip);
+        assert!(edited_frontend.diagnostics.is_empty(), "edit {index}");
+        assert!(edited_collected.diagnostics().is_empty(), "edit {index}");
+        let changed = owners(edited_frontend.ast.as_ref().unwrap(), &edited_source, edited_collected.env()).unwrap();
+        assert_eq!(changed.len(), expected.len(), "edit {index}");
+        for (kind, spelling, tag, tail) in expected {
+            let entries = edited_collected.env().symbols().iter().filter(|entry|
+                entry.kind() == kind && entry.primary_spelling() == spelling).collect::<Vec<_>>();
+            assert_eq!(entries.len(), 1, "edit {index}: {spelling}");
+            let bytes = [b"mizar-resolve/source-registration-owner/v1\0".as_slice(), &[tag],
+                b"\0\0\0\x0aowner-test\0\0\0\x06owners", tail].concat();
+            assert_eq!(changed.get(entries[0].symbol()), Some(&bytes), "edit {index}: {spelling}");
+        }
+        if index == 2 || index == 4 {
+            assert_ne!(changed.keys().collect::<Vec<_>>(), baseline.keys().collect::<Vec<_>>());
+        }
+        if skip != 0 {
+            assert_ne!(edited_source.source_id(), source.source_id());
+        }
+    }
+    for (index, (edited, package, module, package_frame, module_frame)) in [
+        (text.replace("OAADef", "RenamedLabel"), "owner-test", "owners", b"\0\0\0\x0aowner-test".as_slice(), b"\0\0\0\x06owners".as_slice()),
+        (text.replace("oamarked", "renamedconstructor"), "owner-test", "owners", b"\0\0\0\x0aowner-test", b"\0\0\0\x06owners"),
+        (text.clone(), "owner-test", "other_module", b"\0\0\0\x0aowner-test", b"\0\0\0\x0cother_module"),
+        (text, "other-package", "owners", b"\0\0\0\x0dother-package", b"\0\0\0\x06owners"),
+    ].into_iter().enumerate() {
+        let (frontend, source, collected) = source_registration_owner_inputs(&edited, package, module, 0);
+        assert!(frontend.diagnostics.is_empty());
+        assert!(collected.diagnostics().is_empty());
+        let changed = owners(frontend.ast.as_ref().unwrap(), &source, collected.env()).unwrap();
+        assert_eq!(changed.len(), expected.len());
+        for (kind, spelling, tag, tail) in expected {
+            let (spelling, tail) = match (index, spelling) {
+                (0, "oamarked") => (spelling, b"\0\0\0\x0cRenamedLabel\0\0\0\x08oamarked".as_slice()),
+                (1, "oamarked") => ("renamedconstructor", b"\0\0\0\x06OAADef\0\0\0\x12renamedconstructor".as_slice()),
+                _ => (spelling, tail),
+            };
+            let entries = collected.env().symbols().iter().filter(|entry|
+                entry.kind() == kind && entry.primary_spelling() == spelling).collect::<Vec<_>>();
+            assert_eq!(entries.len(), 1, "control {index}: {spelling}");
+            let bytes = [b"mizar-resolve/source-registration-owner/v1\0".as_slice(), &[tag],
+                package_frame, module_frame, tail].concat();
+            assert_eq!(changed.get(entries[0].symbol()), Some(&bytes), "control {index}: {spelling}");
+        }
+    }
+    for binder in ["n", "renamed"] {
+        let text = format!("definition\n let {binder} be set;\n let X be set;\n attr ParamDef: X is {binder}-dimensional means X = X;\nend;\n");
+        let (frontend, source, collected) = source_registration_owner_inputs(&text, "owner-test", "owners", 0);
+        assert!(frontend.diagnostics.is_empty());
+        assert!(collected.diagnostics().is_empty());
+        let payloads = owners(frontend.ast.as_ref().unwrap(), &source, collected.env()).unwrap();
+        assert_eq!(payloads.len(), 1);
+        let entries = collected.env().symbols().iter().filter(|entry|
+            entry.kind() == SymbolKind::Attribute && entry.primary_spelling() == "dimensional").collect::<Vec<_>>();
+        assert_eq!(entries.len(), 1);
+        let payload = payloads.get(entries[0].symbol()).unwrap();
+        assert_eq!(payload, b"mizar-resolve/source-registration-owner/v1\0\x01\0\0\0\x0aowner-test\0\0\0\x06owners\0\0\0\x08ParamDef\0\0\0\x0bdimensional");
+    }
+}
+
+#[test]
+fn source_registration_owner_refuses_foreign_missing_recovered_duplicate_and_unsupported_inputs() {
+    use mizar_resolve::symbols::{source_registration_owner_payloads as owners, validate_source_symbol_env};
+    let text = std::fs::read_to_string(step5c3_registration_case().source_path).unwrap();
+    let (frontend, source, collected) = source_registration_owner_inputs(&text, "owner-test", "owners", 0);
+    let ast = frontend.ast.as_ref().unwrap();
+    assert!(owners(ast, &source, collected.env()).is_ok());
+    for (edited, package, skip) in [
+        (text.replace("wmarked", "foreignmarked"), "owner-test", 0),
+        (text.clone(), "foreign-package", 0),
+        (text.clone(), "owner-test", 1),
+    ] {
+        let (foreign_frontend, foreign_source, foreign_collected) = source_registration_owner_inputs(&edited, package, "owners", skip);
+        assert!(foreign_frontend.diagnostics.is_empty());
+        assert!(foreign_collected.diagnostics().is_empty());
+        let foreign_ast = foreign_frontend.ast.as_ref().unwrap();
+        if let Err(error) = source.validate_against(foreign_ast, source.module()) {
+            assert_eq!(owners(foreign_ast, &source, collected.env()).unwrap_err(), error.to_string());
+        }
+        if let Err(error) = foreign_source.validate_against(ast, foreign_source.module()) {
+            assert_eq!(owners(ast, &foreign_source, collected.env()).unwrap_err(), error.to_string());
+        } else {
+            let error = validate_source_symbol_env(&foreign_source, collected.env()).unwrap_err();
+            assert_eq!(owners(ast, &foreign_source, collected.env()).unwrap_err(), error);
+        }
+        let error = validate_source_symbol_env(&source, foreign_collected.env()).unwrap_err();
+        assert_eq!(owners(ast, &source, foreign_collected.env()).unwrap_err(), error);
+    }
+    let unsupported = "unsupported source registration owner payload";
+    for (edited, expected_optional_refusal) in [
+        (text.replace("attr WMDef:", "attr :"), false),
+        (text.replace("cluster WMarkedExists:", "cluster :"), false),
+        (text.replace("means X = X", "means X ="), false),
+        (text.replace("end;\n\nregistration", "  attr WMDef: X is othermarked means X = X;\nend;\n\nregistration"), true),
+        (format!("{text}\nregistration\n cluster WMarkedExists: wmarked set;\n existence proof take the set; thus the set is wmarked by WMDef; end;\nend;\n"), false),
+        (format!("{text}\nregistration\n cluster Conditional: wmarked -> wmarked for set;\n coherence;\nend;\n"), true),
+    ] {
+        let (bad_frontend, bad_source, bad_collected) = source_registration_owner_inputs(&edited, "owner-test", "owners", 0);
+        let before = bad_collected.clone();
+        let result = owners(bad_frontend.ast.as_ref().unwrap(), &bad_source, bad_collected.env());
+        if expected_optional_refusal {
+            assert!(bad_frontend.diagnostics.is_empty(), "{edited}");
+            assert!(bad_collected.diagnostics().is_empty(), "{edited}");
+            validate_source_symbol_env(&bad_source, bad_collected.env()).unwrap();
+            assert_eq!(result.unwrap_err(), unsupported, "{edited}");
+        } else {
+            let error = validate_source_symbol_env(&bad_source, bad_collected.env()).unwrap_err();
+            assert_eq!(result.unwrap_err(), error, "{edited}");
+        }
+        assert_eq!(bad_collected, before);
+    }
+}
