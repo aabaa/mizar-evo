@@ -570,6 +570,8 @@ contract、禁止境界、real-source/corruption requirement を使用する。�
 
 66. **[Source registration canonical goal and context](../../task_contracts/ja/VC-SOURCE-REGISTRATION-GOAL-CONTEXT.md).** [x]
 
+67. **[Source registration source-shape hashes](../../task_contracts/ja/VC-SOURCE-REGISTRATION-SOURCE-SHAPE.md).** [x]
+
 ## 推奨検証
 
 各タスクの後で実行する:

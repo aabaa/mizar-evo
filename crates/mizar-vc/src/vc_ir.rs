@@ -379,6 +379,84 @@ impl VcSet {
         ))
     }
 
+    /// Hashes bounded declaration syntax and actual source-registration expansion roles.
+    /// Opaque Resolver bytes and their current-source association remain caller-owned.
+    pub fn source_registration_source_shape_hashes(
+        &self,
+        core: &mizar_core::core_ir::CoreIr,
+        formulas: &BTreeMap<CoreFormulaId, Vec<u8>>,
+        syntax: &BTreeMap<CoreItemId, Vec<u8>>,
+    ) -> Result<BTreeMap<VcId, Hash>, String> {
+        self.source_registration_canonical_fingerprints(core, formulas)?;
+        let invalid = || "unsupported source registration source shape".to_owned();
+        let registrations = core
+            .items()
+            .iter()
+            .filter_map(|(id, item)| {
+                matches!(item.kind, mizar_core::core_ir::CoreItemKind::Registration).then_some(id)
+            })
+            .collect::<BTreeSet<_>>();
+        if syntax.keys().copied().collect::<BTreeSet<_>>() != registrations
+            || syntax.values().any(Vec::is_empty)
+            || syntax.values().collect::<BTreeSet<_>>().len() != syntax.len()
+        {
+            return Err(invalid());
+        }
+        let mut hashes = BTreeMap::new();
+        for row in &self.seed_accounting {
+            let (leaves, expansion_schema) = match &row.mapping {
+                SeedVcMapping::NoConcreteVc { .. } => continue,
+                SeedVcMapping::Expanded {
+                    vcs,
+                    expansion_schema,
+                } => (vcs, expansion_schema),
+                _ => return Err(invalid()),
+            };
+            let SeedOriginRef::ExistingCore { seed } = row.origin else {
+                return Err(invalid());
+            };
+            let seed = core.obligation_seeds().get(seed).ok_or_else(invalid)?;
+            if !registrations.contains(&seed.owner)
+                || seed.kind != ObligationSeedKind::CheckerInitial
+                || seed.local_path.as_str() != "registration/existence"
+                || expansion_schema.as_str() != "source-existential-registration-v1"
+            {
+                return Err(invalid());
+            }
+            let bytes = syntax.get(&seed.owner).ok_or_else(invalid)?;
+            for leaf in leaves {
+                let vc = self.vc(leaf.vc).ok_or_else(invalid)?;
+                let mut payload = b"mizar-vc/source-registration-source-shape/v1\0".to_vec();
+                for bytes in [
+                    self.schema_version.as_str().as_bytes(),
+                    vc.anchor.generation_schema_version.as_str().as_bytes(),
+                    expansion_schema.as_str().as_bytes(),
+                ] {
+                    source_registration_frame(&mut payload, bytes).map_err(|_| invalid())?;
+                }
+                payload.push(1);
+                source_registration_frame(&mut payload, seed.local_path.as_str().as_bytes())
+                    .map_err(|_| invalid())?;
+                payload.extend(
+                    u32::try_from(leaf.expansion_index)
+                        .map_err(|_| invalid())?
+                        .to_be_bytes(),
+                );
+                source_registration_frame(&mut payload, bytes).map_err(|_| invalid())?;
+                let hash =
+                    stable_fingerprint_hash("mizar-vc-source-registration-source-shape", &payload);
+                if hashes.insert(leaf.vc, hash).is_some() {
+                    return Err(invalid());
+                }
+            }
+        }
+        if hashes.len() != self.vcs.len() || !self.vcs.iter().all(|vc| hashes.contains_key(&vc.id))
+        {
+            return Err(invalid());
+        }
+        Ok(hashes)
+    }
+
     pub fn canonical_vc_fingerprint(&self, vc: VcId) -> Option<CanonicalVcFingerprint> {
         let vc = self.vc(vc)?;
         canonical_vc_fingerprint(vc, &generated_formula_map(&self.generated_formulas))

@@ -18945,3 +18945,243 @@ fn source_registration_syntax_preserves_upstream_errors_and_refuses_real_prefix_
     assert_eq!(syntax(&source, collected.env()).unwrap(), prior);
     assert_eq!((frontend.ast, source, collected, prior), before);
 }
+
+// Rationale: retain the existing producer tuple plus current-item syntax map without a one-use abstraction.
+#[allow(clippy::type_complexity)]
+fn source_registration_source_shape_inputs(
+    text: &str,
+    module: &str,
+    skip: usize,
+) -> (
+    mizar_core::core_ir::CoreIr,
+    mizar_vc::vc_ir::VcSet,
+    std::collections::BTreeMap<mizar_core::core_ir::CoreFormulaId, Vec<u8>>,
+    std::collections::BTreeMap<mizar_vc::vc_ir::VcId, String>,
+    std::collections::BTreeMap<mizar_core::core_ir::CoreItemId, Vec<u8>>,
+) {
+    use mizar_core::core_ir::CoreItemKind;
+    use mizar_resolve::{env::SymbolKind, symbols::source_registration_syntax_payloads_from_arena};
+    let (core, vcs, formulas, owners) = source_registration_vc_fingerprint_inputs(text, module, skip);
+    // Repeat genuine producers from the same immutable text; this is test plumbing,
+    // not the future authenticated same-call Proof assembly.
+    let (frontend, source, collected) = source_registration_owner_inputs(text, "vc-fingerprint-test", module, skip);
+    assert!(frontend.diagnostics.is_empty());
+    assert!(collected.diagnostics().is_empty());
+    assert_eq!(core.source_id(), source.source_id());
+    assert_eq!(core.module_id(), source.module());
+    let payloads = source_registration_syntax_payloads_from_arena(&source, collected.env()).unwrap();
+    let mut syntax = std::collections::BTreeMap::new();
+    for (id, item) in core.items().iter().filter(|(_, item)| item.kind == CoreItemKind::Registration) {
+        let actual = collected.env().symbols().iter().find(|entry| entry.symbol() == &item.symbol).unwrap();
+        assert_eq!(actual.kind(), SymbolKind::Registration);
+        syntax.insert(id, payloads[actual.symbol()].clone());
+    }
+    assert_eq!(syntax.len(), payloads.len());
+    (core, vcs, formulas, owners, syntax)
+}
+
+#[test]
+fn source_registration_source_shape_exact_current_leaves_and_default_discharge() {
+    use mizar_vc::discharge::{DischargeInput, DischargePolicy, try_discharge};
+    // Spec 6.2/17.2-17.3; independent pre-Rust grammar/framing/hash literals.
+    let expected = [
+        ("WMarkedExists:0", "093d0dadf9f2aa9230440a7f7bf470a6ebb250c4f54331b25183329cd478a4c1"),
+        ("WMarkedExists:1", "093d0dadf9f2aa92ac93248f33789946ebb250c4f54331b2b45d3b8d4944b75b"),
+        ("OAExists:0", "a03b1cace69c8010524b10ab52e1a4ac28192d4024c8ddfc74cd191d362b6833"),
+        ("OAExists:1", "a03b1cace69c80105180874e8f354fc928192d4024c8ddfc0631a2a7ab47c84a"),
+        ("OBExists:0", "8fee99cbb2eaec3ad96796514ee9ebc041e01cca2dc6a22de4125a9c3fc6f956"),
+        ("OBExists:1", "8fee99cbb2eaec3a19a90b8cf13025a841e01cca2dc6a22d37a9ed67060be14f"),
+        ("OABExists:0", "7a2e0049775c610ccd178dc7f5ebd30a610d8884dfbdeb09e69240073f75c5cc"),
+        ("OABExists:1", "7a2e0049775c610c4e61ea6952aa4283610d8884dfbdeb092a6794ef0d44f5a2"),
+    ];
+    for (count, case) in [(2, step5c3_registration_case()), (6, step5c13_registration_case())] {
+        let text = std::fs::read_to_string(case.source_path).unwrap();
+        let (core, vcs, formulas, owners, syntax) = source_registration_source_shape_inputs(&text, "vc_fingerprints", 0);
+        let before = (core.clone(), vcs.clone(), formulas.clone(), syntax.clone());
+        let hashes = vcs.source_registration_source_shape_hashes(&core, &formulas, &syntax).unwrap();
+        assert_eq!(hashes.len(), count);
+        assert_eq!(hashes.keys().collect::<Vec<_>>(), owners.keys().collect::<Vec<_>>());
+        for (id, owner) in &owners {
+            let hex = hashes[id].as_bytes().iter().map(|byte| format!("{byte:02x}")).collect::<String>();
+            assert_eq!(hex, expected.iter().find(|(name, _)| name == owner).unwrap().1);
+            if let Some(label) = owner.strip_suffix(":0") {
+                let other = *owners.iter().find(|(_, name)| **name == format!("{label}:1")).unwrap().0;
+                assert_ne!(hashes[id], hashes[&other]);
+                assert_eq!(vcs.vc(*id).unwrap().anchor.owner, vcs.vc(other).unwrap().anchor.owner);
+            }
+        }
+        let discharged = try_discharge(DischargeInput { vc_set: &vcs, policy: &DischargePolicy::default() }).unwrap();
+        let discharged_before = discharged.vc_set().clone();
+        assert_eq!(discharged.vc_set().source_registration_source_shape_hashes(&core, &formulas, &syntax).unwrap(), hashes);
+        assert_eq!(discharged.vc_set(), &discharged_before);
+        assert_eq!((core, vcs, formulas, syntax), before);
+    }
+}
+
+#[test]
+fn source_registration_source_shape_neutral_relocation_and_participating_edits() {
+    use mizar_vc::{
+        generator::generate_source_existential_registration as generate,
+        vc_ir::{AnchorOwner, GenerationSchemaVersion, VcSchemaVersion},
+    };
+    let text = std::fs::read_to_string(step5c13_registration_case().source_path).unwrap();
+    let (core, vcs, formulas, owners, syntax) = source_registration_source_shape_inputs(&text, "vc_fingerprints", 0);
+    let before = (core.clone(), vcs.clone(), formulas.clone(), syntax.clone());
+    let hashes = vcs.source_registration_source_shape_hashes(&core, &formulas, &syntax).unwrap();
+    let a = "  attr OAADef: X is oamarked means X = X;\n";
+    let b = "  attr OBBDef: X is obmarked means X = X;\n";
+    let ra = text.find("  cluster OAExists:").unwrap();
+    let rb = text.find("  cluster OBExists:").unwrap();
+    let rab = text.find("  cluster OABExists:").unwrap();
+    let end = text[rab..].find("end;\nend;").unwrap() + rab + "end;\n".len();
+    let reordered =
+        format!("{}{}{}{}{}", &text[..ra], &text[rab..end], &text[ra..rb], &text[rb..rab], &text[end..]).replace(&format!("{a}{b}"), &format!("{b}{a}"));
+    assert_ne!(reordered, text);
+    for (index, edited, skip) in [
+        (0, format!("\n:: neutral trivia\n{}", text.replace("  ", "    ")), 0),
+        (1, text.replace('X', "OuterBinder"), 0),
+        (2, text.replacen("means X = X", "means not X = X", 1), 0),
+        (3, text.clone(), 7),
+        (4, reordered, 0),
+    ] {
+        let (other_core, other_vcs, other_formulas, other_owners, other_syntax) = source_registration_source_shape_inputs(&edited, "vc_fingerprints", skip);
+        let other_before = (other_core.clone(), other_vcs.clone(), other_formulas.clone(), other_syntax.clone());
+        let actual = other_vcs.source_registration_source_shape_hashes(&other_core, &other_formulas, &other_syntax).unwrap();
+        for (id, name) in &owners {
+            let current = *other_owners.iter().find(|(_, other)| *other == name).unwrap().0;
+            assert_eq!(actual[&current], hashes[id], "neutral {index}: {name}");
+            if index == 4 && name == "OABExists:1" {
+                assert_ne!(current, *id);
+                let AnchorOwner::Registration(old_item) = vcs.vc(*id).unwrap().anchor.owner else { unreachable!() };
+                let AnchorOwner::Registration(item) = other_vcs.vc(current).unwrap().anchor.owner else { unreachable!() };
+                assert_ne!(item, old_item);
+                assert_ne!(other_core.items().get(item).unwrap().symbol, core.items().get(old_item).unwrap().symbol);
+                assert_ne!(other_vcs.vc(current).unwrap().goal, vcs.vc(*id).unwrap().goal);
+            }
+        }
+        if index == 4 {
+            let (_, old_source, _) = source_registration_owner_inputs(&text, "vc-fingerprint-test", "vc_fingerprints", 0);
+            let (_, relocated, _) = source_registration_owner_inputs(&edited, "vc-fingerprint-test", "vc_fingerprints", 0);
+            let old_nodes = old_source.arena().iter().filter_map(|(id, node)|
+                matches!(node.kind(), mizar_syntax::SurfaceNodeKind::ExistentialRegistration).then_some(id)).collect::<Vec<_>>();
+            let current_nodes = relocated.arena().iter().filter_map(|(id, node)|
+                matches!(node.kind(), mizar_syntax::SurfaceNodeKind::ExistentialRegistration).then_some(id)).collect::<Vec<_>>();
+            assert_ne!(current_nodes, old_nodes);
+        }
+        if skip != 0 {
+            assert_ne!(other_core.source_id(), core.source_id());
+        }
+        assert_eq!((other_core, other_vcs, other_formulas, other_syntax), other_before);
+    }
+    for (index, edited, module) in [
+        (0, text.replace("OAExists", "RenamedExists"), "vc_fingerprints"),
+        (1, text.replace("oamarked", "othermarked"), "vc_fingerprints"),
+        (2, text.clone(), "other_module"),
+    ] {
+        let (other_core, other_vcs, other_formulas, other_owners, other_syntax) = source_registration_source_shape_inputs(&edited, module, 0);
+        let other_before = (other_core.clone(), other_vcs.clone(), other_formulas.clone(), other_syntax.clone());
+        let actual = other_vcs.source_registration_source_shape_hashes(&other_core, &other_formulas, &other_syntax).unwrap();
+        for (id, name) in &owners {
+            let current_name = if index == 0 { name.replace("OAExists:", "RenamedExists:") } else { name.clone() };
+            let current = other_owners.iter().find(|(_, other)| **other == current_name).unwrap().0;
+            let changed = match index {
+                0 => name.starts_with("OAExists:"),
+                1 => !name.starts_with("OBExists:"),
+                _ => true,
+            };
+            assert_eq!(actual[current] != hashes[id], changed, "participating {index}: {name}");
+        }
+        assert_eq!((other_core, other_vcs, other_formulas, other_syntax), other_before);
+    }
+    for (snapshot, generation, schema, changed) in [
+        (41, "source-vc-fingerprint-test", "source-vc-fingerprint-v1", false),
+        (0, "other-generation", "source-vc-fingerprint-v1", true),
+        (0, "source-vc-fingerprint-test", "other-vc-schema", true),
+    ] {
+        let other = generate(&core, super::shared::snapshot_id(snapshot), &GenerationSchemaVersion::new(generation), &VcSchemaVersion::new(schema)).unwrap();
+        let other_before = other.clone();
+        let actual = other.source_registration_source_shape_hashes(&core, &formulas, &syntax).unwrap();
+        for id in owners.keys() {
+            assert_eq!(actual[id] != hashes[id], changed);
+        }
+        assert_eq!(other, other_before);
+    }
+    assert_eq!((core, vcs, formulas, syntax), before);
+}
+
+#[test]
+fn source_registration_source_shape_refuses_whole_inputs_and_invalid_syntax_maps() {
+    use mizar_core::core_ir::CoreItemKind;
+    use mizar_vc::vc_ir::{VcSet, VcSetParts, VcText};
+    let text = std::fs::read_to_string(step5c13_registration_case().source_path).unwrap();
+    let (core, vcs, formulas, _, syntax) = source_registration_source_shape_inputs(&text, "vc_fingerprints", 0);
+    let before = (core.clone(), vcs.clone(), formulas.clone(), syntax.clone());
+    let valid = vcs.source_registration_source_shape_hashes(&core, &formulas, &syntax).unwrap();
+    let first = *syntax.keys().next().unwrap();
+    let second = *syntax.keys().nth(1).unwrap();
+    let extra = core.items().iter().find(|(_, item)| item.kind != CoreItemKind::Registration).unwrap().0;
+    for index in 0..4 {
+        let mut bad = syntax.clone();
+        match index {
+            0 => {
+                bad.remove(&first);
+            }
+            1 => {
+                bad.insert(extra, b"extra".to_vec());
+            }
+            2 => {
+                bad.insert(first, Vec::new());
+            }
+            _ => {
+                bad.insert(first, syntax[&second].clone());
+            }
+        }
+        let bad_before = bad.clone();
+        assert_eq!(vcs.source_registration_source_shape_hashes(&core, &formulas, &bad).unwrap_err(), "unsupported source registration source shape");
+        assert_eq!(bad, bad_before);
+        assert_eq!(vcs.source_registration_source_shape_hashes(&core, &formulas, &syntax).unwrap(), valid);
+    }
+    let empty = std::collections::BTreeMap::new();
+    let empty_syntax = std::collections::BTreeMap::new();
+    let upstream = vcs.source_registration_canonical_fingerprints(&core, &empty).unwrap_err();
+    assert_eq!(vcs.source_registration_source_shape_hashes(&core, &empty, &empty_syntax).unwrap_err(), upstream);
+    let (foreign_core, foreign_vcs, foreign_formulas, _, foreign_syntax) =
+        source_registration_source_shape_inputs(&text.replace("oamarked", "foreignmarked"), "vc_fingerprints", 0);
+    let foreign_before = (foreign_core.clone(), foreign_vcs.clone(), foreign_formulas.clone(), foreign_syntax.clone());
+    for (set, graph, roots) in [(&vcs, &foreign_core, &formulas), (&foreign_vcs, &core, &foreign_formulas)] {
+        let upstream = set.source_registration_canonical_fingerprints(graph, roots).unwrap_err();
+        assert_eq!(set.source_registration_source_shape_hashes(graph, roots, &empty_syntax).unwrap_err(), upstream);
+    }
+    assert_eq!((foreign_core, foreign_vcs, foreign_formulas, foreign_syntax), foreign_before);
+    let mut parts = VcSetParts {
+        schema_version: vcs.schema_version().clone(),
+        snapshot: vcs.snapshot(),
+        source: vcs.source(),
+        module: vcs.module().clone(),
+        generated_formulas: vcs.generated_formulas().to_vec(),
+        vcs: vcs.vcs().to_vec(),
+        seed_accounting: vcs.seed_accounting().to_vec(),
+    };
+    let empty_set = VcSet::try_new(VcSetParts { vcs: Vec::new(), generated_formulas: Vec::new(), seed_accounting: Vec::new(), ..parts.clone() }).unwrap();
+    let upstream = empty_set.source_registration_canonical_fingerprints(&core, &formulas).unwrap_err();
+    assert_eq!(empty_set.source_registration_source_shape_hashes(&core, &formulas, &empty_syntax).unwrap_err(), upstream);
+    parts.vcs.last_mut().unwrap().provenance[0].key = VcText::new("altered last leaf");
+    let bad = VcSet::try_new(parts).unwrap();
+    let bad_before = bad.clone();
+    let upstream = bad.source_registration_canonical_fingerprints(&core, &formulas).unwrap_err();
+    assert_eq!(bad.source_registration_source_shape_hashes(&core, &formulas, &syntax).unwrap_err(), upstream);
+    assert_eq!(bad, bad_before);
+    let ra = text.find("  cluster OAExists:").unwrap();
+    let rb = text.find("  cluster OBExists:").unwrap();
+    let rab = text.find("  cluster OABExists:").unwrap();
+    let swapped = format!("{}{}{}{}", &text[..ra], &text[rb..rab], &text[ra..rb], &text[rab..]);
+    let (source, nodes, collected, _) = source_registration_formula_inputs(&swapped, "vc-fingerprint-test", "vc_fingerprints", 0);
+    let check = mizar_checker::registration_resolution::check_source_existential_registration_proof(&source, &nodes, collected.env()).unwrap();
+    let unsupported = mizar_core::elaborator::lower_source_existential_registration(&check).unwrap();
+    let unsupported_before = unsupported.clone();
+    let upstream = vcs.source_registration_canonical_fingerprints(&unsupported, &formulas).unwrap_err();
+    assert_ne!(upstream, "unsupported source registration VC fingerprint");
+    assert_eq!(vcs.source_registration_source_shape_hashes(&unsupported, &formulas, &empty_syntax).unwrap_err(), upstream);
+    assert_eq!(unsupported, unsupported_before);
+    assert_eq!((core, vcs, formulas, syntax), before);
+}

@@ -604,6 +604,8 @@ authorized.
 
 66. **[Source registration canonical goal and context](../../task_contracts/en/VC-SOURCE-REGISTRATION-GOAL-CONTEXT.md).** [x]
 
+67. **[Source registration source-shape hashes](../../task_contracts/en/VC-SOURCE-REGISTRATION-SOURCE-SHAPE.md).** [x]
+
 ## Recommended Verification
 
 Run after each task:
