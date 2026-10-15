@@ -18262,3 +18262,176 @@ fn source_registration_vc_fingerprint_refuses_foreign_incomplete_and_altered_set
     }
     assert_eq!((core, vcs, formulas), before);
 }
+
+#[test]
+fn source_registration_vc_fingerprint_goal_context_exact_and_default_discharge() {
+    use mizar_vc::discharge::{try_discharge, DischargeInput, DischargePolicy};
+    // Spec 6.2/17.2-17.3; independent semantic-literal component expectations.
+    for (multiple, case) in [(false, step5c3_registration_case()), (true, step5c13_registration_case())] {
+        let text = std::fs::read_to_string(case.source_path).unwrap();
+        let (core, vcs, formulas, owners) = source_registration_vc_fingerprint_inputs(&text, "vc_fingerprints", 0);
+        let before = (core.clone(), vcs.clone(), formulas.clone());
+        let expected = if multiple { vec![
+            ("OAExists:0", "4b4a60f718622f1c4634fb5bd1c387511846dba0c963586349b8a2403b95474e", "47bcff63208e4f2bb751aa7f0e7de82e2e937c366e03d8e20d1a51bc0ccf404a"),
+            ("OAExists:1", "84d94214fdef120907bc1f27bb53c0f243dabf8b169a57ef064ed257e42188e5", "0ce52dd269455ebfa02edfca43f8e9fbdb8a8c5eda2dcbf89b91fff1aa66893d"),
+            ("OBExists:0", "4b4a60f718622f1c4634fb5bd1c38751231ead4bebb4003949b8a2403b95474e", "47bcff63208e4f2bb751aa7f0e7de82ec4cd8d3b34755d0f0d1a51bc0ccf404a"),
+            ("OBExists:1", "33c378c34ceba23e07bc1f27bb53c0f26352c612321e14de4e307a1c7cac4644", "9ecce3fea430af414f3523d20bc9f3394f1f6a3103e5fa6ff3db1dc458fac0fa"),
+            ("OABExists:0", "e380b37c2b98e63cfe64c047e89d1394b370fbd5d1153c57d96e4b8476c3fb61", "0f160ddcfcc2f9106d7ffc5ce2d257a15c5b8bafac06294bdc8ccce6152d3200"),
+            ("OABExists:1", "d7d777d0d2fe0151e97721647d9190ad3c8580767fe76d7d98f90153d81264a5", "1bf3aefadacb21dda37ccec89075065345dfaec53d77eeaa0d6e35699144a0b7"),
+        ] } else { vec![
+            ("WMarkedExists:0", "71433ad25a6e8569d236f5ab777d8a50873e4d313d68cc861a8be02fd85bb00a", "f443b2554f5faa7beb6010089818bc5c54aa46205a82deba74ec749506bdffb7"),
+            ("WMarkedExists:1", "17b53b73858f307f1649fb6bb0d909889bee8acf6c4f5e63376856076054b7e2", "e53a60bb620c4c579fd3d1693a5882cbacd4a2d9acb894097b1f9e8783d0ebf7"),
+        ] };
+        assert_eq!(owners.len(), expected.len());
+        let discharged = try_discharge(DischargeInput { vc_set: &vcs, policy: &DischargePolicy::default() }).unwrap();
+        assert_ne!(discharged.vc_set(), &vcs);
+        let discharged_before = discharged.vc_set().clone();
+        for (id, owner) in &owners {
+            let pair = vcs.source_registration_canonical_goal_context(*id, &core, &formulas).unwrap();
+            let actual = [pair.0, pair.1].map(|hash| hash.as_bytes().iter().map(|byte| format!("{byte:02x}")).collect::<String>());
+            let (_, goal, context) = expected.iter().find(|(name, _, _)| *name == owner).unwrap();
+            assert_eq!(actual, [*goal, *context], "{owner}");
+            assert_eq!(discharged.vc_set().source_registration_canonical_goal_context(*id, &core, &formulas).unwrap(), pair);
+        }
+        assert_eq!(discharged.vc_set(), &discharged_before);
+        assert_eq!((core, vcs, formulas), before);
+    }
+}
+
+#[test]
+fn source_registration_vc_fingerprint_goal_context_edits_order_and_separation() {
+    use mizar_vc::{generator::generate_source_existential_registration as generate,
+        vc_ir::{GenerationSchemaVersion, VcSchemaVersion}};
+    let text = std::fs::read_to_string(step5c13_registration_case().source_path).unwrap();
+    let (core, vcs, formulas, owners) = source_registration_vc_fingerprint_inputs(&text, "vc_fingerprints", 0);
+    let before = (core.clone(), vcs.clone(), formulas.clone());
+    let baseline = owners.iter().map(|(id, owner)| (owner.clone(), vcs.source_registration_canonical_goal_context(*id, &core, &formulas).unwrap())).collect::<std::collections::BTreeMap<_, _>>();
+    let a = "  attr OAADef: X is oamarked means X = X;\n";
+    let b = "  attr OBBDef: X is obmarked means X = X;\n";
+    let registration_a = "  cluster OAExists: oamarked set;\n  existence proof\n    take the set;\n    thus the set is oamarked by OAADef;\n  end;\n";
+    let registration_b = "  cluster OBExists: obmarked set;\n  existence proof\n    take the set;\n    thus the set is obmarked by OBBDef;\n  end;\n";
+    let registration_ab = "  cluster OABExists: oamarked obmarked set;\n  existence proof\n    take the set;\n    thus the set is oamarked obmarked by OAADef, OBBDef;\n  end;\n";
+    let reordered = text.replace(&format!("{a}{b}"), &format!("{b}{a}"))
+        .replace(&format!("{registration_a}{registration_b}{registration_ab}"), &format!("{registration_ab}{registration_a}{registration_b}"));
+    assert_ne!(reordered, text);
+    for (index, edited, skip) in [
+        (0, format!("\n:: shifted ranges\n{}", text.replace("  ", "    ")), 0),
+        (1, text.replace('X', "Subject"), 0),
+        (2, reordered, 0),
+        (3, text.clone(), 7),
+    ] {
+        let (other_core, other_vcs, other_formulas, other_owners) = source_registration_vc_fingerprint_inputs(&edited, "vc_fingerprints", skip);
+        let other_before = (other_core.clone(), other_vcs.clone(), other_formulas.clone());
+        for (id, owner) in &other_owners {
+            assert_eq!(other_vcs.source_registration_canonical_goal_context(*id, &other_core, &other_formulas).unwrap(), baseline[owner], "neutral edit {index}: {owner}");
+        }
+        if index == 2 {
+            let current = *other_owners.iter().find(|(_, owner)| *owner == "OABExists:1").unwrap().0;
+            let old = *owners.iter().find(|(_, owner)| *owner == "OABExists:1").unwrap().0;
+            assert_ne!(current, old);
+            assert_ne!(other_vcs.vc(current).unwrap().goal, vcs.vc(old).unwrap().goal);
+            assert_ne!(other_formulas.keys().collect::<Vec<_>>(), formulas.keys().collect::<Vec<_>>());
+        }
+        if skip != 0 { assert_ne!(other_core.source_id(), core.source_id()); }
+        assert_eq!((other_core, other_vcs, other_formulas), other_before);
+    }
+    // Existing VC65 coverage traces this genuine A/B-reference control to B/A content order.
+    let (changed_core, changed_vcs, changed_formulas, changed_owners) = source_registration_vc_fingerprint_inputs(&text.replace("OAADef", "ZZZDef"), "vc_fingerprints", 0);
+    let current = *changed_owners.iter().find(|(_, owner)| *owner == "OABExists:1").unwrap().0;
+    let changed_before = (changed_core.clone(), changed_vcs.clone(), changed_formulas.clone());
+    let pair = changed_vcs.source_registration_canonical_goal_context(current, &changed_core, &changed_formulas).unwrap();
+    let actual = [pair.0, pair.1].map(|hash| hash.as_bytes().iter().map(|byte| format!("{byte:02x}")).collect::<String>());
+    assert_eq!(actual, ["ab613a0887575f91e97721647d9190ad09e7790e6143deb841a193015c41303b", "ea87af78ac61e0060bc626c2207e6bcf252c4e198d07d52b033789e02936206e"]);
+    assert_eq!((changed_core, changed_vcs, changed_formulas), changed_before);
+    for (index, edited, module) in [
+        (0, text.replacen("means X = X", "means not X = X", 1), "vc_fingerprints"),
+        (1, text.replace("OAExists", "RenamedExists"), "vc_fingerprints"),
+        (2, text.clone(), "other_module"),
+    ] {
+        let (other_core, other_vcs, other_formulas, other_owners) = source_registration_vc_fingerprint_inputs(&edited, module, 0);
+        let other_before = (other_core.clone(), other_vcs.clone(), other_formulas.clone());
+        for (id, owner) in &other_owners {
+            let name = if index == 1 { owner.replace("RenamedExists:", "OAExists:") } else { owner.clone() };
+            let pair = other_vcs.source_registration_canonical_goal_context(*id, &other_core, &other_formulas).unwrap();
+            let expected = baseline[&name];
+            let context_changed = match index { 0 => owner == "OAExists:1" || owner == "OABExists:1", 1 => name.starts_with("OAExists:"), _ => true };
+            let goal_changed = match index { 0 => false, 1 => name.starts_with("OAExists:"), _ => true };
+            assert_eq!(pair.0 != expected.0, goal_changed, "goal control {index}: {owner}");
+            assert_eq!(pair.1 != expected.1, context_changed, "context control {index}: {owner}");
+            if index == 0 && owner == "OABExists:1" {
+                let hex = pair.1.as_bytes().iter().map(|byte| format!("{byte:02x}")).collect::<String>();
+                assert_eq!(hex, "4505d4e4b00dda13a34b976f8a27518052ee5cdf74095f8c7a09949fe5534184");
+            }
+        }
+        assert_eq!((other_core, other_vcs, other_formulas), other_before);
+    }
+    for (generation, schema) in [("other-generation", "source-vc-fingerprint-v1"), ("source-vc-fingerprint-test", "other-vc-schema")] {
+        let other_vcs = generate(&core, vcs.snapshot(), &GenerationSchemaVersion::new(generation), &VcSchemaVersion::new(schema)).unwrap();
+        let other_before = other_vcs.clone();
+        for (id, owner) in &owners {
+            let pair = other_vcs.source_registration_canonical_goal_context(*id, &core, &formulas).unwrap();
+            assert_ne!(pair.0, baseline[owner].0);
+            assert_ne!(pair.1, baseline[owner].1);
+        }
+        assert_eq!(other_vcs, other_before);
+    }
+    assert_eq!((core, vcs, formulas), before);
+}
+
+#[test]
+fn source_registration_vc_fingerprint_goal_context_refuses_whole_inputs_before_selection() {
+    use mizar_vc::vc_ir::{VcFormulaRef, VcId, VcSet, VcSetParts, VcText};
+    let text = std::fs::read_to_string(step5c13_registration_case().source_path).unwrap();
+    let (core, vcs, formulas, owners) = source_registration_vc_fingerprint_inputs(&text, "vc_fingerprints", 0);
+    let before = (core.clone(), vcs.clone(), formulas.clone());
+    let selected = *owners.iter().find(|(_, owner)| *owner == "OAExists:0").unwrap().0;
+    let absent = VcId::new(vcs.vcs().len());
+    let unsupported = "unsupported source registration VC fingerprint";
+    assert_eq!(vcs.source_registration_canonical_goal_context(absent, &core, &formulas).unwrap_err(), unsupported);
+    // The selected type leaf reaches just its one actual Core root.
+    let VcFormulaRef::Core(selected_root) = vcs.vc(selected).unwrap().goal else { unreachable!() };
+    let outside = *formulas.keys().find(|id| **id != selected_root).unwrap();
+    let extra = core.formulas().iter().find(|(id, _)| !formulas.contains_key(id)).unwrap().0;
+    for index in 0..3 {
+        let mut bad = formulas.clone();
+        match index { 0 => { bad.remove(&outside); }, 1 => { bad.insert(outside, Vec::new()); },
+            _ => { bad.insert(extra, formulas[&outside].clone()); } }
+        let map_before = bad.clone();
+        assert_eq!(vcs.source_registration_canonical_goal_context(selected, &core, &bad).unwrap_err(), unsupported);
+        assert_eq!(bad, map_before);
+    }
+    let mut parts = VcSetParts { schema_version: vcs.schema_version().clone(), snapshot: vcs.snapshot(),
+        source: vcs.source(), module: vcs.module().clone(), generated_formulas: vcs.generated_formulas().to_vec(),
+        vcs: vcs.vcs().to_vec(), seed_accounting: vcs.seed_accounting().to_vec() };
+    let unselected = parts.vcs.iter_mut().find(|vc| vc.id != selected).unwrap();
+    unselected.provenance[0].key = VcText::new("altered unselected leaf");
+    let bad = VcSet::try_new(parts).unwrap();
+    let bad_before = bad.clone();
+    assert_eq!(bad.source_registration_canonical_goal_context(selected, &core, &formulas).unwrap_err(), unsupported);
+    assert_eq!(bad, bad_before);
+    let (foreign_core, foreign_vcs, foreign_formulas, _) = source_registration_vc_fingerprint_inputs(&text.replace("oamarked", "foreignmarked"), "vc_fingerprints", 0);
+    let foreign_before = (foreign_core.clone(), foreign_vcs.clone(), foreign_formulas.clone());
+    assert_ne!(foreign_core, core);
+    assert_eq!(vcs.source_registration_canonical_goal_context(selected, &foreign_core, &formulas).unwrap_err(), unsupported);
+    assert_eq!(foreign_vcs.source_registration_canonical_goal_context(selected, &core, &foreign_formulas).unwrap_err(), unsupported);
+    assert_eq!((foreign_core, foreign_vcs, foreign_formulas), foreign_before);
+    // Core55 supports OA/OB swapping, while genuine source VC regeneration rejects it.
+    let a = text.find("  cluster OAExists:").unwrap();
+    let b = text.find("  cluster OBExists:").unwrap();
+    let ab = text.find("  cluster OABExists:").unwrap();
+    let swapped = format!("{}{}{}{}", &text[..a], &text[b..ab], &text[a..b], &text[ab..]);
+    assert_ne!(swapped, text);
+    let (source, nodes, collected, owner_payloads) = source_registration_formula_inputs(&swapped, "vc-fingerprint-test", "vc_fingerprints", 0);
+    let check = mizar_checker::registration_resolution::check_source_existential_registration_proof(&source, &nodes, collected.env()).unwrap();
+    let unsupported_core = mizar_core::elaborator::lower_source_existential_registration(&check).unwrap();
+    let empty = mizar_core::elaborator::source_registration_formula_payloads(&check, &unsupported_core, &owner_payloads, &[]).unwrap();
+    assert!(empty.is_empty());
+    let upstream = mizar_vc::generator::generate_source_existential_registration(
+        &unsupported_core, vcs.snapshot(), &vcs.vcs()[0].anchor.generation_schema_version, vcs.schema_version(),
+    ).unwrap_err();
+    assert_ne!(upstream, unsupported);
+    let upstream_before = (unsupported_core.clone(), empty.clone());
+    assert_eq!(vcs.source_registration_canonical_goal_context(absent, &unsupported_core, &empty).unwrap_err(), upstream);
+    assert_eq!((unsupported_core, empty), upstream_before);
+    assert_eq!((core, vcs, formulas), before);
+}

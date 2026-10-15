@@ -602,6 +602,8 @@ authorized.
 
 65. **[Source registration canonical VC fingerprints](../../task_contracts/en/VC-SOURCE-REGISTRATION-FINGERPRINTS.md).** [x]
 
+66. **[Source registration canonical goal and context](../../task_contracts/en/VC-SOURCE-REGISTRATION-GOAL-CONTEXT.md).** [x]
+
 ## Recommended Verification
 
 Run after each task:

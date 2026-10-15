@@ -222,85 +222,10 @@ impl VcSet {
         core: &mizar_core::core_ir::CoreIr,
         formulas: &BTreeMap<CoreFormulaId, Vec<u8>>,
     ) -> Result<BTreeMap<VcId, CanonicalVcFingerprint>, String> {
-        const INVALID: &str = "unsupported source registration VC fingerprint";
-        fn frame(output: &mut Vec<u8>, bytes: &[u8]) -> Result<(), String> {
-            output.extend(
-                u32::try_from(bytes.len())
-                    .map_err(|_| INVALID.to_owned())?
-                    .to_be_bytes(),
-            );
-            output.extend(bytes);
-            Ok(())
-        }
-        fn encode(
-            reference: VcFormulaRef,
-            generated: &BTreeMap<VcGeneratedFormulaId, &VcGeneratedFormula>,
-            formulas: &BTreeMap<CoreFormulaId, Vec<u8>>,
-            reached: &mut BTreeSet<CoreFormulaId>,
-            visiting: &mut BTreeSet<VcGeneratedFormulaId>,
-        ) -> Result<Vec<u8>, String> {
-            let mut bytes = Vec::new();
-            match reference {
-                VcFormulaRef::Core(id) => {
-                    let payload = formulas
-                        .get(&id)
-                        .filter(|bytes| !bytes.is_empty())
-                        .ok_or_else(|| INVALID.to_owned())?;
-                    reached.insert(id);
-                    bytes.push(0);
-                    frame(&mut bytes, payload)?;
-                }
-                VcFormulaRef::Generated(id) => {
-                    if !visiting.insert(id) {
-                        return Err(INVALID.to_owned());
-                    }
-                    let row = generated.get(&id).ok_or_else(|| INVALID.to_owned())?;
-                    bytes.extend([
-                        1,
-                        match row.kind {
-                            VcGeneratedFormulaKind::GeneratedTypeObligation => 1,
-                            VcGeneratedFormulaKind::NegatedPremise => 2,
-                            VcGeneratedFormulaKind::Conjunction => 3,
-                            _ => return Err(INVALID.to_owned()),
-                        },
-                    ]);
-                    frame(&mut bytes, b"source-existential-registration-v1")?;
-                    match &row.shape {
-                        VcGeneratedFormulaShape::Ref(child)
-                        | VcGeneratedFormulaShape::Not(child) => {
-                            bytes.push(if matches!(row.shape, VcGeneratedFormulaShape::Ref(_)) {
-                                1
-                            } else {
-                                2
-                            });
-                            bytes.extend(encode(*child, generated, formulas, reached, visiting)?);
-                        }
-                        VcGeneratedFormulaShape::And(children)
-                        | VcGeneratedFormulaShape::Or(children) => {
-                            bytes.push(if matches!(row.shape, VcGeneratedFormulaShape::And(_)) {
-                                3
-                            } else {
-                                4
-                            });
-                            bytes.extend(
-                                u32::try_from(children.len())
-                                    .map_err(|_| INVALID.to_owned())?
-                                    .to_be_bytes(),
-                            );
-                            for child in children {
-                                bytes.extend(encode(
-                                    *child, generated, formulas, reached, visiting,
-                                )?);
-                            }
-                        }
-                        _ => return Err(INVALID.to_owned()),
-                    }
-                    visiting.remove(&id);
-                }
-            }
-            Ok(bytes)
-        }
-        let first = self.vcs.first().ok_or_else(|| INVALID.to_owned())?;
+        let first = self
+            .vcs
+            .first()
+            .ok_or_else(|| SOURCE_REGISTRATION_FINGERPRINT_INVALID.to_owned())?;
         let generation_schema = &first.anchor.generation_schema_version;
         let fresh = crate::generator::generate_source_existential_registration(
             core,
@@ -315,7 +240,7 @@ impl VcSet {
             })
             .map_err(|error| error.to_string())?;
             if self != discharged.vc_set() {
-                return Err(INVALID.to_owned());
+                return Err(SOURCE_REGISTRATION_FINGERPRINT_INVALID.to_owned());
             }
         }
         let generated = generated_formula_map(&self.generated_formulas);
@@ -330,9 +255,9 @@ impl VcSet {
                 || !vc.local_context.policy_inputs().is_empty()
                 || vc.proof_hint.is_some()
             {
-                return Err(INVALID.to_owned());
+                return Err(SOURCE_REGISTRATION_FINGERPRINT_INVALID.to_owned());
             }
-            let goal = encode(
+            let goal = source_registration_encode(
                 vc.goal,
                 &generated,
                 formulas,
@@ -342,10 +267,10 @@ impl VcSet {
             let mut premises = Vec::new();
             for premise in &vc.premises {
                 let PremiseRef::GeneratedFact { formula } = premise else {
-                    return Err(INVALID.to_owned());
+                    return Err(SOURCE_REGISTRATION_FINGERPRINT_INVALID.to_owned());
                 };
                 let mut bytes = vec![1];
-                bytes.extend(encode(
+                bytes.extend(source_registration_encode(
                     *formula,
                     &generated,
                     formulas,
@@ -356,17 +281,17 @@ impl VcSet {
             }
             premises.sort();
             let mut payload = b"mizar-vc/source-registration-canonical-vc/v1\0".to_vec();
-            frame(&mut payload, self.schema_version.as_str().as_bytes())?;
-            frame(&mut payload, generation_schema.as_str().as_bytes())?;
+            source_registration_frame(&mut payload, self.schema_version.as_str().as_bytes())?;
+            source_registration_frame(&mut payload, generation_schema.as_str().as_bytes())?;
             payload.push(1);
-            frame(&mut payload, &goal)?;
+            source_registration_frame(&mut payload, &goal)?;
             payload.extend(
                 u32::try_from(premises.len())
-                    .map_err(|_| INVALID.to_owned())?
+                    .map_err(|_| SOURCE_REGISTRATION_FINGERPRINT_INVALID.to_owned())?
                     .to_be_bytes(),
             );
             for premise in premises {
-                frame(&mut payload, &premise)?;
+                source_registration_frame(&mut payload, &premise)?;
             }
             payload.extend([0, 0, 0]);
             fingerprints.insert(
@@ -378,9 +303,80 @@ impl VcSet {
             );
         }
         if reached.len() != formulas.len() || !formulas.keys().all(|id| reached.contains(id)) {
-            return Err(INVALID.to_owned());
+            return Err(SOURCE_REGISTRATION_FINGERPRINT_INVALID.to_owned());
         }
         Ok(fingerprints)
+    }
+
+    /// Returns separate bounded source-registration goal and visible-context hashes.
+    /// Opaque Core payload provenance and currentness remain the caller's responsibility.
+    pub fn source_registration_canonical_goal_context(
+        &self,
+        vc: VcId,
+        core: &mizar_core::core_ir::CoreIr,
+        formulas: &BTreeMap<CoreFormulaId, Vec<u8>>,
+    ) -> Result<(Hash, Hash), String> {
+        self.source_registration_canonical_fingerprints(core, formulas)?;
+        let vc = self
+            .vc(vc)
+            .ok_or_else(|| SOURCE_REGISTRATION_FINGERPRINT_INVALID.to_owned())?;
+        let generated = generated_formula_map(&self.generated_formulas);
+        let mut reached = BTreeSet::new();
+        let goal = source_registration_encode(
+            vc.goal,
+            &generated,
+            formulas,
+            &mut reached,
+            &mut BTreeSet::new(),
+        )?;
+        let mut goal_payload = b"mizar-vc/source-registration-canonical-goal/v1\0".to_vec();
+        source_registration_frame(&mut goal_payload, self.schema_version.as_str().as_bytes())?;
+        source_registration_frame(
+            &mut goal_payload,
+            vc.anchor.generation_schema_version.as_str().as_bytes(),
+        )?;
+        source_registration_frame(&mut goal_payload, &goal)?;
+        let mut premises = Vec::new();
+        for premise in &vc.premises {
+            let PremiseRef::GeneratedFact { formula } = premise else {
+                return Err(SOURCE_REGISTRATION_FINGERPRINT_INVALID.to_owned());
+            };
+            let mut bytes = vec![1];
+            bytes.extend(source_registration_encode(
+                *formula,
+                &generated,
+                formulas,
+                &mut reached,
+                &mut BTreeSet::new(),
+            )?);
+            premises.push(bytes);
+        }
+        premises.sort();
+        let mut context_payload = b"mizar-vc/source-registration-canonical-context/v1\0".to_vec();
+        source_registration_frame(
+            &mut context_payload,
+            self.schema_version.as_str().as_bytes(),
+        )?;
+        source_registration_frame(
+            &mut context_payload,
+            vc.anchor.generation_schema_version.as_str().as_bytes(),
+        )?;
+        context_payload.extend(
+            u32::try_from(premises.len())
+                .map_err(|_| SOURCE_REGISTRATION_FINGERPRINT_INVALID.to_owned())?
+                .to_be_bytes(),
+        );
+        for premise in premises {
+            source_registration_frame(&mut context_payload, &premise)?;
+        }
+        context_payload.extend([0, 0, 0]);
+        Ok((
+            stable_fingerprint_hash("mizar-vc-source-registration-canonical-goal", &goal_payload),
+            stable_fingerprint_hash(
+                "mizar-vc-source-registration-canonical-context",
+                &context_payload,
+            ),
+        ))
     }
 
     pub fn canonical_vc_fingerprint(&self, vc: VcId) -> Option<CanonicalVcFingerprint> {
@@ -395,6 +391,88 @@ impl VcSet {
             &generated_formula_map(&self.generated_formulas),
         )
     }
+}
+
+const SOURCE_REGISTRATION_FINGERPRINT_INVALID: &str =
+    "unsupported source registration VC fingerprint";
+fn source_registration_frame(output: &mut Vec<u8>, bytes: &[u8]) -> Result<(), String> {
+    output.extend(
+        u32::try_from(bytes.len())
+            .map_err(|_| SOURCE_REGISTRATION_FINGERPRINT_INVALID.to_owned())?
+            .to_be_bytes(),
+    );
+    output.extend(bytes);
+    Ok(())
+}
+fn source_registration_encode(
+    reference: VcFormulaRef,
+    generated: &BTreeMap<VcGeneratedFormulaId, &VcGeneratedFormula>,
+    formulas: &BTreeMap<CoreFormulaId, Vec<u8>>,
+    reached: &mut BTreeSet<CoreFormulaId>,
+    visiting: &mut BTreeSet<VcGeneratedFormulaId>,
+) -> Result<Vec<u8>, String> {
+    let mut bytes = Vec::new();
+    match reference {
+        VcFormulaRef::Core(id) => {
+            let payload = formulas
+                .get(&id)
+                .filter(|bytes| !bytes.is_empty())
+                .ok_or_else(|| SOURCE_REGISTRATION_FINGERPRINT_INVALID.to_owned())?;
+            reached.insert(id);
+            bytes.push(0);
+            source_registration_frame(&mut bytes, payload)?;
+        }
+        VcFormulaRef::Generated(id) => {
+            if !visiting.insert(id) {
+                return Err(SOURCE_REGISTRATION_FINGERPRINT_INVALID.to_owned());
+            }
+            let row = generated
+                .get(&id)
+                .ok_or_else(|| SOURCE_REGISTRATION_FINGERPRINT_INVALID.to_owned())?;
+            bytes.extend([
+                1,
+                match row.kind {
+                    VcGeneratedFormulaKind::GeneratedTypeObligation => 1,
+                    VcGeneratedFormulaKind::NegatedPremise => 2,
+                    VcGeneratedFormulaKind::Conjunction => 3,
+                    _ => return Err(SOURCE_REGISTRATION_FINGERPRINT_INVALID.to_owned()),
+                },
+            ]);
+            source_registration_frame(&mut bytes, b"source-existential-registration-v1")?;
+            match &row.shape {
+                VcGeneratedFormulaShape::Ref(child) | VcGeneratedFormulaShape::Not(child) => {
+                    bytes.push(if matches!(row.shape, VcGeneratedFormulaShape::Ref(_)) {
+                        1
+                    } else {
+                        2
+                    });
+                    bytes.extend(source_registration_encode(
+                        *child, generated, formulas, reached, visiting,
+                    )?);
+                }
+                VcGeneratedFormulaShape::And(children) | VcGeneratedFormulaShape::Or(children) => {
+                    bytes.push(if matches!(row.shape, VcGeneratedFormulaShape::And(_)) {
+                        3
+                    } else {
+                        4
+                    });
+                    bytes.extend(
+                        u32::try_from(children.len())
+                            .map_err(|_| SOURCE_REGISTRATION_FINGERPRINT_INVALID.to_owned())?
+                            .to_be_bytes(),
+                    );
+                    for child in children {
+                        bytes.extend(source_registration_encode(
+                            *child, generated, formulas, reached, visiting,
+                        )?);
+                    }
+                }
+                _ => return Err(SOURCE_REGISTRATION_FINGERPRINT_INVALID.to_owned()),
+            }
+            visiting.remove(&id);
+        }
+    }
+    Ok(bytes)
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]

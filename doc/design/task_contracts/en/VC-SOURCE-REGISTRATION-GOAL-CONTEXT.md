@@ -1,0 +1,13 @@
+# Task VC-SOURCE-REGISTRATION-GOAL-CONTEXT: separate source goal and context
+Canonical language: English; [Japanese pointer](../ja/VC-SOURCE-REGISTRATION-GOAL-CONTEXT.md).
+Status: implemented. Tier: full. Owner: [VC plan](../../mizar-vc/en/00.crate_plan.md), task 66; consumers: future same-source anchor and Proof identity assembly.
+Authority: spec §§6.2/17.1–17.3; architecture07 context preservation and architecture22 IV-002/IV-005 canonical goal/context split; [sole API/format/trust/test owner](../../mizar-vc/en/vc_ir.md#source-registration-canonical-goal-and-context).
+Dependencies/readiness: real Core55 formula payloads and VC65 whole-source validation/content encoding exist; no missing source, premise or evidence is reconstructed.
+Gap: source_drift/test_gap; the bounded whole VC fingerprint does not supply separately derived goal/context components, and generic Core-only anchor goals remain conservative.
+Scope: one selected-leaf VcSet method returning two raw hashes through existing source validation and shared formula/frame encoders, with exact source-specific schema/domain profiles and content-sorted visible premises. Preserve all old bytes and APIs.
+Write scope: existing vc_ir.rs new method and necessary extraction of its existing local encoders only; append-only runner tests reusing existing genuine setup; paired owner/plan/TODO and contracts. No new setup/helper matrix or lower-stage change.
+Tests: three genuine families for independent current-leaf goal/context expectations, real default discharge, neutral/participating edits and actual premise-content order, goal/context separation under body edit, invalid whole inputs/selected leaf, upstream errors and unchanged API inputs.
+Forbidden: new public type/field/adapter/file/dependency, parallel AST, generic fingerprint/anchor/discharge/reuse changes, fabricated positive identities/evidence/status/cache hits, protected spec/.miz/expectation/trace/ledger or old test-intent changes.
+Deferrals: opaque payload provenance/currentness remains caller-owned; full source shape/anchor/dependency composition, trusted fresh assembly, policy/evidence identity and Proof/Cache/Artifact/Driver integration stay open.
+Reviews: independent SPEC/TEST/CODE/VOLUME/CONSISTENCY and task-bounded full gates; narrow then affected VC/Core/Proof/Cache/MizarTest checks; parent cargo fmt --check, cargo clippy --all-targets --all-features -- -D warnings, cargo test.
+Exit: genuine selected goal and visible-context content have separate deterministic hashes without upgrading an anchor, dependency slice, accepted result or reuse eligibility.

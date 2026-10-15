@@ -568,6 +568,8 @@ contract、禁止境界、real-source/corruption requirement を使用する。�
 
 65. **[Source registration canonical VC fingerprints](../../task_contracts/ja/VC-SOURCE-REGISTRATION-FINGERPRINTS.md).** [x]
 
+66. **[Source registration canonical goal and context](../../task_contracts/ja/VC-SOURCE-REGISTRATION-GOAL-CONTEXT.md).** [x]
+
 ## 推奨検証
 
 各タスクの後で実行する:

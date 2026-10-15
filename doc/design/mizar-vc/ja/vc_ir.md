@@ -578,3 +578,16 @@ caller は実際の checked-lowered Core と、全 goal/generated-fact premise �
 VC payload は UTF-8 mizar-vc/source-registration-canonical-vc/v1 と zero で始め、VC schema・generation schema の frame、RegistrationStyleCorrectness/Registration の kind byte 1、goal bytes の frame、checked big-endian u32 premise 数、辞書順で並べた premise bytes を個別 frame で続ける。premise bytes は GeneratedFact の byte 1 と式 bytes。重複数を保ち、参照 ID でなく解決後 bytes を並べる。空 context entry・空 policy input・hint 無しを表す zero 三つを末尾に置く。既存 stable_fingerprint_hash に domain mizar-vc-source-registration-canonical-vc を渡し、既存 CanonicalVcFingerprint に格納する。key は現在の VcId。
 明示した入力責任の下で限定 VC 内容を識別する。status、anchor、source-shaped identity、完全な依存合成、deterministic discharge evidence hash、policy/witness identity、proof/cache/publication eligibility は別責務。既存の不完全 marker・generic method を変更せず、reuse key・Complete result・受理済み witness を生成しない。
 テストは実 single/aggregate source と現在の owner/leaf 対応、固定 format から独立に求めた hash、Open/default-discharge 一致と不変入力、neutral edit・実 allocator relocation・宣言/registration 並べ替えと解決済み premise 順、body/owner/module/schema の参加、実 foreign graph、欠落・空・余分な実 root payload、構造 VC 改変と空 set の拒否を扱う。既存 Core/owner profile matrix 全体は複写せず再利用する。
+
+## Source registration canonical goal and context
+
+`VcSet::source_registration_canonical_goal_context(&self, vc: VcId, core: &CoreIr, formulas: &BTreeMap<CoreFormulaId, Vec<u8>>) -> Result<(Hash, Hash), String>` は現在の選択 leaf の goal hash、context hash の順で返す。
+まず集合全体と完全な root map に [source canonical VC validation](#source-registration-canonical-vc-fingerprints) を適用し、全上流 error を保つ。その後に選択 VcId の存在を要求し、無ければ同じ内部 error unsupported source registration VC fingerprint を返す。両 hash は不可分に返し、入力を変更しない。
+リンク先 profile の実 checked Core、変更しない同一 source の opaque Core55 bytes、対応 source graph、Open/default-discharge 対応、caller が負う provenance/currentness の責任を緩めない。既存 frame/formula encoder を共有し、旧 bytes と generic API を変えない。
+
+選択 goal と全可視 GeneratedFact premise を同じ式 grammar で符号化する。context は実 witness-type・展開済み definition premise と重複数、空 local entry/policy input、hint 無しを含む。source 専用 context profile とし、既存 generic LocalContextFingerprint は local-row profile を保つ。
+goal payload は UTF-8 mizar-vc/source-registration-canonical-goal/v1 と zero、VC schema・generation schema・goal bytes の frame の順。既存 stable_fingerprint_hash に domain mizar-vc-source-registration-canonical-goal を渡す。
+context payload は UTF-8 mizar-vc/source-registration-canonical-context/v1 と zero、VC schema・generation schema の frame、checked big-endian u32 premise 数、辞書順の premise vector を個別 frame にして続ける。vector は GeneratedFact の byte 1 と式 bytes。空 local entry・空 policy input・hint 無しの zero 三つを末尾に置く。domain は mizar-vc-source-registration-canonical-context。frame 長は checked big-endian u32 byte 長を保つ。
+両 component は VC 全体の fingerprint、Kernel/Artifact hash、source-shaped identity、完全な合成 dependency footprint、受理 evidence を代替しない。既存 anchor marker・依存完全性・status・policy・freshness・reuse eligibility・publication は変えず、trusted consumer の前には将来の source assembly が実 producer を結び付ける。
+
+三つのテスト群で既存の実 source setup と現在の owner/leaf 対応を再利用する。独立した固定 format の goal/context 期待値と Open/default-discharge equality、neutral relocation/並替え・解決後 premise 内容順・schema/owner/module の影響と goal を保って該当 context を変える definition-body edit、全入力/選択 leaf の拒否・実上流 error・API 入力不変性を確認する。既存 canonical VC 期待値を保ち、旧 producer/profile の全 matrix は複製しない。
