@@ -557,6 +557,8 @@ the owning producers when the paired tasks land.
 
 41. **[Opt-in native SourceLoad persistence](../../task_contracts/en/DRIVER-NATIVE-SOURCE-CACHE-PERSISTENCE.md).** [x]
 
+42. **[Retained same-capture native Frontend lookup](../../task_contracts/en/DRIVER-RETAINED-NATIVE-FRONTEND-CACHE-LOOKUP.md).** [x]
+
 ## Recommended Verification
 
 Run after each task:

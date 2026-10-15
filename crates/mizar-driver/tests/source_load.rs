@@ -17529,3 +17529,699 @@ fn persistent_native_cache_edits_failed_frontend_and_each_package() {
         );
     }
 }
+
+fn native_disk_frontend_lookup_target(
+    submission: &mizar_driver::driver::BuildSubmission,
+    ids: &InMemorySessionIdAllocator,
+    threshold: usize,
+) -> (mizar_ir::cache_adapter::IrCacheAdapter, PhaseInput) {
+    let (inputs, source_input) = native_disk_lookup_context(submission, ids);
+    let owner = publisher(source_input.snapshot, threshold, &source_input.work_unit);
+    let result = source_registry()
+        .execute_phase_with_resources(
+            PipelinePhase::SourceLoad,
+            source_input.clone(),
+            PhaseExecutionResources {
+                diagnostics: Some(DiagnosticSink::new(DiagnosticProducerScope::new(
+                    DiagnosticPhase::SourceLoad,
+                    source_input.snapshot,
+                    "frontend.source_load",
+                ))),
+                output_publisher: Some(owner.clone()),
+                source_load: Some(inputs),
+                ..PhaseExecutionResources::default()
+            },
+        )
+        .unwrap()
+        .result;
+    assert!(result.diagnostics.is_empty());
+    assert_eq!(result.output_refs.len(), 1);
+    let source = &result.output_refs[0];
+    assert_eq!(source.output_kind(), &OutputKind::new("SourceUnit"));
+    let parent = SealedParentOutputHandle::from_current_output(
+        &owner,
+        source_input.snapshot,
+        source.clone(),
+    )
+    .unwrap();
+    let input = PhaseInput::new(
+        source_input.work_unit.clone(),
+        PhaseDispatchInputBundle::new(
+            source_input.snapshot,
+            source_input.identities().input_hash(),
+            vec![],
+            vec![parent],
+        )
+        .unwrap(),
+    );
+    (mizar_ir::cache_adapter::IrCacheAdapter::new(owner), input)
+}
+
+#[test]
+fn native_disk_frontend_lookup_reconstructs_resident_blob_and_clean_aggregate() {
+    use mizar_cache::{
+        cache_key::{CacheKeyBuildOutcome, CacheKeyBuilder},
+        cache_store::{CacheInsertOutcome, CacheLookupOutcome, CacheStoreRoot},
+    };
+    use mizar_ir::{
+        cache_adapter::{CacheAdapterMiss, CacheRehydrateOutcome, EncodeCacheRecordOutcome},
+        publisher::PublishError,
+        storage::StorageError,
+    };
+    for threshold in [usize::MAX, 0] {
+        let fixture = Fixture::new("\u{feff}definition\r\nend;\r\n".as_bytes());
+        let ids = InMemorySessionIdAllocator::new();
+        let snapshots = SnapshotRegistry::new();
+        let (driver, submission, oracle, handle, oracle_input) =
+            native_disk_frontend_record_submission(&fixture, &ids, &snapshots, threshold);
+        let (inputs, _) = native_disk_lookup_context(&submission, &ids);
+        let policy = mizar_proof::policy::VerifierPolicy::release();
+        let request = inputs
+            .prepare_native_disk_frontend_cache_request(&oracle_input, &policy, &oracle, &handle)
+            .unwrap();
+        let CacheKeyBuildOutcome::Cacheable(key) = CacheKeyBuilder::new(request.clone()).build()
+        else {
+            panic!("current native leaf profile");
+        };
+        let EncodeCacheRecordOutcome::Encoded(record) = inputs
+            .encode_native_disk_frontend_cache_record(
+                &oracle_input,
+                &policy,
+                &oracle,
+                handle.clone(),
+            )
+            .unwrap()
+        else {
+            panic!("genuine scheduled Frontend record");
+        };
+        assert_eq!(key, record.header.key);
+        assert_eq!(
+            record.header.produced_by,
+            request.validation_inputs.toolchain_compatibility
+        );
+        assert_eq!(key.phase.as_str(), "Frontend");
+        let store = CacheStoreRoot::new(fixture.root.join("retained-frontend"));
+        assert_eq!(store.insert(&record).unwrap(), CacheInsertOutcome::Inserted);
+        assert!(matches!(store.lookup(&key), CacheLookupOutcome::Hit(found) if found == record));
+        assert!(matches!(
+            inputs
+                .rehydrate_native_disk_frontend_cache(
+                    &oracle_input,
+                    &policy,
+                    &store,
+                    (&oracle_input, &oracle, &handle),
+                    &oracle,
+                )
+                .unwrap(),
+            CacheRehydrateOutcome::Miss(CacheAdapterMiss::Publisher { error })
+                if matches!(error.as_ref(), PublishError::Storage { error }
+                    if matches!(error.as_ref(), StorageError::OutputAlreadyStored { .. }))
+        ));
+        assert_eq!(oracle.successful_rehydrations(), 0);
+        let expected = oracle.publisher().storage().get(&handle).unwrap();
+        fs::remove_file(fixture.root.join("alpha/src/main.miz")).unwrap();
+        let (clean, clean_input) = native_disk_frontend_lookup_target(&submission, &ids, threshold);
+        allow_frontend(clean.publisher(), &clean_input.work_unit);
+        let clean_result = driver
+            .registry()
+            .execute_phase_with_resources(
+                PipelinePhase::Frontend,
+                clean_input.clone(),
+                PhaseExecutionResources {
+                    diagnostics: Some(DiagnosticSink::new(DiagnosticProducerScope::new(
+                        DiagnosticPhase::Frontend,
+                        clean_input.snapshot,
+                        "frontend.run_loaded",
+                    ))),
+                    output_publisher: Some(clean.publisher().clone()),
+                    source_load: Some(inputs),
+                    ..PhaseExecutionResources::default()
+                },
+            )
+            .unwrap()
+            .result;
+        assert!(clean_result.diagnostics.is_empty());
+        let clean_handle = clean
+            .publisher()
+            .storage()
+            .typed_handle::<FrontendOutput<<MizarParserSeam as ParserSeam>::Ast>>(
+                &clean_result.output_refs[0],
+                &OutputKind::new("FrontendOutput"),
+            )
+            .unwrap();
+        let clean_output = clean.publisher().storage().get(&clean_handle).unwrap();
+        assert_eq!(*clean_output, *expected);
+        for _ in 0..2 {
+            let (target, input) = native_disk_frontend_lookup_target(&submission, &ids, threshold);
+            assert!(!std::sync::Arc::ptr_eq(
+                target.publisher().storage(),
+                oracle.publisher().storage()
+            ));
+            assert!(
+                target
+                    .publisher()
+                    .storage()
+                    .typed_handle::<FrontendOutput<<MizarParserSeam as ParserSeam>::Ast>>(
+                        handle.any(),
+                        &OutputKind::new("FrontendOutput"),
+                    )
+                    .is_err()
+            );
+            allow_frontend(target.publisher(), &input.work_unit);
+            assert_eq!(
+                input.parent_outputs()[0].output(),
+                oracle_input.parent_outputs()[0].output()
+            );
+            let CacheRehydrateOutcome::Rehydrated(rehydrated) = inputs
+                .rehydrate_native_disk_frontend_cache(
+                    &input,
+                    &policy,
+                    &store,
+                    (&oracle_input, &oracle, &handle),
+                    &target,
+                )
+                .unwrap()
+            else {
+                panic!("real retained lookup");
+            };
+            let actual = target.publisher().storage().get(&rehydrated).unwrap();
+            assert_eq!(*actual, *clean_output);
+            assert_eq!(
+                actual.source.source_id,
+                inputs.snapshot.source_versions[0].source_id
+            );
+            assert_eq!(
+                actual.source.line_map,
+                LineMap::new(actual.source.source_id, "definition\nend;\n")
+            );
+            assert_eq!(
+                actual
+                    .source
+                    .loading_map
+                    .as_ref()
+                    .unwrap()
+                    .original_offset_for_loaded(actual.source.source_id, 0)
+                    .unwrap(),
+                3
+            );
+            assert_eq!(rehydrated.lineage(), handle.lineage());
+            assert_eq!(
+                target
+                    .publisher()
+                    .storage()
+                    .side_tables(&rehydrated)
+                    .unwrap(),
+                oracle.publisher().storage().side_tables(&handle).unwrap()
+            );
+            assert_eq!(target.successful_rehydrations(), 1);
+            for (phase, reason) in [
+                (
+                    PipelinePhase::SourceLoad,
+                    "current disk source maps require a real source load",
+                ),
+                (
+                    PipelinePhase::Frontend,
+                    "frontend inputs require a live source and dependency run",
+                ),
+            ] {
+                assert_eq!(
+                    driver
+                        .registry()
+                        .cache_key_for_phase(phase, &input)
+                        .unwrap()
+                        .intent,
+                    PhaseCacheIntent::NoKey {
+                        reason: reason.into()
+                    }
+                );
+            }
+            assert!(matches!(
+                inputs
+                    .rehydrate_native_disk_frontend_cache(
+                        &input,
+                        &policy,
+                        &store,
+                        (&oracle_input, &oracle, &handle),
+                        &target,
+                    )
+                    .unwrap(),
+                CacheRehydrateOutcome::Miss(CacheAdapterMiss::Publisher { error })
+                    if matches!(error.as_ref(), PublishError::Storage { error }
+                        if matches!(error.as_ref(), StorageError::OutputAlreadyStored { .. }))
+            ));
+            assert_eq!(target.successful_rehydrations(), 1);
+        }
+    }
+}
+
+#[test]
+fn native_disk_frontend_lookup_misses_changed_source_raw_policy_and_context() {
+    use mizar_cache::cache_store::{CacheInsertOutcome, CacheStoreRoot};
+    use mizar_ir::cache_adapter::{CacheRehydrateOutcome, EncodeCacheRecordOutcome};
+    let fixture = Fixture::new(b"definition\nend;\n");
+    let ids = InMemorySessionIdAllocator::new();
+    let snapshots = SnapshotRegistry::new();
+    let store = CacheStoreRoot::new(fixture.root.join("retained-frontend"));
+    let release = mizar_proof::policy::VerifierPolicy::release();
+    let mut baseline = None;
+    for case in [
+        "base",
+        "raw",
+        "semantic",
+        "policy",
+        "config-binding",
+        "context",
+    ] {
+        fixture.write(match case {
+            "raw" => "\u{feff}definition\r\nend;\r\n".as_bytes(),
+            "semantic" => b"theorem T: a = a;\n",
+            _ => b"definition\nend;\n",
+        });
+        let (_driver, submission, oracle, handle, oracle_input) = if case == "context" {
+            use mizar_build::planner::{lockfile_content_hash, workspace_config_content_hash};
+            let (mut draft, mut input) = fixture.submit_request(vec![], vec![]);
+            input.workspace_packages[0].manifest.verifier.max_axioms += 1;
+            let plan = produce_build_plan(
+                input.plan_request.clone(),
+                input.workspace_packages.clone(),
+                input.lockfile.clone(),
+            )
+            .unwrap();
+            draft.source_inputs.versions.clear();
+            draft.dependency_inputs.lockfile_hash = lockfile_content_hash(&plan.lockfile);
+            draft.verifier_config = VerifierConfigInput::new(workspace_config_content_hash(
+                &plan.verifier_config,
+                &plan.build_config,
+            ));
+            let session = draft
+                .capture_sources(
+                    &ids,
+                    &snapshots,
+                    vec![(
+                        DiskSourceLoader::new(fixture.root.join("alpha")),
+                        SourceInput {
+                            package_id: fixture.version.package_id.clone(),
+                            module_path: fixture.version.module_path.clone(),
+                            normalized_path: fixture.version.normalized_path.clone(),
+                            edition: fixture.version.edition.clone(),
+                            origin: SourceOriginInput::Disk {
+                                path: "src/main.miz".into(),
+                            },
+                        },
+                    )],
+                )
+                .unwrap();
+            let unit = WorkUnit::Module {
+                module: mizar_build::module_index::ModuleId::new(
+                    PackageId::new("alpha"),
+                    ModulePath::new("main"),
+                ),
+            };
+            let owner = publisher(session.captured().snapshot().id, 0, &unit);
+            allow_frontend(&owner, &unit);
+            let mut builder = PhaseRegistryBuilder::new();
+            builder.register_source_load();
+            builder.register_frontend(vec![]);
+            let mut driver =
+                CompilerDriver::new(builder.build().unwrap()).with_output_publisher(owner.clone());
+            let submission = driver
+                .submit_captured(session, &ids, &snapshots, input)
+                .unwrap();
+            let (_, source_input) = native_disk_lookup_context(&submission, &ids);
+            let refs = submission
+                .scheduler_run
+                .as_ref()
+                .unwrap()
+                .phase_results
+                .values()
+                .flatten()
+                .flat_map(|result| &result.output_refs)
+                .collect::<Vec<_>>();
+            let source = refs
+                .iter()
+                .find(|output| output.output_kind() == &OutputKind::new("SourceUnit"))
+                .unwrap();
+            let parent = SealedParentOutputHandle::from_current_output(
+                &owner,
+                source_input.snapshot,
+                (*source).clone(),
+            )
+            .unwrap();
+            let handle = owner
+                .storage()
+                .typed_handle::<FrontendOutput<<MizarParserSeam as ParserSeam>::Ast>>(
+                    refs.iter()
+                        .find(|output| output.output_kind() == &OutputKind::new("FrontendOutput"))
+                        .unwrap(),
+                    &OutputKind::new("FrontendOutput"),
+                )
+                .unwrap();
+            let oracle_input = PhaseInput::new(
+                unit,
+                PhaseDispatchInputBundle::new(
+                    source_input.snapshot,
+                    source_input.identities().input_hash(),
+                    vec![],
+                    vec![parent],
+                )
+                .unwrap(),
+            );
+            (
+                driver,
+                submission,
+                mizar_ir::cache_adapter::IrCacheAdapter::new(owner),
+                handle,
+                oracle_input,
+            )
+        } else {
+            native_disk_frontend_record_submission(&fixture, &ids, &snapshots, 0)
+        };
+        let (inputs, _) = native_disk_lookup_context(&submission, &ids);
+        let (target, input) = native_disk_frontend_lookup_target(&submission, &ids, 0);
+        allow_frontend(target.publisher(), &input.work_unit);
+        let policy = if case == "policy" {
+            mizar_proof::policy::VerifierPolicy::development()
+        } else {
+            release.clone()
+        };
+        if case == "config-binding" {
+            // Adversarial plan mutation is only a capture/config binding rejection.
+            let mut plan = inputs.build_plan.clone();
+            plan.verifier_config.packages[0].config.max_axioms += 1;
+            let changed = SourceLoadInputs {
+                build_plan: &plan,
+                ..inputs
+            };
+            assert!(
+                changed
+                    .rehydrate_native_disk_frontend_cache(
+                        &input,
+                        &policy,
+                        &store,
+                        (&oracle_input, &oracle, &handle),
+                        &target
+                    )
+                    .is_err()
+            );
+            continue;
+        }
+        let EncodeCacheRecordOutcome::Encoded(record) = inputs
+            .encode_native_disk_frontend_cache_record(
+                &oracle_input,
+                &policy,
+                &oracle,
+                handle.clone(),
+            )
+            .unwrap()
+        else {
+            panic!("genuine changed-input record");
+        };
+        if case == "base" {
+            assert_eq!(store.insert(&record).unwrap(), CacheInsertOutcome::Inserted);
+            baseline = Some(record.header.key.clone());
+        } else {
+            assert_ne!(&record.header.key, baseline.as_ref().unwrap());
+            assert!(matches!(
+                inputs
+                    .rehydrate_native_disk_frontend_cache(
+                        &input,
+                        &policy,
+                        &store,
+                        (&oracle_input, &oracle, &handle),
+                        &target,
+                    )
+                    .unwrap(),
+                CacheRehydrateOutcome::Miss(_)
+            ));
+            assert_eq!(target.successful_rehydrations(), 0);
+        }
+    }
+}
+
+#[test]
+fn native_disk_frontend_lookup_rejects_permissions_parents_and_coherent_wrong_aggregate() {
+    use mizar_cache::cache_store::{CacheInsertOutcome, CacheStoreRoot};
+    use mizar_ir::{
+        cache_adapter::{
+            CacheAdapterCacheability, CacheAdapterMiss, CacheRehydrateOutcome,
+            EncodeCacheRecordInput, EncodeCacheRecordOutcome, IrCacheAdapter,
+        },
+        publisher::{OutputOrigin, PublicationTarget, PublishError, PublishOutputInput},
+        storage::{BlobDecodeError, BlobDecoder, CollectInput, SchemaVersion},
+    };
+    let fixture = Fixture::new(b"definition\nend;\n");
+    let ids = InMemorySessionIdAllocator::new();
+    let snapshots = SnapshotRegistry::new();
+    let policy = mizar_proof::policy::VerifierPolicy::release();
+    for case in [
+        "permission",
+        "foreign",
+        "unpublished",
+        "mixed-source",
+        "obsolete",
+        "collected",
+        "oracle-obsolete",
+        "oracle-collected",
+        "mixed-capture",
+        "missing-parent",
+        "wrong-parent",
+        "producer",
+        "corrupt",
+        "coherent",
+    ] {
+        let (_driver, submission, oracle, handle, oracle_input) =
+            native_disk_frontend_record_submission(&fixture, &ids, &snapshots, 0);
+        let (inputs, _) = native_disk_lookup_context(&submission, &ids);
+        let (target, mut input) = native_disk_frontend_lookup_target(&submission, &ids, 0);
+        if case != "permission" {
+            allow_frontend(target.publisher(), &input.work_unit);
+        }
+        let EncodeCacheRecordOutcome::Encoded(mut record) = inputs
+            .encode_native_disk_frontend_cache_record(
+                &oracle_input,
+                &policy,
+                &oracle,
+                handle.clone(),
+            )
+            .unwrap()
+        else {
+            panic!("genuine source record");
+        };
+        let alternate;
+        let selected = if case == "foreign" {
+            alternate = IrCacheAdapter::new(publisher(input.snapshot, 0, &input.work_unit));
+            &alternate
+        } else if case == "unpublished" {
+            alternate = IrCacheAdapter::new(std::sync::Arc::new(PhaseOutputPublisher::new(
+                target.publisher().storage().clone(),
+                target.publisher().registry().clone(),
+            )));
+            alternate
+                .publisher()
+                .register_current_snapshot(input.snapshot);
+            &alternate
+        } else {
+            &target
+        };
+        match case {
+            "obsolete" => target.publisher().mark_obsolete(input.snapshot).unwrap(),
+            "oracle-obsolete" => oracle.publisher().mark_obsolete(input.snapshot).unwrap(),
+            "collected" | "oracle-collected" => {
+                let owner = if case == "collected" {
+                    target.publisher()
+                } else {
+                    oracle.publisher()
+                };
+                owner.storage().collect(CollectInput {
+                    snapshot: input.snapshot,
+                    protected_outputs: vec![],
+                });
+            }
+            "missing-parent" | "wrong-parent" => {
+                input = PhaseInput::new(
+                    input.work_unit.clone(),
+                    PhaseDispatchInputBundle::new(
+                        input.snapshot,
+                        input.identities().input_hash(),
+                        vec![],
+                        if case == "wrong-parent" {
+                            vec![
+                                SealedParentOutputHandle::from_current_output(
+                                    oracle.publisher(),
+                                    input.snapshot,
+                                    handle.erase(),
+                                )
+                                .unwrap(),
+                            ]
+                        } else {
+                            vec![]
+                        },
+                    )
+                    .unwrap(),
+                );
+            }
+            "producer" => {
+                record.header.produced_by[0].value = "negative-only-other-producer".into()
+            }
+            "corrupt" => {
+                *record = mizar_cache::cache_store::CacheRecord::new_inline(
+                    record.header.key.clone(),
+                    record.header.produced_by.clone(),
+                    vec![],
+                );
+            }
+            "coherent" => {
+                // This is an adversarial aggregate, never a real Frontend producer.
+                let actual = oracle.publisher().storage().get(&handle).unwrap();
+                let mut wrong = (*actual).clone();
+                wrong.tokens.tokens[0].text = "negative-only-token".into();
+                let raw = wrong.canonical_disk_bytes().unwrap();
+                assert_ne!(raw, actual.canonical_disk_bytes().unwrap());
+                let descriptor = inputs.captured.unwrap().native_sources().unwrap()[0]
+                    .2
+                    .clone();
+                let source_id = actual.source.source_id;
+                let decoded =
+                    FrontendOutput::from_canonical_storage_bytes(&raw, source_id, &descriptor)
+                        .unwrap();
+                assert_eq!(decoded, wrong);
+                assert_eq!(decoded.canonical_disk_bytes().unwrap(), raw);
+                let mut semantic = b"mizar-frontend/output-publication/v1\0".to_vec();
+                semantic.extend_from_slice(
+                    actual
+                        .cache_keys
+                        .ast
+                        .as_ref()
+                        .unwrap()
+                        .stable_hash()
+                        .as_bytes(),
+                );
+                let side = (*oracle.publisher().storage().side_tables(&handle).unwrap()).clone();
+                let decode_input = descriptor;
+                let negative = target
+                    .publisher()
+                    .publish(PublishOutputInput {
+                        slot: target.publisher().allocate(
+                            input.snapshot,
+                            handle.phase().clone(),
+                            handle.work_unit().clone(),
+                            handle.output_kind().clone(),
+                            SchemaVersion::new(1),
+                        ),
+                        snapshot: input.snapshot,
+                        phase: handle.phase().clone(),
+                        work_unit: handle.work_unit().clone(),
+                        output_kind: handle.output_kind().clone(),
+                        schema_version: SchemaVersion::new(1),
+                        payload: wrong,
+                        canonical_payload: Some(semantic.clone()),
+                        storage_payload: Some(raw.clone()),
+                        decode: BlobDecoder::new(move |bytes| {
+                            FrontendOutput::from_canonical_storage_bytes(
+                                bytes,
+                                source_id,
+                                &decode_input,
+                            )
+                            .ok_or_else(|| BlobDecodeError::new("negative aggregate"))
+                        }),
+                        parents: vec![input.parent_outputs()[0].as_output_ref().clone()],
+                        named_input_hashes: handle.lineage().named_input_hashes.clone(),
+                        side_tables: side.clone(),
+                        origin: OutputOrigin::PackageSource,
+                        target: PublicationTarget::CurrentPackage,
+                    })
+                    .unwrap();
+                assert_eq!(
+                    target
+                        .publisher()
+                        .storage()
+                        .side_tables(&negative)
+                        .unwrap()
+                        .as_ref(),
+                    &side
+                );
+                assert_eq!(negative.content_hash(), handle.content_hash());
+                let EncodeCacheRecordOutcome::Encoded(adversarial) =
+                    target.encode(EncodeCacheRecordInput {
+                        handle: negative,
+                        cache_key: record.header.key.clone(),
+                        produced_by: record.header.produced_by.clone(),
+                        canonical_payload: semantic,
+                        storage_payload: raw,
+                        cacheability: CacheAdapterCacheability::Cacheable,
+                    })
+                else {
+                    panic!("self-consistent adversarial control");
+                };
+                record = adversarial;
+            }
+            _ => {}
+        }
+        let store = CacheStoreRoot::new(fixture.root.join(format!("retained-{case}")));
+        assert_eq!(store.insert(&record).unwrap(), CacheInsertOutcome::Inserted);
+        if case == "mixed-source" {
+            let (_, fresh_submission, _, _, _) =
+                native_disk_frontend_record_submission(&fixture, &ids, &snapshots, 0);
+            let (fresh_target, fresh_input) =
+                native_disk_frontend_lookup_target(&fresh_submission, &ids, 0);
+            allow_frontend(fresh_target.publisher(), &fresh_input.work_unit);
+            assert_eq!(fresh_input.identities(), oracle_input.identities());
+            assert!(
+                inputs
+                    .rehydrate_native_disk_frontend_cache(
+                        &fresh_input,
+                        &policy,
+                        &store,
+                        (&oracle_input, &oracle, &handle),
+                        &fresh_target
+                    )
+                    .is_err()
+            );
+            assert_eq!(fresh_target.successful_rehydrations(), 0);
+        } else if case == "mixed-capture" {
+            let (_, fresh_submission, _, _, _) =
+                native_disk_frontend_record_submission(&fixture, &ids, &snapshots, 0);
+            let (fresh_inputs, _) = native_disk_lookup_context(&fresh_submission, &ids);
+            assert_eq!(fresh_inputs.snapshot.id, inputs.snapshot.id);
+            assert_ne!(
+                fresh_inputs.snapshot.source_versions[0].source_id,
+                inputs.snapshot.source_versions[0].source_id
+            );
+            assert!(
+                fresh_inputs
+                    .rehydrate_native_disk_frontend_cache(
+                        &input,
+                        &policy,
+                        &store,
+                        (&oracle_input, &oracle, &handle),
+                        selected
+                    )
+                    .is_err()
+            );
+        } else {
+            let outcome = inputs.rehydrate_native_disk_frontend_cache(
+                &input,
+                &policy,
+                &store,
+                (&oracle_input, &oracle, &handle),
+                selected,
+            );
+            match case {
+                "coherent" => assert!(
+                    matches!(outcome.unwrap(), CacheRehydrateOutcome::Miss(CacheAdapterMiss::Decode { message }) if message == "native Frontend lookup storage mismatch")
+                ),
+                "corrupt" => assert!(matches!(
+                    outcome.unwrap(),
+                    CacheRehydrateOutcome::Miss(CacheAdapterMiss::CorruptRecord)
+                )),
+                "permission" => assert!(matches!(
+                    outcome.unwrap(),
+                    CacheRehydrateOutcome::Miss(CacheAdapterMiss::Publisher { error })
+                        if matches!(error.as_ref(), PublishError::WorkUnitNotAllowed { .. })
+                )),
+                _ => assert!(outcome.is_err(), "{case}"),
+            }
+        }
+        assert_eq!(selected.successful_rehydrations(), 0);
+    }
+}

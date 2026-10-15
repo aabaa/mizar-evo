@@ -525,6 +525,8 @@ artifact/test のフォローアップタスクが所有する。本 crate の�
 
 41. **[明示的な native SourceLoad 保存](../../task_contracts/ja/DRIVER-NATIVE-SOURCE-CACHE-PERSISTENCE.md).** [x]
 
+42. **[同一 capture の retained native Frontend lookup](../../task_contracts/ja/DRIVER-RETAINED-NATIVE-FRONTEND-CACHE-LOOKUP.md).** [x]
+
 ## 推奨検証
 
 各タスクの後で実行する:

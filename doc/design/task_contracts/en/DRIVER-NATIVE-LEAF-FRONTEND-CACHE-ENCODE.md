@@ -1,7 +1,7 @@
 # Task DRIVER-NATIVE-LEAF-FRONTEND-CACHE-ENCODE: bound Frontend record encoding
 Canonical language: English; [Japanese pointer](../ja/DRIVER-NATIVE-LEAF-FRONTEND-CACHE-ENCODE.md).
 Status: implemented for the bound native Disk leaf profile. Tier: full. Owner: [Driver plan](../../mizar-driver/en/00.crate_plan.md), task 39; consumers: explicit native cache callers before Frontend lookup.
-Dependencies/readiness: real native Disk SourceLoad/Frontend publication, canonical output/key codecs and IR encoder exist; independent current Frontend lookup expectations do not.
+Dependencies/readiness: real native Disk SourceLoad/Frontend publication, canonical output/key codecs and IR encoder exist; independent cold pre-execution Frontend expectations do not.
 Authority: spec §23.4; [incremental contract](../../architecture/en/22.incremental_verification_contract.md#cache-miss-fallback); [source-service owner](../../mizar-driver/en/frontend_adapter.md#native-leaf-frontend-record-encoding).
 Gap addressed: source_gap in the producer-bound native leaf Frontend record association.
 Scope: one method on existing SourceLoadInputs, existing frontend_adapter.rs and appended source_load.rs tests with one private setup helper shared by three real consumers; paired owner, contract, plan and TODO. Use the owner-defined zero-import/zero-dependency profile and existing codecs/Cache/IR encoder only.

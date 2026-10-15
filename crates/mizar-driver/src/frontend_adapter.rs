@@ -359,25 +359,21 @@ impl<'a> crate::registry::SourceLoadInputs<'a> {
         }))
     }
 
-    /// Encodes a current zero-import Frontend output bound to native Disk capture.
-    pub fn encode_native_disk_frontend_cache_record(
+    fn prepare_native_disk_frontend_cache_payload(
         self,
         input: &PhaseInput,
         policy: &mizar_proof::policy::VerifierPolicy,
         adapter: &mizar_ir::cache_adapter::IrCacheAdapter,
-        handle: mizar_ir::storage::PhaseOutputRef<
+        handle: &mizar_ir::storage::PhaseOutputRef<
             FrontendOutput<<MizarParserSeam as ParserSeam>::Ast>,
         >,
-    ) -> Result<mizar_ir::cache_adapter::EncodeCacheRecordOutcome, String> {
+    ) -> Result<(mizar_cache::cache_key::CacheKeyRequest, Vec<u8>, Vec<u8>), String> {
         use mizar_cache::cache_key::{
-            CacheKeyBuildOutcome, CacheKeyBuilder, NamedHash, NamedSchemaVersion,
-            PipelinePhase as CachePhase, SchemaVersion as CacheSchema,
+            NamedHash, NamedSchemaVersion, PipelinePhase as CachePhase,
+            SchemaVersion as CacheSchema,
         };
         use mizar_frontend::cache_key::PreprocessedSourceCacheKey;
-        use mizar_ir::{
-            cache_adapter::{CacheAdapterCacheability, EncodeCacheRecordInput},
-            dispatch_input::PhaseDispatchInputBundle,
-        };
+        use mizar_ir::dispatch_input::PhaseDispatchInputBundle;
 
         self.validate_native_lock_content()?;
         self.validate_native_config_content()?;
@@ -479,7 +475,7 @@ impl<'a> crate::registry::SourceLoadInputs<'a> {
         {
             return Err("native Frontend encoding output binding mismatch".to_owned());
         }
-        let output = storage.get(&handle).map_err(|error| error.to_string())?;
+        let output = storage.get(handle).map_err(|error| error.to_string())?;
         if output.source.source_id != version.source_id
             || !output
                 .source
@@ -519,7 +515,7 @@ impl<'a> crate::registry::SourceLoadInputs<'a> {
             .canonical_disk_bytes()
             .ok_or_else(|| "native Frontend encoding storage is unsupported".to_owned())?;
         if *storage
-            .side_tables(&handle)
+            .side_tables(handle)
             .map_err(|error| error.to_string())?
             != (IrSideTables {
                 source_maps: vec![SideTableRecord::new(
@@ -581,12 +577,30 @@ impl<'a> crate::registry::SourceLoadInputs<'a> {
                 version: CacheSchema::new(version),
             });
         }
+        let mut canonical_payload = b"mizar-frontend/output-publication/v1\0".to_vec();
+        canonical_payload.extend_from_slice(ast_key.stable_hash().as_bytes());
+        Ok((request, canonical_payload, storage_payload))
+    }
+
+    /// Encodes a current zero-import Frontend output bound to native Disk capture.
+    pub fn encode_native_disk_frontend_cache_record(
+        self,
+        input: &PhaseInput,
+        policy: &mizar_proof::policy::VerifierPolicy,
+        adapter: &mizar_ir::cache_adapter::IrCacheAdapter,
+        handle: mizar_ir::storage::PhaseOutputRef<
+            FrontendOutput<<MizarParserSeam as ParserSeam>::Ast>,
+        >,
+    ) -> Result<mizar_ir::cache_adapter::EncodeCacheRecordOutcome, String> {
+        use mizar_cache::cache_key::{CacheKeyBuildOutcome, CacheKeyBuilder};
+        use mizar_ir::cache_adapter::{CacheAdapterCacheability, EncodeCacheRecordInput};
+
+        let (request, canonical_payload, storage_payload) =
+            self.prepare_native_disk_frontend_cache_payload(input, policy, adapter, &handle)?;
         let key = match CacheKeyBuilder::new(request.clone()).build() {
             CacheKeyBuildOutcome::Cacheable(key) => key,
             _ => return Err("native Frontend encoding requires a cacheable key".to_owned()),
         };
-        let mut canonical_payload = b"mizar-frontend/output-publication/v1\0".to_vec();
-        canonical_payload.extend_from_slice(ast_key.stable_hash().as_bytes());
         Ok(adapter.encode(EncodeCacheRecordInput {
             handle,
             cache_key: key,
@@ -595,6 +609,184 @@ impl<'a> crate::registry::SourceLoadInputs<'a> {
             storage_payload,
             cacheability: CacheAdapterCacheability::Cacheable,
         }))
+    }
+
+    /// Prepares the checked native leaf profile from a retained current Frontend oracle.
+    pub fn prepare_native_disk_frontend_cache_request(
+        self,
+        input: &PhaseInput,
+        policy: &mizar_proof::policy::VerifierPolicy,
+        adapter: &mizar_ir::cache_adapter::IrCacheAdapter,
+        handle: &mizar_ir::storage::PhaseOutputRef<
+            FrontendOutput<<MizarParserSeam as ParserSeam>::Ast>,
+        >,
+    ) -> Result<mizar_cache::cache_key::CacheKeyRequest, String> {
+        self.prepare_native_disk_frontend_cache_payload(input, policy, adapter, handle)
+            .map(|(request, _, _)| request)
+    }
+
+    /// Reconstructs a native leaf Frontend output against a retained current oracle.
+    pub fn rehydrate_native_disk_frontend_cache(
+        self,
+        input: &PhaseInput,
+        policy: &mizar_proof::policy::VerifierPolicy,
+        store: &mizar_cache::cache_store::CacheStoreRoot,
+        oracle: (
+            &PhaseInput,
+            &mizar_ir::cache_adapter::IrCacheAdapter,
+            &mizar_ir::storage::PhaseOutputRef<
+                FrontendOutput<<MizarParserSeam as ParserSeam>::Ast>,
+            >,
+        ),
+        adapter: &mizar_ir::cache_adapter::IrCacheAdapter,
+    ) -> Result<
+        mizar_ir::cache_adapter::CacheRehydrateOutcome<
+            FrontendOutput<<MizarParserSeam as ParserSeam>::Ast>,
+        >,
+        String,
+    > {
+        use mizar_cache::{
+            cache_key::{CacheKeyBuildOutcome, CacheKeyBuilder},
+            cache_store::CacheLookupOutcome,
+        };
+        use mizar_ir::cache_adapter::RehydrateCacheHitInput;
+
+        let (oracle_input, oracle_adapter, oracle_handle) = oracle;
+        let (request, semantic, storage_payload) = self
+            .prepare_native_disk_frontend_cache_payload(
+                oracle_input,
+                policy,
+                oracle_adapter,
+                oracle_handle,
+            )?;
+        if input.snapshot != oracle_input.snapshot
+            || input.work_unit != oracle_input.work_unit
+            || input.identities() != oracle_input.identities()
+            || input.parent_outputs().len() != 1
+        {
+            return Err("native Frontend lookup target binding mismatch".to_owned());
+        }
+        let publisher = adapter.publisher();
+        publisher
+            .validate_current_snapshot(input.snapshot)
+            .map_err(|error| error.to_string())?;
+        let WorkUnit::Module { module } = &input.work_unit else {
+            return Err("native Frontend lookup requires a module".to_owned());
+        };
+        let version = unique(self.snapshot.source_versions.iter().filter(|version| {
+            version.package_id == module.package && version.module_path == module.path
+        }))
+        .ok_or_else(|| "native Frontend lookup requires one captured source".to_owned())?;
+        let (source, source_input) = self
+            .native_source(version)
+            .ok_or_else(|| "native Frontend lookup capture binding failed".to_owned())?;
+        let storage = publisher.storage();
+        let parent = input.parent_outputs()[0].as_output_ref();
+        storage
+            .validate_handle(parent)
+            .map_err(|error| error.to_string())?;
+        publisher
+            .validate_current_output(input.snapshot, parent)
+            .map_err(|error| error.to_string())?;
+        if parent.phase().as_str() != "SourceLoad"
+            || parent.work_unit().as_str() != request.work_unit.as_str()
+            || parent.output_kind() != &OutputKind::new("SourceUnit")
+            || parent.schema_version() != SchemaVersion::new(1)
+        {
+            return Err("native Frontend lookup source parent mismatch".to_owned());
+        }
+        let typed_parent = storage
+            .typed_handle::<SourceUnit>(parent, &OutputKind::new("SourceUnit"))
+            .map_err(|error| error.to_string())?;
+        let parent_source = storage
+            .get(&typed_parent)
+            .map_err(|error| error.to_string())?;
+        if parent_source.source_id != version.source_id
+            || !parent_source.matches_canonical_storage(&source, &source_input)
+        {
+            return Err("native Frontend lookup parent storage mismatch".to_owned());
+        }
+        let source_storage_hash = request
+            .input_hashes
+            .iter()
+            .find(|entry| entry.name == "source-storage")
+            .ok_or_else(|| "native Frontend lookup requires source storage identity".to_owned())?
+            .digest;
+        if !typed_parent.lineage().parents.is_empty()
+            || typed_parent.lineage().named_input_hashes
+                != vec![NamedInputHash {
+                    name: "source".to_owned(),
+                    domain: SOURCE_UNIT_CACHE_KEY_VERSION.to_owned(),
+                    digest: input.identities().input_hash(),
+                }]
+            || *storage
+                .side_tables(&typed_parent)
+                .map_err(|error| error.to_string())?
+                != (IrSideTables {
+                    source_maps: vec![SideTableRecord::new(
+                        "source-storage",
+                        source.normalized_path.as_str(),
+                        source_storage_hash,
+                    )],
+                    ..IrSideTables::default()
+                })
+            || parent.output() != oracle_input.parent_outputs()[0].output()
+        {
+            return Err("native Frontend lookup source parent lineage mismatch".to_owned());
+        }
+        let key = match CacheKeyBuilder::new(request.clone()).build() {
+            CacheKeyBuildOutcome::Cacheable(key) => key,
+            _ => return Err("native Frontend lookup requires a cacheable key".to_owned()),
+        };
+        let side_tables = IrSideTables {
+            source_maps: vec![SideTableRecord::new(
+                "frontend-storage",
+                source.normalized_path.as_str(),
+                Hash::from_bytes(blake3::derive_key(
+                    "mizar-frontend/output-storage-side-table/v1",
+                    &storage_payload,
+                )),
+            )],
+            ..IrSideTables::default()
+        };
+        let lookup = store.lookup(&key);
+        if let CacheLookupOutcome::Hit(record) = &lookup
+            && record.header.produced_by != request.validation_inputs.toolchain_compatibility
+        {
+            return Err("native Frontend lookup producer binding mismatch".to_owned());
+        }
+        Ok(adapter.rehydrate_with_expected_payload(
+            RehydrateCacheHitInput {
+                lookup,
+                snapshot: input.snapshot,
+                phase: IrPipelinePhase::new(request.phase.as_str()),
+                work_unit: IrWorkUnit::new(request.work_unit.as_str()),
+                output_kind: OutputKind::new("FrontendOutput"),
+                schema_version: SchemaVersion::new(1),
+                parents: vec![parent.clone()],
+                named_input_hashes: oracle_handle.lineage().named_input_hashes.clone(),
+                decode: BlobDecoder::new(move |bytes| {
+                    if bytes != storage_payload {
+                        return Err(BlobDecodeError::new(
+                            "native Frontend lookup storage mismatch",
+                        ));
+                    }
+                    FrontendOutput::from_canonical_storage_bytes(
+                        bytes,
+                        source.source_id,
+                        &source_input,
+                    )
+                    .filter(|decoded| {
+                        decoded
+                            .source
+                            .matches_canonical_storage(&source, &source_input)
+                    })
+                    .ok_or_else(|| BlobDecodeError::new("native Frontend lookup storage mismatch"))
+                }),
+            },
+            &semantic,
+            &side_tables,
+        ))
     }
 
     /// Reconstructs an authorized current source from its genuine native Disk key.
