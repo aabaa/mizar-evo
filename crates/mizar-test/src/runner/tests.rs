@@ -18435,3 +18435,166 @@ fn source_registration_vc_fingerprint_goal_context_refuses_whole_inputs_before_s
     assert_eq!((unsupported_core, empty), upstream_before);
     assert_eq!((core, vcs, formulas), before);
 }
+
+#[test]
+fn source_registration_canonical_components_exact_current_leaves_and_producer_equality() {
+    use mizar_proof::status::source_registration_canonical_components as components;
+    use mizar_vc::{generator::generate_source_existential_registration as generate,
+        vc_ir::{GenerationSchemaVersion, VcSchemaVersion}};
+    // Spec 6.2/17.2-17.3; independent semantic literals with existing Proof schemas.
+    let expected = [
+            ("WMarkedExists:0", ["41511505b528f198d3eaa04b46cf8db24c65dae53fdb2ab19dd6d4da683dc983", "c7cb7dea9c41ea1ceabf196a535723219b3df51f307942f6256265f39873498d", "0ab48d5682ae1b48fff910f004655a485e8dad151d7e573040e33a6b344a2b9b"]),
+            ("WMarkedExists:1", ["af00f4f76a9b95ee07503426b32b958d52b6badb091a8f01a2ee8dbb92a8d47b", "da98780a50d5c8ece525ebd1155dbe3855450f76b18ce0d80626c0cb378254ec", "48bc5627acf00e1c9c73e9c5193de72c98df05fe16db7c923544cabbf0352283"]),
+            ("OAExists:0", ["90b4afcfba9e663b7dfb02b029a64787e7290811e8e6d4ccf35d5cd0aad43604", "2e217ac8e5780d68d8d90cb1684ffab8b8b8b167e2d30e4dd09c531c7323d46e", "ef79f6d1ae040194674547055df012d76375069d97ec8cfecc91f512dfe67edb"]),
+            ("OAExists:1", ["7a0ba9e438f251286b86f5e947f18abd7baa1a092ac1a9e8556aa0eac1ab471a", "a9560e0e4eb5b1673bccef0f3d503fccbae72b1255df67c7bbd9bed99316b10e", "19c7ca5c8b33f06205363a444fbd61ef0b82c3f6e543e8eb3afdc70ac7ebd7f5"]),
+            ("OBExists:0", ["fa6ed869a5372bf37dfb02b029a647878a12db1e3c4030f9f35d5cd0aad43604", "2e217ac8e5780d68d8d90cb1684ffab8b8b8b167e2d30e4dd1e263caa9600da5", "ef79f6d1ae040194674547055df012d76375069d97ec8cfefbe1f1878eecb493"]),
+            ("OBExists:1", ["823953e2287436c2cb922958af274eb5dcb854a516ccfaebd7ff26330b5947bc", "90b3eb40750e7a8f43ecc0d3bd872f7048158c0f883a93dbe7a0de2e9e249f5c", "efcc953a42287158e83a16ade07057e9a68c9588e0b6e7deed45089e58fffd2a"]),
+            ("OABExists:0", ["86ebaecbde4404129e1b76a02d80436d94f5614528616d2406727c218d4130ee", "1858c583981b9e80d8b06ab5adf11b0cc4196cec1c94154f98cf38eb26903e91", "119e79588d41d5c07508fa1d46879b36c4a8248bdf60f16aafd93a676df8311f"]),
+            ("OABExists:1", ["ab7f0c1db0ed819a1fb434e5c4b7c44347a3de5a1a6cd45fae853d523cc937fc", "93fb0ea3ef9be446687613ae6b349994d6e160e7f03310cddc051bc498602255", "0aca806622a46550fa0ed46926004662fc55d52d8999b0afb4c36201b66acb52"]),
+    ];
+    let mut checked = 0;
+    for case in [step5c3_registration_case(), step5c13_registration_case()] {
+        let text = std::fs::read_to_string(case.source_path).unwrap();
+        let (source, nodes, collected, _) = source_registration_formula_inputs(&text, "vc-fingerprint-test", "vc_fingerprints", 0);
+        let before = (source.clone(), nodes.clone(), collected.env().clone());
+        let (core, _, formulas, owners) = source_registration_vc_fingerprint_inputs(&text, "vc_fingerprints", 0);
+        for snapshot in [super::shared::snapshot_id(0), super::shared::snapshot_id(41)] {
+            let vcs = generate(&core, snapshot, &GenerationSchemaVersion::new("source-existential-registration-v1"), &VcSchemaVersion::new("vc-v1")).unwrap();
+            let full = vcs.source_registration_canonical_fingerprints(&core, &formulas).unwrap();
+            assert_eq!(vcs.vcs().len(), owners.len());
+            for (id, owner) in &owners {
+                let triple = components(&source, &nodes, collected.env(), snapshot, *id).unwrap();
+                let pair = vcs.source_registration_canonical_goal_context(*id, &core, &formulas).unwrap();
+                assert_eq!(triple, (full[id], pair.0, pair.1), "{owner}");
+                let hex = [triple.0.hash(), triple.1, triple.2].map(|hash| hash.as_bytes().iter().map(|byte| format!("{byte:02x}")).collect::<String>());
+                assert_eq!(hex, expected.iter().find(|(name, _)| name == owner).unwrap().1, "{owner}");
+                if snapshot == super::shared::snapshot_id(0) { checked += 1; }
+            }
+        }
+        assert_eq!((source, nodes, collected.env().clone()), before);
+    }
+    assert_eq!(checked, 8);
+}
+
+#[test]
+fn source_registration_canonical_components_neutral_relocation_and_participating_edits() {
+    use mizar_proof::status::source_registration_canonical_components as components;
+    let text = std::fs::read_to_string(step5c13_registration_case().source_path).unwrap();
+    let snapshot = super::shared::snapshot_id(0);
+    let (source, nodes, collected, _) = source_registration_formula_inputs(&text, "vc-fingerprint-test", "vc_fingerprints", 0);
+    let before = (source.clone(), nodes.clone(), collected.env().clone());
+    let (core, vcs, formulas, owners) = source_registration_vc_fingerprint_inputs(&text, "vc_fingerprints", 0);
+    let mut baseline = std::collections::BTreeMap::new();
+    for (id, owner) in &owners {
+        baseline.insert(owner.clone(), components(&source, &nodes, collected.env(), snapshot, *id).unwrap());
+    }
+    let a = "  attr OAADef: X is oamarked means X = X;\n";
+    let b = "  attr OBBDef: X is obmarked means X = X;\n";
+    let registration_a = "  cluster OAExists: oamarked set;\n  existence proof\n    take the set;\n    thus the set is oamarked by OAADef;\n  end;\n";
+    let registration_b = "  cluster OBExists: obmarked set;\n  existence proof\n    take the set;\n    thus the set is obmarked by OBBDef;\n  end;\n";
+    let registration_ab = "  cluster OABExists: oamarked obmarked set;\n  existence proof\n    take the set;\n    thus the set is oamarked obmarked by OAADef, OBBDef;\n  end;\n";
+    let reordered = text.replace(&format!("{a}{b}"), &format!("{b}{a}"))
+        .replace(&format!("{registration_a}{registration_b}{registration_ab}"), &format!("{registration_ab}{registration_a}{registration_b}"));
+    assert_ne!(reordered, text);
+    for (index, edited, skip) in [
+        (0, format!("\n:: shifted ranges\n{}", text.replace("  ", "    ")), 0),
+        (1, text.replace('X', "Subject"), 0), (2, reordered, 0), (3, text.clone(), 7),
+    ] {
+        let (s, n, e, _) = source_registration_formula_inputs(&edited, "vc-fingerprint-test", "vc_fingerprints", skip);
+        let inputs_before = (s.clone(), n.clone(), e.env().clone());
+        let (other_core, other_vcs, other_formulas, other_owners) = source_registration_vc_fingerprint_inputs(&edited, "vc_fingerprints", skip);
+        assert_eq!(other_owners.len(), baseline.len());
+        for (id, owner) in &other_owners {
+            assert_eq!(components(&s, &n, e.env(), snapshot, *id).unwrap(), baseline[owner], "neutral edit {index}: {owner}");
+        }
+        if index == 2 {
+            let current = *other_owners.iter().find(|(_, owner)| *owner == "OABExists:1").unwrap().0;
+            let old = *owners.iter().find(|(_, owner)| *owner == "OABExists:1").unwrap().0;
+            assert_ne!(current, old);
+            assert_ne!(other_vcs.vc(current).unwrap().goal, vcs.vc(old).unwrap().goal);
+            assert_ne!(other_formulas.keys().collect::<Vec<_>>(), formulas.keys().collect::<Vec<_>>());
+        }
+        if skip != 0 { assert_ne!(other_core.source_id(), core.source_id()); }
+        assert_eq!((s, n, e.env().clone()), inputs_before);
+    }
+    for (index, edited, module) in [
+        (0, text.replacen("means X = X", "means not X = X", 1), "vc_fingerprints"),
+        (1, text.replace("OAExists", "RenamedExists"), "vc_fingerprints"),
+        (2, text.clone(), "other_module"),
+    ] {
+        let (s, n, e, _) = source_registration_formula_inputs(&edited, "vc-fingerprint-test", module, 0);
+        let inputs_before = (s.clone(), n.clone(), e.env().clone());
+        let (_, _, _, current_owners) = source_registration_vc_fingerprint_inputs(&edited, module, 0);
+        assert_eq!(current_owners.len(), baseline.len());
+        for (id, owner) in &current_owners {
+            let name = if index == 1 { owner.replace("RenamedExists:", "OAExists:") } else { owner.clone() };
+            let triple = components(&s, &n, e.env(), snapshot, *id).unwrap();
+            let original = &baseline[&name];
+            let changed = match index { 0 => owner == "OAExists:1" || owner == "OABExists:1", 1 => name.starts_with("OAExists:"), _ => true };
+            assert_eq!(triple.0 != original.0, changed, "VC control {index}: {owner}");
+            assert_eq!(triple.1 != original.1, index != 0 && changed, "goal control {index}: {owner}");
+            assert_eq!(triple.2 != original.2, changed, "context control {index}: {owner}");
+            if index == 0 && owner == "OABExists:1" {
+                let hex = [triple.0.hash(), triple.1, triple.2].map(|hash| hash.as_bytes().iter().map(|byte| format!("{byte:02x}")).collect::<String>());
+                assert_eq!(hex, ["095bdfff03efe1ddc81f05f7af856040afec2930beeb84da0f95b16d9e0a4bcc", "93fb0ea3ef9be446687613ae6b349994d6e160e7f03310cddc051bc498602255", "042d35a9d0248233bada41d2e6413c4c8d23722fac79e8eeee6a16be4ef8f4b3"]);
+            }
+        }
+        assert_eq!((s, n, e.env().clone()), inputs_before);
+    }
+    assert_eq!((source, nodes, collected.env().clone()), before);
+}
+
+#[test]
+fn source_registration_canonical_components_rejects_absent_foreign_and_upstream_errors() {
+    use mizar_checker::registration_resolution::check_source_existential_registration_proof as check;
+    use mizar_proof::status::source_registration_canonical_components as components;
+    use mizar_vc::vc_ir::{GenerationSchemaVersion, VcId, VcSchemaVersion};
+    let text = std::fs::read_to_string(step5c13_registration_case().source_path).unwrap();
+    let snapshot = super::shared::snapshot_id(0);
+    let (source, nodes, collected, _) = source_registration_formula_inputs(&text, "vc-fingerprint-test", "vc_fingerprints", 0);
+    let before = (source.clone(), nodes.clone(), collected.env().clone());
+    let (_, vcs, _, owners) = source_registration_vc_fingerprint_inputs(&text, "vc_fingerprints", 0);
+    let selected = *owners.keys().next().unwrap();
+    let absent = VcId::new(vcs.vcs().len());
+    let invalid = "registration.proof.invalid_source_components";
+    assert_eq!(components(&source, &nodes, collected.env(), snapshot, absent).unwrap_err(), invalid);
+    let (foreign_source, foreign_nodes, foreign_env, _) = source_registration_formula_inputs(&text.replace("oamarked", "foreignmarked"), "vc-fingerprint-test", "vc_fingerprints", 0);
+    let foreign_before = (foreign_source.clone(), foreign_nodes.clone(), foreign_env.env().clone());
+    for (s, n, e) in [(&foreign_source, &nodes, collected.env()), (&source, &foreign_nodes, collected.env()), (&source, &nodes, foreign_env.env())] {
+        let upstream = check(s, n, e).unwrap_err();
+        assert_ne!(upstream, invalid);
+        for id in [selected, absent] {
+            assert_eq!(components(s, n, e, snapshot, id).unwrap_err(), upstream);
+        }
+    }
+    assert_eq!((foreign_source, foreign_nodes, foreign_env.env().clone()), foreign_before);
+    // A syntactically valid proof with its required witness step missing is refused upstream.
+    let malformed = text.replacen("    take the set;\n", "", 1);
+    assert_ne!(malformed, text);
+    let (s, n, e, _) = source_registration_formula_inputs(&malformed, "vc-fingerprint-test", "vc_fingerprints", 0);
+    let inputs_before = (s.clone(), n.clone(), e.env().clone());
+    let upstream = check(&s, &n, e.env()).unwrap_err();
+    assert_ne!(upstream, invalid);
+    for id in [selected, absent] {
+        assert_eq!(components(&s, &n, e.env(), snapshot, id).unwrap_err(), upstream);
+    }
+    assert_eq!((s, n, e.env().clone()), inputs_before);
+    // Genuine Core supports OA/OB swapping, while source VC generation refuses it.
+    let a = text.find("  cluster OAExists:").unwrap();
+    let b = text.find("  cluster OBExists:").unwrap();
+    let ab = text.find("  cluster OABExists:").unwrap();
+    let swapped = format!("{}{}{}{}", &text[..a], &text[b..ab], &text[a..b], &text[ab..]);
+    assert_ne!(swapped, text);
+    let (s, n, e, _) = source_registration_formula_inputs(&swapped, "vc-fingerprint-test", "vc_fingerprints", 0);
+    let inputs_before = (s.clone(), n.clone(), e.env().clone());
+    let checked = check(&s, &n, e.env()).unwrap();
+    let core = mizar_core::elaborator::lower_source_existential_registration(&checked).unwrap();
+    let upstream = mizar_vc::generator::generate_source_existential_registration(&core, snapshot,
+        &GenerationSchemaVersion::new("source-existential-registration-v1"), &VcSchemaVersion::new("vc-v1")).unwrap_err();
+    assert_ne!(upstream, invalid);
+    for id in [selected, absent] {
+        assert_eq!(components(&s, &n, e.env(), snapshot, id).unwrap_err(), upstream);
+    }
+    assert_eq!((s, n, e.env().clone()), inputs_before);
+    assert_eq!((source, nodes, collected.env().clone()), before);
+}

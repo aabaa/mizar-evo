@@ -209,6 +209,16 @@ status projection は ATP backend 実行、SAT solving、kernel 呼び出し、s
 invention、premise selection、proof cache query、witness の stage/publish、artifact
 manifest write、proof acceptance を行わない。
 
+## Source canonical components
+
+`source_registration_canonical_components(&SurfaceResolvedArena, &TypedArena, &SymbolEnv, BuildSnapshotId, VcId) -> Result<(CanonicalVcFingerprint, Hash, Hash), String>` は現在の選択 leaf の VC 全体 fingerprint、goal hash、可視 context hash をこの順で既存型・既存 content profile により返す。
+同じ不変入力で source proof checker、既存 Core lowering、source VC generator をこの順に fresh 実行する。既存 Proof の generation schema source-existential-registration-v1 と VC schema vc-v1 を使う。既存 source facade の本体・検査順・error は維持し、この操作はそれらの呼出し、default discharge、Kernel 検査を行わない。
+同じ source/env で [arena owner producer](../../mizar-resolve/ja/symbols.md#arena-registration-owner-payloads) を呼ぶ。全 original VC の goal と GeneratedFact premise から、実 generated Ref/Not/And/Or row をたどって到達 Core root の集合を得る。現在の実 id は走査だけに使い、caller graph や再構成 payload を受け取らない。欠損・未対応走査は内部 error registration.proof.invalid_source_components で全体拒否する。
+保持した同一 checker result、局所生成 Core、変更していない局所 owner map、全到達 root 集合で [Core formula content](../../mizar-core/ja/elaborator.md#source-registration-formula-payloads) を呼ぶ。続けて全 [canonical VC map](../../mizar-vc/ja/vc_ir.md#source-registration-canonical-vc-fingerprints) を得て現在の選択 VcId を要求し、なければ同じ内部 error とする。同じ Core/map でその [goal/context 値](../../mizar-vc/ja/vc_ir.md#source-registration-canonical-goal-and-context) を得る。選択失敗より先に各 upstream error をそのまま伝播し、全成功時だけ tuple を返す。
+この呼出し内で実 producer 出力を関連付け、opaque owner/formula byte を caller 入力にしない。返値は限定 content であり、実行 receipt や移譲可能な trust token ではない。source/snapshot の現在性は caller が所有する。既存 hash algorithm/domain/schema framing、汎用 anchor/dependency/status は維持し、新 encoder・公開型・field・adapter・dependency・下位 API を追加しない。
+有効な tuple や未証明・偽の source body から受理を導かない。完全な正規 owner/path/source shape、phase 合成 context/dependency、6 field Proof identity、policy/evidence/witness 関連付け、trusted metadata、再利用資格、source 活性化と公開は別作業である。Proof23/Artifact25/17 と Steps6–8 は保留を維持する。
+実 source の追加3系列は既存 setup を再利用する。現在 owner/leaf に対する独立 frozen-profile VC/goal/context 期待値と実下位 producer との一致、中立編集・allocator/現在 id 移動・対応済み declaration/registration 並替・module/owner/body 変更と goal/context 分離、実 foreign/malformed/unsupported 入力・不在選択・upstream error 優先・API 入力不変性を扱う。既存 fixture・期待値・全旧 test は変更せず、架空 accepted control や producer profile matrix の複製を作らない。
+
 ## Source candidate checking
 
 `check_source_registration_candidate(&SurfaceResolvedArena, &TypedArena, &SymbolEnv, BuildSnapshotId, VcId, (LogicProfile, ConcreteFormat), &VerifierPolicy) -> Result<(KernelCheckResult, PolicyDecision), String>` は leaf 1件の fresh 検査を所有し、登録活性化や公開を行わない。encoding tuple は既存の明示 profile/format をまとめるだけで型を追加しない。source checker と Core lowering を再実行し、既存 source/VC schema で元 graph を生成して実 default Discharge を適用する。選択 NeedsAtp leaf に [実 source candidate factory](../../mizar-atp/ja/backend.md#source-registration-candidate-inputs) を使う。未対応・foreign input、不正・Discharged target、実行許可のない policy では checked result や fallback なしで error とする。

@@ -462,6 +462,8 @@ layer consumes both; one alignment task is owned here.
 
 31. **[Unpublished source ATP witness projection](../../task_contracts/en/PROOF-SOURCE-CANDIDATE-WITNESS-PROJECTION.md).** [x]
 
+32. **[Genuine source canonical components](../../task_contracts/en/PROOF-SOURCE-CANONICAL-COMPONENTS.md).** [x]
+
 ## Recommended Verification
 
 Run after each task:
