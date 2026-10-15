@@ -549,6 +549,8 @@ the owning producers when the paired tasks land.
 
 37. **[Read-only original native capture consumer handoff](../../task_contracts/en/LSP-NATIVE-FRONTEND-DIAGNOSTIC-NOTIFICATIONS.md).** [x]
 
+38. **[Explicit native Disk cached SourceLoad scheduling](../../task_contracts/en/DRIVER-NATIVE-DISK-CACHE-SCHEDULE.md).** [x]
+
 ## Recommended Verification
 
 Run after each task:

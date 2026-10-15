@@ -517,6 +517,8 @@ artifact/test のフォローアップタスクが所有する。本 crate の�
 
 37. **[Read-only original native capture consumer handoff](../../task_contracts/ja/LSP-NATIVE-FRONTEND-DIAGNOSTIC-NOTIFICATIONS.md).** [x]
 
+38. **[Explicit native Disk cached SourceLoad scheduling](../../task_contracts/ja/DRIVER-NATIVE-DISK-CACHE-SCHEDULE.md).** [x]
+
 ## 推奨検証
 
 各タスクの後で実行する:

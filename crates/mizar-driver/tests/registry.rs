@@ -610,3 +610,26 @@ impl PhaseService for FixtureService {
         PhaseResult::complete()
     }
 }
+
+#[test]
+fn copied_builtin_descriptors_preserve_fixture_concrete_identity() {
+    let mut builder = PhaseRegistryBuilder::new();
+    builder.register_source_load();
+    builder.register_frontend(vec![]);
+    let registry = builder.build().unwrap();
+    let mut fixture = fixture_service(
+        "fixture",
+        PhaseOwner::MizarFrontend,
+        vec![PipelinePhase::Frontend],
+        1,
+    );
+    for phase in [PipelinePhase::SourceLoad, PipelinePhase::Frontend] {
+        fixture.descriptor = registry.descriptor_for_phase(phase).unwrap().clone();
+        let service: &dyn PhaseService = &fixture;
+        assert_eq!(service.phase(), fixture.descriptor);
+        assert_eq!(
+            std::any::Any::type_id(service),
+            std::any::TypeId::of::<FixtureService>()
+        );
+    }
+}

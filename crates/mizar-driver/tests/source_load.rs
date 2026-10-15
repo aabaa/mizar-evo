@@ -14665,3 +14665,302 @@ fn current_native_diagnostic_submission_preserves_captured_precondition_errors()
         DriverSubmitError::InvalidCapturedSession { .. }
     ));
 }
+
+#[test]
+fn native_disk_cache_scheduled_results_match_clean_runs_and_release_owners() {
+    use mizar_build::planner::{lockfile_content_hash, workspace_config_content_hash};
+    use mizar_build::scheduler::SchedulerEventKind;
+    use mizar_cache::cache_store::{CacheInsertOutcome, CacheStoreRoot};
+    use mizar_ir::{
+        cache_adapter::{EncodeCacheRecordOutcome, IrCacheAdapter},
+        storage::CollectInput,
+    };
+    for threshold in [usize::MAX, 0] {
+        for case in [
+            "hit", "raw", "missing", "disabled", "provider", "config", "cancel", "obsolete",
+        ] {
+            let fixture = Fixture::new("\u{feff}definition\r\nend;\r\n".as_bytes());
+            let ids = InMemorySessionIdAllocator::new();
+            let snapshots = SnapshotRegistry::new();
+            let policy = mizar_proof::policy::VerifierPolicy::release();
+            let store = CacheStoreRoot::new(fixture.root.join("scheduled-cache"));
+            let mut old_source = None;
+            for old in [true, false] {
+                fixture.write(if !old && case == "raw" {
+                    b"definition\nend;\n"
+                } else {
+                    "\u{feff}definition\r\nend;\r\n".as_bytes()
+                });
+                let (mut draft, mut input) = fixture.submit_request(vec![], vec![]);
+                let plan = produce_build_plan(
+                    input.plan_request.clone(),
+                    input.workspace_packages.clone(),
+                    input.lockfile.clone(),
+                )
+                .unwrap();
+                draft.source_inputs.versions.clear();
+                draft.dependency_inputs.lockfile_hash = lockfile_content_hash(&plan.lockfile);
+                draft.verifier_config = VerifierConfigInput::new(workspace_config_content_hash(
+                    &plan.verifier_config,
+                    &plan.build_config,
+                ));
+                if !old && case == "config" {
+                    draft.verifier_config = VerifierConfigInput::new(hash(2));
+                }
+                let descriptor = SourceInput {
+                    package_id: fixture.version.package_id.clone(),
+                    module_path: fixture.version.module_path.clone(),
+                    normalized_path: fixture.version.normalized_path.clone(),
+                    edition: fixture.version.edition.clone(),
+                    origin: SourceOriginInput::Disk {
+                        path: "src/main.miz".into(),
+                    },
+                };
+                let session = draft
+                    .capture_sources(
+                        &ids,
+                        &snapshots,
+                        vec![(
+                            DiskSourceLoader::new(fixture.root.join("alpha")),
+                            descriptor,
+                        )],
+                    )
+                    .unwrap();
+                let snapshot = session.captured().snapshot().id;
+                let source_id = session.captured().snapshot().source_versions[0].source_id;
+                let unit = WorkUnit::Module {
+                    module: mizar_build::module_index::ModuleId::new(
+                        PackageId::new("alpha"),
+                        ModulePath::new("main"),
+                    ),
+                };
+                let owner = publisher(snapshot, threshold, &unit);
+                allow_frontend(&owner, &unit);
+                let mut builder = PhaseRegistryBuilder::new();
+                builder.register_source_load();
+                builder.register_frontend(vec![]);
+                let mut driver = CompilerDriver::new(builder.build().unwrap())
+                    .with_output_publisher(owner.clone());
+                fs::remove_file(fixture.root.join("alpha/src/main.miz")).unwrap();
+                if old {
+                    let submission = driver
+                        .submit_captured(session, &ids, &snapshots, input)
+                        .unwrap();
+                    let (inputs, phase_input) = native_disk_lookup_context(&submission, &ids);
+                    assert_eq!(inputs.validate_native_lock_content(), Ok(()));
+                    assert_eq!(inputs.validate_native_config_content(), Ok(()));
+                    let result = submission
+                        .scheduler_run
+                        .as_ref()
+                        .unwrap()
+                        .phase_results
+                        .get(&source_task(&submission).id)
+                        .unwrap();
+                    let handle = owner
+                        .storage()
+                        .typed_handle::<SourceUnit>(
+                            &result[0].output_refs[0],
+                            &OutputKind::new("SourceUnit"),
+                        )
+                        .unwrap();
+                    let EncodeCacheRecordOutcome::Encoded(record) = inputs
+                        .encode_native_disk_cache_record(
+                            &phase_input,
+                            &policy,
+                            &IrCacheAdapter::new(owner),
+                            handle,
+                        )
+                        .unwrap()
+                    else {
+                        panic!("real scheduled record");
+                    };
+                    if case != "missing" {
+                        assert_eq!(store.insert(&record).unwrap(), CacheInsertOutcome::Inserted);
+                        assert!(matches!(
+                            store.lookup(&record.header.key),
+                            mizar_cache::cache_store::CacheLookupOutcome::Hit(_)
+                        ));
+                    }
+                    old_source = Some((
+                        source_id,
+                        submission.session.captured().snapshot().source_versions[0].source_hash,
+                    ));
+                    continue;
+                }
+                assert_ne!(old_source.unwrap().0, source_id);
+                assert_eq!(
+                    old_source.unwrap().1,
+                    session.captured().snapshot().source_versions[0].source_hash
+                );
+                let (_, clean_input) = fixture.submit_request(vec![], vec![]);
+                let clean_owner = publisher(snapshot, threshold, &unit);
+                allow_frontend(&clean_owner, &unit);
+                let mut clean_builder = PhaseRegistryBuilder::new();
+                clean_builder.register_source_load();
+                clean_builder.register_frontend(vec![]);
+                let clean = CompilerDriver::new(clean_builder.build().unwrap())
+                    .with_output_publisher(clean_owner.clone())
+                    .submit_captured(session.clone(), &ids, &snapshots, clean_input)
+                    .unwrap();
+                let source_task = source_task(&clean);
+                let frontend_task = clean
+                    .task_graph
+                    .as_ref()
+                    .unwrap()
+                    .tasks()
+                    .iter()
+                    .find(|task| task.phases == [PipelinePhase::Frontend])
+                    .unwrap();
+                input.cache_policy = if case == "disabled" {
+                    CacheSchedulingPolicy::Disabled
+                } else {
+                    CacheSchedulingPolicy::Enabled
+                };
+                // Even an otherwise viable caller hit must be replaced by this route.
+                input.cache_decisions = CacheSchedulingPlan::new(vec![CacheTaskDecision::new(
+                    source_task.id.clone(),
+                    CacheSchedulingOutcome::ValidatedHit(ValidatedCacheHit::new(
+                        vec![CacheOutputRef::new("caller", "fiction")],
+                        vec![],
+                    )),
+                )]);
+                if case == "provider" {
+                    input.phase_dispatch_inputs = Some(Box::new(SuppliedInput::None));
+                }
+                if case == "cancel" {
+                    input.cancellation.cancel_task(source_task.id.clone());
+                }
+                if case == "obsolete" {
+                    input
+                        .cancellation
+                        .discard_obsolete_completed_task(source_task.id.clone());
+                }
+                let submission = driver
+                    .submit_captured_with_native_disk_cache(
+                        session, &ids, &snapshots, input, &policy, &store,
+                    )
+                    .unwrap();
+                let run = submission.scheduler_run.as_ref().unwrap();
+                let state = run
+                    .task_states
+                    .iter()
+                    .find(|record| record.task_id == source_task.id)
+                    .unwrap()
+                    .state;
+                let started = |id: &mizar_build::task_graph::TaskId| {
+                    run.events.iter().any(|event| {
+                        event.task_id.as_ref() == Some(id)
+                            && event.kind == SchedulerEventKind::TaskStarted
+                    })
+                };
+                if case == "cancel" || case == "obsolete" || case == "provider" {
+                    assert_eq!(
+                        state,
+                        if case == "provider" {
+                            TaskState::Blocked
+                        } else {
+                            TaskState::Cancelled
+                        }
+                    );
+                    assert!(!run.phase_results.contains_key(&source_task.id));
+                    assert!(!run.phase_results.contains_key(&frontend_task.id));
+                } else {
+                    assert_eq!(
+                        state,
+                        if case == "hit" {
+                            TaskState::CacheHit
+                        } else {
+                            TaskState::Completed
+                        }
+                    );
+                    assert_eq!(started(&source_task.id), case != "hit");
+                    assert!(started(&frontend_task.id));
+                    let mut actual_source = None;
+                    for (id, kind) in [
+                        (&source_task.id, "SourceUnit"),
+                        (&frontend_task.id, "FrontendOutput"),
+                    ] {
+                        let actual = &run.phase_results[id][0];
+                        let expected = &clean.scheduler_run.as_ref().unwrap().phase_results[id][0];
+                        assert_eq!(actual.status, PhaseStatus::Complete);
+                        assert_eq!(actual.diagnostics, expected.diagnostics);
+                        if case == "hit" && kind == "SourceUnit" {
+                            assert!(actual.cache_observation.is_none());
+                        }
+                        let output = &actual.output_refs[0];
+                        assert_eq!(
+                            output.content_hash(),
+                            expected.output_refs[0].content_hash()
+                        );
+                        assert_eq!(
+                            output.side_table_hash(),
+                            expected.output_refs[0].side_table_hash()
+                        );
+                        assert_eq!(
+                            matches!(output.placement(), StoragePlacement::Blob { .. }),
+                            threshold == 0
+                        );
+                        if kind == "SourceUnit" {
+                            let actual_handle = owner
+                                .storage()
+                                .typed_handle::<SourceUnit>(output, &OutputKind::new(kind))
+                                .unwrap();
+                            let expected_handle = clean_owner
+                                .storage()
+                                .typed_handle::<SourceUnit>(
+                                    &expected.output_refs[0],
+                                    &OutputKind::new(kind),
+                                )
+                                .unwrap();
+                            assert_eq!(
+                                *owner.storage().get(&actual_handle).unwrap(),
+                                *clean_owner.storage().get(&expected_handle).unwrap()
+                            );
+                            assert_eq!(
+                                owner.storage().side_tables(&actual_handle).unwrap(),
+                                clean_owner.storage().side_tables(&expected_handle).unwrap()
+                            );
+                            assert!(output.lineage().parents.is_empty());
+                            actual_source = Some(output.output());
+                        } else {
+                            let actual_handle = owner.storage().typed_handle::<FrontendOutput<<MizarParserSeam as ParserSeam>::Ast>>(output, &OutputKind::new(kind)).unwrap();
+                            let expected_handle = clean_owner.storage().typed_handle::<FrontendOutput<<MizarParserSeam as ParserSeam>::Ast>>(&expected.output_refs[0], &OutputKind::new(kind)).unwrap();
+                            assert_eq!(
+                                *owner.storage().get(&actual_handle).unwrap(),
+                                *clean_owner.storage().get(&expected_handle).unwrap()
+                            );
+                            assert_eq!(
+                                owner.storage().side_tables(&actual_handle).unwrap(),
+                                clean_owner.storage().side_tables(&expected_handle).unwrap()
+                            );
+                            assert_eq!(output.lineage().parents, vec![actual_source.unwrap()]);
+                        }
+                    }
+                }
+                assert_eq!(
+                    submission.status,
+                    if case == "provider" {
+                        DriverSubmissionStatus::BlockedByPhaseDispatchGap
+                    } else {
+                        DriverSubmissionStatus::BlockedByMissingPhaseServices
+                    }
+                );
+                let collected = owner.storage().collect(CollectInput {
+                    snapshot,
+                    protected_outputs: vec![],
+                });
+                assert_eq!(collected.retained_outputs, 0);
+                assert_eq!(
+                    collected.outputs_dropped,
+                    if case == "provider" {
+                        0
+                    } else if case == "cancel" || case == "obsolete" {
+                        1
+                    } else {
+                        2
+                    }
+                );
+            }
+        }
+    }
+}

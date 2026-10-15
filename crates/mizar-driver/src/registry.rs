@@ -225,7 +225,7 @@ pub enum PhaseRegistryError {
     },
 }
 
-pub trait PhaseService: Send + Sync {
+pub trait PhaseService: Send + Sync + std::any::Any {
     fn phase(&self) -> PhaseDescriptor;
 
     fn cache_key(&self, input: &PhaseInput, context: &PhaseCacheContext) -> PhaseCacheIntent;
@@ -512,7 +512,7 @@ impl PhaseRegistry {
             .execute(descriptor, service, input, resources))
     }
 
-    fn service_for_phase(
+    pub(crate) fn service_for_phase(
         &self,
         phase: PipelinePhase,
     ) -> Result<&dyn PhaseService, PhaseRegistryError> {

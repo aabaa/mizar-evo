@@ -172,6 +172,8 @@ driver-owned query boundary が canonical `CacheKey` と lookup result の構築
 write したり、LSP payload へ変換したり、proof/cache/artifact record を trusted status
 へ昇格したりしてはならない。
 
+PhaseService は std::any::Any も継承し、direct query-boundary call も含め concrete implementer に static を要求する。non-static 借用 implementer は対象外であり、登録 service は既に static な所有を要求される。既存 service_for_phase lookup を crate-visible とし、明示的 native Disk cached scheduling 経路が実装の TypeId を組込み SourceLoadService/FrontendService と比較できるようにする。上書き可能な identity 宣言や新 field は作らず、descriptor/query/通常 dispatch は維持する。
+
 ### PhaseContext
 
 ```rust

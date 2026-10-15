@@ -167,6 +167,7 @@ trait PhaseService {
 
 The descriptor is registration identity, not semantic authority. Phase meaning
 comes from the architecture specs and owning phase crates.
+PhaseService also extends std::any::Any, requiring static concrete implementers, including for direct query-boundary calls; borrowing non-static implementers are outside this interface. Registered services already require static ownership. The existing service_for_phase lookup is crate-visible so the explicit native Disk cached scheduling route can compare concrete implementation TypeIds with the built-in SourceLoadService/FrontendService. This adds no overridable identity claim or new field; descriptors, query behavior and ordinary dispatch remain unchanged.
 
 `cache_key` is a pure projection from supplied input identities and context
 identity fields into a cache-key intent or owner-provided cache-key request. It

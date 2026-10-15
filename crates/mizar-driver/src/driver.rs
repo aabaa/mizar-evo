@@ -390,7 +390,7 @@ impl CompilerDriver {
         let session = pending
             .capture_snapshot(snapshots)
             .map_err(|error| DriverSubmitError::SnapshotCapture { error })?;
-        self.submit_inner(session, allocator, snapshots, input, true, false)
+        self.submit_inner(session, allocator, snapshots, input, (true, false), None)
     }
 
     pub fn submit<A, L>(
@@ -410,7 +410,7 @@ impl CompilerDriver {
         let session = pending
             .capture_snapshot(snapshots)
             .map_err(|error| DriverSubmitError::SnapshotCapture { error })?;
-        self.submit_inner(session, allocator, snapshots, input, false, false)
+        self.submit_inner(session, allocator, snapshots, input, (false, false), None)
     }
 
     pub fn submit_captured<A: SessionIdAllocator, L: SourceLayoutProvider>(
@@ -420,7 +420,30 @@ impl CompilerDriver {
         snapshots: &SnapshotRegistry<A>,
         input: DriverSubmitInput<L>,
     ) -> Result<BuildSubmission, DriverSubmitError> {
-        self.submit_inner(session, allocator, snapshots, input, false, true)
+        self.submit_inner(session, allocator, snapshots, input, (false, true), None)
+    }
+
+    /// Uses genuine native Disk SourceLoad cache records for captured scheduling.
+    pub fn submit_captured_with_native_disk_cache<
+        A: SessionIdAllocator,
+        L: SourceLayoutProvider,
+    >(
+        &mut self,
+        session: BuildSession,
+        allocator: &A,
+        snapshots: &SnapshotRegistry<A>,
+        input: DriverSubmitInput<L>,
+        policy: &mizar_proof::policy::VerifierPolicy,
+        store: &mizar_cache::cache_store::CacheStoreRoot,
+    ) -> Result<BuildSubmission, DriverSubmitError> {
+        self.submit_inner(
+            session,
+            allocator,
+            snapshots,
+            input,
+            (false, true),
+            Some((policy, store)),
+        )
     }
 
     /// Checks live session currentness for a native Disk diagnostic handoff.
@@ -572,7 +595,7 @@ impl CompilerDriver {
         snapshots: &SnapshotRegistry<A>,
         input: DriverSubmitInput<L>,
     ) -> Result<BuildSubmission, DriverSubmitError> {
-        self.submit_inner(session, allocator, snapshots, input, true, true)
+        self.submit_inner(session, allocator, snapshots, input, (true, true), None)
     }
 
     fn submit_inner<A, L>(
@@ -581,8 +604,11 @@ impl CompilerDriver {
         allocator: &A,
         snapshots: &SnapshotRegistry<A>,
         input: DriverSubmitInput<L>,
-        discover_imports: bool,
-        prepared: bool,
+        (discover_imports, prepared): (bool, bool),
+        native_disk_cache: Option<(
+            &mizar_proof::policy::VerifierPolicy,
+            &mizar_cache::cache_store::CacheStoreRoot,
+        )>,
     ) -> Result<BuildSubmission, DriverSubmitError>
     where
         A: SessionIdAllocator,
@@ -812,7 +838,11 @@ impl CompilerDriver {
         scheduler_input.mode = scheduler_mode;
         scheduler_input.priority_hints = priority_hints;
         scheduler_input.cache = cache_policy;
-        scheduler_input.cache_decisions = cache_decisions;
+        scheduler_input.cache_decisions = if native_disk_cache.is_some() {
+            CacheSchedulingPlan::empty()
+        } else {
+            cache_decisions
+        };
         if !missing_services.is_empty() {
             use mizar_build::cache_seam::{CacheFallbackReason, CacheSchedulingOutcome};
             for decision in &mut scheduler_input.cache_decisions.decisions {
@@ -845,9 +875,137 @@ impl CompilerDriver {
                 allocator,
             }),
         );
+        let mut cached_sources = Vec::new();
+        if let Some((policy, store)) = native_disk_cache
+            && cache_policy == CacheSchedulingPolicy::Enabled
+            && phase_dispatch_inputs.is_none()
+            && built_in_prefix
+            && session.captured.native_sources().is_some()
+            && !session.captured.snapshot.source_versions.is_empty()
+            && session
+                .captured
+                .snapshot
+                .source_versions
+                .iter()
+                .all(|version| version.origin == mizar_session::SourceOrigin::Disk)
+        {
+            use crate::{
+                frontend_adapter::{FrontendService, SourceLoadService},
+                registry::{PhaseInput, PhaseStatus, SourceLoadInputs},
+            };
+            use mizar_build::cache_seam::{
+                CacheOutputRef, CacheSchedulingOutcome, CacheTaskDecision, ValidatedCacheHit,
+            };
+            use mizar_ir::{
+                cache_adapter::{CacheRehydrateOutcome, IrCacheAdapter},
+                dispatch_input::PhaseDispatchInputBundle,
+                storage::RetainOwner,
+            };
+            let concrete_builtins = self
+                .registry
+                .service_for_phase(PipelinePhase::SourceLoad)
+                .is_ok_and(|service| {
+                    std::any::Any::type_id(service) == std::any::TypeId::of::<SourceLoadService>()
+                })
+                && self
+                    .registry
+                    .service_for_phase(PipelinePhase::Frontend)
+                    .is_ok_and(|service| {
+                        std::any::Any::type_id(service) == std::any::TypeId::of::<FrontendService>()
+                    });
+            let inputs = SourceLoadInputs {
+                snapshot: &session.captured.snapshot,
+                captured: Some(&session.captured),
+                build_plan: &build_plan,
+                module_index: &module_index,
+                allocator,
+            };
+            if concrete_builtins
+                && inputs.validate_native_lock_content().is_ok()
+                && inputs.validate_native_config_content().is_ok()
+                && let Some(publisher) = self.output_publisher.as_ref()
+            {
+                let adapter = IrCacheAdapter::new(publisher.clone());
+                for task in task_graph.tasks() {
+                    if task.phases != [PipelinePhase::SourceLoad] {
+                        continue;
+                    }
+                    let mizar_build::task_graph::WorkUnit::Module { module } = &task.unit else {
+                        continue;
+                    };
+                    let mut versions = inputs.snapshot.source_versions.iter().filter(|version| {
+                        version.package_id == module.package && version.module_path == module.path
+                    });
+                    let Some(version) = versions.next() else {
+                        continue;
+                    };
+                    if versions.next().is_some() {
+                        continue;
+                    }
+                    let input = PhaseInput::new(
+                        task.unit.clone(),
+                        PhaseDispatchInputBundle::without_parent_outputs(
+                            inputs.snapshot.id,
+                            crate::frontend_adapter::source_input_hash(version),
+                            Vec::new(),
+                        ),
+                    );
+                    let Ok(CacheRehydrateOutcome::Rehydrated(handle)) =
+                        inputs.rehydrate_native_disk_cache(&input, policy, store, &adapter)
+                    else {
+                        continue;
+                    };
+                    let owner = RetainOwner::new(format!(
+                        "native-disk-cache:{:p}:{:?}:{}",
+                        self,
+                        session.id,
+                        task.id.as_str()
+                    ));
+                    if publisher
+                        .validate_current_output(input.snapshot, handle.any())
+                        .is_err()
+                        || publisher.storage().validate_handle(handle.any()).is_err()
+                        || publisher
+                            .storage()
+                            .retain(handle.output(), owner.clone())
+                            .is_err()
+                    {
+                        continue;
+                    }
+                    scheduler_input
+                        .cache_decisions
+                        .decisions
+                        .push(CacheTaskDecision::new(
+                            task.id.clone(),
+                            CacheSchedulingOutcome::ValidatedHit(ValidatedCacheHit::new(
+                                vec![CacheOutputRef::new(
+                                    format!("{:?}", handle.output()),
+                                    format!("{:?}", handle.content_hash()),
+                                )],
+                                Vec::new(),
+                            )),
+                        ));
+                    dispatcher.phase_results.insert(
+                        task.id.clone(),
+                        vec![PhaseResult {
+                            status: PhaseStatus::Complete,
+                            diagnostics: Vec::new(),
+                            output_refs: vec![handle.erase()],
+                            cache_observation: None,
+                        }],
+                    );
+                    cached_sources.push((task.id.clone(), *handle, owner));
+                }
+            }
+        }
         let scheduler_run = match run_scheduler_with_dispatcher(scheduler_input, &mut dispatcher) {
             Ok(scheduler_run) => scheduler_run,
             Err(diagnostics) => {
+                for (_, handle, owner) in &cached_sources {
+                    if let Some(publisher) = self.output_publisher.as_ref() {
+                        let _ = publisher.storage().release(handle.output(), owner);
+                    }
+                }
                 session.finish(BuildSessionOutcome::Failed);
                 let failed_session = session.clone();
                 let publication_decision = self.lanes.publication_decision(snapshots, &session);
@@ -879,6 +1037,14 @@ impl CompilerDriver {
             DriverSubmissionStatus::SchedulerValidated
         };
         let mut phase_results = dispatcher.phase_results;
+        for (task, _, _) in &cached_sources {
+            if !scheduler_run.task_states.iter().any(|record| {
+                &record.task_id == task
+                    && record.state == mizar_build::scheduler::TaskState::CacheHit
+            }) {
+                phase_results.remove(task);
+            }
+        }
         let publisher_current = self.output_publisher.as_ref().is_none_or(|publisher| {
             publisher
                 .validate_current_snapshot(session.captured.snapshot.id)
@@ -916,6 +1082,11 @@ impl CompilerDriver {
                 scheduler_task_states: &driver_scheduler_run.task_states,
             },
         );
+        for (_, handle, owner) in &cached_sources {
+            if let Some(publisher) = self.output_publisher.as_ref() {
+                let _ = publisher.storage().release(handle.output(), owner);
+            }
+        }
         self.store_session(session.clone(), cancellation, events);
         Ok(BuildSubmission {
             session,
