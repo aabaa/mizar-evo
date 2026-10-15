@@ -68,6 +68,156 @@ impl Server {
             .map(|(version, text)| (*version, text.as_str()))
     }
 
+    /// Submits a native capture and returns current all-OpenBuffer frontend notification data.
+    pub fn submit_native_frontend_diagnostics<
+        A: mizar_session::SessionIdAllocator,
+        L: mizar_build::module_index::SourceLayoutProvider,
+    >(
+        &self,
+        driver: &mut mizar_driver::driver::CompilerDriver,
+        session: mizar_driver::request::BuildSession,
+        allocator: &A,
+        snapshots: &mizar_session::SnapshotRegistry<A>,
+        input: mizar_driver::driver::DriverSubmitInput<L>,
+    ) -> Result<
+        (mizar_driver::driver::BuildSubmission, Option<Vec<Value>>),
+        mizar_driver::driver::DriverSubmitError,
+    > {
+        use mizar_build::task_graph::{PipelinePhase as BuildPhase, TaskKind, WorkUnit};
+        use mizar_diagnostics::{
+            failure_record::{DiagnosticFreshness, DiagnosticPrimaryLocation, PipelinePhase},
+            registry::DiagnosticSeverity,
+        };
+        use mizar_driver::registry::PhaseStatus;
+        let (submission, index) = driver
+            .submit_captured_with_native_diagnostic_index(session, allocator, snapshots, input)?;
+        let notifications = (|| {
+            if self.initialized.is_none() || self.shutdown || self.exit_code.is_some() {
+                return None;
+            }
+            let index = index.as_ref()?;
+            let snapshot = submission.session.captured().snapshot().id;
+            if !index.obsolete_drafts().is_empty() {
+                return None;
+            }
+            driver
+                .validate_current_native_diagnostics(submission.session.id(), snapshots)
+                .ok()?;
+            let sources = driver
+                .session(submission.session.id())?
+                .captured()
+                .native_sources()?;
+            if sources.is_empty() {
+                return None;
+            }
+            let graph = submission.task_graph.as_ref()?;
+            let run = submission.scheduler_run.as_ref()?;
+            let mut by_source = std::collections::HashMap::new();
+            let mut by_uri = BTreeMap::new();
+            for (_, loaded, input) in sources {
+                let mizar_session::SourceOriginInput::OpenBuffer {
+                    uri,
+                    actual_version,
+                    text,
+                    ..
+                } = &input.origin
+                else {
+                    return None;
+                };
+                let version = i32::try_from(*actual_version).ok()?;
+                if self.document(uri) != Some((version, text.as_ref()))
+                    || by_source
+                        .insert(loaded.source_id, (loaded, input, uri))
+                        .is_some()
+                    || by_uri.insert(uri, (version, Vec::new())).is_some()
+                {
+                    return None;
+                }
+                // Clean captures must also have valid original maps and version context.
+                crate::lsp_range_from_open_buffer(
+                    &loaded.line_map,
+                    loaded.loading_map.as_ref(),
+                    &input.origin,
+                    mizar_session::SourceRange {
+                        source_id: loaded.source_id,
+                        start: 0,
+                        end: 0,
+                    },
+                )
+                .ok()?;
+                let mut tasks = graph.tasks().iter().filter(|task| {
+                    task.kind == TaskKind::Frontend
+                        && matches!(&task.unit, WorkUnit::Module { module }
+                            if module.package == input.package_id && module.path == input.module_path)
+                });
+                let task = tasks.next()?;
+                if tasks.next().is_some() || task.phases != [BuildPhase::Frontend] {
+                    return None;
+                }
+                let [result] = run.phase_results.get(&task.id)?.as_slice() else {
+                    return None;
+                };
+                if !matches!(
+                    result.status,
+                    PhaseStatus::Complete | PhaseStatus::Recoverable | PhaseStatus::Fatal
+                ) || (result.status != PhaseStatus::Complete
+                    && !index.records().iter().any(|record| {
+                        matches!(record.primary_location(), DiagnosticPrimaryLocation::Span(span)
+                            if span.range().source_id == loaded.source_id)
+                    }))
+                {
+                    return None;
+                }
+            }
+            for record in index.records() {
+                if record.phase() != PipelinePhase::Frontend
+                    || record.freshness()
+                        != &(DiagnosticFreshness::Current {
+                            source_snapshot: snapshot,
+                        })
+                {
+                    return None;
+                }
+                let DiagnosticPrimaryLocation::Span(span) = record.primary_location() else {
+                    return None;
+                };
+                let (loaded, input, uri) = by_source.get(&span.range().source_id)?;
+                let range = crate::lsp_range_from_open_buffer(
+                    &loaded.line_map,
+                    loaded.loading_map.as_ref(),
+                    &input.origin,
+                    span.range(),
+                )
+                .ok()?;
+                let severity = match record.severity() {
+                    DiagnosticSeverity::Error => 1,
+                    DiagnosticSeverity::Warning => 2,
+                    DiagnosticSeverity::Info => 3,
+                    _ => return None,
+                };
+                by_uri.get_mut(uri)?.1.push(json!({
+                    "range": {"start": {"line": range.start.line, "character": range.start.character},
+                        "end": {"line": range.end.line, "character": range.end.character}},
+                    "code": record.code().to_string(), "message": record.message(), "severity": severity
+                }));
+            }
+            let notifications = by_uri
+                .into_iter()
+                .map(|(uri, (version, diagnostics))| {
+                    json!({
+                        "jsonrpc": "2.0", "method": "textDocument/publishDiagnostics",
+                        "params": {"uri": uri, "version": version, "diagnostics": diagnostics}
+                    })
+                })
+                .collect();
+            driver
+                .validate_current_native_diagnostics(submission.session.id(), snapshots)
+                .ok()?;
+            Some(notifications)
+        })();
+        Ok((submission, notifications))
+    }
+
     /// Handles a JSON-RPC message without creating compiler snapshots.
     pub fn handle_message(&mut self, message: Value) -> Option<Value> {
         if self.exit_code.is_some() {
@@ -1405,5 +1555,488 @@ mod tests {
             "workspace root must be absolute"
         );
         fs::remove_dir_all(root).unwrap();
+    }
+
+    #[test]
+    fn native_frontend_notifications_preserve_real_submissions_and_original_editor_tuples() {
+        use mizar_build::{
+            module_index::{StaticSourceLayout, build_module_index},
+            planner::{
+                DependencySelection, PlanRequest, WorkspacePackage, parse_lockfile,
+                parse_package_manifest, produce_build_plan,
+            },
+            task_graph::{ModuleDependencyOverlay, TaskKind},
+        };
+        use mizar_driver::{
+            driver::{CompilerDriver, DriverSubmitError, DriverSubmitInput},
+            registry::{PhaseRegistryBuilder, PhaseStatus},
+            request::{
+                BatchInvocation, BatchRequest, BuildLaneId, BuildProfile, BuildRequestDraft,
+                BuildRequestGeneration, BuildRequestOrigin, BuildTargets, DependencyInputSet,
+                SourceInputSet, VerifierConfigInput,
+            },
+        };
+        use mizar_ir::{
+            identity::{OutputKind, PipelinePhase as IrPhase, SnapshotHandleRegistry, WorkUnit},
+            publisher::{AllowedWorkUnit, PhaseOutputPublisher},
+            storage::IrStorageService,
+        };
+        use mizar_session::{
+            DiskSourceLoader, Hash, InMemorySessionIdAllocator, PackageId, SnapshotRegistry,
+            SourceOriginInput, ToolchainInfo, WorkspaceRoot,
+        };
+        use std::{fs, sync::Arc, time::SystemTime};
+
+        for mode in [
+            "fatal",
+            "clean",
+            "version",
+            "raw",
+            "closed",
+            "alias",
+            "disk",
+            "mixed",
+            "generated",
+            "resolver",
+            "uninitialized",
+            "shutdown",
+            "exit",
+            "missing-publisher",
+            "invalid-registry",
+            "denied-source",
+            "denied-clean-frontend",
+        ] {
+            let root = std::env::temp_dir().join(format!(
+                "mizar-lsp-native-notifications-{}-{}-{mode}",
+                std::process::id(),
+                SystemTime::now()
+                    .duration_since(SystemTime::UNIX_EPOCH)
+                    .unwrap()
+                    .as_nanos()
+            ));
+            fs::create_dir_all(root.join("alpha/src")).unwrap();
+            for name in ["main", "clean"] {
+                fs::write(root.join(format!("alpha/src/{name}.miz")), [0xff]).unwrap();
+            }
+            let workspace = WorkspaceRoot::new(root.to_str().unwrap());
+            let plan_request = PlanRequest {
+                workspace_root: workspace.clone(),
+                dependency_selection: DependencySelection::Normal,
+                toolchain: ToolchainInfo::new("mizar-evo-test"),
+            };
+            let packages = vec![WorkspacePackage {
+                member_path: "alpha".into(),
+                manifest: parse_package_manifest(
+                    "[package]\nname = \"alpha\"\nversion = \"0.1.0\"\n",
+                )
+                .unwrap(),
+            }];
+            let lock = parse_lockfile("schema_version = 1\n[[package]]\nname = \"alpha\"\nversion = \"0.1.0\"\nsource = { kind = \"workspace\", path = \"alpha\" }\ndependencies = []\n").unwrap();
+            let plan =
+                produce_build_plan(plan_request.clone(), packages.clone(), lock.clone()).unwrap();
+            let layout = StaticSourceLayout::from_native_disk(&plan).unwrap();
+            let index = build_module_index(&plan, &layout, &[]).unwrap();
+            let loader = DiskSourceLoader::new(root.join("alpha"));
+            let mut server = Server::default();
+            initialize(&mut server);
+            let mut descriptors = Vec::new();
+            let mut uris = Vec::new();
+            for name in ["main", "clean"] {
+                let uri = format!(
+                    "file://{}{}",
+                    if cfg!(windows) { "/" } else { "" },
+                    root.join(format!("alpha/src/{name}.miz"))
+                        .to_str()
+                        .unwrap()
+                        .replace('\\', "/")
+                );
+                let raw = if name == "clean" || mode == "clean" {
+                    "\u{feff}definition\r\nend;\r\n:: 🦀\r\n"
+                } else if mode == "alias" {
+                    "end\n"
+                } else if mode == "resolver" {
+                    "import mml.no_such;\ndefinition\nend;\n"
+                } else {
+                    "\u{feff}::=🦀=::end\r\n:: suffix\r"
+                };
+                server.handle_message(notification(
+                    "textDocument/didOpen",
+                    json!({"textDocument": {
+                    "uri": uri, "languageId": "mizar", "version": 7, "text": raw}}),
+                ));
+                let (version, text) = server.document(&uri).unwrap();
+                let mut descriptor = index
+                    .native_open_buffer_input(
+                        &workspace,
+                        &PackageId::new("alpha"),
+                        &loader,
+                        SourceOriginInput::OpenBuffer {
+                            uri: if mode == "alias" && name == "main" {
+                                uri.replace("main.miz", "%6dain.miz")
+                            } else {
+                                uri.clone()
+                            },
+                            expected_version: i64::from(version),
+                            actual_version: i64::from(version),
+                            text: text.into(),
+                        },
+                    )
+                    .unwrap();
+                if mode == "disk" || (mode == "mixed" && name == "clean") {
+                    fs::write(root.join(format!("alpha/src/{name}.miz")), raw).unwrap();
+                    descriptor.origin = SourceOriginInput::Disk {
+                        path: format!("src/{name}.miz").into(),
+                    };
+                } else if mode == "generated" {
+                    descriptor.origin = SourceOriginInput::Generated {
+                        generator: mizar_session::GeneratedSourceKind::new("lsp-native-test"),
+                        text: raw.into(),
+                        anchor: None,
+                    };
+                }
+                descriptors.push((loader.clone(), descriptor));
+                uris.push(uri);
+            }
+            let ids = InMemorySessionIdAllocator::new();
+            let snapshots = SnapshotRegistry::new();
+            let draft = BuildRequestDraft {
+                lane: BuildLaneId::new(1),
+                origin: BuildRequestOrigin::Batch(BatchRequest {
+                    invocation: BatchInvocation::default(),
+                }),
+                generation: BuildRequestGeneration::new(0),
+                workspace_root: workspace,
+                profile: BuildProfile::new("check"),
+                targets: BuildTargets::default(),
+                source_inputs: SourceInputSet { versions: vec![] },
+                dependency_inputs: DependencyInputSet::new(
+                    vec![],
+                    Hash::from_bytes([1; 32]),
+                    ToolchainInfo::new("mizar-evo-test"),
+                ),
+                verifier_config: VerifierConfigInput::new(Hash::from_bytes([2; 32])),
+            };
+            let session = draft
+                .capture_sources(&ids, &snapshots, descriptors)
+                .unwrap();
+            let snapshot = session.captured().snapshot().id;
+            // SourceLoad and Frontend must use the protected capture, including Disk inputs.
+            for name in ["main", "clean"] {
+                fs::remove_file(root.join(format!("alpha/src/{name}.miz"))).unwrap();
+            }
+            match mode {
+                "version" => {
+                    server.handle_message(notification(
+                        "textDocument/didChange",
+                        json!({
+                    "textDocument": {"uri": uris[1], "version": 8}, "contentChanges": []}),
+                    ));
+                }
+                "raw" => {
+                    server.handle_message(notification(
+                        "textDocument/didClose",
+                        json!({"textDocument": {"uri": uris[1]}}),
+                    ));
+                    server.handle_message(notification("textDocument/didOpen", json!({"textDocument": {
+                        "uri": uris[1], "languageId": "mizar", "version": 7, "text": "definition\nend;\n:: 🦀\n"}})));
+                    let (_, loaded, input) = session
+                        .captured()
+                        .native_sources()
+                        .unwrap()
+                        .iter()
+                        .find(|(_, _, input)| input.module_path.as_str() == "clean")
+                        .unwrap();
+                    assert_eq!(server.document(&uris[1]), Some((7, loaded.text.as_ref())));
+                    let SourceOriginInput::OpenBuffer { text, .. } = &input.origin else {
+                        unreachable!()
+                    };
+                    assert_ne!(server.document(&uris[1]).unwrap().1, text.as_ref());
+                }
+                "closed" => {
+                    server.handle_message(notification(
+                        "textDocument/didClose",
+                        json!({
+                    "textDocument": {"uri": uris[1]}}),
+                    ));
+                }
+                "uninitialized" => server = Server::default(),
+                "shutdown" => {
+                    server.handle_message(request("shutdown", Value::Null));
+                }
+                "exit" => {
+                    server.handle_message(notification("exit", Value::Null));
+                }
+                _ => {}
+            }
+            let invalid_registry = SnapshotRegistry::new();
+            let registry = if mode == "invalid-registry" {
+                &invalid_registry
+            } else {
+                &snapshots
+            };
+            let mut ordinary = None;
+            let mut original_records = Vec::new();
+            for route in ["ordinary", "index", "notifications"] {
+                let owner = Arc::new(PhaseOutputPublisher::new(
+                    Arc::new(IrStorageService::new()),
+                    Arc::new(SnapshotHandleRegistry::new()),
+                ));
+                owner.register_current_snapshot(snapshot);
+                for name in ["main", "clean"] {
+                    for (phase, kind) in
+                        [("SourceLoad", "SourceUnit"), ("Frontend", "FrontendOutput")]
+                    {
+                        if (mode == "denied-source" && phase == "SourceLoad")
+                            || (mode == "denied-clean-frontend"
+                                && name == "clean"
+                                && phase == "Frontend")
+                        {
+                            continue;
+                        }
+                        owner.allow_work_unit(AllowedWorkUnit::new(
+                            IrPhase::new(phase),
+                            OutputKind::new(kind),
+                            WorkUnit::new(format!("{:?}:{:?}", "alpha", name)),
+                        ));
+                    }
+                }
+                let mut builder = PhaseRegistryBuilder::new();
+                builder.register_source_load();
+                builder.register_frontend(vec![]);
+                let mut driver = CompilerDriver::new(builder.build().unwrap());
+                if mode != "missing-publisher" {
+                    driver = driver.with_output_publisher(owner);
+                }
+                let mut input = DriverSubmitInput::new(
+                    plan_request.clone(),
+                    packages.clone(),
+                    lock.clone(),
+                    layout.clone(),
+                );
+                input.dependency_overlay = ModuleDependencyOverlay::complete(vec![]);
+                let result = match route {
+                    "ordinary" => driver
+                        .submit_captured(session.clone(), &ids, registry, input)
+                        .map(|s| (s, None)),
+                    "index" => driver
+                        .submit_captured_with_native_diagnostic_index(
+                            session.clone(),
+                            &ids,
+                            registry,
+                            input,
+                        )
+                        .map(|(s, index)| {
+                            assert_eq!(
+                                index.is_some(),
+                                !matches!(mode, "generated" | "missing-publisher"),
+                                "{mode}"
+                            );
+                            if let Some(index) = index {
+                                original_records = index.records().to_vec();
+                                if mode == "denied-source" {
+                                    assert!(index.is_empty());
+                                } else if mode == "denied-clean-frontend" {
+                                    assert_eq!(
+                                        original_records
+                                            .iter()
+                                            .map(|record| record.code().number())
+                                            .collect::<Vec<_>>(),
+                                        vec![33, 52]
+                                    );
+                                }
+                                if mode == "resolver" {
+                                    assert!(original_records.iter().any(|record| {
+                                        record.phase() ==
+                                        mizar_diagnostics::failure_record::PipelinePhase::Resolver
+                                    }));
+                                }
+                            }
+                            (s, None)
+                        }),
+                    _ => server.submit_native_frontend_diagnostics(
+                        &mut driver,
+                        session.clone(),
+                        &ids,
+                        registry,
+                        input,
+                    ),
+                };
+                if mode == "invalid-registry" {
+                    assert!(
+                        matches!(
+                            &result,
+                            Err(DriverSubmitError::InvalidCapturedSession { .. })
+                        ),
+                        "{mode}/{route}: {result:?}"
+                    );
+                } else {
+                    assert!(result.is_ok(), "{mode}/{route}: {result:?}");
+                }
+                if route == "ordinary" {
+                    ordinary = Some(result.map(|(submission, _)| submission));
+                    continue;
+                }
+                let (submission, notifications) = match result {
+                    Ok(value) => {
+                        assert_eq!(
+                            Ok(value.0.clone()),
+                            *ordinary.as_ref().unwrap(),
+                            "{mode}/{route}"
+                        );
+                        value
+                    }
+                    Err(error) => {
+                        assert_eq!(Err(error), *ordinary.as_ref().unwrap(), "{mode}/{route}");
+                        continue;
+                    }
+                };
+                if !matches!(mode, "generated" | "missing-publisher") {
+                    assert_eq!(
+                        driver.validate_current_native_diagnostics(session.id(), registry),
+                        Ok(()),
+                        "{mode}"
+                    );
+                    let run = submission.scheduler_run.as_ref().unwrap();
+                    if matches!(mode, "denied-source" | "denied-clean-frontend") {
+                        for (_, _, input) in driver
+                            .session(session.id())
+                            .unwrap()
+                            .captured()
+                            .native_sources()
+                            .unwrap()
+                        {
+                            let SourceOriginInput::OpenBuffer {
+                                uri,
+                                actual_version,
+                                text,
+                                ..
+                            } = &input.origin
+                            else {
+                                unreachable!()
+                            };
+                            assert_eq!(
+                                server.document(uri),
+                                Some((i32::try_from(*actual_version).unwrap(), text.as_ref()))
+                            );
+                        }
+                    }
+                    for task in submission
+                        .task_graph
+                        .as_ref()
+                        .unwrap()
+                        .tasks()
+                        .iter()
+                        .filter(|task| task.kind == TaskKind::SourceLoad)
+                    {
+                        let source_results = &run.phase_results[&task.id];
+                        assert_eq!(source_results.len(), 1);
+                        assert_eq!(
+                            source_results[0].status,
+                            if mode == "denied-source" {
+                                PhaseStatus::Blocking
+                            } else {
+                                PhaseStatus::Complete
+                            }
+                        );
+                        assert!(source_results[0].diagnostics.is_empty());
+                        if matches!(mode, "denied-source" | "denied-clean-frontend") {
+                            let frontend = submission
+                                .task_graph
+                                .as_ref()
+                                .unwrap()
+                                .tasks()
+                                .iter()
+                                .find(|frontend| {
+                                    frontend.kind == TaskKind::Frontend
+                                        && frontend.unit == task.unit
+                                })
+                                .unwrap();
+                            if mode == "denied-source" {
+                                assert!(source_results[0].output_refs.is_empty());
+                                assert!(!run.phase_results.contains_key(&frontend.id));
+                            } else {
+                                let frontend_results = &run.phase_results[&frontend.id];
+                                assert_eq!(frontend_results.len(), 1);
+                                let mizar_build::task_graph::WorkUnit::Module { module } =
+                                    &task.unit
+                                else {
+                                    unreachable!()
+                                };
+                                assert_eq!(
+                                    frontend_results[0].status,
+                                    if module.path.as_str() == "clean" {
+                                        PhaseStatus::Blocking
+                                    } else {
+                                        PhaseStatus::Fatal
+                                    }
+                                );
+                                assert_eq!(
+                                    frontend_results[0].diagnostics.is_empty(),
+                                    module.path.as_str() == "clean"
+                                );
+                            }
+                        }
+                    }
+                }
+                if route == "notifications" {
+                    if !matches!(mode, "fatal" | "clean") {
+                        assert_eq!(notifications, None, "{mode}");
+                        if mode == "alias" {
+                            assert!(
+                                driver
+                                    .session(session.id())
+                                    .unwrap()
+                                    .captured()
+                                    .native_sources()
+                                    .unwrap()
+                                    .iter()
+                                    .find(|(_, _, input)| input.module_path.as_str() == "main")
+                                    .unwrap()
+                                    .1
+                                    .loading_map
+                                    .is_none()
+                            );
+                        }
+                        continue;
+                    }
+                    let notifications = notifications.unwrap();
+                    let expected_diagnostics = if mode == "clean" {
+                        vec![]
+                    } else {
+                        vec![
+                            json!({"range": {"start": {"line": 0, "character": 9},
+                            "end": {"line": 0, "character": 12}}, "code": "E0033",
+                            "message": "unmatched `end` in lexical scope skeleton", "severity": 1}),
+                            json!({"range": {"start": {"line": 0, "character": 9},
+                            "end": {"line": 0, "character": 12}}, "code": "E0052",
+                            "message": "`end` has no matching block opener", "severity": 1}),
+                        ]
+                    };
+                    assert_eq!(
+                        notifications,
+                        vec![
+                            json!({"jsonrpc": "2.0", "method": "textDocument/publishDiagnostics",
+                            "params": {"uri": uris[1], "version": 7, "diagnostics": []}}),
+                            json!({"jsonrpc": "2.0", "method": "textDocument/publishDiagnostics",
+                            "params": {"uri": uris[0], "version": 7, "diagnostics": expected_diagnostics}})
+                        ],
+                        "{mode}"
+                    );
+                    let diagnostics = notifications[1]["params"]["diagnostics"]
+                        .as_array()
+                        .unwrap();
+                    assert_eq!(diagnostics.len(), original_records.len());
+                    for (diagnostic, record) in diagnostics.iter().zip(&original_records) {
+                        assert_eq!(diagnostic["code"], record.code().to_string());
+                        assert_eq!(diagnostic["message"], record.message());
+                        assert_eq!(
+                            record.severity(),
+                            mizar_diagnostics::registry::DiagnosticSeverity::Error
+                        );
+                    }
+                }
+            }
+            fs::remove_dir_all(root).unwrap();
+        }
     }
 }

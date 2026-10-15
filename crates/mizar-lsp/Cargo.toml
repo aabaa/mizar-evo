@@ -18,7 +18,11 @@ path = "src/main.rs"
 
 [dependencies]
 mizar-build = { path = "../mizar-build" }
+mizar-diagnostics = { path = "../mizar-diagnostics" }
 mizar-driver = { path = "../mizar-driver" }
 mizar-lexer = { path = "../mizar-lexer" }
 mizar-session = { path = "../mizar-session" }
 serde_json = "1"
+
+[dev-dependencies]
+mizar-ir = { path = "../mizar-ir" }

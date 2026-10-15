@@ -268,6 +268,8 @@ Tasks 1–5: [LSP-LIFECYCLE-FOUNDATION](../../task_contracts/ja/LSP-LIFECYCLE-FO
 
 33. **[Native initialize workspace inputs](../../task_contracts/ja/LSP-NATIVE-WORKSPACE-INPUTS.md).** [x]
 
+34. **[Native frontend notification data](../../task_contracts/ja/LSP-NATIVE-FRONTEND-DIAGNOSTIC-NOTIFICATIONS.md).** [x]
+
 ## 推奨検証
 
 各タスクの後で実行する:

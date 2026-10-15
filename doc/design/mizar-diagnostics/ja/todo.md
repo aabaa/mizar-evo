@@ -442,6 +442,8 @@ artifact/test のフォローアップタスクが所有する。本 crate の�
 であり、対となるタスクが到着したら owning producer を通じて訂正済み契約を
 消費すること。
 
+23. **[Lightweight LSP consumer registration](../../task_contracts/ja/LSP-NATIVE-FRONTEND-DIAGNOSTIC-NOTIFICATIONS.md).** [x]
+
 ## 推奨検証
 
 各タスクの後で実行する:

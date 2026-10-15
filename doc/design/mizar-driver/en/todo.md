@@ -547,6 +547,8 @@ the owning producers when the paired tasks land.
 
 36. **[Current native Disk/OpenBuffer diagnostic index](../../task_contracts/en/DRIVER-CURRENT-NATIVE-DIAGNOSTIC-INDEX.md).** [x]
 
+37. **[Read-only original native capture consumer handoff](../../task_contracts/en/LSP-NATIVE-FRONTEND-DIAGNOSTIC-NOTIFICATIONS.md).** [x]
+
 ## Recommended Verification
 
 Run after each task:

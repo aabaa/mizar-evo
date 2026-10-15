@@ -57,3 +57,8 @@ Task 16 verification is documentation-only:
   `mizar-diagnostics` consumer adoption;
 - `git diff --check` and `git diff --cached --check` are sufficient for this
   task unless source files change.
+
+## Current lightweight LSP consumer
+
+The real explicit all-OpenBuffer/current-Frontend notification projection is owned by [LSP Server](../../mizar-lsp/en/server.md#native-frontend-diagnostic-notifications). It consumes the genuine Driver index and original capture under its existing guarded profile. Register mizar-lsp alongside mizar-driver as a Diagnostics consumer for this lightweight route; all other consumers remain subject to their unchanged adoption triggers.
+The workspace reverse-dependency guard permits only these named consumers and retains dependency-table and alias detection. This is a current conditional registration, not a revision of Task16's historical documentation-only result or completion of its old coherent-publication trigger. Full semantic snapshot publication, wire/stdio integration, explanation conversion, ENTRY and SCA-003 remain separately deferred; Diagnostics gains no protocol, driver or acceptance responsibility.

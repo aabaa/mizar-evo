@@ -515,6 +515,8 @@ artifact/test のフォローアップタスクが所有する。本 crate の�
 
 36. **[Current native Disk/OpenBuffer diagnostic index](../../task_contracts/ja/DRIVER-CURRENT-NATIVE-DIAGNOSTIC-INDEX.md).** [x]
 
+37. **[Read-only original native capture consumer handoff](../../task_contracts/ja/LSP-NATIVE-FRONTEND-DIAGNOSTIC-NOTIFICATIONS.md).** [x]
+
 ## 推奨検証
 
 各タスクの後で実行する:

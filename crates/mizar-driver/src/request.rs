@@ -361,9 +361,7 @@ impl CapturedSnapshot {
     pub fn active_snapshot_lease(&self) -> &SnapshotLease {
         &self.active_snapshot_lease
     }
-    pub(crate) fn native_sources(
-        &self,
-    ) -> Option<&[(DiskSourceLoader, LoadedSource, SourceInput)]> {
+    pub fn native_sources(&self) -> Option<&[(DiskSourceLoader, LoadedSource, SourceInput)]> {
         self.native_sources.as_deref()
     }
 }

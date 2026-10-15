@@ -269,6 +269,8 @@ Tasks 1–5: [LSP-LIFECYCLE-FOUNDATION](../../task_contracts/en/LSP-LIFECYCLE-FO
 
 33. **[Native initialize workspace inputs](../../task_contracts/en/LSP-NATIVE-WORKSPACE-INPUTS.md).** [x]
 
+34. **[Native frontend notification data](../../task_contracts/en/LSP-NATIVE-FRONTEND-DIAGNOSTIC-NOTIFICATIONS.md).** [x]
+
 ## Recommended Verification
 
 Run after each task:

@@ -42,7 +42,10 @@ fn workspace_consumers_are_limited_to_driver_until_adoption_seams_land() {
     let mut reverse_dependencies = Vec::new();
 
     for member in workspace_members(&workspace_manifest) {
-        if member == "crates/mizar-diagnostics" || member == "crates/mizar-driver" {
+        if member == "crates/mizar-diagnostics"
+            || member == "crates/mizar-driver"
+            || member == "crates/mizar-lsp"
+        {
             continue;
         }
 
@@ -66,9 +69,8 @@ fn workspace_consumers_are_limited_to_driver_until_adoption_seams_land() {
 
     assert!(
         reverse_dependencies.is_empty(),
-        "mizar-driver is the only allowed diagnostics consumer until real \
-         adoption seams land; unexpected mizar-diagnostics reverse \
-         dependencies:\n{}",
+        "mizar-driver and mizar-lsp are the only registered diagnostics consumers; \
+         unexpected mizar-diagnostics reverse dependencies:\n{}",
         reverse_dependencies.join("\n")
     );
 }
