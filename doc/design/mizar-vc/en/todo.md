@@ -600,6 +600,8 @@ authorized.
 
 64. **[Local evidence component hashes](../../task_contracts/en/VC-LOCAL-EVIDENCE-COMPONENT-HASHES.md).** [x] — Raw component identities only; Proof/Artifact association and publication remain open.
 
+65. **[Source registration canonical VC fingerprints](../../task_contracts/en/VC-SOURCE-REGISTRATION-FINGERPRINTS.md).** [x]
+
 ## Recommended Verification
 
 Run after each task:

@@ -566,6 +566,8 @@ contract、禁止境界、real-source/corruption requirement を使用する。�
 
 64. **[Local evidence component hashes](../../task_contracts/ja/VC-LOCAL-EVIDENCE-COMPONENT-HASHES.md).** [x] — Raw component identities only; Proof/Artifact association and publication remain open.
 
+65. **[Source registration canonical VC fingerprints](../../task_contracts/ja/VC-SOURCE-REGISTRATION-FINGERPRINTS.md).** [x]
+
 ## 推奨検証
 
 各タスクの後で実行する:
