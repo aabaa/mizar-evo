@@ -18598,3 +18598,350 @@ fn source_registration_canonical_components_rejects_absent_foreign_and_upstream_
     assert_eq!((s, n, e.env().clone()), inputs_before);
     assert_eq!((source, nodes, collected.env().clone()), before);
 }
+// Independent grammar construction: literal Syntax schema tags, never actual AST traversal.
+fn source_registration_syntax_expected(label: &str, attrs: &[&str], refs: &[&str]) -> Vec<u8> {
+    let frame = |bytes: &[u8]| {
+        [u32::try_from(bytes.len()).unwrap().to_be_bytes().as_slice(), bytes].concat()
+    };
+    let n = |tag: u16, children: Vec<Vec<u8>>| {
+        [tag.to_be_bytes().as_slice(),
+            u32::try_from(children.len()).unwrap().to_be_bytes().as_slice(),
+            children.concat().as_slice()].concat()
+    };
+    let t = |kind: u16, text: &str| {
+        [2u16.to_be_bytes().as_slice(), kind.to_be_bytes().as_slice(),
+            frame(text.as_bytes()).as_slice(), &[0; 4]].concat()
+    };
+    let a = |name: &str| n(23, vec![n(7, vec![n(8, vec![t(105, name)])])]);
+    let set_type = n(21, vec![n(25, vec![t(101, "set")])]);
+    let choice = n(28, vec![n(33, vec![t(101, "the"), set_type])]);
+    let rhs = if attrs.len() == 1 {
+        n(47, vec![a(attrs[0])])
+    } else {
+        assert_eq!(attrs.len(), 2);
+        // The parser stores the second adjective as this TypeHead in the aggregate assertion.
+        n(21, vec![n(22, vec![a(attrs[0])]), n(25, vec![n(7, vec![n(8, vec![t(105, attrs[1])])])])])
+    };
+    let mut references = Vec::new();
+    for (index, reference) in refs.iter().enumerate() {
+        if index != 0 { references.push(t(102, ",")); }
+        references.push(n(74, vec![t(100, reference)]));
+    }
+    let take = n(67, vec![t(101, "take"), n(68, vec![choice.clone()]), t(102, ";")]);
+    let proposition = n(64, vec![n(44, vec![n(46, vec![choice, t(101, "is"), rhs])])]);
+    let by = n(72, vec![t(101, "by"), n(73, references)]);
+    let conclusion = n(84, vec![t(101, "thus"), proposition, by, t(102, ";")]);
+    let proof = n(98, vec![t(101, "proof"), take, conclusion, t(101, "end")]);
+    let correctness = n(115, vec![t(101, "existence"), proof, t(102, ";")]);
+    let declared_type = n(21, vec![n(22, attrs.iter().map(|name| a(name)).collect()), n(25, vec![t(101, "set")])]);
+    let root = n(142, vec![t(101, "cluster"), t(100, label), t(102, ":"), declared_type, t(102, ";"), correctness]);
+    let owner = [b"mizar-resolve/source-registration-owner/v1\0\x02".as_slice(),
+        frame(b"owner-test").as_slice(), frame(b"owners").as_slice(), frame(label.as_bytes()).as_slice()].concat();
+    [b"mizar-resolve/source-registration-syntax/v1\0".as_slice(), frame(&owner).as_slice(), &root].concat()
+}
+
+#[test]
+fn source_registration_syntax_exact_single_aggregate_current_keys_and_empty() {
+    use mizar_resolve::{
+        env::SymbolKind, symbols::source_registration_syntax_payloads_from_arena as syntax,
+    };
+    let expected = [
+        (
+            "WMarkedExists",
+            source_registration_syntax_expected("WMarkedExists", &["wmarked"], &["WMDef"]),
+        ),
+        (
+            "OAExists",
+            source_registration_syntax_expected("OAExists", &["oamarked"], &["OAADef"]),
+        ),
+        (
+            "OBExists",
+            source_registration_syntax_expected("OBExists", &["obmarked"], &["OBBDef"]),
+        ),
+        (
+            "OABExists",
+            source_registration_syntax_expected(
+                "OABExists",
+                &["oamarked", "obmarked"],
+                &["OAADef", "OBBDef"],
+            ),
+        ),
+    ];
+    for (multiple, case) in [
+        (false, step5c3_registration_case()),
+        (true, step5c13_registration_case()),
+    ] {
+        let text = std::fs::read_to_string(case.source_path).unwrap();
+        let (frontend, source, collected) =
+            source_registration_owner_inputs(&text, "owner-test", "owners", 0);
+        assert!(frontend.diagnostics.is_empty());
+        assert!(collected.diagnostics().is_empty());
+        let before = (frontend.ast.clone(), source.clone(), collected.clone());
+        let payloads = syntax(&source, collected.env()).unwrap();
+        let entries = collected
+            .env()
+            .symbols()
+            .iter()
+            .filter(|entry| entry.kind() == SymbolKind::Registration)
+            .collect::<Vec<_>>();
+        assert_eq!(entries.len(), if multiple { 3 } else { 1 });
+        assert_eq!(payloads.len(), entries.len());
+        for entry in entries {
+            let bytes = &expected
+                .iter()
+                .find(|(label, _)| *label == entry.primary_spelling())
+                .unwrap()
+                .1;
+            assert_eq!(payloads.get(entry.symbol()), Some(bytes));
+        }
+        assert_eq!(syntax(&source, collected.env()).unwrap(), payloads);
+        assert_eq!((frontend.ast, source, collected), before);
+    }
+    for text in [
+        "",
+        "definition\n let X be set;\n attr OnlyDef: X is onlymarked means X = X;\nend;\n",
+    ] {
+        let (frontend, source, collected) =
+            source_registration_owner_inputs(text, "owner-test", "owners", 0);
+        assert!(frontend.diagnostics.is_empty());
+        assert!(collected.diagnostics().is_empty());
+        let before = (frontend.ast.clone(), source.clone(), collected.clone());
+        assert!(syntax(&source, collected.env()).unwrap().is_empty());
+        assert_eq!((frontend.ast, source, collected), before);
+    }
+}
+
+#[test]
+fn source_registration_syntax_neutral_relocation_order_and_participating_edits() {
+    use mizar_resolve::{
+        env::SymbolKind, symbols::source_registration_syntax_payloads_from_arena as syntax,
+    };
+    use mizar_syntax::SurfaceNodeKind;
+    let text = std::fs::read_to_string(step5c13_registration_case().source_path).unwrap();
+    let (_, source, collected) = source_registration_owner_inputs(&text, "owner-test", "owners", 0);
+    let baseline = syntax(&source, collected.env()).unwrap();
+    let baseline_ids = source
+        .arena()
+        .iter()
+        .filter_map(|(id, node)| {
+            matches!(node.kind(), SurfaceNodeKind::ExistentialRegistration).then_some(id)
+        })
+        .collect::<Vec<_>>();
+    let attribute_a = "  attr OAADef: X is oamarked means X = X;\n";
+    let attribute_b = "  attr OBBDef: X is obmarked means X = X;\n";
+    let registration_a = "  cluster OAExists: oamarked set;\n  existence proof\n    take the set;\n    thus the set is oamarked by OAADef;\n  end;\n";
+    let registration_b = "  cluster OBExists: obmarked set;\n  existence proof\n    take the set;\n    thus the set is obmarked by OBBDef;\n  end;\n";
+    let registration_ab = "  cluster OABExists: oamarked obmarked set;\n  existence proof\n    take the set;\n    thus the set is oamarked obmarked by OAADef, OBBDef;\n  end;\n";
+    let reordered = text
+        .replace(
+            &format!("{attribute_a}{attribute_b}"),
+            &format!("{attribute_b}{attribute_a}"),
+        )
+        .replace(
+            &format!("{registration_a}{registration_b}{registration_ab}"),
+            &format!("{registration_ab}{registration_b}{registration_a}"),
+        );
+    assert_ne!(reordered, text);
+    let split = format!("definition\n let X be set;\n{attribute_b}end;\ndefinition\n let X be set;\n{attribute_a}end;\nregistration\n{registration_ab}end;\nregistration\n{registration_b}end;\nregistration\n{registration_a}end;\n");
+    let leading =
+        "definition\n let X be set;\n func ExtraDef: extra X -> set equals X;\n coherence;\nend;\n";
+    let before = (source.clone(), collected.clone(), baseline.clone());
+    for (index, edited, skip) in [
+        (
+            0,
+            format!("\n:: shifted trivia\n{}", text.replace("  ", "    ")),
+            0,
+        ),
+        (1, text.replace('X', "OuterBinder"), 0),
+        (2, text.replacen("means X = X", "means not X = X", 1), 0),
+        (3, text.clone(), 7),
+        (4, format!("{leading}{text}"), 0),
+        (5, reordered, 0),
+        (6, split, 0),
+    ] {
+        let (frontend, current, entries) =
+            source_registration_owner_inputs(&edited, "owner-test", "owners", skip);
+        assert!(frontend.diagnostics.is_empty(), "edit {index}");
+        assert!(entries.diagnostics().is_empty(), "edit {index}");
+        let current_before = (frontend.ast.clone(), current.clone(), entries.clone());
+        let actual = syntax(&current, entries.env()).unwrap();
+        assert_eq!(actual.len(), 3, "edit {index}");
+        for entry in entries
+            .env()
+            .symbols()
+            .iter()
+            .filter(|entry| entry.kind() == SymbolKind::Registration)
+        {
+            let old = collected
+                .env()
+                .symbols()
+                .iter()
+                .find(|old| {
+                    old.kind() == SymbolKind::Registration
+                        && old.primary_spelling() == entry.primary_spelling()
+                })
+                .unwrap();
+            assert_eq!(
+                actual.get(entry.symbol()),
+                baseline.get(old.symbol()),
+                "edit {index}: {}",
+                entry.primary_spelling()
+            );
+        }
+        if index == 3 {
+            assert_ne!(current.source_id(), source.source_id());
+        }
+        if index == 4 {
+            let ids = current
+                .arena()
+                .iter()
+                .filter_map(|(id, node)| {
+                    matches!(node.kind(), SurfaceNodeKind::ExistentialRegistration).then_some(id)
+                })
+                .collect::<Vec<_>>();
+            assert_ne!(ids, baseline_ids);
+        }
+        if index >= 5 {
+            assert_ne!(
+                actual.keys().collect::<Vec<_>>(),
+                baseline.keys().collect::<Vec<_>>()
+            );
+        }
+        assert_eq!((frontend.ast, current, entries), current_before);
+    }
+    for (index, edited, package, module) in [
+        (
+            0,
+            text.replace("OAExists", "RenamedExists"),
+            "owner-test",
+            "owners",
+        ),
+        (
+            1,
+            text.replacen(
+                "thus the set is oamarked by OAADef",
+                "thus the set is obmarked by OAADef",
+                1,
+            ),
+            "owner-test",
+            "owners",
+        ),
+        (2, text.clone(), "other-package", "owners"),
+        (3, text.clone(), "owner-test", "other_module"),
+    ] {
+        let (frontend, current, entries) =
+            source_registration_owner_inputs(&edited, package, module, 0);
+        assert!(frontend.diagnostics.is_empty());
+        assert!(entries.diagnostics().is_empty());
+        let actual = syntax(&current, entries.env()).unwrap();
+        assert_eq!(actual.len(), 3);
+        for entry in entries
+            .env()
+            .symbols()
+            .iter()
+            .filter(|entry| entry.kind() == SymbolKind::Registration)
+        {
+            let name = if entry.primary_spelling() == "RenamedExists" {
+                "OAExists"
+            } else {
+                entry.primary_spelling()
+            };
+            let old = collected
+                .env()
+                .symbols()
+                .iter()
+                .find(|old| {
+                    old.kind() == SymbolKind::Registration && old.primary_spelling() == name
+                })
+                .unwrap();
+            if index >= 2 || name == "OAExists" {
+                assert_ne!(actual.get(entry.symbol()), baseline.get(old.symbol()));
+            } else {
+                assert_eq!(actual.get(entry.symbol()), baseline.get(old.symbol()));
+            }
+        }
+    }
+    assert_eq!((source, collected, baseline), before);
+}
+
+#[test]
+fn source_registration_syntax_preserves_upstream_errors_and_refuses_real_prefix_payload() {
+    use mizar_resolve::symbols::{
+        source_registration_owner_payloads_from_arena as owners,
+        source_registration_syntax_payloads_from_arena as syntax, validate_source_symbol_env,
+    };
+    use mizar_syntax::{SurfaceFormulaPrefixOperator, SurfaceNodeKind};
+    let text = std::fs::read_to_string(step5c3_registration_case().source_path).unwrap();
+    let (frontend, source, collected) =
+        source_registration_owner_inputs(&text, "owner-test", "owners", 0);
+    let prior = syntax(&source, collected.env()).unwrap();
+    let before = (
+        frontend.ast.clone(),
+        source.clone(),
+        collected.clone(),
+        prior.clone(),
+    );
+    for edited in [text.replace("wmarked", "foreignmarked"),
+        format!("{text}\ndefinition\n let X be set;\n func ExtraDef: extra X -> set equals X;\n coherence;\nend;\n")] {
+        let (other_frontend, other_source, other) = source_registration_owner_inputs(&edited, "owner-test", "owners", 0);
+        assert!(other_frontend.diagnostics.is_empty());
+        assert!(other.diagnostics().is_empty());
+        let other_before = (other_frontend.ast.clone(), other_source.clone(), other.clone());
+        let error = validate_source_symbol_env(&source, other.env()).unwrap_err();
+        assert_eq!(syntax(&source, other.env()).unwrap_err(), error);
+        let error = validate_source_symbol_env(&other_source, collected.env()).unwrap_err();
+        assert_eq!(syntax(&other_source, collected.env()).unwrap_err(), error);
+        assert_eq!((other_frontend.ast, other_source, other), other_before);
+    }
+    for (edited, owner_refusal) in [
+        (text.replace("means X = X", "means X ="), false),
+        (format!("{text}\nregistration\n cluster WMarkedExists: wmarked set;\n existence proof take the set; thus the set is wmarked by WMDef; end;\nend;\n"), false),
+        (text.replace("end;\n\nregistration", "  attr WMDef: X is othermarked means X = X;\nend;\n\nregistration"), true),
+        (format!("{text}\nregistration\n cluster Conditional: wmarked -> wmarked for set;\n coherence;\nend;\n"), true),
+    ] {
+        let (bad_frontend, bad_source, bad) = source_registration_owner_inputs(&edited, "owner-test", "owners", 0);
+        let bad_before = (bad_frontend.ast.clone(), bad_source.clone(), bad.clone());
+        let upstream = owners(&bad_source, bad.env()).unwrap_err();
+        if owner_refusal {
+            assert!(bad_frontend.diagnostics.is_empty());
+            assert!(bad.diagnostics().is_empty());
+            validate_source_symbol_env(&bad_source, bad.env()).unwrap();
+            assert_eq!(upstream, "unsupported source registration owner payload");
+        } else {
+            assert_eq!(upstream, validate_source_symbol_env(&bad_source, bad.env()).unwrap_err());
+        }
+        assert_eq!(syntax(&bad_source, bad.env()).unwrap_err(), upstream);
+        assert_eq!((bad_frontend.ast, bad_source, bad), bad_before);
+    }
+    let edited = text.replace("thus the set is wmarked", "thus not the set is wmarked");
+    let (unsupported_frontend, unsupported_source, unsupported) =
+        source_registration_owner_inputs(&edited, "owner-test", "owners", 0);
+    assert!(unsupported_frontend.diagnostics.is_empty());
+    assert!(unsupported.diagnostics().is_empty());
+    validate_source_symbol_env(&unsupported_source, unsupported.env()).unwrap();
+    owners(&unsupported_source, unsupported.env()).unwrap();
+    assert!(unsupported_frontend
+        .ast
+        .as_ref()
+        .unwrap()
+        .node_views()
+        .any(|node| matches!(
+            node.kind(),
+            SurfaceNodeKind::PrefixFormula(SurfaceFormulaPrefixOperator::Not)
+        )));
+    let unsupported_before = (
+        unsupported_frontend.ast.clone(),
+        unsupported_source.clone(),
+        unsupported.clone(),
+    );
+    assert_eq!(
+        syntax(&unsupported_source, unsupported.env()).unwrap_err(),
+        "unsupported source registration syntax payload"
+    );
+    assert_eq!(
+        (unsupported_frontend.ast, unsupported_source, unsupported),
+        unsupported_before
+    );
+    assert_eq!(syntax(&source, collected.env()).unwrap(), prior);
+    assert_eq!((frontend.ast, source, collected, prior), before);
+}

@@ -215,6 +215,100 @@ pub fn source_registration_owner_payloads(
     Ok(owners)
 }
 
+/// Derives declaration-local syntax content for validated existential registrations.
+pub fn source_registration_syntax_payloads_from_arena(
+    source: &SurfaceResolvedArena,
+    symbols: &SymbolEnv,
+) -> Result<BTreeMap<SymbolId, Vec<u8>>, String> {
+    let ast = validated_source_symbol_ast(source, symbols)?;
+    let owners = source_registration_owner_payloads(&ast, source, symbols)?;
+    let unsupported = || "unsupported source registration syntax payload".to_owned();
+    let shells = DeclarationShellCollector::new(&ast, source.module()).collect();
+    let mut payloads = BTreeMap::new();
+    for shell in shells.declarations() {
+        if shell.kind() != DeclarationShellKind::ExistentialRegistration {
+            continue;
+        }
+        let origin = shell_origin(
+            ast.source_id,
+            source.module(),
+            shell,
+            &shell_context(&shells, shell),
+        );
+        let mut entries = symbols
+            .symbols()
+            .iter()
+            .filter(|entry| entry.kind() == SymbolKind::Registration && entry.origin() == &origin);
+        let entry = entries.next().ok_or_else(unsupported)?;
+        if entries.next().is_some() {
+            return Err(unsupported());
+        }
+        let owner = owners.get(entry.symbol()).ok_or_else(unsupported)?;
+        let mut payload = b"mizar-resolve/source-registration-syntax/v1\0".to_vec();
+        let length = u32::try_from(owner.len()).map_err(|_| unsupported())?;
+        payload.extend_from_slice(&length.to_be_bytes());
+        payload.extend_from_slice(owner);
+        let mut pending = vec![shell.node_id()];
+        while let Some(id) = pending.pop() {
+            let node = ast.node_view(id).ok_or_else(unsupported)?;
+            match node.kind() {
+                SurfaceNodeKind::Token(token) => {
+                    if !matches!(
+                        token.kind,
+                        SurfaceTokenKind::Identifier
+                            | SurfaceTokenKind::ReservedWord
+                            | SurfaceTokenKind::ReservedSymbol
+                            | SurfaceTokenKind::UserSymbol
+                    ) {
+                        return Err(unsupported());
+                    }
+                }
+                SurfaceNodeKind::ExistentialRegistration
+                | SurfaceNodeKind::TypeExpression
+                | SurfaceNodeKind::AttributeChain
+                | SurfaceNodeKind::AttributeRef
+                | SurfaceNodeKind::QualifiedSymbol
+                | SurfaceNodeKind::PathSegment
+                | SurfaceNodeKind::TypeHead
+                | SurfaceNodeKind::CorrectnessCondition
+                | SurfaceNodeKind::ProofBlock
+                | SurfaceNodeKind::TakeStatement
+                | SurfaceNodeKind::Witness
+                | SurfaceNodeKind::TermExpression
+                | SurfaceNodeKind::ChoiceTerm
+                | SurfaceNodeKind::ConclusionStatement
+                | SurfaceNodeKind::Proposition
+                | SurfaceNodeKind::FormulaExpression
+                | SurfaceNodeKind::IsAssertion
+                | SurfaceNodeKind::AttributeTestChain
+                | SurfaceNodeKind::JustificationClause
+                | SurfaceNodeKind::ReferenceList
+                | SurfaceNodeKind::Reference => {}
+                _ => return Err(unsupported()),
+            }
+            payload.extend_from_slice(&(node.syntax_kind() as u16).to_be_bytes());
+            if let SurfaceNodeKind::Token(token) = node.kind() {
+                payload.extend_from_slice(&(token.kind.syntax_kind() as u16).to_be_bytes());
+                let length = u32::try_from(token.text.len()).map_err(|_| unsupported())?;
+                payload.extend_from_slice(&length.to_be_bytes());
+                payload.extend_from_slice(token.text.as_bytes());
+            }
+            let count = u32::try_from(node.children().len()).map_err(|_| unsupported())?;
+            payload.extend_from_slice(&count.to_be_bytes());
+            pending.extend(node.children().iter().rev().copied());
+        }
+        if payloads.insert(entry.symbol().clone(), payload).is_some() {
+            return Err(unsupported());
+        }
+    }
+    if symbols.symbols().iter().any(|entry| {
+        entry.kind() == SymbolKind::Registration && !payloads.contains_key(entry.symbol())
+    }) {
+        return Err(unsupported());
+    }
+    Ok(payloads)
+}
+
 /// Duplicate and overload policy for an opaque declaration projection.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
 #[non_exhaustive]

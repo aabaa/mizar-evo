@@ -663,6 +663,8 @@ Keep `cargo test -p mizar-resolve` green after each task (see
 
 36. **[Arena registration owner payloads](../../task_contracts/en/RESOLVE-ARENA-REGISTRATION-OWNER-PAYLOADS.md).** [x]
 
+37. **[Source registration syntax payloads](../../task_contracts/en/RESOLVE-SOURCE-REGISTRATION-SYNTAX-PAYLOADS.md).** [x]
+
 ## Crate Close-Out
 
 - Completed: [crate_exit_report.md](./crate_exit_report.md) records
