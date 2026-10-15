@@ -328,8 +328,8 @@ driver は diagnostic batch と readiness event を transport してよい。dia
 
 ## Current native Disk diagnostic index
 
-`validate_current_disk_diagnostics(session, snapshots) -> Result<(), String>` は Driver 内の session を読み、保護された native capture・非空で全て Disk の version・Finished(Succeeded/Failed/Blocked)・既存の live lane/request-snapshot publication guard・当該 snapshot を認める供給済 publisher を要求する。欠落・未対応・obsolete は Err とする。batch/index の真正性・file freshness・source-map 保持・将来の公開 receipt を与えない。
-`submit_captured_with_diagnostic_index(session, allocator, snapshots, input) -> Result<(BuildSubmission, Option<BuildDiagnosticIndex>), DriverSubmitError>` は既存 submit_captured をそのまま実行し、その元の実 phase-result batch だけを Diagnostics from_batches で集約する。集約の前後で guard と実 scheduler run を要求し、不成立や集約失敗は submission を変えず None、元の提出 error は保持する。実 Failed/Blocked phase の診断と clean run の空 index を許し、scheduler message から draft を推測せず意味・証明成功を要求しない。Open/Generated capture・overlay・current LSP 公開・後続 consumer は保留する。index は immutable snapshot data であり、後の受け渡し前に live guard を再検査し、file/version/map/routing 条件は別途満たす。
+`validate_current_disk_diagnostics(session, snapshots) -> Result<(), String>` は全 Disk 制約を保ち、[共有 native-session 条件](#current-native-diagnostic-index)へ委譲する。この Disk 専用 API は OpenBuffer/Generated capture を引き続き非対応とし、未知・非対応・obsolete は共有条件に従い Err とする。
+`submit_captured_with_diagnostic_index(session, allocator, snapshots, input) -> Result<(BuildSubmission, Option<BuildDiagnosticIndex>), DriverSubmitError>` は既存 submit_captured をそのまま実行し、その元の実 phase-result batch だけを Diagnostics from_batches で集約する。集約の前後で guard と実 scheduler run を要求し、不成立や集約失敗は submission を変えず None、元の提出 error は保持する。実 Failed/Blocked phase の診断と clean run の空 index を許し、scheduler message から draft を推測せず意味・証明成功を要求しない。この Disk 専用 method は Open/Generated capture を除外し、overlay・current LSP 公開・後続 consumer は保留する。index は immutable snapshot data であり、後の受け渡し前に live guard を再検査し、file/version/map/routing 条件は別途満たす。
 
 ## Testing Requirements
 
@@ -387,3 +387,11 @@ caller の publisher owner が実 snapshot/work unit を事前承認する。Dri
 Native 前提拒否は watch の承認済み置換を作らない。CLI は両 error を既存 InternalError envelope の `invalid_native_submission` へ写し、phase 診断や event を作らない。
 
 raw/version 変更は canonical snapshot ID を維持したまま storage 来歴を変え得る。既存 [IR identity](../../mizar-ir/ja/identity.md) の slot 競合拒否は維持し、その成功再実行には新しい owner publisher を使う。旧 handle の物理/source/lane guard は引き続き必要。
+
+## Current native diagnostic index
+
+`validate_current_native_diagnostics(session, snapshots) -> Result<(), String>` が共有 live session 適格性を所有する。Driver 自身の保存 record だけを読み、protected native capture、非空かつ全て Disk/OpenBuffer（混在可）の version、Finished(Succeeded/Failed/Blocked)、既存 Driver lane/request-snapshot の Current 判定、および当該 snapshot を認可する明示 publisher を要求する。未知・非対応・cancelled/非終端・obsolete・publisher 欠落は Err。Generated/将来 origin は非対応とし、loaded version/path の妥当性は protected capture の責務に残す。
+`submit_captured_with_native_diagnostic_index(session, allocator, snapshots, input)` は Disk wrapper と同じ既存の引数/戻り型と元 run 集約契約を使い、既存 submit_captured を先に実行し、Diagnostics from_batches の前後で native guard を呼ぶ。実際の同じ呼出しの phase-result batch だけを入力とし、実 scheduler run を要求する。guard/集約失敗は元 submission のまま None、通常 submit error はそのまま伝える。実 Failed/Blocked 診断や clean 空 index に後続意味・証明成功を要求しない。
+record identity/filter/dedup/sort は既存 Diagnostics に残す。
+実 OpenBuffer/混在 native batch、実 Frontend failure/clean 空結果、通常 submission との一致、既存集約 oracle と独立 record/source/raw-map 条件、実 NoKey をテストする。既存 Disk/共通 live guard/error テストを変更せず、native origin 除外と live OpenBuffer supersession を追加し、URI/capture/map matrix は重複しない。file 編集/削除後も capture 済み raw text/map を保ち、native SourceLoad の本文再読込や error producer を捏造しない。
+検証するのは current Driver session の適格性だけである。Server buffer、最新 editor URI/version/text、source-map/IR lifetime、file/config freshness、任意 batch/index の真正性、PublishedLspSnapshot は保証しない。後続 LSP consumer が元 raw descriptor/map を現文書へ対応付け、受け渡し前に再検査する。返す index は一時点の immutable data で、scheduling/cache/proof/artifact/publication や完全 native host の達成を意味しない。

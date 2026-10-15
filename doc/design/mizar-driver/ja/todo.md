@@ -513,6 +513,8 @@ artifact/test のフォローアップタスクが所有する。本 crate の�
 
 35. **[Current native Disk 診断 index](../../task_contracts/ja/DRIVER-CURRENT-DISK-DIAGNOSTIC-INDEX.md).** [x]
 
+36. **[Current native Disk/OpenBuffer diagnostic index](../../task_contracts/ja/DRIVER-CURRENT-NATIVE-DIAGNOSTIC-INDEX.md).** [x]
+
 ## 推奨検証
 
 各タスクの後で実行する:

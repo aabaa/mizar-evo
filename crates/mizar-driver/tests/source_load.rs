@@ -14122,3 +14122,546 @@ fn native_open_buffer_input_feeds_protected_prefix_like_explicit_clean_input() {
         }
     }
 }
+
+#[test]
+fn current_native_diagnostic_index_preserves_open_and_mixed_original_runs() {
+    use mizar_diagnostics::{
+        aggregator::BuildDiagnosticIndex, failure_record::DiagnosticFreshness,
+    };
+    for mode in ["clean", "fatal", "mixed"] {
+        let raw = if mode == "clean" {
+            "\u{feff}definition\r\nend;\r\n"
+        } else {
+            "\u{feff}end\r\n"
+        };
+        let fixture = Fixture::new(raw.as_bytes());
+        let ids = InMemorySessionIdAllocator::new();
+        let snapshots = SnapshotRegistry::new();
+        let (mut draft, _) = fixture.submit_request(vec![], vec![]);
+        draft.source_inputs.versions.clear();
+        let mut descriptors = vec![SourceInput {
+            package_id: fixture.version.package_id.clone(),
+            module_path: fixture.version.module_path.clone(),
+            normalized_path: fixture.version.normalized_path.clone(),
+            edition: fixture.version.edition.clone(),
+            origin: SourceOriginInput::OpenBuffer {
+                uri: format!(
+                    "file://{}",
+                    fixture.root.join("alpha/src/main.miz").display()
+                ),
+                expected_version: 7,
+                actual_version: 7,
+                text: raw.into(),
+            },
+        }];
+        if mode == "mixed" {
+            fs::write(
+                fixture.root.join("alpha/src/leaf.miz"),
+                "\u{feff}import mml.no_such;\r\ndefinition\r\nend;\r\n",
+            )
+            .unwrap();
+            descriptors.push(SourceInput {
+                package_id: PackageId::new("alpha"),
+                module_path: ModulePath::new("leaf"),
+                normalized_path: normalize_path(
+                    &fixture.root.join("alpha"),
+                    Path::new("src/leaf.miz"),
+                )
+                .unwrap(),
+                edition: Edition::new("2025"),
+                origin: SourceOriginInput::Disk {
+                    path: "src/leaf.miz".into(),
+                },
+            });
+        }
+        let loader = DiskSourceLoader::new(fixture.root.join("alpha"));
+        let originals = descriptors
+            .iter()
+            .map(|descriptor| {
+                mizar_session::SourceLoader::load(
+                    &loader,
+                    snapshot_id(0x51),
+                    descriptor.clone(),
+                    &InMemorySessionIdAllocator::new(),
+                )
+                .unwrap()
+            })
+            .collect::<Vec<_>>();
+        let session = draft
+            .capture_sources(
+                &ids,
+                &snapshots,
+                descriptors
+                    .iter()
+                    .cloned()
+                    .map(|descriptor| (loader.clone(), descriptor))
+                    .collect(),
+            )
+            .unwrap();
+        let snapshot = session.captured().snapshot().id;
+        for descriptor in &descriptors {
+            let path = fixture
+                .root
+                .join("alpha")
+                .join(format!("src/{}.miz", descriptor.module_path.as_str()));
+            fs::write(&path, [0xff]).unwrap();
+            fs::remove_file(path).unwrap();
+        }
+        let mut ordinary = None;
+        for indexed in [false, true] {
+            let unit = WorkUnit::Module {
+                module: mizar_build::module_index::ModuleId::new(
+                    PackageId::new("alpha"),
+                    ModulePath::new("main"),
+                ),
+            };
+            let owner = publisher(snapshot, 0, &unit);
+            for descriptor in &descriptors {
+                let unit = WorkUnit::Module {
+                    module: mizar_build::module_index::ModuleId::new(
+                        descriptor.package_id.clone(),
+                        descriptor.module_path.clone(),
+                    ),
+                };
+                owner.allow_work_unit(AllowedWorkUnit::new(
+                    IrPipelinePhase::new("SourceLoad"),
+                    OutputKind::new("SourceUnit"),
+                    IrWorkUnit::new(format!(
+                        "{:?}:{:?}",
+                        descriptor.package_id.as_str(),
+                        descriptor.module_path.as_str()
+                    )),
+                ));
+                allow_frontend(&owner, &unit);
+            }
+            let mut builder = PhaseRegistryBuilder::new();
+            builder.register_source_load();
+            builder.register_frontend(vec![]);
+            let mut driver =
+                CompilerDriver::new(builder.build().unwrap()).with_output_publisher(owner.clone());
+            let (_, mut input) = fixture.submit_request(vec![], vec![]);
+            if mode == "mixed" {
+                input.source_layout = StaticSourceLayout::new(vec![WorkspaceSourcePackage {
+                    package_id: PackageId::new("alpha"),
+                    files: vec![
+                        WorkspaceSourceFile::new("src/main.miz", "main.miz"),
+                        WorkspaceSourceFile::new("src/leaf.miz", "leaf.miz"),
+                    ],
+                }]);
+            }
+            let (submission, index) = if indexed {
+                driver
+                    .submit_captured_with_native_diagnostic_index(
+                        session.clone(),
+                        &ids,
+                        &snapshots,
+                        input,
+                    )
+                    .unwrap()
+            } else {
+                (
+                    driver
+                        .submit_captured(session.clone(), &ids, &snapshots, input)
+                        .unwrap(),
+                    None,
+                )
+            };
+            let run = submission.scheduler_run.as_ref().unwrap();
+            assert_eq!(
+                submission.session.state(),
+                BuildSessionState::Finished(if mode == "clean" {
+                    BuildSessionOutcome::Blocked
+                } else {
+                    BuildSessionOutcome::Failed
+                })
+            );
+            let mut sources = Vec::new();
+            for (descriptor, expected) in descriptors.iter().zip(&originals) {
+                let unit = WorkUnit::Module {
+                    module: mizar_build::module_index::ModuleId::new(
+                        descriptor.package_id.clone(),
+                        descriptor.module_path.clone(),
+                    ),
+                };
+                let tasks = submission.task_graph.as_ref().unwrap().tasks();
+                let task = tasks
+                    .iter()
+                    .find(|task| task.kind == TaskKind::SourceLoad && task.unit == unit)
+                    .unwrap();
+                let result = &run.phase_results[&task.id][0];
+                assert_eq!(result.status, PhaseStatus::Complete);
+                assert!(result.diagnostics.is_empty());
+                let source = owner
+                    .storage()
+                    .get(
+                        &owner
+                            .storage()
+                            .typed_handle::<SourceUnit>(
+                                &result.output_refs[0],
+                                &OutputKind::new("SourceUnit"),
+                            )
+                            .unwrap(),
+                    )
+                    .unwrap();
+                let version = session
+                    .captured()
+                    .snapshot()
+                    .source_versions
+                    .iter()
+                    .find(|version| version.module_path == descriptor.module_path)
+                    .unwrap();
+                assert_eq!(source.source_id, version.source_id);
+                assert_eq!(source.source_hash, version.source_hash);
+                assert_eq!(source.origin, version.origin);
+                assert_eq!(source.source_text, expected.text);
+                assert_eq!(
+                    source.line_map,
+                    LineMap::new(source.source_id, &expected.text)
+                );
+                let map = source.loading_map.as_ref().unwrap();
+                assert_eq!(map.source_id, source.source_id);
+                assert_eq!(map.loaded_text_hash, source.source_hash);
+                assert_eq!(map.loaded_text_len, source.source_text.len());
+                assert_eq!(map.origin, expected.loading_map.as_ref().unwrap().origin);
+                assert_eq!(
+                    map.segments,
+                    expected.loading_map.as_ref().unwrap().segments
+                );
+                assert!(map.segments.iter().any(|segment| matches!(
+                    segment,
+                    mizar_session::LoadingMapSegment::RemovedLeadingBom { .. }
+                )));
+                assert!(map.segments.iter().any(|segment| matches!(
+                    segment,
+                    mizar_session::LoadingMapSegment::NormalizedNewline { .. }
+                )));
+                let dispatch = PhaseInput::new(
+                    unit.clone(),
+                    PhaseDispatchInputBundle::without_parent_outputs(
+                        snapshot,
+                        SourceUnitCacheKey::from_source(&source).stable_hash(),
+                        vec![],
+                    ),
+                );
+                for phase in [PipelinePhase::SourceLoad, PipelinePhase::Frontend] {
+                    assert!(matches!(
+                        driver
+                            .registry()
+                            .cache_key_for_phase(phase, &dispatch)
+                            .unwrap()
+                            .intent,
+                        PhaseCacheIntent::NoKey { .. }
+                    ));
+                }
+                let frontend = tasks
+                    .iter()
+                    .find(|task| task.kind == TaskKind::Frontend && task.unit == unit)
+                    .unwrap();
+                assert_eq!(
+                    run.phase_results[&frontend.id][0].status,
+                    if mode == "clean" {
+                        PhaseStatus::Complete
+                    } else if descriptor.module_path.as_str() == "leaf" {
+                        PhaseStatus::Recoverable
+                    } else {
+                        PhaseStatus::Fatal
+                    }
+                );
+                sources.push(source);
+            }
+            if indexed {
+                assert_eq!(&submission, ordinary.as_ref().unwrap());
+                assert_eq!(
+                    driver.validate_current_native_diagnostics(session.id(), &snapshots),
+                    Ok(())
+                );
+                assert!(
+                    driver
+                        .validate_current_disk_diagnostics(session.id(), &snapshots)
+                        .is_err()
+                );
+                let index = index.unwrap();
+                assert_eq!(
+                    index,
+                    BuildDiagnosticIndex::from_batches(
+                        snapshot,
+                        run.phase_results
+                            .values()
+                            .flatten()
+                            .flat_map(|result| result.diagnostics.clone())
+                            .collect()
+                    )
+                    .unwrap()
+                );
+                assert_eq!(index.snapshot(), snapshot);
+                assert!(index.obsolete_drafts().is_empty());
+                assert_eq!(index.is_empty(), mode == "clean");
+                for source in sources {
+                    let records = index.records().iter().filter(|record| matches!(record.primary_location(), DiagnosticPrimaryLocation::Span(span) if span.range().source_id == source.source_id)).collect::<Vec<_>>();
+                    let codes = records
+                        .iter()
+                        .map(|record| record.code().number())
+                        .collect::<Vec<_>>();
+                    if mode == "clean" {
+                        assert!(codes.is_empty());
+                    } else if source.module_path.as_str() == "main" {
+                        assert_eq!(codes, vec![33, 52]);
+                    } else {
+                        assert!(codes.contains(&22));
+                        assert!(codes.contains(&220));
+                    }
+                    for record in records {
+                        assert_eq!(record.handle().snapshot, snapshot);
+                        assert_eq!(index.record_by_id(record.handle().id), Some(record));
+                        assert!(
+                            index
+                                .handles_for_source(source.source_id)
+                                .unwrap()
+                                .contains(&record.handle())
+                        );
+                        assert_eq!(
+                            record.freshness(),
+                            &DiagnosticFreshness::Current {
+                                source_snapshot: snapshot
+                            }
+                        );
+                        assert_eq!(
+                            record.phase(),
+                            if record.code().number() >= 220 {
+                                DiagnosticPhase::Resolver
+                            } else {
+                                DiagnosticPhase::Frontend
+                            }
+                        );
+                        let DiagnosticPrimaryLocation::Span(span) = record.primary_location()
+                        else {
+                            unreachable!()
+                        };
+                        assert!(span.range().start <= span.range().end);
+                        assert!(span.range().end <= source.source_text.len());
+                        if source.module_path.as_str() == "main" {
+                            assert_eq!((span.range().start, span.range().end), (0, 3));
+                        }
+                    }
+                }
+            } else {
+                ordinary = Some(submission);
+            }
+        }
+    }
+}
+
+#[test]
+fn current_native_diagnostic_guard_rejects_generated_and_superseded_open_sessions() {
+    for mode in ["generated", "lane", "request"] {
+        let fixture = Fixture::new(b"definition\nend;\n");
+        let ids = InMemorySessionIdAllocator::new();
+        let snapshots = SnapshotRegistry::new();
+        let (mut draft, input) = fixture.submit_request(vec![], vec![]);
+        draft.source_inputs.versions.clear();
+        let descriptor = SourceInput {
+            package_id: fixture.version.package_id.clone(),
+            module_path: fixture.version.module_path.clone(),
+            normalized_path: fixture.version.normalized_path.clone(),
+            edition: fixture.version.edition.clone(),
+            origin: if mode == "generated" {
+                SourceOriginInput::Generated {
+                    generator: mizar_session::GeneratedSourceKind::new("native-index-test"),
+                    text: "definition\nend;\n".into(),
+                    anchor: None,
+                }
+            } else {
+                SourceOriginInput::OpenBuffer {
+                    uri: format!(
+                        "file://{}",
+                        fixture.root.join("alpha/src/main.miz").display()
+                    ),
+                    expected_version: 7,
+                    actual_version: 7,
+                    text: "definition\nend;\n".into(),
+                }
+            },
+        };
+        let loader = DiskSourceLoader::new(fixture.root.join("alpha"));
+        let session = draft
+            .clone()
+            .capture_sources(&ids, &snapshots, vec![(loader.clone(), descriptor.clone())])
+            .unwrap();
+        let snapshot = session.captured().snapshot().id;
+        let unit = WorkUnit::Module {
+            module: mizar_build::module_index::ModuleId::new(
+                PackageId::new("alpha"),
+                ModulePath::new("main"),
+            ),
+        };
+        let owner = publisher(snapshot, 0, &unit);
+        allow_frontend(&owner, &unit);
+        let mut builder = PhaseRegistryBuilder::new();
+        builder.register_source_load();
+        builder.register_frontend(vec![]);
+        let mut driver =
+            CompilerDriver::new(builder.build().unwrap()).with_output_publisher(owner.clone());
+        assert!(
+            driver
+                .validate_current_native_diagnostics(session.id(), &snapshots)
+                .is_err()
+        );
+        let (submission, index) = driver
+            .submit_captured_with_native_diagnostic_index(session.clone(), &ids, &snapshots, input)
+            .unwrap();
+        assert_eq!(
+            submission.session.state(),
+            BuildSessionState::Finished(BuildSessionOutcome::Blocked)
+        );
+        assert_eq!(
+            submission.publication_decision,
+            mizar_driver::request::PublicationDecision::Current
+        );
+        assert!(snapshots.is_current_for_request(snapshot, session.request().id));
+        assert!(owner.validate_current_snapshot(snapshot).is_ok());
+        assert_eq!(index.is_some(), mode != "generated");
+        assert_eq!(
+            driver
+                .validate_current_native_diagnostics(session.id(), &snapshots)
+                .is_ok(),
+            mode != "generated"
+        );
+        assert!(
+            driver
+                .validate_current_disk_diagnostics(session.id(), &snapshots)
+                .is_err()
+        );
+        if mode == "generated" {
+            assert!(matches!(
+                submission.session.captured().snapshot().source_versions[0].origin,
+                SourceOrigin::Generated { .. }
+            ));
+            let mut builder = PhaseRegistryBuilder::new();
+            builder.register_source_load();
+            builder.register_frontend(vec![]);
+            let mut ordinary =
+                CompilerDriver::new(builder.build().unwrap()).with_output_publisher(owner.clone());
+            let (_, input) = fixture.submit_request(vec![], vec![]);
+            assert_eq!(
+                submission,
+                ordinary
+                    .submit_captured(session.clone(), &ids, &snapshots, input)
+                    .unwrap()
+            );
+            continue;
+        }
+        let mut replacement = descriptor;
+        replacement.origin = SourceOriginInput::OpenBuffer {
+            uri: format!(
+                "file://{}",
+                fixture.root.join("alpha/src/main.miz").display()
+            ),
+            expected_version: 8,
+            actual_version: 8,
+            text: if mode == "lane" {
+                "definition\nend;\n"
+            } else {
+                "end"
+            }
+            .into(),
+        };
+        if mode == "lane" {
+            draft.generation = BuildRequestGeneration::new(1);
+            let next = draft
+                .capture_sources(&ids, &snapshots, vec![(loader, replacement)])
+                .unwrap();
+            assert_eq!(next.captured().snapshot().id, snapshot);
+            assert_ne!(
+                next.captured().snapshot().source_versions,
+                session.captured().snapshot().source_versions
+            );
+            let fresh = publisher(snapshot, 0, &unit);
+            allow_frontend(&fresh, &unit);
+            driver = driver.with_output_publisher(fresh.clone());
+            let (_, input) = fixture.submit_request(vec![], vec![]);
+            let (_, next_index) = driver
+                .submit_captured_with_native_diagnostic_index(next.clone(), &ids, &snapshots, input)
+                .unwrap();
+            assert!(next_index.is_some());
+            assert_eq!(
+                driver.validate_current_native_diagnostics(next.id(), &snapshots),
+                Ok(())
+            );
+            assert!(snapshots.is_current_for_request(snapshot, session.request().id));
+            assert!(fresh.validate_current_snapshot(snapshot).is_ok());
+        } else {
+            let request = session.request();
+            let (next, _, _) = snapshots
+                .load_snapshot(
+                    request.id,
+                    (
+                        request.workspace_root.clone(),
+                        request.dependency_inputs.artifacts.clone(),
+                        request.dependency_inputs.lockfile_hash,
+                        request.dependency_inputs.toolchain.clone(),
+                        request.verifier_config.hash,
+                    ),
+                    vec![(loader, replacement)],
+                )
+                .unwrap();
+            assert_ne!(next.id, snapshot);
+            assert!(!snapshots.is_current_for_request(snapshot, request.id));
+            assert!(owner.validate_current_snapshot(snapshot).is_ok());
+        }
+        assert!(
+            driver
+                .validate_current_native_diagnostics(session.id(), &snapshots)
+                .is_err()
+        );
+        assert!(index.unwrap().is_empty());
+    }
+}
+
+#[test]
+fn current_native_diagnostic_submission_preserves_captured_precondition_errors() {
+    let fixture = Fixture::new(b"definition\nend;\n");
+    let ids = InMemorySessionIdAllocator::new();
+    let snapshots = SnapshotRegistry::new();
+    let (mut draft, _) = fixture.submit_request(vec![], vec![]);
+    draft.source_inputs.versions.clear();
+    let session = draft
+        .capture_sources(
+            &ids,
+            &snapshots,
+            vec![(
+                DiskSourceLoader::new(fixture.root.join("alpha")),
+                SourceInput {
+                    package_id: fixture.version.package_id.clone(),
+                    module_path: fixture.version.module_path.clone(),
+                    normalized_path: fixture.version.normalized_path.clone(),
+                    edition: fixture.version.edition.clone(),
+                    origin: SourceOriginInput::OpenBuffer {
+                        uri: format!(
+                            "file://{}",
+                            fixture.root.join("alpha/src/main.miz").display()
+                        ),
+                        expected_version: 7,
+                        actual_version: 7,
+                        text: "definition\nend;\n".into(),
+                    },
+                },
+            )],
+        )
+        .unwrap();
+    let invalid_registry = SnapshotRegistry::new();
+    let mut original = CompilerDriver::new(source_registry());
+    let mut indexed = CompilerDriver::new(source_registry());
+    let (_, input) = fixture.submit_request(vec![], vec![]);
+    let expected = original
+        .submit_captured(session.clone(), &ids, &invalid_registry, input)
+        .unwrap_err();
+    let (_, input) = fixture.submit_request(vec![], vec![]);
+    let actual = indexed
+        .submit_captured_with_native_diagnostic_index(session, &ids, &invalid_registry, input)
+        .unwrap_err();
+    assert_eq!(actual, expected);
+    assert!(matches!(
+        actual,
+        DriverSubmitError::InvalidCapturedSession { .. }
+    ));
+}

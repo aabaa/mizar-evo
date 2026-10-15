@@ -545,6 +545,8 @@ the owning producers when the paired tasks land.
 
 35. **[Current native Disk diagnostic index](../../task_contracts/en/DRIVER-CURRENT-DISK-DIAGNOSTIC-INDEX.md).** [x]
 
+36. **[Current native Disk/OpenBuffer diagnostic index](../../task_contracts/en/DRIVER-CURRENT-NATIVE-DIAGNOSTIC-INDEX.md).** [x]
+
 ## Recommended Verification
 
 Run after each task:
