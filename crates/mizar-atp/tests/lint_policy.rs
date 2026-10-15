@@ -727,6 +727,7 @@ fn atp_portfolio_public_api_surface_is_task_eighteen_allowlist() {
             "PortfolioStopSummary::new",
             "PortfolioStopSummary::reason",
             "collect_portfolio_results",
+            "execute_portfolio",
             "plan_portfolio",
         ],
         "{} public functions and methods must stay limited to task-18 \

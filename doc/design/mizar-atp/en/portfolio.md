@@ -447,3 +447,8 @@ candidate-production path:
 The suite intentionally leaves real backend extraction, kernel checking,
 proof-policy winner selection, artifact witnesses, proof-cache promotion, and
 active `.miz` advanced-semantics execution deferred to their owning tasks.
+
+## Explicit sequential execution
+
+`execute_portfolio(PortfolioPlan) -> Result<PortfolioEvidenceSet, PortfolioError>` invokes existing run_backend sequentially on clones of the plan's already validated, canonically ordered runs, then delegates the original results and consumed plan to collect_portfolio_results. Do not classify stdout, replace encoded inputs/commands/limits/seeds/tokens, invent results/candidates, or stop after a successful exit, timeout or local error; absent cancellation, collect every scheduled terminal result. Stopped plans launch nothing. Preserve existing collector validation, identities and cancellation suppression.
+Check the portfolio token before each launch; after observed cancellation launch no remaining runs and collect only actual returned results. Preserve each original per-run token: sharing the portfolio token enables existing in-flight cancellation; distinct tokens retain their existing per-run cancellation/timeout behavior, without a new immediate portfolio-to-child propagation guarantee. This explicit diagnostic execution path adds no profile discovery, solver:auto/parallel scheduler, output extractor, proof policy, kernel/witness/cache operation or trusted status. Tests use genuine concrete encoder bytes and actual local child execution, including deterministic order, non-proof output, local failures/timeout continuation, stopped plans and both cancellation associations; local test children establish no supported solver success.

@@ -7,13 +7,7 @@ use crate::problem::{
     SoftTypeStrategy,
 };
 use mizar_vc::vc_ir::VcId;
-use std::{
-    collections::BTreeSet,
-    os::unix::fs::PermissionsExt,
-    sync::{Mutex, MutexGuard},
-};
-
-static PRIVATE_TEMP_TEST_LOCK: Mutex<()> = Mutex::new(());
+use std::{collections::BTreeSet, os::unix::fs::PermissionsExt, sync::MutexGuard};
 
 #[test]
 fn runs_mock_backend_with_byte_exact_stdin_input() {

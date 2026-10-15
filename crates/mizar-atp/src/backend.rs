@@ -2609,4 +2609,7 @@ fn hex(bytes: &[u8]) -> String {
 }
 
 #[cfg(all(test, unix))]
+pub(crate) static PRIVATE_TEMP_TEST_LOCK: std::sync::Mutex<()> = std::sync::Mutex::new(());
+
+#[cfg(all(test, unix))]
 mod tests;

@@ -701,6 +701,8 @@ candidate evidence through the kernel-owned schema and must not weaken it.
 
 37. **[Structured local ranking](../../task_contracts/en/ATP-STRUCTURED-LOCAL-RANKING.md).** [x] — Complete candidate ordering only; full task31 integration remains open.
 
+38. **[Explicit sequential execution](../../task_contracts/en/ATP-SEQUENTIAL-PROCESS-DISPATCH.md).** [x] — Generic process dispatch only; full extraction/parallel integration remain open.
+
 ## Recommended Verification
 
 Run after each task:

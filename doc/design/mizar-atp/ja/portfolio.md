@@ -401,3 +401,8 @@ task 21 は、実装済み candidate-production path に cross-module determinis
 この suite は real backend extraction、kernel checking、proof-policy winner selection、
 artifact witness、proof-cache promotion、active `.miz` advanced-semantics execution を、
 それぞれの所有 task に deferred のまま残す。
+
+## Explicit sequential execution
+
+`execute_portfolio(PortfolioPlan) -> Result<PortfolioEvidenceSet, PortfolioError>` は検証済み canonical 順の planned run の clone を既存 run_backend で逐次実行し、元の実結果と消費する plan を collect_portfolio_results に渡す。stdout 解釈、input/command/limit/seed/token の置換、架空 result/candidate、正常終了・timeout・局所 error による早期終了は禁止し、cancel がなければ全 terminal result を収集する。停止済み plan は起動せず、既存 collector の検証・identity・cancel 時の candidate 抑止を維持する。
+各起動前に portfolio token を確認し、cancel 観測後は後続を起動せず実際に返った結果だけを収集する。各 run の元 token を保持し、portfolio と共有なら既存の実行中 cancel が働き、別 token なら元の run cancel/timeout に従う。新しい即時 cross-token 伝播は保証しない。明示的な診断用実行であり profile 探索・solver:auto/並列 scheduler・output extractor・proof policy・kernel/witness/cache 操作・trusted status は追加しない。試験は実 concrete encoder bytes と実 local child を使い、決定的順序、非証明 output、error/timeout 後の継続、停止 plan、共有/別 token を検証し、対応 solver の成功とはしない。

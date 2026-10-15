@@ -244,6 +244,7 @@ Public entry functions:
 
 - `plan_portfolio`
 - `collect_portfolio_results`
+- `execute_portfolio`
 
 | spec promise | source evidence | test evidence | status |
 |---|---|---|---|

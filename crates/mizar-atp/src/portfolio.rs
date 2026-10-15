@@ -1,10 +1,10 @@
 //! Policy-neutral ATP portfolio planning and candidate collection.
 //!
-//! This module implements the task-18 no-early-stop slice specified in
+//! This module implements no-early-stop planning, execution and collection specified in
 //! [portfolio.md](../../../doc/design/mizar-atp/en/portfolio.md). It builds
 //! deterministic plans from prebuilt backend runs and collects terminal backend
-//! results into untrusted evidence sets. It does not run backends directly,
-//! call the kernel, evaluate proof policy, select artifact winners, publish
+//! results into untrusted evidence sets, with explicit sequential process execution.
+//! It does not call the kernel, evaluate proof policy, select artifact winners, publish
 //! witnesses, update caches, or trust backend proof material.
 
 use crate::{
@@ -568,6 +568,17 @@ pub fn plan_portfolio(input: PortfolioInput) -> Result<PortfolioPlan, PortfolioE
         policy_constraints: input.policy_constraints,
         cancellation: input.cancellation,
     })
+}
+
+pub fn execute_portfolio(plan: PortfolioPlan) -> Result<PortfolioEvidenceSet, PortfolioError> {
+    let mut results = Vec::new();
+    for run in &plan.backend_runs {
+        if plan.cancellation.is_cancelled() {
+            break;
+        }
+        results.push(crate::backend::run_backend(run.clone()));
+    }
+    collect_portfolio_results(plan, results)
 }
 
 pub fn collect_portfolio_results(

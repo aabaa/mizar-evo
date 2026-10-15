@@ -869,3 +869,404 @@ fn target_binding(vc_index: u32) -> AtpTargetBinding {
 fn hash_with_seed(seed: u8) -> Hash {
     Hash::from_bytes([seed; Hash::BYTE_LEN])
 }
+
+#[cfg(unix)]
+fn process_run(
+    fixture: &mut Fixture,
+    id: &str,
+    command: BackendCommand,
+    timeout: Duration,
+    cancellation: &BackendCancellationToken,
+) -> BackendRunInput {
+    let problem = &fixture.problem;
+    fixture.problem = AtpProblem::try_new(AtpProblemParts {
+        vc_id: problem.vc_id(),
+        target_binding: problem.target_binding().clone(),
+        logic_profile: LogicProfile::try_new(
+            "fof-process-fixture",
+            LogicFragment::Fof,
+            EqualitySupport::Supported,
+            QuantifierPolicy::PropositionalOnly,
+            SoftTypeStrategy::GuardPredicates,
+            NativePropertySupport::Unsupported,
+            BTreeSet::from([ConcreteFormat::Tptp]),
+        )
+        .expect("supported FOF profile"),
+        expected_result: problem.expected_result(),
+        declarations: problem.declarations().to_vec(),
+        axioms: problem.axioms().to_vec(),
+        conjecture: problem.conjecture().clone(),
+        type_context: AtpTypeContext::new(vec![crate::problem::AtpTypeGuard::new(
+            crate::problem::AtpTypeGuardId::new(1),
+            AtpFormulaTree::Atom(AtpAtom::new("P", vec![])),
+            AtpProvenanceId::new(2),
+        )]),
+        properties: problem.properties().to_vec(),
+        symbol_map: problem.symbol_map().to_vec(),
+        provenance: problem.provenance().to_vec(),
+        diagnostics: problem.diagnostics().to_vec(),
+    })
+    .expect("supported process fixture");
+    BackendRunInput::new(
+        BackendRunId::new(id).expect("run id"),
+        EncodedBackendProblem::encode(&fixture.problem, ConcreteFormat::Tptp)
+            .expect("real encoding"),
+        BackendProfile::new(
+            BackendProfileId::new(id).expect("profile id"),
+            BackendKind::new("local-child-diagnostic").expect("backend kind"),
+            ConcreteFormat::Tptp,
+        ),
+        command,
+        BackendResourceLimits::new().with_wall_timeout(timeout),
+        BackendIoMode::Stdin,
+        cancellation.clone(),
+    )
+    .with_random_seed(17)
+}
+
+#[cfg(unix)]
+#[test]
+fn execute_portfolio_dispatches_encoded_bytes_in_canonical_order_and_replays() {
+    let _guard = crate::backend::PRIVATE_TEMP_TEST_LOCK
+        .lock()
+        .unwrap_or_else(std::sync::PoisonError::into_inner);
+    let mut fixture = Fixture::new();
+    let marker = std::env::temp_dir().join(format!("atp-portfolio-order-{}", std::process::id()));
+    let cancellation = BackendCancellationToken::new();
+    let runs = [
+        (
+            "a",
+            "[ ! -s \"$1\" ] || exit 1; printf 'a' >> \"$1\"; /bin/cat",
+        ),
+        (
+            "b",
+            "[ \"$(/bin/cat \"$1\")\" = a ] || exit 1; printf 'b' >> \"$1\"; printf 'unsat\\n'",
+        ),
+    ]
+    .map(|(id, script)| {
+        process_run(
+            &mut fixture,
+            id,
+            BackendCommand::new(
+                "/bin/sh",
+                vec![
+                    "-c".into(),
+                    script.into(),
+                    "--".into(),
+                    marker.to_string_lossy().into_owned(),
+                ],
+            )
+            .expect("command"),
+            Duration::from_secs(5),
+            &cancellation,
+        )
+    });
+    let first = plan_portfolio(fixture.input(runs.iter().rev().cloned().collect())).expect("plan");
+    let replay = plan_portfolio(fixture.input(runs.to_vec())).expect("replay plan");
+    assert_eq!(first.plan_hash(), replay.plan_hash());
+    std::fs::write(&marker, b"").expect("reset order marker");
+    let evidence = execute_portfolio(first.clone()).expect("execution");
+    assert_eq!(std::fs::read(&marker).expect("dispatch order"), b"ab");
+    assert_eq!(
+        evidence.stop_summary().reason(),
+        PortfolioStopReason::AllRunsCollected
+    );
+    assert_eq!(evidence.backend_results().len(), 2);
+    for (result, run) in evidence
+        .backend_results()
+        .iter()
+        .zip(first.scheduled_runs())
+    {
+        assert_eq!(result.run_id(), run.run_id());
+        assert_eq!(
+            result.command_fingerprint(),
+            backend_run_command_fingerprint(run)
+        );
+        assert_eq!(result.encoded_problem(), run.encoded_problem());
+        assert_eq!(result.status(), BackendRunStatus::Unknown);
+        assert_eq!(result.observed_result(), None);
+        assert!(result.candidate_evidence().is_none());
+        assert!(result.child_reaped());
+    }
+    assert_eq!(
+        evidence.backend_results()[0].stdout().retained_bytes(),
+        runs[0].encoded_problem().input_text()
+    );
+    assert_eq!(
+        evidence.backend_results()[1].stdout().retained_bytes(),
+        b"unsat\n"
+    );
+    assert!(evidence.candidates().is_empty());
+    let collected = collect_portfolio_results(
+        first,
+        evidence.backend_results().iter().rev().cloned().collect(),
+    )
+    .expect("unchanged collector");
+    assert_eq!(evidence, collected);
+    std::fs::write(&marker, b"").expect("reset order marker");
+    let repeated = execute_portfolio(replay).expect("replay execution");
+    assert_eq!(std::fs::read(&marker).expect("replay order"), b"ab");
+    assert_eq!(evidence.evidence_set_hash(), repeated.evidence_set_hash());
+    std::fs::remove_file(marker).expect("remove order marker");
+}
+
+#[cfg(unix)]
+#[test]
+fn execute_portfolio_continues_after_actual_spawn_error_exit_timeout_and_run_cancel() {
+    let _guard = crate::backend::PRIVATE_TEMP_TEST_LOCK
+        .lock()
+        .unwrap_or_else(std::sync::PoisonError::into_inner);
+    let mut fixture = Fixture::new();
+    let cancelled_run = BackendCancellationToken::new();
+    cancelled_run.cancel();
+    let independent = BackendCancellationToken::new();
+    let runs = [
+        (
+            "a-spawn",
+            BackendCommand::new("/dev/null/absent-atp-backend", vec![]).expect("missing command"),
+            &independent,
+        ),
+        (
+            "b-exit",
+            BackendCommand::new("/bin/sh", vec!["-c".into(), "exit 7".into()])
+                .expect("exit command"),
+            &independent,
+        ),
+        (
+            "c-timeout",
+            BackendCommand::new("/bin/sh", vec!["-c".into(), "while :; do :; done".into()])
+                .expect("timeout command"),
+            &independent,
+        ),
+        (
+            "d-cancel",
+            BackendCommand::new("/bin/sh", vec!["-c".into(), "exit 99".into()])
+                .expect("cancel command"),
+            &cancelled_run,
+        ),
+        (
+            "e-last",
+            BackendCommand::new("/bin/sh", vec!["-c".into(), "printf 'unsat\\n'".into()])
+                .expect("last command"),
+            &independent,
+        ),
+    ]
+    .map(|(id, command, token)| {
+        process_run(&mut fixture, id, command, Duration::from_millis(200), token)
+    });
+    let evidence = execute_portfolio(plan_portfolio(fixture.input(runs.to_vec())).expect("plan"))
+        .expect("execution");
+    assert_eq!(
+        evidence.stop_summary().reason(),
+        PortfolioStopReason::AllRunsCollected
+    );
+    assert_eq!(
+        evidence
+            .backend_results()
+            .iter()
+            .map(BackendRunResult::status)
+            .collect::<Vec<_>>(),
+        vec![
+            BackendRunStatus::Error,
+            BackendRunStatus::Error,
+            BackendRunStatus::Timeout,
+            BackendRunStatus::Cancelled,
+            BackendRunStatus::Unknown
+        ]
+    );
+    for index in [1, 2, 4] {
+        assert!(evidence.backend_results()[index].child_reaped());
+    }
+    assert!(
+        evidence.backend_results()[0]
+            .diagnostics()
+            .iter()
+            .any(|d| d.key() == "spawn_failed")
+    );
+    assert_eq!(
+        evidence.backend_results()[1]
+            .exit_status()
+            .expect("exit status")
+            .code(),
+        Some(7)
+    );
+    assert_eq!(
+        evidence.backend_results()[4].stdout().retained_bytes(),
+        b"unsat\n"
+    );
+    assert!(
+        evidence
+            .backend_results()
+            .iter()
+            .all(|result| result.candidate_evidence().is_none()
+                && result.observed_result().is_none())
+    );
+    assert!(evidence.candidates().is_empty());
+}
+
+#[cfg(unix)]
+#[test]
+fn execute_portfolio_never_launches_stopped_or_cancelled_plans() {
+    let _guard = crate::backend::PRIVATE_TEMP_TEST_LOCK
+        .lock()
+        .unwrap_or_else(std::sync::PoisonError::into_inner);
+    let mut fixture = Fixture::new();
+    let marker = std::env::temp_dir().join(format!("atp-portfolio-stopped-{}", std::process::id()));
+    let _ = std::fs::remove_file(&marker);
+    let token = BackendCancellationToken::new();
+    let run = process_run(
+        &mut fixture,
+        "a",
+        BackendCommand::new(
+            "/bin/sh",
+            vec![
+                "-c".into(),
+                "printf launched > \"$1\"".into(),
+                "--".into(),
+                marker.to_string_lossy().into_owned(),
+            ],
+        )
+        .expect("command"),
+        Duration::from_secs(5),
+        &token,
+    );
+    let mut scheduler_stopped = fixture.input(vec![run.clone()]);
+    scheduler_stopped.scheduler_budget = PortfolioBudget::with_max_scheduled_runs(0);
+    let pre_cancel = BackendCancellationToken::new();
+    pre_cancel.cancel();
+    for (input, reason) in [
+        (
+            fixture.input(vec![]),
+            PortfolioStopReason::NoSchedulableProfile,
+        ),
+        (
+            fixture.input_with_cancellation(vec![run.clone()], pre_cancel),
+            PortfolioStopReason::Cancelled,
+        ),
+        (
+            fixture.input_with_obligation_budget(
+                vec![run.clone()],
+                PortfolioBudget::with_max_scheduled_runs(0),
+            ),
+            PortfolioStopReason::BudgetExhausted,
+        ),
+        (scheduler_stopped, PortfolioStopReason::BudgetExhausted),
+    ] {
+        let evidence = execute_portfolio(plan_portfolio(input).expect("stopped plan"))
+            .expect("stopped execution");
+        assert_eq!(evidence.stop_summary().reason(), reason);
+        assert!(evidence.backend_results().is_empty());
+        assert!(evidence.candidates().is_empty());
+    }
+    let plan = plan_portfolio(fixture.input_with_cancellation(vec![run], token.clone()))
+        .expect("active plan");
+    assert_eq!(plan.scheduled_runs().len(), 1);
+    token.cancel();
+    let evidence = execute_portfolio(plan).expect("cancelled execution");
+    assert_eq!(
+        evidence.stop_summary().reason(),
+        PortfolioStopReason::Cancelled
+    );
+    assert!(evidence.backend_results().is_empty());
+    assert!(evidence.candidates().is_empty());
+    assert!(!marker.exists());
+}
+
+#[cfg(unix)]
+#[test]
+fn execute_portfolio_preserves_shared_and_distinct_inflight_cancellation() {
+    let _guard = crate::backend::PRIVATE_TEMP_TEST_LOCK
+        .lock()
+        .unwrap_or_else(std::sync::PoisonError::into_inner);
+    let mut fixture = Fixture::new();
+    for (label, shared, release, status) in [
+        ("shared", true, false, BackendRunStatus::Cancelled),
+        ("distinct-complete", false, true, BackendRunStatus::Unknown),
+        ("distinct-timeout", false, false, BackendRunStatus::Timeout),
+    ] {
+        let marker =
+            std::env::temp_dir().join(format!("atp-portfolio-{label}-{}", std::process::id()));
+        let released = marker.with_extension("release");
+        let _ = std::fs::remove_file(&marker);
+        let _ = std::fs::remove_file(&released);
+        let portfolio_token = BackendCancellationToken::new();
+        let run_token = if shared {
+            portfolio_token.clone()
+        } else {
+            BackendCancellationToken::new()
+        };
+        let runs = [
+            (
+                "a",
+                "printf ready > \"$1\"; while [ ! -f \"$2\" ]; do :; done; printf done",
+            ),
+            ("b", "printf following >> \"$1\""),
+        ]
+        .map(|(id, script)| {
+            process_run(
+                &mut fixture,
+                id,
+                BackendCommand::new(
+                    "/bin/sh",
+                    vec![
+                        "-c".into(),
+                        script.into(),
+                        "--".into(),
+                        marker.to_string_lossy().into_owned(),
+                        released.to_string_lossy().into_owned(),
+                    ],
+                )
+                .expect("command"),
+                if label == "distinct-timeout" {
+                    Duration::from_secs(1)
+                } else {
+                    Duration::from_secs(5)
+                },
+                &run_token,
+            )
+        });
+        let plan =
+            plan_portfolio(fixture.input_with_cancellation(runs.to_vec(), portfolio_token.clone()))
+                .expect("plan");
+        let worker = std::thread::spawn(move || execute_portfolio(plan));
+        let deadline = std::time::Instant::now() + Duration::from_secs(5);
+        let mut started = false;
+        while std::time::Instant::now() < deadline {
+            if std::fs::read(&marker).is_ok_and(|bytes| bytes == b"ready") {
+                started = true;
+                break;
+            }
+            std::thread::sleep(Duration::from_millis(1));
+        }
+        portfolio_token.cancel();
+        if release {
+            std::fs::write(&released, b"").expect("release independent child");
+        }
+        let evidence = worker
+            .join()
+            .expect("execution thread")
+            .expect("cancelled evidence");
+        assert!(
+            started,
+            "child must signal readiness before cancellation: {label}"
+        );
+        assert_eq!(
+            evidence.stop_summary().reason(),
+            PortfolioStopReason::Cancelled
+        );
+        assert_eq!(evidence.backend_results().len(), 1, "{label}");
+        assert_eq!(evidence.backend_results()[0].status(), status, "{label}");
+        assert!(evidence.backend_results()[0].child_reaped());
+        assert_eq!(std::fs::read(&marker).expect("launch marker"), b"ready");
+        assert!(evidence.candidates().is_empty());
+        assert_eq!(run_token.is_cancelled(), shared);
+        if release {
+            assert_eq!(
+                evidence.backend_results()[0].stdout().retained_bytes(),
+                b"done"
+            );
+            std::fs::remove_file(released).expect("remove release marker");
+        }
+        std::fs::remove_file(marker).expect("remove readiness marker");
+    }
+}
