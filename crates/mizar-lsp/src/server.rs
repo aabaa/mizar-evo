@@ -218,6 +218,44 @@ impl Server {
         Ok((submission, notifications))
     }
 
+    /// Submits native frontend diagnostics and writes each currently eligible LSP frame.
+    pub fn submit_native_frontend_diagnostics_to_writer<
+        A: mizar_session::SessionIdAllocator,
+        L: mizar_build::module_index::SourceLayoutProvider,
+    >(
+        &self,
+        driver: &mut mizar_driver::driver::CompilerDriver,
+        session: mizar_driver::request::BuildSession,
+        allocator: &A,
+        snapshots: &mizar_session::SnapshotRegistry<A>,
+        input: mizar_driver::driver::DriverSubmitInput<L>,
+        output: &mut impl Write,
+    ) -> Result<
+        (mizar_driver::driver::BuildSubmission, io::Result<usize>),
+        mizar_driver::driver::DriverSubmitError,
+    > {
+        let (submission, notifications) =
+            self.submit_native_frontend_diagnostics(driver, session, allocator, snapshots, input)?;
+        let delivery = (|| {
+            let mut count = 0;
+            for notification in notifications.into_iter().flatten() {
+                let body = serde_json::to_vec(&notification).map_err(io::Error::other)?;
+                if driver
+                    .validate_current_native_diagnostics(submission.session.id(), snapshots)
+                    .is_err()
+                {
+                    break;
+                }
+                write!(output, "Content-Length: {}\r\n\r\n", body.len())?;
+                output.write_all(&body)?;
+                output.flush()?;
+                count += 1;
+            }
+            Ok(count)
+        })();
+        Ok((submission, delivery))
+    }
+
     /// Handles a JSON-RPC message without creating compiler snapshots.
     pub fn handle_message(&mut self, message: Value) -> Option<Value> {
         if self.exit_code.is_some() {
@@ -2038,5 +2076,466 @@ mod tests {
             }
             fs::remove_dir_all(root).unwrap();
         }
+    }
+
+    fn native_wire_fixture(
+        server: &mut Server,
+        ids: &mizar_session::InMemorySessionIdAllocator,
+        snapshots: &mizar_session::SnapshotRegistry,
+    ) -> (
+        mizar_driver::request::BuildSession,
+        impl Fn() -> mizar_driver::driver::DriverSubmitInput<
+            mizar_build::module_index::StaticSourceLayout,
+        > + use<>,
+        impl Fn() -> (
+            mizar_driver::driver::CompilerDriver,
+            std::sync::Arc<mizar_ir::publisher::PhaseOutputPublisher>,
+        ) + use<>,
+    ) {
+        use mizar_build::{
+            module_index::{StaticSourceLayout, build_module_index},
+            planner::{
+                DependencySelection, PlanRequest, WorkspacePackage, parse_lockfile,
+                parse_package_manifest, produce_build_plan,
+            },
+            task_graph::ModuleDependencyOverlay,
+        };
+        use mizar_driver::{
+            driver::{CompilerDriver, DriverSubmitInput},
+            registry::PhaseRegistryBuilder,
+            request::{
+                BatchInvocation, BatchRequest, BuildLaneId, BuildProfile, BuildRequestDraft,
+                BuildRequestGeneration, BuildRequestOrigin, BuildTargets, DependencyInputSet,
+                SourceInputSet, VerifierConfigInput,
+            },
+        };
+        use mizar_ir::{
+            identity::{OutputKind, PipelinePhase, SnapshotHandleRegistry, WorkUnit},
+            publisher::{AllowedWorkUnit, PhaseOutputPublisher},
+            storage::IrStorageService,
+        };
+        use mizar_session::{
+            DiskSourceLoader, Hash, PackageId, SourceOriginInput, ToolchainInfo, WorkspaceRoot,
+        };
+        use std::{fs, sync::Arc, time::SystemTime};
+
+        let root = std::env::temp_dir().join(format!(
+            "mizar-lsp-wire-🦀-{}-{}",
+            std::process::id(),
+            SystemTime::now()
+                .duration_since(SystemTime::UNIX_EPOCH)
+                .unwrap()
+                .as_nanos()
+        ));
+        fs::create_dir_all(root.join("alpha/src")).unwrap();
+        for name in ["main", "clean"] {
+            fs::write(root.join(format!("alpha/src/{name}.miz")), [0xff]).unwrap();
+        }
+        let workspace = WorkspaceRoot::new(root.to_str().unwrap());
+        let plan_request = PlanRequest {
+            workspace_root: workspace.clone(),
+            dependency_selection: DependencySelection::Normal,
+            toolchain: ToolchainInfo::new("mizar-evo-test"),
+        };
+        let packages = vec![WorkspacePackage {
+            member_path: "alpha".into(),
+            manifest: parse_package_manifest("[package]\nname = \"alpha\"\nversion = \"0.1.0\"\n")
+                .unwrap(),
+        }];
+        let lock = parse_lockfile("schema_version = 1\n[[package]]\nname = \"alpha\"\nversion = \"0.1.0\"\nsource = { kind = \"workspace\", path = \"alpha\" }\ndependencies = []\n").unwrap();
+        let plan =
+            produce_build_plan(plan_request.clone(), packages.clone(), lock.clone()).unwrap();
+        let layout = StaticSourceLayout::from_native_disk(&plan).unwrap();
+        let index = build_module_index(&plan, &layout, &[]).unwrap();
+        let loader = DiskSourceLoader::new(root.join("alpha"));
+        initialize(server);
+        let mut descriptors = Vec::new();
+        for (name, raw) in [
+            ("main", "\u{feff}::=🦀=::end\r\n:: suffix\r"),
+            ("clean", "\u{feff}definition\r\nend;\r\n:: 🦀\r\n"),
+        ] {
+            let uri = format!(
+                "file://{}{}",
+                if cfg!(windows) { "/" } else { "" },
+                root.join(format!("alpha/src/{name}.miz"))
+                    .to_str()
+                    .unwrap()
+                    .replace('\\', "/")
+            );
+            server.handle_message(notification(
+                "textDocument/didOpen",
+                json!({"textDocument": {
+                "uri": uri, "languageId": "mizar", "version": 7, "text": raw}}),
+            ));
+            let descriptor = index
+                .native_open_buffer_input(
+                    &workspace,
+                    &PackageId::new("alpha"),
+                    &loader,
+                    SourceOriginInput::OpenBuffer {
+                        uri,
+                        expected_version: 7,
+                        actual_version: 7,
+                        text: raw.into(),
+                    },
+                )
+                .unwrap();
+            descriptors.push((loader.clone(), descriptor));
+        }
+        let session = BuildRequestDraft {
+            lane: BuildLaneId::new(1),
+            origin: BuildRequestOrigin::Batch(BatchRequest {
+                invocation: BatchInvocation::default(),
+            }),
+            generation: BuildRequestGeneration::new(0),
+            workspace_root: workspace,
+            profile: BuildProfile::new("check"),
+            targets: BuildTargets::default(),
+            source_inputs: SourceInputSet { versions: vec![] },
+            dependency_inputs: DependencyInputSet::new(
+                vec![],
+                Hash::from_bytes([1; 32]),
+                ToolchainInfo::new("mizar-evo-test"),
+            ),
+            verifier_config: VerifierConfigInput::new(Hash::from_bytes([2; 32])),
+        }
+        .capture_sources(ids, snapshots, descriptors)
+        .unwrap();
+        for name in ["main", "clean"] {
+            fs::remove_file(root.join(format!("alpha/src/{name}.miz"))).unwrap();
+        }
+        let snapshot = session.captured().snapshot().id;
+        let drivers = move || {
+            let owner = Arc::new(PhaseOutputPublisher::new(
+                Arc::new(IrStorageService::new()),
+                Arc::new(SnapshotHandleRegistry::new()),
+            ));
+            owner.register_current_snapshot(snapshot);
+            for name in ["main", "clean"] {
+                for (phase, kind) in [("SourceLoad", "SourceUnit"), ("Frontend", "FrontendOutput")]
+                {
+                    owner.allow_work_unit(AllowedWorkUnit::new(
+                        PipelinePhase::new(phase),
+                        OutputKind::new(kind),
+                        WorkUnit::new(format!("{:?}:{:?}", "alpha", name)),
+                    ));
+                }
+            }
+            let mut builder = PhaseRegistryBuilder::new();
+            builder.register_source_load();
+            builder.register_frontend(vec![]);
+            (
+                CompilerDriver::new(builder.build().unwrap()).with_output_publisher(owner.clone()),
+                owner,
+            )
+        };
+        let input = move || {
+            let mut input = DriverSubmitInput::new(
+                plan_request.clone(),
+                packages.clone(),
+                lock.clone(),
+                layout.clone(),
+            );
+            input.dependency_overlay = ModuleDependencyOverlay::complete(vec![]);
+            input
+        };
+        (session, input, drivers)
+    }
+
+    #[derive(Default)]
+    struct NativeWireWriter {
+        bytes: Vec<u8>,
+        calls: Vec<&'static str>,
+        body: bool,
+        fail: Option<&'static str>,
+        partial: bool,
+        obsolete_on_flush: Option<(
+            std::sync::Arc<mizar_ir::publisher::PhaseOutputPublisher>,
+            mizar_session::BuildSnapshotId,
+        )>,
+    }
+
+    impl Write for NativeWireWriter {
+        fn write(&mut self, bytes: &[u8]) -> io::Result<usize> {
+            let operation = if self.body { "body" } else { "header" };
+            self.calls.push(operation);
+            if self.fail == Some(operation) && self.partial {
+                return Err(io::Error::other(operation));
+            }
+            let count = if self.fail == Some(operation) {
+                self.partial = true;
+                bytes.len().min(2)
+            } else {
+                bytes.len()
+            };
+            self.bytes.extend_from_slice(&bytes[..count]);
+            self.body |= self.bytes.ends_with(b"\r\n\r\n");
+            Ok(count)
+        }
+
+        fn flush(&mut self) -> io::Result<()> {
+            self.calls.push("flush");
+            if self.fail == Some("flush") {
+                return Err(io::Error::other("flush"));
+            }
+            if let Some((owner, snapshot)) = self.obsolete_on_flush.take() {
+                owner.mark_obsolete(snapshot).unwrap();
+            }
+            self.body = false;
+            Ok(())
+        }
+    }
+
+    #[test]
+    fn native_wire_frames_preserve_original_records_raw_ranges_and_submission() {
+        let mut server = Server::default();
+        let ids = mizar_session::InMemorySessionIdAllocator::new();
+        let snapshots = mizar_session::SnapshotRegistry::new();
+        let (session, input, drivers) = native_wire_fixture(&mut server, &ids, &snapshots);
+        let (mut ordinary_driver, _) = drivers();
+        let ordinary = ordinary_driver
+            .submit_captured(session.clone(), &ids, &snapshots, input())
+            .unwrap();
+        let (mut indexed_driver, _) = drivers();
+        let (_, index) = indexed_driver
+            .submit_captured_with_native_diagnostic_index(
+                session.clone(),
+                &ids,
+                &snapshots,
+                input(),
+            )
+            .unwrap();
+        let index = index.unwrap();
+        let (mut driver, _) = drivers();
+        let mut writer = NativeWireWriter::default();
+        let (submission, delivery) = server
+            .submit_native_frontend_diagnostics_to_writer(
+                &mut driver,
+                session,
+                &ids,
+                &snapshots,
+                input(),
+                &mut writer,
+            )
+            .unwrap();
+        assert_eq!(submission, ordinary);
+        assert_eq!(delivery.unwrap(), 2);
+        assert_eq!(writer.calls.iter().filter(|&&op| op == "flush").count(), 2);
+        let mut remaining = writer.bytes.as_slice();
+        let mut messages = Vec::new();
+        while !remaining.is_empty() {
+            let header_end = remaining
+                .windows(4)
+                .position(|part| part == b"\r\n\r\n")
+                .unwrap();
+            let header = std::str::from_utf8(&remaining[..header_end]).unwrap();
+            let length: usize = header
+                .strip_prefix("Content-Length: ")
+                .unwrap()
+                .parse()
+                .unwrap();
+            remaining = &remaining[header_end + 4..];
+            let body = &remaining[..length];
+            assert!(body.len() > std::str::from_utf8(body).unwrap().chars().count());
+            messages.push(serde_json::from_slice::<Value>(body).unwrap());
+            remaining = &remaining[length..];
+        }
+        let uris = server.documents.keys().collect::<Vec<_>>();
+        assert_eq!(
+            messages[0],
+            json!({"jsonrpc": "2.0", "method": "textDocument/publishDiagnostics",
+            "params": {"uri": uris[0], "version": 7, "diagnostics": []}})
+        );
+        let diagnostics = vec![
+            json!({"range": {"start": {"line": 0, "character": 9}, "end": {"line": 0, "character": 12}},
+                "code": "E0033", "message": "unmatched `end` in lexical scope skeleton", "severity": 1}),
+            json!({"range": {"start": {"line": 0, "character": 9}, "end": {"line": 0, "character": 12}},
+                "code": "E0052", "message": "`end` has no matching block opener", "severity": 1}),
+        ];
+        assert_eq!(
+            messages[1],
+            json!({"jsonrpc": "2.0", "method": "textDocument/publishDiagnostics",
+            "params": {"uri": uris[1], "version": 7, "diagnostics": diagnostics}})
+        );
+        assert_eq!(diagnostics.len(), index.records().len());
+        for (diagnostic, record) in diagnostics.iter().zip(index.records()) {
+            assert_eq!(diagnostic["code"], record.code().to_string());
+            assert_eq!(diagnostic["message"], record.message());
+            assert_eq!(
+                record.severity(),
+                mizar_diagnostics::registry::DiagnosticSeverity::Error
+            );
+        }
+        std::fs::remove_dir_all(input().plan_request.workspace_root.as_str()).unwrap();
+    }
+
+    #[test]
+    fn native_wire_withholds_ineligible_handoffs_and_preserves_driver_errors() {
+        let mut server = Server::default();
+        let ids = mizar_session::InMemorySessionIdAllocator::new();
+        let snapshots = mizar_session::SnapshotRegistry::new();
+        let (session, input, drivers) = native_wire_fixture(&mut server, &ids, &snapshots);
+        let (mut ordinary_driver, _) = drivers();
+        let ordinary = ordinary_driver
+            .submit_captured(session.clone(), &ids, &snapshots, input())
+            .unwrap();
+        let uri = server.documents.keys().next().unwrap().clone();
+        let original = server.document(&uri).unwrap().1.to_owned();
+        for mode in ["control", "version", "raw", "invalid-registry"] {
+            let mut current = Server::default();
+            initialize(&mut current);
+            for (uri, (version, text)) in &server.documents {
+                current.handle_message(notification(
+                    "textDocument/didOpen",
+                    json!({"textDocument": {
+                    "uri": uri, "languageId": "mizar", "version": version, "text": text}}),
+                ));
+            }
+            if mode == "version" {
+                current.handle_message(notification("textDocument/didChange", json!({
+                    "textDocument": {"uri": uri, "version": 8}, "contentChanges": [{"text": original}]})));
+                assert_eq!(current.document(&uri), Some((8, original.as_str())));
+            } else if mode == "raw" {
+                let normalized = original
+                    .trim_start_matches('\u{feff}')
+                    .replace("\r\n", "\n");
+                current.handle_message(notification(
+                    "textDocument/didClose",
+                    json!({"textDocument": {"uri": uri}}),
+                ));
+                current.handle_message(notification(
+                    "textDocument/didOpen",
+                    json!({"textDocument": {
+                    "uri": uri, "languageId": "mizar", "version": 7, "text": normalized}}),
+                ));
+                let loaded = session.captured().native_sources().unwrap().iter()
+                    .find(|(_, _, input)| matches!(&input.origin,
+                        mizar_session::SourceOriginInput::OpenBuffer { uri: captured, .. } if captured == &uri))
+                    .unwrap();
+                assert_eq!(loaded.1.text.as_ref(), normalized);
+                assert_ne!(original, normalized);
+            }
+            let invalid = mizar_session::SnapshotRegistry::new();
+            let registry = if mode == "invalid-registry" {
+                &invalid
+            } else {
+                &snapshots
+            };
+            let (mut driver, _) = drivers();
+            let mut writer = NativeWireWriter::default();
+            let result = current.submit_native_frontend_diagnostics_to_writer(
+                &mut driver,
+                session.clone(),
+                &ids,
+                registry,
+                input(),
+                &mut writer,
+            );
+            if mode == "invalid-registry" {
+                let (mut ordinary_driver, _) = drivers();
+                let expected = ordinary_driver
+                    .submit_captured(session.clone(), &ids, registry, input())
+                    .unwrap_err();
+                assert!(matches!(
+                    expected,
+                    mizar_driver::driver::DriverSubmitError::InvalidCapturedSession { .. }
+                ));
+                assert_eq!(result.unwrap_err(), expected);
+            } else {
+                let (submission, delivery) = result.unwrap();
+                assert_eq!(submission, ordinary);
+                assert_eq!(delivery.unwrap(), if mode == "control" { 2 } else { 0 });
+                assert_eq!(
+                    driver.validate_current_native_diagnostics(session.id(), registry),
+                    Ok(())
+                );
+            }
+            if mode != "control" {
+                assert!(writer.bytes.is_empty());
+                assert!(writer.calls.is_empty());
+            }
+        }
+        std::fs::remove_dir_all(input().plan_request.workspace_root.as_str()).unwrap();
+    }
+
+    #[test]
+    fn native_wire_stops_on_io_errors_and_rechecks_real_publisher_after_each_frame() {
+        let mut server = Server::default();
+        let ids = mizar_session::InMemorySessionIdAllocator::new();
+        let snapshots = mizar_session::SnapshotRegistry::new();
+        let (session, input, drivers) = native_wire_fixture(&mut server, &ids, &snapshots);
+        let (mut ordinary_driver, _) = drivers();
+        let ordinary = ordinary_driver
+            .submit_captured(session.clone(), &ids, &snapshots, input())
+            .unwrap();
+        let mut complete_prefix = None;
+        for mode in ["header", "body", "flush", "obsolete"] {
+            let (mut driver, owner) = drivers();
+            let mut writer = NativeWireWriter {
+                fail: (mode != "obsolete").then_some(mode),
+                obsolete_on_flush: (mode == "obsolete")
+                    .then_some((owner, session.captured().snapshot().id)),
+                ..NativeWireWriter::default()
+            };
+            let (submission, delivery) = server
+                .submit_native_frontend_diagnostics_to_writer(
+                    &mut driver,
+                    session.clone(),
+                    &ids,
+                    &snapshots,
+                    input(),
+                    &mut writer,
+                )
+                .unwrap();
+            assert_eq!(submission, ordinary);
+            if mode == "obsolete" {
+                assert_eq!(delivery.unwrap(), 1);
+                assert!(
+                    driver
+                        .validate_current_native_diagnostics(session.id(), &snapshots)
+                        .is_err()
+                );
+                assert_eq!(writer.calls.iter().filter(|&&op| op == "flush").count(), 1);
+                assert_eq!(&writer.bytes, complete_prefix.as_ref().unwrap());
+            } else {
+                let error = delivery.unwrap_err();
+                assert_eq!(error.kind(), io::ErrorKind::Other);
+                assert_eq!(error.to_string(), mode);
+                assert_eq!(writer.calls.last(), Some(&mode));
+                if mode != "flush" {
+                    assert_eq!(writer.calls.iter().filter(|&&op| op == mode).count(), 2);
+                }
+                assert_eq!(
+                    writer.calls.iter().filter(|&&op| op == "flush").count(),
+                    usize::from(mode == "flush")
+                );
+                if mode == "header" {
+                    assert_eq!(writer.bytes, b"Co");
+                } else {
+                    let header_end = writer
+                        .bytes
+                        .windows(4)
+                        .position(|part| part == b"\r\n\r\n")
+                        .unwrap();
+                    let length: usize = std::str::from_utf8(&writer.bytes[..header_end])
+                        .unwrap()
+                        .strip_prefix("Content-Length: ")
+                        .unwrap()
+                        .parse()
+                        .unwrap();
+                    assert_eq!(
+                        writer.bytes.len() - header_end - 4,
+                        if mode == "body" { 2 } else { length }
+                    );
+                    if mode == "flush" {
+                        let message: Value =
+                            serde_json::from_slice(&writer.bytes[header_end + 4..]).unwrap();
+                        assert_eq!(message["params"]["diagnostics"], json!([]));
+                        complete_prefix = Some(writer.bytes);
+                    }
+                }
+            }
+        }
+        std::fs::remove_dir_all(input().plan_request.workspace_root.as_str()).unwrap();
     }
 }

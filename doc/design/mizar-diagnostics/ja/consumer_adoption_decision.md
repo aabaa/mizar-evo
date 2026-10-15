@@ -62,4 +62,4 @@ task 16 の verification は documentation-only である。
 ## Current lightweight LSP consumer
 
 実際の明示的な全 OpenBuffer/current-Frontend 通知 projection は [LSP Server](../../mizar-lsp/ja/server.md#native-frontend-diagnostic-notifications) が所有する。元 capture と実 Driver index を既存の guard profile で消費する。この lightweight route の Diagnostics consumer として mizar-driver に加えて mizar-lsp を登録し、他 consumer の採用 trigger は変更しない。
-workspace reverse-dependency guard はこの名前付き consumer だけを許可し、dependency table/alias 検出を保持する。現在の条件付き登録であり、Task16 の歴史的 documentation-only 結果の書換えや、旧 coherent-publication trigger の完了ではない。完全な semantic snapshot publication、wire/stdio 接続、explanation 変換、ENTRY、SCA-003 は別途保留し、Diagnostics は protocol/driver/受理の責務を持たない。
+workspace reverse-dependency guard はこの名前付き consumer だけを許可し、dependency table/alias 検出を保持する。現在の条件付き登録であり、Task16 の歴史的 documentation-only 結果の書換えや、旧 coherent-publication trigger の完了ではない。完全な semantic snapshot publication、自動 host/stdio 接続、explanation 変換、ENTRY、SCA-003 は別途保留し、Diagnostics は protocol/driver/受理の責務を持たない。
