@@ -559,6 +559,8 @@ the owning producers when the paired tasks land.
 
 42. **[Retained same-capture native Frontend lookup](../../task_contracts/en/DRIVER-RETAINED-NATIVE-FRONTEND-CACHE-LOOKUP.md).** [x]
 
+43. **[Opt-in native leaf Frontend persistence](../../task_contracts/en/DRIVER-NATIVE-FRONTEND-CACHE-PERSISTENCE.md).** [x]
+
 ## Recommended Verification
 
 Run after each task:

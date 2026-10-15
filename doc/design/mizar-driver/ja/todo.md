@@ -527,6 +527,8 @@ artifact/test のフォローアップタスクが所有する。本 crate の�
 
 42. **[同一 capture の retained native Frontend lookup](../../task_contracts/ja/DRIVER-RETAINED-NATIVE-FRONTEND-CACHE-LOOKUP.md).** [x]
 
+43. **[Opt-in native leaf Frontend persistence](../../task_contracts/ja/DRIVER-NATIVE-FRONTEND-CACHE-PERSISTENCE.md).** [x]
+
 ## 推奨検証
 
 各タスクの後で実行する:

@@ -18225,3 +18225,665 @@ fn native_disk_frontend_lookup_rejects_permissions_parents_and_coherent_wrong_ag
         assert_eq!(selected.successful_rehydrations(), 0);
     }
 }
+
+fn persistent_native_frontend_case(
+    settings: &[(&str, &str)],
+    case: &str,
+    stages: &[&str],
+    threshold: usize,
+    store_path: &str,
+    reverse: bool,
+) {
+    use mizar_build::planner::{lockfile_content_hash, workspace_config_content_hash};
+    use mizar_cache::{
+        cache_key::{CacheKeyBuildOutcome, CacheKeyBuilder},
+        cache_store::{CacheLookupOutcome, CacheStoreRoot},
+    };
+    use mizar_ir::cache_adapter::{CacheRehydrateOutcome, IrCacheAdapter};
+    let fixture = Fixture::new(stages[0].as_bytes());
+    let ids = InMemorySessionIdAllocator::new();
+    let snapshots = SnapshotRegistry::new();
+    let policy = mizar_proof::policy::VerifierPolicy::release();
+    let store = CacheStoreRoot::new(fixture.root.join(store_path));
+    assert!(!store.root().exists());
+    if case == "store-error" {
+        fs::write(store.root(), b"cache-root file").unwrap();
+    }
+    let mut previous_keys = Vec::new();
+    for (stage, raw) in stages.iter().enumerate() {
+        for replay in 0..2 {
+            let mut captured = None;
+            let mut clean = None;
+            let mut source_hits = Vec::new();
+            let mut frontend_keys = Vec::new();
+            for actual in [false, true] {
+                let (mut draft, mut input) = fixture.submit_request(vec![], vec![]);
+                input.workspace_packages = settings
+                    .iter()
+                    .map(|(name, build)| WorkspacePackage {
+                        member_path: (*name).into(),
+                        manifest: parse_package_manifest(&format!(
+                            "[package]\nname = \"{name}\"\nversion = \"0.1.0\"\n{build}"
+                        ))
+                        .unwrap(),
+                    })
+                    .collect();
+                input.lockfile = parse_lockfile(&format!(
+                    "schema_version = 1\n{}",
+                    settings.iter().map(|(name, _)| format!(
+                        "[[package]]\nname = \"{name}\"\nversion = \"0.1.0\"\nsource = {{ kind = \"workspace\", path = \"{name}\" }}\ndependencies = []\n"
+                    )).collect::<String>()
+                )).unwrap();
+                let mut layout = settings
+                    .iter()
+                    .map(|(name, _)| WorkspaceSourcePackage {
+                        package_id: PackageId::new(*name),
+                        files: vec![WorkspaceSourceFile::new("src/main.miz", "main.miz")],
+                    })
+                    .collect::<Vec<_>>();
+                if reverse {
+                    input.workspace_packages.reverse();
+                    layout.reverse();
+                    input.worker_count = 4;
+                    input.completion_order = CompletionOrder::Reverse;
+                }
+                if case == "imports" {
+                    layout[0]
+                        .files
+                        .push(WorkspaceSourceFile::new("src/leaf.miz", "leaf.miz"));
+                    input.dependency_overlay = complete_leaf_import_overlay();
+                }
+                input.source_layout = StaticSourceLayout::new(layout);
+                input.cache_policy = if case == "disabled" {
+                    CacheSchedulingPolicy::Disabled
+                } else {
+                    CacheSchedulingPolicy::Enabled
+                };
+                let plan = produce_build_plan(
+                    input.plan_request.clone(),
+                    input.workspace_packages.clone(),
+                    input.lockfile.clone(),
+                )
+                .unwrap();
+                draft.source_inputs.versions.clear();
+                draft.dependency_inputs.lockfile_hash = lockfile_content_hash(&plan.lockfile);
+                draft.verifier_config = VerifierConfigInput::new(if case == "context" {
+                    hash(2)
+                } else {
+                    workspace_config_content_hash(&plan.verifier_config, &plan.build_config)
+                });
+                let session = if actual {
+                    captured.take().unwrap()
+                } else {
+                    let mut descriptors = Vec::new();
+                    for (name, _) in settings {
+                        let root = fixture.root.join(name);
+                        fs::create_dir_all(root.join("src")).unwrap();
+                        for module in if case == "imports" {
+                            vec!["main", "leaf"]
+                        } else {
+                            vec!["main"]
+                        } {
+                            let path = format!("src/{module}.miz");
+                            fs::write(
+                                root.join(&path),
+                                if *name == "alpha" && module == "main" {
+                                    raw.as_bytes()
+                                } else {
+                                    b"definition\nend;\n"
+                                },
+                            )
+                            .unwrap();
+                            descriptors.push((
+                                DiskSourceLoader::new(&root),
+                                SourceInput {
+                                    package_id: PackageId::new(*name),
+                                    module_path: ModulePath::new(module),
+                                    normalized_path: normalize_path(&root, Path::new(&path))
+                                        .unwrap(),
+                                    edition: Edition::new("2025"),
+                                    origin: SourceOriginInput::Disk { path: path.into() },
+                                },
+                            ));
+                        }
+                    }
+                    if reverse {
+                        descriptors.reverse();
+                    }
+                    let session = draft
+                        .capture_sources(&ids, &snapshots, descriptors)
+                        .unwrap();
+                    for (name, _) in settings {
+                        fs::remove_file(fixture.root.join(name).join("src/main.miz")).unwrap();
+                        if case == "imports" {
+                            fs::remove_file(fixture.root.join(name).join("src/leaf.miz")).unwrap();
+                        }
+                    }
+                    captured = Some(session.clone());
+                    session
+                };
+                let snapshot = session.captured().snapshot().id;
+                let unit = WorkUnit::Module {
+                    module: mizar_build::module_index::ModuleId::new(
+                        PackageId::new(settings[0].0),
+                        ModulePath::new("main"),
+                    ),
+                };
+                let owner = publisher(snapshot, threshold, &unit);
+                for (name, _) in settings {
+                    owner.allow_work_unit(AllowedWorkUnit::new(
+                        IrPipelinePhase::new("SourceLoad"),
+                        OutputKind::new("SourceUnit"),
+                        IrWorkUnit::new(format!("{name:?}:{:?}", "main")),
+                    ));
+                    allow_frontend(
+                        &owner,
+                        &WorkUnit::Module {
+                            module: mizar_build::module_index::ModuleId::new(
+                                PackageId::new(*name),
+                                ModulePath::new("main"),
+                            ),
+                        },
+                    );
+                }
+                if case == "imports" {
+                    owner.allow_work_unit(AllowedWorkUnit::new(
+                        IrPipelinePhase::new("SourceLoad"),
+                        OutputKind::new("SourceUnit"),
+                        IrWorkUnit::new(format!("{:?}:{:?}", "alpha", "leaf")),
+                    ));
+                    allow_frontend(
+                        &owner,
+                        &WorkUnit::Module {
+                            module: mizar_build::module_index::ModuleId::new(
+                                PackageId::new("alpha"),
+                                ModulePath::new("leaf"),
+                            ),
+                        },
+                    );
+                }
+                let mut builder = PhaseRegistryBuilder::new();
+                builder.register_source_load();
+                builder.register_frontend(vec![]);
+                let mut driver = CompilerDriver::new(builder.build().unwrap())
+                    .with_output_publisher(owner.clone());
+                if case == "provider" {
+                    input.phase_dispatch_inputs = Some(Box::new(SuppliedInput::None));
+                }
+                if actual && matches!(case, "cancel" | "obsolete" | "cancel-frontend") {
+                    let (submission, _): &(
+                        mizar_driver::driver::BuildSubmission,
+                        std::sync::Arc<PhaseOutputPublisher>,
+                    ) = clean.as_ref().unwrap();
+                    let task = submission
+                        .task_graph
+                        .as_ref()
+                        .unwrap()
+                        .tasks()
+                        .iter()
+                        .find(|task| {
+                            task.kind
+                                == if case == "cancel-frontend" {
+                                    TaskKind::Frontend
+                                } else {
+                                    TaskKind::SourceLoad
+                                }
+                        })
+                        .unwrap();
+                    if case == "obsolete" {
+                        input
+                            .cancellation
+                            .discard_obsolete_completed_task(task.id.clone());
+                    } else {
+                        input.cancellation.cancel_task(task.id.clone());
+                    }
+                }
+                let submission = if !actual {
+                    driver.submit_captured(session, &ids, &snapshots, input)
+                } else if case == "source-only" {
+                    driver.submit_captured_with_persistent_native_disk_cache(
+                        session, &ids, &snapshots, input, &policy, &store,
+                    )
+                } else if case == "read-only" {
+                    driver.submit_captured_with_configured_native_disk_cache(
+                        session, &ids, &snapshots, input, &policy, &store,
+                    )
+                } else {
+                    driver.submit_captured_with_persistent_native_prefix_cache(
+                        session, &ids, &snapshots, input, &policy, &store,
+                    )
+                }
+                .unwrap();
+                let run = submission.scheduler_run.as_ref().unwrap();
+                let graph = submission.task_graph.as_ref().unwrap();
+                let captured = submission.session.captured();
+                let inputs = SourceLoadInputs {
+                    snapshot: captured.snapshot(),
+                    captured: Some(captured),
+                    build_plan: submission.build_plan.as_ref().unwrap(),
+                    module_index: submission.module_index.as_ref().unwrap(),
+                    allocator: &ids,
+                };
+                let adapter = IrCacheAdapter::new(owner.clone());
+                for (ordinal, (name, build)) in settings.iter().enumerate() {
+                    let source_task = graph.tasks().iter().find(|task| task.kind == TaskKind::SourceLoad && matches!(&task.unit, WorkUnit::Module { module } if module.package.as_str() == *name && module.path.as_str() == "main")).unwrap();
+                    let frontend_task = graph
+                        .tasks()
+                        .iter()
+                        .find(|task| {
+                            task.kind == TaskKind::Frontend && task.unit == source_task.unit
+                        })
+                        .unwrap();
+                    let version = captured
+                        .snapshot()
+                        .source_versions
+                        .iter()
+                        .find(|version| {
+                            version.package_id.as_str() == *name
+                                && version.module_path.as_str() == "main"
+                        })
+                        .unwrap();
+                    let source_input = PhaseInput::new(
+                        source_task.unit.clone(),
+                        PhaseDispatchInputBundle::without_parent_outputs(
+                            snapshot,
+                            source_key(version),
+                            vec![],
+                        ),
+                    );
+                    let CacheKeyBuildOutcome::Cacheable(source_key) = CacheKeyBuilder::new(
+                        inputs
+                            .prepare_native_disk_cache_request(&source_input, &policy)
+                            .unwrap(),
+                    )
+                    .build() else {
+                        panic!("source key");
+                    };
+                    let eligible = !matches!(
+                        case,
+                        "disabled"
+                            | "foreign"
+                            | "provider"
+                            | "context"
+                            | "cancel"
+                            | "obsolete"
+                            | "cancel-frontend"
+                            | "store-error"
+                            | "read-only"
+                    ) && !build.contains("incremental = false")
+                        && store.root()
+                            == fixture.root.join(name).join(if build.contains("cache/") {
+                                if *name == "alpha" {
+                                    "cache/a"
+                                } else {
+                                    "cache/b"
+                                }
+                            } else {
+                                ".mizar-cache"
+                            });
+                    if !actual {
+                        source_hits.push(matches!(
+                            store.lookup(&source_key),
+                            CacheLookupOutcome::Hit(_)
+                        ));
+                    }
+                    if actual && matches!(case, "cancel" | "obsolete" | "cancel-frontend") {
+                        assert!(
+                            run.task_states
+                                .iter()
+                                .any(|state| state.state == TaskState::Cancelled)
+                        );
+                        assert!(!store.root().exists());
+                        continue;
+                    }
+                    let Some(source_result) = run
+                        .phase_results
+                        .get(&source_task.id)
+                        .and_then(|results| results.first())
+                    else {
+                        assert_eq!(case, "provider");
+                        continue;
+                    };
+                    assert_eq!(
+                        run.task_states
+                            .iter()
+                            .find(|state| state.task_id == source_task.id)
+                            .unwrap()
+                            .state,
+                        if actual && eligible && source_hits[ordinal] {
+                            TaskState::CacheHit
+                        } else {
+                            TaskState::Completed
+                        }
+                    );
+                    let source_ref = &source_result.output_refs[0];
+                    let input = PhaseInput::new(
+                        source_task.unit.clone(),
+                        PhaseDispatchInputBundle::new(
+                            snapshot,
+                            source_input.identities().input_hash(),
+                            vec![],
+                            vec![
+                                SealedParentOutputHandle::from_published_output(
+                                    &owner,
+                                    snapshot,
+                                    source_ref.clone(),
+                                )
+                                .unwrap(),
+                            ],
+                        )
+                        .unwrap(),
+                    );
+                    for (phase, reason) in [
+                        (
+                            PipelinePhase::SourceLoad,
+                            "current disk source maps require a real source load",
+                        ),
+                        (
+                            PipelinePhase::Frontend,
+                            "frontend inputs require a live source and dependency run",
+                        ),
+                    ] {
+                        assert_eq!(
+                            driver
+                                .registry()
+                                .cache_key_for_phase(phase, &input)
+                                .unwrap()
+                                .intent,
+                            PhaseCacheIntent::NoKey {
+                                reason: reason.into()
+                            }
+                        );
+                    }
+                    let result = &run.phase_results[&frontend_task.id][0];
+                    let failed = *name == "alpha" && raw.contains("theorem T: ;");
+                    assert_eq!(
+                        result.status,
+                        if failed {
+                            PhaseStatus::Recoverable
+                        } else {
+                            PhaseStatus::Complete
+                        }
+                    );
+                    if result.output_refs.is_empty() {
+                        assert!(!result.diagnostics.is_empty());
+                        assert!(!store.root().join("records/Frontend").exists());
+                        if actual {
+                            assert_eq!(
+                                matches!(store.lookup(&source_key), CacheLookupOutcome::Hit(_)),
+                                eligible
+                            );
+                            let (clean_submission, _) = clean.as_ref().unwrap();
+                            assert_eq!(
+                                submission.session.state(),
+                                clean_submission.session.state()
+                            );
+                            assert_eq!(
+                                result.diagnostics,
+                                clean_submission
+                                    .scheduler_run
+                                    .as_ref()
+                                    .unwrap()
+                                    .phase_results[&frontend_task.id][0]
+                                    .diagnostics
+                            );
+                        }
+                        continue;
+                    }
+                    assert_eq!(
+                        run.task_states
+                            .iter()
+                            .find(|state| state.task_id == frontend_task.id)
+                            .unwrap()
+                            .state,
+                        TaskState::Completed
+                    );
+                    let handle = owner
+                        .storage()
+                        .typed_handle::<FrontendOutput<<MizarParserSeam as ParserSeam>::Ast>>(
+                            &result.output_refs[0],
+                            &OutputKind::new("FrontendOutput"),
+                        )
+                        .unwrap();
+                    assert_eq!(frontend_task.phases, [PipelinePhase::Frontend]);
+                    let output = owner.storage().get(&handle).unwrap();
+                    assert_eq!(
+                        handle.lineage().parents.len(),
+                        if case == "imports" { 2 } else { 1 }
+                    );
+                    assert!(handle.lineage().parents.contains(&source_ref.output()));
+                    assert_eq!(
+                        matches!(handle.placement(), StoragePlacement::Blob { .. }),
+                        threshold == 0
+                    );
+                    if actual {
+                        let (clean_submission, clean_owner) = clean.as_ref().unwrap();
+                        assert_eq!(submission.session.state(), clean_submission.session.state());
+                        assert_eq!(submission.status, clean_submission.status);
+                        let clean_result = &clean_submission
+                            .scheduler_run
+                            .as_ref()
+                            .unwrap()
+                            .phase_results[&frontend_task.id][0];
+                        assert_eq!(result.diagnostics, clean_result.diagnostics);
+                        assert_eq!(
+                            source_result.diagnostics,
+                            clean_submission
+                                .scheduler_run
+                                .as_ref()
+                                .unwrap()
+                                .phase_results[&source_task.id][0]
+                                .diagnostics
+                        );
+                        let clean_handle = clean_owner
+                            .storage()
+                            .typed_handle::<FrontendOutput<<MizarParserSeam as ParserSeam>::Ast>>(
+                                &clean_result.output_refs[0],
+                                &OutputKind::new("FrontendOutput"),
+                            )
+                            .unwrap();
+                        assert_eq!(*output, *clean_owner.storage().get(&clean_handle).unwrap());
+                        assert_eq!(
+                            owner.storage().side_tables(&handle).unwrap(),
+                            clean_owner.storage().side_tables(&clean_handle).unwrap()
+                        );
+                    }
+                    if case == "imports" {
+                        assert_eq!(frontend_task.dependencies.len(), 3);
+                        assert!(
+                            inputs
+                                .prepare_native_disk_frontend_cache_request(
+                                    &input, &policy, &adapter, &handle
+                                )
+                                .is_err()
+                        );
+                        if actual {
+                            assert!(matches!(
+                                store.lookup(&source_key),
+                                CacheLookupOutcome::Hit(_)
+                            ));
+                            assert_eq!(
+                                fs::read_dir(store.root().join("records/Frontend"))
+                                    .unwrap()
+                                    .count(),
+                                1
+                            );
+                        }
+                        continue;
+                    }
+                    if case == "context" {
+                        assert!(
+                            inputs
+                                .prepare_native_disk_frontend_cache_request(
+                                    &input, &policy, &adapter, &handle
+                                )
+                                .is_err()
+                        );
+                        assert!(!store.root().exists());
+                        continue;
+                    }
+                    let CacheKeyBuildOutcome::Cacheable(key) = CacheKeyBuilder::new(
+                        inputs
+                            .prepare_native_disk_frontend_cache_request(
+                                &input, &policy, &adapter, &handle,
+                            )
+                            .unwrap(),
+                    )
+                    .build() else {
+                        panic!("frontend key");
+                    };
+                    if !actual {
+                        assert!(!store.record_path(&key).exists());
+                        if replay == 0 && *name == "alpha" {
+                            if stage > 0 {
+                                assert_ne!(key, previous_keys[ordinal]);
+                            }
+                            if stage == 0 {
+                                previous_keys.push(key.clone());
+                            } else {
+                                previous_keys[ordinal] = key.clone();
+                            }
+                        }
+                        frontend_keys.push(key);
+                        continue;
+                    }
+                    assert_eq!(key, frontend_keys[ordinal]);
+                    assert_eq!(
+                        matches!(store.lookup(&key), CacheLookupOutcome::Hit(_)),
+                        eligible && case != "source-only"
+                    );
+                    assert_eq!(
+                        matches!(store.lookup(&source_key), CacheLookupOutcome::Hit(_)),
+                        eligible
+                    );
+                    if eligible && case != "source-only" {
+                        if settings.len() == 1 {
+                            let (target, target_input) =
+                                native_disk_frontend_lookup_target(&submission, &ids, threshold);
+                            allow_frontend(target.publisher(), &target_input.work_unit);
+                            let CacheRehydrateOutcome::Rehydrated(rebuilt) = inputs
+                                .rehydrate_native_disk_frontend_cache(
+                                    &target_input,
+                                    &policy,
+                                    &store,
+                                    (&input, &adapter, &handle),
+                                    &target,
+                                )
+                                .unwrap()
+                            else {
+                                panic!("Driver-produced retained record");
+                            };
+                            assert_eq!(
+                                *target.publisher().storage().get(&rebuilt).unwrap(),
+                                *output
+                            );
+                            assert_eq!(
+                                target.publisher().storage().side_tables(&rebuilt).unwrap(),
+                                owner.storage().side_tables(&handle).unwrap()
+                            );
+                            assert_eq!(rebuilt.lineage(), handle.lineage());
+                            assert_eq!(target.successful_rehydrations(), 1);
+                        }
+                        // Force the next real SourceLoad hit to produce the Frontend record anew.
+                        fs::remove_file(store.record_path(&key)).unwrap();
+                        assert!(!store.record_path(&key).exists());
+                    }
+                }
+                if actual
+                    && !matches!(
+                        case,
+                        "hit" | "edits" | "source-only" | "store-error" | "failed" | "imports"
+                    )
+                {
+                    assert!(!store.root().exists());
+                }
+                if case == "store-error" {
+                    assert_eq!(fs::read(store.root()).unwrap(), b"cache-root file");
+                }
+                if !actual {
+                    clean = Some((submission, owner));
+                }
+            }
+        }
+    }
+}
+
+#[test]
+fn persistent_native_frontend_cold_and_source_hit_records_reconstruct_like_clean() {
+    for threshold in [usize::MAX, 0] {
+        persistent_native_frontend_case(
+            &[("alpha", "")],
+            "hit",
+            &["\u{feff}definition\r\nend;\r\n"],
+            threshold,
+            "alpha/.mizar-cache",
+            false,
+        );
+    }
+}
+
+#[test]
+fn persistent_native_frontend_edits_and_package_order_keep_real_associations() {
+    for (reverse, store) in [(false, "alpha/cache/a"), (true, "beta/cache/b")] {
+        persistent_native_frontend_case(
+            &[
+                ("alpha", "[build]\ncache_dir = \"cache/a\"\n"),
+                ("beta", "[build]\ncache_dir = \"cache/b\"\n"),
+            ],
+            "edits",
+            &[
+                "\u{feff}definition\r\nend;\r\n",
+                "\u{feff}definition\r\nlet x be set;\r\nend;\r\n",
+                "definition\nlet x be set;\nend;\n",
+            ],
+            0,
+            store,
+            reverse,
+        );
+    }
+}
+
+#[test]
+fn persistent_native_frontend_cold_guards_errors_and_older_entries() {
+    for case in [
+        "disabled",
+        "foreign",
+        "provider",
+        "context",
+        "cancel",
+        "obsolete",
+        "cancel-frontend",
+        "store-error",
+        "opt-out",
+        "source-only",
+        "read-only",
+        "failed",
+        "imports",
+    ] {
+        persistent_native_frontend_case(
+            &[(
+                "alpha",
+                if case == "opt-out" {
+                    "[build]\nincremental = false\n"
+                } else {
+                    ""
+                },
+            )],
+            case,
+            &[if case == "failed" {
+                "theorem T: ;\n"
+            } else if case == "imports" {
+                "import alpha.leaf;\ndefinition\nend;\n"
+            } else {
+                "definition\nend;\n"
+            }],
+            usize::MAX,
+            if case == "foreign" {
+                "foreign-cache"
+            } else {
+                "alpha/.mizar-cache"
+            },
+            false,
+        );
+    }
+}
