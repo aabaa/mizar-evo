@@ -1,0 +1,12 @@
+# Task DRIVER-NATIVE-LEAF-FRONTEND-CACHE-ENCODE: bound Frontend record encoding
+Canonical language: English; [Japanese pointer](../ja/DRIVER-NATIVE-LEAF-FRONTEND-CACHE-ENCODE.md).
+Status: implemented for the bound native Disk leaf profile. Tier: full. Owner: [Driver plan](../../mizar-driver/en/00.crate_plan.md), task 39; consumers: explicit native cache callers before Frontend lookup.
+Dependencies/readiness: real native Disk SourceLoad/Frontend publication, canonical output/key codecs and IR encoder exist; independent current Frontend lookup expectations do not.
+Authority: spec §23.4; [incremental contract](../../architecture/en/22.incremental_verification_contract.md#cache-miss-fallback); [source-service owner](../../mizar-driver/en/frontend_adapter.md#native-leaf-frontend-record-encoding).
+Gap addressed: source_gap in the producer-bound native leaf Frontend record association.
+Scope: one method on existing SourceLoadInputs, existing frontend_adapter.rs and appended source_load.rs tests with one private setup helper shared by three real consumers; paired owner, contract, plan and TODO. Use the owner-defined zero-import/zero-dependency profile and existing codecs/Cache/IR encoder only.
+Forbidden: new types/fields/production or single-use test helpers/adapters/files/dependencies, source-body reload or phase rerun, codec/semantic/hash/schema changes, store writes/lookup/rehydration/scheduler changes, registered NoKey changes, fabricated positive producer/results/Hit/Accepted, protected spec/.miz/expectation/trace/ledger changes.
+Boundary/audit: plain post-production records are not independent lookup expectations, service-execution attestations, full runtime association, proof/witness/artifact acceptance or STEP6C/Step6 completion; broader imports/Open/generated profiles remain unsupported. No coverage classification, owner or deferral change.
+Tests: distinct real scheduled resident/blob record/replay consumers, semantic/raw/context key invalidation and current/physical/parent/source/profile rejection; preserve existing tests verbatim. Store transport does not establish skip-execution equivalence.
+Require independent SPEC/TEST/CODE/VOLUME/CONSISTENCY reviews; parent cargo fmt --check, cargo clippy --all-targets --all-features -- -D warnings, cargo test; scoped gates and quality review.
+Exit: only the bound supported current Frontend output encodes through existing IR; unsupported/error inputs yield no record and all named deferrals remain open.

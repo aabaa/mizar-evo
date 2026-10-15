@@ -551,6 +551,8 @@ the owning producers when the paired tasks land.
 
 38. **[Explicit native Disk cached SourceLoad scheduling](../../task_contracts/en/DRIVER-NATIVE-DISK-CACHE-SCHEDULE.md).** [x]
 
+39. **[Native leaf Frontend record encoding](../../task_contracts/en/DRIVER-NATIVE-LEAF-FRONTEND-CACHE-ENCODE.md).** [x]
+
 ## Recommended Verification
 
 Run after each task:

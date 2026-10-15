@@ -519,6 +519,8 @@ artifact/test のフォローアップタスクが所有する。本 crate の�
 
 38. **[Explicit native Disk cached SourceLoad scheduling](../../task_contracts/ja/DRIVER-NATIVE-DISK-CACHE-SCHEDULE.md).** [x]
 
+39. **[native leaf Frontend record 符号化](../../task_contracts/ja/DRIVER-NATIVE-LEAF-FRONTEND-CACHE-ENCODE.md).** [x]
+
 ## 推奨検証
 
 各タスクの後で実行する:
