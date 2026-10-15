@@ -555,6 +555,8 @@ the owning producers when the paired tasks land.
 
 40. **[Package-configured native cache scheduling](../../task_contracts/en/DRIVER-NATIVE-PACKAGE-CACHE-SCHEDULE.md).** [x]
 
+41. **[Opt-in native SourceLoad persistence](../../task_contracts/en/DRIVER-NATIVE-SOURCE-CACHE-PERSISTENCE.md).** [x]
+
 ## Recommended Verification
 
 Run after each task:

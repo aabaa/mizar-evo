@@ -523,6 +523,8 @@ artifact/test のフォローアップタスクが所有する。本 crate の�
 
 40. **[package 設定に従う native cache scheduling](../../task_contracts/ja/DRIVER-NATIVE-PACKAGE-CACHE-SCHEDULE.md).** [x]
 
+41. **[明示的な native SourceLoad 保存](../../task_contracts/ja/DRIVER-NATIVE-SOURCE-CACHE-PERSISTENCE.md).** [x]
+
 ## 推奨検証
 
 各タスクの後で実行する:

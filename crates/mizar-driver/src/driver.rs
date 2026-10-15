@@ -442,7 +442,7 @@ impl CompilerDriver {
             snapshots,
             input,
             (false, true),
-            Some((policy, store, false)),
+            Some((policy, store, false, false)),
         )
     }
 
@@ -465,7 +465,30 @@ impl CompilerDriver {
             snapshots,
             input,
             (false, true),
-            Some((policy, store, true)),
+            Some((policy, store, true, false)),
+        )
+    }
+
+    /// Uses configured native Disk SourceLoad records and persists accepted cold outputs.
+    pub fn submit_captured_with_persistent_native_disk_cache<
+        A: SessionIdAllocator,
+        L: SourceLayoutProvider,
+    >(
+        &mut self,
+        session: BuildSession,
+        allocator: &A,
+        snapshots: &SnapshotRegistry<A>,
+        input: DriverSubmitInput<L>,
+        policy: &mizar_proof::policy::VerifierPolicy,
+        store: &mizar_cache::cache_store::CacheStoreRoot,
+    ) -> Result<BuildSubmission, DriverSubmitError> {
+        self.submit_inner(
+            session,
+            allocator,
+            snapshots,
+            input,
+            (false, true),
+            Some((policy, store, true, true)),
         )
     }
 
@@ -631,6 +654,7 @@ impl CompilerDriver {
         native_disk_cache: Option<(
             &mizar_proof::policy::VerifierPolicy,
             &mizar_cache::cache_store::CacheStoreRoot,
+            bool,
             bool,
         )>,
     ) -> Result<BuildSubmission, DriverSubmitError>
@@ -900,7 +924,8 @@ impl CompilerDriver {
             }),
         );
         let mut cached_sources = Vec::new();
-        if let Some((policy, store, configured)) = native_disk_cache
+        let mut pending_sources = Vec::new();
+        if let Some((policy, store, configured, persist)) = native_disk_cache
             && cache_policy == CacheSchedulingPolicy::Enabled
             && phase_dispatch_inputs.is_none()
             && built_in_prefix
@@ -1002,6 +1027,9 @@ impl CompilerDriver {
                             Vec::new(),
                         ),
                     );
+                    if persist {
+                        pending_sources.push((task.id.clone(), input.clone()));
+                    }
                     let Ok(CacheRehydrateOutcome::Rehydrated(handle)) =
                         inputs.rehydrate_native_disk_cache(&input, policy, store, &adapter)
                     else {
@@ -1118,6 +1146,63 @@ impl CompilerDriver {
             || self.lanes.publication_decision(snapshots, &session) != PublicationDecision::Current
         {
             phase_results.clear();
+        }
+        if let Some((policy, store, _, true)) = native_disk_cache
+            && !scheduler_run
+                .task_states
+                .iter()
+                .any(|record| record.state == mizar_build::scheduler::TaskState::Cancelled)
+            && let Some(publisher) = self.output_publisher.as_ref()
+        {
+            let inputs = crate::registry::SourceLoadInputs {
+                snapshot: &session.captured.snapshot,
+                captured: Some(&session.captured),
+                build_plan: &build_plan,
+                module_index: &module_index,
+                allocator,
+            };
+            let adapter = mizar_ir::cache_adapter::IrCacheAdapter::new(publisher.clone());
+            for (task, input) in pending_sources {
+                if !scheduler_run.task_states.iter().any(|record| {
+                    record.task_id == task
+                        && record.state == mizar_build::scheduler::TaskState::Completed
+                }) {
+                    continue;
+                }
+                let Some(results) = phase_results.get(&task) else {
+                    continue;
+                };
+                let [result] = results.as_slice() else {
+                    continue;
+                };
+                let [output] = result.output_refs.as_slice() else {
+                    continue;
+                };
+                if result.status != crate::registry::PhaseStatus::Complete {
+                    continue;
+                }
+                let Ok(handle) = publisher
+                    .storage()
+                    .typed_handle(output, &mizar_ir::identity::OutputKind::new("SourceUnit"))
+                else {
+                    continue;
+                };
+                let Ok(mizar_ir::cache_adapter::EncodeCacheRecordOutcome::Encoded(record)) =
+                    inputs.encode_native_disk_cache_record(&input, policy, &adapter, handle)
+                else {
+                    continue;
+                };
+                if self.lanes.publication_decision(snapshots, &session)
+                    != PublicationDecision::Current
+                    || publisher
+                        .validate_current_output(input.snapshot, output)
+                        .is_err()
+                    || publisher.storage().validate_handle(output).is_err()
+                {
+                    break;
+                }
+                let _ = store.insert(&record);
+            }
         }
         let mut driver_scheduler_run = DriverSchedulerRun::from_scheduler_run(scheduler_run);
         driver_scheduler_run.phase_results = phase_results;
