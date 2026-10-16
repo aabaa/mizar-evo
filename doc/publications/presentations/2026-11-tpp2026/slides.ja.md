@@ -642,13 +642,15 @@ have "Q a"
   by (metis allPQ pa)
 ```
 
-Mizar Evo: native hammer を処理系・IDE に統合する計画。
+Mizar Evo: `by atp` で補題探索を依頼（暫定構文）。
 
 **未解決ゴール → ライブラリの補題候補 → ATP 試行 → `by` の提案。**
 
-提案される証明（Pa は局所仮定 P(a)） (sketch, 予定):
+入力と提案例（Pa は局所仮定 P(a)） (sketch, 予定):
 
 ```mizar
+thus Q(a) by atp;
+:: 提案例:
 :: library.AllPQ: for x holds P(x) implies Q(x)
 thus Q(a) by library.AllPQ, Pa;
 ```
@@ -658,8 +660,8 @@ thus Q(a) by library.AllPQ, Pa;
 
 Speaker note:
 
-- Source: spec 22 §22.4.4; spec 23 §23.5.2, LSP。候補探索・再試行・引用追加。比較と検証入力の詳細は draft.ja.md。
-- 比較: [Sledgehammer guide](https://isabelle.in.tum.de/doc/sledgehammer.pdf), §1, 5.2。
+- `by atp` は暫定構文（仕様未確定）。将来は引数を持たせる想定。
+- Source: spec 22 §22.4.4; spec 23 §23.5.2。詳細・比較出典は draft.ja.md。
 
 ### Frame 6.2 - ATP の活用: 探索・検査・再利用
 
