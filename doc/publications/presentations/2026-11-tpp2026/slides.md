@@ -422,23 +422,35 @@ Speaker note:
 
 ## Part 4. Verified Computation
 
-### Frame 4.1 - Computation: Verified Algorithms
+### Frame 4.1 - Computation: verified algorithms
 
-Hoare-style checking of readable procedures:
+Use Hoare rules to turn a procedure into proof obligations:
 
 ```text
 { requires }  algorithm body  { ensures }
 ```
 
-- **Use familiar pseudocode: assignment, `if/else`, `while`, `for`, and `return`. Contracts and loop invariants state what must hold.**
-- **Generate first-order verification conditions using Hoare logic. Verify correctness and, when required, termination.**
-- Verify algorithms themselves and use verified procedures to support proofs.
+P / Q: precondition / postcondition; B: condition; I: invariant; S: statement.
+
+### Table 8. Basic Hoare rules
+
+| Syntax | Conditions to check (partial correctness)[^1] |
+|---|---|
+| Assignment `x := e` | `P ⇒ Q[x ← e]` (replace free x in Q with e) |
+| `if B do S1 else S2 end` | `{P ∧ B} S1 {Q}` and `{P ∧ ¬B} S2 {Q}` |
+| `while B do S end` | Establish: `P ⇒ I`; preserve: `{I ∧ B} S {I}`; exit: `I ∧ ¬B ⇒ Q` |
+| `return e` | `P ⇒ Q[result ← e]` |
+
+**Apply these rules recursively to generate first-order proof obligations.**
+
+[^1]: Basic forms for simple variables and pure expressions. Early return / break / continue and type / domain conditions are omitted.
 
 Speaker note:
 
-- Source: `doc/spec/en/20.algorithm_and_verification.md` sections 20.2, 20.3, 20.13.3. Correctness is partial by default; `terminating` adds a termination obligation. This is pseudocode-like procedural notation, rather than a separate proof-state tactic language.
+- Source: `doc/spec/en/20.algorithm_and_verification.md` §20.1.4, 20.4.3, 20.5.1, 20.13.3. The table gives backward rules with capture-avoiding substitution. Forward generation uses old-state names for assignments and havocs modified locations at loop heads. Details: `draft.ja.md`.
+- Partial correctness is the default. terminating requires separate termination checks. Verified procedures can also support proofs.
 
-### Frame 4.2 - Algorithms: Contracts, Proofs, Computation
+### Frame 4.2 - algorithm: contracts, proofs, computation
 
 **Euclid's algorithm with a contract** (specification example):
 
@@ -456,24 +468,56 @@ do
 end;
 ```
 
-- **`terminating` requires termination for every input satisfying `requires`. The verifier checks the invariant and strict decrease of y.**[^1]
-- **After verification, the algorithm is promoted to a mathematical functor, usable in formulas and proofs.**
+- **`terminating` requires termination for every input satisfying requires. Check the invariant and strict decrease of y.**[^1]
+- **After verification, promote it to a mathematical functor for formulas and proofs.**
 
-[^1]: Loop annotations resemble Dafny's `invariant` / `decreases`; Evo uses `invariant` / `decreasing`.
+[^1]: Loop annotations resemble Dafny's `invariant` / `decreases`. Evo uses `invariant` / `decreasing`.
 
 Speaker note:
 
-- Source: spec 20, sections 20.1.1, 20.5, 20.12; outer definition/let omitted.
-- Compare [Dafny §8.15](https://dafny.org/latest/DafnyRef/DafnyRef.html#sec-loop-specifications).
+- Source: specification chapter 20, §20.1.1, 20.5, 20.12. Outer definition / let context omitted.
+- Comparison: [Dafny §8.15](https://dafny.org/latest/DafnyRef/DafnyRef.html#sec-loop-specifications).
 
-### Frame 4.2a - Termination And Functor Promotion
+### Frame 4.3 - Euclid: code and proof obligations
+
+The body again (sketch, a,b >= 1; outer context omitted):
+
+```mizar
+var x := a; var y := b; :: (1)
+while y <> 0 do
+  invariant x >= 1 & y >= 0 & Gcd(a,b) = Gcd(x,y); :: (2)
+  decreasing y; :: (3)
+  const r := x mod y; x := y; y := r;
+end;
+return x; :: (4)
+```
+
+### Table 9. Proof obligations for Euclid's algorithm
+
+| Point | Proof obligation | Mathematical reason |
+|---|---|---|
+| (1) | Establish the invariant | `x=a`, `y=b`; positivity from the precondition |
+| (2) | Preserve the invariant | Old `(x,y)` becomes `(y,r)`; `Gcd(x,y) = Gcd(y,r)`, old `y >= 1`, `r >= 0` |
+| (3) | Decrease the Nat measure | `y' = r`, `0 <= r < y` |
+| (4) | Postcondition at exit | `y=0`; `Gcd(a,b) = Gcd(x,0) = x` |
+
+**Check each point using library lemmas for GCD and remainder.**
+
+Speaker note:
+
+- Source: `doc/spec/en/20.algorithm_and_verification.md` §20.5, 20.12, 20.13.3. Numbers connect the repeated body to the table. Compute r=x mod y in the old state, then update to (y,r). SAT alone does not know arithmetic. Changing y:=r to y:=x loses the decrease. Specification-based explanation.
+- Future direction: number theory, combinatorics, symbolic computation, optimization, cryptography, and quantum algorithms. MVM execution and code extraction remain future work.
+
+### Frame 4.4 - terminating and functor promotion
+
+### Table 10. Algorithm termination and guarantees
 
 | Algorithm form | Meaning under requires |
 |---|---|
-| Without terminating | If the call returns, its contract holds |
-| Verified terminating | Totality under requires; usable as a functor |
+| Without terminating | The contract holds if the call returns |
+| Verified terminating | Total under requires; usable as a functor |
 
-Reason about Euclid through its contract (sketch):
+Reason with Euclid's contract (sketch):
 
 ```mizar
 let a, b be Nat;
@@ -481,31 +525,47 @@ assume a >= 1 & b >= 1;
 thus euclid_gcd(a,b) = Gcd(a,b) by EuclidGcdDef;
 ```
 
-- **Verified definitional algorithms also give defining equations. Euclid has a loop: use only its totality and contract axioms.**
-- `by computation` is specified separately; MVM execution and code extraction remain future work.
+Use a computed result in a proof (sketch, MVM not implemented):
+
+```mizar
+thus euclid_gcd(12,8) = 4 by computation;
+```
+
+Run a verified algorithm on MVM, the virtual machine, and use its result in a proof.
+
+**The default `computed` path also trusts MVM. It differs from kernel / SAT rechecking.**
 
 Speaker note:
 
-- Source: `doc/spec/en/20.algorithm_and_verification.md` sections 20.7.2-20.7.3, 20.13.2; `16.theorems_and_proofs.md` section 16.5.1. `by EuclidGcdDef` cites verified promotion axioms. The callable name alone is not a citation. The fragment assumes the surrounding proof and Gcd definition; the guarantee is under requires.
+- Source: `doc/spec/en/20.algorithm_and_verification.md` §20.7.2–20.7.3, 20.9.1–20.9.2, 20.13.2; `16.theorems_and_proofs.md` §16.5.1. MVM execution and code extraction are future work.
+- Requires the precondition and a verified executable artifact. Replay requires defining equations and kernel checks; it does not apply to this loop-based Euclid example. Details: `draft.ja.md`.
 
-### Frame 4.3 - Euclid: What Must Be Proved?
+### Frame 4.5 - Verified expression rewriting: lambda and differentiation
 
-One loop step: old state `(x,y)` with `y > 0`; set `r = x mod y`; new state `(x',y') = (y,r)`.
+Write a function directly (sketch, u is Real):
 
-| Obligation | Mathematical reason |
-|---|---|
-| Establish the invariant | `x=a`, `y=b`; the precondition gives positivity |
-| Preserve the invariant | `Gcd(x,y) = Gcd(y,r)`, `y >= 1`, `r >= 0` |
-| Decrease the Nat measure | `y' = r`, and `0 <= r < y` |
-| Establish the postcondition on exit | `y=0`; `Gcd(a,b) = Gcd(x,0) = x` |
+```mizar
+u |-> (sin u)*u
+```
 
-- **The library supplies the GCD and remainder lemmas. These obligations go through theorem checking; SAT alone does not know arithmetic.**
-- Replacing the final `y := r` with `y := x` loses strict decrease. This is a specification walkthrough.
+`differentiate` recursively processes expression forms such as products and sin.
+
+Use it in a derivative proof (sketch, x is Real; MVM not implemented):
+
+```mizar
+thus diff((u |-> (sin u)*u), x) = (cos x)*x + sin x
+  by computation(differentiate(u |-> (sin u)*u));
+```
+
+- **`|->` denotes a set-theoretic function. An `expr` syntax tree keeps expression structure and variable binding.**
+- The transformation algorithm's contract verifies differentiability and the correct derivative.[^1]
+
+[^1]: Assumes differentiation, semantic conversion, and simplification lemmas. This is a specification sketch, not an execution result.
 
 Speaker note:
 
-- Source: `doc/spec/en/20.algorithm_and_verification.md` sections 20.5, 20.12, 20.13.3. This illustrates obligations, not an execution result.
-- Longer-term targets remain future directions: number theory, combinatorics, symbolic computation, optimization, cryptography, and quantum algorithms. MVM execution and extraction remain future work.
+- Source: `doc/spec/en/13.term_expression.md` §13.10; `20.algorithm_and_verification.md` §20.5.3, 20.9.2, 20.12.
+- differentiate is a partial algorithm. Variable declarations, set-theoretic meaning, and a factorization application idea are in `draft.ja.md`.
 
 ## Part 5. Development Infrastructure
 

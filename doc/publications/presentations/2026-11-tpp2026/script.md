@@ -127,3 +127,36 @@ After defpred, we explicitly apply by NatInduction[P], Base, Step. Functor param
 The upper example gives vector-space data over a field K. The lower example describes density in a space M.
 Familiar of notation and prefix attributes are syntax sugar for templates. Vector of K corresponds to Vector[K]; M-dense corresponds to dense[M]. We can also write VectorSpace over K.
 Structures, attributes, modes, and other declarations share this parameter mechanism. [Specification-based sketch]
+
+## Part 4. Verified Computation (19:00–24:15)
+
+### 4.1 Computation: verified algorithms (19:00)
+
+Hoare logic checks that, starting from precondition P, a statement satisfies postcondition Q if it returns.
+For assignment, replace x in Q with expression e. For if, split into the condition B and its negation. For while, prove that invariant I holds on entry, that the body preserves I, and that I with the negated condition gives Q on exit.
+Apply the rules recursively to generate first-order proof obligations. We will handle termination with terminating later. [Basic specification rules]
+
+### 4.2 algorithm: contracts, proofs, computation (19:45)
+
+This is Euclid's algorithm. Requires and ensures give its contract. The loop has invariant and decreasing annotations. Gcd is the mathematical functor.
+EuclidGcdDef is the definition label; euclid_gcd is the callable name. Terminating claims termination for every input satisfying requires. We check proof obligations generated from the invariant and measure.
+After verification, it can be used as a mathematical functor in formulas and proofs. [Specification]
+
+### 4.3 Euclid: code and proof obligations (21:00)
+
+Here is the body again. Match the numbered code points to the table.
+At one, initializing x=a and y=b establishes the invariant from the precondition. At two, the invariant must survive computing r=x mod y and replacing x,y by the old y,r. We use the lemma Gcd(x,y)=Gcd(y,r).
+At three, the measure is y. It is positive when we enter the loop. The remainder is nonnegative and smaller than the old y, so the measure strictly decreases. At four, y is zero. The invariant and Gcd(x,0)=x show that the returned value is the GCD of the inputs.
+We check these obligations with library lemmas. [Specification-based explanation]
+
+### 4.4 terminating and functor promotion (22:15)
+
+Partial correctness is the default. Checking terminating gives totality under requires, so the algorithm can be used as a functor.
+The upper example cites the verified contract for positive natural numbers a and b. In the lower example, by computation runs the algorithm on 12 and 8 using MVM, the virtual machine. It uses the result, four, in the proof.
+This default path also trusts MVM's execution result. It differs from kernel and SAT rechecking. MVM execution is not implemented; the examples explain the specification. [Specification / Implementation status]
+
+### 4.5 Verified expression rewriting: lambda and differentiation (23:15)
+
+Lambda notation writes a function directly. Here, u maps to sin u times u, for real u.
+When passed as expr, a syntax tree, the algorithm can process products and sin while preserving variable binding. We verify differentiate's contract using differentiation rules, then use the transformed expression in a derivative proof. The displayed conclusion also uses semantic conversion and simplification lemmas.
+This connects function notation, expression transformation, and its correctness proof. It is a specification sketch; MVM execution remains future work. [Specification-based sketch]
