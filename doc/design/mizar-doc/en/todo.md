@@ -11,7 +11,7 @@
 ## Module Implementation
 
 Module specs are fixed in paired spec tasks before implementation. The first
-published-input reader is owned by [artifact_reader.md](./artifact_reader.md); other module specs remain pending.
+published-input reader is owned by [artifact_reader.md](./artifact_reader.md); [doc_build.md](./doc_build.md) fixes only initial raw export metadata indexing. Full build/index and other module specs remain pending.
 Per [internal 07](../../internal/en/07.crate_module_layout.md) this crate owns
 both documentation rendering **and** extraction (earlier phase-16 drafts named
 a separate `mizar-extract`, but architecture/internal docs now use the
@@ -21,7 +21,7 @@ crate refines architecture 13 and internal 05.
 | Module | Spec | Source | Status |
 |---|---|---|---|
 | artifact_reader | `artifact_reader.md` (task 2) | `src/artifact_reader.rs` | [x] |
-| doc_build | `doc_build.md` (task 4) | `src/doc_build.rs` | [ ] |
+| doc_build | `doc_build.md` (task 4) | `src/doc_build.rs` | [~] |
 | comments | `comments.md` (task 6) | `src/comments.rs` | [ ] |
 | links | `links.md` (task 9) | `src/links.rs` | [ ] |
 | math | `math.md` (task 11) | `src/math.rs` | [ ] |
@@ -102,14 +102,14 @@ Tasks 1–3 form [DOC-PUBLISHED-ARTIFACT-READER](../../task_contracts/en/DOC-PUB
      cleanly with diagnostics.
    - Deps: 2. Spec: `artifact_reader.md`.
 
-4. **Spec: `doc_build.md`.** [ ]
+4. **Spec: `doc_build.md`.** [~]
    - Write the documentation build-plan spec (English and Japanese, no
      code): phase-16 requests, build planning over packages, the
      documentation index, determinism rules, and the consumer-phase rule.
    - Deps: 2. Spec: architecture 13 "Documentation Build Plan",
      [internal 05](../../internal/en/05.documentation_extraction.md).
 
-5. **Documentation build planning and index.** [ ]
+5. **Documentation build planning and index.** [~]
    - Implement build planning and the documentation index over reader
      output.
    - Tests: plan fixtures over multi-package inputs; deterministic index
@@ -288,6 +288,12 @@ Tasks 1–3 form [DOC-PUBLISHED-ARTIFACT-READER](../../task_contracts/en/DOC-PUB
       [21.source_code_annotation_and_atp.md](../../../spec/en/21.source_code_annotation_and_atp.md),
       [24.documentation_generation.md](../../../spec/en/24.documentation_generation.md),
       this TODO, and all `mizar-doc` module specs.
+
+### Derived Input Prerequisite
+
+30. **Published export metadata index.** [x]
+    - [DOC-PUBLISHED-EXPORT-INDEX](../../task_contracts/en/DOC-PUBLISHED-EXPORT-INDEX.md); initial tasks4/5 subset, with full planning/index work remaining open.
+    - Deps: 3. Tests: canonical raw metadata, full identity/duplicates, empty inputs and delegated refusal.
 
 ### Audit review note (2026-07-06)
 

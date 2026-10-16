@@ -20322,3 +20322,217 @@ fn doc_published_missing_malformed_unsafe_and_witness_files() {
     assert!(read_published_artifacts(&root, hash).is_ok());
     std::fs::remove_dir_all(root).unwrap();
 }
+
+fn doc_export_index_publish(
+    root: &std::path::Path,
+    manifest: &mut mizar_artifact::manifest::ArtifactManifest,
+    artifacts: &mut [mizar_artifact::verified_artifact::VerifiedArtifact],
+) -> mizar_session::Hash {
+    use mizar_artifact::{manifest::write_manifest_file, store::*, verified_artifact::*};
+    manifest.modules = artifacts
+        .iter_mut()
+        .enumerate()
+        .map(|(index, artifact)| {
+            artifact.refresh_hashes().unwrap();
+            let json = if artifact.schema_version == SchemaVersion::new(2, 0) {
+                builtin_verified_artifact_json(artifact)
+            } else {
+                verified_artifact_json(artifact)
+            }
+            .unwrap();
+            let path = PublishedArtifactPath::new(format!("modules/index_{index}.json")).unwrap();
+            let write = write_published_artifact(
+                root,
+                &path,
+                &json,
+                &artifact_hash_domain(VERIFIED_ARTIFACT_SCHEMA_FAMILY, artifact.schema_version),
+                &artifact_hash_excluded_paths(),
+            )
+            .unwrap();
+            let mut entry = manifest
+                .modules
+                .iter()
+                .find(|entry| entry.artifact_hash.schema_version == artifact.schema_version)
+                .unwrap()
+                .clone();
+            entry.module = artifact.module.clone();
+            entry.artifact_file = path.as_str().into();
+            entry.artifact_hash.digest = write.artifact_hash;
+            entry.interface_hash.digest = artifact.interface_hash;
+            entry.implementation_hash.digest = artifact.implementation_hash;
+            entry
+        })
+        .collect();
+    write_manifest_file(root, manifest).unwrap().artifact_hash
+}
+
+#[test]
+fn doc_export_index_profiles_fqn_order_and_complete_preservation() {
+    use mizar_artifact::manifest::{ManifestFileReadOptions, read_manifest_file};
+    use mizar_doc::doc_build::read_published_export_index;
+    let (root, mut manifest, mut artifacts) = doc_published_fixture();
+    // Genuine witness payloads come from the old fixture; export metadata is caller-owned.
+    let mut expected = std::collections::BTreeMap::new();
+    for artifact in &mut artifacts {
+        let mut zulu = artifact.exports[0].clone();
+        zulu.origin_id = "a-origin".into();
+        zulu.fully_qualified_name = "fixture::Zulu".into();
+        let mut alpha = zulu.clone();
+        alpha.origin_id = "z-origin".into();
+        alpha.fully_qualified_name = "fixture::Alpha".into();
+        alpha.namespace_path = vec!["caller".into(), "nested".into()];
+        alpha.export_kind = "caller-kind".into();
+        alpha.rendered_signature = "caller signature with uninterpreted text".into();
+        artifact.exports = vec![zulu.clone(), alpha.clone()];
+        expected.insert(artifact.module.clone(), vec![alpha, zulu]);
+    }
+    let hash = doc_export_index_publish(&root, &mut manifest, &mut artifacts);
+    let paths = std::iter::once("artifact-manifest.json".to_owned())
+        .chain(manifest.modules.iter().map(|m| m.artifact_file.clone()))
+        .chain(
+            manifest.modules[1]
+                .proof_witnesses
+                .iter()
+                .map(|w| w.witness_path.clone()),
+        )
+        .collect::<Vec<_>>();
+    let before = paths
+        .iter()
+        .map(|path| std::fs::read(root.join(path)).unwrap())
+        .collect::<Vec<_>>();
+    let expected_manifest = read_manifest_file(&root, ManifestFileReadOptions::default()).unwrap();
+    assert_eq!(
+        read_published_export_index(&root, hash).unwrap(),
+        (expected_manifest, expected)
+    );
+    assert_eq!(
+        paths
+            .iter()
+            .map(|path| std::fs::read(root.join(path)).unwrap())
+            .collect::<Vec<_>>(),
+        before
+    );
+    std::fs::remove_dir_all(root).unwrap();
+}
+
+#[test]
+fn doc_export_index_full_identity_duplicates_and_absent_metadata() {
+    use mizar_artifact::{
+        module_summary::ModuleSummaryIdentity, verified_artifact::ExportVisibility,
+    };
+    use mizar_doc::doc_build::read_published_export_index;
+    let (root, mut manifest, originals) = doc_published_fixture();
+    manifest.package.package_id = "outer-publication".into();
+    // These caller-owned identity constants state existing tuple/string order,
+    // including lexical 1.10 before 1.2; every module has the same path.
+    let identities = [
+        ("package-a", None, None, "2026"),
+        ("package-a", None, None, "2027"),
+        ("package-a", None, Some("lock-a"), "2026"),
+        ("package-a", None, Some("lock-b"), "2026"),
+        ("package-a", Some("1.10"), None, "2026"),
+        ("package-a", Some("1.2"), None, "2026"),
+        ("package-b", None, None, "2026"),
+    ]
+    .map(|(package, version, lock, edition)| ModuleSummaryIdentity {
+        package_id: package.into(),
+        package_version: version.map(str::to_owned),
+        lockfile_identity: lock.map(str::to_owned),
+        module_path: "same_path".into(),
+        language_edition: edition.into(),
+    });
+    let mut first = originals[0].exports[0].clone();
+    first.origin_id = "a-origin".into();
+    first.fully_qualified_name = "fixture::duplicate".into();
+    first.visibility = ExportVisibility::Reexported;
+    first.proof_status = None;
+    first.documentation_ref = None;
+    let mut last = first.clone();
+    last.origin_id = "z-origin".into();
+    last.visibility = ExportVisibility::Public;
+    last.documentation_ref = originals[0].exports[0].documentation_ref.clone();
+    let mut artifacts = identities
+        .iter()
+        .rev()
+        .map(|identity| {
+            let mut artifact = originals[0].clone();
+            artifact.module = identity.clone();
+            artifact.exports = vec![first.clone(), last.clone()];
+            artifact
+        })
+        .collect::<Vec<_>>();
+    let hash = doc_export_index_publish(&root, &mut manifest, &mut artifacts);
+    let (read, index) = read_published_export_index(&root, hash).unwrap();
+    assert_eq!(read.manifest.package, manifest.package);
+    assert_eq!(index.keys().cloned().collect::<Vec<_>>(), identities);
+    for identity in &identities {
+        assert_ne!(identity.package_id, read.manifest.package.package_id);
+        assert_eq!(index[identity], vec![first.clone(), last.clone()]);
+    }
+    std::fs::remove_dir_all(root).unwrap();
+}
+
+#[test]
+fn doc_export_index_empty_inputs_delegated_errors_and_file_preservation() {
+    use mizar_artifact::{manifest::*, store::StoreIoError};
+    use mizar_doc::doc_build::read_published_export_index;
+    let (root, mut manifest, mut artifacts) = doc_published_fixture();
+    for artifact in &mut artifacts {
+        artifact.exports.clear();
+    }
+    let hash = doc_export_index_publish(&root, &mut manifest, &mut artifacts);
+    let paths = std::iter::once("artifact-manifest.json".to_owned())
+        .chain(manifest.modules.iter().map(|m| m.artifact_file.clone()))
+        .chain(
+            manifest.modules[1]
+                .proof_witnesses
+                .iter()
+                .map(|w| w.witness_path.clone()),
+        )
+        .collect::<Vec<_>>();
+    let before = paths
+        .iter()
+        .map(|path| std::fs::read(root.join(path)).unwrap())
+        .collect::<Vec<_>>();
+    let (read, index) = read_published_export_index(&root, hash).unwrap();
+    assert_eq!(read.manifest, manifest);
+    assert_eq!(index.len(), artifacts.len());
+    for artifact in &artifacts {
+        assert_eq!(index.get(&artifact.module), Some(&Vec::new()));
+    }
+    assert!(matches!(
+        read_published_export_index(&root, mizar_session::hash_text("wrong publication")),
+        Err(ManifestError::StoreIo(StoreIoError::ArtifactHashMismatch { path, .. }))
+            if path == "artifact-manifest.json"
+    ));
+    let missing = root.join(&manifest.modules[1].artifact_file);
+    let nested_bytes = std::fs::read(&missing).unwrap();
+    std::fs::remove_file(&missing).unwrap();
+    assert!(matches!(
+        read_published_export_index(&root, hash),
+        Err(ManifestError::StoreIo(StoreIoError::Io {
+            kind: std::io::ErrorKind::NotFound,
+            ..
+        }))
+    ));
+    assert!(!missing.exists());
+    std::fs::write(&missing, nested_bytes).unwrap();
+    assert_eq!(
+        paths
+            .iter()
+            .map(|path| std::fs::read(root.join(path)).unwrap())
+            .collect::<Vec<_>>(),
+        before
+    );
+    manifest.modules.clear();
+    let hash = write_manifest_file(&root, &manifest).unwrap().artifact_hash;
+    let before = std::fs::read(root.join("artifact-manifest.json")).unwrap();
+    let (read, index) = read_published_export_index(&root, hash).unwrap();
+    assert_eq!(read.manifest, manifest);
+    assert!(index.is_empty());
+    assert_eq!(
+        std::fs::read(root.join("artifact-manifest.json")).unwrap(),
+        before
+    );
+    std::fs::remove_dir_all(root).unwrap();
+}

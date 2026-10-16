@@ -11,7 +11,7 @@
 ## モジュール実装
 
 各 module 仕様は専用 spec task で英日同時に固定してから実装する。
-最初の公開成果物リーダーは [artifact_reader.md](./artifact_reader.md) が所有し、他の module 仕様は未着手である。
+最初の公開成果物リーダーは [artifact_reader.md](./artifact_reader.md) が所有し、[doc_build.md](./doc_build.md) は最初の raw export metadata index だけを定める。完全な build/index と他の module 仕様は未完了である。
 [internal 07](../../internal/ja/07.crate_module_layout.md) により、この
 crate はドキュメントのレンダリングと抽出の**両方**を所有する
 （以前の phase-16 draft は別 crate `mizar-extract` を挙げていたが、現在の
@@ -21,7 +21,7 @@ internal 05 を精緻化する。
 | モジュール | 仕様 | ソース | 状態 |
 |---|---|---|---|
 | artifact_reader | `artifact_reader.md`（task 2） | `src/artifact_reader.rs` | [x] |
-| doc_build | `doc_build.md`（task 4） | `src/doc_build.rs` | [ ] |
+| doc_build | `doc_build.md`（task 4） | `src/doc_build.rs` | [~] |
 | comments | `comments.md`（task 6） | `src/comments.rs` | [ ] |
 | links | `links.md`（task 9） | `src/links.rs` | [ ] |
 | math | `math.md`（task 11） | `src/math.rs` | [ ] |
@@ -102,14 +102,14 @@ Tasks1–3 は [DOC-PUBLISHED-ARTIFACT-READER](../../task_contracts/ja/DOC-PUBLI
      付きで明確に失敗する。
    - 依存: 2。仕様: `artifact_reader.md`。
 
-4. **仕様: `doc_build.md`。** [ ]
+4. **仕様: `doc_build.md`。** [~]
    - ドキュメントビルド計画の仕様を執筆する（英語と日本語、コード
      なし）: phase 16 リクエスト、パッケージをまたぐビルド計画、
      ドキュメント索引、決定性規則、消費 phase の規則。
    - 依存: 2。仕様: アーキテクチャ 13「Documentation Build Plan」、
      [internal 05](../../internal/ja/05.documentation_extraction.md)。
 
-5. **ドキュメントビルド計画と索引。** [ ]
+5. **ドキュメントビルド計画と索引。** [~]
    - リーダー出力上にビルド計画とドキュメント索引を実装する。
    - テスト: 複数パッケージ入力上の計画フィクスチャ。決定的な索引順。
    - 依存: 3、4。仕様: `doc_build.md`。
@@ -283,6 +283,12 @@ Tasks1–3 は [DOC-PUBLISHED-ARTIFACT-READER](../../task_contracts/ja/DOC-PUBLI
       [21.source_code_annotation_and_atp.md](../../../spec/ja/21.source_code_annotation_and_atp.md),
       [24.documentation_generation.md](../../../spec/ja/24.documentation_generation.md),
       本 TODO、および全 `mizar-doc` module spec。
+
+### 派生入力の前提
+
+30. **公開 export metadata index。** [x]
+    - [DOC-PUBLISHED-EXPORT-INDEX](../../task_contracts/ja/DOC-PUBLISHED-EXPORT-INDEX.md)。tasks4/5 の初期 subset であり、完全な planning/index は未完了に保つ。
+    - 依存: 3。テスト: canonical raw metadata、完全 identity/重複、空入力と委譲先の拒否。
 
 ### 監査レビュー注記(2026-07-06)
 

@@ -126,7 +126,7 @@ All crates below are workspace members. "Next work" points into the
 | mizar-driver | Build requests, phase registry, CLI/watch/LSP entry points | [~] scheduled SourceLoad/Frontend and workspace lexical publication implemented | Step 6 real-service equivalence; later services remain producer-blocked | [todo](./mizar-driver/en/todo.md) |
 | mizar-diagnostics | Diagnostic registry, failure records, ordering, rendering | [x] internal milestone and E0220–E0224 import descriptors implemented | Step 8 broader public adoption | [todo](./mizar-diagnostics/en/todo.md) |
 | mizar-lsp | Editor protocol and range conversion | [~] range/lifecycle foundation; semantic consumers remain open | Step 8 tasks 6–24 | [todo](./mizar-lsp/en/todo.md) |
-| mizar-doc | Documentation rendering and extraction | [~] first published-input reader implemented | Step 8 tasks 4–29 | [todo](./mizar-doc/en/todo.md) |
+| mizar-doc | Documentation rendering and extraction | [~] published-input reader/export index implemented | Step 8 tasks 4–29 | [todo](./mizar-doc/en/todo.md) |
 
 ## Sequential Execution Plan
 
@@ -776,9 +776,9 @@ diagnostics, metadata, artifacts, and semantic indexes.
 2. [~] [mizar-lsp tasks 1-24](./mizar-lsp/en/todo.md) — server, snapshots,
    diagnostics, build bridge, metadata, navigation, actions, explanations,
    and the `@show_*`/`@eval` projection audit (SCA-003).
-3. [~] [mizar-doc tasks 1-29](./mizar-doc/en/todo.md) — the first published-input
-   reader is implemented; phase-16 rendering, extraction and remaining focused
-   specs stay open (SCA-002). `mizar-doc` must not re-run semantic analysis.
+3. [~] [mizar-doc tasks 1-30](./mizar-doc/en/todo.md) — published-input reading and
+   raw export indexing are implemented; full planning/indexing, phase-16 rendering,
+   extraction and remaining specs stay open (SCA-002). `mizar-doc` must not re-run semantic analysis.
 4. [~] [`mizar lsp` stdio entry point](./task_contracts/en/EDITOR-LSP-ENTRY.md)
    has an executable [lifecycle host](./mizar-driver/en/cli.md#stdio-lifecycle-host);
    workspace/settings, build binding and current-build diagnostics remain open. [Raw initialize inputs](./task_contracts/en/LSP-RAW-INITIALIZE-HANDOFF.md) precede their host binding. [Explicit native metadata acquisition](./task_contracts/en/LSP-NATIVE-WORKSPACE-INPUTS.md) precedes runtime context. [Current Disk diagnostic indexes](./task_contracts/en/DRIVER-CURRENT-DISK-DIAGNOSTIC-INDEX.md) and [native OpenBuffer handoffs](./task_contracts/en/DRIVER-CURRENT-NATIVE-DIAGNOSTIC-INDEX.md) precede current LSP transport. [Explicit frontend notifications](./task_contracts/en/LSP-NATIVE-FRONTEND-DIAGNOSTIC-NOTIFICATIONS.md) bind original current OpenBuffer inputs before wire/host integration.
@@ -920,7 +920,7 @@ follow-ups, in roadmap order:
 | ID | Classification | Coverage gap | Owning TODO task |
 |---|---|---|---|
 | SCA-001 | `design_drift` | The top-level design index must stay aligned with this roadmap's workspace-crate statuses. | Docs-only sync of [README.md](./README.md); future roadmap sync tasks must re-check it. |
-| SCA-002 | `todo` | The [published-input reader](./mizar-doc/en/artifact_reader.md) fixes initial Artifact loading; remaining phase-16 module specs and documentation generation remain open. | [mizar-doc tasks 4, 6, 9, 11, 13, 16, 18, 21, 23, and 29](./mizar-doc/en/todo.md) (plan step 8) |
+| SCA-002 | `todo` | The [published-input reader](./mizar-doc/en/artifact_reader.md) and initial [raw export index](./mizar-doc/en/doc_build.md) specify input validation/ordering; full build/index, remaining phase-16 specs and generation remain open. | [mizar-doc tasks 4, 6, 9, 11, 13, 16, 18, 21, 23, and 29](./mizar-doc/en/todo.md) (plan step 8) |
 | SCA-003 | `todo` | `@show_*` and `@eval` have parser/syntax coverage but need end-to-end display/evaluation projection boundaries. | [mizar-lsp task 24](./mizar-lsp/en/todo.md), plus `mizar-doc` and VC producer tasks as they expose data (plan step 8) |
 | SCA-004 | `external_dependency_gap` | Remaining resolver name/label and semantic-import diagnostics need public adoption beyond the implemented E0220–E0224 import subset. | [mizar-resolve task 30](./mizar-resolve/en/todo.md), [mizar-diagnostics consumer adoption](./mizar-diagnostics/en/consumer_adoption_decision.md) (plan step 8) |
 | SCA-005 | `source_drift` / `test_gap`; producer dependencies for VC 53 | Algorithm VC/static-safety coverage still lacks source-derived branch/match/range/collection-loop, term-derived/recursive termination, Pick non-emptiness, snapshot/claim, partial-call evidence admission, and ghost-isolation zero-VC integration. | Completed [mizar-vc task 30](./mizar-vc/en/todo.md) is decomposition authority; VC Tasks 42-55 and their `MT10-VC-PV/VC<n>` slices own the bounded families subject to exact Core 42-53 dependencies. Current [ALGDEF-VC53-NORMAL-RETURN](./task_contracts/en/ALGDEF-VC53-NORMAL-RETURN.md) supersedes Task 30's old authority blocker for this slice; authentic source/evidence and proof producers remain prerequisites, and imported evidence remains blocked. Do not invent acceptance or transport inputs. Ghost isolation is a Core-53 static diagnostic/zero-VC boundary, not a proof VC. Task 31 owns only the preceding exact contradiction slice. |
