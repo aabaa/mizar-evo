@@ -708,37 +708,55 @@ Speaker note:
 - Each blue box defines implication variable s/t and gives four clauses. With unit clauses p and not r, there are five variables and ten clauses. DIMACS is retained in `draft.ja.md` §6. This is not an execution dump.
 - The kernel neither searches for substitutions nor replays external resolution steps. Source: architecture chapters 08, 15, 16.
 
-## Part Closing. Status And Roadmap
+## Part 7. Status And Roadmap
 
-### Frame Where The Project Stands (October 2026)
+### Frame 7.1 - Implementation status and size
 
-- **Specification: 24 chapters plus appendices. English is the canonical language.**
-- **Implemented on the main branch: the Rust frontend (lexer, parser, syntax tree); name resolution and type checking on an alpha corpus; proof-obligation generation with deterministic discharge; ATP problem encoding and candidate evidence; SAT-backed kernel evidence checking; cache, fingerprint, and build-scheduling milestones.**
-- **In progress: end-to-end integration from source to verified artifact; the LSP server; the documentation generator.**
-- **Planned for later: MVM execution, code extraction, library-wide premise selection, MML migration.**
-- This talk does not claim any end-to-end results with external provers.
+**Rust product code: 271.1 kLoC now; 360–540 kLoC estimated at completion (provisional).**
+
+### Table 13. Implementation status and code size (kLoC)
+
+| Area | Implemented | Completion estimate | Limited implementation and remaining work |
+|---|---:|---:|---|
+| lexer / parser / frontend | 34.4 | 36–43 | Includes syntax; source loading, lexing, parsing connected |
+| resolver / checker | 122.9 | 148–193 | Limited source-derived semantics; generalization / service connections remain |
+| Core / VC | 49.7 | 65–95 | Includes IR / proof; limited source to verification conditions |
+| ATP | 9.6 | 16–28 | Problem encoding / candidate generation; real backend integration remains |
+| kernel | 12.8 | 15–20 | Formula, substitution, provenance checks; includes 1.9 for SAT encoding / connection |
+| build / driver / artifact | 41.3 | 56–85 | Includes cache / shared support; full-pipeline publication not connected |
+| LSP | 0.5 | 6–19 | Lifecycle / document sync base; semantic connections remain |
+| MVM / extraction / doc | 0 | 17–57 | Runtime, extraction, documentation generation unimplemented |
+
+**Checking, excluding ATP: kernel plus SAT dependencies = 17.6 kLoC.**
+
+Core, session, and shared support are counted separately. The table excludes dependencies, tests, blank lines, and comments. Estimates include current code; values are rounded.
+
+Source: fixed snapshot `08861708`. Counting and estimate basis: `draft.ja.md` §7.
 
 Speaker note:
 
-- Source: `doc/design/todo.md`, Crate Status, as of October 7, 2026. Re-check before the talk.
+- 1 kLoC = 1,000 lines. Completion estimates are rough and not calibrated against delivery history. MML porting is excluded.
+- Kernel 12.751, including 1.947 for SAT encoding / connection. SAT dependencies batsat 0.6.0 and bit-vec 0.5.1 add 4.879, totaling 17.630 kLoC. This does not measure the full minimum trusted computing base (TCB), which also involves Core, session, and other support.
+- Limited implementation at the fixed snapshot. Whole-code count: October 15; kernel recount and SAT dependencies: October 16, 2026.
 
-### Frame Roadmap
+### Frame 7.2 - Next steps and summary
 
-![Roadmap](figures/roadmap_tpp.pdf)
+### Next steps
 
-- **2026: finish the specification, the Rust pipeline through the kernel, template processing, and an alpha end-to-end run.**
-- **2027: migrate representative MML articles, build a native hammer baseline, and benchmark on top-level theorems, in the same units MizAR uses.**
-- 2028 and later: scale up the migration; learned premise selection; LLM-assisted failure recovery; MVM and extraction. Cryptographic and quantum targets stay future directions.
+- **First priority: connect source-to-semantics → VC → evidence → kernel → artifact → build.**
+- Align algorithm semantics and proof obligations; expand the working paths.
+- Develop MVM runtime and extraction separately. Porting all MML is a separate task from completing the processor.
+- Learned premise selection, LLM repair, cryptography, and quantum algorithms are long-term directions.
 
-### Frame Closing
+### Summary
 
-```text
-**Keep the foundation small.**
-**Keep the mathematics readable.**
-**Modernize everything else.**
-```
+- **Keep FOL, set theory, and mathematical writing. Redesign the language and development tools.**
+- **Separate ATP search from trusted checking. The specification is still evolving.**
+- **I welcome ITP users' requests for notation, proof assistance, and development tools.**
 
-- **Thank you. I welcome your questions, especially on MML migration, usability, and how to evaluate automation.**
+Speaker note:
+
+- Source: `doc/design/todo.md`, integration order and MML-port boundary.
 
 ## Backup 1. MizAR 60 In Detail
 
