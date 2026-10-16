@@ -273,6 +273,8 @@ Tasks 1–5: [LSP-LIFECYCLE-FOUNDATION](../../task_contracts/en/LSP-LIFECYCLE-FO
 
 35. **[Explicit native diagnostic wire](../../task_contracts/en/LSP-NATIVE-FRONTEND-DIAGNOSTIC-WIRE.md).** [x]
 
+36. **[Open document lifetime handles](../../task_contracts/en/LSP-OPEN-DOCUMENT-LIFETIME.md).** [x]
+
 ## Recommended Verification
 
 Run after each task:

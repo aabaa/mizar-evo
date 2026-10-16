@@ -272,6 +272,8 @@ Tasks 1–5: [LSP-LIFECYCLE-FOUNDATION](../../task_contracts/ja/LSP-LIFECYCLE-FO
 
 35. **[明示的な native 診断送信](../../task_contracts/ja/LSP-NATIVE-FRONTEND-DIAGNOSTIC-WIRE.md).** [x]
 
+36. **[Open document lifetime handles](../../task_contracts/ja/LSP-OPEN-DOCUMENT-LIFETIME.md).** [x]
+
 ## 推奨検証
 
 各タスクの後で実行する:

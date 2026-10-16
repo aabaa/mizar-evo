@@ -13,7 +13,7 @@ pub struct Server {
     initialized: Option<Value>,
     shutdown: bool,
     exit_code: Option<i32>,
-    documents: BTreeMap<String, (i32, String)>,
+    documents: BTreeMap<String, (i32, String, std::sync::Arc<()>)>,
 }
 
 impl Server {
@@ -65,7 +65,18 @@ impl Server {
     pub fn document(&self, uri: &str) -> Option<(i32, &str)> {
         self.documents
             .get(uri)
-            .map(|(version, text)| (*version, text.as_str()))
+            .map(|(version, text, ..)| (*version, text.as_str()))
+    }
+
+    /// Returns this live connection's open incarnation, independent of version/compiler state.
+    /// Compare with a fresh query using `Weak::ptr_eq`; upgrading does not prove currentness.
+    pub fn document_lifetime(&self, uri: &str) -> Option<std::sync::Weak<()>> {
+        if self.shutdown || self.exit_code.is_some() {
+            return None;
+        }
+        self.documents
+            .get(uri)
+            .map(|(_, _, lifetime)| std::sync::Arc::downgrade(lifetime))
     }
 
     /// Submits a native capture and returns current all-OpenBuffer frontend notification data.
@@ -374,8 +385,10 @@ impl Server {
                 document.get("languageId")?.as_str()?;
                 let text = document.get("text")?.as_str()?;
                 if !self.documents.contains_key(uri) {
-                    self.documents
-                        .insert(uri.to_owned(), (version, text.to_owned()));
+                    self.documents.insert(
+                        uri.to_owned(),
+                        (version, text.to_owned(), std::sync::Arc::new(())),
+                    );
                 }
             }
             "textDocument/didChange" => {
@@ -2384,7 +2397,7 @@ mod tests {
         for mode in ["control", "version", "raw", "invalid-registry"] {
             let mut current = Server::default();
             initialize(&mut current);
-            for (uri, (version, text)) in &server.documents {
+            for (uri, (version, text, ..)) in &server.documents {
                 current.handle_message(notification(
                     "textDocument/didOpen",
                     json!({"textDocument": {
@@ -2537,5 +2550,148 @@ mod tests {
             }
         }
         std::fs::remove_dir_all(input().plan_request.workspace_root.as_str()).unwrap();
+    }
+
+    #[test]
+    fn open_document_lifetime_retains_open_across_changes_and_separates_uris() {
+        let mut server = Server::default();
+        let uri = "file:///a.miz";
+        assert!(server.document_lifetime(uri).is_none());
+        initialize(&mut server);
+        server.handle_message(notification(
+            "textDocument/didOpen",
+            json!({"textDocument": {
+            "uri": uri, "languageId": "mizar", "version": 7, "text": "alpha"}}),
+        ));
+        let first = server.document_lifetime(uri).unwrap();
+        assert!(first.ptr_eq(&server.document_lifetime(uri).unwrap()));
+        for (version, changes) in [(8, json!([{"text": "\u{feff}beta\r\n"}])), (9, json!([]))] {
+            let response = server.handle_message(notification(
+                "textDocument/didChange",
+                json!({
+                "textDocument": {"uri": uri, "version": version}, "contentChanges": changes}),
+            ));
+            assert_eq!(response, None);
+            assert_eq!(server.document(uri), Some((version, "\u{feff}beta\r\n")));
+            assert!(first.ptr_eq(&server.document_lifetime(uri).unwrap()));
+        }
+        server.handle_message(notification("textDocument/didOpen", json!({"textDocument": {
+            "uri": "file:///b.miz", "languageId": "mizar", "version": 9, "text": "\u{feff}beta\r\n"}})));
+        assert!(!first.ptr_eq(&server.document_lifetime("file:///b.miz").unwrap()));
+        assert!(first.ptr_eq(&server.document_lifetime(uri).unwrap()));
+    }
+
+    #[test]
+    fn open_document_lifetime_reopen_and_other_server_have_distinct_handles() {
+        let mut server = Server::default();
+        initialize(&mut server);
+        let uri = "file:///a.miz";
+        let open = notification(
+            "textDocument/didOpen",
+            json!({"textDocument": {
+            "uri": uri, "languageId": "mizar", "version": 7, "text": "alpha"}}),
+        );
+        server.handle_message(open.clone());
+        let old = server.document_lifetime(uri).unwrap();
+        let _retained_old_allocation = old.upgrade().unwrap();
+        let response = server.handle_message(notification(
+            "textDocument/didClose",
+            json!({
+            "textDocument": {"uri": uri}}),
+        ));
+        assert_eq!(response, None);
+        assert!(server.document_lifetime(uri).is_none());
+        assert_eq!(server.document(uri), None);
+        server.handle_message(open.clone());
+        let reopened = server.document_lifetime(uri).unwrap();
+        assert!(!old.ptr_eq(&reopened));
+        assert_eq!(server.document(uri), Some((7, "alpha")));
+        let mut other = Server::default();
+        initialize(&mut other);
+        other.handle_message(open);
+        let independent = other.document_lifetime(uri).unwrap();
+        assert!(!old.ptr_eq(&independent));
+        assert!(!reopened.ptr_eq(&independent));
+        assert!(reopened.ptr_eq(&server.document_lifetime(uri).unwrap()));
+    }
+
+    #[test]
+    fn open_document_lifetime_ignores_invalid_traffic_and_withholds_terminal_handles() {
+        let mut server = Server::default();
+        let uri = "file:///a.miz";
+        let open = notification(
+            "textDocument/didOpen",
+            json!({"textDocument": {
+            "uri": uri, "languageId": "mizar", "version": 7, "text": "alpha"}}),
+        );
+        assert_eq!(server.handle_message(open.clone()), None);
+        assert!(server.document_lifetime(uri).is_none());
+        assert_eq!(server.document(uri), None);
+        initialize(&mut server);
+        server.handle_message(notification(
+            "textDocument/didOpen",
+            json!({"textDocument": {
+            "uri": uri, "version": 7, "text": "alpha"}}),
+        ));
+        assert!(server.document_lifetime(uri).is_none());
+        server.handle_message(open.clone());
+        let live = server.document_lifetime(uri).unwrap();
+        for (method, params) in [
+            (
+                "textDocument/didOpen",
+                json!({"textDocument": {
+                "uri": uri, "languageId": "mizar", "version": 20, "text": "other"}}),
+            ),
+            (
+                "textDocument/didChange",
+                json!({"textDocument": {"uri": uri, "version": 8},
+                "contentChanges": [{"text": "other", "range": {}}]}),
+            ),
+            (
+                "textDocument/didChange",
+                json!({"textDocument": {"uri": uri, "version": 7},
+                "contentChanges": [{"text": "other"}]}),
+            ),
+            (
+                "textDocument/didClose",
+                json!({"textDocument": {"uri": "file:///b.miz"}}),
+            ),
+        ] {
+            assert_eq!(server.handle_message(notification(method, params)), None);
+            assert!(live.ptr_eq(&server.document_lifetime(uri).unwrap()));
+            assert_eq!(server.document(uri), Some((7, "alpha")));
+        }
+        assert_eq!(
+            server.handle_message(request("shutdown", Value::Null)),
+            Some(json!({"jsonrpc": "2.0", "id": 7, "result": null}))
+        );
+        assert!(server.document_lifetime(uri).is_none());
+        for message in [
+            open.clone(),
+            notification(
+                "textDocument/didChange",
+                json!({"textDocument": {"uri": uri, "version": 8},
+                "contentChanges": [{"text": "other"}]}),
+            ),
+            notification(
+                "textDocument/didClose",
+                json!({"textDocument": {"uri": uri}}),
+            ),
+            notification("exit", Value::Null),
+        ] {
+            assert_eq!(server.handle_message(message), None);
+            assert!(server.document_lifetime(uri).is_none());
+            assert_eq!(server.document(uri), Some((7, "alpha")));
+        }
+        let mut abrupt = Server::default();
+        initialize(&mut abrupt);
+        abrupt.handle_message(open);
+        assert!(abrupt.document_lifetime(uri).is_some());
+        assert_eq!(
+            abrupt.handle_message(notification("exit", Value::Null)),
+            None
+        );
+        assert!(abrupt.document_lifetime(uri).is_none());
+        assert_eq!(abrupt.document(uri), Some((7, "alpha")));
     }
 }
