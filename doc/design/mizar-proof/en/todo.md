@@ -466,6 +466,8 @@ layer consumes both; one alignment task is owned here.
 
 33. **[Genuine source candidate anchors](../../task_contracts/en/SOURCE-REGISTRATION-CANDIDATE-ANCHORS.md).** [x]
 
+34. **[Source VC-local dependency slices](../../task_contracts/en/PROOF-SOURCE-DEPENDENCY-SLICE.md).** [x]
+
 ## Recommended Verification
 
 Run after each task:

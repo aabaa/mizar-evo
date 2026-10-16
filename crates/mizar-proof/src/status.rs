@@ -231,6 +231,42 @@ pub fn source_registration_candidate_anchor(
     Ok((anchor, *full, goal, context))
 }
 
+/// Returns the original source VC's conservative dependency slice.
+/// The numeric handle and incomplete fingerprint do not authorize reuse or publication.
+pub fn source_registration_dependency_slice(
+    source: &mizar_resolve::resolved_ast::SurfaceResolvedArena,
+    nodes: &mizar_checker::typed_ast::TypedArena,
+    symbols: &mizar_resolve::env::SymbolEnv,
+    snapshot: mizar_session::BuildSnapshotId,
+    vc_id: VcId,
+) -> Result<mizar_vc::dependency_slice::DependencySlice, String> {
+    use mizar_vc::{
+        dependency_slice::{DependencySliceInput, try_compute_dependency_slices},
+        vc_ir::{GenerationSchemaVersion, VcSchemaVersion},
+    };
+
+    let check =
+        mizar_checker::registration_resolution::check_source_existential_registration_proof(
+            source, nodes, symbols,
+        )?;
+    let core = mizar_core::elaborator::lower_source_existential_registration(&check)?;
+    let vcs = mizar_vc::generator::generate_source_existential_registration(
+        &core,
+        snapshot,
+        &GenerationSchemaVersion::new("source-existential-registration-v1"),
+        &VcSchemaVersion::new("vc-v1"),
+    )?;
+    let slices = try_compute_dependency_slices(DependencySliceInput {
+        vc_set: &vcs,
+        discharge_output: None,
+    })
+    .map_err(|error| error.to_string())?;
+    slices
+        .slice_for(vc_id)
+        .cloned()
+        .ok_or_else(|| "registration.proof.invalid_source_dependency_slice".to_owned())
+}
+
 /// Freshly checks one authentic NeedsAtp registration candidate under the current policy.
 /// The returned check and classification do not authorize activation or publication.
 pub fn check_source_registration_candidate(

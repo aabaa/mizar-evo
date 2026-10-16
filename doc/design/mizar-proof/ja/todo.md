@@ -442,6 +442,8 @@ kernel の拒否語彙と evidence 契約を訂正した。policy 層はその�
 
 33. **[Genuine source candidate anchors](../../task_contracts/ja/SOURCE-REGISTRATION-CANDIDATE-ANCHORS.md).** [x]
 
+34. **[Source VC-local dependency slices](../../task_contracts/ja/PROOF-SOURCE-DEPENDENCY-SLICE.md).** [x]
+
 ## 推奨検証
 
 各タスクの後で実行する:

@@ -228,6 +228,14 @@ manifest write、proof acceptance を行わない。
 同一呼出しで実 producer を結ぶ best-effort cross-edit 候補であり、一致だけで reuse は許可しない。architecture22 の VC 全体・local context・完全依存・互換 policy・検証 evidence の要求を保つ。完全な構造化 anchor／Proof identity・source 活性化・受理 metadata・witness・公開・runtime 結合は保留する。未証明・偽の source でも候補を持ち得る。Proof23/Artifact25/17 と Steps6–8 は未完了のままとする。
 共有 integration test の所有者は [VC profile](../../mizar-vc/ja/vc_ir.md#source-registration-candidate-anchor-hashes) とする。
 
+## Source dependency slices
+
+`source_registration_dependency_slice(&SurfaceResolvedArena, &TypedArena, &SymbolEnv, BuildSnapshotId, VcId) -> Result<DependencySlice, String>` は既存の所有された [VC-local slice](../../mizar-vc/ja/dependency_slice.md) を返し、entries、unknowns、completeness、status、fingerprint を保持する。呼び出し側の Core/VC graph、discharge output、payload、identity、policy、accepted flag は入力にしない。
+変更しない source proof checker、Core lowering、source VC generator を順に新規実行し、既存 Proof generation schema source-existential-registration-v1 と VC schema vc-v1 を使用する。上流のエラーをそのまま伝播し、元の Open graph 全体に既存 try_compute_dependency_slices を discharge_output None で適用する。下流エラーは Display の文字列で伝播する。その後だけ VcId を選択して既存 slice を clone し、不在なら内部 registration.proof.invalid_source_dependency_slice を返す。不変入力と既存 facade の本体を保ち、小さな処理をインラインにし、helper、type、field、adapter、dependency、hash profile を追加しない。
+VcId は今回の graph に対する検索 handle であり、来歴や現在性の証拠ではない。別 graph の数値が同じ handle は区別できない。source/snapshot の現在性は呼び出し側が担う。default discharge、Kernel check、policy 評価、status/anchor の変更、trusted metadata、witness、publication を行わない。
+汎用 Core/Anchor unknown marker と実際の IncompleteUncacheable/cache-miss 判定を保持し、欠落を依存なしと解釈しない。この raw VC-local fingerprint は architecture22 の phase footprint 合成でも、別の source canonical-content profile でもない。完全な六項目 Proof identity、完全依存、受理/reuse、Proof23/Artifact25/17/Steps6–8 は別の課題として維持する。
+既存 source setup を再利用する追加の実ソース三系列で、Proof schema による元の下流 producer と single/aggregate leaf の full-slice 一致、neutral/participating source・snapshot 変更でも実際の unknown/cache miss を保持すること、不在 handle・実際の混合/不正/未対応入力・選択前の上流エラー・入力不変性を確認する。不完全 hash が取得不能な内容の変更ごとに変わるとは仮定しない。既存 fixture/expectation/test を保ち、下流 slice matrix を複製せず、架空の下流エラーや受理済み control を作らない。
+
 ## Source candidate checking
 
 `check_source_registration_candidate(&SurfaceResolvedArena, &TypedArena, &SymbolEnv, BuildSnapshotId, VcId, (LogicProfile, ConcreteFormat), &VerifierPolicy) -> Result<(KernelCheckResult, PolicyDecision), String>` は leaf 1件の fresh 検査を所有し、登録活性化や公開を行わない。encoding tuple は既存の明示 profile/format をまとめるだけで型を追加しない。source checker と Core lowering を再実行し、既存 source/VC schema で元 graph を生成して実 default Discharge を適用する。選択 NeedsAtp leaf に [実 source candidate factory](../../mizar-atp/ja/backend.md#source-registration-candidate-inputs) を使う。未対応・foreign input、不正・Discharged target、実行許可のない policy では checked result や fallback なしで error とする。
