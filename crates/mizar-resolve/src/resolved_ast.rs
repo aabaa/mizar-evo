@@ -2164,5 +2164,292 @@ impl From<ResolvedArenaError> for ResolvedAstError {
     }
 }
 
+/// Composes an unpublished semantic snapshot for the closed theorem source profile.
+pub fn source_theorem_resolved_ast(
+    ast: &SurfaceAst,
+    source: &SurfaceResolvedArena,
+    symbols: &crate::env::SymbolEnv,
+) -> Result<Option<ResolvedAst>, String> {
+    let Some(names) =
+        crate::names::source_theorem_builtin_type_reference_candidates(ast, source, symbols)?
+    else {
+        return Ok(None);
+    };
+    let Some(labels) =
+        crate::labels::source_theorem_label_reference_candidates(ast, source, symbols)?
+    else {
+        return Ok(None);
+    };
+    let token_is = |node: mizar_syntax::SurfaceNodeView<'_>, kind, text: &str| {
+        node.as_token()
+            .is_some_and(|token| token.kind == kind && token.text.as_ref() == text)
+    };
+    let mut identifiers = std::collections::BTreeSet::new();
+    let mut binders = Vec::new();
+    let mut occurrences = Vec::new();
+    let mut name_sites = std::collections::BTreeSet::new();
+    let mut label_sites = std::collections::BTreeSet::new();
+    for node in ast.node_views() {
+        let children = node.child_views().collect::<Vec<_>>();
+        let admitted = match (node.kind(), children.as_slice()) {
+            (
+                SurfaceNodeKind::Root
+                | SurfaceNodeKind::CompilationUnit
+                | SurfaceNodeKind::ItemList
+                | SurfaceNodeKind::VisibleItem
+                | SurfaceNodeKind::VisibilityMarker
+                | SurfaceNodeKind::JustificationClause
+                | SurfaceNodeKind::ReferenceList,
+                _,
+            ) => true,
+            (SurfaceNodeKind::Token(_), []) => true,
+            (SurfaceNodeKind::TheoremItem | SurfaceNodeKind::LemmaItem, children) => {
+                let proofless = children.first().is_some_and(|first| {
+                    token_is(*first, mizar_syntax::SurfaceTokenKind::ReservedWord, "open")
+                        || token_is(
+                            *first,
+                            mizar_syntax::SurfaceTokenKind::ReservedWord,
+                            "assumed",
+                        )
+                });
+                let offset = usize::from(proofless);
+                if children.len() != 6
+                    || !matches!(
+                        children[3 + offset].kind(),
+                        SurfaceNodeKind::FormulaExpression
+                    )
+                    || (!proofless && !matches!(children[4].kind(), SurfaceNodeKind::ProofBlock))
+                    || !token_is(
+                        children[5],
+                        mizar_syntax::SurfaceTokenKind::ReservedSymbol,
+                        ";",
+                    )
+                {
+                    return Ok(None);
+                }
+                identifiers.insert(children[1 + offset].id())
+            }
+            (SurfaceNodeKind::ProofBlock, [_, statements @ .., _]) => {
+                statements.iter().all(|statement| {
+                    matches!(
+                        statement.kind(),
+                        SurfaceNodeKind::LetStatement | SurfaceNodeKind::ConclusionStatement
+                    )
+                })
+            }
+            (SurfaceNodeKind::LetStatement, [first, segment, last]) => {
+                token_is(*first, mizar_syntax::SurfaceTokenKind::ReservedWord, "let")
+                    && matches!(segment.kind(), SurfaceNodeKind::QualifiedVariableSegment)
+                    && token_is(*last, mizar_syntax::SurfaceTokenKind::ReservedSymbol, ";")
+            }
+            (SurfaceNodeKind::ConclusionStatement, [first, proposition, rest @ .., last]) => {
+                token_is(*first, mizar_syntax::SurfaceTokenKind::ReservedWord, "thus")
+                    && matches!(proposition.kind(), SurfaceNodeKind::Proposition)
+                    && (rest.is_empty()
+                        || (rest.len() == 1
+                            && matches!(rest[0].kind(), SurfaceNodeKind::JustificationClause)))
+                    && token_is(*last, mizar_syntax::SurfaceTokenKind::ReservedSymbol, ";")
+            }
+            (SurfaceNodeKind::Proposition, [formula]) => {
+                matches!(formula.kind(), SurfaceNodeKind::FormulaExpression)
+            }
+            (SurfaceNodeKind::FormulaExpression, [formula]) => matches!(
+                formula.kind(),
+                SurfaceNodeKind::QuantifiedFormula(mizar_syntax::SurfaceQuantifierKind::Universal)
+                    | SurfaceNodeKind::BuiltinPredicateApplication
+            ),
+            (
+                SurfaceNodeKind::QuantifiedFormula(mizar_syntax::SurfaceQuantifierKind::Universal),
+                [first, segment, holds, body],
+            ) => {
+                token_is(*first, mizar_syntax::SurfaceTokenKind::ReservedWord, "for")
+                    && matches!(segment.kind(), SurfaceNodeKind::QuantifierVariableSegment)
+                    && token_is(
+                        *holds,
+                        mizar_syntax::SurfaceTokenKind::ReservedWord,
+                        "holds",
+                    )
+                    && matches!(body.kind(), SurfaceNodeKind::BuiltinPredicateApplication)
+            }
+            (
+                SurfaceNodeKind::QuantifierVariableSegment
+                | SurfaceNodeKind::QualifiedVariableSegment,
+                [identifier, copula, ty],
+            ) => {
+                if !identifier
+                    .as_token()
+                    .is_some_and(|token| token.kind == mizar_syntax::SurfaceTokenKind::Identifier)
+                    || !(token_is(*copula, mizar_syntax::SurfaceTokenKind::ReservedWord, "be")
+                        || token_is(
+                            *copula,
+                            mizar_syntax::SurfaceTokenKind::ReservedWord,
+                            "being",
+                        ))
+                    || !matches!(ty.kind(), SurfaceNodeKind::TypeExpression)
+                {
+                    return Ok(None);
+                }
+                binders.push((
+                    *identifier,
+                    if matches!(node.kind(), SurfaceNodeKind::QuantifierVariableSegment) {
+                        crate::names::SourceVariableBindingKind::Quantifier
+                    } else {
+                        crate::names::SourceVariableBindingKind::Let
+                    },
+                ));
+                identifiers.insert(identifier.id())
+            }
+            (SurfaceNodeKind::TypeExpression, [_]) => true,
+            (SurfaceNodeKind::TypeHead, [_]) => name_sites.insert(
+                source
+                    .resolved_node_for(node.id())
+                    .expect("validated mapping"),
+            ),
+            (SurfaceNodeKind::BuiltinPredicateApplication, [left, equal, right]) => {
+                matches!(left.kind(), SurfaceNodeKind::TermExpression)
+                    && token_is(*equal, mizar_syntax::SurfaceTokenKind::ReservedSymbol, "=")
+                    && matches!(right.kind(), SurfaceNodeKind::TermExpression)
+            }
+            (SurfaceNodeKind::TermExpression, [term]) => {
+                matches!(
+                    term.kind(),
+                    SurfaceNodeKind::TermReference | SurfaceNodeKind::NumeralTerm
+                ) && node.range() == term.range()
+                    && node.range().start < node.range().end
+            }
+            (SurfaceNodeKind::TermReference | SurfaceNodeKind::NumeralTerm, [terminal]) => {
+                if node.range() != terminal.range() || node.range().start == node.range().end {
+                    return Ok(None);
+                }
+                let Some(token) = terminal.as_token() else {
+                    return Ok(None);
+                };
+                if matches!(node.kind(), SurfaceNodeKind::TermReference) {
+                    if token.kind != mizar_syntax::SurfaceTokenKind::Identifier {
+                        return Ok(None);
+                    }
+                    occurrences.push((node, *terminal));
+                    identifiers.insert(terminal.id())
+                } else {
+                    token.kind == mizar_syntax::SurfaceTokenKind::Numeral
+                }
+            }
+            (SurfaceNodeKind::Reference, [identifier]) => {
+                identifiers.insert(identifier.id())
+                    && label_sites.insert(
+                        source
+                            .resolved_node_for(node.id())
+                            .expect("validated mapping"),
+                    )
+            }
+            _ => false,
+        };
+        if !admitted {
+            return Ok(None);
+        }
+    }
+    if ast
+        .node_views()
+        .filter(|node| {
+            node.as_token()
+                .is_some_and(|token| token.kind == mizar_syntax::SurfaceTokenKind::Identifier)
+        })
+        .map(|node| node.id())
+        .collect::<std::collections::BTreeSet<_>>()
+        != identifiers
+    {
+        return Ok(None);
+    }
+    let scope = crate::names::SourceVariableScopeResolver::resolve_occurrences(
+        crate::names::SourceVariableScopeInput::new(ast, source.module(), symbols),
+    )
+    .map_err(|error| format!("{error:?}"))?;
+    if scope.bindings().len() != binders.len() || scope.references().len() != occurrences.len() {
+        return Ok(None);
+    }
+    let mut binding_ids = std::collections::BTreeSet::new();
+    for (token, kind) in binders {
+        let binding = scope.bindings().iter().find(|binding| {
+            binding.node() == token.id()
+                && binding.range() == token.range()
+                && binding.spelling() == token.as_token().expect("identifier").text.as_ref()
+                && binding.kind() == kind
+        });
+        let Some(binding) = binding else {
+            return Ok(None);
+        };
+        if !binding_ids.insert(binding.id()) {
+            return Ok(None);
+        }
+    }
+    let mut reference_ids = std::collections::BTreeSet::new();
+    for (node, token) in occurrences {
+        let reference = scope.references().iter().find(|reference| {
+            reference.node() == node.id()
+                && reference.range() == token.range()
+                && reference.spelling() == token.as_token().expect("identifier").text.as_ref()
+                && reference.kind() == crate::names::SourceVariableReferenceKind::Term
+                && binding_ids.contains(&reference.binding())
+                && scope.bindings().iter().any(|binding| {
+                    binding.id() == reference.binding()
+                        && binding.spelling() == reference.spelling()
+                })
+        });
+        let Some(reference) = reference else {
+            return Ok(None);
+        };
+        if !reference_ids.insert(reference.id()) {
+            return Ok(None);
+        }
+    }
+    let mut nodes = source
+        .arena()
+        .iter()
+        .map(|(_, node)| node.clone())
+        .collect::<Vec<_>>();
+    for (id, entry) in names.table().iter() {
+        if !name_sites.remove(&entry.site().node()) {
+            return Ok(None);
+        }
+        let node = &mut nodes[entry.site().node().index()];
+        node.reference_key = Some(NodeReferenceKey::Name(id));
+        node.resolution = match entry.resolution() {
+            NameResolution::Resolved(_) | NameResolution::ResolvedBuiltin(_) => {
+                NodeResolutionState::Resolved
+            }
+            NameResolution::Unresolved(_) => NodeResolutionState::Unresolved,
+            NameResolution::Ambiguous(_) => NodeResolutionState::Ambiguous,
+            NameResolution::DeferredSelector(_) => NodeResolutionState::Deferred,
+        };
+    }
+    for (id, entry) in labels.table().iter() {
+        if !label_sites.remove(&entry.site().node()) {
+            return Ok(None);
+        }
+        let node = &mut nodes[entry.site().node().index()];
+        node.reference_key = Some(NodeReferenceKey::Label(id));
+        node.resolution = match entry.resolution() {
+            LabelResolution::Resolved(_) => NodeResolutionState::Resolved,
+            LabelResolution::Unresolved(_) => NodeResolutionState::Unresolved,
+            LabelResolution::Ambiguous(_) => NodeResolutionState::Ambiguous,
+        };
+    }
+    if !name_sites.is_empty() || !label_sites.is_empty() {
+        return Ok(None);
+    }
+    let arena =
+        ResolvedArena::try_new(source.arena().root(), nodes).map_err(|error| error.to_string())?;
+    ResolvedAst::try_new(
+        ast.source_id,
+        source.module().clone(),
+        arena,
+        names.table().clone(),
+        labels.table().clone(),
+        ResolvedImports::default(),
+    )
+    .map(Some)
+    .map_err(|error| error.to_string())
+}
+
 #[cfg(test)]
 mod tests;

@@ -5037,3 +5037,390 @@ fn source_theorem_builtin_type_reference_candidates_refuse_incomplete_coverage()
         assert_eq!((rebuilt, arena, env), before);
     }
 }
+#[test]
+fn source_theorem_resolved_ast_preserves_complete_semantic_snapshot() {
+    let fixture = include_str!(
+        "../../../../tests/miz/pass/resolve/pass_declaration_symbol_private_theorem_visibility_001.miz"
+    );
+    for (text, types, citations) in [
+        (fixture.to_owned(), vec![(36,39,"set"),(69,72,"set"),(124,127,"set"),(157,160,"set")], vec![(178,184,"PrivT1")]),
+        (fixture.replace("private ", ""), vec![(28,31,"set"),(61,64,"set"),(116,119,"set"),(149,152,"set")], vec![(170,176,"PrivT1")]),
+        (include_str!("../../../../tests/miz/pass/theorems/pass_proof_verification_lemma_reference_001.miz").to_owned(), vec![(24,27,"set"),(57,60,"set"),(111,114,"set"),(144,147,"set")], vec![(165,169,"Lem1")]),
+        (include_str!("../../../../tests/miz/pass/theorems/pass_proof_verification_theorem_status_open_assumed_001.miz").to_owned(), vec![(33,36,"set"),(85,88,"set")], vec![]),
+        (fixture.replace("set", "object"), vec![(36,42,"object"),(72,78,"object"),(130,136,"object"),(166,172,"object")], vec![(190,196,"PrivT1")]),
+        (fixture.replacen("set", "object", 1), vec![(36,42,"object"),(72,75,"set"),(127,130,"set"),(160,163,"set")], vec![(181,187,"PrivT1")]),
+        ("theorem Plain: 0 = 0\nproof\n  thus 0 = 0;\nend;\n".to_owned(), vec![], vec![]),
+        (fixture.replace("by PrivT1", "by Missing"), vec![(36,39,"set"),(69,72,"set"),(124,127,"set"),(157,160,"set")], vec![(178,185,"Missing")]),
+    ] {
+        let (ast, module, _, env, arena) = parsed_private_theorem_fixture(&text);
+        let before = (ast.clone(), arena.clone(), env.clone());
+        let result = crate::resolved_ast::source_theorem_resolved_ast(&ast, &arena, &env).unwrap().unwrap();
+        assert_eq!(result.source_id(), ast.source_id);
+        assert_eq!(result.module_id(), &module);
+        assert_eq!(result.nodes().root(), arena.arena().root());
+        assert_eq!(result.nodes().len(), ast.nodes().len());
+        assert_eq!(result.imports(), &crate::resolved_ast::ResolvedImports::new());
+        let mut expected_names = crate::resolved_ast::NameRefTable::new();
+        let mut expected_labels = crate::resolved_ast::LabelRefTable::new();
+        let mut attachments = BTreeMap::new();
+        for (start, end, spelling) in types {
+            assert_eq!(&text[start..end], spelling);
+            let head = ast.node_views().find(|node| matches!(node.kind(), SurfaceNodeKind::TypeHead) && node.range() == range(ast.source_id, start, end)).unwrap();
+            let mapped = arena.resolved_node_for(head.id()).unwrap();
+            let origin = SemanticOrigin::new(ast.source_id, module.clone(), SourceAnchor::Range(head.range()), vec![u32::try_from(head.id().index()).unwrap()]);
+            let id = expected_names.insert(crate::resolved_ast::NameRefEntry::new(
+                ReferenceSite::new(mapped, head.range(), spelling),
+                crate::resolved_ast::NameResolution::ResolvedBuiltin(crate::resolved_ast::BuiltinRef::new(crate::resolved_ast::BuiltinId::new(format!("builtin:type:{spelling}")), head.range(), spelling)), origin));
+            attachments.insert(mapped, (crate::resolved_ast::NodeReferenceKey::Name(id), crate::resolved_ast::NodeResolutionState::Resolved));
+        }
+        for (start, end, spelling) in citations {
+            assert_eq!(&text[start..end], spelling);
+            let reference = ast.node_views().find(|node| matches!(node.kind(), SurfaceNodeKind::Reference) && node.range() == range(ast.source_id, start, end)).unwrap();
+            let statement = ast.node_views().find(|node| matches!(node.kind(), SurfaceNodeKind::ConclusionStatement) && node.range().start <= start && node.range().end >= end).unwrap();
+            let theorem = ast.node_views().find(|node| matches!(node.kind(), SurfaceNodeKind::TheoremItem | SurfaceNodeKind::LemmaItem) && node.range().start <= start && node.range().end >= end).unwrap();
+            let origin = SemanticOrigin::new(ast.source_id, module.clone(), SourceAnchor::Range(reference.range()), [theorem.id(), statement.id(), reference.id()].map(|id| u32::try_from(id.index()).unwrap()).to_vec());
+            let mapped = arena.resolved_node_for(reference.id()).unwrap();
+            assert_ne!(&origin, arena.arena().node(mapped).unwrap().origin());
+            let (resolution, state) = if spelling == "Missing" {
+                (LabelResolution::Unresolved(crate::resolved_ast::UnresolvedLabelRef::new(spelling, reference.range(), crate::resolved_ast::LabelExpectation::ProofOrTheorem)), crate::resolved_ast::NodeResolutionState::Unresolved)
+            } else {
+                let owner = env.symbols().iter().find(|entry| entry.primary_spelling() == spelling).unwrap();
+                (LabelResolution::Resolved(LabelRef::new(crate::resolved_ast::LabelOriginPath::new(owner.symbol().fqn().as_str()), LabelKind::Theorem, reference.range())), crate::resolved_ast::NodeResolutionState::Resolved)
+            };
+            let id = expected_labels.insert(crate::resolved_ast::LabelRefEntry::new(ReferenceSite::new(mapped, reference.range(), spelling), resolution, origin));
+            attachments.insert(mapped, (crate::resolved_ast::NodeReferenceKey::Label(id), state));
+        }
+        assert_eq!(result.name_refs(), &expected_names);
+        assert_eq!(result.label_refs(), &expected_labels);
+        for (id, original) in arena.arena().iter() {
+            let expected = if let Some((key, state)) = attachments.get(&id) { original.clone().with_reference_key(*key).with_resolution(*state) } else { original.clone() };
+            assert_eq!(result.nodes().node(id).unwrap(), &expected);
+            assert_eq!(original.resolution(), crate::resolved_ast::NodeResolutionState::NotApplicable);
+            assert_eq!(original.reference_key(), None);
+        }
+        assert_eq!(result.name_refs(), crate::names::source_theorem_builtin_type_reference_candidates(&ast, &arena, &env).unwrap().unwrap().table());
+        assert_eq!(result.label_refs(), source_theorem_label_reference_candidates(&ast, &arena, &env).unwrap().unwrap().table());
+        assert_eq!(crate::resolved_ast::source_theorem_resolved_ast(&ast, &arena, &env).unwrap(), Some(result));
+        assert_eq!((ast, arena, env), before);
+    }
+}
+
+#[test]
+fn source_theorem_resolved_ast_refuses_incomplete_roles_and_preserves_errors() {
+    let fixture = include_str!(
+        "../../../../tests/miz/pass/resolve/pass_declaration_symbol_private_theorem_visibility_001.miz"
+    );
+    let (ast, module, namespace, _, _) = parsed_private_theorem_fixture(fixture);
+    let term = ast
+        .node_views()
+        .find(|node| {
+            matches!(node.kind(), SurfaceNodeKind::TermReference)
+                && node.range() == range(ast.source_id, 46, 47)
+        })
+        .unwrap();
+    let terminal = term.child_views().next().unwrap();
+    let wrapper = ast
+        .node_views()
+        .find(|node| {
+            matches!(node.kind(), SurfaceNodeKind::TermExpression) && node.children() == [term.id()]
+        })
+        .unwrap();
+    let formula = ast
+        .node_views()
+        .find(|node| {
+            matches!(node.kind(), SurfaceNodeKind::BuiltinPredicateApplication)
+                && node.range().start == 46
+        })
+        .unwrap();
+    let segment = ast
+        .node_views()
+        .find(|node| matches!(node.kind(), SurfaceNodeKind::QuantifierVariableSegment))
+        .unwrap();
+    for mutation in [
+        "qualified",
+        "template",
+        "other_formula",
+        "other_term",
+        "extra_formula_child",
+        "extra_segment_child",
+        "hidden_identifier",
+        "misclassified_identifier",
+        "term_range",
+        "wrapper_range",
+        "numeral_kind",
+        "application",
+        "extra_owner_child",
+        "extra_proposition_child",
+        "extra_quantifier_child",
+        "extra_formula_wrapper_child",
+        "wrong_let_keyword",
+        "wrong_conclusion_keyword",
+    ] {
+        let mut builder = SurfaceAstBuilder::new(ast.source_id);
+        let mut mapped = BTreeMap::new();
+        for node in ast.node_views() {
+            let mut kind = node.kind().clone();
+            let mut node_range = node.range();
+            let mut children = node
+                .children()
+                .iter()
+                .map(|child| mapped[child])
+                .collect::<Vec<_>>();
+            if node.id() == term.id() {
+                match mutation {
+                    "qualified" => {
+                        children = vec![builder.add_node(
+                            SurfaceNodeKind::QualifiedSymbol,
+                            node_range,
+                            children,
+                        )]
+                    }
+                    "template" => children.push(builder.add_node(
+                        SurfaceNodeKind::TemplateArguments,
+                        range(ast.source_id, 47, 47),
+                        vec![],
+                    )),
+                    "other_term" => kind = SurfaceNodeKind::ParenthesizedTerm,
+                    "application" => kind = SurfaceNodeKind::ApplicationTerm,
+                    "misclassified_identifier" | "numeral_kind" => {
+                        kind = SurfaceNodeKind::NumeralTerm
+                    }
+                    "term_range" => node_range.end += 1,
+                    _ => {}
+                }
+            }
+            if node.id() == wrapper.id() && matches!(mutation, "wrapper_range" | "term_range") {
+                node_range.end += 1;
+            }
+            if node.id() == formula.id() {
+                match mutation {
+                    "other_formula" => {
+                        kind = SurfaceNodeKind::BinaryFormula(
+                            mizar_syntax::SurfaceFormulaBinaryOperator {
+                                connective: mizar_syntax::SurfaceFormulaConnective::And,
+                                repeated: false,
+                            },
+                        )
+                    }
+                    "extra_formula_child" | "hidden_identifier" => {
+                        children.insert(
+                            1,
+                            builder.add_token(
+                                if mutation == "hidden_identifier" {
+                                    SurfaceTokenKind::Identifier
+                                } else {
+                                    SurfaceTokenKind::ReservedSymbol
+                                },
+                                "extra",
+                                range(ast.source_id, 47, 47),
+                            ),
+                        );
+                    }
+                    _ => {}
+                }
+            }
+            if node.id() == segment.id() && mutation == "extra_segment_child" {
+                children.push(builder.add_token(
+                    SurfaceTokenKind::ReservedSymbol,
+                    ",",
+                    range(ast.source_id, 39, 39),
+                ));
+            }
+            if node.id() == terminal.id() && mutation == "numeral_kind" {
+                kind = SurfaceNodeKind::Token(mizar_syntax::SurfaceToken {
+                    kind: SurfaceTokenKind::ReservedWord,
+                    text: "X".into(),
+                });
+            }
+            if mutation == "wrong_let_keyword"
+                && node
+                    .as_token()
+                    .is_some_and(|token| token.text.as_ref() == "let")
+            {
+                kind = SurfaceNodeKind::Token(mizar_syntax::SurfaceToken {
+                    kind: SurfaceTokenKind::ReservedWord,
+                    text: "thus".into(),
+                });
+            }
+            if mutation == "wrong_conclusion_keyword"
+                && node
+                    .as_token()
+                    .is_some_and(|token| token.text.as_ref() == "thus")
+            {
+                kind = SurfaceNodeKind::Token(mizar_syntax::SurfaceToken {
+                    kind: SurfaceTokenKind::ReservedWord,
+                    text: "let".into(),
+                });
+            }
+            if (mutation == "extra_owner_child"
+                && matches!(node.kind(), SurfaceNodeKind::TheoremItem))
+                || (mutation == "extra_proposition_child"
+                    && matches!(node.kind(), SurfaceNodeKind::Proposition))
+                || (mutation == "extra_quantifier_child"
+                    && matches!(node.kind(), SurfaceNodeKind::QuantifiedFormula(_)))
+                || (mutation == "extra_formula_wrapper_child"
+                    && matches!(node.kind(), SurfaceNodeKind::FormulaExpression))
+            {
+                children.push(builder.add_token(
+                    SurfaceTokenKind::ReservedSymbol,
+                    "",
+                    range(ast.source_id, node_range.end, node_range.end),
+                ));
+            }
+            let id = if let SurfaceNodeKind::Token(token) = &kind {
+                builder.add_token(token.kind, token.text.clone(), node_range)
+            } else {
+                builder.add_node(kind, node_range, children)
+            };
+            mapped.insert(node.id(), id);
+        }
+        let rebuilt = builder.finish(Some(mapped[&ast.root().unwrap()]), None);
+        let shells =
+            crate::declarations::DeclarationShellCollector::new(&rebuilt, &module).collect();
+        let collected =
+            crate::symbols::SignatureProjectionExtractor::new(&rebuilt, &shells, namespace.clone())
+                .collect(&module);
+        assert!(collected.diagnostics().is_empty(), "{mutation}");
+        let env = collected.into_env();
+        let arena = SurfaceResolvedArena::lower(&rebuilt, &module).unwrap();
+        let before = (rebuilt.clone(), arena.clone(), env.clone());
+        assert!(
+            crate::names::source_theorem_builtin_type_reference_candidates(&rebuilt, &arena, &env)
+                .unwrap_or_else(|error| panic!("{mutation}: {error}"))
+                .is_some(),
+            "{mutation}: inherited admission"
+        );
+        assert!(
+            rebuilt
+                .node_views()
+                .any(|node| matches!(node.kind(), SurfaceNodeKind::TermReference)
+                    && node.range() == range(ast.source_id, 50, 51)),
+            "{mutation}: supported use retained"
+        );
+        assert_eq!(
+            crate::resolved_ast::source_theorem_resolved_ast(&rebuilt, &arena, &env).unwrap(),
+            None,
+            "{mutation}"
+        );
+        assert_eq!((rebuilt, arena, env), before);
+    }
+    let template_source = fixture.replacen("holds X = X", "holds X[set] = X", 1);
+    let (template_ast, template_module, _, template_env, template_arena) =
+        parsed_private_theorem_fixture(&template_source);
+    let template_names = crate::names::source_theorem_builtin_type_reference_candidates(
+        &template_ast,
+        &template_arena,
+        &template_env,
+    )
+    .unwrap()
+    .unwrap();
+    assert_eq!(template_names.table().len(), 5);
+    let template_scope = crate::names::SourceVariableScopeResolver::resolve_occurrences(
+        crate::names::SourceVariableScopeInput::new(&template_ast, &template_module, &template_env),
+    )
+    .unwrap();
+    assert_eq!(template_scope.references().len(), 8);
+    let template_reference = template_ast
+        .node_views()
+        .find(|node| {
+            matches!(node.kind(), SurfaceNodeKind::TermReference)
+                && node.range() == range(template_ast.source_id, 46, 52)
+        })
+        .unwrap();
+    assert_eq!(template_reference.children().len(), 2);
+    assert!(
+        template_scope
+            .references()
+            .iter()
+            .any(|reference| reference.node() == template_reference.id())
+    );
+    assert_eq!(
+        crate::resolved_ast::source_theorem_resolved_ast(
+            &template_ast,
+            &template_arena,
+            &template_env
+        )
+        .unwrap(),
+        None
+    );
+    let (unsupported_ast, unsupported_module, _, unsupported_env, unsupported_arena) =
+        parsed_private_theorem_fixture(&template_source.replacen("X[set] = X", "X[set] = Y", 1));
+    assert!(
+        crate::names::source_theorem_builtin_type_reference_candidates(
+            &unsupported_ast,
+            &unsupported_arena,
+            &unsupported_env
+        )
+        .unwrap()
+        .is_some()
+    );
+    assert!(matches!(
+        crate::names::SourceVariableScopeResolver::resolve_occurrences(
+            crate::names::SourceVariableScopeInput::new(
+                &unsupported_ast,
+                &unsupported_module,
+                &unsupported_env
+            )
+        ),
+        Err(crate::names::SourceVariableScopeError::UnresolvedReference)
+    ));
+    assert_eq!(
+        crate::resolved_ast::source_theorem_resolved_ast(
+            &unsupported_ast,
+            &unsupported_arena,
+            &unsupported_env
+        )
+        .unwrap(),
+        None
+    );
+    let unsupported = fixture.replace("by PrivT1;", "by main.PrivT1;");
+    let (ast, module, _, env, arena) = parsed_private_theorem_fixture(&unsupported);
+    assert_eq!(
+        crate::names::source_theorem_builtin_type_reference_candidates(&ast, &arena, &env).unwrap(),
+        None
+    );
+    assert_eq!(
+        crate::resolved_ast::source_theorem_resolved_ast(&ast, &arena, &env).unwrap(),
+        None
+    );
+    let (foreign_ast, _, _, foreign_env, _) =
+        parsed_private_theorem_fixture(&unsupported.replace("UsePriv1", "Changed1"));
+    assert_eq!(
+        crate::resolved_ast::source_theorem_resolved_ast(&foreign_ast, &arena, &env).unwrap_err(),
+        arena
+            .validate_against(&foreign_ast, &module)
+            .unwrap_err()
+            .to_string()
+    );
+    assert_eq!(
+        crate::resolved_ast::source_theorem_resolved_ast(&ast, &arena, &foreign_env).unwrap_err(),
+        crate::symbols::validate_source_symbol_env(&arena, &foreign_env).unwrap_err()
+    );
+    assert_eq!(
+        crate::resolved_ast::source_theorem_resolved_ast(&foreign_ast, &arena, &foreign_env)
+            .unwrap_err(),
+        arena
+            .validate_against(&foreign_ast, &module)
+            .unwrap_err()
+            .to_string()
+    );
+    let (ast, module, _, env, arena) =
+        parsed_private_theorem_fixture(&fixture.replace("thus X = X;", "thus Y = X;"));
+    assert!(
+        crate::names::source_theorem_builtin_type_reference_candidates(&ast, &arena, &env)
+            .unwrap()
+            .is_some()
+    );
+    let error = crate::names::SourceVariableScopeResolver::resolve_occurrences(
+        crate::names::SourceVariableScopeInput::new(&ast, &module, &env),
+    )
+    .unwrap_err();
+    assert!(matches!(
+        error,
+        crate::names::SourceVariableScopeError::UnresolvedReference
+    ));
+    assert_eq!(
+        crate::resolved_ast::source_theorem_resolved_ast(&ast, &arena, &env).unwrap_err(),
+        format!("{error:?}")
+    );
+}

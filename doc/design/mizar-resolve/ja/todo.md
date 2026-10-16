@@ -631,6 +631,8 @@ IR 所有権: [01.ir_layers.md](../../architecture/ja/01.ir_layers.md)。
 
 41. **[Source theorem builtin type reference candidates](../../task_contracts/ja/RESOLVE-SOURCE-THEOREM-BUILTIN-TYPE-REFERENCES.md).** [x]
 
+42. **[Source theorem semantic AST](../../task_contracts/ja/RESOLVE-SOURCE-THEOREM-SEMANTIC-AST.md).** [x]
+
 ## crate close-out
 
 - 完了: [crate_exit_report.md](./crate_exit_report.md) に、non-deferred task completion、
