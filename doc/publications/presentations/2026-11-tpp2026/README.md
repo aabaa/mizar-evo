@@ -1,10 +1,12 @@
 # TPP 2026 Presentation
 
 Working materials for the Mizar Evo talk at TPP 2026, the 22nd Theorem Proving
-and Provers meeting, RIKEN AIP Tokyo Office, November 16-17, 2026. The talk is
-being revised in Japanese for a provisional 45-minute slot: 36.5 minutes of
-presentation, seven minutes of questions, and 1.5 minutes of buffer. Confirm the official slot and
-question time with the organizers. Aim for 35–38 minutes, never over 40.
+and Provers meeting, RIKEN AIP Tokyo Office, November 16-17, 2026. The English
+deck and spoken script follow the reviewed Japanese version, with 31 main
+slides and five backups. The provisional 45-minute slot allows 36.5 minutes
+of presentation, seven minutes of questions, and 1.5 minutes of buffer.
+Confirm the official slot and question time with the organizers. Aim for
+35–38 minutes, never over 40.
 
 ## Title
 
@@ -20,7 +22,7 @@ Japanese title for the program (first candidate in `draft.ja.md`):
 
 ## Purpose
 
-The Japanese presentation opens with Mizar history and the project’s design
+The presentation opens with Mizar history and the project’s design
 work in 2023–2026, including the sustained work in 2024–2025. It then maps six
 challenges in modernizing current Mizar to six design principles. It explains how
 Mizar Evo preserves the logical foundation and readable mathematical language
@@ -36,13 +38,15 @@ story is evidence, formula instantiation, and a trusted SAT check.
 - `draft.ja.md` - Japanese narrative draft. **Canonical content document**:
   the story, the historical sources, claim levels, timing, and the pre-talk
   checklist live here.
-- `slides.md` - previous English deck source, unchanged during this Japanese
-  revision. Translation follows Japanese content approval; CEFR B1 to easy B2.
+- `slides.md` - English deck source, aligned with the reviewed Japanese deck;
+  CEFR B1 to easy B2. It shares frame IDs, code examples, figures, and table numbers.
 - `slides.ja.md` - Japanese deck source. Principle section numbers stay;
   Section 0 covers the introduction, sections 1–6 the design principles, and section 7 status and plans.
   Figures retain their English labels.
 - `script.ja.md` - Japanese spoken script, frame by frame, with timing and
-  claim-level tags, for the revised Japanese deck. It is not yet aligned with the English deck.
+  claim-level tags, for the revised Japanese deck.
+- `script.md` - English spoken script with the same frame order, timing allocation,
+  questions, and separate non-spoken presenter notes.
 - `build_beamer.py` - loads the Bialystok generator
   (`../2026-09-bialystok/build_beamer.py`) as a library and overrides the
   deck-specific settings (parts, title-page metadata, figure heights,
@@ -55,10 +59,10 @@ story is evidence, formula instantiation, and a trusted SAT check.
   `tpp2026_ja_notes.pdf` - generated Japanese decks.
 - `figures/` - TikZ figures new to this talk: `evaluation_units`,
   `two_paths`, `where_you_pay`, `layer_stack`, `llm_atp_loop`, `roadmap_tpp`,
-  plus `resolution_evidence` and `sat_evidence_check` for the Japanese checking example.
+  plus `resolution_evidence` and `sat_evidence_check` shared by both checking sections.
 - `references.bib` - seed bibliography. Verify metadata before the final talk.
 
-## Storyline (Japanese Revision, 36.5 Minutes)
+## Storyline (Both Languages, 36.5 Minutes)
 
 History traces early experimental processors, the PC port, PC-Mizar and MML,
 then Mizar-rs and Evo before the six-principle table in frame 0.5. Sections 1–6
@@ -86,7 +90,7 @@ Keep the design timeline and evidence/SAT
 examples. These budgets include pointing at code and diagrams; rehearsal is
 still required. Backups are for questions, not extra material to fill 45 minutes.
 
-Japanese frame 1.2 briefly shows two current-Mizar theorem sketches: Cantor
+Frame 1.2 briefly shows two current-Mizar theorem sketches: Cantor
 and the compact-to-Hausdorff continuous-bijection theorem. Proofs are omitted;
 the examples share one minute to show mathematical objects, structures and attributes.
 Kernel details stay in part 6.
@@ -97,7 +101,7 @@ and all clauses of a Tseitin SAT encoding;
 external resolution steps are not replayed as kernel acceptance evidence.
 The independent instance finder is planned and unimplemented at the fixed snapshot;
 the trace-extraction diagram is a candidate-generation sketch.
-Japanese frames 2.1-2.6 follow type, registration, then overload: structure
+Frames 2.1-2.6 follow type, registration, then overload: structure
 and property declarations (2.2), post-declaration inheritance (2.3), then the
 Unital mode and its unit implementation, reused as zero through the selected
 LoopStr view (2.4). Labeled registration chains follow in 2.5, and definition
@@ -142,10 +146,13 @@ benchmark conditions, and HOL-to-FOL encoding/reconstruction, in that order.
   idea per sentence. Technical terms stay and are explained in simple words on
   first use. Code, exact MML excerpts, and figure labels are unchanged.
 - Production order: `draft.ja.md` → `slides.ja.md` and `script.ja.md` → English.
-- This task updates Japanese content and this README only. Keep `slides.md`,
-  figures, language specification, internal designs, and Rust sources unchanged.
-  The generator uses compact first columns for the two Japanese history tables. Existing tracked PDFs/TeX still represent the earlier deck
-  until explicitly regenerated; use the revised Markdown for content review.
+- Update English from the reviewed Japanese content. Preserve code, numerical
+  data, sources, and the distinction between specification, implementation,
+  and plans. Shared figures, language specifications, internal designs, and
+  Rust sources stay outside the translation scope.
+- The generator keeps both decks at 36 pages, with compact table columns and
+  captions. Existing tracked PDFs/TeX still represent the earlier deck until
+  explicitly regenerated; revised previews live under `target/` in the worktree.
 - Work in a dedicated branch/worktree. Do not merge into main, push, or create
   a PR until instructed.
 
@@ -176,7 +183,12 @@ the implementation.
 # figures (only when a figures/*.tex source changed)
 cd figures && for f in *.tex; do pdflatex -interaction=nonstopmode "$f"; done && cd ..
 
-# Japanese only (inside the dedicated worktree)
+# English (inside the dedicated worktree)
+python3 build_beamer.py en
+pdflatex tpp2026.tex && pdflatex tpp2026.tex
+pdflatex tpp2026_notes.tex && pdflatex tpp2026_notes.tex
+
+# Japanese
 python3 build_beamer.py ja
 
 # Japanese deck (upLaTeX + dvipdfmx)
@@ -191,7 +203,7 @@ repository. The Japanese deck uses the Harano Aji fonts through the default
 dvipdfmx.
 
 The generator may split a source frame into continuation pages. Check the
-rendered Japanese deck and notes after revision, especially tables and source
+rendered decks and notes after revision, especially tables and source
 notes. Timing follows source frame IDs, not generated page numbers.
 
 ## Pre-Talk Checklist
@@ -223,8 +235,9 @@ Still to do before the talk:
 - [ ] Confirm any precise ordering of the 2023 consultations, repository rename
       date, or specific Białystok feedback before adding those details.
 - [ ] Keep annual development targets in `draft.ja.md` §7.2, outside the slides and narration.
-- [ ] Build and inspect the Japanese deck; translate and rebuild English later.
-- [ ] Rehearse `script.ja.md` against the clock.
+- [ ] Regenerate and inspect both language editions after any further content changes.
+- [ ] Rehearse `script.ja.md` / `script.md` against the clock; English timing
+      is an allocation, not a measured delivery time.
 
 ## Instructions for Codex
 
@@ -244,4 +257,5 @@ When revising the slides:
 - lead with history and development, then connect to the existing six principles;
 - explain evidence instantiation and SAT checking in the main talk;
 - keep benchmarks and HOL/FOL performance questions in the backups;
-- keep `script.ja.md` aligned with the frame order and IDs in `slides.ja.md`.
+- keep both spoken scripts aligned with their deck frame IDs and timing; use
+  the reviewed Japanese version as the translation authority.

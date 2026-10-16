@@ -46,6 +46,8 @@ FIGURE_HEIGHT_LIMITS_EN = {
     "llm_atp_loop": 0.54,
     "roadmap_tpp": 0.46,
     "reasoning_boundary": 0.52,
+    "resolution_evidence": 0.65,
+    "sat_evidence_check": 0.64,
 }
 
 # Japanese prose wraps into more lines than English, so figures get less room.
@@ -68,9 +70,19 @@ DECKS = {
         "figure_heights": FIGURE_HEIGHT_LIMITS_EN,
         "documentclass_options": "aspectratio=169,11pt",
         "font_setup": [r"\usepackage[T1]{fontenc}"],
-        "preamble_extra": [],
-        "author": "Mizar Evo project",
-        "date": "TPP 2026, RIKEN AIP Tokyo Office, November 16--17, 2026",
+        "preamble_extra": [
+            r"\institute{Iwate Prefectural University}",
+            r"\DeclareUnicodeCharacter{21D2}{\ensuremath{\Rightarrow}}",
+            r"\DeclareUnicodeCharacter{2227}{\ensuremath{\land}}",
+            r"\DeclareUnicodeCharacter{00AC}{\ensuremath{\neg}}",
+            r"\DeclareUnicodeCharacter{2190}{\ensuremath{\leftarrow}}",
+        ],
+        "author": "Kazuhisa Nakasho",
+        "date": (
+            r"{\small\bfseries TPP 2026}\\[1.5mm]"
+            r"{\footnotesize RIKEN AIP Tokyo Office}\\[1mm]"
+            r"{\footnotesize November 16--17, 2026}"
+        ),
     },
     "ja": {
         "input": ROOT / "slides.ja.md",
@@ -122,10 +134,13 @@ def build(gen, deck: dict) -> None:
     split_frame_lines = gen.split_frame_lines
     make_talk_track = gen.make_talk_track
     table_to_tex = gen.table_to_tex
-    if deck["input"].name == "slides.ja.md":
+    if deck["input"].name in ("slides.md", "slides.ja.md"):
         # Keep the eight implementation groups in one table.
         def implementation_table(rows):
-            if len(rows) != 10 or rows[0] != "| 領域 | 実装済み | 完成時見積 | 限定実装と残る範囲 |":
+            if len(rows) != 10 or rows[0] not in (
+                "| 領域 | 実装済み | 完成時見積 | 限定実装と残る範囲 |",
+                "| Area | Now | Est. total | Scope / remaining work |",
+            ):
                 return table_to_tex(rows)
             table = table_to_tex(rows[:-1])
             last_row = " & ".join(gen.inline_tex(cell) for cell in gen.split_table_row(rows[-1]))
@@ -140,6 +155,14 @@ def build(gen, deck: dict) -> None:
         # Keep composed slides and diagrams intact.
         gen.split_frame_lines = lambda lines: (
             [lines] if any(marker in lines for marker in (
+                "| | MizAR 60 (ITP 2023) | Sledgehammer / AFP (ITP 2022) |",
+                "| Period | Main milestones |",
+                "| Period | Development |",
+                "### Developing the language design",
+                "| Point | Proof obligation | Mathematical reason |",
+                "| equalities / expansions | Equality / definition-expansion information |",
+                "| Area | Challenge in current Mizar | Design principle |",
+                "| Area | Now | Est. total | Scope / remaining work |",
                 "| 時期 | 実装史の主な節目 |",
                 "| 時期 | 開発内容 |",
                 "### 言語設計の深化",
@@ -159,23 +182,40 @@ def build(gen, deck: dict) -> None:
         gen.split_frame_lines = split_frame_lines
         gen.make_talk_track = make_talk_track
         gen.table_to_tex = table_to_tex
-    if deck["input"].name == "slides.ja.md":
+    if deck["input"].name in ("slides.md", "slides.ja.md"):
         # Keep labels and numbers compact; give prose the remaining width.
         generated = [detail_tex, notes_tex]
         for _, _, body in units:
             for line in body:
-                if line.startswith("### 表"):
+                if line.startswith(("### 表", "### Table ")):
                     caption = gen.inline_tex(line[4:])
                     heading = r"\smallskip" + "\n" + rf"\textbf{{{caption}}}"
                     label = r"\par\noindent{\footnotesize\bfseries " + caption + r"\par}"
                     generated = [tex.replace(heading, label) for tex in generated]
         for annotation in (
+            "Core / session counted separately. Excludes dependencies, tests, blank lines, comments. Estimates include current code; rounded.",
+            "Source: fixed snapshot `08861708`. Counting and estimate basis: `draft.ja.md` §7.",
+            "Source: Matuszewski & Rudnicki (2005); Carneiro (ITP 2023), Table 1.",
+            "JSPS KAKENHI, Scientific Research (C), awarded in 2024: 24K14897, “Renewing the language specification of a set-theory-based proof assistant” (title translated).",
             "Source: Matuszewski & Rudnicki (2005); Carneiro (ITP 2023), Table 1。",
             "科研費 基盤研究(C)・2024年度採択: 24K14897「集合論ベースの定理証明支援系の言語仕様の刷新」",
         ):
             source = gen.inline_tex(annotation)
             generated = [tex.replace(source, r"{\footnotesize " + source + "}") for tex in generated]
-        for headers, columns in (
+        table_layouts = (
+            (("Period", "Main milestones"), "lX"),
+            (("System", "Overview"), "lX"),
+            (("Period", "Development"), "lX"),
+            (("Starting fact", "Derived fact", "Recorded rule"), "lll"),
+            (("Value type", "Result-type redefinition", "Attribute / totality registration"), "lll"),
+            (("Call (real R / complex C)[^1]", "Result type"), "lX"),
+            (("Syntax", "Conditions to check (partial correctness)[^1]"), "lX"),
+            (("Algorithm form", "Meaning under requires"), "lX"),
+            (("Point", "Proof obligation", "Mathematical reason"), "llX"),
+            (("Directives", "What they import"), "lX"),
+            (("Stage", "What authors can inspect"), "lX"),
+            (("Area", "Now", "Est. total", "Scope / remaining work"), "lrrX"),
+        ) if deck["input"].name == "slides.md" else (
             (("時期", "実装史の主な節目"), "lX"),
             (("処理系", "概要"), "lX"),
             (("時期", "開発内容"), "lX"),
@@ -188,6 +228,8 @@ def build(gen, deck: dict) -> None:
             (("一覧", "取り込むもの"), "lX"),
             (("段階", "著者が確認できるもの"), "lX"),
             (("領域", "実装済み", "完成時見積", "限定実装と残る範囲"), "lrrX"),
+        )
+        for headers, columns in (*table_layouts,
             (("", "MizAR 60 (ITP 2023)", "Sledgehammer / AFP (ITP 2022)"), "lXX"),
         ):
             flex = r">{\raggedright\arraybackslash}X"
@@ -201,7 +243,7 @@ def build(gen, deck: dict) -> None:
                 rf"\begin{{tabularx}}{{\textwidth}}{{{spec}}}"
                 if "X" in columns else rf"\begin{{tabular}}{{{spec}}}"
             )
-            if headers[1] in ("実装史の主な節目", "概要", "取り込むもの"):
+            if headers[1] in ("実装史の主な節目", "概要", "取り込むもの", "Main milestones", "Overview", "What they import"):
                 begin = r"\renewcommand{\arraystretch}{0.93}" + "\n" + begin
             for index, tex in enumerate(generated):
                 start = tex.index(original)
@@ -212,11 +254,18 @@ def build(gen, deck: dict) -> None:
                 generated[index] = tex[:start] + table + tex[end:]
         # Give the six-principle overview enough type size and space to scan.
         for index, tex in enumerate(generated):
-            header = gen.inline_tex("現行 Mizar から取り組む課題")
+            header = gen.inline_tex(
+                "Challenge in current Mizar" if deck["input"].name == "slides.md"
+                else "現行 Mizar から取り組む課題"
+            )
             start = tex.rindex(r"\begin{scriptsize}", 0, tex.index(header))
             end = tex.index(r"\end{scriptsize}", start) + len(r"\end{scriptsize}")
             table = tex[start:end].replace("scriptsize", "small")
-            table = table.replace(r"\arraystretch}{1.15}", r"\arraystretch}{1.5}")
+            table = table.replace(
+                r"\arraystretch}{1.15}",
+                r"\arraystretch}{1.35}" if deck["input"].name == "slides.md"
+                else r"\arraystretch}{1.5}"
+            )
             flex = r">{\raggedright\arraybackslash}X"
             table = table.replace("{" + flex * 3 + "}", "{l" + flex * 2 + "}")
             generated[index] = tex[:start] + table + tex[end:]

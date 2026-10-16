@@ -11,6 +11,7 @@ Content authority: `draft.ja.md`. This deck follows `slides.ja.md`; the English 
 - Keep the structural labels `Title:`, `Subtitle:`, `Speaker note:`, and `Source:`, and code-status labels `exact MML excerpt`, `specification example`, and `sketch` for the generator.
 - Bold text gives the main spoken points. Tables have titles and continuous numbers across the main talk and backups.
 - Distinguish published history and the author's account. Technical examples describe existing Mizar, the Evo specification, or a sketch. Implementation claims use the fixed snapshot in 7.1. Mark research hypotheses and future directions explicitly.
+- Short references “spec NN” / “architecture NN” mean chapters under `doc/spec/en/` / `doc/design/architecture/en/`.
 - Use plain English (CEFR B1 to easy B2). Explain technical terms at first use. Build with `python3 build_beamer.py en`, then pdflatex; see README.
 
 ## Part 0. Introduction
@@ -30,7 +31,7 @@ Speaker note:
 - **Mizar Evolution, or Mizar Evo, redesigns the language and its tools. We begin with history and development, then discuss six design principles, implementation limits, and plans.**
 - Distinguish facts, research hypotheses, and future directions throughout.
 
-### Frame 0.2 - Mizar implementation history: from early systems to Mizar-rs and Evo
+### Frame 0.2 - Mizar: early systems, Mizar-rs, and Evo
 
 ### Table 1. Early Mizar systems and the start of MML
 
@@ -48,10 +49,10 @@ Speaker note:
 |---|---|
 | PC-Mizar (Pascal) | Parser → MSM → Analyzer → Checker |
 | Mizar-rs (Rust, ITP 2023) | Reimplements the checker / analyzer, aiming at language compatibility |
-| | **All MML checked:** replaced the checker and checked the full MML of that time |
+| | **All MML checked:** replaced the checker; the full MML of that time passed |
 | | **Speed:** about 5–6× faster (8 threads, elapsed time) |
-| | **Bug reports:** four soundness bugs in the existing system; no false MML proofs using them |
-| Mizar Evo (Rust) | Keeps mathematical writing and the logical foundation; builds a new language and processor |
+| | **Bugs:** four soundness bugs reported; no false MML proofs used them |
+| Mizar Evo (Rust) | New language / processor; keeps mathematical writing and the logical foundation |
 
 Source: Matuszewski & Rudnicki (2005); Carneiro (ITP 2023), Table 1.
 
@@ -67,14 +68,14 @@ Speaker note:
 
 | Period | Development |
 |---|---|
-| August 2023 | First README: mizar-wishlist |
-| September–October 2024 | Imports, namespaces, structure inheritance, type system |
-| May–June 2025 | Modes, type inference, redefinition; dependent structures / attributes removed, then reintroduced |
-| January–April 2026 | EBNF, logical encoding, registration, template and algorithm semantics / contracts |
+| Aug 2023 | First README: mizar-wishlist |
+| Sep–Oct 2024 | Imports, namespaces, structure inheritance, type system |
+| May–Jun 2025 | Modes, inference, redefinition; dependent structures / attributes removed and restored |
+| Jan–Apr 2026 | EBNF, logical encoding, registration, template and algorithm semantics / contracts |
 | May 2026 | Implementation design → test harness → minimal lexer |
 
-- **The idea began as an extension of Mizar notation. Preparing a 2023 grant proposal led to a redesign of the language and processor.**
-- At ITP 2023, Mario Carneiro responded positively to a request for implementation help. At CICM 2023, I discussed the wishlist with Adam Naumowicz.
+- **From extending Mizar notation to redesigning its language and processor during the 2023 grant proposal.**
+- ITP 2023: Mario Carneiro welcomed a request for implementation help. CICM 2023: wishlist discussion with Adam Naumowicz.
 - Early priorities: generic types, namespaces / packages, ATP / traceability. The prototype was to use Mizar-rs.
 
 JSPS KAKENHI, Scientific Research (C), awarded in 2024: 24K14897, “Renewing the language specification of a set-theory-based proof assistant” (title translated).
@@ -89,7 +90,7 @@ Speaker note:
 ### Developing the language design
 
 - **template:** from generics to a common theorem form for schemes, with structure views and type-argument inference.
-- **algorithm:** cryptographers in the Japanese Mizar community wanted proofs of algorithms from the start. Proving elliptic-curve associativity also required difficult, large symbolic calculations.
+- **algorithm:** early requests from Japanese Mizar cryptographers for algorithm proofs, and difficult symbolic calculations in elliptic-curve associativity.
 
 ### Implementation and discussions since May 2026
 
@@ -100,9 +101,9 @@ Speaker note:
 
 Speaker note:
 
-- Source: specification chapters 18 and 20, Git diffs, and the author's additional account on October 15, 2026. Details: `draft.ja.md`.
+- Source: spec 18/20, Git diffs, author's account (2026-10-15); `draft.ja.md`.
 
-### Frame 0.5 - Current Mizar: six challenges and design principles
+### Frame 0.5 - Six challenges and design principles
 
 ### Table 4. Six challenges and design principles
 
@@ -185,7 +186,7 @@ Readable mathematics relies on many automatic decisions.
 
 Speaker note:
 
-- Source: `doc/spec/en/08.type_inference.md` §8.1–8.2; `17.clusters_and_registrations.md` §17.7; `19.overload_resolution.md` §19.1–19.3. New specification: type in 2.2–2.4, registration in 2.5, overload and explicit views in 2.6.
+- Source: spec 08 §8.1–8.2; 17 §17.7; 19 §19.1–19.3. Type: 2.2–2.4; registration: 2.5; overload / views: 2.6.
 
 ### Frame 2.2 - type: declare fields and properties
 
@@ -259,7 +260,7 @@ Speaker note:
 
 ### Frame 2.5 - registration: automatic chains hide dependencies
 
-**Automatic rules can form chains. The source at the point of use does not show all rules involved.**
+**Automatic rule chains hide dependencies at the point of use.**
 
 ```mizar
 registration
@@ -330,7 +331,7 @@ Speaker note:
 
 Speaker note:
 
-- Source: MML [VALUED_1](https://mizar.uwb.edu.pl/version/current/html/valued_1.html), def 1 and the following five groups of attribute registrations, PartFunc redefinitions, and total registrations. The table summarizes them; it is not a quotation. C is a common domain. Each row assumes the corresponding input value types; total registrations assume total functions and the required nonempty ranges. Each redefinition / registration has a coherence proof.
+- Source: MML [VALUED_1](https://mizar.uwb.edu.pl/version/current/html/valued_1.html), def 1 and five following groups of attribute / total registrations and PartFunc redefinitions. Table summary, not a quotation. C is the common domain. Each row assumes its input value type; total registration also needs total inputs and nonempty ranges. All redefinitions / registrations have coherence proofs.
 - The body of VALUED_1:def 1 is shared and uses the intersection of domains. The next template sketch is restricted to a common nonempty domain I.
 
 ### Frame 3.2 - template: share the body and result type
@@ -355,14 +356,14 @@ end;
 | `f + g` | `Function of I,R.carrier` |
 | `u + v` | `Function of I,C.carrier` |
 
-- **Use the same Add[T,I] for rational, integer, and natural values. Share the body and result-type declaration.**
+- **Same body and result type for rational, integer, and natural values too.**
 
 [^1]: Explicit forms: `f +[R,I] g`, `u +[C,I] v`. Omit arguments only when declared types determine them uniquely. Use `qua` for ambiguous inheritance paths.
 
 Speaker note:
 
-- Assume `let R be RealAdd; let C be ComplexAdd;` and the needed registrations. Each has a unique path to non empty AddMagma. f,g have type Function of I,R.carrier; u,v have type Function of I,C.carrier. Declared types determine T and I uniquely. Other number types need their additive structures, closure, and registrations. synonym supplies infix +.
-- Source: `doc/spec/en/11.symbol_management.md` §11.1.2; `18.templates.md` §18.2.2, 18.2.7, 18.7; `19.overload_resolution.md` §19.6.2. A range set alone does not select the addition structure. qua views are not inferred automatically.
+- Assume RealAdd R, ComplexAdd C, and required registrations, with unique paths to non empty AddMagma. f,g: Function of I,R.carrier; u,v: Function of I,C.carrier. Declared types uniquely determine T,I. Other number types need additive structures, closure, registrations. synonym supplies +.
+- Source: spec 11 §11.1.2; 18 §18.2.2, 18.2.7, 18.7; 19 §19.6.2. A range set alone does not select addition; qua views are not inferred.
 
 ### Frame 3.3 - Unify schemes with template theorems [deep dive]
 
@@ -424,7 +425,7 @@ Speaker note:
 
 ### Frame 4.1 - Computation: verified algorithms
 
-Use Hoare rules to turn a procedure into proof obligations:
+**Apply Hoare rules recursively to generate first-order proof obligations:**
 
 ```text
 { requires }  algorithm body  { ensures }
@@ -441,7 +442,6 @@ P / Q: precondition / postcondition; B: condition; I: invariant; S: statement.
 | `while B do S end` | Establish: `P ⇒ I`; preserve: `{I ∧ B} S {I}`; exit: `I ∧ ¬B ⇒ Q` |
 | `return e` | `P ⇒ Q[result ← e]` |
 
-**Apply these rules recursively to generate first-order proof obligations.**
 
 [^1]: Basic forms for simple variables and pure expressions. Early return / break / continue and type / domain conditions are omitted.
 
@@ -497,7 +497,7 @@ return x; :: (4)
 | Point | Proof obligation | Mathematical reason |
 |---|---|---|
 | (1) | Establish the invariant | `x=a`, `y=b`; positivity from the precondition |
-| (2) | Preserve the invariant | Old `(x,y)` becomes `(y,r)`; `Gcd(x,y) = Gcd(y,r)`, old `y >= 1`, `r >= 0` |
+| (2) | Preserve the invariant | `Gcd(x,y)=Gcd(y,r)`; old `y >= 1`, `r >= 0` |
 | (3) | Decrease the Nat measure | `y' = r`, `0 <= r < y` |
 | (4) | Postcondition at exit | `y=0`; `Gcd(a,b) = Gcd(x,0) = x` |
 
@@ -564,14 +564,14 @@ thus diff((u |-> (sin u)*u), x) = (cos x)*x + sin x
 
 Speaker note:
 
-- Source: `doc/spec/en/13.term_expression.md` §13.10; `20.algorithm_and_verification.md` §20.5.3, 20.9.2, 20.12.
-- differentiate is a partial algorithm. Variable declarations, set-theoretic meaning, and a factorization application idea are in `draft.ja.md`.
+- Source: spec 13 §13.10; 20 §20.5.3, 20.9.2, 20.12.
+- Partial algorithm. Declarations, set-theoretic meaning, factorization idea: `draft.ja.md`.
 
 ## Part 5. Development Infrastructure
 
 ### Frame 5.1 - Environment: what must an author import?
 
-Current Mizar environment, shortened from ALGSTR_0 (sketch):
+Current Mizar, shortened from ALGSTR_0 (sketch):
 
 ```mizar
 environ
@@ -593,7 +593,7 @@ environ
 | theorems / schemes | Theorems / schemes |
 
 - `notations` / `definitions`: article order determines notation / definition priority.
-- **The hardest part of article authoring: managing environment overrides and order dependence.**
+- **Hardest for authors: managing environment overrides and order dependence.**
 
 Speaker note:
 
@@ -686,7 +686,7 @@ Candidate extraction from a resolution log (sketch):
 
 ![Resolution tree with composed substitutions and extracted evidence](figures/resolution_evidence.pdf)
 
-- **An untrusted extractor composes substitutions along branches: save `x := a` for F1 and `y := a` for F2.**
+- **Untrusted extraction: compose to `x := a` for F1 and `y := a` for F2.**
 
 Speaker note:
 
@@ -712,32 +712,32 @@ Speaker note:
 
 ### Frame 7.1 - Implementation status and size
 
-**Rust product code: 271.1 kLoC now; 360–540 kLoC estimated at completion (provisional).**
+**Rust product code: 271.1 kLoC; estimated total: 360–540 kLoC (provisional).**
 
 ### Table 13. Implementation status and code size (kLoC)
 
-| Area | Implemented | Completion estimate | Limited implementation and remaining work |
+| Area | Now | Est. total | Scope / remaining work |
 |---|---:|---:|---|
-| lexer / parser / frontend | 34.4 | 36–43 | Includes syntax; source loading, lexing, parsing connected |
-| resolver / checker | 122.9 | 148–193 | Limited source-derived semantics; generalization / service connections remain |
-| Core / VC | 49.7 | 65–95 | Includes IR / proof; limited source to verification conditions |
-| ATP | 9.6 | 16–28 | Problem encoding / candidate generation; real backend integration remains |
-| kernel | 12.8 | 15–20 | Formula, substitution, provenance checks; includes 1.9 for SAT encoding / connection |
-| build / driver / artifact | 41.3 | 56–85 | Includes cache / shared support; full-pipeline publication not connected |
-| LSP | 0.5 | 6–19 | Lifecycle / document sync base; semantic connections remain |
-| MVM / extraction / doc | 0 | 17–57 | Runtime, extraction, documentation generation unimplemented |
+| lexer / parser / frontend | 34.4 | 36–43 | Syntax, source loading, lexing, parsing connected |
+| resolver / checker | 122.9 | 148–193 | Limited source semantics; generalization / services remain |
+| Core / VC | 49.7 | 65–95 | IR / proof; limited source to VCs |
+| ATP | 9.6 | 16–28 | Encoding / candidates; real backend integration remains |
+| kernel | 12.8 | 15–20 | Formula / substitution / provenance checks; includes 1.9 for SAT |
+| build / driver / artifact | 41.3 | 56–85 | Cache / shared support; full-pipeline publication not connected |
+| LSP | 0.5 | 6–19 | Lifecycle / sync; semantic connections remain |
+| MVM / extraction / doc | 0 | 17–57 | Runtime / extraction / docs unimplemented |
 
-**Checking, excluding ATP: kernel plus SAT dependencies = 17.6 kLoC.**
+**Excluding ATP: kernel + SAT dependencies = 17.6 kLoC.**
 
-Core, session, and shared support are counted separately. The table excludes dependencies, tests, blank lines, and comments. Estimates include current code; values are rounded.
+Core / session counted separately. Excludes dependencies, tests, blank lines, comments. Estimates include current code; rounded.
 
 Source: fixed snapshot `08861708`. Counting and estimate basis: `draft.ja.md` §7.
 
 Speaker note:
 
-- 1 kLoC = 1,000 lines. Completion estimates are rough and not calibrated against delivery history. MML porting is excluded.
-- Kernel 12.751, including 1.947 for SAT encoding / connection. SAT dependencies batsat 0.6.0 and bit-vec 0.5.1 add 4.879, totaling 17.630 kLoC. This does not measure the full minimum trusted computing base (TCB), which also involves Core, session, and other support.
-- Limited implementation at the fixed snapshot. Whole-code count: October 15; kernel recount and SAT dependencies: October 16, 2026.
+- 1 kLoC = 1,000 lines. Estimates are rough and uncalibrated; MML porting is excluded.
+- Kernel 12.751 (SAT encoding / connection: 1.947). SAT dependencies: batsat 0.6.0 + bit-vec 0.5.1 = 4.879; total 17.630 kLoC. Excludes Core / session / shared support; not the full minimum trusted computing base (TCB).
+- Fixed snapshot, limited implementation. Counted October 15, 2026; kernel recount / SAT dependencies, October 16.
 
 ### Frame 7.2 - Next steps and summary
 
@@ -745,14 +745,14 @@ Speaker note:
 
 - **First priority: connect source-to-semantics → VC → evidence → kernel → artifact → build.**
 - Align algorithm semantics and proof obligations; expand the working paths.
-- Develop MVM runtime and extraction separately. Porting all MML is a separate task from completing the processor.
+- MVM runtime / extraction: separate work. MML porting is separate from processor completion.
 - Learned premise selection, LLM repair, cryptography, and quantum algorithms are long-term directions.
 
 ### Summary
 
-- **Keep FOL, set theory, and mathematical writing. Redesign the language and development tools.**
+- **Keep FOL, set theory, and mathematical writing; redesign language and tools.**
 - **Separate ATP search from trusted checking. The specification is still evolving.**
-- **I welcome ITP users' requests for notation, proof assistance, and development tools.**
+- **Please share your ITP needs: notation, proof assistance, development tools.**
 
 Speaker note:
 
