@@ -468,6 +468,8 @@ layer consumes both; one alignment task is owned here.
 
 34. **[Source VC-local dependency slices](../../task_contracts/en/PROOF-SOURCE-DEPENDENCY-SLICE.md).** [x]
 
+35. **[Original-source raw identity](../../task_contracts/en/PROOF-SOURCE-ORIGINAL-IDENTITY.md).** [x] — Full incomplete VC-local slice accompanies the bounded fields; generic identity and witness/reuse remain open.
+
 ## Recommended Verification
 
 Run after each task:

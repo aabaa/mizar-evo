@@ -267,6 +267,64 @@ pub fn source_registration_dependency_slice(
         .ok_or_else(|| "registration.proof.invalid_source_dependency_slice".to_owned())
 }
 
+/// Assembles raw original-source identity with its full conservative Open slice.
+/// This incomplete VC-local readout does not authorize acceptance, reuse or publication.
+pub fn source_registration_obligation_identity(
+    source: &mizar_resolve::resolved_ast::SurfaceResolvedArena,
+    nodes: &mizar_checker::typed_ast::TypedArena,
+    symbols: &mizar_resolve::env::SymbolEnv,
+    snapshot: mizar_session::BuildSnapshotId,
+    vc_id: VcId,
+) -> Result<
+    (
+        ProofObligationIdentity,
+        mizar_vc::dependency_slice::DependencySlice,
+    ),
+    String,
+> {
+    use mizar_artifact::store::{CanonicalHashDomain, CanonicalJson, HashClass};
+
+    let (anchor, vc, goal, context) =
+        source_registration_candidate_anchor(source, nodes, symbols, snapshot, vc_id)?;
+    let slice = source_registration_dependency_slice(source, nodes, symbols, snapshot, vc_id)?;
+    let obligation = CanonicalJson::object([
+        ("obligation_anchor", CanonicalJson::string(anchor.as_str())),
+        (
+            "vc_fingerprint",
+            CanonicalJson::string(source_discharge_hex(vc.hash().as_bytes())),
+        ),
+        (
+            "canonical_goal_hash",
+            CanonicalJson::string(source_discharge_hex(goal.as_bytes())),
+        ),
+        (
+            "local_context_fingerprint",
+            CanonicalJson::string(source_discharge_hex(context.as_bytes())),
+        ),
+        (
+            "vc_local_dependency_slice_fingerprint",
+            CanonicalJson::string(source_discharge_hex(slice.fingerprint().hash().as_bytes())),
+        ),
+    ])
+    .map_err(|error| error.to_string())?;
+    let fingerprint = CanonicalHashDomain::new(
+        HashClass::Interface,
+        "mizar-proof/source-registration-original-obligation",
+        SchemaVersion::new(1, 0),
+    )
+    .hash(&obligation, &[]);
+    let identity = ProofObligationIdentity::new(
+        anchor.as_str().to_owned(),
+        anchor,
+        fingerprint,
+        vc.hash(),
+        context,
+        slice.fingerprint().hash(),
+    )
+    .map_err(|error| error.to_string())?;
+    Ok((identity, slice))
+}
+
 /// Freshly checks one authentic NeedsAtp registration candidate under the current policy.
 /// The returned check and classification do not authorize activation or publication.
 pub fn check_source_registration_candidate(

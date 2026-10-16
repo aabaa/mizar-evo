@@ -444,6 +444,8 @@ kernel の拒否語彙と evidence 契約を訂正した。policy 層はその�
 
 34. **[Source VC-local dependency slices](../../task_contracts/ja/PROOF-SOURCE-DEPENDENCY-SLICE.md).** [x]
 
+35. **[元 source の raw identity](../../task_contracts/ja/PROOF-SOURCE-ORIGINAL-IDENTITY.md).** [x] — 限定 field と不完全 VC-local slice 全体を組で保持し、汎用 identity・witness/reuse は未完了とする。
+
 ## 推奨検証
 
 各タスクの後で実行する:
