@@ -180,3 +180,33 @@ This is not a one-to-one translation of the old environment lists. We keep mathe
 Here is the whole design in one picture.
 At the top is rich mathematics: structures, templates, algorithms, and modules. Below is a small first-order foundation. Around it are modern tools: the ATP layer, kernel, artifacts, versioned libraries, IDE, AI, and publication.
 The design keeps mathematical writing and a small core, and rebuilds the tools. The features in this talk belong to these layers. [Specification]
+
+## Part 6. Checking And Automation (27:15–32:30)
+
+### 6.1 Automation: find lemmas and suggest a proof (27:15)
+
+Isabelle's Sledgehammer finds lemmas and suggests proofs. We plan similar help in Mizar Evo.
+Here we use by atp as provisional syntax to request search. The invocation syntax is not yet specified; future arguments are expected.
+From the goal Q(a) and local assumption P(a), assistance finds AllPQ, tries it with an ATP, and suggests the citation below. We apply the citations in the source and verify again.
+Search and suggestions help authors. Acceptance depends on kernel checks of formula and substitution evidence. [Specification / Plan]
+
+### 6.2 Using ATPs: search, check, and reuse (28:15)
+
+The flowchart shows where ATPs are used.
+We send the goal and available premises to an ATP. The kernel checks the candidate evidence, and accepted results are stored in the library for reuse.
+If the goal remains open, we revise lemmas or strategy and retry. An LLM can help with suggestions and repairs. The figure shows design intent, not a measured result about the cost and benefit of retries.
+Normal verification uses source citations and local hypotheses. Lemmas found during assistance must also be written into citations and verified again. The next slide shows the evidence that supports acceptance. [Specification / Design intent]
+
+### 6.3 Resolution tree and extracted substitutions (29:15)
+
+F1 says P implies Q; F2 says Q implies R; H is P(a); the goal is R(a). Add the negated goal and derive a contradiction.
+In the left tree, unifying Q(x) and Q(y) gives x:=y and the clause not P(y) or R(y). Then unifying P(y) and P(a) gives y:=a and R(a). Together with not R(a), this gives the empty clause.
+On the right, compose x:=y with y:=a along the branch. Recover x:=a for the original F1 and y:=a for F2, tied to their origins and target.
+This is an untrusted candidate-generation idea using an external log. The current design plans an independent instance finder to produce the same evidence format, but it is not implemented. The kernel does not replay each inference in the log. [Design sketch / Unimplemented]
+
+### 6.4 From saved evidence to concrete SAT clauses (30:45)
+
+The top row shows saved evidence, kernel checks, and instantiation. The kernel checks original formulas and composed substitutions against their origins, target, and binding context. It checks capture avoidance. It then instantiates both implications at a and adds P(a) and the negated goal.
+Assign propositional variables one, two, and three to P(a), Q(a), and R(a). Introduce variables four and five for the implications, with unit clauses asserting them. This Tseitin encoding follows the current encoder's construction.
+The two blue boxes below show definitions of s and t. Each gives three defining clauses and one unit clause asserting the implication. With the unit clauses p and not r above, we get five variables and ten clauses. As the green band shows, p and the two implications force r, contradicting not r.
+The small kernel does not replay external resolution steps. It generates clauses from checked evidence and asks a trusted SAT checker to confirm UNSAT. The displayed clauses illustrate the encoding; they are not a dump from an execution. [Architecture-based design sketch]

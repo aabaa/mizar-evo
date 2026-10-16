@@ -636,9 +636,9 @@ Speaker note:
 
 ## Part 6. Checking And Automation
 
-### Frame 6.1 - Automation: Separate Search From Checking
+### Frame 6.1 - Automation: find lemmas and suggest a proof
 
-Isabelle/HOL: Sledgehammer suggests a locally checked proof (sketch):
+Isabelle/HOL: Sledgehammer suggests a proof (sketch):
 
 ```text
 have "Q a"
@@ -646,88 +646,67 @@ have "Q a"
   by (metis allPQ pa)
 ```
 
-Mizar Evo: cited facts justify a declarative step (sketch):
+Mizar Evo: request lemma search with `by atp` (provisional syntax).
+
+**Open goal → library lemma candidates → ATP trials → a `by` suggestion.**
+
+Request and suggestion (sketch, planned; Pa is the local assumption P(a)):
 
 ```mizar
-assume AllPQ: for x being object holds P(x) implies Q(x);
-assume Pa: P(a);
-thus Q(a) by AllPQ, Pa;
+thus Q(a) by atp;
+:: Suggested proof:
+:: library.AllPQ: for x holds P(x) implies Q(x)
+thus Q(a) by library.AllPQ, Pa;
 ```
 
-- **Shared pattern: goal and facts → external search → local trusted acceptance. A prover's success report alone is insufficient.**
-- Isabelle reconstructs a proof, often by local Metis reproof. Mizar Evo checks formula/substitution evidence through instantiation and SAT.
+- **Reduce manual lemma search. Keep the selected premises explicit in the source.**
+- Apply the suggestion and verify again. The kernel / SAT checks formula and substitution evidence before acceptance.
 
 Speaker note:
 
-- Source: [Sledgehammer guide](https://isabelle.in.tum.de/doc/sledgehammer.pdf), sections 1, 5.2; spec 16; architecture 08, 10, 15. The sketches assume corresponding hypotheses.
-- Evo uses cited/local facts; Sledgehammer selects theory facts. Their shared search/check pattern does not imply identical evidence or measured results.
+- `by atp` is provisional presentation syntax, not settled specification syntax. Future arguments are expected.
+- Source: specification chapter 22, §22.4.4; chapter 23, §23.5.2. Details and comparison sources: `draft.ja.md`.
 
-### Frame 6.2 - Using ATPs: Search, Check, And Reuse
+### Frame 6.2 - Using ATPs: search, check, and reuse
 
 ![ATP use with checking, storage, and retry](figures/llm_atp_loop.pdf)
 
-- **Goal and facts → ATP search → kernel check → store in the library and reuse.**
-- For open goals, revise lemmas or the plan and retry. The figure shows design intent.
+- **Goal and premises → ATP search → kernel checking → library storage and reuse.**
+- If unresolved, revise lemmas or strategy and retry. The figure shows design intent.
 
 Speaker note:
 
-- LLMs can help propose and repair. Acceptance depends on the evidence check, explained on the next frame.
-- Current ATP input is cited premises and local hypotheses. Whole-library premise selection and the loop's cost-effectiveness remain evaluation targets.
-- Source: `doc/spec/en/21.source_code_annotation_and_atp.md` section 21.7.2; `doc/design/architecture/en/21.ai_agent_interface.md`.
+- LLMs can help suggest and repair proofs. Acceptance depends on evidence checking, explained next.
+- Normal verification uses source citations and local hypotheses. Assistance selects library candidates, tries them, and suggests citations to apply before re-verification. Native-hammer and retry evaluation remains future work.
+- Source: `doc/spec/en/21.source_code_annotation_and_atp.md` §21.7.2; `doc/design/architecture/en/21.ai_agent_interface.md`.
 
-### Frame 6.3 - Resolution Tree And Extracted Substitutions
+### Frame 6.3 - Resolution tree and extracted substitutions
 
-Candidate extraction from a Resolution log (sketch):
+Candidate extraction from a resolution log (sketch):
 
-```text
-F1: forall x. (P(x) implies Q(x)); F2: forall y. (Q(y) implies R(y))
-H: P(a); goal: R(a); refute: F1 & F2 & H & not R(a)
+![Resolution tree with composed substitutions and extracted evidence](figures/resolution_evidence.pdf)
 
-{not P(x), Q(x)}             {not Q(y), R(y)}
-          \                 /
-           sigma1 = {x := y}       :: unify Q(x), Q(y)
-           {not P(y), R(y)}        {P(a)}
-                    \             /
-                     sigma2 = {y := a} :: unify P(y), P(a)
-                     {R(a)}        {not R(a)}
-                          \        /
-                           sigma3 = {}
-                                {}
-```
-
-- **The untrusted extractor composes substitutions along the branches: save `x := a` for F1 and `y := a` for F2.**
+- **An untrusted extractor composes substitutions along branches: save `x := a` for F1 and `y := a` for F2.**
 
 Speaker note:
 
-- Variables x/y are renamed apart. Q unifies with x:=y; P with y:=a. Compose to obtain F1[x:=a] and F2[y:=a].
-- This log-assisted producer is a proposal; architecture 10 uses independent instance finding. The kernel checks evidence, not log steps.
-- Source: architecture 08, 10, 15, 16. Sketch, not an external-prover execution.
+- Clause variables x/y have distinct names. Unifying Q gives x:=y; unifying P gives y:=a. Compose them to recover F1[x:=a] and F2[y:=a].
+- This is a log-based candidate-generation idea. The independent instance finder in architecture 10 is unimplemented (ATP TODO 30). The kernel does not replay each log inference.
+- Source: architecture chapters 08, 10, 15, 16. This is a sketch, not an external-prover execution example.
 
-### Frame 6.3a - Saved Evidence To Concrete SAT Clauses
+### Frame 6.4 - From saved evidence to concrete SAT clauses
 
-Saved candidate, kernel preprocessing, and SAT input (sketch):
+From evidence checks to SAT-based acceptance (sketch):
 
-```text
-save: F1,F2,H (source bindings); F1[x:=a], F2[y:=a]; goal R(a), refute
-check: source/context, binders, capture avoidance
-instances: P(a) implies Q(a); Q(a) implies R(a); P(a); not R(a)
-atoms: p=P(a)=1, q=Q(a)=2, r=R(a)=3
-logical CNF: (not p or q) & (not q or r) & p & not r
-Tseitin: s=4 iff (not p or q); t=5 iff (not q or r)
-SAT clauses (DIMACS example; 0 ends each clause):
-p cnf 5 10
-1 0       -3 0
-1 4 0     -2 4 0     -1 2 -4 0     4 0
-2 5 0     -3 5 0     -2 3 -5 0     5 0
-```
+![Evidence checks, ground instances and a five-variable ten-clause SAT refutation](figures/sat_evidence_check.pdf)
 
-- **The small kernel derives instances and CNF from checked evidence. Its SAT checker finds UNSAT, so accept R(a); external Resolution steps are not replayed.**
+- **Check evidence, regenerate CNF, confirm UNSAT with SAT, and accept R(a).**
 
 Speaker note:
 
-- Save source formulas, composed substitutions, binder contexts, target VC, and refutation polarity. Derived instances and SAT clauses are recomputed (Backup 5).
-- DIMACS: 5 variables, 10 clauses; negative means negation, 0 ends a clause. s/t encode the implications. This encoder-style construction is not a runtime dump.
-- The kernel searches no substitutions. Source: architecture 08, 15, 16.
+- Save original formulas, composed substitutions, binding context, target VC, and refutation polarity. Regenerate instances and SAT clauses; details in `draft.ja.md` §6.
+- Each blue box defines implication variable s/t and gives four clauses. With unit clauses p and not r, there are five variables and ten clauses. DIMACS is retained in `draft.ja.md` §6. This is not an execution dump.
+- The kernel neither searches for substitutions nor replays external resolution steps. Source: architecture chapters 08, 15, 16.
 
 ## Part Closing. Status And Roadmap
 
