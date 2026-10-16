@@ -2,8 +2,8 @@
 
 Working materials for the Mizar Evo talk at TPP 2026, the 22nd Theorem Proving
 and Provers meeting, RIKEN AIP Tokyo Office, November 16-17, 2026. The talk is
-being revised in Japanese for a provisional 45-minute slot: 38 minutes of
-presentation and seven minutes of questions. Confirm the official slot and
+being revised in Japanese for a provisional 45-minute slot: 36.5 minutes of
+presentation, seven minutes of questions, and 1.5 minutes of buffer. Confirm the official slot and
 question time with the organizers. Aim for 35–38 minutes, never over 40.
 
 ## Title
@@ -58,7 +58,7 @@ story is evidence, formula instantiation, and a trusted SAT check.
   plus `resolution_evidence` and `sat_evidence_check` for the Japanese checking example.
 - `references.bib` - seed bibliography. Verify metadata before the final talk.
 
-## Storyline (Japanese Revision, 38 Minutes)
+## Storyline (Japanese Revision, 36.5 Minutes)
 
 History traces early experimental processors, the PC port, PC-Mizar and MML,
 then Mizar-rs and Evo before the six-principle table in frame 0.5. Sections 1–6
@@ -76,12 +76,13 @@ project origin with its design timeline, and design expansion with AI implementa
 | 4. Verified computation | 19–24 | 5 | 4.1–4.5 |
 | 5. Development infrastructure | 24–27 | 3 | 5.1–5.3 |
 | 6. Checking and automation | 27–32 | 5 | 6.1–6.4 |
-| Status, roadmap, closing | 32–38 | 6 | 7.1, 7.2, 7.3, 7.4 |
-| Questions (outside main talk) | 38–45 | 7 | selected backups |
+| Status, roadmap, closing | 32–36.5 | 4.5 | 7.1–7.3 |
+| Questions (outside main talk) | 36.5–43.5 | 7 | selected backups |
+| Buffer | 43.5–45 | 1.5 | |
 
 For 35 minutes, skip 3.3 (40 seconds), shorten 3.4 to 15 seconds (saving 20),
-skip 5.3 (one minute), and shorten the design-expansion part of 0.4 to
-30 seconds and 7.3 to 90 seconds. Keep the design timeline and evidence/SAT
+and shorten the design-expansion part of 0.4 to 30 seconds (saving 30).
+Keep the design timeline and evidence/SAT
 examples. These budgets include pointing at code and diagrams; rehearsal is
 still required. Backups are for questions, not extra material to fill 45 minutes.
 
@@ -124,6 +125,9 @@ syntax and future arguments are not yet specified);
 sketches and specification examples, not execution or external-prover results.
 Frame 7.1 uses kLoC consistently, separates ATP from kernel, and gives the
 measured kernel plus SAT-dependency source size with its counting boundary.
+The closing section goes directly from implementation status (7.1) to
+priorities (7.2) and closing (7.3); internal connection details stay in the
+narrative draft for questions.
 The closing line is fixed:
 *Keep the foundation small. Keep the mathematics readable. Modernize everything
 else.*

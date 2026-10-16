@@ -2,7 +2,7 @@
 
 Status: 日本語先行の改訂案。既存の6原則の番号を維持し、序論 §0、6つの設計指針 §1–§6、実装状況・結び §7 で構成。英語版は次段階。
 
-対象: TPP 2026（第22回 Theorem Proving and Provers meeting）、理化学研究所 AIP 東京オフィス、2026年11月16日～17日。45分枠を仮定し、本編38分＋質疑7分（正式枠は要確認）。
+対象: TPP 2026（第22回 Theorem Proving and Provers meeting）、理化学研究所 AIP 東京オフィス、2026年11月16日～17日。45分枠を仮定し、本編36分30秒＋質疑7分＋余裕1分30秒（正式枠は要確認）。
 
 内容の正典は `draft.ja.md`。発表原稿は `script.ja.md`。図は英語版と共通で、英語のラベルのまま使う（`figures/` と `../2026-09-bialystok/figures/`）。
 
@@ -11,7 +11,7 @@ Status: 日本語先行の改訂案。既存の6原則の番号を維持し、�
 - 構造ラベル（`Title:`、`Subtitle:`、`Speaker note:`、`Source:`）と、コード例の状態ラベル（`exact MML excerpt`、`specification example`、`sketch`）は生成器が解釈するので英語のまま残す。
 - 太字 `**...**` は読み上げる骨格。日本語台本の要点と対応させる。
 - 表題は各表の直上に置き、本編・補足を通して「表1」から通し番号を付ける。
-- 主張レベル: 歴史は出典と本人説明を区別。§1–§6 は既存システム・仕様・スケッチを表示。実装は 7.1–7.2 の固定コミットの限定範囲。「研究仮説」「将来構想」は本文中に明記する。
+- 主張レベル: 歴史は出典と本人説明を区別。§1–§6 は既存システム・仕様・スケッチを表示。実装状況は 7.1 の固定コミットの限定範囲。「研究仮説」「将来構想」は本文中に明記する。
 - 生成: `python3 build_beamer.py ja` が `tpp2026_ja.tex` を出力し、upLaTeX + dvipdfmx でコンパイルする（README 参照）。
 
 ## Part 0. Introduction
@@ -735,25 +735,7 @@ Speaker note:
 - kernel 12.751、うち SAT 符号化・接続1.947。SAT 依存 batsat 0.6.0 と bit-vec 0.5.1 は計4.879、合計17.630 kLoC。Core・session 等を含む最小 TCB 全体の計測ではない。
 - 固定版の限定実装。全体は10月15日、kernel 再集計・SAT 依存は10月16日計測。
 
-### Frame 7.2 - ソースから成果物まで: 接続の境界
-
-```text
-Driver:  source -> SourceLoad -> Frontend
-                                    ... later services: pending
-Tests:   source -> resolver/checker -> Core -> VC  (limited corpus)
-Next:    evidence -> kernel acceptance -> witness -> artifact -> build/cache
-```
-
-- **SAT-backed kernel の節目は、あらゆる source proof の受理完成を意味しない。**
-- **Algorithm の検証義務生成と、MVM 実行・code extraction・by computation は別の到達点。**
-- 外部 prover を用いる一般的な source-to-artifact の実証結果は未主張。
-
-Speaker note:
-
-- Source: `doc/design/todo.md` Step 6–7; `crates/mizar-driver/src/registry/catalog.rs` の ModuleResolver 以後は ExternalDependencyGap; `crates/mizar-test/src/runner/proof_verification.rs` の限定 source 経路; 仕様20.9–20.10。
-- 7.1 と同じ固定コミット。式・文脈・置換・来歴の生成、受理後の witness、artifact と再利用の接続を順に完成させる。
-
-### Frame 7.3 - ロードマップ: 統合を優先する
+### Frame 7.2 - ロードマップ: 統合を優先する
 
 - **最優先: source-to-semantics → VC → evidence → kernel → artifact → build の統合。**
 - Algorithm の意味論・検証義務を整合し、限定的に動く経路を広げる。
@@ -764,9 +746,8 @@ Speaker note:
 Speaker note:
 
 - Source: `doc/design/todo.md` の統合順序・MML port 境界と改訂ブリーフの研究目標。年度は目標であり完成の確約ではない。
-- 35分版では1分30秒。最優先の接続と研究目標を述べ、長期構想の個別例は読み上げない。
 
-### Frame 7.4 - おわりに
+### Frame 7.3 - おわりに
 
 ```text
 **Keep the foundation small.**
@@ -901,7 +882,7 @@ Source: `doc/spec/en/23.package_management_and_build_system.md`; Białystok 資�
 
 ## Backup 9. 質疑用の具体例
 
-本編38分には追加せず、質問に応じて以下を参照:
+本編36分30秒には追加せず、質問に応じて以下を参照:
 
 1. 単一のゴールで HOL から FOL への関数の符号化を説明（`app`、部分適用、lambda lifting）。
 2. Mizar の関数表現: `Function of X,Y`、`f.x`、集合論的対象としての soft type。
