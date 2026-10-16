@@ -127,7 +127,8 @@ Frame 7.1 uses kLoC consistently, separates ATP from kernel, and gives the
 measured kernel plus SAT-dependency source size with its counting boundary.
 The closing section goes directly from implementation status (7.1) to
 priorities and the design summary on one slide (7.2), ending with a request
-for feedback, with parallel development and summary subheadings. Internal
+for ITP user requirements on notation, proof assistance, and development tools,
+with parallel development and summary subheadings. Internal
 connection details stay in the narrative draft for questions. The five backups
 cover template instantiation, incremental verification, package manifests,
 benchmark conditions, and HOL-to-FOL encoding/reconstruction, in that order.
