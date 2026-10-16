@@ -223,9 +223,11 @@ Public entry functions:
 - `classify_backend_observation`
 - `encode_closed_choice_reflexivity_names`
 - `build_source_registration_candidate_inputs`
+- `source_registration_ground_term_correspondence`
 
 | Spec promise | Source evidence | Test evidence | Status |
 |---|---|---|---|
+| Existing source-observed ground choices are paired by original VC producer references with original parsed Kernel terms. | [backend owner](./backend.md#source-ground-term-correspondence); source query. | `source_ground_term_correspondence_*` and exact backend static seam inventories. | Implemented existing-term association only; full ATP30 remains open. |
 | The generic backend runner uses deterministic command fingerprints, explicit stdin/private-file input delivery, version probes, resource limits, timeout/cancellation/crash handling, stream capture, and private temp cleanup. | `run_backend`, `BackendRunInput`, `BackendRunResult`, command/resource/capture helpers. | command fingerprint, stdin/private-file, version probe, timeout/cancellation/crash, drain-safe capture, temp cleanup, and unsupported-limit tests. | Implemented for generic direct-spawn and mock backend routes. |
 | `Proved` is candidate-evidence-only and requires matching `Unsat` plus formula/substitution candidate payload; backend proof method, resolution trace, backend log, unsat core, and SMT proof object are never trusted. | `classify_backend_observation`, `BackendCandidateEvidence`, `BackendCandidatePayload`, status validation. | mock proved, prohibited payload, counterexample/unknown/error, truncation, and metadata mismatch tests. | Implemented for mock classification; real extraction remains external. |
 | Stable run metadata is reproducibility metadata and stays outside trusted acceptance and candidate hashes. | `BackendRunMetadata`, `BackendRunResult::metadata`. | task-19 metadata projection tests. | Implemented. |

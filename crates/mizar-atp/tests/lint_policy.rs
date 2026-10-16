@@ -284,6 +284,10 @@ fn atp_backend_module_has_paired_specs_and_excludes_trusted_acceptance() {
         "mizar_kernel::clause::SymbolKind::Equality",
         "mizar_kernel::clause::SymbolKind::FunctorPredicate",
         "mizar_kernel::clause::Term::Application",
+        "mizar_kernel::clause::Term",
+        "mizar_kernel::clause::SymbolKind::BuiltinRelation",
+        "mizar_kernel::formula_evidence::Formula::Atom",
+        "mizar_kernel::formula_evidence::FormulaSource::GeneratedVcFact",
     ] {
         restricted_source = restricted_source.replace(allowed, "");
     }
@@ -530,6 +534,7 @@ fn atp_backend_public_api_surface_is_task_fourteen_allowlist() {
             "classify_backend_observation",
             "encode_closed_choice_reflexivity_names",
             "run_backend",
+            "source_registration_ground_term_correspondence",
         ],
         "{} public functions and methods must stay limited to task-14 generic \
          runner, task-19 run metadata projection, and mock-classification \

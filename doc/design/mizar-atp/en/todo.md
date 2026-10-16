@@ -706,6 +706,8 @@ candidate evidence through the kernel-owned schema and must not weaken it.
 
 39. **[Observed ground terms](../../task_contracts/en/ATP-OBSERVED-GROUND-TERMS.md).** [x] — Finite borrowed input terms only; ATP30 search, policy limits and acceptance remain open.
 
+40. **[Source ground term correspondence](../../task_contracts/en/ATP-SOURCE-GROUND-TERM-CORRESPONDENCE.md).** [x] — Existing observed choices only; general mapping/search and acceptance remain open.
+
 ## Recommended Verification
 
 Run after each task:

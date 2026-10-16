@@ -744,6 +744,7 @@ permit; each source-integration slice waits for its actual upstream outputs.
    [Unchecked source candidate inputs](./task_contracts/en/ATP-SOURCE-CANDIDATE-INPUTS.md) supply bound normal wire only; full search/acceptance gates remain open.
    [Observed ground input terms](./task_contracts/en/ATP-OBSERVED-GROUND-TERMS.md) are implemented as borrowed existing data only; instance search and evidence production remain open.
    [Explicit policy limits](./task_contracts/en/PROOF-INSTANCE-SEARCH-LIMITS.md) are implemented as configuration only; finder counting/enforcement and full search remain open.
+   [Source term correspondence](./task_contracts/en/ATP-SOURCE-GROUND-TERM-CORRESPONDENCE.md) is implemented for existing observed choices; general mapping/extraction/search remains open.
 2. [ ] [Built-in evidence candidates](./task_contracts/en/PREATP-FORMULA-EVIDENCE.md)
    (VC 60); design can start, general source integration waits for authentic
    formula/context/substitution/provenance producers. [Original-source direct-premise candidates](./task_contracts/en/VC-SOURCE-DIRECT-PREMISE-CANDIDATE.md) supply only bounded untrusted association.

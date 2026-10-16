@@ -21294,3 +21294,193 @@ fn source_registration_instance_search_limits_preserve_fresh_check_results() {
         assert_eq!((source, nodes, symbols), before);
     }
 }
+
+#[test]
+fn source_ground_term_correspondence_preserves_exact_original_pairs_and_inputs() {
+    use mizar_atp::{
+        backend::source_registration_ground_term_correspondence as correspondence,
+        problem::ConcreteFormat,
+        translator::translate_source_existential_registration as translate,
+    };
+    use mizar_kernel::{
+        certificate_parser::{ClauseTautologyPolicy, Fingerprint, KernelProfileRecord},
+        clause::{SymbolKind, Term},
+        formula_evidence::{Formula, FormulaEvidenceParseContext, parse_formula_evidence},
+    };
+    use mizar_vc::{
+        kernel_evidence_handoff::build_source_existential_kernel_handoff, vc_ir::VcStatus,
+    };
+    for (multiple, case) in [
+        (false, step5c3_registration_case()),
+        (true, step5c13_registration_case()),
+    ] {
+        let original = std::fs::read_to_string(case.source_path).unwrap();
+        let renamed = original.replace("marked", "retagged").replace("X", "Value");
+        for base in [&original, &renamed] {
+            let formal = if base == &original { "X" } else { "Value" };
+            let negative = base.replace(
+                &format!("means {formal} = {formal}"),
+                &format!("means not {formal} = {formal}"),
+            );
+            assert_ne!(&negative, base);
+            for text in [base, &negative] {
+                let (core, _, vcs) = source_candidate_core_and_vcs(multiple, text);
+                let before = (core.clone(), vcs.clone());
+                let selected = vcs
+                    .vcs()
+                    .iter()
+                    .filter(|vc| vc.status == VcStatus::NeedsAtp)
+                    .collect::<Vec<_>>();
+                assert_eq!(selected.len(), if multiple { 3 } else { 1 });
+                for vc in selected {
+                    let handoff =
+                        build_source_existential_kernel_handoff(&core, &vcs, vc.id).unwrap();
+                    let envelope = handoff.canonical_evidence();
+                    let target = envelope.target_vc();
+                    let context = FormulaEvidenceParseContext::v1(
+                        Fingerprint::new(target.algorithm_id, target.digest.clone()),
+                        KernelProfileRecord::v1(
+                            envelope.kernel_profile().profile_id,
+                            ClauseTautologyPolicy::Reject,
+                        ),
+                    );
+                    let parsed = parse_formula_evidence(
+                        &handoff.encode_local_evidence(None).unwrap(),
+                        &context,
+                    )
+                    .unwrap();
+                    // Independent value oracle: final goal occurrences, never the set-premise join.
+                    let goals = match &parsed.final_goal().formula {
+                        Formula::Atom(_) => std::slice::from_ref(&parsed.final_goal().formula),
+                        Formula::And(children) => children.as_slice(),
+                        _ => panic!("actual source goal"),
+                    };
+                    assert!(!goals.is_empty());
+                    let terms = goals.iter().map(|goal| {
+                        let Formula::Atom(atom) = goal else { panic!("actual conjunct") };
+                        assert_eq!(atom.symbol.kind, SymbolKind::Predicate);
+                        let [term] = atom.arguments.as_slice() else { panic!("actual argument") };
+                        assert!(matches!(term, Term::Application { symbol, arguments }
+                            if symbol.kind == SymbolKind::FunctorPredicate && arguments.is_empty()));
+                        term
+                    }).collect::<Vec<_>>();
+                    let expected_term = terms[0];
+                    assert!(terms.iter().all(|term| *term == expected_term));
+                    for substitution in parsed.substitutions() {
+                        let [replacement] = substitution.payload.replacements.as_slice() else {
+                            panic!("actual replacement")
+                        };
+                        assert_eq!(&replacement.actual_term, expected_term);
+                    }
+                    for format in [ConcreteFormat::Tptp, ConcreteFormat::SmtLib] {
+                        let profile =
+                            source_candidate_profile("source-ground-term-correspondence", format);
+                        let problem = translate(&core, &vcs, vc.id, profile.clone()).unwrap();
+                        let observed = problem.observed_ground_terms().unwrap();
+                        assert_eq!(observed.len(), 1);
+                        let expected = observed
+                            .into_iter()
+                            .map(|term| (term.clone(), expected_term.clone()))
+                            .collect::<std::collections::BTreeMap<_, _>>();
+                        let actual = correspondence(&core, &vcs, vc.id, profile.clone()).unwrap();
+                        assert_eq!(actual, expected);
+                        assert_eq!(correspondence(&core, &vcs, vc.id, profile).unwrap(), actual);
+                    }
+                }
+                assert_eq!((core, vcs), before);
+            }
+        }
+    }
+}
+
+#[test]
+fn source_ground_term_correspondence_preserves_existing_whole_input_refusals() {
+    use mizar_atp::{
+        backend::source_registration_ground_term_correspondence as correspondence, problem::*,
+        translator::translate_source_existential_registration as translate,
+    };
+    use mizar_core::core_ir::{CoreIr, CoreIrParts};
+    use mizar_vc::vc_ir::*;
+    for (multiple, case) in [
+        (false, step5c3_registration_case()),
+        (true, step5c13_registration_case()),
+    ] {
+        let text = std::fs::read_to_string(case.source_path).unwrap();
+        let (core, open, vcs) = source_candidate_core_and_vcs(multiple, &text);
+        let (foreign, _, foreign_vcs) =
+            source_candidate_core_and_vcs(multiple, &text.replace("marked", "foreignmarked"));
+        let selected = vcs
+            .vcs()
+            .iter()
+            .find(|vc| vc.status == VcStatus::NeedsAtp)
+            .unwrap()
+            .id;
+        let discharged = vcs
+            .vcs()
+            .iter()
+            .find(|vc| matches!(vc.status, VcStatus::Discharged { .. }))
+            .unwrap()
+            .id;
+        let absent = VcId::new(vcs.vcs().len());
+        let mut parts = VcSetParts {
+            schema_version: vcs.schema_version().clone(),
+            snapshot: vcs.snapshot(),
+            source: vcs.source(),
+            module: vcs.module().clone(),
+            generated_formulas: vcs.generated_formulas().to_vec(),
+            vcs: vcs.vcs().to_vec(),
+            seed_accounting: vcs.seed_accounting().to_vec(),
+        };
+        // A sibling outside the selected leaf still belongs to the producer's whole input.
+        parts.vcs[discharged.index()].provenance.pop();
+        let changed_vcs = VcSet::try_new(parts).unwrap();
+        let mut parts = CoreIrParts {
+            source_id: core.source_id(),
+            module_id: core.module_id().clone(),
+            items: core.items().clone(),
+            terms: core.terms().clone(),
+            formulas: core.formulas().clone(),
+            definitions: core.definitions().clone(),
+            proofs: core.proofs().clone(),
+            proof_nodes: core.proof_nodes().clone(),
+            algorithms: core.algorithms().clone(),
+            algorithm_statements: core.algorithm_statements().clone(),
+            generated: core.generated().clone(),
+            obligation_seeds: core.obligation_seeds().clone(),
+            source_map: core.source_map().clone(),
+            diagnostics: core.diagnostics().clone(),
+        };
+        let id = core.generated().iter().next().unwrap().0;
+        parts.generated.get_mut(id).unwrap().evidence.clear();
+        let changed_core = CoreIr::try_new(parts).unwrap();
+        let unsupported = LogicProfile::try_new(
+            "unsupported",
+            LogicFragment::TffLike,
+            EqualitySupport::Supported,
+            QuantifierPolicy::FirstOrder,
+            SoftTypeStrategy::GuardPredicates,
+            NativePropertySupport::Unsupported,
+            [ConcreteFormat::Tptp].into_iter().collect(),
+        )
+        .unwrap();
+        for format in [ConcreteFormat::Tptp, ConcreteFormat::SmtLib] {
+            let profile = source_candidate_profile("source-ground-term-refusals", format);
+            for (c, v, id, p) in [
+                (&core, &open, selected, profile.clone()),
+                (&core, &vcs, discharged, profile.clone()),
+                (&core, &vcs, absent, profile.clone()),
+                (&foreign, &vcs, selected, profile.clone()),
+                (&core, &foreign_vcs, selected, profile.clone()),
+                (&changed_core, &vcs, selected, profile.clone()),
+                (&core, &changed_vcs, selected, profile.clone()),
+                (&core, &changed_vcs, absent, profile.clone()),
+                (&core, &vcs, selected, unsupported.clone()),
+            ] {
+                let before = (c.clone(), v.clone());
+                let old_error = translate(c, v, id, p.clone()).unwrap_err();
+                assert_eq!(correspondence(c, v, id, p).unwrap_err(), old_error);
+                assert_eq!((c.clone(), v.clone()), before);
+            }
+        }
+    }
+}

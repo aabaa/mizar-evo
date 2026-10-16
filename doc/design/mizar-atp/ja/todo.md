@@ -651,6 +651,8 @@ polarity)、F2(非 import ソース束縛)、F6(imported-statement projection)
 
 39. **[Observed ground terms](../../task_contracts/ja/ATP-OBSERVED-GROUND-TERMS.md).** [x] — 既存項の有限な参照 query だけ。ATP30 の探索・policy limit・受理は未完了。
 
+40. **[Source ground term correspondence](../../task_contracts/ja/ATP-SOURCE-GROUND-TERM-CORRESPONDENCE.md).** [x] — 既存観測 choice の対応だけ。汎用対応/探索と受理は未完了。
+
 ## 推奨検証
 
 各タスクの後で実行する:

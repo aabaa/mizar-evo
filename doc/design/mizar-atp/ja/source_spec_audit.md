@@ -221,9 +221,11 @@ Public entry functions:
 - `classify_backend_observation`
 - `encode_closed_choice_reflexivity_names`
 - `build_source_registration_candidate_inputs`
+- `source_registration_ground_term_correspondence`
 
 | spec promise | source evidence | test evidence | status |
 |---|---|---|---|
+| 既存 source 観測 ground choice を元 VC producer ref により元 parsed Kernel 項へ対応させる。 | [backend owner](./backend.md#source-ground-term-correspondence)、source query。 | `source_ground_term_correspondence_*` と正確な backend static seam inventory。 | 既存項の対応だけを実装。全 ATP30 は未完了。 |
 | Generic backend runner は deterministic command fingerprint、explicit stdin/private-file input delivery、version probe、resource limit、timeout/cancellation/crash handling、stream capture、private temp cleanup を使う。 | `run_backend`、`BackendRunInput`、`BackendRunResult`、command/resource/capture helper。 | command fingerprint、stdin/private-file、version probe、timeout/cancellation/crash、drain-safe capture、temp cleanup、unsupported-limit tests。 | generic direct-spawn と mock backend route 向けに実装済み。 |
 | `Proved` は candidate-evidence-only であり、matching `Unsat` と formula/substitution candidate payload を要求する。backend proof method、resolution trace、backend log、unsat core、SMT proof object は trusted ではない。 | `classify_backend_observation`、`BackendCandidateEvidence`、`BackendCandidatePayload`、status validation。 | mock proved、prohibited payload、counterexample/unknown/error、truncation、metadata mismatch tests。 | mock classification 向けに実装済み。real extraction は external のまま。 |
 | Stable run metadata は reproducibility metadata であり、trusted acceptance と candidate hash の外に残る。 | `BackendRunMetadata`、`BackendRunResult::metadata`。 | task-19 metadata projection tests。 | 実装済み。 |

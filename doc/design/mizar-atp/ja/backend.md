@@ -116,6 +116,16 @@ candidate_id は既存 private StableHasher の domain `mizar-atp/source-registr
 pair は未検査の試行であり、fresh Kernel check が拒否する実際の偽の source も含む。backend result や探索成功ではない。caller が現 source/context 認証と独立した通常 [Kernel 検査](../../mizar-kernel/ja/checker.md)、[Proof](../../mizar-proof/ja/selection.md) が受理を所有する。既存 original-Open built-in facade は変えない。探索上限・汎用 finder・advisory 抽出・backend 実行・publication・reuse は保留する。
 異なる実 source 回帰 caller 3箇所で direct concrete encoding/metadata、独立した通常 wire/fresh Kernel outcome、source/context 全体の破損を検査する。両 format、元・改名した正/負の single/aggregate source、決定的 replay/固定 identity、元 Open・選択した Discharged の拒否、破損 output の未信頼性を扱う。既存 manual/producer oracle を維持する。
 
+## Source ground term correspondence
+
+`source_registration_ground_term_correspondence(&CoreIr, &VcSet, VcId, LogicProfile) -> Result<BTreeMap<AtpTerm, mizar_kernel::clause::Term>, String>` は既存項の owned copy だけを返す。同一の immutable tuple から既存 source ATP problem と元 VC handoff を別々に再構築し、既存 whole-graph/default-discharge/profile gate を先に適用する。caller の Core/VC record とこの query は元 source の鮮度や証明権限を確立しない。
+既存 source candidate factory と同じく、元 handoff の local Formula v1 を実 target/profile/tautology policy で parse し、lower error を伝播する。profile 変更・candidate 構築・v2/equality-name writer・checker・探索は呼ばない。限定 source route は観測 ground term 1個、閉じた generated builtin:set axiom 1個、その複製 type guard 1個を要求し、他の shape は部分 data なしで拒否する。
+ATP axiom の唯一の引数は観測した nullary Function と一致させる。解決済み GeneratedVcFact provenance を既存 generated:N marker によって選択 VC の実 VcFormulaRef::Generated に結び、独立した ATP/Kernel ID を parse・同一視しない。producer_formula_ref と GeneratedVcFact source が一致する元 envelope entry を一意に求め、その実 formula_id で parsed entry を選ぶ。source ID/class・完全 formula fingerprint・provenance ID を比較し、元/parsed provenance の target・formula fingerprint・payload、および既存 handoff payload encoding による ATP anchor の一致を要求する。
+対応 Kernel formula は arity 1 の BuiltinRelation atom、唯一の引数は元の nullary FunctorPredicate Application とする。既存 ATP 引数と実 Kernel 引数を組にし、owned return のためだけに clone する。type guard は axiom と同じ formula/解決済み ATP provenance source/payload を持ち、全観測項を過不足・矛盾なく対応させる。名前/hash・manifest 順・宣言・個数・候補 substitution から Kernel 数値 symbol を推測しない。
+既存 producer/framing/parser error を先に伝播し、対応付け固有の拒否は内部 String `registration.atp.invalid_ground_term_correspondence` とする。public diagnostic・type/helper/alias/profile・wire/hash domain・dependency・lower-stage 変更は加えない。backend.rs に関数1個を挿入し、それ以外の旧 byte を保つ。既存 lint_policy.rs はこの関数と data-only Term/BuiltinRelation/Formula::Atom/FormulaSource::GeneratedVcFact の正確な path の inventory だけを更新し、Kernel import/検査/SAT/publication/reuse を含む trusted/downstream 禁止を全て保つ。
+実 source test を2系列追加する。元/改名/single/全 aggregate/偽定義を両対応 profile で扱い、元 parsed goal/substitution 項を独立 oracle とした完全 pair・決定的 replay・実入力不変性を確認する系列、および既存 whole-input/profile/current-handle 拒否と実 Core/VC 不変性の系列とする。旧 helper/lower matrix を再利用し、架空 Accepted/Complete/context/evidence や単一用途の parser/producer helper を追加しない。
+対応は既存の観測 ground choice に限定する。一般の関数/変数/量化子対応・Forall 除去・項/substitution/equality 生成・policy 計数/制限/SAT/探索・candidate 受理・runtime・witness/publication/reuse・全 ATP30/Steps6–8 は後続 owner に残す。
+
 ## stable hash と fingerprint
 
 Task-14 source は backend metadata 用の private deterministic hash helper を実装しなければならない。
