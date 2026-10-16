@@ -1,17 +1,18 @@
 # Mizar Evo の設計指針について
 
-Status: `slides.md`（英語デッキ原稿）の日本語版。英語版のフレーム番号を維持し、Frame 0.2 は省略。
+Status: 日本語先行の改訂案。既存の6原則の番号を維持し、序論 §0、6つの設計指針 §1–§6、実装状況・結び §7 で構成。英語版は次段階。
 
-対象: TPP 2026（第22回 Theorem Proving and Provers meeting）、理化学研究所 AIP 東京オフィス、2026年11月16-17日。30分枠。
+対象: TPP 2026（第22回 Theorem Proving and Provers meeting）、理化学研究所 AIP 東京オフィス、2026年11月16日～17日。45分枠を仮定し、本編38分＋質疑7分（正式枠は要確認）。
 
 内容の正典は `draft.ja.md`。発表原稿は `script.ja.md`。図は英語版と共通で、英語のラベルのまま使う（`figures/` と `../2026-09-bialystok/figures/`）。
 
 ## 書式上の約束
 
 - 構造ラベル（`Title:`、`Subtitle:`、`Speaker note:`、`Source:`）と、コード例の状態ラベル（`exact MML excerpt`、`specification example`、`sketch`）は生成器が解釈するので英語のまま残す。
-- 太字 `**...**` は読み上げる骨格。英語版と同じ箇所を太字にする。
-- 主張レベル: 無印は事実（既存システム、公開ベンチマーク、Mizar Evo 仕様、main branch）。「研究仮説」「将来構想」は本文中に明記する。
-- 生成: `python3 build_beamer.py` が `tpp2026_ja.tex` を出力し、upLaTeX + dvipdfmx でコンパイルする（README 参照）。
+- 太字 `**...**` は読み上げる骨格。日本語台本の要点と対応させる。
+- 表題は各表の直上に置き、本編・補足を通して「表1」から通し番号を付ける。
+- 主張レベル: 歴史は出典と本人説明を区別。§1–§6 は既存システム・仕様・スケッチを表示。実装は 7.1–7.2 の固定コミットの限定範囲。「研究仮説」「将来構想」は本文中に明記する。
+- 生成: `python3 build_beamer.py ja` が `tpp2026_ja.tex` を出力し、upLaTeX + dvipdfmx でコンパイルする（README 参照）。
 
 ## Part 0. Introduction
 
@@ -26,20 +27,94 @@ Mizar Evo の設計指針について
 
 Speaker note:
 
-- **Mizar は証明検査系です。一階の集合論の上に、人間が読める数学の言葉で書かれた50年分のライブラリを持っています。**
-- **Mizar Evolution、略して Mizar Evo は、その言語と道具を設計し直すプロジェクトです。現行 Mizar の課題を整理し、新仕様でどのように対応するかを説明します。**
+- **Mizar は証明検査系です。一階の集合論の上に、人間が読める数学の言葉と、MML の蓄積を持っています。**
+- **Mizar Evolution、略して Mizar Evo は、その言語と道具を設計し直すプロジェクトです。歴史と開発経緯から6つの設計指針へ進み、現在の実装の境界と計画で結びます。**
 - 話す内容にはすべて、事実・研究仮説・将来構想のラベルを付けます。
 
-### Frame 0.3 - 現行 Mizar の課題と6つの設計指針
+### Frame 0.2 - Mizar の実装史: 初期処理系から Mizar-rs、Evo へ
 
-| 現行 Mizar から取り組む課題 | 新仕様の設計指針 |
+### 表1　Mizar の初期処理系と MML の成立
+
+| 時期 | 実装史の主な節目 |
 |---|---|
-| **§1 基盤:** 論理・MML の継承と処理系の刷新 | 一階論理・集合論を維持し、kernel を小さく保つ |
-| **§2 記述:** 暗黙の型・登録・演算選択の追跡 | 数学的な抽象化を継承し、暗黙の選択を明示 |
-| **§3 汎用化:** 定義・定理・scheme の個別機構 | template で共通化の仕組みを統一 |
-| **§4 計算:** 証明と実行可能な手続きの接続 | algorithm の契約・不変条件・停止性を検査 |
-| **§5 開発基盤:** 依存管理・配布・差分検証・IDE | module・namespace・package・差分ビルド・LSP |
-| **§6 検査・自動化:** 外部探索と検査根拠の接続 | ATP を活用し、evidence のインスタンス化と SAT 検査 |
+| 1973–75 | 数学文書の構想 → 命題論理の Mizar-PC（Algol / ODRA） |
+| 1977 | Mizar-QC: 量化を導入（Pascal / CDC 6000） |
+| 1982–84 | MSE: 小言語への整理。HPF: 数学的記法・暗黙の引数を拡充 |
+| 1986 | Mizar-4: 複数パスで処理。同年末に PC / DOS へ移植 |
+| 1988–89 | PC-Mizar、article 間参照。1989年1月1日に MML 開始 |
+
+### 表2　PC-Mizar・Mizar-rs・Mizar Evo の概要
+
+| 処理系 | 概要 |
+|---|---|
+| PC-Mizar（Pascal） | Parser → MSM → Analyzer → Checker の段階的処理 |
+| Mizar-rs（Rust、ITP 2023） | 既存言語との互換性を目指し checker / analyzer を再実装 |
+| | **全 MML 検査:** checker を差し替え、当時の全 MML を検査 |
+| | **高速化:** 約5〜6倍（8 threads、実時間比較） |
+| | **不具合発見:** 既存実装の健全性バグ4件を報告（MML 内で偽の証明への利用なし） |
+| Mizar Evo（Rust） | 数学的記述と論理基盤を継承し、新しい言語仕様・処理系を構築 |
+
+Source: Matuszewski & Rudnicki (2005); Carneiro (ITP 2023), Table 1。
+
+Speaker note:
+
+- Mizar-PC は命題論理版で、後年の PC-Mizar とは別。可読な記法・検査・ライブラリを複数の実験と再設計で育てた。表は代表的な節目で、一本道の後継関係ではない。詳細・URLは `draft.ja.md`「歴史と開発経緯」。
+- Carneiro 2023 §1脚注2の1986は PC 移植の起点。PC-Mizar 実装は1988年。MSM は More Strict Mizar。
+- 速度値は Mizar-rs の測定。実時間は checker のみ57.37→11.33分、analyzer 込み71.38→11.71分。健全性には両者が関わり、同論文 §5.4には互換性に伴う問題も残る。
+
+### Frame 0.3 - 2023–2026年: 構想から言語設計へ
+
+### 表3　Mizar Evo の開発経緯
+
+| 時期 | 開発内容 |
+|---|---|
+| 2023年8月 | 初回 README は mizar-wishlist |
+| 2024年9–10月 | import、namespace、structure 継承、型システム |
+| 2025年5–6月 | mode、型推論、redefinition。依存構造・属性の草案を削除後、再導入 |
+| 2026年1–4月 | EBNF・論理エンコード、registration、template、algorithm の意味論・契約 |
+| 2026年5月 | 実装設計 → テストハーネス → minimal lexer |
+
+- **Mizar の記法を拡張する構想から出発し、2023年の科研費申請準備を機に、言語仕様と処理系を再設計する方針を定めた。**
+- ITP 2023 で Mario Carneiro 氏に実装協力を相談し、前向きな了承。CICM 2023 ではAdam Naumowicz 先生にwishlistについて相談。
+- 当初の柱: 型の全称量化（generics）、namespace / package、ATP / traceability。Mizar-rs を利用するプロトタイプを構想。
+
+科研費 基盤研究(C)・2024年度採択: 24K14897「集合論ベースの定理証明支援系の言語仕様の刷新」
+
+Speaker note:
+
+- Source: 2023年8月申請書と Git 差分。詳細は `draft.ja.md`「歴史と開発経緯」。
+- 相談の年内順序・現在の参加確約は未確認。年表の日付はコミット日。
+
+### Frame 0.4 - 設計の深化と AI Agentによる実装
+
+### 言語設計の深化
+
+- **template:** 当初の generics 構想から、scheme 相当を theorem に統一。構造 view・型引数推論へ拡張。
+- **algorithm:** 日本の Mizar コミュニティの暗号理論研究者から、当初より アルゴリズムを証明したいという要望。楕円曲線の結合法則の証明でも、膨大な数式処理に苦労。
+
+### 2026年5月からの実装と意見交換
+
+- **5月: AI coding agents を使い Rust 実装を本格化。6–7月: crate 開発・自律開発手順・SAT-backed 検査と監査。**
+- **設計 → エージェント実装 → テスト・監査 → 仕様再検討。**
+- 9月: Białystok で Mizar チームにセミナー・意見交換。
+- 9–10月: source 由来の VC を拡張しつつ、algorithm の部分性・契約を修正。
+
+Speaker note:
+
+- Source: 仕様18・20、Git 差分、2026年10月15日の補足説明。詳細は `draft.ja.md`。
+
+### Frame 0.5 - 現行 Mizar の課題と6つの設計指針
+
+### 表4　現行 Mizar の課題と6つの設計指針
+
+| 領域 | 現行 Mizar から取り組む課題 | 新仕様の設計指針 |
+|---|---|---|
+| **§1 基盤** | 論理・MML の継承と処理系の刷新 | 一階論理・集合論を維持し、kernel を小さく保つ |
+| **§2 記述** | 暗黙の type・registration・overload の追跡 | 数学的な抽象化を継承し、暗黙の選択を明示 |
+| **§3 汎用化** | 定義・定理・scheme の個別機構 | template で共通化の仕組みを統一 |
+| **§4 計算** | 証明と実行可能な手続きの接続 | algorithm の契約・不変条件・停止性を検査 |
+| **§5 開発基盤** | 依存管理・配布・差分検証・IDE | module・namespace・package・差分ビルド・LSP |
+| **§6 検査・自動化** | 外部探索と検査根拠の接続 | ATP を活用し、evidence のインスタンス化と SAT 検査 |
 
 Speaker note:
 
@@ -65,98 +140,79 @@ Speaker note:
 - 数学的な記述と証明支援に必要な機能は、一階の基盤の上にも構成できる。「仕組みが近い」はこれらの構成を指し、論理体系や表現方法の同一性を意味しない。
 - 成功率や再構成の失敗率から一階の性能優位性を主張しない。設計の効果は、記述の利便性・自動証明・証明検査の観点で評価する。
 
-### Frame 1.2 - 現行 Mizar: 集合論的な関数
+### Frame 1.2 - 集合から位相空間まで
 
-関数適用は定義された集合論的関係 (exact MML excerpt):
-
-```mizar
-  func f.x -> set means
-  :Def2:
-  [x,it] in f if x in dom f otherwise it = {};
-```
-
-型付き関数は部分関数の上の soft type (exact MML excerpt):
+例1: Cantor の定理（現行 Mizar・証明省略） (sketch):
 
 ```mizar
-definition
-  let X,Y;
-  mode Function of X,Y is quasi_total PartFunc of X,Y;
-end;
+theorem Cantor:
+  for X being set holds card X in card (bool X)
+proof ... end;
 ```
 
-- **関数は対の集合として表される一階の対象。関数適用は集合論上で定義する。**
-- **関数の扱いに、基盤論理の高階化は不要。**
-- 記述上の課題: 定義域・グラフ・関数性・所属関係を直接記述すると煩雑。
+例2: コンパクト空間から Hausdorff 空間への連続全単射（証明省略） (sketch):
+
+```mizar
+theorem CompactBijection:
+  for S being compact TopSpace,
+      T being non empty T_2 TopSpace,
+      f being Function of S,T
+  st f is continuous one-to-one & rng f = [#] T
+  holds f is being_homeomorphism
+proof ... end;
+```
+
+- **集合・冪集合・基数から位相空間まで、一階の集合論の上で数学を記述する。**
 
 Speaker note:
 
-- Source（2026年10月7日確認）: <https://mizar.uwb.edu.pl/version/current/mml/funct_1.miz>（138-140 行、`FUNCT_1:def 2`）、<https://mizar.uwb.edu.pl/version/current/mml/funct_2.miz>（87-90 行）。GPL-3.0-or-later / CC-BY-SA-3.0-or-later。
-- `quasi_total`（FUNCT_2 の 36-44 行）は、Y が空でなければ定義域が X 全体であることを言う。
+- Source: CARD_1:14、COMPTS_1:17（Backup 10）。各30秒程度で意味と記述の機構を指す。証明を省略した説明例で、実行結果ではない。
+- Cantor: bool Xは冪集合。基数を始順序数で表すため、inはここでは濃度の大小。位相: T_2はHausdorff、rng f = [#] Tは全射、結論は同相写像。探索・検査の分離は§6。
 
 ## Part 2. Readable Mathematics
 
-### Frame 2.1 - 記述の課題: 可読性と抽象化を継承・拡張
+### Frame 2.1 - type・registration・overload の追跡
 
-ソース上の関数表現 (sketch, 現行 Mizar と Mizar Evo で有効):
+数学を自然に記述するため、処理系は多くの判断を自動的に行う。
 
-```mizar
-let X, Y be set;
-let f be Function of X, Y;
-let x be Element of X;
-...  f.x  ...
-```
+- **type: 対象をどの型として使えるか。**
+  属性や継承をたどる。例: Group → Magma（継承経路が一意の場合）。
+- **registration: 必要な属性は、どの規則から得られたか。**
+  例: empty → finite → countable という登録規則の連鎖。
+- **overload: どの定義を選び、どのビューで使うか。**
+  同じ記号の候補や、環の加法・乗法のビューを区別する。
 
-- **集合論的な関数を `Function of X,Y` と `f.x` で記述し、対や定義域の詳細を抽象化する。**
-- **soft type、mode、attribute、registration、scheme、宣言的証明は、単なる記法の簡略化を超え、一階の集合論を可読な数学的記述へ結び付ける言語機構。**
-- **新仕様: 数学的な記述を継承・拡張し、型・登録・オーバーロードの暗黙の選択を明示・追跡可能にする。**
-
-### Frame 2.2 - Registration: 自動的な連鎖に名前を付ける
-
-ラベルを持つ自動適用規則 (specification example):
-
-```mizar
-registration
-  cluster EmptyImpliesFinite: empty -> finite for set;
-  coherence proof ... end;
-  cluster FiniteImpliesCountable: finite -> countable for set;
-  coherence proof ... end;
-end;
-```
-
-| 出発点 | 自動的に得られる事実 | 記録する規則 |
-|---|---|---|
-| S is empty | S is finite | EmptyImpliesFinite |
-| S is finite | S is countable | FiniteImpliesCountable |
-
-- **連鎖的な自動適用を保ち、各登録項目のラベルを必須にして、適用経路を記録する。**
-- 証明がどの規則に依存するかを説明できる。自動適用のために `by` で明示引用する必要はない。
+**自然な記述と自動適用を保ちながら、暗黙の判断の根拠を追跡可能にする。**
 
 Speaker note:
 
-- Source: `doc/spec/en/17.clusters_and_registrations.md` §17.2, 17.7; `23.package_management_and_build_system.md` §23.7.7。表は empty set S の説明用トレース。属性の解決は ATP 探索より前に行う。
+- Source: `doc/spec/en/08.type_inference.md` §8.1–8.2; `17.clusters_and_registrations.md` §17.7; `19.overload_resolution.md` §19.1–19.3。新仕様。type: 2.2–2.4、registration: 2.5、overload とビュー指定: 2.6。
 
-### Frame 2.3 - 構造: 格納する field と導出する property
+### Frame 2.2 - type: field と property を宣言する
 
-データと標準的な値を分ける (specification example):
+構造の宣言（definition 内の抜粋） (specification example):
 
 ```mizar
-definition
-  struct AddLoopStr where
-    field carrier -> set;
-    field add -> BinOp of carrier;
-    property zero -> Element of carrier;
-  end;
+struct LoopStr where
+  field carrier -> set;
+  field binop -> BinOp of carrier;
+  property unit -> Element of carrier;
+end;
+
+struct AddLoopStr where
+  field carrier -> set;
+  field add -> BinOp of carrier;
+  property zero -> Element of carrier;
 end;
 ```
 
-- **field は格納するデータで、構成子の引数。property の一意な値は、別の実装で与える。**
-- `zero` の宣言は型を与える。`means` 実装は存在・一意性を証明し、`equals` 実装は値を表す項を与える。
+**field は格納するデータ。property は名前と型を宣言し、実装は別に与える。**
 
 Speaker note:
 
-- Source: `doc/spec/en/05.structures.md` §5.2; `07.modes.md` §7.4.1, 7.8.2; `sample_codes.md`, AddLoopStr。property の実装が重なる場合は coherence が必要。
+- Source: `doc/spec/en/05.structures.md` §5.2, 5.5.1; `sample_codes.md`, LoopStr・AddLoopStr。構造宣言は definition 内の抜粋。構成子に渡すのは field のみ。継承は2.3、mode と unit の実装は2.4。
 
-### Frame 2.3a - 継承関係を後から宣言する
+### Frame 2.3 - type: 継承関係を後から宣言する
 
 AddLoopStr の宣言後に、親への対応付けを追加 (specification example):
 
@@ -178,61 +234,104 @@ Speaker note:
 
 - Source: `doc/spec/en/05.structures.md` §5.3; `sample_codes.md`, AddLoopStr。Rust との類似は宣言の分離を指す。LoopStr の binop は field、unit は property。
 
-### Frame 2.3b - ダイアモンド継承と Group の定理の再利用
+### Frame 2.4 - type: Unital の unit を実装し、zero に引き継ぐ
 
-同じ階層にある二つの経路 (sketch):
-
-```text
-AddLoopStr -> LoopStr -> Magma
-AddLoopStr -> AddMagma -> Magma
-```
-
-Group の定理を環の加法ビューで利用 (sketch):
+has_unit は両側単位元の存在を表す（unit に依存しない） (sketch):
 
 ```mizar
 definition
-  let T be type extends Group;
-  theorem RightUnit[T]:
-    for x being Element of T.carrier holds T.binop(x,T.unit) = x
-  proof ... end;
+  mode UnitalDef: Unital is has_unit LoopStr;
+  let M be Unital;
+  property M.unit means
+    for x being Element of M.carrier holds
+      M.binop(it,x) = x & M.binop(x,it) = x;
+  existence proof ... end;
+  uniqueness proof ... end;
 end;
-RightUnit[R qua AddLoopStr]  :: gives R.add(x,R.zero) = x
 ```
 
-- **メンバーの起点と継承経路を追跡し、共有を検査。演算のビューは区別したまま保つ。**
-- 環の加法ビューは Group。リネームを通じて定理を再利用する。乗法側に必要なのは monoid の構造。
+- **A の LoopStr ビューが Unital なら、unit の実装を zero として利用できる。**
+- `property zero from unit` の対応: `A.zero = (A qua LoopStr).unit`。zero の再実装は不要。
 
 Speaker note:
 
-- Source: `doc/spec/en/05.structures.md` §5.4; `sample_codes.md`, Group・Ring; `18.templates.md` §18.2.2, 18.10.2。R は Ring、x はその carrier の要素とし、Group・property の定義と必要な登録を仮定。同じ型の共有は自動検査、異なる型には coherence が必要。選択したビューが定理の前提を満たす必要がある。
+- Source: `doc/spec/en/07.modes.md` §7.4.1, 7.8.2; `05.structures.md` §5.3, 5.8.3。仕様7の実装例を LoopStr に適用した sketch。has_unit の属性定義は draft.ja.md、証明本体は省略。存在は mode の前提から、一意性は二つの単位元の演算から示せる。A は AddLoopStr、その選択した LoopStr ビューに Unital の前提が必要。異なるビューの事実を混同しない。重なる実装がない例で、重なる場合は coherence が必要。
+
+### Frame 2.5 - registration: 自動連鎖で見えにくくなる依存
+
+**自動適用が連鎖し、利用箇所のソースだけでは依存する登録規則を追いにくい。**
+
+```mizar
+registration
+  cluster EmptyImpliesFinite: empty -> finite for set;
+  coherence proof ... end;
+  cluster FiniteImpliesCountable: finite -> countable for set;
+  coherence proof ... end;
+end;
+```
+
+### 表5　新仕様で記録する登録規則の適用経路
+
+| 出発点 | 自動的に得られる事実 | 記録する規則 |
+|---|---|---|
+| S is empty | S is finite | EmptyImpliesFinite |
+| S is finite | S is countable | FiniteImpliesCountable |
+
+- `empty` の宣言から `finite`・`countable` まで暗黙に得る。`by` で規則を引用する必要はない。
+- **新仕様: 自動適用を保ち、規則のラベルと適用経路を記録する。**
+
+Speaker note:
+
+- Source: `doc/spec/en/17.clusters_and_registrations.md` §17.2, 17.4.1, 17.7; `23.package_management_and_build_system.md` §23.7.7。コードは新仕様のラベル付き登録例、表は empty set S の説明用トレース。利用箇所には規則の引用を書かず、別の登録規則が複数段適用されることを強調する。属性の解決は ATP 探索より前に行う。
+
+### Frame 2.6 - overload: 同じ環の単位元を使い分ける
+
+**同じ環 R でも、加法の単位元は 0、乗法の単位元は 1。**
+
+- 加法の AddMagma: `0 + x = x + 0 = x`
+- 乗法の MulMagma: `1 * x = x * 1 = x`
+
+id. M は unital Magma M の単位元を返す (sketch, 定義省略):
+
+```mizar
+let R be Ring;
+id. R;                   :: ambiguous Magma view
+id. (R qua AddMagma);     :: R.zero
+id. (R qua MulMagma);     :: R.one
+```
+
+- id. の定義が一つでも、R をどの Magma として使うかが曖昧になる。
+- **qua で加法・乗法のビューを明示し、0 と 1 を区別する。**
+
+Speaker note:
+
+- Source: `doc/spec/en/sample_codes.md`, IdentityDef・LoopUnitalDef・RingLikeDef; `19.overload_resolution.md` §19.2.2–19.3.1; `05.structures.md` §5.8.3。ここで示す単位元の id. 定義に限定した sketch。各ビューが unital で、単位元が R.zero / R.one に対応し、Magma への経路が一意であることを仮定する。定義は draft.ja.md。
 
 ## Part 3. Generic Mathematics
 
-### Frame 3.1 - 現行 MML: 関数の和と結果型
+### Frame 3.1 - 現行 MML: 型ごとに増える再定義・登録
 
-**例: 関数の和。「各点で値を足す」という構成を共通化。**
+**関数の和の本体は一つでも、結果型を保つ記述は型ごとに必要。**
 
-結果型の登録 (sketch, 複素数値・実数値の別々の入力ブロック):
+### 表6　関数の和に付随する型ごとの再定義・登録（VALUED_1）
 
-```mizar
-cluster f1 + f2 -> complex-valued;
-cluster f1 + f2 -> real-valued;
-```
+| 値の型 | 結果型の再定義 | 属性・全域性の登録 |
+|---|---|---|
+| 複素数 | `PartFunc of C,COMPLEX` | `complex-valued` ＋ `total` |
+| 実数 | `PartFunc of C,REAL` | `real-valued` ＋ `total` |
+| 有理数 | `PartFunc of C,RAT` | `RAT-valued` ＋ `total` |
+| 整数 | `PartFunc of C,INT` | `INT-valued` ＋ `total` |
+| 自然数 | `PartFunc of C,NAT` | `natural-valued` ＋ `total` |
 
-| VALUED_1 の段階 | 型の情報 |
-|---|---|
-| 点ごとの和を一度定義 | 結果は Function |
-| 値域の型を絞る | 複素数・実数それぞれの PartFunc 再定義 |
-| 元の定義域全体を回復 | それぞれの全域性の登録 |
-
-- **数学的な演算は既に共通化されている。結果型の精緻化は値の種類ごとに付随する。**
+- **対応する型が増えるたびに、再定義・登録・整合性の証明が増える。**
+- 同じ「関数の和」と、その結果型を、一つの template で記述したい。
 
 Speaker note:
 
-- Source: MML [VALUED_1](https://mizar.uwb.edu.pl/version/current/html/valued_1.html), def 1 と後続の結果型の精緻化。表示した各行は別々の registration ブロックからの抜粋で、宣言と coherence 証明は省略。GPL-3.0-or-later / CC-BY-SA-3.0-or-later。
-- VALUED_1:def 1 は入力の定義域の共通部分を使う。次のスケッチは共通の非空定義域 I に限定し、構成全体を置換する例ではない。
+- Source: MML [VALUED_1](https://mizar.uwb.edu.pl/version/current/html/valued_1.html), def 1 と直後の5種類の属性登録・PartFunc 再定義・total 登録。表は記述の整理で、逐語引用ではない。C は共通の定義域。各行は入力値の型を仮定し、total の登録は全域関数と必要な非空値域を仮定する。各再定義・登録に coherence 証明が伴う。
+- VALUED_1:def 1 の本体は共通で、定義域の共通部分を使う。次の template 例は共通の非空定義域 I に限定する。
 
-### Frame 3.1a - Template: 共通の本体と具体的な結果型
+### Frame 3.2 - template: 本体と結果型を一元化する
 
 汎用 functor (sketch, 存在・一意性の証明は省略):
 
@@ -247,21 +346,23 @@ definition
 end;
 ```
 
+### 表7　Template の具体化と結果型
+
 | 呼び出し（実数 R・複素数 C）[^1] | 結果型 |
 |---|---|
 | `f + g` | `Function of I,R.carrier` |
 | `u + v` | `Function of I,C.carrier` |
 
-- **synonym で中置の `+` を与え、型引数は宣言型から推論する。**
+- **有理数・整数・自然数にも、同じ Add[T,I]。本体と結果型の記述を一元化する。**
 
 [^1]: 明示形: `f +[R,I] g`、`u +[C,I] v`。省略は宣言型から一意に推論できる場合。継承経路が曖昧なら `qua` を明示。
 
 Speaker note:
 
-- `let R be RealAdd; let C be ComplexAdd;` を仮定。non empty AddMagma への継承経路は一意で、必要な登録を持つ。f,g の宣言型は Function of I,R.carrier、u,v は Function of I,C.carrier。正規化した宣言型から T・I が一意に決まる例。
+- `let R be RealAdd; let C be ComplexAdd;` と必要な登録を仮定。両構造の non empty AddMagma への経路は一意。f,g は Function of I,R.carrier、u,v は Function of I,C.carrier。宣言型から T・I が一意に決まる。有理数・整数・自然数も各加法構造・閉性・登録を前提に同じ Add を使う。synonym が中置の + を与える。
 - Source: `doc/spec/en/11.symbol_management.md` §11.1.2; `18.templates.md` §18.2.2, 18.2.7, 18.7; `19.overload_resolution.md` §19.6.2。値域集合だけから加法構造を選べるとはしない。qua のビューは自動推論しない。
 
-### Frame 3.2 - Scheme を template に統合 [deep dive]
+### Frame 3.3 - Scheme を template に統合 [deep dive]
 
 述語パラメータ付き定理としての帰納法 (specification example):
 
@@ -275,28 +376,77 @@ definition
 end;
 ```
 
-- 述語パラメータにより、代入する述語ごとの一階定理の族を表現する。
+- 述語パラメータにより、代入する述語ごとの一階定理の族を表現する。[^1]
 - 明示的なインスタンス化: `defpred` に続けて `by NatInduction[P], Base, Step`。
 - 関数子パラメータは集合ではなく schema レベルの記号として扱い、一階論理を維持する。
-- 詳細: Białystok 資料 Story 6（`PermProduct[T]`、`qua` によるビュー）、および本資料 Backup 4。
+
+[^1]: 詳細: Białystok 資料 Story 6（`PermProduct[T]`、`qua` によるビュー）、および本資料 Backup 4。
+
+Speaker note:
+
+- Source: `doc/spec/en/18.templates.md` §18.2.3, 18.8.2, 18.9。型・値パラメータ化の構造・属性への適用例は次の3.4。
+
+### Frame 3.4 - template: 構造と属性もパラメータ化する
+
+struct: 体 K 上のベクトル空間のデータ (sketch, definition 内の抜粋):
+
+```mizar
+let K be Field;
+struct VectorSpace[K] where
+  field carrier -> non empty set;
+  field add -> BinOp of carrier;
+  field smul -> Function of [:K.carrier, carrier:], carrier;
+end;
+```
+
+`of` / `over` は syntax sugar: `Vector of K` → `Vector[K]`（mode の例）。
+
+attr: 空間 M における部分集合 S の稠密性 (sketch, 条件省略):
+
+```mizar
+let M be MetricSpace;
+let S be Subset of M.carrier;
+attr DenseDef: S is dense[M] means ...;
+```
+
+属性の接頭表記も syntax sugar: `M-dense` → `dense[M]`。
+
+**型・値によるパラメータ化は struct・attr・mode・pred・func に共通。**
+
+Speaker note:
+
+- Source: `doc/spec/en/18.templates.md` §18.1, 18.2.6, 18.3, 18.5。definition 内の抜粋。VectorSpace[K] の法則と dense[M] の条件は省略。Vector は K を引数に取る mode と of 同義表記を仮定。構造でも VectorSpace over K は VectorSpace[K] の同義表記。述語・関数子パラメータは theorem・algorithm のみ。
+- 35分版は15秒で構造と属性のパラメータ化を指す。
 
 ## Part 4. Verified Computation
 
 ### Frame 4.1 - 計算の課題: 検証可能な algorithm
 
-読みやすい手続きを Hoare 論理で検査する:
+手続きを Hoare 論理の規則で証明義務に分解する:
 
 ```text
 { requires }  algorithm body  { ensures }
 ```
 
-- **代入・`if/else`・`while`・`for`・`return` という馴染みのある擬似コード。契約とループ不変条件で条件を記述する。**
-- **Hoare 論理の規則から一階の証明義務を生成し、正しさと、必要な場合は停止性を検査する。**
-- アルゴリズム自体の検証と、検証済み手続きによる証明支援に用いる。
+P・Q: 事前・事後条件、B: 条件、I: 不変条件、S: 文。
+
+### 表8　Hoare 論理の基本規則
+
+| 構文 | 検査する条件（部分正当性）[^1] |
+|---|---|
+| 代入 `x := e` | `P ⇒ Q[x ← e]`（Q 中の自由な x を e で置換） |
+| `if B do S1 else S2 end` | `{P ∧ B} S1 {Q}` と `{P ∧ ¬B} S2 {Q}` |
+| `while B do S end` | 初期成立: `P ⇒ I`、保存: `{I ∧ B} S {I}`、終了: `I ∧ ¬B ⇒ Q` |
+| `return e` | `P ⇒ Q[result ← e]` |
+
+**各構文の規則を再帰的に適用し、一階論理の証明義務へ分解する。**
+
+[^1]: 単純変数・純粋な式の基本形。途中の return / break / continue、型・定義域の条件は省略。
 
 Speaker note:
 
-- Source: `doc/spec/en/20.algorithm_and_verification.md` §20.2, 20.3, 20.13.3。既定は部分正当性。terminating は停止性の証明義務を加える。手続きの表記は擬似コードに近く、証明状態を操作する別の tactic 言語ではない。
+- Source: `doc/spec/en/20.algorithm_and_verification.md` §20.1.4, 20.4.3, 20.5.1, 20.13.3。表は後ろ向きの規則（捕獲回避置換）。前向き生成は旧状態名で代入を処理し、ループ頭で変更箇所を havoc する。詳細は draft.ja.md。
+- 既定は部分正当性。terminating の停止性は別途検査。検証済み手続きは証明支援にも用いる。
 
 ### Frame 4.2 - Algorithm: 契約、証明、計算
 
@@ -326,7 +476,9 @@ Speaker note:
 - Source: spec 20、§20.1.1, 20.5, 20.12。外側の definition/let を省略。
 - 比較: [Dafny §8.15](https://dafny.org/latest/DafnyRef/DafnyRef.html#sec-loop-specifications)。
 
-### Frame 4.2a - terminating と functor 昇格
+### Frame 4.3 - terminating と functor 昇格
+
+### 表9　Algorithm の停止性と保証
 
 | algorithm の形 | requires の下での意味 |
 |---|---|
@@ -341,16 +493,24 @@ assume a >= 1 & b >= 1;
 thus euclid_gcd(a,b) = Gcd(a,b) by EuclidGcdDef;
 ```
 
-- **検証済みの定義的な断片は方程式も与える。ループを持つ互除法では全域性と契約の公理のみを用いる。**
-- `by computation` は別に仕様化。MVM 実行・コード抽出は今後の課題。
+計算結果を使う証明 (sketch, MVM 未実装):
+
+```mizar
+thus euclid_gcd(12,8) = 4 by computation;
+```
+
+検証済み algorithm を MVM（仮想機械）で実行し、その結果を証明に使う。
 
 Speaker note:
 
-- Source: `doc/spec/en/20.algorithm_and_verification.md` §20.7.2–20.7.3, 20.13.2; `16.theorems_and_proofs.md` §16.5.1。by EuclidGcdDef は検証済みの昇格公理を引用。呼び出す名前だけでは引用にならない。周囲の証明と Gcd の定義を仮定し、保証は requires の下で与える。
+- Source: `doc/spec/en/20.algorithm_and_verification.md` §20.7.2–20.7.3, 20.9.1–20.9.2, 20.13.2; `16.theorems_and_proofs.md` §16.5.1。MVM 実行・コード抽出は今後の課題。
+- requires と検証済み実行artifactが前提。既定の computation は MVM を信頼する computed 経路。kernel replay の条件は draft.ja.md。
 
-### Frame 4.3 - 互除法: 何を証明するのか
+### Frame 4.4 - 互除法: 何を証明するのか
 
 1回の反復: 旧状態 `(x,y)`、`y > 0`。`r = x mod y` とすると、新状態 `(x',y') = (y,r)`。
+
+### 表10　ユークリッドの互除法の証明義務
 
 | 証明義務 | 数学的な根拠 |
 |---|---|
@@ -367,6 +527,33 @@ Speaker note:
 - Source: `doc/spec/en/20.algorithm_and_verification.md` §20.5, 20.12, 20.13.3。証明義務の説明例であり、実行結果ではない。
 - 長期的な対象は将来構想: 整数論・組合せ論、記号計算、最適化、暗号、量子アルゴリズム。MVM 実行・コード抽出も今後の課題。
 
+### Frame 4.5 - 式変形を検証する: lambda と微分
+
+関数を直接記述する（u は Real） (sketch):
+
+```mizar
+u |-> (sin u)*u
+```
+
+`differentiate` が積・sin などの式の構造を再帰的に処理する。
+
+微分の証明に利用する（x は Real） (sketch, MVM 未実装):
+
+```mizar
+thus diff((u |-> (sin u)*u), x) = (cos x)*x + sin x
+  by computation(differentiate(u |-> (sin u)*u));
+```
+
+- **`|->` は集合論的な関数を表し、`expr`（構文木）が式の構造と変数束縛を保持する。**
+- 変換 algorithm の契約で、微分可能性と導関数の正しさを検証する。[^1]
+
+[^1]: 微分則・意味変換・簡約の補題を仮定。仕様例であり、実行結果ではない。
+
+Speaker note:
+
+- Source: `doc/spec/en/13.term_expression.md` §13.10; `20.algorithm_and_verification.md` §20.5.3, 20.9.2, 20.12。
+- differentiate は部分 algorithm。変数の宣言、集合論的な意味、因数分解の応用案は draft.ja.md。
+
 ## Part 5. Development Infrastructure
 
 ### Frame 5.1 - 環境部: 著者は何を取り込むのか
@@ -382,6 +569,8 @@ environ
  theorems STRUCT_0;
 ```
 
+### 表11　環境部の依存指定と役割
+
 | 一覧 | 取り込むもの |
 |---|---|
 | vocabularies / notations | 記号 / 記法 |
@@ -395,7 +584,7 @@ Speaker note:
 - Source: Białystok `draft.md` Frame 2.1–2.2、ALGSTR_0 の引用。省略記号で一覧を短縮。取り込む登録は暗黙の型推論にも影響し、記号だけでは記法・型の事実は揃わない。
 - 順序の Source: Adam Naumowicz, Towards Standardized Mizar Environments, CICM 2017, slide 13: <https://mizar.uwb.edu.pl/~softadm/imports/slides.pdf>。現行環境部の該当する一覧の話で、すべての import 指令の話ではない。
 
-### Frame 5.1a - import と依存の追跡
+### Frame 5.2 - import と依存の追跡
 
 新仕様: モジュールの import (specification example):
 
@@ -403,6 +592,8 @@ Speaker note:
 import .function;
 import mml.algebra.structure.sorted;
 ```
+
+### 表12　import と依存関係の追跡
 
 | 段階 | 著者が確認できるもの |
 |---|---|
@@ -417,7 +608,7 @@ Speaker note:
 
 - Source: `doc/spec/en/12.modules_and_namespaces.md` §12.3、`17.clusters_and_registrations.md`, Traceability、`23.package_management_and_build_system.md`。import 例は一対一の機械的な移行例ではない。詳細: Backup 7–8。
 
-### Frame 5.2 - 全体像
+### Frame 5.3 - 全体像 [deep dive]
 
 ![Mizar Evo in one picture](figures/layer_stack.pdf)
 
@@ -472,21 +663,7 @@ Speaker note:
 
 Resolution ログからの候補抽出 (sketch):
 
-```text
-F1: forall x. (P(x) implies Q(x)); F2: forall y. (Q(y) implies R(y))
-H: P(a); goal: R(a); refute: F1 & F2 & H & not R(a)
-
-{not P(x), Q(x)}             {not Q(y), R(y)}
-          \                 /
-           sigma1 = {x := y}       :: unify Q(x), Q(y)
-           {not P(y), R(y)}        {P(a)}
-                    \             /
-                     sigma2 = {y := a} :: unify P(y), P(a)
-                     {R(a)}        {not R(a)}
-                          \        /
-                           sigma3 = {}
-                                {}
-```
+![Resolution tree with composed substitutions and extracted evidence](figures/resolution_evidence.pdf)
 
 - **非信頼の抽出器が枝上の置換を合成。F1 に `x := a`、F2 に `y := a` を保存する。**
 
@@ -496,55 +673,80 @@ Speaker note:
 - ログを使う候補生成案。現行 architecture 10 は独立した instance finder。kernel は evidence を検査し、ログの各推論を信頼しない。
 - Source: architecture 08, 10, 15, 16。スケッチであり、外部 prover の実行例ではない。
 
-### Frame 6.3a - 保存する証拠から具体的な SAT 節へ
+### Frame 6.4 - 保存する証拠から具体的な SAT 節へ
 
-保存する候補・kernel の前処理・SAT 入力 (sketch):
+evidence の照合から SAT による受理まで (sketch):
 
-```text
-save: F1,F2,H (source bindings); F1[x:=a], F2[y:=a]; goal R(a), refute
-check: source/context, binders, capture avoidance
-instances: P(a) implies Q(a); Q(a) implies R(a); P(a); not R(a)
-atoms: p=P(a)=1, q=Q(a)=2, r=R(a)=3
-logical CNF: (not p or q) & (not q or r) & p & not r
-Tseitin: s=4 iff (not p or q); t=5 iff (not q or r)
-SAT clauses (DIMACS example; 0 ends each clause):
-p cnf 5 10
-1 0       -3 0
-1 4 0     -2 4 0     -1 2 -4 0     4 0
-2 5 0     -3 5 0     -2 3 -5 0     5 0
-```
+![Evidence checks, ground instances and a five-variable ten-clause SAT refutation](figures/sat_evidence_check.pdf)
 
-- **small kernel が検査済み evidence から instance・CNF を生成。自身の SAT 検査器で UNSAT を確認し R(a) を受理する。外部 Resolution の各ステップは replay しない。**
+- **evidence を照合し、CNF を再生成。SAT で UNSAT を確認して R(a) を受理。**
 
 Speaker note:
 
 - 元の式、合成した置換、束縛文脈、対象 VC と反駁の極性を保存。instance と SAT 節は再生成する（Backup 5）。
-- DIMACS: 5変数・10節、負の整数は否定、0 は節の終端。s/t は含意を表す。エンコーダに沿った構成例で、実行ダンプではない。
-- kernel は置換を探索しない。Source: architecture 08, 15, 16。
+- 青い各箱は含意を表す s/t の定義と4節。単位節 p・not r と合わせて5変数・10節。元の DIMACS は `draft.ja.md` §6に保持。実行ダンプではない。
+- kernel は置換を探索せず、外部 Resolution の各ステップを replay しない。Source: architecture 08, 15, 16。
 
-## Part Closing. Status And Roadmap
+## Part 7. Status And Roadmap
 
-### Frame 仕様と実装の状況（2026年10月）
+### Frame 7.1 - 実装状況と規模
 
-- **仕様: 24章と付録。英語が正典。**
-- **main branch に実装済み: Rust フロントエンド（字句解析・構文解析・構文木）、alpha コーパス上の名前解決・型検査、証明義務の生成・決定的な discharge、ATP 問題の符号化・候補 evidence、SAT に基づく kernel の evidence 検査、キャッシュ・指紋・ビルドスケジューリングの各マイルストーン。**
-- **進行中: ソースから検証済み成果物までの end-to-end 統合、LSP サーバ、ドキュメント生成。**
-- **今後の課題: MVM 実行、コード抽出、ライブラリ全体の前提選択、MML 移行。**
-- 本講演の対象範囲に、外部 ATP を用いた end-to-end の実証結果は含めない。
+**Rust 製品コードの実装済み約27.1万行。完成時見積は約36–54万行（暫定）。**
+
+### 表13　実装状況とコード規模
+
+| 領域 | 実装済み | 完成時見積 | 限定実装と残る範囲 |
+|---|---:|---:|---|
+| lexer / parser / frontend | 34.4 | 36–43 | syntax を含む。実ソース読込・字句／構文解析を接続 |
+| resolver / checker | 122.9 | 148–193 | source 由来の限定意味論。一般化・サービス接続は残る |
+| Core / VC | 49.7 | 65–95 | IR・proof を含む。限定 source から検証義務へ |
+| ATP / kernel | 22.3 | 30–48 | 符号化・内部候補・SAT 検査。実 ATP との統合は残る |
+| build / driver / artifact | 41.3 | 56–85 | cache・共通基盤を含む。全工程の発行は未接続 |
+| LSP | 0.5 | 6–19 | lifecycle・文書同期の基盤。意味情報との接続は残る |
+| MVM / extraction / doc | 0 | 17–57 | runtime・抽出・文書生成は未実装 |
+
+単位: kLoC（1,000行）。空行・コメント・テストを除く。完成時見積は実装済みを含む総量の概算。MML 移植は対象外。
+
+Source: 基準 `08861708`、2026-10-15計測。残機能に基づく暫定見積。集計範囲・根拠は `draft.ja.md` §7。
 
 Speaker note:
 
-- Source: `doc/design/todo.md`, Crate Status（2026年10月7日時点）。講演前に再確認。
+- 19 crates・178ファイル、271,118 LoC。製品コードの量であり完成率ではない。外部 prover・非 Rust コードも対象外。
+- 追加88–266 kLoCを仮置き。既存部品の再利用を想定し、実績較正は未実施。講演直前に再計測・再見積する。
+- 機能状況は同じ固定コミットの限定範囲。crate の完了表示を全言語の受理能力に読み替えない。
 
-### Frame ロードマップ
+### Frame 7.2 - ソースから成果物まで: 接続の境界
 
-![Roadmap](figures/roadmap_tpp.pdf)
+```text
+Driver:  source -> SourceLoad -> Frontend
+                                    ... later services: pending
+Tests:   source -> resolver/checker -> Core -> VC  (limited corpus)
+Next:    evidence -> kernel acceptance -> witness -> artifact -> build/cache
+```
 
-- **2026年: 仕様、kernel までの Rust パイプライン、template 処理、alpha の end-to-end 実行の完成。**
-- **2027年: 代表的な MML article の移行、native hammer のベースライン構築、MizAR と同じ top-level theorem 単位での評価。**
-- 2028年以降: 移行の拡大、学習ベースの前提選択、LLM による失敗回復、MVM・コード抽出。暗号・量子は将来構想。
+- **SAT-backed kernel の節目は、あらゆる source proof の受理完成を意味しない。**
+- **Algorithm の検証義務生成と、MVM 実行・code extraction・by computation は別の到達点。**
+- 外部 prover を用いる一般的な source-to-artifact の実証結果は未主張。
 
-### Frame おわりに
+Speaker note:
+
+- Source: `doc/design/todo.md` Step 6–7; `crates/mizar-driver/src/registry/catalog.rs` の ModuleResolver 以後は ExternalDependencyGap; `crates/mizar-test/src/runner/proof_verification.rs` の限定 source 経路; 仕様20.9–20.10。
+- 7.1 と同じ固定コミット。式・文脈・置換・来歴の生成、受理後の witness、artifact と再利用の接続を順に完成させる。
+
+### Frame 7.3 - ロードマップ: 統合を優先する
+
+- **最優先: source-to-semantics → VC → evidence → kernel → artifact → build の統合。**
+- Algorithm の意味論・検証義務を整合し、限定的に動く経路を広げる。
+- **2027年度の目標（予定）: 代表的 MML article の移植・互換性評価、native hammer のベースライン、top-level theorem 単位の評価、論文化。**
+- MVM runtime・抽出は別途開発。MML 全体の移植は処理系完成と別課題。
+- 科研費延長は検討中・未承認。学習的前提選択、LLM 修復、暗号・量子は長期構想。
+
+Speaker note:
+
+- Source: `doc/design/todo.md` の統合順序・MML port 境界と改訂ブリーフの研究目標。年度は目標であり完成の確約ではない。
+- 35分版では1分30秒。最優先の接続と研究目標を述べ、長期構想の個別例は読み上げない。
+
+### Frame 7.4 - おわりに
 
 ```text
 **Keep the foundation small.**
@@ -552,8 +754,9 @@ Speaker note:
 **Modernize everything else.**
 ```
 
-- **基盤を小さく保ち、数学的記述の可読性を維持し、周辺基盤を現代化する。**
-- **議論したい点: MML の移行、記述の利便性、自動化の評価。**
+- **FOL・集合論と数学的な記述能力を継承し、言語・開発基盤を再設計する。**
+- **ATP の探索と信頼できる検査を分ける。仕様は今も進化中。**
+- **実装・健全性・MML 互換性について、専門家の意見を求めたい。**
 
 ## Backup 1. MizAR 60 の詳細
 
@@ -567,6 +770,8 @@ Source: Jakubův et al., MizAR 60 for Mizar 50, ITP 2023.
 - 手法: ENIGMA と Deepire で誘導した E と Vampire、学習ベースの前提選択、数百万の ATP 証明で学習するループ。
 
 ## Backup 2. Sledgehammer 評価の詳細
+
+### 表14　Sledgehammer と Magnushammer の評価条件
 
 | 評価 | 対象・方式 | 成功率 |
 |---|---|---|
@@ -674,9 +879,9 @@ topology = { version = "^0.9", features = ["metric"] }
 
 Source: `doc/spec/en/23.package_management_and_build_system.md`; Białystok 資料 Story 1。
 
-## Backup 9. 45分版での追加
+## Backup 9. 質疑用の具体例
 
-時間に応じ、以下の具体例を追加:
+本編38分には追加せず、質問に応じて以下を参照:
 
 1. 単一のゴールで HOL から FOL への関数の符号化を説明（`app`、部分適用、lambda lifting）。
 2. Mizar の関数表現: `Function of X,Y`、`f.x`、集合論的対象としての soft type。
@@ -684,28 +889,32 @@ Source: `doc/spec/en/23.package_management_and_build_system.md`; Białystok 資�
 4. Algorithm: ユークリッドの互除法、`by computation`、関数子への昇格。
 5. Structure とビュー: `AddMagma`、`MulMagma`、`Magma`（Białystok Story 2）。
 6. 現代的な基盤: `mizar.pkg`、namespace、指紋グラフ（Backup 7-8）。
-7. 検査: evidence のインスタンス化と SAT 検査（本編 6.3、詳細は Backup 5）。
+7. 検査: evidence のインスタンス化と SAT 検査（本編 6.4、詳細は Backup 5）。
 
 ## Backup 10. 出典と帰属
 
-本講演における MML の原文引用:
+本講演の例が参照する MML:
 
-| 目的 | 出典 | 行 | 使用箇所 |
-|---|---|---:|---|
-| 関数適用 `f.x` | `funct_1.miz` | 138-140 | Frame 1.2 |
-| soft type としての `Function of X,Y` | `funct_2.miz` | 87-90 | Frame 1.2 |
+### 表15　MML の参照箇所
+
+| 目的 | 出典 | 参照箇所 | 使用箇所 |
+|---|---|---|---|
+| Cantor の定理 | `CARD_1` | 定理14 | Frame 1.2 例1 |
+| 連続全単射と同相性 | `COMPTS_1` | 定理17 | Frame 1.2 例2 |
 
 Source URLs:
 
-- `FUNCT_1`: <https://mizar.uwb.edu.pl/version/current/mml/funct_1.miz>
-- `FUNCT_2`: <https://mizar.uwb.edu.pl/version/current/mml/funct_2.miz>
+- <https://mizar.uwb.edu.pl/version/current/html/card_1.html#T14>
+- <https://mizar.uwb.edu.pl/version/current/html/compts_1.html#T17>
 
 帰属についての注記:
 
-- MML のテキストは GPL-3.0-or-later / CC-BY-SA-3.0-or-later。article 名・URL・行番号を発表者ノートに記載。
+- 参照した MML のテキストは GPL-3.0-or-later / CC-BY-SA-3.0-or-later。表14に挙げたスライド例は説明用に構成し、原文引用とは区別する。
 - ベンチマークの数値は Backup 1-2 と `references.bib` を参照。最終版の作成前に、出版社の情報で書誌事項を確認。
 
 ## Backup 11. 評価条件の比較
+
+### 表16　MizAR 60 と Sledgehammer の評価条件
 
 | | MizAR 60 (ITP 2023) | Sledgehammer / AFP (ITP 2022) |
 |---|---|---|
@@ -794,6 +1003,8 @@ Speaker note:
 - 集合論の直接記述に伴う対・定義域などの細部は、Mizar の soft type、mode、attribute、registration、scheme で抽象化する。
 
 ## Backup 17. 設計上のトレードオフ
+
+### 表17　HOL / FOL における設計上のトレードオフ
 
 | | HOL ITP + ATP | FOL ITP + ATP |
 |---|---|---|
