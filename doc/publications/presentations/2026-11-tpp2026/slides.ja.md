@@ -739,13 +739,12 @@ Speaker note:
 
 - **最優先: source-to-semantics → VC → evidence → kernel → artifact → build の統合。**
 - Algorithm の意味論・検証義務を整合し、限定的に動く経路を広げる。
-- **2027年度の目標（予定）: 代表的 MML article の移植・互換性評価、native hammer のベースライン、top-level theorem 単位の評価、論文化。**
 - MVM runtime・抽出は別途開発。MML 全体の移植は処理系完成と別課題。
-- 科研費延長は検討中・未承認。学習的前提選択、LLM 修復、暗号・量子は長期構想。
+- 学習的前提選択、LLM 修復、暗号・量子は長期構想。
 
 Speaker note:
 
-- Source: `doc/design/todo.md` の統合順序・MML port 境界と改訂ブリーフの研究目標。年度は目標であり完成の確約ではない。
+- Source: `doc/design/todo.md` の統合順序・MML port 境界。
 
 ### Frame 7.3 - おわりに
 

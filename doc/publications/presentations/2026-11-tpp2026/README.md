@@ -201,7 +201,7 @@ Verified on October 7, 2026 while designing the deck:
 - [x] Exact MML excerpts: `funct_1.miz` lines 138-140, `funct_2.miz` lines
       87-90.
 - [x] Current specification sends ATPs only cited premises and local
-      hypotheses (spec 21.7.2); the native hammer is a 2027 research item.
+      hypotheses (spec 21.7.2); native-hammer citation assistance is planned.
 
 Still to do before the talk:
 
@@ -218,7 +218,7 @@ Still to do before the talk:
 - [ ] Confirm the assumed 45-minute slot and seven-minute question time.
 - [ ] Confirm any precise ordering of the 2023 consultations, repository rename
       date, or specific Białystok feedback before adding those details.
-- [ ] Keep the proposed 2027 work and unapproved grant extension as plans.
+- [ ] Keep annual development targets in `draft.ja.md` §7.2, outside the slides and narration.
 - [ ] Build and inspect the Japanese deck; translate and rebuild English later.
 - [ ] Rehearse `script.ja.md` against the clock.
 
