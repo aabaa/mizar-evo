@@ -2696,3 +2696,127 @@ fn locked_toolchain_metadata_hash_matches_independent_frames_and_all_field_invar
     duplicate.packages[0].dependencies.push(dependency);
     assert_ne!(lockfile_content_hash(&duplicate), baseline);
 }
+
+#[test]
+fn constraint_bound_overflow_preserves_public_lock_validation() {
+    let cases: &[(&str, &[(&str, bool)])] = &[
+        (
+            "^18446744073709551615.4.5",
+            &[
+                ("18446744073709551615.4.5", true),
+                ("18446744073709551615.5.0", true),
+                ("18446744073709551615.4.4", false),
+                ("18446744073709551615.4.5-rc.1", false),
+                ("18446744073709551615.4.5+build.1", true),
+            ],
+        ),
+        (
+            "^0.18446744073709551615.4",
+            &[
+                ("0.18446744073709551615.4", true),
+                ("0.18446744073709551615.5", true),
+                ("0.18446744073709551615.3", false),
+                ("1.0.0", false),
+            ],
+        ),
+        (
+            "^0.0.18446744073709551615",
+            &[
+                ("0.0.18446744073709551615", true),
+                ("0.0.18446744073709551614", false),
+                ("0.0.18446744073709551615-rc.1", false),
+                ("0.0.18446744073709551615+build.1", true),
+                ("0.1.0", false),
+                ("1.0.0", false),
+            ],
+        ),
+        (
+            "~1.18446744073709551615.4",
+            &[
+                ("1.18446744073709551615.4", true),
+                ("1.18446744073709551615.5", true),
+                ("1.18446744073709551615.3", false),
+                ("2.0.0", false),
+            ],
+        ),
+        (
+            "^18446744073709551614.4.5",
+            &[
+                ("18446744073709551614.4.5", true),
+                ("18446744073709551614.4.4", false),
+                ("18446744073709551615.0.0-rc.1", true),
+                ("18446744073709551615.0.0", false),
+                ("18446744073709551615.0.0+build.1", false),
+            ],
+        ),
+        (
+            "^0.18446744073709551614.4",
+            &[
+                ("0.18446744073709551614.4", true),
+                ("0.18446744073709551614.3", false),
+                ("0.18446744073709551615.0-rc.1", true),
+                ("0.18446744073709551615.0", false),
+            ],
+        ),
+        (
+            "^0.0.18446744073709551614",
+            &[
+                ("0.0.18446744073709551614", true),
+                ("0.0.18446744073709551613", false),
+                ("0.0.18446744073709551615-rc.1", true),
+                ("0.0.18446744073709551615", false),
+            ],
+        ),
+        (
+            "~1.18446744073709551614.4",
+            &[
+                ("1.18446744073709551614.4", true),
+                ("1.18446744073709551614.3", false),
+                ("1.18446744073709551615.0-rc.1", true),
+                ("1.18446744073709551615.0", false),
+            ],
+        ),
+    ];
+    for &(constraint, versions) in cases {
+        let manifest = parse_package_manifest(&format!(
+            r#"
+            [package]
+            name = "alpha"
+            version = "1.0.0"
+            [dependencies]
+            dep = "{constraint}"
+            "#
+        ))
+        .expect("valid manifest constraint");
+        for &(version, expected) in versions {
+            let lock = parse_lockfile(&format!(
+                r#"
+                schema_version = 1
+                [[package]]
+                name = "alpha"
+                version = "1.0.0"
+                source = {{ kind = "workspace", path = "alpha" }}
+                dependencies = [{{ name = "dep", version = "{version}" }}]
+                [[package]]
+                name = "dep"
+                version = "{version}"
+                source = {{ kind = "registry", registry = "default", checksum = "sha256:abcd" }}
+                dependencies = []
+                "#
+            ))
+            .expect("internally consistent lockfile");
+            let result = validate_lockfile_for_workspace(std::slice::from_ref(&manifest), &lock);
+            assert_eq!(result.is_ok(), expected, "{constraint} against {version}");
+            if let Err(diagnostics) = result {
+                assert_eq!(diagnostics.diagnostics().len(), 1);
+                let diagnostic = &diagnostics.diagnostics()[0];
+                assert_eq!(
+                    diagnostic.kind,
+                    ManifestDiagnosticKind::InvalidDependencyVersion
+                );
+                assert_eq!(diagnostic.location.path, "<lockfile>");
+                assert_eq!(diagnostic.location.key, "alpha.dependencies.dep");
+            }
+        }
+    }
+}

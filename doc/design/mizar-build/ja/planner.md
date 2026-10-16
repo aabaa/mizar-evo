@@ -159,6 +159,10 @@ produce_build_plan では収集済み member の既存相対座標 (root '.' を
 planner は既存 lockfile を検証する。`mizar.lock` の更新や再書き込みは行わない。
 lockfile generation と registry solving は同じ data model の上にある将来作業である。
 
+## Version Constraint Bound Arithmetic
+caret/tilde の上限増分は、parse 済 u64 最大 component でも panic/wrap しない。上限 Version を表現できる場合は既存 lower bound と Version 比較を保ち、private upper_bound_caret は checked addition による Option<Version> を返してよい。上限を表現できない場合、tilde は candidate の major を base と同じにし、caret は major を保ち、base major が零なら minor も同じに保つ。overflow を高位 prefix の無制限許可にしない。
+exact/range、prerelease/build 比較、parser 文法、validation error、public API は保つ。公開 parse/lock validation 経由の定数 table test 一系列を追加し、四 overflow 分岐、充足/lower bound/高位 prefix の対照、近傍の表現可能上限を debug/release で扱う。新 helper/type/依存や toolchain 充足・選択・W0306/runtime 権限は加えない。
+
 ## Lock content fingerprint
 
 `lockfile_content_hash(&Lockfile) -> mizar_session::Hash` は直接構築した任意の値を含む現行 typed lock の全 field を fingerprint にする。schema・assignment・provenance・現在の file の検証ではなく、file 読み込みや parser/planner policy を変更しない。raw TOML の comment/空白/順序、workspace root/member manifest、source text、実行中のToolchainInfo、effective configuration、dependency artifact は別入力である。

@@ -475,6 +475,8 @@ Keep `cargo test -p mizar-build` green after each task (see
 
 37. **[Recorded toolchain version metadata](../../task_contracts/en/BUILD-LOCKED-TOOLCHAIN-METADATA.md).** [x]
 
+38. **[Overflow-safe constraint bounds](../../task_contracts/en/BUILD-CONSTRAINT-BOUND-OVERFLOW.md).** [x]
+
 ## Recommended Verification
 
 Run after each task:

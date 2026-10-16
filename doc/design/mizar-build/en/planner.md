@@ -162,6 +162,10 @@ The planner validates an existing lockfile. It does not update or rewrite
 `mizar.lock`; lockfile generation and registry solving are future work above
 the same data model.
 
+## Version Constraint Bound Arithmetic
+Caret/tilde upper-bound increments must not panic or wrap for parsed u64-max components. Keep the existing lower bound and Version comparisons when the upper Version is representable; private upper_bound_caret may return Option<Version> using checked addition. If no upper Version is representable, tilde retains the candidate's base major; caret retains base major and, for zero base major, base minor. Overflow never makes higher prefixes globally admissible.
+Preserve exact/range handling, prerelease/build comparisons, parser grammar, validation errors and public APIs. Append one literal table-driven public parse/lock-validation test covering all four overflow branches, satisfying/lower-bound/higher-prefix controls and nearby representable bounds; run it in debug and release. No new helper/type/dependency or toolchain satisfaction, selection, W0306/runtime authority is added.
+
 ## Lock content fingerprint
 
 `lockfile_content_hash(&Lockfile) -> mizar_session::Hash` fingerprints every current typed lock field, including arbitrary directly constructed values; it validates neither schema, assignment, provenance nor current files. It reads no files and changes no parser/planner policy. Raw TOML comments/whitespace/order, workspace root/member manifests, source text, running ToolchainInfo, effective configuration and dependency artifacts are separate inputs.

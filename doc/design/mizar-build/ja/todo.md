@@ -462,6 +462,8 @@ internal: [01](../../internal/ja/01.compiler_driver_and_pipeline_scheduler.md)�
 
 37. **[記録されたtoolchain版metadata](../../task_contracts/ja/BUILD-LOCKED-TOOLCHAIN-METADATA.md).** [x]
 
+38. **[overflow しない制約上限](../../task_contracts/ja/BUILD-CONSTRAINT-BOUND-OVERFLOW.md).** [x]
+
 ## 推奨検証
 
 各タスクの後で実行する:

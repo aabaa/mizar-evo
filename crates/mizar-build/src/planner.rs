@@ -2432,9 +2432,22 @@ impl VersionConstraint {
     fn matches(&self, version: &Version) -> bool {
         match self {
             Self::Exact(exact) => version == exact,
-            Self::Caret(base) => version >= base && version < &upper_bound_caret(base),
+            Self::Caret(base) => {
+                version >= base
+                    && match upper_bound_caret(base) {
+                        Some(upper) => version < &upper,
+                        None => {
+                            version.major == base.major
+                                && (base.major > 0 || version.minor == base.minor)
+                        }
+                    }
+            }
             Self::Tilde(base) => {
-                version >= base && version < &Version::new(base.major, base.minor + 1, 0)
+                version >= base
+                    && match base.minor.checked_add(1) {
+                        Some(minor) => version < &Version::new(base.major, minor, 0),
+                        None => version.major == base.major,
+                    }
             }
             Self::Range(comparators) => comparators
                 .iter()
@@ -2454,13 +2467,19 @@ impl VersionComparator {
     }
 }
 
-fn upper_bound_caret(base: &Version) -> Version {
+fn upper_bound_caret(base: &Version) -> Option<Version> {
     if base.major > 0 {
-        Version::new(base.major + 1, 0, 0)
+        base.major
+            .checked_add(1)
+            .map(|major| Version::new(major, 0, 0))
     } else if base.minor > 0 {
-        Version::new(0, base.minor + 1, 0)
+        base.minor
+            .checked_add(1)
+            .map(|minor| Version::new(0, minor, 0))
     } else {
-        Version::new(0, 0, base.patch + 1)
+        base.patch
+            .checked_add(1)
+            .map(|patch| Version::new(0, 0, patch))
     }
 }
 

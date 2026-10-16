@@ -1,0 +1,11 @@
+# Task BUILD-CONSTRAINT-BOUND-OVERFLOW: safe version bound arithmetic
+Canonical language: English; [Japanese pointer](../ja/BUILD-CONSTRAINT-BOUND-OVERFLOW.md).
+Status: implemented. Tier: full. Owner: [Build plan](../../mizar-build/en/00.crate_plan.md), task38; consumers existing lock validation and later toolchain comparisons.
+Authority: [spec §23.2](../../../spec/en/23.package_management_and_build_system.md#232-versioning-and-dependency-resolution), existing planner dependency-validation tests; [sole arithmetic owner](../../mizar-build/en/planner.md#version-constraint-bound-arithmetic).
+Readiness/gap: source_drift/test_gap in existing caret/tilde upper arithmetic; valid parsed maximum components overflow before existing constraint validation can return. Current parser/validator inputs permit an independent bounded repair.
+Scope: only existing private VersionConstraint::matches and upper_bound_caret bodies/signature; owner fixes checked bounds and retained prefix conditions. Preserve all representable-bound Version comparisons and lower bounds, exact/range handling, diagnostics and public surfaces. No new helper/type/field/dependency/schema/profile.
+Tests: append one table-driven existing-public-parser/lock-validator family, independent literal positive/negative and near-limit controls for every overflow branch; run scoped debug and release. Original tests/fixtures/expectations stay exact; no standalone replacement matcher oracle.
+Writes: localized planner.rs private bodies, append-only planner/tests.rs; paired planner/plan/TODO/contracts only. Root roadmap/audit and all unrelated Rust/Cargo remain exact.
+Forbidden: protected spec/.miz/expectation/trace/ledger changes, overflow as global permission, saturation/wrapping that changes bounds, altered prerelease/build policy or public diagnostics, fabricated inputs/Accepted/Complete/hits or semantic coverage credit.
+Deferrals: full toolchain constraint intersection/pinning/dependency-release authentication/mismatch/runtime, all Steps6–8 gates and broader service/publication integration remain open.
+Reviews/exit: SPEC before Rust; TEST/CODE/VOLUME/CONSISTENCY and scoped full gates, narrow debug/release and planner tests, parent cargo fmt --check, cargo clippy --all-targets --all-features -- -D warnings, cargo test. Only task38 may close.
