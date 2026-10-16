@@ -1010,6 +1010,147 @@ impl<'a> crate::registry::SourceLoadInputs<'a> {
         mizar_resolve::symbols::source_theorem_module_candidates(ast, &arena, collection.env())
     }
 
+    /// Associates a published Frontend parent with a fresh protected-source execution.
+    pub fn native_theorem_module_candidates_with_frontend_parent(
+        self,
+        input: &PhaseInput,
+        publisher: &mizar_ir::publisher::PhaseOutputPublisher,
+    ) -> Result<
+        Option<(
+            mizar_resolve::resolved_ast::ResolvedAst,
+            mizar_resolve::env::SymbolEnv,
+        )>,
+        String,
+    > {
+        if input.snapshot != self.snapshot.id {
+            return Err("native Frontend resolver snapshot mismatch".to_owned());
+        }
+        let WorkUnit::Module { module } = &input.work_unit else {
+            return Err("native Frontend resolver requires a module".to_owned());
+        };
+        let version = unique(self.snapshot.source_versions.iter().filter(|version| {
+            version.package_id == module.package && version.module_path == module.path
+        }))
+        .ok_or_else(|| "native Frontend resolver requires one captured source".to_owned())?;
+        let (source, _) = self
+            .native_source(version)
+            .ok_or_else(|| "native Frontend resolver capture binding failed".to_owned())?;
+        if input.identities().input_hash() != source_input_hash(version)
+            || !input.identities().dependency_hashes().is_empty()
+            || !self.snapshot.dependency_artifacts.is_empty()
+            || !self.module_index.dependency_summaries.is_empty()
+            || input.parent_outputs().len() != 1
+        {
+            return Err("native Frontend resolver requires the leaf input profile".to_owned());
+        }
+        let parent = input.parent_outputs()[0].as_output_ref();
+        let storage = publisher.storage();
+        storage
+            .validate_handle(parent)
+            .map_err(|error| error.to_string())?;
+        publisher
+            .validate_published_output(input.snapshot, parent)
+            .map_err(|error| error.to_string())?;
+        let work_unit = IrWorkUnit::new(format!(
+            "{:?}:{:?}",
+            module.package.as_str(),
+            module.path.as_str()
+        ));
+        if parent.snapshot() != input.snapshot
+            || parent.phase() != &IrPipelinePhase::new("Frontend")
+            || parent.work_unit() != &work_unit
+            || parent.output_kind() != &OutputKind::new("FrontendOutput")
+            || parent.schema_version() != SchemaVersion::new(1)
+        {
+            return Err("native Frontend resolver parent binding mismatch".to_owned());
+        }
+        let typed = storage
+            .typed_handle::<FrontendOutput<<MizarParserSeam as ParserSeam>::Ast>>(
+                parent,
+                &OutputKind::new("FrontendOutput"),
+            )
+            .map_err(|error| error.to_string())?;
+        let [ancestor] = typed.lineage().parents.as_slice() else {
+            return Err("native Frontend resolver requires one SourceLoad ancestor".to_owned());
+        };
+        let ancestor = publisher
+            .registry()
+            .output_lineage(*ancestor)
+            .ok_or_else(|| "native Frontend resolver requires registered ancestry".to_owned())?;
+        if ancestor.snapshot != input.snapshot
+            || ancestor.phase != IrPipelinePhase::new("SourceLoad")
+            || ancestor.work_unit != work_unit
+            || ancestor.output_kind != OutputKind::new("SourceUnit")
+            || !ancestor.parents.is_empty()
+            || ancestor.named_input_hashes
+                != vec![NamedInputHash {
+                    name: "source".to_owned(),
+                    domain: SOURCE_UNIT_CACHE_KEY_VERSION.to_owned(),
+                    digest: input.identities().input_hash(),
+                }]
+        {
+            return Err("native Frontend resolver SourceLoad ancestry mismatch".to_owned());
+        }
+        let retained = storage.get(&typed).map_err(|error| error.to_string())?;
+        let package = self
+            .build_plan
+            .packages
+            .iter()
+            .find(|package| package.package_id == module.package)
+            .ok_or_else(|| "native Frontend resolver requires a bound package".to_owned())?;
+        let PackagePlanSource::Workspace { root, .. } = &package.source else {
+            return Err("native Frontend resolver requires a workspace package".to_owned());
+        };
+        let output = Frontend::new(
+            FrontendSourceLoader::new(DiskSourceLoader::new(
+                PathBuf::from(self.snapshot.workspace_root.as_str()).join(root),
+            )),
+            self.dependency_lexical_provider(&[]),
+            MizarParserSeam,
+        )
+        .run_loaded(source)
+        .map_err(|error| error.to_string())?;
+        if *retained != output {
+            return Err("native Frontend resolver complete output mismatch".to_owned());
+        }
+        if !output.diagnostics.is_empty() || output.cache_keys.ast.is_none() {
+            return Ok(None);
+        }
+        let Some(ast) = output.ast.as_ref() else {
+            return Ok(None);
+        };
+        let resolver_module =
+            mizar_resolve::resolved_ast::ModuleId::new(module.package.clone(), module.path.clone());
+        let shells =
+            mizar_resolve::declarations::DeclarationShellCollector::new(ast, &resolver_module)
+                .collect();
+        let collection = mizar_resolve::symbols::SignatureProjectionExtractor::new(
+            ast,
+            &shells,
+            mizar_resolve::env::NamespacePath::new(module.path.as_str()),
+        )
+        .collect(&resolver_module);
+        if !collection.diagnostics().is_empty() {
+            return Ok(None);
+        }
+        let arena = mizar_resolve::resolved_ast::SurfaceResolvedArena::lower(ast, &resolver_module)
+            .map_err(|error| error.to_string())?;
+        let result = mizar_resolve::symbols::source_theorem_module_candidates(
+            ast,
+            &arena,
+            collection.env(),
+        )?;
+        if result.is_some() {
+            storage
+                .validate_handle(parent)
+                .map_err(|error| error.to_string())?;
+            publisher
+                .validate_published_output(input.snapshot, parent)
+                .map_err(|error| error.to_string())?;
+        }
+        Ok(result)
+    }
+
     fn native_source(
         self,
         version: &mizar_session::SourceVersion,

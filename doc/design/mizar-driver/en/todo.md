@@ -565,6 +565,8 @@ the owning producers when the paired tasks land.
 
 45. **[Captured native theorem module candidates](../../task_contracts/en/DRIVER-NATIVE-THEOREM-MODULE-CANDIDATES.md).** [x]
 
+46. **[Native Frontend resolver binding](../../task_contracts/en/DRIVER-NATIVE-FRONTEND-RESOLVER-BINDING.md).** [x]
+
 ## Recommended Verification
 
 Run after each task:
