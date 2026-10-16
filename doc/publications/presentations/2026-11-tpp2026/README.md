@@ -108,11 +108,12 @@ and attr dense[M] examples of shared type/value parameterization, including
 `Vector of K` / `M-dense` as syntax sugar for `Vector[K]` / `dense[M]`.
 Part 3 keeps its three-minute budget (45/60/40/35 seconds);
 4.1 summarizes the basic assignment, branch, loop and return Hoare rules;
-4.3 explains promotion through checked termination, contract citation, and
+4.3 repeats the Euclid body with numbered annotations matching the table of
+establishment, preservation, termination and exit obligations;
+4.4 explains promotion through checked termination, contract citation, and
 `by computation` using a concrete-input example (MVM execution remains planned);
-4.4 follows Euclid's establishment, preservation, termination, and exit;
 4.5 connects lambda function notation, reflected syntax and verified symbolic
-differentiation. Part 4 keeps five minutes (45/75/60/75/45 seconds);
+differentiation. Part 4 keeps five minutes (45/75/75/60/45 seconds);
 5.1-5.2 explain the old environment before showing imports. These are explanatory
 sketches and specification examples, not execution or external-prover results.
 The closing line is fixed:

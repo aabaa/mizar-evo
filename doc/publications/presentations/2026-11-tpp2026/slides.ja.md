@@ -476,9 +476,39 @@ Speaker note:
 - Source: spec 20、§20.1.1, 20.5, 20.12。外側の definition/let を省略。
 - 比較: [Dafny §8.15](https://dafny.org/latest/DafnyRef/DafnyRef.html#sec-loop-specifications)。
 
-### Frame 4.3 - terminating と functor 昇格
+### Frame 4.3 - 互除法: コードと証明義務
 
-### 表9　Algorithm の停止性と保証
+互除法の本体を再掲（a,b >= 1、外枠省略） (sketch):
+
+```mizar
+var x := a; var y := b; :: (1)
+while y <> 0 do
+  invariant x >= 1 & y >= 0 & Gcd(a,b) = Gcd(x,y); :: (2)
+  decreasing y; :: (3)
+  const r := x mod y; x := y; y := r;
+end;
+return x; :: (4)
+```
+
+### 表9　ユークリッドの互除法の証明義務
+
+| 箇所 | 証明義務 | 数学的な根拠 |
+|---|---|---|
+| (1) | 不変条件の初期成立 | `x=a`, `y=b`。事前条件から正値性 |
+| (2) | 不変条件の保存 | 旧 `(x,y)` から `(y,r)` へ。`Gcd(x,y) = Gcd(y,r)`、旧 `y >= 1`、`r >= 0` |
+| (3) | Nat 値の測度の減少 | `y' = r`、`0 <= r < y` |
+| (4) | 終了時の事後条件 | `y=0`。`Gcd(a,b) = Gcd(x,0) = x` |
+
+**各箇所をライブラリの GCD・剰余の補題とともに検査する。**
+
+Speaker note:
+
+- Source: `doc/spec/en/20.algorithm_and_verification.md` §20.5, 20.12, 20.13.3。4.2 の本体を再掲し、注釈番号を表に対応させる。旧状態 (x,y) で r=x mod y、更新後は (y,r)。SAT 単独が算術を知っているわけではない。最後の y:=r を y:=x に変えると減少を失う。仕様に基づく説明例。
+- 長期的な対象は将来構想: 整数論・組合せ論、記号計算、最適化、暗号、量子アルゴリズム。MVM 実行・コード抽出も今後の課題。
+
+### Frame 4.4 - terminating と functor 昇格
+
+### 表10　Algorithm の停止性と保証
 
 | algorithm の形 | requires の下での意味 |
 |---|---|
@@ -505,27 +535,6 @@ Speaker note:
 
 - Source: `doc/spec/en/20.algorithm_and_verification.md` §20.7.2–20.7.3, 20.9.1–20.9.2, 20.13.2; `16.theorems_and_proofs.md` §16.5.1。MVM 実行・コード抽出は今後の課題。
 - requires と検証済み実行artifactが前提。既定の computation は MVM を信頼する computed 経路。kernel replay の条件は draft.ja.md。
-
-### Frame 4.4 - 互除法: 何を証明するのか
-
-1回の反復: 旧状態 `(x,y)`、`y > 0`。`r = x mod y` とすると、新状態 `(x',y') = (y,r)`。
-
-### 表10　ユークリッドの互除法の証明義務
-
-| 証明義務 | 数学的な根拠 |
-|---|---|
-| 不変条件の初期成立 | `x=a`, `y=b`。事前条件から正値性 |
-| 不変条件の保存 | `Gcd(x,y) = Gcd(y,r)`、`y >= 1`、`r >= 0` |
-| Nat 値の測度の減少 | `y' = r`、`0 <= r < y` |
-| 終了時の事後条件 | `y=0`。`Gcd(a,b) = Gcd(x,0) = x` |
-
-- **GCD・剰余の補題をライブラリから用い、定理と同じ枠組みで検査する。SAT 単独が算術を知っているわけではない。**
-- 最後の `y := r` を `y := x` に変えると減少を失う。仕様に基づく説明例。
-
-Speaker note:
-
-- Source: `doc/spec/en/20.algorithm_and_verification.md` §20.5, 20.12, 20.13.3。証明義務の説明例であり、実行結果ではない。
-- 長期的な対象は将来構想: 整数論・組合せ論、記号計算、最適化、暗号、量子アルゴリズム。MVM 実行・コード抽出も今後の課題。
 
 ### Frame 4.5 - 式変形を検証する: lambda と微分
 
