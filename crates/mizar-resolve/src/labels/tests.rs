@@ -5846,3 +5846,226 @@ fn source_theorem_module_candidates_refuse_whole_pairs_and_preserve_lower_order(
     );
     assert_eq!((rebuilt, arena, env), before);
 }
+
+#[test]
+fn source_theorem_module_storage_roundtrips_complete_pairs_and_rebinds() {
+    let fixture = include_str!(
+        "../../../../tests/miz/pass/resolve/pass_declaration_symbol_private_theorem_visibility_001.miz"
+    );
+    let many = (0..12)
+        .map(|i| format!("theorem T{i}: 0 = 0\nproof\n  thus 0 = 0;\nend;\n"))
+        .collect::<String>();
+    let mixed = format!(
+        "{fixture}\ntheorem Alpha: 0 = 0\nproof\n  thus 0 = 0 by UsePriv1, PrivT1, PrivT1;\nend;\n"
+    );
+    let trivia = format!(
+        "\u{feff}{}",
+        fixture
+            .replacen("proof\n", "proof\n  :: 日本語 trivia\n", 1)
+            .replace('\n', "\r\n")
+    );
+    for text in [
+        fixture.to_owned(),
+        mixed,
+        fixture.replace("theorem UsePriv1", "lemma UsePriv1"),
+        fixture.replace("\ntheorem UsePriv1", "\nprivate theorem UsePriv1"),
+        include_str!("../../../../tests/miz/pass/theorems/pass_proof_verification_theorem_status_open_assumed_001.miz").to_owned(),
+        many,
+        trivia,
+    ] {
+        let (ast, module, _, env, arena) = parsed_private_theorem_fixture(&text);
+        let before = (ast.clone(), env.clone(), arena.clone());
+        let expected = crate::symbols::source_theorem_module_candidates(&ast, &arena, &env).unwrap().unwrap();
+        if text.contains("theorem T11:") {
+            let ids = env.definitions().iter().map(|entry| entry.id().index()).collect::<Vec<_>>();
+            assert_eq!(ids.len(), 12);
+            assert!(ids.windows(2).any(|pair| pair[0] > pair[1]));
+        }
+        let nested = ast.canonical_bytes().unwrap();
+        let bytes = crate::symbols::source_theorem_module_candidates_canonical_bytes(&ast, &module).unwrap().unwrap();
+        let mut literal = b"mizar-resolve/source-theorem-module-storage/v1\0\x03\0\0\0\0\0\0\0pkg\x04\0\0\0\0\0\0\0main".to_vec();
+        literal.extend_from_slice(&u64::try_from(nested.len()).unwrap().to_le_bytes());
+        literal.extend_from_slice(&nested);
+        assert_eq!(bytes, literal);
+        assert_eq!(crate::symbols::source_theorem_module_candidates_from_canonical_bytes(&bytes, ast.source_id, &module), Some(expected.clone()));
+        assert_eq!(crate::symbols::source_theorem_module_candidates_canonical_bytes(&ast, &module).unwrap(), Some(bytes.clone()));
+        let rebound_id = distinct_source_ids().1;
+        assert_ne!(rebound_id, ast.source_id);
+        // This is storage reconstruction under a genuine id, not a Frontend execution receipt.
+        let rebound = SurfaceAst::from_canonical_bytes(&nested, rebound_id).unwrap();
+        let shells = crate::declarations::DeclarationShellCollector::new(&rebound, &module).collect();
+        let collected = crate::symbols::SignatureProjectionExtractor::new(&rebound, &shells, NamespacePath::new(module.path().as_str())).collect(&module);
+        assert!(collected.diagnostics().is_empty());
+        let rebound_arena = SurfaceResolvedArena::lower(&rebound, &module).unwrap();
+        let rebound_expected = crate::symbols::source_theorem_module_candidates(&rebound, &rebound_arena, collected.env()).unwrap().unwrap();
+        assert_ne!(rebound_expected, expected);
+        assert_eq!(crate::symbols::source_theorem_module_candidates_from_canonical_bytes(&bytes, rebound_id, &module), Some(rebound_expected));
+        assert_eq!(crate::symbols::source_theorem_module_candidates_canonical_bytes(&rebound, &module).unwrap(), Some(bytes));
+        assert_eq!((ast, env, arena), before);
+    }
+}
+
+#[test]
+fn source_theorem_module_storage_rejects_lower_and_storage_failures() {
+    let fixture = include_str!(
+        "../../../../tests/miz/pass/resolve/pass_declaration_symbol_private_theorem_visibility_001.miz"
+    );
+    for text in [
+        fixture.replace("by PrivT1", "by Missing"),
+        fixture.replace("by PrivT1", "by main.PrivT1"),
+        format!("{fixture}\nreserve Y for set;\n"),
+        fixture.replace("thus X = X;", "thus Y = X;"),
+    ] {
+        let (ast, module, _, env, arena) = parsed_private_theorem_fixture(&text);
+        let before = (ast.clone(), env.clone(), arena.clone());
+        let lower = crate::symbols::source_theorem_module_candidates(&ast, &arena, &env);
+        if text.contains("thus Y = X;") {
+            assert_eq!(lower.as_ref().unwrap_err(), "UnresolvedReference");
+            // Oversize framing must refuse before replaying even an error-producing AST.
+            let oversized = module_id(&"p".repeat(32 * 1024 * 1024), "main");
+            assert_eq!(
+                crate::symbols::source_theorem_module_candidates_canonical_bytes(&ast, &oversized)
+                    .unwrap(),
+                None
+            );
+        } else {
+            assert_eq!(lower, Ok(None));
+        }
+        assert_eq!(
+            crate::symbols::source_theorem_module_candidates_canonical_bytes(&ast, &module),
+            lower.map(|pair| pair.map(|_| unreachable!()))
+        );
+        let nested = ast.canonical_bytes().unwrap();
+        let mut bytes = b"mizar-resolve/source-theorem-module-storage/v1\0".to_vec();
+        for field in [b"pkg".as_slice(), b"main".as_slice(), nested.as_slice()] {
+            bytes.extend_from_slice(&u64::try_from(field.len()).unwrap().to_le_bytes());
+            bytes.extend_from_slice(field);
+        }
+        assert_eq!(
+            crate::symbols::source_theorem_module_candidates_from_canonical_bytes(
+                &bytes,
+                ast.source_id,
+                &module
+            ),
+            None
+        );
+        assert_eq!((ast, env, arena), before);
+    }
+    let (ast, module, _, env, arena) = parsed_private_theorem_fixture(fixture);
+    let before = (ast.clone(), env.clone(), arena.clone());
+    let bytes = crate::symbols::source_theorem_module_candidates_canonical_bytes(&ast, &module)
+        .unwrap()
+        .unwrap();
+    for end in 0..bytes.len() {
+        assert_eq!(
+            crate::symbols::source_theorem_module_candidates_from_canonical_bytes(
+                &bytes[..end],
+                ast.source_id,
+                &module
+            ),
+            None,
+            "truncation {end}"
+        );
+    }
+    for expected in [module_id("other", "main"), module_id("pkg", "other")] {
+        assert_eq!(
+            crate::symbols::source_theorem_module_candidates_from_canonical_bytes(
+                &bytes,
+                ast.source_id,
+                &expected
+            ),
+            None
+        );
+    }
+    let domain_len = b"mizar-resolve/source-theorem-module-storage/v1\0".len();
+    for offset in [0, domain_len - 1, domain_len + 8, domain_len + 8 + 3 + 8] {
+        let mut malformed = bytes.clone();
+        malformed[offset] ^= 1;
+        assert_eq!(
+            crate::symbols::source_theorem_module_candidates_from_canonical_bytes(
+                &malformed,
+                ast.source_id,
+                &module
+            ),
+            None
+        );
+    }
+    for offset in [domain_len, domain_len + 8 + 3, domain_len + 8 + 3 + 8 + 4] {
+        let mut malformed = bytes.clone();
+        malformed[offset..offset + 8].copy_from_slice(&u64::MAX.to_le_bytes());
+        assert_eq!(
+            crate::symbols::source_theorem_module_candidates_from_canonical_bytes(
+                &malformed,
+                ast.source_id,
+                &module
+            ),
+            None
+        );
+    }
+    for suffix in [b"x".as_slice(), &[0; 8]] {
+        let mut malformed = bytes.clone();
+        malformed.extend_from_slice(suffix);
+        assert_eq!(
+            crate::symbols::source_theorem_module_candidates_from_canonical_bytes(
+                &malformed,
+                ast.source_id,
+                &module
+            ),
+            None
+        );
+    }
+    let nested = ast.canonical_bytes().unwrap();
+    let schema = String::from_utf8(nested.clone())
+        .unwrap()
+        .replacen(
+            "mizar-syntax/surface-ast/v1",
+            "mizar-syntax/surface-ast/v2",
+            1,
+        )
+        .into_bytes();
+    let mut noncanonical = nested.clone();
+    noncanonical.push(b' ');
+    for nested in [vec![0xff], b"[]".to_vec(), schema, noncanonical] {
+        assert!(SurfaceAst::from_canonical_bytes(&nested, ast.source_id).is_none());
+        let mut malformed = bytes[..domain_len + 8 + 3 + 8 + 4].to_vec();
+        malformed.extend_from_slice(&u64::try_from(nested.len()).unwrap().to_le_bytes());
+        malformed.extend_from_slice(&nested);
+        assert_eq!(
+            crate::symbols::source_theorem_module_candidates_from_canonical_bytes(
+                &malformed,
+                ast.source_id,
+                &module
+            ),
+            None
+        );
+    }
+    let oversized_module = module_id("pkg", &"m".repeat(32 * 1024 * 1024));
+    let mut oversized = b"mizar-resolve/source-theorem-module-storage/v1\0".to_vec();
+    for field in [
+        oversized_module.package().as_str().as_bytes(),
+        oversized_module.path().as_str().as_bytes(),
+        nested.as_slice(),
+    ] {
+        oversized.extend_from_slice(&u64::try_from(field.len()).unwrap().to_le_bytes());
+        oversized.extend_from_slice(field);
+    }
+    assert!(oversized.len() > 32 * 1024 * 1024);
+    assert_eq!(
+        crate::symbols::source_theorem_module_candidates_from_canonical_bytes(
+            &oversized,
+            ast.source_id,
+            &oversized_module
+        ),
+        None
+    );
+    let mut inconsistent = ast.clone();
+    inconsistent.source_id = distinct_source_ids().1;
+    assert_ne!(inconsistent.source_id, ast.source_id);
+    assert_eq!(inconsistent.canonical_bytes(), None);
+    assert_eq!(
+        crate::symbols::source_theorem_module_candidates_canonical_bytes(&inconsistent, &module)
+            .unwrap(),
+        None
+    );
+    assert_eq!((ast, env, arena), before);
+}

@@ -3700,5 +3700,94 @@ pub fn source_theorem_module_candidates(
     )))
 }
 
+/// Stores the genuine source-profile theorem metadata pair through Syntax storage.
+pub fn source_theorem_module_candidates_canonical_bytes(
+    ast: &SurfaceAst,
+    module: &ModuleId,
+) -> Result<Option<Vec<u8>>, String> {
+    let Some(nested) = ast.canonical_bytes() else {
+        return Ok(None);
+    };
+    let domain = b"mizar-resolve/source-theorem-module-storage/v1\0";
+    let fields = [
+        module.package().as_str().as_bytes(),
+        module.path().as_str().as_bytes(),
+        nested.as_slice(),
+    ];
+    let mut size = domain.len();
+    for field in fields {
+        let Some(next) = size
+            .checked_add(8)
+            .and_then(|size| size.checked_add(field.len()))
+        else {
+            return Ok(None);
+        };
+        if next > 32 * 1024 * 1024 {
+            return Ok(None);
+        }
+        size = next;
+    }
+    let shells = DeclarationShellCollector::new(ast, module).collect();
+    let collected =
+        SignatureProjectionExtractor::new(ast, &shells, NamespacePath::new(module.path().as_str()))
+            .collect(module);
+    if !collected.diagnostics().is_empty() {
+        return Ok(None);
+    }
+    let arena = SurfaceResolvedArena::lower(ast, module).map_err(|error| error.to_string())?;
+    if source_theorem_module_candidates(ast, &arena, collected.env())?.is_none() {
+        return Ok(None);
+    }
+    let mut bytes = Vec::with_capacity(size);
+    bytes.extend_from_slice(domain);
+    for field in fields {
+        let Ok(length) = u64::try_from(field.len()) else {
+            return Ok(None);
+        };
+        bytes.extend_from_slice(&length.to_le_bytes());
+        bytes.extend_from_slice(field);
+    }
+    Ok(Some(bytes))
+}
+
+/// Replays stored source syntax under caller-supplied source and module identities.
+pub fn source_theorem_module_candidates_from_canonical_bytes(
+    bytes: &[u8],
+    source_id: SourceId,
+    module: &ModuleId,
+) -> Option<(crate::resolved_ast::ResolvedAst, SymbolEnv)> {
+    if bytes.len() > 32 * 1024 * 1024 {
+        return None;
+    }
+    let mut rest = bytes.strip_prefix(b"mizar-resolve/source-theorem-module-storage/v1\0")?;
+    let mut fields = [&[][..]; 3];
+    for field in &mut fields {
+        let length = u64::from_le_bytes(rest.get(..8)?.try_into().ok()?);
+        rest = rest.get(8..)?;
+        let length = usize::try_from(length).ok()?;
+        *field = rest.get(..length)?;
+        rest = rest.get(length..)?;
+    }
+    if !rest.is_empty()
+        || fields[0] != module.package().as_str().as_bytes()
+        || fields[1] != module.path().as_str().as_bytes()
+    {
+        return None;
+    }
+    let ast = SurfaceAst::from_canonical_bytes(fields[2], source_id)?;
+    let shells = DeclarationShellCollector::new(&ast, module).collect();
+    let collected = SignatureProjectionExtractor::new(
+        &ast,
+        &shells,
+        NamespacePath::new(module.path().as_str()),
+    )
+    .collect(module);
+    if !collected.diagnostics().is_empty() {
+        return None;
+    }
+    let arena = SurfaceResolvedArena::lower(&ast, module).ok()?;
+    source_theorem_module_candidates(&ast, &arena, collected.env()).ok()?
+}
+
 #[cfg(test)]
 mod tests;
