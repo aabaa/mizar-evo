@@ -4328,3 +4328,214 @@ fn source_public_theorem_label_candidates_refuse_profiles_after_correspondence_c
         crate::symbols::validate_source_symbol_env(&resolved, &mutated_env).unwrap_err()
     );
 }
+
+#[test]
+fn source_public_theorem_formula_candidates_associate_original_written_nodes() {
+    let fixture = include_str!(
+        "../../../../tests/miz/pass/resolve/pass_declaration_symbol_private_theorem_visibility_001.miz"
+    );
+    for (text, expected) in [
+        (fixture.to_owned(), vec![("UsePriv1", 112, 139)]),
+        (
+            fixture.replace("theorem UsePriv1", "lemma UsePriv1"),
+            vec![("UsePriv1", 110, 137)],
+        ),
+        (
+            fixture.replacen(
+                "thus X = X by PrivT1;",
+                "Inner: X = X;\n  thus X = X by Inner;",
+                1,
+            ),
+            vec![("UsePriv1", 112, 139)],
+        ),
+        (
+            include_str!(
+                "../../../../tests/miz/pass/theorems/pass_proof_verification_theorem_status_open_assumed_001.miz"
+            )
+            .to_owned(),
+            vec![("OpenT1", 21, 48), ("AxT1", 73, 100)],
+        ),
+    ] {
+        let (ast, _, _, env, resolved) = parsed_private_theorem_fixture(&text);
+        let before = (ast.clone(), resolved.clone(), env.clone());
+        let mut expected_formulas = BTreeMap::new();
+        for (label, start, end) in expected {
+            let owner = env.symbols().iter().find(|entry| entry.primary_spelling() == label).unwrap();
+            assert_eq!(owner.visibility(), Visibility::Public);
+            assert_eq!(owner.export_status(), ExportStatus::Exported);
+            let expected_range = range(ast.source_id, start, end);
+            let nodes = ast.node_views().filter(|node| {
+                node.as_formula_expression().is_some() && node.range() == expected_range
+            }).collect::<Vec<_>>();
+            let [formula] = nodes.as_slice() else { panic!("unique written formula for {label}") };
+            assert_eq!(&text[start..end], "for X being set holds X = X");
+            let item = exact_proof_label_item_list(&ast).unwrap().child_views().find(|item| {
+                source_range_from_anchor(owner.origin().anchor()) == Some(item.range())
+            }).unwrap();
+            assert!(item.child_views().any(|child| child.id() == formula.id()));
+            assert!(expected_formulas.insert(owner.symbol().clone(), formula.id()).is_none());
+        }
+        let candidates = source_public_theorem_formula_candidates(&ast, &resolved, &env).unwrap();
+        assert_eq!(candidates, Some(expected_formulas));
+        assert_eq!(source_public_theorem_formula_candidates(&ast, &resolved, &env).unwrap(), candidates);
+        assert_eq!((ast, resolved, env), before);
+    }
+    let all_private = fixture.replace("\ntheorem UsePriv1", "\nprivate theorem UsePriv1");
+    let (ast, _, _, env, resolved) = parsed_private_theorem_fixture(&all_private);
+    assert_eq!(
+        source_public_theorem_formula_candidates(&ast, &resolved, &env).unwrap(),
+        Some(BTreeMap::new())
+    );
+}
+
+#[test]
+fn source_public_theorem_formula_candidates_refuse_malformed_written_nodes_after_base_admission() {
+    let fixture = include_str!(
+        "../../../../tests/miz/pass/resolve/pass_declaration_symbol_private_theorem_visibility_001.miz"
+    );
+    let unsupported = format!("{fixture}\ntheorem Plain: 0 = 0;\n");
+    let (unsupported_ast, module, _, unsupported_env, unsupported_arena) =
+        parsed_private_theorem_fixture(&unsupported);
+    assert_eq!(
+        source_public_theorem_formula_candidates(
+            &unsupported_ast,
+            &unsupported_arena,
+            &unsupported_env
+        )
+        .unwrap(),
+        None
+    );
+    let (foreign_ast, _, _, foreign_env, _) =
+        parsed_private_theorem_fixture(&unsupported.replace("UsePriv1", "Changed1"));
+    assert_eq!(
+        source_public_theorem_formula_candidates(
+            &foreign_ast,
+            &unsupported_arena,
+            &unsupported_env
+        )
+        .unwrap_err(),
+        unsupported_arena
+            .validate_against(&foreign_ast, &module)
+            .unwrap_err()
+            .to_string()
+    );
+    assert_eq!(
+        source_public_theorem_formula_candidates(
+            &unsupported_ast,
+            &unsupported_arena,
+            &foreign_env
+        )
+        .unwrap_err(),
+        crate::symbols::validate_source_symbol_env(&unsupported_arena, &foreign_env).unwrap_err()
+    );
+    let (ast, module, namespace, _, _) = parsed_private_theorem_fixture(fixture);
+    let owner = exact_proof_label_item_list(&ast)
+        .unwrap()
+        .child_views()
+        .find(|item| {
+            exact_theorem_owner(*item, true).is_some_and(|owner| owner.spelling == "UsePriv1")
+        })
+        .unwrap();
+    let children = owner.child_views().collect::<Vec<_>>();
+    let formula = children[3];
+    assert_eq!(formula.range(), range(ast.source_id, 112, 139));
+    let descendant = formula
+        .child_views()
+        .find(|node| node.as_token().is_none())
+        .unwrap();
+    for mutation in [
+        "kind",
+        "missing",
+        "multiple",
+        "misplaced",
+        "colon_overlap",
+        "proof_overlap",
+        "empty",
+        "foreign_formula",
+        "child_escape",
+        "foreign_child",
+        "proof_body",
+        "justification",
+        "computation",
+    ] {
+        // Replay structured parser output; this mutation is not source-text authentication.
+        let mut builder = SurfaceAstBuilder::new(ast.source_id);
+        let mut mapped = BTreeMap::new();
+        for node in ast.node_views() {
+            let mut kind = node.kind().clone();
+            let mut node_range = node.range();
+            let mut mapped_children = node
+                .children()
+                .iter()
+                .map(|child| mapped[child])
+                .collect::<Vec<_>>();
+            if node.id() == formula.id() {
+                match mutation {
+                    "kind" => kind = SurfaceNodeKind::Proposition,
+                    "colon_overlap" => node_range.start = children[2].range().end - 1,
+                    "proof_overlap" => node_range.end = children[4].range().start + 1,
+                    "empty" => node_range.end = node_range.start,
+                    "foreign_formula" => node_range.source_id = distinct_source_ids().1,
+                    _ => {}
+                }
+            }
+            if node.id() == descendant.id() {
+                match mutation {
+                    "child_escape" => node_range.end = formula.range().end + 1,
+                    "foreign_child" => node_range.source_id = distinct_source_ids().1,
+                    "proof_body" => kind = SurfaceNodeKind::ProofBlock,
+                    "justification" => kind = SurfaceNodeKind::JustificationClause,
+                    "computation" => kind = SurfaceNodeKind::ComputationJustification,
+                    _ => {}
+                }
+            }
+            if node.id() == owner.id() {
+                match mutation {
+                    "missing" => {
+                        mapped_children.remove(3);
+                    }
+                    "multiple" => {
+                        let extra =
+                            builder.add_node(formula.kind().clone(), formula.range(), Vec::new());
+                        mapped_children.insert(4, extra);
+                    }
+                    "misplaced" => mapped_children.swap(3, 4),
+                    _ => {}
+                }
+            }
+            let id = match &kind {
+                SurfaceNodeKind::Token(token) => {
+                    builder.add_token(token.kind, token.text.clone(), node_range)
+                }
+                _ => builder.add_node(kind, node_range, mapped_children),
+            };
+            mapped.insert(node.id(), id);
+        }
+        let rebuilt = builder.finish(Some(mapped[&ast.root().unwrap()]), None);
+        let shells =
+            crate::declarations::DeclarationShellCollector::new(&rebuilt, &module).collect();
+        let collected =
+            crate::symbols::SignatureProjectionExtractor::new(&rebuilt, &shells, namespace.clone())
+                .collect(&module);
+        assert!(
+            collected.diagnostics().is_empty(),
+            "{mutation}: {:?}",
+            collected.diagnostics()
+        );
+        let env = collected.into_env();
+        let arena = SurfaceResolvedArena::lower(&rebuilt, &module).unwrap();
+        let before = (rebuilt.clone(), arena.clone(), env.clone());
+        assert!(
+            source_public_theorem_label_candidates(&rebuilt, &arena, &env)
+                .unwrap()
+                .is_some(),
+            "{mutation}: inherited admission"
+        );
+        assert_eq!(
+            source_public_theorem_formula_candidates(&rebuilt, &arena, &env).unwrap(),
+            None,
+            "{mutation}"
+        );
+        assert_eq!((rebuilt, arena, env), before);
+    }
+}

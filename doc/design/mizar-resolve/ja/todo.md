@@ -625,6 +625,8 @@ IR 所有権: [01.ir_layers.md](../../architecture/ja/01.ir_layers.md)。
 
 38. **[Source public theorem label candidates](../../task_contracts/ja/RESOLVE-SOURCE-PUBLIC-THEOREM-LABELS.md).** [x]
 
+39. **[Source public theorem formula candidates](../../task_contracts/ja/RESOLVE-SOURCE-PUBLIC-THEOREM-FORMULAS.md).** [x]
+
 ## crate close-out
 
 - 完了: [crate_exit_report.md](./crate_exit_report.md) に、non-deferred task completion、

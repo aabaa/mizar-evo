@@ -667,6 +667,8 @@ Keep `cargo test -p mizar-resolve` green after each task (see
 
 38. **[Source public theorem label candidates](../../task_contracts/en/RESOLVE-SOURCE-PUBLIC-THEOREM-LABELS.md).** [x]
 
+39. **[Source public theorem formula candidates](../../task_contracts/en/RESOLVE-SOURCE-PUBLIC-THEOREM-FORMULAS.md).** [x]
+
 ## Crate Close-Out
 
 - Completed: [crate_exit_report.md](./crate_exit_report.md) records

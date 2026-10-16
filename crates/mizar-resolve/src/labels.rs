@@ -2055,5 +2055,102 @@ pub fn source_public_theorem_label_candidates(
     Ok(Some(rows))
 }
 
+/// Associates unpublished public source owners with their written formula nodes.
+pub fn source_public_theorem_formula_candidates(
+    ast: &SurfaceAst,
+    source: &SurfaceResolvedArena,
+    symbols: &SymbolEnv,
+) -> Result<Option<BTreeMap<crate::resolved_ast::SymbolId, SurfaceNodeId>>, String> {
+    let Some(rows) = source_public_theorem_label_candidates(ast, source, symbols)? else {
+        return Ok(None);
+    };
+    let Some(items) = exact_proof_label_item_list(ast) else {
+        return Ok(None);
+    };
+    let mut formulas = BTreeMap::new();
+    for row in &rows {
+        let owners = symbols
+            .symbols()
+            .iter()
+            .filter(|entry| {
+                entry.symbol().fqn().as_str() == row.owner_fully_qualified_name
+                    && entry.primary_spelling() == row.label
+            })
+            .collect::<Vec<_>>();
+        let [owner] = owners.as_slice() else {
+            return Ok(None);
+        };
+        let Some(owner_range) = source_range_from_anchor(owner.origin().anchor()) else {
+            return Ok(None);
+        };
+        let matches = items
+            .child_views()
+            .filter(|item| {
+                item.range() == owner_range
+                    && matches!(
+                        (owner.kind(), item.kind()),
+                        (SymbolKind::Theorem, SurfaceNodeKind::TheoremItem)
+                            | (SymbolKind::Lemma, SurfaceNodeKind::LemmaItem)
+                    )
+                    && exact_theorem_owner(*item, true)
+                        .is_some_and(|theorem| theorem.spelling == row.label)
+            })
+            .collect::<Vec<_>>();
+        let [item] = matches.as_slice() else {
+            return Ok(None);
+        };
+        let children = item.child_views().collect::<Vec<_>>();
+        let [first, _, _, _, fifth, terminator] = children.as_slice() else {
+            return Ok(None);
+        };
+        let proofless = token_is(first, SurfaceTokenKind::ReservedWord, "open")
+            || token_is(first, SurfaceTokenKind::ReservedWord, "assumed");
+        let colon = children[2 + usize::from(proofless)];
+        let formula = children[3 + usize::from(proofless)];
+        if formula.as_formula_expression().is_none()
+            || (!proofless && !matches!(fifth.kind(), SurfaceNodeKind::ProofBlock))
+            || !token_is(terminator, SurfaceTokenKind::ReservedSymbol, ";")
+        {
+            return Ok(None);
+        }
+        let range = formula.range();
+        let boundary = if proofless { terminator } else { fifth };
+        if owner_range.source_id != ast.source_id
+            || range.start >= range.end
+            || range.start < owner_range.start
+            || range.end > owner_range.end
+            || range.start < colon.range().end
+            || range.end > boundary.range().start
+        {
+            return Ok(None);
+        }
+        let mut pending = vec![formula];
+        while let Some(node) = pending.pop() {
+            let child_range = node.range();
+            if child_range.source_id != ast.source_id
+                || child_range.start > child_range.end
+                || child_range.start < range.start
+                || child_range.end > range.end
+                || matches!(
+                    node.kind(),
+                    SurfaceNodeKind::ProofBlock
+                        | SurfaceNodeKind::JustificationClause
+                        | SurfaceNodeKind::ComputationJustification
+                )
+            {
+                return Ok(None);
+            }
+            pending.extend(node.child_views());
+        }
+        if formulas
+            .insert(owner.symbol().clone(), formula.id())
+            .is_some()
+        {
+            return Ok(None);
+        }
+    }
+    Ok(Some(formulas))
+}
+
 #[cfg(test)]
 mod tests;
