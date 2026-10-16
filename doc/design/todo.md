@@ -713,6 +713,8 @@ Pre-audit 5B.3 and Gate S1 block only consumers requiring their outputs.
      private theorem labels ([A53](./task_contracts/en/STEP6A53-PRIVATE-THEOREM-LABEL-SOURCE.md))
      and distinct variable scopes ([A54](./task_contracts/en/STEP6A54-VARIABLE-SCOPE-IDENTITY.md)).
 
+   [Source public theorem-label candidates](./task_contracts/en/RESOLVE-SOURCE-PUBLIC-THEOREM-LABELS.md) are implemented as raw source-relative rows before complete producer-owned summaries; service registration remains separate.
+
    These slices do not register ModuleResolver or later semantic services;
    their remaining owner-provided payload/publication prerequisites stay open.
 2. [~] [Real-service equivalence](./task_contracts/en/STEP6C-REAL-SERVICE-EQUIVALENCE.md)

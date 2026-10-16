@@ -1930,5 +1930,130 @@ fn range_key(range: SourceRange) -> (String, usize, usize) {
     (format!("{:?}", range.source_id), range.start, range.end)
 }
 
+/// Derives unpublished public theorem-label rows from corresponding source inputs.
+pub fn source_public_theorem_label_candidates(
+    ast: &SurfaceAst,
+    source: &SurfaceResolvedArena,
+    symbols: &SymbolEnv,
+) -> Result<Option<Vec<mizar_artifact::module_summary::ExportedLabelSummary>>, String> {
+    source
+        .validate_against(ast, source.module())
+        .map_err(|error| error.to_string())?;
+    crate::symbols::validate_source_symbol_env(source, symbols)?;
+    let Some(items) = exact_proof_label_item_list(ast) else {
+        return Ok(None);
+    };
+    for item in items.child_views() {
+        let item = if matches!(item.kind(), SurfaceNodeKind::VisibleItem) {
+            let children = item.child_views().collect::<Vec<_>>();
+            let [marker, theorem] = children.as_slice() else {
+                return Ok(None);
+            };
+            let tokens = marker.child_views().collect::<Vec<_>>();
+            if item.is_recovered()
+                || marker.is_recovered()
+                || !matches!(marker.kind(), SurfaceNodeKind::VisibilityMarker)
+                || !matches!(theorem.kind(), SurfaceNodeKind::TheoremItem)
+                || tokens.len() != 1
+                || tokens[0].is_recovered()
+                || !token_is(&tokens[0], SurfaceTokenKind::ReservedWord, "private")
+            {
+                return Ok(None);
+            }
+            *theorem
+        } else {
+            item
+        };
+        let Some(owner) = exact_theorem_owner(item, true) else {
+            return Ok(None);
+        };
+        if item.is_recovered()
+            || item
+                .child_views()
+                .any(|child| matches!(child.kind(), SurfaceNodeKind::JustificationClause))
+            || owner
+                .proof
+                .is_some_and(|proof| !proof_block_boundary_is_supported(proof))
+        {
+            return Ok(None);
+        }
+    }
+    if !symbols.labels().is_empty() {
+        return Ok(None);
+    }
+    let namespace = NamespacePath::new(source.module().path().as_str());
+    let owners = symbols
+        .symbols()
+        .iter()
+        .filter(|entry| {
+            entry.symbol().module() == source.module()
+                && entry.namespace() == &namespace
+                && matches!(entry.kind(), SymbolKind::Theorem | SymbolKind::Lemma)
+                && entry.visibility() == Visibility::Public
+                && entry.export_status() == ExportStatus::Exported
+        })
+        .collect::<Vec<_>>();
+    let contributions = owners
+        .iter()
+        .map(|owner| owner.contribution())
+        .collect::<std::collections::BTreeSet<_>>();
+    let mut seen = std::collections::BTreeSet::new();
+    let mut rows = Vec::new();
+    for contribution in contributions {
+        let collection = ProofLabelSourceCollector::new(
+            ast,
+            source.module(),
+            namespace.clone(),
+            contribution,
+            source,
+        )
+        .and_then(|collector| collector.collect_with_theorem_owners(symbols))
+        .map_err(|error| error.to_string())?;
+        for projection in collection.projections().iter().filter(|projection| {
+            projection.kind() == LabelKind::Theorem
+                && projection.visibility() == Visibility::Public
+                && projection.export_status() == ExportStatus::Exported
+        }) {
+            let matching = owners
+                .iter()
+                .filter(|owner| owner.symbol().fqn().as_str() == projection.origin_path().as_str())
+                .collect::<Vec<_>>();
+            let [owner] = matching.as_slice() else {
+                return Ok(None);
+            };
+            if !seen.insert(owner.symbol()) {
+                return Ok(None);
+            }
+            let range = projection.declaration_range();
+            rows.push(mizar_artifact::module_summary::ExportedLabelSummary {
+                origin_id: projection.origin_path().as_str().to_owned(),
+                label: projection.primary_spelling().to_owned(),
+                owner_fully_qualified_name: owner.symbol().fqn().as_str().to_owned(),
+                visibility: "public".to_owned(),
+                source_range: mizar_artifact::module_summary::SourceRangeSummary {
+                    start_byte: u64::try_from(range.start)
+                        .map_err(|_| "source label range start exceeds u64".to_owned())?,
+                    end_byte: u64::try_from(range.end)
+                        .map_err(|_| "source label range end exceeds u64".to_owned())?,
+                },
+                target_kind: "theorem".to_owned(),
+            });
+        }
+    }
+    if seen.len() != owners.len() {
+        return Ok(None);
+    }
+    rows.sort_by(|left, right| {
+        left.label
+            .cmp(&right.label)
+            .then_with(|| {
+                left.owner_fully_qualified_name
+                    .cmp(&right.owner_fully_qualified_name)
+            })
+            .then_with(|| left.origin_id.cmp(&right.origin_id))
+    });
+    Ok(Some(rows))
+}
+
 #[cfg(test)]
 mod tests;

@@ -665,6 +665,8 @@ Keep `cargo test -p mizar-resolve` green after each task (see
 
 37. **[Source registration syntax payloads](../../task_contracts/en/RESOLVE-SOURCE-REGISTRATION-SYNTAX-PAYLOADS.md).** [x]
 
+38. **[Source public theorem label candidates](../../task_contracts/en/RESOLVE-SOURCE-PUBLIC-THEOREM-LABELS.md).** [x]
+
 ## Crate Close-Out
 
 - Completed: [crate_exit_report.md](./crate_exit_report.md) records

@@ -4160,3 +4160,171 @@ const fn range(source_id: SourceId, start: usize, end: usize) -> SourceRange {
         end,
     }
 }
+
+#[test]
+fn source_public_theorem_label_candidates_project_exact_source_rows() {
+    let fixture = include_str!(
+        "../../../../tests/miz/pass/resolve/pass_declaration_symbol_private_theorem_visibility_001.miz"
+    );
+    let alpha = "theorem Alpha: for X being set holds X = X\nproof\n  thus thesis;\nend;\n";
+    for (text, expected) in [
+        (fixture.to_owned(), vec![("UsePriv1", 102, 110)]),
+        (
+            fixture.replace("UsePriv1", "Renamed1"),
+            vec![("Renamed1", 102, 110)],
+        ),
+        (
+            fixture.replacen("thus X = X;", "Inner: X = X;\n  thus X = X by Inner;", 1),
+            vec![("UsePriv1", 127, 135)],
+        ),
+        (
+            fixture.replace("theorem UsePriv1", "lemma UsePriv1"),
+            vec![("UsePriv1", 100, 108)],
+        ),
+        (
+            include_str!(
+                "../../../../tests/miz/pass/theorems/pass_proof_verification_theorem_status_open_assumed_001.miz"
+            )
+            .to_owned(),
+            vec![("AxT1", 67, 71), ("OpenT1", 13, 19)],
+        ),
+        (
+            format!("{fixture}\n{alpha}"),
+            vec![("Alpha", 200, 205), ("UsePriv1", 102, 110)],
+        ),
+        (
+            format!("{alpha}\n{fixture}"),
+            vec![("Alpha", 8, 13), ("UsePriv1", 172, 180)],
+        ),
+    ] {
+        let (ast, module, namespace, env, resolved) = parsed_private_theorem_fixture(&text);
+        let before = (ast.clone(), resolved.clone(), env.clone());
+        let rows = source_public_theorem_label_candidates(&ast, &resolved, &env)
+            .unwrap()
+            .unwrap();
+        let expected_rows = expected
+            .iter()
+            .map(|(label, start_byte, end_byte)| {
+                let owner = env
+                    .symbols()
+                    .iter()
+                    .find(|entry| entry.primary_spelling() == *label)
+                    .unwrap();
+                assert_eq!(owner.visibility(), Visibility::Public);
+                assert_eq!(owner.export_status(), ExportStatus::Exported);
+                assert_eq!(owner.symbol().module(), &module);
+                assert_eq!(owner.namespace(), &namespace);
+                assert_ne!(
+                    source_range_from_anchor(owner.origin().anchor()).unwrap(),
+                    SourceRange { source_id: ast.source_id, start: *start_byte as usize, end: *end_byte as usize }
+                );
+                mizar_artifact::module_summary::ExportedLabelSummary {
+                    origin_id: owner.symbol().fqn().as_str().to_owned(),
+                    label: (*label).to_owned(),
+                    owner_fully_qualified_name: owner.symbol().fqn().as_str().to_owned(),
+                    visibility: "public".to_owned(),
+                    source_range: mizar_artifact::module_summary::SourceRangeSummary {
+                        start_byte: *start_byte,
+                        end_byte: *end_byte,
+                    },
+                    target_kind: "theorem".to_owned(),
+                }
+            })
+            .collect::<Vec<_>>();
+        assert_eq!(rows, expected_rows, "{text}");
+        assert_eq!(
+            source_public_theorem_label_candidates(&ast, &resolved, &env).unwrap(),
+            Some(rows)
+        );
+        assert_eq!((ast, resolved, env), before);
+    }
+    let all_private = fixture.replace("\ntheorem UsePriv1", "\nprivate theorem UsePriv1");
+    let (ast, _, _, env, resolved) = parsed_private_theorem_fixture(&all_private);
+    assert_eq!(
+        source_public_theorem_label_candidates(&ast, &resolved, &env).unwrap(),
+        Some(Vec::new())
+    );
+}
+
+#[test]
+fn source_public_theorem_label_candidates_refuse_profiles_after_correspondence_checks() {
+    let fixture = include_str!(
+        "../../../../tests/miz/pass/resolve/pass_declaration_symbol_private_theorem_visibility_001.miz"
+    );
+    for text in [
+        fixture.replacen("private theorem", "public theorem", 1),
+        format!("{fixture}\nreserve Y for set;\n"),
+        format!("{fixture}\ntheorem Plain: 0 = 0;\n"),
+        format!("{fixture}\ntheorem Direct: 0 = 0 by UsePriv1;\n"),
+        format!("{fixture}\nopen theorem OpenDirect: 0 = 0 by UsePriv1;\n"),
+        format!("{fixture}\nopen theorem OpenComp: 0 = 0 by computation(steps: 1);\n"),
+        format!(
+            "{fixture}\n{}",
+            include_str!(
+                "../../../../tests/miz/pass/algorithms/pass_proof_verification_computation_justification_001.miz"
+            )
+        ),
+    ] {
+        let (ast, _, _, env, resolved) = parsed_private_theorem_fixture(&text);
+        assert!(env.symbols().iter().any(|entry| {
+            entry.primary_spelling() == "UsePriv1"
+                && entry.visibility() == Visibility::Public
+                && entry.export_status() == ExportStatus::Exported
+        }));
+        assert_eq!(
+            source_public_theorem_label_candidates(&ast, &resolved, &env).unwrap(),
+            None,
+            "{text}"
+        );
+    }
+    let text = format!("{fixture}\ntheorem Plain: 0 = 0;\n");
+    let (ast, module, namespace, env, resolved) = parsed_private_theorem_fixture(&text);
+    let (foreign_ast, _, _, foreign_env, foreign_arena) =
+        parsed_private_theorem_fixture(&text.replace("UsePriv1", "Changed1"));
+    assert_eq!(
+        source_public_theorem_label_candidates(&foreign_ast, &resolved, &env).unwrap_err(),
+        resolved
+            .validate_against(&foreign_ast, &module)
+            .unwrap_err()
+            .to_string()
+    );
+    assert_eq!(
+        source_public_theorem_label_candidates(&ast, &foreign_arena, &env).unwrap_err(),
+        foreign_arena
+            .validate_against(&ast, &module)
+            .unwrap_err()
+            .to_string()
+    );
+    assert_eq!(
+        source_public_theorem_label_candidates(&ast, &resolved, &foreign_env).unwrap_err(),
+        crate::symbols::validate_source_symbol_env(&resolved, &foreign_env).unwrap_err()
+    );
+    let mut mutated_ast = ast.clone();
+    mutated_ast.source_id = distinct_source_ids().1;
+    assert_ne!(mutated_ast.source_id, ast.source_id);
+    assert_eq!(
+        source_public_theorem_label_candidates(&mutated_ast, &resolved, &env).unwrap_err(),
+        resolved
+            .validate_against(&mutated_ast, &module)
+            .unwrap_err()
+            .to_string()
+    );
+    let foreign_module_arena =
+        SurfaceResolvedArena::lower(&ast, &module_id("pkg", "other")).unwrap();
+    assert_eq!(
+        source_public_theorem_label_candidates(&ast, &foreign_module_arena, &env).unwrap_err(),
+        crate::symbols::validate_source_symbol_env(&foreign_module_arena, &env).unwrap_err()
+    );
+    let shells = crate::declarations::DeclarationShellCollector::new(&ast, &module).collect();
+    let mutated_env = crate::symbols::SignatureProjectionExtractor::new(
+        &ast,
+        &shells,
+        NamespacePath::new(format!("{}.other", namespace.as_str())),
+    )
+    .collect(&module)
+    .into_env();
+    assert_eq!(
+        source_public_theorem_label_candidates(&ast, &resolved, &mutated_env).unwrap_err(),
+        crate::symbols::validate_source_symbol_env(&resolved, &mutated_env).unwrap_err()
+    );
+}
