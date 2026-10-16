@@ -780,9 +780,10 @@ diagnostics, metadata, artifacts, and semantic indexes.
 2. [~] [mizar-lsp tasks 1-24](./mizar-lsp/en/todo.md) — server, snapshots,
    diagnostics, build bridge, metadata, navigation, actions, explanations,
    and the `@show_*`/`@eval` projection audit (SCA-003).
-3. [~] [mizar-doc tasks 1-31](./mizar-doc/en/todo.md) — published-input reading and
+3. [~] [mizar-doc tasks 1-32](./mizar-doc/en/todo.md) — published-input reading and
    raw export indexing are implemented; full planning/indexing, phase-16 rendering,
    extraction and remaining specs stay open (SCA-002). `mizar-doc` must not re-run semantic analysis.
+   [Optional published module summaries](./task_contracts/en/DOC-PUBLISHED-MODULE-SUMMARIES.md) are implemented as preserved label inputs; full index/link planning remains open.
    [Optional native Disk source content](./task_contracts/en/DOC-NATIVE-DISK-SOURCE.md) implements a text/hash prerequisite; comment attachment and currentness remain separate.
 4. [~] [`mizar lsp` stdio entry point](./task_contracts/en/EDITOR-LSP-ENTRY.md)
    has an executable [lifecycle host](./mizar-driver/en/cli.md#stdio-lifecycle-host);

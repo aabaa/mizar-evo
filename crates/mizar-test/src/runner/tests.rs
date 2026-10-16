@@ -21484,3 +21484,366 @@ fn source_ground_term_correspondence_preserves_existing_whole_input_refusals() {
         }
     }
 }
+
+fn doc_module_summaries_fixture() -> (
+    PathBuf,
+    mizar_artifact::manifest::ArtifactManifest,
+    Vec<mizar_artifact::module_summary::ModuleSummary>,
+) {
+    use mizar_artifact::{
+        manifest::write_manifest_file,
+        module_summary::*,
+        registration_summary::{ArtifactHashClass, ArtifactHashRef},
+        store::*,
+    };
+    let (root, mut manifest, artifacts) = doc_published_fixture();
+    let mut summaries = Vec::new();
+    for (index, (entry, artifact)) in manifest.modules.iter_mut().zip(artifacts).enumerate() {
+        // Sidecar records are caller-owned structural metadata, not producer evidence.
+        let mut summary = ModuleSummary {
+            schema_version: current_schema_version(),
+            module: artifact.module,
+            source_hash: artifact.source_hash,
+            interface_hash: mizar_session::hash_text("unrefreshed"),
+            exported_symbols: Vec::new(),
+            exported_labels: Vec::new(),
+            lexical_summary: ModuleLexicalSummary {
+                schema_version: "caller-lexical-v1".into(),
+                fingerprint: (index == 0).then(|| mizar_session::hash_text("lexical")),
+                contributions: Vec::new(),
+            },
+            reexports: Vec::new(),
+            dependency_interfaces: Vec::new(),
+        };
+        for (ordinal, name) in ["Alpha", "Zulu"].into_iter().enumerate() {
+            let range = SourceRangeSummary {
+                start_byte: ordinal as u64,
+                end_byte: ordinal as u64 + 1,
+            };
+            let mut dependency = summary.module.clone();
+            dependency.module_path = format!("dependency_{ordinal}");
+            summary.exported_symbols.push(ExportedSymbolSummary {
+                origin_id: format!("origin-{}", 1 - ordinal),
+                fully_qualified_name: format!("caller::{name}"),
+                namespace_path: vec!["caller".into(), name.into()],
+                visibility: "public".into(),
+                declaration_kind: "structural".into(),
+                source_range: range,
+                rendered_signature: format!("uninterpreted {name}"),
+                interface_fingerprint: mizar_session::hash_text(name),
+                proof_status: (ordinal == 0).then_some(ProofStatusSummary::NotRequired),
+            });
+            summary.exported_labels.push(ExportedLabelSummary {
+                origin_id: format!("label-{ordinal}"),
+                label: "same-label".into(),
+                owner_fully_qualified_name: "caller::unjoined-owner".into(),
+                visibility: "public".into(),
+                source_range: range,
+                target_kind: format!("caller-{name}"),
+            });
+            summary
+                .lexical_summary
+                .contributions
+                .push(LexicalContributionSummary {
+                    kind: "notation".into(),
+                    key: name.into(),
+                    payload: format!("caller payload {name}"),
+                });
+            summary.reexports.push(ModuleReexportSummary {
+                target_module: dependency.clone(),
+                target_item_origin_id: (ordinal == 0).then(|| "caller-target".into()),
+                exported_name: (ordinal == 0).then(|| "caller-name".into()),
+                provenance_origin_id: (ordinal == 0).then(|| "caller-provenance".into()),
+            });
+            summary.dependency_interfaces.push(DependencyInterfaceRef {
+                module: dependency,
+                interface_hash: mizar_session::hash_text(name),
+            });
+        }
+        summary.refresh_interface_hash().unwrap();
+        let path = PublishedArtifactPath::new(format!("summaries/module_{index}.json")).unwrap();
+        let write = write_published_artifact(
+            &root,
+            &path,
+            &module_summary_json(&summary).unwrap(),
+            &artifact_hash_domain(MODULE_SUMMARY_SCHEMA_FAMILY, summary.schema_version),
+            &[],
+        )
+        .unwrap();
+        entry.module_summary_file = Some(path.as_str().into());
+        entry.module_summary_hash = Some(ArtifactHashRef::new(
+            ArtifactHashClass::Artifact,
+            MODULE_SUMMARY_SCHEMA_FAMILY,
+            summary.schema_version,
+            write.artifact_hash,
+        ));
+        entry.module_summary_interface_hash = Some(ArtifactHashRef::new(
+            ArtifactHashClass::Interface,
+            MODULE_SUMMARY_SCHEMA_FAMILY,
+            summary.schema_version,
+            summary.interface_hash,
+        ));
+        summaries.push(summary);
+    }
+    write_manifest_file(&root, &manifest).unwrap();
+    (root, manifest, summaries)
+}
+
+#[test]
+fn doc_module_summaries_complete_fields_vector_order_replay_and_purity() {
+    use mizar_artifact::{manifest::*, module_summary::*, store::*};
+    use mizar_doc::{
+        artifact_reader::read_published_artifacts, doc_build::read_published_module_summary_index,
+    };
+    let (root, manifest, summaries) = doc_module_summaries_fixture();
+    let selected = read_manifest_file(&root, ManifestFileReadOptions::default()).unwrap();
+    let hash = selected.artifact_hash;
+    let paths = std::iter::once("artifact-manifest.json".to_owned())
+        .chain(manifest.modules.iter().flat_map(|entry| {
+            std::iter::once(entry.artifact_file.clone())
+                .chain(entry.module_summary_file.clone())
+                .chain(entry.proof_witnesses.iter().map(|w| w.witness_path.clone()))
+        }))
+        .collect::<Vec<_>>();
+    let before = paths
+        .iter()
+        .map(|p| std::fs::read(root.join(p)).unwrap())
+        .collect::<Vec<_>>();
+    assert_eq!(read_published_artifacts(&root, hash).unwrap().0, selected);
+    let mut expected = std::collections::BTreeMap::new();
+    for (entry, summary) in manifest.modules.iter().zip(summaries) {
+        let path = PublishedArtifactPath::new(entry.module_summary_file.as_ref().unwrap()).unwrap();
+        let domain = artifact_hash_domain(MODULE_SUMMARY_SCHEMA_FAMILY, summary.schema_version);
+        let original = read_published_artifact(
+            &root,
+            &path,
+            PublishedArtifactReadOptions {
+                artifact_hash_domain: Some(&domain),
+                hash_excluded_paths: &[],
+                expected_artifact_hash: Some(entry.module_summary_hash.as_ref().unwrap().digest),
+            },
+        )
+        .unwrap();
+        assert_eq!(
+            read_module_summary(&original.value, ModuleSummaryReadOptions::default()).unwrap(),
+            summary
+        );
+        assert_eq!(summary.exported_labels.len(), 2);
+        assert_eq!(
+            summary.exported_labels[0].label,
+            summary.exported_labels[1].label
+        );
+        assert_ne!(
+            summary.exported_labels[0].origin_id,
+            summary.exported_labels[1].origin_id
+        );
+        expected.insert(summary.module.clone(), Some(summary));
+    }
+    for _ in 0..2 {
+        assert_eq!(
+            read_published_module_summary_index(&root, hash).unwrap(),
+            (selected.clone(), expected.clone())
+        );
+    }
+    assert_eq!(
+        paths
+            .iter()
+            .map(|p| std::fs::read(root.join(p)).unwrap())
+            .collect::<Vec<_>>(),
+        before
+    );
+    std::fs::remove_dir_all(root).unwrap();
+}
+
+#[test]
+fn doc_module_summaries_full_identity_absence_empty_labels_modules_and_publication() {
+    use mizar_artifact::{manifest::*, module_summary::*, store::*};
+    use mizar_doc::{
+        artifact_reader::read_published_artifacts, doc_build::read_published_module_summary_index,
+    };
+    let (root, mut manifest, mut summaries) = doc_module_summaries_fixture();
+    let selected = read_manifest_file(&root, ManifestFileReadOptions::default()).unwrap();
+    let originals = read_published_artifacts(&root, selected.artifact_hash)
+        .unwrap()
+        .1;
+    let identities = [
+        ("package-a", None, None, "2026"),
+        ("package-a", None, None, "2027"),
+        ("package-a", None, Some("lock-a"), "2026"),
+        ("package-a", None, Some("lock-b"), "2026"),
+        ("package-a", Some("1.10"), None, "2026"),
+        ("package-a", Some("1.2"), None, "2026"),
+        ("package-b", None, None, "2026"),
+    ]
+    .map(|(package, version, lock, edition)| ModuleSummaryIdentity {
+        package_id: package.into(),
+        package_version: version.map(str::to_owned),
+        lockfile_identity: lock.map(str::to_owned),
+        module_path: "same_path".into(),
+        language_edition: edition.into(),
+    });
+    for entry in &mut manifest.modules {
+        entry.module_summary_file = None;
+        entry.module_summary_hash = None;
+        entry.module_summary_interface_hash = None;
+    }
+    let mut artifacts = identities
+        .iter()
+        .rev()
+        .map(|identity| {
+            let mut artifact = originals[0].clone();
+            artifact.module = identity.clone();
+            artifact.exports.clear();
+            artifact
+        })
+        .collect::<Vec<_>>();
+    doc_export_index_publish(&root, &mut manifest, &mut artifacts);
+    let empty = &mut summaries[0];
+    empty.module = identities[0].clone();
+    empty.exported_symbols.clear();
+    empty.exported_labels.clear();
+    empty.lexical_summary.fingerprint = None;
+    empty.lexical_summary.contributions.clear();
+    empty.reexports.clear();
+    empty.dependency_interfaces.clear();
+    empty.refresh_interface_hash().unwrap();
+    let path = PublishedArtifactPath::new("summaries/empty.json").unwrap();
+    let write = write_published_artifact(
+        &root,
+        &path,
+        &module_summary_json(empty).unwrap(),
+        &artifact_hash_domain(MODULE_SUMMARY_SCHEMA_FAMILY, empty.schema_version),
+        &[],
+    )
+    .unwrap();
+    let entry = manifest
+        .modules
+        .iter_mut()
+        .find(|e| e.module == identities[0])
+        .unwrap();
+    entry.module_summary_file = Some(path.as_str().into());
+    entry.module_summary_hash = selected.manifest.modules[0].module_summary_hash.clone();
+    entry.module_summary_hash.as_mut().unwrap().digest = write.artifact_hash;
+    entry.module_summary_interface_hash = selected.manifest.modules[0]
+        .module_summary_interface_hash
+        .clone();
+    entry.module_summary_interface_hash.as_mut().unwrap().digest = empty.interface_hash;
+    manifest.package.package_id = "outer-publication".into();
+    let hash = write_manifest_file(&root, &manifest).unwrap().artifact_hash;
+    let (read, index) = read_published_module_summary_index(&root, hash).unwrap();
+    assert_eq!(
+        read,
+        read_manifest_file(&root, ManifestFileReadOptions::default()).unwrap()
+    );
+    assert_eq!(index.keys().cloned().collect::<Vec<_>>(), identities);
+    assert_eq!(index[&identities[0]], Some(empty.clone()));
+    for identity in &identities[1..] {
+        assert_eq!(index.get(identity), Some(&None));
+    }
+    manifest.modules.clear();
+    let hash = write_manifest_file(&root, &manifest).unwrap().artifact_hash;
+    let (read, index) = read_published_module_summary_index(&root, hash).unwrap();
+    assert_eq!(
+        read,
+        read_manifest_file(&root, ManifestFileReadOptions::default()).unwrap()
+    );
+    assert!(index.is_empty());
+    std::fs::remove_dir_all(root).unwrap();
+}
+
+#[test]
+fn doc_module_summaries_delegated_refusals_preserve_errors_and_bytes() {
+    use mizar_artifact::{manifest::*, module_summary::*, store::*};
+    use mizar_doc::{
+        artifact_reader::read_published_artifacts, doc_build::read_published_module_summary_index,
+    };
+    let (root, manifest, summaries) = doc_module_summaries_fixture();
+    let path =
+        PublishedArtifactPath::new(manifest.modules[0].module_summary_file.as_ref().unwrap())
+            .unwrap();
+    let paths = std::iter::once("artifact-manifest.json".to_owned())
+        .chain(manifest.modules.iter().flat_map(|entry| {
+            std::iter::once(entry.artifact_file.clone())
+                .chain(entry.module_summary_file.clone())
+                .chain(entry.proof_witnesses.iter().map(|w| w.witness_path.clone()))
+        }))
+        .collect::<Vec<_>>();
+    for case in 0..6 {
+        let mut changed = manifest.clone();
+        let mut summary = summaries[0].clone();
+        let wrong = mizar_session::hash_text("caller-selected mismatch");
+        match case {
+            2 => changed.modules[0].module_summary_file = Some("summaries/missing.json".into()),
+            3 => summary.module.module_path = "other_module".into(),
+            4 => {
+                changed.modules[0]
+                    .module_summary_interface_hash
+                    .as_mut()
+                    .unwrap()
+                    .digest = wrong
+            }
+            5 => summary.source_hash = wrong,
+            _ => {}
+        }
+        summary.refresh_interface_hash().unwrap();
+        let write = write_published_artifact(
+            &root,
+            &path,
+            &module_summary_json(&summary).unwrap(),
+            &artifact_hash_domain(MODULE_SUMMARY_SCHEMA_FAMILY, summary.schema_version),
+            &[],
+        )
+        .unwrap();
+        changed.modules[0]
+            .module_summary_hash
+            .as_mut()
+            .unwrap()
+            .digest = if case == 1 {
+            wrong
+        } else {
+            write.artifact_hash
+        };
+        let published = write_manifest_file(&root, &changed).unwrap().artifact_hash;
+        let hash = if case == 0 { wrong } else { published };
+        let before = paths
+            .iter()
+            .map(|p| std::fs::read(root.join(p)).unwrap())
+            .collect::<Vec<_>>();
+        let original = read_published_artifacts(&root, hash).unwrap_err();
+        match (case, &original) {
+            (0 | 1, ManifestError::StoreIo(StoreIoError::ArtifactHashMismatch { .. })) => {}
+            (
+                2,
+                ManifestError::StoreIo(StoreIoError::Io {
+                    kind: std::io::ErrorKind::NotFound,
+                    ..
+                }),
+            ) => {}
+            (3, ManifestError::ModuleSummary { error, .. }) => assert!(matches!(
+                error.as_ref(),
+                ModuleSummaryError::ModuleIdentityMismatch { .. }
+            )),
+            (4, ManifestError::ModuleSummary { error, .. }) => assert!(matches!(
+                error.as_ref(),
+                ModuleSummaryError::ExpectedInterfaceHashMismatch { .. }
+            )),
+            (5, ManifestError::ReferencedArtifactMismatch { field, .. }) => {
+                assert_eq!(field, "source_hash")
+            }
+            _ => panic!("unexpected delegated refusal for case {case}: {original:?}"),
+        }
+        assert_eq!(
+            read_published_module_summary_index(&root, hash).unwrap_err(),
+            original
+        );
+        assert_eq!(
+            paths
+                .iter()
+                .map(|p| std::fs::read(root.join(p)).unwrap())
+                .collect::<Vec<_>>(),
+            before
+        );
+        assert!(!root.join("summaries/missing.json").exists());
+    }
+    std::fs::remove_dir_all(root).unwrap();
+}

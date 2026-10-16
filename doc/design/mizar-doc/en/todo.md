@@ -11,7 +11,7 @@
 ## Module Implementation
 
 Module specs are fixed in paired spec tasks before implementation. The first
-published-input reader is owned by [artifact_reader.md](./artifact_reader.md); [doc_build.md](./doc_build.md) fixes only initial raw export metadata indexing. Full build/index and other module specs remain pending.
+published-input reader is owned by [artifact_reader.md](./artifact_reader.md); [doc_build.md](./doc_build.md) owns raw export indexing and optional published module-summary inputs. Full build/index and other module specs remain pending.
 Per [internal 07](../../internal/en/07.crate_module_layout.md) this crate owns
 both documentation rendering **and** extraction (earlier phase-16 drafts named
 a separate `mizar-extract`, but architecture/internal docs now use the
@@ -297,6 +297,10 @@ Tasks 1–3 form [DOC-PUBLISHED-ARTIFACT-READER](../../task_contracts/en/DOC-PUB
 
 31. **Optional native Disk source content.** [x]
     - [DOC-NATIVE-DISK-SOURCE](../../task_contracts/en/DOC-NATIVE-DISK-SOURCE.md) fixes the reader's hash-checked text/maps prerequisite; deps 3 and existing Session native path/normalization/hash APIs. Full tasks4–7 remain open.
+
+32. **Optional published module-summary index.** [x]
+    - [DOC-PUBLISHED-MODULE-SUMMARIES](../../task_contracts/en/DOC-PUBLISHED-MODULE-SUMMARIES.md) exposes preserved label sidecars as a tasks4/5 input prerequisite; label association, full planning/rendering and Steps6–8 stay open.
+    - Deps: 3 and existing hash-bound Artifact summary readers.
 
 ### Audit review note (2026-07-06)
 
