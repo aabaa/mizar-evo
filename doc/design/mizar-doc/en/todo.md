@@ -295,6 +295,9 @@ Tasks 1–3 form [DOC-PUBLISHED-ARTIFACT-READER](../../task_contracts/en/DOC-PUB
     - [DOC-PUBLISHED-EXPORT-INDEX](../../task_contracts/en/DOC-PUBLISHED-EXPORT-INDEX.md); initial tasks4/5 subset, with full planning/index work remaining open.
     - Deps: 3. Tests: canonical raw metadata, full identity/duplicates, empty inputs and delegated refusal.
 
+31. **Optional native Disk source content.** [x]
+    - [DOC-NATIVE-DISK-SOURCE](../../task_contracts/en/DOC-NATIVE-DISK-SOURCE.md) fixes the reader's hash-checked text/maps prerequisite; deps 3 and existing Session native path/normalization/hash APIs. Full tasks4–7 remain open.
+
 ### Audit review note (2026-07-06)
 
 The July 2026 semantic, kernel-soundness, and template-encoding audits

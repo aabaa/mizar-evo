@@ -290,6 +290,9 @@ Tasks1–3 は [DOC-PUBLISHED-ARTIFACT-READER](../../task_contracts/ja/DOC-PUBLI
     - [DOC-PUBLISHED-EXPORT-INDEX](../../task_contracts/ja/DOC-PUBLISHED-EXPORT-INDEX.md)。tasks4/5 の初期 subset であり、完全な planning/index は未完了に保つ。
     - 依存: 3。テスト: canonical raw metadata、完全 identity/重複、空入力と委譲先の拒否。
 
+31. **Optional native Disk source content。** [x]
+    - [DOC-NATIVE-DISK-SOURCE](../../task_contracts/ja/DOC-NATIVE-DISK-SOURCE.md) は hash 確認付き text/map の reader 前提を定める。依存は3と既存 Session native path/正規化/hash API。完全な tasks4–7 は未完了に保つ。
+
 ### 監査レビュー注記(2026-07-06)
 
 2026 年 7 月の意味論・kernel 健全性・テンプレートエンコーディング監査

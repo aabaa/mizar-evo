@@ -1,0 +1,11 @@
+# Task DOC-NATIVE-DISK-SOURCE: optional native source content
+Canonical language: English; [Japanese pointer](../ja/DOC-NATIVE-DISK-SOURCE.md).
+Status: implemented. Tier: full. Owner: [Doc plan](../../mizar-doc/en/00.crate_plan.md) task31, a source-input prerequisite; full tasks4–7 stay open.
+Authority: spec §§2.1/2.9.1/24, architecture13 input loading and internal05 ArtifactDocReader; [reader owner](../../mizar-doc/en/artifact_reader.md#optional-native-disk-source), existing Session native path/normalization/hash APIs.
+Readiness/gap: Doc3 exists; snapshot-free optional Disk content has source_drift/test_gap. Freeze this bounded source acquisition without choosing task6's comment source or creating source identities.
+Scope: exactly one read_native_disk_source API in existing artifact_reader returns existing text/loading-map tuple only after required normalized Session source-hash equality. Owner fixes native path rules, precise optional-NotFound/error layering, normalization and complete map retention. No new type/field/helper/dependency/profile or lower-stage edits.
+Tests: freeze independent content/hash/map/error relations before Rust; exactly three append-only genuine-source-backed and constant-normalization/error families, real bytes/edit/restore; reuse original fixtures and lower path matrices. No new private helper unless three real callers require it.
+Writes: existing Doc artifact_reader imports plus appended function, append-only mizar-test runner families; paired reader/plan/TODO and necessary root/audit boundaries/status. All old Rust bodies/Cargo/spec/.miz/expectation/trace/ledger remain exact.
+Forbidden: fake Snapshot/SourceId/context/producer/evidence/Accepted/Complete/hit; new public diagnostic policy, package authentication, hash-to-item/range/attachment/currentness inference, source/publication mutation, semantic rechecking, copied validators or permissive fallback.
+Deferrals: task6 source decision, full4–7/build/index/comment/attachment, packaged/workspace source layouts, other origins, warning/render/extraction/runtime/acceptance/publication integration and Steps6–8.
+Reviews/exit: SPEC before Rust, then TEST/CODE/VOLUME/CONSISTENCY and bounded full gates; narrow source/Doc tests, then parent cargo fmt --check, cargo clippy --all-targets --all-features -- -D warnings, cargo test. Only task31 may close.

@@ -20536,3 +20536,251 @@ fn doc_export_index_empty_inputs_delegated_errors_and_file_preservation() {
     );
     std::fs::remove_dir_all(root).unwrap();
 }
+
+#[test]
+fn doc_native_source_genuine_artifact_hash_and_preserved_bytes() {
+    use mizar_doc::artifact_reader::read_native_disk_source;
+    let (root, manifest, artifacts) = doc_published_fixture();
+    let original = std::fs::read(step5c13_registration_case().source_path).unwrap();
+    let expected_text = std::str::from_utf8(&original).unwrap().to_owned();
+    let path = root.join("src/source.miz");
+    std::fs::create_dir_all(path.parent().unwrap()).unwrap();
+    std::fs::write(&path, &original).unwrap();
+    let publication_paths = std::iter::once("artifact-manifest.json".to_owned())
+        .chain(manifest.modules.iter().map(|m| m.artifact_file.clone()))
+        .chain(
+            manifest.modules[1]
+                .proof_witnesses
+                .iter()
+                .map(|w| w.witness_path.clone()),
+        )
+        .collect::<Vec<_>>();
+    let publication_before = publication_paths
+        .iter()
+        .map(|p| std::fs::read(root.join(p)).unwrap())
+        .collect::<Vec<_>>();
+    for (artifact, requested) in artifacts
+        .iter()
+        .zip([PathBuf::from("src/source.miz"), path.clone()])
+    {
+        let expected_hash = artifact.source_hash;
+        assert_eq!(
+            read_native_disk_source(&root, requested, expected_hash).unwrap(),
+            Some((expected_text.clone(), None))
+        );
+        assert_eq!(std::fs::read(&path).unwrap(), original);
+    }
+    assert_eq!(
+        publication_paths
+            .iter()
+            .map(|p| std::fs::read(root.join(p)).unwrap())
+            .collect::<Vec<_>>(),
+        publication_before
+    );
+    std::fs::remove_dir_all(root).unwrap();
+}
+
+#[test]
+fn doc_native_source_literal_normalization_and_complete_loading_maps() {
+    use mizar_doc::artifact_reader::read_native_disk_source;
+    use mizar_session::{
+        hash_text,
+        source_map::{LoadingMapSegment::*, TextRange},
+    };
+    let (root, _, _) = doc_published_fixture();
+    let path = root.join("src/source.miz");
+    std::fs::create_dir_all(path.parent().unwrap()).unwrap();
+    let cases = [
+        ("", "", None),
+        ("λ\r\u{feff}z\n", "λ\r\u{feff}z\n", None),
+        (
+            "\u{feff}",
+            "",
+            Some(vec![
+                RemovedLeadingBom {
+                    original: TextRange { start: 0, end: 3 },
+                },
+                Original {
+                    loaded: TextRange { start: 0, end: 0 },
+                    original: TextRange { start: 3, end: 3 },
+                },
+            ]),
+        ),
+        (
+            "\u{feff}\u{feff}λ",
+            "\u{feff}λ",
+            Some(vec![
+                RemovedLeadingBom {
+                    original: TextRange { start: 0, end: 3 },
+                },
+                Original {
+                    loaded: TextRange { start: 0, end: 5 },
+                    original: TextRange { start: 3, end: 8 },
+                },
+            ]),
+        ),
+        (
+            "\r\n\r\n",
+            "\n\n",
+            Some(vec![
+                NormalizedNewline {
+                    loaded: TextRange { start: 0, end: 1 },
+                    original: TextRange { start: 0, end: 2 },
+                },
+                NormalizedNewline {
+                    loaded: TextRange { start: 1, end: 2 },
+                    original: TextRange { start: 2, end: 4 },
+                },
+            ]),
+        ),
+        (
+            "\r\nλ",
+            "\nλ",
+            Some(vec![
+                NormalizedNewline {
+                    loaded: TextRange { start: 0, end: 1 },
+                    original: TextRange { start: 0, end: 2 },
+                },
+                Original {
+                    loaded: TextRange { start: 1, end: 3 },
+                    original: TextRange { start: 2, end: 4 },
+                },
+            ]),
+        ),
+        (
+            "\u{feff}λ\r\nz\r\u{feff}\r\n",
+            "λ\nz\r\u{feff}\n",
+            Some(vec![
+                RemovedLeadingBom {
+                    original: TextRange { start: 0, end: 3 },
+                },
+                Original {
+                    loaded: TextRange { start: 0, end: 2 },
+                    original: TextRange { start: 3, end: 5 },
+                },
+                NormalizedNewline {
+                    loaded: TextRange { start: 2, end: 3 },
+                    original: TextRange { start: 5, end: 7 },
+                },
+                Original {
+                    loaded: TextRange { start: 3, end: 8 },
+                    original: TextRange { start: 7, end: 12 },
+                },
+                NormalizedNewline {
+                    loaded: TextRange { start: 8, end: 9 },
+                    original: TextRange { start: 12, end: 14 },
+                },
+            ]),
+        ),
+    ];
+    for (raw, expected_text, expected_map) in cases {
+        let expected_hash = hash_text(expected_text);
+        std::fs::write(&path, raw).unwrap();
+        assert_eq!(
+            read_native_disk_source(&root, "src/source.miz", expected_hash).unwrap(),
+            Some((expected_text.to_owned(), expected_map)),
+            "{raw:?}"
+        );
+        assert_eq!(std::fs::read(&path).unwrap(), raw.as_bytes());
+    }
+    std::fs::remove_dir_all(root).unwrap();
+}
+
+#[test]
+fn doc_native_source_absence_typed_errors_and_edit_restore() {
+    use mizar_doc::artifact_reader::read_native_disk_source;
+    use mizar_session::source::SourcePathError;
+    use std::io::ErrorKind;
+    let (root, _, artifacts) = doc_published_fixture();
+    let original_path = step5c13_registration_case().source_path;
+    let original = std::fs::read(&original_path).unwrap();
+    let expected_hash = artifacts[1].source_hash;
+    let path = root.join("src/source.miz");
+    std::fs::create_dir_all(path.parent().unwrap()).unwrap();
+    assert_eq!(
+        read_native_disk_source(&root, "src/source.miz", expected_hash).unwrap(),
+        None
+    );
+    assert!(!path.exists());
+    let missing_root = root.join("absent");
+    let error =
+        read_native_disk_source(&missing_root, "src/source.miz", expected_hash).unwrap_err();
+    assert_eq!(error.kind(), ErrorKind::NotFound);
+    assert_eq!(
+        error.get_ref().unwrap().downcast_ref::<SourcePathError>(),
+        Some(&SourcePathError::PackageRootUnavailable {
+            path: missing_root,
+            kind: ErrorKind::NotFound
+        })
+    );
+    let canonical_root = std::fs::canonicalize(&root).unwrap();
+    let bad_extension = root.join("src/source.txt");
+    std::fs::write(&bad_extension, &original).unwrap();
+    let error = read_native_disk_source(&root, "src/source.txt", expected_hash).unwrap_err();
+    assert_eq!(error.kind(), ErrorKind::InvalidInput);
+    assert_eq!(
+        error.get_ref().unwrap().downcast_ref::<SourcePathError>(),
+        Some(&SourcePathError::UnsupportedExtension {
+            path: canonical_root.join("src/source.txt")
+        })
+    );
+    let error = read_native_disk_source(&root, &original_path, expected_hash).unwrap_err();
+    assert_eq!(error.kind(), ErrorKind::InvalidInput);
+    assert_eq!(
+        error.get_ref().unwrap().downcast_ref::<SourcePathError>(),
+        Some(&SourcePathError::OutsidePackageRoot {
+            package_root: canonical_root.clone(),
+            path: std::fs::canonicalize(&original_path).unwrap()
+        })
+    );
+    std::fs::write(&path, &original).unwrap();
+    let blocked = "src/source.miz/child.miz";
+    let kind = std::fs::canonicalize(root.join(blocked))
+        .unwrap_err()
+        .kind();
+    assert_ne!(kind, ErrorKind::NotFound);
+    let error = read_native_disk_source(&root, blocked, expected_hash).unwrap_err();
+    assert_eq!(error.kind(), kind);
+    assert_eq!(
+        error.get_ref().unwrap().downcast_ref::<SourcePathError>(),
+        Some(&SourcePathError::SourcePathUnavailable {
+            path: canonical_root.join(blocked),
+            kind
+        })
+    );
+    let directory = root.join("src/directory.miz");
+    std::fs::create_dir(&directory).unwrap();
+    let expected_error = std::fs::read(&directory).unwrap_err();
+    let error = read_native_disk_source(&root, "src/directory.miz", expected_hash).unwrap_err();
+    assert_eq!(error.kind(), expected_error.kind());
+    assert_eq!(error.raw_os_error(), expected_error.raw_os_error());
+    assert!(error.get_ref().is_none());
+    std::fs::write(&path, [0xff]).unwrap();
+    let error = read_native_disk_source(&root, "src/source.miz", expected_hash).unwrap_err();
+    assert_eq!(error.kind(), ErrorKind::InvalidData);
+    let utf8 = error
+        .get_ref()
+        .unwrap()
+        .downcast_ref::<std::str::Utf8Error>()
+        .unwrap();
+    assert_eq!(utf8.valid_up_to(), 0);
+    assert_eq!(utf8.error_len(), Some(1));
+    assert_eq!(std::fs::read(&path).unwrap(), [0xff]);
+    let mut edited = original.clone();
+    edited.extend_from_slice(b"\n:: edited source\n");
+    std::fs::write(&path, &edited).unwrap();
+    assert_eq!(
+        read_native_disk_source(&root, "src/source.miz", expected_hash)
+            .unwrap_err()
+            .kind(),
+        ErrorKind::InvalidData
+    );
+    assert_eq!(std::fs::read(&path).unwrap(), edited);
+    std::fs::write(&path, &original).unwrap();
+    assert_eq!(
+        read_native_disk_source(&root, "src/source.miz", expected_hash).unwrap(),
+        Some((String::from_utf8(original.clone()).unwrap(), None))
+    );
+    assert_eq!(std::fs::read(&path).unwrap(), original);
+    std::fs::remove_dir_all(root).unwrap();
+}

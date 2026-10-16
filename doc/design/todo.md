@@ -126,7 +126,7 @@ All crates below are workspace members. "Next work" points into the
 | mizar-driver | Build requests, phase registry, CLI/watch/LSP entry points | [~] scheduled SourceLoad/Frontend and workspace lexical publication implemented | Step 6 real-service equivalence; later services remain producer-blocked | [todo](./mizar-driver/en/todo.md) |
 | mizar-diagnostics | Diagnostic registry, failure records, ordering, rendering | [x] internal milestone and E0220–E0224 import descriptors implemented | Step 8 broader public adoption | [todo](./mizar-diagnostics/en/todo.md) |
 | mizar-lsp | Editor protocol and range conversion | [~] range/lifecycle foundation; semantic consumers remain open | Step 8 tasks 6–24 | [todo](./mizar-lsp/en/todo.md) |
-| mizar-doc | Documentation rendering and extraction | [~] published-input reader/export index implemented | Step 8 tasks 4–29 | [todo](./mizar-doc/en/todo.md) |
+| mizar-doc | Documentation rendering and extraction | [~] published-input reader/export index/native source input implemented | Step 8 tasks 4–29 | [todo](./mizar-doc/en/todo.md) |
 
 ## Sequential Execution Plan
 
@@ -776,9 +776,10 @@ diagnostics, metadata, artifacts, and semantic indexes.
 2. [~] [mizar-lsp tasks 1-24](./mizar-lsp/en/todo.md) — server, snapshots,
    diagnostics, build bridge, metadata, navigation, actions, explanations,
    and the `@show_*`/`@eval` projection audit (SCA-003).
-3. [~] [mizar-doc tasks 1-30](./mizar-doc/en/todo.md) — published-input reading and
+3. [~] [mizar-doc tasks 1-31](./mizar-doc/en/todo.md) — published-input reading and
    raw export indexing are implemented; full planning/indexing, phase-16 rendering,
    extraction and remaining specs stay open (SCA-002). `mizar-doc` must not re-run semantic analysis.
+   [Optional native Disk source content](./task_contracts/en/DOC-NATIVE-DISK-SOURCE.md) implements a text/hash prerequisite; comment attachment and currentness remain separate.
 4. [~] [`mizar lsp` stdio entry point](./task_contracts/en/EDITOR-LSP-ENTRY.md)
    has an executable [lifecycle host](./mizar-driver/en/cli.md#stdio-lifecycle-host);
    workspace/settings, build binding and current-build diagnostics remain open. [Raw initialize inputs](./task_contracts/en/LSP-RAW-INITIALIZE-HANDOFF.md) precede their host binding. [Explicit native metadata acquisition](./task_contracts/en/LSP-NATIVE-WORKSPACE-INPUTS.md) precedes runtime context. [Current Disk diagnostic indexes](./task_contracts/en/DRIVER-CURRENT-DISK-DIAGNOSTIC-INDEX.md) and [native OpenBuffer handoffs](./task_contracts/en/DRIVER-CURRENT-NATIVE-DIAGNOSTIC-INDEX.md) precede current LSP transport. [Explicit frontend notifications](./task_contracts/en/LSP-NATIVE-FRONTEND-DIAGNOSTIC-NOTIFICATIONS.md) bind original current OpenBuffer inputs before wire/host integration.
