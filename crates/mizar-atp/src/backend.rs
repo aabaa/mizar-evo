@@ -3,9 +3,9 @@
 //! This module implements the task-14 runner specified in
 //! [backend.md](../../../doc/design/mizar-atp/en/backend.md). It launches
 //! untrusted backend processes, records deterministic run metadata, and offers
-//! a mock classification seam and bounded source candidate transport. It does not parse
+//! a mock classification seam and bounded source candidate transport and SAT screening. It does not parse
 //! real backend proof languages, extract backend candidate evidence, invoke kernel checking,
-//! check SAT, accept proofs, publish witnesses, or trust backend proof
+//! accept proofs, publish witnesses, or trust backend proof
 //! objects, logs, unsat cores, traces, or used-axiom reports.
 
 use crate::problem::{AtpProblemId, AtpTargetBinding, ConcreteFormat, ExpectedBackendResult};
@@ -262,6 +262,85 @@ pub fn build_source_registration_candidate_inputs(
     )
     .map_err(|error| error.to_string())?;
     Ok((encoded, candidate))
+}
+
+/// Screens one unchanged source candidate under explicit caller-owned work bounds.
+pub fn screen_source_registration_candidate(
+    core: &mizar_core::core_ir::CoreIr,
+    vc_set: &mizar_vc::vc_ir::VcSet,
+    vc_id: mizar_vc::vc_ir::VcId,
+    logic_profile: crate::problem::LogicProfile,
+    concrete_format: ConcreteFormat,
+    limits: Option<[u64; 4]>,
+) -> Result<Option<(EncodedBackendProblem, BackendCandidateEvidence)>, String> {
+    let pair = build_source_registration_candidate_inputs(
+        core,
+        vc_set,
+        vc_id,
+        logic_profile.clone(),
+        concrete_format,
+    )?;
+    let pool = source_registration_ground_term_correspondence(core, vc_set, vc_id, logic_profile)?;
+    let Some(limits) = limits else {
+        return Ok(None);
+    };
+    let handoff = mizar_vc::kernel_evidence_handoff::build_source_existential_kernel_handoff(
+        core, vc_set, vc_id,
+    )?;
+    let envelope = handoff.canonical_evidence();
+    let target = envelope.target_vc();
+    let profile = envelope.kernel_profile();
+    let tautology = match profile.clause_tautology_policy {
+        mizar_vc::kernel_evidence_handoff::KernelClauseTautologyPolicy::Reject => {
+            mizar_kernel::certificate_parser::ClauseTautologyPolicy::Reject
+        }
+        mizar_vc::kernel_evidence_handoff::KernelClauseTautologyPolicy::Marker => {
+            mizar_kernel::certificate_parser::ClauseTautologyPolicy::Marker
+        }
+        _ => return Err("unsupported source kernel profile".to_owned()),
+    };
+    let mut context = mizar_kernel::formula_evidence::FormulaEvidenceParseContext::v1(
+        mizar_kernel::certificate_parser::Fingerprint::new(
+            target.algorithm_id,
+            target.digest.clone(),
+        ),
+        mizar_kernel::certificate_parser::KernelProfileRecord::v1(profile.profile_id, tautology),
+    );
+    context.accepted_schema_versions.insert(2);
+    let BackendCandidatePayload::FormulaSubstitutionBytes(bytes) = pair.1.payload() else {
+        return Err("unsupported source candidate payload".to_owned());
+    };
+    let parsed = mizar_kernel::formula_evidence::parse_formula_evidence(bytes, &context)
+        .map_err(|error| format!("{error:?}"))?;
+    for (count, limit) in [
+        pool.len(),
+        parsed.substitutions().len(),
+        parsed.equality_instances().len(),
+        1,
+    ]
+    .into_iter()
+    .zip(limits)
+    {
+        let count =
+            u64::try_from(count).map_err(|_| "source candidate work count overflow".to_owned())?;
+        if count > limit {
+            return Ok(None);
+        }
+    }
+    let encoded = mizar_kernel::sat_encoding::encode_formula_evidence(
+        &parsed,
+        &mizar_kernel::sat_encoding::SatEncodingContext::v1(),
+    )
+    .map_err(|error| format!("{error:?}"))?;
+    let query = mizar_kernel::sat_checker::check_sat_problem(
+        &encoded,
+        &mizar_kernel::sat_checker::SatCheckContext::v1(),
+    );
+    if query.is_unsat() {
+        Ok(Some(pair))
+    } else {
+        Ok(None)
+    }
 }
 
 /// Encodes untrusted reflexivity names from the caller's actual parsed v1 evidence.

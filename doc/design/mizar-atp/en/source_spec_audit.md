@@ -224,9 +224,11 @@ Public entry functions:
 - `encode_closed_choice_reflexivity_names`
 - `build_source_registration_candidate_inputs`
 - `source_registration_ground_term_correspondence`
+- `screen_source_registration_candidate`
 
 | Spec promise | Source evidence | Test evidence | Status |
 |---|---|---|---|
+| Existing genuine source candidates are screened with explicit bounded admission counts and one untrusted SAT query. | [backend owner](./backend.md#source-candidate-sat-screening). | `source_candidate_sat_screen_*` and exact static service/API inventories. | Implemented bounded query only; fresh acceptance and full ATP30 remain open. |
 | Existing source-observed ground choices are paired by original VC producer references with original parsed Kernel terms. | [backend owner](./backend.md#source-ground-term-correspondence); source query. | `source_ground_term_correspondence_*` and exact backend static seam inventories. | Implemented existing-term association only; full ATP30 remains open. |
 | The generic backend runner uses deterministic command fingerprints, explicit stdin/private-file input delivery, version probes, resource limits, timeout/cancellation/crash handling, stream capture, and private temp cleanup. | `run_backend`, `BackendRunInput`, `BackendRunResult`, command/resource/capture helpers. | command fingerprint, stdin/private-file, version probe, timeout/cancellation/crash, drain-safe capture, temp cleanup, and unsupported-limit tests. | Implemented for generic direct-spawn and mock backend routes. |
 | `Proved` is candidate-evidence-only and requires matching `Unsat` plus formula/substitution candidate payload; backend proof method, resolution trace, backend log, unsat core, and SMT proof object are never trusted. | `classify_backend_observation`, `BackendCandidateEvidence`, `BackendCandidatePayload`, status validation. | mock proved, prohibited payload, counterexample/unknown/error, truncation, and metadata mismatch tests. | Implemented for mock classification; real extraction remains external. |

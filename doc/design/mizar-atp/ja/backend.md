@@ -11,9 +11,9 @@ metadata、backend version recording、timeout/cancellation の graceful handlin
 backend-result classification を所有する。
 
 backend module は引き続き evidence producer boundary である。proof acceptance、
-Kernel checking/acceptance API 呼び出し、SAT checking、witness publication、portfolio winner selection、
+Kernel checking/acceptance API 呼び出し、witness publication、portfolio winner selection、
 cache update、backend proof method、log、unsat core、SMT proof object、TSTP trace、
-resolution trace を trusted acceptance material に変えることは行わない。
+resolution trace を trusted acceptance material に変えることは行わない。generic process runner は SAT を実行せず、下記の別の限定 source query が既存 SAT service を untrusted 候補の検査にだけ用いる。
 
 ## 範囲
 
@@ -115,6 +115,16 @@ schema 1 と一意の Equality manifest key を要求する。各 substitution �
 candidate_id は既存 private StableHasher の domain `mizar-atp/source-registration-candidate/v1` から、byte field `encoded-input-hash`、`encoded-metadata-hash`、u64 field `target-fingerprint-algorithm`、byte field `formula-substitution-bytes` の順で作る。実 container hash・target algorithm ID・正確な payload byte を使い、既存小文字 hex と prefix `source-registration-v1:` で表す。metadata は target digest/producer・label・mapping・source provenance を結び、旧 hash を変えず algorithm を明示的に加える。input hash は実 text/format/profile、payload は通常の evidence field を結ぶ。Debug・runtime data・report・caller receipt を hash に入れない。
 pair は未検査の試行であり、fresh Kernel check が拒否する実際の偽の source も含む。backend result や探索成功ではない。caller が現 source/context 認証と独立した通常 [Kernel 検査](../../mizar-kernel/ja/checker.md)、[Proof](../../mizar-proof/ja/selection.md) が受理を所有する。既存 original-Open built-in facade は変えない。探索上限・汎用 finder・advisory 抽出・backend 実行・publication・reuse は保留する。
 異なる実 source 回帰 caller 3箇所で direct concrete encoding/metadata、独立した通常 wire/fresh Kernel outcome、source/context 全体の破損を検査する。両 format、元・改名した正/負の single/aggregate source、決定的 replay/固定 identity、元 Open・選択した Discharged の拒否、破損 output の未信頼性を扱う。既存 manual/producer oracle を維持する。
+
+## Source candidate SAT screening
+`screen_source_registration_candidate(&CoreIr, &VcSet, VcId, LogicProfile, ConcreteFormat, Option<[u64; 4]>) -> Result<Option<(EncodedBackendProblem, BackendCandidateEvidence)>, String>` は既存 source factory の一候補だけを検査し、backend 実行・項/置換生成・証明受理を行わない。
+変更しない source candidate factory、その後 source ground-term correspondence を同じ immutable tuple で呼び、元の whole-input/profile/encoding 拒否を limits より先に保持する。optional setting は caller（既存 Proof policy getter など）から渡し、新依存や default を作らない。None は未設定で None を返し、literal zero/MAX を保持する。既存 Proof facade、policy fingerprint、prebuilt candidate の挙動は変えない。
+完全な既存 observed correspondence pool、実 parsed candidate の substitution record 数、named equality record 数を最初の三座標と比較し、第四座標は SAT 一回を許可する必要がある。usize-to-u64 は checked conversion とし、切り捨てない。これは限定候補の admission count であり、先行 source load/build や一般探索の列挙を制限するものではない。超過は SAT encode/solve 前に None とし、部分 pair を返さない。
+設定時は同じ tuple の元 handoff を実 target/profile/tautology parser context の取得だけに再構築し、schema2 を明示許可して元 candidate FormulaSubstitutionBytes を parse する。wire/name/provenance/candidateID/encoded binding/入力は保持し、parse error は内部 String で伝播する。private numeric name の再構築・canonical bytes の wire 流用・別 profile・candidate 由来 source context・供給 SAT clause は禁止する。
+既存 `mizar_kernel::sat_encoding::SatEncodingContext::v1`/`mizar_kernel::sat_encoding::encode_formula_evidence` と `mizar_kernel::sat_checker::SatCheckContext::v1`/`mizar_kernel::sat_checker::check_sat_problem` だけを用い、内部 limits/replay は変えない。encoding error は内部 String で伝播し、is_unsat の場合だけ元 pair をそのまま返す。Sat/Rejected は None。一回までの query は KernelCheckResult/accepted status ではなく、独立した元 context による通常の fresh Kernel check と Proof policy を代替しない。
+backend 関数一つの挿入と必要な module intro 表現だけを実装する。Rust 前に既存 public-function inventory と正確な fully-qualified SAT service/context 四経路だけを拡張する。元の禁止 token/assertion と他 inventory byte を保持し、generic runner/portfolio 本体は query-free、Kernel acceptance/witness/cache/proof-policy call の拒否を保つ。新 production type/helper/file/adapter/field/dependency/profile/hash/wire や下位編集は行わない。
+source_candidate_sat_screen_* 三系列だけを追加し、元の実 source helper を再利用する。positive/false/single/aggregate/両 format の旧 factory pair と通常 fresh Kernel の独立 oracle・replay/入力保持、実 policy getter の None/zero/exact/各座標不足/MAX、設定/未設定の元 whole-input/profile 拒否を扱う。元の実 handoff に対する source_candidate_check_bytes と既存 corruption matrix/不変 fixture を使い、新 context producer や一回用 helper を作らない。
+caller-owned Core/VC replay と Unsat は元 source/current-runtime 認証・受理・witness/reuse/cache 権限を与えない。代替列挙・新 instance 生成・advisory report・backend 実行・一般 finder search 制限・Proof scheduling・ATP30/31/Steps6–8 は未完了に残す。
 
 ## Source ground term correspondence
 

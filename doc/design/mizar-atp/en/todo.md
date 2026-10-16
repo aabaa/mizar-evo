@@ -708,6 +708,8 @@ candidate evidence through the kernel-owned schema and must not weaken it.
 
 40. **[Source ground term correspondence](../../task_contracts/en/ATP-SOURCE-GROUND-TERM-CORRESPONDENCE.md).** [x] — Existing observed choices only; general mapping/search and acceptance remain open.
 
+41. **[Source candidate SAT screening](../../task_contracts/en/ATP-SOURCE-CANDIDATE-SAT-SCREEN.md).** [x] — Explicit bounded untrusted query only; generic search and acceptance remain open.
+
 ## Recommended Verification
 
 Run after each task:
