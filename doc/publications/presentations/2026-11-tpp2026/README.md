@@ -76,7 +76,7 @@ project origin with its design timeline, and design expansion with AI implementa
 | 4. Verified computation | 19–24 | 5 | 4.1–4.5 |
 | 5. Development infrastructure | 24–27 | 3 | 5.1–5.3 |
 | 6. Checking and automation | 27–32 | 5 | 6.1–6.4 |
-| Status, roadmap, closing | 32–36.5 | 4.5 | 7.1–7.3 |
+| Status, roadmap, closing | 32–36.5 | 4.5 | 7.1–7.2 |
 | Questions (outside main talk) | 36.5–43.5 | 7 | selected backups |
 | Buffer | 43.5–45 | 1.5 | |
 
@@ -126,11 +126,8 @@ sketches and specification examples, not execution or external-prover results.
 Frame 7.1 uses kLoC consistently, separates ATP from kernel, and gives the
 measured kernel plus SAT-dependency source size with its counting boundary.
 The closing section goes directly from implementation status (7.1) to
-priorities (7.2) and closing (7.3); internal connection details stay in the
-narrative draft for questions.
-The closing line is fixed:
-*Keep the foundation small. Keep the mathematics readable. Modernize everything
-else.*
+priorities and the design summary on one slide (7.2), ending with a request
+for feedback. Internal connection details stay in the narrative draft for questions.
 
 ## Language Policy
 

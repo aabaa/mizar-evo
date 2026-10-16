@@ -735,28 +735,22 @@ Speaker note:
 - kernel 12.751、うち SAT 符号化・接続1.947。SAT 依存 batsat 0.6.0 と bit-vec 0.5.1 は計4.879、合計17.630 kLoC。Core・session 等を含む最小 TCB 全体の計測ではない。
 - 固定版の限定実装。全体は10月15日、kernel 再集計・SAT 依存は10月16日計測。
 
-### Frame 7.2 - ロードマップ: 統合を優先する
+### Frame 7.2 - 今後の開発とまとめ
 
 - **最優先: source-to-semantics → VC → evidence → kernel → artifact → build の統合。**
 - Algorithm の意味論・検証義務を整合し、限定的に動く経路を広げる。
 - MVM runtime・抽出は別途開発。MML 全体の移植は処理系完成と別課題。
 - 学習的前提選択、LLM 修復、暗号・量子は長期構想。
 
-Speaker note:
-
-- Source: `doc/design/todo.md` の統合順序・MML port 境界。
-
-### Frame 7.3 - おわりに
-
-```text
-**Keep the foundation small.**
-**Keep the mathematics readable.**
-**Modernize everything else.**
-```
+### まとめ
 
 - **FOL・集合論と数学的な記述能力を継承し、言語・開発基盤を再設計する。**
 - **ATP の探索と信頼できる検査を分ける。仕様は今も進化中。**
 - **実装・健全性・MML 互換性について、専門家の意見を求めたい。**
+
+Speaker note:
+
+- Source: `doc/design/todo.md` の統合順序・MML port 境界。
 
 ## Backup 1. MizAR 60 の詳細
 
