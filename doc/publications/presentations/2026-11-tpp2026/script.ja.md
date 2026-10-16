@@ -186,19 +186,18 @@ expr、構文木として渡すと、algorithm が積や sin の形と変数束�
 
 ## Part 6. Checking And Automation（27–32分）
 
-### 6.1 Automation: Separate Search From Checking（27:00）
+### 6.1 自動化: 補題を探索し、証明を提案する（27:00）
 
-Sledgehammer と似た流れを、ソースで見ます。Isabelle では Q a を示したいところで sledgehammer を呼び、たとえば metis allPQ pa という内部で検証する証明を提案してもらいます。この例は仕組みを示すスケッチです。
-Mizar Evo では、すべての x について P(x) なら Q(x) という前提 AllPQ と P(a) を引用して、thus Q(a) by AllPQ, Pa と書きます。
-共通点は、ゴールと前提から外部で探索し、最後は内側の信頼できる仕組みで受理することです。prover の成功報告だけでは証明を受理しません。
-Isabelle の Metis は内部で再証明します。Mizar Evo は元の論理式と置換を受け取り、instance 生成と SAT 検査を行います。Mizar の前提は引用前提と局所仮定で、Sledgehammer の theory context からの前提選択とは範囲が異なります。〔アーキテクチャ仕様に基づく説明〕
+Isabelle の Sledgehammer は補題を探し、証明案を提示します。Mizar Evo でも同様の native hammer を処理系・IDE に統合する計画です。
+下の by は最終出力です。ゴール Q(a) と局所仮定 P(a) から、ライブラリの補題 AllPQ を候補に選び、ATP で試して引用案を提案します。採用した引用をソースに反映し、再検証します。
+探索や提案を自動化して執筆を支援し、受理は論理式と置換の evidence を kernel で検査して決めます。〔仕様・計画に基づく説明〕
 
 ### 6.2 Using ATPs: Search, Check, And Reuse（28:00）
 
 ATP をどこで活用するか、流れ図で示します。
 ゴールと利用できる前提を ATP に渡して探索し、得られた候補 evidence を kernel で検査します。受理した成果をライブラリに保存し、再利用します。
 未解決の場合は、補題や方針を修正して再探索します。LLM はこの提案や修復を支援できます。この図は設計意図であり、反復の費用対効果を示した実験結果ではありません。
-現在の ATP 入力は引用した前提と局所仮定です。受理の根拠である evidence の検査を、次のページで具体的に見ます。〔仕様／設計意図〕
+通常の検証で使う前提は、ソースの引用と局所仮定です。支援段階で探索した補題も引用へ反映し、再検証します。受理の根拠である evidence の検査を、次のページで具体的に見ます。〔仕様／設計意図〕
 
 ### 6.3 Resolution Tree And Extracted Substitutions（28:45）
 

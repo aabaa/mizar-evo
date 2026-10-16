@@ -116,7 +116,9 @@ establishment, preservation, termination and exit obligations;
 differentiation. Part 4 keeps five minutes (45/75/75/60/45 seconds);
 5.1 lists all ten environment directives and emphasizes notation/definition
 precedence and order dependence as the central authoring difficulty;
-5.2 then introduces imports. These are explanatory
+5.2 then introduces imports. Frame 6.1 shows the planned native-hammer flow from
+library premise candidates and ATP trials to an explicit by-clause suggestion;
+6.2 separates suggestion from source-based verification. These are explanatory
 sketches and specification examples, not execution or external-prover results.
 The closing line is fixed:
 *Keep the foundation small. Keep the mathematics readable. Modernize everything

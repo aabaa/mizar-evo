@@ -632,9 +632,9 @@ Speaker note:
 
 ## Part 6. Checking And Automation
 
-### Frame 6.1 - 自動化の課題: 証明探索と検査の分離
+### Frame 6.1 - 自動化: 補題を探索し、証明を提案する
 
-Isabelle/HOL: Sledgehammer が内部で検証する証明を提案 (sketch):
+Isabelle/HOL: Sledgehammer が証明を提案 (sketch):
 
 ```text
 have "Q a"
@@ -642,21 +642,24 @@ have "Q a"
   by (metis allPQ pa)
 ```
 
-Mizar Evo: 引用した前提で宣言的な証明ステップを記述 (sketch):
+Mizar Evo: native hammer を処理系・IDE に統合する計画。
+
+**未解決ゴール → ライブラリの補題候補 → ATP 試行 → `by` の提案。**
+
+提案される証明（Pa は局所仮定 P(a)） (sketch, 予定):
 
 ```mizar
-assume AllPQ: for x being object holds P(x) implies Q(x);
-assume Pa: P(a);
-thus Q(a) by AllPQ, Pa;
+:: library.AllPQ: for x holds P(x) implies Q(x)
+thus Q(a) by library.AllPQ, Pa;
 ```
 
-- **共通する流れ: ゴールと前提 → 外部探索 → 内側の信頼できる受理判定。prover の成功報告だけでは受理しない。**
-- Isabelle は Metis 等で内部の証明を再構成。Mizar Evo は論理式・置換の evidence をインスタンス化し、SAT で検査する。
+- **補題を探して列挙する負担を軽減し、採用した前提はソースに明示する。**
+- 提案を反映して再検証し、論理式・置換の evidence を kernel / SAT で検査して受理する。
 
 Speaker note:
 
-- Source: [Sledgehammer guide](https://isabelle.in.tum.de/doc/sledgehammer.pdf), §1, 5.2; spec 16; architecture 08, 10, 15。対応する前提を仮定する説明例。
-- Evo は引用前提・局所仮定、Sledgehammer は theory context からの前提選択。共通の探索・検査の流れは evidence の同一性や実証結果を意味しない。
+- Source: spec 22 §22.4.4; spec 23 §23.5.2, LSP。候補探索・再試行・引用追加。比較と検証入力の詳細は draft.ja.md。
+- 比較: [Sledgehammer guide](https://isabelle.in.tum.de/doc/sledgehammer.pdf), §1, 5.2。
 
 ### Frame 6.2 - ATP の活用: 探索・検査・再利用
 
@@ -668,7 +671,7 @@ Speaker note:
 Speaker note:
 
 - LLM は提案・修復を支援。受理は evidence の検査で決まり、その仕組みを次のページで示す。
-- 現在の ATP 入力は引用した前提と局所仮定。ライブラリ全体の前提選択と反復の費用対効果は今後の評価対象。
+- 通常の検証入力はソースの引用と局所仮定。支援段階でライブラリから候補を選び、試行後に引用案を反映して再検証する。native hammer と反復支援の評価は今後の課題。
 - Source: `doc/spec/en/21.source_code_annotation_and_atp.md` §21.7.2; `doc/design/architecture/en/21.ai_agent_interface.md`。
 
 ### Frame 6.3 - Resolution 木と置換の抽出

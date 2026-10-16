@@ -818,11 +818,13 @@ package・バージョン管理・差分検証の詳細は全体像と Backup 7�
 
 # 6. 検査・自動化: Evidence のインスタンス化と SAT 検査
 
-§6.1 は同じ前提・ゴールを使った Isabelle/HOL の Sledgehammer/Metis と Mizar Evo の by の概形を並べ、外部探索と内側の受理判定を分離する共通点を示す。Metis は内部で再証明し、Mizar Evo は論理式・置換の evidence を検査する。前提選択の範囲は異なる。
-Source: [Sledgehammer user guide](https://isabelle.in.tum.de/doc/sledgehammer.pdf), §1, 5.2; `doc/design/architecture/en/08.reasoning_boundary.md`。
+§6.1 は、Sledgehammer と同様の native hammer を Mizar Evo の処理系・IDE に統合する計画を示す。提示する by は支援の最終出力であり、その前段に未解決ゴールからの補題候補の選択、ATP 試行、引用案の提示がある。局所仮定 Pa: P(a) とゴール Q(a) に対し、ライブラリの説明用補題 library.AllPQ（すべての x で P(x) implies Q(x)）を候補として提案する例にする。
+仕様 §22.4.4 では、未解決の義務について利用可能なライブラリの事実を順位付けし、設定された再試行で候補を追加して ATP を試す。引用案はソースに反映してから再検証・受理する。§23.5.2 は候補を missing_facts.json に記録し、LSP は引用を追加する操作を提供する。初期の順位付けは記号ベースで、学習的手法は後の拡張である。候補提示と最小核による受理を区別し、prover の成功報告だけで証明済みとはしない。スライドの矢印は支援の流れであり、独自の言語構文や実行結果を示さない。
+通常の検証に渡す前提は明示引用と局所仮定（仕様 §21.7.2）であり、ライブラリの候補探索は引用案を作る支援段階である。Sledgehammer/Metis は内部で証明を再構成し、Evo は論理式・置換の evidence をインスタンス化・SAT 検査する。両者の探索結果や evidence が同一であるとは主張しない。
+Source: [Sledgehammer user guide](https://isabelle.in.tum.de/doc/sledgehammer.pdf), §1, 5.2; `doc/spec/en/21.source_code_annotation_and_atp.md` §21.7.2; `22.error_handling_and_diagnostics.md` §22.4.4; `23.package_management_and_build_system.md` §23.5.2, LSP; `doc/design/architecture/en/08.reasoning_boundary.md`, `09.atp_interface_protocol.md`。
 
 §6 では、ATP の探索・kernel 検査・ライブラリへの保存と再利用・再試行の流れ図を先に示す。
-図は設計意図であり、LLM の提案・修復も示すが、反復の費用対効果は未評価。
+図は設計意図であり、LLM の提案・修復も示すが、反復の費用対効果は未評価。支援で得た補題候補を引用に反映し、通常の検証で evidence を検査する流れにつなげる。
 続いて Backup 5 の検査の仕組みを、3段階で示す。
 
 1. **Evidence:** 元の論理式、明示的な代入、来歴、対象ゴールを保持する。
