@@ -1,112 +1,17 @@
 # Mizar Evo: Design Principles
 
-Status: first deck draft for TPP 2026, designed from the Japanese narrative
-draft `draft.ja.md`, which remains the canonical content document.
+Status: English version aligned with the reviewed Japanese deck. Section 0 introduces the history and development; sections 1–6 keep the six design principles; section 7 covers implementation and plans.
 
-Planned occasion: TPP 2026 (the 22nd Theorem Proving and Provers meeting),
-RIKEN AIP Tokyo Office, November 16-17, 2026. Thirty-minute slot.
+Occasion: TPP 2026 (the 22nd Theorem Proving and Provers meeting), RIKEN AIP Tokyo Office, November 16–17, 2026. Assumed 45-minute slot: 36:30 for the talk, seven minutes for questions, and 1:30 of buffer. Confirm the official slot.
 
-Companion files: `script.ja.md` (Japanese spoken script, frame by frame),
-`references.bib` (seed bibliography), `../2026-09-bialystok/` (visual and
-reference deck; its figures are reused by relative path and its detailed
-feature frames serve as backup material instead of being repeated here).
+Content authority: `draft.ja.md`. This deck follows `slides.ja.md`; the English spoken script is `script.md`. Shared figures keep their English labels.
 
-## Main Idea
+## Conventions
 
-Start with six challenges in modernizing current Mizar, then map each to a
-design principle in the new specification. Preserve the logical foundation and
-readable mathematics while rebuilding generic mechanisms, verified computation,
-development tools, and evidence checking.
-
-Benchmarks and HOL/FOL comparisons are supplementary context. Their results
-do not establish a first-order performance advantage.
-
-## Language Level
-
-Slide prose is plain English at CEFR B1 to easy B2: short sentences, common
-words, one idea per sentence. Technical terms (premise selection, hammer,
-reconstruction, soft type, kernel) stay, and the first use of a term explains
-it in simple words. Code, exact MML excerpts, and figure labels are unchanged.
-The Japanese companion deck `slides.ja.md` follows the same frames.
-
-## Claim Levels
-
-Statements in this deck fall into three levels. Untagged statements are facts
-about existing systems, published benchmarks, or the Mizar Evo specification
-and main branch. The two other levels are tagged in the text:
-
-- "research hypothesis": a claim Mizar Evo is built to test, not a result;
-- "future direction": a target with no committed date or design.
-
-## Code Status Convention
-
-Every code example carries one of three status labels, as in the Bialystok deck:
-
-- "exact MML excerpt": exact text from the current MML, with article name and
-  line numbers; attribution and license notes stay in speaker notes;
-- "specification example": taken from or directly adapted from the Mizar Evo
-  language specification under `doc/spec/en/`;
-- "sketch": schematic text that no specification fixes (used for the HOL and
-  encoding illustrations and for ordinary Mizar usage).
-
-## Source Status
-
-### Repository Sources
-
-- `doc/spec/en/01.introduction.md` (first-order foundation, kernel principle)
-- `doc/spec/en/18.templates.md` (templates, schemes)
-- `doc/spec/en/20.algorithm_and_verification.md` (algorithms, MVM)
-- `doc/spec/en/21.source_code_annotation_and_atp.md` (ATP integration,
-  axiom set assembly: cited premises only, no global premise selection)
-- `doc/design/architecture/en/08.reasoning_boundary.md`,
-  `09.atp_interface_protocol.md`, `10.atp_backend_integration.md`
-- `doc/design/todo.md`, Crate Status (implementation scope, October 2026)
-
-### External Sources
-
-Checked on October 7, 2026:
-
-- Jakubův et al., MizAR 60 for Mizar 50, ITP 2023 (arXiv 2303.06686):
-  MML 1147 exported by MPTP as 57,897 theorems including unnamed top-level
-  lemmas; 58.4% proved in hammering mode by a portfolio limited to 420 CPU s;
-  over 75% with premises selected from the library by a human or a machine;
-  strongest single method 40% in 30 s (hammering) and 60% in 120 s
-  (human premises).
-- Blanchette, Haslbeck, Matichuk, Nipkow, Mining the Archive of Formal Proofs,
-  CICM 2015: 6,934 goals from 128 randomly selected AFP theories (up to 100
-  goals each), Isabelle2014, MePo, 30 s per prover (E, SPASS, Vampire, Z3);
-  one-line reconstruction 49.4-49.7% per prover; 60.7% of goals proved when
-  the provers are combined and trusted as oracles.
-- Böhme and Nipkow, Sledgehammer: Judgement Day, IJCAR 2010 (as summarized in
-  the CICM 2015 paper): 1,240 subgoals from seven theories, 46% with E, SPASS,
-  and Vampire in parallel for 30 s; a 2015 preliminary evaluation reached 75%
-  on the same benchmarks with six provers.
-- MML plain text for exact excerpts: `funct_1.miz` lines 138-140 and
-  `funct_2.miz` lines 87-90 at <https://mizar.uwb.edu.pl/version/current/mml/>.
-  The files state GPL-3.0-or-later / CC-BY-SA-3.0-or-later terms; keep
-  attribution, URLs, and line numbers in speaker notes.
-- TPP 2026 announcement: November 16-17, 2026, RIKEN AIP Tokyo Office
-  (<https://auto-res.github.io/tpp2026/>).
-
-## Deck Shape
-
-Section 0 gives one table of challenges and design principles.
-Sections 1–6 each explain the corresponding principle. Unnumbered closing
-frames cover implementation status, the roadmap, and discussion.
-Seventeen backups keep benchmark and HOL/FOL comparison details.
-
-| Section | Minutes | Story beat |
-|---|---:|---|
-| 0. Introduction | 0-2 | challenges and design principles in one table |
-| 1. Logical foundation | 2-4 | retain first-order logic, set theory, and MML |
-| 2. Readable mathematics | 4-10 | named registration chains, inheritance, and theorem reuse |
-| 3. Generic mathematics | 10-14 | templates, infix notation, and type-argument inference |
-| 4. Verified computation | 14-20 | Hoare logic, termination, promotion, and Euclid obligations |
-| 5. Development infrastructure | 20-23 | environment roles and ordering, imports |
-| 6. Checking and automation | 23-28 | Sledgehammer analogy, refutation, CNF, and SAT |
-| Closing | 28-30 | status, roadmap, and discussion |
-
-For a 45-minute slot, add the examples listed in §README.md`.
+- Keep the structural labels `Title:`, `Subtitle:`, `Speaker note:`, and `Source:`, and code-status labels `exact MML excerpt`, `specification example`, and `sketch` for the generator.
+- Bold text gives the main spoken points. Tables have titles and continuous numbers across the main talk and backups.
+- Distinguish published history and the author's account. Technical examples describe existing Mizar, the Evo specification, or a sketch. Implementation claims use the fixed snapshot in 7.1. Mark research hypotheses and future directions explicitly.
+- Use plain English (CEFR B1 to easy B2). Explain technical terms at first use. Build with `python3 build_beamer.py en`, then pdflatex; see README.
 
 ## Part 0. Introduction
 
@@ -116,49 +21,105 @@ Title:
 
 ```text
 Mizar Evo: Design Principles
-Connecting automatic proof, readable mathematics, and checked computation
-```
-
-Subtitle:
-
-```text
-TPP 2026, RIKEN AIP Tokyo Office, November 2026
+Reconnecting automated proof, readable mathematics, and verified computation
 ```
 
 Speaker note:
 
-- **Mizar is a proof checker. It has a fifty-year-old library, written in a readable mathematical language over first-order set theory.**
-- **Mizar Evolution, or Mizar Evo, is a redesign of its language and tools. I will start with current Mizar's modernization challenges, then show how the new specification addresses them.**
-- Everything I say has a label: fact, research hypothesis, or future direction.
+- **Mizar is a proof checker. It combines first-order set theory, readable mathematical language, and the MML library.**
+- **Mizar Evolution, or Mizar Evo, redesigns the language and its tools. We begin with history and development, then discuss six design principles, implementation limits, and plans.**
+- Distinguish facts, research hypotheses, and future directions throughout.
 
-### Frame 0.2 - How To Read The Claims [deep dive]
+### Frame 0.2 - Mizar implementation history: from early systems to Mizar-rs and Evo
 
-| Level | Meaning | Marked how |
-|---|---|---|
-| fact | existing systems, published benchmarks, the Mizar Evo specification and main branch | no tag |
-| research hypothesis | a claim that Mizar Evo is built to test | tagged in the text |
-| future direction | a goal with no fixed date or design yet | tagged in the text |
+### Table 1. Early Mizar systems and the start of MML
 
-Code labels follow the Bialystok deck: exact MML excerpt, specification example, sketch.
-
-- The specification and the implementation are different things. One frame near the end separates them.
-
-### Frame 0.3 - Current Mizar: Six Challenges And Design Principles
-
-| Challenge in modernizing Mizar | New design principle |
+| Period | Main milestones |
 |---|---|
-| **§1 Foundation:** retain logic and MML; renew tools | First-order logic, set theory, and a small kernel |
-| **§2 Writing:** implicit types, registrations, overloads | Mathematical abstraction; explicit, traceable choices |
-| **§3 Generics:** separate definition and scheme mechanisms | Templates for definitions, theorems, and schemes |
-| **§4 Computation:** connect proofs and procedures | Contracts, invariants, and termination checks |
-| **§5 Development:** tools for a large library | Modules, namespaces, packages, incremental builds, LSP |
-| **§6 Checking:** external search and evidence | ATP flow; derive formula instances; trusted SAT check |
+| 1973–75 | Mathematical documents → propositional Mizar-PC (Algol / ODRA) |
+| 1977 | Mizar-QC: quantifiers (Pascal / CDC 6000) |
+| 1982–84 | MSE: a smaller language. HPF: mathematical notation and implicit arguments |
+| 1986 | Mizar-4: multiple passes; ported to PC / DOS at the end of the year |
+| 1988–89 | PC-Mizar, references between articles; MML began on January 1, 1989 |
+
+### Table 2. PC-Mizar, Mizar-rs, and Mizar Evo
+
+| System | Overview |
+|---|---|
+| PC-Mizar (Pascal) | Parser → MSM → Analyzer → Checker |
+| Mizar-rs (Rust, ITP 2023) | Reimplements the checker / analyzer, aiming at language compatibility |
+| | **All MML checked:** replaced the checker and checked the full MML of that time |
+| | **Speed:** about 5–6× faster (8 threads, elapsed time) |
+| | **Bug reports:** four soundness bugs in the existing system; no false MML proofs using them |
+| Mizar Evo (Rust) | Keeps mathematical writing and the logical foundation; builds a new language and processor |
+
+Source: Matuszewski & Rudnicki (2005); Carneiro (ITP 2023), Table 1.
 
 Speaker note:
 
-- Each row pairs a challenge with its design principle. Sections 1–6 follow these rows. First-order logic and readable mathematics are assets to preserve.
-- The closing status frame separates the specification from implementation.
-- Source: specification 01, 18, 20, 21, 23; Bialystok problem-driven stories.
+- Mizar-PC was propositional; it differs from the later PC-Mizar. Readable notation, checking, and library reuse grew through several experiments and redesigns. These are selected milestones, not a single line of successors. Source details and URLs: `draft.ja.md`, history and development.
+- Carneiro 2023 §1, footnote 2 dates the PC port to 1986; PC-Mizar dates to 1988. MSM means More Strict Mizar.
+- Mizar-rs elapsed times: checker only, 57.37→11.33 minutes; analyzer plus checker, 71.38→11.71 minutes. Both affect soundness. Compatibility-related issues remain in §5.4 of the paper.
+
+### Frame 0.3 - 2023–2026: from an idea to language design
+
+### Table 3. Mizar Evo development
+
+| Period | Development |
+|---|---|
+| August 2023 | First README: mizar-wishlist |
+| September–October 2024 | Imports, namespaces, structure inheritance, type system |
+| May–June 2025 | Modes, type inference, redefinition; dependent structures / attributes removed, then reintroduced |
+| January–April 2026 | EBNF, logical encoding, registration, template and algorithm semantics / contracts |
+| May 2026 | Implementation design → test harness → minimal lexer |
+
+- **The idea began as an extension of Mizar notation. Preparing a 2023 grant proposal led to a redesign of the language and processor.**
+- At ITP 2023, Mario Carneiro responded positively to a request for implementation help. At CICM 2023, I discussed the wishlist with Adam Naumowicz.
+- Early priorities: generic types, namespaces / packages, ATP / traceability. The prototype was to use Mizar-rs.
+
+JSPS KAKENHI, Scientific Research (C), awarded in 2024: 24K14897, “Renewing the language specification of a set-theory-based proof assistant” (title translated).
+
+Speaker note:
+
+- Source: August 2023 grant proposal and Git diffs. Details: `draft.ja.md`, history and development.
+- The exact order of the consultations within 2023 and any current participation commitment are unconfirmed. Timeline dates are commit dates.
+
+### Frame 0.4 - Design development and implementation with AI agents
+
+### Developing the language design
+
+- **template:** from generics to a common theorem form for schemes, with structure views and type-argument inference.
+- **algorithm:** cryptographers in the Japanese Mizar community wanted proofs of algorithms from the start. Proving elliptic-curve associativity also required difficult, large symbolic calculations.
+
+### Implementation and discussions since May 2026
+
+- **May: started substantial Rust implementation with AI coding agents. June–July: crate development, autonomous workflows, SAT-backed checking and audits.**
+- **Design → agent implementation → tests and audits → specification revision.**
+- September: seminar and discussions with the Mizar team in Białystok.
+- September–October: more source-derived VCs; revisions to algorithm partiality and contracts.
+
+Speaker note:
+
+- Source: specification chapters 18 and 20, Git diffs, and the author's additional account on October 15, 2026. Details: `draft.ja.md`.
+
+### Frame 0.5 - Current Mizar: six challenges and design principles
+
+### Table 4. Six challenges and design principles
+
+| Area | Challenge in current Mizar | Design principle |
+|---|---|---|
+| **§1 Foundation** | Keep the logic and MML while replacing the processor | Keep FOL / set theory and a small kernel |
+| **§2 Writing** | Trace implicit type, registration, and overload choices | Keep mathematical abstractions; explain implicit choices |
+| **§3 Generics** | Separate mechanisms for definitions, theorems, and schemes | Unify generic mechanisms with templates |
+| **§4 Computation** | Connect proofs to executable procedures | Check algorithm contracts, invariants, and termination |
+| **§5 Tools** | Dependencies, distribution, incremental checking, IDE | Modules, namespaces, packages, incremental builds, LSP |
+| **§6 Checking** | Connect external search to checking evidence | Use ATPs; instantiate evidence and check with SAT |
+
+Speaker note:
+
+- Each row connects a challenge to a principle; sections 1–6 follow this order. First-order foundations and readable mathematics are strengths to preserve.
+- The closing status section distinguishes the specification from implemented behavior.
+- Source: specification chapters 01, 18, 20, 21, 23; the problem-driven stories in the Białystok deck.
 
 ## Part 1. Logical Foundation
 

@@ -1,0 +1,50 @@
+# TPP 2026 Spoken Script (English)
+
+> **Status:** English companion to the reviewed Japanese script. Frame order follows `slides.md` and `slides.ja.md`; `draft.ja.md` remains the content authority.
+> **Timing:** Headings give start times in the 36:30 allocation: introduction 9 minutes, six principles 23:30, closing 4 minutes. Add seven minutes of questions and 1:30 of buffer for an assumed 45-minute slot. This includes pointing at code and figures; confirm the slot and rehearse the English delivery. Do not exceed 40 minutes.
+> **Claim labels:** [Literature], [Git history], [Specification], [Limited implementation], and [Plan / Future direction]. Presenter notes at the end are not spoken.
+
+For 35 minutes, skip 3.3 (40 seconds), reduce 3.4 to 15 seconds (save 20), and reduce the design discussion in 0.4 to 30 seconds (save 30). Keep the timeline in 0.3 and the checking examples in 6.3–6.4. Backups are for questions only. In the full version, start 7.1 at 32:30 and finish at 36:30.
+
+## Part 0. Introduction (0–9 minutes)
+
+### 0.1 Title (0:00)
+
+Mizar is a proof checker based on set theory. We write proofs in a language close to readable mathematics.
+Mizar Evo redesigns this language and its tools. I will begin with the history and development, then show six design principles, the implementation status, and our next steps.
+
+### 0.2 Mizar implementation history (0:30)
+
+In 1973, the starting idea was to handle mathematical documents on a computer. The 1975 Mizar-PC handled propositional logic. Here, PC means propositional calculus. It is different from the later PC-Mizar for personal computers. The early version used Algol on ODRA. Mizar-QC added quantifiers in 1977, using Pascal on CDC. [Historical paper]
+In the early 1980s, experiments included MSE, with a smaller language, and HPF, with more mathematical notation and implicit arguments. These are selected milestones, not a single line of successors.
+Mizar-4 in 1986 used several passes linked by files to work with limited memory. It was ported to PCs at the end of that year. PC-Mizar followed in 1988, and MML began the next year. Articles could refer to each other and build mathematics together. [Historical paper]
+Readable writing and library reuse grew through these experiments and redesigns.
+
+Mario Carneiro's Mizar-rs reimplemented the analyzer and checker in Rust. Both parts affect soundness. [Carneiro 2023]
+There are three main results. First, its checker replaced the existing checker and checked the full MML of that time. Second, it was about five to six times faster in the paper's eight-thread elapsed-time comparison. Third, it found and reported four soundness bugs in the existing implementation. This does not mean those bugs were used to prove false statements in MML. [Table 1, §5]
+The reimplementation improved speed and helped improve the existing system. Proof output for a small trusted base remained future work. Against this background, Mizar Evo redesigns the language specification and builds the processor in Rust. [Literature / Evo design]
+
+### 0.3 From an idea to language design (3:00)
+
+The timeline shows the move from an idea to language design and implementation. [Git history]
+The first README, in August 2023, was called mizar-wishlist. By autumn 2024, I was writing concrete designs for imports, namespaces, structure inheritance, and the type system.
+In 2025, I worked on mode syntax, type inference and checking, and redefinition of predicates and functors. Features were also removed and reconsidered. Drafts for dependent structures and attributes were removed, then brought back after clarifying their relation to templates. [Git history]
+From January to April 2026, the work covered EBNF, logical encoding, registration, templates, and algorithm contracts and semantics. In May, I designed the implementation pipeline, added a test harness on the 17th, and a minimal lexer on the 18th. [Git history]
+
+The original idea was to extend Mizar notation. Preparing a grant proposal in 2023 led me to redesign both the language specification and the processor.
+At ITP that year, I asked Mario about helping with implementation after the specification was ready. He responded positively. At CICM 2023, I discussed the wishlist with Adam Naumowicz.
+The proposal focused on universal quantification over types, namespaces and packages, ATP, and traceability. The planned prototype used Mizar-rs. “Universal quantification over types” was the proposal's wording; the current specification uses templates over a first-order foundation. [Grant proposal / Specification]
+
+### 0.4 Design development and AI agents (6:30)
+
+Generics were part of the template idea from the start. The design grew to express traditional schemes as theorems inside templates. Structure views and bounds on type parameters let one theorem serve, for example, both addition and multiplication in a ring. Type-argument inference was also developed. The scope grew from replacing types to sharing definitions and proofs. [Specification 18 / Git history]
+There was also an early demand for algorithms. Many members of the Japanese Mizar community work in cryptography and wanted to prove algorithms. I also experienced difficult symbolic calculations while proving elliptic-curve associativity with formulas. We had wanted to bring computation into proofs for a long time. This led to the design of contracts, termination, partiality, and conditions for using verified computation as a functor.
+
+Progress in AI coding agents made it possible to start substantial Rust implementation in May 2026 without waiting for the implementation help first considered.
+In June and July, the work covered crates, autonomous development procedures, SAT-backed checking, and soundness audits. Implementation and tests revealed unclear parts of the specification and led back to design. [Git history / Experience]
+In September, I gave a seminar and discussed the design with the Mizar team in Białystok. Algorithm specification changes continued in autumn. [Git history]
+
+### 0.5 Six challenges and design principles (8:30)
+
+This work led to six design principles: foundation, writing, generics, computation, development tools, and checking and automation.
+We keep first-order logic, set theory, and readable mathematics, while redesigning templates, algorithms, tools, and evidence checking. Most examples that follow explain the specification. I will show the implemented scope at the end. [Challenges / Specification]
