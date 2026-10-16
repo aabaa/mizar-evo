@@ -432,6 +432,74 @@ impl AtpProblem {
         ))
     }
 
+    pub fn observed_ground_terms(&self) -> Result<BTreeSet<&AtpTerm>, AtpProblemError> {
+        fn term<'a>(node: &'a AtpTerm, observed: &mut BTreeSet<&'a AtpTerm>) -> bool {
+            match node {
+                AtpTerm::Variable(_) => false,
+                AtpTerm::Function { arguments, .. } => {
+                    let mut closed = true;
+                    for argument in arguments {
+                        closed &= term(argument, observed);
+                    }
+                    if closed {
+                        observed.insert(node);
+                    }
+                    closed
+                }
+            }
+        }
+        fn formula<'a>(node: &'a AtpFormulaTree, observed: &mut BTreeSet<&'a AtpTerm>) {
+            match node {
+                AtpFormulaTree::True | AtpFormulaTree::False => {}
+                AtpFormulaTree::Atom(atom) => {
+                    for argument in atom.arguments() {
+                        term(argument, observed);
+                    }
+                }
+                AtpFormulaTree::Equality { left, right } => {
+                    term(left, observed);
+                    term(right, observed);
+                }
+                AtpFormulaTree::Not(body)
+                | AtpFormulaTree::Forall { body, .. }
+                | AtpFormulaTree::Exists { body, .. } => formula(body, observed),
+                AtpFormulaTree::And(children) | AtpFormulaTree::Or(children) => {
+                    for child in children {
+                        formula(child, observed);
+                    }
+                }
+                AtpFormulaTree::Implies(left, right) => {
+                    formula(left, observed);
+                    formula(right, observed);
+                }
+            }
+        }
+        let mut observed = BTreeSet::new();
+        for row in self.axioms.iter().chain(std::iter::once(&self.conjecture)) {
+            formula(
+                row.formula()
+                    .ok_or(AtpProblemError::MissingFormulaPayload {
+                        formula_id: row.id(),
+                    })?,
+                &mut observed,
+            );
+        }
+        for guard in self.type_context.guards() {
+            formula(guard.formula(), &mut observed);
+        }
+        for property in &self.properties {
+            match property.encoding() {
+                PropertyEncoding::Axiom(tree) => formula(tree, &mut observed),
+                PropertyEncoding::NativeDeclaration(_) => {
+                    return Err(AtpProblemError::UnsupportedProfileFeature {
+                        feature: "native property ground-term input",
+                    });
+                }
+            }
+        }
+        Ok(observed)
+    }
+
     pub const fn conjecture(&self) -> &AtpFormula {
         &self.conjecture
     }

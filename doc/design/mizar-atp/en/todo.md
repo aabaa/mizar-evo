@@ -703,6 +703,8 @@ candidate evidence through the kernel-owned schema and must not weaken it.
 
 38. **[Explicit sequential execution](../../task_contracts/en/ATP-SEQUENTIAL-PROCESS-DISPATCH.md).** [x] — Generic process dispatch only; full extraction/parallel integration remain open.
 
+39. **[Observed ground terms](../../task_contracts/en/ATP-OBSERVED-GROUND-TERMS.md).** [x] — Finite borrowed input terms only; ATP30 search, policy limits and acceptance remain open.
+
 ## Recommended Verification
 
 Run after each task:

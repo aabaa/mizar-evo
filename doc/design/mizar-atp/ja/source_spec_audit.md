@@ -99,13 +99,14 @@ literal top-level public item:
   `AtpSymbolMapEntry`, `AtpSymbolSource`, `AtpProvenance`, `AtpSourceRef`,
   `AtpDiagnostic`, `AtpProblemError`
 
-Public entry functions: public data type の constructor/accessor 以外はない。
+Public entry functions: module-level entry はなく、AtpProblem の inherent query は [problem.md](./problem.md) が所有する。
 
 | spec promise | source evidence | test evidence | status |
 |---|---|---|---|
 | Backend-neutral `AtpProblem` は declaration、axiom、conjecture、target binding、symbol map、provenance、property、diagnostic、`Unsat` polarity を記録し、backend proof や SAT clause を埋め込まない。 | `AtpProblemParts`、`AtpProblem::try_new`、canonical identity/debug helper。 | construction、deterministic identity、debug rendering、expected-result restriction、prohibited trusted material、validation rejection の problem module tests。 | explicit ATP problem payload 向けに実装済み。 |
 | Logic profile と formula tree は unsupported feature を silent re-profile せず、fail-closed profile error として保持する。 | `LogicProfile`、profile validation、formula/type-context validation helper。 | unsupported-profile、symbol-reference、missing-payload、source/provenance rejection tests。 | 実装済み。 |
 | Public enum は downstream forward-compatible である。 | public enum の `#[non_exhaustive]`。 | `atp_public_enums_are_non_exhaustive_and_documented`。 | task 22 で guard 済み。 |
+| 観測 ground input term は参照のまま完全に保ち、新 term 生成や信頼を加えない。 | AtpProblem::observed_ground_terms。 | 構造/参照/空/native-input の定数と実 source 入力保持系列。 | raw input query だけを実装し、完全 ATP30 は未完了。 |
 
 ### `translator`
 

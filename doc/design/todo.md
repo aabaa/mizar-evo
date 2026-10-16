@@ -742,6 +742,7 @@ permit; each source-integration slice waits for its actual upstream outputs.
    (kernel 36).
    Bounded source [projections](./task_contracts/en/ATP-SOURCE-REGISTRATION-PROJECTIONS.md), [encoded input bindings](./task_contracts/en/ATP-ENCODED-PROBLEM-PRODUCER.md) and shared [local evidence transport](./task_contracts/en/VC-LOCAL-EVIDENCE-WIRE.md) are implemented; candidate extraction and backend execution remain open.
    [Unchecked source candidate inputs](./task_contracts/en/ATP-SOURCE-CANDIDATE-INPUTS.md) supply bound normal wire only; full search/acceptance gates remain open.
+   [Observed ground input terms](./task_contracts/en/ATP-OBSERVED-GROUND-TERMS.md) are implemented as borrowed existing data only; instance search and evidence production remain open.
 2. [ ] [Built-in evidence candidates](./task_contracts/en/PREATP-FORMULA-EVIDENCE.md)
    (VC 60); design can start, general source integration waits for authentic
    formula/context/substitution/provenance producers. [Original-source direct-premise candidates](./task_contracts/en/VC-SOURCE-DIRECT-PREMISE-CANDIDATE.md) supply only bounded untrusted association.

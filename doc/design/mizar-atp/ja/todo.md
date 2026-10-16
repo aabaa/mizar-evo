@@ -648,6 +648,8 @@ polarity)、F2(非 import ソース束縛)、F6(imported-statement projection)
 
 38. **[明示的な逐次実行](../../task_contracts/ja/ATP-SEQUENTIAL-PROCESS-DISPATCH.md).** [x] — generic process dispatch のみ。full extraction/並列統合は保留。
 
+39. **[Observed ground terms](../../task_contracts/ja/ATP-OBSERVED-GROUND-TERMS.md).** [x] — 既存項の有限な参照 query だけ。ATP30 の探索・policy limit・受理は未完了。
+
 ## 推奨検証
 
 各タスクの後で実行する:

@@ -1149,3 +1149,215 @@ fn constant(name: &str) -> AtpTerm {
         arguments: Vec::new(),
     }
 }
+
+#[test]
+fn observed_ground_terms_traverse_all_sections_and_borrow_closed_subtrees_in_value_order() {
+    let pair = |left, right| AtpTerm::Function {
+        function: AtpSymbolName::new("f"),
+        arguments: vec![left, right],
+    };
+    let mut parts = minimal_parts();
+    parts.logic_profile = profile_first_order();
+    for (index, (name, kind, arity)) in [
+        ("b", AtpDeclarationKind::Function, 0),
+        ("c", AtpDeclarationKind::Function, 0),
+        ("d", AtpDeclarationKind::Function, 0),
+        ("e", AtpDeclarationKind::Function, 0),
+        ("f", AtpDeclarationKind::Function, 2),
+        ("g", AtpDeclarationKind::Function, 0),
+        ("h", AtpDeclarationKind::Function, 0),
+        ("i", AtpDeclarationKind::Function, 0),
+        ("j", AtpDeclarationKind::Function, 0),
+        ("unused", AtpDeclarationKind::Function, 0),
+        ("Q", AtpDeclarationKind::Predicate, 2),
+        ("x", AtpDeclarationKind::GeneratedBinder, 0),
+        ("S", AtpDeclarationKind::Sort, 0),
+    ]
+    .into_iter()
+    .enumerate()
+    {
+        parts.declarations.push(AtpDeclaration::new(
+            AtpDeclarationId::new(index as u32 + 3),
+            kind,
+            name,
+            arity,
+            AtpProvenanceId::new(1),
+        ));
+        parts.symbol_map.push(AtpSymbolMapEntry::new(
+            name,
+            if kind == AtpDeclarationKind::GeneratedBinder {
+                AtpSymbolSource::GeneratedBinder(AtpSourceBinding::new("binder:x"))
+            } else {
+                AtpSymbolSource::MizarSymbol(AtpSourceBinding::new(name))
+            },
+        ));
+    }
+    parts.axioms[0] = AtpFormula::new(
+        AtpFormulaId::new(1),
+        AtpFormulaTree::Forall {
+            binders: vec![AtpBinder::new("x", Some(AtpSymbolName::new("S")))],
+            body: Box::new(AtpFormulaTree::And(vec![
+                AtpFormulaTree::True,
+                AtpFormulaTree::False,
+                AtpFormulaTree::Not(Box::new(atom(
+                    "P",
+                    vec![pair(
+                        pair(variable("x"), constant("a")),
+                        pair(constant("a"), constant("b")),
+                    )],
+                ))),
+                AtpFormulaTree::Or(vec![
+                    atom("Q", vec![variable("x"), constant("c")]),
+                    atom("P", vec![constant("d")]),
+                ]),
+                AtpFormulaTree::Implies(
+                    Box::new(atom("P", vec![constant("e")])),
+                    Box::new(atom("P", vec![constant("g")])),
+                ),
+            ])),
+        },
+        AtpProvenanceId::new(2),
+    );
+    parts.type_context = AtpTypeContext::new(vec![AtpTypeGuard::new(
+        AtpTypeGuardId::new(1),
+        AtpFormulaTree::Exists {
+            binders: vec![AtpBinder::new("x", None)],
+            body: Box::new(AtpFormulaTree::Equality {
+                left: constant("h"),
+                right: constant("i"),
+            }),
+        },
+        AtpProvenanceId::new(1),
+    )]);
+    parts.properties.push(EncodedProperty::axiom(
+        AtpPropertyId::new(1),
+        "P",
+        AtpFormulaTree::Equality {
+            left: pair(constant("a"), constant("a")),
+            right: constant("j"),
+        },
+        AtpProvenanceId::new(2),
+    ));
+    parts.conjecture = AtpFormula::new(
+        AtpFormulaId::new(2),
+        atom("P", vec![pair(constant("b"), constant("a"))]),
+        AtpProvenanceId::new(3),
+    );
+    let expected = vec![
+        constant("a"),
+        constant("b"),
+        constant("c"),
+        constant("d"),
+        constant("e"),
+        pair(constant("a"), constant("a")),
+        pair(constant("a"), constant("b")),
+        pair(constant("b"), constant("a")),
+        constant("g"),
+        constant("h"),
+        constant("i"),
+        constant("j"),
+    ];
+    let problem = AtpProblem::try_new(parts).expect("validated all-section trees");
+    let before = problem.clone();
+    let mut formulas = vec![
+        problem.axioms()[0].formula().unwrap(),
+        problem.type_context().guards()[0].formula(),
+        problem.conjecture().formula().unwrap(),
+    ];
+    let PropertyEncoding::Axiom(property) = problem.properties()[0].encoding() else {
+        panic!("explicit property axiom");
+    };
+    formulas.push(property);
+    let mut terms = Vec::new();
+    while let Some(tree) = formulas.pop() {
+        match tree {
+            AtpFormulaTree::True | AtpFormulaTree::False => {}
+            AtpFormulaTree::Atom(atom) => terms.extend(atom.arguments()),
+            AtpFormulaTree::Equality { left, right } => terms.extend([left, right]),
+            AtpFormulaTree::Not(body)
+            | AtpFormulaTree::Forall { body, .. }
+            | AtpFormulaTree::Exists { body, .. } => formulas.push(body),
+            AtpFormulaTree::And(children) | AtpFormulaTree::Or(children) => {
+                formulas.extend(children);
+            }
+            AtpFormulaTree::Implies(left, right) => {
+                formulas.extend([left.as_ref(), right.as_ref()]);
+            }
+        }
+    }
+    let mut original_terms = Vec::new();
+    while let Some(term) = terms.pop() {
+        original_terms.push(term);
+        if let AtpTerm::Function { arguments, .. } = term {
+            terms.extend(arguments);
+        }
+    }
+    let observed = problem.observed_ground_terms().unwrap();
+    assert_eq!(
+        observed.iter().copied().collect::<Vec<_>>(),
+        expected.iter().collect::<Vec<_>>()
+    );
+    assert!(observed.iter().all(|term| {
+        original_terms
+            .iter()
+            .any(|original| std::ptr::eq(*term, *original))
+    }));
+    assert_eq!(problem, before);
+}
+
+#[test]
+fn observed_ground_terms_allow_empty_observations_and_refuse_valid_native_properties() {
+    for tree in [
+        AtpFormulaTree::True,
+        AtpFormulaTree::False,
+        AtpFormulaTree::Forall {
+            binders: vec![AtpBinder::new("x", None)],
+            body: Box::new(atom("P", vec![variable("x")])),
+        },
+    ] {
+        let mut parts = minimal_parts();
+        parts.logic_profile = profile_first_order();
+        parts.declarations.push(AtpDeclaration::new(
+            AtpDeclarationId::new(3),
+            AtpDeclarationKind::GeneratedBinder,
+            "x",
+            0,
+            AtpProvenanceId::new(1),
+        ));
+        parts.symbol_map.push(AtpSymbolMapEntry::new(
+            "x",
+            AtpSymbolSource::GeneratedBinder(AtpSourceBinding::new("binder:x")),
+        ));
+        parts.axioms[0] =
+            AtpFormula::new(AtpFormulaId::new(1), tree.clone(), AtpProvenanceId::new(2));
+        parts.conjecture = AtpFormula::new(AtpFormulaId::new(2), tree, AtpProvenanceId::new(3));
+        let problem = AtpProblem::try_new(parts).unwrap();
+        let before = problem.clone();
+        assert!(problem.observed_ground_terms().unwrap().is_empty());
+        assert_eq!(problem, before);
+    }
+    let mut parts = minimal_parts();
+    parts.logic_profile = profile_with_native_properties();
+    let expected = constant("a");
+    let control = AtpProblem::try_new(parts.clone()).unwrap();
+    assert_eq!(
+        control.observed_ground_terms().unwrap(),
+        BTreeSet::from([&expected])
+    );
+    parts.properties.push(EncodedProperty::native_declaration(
+        AtpPropertyId::new(1),
+        "P",
+        AtpDeclarationId::new(1),
+        AtpProvenanceId::new(2),
+    ));
+    let problem =
+        AtpProblem::try_new(parts).expect("valid native property profile and declaration");
+    let before = problem.clone();
+    assert_eq!(
+        problem.observed_ground_terms(),
+        Err(AtpProblemError::UnsupportedProfileFeature {
+            feature: "native property ground-term input",
+        })
+    );
+    assert_eq!(problem, before);
+}

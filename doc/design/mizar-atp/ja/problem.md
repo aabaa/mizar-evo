@@ -171,6 +171,13 @@ backend-reported proof order は semantic identity から除外する。
 候補 N 件で共有 symbol ごとに N-df(s)+1 を足す。df(s) はその symbol を含む候補数で、反復で増やさない。u128 の和を降順、同点は一意の formula ID 昇順に並べる。希少性は入力集合内だけを表し、元 row の provenance と不変 input 対応を保って conjecture 追加・前提削除を行わない。
 未検証 candidate-production の前提部分であり、source projection は既存の真正な入力を使う。library facts・実 budget/citation・刈り込み・提案/retry・未解決 label・公開・証明受理は担当の依存待ちに留める。library 全体の希少性や source-currentness receipt は得られない。
 
+## Observed Ground Terms
+`AtpProblem::observed_ground_terms(&self) -> Result<BTreeSet<&AtpTerm>, AtpProblemError>` は既存の変数を含まない term subtree への参照を返し、既存 AtpTerm Ord（function 名、再帰 argument）で重複排除・整列する。新 type/field/clone/identity/正規化/profile を作らない。
+既存 axiom、type-context guard、axiom-form property、conjecture を全て辿る。全論理・量化 body、atom argument、equality 両辺を辿り、Function は全 descendant が Function の場合だけ closed とする。Variable と variable を含む compound は除くが、全 sibling を訪問し closed descendant は残す。同値 subtree は value でまとめ、参照は元の immutable problem 内を指す。pointer-address 順や重複の代表位置を約束しない。
+binder/sort/predicate 名や未使用 declaration を term にせず、代入、既定 constant、新たな組合せ、text/debug-render parsing を行わない。観測対象が空なら空集合を返す。axiom/conjecture tree 不在は既存 MissingFormulaPayload、NativeDeclaration property は既存 UnsupportedProfileFeature { feature: "native property ground-term input" } とし、部分結果や fallback を返さない。現 concrete encoder も native property route を拒否する。
+追加三系列は独立定数による全 section/論理/groundness/重複/順序/参照、空観測と妥当な native-property 拒否、元の choice term を期待する実 single/aggregate source-registration の元・改名・否定ケースと入力/encoding 不変性を扱う。既存 validated fixture builder と実 pipeline helper を再利用し、constructor/encoder 全 matrix を複製しない。
+有限の入力 query だけを ATP30 前提として実装する。新 term 生成、代入、equality name、policy search limit、SAT/backend、candidate/evidence 生成、受理/公開/cache、Steps6–8 は後続 owner に残す。private recursive walker は各々三個以上の実 call site がある場合だけ最大二個を認め、既存 method/helper body は全て保つ。
+
 ## public enum forward compatibility
 
 task 22 は frontend task 25 の方針を `problem` module に適用する。この module が所有する

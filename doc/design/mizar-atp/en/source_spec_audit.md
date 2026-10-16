@@ -101,14 +101,14 @@ Literal top-level public items:
   `AtpSymbolMapEntry`, `AtpSymbolSource`, `AtpProvenance`, `AtpSourceRef`,
   `AtpDiagnostic`, `AtpProblemError`
 
-Public entry functions: none beyond constructors/accessors on the public data
-types.
+Public entry functions: no module-level entry; inherent AtpProblem queries are owned by [problem.md](./problem.md).
 
 | Spec promise | Source evidence | Test evidence | Status |
 |---|---|---|---|
 | Backend-neutral `AtpProblem` records declarations, axioms, conjecture, target binding, symbol map, provenance, properties, diagnostics, and `Unsat` polarity without embedding backend proofs or SAT clauses. | `AtpProblemParts`, `AtpProblem::try_new`, canonical identity/debug helpers. | problem module tests for construction, deterministic identity, debug rendering, expected-result restriction, prohibited trusted material, and validation rejection. | Implemented for explicit ATP problem payloads. |
 | Logic profiles and formula trees preserve unsupported features as fail-closed profile errors rather than silently re-profiling. | `LogicProfile`, profile validation, formula/type-context validation helpers. | unsupported-profile, symbol-reference, missing-payload, and source/provenance rejection tests. | Implemented. |
 | Public enums are downstream forward-compatible. | `#[non_exhaustive]` on public enums. | `atp_public_enums_are_non_exhaustive_and_documented`. | Guarded by task 22. |
+| Observed ground input terms remain borrowed, complete and untrusted without new term generation. | AtpProblem::observed_ground_terms. | Fixed structural/borrow/empty/native-input and genuine source input-preservation families. | Implemented raw input query only; full ATP30 remains open. |
 
 ### `translator`
 

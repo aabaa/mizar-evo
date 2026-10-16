@@ -20784,3 +20784,94 @@ fn doc_native_source_absence_typed_errors_and_edit_restore() {
     assert_eq!(std::fs::read(&path).unwrap(), original);
     std::fs::remove_dir_all(root).unwrap();
 }
+
+#[test]
+fn source_registration_observed_ground_terms_preserve_actual_choices_inputs_and_encodings() {
+    use mizar_atp::{
+        problem::*,
+        smtlib_encoder::{SmtLibDialect, encode_smtlib},
+        tptp_encoder::{TptpDialect, encode_tptp},
+        translator::translate_source_existential_registration as translate,
+    };
+    use mizar_core::core_ir::CoreTermKind;
+    use mizar_vc::vc_ir::VcStatus;
+    for (multiple, case) in [
+        (false, step5c3_registration_case()),
+        (true, step5c13_registration_case()),
+    ] {
+        let original = std::fs::read_to_string(case.source_path).unwrap();
+        let renamed = original.replace("marked", "retagged").replace("X", "Value");
+        let negative = original.replace("means X = X", "means not X = X");
+        assert_ne!(renamed, original);
+        assert_ne!(negative, original);
+        for text in [&original, &renamed, &negative] {
+            let (core, _, vcs) = source_candidate_core_and_vcs(multiple, text);
+            let before_core = core.clone();
+            let before_vcs = vcs.clone();
+            let origins = core
+                .generated()
+                .iter()
+                .map(|(_, row)| row)
+                .collect::<Vec<_>>();
+            let selected = vcs
+                .vcs()
+                .iter()
+                .filter(|vc| vc.status == VcStatus::NeedsAtp)
+                .collect::<Vec<_>>();
+            assert_eq!(selected.len(), if multiple { 3 } else { 1 });
+            assert_eq!(selected.len(), origins.len());
+            for (registration, vc) in selected.iter().enumerate() {
+                let functor = origins[registration].functor.as_ref().unwrap();
+                let expected = AtpTerm::Function {
+                    function: AtpSymbolName::new(format!("choice:{functor:?}")),
+                    arguments: vec![],
+                };
+                assert!(core.terms().iter().any(|(_, term)| matches!(
+                    &term.kind,
+                    CoreTermKind::Apply { functor: actual, args }
+                        if actual == functor && args.is_empty()
+                )));
+                for format in [ConcreteFormat::Tptp, ConcreteFormat::SmtLib] {
+                    let problem = translate(
+                        &core,
+                        &vcs,
+                        vc.id,
+                        source_candidate_profile("source-observed-ground-terms", format),
+                    )
+                    .unwrap();
+                    let before = problem.clone();
+                    let encoded_before = if format == ConcreteFormat::Tptp {
+                        encode_tptp(&problem, TptpDialect::Fof)
+                            .unwrap()
+                            .text()
+                            .to_owned()
+                    } else {
+                        encode_smtlib(&problem, SmtLibDialect::Uninterpreted)
+                            .unwrap()
+                            .text()
+                            .to_owned()
+                    };
+                    assert_eq!(
+                        problem.observed_ground_terms().unwrap(),
+                        std::collections::BTreeSet::from([&expected])
+                    );
+                    assert_eq!(problem, before);
+                    let encoded_after = if format == ConcreteFormat::Tptp {
+                        encode_tptp(&problem, TptpDialect::Fof)
+                            .unwrap()
+                            .text()
+                            .to_owned()
+                    } else {
+                        encode_smtlib(&problem, SmtLibDialect::Uninterpreted)
+                            .unwrap()
+                            .text()
+                            .to_owned()
+                    };
+                    assert_eq!(encoded_after.as_bytes(), encoded_before.as_bytes());
+                }
+            }
+            assert_eq!(core, before_core);
+            assert_eq!(vcs, before_vcs);
+        }
+    }
+}
