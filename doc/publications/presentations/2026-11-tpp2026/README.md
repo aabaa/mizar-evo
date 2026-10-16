@@ -127,7 +127,10 @@ Frame 7.1 uses kLoC consistently, separates ATP from kernel, and gives the
 measured kernel plus SAT-dependency source size with its counting boundary.
 The closing section goes directly from implementation status (7.1) to
 priorities and the design summary on one slide (7.2), ending with a request
-for feedback. Internal connection details stay in the narrative draft for questions.
+for feedback, with parallel development and summary subheadings. Internal
+connection details stay in the narrative draft for questions. The five backups
+cover template instantiation, incremental verification, package manifests,
+benchmark conditions, and HOL-to-FOL encoding/reconstruction, in that order.
 
 ## Language Policy
 
@@ -202,7 +205,7 @@ Verified on October 7, 2026 while designing the deck:
 
 Still to do before the talk:
 
-- [ ] Re-read the HOL-to-FOL encoding frame (Backup 15) against Meng and Paulson 2008
+- [ ] Re-read the HOL-to-FOL encoding frame (Backup 5) against Meng and Paulson 2008
       and Blanchette et al. 2016; it is schematic.
 - [ ] Check the historical wording: FOL completeness and the ATP tradition,
       LCF tactics, and "Mizar never had a user-programmable tactic language".

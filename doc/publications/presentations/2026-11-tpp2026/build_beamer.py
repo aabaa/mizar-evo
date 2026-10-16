@@ -188,10 +188,7 @@ def build(gen, deck: dict) -> None:
             (("一覧", "取り込むもの"), "lX"),
             (("段階", "著者が確認できるもの"), "lX"),
             (("領域", "実装済み", "完成時見積", "限定実装と残る範囲"), "lrrX"),
-            (("評価", "対象・方式", "成功率"), "lXr"),
-            (("目的", "出典", "参照箇所", "使用箇所"), "llll"),
             (("", "MizAR 60 (ITP 2023)", "Sledgehammer / AFP (ITP 2022)"), "lXX"),
-            (("", "HOL ITP + ATP", "FOL ITP + ATP"), "lXX"),
         ):
             flex = r">{\raggedright\arraybackslash}X"
             header = " & ".join(rf"\textbf{{{gen.inline_tex(cell)}}}" for cell in headers)

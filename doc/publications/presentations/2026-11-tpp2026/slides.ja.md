@@ -166,7 +166,7 @@ proof ... end;
 
 Speaker note:
 
-- Source: CARD_1:14、COMPTS_1:17（Backup 10）。各30秒程度で意味と記述の機構を指す。証明を省略した説明例で、実行結果ではない。
+- Source: CARD_1:14、COMPTS_1:17（draft.ja.md §1）。各30秒程度で意味と記述の機構を指す。証明を省略した説明例で、実行結果ではない。
 - Cantor: bool Xは冪集合。基数を始順序数で表すため、inはここでは濃度の大小。位相: T_2はHausdorff、rng f = [#] Tは全射、結論は同相写像。探索・検査の分離は§6。
 
 ## Part 2. Readable Mathematics
@@ -380,7 +380,7 @@ end;
 - 明示的なインスタンス化: `defpred` に続けて `by NatInduction[P], Base, Step`。
 - 関数子パラメータは集合ではなく schema レベルの記号として扱い、一階論理を維持する。
 
-[^1]: 詳細: Białystok 資料 Story 6（`PermProduct[T]`、`qua` によるビュー）、および本資料 Backup 4。
+[^1]: 詳細: Białystok 資料 Story 6（`PermProduct[T]`、`qua` によるビュー）、および本資料 Backup 1。
 
 Speaker note:
 
@@ -618,7 +618,7 @@ import mml.algebra.structure.sorted;
 
 Speaker note:
 
-- Source: `doc/spec/en/12.modules_and_namespaces.md` §12.3、`17.clusters_and_registrations.md`, Traceability、`23.package_management_and_build_system.md`。import 例は一対一の機械的な移行例ではない。詳細: Backup 7–8。
+- Source: `doc/spec/en/12.modules_and_namespaces.md` §12.3、`17.clusters_and_registrations.md`, Traceability、`23.package_management_and_build_system.md`。import 例は一対一の機械的な移行例ではない。詳細: Backup 2–3。
 
 ### Frame 5.3 - 全体像 [deep dive]
 
@@ -700,7 +700,7 @@ evidence の照合から SAT による受理まで (sketch):
 
 Speaker note:
 
-- 元の式、合成した置換、束縛文脈、対象 VC と反駁の極性を保存。instance と SAT 節は再生成する（Backup 5）。
+- 元の式、合成した置換、束縛文脈、対象 VC と反駁の極性を保存。instance と SAT 節は再生成する（詳細は draft.ja.md §6）。
 - 青い各箱は含意を表す s/t の定義と4節。単位節 p・not r と合わせて5変数・10節。元の DIMACS は `draft.ja.md` §6に保持。実行ダンプではない。
 - kernel は置換を探索せず、外部 Resolution の各ステップを replay しない。Source: architecture 08, 15, 16。
 
@@ -737,6 +737,8 @@ Speaker note:
 
 ### Frame 7.2 - 今後の開発とまとめ
 
+### 今後の開発
+
 - **最優先: source-to-semantics → VC → evidence → kernel → artifact → build の統合。**
 - Algorithm の意味論・検証義務を整合し、限定的に動く経路を広げる。
 - MVM runtime・抽出は別途開発。MML 全体の移植は処理系完成と別課題。
@@ -752,46 +754,7 @@ Speaker note:
 
 - Source: `doc/design/todo.md` の統合順序・MML port 境界。
 
-## Backup 1. MizAR 60 の詳細
-
-Source: Jakubův et al., MizAR 60 for Mizar 50, ITP 2023.
-
-- データ: MPTP で出力した MML 1147、無名の top-level lemma を含む 57,897 件の定理。MizAR 40 と同一版を用いた比較。
-- 学習・開発・holdout を90:5:5に分割。holdout 2,896件中1,690件（58.4%）を hammering mode で証明。ユーザの前提指定なし、420 CPU 秒（MizAR 40 は約40.6%）。
-- 人または機械がライブラリから前提を選べる条件では 75% 超（MizAR 40 は 56%）。
-- 最高性能の単一手法: hammering mode で 30 秒 40%。人間の前提指定ありで 120 秒 60%。
-- 転移: 同手法を MML 1382 の新規 242 article、13,370 定理にも適用。
-- 手法: ENIGMA と Deepire で誘導した E と Vampire、学習ベースの前提選択、数百万の ATP 証明で学習するループ。
-
-## Backup 2. Sledgehammer 評価の詳細
-
-### 表14　Sledgehammer と Magnushammer の評価条件
-
-| 評価 | 対象・方式 | 成功率 |
-|---|---|---|
-| ITP 2022 | AFP 5,000ゴール、greedy 16構成 | 68.8% |
-| Magnushammer（2023年公開） | PISA 1,000定理、Sledgehammer | 38.3% |
-| 同じ PISA 評価 | 学習による前提選択を用いる Magnushammer | 59.5% |
-
-- ITP 2022: 50 entry × 100ゴール。MePo、基準512事実、各構成30 CPU 秒。構成は評価集合から事後選択。再構成は評価対象外。
-- PISA: Isabelle2021-1、Sledgehammer の timeout 30秒、ローカル5 prover、複数設定の成功集合を集約。Isabelle 内での検証を成功条件とする。
-- 年代が近くても、局所ゴールと定理全体、探索成功と検証済み証明を混同しない。
-
-Speaker note:
-
-- Source: Desharnais et al., Seventeen Provers Under the Hammer, ITP 2022, sections 5, 5.6, Table 10; Mikuła et al., Magnushammer, arXiv:2303.04488（2023年公開）, Table 2, Appendix A.4。
-
-## Backup 3. HOL から FOL への符号化と再構成
-
-- 関数適用: 関数変数の適用を `app(F, X)` で表現。定数の適用はカリー化を維持、または平坦化。
-- ラムダ抽象: lambda lifting は定義式付きの新しい定数を導入する。コンビネータ変換が代替。
-- 型: 多相な HOL の型を guard、tag、または単相化で符号化。選択は健全性・完全性・prover 性能に影響する。
-- 真偽値: 論理式中の真偽値を返す項には追加の符号化が必要。
-- 再構成: 使用した補題による `metis`、SMT 証明の `smt` replay、生成した Isar テキスト。再構成の失敗は別途集計。
-
-Source: Meng and Paulson 2008; Blanchette, Böhme, Popescu, Smallbone 2016; Blanchette, Kaliszyk, Paulson, Urban 2016; Schurr, Fleury, Desharnais 2021.
-
-## Backup 4. Template のインスタンス化: 一つの証明、多くのビュー
+## Backup 1. template のインスタンス化: 一つの証明、多くのビュー
 
 有界な型パラメータと汎用的な定理 (specification example, 証明は省略):
 
@@ -820,29 +783,7 @@ Speaker note:
 
 - Source: `doc/spec/en/18.templates.md`, section 18.2.2.
 
-## Backup 5. Kernel evidence と信頼できる SAT 検査
-
-![KernelEvidence and the kernel's SAT check](../2026-09-bialystok/figures/certificate_replay.pdf)
-
-- evidence は元の論理式・明示的な代入・来歴・対象とゴールの対応を保持。kernel はこれらを検査し、決定的な SAT 問題を生成。信頼できるプロセス内 SAT 検査器で UNSAT を確認する。
-- バックエンドの証明トレース、SMT の証明オブジェクト、ログ、終了コードは診断用のみ。
-
-Speaker note:
-
-- Source: `doc/design/architecture/en/08.reasoning_boundary.md`, `15.kernel_certificate_format.md`.
-
-## Backup 6. ATP の中心経路
-
-![The core ATP path, with responsibility groups](../2026-09-bialystok/figures/pipeline.pdf)
-
-- 決定的な discharge 後の未解決義務のみを ATP に送る。前段の discharge にも再検査可能な evidence が必要。
-- 各境界で、情報の管理主体・記録する成果物・変更後の再検査範囲を定める。
-
-Speaker note:
-
-- Source: `doc/design/architecture/en/00.pipeline_overview.md`; Białystok 資料 Part 10。
-
-## Backup 7. 差分検証
+## Backup 2. 差分検証
 
 ![The fingerprint graph: what a change re-verifies](../2026-09-bialystok/figures/fingerprint_graph.pdf)
 
@@ -853,7 +794,7 @@ Speaker note:
 
 - Source: `doc/design/architecture/en/11.artifact_and_incremental_build.md`, `18.dependency_fingerprint.md`; Białystok 資料 Story 5。
 
-## Backup 8. Package manifest
+## Backup 3. Package manifest
 
 Mizar Evo (specification example):
 
@@ -873,42 +814,9 @@ topology = { version = "^0.9", features = ["metric"] }
 
 Source: `doc/spec/en/23.package_management_and_build_system.md`; Białystok 資料 Story 1。
 
-## Backup 9. 質疑用の具体例
+## Backup 4. 評価条件の比較
 
-本編36分30秒には追加せず、質問に応じて以下を参照:
-
-1. 単一のゴールで HOL から FOL への関数の符号化を説明（`app`、部分適用、lambda lifting）。
-2. Mizar の関数表現: `Function of X,Y`、`f.x`、集合論的対象としての soft type。
-3. Template: 加法と乗法のビューを持つ `PermProduct[T]`（Backup 4）。
-4. Algorithm: ユークリッドの互除法、`by computation`、関数子への昇格。
-5. Structure とビュー: `AddMagma`、`MulMagma`、`Magma`（Białystok Story 2）。
-6. 現代的な基盤: `mizar.pkg`、namespace、指紋グラフ（Backup 7-8）。
-7. 検査: evidence のインスタンス化と SAT 検査（本編 6.4、詳細は Backup 5）。
-
-## Backup 10. 出典と帰属
-
-本講演の例が参照する MML:
-
-### 表15　MML の参照箇所
-
-| 目的 | 出典 | 参照箇所 | 使用箇所 |
-|---|---|---|---|
-| Cantor の定理 | `CARD_1` | 定理14 | Frame 1.2 例1 |
-| 連続全単射と同相性 | `COMPTS_1` | 定理17 | Frame 1.2 例2 |
-
-Source URLs:
-
-- <https://mizar.uwb.edu.pl/version/current/html/card_1.html#T14>
-- <https://mizar.uwb.edu.pl/version/current/html/compts_1.html#T17>
-
-帰属についての注記:
-
-- 参照した MML のテキストは GPL-3.0-or-later / CC-BY-SA-3.0-or-later。表14に挙げたスライド例は説明用に構成し、原文引用とは区別する。
-- ベンチマークの数値は Backup 1-2 と `references.bib` を参照。最終版の作成前に、出版社の情報で書誌事項を確認。
-
-## Backup 11. 評価条件の比較
-
-### 表16　MizAR 60 と Sledgehammer の評価条件
+### 表14　MizAR 60 と Sledgehammer の評価条件
 
 | | MizAR 60 (ITP 2023) | Sledgehammer / AFP (ITP 2022) |
 |---|---|---|
@@ -927,43 +835,7 @@ Speaker note:
 - 公表年と実験時期は異なる。MizAR の主要実験は2020–2021年。AFP 評価は2022年1月の Isabelle と2021年12月の AFP を使用。
 - MizAR の 75% は、人または機械がライブラリから前提を選んだ条件。質問用に取っておく。
 
-## Backup 12. 評価単位: 定理全体と局所ゴール
-
-![What each benchmark counts](figures/evaluation_units.pdf)
-
-- **MizAR: 著者による前提指定なしに、ライブラリから定理全体を自動証明できるか。**
-- **AFP 研究: 証明中の局所ゴールを、その文脈で自動証明できるか。多くは人手で記述された証明の内部に位置する。**
-- いずれも妥当な評価であるが、対象とする課題は異なる。
-
-## Backup 13. 一階 ATP への二つの接続経路
-
-![Two paths from an interactive prover to a first-order ATP](figures/two_paths.pdf)
-
-- **Sledgehammer の一階・SMT 経路: 高階のゴールを翻訳し、得られた証明を Isabelle 内で再構成する。**
-- **MizAR: 一階・集合論の問題を ATP へ送る。**
-
-Speaker note:
-
-- どちらも既存システムの説明（Blanchette, Kaliszyk, Paulson, Urban 2016; Jakubův et al. 2023）。オレンジの箱が翻訳と再構成の層。
-- 図は一階・SMT 接続の概形。ITP 2022 の評価は、高階形式を直接扱う prover も含む。
-- MizAR の見出しの数字は ATP 証明を数える。Mizar checker は、推論が検査器の強さの範囲なら、得られた `by` ステップを再検査する。
-
-## Backup 14. 高階論理における関数
-
-HOL の文の概形 (sketch, Isabelle/HOL 風の記法):
-
-```hol
-f :: 'a => 'b        x :: 'a
-
-P (f x)
-```
-
-- **HOL: 関数型と関数適用を論理に組み込む。**
-- 関数を引数・戻り値とする関数、部分適用、ラムダ抽象を直接記述できる。
-- **高階の構造を用いた簡潔な数学的記述が可能。**
-- **E や Vampire の一階推論を利用するには、高階構造を一階表現へ符号化する必要がある。**
-
-## Backup 15. HOL の符号化と再構成
+## Backup 5. HOL の符号化と再構成
 
 符号化の手順の概形 (sketch):
 
@@ -983,29 +855,3 @@ Speaker note:
 
 - Source: Meng and Paulson 2008（高階節から一階節への翻訳）; Blanchette, Böhme, Popescu, Smallbone 2016（型の符号化）; Blanchette, Kaliszyk, Paulson, Urban 2016（サーベイ）; Schurr, Fleury, Desharnais 2021（再構成）。
 - Sledgehammer が実際に使う符号化は prover とオプションで変わる。この枚は概形。
-
-## Backup 16. 複雑さを担う層の違い
-
-![Where HOL and FOL systems pay for complexity](figures/where_you_pay.pdf)
-
-- **HOL は高階構造を ATP 向けに符号化。Mizar は集合論の細部を言語層で抽象化。**
-- **Mizar Evo: 一階の基盤を保ち、数学的な記述を現代化。**
-
-Speaker note:
-
-- HOL と FOL では複雑さを担う層が異なる。HOL は関数型・ラムダを論理に組み込み、一階 ATP との接続では符号化と再構成を行う。
-- 集合論の直接記述に伴う対・定義域などの細部は、Mizar の soft type、mode、attribute、registration、scheme で抽象化する。
-
-## Backup 17. 設計上のトレードオフ
-
-### 表17　HOL / FOL における設計上のトレードオフ
-
-| | HOL ITP + ATP | FOL ITP + ATP |
-|---|---|---|
-| 記述 | 高階機能による簡潔な記述 | 直接記述すると冗長 |
-| 関数 | 基本的な高階の対象 | 一階の集合論的対象 |
-| ATP 接続 | 高階構造の一階・SMT 符号化 | 一階問題の生成 |
-| 再構成 | Isabelle 内での再構成 | 対応可能な Mizar ステップの再検査 |
-| 言語層の役割 | HOL の抽象 | 一階の細部の抽象化 |
-
-- 表現と検査の経路を比較した表であり、実測上の性能優位性を示すものではない。
