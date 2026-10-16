@@ -121,7 +121,18 @@ def build(gen, deck: dict) -> None:
     title, units = gen.parse_markdown(deck["input"])
     split_frame_lines = gen.split_frame_lines
     make_talk_track = gen.make_talk_track
+    table_to_tex = gen.table_to_tex
     if deck["input"].name == "slides.ja.md":
+        # Keep the eight implementation groups in one table.
+        def implementation_table(rows):
+            if len(rows) != 10 or rows[0] != "| 領域 | 実装済み | 完成時見積 | 限定実装と残る範囲 |":
+                return table_to_tex(rows)
+            table = table_to_tex(rows[:-1])
+            last_row = " & ".join(gen.inline_tex(cell) for cell in gen.split_table_row(rows[-1]))
+            table.insert(table.index(r"\bottomrule"), last_row + r" \\")
+            return table
+
+        gen.table_to_tex = implementation_table
         # Subheadings organize the slide; omit them from the spoken-note list.
         gen.make_talk_track = lambda visible, notes: make_talk_track(
             [line for line in visible if not line.startswith("### ")], notes
@@ -147,6 +158,7 @@ def build(gen, deck: dict) -> None:
     finally:
         gen.split_frame_lines = split_frame_lines
         gen.make_talk_track = make_talk_track
+        gen.table_to_tex = table_to_tex
     if deck["input"].name == "slides.ja.md":
         # Keep labels and numbers compact; give prose the remaining width.
         generated = [detail_tex, notes_tex]

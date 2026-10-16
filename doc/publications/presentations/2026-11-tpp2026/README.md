@@ -122,6 +122,8 @@ candidates and ATP trials to an explicit by-clause suggestion (invocation
 syntax and future arguments are not yet specified);
 6.2 separates suggestion from source-based verification. These are explanatory
 sketches and specification examples, not execution or external-prover results.
+Frame 7.1 uses kLoC consistently, separates ATP from kernel, and gives the
+measured kernel plus SAT-dependency source size with its counting boundary.
 The closing line is fixed:
 *Keep the foundation small. Keep the mathematics readable. Modernize everything
 else.*
