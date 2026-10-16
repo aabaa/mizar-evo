@@ -303,7 +303,7 @@ obligation reference は class Interface、family `mizar-proof/source-registrati
 metadata hash は完全な artifact-hash string、２つの version は canonical string、不在の imported context は null、実 accepted polarity は stable string、真正な payload hash は完全な artifact-hash string として複写する。汎用 VC/discharge/dependency fingerprint で代用しない。
 
 obligation_id は選択された source-target 名、witness_path は `proof-witnesses/source-registration-discharge-v1/<lowercase-payload-digest>.bin` とする。lowercase hex は新 producer の実３箇所（target、payload、path）だけで共有し、既存 selector の書式/error は変えない。この metadata/hash から [明示的 built-in reference](../../mizar-artifact/ja/proof_witness.md#built-in-reference-profile) を構成し、Artifact value writer で構造検証して selection・bytes とともに返す。
-この tuple は TrustedKernelWitnessMetadata、ProofWitnessDraft、file I/O、committed-publication proof、accepted witness status projection、selected witness/discharge reuse hash を生成しない。既存 unsupported publication、incomplete dependency slice、保守的な汎用 identity と caller 所有の現 source/snapshot freshness を保つ。上位 artifact/manifest 統合と完全な Proof23/Artifact25 は保留する。
+この tuple は TrustedKernelWitnessMetadata、ProofWitnessDraft、file I/O、committed-publication proof、accepted witness status projection、selected witness/discharge reuse hash を生成しない。既存 unsupported publication、incomplete dependency slice、保守的な汎用 identity と caller 所有の現 source/snapshot freshness を保つ。完全な source producer による artifact 組立、Proof witness staging／publication 統合と完全な Proof23/Artifact25 は保留する。
 試験は新鮮な単一/複数 source leaf、改名 source、snapshot/policy、再構成した正確な通常 payload/raw metadata、canonical round-trip、hash/path 入力と上流拒否を使う。実 false-correctness Kernel 拒否と既存 check/metadata/selection の意図を保ち、Artifact の shape mutation を source 受理/公開の証拠に数えない。
 
 ## Source existential-registration proof

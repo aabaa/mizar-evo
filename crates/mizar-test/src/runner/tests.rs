@@ -19378,3 +19378,319 @@ fn source_registration_candidate_anchor_refuses_whole_inputs_before_selection() 
     }
     assert_eq!((source, nodes, collected.env().clone(), core, vcs, formulas, syntax, owners), before);
 }
+
+// Caller-owned envelope coordinates exercise structure only; acceptance and witness
+// bytes below come from the original source projectors, not an enclosing producer.
+fn builtin_enclosing_fixture(multiple: bool) -> (mizar_artifact::verified_artifact::VerifiedArtifact, Vec<Vec<u8>>) {
+    use mizar_artifact::{module_summary::{ModuleSummaryIdentity, SourceRangeSummary},
+        registration_summary::{ArtifactHashClass, ArtifactHashRef}, store::SchemaVersion,
+        verified_artifact::{BuildProvenance, ObligationMetadata, ObligationStatus, VerifiedArtifact}};
+    use mizar_proof::{policy::VerifierPolicy, selection::ProofWinnerClass, status::{
+        project_source_registration_candidate_witness, project_source_registration_discharge_witness}};
+    use mizar_vc::vc_ir::VcStatus;
+    let case = if multiple { step5c13_registration_case() } else { step5c3_registration_case() };
+    let text = std::fs::read_to_string(case.source_path).unwrap();
+    let (source, nodes, symbols) = if multiple { step5c13_registration_inputs(&text) }
+        else { step5c3_registration_inputs(&text) }.unwrap();
+    let before = (source.clone(), nodes.clone(), symbols.clone());
+    let (_, _, vcs) = source_candidate_core_and_vcs(multiple, &text);
+    let policy = VerifierPolicy::release();
+    let mut references = Vec::new();
+    let mut payloads = Vec::new();
+    for vc in vcs.vcs() {
+        let (selection, reference, bytes) = match vc.status {
+            VcStatus::Discharged { .. } => {
+                let result = project_source_registration_discharge_witness(&source, &nodes, &symbols,
+                    super::shared::snapshot_id(0), vc.id, &policy).unwrap();
+                assert_eq!(result.0.selected_class(), ProofWinnerClass::DischargedBuiltin);
+                result
+            }
+            VcStatus::NeedsAtp => {
+                let format = mizar_atp::problem::ConcreteFormat::Tptp;
+                let result = project_source_registration_candidate_witness(&source, &nodes, &symbols,
+                    super::shared::snapshot_id(0), vc.id,
+                    (source_candidate_profile("enclosing-source", format), format), &policy).unwrap();
+                assert_eq!(result.0.selected_class(), ProofWinnerClass::KernelVerified);
+                result
+            }
+            _ => panic!("unexpected source obligation"),
+        };
+        assert!(selection.selected_candidate_id().is_some());
+        assert!(!bytes.is_empty());
+        references.push(reference);
+        payloads.push(bytes);
+    }
+    assert_eq!(references.len(), if multiple { 6 } else { 2 });
+    assert_eq!((source, nodes, symbols), before);
+    let fingerprint = references[0].obligation_fingerprint.clone();
+    let obligations = references.iter().map(|w| ObligationMetadata {
+        obligation_id: w.obligation_id.clone(), obligation_anchor: None, owner_origin_id: None,
+        source_range: SourceRangeSummary { start_byte: 0, end_byte: text.len() as u64 },
+        obligation_kind: "structural-container".into(), statement_summary: "source witness reference".into(),
+        obligation_fingerprint: w.obligation_fingerprint.clone(), vc_fingerprint: fingerprint.clone(),
+        local_context_fingerprint: fingerprint.clone(), dependency_slice_fingerprint: fingerprint.clone(),
+        verifier_policy_fingerprint: w.kernel_acceptance.verifier_policy_fingerprint.clone(),
+        status: ObligationStatus::Accepted, accepted_witness_obligation_id: Some(w.obligation_id.clone()),
+        deterministic_discharge_hash: None, diagnostic_ref: None,
+    }).collect();
+    let mut artifact = VerifiedArtifact {
+        schema_version: SchemaVersion::new(2, 0),
+        module: ModuleSummaryIdentity { package_id: "enclosing-fixture".into(), package_version: None,
+            lockfile_identity: None, module_path: "source".into(), language_edition: "2026".into() },
+        source_file: "src/source.miz".into(), source_hash: mizar_session::hash_text(&text), verified_at: None,
+        interface_hash: mizar_session::hash_text("unrefreshed interface"),
+        implementation_hash: mizar_session::hash_text("unrefreshed implementation"),
+        exports: Vec::new(), expressions: Vec::new(), obligations, proof_witnesses: references,
+        diagnostics: Vec::new(), provenance: BuildProvenance { toolchain: "structural-test".into(),
+            language_edition: "2026".into(), lockfile_hash: ArtifactHashRef::new(ArtifactHashClass::Artifact,
+                "fixture/lock", SchemaVersion::new(1, 0), mizar_session::hash_text("lock")),
+            verifier_config_hash: fingerprint, dependency_artifact_hashes: Vec::new(), cache_key: None },
+    };
+    artifact.refresh_hashes().unwrap();
+    (artifact, payloads)
+}
+
+#[test]
+fn builtin_enclosing_roundtrip_mixed_and_normal_compatibility() {
+    use mizar_artifact::{proof_witness::{ProofStatus, builtin_proof_witness_ref_json, proof_witness_ref_json},
+        store::{CanonicalJson, SchemaVersion, canonical_json_bytes}, verified_artifact::*};
+    assert_eq!(current_schema_version(), SchemaVersion::new(1, 0));
+    assert!(schema_version_support().check(Some("2.0")).is_err());
+    for multiple in [false, true] {
+        let (artifact, _) = builtin_enclosing_fixture(multiple);
+        for builtin_only in [false, true] {
+            let mut artifact = artifact.clone();
+            if builtin_only {
+                artifact.proof_witnesses.retain(|w| w.proof_status == ProofStatus::DischargedBuiltin);
+                artifact.obligations.retain(|o| artifact.proof_witnesses.iter().any(|w| w.obligation_id == o.obligation_id));
+                artifact.refresh_hashes().unwrap();
+            }
+            let json = builtin_verified_artifact_json(&artifact).unwrap();
+            if builtin_only {
+                let mut equivalent = json.clone();
+                let CanonicalJson::Object(fields) = &mut equivalent else { unreachable!() };
+                let CanonicalJson::Array(references) = fields.get_mut("proof_witnesses").unwrap() else { unreachable!() };
+                for reference in references {
+                    let CanonicalJson::Object(fields) = reference else { unreachable!() };
+                    fields.insert("schema_version".into(), CanonicalJson::string("03.00"));
+                }
+                let decoded = read_builtin_verified_artifact(&equivalent, Default::default()).unwrap();
+                assert!(decoded.proof_witnesses.iter().all(|w| w.schema_version == SchemaVersion::new(3, 0)));
+                assert_eq!(builtin_verified_artifact_json(&decoded).unwrap(), json);
+            }
+            let read = read_builtin_verified_artifact(&json, Default::default()).unwrap();
+            assert_eq!(read.proof_witnesses.len(), artifact.proof_witnesses.len());
+            for reference in &read.proof_witnesses {
+                assert!(artifact.proof_witnesses.contains(reference));
+                let encoded = match reference.proof_status {
+                    ProofStatus::DischargedBuiltin => builtin_proof_witness_ref_json(reference).unwrap(),
+                    ProofStatus::KernelVerified => proof_witness_ref_json(reference).unwrap(),
+                    _ => panic!("unexpected source proof status"),
+                };
+                let CanonicalJson::Object(fields) = &json else { unreachable!() };
+                let CanonicalJson::Array(witnesses) = &fields["proof_witnesses"] else { unreachable!() };
+                assert!(witnesses.contains(&encoded));
+            }
+            assert_eq!(canonical_json_bytes(&json), canonical_json_bytes(&builtin_verified_artifact_json(&read).unwrap()));
+            assert!(read_verified_artifact(&json, Default::default()).is_err());
+            assert!(verified_artifact_json(&artifact).is_err());
+            assert!(write_verified_artifact(&artifact).is_err());
+            artifact.schema_version = SchemaVersion::new(1, 0);
+            assert!(artifact.refresh_hashes().is_err());
+        }
+        let mut normal = artifact.clone();
+        normal.schema_version = SchemaVersion::new(1, 0);
+        normal.proof_witnesses.retain(|w| w.proof_status == ProofStatus::KernelVerified);
+        normal.obligations.retain(|o| normal.proof_witnesses.iter().any(|w| w.obligation_id == o.obligation_id));
+        normal.refresh_hashes().unwrap();
+        let json = verified_artifact_json(&normal).unwrap();
+        let read = read_verified_artifact(&json, Default::default()).unwrap();
+        assert_eq!(json, verified_artifact_json(&read).unwrap());
+        assert_eq!(write_verified_artifact(&normal).unwrap(), canonical_json_bytes(&json));
+        assert!(read_builtin_verified_artifact(&json, Default::default()).is_err());
+        assert!(builtin_verified_artifact_json(&normal).is_err());
+    }
+}
+
+#[test]
+fn builtin_enclosing_hash_participants_order_and_exclusions() {
+    use mizar_artifact::{proof_witness::ProofStatus, store::{CanonicalJson, SchemaVersion, artifact_hash_domain}, verified_artifact::*};
+    let (artifact, _) = builtin_enclosing_fixture(true);
+    let interface = artifact.compute_interface_hash().unwrap();
+    let implementation = artifact.compute_implementation_hash().unwrap();
+    let json = builtin_verified_artifact_json(&artifact).unwrap();
+    let domain = artifact_hash_domain(VERIFIED_ARTIFACT_SCHEMA_FAMILY, artifact.schema_version);
+    let store_hash = domain.hash(&json, &artifact_hash_excluded_paths());
+    // Frozen participant sets are independent of the new profile dispatch.
+    for (projection, keys) in [
+        (interface_hash_input_json(&artifact).unwrap(), vec!["dependency_artifact_hashes", "exports", "module", "schema_version"]),
+        (implementation_hash_input_json(&artifact).unwrap(), vec!["diagnostics", "exports", "expressions", "module", "obligations", "proof_witnesses", "provenance", "schema_version", "source_file", "source_hash"]),
+    ] {
+        let CanonicalJson::Object(fields) = projection else { unreachable!() };
+        assert_eq!(fields.keys().map(String::as_str).collect::<Vec<_>>(), keys);
+    }
+    let mut reordered = artifact.clone();
+    reordered.proof_witnesses.reverse();
+    reordered.obligations.reverse();
+    assert_eq!(builtin_verified_artifact_json(&reordered).unwrap(), json);
+    for index in 0..4 {
+        let mut changed = artifact.clone();
+        let reference = &mut changed.proof_witnesses[0];
+        match index {
+            0 => reference.witness_path = "proof-witnesses/relocated.bin".into(),
+            1 => reference.witness_artifact_hash.digest = mizar_session::hash_text("changed payload"),
+            2 => reference.kernel_acceptance.accepted_result_hash.digest = mizar_session::hash_text("changed acceptance metadata"),
+            _ => reference.kernel_acceptance.formula_context_hash = Some(reference.obligation_fingerprint.clone()),
+        }
+        changed.refresh_hashes().unwrap();
+        assert_eq!(changed.interface_hash, interface);
+        assert_ne!(changed.implementation_hash, implementation);
+        assert_ne!(domain.hash(&builtin_verified_artifact_json(&changed).unwrap(), &artifact_hash_excluded_paths()), store_hash);
+    }
+    let mut local = artifact.clone();
+    local.verified_at = Some("2026-10-16T01:02:03Z".into());
+    local.provenance.cache_key = Some("caller-local-cache-key".into());
+    local.refresh_hashes().unwrap();
+    assert_eq!((local.interface_hash, local.implementation_hash), (interface, implementation));
+    assert_ne!(builtin_verified_artifact_json(&local).unwrap(), json);
+    assert_eq!(domain.hash(&builtin_verified_artifact_json(&local).unwrap(), &artifact_hash_excluded_paths()), store_hash);
+    // Use the same genuine normal references in both enclosing versions.
+    let mut normal = artifact.clone();
+    normal.proof_witnesses.retain(|w| w.proof_status == ProofStatus::KernelVerified);
+    normal.obligations.retain(|o| normal.proof_witnesses.iter().any(|w| w.obligation_id == o.obligation_id));
+    normal.refresh_hashes().unwrap();
+    let explicit_hashes = (normal.interface_hash, normal.implementation_hash);
+    normal.schema_version = SchemaVersion::new(1, 0);
+    normal.refresh_hashes().unwrap();
+    assert_ne!(normal.interface_hash, explicit_hashes.0);
+    assert_ne!(normal.implementation_hash, explicit_hashes.1);
+}
+
+#[test]
+fn builtin_enclosing_rejects_invalid_envelopes_and_manifest_bindings() {
+    use mizar_artifact::{manifest::*, proof_witness::{EvidenceKind, ProofWitnessError},
+        registration_summary::{ArtifactHashClass, ArtifactHashRef},
+        store::{CanonicalJson, SchemaVersion, artifact_hash_domain, canonical_json_bytes}, verified_artifact::*};
+    let (artifact, payloads) = builtin_enclosing_fixture(false);
+    let json = builtin_verified_artifact_json(&artifact).unwrap();
+    for version in [None, Some(CanonicalJson::string("2.1")), Some(CanonicalJson::string("3.0")), Some(CanonicalJson::string("bad")), Some(CanonicalJson::null())] {
+        let mut bad = json.clone();
+        let CanonicalJson::Object(fields) = &mut bad else { unreachable!() };
+        fields.insert("unexpected".into(), CanonicalJson::null());
+        match version { Some(v) => { fields.insert("schema_version".into(), v); } None => { fields.remove("schema_version"); } }
+        assert!(matches!(read_builtin_verified_artifact(&bad, Default::default()), Err(VerifiedArtifactError::SchemaVersion(_) | VerifiedArtifactError::UnexpectedType { .. })));
+    }
+    for index in 0..7 {
+        let mut bad = artifact.clone();
+        match index {
+            0 => bad.obligations[0].obligation_fingerprint.digest = mizar_session::hash_text("wrong fingerprint"),
+            1 => bad.obligations[0].verifier_policy_fingerprint.digest = mizar_session::hash_text("wrong policy"),
+            2 => bad.proof_witnesses[0].obligation_id.push_str("-orphan"),
+            3 => bad.proof_witnesses.push(bad.proof_witnesses[0].clone()),
+            4 => bad.obligations[0].accepted_witness_obligation_id = None,
+            5 => bad.proof_witnesses[0].evidence_kind = EvidenceKind::AtpCertificate,
+            _ => bad.proof_witnesses[0].schema_version = SchemaVersion::new(3, 1),
+        }
+        let error = builtin_verified_artifact_json(&bad).unwrap_err();
+        assert!(match (index, &error) {
+            (0, VerifiedArtifactError::WitnessReferenceMismatch { path, .. }) => path == "$.obligations[0].obligation_fingerprint",
+            (1, VerifiedArtifactError::WitnessReferenceMismatch { path, .. }) => path == "$.obligations[0].verifier_policy_fingerprint",
+            (2 | 4, VerifiedArtifactError::WitnessReferenceMismatch { path, .. }) => path == "$.obligations[0].accepted_witness_obligation_id",
+            (3, VerifiedArtifactError::DuplicateEntry { path, .. }) => path == "$.proof_witnesses",
+            (5, VerifiedArtifactError::ProofWitness { path, error: ProofWitnessError::InvalidStatusEvidence { .. } }) => path == "$.proof_witnesses[0]",
+            (6, VerifiedArtifactError::ProofWitness { path, error: ProofWitnessError::SchemaVersion(_) }) => path == "$.proof_witnesses[0]",
+            _ => false,
+        }, "case {index}: {error:?}");
+    }
+    for index in 0..5 {
+        let mut bad = json.clone();
+        let CanonicalJson::Object(fields) = &mut bad else { unreachable!() };
+        let CanonicalJson::Array(references) = fields.get_mut("proof_witnesses").unwrap() else { unreachable!() };
+        let CanonicalJson::Object(reference) = &mut references[0] else { unreachable!() };
+        match index {
+            0 => { reference.remove("schema_version"); }
+            1 => { reference.insert("schema_version".into(), CanonicalJson::string("4.0")); }
+            2 => { reference.insert("legacy_certificate".into(), CanonicalJson::null()); }
+            3 => { reference.insert("proof_status".into(), CanonicalJson::string("externally_attested")); }
+            _ => { reference.insert("evidence_kind".into(), CanonicalJson::string("backend_certificate")); }
+        }
+        let error = read_builtin_verified_artifact(&bad, Default::default()).unwrap_err();
+        assert!(matches!(&error, VerifiedArtifactError::ProofWitness { path, error: nested }
+            if path == "$.proof_witnesses[0]" && match (index, nested) {
+                (0 | 1, ProofWitnessError::SchemaVersion(_)) => true,
+                (2, ProofWitnessError::UnknownField { path, field }) => path == "$" && field == "legacy_certificate",
+                (3, ProofWitnessError::InvalidField { path, .. }) => path == "$.proof_status",
+                (4, ProofWitnessError::InvalidField { path, .. }) => path == "$.evidence_kind",
+                _ => false,
+            }), "nested case {index}: {error:?}");
+    }
+    let mut foreign_module = artifact.module.clone();
+    foreign_module.module_path = "foreign".into();
+    for options in [
+        VerifiedArtifactReadOptions { expected_module: Some(&foreign_module), ..Default::default() },
+        VerifiedArtifactReadOptions { expected_interface_hash: Some(mizar_session::hash_text("wrong interface")), ..Default::default() },
+        VerifiedArtifactReadOptions { expected_implementation_hash: Some(mizar_session::hash_text("wrong implementation")), ..Default::default() },
+    ] { assert!(read_builtin_verified_artifact(&json, options).is_err()); }
+    let temp = std::process::Command::new("mktemp").arg("-d").output().unwrap();
+    assert!(temp.status.success());
+    let root = PathBuf::from(String::from_utf8(temp.stdout).unwrap().trim());
+    std::fs::create_dir_all(root.join("modules")).unwrap();
+    std::fs::write(root.join("modules/source.json"), canonical_json_bytes(&json)).unwrap();
+    let domain = artifact_hash_domain(VERIFIED_ARTIFACT_SCHEMA_FAMILY, artifact.schema_version);
+    let entry = ModuleArtifactEntry {
+        module: artifact.module.clone(), source_file: artifact.source_file.clone(), source_hash: artifact.source_hash,
+        artifact_file: "modules/source.json".into(), artifact_hash: ArtifactHashRef::new(ArtifactHashClass::Artifact,
+            VERIFIED_ARTIFACT_SCHEMA_FAMILY, artifact.schema_version, domain.hash(&json, &artifact_hash_excluded_paths())),
+        interface_hash: ArtifactHashRef::new(ArtifactHashClass::Interface, VERIFIED_ARTIFACT_SCHEMA_FAMILY, artifact.schema_version, artifact.interface_hash),
+        implementation_hash: ArtifactHashRef::new(ArtifactHashClass::Implementation, VERIFIED_ARTIFACT_SCHEMA_FAMILY, artifact.schema_version, artifact.implementation_hash),
+        module_summary_file: None, module_summary_hash: None, module_summary_interface_hash: None,
+        registration_summary_file: None, registration_summary_hash: None, registration_interface_hash: None,
+        proof_witnesses: artifact.proof_witnesses.iter().map(|w| ManifestProofWitnessEntry {
+            obligation_id: w.obligation_id.clone(), obligation_fingerprint: w.obligation_fingerprint.clone(),
+            witness_path: w.witness_path.clone(), witness_artifact_hash: w.witness_artifact_hash.clone(),
+        }).collect(), diagnostics_hash: None,
+    };
+    let manifest = ArtifactManifest { schema_version: SchemaVersion::new(1, 0),
+        package: PackageIdentity { package_id: artifact.module.package_id.clone(), package_version: None, lockfile_identity: None },
+        artifact_root: "artifacts".into(), lockfile_hash: artifact.provenance.lockfile_hash.clone(),
+        toolchain: artifact.provenance.toolchain.clone(), language_edition: "2026".into(),
+        verifier_config_hash: artifact.provenance.verifier_config_hash.clone(), modules: vec![entry], development_artifacts: Vec::new(),
+        provenance: ManifestProvenance { generated_by: "structural-test".into(), manifest_policy: "test".into(), transaction_format: "test".into() },
+    };
+    let options = ManifestFileReadOptions { validate_references: true, ..Default::default() };
+    write_manifest_file(&root, &manifest).unwrap();
+    assert_eq!(read_manifest_file(&root, options).unwrap().manifest.schema_version, SchemaVersion::new(1, 0));
+    assert!(read_manifest_file(&root, ManifestFileReadOptions { validate_witness_files: true, ..options }).is_err());
+    for (reference, bytes) in artifact.proof_witnesses.iter().zip(payloads) {
+        let path = root.join(&reference.witness_path);
+        std::fs::create_dir_all(path.parent().unwrap()).unwrap();
+        std::fs::write(path, bytes).unwrap();
+    }
+    assert!(read_manifest_file(&root, ManifestFileReadOptions { validate_witness_files: true, ..options }).is_ok());
+    for index in 0..7 {
+        let mut bad = manifest.clone();
+        let entry = &mut bad.modules[0];
+        match index {
+            0 => entry.artifact_hash.digest = mizar_session::hash_text("stale stored hash"),
+            1 => { entry.proof_witnesses.pop(); }
+            2 => entry.proof_witnesses[0].witness_path = "proof-witnesses/wrong.bin".into(),
+            3 => entry.source_hash = mizar_session::hash_text("other source"),
+            _ => {
+                let version = match index { 4 => SchemaVersion::new(1, 0), 5 => SchemaVersion::new(2, 1), _ => SchemaVersion::new(9, 0) };
+                entry.artifact_hash.schema_version = version;
+                entry.artifact_hash.digest = artifact_hash_domain(VERIFIED_ARTIFACT_SCHEMA_FAMILY, version).hash(&json, &artifact_hash_excluded_paths());
+                entry.interface_hash.schema_version = version;
+                entry.implementation_hash.schema_version = version;
+            }
+        }
+        write_manifest_file(&root, &bad).unwrap();
+        assert!(read_manifest_file(&root, options).is_err(), "manifest case {index}");
+    }
+    write_manifest_file(&root, &manifest).unwrap();
+    let mut corrupt = json.clone();
+    let CanonicalJson::Object(fields) = &mut corrupt else { unreachable!() };
+    fields.insert("source_file".into(), CanonicalJson::string("src/corrupt.miz"));
+    std::fs::write(root.join("modules/source.json"), canonical_json_bytes(&corrupt)).unwrap();
+    assert!(matches!(read_manifest_file(&root, options), Err(ManifestError::StoreIo(_))));
+    std::fs::remove_dir_all(root).unwrap();
+}

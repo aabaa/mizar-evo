@@ -40,6 +40,13 @@ task 11 の初期 version である。task 11 reader は `1.0..=1.0` の範囲�
 後続仕様が forward-compatible minor-version handling を明示的に宣言しない限り、missing、
 malformed、異なる major、新しすぎる minor version を拒否する。
 
+## Explicit built-in enclosing profile
+
+`builtin_verified_artifact_json(&VerifiedArtifact)` と `read_builtin_verified_artifact(&CanonicalJson, VerifiedArtifactReadOptions)` は既存 value/options/type と schema family を使い、上位 version 2.0、major 一致・minor UpToSupported 0 とする。既存 canonical value／検証済み artifact を返し、bytes は canonical_json_bytes を使う。通常 current_schema_version/schema_version_support と writer/value/reader は1.0のまま、元 bytes と拒否順を保つ。
+field、canonical sort、重複検査、obligation/status/fingerprint/policy 整合、expected module/hash、field/path/range 検査、local metadata 除外を保つ。上位2.0は通常 reference2.0/KernelVerified と明示 reference3.0/DischargedBuiltin を許し、いずれも FormulaSubstitutionKernelEvidence だけとする。上位1.0は通常 reference だけを許す。status/version の読み替えや通常 decode 失敗による受理はしない。各 accepted obligation は唯一の witness に対応し、全 witness は一致する accepted obligation を参照する。
+既存 interface/implementation projection と compute/refresh は不変の hash domain/framing に上位 version を使う。2.0の nested witness 直列化だけを切替え、全 reference 内容は implementation identity に含み、interface identity には含めない。field 解釈前の schema/version/class 検査を保ち、任意の expected major を許さない。既存 reader body は通常・明示・manifest 宣言の consumer が使い、既存 nested writer は直列化・implementation hash・検証で使う。並行表現や二用途だけの pipeline abstraction は加えない。
+実 source 三系列で fresh built-in/ATP reference producer を再利用し、round-trip／混在 class／通常互換、独立した hash participant／順序／除外の関係、不正 envelope と他条件が有効な manifest hash／coverage control を確認する。既存 normal/profile/transaction test 本体は不変。caller 所有の構造 container は完全 source producer・trusted token・完全 Proof identity・reuse・公開資格を示さず、Proof／phase-15 owner に保留する。
+
 ## Top-Level Shape
 
 task 11 は次の canonical JSON field shape を使う。

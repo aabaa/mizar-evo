@@ -162,6 +162,10 @@ fields are all `null` together or all non-null together. The
 indexes or explanation bundles. It is not proof authority and does not replace
 the diagnostics embedded in `VerifiedArtifact`.
 
+## Declared enclosing profiles
+
+Manifest schema/current APIs remain 1.0: witness entries carry the existing id/fingerprint/path/hash tuple and no status discriminator. Referenced main artifacts select the known enclosing 1.0 or explicit 2.0 reader profile through their declared artifact-hash schema version; unknown majors/minors remain rejected. Keep the actual store-framed hash, expected module/interface/implementation hashes, source/version checks and exact witness coverage, plus optional file reachability. Use the existing shared enclosing reader directly; do not add another transaction, token or acceptance path. Normal enclosing 1.0 and all original manifest/transaction behavior remain intact; a structurally valid explicit reference is not source acceptance, complete Proof identity or committed Proof publication authorization.
+
 ## Proof Witness Entries
 
 Manifest proof witness entries make externally stored witness files reachable

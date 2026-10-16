@@ -42,6 +42,13 @@ initial version for task 11. Task 11 readers support the range `1.0..=1.0` and
 reject missing, malformed, different-major, and newer-minor versions unless a
 later spec explicitly declares forward-compatible minor-version handling.
 
+## Explicit built-in enclosing profile
+
+`builtin_verified_artifact_json(&VerifiedArtifact)` and `read_builtin_verified_artifact(&CanonicalJson, VerifiedArtifactReadOptions)` use the existing value/options/types and schema family with enclosing version 2.0, major-exact/minor UpToSupported 0. They return the existing canonical value and validated artifact; canonical_json_bytes supplies bytes. Normal current_schema_version/schema_version_support, writer/value/reader remain 1.0 with their original bytes and rejection order.
+Keep the same fields and canonical sorting, duplicate checks, obligation/status/fingerprint/policy consistency, expected module/hash checks, field/path/range validation and local metadata exclusions. Enclosing 2.0 permits normal reference 2.0/KernelVerified and explicit reference 3.0/DischargedBuiltin, both only FormulaSubstitutionKernelEvidence; enclosing 1.0 retains normal references only. Never relabel statuses/versions or use failed normal decoding as acceptance. Each accepted obligation still resolves exactly once and every witness references a matching accepted obligation.
+Existing interface/implementation projections and compute/refresh methods use the enclosing version in their unchanged hash domains/framing. Only nested witness serialization dispatch changes for 2.0; full reference content participates in implementation identity, not interface identity. Preserve schema/version/class checks before interpreting fields and never admit arbitrary expected majors. The existing reader body has normal, explicit and manifest-declared consumers; the existing nested writer serves serialization, implementation hashing and validation. Add no parallel representation or two-use pipeline abstraction.
+Three genuine-source families reuse fresh built-in/ATP reference producers for round-trip/mixed classes and normal compatibility; independent hash participant/order/exclusion relations; and invalid envelopes with otherwise-valid manifest hash/coverage controls. Existing normal/profile/transaction tests remain verbatim. Caller-owned structural containers do not establish a complete source producer, trusted token, full Proof identity, reuse or publication eligibility; those remain with Proof and phase-15 owners.
+
 ## Top-Level Shape
 
 Task 11 uses this canonical JSON field shape:

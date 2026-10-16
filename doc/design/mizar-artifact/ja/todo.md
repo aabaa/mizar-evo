@@ -340,6 +340,8 @@ internal: [02](../../internal/ja/02.artifact_store_cache_key_and_manifest.md)、
 
 26. **[実 source の明示的 built-in reference profile](../../task_contracts/ja/PROOF-SOURCE-DISCHARGE-WITNESS-PROJECTION.md).** [x] — Unpublished projection only; task 25 publication remains open.
 
+27. **[Explicit built-in enclosing profile](../../task_contracts/ja/ARTIFACT-BUILTIN-ENCLOSING-PROFILE.md).** [x]
+
 ## 推奨検証
 
 各タスクの後で実行する:

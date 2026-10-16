@@ -15,7 +15,8 @@ use crate::{
     module_summary::{ModuleSummaryIdentity, SOURCE_HASH_CONSTRUCTION, SourceRangeSummary},
     proof_witness::{
         EvidenceKind, ProofStatus as WitnessProofStatus, ProofWitnessError,
-        ProofWitnessReadOptions, ProofWitnessRef, proof_witness_ref_json, read_proof_witness_ref,
+        ProofWitnessReadOptions, ProofWitnessRef, builtin_proof_witness_ref_json,
+        proof_witness_ref_json, read_builtin_proof_witness_ref, read_proof_witness_ref,
     },
     registration_summary::{ArtifactHashClass, ArtifactHashRef},
     store::{
@@ -363,8 +364,27 @@ pub fn write_verified_artifact(
 pub fn verified_artifact_json(
     artifact: &VerifiedArtifact,
 ) -> Result<CanonicalJson, VerifiedArtifactError> {
+    schema_version_support().check(Some(&artifact.schema_version.to_string()))?;
     validate_artifact(artifact)?;
     verified_artifact_json_unchecked(artifact)
+}
+
+/// Builds the explicit 2.0 enclosing value for built-in and normal witness references.
+pub fn builtin_verified_artifact_json(
+    artifact: &VerifiedArtifact,
+) -> Result<CanonicalJson, VerifiedArtifactError> {
+    enclosing_version_support(SchemaVersion::new(2, 0))?
+        .check(Some(&artifact.schema_version.to_string()))?;
+    validate_artifact(artifact)?;
+    verified_artifact_json_unchecked(artifact)
+}
+
+/// Reads and validates an explicit 2.0 enclosing value.
+pub fn read_builtin_verified_artifact(
+    value: &CanonicalJson,
+    options: VerifiedArtifactReadOptions<'_>,
+) -> Result<VerifiedArtifact, VerifiedArtifactError> {
+    read_verified_artifact_for_version(value, options, SchemaVersion::new(2, 0))
 }
 
 /// Reads and validates a verified artifact from a canonical JSON value.
@@ -372,8 +392,17 @@ pub fn read_verified_artifact(
     value: &CanonicalJson,
     options: VerifiedArtifactReadOptions<'_>,
 ) -> Result<VerifiedArtifact, VerifiedArtifactError> {
+    read_verified_artifact_for_version(value, options, current_schema_version())
+}
+
+pub(crate) fn read_verified_artifact_for_version(
+    value: &CanonicalJson,
+    options: VerifiedArtifactReadOptions<'_>,
+    expected_version: SchemaVersion,
+) -> Result<VerifiedArtifact, VerifiedArtifactError> {
+    let support = enclosing_version_support(expected_version)?;
     let fields = expect_object(value, "$")?;
-    let schema_version = read_schema_version(fields, options.artifact_path)?;
+    let schema_version = read_schema_version(fields, options.artifact_path, support)?;
     reject_unknown_fields(
         fields,
         &[
@@ -427,6 +456,7 @@ pub fn read_verified_artifact(
         proof_witnesses: read_proof_witnesses(
             required_field(fields, "proof_witnesses", "$")?,
             "$.proof_witnesses",
+            schema_version,
         )?,
         diagnostics: read_diagnostics(
             required_field(fields, "diagnostics", "$")?,
@@ -747,14 +777,18 @@ fn validate_artifact(artifact: &VerifiedArtifact) -> Result<(), VerifiedArtifact
 }
 
 fn validate_artifact_shape(artifact: &VerifiedArtifact) -> Result<(), VerifiedArtifactError> {
-    schema_version_support().check(Some(&artifact.schema_version.to_string()))?;
+    enclosing_version_support(artifact.schema_version)?;
     validate_identity(&artifact.module, "$.module")?;
     validate_source_file(&artifact.source_file, "$.source_file")?;
     validate_optional_verified_at(artifact.verified_at.as_deref(), "$.verified_at")?;
     validate_exports(&artifact.exports, "$.exports")?;
     validate_expressions(&artifact.expressions, "$.expressions")?;
     validate_obligations(&artifact.obligations, "$.obligations")?;
-    validate_proof_witnesses(&artifact.proof_witnesses, "$.proof_witnesses")?;
+    validate_proof_witnesses(
+        &artifact.proof_witnesses,
+        "$.proof_witnesses",
+        artifact.schema_version,
+    )?;
     validate_diagnostics(&artifact.diagnostics, "$.diagnostics")?;
     validate_provenance(&artifact.provenance, "$.provenance")?;
     validate_witness_consistency(artifact)?;
@@ -829,7 +863,11 @@ fn verified_artifact_json_unchecked(
                     .into_iter()
                     .enumerate()
                     .map(|(index, witness)| {
-                        proof_witness_json(witness, &array_path("$.proof_witnesses", index))
+                        proof_witness_json(
+                            witness,
+                            &array_path("$.proof_witnesses", index),
+                            artifact.schema_version,
+                        )
                     })
                     .collect::<Result<Vec<_>, _>>()?,
             ),
@@ -933,7 +971,11 @@ pub fn implementation_hash_input_json(
                     .into_iter()
                     .enumerate()
                     .map(|(index, witness)| {
-                        proof_witness_json(witness, &array_path("$.proof_witnesses", index))
+                        proof_witness_json(
+                            witness,
+                            &array_path("$.proof_witnesses", index),
+                            artifact.schema_version,
+                        )
                     })
                     .collect::<Result<Vec<_>, _>>()?,
             ),
@@ -1193,8 +1235,16 @@ fn obligation_json(
 fn proof_witness_json(
     witness: &ProofWitnessRef,
     path: &str,
+    enclosing_version: SchemaVersion,
 ) -> Result<CanonicalJson, VerifiedArtifactError> {
-    proof_witness_ref_json(witness).map_err(|error| VerifiedArtifactError::ProofWitness {
+    let result = if enclosing_version == SchemaVersion::new(2, 0)
+        && witness.schema_version == SchemaVersion::new(3, 0)
+    {
+        builtin_proof_witness_ref_json(witness)
+    } else {
+        proof_witness_ref_json(witness)
+    };
+    result.map_err(|error| VerifiedArtifactError::ProofWitness {
         path: path.to_owned(),
         error,
     })
@@ -1366,9 +1416,27 @@ fn string_array_json(values: &[String]) -> CanonicalJson {
     CanonicalJson::array(values.iter().map(CanonicalJson::string))
 }
 
+fn enclosing_version_support(
+    version: SchemaVersion,
+) -> Result<SchemaVersionSupport, VerifiedArtifactError> {
+    if version == SchemaVersion::new(2, 0) {
+        Ok(SchemaVersionSupport::new(
+            VERIFIED_ARTIFACT_SCHEMA_FAMILY,
+            2,
+            0,
+            MinorVersionPolicy::UpToSupported,
+        ))
+    } else {
+        let support = schema_version_support();
+        support.check(Some(&version.to_string()))?;
+        Ok(support)
+    }
+}
+
 fn read_schema_version(
     fields: &BTreeMap<String, CanonicalJson>,
     artifact_path: Option<&str>,
+    support: SchemaVersionSupport,
 ) -> Result<SchemaVersion, VerifiedArtifactError> {
     let value = fields.get("schema_version");
     let version = match value {
@@ -1381,7 +1449,6 @@ fn read_schema_version(
         }
         None => None,
     };
-    let support = schema_version_support();
     if let Some(path) = artifact_path {
         support.check_at_path(version, path).map_err(Into::into)
     } else {
@@ -1720,6 +1787,7 @@ fn read_obligation(
 fn read_proof_witnesses(
     value: &CanonicalJson,
     path: &str,
+    enclosing_version: SchemaVersion,
 ) -> Result<Vec<ProofWitnessRef>, VerifiedArtifactError> {
     let values = expect_array(value, path)?;
     let witnesses = values
@@ -1727,7 +1795,16 @@ fn read_proof_witnesses(
         .enumerate()
         .map(|(index, value)| {
             let item_path = array_path(path, index);
-            read_proof_witness_ref(value, ProofWitnessReadOptions::default()).map_err(|error| {
+            let reader = if enclosing_version == SchemaVersion::new(2, 0)
+                && let CanonicalJson::Object(fields) = value
+                && let Some(CanonicalJson::String(version)) = fields.get("schema_version")
+                && version.parse::<SchemaVersion>().ok() == Some(SchemaVersion::new(3, 0))
+            {
+                read_builtin_proof_witness_ref
+            } else {
+                read_proof_witness_ref
+            };
+            reader(value, ProofWitnessReadOptions::default()).map_err(|error| {
                 VerifiedArtifactError::ProofWitness {
                     path: item_path,
                     error,
@@ -1735,7 +1812,7 @@ fn read_proof_witnesses(
             })
         })
         .collect::<Result<Vec<_>, _>>()?;
-    validate_proof_witnesses(&witnesses, path)?;
+    validate_proof_witnesses(&witnesses, path, enclosing_version)?;
     ensure_sorted_by_key(&witnesses, proof_witness_sort_key, path)?;
     Ok(witnesses)
 }
@@ -2439,13 +2516,11 @@ fn validate_obligation_status_shape(
 fn validate_proof_witnesses(
     witnesses: &[ProofWitnessRef],
     path: &str,
+    enclosing_version: SchemaVersion,
 ) -> Result<(), VerifiedArtifactError> {
     ensure_no_duplicate_keys(witnesses, |witness| witness.obligation_id.clone(), path)?;
     for (index, witness) in witnesses.iter().enumerate() {
-        proof_witness_ref_json(witness).map_err(|error| VerifiedArtifactError::ProofWitness {
-            path: array_path(path, index),
-            error,
-        })?;
+        proof_witness_json(witness, &array_path(path, index), enclosing_version)?;
     }
     Ok(())
 }

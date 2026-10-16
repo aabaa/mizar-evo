@@ -200,8 +200,8 @@ order、ATP completion order、backend runtime、filesystem order は serialized
 明示的な version 3.0 profile は既存 ProofWitnessRef/KernelAcceptanceMetadata の field と schema family を使い、DischargedBuiltin と FormulaSubstitutionKernelEvidence の組だけを受け付ける。構造投影であり proof 受理操作ではない。
 `builtin_proof_witness_ref_json(&ProofWitnessRef)` は検証済み CanonicalJson、`read_builtin_proof_witness_ref(&CanonicalJson, ProofWitnessReadOptions)` は同じ profile の検証を提供する。bytes 化は既存 canonical_json_bytes を使い、単一用途の byte wrapper/public type/field/adapter は加えない。
 field 解釈より先に major 3/minor 0、UpToSupported を要求する。他 major/新 minor、version 欠落/不正、unknown/legacy field、異なる status/evidence の組を拒否し、既存 hash-class/family/path/metadata 検査と optional expected payload-hash equality を保つ。供給 version を書き換えず、通常 reader のため built-in を kernel_verified に再分類しない。
-通常の current_schema_version/schema_version_support と既存 writer/reader API は 2.0/KernelVerified のまま、拒否条件と canonical bytes を正確に保つ。VerifiedArtifact/Manifest、通常 Proof staging/publication、Cache 規則は変えず、3.0 reference は既存上位 reader を通らない。
-[source projection owner](../../mizar-proof/ja/status.md#source-discharge-witness-projection) が真正な同一呼出し metadata と検査済み payload を供給する。typed reference や構造 read の成功だけでは trusted token、現 source 権限、committed reachability、公開を得られず、main artifact/manifest 統合は保留する。
+通常の current_schema_version/schema_version_support と既存 writer/reader API は 2.0/KernelVerified のまま、拒否条件と canonical bytes を正確に保つ。[明示的な上位対応](verified_artifact.md#explicit-built-in-enclosing-profile) が別の2.0 container と manifest 宣言の結合を所有し、通常の上位1.0は3.0 reference を拒否する。通常 Proof staging/publication と Cache 規則は保つ。
+[source projection owner](../../mizar-proof/ja/status.md#source-discharge-witness-projection) が真正な同一呼出し metadata と検査済み payload を供給する。typed reference や構造 read の成功だけでは trusted token、現 source 権限、committed reachability、公開を得られず、完全な source producer による artifact 組立と Proof witness staging／publication 統合は保留する。
 試験は実 source reference の明示 API round-trip、決定的 canonical bytes、version/status/evidence/field/hash/path 拒否を検証し、既存通常 codec 試験をすべて保つ。合成 shape mutation は構造試験に限る。
 
 ## Reader And Writer Requirements

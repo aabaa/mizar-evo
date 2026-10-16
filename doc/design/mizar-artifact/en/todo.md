@@ -351,6 +351,8 @@ Keep `cargo test -p mizar-artifact` green after each task (see
 
 26. **[Explicit source built-in reference profile](../../task_contracts/en/PROOF-SOURCE-DISCHARGE-WITNESS-PROJECTION.md).** [x] — Unpublished projection only; task 25 publication remains open.
 
+27. **[Explicit built-in enclosing profile](../../task_contracts/en/ARTIFACT-BUILTIN-ENCLOSING-PROFILE.md).** [x]
+
 ## Recommended Verification
 
 Run after each task:

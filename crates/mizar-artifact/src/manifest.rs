@@ -32,7 +32,7 @@ use crate::{
     },
     verified_artifact::{
         VERIFIED_ARTIFACT_SCHEMA_FAMILY, VerifiedArtifactError, VerifiedArtifactReadOptions,
-        artifact_hash_excluded_paths, read_verified_artifact,
+        artifact_hash_excluded_paths, read_verified_artifact_for_version,
     },
 };
 
@@ -1590,13 +1590,18 @@ fn validate_module_references(
         },
     )
     .map_err(ManifestError::StoreIo)?;
-    let artifact = read_verified_artifact(
+    let artifact = read_verified_artifact_for_version(
         &read.value,
         VerifiedArtifactReadOptions {
             artifact_path: Some(artifact_path.as_str()),
             expected_module: Some(&entry.module),
             expected_interface_hash: Some(entry.interface_hash.digest),
             expected_implementation_hash: Some(entry.implementation_hash.digest),
+        },
+        if entry.artifact_hash.schema_version == SchemaVersion::new(2, 0) {
+            SchemaVersion::new(2, 0)
+        } else {
+            crate::verified_artifact::current_schema_version()
         },
     )
     .map_err(|error| ManifestError::VerifiedArtifact {
