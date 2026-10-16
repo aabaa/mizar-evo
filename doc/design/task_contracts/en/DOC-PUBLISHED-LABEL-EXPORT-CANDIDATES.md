@@ -1,0 +1,10 @@
+# Task DOC-PUBLISHED-LABEL-EXPORT-CANDIDATES: stored label owners
+Canonical language: English; [Japanese pointer](../ja/DOC-PUBLISHED-LABEL-EXPORT-CANDIDATES.md).
+Status: implemented. Tier: full. Owner: [Doc plan](../../mizar-doc/en/00.crate_plan.md), task33; consumer: existing tasks4/5 index planning.
+Authority: spec §§23.5.1/24.2, architecture13 consumer identity/determinism and internal05; [sole API/matching/error/test owner](../../mizar-doc/en/doc_build.md#published-label-export-candidates).
+Readiness/gaps: tasks30/32 provide validated full exports/optional label records; exact stored owner-candidate consumption was source_drift/test_gap, without a new semantic ruling or producer dependency.
+Scope: one existing-type record-query function; freeze complete readers before lookup, same publication/full module/whole label record, all exact owner-FQN candidates and None versus Some(empty) in the owner. No winner or link resolution.
+Writes/tests: append one function to doc_build.rs and exactly two doc_label_export_candidates_* families to runner/tests.rs; no helper, new representation, dependency or old-byte edits. Paired owner/plan/TODO, root follow-up/coverage mapping and this contract only; use existing honest structural publication fixtures/writers and lower validation coverage.
+Forbidden: source-semantic/acceptance/currentness claims from caller-owned metadata; fake producer/evidence/Accepted/Complete/cache hit; inferring labels/origin/kind/range/visibility, arbitrary supplied maps, public diagnostics, codecs/hash/schema/allow changes, or spec/.miz/expectation/trace/ledger/Cargo edits.
+Deferrals/audit: chapter24/SCA-002 owner mapping only, no generation coverage; general label resolution, page/anchor/import/dependency planning, semantic producers/phase15, full Doc4/5/rendering/runtime/publication/reuse/cache and Steps6–8 remain open.
+Reviews/exit: SPEC before Rust, TEST/CODE/VOLUME/CONSISTENCY and bounded full gates; focused genuine-publication metadata/error checks plus Doc/Artifact checks, then parent cargo fmt --check, cargo clippy --all-targets --all-features -- -D warnings, cargo test. Only task33 may close.

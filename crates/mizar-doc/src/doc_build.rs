@@ -102,3 +102,27 @@ pub fn read_published_module_summary_index(
     }
     Ok((manifest, index))
 }
+
+/// Reads all stored owner exports for an exact published label record.
+pub fn read_published_label_export_candidates(
+    artifact_root: impl AsRef<Path>,
+    expected_manifest_hash: Hash,
+    module: &ModuleSummaryIdentity,
+    label: &mizar_artifact::module_summary::ExportedLabelSummary,
+) -> Result<(PublishedManifestRead, Option<Vec<VerifiedExport>>), ManifestError> {
+    let root = artifact_root.as_ref();
+    let (manifest, mut exports) = read_published_export_index(root, expected_manifest_hash)?;
+    let (_, summaries) = read_published_module_summary_index(root, expected_manifest_hash)?;
+    let candidates = summaries
+        .get(module)
+        .and_then(Option::as_ref)
+        .filter(|summary| summary.exported_labels.contains(label))
+        .and_then(|_| exports.remove(module))
+        .map(|exports| {
+            exports
+                .into_iter()
+                .filter(|export| export.fully_qualified_name == label.owner_fully_qualified_name)
+                .collect()
+        });
+    Ok((manifest, candidates))
+}

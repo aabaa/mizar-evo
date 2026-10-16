@@ -11,7 +11,7 @@
 ## モジュール実装
 
 各 module 仕様は専用 spec task で英日同時に固定してから実装する。
-最初の公開成果物リーダーは [artifact_reader.md](./artifact_reader.md) が所有し、[doc_build.md](./doc_build.md) はraw export index と optional 公開 module-summary 入力を所有する。完全な build/index と他の module 仕様は未完了である。
+最初の公開成果物リーダーは [artifact_reader.md](./artifact_reader.md) が所有し、[doc_build.md](./doc_build.md) は raw export index・optional 公開 module-summary 入力・保存 label-owner 候補 query を所有する。完全な build/index と他の module 仕様は未完了である。
 [internal 07](../../internal/ja/07.crate_module_layout.md) により、この
 crate はドキュメントのレンダリングと抽出の**両方**を所有する
 （以前の phase-16 draft は別 crate `mizar-extract` を挙げていたが、現在の
@@ -296,6 +296,10 @@ Tasks1–3 は [DOC-PUBLISHED-ARTIFACT-READER](../../task_contracts/ja/DOC-PUBLI
 32. **Optional 公開 module-summary index。** [x]
     - [DOC-PUBLISHED-MODULE-SUMMARIES](../../task_contracts/ja/DOC-PUBLISHED-MODULE-SUMMARIES.md) は tasks4/5 の入力として label sidecar を保持する。label 対応付け・完全な planning/rendering・Steps6–8 は未完了。
     - 依存: 3、既存 Artifact の hash-bound summary reader。
+
+33. **公開 label export 候補。** [x]
+    - [DOC-PUBLISHED-LABEL-EXPORT-CANDIDATES](../../task_contracts/ja/DOC-PUBLISHED-LABEL-EXPORT-CANDIDATES.md) は保存 record/owner-FQN の正確な query を定める。完全 planning/link resolution は未完了。
+    - 依存: 30、32。新 producer/受理権限は作らない。
 
 ### 監査レビュー注記(2026-07-06)
 

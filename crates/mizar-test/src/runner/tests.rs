@@ -22195,3 +22195,284 @@ fn source_candidate_sat_screen_preserves_lower_refusals_before_optional_limits()
         }
     }
 }
+
+#[test]
+fn doc_label_export_candidates_exact_records_all_owners_identity_and_purity() {
+    use mizar_artifact::{manifest::*, module_summary::*, store::*, verified_artifact::*};
+    use mizar_doc::{
+        artifact_reader::read_published_artifacts,
+        doc_build::read_published_label_export_candidates as read,
+    };
+    let (root, mut manifest, mut summaries) = doc_module_summaries_fixture();
+    let selected = read_manifest_file(&root, ManifestFileReadOptions::default()).unwrap();
+    let mut artifacts = read_published_artifacts(&root, selected.artifact_hash)
+        .unwrap()
+        .1;
+    let mut unique = artifacts[0].exports[0].clone();
+    unique.fully_qualified_name = "caller::unique".into();
+    let mut last = unique.clone();
+    last.origin_id = "z-owner".into();
+    last.fully_qualified_name = "caller::multiple".into();
+    last.namespace_path = vec!["uninterpreted".into()];
+    last.visibility = ExportVisibility::Reexported;
+    last.export_kind = "different-kind".into();
+    last.source_range = SourceRangeSummary {
+        start_byte: 20,
+        end_byte: 30,
+    };
+    last.rendered_signature = "uninterpreted signature".into();
+    last.interface_fingerprint.digest = mizar_session::hash_text("different interface");
+    last.proof_status = None;
+    last.documentation_ref = None;
+    let mut first = last.clone();
+    first.origin_id = "a-owner".into();
+    first.proof_status = unique.proof_status;
+    first.documentation_ref = unique.documentation_ref.clone();
+    let mut unrelated = unique.clone();
+    unrelated.origin_id = "unrelated".into();
+    unrelated.fully_qualified_name = "caller::multiple_extra".into();
+    artifacts[0].exports = vec![last.clone(), unique.clone(), unrelated, first.clone()];
+    let mut foreign = unique.clone();
+    foreign.origin_id = "foreign-owner".into();
+    artifacts[1].exports = vec![foreign.clone()];
+    summaries[0].exported_labels[0].owner_fully_qualified_name =
+        unique.fully_qualified_name.clone();
+    summaries[0].exported_labels[1].owner_fully_qualified_name = first.fully_qualified_name.clone();
+    let mut unmatched = summaries[0].exported_labels[0].clone();
+    unmatched.origin_id = "unmatched-label".into();
+    unmatched.owner_fully_qualified_name = "caller::unmatched".into();
+    summaries[0].exported_labels.push(unmatched);
+    summaries[1].exported_labels = summaries[0].exported_labels.clone();
+    for (index, ((entry, artifact), summary)) in manifest
+        .modules
+        .iter_mut()
+        .zip(&mut artifacts)
+        .zip(&mut summaries)
+        .enumerate()
+    {
+        artifact.module.module_path = "same_path".into();
+        artifact.module.package_version = Some(format!("1.{index}"));
+        summary.module = artifact.module.clone();
+        entry.module = artifact.module.clone();
+        artifact.refresh_hashes().unwrap();
+        let json = if index == 0 {
+            verified_artifact_json(artifact)
+        } else {
+            builtin_verified_artifact_json(artifact)
+        }
+        .unwrap();
+        let write = write_published_artifact(
+            &root,
+            &PublishedArtifactPath::new(&entry.artifact_file).unwrap(),
+            &json,
+            &artifact_hash_domain(VERIFIED_ARTIFACT_SCHEMA_FAMILY, artifact.schema_version),
+            &artifact_hash_excluded_paths(),
+        )
+        .unwrap();
+        entry.artifact_hash.digest = write.artifact_hash;
+        entry.interface_hash.digest = artifact.interface_hash;
+        entry.implementation_hash.digest = artifact.implementation_hash;
+        summary.refresh_interface_hash().unwrap();
+        let write = write_published_artifact(
+            &root,
+            &PublishedArtifactPath::new(entry.module_summary_file.as_ref().unwrap()).unwrap(),
+            &module_summary_json(summary).unwrap(),
+            &artifact_hash_domain(MODULE_SUMMARY_SCHEMA_FAMILY, summary.schema_version),
+            &[],
+        )
+        .unwrap();
+        entry.module_summary_hash.as_mut().unwrap().digest = write.artifact_hash;
+        entry.module_summary_interface_hash.as_mut().unwrap().digest = summary.interface_hash;
+    }
+    let hash = write_manifest_file(&root, &manifest).unwrap().artifact_hash;
+    let selected = read_manifest_file(&root, ManifestFileReadOptions::default()).unwrap();
+    let paths = std::iter::once("artifact-manifest.json".to_owned())
+        .chain(manifest.modules.iter().flat_map(|entry| {
+            std::iter::once(entry.artifact_file.clone())
+                .chain(entry.module_summary_file.clone())
+                .chain(entry.proof_witnesses.iter().map(|w| w.witness_path.clone()))
+        }))
+        .collect::<Vec<_>>();
+    let before = paths
+        .iter()
+        .map(|p| std::fs::read(root.join(p)).unwrap())
+        .collect::<Vec<_>>();
+    assert_eq!(
+        summaries[0].module.module_path,
+        summaries[1].module.module_path
+    );
+    assert_ne!(summaries[0].module, summaries[1].module);
+    assert!(
+        summaries[0]
+            .exported_labels
+            .iter()
+            .all(|label| label.label == "same-label")
+    );
+    for _ in 0..2 {
+        for (module, label, expected) in [
+            (
+                &summaries[0].module,
+                &summaries[0].exported_labels[0],
+                vec![unique.clone()],
+            ),
+            (
+                &summaries[0].module,
+                &summaries[0].exported_labels[1],
+                vec![first.clone(), last.clone()],
+            ),
+            (
+                &summaries[0].module,
+                &summaries[0].exported_labels[2],
+                vec![],
+            ),
+            (
+                &summaries[1].module,
+                &summaries[1].exported_labels[0],
+                vec![foreign.clone()],
+            ),
+            (
+                &summaries[1].module,
+                &summaries[1].exported_labels[1],
+                vec![],
+            ),
+        ] {
+            assert_eq!(
+                read(&root, hash, module, label).unwrap(),
+                (selected.clone(), Some(expected))
+            );
+        }
+    }
+    for field in 0..6 {
+        let mut forged = summaries[0].exported_labels[0].clone();
+        match field {
+            0 => forged.origin_id.push_str("-forged"),
+            1 => forged.label.push_str("-forged"),
+            2 => forged.owner_fully_qualified_name = first.fully_qualified_name.clone(),
+            3 => forged.visibility = "private".into(),
+            4 => forged.source_range.end_byte += 1,
+            5 => forged.target_kind.push_str("-forged"),
+            _ => unreachable!(),
+        }
+        assert_eq!(
+            read(&root, hash, &summaries[0].module, &forged).unwrap(),
+            (selected.clone(), None)
+        );
+    }
+    assert_eq!(
+        paths
+            .iter()
+            .map(|p| std::fs::read(root.join(p)).unwrap())
+            .collect::<Vec<_>>(),
+        before
+    );
+    std::fs::remove_dir_all(root).unwrap();
+}
+
+#[test]
+fn doc_label_export_candidates_absences_and_original_errors_before_lookup() {
+    use mizar_artifact::{manifest::*, module_summary::*, store::*};
+    use mizar_doc::doc_build::{
+        read_published_export_index, read_published_label_export_candidates as read,
+    };
+    let (root, manifest, summaries) = doc_module_summaries_fixture();
+    let label = &summaries[0].exported_labels[0];
+    let module = &summaries[0].module;
+    let mut missing = module.clone();
+    missing.package_version = Some("missing-coordinate".into());
+    let mut forged = label.clone();
+    forged.origin_id.push_str("-forged");
+    let paths = std::iter::once("artifact-manifest.json".to_owned())
+        .chain(manifest.modules.iter().flat_map(|entry| {
+            std::iter::once(entry.artifact_file.clone())
+                .chain(entry.module_summary_file.clone())
+                .chain(entry.proof_witnesses.iter().map(|w| w.witness_path.clone()))
+        }))
+        .collect::<Vec<_>>();
+    for case in 0..7 {
+        let mut changed = manifest.clone();
+        let mut summary = summaries[0].clone();
+        let wrong = mizar_session::hash_text("caller-selected mismatch");
+        match case {
+            2 => summary.module.module_path = "other_module".into(),
+            3 => summary.source_hash = wrong,
+            4 => summary.exported_labels.clear(),
+            5 => {
+                changed.modules[0].module_summary_file = None;
+                changed.modules[0].module_summary_hash = None;
+                changed.modules[0].module_summary_interface_hash = None;
+            }
+            6 => changed.modules.clear(),
+            _ => {}
+        }
+        summary.refresh_interface_hash().unwrap();
+        let path =
+            PublishedArtifactPath::new(manifest.modules[0].module_summary_file.as_ref().unwrap())
+                .unwrap();
+        let write = write_published_artifact(
+            &root,
+            &path,
+            &module_summary_json(&summary).unwrap(),
+            &artifact_hash_domain(MODULE_SUMMARY_SCHEMA_FAMILY, summary.schema_version),
+            &[],
+        )
+        .unwrap();
+        if case != 5 && case != 6 {
+            changed.modules[0]
+                .module_summary_hash
+                .as_mut()
+                .unwrap()
+                .digest = write.artifact_hash;
+            changed.modules[0]
+                .module_summary_interface_hash
+                .as_mut()
+                .unwrap()
+                .digest = summary.interface_hash;
+        }
+        let published = write_manifest_file(&root, &changed).unwrap().artifact_hash;
+        let hash = if case == 1 { wrong } else { published };
+        let before = paths
+            .iter()
+            .map(|p| std::fs::read(root.join(p)).unwrap())
+            .collect::<Vec<_>>();
+        if (1..=3).contains(&case) {
+            let original = read_published_export_index(&root, hash).unwrap_err();
+            match (case, &original) {
+                (1, ManifestError::StoreIo(StoreIoError::ArtifactHashMismatch { .. })) => {}
+                (2, ManifestError::ModuleSummary { error, .. }) => assert!(matches!(
+                    error.as_ref(),
+                    ModuleSummaryError::ModuleIdentityMismatch { .. }
+                )),
+                (3, ManifestError::ReferencedArtifactMismatch { field, .. }) => {
+                    assert_eq!(field, "source_hash")
+                }
+                _ => panic!("unexpected original error for case {case}: {original:?}"),
+            }
+            for (module, label) in [(&missing, label), (module, &forged)] {
+                assert_eq!(read(&root, hash, module, label).unwrap_err(), original);
+            }
+        } else {
+            let selected = read_manifest_file(&root, ManifestFileReadOptions::default()).unwrap();
+            assert_eq!(
+                read(&root, hash, module, label).unwrap(),
+                (
+                    selected.clone(),
+                    if case == 0 { Some(vec![]) } else { None }
+                )
+            );
+            for (module, label) in [(&missing, label), (module, &forged)] {
+                assert_eq!(
+                    read(&root, hash, module, label).unwrap(),
+                    (selected.clone(), None)
+                );
+            }
+        }
+        assert_eq!(
+            paths
+                .iter()
+                .map(|p| std::fs::read(root.join(p)).unwrap())
+                .collect::<Vec<_>>(),
+            before
+        );
+    }
+    std::fs::remove_dir_all(root).unwrap();
+}
