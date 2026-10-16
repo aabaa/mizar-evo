@@ -160,3 +160,23 @@ This default path also trusts MVM's execution result. It differs from kernel and
 Lambda notation writes a function directly. Here, u maps to sin u times u, for real u.
 When passed as expr, a syntax tree, the algorithm can process products and sin while preserving variable binding. We verify differentiate's contract using differentiation rules, then use the transformed expression in a derivative proof. The displayed conclusion also uses semantic conversion and simplification lemmas.
 This connects function notation, expression transformation, and its correctness proof. It is a specification sketch; MVM execution remains future work. [Specification-based sketch]
+
+## Part 5. Development Infrastructure (24:15–27:15)
+
+### 5.1 Environment: what must an author import? (24:15)
+
+The table shows all ten environment directives. The code above is shortened from ALGSTR_0. Even for the same article STRUCT_0, authors select resources by role: symbols, notation, constructors, registrations, and so on.
+Notations and definitions are especially difficult. Overlapping notation and redefinitions have priorities. The order of articles can change which notation or definition is selected. Adding or reordering articles can affect existing text and proofs.
+Authors manage both the imported resources and these priorities. Managing overrides and order dependence is the hardest part of writing a Mizar article. [Current environment]
+
+### 5.2 Imports and dependency tracking (25:15)
+
+The new specification imports a module's public items with import. The two example modules follow the specification. Original fully qualified names and registration traces are intended to show which items were actually used.
+Dependency fingerprints allow reuse of checked results. Packages and lockfiles fix versions. The IDE is designed to show resolved names and traces.
+This is not a one-to-one translation of the old environment lists. We keep mathematical writing while building tools that explain dependencies and implicit processing. [Specification]
+
+### 5.3 The whole picture [deep dive] (26:15)
+
+Here is the whole design in one picture.
+At the top is rich mathematics: structures, templates, algorithms, and modules. Below is a small first-order foundation. Around it are modern tools: the ATP layer, kernel, artifacts, versioned libraries, IDE, AI, and publication.
+The design keeps mathematical writing and a small core, and rebuilds the tools. The features in this talk belong to these layers. [Specification]

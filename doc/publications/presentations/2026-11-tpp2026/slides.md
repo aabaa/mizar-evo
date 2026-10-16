@@ -569,7 +569,7 @@ Speaker note:
 
 ## Part 5. Development Infrastructure
 
-### Frame 5.1 - Environment: What Must An Author Import?
+### Frame 5.1 - Environment: what must an author import?
 
 Current Mizar environment, shortened from ALGSTR_0 (sketch):
 
@@ -582,50 +582,57 @@ environ
  theorems STRUCT_0;
 ```
 
-| List | What it supplies |
+### Table 11. The ten environment directives
+
+| Directives | What they import |
 |---|---|
 | vocabularies / notations | Symbols / notation |
-| constructors | Constructors |
-| registrations / theorems | Automatic type facts / cited theorems |
+| constructors / registrations | Constructors / automatic type facts |
+| requirements / definitions | Special automatic processing / definition information |
+| equalities / expansions | Equality / definition-expansion information |
+| theorems / schemes | Theorems / schemes |
 
-- **Choose articles by role; `notations` and `definitions` also depend on article order.**
+- `notations` / `definitions`: article order determines notation / definition priority.
+- **The hardest part of article authoring: managing environment overrides and order dependence.**
 
 Speaker note:
 
-- Source: Bialystok `draft.md` frames 2.1-2.2, quoting ALGSTR_0. Ellipses shorten the lists. Imported registrations can affect implicit type inference; a symbol alone does not supply its notation or type facts.
-- Source on ordering: Adam Naumowicz, Towards Standardized Mizar Environments, CICM 2017, slide 13: <https://mizar.uwb.edu.pl/~softadm/imports/slides.pdf>. The claim concerns those current-environment lists, not every import directive.
+- Source: Białystok `draft.md`, Frames 2.1–2.2; ALGSTR_0 excerpt. The code shows only five directive types. Authors select resources by role. requirements names special automatic processing to enable.
+- Source: Adam Naumowicz, Towards Standardized Mizar Environments, CICM 2017, slides 7, 13, 19–24: <https://mizar.uwb.edu.pl/~softadm/imports/slides.pdf>. Overrides mean priority when selecting notation and redefinitions. Reordering can change existing notation resolution and proofs. Details: `draft.ja.md`.
 
-### Frame 5.1a - Imports And Dependency Tracking
+### Frame 5.2 - Imports and dependency tracking
 
-New specification: module imports (specification example):
+Module imports in the new specification (specification example):
 
 ```mizar
 import .function;
 import mml.algebra.structure.sorted;
 ```
 
-| Stage | What the author can inspect |
-|---|---|
-| Import | The module's public definitions, theorems, and registrations |
-| Resolve | Source fully-qualified names and registration traces |
-| Reuse | Validated dependency fingerprints for incremental builds |
+### Table 12. Imports and dependency tracking
 
-- **Bring public items in together, then track what was actually used.**
-- Packages and lock files fix dependency versions; IDE diagnostics can expose the resolved names and traces.
+| Stage | What authors can inspect |
+|---|---|
+| Import | Public definitions, theorems, and registrations |
+| Resolution | Original fully qualified names and registration traces |
+| Reuse | Checked dependency fingerprints for incremental builds |
+
+- **Import public items together, and trace what was actually used.**
+- The design fixes dependency versions with packages and lockfiles. IDE diagnostics expose resolved names and traces.
 
 Speaker note:
 
-- Source: `doc/spec/en/12.modules_and_namespaces.md` section 12.3; `17.clusters_and_registrations.md`, Traceability; `23.package_management_and_build_system.md`. The import example is not a mechanical one-to-one migration. Details: Backups 7-8.
+- Source: `doc/spec/en/12.modules_and_namespaces.md` §12.3; `17.clusters_and_registrations.md`, Traceability; `23.package_management_and_build_system.md`. These imports are not a one-to-one mechanical translation of the old environment. Details: Backups 2–3.
 
-### Frame 5.2 - The Whole Picture
+### Frame 5.3 - The whole picture [deep dive]
 
 ![Mizar Evo in one picture](figures/layer_stack.pdf)
 
-- **Rich mathematics, a small first-order core, and modern infrastructure.**
+- **Support rich mathematical writing with a small first-order foundation and modern development tools.**
 
 Speaker note:
 
-- Elaboration maps the mathematical language to a first-order representation. The kernel checks evidence proposed by external ATPs. Verified artifacts and the library support IDE / LSP, AI, and publication.
+- Elaboration turns mathematical language into a first-order representation. The kernel checks candidate evidence from external ATPs. Checked artifacts and libraries support IDE / LSP, AI, and publication.
 
 ## Part 6. Checking And Automation
 
