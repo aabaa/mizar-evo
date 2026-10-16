@@ -48,3 +48,19 @@ In September, I gave a seminar and discussed the design with the Mizar team in B
 
 This work led to six design principles: foundation, writing, generics, computation, development tools, and checking and automation.
 We keep first-order logic, set theory, and readable mathematics, while redesigning templates, algorithms, tools, and evidence checking. Most examples that follow explain the specification. I will show the implemented scope at the end. [Challenges / Specification]
+
+## Part 1. Logical Foundation (9–11 minutes)
+
+### 1.1 Keep the foundation, rebuild the tools (9:00)
+
+Mizar Evo keeps the mathematical language and rebuilds the tools below and around it.
+We keep first-order logic and Tarski–Grothendieck set theory as the proof foundation. We also keep soft types, modes, attributes, registrations, structures, and declarative proofs.
+ATP means automated theorem prover. We separate its search from independent checking of its results by a small kernel. This preserves the logic while keeping the trusted base small. Section 6 will show how checking works.
+Section 2 covers mathematical writing, section 3 generics, section 4 computation, and section 5 development tools. [Specification]
+
+### 1.2 From sets to topological spaces (10:00)
+
+Here are two examples of the mathematical writing we want to keep. Please focus on the assumptions and conclusions.
+The first is Cantor's theorem: the power set of X has a larger cardinality than X. Sets, power sets, and cardinals are all objects in the same first-order set theory. Cardinals are represented as ordinals, so in expresses the strict inequality here.
+The second theorem says that a continuous bijection from a compact space to a Hausdorff space is a homeomorphism. TopSpace is a structure; compact and T_2 are attributes. The statement gives conditions on the map and its conclusion.
+We keep this way of writing mathematics and redesign the processor that supports search and checking. [CARD_1:14 / COMPTS_1:17]

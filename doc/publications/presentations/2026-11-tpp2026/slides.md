@@ -123,49 +123,50 @@ Speaker note:
 
 ## Part 1. Logical Foundation
 
-### Frame 1.1 - Keep The Foundation, Rebuild The Tools
+### Frame 1.1 - Keep the foundation, rebuild the tools
 
 ```text
-**Keep the mathematical layer.**
-**Rebuild the tools under it and around it.**
+**Keep the mathematical language.**
+**Rebuild the processor and development tools.**
 ```
 
-- **Mizar Evo keeps first-order logic and Tarski-Grothendieck set theory as the base logic.**
-- It keeps soft types, modes, attributes, registrations, structures, and declarative proofs.
-- **Separate proof search from checking; a small kernel decides acceptance. Details in section 6.**
+- **Keep first-order logic (FOL) and Tarski–Grothendieck set theory.**
+- Keep soft types, modes, attributes, registrations, structures, and declarative proofs.
+- **Separate ATP search from checking: a small kernel independently checks the results. Details in §6.**
 
 Speaker note:
 
-- The shared structure concerns mathematical writing and proof tools, not identical logics or representations.
-- Neither success rates nor reconstruction failures show a first-order advantage. Evaluate ease of writing, automation, and proof checking.
+- Mathematical language and proof support can be built over a first-order foundation. Similar mechanisms do not imply identical logics or representations.
+- Success rates and reconstruction failures do not establish a first-order performance advantage. Evaluate the design through mathematical writing, automation, and proof checking.
 
-### Frame 1.2 - Current Mizar: Functions In Set Theory
+### Frame 1.2 - From sets to topological spaces
 
-Function application is a defined set-theoretic relation (exact MML excerpt):
-
-```mizar
-  func f.x -> set means
-  :Def2:
-  [x,it] in f if x in dom f otherwise it = {};
-```
-
-A typed function is a soft type over partial functions (exact MML excerpt):
+Example 1: Cantor's theorem in current Mizar (sketch, proof omitted):
 
 ```mizar
-definition
-  let X,Y;
-  mode Function of X,Y is quasi_total PartFunc of X,Y;
-end;
+theorem Cantor:
+  for X being set holds card X in card (bool X)
+proof ... end;
 ```
 
-- **Here a function is an ordinary first-order object: a set of pairs. Application is defined, not built into the logic.**
-- **Nothing in the base logic has to be higher-order.**
-- The price: if you write raw set theory, the domain, the graph, functionality, and membership all appear in the text.
+Example 2: a continuous bijection from a compact space to a Hausdorff space (sketch, proof omitted):
+
+```mizar
+theorem CompactBijection:
+  for S being compact TopSpace,
+      T being non empty T_2 TopSpace,
+      f being Function of S,T
+  st f is continuous one-to-one & rng f = [#] T
+  holds f is being_homeomorphism
+proof ... end;
+```
+
+- **Write mathematics from sets, power sets, and cardinals to topological spaces over first-order set theory.**
 
 Speaker note:
 
-- Source: current MML `funct_1.miz`, lines 138-140 (`FUNCT_1:def 2`), and `funct_2.miz`, lines 87-90 (checked October 7, 2026). URLs: <https://mizar.uwb.edu.pl/version/current/mml/funct_1.miz>, <https://mizar.uwb.edu.pl/version/current/mml/funct_2.miz>. GPL-3.0-or-later / CC-BY-SA-3.0-or-later.
-- `quasi_total` (FUNCT_2, lines 36-44) says the domain is all of X unless Y is empty.
+- Source: CARD_1:14 and COMPTS_1:17 (`draft.ja.md` §1). Spend about 30 seconds on each example, pointing out the meaning and language features. Proofs are omitted; these are explanatory sketches, not execution results.
+- Cantor: bool X is the power set. Cardinals are initial ordinals, so in expresses a strict cardinal inequality here. Topology: T_2 means Hausdorff; rng f = [#] T means surjective; the conclusion states that f is a homeomorphism. Search and checking are separated in §6.
 
 ## Part 2. Readable Mathematics
 
