@@ -729,6 +729,8 @@ Pre-audit 5B.3 and Gate S1 block only consumers requiring their outputs.
 
    [Source theorem module metadata](./task_contracts/en/RESOLVE-SOURCE-THEOREM-MODULE-CANDIDATES.md) composes actual AST, signature, label and citation inputs; complete ModuleResolver/summary publication remains separate.
 
+   [Captured native theorem module metadata](./task_contracts/en/DRIVER-NATIVE-THEOREM-MODULE-CANDIDATES.md) binds that actual pair to protected captured source; service registration and current-runtime publication remain separate.
+
    These slices do not register ModuleResolver or later semantic services;
    their remaining owner-provided payload/publication prerequisites stay open.
 2. [~] [Real-service equivalence](./task_contracts/en/STEP6C-REAL-SERVICE-EQUIVALENCE.md)

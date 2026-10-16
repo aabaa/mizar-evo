@@ -19168,3 +19168,321 @@ fn native_public_theorem_formula_text_candidates_refuse_unbound_and_incomplete_s
         }
     }
 }
+
+#[test]
+fn native_theorem_module_candidates_preserve_captured_pairs_and_original_owners() {
+    let private = include_str!(
+        "../../../tests/miz/pass/resolve/pass_declaration_symbol_private_theorem_visibility_001.miz"
+    );
+    let quantified = "101:3:for100:1:X101:5:being101:3:set101:5:holds100:1:X102:1:=100:1:X";
+    let numeral = "103:1:0102:1:=103:1:0";
+    for (text, public, citations) in [
+        (private.to_owned(), vec![("UsePriv1", quantified)], vec![("UsePriv1", "PrivT1")]),
+        (private.replace("theorem UsePriv1", "lemma UsePriv1"), vec![("UsePriv1", quantified)], vec![("UsePriv1", "PrivT1")]),
+        (private.replace("\ntheorem UsePriv1", "\nprivate theorem UsePriv1"), vec![], vec![("UsePriv1", "PrivT1")]),
+        (include_str!("../../../tests/miz/pass/theorems/pass_proof_verification_theorem_status_open_assumed_001.miz").to_owned(), vec![("OpenT1", quantified), ("AxT1", quantified)], vec![]),
+        (format!("{private}\ntheorem Alpha: 0 = 0\nproof\n  thus 0 = 0 by UsePriv1;\nend;\n"), vec![("UsePriv1", quantified), ("Alpha", numeral)], vec![("UsePriv1", "PrivT1"), ("Alpha", "UsePriv1")]),
+        (format!("\u{feff}{}", private.replace("holds X = X", "holds X ::= 日本語 formula =:: = X").replace('\n', "\r\n")), vec![("UsePriv1", quantified)], vec![("UsePriv1", "PrivT1")]),
+    ] {
+        for open in [false, true] {
+            let fixture = Fixture::new(text.as_bytes());
+            let ids = InMemorySessionIdAllocator::new();
+            let snapshots = SnapshotRegistry::new();
+            let (mut draft, input) = fixture.submit_request(vec![], vec![]);
+            draft.source_inputs.versions.clear();
+            let descriptor = SourceInput {
+                package_id: fixture.version.package_id.clone(),
+                module_path: fixture.version.module_path.clone(),
+                normalized_path: fixture.version.normalized_path.clone(),
+                edition: fixture.version.edition.clone(),
+                origin: if open {
+                    SourceOriginInput::OpenBuffer {
+                        uri: format!("file://{}", fixture.root.join("alpha/src/main.miz").display()),
+                        expected_version: 7,
+                        actual_version: 7,
+                        text: std::sync::Arc::from(text.as_str()),
+                    }
+                } else {
+                    SourceOriginInput::Disk { path: "src/main.miz".into() }
+                },
+            };
+            if open {
+                fixture.write(&[0xff]);
+            }
+            let session = draft.capture_sources(
+                &ids,
+                &snapshots,
+                vec![(DiskSourceLoader::new(fixture.root.join("alpha")), descriptor.clone())],
+            ).unwrap();
+            let mut builder = PhaseRegistryBuilder::new();
+            builder.register_source_load();
+            let submission = CompilerDriver::new(builder.build().unwrap())
+                .submit_captured(session, &ids, &snapshots, input).unwrap();
+            let (inputs, _) = native_disk_lookup_context(&submission, &ids);
+            let module = mizar_build::module_index::ModuleId::new(PackageId::new("alpha"), ModulePath::new("main"));
+            let (_, loaded, captured_input) = &inputs.captured.unwrap().native_sources().unwrap()[0];
+            let source = mizar_frontend::source::source_unit_from_loaded(
+                loaded.clone(), mizar_frontend::source::diagnostic_file_path(captured_input),
+            );
+            assert_eq!(source.source_text.as_ref(), text.trim_start_matches('\u{feff}').replace("\r\n", "\n"));
+            let output = mizar_frontend::orchestration::Frontend::new(
+                mizar_frontend::source::FrontendSourceLoader::new(DiskSourceLoader::new(fixture.root.join("alpha"))),
+                inputs.dependency_lexical_provider(&[]), MizarParserSeam,
+            ).run_loaded(source.clone()).unwrap();
+            assert!(output.diagnostics.is_empty(), "{:?}", output.diagnostics);
+            assert!(output.cache_keys.ast.is_some());
+            let ast = output.ast.as_ref().unwrap();
+            let resolver_module = mizar_resolve::resolved_ast::ModuleId::new(module.package.clone(), module.path.clone());
+            let shells = mizar_resolve::declarations::DeclarationShellCollector::new(ast, &resolver_module).collect();
+            let collection = mizar_resolve::symbols::SignatureProjectionExtractor::new(
+                ast, &shells, mizar_resolve::env::NamespacePath::new("main"),
+            ).collect(&resolver_module);
+            assert!(collection.diagnostics().is_empty());
+            let arena = mizar_resolve::resolved_ast::SurfaceResolvedArena::lower(ast, &resolver_module).unwrap();
+            let expected = mizar_resolve::symbols::source_theorem_module_candidates(ast, &arena, collection.env()).unwrap().unwrap();
+            assert_eq!(expected.0.source_id(), loaded.source_id);
+            assert_eq!(expected.0.module_id(), &resolver_module);
+            assert_eq!(expected.1.module_id(), &resolver_module);
+            let public_keys = public.iter().map(|(name, payload)| {
+                let owners = collection.env().symbols().iter().filter(|owner| owner.primary_spelling() == *name).collect::<Vec<_>>();
+                let [owner] = owners.as_slice() else { panic!("one original owner for {name}") };
+                assert_eq!(owner.visibility(), mizar_resolve::env::Visibility::Public);
+                assert_eq!(owner.origin().source_id(), loaded.source_id);
+                assert_eq!(owner.symbol().module(), &resolver_module);
+                let signature = mizar_resolve::env::SignatureShell::Opaque {
+                    schema: "source-theorem-statement-tokens-v1".to_owned(), payload: (*payload).to_owned(),
+                };
+                assert_eq!(expected.1.symbols().get(owner.symbol()).unwrap().signature(), Some(&signature));
+                assert_eq!(expected.1.definitions().by_symbol(owner.symbol()).unwrap().signature(), Some(&signature));
+                owner.symbol().clone()
+            }).collect::<std::collections::BTreeSet<_>>();
+            assert_eq!(expected.1.symbols().iter().filter(|owner| owner.visibility() == mizar_resolve::env::Visibility::Public).map(|owner| owner.symbol().clone()).collect::<std::collections::BTreeSet<_>>(), public_keys);
+            assert_eq!(expected.1.definitions().iter().filter(|owner| owner.visibility() == mizar_resolve::env::Visibility::Public).map(|owner| owner.symbol().clone()).collect::<std::collections::BTreeSet<_>>(), public_keys);
+            assert_eq!(expected.0.label_refs().len(), citations.len());
+            let edges = expected.1.declaration_dependencies().iter().collect::<Vec<_>>();
+            assert_eq!(edges.len(), citations.len());
+            for (edge, (source_name, target_name)) in edges.iter().zip(&citations) {
+                let source_owner = collection.env().symbols().iter().find(|owner| owner.primary_spelling() == *source_name).unwrap();
+                let target_owner = collection.env().symbols().iter().find(|owner| owner.primary_spelling() == *target_name).unwrap();
+                assert_eq!(edge.source(), &mizar_resolve::env::DependencyEndpoint::Symbol(source_owner.symbol().clone()));
+                let target = expected.1.labels().iter().find(|label| label.origin() == target_owner.origin()).unwrap();
+                assert_eq!(edge.target(), &mizar_resolve::env::DependencyEndpoint::Label(target.origin_path().clone()));
+            }
+            let before = (inputs.snapshot.clone(), inputs.build_plan.clone(), inputs.module_index.clone(), loaded.clone(), captured_input.clone(), ast.clone(), arena.clone(), collection.env().clone());
+            for stage in 0..3 {
+                if stage == 1 {
+                    fixture.write(b"open theorem Changed: 0 = 1;\n");
+                } else if stage == 2 {
+                    fs::remove_file(fixture.root.join("alpha/src/main.miz")).unwrap();
+                }
+                assert_eq!(inputs.native_theorem_module_candidates(&module).unwrap(), Some(expected.clone()), "open={open}, stage={stage}");
+            }
+            mizar_resolve::symbols::validate_source_symbol_env(&arena, collection.env()).unwrap();
+            assert_eq!((inputs.snapshot.clone(), inputs.build_plan.clone(), inputs.module_index.clone(), loaded.clone(), captured_input.clone(), ast.clone(), arena.clone(), collection.env().clone()), before);
+            assert_eq!(captured_input, &descriptor);
+        }
+    }
+}
+
+#[test]
+fn native_theorem_module_candidates_preserve_real_refusals_errors_and_binding_guards() {
+    let private = include_str!(
+        "../../../tests/miz/pass/resolve/pass_declaration_symbol_private_theorem_visibility_001.miz"
+    );
+    for (text, case) in [
+        (format!("{private}\nreserve Y for set;\n"), "unsupported"),
+        (private.replace("by PrivT1", "by Missing"), "unresolved"),
+        ("theorem Broken: ;\n".to_owned(), "diagnostic"),
+        (private.replace("thus X = X;", "thus Y = Y;"), "error"),
+    ] {
+        let fixture = Fixture::new(text.as_bytes());
+        let foreign = Fixture::new(text.as_bytes());
+        let ids = InMemorySessionIdAllocator::new();
+        let snapshots = SnapshotRegistry::new();
+        let (_, submission, _, _, _) =
+            native_disk_record_submission(&fixture, &ids, &snapshots, usize::MAX);
+        let (_, foreign_submission, _, _, _) =
+            native_disk_record_submission(&foreign, &ids, &snapshots, usize::MAX);
+        let (inputs, _) = native_disk_lookup_context(&submission, &ids);
+        let (foreign_inputs, _) = native_disk_lookup_context(&foreign_submission, &ids);
+        let module = mizar_build::module_index::ModuleId::new(
+            PackageId::new("alpha"),
+            ModulePath::new("main"),
+        );
+        let (_, loaded, descriptor) = &inputs.captured.unwrap().native_sources().unwrap()[0];
+        let output = mizar_frontend::orchestration::Frontend::new(
+            mizar_frontend::source::FrontendSourceLoader::new(DiskSourceLoader::new(
+                fixture.root.join("alpha"),
+            )),
+            inputs.dependency_lexical_provider(&[]),
+            MizarParserSeam,
+        )
+        .run_loaded(mizar_frontend::source::source_unit_from_loaded(
+            loaded.clone(),
+            mizar_frontend::source::diagnostic_file_path(descriptor),
+        ))
+        .unwrap();
+        assert_eq!(!output.diagnostics.is_empty(), case == "diagnostic");
+        let before = (
+            inputs.snapshot.clone(),
+            inputs.build_plan.clone(),
+            inputs.module_index.clone(),
+            loaded.clone(),
+            descriptor.clone(),
+        );
+        if case == "diagnostic" {
+            assert_eq!(
+                inputs.native_theorem_module_candidates(&module).unwrap(),
+                None
+            );
+        } else {
+            let ast = output.ast.as_ref().unwrap();
+            assert!(output.cache_keys.ast.is_some());
+            let resolver_module = mizar_resolve::resolved_ast::ModuleId::new(
+                module.package.clone(),
+                module.path.clone(),
+            );
+            let shells =
+                mizar_resolve::declarations::DeclarationShellCollector::new(ast, &resolver_module)
+                    .collect();
+            let collection = mizar_resolve::symbols::SignatureProjectionExtractor::new(
+                ast,
+                &shells,
+                mizar_resolve::env::NamespacePath::new("main"),
+            )
+            .collect(&resolver_module);
+            assert!(collection.diagnostics().is_empty());
+            let arena =
+                mizar_resolve::resolved_ast::SurfaceResolvedArena::lower(ast, &resolver_module)
+                    .unwrap();
+            let lower = mizar_resolve::symbols::source_theorem_module_candidates(
+                ast,
+                &arena,
+                collection.env(),
+            );
+            if case == "error" {
+                assert_eq!(
+                    mizar_resolve::names::SourceVariableScopeResolver::resolve_occurrences(
+                        mizar_resolve::names::SourceVariableScopeInput::new(
+                            ast,
+                            &resolver_module,
+                            collection.env()
+                        )
+                    )
+                    .unwrap_err(),
+                    mizar_resolve::names::SourceVariableScopeError::UnresolvedReference
+                );
+                let error = mizar_resolve::resolved_ast::source_theorem_resolved_ast(
+                    ast,
+                    &arena,
+                    collection.env(),
+                )
+                .unwrap_err();
+                assert_eq!(lower, Err(error.clone()));
+                assert_eq!(inputs.native_theorem_module_candidates(&module), Err(error));
+            } else {
+                if case == "unresolved" {
+                    let semantic = mizar_resolve::resolved_ast::source_theorem_resolved_ast(
+                        ast,
+                        &arena,
+                        collection.env(),
+                    )
+                    .unwrap()
+                    .unwrap();
+                    assert!(semantic.label_refs().iter().any(|(_, row)| matches!(
+                        row.resolution(),
+                        mizar_resolve::resolved_ast::LabelResolution::Unresolved(_)
+                    )));
+                } else {
+                    assert_eq!(
+                        mizar_resolve::resolved_ast::source_theorem_resolved_ast(
+                            ast,
+                            &arena,
+                            collection.env()
+                        )
+                        .unwrap(),
+                        None
+                    );
+                }
+                assert_eq!(lower.unwrap(), None);
+                assert_eq!(
+                    inputs.native_theorem_module_candidates(&module).unwrap(),
+                    None
+                );
+            }
+        }
+        for requested in [
+            mizar_build::module_index::ModuleId::new(
+                PackageId::new("alpha"),
+                ModulePath::new("missing"),
+            ),
+            mizar_build::module_index::ModuleId::new(
+                PackageId::new("foreign"),
+                ModulePath::new("main"),
+            ),
+        ] {
+            assert!(inputs.native_theorem_module_candidates(&requested).is_err());
+        }
+        let mut ambiguous = inputs.snapshot.clone();
+        ambiguous
+            .source_versions
+            .push(ambiguous.source_versions[0].clone());
+        let mut absent_index = inputs.module_index.clone();
+        absent_index.modules.clear();
+        let mut ambiguous_index = inputs.module_index.clone();
+        ambiguous_index
+            .modules
+            .push(ambiguous_index.modules[0].clone());
+        let mut foreign_index = foreign_inputs.module_index.clone();
+        foreign_index.modules[0].module.package = PackageId::new("foreign");
+        assert_ne!(&foreign_index, inputs.module_index);
+        for invalid in [
+            SourceLoadInputs {
+                captured: None,
+                ..inputs
+            },
+            SourceLoadInputs {
+                captured: Some(foreign_submission.session.captured()),
+                ..inputs
+            },
+            SourceLoadInputs {
+                snapshot: &ambiguous,
+                ..inputs
+            },
+            SourceLoadInputs {
+                snapshot: foreign_inputs.snapshot,
+                ..inputs
+            },
+            SourceLoadInputs {
+                module_index: &absent_index,
+                ..inputs
+            },
+            SourceLoadInputs {
+                module_index: &ambiguous_index,
+                ..inputs
+            },
+            SourceLoadInputs {
+                module_index: &foreign_index,
+                ..inputs
+            },
+        ] {
+            let error = invalid
+                .native_theorem_module_candidates(&module)
+                .unwrap_err();
+            assert!(
+                error.contains("captured source version") || error.contains("capture binding"),
+                "{error}"
+            );
+        }
+        assert_eq!(
+            (
+                inputs.snapshot.clone(),
+                inputs.build_plan.clone(),
+                inputs.module_index.clone(),
+                loaded.clone(),
+                descriptor.clone()
+            ),
+            before
+        );
+    }
+}

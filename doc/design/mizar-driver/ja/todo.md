@@ -531,6 +531,8 @@ artifact/test のフォローアップタスクが所有する。本 crate の�
 
 44. **[Captured original public theorem formula text](../../task_contracts/ja/DRIVER-NATIVE-PUBLIC-THEOREM-TEXT.md).** [x]
 
+45. **[Captured native theorem module candidates](../../task_contracts/ja/DRIVER-NATIVE-THEOREM-MODULE-CANDIDATES.md).** [x]
+
 ## 推奨検証
 
 各タスクの後で実行する:

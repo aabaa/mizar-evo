@@ -563,6 +563,8 @@ the owning producers when the paired tasks land.
 
 44. **[Captured original public theorem formula text](../../task_contracts/en/DRIVER-NATIVE-PUBLIC-THEOREM-TEXT.md).** [x]
 
+45. **[Captured native theorem module candidates](../../task_contracts/en/DRIVER-NATIVE-THEOREM-MODULE-CANDIDATES.md).** [x]
+
 ## Recommended Verification
 
 Run after each task:

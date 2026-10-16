@@ -949,6 +949,67 @@ impl<'a> crate::registry::SourceLoadInputs<'a> {
         Ok(Some(texts))
     }
 
+    /// Returns unpublished theorem module metadata from protected native capture.
+    pub fn native_theorem_module_candidates(
+        self,
+        module: &mizar_build::module_index::ModuleId,
+    ) -> Result<
+        Option<(
+            mizar_resolve::resolved_ast::ResolvedAst,
+            mizar_resolve::env::SymbolEnv,
+        )>,
+        String,
+    > {
+        let version = unique(self.snapshot.source_versions.iter().filter(|version| {
+            version.package_id == module.package && version.module_path == module.path
+        }))
+        .ok_or_else(|| "native theorem module requires one captured source version".to_owned())?;
+        let (source, _) = self
+            .native_source(version)
+            .ok_or_else(|| "native theorem module capture binding failed".to_owned())?;
+        let package = self
+            .build_plan
+            .packages
+            .iter()
+            .find(|package| package.package_id == module.package)
+            .ok_or_else(|| "native theorem module requires a bound package".to_owned())?;
+        let PackagePlanSource::Workspace { root, .. } = &package.source else {
+            return Err("native theorem module requires a workspace package".to_owned());
+        };
+        let output = Frontend::new(
+            FrontendSourceLoader::new(DiskSourceLoader::new(
+                PathBuf::from(self.snapshot.workspace_root.as_str()).join(root),
+            )),
+            self.dependency_lexical_provider(&[]),
+            MizarParserSeam,
+        )
+        .run_loaded(source)
+        .map_err(|error| error.to_string())?;
+        if !output.diagnostics.is_empty() || output.cache_keys.ast.is_none() {
+            return Ok(None);
+        }
+        let Some(ast) = output.ast.as_ref() else {
+            return Ok(None);
+        };
+        let resolver_module =
+            mizar_resolve::resolved_ast::ModuleId::new(module.package.clone(), module.path.clone());
+        let shells =
+            mizar_resolve::declarations::DeclarationShellCollector::new(ast, &resolver_module)
+                .collect();
+        let collection = mizar_resolve::symbols::SignatureProjectionExtractor::new(
+            ast,
+            &shells,
+            mizar_resolve::env::NamespacePath::new(module.path.as_str()),
+        )
+        .collect(&resolver_module);
+        if !collection.diagnostics().is_empty() {
+            return Ok(None);
+        }
+        let arena = mizar_resolve::resolved_ast::SurfaceResolvedArena::lower(ast, &resolver_module)
+            .map_err(|error| error.to_string())?;
+        mizar_resolve::symbols::source_theorem_module_candidates(ast, &arena, collection.env())
+    }
+
     fn native_source(
         self,
         version: &mizar_session::SourceVersion,
