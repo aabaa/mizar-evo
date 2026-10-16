@@ -473,6 +473,8 @@ Keep `cargo test -p mizar-build` green after each task (see
 
 36. **[Explicit native OpenBuffer input](../../task_contracts/en/BUILD-NATIVE-OPEN-BUFFER-INPUT.md).** [x]
 
+37. **[Recorded toolchain version metadata](../../task_contracts/en/BUILD-LOCKED-TOOLCHAIN-METADATA.md).** [x]
+
 ## Recommended Verification
 
 Run after each task:

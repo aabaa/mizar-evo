@@ -2005,6 +2005,7 @@ fn build_plan(packages: Vec<PackagePlan>) -> BuildPlan {
         dependency_graph: DependencyGraph { edges: Vec::new() },
         lockfile: Lockfile {
             schema_version: 1,
+            toolchain_version: None,
             packages: Vec::new(),
         },
         toolchain: ToolchainInfo::new("test"),

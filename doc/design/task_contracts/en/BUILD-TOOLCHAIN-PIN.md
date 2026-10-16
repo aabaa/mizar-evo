@@ -2,9 +2,9 @@
 Canonical language: English; [Japanese pointer](../ja/BUILD-TOOLCHAIN-PIN.md).
 Status: planned. Tier: full. Owner: [build plan](../../mizar-build/en/00.crate_plan.md); consumers: [driver plan](../../mizar-driver/en/00.crate_plan.md), [test plan](../../mizar-test/en/00.crate_plan.md), the toolchain manager.
 Dependencies: current planner and dependency-constraint handling; authenticated manifests for all resolved dependencies and released-toolchain version metadata.
-Readiness: manifest/lock parsing and validation can start; complete selection remains blocked until dependency constraints and release versions are available.
+Readiness: optional workspace constraints and recorded lock-version metadata are available; complete validation, selection and mismatch integration await authenticated dependency constraints and release versions.
 Authority: [§23.1-23.2](../../../spec/en/23.package_management_and_build_system.md#232-versioning-and-dependency-resolution) and [§22.6.6](../../../spec/en/22.error_handling_and_diagnostics.md#2266-api-compatibility-semver-check).
-Gap: `source_drift` and `test_gap`; planner package/lock field lists omit toolchain constraints and the locked version. Running ToolchainInfo is provenance, not a resolved pin.
+Gap: `source_drift` and `test_gap`; parsed metadata is not yet integrated with complete constraint satisfaction, authenticated locked selection or running-version mismatch policy. Running ToolchainInfo is provenance, not a resolved pin.
 Owner details: [planner boundary and tests](../../mizar-build/en/planner.md#toolchain-constraint-boundary); diagnostics adoption remains producer-owned.
 
 ## Scope

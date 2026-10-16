@@ -34,6 +34,7 @@ pub struct WorkspaceManifest {
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Lockfile {
     pub schema_version: u64,
+    pub toolchain_version: Option<Version>,
     pub packages: Vec<LockedPackage>,
 }
 
@@ -389,13 +390,16 @@ pub fn lockfile_content_hash(lockfile: &Lockfile) -> mizar_session::Hash {
         })
         .collect::<Vec<_>>();
     packages.sort_by_cached_key(canonical_json_string);
-    let content = Array(vec![
-        String(lockfile.schema_version.to_string()),
-        Array(packages),
-    ]);
+    let mut content = vec![String(lockfile.schema_version.to_string()), Array(packages)];
+    let profile = if let Some(version) = &lockfile.toolchain_version {
+        content.push(String(version.to_string()));
+        "mizar-build/parsed-lock-content/v2"
+    } else {
+        "mizar-build/parsed-lock-content/v1"
+    };
     mizar_session::hash_text(&format!(
-        "mizar-build/parsed-lock-content/v1\n{}",
-        canonical_json_string(&content)
+        "{profile}\n{}",
+        canonical_json_string(&Array(content))
     ))
 }
 
@@ -598,7 +602,7 @@ pub fn parse_lockfile(input: &str) -> Result<Lockfile, ManifestDiagnostics> {
         "<lockfile>",
         "",
         &document,
-        &["schema_version", "package"],
+        &["schema_version", "toolchain_version", "package"],
         &mut diagnostics,
     );
 
@@ -613,6 +617,22 @@ pub fn parse_lockfile(input: &str) -> Result<Lockfile, ManifestDiagnostics> {
         ));
     }
 
+    let toolchain_version = read_optional_string(
+        "<lockfile>",
+        &document,
+        "toolchain_version",
+        &mut diagnostics,
+    )
+    .and_then(|value| {
+        parse_version(
+            "<lockfile>",
+            "toolchain_version",
+            &value,
+            ManifestDiagnosticKind::InvalidVersion,
+            &mut diagnostics,
+        )
+    });
+
     let mut packages = parse_locked_packages(&document, &mut diagnostics);
     packages.sort_by(|left, right| left.name.cmp(&right.name));
     validate_locked_package_uniqueness(&packages, &mut diagnostics);
@@ -621,6 +641,7 @@ pub fn parse_lockfile(input: &str) -> Result<Lockfile, ManifestDiagnostics> {
     finish_with_diagnostics(
         Lockfile {
             schema_version,
+            toolchain_version,
             packages,
         },
         diagnostics,

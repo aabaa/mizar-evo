@@ -926,6 +926,7 @@ fn build_plan(packages: Vec<PackagePlan>, edges: Vec<DependencyEdge>) -> BuildPl
         dependency_graph: DependencyGraph { edges },
         lockfile: Lockfile {
             schema_version: 1,
+            toolchain_version: None,
             packages: Vec::new(),
         },
         toolchain: ToolchainInfo::new("test"),

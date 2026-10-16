@@ -161,10 +161,10 @@ lockfile generation と registry solving は同じ data model の上にある将
 
 ## Lock content fingerprint
 
-`lockfile_content_hash(&Lockfile) -> mizar_session::Hash` は直接構築した任意の値を含む現行 typed lock の全 field を fingerprint にする。schema・assignment・provenance・現在の file の検証ではなく、file 読み込みや parser/planner policy を変更しない。raw TOML の comment/空白/順序、workspace root/member manifest、source text、toolchain、effective configuration、dependency artifact は別入力である。
-既存 Artifact `CanonicalJson` の array/string と `canonical_json_string` を使う。root は `[schema, packages]`、package は `[name, version, source, dependencies]`、dependency は `[name, version]`、source は `["workspace", path]` または `["registry", registry, checksum]`。schema は full u64 の十進 string、version は prerelease/build を含む exact SemVer display string。dependency/package array は完全な canonical JSON tuple text で整列し、重複数を保持する。parser/validator が拒否する任意 typed 値も全現行 field を保持する。
-preimage は UTF-8 prefix `mizar-build/parsed-lock-content/v1`、1 LF、canonical root JSON string (末尾 1 LF) の順。既存 Session `hash_text` の source-text-domain/length/BLAKE3 処理へ渡す Build content profile であり、新しい raw hash primitive、Artifact hash class、Cache key domain ではない。typed lock field の追加は profile 拡張レビューを必要とする。schema integer の切り捨て、Debug/raw-TOML encoding は使わない。
-独立 literal golden で frame/field 順序を固定する。全 scalar/variant/edge、full u64/SemVer、入力順/重複数を検証し、実 native file と生成 hash を genuine snapshot/SourceLoad cache carrier に渡す。carrier は transport のみを示し、未知 toolchain field は既存 parser で失敗する。残りの fixture context に認証の意味はなく、service は実 NoKey を保ち、currentness/configuration/toolchain/pin/registry/runtime/Proof/cache 受理/bootstrap は依存待ちである。
+`lockfile_content_hash(&Lockfile) -> mizar_session::Hash` は直接構築した任意の値を含む現行 typed lock の全 field を fingerprint にする。schema・assignment・provenance・現在の file の検証ではなく、file 読み込みや parser/planner policy を変更しない。raw TOML の comment/空白/順序、workspace root/member manifest、source text、実行中のToolchainInfo、effective configuration、dependency artifact は別入力である。
+既存 Artifact `CanonicalJson` の array/string と `canonical_json_string` を使う。root は toolchain_version が None なら `[schema, packages]`、Some なら `[schema, packages, version]` とし、末尾に記録されたexact SemVer display stringを置く。package は `[name, version, source, dependencies]`、dependency は `[name, version]`、source は `["workspace", path]` または `["registry", registry, checksum]`。schema は full u64 の十進 string、version は prerelease/build を含む exact SemVer display string。dependency/package array は完全な canonical JSON tuple text で整列し、重複数を保持する。parser/validator が拒否する任意 typed 値も全現行 field を保持する。
+preimage は None では従来bytesを維持するUTF-8 prefix `mizar-build/parsed-lock-content/v1`、Some では `mizar-build/parsed-lock-content/v2`、1 LF、canonical root JSON string (末尾 1 LF) の順。既存 Session `hash_text` の source-text-domain/length/BLAKE3 処理へ渡す Build content profile であり、新しい raw hash primitive、Artifact hash class、Cache key domain ではない。typed lock field の追加は profile 拡張レビューを必要とする。schema integer の切り捨て、Debug/raw-TOML encoding は使わない。
+独立 literal golden で frame/field 順序を固定する。全 scalar/variant/edge、full u64/SemVer、入力順/重複数を検証し、実 native file と生成 hash を genuine snapshot/SourceLoad cache carrier に渡す。carrier は transport のみを示し、旧unknown root `toolchain` keyは引き続き拒否する。残りの fixture context に認証の意味はなく、service は実 NoKey を保ち、currentness/configuration/toolchain/pin/registry/runtime/Proof/cache 受理/bootstrap は依存待ちである。
 
 ## Native workspace input acquisition
 
@@ -384,6 +384,12 @@ planner は任意の package toolchain 制約、workspace/解決済み依存の�
 開発時の不一致は警告、release 時はエラー。選択した release が backend build を固定し、インストールと再配布は driver が所有する。
 planner テストは省略と既存の制約形式、不正/競合制約、依存/release 入力欠落、pin 維持、利用不能な版を扱い、CLI テストは不一致の両モードと、実行中/lock の版が一致して W0306 やエラーを出さない場合を扱う。
 先送りの境界であり、lock schema/API 形状や実行時の導入済み状態を定めない。
+
+## Locked toolchain version metadata
+
+既存Lockfileに `toolchain_version: Option<Version>` を追加する。schema 1のroot `toolchain_version` は任意で、省略はNone、stringはprerelease/buildを含む既存exact SemVer parserへ渡す。trim・制約・部分版aliasは認めない。read_optional_stringとparse_versionを再利用し、'<lockfile>', 'toolchain_version'の既存InvalidType/InvalidVersion、元の拒否string/型名、diagnostic順序と最終error barrierを保つ。root `toolchain` はunknownのままで、alias/defaultや公開診断を加えない。
+既存native reader、BuildPlanの所有/clone、保持済みDriver inputは実metadataをそのまま運び、指定ToolchainInfoはopaqueのまま変更しない。既存package/lock validatorはtoolchain制約の充足・解決済依存の認証・release可用性を確立しない。Some/Noneはいずれもresolved pin・実行中/backend identity・選択・不一致/W0306・currentness・受理の権威を与えず、完全選択とruntime/host統合は別作業に残す。
+全typed値に前節のfingerprint profileを用い、Noneの旧literal goldenを保ち、Someは全旧fieldとexact version全体を束縛する。省略/full版、不正型/stringとerror位置、旧unknown-key拒否維持、実plan保持、独立frame golden、Some時の全旧field/順序/重複数、実native fileと独立clean parser/planを試験する。生成hashをgenuine captured Driver SourceLoad/Frontendとcache request metadataへ運び、全出力/診断/NoKeyを比較し、明示old-capture/new-version lock対応を拒否する。他の指定contextにruntime認証の意味を与えない。既存四Lockfile test literalはNone追加だけとし、旧expectation変更や新helperを要求しない。
 
 ## Package toolchain constraint metadata
 

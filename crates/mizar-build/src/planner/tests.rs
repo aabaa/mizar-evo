@@ -1765,6 +1765,7 @@ fn lock_content_hash_matches_independent_literal_profile_and_frame() {
     use super::{LockedDependency, LockedPackage, Lockfile, lockfile_content_hash};
     let lock = Lockfile {
         schema_version: u64::MAX,
+        toolchain_version: None,
         packages: vec![
             LockedPackage {
                 name: "alpha".into(),
@@ -2462,4 +2463,236 @@ fn package_toolchain_constraints_remain_package_local_with_registry_metadata_abs
         PackagePlanSource::Registry { .. }
     ));
     assert_eq!(plan.packages[1].toolchain_constraint, None);
+}
+
+#[test]
+fn locked_toolchain_metadata_parses_exact_versions_and_retains_plan_inputs() {
+    let package = workspace_package(
+        "alpha",
+        "[package]\nname = \"alpha\"\nversion = \"0.1.0\"\ntoolchain = \"<1\"\n",
+    );
+    let body = "[[package]]\nname = \"alpha\"\nversion = \"0.1.0\"\nsource = { kind = \"workspace\", path = \"alpha\" }\ndependencies = []\n";
+    for version in [None, Some("1.4.2"), Some("10.2.3-rc.1+build.7")] {
+        let field = version.map_or(String::new(), |v| format!("toolchain_version = \"{v}\"\n"));
+        let lock = parse_lockfile(&format!("schema_version = 1\n{field}{body}")).unwrap();
+        assert_eq!(
+            lock.toolchain_version,
+            version.map(|v| Version::parse(v).unwrap())
+        );
+        validate_lockfile_for_workspace(std::slice::from_ref(&package.manifest), &lock).unwrap();
+        let request = plan_request(DependencySelection::Normal);
+        let plan =
+            produce_build_plan(request.clone(), vec![package.clone()], lock.clone()).unwrap();
+        assert_eq!(plan.lockfile, lock);
+        assert_eq!(plan.toolchain, request.toolchain);
+        assert_eq!(
+            plan.packages[0].toolchain_constraint,
+            package.manifest.toolchain_constraint
+        );
+    }
+}
+
+#[test]
+fn locked_toolchain_metadata_errors_preserve_locations_values_order_and_barrier() {
+    for (value, kind, rejected) in [
+        ("\"\"", ManifestDiagnosticKind::InvalidVersion, ""),
+        ("\"1\"", ManifestDiagnosticKind::InvalidVersion, "1"),
+        ("\"1.4\"", ManifestDiagnosticKind::InvalidVersion, "1.4"),
+        (
+            "\"^1.4.2\"",
+            ManifestDiagnosticKind::InvalidVersion,
+            "^1.4.2",
+        ),
+        (
+            "\"~1.4.2\"",
+            ManifestDiagnosticKind::InvalidVersion,
+            "~1.4.2",
+        ),
+        (
+            "\">=1.0, <2.0\"",
+            ManifestDiagnosticKind::InvalidVersion,
+            ">=1.0, <2.0",
+        ),
+        (
+            "\" 1.4.2\"",
+            ManifestDiagnosticKind::InvalidVersion,
+            " 1.4.2",
+        ),
+        (
+            "\"1.4.2 \"",
+            ManifestDiagnosticKind::InvalidVersion,
+            "1.4.2 ",
+        ),
+        (
+            "\"v1.4.2\"",
+            ManifestDiagnosticKind::InvalidVersion,
+            "v1.4.2",
+        ),
+        (
+            "\"1.4.2-01\"",
+            ManifestDiagnosticKind::InvalidVersion,
+            "1.4.2-01",
+        ),
+        ("true", ManifestDiagnosticKind::InvalidType, "boolean"),
+        ("1", ManifestDiagnosticKind::InvalidType, "integer"),
+        ("1.4", ManifestDiagnosticKind::InvalidType, "float"),
+        ("[]", ManifestDiagnosticKind::InvalidType, "array"),
+        ("{}", ManifestDiagnosticKind::InvalidType, "table"),
+        (
+            "2025-01-01",
+            ManifestDiagnosticKind::InvalidType,
+            "datetime",
+        ),
+    ] {
+        let error = parse_lockfile(&format!(
+            "schema_version = 1\ntoolchain_version = {value}\npackage = []\n"
+        ))
+        .unwrap_err();
+        assert_eq!(
+            error.diagnostics(),
+            &[super::ManifestDiagnostic::new(
+                "<lockfile>",
+                "toolchain_version",
+                kind,
+                Some(rejected.into()),
+            )],
+            "{value}"
+        );
+    }
+    let errors = parse_lockfile(
+        "toolchain_version = false\nschema_version = 2\nextra = true\npackage = []\n",
+    )
+    .unwrap_err();
+    assert_eq!(
+        errors.diagnostics(),
+        &[
+            super::ManifestDiagnostic::new(
+                "<lockfile>",
+                "extra",
+                ManifestDiagnosticKind::UnknownField,
+                None
+            ),
+            super::ManifestDiagnostic::new(
+                "<lockfile>",
+                "schema_version",
+                ManifestDiagnosticKind::InvalidLockfileSchema,
+                Some("2".into())
+            ),
+            super::ManifestDiagnostic::new(
+                "<lockfile>",
+                "toolchain_version",
+                ManifestDiagnosticKind::InvalidType,
+                Some("boolean".into())
+            ),
+        ]
+    );
+}
+
+#[test]
+fn locked_toolchain_metadata_hash_matches_independent_frames_and_all_field_invariants() {
+    use super::{LockedDependency, lockfile_content_hash};
+    let mut lock = parse_lockfile("schema_version = 1\n[[package]]\nname = \"alpha\"\nversion = \"10.2.3-rc.1+build.7\"\nsource = { kind = \"workspace\", path = \".\" }\ndependencies = [{ name = \"beta\", version = \"2.4.6-rc.2+edge.9\" }]\n[[package]]\nname = \"beta\"\nversion = \"2.4.6-rc.2+edge.9\"\nsource = { kind = \"registry\", registry = \"default\", checksum = \"x\" }\ndependencies = []\n").unwrap();
+    lock.schema_version = u64::MAX;
+    let old = "[\"18446744073709551615\",[[\"alpha\",\"10.2.3-rc.1+build.7\",[\"workspace\",\".\"],[[\"beta\",\"2.4.6-rc.2+edge.9\"]]],[\"beta\",\"2.4.6-rc.2+edge.9\",[\"registry\",\"default\",\"x\"],[]]]]\n";
+    lock.toolchain_version = Some(Version::parse("4.5.6-rc.7+build.8").unwrap());
+    let new = "[\"18446744073709551615\",[[\"alpha\",\"10.2.3-rc.1+build.7\",[\"workspace\",\".\"],[[\"beta\",\"2.4.6-rc.2+edge.9\"]]],[\"beta\",\"2.4.6-rc.2+edge.9\",[\"registry\",\"default\",\"x\"],[]]],\"4.5.6-rc.7+build.8\"]\n";
+    let baseline = lockfile_content_hash(&lock);
+    assert_eq!(
+        baseline,
+        mizar_session::hash_text(&format!("mizar-build/parsed-lock-content/v2\n{new}"))
+    );
+    for wrong in [
+        new.to_owned(),
+        format!("mizar-build/parsed-lock-content/v1\n{new}"),
+        format!("mizar-build/parsed-lock-content/v2{new}"),
+        format!("mizar-build/parsed-lock-content/v2\n{}", new.trim_end()),
+        format!("mizar-build/parsed-lock-content/v2\n{old}"),
+    ] {
+        assert_ne!(baseline, mizar_session::hash_text(&wrong));
+    }
+    for field in 0..19 {
+        let mut changed = lock.clone();
+        match field {
+            0 => changed.schema_version = 1,
+            1 => changed.schema_version ^= 1 << 63,
+            2 => changed.packages[0].name = "quote\"\n\\😀".into(),
+            3 => changed.packages[0].version.major += 1,
+            4 => changed.packages[0].version.pre = semver::Prerelease::new("rc.2").unwrap(),
+            5 => changed.packages[0].version.build = semver::BuildMetadata::new("build.8").unwrap(),
+            6 => {
+                changed.packages[0].source = LockSource::Workspace {
+                    path: "other".into(),
+                }
+            }
+            7 => {
+                changed.packages[0].source = LockSource::Registry {
+                    registry: ".".into(),
+                    checksum: "".into(),
+                }
+            }
+            8 => {
+                changed.packages[1].source = LockSource::Registry {
+                    registry: "other".into(),
+                    checksum: "x".into(),
+                }
+            }
+            9 => {
+                changed.packages[1].source = LockSource::Registry {
+                    registry: "default".into(),
+                    checksum: "y".into(),
+                }
+            }
+            10 => changed.packages[0].dependencies[0].name = "other".into(),
+            11 => changed.packages[0].dependencies[0].version.major += 1,
+            12 => {
+                changed.packages[0].dependencies[0].version.pre =
+                    semver::Prerelease::new("rc.3").unwrap()
+            }
+            13 => {
+                changed.packages[0].dependencies[0].version.build =
+                    semver::BuildMetadata::new("edge.10").unwrap()
+            }
+            14 => {
+                changed.packages.pop();
+            }
+            15 => changed.packages[0].dependencies.clear(),
+            16 => changed.toolchain_version.as_mut().unwrap().major += 1,
+            17 => {
+                changed.toolchain_version.as_mut().unwrap().pre =
+                    semver::Prerelease::new("rc.8").unwrap()
+            }
+            18 => {
+                changed.toolchain_version.as_mut().unwrap().build =
+                    semver::BuildMetadata::new("build.9").unwrap()
+            }
+            _ => unreachable!(),
+        }
+        assert_ne!(lockfile_content_hash(&changed), baseline, "field {field}");
+    }
+    lock.packages[0].dependencies.push(LockedDependency {
+        name: "beta".into(),
+        version: Version::new(10, 0, 0),
+    });
+    let mut other = lock.packages[0].clone();
+    other.source = LockSource::Workspace {
+        path: "other".into(),
+    };
+    lock.packages.push(other);
+    let mut edge_only = lock.packages[0].clone();
+    edge_only.dependencies.pop();
+    lock.packages.push(edge_only);
+    let baseline = lockfile_content_hash(&lock);
+    let mut reversed = lock.clone();
+    reversed.packages.reverse();
+    for package in &mut reversed.packages {
+        package.dependencies.reverse();
+    }
+    assert_eq!(lockfile_content_hash(&reversed), baseline);
+    let mut duplicate = lock.clone();
+    duplicate.packages.push(duplicate.packages[0].clone());
+    assert_ne!(lockfile_content_hash(&duplicate), baseline);
+    duplicate = lock.clone();
+    let dependency = duplicate.packages[0].dependencies[0].clone();
+    duplicate.packages[0].dependencies.push(dependency);
+    assert_ne!(lockfile_content_hash(&duplicate), baseline);
 }
