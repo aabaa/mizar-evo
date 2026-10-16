@@ -529,6 +529,8 @@ artifact/test のフォローアップタスクが所有する。本 crate の�
 
 43. **[Opt-in native leaf Frontend persistence](../../task_contracts/ja/DRIVER-NATIVE-FRONTEND-CACHE-PERSISTENCE.md).** [x]
 
+44. **[Captured original public theorem formula text](../../task_contracts/ja/DRIVER-NATIVE-PUBLIC-THEOREM-TEXT.md).** [x]
+
 ## 推奨検証
 
 各タスクの後で実行する:

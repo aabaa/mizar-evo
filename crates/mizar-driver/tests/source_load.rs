@@ -18887,3 +18887,284 @@ fn persistent_native_frontend_cold_guards_errors_and_older_entries() {
         );
     }
 }
+
+#[test]
+fn native_public_theorem_formula_text_candidates_preserve_captured_original_owners_and_text() {
+    let private = include_str!(
+        "../../../tests/miz/pass/resolve/pass_declaration_symbol_private_theorem_visibility_001.miz"
+    );
+    let statuses = include_str!(
+        "../../../tests/miz/pass/theorems/pass_proof_verification_theorem_status_open_assumed_001.miz"
+    );
+    let plain_formula = "for X being set holds X = X";
+    let commented_formula = "for X being set\n  holds X ::= 日本語 formula =::  =  X";
+    for (text, formulas) in [
+        (private.to_owned(), vec![("UsePriv1", plain_formula)]),
+        (
+            private.replace("theorem UsePriv1", "lemma UsePriv1"),
+            vec![("UsePriv1", plain_formula)],
+        ),
+        (
+            private.replacen(
+                "thus X = X by PrivT1;",
+                "Inner: X = X;\n  thus X = X by Inner;",
+                1,
+            ),
+            vec![("UsePriv1", plain_formula)],
+        ),
+        (
+            private.replace("\ntheorem UsePriv1", "\nprivate theorem UsePriv1"),
+            vec![],
+        ),
+        (
+            statuses.replace(
+                "assumed theorem AxT1: for X being set holds X = X;",
+                "assumed theorem AxT1: for Y being set holds Y = Y;",
+            ),
+            vec![
+                ("OpenT1", plain_formula),
+                ("AxT1", "for Y being set holds Y = Y"),
+            ],
+        ),
+        (
+            format!(
+                "\u{feff}{}",
+                private
+                    .replace(plain_formula, commented_formula)
+                    .replace('\n', "\r\n")
+            ),
+            vec![("UsePriv1", commented_formula)],
+        ),
+    ] {
+        for open in [false, true] {
+            let fixture = Fixture::new(text.as_bytes());
+            let ids = InMemorySessionIdAllocator::new();
+            let snapshots = SnapshotRegistry::new();
+            let (mut draft, input) = fixture.submit_request(vec![], vec![]);
+            draft.source_inputs.versions.clear();
+            let descriptor = SourceInput {
+                package_id: fixture.version.package_id.clone(),
+                module_path: fixture.version.module_path.clone(),
+                normalized_path: fixture.version.normalized_path.clone(),
+                edition: fixture.version.edition.clone(),
+                origin: if open {
+                    SourceOriginInput::OpenBuffer {
+                        uri: format!(
+                            "file://{}",
+                            fixture.root.join("alpha/src/main.miz").display()
+                        ),
+                        expected_version: 7,
+                        actual_version: 7,
+                        text: std::sync::Arc::from(text.as_str()),
+                    }
+                } else {
+                    SourceOriginInput::Disk {
+                        path: "src/main.miz".into(),
+                    }
+                },
+            };
+            if open {
+                fixture.write(&[0xff]);
+            }
+            let session = draft
+                .capture_sources(
+                    &ids,
+                    &snapshots,
+                    vec![(
+                        DiskSourceLoader::new(fixture.root.join("alpha")),
+                        descriptor.clone(),
+                    )],
+                )
+                .unwrap();
+            let mut builder = PhaseRegistryBuilder::new();
+            builder.register_source_load();
+            let submission = CompilerDriver::new(builder.build().unwrap())
+                .submit_captured(session, &ids, &snapshots, input)
+                .unwrap();
+            let (inputs, _) = native_disk_lookup_context(&submission, &ids);
+            let module = mizar_build::module_index::ModuleId::new(
+                PackageId::new("alpha"),
+                ModulePath::new("main"),
+            );
+            let (_, loaded, captured_input) =
+                &inputs.captured.unwrap().native_sources().unwrap()[0];
+            let source = mizar_frontend::source::source_unit_from_loaded(
+                loaded.clone(),
+                mizar_frontend::source::diagnostic_file_path(captured_input),
+            );
+            assert_eq!(
+                source.source_text.as_ref(),
+                text.trim_start_matches('\u{feff}').replace("\r\n", "\n")
+            );
+            let output = mizar_frontend::orchestration::Frontend::new(
+                mizar_frontend::source::FrontendSourceLoader::new(DiskSourceLoader::new(
+                    fixture.root.join("alpha"),
+                )),
+                inputs.dependency_lexical_provider(&[]),
+                MizarParserSeam,
+            )
+            .run_loaded(source.clone())
+            .unwrap();
+            assert!(output.diagnostics.is_empty(), "{:?}", output.diagnostics);
+            let ast = output.ast.as_ref().unwrap();
+            let resolver_module = mizar_resolve::resolved_ast::ModuleId::new(
+                module.package.clone(),
+                module.path.clone(),
+            );
+            let shells =
+                mizar_resolve::declarations::DeclarationShellCollector::new(ast, &resolver_module)
+                    .collect();
+            let collection = mizar_resolve::symbols::SignatureProjectionExtractor::new(
+                ast,
+                &shells,
+                mizar_resolve::env::NamespacePath::new("main"),
+            )
+            .collect(&resolver_module);
+            assert!(collection.diagnostics().is_empty());
+            let mut expected = std::collections::BTreeMap::new();
+            for (label, formula) in &formulas {
+                let owners = collection
+                    .env()
+                    .symbols()
+                    .iter()
+                    .filter(|owner| owner.primary_spelling() == *label)
+                    .collect::<Vec<_>>();
+                let [owner] = owners.as_slice() else {
+                    panic!("one independently collected owner for {label}");
+                };
+                expected.insert(owner.symbol().clone(), (*formula).to_owned());
+            }
+            let before = (
+                inputs.snapshot.clone(),
+                inputs.build_plan.clone(),
+                inputs.module_index.clone(),
+                loaded.clone(),
+                captured_input.clone(),
+            );
+            for stage in 0..3 {
+                if stage == 1 {
+                    fixture.write(b"open theorem Changed: 0 = 1;\n");
+                } else if stage == 2 {
+                    fs::remove_file(fixture.root.join("alpha/src/main.miz")).unwrap();
+                }
+                assert_eq!(
+                    inputs
+                        .native_public_theorem_formula_text_candidates(&module)
+                        .unwrap(),
+                    Some(expected.clone()),
+                    "open={open}, stage={stage}"
+                );
+            }
+            assert_eq!(
+                (
+                    inputs.snapshot.clone(),
+                    inputs.build_plan.clone(),
+                    inputs.module_index.clone(),
+                    loaded.clone(),
+                    captured_input.clone(),
+                ),
+                before
+            );
+            assert_eq!(captured_input, &descriptor);
+        }
+    }
+}
+
+#[test]
+fn native_public_theorem_formula_text_candidates_refuse_unbound_and_incomplete_sources() {
+    let private = include_str!(
+        "../../../tests/miz/pass/resolve/pass_declaration_symbol_private_theorem_visibility_001.miz"
+    );
+    for (text, diagnostic) in [
+        (format!("{private}\ntheorem Plain: 0 = 0;\n"), false),
+        ("theorem Broken: ;\n".to_owned(), true),
+    ] {
+        let fixture = Fixture::new(text.as_bytes());
+        let foreign = Fixture::new(text.as_bytes());
+        let ids = InMemorySessionIdAllocator::new();
+        let snapshots = SnapshotRegistry::new();
+        let (_, submission, _, _, _) =
+            native_disk_record_submission(&fixture, &ids, &snapshots, usize::MAX);
+        let (_, foreign_submission, _, _, _) =
+            native_disk_record_submission(&foreign, &ids, &snapshots, usize::MAX);
+        let (inputs, _) = native_disk_lookup_context(&submission, &ids);
+        let module = mizar_build::module_index::ModuleId::new(
+            PackageId::new("alpha"),
+            ModulePath::new("main"),
+        );
+        let (_, loaded, descriptor) = &inputs.captured.unwrap().native_sources().unwrap()[0];
+        let output = mizar_frontend::orchestration::Frontend::new(
+            mizar_frontend::source::FrontendSourceLoader::new(DiskSourceLoader::new(
+                fixture.root.join("alpha"),
+            )),
+            inputs.dependency_lexical_provider(&[]),
+            MizarParserSeam,
+        )
+        .run_loaded(mizar_frontend::source::source_unit_from_loaded(
+            loaded.clone(),
+            mizar_frontend::source::diagnostic_file_path(descriptor),
+        ))
+        .unwrap();
+        assert_eq!(!output.diagnostics.is_empty(), diagnostic);
+        assert_eq!(
+            inputs
+                .native_public_theorem_formula_text_candidates(&module)
+                .unwrap(),
+            None
+        );
+        for requested in [
+            mizar_build::module_index::ModuleId::new(
+                PackageId::new("alpha"),
+                ModulePath::new("missing"),
+            ),
+            mizar_build::module_index::ModuleId::new(
+                PackageId::new("foreign"),
+                ModulePath::new("main"),
+            ),
+        ] {
+            assert!(
+                inputs
+                    .native_public_theorem_formula_text_candidates(&requested)
+                    .is_err()
+            );
+        }
+        let mut ambiguous = inputs.snapshot.clone();
+        ambiguous
+            .source_versions
+            .push(ambiguous.source_versions[0].clone());
+        let mut absent_index = inputs.module_index.clone();
+        absent_index.modules.clear();
+        let mut ambiguous_index = inputs.module_index.clone();
+        ambiguous_index
+            .modules
+            .push(ambiguous_index.modules[0].clone());
+        for invalid in [
+            SourceLoadInputs {
+                captured: None,
+                ..inputs
+            },
+            SourceLoadInputs {
+                captured: Some(foreign_submission.session.captured()),
+                ..inputs
+            },
+            SourceLoadInputs {
+                snapshot: &ambiguous,
+                ..inputs
+            },
+            SourceLoadInputs {
+                module_index: &absent_index,
+                ..inputs
+            },
+            SourceLoadInputs {
+                module_index: &ambiguous_index,
+                ..inputs
+            },
+        ] {
+            assert!(
+                invalid
+                    .native_public_theorem_formula_text_candidates(&module)
+                    .is_err()
+            );
+        }
+    }
+}

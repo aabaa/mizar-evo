@@ -561,6 +561,8 @@ the owning producers when the paired tasks land.
 
 43. **[Opt-in native leaf Frontend persistence](../../task_contracts/en/DRIVER-NATIVE-FRONTEND-CACHE-PERSISTENCE.md).** [x]
 
+44. **[Captured original public theorem formula text](../../task_contracts/en/DRIVER-NATIVE-PUBLIC-THEOREM-TEXT.md).** [x]
+
 ## Recommended Verification
 
 Run after each task:
