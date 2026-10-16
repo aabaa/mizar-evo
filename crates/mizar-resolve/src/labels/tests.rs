@@ -4539,3 +4539,259 @@ fn source_public_theorem_formula_candidates_refuse_malformed_written_nodes_after
         assert_eq!((rebuilt, arena, env), before);
     }
 }
+
+#[test]
+fn source_theorem_label_reference_candidates_preserve_original_batch() {
+    let fixture = include_str!(
+        "../../../../tests/miz/pass/resolve/pass_declaration_symbol_private_theorem_visibility_001.miz"
+    );
+    for (text, expected) in [
+        (fixture.to_owned(), vec![(178, 184, "PrivT1")]),
+        (
+            fixture.replace("theorem UsePriv1", "lemma UsePriv1"),
+            vec![(176, 182, "PrivT1")],
+        ),
+        (
+            fixture.replace("thus X = X by PrivT1;", "Inner: X = X by PrivT1;\n  thus X = X by Inner, PrivT1, Missing;"),
+            vec![(180, 186, "PrivT1"), (204, 209, "Inner"), (211, 217, "PrivT1"), (219, 226, "Missing")],
+        ),
+        (
+            fixture.replacen("thus X = X;", "Inner: X = X\n  proof\n    thus X = X;\n  end;\n  thus X = X by Inner;", 1),
+            vec![(136, 141, "Inner"), (233, 239, "PrivT1")],
+        ),
+        (fixture.replace(" by PrivT1", ""), vec![]),
+        (
+            include_str!("../../../../tests/miz/pass/theorems/pass_proof_verification_theorem_status_open_assumed_001.miz").to_owned(),
+            vec![],
+        ),
+    ] {
+        let (ast, module, namespace, env, arena) = parsed_private_theorem_fixture(&text);
+        let before = (ast.clone(), arena.clone(), env.clone());
+        let contribution = env.contributions().by_source(ast.source_id)[0].id();
+        let collection = ProofLabelSourceCollector::new(&ast, &module, namespace.clone(), contribution, &arena)
+            .unwrap().collect_with_theorem_owners(&env).unwrap();
+        let result = source_theorem_label_reference_candidates(&ast, &arena, &env).unwrap().unwrap();
+        assert_eq!(result.ids().len(), expected.len());
+        for (id, (start, end, spelling)) in result.ids().iter().zip(expected) {
+            assert_eq!(&text[start..end], spelling);
+            let reference = ast.node_views().find(|node| {
+                matches!(node.kind(), SurfaceNodeKind::Reference)
+                    && node.range() == range(ast.source_id, start, end)
+            }).unwrap();
+            let entry = result.table().get(*id).unwrap();
+            assert_eq!(entry.site(), &ReferenceSite::new(arena.resolved_node_for(reference.id()).unwrap(), reference.range(), spelling));
+            let original = collection.references().iter().find(|candidate| candidate.site() == entry.site()).unwrap();
+            assert_eq!(entry.origin(), original.origin());
+            if spelling == "Missing" {
+                assert!(matches!(entry.resolution(), LabelResolution::Unresolved(_)));
+                assert!(result.has_unresolved());
+            } else {
+                let projection = collection.projections().iter().find(|projection| projection.primary_spelling() == spelling).unwrap();
+                if spelling == "PrivT1" {
+                    let owner = env.symbols().iter().find(|owner| owner.primary_spelling() == spelling).unwrap();
+                    assert_eq!(projection.origin_path().as_str(), owner.symbol().fqn().as_str());
+                    assert_eq!(projection.declaration_range(), range(ast.source_id, 16, 22));
+                    assert_eq!(projection.origin(), owner.origin());
+                    assert_eq!(projection.visibility(), Visibility::Private);
+                } else {
+                    assert_eq!(projection.kind(), LabelKind::ProofStep);
+                    assert!(matches!(projection.declaration_range().start, 76 | 164));
+                    assert_eq!(&text[projection.declaration_range().start..projection.declaration_range().end], "Inner");
+                }
+                assert_eq!(entry.resolution(), &LabelResolution::Resolved(LabelRef::new(projection.origin_path().clone(), projection.kind(), reference.range())));
+            }
+        }
+        assert_eq!(result, LabelResolver::new(collection.projections()).resolve(&module, &namespace, collection.references()));
+        assert_eq!(source_theorem_label_reference_candidates(&ast, &arena, &env).unwrap(), Some(result));
+        assert_eq!((ast, arena, env), before);
+    }
+}
+
+#[test]
+fn source_theorem_label_reference_candidates_refuse_incomplete_coverage() {
+    let fixture = include_str!(
+        "../../../../tests/miz/pass/resolve/pass_declaration_symbol_private_theorem_visibility_001.miz"
+    );
+    for text in [
+        fixture.replace("by PrivT1;", "by PrivT1, main.PrivT1;"),
+        fixture.replace("by PrivT1;", "by PrivT1, PrivT1[X];"),
+        fixture.replace("by PrivT1;", "by PrivT1, main.{PrivT1};"),
+        fixture.replacen("thus X = X;", "assume X = X;\n  thus X = X;", 1),
+        fixture.replacen("let X be set;", "let X be set such that A1: X = X;", 1),
+    ] {
+        let (ast, module, namespace, env, arena) = parsed_private_theorem_fixture(&text);
+        assert!(
+            source_public_theorem_label_candidates(&ast, &arena, &env)
+                .unwrap()
+                .is_some()
+        );
+        let collection = ProofLabelSourceCollector::new(
+            &ast,
+            &module,
+            namespace,
+            env.contributions().by_source(ast.source_id)[0].id(),
+            &arena,
+        )
+        .unwrap()
+        .collect_with_theorem_owners(&env)
+        .unwrap();
+        assert!(
+            !collection.references().is_empty(),
+            "supported citation retained: {text}"
+        );
+        assert_eq!(
+            source_theorem_label_reference_candidates(&ast, &arena, &env).unwrap(),
+            None,
+            "{text}"
+        );
+    }
+    let unsupported = format!("{fixture}\ntheorem Plain: 0 = 0;\n");
+    let (ast, module, _, env, arena) = parsed_private_theorem_fixture(&unsupported);
+    assert_eq!(
+        source_theorem_label_reference_candidates(&ast, &arena, &env).unwrap(),
+        None
+    );
+    let (foreign_ast, _, _, foreign_env, _) =
+        parsed_private_theorem_fixture(&unsupported.replace("UsePriv1", "Changed1"));
+    assert_eq!(
+        source_theorem_label_reference_candidates(&foreign_ast, &arena, &env).unwrap_err(),
+        arena
+            .validate_against(&foreign_ast, &module)
+            .unwrap_err()
+            .to_string()
+    );
+    assert_eq!(
+        source_theorem_label_reference_candidates(&ast, &arena, &foreign_env).unwrap_err(),
+        crate::symbols::validate_source_symbol_env(&arena, &foreign_env).unwrap_err()
+    );
+
+    let (ast, module, namespace, _, _) = parsed_private_theorem_fixture(fixture);
+    let reference = ast
+        .node_views()
+        .find(|node| matches!(node.kind(), SurfaceNodeKind::Reference))
+        .unwrap();
+    let list = ast
+        .node_views()
+        .find(|node| matches!(node.kind(), SurfaceNodeKind::ReferenceList))
+        .unwrap();
+    let owner = exact_proof_label_item_list(&ast)
+        .unwrap()
+        .child_views()
+        .find(|item| {
+            exact_theorem_owner(*item, true).is_some_and(|owner| owner.spelling == "UsePriv1")
+        })
+        .unwrap();
+    assert_eq!(owner.range().source_id, ast.source_id);
+    let foreign_source_id = distinct_source_ids().1;
+    assert_ne!(foreign_source_id, ast.source_id);
+    for mutation in [
+        "range",
+        "child_range",
+        "duplicate",
+        "orphan",
+        "hidden",
+        "parent_original_source",
+        "parent_foreign_source",
+    ] {
+        let mut builder = SurfaceAstBuilder::new(ast.source_id);
+        let mut mapped = BTreeMap::new();
+        for node in ast.node_views() {
+            let mut kind = node.kind().clone();
+            let mut node_range = node.range();
+            let mut children = node
+                .children()
+                .iter()
+                .map(|child| mapped[child])
+                .collect::<Vec<_>>();
+            if node.id() == owner.id()
+                && matches!(mutation, "parent_original_source" | "parent_foreign_source")
+            {
+                node_range.source_id = if mutation == "parent_foreign_source" {
+                    foreign_source_id
+                } else {
+                    ast.source_id
+                };
+            }
+            if node.id() == reference.id() && mutation == "range" {
+                node_range.start -= 1;
+            }
+            if reference.children().contains(&node.id()) && mutation == "child_range" {
+                node_range.end += 1;
+            }
+            if node.id() == list.id() && mutation == "duplicate" {
+                let identifier = exact_simple_reference_identifier(reference).unwrap();
+                let token = identifier.as_token().unwrap();
+                let cloned = builder.add_token(token.kind, token.text.clone(), identifier.range());
+                children.push(builder.add_node(
+                    reference.kind().clone(),
+                    reference.range(),
+                    vec![cloned],
+                ));
+            }
+            if node.id() == list.id() && mutation == "hidden" {
+                // A retained citation under a skipped list wrapper is not an empty batch.
+                kind = SurfaceNodeKind::FormulaExpression;
+            }
+            let id = match &kind {
+                SurfaceNodeKind::Token(token) => {
+                    builder.add_token(token.kind, token.text.clone(), node_range)
+                }
+                _ => builder.add_node(kind, node_range, children),
+            };
+            mapped.insert(node.id(), id);
+        }
+        if mutation == "orphan" {
+            builder.add_node(SurfaceNodeKind::ReferenceList, list.range(), Vec::new());
+        }
+        let rebuilt = builder.finish(Some(mapped[&ast.root().unwrap()]), None);
+        let shells =
+            crate::declarations::DeclarationShellCollector::new(&rebuilt, &module).collect();
+        let collected =
+            crate::symbols::SignatureProjectionExtractor::new(&rebuilt, &shells, namespace.clone())
+                .collect(&module);
+        assert!(collected.diagnostics().is_empty(), "{mutation}");
+        let env = collected.into_env();
+        let arena = SurfaceResolvedArena::lower(&rebuilt, &module).unwrap();
+        let before = (rebuilt.clone(), arena.clone(), env.clone());
+        assert!(
+            source_public_theorem_label_candidates(&rebuilt, &arena, &env)
+                .unwrap()
+                .is_some(),
+            "{mutation}: inherited admission"
+        );
+        let collection = ProofLabelSourceCollector::new(
+            &rebuilt,
+            &module,
+            namespace.clone(),
+            env.contributions().by_source(rebuilt.source_id)[0].id(),
+            &arena,
+        )
+        .unwrap()
+        .collect_with_theorem_owners(&env)
+        .unwrap();
+        assert_eq!(
+            collection.projections().len(),
+            2,
+            "{mutation}: genuine owners"
+        );
+        assert_eq!(
+            collection.references().len(),
+            match mutation {
+                "duplicate" => 2,
+                "hidden" => 0,
+                _ => 1,
+            },
+            "{mutation}: actual collector"
+        );
+        let result = source_theorem_label_reference_candidates(&rebuilt, &arena, &env).unwrap();
+        if mutation == "parent_original_source" {
+            assert!(
+                result.is_some(),
+                "original same-source parent remains admitted"
+            );
+        } else {
+            assert_eq!(result, None, "{mutation}");
+        }
+        assert_eq!((rebuilt, arena, env), before);
+    }
+}

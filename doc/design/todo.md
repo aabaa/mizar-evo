@@ -719,6 +719,8 @@ Pre-audit 5B.3 and Gate S1 block only consumers requiring their outputs.
 
    [Captured original public theorem text](./task_contracts/en/DRIVER-NATIVE-PUBLIC-THEOREM-TEXT.md) is implemented as capture-bound raw formula text; complete signature and publication producers remain separate.
 
+   [Source theorem label-reference candidates](./task_contracts/en/RESOLVE-SOURCE-THEOREM-LABEL-REFERENCES.md) are implemented as internal source-relative batches; complete semantic tables and public diagnostic adoption remain separate.
+
    These slices do not register ModuleResolver or later semantic services;
    their remaining owner-provided payload/publication prerequisites stay open.
 2. [~] [Real-service equivalence](./task_contracts/en/STEP6C-REAL-SERVICE-EQUIVALENCE.md)

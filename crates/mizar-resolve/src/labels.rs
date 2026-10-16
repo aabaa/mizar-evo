@@ -2152,5 +2152,220 @@ pub fn source_public_theorem_formula_candidates(
     Ok(Some(formulas))
 }
 
+/// Resolves a fully covered bounded batch of original source citations.
+pub fn source_theorem_label_reference_candidates(
+    ast: &SurfaceAst,
+    source: &SurfaceResolvedArena,
+    symbols: &SymbolEnv,
+) -> Result<Option<LabelResolutionResult>, String> {
+    if source_public_theorem_label_candidates(ast, source, symbols)?.is_none() {
+        return Ok(None);
+    }
+    let contributions = symbols
+        .contributions()
+        .iter()
+        .filter(|entry| {
+            entry.module() == source.module()
+                && matches!(entry.kind(), crate::env::ContributionKind::LocalSource { source_id } if *source_id == ast.source_id)
+        })
+        .collect::<Vec<_>>();
+    let [contribution] = contributions.as_slice() else {
+        return Ok(None);
+    };
+    let namespace = NamespacePath::new(source.module().path().as_str());
+    let collection = ProofLabelSourceCollector::new(
+        ast,
+        source.module(),
+        namespace.clone(),
+        contribution.id(),
+        source,
+    )
+    .and_then(|collector| collector.collect_with_theorem_owners(symbols))
+    .map_err(|error| error.to_string())?;
+    let Some(items) = exact_proof_label_item_list(ast) else {
+        return Ok(None);
+    };
+    let mut pending = Vec::new();
+    for item in items.child_views() {
+        let item = if matches!(item.kind(), SurfaceNodeKind::VisibleItem) {
+            item.child_views()
+                .nth(1)
+                .expect("validated private wrapper")
+        } else {
+            item
+        };
+        if let Some(proof) = exact_theorem_owner(item, true).and_then(|owner| owner.proof) {
+            pending.push((proof, item, None, false));
+        }
+    }
+    let mut visited = std::collections::BTreeSet::new();
+    let mut sites = std::collections::BTreeSet::new();
+    while let Some((node, parent, grandparent, in_let)) = pending.pop() {
+        let range = node.range();
+        if range.source_id != ast.source_id
+            || range.source_id != parent.range().source_id
+            || range.start > range.end
+            || range.start < parent.range().start
+            || range.end > parent.range().end
+            || !visited.insert(node.id())
+        {
+            return Ok(None);
+        }
+        let children = node.child_views().collect::<Vec<_>>();
+        if children
+            .windows(2)
+            .any(|pair| pair[0].range().end > pair[1].range().start)
+        {
+            return Ok(None);
+        }
+        match node.kind() {
+            SurfaceNodeKind::ProofBlock
+                if in_let
+                    || !matches!(
+                        parent.kind(),
+                        SurfaceNodeKind::TheoremItem
+                            | SurfaceNodeKind::LemmaItem
+                            | SurfaceNodeKind::CompactStatement
+                            | SurfaceNodeKind::ConclusionStatement
+                    )
+                    || !proof_block_boundary_is_supported(node)
+                    || children[1..children.len() - 1].iter().any(|statement| {
+                        !matches!(
+                            statement.kind(),
+                            SurfaceNodeKind::CompactStatement
+                                | SurfaceNodeKind::ConclusionStatement
+                                | SurfaceNodeKind::LetStatement
+                        )
+                    }) =>
+            {
+                return Ok(None);
+            }
+            SurfaceNodeKind::CompactStatement
+            | SurfaceNodeKind::ConclusionStatement
+            | SurfaceNodeKind::LetStatement
+                if !matches!(parent.kind(), SurfaceNodeKind::ProofBlock) =>
+            {
+                return Ok(None);
+            }
+            SurfaceNodeKind::JustificationClause
+                if in_let
+                    || !matches!(
+                        parent.kind(),
+                        SurfaceNodeKind::CompactStatement | SurfaceNodeKind::ConclusionStatement
+                    )
+                    || children.len() != 2
+                    || !token_is(&children[0], SurfaceTokenKind::ReservedWord, "by")
+                    || !matches!(children[1].kind(), SurfaceNodeKind::ReferenceList) =>
+            {
+                return Ok(None);
+            }
+            SurfaceNodeKind::ReferenceList
+                if in_let
+                    || !matches!(parent.kind(), SurfaceNodeKind::JustificationClause)
+                    || children.is_empty()
+                    || children.len() % 2 != 1
+                    || children.iter().enumerate().any(|(index, child)| {
+                        if index % 2 == 0 {
+                            !matches!(child.kind(), SurfaceNodeKind::Reference)
+                        } else {
+                            !token_is(child, SurfaceTokenKind::ReservedSymbol, ",")
+                        }
+                    }) =>
+            {
+                return Ok(None);
+            }
+            SurfaceNodeKind::Reference => {
+                if in_let || !matches!(parent.kind(), SurfaceNodeKind::ReferenceList) {
+                    return Ok(None);
+                }
+                let Some(identifier) = exact_simple_reference_identifier(node) else {
+                    return Ok(None);
+                };
+                let Some(mapped) = source.resolved_node_for(node.id()) else {
+                    return Ok(None);
+                };
+                let site = ReferenceSite::new(
+                    mapped,
+                    range,
+                    identifier
+                        .as_token()
+                        .expect("validated identifier")
+                        .text
+                        .as_ref(),
+                );
+                if !sites.insert(mapped)
+                    || collection
+                        .references()
+                        .iter()
+                        .filter(|reference| reference.site() == &site)
+                        .count()
+                        != 1
+                {
+                    return Ok(None);
+                }
+            }
+            SurfaceNodeKind::QualifiedReference
+            | SurfaceNodeKind::GroupedReference
+            | SurfaceNodeKind::GroupedReferenceItem
+            | SurfaceNodeKind::BulkReference
+            | SurfaceNodeKind::ComputationJustification => return Ok(None),
+            _ => {}
+        }
+        if token_is(&node, SurfaceTokenKind::ReservedSymbol, ":") {
+            let label = grandparent
+                .filter(|statement: &SurfaceNodeView<'_>| {
+                    matches!(statement.kind(), SurfaceNodeKind::CompactStatement)
+                })
+                .and_then(exact_compact_statement_label);
+            if in_let
+                || !matches!(parent.kind(), SurfaceNodeKind::Proposition)
+                || parent.child_views().nth(1).map(|child| child.id()) != Some(node.id())
+                || label.is_none_or(|label| {
+                    collection
+                        .projections()
+                        .iter()
+                        .filter(|projection| {
+                            projection.kind() == LabelKind::ProofStep
+                                && projection.declaration_range() == label.range()
+                        })
+                        .count()
+                        != 1
+                })
+            {
+                return Ok(None);
+            }
+        }
+        let in_let = in_let || matches!(node.kind(), SurfaceNodeKind::LetStatement);
+        pending.extend(
+            children
+                .into_iter()
+                .map(|child| (child, node, Some(parent), in_let)),
+        );
+    }
+    if sites.len() != collection.references().len()
+        || ast.node_views().any(|node| {
+            matches!(
+                node.kind(),
+                SurfaceNodeKind::ProofBlock
+                    | SurfaceNodeKind::JustificationClause
+                    | SurfaceNodeKind::ReferenceList
+                    | SurfaceNodeKind::Reference
+                    | SurfaceNodeKind::QualifiedReference
+                    | SurfaceNodeKind::GroupedReference
+                    | SurfaceNodeKind::GroupedReferenceItem
+                    | SurfaceNodeKind::BulkReference
+                    | SurfaceNodeKind::ComputationJustification
+            ) && !visited.contains(&node.id())
+        })
+    {
+        return Ok(None);
+    }
+    Ok(Some(LabelResolver::new(collection.projections()).resolve(
+        source.module(),
+        &namespace,
+        collection.references(),
+    )))
+}
+
 #[cfg(test)]
 mod tests;
