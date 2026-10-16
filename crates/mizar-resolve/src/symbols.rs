@@ -3526,5 +3526,179 @@ pub fn source_public_theorem_signature_candidates(
     Ok(Some(signatures))
 }
 
+/// Composes original theorem semantics, signatures, labels and citation dependencies.
+pub fn source_theorem_module_candidates(
+    ast: &SurfaceAst,
+    source: &SurfaceResolvedArena,
+    symbols: &SymbolEnv,
+) -> Result<Option<(crate::resolved_ast::ResolvedAst, SymbolEnv)>, String> {
+    let Some(resolved) = crate::resolved_ast::source_theorem_resolved_ast(ast, source, symbols)?
+    else {
+        return Ok(None);
+    };
+    let Some(signatures) = source_public_theorem_signature_candidates(ast, source, symbols)? else {
+        return Ok(None);
+    };
+    let Some(labels) =
+        crate::labels::source_theorem_label_reference_candidates(ast, source, symbols)?
+    else {
+        return Ok(None);
+    };
+    let mut indexes = SymbolEnvIndexes {
+        imports: symbols.imports().clone(),
+        exports: symbols.exports().clone(),
+        symbols: crate::env::SymbolIndex::new(),
+        labels: labels.index().clone(),
+        definitions: crate::env::DefinitionIndex::new(),
+        overloads: symbols.overloads().clone(),
+        registrations: symbols.registrations().clone(),
+        lexical_summaries: symbols.lexical_summaries().clone(),
+        namespace_graph: symbols.namespace_graph().clone(),
+        declaration_dependencies: symbols.declaration_dependencies().clone(),
+        contributions: symbols.contributions().clone(),
+        module_summaries: symbols.module_summaries().clone(),
+    };
+    for label in indexes.labels.iter() {
+        if indexes.contributions.get(label.contribution()).is_none() {
+            return Ok(None);
+        }
+        indexes
+            .contributions
+            .add_label(label.contribution(), label.origin_path().clone());
+    }
+    let shells = DeclarationShellCollector::new(ast, source.module()).collect();
+    let mut dependencies: BTreeMap<SymbolId, Vec<crate::env::DeclarationDependencyId>> =
+        BTreeMap::new();
+    for (_, reference) in resolved.label_refs().iter() {
+        let crate::resolved_ast::LabelResolution::Resolved(target) = reference.resolution() else {
+            return Ok(None);
+        };
+        if indexes
+            .labels
+            .get(target.origin())
+            .is_none_or(|label| label.kind() != target.kind())
+        {
+            return Ok(None);
+        }
+        let [theorem, _, _] = reference.origin().structural_path() else {
+            return Ok(None);
+        };
+        let mut owners = shells.declarations().iter().filter(|shell| {
+            shell.node_id().index() == *theorem as usize
+                && matches!(
+                    shell.kind(),
+                    DeclarationShellKind::Theorem | DeclarationShellKind::Lemma
+                )
+        });
+        let Some(shell) = owners.next() else {
+            return Ok(None);
+        };
+        if owners.next().is_some() {
+            return Ok(None);
+        }
+        let context = shell_context(&shells, shell);
+        let origin = shell_origin(ast.source_id, source.module(), shell, &context);
+        let kind = match shell.kind() {
+            DeclarationShellKind::Theorem => SymbolKind::Theorem,
+            DeclarationShellKind::Lemma => SymbolKind::Lemma,
+            _ => unreachable!(),
+        };
+        let mut owners = symbols
+            .symbols()
+            .iter()
+            .filter(|entry| entry.kind() == kind && entry.origin() == &origin);
+        let Some(owner) = owners.next() else {
+            return Ok(None);
+        };
+        if owners.next().is_some()
+            || indexes.contributions.get(owner.contribution()).is_none()
+            || symbols
+                .definitions()
+                .by_symbol(owner.symbol())
+                .is_none_or(|definition| definition.contribution() != owner.contribution())
+        {
+            return Ok(None);
+        }
+        let edge = indexes.declaration_dependencies.insert(
+            crate::env::DependencyEndpoint::Symbol(owner.symbol().clone()),
+            crate::env::DependencyEndpoint::Label(target.origin().clone()),
+            crate::env::DeclarationDependencyKind::LabelCitation,
+            SourceAnchor::Range(reference.site().range()),
+            owner.contribution(),
+        );
+        indexes
+            .contributions
+            .add_declaration_dependency(owner.contribution(), edge);
+        dependencies
+            .entry(owner.symbol().clone())
+            .or_default()
+            .push(edge);
+    }
+    let mut remaining = signatures.clone();
+    for entry in symbols.symbols().iter() {
+        let mut entry = entry.clone();
+        if entry.visibility() == Visibility::Public {
+            let Some(signature) = remaining.remove(entry.symbol()) else {
+                return Ok(None);
+            };
+            entry = entry.with_signature(signature);
+        }
+        indexes.symbols.insert(entry);
+    }
+    if !remaining.is_empty() {
+        return Ok(None);
+    }
+    let mut remaining = signatures;
+    let mut definitions = symbols.definitions().iter().collect::<Vec<_>>();
+    definitions.sort_by_key(|entry| entry.id().index());
+    for entry in definitions {
+        let mut all_dependencies = entry.dependencies().to_vec();
+        all_dependencies.extend(dependencies.remove(entry.symbol()).unwrap_or_default());
+        let mut shell = DefinitionShell::new(
+            entry.symbol().clone(),
+            entry.kind(),
+            entry.origin().clone(),
+            entry.contribution(),
+        )
+        .with_visibility(entry.visibility())
+        .with_parameters(entry.parameters().to_vec())
+        .with_binders(entry.binders().to_vec())
+        .with_dependencies(all_dependencies);
+        if let Some(arity) = entry.arity() {
+            shell = shell.with_arity(arity);
+        }
+        if let Some(notation) = entry.notation_shape() {
+            shell = shell.with_notation_shape(notation);
+        }
+        if let Some(doc) = entry.doc_attachment() {
+            shell = shell.with_doc_attachment(doc.clone());
+        }
+        if let Some(conflict) = entry.conflict() {
+            shell = shell.with_conflict(conflict.clone());
+        }
+        let signature = if entry.visibility() == Visibility::Public {
+            let Some(signature) = remaining.remove(entry.symbol()) else {
+                return Ok(None);
+            };
+            Some(signature)
+        } else {
+            entry.signature().cloned()
+        };
+        if let Some(signature) = signature {
+            shell = shell.with_signature(signature);
+        }
+        if indexes.definitions.insert(shell) != entry.id() {
+            return Ok(None);
+        }
+    }
+    if !remaining.is_empty() || !dependencies.is_empty() {
+        return Ok(None);
+    }
+    Ok(Some((
+        resolved,
+        SymbolEnv::new(symbols.module_id().clone(), indexes),
+    )))
+}
+
 #[cfg(test)]
 mod tests;

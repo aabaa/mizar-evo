@@ -727,6 +727,8 @@ Pre-audit 5B.3 and Gate S1 block only consumers requiring their outputs.
 
    [Body-free public theorem statement shells](./task_contracts/en/RESOLVE-SOURCE-PUBLIC-THEOREM-SIGNATURES.md) are implemented as raw surface-token signatures; complete env/summary publication and semantic fingerprints remain separate.
 
+   [Source theorem module metadata](./task_contracts/en/RESOLVE-SOURCE-THEOREM-MODULE-CANDIDATES.md) composes actual AST, signature, label and citation inputs; complete ModuleResolver/summary publication remains separate.
+
    These slices do not register ModuleResolver or later semantic services;
    their remaining owner-provided payload/publication prerequisites stay open.
 2. [~] [Real-service equivalence](./task_contracts/en/STEP6C-REAL-SERVICE-EQUIVALENCE.md)

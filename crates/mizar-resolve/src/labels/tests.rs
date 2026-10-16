@@ -5619,3 +5619,230 @@ fn source_public_theorem_signature_candidates_refuse_whole_maps_and_preserve_err
         assert_eq!((rebuilt, arena, env), before);
     }
 }
+
+#[test]
+fn source_theorem_module_candidates_compose_original_metadata_and_identities() {
+    let fixture = include_str!(
+        "../../../../tests/miz/pass/resolve/pass_declaration_symbol_private_theorem_visibility_001.miz"
+    );
+    let quantified = "101:3:for100:1:X101:5:being101:3:set101:5:holds100:1:X102:1:=100:1:X";
+    let numeral = "103:1:0102:1:=103:1:0";
+    let many = (0..12)
+        .map(|i| format!("theorem T{i}: 0 = 0\nproof\n  thus 0 = 0;\nend;\n"))
+        .collect::<String>();
+    for (text, public, citations, nonallocation_order) in [
+        (fixture.to_owned(), vec![("UsePriv1".to_owned(), quantified)], vec![("UsePriv1", "PrivT1")], false),
+        (format!("{fixture}\ntheorem Alpha: 0 = 0\nproof\n  thus 0 = 0 by UsePriv1;\nend;\n"), vec![("UsePriv1".to_owned(), quantified), ("Alpha".to_owned(), numeral)], vec![("UsePriv1", "PrivT1"), ("Alpha", "UsePriv1")], false),
+        (fixture.replace("by PrivT1;", "by PrivT1, PrivT1;"), vec![("UsePriv1".to_owned(), quantified)], vec![("UsePriv1", "PrivT1"), ("UsePriv1", "PrivT1")], false),
+        (fixture.replace("theorem UsePriv1", "lemma UsePriv1").replace("private ", ""), vec![("PrivT1".to_owned(), quantified), ("UsePriv1".to_owned(), quantified)], vec![("UsePriv1", "PrivT1")], false),
+        (fixture.replace("\ntheorem UsePriv1", "\nprivate theorem UsePriv1"), vec![], vec![("UsePriv1", "PrivT1")], false),
+        (include_str!("../../../../tests/miz/pass/theorems/pass_proof_verification_theorem_status_open_assumed_001.miz").to_owned(), vec![("OpenT1".to_owned(), quantified), ("AxT1".to_owned(), quantified)], vec![], false),
+        (many, (0..12).map(|i| (format!("T{i}"), numeral)).collect(), vec![], true),
+    ] {
+        let (ast, module, _, env, arena) = parsed_private_theorem_fixture(&text);
+        let before = (ast.clone(), arena.clone(), env.clone());
+        if nonallocation_order {
+            let ids = env.definitions().iter().map(|entry| entry.id().index()).collect::<Vec<_>>();
+            assert_eq!(ids.len(), 12);
+            assert!(ids.windows(2).any(|pair| pair[0] > pair[1]), "genuine iterator differs from allocation order");
+        }
+        let semantic = crate::resolved_ast::source_theorem_resolved_ast(&ast, &arena, &env).unwrap().unwrap();
+        let labels = source_theorem_label_reference_candidates(&ast, &arena, &env).unwrap().unwrap();
+        let mut signatures = BTreeMap::new();
+        for (name, payload) in public {
+            let owner = env.symbols().iter().find(|entry| entry.primary_spelling() == name).unwrap();
+            assert_eq!(owner.visibility(), Visibility::Public);
+            assert!(signatures.insert(owner.symbol().clone(), crate::env::SignatureShell::Opaque {
+                schema: "source-theorem-statement-tokens-v1".to_owned(), payload: payload.to_owned(),
+            }).is_none());
+        }
+        assert_eq!(crate::symbols::source_public_theorem_signature_candidates(&ast, &arena, &env).unwrap(), Some(signatures.clone()));
+        crate::symbols::validate_source_symbol_env(&arena, &env).unwrap();
+        let (actual, composed) = crate::symbols::source_theorem_module_candidates(&ast, &arena, &env).unwrap().unwrap();
+        assert_eq!(actual, semantic);
+        assert_eq!(composed.module_id(), &module);
+        assert_eq!(composed.labels(), labels.index());
+        assert_eq!(actual.label_refs(), labels.table());
+        assert_eq!(composed.imports(), env.imports());
+        assert_eq!(composed.exports(), env.exports());
+        assert_eq!(composed.overloads(), env.overloads());
+        assert_eq!(composed.registrations(), env.registrations());
+        assert_eq!(composed.lexical_summaries(), env.lexical_summaries());
+        assert_eq!(composed.namespace_graph(), env.namespace_graph());
+        assert_eq!(composed.module_summaries(), env.module_summaries());
+        let mut expected_symbols = crate::env::SymbolIndex::new();
+        for original in env.symbols().iter() {
+            let expected = if let Some(signature) = signatures.get(original.symbol()) {
+                original.clone().with_signature(signature.clone())
+            } else {
+                assert_eq!(original.visibility(), Visibility::Private);
+                original.clone()
+            };
+            expected_symbols.insert(expected);
+        }
+        assert_eq!(composed.symbols(), &expected_symbols);
+        let mut contributions = env.contributions().clone();
+        for label in labels.index().iter() {
+            let original = env.contributions().get(label.contribution()).unwrap();
+            assert_eq!(original.module(), &module);
+            contributions.add_label(label.contribution(), label.origin_path().clone());
+        }
+        let mut dependencies = env.declaration_dependencies().clone();
+        let mut by_owner: BTreeMap<SymbolId, Vec<crate::env::DeclarationDependencyId>> = BTreeMap::new();
+        assert_eq!(actual.label_refs().len(), citations.len());
+        for ((_, row), (source_name, target_name)) in actual.label_refs().iter().zip(citations) {
+            assert_eq!(row.site().spelling(), target_name);
+            let source_owner = env.symbols().iter().find(|entry| entry.primary_spelling() == source_name).unwrap();
+            let target_owner = env.symbols().iter().find(|entry| entry.primary_spelling() == target_name).unwrap();
+            let reference = ast.node_views().find(|node| matches!(node.kind(), SurfaceNodeKind::Reference) && node.range() == row.site().range()).unwrap();
+            let theorem = ast.node_views().find(|node| matches!(node.kind(), SurfaceNodeKind::TheoremItem | SurfaceNodeKind::LemmaItem) && node.range().start <= reference.range().start && node.range().end >= reference.range().end).unwrap();
+            let statement = ast.node_views().find(|node| matches!(node.kind(), SurfaceNodeKind::ConclusionStatement) && node.range().start <= reference.range().start && node.range().end >= reference.range().end).unwrap();
+            assert_eq!(row.origin().structural_path(), [theorem.id(), statement.id(), reference.id()].map(|node| u32::try_from(node.index()).unwrap()));
+            assert_eq!(source_owner.origin().anchor(), &SourceAnchor::Range(theorem.range()));
+            assert_eq!(row.site().node(), arena.resolved_node_for(reference.id()).unwrap());
+            let target = crate::resolved_ast::LabelOriginPath::new(target_owner.symbol().fqn().as_str());
+            assert_eq!(row.resolution(), &LabelResolution::Resolved(LabelRef::new(target.clone(), LabelKind::Theorem, reference.range())));
+            assert_eq!(composed.labels().get(&target).unwrap().origin(), target_owner.origin());
+            let edge = dependencies.insert(
+                crate::env::DependencyEndpoint::Symbol(source_owner.symbol().clone()),
+                crate::env::DependencyEndpoint::Label(target),
+                crate::env::DeclarationDependencyKind::LabelCitation,
+                SourceAnchor::Range(reference.range()), source_owner.contribution(),
+            );
+            contributions.add_declaration_dependency(source_owner.contribution(), edge);
+            by_owner.entry(source_owner.symbol().clone()).or_default().push(edge);
+            assert_eq!(composed.declaration_dependencies().get(edge), dependencies.get(edge));
+        }
+        assert_eq!(composed.declaration_dependencies(), &dependencies);
+        assert_eq!(composed.contributions(), &contributions);
+        assert_eq!(composed.definitions().len(), env.definitions().len());
+        for original in env.definitions().iter() {
+            let retained = composed.definitions().get(original.id()).unwrap();
+            assert_eq!(retained.symbol(), original.symbol());
+            assert_eq!(retained.kind(), original.kind());
+            assert_eq!(retained.visibility(), original.visibility());
+            assert_eq!(retained.parameters(), original.parameters());
+            assert_eq!(retained.binders(), original.binders());
+            assert_eq!(retained.arity(), original.arity());
+            assert_eq!(retained.notation_shape(), original.notation_shape());
+            assert_eq!(retained.doc_attachment(), original.doc_attachment());
+            assert_eq!(retained.origin(), original.origin());
+            assert_eq!(retained.contribution(), original.contribution());
+            assert_eq!(retained.conflict(), original.conflict());
+            assert_eq!(retained.signature(), signatures.get(original.symbol()).or(original.signature()));
+            let mut expected = original.dependencies().to_vec();
+            expected.extend(by_owner.remove(original.symbol()).unwrap_or_default());
+            expected.sort();
+            assert_eq!(retained.dependencies(), expected);
+        }
+        assert!(by_owner.is_empty());
+        assert_eq!(crate::symbols::source_theorem_module_candidates(&ast, &arena, &env).unwrap(), Some((actual, composed.clone())));
+        assert!(crate::symbols::validate_source_symbol_env(&arena, &composed).is_err());
+        crate::symbols::validate_source_symbol_env(&arena, &env).unwrap();
+        assert_eq!((ast, arena, env), before);
+    }
+}
+
+#[test]
+fn source_theorem_module_candidates_refuse_whole_pairs_and_preserve_lower_order() {
+    let fixture = include_str!(
+        "../../../../tests/miz/pass/resolve/pass_declaration_symbol_private_theorem_visibility_001.miz"
+    );
+    for text in [
+        fixture.replace("by PrivT1", "by Missing"),
+        fixture.replace("by PrivT1", "by main.PrivT1"),
+        format!("{fixture}\nreserve Y for set;\n"),
+        format!("{fixture}\ntheorem Plain: 0 = 0;\n"),
+    ] {
+        let (ast, _, _, env, arena) = parsed_private_theorem_fixture(&text);
+        let before = (ast.clone(), arena.clone(), env.clone());
+        let lower = crate::resolved_ast::source_theorem_resolved_ast(&ast, &arena, &env).unwrap();
+        if text.contains("by Missing") {
+            let lower = lower.unwrap();
+            assert!(
+                lower
+                    .label_refs()
+                    .iter()
+                    .any(|(_, row)| matches!(row.resolution(), LabelResolution::Unresolved(_)))
+            );
+            assert!(
+                crate::symbols::source_public_theorem_signature_candidates(&ast, &arena, &env)
+                    .unwrap()
+                    .is_some()
+            );
+        } else {
+            assert_eq!(lower, None);
+        }
+        assert_eq!(
+            crate::symbols::source_theorem_module_candidates(&ast, &arena, &env).unwrap(),
+            None
+        );
+        assert_eq!((ast, arena, env), before);
+    }
+    let (ast, _, _, env, arena) = parsed_private_theorem_fixture(fixture);
+    let (foreign_ast, _, _, foreign_env, foreign_arena) =
+        parsed_private_theorem_fixture(&fixture.replace("UsePriv1", "Changed1"));
+    for (ast, arena, env) in [
+        (&foreign_ast, &arena, &env),
+        (&ast, &foreign_arena, &env),
+        (&ast, &arena, &foreign_env),
+    ] {
+        let before = (ast.clone(), arena.clone(), env.clone());
+        assert_eq!(
+            crate::symbols::source_theorem_module_candidates(ast, arena, env).unwrap_err(),
+            crate::resolved_ast::source_theorem_resolved_ast(ast, arena, env).unwrap_err()
+        );
+        assert_eq!((ast.clone(), arena.clone(), env.clone()), before);
+    }
+    let text = "theorem Numeral: 0 = 0\nproof\n  thus 0 = 0;\nend;\n";
+    let (ast, module, namespace, _, _) = parsed_private_theorem_fixture(text);
+    let target = ast
+        .node_views()
+        .find(|node| {
+            node.as_token()
+                .is_some_and(|token| token.kind == SurfaceTokenKind::Numeral)
+        })
+        .unwrap()
+        .id();
+    let mut builder = SurfaceAstBuilder::new(ast.source_id);
+    let mut mapped = BTreeMap::new();
+    for node in ast.node_views() {
+        let children = node.children().iter().map(|child| mapped[child]).collect();
+        let id = if let Some(token) = node.as_token() {
+            builder.add_token(
+                token.kind,
+                if node.id() == target {
+                    "".into()
+                } else {
+                    token.text.clone()
+                },
+                node.range(),
+            )
+        } else {
+            builder.add_node(node.kind().clone(), node.range(), children)
+        };
+        mapped.insert(node.id(), id);
+    }
+    let rebuilt = builder.finish(Some(mapped[&ast.root().unwrap()]), None);
+    let shells = crate::declarations::DeclarationShellCollector::new(&rebuilt, &module).collect();
+    let collected = crate::symbols::SignatureProjectionExtractor::new(&rebuilt, &shells, namespace)
+        .collect(&module);
+    assert!(collected.diagnostics().is_empty());
+    let env = collected.into_env();
+    let arena = SurfaceResolvedArena::lower(&rebuilt, &module).unwrap();
+    let before = (rebuilt.clone(), arena.clone(), env.clone());
+    assert!(
+        crate::resolved_ast::source_theorem_resolved_ast(&rebuilt, &arena, &env)
+            .unwrap()
+            .is_some()
+    );
+    assert_eq!(
+        crate::symbols::source_public_theorem_signature_candidates(&rebuilt, &arena, &env).unwrap(),
+        None
+    );
+    assert_eq!(
+        crate::symbols::source_theorem_module_candidates(&rebuilt, &arena, &env).unwrap(),
+        None
+    );
+    assert_eq!((rebuilt, arena, env), before);
+}
