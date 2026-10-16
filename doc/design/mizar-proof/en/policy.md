@@ -59,6 +59,15 @@ The active policy is a stable record with these policy-relevant fields:
 | `policy_assumption` | Whether explicit policy assumptions are rejected or recordable as non-trusted policy status. |
 | `kernel_evidence_formats` | Kernel-checkable evidence formats that may be scheduled, currently formula/substitution evidence and built-in kernel evidence representations. |
 | `checker_schema_version` | Kernel/proof checker schema version required by the policy. |
+| `instance_search_limits` | Optional explicit finder work-count bounds; [configuration-only carrier](#instance-search-limits). |
+
+### Instance Search Limits
+
+`VerifierPolicy::instance_search_limits(&self) -> Option<[u64; 4]>` and `with_instance_search_limits(self, Option<[u64; 4]>) -> Self` expose one private field using existing types. Both are const; the getter copies the value and the builder changes only this field. Release, development, interactive and Default retain None; None clears the setting and denotes unconfigured finder limits, never unlimited search. Preserve literal zero and u64::MAX without conversion or numerical defaults.
+Array coordinates are maximum distinct ground terms in the finite input/generated pool, premise-instantiation candidates, named equality-instance candidates, and untrusted SAT search checks, in that order. These are deterministic work-count bounds for the future finder, distinct from timeout, premise pruning, backend-run limits and Kernel parsing/encoding limits. Counting/enforcement, term generation, exhaustion returning no evidence and actual finder invocation remain separate ATP work; storing a setting performs none of them.
+For None, policy_fingerprint emits exactly its old fields/bytes. For Some, after the existing checker_schema_version field and before finalization, append field_u16 `instance_search_limits_version` = 1, then field_u64 `max_ground_terms`, `max_premise_instances`, `max_equality_instances`, `max_sat_checks` from the four coordinates. Reuse the existing hash/domain/framing, with no schema-version or old-field change. Some zero is distinct from None; clearing restores the old fingerprint. Existing classification, scheduling, admission, selection and acceptance remain unchanged; configured identity is validation data, not proof authority.
+Two appended unit families fix actual pre-change legacy fingerprints/defaults/clear behavior and explicit zero/max/each-coordinate distinction/determinism. One appended genuine-source family reuses original/false aggregate registrations, both formats and existing policies; compare entire fresh Kernel result/PolicyDecision tuples with their unconfigured baselines and preserve immutable actual inputs. These prebuilt source candidates are not finder runs; no test-only Accepted constructor or duplicate existing policy/producer matrix is added.
+This carrier does not complete ATP30 or supply term-wire correspondence, search/exhaustion evidence, runtime currentness, witness/publication/reuse or any Step6–8 gate.
 
 ### Build Modes
 

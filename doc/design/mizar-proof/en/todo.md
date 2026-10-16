@@ -470,6 +470,8 @@ layer consumes both; one alignment task is owned here.
 
 35. **[Original-source raw identity](../../task_contracts/en/PROOF-SOURCE-ORIGINAL-IDENTITY.md).** [x] — Full incomplete VC-local slice accompanies the bounded fields; generic identity and witness/reuse remain open.
 
+36. **[Explicit instance-search limits](../../task_contracts/en/PROOF-INSTANCE-SEARCH-LIMITS.md).** [x] — Optional policy settings only; finder enforcement and full ATP30 remain open.
+
 ## Recommended Verification
 
 Run after each task:

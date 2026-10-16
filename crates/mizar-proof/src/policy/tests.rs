@@ -953,3 +953,64 @@ struct ExternalAdmissionCase {
     expected_category: PolicyDiagnosticCategory,
     expected_reason: PolicyReasonCode,
 }
+
+#[test]
+fn instance_search_limits_defaults_clear_and_legacy_fingerprints() {
+    assert_eq!(VerifierPolicy::default(), VerifierPolicy::release());
+    for (policy, legacy) in [
+        (
+            VerifierPolicy::release(),
+            "18196dfb103e176048d8ae3bcf365dd1b884c4977ec035e8a88ae2e97849cbcf",
+        ),
+        (
+            VerifierPolicy::development(),
+            "3e312fa2ea30084e3055facbf8503d1008d3b291ed1fff4d776251c9de948054",
+        ),
+        (
+            VerifierPolicy::interactive(),
+            "f58810d5b3e05e5b2f29510354528310b9df4949211677d4a2d6587c16cc1153",
+        ),
+    ] {
+        assert_eq!(policy.instance_search_limits(), None);
+        assert_eq!(policy.policy_fingerprint().to_lower_hex(), legacy);
+        for limits in [[0; 4], [u64::MAX; 4], [3, 5, 7, 11]] {
+            let cleared = policy
+                .clone()
+                .with_instance_search_limits(Some(limits))
+                .with_instance_search_limits(None);
+            assert_eq!(cleared, policy);
+            assert_eq!(cleared.policy_fingerprint().to_lower_hex(), legacy);
+        }
+    }
+}
+
+#[test]
+fn instance_search_limits_preserve_literal_counts_and_distinct_identity() {
+    for policy in [
+        VerifierPolicy::release(),
+        VerifierPolicy::development(),
+        VerifierPolicy::interactive(),
+    ] {
+        let mut fingerprints = BTreeSet::from([policy.policy_fingerprint().to_lower_hex()]);
+        for limits in [
+            [0; 4],
+            [u64::MAX; 4],
+            [1, 0, 0, 0],
+            [0, 1, 0, 0],
+            [0, 0, 1, 0],
+            [0, 0, 0, 1],
+            [3, 5, 7, 11],
+        ] {
+            let configured = policy.clone().with_instance_search_limits(Some(limits));
+            assert_eq!(configured.instance_search_limits(), Some(limits));
+            assert_eq!(
+                configured.policy_fingerprint(),
+                policy
+                    .clone()
+                    .with_instance_search_limits(Some(limits))
+                    .policy_fingerprint()
+            );
+            assert!(fingerprints.insert(configured.policy_fingerprint().to_lower_hex()));
+        }
+    }
+}

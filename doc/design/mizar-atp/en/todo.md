@@ -684,6 +684,7 @@ candidate evidence through the kernel-owned schema and must not weaken it.
       witness/cache output, or trusted backend material.
 30. **Untrusted instance finder.** [ ]
     - Local candidate transport prerequisite: [VC62](../../task_contracts/en/VC-LOCAL-EVIDENCE-WIRE.md); extraction/search remain open.
+    - Policy settings prerequisite: [Proof36](../../task_contracts/en/PROOF-INSTANCE-SEARCH-LIMITS.md); search/counting/enforcement remain open.
     - Produces kernel evidence from proved problems (closes the task-15 extraction deferral). Contract: [ATPK-INSTANCE-FINDER](../../task_contracts/en/ATPK-INSTANCE-FINDER.md).
 31. **Deterministic premise ranking.** [ ]
     - `symbol-overlap-v1` for pruning, suggestions, and unresolved citations (spec §22.4.4). Contract: [ATPK-PREMISE-RANKING](../../task_contracts/en/ATPK-PREMISE-RANKING.md).

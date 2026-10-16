@@ -446,6 +446,8 @@ kernel の拒否語彙と evidence 契約を訂正した。policy 層はその�
 
 35. **[元 source の raw identity](../../task_contracts/ja/PROOF-SOURCE-ORIGINAL-IDENTITY.md).** [x] — 限定 field と不完全 VC-local slice 全体を組で保持し、汎用 identity・witness/reuse は未完了とする。
 
+36. **[明示的な instance-search 上限](../../task_contracts/ja/PROOF-INSTANCE-SEARCH-LIMITS.md).** [x] — 任意 policy 設定のみ。finder の制限適用と全 ATP30 は未完了。
+
 ## 推奨検証
 
 各タスクの後で実行する:

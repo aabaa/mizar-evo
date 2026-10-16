@@ -32,6 +32,7 @@ pub struct VerifierPolicy {
     policy_assumption: PolicyAssumptionMode,
     kernel_evidence_formats: BTreeSet<KernelEvidenceFormat>,
     checker_schema_version: u16,
+    instance_search_limits: Option<[u64; 4]>,
 }
 
 impl VerifierPolicy {
@@ -48,6 +49,7 @@ impl VerifierPolicy {
             policy_assumption: PolicyAssumptionMode::Reject,
             kernel_evidence_formats: default_kernel_evidence_formats(),
             checker_schema_version: DEFAULT_CHECKER_SCHEMA_VERSION,
+            instance_search_limits: None,
         }
     }
 
@@ -184,6 +186,20 @@ impl VerifierPolicy {
         self
     }
 
+    /// Finder work-count bounds: ground terms, premise instances, equality instances, SAT checks.
+    /// `None` is unconfigured; literal counts are retained without starting a search.
+    #[must_use]
+    pub const fn instance_search_limits(&self) -> Option<[u64; 4]> {
+        self.instance_search_limits
+    }
+
+    /// Sets or clears explicit finder bounds without changing proof acceptance policy.
+    #[must_use]
+    pub const fn with_instance_search_limits(mut self, limits: Option<[u64; 4]>) -> Self {
+        self.instance_search_limits = limits;
+        self
+    }
+
     #[must_use]
     pub fn policy_fingerprint(&self) -> PolicyFingerprint {
         let mut hash = StableHasher::new(POLICY_FINGERPRINT_DOMAIN);
@@ -205,6 +221,13 @@ impl VerifierPolicy {
             hash.field_str("kernel_evidence_format", format.as_str());
         }
         hash.field_u16("checker_schema_version", self.checker_schema_version);
+        if let Some([ground, premise, equality, sat]) = self.instance_search_limits {
+            hash.field_u16("instance_search_limits_version", 1);
+            hash.field_u64("max_ground_terms", ground);
+            hash.field_u64("max_premise_instances", premise);
+            hash.field_u64("max_equality_instances", equality);
+            hash.field_u64("max_sat_checks", sat);
+        }
         PolicyFingerprint(hash.finalize())
     }
 

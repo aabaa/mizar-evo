@@ -21211,3 +21211,86 @@ fn source_original_obligation_identity_real_errors_precede_absent_handle() {
     }
     assert_eq!((source, nodes, collected.env().clone()), before);
 }
+
+#[test]
+fn source_registration_instance_search_limits_preserve_fresh_check_results() {
+    use mizar_atp::problem::ConcreteFormat;
+    use mizar_kernel::checker::KernelCheckStatus;
+    use mizar_proof::{
+        policy::{CandidatePolicyClass, VerifierPolicy},
+        status::check_source_registration_candidate as check,
+    };
+    use mizar_vc::vc_ir::VcStatus;
+    let original = std::fs::read_to_string(step5c13_registration_case().source_path).unwrap();
+    let snapshot = super::shared::snapshot_id(0);
+    for negative in [false, true] {
+        let text = if negative {
+            original.replacen("means X = X", "means not X = X", 1)
+        } else {
+            original.clone()
+        };
+        let (source, nodes, symbols) = step5c13_registration_inputs(&text).unwrap();
+        let (_, _, vcs) = source_candidate_core_and_vcs(true, &text);
+        let before = (source.clone(), nodes.clone(), symbols.clone());
+        let mut leaves = 0;
+        for vc in vcs
+            .vcs()
+            .iter()
+            .filter(|vc| vc.status == VcStatus::NeedsAtp)
+        {
+            leaves += 1;
+            for format in [ConcreteFormat::Tptp, ConcreteFormat::SmtLib] {
+                for policy in [
+                    VerifierPolicy::release(),
+                    VerifierPolicy::development(),
+                    VerifierPolicy::interactive(),
+                ] {
+                    let profile = source_candidate_profile("instance-search-limits", format);
+                    let baseline = check(
+                        &source,
+                        &nodes,
+                        &symbols,
+                        snapshot,
+                        vc.id,
+                        (profile.clone(), format),
+                        &policy,
+                    )
+                    .unwrap();
+                    let rejected = negative && vc.id.index() != 3;
+                    assert_eq!(
+                        baseline.0.status(),
+                        if rejected {
+                            KernelCheckStatus::Rejected
+                        } else {
+                            KernelCheckStatus::Accepted
+                        }
+                    );
+                    assert_eq!(
+                        baseline.1.class,
+                        if rejected {
+                            CandidatePolicyClass::KernelRejected
+                        } else {
+                            CandidatePolicyClass::KernelVerified
+                        }
+                    );
+                    for limits in [[0; 4], [3, 5, 7, 11]] {
+                        let configured = policy.clone().with_instance_search_limits(Some(limits));
+                        let actual = check(
+                            &source,
+                            &nodes,
+                            &symbols,
+                            snapshot,
+                            vc.id,
+                            (profile.clone(), format),
+                            &configured,
+                        )
+                        .unwrap();
+                        assert_eq!(actual, baseline);
+                    }
+                }
+            }
+        }
+        assert_eq!(leaves, 3);
+        assert_eq!((source, nodes, symbols), before);
+    }
+}

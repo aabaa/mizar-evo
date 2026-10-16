@@ -57,6 +57,15 @@ active policy は、次の policy-relevant field を持つ安定 record であ�
 | `policy_assumption` | 明示的な policy assumption を reject するか、non-trusted policy status として記録可能にするか。 |
 | `kernel_evidence_formats` | schedule 可能な kernel-checkable evidence format。現在は formula/substitution evidence と built-in kernel evidence representation。 |
 | `checker_schema_version` | policy が要求する kernel/proof checker schema version。 |
+| `instance_search_limits` | 明示的な finder work-count 上限の任意設定。[設定 carrier](#instance-search-limits) に留める。 |
+
+### Instance Search Limits
+
+`VerifierPolicy::instance_search_limits(&self) -> Option<[u64; 4]>` と `with_instance_search_limits(self, Option<[u64; 4]>) -> Self` は既存型で一つの private field を公開する。どちらも const とし、getter は値を copy、builder はこの field だけを変更する。Release/development/interactive/Default は None を保持し、None は設定解除・探索上限未設定を意味し、無制限探索ではない。zero/u64::MAX はそのまま保持し、変換や数値既定値を導入しない。
+array の順は、有限な入力/生成 pool の異なる ground term 数、前提 instantiation candidate 数、名前付き equality instance candidate 数、untrusted SAT search check 数の最大値とする。将来 finder の決定的 work-count 上限であり、timeout・前提刈込み・backend run・Kernel parse/encode 上限と区別する。計数/制限適用・項生成・上限到達時の evidence なし・finder 起動は ATP の別作業で、設定の保存では行わない。
+None の policy_fingerprint は従来 field/byte をそのまま出す。Some は既存 checker_schema_version field の後・finalize 前に field_u16 `instance_search_limits_version` = 1、続いて四要素の field_u64 `max_ground_terms`、`max_premise_instances`、`max_equality_instances`、`max_sat_checks` を追加する。既存 hash/domain/framing を再利用し、schema version・旧 field は変更しない。Some zero と None は異なり、解除で旧 fingerprint に戻る。既存 classification/scheduling/admission/selection/acceptance は不変で、設定 identity は検証用 data に留まる。
+追加 unit 2系列で変更前の実 legacy fingerprint/default/解除と、明示 zero/max/各要素の区別/決定性を確認する。追加の実 source 1系列は元/偽定義の aggregate registration・両 format・既存 policy を再利用し、fresh Kernel result/PolicyDecision tuple 全体を未設定 baseline と比較して実入力不変性を保持する。この既存生成候補は finder 実行ではなく、test-only Accepted constructor や既存 policy/producer matrix の複製を追加しない。
+この carrier は ATP30 の完了、term-wire 対応、探索/上限 evidence、runtime currentness、witness/publication/reuse、Step6–8 gate の成立を供給しない。
 
 ### Build Modes
 
