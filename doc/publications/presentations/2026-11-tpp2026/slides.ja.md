@@ -680,7 +680,7 @@ Speaker note:
 
 ### Frame 6.3 - Resolution 木と置換の抽出
 
-Resolution ログからの候補抽出 (sketch):
+Resolution ログからの候補抽出案 (sketch):
 
 ![Resolution tree with composed substitutions and extracted evidence](figures/resolution_evidence.pdf)
 
@@ -689,7 +689,7 @@ Resolution ログからの候補抽出 (sketch):
 Speaker note:
 
 - 節の変数 x/y は別名にしている。Q の単一化で x:=y、P の単一化で y:=a。合成して F1[x:=a] と F2[y:=a] を回収する。
-- ログを使う候補生成案。現行 architecture 10 は独立した instance finder。kernel は evidence を検査し、ログの各推論を信頼しない。
+- ログを使う候補生成案。architecture 10 の独立 instance finder は未実装（ATP TODO 30）。kernel は各ログ推論を再生しない。
 - Source: architecture 08, 10, 15, 16。スケッチであり、外部 prover の実行例ではない。
 
 ### Frame 6.4 - 保存する証拠から具体的な SAT 節へ

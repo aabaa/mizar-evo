@@ -75,8 +75,8 @@ project origin with its design timeline, and design expansion with AI implementa
 | 3. Generic mathematics | 16–19 | 3 | 3.1–3.4 |
 | 4. Verified computation | 19:00–24:15 | 5.25 | 4.1–4.5 |
 | 5. Development infrastructure | 24:15–27:15 | 3 | 5.1–5.3 |
-| 6. Checking and automation | 27:15–32:15 | 5 | 6.1–6.4 |
-| Status, roadmap, closing | 32:15–36:30 | 4.25 | 7.1–7.2 |
+| 6. Checking and automation | 27:15–32:30 | 5.25 | 6.1–6.4 |
+| Status, roadmap, closing | 32:30–36:30 | 4 | 7.1–7.2 |
 | Questions (outside main talk) | 36.5–43.5 | 7 | selected backups |
 | Buffer | 43.5–45 | 1.5 | |
 
@@ -91,10 +91,12 @@ and the compact-to-Hausdorff continuous-bijection theorem. Proofs are omitted;
 the examples share one minute to show mathematical objects, structures and attributes.
 Kernel details stay in part 6.
 
-Frame 6.2 keeps the ATP flow diagram in the main talk;
-6.3-6.4 show a resolution tree, composed substitutions, kernel preprocessing,
+Frame 6.2 has 60 seconds for the ATP flow diagram, taking another 15 seconds
+from the closing section. Frames 6.3-6.4 show a resolution tree, composed substitutions, kernel preprocessing,
 and all clauses of a Tseitin SAT encoding;
 external resolution steps are not replayed as kernel acceptance evidence.
+The independent instance finder is planned and unimplemented at the fixed snapshot;
+the trace-extraction diagram is a candidate-generation sketch.
 Japanese frames 2.1-2.6 follow type, registration, then overload: structure
 and property declarations (2.2), post-declaration inheritance (2.3), then the
 Unital mode and its unit implementation, reused as zero through the selected
