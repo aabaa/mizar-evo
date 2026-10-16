@@ -771,9 +771,10 @@ Mizar は50年にわたり大規模な数学ライブラリを支えてきた。
 | generic mechanismが分散 | unified template |
 | proofとexecutable procedureが分離 | verified algorithm / MVM |
 
-§5.1 では ALGSTR_0 の環境部を短縮して、初見の人にも役割別の依存指定を説明する。
-記号・記法・構成子・登録・定理で同じ article が複数回現れ、著者が article と必要な役割を判断する負担を示す。
-現行環境部では、特に notations・definitions の article 順が意味を持つことも述べる。Source: Adam Naumowicz, Towards Standardized Mizar Environments, CICM 2017, slide 13 (<https://mizar.uwb.edu.pl/~softadm/imports/slides.pdf>)。
+§5.1 では、環境部に vocabularies・notations・constructors・registrations・requirements・definitions・equalities・expansions・theorems・schemes の10種類の指令があることを表で示す。ALGSTR_0 のコードはそのうち5種類を示す抜粋で、すべての指令を使う必要があるという意味ではない。requirements は特別な処理を有効にする名前を指定する。
+同じ資源も記号・記法・構成子・登録など役割ごとに指定する。そのうえ notations・definitions は列挙順が設計上意味を持ち、上書きの優先関係によって採用される記法や定義・再定義が切り替わる。ここで上書きは選択上の優先を指す。取り込む対象の選択と、この上書き・順序依存の管理を、アーティクル執筆の最大の難所として強調する。
+例として CICM 2017 資料では、YELLOW_3 の定義展開を修正する並べ替えが別の記法の型情報に影響し、YELLOW_9 では discrete の記法解決が取り込む順序で変わる。スライド本文では個別例を省き、追加・並べ替えが既存の記述や証明へ波及することを口頭で述べる。
+Source: Adam Naumowicz, Towards Standardized Mizar Environments, CICM 2017, slides 7, 13, 19–24 (<https://mizar.uwb.edu.pl/~softadm/imports/slides.pdf>)。
 続けて仕様の import 例を示す。旧一覧との一対一の翻訳ではなく、モジュールの公開項目を取り込み、完全修飾名・解決トレースで利用項目を追跡する設計として説明する。
 package・バージョン管理・差分検証の詳細は全体像と Backup 7–8 で補足する。
 

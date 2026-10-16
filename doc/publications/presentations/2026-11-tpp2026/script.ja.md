@@ -168,9 +168,9 @@ expr、構文木として渡すと、algorithm が積や sin の形と変数束�
 
 ### 5.1 Environment: What Must An Author Import?（24:00）
 
-現行 Mizar の環境部を見ます。ALGSTR_0 を短縮したものです。vocabularies は記号、notations は記法、constructors は構成子、registrations は型推論などで自動適用する事実、theorems は引用する定理を取り込みます。
-特に notations と definitions は article を並べる順序にも意味があり、取り込む対象だけでなく、その順序も著者が管理します。
-同じ STRUCT_0 が複数の一覧に出ます。新しい概念を使いたい著者は、それがどの article にあり、どの役割を取り込む必要があるかを判断します。記号が読めても、必要な記法や登録が揃ったとは限りません。〔現行環境の説明〕
+環境部には、表に示した10種類の指令があります。上のコードは ALGSTR_0 の一部を抜粋したものです。同じ STRUCT_0 でも、記号・記法・構成子・登録など、必要な資源を役割ごとに選びます。
+特に難しいのが notations と definitions です。重なる記法や再定義には上書きの優先関係があり、article の列挙順によって採用される記法・定義が切り替わります。追加や並べ替えが、既存の記述や証明に影響することがあります。
+何を取り込むかに加え、この優先関係まで著者が管理します。上書きと順序依存の管理が、Mizar アーティクル執筆の最大の難所です。〔現行環境の説明〕
 
 ### 5.2 Imports And Dependency Tracking（25:00）
 

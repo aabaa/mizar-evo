@@ -134,6 +134,7 @@ def build(gen, deck: dict) -> None:
                 "### 言語設計の深化",
                 "thus euclid_gcd(12,8) = 4 by computation;",
                 "| 箇所 | 証明義務 | 数学的な根拠 |",
+                "| equalities / expansions | 等式 / 定義展開の情報 |",
                 "| 領域 | 現行 Mizar から取り組む課題 | 新仕様の設計指針 |",
                 "![Resolution tree with composed substitutions and extracted evidence](figures/resolution_evidence.pdf)",
                 "![Evidence checks, ground instances and a five-variable ten-clause SAT refutation](figures/sat_evidence_check.pdf)",
@@ -191,7 +192,7 @@ def build(gen, deck: dict) -> None:
                 rf"\begin{{tabularx}}{{\textwidth}}{{{spec}}}"
                 if "X" in columns else rf"\begin{{tabular}}{{{spec}}}"
             )
-            if headers[1] in ("実装史の主な節目", "概要"):
+            if headers[1] in ("実装史の主な節目", "概要", "取り込むもの"):
                 begin = r"\renewcommand{\arraystretch}{0.93}" + "\n" + begin
             for index, tex in enumerate(generated):
                 start = tex.index(original)

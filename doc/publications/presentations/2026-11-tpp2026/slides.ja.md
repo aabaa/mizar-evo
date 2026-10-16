@@ -578,20 +578,23 @@ environ
  theorems STRUCT_0;
 ```
 
-### 表11　環境部の依存指定と役割
+### 表11　環境部の10種類の指令
 
 | 一覧 | 取り込むもの |
 |---|---|
 | vocabularies / notations | 記号 / 記法 |
-| constructors | 構成子 |
-| registrations / theorems | 自動的な型の事実 / 引用する定理 |
+| constructors / registrations | 構成子 / 自動的な型の事実 |
+| requirements / definitions | 特別な自動処理 / 定義情報 |
+| equalities / expansions | 等式 / 定義展開の情報 |
+| theorems / schemes | 定理 / scheme |
 
-- **役割別に必要な article を選ぶ。`notations`・`definitions` は article の順序にも意味がある。**
+- `notations`・`definitions`: article 順が記法・定義の優先を決める。
+- **アーティクル執筆の最大の難所: 環境部の上書きと順序依存の管理。**
 
 Speaker note:
 
-- Source: Białystok `draft.md` Frame 2.1–2.2、ALGSTR_0 の引用。省略記号で一覧を短縮。取り込む登録は暗黙の型推論にも影響し、記号だけでは記法・型の事実は揃わない。
-- 順序の Source: Adam Naumowicz, Towards Standardized Mizar Environments, CICM 2017, slide 13: <https://mizar.uwb.edu.pl/~softadm/imports/slides.pdf>。現行環境部の該当する一覧の話で、すべての import 指令の話ではない。
+- Source: Białystok `draft.md` Frame 2.1–2.2、ALGSTR_0 の引用。コードは5種類だけを示す抜粋。必要な資源を役割別に選ぶ。requirements は特別な処理を有効化する名前を指定する。
+- Source: Adam Naumowicz, Towards Standardized Mizar Environments, CICM 2017, slides 7, 13, 19–24: <https://mizar.uwb.edu.pl/~softadm/imports/slides.pdf>。上書きは記法・再定義の選択上の優先を指す。並べ替えが既存の記法解決や証明に波及する。詳細は draft.ja.md。
 
 ### Frame 5.2 - import と依存の追跡
 

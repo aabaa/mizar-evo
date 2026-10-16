@@ -114,7 +114,9 @@ establishment, preservation, termination and exit obligations;
 `by computation` using a concrete-input example (MVM execution remains planned);
 4.5 connects lambda function notation, reflected syntax and verified symbolic
 differentiation. Part 4 keeps five minutes (45/75/75/60/45 seconds);
-5.1-5.2 explain the old environment before showing imports. These are explanatory
+5.1 lists all ten environment directives and emphasizes notation/definition
+precedence and order dependence as the central authoring difficulty;
+5.2 then introduces imports. These are explanatory
 sketches and specification examples, not execution or external-prover results.
 The closing line is fixed:
 *Keep the foundation small. Keep the mathematics readable. Modernize everything
