@@ -1,0 +1,11 @@
+# Task DOC-NATIVE-LEXICAL-SOURCE: optional native lexical input
+Canonical language: English; [Japanese pointer](../ja/DOC-NATIVE-LEXICAL-SOURCE.md).
+Status: implemented. Tier: full. Owner: [Doc plan](../../mizar-doc/en/00.crate_plan.md) task34; consumers tasks6/7, which remain open.
+Authority: [spec §§2.9.1–2](../../../spec/en/02.lexical_structure.md#29-comments-and-annotations), [§24.1](../../../spec/en/24.documentation_generation.md#241-documentation-comments-syntax), architecture13/internal05 input ownership; [sole reader owner](../../mizar-doc/en/artifact_reader.md#optional-native-lexical-source).
+Readiness/gap: task31 and identity-free Lexer preprocessing exist separately; their missing native raw-input connection is source_drift/test_gap, independent of verified attachment producers.
+Scope: exactly one existing-type-only optional native lexical reader, preserving complete normalized text/loading maps and Lexer result under the owner's delegation/coordinate rules. Add only the workspace Lexer dependency; no lower-stage edits or new source/type/field/helper/alias/profile.
+Tests: exactly three append-only mizar-test families frozen by the reader owner; independent literal text/trivia/map/diagnostic oracles, annotation protection, native errors/edit/restore. Original tests/fixtures and reader bodies remain exact; no helper without three real callers.
+Writes: Doc artifact_reader imports/appended function, Doc Cargo.toml/lock dependency entry, appended runner tests; paired reader/plan/TODO/contract plus root task index and chapter24 audit mapping. Audit status stays todo with no coverage credit.
+Forbidden: invented source/snapshot IDs/context/producer/evidence/Accepted/Complete/hit, new diagnostics, semantic rechecking, source/publication mutation, silent diagnostic/trivia/map loss or permissive fallback.
+Deferrals: full task6 source policy, verified item/range/adjacency attachment, tags/Markdown/links/rendering/extraction, artifact/bundle transport, package/currentness/runtime/publication integration and Steps6–8.
+Reviews/exit: SPEC before Rust, TEST/CODE/VOLUME/CONSISTENCY, bounded full gates; scoped Doc/native lexical and doc-lint tests, then parent cargo fmt --check, cargo clippy --all-targets --all-features -- -D warnings, cargo test. Only task34 may close.

@@ -8,6 +8,7 @@ repository.workspace = true
 [dependencies]
 mizar-session = { path = "../mizar-session" }
 mizar-artifact = { path = "../mizar-artifact" }
+mizar-lexer = { path = "../mizar-lexer" }
 
 [lints]
 workspace = true

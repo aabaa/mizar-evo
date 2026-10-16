@@ -22476,3 +22476,318 @@ fn doc_label_export_candidates_absences_and_original_errors_before_lookup() {
     }
     std::fs::remove_dir_all(root).unwrap();
 }
+
+#[test]
+fn doc_native_lexical_literal_trivia_and_annotation_strings() {
+    use mizar_doc::artifact_reader::read_native_lexical_source;
+    use mizar_lexer::{
+        CommentKind::*, CommentTrivia, PreprocessedLexicalSource, SourcePreprocessMap,
+        SourcePreprocessMapSegment::*, SourceSpan as Span,
+    };
+    let (root, manifest, _) = doc_published_fixture();
+    let publication_paths = std::iter::once("artifact-manifest.json".to_owned())
+        .chain(manifest.modules.iter().map(|m| m.artifact_file.clone()))
+        .chain(
+            manifest.modules[1]
+                .proof_witnesses
+                .iter()
+                .map(|w| w.witness_path.clone()),
+        )
+        .collect::<Vec<_>>();
+    let before = publication_paths
+        .iter()
+        .map(|p| std::fs::read(root.join(p)).unwrap())
+        .collect::<Vec<_>>();
+    let text = "::: λ\n:: n\nx::=b=::y\n@latex(\":::λ\", '::=x=::')\n";
+    let path = root.join("src/source.miz");
+    std::fs::create_dir_all(path.parent().unwrap()).unwrap();
+    std::fs::write(&path, text).unwrap();
+    assert_eq!(
+        read_native_lexical_source(&root, "src/source.miz", mizar_session::hash_text(text))
+            .unwrap(),
+        Some((
+            text.to_owned(),
+            None,
+            PreprocessedLexicalSource {
+                lexical_text: "\n\nx y\n@latex(\":::λ\", '::=x=::')\n".into(),
+                comments: vec![
+                    CommentTrivia {
+                        kind: Documentation,
+                        lexeme: "::: λ\n".into(),
+                        span: Span::new(0, 7)
+                    },
+                    CommentTrivia {
+                        kind: SingleLine,
+                        lexeme: ":: n\n".into(),
+                        span: Span::new(7, 12)
+                    },
+                    CommentTrivia {
+                        kind: MultiLine,
+                        lexeme: "::=b=::".into(),
+                        span: Span::new(13, 20)
+                    },
+                ],
+                diagnostics: vec![],
+                preprocess_map: SourcePreprocessMap {
+                    segments: vec![
+                        RemovedComment {
+                            source: Span::new(0, 7),
+                            kind: Documentation
+                        },
+                        SyntheticWhitespace {
+                            lexical: Span::new(0, 1),
+                            anchor: Span::new(6, 7)
+                        },
+                        RemovedComment {
+                            source: Span::new(7, 12),
+                            kind: SingleLine
+                        },
+                        SyntheticWhitespace {
+                            lexical: Span::new(1, 2),
+                            anchor: Span::new(11, 12)
+                        },
+                        Original {
+                            lexical: Span::new(2, 3),
+                            source: Span::new(12, 13)
+                        },
+                        RemovedComment {
+                            source: Span::new(13, 20),
+                            kind: MultiLine
+                        },
+                        SyntheticWhitespace {
+                            lexical: Span::new(3, 4),
+                            anchor: Span::new(13, 20)
+                        },
+                        Original {
+                            lexical: Span::new(4, 33),
+                            source: Span::new(20, 49)
+                        },
+                    ]
+                },
+            }
+        ))
+    );
+    assert_eq!(std::fs::read(&path).unwrap(), text.as_bytes());
+    assert_eq!(
+        publication_paths
+            .iter()
+            .map(|p| std::fs::read(root.join(p)).unwrap())
+            .collect::<Vec<_>>(),
+        before
+    );
+    std::fs::remove_dir_all(root).unwrap();
+}
+
+#[test]
+fn doc_native_lexical_normalized_unicode_and_both_map_frames() {
+    use mizar_doc::artifact_reader::read_native_lexical_source;
+    use mizar_lexer::{
+        CommentKind::*, CommentTrivia, PreprocessedLexicalSource, SourcePreprocessDiagnostic,
+        SourcePreprocessDiagnosticCode, SourcePreprocessDiagnosticPayload, SourcePreprocessMap,
+        SourcePreprocessMapSegment::*, SourceSpan as Span,
+    };
+    use mizar_session::source_map::{LoadingMapSegment, TextRange};
+    let (root, _, _) = doc_published_fixture();
+    let raw = "\u{feff}\u{feff}::: λ\r\nx::=μ=::y\r\n";
+    let normalized = "\u{feff}::: λ\nx::=μ=::y\n";
+    let path = root.join("src/source.miz");
+    std::fs::create_dir_all(path.parent().unwrap()).unwrap();
+    std::fs::write(&path, raw).unwrap();
+    assert_eq!(
+        read_native_lexical_source(&root, &path, mizar_session::hash_text(normalized)).unwrap(),
+        Some((
+            normalized.to_owned(),
+            Some(vec![
+                LoadingMapSegment::RemovedLeadingBom {
+                    original: TextRange { start: 0, end: 3 }
+                },
+                LoadingMapSegment::Original {
+                    loaded: TextRange { start: 0, end: 9 },
+                    original: TextRange { start: 3, end: 12 }
+                },
+                LoadingMapSegment::NormalizedNewline {
+                    loaded: TextRange { start: 9, end: 10 },
+                    original: TextRange { start: 12, end: 14 }
+                },
+                LoadingMapSegment::Original {
+                    loaded: TextRange { start: 10, end: 20 },
+                    original: TextRange { start: 14, end: 24 }
+                },
+                LoadingMapSegment::NormalizedNewline {
+                    loaded: TextRange { start: 20, end: 21 },
+                    original: TextRange { start: 24, end: 26 }
+                },
+            ]),
+            PreprocessedLexicalSource {
+                lexical_text: "\u{feff}\nx y\n".into(),
+                comments: vec![
+                    CommentTrivia {
+                        kind: Documentation,
+                        lexeme: "::: λ\n".into(),
+                        span: Span::new(3, 10)
+                    },
+                    CommentTrivia {
+                        kind: MultiLine,
+                        lexeme: "::=μ=::".into(),
+                        span: Span::new(11, 19)
+                    },
+                ],
+                diagnostics: vec![SourcePreprocessDiagnostic {
+                    code: SourcePreprocessDiagnosticCode::NonAsciiCode,
+                    message: "code regions must be ASCII before lexing".into(),
+                    span: Span::new(0, 3),
+                    payload: SourcePreprocessDiagnosticPayload::NonAsciiCode {
+                        character: '\u{feff}',
+                        utf8_len: 3,
+                    },
+                }],
+                preprocess_map: SourcePreprocessMap {
+                    segments: vec![
+                        Original {
+                            lexical: Span::new(0, 3),
+                            source: Span::new(0, 3)
+                        },
+                        RemovedComment {
+                            source: Span::new(3, 10),
+                            kind: Documentation
+                        },
+                        SyntheticWhitespace {
+                            lexical: Span::new(3, 4),
+                            anchor: Span::new(9, 10)
+                        },
+                        Original {
+                            lexical: Span::new(4, 5),
+                            source: Span::new(10, 11)
+                        },
+                        RemovedComment {
+                            source: Span::new(11, 19),
+                            kind: MultiLine
+                        },
+                        SyntheticWhitespace {
+                            lexical: Span::new(5, 6),
+                            anchor: Span::new(11, 19)
+                        },
+                        Original {
+                            lexical: Span::new(6, 8),
+                            source: Span::new(19, 21)
+                        },
+                    ]
+                },
+            }
+        ))
+    );
+    assert_eq!(std::fs::read(&path).unwrap(), raw.as_bytes());
+    std::fs::remove_dir_all(root).unwrap();
+}
+
+#[test]
+fn doc_native_lexical_delegated_errors_edit_restore_and_complete_diagnostics() {
+    use mizar_doc::artifact_reader::read_native_lexical_source;
+    use mizar_lexer::{
+        CommentKind, CommentTrivia, PreprocessedLexicalSource, SourcePreprocessDiagnostic,
+        SourcePreprocessDiagnosticCode as Code, SourcePreprocessDiagnosticPayload as Payload,
+        SourcePreprocessMap, SourcePreprocessMapSegment::*,
+        SourcePreprocessRecoveryHint as Recovery, SourceSpan as Span,
+    };
+    use mizar_session::{hash_text, source::SourcePathError};
+    use std::io::ErrorKind;
+    let (root, _, _) = doc_published_fixture();
+    let text = "λ\r::=μ\n";
+    let expected_hash = hash_text(text);
+    let path = root.join("src/source.miz");
+    std::fs::create_dir_all(path.parent().unwrap()).unwrap();
+    assert_eq!(
+        read_native_lexical_source(&root, &path, expected_hash).unwrap(),
+        None
+    );
+    assert!(!path.exists());
+    let missing_root = root.join("absent");
+    let error =
+        read_native_lexical_source(&missing_root, "src/source.miz", expected_hash).unwrap_err();
+    assert_eq!(error.kind(), ErrorKind::NotFound);
+    assert_eq!(
+        error.get_ref().unwrap().downcast_ref::<SourcePathError>(),
+        Some(&SourcePathError::PackageRootUnavailable {
+            path: missing_root,
+            kind: ErrorKind::NotFound
+        })
+    );
+    std::fs::write(&path, [0xff]).unwrap();
+    let error = read_native_lexical_source(&root, &path, expected_hash).unwrap_err();
+    assert_eq!(error.kind(), ErrorKind::InvalidData);
+    let utf8 = error
+        .get_ref()
+        .unwrap()
+        .downcast_ref::<std::str::Utf8Error>()
+        .unwrap();
+    assert_eq!((utf8.valid_up_to(), utf8.error_len()), (0, Some(1)));
+    assert_eq!(std::fs::read(&path).unwrap(), [0xff]);
+    let edited = "λ\r::=edited\n";
+    std::fs::write(&path, edited).unwrap();
+    let error = read_native_lexical_source(&root, &path, expected_hash).unwrap_err();
+    assert_eq!(error.kind(), ErrorKind::InvalidData);
+    assert_eq!(error.to_string(), "native source hash mismatch");
+    assert_eq!(std::fs::read(&path).unwrap(), edited.as_bytes());
+    std::fs::write(&path, text).unwrap();
+    assert_eq!(
+        read_native_lexical_source(&root, &path, expected_hash).unwrap(),
+        Some((
+            text.into(),
+            None,
+            PreprocessedLexicalSource {
+                lexical_text: "λ\r\n".into(),
+                comments: vec![CommentTrivia {
+                    kind: CommentKind::MultiLine,
+                    lexeme: "::=μ\n".into(),
+                    span: Span::new(3, 9)
+                }],
+                diagnostics: vec![
+                    SourcePreprocessDiagnostic {
+                        code: Code::NonAsciiCode,
+                        message: "code regions must be ASCII before lexing".into(),
+                        span: Span::new(0, 2),
+                        payload: Payload::NonAsciiCode {
+                            character: 'λ',
+                            utf8_len: 2
+                        }
+                    },
+                    SourcePreprocessDiagnostic {
+                        code: Code::CarriageReturn,
+                        message: "source text must be LF-only before lexing".into(),
+                        span: Span::new(2, 3),
+                        payload: Payload::CarriageReturn {
+                            recovery: Recovery::NormalizeCrLfBeforeLexerEntry
+                        }
+                    },
+                    SourcePreprocessDiagnostic {
+                        code: Code::UnterminatedMultiLineComment,
+                        message: "unterminated multi-line comment".into(),
+                        span: Span::new(3, 9),
+                        payload: Payload::UnterminatedMultiLineComment {
+                            opener: Span::new(3, 6),
+                            recovery: Recovery::PreserveNewlinesAndDropCommentText
+                        }
+                    },
+                ],
+                preprocess_map: SourcePreprocessMap {
+                    segments: vec![
+                        Original {
+                            lexical: Span::new(0, 3),
+                            source: Span::new(0, 3)
+                        },
+                        RemovedComment {
+                            source: Span::new(3, 9),
+                            kind: CommentKind::MultiLine
+                        },
+                        SyntheticWhitespace {
+                            lexical: Span::new(3, 4),
+                            anchor: Span::new(8, 9)
+                        },
+                    ]
+                },
+            }
+        ))
+    );
+    assert_eq!(std::fs::read(&path).unwrap(), text.as_bytes());
+    std::fs::remove_dir_all(root).unwrap();
+}

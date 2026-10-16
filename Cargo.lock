@@ -503,6 +503,7 @@ name = "mizar-doc"
 version = "0.1.0"
 dependencies = [
  "mizar-artifact",
+ "mizar-lexer",
  "mizar-session",
 ]
 

@@ -49,8 +49,8 @@ artifact を読み、意味論解析を再実行せず、証明の有効性に�
 
 ## crate の前提条件
 
-この crate は `mizar-session` と `mizar-artifact`（スキーマとリーダー）に
-依存する。実際のエンドツーエンド入力は phase 15 の emission
+この crate は `mizar-session`、`mizar-artifact`（スキーマ/リーダー）、
+optional native lexical input 用 `mizar-lexer` に依存する。実際のエンドツーエンド入力は phase 15 の emission
 （`mizar-artifact` task 17）を必要とする。それまではフィクスチャ
 artifact で開発を進める。アーキテクチャ:
 [13.documentation_and_extraction.md](../../architecture/ja/13.documentation_and_extraction.md)。
@@ -67,7 +67,7 @@ internal: [05](../../internal/ja/05.documentation_extraction.md)。
   ドキュメントコメントが phase 16 に届く方法を決める: emission 時に
   artifact へ射影する（既定候補。消費 phase の規則に忠実）か、
   `mizar-frontend` 経由で `PreprocessedSource` から再読込するか。この
-  決定はこの crate が frontend 依存を持つかどうかを定める。
+  決定はこの crate が frontend 依存を持つかどうかを定める。task34 は optional native input に既存 identity-free Lexer 前処理を選ぶだけで、完全 task6 と artifact/bundle transport は未解決に保つ。
 - **最初の抽出ターゲット: 未解決。task 21 で解決する。** まず 1 つの
   ターゲットバックエンド、その後一般化（アーキテクチャ 13 の採用方針）。
   最初のターゲット言語を選び、決定を `extract_backend.md` に記録する。
@@ -300,6 +300,9 @@ Tasks1–3 は [DOC-PUBLISHED-ARTIFACT-READER](../../task_contracts/ja/DOC-PUBLI
 33. **公開 label export 候補。** [x]
     - [DOC-PUBLISHED-LABEL-EXPORT-CANDIDATES](../../task_contracts/ja/DOC-PUBLISHED-LABEL-EXPORT-CANDIDATES.md) は保存 record/owner-FQN の正確な query を定める。完全 planning/link resolution は未完了。
     - 依存: 30、32。新 producer/受理権限は作らない。
+
+34. **Optional native lexical source。** [x]
+    - [DOC-NATIVE-LEXICAL-SOURCE](../../task_contracts/ja/DOC-NATIVE-LEXICAL-SOURCE.md); tasks6/7 の raw input 前提。依存31と既存 Lexer 前処理。完全 attachment/rendering は未完了。
 
 ### 監査レビュー注記(2026-07-06)
 

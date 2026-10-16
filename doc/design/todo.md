@@ -804,12 +804,13 @@ diagnostics, metadata, artifacts, and semantic indexes.
 2. [~] [mizar-lsp tasks 1-24](./mizar-lsp/en/todo.md) — server, snapshots,
    diagnostics, build bridge, metadata, navigation, actions, explanations,
    and the `@show_*`/`@eval` projection audit (SCA-003).
-3. [~] [mizar-doc tasks 1-33](./mizar-doc/en/todo.md) — published-input reading and
+3. [~] [mizar-doc tasks 1-34](./mizar-doc/en/todo.md) — published-input reading and
    raw export indexing are implemented; full planning/indexing, phase-16 rendering,
    extraction and remaining specs stay open (SCA-002). `mizar-doc` must not re-run semantic analysis.
    [Optional published module summaries](./task_contracts/en/DOC-PUBLISHED-MODULE-SUMMARIES.md) are implemented as preserved label inputs; full index/link planning remains open.
    [Stored label export candidates](./task_contracts/en/DOC-PUBLISHED-LABEL-EXPORT-CANDIDATES.md) are implemented as exact stored-record queries; full label/link planning remains open.
    [Optional native Disk source content](./task_contracts/en/DOC-NATIVE-DISK-SOURCE.md) implements a text/hash prerequisite; comment attachment and currentness remain separate.
+   [Optional native lexical source](./task_contracts/en/DOC-NATIVE-LEXICAL-SOURCE.md) is implemented as a raw-trivia prerequisite; full task6/attachment remains open.
 4. [~] [`mizar lsp` stdio entry point](./task_contracts/en/EDITOR-LSP-ENTRY.md)
    has an executable [lifecycle host](./mizar-driver/en/cli.md#stdio-lifecycle-host);
    workspace/settings, build binding and current-build diagnostics remain open. [Raw initialize inputs](./task_contracts/en/LSP-RAW-INITIALIZE-HANDOFF.md) precede their host binding. [Explicit native metadata acquisition](./task_contracts/en/LSP-NATIVE-WORKSPACE-INPUTS.md) precedes runtime context. [Current Disk diagnostic indexes](./task_contracts/en/DRIVER-CURRENT-DISK-DIAGNOSTIC-INDEX.md) and [native OpenBuffer handoffs](./task_contracts/en/DRIVER-CURRENT-NATIVE-DIAGNOSTIC-INDEX.md) precede current LSP transport. [Explicit frontend notifications](./task_contracts/en/LSP-NATIVE-FRONTEND-DIAGNOSTIC-NOTIFICATIONS.md) bind original current OpenBuffer inputs before wire/host integration. [Originating native capture](./task_contracts/en/LSP-NATIVE-OPEN-BUFFER-CAPTURE.md) binds the original open incarnation before full snapshot/host integration.

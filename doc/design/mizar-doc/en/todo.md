@@ -49,8 +49,8 @@ committed autonomously without holding the rest of the crate in flight.
 
 ## Crate Prerequisites
 
-The crate depends on `mizar-session` and `mizar-artifact` (schemas and
-readers). Real end-to-end inputs need phase-15 emission
+The crate depends on `mizar-session`, `mizar-artifact` (schemas/readers) and
+`mizar-lexer` for optional native lexical input. Real end-to-end inputs need phase-15 emission
 (`mizar-artifact` task 17); until then, fixture artifacts drive development.
 Architecture: [13.documentation_and_extraction.md](../../architecture/en/13.documentation_and_extraction.md);
 internal: [05](../../internal/en/05.documentation_extraction.md).
@@ -66,7 +66,7 @@ internal: [05](../../internal/en/05.documentation_extraction.md).
   reach phase 16: projected into artifacts at emission (default candidate,
   honoring the consumer-phase rule) or re-read from `PreprocessedSource`
   via `mizar-frontend`. The decision sets whether this crate gains a
-  frontend dependency.
+  frontend dependency. Task34 separately selects existing identity-free Lexer preprocessing for optional native inputs; it does not resolve full task6 or artifact/bundle transport.
 - **First extraction target: open, resolved by task 21.** One target
   backend first, then generalize (architecture 13 adopted approach); choose
   the first target language and record the decision in
@@ -305,6 +305,9 @@ Tasks 1–3 form [DOC-PUBLISHED-ARTIFACT-READER](../../task_contracts/en/DOC-PUB
 33. **Published label export candidates.** [x]
     - [DOC-PUBLISHED-LABEL-EXPORT-CANDIDATES](../../task_contracts/en/DOC-PUBLISHED-LABEL-EXPORT-CANDIDATES.md) fixes exact stored-record/owner-FQN queries; full planning/link resolution remains open.
     - Deps: 30, 32; no new producer or acceptance authority.
+
+34. **Optional native lexical source.** [x]
+    - [DOC-NATIVE-LEXICAL-SOURCE](../../task_contracts/en/DOC-NATIVE-LEXICAL-SOURCE.md); A tasks6/7 raw-input prerequisite; deps31 and existing Lexer preprocessing. Full attachment/rendering remains open.
 
 ### Audit review note (2026-07-06)
 

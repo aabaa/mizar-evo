@@ -14,6 +14,7 @@ use mizar_artifact::{
         artifact_hash_excluded_paths, read_builtin_verified_artifact, read_verified_artifact,
     },
 };
+use mizar_lexer::{PreprocessedLexicalSource, preprocess_source_for_lexing};
 use mizar_session::{
     Hash,
     source::{SourcePathError, hash_text, normalize_source_path, normalize_source_text},
@@ -119,4 +120,26 @@ pub fn read_native_disk_source(
         ));
     }
     Ok(Some(normalized))
+}
+
+/// Reads optional native source with all identity-free lexical preprocessing data.
+#[allow(clippy::type_complexity)]
+pub fn read_native_lexical_source(
+    package_root: impl AsRef<Path>,
+    path: impl AsRef<Path>,
+    expected_source_hash: Hash,
+) -> io::Result<
+    Option<(
+        String,
+        Option<Vec<LoadingMapSegment>>,
+        PreprocessedLexicalSource,
+    )>,
+> {
+    let Some((text, loading_map)) =
+        read_native_disk_source(package_root, path, expected_source_hash)?
+    else {
+        return Ok(None);
+    };
+    let lexical = preprocess_source_for_lexing(&text);
+    Ok(Some((text, loading_map, lexical)))
 }

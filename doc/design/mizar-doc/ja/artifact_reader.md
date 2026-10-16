@@ -1,7 +1,7 @@
 # mizar-doc Artifact Reader
 正本は英語: [English companion](../en/artifact_reader.md)。
 ## Published Input Loading
-`read_published_artifacts(artifact_root: impl AsRef<Path>, expected_manifest_hash: Hash) -> Result<(PublishedManifestRead, Vec<VerifiedArtifact>), ManifestError>` は呼び出し側が選んだ公開セットの読み取り専用 consumer である。既存型を用いて全 field と manifest module 順序を保ち、DocInput wrapper、新 enum/field/adapter/hash profile を追加せず、crate の依存は Session と Artifact のみにする。
+`read_published_artifacts(artifact_root: impl AsRef<Path>, expected_manifest_hash: Hash) -> Result<(PublishedManifestRead, Vec<VerifiedArtifact>), ManifestError>` は呼び出し側が選んだ公開セットの読み取り専用 consumer である。既存型を用いて全 field と manifest module 順序を保ち、DocInput wrapper、新 enum/field/adapter/hash profile を追加せず、公開 reader は Session と Artifact を使い、optional native lexical input は Lexer も使う。
 最初に既存 read_manifest_file を expected_manifest_hash Some、validate_references true、validate_witness_files true で呼び、development-artifact loading は false に保つ。返った manifest/path/hash を変更しない。schema、canonical 順序、portable path、実 store/module/interface/implementation/source/version binding、正確な witness coverage、sidecar、witness-file 到達性は既存 Manifest 検証が所有する。
 次に各 manifest.modules entry を既存 PublishedArtifactPath/read_published_artifact と、その VerifiedArtifact store domain・元の除外項目・expected artifact digest で読む。宣言が正確に2.0なら既存 explicit enclosing2.0 reader、それ以外は normal enclosing1.0 reader を選び、実 path と expected module/interface/implementation hash を渡す。path/store の失敗は StoreIo、内部 reader の失敗は VerifiedArtifact { path, boxed error } の既存 ManifestError layer を保つ。decode 失敗時の fallback や未対応 version の許可を追加しない。
 再読み取りは参照検証を完了した際と同じ expected store hash に一致しなければならず、stable content はその source/version/witness binding を維持する。private Manifest 検証 matrix を複製せず、別 store/codec を作らない。除外された local metadata の意味を保ち、途中失敗なら部分結果を返さない。cache、source 再読、変更、callback、production helper は追加しない。
@@ -14,5 +14,10 @@ UTF8 を検証し（InvalidData に Utf8Error を保持）、既存 normalize_so
 Session Disk 規則は先頭 BOM 一個だけを除き CRLF を LF にする。単独 CR と内部 BOM は残す。比較は正規化 content の一致であり raw byte identity ではない。入力や公開 file を書き換えない。native path と Artifact 格納 path は自動対応せず、package root/source 座標/expected hash の選択と対応は呼出し側の責任である。packaged/workspace-relative layout、OpenBuffer、Generated は対象外である。
 追加三系列は既存実 source/artifact hash と byte 保持、独立した正規化/map の定数ケース、不在と root/path/UTF8/hash error の区別と編集・復元を扱う。既存 fixture/path validator を再利用し、全 matrix を複製しない。
 hash 一致は package 所有関係、item/range/隣接/comment attachment、source 現在性、atomic capture、受理、reuse、抽出準備を保証しない。task6 の供給源決定、完全な build/index、source bundle、後続診断/rendering/extraction 統合は未完了に保つ。
+## Optional Native Lexical Source
+`read_native_lexical_source(package_root: impl AsRef<Path>, path: impl AsRef<Path>, expected_source_hash: Hash) -> std::io::Result<Option<(String, Option<Vec<LoadingMapSegment>>, PreprocessedLexicalSource)>>` は read_native_disk_source を一度使い、前処理より前にその不在・元の error を伝える。既存 reader 本体は変えない。
+成功時は同じ正規化 text を既存 Lexer preprocess_source_for_lexing に一度渡し、元の text/loading map と既存 lexical result 全体（lexical_text、全 comment kind/raw lexeme/byte span、診断、前処理 map）を返す。comment/source span は正規化 text、lexical span は lexical_text を指し、loading map は元 Disk と正規化 text の関係を保つ。再正規化・再読・marker 除去・filter は行わない。
+この optional native 経路だけ identity-free Lexer 入力を選ぶ。新 type/field/helper/profile、source ID、Frontend 依存、Doc 診断採用、block grouping、tag/Markdown 解析、検証済み item/range/隣接 attachment、現在性・意味/受理権限は加えず、完全 task6 と artifact/bundle transport は未完了に保つ。
+追加三系列は定数による raw trivia/annotation string、Unicode 正規化 text と両 map 座標、不在・error・編集/復元と前処理診断全体を扱う。下位 matrix を複製せず既存 test を再利用し、source/publication byte を保持する。
 ## Deferred Inputs
 Package Doc metadata、dependency Doc index、source comment/snippet/LaTeX、実行投影は後続 TODO owner に従い、欠落を埋めない。Documentation-family 診断採用と current build/source binding は doc_build/consumer 統合に残す。render/extraction service や source-to-artifact 全体の完了は主張しない。
