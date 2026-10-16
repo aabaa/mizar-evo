@@ -758,46 +758,9 @@ Speaker note:
 
 - Source: `doc/design/todo.md`, integration order and MML-port boundary.
 
-## Backup 1. MizAR 60 In Detail
+## Backup 1. Template instantiation: one proof, many views
 
-Source: Jakubův et al., MizAR 60 for Mizar 50, ITP 2023.
-
-- Dataset: MML 1147 exported by MPTP, 57,897 theorems including unnamed top-level lemmas; the same version as the MizAR 40 evaluation, so the results can be compared.
-- Holdout: 1,690 / 2,896 (58.4%), without user premise help, 420 CPU s. Training/development/holdout: 90:5:5 (MizAR 40: about 40.6%).
-- Over 75% proved when the premises can be chosen from the library by a human or a machine (MizAR 40: 56%).
-- Strongest single method: 40% in 30 s in hammering mode; 60% in 120 s with human premises.
-- Transfer: the strongest method also works on 13,370 new theorems from 242 new articles in MML 1382.
-- Methods: E and Vampire with ENIGMA and Deepire guidance, learned premise selection, and a loop that trains on millions of ATP proofs.
-
-## Backup 2. Sledgehammer Evaluations In Detail
-
-| Evaluation | Dataset and method | Success |
-|---|---|---|
-| ITP 2022 | 5,000 AFP goals, 16 greedy configurations | 68.8% |
-| Magnushammer (preprint 2023) | 1,000 PISA theorems, Sledgehammer | 38.3% |
-| Same PISA evaluation | Magnushammer with learned premise selection | 59.5% |
-
-- ITP 2022: 50 entries, 100 goals each; MePo, 512 facts in the base setting, 30 CPU seconds per configuration. Configurations are selected using the evaluation set. Reconstruction is not evaluated.
-- PISA: Isabelle2021-1, Sledgehammer timeout 30 seconds, five local provers, union over several settings. Success requires a proof checked by Isabelle.
-- Close dates do not make local goals and whole theorems, or search success and checked proofs, the same measure.
-
-Speaker note:
-
-- Source: Desharnais et al., Seventeen Provers Under the Hammer, ITP 2022, sections 5, 5.6, Table 10; Mikuła et al., Magnushammer, arXiv:2303.04488 (preprint 2023), Table 2, Appendix A.4.
-
-## Backup 3. HOL-To-FOL Encodings And Reconstruction
-
-- Function application: a variable function applied to an argument becomes `app(F, X)`; applications of constants may stay curried or be flattened.
-- Lambda abstraction: lambda lifting introduces fresh constants with defining equations; combinator translation is the alternative.
-- Types: polymorphic HOL types are encoded by guards, tags, or monomorphization; the choice affects soundness, completeness, and prover performance.
-- Booleans: Boolean-valued terms inside formulas need a separate encoding.
-- Reconstruction: `metis` with the used lemmas, `smt` replay of SMT proofs, or generated Isar text; evaluations count reconstruction failures separately.
-
-Source: Meng and Paulson 2008; Blanchette, Böhme, Popescu, Smallbone 2016; Blanchette, Kaliszyk, Paulson, Urban 2016; Schurr, Fleury, Desharnais 2021.
-
-## Backup 4. Template Instantiation: One Proof, Many Views
-
-Bounded type parameter and generic theorem (specification example, proof omitted):
+A generic theorem with a bounded type parameter (specification example, proof omitted):
 
 ```mizar
 definition
@@ -810,7 +773,7 @@ definition
 end;
 ```
 
-Instantiation (specification example, with the required registrations):
+Instances (specification example, assuming the required registrations):
 
 ```mizar
 PermProduct[commutative associative unital AddMagma]
@@ -818,46 +781,24 @@ PermProduct[commutative associative unital MulMagma]
 let R be commutative Ring;  PermProduct[R qua AddMagma]  :: additive view
 ```
 
-- A ring reaches Magma along two paths; `qua` selects the view, and the view also sets the notation.
+- A ring has two inheritance paths to Magma. The view selected by `qua` determines the notation.
 
 Speaker note:
 
 - Source: `doc/spec/en/18.templates.md`, section 18.2.2.
 
-## Backup 5. Kernel Evidence And The Trusted SAT Check
-
-![KernelEvidence and the kernel's SAT check](../2026-09-bialystok/figures/certificate_replay.pdf)
-
-- The evidence holds source formulas, explicit substitutions, provenance, and target and goal bindings. The kernel checks them, builds a deterministic SAT problem, and requires UNSAT from its trusted in-process SAT checker.
-- Backend proof traces, SMT proof objects, logs, and exit codes are for diagnosis only.
-
-Speaker note:
-
-- Source: `doc/design/architecture/en/08.reasoning_boundary.md`, `15.kernel_certificate_format.md`.
-
-## Backup 6. The Core ATP Path
-
-![The core ATP path, with responsibility groups](../2026-09-bialystok/figures/pipeline.pdf)
-
-- Only obligations that are still open after deterministic discharge go to ATPs. The earlier discharge also needs replayable evidence.
-- Each boundary states who owns a fact, which artifact records it, and what must be checked again after a change.
-
-Speaker note:
-
-- Source: `doc/design/architecture/en/00.pipeline_overview.md`; Bialystok deck, Part 10.
-
-## Backup 7. Incremental Verification
+## Backup 2. Incremental verification
 
 ![The fingerprint graph: what a change re-verifies](../2026-09-bialystok/figures/fingerprint_graph.pdf)
 
-- A proof-body edit does not rebuild importers when the exported statement and the accepted status stay the same. An interface change re-verifies the dependency cone.
-- All relevant cache keys must match; missing data is a cache miss. Cache reuse is never proof authority: a clean build must reproduce every acceptance.
+- After a proof-body edit, dependents need no rebuild if the public claim and acceptance status stay unchanged. Interface changes recheck the dependency cone.
+- Cache reuse requires exact matches of the relevant keys. Missing data means a cache miss. Reuse alone does not guarantee correctness; a clean build must reproduce all accepted results.
 
 Speaker note:
 
-- Source: `doc/design/architecture/en/11.artifact_and_incremental_build.md`, `18.dependency_fingerprint.md`; Bialystok deck, Story 5.
+- Source: `doc/design/architecture/en/11.artifact_and_incremental_build.md`, `18.dependency_fingerprint.md`; Białystok deck, Story 5.
 
-## Backup 8. Package Manifest
+## Backup 3. Package manifest
 
 Mizar Evo (specification example):
 
@@ -872,100 +813,35 @@ mml_core = "^1.0"
 topology = { version = "^0.9", features = ["metric"] }
 ```
 
-- Reproducible builds need fixed source, lockfile, toolchain, and verifier settings, including deterministic ATP evidence.
-- Versioned reuse replaces manual copying between article sets; an aggregate module can export a whole topic through one import.
+- Reproducible builds need fixed sources, lockfile, toolchain, checker configuration, and deterministic ATP evidence.
+- Versioned reuse removes manual copying between article collections. Aggregate modules can expose a whole field through one import.
 
-Source: `doc/spec/en/23.package_management_and_build_system.md`; Bialystok deck, Story 1.
+Source: `doc/spec/en/23.package_management_and_build_system.md`; Białystok deck, Story 1.
 
-## Backup 9. Forty-Five-Minute Additions
+## Backup 4. Comparing evaluation conditions
 
-Add selected examples where they fit in the story:
-
-1. HOL-to-FOL function encoding worked through on one goal (`app`, partial application, lambda lifting).
-2. Mizar function representation: `Function of X,Y`, `f.x`, soft type as a set-theoretic object.
-3. Template: `PermProduct[T]` with additive and multiplicative views (Backup 4).
-4. Algorithm: Euclidean GCD plus `by computation` and the promotion to a functor.
-5. Structures and views: `AddMagma`, `MulMagma`, `Magma` (Bialystok Story 2).
-6. Modern infrastructure: `mizar.pkg`, namespaces, the fingerprint graph (Backups 7-8).
-7. Checking: evidence instantiation and the SAT check (Frame 6.3; details in Backup 5).
-
-## Backup 10. Sources And Attribution
-
-Exact MML excerpts used in this talk:
-
-| Purpose | Source | Lines | Used in |
-|---|---|---:|---|
-| Function application `f.x` | `funct_1.miz` | 138-140 | Frame 1.2 |
-| `Function of X,Y` as a soft type | `funct_2.miz` | 87-90 | Frame 1.2 |
-
-Source URLs:
-
-- `FUNCT_1`: <https://mizar.uwb.edu.pl/version/current/mml/funct_1.miz>
-- `FUNCT_2`: <https://mizar.uwb.edu.pl/version/current/mml/funct_2.miz>
-
-Attribution note:
-
-- MML plain-text files state GPL-3.0-or-later / CC-BY-SA-3.0-or-later terms; keep article attribution, URLs, and line numbers in speaker notes.
-- Benchmark figures: see Backups 1-2 and `references.bib`. Verify bibliographic metadata against publishers before the final deck.
-
-## Backup 11. Comparing Evaluation Conditions
+### Table 14. MizAR 60 and Sledgehammer evaluation conditions
 
 | | MizAR 60 (ITP 2023) | Sledgehammer / AFP (ITP 2022) |
 |---|---|---|
-| success | 58.4% (1,690 / 2,896) | 68.8% (3,440 / 5,000) |
-| counts | MML 1147: 2,896 holdout theorems/lemmas (57,897 total) | 5,000 local goals; 50 AFP entries |
-| premises | learned selection from the whole library | MePo; base 512 facts, varied by configuration |
-| budget | portfolio: 420 CPU s | 16 greedy configurations, 30 CPU s each: 480 CPU s |
-| status | ATP proof found (hammering) | external proof found; no Isabelle reconstruction |
+| Reported success | 58.4% (1,690 / 2,896) | 68.8% (3,440 / 5,000) |
+| Evaluation set | MML 1147 theorems / lemmas; 2,896 holdout problems out of 57,897 | 5,000 local goals from 50 AFP entries |
+| Premise selection | Learned selection from the whole library | MePo; baseline 512 facts, varied by configuration |
+| Time budget | Portfolio total: 420 CPU seconds | Greedy 16 configurations × 30 CPU seconds = 480 CPU seconds |
+| Success criterion | ATP proof found (hammering mode) | External-prover proof found; Isabelle reconstruction excluded |
 
-- **Different units, premises, budgets, and configurations; the rates do not rank the designs.**
-
-Speaker note:
-
-- A "hammer" is a tool that sends a goal to automatic provers. "Premises" are the facts the prover may use.
-- Source: Jakubův et al. 2023, sections 6.2, 6.5; Desharnais et al. 2022, sections 5, 5.6, Table 10. The greedy configurations were selected using the evaluation set itself.
-- Publication dates differ from experiment dates. MizAR's main experiments ran in 2020-2021; the AFP study uses Isabelle from January 2022 and AFP from December 2021.
-- MizAR's 75% figure uses premises chosen from the library by a human or a machine. Keep it for questions.
-
-## Backup 12. What Each Number Counts
-
-![What each benchmark counts](figures/evaluation_units.pdf)
-
-- **MizAR asks: can the machine prove this whole theorem from the library, with no help from the author?**
-- **The AFP study asks: can the machine close this goal where it appears, often inside a proof that a person has already written?**
-- Both are fair questions. They are not the same question.
-
-## Backup 13. Two Paths To A First-Order Prover
-
-![Two paths from an interactive prover to a first-order ATP](figures/two_paths.pdf)
-
-- **In Sledgehammer's first-order and SMT path, a higher-order goal is translated, and the proof is rebuilt inside Isabelle.**
-- **MizAR gives the prover a problem that is already first-order. The generated problem is first-order.**
+- **Different targets, premise selection, time budgets, and configuration choices. Success rates alone cannot rank the designs.**
 
 Speaker note:
 
-- Both paths describe existing systems (Blanchette, Kaliszyk, Paulson, Urban 2016; Jakubův et al. 2023). The orange boxes are the translation and reconstruction layers.
-- The figure shows the first-order and SMT path. The ITP 2022 evaluation also includes provers using native higher-order formats.
-- MizAR's headline percentages count ATP proofs. The Mizar checker re-checks the resulting `by` step when the inference is within its strength.
+- A hammer sends goals to automated provers. Premises are facts the prover may use.
+- Source: Jakubův et al. 2023, §6.2, 6.5; Desharnais et al. 2022, §5, 5.6, Table 10. The greedy configurations were selected after testing on the same evaluation set.
+- Publication and experiment dates differ: main MizAR experiments, 2020–2021; AFP evaluation, Isabelle from January 2022 and AFP from December 2021.
+- MizAR's 75% figure uses library premises selected by a human or a machine. Keep it for questions.
 
-## Backup 14. Functions In Higher-Order Logic
+## Backup 5. HOL encoding and reconstruction
 
-Schematic HOL statement (sketch, Isabelle/HOL-style notation):
-
-```hol
-f :: 'a => 'b        x :: 'a
-
-P (f x)
-```
-
-- **In HOL, function types and function application are part of the logic itself.**
-- Functions as arguments, functions that return functions, partial application, lambda: all can be written directly.
-- **This is very convenient for the person who writes mathematics.**
-- **But E and Vampire are first-order provers. The higher-order structure must be encoded before they can see it.**
-
-## Backup 15. HOL Encoding And Reconstruction
-
-Encoding steps, schematic (sketch):
+Outline of encoding steps (sketch):
 
 ```fol
 F X                   ->  app(F, X)
@@ -974,36 +850,12 @@ polymorphic types     ->  type guards or type tags
 Boolean-valued terms  ->  extra encoding
 ```
 
-- **Applying a variable function becomes an explicit `app` symbol. Lambdas are lifted out or turned into combinators. Types become guards or tags.**
-- **After the prover succeeds, the proof must come back into Isabelle: a `metis` call, an `smt` replay, or generated Isar text. This step is called reconstruction.**
-- These mechanisms connect HOL goals to first-order provers.
-- This describes the connection, not a measured performance ranking.
+- **Use `app` for function-variable application. Encode lambdas with lambda lifting or combinators, and types with guards or tags.**
+- **Reconstruct the ATP proof inside Isabelle: `metis`, `smt` replay, or generated Isar text.**
+- These techniques connect higher-order ITPs to first-order ATPs.
+- This explains the connection, not a measured performance advantage.
 
 Speaker note:
 
-- Source: Meng and Paulson 2008 (translating higher-order clauses to first-order clauses); Blanchette, Böhme, Popescu, Smallbone 2016 (type encodings); Blanchette, Kaliszyk, Paulson, Urban 2016 (survey); Schurr, Fleury, Desharnais 2021 (reconstruction).
-- The exact encodings that Sledgehammer uses depend on the prover and the options. This frame is schematic.
-
-## Backup 16. Where Complexity Lives
-
-![Where HOL and FOL systems pay for complexity](figures/where_you_pay.pdf)
-
-- **HOL encodes higher-order structures for ATPs. Mizar's language hides set-theoretic details.**
-- **Mizar Evo keeps the first-order foundation and modernizes mathematical writing.**
-
-Speaker note:
-
-- HOL and FOL put complexity in different layers. HOL has function types and lambdas in its logic; its first-order ATP path uses encoding and reconstruction.
-- Mizar's soft types, modes, attributes, registrations, and schemes hide details such as pairs and domains that appear in raw set-theoretic writing.
-
-## Backup 17. Design Trade-Offs
-
-| | HOL ITP + ATP | FOL ITP + ATP |
-|---|---|---|
-| writing | higher-order features, short text | long text if written raw |
-| functions | basic higher-order objects | first-order set-theoretic objects |
-| ATP connection | HOL-to-FOL / SMT encoding | generation of a first-order problem |
-| reconstruction | reconstruction in Isabelle | rechecking Mizar steps where supported |
-| the language must provide | HOL abstraction | abstraction that hides first-order details |
-
-- This table compares representations and checking paths. It gives no measured performance advantage.
+- Source: Meng and Paulson 2008 (higher-order to first-order clauses); Blanchette, Böhme, Popescu, Smallbone 2016 (type encoding); Blanchette, Kaliszyk, Paulson, Urban 2016 (survey); Schurr, Fleury, Desharnais 2021 (reconstruction).
+- The actual Sledgehammer encoding depends on prover and options. This is an outline.
