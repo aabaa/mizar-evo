@@ -64,3 +64,40 @@ Here are two examples of the mathematical writing we want to keep. Please focus 
 The first is Cantor's theorem: the power set of X has a larger cardinality than X. Sets, power sets, and cardinals are all objects in the same first-order set theory. Cardinals are represented as ordinals, so in expresses the strict inequality here.
 The second theorem says that a continuous bijection from a compact space to a Hausdorff space is a homeomorphism. TopSpace is a structure; compact and T_2 are attributes. The statement gives conditions on the map and its conclusion.
 We keep this way of writing mathematics and redesign the processor that supports search and checking. [CARD_1:14 / COMPTS_1:17]
+
+## Part 2. Readable Mathematics (11–16 minutes)
+
+### 2.1 Trace type, registration, and overload choices (11:00)
+
+We follow implicit decisions in this order: type, registration, and overload.
+Which types can an object be used as? Which rules supplied the required attributes? Which definition and view were selected? We keep natural writing and automatic processing, while making the reasons visible. First, let us look at structure declarations and inheritance. [Specification]
+
+### 2.2 type: declare fields and properties (11:30)
+
+These declarations define LoopStr and its additive version, AddLoopStr. The carrier and operation are stored fields. They are data passed to the constructor.
+The properties unit and zero declare only names and types. Their values are not defined here. We first declare how the two structures are related by inheritance, then implement the property. [Specification]
+
+### 2.3 type: declare inheritance after the structure (12:15)
+
+We can write inherit after declaring the structure. Separating the type definition from the implementation of a relation resembles a Rust trait implementation.
+The parent's binop maps to the child's add; its property unit maps to the child's zero. There is one inherit declaration per parent. Equal types need no proof; narrowing a type needs a coherence proof.
+Next, we use this mapping to implement unit on the parent side. [Specification]
+
+### 2.4 type: implement unit for Unital, reuse it as zero (13:00)
+
+The attribute has_unit says that a two-sided identity exists. It does not refer to unit itself. The mode Unital selects LoopStr objects with this attribute. We then implement unit with means. Existence follows from the mode assumption; uniqueness follows by applying the operation to two identities.
+If AddLoopStr's selected LoopStr view is Unital, the zero from unit mapping lets us reuse this implementation as zero. We do not need a separate implementation for zero. [Specification-based sketch, proofs omitted]
+
+### 2.5 registration: automatic chains hide dependencies (13:45)
+
+Next is registration. Declaring a set S to be empty automatically gives finite, then countable. At the point of use, we do not have to cite these rules with by.
+This is useful, but when registrations form a chain, it becomes difficult to see which rules produced countable from that source alone. This is the traceability problem.
+The new specification keeps automatic application but requires labels and records the path from EmptyImpliesFinite to FiniteImpliesCountable. It can explain the dependency chain, as well as the final attribute. [Specification]
+
+### 2.6 overload: two identities in the same ring (14:45)
+
+Finally, overload. Let us use the identity element for addition and multiplication in a ring.
+The additive identity is zero, and the multiplicative identity is one. Both are identities, but their values differ.
+The specification's functor id. M returns the identity of a unital Magma. Writing only id. R leaves a choice: the additive or multiplicative Magma view?
+R qua AddMagma gives R.zero. R qua MulMagma gives R.one. Each selected view must have an identity.
+The view lets us select zero or one within the same ring. Types and attributes decide which definitions apply; the chosen operation view must also be clear. [Specification-based sketch]

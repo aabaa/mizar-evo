@@ -170,70 +170,50 @@ Speaker note:
 
 ## Part 2. Readable Mathematics
 
-### Frame 2.1 - Preserve And Extend Mathematical Writing
+### Frame 2.1 - Trace type, registration, and overload choices
 
-What the author actually writes (sketch, valid in current Mizar and Mizar Evo):
+Readable mathematics relies on many automatic decisions.
 
-```mizar
-let X, Y be set;
-let f be Function of X, Y;
-let x be Element of X;
-...  f.x  ...
-```
+- **type: which types can this object be used as?**
+  Follow attributes and inheritance. Example: Group → Magma, with a unique path.
+- **registration: which rules supplied the required attributes?**
+  Example: the chain empty → finite → countable.
+- **overload: which definition and view were selected?**
+  Distinguish definitions with the same notation, or addition and multiplication in a ring.
 
-- **It is the same set-theoretic function. But the author writes `Function of X,Y` and `f.x`, not pairs and domains.**
-- **Soft types, modes, attributes, registrations, schemes, and declarative proofs are not just a nicer way to write the same thing. They are the language design that lifts first-order set theory up to readable mathematics.**
-- **New specification: preserve and extend mathematical writing; make implicit type, registration, and overload choices explicit and traceable.**
-
-### Frame 2.2 - Registrations: Give Automatic Chains Names
-
-Named automatic rules (specification example):
-
-```mizar
-registration
-  cluster EmptyImpliesFinite: empty -> finite for set;
-  coherence proof ... end;
-  cluster FiniteImpliesCountable: finite -> countable for set;
-  coherence proof ... end;
-end;
-```
-
-| Starting fact | Automatically derived fact | Recorded rule |
-|---|---|---|
-| S is empty | S is finite | EmptyImpliesFinite |
-| S is finite | S is countable | FiniteImpliesCountable |
-
-- **Keep automatic chaining; require a label on every registration item and record the applied path.**
-- Labels explain which rule a proof depends on. Explicit `by` citations remain optional for automatic application.
+**Keep natural writing and automatic rules, while tracing the reasons for implicit choices.**
 
 Speaker note:
 
-- Source: `doc/spec/en/17.clusters_and_registrations.md` sections 17.2, 17.7; `23.package_management_and_build_system.md` section 23.7.7. The trace above is illustrative for an empty set S. Attribute resolution precedes ATP search.
+- Source: `doc/spec/en/08.type_inference.md` §8.1–8.2; `17.clusters_and_registrations.md` §17.7; `19.overload_resolution.md` §19.1–19.3. New specification: type in 2.2–2.4, registration in 2.5, overload and explicit views in 2.6.
 
-### Frame 2.3 - Structures: Stored Fields And Derived Properties
+### Frame 2.2 - type: declare fields and properties
 
-Data and canonical values have different roles (specification example):
+Structure declarations (specification example, inside a definition block):
 
 ```mizar
-definition
-  struct AddLoopStr where
-    field carrier -> set;
-    field add -> BinOp of carrier;
-    property zero -> Element of carrier;
-  end;
+struct LoopStr where
+  field carrier -> set;
+  field binop -> BinOp of carrier;
+  property unit -> Element of carrier;
+end;
+
+struct AddLoopStr where
+  field carrier -> set;
+  field add -> BinOp of carrier;
+  property zero -> Element of carrier;
 end;
 ```
 
-- **Fields store data and are constructor arguments. Properties get a uniquely determined value from a separate implementation.**
-- The declaration of `zero` supplies its type. A `means` implementation proves existence and uniqueness; an `equals` implementation supplies a term.
+**A field stores data. A property declares a name and type; its implementation is given separately.**
 
 Speaker note:
 
-- Source: `doc/spec/en/05.structures.md` section 5.2; `07.modes.md` sections 7.4.1, 7.8.2; `sample_codes.md`, AddLoopStr. Overlapping property implementations require coherence.
+- Source: `doc/spec/en/05.structures.md` §5.2, 5.5.1; `sample_codes.md`, LoopStr and AddLoopStr. These declarations are excerpts inside a definition block. Only fields are constructor arguments. Inheritance follows in 2.3, then the mode and unit implementation in 2.4.
 
-### Frame 2.3a - Inheritance Can Be Declared Later
+### Frame 2.3 - type: declare inheritance after the structure
 
-After declaring AddLoopStr, add a parent mapping (specification example):
+Add a parent mapping after declaring AddLoopStr (specification example):
 
 ```mizar
 definition
@@ -245,41 +225,89 @@ definition
 end;
 ```
 
-- **Separate the structure declaration from later inheritance declarations, much like implementing a Rust trait after defining a type.**
-- `from` renames the parent roles: `binop` becomes `add`, and `unit` becomes `zero`.
-- Each declaration has one parent. Identical member types need no proof; narrower types need a `coherence` proof.
+- **Separate structure declarations from inheritance. This resembles implementing a Rust trait after defining a type.**
+- `from` renames a parent's role: `binop` becomes `add`, and `unit` becomes `zero`.
+- One declaration per parent. Equal member types need no proof; narrower types require `coherence`.
 
 Speaker note:
 
-- Source: `doc/spec/en/05.structures.md` section 5.3; `sample_codes.md`, AddLoopStr. The Rust comparison concerns separate declarations, not identical semantics. LoopStr declares binop as a field and unit as a property.
+- Source: `doc/spec/en/05.structures.md` §5.3; `sample_codes.md`, AddLoopStr. The Rust analogy concerns the separation of declarations. In LoopStr, binop is a field and unit is a property.
 
-### Frame 2.3b - Checked Diamonds And Reused Group Theorems
+### Frame 2.4 - type: implement unit for Unital, reuse it as zero
 
-Two paths in the same hierarchy (sketch):
-
-```text
-AddLoopStr -> LoopStr -> Magma
-AddLoopStr -> AddMagma -> Magma
-```
-
-A Group theorem applied to a ring's additive view (sketch):
+has_unit states that a two-sided identity exists; it does not depend on unit (sketch):
 
 ```mizar
 definition
-  let T be type extends Group;
-  theorem RightUnit[T]:
-    for x being Element of T.carrier holds T.binop(x,T.unit) = x
-  proof ... end;
+  mode UnitalDef: Unital is has_unit LoopStr;
+  let M be Unital;
+  property M.unit means
+    for x being Element of M.carrier holds
+      M.binop(it,x) = x & M.binop(x,it) = x;
+  existence proof ... end;
+  uniqueness proof ... end;
 end;
-RightUnit[R qua AddLoopStr]  :: gives R.add(x,R.zero) = x
 ```
 
-- **Track member roots and inheritance paths; check shared members while keeping the operation views distinct.**
-- Ring's additive view is a Group. Reuse its theorem through renamed members; multiplication is only required to be a monoid.
+- **If A's selected LoopStr view is Unital, reuse its unit implementation as zero.**
+- `property zero from unit` gives `A.zero = (A qua LoopStr).unit`. No new zero implementation is needed.
 
 Speaker note:
 
-- Source: `doc/spec/en/05.structures.md` section 5.4; `sample_codes.md`, Group and Ring; `18.templates.md` sections 18.2.2, 18.10.2. Assume R is Ring, x is in its carrier, and the needed Group/property definitions and registrations. Equal member types join automatically; other types need coherence. The selected view must satisfy the theorem's assumptions.
+- Source: `doc/spec/en/07.modes.md` §7.4.1, 7.8.2; `05.structures.md` §5.3, 5.8.3. Sketch adapting the implementation example in chapter 7 to LoopStr. The has_unit definition is in `draft.ja.md`; proof bodies are omitted. Existence follows from the mode assumption, uniqueness by applying the operation to two identities.
+- A is AddLoopStr, and the selected LoopStr view must satisfy Unital. Do not mix facts from different views. This example has no overlapping implementations; overlaps require coherence.
+
+### Frame 2.5 - registration: automatic chains hide dependencies
+
+**Automatic rules can form chains. The source at the point of use does not show all rules involved.**
+
+```mizar
+registration
+  cluster EmptyImpliesFinite: empty -> finite for set;
+  coherence proof ... end;
+  cluster FiniteImpliesCountable: finite -> countable for set;
+  coherence proof ... end;
+end;
+```
+
+### Table 5. Registration paths recorded by the new specification
+
+| Starting fact | Derived fact | Recorded rule |
+|---|---|---|
+| S is empty | S is finite | EmptyImpliesFinite |
+| S is finite | S is countable | FiniteImpliesCountable |
+
+- Declaring `empty` gives `finite` and then `countable` implicitly. No rule citation with `by` is needed.
+- **New specification: keep automatic application, and record rule labels and application paths.**
+
+Speaker note:
+
+- Source: `doc/spec/en/17.clusters_and_registrations.md` §17.2, 17.4.1, 17.7; `23.package_management_and_build_system.md` §23.7.7. Labeled registration example from the new specification; the table is an explanatory trace for an empty set S.
+- Emphasize that rules are not cited at the point of use and can apply in several stages. Attribute resolution takes place before ATP search.
+
+### Frame 2.6 - overload: two identities in the same ring
+
+**In the same ring R, the additive identity is 0 and the multiplicative identity is 1.**
+
+- Additive AddMagma: `0 + x = x + 0 = x`
+- Multiplicative MulMagma: `1 * x = x * 1 = x`
+
+id. M returns the identity of a unital Magma M (sketch, definition omitted):
+
+```mizar
+let R be Ring;
+id. R;                   :: ambiguous Magma view
+id. (R qua AddMagma);     :: R.zero
+id. (R qua MulMagma);     :: R.one
+```
+
+- Even with one definition of id., the Magma view of R is ambiguous.
+- **Use qua to select the additive or multiplicative view and distinguish 0 from 1.**
+
+Speaker note:
+
+- Source: `doc/spec/en/sample_codes.md`, IdentityDef, LoopUnitalDef, RingLikeDef; `19.overload_resolution.md` §19.2.2–19.3.1; `05.structures.md` §5.8.3.
+- Sketch limited to the identity functor id. Assume both views are unital, their identities correspond to R.zero / R.one, and each path to Magma is unique. Definitions: `draft.ja.md`.
 
 ## Part 3. Generic Mathematics
 
