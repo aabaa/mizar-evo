@@ -10,8 +10,8 @@
 
 ## Module Implementation
 
-Module specs do not exist yet; each is written by its own spec task (English
-and Japanese in the same change) before the implementation tasks that cite it.
+Module specs are fixed in paired spec tasks before implementation. The first
+published-input reader is owned by [artifact_reader.md](./artifact_reader.md); other module specs remain pending.
 Per [internal 07](../../internal/en/07.crate_module_layout.md) this crate owns
 both documentation rendering **and** extraction (earlier phase-16 drafts named
 a separate `mizar-extract`, but architecture/internal docs now use the
@@ -20,7 +20,7 @@ crate refines architecture 13 and internal 05.
 
 | Module | Spec | Source | Status |
 |---|---|---|---|
-| artifact_reader | `artifact_reader.md` (task 2) | `src/artifact_reader.rs` | [ ] |
+| artifact_reader | `artifact_reader.md` (task 2) | `src/artifact_reader.rs` | [x] |
 | doc_build | `doc_build.md` (task 4) | `src/doc_build.rs` | [ ] |
 | comments | `comments.md` (task 6) | `src/comments.rs` | [ ] |
 | links | `links.md` (task 9) | `src/links.rs` | [ ] |
@@ -79,21 +79,23 @@ Keep `cargo test -p mizar-doc` green after each task (see
 
 ### Inputs
 
-1. **Crate scaffold and lint-policy guard.** [ ]
+Tasks 1–3 form [DOC-PUBLISHED-ARTIFACT-READER](../../task_contracts/en/DOC-PUBLISHED-ARTIFACT-READER.md), with the reader contract reviewed before crate implementation.
+
+1. **Crate scaffold and lint-policy guard.** [x]
    - Add the `mizar-doc` workspace member depending on `mizar-session` and
      `mizar-artifact`; add `tests/lint_policy.rs` mirroring the
      `mizar-frontend` guard.
    - Tests: lint-policy guard passes; workspace builds.
    - Deps: `mizar-artifact` task 11. Spec: architecture 13.
 
-2. **Spec: `artifact_reader.md`.** [ ]
+2. **Spec: `artifact_reader.md`.** [x]
    - Write the artifact-reader spec (English and Japanese, no code):
      validating reads of `VerifiedArtifact`s and manifests, schema
      compatibility handling, and the documentation-input projection
      (internal 05 "Artifact Documentation Reader").
    - Deps: 1. Spec: [internal 05](../../internal/en/05.documentation_extraction.md).
 
-3. **Artifact reader.** [ ]
+3. **Artifact reader.** [x]
    - Implement validating artifact/manifest reads with schema-version
      checks; fixture artifacts for tests.
    - Tests: valid/invalid artifact fixtures; incompatible versions fail

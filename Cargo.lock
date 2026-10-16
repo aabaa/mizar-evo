@@ -499,6 +499,14 @@ dependencies = [
 ]
 
 [[package]]
+name = "mizar-doc"
+version = "0.1.0"
+dependencies = [
+ "mizar-artifact",
+ "mizar-session",
+]
+
+[[package]]
 name = "mizar-driver"
 version = "0.1.0"
 dependencies = [
@@ -630,6 +638,7 @@ dependencies = [
  "mizar-atp",
  "mizar-checker",
  "mizar-core",
+ "mizar-doc",
  "mizar-frontend",
  "mizar-kernel",
  "mizar-lexer",

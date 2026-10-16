@@ -142,12 +142,6 @@ are companions when both are present.
   failure records, deterministic ordering, and rendering; current internal
   milestone and public E0220–E0224 import descriptors are implemented;
   broader public adoption remains planned.
-
-### Planned Crate Roots
-
-These directories carry crate-level TODOs and design intent before their Rust
-crates are added to the workspace:
-
 - [mizar-doc](./mizar-doc/en/todo.md) - documentation rendering and extraction.
 
 ## 4. Canonical Task Contracts (`task_contracts/`)

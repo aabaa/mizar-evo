@@ -334,7 +334,7 @@ fn phase_owner_crates_do_not_depend_on_driver_or_salsa() {
         "mizar-artifact",
         "mizar-doc",
     ];
-    let expected_missing = BTreeSet::from(["mizar-doc"]);
+    let expected_missing = BTreeSet::new();
     let mut missing = BTreeSet::new();
     let mut violations = Vec::new();
 

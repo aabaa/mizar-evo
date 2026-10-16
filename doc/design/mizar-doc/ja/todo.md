@@ -10,8 +10,8 @@
 
 ## モジュール実装
 
-モジュール仕様はまだ存在しない。各仕様は、それを引用する実装タスクより前に、
-専用の仕様タスクが（英語と日本語を同じ変更で）執筆する。
+各 module 仕様は専用 spec task で英日同時に固定してから実装する。
+最初の公開成果物リーダーは [artifact_reader.md](./artifact_reader.md) が所有し、他の module 仕様は未着手である。
 [internal 07](../../internal/ja/07.crate_module_layout.md) により、この
 crate はドキュメントのレンダリングと抽出の**両方**を所有する
 （以前の phase-16 draft は別 crate `mizar-extract` を挙げていたが、現在の
@@ -20,7 +20,7 @@ internal 05 を精緻化する。
 
 | モジュール | 仕様 | ソース | 状態 |
 |---|---|---|---|
-| artifact_reader | `artifact_reader.md`（task 2） | `src/artifact_reader.rs` | [ ] |
+| artifact_reader | `artifact_reader.md`（task 2） | `src/artifact_reader.rs` | [x] |
 | doc_build | `doc_build.md`（task 4） | `src/doc_build.rs` | [ ] |
 | comments | `comments.md`（task 6） | `src/comments.rs` | [ ] |
 | links | `links.md`（task 9） | `src/links.rs` | [ ] |
@@ -79,21 +79,23 @@ internal: [05](../../internal/ja/05.documentation_extraction.md)。
 
 ### 入力
 
-1. **crate の足場と lint 方針のガード。** [ ]
+Tasks1–3 は [DOC-PUBLISHED-ARTIFACT-READER](../../task_contracts/ja/DOC-PUBLISHED-ARTIFACT-READER.md) が所有し、reader 契約のレビューを crate 実装より前に行う。
+
+1. **crate の足場と lint 方針のガード。** [x]
    - `mizar-session` と `mizar-artifact` に依存する workspace メンバー
      `mizar-doc` を追加し、`mizar-frontend` のガードに倣った
      `tests/lint_policy.rs` を追加する。
    - テスト: lint 方針ガードが通る。workspace がビルドできる。
    - 依存: `mizar-artifact` task 11。仕様: アーキテクチャ 13。
 
-2. **仕様: `artifact_reader.md`。** [ ]
+2. **仕様: `artifact_reader.md`。** [x]
    - artifact リーダーの仕様を執筆する（英語と日本語、コードなし）:
      `VerifiedArtifact` と manifest の検証つき読み込み、スキーマ互換性の
      扱い、ドキュメント入力の射影（internal 05「Artifact Documentation
      Reader」）。
    - 依存: 1。仕様: [internal 05](../../internal/ja/05.documentation_extraction.md)。
 
-3. **artifact リーダー。** [ ]
+3. **artifact リーダー。** [x]
    - schema-version チェックつきの検証読み込みを実装する。テストは
      フィクスチャ artifact を使う。
    - テスト: 有効/無効 artifact のフィクスチャ。非互換バージョンが診断

@@ -19821,3 +19821,504 @@ fn source_dependency_real_upstream_errors_precede_absent_handle() {
     }
     assert_eq!((source, nodes, collected.env().clone()), before);
 }
+
+// These are caller-owned structural publication envelopes. Only the witness
+// references/payloads come from existing genuine source projectors; envelope
+// coordinates and metadata make no producer, currentness, or acceptance claim.
+fn doc_published_fixture() -> (
+    PathBuf,
+    mizar_artifact::manifest::ArtifactManifest,
+    Vec<mizar_artifact::verified_artifact::VerifiedArtifact>,
+) {
+    use mizar_artifact::{
+        manifest::*,
+        module_summary::SourceRangeSummary,
+        proof_witness::ProofStatus,
+        registration_summary::{ArtifactHashClass, ArtifactHashRef},
+        store::{
+            PublishedArtifactPath, SchemaVersion, artifact_hash_domain, write_published_artifact,
+        },
+        verified_artifact::*,
+    };
+    let temp = std::process::Command::new("mktemp")
+        .arg("-d")
+        .output()
+        .unwrap();
+    assert!(temp.status.success());
+    let root = PathBuf::from(String::from_utf8(temp.stdout).unwrap().trim());
+    let (explicit, payloads) = builtin_enclosing_fixture(true);
+    for (reference, bytes) in explicit.proof_witnesses.iter().zip(payloads) {
+        let path = root.join(&reference.witness_path);
+        std::fs::create_dir_all(path.parent().unwrap()).unwrap();
+        std::fs::write(path, bytes).unwrap();
+    }
+    let mut normal = explicit.clone();
+    normal.schema_version = SchemaVersion::new(1, 0);
+    normal
+        .proof_witnesses
+        .retain(|w| w.proof_status == ProofStatus::KernelVerified);
+    normal.obligations.retain(|o| {
+        normal
+            .proof_witnesses
+            .iter()
+            .any(|w| w.obligation_id == o.obligation_id)
+    });
+    let mut artifacts = vec![normal, explicit];
+    let mut entries = Vec::new();
+    for (index, artifact) in artifacts.iter_mut().enumerate() {
+        artifact.module.module_path = format!("module_{index}");
+        artifact.verified_at = Some("2026-10-16T01:02:03Z".into());
+        artifact.provenance.cache_key = Some("structural-local-metadata".into());
+        let range = SourceRangeSummary {
+            start_byte: 0,
+            end_byte: 1,
+        };
+        let diagnostic = ArtifactHashRef::new(
+            ArtifactHashClass::Diagnostic,
+            "fixture/diagnostic",
+            SchemaVersion::new(1, 0),
+            mizar_session::hash_text("diagnostic"),
+        );
+        artifact.exports = vec![VerifiedExport {
+            origin_id: "structural-export".into(),
+            fully_qualified_name: "fixture::export".into(),
+            namespace_path: vec!["fixture".into()],
+            visibility: ExportVisibility::Public,
+            export_kind: "structural".into(),
+            source_range: range,
+            rendered_signature: "metadata".into(),
+            interface_fingerprint: ArtifactHashRef::new(
+                ArtifactHashClass::Interface,
+                "fixture/export",
+                SchemaVersion::new(1, 0),
+                mizar_session::hash_text("export"),
+            ),
+            proof_status: Some(ExportProofStatus::NotRequired),
+            documentation_ref: Some(diagnostic.clone()),
+        }];
+        artifact.expressions = vec![ExpressionMetadata {
+            expression_id: "structural-expression".into(),
+            source_range: range,
+            expression_kind: "structural".into(),
+            rendered_surface: "metadata".into(),
+            inferred_type: Some("metadata-type".into()),
+            resolved_symbol: Some("fixture::symbol".into()),
+            inserted_coercions: vec!["metadata-coercion".into()],
+            active_thesis: Some("metadata-thesis".into()),
+            overload_resolution: Some(OverloadMetadata {
+                root_symbol: "root".into(),
+                selected_candidate: "candidate".into(),
+                active_refinements: vec!["refinement".into()],
+                coercion_summary: Some("coercion".into()),
+            }),
+        }];
+        artifact.diagnostics = vec![ArtifactDiagnostic {
+            diagnostic_id: "structural-diagnostic".into(),
+            code: "fixture".into(),
+            severity: DiagnosticSeverity::Info,
+            primary_range: Some(range),
+            message_key: "fixture-message".into(),
+            rendered_message: "metadata".into(),
+            related: vec![DiagnosticRelated {
+                source_range: range,
+                message_key: "related".into(),
+                rendered_message: "related metadata".into(),
+            }],
+            explanation_ref: Some(diagnostic),
+        }];
+        artifact.provenance.dependency_artifact_hashes = vec![DependencyArtifactHash {
+            module: artifact.module.clone(),
+            interface_hash: artifact.exports[0].interface_fingerprint.clone(),
+            implementation_hash: Some(ArtifactHashRef::new(
+                ArtifactHashClass::Implementation,
+                "fixture/dependency",
+                SchemaVersion::new(1, 0),
+                mizar_session::hash_text("dependency implementation"),
+            )),
+            artifact_hash: Some(artifact.provenance.lockfile_hash.clone()),
+        }];
+        artifact
+            .obligations
+            .sort_by(|a, b| a.obligation_id.cmp(&b.obligation_id));
+        artifact
+            .proof_witnesses
+            .sort_by(|a, b| a.obligation_id.cmp(&b.obligation_id));
+        artifact.refresh_hashes().unwrap();
+        let json = if index == 0 {
+            verified_artifact_json(artifact)
+        } else {
+            builtin_verified_artifact_json(artifact)
+        }
+        .unwrap();
+        let path = PublishedArtifactPath::new(format!("modules/module_{index}.json")).unwrap();
+        let write = write_published_artifact(
+            &root,
+            &path,
+            &json,
+            &artifact_hash_domain(VERIFIED_ARTIFACT_SCHEMA_FAMILY, artifact.schema_version),
+            &artifact_hash_excluded_paths(),
+        )
+        .unwrap();
+        entries.push(ModuleArtifactEntry {
+            module: artifact.module.clone(),
+            source_file: artifact.source_file.clone(),
+            source_hash: artifact.source_hash,
+            artifact_file: path.as_str().into(),
+            artifact_hash: ArtifactHashRef::new(
+                ArtifactHashClass::Artifact,
+                VERIFIED_ARTIFACT_SCHEMA_FAMILY,
+                artifact.schema_version,
+                write.artifact_hash,
+            ),
+            interface_hash: ArtifactHashRef::new(
+                ArtifactHashClass::Interface,
+                VERIFIED_ARTIFACT_SCHEMA_FAMILY,
+                artifact.schema_version,
+                artifact.interface_hash,
+            ),
+            implementation_hash: ArtifactHashRef::new(
+                ArtifactHashClass::Implementation,
+                VERIFIED_ARTIFACT_SCHEMA_FAMILY,
+                artifact.schema_version,
+                artifact.implementation_hash,
+            ),
+            module_summary_file: None,
+            module_summary_hash: None,
+            module_summary_interface_hash: None,
+            registration_summary_file: None,
+            registration_summary_hash: None,
+            registration_interface_hash: None,
+            proof_witnesses: artifact
+                .proof_witnesses
+                .iter()
+                .map(|w| ManifestProofWitnessEntry {
+                    obligation_id: w.obligation_id.clone(),
+                    obligation_fingerprint: w.obligation_fingerprint.clone(),
+                    witness_path: w.witness_path.clone(),
+                    witness_artifact_hash: w.witness_artifact_hash.clone(),
+                })
+                .collect(),
+            diagnostics_hash: None,
+        });
+    }
+    let manifest = ArtifactManifest {
+        schema_version: SchemaVersion::new(1, 0),
+        package: PackageIdentity {
+            package_id: artifacts[0].module.package_id.clone(),
+            package_version: None,
+            lockfile_identity: None,
+        },
+        artifact_root: "artifacts".into(),
+        lockfile_hash: artifacts[0].provenance.lockfile_hash.clone(),
+        toolchain: artifacts[0].provenance.toolchain.clone(),
+        language_edition: "2026".into(),
+        verifier_config_hash: artifacts[0].provenance.verifier_config_hash.clone(),
+        modules: entries,
+        // Deliberately absent development file must not be loaded by this facade.
+        development_artifacts: vec![DevelopmentArtifactEntry {
+            kind: "structural".into(),
+            path: "development/absent.json".into(),
+            artifact_hash: Some(artifacts[0].provenance.lockfile_hash.clone()),
+            diagnostic_hash: None,
+            related_module: None,
+        }],
+        provenance: ManifestProvenance {
+            generated_by: "caller-structural-fixture".into(),
+            manifest_policy: "test".into(),
+            transaction_format: "test".into(),
+        },
+    };
+    write_manifest_file(&root, &manifest).unwrap();
+    (root, manifest, artifacts)
+}
+
+#[test]
+fn doc_published_profiles_order_and_typed_preservation() {
+    use mizar_artifact::{manifest::*, store::SchemaVersion};
+    use mizar_doc::artifact_reader::read_published_artifacts;
+    let (root, manifest, artifacts) = doc_published_fixture();
+    let paths = std::iter::once("artifact-manifest.json".to_owned())
+        .chain(
+            manifest
+                .modules
+                .iter()
+                .map(|entry| entry.artifact_file.clone()),
+        )
+        .chain(
+            manifest.modules[1]
+                .proof_witnesses
+                .iter()
+                .map(|w| w.witness_path.clone()),
+        )
+        .collect::<Vec<_>>();
+    let bytes_before = paths
+        .iter()
+        .map(|path| std::fs::read(root.join(path)).unwrap())
+        .collect::<Vec<_>>();
+    let expected = read_manifest_file(&root, ManifestFileReadOptions::default()).unwrap();
+    let actual = read_published_artifacts(&root, expected.artifact_hash).unwrap();
+    assert_eq!(actual, (expected, artifacts.clone()));
+    assert_eq!(
+        actual
+            .1
+            .iter()
+            .map(|a| a.schema_version)
+            .collect::<Vec<_>>(),
+        vec![SchemaVersion::new(1, 0), SchemaVersion::new(2, 0)]
+    );
+    assert_eq!(
+        actual
+            .1
+            .iter()
+            .map(|a| a.module.module_path.as_str())
+            .collect::<Vec<_>>(),
+        vec!["module_0", "module_1"]
+    );
+    assert_eq!(
+        paths
+            .iter()
+            .map(|path| std::fs::read(root.join(path)).unwrap())
+            .collect::<Vec<_>>(),
+        bytes_before
+    );
+    assert!(!root.join("development/absent.json").exists());
+    std::fs::remove_dir_all(root).unwrap();
+}
+
+#[test]
+fn doc_published_rejects_bound_hashes_versions_and_coverage() {
+    use mizar_artifact::{
+        manifest::*,
+        store::{
+            CanonicalJson, SchemaVersion, StoreIoError, artifact_hash_domain, canonical_json_bytes,
+        },
+        verified_artifact::*,
+    };
+    use mizar_doc::artifact_reader::read_published_artifacts;
+    let (root, manifest, artifacts) = doc_published_fixture();
+    let initial = read_manifest_file(&root, Default::default()).unwrap();
+    assert!(
+        matches!(read_published_artifacts(&root, mizar_session::hash_text("wrong publication")),
+        Err(ManifestError::StoreIo(StoreIoError::ArtifactHashMismatch { path, .. })) if path == "artifact-manifest.json")
+    );
+    // Every mutated manifest gets its actual public store hash; stale outer hashes
+    // cannot mask the selected reference guard. Module 0 remains valid throughout.
+    for index in 0..11 {
+        let mut bad = manifest.clone();
+        let entry = &mut bad.modules[1];
+        match index {
+            0 => entry.artifact_hash.digest = mizar_session::hash_text("wrong store hash"),
+            1 => entry.source_file = "src/other.miz".into(),
+            2 => entry.source_hash = mizar_session::hash_text("wrong source hash"),
+            3 => entry.module.module_path = "module_2".into(),
+            4 => entry.interface_hash.digest = mizar_session::hash_text("wrong interface"),
+            5 => {
+                entry.implementation_hash.digest = mizar_session::hash_text("wrong implementation")
+            }
+            6 => {
+                entry.proof_witnesses.pop();
+            }
+            7 => entry.proof_witnesses[0].witness_path = "proof-witnesses/other.bin".into(),
+            _ => {
+                let version = match index {
+                    8 => SchemaVersion::new(1, 0),
+                    9 => SchemaVersion::new(2, 1),
+                    _ => SchemaVersion::new(9, 0),
+                };
+                entry.artifact_hash.schema_version = version;
+                entry.interface_hash.schema_version = version;
+                entry.implementation_hash.schema_version = version;
+                entry.artifact_hash.digest =
+                    artifact_hash_domain(VERIFIED_ARTIFACT_SCHEMA_FAMILY, version).hash(
+                        &builtin_verified_artifact_json(&artifacts[1]).unwrap(),
+                        &artifact_hash_excluded_paths(),
+                    );
+            }
+        }
+        let write = write_manifest_file(&root, &bad).unwrap();
+        let before = std::fs::read(root.join("artifact-manifest.json")).unwrap();
+        let error = read_published_artifacts(&root, write.artifact_hash).unwrap_err();
+        let valid = match (index, &error) {
+            (0, ManifestError::StoreIo(StoreIoError::ArtifactHashMismatch { path, .. })) => {
+                path == "modules/module_1.json"
+            }
+            (1 | 2, ManifestError::ReferencedArtifactMismatch { path, field, .. }) => {
+                path == "modules/module_1.json"
+                    && field
+                        == if index == 1 {
+                            "source_file"
+                        } else {
+                            "source_hash"
+                        }
+            }
+            (3..=5 | 8..=10, ManifestError::VerifiedArtifact { path, error }) => {
+                path == "modules/module_1.json"
+                    && matches!(
+                        (index, error.as_ref()),
+                        (3, VerifiedArtifactError::ModuleIdentityMismatch { .. })
+                            | (
+                                4,
+                                VerifiedArtifactError::ExpectedInterfaceHashMismatch { .. }
+                            )
+                            | (
+                                5,
+                                VerifiedArtifactError::ExpectedImplementationHashMismatch { .. }
+                            )
+                            | (8..=10, VerifiedArtifactError::SchemaVersion(_))
+                    )
+            }
+            (6 | 7, ManifestError::WitnessCoverageMismatch { module, .. }) => {
+                module.contains("module_1")
+            }
+            _ => false,
+        };
+        assert!(valid, "case {index}: {error:?}");
+        assert_eq!(
+            std::fs::read(root.join("artifact-manifest.json")).unwrap(),
+            before
+        );
+    }
+    // Bind the actual malformed inner value to its actual store hash, isolating
+    // public codec schema validation from publication-integrity checks.
+    let mut json = builtin_verified_artifact_json(&artifacts[1]).unwrap();
+    let CanonicalJson::Object(fields) = &mut json else {
+        unreachable!()
+    };
+    fields.insert("schema_version".into(), CanonicalJson::string("2.1"));
+    let mut bad = manifest.clone();
+    bad.modules[1].artifact_hash.digest =
+        artifact_hash_domain(VERIFIED_ARTIFACT_SCHEMA_FAMILY, SchemaVersion::new(2, 0))
+            .hash(&json, &artifact_hash_excluded_paths());
+    std::fs::write(
+        root.join(&bad.modules[1].artifact_file),
+        canonical_json_bytes(&json),
+    )
+    .unwrap();
+    let write = write_manifest_file(&root, &bad).unwrap();
+    assert!(
+        matches!(read_published_artifacts(&root, write.artifact_hash), Err(ManifestError::VerifiedArtifact { path, error })
+        if path == "modules/module_1.json" && matches!(*error, VerifiedArtifactError::SchemaVersion(_)))
+    );
+    let mut json = artifact_manifest_json(&manifest).unwrap();
+    let CanonicalJson::Object(fields) = &mut json else {
+        unreachable!()
+    };
+    fields.insert("schema_version".into(), CanonicalJson::string("2.0"));
+    std::fs::write(
+        root.join("artifact-manifest.json"),
+        canonical_json_bytes(&json),
+    )
+    .unwrap();
+    assert!(matches!(
+        read_published_artifacts(&root, initial.artifact_hash),
+        Err(ManifestError::SchemaVersion(_))
+    ));
+    std::fs::remove_dir_all(root).unwrap();
+}
+
+#[test]
+fn doc_published_missing_malformed_unsafe_and_witness_files() {
+    use mizar_artifact::{
+        manifest::*,
+        store::{CanonicalJson, PublishedPathError, StoreIoError, canonical_json_bytes},
+    };
+    use mizar_doc::artifact_reader::read_published_artifacts;
+    let (root, manifest, _) = doc_published_fixture();
+    let hash = read_manifest_file(&root, Default::default())
+        .unwrap()
+        .artifact_hash;
+    let targets = [
+        "artifact-manifest.json",
+        "modules/module_1.json",
+        manifest.modules[1].proof_witnesses[0].witness_path.as_str(),
+    ];
+    for (index, relative) in targets.iter().enumerate() {
+        let path = root.join(relative);
+        let bytes = std::fs::read(&path).unwrap();
+        std::fs::remove_file(&path).unwrap();
+        assert!(
+            matches!(
+                read_published_artifacts(&root, hash),
+                Err(ManifestError::StoreIo(StoreIoError::Io {
+                    kind: std::io::ErrorKind::NotFound,
+                    ..
+                }))
+            ),
+            "missing {relative}"
+        );
+        std::fs::write(&path, &bytes).unwrap();
+        if index < 2 {
+            for (bad, utf8) in [(b"{".as_slice(), false), (b"\xff".as_slice(), true)] {
+                std::fs::write(&path, bad).unwrap();
+                let error = read_published_artifacts(&root, hash).unwrap_err();
+                assert!(
+                    matches!((&error, utf8),
+                    (ManifestError::StoreIo(StoreIoError::InvalidUtf8 { path, .. }), true) |
+                    (ManifestError::StoreIo(StoreIoError::CorruptCanonicalJson { path, .. }), false) if path == relative),
+                    "{error:?}"
+                );
+                assert_eq!(std::fs::read(&path).unwrap(), bad);
+            }
+            std::fs::write(&path, &bytes).unwrap();
+        }
+        #[cfg(unix)]
+        {
+            let outside = root.with_extension(format!("outside-{index}"));
+            std::fs::write(&outside, &bytes).unwrap();
+            std::fs::remove_file(&path).unwrap();
+            std::os::unix::fs::symlink(&outside, &path).unwrap();
+            assert!(matches!(
+                read_published_artifacts(&root, hash),
+                Err(ManifestError::StoreIo(StoreIoError::Path { .. }))
+            ));
+            assert_eq!(std::fs::read(&outside).unwrap(), bytes);
+            std::fs::remove_file(&path).unwrap();
+            std::fs::remove_file(outside).unwrap();
+            std::fs::write(&path, &bytes).unwrap();
+        }
+    }
+    // Raw canonical JSON is intentional: the public writer rejects unsafe paths.
+    for (field, unsafe_path) in [
+        ("artifact_file", "../escape.json"),
+        ("artifact_file", "/absolute.json"),
+        ("witness_path", "../escape.bin"),
+    ] {
+        let mut json = artifact_manifest_json(&manifest).unwrap();
+        let CanonicalJson::Object(fields) = &mut json else {
+            unreachable!()
+        };
+        let CanonicalJson::Array(modules) = fields.get_mut("modules").unwrap() else {
+            unreachable!()
+        };
+        let CanonicalJson::Object(entry) = &mut modules[1] else {
+            unreachable!()
+        };
+        if field == "witness_path" {
+            let CanonicalJson::Array(witnesses) = entry.get_mut("proof_witnesses").unwrap() else {
+                unreachable!()
+            };
+            let CanonicalJson::Object(witness) = &mut witnesses[0] else {
+                unreachable!()
+            };
+            witness.insert(field.into(), CanonicalJson::string(unsafe_path));
+        } else {
+            entry.insert(field.into(), CanonicalJson::string(unsafe_path));
+        }
+        let bytes = canonical_json_bytes(&json);
+        std::fs::write(root.join("artifact-manifest.json"), &bytes).unwrap();
+        let error = read_published_artifacts(&root, hash).unwrap_err();
+        assert!(
+            matches!(&error, ManifestError::InvalidField { path, reason }
+                if path == if field == "witness_path" { "$.modules[1].proof_witnesses[0].witness_path" } else { "$.modules[1].artifact_file" }
+                && reason == &if unsafe_path.starts_with('/') { PublishedPathError::Absolute } else { PublishedPathError::ParentSegment }.to_string()),
+            "{error:?}"
+        );
+        assert_eq!(
+            std::fs::read(root.join("artifact-manifest.json")).unwrap(),
+            bytes
+        );
+    }
+    write_manifest_file(&root, &manifest).unwrap();
+    assert!(read_published_artifacts(&root, hash).is_ok());
+    std::fs::remove_dir_all(root).unwrap();
+}

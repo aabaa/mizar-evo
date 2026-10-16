@@ -1,0 +1,13 @@
+[package]
+name = "mizar-doc"
+version = "0.1.0"
+edition.workspace = true
+license.workspace = true
+repository.workspace = true
+
+[dependencies]
+mizar-session = { path = "../mizar-session" }
+mizar-artifact = { path = "../mizar-artifact" }
+
+[lints]
+workspace = true
