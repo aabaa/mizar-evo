@@ -20099,3 +20099,649 @@ fn native_frontend_resolver_binding_rejects_bad_associations_and_preserves_lower
             .is_err()
     );
 }
+
+fn retained_native_frontend_cache_case(case: &str, threshold: usize, reverse: bool) {
+    use mizar_build::{
+        planner::{lockfile_content_hash, workspace_config_content_hash},
+        scheduler::SchedulerEventKind,
+    };
+    use mizar_cache::cache_store::{CacheInsertOutcome, CacheStoreRoot};
+    use mizar_ir::{
+        cache_adapter::{EncodeCacheRecordOutcome, IrCacheAdapter},
+        storage::CollectInput,
+    };
+    let fixture = Fixture::new("\u{feff}definition\r\nend;\r\n".as_bytes());
+    fs::write(
+        fixture.root.join("alpha/src/leaf.miz"),
+        b"definition\nend;\n",
+    )
+    .unwrap();
+    let ids = InMemorySessionIdAllocator::new();
+    let snapshots = SnapshotRegistry::new();
+    let policy = mizar_proof::policy::VerifierPolicy::release();
+    let store = CacheStoreRoot::new(fixture.root.join("retained-schedule"));
+    let (mut draft, mut warm_input) = fixture.submit_request(vec![], vec![]);
+    let files = vec![
+        WorkspaceSourceFile::new("src/main.miz", "main.miz"),
+        WorkspaceSourceFile::new("src/leaf.miz", "leaf.miz"),
+    ];
+    warm_input.source_layout = StaticSourceLayout::new(vec![WorkspaceSourcePackage {
+        package_id: PackageId::new("alpha"),
+        files: files.clone(),
+    }]);
+    let plan = produce_build_plan(
+        warm_input.plan_request.clone(),
+        warm_input.workspace_packages.clone(),
+        warm_input.lockfile.clone(),
+    )
+    .unwrap();
+    draft.source_inputs.versions.clear();
+    draft.dependency_inputs.lockfile_hash = lockfile_content_hash(&plan.lockfile);
+    draft.verifier_config = VerifierConfigInput::new(workspace_config_content_hash(
+        &plan.verifier_config,
+        &plan.build_config,
+    ));
+    let mut descriptors = ["main", "leaf"]
+        .into_iter()
+        .map(|module| {
+            (
+                DiskSourceLoader::new(fixture.root.join("alpha")),
+                SourceInput {
+                    package_id: PackageId::new("alpha"),
+                    module_path: ModulePath::new(module),
+                    normalized_path: normalize_path(
+                        &fixture.root.join("alpha"),
+                        Path::new(&format!("src/{module}.miz")),
+                    )
+                    .unwrap(),
+                    edition: Edition::new("2025"),
+                    origin: SourceOriginInput::Disk {
+                        path: format!("src/{module}.miz").into(),
+                    },
+                },
+            )
+        })
+        .collect::<Vec<_>>();
+    if reverse {
+        descriptors.reverse();
+    }
+    let saved = draft
+        .capture_sources(&ids, &snapshots, descriptors)
+        .unwrap();
+    assert_eq!(saved.state(), BuildSessionState::SnapshotCaptured);
+    let captured = saved.captured().clone();
+    let snapshot = captured.snapshot().id;
+    let units = ["main", "leaf"].map(|module| WorkUnit::Module {
+        module: mizar_build::module_index::ModuleId::new(
+            PackageId::new("alpha"),
+            ModulePath::new(module),
+        ),
+    });
+    let make_driver = || {
+        let owner = publisher(snapshot, threshold, &units[0]);
+        owner.allow_work_unit(AllowedWorkUnit::new(
+            IrPipelinePhase::new("SourceLoad"),
+            OutputKind::new("SourceUnit"),
+            IrWorkUnit::new(format!("{:?}:{:?}", "alpha", "leaf")),
+        ));
+        for unit in &units {
+            allow_frontend(&owner, unit);
+        }
+        let mut builder = PhaseRegistryBuilder::new();
+        builder.register_source_load();
+        builder.register_frontend(vec![]);
+        (
+            CompilerDriver::new(builder.build().unwrap()).with_output_publisher(owner.clone()),
+            owner,
+        )
+    };
+    let (mut warm_driver, warm_owner) = make_driver();
+    // Keep the genuine captured session before the ordinary producer finishes it.
+    let warm = warm_driver
+        .submit_captured(saved.clone(), &ids, &snapshots, warm_input)
+        .unwrap();
+    let warm_run = warm.scheduler_run.as_ref().unwrap();
+    let graph = warm.task_graph.as_ref().unwrap();
+    let main_source = graph
+        .tasks()
+        .iter()
+        .find(|task| task.unit == units[0] && task.phases == [PipelinePhase::SourceLoad])
+        .unwrap();
+    let main_frontend = graph
+        .tasks()
+        .iter()
+        .find(|task| task.unit == units[0] && task.phases == [PipelinePhase::Frontend])
+        .unwrap();
+    let root = graph
+        .tasks()
+        .iter()
+        .find(|task| task.kind == TaskKind::PackageResolve)
+        .unwrap();
+    let inputs = SourceLoadInputs {
+        snapshot: captured.snapshot(),
+        captured: Some(&captured),
+        build_plan: warm.build_plan.as_ref().unwrap(),
+        module_index: warm.module_index.as_ref().unwrap(),
+        allocator: &ids,
+    };
+    let oracle = IrCacheAdapter::new(warm_owner.clone());
+    let mut source_paths = Vec::new();
+    for task in graph
+        .tasks()
+        .iter()
+        .filter(|task| task.phases == [PipelinePhase::SourceLoad])
+    {
+        let WorkUnit::Module { module } = &task.unit else {
+            unreachable!()
+        };
+        let version = captured
+            .snapshot()
+            .source_versions
+            .iter()
+            .find(|version| version.module_path == module.path)
+            .unwrap();
+        let input = PhaseInput::new(
+            task.unit.clone(),
+            PhaseDispatchInputBundle::without_parent_outputs(snapshot, source_key(version), vec![]),
+        );
+        let handle = warm_owner
+            .storage()
+            .typed_handle::<SourceUnit>(
+                &warm_run.phase_results[&task.id][0].output_refs[0],
+                &OutputKind::new("SourceUnit"),
+            )
+            .unwrap();
+        let EncodeCacheRecordOutcome::Encoded(record) = inputs
+            .encode_native_disk_cache_record(&input, &policy, &oracle, handle)
+            .unwrap()
+        else {
+            panic!("genuine scheduled source record")
+        };
+        source_paths.push((task.id.clone(), store.record_path(&record.header.key)));
+        assert_eq!(store.insert(&record).unwrap(), CacheInsertOutcome::Inserted);
+    }
+    let main_version = captured
+        .snapshot()
+        .source_versions
+        .iter()
+        .find(|version| version.module_path.as_str() == "main")
+        .unwrap();
+    let oracle_input = PhaseInput::new(
+        units[0].clone(),
+        PhaseDispatchInputBundle::new(
+            snapshot,
+            source_key(main_version),
+            vec![],
+            vec![
+                SealedParentOutputHandle::from_published_output(
+                    &warm_owner,
+                    snapshot,
+                    warm_run.phase_results[&main_source.id][0].output_refs[0].clone(),
+                )
+                .unwrap(),
+            ],
+        )
+        .unwrap(),
+    );
+    let oracle_handle = warm_owner
+        .storage()
+        .typed_handle::<FrontendOutput<<MizarParserSeam as ParserSeam>::Ast>>(
+            &warm_run.phase_results[&main_frontend.id][0].output_refs[0],
+            &OutputKind::new("FrontendOutput"),
+        )
+        .unwrap();
+    let EncodeCacheRecordOutcome::Encoded(mut frontend_record) = inputs
+        .encode_native_disk_frontend_cache_record(
+            &oracle_input,
+            &policy,
+            &oracle,
+            oracle_handle.clone(),
+        )
+        .unwrap()
+    else {
+        panic!("genuine scheduled Frontend record")
+    };
+    let frontend_path = store.record_path(&frontend_record.header.key);
+    assert_eq!(
+        store.insert(&frontend_record).unwrap(),
+        CacheInsertOutcome::Inserted
+    );
+    // Native capture is immutable and no phase can reread these bodies.
+    for module in ["main", "leaf"] {
+        fs::remove_file(fixture.root.join(format!("alpha/src/{module}.miz"))).unwrap();
+    }
+    for replay in 0..if case == "hit" { 3 } else { 2 } {
+        let negative = replay > 0 && case != "hit";
+        if replay == 1 {
+            match case {
+                "source-miss" => fs::remove_file(
+                    &source_paths
+                        .iter()
+                        .find(|(id, _)| id == &main_source.id)
+                        .unwrap()
+                        .1,
+                )
+                .unwrap(),
+                "frontend-miss" => fs::remove_file(&frontend_path).unwrap(),
+                "source-corrupt" => fs::write(
+                    &source_paths
+                        .iter()
+                        .find(|(id, _)| id == &main_source.id)
+                        .unwrap()
+                        .1,
+                    b"invalid record",
+                )
+                .unwrap(),
+                "frontend-corrupt" => fs::write(&frontend_path, b"invalid record").unwrap(),
+                "producer" => {
+                    frontend_record.header.produced_by[0].value =
+                        "negative-only-other-producer".into();
+                    let alternate = CacheStoreRoot::new(fixture.root.join("bad-producer"));
+                    alternate.insert(&frontend_record).unwrap();
+                    fs::copy(
+                        alternate.record_path(&frontend_record.header.key),
+                        &frontend_path,
+                    )
+                    .unwrap();
+                }
+                "oracle-stale" => {
+                    warm_owner.mark_obsolete(snapshot).unwrap();
+                }
+                "oracle-collected" => {
+                    let collected = warm_owner.storage().collect(CollectInput {
+                        snapshot,
+                        protected_outputs: vec![],
+                    });
+                    assert_eq!(collected.outputs_dropped, 4);
+                    assert!(
+                        warm_owner
+                            .storage()
+                            .validate_handle(oracle_handle.any())
+                            .is_err()
+                    );
+                }
+                _ => {}
+            }
+        }
+        let (_, mut input) = fixture.submit_request(vec![], vec![]);
+        let mut ordered_files = files.clone();
+        if reverse {
+            ordered_files.reverse();
+        }
+        input.source_layout = StaticSourceLayout::new(vec![WorkspaceSourcePackage {
+            package_id: PackageId::new("alpha"),
+            files: ordered_files,
+        }]);
+        input.worker_count = if reverse { 4 } else { 1 };
+        input.completion_order = if reverse {
+            CompletionOrder::Reverse
+        } else {
+            CompletionOrder::Canonical
+        };
+        if negative && case == "graph" {
+            input.dependency_overlay = complete_leaf_import_overlay();
+        }
+        if negative && case == "context" {
+            input.workspace_packages[0].manifest.verifier.max_axioms += 1;
+        }
+        let (mut clean_driver, clean_owner) = make_driver();
+        let (_, mut clean_input) = fixture.submit_request(vec![], vec![]);
+        clean_input.source_layout = StaticSourceLayout::new(vec![WorkspaceSourcePackage {
+            package_id: PackageId::new("alpha"),
+            files: files.clone(),
+        }]);
+        clean_input.dependency_overlay = input.dependency_overlay.clone();
+        clean_input.workspace_packages = input.workspace_packages.clone();
+        let clean = clean_driver
+            .submit_captured(saved.clone(), &ids, &snapshots, clean_input)
+            .unwrap();
+        let (mut driver, mut owner) = make_driver();
+        if negative && case == "duplicate" {
+            owner = warm_owner.clone();
+            let mut builder = PhaseRegistryBuilder::new();
+            builder.register_source_load();
+            builder.register_frontend(vec![]);
+            driver =
+                CompilerDriver::new(builder.build().unwrap()).with_output_publisher(owner.clone());
+        }
+        input.cache_policy = if negative && case == "disabled" {
+            CacheSchedulingPolicy::Disabled
+        } else {
+            CacheSchedulingPolicy::Enabled
+        };
+        if negative {
+            match case {
+                "provider" => input.phase_dispatch_inputs = Some(Box::new(SuppliedInput::None)),
+                "cancel-source" => input.cancellation.cancel_task(main_source.id.clone()),
+                "cancel-frontend" => input.cancellation.cancel_task(main_frontend.id.clone()),
+                "cancel-root" => input.cancellation.cancel_task(root.id.clone()),
+                "obsolete-source" => input
+                    .cancellation
+                    .discard_obsolete_completed_task(main_source.id.clone()),
+                "obsolete-frontend" => input
+                    .cancellation
+                    .discard_obsolete_completed_task(main_frontend.id.clone()),
+                "resource" => input.resource_budget.module_workers = 0,
+                _ => {}
+            }
+        }
+        let actual_oracle_result = &warm_run.phase_results[&main_frontend.id][0];
+        let mut malformed_result = actual_oracle_result.clone();
+        if negative {
+            match case {
+                "oracle-status" => malformed_result.status = PhaseStatus::Recoverable,
+                "oracle-empty" => malformed_result.output_refs.clear(),
+                "oracle-multiple" => malformed_result.output_refs.push(oracle_handle.erase()),
+                "oracle-diagnostics" => malformed_result.diagnostics.push(
+                    DiagnosticSink::new(DiagnosticProducerScope::new(
+                        DiagnosticPhase::Frontend,
+                        snapshot,
+                        "frontend.run_loaded",
+                    ))
+                    .seal(),
+                ),
+                _ => {}
+            }
+        }
+        let selected_result = if negative
+            && matches!(
+                case,
+                "oracle-status" | "oracle-empty" | "oracle-multiple" | "oracle-diagnostics"
+            ) {
+            &malformed_result
+        } else {
+            actual_oracle_result
+        };
+        let mut selected_input = oracle_input.clone();
+        if negative && case == "binding" {
+            selected_input.work_unit = units[1].clone();
+        }
+        let foreign = IrCacheAdapter::new(publisher(snapshot, threshold, &units[0]));
+        let selected_oracle = if negative && case == "oracle-foreign" {
+            &foreign
+        } else {
+            &oracle
+        };
+        let error_store = CacheStoreRoot::new(fixture.root.join("store-error"));
+        if negative && case == "store-error" && !error_store.root().exists() {
+            fs::write(error_store.root(), b"cache root file").unwrap();
+        }
+        let selected_store = if negative && case == "store-error" {
+            &error_store
+        } else {
+            &store
+        };
+        let record_bytes = source_paths
+            .iter()
+            .map(|(_, path)| fs::read(path).ok())
+            .chain(std::iter::once(fs::read(&frontend_path).ok()))
+            .collect::<Vec<_>>();
+        let submission = driver
+            .submit_captured_with_retained_native_frontend_cache(
+                saved.clone(),
+                &ids,
+                &snapshots,
+                input,
+                (&policy, selected_store),
+                (&selected_input, selected_oracle, selected_result),
+            )
+            .unwrap();
+        assert_eq!(submission.session.captured(), &captured);
+        assert_eq!(saved.state(), BuildSessionState::SnapshotCaptured);
+        assert_eq!(
+            record_bytes,
+            source_paths
+                .iter()
+                .map(|(_, path)| fs::read(path).ok())
+                .chain(std::iter::once(fs::read(&frontend_path).ok()))
+                .collect::<Vec<_>>()
+        );
+        let run = submission.scheduler_run.as_ref().unwrap();
+        let state = |id: &mizar_build::task_graph::TaskId| {
+            run.task_states
+                .iter()
+                .find(|record| &record.task_id == id)
+                .unwrap()
+                .state
+        };
+        let started = |id: &mizar_build::task_graph::TaskId| {
+            run.events.iter().any(|event| {
+                event.task_id.as_ref() == Some(id) && event.kind == SchedulerEventKind::TaskStarted
+            })
+        };
+        let suppress = negative
+            && matches!(
+                case,
+                "provider"
+                    | "duplicate"
+                    | "cancel-source"
+                    | "cancel-frontend"
+                    | "cancel-root"
+                    | "obsolete-source"
+                    | "obsolete-frontend"
+            );
+        let source_hit = !negative
+            || !matches!(
+                case,
+                "source-miss" | "source-corrupt" | "disabled" | "context" | "store-error"
+            );
+        let frontend_hit = !negative;
+        if negative && case == "resource" {
+            assert_eq!(state(&main_source.id), TaskState::CacheHit);
+            assert_eq!(state(&main_frontend.id), TaskState::CacheHit);
+            assert!(!started(&main_source.id));
+            assert!(!started(&main_frontend.id));
+            assert!(run.diagnostics.iter().any(|diagnostic| diagnostic.kind
+                == mizar_build::scheduler::SchedulerDiagnosticKind::ImpossibleResourceRequest));
+            assert!(
+                run.task_states
+                    .iter()
+                    .any(|record| record.state == TaskState::Blocked)
+            );
+        } else if !suppress {
+            assert_eq!(
+                state(&main_source.id),
+                if source_hit {
+                    TaskState::CacheHit
+                } else {
+                    TaskState::Completed
+                },
+                "{case}/{replay}"
+            );
+            assert_eq!(
+                state(&main_frontend.id),
+                if frontend_hit {
+                    TaskState::CacheHit
+                } else if case == "graph" {
+                    assert_eq!(
+                        clean
+                            .scheduler_run
+                            .as_ref()
+                            .unwrap()
+                            .task_states
+                            .iter()
+                            .find(|record| record.task_id == main_frontend.id)
+                            .unwrap()
+                            .state,
+                        TaskState::Blocked
+                    );
+                    TaskState::Blocked
+                } else {
+                    TaskState::Completed
+                },
+                "{case}/{replay}"
+            );
+            assert_eq!(started(&main_source.id), !source_hit);
+            assert_eq!(started(&main_frontend.id), !frontend_hit);
+            assert_eq!(submission.status, clean.status);
+            assert_eq!(submission.session.state(), clean.session.state());
+            assert_eq!(
+                run.phase_results.len(),
+                clean.scheduler_run.as_ref().unwrap().phase_results.len()
+            );
+            for (task, results) in &run.phase_results {
+                let expected = &clean.scheduler_run.as_ref().unwrap().phase_results[task];
+                assert_eq!(results.len(), expected.len());
+                for (result, expected) in results.iter().zip(expected) {
+                    assert_eq!(result.status, expected.status);
+                    assert_eq!(result.diagnostics, expected.diagnostics);
+                    assert_eq!(result.output_refs.len(), expected.output_refs.len());
+                    if state(task) == TaskState::CacheHit {
+                        assert!(result.cache_observation.is_none());
+                    }
+                    for (output, expected) in result.output_refs.iter().zip(&expected.output_refs) {
+                        assert_eq!(output.output(), expected.output());
+                        assert_eq!(output.content_hash(), expected.content_hash());
+                        assert_eq!(output.side_table_hash(), expected.side_table_hash());
+                        assert_eq!(output.lineage(), expected.lineage());
+                        assert_eq!(
+                            matches!(output.placement(), StoragePlacement::Blob { .. }),
+                            threshold == 0
+                        );
+                        if output.output_kind() == &OutputKind::new("SourceUnit") {
+                            let actual = owner
+                                .storage()
+                                .typed_handle::<SourceUnit>(output, &OutputKind::new("SourceUnit"))
+                                .unwrap();
+                            let expected = clean_owner
+                                .storage()
+                                .typed_handle::<SourceUnit>(
+                                    expected,
+                                    &OutputKind::new("SourceUnit"),
+                                )
+                                .unwrap();
+                            assert_eq!(
+                                *owner.storage().get(&actual).unwrap(),
+                                *clean_owner.storage().get(&expected).unwrap()
+                            );
+                            assert_eq!(
+                                owner.storage().side_tables(&actual).unwrap(),
+                                clean_owner.storage().side_tables(&expected).unwrap()
+                            );
+                        } else {
+                            let actual = owner.storage().typed_handle::<FrontendOutput<<MizarParserSeam as ParserSeam>::Ast>>(output, &OutputKind::new("FrontendOutput")).unwrap();
+                            let expected = clean_owner.storage().typed_handle::<FrontendOutput<<MizarParserSeam as ParserSeam>::Ast>>(expected, &OutputKind::new("FrontendOutput")).unwrap();
+                            assert_eq!(
+                                *owner.storage().get(&actual).unwrap(),
+                                *clean_owner.storage().get(&expected).unwrap()
+                            );
+                            assert_eq!(
+                                owner.storage().side_tables(&actual).unwrap(),
+                                clean_owner.storage().side_tables(&expected).unwrap()
+                            );
+                        }
+                    }
+                }
+            }
+            let task = submission
+                .task_graph
+                .as_ref()
+                .unwrap()
+                .tasks()
+                .iter()
+                .find(|task| task.id == main_frontend.id)
+                .unwrap();
+            assert_eq!(
+                task.dependencies.len(),
+                if negative && case == "graph" { 3 } else { 2 }
+            );
+            assert!(task.dependencies.contains(&main_source.id));
+            assert!(task.dependencies.contains(&root.id));
+        } else {
+            assert_ne!(state(&main_frontend.id), TaskState::CacheHit, "{case}");
+            assert!(!run.phase_results.contains_key(&main_frontend.id));
+            if matches!(
+                case,
+                "cancel-source" | "cancel-root" | "obsolete-source" | "provider"
+            ) {
+                assert!(!run.phase_results.contains_key(&main_source.id), "{case}");
+            }
+            if case == "duplicate" {
+                assert_eq!(state(&main_source.id), TaskState::Blocked);
+                let result = &run.phase_results[&main_source.id][0];
+                assert_eq!(result.status, PhaseStatus::Blocking);
+                assert!(result.output_refs.is_empty());
+                assert!(started(&main_source.id));
+            }
+            assert!(run.task_states.iter().any(|record| matches!(
+                record.state,
+                TaskState::Cancelled | TaskState::Failed | TaskState::Blocked
+            )));
+        }
+        // Exactly prepared payloads may remain physically stored after a rejected skip.
+        let collected = owner.storage().collect(CollectInput {
+            snapshot,
+            protected_outputs: vec![],
+        });
+        assert_eq!(collected.retained_outputs, 0, "{case}/{replay}");
+        assert_eq!(
+            collected.outputs_dropped,
+            if suppress && case == "provider" {
+                0
+            } else if negative && matches!(case, "cancel-root" | "resource" | "graph") {
+                3
+            } else {
+                4
+            },
+            "{case}/{replay}"
+        );
+        for output in run
+            .phase_results
+            .values()
+            .flatten()
+            .flat_map(|result| &result.output_refs)
+        {
+            assert!(owner.storage().validate_handle(output).is_err());
+        }
+    }
+}
+
+#[test]
+fn retained_native_frontend_cache_hits_match_clean_resident_blob_replay_and_order() {
+    for threshold in [usize::MAX, 0] {
+        for reverse in [false, true] {
+            retained_native_frontend_cache_case("hit", threshold, reverse);
+        }
+    }
+}
+
+#[test]
+fn retained_native_frontend_cache_misses_and_unsupported_profiles_execute_normally() {
+    for case in [
+        "source-miss",
+        "frontend-miss",
+        "source-corrupt",
+        "frontend-corrupt",
+        "producer",
+        "store-error",
+        "disabled",
+        "provider",
+        "context",
+        "binding",
+        "graph",
+        "oracle-foreign",
+        "oracle-stale",
+        "oracle-collected",
+        "oracle-status",
+        "oracle-empty",
+        "oracle-multiple",
+        "oracle-diagnostics",
+    ] {
+        retained_native_frontend_cache_case(case, usize::MAX, false);
+    }
+}
+
+#[test]
+fn retained_native_frontend_cache_rejected_skips_release_actual_owners() {
+    for case in [
+        "cancel-source",
+        "cancel-frontend",
+        "cancel-root",
+        "obsolete-source",
+        "obsolete-frontend",
+        "resource",
+        "duplicate",
+    ] {
+        retained_native_frontend_cache_case(case, 0, true);
+    }
+}

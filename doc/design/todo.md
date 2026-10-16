@@ -689,6 +689,7 @@ Native editor [storage codecs](./mizar-frontend/en/source.md#canonical-openbuffe
 [IR producer expectations](./task_contracts/en/IR-CURRENT-CACHE-PAYLOAD-BINDING.md) guard cached publication before storage decoding.
 [Current native Disk lookup](./task_contracts/en/DRIVER-NATIVE-DISK-CACHE-REHYDRATE.md) binds caller-invoked typed reconstruction before retained scheduler integration.
 [Explicit cached task association](./task_contracts/en/DRIVER-NATIVE-DISK-CACHE-SCHEDULE.md) owns the bounded genuine SourceLoad scheduler handoff before full runtime integration.
+[Explicit retained Frontend scheduling](./task_contracts/en/DRIVER-RETAINED-NATIVE-FRONTEND-CACHE-SCHEDULE.md) binds the same protected capture before full runtime integration.
 Their LSP build bridge and current diagnostic publication remain Step 8 prerequisites.
 Step 7's [instance-finder design](./task_contracts/en/ATPK-INSTANCE-FINDER.md) follows its existing producer dependencies.
 Full cache-hit equivalence still needs complete active-runtime context beyond

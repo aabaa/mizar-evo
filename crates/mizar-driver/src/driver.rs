@@ -390,7 +390,14 @@ impl CompilerDriver {
         let session = pending
             .capture_snapshot(snapshots)
             .map_err(|error| DriverSubmitError::SnapshotCapture { error })?;
-        self.submit_inner(session, allocator, snapshots, input, (true, false), None)
+        self.submit_inner(
+            session,
+            allocator,
+            snapshots,
+            input,
+            (true, false, None),
+            None,
+        )
     }
 
     pub fn submit<A, L>(
@@ -410,7 +417,14 @@ impl CompilerDriver {
         let session = pending
             .capture_snapshot(snapshots)
             .map_err(|error| DriverSubmitError::SnapshotCapture { error })?;
-        self.submit_inner(session, allocator, snapshots, input, (false, false), None)
+        self.submit_inner(
+            session,
+            allocator,
+            snapshots,
+            input,
+            (false, false, None),
+            None,
+        )
     }
 
     pub fn submit_captured<A: SessionIdAllocator, L: SourceLayoutProvider>(
@@ -420,7 +434,14 @@ impl CompilerDriver {
         snapshots: &SnapshotRegistry<A>,
         input: DriverSubmitInput<L>,
     ) -> Result<BuildSubmission, DriverSubmitError> {
-        self.submit_inner(session, allocator, snapshots, input, (false, true), None)
+        self.submit_inner(
+            session,
+            allocator,
+            snapshots,
+            input,
+            (false, true, None),
+            None,
+        )
     }
 
     /// Uses genuine native Disk SourceLoad cache records for captured scheduling.
@@ -441,7 +462,7 @@ impl CompilerDriver {
             allocator,
             snapshots,
             input,
-            (false, true),
+            (false, true, None),
             Some((policy, store, false, false, false)),
         )
     }
@@ -464,7 +485,7 @@ impl CompilerDriver {
             allocator,
             snapshots,
             input,
-            (false, true),
+            (false, true, None),
             Some((policy, store, true, false, false)),
         )
     }
@@ -487,7 +508,7 @@ impl CompilerDriver {
             allocator,
             snapshots,
             input,
-            (false, true),
+            (false, true, None),
             Some((policy, store, true, true, false)),
         )
     }
@@ -510,8 +531,38 @@ impl CompilerDriver {
             allocator,
             snapshots,
             input,
-            (false, true),
+            (false, true, None),
             Some((policy, store, true, true, true)),
+        )
+    }
+
+    /// Schedules native Disk cache hits against one genuine retained Frontend oracle.
+    pub fn submit_captured_with_retained_native_frontend_cache<
+        A: SessionIdAllocator,
+        L: SourceLayoutProvider,
+    >(
+        &mut self,
+        session: BuildSession,
+        allocator: &A,
+        snapshots: &SnapshotRegistry<A>,
+        input: DriverSubmitInput<L>,
+        cache: (
+            &mizar_proof::policy::VerifierPolicy,
+            &mizar_cache::cache_store::CacheStoreRoot,
+        ),
+        oracle: (
+            &crate::registry::PhaseInput,
+            &mizar_ir::cache_adapter::IrCacheAdapter,
+            &crate::registry::PhaseResult,
+        ),
+    ) -> Result<BuildSubmission, DriverSubmitError> {
+        self.submit_inner(
+            session,
+            allocator,
+            snapshots,
+            input,
+            (false, true, Some(oracle)),
+            Some((cache.0, cache.1, false, false, false)),
         )
     }
 
@@ -664,7 +715,14 @@ impl CompilerDriver {
         snapshots: &SnapshotRegistry<A>,
         input: DriverSubmitInput<L>,
     ) -> Result<BuildSubmission, DriverSubmitError> {
-        self.submit_inner(session, allocator, snapshots, input, (true, true), None)
+        self.submit_inner(
+            session,
+            allocator,
+            snapshots,
+            input,
+            (true, true, None),
+            None,
+        )
     }
 
     fn submit_inner<A, L>(
@@ -673,7 +731,15 @@ impl CompilerDriver {
         allocator: &A,
         snapshots: &SnapshotRegistry<A>,
         input: DriverSubmitInput<L>,
-        (discover_imports, prepared): (bool, bool),
+        (discover_imports, prepared, oracle): (
+            bool,
+            bool,
+            Option<(
+                &crate::registry::PhaseInput,
+                &mizar_ir::cache_adapter::IrCacheAdapter,
+                &crate::registry::PhaseResult,
+            )>,
+        ),
         native_disk_cache: Option<(
             &mizar_proof::policy::VerifierPolicy,
             &mizar_cache::cache_store::CacheStoreRoot,
@@ -1099,7 +1165,131 @@ impl CompilerDriver {
                             cache_observation: None,
                         }],
                     );
-                    cached_sources.push((task.id.clone(), *handle, owner));
+                    cached_sources.push((task.id.clone(), handle.erase(), owner));
+                    let Some((oracle_input, oracle_adapter, oracle_result)) = oracle else {
+                        continue;
+                    };
+                    if oracle_result.status != PhaseStatus::Complete
+                        || !oracle_result.diagnostics.is_empty()
+                    {
+                        continue;
+                    }
+                    let [oracle_output] = oracle_result.output_refs.as_slice() else {
+                        continue;
+                    };
+                    if task.unit != oracle_input.work_unit
+                        || task_graph
+                            .tasks()
+                            .iter()
+                            .filter(|candidate| {
+                                candidate.unit == task.unit
+                                    && candidate.phases == [PipelinePhase::SourceLoad]
+                            })
+                            .count()
+                            != 1
+                    {
+                        continue;
+                    }
+                    let mut roots = task_graph.tasks().iter().filter(|candidate| {
+                        candidate.kind == mizar_build::task_graph::TaskKind::PackageResolve
+                            && candidate.unit == mizar_build::task_graph::WorkUnit::Workspace
+                            && candidate.phases == [PipelinePhase::PackageResolve]
+                    });
+                    let Some(root) = roots.next() else { continue };
+                    if roots.next().is_some() {
+                        continue;
+                    }
+                    let mut frontends = task_graph.tasks().iter().filter(|candidate| {
+                        candidate.unit == task.unit && candidate.phases == [PipelinePhase::Frontend]
+                    });
+                    let Some(frontend) = frontends.next() else {
+                        continue;
+                    };
+                    if frontends.next().is_some()
+                        || frontend.dependencies.len() != 2
+                        || !frontend.dependencies.contains(&task.id)
+                        || !frontend.dependencies.contains(&root.id)
+                    {
+                        continue;
+                    }
+                    let Ok(parent) =
+                        mizar_ir::dispatch_input::SealedParentOutputHandle::from_published_output(
+                            publisher,
+                            input.snapshot,
+                            handle.erase(),
+                        )
+                    else {
+                        continue;
+                    };
+                    let Ok(bundle) = PhaseDispatchInputBundle::new(
+                        input.snapshot,
+                        input.identities().input_hash(),
+                        Vec::new(),
+                        vec![parent],
+                    ) else {
+                        continue;
+                    };
+                    let frontend_input = PhaseInput::new(task.unit.clone(), bundle);
+                    let Ok(oracle_handle) = oracle_adapter.publisher().storage().typed_handle(
+                        oracle_output,
+                        &mizar_ir::identity::OutputKind::new("FrontendOutput"),
+                    ) else {
+                        continue;
+                    };
+                    let Ok(CacheRehydrateOutcome::Rehydrated(frontend_handle)) = inputs
+                        .rehydrate_native_disk_frontend_cache(
+                            &frontend_input,
+                            policy,
+                            store,
+                            (oracle_input, oracle_adapter, &oracle_handle),
+                            &adapter,
+                        )
+                    else {
+                        continue;
+                    };
+                    let owner = RetainOwner::new(format!(
+                        "native-disk-cache:{:p}:{:?}:{}",
+                        self,
+                        session.id,
+                        frontend.id.as_str()
+                    ));
+                    if publisher
+                        .validate_current_output(input.snapshot, frontend_handle.any())
+                        .is_err()
+                        || publisher
+                            .storage()
+                            .validate_handle(frontend_handle.any())
+                            .is_err()
+                        || publisher
+                            .storage()
+                            .retain(frontend_handle.output(), owner.clone())
+                            .is_err()
+                    {
+                        continue;
+                    }
+                    scheduler_input
+                        .cache_decisions
+                        .decisions
+                        .push(CacheTaskDecision::new(
+                            frontend.id.clone(),
+                            CacheSchedulingOutcome::ValidatedHit(ValidatedCacheHit::new(
+                                vec![CacheOutputRef::new(
+                                    format!("{:?}", frontend_handle.output()),
+                                    format!("{:?}", frontend_handle.content_hash()),
+                                )],
+                                Vec::new(),
+                            )),
+                        ));
+                    dispatcher.phase_results.insert(
+                        frontend.id.clone(),
+                        vec![PhaseResult {
+                            status: PhaseStatus::Complete,
+                            diagnostics: Vec::new(),
+                            output_refs: vec![frontend_handle.erase()],
+                            cache_observation: None,
+                        }],
+                    );
+                    cached_sources.push((frontend.id.clone(), frontend_handle.erase(), owner));
                 }
             }
         }

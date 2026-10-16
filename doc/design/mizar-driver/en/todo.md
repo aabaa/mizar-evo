@@ -567,6 +567,8 @@ the owning producers when the paired tasks land.
 
 46. **[Native Frontend resolver binding](../../task_contracts/en/DRIVER-NATIVE-FRONTEND-RESOLVER-BINDING.md).** [x]
 
+47. **[Explicit retained native Frontend cache scheduling](../../task_contracts/en/DRIVER-RETAINED-NATIVE-FRONTEND-CACHE-SCHEDULE.md).** [x]
+
 ## Recommended Verification
 
 Run after each task:

@@ -535,6 +535,8 @@ artifact/test のフォローアップタスクが所有する。本 crate の�
 
 46. **[Native Frontend resolver binding](../../task_contracts/ja/DRIVER-NATIVE-FRONTEND-RESOLVER-BINDING.md).** [x]
 
+47. **[保持済みnative Frontend cacheの明示スケジュール連携](../../task_contracts/ja/DRIVER-RETAINED-NATIVE-FRONTEND-CACHE-SCHEDULE.md).** [x]
+
 ## 推奨検証
 
 各タスクの後で実行する:
