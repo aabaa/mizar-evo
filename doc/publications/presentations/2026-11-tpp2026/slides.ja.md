@@ -133,7 +133,7 @@ Speaker note:
 
 - **一階論理と Tarski-Grothendieck 集合論を基盤として維持。**
 - soft type、mode、attribute、registration、structure、宣言的証明を継承。
-- **証明探索と検査を分離し、受理を小規模な kernel に集約。詳細は §6。**
+- **ATP の探索と検査を分離し、結果を小規模な kernel で独立に検査。詳細は §6。**
 
 Speaker note:
 
@@ -531,10 +531,12 @@ thus euclid_gcd(12,8) = 4 by computation;
 
 検証済み algorithm を MVM（仮想機械）で実行し、その結果を証明に使う。
 
+**既定は MVM も信頼する `computed` 経路。kernel/SAT の再検査とは区別する。**
+
 Speaker note:
 
 - Source: `doc/spec/en/20.algorithm_and_verification.md` §20.7.2–20.7.3, 20.9.1–20.9.2, 20.13.2; `16.theorems_and_proofs.md` §16.5.1。MVM 実行・コード抽出は今後の課題。
-- requires と検証済み実行artifactが前提。既定の computation は MVM を信頼する computed 経路。kernel replay の条件は draft.ja.md。
+- requires と検証済み実行artifactが前提。replay は定義方程式と kernel 検査を要求し、このループ付き互除法には使えない。詳細は draft.ja.md。
 
 ### Frame 4.5 - 式変形を検証する: lambda と微分
 

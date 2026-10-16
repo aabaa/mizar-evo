@@ -73,10 +73,10 @@ project origin with its design timeline, and design expansion with AI implementa
 | 1. Logical foundation | 9–11 | 2 | 1.1–1.2 |
 | 2. Readable mathematics | 11–16 | 5 | 2.1–2.6 |
 | 3. Generic mathematics | 16–19 | 3 | 3.1–3.4 |
-| 4. Verified computation | 19–24 | 5 | 4.1–4.5 |
-| 5. Development infrastructure | 24–27 | 3 | 5.1–5.3 |
-| 6. Checking and automation | 27–32 | 5 | 6.1–6.4 |
-| Status, roadmap, closing | 32–36.5 | 4.5 | 7.1–7.2 |
+| 4. Verified computation | 19:00–24:15 | 5.25 | 4.1–4.5 |
+| 5. Development infrastructure | 24:15–27:15 | 3 | 5.1–5.3 |
+| 6. Checking and automation | 27:15–32:15 | 5 | 6.1–6.4 |
+| Status, roadmap, closing | 32:15–36:30 | 4.25 | 7.1–7.2 |
 | Questions (outside main talk) | 36.5–43.5 | 7 | selected backups |
 | Buffer | 43.5–45 | 1.5 | |
 
@@ -112,9 +112,10 @@ Part 3 keeps its three-minute budget (45/60/40/35 seconds);
 4.3 repeats the Euclid body with numbered annotations matching the table of
 establishment, preservation, termination and exit obligations;
 4.4 explains promotion through checked termination, contract citation, and
-`by computation` using a concrete-input example (MVM execution remains planned);
+`by computation` using a concrete-input example. Default computation also
+trusts the MVM result; kernel replay is a separate path (MVM execution remains planned);
 4.5 connects lambda function notation, reflected syntax and verified symbolic
-differentiation. Part 4 keeps five minutes (45/75/75/60/45 seconds);
+differentiation. Part 4 uses 5.25 minutes (45/75/75/60/60 seconds), taking 15 seconds from the closing section;
 5.1 lists all ten environment directives and emphasizes notation/definition
 precedence and order dependence as the central authoring difficulty;
 5.2 then introduces imports. Frame 6.1 shows the planned native-hammer flow from
