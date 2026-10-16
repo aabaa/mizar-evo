@@ -7302,5 +7302,74 @@ fn inline_application_arity(ast: &SurfaceAst, node: SurfaceNodeId) -> usize {
         .count()
 }
 
+/// Resolves the complete intrinsic type-use batch for the bounded theorem profile.
+pub fn source_theorem_builtin_type_reference_candidates(
+    ast: &SurfaceAst,
+    source: &SurfaceResolvedArena,
+    symbols: &crate::env::SymbolEnv,
+) -> Result<Option<NameReferenceResolution>, String> {
+    if crate::labels::source_theorem_label_reference_candidates(ast, source, symbols)?.is_none() {
+        return Ok(None);
+    }
+    validate_variable_surface_with_mode(ast, true).map_err(|error| format!("{error:?}"))?;
+    let mut heads = BTreeSet::new();
+    let mut candidates = Vec::new();
+    for expression in ast
+        .node_views()
+        .filter(|node| matches!(node.kind(), SurfaceNodeKind::TypeExpression))
+    {
+        let [head] = expression.children() else {
+            return Ok(None);
+        };
+        let head = ast.node_view(*head).expect("validated surface child");
+        if !matches!(head.kind(), SurfaceNodeKind::TypeHead) {
+            return Ok(None);
+        }
+        let [token] = head.children() else {
+            return Ok(None);
+        };
+        let token = ast.node_view(*token).expect("validated surface child");
+        let Some(keyword) = token.as_token() else {
+            return Ok(None);
+        };
+        let range = expression.range();
+        if keyword.kind != SurfaceTokenKind::ReservedWord
+            || !matches!(keyword.text.as_ref(), "set" | "object")
+            || range.start == range.end
+            || head.range() != range
+            || token.range() != range
+        {
+            return Ok(None);
+        }
+        heads.insert(head.id());
+        let Some(mapped) = source.resolved_node_for(head.id()) else {
+            return Ok(None);
+        };
+        let Some(original) = source.arena().node(mapped) else {
+            return Ok(None);
+        };
+        candidates.push(NameReferenceCandidate::unqualified(
+            ReferenceSite::new(mapped, range, keyword.text.as_ref()),
+            original.origin().clone(),
+            range.start,
+        ));
+    }
+    if ast
+        .node_views()
+        .any(|node| matches!(node.kind(), SurfaceNodeKind::TypeHead) && !heads.contains(&node.id()))
+    {
+        return Ok(None);
+    }
+    let builtins = [
+        BuiltinNameProjection::new(BuiltinId::new("builtin:type:set"), "set"),
+        BuiltinNameProjection::new(BuiltinId::new("builtin:type:object"), "object"),
+    ];
+    Ok(Some(SymbolNameResolver::new(&[], &builtins).resolve(
+        source.module(),
+        &NamespacePath::new(source.module().path().as_str()),
+        &candidates,
+    )))
+}
+
 #[cfg(test)]
 mod tests;

@@ -4795,3 +4795,245 @@ fn source_theorem_label_reference_candidates_refuse_incomplete_coverage() {
         assert_eq!((rebuilt, arena, env), before);
     }
 }
+#[test]
+fn source_theorem_builtin_type_reference_candidates_preserve_original_batch() {
+    let fixture = include_str!(
+        "../../../../tests/miz/pass/resolve/pass_declaration_symbol_private_theorem_visibility_001.miz"
+    );
+    for (text, expected) in [
+        (fixture.to_owned(), vec![(36, 39, "set"), (69, 72, "set"), (124, 127, "set"), (157, 160, "set")]),
+        (fixture.replace("private ", ""), vec![(28, 31, "set"), (61, 64, "set"), (116, 119, "set"), (149, 152, "set")]),
+        (include_str!("../../../../tests/miz/pass/theorems/pass_proof_verification_lemma_reference_001.miz").to_owned(), vec![(24, 27, "set"), (57, 60, "set"), (111, 114, "set"), (144, 147, "set")]),
+        (include_str!("../../../../tests/miz/pass/theorems/pass_proof_verification_theorem_status_open_assumed_001.miz").to_owned(), vec![(33, 36, "set"), (85, 88, "set")]),
+        (fixture.replace("set", "object"), vec![(36, 42, "object"), (72, 78, "object"), (130, 136, "object"), (166, 172, "object")]),
+        (fixture.replacen("set", "object", 1), vec![(36, 42, "object"), (72, 75, "set"), (127, 130, "set"), (160, 163, "set")]),
+        ("theorem Plain: 0 = 0\nproof\n  thus 0 = 0;\nend;\n".to_owned(), vec![]),
+    ] {
+        let (ast, module, namespace, env, arena) = parsed_private_theorem_fixture(&text);
+        let before = (ast.clone(), arena.clone(), env.clone());
+        let result = crate::names::source_theorem_builtin_type_reference_candidates(&ast, &arena, &env).unwrap().unwrap();
+        assert_eq!(result.ids().len(), expected.len());
+        assert_eq!(result.table().len(), expected.len());
+        assert!(!result.has_unresolved());
+        assert_eq!(ast.node_views().filter(|node| matches!(node.kind(), SurfaceNodeKind::TypeHead)).count(), expected.len());
+        let mut candidates = Vec::new();
+        for (index, (id, (start, end, spelling))) in result.ids().iter().zip(expected).enumerate() {
+            assert_eq!(id.index(), index);
+            assert_eq!(&text[start..end], spelling);
+            let head = ast.node_views().find(|node| matches!(node.kind(), SurfaceNodeKind::TypeHead) && node.range() == range(ast.source_id, start, end)).unwrap();
+            let mapped = arena.resolved_node_for(head.id()).unwrap();
+            let entry = result.table().get(*id).unwrap();
+            assert_eq!(entry.site(), &ReferenceSite::new(mapped, head.range(), spelling));
+            assert_eq!(entry.origin(), arena.arena().node(mapped).unwrap().origin());
+            let builtin = match spelling {
+                "set" => "builtin:type:set",
+                "object" => "builtin:type:object",
+                _ => unreachable!(),
+            };
+            assert_eq!(entry.resolution(), &crate::resolved_ast::NameResolution::ResolvedBuiltin(crate::resolved_ast::BuiltinRef::new(crate::resolved_ast::BuiltinId::new(builtin), range(ast.source_id, start, end), spelling)));
+            candidates.push(crate::names::NameReferenceCandidate::unqualified(entry.site().clone(), entry.origin().clone(), start));
+        }
+        let builtins = [
+            crate::names::BuiltinNameProjection::new(crate::resolved_ast::BuiltinId::new("builtin:type:set"), "set"),
+            crate::names::BuiltinNameProjection::new(crate::resolved_ast::BuiltinId::new("builtin:type:object"), "object"),
+        ];
+        assert_eq!(result, crate::names::SymbolNameResolver::new(&[], &builtins).resolve(&module, &namespace, &candidates));
+        assert_eq!(crate::names::source_theorem_builtin_type_reference_candidates(&ast, &arena, &env).unwrap(), Some(result));
+        assert_eq!((ast, arena, env), before);
+    }
+}
+
+#[test]
+fn source_theorem_builtin_type_reference_candidates_refuse_incomplete_coverage() {
+    let fixture = include_str!(
+        "../../../../tests/miz/pass/resolve/pass_declaration_symbol_private_theorem_visibility_001.miz"
+    );
+    let unsupported = fixture.replace("by PrivT1;", "by PrivT1, main.PrivT1;");
+    let (ast, module, _, env, arena) = parsed_private_theorem_fixture(&unsupported);
+    assert_eq!(
+        source_theorem_label_reference_candidates(&ast, &arena, &env).unwrap(),
+        None
+    );
+    assert_eq!(
+        crate::names::source_theorem_builtin_type_reference_candidates(&ast, &arena, &env).unwrap(),
+        None
+    );
+    let (foreign_ast, _, _, foreign_env, _) =
+        parsed_private_theorem_fixture(&unsupported.replace("UsePriv1", "Changed1"));
+    assert_eq!(
+        crate::names::source_theorem_builtin_type_reference_candidates(&foreign_ast, &arena, &env)
+            .unwrap_err(),
+        arena
+            .validate_against(&foreign_ast, &module)
+            .unwrap_err()
+            .to_string()
+    );
+    assert_eq!(
+        crate::names::source_theorem_builtin_type_reference_candidates(&ast, &arena, &foreign_env)
+            .unwrap_err(),
+        crate::symbols::validate_source_symbol_env(&arena, &foreign_env).unwrap_err()
+    );
+
+    let (ast, module, namespace, _, _) = parsed_private_theorem_fixture(fixture);
+    let expression = ast
+        .node_views()
+        .find(|node| matches!(node.kind(), SurfaceNodeKind::TypeExpression))
+        .unwrap();
+    assert_eq!(expression.range(), range(ast.source_id, 36, 39));
+    let head = expression.child_views().next().unwrap();
+    let token = head.child_views().next().unwrap();
+    for mutation in [
+        "attribute",
+        "extra_token",
+        "missing_head",
+        "missing_token",
+        "non_token",
+        "named",
+        "token_kind",
+        "token_text",
+        "expression_range",
+        "head_range",
+        "token_range",
+        "empty",
+        "uncovered",
+        "orphan",
+        "foreign_range",
+    ] {
+        let mut builder = SurfaceAstBuilder::new(ast.source_id);
+        let mut mapped = BTreeMap::new();
+        for node in ast.node_views() {
+            let mut kind = node.kind().clone();
+            let mut node_range = node.range();
+            let mut children = node
+                .children()
+                .iter()
+                .map(|child| mapped[child])
+                .collect::<Vec<_>>();
+            if node.id() == token.id() {
+                if mutation == "token_kind" {
+                    kind = SurfaceNodeKind::Token(mizar_syntax::SurfaceToken {
+                        kind: SurfaceTokenKind::Identifier,
+                        text: "set".into(),
+                    });
+                }
+                if mutation == "token_text" {
+                    kind = SurfaceNodeKind::Token(mizar_syntax::SurfaceToken {
+                        kind: SurfaceTokenKind::ReservedWord,
+                        text: "Set".into(),
+                    });
+                }
+                if mutation == "token_range" {
+                    node_range.end -= 1;
+                }
+                if mutation == "foreign_range" {
+                    node_range.source_id = distinct_source_ids().1;
+                }
+            }
+            if node.id() == head.id() {
+                match mutation {
+                    "extra_token" => {
+                        let original = token.as_token().unwrap();
+                        children.push(builder.add_token(
+                            original.kind,
+                            original.text.clone(),
+                            token.range(),
+                        ));
+                    }
+                    "missing_head" => kind = SurfaceNodeKind::FormulaExpression,
+                    "missing_token" => children.clear(),
+                    "non_token" | "named" => {
+                        children = vec![builder.add_node(
+                            if mutation == "named" {
+                                SurfaceNodeKind::QualifiedSymbol
+                            } else {
+                                SurfaceNodeKind::FormulaExpression
+                            },
+                            token.range(),
+                            children,
+                        )];
+                    }
+                    "head_range" => node_range.start -= 1,
+                    _ => {}
+                }
+            }
+            if node.id() == expression.id() {
+                match mutation {
+                    "attribute" => {
+                        let original = token.as_token().unwrap();
+                        let cloned =
+                            builder.add_token(original.kind, original.text.clone(), token.range());
+                        children.insert(
+                            0,
+                            builder.add_node(
+                                SurfaceNodeKind::AttributeChain,
+                                token.range(),
+                                vec![cloned],
+                            ),
+                        );
+                    }
+                    "expression_range" => node_range.start -= 1,
+                    "uncovered" => kind = SurfaceNodeKind::FormulaExpression,
+                    _ => {}
+                }
+            }
+            if mutation == "empty" && [expression.id(), head.id(), token.id()].contains(&node.id())
+            {
+                node_range.end = node_range.start;
+            }
+            let id = match &kind {
+                SurfaceNodeKind::Token(token) => {
+                    builder.add_token(token.kind, token.text.clone(), node_range)
+                }
+                _ => builder.add_node(kind, node_range, children),
+            };
+            mapped.insert(node.id(), id);
+        }
+        if mutation == "orphan" {
+            let original = token.as_token().unwrap();
+            let cloned = builder.add_token(original.kind, original.text.clone(), token.range());
+            builder.add_node(head.kind().clone(), head.range(), vec![cloned]);
+        }
+        let rebuilt = builder.finish(Some(mapped[&ast.root().unwrap()]), None);
+        let shells =
+            crate::declarations::DeclarationShellCollector::new(&rebuilt, &module).collect();
+        let collected =
+            crate::symbols::SignatureProjectionExtractor::new(&rebuilt, &shells, namespace.clone())
+                .collect(&module);
+        assert!(collected.diagnostics().is_empty(), "{mutation}");
+        let env = collected.into_env();
+        let arena = SurfaceResolvedArena::lower(&rebuilt, &module).unwrap();
+        let before = (rebuilt.clone(), arena.clone(), env.clone());
+        assert!(
+            source_theorem_label_reference_candidates(&rebuilt, &arena, &env)
+                .unwrap()
+                .is_some(),
+            "{mutation}: inherited admission"
+        );
+        assert!(
+            rebuilt
+                .node_views()
+                .any(|node| matches!(node.kind(), SurfaceNodeKind::TypeHead)
+                    && node.range() == range(ast.source_id, 69, 72)),
+            "{mutation}: supported head retained"
+        );
+        let result =
+            crate::names::source_theorem_builtin_type_reference_candidates(&rebuilt, &arena, &env);
+        match mutation {
+            "missing_token" | "head_range" | "orphan" => assert_eq!(
+                result.unwrap_err(),
+                format!("{:?}", crate::names::SourceVariableScopeError::InvalidShape),
+                "{mutation}"
+            ),
+            "foreign_range" => assert_eq!(
+                result.unwrap_err(),
+                format!(
+                    "{:?}",
+                    crate::names::SourceVariableScopeError::SourceMismatch
+                ),
+                "{mutation}"
+            ),
+            _ => assert_eq!(result.unwrap(), None, "{mutation}"),
+        }
+        assert_eq!((rebuilt, arena, env), before);
+    }
+}

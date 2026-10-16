@@ -671,6 +671,8 @@ Keep `cargo test -p mizar-resolve` green after each task (see
 
 40. **[Source theorem label reference candidates](../../task_contracts/en/RESOLVE-SOURCE-THEOREM-LABEL-REFERENCES.md).** [x]
 
+41. **[Source theorem builtin type reference candidates](../../task_contracts/en/RESOLVE-SOURCE-THEOREM-BUILTIN-TYPE-REFERENCES.md).** [x]
+
 ## Crate Close-Out
 
 - Completed: [crate_exit_report.md](./crate_exit_report.md) records
