@@ -274,6 +274,8 @@ Tasks 1–5: [LSP-LIFECYCLE-FOUNDATION](../../task_contracts/ja/LSP-LIFECYCLE-FO
 
 36. **[Open document lifetime handles](../../task_contracts/ja/LSP-OPEN-DOCUMENT-LIFETIME.md).** [x]
 
+37. **[元の native OpenBuffer 捕捉](../../task_contracts/ja/LSP-NATIVE-OPEN-BUFFER-CAPTURE.md)。** [x]
+
 ## 推奨検証
 
 各タスクの後で実行する:
