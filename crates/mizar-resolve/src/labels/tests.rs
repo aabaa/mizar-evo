@@ -5424,3 +5424,198 @@ fn source_theorem_resolved_ast_refuses_incomplete_roles_and_preserves_errors() {
         format!("{error:?}")
     );
 }
+
+#[test]
+fn source_public_theorem_signature_candidates_frame_original_public_statements() {
+    let fixture = include_str!(
+        "../../../../tests/miz/pass/resolve/pass_declaration_symbol_private_theorem_visibility_001.miz"
+    );
+    let quantified = "101:3:for100:1:X101:5:being101:3:set101:5:holds100:1:X102:1:=100:1:X";
+    let numeral = "103:1:0102:1:=103:1:0";
+    let alpha = "theorem Alpha: 0 = 0\nproof\n  thus 0 = 0;\nend;\n";
+    for (text, expected) in [
+        (fixture.to_owned(), vec![("UsePriv1", quantified)]),
+        (fixture.replace("theorem UsePriv1", "lemma UsePriv1"), vec![("UsePriv1", quantified)]),
+        (fixture.replace("private ", ""), vec![("PrivT1", quantified), ("UsePriv1", quantified)]),
+        (fixture.replace("UsePriv1", "Renamed1"), vec![("Renamed1", quantified)]),
+        (fixture.replace("thus X = X by PrivT1;", "Inner: X = X;\n  thus X = X by Inner;"), vec![("UsePriv1", quantified)]),
+        (fixture.replace("holds X = X", "holds\n X  =  X :: \u{03bb} comment\n"), vec![("UsePriv1", quantified)]),
+        (format!("{fixture}\n{alpha}"), vec![("UsePriv1", quantified), ("Alpha", numeral)]),
+        (format!("{alpha}\n{fixture}"), vec![("UsePriv1", quantified), ("Alpha", numeral)]),
+        (include_str!("../../../../tests/miz/pass/theorems/pass_proof_verification_theorem_status_open_assumed_001.miz").to_owned(), vec![("OpenT1", quantified), ("AxT1", quantified)]),
+        (fixture.replace('X', "Y"), vec![("UsePriv1", "101:3:for100:1:Y101:5:being101:3:set101:5:holds100:1:Y102:1:=100:1:Y")]),
+        (fixture.replace("holds X = X", "holds X <> X"), vec![("UsePriv1", "101:3:for100:1:X101:5:being101:3:set101:5:holds100:1:X102:2:<>100:1:X")]),
+        (alpha.replace("0 = 0", "0 = 12"), vec![("Alpha", "103:1:0102:1:=103:2:12")]),
+        (alpha.replace("0 = 0", "12 = 0"), vec![("Alpha", "103:2:12102:1:=103:1:0")]),
+        (fixture.replace("\ntheorem UsePriv1", "\nprivate theorem UsePriv1"), vec![]),
+    ] {
+        let (ast, _, _, env, arena) = parsed_private_theorem_fixture(&text);
+        let before = (ast.clone(), arena.clone(), env.clone());
+        let mut expected_map = BTreeMap::new();
+        for (label, payload) in expected {
+            let owner = env.symbols().iter().find(|entry| entry.primary_spelling() == label).unwrap();
+            assert_eq!(owner.visibility(), Visibility::Public);
+            assert_eq!(owner.export_status(), ExportStatus::Exported);
+            assert!(expected_map.insert(owner.symbol().clone(), crate::env::SignatureShell::Opaque {
+                schema: "source-theorem-statement-tokens-v1".to_owned(),
+                payload: payload.to_owned(),
+            }).is_none());
+        }
+        let result = crate::symbols::source_public_theorem_signature_candidates(&ast, &arena, &env).unwrap();
+        assert_eq!(result, Some(expected_map), "{text}");
+        assert_eq!(crate::symbols::source_public_theorem_signature_candidates(&ast, &arena, &env).unwrap(), result);
+        assert_eq!((ast, arena, env), before);
+    }
+}
+
+#[test]
+fn source_public_theorem_signature_candidates_refuse_whole_maps_and_preserve_errors() {
+    let fixture = include_str!(
+        "../../../../tests/miz/pass/resolve/pass_declaration_symbol_private_theorem_visibility_001.miz"
+    );
+    for text in [
+        fixture.replacen("private theorem", "public theorem", 1),
+        format!("{fixture}\nreserve Y for set;\n"),
+        format!("{fixture}\ntheorem Plain: 0 = 0;\n"),
+        format!("{fixture}\ntheorem Direct: 0 = 0 by UsePriv1;\n"),
+        format!("{fixture}\nopen theorem OpenDirect: 0 = 0 by UsePriv1;\n"),
+        format!("{fixture}\nopen theorem OpenComp: 0 = 0 by computation(steps: 1);\n"),
+        format!(
+            "{fixture}\n{}",
+            include_str!(
+                "../../../../tests/miz/pass/algorithms/pass_proof_verification_computation_justification_001.miz"
+            )
+        ),
+    ] {
+        let (ast, _, _, env, arena) = parsed_private_theorem_fixture(&text);
+        let before = (ast.clone(), arena.clone(), env.clone());
+        assert_eq!(
+            source_public_theorem_formula_candidates(&ast, &arena, &env).unwrap(),
+            None
+        );
+        assert_eq!(
+            crate::symbols::source_public_theorem_signature_candidates(&ast, &arena, &env).unwrap(),
+            None
+        );
+        assert_eq!((ast, arena, env), before);
+    }
+    let unsupported = format!("{fixture}\ntheorem Plain: 0 = 0;\n");
+    let (ast, _, _, env, arena) = parsed_private_theorem_fixture(&unsupported);
+    let (foreign_ast, _, _, foreign_env, foreign_arena) =
+        parsed_private_theorem_fixture(&unsupported.replace("UsePriv1", "Changed1"));
+    for (ast, arena, env) in [
+        (&foreign_ast, &arena, &env),
+        (&ast, &foreign_arena, &env),
+        (&ast, &arena, &foreign_env),
+        (&foreign_ast, &arena, &foreign_env),
+    ] {
+        let before = (ast.clone(), arena.clone(), env.clone());
+        assert_eq!(
+            crate::symbols::source_public_theorem_signature_candidates(ast, arena, env)
+                .unwrap_err(),
+            source_public_theorem_formula_candidates(ast, arena, env).unwrap_err()
+        );
+        assert_eq!((ast.clone(), arena.clone(), env.clone()), before);
+    }
+    let text = format!("{fixture}\ntheorem Alpha: 0 = 0\nproof\n  thus 0 = 0;\nend;\n");
+    let (ast, module, namespace, env, arena) = parsed_private_theorem_fixture(&text);
+    let original = source_public_theorem_formula_candidates(&ast, &arena, &env)
+        .unwrap()
+        .unwrap();
+    let target_owner = env
+        .symbols()
+        .iter()
+        .find(|entry| entry.primary_spelling() == "UsePriv1")
+        .unwrap();
+    let supported_owner = env
+        .symbols()
+        .iter()
+        .find(|entry| entry.primary_spelling() == "Alpha")
+        .unwrap();
+    let formula = ast.node_view(original[target_owner.symbol()]).unwrap();
+    let target = ast
+        .node_views()
+        .find(|node| {
+            node.as_token()
+                .is_some_and(|token| token.text.as_ref() == "X")
+                && node.range().start >= formula.range().start
+                && node.range().end <= formula.range().end
+        })
+        .unwrap();
+    for mutation in [
+        "unknown",
+        "annotation",
+        "string",
+        "empty",
+        "token_free",
+        "error_token",
+        "recovery",
+    ] {
+        let mut builder = SurfaceAstBuilder::new(ast.source_id);
+        let mut mapped = BTreeMap::new();
+        for node in ast.node_views() {
+            let mut children = node
+                .children()
+                .iter()
+                .map(|child| mapped[child])
+                .collect::<Vec<_>>();
+            if node.id() == formula.id() && mutation == "token_free" {
+                children.clear();
+            }
+            let id = if let Some(token) = node.as_token() {
+                let mut kind = token.kind;
+                let mut text = token.text.clone();
+                if node.id() == target.id() {
+                    match mutation {
+                        "unknown" => kind = SurfaceTokenKind::Unknown,
+                        "annotation" => kind = SurfaceTokenKind::AnnotationMarker,
+                        "string" => kind = SurfaceTokenKind::StringLiteral,
+                        "empty" => text = "".into(),
+                        "error_token" | "recovery" => kind = SurfaceTokenKind::ErrorRecovery,
+                        _ => {}
+                    }
+                }
+                if node.id() == target.id() && mutation == "recovery" {
+                    builder.add_recovered_token(kind, text, node.range())
+                } else {
+                    builder.add_token(kind, text, node.range())
+                }
+            } else {
+                builder.add_node(node.kind().clone(), node.range(), children)
+            };
+            mapped.insert(node.id(), id);
+        }
+        let rebuilt = builder.finish(Some(mapped[&ast.root().unwrap()]), None);
+        let shells =
+            crate::declarations::DeclarationShellCollector::new(&rebuilt, &module).collect();
+        let collected =
+            crate::symbols::SignatureProjectionExtractor::new(&rebuilt, &shells, namespace.clone())
+                .collect(&module);
+        let env = collected.into_env();
+        let arena = SurfaceResolvedArena::lower(&rebuilt, &module).unwrap();
+        let before = (rebuilt.clone(), arena.clone(), env.clone());
+        let upstream = source_public_theorem_formula_candidates(&rebuilt, &arena, &env);
+        let result =
+            crate::symbols::source_public_theorem_signature_candidates(&rebuilt, &arena, &env);
+        if mutation == "recovery" {
+            assert_eq!(result.unwrap_err(), upstream.unwrap_err());
+        } else {
+            let formulas = upstream.unwrap().unwrap();
+            assert_eq!(formulas.len(), 2, "{mutation}");
+            assert!(
+                formulas.contains_key(supported_owner.symbol()),
+                "{mutation}: supported public owner retained"
+            );
+            let supported = ast.node_view(original[supported_owner.symbol()]).unwrap();
+            assert_eq!(
+                rebuilt
+                    .node_view(formulas[supported_owner.symbol()])
+                    .unwrap()
+                    .range(),
+                supported.range()
+            );
+            assert_eq!(result.unwrap(), None, "{mutation}");
+        }
+        assert_eq!((rebuilt, arena, env), before);
+    }
+}

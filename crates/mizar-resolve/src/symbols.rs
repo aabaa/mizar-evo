@@ -3471,5 +3471,60 @@ fn declaration_shell_kind_key(kind: DeclarationShellKind) -> &'static str {
     }
 }
 
+/// Derives unpublished body-free token signatures for original public statements.
+pub fn source_public_theorem_signature_candidates(
+    ast: &SurfaceAst,
+    source: &SurfaceResolvedArena,
+    symbols: &SymbolEnv,
+) -> Result<Option<BTreeMap<SymbolId, SignatureShell>>, String> {
+    let Some(formulas) =
+        crate::labels::source_public_theorem_formula_candidates(ast, source, symbols)?
+    else {
+        return Ok(None);
+    };
+    let mut signatures = BTreeMap::new();
+    for (owner, formula) in formulas {
+        let mut pending = vec![formula];
+        let mut payload = String::new();
+        while let Some(id) = pending.pop() {
+            let node = ast.node_view(id).expect("validated formula subtree");
+            if let Some(token) = node.as_token() {
+                if !matches!(
+                    token.kind,
+                    SurfaceTokenKind::Identifier
+                        | SurfaceTokenKind::ReservedWord
+                        | SurfaceTokenKind::ReservedSymbol
+                        | SurfaceTokenKind::Numeral
+                        | SurfaceTokenKind::LexemeRun
+                        | SurfaceTokenKind::UserSymbol
+                ) || token.text.is_empty()
+                {
+                    return Ok(None);
+                }
+                let Ok(length) = u32::try_from(token.text.len()) else {
+                    return Ok(None);
+                };
+                payload.push_str(&format!(
+                    "{}:{length}:{}",
+                    token.kind.syntax_kind() as u16,
+                    token.text
+                ));
+            }
+            pending.extend(node.children().iter().rev().copied());
+        }
+        if payload.is_empty() {
+            return Ok(None);
+        }
+        signatures.insert(
+            owner,
+            SignatureShell::Opaque {
+                schema: "source-theorem-statement-tokens-v1".to_owned(),
+                payload,
+            },
+        );
+    }
+    Ok(Some(signatures))
+}
+
 #[cfg(test)]
 mod tests;

@@ -725,6 +725,8 @@ Pre-audit 5B.3 and Gate S1 block only consumers requiring their outputs.
 
    [Closed-profile theorem semantic AST](./task_contracts/en/RESOLVE-SOURCE-THEOREM-SEMANTIC-AST.md) is implemented as a bounded snapshot; complete ModuleResolver/signature publication remains separate.
 
+   [Body-free public theorem statement shells](./task_contracts/en/RESOLVE-SOURCE-PUBLIC-THEOREM-SIGNATURES.md) are implemented as raw surface-token signatures; complete env/summary publication and semantic fingerprints remain separate.
+
    These slices do not register ModuleResolver or later semantic services;
    their remaining owner-provided payload/publication prerequisites stay open.
 2. [~] [Real-service equivalence](./task_contracts/en/STEP6C-REAL-SERVICE-EQUIVALENCE.md)
