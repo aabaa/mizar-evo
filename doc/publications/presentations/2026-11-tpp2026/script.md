@@ -101,3 +101,29 @@ The additive identity is zero, and the multiplicative identity is one. Both are 
 The specification's functor id. M returns the identity of a unital Magma. Writing only id. R leaves a choice: the additive or multiplicative Magma view?
 R qua AddMagma gives R.zero. R qua MulMagma gives R.one. Each selected view must have an identity.
 The view lets us select zero or one within the same ring. Types and attributes decide which definitions apply; the chosen operation view must also be clear. [Specification-based sketch]
+
+## Part 3. Generic Mathematics (16–19 minutes)
+
+### 3.1 Current MML: more types, more declarations (16:00)
+
+Next, templates. Adding functions means adding their values at each point. Current MML already defines this body once.
+But preserving the result type requires separate redefinitions and registrations for complex, real, rational, integer, and natural values. Each also needs coherence proofs.
+The sum is the same, but each new type adds surrounding declarations and proofs. The next example uses a template to share this work. [VALUED_1]
+
+### 3.2 template: share the body and result type (16:45)
+
+We take an additive structure T and a common nonempty domain I as parameters. One definition gives both the body and the result type of function addition.
+From real to natural values, we can use the same Add with the corresponding additive structure. Type-specific closure facts and registrations are still needed, but we do not repeat the sum and its result type.
+The synonym supplies + notation. Here, declared types determine T and I uniquely, so we can write f+g or u+v without arguments. Ambiguous inheritance paths need qua.
+Current MML also handles intersections of different domains. This example is restricted to a common nonempty domain. [Specification-based sketch, proofs omitted]
+
+### 3.3 Unify schemes with template theorems [deep dive] (17:45)
+
+Traditional schemes also become theorems. Induction becomes NatInduction[P], with let P be pred(Nat). The predicate parameter gives a family of first-order theorems, one for each substituted predicate.
+After defpred, we explicitly apply by NatInduction[P], Base, Step. Functor parameters are schema-level symbols, so the logic stays first-order. [Specification]
+
+### 3.4 template: structures and attributes too (18:25)
+
+The upper example gives vector-space data over a field K. The lower example describes density in a space M.
+Familiar of notation and prefix attributes are syntax sugar for templates. Vector of K corresponds to Vector[K]; M-dense corresponds to dense[M]. We can also write VectorSpace over K.
+Structures, attributes, modes, and other declarations share this parameter mechanism. [Specification-based sketch]

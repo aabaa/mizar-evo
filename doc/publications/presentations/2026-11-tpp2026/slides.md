@@ -311,31 +311,29 @@ Speaker note:
 
 ## Part 3. Generic Mathematics
 
-### Frame 3.1 - Current MML: Result Types For The Sum Of Functions
+### Frame 3.1 - Current MML: more types, more redefinitions and registrations
 
-**Example: the sum of functions. Add their values at each point.**
+**The sum of functions has one body, but preserving result types needs work for each type.**
 
-Result-type registrations (sketch, separate complex-valued and real-valued input blocks):
+### Table 6. Per-type declarations for function addition in VALUED_1
 
-```mizar
-cluster f1 + f2 -> complex-valued;
-cluster f1 + f2 -> real-valued;
-```
+| Value type | Result-type redefinition | Attribute / totality registration |
+|---|---|---|
+| Complex | `PartFunc of C,COMPLEX` | `complex-valued` + `total` |
+| Real | `PartFunc of C,REAL` | `real-valued` + `total` |
+| Rational | `PartFunc of C,RAT` | `RAT-valued` + `total` |
+| Integer | `PartFunc of C,INT` | `INT-valued` + `total` |
+| Natural | `PartFunc of C,NAT` | `natural-valued` + `total` |
 
-| Step in VALUED_1 | Type information |
-|---|---|
-| Define pointwise addition once | The result is a Function |
-| Refine the codomain | Separate complex and real PartFunc redefinitions |
-| Recover the full input domain | Separate totality registrations |
-
-- **The mathematical operation is already shared. The result-type refinements still follow the value types.**
+- **Each new type adds redefinitions, registrations, and coherence proofs.**
+- We want one template for function addition and its result type.
 
 Speaker note:
 
-- Source: MML [VALUED_1](https://mizar.uwb.edu.pl/version/current/html/valued_1.html), def 1 and the following result-type refinements. Each displayed line is from a separate registration block; declarations and coherence proofs are omitted. GPL-3.0-or-later / CC-BY-SA-3.0-or-later.
-- VALUED_1:def 1 uses the intersection of the input domains. The next sketch is limited to a common nonempty domain I; it does not replace the full construction.
+- Source: MML [VALUED_1](https://mizar.uwb.edu.pl/version/current/html/valued_1.html), def 1 and the following five groups of attribute registrations, PartFunc redefinitions, and total registrations. The table summarizes them; it is not a quotation. C is a common domain. Each row assumes the corresponding input value types; total registrations assume total functions and the required nonempty ranges. Each redefinition / registration has a coherence proof.
+- The body of VALUED_1:def 1 is shared and uses the intersection of domains. The next template sketch is restricted to a common nonempty domain I.
 
-### Frame 3.1a - Template: One Body And Concrete Result Types
+### Frame 3.2 - template: share the body and result type
 
 Generic functor (sketch, existence and uniqueness proofs omitted):
 
@@ -350,21 +348,23 @@ definition
 end;
 ```
 
-| Call (real R, complex C)[^1] | Result type |
+### Table 7. Template instances and result types
+
+| Call (real R / complex C)[^1] | Result type |
 |---|---|
 | `f + g` | `Function of I,R.carrier` |
 | `u + v` | `Function of I,C.carrier` |
 
-- **A synonym gives infix `+`; infer template arguments from declared types.**
+- **Use the same Add[T,I] for rational, integer, and natural values. Share the body and result-type declaration.**
 
-[^1]: Explicit: `f +[R,I] g`, `u +[C,I] v`. Omit arguments only when declared types determine them uniquely. Write `qua` for ambiguous inheritance paths.
+[^1]: Explicit forms: `f +[R,I] g`, `u +[C,I] v`. Omit arguments only when declared types determine them uniquely. Use `qua` for ambiguous inheritance paths.
 
 Speaker note:
 
-- Assume `let R be RealAdd; let C be ComplexAdd;`, with unique inheritance to nonempty AddMagma and the needed registrations. f,g have declared type Function of I,R.carrier; u,v have Function of I,C.carrier. Assume their normalized declared types uniquely determine T and I.
-- Source: `doc/spec/en/11.symbol_management.md` section 11.1.2; `18.templates.md` sections 18.2.2, 18.2.7, 18.7; `19.overload_resolution.md` section 19.6.2. A codomain set alone does not select its addition structure. `qua` views are never inferred.
+- Assume `let R be RealAdd; let C be ComplexAdd;` and the needed registrations. Each has a unique path to non empty AddMagma. f,g have type Function of I,R.carrier; u,v have type Function of I,C.carrier. Declared types determine T and I uniquely. Other number types need their additive structures, closure, and registrations. synonym supplies infix +.
+- Source: `doc/spec/en/11.symbol_management.md` §11.1.2; `18.templates.md` §18.2.2, 18.2.7, 18.7; `19.overload_resolution.md` §19.6.2. A range set alone does not select the addition structure. qua views are not inferred automatically.
 
-### Frame 3.2 - Schemes Become Ordinary Templates [deep dive]
+### Frame 3.3 - Unify schemes with template theorems [deep dive]
 
 Induction as a theorem with a predicate parameter (specification example):
 
@@ -378,10 +378,47 @@ definition
 end;
 ```
 
-- A predicate parameter gives a family of first-order theorems, one for each predicate you put in.
-- Instantiation is explicit: `by NatInduction[P], Base, Step` after a `defpred`.
-- Functor parameters are schema-level symbols, not sets. This keeps the logic first-order.
-- Details: Bialystok deck, Story 6 (`PermProduct[T]`, `qua` views), and Backup 4 here.
+- A predicate parameter describes a family of first-order theorems, one per substituted predicate.[^1]
+- Explicit instantiation: `defpred`, followed by `by NatInduction[P], Base, Step`.
+- Functor parameters are schema-level symbols, not sets. The logic stays first-order.
+
+[^1]: Details: Białystok deck, Story 6 (`PermProduct[T]` and views with `qua`); also Backup 1 here.
+
+Speaker note:
+
+- Source: `doc/spec/en/18.templates.md` §18.2.3, 18.8.2, 18.9. Frame 3.4 shows type / value parameters for structures and attributes.
+
+### Frame 3.4 - template: parameterize structures and attributes too
+
+struct: vector-space data over a field K (sketch, inside a definition block):
+
+```mizar
+let K be Field;
+struct VectorSpace[K] where
+  field carrier -> non empty set;
+  field add -> BinOp of carrier;
+  field smul -> Function of [:K.carrier, carrier:], carrier;
+end;
+```
+
+`of` / `over` are syntax sugar: `Vector of K` → `Vector[K]` (a mode example).
+
+attr: a subset S is dense in a space M (sketch, condition omitted):
+
+```mizar
+let M be MetricSpace;
+let S be Subset of M.carrier;
+attr DenseDef: S is dense[M] means ...;
+```
+
+Prefix attribute notation is syntax sugar too: `M-dense` → `dense[M]`.
+
+**Type / value parameters are shared across struct, attr, mode, pred, and func.**
+
+Speaker note:
+
+- Source: `doc/spec/en/18.templates.md` §18.1, 18.2.6, 18.3, 18.5. Excerpts inside a definition block; vector-space laws and the density condition are omitted. Assume a mode Vector taking K and its of synonym. VectorSpace over K is also a synonym for VectorSpace[K]. Predicate / functor parameters are restricted to theorem and algorithm.
+- In the 35-minute version, spend 15 seconds pointing to structure and attribute parameters.
 
 ## Part 4. Verified Computation
 
