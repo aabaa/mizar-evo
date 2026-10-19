@@ -482,6 +482,7 @@ layer consumes both; one alignment task is owned here.
 42. **[Source theorem reflexivity status projection](../../task_contracts/en/PROOF-SOURCE-THEOREM-STATUS-PROJECTION.md).** [x]
 43. **[Source theorem reflexivity metadata and checked wire](../../task_contracts/en/PROOF-SOURCE-THEOREM-REFLEXIVITY-METADATA.md).** [x]
 44. **[Source theorem reflexivity witness projection](../../task_contracts/en/PROOF-SOURCE-THEOREM-WITNESS-PROJECTION.md).** [x]
+45. **[Source theorem reflexivity status with used axioms](../../task_contracts/en/PROOF-SOURCE-THEOREM-USED-AXIOMS-STATUS.md).** [x]
 
 ## Recommended Verification
 

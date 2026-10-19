@@ -783,6 +783,7 @@ permit; each source-integration slice waits for its actual upstream outputs.
    [Source theorem internal status](./task_contracts/en/PROOF-SOURCE-THEOREM-STATUS-PROJECTION.md) composes genuine identity, selection and conservative dependencies; publication and reuse remain open.
    [Theorem raw metadata and checked wire](./task_contracts/en/PROOF-SOURCE-THEOREM-REFLEXIVITY-METADATA.md) retain actual same-call check products; trusted witness/publication and reuse remain open.
    [Unpublished theorem witness projection](./task_contracts/en/PROOF-SOURCE-THEOREM-WITNESS-PROJECTION.md) binds genuine original identity and same-call checked context/payload; trusted staging/publication and reuse remain open.
+   [Same-result theorem used-axioms status](./task_contracts/en/PROOF-SOURCE-THEOREM-USED-AXIOMS-STATUS.md) retains genuine reference metadata with the original conservative slice; full imported-FQN recording, publication and reuse remain open.
 2. [ ] [Built-in evidence candidates](./task_contracts/en/PREATP-FORMULA-EVIDENCE.md)
    (VC 60); design can start, general source integration waits for authentic
    formula/context/substitution/provenance producers. [Original-source direct-premise candidates](./task_contracts/en/VC-SOURCE-DIRECT-PREMISE-CANDIDATE.md) supply only bounded untrusted association.

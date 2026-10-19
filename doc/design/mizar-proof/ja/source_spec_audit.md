@@ -60,6 +60,8 @@ task 15 は未 exercise だった 3 つの validation path に focused unit cove
 
 ### Status
 
+`project_source_theorem_reflexivity_used_axioms_status`: [唯一の API 所有元](./status.md#source-theorem-reflexivity-status-with-used-axioms).
+
 `project_source_theorem_reflexivity_witness`: [唯一の API 所有元](./status.md#source-theorem-reflexivity-witness-projection).
 
 `check_source_theorem_reflexivity_metadata`: [唯一の API 所有元](./status.md#source-theorem-reflexivity-metadata-and-checked-wire).

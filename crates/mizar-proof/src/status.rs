@@ -280,11 +280,20 @@ pub fn select_source_theorem_reflexivity(
     vc_id: VcId,
     policy: &VerifierPolicy,
 ) -> Result<crate::selection::ProofSelection, String> {
-    use crate::selection::{ProofEvidenceCandidate, ProofEvidenceSet, select_winner};
     let origin = KernelEvidenceOrigin::BuiltinDischarge;
     let (result, decision, _, _, _) = check_source_theorem_reflexivity_payload(
         source, check, symbols, snapshot, vc_id, policy, false,
     )?;
+    select_source_theorem_reflexivity_result(&result, decision, origin, policy)
+}
+
+fn select_source_theorem_reflexivity_result(
+    result: &KernelCheckResult,
+    decision: crate::policy::PolicyDecision,
+    origin: KernelEvidenceOrigin,
+    policy: &VerifierPolicy,
+) -> Result<crate::selection::ProofSelection, String> {
+    use crate::selection::{ProofEvidenceCandidate, ProofEvidenceSet, select_winner};
     let invalid = || "theorem.proof.invalid_source_selection".to_owned();
     let target = result.target_vc_fingerprint().sort_bytes();
     let id = CandidateSourceId::new(format!(
@@ -295,7 +304,7 @@ pub fn select_source_theorem_reflexivity(
     let candidate = if decision.class == crate::policy::CandidatePolicyClass::DischargedBuiltin {
         ProofEvidenceCandidate::from_trusted_kernel_input(
             id,
-            &KernelPolicyInput::from_kernel_result(&result, origin),
+            &KernelPolicyInput::from_kernel_result(result, origin),
         )
         .ok_or_else(invalid)?
     } else {
@@ -322,7 +331,6 @@ pub fn project_source_theorem_reflexivity_witness(
     ),
     String,
 > {
-    use crate::selection::{ProofEvidenceCandidate, ProofEvidenceSet, select_winner};
     use mizar_artifact::{
         proof_witness::{
             EvidenceKind, ProofStatus, ProofWitnessRef, builtin_proof_witness_ref_json,
@@ -343,18 +351,12 @@ pub fn project_source_theorem_reflexivity_witness(
     let metadata = metadata.ok_or_else(invalid)?;
     let input = KernelPolicyInput::from_kernel_result(&result, origin);
     let polarity = input.accepted_goal_polarity().ok_or_else(invalid)?;
-    let target = result.target_vc_fingerprint().sort_bytes();
-    let target_hex = source_discharge_hex(&target);
-    let id = CandidateSourceId::new(format!("source-theorem-reflexivity-v1:{target_hex}"))
+    let selection = select_source_theorem_reflexivity_result(&result, decision, origin, policy)
         .map_err(|_| invalid())?;
-    let candidate =
-        ProofEvidenceCandidate::from_trusted_kernel_input(id, &input).ok_or_else(invalid)?;
-    let selection = select_winner(
-        &ProofEvidenceSet::new(target, None, policy.clone()).with_candidates([candidate]),
-    );
     if selection.selected_class() != ProofWinnerClass::DischargedBuiltin {
         return Err(invalid());
     }
+    let target_hex = source_discharge_hex(&result.target_vc_fingerprint().sort_bytes());
     let payload_family = "mizar-proof/source-theorem-reflexivity-witness-payload";
     let witness_artifact_hash = ArtifactHashRef {
         class: ArtifactHashClass::Artifact,
@@ -505,6 +507,49 @@ pub fn project_source_theorem_reflexivity_status(
         policy.clone(),
         identity,
     ))
+    .map_err(|error| error.to_string())?;
+    Ok((projection, slice))
+}
+
+/// Projects genuine source theorem reflexivity with same-result trusted used axioms.
+pub fn project_source_theorem_reflexivity_used_axioms_status(
+    source: &mizar_resolve::resolved_ast::SurfaceResolvedArena,
+    check: &mizar_checker::type_checker::SourceTheoremCheck<'_>,
+    symbols: &mizar_resolve::env::SymbolEnv,
+    snapshot: mizar_session::BuildSnapshotId,
+    vc_id: VcId,
+    policy: &VerifierPolicy,
+) -> Result<
+    (
+        ProofStatusProjection,
+        mizar_vc::dependency_slice::DependencySlice,
+    ),
+    String,
+> {
+    use crate::selection::{VcProofSelection, merge_artifact_proof_selections};
+    let (identity, slice) =
+        source_theorem_obligation_identity(source, check, symbols, snapshot, vc_id)?;
+    let origin = KernelEvidenceOrigin::BuiltinDischarge;
+    let (result, decision, _, _, _) = check_source_theorem_reflexivity_payload(
+        source, check, symbols, snapshot, vc_id, policy, false,
+    )?;
+    let invalid = || "theorem.proof.invalid_source_used_axioms_status".to_owned();
+    if decision.class != crate::policy::CandidatePolicyClass::DischargedBuiltin {
+        return Err(invalid());
+    }
+    let selection = select_source_theorem_reflexivity_result(&result, decision, origin, policy)?;
+    if selection.selected_class() != ProofWinnerClass::DischargedBuiltin {
+        return Err(invalid());
+    }
+    let reference = TrustedUsedAxiomsRef::from_kernel_result(&result, origin)
+        .map_err(|error| error.to_string())?;
+    let merged = merge_artifact_proof_selections([], [VcProofSelection::new(vc_id, selection)])
+        .map_err(|error| error.to_string())?;
+    let [selection] = <[_; 1]>::try_from(merged).map_err(|_| invalid())?;
+    let projection = project_status(
+        ProofStatusProjectionInput::new(selection, policy.clone(), identity)
+            .with_trusted_used_axioms(reference),
+    )
     .map_err(|error| error.to_string())?;
     Ok((projection, slice))
 }
