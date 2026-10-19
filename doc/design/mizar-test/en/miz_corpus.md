@@ -188,3 +188,22 @@ sources currently blocked by frontend gaps are inventoried in
 reproduces a parser panic, so corpus-wide tooling must not assume every
 committed `.miz` parses until gap G5 closes). Corpus pairs move
 `345/345 -> 465/465`; discovered cases move `430 -> 550`.
+
+## Multiple-argument Binder Acceptance Tests
+
+Test design for [§13.10](../../../spec/en/13.term_expression.md#1310-function-binder--) and [§20.5.3](../../../spec/en/20.algorithm_and_verification.md#2053-reflected-syntax).
+
+These requirements fix future test intent, not current implementation success. Stage-specific fixtures require authentic producers; existing tests/expectations are unchanged.
+
+| ID / stage | Required positive and rejection observations |
+|---|---|
+| MB1 / syntax | Unary, binary, ternary and four-head forms; weakest precedence, right nesting, body versus whole-Binder qua, application/restriction and use inside a comma-separated call. Reject empty, repeated, trailing-comma, unparenthesized multi-head, typed and destructuring heads. |
+| MB2 / formation | Infer REAL×REAL and NAT×REAL; explicit certified product expectation selects its factors, including narrower factors with all-input type proofs. Reject missing carriers, incompatible factors and non-product expectations without fallback or factor guessing from equalities. |
+| MB3 / empty domains | An explicit empty factor produces an empty function, including empty codomain; no values/environments are manufactured. Missing factors remain errors even if another is empty; unsupported body forms still reject; nonempty domain with empty codomain rejects. |
+| MB4 / scope and obligations | Fresh UIDs ignore outer values/individual assumptions; retain outer type dependencies and free identities. Reject unavailable declarations, fresh-head-dependent domains/types and unproved body/application/range conditions; restriction cannot rescue failed formation. |
+| MB5 / meaning | Binary f.[a,b], ternary f.[[a,b],c] and four-coordinate packing follow the pointwise equation; all coordinates update simultaneously. Distinguish curried functions, unary pair arguments and multiple heads without implicit conversion. |
+| MB6 / capture | Match exact arity independently of display names; preserve original coordinate types/order, actual domain and external/extended contexts, even for empty domains. Mismatched arity does not match. |
+| MB7 / reconstruction | Unchanged round trip is structurally equal; explicit codomain changes retain range proofs. Function requires saved-domain equality, PartFunc inclusion without enlargement. Reject reordered/incomplete/mixed capture groups or missing C, including equal UIDs with different default codomains. |
+| MB8 / structure and R2 | Exact child order/duplicates, size recurrence, free-UID removal for every head, coordinate-valued pair versus separate coordinates, deterministic inner-collision renaming and unavailable-free-declaration rejection follow §20.5.3. |
+| MB9 / certification | Certified packing/decomposition and function construction prove the ordinary/reflected meaning correspondence; missing library/per-use proofs or same-spelling substitutes supply no axiom or acceptance. |
+| MB10 / later differentiation | For (x,y) ↦ x*y+sin y on REAL×REAL, coordinate 1 yields y and coordinate 2 yields x+cos y. Require all-real update admissibility in every other-coordinate environment and preserve all head identities/order; this is a future library test, not a partial-differentiation API definition. |

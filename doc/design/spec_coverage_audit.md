@@ -18,7 +18,7 @@ not change language behavior, `doc/spec`, `.miz` tests, expectation metadata,
 or Rust source. It is a synchronization ledger for design and TODO work.
 
 The AST reflection specification transfer does not activate coverage.
-Multiple-argument Binder formation, ordered reflection and [acceptance requirements](../spec/en/13.term_expression.md#13102-acceptance-requirements) extend the deferred AST-PARSE/TYPE/LOWER/CORPUS scope; executable cases and pinned pair/product certification remain prerequisites, with no trace activation or semantic credit.
+Multiple-argument Binder formation, ordered reflection and [acceptance test plan](./mizar-test/en/miz_corpus.md#multiple-argument-binder-acceptance-tests) extend the deferred AST-PARSE/TYPE/LOWER/CORPUS scope; executable cases and pinned pair/product certification remain prerequisites, with no trace activation or semantic credit.
 Parser/checker, core/VC, proof/MVM and artifact/build integration remain
 unimplemented follow-ups sequenced by [the roadmap](./todo.md). Owner TODOs
 now name [AST-PARSE](./task_contracts/en/AST-PARSE.md), [AST-TYPE](./task_contracts/en/AST-TYPE.md), [AST-LOWER](./task_contracts/en/AST-LOWER.md), [AST-CONTRACT](./task_contracts/en/AST-CONTRACT.md), [AST-COMPUTE](./task_contracts/en/AST-COMPUTE.md),
