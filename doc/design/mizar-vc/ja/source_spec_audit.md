@@ -54,6 +54,8 @@ Evidence: `crates/mizar-vc/tests/lint_policy.rs` の
 
 ## Public Surface Inventory
 
+`generate_source_theorem_vcs`: [唯一の API 所有元](./generator.md#source-theorem-vc-generation).
+
 ### `vc_ir`
 
 `source_theorem_candidate_anchor_hash`: [唯一の API 所有元](./vc_ir.md#source-theorem-candidate-anchor-hash).

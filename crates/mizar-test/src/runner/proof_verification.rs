@@ -7441,4 +7441,353 @@ mod term_proof_tests {
             assert_eq!((source, collected.env().clone()), before);
         }
     }
+
+    #[test]
+    fn source_theorem_reflexivity_checks_genuine_original_targets() {
+        use super::super::tests::source_registration_owner_inputs as inputs;
+        use mizar_core::{
+            control_flow::{build_control_flow_ir, build_obligation_seed_handoff},
+            elaborator::lower_source_theorem_skeletons as lower,
+        };
+        use mizar_kernel::{
+            checker::{KernelCheckStatus, KernelEvidenceCheckKind},
+            rejection::TargetVcFingerprint,
+        };
+        use mizar_proof::{
+            policy::{CandidatePolicyClass, VerifierPolicy},
+            status::{
+                check_source_theorem_reflexivity as verify,
+                source_theorem_canonical_inputs as canonical,
+                source_theorem_obligation_identity as identity,
+            },
+        };
+        use mizar_vc::{
+            generator::{
+                CoreGenerationCandidateSet as Candidates, CoreGenerationInput as Generation,
+                VcNormalizationInput as Normalization, generate_source_theorem_vcs as generate,
+            },
+            kernel_evidence_handoff::build_source_theorem_kernel_handoff as project,
+            vc_ir::*,
+        };
+        let original =
+            "theorem T: for X being set holds X = X proof let X be set; thus X = X; end;";
+        let mut original_source = None;
+        let mut prior = Vec::new();
+        for (text, package, module, skip) in [
+            (original.to_owned(), "owner-test", "owners", 0),
+            (
+                original.replace(
+                    "for X being set holds X = X",
+                    "for Bound being set holds Bound = Bound",
+                ),
+                "owner-test",
+                "owners",
+                0,
+            ),
+            (
+                original.replace(
+                    "let X be set; thus X = X",
+                    "let Local be set; thus Local = Local",
+                ),
+                "owner-test",
+                "owners",
+                0,
+            ),
+            (
+                format!(":: 日本語 λ\n{original}\n"),
+                "owner-test",
+                "owners",
+                0,
+            ),
+            (original.to_owned(), "owner-test", "owners", 7),
+            (original.to_owned(), "other-package", "owners", 0),
+            (original.to_owned(), "owner-test", "nested.owners", 0),
+        ] {
+            let (frontend, source, collected) = inputs(&text, package, module, skip);
+            assert!(frontend.diagnostics.is_empty());
+            assert!(collected.diagnostics().is_empty());
+            let ast = frontend.ast.as_ref().unwrap();
+            let symbols = collected.env();
+            let before = (source.clone(), symbols.clone(), prior.clone());
+            if skip == 7 {
+                assert_ne!(Some(source.source_id()), original_source);
+            } else if original_source.is_none() {
+                original_source = Some(source.source_id());
+            }
+            with_source_theorem_check(ast, &source, symbols, |check| {
+                let check_before = format!("{check:?}");
+                let core = lower(check, None)?;
+                let generation_schema = GenerationSchemaVersion::new("source-theorem-local-v1");
+                let vc_schema = VcSchemaVersion::new("vc-v1");
+                for ordinal in [777, 778] {
+                    let snapshot = snapshot_id(ordinal);
+                    // Independent original generic construction, with the Proof schemas.
+                    let flow = build_control_flow_ir(&core);
+                    let handoff = build_obligation_seed_handoff(&core, &flow);
+                    let intake = SeedIntakeTable::try_from_handoff(&handoff)
+                        .map_err(|error| error.to_string())?;
+                    let package = core.module_id().package().as_str();
+                    let path = core.module_id().path().as_str();
+                    let module = VcModuleRef::new(format!(
+                        "package={}:{};module={}:{}",
+                        package.len(),
+                        package,
+                        path.len(),
+                        path
+                    ));
+                    let candidates = Candidates::try_from_seed_intake(Generation {
+                        schema_version: &generation_schema,
+                        module: &module,
+                        intake: &intake,
+                        handoff: &handoff,
+                        flow_output: Some(&flow),
+                    })
+                    .map_err(|error| error.to_string())?;
+                    let expected = Candidates::try_normalize(Normalization {
+                        schema_version: &vc_schema,
+                        snapshot,
+                        source: core.source_id(),
+                        candidates: &candidates,
+                    })
+                    .map_err(|error| error.to_string())?;
+                    let graph = generate(&core, snapshot, &generation_schema, &vc_schema)?;
+                    assert_eq!(graph, expected);
+                    assert_eq!(graph.vcs().len(), 1);
+                    let vc = &expected.vcs()[0];
+                    assert_eq!(vc.status, VcStatus::Open);
+                    let original_handoff = project(&core, &expected, vc.id)?;
+                    let target = original_handoff.canonical_evidence().target_vc();
+                    let target =
+                        TargetVcFingerprint::new(target.algorithm_id, target.digest.clone());
+                    let policy = VerifierPolicy::default();
+                    let old = canonical(check, snapshot, vc.id)?;
+                    let old_identity = identity(&source, check, symbols, snapshot, vc.id)?;
+                    assert_eq!(old_identity.1, old.3);
+                    let immutable = (
+                        core.clone(),
+                        graph.clone(),
+                        expected.clone(),
+                        policy.clone(),
+                    );
+                    let actual = verify(&source, check, symbols, snapshot, vc.id, &policy)?;
+                    assert_eq!(actual.0.status(), KernelCheckStatus::Accepted);
+                    assert_eq!(actual.0.target_vc_fingerprint(), &target);
+                    assert_eq!(
+                        actual.0.evidence_check_kind(),
+                        Some(KernelEvidenceCheckKind::ProofObligation)
+                    );
+                    assert!(!actual.0.policy_taint());
+                    assert!(actual.0.used_axioms().is_empty());
+                    assert_eq!(actual.1.class, CandidatePolicyClass::DischargedBuiltin);
+                    assert_eq!(
+                        actual,
+                        verify(&source, check, symbols, snapshot, vc.id, &policy)?
+                    );
+                    assert_eq!(old, canonical(check, snapshot, vc.id)?);
+                    assert_eq!(
+                        old_identity,
+                        identity(&source, check, symbols, snapshot, vc.id)?
+                    );
+                    assert_eq!(
+                        (&core, &graph, &expected, &policy),
+                        (&immutable.0, &immutable.1, &immutable.2, &immutable.3)
+                    );
+                    prior.push(actual);
+                }
+                assert_eq!(format!("{check:?}"), check_before);
+                Ok(())
+            })
+            .unwrap();
+            assert_eq!((&source, symbols), (&before.0, &before.1));
+            assert_eq!(&prior[..before.2.len()], before.2);
+        }
+    }
+
+    #[test]
+    fn source_theorem_reflexivity_enforces_actual_builtin_policy_formats() {
+        use super::super::tests::source_registration_owner_inputs as inputs;
+        use mizar_kernel::checker::KernelCheckStatus;
+        use mizar_proof::{
+            policy::{CandidatePolicyClass, KernelEvidenceFormat, VerifierPolicy},
+            status::check_source_theorem_reflexivity as verify,
+        };
+        use mizar_vc::vc_ir::VcId;
+        let text = "theorem T: for X being set holds X = X proof let X be set; thus X = X; end;";
+        let (frontend, source, collected) = inputs(text, "owner-test", "owners", 0);
+        assert!(frontend.diagnostics.is_empty());
+        assert!(collected.diagnostics().is_empty());
+        let ast = frontend.ast.as_ref().unwrap();
+        let symbols = collected.env();
+        let before = (source.clone(), symbols.clone());
+        with_source_theorem_check(ast, &source, symbols, |check| {
+            let check_before = format!("{check:?}");
+            for policy in [
+                VerifierPolicy::default(),
+                VerifierPolicy::release().with_require_kernel_certificates(true),
+                VerifierPolicy::development()
+                    .with_kernel_evidence_formats([KernelEvidenceFormat::BuiltinKernelEvidence]),
+                VerifierPolicy::default().with_kernel_evidence_formats([]),
+                VerifierPolicy::release()
+                    .with_kernel_evidence_formats([KernelEvidenceFormat::FormulaSubstitution]),
+            ] {
+                let before = policy.clone();
+                let actual = verify(
+                    &source,
+                    check,
+                    symbols,
+                    snapshot_id(777),
+                    VcId::new(0),
+                    &policy,
+                );
+                if policy
+                    .kernel_evidence_formats()
+                    .contains(&KernelEvidenceFormat::BuiltinKernelEvidence)
+                {
+                    let (result, decision) = actual?;
+                    assert_eq!(result.status(), KernelCheckStatus::Accepted);
+                    assert_eq!(decision.class, CandidatePolicyClass::DischargedBuiltin);
+                } else {
+                    assert_eq!(actual.unwrap_err(), "theorem.proof.kernel_policy_rejected");
+                }
+                assert_eq!(policy, before);
+            }
+            assert_eq!(format!("{check:?}"), check_before);
+            Ok(())
+        })
+        .unwrap();
+        assert_eq!((source, symbols.clone()), before);
+    }
+
+    #[test]
+    fn source_theorem_reflexivity_preserves_upstream_errors_and_inputs() {
+        use super::super::tests::source_registration_owner_inputs as inputs;
+        use mizar_checker::type_checker::SourceVariableSemanticsChecker as Checker;
+        use mizar_core::elaborator::lower_source_theorem_skeletons as lower;
+        use mizar_proof::{
+            policy::VerifierPolicy, status::check_source_theorem_reflexivity as verify,
+        };
+        use mizar_vc::{
+            kernel_evidence_handoff::build_source_theorem_kernel_handoff as project, vc_ir::VcId,
+        };
+        let original =
+            "theorem T: for X being set holds X = X proof let X be set; thus X = X; end;";
+        let snapshot = snapshot_id(777);
+        let absent = VcId::new(usize::MAX);
+        let disabled = VerifierPolicy::default().with_kernel_evidence_formats([]);
+        let policy_before = disabled.clone();
+        let cited = include_str!(
+            "../../../../tests/miz/pass/theorems/pass_proof_verification_lemma_reference_001.miz"
+        );
+        // The unchanged alternate-schema generator supplies only VC69 error oracles here;
+        // no alternate-schema graph supplies an expected successful target.
+        for text in [
+            original.to_owned(),
+            original.replacen("theorem", "lemma", 1),
+            "open theorem O: for X being set holds X = X;".to_owned(),
+            format!(
+                "{original}\n{}",
+                original.replace("theorem T:", "theorem U:")
+            ),
+            cited.to_owned(),
+        ] {
+            let (frontend, source, collected) = inputs(&text, "owner-test", "owners", 0);
+            assert!(frontend.diagnostics.is_empty());
+            assert!(collected.diagnostics().is_empty());
+            let ast = frontend.ast.as_ref().unwrap();
+            let symbols = collected.env();
+            let before = (source.clone(), symbols.clone());
+            with_source_theorem_check(ast, &source, symbols, |check| {
+                let check_before = format!("{check:?}");
+                if text == original {
+                    let policy = VerifierPolicy::default();
+                    let prior = verify(&source, check, symbols, snapshot, VcId::new(0), &policy)?;
+                    let prior_before = prior.clone();
+                    let core = lower(check, None)?;
+                    let vcs = generate_core_vcs(&core, snapshot)?;
+                    assert!(!vcs.vcs().is_empty());
+                    let expected = project(&core, &vcs, absent).unwrap_err();
+                    assert_eq!(
+                        verify(&source, check, symbols, snapshot, absent, &disabled).unwrap_err(),
+                        expected
+                    );
+                    for text in [
+                        original.replace("theorem T:", "theorem Foreign:"),
+                        format!(
+                            "{original}\n{}",
+                            original.replace("theorem T:", "theorem U:")
+                        ),
+                        "theorem T: for X being set holds X = ;".to_owned(),
+                    ] {
+                        let (other_frontend, other_source, other) =
+                            inputs(&text, "owner-test", "owners", 0);
+                        assert_eq!(
+                            !other_frontend.diagnostics.is_empty(),
+                            text.ends_with("= ;")
+                        );
+                        let other_before = (other_source.clone(), other.env().clone());
+                        for (current, symbols) in [
+                            (&other_source, other.env()),
+                            (&source, other.env()),
+                            (&other_source, collected.env()),
+                        ] {
+                            let expected = Checker::check_theorem_skeletons(
+                                current,
+                                check.typed_ast(),
+                                check.scope(),
+                                symbols,
+                                check.labels(),
+                                check.resolved_labels(),
+                                None,
+                            )
+                            .unwrap_err();
+                            for selected in [VcId::new(0), absent] {
+                                assert_eq!(
+                                    verify(current, check, symbols, snapshot, selected, &disabled)
+                                        .unwrap_err(),
+                                    expected
+                                );
+                            }
+                        }
+                        assert_eq!((other_source, other.env().clone()), other_before);
+                    }
+                    assert_eq!(prior, prior_before);
+                    assert_eq!(
+                        prior,
+                        verify(&source, check, symbols, snapshot, VcId::new(0), &policy)?
+                    );
+                } else {
+                    let core = lower(check, None);
+                    let expected = match &core {
+                        Err(error) => error.clone(),
+                        Ok(core) => {
+                            let vcs = generate_core_vcs(core, snapshot)?;
+                            assert!(!vcs.vcs().is_empty());
+                            assert!(vcs.vc(VcId::new(0)).is_some());
+                            project(core, &vcs, VcId::new(0)).unwrap_err()
+                        }
+                    };
+                    assert_eq!(
+                        verify(&source, check, symbols, snapshot, VcId::new(0), &disabled)
+                            .unwrap_err(),
+                        expected
+                    );
+                    let expected = match &core {
+                        Err(error) => error.clone(),
+                        Ok(core) => {
+                            project(core, &generate_core_vcs(core, snapshot)?, absent).unwrap_err()
+                        }
+                    };
+                    assert_eq!(
+                        verify(&source, check, symbols, snapshot, absent, &disabled).unwrap_err(),
+                        expected
+                    );
+                }
+                assert_eq!(format!("{check:?}"), check_before);
+                Ok(())
+            })
+            .unwrap();
+            assert_eq!((source, symbols.clone()), before);
+        }
+        assert_eq!(disabled, policy_before);
+    }
 }

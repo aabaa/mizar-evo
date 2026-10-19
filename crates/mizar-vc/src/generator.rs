@@ -40,6 +40,41 @@ mod task180;
 
 pub use task180::{ExactTask180VcError, ExactTask180VcInput, generate_exact_task180_vc};
 
+/// Generates the original raw generic VC graph without theorem-profile validation.
+pub fn generate_source_theorem_vcs(
+    core: &mizar_core::core_ir::CoreIr,
+    snapshot: BuildSnapshotId,
+    generation_schema: &GenerationSchemaVersion,
+    vc_schema: &VcSchemaVersion,
+) -> Result<VcSet, String> {
+    let flow = mizar_core::control_flow::build_control_flow_ir(core);
+    let handoff = mizar_core::control_flow::build_obligation_seed_handoff(core, &flow);
+    let intake = SeedIntakeTable::try_from_handoff(&handoff).map_err(|error| error.to_string())?;
+    let package = core.module_id().package().as_str();
+    let path = core.module_id().path().as_str();
+    let candidates = CoreGenerationCandidateSet::try_from_seed_intake(CoreGenerationInput {
+        schema_version: generation_schema,
+        module: &VcModuleRef::new(format!(
+            "package={}:{};module={}:{}",
+            package.len(),
+            package,
+            path.len(),
+            path
+        )),
+        intake: &intake,
+        handoff: &handoff,
+        flow_output: Some(&flow),
+    })
+    .map_err(|error| error.to_string())?;
+    CoreGenerationCandidateSet::try_normalize(VcNormalizationInput {
+        schema_version: vc_schema,
+        snapshot,
+        source: core.source_id(),
+        candidates: &candidates,
+    })
+    .map_err(|error| error.to_string())
+}
+
 /// Generates one open symbolic request from the bounded source computation theorem.
 pub fn generate_source_computation_request(
     core: &mizar_core::core_ir::CoreIr,

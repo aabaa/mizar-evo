@@ -579,6 +579,7 @@ contract、禁止境界、real-source/corruption requirement を使用する。�
 70. **[Source theorem canonical components](../../task_contracts/ja/VC-SOURCE-THEOREM-CANONICAL-COMPONENTS.md).** [x]
 
 71. **[Source theorem candidate anchor hash](../../task_contracts/ja/SOURCE-THEOREM-ORIGINAL-IDENTITY.md).** [x]
+72. **[Source theorem VC generation](../../task_contracts/ja/PROOF-SOURCE-THEOREM-REFLEXIVITY-CHECK.md).** [x]
 
 ## 推奨検証
 

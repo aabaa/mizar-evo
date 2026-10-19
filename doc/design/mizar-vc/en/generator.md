@@ -686,3 +686,13 @@ Generate source-authenticated conditional library and all-input Binder formation
 ## Full Computation Closure Admission
 
 Future computation admission covers every direct/transitive evaluated algorithm through authentic local or validated exported bodies/dependencies, including internal private helpers. For each value-returning callee with non-ghost Pick or unordered set iteration, retain type/precondition guards and the complete ensures uniqueness goal (§20.9.2), or the exact result=t/result=true iff φ exemption with no result occurrence in t/φ. Procedures themselves do not acquire this obligation; non-trigger value-returning controls have neither a non-ghost Pick nor an unordered set loop. Ordered sequence plus non-ghost Pick and ghost Pick plus unordered set loop still trigger the requirement. Missing closure/classification/contract inputs block admission. Tests cover each applicability boundary, imported/transitive nondeterministic callees, genuine proof/exemption versus Open/failed goals, stale contracts/group/call/dependency data and forged exemptions, for explicit computation and ground-evaluation discharge alike.
+
+## Source theorem VC generation
+
+`generate_source_theorem_vcs(&CoreIr, BuildSnapshotId, &GenerationSchemaVersion, &VcSchemaVersion) -> Result<VcSet, String>` owns only the existing generic raw generation block in generator.rs.
+Run build_control_flow_ir, build_obligation_seed_handoff and SeedIntakeTable::try_from_handoff, preserving their existing validations and Display error text.
+Construct VcModuleRef from actual Core package/path UTF-8 byte lengths and values as `package={}:{};module={}:{}`; use actual intake, handoff and Some(flow) in CoreGenerationCandidateSet::try_from_seed_intake with the supplied generation schema.
+Then try_normalize with the supplied VC schema/snapshot, actual core.source_id() and those candidates, preserving Display errors and the exact original graph.
+Three direct production callers belong to the same task: Proof canonical inputs, VC theorem-handoff replay and fresh Proof theorem reflexivity checking. Registration's bespoke generator and independent test construction stay unchanged.
+At the first caller preserve lower/roots/Core56 before generation; at replay preserve selected lookup before generation and whole equality/profile checks afterwards, using that selected anchor's actual generation schema and set VC schema/snapshot. All old surrounding statements, validations, structures, order and errors remain unchanged.
+This is not a theorem-profile validator, source seal or acceptance/currentness API. Add no type, field, adapter, helper, dependency, encoder, receipt or new validation; preserve anchors, statuses, schemas and all generic behavior.

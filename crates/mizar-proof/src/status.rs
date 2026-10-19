@@ -42,8 +42,7 @@ pub fn source_theorem_canonical_inputs(
 > {
     use mizar_vc::{
         dependency_slice::{DependencySliceInput, try_compute_dependency_slices},
-        generator::{CoreGenerationCandidateSet, CoreGenerationInput, VcNormalizationInput},
-        vc_ir::{GenerationSchemaVersion, SeedIntakeTable, VcModuleRef, VcSchemaVersion},
+        vc_ir::{GenerationSchemaVersion, VcSchemaVersion},
     };
 
     let core = mizar_core::elaborator::lower_source_theorem_skeletons(check, None)?;
@@ -53,32 +52,12 @@ pub fn source_theorem_canonical_inputs(
         .flat_map(|(_, seed)| seed.context.iter().copied().chain(seed.goal))
         .collect::<Vec<_>>();
     let formulas = mizar_core::elaborator::source_theorem_formula_payloads(check, &core, &roots)?;
-    let flow = mizar_core::control_flow::build_control_flow_ir(&core);
-    let handoff = mizar_core::control_flow::build_obligation_seed_handoff(&core, &flow);
-    let intake = SeedIntakeTable::try_from_handoff(&handoff).map_err(|error| error.to_string())?;
-    let package = core.module_id().package().as_str();
-    let path = core.module_id().path().as_str();
-    let candidates = CoreGenerationCandidateSet::try_from_seed_intake(CoreGenerationInput {
-        schema_version: &GenerationSchemaVersion::new("source-theorem-local-v1"),
-        module: &VcModuleRef::new(format!(
-            "package={}:{};module={}:{}",
-            package.len(),
-            package,
-            path.len(),
-            path
-        )),
-        intake: &intake,
-        handoff: &handoff,
-        flow_output: Some(&flow),
-    })
-    .map_err(|error| error.to_string())?;
-    let vcs = CoreGenerationCandidateSet::try_normalize(VcNormalizationInput {
-        schema_version: &VcSchemaVersion::new("vc-v1"),
+    let vcs = mizar_vc::generator::generate_source_theorem_vcs(
+        &core,
         snapshot,
-        source: core.source_id(),
-        candidates: &candidates,
-    })
-    .map_err(|error| error.to_string())?;
+        &GenerationSchemaVersion::new("source-theorem-local-v1"),
+        &VcSchemaVersion::new("vc-v1"),
+    )?;
     let (vc, goal, context) = vcs.source_theorem_canonical_components(vc_id, &core, &formulas)?;
     let slices = try_compute_dependency_slices(DependencySliceInput {
         vc_set: &vcs,
@@ -90,6 +69,84 @@ pub fn source_theorem_canonical_inputs(
         .cloned()
         .ok_or_else(|| "theorem.proof.invalid_source_canonical_inputs".to_owned())?;
     Ok((vc, goal, context, slice))
+}
+
+/// Checks genuine original theorem reflexivity and returns its normal policy classification.
+pub fn check_source_theorem_reflexivity(
+    source: &mizar_resolve::resolved_ast::SurfaceResolvedArena,
+    check: &mizar_checker::type_checker::SourceTheoremCheck<'_>,
+    symbols: &mizar_resolve::env::SymbolEnv,
+    snapshot: mizar_session::BuildSnapshotId,
+    vc_id: VcId,
+    policy: &VerifierPolicy,
+) -> Result<(KernelCheckResult, crate::policy::PolicyDecision), String> {
+    use crate::policy::{PolicyCandidate, ProofPolicyEvaluator};
+    use mizar_kernel::{
+        certificate_parser::{ClauseTautologyPolicy, Fingerprint, KernelProfileRecord},
+        formula_evidence::{FormulaEvidenceParseContext, parse_formula_evidence},
+    };
+    use mizar_vc::{
+        generator::generate_source_theorem_vcs,
+        kernel_evidence_handoff::{
+            KernelClauseTautologyPolicy, build_source_theorem_kernel_handoff,
+        },
+        vc_ir::{GenerationSchemaVersion, VcSchemaVersion},
+    };
+
+    let fresh =
+        mizar_checker::type_checker::SourceVariableSemanticsChecker::check_theorem_skeletons(
+            source,
+            check.typed_ast(),
+            check.scope(),
+            symbols,
+            check.labels(),
+            check.resolved_labels(),
+            None,
+        )?;
+    let invalid = || "theorem.proof.invalid_source_evidence".to_owned();
+    if check.owners() != fresh.owners() {
+        return Err(invalid());
+    }
+    let core = mizar_core::elaborator::lower_source_theorem_skeletons(&fresh, None)?;
+    let vcs = generate_source_theorem_vcs(
+        &core,
+        snapshot,
+        &GenerationSchemaVersion::new("source-theorem-local-v1"),
+        &VcSchemaVersion::new("vc-v1"),
+    )?;
+    let handoff = build_source_theorem_kernel_handoff(&core, &vcs, vc_id)?;
+    let envelope = handoff.canonical_evidence();
+    let target = envelope.target_vc();
+    let profile = envelope.kernel_profile();
+    let bytes = handoff.encode_local_evidence(None)?;
+    let tautology = match profile.clause_tautology_policy {
+        KernelClauseTautologyPolicy::Reject => ClauseTautologyPolicy::Reject,
+        KernelClauseTautologyPolicy::Marker => ClauseTautologyPolicy::Marker,
+        _ => return Err(invalid()),
+    };
+    let mut parse_context = FormulaEvidenceParseContext::v1(
+        Fingerprint::new(target.algorithm_id, target.digest.clone()),
+        KernelProfileRecord::v1(profile.profile_id, tautology),
+    );
+    let parsed = parse_formula_evidence(&bytes, &parse_context)
+        .map_err(|error| format!("theorem.proof.parse:{error:?}"))?;
+    let names = mizar_atp::backend::encode_local_variable_reflexivity_names(&parsed)?;
+    let bytes = handoff.encode_local_evidence(Some(&names))?;
+    parse_context.accepted_schema_versions.insert(2);
+    let parsed = parse_formula_evidence(&bytes, &parse_context)
+        .map_err(|error| format!("theorem.proof.parse:{error:?}"))?;
+    let origin = KernelEvidenceOrigin::BuiltinDischarge;
+    let evaluator = ProofPolicyEvaluator::new(policy.clone());
+    if !evaluator.can_schedule_kernel_check(&PolicyCandidate::UncheckedBuiltinDischarge {
+        has_stable_kernel_representation: true,
+    }) {
+        return Err("theorem.proof.kernel_policy_rejected".to_owned());
+    }
+    let result =
+        check_source_kernel_handoff(&handoff, &parsed, "theorem.proof.invalid_source_evidence")?;
+    let input = KernelPolicyInput::from_kernel_result(&result, origin);
+    let decision = evaluator.evaluate_candidate(&PolicyCandidate::KernelResult(input));
+    Ok((result, decision))
 }
 
 /// Binds genuine original theorem content to its full conservative Open dependency slice.

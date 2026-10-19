@@ -1501,41 +1501,19 @@ pub fn build_source_theorem_kernel_handoff(
     vc_set: &VcSet,
     vc_id: VcId,
 ) -> Result<VcKernelEvidenceHandoff, String> {
-    use crate::generator::{CoreGenerationCandidateSet, CoreGenerationInput, VcNormalizationInput};
-    use crate::vc_ir::{SeedIntakeTable, SeedOriginRef, SeedVcMapping, VcModuleRef, VcStatus};
+    use crate::vc_ir::{SeedOriginRef, SeedVcMapping, VcStatus};
     use mizar_core::core_ir::{
         CoreFormulaKind, CoreItemKind, CoreItemStatus, CoreProofNodeKind, CoreProofStatus,
         CoreTermKind, ObligationSeedKind, ObligationSeedStatus,
     };
     let invalid = || "theorem.handoff.invalid_projection".to_owned();
     let vc = vc_set.vc(vc_id).ok_or_else(invalid)?;
-    let flow = mizar_core::control_flow::build_control_flow_ir(core);
-    let handoff = mizar_core::control_flow::build_obligation_seed_handoff(core, &flow);
-    let intake = SeedIntakeTable::try_from_handoff(&handoff).map_err(|e| e.to_string())?;
-    let package = core.module_id().package().as_str();
-    let path = core.module_id().path().as_str();
-    let module = VcModuleRef::new(format!(
-        "package={}:{};module={}:{}",
-        package.len(),
-        package,
-        path.len(),
-        path
-    ));
-    let candidates = CoreGenerationCandidateSet::try_from_seed_intake(CoreGenerationInput {
-        schema_version: &vc.anchor.generation_schema_version,
-        module: &module,
-        intake: &intake,
-        handoff: &handoff,
-        flow_output: Some(&flow),
-    })
-    .map_err(|e| e.to_string())?;
-    let replay = CoreGenerationCandidateSet::try_normalize(VcNormalizationInput {
-        schema_version: vc_set.schema_version(),
-        snapshot: vc_set.snapshot(),
-        source: core.source_id(),
-        candidates: &candidates,
-    })
-    .map_err(|e| e.to_string())?;
+    let replay = crate::generator::generate_source_theorem_vcs(
+        core,
+        vc_set.snapshot(),
+        &vc.anchor.generation_schema_version,
+        vc_set.schema_version(),
+    )?;
     if &replay != vc_set
         || vc.status != VcStatus::Open
         || vc_set.vcs().len() != 1

@@ -60,6 +60,8 @@ matching crate or module-level boundary comment:
 
 ### Status
 
+`check_source_theorem_reflexivity`: [sole API owner](./status.md#source-theorem-reflexivity-check).
+
 `source_theorem_obligation_identity`: [sole API owner](./status.md#source-theorem-original-obligation-identity).
 
 `source_theorem_canonical_inputs`: [sole API/process/schema/test owner](./status.md#source-theorem-canonical-inputs).

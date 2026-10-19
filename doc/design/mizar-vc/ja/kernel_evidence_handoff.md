@@ -397,7 +397,7 @@ context identity は全実 envelope と producer entry を結び、provenance �
 初期 profile は unmodified `CoreItemKind::Theorem`（Lemma 以外）1件、Valid/PendingAutomaticProof、active TheoremProof seed 1件、IntroduceBinder と実際の uncited TerminalGoal の順の proof 1件のみ。追加 item/proof/seed、definition、algorithm、generated origin、diagnostic は拒否する。
 元 proposition は実 set guard 付き universal binder 1件と、その束縛変数の反射等式 body を持つ。導入した local variable は自身の実 set guard と反射等式 terminal goal を持つ。同じ source 表記でも両 Core variable identity は異なり、実際に到達可能な profile term/formula のみ扱う。
 
-射影前に既存 Core flow/obligation handoff、SeedIntakeTable、CoreGenerationCandidateSet、normalization で supplied VC set 全体を再生成・比較する。Core の既存 length-framed package/module identity、supplied snapshot/schema、selected anchor generation schema を使い、seed accounting、owner、goal、local-context の完全な関連付けを要求する。
+最初に selected VC handle を検索し、supplied snapshot/VC schema と selected anchor generation schema で [raw generation](./generator.md#source-theorem-vc-generation) を呼ぶ。profile validation/evidence 射影より前に、seed accounting、owner、goal、local-context association を含む WHOLE replay equality を要求する。
 この Core TerminalGoal から生成された元の Open TheoremProofStep のみ対応し、terminal marker は合成しない。VcId は検索 handle であり出自証明ではない。欠落、foreign、cross-paired、whole-graph 変更、既定 Discharge/NeedsAtp alternative は拒否する。profile 拒否は internal `theorem.handoff.invalid_projection`、下位 error は元の Display text を保持する。
 実 local guard と selected local goal だけを KernelFormulaPayloads に射影し、既存 `build_kernel_evidence_handoff` で消費する。元の Forall guard/body は skeleton 確認専用で前提へ平坦化せず、proposition/goal を前提にしない。
 Cited/pending dependency、拡張 profile、他 role は拒否する。caller payload/source text/Debug からの式復元、VC での source 再検査、置換・等式 instance の捏造、imported/accepted fact や隠れた引用前提の追加は禁止する。

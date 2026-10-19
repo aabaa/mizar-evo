@@ -778,6 +778,7 @@ permit; each source-integration slice waits for its actual upstream outputs.
    [Genuine theorem inputs](./task_contracts/en/PROOF-SOURCE-THEOREM-CANONICAL-INPUTS.md) join that content and the original conservative slice; source identity and acceptance remain open.
    [Theorem local syntax](./task_contracts/en/RESOLVE-SOURCE-THEOREM-SYNTAX-PAYLOADS.md) supplies declaration-local bytes before source identity; acceptance remains open.
    [Theorem original identity](./task_contracts/en/SOURCE-THEOREM-ORIGINAL-IDENTITY.md) binds genuine original fields and the full conservative slice; acceptance and reuse remain open.
+   [Fresh theorem reflexivity checking](./task_contracts/en/PROOF-SOURCE-THEOREM-REFLEXIVITY-CHECK.md) connects genuine normal results to existing built-in classification; general acceptance, witness/publication and reuse remain open.
 2. [ ] [Built-in evidence candidates](./task_contracts/en/PREATP-FORMULA-EVIDENCE.md)
    (VC 60); design can start, general source integration waits for authentic
    formula/context/substitution/provenance producers. [Original-source direct-premise candidates](./task_contracts/en/VC-SOURCE-DIRECT-PREMISE-CANDIDATE.md) supply only bounded untrusted association.
