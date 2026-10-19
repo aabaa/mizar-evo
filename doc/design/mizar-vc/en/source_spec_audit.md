@@ -59,6 +59,8 @@ imports.
 
 ### `vc_ir`
 
+[VcSet::source_theorem_canonical_components](./vc_ir.md#source-theorem-canonical-components) owns the bounded source-theorem method profile.
+
 Generated public newtypes:
 
 - `VcId`, `VcGeneratedFormulaId`, `ContextEntryId`

@@ -610,6 +610,8 @@ authorized.
 
 69. **[Source theorem local handoff](../../task_contracts/en/VC-SOURCE-THEOREM-LOCAL-HANDOFF.md).** [x]
 
+70. **[Source theorem canonical components](../../task_contracts/en/VC-SOURCE-THEOREM-CANONICAL-COMPONENTS.md).** [x]
+
 ## Recommended Verification
 
 Run after each task:

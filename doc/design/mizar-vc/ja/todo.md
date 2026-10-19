@@ -576,6 +576,8 @@ contract、禁止境界、real-source/corruption requirement を使用する。�
 
 69. **[Source theorem local handoff](../../task_contracts/ja/VC-SOURCE-THEOREM-LOCAL-HANDOFF.md).** [x]
 
+70. **[Source theorem canonical components](../../task_contracts/ja/VC-SOURCE-THEOREM-CANONICAL-COMPONENTS.md).** [x]
+
 ## 推奨検証
 
 各タスクの後で実行する:

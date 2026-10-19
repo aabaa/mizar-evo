@@ -501,6 +501,100 @@ impl VcSet {
         Ok(hashes)
     }
 
+    /// Hashes bounded theorem content after replaying its original source VC graph.
+    /// Opaque formula byte provenance and currentness remain caller-owned; replay is no source seal.
+    pub fn source_theorem_canonical_components(
+        &self,
+        vc: VcId,
+        core: &mizar_core::core_ir::CoreIr,
+        formulas: &BTreeMap<CoreFormulaId, Vec<u8>>,
+    ) -> Result<(CanonicalVcFingerprint, Hash, LocalContextFingerprint), String> {
+        crate::kernel_evidence_handoff::build_source_theorem_kernel_handoff(core, self, vc)?;
+        let invalid = || "unsupported source theorem canonical components".to_owned();
+        let vc = self.vc(vc).ok_or_else(invalid)?;
+        let [entry] = vc.local_context.entries() else {
+            return Err(invalid());
+        };
+        let (Some(VcFormulaRef::Core(guard)), VcFormulaRef::Core(goal)) = (entry.formula, vc.goal)
+        else {
+            return Err(invalid());
+        };
+        let [provenance] = entry.provenance.as_slice() else {
+            return Err(invalid());
+        };
+        let item = core.items().iter().next().ok_or_else(invalid)?.1;
+        if entry.kind != ContextEntryKind::ProofAssumption
+            || vc.premises != [PremiseRef::LocalContext(entry.id)]
+            || !vc.local_context.policy_inputs().is_empty()
+            || vc.proof_hint.is_some()
+            || entry.sort_key.as_str()
+                != format!(
+                    "core-context-formula-{:08}-source-ordinal-00000000",
+                    guard.index()
+                )
+            || provenance.phase != VcProvenancePhase::CoreHandoff
+            || provenance.key.as_str() != format!("context-formula-{}", guard.index())
+            || provenance.core.as_ref()
+                != Some(&CoreProvenance::new(
+                    mizar_core::core_ir::CoreProvenancePhase::Checker,
+                    format!(
+                        "checker/theorem/{}/skeleton/terminal",
+                        item.symbol.fqn().as_str()
+                    ),
+                ))
+            || guard == goal
+            || formulas.len() != 2
+            || !formulas.contains_key(&guard)
+            || !formulas.contains_key(&goal)
+            || formulas.values().any(Vec::is_empty)
+        {
+            return Err(invalid());
+        }
+        let mut entry_payload = 0u32.to_be_bytes().to_vec();
+        entry_payload.push(1); // ProofAssumption, with the verified source ordinal normalized.
+        source_registration_frame(&mut entry_payload, &formulas[&guard]).map_err(|_| invalid())?;
+        entry_payload.extend(1u32.to_be_bytes());
+        entry_payload.push(1); // CoreHandoff.
+        source_registration_frame(&mut entry_payload, b"context-formula").map_err(|_| invalid())?;
+        entry_payload.extend([1, 1]); // Some Checker provenance, normalized to its verified role.
+        source_registration_frame(&mut entry_payload, b"source-theorem-local-proof/terminal")
+            .map_err(|_| invalid())?;
+        let mut vc_payload = b"mizar-vc/source-theorem-canonical-vc/v1\0".to_vec();
+        let mut goal_payload = b"mizar-vc/source-theorem-canonical-goal/v1\0".to_vec();
+        let mut context_payload = b"mizar-vc/source-theorem-canonical-context/v1\0".to_vec();
+        for payload in [&mut vc_payload, &mut goal_payload, &mut context_payload] {
+            source_registration_frame(payload, self.schema_version.as_str().as_bytes())
+                .map_err(|_| invalid())?;
+            source_registration_frame(
+                payload,
+                vc.anchor.generation_schema_version.as_str().as_bytes(),
+            )
+            .map_err(|_| invalid())?;
+        }
+        source_registration_frame(&mut goal_payload, &formulas[&goal]).map_err(|_| invalid())?;
+        context_payload.extend(1u32.to_be_bytes());
+        source_registration_frame(&mut context_payload, &entry_payload).map_err(|_| invalid())?;
+        context_payload.extend(0u32.to_be_bytes());
+        vc_payload.push(1); // TheoremProofStep.
+        source_registration_frame(&mut vc_payload, &formulas[&goal]).map_err(|_| invalid())?;
+        vc_payload.extend(1u32.to_be_bytes());
+        vc_payload.push(1); // The actual resolved LocalContext premise.
+        source_registration_frame(&mut vc_payload, &entry_payload).map_err(|_| invalid())?;
+        vc_payload.extend(0u32.to_be_bytes());
+        vc_payload.push(0); // Absent proof hint.
+        Ok((
+            CanonicalVcFingerprint(stable_fingerprint_hash(
+                "mizar-vc-source-theorem-canonical-vc",
+                &vc_payload,
+            )),
+            stable_fingerprint_hash("mizar-vc-source-theorem-canonical-goal", &goal_payload),
+            LocalContextFingerprint(stable_fingerprint_hash(
+                "mizar-vc-source-theorem-canonical-context",
+                &context_payload,
+            )),
+        ))
+    }
+
     pub fn canonical_vc_fingerprint(&self, vc: VcId) -> Option<CanonicalVcFingerprint> {
         let vc = self.vc(vc)?;
         canonical_vc_fingerprint(vc, &generated_formula_map(&self.generated_formulas))

@@ -56,6 +56,8 @@ Evidence: `crates/mizar-vc/tests/lint_policy.rs` の
 
 ### `vc_ir`
 
+[VcSet::source_theorem_canonical_components](./vc_ir.md#source-theorem-canonical-components) が限定 source-theorem method profile を所有する。
+
 生成 public newtype:
 
 - `VcId`, `VcGeneratedFormulaId`, `ContextEntryId`
