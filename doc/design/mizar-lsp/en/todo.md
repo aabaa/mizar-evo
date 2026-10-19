@@ -19,7 +19,7 @@ task 2 retrofits `range`, where code predates its spec. The crate follows
 |---|---|---|---|
 | range | [range.md](range.md) (task 2) | `src/range_mapper.rs` | [x] |
 | server | [server.md](server.md) (task 4) | `src/server.rs` | [x] |
-| snapshot | `snapshot.md` (task 6) | `src/snapshot.rs` | [ ] |
+| snapshot | [snapshot.md](snapshot.md) (task 6) | `src/snapshot.rs` | [ ] |
 | diagnostics | `diagnostics.md` (task 8) | `src/diagnostics.rs` | [ ] |
 | build_bridge | `build_bridge.md` (task 10) | `src/build_bridge.rs` | [ ] |
 | metadata | `metadata.md` (task 12) | `src/metadata.rs` | [ ] |
@@ -109,7 +109,8 @@ Tasks 1–5: [LSP-LIFECYCLE-FOUNDATION](../../task_contracts/en/LSP-LIFECYCLE-FO
      requests answered per protocol, never crashing.
    - Deps: 4. Spec: `server.md`.
 
-6. **Spec: `snapshot.md`.** [ ]
+6. **Spec: `snapshot.md`.** [x]
+   - [LSP-SNAPSHOT-FRESHNESS-DESIGN](../../task_contracts/en/LSP-SNAPSHOT-FRESHNESS-DESIGN.md).
    - Write the snapshot/freshness spec (English and Japanese, no code):
      open-buffer snapshots, document versions, the current/stale
      `LspSnapshot` model over `mizar-ir` handles, and staleness marking

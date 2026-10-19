@@ -110,7 +110,8 @@ Tasks 1–5: [LSP-LIFECYCLE-FOUNDATION](../../task_contracts/ja/LSP-LIFECYCLE-FO
      しない。
    - 依存: 4。仕様: `server.md`。
 
-6. **仕様: `snapshot.md`。** [ ]
+6. **仕様: `snapshot.md`。** [x]
+   - [LSP-SNAPSHOT-FRESHNESS-DESIGN](../../task_contracts/ja/LSP-SNAPSHOT-FRESHNESS-DESIGN.md).
    - snapshot/鮮度の仕様を執筆する（英語と日本語、コードなし）: open
      バッファの snapshot、文書バージョン、`mizar-ir` ハンドル上の
      current/stale な `LspSnapshot` モデル、staleness のマーク規則。
