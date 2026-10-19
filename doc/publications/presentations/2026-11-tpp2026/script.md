@@ -10,19 +10,19 @@ For 35 minutes, skip 3.3 (40 seconds), reduce 3.4 to 15 seconds (save 20), and r
 
 ### 0.1 Title (0:00)
 
-Mizar is a proof checker based on set theory. We write proofs in a language close to readable mathematics.
-Mizar Evo redesigns this language and its tools. I will begin with the history and development, then show six design principles, the implementation status, and our next steps.
+Mizar is a proof checker based on set theory. It uses readable mathematical language and the Mizar Mathematical Library, or MML.
+Mizar Evo redesigns the language and tools. I will cover the history, six design principles, implementation status, and next steps.
 
 ### 0.2 Mizar implementation history (0:30)
 
 In 1973, the starting idea was to handle mathematical documents on a computer. The 1975 Mizar-PC handled propositional logic. Here, PC means propositional calculus. It is different from the later PC-Mizar for personal computers. The early version used Algol on ODRA. Mizar-QC added quantifiers in 1977, using Pascal on CDC. [Historical paper]
-In the early 1980s, experiments included MSE, with a smaller language, and HPF, with more mathematical notation and implicit arguments. These are selected milestones, not a single line of successors.
+In the early 1980s, experiments included MSE, with a smaller language, and HPF, with more mathematical notation and implicit arguments. These are some key stages in the history. The systems did not simply replace each other in order.
 Mizar-4 in 1986 used several passes linked by files to work with limited memory. It was ported to PCs at the end of that year. PC-Mizar followed in 1988, and MML began the next year. Articles could refer to each other and build mathematics together. [Historical paper]
 Readable writing and library reuse grew through these experiments and redesigns.
 
 Mario Carneiro's Mizar-rs reimplemented the analyzer and checker in Rust. Both parts affect soundness. [Carneiro 2023]
-There are three main results. First, its checker replaced the existing checker and checked the full MML of that time. Second, it was about five to six times faster in the paper's eight-thread elapsed-time comparison. Third, it found and reported four soundness bugs in the existing implementation. This does not mean those bugs were used to prove false statements in MML. [Table 1, §5]
-The reimplementation improved speed and helped improve the existing system. Proof output for a small trusted base remained future work. Against this background, Mizar Evo redesigns the language specification and builds the processor in Rust. [Literature / Evo design]
+There are three main results. First, its checker replaced the existing checker and checked the full MML of that time. Second, it was about five to six times faster. The paper compared elapsed time with eight threads. Third, it found and reported four soundness bugs in the existing implementation. This does not mean those bugs were used to prove false statements in MML. [Table 1, §5]
+The reimplementation improved speed and helped improve the existing system. Proof output for a small trusted base remained future work. Mizar Evo redesigns the language specification and builds the processor in Rust. [Literature / Evo design]
 
 ### 0.3 From an idea to language design (3:00)
 
@@ -33,15 +33,15 @@ From January to April 2026, the work covered EBNF, logical encoding, registratio
 
 The original idea was to extend Mizar notation. Preparing a grant proposal in 2023 led me to redesign both the language specification and the processor.
 At ITP that year, I asked Mario about helping with implementation after the specification was ready. He responded positively. At CICM 2023, I discussed the wishlist with Adam Naumowicz.
-The proposal focused on universal quantification over types, namespaces and packages, ATP, and traceability. The planned prototype used Mizar-rs. “Universal quantification over types” was the proposal's wording; the current specification uses templates over a first-order foundation. [Grant proposal / Specification]
+The proposal focused on universal quantification over types, namespaces and packages, automated proof search, and traceability. Traceability means recording how the system makes its choices. The planned prototype used Mizar-rs. “Universal quantification over types” was the proposal's wording; the current specification uses templates over a first-order foundation. [Grant proposal / Specification]
 
 ### 0.4 Design development and AI agents (6:30)
 
 Generics were part of the template idea from the start. The design grew to express traditional schemes as theorems inside templates. Structure views and bounds on type parameters let one theorem serve, for example, both addition and multiplication in a ring. Type-argument inference was also developed. The scope grew from replacing types to sharing definitions and proofs. [Specification 18 / Git history]
 There was also an early demand for algorithms. Many members of the Japanese Mizar community work in cryptography and wanted to prove algorithms. I also experienced difficult symbolic calculations while proving elliptic-curve associativity with formulas. We had wanted to bring computation into proofs for a long time. This led to the design of contracts, termination, partiality, and conditions for using verified computation as a functor.
 
-Progress in AI coding agents made it possible to start substantial Rust implementation in May 2026 without waiting for the implementation help first considered.
-In June and July, the work covered crates, autonomous development procedures, SAT-backed checking, and soundness audits. Implementation and tests revealed unclear parts of the specification and led back to design. [Git history / Experience]
+With AI coding agents, I could begin Rust implementation in May 2026. I no longer needed to wait for the implementation help I had first considered.
+In June and July, the work covered crates, agent development procedures, SAT-backed checking, and soundness audits. Implementation and tests revealed unclear parts of the specification and led back to design. [Git history / Experience]
 In September, I gave a seminar and discussed the design with the Mizar team in Białystok. Algorithm specification changes continued in autumn. [Git history]
 
 ### 0.5 Six challenges and design principles (8:30)

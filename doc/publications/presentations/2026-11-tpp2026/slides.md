@@ -27,7 +27,7 @@ Reconnecting automated proof, readable mathematics, and verified computation
 
 Speaker note:
 
-- **Mizar is a proof checker. It combines first-order set theory, readable mathematical language, and the MML library.**
+- **Mizar is a proof checker. It combines first-order set theory, readable mathematical language, and the Mizar Mathematical Library (MML).**
 - **Mizar Evolution, or Mizar Evo, redesigns the language and its tools. We begin with history and development, then discuss six design principles, implementation limits, and plans.**
 - Distinguish facts, research hypotheses, and future directions throughout.
 
@@ -48,7 +48,7 @@ Speaker note:
 | System | Overview |
 |---|---|
 | PC-Mizar (Pascal) | Parser → MSM → Analyzer → Checker |
-| Mizar-rs (Rust, ITP 2023) | Reimplements the checker / analyzer, aiming at language compatibility |
+| Mizar-rs (Rust, ITP 2023) | Reimplements the checker / analyzer to support the existing language |
 | | **All MML checked:** replaced the checker; the full MML of that time passed |
 | | **Speed:** about 5–6× faster (8 threads, elapsed time) |
 | | **Bugs:** four soundness bugs reported; no false MML proofs used them |
@@ -74,7 +74,7 @@ Speaker note:
 | Jan–Apr 2026 | EBNF, logical encoding, registration, template and algorithm semantics / contracts |
 | May 2026 | Implementation design → test harness → minimal lexer |
 
-- **From extending Mizar notation to redesigning its language and processor during the 2023 grant proposal.**
+- **Preparing the 2023 grant proposal changed the plan: from notation extensions to a new language and processor.**
 - ITP 2023: Mario Carneiro welcomed a request for implementation help. CICM 2023: wishlist discussion with Adam Naumowicz.
 - Early priorities: generic types, namespaces / packages, ATP / traceability. The prototype was to use Mizar-rs.
 
@@ -94,10 +94,10 @@ Speaker note:
 
 ### Implementation and discussions since May 2026
 
-- **May: started substantial Rust implementation with AI coding agents. June–July: crate development, autonomous workflows, SAT-backed checking and audits.**
+- **May: began Rust implementation with AI coding agents. June–July: crate development, agent workflows, SAT-backed checking and audits.**
 - **Design → agent implementation → tests and audits → specification revision.**
 - September: seminar and discussions with the Mizar team in Białystok.
-- September–October: more source-derived VCs; revisions to algorithm partiality and contracts.
+- September–October: more proof obligations from source; changes to algorithm partiality and contracts.
 
 Speaker note:
 
