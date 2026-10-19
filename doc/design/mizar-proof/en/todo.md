@@ -476,6 +476,8 @@ layer consumes both; one alignment task is owned here.
 
 38. **[Genuine theorem canonical inputs](../../task_contracts/en/PROOF-SOURCE-THEOREM-CANONICAL-INPUTS.md).** [x]
 
+39. **[Source theorem original obligation identity](../../task_contracts/en/SOURCE-THEOREM-ORIGINAL-IDENTITY.md).** [x]
+
 ## Recommended Verification
 
 Run after each task:

@@ -60,6 +60,8 @@ matching crate or module-level boundary comment:
 
 ### Status
 
+`source_theorem_obligation_identity`: [sole API owner](./status.md#source-theorem-original-obligation-identity).
+
 `source_theorem_canonical_inputs`: [sole API/process/schema/test owner](./status.md#source-theorem-canonical-inputs).
 
 | Public API group | Spec coverage | Test coverage | Result |

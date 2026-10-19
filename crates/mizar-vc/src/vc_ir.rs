@@ -609,6 +609,37 @@ impl VcSet {
     }
 }
 
+/// Hashes opaque caller-owned theorem ingredients without authenticating their profile or source.
+/// The result is a raw candidate and grants no completeness, acceptance or reuse authority.
+pub fn source_theorem_candidate_anchor_hash(
+    owner: &[u8],
+    syntax: &[u8],
+    vc: CanonicalVcFingerprint,
+    goal: Hash,
+    context: LocalContextFingerprint,
+) -> Result<Hash, String> {
+    let invalid = || "unsupported source theorem candidate anchor".to_owned();
+    if owner.is_empty() || syntax.is_empty() {
+        return Err(invalid());
+    }
+    let mut payload = b"mizar-vc/source-theorem-candidate-anchor/v1\0".to_vec();
+    payload.push(1);
+    for bytes in [
+        b"source-theorem-local-proof/terminal".as_slice(),
+        owner,
+        syntax,
+    ] {
+        source_registration_frame(&mut payload, bytes).map_err(|_| invalid())?;
+    }
+    payload.extend(vc.hash().as_bytes());
+    payload.extend(goal.as_bytes());
+    payload.extend(context.hash().as_bytes());
+    Ok(stable_fingerprint_hash(
+        "mizar-vc-source-theorem-candidate-anchor",
+        &payload,
+    ))
+}
+
 const SOURCE_REGISTRATION_FINGERPRINT_INVALID: &str =
     "unsupported source registration VC fingerprint";
 fn source_registration_frame(output: &mut Vec<u8>, bytes: &[u8]) -> Result<(), String> {

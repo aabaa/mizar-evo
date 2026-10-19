@@ -60,6 +60,8 @@ task 15 は未 exercise だった 3 つの validation path に focused unit cove
 
 ### Status
 
+`source_theorem_obligation_identity`: [唯一の API 所有元](./status.md#source-theorem-original-obligation-identity).
+
 `source_theorem_canonical_inputs`: [唯一の API/process/schema/test 所有元](./status.md#source-theorem-canonical-inputs)。
 
 | Public API group | Spec coverage | Test coverage | Result |

@@ -4395,12 +4395,7 @@ mod term_proof_tests {
         text: &str,
         consume: impl FnOnce(&mizar_checker::type_checker::SourceTheoremCheck<'_>) -> Result<T, String>,
     ) -> Result<T, String> {
-        use mizar_checker::type_checker::SourceVariableSemanticsChecker;
-        use mizar_resolve::{
-            labels::{LabelResolver, ProofLabelSourceCollector},
-            names::{SourceVariableScopeInput, SourceVariableScopeResolver},
-            resolved_ast::SurfaceResolvedArena,
-        };
+        use mizar_resolve::resolved_ast::SurfaceResolvedArena;
         let config = config();
         let plan = crate::harness::build_test_plan(&config).unwrap();
         let case = plan
@@ -4415,55 +4410,61 @@ mod term_proof_tests {
         }
         let source =
             SurfaceResolvedArena::lower(&ast, &resolver.module).map_err(|e| e.to_string())?;
+        with_source_theorem_check(&ast, &source, &resolver.env, consume)
+    }
+
+    fn with_source_theorem_check<T>(
+        ast: &mizar_syntax::SurfaceAst,
+        source: &mizar_resolve::resolved_ast::SurfaceResolvedArena,
+        symbols: &mizar_resolve::env::SymbolEnv,
+        consume: impl FnOnce(&mizar_checker::type_checker::SourceTheoremCheck<'_>) -> Result<T, String>,
+    ) -> Result<T, String> {
+        use mizar_checker::type_checker::SourceVariableSemanticsChecker;
+        use mizar_resolve::{
+            labels::{LabelResolver, ProofLabelSourceCollector},
+            names::{SourceVariableScopeInput, SourceVariableScopeResolver},
+        };
         let scope = SourceVariableScopeResolver::resolve_proof_occurrences(
-            SourceVariableScopeInput::new(&ast, &resolver.module, &resolver.env),
+            SourceVariableScopeInput::new(ast, source.module(), symbols),
         )
         .map_err(|e| format!("{e:?}"))?;
         let bindings = SourceVariableSemanticsChecker::occurrence_binding_env(&scope);
         let typed = super::super::type_elaboration::step5c8_formula_typed_ast(
-            &ast,
-            &resolver.module,
-            &resolver.env,
+            ast,
+            source.module(),
+            symbols,
             &scope,
             &bindings,
             true,
         )?;
-        let owner = resolver
-            .env
+        let owner = symbols
             .symbols()
             .iter()
             .find(|entry| entry.kind() == mizar_resolve::env::SymbolKind::Theorem)
             .or_else(|| {
-                resolver
-                    .env
+                symbols
                     .symbols()
                     .iter()
                     .find(|entry| entry.kind() == mizar_resolve::env::SymbolKind::Lemma)
             })
             .ok_or("no theorem")?;
-        let namespace = mizar_resolve::env::NamespacePath::new(resolver.module.path().as_str());
+        let namespace = mizar_resolve::env::NamespacePath::new(source.module().path().as_str());
         let labels = ProofLabelSourceCollector::new(
-            &ast,
-            &resolver.module,
+            ast,
+            source.module(),
             namespace.clone(),
             owner.contribution(),
-            &source,
+            source,
         )
-        .and_then(|collector| collector.collect_with_theorem_owners(&resolver.env))
+        .and_then(|collector| collector.collect_with_theorem_owners(symbols))
         .map_err(|e| e.to_string())?;
         let resolved = LabelResolver::new(labels.projections()).resolve(
-            &resolver.module,
+            source.module(),
             &namespace,
             labels.references(),
         );
         let check = SourceVariableSemanticsChecker::check_theorem_skeletons(
-            &source,
-            &typed,
-            &scope,
-            &resolver.env,
-            &labels,
-            &resolved,
-            None,
+            source, &typed, &scope, symbols, &labels, &resolved, None,
         )?;
         consume(&check)
     }
@@ -7124,6 +7125,320 @@ mod term_proof_tests {
                 Ok(())
             })
             .unwrap();
+        }
+    }
+
+    #[test]
+    fn source_theorem_obligation_identity_exact_genuine_fields_and_slices() {
+        use super::super::tests::source_registration_owner_inputs as inputs;
+        use mizar_artifact::store::{CanonicalHashDomain, CanonicalJson, HashClass, SchemaVersion};
+        use mizar_proof::status::{
+            source_theorem_canonical_inputs as canonical,
+            source_theorem_obligation_identity as identity,
+        };
+        use mizar_vc::{dependency_slice::DependencySliceCompleteness, vc_ir::*};
+        let original =
+            "theorem T: for X being set holds X = X proof let X be set; thus X = X; end;";
+        let expected = [
+            "5a352e84b26834eb3cc0e54edd522604c625a953b3ba47f927cd762001c116c9",
+            "8ba4633c3ed51f7af5c2744adba8c89fe6fb65da7fb01b506305fe4afbc884db",
+            "d87df55e0d47933114a69f77e96d84c426c5b30369eb451834358f1c6b4b08a1",
+        ];
+        // Complete Resolver46 bytes and candidate literals frozen before this implementation.
+        let expected_syntax = concat!(
+            "6d697a61722d7265736f6c76652f736f757263652d7468656f72656d2d73796e7461782f7631000060000000",
+            "0600020065000000077468656f72656d000000000002006400000001540000000000020066000000013a0000",
+            "0000002c000000010037000000040002006500000003666f7200000000003800000003000200640000000158",
+            "0000000000020065000000056265696e67000000000015000000010019000000010002006500000003736574",
+            "000000000002006500000005686f6c647300000000002d00000003001c00000001001d000000010002006400",
+            "000001580000000000020066000000013d00000000001c00000001001d000000010002006400000001580000",
+            "0000006200000004000200650000000570726f6f6600000000003d0000000300020065000000036c65740000",
+            "0000003e00000003000200640000000158000000000002006500000002626500000000001500000001001900",
+            "00000100020065000000037365740000000000020066000000013b0000000000540000000300020065000000",
+            "047468757300000000004000000001002c00000001002d00000003001c00000001001d000000010002006400",
+            "000001580000000000020066000000013d00000000001c00000001001d000000010002006400000001580000",
+            "000000020066000000013b000000000002006500000003656e640000000000020066000000013b00000000",
+        ).as_bytes().chunks_exact(2).map(|pair| {
+            u8::from_str_radix(std::str::from_utf8(pair).unwrap(), 16).unwrap()
+        }).collect::<Vec<_>>();
+        for (label, digest) in [
+            (
+                "T",
+                "9135ff7f3f377b4585f23b8677c68aa131190b4d10864bf4ecc4c623cb098d7a",
+            ),
+            (
+                "U",
+                "9135ff7f3f377b4511b939a5737fde9431190b4d10864bf48c80a6b4e18f3ff3",
+            ),
+        ] {
+            let text = original.replace("theorem T:", &format!("theorem {label}:"));
+            let (frontend, source, collected) = inputs(&text, "owner-test", "owners", 0);
+            assert!(frontend.diagnostics.is_empty());
+            assert!(collected.diagnostics().is_empty());
+            let symbols = collected.env();
+            let ast = frontend.ast.as_ref().unwrap();
+            let before = (source.clone(), collected.env().clone());
+            with_source_theorem_check(ast, &source, symbols, |check| {
+                let check_before = format!("{check:?}");
+                let owner = format!(concat!(
+                    "{{\"module_path\":\"owners\",\"namespace\":\"owners\",\"package_id\":\"owner-test\",",
+                    "\"role\":\"theorem\",\"spelling\":\"{}\",\"status\":\"unmodified\",\"visibility\":\"public\"}}\n"
+                ), label).into_bytes();
+                let mut syntax = expected_syntax.clone();
+                assert_eq!(syntax.len(), 527);
+                assert_eq!(syntax[72], b'T');
+                syntax[72] = label.as_bytes()[0];
+                let syntax_rows = mizar_resolve::symbols::source_theorem_syntax_payloads_from_arena(&source, symbols)?;
+                assert_eq!(syntax_rows.len(), 1);
+                assert_eq!(syntax_rows.get(&check.owners()[0].0.symbol), Some(&syntax));
+                let anchor = format!("source-theorem-candidate-anchor-v1:{digest}");
+                for ordinal in [777, 778] {
+                    let snapshot = snapshot_id(ordinal);
+                    // Request the unchanged old producer FIRST; its entire real slice is the operand.
+                    let old = canonical(check, snapshot, VcId::new(0))?;
+                    let hashes = [old.0.hash(), old.1, old.2.hash(), old.3.fingerprint().hash()].map(|hash| {
+                        hash.as_bytes().iter().map(|byte| format!("{byte:02x}")).collect::<String>()
+                    });
+                    assert_eq!(hashes[..3], expected);
+                    let obligation = CanonicalJson::object([
+                        ("obligation_anchor", CanonicalJson::string(&anchor)),
+                        ("vc_fingerprint", CanonicalJson::string(expected[0])),
+                        ("canonical_goal_hash", CanonicalJson::string(expected[1])),
+                        ("local_context_fingerprint", CanonicalJson::string(expected[2])),
+                        ("vc_local_dependency_slice_fingerprint", CanonicalJson::string(&hashes[3])),
+                    ]).map_err(|error| error.to_string())?;
+                    let fingerprint = CanonicalHashDomain::new(
+                        HashClass::Interface, "mizar-proof/source-theorem-original-obligation", SchemaVersion::new(1, 0),
+                    ).hash(&obligation, &[]);
+                    let actual = identity(&source, check, symbols, snapshot, VcId::new(0))?;
+                    assert_eq!(actual.0.obligation_id(), anchor);
+                    assert_eq!(actual.0.obligation_anchor().as_str(), anchor);
+                    assert_eq!(actual.0.obligation_fingerprint(), fingerprint);
+                    assert_eq!(actual.0.vc_fingerprint(), old.0.hash());
+                    assert_eq!(actual.0.local_context_fingerprint(), old.2.hash());
+                    assert_eq!(actual.0.dependency_slice_fingerprint(), old.3.fingerprint().hash());
+                    assert_eq!(actual.1, old.3);
+                    assert_eq!(actual.1.vc(), VcId::new(0));
+                    assert_eq!(actual.1.kind(), &VcKind::TheoremProofStep);
+                    assert_eq!(actual.1.status(), &VcStatus::Open);
+                    assert_eq!(actual.1.entries(), old.3.entries());
+                    assert_eq!(actual.1.unknowns(), old.3.unknowns());
+                    assert_eq!(actual.1.fingerprint(), old.3.fingerprint());
+                    assert!(!actual.1.entries().is_empty());
+                    assert!(!actual.1.unknowns().is_empty());
+                    assert_eq!(actual.1.completeness(), DependencySliceCompleteness::IncompleteUncacheable);
+                    assert!(!actual.1.is_complete());
+                    assert!(actual.1.requires_cache_miss());
+                    let raw = source_theorem_candidate_anchor_hash(&owner, &syntax, old.0, old.1, old.2)?;
+                    assert_eq!(raw.as_bytes().iter().map(|byte| format!("{byte:02x}")).collect::<String>(), digest);
+                    for (owner_bytes, syntax_bytes) in [(&[][..], syntax.as_slice()), (owner.as_slice(), &[][..])] {
+                        assert_eq!(source_theorem_candidate_anchor_hash(owner_bytes, syntax_bytes, old.0, old.1, old.2).unwrap_err(),
+                            "unsupported source theorem candidate anchor");
+                    }
+                    assert_eq!(actual, identity(&source, check, symbols, snapshot, VcId::new(0))?);
+                    assert_eq!(old, canonical(check, snapshot, VcId::new(0))?);
+                }
+                assert_eq!(format!("{check:?}"), check_before);
+                Ok(())
+            }).unwrap();
+            assert_eq!((source, collected.env().clone()), before);
+        }
+    }
+
+    #[test]
+    fn source_theorem_obligation_identity_neutral_allocation_and_participating_edits() {
+        use super::super::tests::source_registration_owner_inputs as inputs;
+        use mizar_proof::status::{
+            source_theorem_canonical_inputs as canonical,
+            source_theorem_obligation_identity as identity,
+        };
+        use mizar_vc::vc_ir::VcId;
+        let original =
+            "theorem T: for X being set holds X = X proof let X be set; thus X = X; end;";
+        let expected = "source-theorem-candidate-anchor-v1:9135ff7f3f377b4585f23b8677c68aa131190b4d10864bf4ecc4c623cb098d7a";
+        let mut prior = Vec::new();
+        let mut original_source = None;
+        for (text, package, module, skip, neutral) in [
+            (original.to_owned(), "owner-test", "owners", 0, true),
+            (
+                format!(
+                    ":: 日本語 λ\n{}\n",
+                    original.replace(" proof ", "\nproof\n")
+                ),
+                "owner-test",
+                "owners",
+                0,
+                true,
+            ),
+            (original.to_owned(), "owner-test", "owners", 7, true),
+            (original.to_owned(), "other-package", "owners", 0, false),
+            (original.to_owned(), "owner-test", "other_module", 0, false),
+            (original.to_owned(), "owner-test", "nested.owners", 0, false),
+            (
+                original.replace("theorem T:", "theorem U:"),
+                "owner-test",
+                "owners",
+                0,
+                false,
+            ),
+            (
+                original.replace(
+                    "for X being set holds X = X",
+                    "for Bound being set holds Bound = Bound",
+                ),
+                "owner-test",
+                "owners",
+                0,
+                false,
+            ),
+            (
+                original.replace(
+                    "let X be set; thus X = X",
+                    "let Local be set; thus Local = Local",
+                ),
+                "owner-test",
+                "owners",
+                0,
+                false,
+            ),
+        ] {
+            let (frontend, source, collected) = inputs(&text, package, module, skip);
+            assert!(frontend.diagnostics.is_empty());
+            assert!(collected.diagnostics().is_empty());
+            let symbols = collected.env();
+            let ast = frontend.ast.as_ref().unwrap();
+            let before = (source.clone(), collected.env().clone(), prior.clone());
+            if skip == 7 {
+                assert_ne!(Some(source.source_id()), original_source);
+            } else if original_source.is_none() {
+                original_source = Some(source.source_id());
+            }
+            with_source_theorem_check(ast, &source, symbols, |check| {
+                let check_before = format!("{check:?}");
+                for ordinal in [777, 778] {
+                    let snapshot = snapshot_id(ordinal);
+                    let old = canonical(check, snapshot, VcId::new(0))?;
+                    let actual = identity(&source, check, symbols, snapshot, VcId::new(0))?;
+                    if neutral {
+                        assert_eq!(actual.0.obligation_anchor().as_str(), expected);
+                    } else {
+                        assert_ne!(actual.0.obligation_anchor().as_str(), expected);
+                    }
+                    assert_eq!(actual.1, old.3);
+                    assert_eq!(actual.0.vc_fingerprint(), old.0.hash());
+                    assert_eq!(actual.0.local_context_fingerprint(), old.2.hash());
+                    assert_eq!(
+                        actual.0.dependency_slice_fingerprint(),
+                        old.3.fingerprint().hash()
+                    );
+                    assert_eq!(old, canonical(check, snapshot, VcId::new(0))?);
+                    prior.push(actual);
+                }
+                assert_eq!(format!("{check:?}"), check_before);
+                Ok(())
+            })
+            .unwrap();
+            assert_eq!((&source, collected.env()), (&before.0, &before.1));
+            assert_eq!(&prior[..before.2.len()], before.2);
+        }
+    }
+
+    #[test]
+    fn source_theorem_obligation_identity_preserve_upstream_errors_and_inputs() {
+        use super::super::tests::source_registration_owner_inputs as inputs;
+        use mizar_checker::type_checker::SourceVariableSemanticsChecker;
+        use mizar_proof::status::{
+            source_theorem_canonical_inputs as canonical,
+            source_theorem_obligation_identity as identity,
+        };
+        use mizar_vc::vc_ir::VcId;
+        let original =
+            "theorem T: for X being set holds X = X proof let X be set; thus X = X; end;";
+        let snapshot = snapshot_id(777);
+        let absent = VcId::new(usize::MAX);
+        for text in [
+            original.to_owned(),
+            original.replacen("theorem", "lemma", 1),
+            "open theorem O: for X being set holds X = X;".to_owned(),
+            format!(
+                "{original}\n{}",
+                original.replace("theorem T:", "theorem U:")
+            ),
+        ] {
+            let (frontend, source, collected) = inputs(&text, "owner-test", "owners", 0);
+            assert!(frontend.diagnostics.is_empty());
+            assert!(collected.diagnostics().is_empty());
+            let symbols = collected.env();
+            let ast = frontend.ast.as_ref().unwrap();
+            let before = (source.clone(), collected.env().clone());
+            with_source_theorem_check(ast, &source, symbols, |check| {
+                let check_before = format!("{check:?}");
+                if text == original {
+                    let old = canonical(check, snapshot, VcId::new(0))?;
+                    let prior = identity(&source, check, symbols, snapshot, VcId::new(0))?;
+                    assert_eq!(
+                        identity(&source, check, symbols, snapshot, absent).unwrap_err(),
+                        canonical(check, snapshot, absent).unwrap_err()
+                    );
+                    for text in [
+                        original.replace("theorem T:", "theorem Foreign:"),
+                        format!(
+                            "{original}\n{}",
+                            original.replace("theorem T:", "theorem U:")
+                        ),
+                        "theorem T: for X being set holds X = ;".to_owned(),
+                    ] {
+                        let (other_frontend, other_source, other) =
+                            inputs(&text, "owner-test", "owners", 0);
+                        assert_eq!(
+                            !other_frontend.diagnostics.is_empty(),
+                            text.ends_with("= ;")
+                        );
+                        let other_before = (other_source.clone(), other.env().clone());
+                        for (current, symbols) in [
+                            (&other_source, other.env()),
+                            (&source, other.env()),
+                            (&other_source, collected.env()),
+                        ] {
+                            let expected = SourceVariableSemanticsChecker::check_theorem_skeletons(
+                                current,
+                                check.typed_ast(),
+                                check.scope(),
+                                symbols,
+                                check.labels(),
+                                check.resolved_labels(),
+                                None,
+                            )
+                            .unwrap_err();
+                            for selected in [VcId::new(0), absent] {
+                                assert_eq!(
+                                    identity(current, check, symbols, snapshot, selected)
+                                        .unwrap_err(),
+                                    expected
+                                );
+                            }
+                        }
+                        assert_eq!((other_source, other.env().clone()), other_before);
+                    }
+                    assert_eq!(old, canonical(check, snapshot, VcId::new(0))?);
+                    assert_eq!(
+                        prior,
+                        identity(&source, check, symbols, snapshot, VcId::new(0))?
+                    );
+                } else {
+                    for selected in [VcId::new(0), absent] {
+                        let expected = canonical(check, snapshot, selected).unwrap_err();
+                        assert_eq!(
+                            identity(&source, check, symbols, snapshot, selected).unwrap_err(),
+                            expected
+                        );
+                    }
+                }
+                assert_eq!(format!("{check:?}"), check_before);
+                Ok(())
+            })
+            .unwrap();
+            assert_eq!((source, collected.env().clone()), before);
         }
     }
 }

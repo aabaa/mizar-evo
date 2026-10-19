@@ -17316,7 +17316,7 @@ fn source_registration_candidate_witness_preserves_upstream_failures_and_real_re
     }
 }
 
-fn source_registration_owner_inputs(
+pub(super) fn source_registration_owner_inputs(
     text: &str,
     package: &str,
     module: &str,
@@ -17338,7 +17338,11 @@ fn source_registration_owner_inputs(
     assert!(temporary.status.success());
     let root = PathBuf::from(String::from_utf8(temporary.stdout).unwrap().trim());
     std::fs::create_dir(root.join("src")).unwrap();
-    let path = root.join("src").join(format!("{module}.miz"));
+    let path = root
+        .join("src")
+        .join(module.split('.').collect::<PathBuf>())
+        .with_extension("miz");
+    std::fs::create_dir_all(path.parent().unwrap()).unwrap();
     std::fs::write(&path, text).unwrap();
     let snapshot = super::shared::snapshot_id(5835);
     let ids = InMemorySessionIdAllocator::new();

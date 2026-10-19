@@ -92,6 +92,124 @@ pub fn source_theorem_canonical_inputs(
     Ok((vc, goal, context, slice))
 }
 
+/// Binds genuine original theorem content to its full conservative Open dependency slice.
+/// Source/snapshot freshness remains caller-owned; this grants no acceptance or reuse authority.
+pub fn source_theorem_obligation_identity(
+    source: &mizar_resolve::resolved_ast::SurfaceResolvedArena,
+    check: &mizar_checker::type_checker::SourceTheoremCheck<'_>,
+    symbols: &mizar_resolve::env::SymbolEnv,
+    snapshot: mizar_session::BuildSnapshotId,
+    vc_id: VcId,
+) -> Result<
+    (
+        ProofObligationIdentity,
+        mizar_vc::dependency_slice::DependencySlice,
+    ),
+    String,
+> {
+    use mizar_artifact::store::{
+        CanonicalHashDomain, CanonicalJson, HashClass, canonical_json_bytes,
+    };
+    use mizar_checker::source_statement::{
+        SourceStatementRecovery, SourceTheoremRole, SourceTheoremStatus,
+    };
+
+    let fresh =
+        mizar_checker::type_checker::SourceVariableSemanticsChecker::check_theorem_skeletons(
+            source,
+            check.typed_ast(),
+            check.scope(),
+            symbols,
+            check.labels(),
+            check.resolved_labels(),
+            None,
+        )?;
+    let invalid = || "theorem.proof.invalid_source_identity".to_owned();
+    if check.owners() != fresh.owners() {
+        return Err(invalid());
+    }
+    let (vc, goal, context, slice) = source_theorem_canonical_inputs(&fresh, snapshot, vc_id)?;
+    let syntax =
+        mizar_resolve::symbols::source_theorem_syntax_payloads_from_arena(source, symbols)?;
+    let [(owner, visibility)] = fresh.owners() else {
+        return Err(invalid());
+    };
+    if syntax.len() != 1
+        || owner.role != SourceTheoremRole::Theorem
+        || owner.status != SourceTheoremStatus::Unmodified
+        || owner.recovery != SourceStatementRecovery::Normal
+        || !matches!(*visibility, "public" | "private")
+    {
+        return Err(invalid());
+    }
+    let syntax = syntax.get(&owner.symbol).ok_or_else(invalid)?;
+    let module = owner.symbol.module();
+    let owner = CanonicalJson::object([
+        (
+            "package_id",
+            CanonicalJson::string(module.package().as_str()),
+        ),
+        ("module_path", CanonicalJson::string(module.path().as_str())),
+        ("namespace", CanonicalJson::string(module.path().as_str())),
+        ("spelling", CanonicalJson::string(&owner.spelling)),
+        ("role", CanonicalJson::string("theorem")),
+        ("status", CanonicalJson::string("unmodified")),
+        ("visibility", CanonicalJson::string(*visibility)),
+    ])
+    .map_err(|error| error.to_string())?;
+    let candidate = mizar_vc::vc_ir::source_theorem_candidate_anchor_hash(
+        &canonical_json_bytes(&owner),
+        syntax,
+        vc,
+        goal,
+        context,
+    )?;
+    let candidate = ObligationAnchor::new(format!(
+        "source-theorem-candidate-anchor-v1:{}",
+        source_discharge_hex(candidate.as_bytes()),
+    ))
+    .map_err(|error| error.to_string())?;
+    let obligation = CanonicalJson::object([
+        (
+            "obligation_anchor",
+            CanonicalJson::string(candidate.as_str()),
+        ),
+        (
+            "vc_fingerprint",
+            CanonicalJson::string(source_discharge_hex(vc.hash().as_bytes())),
+        ),
+        (
+            "canonical_goal_hash",
+            CanonicalJson::string(source_discharge_hex(goal.as_bytes())),
+        ),
+        (
+            "local_context_fingerprint",
+            CanonicalJson::string(source_discharge_hex(context.hash().as_bytes())),
+        ),
+        (
+            "vc_local_dependency_slice_fingerprint",
+            CanonicalJson::string(source_discharge_hex(slice.fingerprint().hash().as_bytes())),
+        ),
+    ])
+    .map_err(|error| error.to_string())?;
+    let fingerprint = CanonicalHashDomain::new(
+        HashClass::Interface,
+        "mizar-proof/source-theorem-original-obligation",
+        SchemaVersion::new(1, 0),
+    )
+    .hash(&obligation, &[]);
+    let identity = ProofObligationIdentity::new(
+        candidate.as_str().to_owned(),
+        candidate,
+        fingerprint,
+        vc.hash(),
+        context.hash(),
+        slice.fingerprint().hash(),
+    )
+    .map_err(|error| error.to_string())?;
+    Ok((identity, slice))
+}
+
 /// Derives raw canonical VC, goal and visible-context content from one source call.
 /// These components do not authorize acceptance, proof reuse or publication.
 pub fn source_registration_canonical_components(

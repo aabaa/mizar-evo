@@ -612,6 +612,8 @@ authorized.
 
 70. **[Source theorem canonical components](../../task_contracts/en/VC-SOURCE-THEOREM-CANONICAL-COMPONENTS.md).** [x]
 
+71. **[Source theorem candidate anchor hash](../../task_contracts/en/SOURCE-THEOREM-ORIGINAL-IDENTITY.md).** [x]
+
 ## Recommended Verification
 
 Run after each task:

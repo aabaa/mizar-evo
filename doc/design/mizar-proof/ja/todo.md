@@ -452,6 +452,8 @@ kernel の拒否語彙と evidence 契約を訂正した。policy 層はその�
 
 38. **[実 theorem の canonical inputs](../../task_contracts/ja/PROOF-SOURCE-THEOREM-CANONICAL-INPUTS.md).** [x]
 
+39. **[Source theorem original obligation identity](../../task_contracts/ja/SOURCE-THEOREM-ORIGINAL-IDENTITY.md).** [x]
+
 ## 推奨検証
 
 各タスクの後で実行する:
