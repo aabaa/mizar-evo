@@ -60,6 +60,8 @@ matching crate or module-level boundary comment:
 
 ### Status
 
+`source_theorem_canonical_inputs`: [sole API/process/schema/test owner](./status.md#source-theorem-canonical-inputs).
+
 | Public API group | Spec coverage | Test coverage | Result |
 |---|---|---|---|
 | `prove_source_existential_registration` | [Fresh source-owned association](./status.md#source-existential-registration-proof), including both normal kernel checks and same-environment local activation. | Real-source, foreign-input, choice/accounting, substitution and kernel/policy-rejection controls. | implemented; artifact publication remains deferred |

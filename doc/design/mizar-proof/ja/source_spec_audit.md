@@ -60,6 +60,8 @@ task 15 は未 exercise だった 3 つの validation path に focused unit cove
 
 ### Status
 
+`source_theorem_canonical_inputs`: [唯一の API/process/schema/test 所有元](./status.md#source-theorem-canonical-inputs)。
+
 | Public API group | Spec coverage | Test coverage | Result |
 |---|---|---|---|
 | `check_source_registration_candidate` | [Fresh NeedsAtp 検査/分類](./status.md#source-candidate-checking)、独立 context と既存 ATP-origin policy。 | 実 source 正/負、両 encoding、binding と異なる実行 permission control。 | implemented; 分類のみ、publication は保留 |

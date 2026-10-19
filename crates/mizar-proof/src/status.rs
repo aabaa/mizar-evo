@@ -25,6 +25,73 @@ use crate::{
 const USED_AXIOMS_HASH_DOMAIN: &str = "mizar-proof-trusted-used-axioms-v1";
 const PROOF_REUSE_VALIDATION_HASH_DOMAIN: &str = "mizar-proof-reuse-validation-v1";
 
+/// Returns raw canonical theorem content and its full conservative dependency slice.
+/// Source/snapshot freshness remains caller-owned; these inputs do not authorize acceptance or reuse.
+pub fn source_theorem_canonical_inputs(
+    check: &mizar_checker::type_checker::SourceTheoremCheck<'_>,
+    snapshot: mizar_session::BuildSnapshotId,
+    vc_id: VcId,
+) -> Result<
+    (
+        mizar_vc::vc_ir::CanonicalVcFingerprint,
+        Hash,
+        mizar_vc::vc_ir::LocalContextFingerprint,
+        mizar_vc::dependency_slice::DependencySlice,
+    ),
+    String,
+> {
+    use mizar_vc::{
+        dependency_slice::{DependencySliceInput, try_compute_dependency_slices},
+        generator::{CoreGenerationCandidateSet, CoreGenerationInput, VcNormalizationInput},
+        vc_ir::{GenerationSchemaVersion, SeedIntakeTable, VcModuleRef, VcSchemaVersion},
+    };
+
+    let core = mizar_core::elaborator::lower_source_theorem_skeletons(check, None)?;
+    let roots = core
+        .obligation_seeds()
+        .iter()
+        .flat_map(|(_, seed)| seed.context.iter().copied().chain(seed.goal))
+        .collect::<Vec<_>>();
+    let formulas = mizar_core::elaborator::source_theorem_formula_payloads(check, &core, &roots)?;
+    let flow = mizar_core::control_flow::build_control_flow_ir(&core);
+    let handoff = mizar_core::control_flow::build_obligation_seed_handoff(&core, &flow);
+    let intake = SeedIntakeTable::try_from_handoff(&handoff).map_err(|error| error.to_string())?;
+    let package = core.module_id().package().as_str();
+    let path = core.module_id().path().as_str();
+    let candidates = CoreGenerationCandidateSet::try_from_seed_intake(CoreGenerationInput {
+        schema_version: &GenerationSchemaVersion::new("source-theorem-local-v1"),
+        module: &VcModuleRef::new(format!(
+            "package={}:{};module={}:{}",
+            package.len(),
+            package,
+            path.len(),
+            path
+        )),
+        intake: &intake,
+        handoff: &handoff,
+        flow_output: Some(&flow),
+    })
+    .map_err(|error| error.to_string())?;
+    let vcs = CoreGenerationCandidateSet::try_normalize(VcNormalizationInput {
+        schema_version: &VcSchemaVersion::new("vc-v1"),
+        snapshot,
+        source: core.source_id(),
+        candidates: &candidates,
+    })
+    .map_err(|error| error.to_string())?;
+    let (vc, goal, context) = vcs.source_theorem_canonical_components(vc_id, &core, &formulas)?;
+    let slices = try_compute_dependency_slices(DependencySliceInput {
+        vc_set: &vcs,
+        discharge_output: None,
+    })
+    .map_err(|error| error.to_string())?;
+    let slice = slices
+        .slice_for(vc_id)
+        .cloned()
+        .ok_or_else(|| "theorem.proof.invalid_source_canonical_inputs".to_owned())?;
+    Ok((vc, goal, context, slice))
+}
+
 /// Derives raw canonical VC, goal and visible-context content from one source call.
 /// These components do not authorize acceptance, proof reuse or publication.
 pub fn source_registration_canonical_components(

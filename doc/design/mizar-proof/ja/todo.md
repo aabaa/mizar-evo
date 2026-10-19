@@ -450,6 +450,8 @@ kernel の拒否語彙と evidence 契約を訂正した。policy 層はその�
 
 37. **[明示的な screen 済み source attempt](../../task_contracts/ja/PROOF-SOURCE-SCREENED-ATTEMPT.md).** [x]
 
+38. **[実 theorem の canonical inputs](../../task_contracts/ja/PROOF-SOURCE-THEOREM-CANONICAL-INPUTS.md).** [x]
+
 ## 推奨検証
 
 各タスクの後で実行する:

@@ -6936,4 +6936,194 @@ mod term_proof_tests {
         })
         .unwrap();
     }
+
+    #[test]
+    fn source_theorem_canonical_inputs_match_genuine_content_and_full_slices() {
+        use mizar_core::elaborator::{
+            lower_source_theorem_skeletons, source_theorem_formula_payloads,
+        };
+        use mizar_proof::status::source_theorem_canonical_inputs;
+        use mizar_vc::{
+            dependency_slice::{
+                DependencySliceCompleteness, DependencySliceInput, try_compute_dependency_slices,
+            },
+            generator::{CoreGenerationCandidateSet, CoreGenerationInput, VcNormalizationInput},
+            vc_ir::*,
+        };
+        let original =
+            "theorem T: for X being set holds X = X proof let X be set; thus X = X; end;";
+        // Independent fixed-schema literals frozen before the facade implementation.
+        let expected = [
+            "770f0ab609b0f647adef9a5d0a96b8ca81c755bed1fa0c91e4bd9021e5625563",
+            "e2753e241cf06d7bbc31e1886154a430469c93bcae47a724e4a21a77e46e45d9",
+            "2d1ad8e890a278757aef06df254c0035e637e14ad636fa53e887fddb72db8aaa",
+        ];
+        for source in [
+            original.to_owned(),
+            "theorem T: for Bound being set holds Bound = Bound proof let Local be set; thus Local = Local; end;".to_owned(),
+            format!(":: leading trivia\n{}\n", original.replace(" proof ", "\nproof\n")),
+            original.replace("T:", "U:"),
+        ] {
+            with_step5c14_theorem_check(&source, |check| {
+                let check_before = format!("{check:?}");
+                let owners_before = check.owners().to_vec();
+                assert_eq!(check.owners().len(), 1);
+                assert_eq!(check.owners()[0].0.spelling, if source.contains("U:") { "U" } else { "T" });
+                let core = lower_source_theorem_skeletons(check, None)?;
+                let roots = core.obligation_seeds().iter().flat_map(|(_, seed)| {
+                    seed.context.iter().copied().chain(seed.goal)
+                }).collect::<Vec<_>>();
+                let formulas = source_theorem_formula_payloads(check, &core, &roots)?;
+                for ordinal in [777, 778] {
+                    let snapshot = snapshot_id(ordinal);
+                    // Independently generate the original graph, without relabeling a container.
+                    let flow = mizar_core::control_flow::build_control_flow_ir(&core);
+                    let handoff = mizar_core::control_flow::build_obligation_seed_handoff(&core, &flow);
+                    let intake = SeedIntakeTable::try_from_handoff(&handoff)
+                        .map_err(|error| error.to_string())?;
+                    let package = core.module_id().package().as_str();
+                    let path = core.module_id().path().as_str();
+                    let candidates = CoreGenerationCandidateSet::try_from_seed_intake(CoreGenerationInput {
+                        schema_version: &GenerationSchemaVersion::new("source-theorem-local-v1"),
+                        module: &VcModuleRef::new(format!(
+                            "package={}:{};module={}:{}", package.len(), package, path.len(), path
+                        )),
+                        intake: &intake,
+                        handoff: &handoff,
+                        flow_output: Some(&flow),
+                    }).map_err(|error| error.to_string())?;
+                    let vcs = CoreGenerationCandidateSet::try_normalize(VcNormalizationInput {
+                        schema_version: &VcSchemaVersion::new("vc-v1"),
+                        snapshot,
+                        source: core.source_id(),
+                        candidates: &candidates,
+                    }).map_err(|error| error.to_string())?;
+                    assert_eq!(vcs.snapshot(), snapshot);
+                    assert_eq!(vcs.vcs().len(), 1);
+                    let vc = &vcs.vcs()[0];
+                    let anchor_before = vc.anchor.clone();
+                    assert_eq!(vc.status, VcStatus::Open);
+                    assert_eq!(vc.kind, VcKind::TheoremProofStep);
+                    assert!(!vc.anchor.is_complete());
+                    assert_eq!(vcs.canonical_vc_fingerprint(vc.id), None);
+                    assert_eq!(vcs.local_context_fingerprint(vc.id), None);
+                    let components = vcs.source_theorem_canonical_components(vc.id, &core, &formulas)?;
+                    let slices = try_compute_dependency_slices(DependencySliceInput {
+                        vc_set: &vcs,
+                        discharge_output: None,
+                    }).map_err(|error| error.to_string())?;
+                    let slice = slices.slice_for(vc.id).unwrap();
+                    let actual = source_theorem_canonical_inputs(check, snapshot, vc.id)?;
+                    assert_eq!((actual.0, actual.1, actual.2), components);
+                    let hashes = [actual.0.hash(), actual.1, actual.2.hash()].map(|hash| {
+                        hash.as_bytes().iter().map(|byte| format!("{byte:02x}")).collect::<String>()
+                    });
+                    assert_eq!(hashes, expected);
+                    assert_eq!(&actual.3, slice);
+                    assert_eq!(actual.3.vc(), slice.vc());
+                    assert_eq!(actual.3.kind(), slice.kind());
+                    assert_eq!(actual.3.status(), slice.status());
+                    assert_eq!(actual.3.entries(), slice.entries());
+                    assert_eq!(actual.3.unknowns(), slice.unknowns());
+                    assert_eq!(actual.3.completeness(), slice.completeness());
+                    assert_eq!(actual.3.fingerprint(), slice.fingerprint());
+                    assert_eq!(actual.3.kind(), &VcKind::TheoremProofStep);
+                    assert_eq!(actual.3.status(), &VcStatus::Open);
+                    assert!(!actual.3.entries().is_empty());
+                    assert!(!actual.3.unknowns().is_empty());
+                    assert_eq!(actual.3.completeness(), DependencySliceCompleteness::IncompleteUncacheable);
+                    assert!(!actual.3.is_complete());
+                    assert!(actual.3.requires_cache_miss());
+                    assert_eq!(actual, source_theorem_canonical_inputs(check, snapshot, vc.id)?);
+                    assert_eq!(vc.anchor, anchor_before);
+                }
+                assert_eq!(check.owners(), owners_before);
+                assert_eq!(format!("{check:?}"), check_before);
+                Ok(())
+            }).unwrap();
+        }
+    }
+
+    #[test]
+    fn source_theorem_canonical_inputs_preserve_upstream_errors_before_selection() {
+        use mizar_core::{
+            core_ir::{CoreItemKind, CoreProofNodeKind},
+            elaborator::{lower_source_theorem_skeletons, source_theorem_formula_payloads},
+        };
+        use mizar_proof::status::source_theorem_canonical_inputs;
+        use mizar_vc::vc_ir::VcId;
+        let original =
+            "theorem T: for X being set holds X = X proof let X be set; thus X = X; end;";
+        let absent = VcId::new(usize::MAX);
+        with_step5c14_theorem_check(original, |check| {
+            let check_before = format!("{check:?}");
+            let core = lower_source_theorem_skeletons(check, None)?;
+            let roots = core
+                .obligation_seeds()
+                .iter()
+                .flat_map(|(_, seed)| seed.context.iter().copied().chain(seed.goal))
+                .collect::<Vec<_>>();
+            let formulas = source_theorem_formula_payloads(check, &core, &roots)?;
+            // VC69 checks target absence before schema/replay, so the old generator is sufficient.
+            let vcs = generate_core_vcs(&core, snapshot_id(777))?;
+            let expected = vcs
+                .source_theorem_canonical_components(absent, &core, &formulas)
+                .unwrap_err();
+            assert_eq!(
+                source_theorem_canonical_inputs(check, snapshot_id(777), absent).unwrap_err(),
+                expected
+            );
+            assert_eq!(format!("{check:?}"), check_before);
+            Ok(())
+        })
+        .unwrap();
+        for source in [
+            "open theorem O: for X being set holds X = X;".to_owned(),
+            original.replacen("theorem", "lemma", 1),
+            "theorem C: 0 = 0 by computation(steps: 8);".to_owned(),
+        ] {
+            with_step5c14_theorem_check(&source, |check| {
+                let check_before = format!("{check:?}");
+                let expected = if source.starts_with("open theorem") {
+                    let error = lower_source_theorem_skeletons(check, None).unwrap_err();
+                    assert_eq!(error, "theorems.core.status_unsupported");
+                    error
+                } else {
+                    let core = lower_source_theorem_skeletons(check, None)?;
+                    if source.starts_with("lemma") {
+                        assert_eq!(
+                            core.items().iter().next().unwrap().1.kind,
+                            CoreItemKind::Lemma
+                        );
+                    } else {
+                        assert!(
+                            core.obligation_seeds()
+                                .iter()
+                                .all(|(_, seed)| seed.context.is_empty())
+                        );
+                        assert!(core.proof_nodes().iter().any(|(_, node)| {
+                            matches!(node.kind, CoreProofNodeKind::ComputationGoal { .. })
+                        }));
+                    }
+                    let roots = core
+                        .obligation_seeds()
+                        .iter()
+                        .flat_map(|(_, seed)| seed.context.iter().copied().chain(seed.goal))
+                        .collect::<Vec<_>>();
+                    assert!(!roots.is_empty());
+                    source_theorem_formula_payloads(check, &core, &roots).unwrap_err()
+                };
+                for selected in [VcId::new(0), absent] {
+                    assert_eq!(
+                        source_theorem_canonical_inputs(check, snapshot_id(777), selected)
+                            .unwrap_err(),
+                        expected
+                    );
+                }
+                assert_eq!(format!("{check:?}"), check_before);
+                Ok(())
+            })
+            .unwrap();
+        }
+    }
 }

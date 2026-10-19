@@ -474,6 +474,8 @@ layer consumes both; one alignment task is owned here.
 
 37. **[Opt-in screened source attempt](../../task_contracts/en/PROOF-SOURCE-SCREENED-ATTEMPT.md).** [x]
 
+38. **[Genuine theorem canonical inputs](../../task_contracts/en/PROOF-SOURCE-THEOREM-CANONICAL-INPUTS.md).** [x]
+
 ## Recommended Verification
 
 Run after each task:

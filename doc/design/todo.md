@@ -775,6 +775,7 @@ permit; each source-integration slice waits for its actual upstream outputs.
    [Local-variable reflexivity names](./task_contracts/en/ATP-LOCAL-VARIABLE-REFLEXIVITY-NAMES.md) supply bounded instance inputs; source Proof consumption and the full finder remain open.
    [Theorem formula content](./task_contracts/en/CORE-SOURCE-THEOREM-FORMULA-PAYLOADS.md) supplies bounded original local content; VC/context identity and source acceptance remain open.
    [Theorem canonical components](./task_contracts/en/VC-SOURCE-THEOREM-CANONICAL-COMPONENTS.md) supply bounded VC/goal/context content before source identity assembly and acceptance.
+   [Genuine theorem inputs](./task_contracts/en/PROOF-SOURCE-THEOREM-CANONICAL-INPUTS.md) join that content and the original conservative slice; source identity and acceptance remain open.
 2. [ ] [Built-in evidence candidates](./task_contracts/en/PREATP-FORMULA-EVIDENCE.md)
    (VC 60); design can start, general source integration waits for authentic
    formula/context/substitution/provenance producers. [Original-source direct-premise candidates](./task_contracts/en/VC-SOURCE-DIRECT-PREMISE-CANDIDATE.md) supply only bounded untrusted association.
