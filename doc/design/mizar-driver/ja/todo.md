@@ -537,6 +537,8 @@ artifact/test のフォローアップタスクが所有する。本 crate の�
 
 47. **[保持済みnative Frontend cacheの明示スケジュール連携](../../task_contracts/ja/DRIVER-RETAINED-NATIVE-FRONTEND-CACHE-SCHEDULE.md).** [x]
 
+48. **[Import-discovered native diagnostic index](../../task_contracts/ja/DRIVER-IMPORT-DISCOVERED-NATIVE-DIAGNOSTIC-INDEX.md).** [x]
+
 ## 推奨検証
 
 各タスクの後で実行する:

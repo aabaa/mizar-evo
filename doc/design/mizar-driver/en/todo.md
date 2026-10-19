@@ -569,6 +569,8 @@ the owning producers when the paired tasks land.
 
 47. **[Explicit retained native Frontend cache scheduling](../../task_contracts/en/DRIVER-RETAINED-NATIVE-FRONTEND-CACHE-SCHEDULE.md).** [x]
 
+48. **[Import-discovered native diagnostic index](../../task_contracts/en/DRIVER-IMPORT-DISCOVERED-NATIVE-DIAGNOSTIC-INDEX.md).** [x]
+
 ## Recommended Verification
 
 Run after each task:

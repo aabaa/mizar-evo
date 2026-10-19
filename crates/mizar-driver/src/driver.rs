@@ -648,24 +648,11 @@ impl CompilerDriver {
         DriverSubmitError,
     > {
         let submission = self.submit_captured(session, allocator, snapshots, input)?;
-        let index = submission.scheduler_run.as_ref().and_then(|run| {
-            self.validate_current_disk_diagnostics(submission.session.id, snapshots)
-                .ok()?;
-            let batches = run
-                .phase_results
-                .values()
-                .flatten()
-                .flat_map(|result| result.diagnostics.iter().cloned())
-                .collect();
-            let index = mizar_diagnostics::aggregator::BuildDiagnosticIndex::from_batches(
-                submission.session.captured.snapshot.id,
-                batches,
-            )
-            .ok()?;
-            self.validate_current_disk_diagnostics(submission.session.id, snapshots)
-                .ok()?;
-            Some(index)
-        });
+        let index = self.current_diagnostic_index(
+            &submission,
+            snapshots,
+            Self::validate_current_disk_diagnostics,
+        );
         Ok((submission, index))
     }
 
@@ -687,9 +674,49 @@ impl CompilerDriver {
         DriverSubmitError,
     > {
         let submission = self.submit_captured(session, allocator, snapshots, input)?;
-        let index = submission.scheduler_run.as_ref().and_then(|run| {
-            self.validate_current_native_diagnostics(submission.session.id, snapshots)
-                .ok()?;
+        let index = self.current_diagnostic_index(
+            &submission,
+            snapshots,
+            Self::validate_current_native_diagnostics,
+        );
+        Ok((submission, index))
+    }
+
+    /// Discovers imports, then aggregates only the original current native phase batches.
+    pub fn submit_captured_with_import_discovery_and_native_diagnostic_index<
+        A: SessionIdAllocator,
+        L: SourceLayoutProvider,
+    >(
+        &mut self,
+        session: BuildSession,
+        allocator: &A,
+        snapshots: &SnapshotRegistry<A>,
+        input: DriverSubmitInput<L>,
+    ) -> Result<
+        (
+            BuildSubmission,
+            Option<mizar_diagnostics::aggregator::BuildDiagnosticIndex>,
+        ),
+        DriverSubmitError,
+    > {
+        let submission =
+            self.submit_captured_with_import_discovery(session, allocator, snapshots, input)?;
+        let index = self.current_diagnostic_index(
+            &submission,
+            snapshots,
+            Self::validate_current_native_diagnostics,
+        );
+        Ok((submission, index))
+    }
+
+    fn current_diagnostic_index<A: SessionIdAllocator>(
+        &self,
+        submission: &BuildSubmission,
+        snapshots: &SnapshotRegistry<A>,
+        validate: fn(&Self, BuildSessionId, &SnapshotRegistry<A>) -> Result<(), String>,
+    ) -> Option<mizar_diagnostics::aggregator::BuildDiagnosticIndex> {
+        submission.scheduler_run.as_ref().and_then(|run| {
+            validate(self, submission.session.id, snapshots).ok()?;
             let batches = run
                 .phase_results
                 .values()
@@ -701,11 +728,9 @@ impl CompilerDriver {
                 batches,
             )
             .ok()?;
-            self.validate_current_native_diagnostics(submission.session.id, snapshots)
-                .ok()?;
+            validate(self, submission.session.id, snapshots).ok()?;
             Some(index)
-        });
-        Ok((submission, index))
+        })
     }
 
     pub fn submit_captured_with_import_discovery<A: SessionIdAllocator, L: SourceLayoutProvider>(
