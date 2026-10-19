@@ -860,6 +860,7 @@ spec-reserved until a separately authorized diagnostics adoption.
 
 Active implementation contracts follow their own dependencies; completed AST-SPEC records remain specification-transfer history.
 The [multiple-argument Binder specification](./task_contracts/en/AST-MULTI-BINDER-SPEC.md) fixes the product-domain extension and acceptance requirements for these owners; it adds no implementation activation.
+The [Binder task decomposition](./task_contracts/en/AST-MULTI-BINDER-PLAN.md) assigns MBP-01–09 to the existing owners, adds the explicit Resolver prerequisite and separates provisional formation from proof/adoption. Begin with MBP-01 additive syntax preparation; MBP-03 library-input inventory and MBP-08 descriptor preparation can proceed independently. Differentiation remains a later specification/library task.
 
 1. [ ] [AST-PARSE](./task_contracts/en/AST-PARSE.md) — additive syntax; legacy retirement blocked.
 2. [ ] [AST-DIAGNOSTICS](./task_contracts/en/AST-DIAGNOSTICS.md) — descriptor design; emission waits for source-aware producers.
