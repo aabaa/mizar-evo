@@ -480,6 +480,7 @@ layer consumes both; one alignment task is owned here.
 40. **[Source theorem reflexivity check](../../task_contracts/en/PROOF-SOURCE-THEOREM-REFLEXIVITY-CHECK.md).** [x]
 41. **[Source theorem reflexivity selection](../../task_contracts/en/PROOF-SOURCE-THEOREM-REFLEXIVITY-SELECTION.md).** [x]
 42. **[Source theorem reflexivity status projection](../../task_contracts/en/PROOF-SOURCE-THEOREM-STATUS-PROJECTION.md).** [x]
+43. **[Source theorem reflexivity metadata and checked wire](../../task_contracts/en/PROOF-SOURCE-THEOREM-REFLEXIVITY-METADATA.md).** [x]
 
 ## Recommended Verification
 

@@ -781,6 +781,7 @@ permit; each source-integration slice waits for its actual upstream outputs.
    [Fresh theorem reflexivity checking](./task_contracts/en/PROOF-SOURCE-THEOREM-REFLEXIVITY-CHECK.md) connects genuine normal results to existing built-in classification; general acceptance, witness/publication and reuse remain open.
    [Fresh theorem reflexivity selection](./task_contracts/en/PROOF-SOURCE-THEOREM-REFLEXIVITY-SELECTION.md) connects actual checked targets to existing selection; witness/publication and reuse remain open.
    [Source theorem internal status](./task_contracts/en/PROOF-SOURCE-THEOREM-STATUS-PROJECTION.md) composes genuine identity, selection and conservative dependencies; publication and reuse remain open.
+   [Theorem raw metadata and checked wire](./task_contracts/en/PROOF-SOURCE-THEOREM-REFLEXIVITY-METADATA.md) retain actual same-call check products; trusted witness/publication and reuse remain open.
 2. [ ] [Built-in evidence candidates](./task_contracts/en/PREATP-FORMULA-EVIDENCE.md)
    (VC 60); design can start, general source integration waits for authentic
    formula/context/substitution/provenance producers. [Original-source direct-premise candidates](./task_contracts/en/VC-SOURCE-DIRECT-PREMISE-CANDIDATE.md) supply only bounded untrusted association.

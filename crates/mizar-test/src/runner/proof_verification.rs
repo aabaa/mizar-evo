@@ -8327,4 +8327,343 @@ mod term_proof_tests {
         }
         assert_eq!(policies, policies_before);
     }
+
+    #[test]
+    fn source_theorem_reflexivity_metadata_matches_actual_wire_and_fields() {
+        use super::super::tests::source_registration_owner_inputs as inputs;
+        use mizar_artifact::{
+            proof_witness::KernelAcceptanceMetadata,
+            registration_summary::{ArtifactHashClass, ArtifactHashRef},
+            store::SchemaVersion,
+        };
+        use mizar_core::elaborator::lower_source_theorem_skeletons as lower;
+        use mizar_kernel::{
+            certificate_parser::{ClauseTautologyPolicy, Fingerprint, KernelProfileRecord},
+            checker::{KernelCheckStatus as Status, KernelEvidenceCheckKind as Kind},
+            formula_evidence::{FormulaEvidenceParseContext, parse_formula_evidence},
+        };
+        use mizar_proof::{
+            policy::{
+                AcceptedGoalPolarity, CandidatePolicyClass as Class,
+                KernelEvidenceFormat as Format, KernelEvidenceOrigin as Origin, KernelPolicyInput,
+                VerifierPolicy as Policy,
+            },
+            status::{
+                check_source_theorem_reflexivity as verify,
+                check_source_theorem_reflexivity_metadata as metadata,
+                project_source_theorem_reflexivity_status as status,
+                select_source_theorem_reflexivity as select,
+            },
+        };
+        use mizar_vc::{
+            generator::generate_source_theorem_vcs as generate,
+            kernel_evidence_handoff::{
+                KernelClauseTautologyPolicy, build_source_theorem_kernel_handoff as project,
+            },
+            vc_ir::{GenerationSchemaVersion, VcId, VcSchemaVersion, VcStatus},
+        };
+        let original =
+            "theorem T: for X being set holds X = X proof let X be set; thus X = X; end;";
+        let bound = original.replace(
+            "for X being set holds X = X",
+            "for Bound being set holds Bound = Bound",
+        );
+        let local = original.replace(
+            "let X be set; thus X = X",
+            "let Local be set; thus Local = Local",
+        );
+        let trivia = format!(":: 日本語 λ\n{original}\n");
+        let mut original_source = None;
+        let mut prior = Vec::new();
+        for (index, (text, package, module, skip)) in [
+            (original.to_owned(), "owner-test", "owners", 0),
+            (bound, "owner-test", "owners", 0),
+            (local, "owner-test", "owners", 0),
+            (trivia, "owner-test", "owners", 0),
+            (original.to_owned(), "owner-test", "owners", 7),
+            (original.to_owned(), "other-package", "owners", 0),
+            (original.to_owned(), "owner-test", "nested.owners", 0),
+        ]
+        .into_iter()
+        .enumerate()
+        {
+            let (frontend, source, collected) = inputs(&text, package, module, skip);
+            assert!(frontend.diagnostics.is_empty());
+            assert!(collected.diagnostics().is_empty());
+            let env = collected.env();
+            let before = (source.clone(), env.clone(), prior.clone());
+            if skip == 7 {
+                assert_ne!(Some(source.source_id()), original_source);
+            } else if original_source.is_none() {
+                original_source = Some(source.source_id());
+            }
+            with_source_theorem_check(frontend.ast.as_ref().unwrap(), &source, env, |check| {
+                let check_before = format!("{check:?}");
+                for policy in [
+                    Policy::default(),
+                    Policy::release().with_require_kernel_certificates(true),
+                    Policy::development()
+                        .with_kernel_evidence_formats([Format::BuiltinKernelEvidence]),
+                    Policy::default().with_profile_id("theorem-metadata"),
+                    Policy::default().with_schema_version(2),
+                    Policy::default().with_checker_schema_version(2),
+                ]
+                .into_iter()
+                .take(if index == 0 { 6 } else { 1 })
+                {
+                    for ordinal in [777, 778] {
+                        let snap = snapshot_id(ordinal);
+                        let vc = VcId::new(0);
+                        let policy_before = policy.clone();
+                        let raw = verify(&source, check, env, snap, vc, &policy)?;
+                        let raw_before = raw.clone();
+                        let core = lower(check, None)?;
+                        let graph = generate(
+                            &core,
+                            snap,
+                            &GenerationSchemaVersion::new("source-theorem-local-v1"),
+                            &VcSchemaVersion::new("vc-v1"),
+                        )?;
+                        assert_eq!(graph.vcs()[0].status, VcStatus::Open);
+                        let handoff = project(&core, &graph, vc)?;
+                        let envelope = handoff.canonical_evidence();
+                        let target = envelope.target_vc();
+                        let profile = envelope.kernel_profile();
+                        let tautology = match profile.clause_tautology_policy {
+                            KernelClauseTautologyPolicy::Reject => ClauseTautologyPolicy::Reject,
+                            KernelClauseTautologyPolicy::Marker => ClauseTautologyPolicy::Marker,
+                            _ => panic!("unsupported actual theorem profile"),
+                        };
+                        let mut context = FormulaEvidenceParseContext::v1(
+                            Fingerprint::new(target.algorithm_id, target.digest.clone()),
+                            KernelProfileRecord::v1(profile.profile_id, tautology),
+                        );
+                        let v1 = handoff.encode_local_evidence(None)?;
+                        let parsed = parse_formula_evidence(&v1, &context).unwrap();
+                        assert_eq!(parsed.schema_version(), 1);
+                        let names =
+                            mizar_atp::backend::encode_local_variable_reflexivity_names(&parsed)?;
+                        assert!(!names.is_empty());
+                        let wire = handoff.encode_local_evidence(Some(&names))?;
+                        assert_ne!(wire, v1);
+                        context.accepted_schema_versions.insert(2);
+                        let named = parse_formula_evidence(&wire, &context).unwrap();
+                        assert_eq!(named.schema_version(), 2);
+                        assert_eq!(named.equality_instances().len(), names.len());
+                        for name in &names {
+                            assert!(wire.windows(name.len()).any(|bytes| bytes == name));
+                        }
+                        let components = handoff.local_evidence_component_hashes()?;
+                        let input =
+                            KernelPolicyInput::from_kernel_result(&raw.0, Origin::BuiltinDischarge);
+                        assert_eq!(raw.0.status(), Status::Accepted);
+                        assert_eq!(raw.0.evidence_check_kind(), Some(Kind::ProofObligation));
+                        assert!(!raw.0.policy_taint());
+                        assert_eq!(raw.1.class, Class::DischargedBuiltin);
+                        assert_eq!(
+                            input.accepted_goal_polarity(),
+                            Some(AcceptedGoalPolarity::AssertFalseForRefutation)
+                        );
+                        let accepted = input.accepted_evidence_hash().unwrap();
+                        let families = [
+                            "mizar-vc/local-evidence-component/profile",
+                            "mizar-vc/local-evidence-component/formula",
+                            "mizar-vc/local-evidence-component/substitutions",
+                            "mizar-vc/local-evidence-component/provenance",
+                            "mizar-proof/verifier-policy",
+                            "mizar-vc/kernel-evidence-handoff-canonical",
+                            "mizar-proof/kernel-accepted-evidence",
+                        ];
+                        let digests = [
+                            components[0],
+                            components[1],
+                            components[2],
+                            components[3],
+                            policy.policy_fingerprint().hash(),
+                            handoff.canonical_hash(),
+                            accepted,
+                        ];
+                        let [
+                            profile,
+                            formula,
+                            substitutions,
+                            provenance,
+                            verifier,
+                            target,
+                            result,
+                        ] = std::array::from_fn(|i| ArtifactHashRef {
+                            class: ArtifactHashClass::Interface,
+                            schema_family: families[i].into(),
+                            schema_version: SchemaVersion::new(
+                                if i == 4 { policy.schema_version() } else { 1 },
+                                0,
+                            ),
+                            digest: digests[i],
+                        });
+                        let expected = KernelAcceptanceMetadata {
+                            kernel_profile_fingerprint: profile,
+                            verifier_policy_fingerprint: verifier,
+                            checker_schema_version: SchemaVersion::new(
+                                policy.checker_schema_version(),
+                                0,
+                            ),
+                            evidence_schema_version: SchemaVersion::new(named.schema_version(), 0),
+                            target_binding_hash: target,
+                            formula_evidence_hash: formula,
+                            substitution_evidence_hash: substitutions,
+                            provenance_hash: provenance,
+                            formula_context_hash: None,
+                            accepted_result_hash: result,
+                        };
+                        let chosen = select(&source, check, env, snap, vc, &policy)?;
+                        let projected = status(&source, check, env, snap, vc, &policy)?;
+                        let old_before = (chosen.clone(), projected.clone());
+                        let actual = metadata(&source, check, env, snap, vc, &policy)?;
+                        assert_eq!((&actual.0, &actual.1), (&raw.0, &raw.1));
+                        assert_eq!(actual.2.as_ref(), Some(&expected));
+                        assert_eq!(actual.3, wire);
+                        assert_eq!(parse_formula_evidence(&actual.3, &context).unwrap(), named);
+                        assert_eq!(
+                            chosen.reuse_metadata().selected_evidence_hash(),
+                            Some(accepted)
+                        );
+                        assert!(projected.1.requires_cache_miss());
+                        assert!(
+                            !projected
+                                .0
+                                .reuse_metadata()
+                                .cache_reuse_predicate_complete()
+                        );
+                        assert_eq!(actual, metadata(&source, check, env, snap, vc, &policy)?);
+                        assert_eq!(raw, verify(&source, check, env, snap, vc, &policy)?);
+                        assert_eq!(chosen, select(&source, check, env, snap, vc, &policy)?);
+                        assert_eq!(projected, status(&source, check, env, snap, vc, &policy)?);
+                        assert_eq!((chosen, projected), old_before);
+                        assert_eq!(raw, raw_before);
+                        assert_eq!(policy, policy_before);
+                        prior.push(actual);
+                    }
+                }
+                assert_eq!(format!("{check:?}"), check_before);
+                Ok(())
+            })
+            .unwrap();
+            assert_eq!((&source, env), (&before.0, &before.1));
+            assert_eq!(&prior[..before.2.len()], before.2);
+        }
+    }
+
+    #[test]
+    fn source_theorem_reflexivity_metadata_preserves_compatibility_errors() {
+        use super::super::tests::source_registration_owner_inputs as inputs;
+        use mizar_proof::{
+            policy::{KernelEvidenceFormat as Format, VerifierPolicy as Policy},
+            status::{
+                check_source_theorem_reflexivity as verify,
+                check_source_theorem_reflexivity_metadata as metadata,
+            },
+        };
+        use mizar_vc::vc_ir::VcId;
+        let original =
+            "theorem T: for X being set holds X = X proof let X be set; thus X = X; end;";
+        let snap = snapshot_id(777);
+        let absent = VcId::new(usize::MAX);
+        let policies = [
+            Policy::default(),
+            Policy::default().with_kernel_evidence_formats([]),
+            Policy::release().with_kernel_evidence_formats([Format::FormulaSubstitution]),
+        ];
+        let policies_before = policies.clone();
+        let cited = include_str!(
+            "../../../../tests/miz/pass/theorems/pass_proof_verification_lemma_reference_001.miz"
+        );
+        for text in [
+            original.to_owned(),
+            original.replacen("theorem", "lemma", 1),
+            "open theorem O: for X being set holds X = X;".to_owned(),
+            format!(
+                "{original}\n{}",
+                original.replace("theorem T:", "theorem U:")
+            ),
+            cited.to_owned(),
+        ] {
+            let (frontend, source, collected) = inputs(&text, "owner-test", "owners", 0);
+            assert!(frontend.diagnostics.is_empty());
+            assert!(collected.diagnostics().is_empty());
+            let env = collected.env();
+            let before = (source.clone(), env.clone());
+            with_source_theorem_check(frontend.ast.as_ref().unwrap(), &source, env, |check| {
+                let check_before = format!("{check:?}");
+                for (index, policy) in policies.iter().enumerate() {
+                    for vc in [VcId::new(0), absent] {
+                        if text == original && index == 0 && vc != absent {
+                            continue;
+                        }
+                        let expected = verify(&source, check, env, snap, vc, policy).unwrap_err();
+                        assert_eq!(
+                            metadata(&source, check, env, snap, vc, policy).unwrap_err(),
+                            expected
+                        );
+                    }
+                }
+                if text == original {
+                    let vc = VcId::new(0);
+                    let policy = &policies[0];
+                    let prior = (
+                        verify(&source, check, env, snap, vc, policy)?,
+                        metadata(&source, check, env, snap, vc, policy)?,
+                    );
+                    let prior_before = prior.clone();
+                    for text in [
+                        original.replace("theorem T:", "theorem Foreign:"),
+                        format!(
+                            "{original}\n{}",
+                            original.replace("theorem T:", "theorem U:")
+                        ),
+                        "theorem T: for X being set holds X = ;".to_owned(),
+                    ] {
+                        let (other_frontend, other_source, other) =
+                            inputs(&text, "owner-test", "owners", 0);
+                        assert_eq!(
+                            !other_frontend.diagnostics.is_empty(),
+                            text.ends_with("= ;")
+                        );
+                        let other_before = (other_source.clone(), other.env().clone());
+                        for (current, symbols) in [
+                            (&other_source, other.env()),
+                            (&source, other.env()),
+                            (&other_source, env),
+                        ] {
+                            for policy in &policies {
+                                for selected in [vc, absent] {
+                                    let expected =
+                                        verify(current, check, symbols, snap, selected, policy)
+                                            .unwrap_err();
+                                    assert_eq!(
+                                        metadata(current, check, symbols, snap, selected, policy)
+                                            .unwrap_err(),
+                                        expected
+                                    );
+                                }
+                            }
+                        }
+                        assert_eq!((other_source, other.env().clone()), other_before);
+                    }
+                    assert_eq!(prior, prior_before);
+                    assert_eq!(
+                        prior,
+                        (
+                            verify(&source, check, env, snap, vc, policy)?,
+                            metadata(&source, check, env, snap, vc, policy)?,
+                        )
+                    );
+                }
+                assert_eq!(format!("{check:?}"), check_before);
+                Ok(())
+            })
+            .unwrap();
+            assert_eq!((source, env.clone()), before);
+        }
+        assert_eq!(policies, policies_before);
+    }
 }
