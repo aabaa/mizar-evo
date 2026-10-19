@@ -132,13 +132,13 @@ Structures, attributes, modes, and other declarations share this parameter mecha
 
 ### 4.1 Computation: verified algorithms (19:00)
 
-Hoare logic checks that, starting from precondition P, a statement satisfies postcondition Q if it returns.
-For assignment, replace x in Q with expression e. For if, split into the condition B and its negation. For while, prove that invariant I holds on entry, that the body preserves I, and that I with the negated condition gives Q on exit.
-Apply the rules recursively to generate first-order proof obligations. We will handle termination with terminating later. [Basic specification rules]
+P is the precondition; Q is the postcondition. Hoare logic checks that if P holds before a statement, Q holds when it returns.
+Assignment replaces x in Q with e. If splits into B and not B. For while, check three things: I holds on entry; the body preserves I; and I with not B gives Q on exit.
+Applied recursively, these rules give first-order proof obligations, called verification conditions or VCs. Termination is checked separately. [Basic specification rules]
 
 ### 4.2 algorithm: contracts, proofs, computation (19:45)
 
-This is Euclid's algorithm. Requires and ensures give its contract. The loop has invariant and decreasing annotations. Gcd is the mathematical functor.
+This is Euclid's algorithm. Requires states what must hold before the call. Ensures states what must hold after it returns. Together they form the contract. The loop has invariant and decreasing annotations. Gcd is the mathematical functor.
 EuclidGcdDef is the definition label; euclid_gcd is the callable name. Terminating claims termination for every input satisfying requires. We check proof obligations generated from the invariant and measure.
 After verification, it can be used as a mathematical functor in formulas and proofs. [Specification]
 
@@ -151,14 +151,14 @@ We check these obligations with library lemmas. [Specification-based explanation
 
 ### 4.4 terminating and functor promotion (22:15)
 
-Partial correctness is the default. Checking terminating gives totality under requires, so the algorithm can be used as a functor.
+Partial correctness is the default. Once terminating is verified, the algorithm returns for every input that meets requires. It can then be used as a functor.
 The upper example cites the verified contract for positive natural numbers a and b. In the lower example, by computation runs the algorithm on 12 and 8 using MVM, the virtual machine. It uses the result, four, in the proof.
 This default path also trusts MVM's execution result. It differs from kernel and SAT rechecking. MVM execution is not implemented; the examples explain the specification. [Specification / Implementation status]
 
 ### 4.5 Verified expression rewriting: lambda and differentiation (23:15)
 
 Lambda notation writes a function directly. Here, u maps to sin u times u, for real u.
-When passed as expr, a syntax tree, the algorithm can process products and sin while preserving variable binding. We verify differentiate's contract using differentiation rules, then use the transformed expression in a derivative proof. The displayed conclusion also uses semantic conversion and simplification lemmas.
+When passed as expr, a syntax tree, the algorithm can process products and sin while preserving variable binding. We prove differentiate's contract using differentiation rules. If it returns, the input is differentiable and the result gives its derivative. We then use that result in a derivative proof. The displayed conclusion also uses semantic conversion and simplification lemmas.
 This connects function notation, expression transformation, and its correctness proof. It is a specification sketch; MVM execution remains future work. [Specification-based sketch]
 
 ## Part 5. Development Infrastructure (24:15–27:15)

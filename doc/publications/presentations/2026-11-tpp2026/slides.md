@@ -558,7 +558,7 @@ thus diff((u |-> (sin u)*u), x) = (cos x)*x + sin x
 ```
 
 - **`|->` denotes a set-theoretic function. An `expr` syntax tree keeps expression structure and variable binding.**
-- The transformation algorithm's contract verifies differentiability and the correct derivative.[^1]
+- Verify the contract: on return, the input is differentiable and the result is its derivative.[^1]
 
 [^1]: Assumes differentiation, semantic conversion, and simplification lemmas. This is a specification sketch, not an execution result.
 
