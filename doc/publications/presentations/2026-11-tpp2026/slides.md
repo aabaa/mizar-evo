@@ -618,7 +618,7 @@ import mml.algebra.structure.sorted;
 | Reuse | Checked dependency fingerprints for incremental builds |
 
 - **Import public items together, and trace what was actually used.**
-- The design fixes dependency versions with packages and lockfiles. IDE diagnostics expose resolved names and traces.
+- The design fixes dependency versions with packages and lockfiles. The IDE shows resolved names and traces.
 
 Speaker note:
 

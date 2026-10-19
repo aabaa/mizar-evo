@@ -172,7 +172,7 @@ Authors manage both the imported resources and these priorities. Managing overri
 ### 5.2 Imports and dependency tracking (25:15)
 
 The new specification imports a module's public items with import. The two example modules follow the specification. Original fully qualified names and registration traces are intended to show which items were actually used.
-Dependency fingerprints allow reuse of checked results. Packages and lockfiles fix versions. The IDE is designed to show resolved names and traces.
+Dependency fingerprints record which dependencies were checked. They allow us to reuse checked results. Packages and lockfiles fix versions. The editor is designed to show resolved names and traces.
 This is not a one-to-one translation of the old environment lists. We keep mathematical writing while building tools that explain dependencies and implicit processing. [Specification]
 
 ### 5.3 The whole picture [deep dive] (26:15)
