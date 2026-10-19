@@ -309,6 +309,96 @@ pub fn source_registration_syntax_payloads_from_arena(
     Ok(payloads)
 }
 
+/// Derives declaration-local syntax content for validated supported theorems.
+pub fn source_theorem_syntax_payloads_from_arena(
+    source: &SurfaceResolvedArena,
+    symbols: &SymbolEnv,
+) -> Result<BTreeMap<SymbolId, Vec<u8>>, String> {
+    let ast = validated_source_symbol_ast(source, symbols)?;
+    let unsupported = || "unsupported source theorem syntax payload".to_owned();
+    let shells = DeclarationShellCollector::new(&ast, source.module()).collect();
+    let mut payloads = BTreeMap::new();
+    for shell in shells.declarations() {
+        if shell.kind() != DeclarationShellKind::Theorem {
+            continue;
+        }
+        if shell.parent().is_some() {
+            return Err(unsupported());
+        }
+        let origin = shell_origin(
+            ast.source_id,
+            source.module(),
+            shell,
+            &shell_context(&shells, shell),
+        );
+        let mut entries = symbols
+            .symbols()
+            .iter()
+            .filter(|entry| entry.kind() == SymbolKind::Theorem && entry.origin() == &origin);
+        let entry = entries.next().ok_or_else(unsupported)?;
+        if entries.next().is_some() {
+            return Err(unsupported());
+        }
+        let mut payload = b"mizar-resolve/source-theorem-syntax/v1\0".to_vec();
+        let mut pending = vec![shell.node_id()];
+        while let Some(id) = pending.pop() {
+            let node = ast.node_view(id).ok_or_else(unsupported)?;
+            match node.kind() {
+                SurfaceNodeKind::Token(token) => {
+                    if token.text.is_empty()
+                        || !matches!(
+                            token.kind,
+                            SurfaceTokenKind::Identifier
+                                | SurfaceTokenKind::ReservedWord
+                                | SurfaceTokenKind::ReservedSymbol
+                        )
+                    {
+                        return Err(unsupported());
+                    }
+                }
+                SurfaceNodeKind::TheoremItem
+                | SurfaceNodeKind::FormulaExpression
+                | SurfaceNodeKind::QuantifiedFormula(
+                    mizar_syntax::SurfaceQuantifierKind::Universal,
+                )
+                | SurfaceNodeKind::QuantifierVariableSegment
+                | SurfaceNodeKind::TypeExpression
+                | SurfaceNodeKind::TypeHead
+                | SurfaceNodeKind::BuiltinPredicateApplication
+                | SurfaceNodeKind::TermExpression
+                | SurfaceNodeKind::TermReference
+                | SurfaceNodeKind::ProofBlock
+                | SurfaceNodeKind::LetStatement
+                | SurfaceNodeKind::QualifiedVariableSegment
+                | SurfaceNodeKind::ConclusionStatement
+                | SurfaceNodeKind::Proposition => {}
+                _ => return Err(unsupported()),
+            }
+            payload.extend_from_slice(&(node.syntax_kind() as u16).to_be_bytes());
+            if let SurfaceNodeKind::Token(token) = node.kind() {
+                payload.extend_from_slice(&(token.kind.syntax_kind() as u16).to_be_bytes());
+                let length = u32::try_from(token.text.len()).map_err(|_| unsupported())?;
+                payload.extend_from_slice(&length.to_be_bytes());
+                payload.extend_from_slice(token.text.as_bytes());
+            }
+            let count = u32::try_from(node.children().len()).map_err(|_| unsupported())?;
+            payload.extend_from_slice(&count.to_be_bytes());
+            pending.extend(node.children().iter().rev().copied());
+        }
+        if payloads.insert(entry.symbol().clone(), payload).is_some() {
+            return Err(unsupported());
+        }
+    }
+    if symbols
+        .symbols()
+        .iter()
+        .any(|entry| entry.kind() == SymbolKind::Theorem && !payloads.contains_key(entry.symbol()))
+    {
+        return Err(unsupported());
+    }
+    Ok(payloads)
+}
+
 /// Duplicate and overload policy for an opaque declaration projection.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
 #[non_exhaustive]

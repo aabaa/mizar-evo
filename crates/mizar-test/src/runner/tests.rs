@@ -23271,3 +23271,229 @@ fn source_registration_screened_attempt_preserves_lower_errors_and_absence_befor
         before
     );
 }
+
+#[test]
+fn source_theorem_syntax_payloads_exact_current_keys_and_empty() {
+    use mizar_resolve::{
+        env::SymbolKind,
+        symbols::{
+            source_theorem_syntax_payloads_from_arena as syntax, validate_source_symbol_env,
+        },
+    };
+    let t = "theorem T: for X being set holds X = X proof let X be set; thus X = X; end;";
+    let u = t.replace("theorem T:", "theorem U:");
+    // Complete literal frozen independently from the old parser and written grammar.
+    let expected_t = concat!(
+        "6d697a61722d7265736f6c76652f736f757263652d7468656f72656d2d73796e7461782f7631000060000000",
+        "0600020065000000077468656f72656d000000000002006400000001540000000000020066000000013a0000",
+        "0000002c000000010037000000040002006500000003666f7200000000003800000003000200640000000158",
+        "0000000000020065000000056265696e67000000000015000000010019000000010002006500000003736574",
+        "000000000002006500000005686f6c647300000000002d00000003001c00000001001d000000010002006400",
+        "000001580000000000020066000000013d00000000001c00000001001d000000010002006400000001580000",
+        "0000006200000004000200650000000570726f6f6600000000003d0000000300020065000000036c65740000",
+        "0000003e00000003000200640000000158000000000002006500000002626500000000001500000001001900",
+        "00000100020065000000037365740000000000020066000000013b0000000000540000000300020065000000",
+        "047468757300000000004000000001002c00000001002d00000003001c00000001001d000000010002006400",
+        "000001580000000000020066000000013d00000000001c00000001001d000000010002006400000001580000",
+        "000000020066000000013b000000000002006500000003656e640000000000020066000000013b00000000",
+    )
+    .as_bytes()
+    .chunks_exact(2)
+    .map(|pair| u8::from_str_radix(std::str::from_utf8(pair).unwrap(), 16).unwrap())
+    .collect::<Vec<_>>();
+    assert_eq!(expected_t.len(), 527);
+    let mut expected_u = expected_t.clone();
+    // The unique complete Token/Identifier/length/T/child-count record at offset 64.
+    assert_eq!(
+        &expected_t[64..77],
+        b"\x00\x02\x00\x64\x00\x00\x00\x01T\x00\x00\x00\x00"
+    );
+    expected_u[64..77].copy_from_slice(b"\x00\x02\x00\x64\x00\x00\x00\x01U\x00\x00\x00\x00");
+    for (text, count) in [(t.to_owned(), 1), (format!("{t}\n{u}"), 2)] {
+        let (frontend, source, collected) =
+            source_registration_owner_inputs(&text, "owner-test", "owners", 0);
+        assert!(frontend.diagnostics.is_empty());
+        assert!(collected.diagnostics().is_empty());
+        let before = (source.clone(), collected.env().clone());
+        let payloads = syntax(&source, collected.env()).unwrap();
+        assert_eq!(payloads.len(), count);
+        assert_eq!(collected.env().symbols().len(), count);
+        for entry in collected.env().symbols().iter() {
+            assert_eq!(entry.kind(), SymbolKind::Theorem);
+            let expected = match entry.primary_spelling() {
+                "T" => &expected_t,
+                "U" => &expected_u,
+                _ => unreachable!(),
+            };
+            assert_eq!(payloads.get(entry.symbol()), Some(expected));
+        }
+        assert_eq!(syntax(&source, collected.env()).unwrap(), payloads);
+        assert_eq!((source, collected.env().clone()), before);
+    }
+    for text in [String::new(), t.replace("theorem T:", "lemma L:")] {
+        let (frontend, source, collected) =
+            source_registration_owner_inputs(&text, "owner-test", "owners", 0);
+        assert!(frontend.diagnostics.is_empty());
+        assert!(collected.diagnostics().is_empty());
+        let before = (source.clone(), collected.env().clone());
+        validate_source_symbol_env(&source, collected.env()).unwrap();
+        assert!(syntax(&source, collected.env()).unwrap().is_empty());
+        assert_eq!((source, collected.env().clone()), before);
+    }
+}
+
+#[test]
+fn source_theorem_syntax_payloads_neutral_relocation_order_and_local_edits() {
+    use mizar_resolve::{
+        env::{SymbolKind, Visibility},
+        symbols::source_theorem_syntax_payloads_from_arena as syntax,
+    };
+    let t = "theorem T: for X being set holds X = X proof let X be set; thus X = X; end;";
+    let u = t.replace("theorem T:", "theorem U:");
+    let text = format!("{t}\n{u}");
+    let (_, source, collected) = source_registration_owner_inputs(&text, "owner-test", "owners", 0);
+    let prior = syntax(&source, collected.env()).unwrap();
+    let before = (source.clone(), collected.env().clone(), prior.clone());
+    let baseline = collected
+        .env()
+        .symbols()
+        .iter()
+        .filter(|e| e.kind() == SymbolKind::Theorem)
+        .map(|entry| (entry.primary_spelling(), &prior[entry.symbol()]))
+        .collect::<std::collections::BTreeMap<_, _>>();
+    let trivia = format!(":: λ 日本語\n{}", text.replace(' ', "  "));
+    let leading = format!("{}\n{text}", t.replace("theorem T:", "lemma L:"));
+    let renamed = format!("{}\n{u}", t.replace("theorem T:", "theorem R:"));
+    let binder = format!("{}\n{u}", t.replace('X', "Y"));
+    let local = format!(
+        "{}\n{u}",
+        t.replace("let X be set; thus X = X", "let Y be set; thus Y = Y")
+    );
+    for (index, edited, package, module, skip) in [
+        (0, trivia, "owner-test", "owners", 0),
+        (1, text.clone(), "owner-test", "owners", 7),
+        (2, format!("{u}\n{t}"), "owner-test", "owners", 0),
+        (3, leading, "owner-test", "owners", 0),
+        (4, text.clone(), "other-package", "owners", 0),
+        (5, text.clone(), "owner-test", "other_module", 0),
+        (6, format!("private {t}\n{u}"), "owner-test", "owners", 0),
+        (7, renamed, "owner-test", "owners", 0),
+        (8, binder, "owner-test", "owners", 0),
+        (9, local, "owner-test", "owners", 0),
+    ] {
+        let (frontend, current, entries) =
+            source_registration_owner_inputs(&edited, package, module, skip);
+        assert!(frontend.diagnostics.is_empty(), "edit {index}");
+        assert!(entries.diagnostics().is_empty(), "edit {index}");
+        let input_before = (current.clone(), entries.env().clone());
+        let payloads = syntax(&current, entries.env()).unwrap();
+        assert_eq!(payloads.len(), 2);
+        for entry in entries
+            .env()
+            .symbols()
+            .iter()
+            .filter(|e| e.kind() == SymbolKind::Theorem)
+        {
+            let name = if entry.primary_spelling() == "R" {
+                "T"
+            } else {
+                entry.primary_spelling()
+            };
+            let actual = &payloads[entry.symbol()];
+            if index >= 7 && name == "T" {
+                assert_ne!(actual, baseline[name], "edit {index}");
+            } else {
+                assert_eq!(actual, baseline[name], "edit {index}");
+            }
+            assert_eq!(entry.symbol().module(), current.module());
+            assert_eq!(entry.namespace().as_str(), current.module().path().as_str());
+            assert_eq!(
+                entry.visibility(),
+                if index == 6 && name == "T" {
+                    Visibility::Private
+                } else {
+                    Visibility::Public
+                }
+            );
+        }
+        if index == 1 {
+            assert_ne!(current.source_id(), source.source_id());
+        }
+        if index == 3 {
+            assert!(current.arena().len() > source.arena().len());
+        }
+        if matches!(index, 2 | 4 | 5) {
+            assert_ne!(
+                payloads.keys().collect::<Vec<_>>(),
+                prior.keys().collect::<Vec<_>>()
+            );
+        }
+        assert_eq!((current, entries.env().clone()), input_before);
+    }
+    assert_eq!((source, collected.env().clone(), prior), before);
+}
+
+#[test]
+fn source_theorem_syntax_payloads_preserve_upstream_and_refuse_unsupported_subtrees() {
+    use mizar_resolve::symbols::{
+        source_theorem_syntax_payloads_from_arena as syntax, validate_source_symbol_env,
+    };
+    use mizar_syntax::{SurfaceNodeKind, SurfaceQuantifierKind};
+    let t = "theorem T: for X being set holds X = X proof let X be set; thus X = X; end;";
+    let (_, source, collected) = source_registration_owner_inputs(t, "owner-test", "owners", 0);
+    let prior = syntax(&source, collected.env()).unwrap();
+    let before = (source.clone(), collected.env().clone(), prior.clone());
+    for edited in [
+        t.replace("theorem T:", "theorem Foreign:"),
+        format!("{t}\n{}", t.replace("theorem T:", "theorem U:")),
+    ] {
+        let (frontend, current, entries) =
+            source_registration_owner_inputs(&edited, "owner-test", "owners", 0);
+        assert!(frontend.diagnostics.is_empty());
+        assert!(entries.diagnostics().is_empty());
+        let input_before = (current.clone(), entries.env().clone());
+        let error = validate_source_symbol_env(&source, entries.env()).unwrap_err();
+        assert_eq!(syntax(&source, entries.env()).unwrap_err(), error);
+        let error = validate_source_symbol_env(&current, collected.env()).unwrap_err();
+        assert_eq!(syntax(&current, collected.env()).unwrap_err(), error);
+        assert_eq!((current, entries.env().clone()), input_before);
+    }
+    let (frontend, recovered, entries) = source_registration_owner_inputs(
+        "theorem T: for X being set holds X = ;",
+        "owner-test",
+        "owners",
+        0,
+    );
+    assert!(!frontend.diagnostics.is_empty());
+    let recovered_before = (recovered.clone(), entries.env().clone());
+    let error = validate_source_symbol_env(&recovered, entries.env()).unwrap_err();
+    assert_eq!(syntax(&recovered, entries.env()).unwrap_err(), error);
+    assert_eq!((recovered, entries.env().clone()), recovered_before);
+    let existential = "theorem E: ex X being set st X = X;";
+    for edited in [existential.to_owned(), format!("{t}\n{existential}")] {
+        let (frontend, current, entries) =
+            source_registration_owner_inputs(&edited, "owner-test", "owners", 0);
+        assert!(frontend.diagnostics.is_empty());
+        assert!(entries.diagnostics().is_empty());
+        assert!(
+            frontend
+                .ast
+                .as_ref()
+                .unwrap()
+                .node_views()
+                .any(|node| matches!(
+                    node.kind(),
+                    SurfaceNodeKind::QuantifiedFormula(SurfaceQuantifierKind::Existential)
+                ))
+        );
+        let input_before = (current.clone(), entries.env().clone());
+        validate_source_symbol_env(&current, entries.env()).unwrap();
+        assert_eq!(
+            syntax(&current, entries.env()).unwrap_err(),
+            "unsupported source theorem syntax payload"
+        );
+        assert_eq!((current, entries.env().clone()), input_before);
+    }
+    assert_eq!(syntax(&source, collected.env()).unwrap(), prior);
+    assert_eq!((source, collected.env().clone(), prior), before);
+}

@@ -776,6 +776,7 @@ permit; each source-integration slice waits for its actual upstream outputs.
    [Theorem formula content](./task_contracts/en/CORE-SOURCE-THEOREM-FORMULA-PAYLOADS.md) supplies bounded original local content; VC/context identity and source acceptance remain open.
    [Theorem canonical components](./task_contracts/en/VC-SOURCE-THEOREM-CANONICAL-COMPONENTS.md) supply bounded VC/goal/context content before source identity assembly and acceptance.
    [Genuine theorem inputs](./task_contracts/en/PROOF-SOURCE-THEOREM-CANONICAL-INPUTS.md) join that content and the original conservative slice; source identity and acceptance remain open.
+   [Theorem local syntax](./task_contracts/en/RESOLVE-SOURCE-THEOREM-SYNTAX-PAYLOADS.md) supplies declaration-local bytes before source identity; acceptance remains open.
 2. [ ] [Built-in evidence candidates](./task_contracts/en/PREATP-FORMULA-EVIDENCE.md)
    (VC 60); design can start, general source integration waits for authentic
    formula/context/substitution/provenance producers. [Original-source direct-premise candidates](./task_contracts/en/VC-SOURCE-DIRECT-PREMISE-CANDIDATE.md) supply only bounded untrusted association.
