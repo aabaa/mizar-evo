@@ -22,6 +22,7 @@ Readable writing and library reuse grew through these experiments and redesigns.
 
 Mario Carneiro's Mizar-rs reimplemented the analyzer and checker in Rust. Both parts affect soundness. [Carneiro 2023]
 There are three main results. First, its checker replaced the existing checker and checked the full MML of that time. Second, it was about five to six times faster. The paper compared elapsed time with eight threads. Third, it found and reported four soundness bugs in the existing implementation. This does not mean those bugs were used to prove false statements in MML. [Table 1, §5]
+The paper also reports a known soundness issue kept for MML compatibility. Reimplementation did not solve every soundness problem. [§5.4]
 The reimplementation improved speed and helped improve the existing system. Proof output for a small trusted base remained future work. Mizar Evo redesigns the language specification and builds the processor in Rust. [Literature / Evo design]
 
 ### 0.3 From an idea to language design (3:00)
