@@ -114,7 +114,7 @@ The sum is the same, but each new type adds surrounding declarations and proofs.
 
 We take an additive structure T and a common nonempty domain I as parameters. One definition gives both the body and the result type of function addition.
 From real to natural values, we can use the same Add with the corresponding additive structure. Type-specific closure facts and registrations are still needed, but we do not repeat the sum and its result type.
-The synonym supplies + notation. Here, declared types determine T and I uniquely, so we can write f+g or u+v without arguments. Ambiguous inheritance paths need qua.
+The synonym supplies + notation. Here, declared types determine T and I uniquely, so we can write f+g or u+v without the template arguments. Ambiguous inheritance paths need qua.
 Current MML also handles intersections of different domains. This example is restricted to a common nonempty domain. [Specification-based sketch, proofs omitted]
 
 ### 3.3 Unify schemes with template theorems [deep dive] (17:45)
