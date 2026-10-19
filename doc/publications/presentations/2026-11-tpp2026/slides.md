@@ -791,8 +791,8 @@ Speaker note:
 
 ![The fingerprint graph: what a change re-verifies](../2026-09-bialystok/figures/fingerprint_graph.pdf)
 
-- After a proof-body edit, dependents need no rebuild if the public claim and acceptance status stay unchanged. Interface changes recheck the dependency cone.
-- Cache reuse requires exact matches of the relevant keys. Missing data means a cache miss. Reuse alone does not guarantee correctness; a clean build must reproduce all accepted results.
+- A proof-body edit needs no rebuild of other modules if the public claim and acceptance status stay unchanged. An interface change rechecks all direct and indirect dependents.
+- Reuse needs exact matches for all relevant cache keys. Missing data means a miss. A clean build must reproduce every accepted result; reuse alone does not prove correctness.
 
 Speaker note:
 
@@ -814,7 +814,7 @@ topology = { version = "^0.9", features = ["metric"] }
 ```
 
 - Reproducible builds need fixed sources, lockfile, toolchain, checker configuration, and deterministic ATP evidence.
-- Versioned reuse removes manual copying between article collections. Aggregate modules can expose a whole field through one import.
+- Versions let authors reuse articles without manual copies between libraries. One module can collect a field's public items into a single import.
 
 Source: `doc/spec/en/23.package_management_and_build_system.md`; Białystok deck, Story 1.
 

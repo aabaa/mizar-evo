@@ -233,7 +233,7 @@ Thank you. We now have time for questions.
 - **Which is stronger: 58.4% or 68.8%?** The evaluation units, premises, budgets, and success criteria differ. They do not rank the designs. Backup 4.
 - **Is first-order logic better for ATP?** This talk does not rely on that claim. Encoding and reconstruction explain the connection; performance needs separate evaluation. Backup 5.
 - **Do templates really stay first-order?** Chapter 18 treats predicate and functor parameters at schema level. Each instance gives first-order obligations. Backup 1.
-- **Is algorithm just a tactic language?** It is itself subject to contracts and verification. Tactic-like uses are included, but they are specified and verified too. MVM and extraction are unimplemented.
+- **Is algorithm just a tactic language?** Its own contracts must be verified. This includes tactic-like uses: they also need a specification and verification. MVM and extraction are unimplemented.
 - **How much is rechecked after a change?** Public claims, acceptance status, and dependency fingerprints determine reuse. Backup 2; package and lockfile example in Backup 3.
 - **What does the kernel trust?** Main frame 6.4: check evidence correspondence and substitutions, then confirm UNSAT for the kernel-generated SAT problem. Details: `draft.ja.md` §6. Default computation additionally trusts MVM; see 4.4.
 - **What works now?** The limited implementation in 7.1. Connection details are in the question-time notes of `draft.ja.md` §7.1. No general source-to-artifact or end-to-end external-prover result is claimed. Recheck the fixed SHA, `doc/design/todo.md`, and source before the talk.
