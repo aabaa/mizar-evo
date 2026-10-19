@@ -215,13 +215,13 @@ The small kernel does not replay external resolution steps. It generates clauses
 
 ### 7.1 Implementation status and size (32:30)
 
-The unit is kLoC: one thousand lines. At fixed snapshot 08861708, Rust product code is 271.1 kLoC, excluding tests, blank lines, and comments. The completion estimate of 360 to 540 kLoC includes the current code. It is provisional, not a completion percentage or effort forecast. MML porting is separate. [Measurement / Provisional estimate]
-The table separates ATP search from the kernel that accepts proofs. The kernel is 12.8 kLoC, including 1.9 for SAT encoding and connection. Adding the SAT solver and its dependency gives 17.6 kLoC for checking. Core, session, and shared support are counted separately, so this is not the size of the full minimum TCB. [Counting boundary]
+The unit is kLoC: one thousand lines. At fixed snapshot 08861708, Rust product code is 271.1 kLoC, excluding tests, blank lines, and comments. The completion estimate of 360 to 540 kLoC includes the current code. These are rough code-size estimates. They do not predict how much work is complete or how long it will take. MML porting is separate. [Measurement / Provisional estimate]
+The table separates ATP search from the kernel that accepts proofs. The kernel is 12.8 kLoC, including 1.9 for SAT encoding and connection. Adding the SAT solver and its dependency gives 17.6 kLoC for checking. Core, session, and shared support are counted separately, so this is not the size of the full minimum trusted computing base, or TCB. [Counting boundary]
 Components exist, but connecting general source input through acceptance and artifact storage remains unfinished. LSP semantic connections, MVM execution, extraction, and documentation generation also remain future work. [Limited implementation / Plan]
 
 ### 7.2 Next steps and summary (34:00)
 
-Our first priority is to complete these connections: source semantics, VC generation, evidence, kernel acceptance, artifacts, then builds. We will expand the working paths in this order. Unsupported inputs must continue to be rejected. We will also keep aligning algorithm semantics and proof obligations. [Plan]
+Our first priority is to connect these steps. We give source code a precise meaning, then generate verification conditions, or VCs. Next come evidence, kernel acceptance, saved results called artifacts, and builds. We will expand the working paths in this order. Unsupported inputs must continue to be rejected. We will also keep working to make algorithm semantics and proof obligations agree. [Plan]
 MVM runtime and code extraction are separate development tasks. Beyond them, we are considering learned premise selection, LLM repair, cryptography, and quantum algorithms. These are long-term directions without completion dates. [Future direction]
 
 We keep Mizar's first-order logic, set theory, and ability to read and write mathematics. On this foundation, we redesign templates, algorithms, and development tools, and separate ATP search from trusted checking.

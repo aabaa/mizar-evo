@@ -712,7 +712,7 @@ Speaker note:
 
 ### Frame 7.1 - Implementation status and size
 
-**Rust product code: 271.1 kLoC; estimated total: 360–540 kLoC (provisional).**
+**Rust product code: 271.1 kLoC; estimated total: 360–540 kLoC (rough estimate).**
 
 ### Table 13. Implementation status and code size (kLoC)
 
@@ -735,7 +735,7 @@ Source: fixed snapshot `08861708`. Counting and estimate basis: `draft.ja.md` §
 
 Speaker note:
 
-- 1 kLoC = 1,000 lines. Estimates are rough and uncalibrated; MML porting is excluded.
+- 1 kLoC = 1,000 lines. Rough estimates, not yet tested. MML porting is excluded.
 - Kernel 12.751 (SAT encoding / connection: 1.947). SAT dependencies: batsat 0.6.0 + bit-vec 0.5.1 = 4.879; total 17.630 kLoC. Excludes Core / session / shared support; not the full minimum trusted computing base (TCB).
 - Fixed snapshot, limited implementation. Counted October 15, 2026; kernel recount / SAT dependencies, October 16.
 
@@ -744,7 +744,7 @@ Speaker note:
 ### Next steps
 
 - **First priority: connect source-to-semantics → VC → evidence → kernel → artifact → build.**
-- Align algorithm semantics and proof obligations; expand the working paths.
+- Make algorithm semantics and proof obligations agree; extend the working parts.
 - MVM runtime / extraction: separate work. MML porting is separate from processor completion.
 - Learned premise selection, LLM repair, cryptography, and quantum algorithms are long-term directions.
 
