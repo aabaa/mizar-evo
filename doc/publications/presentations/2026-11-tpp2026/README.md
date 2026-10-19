@@ -39,7 +39,7 @@ story is evidence, formula instantiation, and a trusted SAT check.
   the story, the historical sources, claim levels, timing, and the pre-talk
   checklist live here.
 - `slides.md` - English deck source, aligned with the reviewed Japanese deck;
-  CEFR B1 to easy B2. It shares frame IDs, code examples, figures, and table numbers.
+  General English at B1 to lower B2. It shares frame IDs, code examples, figures, and table numbers.
 - `slides.ja.md` - Japanese deck source. Principle section numbers stay;
   Section 0 covers the introduction, sections 1–6 the design principles, and section 7 status and plans.
   Figures retain their English labels.
@@ -142,9 +142,10 @@ benchmark conditions, and HOL-to-FOL encoding/reconstruction, in that order.
 
 ## Language Policy
 
-- English slide prose: CEFR B1 to easy B2. Short sentences, common words, one
-  idea per sentence. Technical terms stay and are explained in simple words on
-  first use. Code, exact MML excerpts, and figure labels are unchanged.
+- General vocabulary and sentence structure in the English slides and spoken
+  script: B1 to lower B2. Use short sentences and common words. Keep necessary
+  technical terms and explain them in simple words at first use. Preserve code,
+  exact MML excerpts, and figure labels.
 - Production order: `draft.ja.md` → `slides.ja.md` and `script.ja.md` → English.
 - Update English from the reviewed Japanese content. Preserve code, numerical
   data, sources, and the distinction between specification, implementation,

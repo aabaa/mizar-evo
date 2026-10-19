@@ -12,7 +12,7 @@ Content authority: `draft.ja.md`. This deck follows `slides.ja.md`; the English 
 - Bold text gives the main spoken points. Tables have titles and continuous numbers across the main talk and backups.
 - Distinguish published history and the author's account. Technical examples describe existing Mizar, the Evo specification, or a sketch. Implementation claims use the fixed snapshot in 7.1. Mark research hypotheses and future directions explicitly.
 - Short references “spec NN” / “architecture NN” mean chapters under `doc/spec/en/` / `doc/design/architecture/en/`.
-- Use plain English (CEFR B1 to easy B2). Explain technical terms at first use. Build with `python3 build_beamer.py en`, then pdflatex; see README.
+- Use B1 to lower-B2 general English. Keep technical terms and explain them at first use. Build with `python3 build_beamer.py en`, then pdflatex; see README.
 
 ## Part 0. Introduction
 
