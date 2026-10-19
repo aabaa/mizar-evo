@@ -155,6 +155,29 @@ pub struct BuildPlan {
     pub build_config: WorkspaceBuildConfig,
 }
 
+impl BuildPlan {
+    /// Compares the recorded lock version with each available package constraint.
+    /// Returns outer None without a version; registry rows remain unknown.
+    /// This raw comparison does not authenticate metadata or validate a toolchain pin.
+    pub fn recorded_toolchain_matches(
+        &self,
+    ) -> Option<impl Iterator<Item = (&PackagePlan, Option<bool>)>> {
+        let version = self.lockfile.toolchain_version.as_ref()?;
+        Some(self.packages.iter().map(move |package| {
+            let matches = match &package.source {
+                PackagePlanSource::Workspace { .. } => Some(
+                    package
+                        .toolchain_constraint
+                        .as_ref()
+                        .is_none_or(|constraint| constraint.matches(version)),
+                ),
+                PackagePlanSource::Registry { .. } => None,
+            };
+            (package, matches)
+        }))
+    }
+}
+
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct PackagePlan {
     pub package_id: PackageId,

@@ -2820,3 +2820,125 @@ fn constraint_bound_overflow_preserves_public_lock_validation() {
         }
     }
 }
+
+#[test]
+fn recorded_toolchain_matches_parsed_constraints_and_missing_versions() {
+    for (constraint, version, expected) in [
+        (None, None, None),
+        (Some("<1"), None, None),
+        (None, Some("1.4.2"), Some(true)),
+        (Some("1.4.2"), Some("1.4.2"), Some(true)),
+        (Some("1.4.2"), Some("1.4.3"), Some(false)),
+        (Some("^1.4"), Some("1.9.0"), Some(true)),
+        (Some("^1.4"), Some("2.0.0"), Some(false)),
+        (Some("~1.4"), Some("1.4.9"), Some(true)),
+        (Some("~1.4"), Some("1.5.0"), Some(false)),
+        (Some(">=1.4, <2"), Some("1.4.2"), Some(true)),
+        (Some(">=2, <1"), Some("1.4.2"), Some(false)),
+        (
+            Some("1.4.2-rc.1+build.7"),
+            Some("1.4.2-rc.1+build.7"),
+            Some(true),
+        ),
+        (
+            Some("1.4.2-rc.1+build.7"),
+            Some("1.4.2-rc.1+build.8"),
+            Some(false),
+        ),
+    ] {
+        let constraint_field =
+            constraint.map_or_else(String::new, |value| format!("toolchain = {value:?}\n"));
+        let package = workspace_package(
+            "alpha",
+            &format!("[package]\nname = \"alpha\"\nversion = \"0.1.0\"\n{constraint_field}"),
+        );
+        let version_field = version.map_or_else(String::new, |value| {
+            format!("toolchain_version = {value:?}\n")
+        });
+        let lock = parse_lockfile(&format!(
+            "schema_version = 1\n{version_field}[[package]]\nname = \"alpha\"\nversion = \"0.1.0\"\nsource = {{ kind = \"workspace\", path = \"alpha\" }}\ndependencies = []\n"
+        ))
+        .unwrap();
+        let plan = produce_build_plan(
+            plan_request(DependencySelection::Normal),
+            vec![package],
+            lock,
+        )
+        .unwrap();
+        let before = plan.clone();
+        let result = plan.recorded_toolchain_matches();
+        assert_eq!(result.is_some(), version.is_some());
+        if let Some(rows) = result {
+            let rows = rows.collect::<Vec<_>>();
+            assert_eq!(rows.len(), 1);
+            assert!(std::ptr::eq(rows[0].0, &plan.packages[0]));
+            assert_eq!(rows[0].1, expected, "{constraint:?} against {version:?}");
+        }
+        assert_eq!(plan, before);
+    }
+}
+
+#[test]
+fn recorded_toolchain_matches_preserves_workspace_order_registry_unknowns_and_raw_rows() {
+    let alpha = workspace_package(
+        "alpha",
+        "[package]\nname = \"alpha\"\nversion = \"0.1.0\"\ntoolchain = \"<1\"\n[dependencies]\ndep = \"1.0.0\"\n",
+    );
+    let beta = workspace_package(
+        "beta",
+        "[package]\nname = \"beta\"\nversion = \"0.1.0\"\ntoolchain = \">=2\"\n",
+    );
+    let zeta = workspace_package("zeta", "[package]\nname = \"zeta\"\nversion = \"0.1.0\"\n");
+    let lock = parse_lockfile("schema_version = 1\ntoolchain_version = \"0.5.0\"\n[[package]]\nname = \"zeta\"\nversion = \"0.1.0\"\nsource = { kind = \"workspace\", path = \"zeta\" }\ndependencies = []\n[[package]]\nname = \"beta\"\nversion = \"0.1.0\"\nsource = { kind = \"workspace\", path = \"beta\" }\ndependencies = []\n[[package]]\nname = \"dep\"\nversion = \"1.0.0\"\nsource = { kind = \"registry\", registry = \"default\", checksum = \"sha256:dep\" }\ndependencies = []\n[[package]]\nname = \"alpha\"\nversion = \"0.1.0\"\nsource = { kind = \"workspace\", path = \"alpha\" }\ndependencies = [{ name = \"dep\", version = \"1.0.0\" }]\n").unwrap();
+    let request = plan_request(DependencySelection::Normal);
+    let mut plan = produce_build_plan(
+        request.clone(),
+        vec![zeta.clone(), beta.clone(), alpha.clone()],
+        lock.clone(),
+    )
+    .unwrap();
+    assert_eq!(
+        plan,
+        produce_build_plan(request, vec![alpha, beta, zeta], lock).unwrap()
+    );
+    for raw_rows in [false, true] {
+        if raw_rows {
+            // Raw public-data controls confer no manifest authenticity.
+            plan.packages[1].toolchain_constraint =
+                Some(VersionConstraint::Exact(Version::new(0, 5, 0)));
+            plan.packages.reverse();
+            plan.packages.push(plan.packages[3].clone());
+        }
+        let before = plan.clone();
+        let rows = plan
+            .recorded_toolchain_matches()
+            .unwrap()
+            .collect::<Vec<_>>();
+        let expected = if raw_rows {
+            vec![
+                ("zeta", Some(true)),
+                ("alpha", Some(true)),
+                ("dep", None),
+                ("beta", Some(false)),
+                ("beta", Some(false)),
+            ]
+        } else {
+            vec![
+                ("beta", Some(false)),
+                ("dep", None),
+                ("alpha", Some(true)),
+                ("zeta", Some(true)),
+            ]
+        };
+        assert_eq!(
+            rows.iter()
+                .map(|(package, result)| (package.package_id.as_str(), *result))
+                .collect::<Vec<_>>(),
+            expected
+        );
+        for ((package, _), original) in rows.iter().zip(&plan.packages) {
+            assert!(std::ptr::eq(*package, original));
+        }
+        assert_eq!(plan, before);
+    }
+}

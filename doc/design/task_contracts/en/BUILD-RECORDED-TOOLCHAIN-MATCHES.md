@@ -1,0 +1,10 @@
+# Task BUILD-RECORDED-TOOLCHAIN-MATCHES: recorded-version relations
+Canonical language: English; [Japanese pointer](../ja/BUILD-RECORDED-TOOLCHAIN-MATCHES.md).
+Status: implemented. Tier: full. Owner: [Build plan](../../mizar-build/en/00.crate_plan.md), task39; consumer [full pinning](../../mizar-build/en/planner.md#toolchain-constraint-boundary).
+Authority: [§23.1–23.2](../../../spec/en/23.package_management_and_build_system.md#232-versioning-and-dependency-resolution); [sole API/invariant/test owner](../../mizar-build/en/planner.md#recorded-toolchain-constraint-relations).
+Dependencies/readiness: parsed workspace constraints and exact lock versions exist; existing overflow-safe matching is available. Gap: design_drift/test_gap between these raw operands and a bounded read-only comparison; authenticated dependency constraints and released versions remain unavailable.
+Scope: implement only the linked existing-BuildPlan query and append its focused planner tests. Preserve existing parser/validator/plan behavior and old tests verbatim; mismatch does not reject a produced plan.
+Writes: one planner.rs impl, append-only planner/tests.rs, paired planner/plan/TODO/contracts; minimal full-pin readiness, root prerequisite and §23 audit relation pointers only.
+Forbidden: new types/fields/helpers/dependencies/schema/diagnostics, alternative matcher or version policy, selected/default/installed version, registry-as-unconstrained inference, protected spec/.miz/expectation/trace/ledger changes, fabricated producers/Accepted/Complete/hits or semantic coverage credit.
+Deferrals: authenticated full pinning/intersection/selection, running/backend identity/W0306, runtime/editor binding, proof/cache/publication and all broad Steps6–8 gates remain open.
+Reviews/exit: SPEC before Rust; independent TEST/CODE/VOLUME/CONSISTENCY and scoped full gates. Focused then full planner tests; parent cargo fmt --check, cargo clippy --all-targets --all-features -- -D warnings, cargo test. Only task39 may close.

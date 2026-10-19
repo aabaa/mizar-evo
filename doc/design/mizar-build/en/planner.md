@@ -410,6 +410,12 @@ Development mismatch is a warning, release mismatch an error. The selected relea
 Planner tests cover omission and existing constraint forms, malformed/conflicting constraints, missing dependency/release inputs, preserved pins and unavailable versions; CLI tests cover both mismatch modes and matching running/locked versions with no W0306 or error.
 This deferred boundary introduces no lock schema/API shape or installed-runtime claim.
 
+## Recorded toolchain constraint relations
+
+`BuildPlan::recorded_toolchain_matches(&self) -> Option<impl Iterator<Item = (&PackagePlan, Option<bool>)>>` borrows existing rows without allocation or mutation. No recorded lock version returns outer None; otherwise every package appears in its existing order and multiplicity, with the original reference. Workspace rows return Some(existing VersionConstraint::matches result), or Some(true) for a genuinely omitted workspace constraint (§23.1). Registry rows always return None for unavailable manifest metadata, including manually populated constraints.
+This is a raw relation over caller-owned plan data, never an aggregate pin-validity verdict or authentication. Publicly constructed/mutated plans acquire no provenance. Existing parsers, validators and produce_build_plan still accept metadata without establishing toolchain satisfaction; opaque supplied ToolchainInfo is untouched. Release/dependency authentication, selection, compiler/backend identity, W0306 and runtime binding stay under the preceding full boundary.
+Append tests using actual parsed manifests/locks and produced plans: absent versus recorded version, unconstrained/matching/conflicting workspace rows, all existing constraint forms through the existing matcher, registry unknown even with a supplied constraint, exact borrowed row order/multiplicity, reordered workspace inputs, and unchanged whole plans. Existing metadata-acceptance tests remain verbatim.
+
 ## Locked toolchain version metadata
 
 Add `toolchain_version: Option<Version>` to existing Lockfile. Root `toolchain_version` is optional in schema 1: omission is None; a string uses existing exact SemVer parsing, including prerelease/build, without trimming, constraints or partial-version aliases. Reuse read_optional_string and parse_version with existing InvalidType/InvalidVersion at '<lockfile>', 'toolchain_version', original rejected strings/type names, diagnostic ordering and final error barrier. Keep root `toolchain` unknown; no alias/default or public diagnostic is added.

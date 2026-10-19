@@ -464,6 +464,8 @@ internal: [01](../../internal/ja/01.compiler_driver_and_pipeline_scheduler.md)�
 
 38. **[overflow しない制約上限](../../task_contracts/ja/BUILD-CONSTRAINT-BOUND-OVERFLOW.md).** [x]
 
+39. **[Recorded toolchain constraint relations](../../task_contracts/ja/BUILD-RECORDED-TOOLCHAIN-MATCHES.md).** [x]
+
 ## 推奨検証
 
 各タスクの後で実行する:

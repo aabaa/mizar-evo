@@ -389,6 +389,12 @@ planner は任意の package toolchain 制約、workspace/解決済み依存の�
 planner テストは省略と既存の制約形式、不正/競合制約、依存/release 入力欠落、pin 維持、利用不能な版を扱い、CLI テストは不一致の両モードと、実行中/lock の版が一致して W0306 やエラーを出さない場合を扱う。
 先送りの境界であり、lock schema/API 形状や実行時の導入済み状態を定めない。
 
+## Recorded toolchain constraint relations
+
+`BuildPlan::recorded_toolchain_matches(&self) -> Option<impl Iterator<Item = (&PackagePlan, Option<bool>)>>` は既存 row を割当・変更なしで借用する。lock 記録版がなければ外側 None、あれば全 package を元の順序・多重度・参照で返す。Workspace は既存 VersionConstraint::matches の Some、取得済 workspace 制約の省略は Some(true) (§23.1)。Registry は手動設定した制約があっても manifest metadata 未取得の None を返す。
+caller 所有 plan の raw relation であり、全 pin の妥当性や認証を与えない。公開の直接構築・変更にも provenance は付かない。既存 parser/validator/produce_build_plan の metadata 受理と opaque ToolchainInfo は変えない。release/dependency 認証、選択、compiler/backend identity、W0306、runtime binding は前節の完全境界に残す。
+実 parser/plan の追記 test は、記録版なし/あり、workspace 制約の省略・一致・矛盾、既存全制約形式、制約手動設定後も registry 不明、借用 row の順序・多重度、workspace 入力順変更、全 plan 不変を扱う。既存 metadata 受理 test はそのまま保つ。
+
 ## Locked toolchain version metadata
 
 既存Lockfileに `toolchain_version: Option<Version>` を追加する。schema 1のroot `toolchain_version` は任意で、省略はNone、stringはprerelease/buildを含む既存exact SemVer parserへ渡す。trim・制約・部分版aliasは認めない。read_optional_stringとparse_versionを再利用し、'<lockfile>', 'toolchain_version'の既存InvalidType/InvalidVersion、元の拒否string/型名、diagnostic順序と最終error barrierを保つ。root `toolchain` はunknownのままで、alias/defaultや公開診断を加えない。
