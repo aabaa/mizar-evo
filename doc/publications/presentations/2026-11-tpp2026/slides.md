@@ -1,112 +1,18 @@
 # Mizar Evo: Design Principles
 
-Status: first deck draft for TPP 2026, designed from the Japanese narrative
-draft `draft.ja.md`, which remains the canonical content document.
+Status: English version aligned with the reviewed Japanese deck. Section 0 introduces the history and development; sections 1–6 keep the six design principles; section 7 covers implementation and plans.
 
-Planned occasion: TPP 2026 (the 22nd Theorem Proving and Provers meeting),
-RIKEN AIP Tokyo Office, November 16-17, 2026. Thirty-minute slot.
+Occasion: TPP 2026 (the 22nd Theorem Proving and Provers meeting), RIKEN AIP Tokyo Office, November 16–17, 2026. Assumed 45-minute slot: 36:30 for the talk, seven minutes for questions, and 1:30 of buffer. Confirm the official slot.
 
-Companion files: `script.ja.md` (Japanese spoken script, frame by frame),
-`references.bib` (seed bibliography), `../2026-09-bialystok/` (visual and
-reference deck; its figures are reused by relative path and its detailed
-feature frames serve as backup material instead of being repeated here).
+Content authority: `draft.ja.md`. This deck follows `slides.ja.md`; the English spoken script is `script.md`. Shared figures keep their English labels.
 
-## Main Idea
+## Conventions
 
-Start with six challenges in modernizing current Mizar, then map each to a
-design principle in the new specification. Preserve the logical foundation and
-readable mathematics while rebuilding generic mechanisms, verified computation,
-development tools, and evidence checking.
-
-Benchmarks and HOL/FOL comparisons are supplementary context. Their results
-do not establish a first-order performance advantage.
-
-## Language Level
-
-Slide prose is plain English at CEFR B1 to easy B2: short sentences, common
-words, one idea per sentence. Technical terms (premise selection, hammer,
-reconstruction, soft type, kernel) stay, and the first use of a term explains
-it in simple words. Code, exact MML excerpts, and figure labels are unchanged.
-The Japanese companion deck `slides.ja.md` follows the same frames.
-
-## Claim Levels
-
-Statements in this deck fall into three levels. Untagged statements are facts
-about existing systems, published benchmarks, or the Mizar Evo specification
-and main branch. The two other levels are tagged in the text:
-
-- "research hypothesis": a claim Mizar Evo is built to test, not a result;
-- "future direction": a target with no committed date or design.
-
-## Code Status Convention
-
-Every code example carries one of three status labels, as in the Bialystok deck:
-
-- "exact MML excerpt": exact text from the current MML, with article name and
-  line numbers; attribution and license notes stay in speaker notes;
-- "specification example": taken from or directly adapted from the Mizar Evo
-  language specification under `doc/spec/en/`;
-- "sketch": schematic text that no specification fixes (used for the HOL and
-  encoding illustrations and for ordinary Mizar usage).
-
-## Source Status
-
-### Repository Sources
-
-- `doc/spec/en/01.introduction.md` (first-order foundation, kernel principle)
-- `doc/spec/en/18.templates.md` (templates, schemes)
-- `doc/spec/en/20.algorithm_and_verification.md` (algorithms, MVM)
-- `doc/spec/en/21.source_code_annotation_and_atp.md` (ATP integration,
-  axiom set assembly: cited premises only, no global premise selection)
-- `doc/design/architecture/en/08.reasoning_boundary.md`,
-  `09.atp_interface_protocol.md`, `10.atp_backend_integration.md`
-- `doc/design/todo.md`, Crate Status (implementation scope, October 2026)
-
-### External Sources
-
-Checked on October 7, 2026:
-
-- Jakubův et al., MizAR 60 for Mizar 50, ITP 2023 (arXiv 2303.06686):
-  MML 1147 exported by MPTP as 57,897 theorems including unnamed top-level
-  lemmas; 58.4% proved in hammering mode by a portfolio limited to 420 CPU s;
-  over 75% with premises selected from the library by a human or a machine;
-  strongest single method 40% in 30 s (hammering) and 60% in 120 s
-  (human premises).
-- Blanchette, Haslbeck, Matichuk, Nipkow, Mining the Archive of Formal Proofs,
-  CICM 2015: 6,934 goals from 128 randomly selected AFP theories (up to 100
-  goals each), Isabelle2014, MePo, 30 s per prover (E, SPASS, Vampire, Z3);
-  one-line reconstruction 49.4-49.7% per prover; 60.7% of goals proved when
-  the provers are combined and trusted as oracles.
-- Böhme and Nipkow, Sledgehammer: Judgement Day, IJCAR 2010 (as summarized in
-  the CICM 2015 paper): 1,240 subgoals from seven theories, 46% with E, SPASS,
-  and Vampire in parallel for 30 s; a 2015 preliminary evaluation reached 75%
-  on the same benchmarks with six provers.
-- MML plain text for exact excerpts: `funct_1.miz` lines 138-140 and
-  `funct_2.miz` lines 87-90 at <https://mizar.uwb.edu.pl/version/current/mml/>.
-  The files state GPL-3.0-or-later / CC-BY-SA-3.0-or-later terms; keep
-  attribution, URLs, and line numbers in speaker notes.
-- TPP 2026 announcement: November 16-17, 2026, RIKEN AIP Tokyo Office
-  (<https://auto-res.github.io/tpp2026/>).
-
-## Deck Shape
-
-Section 0 gives one table of challenges and design principles.
-Sections 1–6 each explain the corresponding principle. Unnumbered closing
-frames cover implementation status, the roadmap, and discussion.
-Seventeen backups keep benchmark and HOL/FOL comparison details.
-
-| Section | Minutes | Story beat |
-|---|---:|---|
-| 0. Introduction | 0-2 | challenges and design principles in one table |
-| 1. Logical foundation | 2-4 | retain first-order logic, set theory, and MML |
-| 2. Readable mathematics | 4-10 | named registration chains, inheritance, and theorem reuse |
-| 3. Generic mathematics | 10-14 | templates, infix notation, and type-argument inference |
-| 4. Verified computation | 14-20 | Hoare logic, termination, promotion, and Euclid obligations |
-| 5. Development infrastructure | 20-23 | environment roles and ordering, imports |
-| 6. Checking and automation | 23-28 | Sledgehammer analogy, refutation, CNF, and SAT |
-| Closing | 28-30 | status, roadmap, and discussion |
-
-For a 45-minute slot, add the examples listed in §README.md`.
+- Keep the structural labels `Title:`, `Subtitle:`, `Speaker note:`, and `Source:`, and code-status labels `exact MML excerpt`, `specification example`, and `sketch` for the generator.
+- Bold text gives the main spoken points. Tables have titles and continuous numbers across the main talk and backups.
+- Distinguish published history and the author's account. Technical examples describe existing Mizar, the Evo specification, or a sketch. Implementation claims use the fixed snapshot in 7.1. Mark research hypotheses and future directions explicitly.
+- Short references “spec NN” / “architecture NN” mean chapters under `doc/spec/en/` / `doc/design/architecture/en/`.
+- Use B1 to lower-B2 general English. Keep technical terms and explain them at first use. Build with `python3 build_beamer.py en`, then pdflatex; see README.
 
 ## Part 0. Introduction
 
@@ -116,162 +22,199 @@ Title:
 
 ```text
 Mizar Evo: Design Principles
-Connecting automatic proof, readable mathematics, and checked computation
-```
-
-Subtitle:
-
-```text
-TPP 2026, RIKEN AIP Tokyo Office, November 2026
+Reconnecting automated proof, readable mathematics, and verified computation
 ```
 
 Speaker note:
 
-- **Mizar is a proof checker. It has a fifty-year-old library, written in a readable mathematical language over first-order set theory.**
-- **Mizar Evolution, or Mizar Evo, is a redesign of its language and tools. I will start with current Mizar's modernization challenges, then show how the new specification addresses them.**
-- Everything I say has a label: fact, research hypothesis, or future direction.
+- **Mizar is a proof checker. It combines first-order set theory, readable mathematical language, and the Mizar Mathematical Library (MML).**
+- **Mizar Evolution, or Mizar Evo, redesigns the language and its tools. We begin with history and development, then discuss six design principles, implementation limits, and plans.**
+- Distinguish facts, research hypotheses, and future directions throughout.
 
-### Frame 0.2 - How To Read The Claims [deep dive]
+### Frame 0.2 - Mizar: early systems, Mizar-rs, and Evo
 
-| Level | Meaning | Marked how |
-|---|---|---|
-| fact | existing systems, published benchmarks, the Mizar Evo specification and main branch | no tag |
-| research hypothesis | a claim that Mizar Evo is built to test | tagged in the text |
-| future direction | a goal with no fixed date or design yet | tagged in the text |
+### Table 1. Early Mizar systems and the start of MML
 
-Code labels follow the Bialystok deck: exact MML excerpt, specification example, sketch.
-
-- The specification and the implementation are different things. One frame near the end separates them.
-
-### Frame 0.3 - Current Mizar: Six Challenges And Design Principles
-
-| Challenge in modernizing Mizar | New design principle |
+| Period | Main milestones |
 |---|---|
-| **§1 Foundation:** retain logic and MML; renew tools | First-order logic, set theory, and a small kernel |
-| **§2 Writing:** implicit types, registrations, overloads | Mathematical abstraction; explicit, traceable choices |
-| **§3 Generics:** separate definition and scheme mechanisms | Templates for definitions, theorems, and schemes |
-| **§4 Computation:** connect proofs and procedures | Contracts, invariants, and termination checks |
-| **§5 Development:** tools for a large library | Modules, namespaces, packages, incremental builds, LSP |
-| **§6 Checking:** external search and evidence | ATP flow; derive formula instances; trusted SAT check |
+| 1973–75 | Mathematical documents → propositional Mizar-PC (Algol / ODRA) |
+| 1977 | Mizar-QC: quantifiers (Pascal / CDC 6000) |
+| 1982–84 | MSE: a smaller language. HPF: mathematical notation and implicit arguments |
+| 1986 | Mizar-4: multiple passes; ported to PC / DOS at the end of the year |
+| 1988–89 | PC-Mizar, references between articles; MML began on January 1, 1989 |
+
+### Table 2. PC-Mizar, Mizar-rs, and Mizar Evo
+
+| System | Overview |
+|---|---|
+| PC-Mizar (Pascal) | Parser → MSM → Analyzer → Checker |
+| Mizar-rs (Rust, ITP 2023) | Reimplements the checker / analyzer to support the existing language |
+| | **All MML checked:** replaced the checker; the full MML of that time passed |
+| | **Speed:** about 5–6× faster (8 threads, elapsed time) |
+| | **Bugs:** four soundness bugs reported; no false MML proofs used them |
+| Mizar Evo (Rust) | New language / processor; keeps mathematical writing and the logical foundation |
+
+Source: Matuszewski & Rudnicki (2005); Carneiro (ITP 2023), Table 1.
 
 Speaker note:
 
-- Each row pairs a challenge with its design principle. Sections 1–6 follow these rows. First-order logic and readable mathematics are assets to preserve.
-- The closing status frame separates the specification from implementation.
-- Source: specification 01, 18, 20, 21, 23; Bialystok problem-driven stories.
+- Mizar-PC was propositional; it differs from the later PC-Mizar. Readable notation, checking, and library reuse grew through several experiments and redesigns. These are selected milestones, not a single line of successors. Source details and URLs: `draft.ja.md`, history and development.
+- Carneiro 2023 §1, footnote 2 dates the PC port to 1986; PC-Mizar dates to 1988. MSM means More Strict Mizar.
+- Mizar-rs elapsed times: checker only, 57.37→11.33 minutes; analyzer plus checker, 71.38→11.71 minutes. Both affect soundness. Compatibility-related issues remain in §5.4 of the paper.
+
+### Frame 0.3 - 2023–2026: from an idea to language design
+
+### Table 3. Mizar Evo development
+
+| Period | Development |
+|---|---|
+| Aug 2023 | First README: mizar-wishlist |
+| Sep–Oct 2024 | Imports, namespaces, structure inheritance, type system |
+| May–Jun 2025 | Modes, inference, redefinition; dependent structures / attributes removed and restored |
+| Jan–Apr 2026 | EBNF, logical encoding, registration, template and algorithm semantics / contracts |
+| May 2026 | Implementation design → test harness → minimal lexer |
+
+- **Preparing the 2023 grant proposal changed the plan: from notation extensions to a new language and processor.**
+- ITP 2023: Mario Carneiro welcomed a request for implementation help. CICM 2023: wishlist discussion with Adam Naumowicz.
+- Early priorities: generic types, namespaces / packages, ATP / traceability. The prototype was to use Mizar-rs.
+
+JSPS KAKENHI, Scientific Research (C), awarded in 2024: 24K14897, “Renewing the language specification of a set-theory-based proof assistant” (title translated).
+
+Speaker note:
+
+- Source: August 2023 grant proposal and Git diffs. Details: `draft.ja.md`, history and development.
+- The exact order of the consultations within 2023 and any current participation commitment are unconfirmed. Timeline dates are commit dates.
+
+### Frame 0.4 - Design development and implementation with AI agents
+
+### Developing the language design
+
+- **template:** from generics to a common theorem form for schemes, with structure views and type-argument inference.
+- **algorithm:** early requests from Japanese Mizar cryptographers for algorithm proofs, and difficult symbolic calculations in elliptic-curve associativity.
+
+### Implementation and discussions since May 2026
+
+- **May: began Rust implementation with AI coding agents. June–July: crate development, agent workflows, SAT-backed checking and audits.**
+- **Design → agent implementation → tests and audits → specification revision.**
+- September: seminar and discussions with the Mizar team in Białystok.
+- September–October: more proof obligations from source; changes to algorithm partiality and contracts.
+
+Speaker note:
+
+- Source: spec 18/20, Git diffs, author's account (2026-10-15); `draft.ja.md`.
+
+### Frame 0.5 - Six challenges and design principles
+
+### Table 4. Six challenges and design principles
+
+| Area | Challenge in current Mizar | Design principle |
+|---|---|---|
+| **§1 Foundation** | Keep the logic and MML while replacing the processor | Keep FOL / set theory and a small kernel |
+| **§2 Writing** | Trace implicit type, registration, and overload choices | Keep mathematical abstractions; explain implicit choices |
+| **§3 Generics** | Separate mechanisms for definitions, theorems, and schemes | Unify generic mechanisms with templates |
+| **§4 Computation** | Connect proofs to executable procedures | Check algorithm contracts, invariants, and termination |
+| **§5 Tools** | Dependencies, distribution, incremental checking, IDE | Modules, namespaces, packages, incremental builds, LSP |
+| **§6 Checking** | Connect external search to checking evidence | Use ATPs; instantiate evidence and check with SAT |
+
+Speaker note:
+
+- Each row connects a challenge to a principle; sections 1–6 follow this order. First-order foundations and readable mathematics are strengths to preserve.
+- The closing status section distinguishes the specification from implemented behavior.
+- Source: specification chapters 01, 18, 20, 21, 23; the problem-driven stories in the Białystok deck.
 
 ## Part 1. Logical Foundation
 
-### Frame 1.1 - Keep The Foundation, Rebuild The Tools
+### Frame 1.1 - Keep the foundation, rebuild the tools
 
 ```text
-**Keep the mathematical layer.**
-**Rebuild the tools under it and around it.**
+**Keep the mathematical language.**
+**Rebuild the processor and development tools.**
 ```
 
-- **Mizar Evo keeps first-order logic and Tarski-Grothendieck set theory as the base logic.**
-- It keeps soft types, modes, attributes, registrations, structures, and declarative proofs.
-- **Separate proof search from checking; a small kernel decides acceptance. Details in section 6.**
+- **Keep first-order logic (FOL) and Tarski–Grothendieck set theory.**
+- Keep soft types, modes, attributes, registrations, structures, and declarative proofs.
+- **Separate ATP search from checking: a small kernel independently checks the results. Details in §6.**
 
 Speaker note:
 
-- The shared structure concerns mathematical writing and proof tools, not identical logics or representations.
-- Neither success rates nor reconstruction failures show a first-order advantage. Evaluate ease of writing, automation, and proof checking.
+- Mathematical language and proof support can be built over a first-order foundation. Similar mechanisms do not imply identical logics or representations.
+- Success rates and reconstruction failures do not establish a first-order performance advantage. Evaluate the design through mathematical writing, automation, and proof checking.
 
-### Frame 1.2 - Current Mizar: Functions In Set Theory
+### Frame 1.2 - From sets to topological spaces
 
-Function application is a defined set-theoretic relation (exact MML excerpt):
-
-```mizar
-  func f.x -> set means
-  :Def2:
-  [x,it] in f if x in dom f otherwise it = {};
-```
-
-A typed function is a soft type over partial functions (exact MML excerpt):
+Example 1: Cantor's theorem in current Mizar (sketch, proof omitted):
 
 ```mizar
-definition
-  let X,Y;
-  mode Function of X,Y is quasi_total PartFunc of X,Y;
-end;
+theorem Cantor:
+  for X being set holds card X in card (bool X)
+proof ... end;
 ```
 
-- **Here a function is an ordinary first-order object: a set of pairs. Application is defined, not built into the logic.**
-- **Nothing in the base logic has to be higher-order.**
-- The price: if you write raw set theory, the domain, the graph, functionality, and membership all appear in the text.
+Example 2: a continuous bijection from a compact space to a Hausdorff space (sketch, proof omitted):
+
+```mizar
+theorem CompactBijection:
+  for S being compact TopSpace,
+      T being non empty T_2 TopSpace,
+      f being Function of S,T
+  st f is continuous one-to-one & rng f = [#] T
+  holds f is being_homeomorphism
+proof ... end;
+```
+
+- **Write mathematics from sets, power sets, and cardinals to topological spaces over first-order set theory.**
 
 Speaker note:
 
-- Source: current MML `funct_1.miz`, lines 138-140 (`FUNCT_1:def 2`), and `funct_2.miz`, lines 87-90 (checked October 7, 2026). URLs: <https://mizar.uwb.edu.pl/version/current/mml/funct_1.miz>, <https://mizar.uwb.edu.pl/version/current/mml/funct_2.miz>. GPL-3.0-or-later / CC-BY-SA-3.0-or-later.
-- `quasi_total` (FUNCT_2, lines 36-44) says the domain is all of X unless Y is empty.
+- Source: CARD_1:14 and COMPTS_1:17 (`draft.ja.md` §1). Spend about 30 seconds on each example, pointing out the meaning and language features. Proofs are omitted; these are explanatory sketches, not execution results.
+- Cantor: bool X is the power set. Cardinals are initial ordinals, so in expresses a strict cardinal inequality here. Topology: T_2 means Hausdorff; rng f = [#] T means surjective; the conclusion states that f is a homeomorphism. Search and checking are separated in §6.
 
 ## Part 2. Readable Mathematics
 
-### Frame 2.1 - Preserve And Extend Mathematical Writing
+### Frame 2.1 - Trace type, registration, and overload choices
 
-What the author actually writes (sketch, valid in current Mizar and Mizar Evo):
+Readable mathematics relies on many automatic decisions.
 
-```mizar
-let X, Y be set;
-let f be Function of X, Y;
-let x be Element of X;
-...  f.x  ...
-```
+- **type: which types can this object be used as?**
+  Follow attributes and inheritance. Example: Group → Magma, with a unique path.
+- **registration: which rules supplied the required attributes?**
+  Example: the chain empty → finite → countable.
+- **overload: which definition and view were selected?**
+  Distinguish definitions with the same notation, or addition and multiplication in a ring.
 
-- **It is the same set-theoretic function. But the author writes `Function of X,Y` and `f.x`, not pairs and domains.**
-- **Soft types, modes, attributes, registrations, schemes, and declarative proofs are not just a nicer way to write the same thing. They are the language design that lifts first-order set theory up to readable mathematics.**
-- **New specification: preserve and extend mathematical writing; make implicit type, registration, and overload choices explicit and traceable.**
-
-### Frame 2.2 - Registrations: Give Automatic Chains Names
-
-Named automatic rules (specification example):
-
-```mizar
-registration
-  cluster EmptyImpliesFinite: empty -> finite for set;
-  coherence proof ... end;
-  cluster FiniteImpliesCountable: finite -> countable for set;
-  coherence proof ... end;
-end;
-```
-
-| Starting fact | Automatically derived fact | Recorded rule |
-|---|---|---|
-| S is empty | S is finite | EmptyImpliesFinite |
-| S is finite | S is countable | FiniteImpliesCountable |
-
-- **Keep automatic chaining; require a label on every registration item and record the applied path.**
-- Labels explain which rule a proof depends on. Explicit `by` citations remain optional for automatic application.
+**Keep natural writing and automatic rules, while tracing the reasons for implicit choices.**
 
 Speaker note:
 
-- Source: `doc/spec/en/17.clusters_and_registrations.md` sections 17.2, 17.7; `23.package_management_and_build_system.md` section 23.7.7. The trace above is illustrative for an empty set S. Attribute resolution precedes ATP search.
+- Source: spec 08 §8.1–8.2; 17 §17.7; 19 §19.1–19.3. Type: 2.2–2.4; registration: 2.5; overload / views: 2.6.
 
-### Frame 2.3 - Structures: Stored Fields And Derived Properties
+### Frame 2.2 - type: declare fields and properties
 
-Data and canonical values have different roles (specification example):
+Structure declarations (specification example, inside a definition block):
 
 ```mizar
-definition
-  struct AddLoopStr where
-    field carrier -> set;
-    field add -> BinOp of carrier;
-    property zero -> Element of carrier;
-  end;
+struct LoopStr where
+  field carrier -> set;
+  field binop -> BinOp of carrier;
+  property unit -> Element of carrier;
+end;
+
+struct AddLoopStr where
+  field carrier -> set;
+  field add -> BinOp of carrier;
+  property zero -> Element of carrier;
 end;
 ```
 
-- **Fields store data and are constructor arguments. Properties get a uniquely determined value from a separate implementation.**
-- The declaration of `zero` supplies its type. A `means` implementation proves existence and uniqueness; an `equals` implementation supplies a term.
+**A field stores data. A property declares a name and type; its implementation is given separately.**
 
 Speaker note:
 
-- Source: `doc/spec/en/05.structures.md` section 5.2; `07.modes.md` sections 7.4.1, 7.8.2; `sample_codes.md`, AddLoopStr. Overlapping property implementations require coherence.
+- Source: `doc/spec/en/05.structures.md` §5.2, 5.5.1; `sample_codes.md`, LoopStr and AddLoopStr. These declarations are excerpts inside a definition block. Only fields are constructor arguments. Inheritance follows in 2.3, then the mode and unit implementation in 2.4.
 
-### Frame 2.3a - Inheritance Can Be Declared Later
+### Frame 2.3 - type: declare inheritance after the structure
 
-After declaring AddLoopStr, add a parent mapping (specification example):
+Add a parent mapping after declaring AddLoopStr (specification example):
 
 ```mizar
 definition
@@ -283,69 +226,115 @@ definition
 end;
 ```
 
-- **Separate the structure declaration from later inheritance declarations, much like implementing a Rust trait after defining a type.**
-- `from` renames the parent roles: `binop` becomes `add`, and `unit` becomes `zero`.
-- Each declaration has one parent. Identical member types need no proof; narrower types need a `coherence` proof.
+- **Separate structure declarations from inheritance. This is similar to implementing a Rust trait after defining a type.**
+- `from` renames a parent's role: `binop` becomes `add`, and `unit` becomes `zero`.
+- One declaration per parent. Equal member types need no proof; narrower types require `coherence`.
 
 Speaker note:
 
-- Source: `doc/spec/en/05.structures.md` section 5.3; `sample_codes.md`, AddLoopStr. The Rust comparison concerns separate declarations, not identical semantics. LoopStr declares binop as a field and unit as a property.
+- Source: `doc/spec/en/05.structures.md` §5.3; `sample_codes.md`, AddLoopStr. The Rust analogy concerns the separation of declarations. In LoopStr, binop is a field and unit is a property.
 
-### Frame 2.3b - Checked Diamonds And Reused Group Theorems
+### Frame 2.4 - type: implement unit for Unital, reuse it as zero
 
-Two paths in the same hierarchy (sketch):
-
-```text
-AddLoopStr -> LoopStr -> Magma
-AddLoopStr -> AddMagma -> Magma
-```
-
-A Group theorem applied to a ring's additive view (sketch):
+has_unit states that a two-sided identity exists; it does not depend on unit (sketch):
 
 ```mizar
 definition
-  let T be type extends Group;
-  theorem RightUnit[T]:
-    for x being Element of T.carrier holds T.binop(x,T.unit) = x
-  proof ... end;
+  mode UnitalDef: Unital is has_unit LoopStr;
+  let M be Unital;
+  property M.unit means
+    for x being Element of M.carrier holds
+      M.binop(it,x) = x & M.binop(x,it) = x;
+  existence proof ... end;
+  uniqueness proof ... end;
 end;
-RightUnit[R qua AddLoopStr]  :: gives R.add(x,R.zero) = x
 ```
 
-- **Track member roots and inheritance paths; check shared members while keeping the operation views distinct.**
-- Ring's additive view is a Group. Reuse its theorem through renamed members; multiplication is only required to be a monoid.
+- **If A's selected LoopStr view is Unital, reuse its unit implementation as zero.**
+- `property zero from unit` gives `A.zero = (A qua LoopStr).unit`. No new zero implementation is needed.
 
 Speaker note:
 
-- Source: `doc/spec/en/05.structures.md` section 5.4; `sample_codes.md`, Group and Ring; `18.templates.md` sections 18.2.2, 18.10.2. Assume R is Ring, x is in its carrier, and the needed Group/property definitions and registrations. Equal member types join automatically; other types need coherence. The selected view must satisfy the theorem's assumptions.
+- Source: `doc/spec/en/07.modes.md` §7.4.1, 7.8.2; `05.structures.md` §5.3, 5.8.3. Sketch adapting the implementation example in chapter 7 to LoopStr. The has_unit definition is in `draft.ja.md`; proof bodies are omitted. Existence follows from the mode assumption, uniqueness by applying the operation to two identities.
+- A is AddLoopStr, and the selected LoopStr view must satisfy Unital. Do not mix facts from different views. This example has no overlapping implementations; overlaps require coherence.
+
+### Frame 2.5 - registration: automatic chains hide dependencies
+
+**Automatic rule chains hide dependencies at the point of use.**
+
+```mizar
+registration
+  cluster EmptyImpliesFinite: empty -> finite for set;
+  coherence proof ... end;
+  cluster FiniteImpliesCountable: finite -> countable for set;
+  coherence proof ... end;
+end;
+```
+
+### Table 5. Registration paths recorded by the new specification
+
+| Starting fact | Derived fact | Recorded rule |
+|---|---|---|
+| S is empty | S is finite | EmptyImpliesFinite |
+| S is finite | S is countable | FiniteImpliesCountable |
+
+- Declaring `empty` gives `finite` and then `countable` implicitly. No rule citation with `by` is needed.
+- **New specification: keep automatic application, and record rule labels and application paths.**
+
+Speaker note:
+
+- Source: `doc/spec/en/17.clusters_and_registrations.md` §17.2, 17.4.1, 17.7; `23.package_management_and_build_system.md` §23.7.7. Labeled registration example from the new specification; the table is an explanatory trace for an empty set S.
+- Emphasize that rules are not cited at the point of use and can apply in several stages. Attribute resolution takes place before ATP search.
+
+### Frame 2.6 - overload: two identities in the same ring
+
+**In the same ring R, the additive identity is 0 and the multiplicative identity is 1.**
+
+- Additive AddMagma: `0 + x = x + 0 = x`
+- Multiplicative MulMagma: `1 * x = x * 1 = x`
+
+id. M returns the identity of a unital Magma M (sketch, definition omitted):
+
+```mizar
+let R be Ring;
+id. R;                   :: ambiguous Magma view
+id. (R qua AddMagma);     :: R.zero
+id. (R qua MulMagma);     :: R.one
+```
+
+- Even with one definition of id., the Magma view of R is ambiguous.
+- **Use qua to select the additive or multiplicative view and distinguish 0 from 1.**
+
+Speaker note:
+
+- Source: `doc/spec/en/sample_codes.md`, IdentityDef, LoopUnitalDef, RingLikeDef; `19.overload_resolution.md` §19.2.2–19.3.1; `05.structures.md` §5.8.3.
+- Sketch limited to the identity functor id. Assume both views are unital, their identities correspond to R.zero / R.one, and each path to Magma is unique. Definitions: `draft.ja.md`.
 
 ## Part 3. Generic Mathematics
 
-### Frame 3.1 - Current MML: Result Types For The Sum Of Functions
+### Frame 3.1 - Current MML: more types, more redefinitions and registrations
 
-**Example: the sum of functions. Add their values at each point.**
+**The sum of functions has one body, but preserving result types needs work for each type.**
 
-Result-type registrations (sketch, separate complex-valued and real-valued input blocks):
+### Table 6. Per-type declarations for function addition in VALUED_1
 
-```mizar
-cluster f1 + f2 -> complex-valued;
-cluster f1 + f2 -> real-valued;
-```
+| Value type | Result-type redefinition | Attribute / totality registration |
+|---|---|---|
+| Complex | `PartFunc of C,COMPLEX` | `complex-valued` + `total` |
+| Real | `PartFunc of C,REAL` | `real-valued` + `total` |
+| Rational | `PartFunc of C,RAT` | `RAT-valued` + `total` |
+| Integer | `PartFunc of C,INT` | `INT-valued` + `total` |
+| Natural | `PartFunc of C,NAT` | `natural-valued` + `total` |
 
-| Step in VALUED_1 | Type information |
-|---|---|
-| Define pointwise addition once | The result is a Function |
-| Refine the codomain | Separate complex and real PartFunc redefinitions |
-| Recover the full input domain | Separate totality registrations |
-
-- **The mathematical operation is already shared. The result-type refinements still follow the value types.**
+- **Each new type adds redefinitions, registrations, and coherence proofs.**
+- We want one template for function addition and its result type.
 
 Speaker note:
 
-- Source: MML [VALUED_1](https://mizar.uwb.edu.pl/version/current/html/valued_1.html), def 1 and the following result-type refinements. Each displayed line is from a separate registration block; declarations and coherence proofs are omitted. GPL-3.0-or-later / CC-BY-SA-3.0-or-later.
-- VALUED_1:def 1 uses the intersection of the input domains. The next sketch is limited to a common nonempty domain I; it does not replace the full construction.
+- Source: MML [VALUED_1](https://mizar.uwb.edu.pl/version/current/html/valued_1.html), def 1 and five following groups of attribute / total registrations and PartFunc redefinitions. Table summary, not a quotation. C is the common domain. Each row assumes its input value type; total registration also needs total inputs and nonempty ranges. All redefinitions / registrations have coherence proofs.
+- The body of VALUED_1:def 1 is shared and uses the intersection of domains. The next template sketch is restricted to a common nonempty domain I.
 
-### Frame 3.1a - Template: One Body And Concrete Result Types
+### Frame 3.2 - template: share the body and result type
 
 Generic functor (sketch, existence and uniqueness proofs omitted):
 
@@ -360,21 +349,23 @@ definition
 end;
 ```
 
-| Call (real R, complex C)[^1] | Result type |
+### Table 7. Template instances and result types
+
+| Call (real R / complex C)[^1] | Result type |
 |---|---|
 | `f + g` | `Function of I,R.carrier` |
 | `u + v` | `Function of I,C.carrier` |
 
-- **A synonym gives infix `+`; infer template arguments from declared types.**
+- **One definition gives the sum and its result type for each number system.**
 
-[^1]: Explicit: `f +[R,I] g`, `u +[C,I] v`. Omit arguments only when declared types determine them uniquely. Write `qua` for ambiguous inheritance paths.
+[^1]: Explicit forms: `f +[R,I] g`, `u +[C,I] v`. Omit arguments only when declared types determine them uniquely. Use `qua` for ambiguous inheritance paths.
 
 Speaker note:
 
-- Assume `let R be RealAdd; let C be ComplexAdd;`, with unique inheritance to nonempty AddMagma and the needed registrations. f,g have declared type Function of I,R.carrier; u,v have Function of I,C.carrier. Assume their normalized declared types uniquely determine T and I.
-- Source: `doc/spec/en/11.symbol_management.md` section 11.1.2; `18.templates.md` sections 18.2.2, 18.2.7, 18.7; `19.overload_resolution.md` section 19.6.2. A codomain set alone does not select its addition structure. `qua` views are never inferred.
+- Assume RealAdd R, ComplexAdd C, and required registrations, with unique paths to non empty AddMagma. f,g: Function of I,R.carrier; u,v: Function of I,C.carrier. Declared types uniquely determine T,I. Other number types need additive structures, closure, registrations. synonym supplies +.
+- Source: spec 11 §11.1.2; 18 §18.2.2, 18.2.7, 18.7; 19 §19.6.2. A range set alone does not select addition; qua views are not inferred.
 
-### Frame 3.2 - Schemes Become Ordinary Templates [deep dive]
+### Frame 3.3 - Unify schemes with template theorems [deep dive]
 
 Induction as a theorem with a predicate parameter (specification example):
 
@@ -388,30 +379,78 @@ definition
 end;
 ```
 
-- A predicate parameter gives a family of first-order theorems, one for each predicate you put in.
-- Instantiation is explicit: `by NatInduction[P], Base, Step` after a `defpred`.
-- Functor parameters are schema-level symbols, not sets. This keeps the logic first-order.
-- Details: Bialystok deck, Story 6 (`PermProduct[T]`, `qua` views), and Backup 4 here.
+- A predicate parameter describes a family of first-order theorems, one per substituted predicate.[^1]
+- Explicit instantiation: `defpred`, followed by `by NatInduction[P], Base, Step`.
+- Functor parameters are schema-level symbols, not sets. The logic stays first-order.
+
+[^1]: Details: Białystok deck, Story 6 (`PermProduct[T]` and views with `qua`); also Backup 1 here.
+
+Speaker note:
+
+- Source: `doc/spec/en/18.templates.md` §18.2.3, 18.8.2, 18.9. Frame 3.4 shows type / value parameters for structures and attributes.
+
+### Frame 3.4 - template: parameterize structures and attributes too
+
+struct: vector-space data over a field K (sketch, inside a definition block):
+
+```mizar
+let K be Field;
+struct VectorSpace[K] where
+  field carrier -> non empty set;
+  field add -> BinOp of carrier;
+  field smul -> Function of [:K.carrier, carrier:], carrier;
+end;
+```
+
+`of` / `over` are syntactic sugar (shorter notation): `Vector of K` → `Vector[K]` (a mode example).
+
+attr: a subset S is dense in a space M (sketch, condition omitted):
+
+```mizar
+let M be MetricSpace;
+let S be Subset of M.carrier;
+attr DenseDef: S is dense[M] means ...;
+```
+
+Prefix attributes are also syntactic sugar: `M-dense` → `dense[M]`.
+
+**Type / value parameters are shared across struct, attr, mode, pred, and func.**
+
+Speaker note:
+
+- Source: `doc/spec/en/18.templates.md` §18.1, 18.2.6, 18.3, 18.5. Excerpts inside a definition block; vector-space laws and the density condition are omitted. Assume a mode Vector taking K and its of synonym. VectorSpace over K is also a synonym for VectorSpace[K]. Predicate / functor parameters are restricted to theorem and algorithm.
+- In the 35-minute version, spend 15 seconds pointing to structure and attribute parameters.
 
 ## Part 4. Verified Computation
 
-### Frame 4.1 - Computation: Verified Algorithms
+### Frame 4.1 - Computation: verified algorithms
 
-Hoare-style checking of readable procedures:
+**Apply Hoare rules recursively to generate first-order proof obligations:**
 
 ```text
 { requires }  algorithm body  { ensures }
 ```
 
-- **Use familiar pseudocode: assignment, `if/else`, `while`, `for`, and `return`. Contracts and loop invariants state what must hold.**
-- **Generate first-order verification conditions using Hoare logic. Verify correctness and, when required, termination.**
-- Verify algorithms themselves and use verified procedures to support proofs.
+P / Q: precondition / postcondition; B: condition; I: invariant; S: statement.
+
+### Table 8. Basic Hoare rules
+
+| Syntax | Conditions to check (partial correctness)[^1] |
+|---|---|
+| Assignment `x := e` | `P ⇒ Q[x ← e]` (replace free x in Q with e) |
+| `if B do S1 else S2 end` | `{P ∧ B} S1 {Q}` and `{P ∧ ¬B} S2 {Q}` |
+| `while B do S end` | Establish: `P ⇒ I`; preserve: `{I ∧ B} S {I}`; exit: `I ∧ ¬B ⇒ Q` |
+| `return e` | `P ⇒ Q[result ← e]` |
+
+
+[^1]: Basic forms for simple variables and pure expressions. Early return / break / continue and type / domain conditions are omitted.
 
 Speaker note:
 
-- Source: `doc/spec/en/20.algorithm_and_verification.md` sections 20.2, 20.3, 20.13.3. Correctness is partial by default; `terminating` adds a termination obligation. This is pseudocode-like procedural notation, rather than a separate proof-state tactic language.
+- Source: `doc/spec/en/20.algorithm_and_verification.md` §20.1.4, 20.4.3, 20.5.1, 20.13.3. The table gives backward rules with capture-avoiding substitution. Forward generation uses old-state names for assignments and havocs modified locations at loop heads. Details: `draft.ja.md`.
+- Partial correctness is the default. terminating requires separate termination checks. Verified procedures can also support proofs.
 
-### Frame 4.2 - Algorithms: Contracts, Proofs, Computation
+### Frame 4.2 - algorithm: contracts, proofs, computation
 
 **Euclid's algorithm with a contract** (specification example):
 
@@ -429,24 +468,56 @@ do
 end;
 ```
 
-- **`terminating` requires termination for every input satisfying `requires`. The verifier checks the invariant and strict decrease of y.**[^1]
-- **After verification, the algorithm is promoted to a mathematical functor, usable in formulas and proofs.**
+- **`terminating` requires termination for every input satisfying requires. Check the invariant and strict decrease of y.**[^1]
+- **After verification, promote it to a mathematical functor for formulas and proofs.**
 
-[^1]: Loop annotations resemble Dafny's `invariant` / `decreases`; Evo uses `invariant` / `decreasing`.
+[^1]: Loop annotations resemble Dafny's `invariant` / `decreases`. Evo uses `invariant` / `decreasing`.
 
 Speaker note:
 
-- Source: spec 20, sections 20.1.1, 20.5, 20.12; outer definition/let omitted.
-- Compare [Dafny §8.15](https://dafny.org/latest/DafnyRef/DafnyRef.html#sec-loop-specifications).
+- Source: specification chapter 20, §20.1.1, 20.5, 20.12. Outer definition / let context omitted.
+- Comparison: [Dafny §8.15](https://dafny.org/latest/DafnyRef/DafnyRef.html#sec-loop-specifications).
 
-### Frame 4.2a - Termination And Functor Promotion
+### Frame 4.3 - Euclid: code and proof obligations
+
+The body again (sketch, a,b >= 1; outer context omitted):
+
+```mizar
+var x := a; var y := b; :: (1)
+while y <> 0 do
+  invariant x >= 1 & y >= 0 & Gcd(a,b) = Gcd(x,y); :: (2)
+  decreasing y; :: (3)
+  const r := x mod y; x := y; y := r;
+end;
+return x; :: (4)
+```
+
+### Table 9. Proof obligations for Euclid's algorithm
+
+| Point | Proof obligation | Mathematical reason |
+|---|---|---|
+| (1) | Establish the invariant | `x=a`, `y=b`; positivity from the precondition |
+| (2) | Preserve the invariant | `Gcd(x,y)=Gcd(y,r)`; old `y >= 1`, `r >= 0` |
+| (3) | Decrease the Nat measure | `y' = r`, `0 <= r < y` |
+| (4) | Postcondition at exit | `y=0`; `Gcd(a,b) = Gcd(x,0) = x` |
+
+**Check each point using library lemmas for GCD and remainder.**
+
+Speaker note:
+
+- Source: `doc/spec/en/20.algorithm_and_verification.md` §20.5, 20.12, 20.13.3. Numbers connect the repeated body to the table. Compute r=x mod y in the old state, then update to (y,r). SAT alone does not know arithmetic. Changing y:=r to y:=x loses the decrease. Specification-based explanation.
+- Future direction: number theory, combinatorics, symbolic computation, optimization, cryptography, and quantum algorithms. MVM execution and code extraction remain future work.
+
+### Frame 4.4 - terminating and functor promotion
+
+### Table 10. Algorithm termination and guarantees
 
 | Algorithm form | Meaning under requires |
 |---|---|
-| Without terminating | If the call returns, its contract holds |
-| Verified terminating | Totality under requires; usable as a functor |
+| Without terminating | The contract holds if the call returns |
+| Verified terminating | Total under requires; usable as a functor |
 
-Reason about Euclid through its contract (sketch):
+Reason with Euclid's contract (sketch):
 
 ```mizar
 let a, b be Nat;
@@ -454,37 +525,53 @@ assume a >= 1 & b >= 1;
 thus euclid_gcd(a,b) = Gcd(a,b) by EuclidGcdDef;
 ```
 
-- **Verified definitional algorithms also give defining equations. Euclid has a loop: use only its totality and contract axioms.**
-- `by computation` is specified separately; MVM execution and code extraction remain future work.
+Use a computed result in a proof (sketch, MVM not implemented):
+
+```mizar
+thus euclid_gcd(12,8) = 4 by computation;
+```
+
+Run a verified algorithm on MVM, the virtual machine, and use its result in a proof.
+
+**The default `computed` path also trusts MVM. It differs from kernel / SAT rechecking.**
 
 Speaker note:
 
-- Source: `doc/spec/en/20.algorithm_and_verification.md` sections 20.7.2-20.7.3, 20.13.2; `16.theorems_and_proofs.md` section 16.5.1. `by EuclidGcdDef` cites verified promotion axioms. The callable name alone is not a citation. The fragment assumes the surrounding proof and Gcd definition; the guarantee is under requires.
+- Source: `doc/spec/en/20.algorithm_and_verification.md` §20.7.2–20.7.3, 20.9.1–20.9.2, 20.13.2; `16.theorems_and_proofs.md` §16.5.1. MVM execution and code extraction are future work.
+- Requires the precondition and a verified executable artifact. Replay requires defining equations and kernel checks; it does not apply to this loop-based Euclid example. Details: `draft.ja.md`.
 
-### Frame 4.3 - Euclid: What Must Be Proved?
+### Frame 4.5 - Verified expression rewriting: lambda and differentiation
 
-One loop step: old state `(x,y)` with `y > 0`; set `r = x mod y`; new state `(x',y') = (y,r)`.
+Write a function directly (sketch, u is Real):
 
-| Obligation | Mathematical reason |
-|---|---|
-| Establish the invariant | `x=a`, `y=b`; the precondition gives positivity |
-| Preserve the invariant | `Gcd(x,y) = Gcd(y,r)`, `y >= 1`, `r >= 0` |
-| Decrease the Nat measure | `y' = r`, and `0 <= r < y` |
-| Establish the postcondition on exit | `y=0`; `Gcd(a,b) = Gcd(x,0) = x` |
+```mizar
+u |-> (sin u)*u
+```
 
-- **The library supplies the GCD and remainder lemmas. These obligations go through theorem checking; SAT alone does not know arithmetic.**
-- Replacing the final `y := r` with `y := x` loses strict decrease. This is a specification walkthrough.
+`differentiate` recursively processes expression forms such as products and sin.
+
+Use it in a derivative proof (sketch, x is Real; MVM not implemented):
+
+```mizar
+thus diff((u |-> (sin u)*u), x) = (cos x)*x + sin x
+  by computation(differentiate(u |-> (sin u)*u));
+```
+
+- **`|->` denotes a set-theoretic function. An `expr` syntax tree keeps expression structure and variable binding.**
+- Verify the contract: on return, the input is differentiable and the result is its derivative.[^1]
+
+[^1]: Assumes differentiation, semantic conversion, and simplification lemmas. This is a specification sketch, not an execution result.
 
 Speaker note:
 
-- Source: `doc/spec/en/20.algorithm_and_verification.md` sections 20.5, 20.12, 20.13.3. This illustrates obligations, not an execution result.
-- Longer-term targets remain future directions: number theory, combinatorics, symbolic computation, optimization, cryptography, and quantum algorithms. MVM execution and extraction remain future work.
+- Source: spec 13 §13.10; 20 §20.5.3, 20.9.2, 20.12.
+- Partial algorithm. Declarations, set-theoretic meaning, factorization idea: `draft.ja.md`.
 
 ## Part 5. Development Infrastructure
 
-### Frame 5.1 - Environment: What Must An Author Import?
+### Frame 5.1 - Environment: what must an author import?
 
-Current Mizar environment, shortened from ALGSTR_0 (sketch):
+Current Mizar, shortened from ALGSTR_0 (sketch):
 
 ```mizar
 environ
@@ -495,56 +582,63 @@ environ
  theorems STRUCT_0;
 ```
 
-| List | What it supplies |
+### Table 11. The ten environment directives
+
+| Directives | What they import |
 |---|---|
 | vocabularies / notations | Symbols / notation |
-| constructors | Constructors |
-| registrations / theorems | Automatic type facts / cited theorems |
+| constructors / registrations | Constructors / automatic type facts |
+| requirements / definitions | Special automatic processing / definition information |
+| equalities / expansions | Equality / definition-expansion information |
+| theorems / schemes | Theorems / schemes |
 
-- **Choose articles by role; `notations` and `definitions` also depend on article order.**
+- `notations` / `definitions`: article order determines notation / definition priority.
+- **Hardest for authors: managing environment overrides and order dependence.**
 
 Speaker note:
 
-- Source: Bialystok `draft.md` frames 2.1-2.2, quoting ALGSTR_0. Ellipses shorten the lists. Imported registrations can affect implicit type inference; a symbol alone does not supply its notation or type facts.
-- Source on ordering: Adam Naumowicz, Towards Standardized Mizar Environments, CICM 2017, slide 13: <https://mizar.uwb.edu.pl/~softadm/imports/slides.pdf>. The claim concerns those current-environment lists, not every import directive.
+- Source: Białystok `draft.md`, Frames 2.1–2.2; ALGSTR_0 excerpt. The code shows only five directive types. Authors select resources by role. requirements names special automatic processing to enable.
+- Source: Adam Naumowicz, Towards Standardized Mizar Environments, CICM 2017, slides 7, 13, 19–24: <https://mizar.uwb.edu.pl/~softadm/imports/slides.pdf>. Overrides mean priority when selecting notation and redefinitions. Reordering can change existing notation resolution and proofs. Details: `draft.ja.md`.
 
-### Frame 5.1a - Imports And Dependency Tracking
+### Frame 5.2 - Imports and dependency tracking
 
-New specification: module imports (specification example):
+Module imports in the new specification (specification example):
 
 ```mizar
 import .function;
 import mml.algebra.structure.sorted;
 ```
 
-| Stage | What the author can inspect |
-|---|---|
-| Import | The module's public definitions, theorems, and registrations |
-| Resolve | Source fully-qualified names and registration traces |
-| Reuse | Validated dependency fingerprints for incremental builds |
+### Table 12. Imports and dependency tracking
 
-- **Bring public items in together, then track what was actually used.**
-- Packages and lock files fix dependency versions; IDE diagnostics can expose the resolved names and traces.
+| Stage | What authors can inspect |
+|---|---|
+| Import | Public definitions, theorems, and registrations |
+| Resolution | Original fully qualified names and registration traces |
+| Reuse | Checked dependency fingerprints for incremental builds |
+
+- **Import public items together, and trace what was actually used.**
+- The design fixes dependency versions with packages and lockfiles. The IDE shows resolved names and traces.
 
 Speaker note:
 
-- Source: `doc/spec/en/12.modules_and_namespaces.md` section 12.3; `17.clusters_and_registrations.md`, Traceability; `23.package_management_and_build_system.md`. The import example is not a mechanical one-to-one migration. Details: Backups 7-8.
+- Source: `doc/spec/en/12.modules_and_namespaces.md` §12.3; `17.clusters_and_registrations.md`, Traceability; `23.package_management_and_build_system.md`. These imports are not a one-to-one mechanical translation of the old environment. Details: Backups 2–3.
 
-### Frame 5.2 - The Whole Picture
+### Frame 5.3 - The whole picture [deep dive]
 
 ![Mizar Evo in one picture](figures/layer_stack.pdf)
 
-- **Rich mathematics, a small first-order core, and modern infrastructure.**
+- **Support rich mathematical writing with a small first-order foundation and modern development tools.**
 
 Speaker note:
 
-- Elaboration maps the mathematical language to a first-order representation. The kernel checks evidence proposed by external ATPs. Verified artifacts and the library support IDE / LSP, AI, and publication.
+- Elaboration turns mathematical language into a first-order representation. The kernel checks candidate evidence from external ATPs. Checked artifacts and libraries support IDE / LSP, AI, and publication.
 
 ## Part 6. Checking And Automation
 
-### Frame 6.1 - Automation: Separate Search From Checking
+### Frame 6.1 - Automation: find lemmas and suggest a proof
 
-Isabelle/HOL: Sledgehammer suggests a locally checked proof (sketch):
+Isabelle/HOL: Sledgehammer suggests a proof (sketch):
 
 ```text
 have "Q a"
@@ -552,161 +646,121 @@ have "Q a"
   by (metis allPQ pa)
 ```
 
-Mizar Evo: cited facts justify a declarative step (sketch):
+Mizar Evo: request lemma search with `by atp` (proposed syntax).
+
+**Open goal → library lemma candidates → ATP trials → a `by` suggestion.**
+
+Request and suggestion (sketch, planned; Pa is the local assumption P(a)):
 
 ```mizar
-assume AllPQ: for x being object holds P(x) implies Q(x);
-assume Pa: P(a);
-thus Q(a) by AllPQ, Pa;
+thus Q(a) by atp;
+:: Suggested proof:
+:: library.AllPQ: for x holds P(x) implies Q(x)
+thus Q(a) by library.AllPQ, Pa;
 ```
 
-- **Shared pattern: goal and facts → external search → local trusted acceptance. A prover's success report alone is insufficient.**
-- Isabelle reconstructs a proof, often by local Metis reproof. Mizar Evo checks formula/substitution evidence through instantiation and SAT.
+- **Reduce manual lemma search. Keep the selected premises explicit in the source.**
+- Apply the suggestion and verify again. The kernel / SAT checks formula and substitution evidence before acceptance.
 
 Speaker note:
 
-- Source: [Sledgehammer guide](https://isabelle.in.tum.de/doc/sledgehammer.pdf), sections 1, 5.2; spec 16; architecture 08, 10, 15. The sketches assume corresponding hypotheses.
-- Evo uses cited/local facts; Sledgehammer selects theory facts. Their shared search/check pattern does not imply identical evidence or measured results.
+- `by atp` is proposed syntax for this talk. The specification does not yet define it. Arguments may be added later.
+- Source: specification chapter 22, §22.4.4; chapter 23, §23.5.2. Details and comparison sources: `draft.ja.md`.
 
-### Frame 6.2 - Using ATPs: Search, Check, And Reuse
+### Frame 6.2 - Using ATPs: search, check, and reuse
 
 ![ATP use with checking, storage, and retry](figures/llm_atp_loop.pdf)
 
-- **Goal and facts → ATP search → kernel check → store in the library and reuse.**
-- For open goals, revise lemmas or the plan and retry. The figure shows design intent.
+- **Goal and premises → ATP search → kernel checking → library storage and reuse.**
+- If unresolved, revise lemmas or strategy and retry. The figure shows design intent.
 
 Speaker note:
 
-- LLMs can help propose and repair. Acceptance depends on the evidence check, explained on the next frame.
-- Current ATP input is cited premises and local hypotheses. Whole-library premise selection and the loop's cost-effectiveness remain evaluation targets.
-- Source: `doc/spec/en/21.source_code_annotation_and_atp.md` section 21.7.2; `doc/design/architecture/en/21.ai_agent_interface.md`.
+- LLMs can help suggest and repair proofs. Acceptance depends on evidence checking, explained next.
+- Normal verification uses source citations and local hypotheses. Assistance selects library candidates, tries them, and suggests citations to apply before re-verification. Native-hammer and retry evaluation remains future work.
+- Source: `doc/spec/en/21.source_code_annotation_and_atp.md` §21.7.2; `doc/design/architecture/en/21.ai_agent_interface.md`.
 
-### Frame 6.3 - Resolution Tree And Extracted Substitutions
+### Frame 6.3 - Resolution tree and extracted substitutions
 
-Candidate extraction from a Resolution log (sketch):
+Getting candidate evidence from a resolution log (sketch):
 
-```text
-F1: forall x. (P(x) implies Q(x)); F2: forall y. (Q(y) implies R(y))
-H: P(a); goal: R(a); refute: F1 & F2 & H & not R(a)
+![Resolution tree with composed substitutions and extracted evidence](figures/resolution_evidence.pdf)
 
-{not P(x), Q(x)}             {not Q(y), R(y)}
-          \                 /
-           sigma1 = {x := y}       :: unify Q(x), Q(y)
-           {not P(y), R(y)}        {P(a)}
-                    \             /
-                     sigma2 = {y := a} :: unify P(y), P(a)
-                     {R(a)}        {not R(a)}
-                          \        /
-                           sigma3 = {}
-                                {}
-```
-
-- **The untrusted extractor composes substitutions along the branches: save `x := a` for F1 and `y := a` for F2.**
+- **Untrusted extraction: compose to `x := a` for F1 and `y := a` for F2.**
 
 Speaker note:
 
-- Variables x/y are renamed apart. Q unifies with x:=y; P with y:=a. Compose to obtain F1[x:=a] and F2[y:=a].
-- This log-assisted producer is a proposal; architecture 10 uses independent instance finding. The kernel checks evidence, not log steps.
-- Source: architecture 08, 10, 15, 16. Sketch, not an external-prover execution.
+- Clause variables x/y have distinct names. Unifying Q gives x:=y; unifying P gives y:=a. Compose them to recover F1[x:=a] and F2[y:=a].
+- This is a proposal for getting candidate evidence from a log. The independent instance finder in architecture 10 is unimplemented (ATP TODO 30). The kernel does not replay each log inference.
+- Source: architecture chapters 08, 10, 15, 16. This is a sketch, not an external-prover execution example.
 
-### Frame 6.3a - Saved Evidence To Concrete SAT Clauses
+### Frame 6.4 - From saved evidence to concrete SAT clauses
 
-Saved candidate, kernel preprocessing, and SAT input (sketch):
+From evidence checks to SAT-based acceptance (sketch):
 
-```text
-save: F1,F2,H (source bindings); F1[x:=a], F2[y:=a]; goal R(a), refute
-check: source/context, binders, capture avoidance
-instances: P(a) implies Q(a); Q(a) implies R(a); P(a); not R(a)
-atoms: p=P(a)=1, q=Q(a)=2, r=R(a)=3
-logical CNF: (not p or q) & (not q or r) & p & not r
-Tseitin: s=4 iff (not p or q); t=5 iff (not q or r)
-SAT clauses (DIMACS example; 0 ends each clause):
-p cnf 5 10
-1 0       -3 0
-1 4 0     -2 4 0     -1 2 -4 0     4 0
-2 5 0     -3 5 0     -2 3 -5 0     5 0
-```
+![Evidence checks, ground instances and a five-variable ten-clause SAT refutation](figures/sat_evidence_check.pdf)
 
-- **The small kernel derives instances and CNF from checked evidence. Its SAT checker finds UNSAT, so accept R(a); external Resolution steps are not replayed.**
+- **Check evidence, regenerate CNF, confirm UNSAT with SAT, and accept R(a).**
 
 Speaker note:
 
-- Save source formulas, composed substitutions, binder contexts, target VC, and refutation polarity. Derived instances and SAT clauses are recomputed (Backup 5).
-- DIMACS: 5 variables, 10 clauses; negative means negation, 0 ends a clause. s/t encode the implications. This encoder-style construction is not a runtime dump.
-- The kernel searches no substitutions. Source: architecture 08, 15, 16.
+- Save original formulas, composed substitutions, binding context, target VC, and refutation polarity. Regenerate instances and SAT clauses; details in `draft.ja.md` §6.
+- Each blue box defines implication variable s/t and gives four clauses. With unit clauses p and not r, there are five variables and ten clauses. DIMACS is retained in `draft.ja.md` §6. This is not an execution dump.
+- The kernel neither searches for substitutions nor replays external resolution steps. Source: architecture chapters 08, 15, 16.
 
-## Part Closing. Status And Roadmap
+## Part 7. Status And Roadmap
 
-### Frame Where The Project Stands (October 2026)
+### Frame 7.1 - Implementation status and size
 
-- **Specification: 24 chapters plus appendices. English is the canonical language.**
-- **Implemented on the main branch: the Rust frontend (lexer, parser, syntax tree); name resolution and type checking on an alpha corpus; proof-obligation generation with deterministic discharge; ATP problem encoding and candidate evidence; SAT-backed kernel evidence checking; cache, fingerprint, and build-scheduling milestones.**
-- **In progress: end-to-end integration from source to verified artifact; the LSP server; the documentation generator.**
-- **Planned for later: MVM execution, code extraction, library-wide premise selection, MML migration.**
-- This talk does not claim any end-to-end results with external provers.
+**Rust product code: 271.1 kLoC; estimated total: 360–540 kLoC (rough estimate).**
 
-Speaker note:
+### Table 13. Implementation status and code size (kLoC)
 
-- Source: `doc/design/todo.md`, Crate Status, as of October 7, 2026. Re-check before the talk.
+| Area | Now | Est. total | Scope / remaining work |
+|---|---:|---:|---|
+| lexer / parser / frontend | 34.4 | 36–43 | Syntax, source loading, lexing, parsing connected |
+| resolver / checker | 122.9 | 148–193 | Limited source semantics; generalization / services remain |
+| Core / VC | 49.7 | 65–95 | IR / proof; limited source to VCs |
+| ATP | 9.6 | 16–28 | Encoding / candidates; real backend integration remains |
+| kernel | 12.8 | 15–20 | Formula / substitution / provenance checks; includes 1.9 for SAT |
+| build / driver / artifact | 41.3 | 56–85 | Cache / shared support; full-pipeline publication not connected |
+| LSP | 0.5 | 6–19 | Lifecycle / sync; semantic connections remain |
+| MVM / extraction / doc | 0 | 17–57 | Runtime / extraction / docs unimplemented |
 
-### Frame Roadmap
+**Excluding ATP: kernel + SAT dependencies = 17.6 kLoC.**
 
-![Roadmap](figures/roadmap_tpp.pdf)
+Core / session counted separately. Excludes dependencies, tests, blank lines, comments. Estimates include current code; rounded.
 
-- **2026: finish the specification, the Rust pipeline through the kernel, template processing, and an alpha end-to-end run.**
-- **2027: migrate representative MML articles, build a native hammer baseline, and benchmark on top-level theorems, in the same units MizAR uses.**
-- 2028 and later: scale up the migration; learned premise selection; LLM-assisted failure recovery; MVM and extraction. Cryptographic and quantum targets stay future directions.
-
-### Frame Closing
-
-```text
-**Keep the foundation small.**
-**Keep the mathematics readable.**
-**Modernize everything else.**
-```
-
-- **Thank you. I welcome your questions, especially on MML migration, usability, and how to evaluate automation.**
-
-## Backup 1. MizAR 60 In Detail
-
-Source: Jakubův et al., MizAR 60 for Mizar 50, ITP 2023.
-
-- Dataset: MML 1147 exported by MPTP, 57,897 theorems including unnamed top-level lemmas; the same version as the MizAR 40 evaluation, so the results can be compared.
-- Holdout: 1,690 / 2,896 (58.4%), without user premise help, 420 CPU s. Training/development/holdout: 90:5:5 (MizAR 40: about 40.6%).
-- Over 75% proved when the premises can be chosen from the library by a human or a machine (MizAR 40: 56%).
-- Strongest single method: 40% in 30 s in hammering mode; 60% in 120 s with human premises.
-- Transfer: the strongest method also works on 13,370 new theorems from 242 new articles in MML 1382.
-- Methods: E and Vampire with ENIGMA and Deepire guidance, learned premise selection, and a loop that trains on millions of ATP proofs.
-
-## Backup 2. Sledgehammer Evaluations In Detail
-
-| Evaluation | Dataset and method | Success |
-|---|---|---|
-| ITP 2022 | 5,000 AFP goals, 16 greedy configurations | 68.8% |
-| Magnushammer (preprint 2023) | 1,000 PISA theorems, Sledgehammer | 38.3% |
-| Same PISA evaluation | Magnushammer with learned premise selection | 59.5% |
-
-- ITP 2022: 50 entries, 100 goals each; MePo, 512 facts in the base setting, 30 CPU seconds per configuration. Configurations are selected using the evaluation set. Reconstruction is not evaluated.
-- PISA: Isabelle2021-1, Sledgehammer timeout 30 seconds, five local provers, union over several settings. Success requires a proof checked by Isabelle.
-- Close dates do not make local goals and whole theorems, or search success and checked proofs, the same measure.
+Source: fixed snapshot `08861708`. Counting and estimate basis: `draft.ja.md` §7.
 
 Speaker note:
 
-- Source: Desharnais et al., Seventeen Provers Under the Hammer, ITP 2022, sections 5, 5.6, Table 10; Mikuła et al., Magnushammer, arXiv:2303.04488 (preprint 2023), Table 2, Appendix A.4.
+- 1 kLoC = 1,000 lines. Rough estimates, not yet tested. MML porting is excluded.
+- Kernel 12.751 (SAT encoding / connection: 1.947). SAT dependencies: batsat 0.6.0 + bit-vec 0.5.1 = 4.879; total 17.630 kLoC. Excludes Core / session / shared support; not the full minimum trusted computing base (TCB).
+- Fixed snapshot, limited implementation. Counted October 15, 2026; kernel recount / SAT dependencies, October 16.
 
-## Backup 3. HOL-To-FOL Encodings And Reconstruction
+### Frame 7.2 - Next steps and summary
 
-- Function application: a variable function applied to an argument becomes `app(F, X)`; applications of constants may stay curried or be flattened.
-- Lambda abstraction: lambda lifting introduces fresh constants with defining equations; combinator translation is the alternative.
-- Types: polymorphic HOL types are encoded by guards, tags, or monomorphization; the choice affects soundness, completeness, and prover performance.
-- Booleans: Boolean-valued terms inside formulas need a separate encoding.
-- Reconstruction: `metis` with the used lemmas, `smt` replay of SMT proofs, or generated Isar text; evaluations count reconstruction failures separately.
+### Next steps
 
-Source: Meng and Paulson 2008; Blanchette, Böhme, Popescu, Smallbone 2016; Blanchette, Kaliszyk, Paulson, Urban 2016; Schurr, Fleury, Desharnais 2021.
+- **First priority: connect source-to-semantics → VC → evidence → kernel → artifact → build.**
+- Make algorithm semantics and proof obligations agree; extend the working parts.
+- MVM runtime / extraction: separate work. MML porting is separate from processor completion.
+- Learned premise selection, LLM repair, cryptography, and quantum algorithms are long-term directions.
 
-## Backup 4. Template Instantiation: One Proof, Many Views
+### Summary
 
-Bounded type parameter and generic theorem (specification example, proof omitted):
+- **Keep FOL, set theory, and mathematical writing; redesign language and tools.**
+- **Separate ATP search from trusted checking. The specification is still evolving.**
+- **Please share your ITP needs: notation, proof assistance, development tools.**
+
+Speaker note:
+
+- Source: `doc/design/todo.md`, integration order and MML-port boundary.
+
+## Backup 1. Template instantiation: one proof, many views
+
+A generic theorem with a bounded type parameter (specification example, proof omitted):
 
 ```mizar
 definition
@@ -719,7 +773,7 @@ definition
 end;
 ```
 
-Instantiation (specification example, with the required registrations):
+Instances (specification example, assuming the required registrations):
 
 ```mizar
 PermProduct[commutative associative unital AddMagma]
@@ -727,46 +781,24 @@ PermProduct[commutative associative unital MulMagma]
 let R be commutative Ring;  PermProduct[R qua AddMagma]  :: additive view
 ```
 
-- A ring reaches Magma along two paths; `qua` selects the view, and the view also sets the notation.
+- A ring has two inheritance paths to Magma. The view selected by `qua` determines the notation.
 
 Speaker note:
 
 - Source: `doc/spec/en/18.templates.md`, section 18.2.2.
 
-## Backup 5. Kernel Evidence And The Trusted SAT Check
-
-![KernelEvidence and the kernel's SAT check](../2026-09-bialystok/figures/certificate_replay.pdf)
-
-- The evidence holds source formulas, explicit substitutions, provenance, and target and goal bindings. The kernel checks them, builds a deterministic SAT problem, and requires UNSAT from its trusted in-process SAT checker.
-- Backend proof traces, SMT proof objects, logs, and exit codes are for diagnosis only.
-
-Speaker note:
-
-- Source: `doc/design/architecture/en/08.reasoning_boundary.md`, `15.kernel_certificate_format.md`.
-
-## Backup 6. The Core ATP Path
-
-![The core ATP path, with responsibility groups](../2026-09-bialystok/figures/pipeline.pdf)
-
-- Only obligations that are still open after deterministic discharge go to ATPs. The earlier discharge also needs replayable evidence.
-- Each boundary states who owns a fact, which artifact records it, and what must be checked again after a change.
-
-Speaker note:
-
-- Source: `doc/design/architecture/en/00.pipeline_overview.md`; Bialystok deck, Part 10.
-
-## Backup 7. Incremental Verification
+## Backup 2. Incremental verification
 
 ![The fingerprint graph: what a change re-verifies](../2026-09-bialystok/figures/fingerprint_graph.pdf)
 
-- A proof-body edit does not rebuild importers when the exported statement and the accepted status stay the same. An interface change re-verifies the dependency cone.
-- All relevant cache keys must match; missing data is a cache miss. Cache reuse is never proof authority: a clean build must reproduce every acceptance.
+- A proof-body edit needs no rebuild of other modules if the public claim and acceptance status stay unchanged. An interface change rechecks all direct and indirect dependents.
+- Reuse needs exact matches for all relevant cache keys. Missing data means a miss. A clean build must reproduce every accepted result; reuse alone does not prove correctness.
 
 Speaker note:
 
-- Source: `doc/design/architecture/en/11.artifact_and_incremental_build.md`, `18.dependency_fingerprint.md`; Bialystok deck, Story 5.
+- Source: `doc/design/architecture/en/11.artifact_and_incremental_build.md`, `18.dependency_fingerprint.md`; Białystok deck, Story 5.
 
-## Backup 8. Package Manifest
+## Backup 3. Package manifest
 
 Mizar Evo (specification example):
 
@@ -781,100 +813,35 @@ mml_core = "^1.0"
 topology = { version = "^0.9", features = ["metric"] }
 ```
 
-- Reproducible builds need fixed source, lockfile, toolchain, and verifier settings, including deterministic ATP evidence.
-- Versioned reuse replaces manual copying between article sets; an aggregate module can export a whole topic through one import.
+- Reproducible builds need fixed sources, lockfile, toolchain, checker configuration, and deterministic ATP evidence.
+- Versions let authors reuse articles without manual copies between libraries. One module can collect a field's public items into a single import.
 
-Source: `doc/spec/en/23.package_management_and_build_system.md`; Bialystok deck, Story 1.
+Source: `doc/spec/en/23.package_management_and_build_system.md`; Białystok deck, Story 1.
 
-## Backup 9. Forty-Five-Minute Additions
+## Backup 4. Comparing evaluation conditions
 
-Add selected examples where they fit in the story:
-
-1. HOL-to-FOL function encoding worked through on one goal (`app`, partial application, lambda lifting).
-2. Mizar function representation: `Function of X,Y`, `f.x`, soft type as a set-theoretic object.
-3. Template: `PermProduct[T]` with additive and multiplicative views (Backup 4).
-4. Algorithm: Euclidean GCD plus `by computation` and the promotion to a functor.
-5. Structures and views: `AddMagma`, `MulMagma`, `Magma` (Bialystok Story 2).
-6. Modern infrastructure: `mizar.pkg`, namespaces, the fingerprint graph (Backups 7-8).
-7. Checking: evidence instantiation and the SAT check (Frame 6.3; details in Backup 5).
-
-## Backup 10. Sources And Attribution
-
-Exact MML excerpts used in this talk:
-
-| Purpose | Source | Lines | Used in |
-|---|---|---:|---|
-| Function application `f.x` | `funct_1.miz` | 138-140 | Frame 1.2 |
-| `Function of X,Y` as a soft type | `funct_2.miz` | 87-90 | Frame 1.2 |
-
-Source URLs:
-
-- `FUNCT_1`: <https://mizar.uwb.edu.pl/version/current/mml/funct_1.miz>
-- `FUNCT_2`: <https://mizar.uwb.edu.pl/version/current/mml/funct_2.miz>
-
-Attribution note:
-
-- MML plain-text files state GPL-3.0-or-later / CC-BY-SA-3.0-or-later terms; keep article attribution, URLs, and line numbers in speaker notes.
-- Benchmark figures: see Backups 1-2 and `references.bib`. Verify bibliographic metadata against publishers before the final deck.
-
-## Backup 11. Comparing Evaluation Conditions
+### Table 14. MizAR 60 and Sledgehammer evaluation conditions
 
 | | MizAR 60 (ITP 2023) | Sledgehammer / AFP (ITP 2022) |
 |---|---|---|
-| success | 58.4% (1,690 / 2,896) | 68.8% (3,440 / 5,000) |
-| counts | MML 1147: 2,896 holdout theorems/lemmas (57,897 total) | 5,000 local goals; 50 AFP entries |
-| premises | learned selection from the whole library | MePo; base 512 facts, varied by configuration |
-| budget | portfolio: 420 CPU s | 16 greedy configurations, 30 CPU s each: 480 CPU s |
-| status | ATP proof found (hammering) | external proof found; no Isabelle reconstruction |
+| Reported success | 58.4% (1,690 / 2,896) | 68.8% (3,440 / 5,000) |
+| Evaluation set | MML 1147 theorems / lemmas; 2,896 holdout problems out of 57,897 | 5,000 local goals from 50 AFP entries |
+| Premise selection | Learned selection from the whole library | MePo; baseline 512 facts, varied by configuration |
+| Time budget | Portfolio total: 420 CPU seconds | Greedy 16 configurations × 30 CPU seconds = 480 CPU seconds |
+| Success criterion | ATP proof found (hammering mode) | External-prover proof found; Isabelle reconstruction excluded |
 
-- **Different units, premises, budgets, and configurations; the rates do not rank the designs.**
-
-Speaker note:
-
-- A "hammer" is a tool that sends a goal to automatic provers. "Premises" are the facts the prover may use.
-- Source: Jakubův et al. 2023, sections 6.2, 6.5; Desharnais et al. 2022, sections 5, 5.6, Table 10. The greedy configurations were selected using the evaluation set itself.
-- Publication dates differ from experiment dates. MizAR's main experiments ran in 2020-2021; the AFP study uses Isabelle from January 2022 and AFP from December 2021.
-- MizAR's 75% figure uses premises chosen from the library by a human or a machine. Keep it for questions.
-
-## Backup 12. What Each Number Counts
-
-![What each benchmark counts](figures/evaluation_units.pdf)
-
-- **MizAR asks: can the machine prove this whole theorem from the library, with no help from the author?**
-- **The AFP study asks: can the machine close this goal where it appears, often inside a proof that a person has already written?**
-- Both are fair questions. They are not the same question.
-
-## Backup 13. Two Paths To A First-Order Prover
-
-![Two paths from an interactive prover to a first-order ATP](figures/two_paths.pdf)
-
-- **In Sledgehammer's first-order and SMT path, a higher-order goal is translated, and the proof is rebuilt inside Isabelle.**
-- **MizAR gives the prover a problem that is already first-order. The generated problem is first-order.**
+- **Different targets, premise selection, time budgets, and configuration choices. Success rates alone cannot rank the designs.**
 
 Speaker note:
 
-- Both paths describe existing systems (Blanchette, Kaliszyk, Paulson, Urban 2016; Jakubův et al. 2023). The orange boxes are the translation and reconstruction layers.
-- The figure shows the first-order and SMT path. The ITP 2022 evaluation also includes provers using native higher-order formats.
-- MizAR's headline percentages count ATP proofs. The Mizar checker re-checks the resulting `by` step when the inference is within its strength.
+- A hammer sends goals to automated provers. Premises are facts the prover may use.
+- Source: Jakubův et al. 2023, §6.2, 6.5; Desharnais et al. 2022, §5, 5.6, Table 10. The greedy configurations were selected after testing on the same evaluation set.
+- Publication and experiment dates differ: main MizAR experiments, 2020–2021; AFP evaluation, Isabelle from January 2022 and AFP from December 2021.
+- MizAR's 75% figure uses library premises selected by a human or a machine. Keep it for questions.
 
-## Backup 14. Functions In Higher-Order Logic
+## Backup 5. HOL encoding and reconstruction
 
-Schematic HOL statement (sketch, Isabelle/HOL-style notation):
-
-```hol
-f :: 'a => 'b        x :: 'a
-
-P (f x)
-```
-
-- **In HOL, function types and function application are part of the logic itself.**
-- Functions as arguments, functions that return functions, partial application, lambda: all can be written directly.
-- **This is very convenient for the person who writes mathematics.**
-- **But E and Vampire are first-order provers. The higher-order structure must be encoded before they can see it.**
-
-## Backup 15. HOL Encoding And Reconstruction
-
-Encoding steps, schematic (sketch):
+Outline of encoding steps (sketch):
 
 ```fol
 F X                   ->  app(F, X)
@@ -883,36 +850,12 @@ polymorphic types     ->  type guards or type tags
 Boolean-valued terms  ->  extra encoding
 ```
 
-- **Applying a variable function becomes an explicit `app` symbol. Lambdas are lifted out or turned into combinators. Types become guards or tags.**
-- **After the prover succeeds, the proof must come back into Isabelle: a `metis` call, an `smt` replay, or generated Isar text. This step is called reconstruction.**
-- These mechanisms connect HOL goals to first-order provers.
-- This describes the connection, not a measured performance ranking.
+- **Use `app` for function-variable application. Encode lambdas with lambda lifting or combinators, and types with guards or tags.**
+- **Reconstruct the ATP proof inside Isabelle: `metis`, `smt` replay, or generated Isar text.**
+- These techniques connect higher-order ITPs to first-order ATPs.
+- This explains the connection, not a measured performance advantage.
 
 Speaker note:
 
-- Source: Meng and Paulson 2008 (translating higher-order clauses to first-order clauses); Blanchette, Böhme, Popescu, Smallbone 2016 (type encodings); Blanchette, Kaliszyk, Paulson, Urban 2016 (survey); Schurr, Fleury, Desharnais 2021 (reconstruction).
-- The exact encodings that Sledgehammer uses depend on the prover and the options. This frame is schematic.
-
-## Backup 16. Where Complexity Lives
-
-![Where HOL and FOL systems pay for complexity](figures/where_you_pay.pdf)
-
-- **HOL encodes higher-order structures for ATPs. Mizar's language hides set-theoretic details.**
-- **Mizar Evo keeps the first-order foundation and modernizes mathematical writing.**
-
-Speaker note:
-
-- HOL and FOL put complexity in different layers. HOL has function types and lambdas in its logic; its first-order ATP path uses encoding and reconstruction.
-- Mizar's soft types, modes, attributes, registrations, and schemes hide details such as pairs and domains that appear in raw set-theoretic writing.
-
-## Backup 17. Design Trade-Offs
-
-| | HOL ITP + ATP | FOL ITP + ATP |
-|---|---|---|
-| writing | higher-order features, short text | long text if written raw |
-| functions | basic higher-order objects | first-order set-theoretic objects |
-| ATP connection | HOL-to-FOL / SMT encoding | generation of a first-order problem |
-| reconstruction | reconstruction in Isabelle | rechecking Mizar steps where supported |
-| the language must provide | HOL abstraction | abstraction that hides first-order details |
-
-- This table compares representations and checking paths. It gives no measured performance advantage.
+- Source: Meng and Paulson 2008 (higher-order to first-order clauses); Blanchette, Böhme, Popescu, Smallbone 2016 (type encoding); Blanchette, Kaliszyk, Paulson, Urban 2016 (survey); Schurr, Fleury, Desharnais 2021 (reconstruction).
+- The actual Sledgehammer encoding depends on prover and options. This is an outline.

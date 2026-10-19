@@ -1,9 +1,12 @@
 # TPP 2026 Presentation
 
 Working materials for the Mizar Evo talk at TPP 2026, the 22nd Theorem Proving
-and Provers meeting, RIKEN AIP Tokyo Office, November 16-17, 2026. The talk is
-designed for a thirty-minute slot; confirm the slot length and language with
-the organizers.
+and Provers meeting, RIKEN AIP Tokyo Office, November 16-17, 2026. The English
+deck and spoken script follow the reviewed Japanese version, with 31 main
+slides and five backups. The provisional 45-minute slot allows 36.5 minutes
+of presentation, seven minutes of questions, and 1.5 minutes of buffer.
+Confirm the official slot and question time with the organizers. Aim for
+35–38 minutes, never over 40.
 
 ## Title
 
@@ -19,8 +22,9 @@ Japanese title for the program (first candidate in `draft.ja.md`):
 
 ## Purpose
 
-The presentation starts with six challenges in modernizing current Mizar
-and maps each to a design principle in the new specification. It explains how
+The presentation opens with Mizar history and the project’s design
+work in 2023–2026, including the sustained work in 2024–2025. It then maps six
+challenges in modernizing current Mizar to six design principles. It explains how
 Mizar Evo preserves the logical foundation and readable mathematical language
 while rebuilding generic mechanisms, verified computation, development tools,
 and evidence checking.
@@ -32,15 +36,17 @@ story is evidence, formula instantiation, and a trusted SAT check.
 ## Files
 
 - `draft.ja.md` - Japanese narrative draft. **Canonical content document**:
-  the story, the claim levels, the 45-minute additions, and the pre-talk
+  the story, the historical sources, claim levels, timing, and the pre-talk
   checklist live here.
-- `slides.md` - English deck source, designed from the draft as a story rather
-  than slide-by-slide. Slide prose is plain English at CEFR B1 to easy B2.
-- `slides.ja.md` - Japanese deck source using the English frame numbering,
-  with frame 0.2 omitted. Figures are
-  shared with the English deck and keep their English labels.
+- `slides.md` - English deck source, aligned with the reviewed Japanese deck;
+  General English at B1 to lower B2. It shares frame IDs, code examples, figures, and table numbers.
+- `slides.ja.md` - Japanese deck source. Principle section numbers stay;
+  Section 0 covers the introduction, sections 1–6 the design principles, and section 7 status and plans.
+  Figures retain their English labels.
 - `script.ja.md` - Japanese spoken script, frame by frame, with timing and
-  claim-level tags, for delivering the talk in Japanese over English slides.
+  claim-level tags, for the revised Japanese deck.
+- `script.md` - English spoken script with the same frame order, timing allocation,
+  questions, and separate non-spoken presenter notes.
 - `build_beamer.py` - loads the Bialystok generator
   (`../2026-09-bialystok/build_beamer.py`) as a library and overrides the
   deck-specific settings (parts, title-page metadata, figure heights,
@@ -51,58 +57,112 @@ story is evidence, formula instantiation, and a trusted SAT check.
   notes ("Read aloud" is the dark-blue bold spine; sources follow).
 - `tpp2026_ja.tex` / `tpp2026_ja.pdf`, `tpp2026_ja_notes.tex` /
   `tpp2026_ja_notes.pdf` - generated Japanese decks.
-- `figures/` - six TikZ figures new to this talk: `evaluation_units`,
-  `two_paths`, `where_you_pay`, `layer_stack`, `llm_atp_loop`, `roadmap_tpp`.
+- `figures/` - TikZ figures new to this talk: `evaluation_units`,
+  `two_paths`, `where_you_pay`, `layer_stack`, `llm_atp_loop`, `roadmap_tpp`,
+  plus `resolution_evidence` and `sat_evidence_check` shared by both checking sections.
 - `references.bib` - seed bibliography. Verify metadata before the final talk.
 
-## Storyline (Thirty Minutes)
+## Storyline (Both Languages, 36.5 Minutes)
 
-Section 0 pairs the six challenges and design principles in one table.
-Sections 1–6 each cover the matching row. Closing frames have no section number.
+History traces early experimental processors, the PC port, PC-Mizar and MML,
+then Mizar-rs and Evo before the six-principle table in frame 0.5. Sections 1–6
+retain their technical examples. Closing frames distinguish specified behavior,
+limited implementation, and plans; the full source-to-artifact path is unfinished.
+The five-slide introduction combines history with processor comparisons, the
+project origin with its design timeline, and design expansion with AI implementation.
 
-| Section | Minutes | Beat | Frames |
-|---|---:|---|---|
-| 0. Introduction | 0-2 | challenges and principles in one table | 0.1-0.3 |
-| 1. Logical foundation | 2-4 | first-order logic, set theory, and MML | 1.1-1.2 |
-| 2. Readable mathematics | 4-10 | named registration chains, inheritance, and theorem reuse | 2.1-2.3b |
-| 3. Generic mathematics | 10-14 | templates, infix notation, and type-argument inference | 3.1-3.2 |
-| 4. Verified computation | 14-20 | Hoare logic, termination, promotion, and Euclid obligations | 4.1-4.3 |
-| 5. Development infrastructure | 20-23 | environment roles and ordering, imports | 5.1-5.2 |
-| 6. Checking and automation | 23-28 | Sledgehammer analogy, refutation, CNF, and SAT | 6.1-6.3a |
-| Closing | 28-30 | implementation status, roadmap, and discussion | unnumbered |
+| Section | Clock | Minutes | Frames |
+|---|---|---:|---|
+| History and development | 0–9 | 9 | 0.1–0.5 |
+| 1. Logical foundation | 9–11 | 2 | 1.1–1.2 |
+| 2. Readable mathematics | 11–16 | 5 | 2.1–2.6 |
+| 3. Generic mathematics | 16–19 | 3 | 3.1–3.4 |
+| 4. Verified computation | 19:00–24:15 | 5.25 | 4.1–4.5 |
+| 5. Development infrastructure | 24:15–27:15 | 3 | 5.1–5.3 |
+| 6. Checking and automation | 27:15–32:30 | 5.25 | 6.1–6.4 |
+| Status, roadmap, closing | 32:30–36:30 | 4 | 7.1–7.2 |
+| Questions (outside main talk) | 36.5–43.5 | 7 | selected backups |
+| Buffer | 43.5–45 | 1.5 | |
 
-Frames marked `[deep dive]` (0.2, 3.2) can be skipped; 0.2 is omitted
-from the Japanese deck. Backups 1-10 hold benchmark details, template
-instantiation, and infrastructure material; 11-17 hold the benchmark and HOL/FOL
-comparison sequence. Frame 6.2 keeps the ATP flow diagram in the main talk;
-6.3-6.3a show a resolution tree, composed substitutions, kernel preprocessing,
+For 35 minutes, skip 3.3 (40 seconds), shorten 3.4 to 15 seconds (saving 20),
+and shorten the design-expansion part of 0.4 to 30 seconds (saving 30).
+Keep the design timeline and evidence/SAT
+examples. These budgets include pointing at code and diagrams; rehearsal is
+still required. Backups are for questions, not extra material to fill 45 minutes.
+
+Frame 1.2 briefly shows two current-Mizar theorem sketches: Cantor
+and the compact-to-Hausdorff continuous-bijection theorem. Proofs are omitted;
+the examples share one minute to show mathematical objects, structures and attributes.
+Kernel details stay in part 6.
+
+Frame 6.2 has 60 seconds for the ATP flow diagram, taking another 15 seconds
+from the closing section. Frames 6.3-6.4 show a resolution tree, composed substitutions, kernel preprocessing,
 and all clauses of a Tseitin SAT encoding;
 external resolution steps are not replayed as kernel acceptance evidence.
-Frames 2.2-2.3b explain labeled registration chains, post-declaration
-inheritance, field/property roles, and Group-theorem reuse through ring views.
-Frames 3.1-3.1a contrast current result-type registrations with a generic sum;
-4.2a explains promotion through checked termination; 4.3 follows Euclid's
-establishment, preservation, termination, and exit;
-5.1-5.1a explain the old environment before showing imports. These are explanatory
+The independent instance finder is planned and unimplemented at the fixed snapshot;
+the trace-extraction diagram is a candidate-generation sketch.
+Frames 2.1-2.6 follow type, registration, then overload: structure
+and property declarations (2.2), post-declaration inheritance (2.3), then the
+Unital mode and its unit implementation, reused as zero through the selected
+LoopStr view (2.4). Labeled registration chains follow in 2.5, and definition
+selection with explicit inheritance views in 2.6. The latter distinguishes
+the additive AddMagma and multiplicative MulMagma views by obtaining zero
+or one as the neutral element of the same ring.
+Frames 3.1-3.2 contrast per-type result redefinitions, registrations and proofs
+for complex, real, rational, integer and natural values with one generic sum.
+Frame 3.3 shows a scheme as a theorem; 3.4 gives brief struct VectorSpace[K]
+and attr dense[M] examples of shared type/value parameterization, including
+`Vector of K` / `M-dense` as syntax sugar for `Vector[K]` / `dense[M]`.
+Part 3 keeps its three-minute budget (45/60/40/35 seconds);
+4.1 summarizes the basic assignment, branch, loop and return Hoare rules;
+4.3 repeats the Euclid body with numbered annotations matching the table of
+establishment, preservation, termination and exit obligations;
+4.4 explains promotion through checked termination, contract citation, and
+`by computation` using a concrete-input example. Default computation also
+trusts the MVM result; kernel replay is a separate path (MVM execution remains planned);
+4.5 connects lambda function notation, reflected syntax and verified symbolic
+differentiation. Part 4 uses 5.25 minutes (45/75/75/60/60 seconds), taking 15 seconds from the closing section;
+5.1 lists all ten environment directives and emphasizes notation/definition
+precedence and order dependence as the central authoring difficulty;
+5.2 then introduces imports. Frame 6.1 shows the planned native-hammer flow from
+the presentation-only provisional `by atp` request through library premise
+candidates and ATP trials to an explicit by-clause suggestion (invocation
+syntax and future arguments are not yet specified);
+6.2 separates suggestion from source-based verification. These are explanatory
 sketches and specification examples, not execution or external-prover results.
-The closing line is fixed:
-*Keep the foundation small. Keep the mathematics readable. Modernize everything
-else.*
+Frame 7.1 uses kLoC consistently, separates ATP from kernel, and gives the
+measured kernel plus SAT-dependency source size with its counting boundary.
+The closing section goes directly from implementation status (7.1) to
+priorities and the design summary on one slide (7.2), ending with a request
+for ITP user requirements on notation, proof assistance, and development tools,
+with parallel development and summary subheadings. Internal
+connection details stay in the narrative draft for questions. The five backups
+cover template instantiation, incremental verification, package manifests,
+benchmark conditions, and HOL-to-FOL encoding/reconstruction, in that order.
 
 ## Language Policy
 
-- English slide prose: CEFR B1 to easy B2. Short sentences, common words, one
-  idea per sentence. Technical terms stay and are explained in simple words on
-  first use. Code, exact MML excerpts, and figure labels are unchanged.
-- Japanese deck: English frame numbering, with frame 0.2 omitted. The spoken
-  script `script.ja.md` works with either deck.
-- Keep the two sources aligned when a frame changes: `slides.md` first, then
-  `slides.ja.md`.
+- General vocabulary and sentence structure in the English slides and spoken
+  script: B1 to lower B2. Use short sentences and common words. Keep necessary
+  technical terms and explain them in simple words at first use. Preserve code,
+  exact MML excerpts, and figure labels.
+- Production order: `draft.ja.md` → `slides.ja.md` and `script.ja.md` → English.
+- Update English from the reviewed Japanese content. Preserve code, numerical
+  data, sources, and the distinction between specification, implementation,
+  and plans. Shared figures, language specifications, internal designs, and
+  Rust sources stay outside the translation scope.
+- The generator keeps both decks at 36 pages, with compact table columns and
+  captions. Existing tracked PDFs/TeX still represent the earlier deck until
+  explicitly regenerated; revised previews live under `target/` in the worktree.
+- Work in a dedicated branch/worktree. Do not merge into main, push, or create
+  a PR until instructed.
 
 ## Claim Levels
 
 Untagged statements are facts about existing systems, published benchmarks,
-the Mizar Evo specification, or the main branch. "Research hypothesis" marks
+the Mizar Evo specification, or the fixed implementation snapshot in
+`draft.ja.md` §7. Historical claims distinguish publications, Git diffs, and
+the author’s account. The snapshot must be refreshed before the talk. "Research hypothesis" marks
 an evaluation question rather than a result. "Future direction" marks targets
 with no committed date or design. The closing status frame separates the specification from
 the implementation.
@@ -124,14 +184,15 @@ the implementation.
 # figures (only when a figures/*.tex source changed)
 cd figures && for f in *.tex; do pdflatex -interaction=nonstopmode "$f"; done && cd ..
 
-# both decks (tex)
-python3 build_beamer.py
+# English (inside the dedicated worktree)
+python3 build_beamer.py en
+pdflatex tpp2026.tex && pdflatex tpp2026.tex
+pdflatex tpp2026_notes.tex && pdflatex tpp2026_notes.tex
 
-# English deck
-pdflatex tpp2026.tex
-pdflatex tpp2026_notes.tex
+# Japanese
+python3 build_beamer.py ja
 
-# Japanese deck (upLaTeX + dvipdfmx; luatexja is not installed here)
+# Japanese deck (upLaTeX + dvipdfmx)
 uplatex tpp2026_ja.tex && dvipdfmx tpp2026_ja.dvi
 uplatex tpp2026_ja_notes.tex && dvipdfmx tpp2026_ja_notes.dvi
 ```
@@ -142,9 +203,9 @@ repository. The Japanese deck uses the Harano Aji fonts through the default
 `ptex-fontmaps` setup and `bxdpx-beamer` + `pxjahyper` for Beamer under
 dvipdfmx.
 
-Both main decks build without vertical overflow. In the notes editions a few
-note pages run long because the "Read aloud" text and sources are reproduced
-in full; trim speaker notes before printing if that matters.
+The generator may split a source frame into continuation pages. Check the
+rendered decks and notes after revision, especially tables and source
+notes. Timing follows source frame IDs, not generated page numbers.
 
 ## Pre-Talk Checklist
 
@@ -157,11 +218,11 @@ Verified on October 7, 2026 while designing the deck:
 - [x] Exact MML excerpts: `funct_1.miz` lines 138-140, `funct_2.miz` lines
       87-90.
 - [x] Current specification sends ATPs only cited premises and local
-      hypotheses (spec 21.7.2); the native hammer is a 2027 research item.
+      hypotheses (spec 21.7.2); native-hammer citation assistance is planned.
 
 Still to do before the talk:
 
-- [ ] Re-read the HOL-to-FOL encoding frame (Backup 15) against Meng and Paulson 2008
+- [ ] Re-read the HOL-to-FOL encoding frame (Backup 5) against Meng and Paulson 2008
       and Blanchette et al. 2016; it is schematic.
 - [ ] Check the historical wording: FOL completeness and the ATP tradition,
       LCF tactics, and "Mizar never had a user-programmable tactic language".
@@ -171,9 +232,13 @@ Still to do before the talk:
       Crate Status, on the talk date; do not claim end-to-end external-prover
       results unless they exist.
 - [ ] Verify `references.bib` metadata against publishers.
-- [ ] Confirm the slot length (30 or 45 minutes) and the question time.
-- [ ] Rebuild both decks and skim every page for overflow.
-- [ ] Rehearse `script.ja.md` against the clock.
+- [ ] Confirm the assumed 45-minute slot and seven-minute question time.
+- [ ] Confirm any precise ordering of the 2023 consultations, repository rename
+      date, or specific Białystok feedback before adding those details.
+- [ ] Keep annual development targets in `draft.ja.md` §7.2, outside the slides and narration.
+- [ ] Regenerate and inspect both language editions after any further content changes.
+- [ ] Rehearse `script.ja.md` / `script.md` against the clock; English timing
+      is an allocation, not a measured delivery time.
 
 ## Instructions for Codex
 
@@ -190,7 +255,8 @@ When revising the slides:
 - do not compare success percentages across MizAR and Sledgehammer as if the
   benchmarks were identical;
 - preserve the distinction between proof search and trusted verification;
-- lead with current Mizar's challenges and the new specification's responses;
+- lead with history and development, then connect to the existing six principles;
 - explain evidence instantiation and SAT checking in the main talk;
 - keep benchmarks and HOL/FOL performance questions in the backups;
-- keep `script.ja.md` aligned with the frame numbers in `slides.md`.
+- keep both spoken scripts aligned with their deck frame IDs and timing; use
+  the reviewed Japanese version as the translation authority.
