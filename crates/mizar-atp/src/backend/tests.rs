@@ -1623,3 +1623,245 @@ fn genuine_encoded_producer_preserves_real_outputs_and_canonical_binding() {
         }
     }
 }
+
+#[test]
+fn structured_source_body_matches_repeated_formals_and_actual_ground_paths() {
+    use crate::problem::{AtpSymbolName, AtpTerm};
+    use mizar_kernel::{
+        clause::{Atom, SymbolKey, SymbolKind, Term, VariableId},
+        formula_evidence::Formula,
+    };
+    let binder = AtpSymbolName::new("formal");
+    let variable = AtpTerm::Variable(binder.clone());
+    let choice = AtpTerm::Function {
+        function: "observed-choice".into(),
+        arguments: vec![],
+    };
+    let actual = Term::Application {
+        symbol: SymbolKey::new(SymbolKind::FunctorPredicate, 19),
+        arguments: vec![],
+    };
+    let ground = std::collections::BTreeMap::from([(choice.clone(), actual.clone())]);
+    let equality = AtpFormulaTree::Equality {
+        left: variable.clone(),
+        right: variable.clone(),
+    };
+    let kernel_equality = Formula::Atom(Atom::new(
+        SymbolKey::new(SymbolKind::Equality, 7),
+        vec![Term::Variable(VariableId(41)); 2],
+    ));
+    let source = AtpFormulaTree::And(vec![
+        AtpFormulaTree::Not(Box::new(equality.clone())),
+        AtpFormulaTree::Or(vec![
+            equality.clone(),
+            AtpFormulaTree::Atom(AtpAtom::new(
+                "attribute:actual",
+                vec![variable.clone(), choice.clone()],
+            )),
+        ]),
+        AtpFormulaTree::Atom(AtpAtom::new("builtin:set", vec![choice.clone()])),
+    ]);
+    let kernel = Formula::And(vec![
+        Formula::Not(Box::new(kernel_equality.clone())),
+        Formula::Or(vec![
+            kernel_equality.clone(),
+            Formula::Atom(Atom::new(
+                SymbolKey::new(SymbolKind::Predicate, 23),
+                vec![Term::Variable(VariableId(41)), actual.clone()],
+            )),
+        ]),
+        Formula::Atom(Atom::new(
+            SymbolKey::new(SymbolKind::BuiltinRelation, 29),
+            vec![actual.clone()],
+        )),
+    ]);
+    let mut formal = None;
+    assert!(match_source_substitution_body(
+        &source,
+        &kernel,
+        &binder,
+        &ground,
+        &mut formal
+    ));
+    assert_eq!(formal, Some(VariableId(41)));
+    let mut other_profile_formal = Some(VariableId(42));
+    assert!(!match_source_substitution_body(
+        &source,
+        &kernel,
+        &binder,
+        &ground,
+        &mut other_profile_formal
+    ));
+    for bad_ground in [
+        std::collections::BTreeMap::new(),
+        std::collections::BTreeMap::from([(choice.clone(), Term::Variable(VariableId(41)))]),
+    ] {
+        assert!(!match_source_substitution_body(
+            &source,
+            &kernel,
+            &binder,
+            &bad_ground,
+            &mut None
+        ));
+    }
+    let conflicting = Formula::Atom(Atom::new(
+        SymbolKey::new(SymbolKind::Equality, 7),
+        vec![
+            Term::Variable(VariableId(41)),
+            Term::Variable(VariableId(42)),
+        ],
+    ));
+    assert!(!match_source_substitution_body(
+        &equality,
+        &conflicting,
+        &binder,
+        &ground,
+        &mut None
+    ));
+    let ground_only = AtpFormulaTree::Equality {
+        left: choice.clone(),
+        right: choice,
+    };
+    let kernel_ground = Formula::Atom(Atom::new(
+        SymbolKey::new(SymbolKind::Equality, 7),
+        vec![actual; 2],
+    ));
+    let mut missing = None;
+    assert!(match_source_substitution_body(
+        &ground_only,
+        &kernel_ground,
+        &binder,
+        &ground,
+        &mut missing
+    ));
+    assert_eq!(missing, None); // The quantified-body caller requires an actual occurrence.
+}
+
+#[test]
+fn structured_source_body_refuses_constructor_order_arity_and_unsupported_shapes() {
+    use crate::problem::{AtpBinder, AtpSymbolName, AtpTerm};
+    use mizar_kernel::{
+        clause::{Atom, SymbolKey, SymbolKind, Term, VariableId},
+        formula_evidence::Formula,
+    };
+    let binder = AtpSymbolName::new("formal");
+    let variable = AtpTerm::Variable(binder.clone());
+    let choice = AtpTerm::Function {
+        function: "choice".into(),
+        arguments: vec![],
+    };
+    let actual = Term::Application {
+        symbol: SymbolKey::new(SymbolKind::FunctorPredicate, 19),
+        arguments: vec![],
+    };
+    let ground = std::collections::BTreeMap::from([(choice.clone(), actual.clone())]);
+    let source = AtpFormulaTree::Equality {
+        left: variable.clone(),
+        right: choice.clone(),
+    };
+    let kernel = Formula::Atom(Atom::new(
+        SymbolKey::new(SymbolKind::Equality, 7),
+        vec![Term::Variable(VariableId(41)), actual.clone()],
+    ));
+    assert!(match_source_substitution_body(
+        &source, &kernel, &binder, &ground, &mut None
+    ));
+    for (predicate, kind) in [
+        ("unknown", SymbolKind::Predicate),
+        ("builtin:set", SymbolKind::BuiltinRelation),
+    ] {
+        let atom = AtpFormulaTree::Atom(AtpAtom::new(
+            predicate,
+            vec![variable.clone(), choice.clone()],
+        ));
+        let actual_atom = Formula::Atom(Atom::new(
+            SymbolKey::new(kind, 23),
+            vec![Term::Variable(VariableId(41)), actual.clone()],
+        ));
+        assert!(!match_source_substitution_body(
+            &atom,
+            &actual_atom,
+            &binder,
+            &ground,
+            &mut None
+        ));
+    }
+    for bad in [
+        AtpFormulaTree::True,
+        AtpFormulaTree::False,
+        AtpFormulaTree::Implies(Box::new(source.clone()), Box::new(source.clone())),
+        AtpFormulaTree::Forall {
+            binders: vec![AtpBinder::new(binder.clone(), None)],
+            body: Box::new(source.clone()),
+        },
+        AtpFormulaTree::Exists {
+            binders: vec![AtpBinder::new(binder.clone(), None)],
+            body: Box::new(source.clone()),
+        },
+        AtpFormulaTree::Not(Box::new(source.clone())),
+        AtpFormulaTree::Equality {
+            left: choice.clone(),
+            right: variable.clone(),
+        },
+        AtpFormulaTree::Equality {
+            left: AtpTerm::Variable("unrelated".into()),
+            right: choice.clone(),
+        },
+        AtpFormulaTree::Equality {
+            left: AtpTerm::Function {
+                function: "choice".into(),
+                arguments: vec![variable.clone()],
+            },
+            right: choice.clone(),
+        },
+        AtpFormulaTree::Atom(AtpAtom::new(
+            "attribute:actual",
+            vec![variable.clone(), choice.clone()],
+        )),
+    ] {
+        assert!(
+            !match_source_substitution_body(&bad, &kernel, &binder, &ground, &mut None),
+            "{bad:?}"
+        );
+    }
+    for bad in [
+        Formula::Not(Box::new(kernel.clone())),
+        Formula::Atom(Atom::new(
+            SymbolKey::new(SymbolKind::Equality, 7),
+            vec![Term::Variable(VariableId(41))],
+        )),
+        Formula::Atom(Atom {
+            symbol: SymbolKey::new(SymbolKind::Equality, 7),
+            arity: 2,
+            arguments: vec![Term::Variable(VariableId(41))],
+        }),
+        Formula::Atom(Atom::new(
+            SymbolKey::new(SymbolKind::Equality, 7),
+            vec![
+                Term::BinderNormalized {
+                    binder_id: 0,
+                    body: Box::new(Term::Variable(VariableId(41))),
+                },
+                actual,
+            ],
+        )),
+    ] {
+        assert!(!match_source_substitution_body(
+            &source, &bad, &binder, &ground, &mut None
+        ));
+    }
+    let and = AtpFormulaTree::And(vec![source.clone()]);
+    for bad in [
+        Formula::Or(vec![kernel.clone()]),
+        Formula::And(vec![kernel.clone(), kernel.clone()]),
+    ] {
+        assert!(!match_source_substitution_body(
+            &and, &bad, &binder, &ground, &mut None
+        ));
+    }
+    let forward = AtpFormulaTree::And(vec![source.clone(), AtpFormulaTree::Not(Box::new(source))]);
+    let reversed = Formula::And(vec![Formula::Not(Box::new(kernel.clone())), kernel]);
+    assert!(!match_source_substitution_body(
+        &forward, &reversed, &binder, &ground, &mut None
+    ));
+}

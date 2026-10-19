@@ -22791,3 +22791,73 @@ fn doc_native_lexical_delegated_errors_edit_restore_and_complete_diagnostics() {
     assert_eq!(std::fs::read(&path).unwrap(), text.as_bytes());
     std::fs::remove_dir_all(root).unwrap();
 }
+
+#[test]
+fn structured_source_candidates_preserve_legacy_container_and_original_context() {
+    use mizar_atp::{
+        backend::{
+            BackendCandidatePayload, EncodedBackendProblem,
+            build_source_registration_candidate_inputs as build,
+        },
+        problem::ConcreteFormat,
+        translator::translate_source_existential_registration,
+    };
+    use mizar_kernel::checker::KernelCheckStatus;
+    use mizar_vc::{
+        kernel_evidence_handoff::build_source_existential_kernel_handoff, vc_ir::VcStatus,
+    };
+    for (multiple, case) in [
+        (false, step5c3_registration_case()),
+        (true, step5c13_registration_case()),
+    ] {
+        let original = std::fs::read_to_string(case.source_path).unwrap();
+        let text = if multiple {
+            original
+                .replace("marked", "retagged")
+                .replace("X", "Value")
+                .replacen("means Value = Value", "means not Value = Value", 1)
+        } else {
+            original
+        };
+        let (core, _, vcs) = source_candidate_core_and_vcs(multiple, &text);
+        let before = (core.clone(), vcs.clone());
+        for vc in vcs
+            .vcs()
+            .iter()
+            .filter(|vc| vc.status == VcStatus::NeedsAtp)
+        {
+            let handoff = build_source_existential_kernel_handoff(&core, &vcs, vc.id).unwrap();
+            assert!(handoff.context_identity_is_consistent());
+            let original_v2_bytes = source_candidate_wire(&handoff);
+            for format in [ConcreteFormat::Tptp, ConcreteFormat::SmtLib] {
+                let profile = source_candidate_profile("structured-source-compatibility", format);
+                let problem =
+                    translate_source_existential_registration(&core, &vcs, vc.id, profile.clone())
+                        .unwrap();
+                let expected_encoded = EncodedBackendProblem::encode(&problem, format).unwrap();
+                let (encoded, candidate) = build(&core, &vcs, vc.id, profile, format).unwrap();
+                assert_eq!(encoded, expected_encoded);
+                assert_eq!(candidate.target_binding(), encoded.target_binding());
+                assert_eq!(candidate.encoded_problem_hash(), encoded.input_hash());
+                assert_eq!(candidate.provenance_hash(), encoded.provenance_hash());
+                assert_eq!(candidate.formula_label_refs(), encoded.formula_labels());
+                assert_eq!(candidate.symbol_binding_refs(), encoded.symbol_bindings());
+                let BackendCandidatePayload::FormulaSubstitutionBytes(bytes) = candidate.payload()
+                else {
+                    panic!("actual source wire")
+                };
+                assert_eq!(bytes, &original_v2_bytes);
+                assert_eq!(
+                    source_candidate_check_bytes(&handoff, bytes, candidate.target_binding())
+                        .unwrap(),
+                    if multiple && vc.id.index() != 3 {
+                        KernelCheckStatus::Rejected
+                    } else {
+                        KernelCheckStatus::Accepted
+                    }
+                );
+            }
+        }
+        assert_eq!((core, vcs), before);
+    }
+}

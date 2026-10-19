@@ -769,6 +769,7 @@ permit; each source-integration slice waits for its actual upstream outputs.
    [Explicit policy limits](./task_contracts/en/PROOF-INSTANCE-SEARCH-LIMITS.md) are implemented as configuration only; finder counting/enforcement and full search remain open.
    [Source term correspondence](./task_contracts/en/ATP-SOURCE-GROUND-TERM-CORRESPONDENCE.md) is implemented for existing observed choices; general mapping/extraction/search remains open.
    [Bounded source candidate SAT screening](./task_contracts/en/ATP-SOURCE-CANDIDATE-SAT-SCREEN.md) is implemented as an explicit-limit untrusted query; general search and fresh acceptance remain open.
+   [Bounded structured source substitutions](./task_contracts/en/ATP-SOURCE-STRUCTURED-SUBSTITUTIONS.md) implement the existing-factory extraction prerequisite; full finder/search and acceptance remain open.
 2. [ ] [Built-in evidence candidates](./task_contracts/en/PREATP-FORMULA-EVIDENCE.md)
    (VC 60); design can start, general source integration waits for authentic
    formula/context/substitution/provenance producers. [Original-source direct-premise candidates](./task_contracts/en/VC-SOURCE-DIRECT-PREMISE-CANDIDATE.md) supply only bounded untrusted association.

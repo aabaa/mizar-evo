@@ -207,11 +207,19 @@ pub fn build_source_registration_candidate_inputs(
     logic_profile: crate::problem::LogicProfile,
     concrete_format: ConcreteFormat,
 ) -> Result<(EncodedBackendProblem, BackendCandidateEvidence), String> {
+    use crate::problem::{AtpFormulaTree, AtpSourceRef};
+    use mizar_vc::{
+        kernel_evidence_handoff::{
+            KernelEvidenceHandoffInput, KernelFormulaPayload, KernelFormulaProjection,
+            KernelFormulaSource, KernelSubstitutionPayload, build_kernel_evidence_handoff,
+        },
+        vc_ir::{PremiseRef, VcFormulaRef},
+    };
     let problem = crate::translator::translate_source_existential_registration(
         core,
         vc_set,
         vc_id,
-        logic_profile,
+        logic_profile.clone(),
     )?;
     let encoded = EncodedBackendProblem::encode(&problem, concrete_format)?;
     let handoff = mizar_vc::kernel_evidence_handoff::build_source_existential_kernel_handoff(
@@ -241,8 +249,220 @@ pub fn build_source_registration_candidate_inputs(
         &context,
     )
     .map_err(|error| format!("{error:?}"))?;
-    let names = encode_closed_choice_reflexivity_names(&parsed)?;
-    let bytes = handoff.encode_local_evidence(Some(&names))?;
+    let ground =
+        source_registration_ground_term_correspondence(core, vc_set, vc_id, logic_profile)?;
+    let invalid = || "registration.atp.invalid_structured_substitution".to_owned();
+    let vc = vc_set.vc(vc_id).ok_or_else(invalid)?;
+    let (_, replacement) = ground.first_key_value().ok_or_else(invalid)?;
+    if ground.len() != 1 {
+        return Err(invalid());
+    }
+    let mizar_kernel::clause::Term::Application { symbol, arguments } = replacement else {
+        return Err(invalid());
+    };
+    if symbol.kind != mizar_kernel::clause::SymbolKind::FunctorPredicate || !arguments.is_empty() {
+        return Err(invalid());
+    }
+    let mut quantified = std::collections::BTreeMap::new();
+    let mut profile_formal = None;
+    let mut ground_reference = None;
+    for axiom in problem.axioms() {
+        let anchor = problem
+            .provenance()
+            .iter()
+            .find(|row| row.id() == axiom.provenance())
+            .ok_or_else(invalid)?;
+        let AtpSourceRef::GeneratedVcFact(binding) = anchor.source() else {
+            return Err(invalid());
+        };
+        let mut references = vc.premises.iter().filter_map(|premise| match premise {
+            PremiseRef::GeneratedFact {
+                formula: VcFormulaRef::Generated(id),
+            } if binding.as_str() == format!("generated:{}", id.index() + 1) => {
+                Some(VcFormulaRef::Generated(*id))
+            }
+            _ => None,
+        });
+        let reference = references.next().ok_or_else(invalid)?;
+        if references.next().is_some() {
+            return Err(invalid());
+        }
+        let mut originals = envelope.formula_evidence().iter().filter(|entry| {
+            entry.producer_formula_ref() == Some(reference)
+                && matches!(entry.source(), KernelFormulaSource::GeneratedVcFact { .. })
+        });
+        let original = originals.next().ok_or_else(invalid)?;
+        if originals.next().is_some() {
+            return Err(invalid());
+        }
+        let entry = parsed
+            .formulas()
+            .iter()
+            .find(|entry| entry.formula_id == original.formula_id())
+            .ok_or_else(invalid)?;
+        if !matches!((original.source(), &entry.source),
+            (KernelFormulaSource::GeneratedVcFact { vc_fact_id: original }, mizar_kernel::formula_evidence::FormulaSource::GeneratedVcFact { vc_fact_id: parsed }) if original == parsed)
+            || entry.formula_fingerprint.algorithm_id != original.formula_fingerprint().algorithm_id
+            || entry.formula_fingerprint.digest != original.formula_fingerprint().digest
+            || entry.provenance_id != original.provenance_id()
+        {
+            return Err(invalid());
+        }
+        let provenance = envelope
+            .provenance()
+            .iter()
+            .find(|row| row.provenance_id == original.provenance_id())
+            .ok_or_else(invalid)?;
+        let parsed_provenance = parsed
+            .provenance()
+            .iter()
+            .find(|row| row.provenance_id == entry.provenance_id)
+            .ok_or_else(invalid)?;
+        if provenance.target_vc != *target
+            || provenance.formula_fingerprint != *original.formula_fingerprint()
+            || parsed_provenance.target_vc.algorithm_id != provenance.target_vc.algorithm_id
+            || parsed_provenance.target_vc.digest != provenance.target_vc.digest
+            || parsed_provenance.formula_fingerprint.algorithm_id
+                != provenance.formula_fingerprint.algorithm_id
+            || parsed_provenance.formula_fingerprint.digest != provenance.formula_fingerprint.digest
+            || parsed_provenance.payload != provenance.payload
+            || anchor.payload().as_str()
+                != format!("mizar-vc-handoff-provenance:{}", hex(&provenance.payload))
+        {
+            return Err(invalid());
+        }
+        match axiom.formula().ok_or_else(invalid)? {
+            AtpFormulaTree::Forall { binders, body } => {
+                let [binder] = binders.as_slice() else {
+                    return Err(invalid());
+                };
+                let mut formal = None;
+                if binder.sort().is_some()
+                    || !match_source_substitution_body(
+                        body,
+                        &entry.formula,
+                        binder.variable(),
+                        &ground,
+                        &mut formal,
+                    )
+                {
+                    return Err(invalid());
+                }
+                let formal = formal.ok_or_else(invalid)?;
+                if profile_formal.is_some_and(|previous| previous != formal)
+                    || quantified
+                        .insert(reference, (formal, provenance.payload.clone()))
+                        .is_some()
+                {
+                    return Err(invalid());
+                }
+                profile_formal = Some(formal);
+            }
+            AtpFormulaTree::Atom(atom) if atom.predicate().as_str() == "builtin:set" => {
+                if ground_reference.replace(reference).is_some() {
+                    return Err(invalid());
+                }
+            }
+            _ => return Err(invalid()),
+        }
+    }
+    if !matches!(vc.premises.first(), Some(PremiseRef::GeneratedFact { formula }) if Some(*formula) == ground_reference)
+    {
+        return Err(invalid());
+    }
+    let mut substitutions = Vec::new();
+    for (index, premise) in vc.premises.iter().skip(1).enumerate() {
+        let PremiseRef::GeneratedFact { formula } = premise else {
+            return Err(invalid());
+        };
+        let (formal, provenance_payload) = quantified.remove(formula).ok_or_else(invalid)?;
+        let substitution_id = u32::try_from(index).map_err(|_| invalid())?;
+        let mut binder_context_encoding = 1u16.to_be_bytes().to_vec();
+        binder_context_encoding.extend(0u32.to_be_bytes());
+        binder_context_encoding.extend(1u32.to_be_bytes());
+        binder_context_encoding.extend(formal.0.to_be_bytes());
+        binder_context_encoding.extend(0u32.to_be_bytes());
+        let mut payload = substitution_id.to_be_bytes().to_vec();
+        payload.push(1);
+        payload.extend(0u32.to_be_bytes());
+        payload.extend(1u32.to_be_bytes());
+        payload.extend(formal.0.to_be_bytes());
+        payload.extend([2, 2]);
+        payload.extend(symbol.id.0.to_be_bytes());
+        payload.extend(0u32.to_be_bytes());
+        payload.push(1);
+        substitutions.push(KernelSubstitutionPayload {
+            substitution_id,
+            source_formula: *formula,
+            binder_context_encoding,
+            payload,
+            freshness_witnesses: Vec::new(),
+            free_variable_constraints: Vec::new(),
+            provenance_payload,
+        });
+    }
+    if !quantified.is_empty() {
+        return Err(invalid());
+    }
+    let mut formula_payloads = Vec::new();
+    for entry in envelope.formula_evidence() {
+        let provenance = envelope
+            .provenance()
+            .iter()
+            .find(|row| row.provenance_id == entry.provenance_id())
+            .ok_or_else(invalid)?;
+        formula_payloads.push(KernelFormulaPayload {
+            formula_ref: entry.producer_formula_ref().ok_or_else(invalid)?,
+            projection: KernelFormulaProjection {
+                formula_fingerprint: entry.formula_fingerprint().clone(),
+                formula_bytes: entry.formula_bytes().to_vec(),
+                provenance_payload: provenance.payload.clone(),
+            },
+        });
+    }
+    let goal = envelope.final_goal();
+    let provenance = envelope
+        .provenance()
+        .iter()
+        .find(|row| row.provenance_id == goal.provenance_id)
+        .ok_or_else(invalid)?;
+    formula_payloads.push(KernelFormulaPayload {
+        formula_ref: goal.producer_formula_ref,
+        projection: KernelFormulaProjection {
+            formula_fingerprint: goal.formula_fingerprint.clone(),
+            formula_bytes: goal.formula_bytes.clone(),
+            provenance_payload: provenance.payload.clone(),
+        },
+    });
+    let rebuilt = build_kernel_evidence_handoff(KernelEvidenceHandoffInput {
+        vc_set,
+        vc: vc_id,
+        goal_polarity: goal.polarity,
+        kernel_profile: profile,
+        symbol_manifest: envelope.symbol_manifest(),
+        variable_manifest: envelope.variable_manifest(),
+        formula_payloads: &formula_payloads,
+        imported_formula_payloads: &[],
+        substitutions: &substitutions,
+        formula_context: None,
+        discharge_output: None,
+    })
+    .map_err(|error| error.to_string())?;
+    if !rebuilt.context_identity_is_consistent()
+        || !handoff.context_identity_is_consistent()
+        || rebuilt.canonical_hash_input() != handoff.canonical_hash_input()
+        || rebuilt.canonical_hash() != handoff.canonical_hash()
+        || rebuilt.context_identity() != handoff.context_identity()
+    {
+        return Err(invalid());
+    }
+    let rebuilt_parsed = mizar_kernel::formula_evidence::parse_formula_evidence(
+        &rebuilt.encode_local_evidence(None)?,
+        &context,
+    )
+    .map_err(|error| format!("{error:?}"))?;
+    let names = encode_closed_choice_reflexivity_names(&rebuilt_parsed)?;
+    let bytes = rebuilt.encode_local_evidence(Some(&names))?;
     let mut hash = StableHasher::new("mizar-atp/source-registration-candidate/v1");
     hash.field_bytes("encoded-input-hash", encoded.input_hash().as_bytes());
     hash.field_bytes("encoded-metadata-hash", encoded.metadata_hash().as_bytes());
@@ -262,6 +482,73 @@ pub fn build_source_registration_candidate_inputs(
     )
     .map_err(|error| error.to_string())?;
     Ok((encoded, candidate))
+}
+
+fn match_source_substitution_body(
+    source: &crate::problem::AtpFormulaTree,
+    kernel: &mizar_kernel::formula_evidence::Formula,
+    binder: &crate::problem::AtpSymbolName,
+    ground: &std::collections::BTreeMap<crate::problem::AtpTerm, mizar_kernel::clause::Term>,
+    formal: &mut Option<mizar_kernel::clause::VariableId>,
+) -> bool {
+    use crate::problem::{AtpFormulaTree, AtpTerm};
+    match (source, kernel) {
+        (AtpFormulaTree::Not(source), mizar_kernel::formula_evidence::Formula::Not(kernel)) => {
+            return match_source_substitution_body(source, kernel, binder, ground, formal);
+        }
+        (AtpFormulaTree::And(source), mizar_kernel::formula_evidence::Formula::And(kernel))
+        | (AtpFormulaTree::Or(source), mizar_kernel::formula_evidence::Formula::Or(kernel)) => {
+            return source.len() == kernel.len()
+                && source.iter().zip(kernel).all(|(source, kernel)| {
+                    match_source_substitution_body(source, kernel, binder, ground, formal)
+                });
+        }
+        _ => {}
+    }
+    let mizar_kernel::formula_evidence::Formula::Atom(atom) = kernel else {
+        return false;
+    };
+    let arguments = match source {
+        AtpFormulaTree::Atom(source)
+            if (source.predicate().as_str() == "builtin:set"
+                && atom.symbol.kind == mizar_kernel::clause::SymbolKind::BuiltinRelation
+                && atom.arity == 1)
+                || (source.predicate().as_str().starts_with("attribute:")
+                    && atom.symbol.kind == mizar_kernel::clause::SymbolKind::Predicate) =>
+        {
+            source.arguments().iter().collect::<Vec<_>>()
+        }
+        AtpFormulaTree::Equality { left, right }
+            if atom.symbol.kind == mizar_kernel::clause::SymbolKind::Equality
+                && atom.arity == 2 =>
+        {
+            vec![left, right]
+        }
+        _ => return false,
+    };
+    if usize::try_from(atom.arity).ok() != Some(arguments.len())
+        || atom.arguments.len() != arguments.len()
+    {
+        return false;
+    }
+    arguments
+        .into_iter()
+        .zip(&atom.arguments)
+        .all(|(source, kernel)| match (source, kernel) {
+            (AtpTerm::Variable(variable), mizar_kernel::clause::Term::Variable(actual))
+                if variable == binder =>
+            {
+                if formal.is_some_and(|previous| previous != *actual) {
+                    return false;
+                }
+                *formal = Some(*actual);
+                true
+            }
+            (AtpTerm::Function { arguments, .. }, _) if arguments.is_empty() => {
+                ground.get(source) == Some(kernel)
+            }
+            _ => false,
+        })
 }
 
 /// Screens one unchanged source candidate under explicit caller-owned work bounds.

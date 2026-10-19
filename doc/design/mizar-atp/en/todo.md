@@ -710,6 +710,8 @@ candidate evidence through the kernel-owned schema and must not weaken it.
 
 41. **[Source candidate SAT screening](../../task_contracts/en/ATP-SOURCE-CANDIDATE-SAT-SCREEN.md).** [x] — Explicit bounded untrusted query only; generic search and acceptance remain open.
 
+42. **[Bounded structured source substitutions](../../task_contracts/en/ATP-SOURCE-STRUCTURED-SUBSTITUTIONS.md).** [x] — Existing factory extraction prerequisite; full finder/search and acceptance remain open.
+
 ## Recommended Verification
 
 Run after each task:
