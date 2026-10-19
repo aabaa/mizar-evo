@@ -22,6 +22,7 @@ Readable writing and library reuse grew through these experiments and redesigns.
 
 Mario Carneiro's Mizar-rs reimplemented the analyzer and checker in Rust. Both parts affect soundness. [Carneiro 2023]
 There are three main results. First, its checker replaced the existing checker and checked the full MML of that time. Second, it was about five to six times faster. The paper compared elapsed time with eight threads. Third, it found and reported four soundness bugs in the existing implementation. This does not mean those bugs were used to prove false statements in MML. [Table 1, §5]
+The paper also reports a known soundness issue kept for MML compatibility. Reimplementation did not solve every soundness problem. [§5.4]
 The reimplementation improved speed and helped improve the existing system. Proof output for a small trusted base remained future work. Mizar Evo redesigns the language specification and builds the processor in Rust. [Literature / Evo design]
 
 ### 0.3 From an idea to language design (3:00)
@@ -114,7 +115,7 @@ The sum is the same, but each new type adds surrounding declarations and proofs.
 
 We take an additive structure T and a common nonempty domain I as parameters. One definition gives both the body and the result type of function addition.
 From real to natural values, we can use the same Add with the corresponding additive structure. Type-specific closure facts and registrations are still needed, but we do not repeat the sum and its result type.
-The synonym supplies + notation. Here, declared types determine T and I uniquely, so we can write f+g or u+v without arguments. Ambiguous inheritance paths need qua.
+The synonym supplies + notation. Here, declared types determine T and I uniquely, so we can write f+g or u+v without the template arguments. Ambiguous inheritance paths need qua.
 Current MML also handles intersections of different domains. This example is restricted to a common nonempty domain. [Specification-based sketch, proofs omitted]
 
 ### 3.3 Unify schemes with template theorems [deep dive] (17:45)
@@ -157,9 +158,9 @@ This default path also trusts MVM's execution result. It differs from kernel and
 
 ### 4.5 Verified expression rewriting: lambda and differentiation (23:15)
 
-Lambda notation writes a function directly. Here, u maps to sin u times u, for real u.
-When passed as expr, a syntax tree, the algorithm can process products and sin while preserving variable binding. We prove differentiate's contract using differentiation rules. If it returns, the input is differentiable and the result gives its derivative. We then use that result in a derivative proof. The displayed conclusion also uses semantic conversion and simplification lemmas.
-This connects function notation, expression transformation, and its correctness proof. It is a specification sketch; MVM execution remains future work. [Specification-based sketch]
+Lambda notation writes a function directly. Here, real u maps to sin u times u.
+An expr syntax tree keeps products, sin, and variable binding. We prove differentiate's contract using differentiation rules. On normal return, the input function is differentiable and the result represents its derivative. The displayed conclusion also needs semantic conversion and simplification lemmas.
+The differentiate call is explicit; the derivative goal does not select it automatically. This connects function notation, rewriting, and correctness proofs. It is a specification sketch; MVM execution remains future work. [Specification-based sketch]
 
 ## Part 5. Development Infrastructure (24:15–27:15)
 
@@ -206,10 +207,9 @@ This is a proposal for getting candidate evidence from an external log. We do no
 
 ### 6.4 From saved evidence to concrete SAT clauses (30:45)
 
-SAT tests whether propositional clauses can all be true at once. UNSAT means they cannot. The top row shows saved evidence, kernel checks, and instantiation. The kernel checks original formulas and composed substitutions against their origins, target, and binding context. It checks that free variables do not become bound by mistake. It then instantiates both implications at a and adds P(a) and the negated goal.
-Assign propositional variables one, two, and three to P(a), Q(a), and R(a). Introduce variables four and five for the implications, with unit clauses that say they are true. This Tseitin encoding follows the current encoder's construction.
-The two blue boxes below show definitions of s and t. Each gives three defining clauses and one unit clause asserting the implication. With the unit clauses p and not r above, we get five variables and ten clauses. As the green band shows, p and the two implications force r, contradicting not r.
-The small kernel does not replay external resolution steps. It generates clauses from checked evidence and asks a trusted SAT checker to confirm UNSAT. The displayed clauses illustrate the encoding; they are not a dump from an execution. [Architecture-based design sketch]
+SAT tests whether all propositional clauses can be true together. UNSAT means they cannot. At the top, the kernel checks formulas, substitutions, origins, target, and binding context. Free variables must not become bound by mistake. It then instantiates both implications at a and adds P(a) and the negated goal.
+Below, p, q, r stand for P(a), Q(a), R(a). Variables s and t stand for the implications. Each blue box gives three defining clauses and one unit clause asserting the implication. Add p and not r: five variables, ten clauses. This Tseitin encoding follows the current encoder.
+The green band shows the contradiction: p and the implications force r, but we also require not r. The kernel generates these clauses from checked evidence, then uses its trusted SAT checker to confirm UNSAT. It does not replay external resolution steps. This is an encoding example, not an execution dump. [Architecture-based design sketch]
 
 ## Part 7. Status And Roadmap (32:30–36:30)
 
