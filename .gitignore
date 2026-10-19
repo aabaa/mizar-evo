@@ -21,3 +21,7 @@
 /doc/publications/**/*.vrb
 /doc/publications/**/__pycache__/
 /doc/publications/**/*.pyc
+
+# Regenerated from TPP Markdown; the spoken scripts are maintained separately.
+/doc/publications/presentations/2026-11-tpp2026/tpp2026_notes.tex
+/doc/publications/presentations/2026-11-tpp2026/tpp2026_ja_notes.tex

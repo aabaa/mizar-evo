@@ -53,10 +53,10 @@ story is evidence, formula instantiation, and a trusted SAT check.
   preamble). `python3 build_beamer.py [en|ja|all]`.
 - `tpp2026.tex` / `tpp2026.pdf` - generated English deck (A4 landscape pages,
   16:9 content, as in the Bialystok deck).
-- `tpp2026_notes.tex` / `tpp2026_notes.pdf` - English deck with presenter
-  notes ("Read aloud" is the dark-blue bold spine; sources follow).
-- `tpp2026_ja.tex` / `tpp2026_ja.pdf`, `tpp2026_ja_notes.tex` /
-  `tpp2026_ja_notes.pdf` - generated Japanese decks.
+- `tpp2026_ja.tex` / `tpp2026_ja.pdf` - generated Japanese deck.
+- `tpp2026_notes.pdf` / `tpp2026_ja_notes.pdf` - generated decks with presenter
+  notes. Their `*_notes.tex` files are regenerated from the slide Markdown and
+  ignored by Git; maintain the spoken scripts in `script.md` / `script.ja.md`.
 - `figures/` - TikZ figures new to this talk: `evaluation_units`,
   `two_paths`, `where_you_pay`, `layer_stack`, `llm_atp_loop`, `roadmap_tpp`,
   plus `resolution_evidence` and `sat_evidence_check` shared by both checking sections.
