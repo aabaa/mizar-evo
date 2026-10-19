@@ -22861,3 +22861,413 @@ fn structured_source_candidates_preserve_legacy_container_and_original_context()
         assert_eq!((core, vcs), before);
     }
 }
+
+#[test]
+fn source_registration_screened_attempt_admission_preserves_legacy_checks() {
+    use mizar_atp::{
+        problem::ConcreteFormat, translator::translate_source_existential_registration,
+    };
+    use mizar_kernel::{
+        certificate_parser::{ClauseTautologyPolicy, Fingerprint, KernelProfileRecord},
+        formula_evidence::{FormulaEvidenceParseContext, parse_formula_evidence},
+    };
+    use mizar_proof::{
+        policy::VerifierPolicy,
+        status::{
+            check_source_registration_candidate as check,
+            try_check_source_registration_candidate as attempt,
+        },
+    };
+    use mizar_vc::{
+        kernel_evidence_handoff::build_source_existential_kernel_handoff, vc_ir::VcStatus,
+    };
+    for (multiple, case) in [
+        (false, step5c3_registration_case()),
+        (true, step5c13_registration_case()),
+    ] {
+        let text = std::fs::read_to_string(case.source_path).unwrap();
+        let (source, nodes, symbols) = if multiple {
+            step5c13_registration_inputs(&text)
+        } else {
+            step5c3_registration_inputs(&text)
+        }
+        .unwrap();
+        let (core, _, vcs) = source_candidate_core_and_vcs(multiple, &text);
+        let before = (source.clone(), nodes.clone(), symbols.clone());
+        let vc = vcs
+            .vcs()
+            .iter()
+            .rev()
+            .find(|vc| vc.status == VcStatus::NeedsAtp)
+            .unwrap();
+        let handoff = build_source_existential_kernel_handoff(&core, &vcs, vc.id).unwrap();
+        let envelope = handoff.canonical_evidence();
+        let target = envelope.target_vc();
+        let mut context = FormulaEvidenceParseContext::v1(
+            Fingerprint::new(target.algorithm_id, target.digest.clone()),
+            KernelProfileRecord::v1(
+                envelope.kernel_profile().profile_id,
+                ClauseTautologyPolicy::Reject,
+            ),
+        );
+        context.accepted_schema_versions.insert(2);
+        let parsed = parse_formula_evidence(&source_candidate_wire(&handoff), &context).unwrap();
+        for format in [ConcreteFormat::Tptp, ConcreteFormat::SmtLib] {
+            let profile = source_candidate_profile("proof-screened-counts", format);
+            let problem =
+                translate_source_existential_registration(&core, &vcs, vc.id, profile.clone())
+                    .unwrap();
+            let exact = [
+                u64::try_from(problem.observed_ground_terms().unwrap().len()).unwrap(),
+                u64::try_from(parsed.substitutions().len()).unwrap(),
+                u64::try_from(parsed.equality_instances().len()).unwrap(),
+                1,
+            ];
+            assert!(exact.into_iter().all(|count| count > 0));
+            let mut below = exact;
+            below[1] -= 1;
+            let policy = VerifierPolicy::release();
+            let snapshot = super::shared::snapshot_id(0);
+            let baseline = check(
+                &source,
+                &nodes,
+                &symbols,
+                snapshot,
+                vc.id,
+                (profile.clone(), format),
+                &policy,
+            )
+            .unwrap();
+            for (limits, admitted) in [
+                (None, false),
+                (Some([0; 4]), false),
+                (Some(below), false),
+                (Some(exact), true),
+                (Some([u64::MAX; 4]), true),
+            ] {
+                let configured = policy.clone().with_instance_search_limits(limits);
+                let policy_before = configured.clone();
+                assert_eq!(
+                    attempt(
+                        &source,
+                        &nodes,
+                        &symbols,
+                        snapshot,
+                        vc.id,
+                        (profile.clone(), format),
+                        &configured
+                    )
+                    .unwrap(),
+                    admitted.then(|| baseline.clone())
+                );
+                assert_eq!(
+                    check(
+                        &source,
+                        &nodes,
+                        &symbols,
+                        snapshot,
+                        vc.id,
+                        (profile.clone(), format),
+                        &configured
+                    )
+                    .unwrap(),
+                    baseline
+                );
+                assert_eq!(configured, policy_before);
+            }
+        }
+        assert_eq!((source, nodes, symbols), before);
+    }
+}
+
+#[test]
+fn source_registration_screened_attempt_matches_fresh_kernel_and_policy() {
+    use mizar_atp::{
+        backend::{BackendCandidatePayload, build_source_registration_candidate_inputs as build},
+        problem::ConcreteFormat,
+    };
+    use mizar_kernel::checker::KernelCheckStatus;
+    use mizar_proof::{
+        policy::{CandidatePolicyClass, VerifierPolicy},
+        status::{
+            check_source_registration_candidate as check,
+            try_check_source_registration_candidate as attempt,
+        },
+    };
+    use mizar_vc::{
+        kernel_evidence_handoff::build_source_existential_kernel_handoff, vc_ir::VcStatus,
+    };
+    for (multiple, case) in [
+        (false, step5c3_registration_case()),
+        (true, step5c13_registration_case()),
+    ] {
+        let original = std::fs::read_to_string(case.source_path).unwrap();
+        let renamed = original.replace("marked", "retagged").replace("X", "Value");
+        for (formal, base) in [("X", &original), ("Value", &renamed)] {
+            let negative = base.replacen(
+                &format!("means {formal} = {formal}"),
+                &format!("means not {formal} = {formal}"),
+                1,
+            );
+            assert_ne!(&negative, base);
+            for (false_source, text) in [(false, base), (true, &negative)] {
+                let (source, nodes, symbols) = if multiple {
+                    step5c13_registration_inputs(text)
+                } else {
+                    step5c3_registration_inputs(text)
+                }
+                .unwrap();
+                let (core, _, vcs) = source_candidate_core_and_vcs(multiple, text);
+                let before = (source.clone(), nodes.clone(), symbols.clone());
+                let mut outcomes = [0; 2];
+                for vc in vcs
+                    .vcs()
+                    .iter()
+                    .filter(|vc| vc.status == VcStatus::NeedsAtp)
+                {
+                    let handoff =
+                        build_source_existential_kernel_handoff(&core, &vcs, vc.id).unwrap();
+                    for format in [ConcreteFormat::Tptp, ConcreteFormat::SmtLib] {
+                        let profile = source_candidate_profile("proof-screened-results", format);
+                        let policy = VerifierPolicy::release()
+                            .with_instance_search_limits(Some([u64::MAX; 4]));
+                        let policy_before = policy.clone();
+                        let old = check(
+                            &source,
+                            &nodes,
+                            &symbols,
+                            super::shared::snapshot_id(0),
+                            vc.id,
+                            (profile.clone(), format),
+                            &policy,
+                        )
+                        .unwrap();
+                        let (_, candidate) =
+                            build(&core, &vcs, vc.id, profile.clone(), format).unwrap();
+                        let BackendCandidatePayload::FormulaSubstitutionBytes(bytes) =
+                            candidate.payload()
+                        else {
+                            panic!("actual candidate bytes")
+                        };
+                        let normal = source_candidate_check_bytes(
+                            &handoff,
+                            bytes,
+                            candidate.target_binding(),
+                        )
+                        .unwrap();
+                        assert_eq!(old.0.status(), normal);
+                        let actual = attempt(
+                            &source,
+                            &nodes,
+                            &symbols,
+                            super::shared::snapshot_id(0),
+                            vc.id,
+                            (profile.clone(), format),
+                            &policy,
+                        )
+                        .unwrap();
+                        if normal == KernelCheckStatus::Accepted {
+                            assert_eq!(old.1.class, CandidatePolicyClass::KernelVerified);
+                            assert_eq!(actual, Some(old));
+                            outcomes[0] += 1;
+                        } else {
+                            assert_eq!(old.1.class, CandidatePolicyClass::KernelRejected);
+                            assert_eq!(actual, None);
+                            outcomes[1] += 1;
+                        }
+                        assert_eq!(policy, policy_before);
+                    }
+                }
+                let leaves = if multiple { 3 } else { 1 };
+                let rejected = if false_source {
+                    if multiple { 2 } else { 1 }
+                } else {
+                    0
+                };
+                assert_eq!(outcomes, [(leaves - rejected) * 2, rejected * 2]);
+                assert_eq!((source, nodes, symbols), before);
+            }
+        }
+    }
+}
+
+#[test]
+fn source_registration_screened_attempt_preserves_lower_errors_and_absence_before_permission() {
+    use mizar_atp::problem::*;
+    use mizar_proof::{
+        policy::{KernelEvidenceFormat, VerifierPolicy},
+        status::{
+            check_source_registration_candidate as check,
+            try_check_source_registration_candidate as attempt,
+        },
+    };
+    use mizar_vc::vc_ir::{VcId, VcStatus};
+    let text = std::fs::read_to_string(step5c3_registration_case().source_path).unwrap();
+    let (source, nodes, symbols) = step5c3_registration_inputs(&text).unwrap();
+    let (foreign_source, foreign_nodes, foreign_symbols) =
+        step5c3_registration_inputs(&text.replace("wmarked", "foreignmarked")).unwrap();
+    let unsupported_text = text.replacen("take the set;", "take the wmarked set;", 1);
+    assert_ne!(unsupported_text, text);
+    let (bad_source, bad_nodes, bad_symbols) =
+        step5c3_registration_inputs(&unsupported_text).unwrap();
+    let before = (
+        source.clone(),
+        nodes.clone(),
+        symbols.clone(),
+        foreign_source.clone(),
+        foreign_nodes.clone(),
+        foreign_symbols.clone(),
+        bad_source.clone(),
+        bad_nodes.clone(),
+        bad_symbols.clone(),
+    );
+    let (_, _, vcs) = source_candidate_core_and_vcs(false, &text);
+    let target = vcs
+        .vcs()
+        .iter()
+        .find(|vc| vc.status == VcStatus::NeedsAtp)
+        .unwrap()
+        .id;
+    let discharged = vcs
+        .vcs()
+        .iter()
+        .find(|vc| matches!(vc.status, VcStatus::Discharged { .. }))
+        .unwrap()
+        .id;
+    let snapshot = super::shared::snapshot_id(0);
+    let policy = VerifierPolicy::release();
+    let format = ConcreteFormat::Tptp;
+    let profile = source_candidate_profile("proof-screened-order", format);
+    let unsupported = LogicProfile::try_new(
+        "unsupported",
+        LogicFragment::TffLike,
+        EqualitySupport::Supported,
+        QuantifierPolicy::FirstOrder,
+        SoftTypeStrategy::GuardPredicates,
+        NativePropertySupport::Unsupported,
+        [format].into_iter().collect(),
+    )
+    .unwrap();
+    for denied in [
+        policy.clone().with_kernel_evidence_formats([]),
+        policy
+            .clone()
+            .with_kernel_evidence_formats([KernelEvidenceFormat::BuiltinKernelEvidence]),
+    ] {
+        for limits in [None, Some([0; 4]), Some([u64::MAX; 4])] {
+            let configured = denied.clone().with_instance_search_limits(limits);
+            let policy_before = configured.clone();
+            let result = attempt(
+                &source,
+                &nodes,
+                &symbols,
+                snapshot,
+                target,
+                (profile.clone(), format),
+                &configured,
+            );
+            if limits == Some([u64::MAX; 4]) {
+                assert_eq!(
+                    result.unwrap_err(),
+                    "registration.proof.kernel_policy_rejected"
+                );
+            } else {
+                assert_eq!(result.unwrap(), None);
+            }
+            assert_eq!(
+                check(
+                    &source,
+                    &nodes,
+                    &symbols,
+                    snapshot,
+                    target,
+                    (profile.clone(), format),
+                    &configured
+                )
+                .unwrap_err(),
+                "registration.proof.kernel_policy_rejected"
+            );
+            for (s, n, e, id, encoding) in [
+                (
+                    &foreign_source,
+                    &nodes,
+                    &symbols,
+                    target,
+                    (profile.clone(), format),
+                ),
+                (
+                    &source,
+                    &foreign_nodes,
+                    &symbols,
+                    target,
+                    (profile.clone(), format),
+                ),
+                (
+                    &source,
+                    &nodes,
+                    &foreign_symbols,
+                    target,
+                    (profile.clone(), format),
+                ),
+                (
+                    &bad_source,
+                    &bad_nodes,
+                    &bad_symbols,
+                    target,
+                    (profile.clone(), format),
+                ),
+                (
+                    &source,
+                    &nodes,
+                    &symbols,
+                    discharged,
+                    (profile.clone(), format),
+                ),
+                (
+                    &source,
+                    &nodes,
+                    &symbols,
+                    VcId::new(vcs.vcs().len()),
+                    (profile.clone(), format),
+                ),
+                (
+                    &source,
+                    &nodes,
+                    &symbols,
+                    target,
+                    (unsupported.clone(), format),
+                ),
+                (
+                    &source,
+                    &nodes,
+                    &symbols,
+                    target,
+                    (profile.clone(), ConcreteFormat::SmtLib),
+                ),
+            ] {
+                let lower_error =
+                    check(s, n, e, snapshot, id, encoding.clone(), &policy).unwrap_err();
+                assert_ne!(lower_error, "registration.proof.kernel_policy_rejected");
+                assert_eq!(
+                    attempt(s, n, e, snapshot, id, encoding, &configured).unwrap_err(),
+                    lower_error
+                );
+            }
+            assert_eq!(configured, policy_before);
+        }
+    }
+    assert_eq!(
+        (
+            source,
+            nodes,
+            symbols,
+            foreign_source,
+            foreign_nodes,
+            foreign_symbols,
+            bad_source,
+            bad_nodes,
+            bad_symbols
+        ),
+        before
+    );
+}

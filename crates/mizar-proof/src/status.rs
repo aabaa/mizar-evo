@@ -340,9 +340,42 @@ pub fn check_source_registration_candidate(
     policy: &VerifierPolicy,
 ) -> Result<(KernelCheckResult, crate::policy::PolicyDecision), String> {
     check_source_registration_candidate_payload(
-        source, nodes, symbols, snapshot, vc_id, encoding, policy,
-    )
+        source,
+        nodes,
+        symbols,
+        snapshot,
+        vc_id,
+        (encoding.0, encoding.1, false),
+        policy,
+    )?
+    .ok_or_else(|| "registration.proof.invalid_source_candidate".to_owned())
     .map(|(result, decision, _, _, _)| (result, decision))
+}
+
+/// Attempts one policy-bounded source candidate screen and fresh normal Kernel check.
+/// Absence supplies no checked result, activation or publication authority.
+pub fn try_check_source_registration_candidate(
+    source: &mizar_resolve::resolved_ast::SurfaceResolvedArena,
+    nodes: &mizar_checker::typed_ast::TypedArena,
+    symbols: &mizar_resolve::env::SymbolEnv,
+    snapshot: mizar_session::BuildSnapshotId,
+    vc_id: VcId,
+    encoding: (
+        mizar_atp::problem::LogicProfile,
+        mizar_atp::problem::ConcreteFormat,
+    ),
+    policy: &VerifierPolicy,
+) -> Result<Option<(KernelCheckResult, crate::policy::PolicyDecision)>, String> {
+    check_source_registration_candidate_payload(
+        source,
+        nodes,
+        symbols,
+        snapshot,
+        vc_id,
+        (encoding.0, encoding.1, true),
+        policy,
+    )
+    .map(|output| output.map(|(result, decision, _, _, _)| (result, decision)))
 }
 
 /// Freshly checks a source ATP candidate and retains raw same-call metadata.
@@ -368,11 +401,22 @@ pub fn check_source_registration_candidate_metadata(
     String,
 > {
     check_source_registration_candidate_payload(
-        source, nodes, symbols, snapshot, vc_id, encoding, policy,
-    )
+        source,
+        nodes,
+        symbols,
+        snapshot,
+        vc_id,
+        (encoding.0, encoding.1, false),
+        policy,
+    )?
+    .ok_or_else(|| "registration.proof.invalid_source_candidate".to_owned())
     .map(|(result, decision, metadata, candidate, _)| (result, decision, metadata, candidate))
 }
 
+#[expect(
+    clippy::type_complexity,
+    reason = "Keeps the shared optional result explicit without a single-use alias"
+)]
 fn check_source_registration_candidate_payload(
     source: &mizar_resolve::resolved_ast::SurfaceResolvedArena,
     nodes: &mizar_checker::typed_ast::TypedArena,
@@ -382,16 +426,17 @@ fn check_source_registration_candidate_payload(
     encoding: (
         mizar_atp::problem::LogicProfile,
         mizar_atp::problem::ConcreteFormat,
+        bool,
     ),
     policy: &VerifierPolicy,
 ) -> Result<
-    (
+    Option<(
         KernelCheckResult,
         crate::policy::PolicyDecision,
         Option<mizar_artifact::proof_witness::KernelAcceptanceMetadata>,
         mizar_atp::backend::BackendCandidateEvidence,
         mizar_vc::kernel_evidence_handoff::VcKernelEvidenceHandoff,
-    ),
+    )>,
     String,
 > {
     use crate::policy::{PolicyCandidate, ProofPolicyEvaluator};
@@ -399,7 +444,10 @@ fn check_source_registration_candidate_payload(
         proof_witness::KernelAcceptanceMetadata,
         registration_summary::{ArtifactHashClass, ArtifactHashRef},
     };
-    use mizar_atp::backend::{BackendCandidatePayload, build_source_registration_candidate_inputs};
+    use mizar_atp::backend::{
+        BackendCandidatePayload, build_source_registration_candidate_inputs,
+        screen_source_registration_candidate,
+    };
     use mizar_checker::registration_resolution::check_source_existential_registration_proof;
     use mizar_kernel::{
         certificate_parser::{ClauseTautologyPolicy, Fingerprint, KernelProfileRecord},
@@ -428,8 +476,22 @@ fn check_source_registration_candidate_payload(
     })
     .map_err(|error| format!("registration.proof.discharge:{error:?}"))?;
     let vcs = discharge.vc_set();
-    let (encoded, candidate) =
-        build_source_registration_candidate_inputs(&core, vcs, vc_id, encoding.0, encoding.1)?;
+    let (encoded, candidate) = if encoding.2 {
+        let Some(pair) = screen_source_registration_candidate(
+            &core,
+            vcs,
+            vc_id,
+            encoding.0,
+            encoding.1,
+            policy.instance_search_limits(),
+        )?
+        else {
+            return Ok(None);
+        };
+        pair
+    } else {
+        build_source_registration_candidate_inputs(&core, vcs, vc_id, encoding.0, encoding.1)?
+    };
     let BackendCandidatePayload::FormulaSubstitutionBytes(bytes) = candidate.payload() else {
         return Err(invalid());
     };
@@ -531,7 +593,7 @@ fn check_source_registration_candidate_payload(
     } else {
         None
     };
-    Ok((result, decision, metadata, candidate, handoff))
+    Ok(Some((result, decision, metadata, candidate, handoff)))
 }
 
 /// Freshly checks one authentic direct-premise source discharge candidate.
@@ -2384,8 +2446,15 @@ pub fn project_source_registration_candidate_witness(
     let invalid = || "registration.proof.invalid_source_candidate".to_owned();
     let (result, decision, metadata, actual, handoff) =
         check_source_registration_candidate_payload(
-            source, nodes, symbols, snapshot, vc_id, encoding, policy,
-        )?;
+            source,
+            nodes,
+            symbols,
+            snapshot,
+            vc_id,
+            (encoding.0, encoding.1, false),
+            policy,
+        )?
+        .ok_or_else(invalid)?;
     if decision.class != crate::policy::CandidatePolicyClass::KernelVerified {
         return Err(invalid());
     }

@@ -448,6 +448,8 @@ kernel の拒否語彙と evidence 契約を訂正した。policy 層はその�
 
 36. **[明示的な instance-search 上限](../../task_contracts/ja/PROOF-INSTANCE-SEARCH-LIMITS.md).** [x] — 任意 policy 設定のみ。finder の制限適用と全 ATP30 は未完了。
 
+37. **[明示的な screen 済み source attempt](../../task_contracts/ja/PROOF-SOURCE-SCREENED-ATTEMPT.md).** [x]
+
 ## 推奨検証
 
 各タスクの後で実行する:

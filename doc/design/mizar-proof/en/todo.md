@@ -472,6 +472,8 @@ layer consumes both; one alignment task is owned here.
 
 36. **[Explicit instance-search limits](../../task_contracts/en/PROOF-INSTANCE-SEARCH-LIMITS.md).** [x] — Optional policy settings only; finder enforcement and full ATP30 remain open.
 
+37. **[Opt-in screened source attempt](../../task_contracts/en/PROOF-SOURCE-SCREENED-ATTEMPT.md).** [x]
+
 ## Recommended Verification
 
 Run after each task:
