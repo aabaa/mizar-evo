@@ -157,9 +157,9 @@ This default path also trusts MVM's execution result. It differs from kernel and
 
 ### 4.5 Verified expression rewriting: lambda and differentiation (23:15)
 
-Lambda notation writes a function directly. Here, u maps to sin u times u, for real u.
-When passed as expr, a syntax tree, the algorithm can process products and sin while preserving variable binding. We prove differentiate's contract using differentiation rules. If it returns, the input is differentiable and the result gives its derivative. We then use that result in a derivative proof. The displayed conclusion also uses semantic conversion and simplification lemmas.
-This connects function notation, expression transformation, and its correctness proof. It is a specification sketch; MVM execution remains future work. [Specification-based sketch]
+Lambda notation writes a function directly. Here, real u maps to sin u times u.
+An expr syntax tree keeps products, sin, and variable binding. We prove differentiate's contract using differentiation rules. On normal return, the input function is differentiable and the result represents its derivative. The displayed conclusion also needs semantic conversion and simplification lemmas.
+The differentiate call is explicit; the derivative goal does not select it automatically. This connects function notation, rewriting, and correctness proofs. It is a specification sketch; MVM execution remains future work. [Specification-based sketch]
 
 ## Part 5. Development Infrastructure (24:15–27:15)
 
