@@ -80,11 +80,16 @@ pub fn check_source_theorem_reflexivity(
     vc_id: VcId,
     policy: &VerifierPolicy,
 ) -> Result<(KernelCheckResult, crate::policy::PolicyDecision), String> {
-    let (result, decision, _, _, _) =
-        check_source_theorem_reflexivity_payload(source, check, symbols, snapshot, vc_id, policy)?;
+    let (result, decision, _, _, _) = check_source_theorem_reflexivity_payload(
+        source, check, symbols, snapshot, vc_id, policy, false,
+    )?;
     Ok((result, decision))
 }
 
+#[expect(
+    clippy::type_complexity,
+    reason = "Keeps the shared checked payload explicit without a single-use alias"
+)]
 fn check_source_theorem_reflexivity_payload(
     source: &mizar_resolve::resolved_ast::SurfaceResolvedArena,
     check: &mizar_checker::type_checker::SourceTheoremCheck<'_>,
@@ -92,13 +97,14 @@ fn check_source_theorem_reflexivity_payload(
     snapshot: mizar_session::BuildSnapshotId,
     vc_id: VcId,
     policy: &VerifierPolicy,
+    include_metadata: bool,
 ) -> Result<
     (
         KernelCheckResult,
         crate::policy::PolicyDecision,
         mizar_vc::kernel_evidence_handoff::VcKernelEvidenceHandoff,
         Vec<u8>,
-        u16,
+        Option<mizar_artifact::proof_witness::KernelAcceptanceMetadata>,
     ),
     String,
 > {
@@ -168,7 +174,80 @@ fn check_source_theorem_reflexivity_payload(
         check_source_kernel_handoff(&handoff, &parsed, "theorem.proof.invalid_source_evidence")?;
     let input = KernelPolicyInput::from_kernel_result(&result, origin);
     let decision = evaluator.evaluate_candidate(&PolicyCandidate::KernelResult(input));
-    Ok((result, decision, handoff, bytes, parsed.schema_version()))
+    let metadata = if include_metadata {
+        use mizar_artifact::{
+            proof_witness::KernelAcceptanceMetadata,
+            registration_summary::{ArtifactHashClass, ArtifactHashRef},
+        };
+
+        let input = KernelPolicyInput::from_kernel_result(&result, origin);
+        let accepted = input.accepted_evidence_hash();
+        let polarity = input.accepted_goal_polarity();
+        if decision.class == crate::policy::CandidatePolicyClass::DischargedBuiltin
+            && result.status() == KernelCheckStatus::Accepted
+            && !result.policy_taint()
+            && result.evidence_check_kind()
+                == Some(mizar_kernel::checker::KernelEvidenceCheckKind::ProofObligation)
+            && polarity == Some(AcceptedGoalPolarity::AssertFalseForRefutation)
+        {
+            accepted
+                .zip(handoff.local_evidence_component_hashes().ok())
+                .map(|(accepted, components)| {
+                    let [
+                        kernel_profile_fingerprint,
+                        formula_evidence_hash,
+                        substitution_evidence_hash,
+                        provenance_hash,
+                    ] = [
+                        ("profile", components[0]),
+                        ("formula", components[1]),
+                        ("substitutions", components[2]),
+                        ("provenance", components[3]),
+                    ]
+                    .map(|(kind, digest)| ArtifactHashRef {
+                        class: ArtifactHashClass::Interface,
+                        schema_family: format!("mizar-vc/local-evidence-component/{kind}"),
+                        schema_version: SchemaVersion::new(1, 0),
+                        digest,
+                    });
+                    KernelAcceptanceMetadata {
+                        kernel_profile_fingerprint,
+                        verifier_policy_fingerprint: ArtifactHashRef {
+                            class: ArtifactHashClass::Interface,
+                            schema_family: "mizar-proof/verifier-policy".into(),
+                            schema_version: SchemaVersion::new(policy.schema_version(), 0),
+                            digest: policy.policy_fingerprint().hash(),
+                        },
+                        checker_schema_version: SchemaVersion::new(
+                            policy.checker_schema_version(),
+                            0,
+                        ),
+                        evidence_schema_version: SchemaVersion::new(parsed.schema_version(), 0),
+                        target_binding_hash: ArtifactHashRef {
+                            class: ArtifactHashClass::Interface,
+                            schema_family: "mizar-vc/kernel-evidence-handoff-canonical".into(),
+                            schema_version: SchemaVersion::new(1, 0),
+                            digest: handoff.canonical_hash(),
+                        },
+                        formula_evidence_hash,
+                        substitution_evidence_hash,
+                        provenance_hash,
+                        formula_context_hash: None,
+                        accepted_result_hash: ArtifactHashRef {
+                            class: ArtifactHashClass::Interface,
+                            schema_family: "mizar-proof/kernel-accepted-evidence".into(),
+                            schema_version: SchemaVersion::new(1, 0),
+                            digest: accepted,
+                        },
+                    }
+                })
+        } else {
+            None
+        }
+    } else {
+        None
+    };
+    Ok((result, decision, handoff, bytes, metadata))
 }
 
 /// Returns ordinary acceptance metadata and the exact wire from one genuine theorem check.
@@ -188,76 +267,8 @@ pub fn check_source_theorem_reflexivity_metadata(
     ),
     String,
 > {
-    use mizar_artifact::{
-        proof_witness::KernelAcceptanceMetadata,
-        registration_summary::{ArtifactHashClass, ArtifactHashRef},
-    };
-
-    let origin = KernelEvidenceOrigin::BuiltinDischarge;
-    let (result, decision, handoff, bytes, evidence_schema_version) =
-        check_source_theorem_reflexivity_payload(source, check, symbols, snapshot, vc_id, policy)?;
-    let input = KernelPolicyInput::from_kernel_result(&result, origin);
-    let accepted = input.accepted_evidence_hash();
-    let polarity = input.accepted_goal_polarity();
-    let metadata = if decision.class == crate::policy::CandidatePolicyClass::DischargedBuiltin
-        && result.status() == KernelCheckStatus::Accepted
-        && !result.policy_taint()
-        && result.evidence_check_kind()
-            == Some(mizar_kernel::checker::KernelEvidenceCheckKind::ProofObligation)
-        && polarity == Some(AcceptedGoalPolarity::AssertFalseForRefutation)
-    {
-        accepted
-            .zip(handoff.local_evidence_component_hashes().ok())
-            .map(|(accepted, components)| {
-                let [
-                    kernel_profile_fingerprint,
-                    formula_evidence_hash,
-                    substitution_evidence_hash,
-                    provenance_hash,
-                ] = [
-                    ("profile", components[0]),
-                    ("formula", components[1]),
-                    ("substitutions", components[2]),
-                    ("provenance", components[3]),
-                ]
-                .map(|(kind, digest)| ArtifactHashRef {
-                    class: ArtifactHashClass::Interface,
-                    schema_family: format!("mizar-vc/local-evidence-component/{kind}"),
-                    schema_version: SchemaVersion::new(1, 0),
-                    digest,
-                });
-                KernelAcceptanceMetadata {
-                    kernel_profile_fingerprint,
-                    verifier_policy_fingerprint: ArtifactHashRef {
-                        class: ArtifactHashClass::Interface,
-                        schema_family: "mizar-proof/verifier-policy".into(),
-                        schema_version: SchemaVersion::new(policy.schema_version(), 0),
-                        digest: policy.policy_fingerprint().hash(),
-                    },
-                    checker_schema_version: SchemaVersion::new(policy.checker_schema_version(), 0),
-                    evidence_schema_version: SchemaVersion::new(evidence_schema_version, 0),
-                    target_binding_hash: ArtifactHashRef {
-                        class: ArtifactHashClass::Interface,
-                        schema_family: "mizar-vc/kernel-evidence-handoff-canonical".into(),
-                        schema_version: SchemaVersion::new(1, 0),
-                        digest: handoff.canonical_hash(),
-                    },
-                    formula_evidence_hash,
-                    substitution_evidence_hash,
-                    provenance_hash,
-                    formula_context_hash: None,
-                    accepted_result_hash: ArtifactHashRef {
-                        class: ArtifactHashClass::Interface,
-                        schema_family: "mizar-proof/kernel-accepted-evidence".into(),
-                        schema_version: SchemaVersion::new(1, 0),
-                        digest: accepted,
-                    },
-                }
-            })
-    } else {
-        None
-    };
-    Ok((result, decision, metadata, bytes))
+    check_source_theorem_reflexivity_payload(source, check, symbols, snapshot, vc_id, policy, true)
+        .map(|(result, decision, _, bytes, metadata)| (result, decision, metadata, bytes))
 }
 
 /// Selects freshly checked original theorem reflexivity without an ATP encoding.
@@ -271,8 +282,9 @@ pub fn select_source_theorem_reflexivity(
 ) -> Result<crate::selection::ProofSelection, String> {
     use crate::selection::{ProofEvidenceCandidate, ProofEvidenceSet, select_winner};
     let origin = KernelEvidenceOrigin::BuiltinDischarge;
-    let (result, decision, _, _, _) =
-        check_source_theorem_reflexivity_payload(source, check, symbols, snapshot, vc_id, policy)?;
+    let (result, decision, _, _, _) = check_source_theorem_reflexivity_payload(
+        source, check, symbols, snapshot, vc_id, policy, false,
+    )?;
     let invalid = || "theorem.proof.invalid_source_selection".to_owned();
     let target = result.target_vc_fingerprint().sort_bytes();
     let id = CandidateSourceId::new(format!(
@@ -292,6 +304,176 @@ pub fn select_source_theorem_reflexivity(
     Ok(select_winner(
         &ProofEvidenceSet::new(target, None, policy.clone()).with_candidates([candidate]),
     ))
+}
+
+/// Projects original theorem identity, fresh selection and an unpublished checked-wire reference.
+pub fn project_source_theorem_reflexivity_witness(
+    source: &mizar_resolve::resolved_ast::SurfaceResolvedArena,
+    check: &mizar_checker::type_checker::SourceTheoremCheck<'_>,
+    symbols: &mizar_resolve::env::SymbolEnv,
+    snapshot: mizar_session::BuildSnapshotId,
+    vc_id: VcId,
+    policy: &VerifierPolicy,
+) -> Result<
+    (
+        crate::selection::ProofSelection,
+        mizar_artifact::proof_witness::ProofWitnessRef,
+        Vec<u8>,
+    ),
+    String,
+> {
+    use crate::selection::{ProofEvidenceCandidate, ProofEvidenceSet, select_winner};
+    use mizar_artifact::{
+        proof_witness::{
+            EvidenceKind, ProofStatus, ProofWitnessRef, builtin_proof_witness_ref_json,
+        },
+        registration_summary::{ArtifactHashClass, ArtifactHashRef},
+        store::{CanonicalHashDomain, CanonicalJson, HashClass},
+    };
+    let (identity, _) =
+        source_theorem_obligation_identity(source, check, symbols, snapshot, vc_id)?;
+    let origin = KernelEvidenceOrigin::BuiltinDischarge;
+    let (result, decision, handoff, bytes, metadata) = check_source_theorem_reflexivity_payload(
+        source, check, symbols, snapshot, vc_id, policy, true,
+    )?;
+    let invalid = || "theorem.proof.invalid_source_witness".to_owned();
+    if decision.class != crate::policy::CandidatePolicyClass::DischargedBuiltin {
+        return Err(invalid());
+    }
+    let metadata = metadata.ok_or_else(invalid)?;
+    let input = KernelPolicyInput::from_kernel_result(&result, origin);
+    let polarity = input.accepted_goal_polarity().ok_or_else(invalid)?;
+    let target = result.target_vc_fingerprint().sort_bytes();
+    let target_hex = source_discharge_hex(&target);
+    let id = CandidateSourceId::new(format!("source-theorem-reflexivity-v1:{target_hex}"))
+        .map_err(|_| invalid())?;
+    let candidate =
+        ProofEvidenceCandidate::from_trusted_kernel_input(id, &input).ok_or_else(invalid)?;
+    let selection = select_winner(
+        &ProofEvidenceSet::new(target, None, policy.clone()).with_candidates([candidate]),
+    );
+    if selection.selected_class() != ProofWinnerClass::DischargedBuiltin {
+        return Err(invalid());
+    }
+    let payload_family = "mizar-proof/source-theorem-reflexivity-witness-payload";
+    let witness_artifact_hash = ArtifactHashRef {
+        class: ArtifactHashClass::Artifact,
+        schema_family: payload_family.into(),
+        schema_version: SchemaVersion::new(1, 0),
+        digest: CanonicalHashDomain::new(
+            HashClass::Artifact,
+            payload_family,
+            SchemaVersion::new(1, 0),
+        )
+        .hash(&CanonicalJson::string(source_discharge_hex(&bytes)), &[]),
+    };
+    let obligation = CanonicalJson::object([
+        (
+            "original_obligation_fingerprint",
+            CanonicalJson::string(source_discharge_hex(
+                identity.obligation_fingerprint().as_bytes(),
+            )),
+        ),
+        ("checked_target_bytes", CanonicalJson::string(target_hex)),
+        (
+            "local_context_identity_hash",
+            CanonicalJson::string(source_discharge_hex(
+                handoff.context_identity_hash().as_bytes(),
+            )),
+        ),
+        (
+            "kernel_profile_fingerprint",
+            CanonicalJson::string(
+                metadata
+                    .kernel_profile_fingerprint
+                    .to_artifact_hash_string(),
+            ),
+        ),
+        (
+            "verifier_policy_fingerprint",
+            CanonicalJson::string(
+                metadata
+                    .verifier_policy_fingerprint
+                    .to_artifact_hash_string(),
+            ),
+        ),
+        (
+            "checker_schema_version",
+            CanonicalJson::string(metadata.checker_schema_version.to_string()),
+        ),
+        (
+            "evidence_schema_version",
+            CanonicalJson::string(metadata.evidence_schema_version.to_string()),
+        ),
+        (
+            "target_binding_hash",
+            CanonicalJson::string(metadata.target_binding_hash.to_artifact_hash_string()),
+        ),
+        (
+            "formula_evidence_hash",
+            CanonicalJson::string(metadata.formula_evidence_hash.to_artifact_hash_string()),
+        ),
+        (
+            "substitution_evidence_hash",
+            CanonicalJson::string(
+                metadata
+                    .substitution_evidence_hash
+                    .to_artifact_hash_string(),
+            ),
+        ),
+        (
+            "provenance_hash",
+            CanonicalJson::string(metadata.provenance_hash.to_artifact_hash_string()),
+        ),
+        (
+            "formula_context_hash",
+            metadata
+                .formula_context_hash
+                .as_ref()
+                .map_or_else(CanonicalJson::null, |hash| {
+                    CanonicalJson::string(hash.to_artifact_hash_string())
+                }),
+        ),
+        (
+            "accepted_result_hash",
+            CanonicalJson::string(metadata.accepted_result_hash.to_artifact_hash_string()),
+        ),
+        (
+            "accepted_goal_polarity",
+            CanonicalJson::string(polarity.as_str()),
+        ),
+        (
+            "witness_artifact_hash",
+            CanonicalJson::string(witness_artifact_hash.to_artifact_hash_string()),
+        ),
+    ])
+    .map_err(|_| invalid())?;
+    let obligation_family = "mizar-proof/source-theorem-reflexivity-obligation";
+    let reference = ProofWitnessRef {
+        schema_version: SchemaVersion::new(3, 0),
+        obligation_id: identity.obligation_id().into(),
+        obligation_fingerprint: ArtifactHashRef {
+            class: ArtifactHashClass::Interface,
+            schema_family: obligation_family.into(),
+            schema_version: SchemaVersion::new(1, 0),
+            digest: CanonicalHashDomain::new(
+                HashClass::Interface,
+                obligation_family,
+                SchemaVersion::new(1, 0),
+            )
+            .hash(&obligation, &[]),
+        },
+        proof_status: ProofStatus::DischargedBuiltin,
+        evidence_kind: EvidenceKind::FormulaSubstitutionKernelEvidence,
+        witness_path: format!(
+            "proof-witnesses/source-theorem-reflexivity-v1/{}.bin",
+            source_discharge_hex(witness_artifact_hash.digest.as_bytes())
+        ),
+        witness_artifact_hash,
+        kernel_acceptance: metadata,
+    };
+    builtin_proof_witness_ref_json(&reference).map_err(|_| invalid())?;
+    Ok((selection, reference, bytes))
 }
 
 /// Projects genuine source theorem reflexivity with its full original dependency slice.

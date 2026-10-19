@@ -457,6 +457,7 @@ kernel の拒否語彙と evidence 契約を訂正した。policy 層はその�
 41. **[Source theorem reflexivity selection](../../task_contracts/ja/PROOF-SOURCE-THEOREM-REFLEXIVITY-SELECTION.md).** [x]
 42. **[Source theorem reflexivity status projection](../../task_contracts/ja/PROOF-SOURCE-THEOREM-STATUS-PROJECTION.md).** [x]
 43. **[Source theorem reflexivity metadata and checked wire](../../task_contracts/ja/PROOF-SOURCE-THEOREM-REFLEXIVITY-METADATA.md).** [x]
+44. **[Source theorem reflexivity witness projection](../../task_contracts/ja/PROOF-SOURCE-THEOREM-WITNESS-PROJECTION.md).** [x]
 
 ## 推奨検証
 

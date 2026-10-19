@@ -8666,4 +8666,647 @@ mod term_proof_tests {
         }
         assert_eq!(policies, policies_before);
     }
+    #[test]
+    fn source_theorem_reflexivity_witness_matches_original_identity_and_checked_wire() {
+        use super::super::tests::source_registration_owner_inputs as inputs;
+        use mizar_artifact::{
+            proof_witness::{
+                EvidenceKind, ProofStatus, ProofWitnessReadOptions, ProofWitnessRef,
+                builtin_proof_witness_ref_json, read_builtin_proof_witness_ref,
+            },
+            registration_summary::{ArtifactHashClass, ArtifactHashRef},
+            store::{CanonicalHashDomain as Domain, CanonicalJson as J, HashClass, SchemaVersion},
+        };
+        use mizar_core::elaborator::lower_source_theorem_skeletons as lower;
+        use mizar_kernel::{
+            certificate_parser::{ClauseTautologyPolicy, Fingerprint, KernelProfileRecord},
+            checker::{KernelCheckStatus as Status, KernelEvidenceCheckKind as Kind},
+            formula_evidence::{FormulaEvidenceParseContext, parse_formula_evidence},
+        };
+        use mizar_proof::selection::{
+            CandidateSourceId as Id, ProofEvidenceCandidate as Candidate, ProofEvidenceSet as Set,
+            ProofWinnerClass, ProofWitnessPublication, select_winner,
+        };
+        use mizar_proof::{
+            policy::{
+                AcceptedGoalPolarity, CandidatePolicyClass as Class,
+                KernelEvidenceFormat as Format, KernelEvidenceOrigin as Origin, KernelPolicyInput,
+                VerifierPolicy as Policy,
+            },
+            status::{
+                check_source_theorem_reflexivity as verify,
+                check_source_theorem_reflexivity_metadata as metadata,
+                project_source_theorem_reflexivity_status as status,
+                project_source_theorem_reflexivity_witness as witness,
+                select_source_theorem_reflexivity as select,
+                source_theorem_canonical_inputs as canonical,
+                source_theorem_obligation_identity as identity,
+            },
+        };
+        use mizar_vc::{
+            generator::generate_source_theorem_vcs as generate,
+            kernel_evidence_handoff::{
+                KernelClauseTautologyPolicy, build_source_theorem_kernel_handoff as project,
+            },
+            vc_ir::{GenerationSchemaVersion, VcId, VcSchemaVersion, VcStatus},
+        };
+        let id = "theorem T: for X being set holds X = X proof let X be set; thus X = X; end;";
+        let bound = id.replace(
+            "for X being set holds X = X",
+            "for Bound being set holds Bound = Bound",
+        );
+        let local = id.replace(
+            "let X be set; thus X = X",
+            "let Local be set; thus Local = Local",
+        );
+        let trivia = format!(":: 日本語 λ\n{id}\n");
+        let mut original_source = None;
+        let mut prior = Vec::new();
+        for (index, (text, package, module, skip)) in [
+            (id.to_owned(), "owner-test", "owners", 0),
+            (bound, "owner-test", "owners", 0),
+            (local, "owner-test", "owners", 0),
+            (trivia, "owner-test", "owners", 0),
+            (id.to_owned(), "owner-test", "owners", 7),
+            (id.to_owned(), "other-package", "owners", 0),
+            (id.to_owned(), "owner-test", "nested.owners", 0),
+        ]
+        .into_iter()
+        .enumerate()
+        {
+            let (frontend, s, collected) = inputs(&text, package, module, skip);
+            assert!(frontend.diagnostics.is_empty());
+            assert!(collected.diagnostics().is_empty());
+            let e = collected.env();
+            let before = (s.clone(), e.clone(), prior.clone());
+            if skip == 7 {
+                assert_ne!(Some(s.source_id()), original_source);
+            } else if original_source.is_none() {
+                original_source = Some(s.source_id());
+            }
+            with_source_theorem_check(frontend.ast.as_ref().unwrap(), &s, e, |c| {
+                let check_before = format!("{c:?}");
+                for p in [
+                    Policy::default(),
+                    Policy::release().with_require_kernel_certificates(true),
+                    Policy::development()
+                        .with_kernel_evidence_formats([Format::BuiltinKernelEvidence]),
+                    Policy::default().with_profile_id("theorem-metadata"),
+                    Policy::default().with_schema_version(2),
+                    Policy::default().with_checker_schema_version(2),
+                ]
+                .into_iter()
+                .take(if index == 0 { 6 } else { 1 })
+                {
+                    for ordinal in [777, 778] {
+                        let sn = snapshot_id(ordinal);
+                        let vc = VcId::new(0);
+                        let policy_before = p.clone();
+                        let id = identity(&s, c, e, sn, vc)?;
+                        let content = canonical(c, sn, vc)?;
+                        let r = verify(&s, c, e, sn, vc, &p)?;
+                        let old = metadata(&s, c, e, sn, vc, &p)?;
+                        assert_eq!((&old.0, &old.1), (&r.0, &r.1));
+                        let core = lower(c, None)?;
+                        let graph = generate(
+                            &core,
+                            sn,
+                            &GenerationSchemaVersion::new("source-theorem-local-v1"),
+                            &VcSchemaVersion::new("vc-v1"),
+                        )?;
+                        assert_eq!(graph.vcs()[0].status, VcStatus::Open);
+                        let handoff = project(&core, &graph, vc)?;
+                        let envelope = handoff.canonical_evidence();
+                        let target = envelope.target_vc();
+                        let profile = envelope.kernel_profile();
+                        let tautology = match profile.clause_tautology_policy {
+                            KernelClauseTautologyPolicy::Reject => ClauseTautologyPolicy::Reject,
+                            KernelClauseTautologyPolicy::Marker => ClauseTautologyPolicy::Marker,
+                            _ => panic!("unsupported actual theorem profile"),
+                        };
+                        let mut context = FormulaEvidenceParseContext::v1(
+                            Fingerprint::new(target.algorithm_id, target.digest.clone()),
+                            KernelProfileRecord::v1(profile.profile_id, tautology),
+                        );
+                        let v1 = handoff.encode_local_evidence(None)?;
+                        let parsed = parse_formula_evidence(&v1, &context).unwrap();
+                        assert_eq!(parsed.schema_version(), 1);
+                        let names =
+                            mizar_atp::backend::encode_local_variable_reflexivity_names(&parsed)?;
+                        assert!(!names.is_empty());
+                        let wire = handoff.encode_local_evidence(Some(&names))?;
+                        assert_ne!(wire, v1);
+                        context.accepted_schema_versions.insert(2);
+                        let named = parse_formula_evidence(&wire, &context).unwrap();
+                        assert_eq!(named.schema_version(), 2);
+                        assert_eq!(named.equality_instances().len(), names.len());
+                        for name in &names {
+                            assert!(wire.windows(name.len()).any(|bytes| bytes == name));
+                        }
+                        let input =
+                            KernelPolicyInput::from_kernel_result(&r.0, Origin::BuiltinDischarge);
+                        assert_eq!(r.0.status(), Status::Accepted);
+                        assert_eq!(r.0.evidence_check_kind(), Some(Kind::ProofObligation));
+                        assert!(!r.0.policy_taint());
+                        assert_eq!(r.1.class, Class::DischargedBuiltin);
+                        assert_eq!(
+                            input.accepted_goal_polarity(),
+                            Some(AcceptedGoalPolarity::AssertFalseForRefutation)
+                        );
+                        let accepted = input.accepted_evidence_hash().unwrap();
+                        let m = old.2.clone().unwrap();
+                        assert_eq!(m.accepted_result_hash.digest, accepted);
+                        assert_eq!(m.target_binding_hash.digest, handoff.canonical_hash());
+                        assert_eq!(
+                            m.checker_schema_version,
+                            SchemaVersion::new(p.checker_schema_version(), 0)
+                        );
+                        assert_eq!(
+                            m.evidence_schema_version,
+                            SchemaVersion::new(named.schema_version(), 0)
+                        );
+                        assert_eq!(m.formula_context_hash, None);
+                        let choice = select(&s, c, e, sn, vc, &p)?;
+                        let state = status(&s, c, e, sn, vc, &p)?;
+                        assert_eq!(id.0.obligation_id(), id.0.obligation_anchor().as_str());
+                        assert_eq!(id.0.vc_fingerprint(), content.0.hash());
+                        assert_eq!(id.0.local_context_fingerprint(), content.2.hash());
+                        assert_eq!(
+                            id.0.dependency_slice_fingerprint(),
+                            content.3.fingerprint().hash()
+                        );
+                        assert_eq!(id.1, content.3);
+                        assert!(!id.1.entries().is_empty());
+                        assert!(!id.1.unknowns().is_empty());
+                        assert!(!id.1.is_complete());
+                        assert!(id.1.requires_cache_miss());
+                        let checked_target = mizar_kernel::rejection::TargetVcFingerprint::new(
+                            target.algorithm_id,
+                            target.digest.clone(),
+                        );
+                        let target = r.0.target_vc_fingerprint().sort_bytes();
+                        let target_hex: String =
+                            target.iter().map(|b| format!("{b:02x}")).collect();
+                        let candidate_id =
+                            Id::new(format!("source-theorem-reflexivity-v1:{target_hex}")).unwrap();
+                        let candidate =
+                            Candidate::from_trusted_kernel_input(candidate_id, &input).unwrap();
+                        let expected_selection = select_winner(
+                            &Set::new(target, None, p.clone()).with_candidates([candidate]),
+                        );
+                        assert_eq!(choice, expected_selection);
+                        assert_eq!(choice.selected_class(), ProofWinnerClass::DischargedBuiltin);
+                        let meta = choice.reuse_metadata();
+                        assert_eq!(
+                            meta.accepted_goal_polarity(),
+                            input.accepted_goal_polarity()
+                        );
+                        assert_eq!(meta.encoded_problem_hash(), None);
+                        assert_eq!(meta.selected_candidate_provenance_hash(), None);
+                        assert_eq!(meta.deterministic_discharge_hash(), None);
+                        assert_eq!(meta.selected_proof_witness_hash(), None);
+                        assert_eq!(
+                            meta.proof_witness_publication(),
+                            ProofWitnessPublication::ExternalDependencyGap
+                        );
+                        let payload_family =
+                            "mizar-proof/source-theorem-reflexivity-witness-payload";
+                        let wire_hex: String = wire.iter().map(|b| format!("{b:02x}")).collect();
+                        let payload_hash = ArtifactHashRef {
+                            class: ArtifactHashClass::Artifact,
+                            schema_family: payload_family.into(),
+                            schema_version: SchemaVersion::new(1, 0),
+                            digest: Domain::new(
+                                HashClass::Artifact,
+                                payload_family,
+                                SchemaVersion::new(1, 0),
+                            )
+                            .hash(&J::string(wire_hex), &[]),
+                        };
+                        let identity_hashes = [
+                            id.0.obligation_fingerprint(),
+                            handoff.context_identity_hash(),
+                        ]
+                        .map(|h| {
+                            h.as_bytes()
+                                .iter()
+                                .map(|b| format!("{b:02x}"))
+                                .collect::<String>()
+                        });
+                        let [original_hash, local_context] = identity_hashes;
+                        let keys = [
+                            "original_obligation_fingerprint",
+                            "checked_target_bytes",
+                            "local_context_identity_hash",
+                            "kernel_profile_fingerprint",
+                            "verifier_policy_fingerprint",
+                            "checker_schema_version",
+                            "evidence_schema_version",
+                            "target_binding_hash",
+                            "formula_evidence_hash",
+                            "substitution_evidence_hash",
+                            "provenance_hash",
+                            "formula_context_hash",
+                            "accepted_result_hash",
+                            "accepted_goal_polarity",
+                            "witness_artifact_hash",
+                        ];
+                        let values = [
+                            original_hash,
+                            target_hex,
+                            local_context,
+                            m.kernel_profile_fingerprint.to_artifact_hash_string(),
+                            m.verifier_policy_fingerprint.to_artifact_hash_string(),
+                            m.checker_schema_version.to_string(),
+                            m.evidence_schema_version.to_string(),
+                            m.target_binding_hash.to_artifact_hash_string(),
+                            m.formula_evidence_hash.to_artifact_hash_string(),
+                            m.substitution_evidence_hash.to_artifact_hash_string(),
+                            m.provenance_hash.to_artifact_hash_string(),
+                            m.accepted_result_hash.to_artifact_hash_string(),
+                            input.accepted_goal_polarity().unwrap().as_str().into(),
+                            payload_hash.to_artifact_hash_string(),
+                        ]
+                        .map(J::string);
+                        let mut values = values.into_iter().collect::<Vec<_>>();
+                        values.insert(11, J::null());
+                        let object = J::object(keys.into_iter().zip(values)).unwrap();
+                        let family = "mizar-proof/source-theorem-reflexivity-obligation";
+                        let expected_ref = ProofWitnessRef {
+                            schema_version: SchemaVersion::new(3, 0),
+                            obligation_id: id.0.obligation_id().into(),
+                            obligation_fingerprint: ArtifactHashRef {
+                                class: ArtifactHashClass::Interface,
+                                schema_family: family.into(),
+                                schema_version: SchemaVersion::new(1, 0),
+                                digest: Domain::new(
+                                    HashClass::Interface,
+                                    family,
+                                    SchemaVersion::new(1, 0),
+                                )
+                                .hash(&object, &[]),
+                            },
+                            proof_status: ProofStatus::DischargedBuiltin,
+                            evidence_kind: EvidenceKind::FormulaSubstitutionKernelEvidence,
+                            witness_path: format!(
+                                "proof-witnesses/source-theorem-reflexivity-v1/{}.bin",
+                                payload_hash
+                                    .digest
+                                    .as_bytes()
+                                    .iter()
+                                    .map(|b| format!("{b:02x}"))
+                                    .collect::<String>()
+                            ),
+                            witness_artifact_hash: payload_hash,
+                            kernel_acceptance: m.clone(),
+                        };
+                        assert_ne!(
+                            expected_ref.obligation_fingerprint.digest,
+                            id.0.obligation_fingerprint()
+                        );
+                        assert_ne!(handoff.context_identity_hash(), handoff.canonical_hash());
+                        assert_eq!(r.0.target_vc_fingerprint(), &checked_target);
+                        assert_eq!(old.3, wire);
+                        let actual = witness(&s, c, e, sn, vc, &p)?;
+                        assert_eq!(actual, (expected_selection, expected_ref, wire.clone()));
+                        let json = builtin_proof_witness_ref_json(&actual.1).unwrap();
+                        assert_eq!(
+                            read_builtin_proof_witness_ref(
+                                &json,
+                                ProofWitnessReadOptions::default()
+                            )
+                            .unwrap(),
+                            actual.1
+                        );
+                        assert_eq!(actual, witness(&s, c, e, sn, vc, &p)?);
+                        assert_eq!(id, identity(&s, c, e, sn, vc)?);
+                        assert_eq!(old, metadata(&s, c, e, sn, vc, &p)?);
+                        assert_eq!(r, verify(&s, c, e, sn, vc, &p)?);
+                        assert_eq!(choice, select(&s, c, e, sn, vc, &p)?);
+                        assert_eq!(state, status(&s, c, e, sn, vc, &p)?);
+                        assert_eq!(state.1, id.1);
+                        assert!(!state.0.reuse_metadata().cache_reuse_predicate_complete());
+                        assert_eq!(p, policy_before);
+                        prior.push(actual);
+                    }
+                }
+                assert_eq!(format!("{c:?}"), check_before);
+                Ok(())
+            })
+            .unwrap();
+            assert_eq!((&s, e), (&before.0, &before.1));
+            assert_eq!(&prior[..before.2.len()], before.2);
+        }
+    }
+    #[test]
+    fn source_theorem_reflexivity_witness_hashes_bind_all_participants() {
+        use super::super::tests::source_registration_owner_inputs as inputs;
+        use mizar_artifact::{
+            registration_summary::{ArtifactHashClass, ArtifactHashRef},
+            store::{CanonicalHashDomain as Domain, CanonicalJson as J, HashClass, SchemaVersion},
+        };
+        use mizar_kernel::{
+            certificate_parser::{ClauseTautologyPolicy, Fingerprint, KernelProfileRecord},
+            formula_evidence::{FormulaEvidenceParseContext, parse_formula_evidence},
+        };
+        use mizar_proof::{
+            policy::{KernelEvidenceOrigin, KernelPolicyInput, VerifierPolicy},
+            status::{
+                check_source_theorem_reflexivity_metadata as metadata,
+                project_source_theorem_reflexivity_witness as witness,
+                source_theorem_obligation_identity as identity,
+            },
+        };
+        use mizar_vc::{
+            generator::generate_source_theorem_vcs,
+            kernel_evidence_handoff::build_source_theorem_kernel_handoff,
+            vc_ir::{GenerationSchemaVersion, VcId, VcSchemaVersion},
+        };
+        let text = "theorem T: for X being set holds X = X proof let X be set; thus X = X; end;";
+        let (frontend, s, collected) = inputs(text, "owner-test", "owners", 0);
+        with_source_theorem_check(frontend.ast.as_ref().unwrap(), &s, collected.env(), |c| {
+            let sn = snapshot_id(777);
+            let vc = VcId::new(0);
+            let p = VerifierPolicy::default();
+            let id = identity(&s, c, collected.env(), sn, vc)?;
+            let old = metadata(&s, c, collected.env(), sn, vc, &p)?;
+            let accepted = old.2.as_ref().unwrap();
+            let core = mizar_core::elaborator::lower_source_theorem_skeletons(c, None)?;
+            let graph = generate_source_theorem_vcs(
+                &core,
+                sn,
+                &GenerationSchemaVersion::new("source-theorem-local-v1"),
+                &VcSchemaVersion::new("vc-v1"),
+            )?;
+            let handoff = build_source_theorem_kernel_handoff(&core, &graph, vc)?;
+            let input = KernelPolicyInput::from_kernel_result(
+                &old.0,
+                KernelEvidenceOrigin::BuiltinDischarge,
+            );
+            let payload_family = "mizar-proof/source-theorem-reflexivity-witness-payload";
+            let payload_domain = Domain::new(
+                HashClass::Artifact,
+                payload_family,
+                SchemaVersion::new(1, 0),
+            );
+            let wire_hex: String = old.3.iter().map(|b| format!("{b:02x}")).collect();
+            let payload = ArtifactHashRef {
+                class: ArtifactHashClass::Artifact,
+                schema_family: payload_family.into(),
+                schema_version: SchemaVersion::new(1, 0),
+                digest: payload_domain.hash(&J::string(wire_hex), &[]),
+            };
+            let identity_hashes = [
+                id.0.obligation_fingerprint(),
+                handoff.context_identity_hash(),
+            ]
+            .map(|h| {
+                h.as_bytes()
+                    .iter()
+                    .map(|b| format!("{b:02x}"))
+                    .collect::<String>()
+            });
+            let [original_hash, local_context] = identity_hashes;
+            let keys = [
+                "original_obligation_fingerprint",
+                "checked_target_bytes",
+                "local_context_identity_hash",
+                "kernel_profile_fingerprint",
+                "verifier_policy_fingerprint",
+                "checker_schema_version",
+                "evidence_schema_version",
+                "target_binding_hash",
+                "formula_evidence_hash",
+                "substitution_evidence_hash",
+                "provenance_hash",
+                "formula_context_hash",
+                "accepted_result_hash",
+                "accepted_goal_polarity",
+                "witness_artifact_hash",
+            ];
+            let values = [
+                original_hash,
+                old.0
+                    .target_vc_fingerprint()
+                    .sort_bytes()
+                    .iter()
+                    .map(|b| format!("{b:02x}"))
+                    .collect(),
+                local_context,
+                accepted
+                    .kernel_profile_fingerprint
+                    .to_artifact_hash_string(),
+                accepted
+                    .verifier_policy_fingerprint
+                    .to_artifact_hash_string(),
+                accepted.checker_schema_version.to_string(),
+                accepted.evidence_schema_version.to_string(),
+                accepted.target_binding_hash.to_artifact_hash_string(),
+                accepted.formula_evidence_hash.to_artifact_hash_string(),
+                accepted
+                    .substitution_evidence_hash
+                    .to_artifact_hash_string(),
+                accepted.provenance_hash.to_artifact_hash_string(),
+                accepted.accepted_result_hash.to_artifact_hash_string(),
+                input.accepted_goal_polarity().unwrap().as_str().into(),
+                payload.to_artifact_hash_string(),
+            ]
+            .map(J::string);
+            let mut values = values.into_iter().collect::<Vec<_>>();
+            values.insert(11, J::null());
+            let object = J::object(keys.into_iter().zip(values)).unwrap();
+            let domain = Domain::new(
+                HashClass::Interface,
+                "mizar-proof/source-theorem-reflexivity-obligation",
+                SchemaVersion::new(1, 0),
+            );
+            let m = domain.hash(&object, &[]);
+            let actual = witness(&s, c, collected.env(), sn, vc, &p)?;
+            assert_eq!(actual.1.witness_artifact_hash, payload);
+            assert_eq!(actual.1.obligation_fingerprint.digest, m);
+            assert_eq!(actual.2, old.3);
+            let J::Object(fields) = &object else {
+                panic!("object");
+            };
+            assert_eq!(fields.len(), 15);
+            // Mutations exercise only the structural hash grammar, never a forged Kernel result.
+            for (key, value) in fields {
+                let mut changed = fields.clone();
+                changed.insert(
+                    key.clone(),
+                    match value {
+                        J::String(text) => J::string(format!("{text}0")),
+                        J::Null => J::string("non-null"),
+                        _ => panic!("unexpected participant type"),
+                    },
+                );
+                assert_ne!(domain.hash(&J::Object(changed), &[]), m, "{key}");
+            }
+            assert_eq!(accepted.formula_context_hash, None);
+            assert_ne!(
+                handoff.context_identity_hash(),
+                accepted.target_binding_hash.digest
+            );
+            assert_ne!(
+                handoff.context_identity_hash(),
+                id.0.local_context_fingerprint()
+            );
+            let v1 = handoff.encode_local_evidence(None)?;
+            assert_ne!(old.3, v1);
+            let v1_hex: String = v1.iter().map(|b| format!("{b:02x}")).collect();
+            assert_ne!(payload_domain.hash(&J::string(v1_hex), &[]), payload.digest);
+            let envelope = handoff.canonical_evidence();
+            let target = envelope.target_vc();
+            let profile = envelope.kernel_profile();
+            assert_eq!(
+                profile.clause_tautology_policy,
+                mizar_vc::kernel_evidence_handoff::KernelClauseTautologyPolicy::Reject
+            );
+            let context = FormulaEvidenceParseContext::v1(
+                Fingerprint::new(target.algorithm_id, target.digest.clone()),
+                KernelProfileRecord::v1(profile.profile_id, ClauseTautologyPolicy::Reject),
+            );
+            let parsed = parse_formula_evidence(&v1, &context).unwrap();
+            let mut names = mizar_atp::backend::encode_local_variable_reflexivity_names(&parsed)?;
+            assert_eq!(handoff.encode_local_evidence(Some(&names))?, old.3);
+            assert!(!names.is_empty());
+            names[0][0] ^= 1;
+            let changed = handoff.encode_local_evidence(Some(&names))?;
+            assert_ne!(changed, old.3);
+            let hex: String = changed.iter().map(|b| format!("{b:02x}")).collect();
+            assert_ne!(payload_domain.hash(&J::string(hex), &[]), payload.digest);
+            let mut changed = old.3.clone();
+            changed.push(0);
+            let hex: String = changed.iter().map(|b| format!("{b:02x}")).collect();
+            assert_ne!(payload_domain.hash(&J::string(hex), &[]), payload.digest);
+            Ok(())
+        })
+        .unwrap();
+    }
+    #[test]
+    fn source_theorem_reflexivity_witness_preserves_identity_first_errors() {
+        use super::super::tests::source_registration_owner_inputs as inputs;
+        use mizar_proof::{
+            policy::{KernelEvidenceFormat as Format, VerifierPolicy as Policy},
+            status::{
+                check_source_theorem_reflexivity as verify,
+                check_source_theorem_reflexivity_metadata as metadata,
+                project_source_theorem_reflexivity_witness as witness,
+                source_theorem_obligation_identity as identity,
+            },
+        };
+        use mizar_vc::vc_ir::VcId;
+        let original =
+            "theorem T: for X being set holds X = X proof let X be set; thus X = X; end;";
+        let snap = snapshot_id(777);
+        let absent = VcId::new(usize::MAX);
+        let policies = [
+            Policy::default(),
+            Policy::default().with_kernel_evidence_formats([]),
+            Policy::release().with_kernel_evidence_formats([Format::FormulaSubstitution]),
+        ];
+        let policies_before = policies.clone();
+        let cited = include_str!(
+            "../../../../tests/miz/pass/theorems/pass_proof_verification_lemma_reference_001.miz"
+        );
+        for text in [
+            original.to_owned(),
+            original.replacen("theorem", "lemma", 1),
+            "open theorem O: for X being set holds X = X;".to_owned(),
+            format!(
+                "{original}\n{}",
+                original.replace("theorem T:", "theorem U:")
+            ),
+            cited.to_owned(),
+        ] {
+            let (frontend, source, collected) = inputs(&text, "owner-test", "owners", 0);
+            assert!(frontend.diagnostics.is_empty());
+            assert!(collected.diagnostics().is_empty());
+            let env = collected.env();
+            let before = (source.clone(), env.clone());
+            with_source_theorem_check(frontend.ast.as_ref().unwrap(), &source, env, |check| {
+                let check_before = format!("{check:?}");
+                for (index, policy) in policies.iter().enumerate() {
+                    for vc in [VcId::new(0), absent] {
+                        if text == original && index == 0 && vc != absent {
+                            continue;
+                        }
+                        let check_error =
+                            metadata(&source, check, env, snap, vc, policy).unwrap_err();
+                        let expected = match identity(&source, check, env, snap, vc) {
+                            Err(_) => identity(&source, check, env, snap, vc).unwrap_err(),
+                            Ok(_) => check_error,
+                        };
+                        assert_eq!(
+                            witness(&source, check, env, snap, vc, policy).unwrap_err(),
+                            expected
+                        );
+                    }
+                }
+                if text == original {
+                    let vc = VcId::new(0);
+                    let policy = &policies[0];
+                    let prior = (
+                        verify(&source, check, env, snap, vc, policy)?,
+                        metadata(&source, check, env, snap, vc, policy)?,
+                        witness(&source, check, env, snap, vc, policy)?,
+                        identity(&source, check, env, snap, vc)?,
+                    );
+                    let prior_before = prior.clone();
+                    for text in [
+                        original.replace("theorem T:", "theorem Foreign:"),
+                        format!(
+                            "{original}\n{}",
+                            original.replace("theorem T:", "theorem U:")
+                        ),
+                        "theorem T: for X being set holds X = ;".to_owned(),
+                    ] {
+                        let (other_frontend, other_source, other) =
+                            inputs(&text, "owner-test", "owners", 0);
+                        assert_eq!(
+                            !other_frontend.diagnostics.is_empty(),
+                            text.ends_with("= ;")
+                        );
+                        let other_before = (other_source.clone(), other.env().clone());
+                        for (current, symbols) in [
+                            (&other_source, other.env()),
+                            (&source, other.env()),
+                            (&other_source, env),
+                        ] {
+                            for policy in &policies {
+                                for selected in [vc, absent] {
+                                    let expected =
+                                        identity(current, check, symbols, snap, selected)
+                                            .unwrap_err();
+                                    metadata(current, check, symbols, snap, selected, policy)
+                                        .unwrap_err();
+                                    assert_eq!(
+                                        witness(current, check, symbols, snap, selected, policy)
+                                            .unwrap_err(),
+                                        expected
+                                    );
+                                }
+                            }
+                        }
+                        assert_eq!((other_source, other.env().clone()), other_before);
+                    }
+                    assert_eq!(prior, prior_before);
+                    assert_eq!(
+                        prior,
+                        (
+                            verify(&source, check, env, snap, vc, policy)?,
+                            metadata(&source, check, env, snap, vc, policy)?,
+                            witness(&source, check, env, snap, vc, policy)?,
+                            identity(&source, check, env, snap, vc)?,
+                        )
+                    );
+                }
+                assert_eq!(format!("{check:?}"), check_before);
+                Ok(())
+            })
+            .unwrap();
+            assert_eq!((source, env.clone()), before);
+        }
+        assert_eq!(policies, policies_before);
+    }
 }
