@@ -5,8 +5,9 @@
 These examples are illustrative library sketches. They are intended to show how
 the surface syntax from the specification fits together; omitted proofs are
 written as `...`. A bare correctness name such as `coherence;` uses the legal
-empty-justification form and leaves the unchanged obligation to no-hint
-verification; it is not an assertion that the obligation is automatically true.
+empty-justification form: it leaves the obligation unchanged and hands it to
+no-hint verification. It is not an assertion that the obligation is
+automatically true.
 
 ## Directory structure
 
@@ -378,4 +379,4 @@ end;
 
 ## Structural algorithm examples
 
-[§20.12](./20.algorithm_and_verification.md#structural-proof-search-and-differentiation) owns the order-chain, occurrence-check and full-real-domain differentiation examples and their proof obligations. [§18.8.4](./18.templates.md#1884-algorithm-templates) and [§20.13.4](./20.algorithm_and_verification.md#20134-recursive-algorithm-encoding) own the iteration/Collatz examples. For a legacy constant finite sequence, replace `n |-> a` by `(Seg n) --> a` (§13.10), preserving the finite domain rather than constructing a Nat-domain Binder.
+The order-chain, occurrence-check, and full-real-domain differentiation examples, together with their proof obligations, live in [§20.12](./20.algorithm_and_verification.md#structural-proof-search-and-differentiation). The iteration and Collatz examples live in [§18.8.4](./18.templates.md#1884-algorithm-templates) and [§20.13.4](./20.algorithm_and_verification.md#20134-recursive-algorithm-encoding). For a legacy constant finite sequence, replace `n |-> a` by `(Seg n) --> a` (§13.10); this preserves the finite domain instead of constructing a Binder over the Nat domain.

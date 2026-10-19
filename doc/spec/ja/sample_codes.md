@@ -2,11 +2,11 @@
 
 > Canonical language: English. English canonical version: [../en/sample_codes.md](../en/sample_codes.md).
 
-これらの例は、library のスケッチを説明するためのものです。仕様の表面構文を
-組み合わせる方法を示し、省略された証明は `...` と書きます。
-`coherence;` のような bare correctness name は正当な空 justification 形式であり、
-obligation を no-hint verification に残します。obligation が自動的に真になるという
-assertion ではありません。
+これらの例は、library のスケッチを説明するためのものです。仕様の表面構文が
+どのように組み合わさるかを示すことを目的としており、省略された証明は `...` と
+書きます。`coherence;` のような bare correctness name は、正当な空の justification
+形式です。これは obligation を変更せずに no-hint verification に委ねるものであり、
+obligation が自動的に真になるという assertion ではありません。
 
 ## ディレクトリ構造
 
@@ -378,4 +378,4 @@ end;
 
 ## 構造を扱う algorithm の例
 
-[§20.12](./20.algorithm_and_verification.md#構造的な証明探索と微分) に大小関係の連鎖、出現検査、全実数上の微分の例と証明義務をまとめます。反復・コラッツの例は [§18.8.4](./18.templates.md)・[§20.13.4](./20.algorithm_and_verification.md) を参照します。旧定数有限列 `n |-> a` は `(Seg n) --> a`（§13.10）へ移し、Nat 領域の Binder を作るのではなく有限の領域を保ちます。
+大小関係の連鎖、出現検査、全実数上の微分の例とその証明義務は、[§20.12](./20.algorithm_and_verification.md#構造的な証明探索と微分) にまとめています。反復とコラッツの例は、[§18.8.4](./18.templates.md) と [§20.13.4](./20.algorithm_and_verification.md) にあります。旧来の定数有限列については、`n |-> a` を `(Seg n) --> a` (§13.10) に置き換えます。これにより、Nat 領域のバインダを作るのではなく、有限の領域を保ちます。

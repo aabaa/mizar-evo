@@ -161,8 +161,8 @@ globally reserved special symbol.
 Fixed annotation names and option names are contextual spellings, not reserved
 identifiers outside their grammar positions. Current contextual spellings are
 `auto`, `cvc5`, `e`, `max_axioms`, `solver`, `steps`, `timeout`, `vampire`,
-`z3`, `result`, and `expr_size`, `expr_children`, `val`, `val_at`, `valid_at`, plus the fixed annotation-name spellings
-following `@` in A.21.
+`z3`, `result`, `expr_size`, `expr_children`, `val`, `val_at`, and `valid_at`,
+plus the fixed annotation-name spellings following `@` in A.21.
 The `@` marker is lexically reserved for annotations, but it is not a
 standalone reserved-symbol token.
 

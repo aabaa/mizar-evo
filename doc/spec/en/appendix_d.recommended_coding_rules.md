@@ -20,7 +20,7 @@ Prefer code whose mathematical intent is visible before the verifier explains it
 | Rule | Recommendation |
 |---|---|
 | Make intent local | Put the type, qualification, citation, or annotation close to the expression it clarifies. |
-| Make public statements self-contained | Bind every variable of a public theorem, lemma, or scheme with an explicit type instead of relying on `reserve`; keep `reserve` for proofs and private items (W0004). The elaborated statement (§23.5.1) shows the explicit form. |
+| Make public statements self-contained | Bind every variable of a public theorem, lemma, or scheme with an explicit type instead of relying on `reserve`. Keep `reserve` for proofs and private items (W0004). The elaborated statement (§23.5.1) shows the explicit form. |
 | Keep proof dependencies explicit | Cite the facts actually needed by a proof step; avoid broad citations once the proof has stabilized. |
 | Prefer stable source over clever source | Avoid depending on fragile overload choices, import order, or implicit cluster chains when a short explicit form is clearer. |
 | Separate specification from execution | State mathematical contracts in `requires`, `ensures`, invariants, and theorems; state reusable inference facts in registrations; keep implementation policy in algorithms or tooling configuration. |
@@ -72,7 +72,7 @@ Proofs should be robust under library growth. A proof that relies on broad searc
 | Parenthesize complex formulas | In long formulas, add parentheses around the intended scope of `not`, `&`, `or`, `implies`, `iff`, `for`, and `ex`. |
 | Treat `open` and `assumed` items visibly | Use theorem statuses deliberately. Do not let ordinary theorems depend on unsettled material. |
 | Keep automation hints advisory | Use `@proof_hint` to control resources or solver choice, not to encode mathematical content. |
-| Validate new statements before proving them | Especially for translated or generated statements, request a counterexample search on the open statement (§22.4.3) and heed W0104, which reports statements that hold only because their hypotheses are contradictory. |
+| Validate new statements before proving them | Especially for translated or generated statements, request a counterexample search on the open statement (§22.4.3). Heed W0104, which reports statements that hold only because their hypotheses are contradictory. |
 
 When a proof step succeeds only with a large axiom budget, prefer adding a named lemma or a narrower citation before increasing the budget permanently.
 
@@ -84,7 +84,7 @@ Algorithm code should make its logical contract and execution assumptions explic
 |---|---|
 | State contracts first | Use `requires` and `ensures` to describe the externally visible behavior before relying on body details. |
 | Keep invariants semantic | Write loop invariants in terms of mathematical state, not incidental iteration order, unless the algorithm is explicitly order-dependent. |
-| Use unordered set loops for order-independent results | Ordered finite sequences support for ... in; use sequence order or for ... to when order matters. |
+| Use unordered set loops for order-independent results | Ordered finite sequences also support `for ... in`; when the order matters, use the sequence order or `for ... to`. |
 | Introduce proof-only state for clarity | Use `ghost var` and `ghost const` for proof-only values, and use `snapshot` to name program states at important points without changing runtime behavior. |
 | Give termination measures meaningful names | A `decreasing` expression should be easy to relate to the recursive call or loop progress. |
 | Prefer explicit search for existential computation | For executable witnesses, implement a search algorithm with clear failure behavior rather than relying on non-executable arbitrary choice. |
@@ -92,9 +92,9 @@ Algorithm code should make its logical contract and execution assumptions explic
 
 Non-executable mathematical definitions are acceptable, but code intended for extraction should avoid operations that the MVM cannot evaluate.
 
-Begin algorithm names with a verb describing the procedure, for example `differentiate`, `check_occurs` or `step_collatz`; use `try_` when false means unsuccessful search rather than refutation. Wrap internal structural helpers in an external entry whose `val` contract states the mathematical result. For contracts about functions, take function-valued trees; the first differentiation example uses `expr of Function of REAL,REAL` for both input and result (§20.12).
+Begin an algorithm name with a verb that describes the procedure, for example `differentiate`, `check_occurs`, or `step_collatz`. Use the `try_` prefix when a `false` result means that a search was unsuccessful, not that the claim was refuted. Wrap internal structural helpers in an external entry whose `val` contract states the mathematical result. For contracts about functions, take function-valued trees; the first differentiation example uses `expr of Function of REAL,REAL` for both its input and its result (§20.12).
 
-For new Binder proposals, first express the operation through the common function abstraction and ordinary mathematical operators. Make ambiguous whole-Binder views explicit with parentheses and `qua`; preserve the chosen domain, capture context and all-input obligations. Preserve finite-sequence domains when migrating old `n |-> a` notation to `(Seg n) --> a` (§13.10).
+Before proposing a new Binder, first try to express the operation through the common function abstraction and ordinary mathematical operators. When a view of a whole Binder is ambiguous, make it explicit with parentheses and `qua`. Preserve the chosen domain, the capture context, and the all-input obligations. When migrating the old `n |-> a` notation to `(Seg n) --> a` (§13.10), preserve the finite-sequence domain.
 
 ## D.6 Annotations and Documentation
 
