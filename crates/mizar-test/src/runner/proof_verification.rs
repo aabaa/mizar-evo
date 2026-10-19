@@ -8028,4 +8028,303 @@ mod term_proof_tests {
         }
         assert_eq!(policies, policies_before);
     }
+
+    #[test]
+    fn source_theorem_reflexivity_status_matches_existing_projection_and_full_slice() {
+        use super::super::tests::source_registration_owner_inputs as inputs;
+        use mizar_proof::{
+            policy::{KernelEvidenceFormat as Format, VerifierPolicy as Policy},
+            selection::{
+                ProofWinnerClass as Winner, VcProofSelection,
+                merge_artifact_proof_selections as merge,
+            },
+            status::{
+                ArtifactPublicationGap as Gap, ArtifactStatusPublication as Publication,
+                ProjectedProofStatus as Status, ProofStatusProjectionInput as Input,
+                project_source_theorem_reflexivity_status as project, project_status,
+                select_source_theorem_reflexivity as select,
+                source_theorem_obligation_identity as identity,
+            },
+        };
+        use mizar_vc::{
+            dependency_slice::DependencySliceCompleteness as Completeness,
+            vc_ir::{VcId, VcKind, VcStatus},
+        };
+        let original =
+            "theorem T: for X being set holds X = X proof let X be set; thus X = X; end;";
+        let bound = original.replace(
+            "for X being set holds X = X",
+            "for Bound being set holds Bound = Bound",
+        );
+        let local = original.replace(
+            "let X be set; thus X = X",
+            "let Local be set; thus Local = Local",
+        );
+        let trivia = format!(":: 日本語 λ\n{original}\n");
+        let mut original_source = None;
+        let mut prior = Vec::new();
+        for (index, (text, package, module, skip)) in [
+            (original.to_owned(), "owner-test", "owners", 0),
+            (bound, "owner-test", "owners", 0),
+            (local, "owner-test", "owners", 0),
+            (trivia, "owner-test", "owners", 0),
+            (original.to_owned(), "owner-test", "owners", 7),
+            (original.to_owned(), "other-package", "owners", 0),
+            (original.to_owned(), "owner-test", "nested.owners", 0),
+        ]
+        .into_iter()
+        .enumerate()
+        {
+            let (frontend, source, collected) = inputs(&text, package, module, skip);
+            assert!(frontend.diagnostics.is_empty());
+            assert!(collected.diagnostics().is_empty());
+            let env = collected.env();
+            let before = (source.clone(), env.clone(), prior.clone());
+            if skip == 7 {
+                assert_ne!(Some(source.source_id()), original_source);
+            } else if original_source.is_none() {
+                original_source = Some(source.source_id());
+            }
+            with_source_theorem_check(frontend.ast.as_ref().unwrap(), &source, env, |check| {
+                let check_before = format!("{check:?}");
+                for (policy_index, policy) in [
+                    Policy::default(),
+                    Policy::release().with_require_kernel_certificates(true),
+                    Policy::development()
+                        .with_kernel_evidence_formats([Format::BuiltinKernelEvidence]),
+                    Policy::default().with_profile_id("theorem-status"),
+                    Policy::default().with_schema_version(2),
+                    Policy::default().with_checker_schema_version(2),
+                ]
+                .into_iter()
+                .take(if index == 0 { 6 } else { 1 })
+                .enumerate()
+                {
+                    let snap = snapshot_id(777 + usize::from(index != 0 || policy_index != 0));
+                    let vc = VcId::new(0);
+                    let policy_before = policy.clone();
+                    let original = identity(&source, check, env, snap, vc)?;
+                    let chosen = select(&source, check, env, snap, vc, &policy)?;
+                    let inputs_before = (original.clone(), chosen.clone());
+                    assert_eq!(chosen.selected_class(), Winner::DischargedBuiltin);
+                    assert!(chosen.trusted_used_axioms_available());
+                    let [merged] = <[_; 1]>::try_from(
+                        merge([], [VcProofSelection::new(vc, chosen.clone())]).unwrap(),
+                    )
+                    .unwrap();
+                    let expected =
+                        project_status(Input::new(merged, policy.clone(), original.0.clone()))
+                            .unwrap();
+                    let actual = project(&source, check, env, snap, vc, &policy)?;
+                    let actual_before = actual.clone();
+                    assert_eq!(actual.0, expected);
+                    assert_eq!(actual.0.vc(), vc);
+                    assert_eq!(actual.0.obligation_id(), original.0.obligation_id());
+                    assert_eq!(actual.0.selected_class(), Winner::DischargedBuiltin);
+                    assert_eq!(actual.0.projected_status(), Status::Accepted);
+                    assert_eq!(
+                        actual.0.artifact_publication(),
+                        Publication::ExternalDependencyGap(
+                            Gap::DischargedBuiltinWitnessUnsupported
+                        )
+                    );
+                    assert_eq!(actual.0.accepted_witness_obligation_id(), None);
+                    assert_eq!(actual.0.trusted_used_axioms(), None);
+                    assert_eq!(actual.0.explanation_ref(), None);
+                    let meta = actual.0.reuse_metadata();
+                    let id = &original.0;
+                    let selected = chosen.reuse_metadata();
+                    assert_eq!(meta.obligation_anchor(), id.obligation_anchor());
+                    assert_eq!(meta.obligation_fingerprint(), id.obligation_fingerprint());
+                    assert_eq!(meta.vc_fingerprint(), id.vc_fingerprint());
+                    assert_eq!(
+                        meta.local_context_fingerprint(),
+                        id.local_context_fingerprint()
+                    );
+                    assert_eq!(
+                        meta.dependency_slice_fingerprint(),
+                        id.dependency_slice_fingerprint()
+                    );
+                    assert_eq!(meta.policy_fingerprint(), policy.policy_fingerprint());
+                    assert_eq!(meta.selected_candidate_id(), chosen.selected_candidate_id());
+                    assert_eq!(
+                        meta.selected_evidence_hash(),
+                        selected.selected_evidence_hash()
+                    );
+                    assert!(meta.selected_evidence_hash().is_some());
+                    assert_eq!(
+                        meta.accepted_goal_polarity(),
+                        selected.accepted_goal_polarity()
+                    );
+                    assert!(meta.accepted_goal_polarity().is_some());
+                    assert_eq!(meta.trusted_used_axioms_hash(), None);
+                    assert_eq!(meta.selected_proof_witness_hash(), None);
+                    assert_eq!(meta.deterministic_discharge_hash(), None);
+                    assert_eq!(meta.selected_candidate_provenance_hash(), None);
+                    assert_eq!(meta.dependency_compatibility(), None);
+                    assert_eq!(meta.explanation_ref(), None);
+                    assert!(!meta.cache_reuse_predicate_complete());
+                    assert_eq!(actual.1, original.1);
+                    assert_eq!(actual.1.vc(), vc);
+                    assert_eq!(actual.1.kind(), &VcKind::TheoremProofStep);
+                    assert_eq!(actual.1.status(), &VcStatus::Open);
+                    assert_eq!(actual.1.entries(), original.1.entries());
+                    assert!(!actual.1.entries().is_empty());
+                    assert_eq!(actual.1.unknowns(), original.1.unknowns());
+                    assert!(!actual.1.unknowns().is_empty());
+                    assert_eq!(actual.1.completeness(), Completeness::IncompleteUncacheable);
+                    assert_eq!(actual.1.fingerprint(), original.1.fingerprint());
+                    assert_eq!(
+                        actual.1.fingerprint().hash(),
+                        meta.dependency_slice_fingerprint()
+                    );
+                    assert!(actual.1.requires_cache_miss());
+                    assert_eq!(actual, project(&source, check, env, snap, vc, &policy)?);
+                    assert_eq!(original, identity(&source, check, env, snap, vc)?);
+                    assert_eq!(chosen, select(&source, check, env, snap, vc, &policy)?);
+                    assert_eq!((&original, &chosen), (&inputs_before.0, &inputs_before.1));
+                    assert_eq!((&actual, &policy), (&actual_before, &policy_before));
+                    prior.push(actual);
+                }
+                assert_eq!(format!("{check:?}"), check_before);
+                Ok(())
+            })
+            .unwrap();
+            assert_eq!((&source, env), (&before.0, &before.1));
+            assert_eq!(&prior[..before.2.len()], before.2);
+        }
+    }
+
+    #[test]
+    fn source_theorem_reflexivity_status_preserves_actual_error_order() {
+        use super::super::tests::source_registration_owner_inputs as inputs;
+        use mizar_proof::{
+            policy::{KernelEvidenceFormat as Format, VerifierPolicy as Policy},
+            status::{
+                project_source_theorem_reflexivity_status as project,
+                select_source_theorem_reflexivity as select,
+                source_theorem_obligation_identity as identity,
+            },
+        };
+        use mizar_vc::vc_ir::VcId;
+        let original =
+            "theorem T: for X being set holds X = X proof let X be set; thus X = X; end;";
+        let snap = snapshot_id(777);
+        let absent = VcId::new(usize::MAX);
+        let policies = [
+            Policy::default(),
+            Policy::default().with_kernel_evidence_formats([]),
+            Policy::release().with_kernel_evidence_formats([Format::FormulaSubstitution]),
+        ];
+        let policies_before = policies.clone();
+        let cited = include_str!(
+            "../../../../tests/miz/pass/theorems/pass_proof_verification_lemma_reference_001.miz"
+        );
+        for (case, text) in [
+            original.to_owned(),
+            original.replacen("theorem", "lemma", 1),
+            "open theorem O: for X being set holds X = X;".to_owned(),
+            format!(
+                "{original}\n{}",
+                original.replace("theorem T:", "theorem U:")
+            ),
+            cited.to_owned(),
+        ]
+        .into_iter()
+        .enumerate()
+        {
+            let (frontend, source, collected) = inputs(&text, "owner-test", "owners", 0);
+            assert!(frontend.diagnostics.is_empty());
+            assert!(collected.diagnostics().is_empty());
+            let env = collected.env();
+            let before = (source.clone(), env.clone());
+            with_source_theorem_check(frontend.ast.as_ref().unwrap(), &source, env, |check| {
+                let check_before = format!("{check:?}");
+                for (policy_index, policy) in policies.iter().enumerate() {
+                    for vc in [VcId::new(0), absent] {
+                        let actual_identity = identity(&source, check, env, snap, vc);
+                        let expected = match actual_identity {
+                            Err(error) => {
+                                let selection_error =
+                                    select(&source, check, env, snap, vc, policy).unwrap_err();
+                                if case == 3 {
+                                    assert_eq!(error, "unsupported source theorem formula payload");
+                                    assert_eq!(
+                                        selection_error,
+                                        "theorem.handoff.invalid_projection"
+                                    );
+                                    assert_ne!(error, selection_error);
+                                }
+                                error
+                            }
+                            Ok(original) => {
+                                assert_eq!(case, 0);
+                                assert_eq!(vc, VcId::new(0));
+                                assert!(original.1.requires_cache_miss());
+                                if policy_index == 0 {
+                                    continue;
+                                }
+                                let error =
+                                    select(&source, check, env, snap, vc, policy).unwrap_err();
+                                assert_eq!(original, identity(&source, check, env, snap, vc)?);
+                                error
+                            }
+                        };
+                        assert_eq!(
+                            project(&source, check, env, snap, vc, policy).unwrap_err(),
+                            expected
+                        );
+                    }
+                }
+                if case == 0 {
+                    let vc = VcId::new(0);
+                    let original_identity = identity(&source, check, env, snap, vc)?;
+                    let prior = project(&source, check, env, snap, vc, &policies[0])?;
+                    let prior_before = prior.clone();
+                    for text in [
+                        original.replace("theorem T:", "theorem Foreign:"),
+                        format!(
+                            "{original}\n{}",
+                            original.replace("theorem T:", "theorem U:")
+                        ),
+                        "theorem T: for X being set holds X = ;".to_owned(),
+                    ] {
+                        let (other_frontend, other_source, other) =
+                            inputs(&text, "owner-test", "owners", 0);
+                        assert_eq!(
+                            !other_frontend.diagnostics.is_empty(),
+                            text.ends_with("= ;")
+                        );
+                        let other_before = (other_source.clone(), other.env().clone());
+                        for (current, symbols) in [
+                            (&other_source, other.env()),
+                            (&source, other.env()),
+                            (&other_source, env),
+                        ] {
+                            for selected in [vc, absent] {
+                                let expected =
+                                    identity(current, check, symbols, snap, selected).unwrap_err();
+                                select(current, check, symbols, snap, selected, &policies[1])
+                                    .unwrap_err();
+                                assert_eq!(
+                                    project(current, check, symbols, snap, selected, &policies[1])
+                                        .unwrap_err(),
+                                    expected
+                                );
+                            }
+                        }
+                        assert_eq!((other_source, other.env().clone()), other_before);
+                    }
+                    assert_eq!(original_identity, identity(&source, check, env, snap, vc)?);
+                    assert_eq!(prior, project(&source, check, env, snap, vc, &policies[0])?);
+                    assert_eq!(prior, prior_before);
+                }
+                assert_eq!(format!("{check:?}"), check_before);
+                Ok(())
+            })
+            .unwrap();
+            assert_eq!((source, env.clone()), before);
+        }
+        assert_eq!(policies, policies_before);
+    }
 }

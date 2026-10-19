@@ -60,6 +60,8 @@ matching crate or module-level boundary comment:
 
 ### Status
 
+`project_source_theorem_reflexivity_status`: [sole API owner](./status.md#source-theorem-reflexivity-status-projection).
+
 `select_source_theorem_reflexivity`: [sole API owner](./status.md#source-theorem-reflexivity-selection).
 
 `check_source_theorem_reflexivity`: [sole API owner](./status.md#source-theorem-reflexivity-check).

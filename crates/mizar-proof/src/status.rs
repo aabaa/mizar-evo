@@ -183,6 +183,39 @@ pub fn select_source_theorem_reflexivity(
     ))
 }
 
+/// Projects genuine source theorem reflexivity with its full original dependency slice.
+pub fn project_source_theorem_reflexivity_status(
+    source: &mizar_resolve::resolved_ast::SurfaceResolvedArena,
+    check: &mizar_checker::type_checker::SourceTheoremCheck<'_>,
+    symbols: &mizar_resolve::env::SymbolEnv,
+    snapshot: mizar_session::BuildSnapshotId,
+    vc_id: VcId,
+    policy: &VerifierPolicy,
+) -> Result<
+    (
+        ProofStatusProjection,
+        mizar_vc::dependency_slice::DependencySlice,
+    ),
+    String,
+> {
+    use crate::selection::{VcProofSelection, merge_artifact_proof_selections};
+    let (identity, slice) =
+        source_theorem_obligation_identity(source, check, symbols, snapshot, vc_id)?;
+    let selection =
+        select_source_theorem_reflexivity(source, check, symbols, snapshot, vc_id, policy)?;
+    let merged = merge_artifact_proof_selections([], [VcProofSelection::new(vc_id, selection)])
+        .map_err(|error| error.to_string())?;
+    let [selection] =
+        <[_; 1]>::try_from(merged).map_err(|_| "theorem.proof.invalid_source_status".to_owned())?;
+    let projection = project_status(ProofStatusProjectionInput::new(
+        selection,
+        policy.clone(),
+        identity,
+    ))
+    .map_err(|error| error.to_string())?;
+    Ok((projection, slice))
+}
+
 /// Binds genuine original theorem content to its full conservative Open dependency slice.
 /// Source/snapshot freshness remains caller-owned; this grants no acceptance or reuse authority.
 pub fn source_theorem_obligation_identity(
