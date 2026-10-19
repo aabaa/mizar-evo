@@ -646,7 +646,7 @@ have "Q a"
   by (metis allPQ pa)
 ```
 
-Mizar Evo: request lemma search with `by atp` (provisional syntax).
+Mizar Evo: request lemma search with `by atp` (proposed syntax).
 
 **Open goal → library lemma candidates → ATP trials → a `by` suggestion.**
 
@@ -664,7 +664,7 @@ thus Q(a) by library.AllPQ, Pa;
 
 Speaker note:
 
-- `by atp` is provisional presentation syntax, not settled specification syntax. Future arguments are expected.
+- `by atp` is proposed syntax for this talk. The specification does not yet define it. Arguments may be added later.
 - Source: specification chapter 22, §22.4.4; chapter 23, §23.5.2. Details and comparison sources: `draft.ja.md`.
 
 ### Frame 6.2 - Using ATPs: search, check, and reuse
@@ -682,7 +682,7 @@ Speaker note:
 
 ### Frame 6.3 - Resolution tree and extracted substitutions
 
-Candidate extraction from a resolution log (sketch):
+Getting candidate evidence from a resolution log (sketch):
 
 ![Resolution tree with composed substitutions and extracted evidence](figures/resolution_evidence.pdf)
 
@@ -691,7 +691,7 @@ Candidate extraction from a resolution log (sketch):
 Speaker note:
 
 - Clause variables x/y have distinct names. Unifying Q gives x:=y; unifying P gives y:=a. Compose them to recover F1[x:=a] and F2[y:=a].
-- This is a log-based candidate-generation idea. The independent instance finder in architecture 10 is unimplemented (ATP TODO 30). The kernel does not replay each log inference.
+- This is a proposal for getting candidate evidence from a log. The independent instance finder in architecture 10 is unimplemented (ATP TODO 30). The kernel does not replay each log inference.
 - Source: architecture chapters 08, 10, 15, 16. This is a sketch, not an external-prover execution example.
 
 ### Frame 6.4 - From saved evidence to concrete SAT clauses

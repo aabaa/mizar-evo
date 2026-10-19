@@ -186,8 +186,8 @@ The design keeps mathematical writing and a small core, and rebuilds the tools. 
 ### 6.1 Automation: find lemmas and suggest a proof (27:15)
 
 Isabelle's Sledgehammer finds lemmas and suggests proofs. We plan similar help in Mizar Evo.
-Here we use by atp as provisional syntax to request search. The invocation syntax is not yet specified; future arguments are expected.
-From the goal Q(a) and local assumption P(a), assistance finds AllPQ, tries it with an ATP, and suggests the citation below. We apply the citations in the source and verify again.
+Here, by atp is proposed syntax for requesting search. The exact syntax is not yet specified. Arguments may be added later.
+For the goal Q(a) and local assumption P(a), the planned tool finds AllPQ. It tries the lemma with an ATP and suggests the citation below. We apply the citations in the source and verify again.
 Search and suggestions help authors. Acceptance depends on kernel checks of formula and substitution evidence. [Specification / Plan]
 
 ### 6.2 Using ATPs: search, check, and reuse (28:15)
@@ -201,13 +201,13 @@ Normal verification uses source citations and local hypotheses. Lemmas found dur
 
 F1 says P implies Q; F2 says Q implies R; H is P(a); the goal is R(a). Add the negated goal and derive a contradiction.
 In the left tree, unifying Q(x) and Q(y) gives x:=y and the clause not P(y) or R(y). Then unifying P(y) and P(a) gives y:=a and R(a). Together with not R(a), this gives the empty clause.
-On the right, compose x:=y with y:=a along the branch. Recover x:=a for the original F1 and y:=a for F2, tied to their origins and target.
-This is an untrusted candidate-generation idea using an external log. The current design plans an independent instance finder to produce the same evidence format, but it is not implemented. The kernel does not replay each inference in the log. [Design sketch / Unimplemented]
+On the right, combine x:=y with y:=a along the branch. This gives x:=a for the original F1 and y:=a for F2. Record which formulas and goal these substitutions belong to.
+This is a proposal for getting candidate evidence from an external log. We do not trust the extractor; the kernel checks its output. The design also plans a separate instance finder that produces the same evidence format. It is not implemented. The kernel does not replay each inference in the log. [Design sketch / Unimplemented]
 
 ### 6.4 From saved evidence to concrete SAT clauses (30:45)
 
-The top row shows saved evidence, kernel checks, and instantiation. The kernel checks original formulas and composed substitutions against their origins, target, and binding context. It checks capture avoidance. It then instantiates both implications at a and adds P(a) and the negated goal.
-Assign propositional variables one, two, and three to P(a), Q(a), and R(a). Introduce variables four and five for the implications, with unit clauses asserting them. This Tseitin encoding follows the current encoder's construction.
+SAT tests whether propositional clauses can all be true at once. UNSAT means they cannot. The top row shows saved evidence, kernel checks, and instantiation. The kernel checks original formulas and composed substitutions against their origins, target, and binding context. It checks that free variables do not become bound by mistake. It then instantiates both implications at a and adds P(a) and the negated goal.
+Assign propositional variables one, two, and three to P(a), Q(a), and R(a). Introduce variables four and five for the implications, with unit clauses that say they are true. This Tseitin encoding follows the current encoder's construction.
 The two blue boxes below show definitions of s and t. Each gives three defining clauses and one unit clause asserting the implication. With the unit clauses p and not r above, we get five variables and ten clauses. As the green band shows, p and the two implications force r, contradicting not r.
 The small kernel does not replay external resolution steps. It generates clauses from checked evidence and asks a trusted SAT checker to confirm UNSAT. The displayed clauses illustrate the encoding; they are not a dump from an execution. [Architecture-based design sketch]
 
