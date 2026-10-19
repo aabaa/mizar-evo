@@ -859,6 +859,7 @@ spec-reserved until a separately authorized diagnostics adoption.
 ### Reflected-syntax implementation [ ]
 
 Active implementation contracts follow their own dependencies; completed AST-SPEC records remain specification-transfer history.
+The [multiple-argument Binder specification](./task_contracts/en/AST-MULTI-BINDER-SPEC.md) fixes the product-domain extension and acceptance requirements for these owners; it adds no implementation activation.
 
 1. [ ] [AST-PARSE](./task_contracts/en/AST-PARSE.md) — additive syntax; legacy retirement blocked.
 2. [ ] [AST-DIAGNOSTICS](./task_contracts/en/AST-DIAGNOSTICS.md) — descriptor design; emission waits for source-aware producers.

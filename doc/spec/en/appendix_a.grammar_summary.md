@@ -511,7 +511,9 @@ Normative reference: [Chapter 13 (Term Expressions)](./13.term_expression.md).
 
 ```ebnf
 term_expression ::= binder_expression | qualified_term ;
-binder_expression ::= identifier "|->" term_expression ;
+binder_expression ::= binder_head "|->" term_expression ;
+binder_head ::= identifier
+              | "(" identifier "," identifier { "," identifier } ")" ;
 qualified_term ::= operator_expression { "qua" type_expression } ;
 
 operator_expression  ::= postfix_expression | functor_application ;
