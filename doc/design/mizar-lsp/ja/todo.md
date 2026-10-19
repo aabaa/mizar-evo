@@ -118,7 +118,8 @@ Tasks 1–5: [LSP-LIFECYCLE-FOUNDATION](../../task_contracts/ja/LSP-LIFECYCLE-FO
    - 依存: 4。仕様: [internal 03](../../internal/ja/03.diagnostics_model_and_lsp_bridge.md)
      「LSP Snapshot」。
 
-7. **open バッファの snapshot とバージョン。** [ ]
+7. **open バッファの snapshot とバージョン。** [~]
+   - source-only 前提: [LSP-RETAINED-NATIVE-SOURCES](../../task_contracts/ja/LSP-RETAINED-NATIVE-SOURCES.md)。完全 registry は未完了。
    - バージョン追跡付きのバッファ snapshot と current/stale snapshot
      レジストリを実装する。
    - テスト: 編集列でバージョンが単調に保たれる。stale な snapshot は

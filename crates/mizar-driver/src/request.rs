@@ -51,7 +51,7 @@ pub struct CaptureSnapshotError {
 pub struct CapturedSnapshot {
     pub(crate) snapshot: BuildSnapshot,
     pub(crate) active_snapshot_lease: SnapshotLease,
-    native_sources: Option<Vec<(DiskSourceLoader, LoadedSource, SourceInput)>>,
+    native_sources: Option<std::sync::Arc<[(DiskSourceLoader, LoadedSource, SourceInput)]>>,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -282,7 +282,8 @@ impl BuildRequestDraft {
                         .into_iter()
                         .zip(sources)
                         .map(|(loader, (loaded, input))| (loader, loaded, input))
-                        .collect(),
+                        .collect::<Vec<_>>()
+                        .into(),
                 ),
             },
             state: BuildSessionState::SnapshotCaptured,

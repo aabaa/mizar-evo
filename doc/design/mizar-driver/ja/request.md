@@ -221,6 +221,7 @@ request、source、source-map、lease id が再利用可能であることを意
 `BuildRequestDraft::capture_sources(allocator, registry, sources)` は保護された `BuildSession` または `DriverSubmitError` を返す。Native `(DiskSourceLoader, SourceInput)` が入力であり、summary があれば ID 前に draft を保持する `NativeSourceVersionsProvided { request }` で拒否する。同じ generic 型の異なる allocator instance は従来どおり許可する。
 通常の request/session ID 取得後、実 `load_snapshot` を一度だけ呼ぶ。失敗は既存 capture error に元 pending を保持し、再試行用 descriptor clone は caller が保持する。成功は実 summary と元 loader/返された LoadedSource/SourceInput triple を CapturedSnapshot に保持する。source ID/map は registry allocator を使う。
 Session の identity/request/capture/state と捕捉 snapshot/lease は crate 内だけで変更可能。公開 `id()`、`request()`、`captured()`、`state()`、`snapshot()`、`active_snapshot_lease()` は読み取り専用で、native_sources() は元 (DiskSourceLoader, LoadedSource, SourceInput) tuple または None を公開借用し、保存領域は private のまま。内部 lifecycle と watch 強制 supersession は維持する。clone は実 raw resource を保持し、終了時に lease/buffer を自動解放しない。
+CapturedSnapshot は native tuple を private な共有 Arc slice に保持し、capture/Driver/result/error clone と LSP reader は元 tuple/map object を共有する。公開借用 accessor/signature と値の equality は変えない。
 publisher owner が実 snapshot/work unit を承認してから[準備済み submit](driver.md#captured-native-submission)を呼ぶ。捕捉は publication 権限を付与しない。registry 検索や canonical ID 一致では個別の raw/version 捕捉を復元できない。
 
 元 tuple の借用自体は live session/editor/publication 権限を持たず、外部 consumer が Driver 保存 session、live guard と現文書検査を使う。可変 access、新 ID、再読込、retain 操作は導入しない。

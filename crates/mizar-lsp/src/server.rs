@@ -14,21 +14,54 @@ pub struct Server {
     shutdown: bool,
     exit_code: Option<i32>,
     documents: BTreeMap<String, (i32, String, std::sync::Arc<()>)>,
+    native_open_buffers: Option<std::sync::Arc<NativeOpenBufferSnapshot>>,
 }
 
 /// A native capture tied to the exact Server open incarnations that supplied its text.
 pub struct NativeOpenBufferCapture {
-    session: mizar_driver::request::BuildSession,
+    session: Option<mizar_driver::request::BuildSession>,
+    snapshot: std::sync::Arc<NativeOpenBufferSnapshot>,
+    release_active: Option<Box<dyn FnOnce() + Send + Sync>>,
+}
+
+impl Drop for NativeOpenBufferCapture {
+    fn drop(&mut self) {
+        if let Some(release) = self.release_active.take() {
+            release();
+        }
+    }
+}
+
+/// Immutable original native sources retained independently of current delivery.
+pub struct NativeOpenBufferSnapshot {
+    captured: mizar_driver::request::CapturedSnapshot,
     lifetimes: Vec<(String, std::sync::Weak<()>)>,
+    release_overlay: Option<Box<dyn FnOnce() + Send + Sync>>,
+}
+
+impl NativeOpenBufferSnapshot {
+    pub fn captured(&self) -> &mizar_driver::request::CapturedSnapshot {
+        &self.captured
+    }
+}
+
+impl Drop for NativeOpenBufferSnapshot {
+    fn drop(&mut self) {
+        self.release_overlay
+            .take()
+            .expect("native overlay cleanup missing")();
+    }
 }
 
 impl Server {
     /// Captures current raw editor text and its original open incarnations together.
-    pub fn capture_native_open_buffers<A: mizar_session::SessionIdAllocator>(
-        &self,
+    pub fn capture_native_open_buffers<
+        A: mizar_session::SessionIdAllocator + Send + Sync + 'static,
+    >(
+        &mut self,
         draft: mizar_driver::request::BuildRequestDraft,
         allocator: &A,
-        snapshots: &mizar_session::SnapshotRegistry<A>,
+        snapshots: &std::sync::Arc<mizar_session::SnapshotRegistry<A>>,
         index: &mizar_build::module_index::ModuleIndex,
         sources: Vec<(
             mizar_session::DiskSourceLoader,
@@ -74,7 +107,69 @@ impl Server {
         let session = draft
             .capture_sources(allocator, snapshots, inputs)
             .map_err(|error| format!("{error:?}"))?;
-        Ok(NativeOpenBufferCapture { session, lifetimes })
+        let active = session.captured().active_snapshot_lease().clone();
+        let active_registry = snapshots.clone();
+        let release_active = Box::new(move || {
+            active_registry
+                .release_lease(active.snapshot, active.lease_id)
+                .expect("native unsubmitted ActiveBuild lease release failed");
+        });
+        let overlay = match snapshots.acquire_lease(
+            session.captured().snapshot().id,
+            mizar_session::RetentionReason::OpenBufferOverlay,
+        ) {
+            Ok(overlay) => overlay,
+            Err(error) => {
+                release_active();
+                return Err(format!("{error:?}"));
+            }
+        };
+        let overlay_registry = snapshots.clone();
+        let snapshot = std::sync::Arc::new(NativeOpenBufferSnapshot {
+            captured: session.captured().clone(),
+            lifetimes,
+            release_overlay: Some(Box::new(move || {
+                overlay_registry
+                    .release_lease(overlay.snapshot, overlay.lease_id)
+                    .expect("native OpenBufferOverlay lease release failed");
+            })),
+        });
+        self.native_open_buffers = Some(snapshot.clone());
+        Ok(NativeOpenBufferCapture {
+            session: Some(session),
+            snapshot,
+            release_active: Some(release_active),
+        })
+    }
+
+    /// Selects one complete original source cohort while its editor association is current.
+    pub fn native_open_buffer_snapshot(&self) -> Option<std::sync::Arc<NativeOpenBufferSnapshot>> {
+        let snapshot = self.native_open_buffers.as_ref()?;
+        if !snapshot.lifetimes.iter().all(|(uri, original)| {
+            self.document_lifetime(uri)
+                .is_some_and(|current| std::sync::Weak::ptr_eq(original, &current))
+        }) || !snapshot
+            .captured
+            .native_sources()?
+            .iter()
+            .all(|(_, _, input)| match &input.origin {
+                mizar_session::SourceOriginInput::OpenBuffer {
+                    uri,
+                    expected_version,
+                    actual_version,
+                    text,
+                } => {
+                    expected_version == actual_version
+                        && self.document(uri).is_some_and(|(version, raw)| {
+                            i64::from(version) == *actual_version && raw == text.as_ref()
+                        })
+                }
+                _ => false,
+            })
+        {
+            return None;
+        }
+        Some(snapshot.clone())
     }
 
     /// Submits the original capture, withholding notifications after an incarnation changes.
@@ -84,7 +179,7 @@ impl Server {
     >(
         &self,
         driver: &mut mizar_driver::driver::CompilerDriver,
-        capture: NativeOpenBufferCapture,
+        mut capture: NativeOpenBufferCapture,
         allocator: &A,
         snapshots: &mizar_session::SnapshotRegistry<A>,
         input: mizar_driver::driver::DriverSubmitInput<L>,
@@ -92,17 +187,17 @@ impl Server {
         (mizar_driver::driver::BuildSubmission, Option<Vec<Value>>),
         mizar_driver::driver::DriverSubmitError,
     > {
-        let eligible = capture.lifetimes.iter().all(|(uri, original)| {
-            self.document_lifetime(uri)
-                .is_some_and(|current| std::sync::Weak::ptr_eq(original, &current))
-        });
-        let (submission, notifications) = self.submit_native_frontend_diagnostics(
-            driver,
-            capture.session,
-            allocator,
-            snapshots,
-            input,
-        )?;
+        let selected = self.native_open_buffer_snapshot();
+        let eligible = selected
+            .as_ref()
+            .is_some_and(|current| std::sync::Arc::ptr_eq(current, &capture.snapshot));
+        let session = capture
+            .session
+            .take()
+            .expect("native capture session missing");
+        capture.release_active = None;
+        let (submission, notifications) =
+            self.submit_native_frontend_diagnostics(driver, session, allocator, snapshots, input)?;
         Ok((submission, notifications.filter(|_| eligible)))
     }
 
@@ -113,7 +208,7 @@ impl Server {
     >(
         &self,
         driver: &mut mizar_driver::driver::CompilerDriver,
-        capture: NativeOpenBufferCapture,
+        mut capture: NativeOpenBufferCapture,
         allocator: &A,
         snapshots: &mizar_session::SnapshotRegistry<A>,
         input: mizar_driver::driver::DriverSubmitInput<L>,
@@ -122,26 +217,22 @@ impl Server {
         (mizar_driver::driver::BuildSubmission, io::Result<usize>),
         mizar_driver::driver::DriverSubmitError,
     > {
-        if capture.lifetimes.iter().all(|(uri, original)| {
-            self.document_lifetime(uri)
-                .is_some_and(|current| std::sync::Weak::ptr_eq(original, &current))
-        }) {
+        let selected = self.native_open_buffer_snapshot();
+        let eligible = selected
+            .as_ref()
+            .is_some_and(|current| std::sync::Arc::ptr_eq(current, &capture.snapshot));
+        let session = capture
+            .session
+            .take()
+            .expect("native capture session missing");
+        capture.release_active = None;
+        if eligible {
             self.submit_native_frontend_diagnostics_to_writer(
-                driver,
-                capture.session,
-                allocator,
-                snapshots,
-                input,
-                output,
+                driver, session, allocator, snapshots, input, output,
             )
         } else {
-            let (submission, _) = self.submit_native_frontend_diagnostics(
-                driver,
-                capture.session,
-                allocator,
-                snapshots,
-                input,
-            )?;
+            let (submission, _) = self
+                .submit_native_frontend_diagnostics(driver, session, allocator, snapshots, input)?;
             Ok((submission, Ok(0)))
         }
     }
@@ -474,6 +565,7 @@ impl Server {
                             return error(id.clone(), -32602, "Invalid params");
                         }
                         self.shutdown = true;
+                        self.native_open_buffers = None;
                         Value::Null
                     }
                     "exit"
@@ -499,6 +591,7 @@ impl Server {
         if method == "exit" {
             if params.is_none_or(Value::is_null) {
                 self.exit_code = Some(if self.shutdown { 0 } else { 1 });
+                self.native_open_buffers = None;
             }
             return None;
         }
@@ -543,10 +636,26 @@ impl Server {
                         buffer.1 = text.to_owned();
                     }
                     buffer.0 = version;
+                    if self.native_open_buffers.as_ref().is_some_and(|snapshot| {
+                        snapshot
+                            .lifetimes
+                            .iter()
+                            .any(|(original, _)| original == uri)
+                    }) {
+                        self.native_open_buffers = None;
+                    }
                 }
             }
             "textDocument/didClose" => {
                 self.documents.remove(uri);
+                if self.native_open_buffers.as_ref().is_some_and(|snapshot| {
+                    snapshot
+                        .lifetimes
+                        .iter()
+                        .any(|(original, _)| original == uri)
+                }) {
+                    self.native_open_buffers = None;
+                }
             }
             _ => {}
         }
@@ -2883,11 +2992,613 @@ mod tests {
         (draft, index, sources)
     }
 
+    #[derive(Clone, Default)]
+    struct ObservingAllocator {
+        inner: std::sync::Arc<mizar_session::InMemorySessionIdAllocator>,
+        leases: std::sync::Arc<std::sync::Mutex<Vec<mizar_session::SnapshotLeaseId>>>,
+        fail_at: std::sync::Arc<std::sync::atomic::AtomicUsize>,
+    }
+
+    impl mizar_session::SessionIdAllocator for ObservingAllocator {
+        fn next_session_id(&self) -> Result<mizar_session::BuildSessionId, mizar_session::IdError> {
+            self.inner.next_session_id()
+        }
+        fn next_request_id(&self) -> Result<mizar_session::BuildRequestId, mizar_session::IdError> {
+            self.inner.next_request_id()
+        }
+        fn next_source_id(
+            &self,
+            snapshot: mizar_session::BuildSnapshotId,
+        ) -> Result<mizar_session::SourceId, mizar_session::IdError> {
+            self.inner.next_source_id(snapshot)
+        }
+        fn next_source_map_id(
+            &self,
+            snapshot: mizar_session::BuildSnapshotId,
+        ) -> Result<mizar_session::SourceMapId, mizar_session::IdError> {
+            self.inner.next_source_map_id(snapshot)
+        }
+        fn next_lease_id(
+            &self,
+            snapshot: mizar_session::BuildSnapshotId,
+        ) -> Result<mizar_session::SnapshotLeaseId, mizar_session::IdError> {
+            let mut leases = self.leases.lock().unwrap();
+            if self.fail_at.load(std::sync::atomic::Ordering::SeqCst) == leases.len() + 1 {
+                return Err(mizar_session::IdError::AllocatorOverflow);
+            }
+            let lease = self.inner.next_lease_id(snapshot)?;
+            leases.push(lease);
+            Ok(lease)
+        }
+    }
+
+    #[test]
+    fn retained_native_sources_share_original_objects_across_equal_id_replacement() {
+        let mut server = Server::default();
+        let ids = ObservingAllocator::default();
+        let (template, input, drivers) = native_wire_fixture(
+            &mut server,
+            &ids.inner,
+            &mizar_session::SnapshotRegistry::new(),
+        );
+        let (draft, index, sources) = originating_native_inputs(&server, &template, input());
+        let snapshots =
+            std::sync::Arc::new(mizar_session::SnapshotRegistry::with_allocator(ids.clone()));
+        let uri = sources[1].2.clone();
+        let raw = server.document(&uri).unwrap().1.to_owned();
+        let first = server
+            .capture_native_open_buffers(draft.clone(), &ids, &snapshots, &index, sources.clone())
+            .unwrap();
+        let old = server.native_open_buffer_snapshot().unwrap();
+        assert!(std::sync::Arc::ptr_eq(&old, &first.snapshot));
+        let original = old.captured().native_sources().unwrap();
+        assert!(std::ptr::eq(
+            original,
+            first
+                .session
+                .as_ref()
+                .unwrap()
+                .captured()
+                .native_sources()
+                .unwrap()
+        ));
+        let cloned = first.session.as_ref().unwrap().clone();
+        assert!(std::ptr::eq(
+            original,
+            cloned.captured().native_sources().unwrap()
+        ));
+        for (version, changes) in [
+            (8, json!([])),
+            (
+                9,
+                json!([{"text": raw.trim_start_matches('\u{feff}').replace("\r\n", "\n")}]),
+            ),
+        ] {
+            server.handle_message(notification("textDocument/didChange", json!({"textDocument": {"uri": uri, "version": version}, "contentChanges": changes})));
+            assert!(server.native_open_buffer_snapshot().is_none());
+            let next = server
+                .capture_native_open_buffers(
+                    draft.clone(),
+                    &ids,
+                    &snapshots,
+                    &index,
+                    sources.clone(),
+                )
+                .unwrap();
+            let current = server.native_open_buffer_snapshot().unwrap();
+            assert_eq!(
+                current.captured().snapshot().id,
+                old.captured().snapshot().id
+            );
+            assert!(!std::sync::Arc::ptr_eq(&old, &current));
+            assert!(!std::ptr::eq(
+                original,
+                current.captured().native_sources().unwrap()
+            ));
+            let (_, loaded, descriptor) = current.captured().native_sources().unwrap().iter().find(|(_, _, input)| matches!(&input.origin, mizar_session::SourceOriginInput::OpenBuffer { uri: key, .. } if key == &uri)).unwrap();
+            assert_eq!(
+                loaded.text.as_ref(),
+                raw.trim_start_matches('\u{feff}').replace("\r\n", "\n")
+            );
+            assert_eq!(
+                descriptor.origin,
+                mizar_session::SourceOriginInput::OpenBuffer {
+                    uri: uri.clone(),
+                    expected_version: version,
+                    actual_version: version,
+                    text: server.document(&uri).unwrap().1.into()
+                }
+            );
+            drop(next);
+        }
+        let (_, loaded, descriptor) = &original[1];
+        assert_eq!(
+            descriptor.origin,
+            mizar_session::SourceOriginInput::OpenBuffer {
+                uri: uri.clone(),
+                expected_version: 7,
+                actual_version: 7,
+                text: raw.into()
+            }
+        );
+        assert!(loaded.loading_map.is_some());
+        for wire in [false, true] {
+            let earlier = server
+                .capture_native_open_buffers(
+                    draft.clone(),
+                    &ids,
+                    &snapshots,
+                    &index,
+                    sources.clone(),
+                )
+                .unwrap();
+            let latest = server
+                .capture_native_open_buffers(
+                    draft.clone(),
+                    &ids,
+                    &snapshots,
+                    &index,
+                    sources.clone(),
+                )
+                .unwrap();
+            let current = server.native_open_buffer_snapshot().unwrap();
+            assert_eq!(
+                earlier.snapshot.captured().snapshot().id,
+                current.captured().snapshot().id
+            );
+            let session_id = earlier.session.as_ref().unwrap().id();
+            let (mut driver, owner) = drivers();
+            owner.register_current_snapshot(current.captured().snapshot().id);
+            if wire {
+                let (mut reference, owner) = drivers();
+                owner.register_current_snapshot(current.captured().snapshot().id);
+                let (expected, messages) = server
+                    .submit_native_frontend_diagnostics(
+                        &mut reference,
+                        earlier.session.as_ref().unwrap().clone(),
+                        &ids,
+                        &snapshots,
+                        input(),
+                    )
+                    .unwrap();
+                assert_eq!(messages.unwrap().len(), 2);
+                let mut writer = NativeWireWriter::default();
+                let (submission, delivery) = server
+                    .submit_originating_native_frontend_diagnostics_to_writer(
+                        &mut driver,
+                        earlier,
+                        &ids,
+                        &snapshots,
+                        input(),
+                        &mut writer,
+                    )
+                    .unwrap();
+                assert_eq!(submission, expected);
+                assert_eq!(delivery.unwrap(), 0);
+                assert!(writer.calls.is_empty());
+                assert!(writer.bytes.is_empty());
+            } else {
+                let (_, messages) = server
+                    .submit_originating_native_frontend_diagnostics(
+                        &mut driver,
+                        earlier,
+                        &ids,
+                        &snapshots,
+                        input(),
+                    )
+                    .unwrap();
+                assert!(messages.is_none());
+            }
+            let stored = driver
+                .session(session_id)
+                .unwrap()
+                .captured()
+                .native_sources()
+                .unwrap();
+            assert!(!std::ptr::eq(
+                stored,
+                current.captured().native_sources().unwrap()
+            ));
+            let session_id = latest.session.as_ref().unwrap().id();
+            let (mut driver, owner) = drivers();
+            owner.register_current_snapshot(current.captured().snapshot().id);
+            if wire {
+                let mut writer = NativeWireWriter::default();
+                let (_, delivery) = server
+                    .submit_originating_native_frontend_diagnostics_to_writer(
+                        &mut driver,
+                        latest,
+                        &ids,
+                        &snapshots,
+                        input(),
+                        &mut writer,
+                    )
+                    .unwrap();
+                assert_eq!(delivery.unwrap(), 2);
+                assert!(!writer.calls.is_empty());
+                assert!(!writer.bytes.is_empty());
+            } else {
+                let (_, messages) = server
+                    .submit_originating_native_frontend_diagnostics(
+                        &mut driver,
+                        latest,
+                        &ids,
+                        &snapshots,
+                        input(),
+                    )
+                    .unwrap();
+                assert_eq!(messages.unwrap().len(), 2);
+            }
+            let stored = driver
+                .session(session_id)
+                .unwrap()
+                .captured()
+                .native_sources()
+                .unwrap();
+            assert!(std::ptr::eq(
+                stored,
+                current.captured().native_sources().unwrap()
+            ));
+            assert!(std::ptr::eq(
+                &stored[1].1.line_map,
+                &current.captured().native_sources().unwrap()[1].1.line_map
+            ));
+            assert!(stored[1].1.loading_map.is_none());
+        }
+        let session_id = first.session.as_ref().unwrap().id();
+        let (mut driver, owner) = drivers();
+        owner.register_current_snapshot(old.captured().snapshot().id);
+        let (_, messages) = server
+            .submit_originating_native_frontend_diagnostics(
+                &mut driver,
+                first,
+                &ids,
+                &snapshots,
+                input(),
+            )
+            .unwrap();
+        assert!(messages.is_none());
+        let stored = driver
+            .session(session_id)
+            .unwrap()
+            .captured()
+            .native_sources()
+            .unwrap();
+        assert!(std::ptr::eq(original, stored));
+        assert!(std::ptr::eq(
+            original[1].1.loading_map.as_ref().unwrap(),
+            stored[1].1.loading_map.as_ref().unwrap()
+        ));
+        std::fs::remove_dir_all(input().plan_request.workspace_root.as_str()).unwrap();
+    }
+
+    #[test]
+    fn retained_native_selection_preserves_ignored_and_failed_capture_but_evicts_changes() {
+        let mut server = Server::default();
+        let ids = ObservingAllocator::default();
+        let (template, input, _) = native_wire_fixture(
+            &mut server,
+            &ids.inner,
+            &mizar_session::SnapshotRegistry::new(),
+        );
+        let (draft, index, sources) = originating_native_inputs(&server, &template, input());
+        let snapshots =
+            std::sync::Arc::new(mizar_session::SnapshotRegistry::with_allocator(ids.clone()));
+        for mode in ["empty-change", "reopen", "shutdown", "exit"] {
+            let mut current = Server::default();
+            initialize(&mut current);
+            for (uri, (version, text, ..)) in &server.documents {
+                current.handle_message(notification("textDocument/didOpen", json!({"textDocument": {"uri": uri, "version": version, "languageId": "mizar", "text": text}})));
+            }
+            let server = &mut current;
+            let capture = server
+                .capture_native_open_buffers(
+                    draft.clone(),
+                    &ids,
+                    &snapshots,
+                    &index,
+                    sources.clone(),
+                )
+                .unwrap();
+            let reader = server.native_open_buffer_snapshot().unwrap();
+            let uri = sources[0].2.clone();
+            let (version, raw) = server.document(&uri).unwrap();
+            let (version, raw) = (version, raw.to_owned());
+            for message in [
+                notification(
+                    "textDocument/didChange",
+                    json!({"textDocument": {"uri": uri, "version": version}, "contentChanges": []}),
+                ),
+                notification(
+                    "textDocument/didChange",
+                    json!({"textDocument": {"uri": uri, "version": version + 1}, "contentChanges": [{"text": "bad", "range": {}}]}),
+                ),
+                notification(
+                    "textDocument/didOpen",
+                    json!({"textDocument": {"uri": "untitled:other", "version": 1, "languageId": "mizar", "text": "other"}}),
+                ),
+                notification(
+                    "textDocument/didChange",
+                    json!({"textDocument": {"uri": "untitled:other", "version": 2}, "contentChanges": []}),
+                ),
+                notification(
+                    "textDocument/didClose",
+                    json!({"textDocument": {"uri": "untitled:other"}}),
+                ),
+            ] {
+                server.handle_message(message);
+                assert!(std::sync::Arc::ptr_eq(
+                    &reader,
+                    &server.native_open_buffer_snapshot().unwrap()
+                ));
+            }
+            assert!(
+                server
+                    .capture_native_open_buffers(draft.clone(), &ids, &snapshots, &index, vec![])
+                    .is_err()
+            );
+            let mut invalid = draft.clone();
+            invalid.source_inputs = template.request().source_inputs.clone();
+            assert!(
+                server
+                    .capture_native_open_buffers(invalid, &ids, &snapshots, &index, sources.clone())
+                    .is_err()
+            );
+            ids.fail_at.store(
+                ids.leases.lock().unwrap().len() + 2,
+                std::sync::atomic::Ordering::SeqCst,
+            );
+            assert!(
+                server
+                    .capture_native_open_buffers(
+                        draft.clone(),
+                        &ids,
+                        &snapshots,
+                        &index,
+                        sources.clone()
+                    )
+                    .is_err()
+            );
+            ids.fail_at.store(0, std::sync::atomic::Ordering::SeqCst);
+            assert!(std::sync::Arc::ptr_eq(
+                &reader,
+                &server.native_open_buffer_snapshot().unwrap()
+            ));
+            match mode {
+                "empty-change" => {
+                    server.handle_message(notification("textDocument/didChange", json!({"textDocument": {"uri": uri, "version": version + 1}, "contentChanges": []})));
+                }
+                "reopen" => {
+                    server.handle_message(notification(
+                        "textDocument/didClose",
+                        json!({"textDocument": {"uri": uri}}),
+                    ));
+                    assert!(server.native_open_buffer_snapshot().is_none());
+                    server.handle_message(notification("textDocument/didOpen", json!({"textDocument": {"uri": uri, "version": version, "languageId": "mizar", "text": raw}})));
+                }
+                "shutdown" => {
+                    server.handle_message(request("shutdown", Value::Null));
+                }
+                "exit" => {
+                    server.handle_message(notification("exit", Value::Null));
+                }
+                _ => unreachable!(),
+            }
+            assert!(server.native_open_buffer_snapshot().is_none());
+            assert_eq!(reader.captured().native_sources().unwrap().len(), 2);
+            drop(capture);
+        }
+        std::fs::remove_dir_all(input().plan_request.workspace_root.as_str()).unwrap();
+    }
+
+    #[test]
+    fn retained_native_leases_follow_real_ticket_reader_and_driver_ownership() {
+        use mizar_session::SnapshotError;
+        let mut original = Server::default();
+        let ids = ObservingAllocator::default();
+        let (template, input, drivers) = native_wire_fixture(
+            &mut original,
+            &ids.inner,
+            &mizar_session::SnapshotRegistry::new(),
+        );
+        let (draft, index, sources) = originating_native_inputs(&original, &template, input());
+        let snapshots =
+            std::sync::Arc::new(mizar_session::SnapshotRegistry::with_allocator(ids.clone()));
+        let subset = original
+            .capture_native_open_buffers(
+                draft.clone(),
+                &ids,
+                &snapshots,
+                &index,
+                sources[..1].to_vec(),
+            )
+            .unwrap();
+        let other = subset.snapshot.captured().snapshot().id;
+        let subset_overlay = ids.leases.lock().unwrap()[1];
+        let full = original
+            .capture_native_open_buffers(draft.clone(), &ids, &snapshots, &index, sources.clone())
+            .unwrap();
+        let full_id = full.snapshot.captured().snapshot().id;
+        let full_overlay = ids.leases.lock().unwrap()[3];
+        assert_ne!(full_id, other);
+        // Only the old ticket retains the replaced subset association.
+        assert!(
+            matches!(snapshots.release_lease(full_id, subset_overlay), Err(SnapshotError::LeaseReleaseMismatch { actual_snapshot, .. }) if actual_snapshot == other)
+        );
+        drop(subset);
+        assert_eq!(
+            snapshots.release_lease(full_id, subset_overlay),
+            Err(SnapshotError::UnknownSnapshotLease {
+                lease_id: subset_overlay
+            })
+        );
+        drop(full);
+        // Only the Server retains this association.
+        assert!(
+            matches!(snapshots.release_lease(other, full_overlay), Err(SnapshotError::LeaseReleaseMismatch { actual_snapshot, .. }) if actual_snapshot == full_id)
+        );
+        for mode in [
+            "abandon",
+            "notification",
+            "writer",
+            "error",
+            "writer-error",
+            "overlay-error",
+            "server-drop",
+        ] {
+            let mut server = Server::default();
+            initialize(&mut server);
+            for (uri, (version, text, ..)) in &original.documents {
+                server.handle_message(notification("textDocument/didOpen", json!({"textDocument": {"uri": uri, "version": version, "languageId": "mizar", "text": text}})));
+            }
+            let start = ids.leases.lock().unwrap().len();
+            if mode == "overlay-error" {
+                ids.fail_at
+                    .store(start + 2, std::sync::atomic::Ordering::SeqCst);
+            }
+            let result = server.capture_native_open_buffers(
+                draft.clone(),
+                &ids,
+                &snapshots,
+                &index,
+                sources.clone(),
+            );
+            if mode == "overlay-error" {
+                assert!(result.err().unwrap().contains("AllocatorOverflow"));
+                let active = ids.leases.lock().unwrap()[start];
+                assert_eq!(
+                    snapshots.release_lease(other, active),
+                    Err(SnapshotError::UnknownSnapshotLease { lease_id: active })
+                );
+                assert!(server.native_open_buffer_snapshot().is_none());
+                ids.fail_at.store(0, std::sync::atomic::Ordering::SeqCst);
+                continue;
+            }
+            let capture = result.unwrap();
+            let reader = server.native_open_buffer_snapshot().unwrap();
+            let active = capture
+                .session
+                .as_ref()
+                .unwrap()
+                .captured()
+                .active_snapshot_lease()
+                .clone();
+            let overlay = ids.leases.lock().unwrap()[start + 1];
+            assert_ne!(active.snapshot, other);
+            assert_eq!(ids.leases.lock().unwrap()[start], active.lease_id);
+            assert_ne!(active.lease_id, overlay);
+            let present = |lease| matches!(snapshots.release_lease(other, lease), Err(SnapshotError::LeaseReleaseMismatch { actual_snapshot, .. }) if actual_snapshot == active.snapshot);
+            assert!(present(active.lease_id));
+            assert!(present(overlay));
+            let (mut driver, owner) = drivers();
+            owner.register_current_snapshot(active.snapshot);
+            match mode {
+                "notification" => {
+                    let (_, messages) = server
+                        .submit_originating_native_frontend_diagnostics(
+                            &mut driver,
+                            capture,
+                            &ids,
+                            &snapshots,
+                            input(),
+                        )
+                        .unwrap();
+                    assert_eq!(messages.unwrap().len(), 2);
+                }
+                "writer" => {
+                    let mut writer = NativeWireWriter::default();
+                    let (_, delivery) = server
+                        .submit_originating_native_frontend_diagnostics_to_writer(
+                            &mut driver,
+                            capture,
+                            &ids,
+                            &snapshots,
+                            input(),
+                            &mut writer,
+                        )
+                        .unwrap();
+                    assert_eq!(delivery.unwrap(), 2);
+                    assert!(!writer.bytes.is_empty());
+                }
+                "error" | "writer-error" => {
+                    let invalid = mizar_session::SnapshotRegistry::with_allocator(ids.clone());
+                    if mode == "writer-error" {
+                        let mut writer = NativeWireWriter::default();
+                        assert!(
+                            server
+                                .submit_originating_native_frontend_diagnostics_to_writer(
+                                    &mut driver,
+                                    capture,
+                                    &ids,
+                                    &invalid,
+                                    input(),
+                                    &mut writer,
+                                )
+                                .is_err()
+                        );
+                        assert!(writer.calls.is_empty());
+                        assert!(writer.bytes.is_empty());
+                    } else {
+                        assert!(
+                            server
+                                .submit_originating_native_frontend_diagnostics(
+                                    &mut driver,
+                                    capture,
+                                    &ids,
+                                    &invalid,
+                                    input()
+                                )
+                                .is_err()
+                        );
+                    }
+                }
+                _ => drop(capture),
+            }
+            if matches!(mode, "notification" | "writer" | "error" | "writer-error") {
+                assert!(present(active.lease_id));
+            } else {
+                assert_eq!(
+                    snapshots.release_lease(other, active.lease_id),
+                    Err(SnapshotError::UnknownSnapshotLease {
+                        lease_id: active.lease_id
+                    })
+                );
+            }
+            assert!(present(overlay));
+            if mode == "server-drop" {
+                drop(server);
+            } else {
+                server.handle_message(notification("textDocument/didChange", json!({"textDocument": {"uri": sources[0].2, "version": 8}, "contentChanges": []})));
+                assert!(server.native_open_buffer_snapshot().is_none());
+            }
+            assert!(present(overlay));
+            assert_eq!(reader.captured().native_sources().unwrap().len(), 2);
+            drop(reader);
+            assert_eq!(
+                snapshots.release_lease(other, overlay),
+                Err(SnapshotError::UnknownSnapshotLease { lease_id: overlay })
+            );
+        }
+        let capture = original
+            .capture_native_open_buffers(draft, &ids, &snapshots, &index, sources)
+            .unwrap();
+        let reader = original.native_open_buffer_snapshot().unwrap();
+        let registry_lifetime = std::sync::Arc::downgrade(&snapshots);
+        drop(capture);
+        drop(original);
+        drop(snapshots);
+        assert!(registry_lifetime.upgrade().is_some());
+        assert_eq!(reader.captured().native_sources().unwrap().len(), 2);
+        drop(reader);
+        assert!(registry_lifetime.upgrade().is_none());
+        std::fs::remove_dir_all(input().plan_request.workspace_root.as_str()).unwrap();
+    }
+
     #[test]
     fn originating_native_capture_uses_current_raw_origins_and_original_producers() {
         let mut server = Server::default();
         let ids = mizar_session::InMemorySessionIdAllocator::new();
-        let snapshots = mizar_session::SnapshotRegistry::new();
+        let snapshots = std::sync::Arc::new(mizar_session::SnapshotRegistry::new());
         let (template, input, drivers) = native_wire_fixture(&mut server, &ids, &snapshots);
         let (draft, index, sources) = originating_native_inputs(&server, &template, input());
         let uris = sources
@@ -2904,7 +3615,7 @@ mod tests {
                     sources.clone(),
                 )
                 .unwrap();
-            let session = capture.session.clone();
+            let session = capture.session.as_ref().unwrap().clone();
             assert_ne!(session.id(), template.id());
             for (name, raw) in [
                 ("clean", "\u{feff}definition\r\nend;\r\n:: 🦀\r\n"),
@@ -2932,6 +3643,7 @@ mod tests {
                     raw.trim_start_matches('\u{feff}').replace("\r\n", "\n")
                 );
                 let (_, original) = capture
+                    .snapshot
                     .lifetimes
                     .iter()
                     .find(|(uri, _)| uri == &expected_uri)
@@ -3015,7 +3727,7 @@ mod tests {
             for wire in [false, true] {
                 let mut server = Server::default();
                 let ids = mizar_session::InMemorySessionIdAllocator::new();
-                let snapshots = mizar_session::SnapshotRegistry::new();
+                let snapshots = std::sync::Arc::new(mizar_session::SnapshotRegistry::new());
                 let (template, input, drivers) = native_wire_fixture(&mut server, &ids, &snapshots);
                 let (draft, index, sources) =
                     originating_native_inputs(&server, &template, input());
@@ -3028,7 +3740,7 @@ mod tests {
                         sources.clone(),
                     )
                     .unwrap();
-                let session = capture.session.clone();
+                let session = capture.session.as_ref().unwrap().clone();
                 let uri = sources[if mode == "reopen-first" { 0 } else { 1 }]
                     .2
                     .clone();
@@ -3074,7 +3786,7 @@ mod tests {
                 let current = if mode == "other" { &other } else { &server };
                 if mode == "reopen-first" {
                     assert!(uri.ends_with("/clean.miz"));
-                    let (unchanged_uri, unchanged) = &capture.lifetimes[1];
+                    let (unchanged_uri, unchanged) = &capture.snapshot.lifetimes[1];
                     assert!(std::sync::Weak::ptr_eq(
                         unchanged,
                         &current.document_lifetime(unchanged_uri).unwrap(),
@@ -3151,7 +3863,9 @@ mod tests {
                         .capture_native_open_buffers(draft, &ids, &snapshots, &index, sources)
                         .unwrap();
                     let (mut driver, owner) = drivers();
-                    owner.register_current_snapshot(fresh.session.captured().snapshot().id);
+                    owner.register_current_snapshot(
+                        fresh.session.as_ref().unwrap().captured().snapshot().id,
+                    );
                     let (_, messages) = server
                         .submit_originating_native_frontend_diagnostics(
                             &mut driver,
@@ -3173,7 +3887,7 @@ mod tests {
         use mizar_session::SessionIdAllocator;
         let mut server = Server::default();
         let ids = mizar_session::InMemorySessionIdAllocator::new();
-        let snapshots = mizar_session::SnapshotRegistry::new();
+        let snapshots = std::sync::Arc::new(mizar_session::SnapshotRegistry::new());
         let (template, input, _) = native_wire_fixture(&mut server, &ids, &snapshots);
         let (draft, index, sources) = originating_native_inputs(&server, &template, input());
         for mode in [
@@ -3279,7 +3993,7 @@ mod tests {
     fn originating_native_capture_preserves_driver_guards_errors_and_writer_failures() {
         let mut server = Server::default();
         let ids = mizar_session::InMemorySessionIdAllocator::new();
-        let snapshots = mizar_session::SnapshotRegistry::new();
+        let snapshots = std::sync::Arc::new(mizar_session::SnapshotRegistry::new());
         let (template, input, drivers) = native_wire_fixture(&mut server, &ids, &snapshots);
         let (draft, index, sources) = originating_native_inputs(&server, &template, input());
         for mode in [
@@ -3299,7 +4013,7 @@ mod tests {
                     sources.clone(),
                 )
                 .unwrap();
-            let session = capture.session.clone();
+            let session = capture.session.as_ref().unwrap().clone();
             let snapshot = session.captured().snapshot().id;
             let invalid = mizar_session::SnapshotRegistry::new();
             let registry = if matches!(mode, "invalid-registry" | "ineligible-error") {
@@ -3397,7 +4111,7 @@ mod tests {
         use std::fs;
 
         let ids = mizar_session::InMemorySessionIdAllocator::new();
-        let snapshots = mizar_session::SnapshotRegistry::new();
+        let snapshots = std::sync::Arc::new(mizar_session::SnapshotRegistry::new());
         // Reuse only fixture allocation, explicit request context and phase drivers.
         let (template, fixture_input, drivers) =
             native_wire_fixture(&mut Server::default(), &ids, &snapshots);
@@ -3478,7 +4192,7 @@ mod tests {
         let capture = server
             .capture_native_open_buffers(draft, &ids, &snapshots, &index, sources)
             .unwrap();
-        let session = capture.session.clone();
+        let session = capture.session.as_ref().unwrap().clone();
         let (mut ordinary_driver, owner) = drivers();
         owner.register_current_snapshot(session.captured().snapshot().id);
         let ordinary = ordinary_driver
@@ -3531,7 +4245,7 @@ mod tests {
         };
         let mut server = Server::default();
         let ids = mizar_session::InMemorySessionIdAllocator::new();
-        let snapshots = mizar_session::SnapshotRegistry::new();
+        let snapshots = std::sync::Arc::new(mizar_session::SnapshotRegistry::new());
         let (template, input, drivers) = native_wire_fixture(&mut server, &ids, &snapshots);
         let (draft, index, sources) = originating_native_inputs(&server, &template, input());
         let uris = sources
@@ -3554,26 +4268,6 @@ mod tests {
                 "textDocument": {"uri": uri, "version": 8}, "contentChanges": [{"text": raw}]}),
             ));
         }
-        let captures = (0..3)
-            .map(|_| {
-                server
-                    .capture_native_open_buffers(
-                        draft.clone(),
-                        &ids,
-                        &snapshots,
-                        &index,
-                        sources.clone(),
-                    )
-                    .unwrap()
-            })
-            .collect::<Vec<_>>();
-        for name in ["main", "clean"] {
-            std::fs::remove_file(
-                std::path::Path::new(input().plan_request.workspace_root.as_str())
-                    .join(format!("alpha/src/{name}.miz")),
-            )
-            .unwrap();
-        }
         let discovered_input = || {
             let mut value = input();
             value.dependency_overlay = ModuleDependencyOverlay::unavailable();
@@ -3593,8 +4287,33 @@ mod tests {
             write!(expected_bytes, "Content-Length: {}\r\n\r\n", body.len()).unwrap();
             expected_bytes.extend(body);
         }
-        for (route, capture) in ["raw", "originating", "wire"].into_iter().zip(captures) {
-            let session = capture.session.clone();
+        for route in ["raw", "originating", "wire"] {
+            for name in ["main", "clean"] {
+                std::fs::write(
+                    std::path::Path::new(input().plan_request.workspace_root.as_str())
+                        .join(format!("alpha/src/{name}.miz")),
+                    [0xff],
+                )
+                .unwrap();
+            }
+            let capture = server
+                .capture_native_open_buffers(
+                    draft.clone(),
+                    &ids,
+                    &snapshots,
+                    &index,
+                    sources.clone(),
+                )
+                .unwrap();
+            for name in ["main", "clean"] {
+                std::fs::remove_file(
+                    std::path::Path::new(input().plan_request.workspace_root.as_str())
+                        .join(format!("alpha/src/{name}.miz")),
+                )
+                .unwrap();
+            }
+
+            let session = capture.session.as_ref().unwrap().clone();
             let snapshot = session.captured().snapshot().id;
             let (mut reference_driver, reference_owner) = drivers();
             reference_owner.register_current_snapshot(snapshot);
@@ -3686,7 +4405,7 @@ mod tests {
         };
         let mut server = Server::default();
         let ids = mizar_session::InMemorySessionIdAllocator::new();
-        let snapshots = mizar_session::SnapshotRegistry::new();
+        let snapshots = std::sync::Arc::new(mizar_session::SnapshotRegistry::new());
         let (template, input, drivers) = native_wire_fixture(&mut server, &ids, &snapshots);
         let (draft, index, sources) = originating_native_inputs(&server, &template, input());
         let main_uri = sources
@@ -3711,7 +4430,7 @@ mod tests {
                     captured_sources,
                 )
                 .unwrap();
-            let session = capture.session.clone();
+            let session = capture.session.as_ref().unwrap().clone();
             let submit_input = || {
                 let mut value = input();
                 value.dependency_overlay = match mode {
@@ -3784,7 +4503,7 @@ mod tests {
         use mizar_build::task_graph::ModuleDependencyOverlay;
         let mut server = Server::default();
         let ids = mizar_session::InMemorySessionIdAllocator::new();
-        let snapshots = mizar_session::SnapshotRegistry::new();
+        let snapshots = std::sync::Arc::new(mizar_session::SnapshotRegistry::new());
         let (template, input, drivers) = native_wire_fixture(&mut server, &ids, &snapshots);
         let (draft, index, sources) = originating_native_inputs(&server, &template, input());
         let main_uri = sources
@@ -3815,7 +4534,7 @@ mod tests {
                     sources.clone(),
                 )
                 .unwrap();
-            let session = capture.session.clone();
+            let session = capture.session.as_ref().unwrap().clone();
             let snapshot = session.captured().snapshot().id;
             if mode.ends_with("reopened") {
                 server.handle_message(notification(

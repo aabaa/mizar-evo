@@ -118,7 +118,8 @@ Tasks 1–5: [LSP-LIFECYCLE-FOUNDATION](../../task_contracts/en/LSP-LIFECYCLE-FO
    - Deps: 4. Spec: [internal 03](../../internal/en/03.diagnostics_model_and_lsp_bridge.md)
      "LSP Snapshot".
 
-7. **Open-buffer snapshots and versions.** [ ]
+7. **Open-buffer snapshots and versions.** [~]
+   - Source-only prerequisite: [LSP-RETAINED-NATIVE-SOURCES](../../task_contracts/en/LSP-RETAINED-NATIVE-SOURCES.md); full registry remains open.
    - Implement buffer snapshots with version tracking and the
      current/stale snapshot registry.
    - Tests: edit sequences keep versions monotonic; stale snapshots are
