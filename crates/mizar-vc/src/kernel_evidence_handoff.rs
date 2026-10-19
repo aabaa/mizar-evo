@@ -1495,6 +1495,239 @@ pub fn build_source_existential_kernel_handoff(
     .map_err(|e| e.to_string())
 }
 
+/// Replays the original generic theorem VC graph before projecting local evidence.
+pub fn build_source_theorem_kernel_handoff(
+    core: &mizar_core::core_ir::CoreIr,
+    vc_set: &VcSet,
+    vc_id: VcId,
+) -> Result<VcKernelEvidenceHandoff, String> {
+    use crate::generator::{CoreGenerationCandidateSet, CoreGenerationInput, VcNormalizationInput};
+    use crate::vc_ir::{SeedIntakeTable, SeedOriginRef, SeedVcMapping, VcModuleRef, VcStatus};
+    use mizar_core::core_ir::{
+        CoreFormulaKind, CoreItemKind, CoreItemStatus, CoreProofNodeKind, CoreProofStatus,
+        CoreTermKind, ObligationSeedKind, ObligationSeedStatus,
+    };
+    let invalid = || "theorem.handoff.invalid_projection".to_owned();
+    let vc = vc_set.vc(vc_id).ok_or_else(invalid)?;
+    let flow = mizar_core::control_flow::build_control_flow_ir(core);
+    let handoff = mizar_core::control_flow::build_obligation_seed_handoff(core, &flow);
+    let intake = SeedIntakeTable::try_from_handoff(&handoff).map_err(|e| e.to_string())?;
+    let package = core.module_id().package().as_str();
+    let path = core.module_id().path().as_str();
+    let module = VcModuleRef::new(format!(
+        "package={}:{};module={}:{}",
+        package.len(),
+        package,
+        path.len(),
+        path
+    ));
+    let candidates = CoreGenerationCandidateSet::try_from_seed_intake(CoreGenerationInput {
+        schema_version: &vc.anchor.generation_schema_version,
+        module: &module,
+        intake: &intake,
+        handoff: &handoff,
+        flow_output: Some(&flow),
+    })
+    .map_err(|e| e.to_string())?;
+    let replay = CoreGenerationCandidateSet::try_normalize(VcNormalizationInput {
+        schema_version: vc_set.schema_version(),
+        snapshot: vc_set.snapshot(),
+        source: core.source_id(),
+        candidates: &candidates,
+    })
+    .map_err(|e| e.to_string())?;
+    if &replay != vc_set
+        || vc.status != VcStatus::Open
+        || vc_set.vcs().len() != 1
+        || !vc_set.generated_formulas().is_empty()
+        || vc_set.seed_accounting().len() != 1
+        || core.items().len() != 1
+        || core.proofs().len() != 1
+        || core.proof_nodes().len() != 2
+        || core.obligation_seeds().len() != 1
+        || !core.definitions().is_empty()
+        || !core.algorithms().is_empty()
+        || !core.algorithm_statements().is_empty()
+        || !core.generated().is_empty()
+        || !core.diagnostics().is_empty()
+    {
+        return Err(invalid());
+    }
+    let (item_id, item) = core.items().iter().next().ok_or_else(invalid)?;
+    let (_, proof) = core.proofs().iter().next().ok_or_else(invalid)?;
+    let (seed_id, seed) = core.obligation_seeds().iter().next().ok_or_else(invalid)?;
+    let accounting = &vc_set.seed_accounting()[0];
+    if item.kind != CoreItemKind::Theorem
+        || item.status != CoreItemStatus::Valid
+        || !item.dependencies.is_empty()
+        || !item.diagnostics.is_empty()
+        || proof.item != item_id
+        || proof.status != CoreProofStatus::PendingAutomaticProof
+        || seed.owner != item_id
+        || seed.kind != ObligationSeedKind::TheoremProof
+        || seed.status != ObligationSeedStatus::Active
+        || seed.label.is_some()
+        || !seed.diagnostics.is_empty()
+        || accounting.handoff != vc.seed.handoff
+        || accounting.origin != (SeedOriginRef::ExistingCore { seed: seed_id })
+        || accounting.seed_status != ObligationSeedStatus::Active
+        || accounting.mapping != (SeedVcMapping::One { vc: vc_id })
+        || vc.kind != VcKind::TheoremProofStep
+    {
+        return Err(invalid());
+    }
+    let root = core.proof_nodes().get(proof.root).ok_or_else(invalid)?;
+    let CoreProofNodeKind::IntroduceBinder {
+        binder: local,
+        child,
+    } = &root.kind
+    else {
+        return Err(invalid());
+    };
+    let terminal = core.proof_nodes().get(*child).ok_or_else(invalid)?;
+    let CoreProofNodeKind::TerminalGoal {
+        obligation,
+        citations,
+    } = &terminal.kind
+    else {
+        return Err(invalid());
+    };
+    let proposition = core.formulas().get(proof.proposition).ok_or_else(invalid)?;
+    let CoreFormulaKind::Forall { binders, body } = &proposition.kind else {
+        return Err(invalid());
+    };
+    let [original] = binders.as_slice() else {
+        return Err(invalid());
+    };
+    let local_guard = local.ty_guard.ok_or_else(invalid)?;
+    let original_guard = original.ty_guard.ok_or_else(invalid)?;
+    let goal = seed.goal.ok_or_else(invalid)?;
+    if original.var == local.var
+        || original.role.as_str() != "quantifier"
+        || local.role.as_str() != "proof-let"
+        || *obligation != seed_id
+        || !citations.is_empty()
+        || !root.diagnostics.is_empty()
+        || !terminal.diagnostics.is_empty()
+        || seed.context != [local_guard]
+        || vc.goal != VcFormulaRef::Core(goal)
+        || vc.local_context.entries().len() != 1
+        || vc.local_context.entries()[0].kind != ContextEntryKind::ProofAssumption
+        || vc.local_context.entries()[0].formula != Some(VcFormulaRef::Core(local_guard))
+        || vc.premises != [PremiseRef::LocalContext(vc.local_context.entries()[0].id)]
+    {
+        return Err(invalid());
+    }
+    let reachable_formulas = [proof.proposition, original_guard, *body, local_guard, goal]
+        .into_iter()
+        .collect::<BTreeSet<_>>();
+    let mut reachable_terms = BTreeSet::new();
+    for (binder, guard, equality) in [
+        (original, original_guard, *body),
+        (local, local_guard, goal),
+    ] {
+        let CoreFormulaKind::TypePred { subject, ty } =
+            &core.formulas().get(guard).ok_or_else(invalid)?.kind
+        else {
+            return Err(invalid());
+        };
+        let CoreFormulaKind::Equals { left, right } =
+            &core.formulas().get(equality).ok_or_else(invalid)?.kind
+        else {
+            return Err(invalid());
+        };
+        if ty.as_str() != "set" {
+            return Err(invalid());
+        }
+        for term in [subject, left, right] {
+            if core
+                .terms()
+                .get(*term)
+                .is_none_or(|term| term.kind != CoreTermKind::Var(binder.var))
+            {
+                return Err(invalid());
+            }
+            reachable_terms.insert(*term);
+        }
+    }
+    if reachable_formulas.len() != 5
+        || core.formulas().len() != reachable_formulas.len()
+        || core.terms().len() != reachable_terms.len()
+    {
+        return Err(invalid());
+    }
+    let symbol_manifest = [
+        KernelManifestEntry {
+            entry_id: 0,
+            payload: vec![3, 0, 0, 0, 0],
+        },
+        KernelManifestEntry {
+            entry_id: 1,
+            payload: vec![4, 0, 0, 0, 1],
+        },
+    ];
+    let variable_manifest = [KernelManifestEntry {
+        entry_id: 0,
+        payload: vec![0, 0, 0, 0],
+    }];
+    let provenance = format!(
+        "source-theorem-local-handoff-v1;source={:?};module={:?};item={:?};proof={:?};seed={:?};accounting={:?}",
+        core.source_id(), core.module_id(), item, proof, seed, vc_set.seed_accounting()
+    ).into_bytes();
+    let frame = |tag: u8, subtype: u8, payload: Vec<u8>| {
+        let mut bytes = vec![tag, subtype];
+        bytes.extend((payload.len() as u32).to_be_bytes());
+        bytes.extend(payload);
+        bytes
+    };
+    let mut formula_payloads = Vec::new();
+    for formula in [local_guard, goal] {
+        let (kind, symbol, terms) = match &core.formulas().get(formula).ok_or_else(invalid)?.kind {
+            CoreFormulaKind::TypePred { subject, .. } => (4, 1u32, vec![*subject]),
+            CoreFormulaKind::Equals { left, right } => (3, 0u32, vec![*left, *right]),
+            _ => return Err(invalid()),
+        };
+        let mut atom = vec![kind];
+        atom.extend(symbol.to_be_bytes());
+        atom.extend((terms.len() as u32).to_be_bytes());
+        atom.extend((terms.len() as u32).to_be_bytes());
+        let mut canonical = atom.clone();
+        for _ in terms {
+            atom.extend([1, 0, 0, 0, 0]);
+            canonical.extend(frame(1, 1, 0u32.to_be_bytes().to_vec()));
+        }
+        let mut wire = vec![1];
+        wire.extend(atom);
+        let mut fingerprint = b"MIZAR_KERNEL_FORMULA\0".to_vec();
+        fingerprint.extend(frame(11, 1, frame(2, kind, canonical)));
+        formula_payloads.push(KernelFormulaPayload {
+            formula_ref: VcFormulaRef::Core(formula),
+            projection: KernelFormulaProjection {
+                formula_fingerprint: KernelEvidenceFingerprint {
+                    algorithm_id: 2,
+                    digest: fingerprint,
+                },
+                formula_bytes: wire,
+                provenance_payload: provenance.clone(),
+            },
+        });
+    }
+    build_kernel_evidence_handoff(KernelEvidenceHandoffInput {
+        vc_set,
+        vc: vc_id,
+        goal_polarity: KernelGoalPolarity::AssertFalseForRefutation,
+        kernel_profile: KernelEvidenceProfile::v1(1, KernelClauseTautologyPolicy::Reject),
+        symbol_manifest: &symbol_manifest,
+        variable_manifest: &variable_manifest,
+        formula_payloads: &formula_payloads,
+        imported_formula_payloads: &[],
+        substitutions: &[],
+        formula_context: None,
+        discharge_output: None,
+    })
+    .map_err(|e| e.to_string())
+}
+
 pub fn build_kernel_evidence_handoff(
     input: KernelEvidenceHandoffInput<'_>,
 ) -> Result<VcKernelEvidenceHandoff, KernelEvidenceHandoffError> {

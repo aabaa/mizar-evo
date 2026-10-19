@@ -574,6 +574,8 @@ contract、禁止境界、real-source/corruption requirement を使用する。�
 
 68. **[Source registration candidate anchor hashes](../../task_contracts/ja/SOURCE-REGISTRATION-CANDIDATE-ANCHORS.md).** [x]
 
+69. **[Source theorem local handoff](../../task_contracts/ja/VC-SOURCE-THEOREM-LOCAL-HANDOFF.md).** [x]
+
 ## 推奨検証
 
 各タスクの後で実行する:

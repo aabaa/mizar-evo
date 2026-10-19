@@ -608,6 +608,8 @@ authorized.
 
 68. **[Source registration candidate anchor hashes](../../task_contracts/en/SOURCE-REGISTRATION-CANDIDATE-ANCHORS.md).** [x]
 
+69. **[Source theorem local handoff](../../task_contracts/en/VC-SOURCE-THEOREM-LOCAL-HANDOFF.md).** [x]
+
 ## Recommended Verification
 
 Run after each task:
