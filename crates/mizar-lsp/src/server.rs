@@ -208,7 +208,8 @@ impl Server {
             .map(|(_, _, lifetime)| std::sync::Arc::downgrade(lifetime))
     }
 
-    /// Submits a native capture and returns current all-OpenBuffer frontend notification data.
+    /// Discovers imports from the native capture before frontend diagnostic submission.
+    /// Returns current all-OpenBuffer notifications through the existing eligibility checks.
     pub fn submit_native_frontend_diagnostics<
         A: mizar_session::SessionIdAllocator,
         L: mizar_build::module_index::SourceLayoutProvider,
@@ -230,7 +231,9 @@ impl Server {
         };
         use mizar_driver::registry::PhaseStatus;
         let (submission, index) = driver
-            .submit_captured_with_native_diagnostic_index(session, allocator, snapshots, input)?;
+            .submit_captured_with_import_discovery_and_native_diagnostic_index(
+                session, allocator, snapshots, input,
+            )?;
         let notifications = (|| {
             if self.initialized.is_none() || self.shutdown || self.exit_code.is_some() {
                 return None;
@@ -3519,5 +3522,379 @@ mod tests {
         assert_eq!(writer.bytes, bytes);
         assert_eq!(writer.calls.iter().filter(|&&op| op == "flush").count(), 2);
         fs::remove_dir_all(root).unwrap();
+    }
+
+    #[test]
+    fn discovery_notifications_preserve_captured_imports_original_records_and_wire() {
+        use mizar_build::task_graph::{
+            DependencyCoverage, ModuleDependencyOverlay, TaskKind, WorkUnit,
+        };
+        let mut server = Server::default();
+        let ids = mizar_session::InMemorySessionIdAllocator::new();
+        let snapshots = mizar_session::SnapshotRegistry::new();
+        let (template, input, drivers) = native_wire_fixture(&mut server, &ids, &snapshots);
+        let (draft, index, sources) = originating_native_inputs(&server, &template, input());
+        let uris = sources
+            .iter()
+            .map(|(_, _, uri)| uri.clone())
+            .collect::<Vec<_>>();
+        for (uri, raw) in [
+            (
+                &uris[1],
+                "\u{feff}import alpha.clean;\r\ntheorem T: a combine b = a;\r\n::=🦀=::end\r\n",
+            ),
+            (
+                &uris[0],
+                "\u{feff}definition\r\nlet x, y be set;\r\npublic func Infix: x combine y -> set equals x;\r\nend;\r\n",
+            ),
+        ] {
+            server.handle_message(notification(
+                "textDocument/didChange",
+                json!({
+                "textDocument": {"uri": uri, "version": 8}, "contentChanges": [{"text": raw}]}),
+            ));
+        }
+        let captures = (0..3)
+            .map(|_| {
+                server
+                    .capture_native_open_buffers(
+                        draft.clone(),
+                        &ids,
+                        &snapshots,
+                        &index,
+                        sources.clone(),
+                    )
+                    .unwrap()
+            })
+            .collect::<Vec<_>>();
+        for name in ["main", "clean"] {
+            std::fs::remove_file(
+                std::path::Path::new(input().plan_request.workspace_root.as_str())
+                    .join(format!("alpha/src/{name}.miz")),
+            )
+            .unwrap();
+        }
+        let discovered_input = || {
+            let mut value = input();
+            value.dependency_overlay = ModuleDependencyOverlay::unavailable();
+            value
+        };
+        // The non-BMP comment prefix is eight UTF-16 units; the BOM is on line zero.
+        let expected = vec![
+            json!({"jsonrpc": "2.0", "method": "textDocument/publishDiagnostics", "params": {"uri": uris[0], "version": 8, "diagnostics": []}}),
+            json!({"jsonrpc": "2.0", "method": "textDocument/publishDiagnostics", "params": {"uri": uris[1], "version": 8, "diagnostics": [
+                {"range": {"start": {"line": 2, "character": 8}, "end": {"line": 2, "character": 11}}, "code": "E0033", "message": "unmatched `end` in lexical scope skeleton", "severity": 1},
+                {"range": {"start": {"line": 2, "character": 8}, "end": {"line": 2, "character": 11}}, "code": "E0052", "message": "`end` has no matching block opener", "severity": 1}
+            ]}}),
+        ];
+        let mut expected_bytes = Vec::new();
+        for message in &expected {
+            let body = serde_json::to_vec(message).unwrap();
+            write!(expected_bytes, "Content-Length: {}\r\n\r\n", body.len()).unwrap();
+            expected_bytes.extend(body);
+        }
+        for (route, capture) in ["raw", "originating", "wire"].into_iter().zip(captures) {
+            let session = capture.session.clone();
+            let snapshot = session.captured().snapshot().id;
+            let (mut reference_driver, reference_owner) = drivers();
+            reference_owner.register_current_snapshot(snapshot);
+            let (expected_submission, index) = reference_driver
+                .submit_captured_with_import_discovery_and_native_diagnostic_index(
+                    session.clone(),
+                    &ids,
+                    &snapshots,
+                    discovered_input(),
+                )
+                .unwrap();
+            let graph = expected_submission.task_graph.as_ref().unwrap();
+            let frontend = |name| {
+                graph.tasks().iter().find(|task| task.kind == TaskKind::Frontend && matches!(&task.unit, WorkUnit::Module { module } if module.path.as_str() == name)).unwrap()
+            };
+            assert!(
+                frontend("main")
+                    .dependencies
+                    .contains(&frontend("clean").id)
+            );
+            assert!(
+                graph
+                    .tasks()
+                    .iter()
+                    .filter(|task| task.kind == TaskKind::ModuleResolve)
+                    .all(|task| task.dependency_coverage
+                        == DependencyCoverage::MissingModuleDependencyOverlay)
+            );
+            let index = index.unwrap();
+            assert_eq!(index.records().len(), 2);
+            for (record, value) in index
+                .records()
+                .iter()
+                .zip(expected[1]["params"]["diagnostics"].as_array().unwrap())
+            {
+                assert_eq!(value["code"], record.code().to_string());
+                assert_eq!(value["message"], record.message());
+            }
+            let (mut driver, owner) = drivers();
+            owner.register_current_snapshot(snapshot);
+            let actual = if route == "wire" {
+                let mut writer = NativeWireWriter::default();
+                let (submission, delivered) = server
+                    .submit_originating_native_frontend_diagnostics_to_writer(
+                        &mut driver,
+                        capture,
+                        &ids,
+                        &snapshots,
+                        discovered_input(),
+                        &mut writer,
+                    )
+                    .unwrap();
+                assert_eq!(delivered.unwrap(), 2);
+                assert_eq!(writer.bytes, expected_bytes);
+                assert_eq!(writer.calls.iter().filter(|&&op| op == "flush").count(), 2);
+                submission
+            } else {
+                let (submission, notifications) = if route == "raw" {
+                    server.submit_native_frontend_diagnostics(
+                        &mut driver,
+                        session,
+                        &ids,
+                        &snapshots,
+                        discovered_input(),
+                    )
+                } else {
+                    server.submit_originating_native_frontend_diagnostics(
+                        &mut driver,
+                        capture,
+                        &ids,
+                        &snapshots,
+                        discovered_input(),
+                    )
+                }
+                .unwrap();
+                assert_eq!(notifications, Some(expected.clone()));
+                submission
+            };
+            assert_eq!(actual, expected_submission);
+        }
+        std::fs::remove_dir_all(input().plan_request.workspace_root.as_str()).unwrap();
+    }
+
+    #[test]
+    fn discovery_notifications_preserve_supplied_overlays_and_whole_failure() {
+        use mizar_build::task_graph::{
+            DependencyCoverage, ModuleDependencyCoverage, ModuleDependencyOverlay, TaskKind,
+            WorkUnit,
+        };
+        let mut server = Server::default();
+        let ids = mizar_session::InMemorySessionIdAllocator::new();
+        let snapshots = mizar_session::SnapshotRegistry::new();
+        let (template, input, drivers) = native_wire_fixture(&mut server, &ids, &snapshots);
+        let (draft, index, sources) = originating_native_inputs(&server, &template, input());
+        let main_uri = sources
+            .iter()
+            .find(|(_, _, uri)| uri.ends_with("/main.miz"))
+            .unwrap()
+            .2
+            .clone();
+        server.handle_message(notification("textDocument/didChange", json!({"textDocument": {"uri": main_uri, "version": 8}, "contentChanges": [{"text": "import alpha.clean;\ndefinition\nend;\n"}]})));
+        for mode in ["missing-capture", "imports-only"] {
+            let captured_sources = sources
+                .iter()
+                .filter(|(_, _, uri)| mode != "missing-capture" || uri.ends_with("/main.miz"))
+                .cloned()
+                .collect();
+            let capture = server
+                .capture_native_open_buffers(
+                    draft.clone(),
+                    &ids,
+                    &snapshots,
+                    &index,
+                    captured_sources,
+                )
+                .unwrap();
+            let session = capture.session.clone();
+            let submit_input = || {
+                let mut value = input();
+                value.dependency_overlay = match mode {
+                    "imports-only" => ModuleDependencyOverlay {
+                        coverage: ModuleDependencyCoverage::ImportsOnly,
+                        edges: vec![],
+                    },
+                    _ => ModuleDependencyOverlay::unavailable(),
+                };
+                value
+            };
+            let (mut reference, owner) = drivers();
+            owner.register_current_snapshot(session.captured().snapshot().id);
+            let expected = reference
+                .submit_captured_with_import_discovery_and_native_diagnostic_index(
+                    session.clone(),
+                    &ids,
+                    &snapshots,
+                    submit_input(),
+                );
+            let (mut driver, owner) = drivers();
+            owner.register_current_snapshot(session.captured().snapshot().id);
+            let actual = server.submit_native_frontend_diagnostics(
+                &mut driver,
+                session,
+                &ids,
+                &snapshots,
+                submit_input(),
+            );
+            match (actual, expected) {
+                (Err(actual), Err(expected)) => {
+                    assert_ne!(mode, "imports-only");
+                    assert_eq!(actual, expected);
+                    let mizar_driver::driver::DriverSubmitError::TaskGraph { diagnostics, .. } =
+                        actual
+                    else {
+                        panic!("whole discovery/overlay failure must fail before scheduling")
+                    };
+                    assert!(diagnostics.diagnostics().iter().any(|diagnostic| diagnostic.kind == mizar_build::task_graph::TaskGraphDiagnosticKind::MissingModuleDependencyOverlay));
+                }
+                (Ok((actual, _)), Ok((expected, _))) => {
+                    assert_eq!(mode, "imports-only");
+                    assert_eq!(actual, expected);
+                    let graph = actual.task_graph.as_ref().unwrap();
+                    let frontend = |name| {
+                        graph.tasks().iter().find(|task| task.kind == TaskKind::Frontend && matches!(&task.unit, WorkUnit::Module { module } if module.path.as_str() == name)).unwrap()
+                    };
+                    assert!(
+                        !frontend("main")
+                            .dependencies
+                            .contains(&frontend("clean").id)
+                    );
+                    assert!(
+                        graph
+                            .tasks()
+                            .iter()
+                            .filter(|task| task.kind == TaskKind::ModuleResolve)
+                            .all(|task| task.dependency_coverage
+                                == DependencyCoverage::MissingModuleDependencyOverlay)
+                    );
+                }
+                other => panic!("discovery reference mismatch: {other:?}"),
+            }
+        }
+        std::fs::remove_dir_all(input().plan_request.workspace_root.as_str()).unwrap();
+    }
+
+    #[test]
+    fn discovery_originating_lifetimes_and_wire_guards_preserve_real_submissions() {
+        use mizar_build::task_graph::ModuleDependencyOverlay;
+        let mut server = Server::default();
+        let ids = mizar_session::InMemorySessionIdAllocator::new();
+        let snapshots = mizar_session::SnapshotRegistry::new();
+        let (template, input, drivers) = native_wire_fixture(&mut server, &ids, &snapshots);
+        let (draft, index, sources) = originating_native_inputs(&server, &template, input());
+        let main_uri = sources
+            .iter()
+            .find(|(_, _, uri)| uri.ends_with("/main.miz"))
+            .unwrap()
+            .2
+            .clone();
+        let raw = "\u{feff}import alpha.clean;\r\n::=🦀=::end\r\n";
+        server.handle_message(notification("textDocument/didChange", json!({"textDocument": {"uri": main_uri, "version": 8}, "contentChanges": [{"text": raw}]})));
+        let submit_input = || {
+            let mut value = input();
+            value.dependency_overlay = ModuleDependencyOverlay::unavailable();
+            value
+        };
+        for mode in [
+            "raw-reopened",
+            "originating-reopened",
+            "wire-reopened",
+            "obsolete-on-flush",
+        ] {
+            let capture = server
+                .capture_native_open_buffers(
+                    draft.clone(),
+                    &ids,
+                    &snapshots,
+                    &index,
+                    sources.clone(),
+                )
+                .unwrap();
+            let session = capture.session.clone();
+            let snapshot = session.captured().snapshot().id;
+            if mode.ends_with("reopened") {
+                server.handle_message(notification(
+                    "textDocument/didClose",
+                    json!({"textDocument": {"uri": main_uri}}),
+                ));
+                server.handle_message(notification("textDocument/didOpen", json!({"textDocument": {"uri": main_uri, "languageId": "mizar", "version": 8, "text": raw}})));
+                assert_eq!(server.document(&main_uri), Some((8, raw)));
+            }
+            let (mut reference, owner) = drivers();
+            owner.register_current_snapshot(snapshot);
+            let expected = reference
+                .submit_captured_with_import_discovery_and_native_diagnostic_index(
+                    session.clone(),
+                    &ids,
+                    &snapshots,
+                    submit_input(),
+                );
+            let (mut driver, owner) = drivers();
+            owner.register_current_snapshot(snapshot);
+            if matches!(mode, "raw-reopened" | "originating-reopened") {
+                let (actual, notifications) = if mode == "raw-reopened" {
+                    server.submit_native_frontend_diagnostics(
+                        &mut driver,
+                        session,
+                        &ids,
+                        &snapshots,
+                        submit_input(),
+                    )
+                } else {
+                    server.submit_originating_native_frontend_diagnostics(
+                        &mut driver,
+                        capture,
+                        &ids,
+                        &snapshots,
+                        submit_input(),
+                    )
+                }
+                .unwrap();
+                assert_eq!(actual, expected.unwrap().0);
+                if mode == "raw-reopened" {
+                    assert_eq!(notifications.unwrap().len(), 2);
+                } else {
+                    assert!(notifications.is_none());
+                }
+                continue;
+            }
+            let mut writer = NativeWireWriter {
+                obsolete_on_flush: (mode == "obsolete-on-flush").then_some((owner, snapshot)),
+                ..NativeWireWriter::default()
+            };
+            let result = server.submit_originating_native_frontend_diagnostics_to_writer(
+                &mut driver,
+                capture,
+                &ids,
+                &snapshots,
+                submit_input(),
+                &mut writer,
+            );
+            let (actual, delivery) = result.unwrap();
+            assert_eq!(actual, expected.unwrap().0);
+            match mode {
+                "obsolete-on-flush" => {
+                    assert_eq!(delivery.unwrap(), 1);
+                    assert_eq!(writer.calls.iter().filter(|&&op| op == "flush").count(), 1);
+                    assert!(
+                        driver
+                            .validate_current_native_diagnostics(session.id(), &snapshots)
+                            .is_err()
+                    );
+                }
+                "wire-reopened" => {
+                    assert_eq!(delivery.unwrap(), 0);
+                    assert!(writer.calls.is_empty());
+                    assert!(writer.bytes.is_empty());
+                }
+                _ => unreachable!(),
+            }
+        }
+        std::fs::remove_dir_all(input().plan_request.workspace_root.as_str()).unwrap();
     }
 }

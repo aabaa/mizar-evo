@@ -12,6 +12,7 @@ Add a `mizar lsp` subcommand that runs the mizar-lsp server over standard input
 and output. The workspace root and settings come from the LSP `initialize`
 request; the subcommand reuses the existing driver session and request API and
 owns no language semantics. Document the subcommand in the CLI owner document.
+Bounded explicit diagnostic binding: use the [native notification owner](../../mizar-lsp/en/server.md#native-frontend-diagnostic-notifications)'s captured import-discovery producer for existing notification/originating/writer operations; preserve signatures, eligibility and wire behavior. Change only that LSP call and its documentation/tests; no automatic host activation or ENTRY completion. Compare genuine discovered submissions and raw-buffer diagnostics, including unavailable/supplied overlays and original lifetime/currentness suppression; preserve all existing tests and protected authorities.
 
 ## Forbidden
 
