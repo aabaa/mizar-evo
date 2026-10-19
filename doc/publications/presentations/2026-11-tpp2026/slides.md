@@ -226,7 +226,7 @@ definition
 end;
 ```
 
-- **Separate structure declarations from inheritance. This resembles implementing a Rust trait after defining a type.**
+- **Separate structure declarations from inheritance. This is similar to implementing a Rust trait after defining a type.**
 - `from` renames a parent's role: `binop` becomes `add`, and `unit` becomes `zero`.
 - One declaration per parent. Equal member types need no proof; narrower types require `coherence`.
 

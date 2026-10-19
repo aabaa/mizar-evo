@@ -79,7 +79,7 @@ The properties unit and zero declare only names and types. Their values are not 
 
 ### 2.3 type: declare inheritance after the structure (12:15)
 
-We can write inherit after declaring the structure. Separating the type definition from the implementation of a relation resembles a Rust trait implementation.
+We can write inherit after declaring the structure. The type definition and inheritance are separate. This is similar to a Rust trait implementation.
 The parent's binop maps to the child's add; its property unit maps to the child's zero. There is one inherit declaration per parent. Equal types need no proof; narrowing a type needs a coherence proof.
 Next, we use this mapping to implement unit on the parent side. [Specification]
 
@@ -98,7 +98,7 @@ The new specification keeps automatic application but requires labels and record
 
 Finally, overload. Let us use the identity element for addition and multiplication in a ring.
 The additive identity is zero, and the multiplicative identity is one. Both are identities, but their values differ.
-The specification's functor id. M returns the identity of a unital Magma. Writing only id. R leaves a choice: the additive or multiplicative Magma view?
+A functor is a function symbol in Mizar. Here, id. M returns the identity of a unital Magma. Writing only id. R leaves a choice: the additive or multiplicative Magma view?
 R qua AddMagma gives R.zero. R qua MulMagma gives R.one. Each selected view must have an identity.
 The view lets us select zero or one within the same ring. Types and attributes decide which definitions apply; the chosen operation view must also be clear. [Specification-based sketch]
 
