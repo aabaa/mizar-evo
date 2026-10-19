@@ -125,7 +125,7 @@ After defpred, we explicitly apply by NatInduction[P], Base, Step. Functor param
 ### 3.4 template: structures and attributes too (18:25)
 
 The upper example gives vector-space data over a field K. The lower example describes density in a space M.
-Familiar of notation and prefix attributes are syntax sugar for templates. Vector of K corresponds to Vector[K]; M-dense corresponds to dense[M]. We can also write VectorSpace over K.
+Familiar of notation and prefix attributes are syntactic sugar for templates: shorter ways to write the same expressions. Vector of K corresponds to Vector[K]; M-dense corresponds to dense[M]. We can also write VectorSpace over K.
 Structures, attributes, modes, and other declarations share this parameter mechanism. [Specification-based sketch]
 
 ## Part 4. Verified Computation (19:00–24:15)

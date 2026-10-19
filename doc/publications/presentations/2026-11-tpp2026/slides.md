@@ -356,7 +356,7 @@ end;
 | `f + g` | `Function of I,R.carrier` |
 | `u + v` | `Function of I,C.carrier` |
 
-- **Same body and result type for rational, integer, and natural values too.**
+- **One definition gives the sum and its result type for each number system.**
 
 [^1]: Explicit forms: `f +[R,I] g`, `u +[C,I] v`. Omit arguments only when declared types determine them uniquely. Use `qua` for ambiguous inheritance paths.
 
@@ -402,7 +402,7 @@ struct VectorSpace[K] where
 end;
 ```
 
-`of` / `over` are syntax sugar: `Vector of K` → `Vector[K]` (a mode example).
+`of` / `over` are syntactic sugar (shorter notation): `Vector of K` → `Vector[K]` (a mode example).
 
 attr: a subset S is dense in a space M (sketch, condition omitted):
 
@@ -412,7 +412,7 @@ let S be Subset of M.carrier;
 attr DenseDef: S is dense[M] means ...;
 ```
 
-Prefix attribute notation is syntax sugar too: `M-dense` → `dense[M]`.
+Prefix attributes are also syntactic sugar: `M-dense` → `dense[M]`.
 
 **Type / value parameters are shared across struct, attr, mode, pred, and func.**
 
