@@ -206,10 +206,9 @@ This is a proposal for getting candidate evidence from an external log. We do no
 
 ### 6.4 From saved evidence to concrete SAT clauses (30:45)
 
-SAT tests whether propositional clauses can all be true at once. UNSAT means they cannot. The top row shows saved evidence, kernel checks, and instantiation. The kernel checks original formulas and composed substitutions against their origins, target, and binding context. It checks that free variables do not become bound by mistake. It then instantiates both implications at a and adds P(a) and the negated goal.
-Assign propositional variables one, two, and three to P(a), Q(a), and R(a). Introduce variables four and five for the implications, with unit clauses that say they are true. This Tseitin encoding follows the current encoder's construction.
-The two blue boxes below show definitions of s and t. Each gives three defining clauses and one unit clause asserting the implication. With the unit clauses p and not r above, we get five variables and ten clauses. As the green band shows, p and the two implications force r, contradicting not r.
-The small kernel does not replay external resolution steps. It generates clauses from checked evidence and asks a trusted SAT checker to confirm UNSAT. The displayed clauses illustrate the encoding; they are not a dump from an execution. [Architecture-based design sketch]
+SAT tests whether all propositional clauses can be true together. UNSAT means they cannot. At the top, the kernel checks formulas, substitutions, origins, target, and binding context. Free variables must not become bound by mistake. It then instantiates both implications at a and adds P(a) and the negated goal.
+Below, p, q, r stand for P(a), Q(a), R(a). Variables s and t stand for the implications. Each blue box gives three defining clauses and one unit clause asserting the implication. Add p and not r: five variables, ten clauses. This Tseitin encoding follows the current encoder.
+The green band shows the contradiction: p and the implications force r, but we also require not r. The kernel generates these clauses from checked evidence, then uses its trusted SAT checker to confirm UNSAT. It does not replay external resolution steps. This is an encoding example, not an execution dump. [Architecture-based design sketch]
 
 ## Part 7. Status And Roadmap (32:30–36:30)
 
