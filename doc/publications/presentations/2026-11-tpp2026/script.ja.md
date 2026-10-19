@@ -235,7 +235,7 @@ Mizar の一階論理と集合論、数学を読み書きする力を継承し�
 - **「template は本当に一階のままか」** → 仕様 18 章：述語・関数子パラメータは schema レベル、インスタンス化ごとに一階義務。Backup 1。
 - **「algorithm は結局 tactic 言語ではないのか」** → 契約付きで検証対象になる点が違う。tactic 的用途も含むが、それ自体が仕様化・検証される。MVM・抽出は未実装。
 - **「変更時はどこまで再検証するのか」** → 公開された主張・受理状態と依存指紋に基づいて再利用範囲を決める。Backup 2。package・lockfile の例は Backup 3。
-- **「kernel は何を信頼しているのか」** → 本編 6.4。evidence の対応と代入を検査し、kernel が生成した SAT 問題の UNSAT を確認する。詳細は draft.ja.md §6。
+- **「kernel は何を信頼しているのか」** → 本編 6.4。evidence の対応と代入を検査し、kernel が生成した SAT 問題の UNSAT を確認する。詳細は draft.ja.md §6。既定の computation は MVM も信頼する（4.4）。
 - **「どこまで動くのか」** → 7.1 の限定実装の通り。詳細な接続範囲は draft.ja.md §7.1 の質疑用補足を参照。一般の source-to-artifact と外部 prover の実証結果は未主張。講演日に固定 SHA と `doc/design/todo.md`、ソースを再確認。
 
 ## 発表者用メモ（読み上げない）
