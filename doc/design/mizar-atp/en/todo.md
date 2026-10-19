@@ -712,6 +712,8 @@ candidate evidence through the kernel-owned schema and must not weaken it.
 
 42. **[Bounded structured source substitutions](../../task_contracts/en/ATP-SOURCE-STRUCTURED-SUBSTITUTIONS.md).** [x] — Existing factory extraction prerequisite; full finder/search and acceptance remain open.
 
+43. **[Local-variable reflexivity names](../../task_contracts/en/ATP-LOCAL-VARIABLE-REFLEXIVITY-NAMES.md).** [x] — Bounded untrusted names prerequisite; source Proof consumption and full finder remain open.
+
 ## Recommended Verification
 
 Run after each task:

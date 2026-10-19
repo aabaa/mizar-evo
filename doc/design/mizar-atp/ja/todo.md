@@ -657,6 +657,8 @@ polarity)、F2(非 import ソース束縛)、F6(imported-statement projection)
 
 42. **[限定した source 構造置換](../../task_contracts/ja/ATP-SOURCE-STRUCTURED-SUBSTITUTIONS.md).** [x] — 既存 factory 内の抽出前提。汎用 finder/探索と受理は未完了。
 
+43. **[Local-variable reflexivity names](../../task_contracts/ja/ATP-LOCAL-VARIABLE-REFLEXIVITY-NAMES.md).** [x] — 限定した untrusted names の前提。source Proof consumer と汎用 finder は未完了。
+
 ## 推奨検証
 
 各タスクの後で実行する:

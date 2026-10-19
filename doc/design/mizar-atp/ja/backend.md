@@ -448,3 +448,14 @@ Task 14 は次の focused Rust coverage を追加しなければならない:
 - kernel/SAT checking、proof policy、witness/cache publication、backend proof method trust、
   resolution-trace trust、unsat-core trust、SMT proof-object trust、trusted backend `used_axioms` が
   存在しないこと。
+
+## Local-variable reflexivity names
+
+`encode_local_variable_reflexivity_names(&mizar_kernel::formula_evidence::ParsedKernelEvidence) -> Result<Vec<Vec<u8>>, String>` は既存 backend module の決定的な untrusted name encoder とする。
+schema 1、空の substitutions、`AssertFalseForRefutation`、plain final-goal Equality atom の両引数が同じ実際の `Term::Variable` である場合だけ扱う。goal を直接読み、通常 parse 済みの manifest/arity/term 検証を重複せず利用する。他の context/formula entry の消費は要求しない。
+他の profile はすべて `Err("unsupported local-variable reflexivity input")` とし、partial names や空の成功へ fallback しない。
+既存 Formula-v2 schema-1 name を一つ返す。順に big-endian u32 instance ID 1、u8 reflexivity tag 1、実際の equality-symbol u32 ID、u8 Variable tag 1、実際の variable u32 ID（14 bytes）。source/hash/role 番号から ID を推定せず、変数を ground constant にしない。
+既存 VC `encode_local_evidence(Some(&names))` が v2 を frame し、Kernel だけが instance を構成・検査する。encoder は探索、SAT query、backend 実行、result 分類、policy、受理、公開の authority を持たない。
+既存 closed-choice encoder の全 byte と動作を保ち、substitution 不在の `Ok(empty)` と全拒否も変えない。source Proof consumer、汎用 finder/探索/limit enforcement、Steps 6–8 は別作業とする。
+既存 private runner `term_proof_tests` の旧 prefix を保って二系列を追記する。真正な元/alpha-renamed Checker/Core/generic-VC/theorem-handoff source から通常 v1 parse、正確で決定的かつ pure な names、既存 v2 writer を経て元 target/context への fresh normal Kernel run を行う。実際の Accepted、ProofObligation、policy taint/imported used axioms 不在、既存 default policy/limits、names 不在 v1 の拒否、foreign/modified original binding の fail closed、source status 維持を要求する。
+補助系列では通常 parse 済み untrusted input の実際の非零 ID と、非対応 schema/polarity/substitutions/non-equality/Boolean shape/異なる変数/ground term を扱う。encoder 入力だけであり、偽 source/backend producer や Accepted control にしない。既存 parser の malformed-manifest/arity/budget coverage を再利用する。

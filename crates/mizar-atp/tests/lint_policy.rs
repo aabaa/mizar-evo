@@ -275,6 +275,7 @@ fn atp_backend_module_has_paired_specs_and_excludes_trusted_acceptance() {
     let mut restricted_source = source.clone();
     for allowed in [
         "mizar_kernel::formula_evidence::ParsedKernelEvidence",
+        "mizar_kernel::formula_evidence::GoalPolarity::AssertFalseForRefutation",
         "mizar_kernel::formula_evidence::FormulaEvidenceParseContext::v1",
         "mizar_kernel::formula_evidence::parse_formula_evidence",
         "mizar_kernel::certificate_parser::Fingerprint::new",
@@ -543,6 +544,7 @@ fn atp_backend_public_api_surface_is_task_fourteen_allowlist() {
             "build_source_registration_candidate_inputs",
             "classify_backend_observation",
             "encode_closed_choice_reflexivity_names",
+            "encode_local_variable_reflexivity_names",
             "run_backend",
             "screen_source_registration_candidate",
             "source_registration_ground_term_correspondence",

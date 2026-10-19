@@ -220,6 +220,7 @@ Public entry functions:
 - `run_backend`
 - `classify_backend_observation`
 - `encode_closed_choice_reflexivity_names`
+- `encode_local_variable_reflexivity_names`
 - `build_source_registration_candidate_inputs`
 - `source_registration_ground_term_correspondence`
 - `screen_source_registration_candidate`

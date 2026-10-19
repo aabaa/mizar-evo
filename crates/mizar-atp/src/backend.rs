@@ -686,6 +686,42 @@ pub fn encode_closed_choice_reflexivity_names(
     Ok(names)
 }
 
+/// Encodes one untrusted reflexivity name using the actual final-goal variable.
+pub fn encode_local_variable_reflexivity_names(
+    parsed: &mizar_kernel::formula_evidence::ParsedKernelEvidence,
+) -> Result<Vec<Vec<u8>>, String> {
+    let invalid = || "unsupported local-variable reflexivity input".to_owned();
+    if parsed.schema_version() != 1
+        || !parsed.substitutions().is_empty()
+        || parsed.final_goal().polarity
+            != mizar_kernel::formula_evidence::GoalPolarity::AssertFalseForRefutation
+    {
+        return Err(invalid());
+    }
+    let mizar_kernel::formula_evidence::Formula::Atom(atom) = &parsed.final_goal().formula else {
+        return Err(invalid());
+    };
+    if atom.symbol.kind != mizar_kernel::clause::SymbolKind::Equality {
+        return Err(invalid());
+    }
+    let [
+        mizar_kernel::clause::Term::Variable(left),
+        mizar_kernel::clause::Term::Variable(right),
+    ] = atom.arguments.as_slice()
+    else {
+        return Err(invalid());
+    };
+    if left != right {
+        return Err(invalid());
+    }
+    let mut name = 1u32.to_be_bytes().to_vec();
+    name.push(1);
+    name.extend(atom.symbol.id.0.to_be_bytes());
+    name.push(1);
+    name.extend(left.0.to_be_bytes());
+    Ok(vec![name])
+}
+
 #[cfg(unix)]
 use std::os::unix::fs::{DirBuilderExt, OpenOptionsExt, PermissionsExt};
 

@@ -511,3 +511,14 @@ Task 14 must add focused Rust coverage for:
 - absence of kernel/SAT checking, proof policy, witness/cache publication,
   backend proof method trust, resolution-trace trust, unsat-core trust, SMT
   proof-object trust, and trusted backend `used_axioms`.
+
+## Local-variable reflexivity names
+
+`encode_local_variable_reflexivity_names(&mizar_kernel::formula_evidence::ParsedKernelEvidence) -> Result<Vec<Vec<u8>>, String>` is a deterministic untrusted name encoder in the existing backend module.
+Support only schema 1, empty substitutions and `AssertFalseForRefutation` with a plain final-goal Equality atom whose two arguments are the same actual `Term::Variable`. Read that goal directly; reuse normal parsed manifest/arity/term validation without duplicating it or requiring other context/formula entries to be consumed.
+All other profiles return `Err("unsupported local-variable reflexivity input")`, without partial names or an empty-success fallback.
+Return exactly one existing Formula-v2 schema-1 name: big-endian u32 instance ID 1, u8 reflexivity tag 1, actual equality-symbol u32 ID, u8 Variable tag 1, actual variable u32 ID (14 bytes). Never infer IDs from source, hashes or role numbers, or turn a variable into a ground constant.
+The existing VC `encode_local_evidence(Some(&names))` frames v2; Kernel alone constructs and checks the instance. No search, SAT query, backend execution, result classification, policy, acceptance or publication authority enters this encoder.
+Preserve every existing closed-choice encoder byte and behavior, including no-substitution `Ok(empty)` and all refusals. Source Proof consumption, general finder/search/limit enforcement and Steps 6–8 remain separate work.
+Tests append two families in the existing private runner `term_proof_tests`, preserving its old prefix: genuine original/alpha-renamed Checker/Core/generic-VC/theorem-handoff sources through normal v1 parse, exact deterministic pure names and existing v2 writer into a fresh normal Kernel run against the original target/context. Require actual Accepted, ProofObligation, no policy taint/imported used axioms, unchanged default policy/limits, no-name v1 rejection and foreign/modified original bindings failing closed; preserve source statuses.
+Supplemental normal parsed untrusted inputs cover actual nonzero IDs and unsupported schema, polarity, substitutions, non-equality/Boolean shape, unequal variables and ground terms. They supply encoder data only, never fake source/backend producers or Accepted controls; reuse existing parser malformed-manifest/arity/budget coverage.
