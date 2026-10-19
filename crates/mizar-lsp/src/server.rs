@@ -3384,4 +3384,140 @@ mod tests {
         }
         std::fs::remove_dir_all(input().plan_request.workspace_root.as_str()).unwrap();
     }
+
+    #[test]
+    fn native_initialize_inputs_reach_originating_frontend_wire() {
+        use mizar_build::{
+            module_index::StaticSourceLayout,
+            planner::{lockfile_content_hash, produce_build_plan, workspace_config_content_hash},
+        };
+        use std::fs;
+
+        let ids = mizar_session::InMemorySessionIdAllocator::new();
+        let snapshots = mizar_session::SnapshotRegistry::new();
+        // Reuse only fixture allocation, explicit request context and phase drivers.
+        let (template, fixture_input, drivers) =
+            native_wire_fixture(&mut Server::default(), &ids, &snapshots);
+        let root = std::path::PathBuf::from(fixture_input().plan_request.workspace_root.as_str());
+        fs::write(
+            root.join("mizar.workspace"),
+            "[workspace]\nmembers = [\"alpha\"]\n",
+        )
+        .unwrap();
+        fs::write(
+            root.join("alpha/mizar.pkg"),
+            "[package]\nname = \"alpha\"\nversion = \"1.2.3\"\n",
+        )
+        .unwrap();
+        fs::write(root.join("mizar.lock"), "schema_version = 1\n[[package]]\nname = \"alpha\"\nversion = \"1.2.3\"\nsource = { kind = \"workspace\", path = \"alpha\" }\ndependencies = []\n").unwrap();
+        // Native association needs files; successful Frontend work must use editor bytes.
+        for name in ["main", "clean"] {
+            fs::write(root.join(format!("alpha/src/{name}.miz")), [0xff]).unwrap();
+        }
+        let root_uri = format!(
+            "file://{}{}",
+            if cfg!(windows) { "/" } else { "" },
+            root.to_str().unwrap().replace('\\', "/")
+        );
+        let mut server = Server::default();
+        let params = json!({"processId": null, "rootUri": root_uri, "capabilities": {}});
+        let response = server
+            .handle_message(request("initialize", params.clone()))
+            .unwrap();
+        assert!(response["result"]["capabilities"].is_object());
+        assert_eq!(server.initialization_params(), Some(&params));
+        let (workspace, packages, lock) = server.native_workspace_inputs().unwrap().unwrap();
+        assert_eq!(packages.len(), 1);
+        assert_eq!(packages[0].member_path, "alpha");
+        assert_eq!(packages[0].manifest.name, "alpha");
+        assert_eq!(packages[0].manifest.version.to_string(), "1.2.3");
+        assert_eq!(lock.packages.len(), 1);
+        assert_eq!(lock.packages[0].version.to_string(), "1.2.3");
+        // ToolchainInfo and remaining runtime operands are still explicit fixture context.
+        let mut plan_request = fixture_input().plan_request;
+        plan_request.workspace_root = workspace.clone();
+        let plan =
+            produce_build_plan(plan_request.clone(), packages.clone(), lock.clone()).unwrap();
+        assert_eq!(plan.packages.len(), 1);
+        assert_eq!(plan.packages[0].package_id.as_str(), "alpha");
+        assert_eq!(plan.packages[0].version.to_string(), "1.2.3");
+        let layout = StaticSourceLayout::from_native_disk(&plan).unwrap();
+        let input = || {
+            let mut input = fixture_input();
+            input.plan_request = plan_request.clone();
+            input.workspace_packages = packages.clone();
+            input.lockfile = lock.clone();
+            input.source_layout = layout.clone();
+            input
+        };
+        for (name, raw) in [
+            ("main", "\u{feff}::=🦀=::end\r\n:: suffix\r"),
+            ("clean", "\u{feff}definition\r\nend;\r\n:: 🦀\r\n"),
+        ] {
+            let uri = format!("{root_uri}/alpha/src/{name}.miz");
+            assert!(server
+                .handle_message(notification(
+                    "textDocument/didOpen",
+                    json!({"textDocument": {"uri": uri, "languageId": "mizar", "version": 7, "text": raw}}),
+                ))
+                .is_none());
+            assert_eq!(server.document(&uri), Some((7, raw)));
+        }
+        let (mut draft, index, sources) = originating_native_inputs(&server, &template, input());
+        draft.workspace_root = workspace;
+        draft.dependency_inputs.lockfile_hash = lockfile_content_hash(&lock);
+        draft.verifier_config.hash =
+            workspace_config_content_hash(&plan.verifier_config, &plan.build_config);
+        let uris = sources
+            .iter()
+            .map(|(_, _, uri)| uri.clone())
+            .collect::<Vec<_>>();
+        let capture = server
+            .capture_native_open_buffers(draft, &ids, &snapshots, &index, sources)
+            .unwrap();
+        let session = capture.session.clone();
+        let (mut ordinary_driver, owner) = drivers();
+        owner.register_current_snapshot(session.captured().snapshot().id);
+        let ordinary = ordinary_driver
+            .submit_captured(session.clone(), &ids, &snapshots, input())
+            .unwrap();
+        assert_eq!(ordinary.build_plan.as_ref(), Some(&plan));
+        assert_eq!(ordinary.module_index.as_ref(), Some(&index));
+        let (mut driver, owner) = drivers();
+        owner.register_current_snapshot(session.captured().snapshot().id);
+        let mut writer = NativeWireWriter::default();
+        let (submission, delivery) = server
+            .submit_originating_native_frontend_diagnostics_to_writer(
+                &mut driver,
+                capture,
+                &ids,
+                &snapshots,
+                input(),
+                &mut writer,
+            )
+            .unwrap();
+        assert_eq!(submission, ordinary);
+        assert_eq!(delivery.unwrap(), 2);
+        let expected = [
+            json!({"jsonrpc": "2.0", "method": "textDocument/publishDiagnostics",
+                "params": {"uri": uris[0], "version": 7, "diagnostics": []}}),
+            json!({"jsonrpc": "2.0", "method": "textDocument/publishDiagnostics",
+            "params": {"uri": uris[1], "version": 7, "diagnostics": [
+                {"range": {"start": {"line": 0, "character": 9}, "end": {"line": 0, "character": 12}},
+                    "code": "E0033", "message": "unmatched `end` in lexical scope skeleton", "severity": 1},
+                {"range": {"start": {"line": 0, "character": 9}, "end": {"line": 0, "character": 12}},
+                    "code": "E0052", "message": "`end` has no matching block opener", "severity": 1}
+            ]}}),
+        ];
+        let mut bytes = Vec::new();
+        for message in expected {
+            let body = serde_json::to_vec(&message).unwrap();
+            assert!(body.len() > std::str::from_utf8(&body).unwrap().chars().count());
+            write!(bytes, "Content-Length: {}\r\n\r\n", body.len()).unwrap();
+            bytes.extend(body);
+        }
+        assert_eq!(writer.bytes, bytes);
+        assert_eq!(writer.calls.iter().filter(|&&op| op == "flush").count(), 2);
+        fs::remove_dir_all(root).unwrap();
+    }
 }
