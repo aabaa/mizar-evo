@@ -54,9 +54,8 @@ story is evidence, formula instantiation, and a trusted SAT check.
 - `tpp2026.tex` / `tpp2026.pdf` - generated English deck (A4 landscape pages,
   16:9 content, as in the Bialystok deck).
 - `tpp2026_ja.tex` / `tpp2026_ja.pdf` - generated Japanese deck.
-- `tpp2026_notes.pdf` / `tpp2026_ja_notes.pdf` - generated decks with presenter
-  notes. Their `*_notes.tex` files are regenerated from the slide Markdown and
-  ignored by Git; maintain the spoken scripts in `script.md` / `script.ja.md`.
+- `*_notes.tex` / `*_notes.pdf` - optional generated decks with presenter
+  notes, ignored by Git. Maintain the spoken scripts in `script.md` / `script.ja.md`.
 - `figures/` - TikZ figures new to this talk: `evaluation_units`,
   `two_paths`, `where_you_pay`, `layer_stack`, `llm_atp_loop`, `roadmap_tpp`,
   plus `resolution_evidence` and `sat_evidence_check` shared by both checking sections.
@@ -187,14 +186,12 @@ cd figures && for f in *.tex; do pdflatex -interaction=nonstopmode "$f"; done &&
 # English (inside the dedicated worktree)
 python3 build_beamer.py en
 pdflatex tpp2026.tex && pdflatex tpp2026.tex
-pdflatex tpp2026_notes.tex && pdflatex tpp2026_notes.tex
 
 # Japanese
 python3 build_beamer.py ja
 
 # Japanese deck (upLaTeX + dvipdfmx)
 uplatex tpp2026_ja.tex && dvipdfmx tpp2026_ja.dvi
-uplatex tpp2026_ja_notes.tex && dvipdfmx tpp2026_ja_notes.dvi
 ```
 
 Run `pdflatex` / `uplatex` twice when frame numbers in the footer look stale.
@@ -204,7 +201,7 @@ repository. The Japanese deck uses the Harano Aji fonts through the default
 dvipdfmx.
 
 The generator may split a source frame into continuation pages. Check the
-rendered decks and notes after revision, especially tables and source
+rendered decks after revision, especially tables and source
 notes. Timing follows source frame IDs, not generated page numbers.
 
 ## Pre-Talk Checklist
