@@ -773,6 +773,7 @@ permit; each source-integration slice waits for its actual upstream outputs.
    [Opt-in screened source checking](./task_contracts/en/PROOF-SOURCE-SCREENED-ATTEMPT.md) implements the bounded Proof consumer; full search and acceptance/publication remain open.
    [Uncited theorem local handoffs](./task_contracts/en/VC-SOURCE-THEOREM-LOCAL-HANDOFF.md) supply original guard/goal inputs; equality candidates and fresh acceptance remain open.
    [Local-variable reflexivity names](./task_contracts/en/ATP-LOCAL-VARIABLE-REFLEXIVITY-NAMES.md) supply bounded instance inputs; source Proof consumption and the full finder remain open.
+   [Theorem formula content](./task_contracts/en/CORE-SOURCE-THEOREM-FORMULA-PAYLOADS.md) supplies bounded original local content; VC/context identity and source acceptance remain open.
 2. [ ] [Built-in evidence candidates](./task_contracts/en/PREATP-FORMULA-EVIDENCE.md)
    (VC 60); design can start, general source integration waits for authentic
    formula/context/substitution/provenance producers. [Original-source direct-premise candidates](./task_contracts/en/VC-SOURCE-DIRECT-PREMISE-CANDIDATE.md) supply only bounded untrusted association.

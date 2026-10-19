@@ -4391,7 +4391,10 @@ mod term_proof_tests {
         )
     }
 
-    fn step5c14_computation_core(text: &str) -> Result<mizar_core::core_ir::CoreIr, String> {
+    fn with_step5c14_theorem_check<T>(
+        text: &str,
+        consume: impl FnOnce(&mizar_checker::type_checker::SourceTheoremCheck<'_>) -> Result<T, String>,
+    ) -> Result<T, String> {
         use mizar_checker::type_checker::SourceVariableSemanticsChecker;
         use mizar_resolve::{
             labels::{LabelResolver, ProofLabelSourceCollector},
@@ -4462,7 +4465,13 @@ mod term_proof_tests {
             &resolved,
             None,
         )?;
-        mizar_core::elaborator::lower_source_theorem_skeletons(&check, None)
+        consume(&check)
+    }
+
+    fn step5c14_computation_core(text: &str) -> Result<mizar_core::core_ir::CoreIr, String> {
+        with_step5c14_theorem_check(text, |check| {
+            mizar_core::elaborator::lower_source_theorem_skeletons(check, None)
+        })
     }
 
     #[test]
@@ -6396,6 +6405,234 @@ mod term_proof_tests {
                     GoalPolarity::AssertTrueForConsistency
                 );
             }
+        }
+    }
+
+    #[test]
+    fn source_theorem_formula_payloads_preserve_actual_locals_and_content() {
+        use mizar_core::{
+            binder_normalization::{
+                BinderContext, CanonicalFormulaKind, CanonicalTermKind, CanonicalVar,
+                NormalizedVarClass, NormalizedVarSort, canonical_formula, normalize_core_formula,
+            },
+            core_ir::{CoreFormulaKind, CoreProofNodeKind},
+            elaborator::{lower_source_theorem_skeletons, source_theorem_formula_payloads},
+        };
+        use mizar_vc::vc_ir::VcFormulaRef;
+        let original =
+            "theorem T: for X being set holds X = X proof let X be set; thus X = X; end;";
+        let mut baseline = None;
+        for source in [
+            original.to_owned(),
+            "theorem Renamed: for Bound being set holds Bound = Bound proof let Local be set; thus Local = Local; end;".to_owned(),
+            format!(":: leading trivia\n{}\n", original.replace(" proof ", "\nproof\n")),
+        ] {
+            let (core, payloads) = with_step5c14_theorem_check(&source, |check| {
+                let core = lower_source_theorem_skeletons(check, None)?;
+                let before = core.clone();
+                let proof = core.proofs().iter().next().unwrap().1;
+                let CoreFormulaKind::Forall { binders, .. } =
+                    &core.formulas().get(proof.proposition).unwrap().kind
+                else {
+                    panic!()
+                };
+                let CoreProofNodeKind::IntroduceBinder { binder: local, .. } =
+                    &core.proof_nodes().get(proof.root).unwrap().kind
+                else {
+                    panic!()
+                };
+                assert_ne!(binders[0].var, local.var);
+                assert_eq!(binders[0].role.as_str(), "quantifier");
+                assert_eq!(local.role.as_str(), "proof-let");
+                let guard = local.ty_guard.unwrap();
+                let goal = core.obligation_seeds().iter().next().unwrap().1.goal.unwrap();
+                let vcs = generate_core_vcs(&core, snapshot_id(777))?;
+                assert_eq!(vcs.vcs().len(), 1);
+                assert_eq!(vcs.vcs()[0].goal, VcFormulaRef::Core(goal));
+                assert_eq!(
+                    vcs.vcs()[0].local_context.entries()[0].formula,
+                    Some(VcFormulaRef::Core(guard))
+                );
+                let mut context = BinderContext::new();
+                for binder in [&binders[0], local] {
+                    context.declare_variable(
+                        binder.var,
+                        NormalizedVarClass::Free,
+                        binder.role.clone(),
+                        NormalizedVarSort::Term,
+                    );
+                }
+                for (id, var) in [(guard, local.var), (binders[0].ty_guard.unwrap(), binders[0].var)] {
+                    let row = core.formulas().get(id).unwrap();
+                    let normalized = normalize_core_formula(&core, id, &context, &row.source)
+                        .map_err(|e| format!("{e:?}"))?;
+                    assert_eq!(normalized.free_variables, [var].into_iter().collect());
+                    let canonical = canonical_formula(&normalized, &context, &row.source)
+                        .map_err(|e| format!("{e:?}"))?;
+                    let CanonicalFormulaKind::TypePred { subject, .. } = canonical.kind() else {
+                        panic!()
+                    };
+                    assert_eq!(subject.kind(), &CanonicalTermKind::Var(CanonicalVar::Free(var)));
+                }
+                let mut prefix = b"mizar-core/source-theorem-formula/v1\0".to_vec();
+                for value in [
+                    core.module_id().package().as_str(),
+                    core.module_id().path().as_str(),
+                    "proof-let",
+                ] {
+                    prefix.extend_from_slice(&u32::try_from(value.len()).unwrap().to_be_bytes());
+                    prefix.extend_from_slice(value.as_bytes());
+                }
+                let mut guard_bytes = prefix.clone();
+                guard_bytes.extend_from_slice(&[3, 0, 0, 0, 3, b's', b'e', b't', 2, 0, 0, 0, 0]);
+                let mut goal_bytes = prefix;
+                goal_bytes.extend_from_slice(&[2, 2, 0, 0, 0, 0, 2, 0, 0, 0, 0]);
+                let expected = [(guard, guard_bytes.clone()), (goal, goal_bytes.clone())]
+                    .into_iter()
+                    .collect();
+                for roots in [[guard, goal], [goal, guard], [guard, goal]] {
+                    assert_eq!(source_theorem_formula_payloads(check, &core, &roots)?, expected);
+                }
+                for (id, bytes) in [(guard, guard_bytes.clone()), (goal, goal_bytes.clone())] {
+                    assert_eq!(
+                        source_theorem_formula_payloads(check, &core, &[id])?,
+                        [(id, bytes)].into_iter().collect()
+                    );
+                }
+                assert!(source_theorem_formula_payloads(check, &core, &[])?.is_empty());
+                assert_eq!(core, before);
+                Ok((core, [guard_bytes, goal_bytes]))
+            }).unwrap();
+            if let Some((previous, bytes)) = &baseline {
+                assert_ne!(&core, previous);
+                assert_eq!(&payloads, bytes);
+            } else {
+                baseline = Some((core, payloads));
+            }
+        }
+    }
+
+    #[test]
+    fn source_theorem_formula_payloads_refuse_foreign_roots_and_profiles() {
+        use mizar_core::{
+            core_ir::*,
+            elaborator::{lower_source_theorem_skeletons, source_theorem_formula_payloads},
+        };
+        let original =
+            "theorem T: for X being set holds X = X proof let X be set; thus X = X; end;";
+        let invalid = "unsupported source theorem formula payload";
+        for source in [
+            original.to_owned(),
+            "open theorem O: for X being set holds X = X;".to_owned(),
+            original.replacen("theorem", "lemma", 1),
+            original.replace("set", "object"),
+            format!("{original} {}", original.replace("T:", "U:")),
+            "theorem C: 0 = 0 by computation(steps: 8);".to_owned(),
+            include_str!(
+                "../../../../tests/miz/pass/theorems/pass_proof_verification_lemma_reference_001.miz"
+            ).to_owned(),
+        ] {
+            with_step5c14_theorem_check(&source, |check| {
+                if source.starts_with("open theorem") {
+                    let lower_error = lower_source_theorem_skeletons(check, None).unwrap_err();
+                    assert_eq!(lower_error, "theorems.core.status_unsupported");
+                    let foreign = step5c14_computation_core(
+                        "theorem C: 0 = 0 by computation(steps: 8);",
+                    )?;
+                    assert!(foreign.proof_nodes().iter().any(|(_, node)| {
+                        matches!(node.kind, CoreProofNodeKind::ComputationGoal { .. })
+                    }));
+                    let roots = foreign.obligation_seeds().iter().flat_map(|(_, seed)| {
+                        seed.context.iter().copied().chain(seed.goal)
+                    }).collect::<Vec<_>>();
+                    assert!(!roots.is_empty());
+                    for requested in [roots.as_slice(), &[]] {
+                        assert_eq!(
+                            source_theorem_formula_payloads(check, &foreign, requested).unwrap_err(),
+                            lower_error
+                        );
+                    }
+                    return Ok(());
+                }
+                let core = lower_source_theorem_skeletons(check, None)?;
+                let before = core.clone();
+                let roots = core.obligation_seeds().iter().flat_map(|(_, seed)| {
+                    seed.context.iter().copied().chain(seed.goal)
+                }).collect::<Vec<_>>();
+                assert!(!roots.is_empty());
+                if source != original {
+                    if source.contains("lemma T:") {
+                        assert_eq!(core.items().iter().next().unwrap().1.kind, CoreItemKind::Lemma);
+                    }
+                    if source.contains("being object") {
+                        assert_eq!(core.items().len(), 1);
+                        assert_eq!(core.proof_nodes().len(), 2);
+                        assert_eq!(roots.len(), 2);
+                        let CoreFormulaKind::TypePred { ty, .. } =
+                            &core.formulas().get(roots[0]).unwrap().kind
+                        else {
+                            panic!()
+                        };
+                        assert_eq!(ty.as_str(), "object");
+                        assert_eq!(
+                            source_theorem_formula_payloads(check, &core, &roots[1..]).unwrap_err(),
+                            invalid
+                        );
+                    }
+                    assert_eq!(source_theorem_formula_payloads(check, &core, &roots).unwrap_err(), invalid);
+                    assert_eq!(source_theorem_formula_payloads(check, &core, &[]).unwrap_err(), invalid);
+                } else {
+                    let proof = core.proofs().iter().next().unwrap().1;
+                    let CoreFormulaKind::Forall { binders, body } =
+                        &core.formulas().get(proof.proposition).unwrap().kind
+                    else {
+                        panic!()
+                    };
+                    for refused in [
+                        vec![roots[0], roots[0]],
+                        vec![CoreFormulaId::new(usize::MAX)],
+                        vec![proof.proposition],
+                        vec![binders[0].ty_guard.unwrap()],
+                        vec![*body],
+                        vec![roots[0], *body],
+                    ] {
+                        assert_eq!(source_theorem_formula_payloads(check, &core, &refused).unwrap_err(), invalid);
+                    }
+                    let foreign = step5c14_computation_core(&source.replace("T:", "Different:"))?;
+                    for requested in [roots.as_slice(), &[]] {
+                        assert_eq!(source_theorem_formula_payloads(check, &foreign, requested).unwrap_err(), invalid);
+                    }
+                    let mut parts = CoreIrParts {
+                        source_id: core.source_id(),
+                        module_id: core.module_id().clone(),
+                        items: core.items().clone(),
+                        terms: core.terms().clone(),
+                        formulas: core.formulas().clone(),
+                        definitions: core.definitions().clone(),
+                        proofs: core.proofs().clone(),
+                        proof_nodes: core.proof_nodes().clone(),
+                        algorithms: core.algorithms().clone(),
+                        algorithm_statements: core.algorithm_statements().clone(),
+                        generated: core.generated().clone(),
+                        obligation_seeds: core.obligation_seeds().clone(),
+                        source_map: core.source_map().clone(),
+                        diagnostics: core.diagnostics().clone(),
+                    };
+                    let CoreFormulaKind::Equals { left, .. } =
+                        core.formulas().get(roots[1]).unwrap().kind
+                    else {
+                        panic!()
+                    };
+                    parts.terms.get_mut(left).unwrap().kind = CoreTermKind::Var(binders[0].var);
+                    let mutated = CoreIr::try_new(parts).unwrap();
+                    assert_ne!(mutated, core);
+                    for requested in [roots.as_slice(), &[]] {
+                        assert_eq!(source_theorem_formula_payloads(check, &mutated, requested).unwrap_err(), invalid);
+                    }
+                }
+                assert_eq!(core, before);
+                Ok(())
+            }).unwrap();
         }
     }
 }

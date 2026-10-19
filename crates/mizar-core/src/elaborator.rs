@@ -15056,6 +15056,148 @@ pub fn source_registration_formula_payloads(
     Ok(selected)
 }
 
+/// Encodes the actual local guard and goal of a replay-checked single-local theorem.
+pub fn source_theorem_formula_payloads(
+    check: &mizar_checker::type_checker::SourceTheoremCheck<'_>,
+    core: &CoreIr,
+    roots: &[CoreFormulaId],
+) -> Result<BTreeMap<CoreFormulaId, Vec<u8>>, String> {
+    use crate::binder_normalization::{
+        CanonicalFormulaKind as F, CanonicalTermKind as T, CanonicalVar, canonical_formula,
+        normalize_core_formula,
+    };
+    let invalid = || "unsupported source theorem formula payload".to_owned();
+    let replay = lower_source_theorem_skeletons(check, None)?;
+    if &replay != core
+        || core.items().len() != 1
+        || core.proofs().len() != 1
+        || core.proof_nodes().len() != 2
+        || core.obligation_seeds().len() != 1
+        || !core.definitions().is_empty()
+        || !core.algorithms().is_empty()
+        || !core.algorithm_statements().is_empty()
+        || !core.generated().is_empty()
+        || !core.diagnostics().is_empty()
+    {
+        return Err(invalid());
+    }
+    let (item_id, item) = core.items().iter().next().ok_or_else(invalid)?;
+    let (_, proof) = core.proofs().iter().next().ok_or_else(invalid)?;
+    let (seed_id, seed) = core.obligation_seeds().iter().next().ok_or_else(invalid)?;
+    if item.kind != CoreItemKind::Theorem
+        || item.status != CoreItemStatus::Valid
+        || !item.dependencies.is_empty()
+        || !item.diagnostics.is_empty()
+        || proof.item != item_id
+        || proof.status != CoreProofStatus::PendingAutomaticProof
+        || seed.owner != item_id
+        || seed.kind != ObligationSeedKind::TheoremProof
+        || seed.status != ObligationSeedStatus::Active
+        || seed.label.is_some()
+        || !seed.diagnostics.is_empty()
+    {
+        return Err(invalid());
+    }
+    let root = core.proof_nodes().get(proof.root).ok_or_else(invalid)?;
+    let CoreProofNodeKind::IntroduceBinder {
+        binder: local,
+        child,
+    } = &root.kind
+    else {
+        return Err(invalid());
+    };
+    let terminal = core.proof_nodes().get(*child).ok_or_else(invalid)?;
+    let CoreProofNodeKind::TerminalGoal {
+        obligation,
+        citations,
+    } = &terminal.kind
+    else {
+        return Err(invalid());
+    };
+    let proposition = core.formulas().get(proof.proposition).ok_or_else(invalid)?;
+    let CoreFormulaKind::Forall { binders, .. } = &proposition.kind else {
+        return Err(invalid());
+    };
+    let [original] = binders.as_slice() else {
+        return Err(invalid());
+    };
+    let guard = local.ty_guard.ok_or_else(invalid)?;
+    let goal = seed.goal.ok_or_else(invalid)?;
+    if original.var == local.var
+        || original.role.as_str() != "quantifier"
+        || local.role.as_str() != "proof-let"
+        || *obligation != seed_id
+        || !citations.is_empty()
+        || !root.diagnostics.is_empty()
+        || !terminal.diagnostics.is_empty()
+        || seed.context != [guard]
+        || guard == goal
+        || roots.iter().collect::<BTreeSet<_>>().len() != roots.len()
+        || roots.iter().any(|id| *id != guard && *id != goal)
+    {
+        return Err(invalid());
+    }
+    let mut context = BinderContext::new();
+    context.declare_variable(
+        local.var,
+        NormalizedVarClass::Free,
+        local.role.clone(),
+        NormalizedVarSort::Term,
+    );
+    let mut prefix = b"mizar-core/source-theorem-formula/v1\0".to_vec();
+    for value in [
+        core.module_id().package().as_str(),
+        core.module_id().path().as_str(),
+        local.role.as_str(),
+    ] {
+        prefix.extend_from_slice(
+            &u32::try_from(value.len())
+                .map_err(|_| invalid())?
+                .to_be_bytes(),
+        );
+        prefix.extend_from_slice(value.as_bytes());
+    }
+    let mut selected = BTreeMap::new();
+    // Validate both actual formulas even when neither root was requested.
+    for (id, is_guard) in [(guard, true), (goal, false)] {
+        let row = core.formulas().get(id).ok_or_else(invalid)?;
+        let normalized =
+            normalize_core_formula(core, id, &context, &row.source).map_err(|_| invalid())?;
+        let canonical =
+            canonical_formula(&normalized, &context, &row.source).map_err(|_| invalid())?;
+        let mut bytes = prefix.clone();
+        match canonical.kind() {
+            F::TypePred { subject, ty } if is_guard && ty.as_str() == "set" => {
+                if subject.kind() != &T::Var(CanonicalVar::Free(local.var)) {
+                    return Err(invalid());
+                }
+                bytes.push(3);
+                bytes.extend_from_slice(
+                    &u32::try_from(ty.as_str().len())
+                        .map_err(|_| invalid())?
+                        .to_be_bytes(),
+                );
+                bytes.extend_from_slice(ty.as_str().as_bytes());
+                bytes.extend_from_slice(&[2, 0, 0, 0, 0]);
+            }
+            F::Equals { left, right } if !is_guard => {
+                bytes.push(2);
+                for term in [left, right] {
+                    if term.kind() != &T::Var(CanonicalVar::Free(local.var)) {
+                        return Err(invalid());
+                    }
+                    bytes.extend_from_slice(&[2, 0, 0, 0, 0]);
+                }
+            }
+            _ => return Err(invalid()),
+        }
+        if roots.contains(&id) {
+            selected.insert(id, bytes);
+        }
+    }
+    Ok(selected)
+}
+
 /// Lowers checked local set/identity functorial and reduction correctness goals.
 pub fn lower_source_functorial_registration(
     check: &mizar_checker::registration_resolution::SourceRegistrationCheck<'_>,

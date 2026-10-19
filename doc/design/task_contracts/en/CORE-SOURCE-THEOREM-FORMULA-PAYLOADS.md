@@ -1,0 +1,15 @@
+# Task CORE-SOURCE-THEOREM-FORMULA-PAYLOADS: theorem formula content
+Canonical language: English; [Japanese pointer](../ja/CORE-SOURCE-THEOREM-FORMULA-PAYLOADS.md).
+Status: implemented as bounded local content; VC/context identity remains open. Tier: full. Owner: [Core plan](../../mizar-core/en/00.crate_plan.md), task 56; consumers: future source-specific VC/context identity assembly.
+Authority: [spec 16.3.1](../../../spec/en/16.theorems_and_proofs.md#1631-skeleton-extraction), [16.3.3](../../../spec/en/16.theorems_and_proofs.md#1633-skeleton-decomposition-rules) and [21.7.5](../../../spec/en/21.source_code_annotation_and_atp.md#2175-kernel-evidence-format).
+Dependencies/readiness: genuine SourceTheoremCheck, existing whole-Core theorem lowering, [binder normalization](../../mizar-core/en/binder_normalization.md#alpha-equivalence) and canonical forms; [sole API/profile/content/test owner](../../mizar-core/en/elaborator.md#source-theorem-formula-payloads).
+Gap: source_drift/test_gap; ordinary theorem Core guard/goal rows lack selected canonical content bytes for future identity consumers. This task supplies that bounded producer without new semantics or proof policy.
+Scope: additive immutable elaborator operation and exactly two genuine private positive/refusal test families under the sole owner; the necessary three-call-site callback extraction preserves the existing pipeline and old lowering wrapper.
+Write scope: crates/mizar-core/src/elaborator.rs and crates/mizar-test/src/runner/proof_verification.rs; paired Core elaborator, plan, TODO, source_spec_audit and these contracts; parent may add only a bounded root Step-7 link and Chapter-21 mapping after implementation. No other production changes.
+Preserve: all old production bodies, generic normalization/canonical identity, ids/statuses, old tests outside the exact helper extraction and final module brace, public diagnostics and recovery.
+Forbidden: new type/field/module/dependency/adapter, parallel formula representation, generic serializer or envelope/Kernel codec, copied source pipeline, raw syntax or repeated checker evaluation in Core, production route activation, protected spec/.miz/expectation/trace/ledger edits.
+Deferrals: broader Core profiles, canonical VC/context/provenance/fingerprint/anchor/dependency assembly, authenticated source currentness, Proof classification/reuse/witness, Artifact/runtime and Steps 6–8 completion remain with their owners; plain content bytes confer no authority.
+Audit: parent assesses actual Chapter 21 mapping after implementation; no trace/semantic credit or broad gate closure. Initial source_spec_audit changes only inventory the public API and link its owner.
+Reviews: independent SPEC before Rust, then TEST, CODE, VOLUME and CONSISTENCY; parent owns authority, integration and final bounded full gates.
+Verification: narrow Core and both new test families first; parent cargo fmt --check, cargo clippy --all-targets --all-features -- -D warnings, cargo test.
+Exit: genuine supported theorem roots produce deterministic content and unsupported inputs fail atomically, with existing behavior and lower-stage ownership preserved.

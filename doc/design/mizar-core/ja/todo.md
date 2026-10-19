@@ -710,6 +710,7 @@ IR264. **Authenticated structure-property definition owner。** [x]
       Task 48 は return-or-fail の網羅性、Task 53 は禁止された失敗位置と ghost 報告項、Task 46 は契約の自己参照の拒否を担う。
 
 55. **[Source registration formula payloads](../../task_contracts/ja/CORE-SOURCE-REGISTRATION-FORMULA-PAYLOADS.md).** [x]
+56. **[Source theorem formula payloads](../../task_contracts/ja/CORE-SOURCE-THEOREM-FORMULA-PAYLOADS.md).** [x] — 限定した局所内容。完全な VC/context identity は未完了。
 
 ## 推奨検証
 
