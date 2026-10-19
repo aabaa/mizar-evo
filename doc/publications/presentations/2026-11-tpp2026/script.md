@@ -55,7 +55,7 @@ We keep first-order logic, set theory, and readable mathematics, while redesigni
 
 Mizar Evo keeps the mathematical language and rebuilds the tools below and around it.
 We keep first-order logic and Tarski–Grothendieck set theory as the proof foundation. We also keep soft types, modes, attributes, registrations, structures, and declarative proofs.
-ATP means automated theorem prover. We separate its search from independent checking of its results by a small kernel. This preserves the logic while keeping the trusted base small. Section 6 will show how checking works.
+ATP means automated theorem prover. We keep its search separate from checking. A small kernel, the core proof checker, checks the ATP results independently. This preserves the logic while keeping the trusted base small. Section 6 will show how checking works.
 Section 2 covers mathematical writing, section 3 generics, section 4 computation, and section 5 development tools. [Specification]
 
 ### 1.2 From sets to topological spaces (10:00)
