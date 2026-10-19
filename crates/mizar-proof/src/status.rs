@@ -149,6 +149,40 @@ pub fn check_source_theorem_reflexivity(
     Ok((result, decision))
 }
 
+/// Selects freshly checked original theorem reflexivity without an ATP encoding.
+pub fn select_source_theorem_reflexivity(
+    source: &mizar_resolve::resolved_ast::SurfaceResolvedArena,
+    check: &mizar_checker::type_checker::SourceTheoremCheck<'_>,
+    symbols: &mizar_resolve::env::SymbolEnv,
+    snapshot: mizar_session::BuildSnapshotId,
+    vc_id: VcId,
+    policy: &VerifierPolicy,
+) -> Result<crate::selection::ProofSelection, String> {
+    use crate::selection::{ProofEvidenceCandidate, ProofEvidenceSet, select_winner};
+    let origin = KernelEvidenceOrigin::BuiltinDischarge;
+    let (result, decision) =
+        check_source_theorem_reflexivity(source, check, symbols, snapshot, vc_id, policy)?;
+    let invalid = || "theorem.proof.invalid_source_selection".to_owned();
+    let target = result.target_vc_fingerprint().sort_bytes();
+    let id = CandidateSourceId::new(format!(
+        "source-theorem-reflexivity-v1:{}",
+        source_discharge_hex(&target)
+    ))
+    .map_err(|_| invalid())?;
+    let candidate = if decision.class == crate::policy::CandidatePolicyClass::DischargedBuiltin {
+        ProofEvidenceCandidate::from_trusted_kernel_input(
+            id,
+            &KernelPolicyInput::from_kernel_result(&result, origin),
+        )
+        .ok_or_else(invalid)?
+    } else {
+        ProofEvidenceCandidate::new(id, decision)
+    };
+    Ok(select_winner(
+        &ProofEvidenceSet::new(target, None, policy.clone()).with_candidates([candidate]),
+    ))
+}
+
 /// Binds genuine original theorem content to its full conservative Open dependency slice.
 /// Source/snapshot freshness remains caller-owned; this grants no acceptance or reuse authority.
 pub fn source_theorem_obligation_identity(

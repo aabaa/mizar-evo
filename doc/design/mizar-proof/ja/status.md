@@ -408,3 +408,14 @@ fresh check を None で lower し、source-theorem-local-v1/vc-v1 と caller sn
 第二系列は実 enabled/disabled/strict policy-format scheduling を API から検証し、真正 enabled 成功/disabled 拒否を要求する。caller boolean/架空 accepted input は使わない。
 第三系列は foreign/augmented/recovered source/env の実 checker error が不在選択/policy より先に来ることを保ち、構築可能な真正 Lemma/open/multi/cited profile error を実 lower/VC69 と比較して旧 missing-selected-id error を保つ。既存 no-name/foreign-target/context refusal、lower/oracle matrix を再利用し、Kernel-context wrapper 複製/旧期待変更をしない。
 入力は不変で filesystem/source/snapshot 現在性は caller 責任。identity metadata/witness/publication/cache/reuse 権限/full acceptance gate/広域 Steps6–8 closure を返さず、架空 DischargeOutput/Accepted/Hit/Complete、caller payload/hash/graph 代用、Kernel/policy/encoder/try_discharge 変更をしない。
+
+## Source theorem reflexivity selection
+
+`select_source_theorem_reflexivity(source: &SurfaceResolvedArena, check: &SourceTheoremCheck<'_>, symbols: &SymbolEnv, snapshot: BuildSnapshotId, vc_id: VcId, policy: &VerifierPolicy) -> Result<ProofSelection, String>` は既存 status.rs の一つの inline facade とし、[実 source の reflexivity 検査](#source-theorem-reflexivity-check)を同じ immutable 入力で一度だけ呼び、上流エラーをそのまま返す。
+結果取得より前に既存手続きの明示的 BuiltinDischarge origin を選び、受理結果から推測しない。選択対象は実結果の target.sort_bytes とし、snapshot-local Kernel target を theorem の六フィールド original identity や canonical VC と混同しない。
+CandidateSourceId は `source-theorem-reflexivity-v1:` と target 全バイトの lowercase hex を既存 source_discharge_hex で連結する可逆名であり、新しい hash profile ではない。constructor 失敗は内部 theorem.proof.invalid_source_selection とする。
+実 decision が DischargedBuiltin の場合だけ、実 result と明示 origin から作る KernelPolicyInput を既存 ProofEvidenceCandidate::from_trusted_kernel_input に渡し、trusted evidence 不在も同じ内部エラーにする。他の実 decision は既存 ordinary candidate に保持し、信頼へ昇格しない。
+この候補、実 target bytes、encoded input の None、現在 policy の clone を変更なしの ProofEvidenceSet/select_winner に渡し、実 selection 全体を返す。producer のない priority、provenance、deterministic discharge、witness hash を設定しない。
+marker/class/evidence hash/polarity の検査と順序は既存 selection が単独所有する。実 builtin 選択でも ExternalDependencyGap と witness/discharge/provenance hash 不在を保つ。trusted used-axiom availability は実受理結果だけを参照し、記録を合成しない。
+追加する source_theorem_reflexivity_selection_* は二系列だけとし、実 check と既存 selector から独立に構成した期待値との selection 全体比較、source/rename/allocation/package/dotted-module/snapshot/policy、受理 hash/polarity と欠落 metadata、反復と入力・先行結果の不変性を扱う。実 check エラー・無効 format・上流順序を保持し、既存三検査系列と Kernel/name/profile 行列を再利用する。架空の受理・拒否 source control や context wrapper を追加しない。
+source/snapshot/filesystem currentness は caller 所有。これは fresh selection だけであり、original identity 関連付け、metadata/wire 保持、witness/status/publication/activation/cache/reuse、一般受理や Steps6–8 完了を与えない。既存 checker/policy/selector/test/helper の振る舞いを変えない。
