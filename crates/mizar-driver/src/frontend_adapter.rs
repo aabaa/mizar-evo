@@ -993,21 +993,12 @@ impl<'a> crate::registry::SourceLoadInputs<'a> {
         };
         let resolver_module =
             mizar_resolve::resolved_ast::ModuleId::new(module.package.clone(), module.path.clone());
-        let shells =
-            mizar_resolve::declarations::DeclarationShellCollector::new(ast, &resolver_module)
-                .collect();
-        let collection = mizar_resolve::symbols::SignatureProjectionExtractor::new(
-            ast,
-            &shells,
-            mizar_resolve::env::NamespacePath::new(module.path.as_str()),
-        )
-        .collect(&resolver_module);
-        if !collection.diagnostics().is_empty() {
+        let Some((arena, env)) =
+            mizar_resolve::symbols::source_theorem_module_original_inputs(ast, &resolver_module)?
+        else {
             return Ok(None);
-        }
-        let arena = mizar_resolve::resolved_ast::SurfaceResolvedArena::lower(ast, &resolver_module)
-            .map_err(|error| error.to_string())?;
-        mizar_resolve::symbols::source_theorem_module_candidates(ast, &arena, collection.env())
+        };
+        mizar_resolve::symbols::source_theorem_module_candidates(ast, &arena, &env)
     }
 
     /// Associates a published Frontend parent with a fresh protected-source execution.
@@ -1121,25 +1112,12 @@ impl<'a> crate::registry::SourceLoadInputs<'a> {
         };
         let resolver_module =
             mizar_resolve::resolved_ast::ModuleId::new(module.package.clone(), module.path.clone());
-        let shells =
-            mizar_resolve::declarations::DeclarationShellCollector::new(ast, &resolver_module)
-                .collect();
-        let collection = mizar_resolve::symbols::SignatureProjectionExtractor::new(
-            ast,
-            &shells,
-            mizar_resolve::env::NamespacePath::new(module.path.as_str()),
-        )
-        .collect(&resolver_module);
-        if !collection.diagnostics().is_empty() {
+        let Some((arena, env)) =
+            mizar_resolve::symbols::source_theorem_module_original_inputs(ast, &resolver_module)?
+        else {
             return Ok(None);
-        }
-        let arena = mizar_resolve::resolved_ast::SurfaceResolvedArena::lower(ast, &resolver_module)
-            .map_err(|error| error.to_string())?;
-        let result = mizar_resolve::symbols::source_theorem_module_candidates(
-            ast,
-            &arena,
-            collection.env(),
-        )?;
+        };
+        let result = mizar_resolve::symbols::source_theorem_module_candidates(ast, &arena, &env)?;
         if result.is_some() {
             storage
                 .validate_handle(parent)

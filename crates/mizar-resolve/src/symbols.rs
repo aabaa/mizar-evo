@@ -3790,6 +3790,22 @@ pub fn source_theorem_module_candidates(
     )))
 }
 
+/// Constructs the original structural arena and unaugmented source collector environment.
+pub fn source_theorem_module_original_inputs(
+    ast: &SurfaceAst,
+    module: &ModuleId,
+) -> Result<Option<(SurfaceResolvedArena, SymbolEnv)>, String> {
+    let shells = DeclarationShellCollector::new(ast, module).collect();
+    let collected =
+        SignatureProjectionExtractor::new(ast, &shells, NamespacePath::new(module.path().as_str()))
+            .collect(module);
+    if !collected.diagnostics().is_empty() {
+        return Ok(None);
+    }
+    let arena = SurfaceResolvedArena::lower(ast, module).map_err(|error| error.to_string())?;
+    Ok(Some((arena, collected.into_env())))
+}
+
 /// Stores the genuine source-profile theorem metadata pair through Syntax storage.
 pub fn source_theorem_module_candidates_canonical_bytes(
     ast: &SurfaceAst,
@@ -3817,15 +3833,10 @@ pub fn source_theorem_module_candidates_canonical_bytes(
         }
         size = next;
     }
-    let shells = DeclarationShellCollector::new(ast, module).collect();
-    let collected =
-        SignatureProjectionExtractor::new(ast, &shells, NamespacePath::new(module.path().as_str()))
-            .collect(module);
-    if !collected.diagnostics().is_empty() {
+    let Some((arena, env)) = source_theorem_module_original_inputs(ast, module)? else {
         return Ok(None);
-    }
-    let arena = SurfaceResolvedArena::lower(ast, module).map_err(|error| error.to_string())?;
-    if source_theorem_module_candidates(ast, &arena, collected.env())?.is_none() {
+    };
+    if source_theorem_module_candidates(ast, &arena, &env)?.is_none() {
         return Ok(None);
     }
     let mut bytes = Vec::with_capacity(size);
@@ -3865,18 +3876,8 @@ pub fn source_theorem_module_candidates_from_canonical_bytes(
         return None;
     }
     let ast = SurfaceAst::from_canonical_bytes(fields[2], source_id)?;
-    let shells = DeclarationShellCollector::new(&ast, module).collect();
-    let collected = SignatureProjectionExtractor::new(
-        &ast,
-        &shells,
-        NamespacePath::new(module.path().as_str()),
-    )
-    .collect(module);
-    if !collected.diagnostics().is_empty() {
-        return None;
-    }
-    let arena = SurfaceResolvedArena::lower(&ast, module).ok()?;
-    source_theorem_module_candidates(&ast, &arena, collected.env()).ok()?
+    let (arena, env) = source_theorem_module_original_inputs(&ast, module).ok()??;
+    source_theorem_module_candidates(&ast, &arena, &env).ok()?
 }
 
 #[cfg(test)]

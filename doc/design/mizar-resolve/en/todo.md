@@ -682,6 +682,7 @@ Keep `cargo test -p mizar-resolve` green after each task (see
 45. **[Source theorem module storage](../../task_contracts/en/RESOLVE-SOURCE-THEOREM-MODULE-STORAGE.md).** [x]
 
 46. **[Source theorem syntax payloads](../../task_contracts/en/RESOLVE-SOURCE-THEOREM-SYNTAX-PAYLOADS.md).** [x]
+47. **[Source theorem module original inputs](../../task_contracts/en/RESOLVE-SOURCE-THEOREM-MODULE-ORIGINAL-INPUTS.md).** [x]
 
 ## Crate Close-Out
 

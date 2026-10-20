@@ -6069,3 +6069,162 @@ fn source_theorem_module_storage_rejects_lower_and_storage_failures() {
     );
     assert_eq!((ast, env, arena), before);
 }
+
+#[test]
+fn source_theorem_module_original_inputs_match_real_original_context() {
+    let fixture = include_str!(
+        "../../../../tests/miz/pass/resolve/pass_declaration_symbol_private_theorem_visibility_001.miz"
+    );
+    let many = (0..12)
+        .map(|i| format!("theorem T{i}: 0 = 0\nproof\n  thus 0 = 0;\nend;\n"))
+        .collect::<String>();
+    let trivia = format!(
+        "\u{feff}{}",
+        fixture
+            .replacen("proof\n", "proof\n  :: 日本語 trivia\n", 1)
+            .replace('\n', "\r\n")
+    );
+    for text in [
+        fixture.to_owned(),
+        fixture.replace("\ntheorem UsePriv1", "\nprivate theorem UsePriv1"),
+        fixture.replace("theorem UsePriv1", "lemma UsePriv1").replace("private ", ""),
+        include_str!("../../../../tests/miz/pass/theorems/pass_proof_verification_theorem_status_open_assumed_001.miz").to_owned(),
+        format!("{fixture}\ntheorem Alpha: 0 = 0\nproof\n  thus 0 = 0 by UsePriv1, PrivT1, PrivT1;\nend;\n"),
+        many,
+        trivia,
+    ] {
+        let (ast, module, _, env, arena) = parsed_private_theorem_fixture(&text);
+        let before = (ast.clone(), module.clone(), arena.clone(), env.clone());
+        if text.contains("theorem T11:") {
+            let ids = env.definitions().iter().map(|entry| entry.id().index()).collect::<Vec<_>>();
+            assert_eq!(ids.len(), 12);
+            assert!(ids.windows(2).any(|pair| pair[0] > pair[1]));
+        }
+        for expected_module in [module.clone(), module_id("other", "main"), module_id("pkg", "nested.main")] {
+            let (expected_arena, expected_env) = if expected_module == module {
+                (arena.clone(), env.clone())
+            } else {
+                let shells = crate::declarations::DeclarationShellCollector::new(&ast, &expected_module).collect();
+                let collected = crate::symbols::SignatureProjectionExtractor::new(&ast, &shells, NamespacePath::new(expected_module.path().as_str())).collect(&expected_module);
+                assert!(collected.diagnostics().is_empty());
+                (SurfaceResolvedArena::lower(&ast, &expected_module).unwrap(), collected.into_env())
+            };
+            let expected_pair = crate::symbols::source_theorem_module_candidates(&ast, &expected_arena, &expected_env).unwrap().unwrap();
+            if text == fixture {
+                assert_ne!(&expected_pair.1, &expected_env);
+            }
+            let module_before = expected_module.clone();
+            let (actual_arena, actual_env) = crate::symbols::source_theorem_module_original_inputs(&ast, &expected_module).unwrap().unwrap();
+            assert_eq!(actual_arena, expected_arena);
+            assert_eq!(actual_env, expected_env);
+            assert_eq!(actual_arena.source_id(), ast.source_id);
+            assert_eq!(actual_arena.module(), &expected_module);
+            assert_eq!(actual_env.module_id(), &expected_module);
+            assert_eq!(crate::symbols::source_theorem_module_candidates(&ast, &actual_arena, &actual_env).unwrap(), Some(expected_pair));
+            assert_eq!(crate::symbols::source_theorem_module_original_inputs(&ast, &expected_module).unwrap(), Some((expected_arena, expected_env)));
+            assert_eq!(expected_module, module_before);
+        }
+        assert_eq!((ast, module, arena, env), before);
+    }
+}
+
+#[test]
+fn source_theorem_module_original_inputs_preserve_constructor_and_admission_boundaries() {
+    use mizar_frontend::{
+        orchestration::Frontend, parsing::MizarParserSeam, source::FrontendSourceLoader,
+    };
+    use mizar_session::{
+        DiskSourceLoader, Edition, SourceInput, SourceOriginInput, normalize_path,
+    };
+
+    let fixture = include_str!(
+        "../../../../tests/miz/pass/resolve/pass_declaration_symbol_private_theorem_visibility_001.miz"
+    );
+    for text in [
+        fixture.replace("by PrivT1", "by Missing"),
+        fixture.replace("by PrivT1", "by main.PrivT1"),
+        format!("{fixture}\nreserve Y for set;\n"),
+        format!("{fixture}\ntheorem Plain: 0 = 0;\n"),
+        fixture.replace("thus X = X;", "thus Y = X;"),
+    ] {
+        let (ast, module, _, env, arena) = parsed_private_theorem_fixture(&text);
+        let before = (ast.clone(), module.clone(), arena.clone(), env.clone());
+        let expected_pair = crate::symbols::source_theorem_module_candidates(&ast, &arena, &env);
+        if text.contains("thus Y = X;") {
+            assert_eq!(expected_pair.as_ref().unwrap_err(), "UnresolvedReference");
+        } else {
+            assert_eq!(expected_pair, Ok(None));
+        }
+        let (actual_arena, actual_env) =
+            crate::symbols::source_theorem_module_original_inputs(&ast, &module)
+                .unwrap()
+                .unwrap();
+        assert_eq!(actual_arena, arena);
+        assert_eq!(actual_env, env);
+        assert_eq!(
+            crate::symbols::source_theorem_module_candidates(&ast, &actual_arena, &actual_env),
+            expected_pair
+        );
+        assert_eq!((ast, module, arena, env), before);
+    }
+    let root = std::env::temp_dir().join(format!(
+        "mizar-resolve-original-inputs-duplicate-{}-{}",
+        std::process::id(),
+        std::time::SystemTime::now()
+            .duration_since(std::time::UNIX_EPOCH)
+            .unwrap()
+            .as_nanos()
+    ));
+    let path = root.join("src/main.miz");
+    std::fs::create_dir_all(path.parent().unwrap()).unwrap();
+    std::fs::write(
+        &path,
+        include_str!(
+            "../../../../tests/miz/fail/resolve/fail_resolve_duplicate_theorem_symbol_001.miz"
+        ),
+    )
+    .unwrap();
+    let output = Frontend::new(
+        FrontendSourceLoader::new(DiskSourceLoader::new(&root)),
+        NoImportedSummaries,
+        MizarParserSeam,
+    )
+    .run(
+        mizar_frontend::source::SourceUnitRequest {
+            snapshot: BuildSnapshotId::from_published_schema_str(&format!(
+                "mizar-session-build-snapshot-v1:{}",
+                "31".repeat(Hash::BYTE_LEN)
+            ))
+            .unwrap(),
+            input: SourceInput {
+                package_id: PackageId::new("pkg"),
+                module_path: ModulePath::new("main"),
+                normalized_path: normalize_path(&root, &path).unwrap(),
+                edition: Edition::new("2025"),
+                origin: SourceOriginInput::Disk { path },
+            },
+        },
+        &InMemorySessionIdAllocator::new(),
+    )
+    .unwrap();
+    std::fs::remove_dir_all(root).unwrap();
+    assert!(output.diagnostics.is_empty(), "{:?}", output.diagnostics);
+    let ast = output
+        .ast
+        .expect("duplicate theorem source has a parser AST");
+    let module = module_id("pkg", "main");
+    let before = (ast.clone(), module.clone());
+    let shells = crate::declarations::DeclarationShellCollector::new(&ast, &module).collect();
+    let collected = crate::symbols::SignatureProjectionExtractor::new(
+        &ast,
+        &shells,
+        NamespacePath::new(module.path().as_str()),
+    )
+    .collect(&module);
+    assert!(!collected.diagnostics().is_empty());
+    assert_eq!(
+        crate::symbols::source_theorem_module_original_inputs(&ast, &module).unwrap(),
+        None
+    );
+    assert_eq!((ast, module), before);
+}

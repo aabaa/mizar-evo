@@ -640,6 +640,7 @@ IR 所有権: [01.ir_layers.md](../../architecture/ja/01.ir_layers.md)。
 45. **[Source theorem module storage](../../task_contracts/ja/RESOLVE-SOURCE-THEOREM-MODULE-STORAGE.md).** [x]
 
 46. **[Source theorem syntax payloads](../../task_contracts/ja/RESOLVE-SOURCE-THEOREM-SYNTAX-PAYLOADS.md).** [x]
+47. **[Source theorem module original inputs](../../task_contracts/ja/RESOLVE-SOURCE-THEOREM-MODULE-ORIGINAL-INPUTS.md).** [x]
 
 ## crate close-out
 
