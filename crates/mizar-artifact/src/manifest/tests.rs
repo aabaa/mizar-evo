@@ -1468,3 +1468,28 @@ impl Drop for TestArtifactRoot {
         let _ = fs::remove_dir_all(&self.path);
     }
 }
+
+#[test]
+fn commit_result_retains_actual_transaction_values() {
+    let root = TestArtifactRoot::new();
+    let seed = sample_manifest();
+    let commit = ManifestTransaction::begin(root.path(), seed.clone(), None)
+        .expect("begin structural transaction")
+        .commit(ManifestCommitOptions::default())
+        .expect("commit structural transaction");
+    let read = read_manifest_file(root.path(), ManifestFileReadOptions::default())
+        .expect("read committed manifest");
+    assert_eq!(read.manifest, seed);
+    let expected_write = PublishedArtifactWrite {
+        path: read.path,
+        artifact_hash: read.artifact_hash,
+    };
+    assert_eq!(commit.manifest(), &seed);
+    assert_eq!(commit.write(), &expected_write);
+
+    fs::write(root.path().join(ARTIFACT_MANIFEST_PATH), b"{").expect("corrupt committed manifest");
+    assert!(read_manifest_file(root.path(), ManifestFileReadOptions::default()).is_err());
+    assert_eq!(commit.manifest(), &seed);
+    assert_eq!(commit.write(), &expected_write);
+    assert_eq!(commit.into_manifest(), seed);
+}

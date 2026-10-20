@@ -398,6 +398,14 @@ indexes that depend on the new publication may be promoted. `mizar-artifact`
 reports manifest commit success or failure; `mizar-cache` owns cache promotion
 and discard policy.
 
+### Retained commit result
+`ManifestCommit` retains exactly the manifest and store write returned only after the existing `ManifestTransaction::commit` succeeds. Its existing fields are private; the public type/path and Debug/Clone/PartialEq/Eq remain. No caller constructor, mutable access or new token/transaction is added.
+Existing-value access is `manifest(&self) -> &ArtifactManifest`, `write(&self) -> &PublishedArtifactWrite` and `into_manifest(self) -> ArtifactManifest`. References are read-only; owned extraction moves the manifest and discards the write. Build first reads the actual write hash, then consumes the manifest without cloning; its public summary remains plain metadata.
+This records past transaction-origin values, not current file integrity, registry/native/snapshot binding, producer input authenticity, witness payload hash validation, proof acceptance, committed Proof publication or cache promotion. Existing validation/error/write/flush order, serialized schemas/profiles, caller freshness checks and all earlier guarantees remain unchanged.
+#### Retained commit result tests
+Append only `commit_result_retains_actual_transaction_values` to existing manifest/tests.rs. Run a real transaction with the existing empty structural seed (no proof/module producer), read its actual written manifest/hash and compare both complete accessor values plus owned extraction. Overwrite the temporary manifest once and show the retained result stays unchanged while a fresh read rejects corruption; no currentness credit follows.
+Three external compile-fail examples in the existing ManifestCommit Rust doccomment reject caller field-literal construction and direct replacement of each field. They use typed function parameters, not fabricated successful records. Keep all existing tests/helpers/fixtures byte-identical; no new helper/type/adapter/dependency or lower-validator matrix.
+
 ## Recovery From Interrupted Commits
 
 Recovery is manifest-first:

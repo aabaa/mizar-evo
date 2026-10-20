@@ -216,12 +216,53 @@ pub struct ManifestTransaction {
 }
 
 /// Successful manifest transaction commit.
+///
+/// Retains past transaction values; it does not attest current file integrity.
+/// Callers cannot construct or replace the retained values directly.
+///
+/// ```compile_fail
+/// use mizar_artifact::{manifest::{ArtifactManifest, ManifestCommit}, store::PublishedArtifactWrite};
+/// fn construct(manifest: ArtifactManifest, write: PublishedArtifactWrite) -> ManifestCommit {
+///     ManifestCommit { manifest, write }
+/// }
+/// ```
+///
+/// ```compile_fail
+/// use mizar_artifact::manifest::{ArtifactManifest, ManifestCommit};
+/// fn replace(mut commit: ManifestCommit, manifest: ArtifactManifest) {
+///     commit.manifest = manifest;
+/// }
+/// ```
+///
+/// ```compile_fail
+/// use mizar_artifact::{manifest::ManifestCommit, store::PublishedArtifactWrite};
+/// fn replace(mut commit: ManifestCommit, write: PublishedArtifactWrite) {
+///     commit.write = write;
+/// }
+/// ```
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct ManifestCommit {
     /// Published manifest.
-    pub manifest: ArtifactManifest,
+    manifest: ArtifactManifest,
     /// Store-level write result for `artifact-manifest.json`.
-    pub write: PublishedArtifactWrite,
+    write: PublishedArtifactWrite,
+}
+
+impl ManifestCommit {
+    /// Returns the manifest retained from the successful transaction.
+    pub fn manifest(&self) -> &ArtifactManifest {
+        &self.manifest
+    }
+
+    /// Returns the store write retained from the successful transaction.
+    pub fn write(&self) -> &PublishedArtifactWrite {
+        &self.write
+    }
+
+    /// Consumes the result and returns its retained manifest.
+    pub fn into_manifest(self) -> ArtifactManifest {
+        self.manifest
+    }
 }
 
 /// Errors produced by the manifest schema and transaction manager.

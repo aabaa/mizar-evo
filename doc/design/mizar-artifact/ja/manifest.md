@@ -349,6 +349,14 @@ successful manifest commit は、新しい publication に依存する cache rec
 最初の時点である。`mizar-artifact` は manifest commit の success または failure を報告する。
 `mizar-cache` が cache promotion と discard policy を所有する。
 
+### Retained commit result
+`ManifestCommit` は既存の `ManifestTransaction::commit` 成功後に返る manifest と store write をそのまま保持する。既存 field は private とし、公開 type/path と Debug/Clone/PartialEq/Eq は維持する。caller constructor、mutable access、新 token/transaction は追加しない。
+既存値への access は `manifest(&self) -> &ArtifactManifest`、`write(&self) -> &PublishedArtifactWrite`、`into_manifest(self) -> ArtifactManifest` とする。参照は read-only、owned extraction は manifest を move して write を破棄する。Build は実 write hash を先に読み、clone せず manifest を consume する。公開 summary は plain metadata のままとする。
+過去の transaction-origin 値の記録であり、現在の file integrity、registry/native/snapshot binding、producer input authenticity、witness payload hash validation、proof acceptance、committed Proof publication、cache promotion は保証しない。既存 validation/error/write/flush 順、serialized schema/profile、caller freshness check と従来の保証は変更しない。
+#### Retained commit result tests
+既存 manifest/tests.rs に `commit_result_retains_actual_transaction_values` だけを追加する。既存の空の structural seed（proof/module producer なし）で実 transaction を実行し、実際に書かれた manifest/hash を読み、両 accessor の全値と owned extraction を比較する。temporary manifest を一度上書きし、保持結果は不変で fresh read は破損を拒否することを確認する。currentness credit は与えない。
+既存 ManifestCommit の Rust doccomment に外部 compile-fail 例を3件置き、caller の field-literal construction と各 field の直接置換を拒否する。型付き関数引数を使い、成功 record を捏造しない。既存 test/helper/fixture の全 byte を維持し、新 helper/type/adapter/dependency や lower-validator matrix は追加しない。
+
 ## Recovery From Interrupted Commits
 
 recovery は manifest-first である。

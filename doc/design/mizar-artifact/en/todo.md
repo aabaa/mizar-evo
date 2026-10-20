@@ -353,6 +353,8 @@ Keep `cargo test -p mizar-artifact` green after each task (see
 
 27. **[Explicit built-in enclosing profile](../../task_contracts/en/ARTIFACT-BUILTIN-ENCLOSING-PROFILE.md).** [x]
 
+28. **[Retained manifest commit result](../../task_contracts/en/ARTIFACT-MANIFEST-COMMIT-RESULT-OPAQUE.md).** [x]
+
 ## Recommended Verification
 
 Run after each task:

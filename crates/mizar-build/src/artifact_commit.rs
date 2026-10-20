@@ -98,10 +98,11 @@ pub fn commit_manifest_updates(
         transaction.stage_module(update.entry)?;
     }
     let commit = transaction.commit(ManifestCommitOptions { freshness_check })?;
+    let manifest_hash = commit.write().artifact_hash;
 
     Ok(ManifestCommitSummary {
-        manifest: commit.manifest,
-        manifest_hash: commit.write.artifact_hash,
+        manifest: commit.into_manifest(),
+        manifest_hash,
         modules,
     })
 }
