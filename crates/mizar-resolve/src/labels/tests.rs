@@ -7186,3 +7186,443 @@ fn source_public_theorem_export_candidates_preserve_refusals_and_boundaries() {
         assert_eq!((ast, arena, env, identity.clone()), before);
     }
 }
+
+#[test]
+fn source_theorem_module_summary_candidate_preserves_real_rows_and_hashes() {
+    use mizar_artifact::{
+        module_summary::*,
+        store::{CanonicalHashDomain, CanonicalJson as Json, HashClass},
+    };
+    use mizar_frontend::{
+        orchestration::Frontend, parsing::MizarParserSeam, source::FrontendSourceLoader,
+    };
+    use mizar_session::{
+        DiskSourceLoader, Edition, SourceInput, SourceOriginInput, hash_text, normalize_path,
+    };
+    let simple = "theorem Base: 0 = 0\nproof\n thus 0 = 0;\nend;\n";
+    let fixture = include_str!(
+        "../../../../tests/miz/pass/resolve/pass_declaration_symbol_private_theorem_visibility_001.miz"
+    );
+    let statuses = include_str!(
+        "../../../../tests/miz/pass/theorems/pass_proof_verification_theorem_status_open_assumed_001.miz"
+    );
+    let mut baseline = None;
+    for case in 0..13 {
+        let text = match case {
+            1 => format!(":: λ relocation\n{simple}"),
+            2 => simple.replace(" thus 0 = 0;", " thus 0 = 0;\n thus 0 = 0;"),
+            3 => simple.replacen("0 = 0", "0 = 1", 1),
+            4 => simple.replace("Base", "Changed"),
+            5 => simple.replace("theorem", "lemma"),
+            6 => fixture.to_owned(),
+            7 => fixture.replace("\ntheorem UsePriv1", "\nprivate theorem UsePriv1"),
+            8 => statuses.to_owned(),
+            9 => String::new(),
+            _ => simple.to_owned(),
+        };
+        let (package, module_path) = match case {
+            10 => ("other-package", "main"),
+            11 => ("pkg", "Nested.Main"),
+            _ => ("pkg", "main"),
+        };
+        let root = std::env::temp_dir().join(format!(
+            "mizar-summary-positive-{}-{case}",
+            std::process::id()
+        ));
+        let path = root.join(if case == 12 {
+            "src/relocated/source.miz"
+        } else {
+            "src/main.miz"
+        });
+        std::fs::create_dir_all(path.parent().unwrap()).unwrap();
+        std::fs::write(&path, &text).unwrap();
+        let snapshot = BuildSnapshotId::from_published_schema_str(&format!(
+            "mizar-session-build-snapshot-v1:{}",
+            "31".repeat(Hash::BYTE_LEN)
+        ))
+        .unwrap();
+        let allocator = InMemorySessionIdAllocator::new();
+        if case == 12 {
+            allocator.next_source_id(snapshot).unwrap();
+        }
+        let frontend = Frontend::new(
+            FrontendSourceLoader::new(DiskSourceLoader::new(&root)),
+            NoImportedSummaries,
+            MizarParserSeam,
+        )
+        .run(
+            mizar_frontend::source::SourceUnitRequest {
+                snapshot,
+                input: SourceInput {
+                    package_id: PackageId::new(package),
+                    module_path: ModulePath::new(module_path),
+                    normalized_path: normalize_path(&root, &path).unwrap(),
+                    edition: Edition::new("2025"),
+                    origin: SourceOriginInput::Disk { path },
+                },
+            },
+            &allocator,
+        )
+        .unwrap();
+        std::fs::remove_dir_all(root).unwrap();
+        assert!(
+            frontend.diagnostics.is_empty(),
+            "{case}: {:?}",
+            frontend.diagnostics
+        );
+        let ast = frontend.ast.as_ref().unwrap();
+        let module = module_id(package, module_path);
+        let shells = crate::declarations::DeclarationShellCollector::new(ast, &module).collect();
+        let collected = crate::symbols::SignatureProjectionExtractor::new(
+            ast,
+            &shells,
+            NamespacePath::new(module_path),
+        )
+        .collect(&module);
+        assert!(collected.diagnostics().is_empty());
+        let identity = ModuleSummaryIdentity {
+            package_id: package.to_owned(),
+            package_version: Some("1.2.3".to_owned()),
+            lockfile_identity: Some("lock:source-test".to_owned()),
+            module_path: module_path.to_owned(),
+            language_edition: "2025".to_owned(),
+        };
+        let before = (frontend.clone(), collected.clone(), identity.clone());
+        let lexical = collected
+            .export_frontend_lexical_contributions(&frontend, &identity)
+            .unwrap();
+        assert!(lexical.is_empty());
+        let locals = frontend.tokens.local_declarations();
+        assert!(locals.user_symbols.is_empty() && locals.operator_declarations.is_empty());
+        assert!(frontend.preprocessed.import_stubs.is_empty());
+        let arena = SurfaceResolvedArena::lower(ast, &module).unwrap();
+        let env = collected.env();
+        let semantic = crate::resolved_ast::source_theorem_resolved_ast(ast, &arena, env)
+            .unwrap()
+            .unwrap();
+        let imports = semantic.imports();
+        assert!(imports.imports().next().is_none() && imports.exports().next().is_none());
+        assert!(imports.canonical_import_modules().is_empty());
+        assert!(env.imports().is_empty() && env.exports().is_empty() && env.overloads().is_empty());
+        assert!(env.registrations().is_empty() && env.lexical_summaries().is_empty());
+        assert!(env.namespace_graph().is_empty() && env.module_summaries().is_empty());
+        let symbols =
+            crate::symbols::source_public_theorem_export_candidates(ast, &arena, env, &identity)
+                .unwrap()
+                .unwrap();
+        let labels = source_public_theorem_label_candidates(ast, &arena, env)
+            .unwrap()
+            .unwrap();
+        let summary = collected
+            .source_theorem_module_summary_candidate(&frontend, &identity)
+            .unwrap()
+            .unwrap();
+        assert_eq!(summary.schema_version, current_schema_version());
+        assert_eq!(summary.module, identity);
+        assert_eq!(summary.source_hash, frontend.source.source_hash);
+        assert_eq!(summary.source_hash, hash_text(&frontend.source.source_text));
+        assert_eq!(summary.exported_symbols, symbols);
+        assert!(
+            summary
+                .exported_symbols
+                .iter()
+                .all(|row| row.proof_status.is_none())
+        );
+        assert_eq!(summary.exported_labels, labels);
+        assert_eq!(
+            summary.lexical_summary,
+            ModuleLexicalSummary {
+                schema_version: "mizar-resolve/exported-lexical/v1".to_owned(),
+                fingerprint: None,
+                contributions: lexical
+            }
+        );
+        assert!(summary.reexports.is_empty() && summary.dependency_interfaces.is_empty());
+        assert_eq!(
+            collected
+                .source_theorem_module_summary_candidate(&frontend, &identity)
+                .unwrap(),
+            Some(summary.clone())
+        );
+        let json = module_summary_json(&summary).unwrap();
+        assert_eq!(
+            write_module_summary(&summary).unwrap(),
+            mizar_artifact::store::canonical_json_bytes(&json)
+        );
+        assert_eq!(
+            read_module_summary(
+                &json,
+                ModuleSummaryReadOptions {
+                    artifact_path: Some("source-summary.json"),
+                    expected_module: Some(&identity),
+                    expected_interface_hash: Some(summary.interface_hash)
+                }
+            )
+            .unwrap(),
+            summary
+        );
+        if case == 0 {
+            let owner = env
+                .symbols()
+                .iter()
+                .find(|owner| owner.primary_spelling() == "Base")
+                .unwrap();
+            let fqn = owner.symbol().fqn().as_str();
+            let module_json = Json::object([
+                ("package_id", Json::string("pkg")),
+                ("package_version", Json::string("1.2.3")),
+                ("lockfile_identity", Json::string("lock:source-test")),
+                ("module_path", Json::string("main")),
+                ("language_edition", Json::string("2025")),
+            ])
+            .unwrap();
+            let mut symbol = Json::object([
+                ("origin_id", Json::string(fqn)),
+                ("fully_qualified_name", Json::string(fqn)),
+                ("namespace_path", Json::array([Json::string("main")])),
+                ("visibility", Json::string("public")),
+                ("declaration_kind", Json::string("theorem")),
+                ("rendered_signature", Json::string("theorem Base : 0 = 0")),
+                ("proof_status", Json::Null),
+            ])
+            .unwrap();
+            let domain = CanonicalHashDomain::new(
+                HashClass::Interface,
+                MODULE_SUMMARY_SCHEMA_FAMILY,
+                current_schema_version(),
+            );
+            let fingerprint = domain.hash(
+                &Json::object([("module", module_json.clone()), ("symbol", symbol.clone())])
+                    .unwrap(),
+                &[],
+            );
+            let hash_hex = fingerprint
+                .as_bytes()
+                .iter()
+                .map(|byte| format!("{byte:02x}"))
+                .collect::<String>();
+            let Json::Object(fields) = &mut symbol else {
+                unreachable!()
+            };
+            fields.insert(
+                "interface_fingerprint".to_owned(),
+                Json::string(format!(
+                    "mizar-artifact/artifact-framed-hash-text/v1:interface:mizar-artifact/module-summary:1.0:{hash_hex}"
+                )),
+            );
+            let label = Json::object([
+                ("origin_id", Json::string(fqn)),
+                ("label", Json::string("Base")),
+                ("owner_fully_qualified_name", Json::string(fqn)),
+                ("visibility", Json::string("public")),
+                ("target_kind", Json::string("theorem")),
+            ])
+            .unwrap();
+            let projection = Json::object([
+                ("schema_version", Json::string("1.0")),
+                ("module", module_json),
+                ("exported_symbols", Json::array([symbol])),
+                ("exported_labels", Json::array([label])),
+                (
+                    "lexical_summary",
+                    Json::object([
+                        (
+                            "schema_version",
+                            Json::string("mizar-resolve/exported-lexical/v1"),
+                        ),
+                        ("fingerprint", Json::Null),
+                        ("contributions", Json::array([])),
+                    ])
+                    .unwrap(),
+                ),
+                ("reexports", Json::array([])),
+                ("dependency_interfaces", Json::array([])),
+            ])
+            .unwrap();
+            assert_eq!(summary.interface_hash, domain.hash(&projection, &[]));
+            baseline = Some((
+                summary.clone(),
+                ast.source_id,
+                frontend.source.normalized_path.clone(),
+            ));
+        }
+        let original = &baseline.as_ref().unwrap().0;
+        if matches!(case, 1 | 2 | 12) {
+            assert_eq!(summary.interface_hash, original.interface_hash);
+            if case == 12 {
+                assert_eq!(summary.source_hash, original.source_hash);
+                assert_ne!(ast.source_id, baseline.as_ref().unwrap().1);
+                assert_ne!(
+                    frontend.source.normalized_path,
+                    baseline.as_ref().unwrap().2
+                );
+            } else {
+                assert_ne!(summary.source_hash, original.source_hash);
+            }
+        }
+        if matches!(case, 3..=5 | 10 | 11) {
+            assert_ne!(summary.interface_hash, original.interface_hash);
+        }
+        if matches!(case, 7 | 9) {
+            assert!(symbols.is_empty() && labels.is_empty());
+        }
+        for field in 0..2 {
+            let mut metadata = identity.clone();
+            if field == 0 {
+                metadata.package_version = Some("2.0.0".to_owned());
+            } else {
+                metadata.lockfile_identity = Some("lock:other".to_owned());
+            }
+            let changed = collected
+                .source_theorem_module_summary_candidate(&frontend, &metadata)
+                .unwrap()
+                .unwrap();
+            assert_eq!(changed.module, metadata);
+            assert_eq!(changed.source_hash, summary.source_hash);
+            assert_ne!(changed.interface_hash, summary.interface_hash);
+        }
+        for field in 0..8 {
+            let mut invalid = identity.clone();
+            match field {
+                0 => invalid.package_id.clear(),
+                1 => invalid.module_path.clear(),
+                2 => invalid.language_edition.clear(),
+                3 => invalid.package_version = Some(String::new()),
+                4 => invalid.lockfile_identity = Some(String::new()),
+                5 => invalid.package_id = "wrong-package".to_owned(),
+                6 => invalid.module_path = "wrong.path".to_owned(),
+                7 => invalid.language_edition = "2027".to_owned(),
+                _ => unreachable!(),
+            }
+            assert_eq!(
+                collected.export_frontend_lexical_contributions(&frontend, &invalid),
+                None
+            );
+            assert_eq!(
+                collected.source_theorem_module_summary_candidate(&frontend, &invalid),
+                Ok(None)
+            );
+        }
+        assert_eq!((frontend.clone(), collected, identity), before);
+    }
+}
+
+#[test]
+fn source_theorem_module_summary_candidate_refuses_missing_or_unsupported_inputs() {
+    use mizar_artifact::module_summary::ModuleSummaryIdentity;
+    use mizar_frontend::{
+        orchestration::Frontend, parsing::MizarParserSeam, source::FrontendSourceLoader,
+    };
+    use mizar_session::{
+        DiskSourceLoader, Edition, SourceInput, SourceOriginInput, hash_text, normalize_path,
+    };
+    let fixture = include_str!(
+        "../../../../tests/miz/pass/resolve/pass_declaration_symbol_private_theorem_visibility_001.miz"
+    );
+    let simple = "theorem Base: 0 = 0\nproof\n thus 0 = 0;\nend;\n";
+    let identity = ModuleSummaryIdentity {
+        package_id: "pkg".to_owned(),
+        package_version: None,
+        lockfile_identity: None,
+        module_path: "main".to_owned(),
+        language_edition: "2025".to_owned(),
+    };
+    let mut original = None;
+    for (case, text) in [
+        fixture.to_owned(), format!("import std.core;\n{simple}"), format!("export std.core;\n{simple}"),
+        format!("{simple}\ndefinition\n let X, Y be set;\n private pred Hidden: X secret Y means X = Y;\nend;\n"),
+        format!("{simple}\nprivate infix_operator(\"+\", left, 80);\n"),
+        format!("{simple}\ndefinition\n let X, Y be set;\n synonym X alias Y for X base Y;\nend;\n"),
+        format!("{simple}\nreserve Y for set;\n"), format!("{simple}\ntheorem Plain: 0 = 0;\n"),
+        format!("{simple}\ntheorem Direct: 0 = 0 by Base;\n"),
+        simple.replace("0 = 0", "f(0) = 0"),
+        include_str!("../../../../tests/miz/fail/resolve/fail_resolve_duplicate_theorem_symbol_001.miz").to_owned(),
+        "theorem Broken: 0 = ;\n".to_owned(), fixture.replace("UsePriv1", "Changed1"),
+    ].into_iter().enumerate() {
+        let root = std::env::temp_dir().join(format!("mizar-summary-negative-{}-{case}", std::process::id()));
+        let path = root.join("src/main.miz");
+        std::fs::create_dir_all(path.parent().unwrap()).unwrap();
+        std::fs::write(&path, &text).unwrap();
+        let frontend = Frontend::new(FrontendSourceLoader::new(DiskSourceLoader::new(&root)), NoImportedSummaries, MizarParserSeam).run(
+            mizar_frontend::source::SourceUnitRequest {
+                snapshot: BuildSnapshotId::from_published_schema_str(&format!("mizar-session-build-snapshot-v1:{}", "31".repeat(Hash::BYTE_LEN))).unwrap(),
+                input: SourceInput { package_id: PackageId::new("pkg"), module_path: ModulePath::new("main"),
+                    normalized_path: normalize_path(&root, &path).unwrap(), edition: Edition::new("2025"), origin: SourceOriginInput::Disk { path }, },
+            }, &InMemorySessionIdAllocator::new()).unwrap();
+        std::fs::remove_dir_all(root).unwrap();
+        let ast = frontend.ast.as_ref().unwrap();
+        let module = module_id("pkg", "main");
+        let shells = crate::declarations::DeclarationShellCollector::new(ast, &module).collect();
+        let collected = crate::symbols::SignatureProjectionExtractor::new(ast, &shells, NamespacePath::new("main")).collect(&module);
+        let arena = SurfaceResolvedArena::lower(ast, &module).unwrap();
+        let lexical = collected.export_frontend_lexical_contributions(&frontend, &identity);
+        let semantic = crate::resolved_ast::source_theorem_resolved_ast(ast, &arena, collected.env());
+        let symbol_rows = crate::symbols::source_public_theorem_export_candidates(ast, &arena, collected.env(), &identity);
+        let label_rows = source_public_theorem_label_candidates(ast, &arena, collected.env());
+        let before = (frontend.clone(), collected.clone(), identity.clone());
+        if case == 0 || case == 12 {
+            assert_eq!(lexical, Some(Vec::new()));
+            assert!(semantic.unwrap().is_some());
+            assert!(symbol_rows.unwrap().is_some() && label_rows.unwrap().is_some());
+            if case == 0 {
+                original = Some((frontend.clone(), collected.clone()));
+                let augmented = crate::symbols::source_theorem_module_candidates(ast, &arena, collected.env()).unwrap().unwrap().1;
+                assert!(crate::resolved_ast::source_theorem_resolved_ast(ast, &arena, &augmented).is_err());
+            } else {
+                let (first, first_collection) = original.as_ref().unwrap();
+                assert_eq!(first_collection.export_frontend_lexical_contributions(&frontend, &identity), None);
+                assert_eq!(collected.export_frontend_lexical_contributions(first, &identity), None);
+                assert_eq!(first_collection.source_theorem_module_summary_candidate(&frontend, &identity), Ok(None));
+                assert_eq!(collected.source_theorem_module_summary_candidate(first, &identity), Ok(None));
+            }
+        } else {
+            if case == 10 { assert!(!collected.diagnostics().is_empty()); }
+            if case == 11 { assert!(!frontend.diagnostics.is_empty()); }
+            if case == 3 {
+                assert!(!frontend.tokens.local_declarations().user_symbols.is_empty());
+                assert_eq!(lexical, Some(Vec::new()), "private lexical omission is not absence");
+            }
+            let expected = if !collected.diagnostics().is_empty() || lexical.is_none()
+                || !frontend.tokens.local_declarations().user_symbols.is_empty()
+                || !frontend.tokens.local_declarations().operator_declarations.is_empty()
+                || !frontend.preprocessed.import_stubs.is_empty() { Ok(None) }
+                else { match semantic { Ok(None) => Ok(None), Err(error) => Err(error), Ok(Some(_)) => panic!("unsupported profile admitted: {case}") } };
+            assert_eq!(collected.source_theorem_module_summary_candidate(&frontend, &identity), expected, "{case}");
+        }
+        let (first, first_collection) = original.as_ref().unwrap();
+        if case == 1 {
+            assert!(!frontend.preprocessed.import_stubs.is_empty());
+            let mut omitted = frontend.clone();
+            omitted.preprocessed.import_stubs.clear();
+            assert_eq!(collected.export_frontend_lexical_contributions(&omitted, &identity), None);
+            assert_eq!(collected.source_theorem_module_summary_candidate(&omitted, &identity), Ok(None));
+        }
+        if case == 3 {
+            let mut stale = first.clone();
+            stale.tokens.local_declarations = frontend.tokens.local_declarations.clone();
+            assert_eq!(first_collection.export_frontend_lexical_contributions(&stale, &identity), None);
+            assert_eq!(first_collection.source_theorem_module_summary_candidate(&stale, &identity), Ok(None));
+        }
+        if case == 11 {
+            let mut diagnostic = first.clone();
+            diagnostic.diagnostics = frontend.diagnostics.clone();
+            assert_eq!(first_collection.export_frontend_lexical_contributions(&diagnostic, &identity), None);
+            assert_eq!(first_collection.source_theorem_module_summary_candidate(&diagnostic, &identity), Ok(None));
+        }
+        assert_eq!((frontend, collected, identity.clone()), before);
+    }
+    let ((first, c), id) = (original.unwrap(), identity);
+    for mutation in 0..5 {
+        let mut f = first.clone();
+        match mutation {
+            0 => f.ast = None,
+            1 => f.source.source_hash = hash_text("stale"),
+            2 => f.source.source_text = "stale".into(),
+            3 => f.preprocessed.lexical_hash = hash_text("stale lexical text"),
+            4 => f.preprocessed.source_map.lexical_text_len += 1,
+            _ => unreachable!(),
+        }
+        assert_eq!(c.export_frontend_lexical_contributions(&f, &id), None);
+        assert_eq!(c.source_theorem_module_summary_candidate(&f, &id), Ok(None));
+    }
+}
