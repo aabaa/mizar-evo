@@ -6126,6 +6126,349 @@ impl TermFormulaChecker {
         Ok((bindings, inference, obligations))
     }
 
+    /// Extracts and infers original-source set equalities without proof credit.
+    pub fn check_source_theorem_equalities(
+        source: &SurfaceResolvedArena,
+        symbols: &SymbolEnv,
+        scope: &ResolvedVariableScope,
+    ) -> Result<
+        (
+            BindingEnv,
+            TermFormulaInferenceOutput,
+            crate::typed_ast::TypedAst,
+        ),
+        String,
+    > {
+        use crate::source_atomic_formula::*;
+        use crate::source_term::*;
+        use crate::typed_ast::{TypedArena, TypedAst, TypedAstParts, TypedNode};
+        mizar_resolve::symbols::validate_source_proof_occurrences(source, symbols, scope)?;
+        let invalid = || "theorems.equality.unsupported_source_types".to_owned();
+        let node = |id| source.arena().node(id).ok_or_else(invalid);
+        let range = |id| match node(id)?.origin().anchor() {
+            SourceAnchor::Range(range) => Ok(*range),
+            _ => Err(invalid()),
+        };
+        let root = source.arena().root();
+        if node(root)?.kind() != &K::Root {
+            return Err(invalid());
+        }
+        let part = |id| match node(id)?.kind() {
+            K::Token(token) => match token.kind {
+                SurfaceTokenKind::Identifier if mizar_lexer::is_identifier(&token.text) => {
+                    Ok("identifier".to_owned())
+                }
+                SurfaceTokenKind::ReservedWord
+                    if [
+                        "theorem", "lemma", "for", "be", "being", "set", "holds", "proof", "let",
+                        "thus", "end", "by",
+                    ]
+                    .contains(&token.text.as_ref()) =>
+                {
+                    Ok(token.text.to_string())
+                }
+                SurfaceTokenKind::ReservedSymbol
+                    if [":", ";", ",", "="].contains(&token.text.as_ref()) =>
+                {
+                    Ok(token.text.to_string())
+                }
+                _ => Err(invalid()),
+            },
+            kind => Ok(format!("{kind:?}")),
+        };
+        let separated = |parts: &[&str], kind| {
+            !parts.is_empty()
+                && parts.len() % 2 == 1
+                && parts
+                    .iter()
+                    .enumerate()
+                    .all(|(index, part)| *part == if index % 2 == 0 { kind } else { "," })
+        };
+        let mut arena = Vec::new();
+        let mut equalities = Vec::new();
+        for (id, current) in source.arena().iter() {
+            let parts = current
+                .children()
+                .iter()
+                .map(|child| part(*child))
+                .collect::<Result<Vec<_>, _>>()?;
+            let parts = parts.iter().map(String::as_str).collect::<Vec<_>>();
+            let valid = match (current.kind(), parts.as_slice()) {
+                (K::Token(_), []) => part(id).is_ok(),
+                (K::Root, _) => {
+                    id == root
+                        && current
+                            .children()
+                            .iter()
+                            .filter_map(|child| source.arena().node(*child))
+                            .filter(|child| child.kind().is_structural())
+                            .map(|child| child.kind())
+                            .eq([&K::CompilationUnit])
+                }
+                (K::CompilationUnit, ["ItemList"]) => true,
+                (K::ItemList, items) => {
+                    !items.is_empty()
+                        && items
+                            .iter()
+                            .all(|item| matches!(*item, "TheoremItem" | "LemmaItem"))
+                }
+                (K::TheoremItem | K::LemmaItem, [keyword, rest @ ..]) => {
+                    *keyword
+                        == if current.kind() == &K::TheoremItem {
+                            "theorem"
+                        } else {
+                            "lemma"
+                        }
+                        && rest == ["identifier", ":", "FormulaExpression", "ProofBlock", ";"]
+                        && node(current.children()[3])?.children().iter().all(|child| {
+                            part(*child).is_ok_and(|kind| kind == "QuantifiedFormula(Universal)")
+                        })
+                }
+                (K::ProofBlock, ["proof", statements @ .., "end"]) => statements
+                    .iter()
+                    .all(|statement| matches!(*statement, "LetStatement" | "ConclusionStatement")),
+                (K::LetStatement, ["let", segments @ .., ";"]) => {
+                    separated(segments, "QualifiedVariableSegment")
+                }
+                (
+                    K::QuantifierVariableSegment | K::QualifiedVariableSegment,
+                    [names @ .., "be" | "being", "TypeExpression"],
+                ) => separated(names, "identifier"),
+                (K::TypeExpression, ["TypeHead"])
+                | (K::TypeHead, ["set"])
+                | (K::TermExpression, ["TermReference"])
+                | (K::TermReference, ["identifier"])
+                | (
+                    K::FormulaExpression,
+                    ["BuiltinPredicateApplication" | "QuantifiedFormula(Universal)"],
+                )
+                | (K::Proposition, ["FormulaExpression"])
+                | (K::ConclusionStatement, ["thus", "Proposition", ";"])
+                | (K::ConclusionStatement, ["thus", "Proposition", "JustificationClause", ";"])
+                | (K::JustificationClause, ["by", "ReferenceList"])
+                | (K::ReferenceList, ["Reference"])
+                | (K::Reference, ["identifier"])
+                | (K::BuiltinPredicateApplication, ["TermExpression", "=", "TermExpression"]) => {
+                    true
+                }
+                (
+                    kind,
+                    [
+                        "for",
+                        segments @ ..,
+                        "holds",
+                        "BuiltinPredicateApplication" | "QuantifiedFormula(Universal)",
+                    ]
+                    | ["for", segments @ .., "QuantifiedFormula(Universal)"],
+                ) if format!("{kind:?}") == "QuantifiedFormula(Universal)" => {
+                    separated(segments, "QuantifierVariableSegment")
+                }
+                _ => false,
+            };
+            if !valid {
+                return Err(invalid());
+            }
+            let kind = match current.kind() {
+                K::TermReference => "source.term.variable-reference".to_owned(),
+                K::BuiltinPredicateApplication => {
+                    equalities.push(id);
+                    "source.formula.atomic.equality".to_owned()
+                }
+                kind => format!("{kind:?}"),
+            };
+            arena.push(
+                TypedNode::new(kind, current.origin().anchor().clone())
+                    .with_resolved_node(id)
+                    .with_children(
+                        current
+                            .children()
+                            .iter()
+                            .map(|id| TypedNodeId::new(id.index()))
+                            .collect(),
+                    ),
+            );
+        }
+        let arena = TypedArena::try_new(Some(TypedNodeId::new(root.index())), arena)
+            .map_err(|_| invalid())?;
+        let bindings = SourceVariableSemanticsChecker::occurrence_binding_env(scope);
+        let context = BindingContextId::new(0);
+        let site = |id: ResolvedNodeId| TypedSiteRef::Node(TypedNodeId::new(id.index()));
+        let mut primary = SourcePrimaryTermHandoffInput {
+            source_id: source.source_id(),
+            module_id: source.module().clone(),
+            terms: Vec::new(),
+            references: Vec::new(),
+            numeric_type_requests: Vec::new(),
+        };
+        let mut terms = Vec::new();
+        for reference in scope.references() {
+            let id = source
+                .resolved_node_for(reference.node())
+                .ok_or_else(invalid)?;
+            let declaration = source
+                .resolved_node_for(scope.bindings()[reference.binding().index()].node())
+                .ok_or_else(invalid)?;
+            let ty = source
+                .arena()
+                .iter()
+                .find(|(_, current)| {
+                    matches!(
+                        current.kind(),
+                        K::QuantifierVariableSegment | K::QualifiedVariableSegment
+                    ) && current.children().contains(&declaration)
+                })
+                .and_then(|(_, current)| current.children().last())
+                .copied()
+                .ok_or_else(invalid)?;
+            let ordinal = primary.terms.len();
+            primary.terms.push(SourcePrimaryTermInput {
+                site: site(id),
+                source_range: reference.range(),
+                source_ordinal: ordinal,
+                context,
+                recovery: SourcePrimaryTermRecovery::Normal,
+                spelling: reference.spelling().into(),
+                kind: SourcePrimaryTermKind::VariableReference,
+                role: SourcePrimaryTermRole::Value,
+                parent: None,
+            });
+            let binding = BindingId::new(reference.binding().index());
+            primary.references.push(SourcePrimaryTermReferenceInput {
+                term: SourcePrimaryTermId::new(ordinal),
+                binding,
+                role: SourcePrimaryTermReferenceRole::Variable,
+            });
+            terms.push(
+                TermInput::new(site(id), context, reference.range(), TermKind::Variable)
+                    .with_reference(TermReference::Binding(binding))
+                    .with_result_type(TypeExpressionInput::new(
+                        TypedSiteRef::Role {
+                            node: TypedNodeId::new(ty.index()),
+                            role: crate::typed_ast::TypeRole::new(format!(
+                                "theorem.equality.use:{ordinal}"
+                            )),
+                        },
+                        range(ty)?,
+                        "set",
+                        TypeHeadInput::BuiltinSet,
+                    )),
+            );
+        }
+        let primary =
+            SourcePrimaryTermProducer::build_from_occurrences(primary, &bindings, &arena, scope)
+                .map_err(|error| error.to_string())?;
+        let primary_sites = primary
+            .terms()
+            .iter()
+            .map(|(id, term)| (term.site().node(), id))
+            .collect::<BTreeMap<_, _>>();
+        let mut atomic = SourceAtomicFormulaHandoffInput {
+            source_id: source.source_id(),
+            module_id: source.module().clone(),
+            formulas: Vec::new(),
+            wrappers: Vec::new(),
+            predicate_segments: Vec::new(),
+            predicate_heads: Vec::new(),
+            candidates: Vec::new(),
+            type_sites: Vec::new(),
+            attributes: Vec::new(),
+            edges: Vec::new(),
+            requests: Vec::new(),
+        };
+        equalities.sort_by_key(|id| range(*id).map(|range| range.start).unwrap_or(usize::MAX));
+        let mut formulas = Vec::new();
+        for id in equalities {
+            let formula = SourceAtomicFormulaId::new(atomic.formulas.len());
+            let mut operands = Vec::new();
+            let mut spellings = Vec::new();
+            for (ordinal, child) in [node(id)?.children()[0], node(id)?.children()[2]]
+                .into_iter()
+                .enumerate()
+            {
+                let term = node(child)?.children()[0];
+                let target = *primary_sites.get(&site(term).node()).ok_or_else(invalid)?;
+                operands.push(site(term));
+                spellings.push(primary.terms().get(target).ok_or_else(invalid)?.spelling());
+                let edge = SourceAtomicEdgeId::new(atomic.edges.len());
+                atomic.edges.push(SourceAtomicEdgeInput {
+                    formula,
+                    ordinal,
+                    role: if ordinal == 0 {
+                        SourceAtomicEdgeRole::BuiltinLeftOperand
+                    } else {
+                        SourceAtomicEdgeRole::BuiltinRightOperand
+                    },
+                    target: SourceAtomicTermTarget::Primary(target),
+                });
+                atomic.requests.push(SourceAtomicRequestInput {
+                    formula,
+                    ordinal,
+                    kind: SourceAtomicRequestKind::OperandExpectedType,
+                    edge: Some(edge),
+                    candidate: None,
+                    type_site: None,
+                    attribute: None,
+                });
+            }
+            atomic.formulas.push(SourceAtomicFormulaInput {
+                site: site(id),
+                source_range: range(id)?,
+                source_ordinal: formula.index(),
+                context,
+                recovery: SourceAtomicFormulaRecovery::Normal,
+                spelling: format!("{} = {}", spellings[0], spellings[1]),
+                kind: SourceAtomicFormulaKind::Equality,
+            });
+            formulas.push(
+                FormulaInput::new(site(id), context, range(id)?, FormulaKind::Equality)
+                    .with_terms(operands),
+            );
+        }
+        let atomic = SourceAtomicFormulaProducer::build(
+            atomic, &bindings, symbols, &primary, None, None, None, &arena,
+        )
+        .map_err(|error| error.to_string())?;
+        let inference = Self::default().infer(symbols, &bindings, terms, formulas);
+        if !inference.diagnostics().is_empty()
+            || !inference.candidate_sets().is_empty()
+            || !inference.facts().is_empty()
+            || inference.terms().len() != primary.terms().len()
+            || inference.formulas().len() != atomic.formulas().len()
+            || inference
+                .type_entries()
+                .iter()
+                .any(|(_, entry)| entry.status != TypeStatus::Known)
+            || inference
+                .terms()
+                .iter()
+                .any(|(_, term)| term.status != TermStatus::Inferred || !term.deferred.is_empty())
+            || inference.formulas().iter().any(|(_, formula)| {
+                formula.status != FormulaStatus::Checked || !formula.deferred.is_empty()
+            })
+        {
+            return Err(invalid());
+        }
+        let typed = TypedAst::try_new(TypedAstParts {
+            source_id: source.source_id(),
+            module_id: source.module().clone(),
+            resolved_root: Some(root),
+            source_context: None,
+            source_type: None,
+            source_attribute: None,
+            nodes: arena,
+            contexts: LocalTypeContextTable::new(),
+            types: TypeTable::new(),
+            facts: TypeFactTable::new(),
+            coercions: CoercionTable::new(),
+            initial_obligations: InitialObligationTable::new(),
+            diagnostics: TypeDiagnosticTable::new(),
+        })
+        .and_then(|ast| ast.with_source_term(primary))
+        .and_then(|ast| ast.with_source_atomic_formula(atomic))
+        .map_err(|error| error.to_string())?;
+        Ok((bindings, inference, typed))
+    }
+
     /// Checks bounded predicate and means-functor statements without proof credit.
     pub fn check_source_predicate_statements(
         source: &SurfaceResolvedArena,

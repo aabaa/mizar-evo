@@ -13,6 +13,8 @@
 - [x] [Step 5C.12: unbounded templates](../../task_contracts/en/STEP5C12-UNBOUNDED-TEMPLATES.md); explicit identity-functor/predicate-formal checking and bare structure-bound selector typing with builtin actual-bound rejection; general bounded instantiation remains deferred.
 - [x] [Step 5C.11: cluster registrations](../../task_contracts/en/STEP5C11-CLUSTER-REGISTRATIONS.md); parser admission, pending intake and bounded false-coherence/false-reducibility verification are active; accepted effects remain pending.
 
+- [x] [Original-source theorem equality producer](../../task_contracts/en/CHECKER-SOURCE-THEOREM-EQUALITY-PRODUCER.md).
+
 ## Status Legend
 
 - [ ] not started

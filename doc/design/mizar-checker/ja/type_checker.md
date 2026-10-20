@@ -3089,3 +3089,17 @@ object を返す return のみの algorithm では、等式 ensures と `return 
 ## Narrower-loci predicate declaration checking
 
 限定 source producer は [proof status](../../mizar-proof/ja/status.md#source-existential-registration-proof) の同一呼出し由来 registration database を受け、source-local full pattern を認証し、両 grouped formal が共有する実際の属性付き type site に既存 inhabitation gate を適用する。既存 radix/属性 closure 関係で元と限定後の順序付き signature を正規化し、両 loci が広がらず少なくとも一つが真に狭い場合だけ、同一 predicate head/arity の可視な先行 ordinary root 一つを推論する。独立の宣言 binding で実際の両等式本体を型検査し、限定 guard 下の同値性について root・新宣言・完全な coherence 節に結ぶ Pending PredicateRedefinitionCoherence request 一つを保持する。記述された `thus thesis` は受理を与えず、use-site refinement・定義公理・theorem/Core/VC credit・汎用 Task274 import は行わない。
+
+## Original-source theorem equality producer
+
+`TermFormulaChecker::check_source_theorem_equalities(&SurfaceResolvedArena, &SymbolEnv, &ResolvedVariableScope) -> Result<(BindingEnv, TermFormulaInferenceOutput, TypedAst), String>` は、import のない既定公開・通常状態の直接 theorem/lemma、裸の set 全称変数、証明内の裸の set let、変数等式、既存の先行モジュール内引用について、ソース抽出と実際の型推論を所有する。限定された型生成であり、定理受理や意味フェーズ全体の完了ではない。
+抽出前に既存 validate_source_proof_occurrences で中立ソース全体、拡張前の宣言収集環境、順序付き束縛・参照全行を認証する。元環境のエラーを先に、その内部 occurrence-mismatch String をそのまま返し、拡張済み resolver 候補環境で代用しない。Syntax 再構築と出現再解決は Resolver の非公開処理に残し、このメソッドは元の中立 arena だけを使い、正確な Universal 種別と grouped/nested 束縛構文を保持する。未使用束縛を含む全宣言・参照を元サイトと記載された裸の set 型に照合する。既存 occurrence_binding_env の射影を使い、primary 行 ID とソース束縛 ID は実際のサイトと生成順序で対応させる。
+入力全体を調べ、未対応または回復済みのバッチは内部 String エラーで全体を拒否する。実際の Root → CompilationUnit → 空でない ItemList の連鎖を要求し、token や式を根とする arena は拒否する。import、明示的可視性ラッパー、open/assumed/conditional、定義、reserve、属性、数値/computation、membership、一般の項適用・結合式、入力の部分抽出は扱わない。既存の広い経路とエラー、公開診断、証明骨格の受理条件は変更しない。
+全中立ノードから TypedArena を作り、根、子と順序、アンカー、回復状態、resolver リンクを保持する。実際の変数参照と等式だけに既存の source-term/atomic タグを付ける。既存 SourcePrimaryTermProducer::build_from_occurrences と SourceAtomicFormulaProducer を使い、実際の束縛・オペランドから TermFormulaChecker::infer を実行する。set 項と等式の推論は完全かつ非保留で成功し、診断や候補・事実・義務を捏造せず、完全な推論結果を返す組に保持する。 Inferred でない項や保留項、Checked でない式や保留式は拒否し、対象サイトを全て保持する。
+既存 TypedAst の構築・インストールで不変なソース/primary/atomic 輸送を返す。空の輸送表は別途返す推論型や TypedAst フェーズ全体の完了を表さない。新しい結果型、フィールド、helper、adapter、依存、並行する項/式表現を追加しない。既存生成器、定理 seal、Core/VC/証明方針、プロファイルとガードを保持する。
+
+### Producer tests and consumers
+既存 Test proof_verification ファミリーに source_theorem_equality_producer_preserves_real_typed_inputs_and_consumers と source_theorem_equality_producer_rejects_foreign_and_unsupported_sources のみ追加する。import は局所に置き、新 helper は作らない。実際の解析/Frontend、元の宣言収集と resolver 出現/ラベル生成器で正例を作り、変更しない [lemma 引用ソース](../../../../tests/miz/pass/theorems/pass_proof_verification_lemma_reference_001.miz)、名前変更、利用可能な実際の Disk/OpenBuffer 捕捉を使う。
+元ノード全体の構造・範囲・リンク、宣言と使用の順序、primary/atomic ペイロード全体、実際に推論された set 型と等式オペランドを独立に確認する。全称と証明内の束縛は実際の出現で区別する。適用可能な既存 harness の生成物とも比較し、任意の resolver リンクの有無をソース同一性の代用にしない。再実行と入力全体の不変性を確認する。異なる変数間の型が正しい等式も扱い、真理や受理を導かない。
+新しい輸送と実際のラベル/スコープから既存 check_theorem_skeletons を構成し、その実際の seal を既存 Core lowering と VC 生成へ渡す。保留義務、正規化された目標/文脈/引用、元ソースの所有を既存の実生成経路と比較する。テスト製 TypedAst/VC や受理結果で代用しない。不正な根、未対応/回復/別ソース・環境・スコープ、宣言型/オペランドの改変、実際の private/open/assumed/import/数値入力は所有段階で拒否し、既存 fixture 意図・状態ガード・全旧テストを保持する。
+完全な resolver/checker/VC service 登録、Complete、公開 artifact、証明/witness token、受理、完全 footprint、cache Hit を意味しない。上位 coverage/owner/deferral は変更しない。既存の機械的ソース目録は整形後の type_checker.rs の実際の行数セルだけ更新し、境界と公開項目の判断は変更しない。
