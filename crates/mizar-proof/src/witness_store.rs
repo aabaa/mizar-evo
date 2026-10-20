@@ -32,6 +32,152 @@ use crate::{
 
 const WITNESS_PAYLOAD_HASH_DOMAIN: &str = "mizar-proof/witness-payload/v1";
 
+pub(crate) const SOURCE_THEOREM_WITNESS_FILE_SCHEMA_FAMILY: &str =
+    "mizar-proof/source-theorem-witness-file";
+
+/// Recovers checked wire bytes from an untrusted, unpublished source witness file.
+pub fn read_source_theorem_witness_file(
+    read: &mizar_artifact::store::PublishedArtifactRead,
+    expected: &ProofWitnessRef,
+) -> Result<Vec<u8>, String> {
+    use mizar_artifact::{
+        proof_witness::{ProofWitnessReadOptions, read_builtin_proof_witness_ref},
+        store::{MinorVersionPolicy, SchemaVersionSupport, artifact_hash_domain},
+    };
+
+    let CanonicalJson::Object(fields) = &read.value else {
+        return Err("source theorem witness file must be an object".to_owned());
+    };
+    let support = SchemaVersionSupport::new(
+        SOURCE_THEOREM_WITNESS_FILE_SCHEMA_FAMILY,
+        1,
+        0,
+        MinorVersionPolicy::UpToSupported,
+    );
+    let header = match fields.get("schema_version") {
+        Some(CanonicalJson::String(version)) => Some(version.as_str()),
+        None => None,
+        Some(_) => Some(""),
+    };
+    let version = support
+        .check_at_path(header, read.path.as_str())
+        .map_err(|error| error.to_string())?;
+    if fields.get("schema_family")
+        != Some(&CanonicalJson::string(
+            SOURCE_THEOREM_WITNESS_FILE_SCHEMA_FAMILY,
+        ))
+    {
+        return Err(format!(
+            "incompatible schema family for {}: actual version {}, supported {}, artifact path {}",
+            SOURCE_THEOREM_WITNESS_FILE_SCHEMA_FAMILY,
+            version,
+            support.supported_range(),
+            read.path.as_str(),
+        ));
+    }
+    let keys = [
+        "schema_version",
+        "schema_family",
+        "obligation_id",
+        "obligation_fingerprint",
+        "payload_schema_family",
+        "payload_schema_version",
+        "payload_bytes_hex",
+        "kernel_acceptance",
+    ];
+    if fields.len() != keys.len() || keys.iter().any(|key| !fields.contains_key(*key)) {
+        return Err("invalid source theorem witness file fields".to_owned());
+    }
+    for key in &keys[..7] {
+        if !matches!(fields.get(*key), Some(CanonicalJson::String(_))) {
+            return Err(format!(
+                "source theorem witness file {key} must be a string"
+            ));
+        }
+    }
+    if !matches!(
+        fields.get("kernel_acceptance"),
+        Some(CanonicalJson::Object(_))
+    ) {
+        return Err("source theorem witness file kernel_acceptance must be an object".to_owned());
+    }
+    if fields["payload_schema_family"]
+        != CanonicalJson::string("mizar-proof/source-theorem-reflexivity-checked-wire")
+        || fields["payload_schema_version"] != CanonicalJson::string("2.0")
+    {
+        return Err("invalid source theorem witness file payload profile".to_owned());
+    }
+    let CanonicalJson::String(hex) = &fields["payload_bytes_hex"] else {
+        unreachable!()
+    };
+    if hex.is_empty()
+        || !hex.len().is_multiple_of(2)
+        || !hex
+            .bytes()
+            .all(|byte| byte.is_ascii_digit() || (b'a'..=b'f').contains(&byte))
+    {
+        return Err("invalid source theorem witness file payload hex".to_owned());
+    }
+    let bytes = (0..hex.len())
+        .step_by(2)
+        .map(|offset| {
+            u8::from_str_radix(&hex[offset..offset + 2], 16).map_err(|error| error.to_string())
+        })
+        .collect::<Result<Vec<_>, _>>()?;
+    let hash = artifact_hash_domain(
+        SOURCE_THEOREM_WITNESS_FILE_SCHEMA_FAMILY,
+        SchemaVersion::new(1, 0),
+    )
+    .hash(&read.value, &[]);
+    if read.artifact_hash != Some(hash) {
+        return Err("source theorem witness file read hash mismatch".to_owned());
+    }
+    let hash_ref = ArtifactHashRef::new(
+        ArtifactHashClass::Artifact,
+        SOURCE_THEOREM_WITNESS_FILE_SCHEMA_FAMILY,
+        SchemaVersion::new(1, 0),
+        hash,
+    );
+    let reference = CanonicalJson::object([
+        ("schema_version", CanonicalJson::string("3.0")),
+        ("obligation_id", fields["obligation_id"].clone()),
+        (
+            "obligation_fingerprint",
+            fields["obligation_fingerprint"].clone(),
+        ),
+        ("proof_status", CanonicalJson::string("discharged_builtin")),
+        (
+            "evidence_kind",
+            CanonicalJson::string("formula_substitution_kernel_evidence"),
+        ),
+        ("witness_path", CanonicalJson::string(read.path.as_str())),
+        (
+            "witness_artifact_hash",
+            CanonicalJson::string(hash_ref.to_artifact_hash_string()),
+        ),
+        ("kernel_acceptance", fields["kernel_acceptance"].clone()),
+    ])
+    .map_err(|error| error.to_string())?;
+    let reference = read_builtin_proof_witness_ref(
+        &reference,
+        ProofWitnessReadOptions {
+            artifact_path: Some(read.path.as_str()),
+            expected_witness_artifact_hash: Some(&expected.witness_artifact_hash),
+        },
+    )
+    .map_err(|error| error.to_string())?;
+    if &reference != expected
+        || reference.obligation_fingerprint.class != ArtifactHashClass::Interface
+        || reference.obligation_fingerprint.schema_family
+            != "mizar-proof/source-theorem-original-obligation"
+        || reference.obligation_fingerprint.schema_version != SchemaVersion::new(1, 0)
+        || reference.kernel_acceptance.evidence_schema_version != SchemaVersion::new(2, 0)
+    {
+        return Err("source theorem witness file reference mismatch".to_owned());
+    }
+    Ok(bytes)
+}
+
 /// Payload schema identity for producer-owned witness bytes.
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct ProofWitnessPayloadSchema {

@@ -465,6 +465,7 @@ kernel の拒否語彙と evidence 契約を訂正した。policy 層はその�
 48. **[Genuine theorem internal witness draft](../../task_contracts/ja/PROOF-SOURCE-THEOREM-WITNESS-DRAFT.md).** [x]
 49. **[Existing witness payload hash value](../../task_contracts/ja/PROOF-WITNESS-PAYLOAD-HASH-VALUE.md).** [x]
 50. **[Original-source draft acquisition](../../task_contracts/ja/PROOF-ORIGINAL-SOURCE-WITNESS-DRAFT.md).** [x]
+51. **[Genuine witness file candidate](../../task_contracts/ja/PROOF-SOURCE-THEOREM-WITNESS-FILE.md).** [x]
 
 ## 推奨検証
 

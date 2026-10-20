@@ -59,6 +59,7 @@ matching crate or module-level boundary comment:
 | `VcProofSelection`, `ProofSelectionSource`, `ArtifactProofSelection`, `ArtifactProofSelectionError`, `merge_artifact_proof_selections` | Artifact proof selection merge section in `selection.md`. | Merge canonical order, source/class compatibility, duplicate source, trusted precedence, same-class tie-break, and non-trusted preservation tests. | consistent |
 
 ### Status
+`source_theorem_reflexivity_witness_file_candidate`: [API owner](./status.md#source-theorem-witness-file-candidate).
 `source_theorem_reflexivity_witness_draft_from_original`: [sole API owner](./status.md#original-source-witness-draft-acquisition).
 `source_theorem_reflexivity_witness_draft`: [sole API owner](./status.md#source-theorem-witness-draft).
 `source_theorem_reflexivity_trusted_witness_metadata_with_wire`: [sole API owner](./status.md#source-theorem-trusted-witness-metadata-with-wire).
@@ -95,6 +96,7 @@ matching crate or module-level boundary comment:
 | `StatusReuseMetadata` | Proof reuse metadata section in `status.md`, including accepted goal polarity in proof-evidence identity. | Architecture-22 identity and reuse metadata coverage tests, accepted-polarity hash invalidation, terminal rejection projection, plus determinism suite. | consistent for the current task scope; downstream cache consumers remain outside this crate. |
 
 ### Witness Store
+`read_source_theorem_witness_file`: [schema and API owner](./witness_store.md#source-theorem-witness-file).
 
 | Public API group | Spec coverage | Test coverage | Result |
 |---|---|---|---|

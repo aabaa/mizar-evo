@@ -562,6 +562,135 @@ pub fn source_theorem_reflexivity_witness_draft_from_original(
     )
 }
 
+/// Builds an unpublished canonical witness file from genuine original-source acquisition.
+#[expect(clippy::type_complexity, reason = "retain the acquisition tuple")]
+pub fn source_theorem_reflexivity_witness_file_candidate(
+    source: &mizar_resolve::resolved_ast::SurfaceResolvedArena,
+    symbols: &mizar_resolve::env::SymbolEnv,
+    snapshot: &mizar_session::BuildSnapshot,
+    policy: &VerifierPolicy,
+    witness_path: &str,
+) -> Result<
+    (
+        (
+            ProofStatusProjection,
+            mizar_vc::dependency_slice::DependencySlice,
+            crate::witness_store::ProofWitnessDraft,
+        ),
+        mizar_artifact::store::CanonicalJson,
+        mizar_artifact::proof_witness::ProofWitnessRef,
+    ),
+    String,
+> {
+    use crate::witness_store::SOURCE_THEOREM_WITNESS_FILE_SCHEMA_FAMILY;
+    use mizar_artifact::{
+        proof_witness::{
+            EvidenceKind, ProofStatus, ProofWitnessRef, builtin_proof_witness_ref_json,
+        },
+        registration_summary::{ArtifactHashClass, ArtifactHashRef},
+        store::{CanonicalJson, artifact_hash_domain},
+    };
+
+    let original = source_theorem_reflexivity_witness_draft_from_original(
+        source,
+        symbols,
+        snapshot,
+        policy,
+        witness_path,
+    )?;
+    let draft = &original.2;
+    let metadata = draft.kernel_acceptance();
+    let mut acceptance = std::collections::BTreeMap::new();
+    for (key, hash) in [
+        (
+            "kernel_profile_fingerprint",
+            &metadata.kernel_profile_fingerprint,
+        ),
+        (
+            "verifier_policy_fingerprint",
+            &metadata.verifier_policy_fingerprint,
+        ),
+        ("target_binding_hash", &metadata.target_binding_hash),
+        ("formula_evidence_hash", &metadata.formula_evidence_hash),
+        (
+            "substitution_evidence_hash",
+            &metadata.substitution_evidence_hash,
+        ),
+        ("provenance_hash", &metadata.provenance_hash),
+        ("accepted_result_hash", &metadata.accepted_result_hash),
+    ] {
+        acceptance.insert(
+            key.to_owned(),
+            CanonicalJson::string(hash.to_artifact_hash_string()),
+        );
+    }
+    for (key, version) in [
+        ("checker_schema_version", metadata.checker_schema_version),
+        ("evidence_schema_version", metadata.evidence_schema_version),
+    ] {
+        acceptance.insert(key.to_owned(), CanonicalJson::string(version.to_string()));
+    }
+    acceptance.insert(
+        "formula_context_hash".to_owned(),
+        metadata
+            .formula_context_hash
+            .as_ref()
+            .map_or(CanonicalJson::Null, |hash| {
+                CanonicalJson::string(hash.to_artifact_hash_string())
+            }),
+    );
+    let file = CanonicalJson::object([
+        ("schema_version", CanonicalJson::string("1.0")),
+        (
+            "schema_family",
+            CanonicalJson::string(SOURCE_THEOREM_WITNESS_FILE_SCHEMA_FAMILY),
+        ),
+        (
+            "obligation_id",
+            CanonicalJson::string(draft.obligation_id()),
+        ),
+        (
+            "obligation_fingerprint",
+            CanonicalJson::string(draft.obligation_fingerprint().to_artifact_hash_string()),
+        ),
+        (
+            "payload_schema_family",
+            CanonicalJson::string(draft.payload_schema().family()),
+        ),
+        (
+            "payload_schema_version",
+            CanonicalJson::string(draft.payload_schema().version().to_string()),
+        ),
+        (
+            "payload_bytes_hex",
+            CanonicalJson::string(source_discharge_hex(draft.payload_bytes())),
+        ),
+        ("kernel_acceptance", CanonicalJson::Object(acceptance)),
+    ])
+    .map_err(|error| error.to_string())?;
+    let reference = ProofWitnessRef {
+        schema_version: SchemaVersion::new(3, 0),
+        obligation_id: draft.obligation_id().to_owned(),
+        obligation_fingerprint: draft.obligation_fingerprint().clone(),
+        proof_status: ProofStatus::DischargedBuiltin,
+        evidence_kind: EvidenceKind::FormulaSubstitutionKernelEvidence,
+        witness_path: draft.witness_path().to_owned(),
+        witness_artifact_hash: ArtifactHashRef::new(
+            ArtifactHashClass::Artifact,
+            SOURCE_THEOREM_WITNESS_FILE_SCHEMA_FAMILY,
+            SchemaVersion::new(1, 0),
+            artifact_hash_domain(
+                SOURCE_THEOREM_WITNESS_FILE_SCHEMA_FAMILY,
+                SchemaVersion::new(1, 0),
+            )
+            .hash(&file, &[]),
+        ),
+        kernel_acceptance: metadata.clone(),
+    };
+    builtin_proof_witness_ref_json(&reference).map_err(|error| error.to_string())?;
+    Ok((original, file, reference))
+}
+
 /// Builds an internal draft from one fresh theorem check and retained snapshot metadata.
 pub fn source_theorem_reflexivity_witness_draft(
     source: &mizar_resolve::resolved_ast::SurfaceResolvedArena,
