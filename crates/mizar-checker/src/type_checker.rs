@@ -6469,6 +6469,78 @@ impl TermFormulaChecker {
         Ok((bindings, inference, typed))
     }
 
+    /// Retains original-source equality inference in its actual typed tables.
+    pub fn check_source_theorem_equalities_with_typed_tables(
+        source: &SurfaceResolvedArena,
+        symbols: &SymbolEnv,
+        scope: &ResolvedVariableScope,
+    ) -> Result<
+        (
+            BindingEnv,
+            TermFormulaInferenceOutput,
+            crate::typed_ast::TypedAst,
+        ),
+        String,
+    > {
+        use crate::typed_ast::{TypedArena, TypedAst, TypedAstParts, TypingState};
+        let (bindings, inference, original) =
+            Self::check_source_theorem_equalities(source, symbols, scope)?;
+        let invalid = || "theorems.equality.invalid_typed_association".to_owned();
+        let mut nodes = original
+            .nodes()
+            .iter()
+            .map(|(_, node)| node.clone())
+            .collect::<Vec<_>>();
+        for (_, term) in inference.terms().iter() {
+            if term.status == TermStatus::Inferred {
+                let entry = inference
+                    .type_entries()
+                    .get(term.type_entry)
+                    .ok_or_else(invalid)?;
+                if entry.owner != term.site {
+                    return Err(invalid());
+                }
+                let node = nodes
+                    .get_mut(term.site.node().index())
+                    .ok_or_else(invalid)?;
+                node.typing = TypingState::Successful;
+                node.links.type_entry = Some(term.type_entry);
+            }
+        }
+        for (_, formula) in inference.formulas().iter() {
+            if formula.status == FormulaStatus::Checked {
+                nodes
+                    .get_mut(formula.site.node().index())
+                    .ok_or_else(invalid)?
+                    .typing = TypingState::Successful;
+            }
+        }
+        let primary = original.source_term().cloned().ok_or_else(invalid)?;
+        let atomic = original
+            .source_atomic_formula()
+            .cloned()
+            .ok_or_else(invalid)?;
+        let typed = TypedAst::try_new(TypedAstParts {
+            source_id: original.source_id(),
+            module_id: original.module_id().clone(),
+            resolved_root: original.resolved_root(),
+            source_context: original.source_context().cloned(),
+            source_type: original.source_type().cloned(),
+            source_attribute: original.source_attribute().cloned(),
+            nodes: TypedArena::try_new(original.nodes().root(), nodes).map_err(|_| invalid())?,
+            contexts: original.contexts().clone(),
+            types: inference.type_entries().clone(),
+            facts: inference.facts().clone(),
+            coercions: original.coercions().clone(),
+            initial_obligations: original.initial_obligations().clone(),
+            diagnostics: inference.diagnostics().clone(),
+        })
+        .and_then(|ast| ast.with_source_term(primary))
+        .and_then(|ast| ast.with_source_atomic_formula(atomic))
+        .map_err(|error| error.to_string())?;
+        Ok((bindings, inference, typed))
+    }
+
     /// Checks bounded predicate and means-functor statements without proof credit.
     pub fn check_source_predicate_statements(
         source: &SurfaceResolvedArena,

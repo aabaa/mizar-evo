@@ -12711,4 +12711,539 @@ mod term_proof_tests {
         fs::remove_dir_all(root).unwrap();
         Ok(())
     }
+
+    #[test]
+    fn source_theorem_typed_inference_retains_real_site_types_and_consumers() -> Result<(), String>
+    {
+        use mizar_checker::{type_checker::*, typed_ast::*};
+        use mizar_core::{
+            core_ir::{CoreProofStatus, ObligationSeedStatus},
+            elaborator::lower_source_theorem_skeletons,
+        };
+        use mizar_frontend::{
+            orchestration::Frontend,
+            parsing::MizarParserSeam,
+            source::{FrontendSourceLoader, SourceUnitRequest},
+        };
+        use mizar_resolve::{
+            declarations::DeclarationShellCollector,
+            env::NamespacePath,
+            labels::{LabelResolver, ProofLabelSourceCollector},
+            names::{SourceVariableScopeInput, SourceVariableScopeResolver},
+            resolved_ast::{ModuleId, SurfaceResolvedArena},
+            symbols::SignatureProjectionExtractor,
+        };
+        use mizar_session::{
+            DiskSourceLoader, Edition, InMemorySessionIdAllocator, ModulePath, PackageId,
+            SourceInput, SourceOrigin, SourceOriginInput, hash_text,
+        };
+        use mizar_syntax::SurfaceNodeKind as K;
+        let fixture = include_str!(
+            "../../../../tests/miz/pass/theorems/pass_proof_verification_lemma_reference_001.miz"
+        );
+        let sources = [
+            fixture.to_owned(),
+            fixture.replace("Lem1", "Seed").replace("let X be set;", "let Local be set;").replace("thus X = X", "thus Local = Local"),
+            "theorem Pair: for A, Spare, B being set holds A = B proof let L, Unused, R be set; thus L = R; end;".into(),
+            "theorem Nested: for A being set for Unused being set holds for B being set holds A = B proof let L be set; let Idle be set; let R be set; thus L = R; end;".into(),
+            "theorem Groups: for A being set, Unused, B being set holds A = B proof let L be set, Idle, R be set; thus L = R; end;".into(),
+            "theorem Different: for A, B being set holds A = B proof let L, R be set; thus L = R; end;".into(),
+        ];
+        let temporary = std::process::Command::new("mktemp")
+            .arg("-d")
+            .output()
+            .unwrap();
+        assert!(temporary.status.success());
+        let root = std::path::PathBuf::from(String::from_utf8(temporary.stdout).unwrap().trim());
+        fs::create_dir(root.join("src")).unwrap();
+        let path = root.join("src/typed_inference.miz");
+        let ids = InMemorySessionIdAllocator::new();
+        for (case, text) in sources.iter().enumerate() {
+            for buffer in [false, true] {
+                fs::write(&path, if buffer { "stale disk content" } else { text }).unwrap();
+                let frontend = Frontend::new(
+                    FrontendSourceLoader::new(DiskSourceLoader::new(&root)),
+                    super::super::ParseOnlyImportProvider,
+                    MizarParserSeam,
+                )
+                .run(
+                    SourceUnitRequest {
+                        snapshot: snapshot_id(777),
+                        input: SourceInput {
+                            package_id: PackageId::new("typed-inference-test"),
+                            module_path: ModulePath::new("owners"),
+                            normalized_path: mizar_session::normalize_path(&root, &path).unwrap(),
+                            edition: Edition::new("2026"),
+                            origin: if buffer {
+                                SourceOriginInput::OpenBuffer {
+                                    uri: format!("file://{}", path.display()),
+                                    expected_version: 3,
+                                    actual_version: 3,
+                                    text: text.clone().into(),
+                                }
+                            } else {
+                                SourceOriginInput::Disk { path: path.clone() }
+                            },
+                        },
+                    },
+                    &ids,
+                )
+                .unwrap();
+                assert!(
+                    frontend.diagnostics.is_empty(),
+                    "{:?}",
+                    frontend.diagnostics
+                );
+                assert_eq!(frontend.source.source_text.as_ref(), text);
+                assert_eq!(frontend.source.source_hash, hash_text(text));
+                assert_eq!(
+                    matches!(
+                        frontend.source.origin,
+                        SourceOrigin::OpenBuffer { version: 3 }
+                    ),
+                    buffer
+                );
+                let ast = frontend.ast.as_ref().unwrap();
+                let module = ModuleId::new(
+                    frontend.source.package_id.clone(),
+                    frontend.source.module_path.clone(),
+                );
+                let source = SurfaceResolvedArena::lower(ast, &module).unwrap();
+                let shells = DeclarationShellCollector::new(ast, &module).collect();
+                let collected = SignatureProjectionExtractor::new(
+                    ast,
+                    &shells,
+                    NamespacePath::new(module.path().as_str()),
+                )
+                .collect(&module);
+                assert!(collected.diagnostics().is_empty());
+                let symbols = collected.env();
+                let scope = SourceVariableScopeResolver::resolve_proof_occurrences(
+                    SourceVariableScopeInput::new(ast, &module, symbols),
+                )
+                .unwrap();
+                let before = (
+                    source.clone(),
+                    symbols.clone(),
+                    scope.clone(),
+                    ast.snapshot_text(),
+                    frontend.source.clone(),
+                );
+                let original =
+                    TermFormulaChecker::check_source_theorem_equalities(&source, symbols, &scope)?;
+                let (bindings, inference, typed) =
+                    TermFormulaChecker::check_source_theorem_equalities_with_typed_tables(
+                        &source, symbols, &scope,
+                    )?;
+                assert_eq!(bindings, original.0);
+                assert_eq!(inference, original.1);
+                assert_eq!(
+                    bindings,
+                    SourceVariableSemanticsChecker::occurrence_binding_env(&scope)
+                );
+                let base = &original.2;
+                assert_eq!(typed.source_id(), base.source_id());
+                assert_eq!(typed.module_id(), base.module_id());
+                assert_eq!(typed.resolved_root(), base.resolved_root());
+                assert_eq!(typed.nodes().root(), base.nodes().root());
+                assert_eq!(typed.nodes().len(), base.nodes().len());
+                assert_eq!(typed.contexts(), base.contexts());
+                assert_eq!(typed.types(), inference.type_entries());
+                assert_eq!(typed.facts(), inference.facts());
+                assert_eq!(typed.diagnostics(), inference.diagnostics());
+                assert_eq!(typed.coercions(), base.coercions());
+                assert_eq!(typed.initial_obligations(), base.initial_obligations());
+                assert_eq!(typed.source_context(), base.source_context());
+                assert_eq!(typed.source_type(), base.source_type());
+                assert_eq!(typed.source_attribute(), base.source_attribute());
+                assert_eq!(typed.source_term(), base.source_term());
+                assert_eq!(typed.source_atomic_formula(), base.source_atomic_formula());
+                assert!(
+                    typed.contexts().is_empty()
+                        && typed.facts().is_empty()
+                        && typed.coercions().is_empty()
+                        && typed.initial_obligations().is_empty()
+                        && typed.diagnostics().is_empty()
+                );
+                for (id, node) in base.nodes().iter() {
+                    let mut expected = node.clone();
+                    if let Some((_, term)) = inference
+                        .terms()
+                        .iter()
+                        .find(|(_, term)| term.site.node() == id)
+                    {
+                        assert_eq!(term.status, TermStatus::Inferred);
+                        expected.typing = TypingState::Successful;
+                        expected.links.type_entry = Some(term.type_entry);
+                    }
+                    if inference.formulas().iter().any(|(_, formula)| {
+                        formula.site.node() == id && formula.status == FormulaStatus::Checked
+                    }) {
+                        expected.typing = TypingState::Successful;
+                        assert!(expected.links.type_entry.is_none());
+                    }
+                    assert_eq!(typed.nodes().node(id), Some(&expected));
+                }
+                let primary = typed.source_term().unwrap();
+                assert_eq!(inference.terms().len(), scope.references().len());
+                assert_eq!(primary.terms().len(), scope.references().len());
+                assert_eq!(typed.types().len(), inference.terms().len() * 2);
+                for ((id, term), occurrence) in primary.terms().iter().zip(scope.references()) {
+                    assert_eq!(term.site().node().index(), occurrence.node().index());
+                    assert_eq!(term.source_range(), occurrence.range());
+                    let reference = primary
+                        .references()
+                        .iter()
+                        .find(|(_, reference)| reference.term() == id)
+                        .unwrap()
+                        .1;
+                    assert_eq!(reference.binding().index(), occurrence.binding().index());
+                    assert_eq!(reference.lexical_scope(), Some(occurrence.scope()));
+                    let checked = inference
+                        .terms()
+                        .iter()
+                        .find(|(_, checked)| &checked.site == term.site())
+                        .unwrap()
+                        .1;
+                    assert_eq!(
+                        checked.reference,
+                        Some(TermReference::Binding(reference.binding()))
+                    );
+                    let node = typed.nodes().node(checked.site.node()).unwrap();
+                    assert_eq!(node.links.type_entry, Some(checked.type_entry));
+                    assert_eq!(node.typing, TypingState::Successful);
+                    assert!(node.links.context.is_none());
+                    let entry = typed.types().get(checked.type_entry).unwrap();
+                    assert_eq!(
+                        Some(entry),
+                        original.1.type_entries().get(checked.type_entry)
+                    );
+                    assert_eq!(entry.owner, checked.site);
+                    assert_eq!(entry.status, TypeStatus::Known);
+                    let TypeEntryActual::Known(actual) = entry.actual else {
+                        panic!("missing normalized result type")
+                    };
+                    let normalized = inference.normalized_types().get(actual).unwrap();
+                    assert_eq!(normalized.head, TypeHeadRef::BuiltinSet);
+                    assert_eq!(normalized.status, NormalizedTypeStatus::Known);
+                    assert_eq!(normalized.source.spelling, "set");
+                    assert!(
+                        normalized.args.is_empty()
+                            && normalized.attributes.positive().is_empty()
+                            && normalized.attributes.negative().is_empty()
+                    );
+                    let binding = &scope.bindings()[occurrence.binding().index()];
+                    let segment = ast
+                        .node_views()
+                        .find(|view| {
+                            matches!(
+                                view.kind(),
+                                K::QuantifierVariableSegment | K::QualifiedVariableSegment
+                            ) && view.children().contains(&binding.node())
+                        })
+                        .unwrap();
+                    let written = segment
+                        .child_views()
+                        .find(|view| matches!(view.kind(), K::TypeExpression))
+                        .unwrap();
+                    let role = TypedSiteRef::Role {
+                        node: TypedNodeId::new(written.id().index()),
+                        role: TypeRole::new(format!("theorem.equality.use:{}", id.index())),
+                    };
+                    let rows = typed
+                        .types()
+                        .iter()
+                        .filter(|(_, row)| row.owner == role)
+                        .collect::<Vec<_>>();
+                    let [(role_id, declared)] = rows.as_slice() else {
+                        panic!("missing unique written type entry")
+                    };
+                    assert_ne!(*role_id, checked.type_entry);
+                    assert_eq!(Some(*declared), original.1.type_entries().get(*role_id));
+                    assert_eq!(declared.actual, entry.actual);
+                    assert_eq!(declared.status, TypeStatus::Known);
+                    assert_eq!(&text[written.range().start..written.range().end], "set");
+                }
+                for (_, formula) in inference.formulas().iter() {
+                    assert_eq!(formula.status, FormulaStatus::Checked);
+                    assert_eq!(formula.kind, FormulaKind::Equality);
+                    let node = typed.nodes().node(formula.site.node()).unwrap();
+                    assert_eq!(node.typing, TypingState::Successful);
+                    assert!(node.links.type_entry.is_none() && node.links.context.is_none());
+                    assert!(
+                        formula.terms.iter().all(|site| inference
+                            .terms()
+                            .iter()
+                            .any(|(_, term)| &term.site == site))
+                    );
+                }
+                let owner = symbols.symbols().iter().next().unwrap();
+                let namespace = NamespacePath::new(module.path().as_str());
+                let labels = ProofLabelSourceCollector::new(
+                    ast,
+                    &module,
+                    namespace.clone(),
+                    owner.contribution(),
+                    &source,
+                )
+                .and_then(|collector| collector.collect_with_theorem_owners(symbols))
+                .unwrap();
+                let resolved = LabelResolver::new(labels.projections()).resolve(
+                    &module,
+                    &namespace,
+                    labels.references(),
+                );
+                let label_before = (labels.clone(), resolved.clone());
+                let old_check = SourceVariableSemanticsChecker::check_theorem_skeletons(
+                    &source, base, &scope, symbols, &labels, &resolved, None,
+                );
+                let new_check = SourceVariableSemanticsChecker::check_theorem_skeletons(
+                    &source, &typed, &scope, symbols, &labels, &resolved, None,
+                );
+                if case < 2 {
+                    let old_check = old_check?;
+                    let new_check = new_check?;
+                    assert!(std::ptr::eq(new_check.typed_ast(), &typed));
+                    assert!(std::ptr::eq(old_check.typed_ast(), base));
+                    assert_eq!(new_check.owners(), old_check.owners());
+                    assert_eq!(new_check.scope(), old_check.scope());
+                    assert_eq!(new_check.labels(), old_check.labels());
+                    assert_eq!(new_check.resolved_labels(), old_check.resolved_labels());
+                    let expected = lower_source_theorem_skeletons(&old_check, None)?;
+                    let core = lower_source_theorem_skeletons(&new_check, None)?;
+                    assert_eq!(core, expected);
+                    assert_eq!(core.source_id(), source.source_id());
+                    assert_eq!(core.module_id(), source.module());
+                    assert!(
+                        core.proofs().iter().all(
+                            |(_, proof)| proof.status == CoreProofStatus::PendingAutomaticProof
+                        )
+                    );
+                    assert_eq!(core.obligation_seeds().len(), 2);
+                    assert!(
+                        core.obligation_seeds()
+                            .iter()
+                            .all(|(_, seed)| seed.status == ObligationSeedStatus::Active
+                                && seed.goal.is_some())
+                    );
+                    let vcs = generate_core_vcs(&core, snapshot_id(777))?;
+                    assert_eq!(vcs, generate_core_vcs(&expected, snapshot_id(777))?);
+                    assert_eq!(vcs.vcs().len(), 2);
+                    assert!(
+                        vcs.vcs()
+                            .iter()
+                            .all(|vc| vc.status == mizar_vc::vc_ir::VcStatus::Open)
+                    );
+                    assert_ne!(vcs.vcs()[0].local_context, vcs.vcs()[1].local_context);
+                    assert_eq!(labels.references().len(), 1);
+                    assert_eq!(core, lower_source_theorem_skeletons(&new_check, None)?);
+                    assert_eq!(vcs, generate_core_vcs(&core, snapshot_id(777))?);
+                } else {
+                    assert_eq!(new_check.unwrap_err(), old_check.unwrap_err());
+                    assert!(inference.formulas().iter().any(|(_, formula)| {
+                        let references = formula
+                            .terms
+                            .iter()
+                            .map(|site| {
+                                inference
+                                    .terms()
+                                    .iter()
+                                    .find(|(_, term)| &term.site == site)
+                                    .unwrap()
+                                    .1
+                                    .reference
+                                    .clone()
+                            })
+                            .collect::<Vec<_>>();
+                        references[0] != references[1]
+                    }));
+                    if case < 5 {
+                        assert!(scope.bindings().iter().any(|binding| {
+                            !scope
+                                .references()
+                                .iter()
+                                .any(|reference| reference.binding() == binding.id())
+                        }));
+                    }
+                }
+                let original_replay =
+                    TermFormulaChecker::check_source_theorem_equalities(&source, symbols, &scope)?;
+                assert_eq!(original_replay, original);
+                let replay = TermFormulaChecker::check_source_theorem_equalities_with_typed_tables(
+                    &source, symbols, &scope,
+                )?;
+                assert_eq!(replay, (bindings, inference, typed));
+                assert_eq!(label_before, (labels, resolved));
+                assert_eq!(
+                    before,
+                    (
+                        source,
+                        symbols.clone(),
+                        scope,
+                        ast.snapshot_text(),
+                        frontend.source.clone()
+                    )
+                );
+            }
+        }
+        fs::remove_dir_all(root).unwrap();
+        Ok(())
+    }
+
+    #[test]
+    fn source_theorem_typed_inference_preserves_upstream_errors() {
+        use mizar_checker::type_checker::TermFormulaChecker;
+        use mizar_resolve::{
+            declarations::DeclarationShellCollector,
+            env::{NamespacePath, SymbolEnv, SymbolEnvIndexes},
+            names::{SourceVariableScopeInput, SourceVariableScopeResolver},
+            resolved_ast::{ModuleId, SurfaceResolvedArena},
+            symbols::{SignatureProjectionExtractor, validate_source_proof_occurrences},
+        };
+        use mizar_session::{ModulePath, PackageId};
+        use mizar_syntax::{SurfaceAstBuilder, SurfaceNodeKind as K};
+        let text = "theorem T: for X being set, Unused being set holds X = X proof let X be set; thus X = X; end;";
+        let ast = parse(text);
+        let module = ModuleId::new(
+            PackageId::new("typed-inference-test"),
+            ModulePath::new("owners"),
+        );
+        let source = SurfaceResolvedArena::lower(&ast, &module).unwrap();
+        let shells = DeclarationShellCollector::new(&ast, &module).collect();
+        let collected = SignatureProjectionExtractor::new(
+            &ast,
+            &shells,
+            NamespacePath::new(module.path().as_str()),
+        )
+        .collect(&module);
+        let symbols = collected.env();
+        let scope = SourceVariableScopeResolver::resolve_proof_occurrences(
+            SourceVariableScopeInput::new(&ast, &module, symbols),
+        )
+        .unwrap();
+        assert!(
+            TermFormulaChecker::check_source_theorem_equalities(&source, symbols, &scope).is_ok()
+        );
+        let empty = SymbolEnv::new(module.clone(), SymbolEnvIndexes::default());
+        let foreign_module = ModuleId::new(PackageId::new("foreign"), ModulePath::new("other"));
+        let mut controls = vec![
+            (
+                "foreign environment",
+                source.clone(),
+                empty.clone(),
+                scope.clone(),
+            ),
+            (
+                "foreign source",
+                SurfaceResolvedArena::lower(&ast, &foreign_module).unwrap(),
+                symbols.clone(),
+                scope.clone(),
+            ),
+        ];
+        for control in ["foreign scope", "recovered source"] {
+            let mut builder = SurfaceAstBuilder::new(ast.source_id);
+            let mut rebuilt = Vec::new();
+            for view in ast.node_views() {
+                let children = view
+                    .children()
+                    .iter()
+                    .map(|id| rebuilt[id.index()])
+                    .collect();
+                rebuilt.push(match view.kind() {
+                    K::Token(token)
+                        if control == "foreign scope" && token.text.as_ref() == "Unused" =>
+                    {
+                        builder.add_token(token.kind, "Hidden", view.range())
+                    }
+                    K::Token(token)
+                        if control == "recovered source" && token.text.as_ref() == "=" =>
+                    {
+                        builder.add_recovered_token(token.kind, token.text.clone(), view.range())
+                    }
+                    K::Token(token) => {
+                        builder.add_token(token.kind, token.text.clone(), view.range())
+                    }
+                    kind => builder.add_node(kind.clone(), view.range(), children),
+                });
+            }
+            let changed = builder.finish(Some(rebuilt[ast.root().unwrap().index()]), None);
+            if control == "foreign scope" {
+                let foreign = SourceVariableScopeResolver::resolve_proof_occurrences(
+                    SourceVariableScopeInput::new(&changed, &module, symbols),
+                )
+                .unwrap();
+                assert_eq!(foreign.source_id(), scope.source_id());
+                assert_eq!(foreign.references(), scope.references());
+                assert_ne!(foreign.bindings(), scope.bindings());
+                controls.push((control, source.clone(), symbols.clone(), foreign));
+            } else {
+                controls.push((
+                    control,
+                    SurfaceResolvedArena::lower(&changed, &module).unwrap(),
+                    symbols.clone(),
+                    scope.clone(),
+                ));
+            }
+        }
+        let unsupported = parse(&text.replace("set", "object"));
+        let unsupported_source = SurfaceResolvedArena::lower(&unsupported, &module).unwrap();
+        let shells = DeclarationShellCollector::new(&unsupported, &module).collect();
+        let collected = SignatureProjectionExtractor::new(
+            &unsupported,
+            &shells,
+            NamespacePath::new(module.path().as_str()),
+        )
+        .collect(&module);
+        let unsupported_scope = SourceVariableScopeResolver::resolve_proof_occurrences(
+            SourceVariableScopeInput::new(&unsupported, &module, collected.env()),
+        )
+        .unwrap();
+        assert_eq!(
+            validate_source_proof_occurrences(
+                &unsupported_source,
+                collected.env(),
+                &unsupported_scope
+            ),
+            Ok(())
+        );
+        controls.push((
+            "unsupported type",
+            unsupported_source.clone(),
+            collected.env().clone(),
+            unsupported_scope.clone(),
+        ));
+        controls.push(("combined precedence", unsupported_source, empty, scope));
+        for (control, source, symbols, scope) in controls {
+            let before = (source.clone(), symbols.clone(), scope.clone());
+            let expected =
+                TermFormulaChecker::check_source_theorem_equalities(&source, &symbols, &scope)
+                    .unwrap_err();
+            if control == "combined precedence" {
+                assert_eq!(
+                    expected,
+                    validate_source_proof_occurrences(&source, &symbols, &scope).unwrap_err()
+                );
+            }
+            assert_eq!(
+                TermFormulaChecker::check_source_theorem_equalities_with_typed_tables(
+                    &source, &symbols, &scope
+                )
+                .unwrap_err(),
+                expected,
+                "{control}"
+            );
+            let expected_replay =
+                TermFormulaChecker::check_source_theorem_equalities(&source, &symbols, &scope)
+                    .unwrap_err();
+            assert_eq!(
+                TermFormulaChecker::check_source_theorem_equalities_with_typed_tables(
+                    &source, &symbols, &scope
+                )
+                .unwrap_err(),
+                expected_replay,
+                "{control}"
+            );
+            assert_eq!(before, (source, symbols, scope));
+        }
+    }
 }

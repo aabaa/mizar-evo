@@ -11,6 +11,7 @@
 > 配下の対応契約文書（例: 258B3M2B2B3E の owner partition 等、旧JA本文のみが
 > 載せていた従属的詳細も契約が保持する）。
 
+- [x] [元ソースの型推論表の結合](../../task_contracts/ja/CHECKER-SOURCE-THEOREM-TYPED-INFERENCE.md).
 - [x] [元ソースの定理等式の抽出と型推論](../../task_contracts/ja/CHECKER-SOURCE-THEOREM-EQUALITY-PRODUCER.md).
 
 ## 状態の凡例
