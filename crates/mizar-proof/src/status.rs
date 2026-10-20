@@ -271,6 +271,29 @@ pub fn check_source_theorem_reflexivity_metadata(
         .map(|(result, decision, _, bytes, metadata)| (result, decision, metadata, bytes))
 }
 
+/// Returns opaque trusted metadata from one fresh source theorem check.
+pub fn source_theorem_reflexivity_trusted_witness_metadata(
+    source: &mizar_resolve::resolved_ast::SurfaceResolvedArena,
+    check: &mizar_checker::type_checker::SourceTheoremCheck<'_>,
+    symbols: &mizar_resolve::env::SymbolEnv,
+    snapshot: mizar_session::BuildSnapshotId,
+    vc_id: VcId,
+    policy: &VerifierPolicy,
+) -> Result<crate::witness_store::TrustedKernelWitnessMetadata, String> {
+    let origin = KernelEvidenceOrigin::BuiltinDischarge;
+    let (result, decision, metadata, _) =
+        check_source_theorem_reflexivity_metadata(source, check, symbols, snapshot, vc_id, policy)?;
+    let metadata = match (decision.class, metadata) {
+        (crate::policy::CandidatePolicyClass::DischargedBuiltin, Some(metadata)) => metadata,
+        _ => return Err("theorem.proof.invalid_source_trusted_witness_metadata".to_owned()),
+    };
+    crate::witness_store::TrustedKernelWitnessMetadata::from_kernel_policy_input(
+        &KernelPolicyInput::from_kernel_result(&result, origin),
+        metadata,
+    )
+    .map_err(|error| error.to_string())
+}
+
 /// Selects freshly checked original theorem reflexivity without an ATP encoding.
 pub fn select_source_theorem_reflexivity(
     source: &mizar_resolve::resolved_ast::SurfaceResolvedArena,

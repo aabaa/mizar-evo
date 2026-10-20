@@ -243,11 +243,9 @@ impl TrustedKernelWitnessMetadata {
     /// Creates witness metadata from a kernel-derived policy input and matching
     /// artifact kernel-acceptance projection.
     ///
-    /// This test-only constructor stands in for the future kernel/artifact
-    /// boundary token. Production callers cannot synthesize trusted
-    /// `KernelAcceptanceMetadata` inside `mizar-proof`.
-    #[cfg(test)]
-    fn from_kernel_policy_input(
+    /// The internal checked producer binds its fresh kernel result to the
+    /// same-call artifact metadata; generic caller metadata remains untrusted.
+    pub(crate) fn from_kernel_policy_input(
         input: &crate::policy::KernelPolicyInput,
         kernel_acceptance: KernelAcceptanceMetadata,
     ) -> Result<Self, ProofWitnessStoreError> {

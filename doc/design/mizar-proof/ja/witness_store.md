@@ -44,10 +44,8 @@ cache record、backend-reported axiom list は trusted witness draft を作ら�
 
 witness handling には 3 つの状態がある:
 
-1. `ProofWitnessDraft`: producer-owned bytes、trusted kernel metadata、対応する status
-   projection。kernel metadata token は、kernel/artifact integration が copy 済みの
-   acceptance metadata を供給するまで public constructor を持たない。store されず、
-   publish されず、それ自体では cache validation にならない。
+1. `ProofWitnessDraft`: producer-owned bytes、trusted metadata、対応 status projection。保存・公開されず、それ自体で cache validation しない。
+   metadata field は opaque、generic binder は crate-internal とし、限定 [Status producer](./status.md#source-theorem-reflexivity-trusted-witness-metadata) だけがこの token を fresh に供給する。
 2. `ProofWitnessStagedRef`: `stage` が返す。stable witness path candidate、payload hash、
    payload schema、obligation identity、selected class、provenance metadata と、
    publish 可能な `KernelVerified` evidence では artifact builder が commit 前に
@@ -197,7 +195,7 @@ publish できず、non-trusted status を昇格させられず、trusted `used_
 | `WITNESS10-G002` | `deferred` | artifact manifest commit integration が、`publish_ref` に必要な committed witness publication proof を供給する。これには committed main artifact への binding と `VerifiedArtifact.proof_witnesses` の exact coverage が含まれる。この spec は token/validation contract を定義するが manifest は書かない。 |
 | `WITNESS10-G003` | `deferred` | formula/substitution witness bytes 以外の concrete payload schema は producer-owned のままである。store は schema identity と bytes を hash するが backend proof payload は解釈しない。 |
 | `WITNESS11-G001` | `external_dependency_gap` | task 11 は、`mizar-artifact` が artifact-owned committed publication proof token を公開するまで `CommittedWitnessPublicationProof` を opaque かつ external には construct 不可能に保つ。internal test は token を構築してよいが、production caller は artifact integration を待たなければならない。 |
-| `WITNESS11-G002` | `external_dependency_gap` | task 11 は、kernel/artifact boundary が copy 済みの `KernelAcceptanceMetadata` を公開するまで `TrustedKernelWitnessMetadata` を opaque かつ external には construct 不可能に保つ。`mizar-proof` は caller が合成した kernel acceptance metadata を trusted witness material として受理してはならない。 |
+| `WITNESS11-G002` | `external_dependency_gap` | 汎用 caller-metadata 受入れは未提供。opaque token は限定 fresh [Status producer](./status.md#source-theorem-reflexivity-trusted-witness-metadata) だけが供給する。 |
 | `WITNESS11-G003` | `deferred` | task 11 は payload schema が canonical bytes を要求するかを記録し、その attestation 下では empty payload を reject するが、byte-level canonicality は concrete payload schema が validator を公開するまで producer-owned のままである。witness hash は引き続き exact bytes と schema identity を覆う。 |
 | `WITNESS11-G004` | `deferred` | task 11 は `dependency_artifact_fingerprint` を producer-owned provenance として保持する。committed dependency artifact と cache validation への binding は artifact/cache integration まで deferred であり、それ単体で witness status を昇格してはならない。 |
 

@@ -47,11 +47,8 @@ lists do not produce trusted witness drafts.
 
 Witness handling has three states:
 
-1. `ProofWitnessDraft`: producer-owned bytes plus trusted kernel metadata and
-   the matching status projection. The kernel metadata token has no public
-   constructor until the kernel/artifact integration supplies copied
-   acceptance metadata. The draft is not stored, not published, and not
-   cache-validating by itself.
+1. `ProofWitnessDraft`: producer-owned bytes plus trusted metadata and matching status projection; not stored, published or cache-validating by itself.
+   Metadata fields stay opaque with a crate-internal generic binder; only the bounded [Status producer](./status.md#source-theorem-reflexivity-trusted-witness-metadata) freshly supplies this token.
 2. `ProofWitnessStagedRef`: returned by `stage`. It records a stable witness
    path candidate, payload hash, payload schema, obligation identity, selected
    class, provenance metadata, and, for publishable `KernelVerified` evidence,
@@ -212,7 +209,7 @@ publish witnesses, upgrade non-trusted statuses, or create trusted
 | `WITNESS10-G002` | `deferred` | Artifact manifest commit integration supplies the committed witness publication proof needed by `publish_ref`, including binding to the committed main artifact and exact coverage of `VerifiedArtifact.proof_witnesses`. This spec defines the token/validation contract; it does not write manifests. |
 | `WITNESS10-G003` | `deferred` | Concrete payload schemas beyond formula/substitution witness bytes remain producer-owned. The store hashes schema identity and bytes but does not interpret backend proof payloads. |
 | `WITNESS11-G001` | `external_dependency_gap` | Task 11 keeps `CommittedWitnessPublicationProof` opaque and externally unconstructible until `mizar-artifact` exposes an artifact-owned committed publication proof token. Internal tests may construct the token; production callers must wait for artifact integration. |
-| `WITNESS11-G002` | `external_dependency_gap` | Task 11 keeps `TrustedKernelWitnessMetadata` opaque and externally unconstructible until the kernel/artifact boundary exposes copied `KernelAcceptanceMetadata`. `mizar-proof` must not accept caller-synthesized kernel acceptance metadata as trusted witness material. |
+| `WITNESS11-G002` | `external_dependency_gap` | Generic caller-metadata admission remains unavailable; the opaque token has only the bounded fresh [Status producer](./status.md#source-theorem-reflexivity-trusted-witness-metadata). |
 | `WITNESS11-G003` | `deferred` | Task 11 records whether a payload schema requires canonical bytes and rejects empty payloads under that attestation, but byte-level canonicality remains producer-owned until concrete payload schemas expose validators. The witness hash still covers exact bytes and schema identity. |
 | `WITNESS11-G004` | `deferred` | Task 11 preserves `dependency_artifact_fingerprint` as producer-owned provenance. Binding it to committed dependency artifacts and cache validation remains deferred to artifact/cache integration; it must not promote witness status by itself. |
 
