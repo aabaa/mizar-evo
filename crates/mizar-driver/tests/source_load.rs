@@ -22012,3 +22012,483 @@ fn native_theorem_module_publication_preserves_refusals_and_publisher_boundaries
         );
     }
 }
+
+#[test]
+fn native_theorem_module_summary_candidate_preserves_captured_rows_and_identity() {
+    use mizar_build::module_index::ModuleId as BuildModuleId;
+    use mizar_frontend::{
+        orchestration::Frontend,
+        source::{FrontendSourceLoader, diagnostic_file_path, source_unit_from_loaded},
+    };
+    let private = include_str!(
+        "../../../tests/miz/pass/resolve/pass_declaration_symbol_private_theorem_visibility_001.miz"
+    );
+    let statuses = include_str!(
+        "../../../tests/miz/pass/theorems/pass_proof_verification_theorem_status_open_assumed_001.miz"
+    );
+    let quantified = "for X being set holds X = X";
+    for (text, public) in [
+        (private.into(), vec![("UsePriv1", "theorem", quantified)]),
+        (
+            private.replace("theorem UsePriv1", "lemma UsePriv1"),
+            vec![("UsePriv1", "lemma", quantified)],
+        ),
+        (
+            private.replace("\ntheorem UsePriv1", "\nprivate theorem UsePriv1"),
+            vec![],
+        ),
+        (
+            statuses.to_owned(),
+            vec![
+                ("OpenT1", "open theorem", quantified),
+                ("AxT1", "assumed theorem", quantified),
+            ],
+        ),
+        (String::new(), vec![]),
+        (
+            format!("{private}\ntheorem Numeral: 0 = 0\nproof\n thus 0 = 0 by UsePriv1;\nend;\n"),
+            vec![
+                ("UsePriv1", "theorem", quantified),
+                ("Numeral", "theorem", "0 = 0"),
+            ],
+        ),
+        (
+            format!(
+                "\u{feff}{}",
+                private
+                    .replace("holds X = X", "holds X ::= 日本語 formula =:: = X")
+                    .replace('\n', "\r\n")
+            ),
+            vec![("UsePriv1", "theorem", quantified)],
+        ),
+    ] {
+        for open in [false, true] {
+            let fixture = Fixture::new(text.as_bytes());
+            let ids = InMemorySessionIdAllocator::new();
+            let snapshots = SnapshotRegistry::new();
+            let (mut draft, input) = fixture.submit_request(vec![], vec![]);
+            draft.source_inputs.versions.clear();
+            let descriptor = SourceInput {
+                package_id: PackageId::new("alpha"),
+                module_path: ModulePath::new("main"),
+                normalized_path: fixture.version.normalized_path.clone(),
+                edition: Edition::new("2025"),
+                origin: if open {
+                    SourceOriginInput::OpenBuffer {
+                        uri: format!(
+                            "file://{}",
+                            fixture.root.join("alpha/src/main.miz").display()
+                        ),
+                        expected_version: 7,
+                        actual_version: 7,
+                        text: std::sync::Arc::from(text.as_str()),
+                    }
+                } else {
+                    SourceOriginInput::Disk {
+                        path: "src/main.miz".into(),
+                    }
+                },
+            };
+            if open {
+                fixture.write(&[0xff]);
+            }
+            let session = draft
+                .capture_sources(
+                    &ids,
+                    &snapshots,
+                    vec![(
+                        DiskSourceLoader::new(fixture.root.join("alpha")),
+                        descriptor.clone(),
+                    )],
+                )
+                .unwrap();
+            let mut builder = PhaseRegistryBuilder::new();
+            builder.register_source_load();
+            let submission = CompilerDriver::new(builder.build().unwrap())
+                .submit_captured(session, &ids, &snapshots, input)
+                .unwrap();
+            let (inputs, _) = native_disk_lookup_context(&submission, &ids);
+            let module = BuildModuleId::new(PackageId::new("alpha"), ModulePath::new("main"));
+            let (_, loaded, captured_input) =
+                &inputs.captured.unwrap().native_sources().unwrap()[0];
+            let output = Frontend::new(
+                FrontendSourceLoader::new(DiskSourceLoader::new(fixture.root.join("alpha"))),
+                inputs.dependency_lexical_provider(&[]),
+                MizarParserSeam,
+            )
+            .run_loaded(source_unit_from_loaded(
+                loaded.clone(),
+                diagnostic_file_path(captured_input),
+            ))
+            .unwrap();
+            assert!(output.diagnostics.is_empty(), "{:?}", output.diagnostics);
+            assert!(output.cache_keys.ast.is_some());
+            let ast = output.ast.as_ref().unwrap();
+            let resolver_module =
+                ResolverModuleId::new(PackageId::new("alpha"), ModulePath::new("main"));
+            let shells = DeclarationShellCollector::new(ast, &resolver_module).collect();
+            let collection =
+                SignatureProjectionExtractor::new(ast, &shells, NamespacePath::new("main"))
+                    .collect(&resolver_module);
+            let identity = ModuleSummaryIdentity {
+                package_id: "alpha".to_owned(),
+                package_version: Some("0.1.0".to_owned()),
+                lockfile_identity: None,
+                module_path: "main".to_owned(),
+                language_edition: "2025".to_owned(),
+            };
+            let expected = collection.source_theorem_module_summary_candidate(&output, &identity);
+            let summary = expected.as_ref().unwrap().as_ref().unwrap();
+            assert_eq!(summary.module, identity);
+            assert_eq!(summary.source_hash, loaded.source_hash);
+            assert_eq!(
+                summary.source_hash,
+                inputs.snapshot.source_versions[0].source_hash
+            );
+            assert_eq!(
+                summary.source_hash,
+                mizar_session::hash_text(&output.source.source_text)
+            );
+            assert_eq!(output.source.source_id, loaded.source_id);
+            assert_eq!(
+                output.source.source_text.as_ref(),
+                text.trim_start_matches('\u{feff}').replace("\r\n", "\n")
+            );
+            assert_eq!(summary.exported_symbols.len(), public.len());
+            assert_eq!(summary.exported_labels.len(), public.len());
+            for (name, prefix, formula) in &public {
+                let owner = collection
+                    .env()
+                    .symbols()
+                    .iter()
+                    .find(|owner| owner.primary_spelling() == *name)
+                    .unwrap();
+                let row = summary
+                    .exported_symbols
+                    .iter()
+                    .find(|row| row.fully_qualified_name == owner.symbol().fqn().as_str())
+                    .unwrap();
+                assert_eq!(row.visibility, "public");
+                assert_eq!(
+                    row.declaration_kind,
+                    prefix.split_whitespace().last().unwrap()
+                );
+                assert_eq!(
+                    row.rendered_signature,
+                    format!("{prefix} {name} : {formula}")
+                );
+                assert_eq!(row.proof_status, None);
+                let label = summary
+                    .exported_labels
+                    .iter()
+                    .find(|row| row.label == *name)
+                    .unwrap();
+                assert_eq!(label.owner_fully_qualified_name, row.fully_qualified_name);
+            }
+            assert!(summary.lexical_summary.contributions.is_empty());
+            let before = (
+                inputs.snapshot.clone(),
+                inputs.build_plan.clone(),
+                inputs.module_index.clone(),
+                loaded.clone(),
+                captured_input.clone(),
+                output.clone(),
+                collection.clone(),
+            );
+            for stage in 0..3 {
+                if stage == 1 {
+                    fixture.write(b"open theorem Changed: 0 = 1;\n");
+                }
+                if stage == 2 {
+                    fs::remove_file(fixture.root.join("alpha/src/main.miz")).unwrap();
+                }
+                assert_eq!(
+                    inputs.native_theorem_module_summary_candidate(&module),
+                    expected,
+                    "open={open}, stage={stage}"
+                );
+            }
+            assert_eq!(
+                (
+                    inputs.snapshot.clone(),
+                    inputs.build_plan.clone(),
+                    inputs.module_index.clone(),
+                    loaded.clone(),
+                    captured_input.clone(),
+                    output.clone(),
+                    collection.clone()
+                ),
+                before
+            );
+            assert_eq!(captured_input, &descriptor);
+        }
+    }
+}
+
+#[test]
+fn native_theorem_module_summary_candidate_preserves_lower_results_and_binding_refusals() {
+    use mizar_build::{module_index::ModuleId as BuildModuleId, planner::PackagePlanSource};
+    use mizar_frontend::{
+        orchestration::Frontend,
+        source::{FrontendSourceLoader, diagnostic_file_path, source_unit_from_loaded},
+    };
+    use mizar_resolve::resolved_ast::{
+        LabelResolution, SurfaceResolvedArena, source_theorem_resolved_ast,
+    };
+    let private = include_str!(
+        "../../../tests/miz/pass/resolve/pass_declaration_symbol_private_theorem_visibility_001.miz"
+    );
+    for (case, text) in [
+        ("unsupported", format!("{private}\nreserve Y for set;\n")),
+        ("citation", private.replace("by PrivT1", "by Missing")),
+        ("diagnostic", "theorem Broken: 0 = ;\n".to_owned()),
+        ("variable", private.replace("thus X = X;", "thus Y = Y;")),
+        ("import", format!("import std.core;\n{private}")),
+        (
+            "private-lexical",
+            format!(
+                "{private}\ndefinition\n let X, Y be set;\n private pred Hidden: X secret Y means X = Y;\nend;\n"
+            ),
+        ),
+        (
+            "duplicate",
+            include_str!(
+                "../../../tests/miz/fail/resolve/fail_resolve_duplicate_theorem_symbol_001.miz"
+            )
+            .to_owned(),
+        ),
+    ] {
+        let fixture = Fixture::new(text.as_bytes());
+        let foreign = Fixture::new(text.as_bytes());
+        let ids = InMemorySessionIdAllocator::new();
+        let snapshots = SnapshotRegistry::new();
+        let mut submissions = Vec::new();
+        for fixture in [&fixture, &foreign] {
+            let (mut draft, input) = fixture.submit_request(vec![], vec![]);
+            draft.source_inputs.versions.clear();
+            let descriptor = SourceInput {
+                package_id: PackageId::new("alpha"),
+                module_path: ModulePath::new("main"),
+                normalized_path: fixture.version.normalized_path.clone(),
+                edition: Edition::new("2025"),
+                origin: SourceOriginInput::Disk {
+                    path: "src/main.miz".into(),
+                },
+            };
+            let session = draft
+                .capture_sources(
+                    &ids,
+                    &snapshots,
+                    vec![(
+                        DiskSourceLoader::new(fixture.root.join("alpha")),
+                        descriptor,
+                    )],
+                )
+                .unwrap();
+            let mut builder = PhaseRegistryBuilder::new();
+            builder.register_source_load();
+            submissions.push(
+                CompilerDriver::new(builder.build().unwrap())
+                    .submit_captured(session, &ids, &snapshots, input)
+                    .unwrap(),
+            );
+        }
+        let (inputs, _) = native_disk_lookup_context(&submissions[0], &ids);
+        let (foreign_inputs, _) = native_disk_lookup_context(&submissions[1], &ids);
+        let module = BuildModuleId::new(PackageId::new("alpha"), ModulePath::new("main"));
+        let (_, loaded, descriptor) = &inputs.captured.unwrap().native_sources().unwrap()[0];
+        let output = Frontend::new(
+            FrontendSourceLoader::new(DiskSourceLoader::new(fixture.root.join("alpha"))),
+            inputs.dependency_lexical_provider(&[]),
+            MizarParserSeam,
+        )
+        .run_loaded(source_unit_from_loaded(
+            loaded.clone(),
+            diagnostic_file_path(descriptor),
+        ))
+        .unwrap();
+        let diagnostic = ["diagnostic", "import"].contains(&case);
+        assert_eq!(!output.diagnostics.is_empty(), diagnostic);
+        let ast = output.ast.as_ref().unwrap();
+        let resolver_module =
+            ResolverModuleId::new(PackageId::new("alpha"), ModulePath::new("main"));
+        let shells = DeclarationShellCollector::new(ast, &resolver_module).collect();
+        let collection =
+            SignatureProjectionExtractor::new(ast, &shells, NamespacePath::new("main"))
+                .collect(&resolver_module);
+        let identity = ModuleSummaryIdentity {
+            package_id: "alpha".to_owned(),
+            package_version: Some("0.1.0".to_owned()),
+            lockfile_identity: None,
+            module_path: "main".to_owned(),
+            language_edition: "2025".to_owned(),
+        };
+        let lower = collection.source_theorem_module_summary_candidate(&output, &identity);
+        let before = (
+            inputs.snapshot.clone(),
+            inputs.build_plan.clone(),
+            inputs.module_index.clone(),
+            loaded.clone(),
+            descriptor.clone(),
+            output.clone(),
+            collection.clone(),
+        );
+        match case {
+            "variable" => {
+                let arena = SurfaceResolvedArena::lower(ast, &resolver_module).unwrap();
+                let error = source_theorem_resolved_ast(ast, &arena, collection.env()).unwrap_err();
+                assert_eq!(lower, Err(error));
+            }
+            "citation" => {
+                let arena = SurfaceResolvedArena::lower(ast, &resolver_module).unwrap();
+                let semantic = source_theorem_resolved_ast(ast, &arena, collection.env())
+                    .unwrap()
+                    .unwrap();
+                assert!(
+                    semantic
+                        .label_refs()
+                        .iter()
+                        .any(|(_, row)| matches!(row.resolution(), LabelResolution::Unresolved(_)))
+                );
+                assert_eq!(
+                    mizar_resolve::symbols::source_theorem_module_candidates(
+                        ast,
+                        &arena,
+                        collection.env()
+                    ),
+                    Ok(None)
+                );
+                assert!(
+                    lower
+                        .as_ref()
+                        .unwrap()
+                        .as_ref()
+                        .unwrap()
+                        .exported_symbols
+                        .iter()
+                        .all(|row| row.proof_status.is_none())
+                );
+            }
+            "private-lexical" => {
+                assert!(!output.tokens.local_declarations().user_symbols.is_empty());
+                assert_eq!(
+                    collection.export_frontend_lexical_contributions(&output, &identity),
+                    Some(Vec::new())
+                );
+                assert_eq!(lower, Ok(None));
+            }
+            "duplicate" => {
+                assert!(!collection.diagnostics().is_empty());
+                assert_eq!(lower, Ok(None));
+            }
+            _ => assert_eq!(lower, Ok(None)),
+        }
+        assert_eq!(
+            inputs.native_theorem_module_summary_candidate(&module),
+            lower,
+            "{case}"
+        );
+        assert_eq!(
+            (
+                inputs.snapshot.clone(),
+                inputs.build_plan.clone(),
+                inputs.module_index.clone(),
+                loaded.clone(),
+                descriptor.clone(),
+                output.clone(),
+                collection.clone()
+            ),
+            before
+        );
+        if case != "citation" {
+            continue;
+        }
+        for requested in [
+            BuildModuleId::new(PackageId::new("alpha"), ModulePath::new("missing")),
+            BuildModuleId::new(PackageId::new("foreign"), ModulePath::new("main")),
+        ] {
+            assert_eq!(
+                inputs
+                    .native_theorem_module_summary_candidate(&requested)
+                    .unwrap_err(),
+                "native theorem summary requires one captured source version"
+            );
+        }
+        let mut ambiguous = inputs.snapshot.clone();
+        ambiguous
+            .source_versions
+            .push(ambiguous.source_versions[0].clone());
+        let mut absent = inputs.snapshot.clone();
+        absent.source_versions.clear();
+        for snapshot in [&ambiguous, &absent] {
+            assert_eq!(
+                SourceLoadInputs {
+                    snapshot,
+                    captured: None,
+                    ..inputs
+                }
+                .native_theorem_module_summary_candidate(&module)
+                .unwrap_err(),
+                "native theorem summary requires one captured source version"
+            );
+        }
+        let mut ambiguous_plan = inputs.build_plan.clone();
+        ambiguous_plan
+            .packages
+            .push(ambiguous_plan.packages[0].clone());
+        let mut wrong_root = inputs.build_plan.clone();
+        let PackagePlanSource::Workspace { root, .. } = &mut wrong_root.packages[0].source else {
+            panic!("workspace")
+        };
+        *root = "foreign".to_owned();
+        let mut wrong_edition = inputs.build_plan.clone();
+        wrong_edition.packages[0].edition = Edition::new("1900");
+        let mut foreign_index = foreign_inputs.module_index.clone();
+        foreign_index.modules[0].module.package = PackageId::new("foreign");
+        let mut ambiguous_index = inputs.module_index.clone();
+        ambiguous_index
+            .modules
+            .push(ambiguous_index.modules[0].clone());
+        for invalid in [
+            SourceLoadInputs {
+                captured: None,
+                ..inputs
+            },
+            SourceLoadInputs {
+                captured: foreign_inputs.captured,
+                ..inputs
+            },
+            SourceLoadInputs {
+                build_plan: foreign_inputs.build_plan,
+                ..inputs
+            },
+            SourceLoadInputs {
+                build_plan: &ambiguous_plan,
+                ..inputs
+            },
+            SourceLoadInputs {
+                build_plan: &wrong_root,
+                ..inputs
+            },
+            SourceLoadInputs {
+                build_plan: &wrong_edition,
+                ..inputs
+            },
+            SourceLoadInputs {
+                module_index: &foreign_index,
+                ..inputs
+            },
+            SourceLoadInputs {
+                module_index: &ambiguous_index,
+                ..inputs
+            },
+        ] {
+            assert_eq!(
+                invalid
+                    .native_theorem_module_summary_candidate(&module)
+                    .unwrap_err(),
+                "native theorem summary capture binding failed"
+            );
+        }
+    }
+}

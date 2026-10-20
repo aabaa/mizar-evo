@@ -540,6 +540,7 @@ artifact/test のフォローアップタスクが所有する。本 crate の�
 48. **[Import-discovered native diagnostic index](../../task_contracts/ja/DRIVER-IMPORT-DISCOVERED-NATIVE-DIAGNOSTIC-INDEX.md).** [x]
 
 49. **[Native theorem module publication](../../task_contracts/ja/DRIVER-NATIVE-THEOREM-MODULE-PUBLICATION.md).** [x]
+50. **[Native theorem summary candidate](../../task_contracts/ja/DRIVER-NATIVE-THEOREM-MODULE-SUMMARY-CANDIDATE.md).** [x]
 
 ## 推奨検証
 

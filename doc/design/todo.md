@@ -740,6 +740,7 @@ Pre-audit 5B.3 and Gate S1 block only consumers requiring their outputs.
    [Source theorem module semantic payload](./task_contracts/en/RESOLVE-SOURCE-THEOREM-MODULE-SEMANTIC-PAYLOAD.md) supplies the actual pair and its bounded internal phase bytes; coherent service publication and complete outputs remain separate.
    [Source public theorem export candidates](./task_contracts/en/RESOLVE-SOURCE-PUBLIC-THEOREM-EXPORT-ROWS.md) supply unpublished original-owner rows with absent projected proof status; complete outgoing summaries, services and publication remain separate.
    [Source theorem summary candidates](./task_contracts/en/RESOLVE-SOURCE-THEOREM-MODULE-SUMMARY-CANDIDATE.md) compose actual Frontend-bound rows and source-checked empty inventories into an unpublished Artifact shape; native identity binding, services, general summaries and publication remain separate.
+   [Captured native theorem summary candidates](./task_contracts/en/DRIVER-NATIVE-THEOREM-MODULE-SUMMARY-CANDIDATE.md) bind protected captured Frontend execution and the existing native identity projection to that raw shape; complete build authentication, services and publication remain separate.
    [Native theorem module publication](./mizar-driver/en/frontend_adapter.md#native-theorem-module-publication) seals the coherent bounded pair/storage/semantic assembly as a prerequisite; real services, complete summaries and runtime integration remain separate.
 
    These slices do not register ModuleResolver or later semantic services;
