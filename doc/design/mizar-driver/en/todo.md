@@ -571,6 +571,8 @@ the owning producers when the paired tasks land.
 
 48. **[Import-discovered native diagnostic index](../../task_contracts/en/DRIVER-IMPORT-DISCOVERED-NATIVE-DIAGNOSTIC-INDEX.md).** [x]
 
+49. **[Native theorem module publication](../../task_contracts/en/DRIVER-NATIVE-THEOREM-MODULE-PUBLICATION.md).** [x]
+
 ## Recommended Verification
 
 Run after each task:
