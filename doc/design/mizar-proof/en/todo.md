@@ -487,6 +487,7 @@ layer consumes both; one alignment task is owned here.
 47. **[Same-check trusted witness metadata and wire](../../task_contracts/en/PROOF-SOURCE-THEOREM-TRUSTED-WITNESS-WIRE.md).** [x]
 
 48. **[Genuine theorem internal witness draft](../../task_contracts/en/PROOF-SOURCE-THEOREM-WITNESS-DRAFT.md).** [x]
+49. **[Existing witness payload hash value](../../task_contracts/en/PROOF-WITNESS-PAYLOAD-HASH-VALUE.md).** [x]
 
 ## Recommended Verification
 

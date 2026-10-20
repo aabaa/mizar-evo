@@ -463,6 +463,7 @@ kernel の拒否語彙と evidence 契約を訂正した。policy 層はその�
 47. **[Same-check trusted witness metadata and wire](../../task_contracts/ja/PROOF-SOURCE-THEOREM-TRUSTED-WITNESS-WIRE.md).** [x]
 
 48. **[Genuine theorem internal witness draft](../../task_contracts/ja/PROOF-SOURCE-THEOREM-WITNESS-DRAFT.md).** [x]
+49. **[Existing witness payload hash value](../../task_contracts/ja/PROOF-WITNESS-PAYLOAD-HASH-VALUE.md).** [x]
 
 ## 推奨検証
 

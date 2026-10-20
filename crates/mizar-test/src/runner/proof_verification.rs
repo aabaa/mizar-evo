@@ -10197,6 +10197,11 @@ mod term_proof_tests {
 
     #[test]
     fn source_theorem_reflexivity_witness_draft_matches_captured_inputs() {
+        use mizar_artifact::store::{
+            CanonicalJson, HashClass, PublishedArtifactPath, PublishedArtifactReadOptions,
+            artifact_hash_domain, canonical_json_bytes, read_published_artifact,
+            write_published_artifact,
+        };
         use mizar_artifact::{
             registration_summary::{ArtifactHashClass, ArtifactHashRef},
             store::SchemaVersion,
@@ -10206,6 +10211,7 @@ mod term_proof_tests {
             parsing::MizarParserSeam,
             source::{FrontendSourceLoader, source_unit_from_loaded},
         };
+        use mizar_proof::witness_store::stage;
         use mizar_proof::{
             policy::{
                 KernelEvidenceFormat as Format, KernelEvidenceOrigin as Origin,
@@ -10454,6 +10460,109 @@ mod term_proof_tests {
                     assert_eq!(actual.2.witness_path(), witness_path);
                     assert!(!root.join(&witness_path).exists());
                     assert_eq!((policy, witness_path), inputs_before);
+                    let draft_before = actual.2.clone();
+                    let staged = stage(actual.2.clone()).unwrap();
+                    let mut payload_hex = String::new();
+                    for byte in &wire {
+                        payload_hex.push_str(&format!("{byte:02x}"));
+                    }
+                    let mut evidence_hex = String::new();
+                    for byte in actual.2.selected_evidence_hash().as_bytes() {
+                        evidence_hex.push_str(&format!("{byte:02x}"));
+                    }
+                    let mut policy_hex = String::new();
+                    let policy_fingerprint = actual.2.provenance().verifier_policy_fingerprint();
+                    for byte in policy_fingerprint.as_bytes() {
+                        policy_hex.push_str(&format!("{byte:02x}"));
+                    }
+                    let expected_value = CanonicalJson::Object(std::collections::BTreeMap::from([
+                        (
+                            "hash_domain".to_owned(),
+                            CanonicalJson::String("mizar-proof/witness-payload/v1".to_owned()),
+                        ),
+                        (
+                            "obligation_fingerprint".to_owned(),
+                            CanonicalJson::String(
+                                actual.2.obligation_fingerprint().to_artifact_hash_string(),
+                            ),
+                        ),
+                        (
+                            "payload_bytes_hex".to_owned(),
+                            CanonicalJson::String(payload_hex),
+                        ),
+                        (
+                            "payload_schema_family".to_owned(),
+                            CanonicalJson::String(actual.2.payload_schema().family().to_owned()),
+                        ),
+                        (
+                            "payload_schema_version".to_owned(),
+                            CanonicalJson::String(actual.2.payload_schema().version().to_string()),
+                        ),
+                        (
+                            "selected_evidence_hash".to_owned(),
+                            CanonicalJson::String(evidence_hex),
+                        ),
+                        (
+                            "verifier_policy_fingerprint".to_owned(),
+                            CanonicalJson::String(policy_hex),
+                        ),
+                    ]));
+                    let mut value = actual.2.payload_hash_value();
+                    assert_eq!(value, expected_value);
+                    let hash = staged.staged_payload_hash();
+                    let schema = actual.2.payload_schema();
+                    let domain = artifact_hash_domain(schema.family(), schema.version());
+                    assert_eq!(hash.class, ArtifactHashClass::Artifact);
+                    assert_eq!(hash.schema_family, schema.family());
+                    assert_eq!(hash.schema_version, schema.version());
+                    assert_eq!(domain.class(), HashClass::Artifact);
+                    assert_eq!(
+                        domain,
+                        artifact_hash_domain(&hash.schema_family, hash.schema_version)
+                    );
+                    assert_eq!(domain.hash(&expected_value, &[]), hash.digest);
+                    assert!(staged.artifact_reference_candidate().is_none());
+                    let transport_root = root.join("unpublished-witness-hash-values");
+                    let transport_path =
+                        PublishedArtifactPath::new(actual.2.witness_path()).unwrap();
+                    let expected_bytes = canonical_json_bytes(&expected_value);
+                    for _ in 0..2 {
+                        assert_eq!(actual.2.payload_hash_value(), expected_value);
+                        let written = write_published_artifact(
+                            &transport_root,
+                            &transport_path,
+                            &value,
+                            &domain,
+                            &[],
+                        )
+                        .unwrap();
+                        assert_eq!(written.path, transport_path);
+                        assert_eq!(written.artifact_hash, hash.digest);
+                        let read = read_published_artifact(
+                            &transport_root,
+                            &transport_path,
+                            PublishedArtifactReadOptions {
+                                artifact_hash_domain: Some(&domain),
+                                expected_artifact_hash: Some(hash.digest),
+                                ..PublishedArtifactReadOptions::default()
+                            },
+                        )
+                        .unwrap();
+                        assert_eq!(read.path, transport_path);
+                        assert_eq!(read.value, expected_value);
+                        assert_eq!(read.artifact_hash, Some(hash.digest));
+                        assert_eq!(
+                            fs::read(transport_root.join(actual.2.witness_path())).unwrap(),
+                            expected_bytes
+                        );
+                    }
+                    let CanonicalJson::Object(object) = &mut value else {
+                        unreachable!("the whole expected value is an object")
+                    };
+                    object.clear();
+                    assert_eq!(actual.2, draft_before);
+                    assert_eq!(actual.2.payload_hash_value(), expected_value);
+                    assert!(!root.join(actual.2.witness_path()).exists());
                     captures.push(snapshot.id);
                 }
                 assert_eq!(format!("{check:?}"), check_before);

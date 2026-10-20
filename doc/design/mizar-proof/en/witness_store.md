@@ -101,6 +101,12 @@ produce the same witness hash. If any trusted input changes, including accepted
 evidence hash, policy fingerprint, obligation fingerprint, payload schema
 version, or payload bytes, the witness hash changes or staging is rejected.
 
+### Payload hash value
+
+`ProofWitnessDraft::payload_hash_value(&self) -> CanonicalJson` returns an owned copy of the existing seven-key generic OBJECT through the unchanged hash encoder: hash_domain, obligation_fingerprint, payload_bytes_hex, payload_schema_family, payload_schema_version, selected_evidence_hash and verifier_policy_fingerprint. It preserves exact existing encodings/domains; caller edits do not mutate the draft. No I/O, validation or new producer/schema is added. This hash input lacks the top-level schema_version required for [published schemas](../../mizar-artifact/en/store.md#schema-versions); actual files remain [unreferenced and unpublished](../../mizar-artifact/en/store.md#store-layout). Published schema ownership is deferred; never add a header/exclusion, substitute raw STRING/composite profiles, or change staging, Builtin/publication guards, acceptance or reuse credit.
+
+Extend only existing source_theorem_reflexivity_witness_draft_matches_captured_inputs after its original pure checks; preserve every old line/helper/fixture. Genuine native Disk/OpenBuffer capture supplies the draft. Independently assemble the whole seven-key expected OBJECT from the genuine draft/wire; compare the new value, existing Artifact writer/readback whole value/full canonical bytes, writer/read/stage digest and family/version/domain, replay and draft purity. Use existing temporary root's unpublished-witness-hash-values subroot with the unchanged draft path so old no-file assertions still hold. Builtin staged reference stays None; never forge committed metadata or add a helper/lower I/O matrix. No publication, currentness, Hit, CompleteSlice or broader gate credit follows.
+
 ## Publication References
 
 For `KernelVerified` formula/substitution evidence, `stage` prepares an

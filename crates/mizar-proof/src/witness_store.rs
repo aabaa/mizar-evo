@@ -424,6 +424,20 @@ impl ProofWitnessDraft {
         &self.payload_bytes
     }
 
+    /// Returns the existing canonical staged-hash value.
+    ///
+    /// This hash input is not a published top-level witness schema.
+    #[must_use]
+    pub fn payload_hash_value(&self) -> CanonicalJson {
+        witness_payload_hash_json_from_inputs(
+            &self.obligation_fingerprint,
+            self.selected_evidence_hash,
+            &self.payload_schema,
+            &self.payload_bytes,
+            self.provenance.verifier_policy_fingerprint(),
+        )
+    }
+
     #[must_use]
     pub fn witness_path(&self) -> &str {
         &self.witness_path

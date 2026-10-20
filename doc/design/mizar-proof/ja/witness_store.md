@@ -94,6 +94,12 @@ time、process id、wall-clock time、random data、cache-hit metadata、manifes
 version、payload bytes など trusted input が変わる場合、witness hash は変わるか staging
 が reject される。
 
+### Payload hash value
+
+`ProofWitnessDraft::payload_hash_value(&self) -> CanonicalJson` は既存 hash encoder を変更せず、7 key の generic OBJECT の owned copy を返す。key は hash_domain、obligation_fingerprint、payload_bytes_hex、payload_schema_family、payload_schema_version、selected_evidence_hash、verifier_policy_fingerprint とする。既存 encoding/domain を保持し、caller の編集は draft を変更しない。I/O、validation、新 producer/schema は追加しない。[published schema](../../mizar-artifact/ja/store.md#schema-versions) に必須の top-level schema_version を持たず、実 file は [unreferenced/unpublished](../../mizar-artifact/ja/store.md#store-layout) のままである。published schema の ownership は保留し、header/exclusion の追加、raw STRING/composite profile の代用、staging・Builtin/publication guard・acceptance・reuse credit の変更は禁止する。
+
+既存 source_theorem_reflexivity_witness_draft_matches_captured_inputs の元の pure check 後だけを拡張し、従来の全 line/helper/fixture を保持する。実 native Disk/OpenBuffer capture の draft/wire から独立に全7 key の expected OBJECT を組み、新しい値、既存 Artifact writer/readback の全値・canonical 全 bytes、writer/read/stage digest と family/version/domain、replay、draft purity を比較する。既存 temporary root の unpublished-witness-hash-values subroot で draft path は変更せず、従来の no-file assertion を維持する。Builtin staged reference は None のままとし、committed metadata の捏造、新 helper、lower I/O matrix は禁止する。publication、currentness、Hit、CompleteSlice、広い gate 達成とはしない。
+
 ## Publication References
 
 `KernelVerified` formula/substitution evidence では、`stage` が次を持つ unpublished
