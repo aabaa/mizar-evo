@@ -517,6 +517,105 @@ pub fn project_source_theorem_reflexivity_witness(
     Ok((selection, reference, bytes))
 }
 
+/// Builds an internal draft from one fresh theorem check and retained snapshot metadata.
+pub fn source_theorem_reflexivity_witness_draft(
+    source: &mizar_resolve::resolved_ast::SurfaceResolvedArena,
+    check: &mizar_checker::type_checker::SourceTheoremCheck<'_>,
+    symbols: &mizar_resolve::env::SymbolEnv,
+    snapshot: &mizar_session::BuildSnapshot,
+    vc_id: VcId,
+    policy: &VerifierPolicy,
+    witness_path: &str,
+) -> Result<
+    (
+        ProofStatusProjection,
+        mizar_vc::dependency_slice::DependencySlice,
+        crate::witness_store::ProofWitnessDraft,
+    ),
+    String,
+> {
+    use mizar_artifact::registration_summary::{ArtifactHashClass, ArtifactHashRef};
+
+    use crate::{
+        selection::{VcProofSelection, merge_artifact_proof_selections},
+        witness_store::{
+            ProofWitnessDraft, ProofWitnessPayloadSchema, ProofWitnessProvenance,
+            TrustedKernelWitnessMetadata,
+        },
+    };
+
+    let (identity, slice) =
+        source_theorem_obligation_identity(source, check, symbols, snapshot.id, vc_id)?;
+    let origin = KernelEvidenceOrigin::BuiltinDischarge;
+    let (result, decision, metadata, wire) = check_source_theorem_reflexivity_metadata(
+        source,
+        check,
+        symbols,
+        snapshot.id,
+        vc_id,
+        policy,
+    )?;
+    let invalid = || "theorem.proof.invalid_source_witness_draft".to_owned();
+    let metadata = match (decision.class, metadata) {
+        (crate::policy::CandidatePolicyClass::DischargedBuiltin, Some(metadata)) => metadata,
+        _ => return Err(invalid()),
+    };
+    let selection = select_source_theorem_reflexivity_result(&result, decision, origin, policy)?;
+    let merged = merge_artifact_proof_selections([], [VcProofSelection::new(vc_id, selection)])
+        .map_err(|error| error.to_string())?;
+    let [selection] = <[_; 1]>::try_from(merged).map_err(|_| invalid())?;
+    let projection = project_status(ProofStatusProjectionInput::new(
+        selection,
+        policy.clone(),
+        identity,
+    ))
+    .map_err(|error| error.to_string())?;
+    let reuse = projection.reuse_metadata();
+    let provenance = ProofWitnessProvenance::new(
+        snapshot.id.fingerprint(),
+        "mizar-proof/source-theorem-reflexivity-witness-draft/v1",
+        reuse.selected_candidate_id().cloned().ok_or_else(invalid)?,
+        origin,
+        reuse.vc_fingerprint(),
+        reuse.dependency_slice_fingerprint(),
+        snapshot.dependency_artifact_fingerprint(),
+        policy.policy_fingerprint().hash(),
+        metadata.checker_schema_version,
+        metadata.evidence_schema_version,
+    )
+    .map_err(|error| error.to_string())?
+    .with_accepted_result_hash(metadata.accepted_result_hash.digest);
+    let payload_schema = ProofWitnessPayloadSchema::with_canonical_bytes_required(
+        "mizar-proof/source-theorem-reflexivity-checked-wire",
+        metadata.evidence_schema_version,
+        true,
+    )
+    .map_err(|error| error.to_string())?;
+    let trusted = TrustedKernelWitnessMetadata::from_kernel_policy_input(
+        &KernelPolicyInput::from_kernel_result(&result, origin),
+        metadata,
+    )
+    .map_err(|error| error.to_string())?;
+    let draft = ProofWitnessDraft::new(
+        projection.obligation_id(),
+        reuse.obligation_anchor().clone(),
+        ArtifactHashRef::new(
+            ArtifactHashClass::Interface,
+            "mizar-proof/source-theorem-original-obligation",
+            SchemaVersion::new(1, 0),
+            reuse.obligation_fingerprint(),
+        ),
+        &projection,
+        trusted,
+        payload_schema,
+        wire,
+        witness_path,
+        provenance,
+    )
+    .map_err(|error| error.to_string())?;
+    Ok((projection, slice, draft))
+}
+
 /// Projects genuine source theorem reflexivity with its full original dependency slice.
 pub fn project_source_theorem_reflexivity_status(
     source: &mizar_resolve::resolved_ast::SurfaceResolvedArena,

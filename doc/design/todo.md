@@ -791,6 +791,7 @@ permit; each source-integration slice waits for its actual upstream outputs.
    [Theorem raw metadata and checked wire](./task_contracts/en/PROOF-SOURCE-THEOREM-REFLEXIVITY-METADATA.md) retain actual same-call check products; trusted witness/publication and reuse remain open.
    [Fresh theorem trusted witness metadata](./task_contracts/en/PROOF-SOURCE-THEOREM-TRUSTED-WITNESS-METADATA.md) supplies only an opaque same-check token; staging/publication, reuse and general acceptance remain open.
    [Same-check trusted witness wire](./task_contracts/en/PROOF-SOURCE-THEOREM-TRUSTED-WITNESS-WIRE.md) retains the actual checked bytes beside the opaque token; matching status/draft/staging, publication and reuse remain separate.
+   [Genuine theorem internal draft](./task_contracts/en/PROOF-SOURCE-THEOREM-WITNESS-DRAFT.md) composes original identity, same-check evidence and retained snapshot metadata; staging/publication, reuse and complete footprints remain separate.
    [Unpublished theorem witness projection](./task_contracts/en/PROOF-SOURCE-THEOREM-WITNESS-PROJECTION.md) binds genuine original identity and same-call checked context/payload; trusted staging/publication and reuse remain open.
    [Same-result theorem used-axioms status](./task_contracts/en/PROOF-SOURCE-THEOREM-USED-AXIOMS-STATUS.md) retains genuine reference metadata with the original conservative slice; full imported-FQN recording, publication and reuse remain open.
 2. [ ] [Built-in evidence candidates](./task_contracts/en/PREATP-FORMULA-EVIDENCE.md)

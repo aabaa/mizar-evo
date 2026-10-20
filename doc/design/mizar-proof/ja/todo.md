@@ -462,6 +462,8 @@ kernel の拒否語彙と evidence 契約を訂正した。policy 層はその�
 46. **[Source theorem reflexivity trusted witness metadata](../../task_contracts/ja/PROOF-SOURCE-THEOREM-TRUSTED-WITNESS-METADATA.md).** [x]
 47. **[Same-check trusted witness metadata and wire](../../task_contracts/ja/PROOF-SOURCE-THEOREM-TRUSTED-WITNESS-WIRE.md).** [x]
 
+48. **[Genuine theorem internal witness draft](../../task_contracts/ja/PROOF-SOURCE-THEOREM-WITNESS-DRAFT.md).** [x]
+
 ## 推奨検証
 
 各タスクの後で実行する:

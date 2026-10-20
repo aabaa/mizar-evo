@@ -59,6 +59,7 @@ matching crate or module-level boundary comment:
 | `VcProofSelection`, `ProofSelectionSource`, `ArtifactProofSelection`, `ArtifactProofSelectionError`, `merge_artifact_proof_selections` | Artifact proof selection merge section in `selection.md`. | Merge canonical order, source/class compatibility, duplicate source, trusted precedence, same-class tie-break, and non-trusted preservation tests. | consistent |
 
 ### Status
+`source_theorem_reflexivity_witness_draft`: [sole API owner](./status.md#source-theorem-witness-draft).
 `source_theorem_reflexivity_trusted_witness_metadata_with_wire`: [sole API owner](./status.md#source-theorem-trusted-witness-metadata-with-wire).
 `source_theorem_reflexivity_trusted_witness_metadata`: [sole API owner](./status.md#source-theorem-reflexivity-trusted-witness-metadata).
 
