@@ -517,6 +517,51 @@ pub fn project_source_theorem_reflexivity_witness(
     Ok((selection, reference, bytes))
 }
 
+/// Acquires an internal draft through the original source's genuine proof pipeline.
+pub fn source_theorem_reflexivity_witness_draft_from_original(
+    source: &mizar_resolve::resolved_ast::SurfaceResolvedArena,
+    symbols: &mizar_resolve::env::SymbolEnv,
+    snapshot: &mizar_session::BuildSnapshot,
+    policy: &VerifierPolicy,
+    witness_path: &str,
+) -> Result<
+    (
+        ProofStatusProjection,
+        mizar_vc::dependency_slice::DependencySlice,
+        crate::witness_store::ProofWitnessDraft,
+    ),
+    String,
+> {
+    use mizar_checker::type_checker::{SourceVariableSemanticsChecker, TermFormulaChecker};
+    use mizar_vc::vc_ir::{GenerationSchemaVersion, VcSchemaVersion};
+
+    let (scope, labels, resolved) = mizar_resolve::symbols::source_proof_inputs(source, symbols)?;
+    let (_, _, typed) =
+        TermFormulaChecker::check_source_theorem_equalities(source, symbols, &scope)?;
+    let check = SourceVariableSemanticsChecker::check_theorem_skeletons(
+        source, &typed, &scope, symbols, &labels, &resolved, None,
+    )?;
+    let core = mizar_core::elaborator::lower_source_theorem_skeletons(&check, None)?;
+    let vcs = mizar_vc::generator::generate_source_theorem_vcs(
+        &core,
+        snapshot.id,
+        &GenerationSchemaVersion::new("source-theorem-local-v1"),
+        &VcSchemaVersion::new("vc-v1"),
+    )?;
+    let [vc] = vcs.vcs() else {
+        return Err("theorem.proof.invalid_source_witness_draft".to_owned());
+    };
+    source_theorem_reflexivity_witness_draft(
+        source,
+        &check,
+        symbols,
+        snapshot,
+        vc.id,
+        policy,
+        witness_path,
+    )
+}
+
 /// Builds an internal draft from one fresh theorem check and retained snapshot metadata.
 pub fn source_theorem_reflexivity_witness_draft(
     source: &mizar_resolve::resolved_ast::SurfaceResolvedArena,

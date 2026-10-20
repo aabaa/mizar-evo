@@ -59,6 +59,7 @@ task 15 は未 exercise だった 3 つの validation path に focused unit cove
 | `VcProofSelection`、`ProofSelectionSource`、`ArtifactProofSelection`、`ArtifactProofSelectionError`、`merge_artifact_proof_selections` | `selection.md` の artifact proof selection merge section。 | merge canonical order、source/class compatibility、duplicate source、trusted precedence、same-class tie-break、non-trusted preservation tests。 | consistent |
 
 ### Status
+`source_theorem_reflexivity_witness_draft_from_original`: [唯一の API 所有元](./status.md#original-source-witness-draft-acquisition)。
 `source_theorem_reflexivity_witness_draft`: [sole API owner](./status.md#source-theorem-witness-draft).
 `source_theorem_reflexivity_trusted_witness_metadata_with_wire`: [唯一の API 所有元](./status.md#source-theorem-trusted-witness-metadata-with-wire)。
 `source_theorem_reflexivity_trusted_witness_metadata`: [唯一の API 所有元](./status.md#source-theorem-reflexivity-trusted-witness-metadata).
