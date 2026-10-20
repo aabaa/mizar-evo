@@ -42,6 +42,28 @@ pub fn validate_source_symbol_env(
     validated_source_symbol_ast(source, symbols).map(|_| ())
 }
 
+/// Authenticates all proof occurrence rows against the original source and symbols.
+pub fn validate_source_proof_occurrences(
+    source: &SurfaceResolvedArena,
+    symbols: &SymbolEnv,
+    scope: &crate::names::ResolvedVariableScope,
+) -> Result<(), String> {
+    let ast = validated_source_symbol_ast(source, symbols)?;
+    let invalid = "source proof occurrences do not match the original source";
+    let actual = crate::names::SourceVariableScopeResolver::resolve_proof_occurrences(
+        crate::names::SourceVariableScopeInput::new(&ast, source.module(), symbols),
+    )
+    .map_err(|_| invalid.to_owned())?;
+    if scope.source_id() != actual.source_id()
+        || scope.module_id() != actual.module_id()
+        || scope.bindings() != actual.bindings()
+        || scope.references() != actual.references()
+    {
+        return Err(invalid.to_owned());
+    }
+    Ok(())
+}
+
 fn validated_source_symbol_ast(
     source: &SurfaceResolvedArena,
     symbols: &SymbolEnv,

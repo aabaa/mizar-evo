@@ -644,6 +644,7 @@ IR 所有権: [01.ir_layers.md](../../architecture/ja/01.ir_layers.md)。
 48. **[Source theorem module semantic payload](../../task_contracts/ja/RESOLVE-SOURCE-THEOREM-MODULE-SEMANTIC-PAYLOAD.md).** [x]
 49. **[Source public theorem export candidates](../../task_contracts/ja/RESOLVE-SOURCE-PUBLIC-THEOREM-EXPORT-ROWS.md).** [x]
 50. **[Source theorem ModuleSummary candidate](../../task_contracts/ja/RESOLVE-SOURCE-THEOREM-MODULE-SUMMARY-CANDIDATE.md).** [x]
+51. **[Original source proof occurrences validation](../../task_contracts/ja/RESOLVE-SOURCE-PROOF-SCOPE-VALIDATION.md).** [x]
 
 ## crate close-out
 
