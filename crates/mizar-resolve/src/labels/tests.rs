@@ -6694,3 +6694,495 @@ fn source_theorem_module_semantic_payload_preserves_errors_and_participation() {
         assert_ne!(streams[0], streams[1], "{case}");
     }
 }
+
+#[test]
+fn source_public_theorem_export_candidates_preserve_real_surface_and_identity() {
+    let fixture = include_str!(
+        "../../../../tests/miz/pass/resolve/pass_declaration_symbol_private_theorem_visibility_001.miz"
+    );
+    let identity = mizar_artifact::module_summary::ModuleSummaryIdentity {
+        package_id: "pkg".to_owned(),
+        package_version: Some("1.2.3".to_owned()),
+        lockfile_identity: Some("lock:source-test".to_owned()),
+        module_path: "main".to_owned(),
+        language_edition: "2025".to_owned(),
+    };
+    let quantified = "theorem UsePriv1 : for X being set holds X = X";
+    let statuses = include_str!(
+        "../../../../tests/miz/pass/theorems/pass_proof_verification_theorem_status_open_assumed_001.miz"
+    );
+    let mixed = "lemma Zed: 12 = 0\nproof\n  thus 12 = 0;\nend;\ntheorem Alpha: 0 = 12\nproof\n  thus 0 = 12 by Zed, Zed;\nend;\nprivate theorem Hidden: 0 = 0\nproof\n  thus 0 = 0;\nend;\n";
+    let schema = mizar_artifact::module_summary::current_schema_version();
+    let mut baseline = None;
+    let mut baseline_source = None;
+    for case in 0..12 {
+        let text = match case {
+            1 => fixture.replace("theorem UsePriv1", "lemma UsePriv1"),
+            2 => fixture.replace("\ntheorem UsePriv1", "\nprivate theorem UsePriv1"),
+            3 => mixed.to_owned(),
+            4 => statuses.to_owned(),
+            5 => fixture.replace("by PrivT1;", "by PrivT1, PrivT1;"),
+            6 => format!(
+                ":: λ\n{}",
+                fixture.replace("holds X = X", "holds\n X  =  X :: trivia\n")
+            ),
+            7 => fixture.replace("holds X = X", "holds X <> X"),
+            8 => statuses.replace("open theorem", "assumed theorem"),
+            _ => fixture.to_owned(),
+        };
+        let expected = match case {
+            1 => vec![("UsePriv1", "lemma UsePriv1 : for X being set holds X = X")],
+            2 => vec![],
+            3 => vec![
+                ("Zed", "lemma Zed : 12 = 0"),
+                ("Alpha", "theorem Alpha : 0 = 12"),
+            ],
+            4 => vec![
+                (
+                    "OpenT1",
+                    "open theorem OpenT1 : for X being set holds X = X",
+                ),
+                ("AxT1", "assumed theorem AxT1 : for X being set holds X = X"),
+            ],
+            8 => vec![
+                (
+                    "OpenT1",
+                    "assumed theorem OpenT1 : for X being set holds X = X",
+                ),
+                ("AxT1", "assumed theorem AxT1 : for X being set holds X = X"),
+            ],
+            7 => vec![(
+                "UsePriv1",
+                "theorem UsePriv1 : for X being set holds X <> X",
+            )],
+            _ => vec![("UsePriv1", quantified)],
+        };
+        let (package, path) = match case {
+            9 => ("other-package", "main"),
+            10 => ("pkg", "Nested.Main"),
+            _ => ("pkg", "main"),
+        };
+        let (mut ast, module, namespace, env, arena) = parsed_private_theorem_fixture(&text);
+        if case == 11 {
+            let root = std::env::temp_dir()
+                .join(format!("mizar-export-relocation-{}", std::process::id()));
+            let path = root.join("src/main.miz");
+            std::fs::create_dir_all(path.parent().unwrap()).unwrap();
+            std::fs::write(&path, &text).unwrap();
+            let allocator = InMemorySessionIdAllocator::new();
+            let snapshot = BuildSnapshotId::from_published_schema_str(&format!(
+                "mizar-session-build-snapshot-v1:{}",
+                "31".repeat(Hash::BYTE_LEN)
+            ))
+            .unwrap();
+            let skipped = allocator.next_source_id(snapshot).unwrap();
+            let output = mizar_frontend::orchestration::Frontend::new(
+                mizar_frontend::source::FrontendSourceLoader::new(
+                    mizar_session::DiskSourceLoader::new(&root),
+                ),
+                NoImportedSummaries,
+                mizar_frontend::parsing::MizarParserSeam,
+            )
+            .run(
+                mizar_frontend::source::SourceUnitRequest {
+                    snapshot,
+                    input: mizar_session::SourceInput {
+                        package_id: PackageId::new("pkg"),
+                        module_path: ModulePath::new("main"),
+                        normalized_path: mizar_session::normalize_path(&root, &path).unwrap(),
+                        edition: mizar_session::Edition::new("2025"),
+                        origin: mizar_session::SourceOriginInput::Disk { path },
+                    },
+                },
+                &allocator,
+            )
+            .unwrap();
+            std::fs::remove_dir_all(root).unwrap();
+            assert!(output.diagnostics.is_empty());
+            let relocated = output.ast.unwrap();
+            assert_ne!(relocated.source_id, skipped);
+            assert_ne!(relocated.source_id, ast.source_id);
+            ast = relocated;
+        }
+        // Alternate package/path are honest supplied metadata with real recollection.
+        let (module, namespace, env, arena) = if matches!(case, 9..=11) {
+            let module = module_id(package, path);
+            let namespace = NamespacePath::new(path);
+            let shells =
+                crate::declarations::DeclarationShellCollector::new(&ast, &module).collect();
+            let env =
+                crate::symbols::SignatureProjectionExtractor::new(&ast, &shells, namespace.clone())
+                    .collect(&module)
+                    .into_env();
+            let arena = SurfaceResolvedArena::lower(&ast, &module).unwrap();
+            (module, namespace, env, arena)
+        } else {
+            (module, namespace, env, arena)
+        };
+        let identity = mizar_artifact::module_summary::ModuleSummaryIdentity {
+            package_id: package.to_owned(),
+            module_path: path.to_owned(),
+            ..identity.clone()
+        };
+        let before = (ast.clone(), arena.clone(), env.clone(), identity.clone());
+        let formulas = source_public_theorem_formula_candidates(&ast, &arena, &env)
+            .unwrap()
+            .unwrap();
+        assert_eq!(formulas.len(), expected.len(), "{case}");
+        let mut expected_rows = Vec::new();
+        for (name, header) in expected {
+            let kind = if header.starts_with("lemma ") {
+                "lemma"
+            } else {
+                "theorem"
+            };
+            let owner = env
+                .symbols()
+                .iter()
+                .find(|owner| owner.primary_spelling() == name)
+                .unwrap();
+            assert_eq!(owner.symbol().module(), &module);
+            assert_eq!(owner.namespace(), &namespace);
+            assert_eq!(namespace.as_str(), path);
+            assert_eq!(owner.visibility(), Visibility::Public);
+            assert_eq!(owner.export_status(), ExportStatus::Exported);
+            let expected_kind = match kind {
+                "lemma" => crate::env::SymbolKind::Lemma,
+                _ => crate::env::SymbolKind::Theorem,
+            };
+            assert_eq!(owner.kind(), expected_kind);
+            let formula = ast.node_view(formulas[owner.symbol()]).unwrap();
+            assert!(formula.as_formula_expression().is_some());
+            // Expected byte boundaries come from the literal source, not a row traversal.
+            let prefix = format!("{}:", header.split(" : ").next().unwrap());
+            let start = text.find(&prefix).unwrap();
+            let end = if header.starts_with("open ") || header.starts_with("assumed ") {
+                start + text[start..].find(';').unwrap() + 1
+            } else {
+                start + text[start..].find("end;").unwrap() + 4
+            };
+            assert_eq!(
+                owner.origin().anchor(),
+                &SourceAnchor::Range(SourceRange {
+                    source_id: ast.source_id,
+                    start,
+                    end
+                })
+            );
+            assert!(formula.range().start > start && formula.range().end < end);
+            let fqn = owner.symbol().fqn().as_str();
+            let symbol_json = mizar_artifact::store::CanonicalJson::Object(
+                [
+                    ("origin_id", fqn),
+                    ("fully_qualified_name", fqn),
+                    ("visibility", "public"),
+                    ("declaration_kind", kind),
+                    ("rendered_signature", header),
+                ]
+                .into_iter()
+                .map(|(k, v)| (k.into(), mizar_artifact::store::CanonicalJson::string(v)))
+                .chain([
+                    (
+                        "namespace_path".to_owned(),
+                        mizar_artifact::store::CanonicalJson::array(
+                            path.split('.')
+                                .map(mizar_artifact::store::CanonicalJson::string),
+                        ),
+                    ),
+                    (
+                        "proof_status".to_owned(),
+                        mizar_artifact::store::CanonicalJson::Null,
+                    ),
+                ])
+                .collect(),
+            );
+            let module_json = mizar_artifact::store::CanonicalJson::Object(
+                [
+                    ("package_id", package),
+                    ("package_version", "1.2.3"),
+                    ("lockfile_identity", "lock:source-test"),
+                    ("module_path", path),
+                    ("language_edition", "2025"),
+                ]
+                .into_iter()
+                .map(|(k, v)| (k.into(), mizar_artifact::store::CanonicalJson::string(v)))
+                .collect(),
+            );
+            let projection = mizar_artifact::store::CanonicalJson::object([
+                ("module", module_json),
+                ("symbol", symbol_json),
+            ])
+            .unwrap();
+            let fingerprint = mizar_artifact::store::CanonicalHashDomain::new(
+                mizar_artifact::store::HashClass::Interface,
+                mizar_artifact::module_summary::MODULE_SUMMARY_SCHEMA_FAMILY,
+                schema,
+            )
+            .hash(&projection, &[]);
+            expected_rows.push(mizar_artifact::module_summary::ExportedSymbolSummary {
+                origin_id: fqn.to_owned(),
+                fully_qualified_name: fqn.to_owned(),
+                namespace_path: path.split('.').map(str::to_owned).collect(),
+                visibility: "public".to_owned(),
+                declaration_kind: kind.to_owned(),
+                source_range: mizar_artifact::module_summary::SourceRangeSummary {
+                    start_byte: start as u64,
+                    end_byte: end as u64,
+                },
+                rendered_signature: header.to_owned(),
+                interface_fingerprint: fingerprint,
+                proof_status: None,
+            });
+        }
+        let rows =
+            crate::symbols::source_public_theorem_export_candidates(&ast, &arena, &env, &identity)
+                .unwrap()
+                .unwrap();
+        assert_eq!(rows, expected_rows, "{case}");
+        assert_eq!(
+            crate::symbols::source_public_theorem_export_candidates(&ast, &arena, &env, &identity)
+                .unwrap(),
+            Some(rows.clone())
+        );
+        if case == 0 {
+            baseline = Some(rows.clone());
+            baseline_source = Some(ast.source_id);
+        }
+        if case == 11 {
+            assert_eq!(&rows, &baseline.as_ref().unwrap()[..1]);
+            assert_ne!(ast.source_id, baseline_source.unwrap());
+        }
+        if matches!(case, 9 | 10) {
+            assert_ne!(
+                rows[0].interface_fingerprint,
+                baseline.as_ref().unwrap()[0].interface_fingerprint
+            );
+        }
+        if matches!(case, 5..=7) {
+            let original = &baseline.as_ref().unwrap()[0];
+            assert_ne!(rows[0].source_range, original.source_range);
+            if case == 7 {
+                assert_ne!(rows[0].rendered_signature, original.rendered_signature);
+                assert_ne!(
+                    rows[0].interface_fingerprint,
+                    original.interface_fingerprint
+                );
+            } else {
+                let mut relocated = rows[0].clone();
+                relocated.source_range = original.source_range;
+                assert_eq!(&relocated, original);
+            }
+        }
+        if case == 4 || case == 8 {
+            let open = rows
+                .iter()
+                .find(|row| row.rendered_signature.contains("OpenT1"))
+                .unwrap();
+            let stored = baseline.as_mut().unwrap();
+            if case == 4 {
+                stored.push(open.clone());
+            } else {
+                assert_ne!(open.rendered_signature, stored[1].rendered_signature);
+                assert_ne!(open.interface_fingerprint, stored[1].interface_fingerprint);
+            }
+        }
+        for field in 0..3 {
+            let mut supplied = identity.clone();
+            match field {
+                0 => supplied.package_version = Some("2.0.0".to_owned()),
+                1 => supplied.lockfile_identity = Some("lock:other".to_owned()),
+                2 => supplied.language_edition = "2027".to_owned(),
+                _ => unreachable!(),
+            }
+            let changed = crate::symbols::source_public_theorem_export_candidates(
+                &ast, &arena, &env, &supplied,
+            )
+            .unwrap()
+            .unwrap();
+            assert_eq!(changed.len(), rows.len());
+            for (actual, original) in changed.iter().zip(&rows) {
+                assert_ne!(actual.interface_fingerprint, original.interface_fingerprint);
+                let mut without_hash = actual.clone();
+                without_hash.interface_fingerprint = original.interface_fingerprint;
+                assert_eq!(&without_hash, original);
+            }
+        }
+        assert_eq!((ast, arena, env, identity.clone()), before);
+    }
+}
+
+#[test]
+fn source_public_theorem_export_candidates_preserve_refusals_and_boundaries() {
+    let fixture = include_str!(
+        "../../../../tests/miz/pass/resolve/pass_declaration_symbol_private_theorem_visibility_001.miz"
+    );
+    let identity = mizar_artifact::module_summary::ModuleSummaryIdentity {
+        package_id: "pkg".to_owned(),
+        package_version: None,
+        lockfile_identity: None,
+        module_path: "main".to_owned(),
+        language_edition: "2025".to_owned(),
+    };
+    let invalid = mizar_artifact::module_summary::ModuleSummaryIdentity {
+        language_edition: String::new(),
+        ..identity.clone()
+    };
+    for text in [
+        format!("{fixture}\nreserve Y for set;\n"),
+        format!("{fixture}\ntheorem Plain: 0 = 0;\n"),
+        fixture.replacen("private theorem", "public theorem", 1),
+    ] {
+        let (ast, _, _, env, arena) = parsed_private_theorem_fixture(&text);
+        let before = (ast.clone(), arena.clone(), env.clone());
+        let lower = source_public_theorem_formula_candidates(&ast, &arena, &env);
+        assert_eq!(lower, Ok(None));
+        for supplied in [&identity, &invalid] {
+            assert_eq!(
+                crate::symbols::source_public_theorem_export_candidates(
+                    &ast, &arena, &env, supplied
+                ),
+                Ok(None)
+            );
+        }
+        assert_eq!((ast, arena, env), before);
+    }
+    let (ast, module, namespace, env, arena) = parsed_private_theorem_fixture(fixture);
+    let (foreign, _, _, foreign_env, foreign_arena) =
+        parsed_private_theorem_fixture(&fixture.replace("UsePriv1", "Changed1"));
+    let augmented = crate::symbols::source_theorem_module_candidates(&ast, &arena, &env)
+        .unwrap()
+        .unwrap()
+        .1;
+    for (ast, arena, env) in [
+        (&foreign, &arena, &env),
+        (&ast, &foreign_arena, &env),
+        (&ast, &arena, &foreign_env),
+        (&ast, &arena, &augmented),
+    ] {
+        let before = (ast.clone(), arena.clone(), env.clone());
+        let lower = source_public_theorem_formula_candidates(ast, arena, env).unwrap_err();
+        for supplied in [&identity, &invalid] {
+            assert_eq!(
+                crate::symbols::source_public_theorem_export_candidates(ast, arena, env, supplied)
+                    .unwrap_err(),
+                lower
+            );
+        }
+        assert_eq!((ast.clone(), arena.clone(), env.clone()), before);
+    }
+    // Altered tokens are negative-only, with a real valid Alpha row ordered first.
+    let text = format!("theorem Alpha: 0 = 0\nproof\n thus 0 = 0;\nend;\n{fixture}");
+    let (ast, _, _, env, arena) = parsed_private_theorem_fixture(&text);
+    let original = source_public_theorem_formula_candidates(&ast, &arena, &env)
+        .unwrap()
+        .unwrap();
+    let owners = original.keys().collect::<Vec<_>>();
+    assert_eq!(owners.len(), 2);
+    for (id, name) in owners.iter().zip(["Alpha", "UsePriv1"]) {
+        assert_eq!(env.symbols().get(id).unwrap().primary_spelling(), name);
+    }
+    let formula = ast.node_view(original[owners[1]]).unwrap();
+    let target = ast
+        .node_views()
+        .find(|node| {
+            node.as_token()
+                .is_some_and(|token| token.text.as_ref() == "X")
+                && node.range().start >= formula.range().start
+                && node.range().end <= formula.range().end
+        })
+        .unwrap()
+        .id();
+    for mutation in 0..3 {
+        let mut builder = SurfaceAstBuilder::new(ast.source_id);
+        let mut mapped = BTreeMap::new();
+        for node in ast.node_views() {
+            let children = node.children().iter().map(|child| mapped[child]).collect();
+            let id = if let Some(token) = node.as_token() {
+                let (kind, text) = match (node.id() == target, mutation) {
+                    (true, 0) => (SurfaceTokenKind::Unknown, token.text.clone()),
+                    (true, 1) => (token.kind, "".into()),
+                    _ => (token.kind, token.text.clone()),
+                };
+                if node.id() == target && mutation == 2 {
+                    builder.add_recovered_token(kind, text, node.range())
+                } else {
+                    builder.add_token(kind, text, node.range())
+                }
+            } else {
+                builder.add_node(node.kind().clone(), node.range(), children)
+            };
+            mapped.insert(node.id(), id);
+        }
+        let rebuilt = builder.finish(Some(mapped[&ast.root().unwrap()]), None);
+        let shells =
+            crate::declarations::DeclarationShellCollector::new(&rebuilt, &module).collect();
+        let env =
+            crate::symbols::SignatureProjectionExtractor::new(&rebuilt, &shells, namespace.clone())
+                .collect(&module)
+                .into_env();
+        let arena = SurfaceResolvedArena::lower(&rebuilt, &module).unwrap();
+        let before = (rebuilt.clone(), arena.clone(), env.clone());
+        let identities = (identity.clone(), invalid.clone());
+        let lower = source_public_theorem_formula_candidates(&rebuilt, &arena, &env);
+        if mutation == 2 {
+            assert!(lower.is_err());
+            for supplied in [&identity, &invalid] {
+                assert_eq!(
+                    crate::symbols::source_public_theorem_export_candidates(
+                        &rebuilt, &arena, &env, supplied
+                    )
+                    .unwrap_err(),
+                    lower.clone().unwrap_err()
+                );
+            }
+        } else {
+            let formulas = lower.unwrap().unwrap();
+            assert_eq!(formulas.keys().collect::<Vec<_>>(), owners);
+            assert_eq!(
+                crate::symbols::source_public_theorem_export_candidates(
+                    &rebuilt, &arena, &env, &identity
+                ),
+                Ok(None)
+            );
+        }
+        assert_eq!((rebuilt, arena, env), before);
+        assert_eq!((identity.clone(), invalid.clone()), identities);
+    }
+    for text in [
+        fixture.to_owned(),
+        fixture.replace("\ntheorem UsePriv1", "\nprivate theorem UsePriv1"),
+    ] {
+        let (ast, _, _, env, arena) = parsed_private_theorem_fixture(&text);
+        let before = (ast.clone(), arena.clone(), env.clone(), identity.clone());
+        let lower = source_public_theorem_formula_candidates(&ast, &arena, &env)
+            .unwrap()
+            .unwrap();
+        assert_eq!(
+            lower.len(),
+            usize::from(!text.contains("private theorem UsePriv1"))
+        );
+        for field in 0..7 {
+            let mut supplied = identity.clone();
+            match field {
+                0 => supplied.package_id = String::new(),
+                1 => supplied.module_path = String::new(),
+                2 => supplied.language_edition = String::new(),
+                3 => supplied.package_version = Some(String::new()),
+                4 => supplied.lockfile_identity = Some(String::new()),
+                5 => supplied.package_id = "wrong-package".to_owned(),
+                6 => supplied.module_path = "wrong.path".to_owned(),
+                _ => unreachable!(),
+            }
+            let result = crate::symbols::source_public_theorem_export_candidates(
+                &ast, &arena, &env, &supplied,
+            )
+            .unwrap_err();
+            if field < 5 {
+                assert_eq!(result, supplied.canonical_json().unwrap_err().to_string());
+            } else {
+                assert_eq!(result, "export identity does not match source module");
+            }
+        }
+        assert_eq!((ast, arena, env, identity.clone()), before);
+    }
+}

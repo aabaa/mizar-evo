@@ -339,3 +339,6 @@ template substitution、type、sethood、evidence、diagnostic、rejection、che
 `MC-G020`/`MC-G021` checker-plan gap、semantic credit、
 `spec_coverage_audit.md`は不変でcoverage-audit deltaはない。
 independent source/documentation/API integration reviewは**NO FINDINGS**。
+
+## Source public theorem export candidates
+Spec11 [visibility](../../../spec/en/11.symbol_management.md#114-public-and-private-symbols)、spec12 [public surface](../../../spec/en/12.modules_and_namespaces.md#125-visibility-control-privatepublic)／[opaque imports](../../../spec/en/12.modules_and_namespaces.md#126-logic-encoding-and-separate-compilation)、spec16 [role/status](../../../spec/en/16.theorems_and_proofs.md#161-theorem-roles-and-status)／[scope](../../../spec/en/16.theorems_and_proofs.md#1642-scope-and-visibility)、architecture03 [phase5](../../architecture/en/03.module_and_symbol_resolution.md#step-5-collect-signature-environment) は bounded [source export-row owner](./symbols.md#source-public-theorem-export-candidates) に対応する。Artifact element 検証を再利用し、完全 summary／acceptance credit は与えない。

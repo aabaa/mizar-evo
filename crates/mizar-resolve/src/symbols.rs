@@ -3616,6 +3616,135 @@ pub fn source_public_theorem_signature_candidates(
     Ok(Some(signatures))
 }
 
+/// Projects unpublished original public theorem rows without proof acceptance metadata.
+pub fn source_public_theorem_export_candidates(
+    ast: &SurfaceAst,
+    source: &SurfaceResolvedArena,
+    symbols: &SymbolEnv,
+    identity: &mizar_artifact::module_summary::ModuleSummaryIdentity,
+) -> Result<Option<Vec<mizar_artifact::module_summary::ExportedSymbolSummary>>, String> {
+    let Some(formulas) =
+        crate::labels::source_public_theorem_formula_candidates(ast, source, symbols)?
+    else {
+        return Ok(None);
+    };
+    identity
+        .canonical_json()
+        .map_err(|error| error.to_string())?;
+    if identity.package_id != source.module().package().as_str()
+        || identity.module_path != source.module().path().as_str()
+    {
+        return Err("export identity does not match source module".to_owned());
+    }
+    let shells = DeclarationShellCollector::new(ast, source.module()).collect();
+    let mut rows = Vec::new();
+    for (symbol, formula) in formulas {
+        let Some(owner) = symbols.symbols().get(&symbol) else {
+            return Ok(None);
+        };
+        let (shell_kind, declaration_kind) = match owner.kind() {
+            SymbolKind::Theorem => (DeclarationShellKind::Theorem, "theorem"),
+            SymbolKind::Lemma => (DeclarationShellKind::Lemma, "lemma"),
+            _ => return Ok(None),
+        };
+        let mut matching = shells.declarations().iter().filter(|shell| {
+            shell.kind() == shell_kind
+                && shell_origin(
+                    ast.source_id,
+                    source.module(),
+                    shell,
+                    &shell_context(&shells, shell),
+                ) == *owner.origin()
+        });
+        let Some(shell) = matching.next() else {
+            return Ok(None);
+        };
+        if matching.next().is_some() {
+            return Ok(None);
+        }
+        let Some(item) = ast.node_view(shell.node_id()) else {
+            return Ok(None);
+        };
+        if item.is_recovered() || item.children().iter().filter(|id| **id == formula).count() != 1 {
+            return Ok(None);
+        }
+        let mut tokens = Vec::new();
+        for child in item.children() {
+            let mut pending = vec![*child];
+            while let Some(id) = pending.pop() {
+                let Some(node) = ast.node_view(id) else {
+                    return Ok(None);
+                };
+                if node.is_recovered() {
+                    return Ok(None);
+                }
+                if let Some(token) = node.as_token() {
+                    if !matches!(
+                        token.kind,
+                        SurfaceTokenKind::Identifier
+                            | SurfaceTokenKind::ReservedWord
+                            | SurfaceTokenKind::ReservedSymbol
+                            | SurfaceTokenKind::Numeral
+                            | SurfaceTokenKind::LexemeRun
+                            | SurfaceTokenKind::UserSymbol
+                    ) || token.text.is_empty()
+                    {
+                        return Ok(None);
+                    }
+                    tokens.push(token.text.as_ref());
+                }
+                pending.extend(node.children().iter().rev().copied());
+            }
+            if *child == formula {
+                break;
+            }
+        }
+        if tokens.is_empty() {
+            return Ok(None);
+        }
+        let range = shell.range();
+        if range.source_id != ast.source_id || range.start > range.end {
+            return Ok(None);
+        }
+        let mut row = mizar_artifact::module_summary::ExportedSymbolSummary {
+            origin_id: owner.symbol().fqn().as_str().to_owned(),
+            fully_qualified_name: owner.symbol().fqn().as_str().to_owned(),
+            namespace_path: owner
+                .namespace()
+                .as_str()
+                .split('.')
+                .map(str::to_owned)
+                .collect(),
+            visibility: "public".to_owned(),
+            declaration_kind: declaration_kind.to_owned(),
+            source_range: mizar_artifact::module_summary::SourceRangeSummary {
+                start_byte: u64::try_from(range.start)
+                    .map_err(|_| "source theorem range start exceeds u64".to_owned())?,
+                end_byte: u64::try_from(range.end)
+                    .map_err(|_| "source theorem range end exceeds u64".to_owned())?,
+            },
+            rendered_signature: tokens.join(" "),
+            interface_fingerprint: mizar_session::Hash::from_bytes(
+                [0; mizar_session::Hash::BYTE_LEN],
+            ),
+            proof_status: None,
+        };
+        row.interface_fingerprint = row
+            .compute_interface_fingerprint(
+                mizar_artifact::module_summary::current_schema_version(),
+                identity,
+            )
+            .map_err(|error| error.to_string())?;
+        rows.push(row);
+    }
+    rows.sort_by(|left, right| {
+        left.fully_qualified_name
+            .cmp(&right.fully_qualified_name)
+            .then_with(|| left.origin_id.cmp(&right.origin_id))
+    });
+    Ok(Some(rows))
+}
+
 /// Composes original theorem semantics, signatures, labels and citation dependencies.
 pub fn source_theorem_module_candidates(
     ast: &SurfaceAst,

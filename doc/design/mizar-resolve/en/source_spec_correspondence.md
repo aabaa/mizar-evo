@@ -363,3 +363,6 @@ gaps, semantic credit, and
 `spec_coverage_audit.md` remain unchanged, so the coverage audit has no delta.
 The independent source/documentation/API integration review reports **NO
 FINDINGS**.
+
+## Source public theorem export candidates
+Spec11 [visibility](../../../spec/en/11.symbol_management.md#114-public-and-private-symbols), spec12 [public surface](../../../spec/en/12.modules_and_namespaces.md#125-visibility-control-privatepublic)/[opaque imports](../../../spec/en/12.modules_and_namespaces.md#126-logic-encoding-and-separate-compilation), spec16 [role/status](../../../spec/en/16.theorems_and_proofs.md#161-theorem-roles-and-status)/[scope](../../../spec/en/16.theorems_and_proofs.md#1642-scope-and-visibility) and architecture03 [phase5](../../architecture/en/03.module_and_symbol_resolution.md#step-5-collect-signature-environment) map to the bounded [source export-row owner](./symbols.md#source-public-theorem-export-candidates), reusing Artifact element validation without complete summary or acceptance credit.
