@@ -418,3 +418,8 @@ retention モジュールは、次の条件を満たすスナップショット�
 - 古くなった result を再利用できるのは、対象 `BuildSnapshotId` に対する通常の cache validation を通した場合だけである。
 - `ObligationAnchor` は後段の semantic/VC layer が所有し、`mizar-session` は所有しない。
 - スナップショットをまたぐキャッシュの再利用は `mizar-cache` の責務である。このモジュールは、等価性を検証するために必要な入力を提供するにとどまる。
+
+## Captured metadata fingerprints
+`BuildSnapshot::dependency_artifact_fingerprint(&self) -> Hash` は既存の長さ付き `domain` part に `mizar-session/dependency-artifact-references/v1` を入れ、変更しない依存 summary encoding を続けた bytes の BLAKE3 を返します。ラベル付き件数と、文字列、次に hash 全 bytes の順で整列した全 artifact 文字列/content-hash 対を含み、重複と空リストを保持します。ラベル・値の長さと件数は LE u64 です。snapshot ID encoding は変更しません。
+この読み取り専用の値射影は registry/native capture 所属、依存ファイル・manifest、runtime・現在性、証明・公開・再利用・完全性を認証しません。空の捕捉リストは記録された参照だけを意味し、検証と入力 metadata の信頼境界は維持します。保持済み ID digest は新たな snapshot hash profile ではなく [ids](./ids.md#シリアライズ) が所有します。
+snapshot/tests.rs に `capture_metadata_fingerprints_bind_retained_values_and_empty_dependencies` と `capture_metadata_fingerprints_bind_exact_dependency_references` だけを追加し、既存 helper/import/test を保持します。実際の native Disk/OpenBuffer 捕捉と独立した公開 ID・encoding oracle で、厳密な対・順序・重複数・空リスト、context/source からの独立性、再実行・入力不変性、detached/superseded 値の限界を検証します。架空の権限や下位検証行列の重複は追加しません。

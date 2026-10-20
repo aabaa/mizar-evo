@@ -247,6 +247,11 @@ impl Hash {
 impl BuildSnapshotId {
     pub const SERIALIZED_LEN: usize = BUILD_SNAPSHOT_SERIALIZED_PREFIX.len() + Hash::BYTE_LEN * 2;
 
+    /// Returns the retained digest without authenticating registry membership or currentness.
+    pub const fn fingerprint(self) -> Hash {
+        self.0
+    }
+
     pub fn to_published_schema_string(self) -> Result<String, IdError> {
         let mut encoded = String::with_capacity(Self::SERIALIZED_LEN);
         encoded.push_str(BUILD_SNAPSHOT_SERIALIZED_PREFIX);

@@ -432,3 +432,8 @@ Key scenarios:
 - Obsolete results may be reused only through normal cache validation against the target `BuildSnapshotId`.
 - `ObligationAnchor` is owned by later semantic/VC layers, not by `mizar-session`.
 - Cache reuse across snapshots belongs to `mizar-cache`; this module only provides the inputs needed to validate equivalence.
+
+## Captured metadata fingerprints
+`BuildSnapshot::dependency_artifact_fingerprint(&self) -> Hash` returns BLAKE3 of the existing length-framed `domain` part containing `mizar-session/dependency-artifact-references/v1`, followed by unchanged dependency-summary encoding: labeled collection count and every exact artifact-string/content-hash pair sorted by string then all hash bytes, retaining duplicates and empty lists. Labels/values have LE u64 lengths; the count is LE u64. The snapshot ID encoding is unchanged.
+This read-only value projection authenticates neither registry/native-capture membership, dependency files/manifests, runtime/currentness nor proof/publication/reuse/completeness. An empty captured list denotes only recorded references; validation and supplied metadata trust stay unchanged. The retained ID digest belongs to [ids](./ids.md#serialization), not a new snapshot hash profile.
+Append only `capture_metadata_fingerprints_bind_retained_values_and_empty_dependencies` and `capture_metadata_fingerprints_bind_exact_dependency_references` to snapshot/tests.rs, preserving old helpers/imports/tests. Use real native Disk/OpenBuffer captures and independent published-ID/encoding oracles; check exact pairs, order, multiplicity, empty lists, context/source independence, replay/input purity and detached/superseded value limits, without fabricated authority or duplicating lower validation matrices.

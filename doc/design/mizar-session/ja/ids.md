@@ -46,6 +46,7 @@ impl Default for InMemorySessionIdAllocator {
 
 impl BuildSnapshotId {
     pub const SERIALIZED_LEN: usize;
+    pub const fn fingerprint(self) -> Hash;
     pub fn to_published_schema_string(self) -> Result<String, IdError>;
     pub fn from_published_schema_str(serialized: &str) -> Result<Self, IdError>;
 }
@@ -128,7 +129,7 @@ ID は意味的な順序を定義しません。
 `BuildSnapshotId` は、公開スキーマ形式として
 `mizar-session-build-snapshot-v1:<64 lowercase hex digits>` を使います。この prefix は
 シリアライズされた ID のドメインです。デシリアライズ時は、他のドメインと非正準な
-16 進表記を拒否しなければなりません。
+16 進表記を拒否しなければなりません。 `BuildSnapshotId::fingerprint(self) -> Hash` は保持済み digest を返し、再ハッシュ・文字列解析・registry 所属や現在性の認証は行いません。
 
 アロケータが発行した ID は、ローカルなデバッグダンプ、ログ、および可搬性がないと明示された開発用アーティファクトに限ってシリアライズしてよいものとします。公開アーティファクトとキャッシュキーは、代わりに正準的なソース・依存・ツールチェイン・構成の各ハッシュを用いなければなりません。
 

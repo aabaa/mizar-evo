@@ -484,6 +484,8 @@ should keep `cargo test -p mizar-session` green (see [Suggested Verification](#s
 
 36. **[Native initialize workspace inputs](../../task_contracts/en/LSP-NATIVE-WORKSPACE-INPUTS.md).** [x]
 
+37. **[Captured metadata fingerprints](../../task_contracts/en/SESSION-CAPTURE-METADATA-FINGERPRINTS.md).** [x]
+
 ## Suggested Verification
 
 After each task, run:

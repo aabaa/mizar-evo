@@ -281,6 +281,18 @@ pub struct SourceVersionCanonicalKey<'a> {
 }
 
 impl BuildSnapshot {
+    /// Fingerprints retained dependency references without authenticating their artifacts.
+    pub fn dependency_artifact_fingerprint(&self) -> Hash {
+        let mut bytes = Vec::new();
+        write_part(
+            &mut bytes,
+            b"domain",
+            b"mizar-session/dependency-artifact-references/v1",
+        );
+        write_dependency_summaries(&mut bytes, &self.dependency_artifacts);
+        Hash::from_bytes(*blake3::hash(&bytes).as_bytes())
+    }
+
     /// Builds a snapshot identity without creation validation or registry insertion.
     ///
     /// This is crate-private so public callers cannot accidentally bypass

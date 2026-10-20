@@ -3055,3 +3055,226 @@ impl Drop for SourcePathFixture {
         let _ = std::fs::remove_dir_all(&self.base);
     }
 }
+
+#[test]
+fn capture_metadata_fingerprints_bind_retained_values_and_empty_dependencies() {
+    let fixture = SourcePathFixture::new();
+    fixture.write("src/main.miz", "disk\r\n");
+    let registry = SnapshotRegistry::new();
+    let request = request_id();
+    let mut context = fixture.capture_context();
+    context.1.clear();
+    let (snapshot, _, retained) = registry
+        .load_snapshot(
+            request,
+            context.clone(),
+            vec![fixture.capture_source(
+                "main",
+                SourceOriginInput::Disk {
+                    path: "src/main.miz".into(),
+                },
+            )],
+        )
+        .unwrap();
+    assert!(snapshot.dependency_artifacts.is_empty());
+    assert_eq!(retained[0].0.text.as_ref(), "disk\n");
+    assert_eq!(
+        snapshot.source_versions[0].source_hash,
+        retained[0].0.source_hash
+    );
+    let before = snapshot.clone();
+    let mut bytes = Vec::new();
+    for (label, value) in [
+        (
+            b"domain".as_slice(),
+            b"mizar-session/dependency-artifact-references/v1".as_slice(),
+        ),
+        (
+            b"dependency-artifact-summaries".as_slice(),
+            0u64.to_le_bytes().as_slice(),
+        ),
+    ] {
+        bytes.extend_from_slice(&(label.len() as u64).to_le_bytes());
+        bytes.extend_from_slice(label);
+        bytes.extend_from_slice(&(value.len() as u64).to_le_bytes());
+        bytes.extend_from_slice(value);
+    }
+    let empty = Hash::from_bytes(*blake3::hash(&bytes).as_bytes());
+    assert_eq!(snapshot.dependency_artifact_fingerprint(), empty);
+    fixture.write("src/main.miz", "later disk bytes");
+    let raw: Arc<str> = Arc::from("editor\r\n");
+    let sources = vec![fixture.capture_source(
+        "main",
+        SourceOriginInput::OpenBuffer {
+            uri: format!("file://{}", fixture.root().join("src/main.miz").display()),
+            expected_version: 4,
+            actual_version: 4,
+            text: raw.clone(),
+        },
+    )];
+    let (current, _, loaded) = registry
+        .load_snapshot(request, context.clone(), sources.clone())
+        .unwrap();
+    let (replayed, _, _) = registry
+        .load_snapshot(request, context.clone(), sources)
+        .unwrap();
+    assert_eq!(replayed.id, current.id);
+    assert_ne!(current.id, snapshot.id);
+    assert_eq!(loaded[0].0.text.as_ref(), "editor\n");
+    assert_eq!(loaded[0].0.origin, SourceOrigin::OpenBuffer { version: 4 });
+    assert_eq!(raw.as_ref(), "editor\r\n");
+    assert_eq!(retained[0].0.text.as_ref(), "disk\n");
+    assert!(!registry.is_current_for_request(snapshot.id, request));
+    assert!(registry.is_current_for_request(current.id, request));
+    // Empty captured references do not establish a complete dependency closure.
+    for value in [&snapshot, &current, &replayed] {
+        assert_eq!(value.dependency_artifact_fingerprint(), empty);
+        let published = value.id.to_published_schema_string().unwrap();
+        let hex = published
+            .strip_prefix("mizar-session-build-snapshot-v1:")
+            .unwrap();
+        let mut decoded = [0; Hash::BYTE_LEN];
+        for (index, pair) in hex.as_bytes().chunks_exact(2).enumerate() {
+            let digits = b"0123456789abcdef";
+            let high = digits.iter().position(|digit| *digit == pair[0]).unwrap();
+            let low = digits.iter().position(|digit| *digit == pair[1]).unwrap();
+            decoded[index] = (high * 16 + low) as u8;
+        }
+        assert_eq!(value.id.fingerprint().as_bytes(), &decoded);
+    }
+    assert_eq!(snapshot, before);
+    let mut detached = snapshot.clone();
+    detached
+        .dependency_artifacts
+        .push(DependencyArtifactRef::new(
+            "supplied-only.vo",
+            hash_text("metadata"),
+        ));
+    assert_eq!(detached.id.fingerprint(), snapshot.id.fingerprint());
+    assert_ne!(detached.dependency_artifact_fingerprint(), empty);
+    assert_eq!(registry.get(detached.id), Some(snapshot));
+}
+
+#[test]
+fn capture_metadata_fingerprints_bind_exact_dependency_references() {
+    let fixture = SourcePathFixture::new();
+    fixture.write("src/main.miz", "source");
+    let registry = SnapshotRegistry::new();
+    let sources = vec![fixture.capture_source(
+        "main",
+        SourceOriginInput::Disk {
+            path: "src/main.miz".into(),
+        },
+    )];
+    // These are supplied reference metadata, not authenticated files or a manifest.
+    let first = hash_text("supplied content");
+    let mut later_bytes = *first.as_bytes();
+    later_bytes[Hash::BYTE_LEN - 1] ^= 1;
+    let base = vec![
+        DependencyArtifactRef::new("é:dep.vo", first),
+        DependencyArtifactRef::new("a/dep.vo", first),
+        DependencyArtifactRef::new("a/dep.vo", Hash::from_bytes(later_bytes)),
+        DependencyArtifactRef::new("a/dep.vo", first),
+    ];
+    let mut context = fixture.capture_context();
+    context.1 = base.clone();
+    let (snapshot, _, _) = registry
+        .load_snapshot(request_id(), context.clone(), sources.clone())
+        .unwrap();
+    let expected = snapshot.dependency_artifact_fingerprint();
+    let before = snapshot.clone();
+    let mut cases = vec![(base.clone(), true), (Vec::new(), false)];
+    let mut reversed = base.clone();
+    reversed.reverse();
+    cases.push((reversed, true));
+    let mut removed = base.clone();
+    removed.pop();
+    cases.push((removed, false));
+    let mut duplicated = base.clone();
+    duplicated.push(base[0].clone());
+    cases.push((duplicated, false));
+    let mut renamed = base.clone();
+    renamed[0].artifact.push('x');
+    cases.push((renamed, false));
+    let mut reassociated = base.clone();
+    let other = reassociated[2].content_hash;
+    reassociated[2].content_hash = reassociated[0].content_hash;
+    reassociated[0].content_hash = other;
+    cases.push((reassociated, false));
+    for index in 0..Hash::BYTE_LEN {
+        let mut changed = base.clone();
+        let mut bytes = *changed[0].content_hash.as_bytes();
+        bytes[index] ^= 1;
+        changed[0].content_hash = Hash::from_bytes(bytes);
+        cases.push((changed, false));
+    }
+    for (references, same) in cases {
+        let mut input = context.clone();
+        input.1 = references.clone();
+        let (value, _, _) = registry
+            .load_snapshot(request_id(), input, sources.clone())
+            .unwrap();
+        let value_before = value.clone();
+        // Independent profile oracle: no production encoder is called here.
+        let mut ordered = references.iter().collect::<Vec<_>>();
+        ordered.sort_by_key(|reference| (&reference.artifact, reference.content_hash.as_bytes()));
+        let count = (ordered.len() as u64).to_le_bytes();
+        let mut parts = vec![
+            (
+                b"domain".as_slice(),
+                b"mizar-session/dependency-artifact-references/v1".as_slice(),
+            ),
+            (
+                b"dependency-artifact-summaries".as_slice(),
+                count.as_slice(),
+            ),
+        ];
+        for reference in ordered {
+            parts.push((b"dependency/artifact", reference.artifact.as_bytes()));
+            parts.push((
+                b"dependency/content-hash",
+                reference.content_hash.as_bytes(),
+            ));
+        }
+        let mut encoded = Vec::new();
+        for (label, value) in parts {
+            encoded.extend_from_slice(&(label.len() as u64).to_le_bytes());
+            encoded.extend_from_slice(label);
+            encoded.extend_from_slice(&(value.len() as u64).to_le_bytes());
+            encoded.extend_from_slice(value);
+        }
+        let actual = value.dependency_artifact_fingerprint();
+        assert_eq!(actual, Hash::from_bytes(*blake3::hash(&encoded).as_bytes()));
+        assert_eq!(actual == expected, same);
+        assert_eq!(value.dependency_artifact_fingerprint(), actual);
+        assert_eq!(value, value_before);
+    }
+    for field in 0..6 {
+        let mut changed = context.clone();
+        let mut inputs = sources.clone();
+        match field {
+            0 => {
+                changed.0 =
+                    WorkspaceRoot::new(fixture.root().parent().unwrap().display().to_string())
+            }
+            1 => changed.2 = hash_text("other lockfile"),
+            2 => changed.3 = ToolchainInfo::new("other-toolchain"),
+            3 => changed.4 = hash_text("other verifier"),
+            4 => inputs[0].1.edition = Edition::new("2027"),
+            _ => {
+                inputs[0].1.origin = SourceOriginInput::OpenBuffer {
+                    uri: format!("file://{}", fixture.root().join("src/main.miz").display()),
+                    expected_version: 1,
+                    actual_version: 1,
+                    text: Arc::from("different source"),
+                }
+            }
+        }
+        let (value, _, _) = registry
+            .load_snapshot(request_id(), changed, inputs)
+            .unwrap();
+        assert_ne!(value.id, snapshot.id);
+        assert_eq!(value.dependency_artifact_fingerprint(), expected);
+    }
+    assert_eq!(snapshot, before);
+}

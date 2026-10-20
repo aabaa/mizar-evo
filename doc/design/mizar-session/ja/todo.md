@@ -465,6 +465,8 @@
 
 36. **[Native initialize workspace inputs](../../task_contracts/ja/LSP-NATIVE-WORKSPACE-INPUTS.md).** [x]
 
+37. **[Captured metadata fingerprints](../../task_contracts/ja/SESSION-CAPTURE-METADATA-FINGERPRINTS.md).** [x]
+
 ## 推奨検証
 
 各タスクの後に、以下を実行する:
