@@ -722,3 +722,11 @@ labels/tests.rs に source_theorem_module_summary_candidate_preserves_real_rows_
 認証はこの対象行だけであり、legacy thesis/statements、過去の実行・解析取得、currentness、完全フェーズ、証明・型・受理は扱わない。既存 resolver profile、エラー、生成器は変更しない。
 ### Validation tests
 labels/tests.rs に source_proof_occurrence_validation_preserves_real_rows_and_inputs と source_proof_occurrence_validation_rejects_foreign_rows_and_preserves_errors だけ追加し、既存 Frontend 補助を再利用する。新 helper と旧 Rust 変更は禁止。実際の private/public、grouped/nested/未使用、Given/Consider、対象行が等しい legacy 経路、再実行・不変性、同一ソースの参照だけ・未使用束縛だけの改変、別 source/module、元環境と拡張環境、実際の parser recovery、未束縛使用の再解決失敗を確認する。正しい実入力と分離した行差を先に示し、scope も不正な場合に元環境のエラーが優先することを確認する。空行での source-id 不一致は実際に割当・全面再束縛したソースを用い、範囲の書換えや正例レシートの捏造で代用しない。
+
+## Original source proof input acquisition
+`source_proof_inputs(&SurfaceResolvedArena, &SymbolEnv) -> Result<(ResolvedVariableScope, ProofLabelSourceCollection, LabelResolutionResult), String>` は Syntax を公開せず、既存 Resolver の証明入力を取得する。
+最初に変更しない validated_source_symbol_ast を呼び、元の未拡張環境のエラーを伝播する。同じ非公開 AST から resolve_proof_occurrences を実行し、失敗は既存の内部 String `source proof occurrences do not match the original source` にする。認証済み環境の同じ source/module の実際の LocalSource contribution、module-path namespace、collect_with_theorem_owners、LabelResolver を使う。collector 構築・収集の失敗は既存の to_string() テキストで伝播する。全出力をこの順序で返し、行の作成・選別・置換や入力の変更を行わない。
+既存の occurrence と theorem-owner collection profile を保ち、新しい元ソース全体の受理 profile は定めない。実際の空 collection、未解決・曖昧参照と内部診断を保つ。Given/Consider の occurrence 対応は label collection を拡張せず、legacy thesis/statements は含めない。後段の admission、scope、型、引用、証明受理の境界を保ち、完全 semantic phase・currentness・証明・公開・再利用の根拠にはしない。
+### Acquisition tests
+labels/tests.rs に source_proof_inputs_match_actual_collectors_and_preserve_inputs と source_proof_inputs_preserve_original_errors_and_boundaries だけを追加し、既存の実 Frontend helper/fixture を使う。private/public と proof-local label/引用、grouped/nested/未使用 binding、Given/Consider occurrence、空 occurrence/引用、未解決 label、重複 label 診断と実 source 由来の曖昧引用について、別途呼ぶ既存 producer の全 tuple と比較する。先に既存 producer の実 Ambiguous 結果と候補の identity/順序/provenance、source の binding/reference/label の具体的事実を確認し、再実行と入力不変性も確認する。
+実際の成功 source/環境を対照に、別 source/module・拡張環境・実 parser recovery を拒否する。未解決変数を持つ source で既存 occurrence の実失敗と元環境エラーの優先順位を確認する。成功用 AST/scope/contribution/label/resolution/semantic receipt は捏造しない。

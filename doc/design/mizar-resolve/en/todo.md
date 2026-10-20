@@ -687,6 +687,7 @@ Keep `cargo test -p mizar-resolve` green after each task (see
 49. **[Source public theorem export candidates](../../task_contracts/en/RESOLVE-SOURCE-PUBLIC-THEOREM-EXPORT-ROWS.md).** [x]
 50. **[Source theorem ModuleSummary candidate](../../task_contracts/en/RESOLVE-SOURCE-THEOREM-MODULE-SUMMARY-CANDIDATE.md).** [x]
 51. **[Original source proof occurrences validation](../../task_contracts/en/RESOLVE-SOURCE-PROOF-SCOPE-VALIDATION.md).** [x]
+52. **[Original source proof input acquisition](../../task_contracts/en/RESOLVE-SOURCE-PROOF-INPUTS.md).** [x]
 
 ## Crate Close-Out
 

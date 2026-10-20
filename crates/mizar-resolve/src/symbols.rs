@@ -64,6 +64,51 @@ pub fn validate_source_proof_occurrences(
     Ok(())
 }
 
+/// Acquires complete resolver-owned proof inputs from the original source and symbols.
+pub fn source_proof_inputs(
+    source: &SurfaceResolvedArena,
+    symbols: &SymbolEnv,
+) -> Result<
+    (
+        crate::names::ResolvedVariableScope,
+        crate::labels::ProofLabelSourceCollection,
+        crate::labels::LabelResolutionResult,
+    ),
+    String,
+> {
+    let ast = validated_source_symbol_ast(source, symbols)?;
+    let scope = crate::names::SourceVariableScopeResolver::resolve_proof_occurrences(
+        crate::names::SourceVariableScopeInput::new(&ast, source.module(), symbols),
+    )
+    .map_err(|_| "source proof occurrences do not match the original source".to_owned())?;
+    let contribution = symbols
+        .contributions()
+        .iter()
+        .find(|entry| {
+            entry.module() == source.module()
+                && matches!(entry.kind(), ContributionKind::LocalSource { source_id } if *source_id == ast.source_id)
+        })
+        .ok_or_else(|| {
+            "source symbol environment does not match its declaration collection".to_owned()
+        })?;
+    let namespace = NamespacePath::new(source.module().path().as_str());
+    let collection = crate::labels::ProofLabelSourceCollector::new(
+        &ast,
+        source.module(),
+        namespace.clone(),
+        contribution.id(),
+        source,
+    )
+    .and_then(|collector| collector.collect_with_theorem_owners(symbols))
+    .map_err(|error| error.to_string())?;
+    let labels = crate::labels::LabelResolver::new(collection.projections()).resolve(
+        source.module(),
+        &namespace,
+        collection.references(),
+    );
+    Ok((scope, collection, labels))
+}
+
 fn validated_source_symbol_ast(
     source: &SurfaceResolvedArena,
     symbols: &SymbolEnv,

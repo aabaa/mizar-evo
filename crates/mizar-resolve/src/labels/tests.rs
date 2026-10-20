@@ -7926,3 +7926,255 @@ fn source_proof_occurrence_validation_rejects_foreign_rows_and_preserves_errors(
     assert_eq!((frontend, recovered_env, recovered_arena), recovered_before);
     assert_eq!((ast, module, env, arena, scope), before);
 }
+
+#[test]
+fn source_proof_inputs_match_actual_collectors_and_preserve_inputs() {
+    use crate::names::{
+        SourceVariableBindingKind, SourceVariableScopeInput, SourceVariableScopeResolver,
+    };
+    use crate::symbols::source_proof_inputs;
+
+    let private = include_str!(
+        "../../../../tests/miz/pass/resolve/pass_declaration_symbol_private_theorem_visibility_001.miz"
+    );
+    let nested = "theorem Local: for X, Y being set holds X = X\nproof\n let X, Y be set;\n A: X = X\n proof\n let Z, W be object;\n thus Z = Z;\n end;\n thus X = X by A;\nend;\n";
+    for (case, text) in [
+        private.to_owned(), private.replace("private ", ""), nested.to_owned(),
+        include_str!("../../../../tests/miz/pass/theorems/pass_formula_statement_given_existential_assumption_001.miz").to_owned(),
+        include_str!("../../../../tests/miz/pass/theorems/pass_formula_statement_consider_choice_001.miz").to_owned(),
+        "theorem Empty: 0 = 0\nproof\n thus 0 = 0;\nend;\n".to_owned(), "".to_owned(),
+        "theorem Unknown: 0 = 0\nproof\n thus 0 = 0 by Missing;\nend;\n".to_owned(),
+        "theorem Duplicates: 0 = 0\nproof\n D: 0 = 0;\n D: 0 = 0;\n thus 0 = 0 by D;\nend;\n".to_owned(),
+    ].into_iter().enumerate() {
+        let (ast, module, namespace, env, arena) = parsed_private_theorem_fixture(&text);
+        let before = (ast.clone(), module.clone(), namespace.clone(), env.clone(), arena.clone());
+        let scope = SourceVariableScopeResolver::resolve_proof_occurrences(SourceVariableScopeInput::new(&ast, &module, &env)).unwrap();
+        assert_eq!(scope.source_id(), ast.source_id);
+        assert_eq!(scope.module_id(), &module);
+        assert!(scope.thesis().is_none() && scope.statements().is_empty());
+        let lets: Vec<_> = scope.bindings().iter().filter(|row| row.kind() == SourceVariableBindingKind::Let).map(|row| row.spelling()).collect();
+        assert_eq!(lets, match case { 0 | 1 => vec!["X", "X"], 2 => vec!["X", "Y", "Z", "W"], 3 => vec!["A"], 4 => vec!["x"], _ => vec![] });
+        for row in scope.bindings() {
+            assert_eq!(&text[row.range().start..row.range().end], row.spelling());
+            assert_eq!(ast.node_view(row.node()).unwrap().as_token().unwrap().text.as_ref(), row.spelling());
+        }
+        for row in scope.references() {
+            assert_eq!(&text[row.range().start..row.range().end], scope.bindings()[row.binding().index()].spelling());
+        }
+        if case == 2 {
+            assert_eq!(scope.references().len(), 8);
+            for name in ["Y", "W"] {
+                let unused = scope.bindings().iter().find(|row| row.spelling() == name && row.kind() == SourceVariableBindingKind::Let).unwrap();
+                assert!(!scope.references().iter().any(|row| row.binding() == unused.id()));
+            }
+        }
+        if case == 3 || case == 4 {
+            let (name, kind) = if case == 3 { ("y0", SourceVariableBindingKind::GivenWitness) } else { ("z", SourceVariableBindingKind::ConsiderWitness) };
+            let witness = scope.bindings().iter().find(|row| row.spelling() == name && row.kind() == kind).unwrap();
+            assert!(scope.references().iter().any(|row| row.binding() == witness.id()));
+        }
+        if case >= 5 { assert!(scope.bindings().is_empty() && scope.references().is_empty()); }
+        let contributions: Vec<_> = env.contributions().iter().filter(|entry| entry.module() == &module && matches!(entry.kind(), ContributionKind::LocalSource { source_id } if *source_id == ast.source_id)).collect();
+        assert_eq!(contributions.len(), 1);
+        let collection = ProofLabelSourceCollector::new(&ast, &module, namespace.clone(), contributions[0].id(), &arena).unwrap().collect_with_theorem_owners(&env).unwrap();
+        let names: Vec<_> = collection.projections().iter().map(|row| row.primary_spelling()).collect();
+        assert_eq!(names, match case { 0 | 1 => vec!["PrivT1", "UsePriv1"], 2 => vec!["Local", "A"], 3 => vec!["Given1"], 4 => vec!["Consider1", "A1"], 5 => vec!["Empty"], 6 => vec![], 7 => vec!["Unknown"], _ => vec!["Duplicates", "D", "D"] });
+        let citations: Vec<_> = collection.references().iter().map(|row| row.site().spelling()).collect();
+        assert_eq!(citations, match case { 0 | 1 => vec!["PrivT1"], 2 => vec!["A"], 3 => vec!["A1"], 7 => vec!["Missing"], 8 => vec!["D"], _ => vec![] });
+        for row in collection.projections() {
+            assert_eq!(&text[row.declaration_range().start..row.declaration_range().end], row.primary_spelling());
+            assert_eq!(row.origin().source_id(), ast.source_id);
+            assert_eq!(row.origin().module_id(), &module);
+            assert_eq!(row.contribution(), contributions[0].id());
+        }
+        if case <= 1 {
+            assert_eq!(collection.projections()[0].visibility(), if case == 0 { Visibility::Private } else { Visibility::Public });
+            assert_eq!(collection.projections()[0].origin_path().as_str(), env.symbols().iter().find(|row| row.primary_spelling() == "PrivT1").unwrap().symbol().fqn().as_str());
+        }
+        let labels = LabelResolver::new(collection.projections()).resolve(&module, &namespace, collection.references());
+        assert_eq!(labels.ids().len(), citations.len());
+        assert_eq!(labels.has_unresolved(), case == 3 || case == 7);
+        if case == 8 {
+            let LabelResolution::Ambiguous(ambiguous) = labels.table().get(labels.ids()[0]).unwrap().resolution() else { panic!("expected genuine duplicate-label ambiguity"); };
+            assert_eq!(ambiguous.spelling(), "D");
+            assert_eq!(ambiguous.range(), collection.references()[0].site().range());
+            assert_eq!(contributions[0].id().index(), 0);
+            assert_eq!(ambiguous.candidates().iter().map(|row| row.origin().as_str()).collect::<Vec<_>>(), vec![
+                "proof-step-v1|package=3:pkg|module=4:main|contribution=0|owner-kind=theorem|owner=10:Duplicates|owner-occurrence=0|proof-path=0:|label=1:D|label-occurrence=0",
+                "proof-step-v1|package=3:pkg|module=4:main|contribution=0|owner-kind=theorem|owner=10:Duplicates|owner-occurrence=0|proof-path=0:|label=1:D|label-occurrence=1",
+            ]);
+            for (candidate, projection) in ambiguous.candidates().iter().zip(&collection.projections()[1..]) {
+                assert_eq!(candidate.origin(), projection.origin_path());
+                assert_eq!(candidate.kind(), LabelKind::ProofStep);
+                assert_eq!(candidate.range(), projection.declaration_range());
+                assert_eq!(projection.origin().anchor(), &SourceAnchor::Range(candidate.range()));
+            }
+            assert_eq!(labels.diagnostics().len(), 1);
+            let diagnostic = &labels.diagnostics()[0];
+            assert_eq!(diagnostic.kind(), LabelDiagnosticKind::DuplicateLabel);
+            assert_eq!(diagnostic.spelling(), "D");
+            assert_eq!(diagnostic.primary_range(), collection.projections()[2].declaration_range());
+            assert_eq!(diagnostic.related_ranges(), &[collection.projections()[1].declaration_range()]);
+        } else { assert!(labels.diagnostics().is_empty()); }
+        let lower = (scope, collection, labels);
+        assert_eq!(source_proof_inputs(&arena, &env).unwrap(), lower);
+        assert_eq!(source_proof_inputs(&arena, &env).unwrap(), lower);
+        assert_eq!((ast, module, namespace, env, arena), before);
+    }
+}
+
+#[test]
+fn source_proof_inputs_preserve_original_errors_and_boundaries() {
+    use crate::names::{SourceVariableScopeInput, SourceVariableScopeResolver};
+    use crate::symbols::{source_proof_inputs, validate_source_symbol_env};
+    use mizar_frontend::{
+        orchestration::Frontend, parsing::MizarParserSeam, source::FrontendSourceLoader,
+    };
+    use mizar_session::{
+        DiskSourceLoader, Edition, SourceInput, SourceOriginInput, normalize_path,
+    };
+
+    let text =
+        "theorem Local: for X being set holds X = X\nproof\n let X be set;\n thus X = X;\nend;\n";
+    let (ast, module, namespace, env, arena) = parsed_private_theorem_fixture(text);
+    let actual = source_proof_inputs(&arena, &env).unwrap();
+    let before = (ast.clone(), env.clone(), arena.clone(), actual.clone());
+    let (_, _, _, foreign_env, foreign_arena) =
+        parsed_private_theorem_fixture(&text.replace("Local", "Other"));
+    source_proof_inputs(&foreign_arena, &foreign_env).unwrap();
+    let foreign_before = (foreign_env.clone(), foreign_arena.clone());
+    for (source, symbols) in [(&arena, &foreign_env), (&foreign_arena, &env)] {
+        let lower = validate_source_symbol_env(source, symbols).unwrap_err();
+        assert_eq!(source_proof_inputs(source, symbols).unwrap_err(), lower);
+    }
+    assert_eq!((foreign_env.clone(), foreign_arena.clone()), foreign_before);
+    let other_module = module_id("other", "Nested.Main");
+    let shells = crate::declarations::DeclarationShellCollector::new(&ast, &other_module).collect();
+    let other_env = crate::symbols::SignatureProjectionExtractor::new(
+        &ast,
+        &shells,
+        NamespacePath::new("Nested.Main"),
+    )
+    .collect(&other_module);
+    assert!(other_env.diagnostics().is_empty());
+    let other_arena = SurfaceResolvedArena::lower(&ast, &other_module).unwrap();
+    let other = source_proof_inputs(&other_arena, other_env.env()).unwrap();
+    assert_eq!(other.0.module_id(), &other_module);
+    let other_before = (other_env.clone(), other_arena.clone(), other.clone());
+    for (source, symbols) in [(&arena, other_env.env()), (&other_arena, &env)] {
+        let lower = validate_source_symbol_env(source, symbols).unwrap_err();
+        assert_eq!(source_proof_inputs(source, symbols).unwrap_err(), lower);
+    }
+    assert_eq!((other_env, other_arena, other), other_before);
+    let (private_ast, _, _, private_env, private_arena) = parsed_private_theorem_fixture(
+        include_str!(
+            "../../../../tests/miz/pass/resolve/pass_declaration_symbol_private_theorem_visibility_001.miz"
+        ),
+    );
+    source_proof_inputs(&private_arena, &private_env).unwrap();
+    let pair = crate::symbols::source_theorem_module_candidates(
+        &private_ast,
+        &private_arena,
+        &private_env,
+    )
+    .unwrap()
+    .unwrap();
+    assert_ne!(pair.1, private_env);
+    let private_before = (
+        private_ast.clone(),
+        private_env.clone(),
+        private_arena.clone(),
+        pair.clone(),
+    );
+    let lower = validate_source_symbol_env(&private_arena, &pair.1).unwrap_err();
+    assert_eq!(
+        source_proof_inputs(&private_arena, &pair.1).unwrap_err(),
+        lower
+    );
+    assert_eq!(
+        (private_ast, private_env, private_arena, pair),
+        private_before
+    );
+    let (unresolved, unresolved_module, _, unresolved_env, unresolved_arena) =
+        parsed_private_theorem_fixture(&text.replace("thus X = X", "thus Q = X"));
+    validate_source_symbol_env(&unresolved_arena, &unresolved_env).unwrap();
+    assert!(
+        SourceVariableScopeResolver::resolve_proof_occurrences(SourceVariableScopeInput::new(
+            &unresolved,
+            &unresolved_module,
+            &unresolved_env
+        ))
+        .is_err()
+    );
+    let unresolved_before = (
+        unresolved.clone(),
+        unresolved_env.clone(),
+        unresolved_arena.clone(),
+    );
+    assert_eq!(
+        source_proof_inputs(&unresolved_arena, &unresolved_env).unwrap_err(),
+        "source proof occurrences do not match the original source"
+    );
+    let lower = validate_source_symbol_env(&unresolved_arena, &foreign_env).unwrap_err();
+    assert_eq!(
+        source_proof_inputs(&unresolved_arena, &foreign_env).unwrap_err(),
+        lower
+    );
+    assert_eq!(
+        (unresolved, unresolved_env, unresolved_arena),
+        unresolved_before
+    );
+    let root = std::env::temp_dir().join(format!(
+        "mizar-proof-inputs-recovery-{}",
+        std::process::id()
+    ));
+    let path = root.join("src/main.miz");
+    std::fs::create_dir_all(path.parent().unwrap()).unwrap();
+    std::fs::write(&path, "theorem Broken: 0 = ;\n").unwrap();
+    let frontend = Frontend::new(
+        FrontendSourceLoader::new(DiskSourceLoader::new(&root)),
+        NoImportedSummaries,
+        MizarParserSeam,
+    )
+    .run(
+        mizar_frontend::source::SourceUnitRequest {
+            snapshot: BuildSnapshotId::from_published_schema_str(&format!(
+                "mizar-session-build-snapshot-v1:{}",
+                "31".repeat(Hash::BYTE_LEN)
+            ))
+            .unwrap(),
+            input: SourceInput {
+                package_id: PackageId::new("pkg"),
+                module_path: ModulePath::new("main"),
+                normalized_path: normalize_path(&root, &path).unwrap(),
+                edition: Edition::new("2025"),
+                origin: SourceOriginInput::Disk { path },
+            },
+        },
+        &InMemorySessionIdAllocator::new(),
+    )
+    .unwrap();
+    std::fs::remove_dir_all(root).unwrap();
+    assert!(!frontend.diagnostics.is_empty());
+    let recovered = frontend.ast.as_ref().unwrap();
+    assert!(recovered.node_views().any(
+        |node| node.is_recovered() || matches!(node.kind(), SurfaceNodeKind::ErrorRecovery(_))
+    ));
+    let shells = crate::declarations::DeclarationShellCollector::new(recovered, &module).collect();
+    let recovered_env =
+        crate::symbols::SignatureProjectionExtractor::new(recovered, &shells, namespace)
+            .collect(&module);
+    let recovered_arena = SurfaceResolvedArena::lower(recovered, &module).unwrap();
+    let recovered_before = (
+        frontend.clone(),
+        recovered_env.clone(),
+        recovered_arena.clone(),
+    );
+    let lower = validate_source_symbol_env(&recovered_arena, recovered_env.env()).unwrap_err();
+    assert_eq!(
+        source_proof_inputs(&recovered_arena, recovered_env.env()).unwrap_err(),
+        lower
+    );
+    assert_eq!((frontend, recovered_env, recovered_arena), recovered_before);
+    assert_eq!((ast, env, arena, actual), before);
+}
