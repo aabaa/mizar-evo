@@ -737,6 +737,7 @@ Pre-audit 5B.3 and Gate S1 block only consumers requiring their outputs.
    [Native Frontend resolver binding](./task_contracts/en/DRIVER-NATIVE-FRONTEND-RESOLVER-BINDING.md) compares a supplied published parent with fresh captured execution before the actual resolver result; runtime and service publication remain separate.
 
    [Original theorem module inputs](./task_contracts/en/RESOLVE-SOURCE-THEOREM-MODULE-ORIGINAL-INPUTS.md) share the genuine original arena and unaugmented env across existing native/storage consumers; semantic streams and service publication remain separate.
+   [Source theorem module semantic payload](./task_contracts/en/RESOLVE-SOURCE-THEOREM-MODULE-SEMANTIC-PAYLOAD.md) supplies the actual pair and its bounded internal phase bytes; coherent service publication and complete outputs remain separate.
 
    These slices do not register ModuleResolver or later semantic services;
    their remaining owner-provided payload/publication prerequisites stay open.

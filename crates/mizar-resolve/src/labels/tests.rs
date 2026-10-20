@@ -6228,3 +6228,469 @@ fn source_theorem_module_original_inputs_preserve_constructor_and_admission_boun
     );
     assert_eq!((ast, module), before);
 }
+
+#[test]
+fn source_theorem_module_semantic_payload_matches_real_pair_and_exact_profile() {
+    let fixture = include_str!(
+        "../../../../tests/miz/pass/resolve/pass_declaration_symbol_private_theorem_visibility_001.miz"
+    );
+    let quantified = "101:3:for100:1:X101:5:being101:3:set101:5:holds100:1:X102:1:=100:1:X";
+    let many = (0..12)
+        .map(|i| format!("theorem T{i}: 0 = 0\nproof\n  thus 0 = 0;\nend;\n"))
+        .collect::<String>();
+    let mixed = format!(
+        "{fixture}\ntheorem Alpha: 0 = 12\nproof\n  thus 0 = 12 by UsePriv1, PrivT1, PrivT1;\nend;\n"
+    );
+    let trivia = format!(
+        "\u{feff}{}",
+        fixture
+            .replacen("proof\n", "proof\n  :: 日本語 trivia\n", 1)
+            .replace('\n', "\r\n")
+    );
+    for text in [fixture.to_owned(), fixture.replace("private ", ""), fixture.replace("\ntheorem UsePriv1", "\nprivate theorem UsePriv1"),
+        fixture.replace("theorem UsePriv1", "lemma UsePriv1"),
+        include_str!("../../../../tests/miz/pass/theorems/pass_proof_verification_theorem_status_open_assumed_001.miz").to_owned(), mixed, many, trivia] {
+        let (ast, module, _, original, arena) = parsed_private_theorem_fixture(&text);
+        let before = (ast.clone(), module.clone(), original.clone(), arena.clone());
+        if text.contains("theorem T11:") {
+            let ids = original.definitions().iter().map(|row| row.id().index()).collect::<Vec<_>>();
+            assert_eq!(ids.len(), 12);
+            assert!(ids.windows(2).any(|pair| pair[0] > pair[1]));
+        }
+        let mut home_bytes = None;
+        let mut home_fqns = None;
+        for actual_module in [module.clone(), module_id("other", "main"), module_id("pkg", "nested.main")] {
+            // Independent original collectors and the whole old pair precede the new API.
+            let shells = crate::declarations::DeclarationShellCollector::new(&ast, &actual_module).collect();
+            let collected = crate::symbols::SignatureProjectionExtractor::new(&ast, &shells, NamespacePath::new(actual_module.path().as_str())).collect(&actual_module);
+            assert!(collected.diagnostics().is_empty());
+            let old_arena = SurfaceResolvedArena::lower(&ast, &actual_module).unwrap();
+            let expected = crate::symbols::source_theorem_module_candidates(&ast, &old_arena, collected.env()).unwrap().unwrap();
+            let (resolved, env, bytes) = crate::symbols::source_theorem_module_semantic_payload(&ast, &actual_module).unwrap().unwrap();
+            assert_eq!((&resolved, &env), (&expected.0, &expected.1));
+            assert_eq!(crate::symbols::source_theorem_module_semantic_payload(&ast, &actual_module).unwrap(), Some((resolved.clone(), env.clone(), bytes.clone())));
+            let fqns = env.symbols().iter().map(|row| row.symbol().fqn().as_str().to_owned()).collect::<Vec<_>>();
+            if actual_module == module {
+                home_bytes = Some(bytes.clone());
+                home_fqns = Some(fqns);
+            } else {
+                assert_ne!(Some(&bytes), home_bytes.as_ref());
+                assert_ne!(Some(&fqns), home_fqns.as_ref());
+            }
+            assert!(bytes.starts_with(b"mizar-resolve/source-theorem-module-semantics/v1\0"));
+            if actual_module == module {
+                assert!(bytes.starts_with(b"mizar-resolve/source-theorem-module-semantics/v1\0\x03\0\0\0\0\0\0\0pkg\x04\0\0\0\0\0\0\0main"));
+            }
+            let mut rest = &bytes[b"mizar-resolve/source-theorem-module-semantics/v1\0".len()..];
+            let number = |input: &mut &[u8]| -> usize {
+                let (word, tail) = input.split_at(8);
+                *input = tail;
+                usize::try_from(u64::from_le_bytes(word.try_into().unwrap())).unwrap()
+            };
+            let string = |input: &mut &[u8]| -> String {
+                let length = number(input);
+                let (value, tail) = input.split_at(length);
+                *input = tail;
+                String::from_utf8(value.to_vec()).unwrap()
+            };
+            let path = |input: &mut &[u8]| -> Vec<u32> {
+                (0..number(input)).map(|_| u32::try_from(number(input)).unwrap()).collect()
+            };
+            assert_eq!(string(&mut rest), actual_module.package().as_str());
+            assert_eq!(string(&mut rest), actual_module.path().as_str());
+            assert_eq!(number(&mut rest), expected.0.nodes().root().index());
+            assert_eq!(number(&mut rest), expected.0.nodes().len());
+            let mut seen = Vec::new();
+            for _ in 0..expected.0.nodes().len() {
+                let id = number(&mut rest);
+                let (_, row) = expected.0.nodes().iter().find(|(key, _)| key.index() == id).unwrap();
+                seen.push(id);
+                let tag = number(&mut rest);
+                assert_eq!(tag, row.kind().syntax_kind() as usize);
+                match row.kind() {
+                    SurfaceNodeKind::Root => assert_eq!(tag, 1),
+                    SurfaceNodeKind::TheoremItem => assert_eq!(tag, 96),
+                    SurfaceNodeKind::QuantifiedFormula(mizar_syntax::SurfaceQuantifierKind::Universal) => assert_eq!(tag, 55),
+                    SurfaceNodeKind::Token(token) => {
+                        let token_tag = number(&mut rest);
+                        assert_eq!(token_tag, token.kind.syntax_kind() as usize);
+                        if token.kind == SurfaceTokenKind::Identifier { assert_eq!(token_tag, 100); }
+                        assert_eq!(string(&mut rest), token.text.as_ref());
+                    }
+                    _ => {}
+                }
+                let children = (0..number(&mut rest)).map(|_| number(&mut rest)).collect::<Vec<_>>();
+                assert_eq!(children, row.children().iter().map(|id| id.index()).collect::<Vec<_>>());
+                let state = number(&mut rest);
+                assert_eq!(state, match row.resolution() { crate::resolved_ast::NodeResolutionState::NotApplicable => 0, crate::resolved_ast::NodeResolutionState::Resolved => 1, _ => panic!("old pair state") });
+                match number(&mut rest) {
+                    0 => assert_eq!(row.reference_key(), None),
+                    1 => assert!(matches!(row.reference_key(), Some(crate::resolved_ast::NodeReferenceKey::Name(key)) if key.index() == number(&mut rest))),
+                    2 => assert!(matches!(row.reference_key(), Some(crate::resolved_ast::NodeReferenceKey::Label(key)) if key.index() == number(&mut rest))),
+                    tag => panic!("unexpected reference tag {tag}"),
+                }
+                assert_eq!(path(&mut rest), row.origin().structural_path());
+            }
+            assert_eq!(seen, expected.0.nodes().iter().map(|(id, _)| id.index()).collect::<Vec<_>>());
+            assert_eq!(number(&mut rest), expected.0.name_refs().len());
+            let mut seen = Vec::new();
+            for _ in 0..expected.0.name_refs().len() {
+                let id = number(&mut rest);
+                let (_, row) = expected.0.name_refs().iter().find(|(key, _)| key.index() == id).unwrap();
+                seen.push(id);
+                let crate::resolved_ast::NameResolution::ResolvedBuiltin(target) = row.resolution() else { panic!("old builtin") };
+                assert_eq!(number(&mut rest), row.site().node().index());
+                assert_eq!(string(&mut rest), row.site().spelling());
+                assert_eq!(string(&mut rest), target.builtin().as_str());
+                assert_eq!(string(&mut rest), target.spelling());
+                assert_eq!(path(&mut rest), row.origin().structural_path());
+            }
+            assert_eq!(seen, expected.0.name_refs().iter().map(|(id, _)| id.index()).collect::<Vec<_>>());
+            assert_eq!(number(&mut rest), expected.0.label_refs().len());
+            let mut seen = Vec::new();
+            for _ in 0..expected.0.label_refs().len() {
+                let id = number(&mut rest);
+                let (_, row) = expected.0.label_refs().iter().find(|(key, _)| key.index() == id).unwrap();
+                seen.push(id);
+                let LabelResolution::Resolved(target) = row.resolution() else { panic!("old label") };
+                assert_eq!(number(&mut rest), row.site().node().index());
+                assert_eq!(string(&mut rest), row.site().spelling());
+                assert_eq!(string(&mut rest), target.origin().as_str());
+                assert_eq!(path(&mut rest), row.origin().structural_path());
+            }
+            assert_eq!(seen, expected.0.label_refs().iter().map(|(id, _)| id.index()).collect::<Vec<_>>());
+            assert_eq!(number(&mut rest), expected.1.symbols().len());
+            let mut seen = Vec::new();
+            for _ in 0..expected.1.symbols().len() {
+                let fqn = string(&mut rest);
+                let row = expected.1.symbols().iter().find(|row| row.symbol().fqn().as_str() == fqn).unwrap();
+                seen.push(fqn);
+                assert_eq!(number(&mut rest), usize::from(row.kind() == crate::env::SymbolKind::Lemma));
+                assert_eq!(number(&mut rest), usize::from(row.visibility() == Visibility::Public));
+                assert_eq!(number(&mut rest), usize::from(row.export_status() == ExportStatus::Exported));
+                assert_eq!(string(&mut rest), row.namespace().as_str());
+                assert_eq!(string(&mut rest), row.primary_spelling());
+                assert_eq!(number(&mut rest), row.contribution().index());
+                let Some(crate::env::SignatureShell::Opaque { schema, payload }) = row.signature() else { panic!("old signature") };
+                assert_eq!(string(&mut rest), *schema);
+                assert_eq!(string(&mut rest), *payload);
+                if row.visibility() == Visibility::Public {
+                    assert_eq!(schema, "source-theorem-statement-tokens-v1");
+                    assert_eq!(payload, if row.primary_spelling() == "Alpha" { "103:1:0102:1:=103:2:12" } else if row.primary_spelling().starts_with('T') { "103:1:0102:1:=103:1:0" } else { quantified });
+                } else { assert_eq!(schema, "parser-signature-v1"); }
+                assert_eq!(path(&mut rest), row.origin().structural_path());
+            }
+            assert_eq!(seen, expected.1.symbols().iter().map(|row| row.symbol().fqn().as_str().to_owned()).collect::<Vec<_>>());
+            assert_eq!(number(&mut rest), expected.1.labels().len());
+            let mut seen = Vec::new();
+            for _ in 0..expected.1.labels().len() {
+                let key = string(&mut rest);
+                let row = expected.1.labels().iter().find(|row| row.origin_path().as_str() == key).unwrap();
+                seen.push(key);
+                assert_eq!(number(&mut rest), usize::from(row.visibility() == Visibility::Public));
+                assert_eq!(number(&mut rest), usize::from(row.export_status() == ExportStatus::Exported));
+                assert_eq!(string(&mut rest), row.namespace().as_str());
+                assert_eq!(string(&mut rest), row.primary_spelling());
+                assert_eq!(number(&mut rest), row.contribution().index());
+                assert_eq!(path(&mut rest), row.origin().structural_path());
+            }
+            assert_eq!(seen, expected.1.labels().iter().map(|row| row.origin_path().as_str().to_owned()).collect::<Vec<_>>());
+            assert_eq!(number(&mut rest), expected.1.definitions().len());
+            let mut seen = Vec::new();
+            for _ in 0..expected.1.definitions().len() {
+                let id = number(&mut rest);
+                let row = expected.1.definitions().iter().find(|row| row.id().index() == id).unwrap();
+                seen.push(id);
+                assert_eq!(string(&mut rest), row.symbol().fqn().as_str());
+                assert_eq!(number(&mut rest), usize::from(row.kind() == crate::env::DefinitionKind::Lemma));
+                assert_eq!(number(&mut rest), usize::from(row.visibility() == Visibility::Public));
+                assert_eq!(number(&mut rest), row.contribution().index());
+                let Some(crate::env::SignatureShell::Opaque { schema, payload }) = row.signature() else { panic!("old definition signature") };
+                assert_eq!(string(&mut rest), *schema);
+                assert_eq!(string(&mut rest), *payload);
+                assert_eq!(path(&mut rest), row.origin().structural_path());
+                let dependencies = (0..number(&mut rest)).map(|_| number(&mut rest)).collect::<Vec<_>>();
+                assert_eq!(dependencies, row.dependencies().iter().map(|key| key.index()).collect::<Vec<_>>());
+            }
+            assert_eq!(seen, expected.1.definitions().iter().map(|row| row.id().index()).collect::<Vec<_>>());
+            assert_eq!(number(&mut rest), expected.1.declaration_dependencies().len());
+            let mut seen = Vec::new();
+            for _ in 0..expected.1.declaration_dependencies().len() {
+                let id = number(&mut rest);
+                let row = expected.1.declaration_dependencies().iter().find(|row| row.id().index() == id).unwrap();
+                seen.push(id);
+                let (crate::env::DependencyEndpoint::Symbol(owner), crate::env::DependencyEndpoint::Label(target)) = (row.source(), row.target()) else { panic!("old citation") };
+                assert_eq!(string(&mut rest), owner.fqn().as_str());
+                assert_eq!(string(&mut rest), target.as_str());
+                assert_eq!(number(&mut rest), row.contribution().index());
+                assert_eq!(row.kind(), crate::env::DeclarationDependencyKind::LabelCitation);
+            }
+            assert_eq!(seen, expected.1.declaration_dependencies().iter().map(|row| row.id().index()).collect::<Vec<_>>());
+            assert_eq!(number(&mut rest), expected.1.contributions().iter().count());
+            let mut seen = Vec::new();
+            for _ in 0..expected.1.contributions().iter().count() {
+                let id = number(&mut rest);
+                let row = expected.1.contributions().iter().find(|row| row.id().index() == id).unwrap();
+                seen.push(id);
+                let effects = row.effects();
+                let symbols = (0..number(&mut rest)).map(|_| string(&mut rest)).collect::<Vec<_>>();
+                let definitions = (0..number(&mut rest)).map(|_| number(&mut rest)).collect::<Vec<_>>();
+                let labels = (0..number(&mut rest)).map(|_| string(&mut rest)).collect::<Vec<_>>();
+                let dependencies = (0..number(&mut rest)).map(|_| number(&mut rest)).collect::<Vec<_>>();
+                assert_eq!(symbols, effects.symbols().iter().map(|key| key.fqn().as_str().to_owned()).collect::<Vec<_>>());
+                assert_eq!(definitions, effects.definitions().iter().map(|key| key.index()).collect::<Vec<_>>());
+                assert_eq!(labels, effects.labels().iter().map(|key| key.as_str().to_owned()).collect::<Vec<_>>());
+                assert_eq!(dependencies, effects.declaration_dependencies().iter().map(|key| key.index()).collect::<Vec<_>>());
+                assert!(matches!(row.kind(), ContributionKind::LocalSource { source_id } if *source_id == ast.source_id));
+            }
+            assert_eq!(seen, expected.1.contributions().iter().map(|row| row.id().index()).collect::<Vec<_>>());
+            assert!(rest.is_empty());
+            if let Some(storage) = crate::symbols::source_theorem_module_candidates_canonical_bytes(&ast, &actual_module).unwrap() {
+                assert_eq!(crate::symbols::source_theorem_module_candidates_from_canonical_bytes(&storage, ast.source_id, &actual_module), Some(expected.clone()));
+            }
+            let rebound_id = distinct_source_ids().1;
+            assert_ne!(rebound_id, ast.source_id);
+            let rebound = SurfaceAst::from_canonical_bytes(&ast.canonical_bytes().unwrap(), rebound_id).unwrap();
+            let rebound_shells = crate::declarations::DeclarationShellCollector::new(&rebound, &actual_module).collect();
+            let rebound_collected = crate::symbols::SignatureProjectionExtractor::new(&rebound, &rebound_shells, NamespacePath::new(actual_module.path().as_str())).collect(&actual_module);
+            assert!(rebound_collected.diagnostics().is_empty());
+            let rebound_arena = SurfaceResolvedArena::lower(&rebound, &actual_module).unwrap();
+            let rebound_expected = crate::symbols::source_theorem_module_candidates(&rebound, &rebound_arena, rebound_collected.env()).unwrap().unwrap();
+            assert_ne!(rebound_expected, expected);
+            let (rebound_resolved, rebound_env, rebound_bytes) = crate::symbols::source_theorem_module_semantic_payload(&rebound, &actual_module).unwrap().unwrap();
+            assert_eq!((rebound_resolved, rebound_env), rebound_expected);
+            assert_eq!(rebound_bytes, bytes);
+        }
+        assert_eq!((ast, module, original, arena), before);
+    }
+}
+
+#[test]
+fn source_theorem_module_semantic_payload_preserves_errors_and_participation() {
+    let fixture = include_str!(
+        "../../../../tests/miz/pass/resolve/pass_declaration_symbol_private_theorem_visibility_001.miz"
+    );
+    for text in [
+        fixture.replace("by PrivT1", "by Missing"),
+        fixture.replace("by PrivT1", "by main.PrivT1"),
+        format!("{fixture}\nreserve Y for set;\n"),
+        format!("{fixture}\ntheorem Plain: 0 = 0;\n"),
+        fixture.replace("thus X = X;", "thus Y = X;"),
+    ] {
+        let (ast, module, _, env, arena) = parsed_private_theorem_fixture(&text);
+        let before = (ast.clone(), module.clone(), env.clone(), arena.clone());
+        let old = crate::symbols::source_theorem_module_candidates(&ast, &arena, &env);
+        let new = crate::symbols::source_theorem_module_semantic_payload(&ast, &module);
+        if text.contains("thus Y = X;") {
+            assert_eq!(old.as_ref().unwrap_err(), "UnresolvedReference");
+            assert_eq!(new.as_ref().unwrap_err(), old.as_ref().unwrap_err());
+            let oversized = module_id(&"p".repeat(32 * 1024 * 1024), "main");
+            assert_eq!(
+                crate::symbols::source_theorem_module_semantic_payload(&ast, &oversized).unwrap(),
+                None
+            );
+        } else {
+            assert_eq!(old, Ok(None));
+            assert_eq!(new, Ok(None));
+        }
+        assert_eq!((ast, module, env, arena), before);
+    }
+    // Negative only: genuine parsed nodes with the second same-width owner restored.
+    let duplicate = include_str!(
+        "../../../../tests/miz/fail/resolve/fail_resolve_duplicate_theorem_symbol_001.miz"
+    );
+    let collision_free = duplicate.replacen("\ntheorem Clash", "\ntheorem Other", 1);
+    let (ast, module, _, _, _) = parsed_private_theorem_fixture(&collision_free);
+    let mut builder = SurfaceAstBuilder::new(ast.source_id);
+    let mut rebuilt = Vec::new();
+    let mut replacements = 0;
+    for node in ast.node_views() {
+        let children = node
+            .children()
+            .iter()
+            .map(|id| rebuilt[id.index()])
+            .collect::<Vec<_>>();
+        let id = if let Some(token) = node.as_token() {
+            if token.text.as_ref() == "Other" {
+                replacements += 1;
+                builder.add_token(token.kind, "Clash", node.range())
+            } else {
+                builder.add_token(token.kind, token.text.clone(), node.range())
+            }
+        } else {
+            builder.add_node(node.kind().clone(), node.range(), children)
+        };
+        rebuilt.push(id);
+    }
+    assert_eq!(replacements, 1);
+    let negative = builder.finish(Some(rebuilt[ast.root().unwrap().index()]), None);
+    let before = (negative.clone(), module.clone());
+    let shells = crate::declarations::DeclarationShellCollector::new(&negative, &module).collect();
+    let collected = crate::symbols::SignatureProjectionExtractor::new(
+        &negative,
+        &shells,
+        NamespacePath::new(module.path().as_str()),
+    )
+    .collect(&module);
+    assert!(!collected.diagnostics().is_empty());
+    assert_eq!(
+        crate::symbols::source_theorem_module_semantic_payload(&negative, &module).unwrap(),
+        None
+    );
+    assert_eq!((negative, module), before);
+    let (base_ast, module, _, base_env, base_arena) = parsed_private_theorem_fixture(fixture);
+    let baseline =
+        crate::symbols::source_theorem_module_candidates(&base_ast, &base_arena, &base_env)
+            .unwrap()
+            .unwrap();
+    let baseline_owner = baseline
+        .1
+        .symbols()
+        .iter()
+        .find(|row| row.primary_spelling() == "UsePriv1")
+        .unwrap();
+    assert_eq!(baseline_owner.kind(), crate::env::SymbolKind::Theorem);
+    assert_eq!(baseline_owner.visibility(), Visibility::Public);
+    let baseline_bytes = crate::symbols::source_theorem_module_semantic_payload(&base_ast, &module)
+        .unwrap()
+        .unwrap()
+        .2;
+    for text in [
+        fixture.replace("proof\n", "proof\n :: 日本語\n"),
+        fixture.replace("X = X", "X  =  X"),
+        format!("\u{feff}{}", fixture.replace('\n', "\r\n")),
+    ] {
+        let (ast, module, _, env, arena) = parsed_private_theorem_fixture(&text);
+        let old = crate::symbols::source_theorem_module_candidates(&ast, &arena, &env)
+            .unwrap()
+            .unwrap();
+        let (resolved, symbols, bytes) =
+            crate::symbols::source_theorem_module_semantic_payload(&ast, &module)
+                .unwrap()
+                .unwrap();
+        assert_eq!((resolved, symbols), old);
+        assert_eq!(bytes, baseline_bytes);
+    }
+    for (case, text) in [
+        ("owner", fixture.replace("PrivT1", "PrivT2")),
+        (
+            "role",
+            fixture.replace("theorem UsePriv1", "lemma UsePriv1"),
+        ),
+        (
+            "visibility",
+            fixture.replace("\ntheorem UsePriv1", "\nprivate theorem UsePriv1"),
+        ),
+        ("binder", fixture.replace('X', "Y")),
+        (
+            "proof",
+            fixture
+                .replace("let X be set;", "let Y be set;")
+                .replace("thus X = X", "thus Y = Y"),
+        ),
+    ] {
+        let (ast, module, _, env, arena) = parsed_private_theorem_fixture(&text);
+        let old = crate::symbols::source_theorem_module_candidates(&ast, &arena, &env)
+            .unwrap()
+            .unwrap();
+        let use_owner = old
+            .1
+            .symbols()
+            .iter()
+            .find(|row| row.primary_spelling() == "UsePriv1")
+            .unwrap();
+        match case {
+            "owner" => assert!(
+                old.1
+                    .labels()
+                    .iter()
+                    .any(|row| row.primary_spelling() == "PrivT2")
+            ),
+            "role" => assert_eq!(use_owner.kind(), crate::env::SymbolKind::Lemma),
+            "visibility" => assert_eq!(use_owner.visibility(), Visibility::Private),
+            "binder" | "proof" => assert!(old.0.nodes().iter().any(|(_, row)| matches!(
+                row.kind(), SurfaceNodeKind::Token(token)
+                    if token.kind == SurfaceTokenKind::Identifier && token.text.as_ref() == "Y"
+            ))),
+            _ => unreachable!(),
+        }
+        let (resolved, symbols, bytes) =
+            crate::symbols::source_theorem_module_semantic_payload(&ast, &module)
+                .unwrap()
+                .unwrap();
+        assert_eq!((resolved, symbols), old);
+        assert_ne!(bytes, baseline_bytes, "{case}");
+    }
+    let alpha = "theorem Alpha: 0 = 0\nproof\n thus 0 = 0;\nend;\n";
+    let beta = "theorem Beta: 0 = 0\nproof\n thus 0 = 0;\nend;\n";
+    let citing =
+        format!("{alpha}{beta}theorem Use: 0 = 0\nproof\n thus 0 = 0 by Alpha, Beta;\nend;\n");
+    for (left, right, case) in [
+        (
+            alpha.to_owned(),
+            alpha.replace("0 = 0", "0 = 12"),
+            "numeral",
+        ),
+        (
+            format!("{alpha}{beta}"),
+            format!("{beta}{alpha}"),
+            "declaration order",
+        ),
+        (
+            citing.clone(),
+            citing.replace("by Alpha, Beta", "by Beta, Alpha"),
+            "citation order",
+        ),
+    ] {
+        let mut pairs = Vec::new();
+        let mut streams = Vec::new();
+        for text in [left, right] {
+            let (ast, module, _, env, arena) = parsed_private_theorem_fixture(&text);
+            let old = crate::symbols::source_theorem_module_candidates(&ast, &arena, &env)
+                .unwrap()
+                .unwrap();
+            let (resolved, symbols, bytes) =
+                crate::symbols::source_theorem_module_semantic_payload(&ast, &module)
+                    .unwrap()
+                    .unwrap();
+            assert_eq!((resolved, symbols), old);
+            pairs.push(old);
+            streams.push(bytes);
+        }
+        match case {
+            "numeral" => assert_ne!(
+                pairs[0].1.symbols().iter().next().unwrap().signature(),
+                pairs[1].1.symbols().iter().next().unwrap().signature()
+            ),
+            "declaration order" => {
+                for (pair, expected_id) in pairs.iter().zip([0, 1]) {
+                    let (_, env) = pair;
+                    let owner = env
+                        .symbols()
+                        .iter()
+                        .find(|row| row.primary_spelling() == "Alpha")
+                        .unwrap();
+                    let definition = env.definitions().by_symbol(owner.symbol()).unwrap();
+                    assert_eq!(definition.id().index(), expected_id);
+                }
+            }
+            "citation order" => {
+                for (pair, names) in pairs.iter().zip([["Alpha", "Beta"], ["Beta", "Alpha"]]) {
+                    let actual = pair
+                        .0
+                        .label_refs()
+                        .iter()
+                        .map(|(_, row)| row.site().spelling())
+                        .collect::<Vec<_>>();
+                    assert_eq!(actual, names);
+                }
+                assert_ne!(
+                    pairs[0].1.declaration_dependencies(),
+                    pairs[1].1.declaration_dependencies()
+                );
+            }
+            _ => unreachable!(),
+        }
+        assert_ne!(streams[0], streams[1], "{case}");
+    }
+}

@@ -3806,6 +3806,207 @@ pub fn source_theorem_module_original_inputs(
     Ok(Some((arena, collected.into_env())))
 }
 
+/// Projects bounded source-shaped semantics from the genuine theorem module pair.
+pub fn source_theorem_module_semantic_payload(
+    ast: &SurfaceAst,
+    module: &ModuleId,
+) -> Result<Option<(crate::resolved_ast::ResolvedAst, SymbolEnv, Vec<u8>)>, String> {
+    let domain = b"mizar-resolve/source-theorem-module-semantics/v1\0";
+    let mut size = domain.len();
+    for field in [module.package().as_str(), module.path().as_str()] {
+        let Some(next) = u64::try_from(field.len())
+            .ok()
+            .and_then(|_| size.checked_add(8))
+            .and_then(|size| size.checked_add(field.len()))
+        else {
+            return Ok(None);
+        };
+        if next > 32 * 1024 * 1024 {
+            return Ok(None);
+        }
+        size = next;
+    }
+    let Some((source, original)) = source_theorem_module_original_inputs(ast, module)? else {
+        return Ok(None);
+    };
+    Ok(source_theorem_module_candidates(ast, &source, &original)?.and_then(|(resolved, env)| {
+        use crate::resolved_ast::{LabelKind, LabelResolution, NameResolution, NodeReferenceKey,
+            NodeResolutionState, RecoveryState};
+        if resolved.module_id() != module || env.module_id() != module
+            || resolved.source_id() != ast.source_id
+            || resolved.imports().imports().next().is_some()
+            || resolved.imports().exports().next().is_some()
+            || !resolved.imports().canonical_import_modules().is_empty()
+            || !env.imports().is_empty() || !env.exports().is_empty()
+            || !env.overloads().is_empty() || !env.registrations().is_empty()
+            || !env.lexical_summaries().is_empty() || !env.namespace_graph().is_empty()
+            || !env.module_summaries().is_empty() { return None; }
+        let scalar = |bytes: &mut Vec<u8>, value: usize| -> Option<()> {
+            let value = u64::try_from(value).ok()?;
+            if bytes.len().checked_add(8)? > 32 * 1024 * 1024 { return None; }
+            bytes.extend_from_slice(&value.to_le_bytes());
+            Some(())
+        };
+        let text = |bytes: &mut Vec<u8>, value: &str| -> Option<()> {
+            if bytes.len().checked_add(8)?.checked_add(value.len())? > 32 * 1024 * 1024 { return None; }
+            scalar(bytes, value.len())?;
+            bytes.extend_from_slice(value.as_bytes());
+            Some(())
+        };
+        let origin = |bytes: &mut Vec<u8>, value: &SemanticOrigin| -> Option<()> {
+            if value.module_id() != module || value.is_recovered() || value.import_edge().is_some() { return None; }
+            scalar(bytes, value.structural_path().len())?;
+            for part in value.structural_path() { scalar(bytes, usize::try_from(*part).ok()?)?; }
+            Some(())
+        };
+        let fqn = |bytes: &mut Vec<u8>, value: &SymbolId| -> Option<()> {
+            if value.module() != module { return None; }
+            text(bytes, value.fqn().as_str())
+        };
+        let mut bytes = Vec::with_capacity(size);
+        bytes.extend_from_slice(domain);
+        text(&mut bytes, module.package().as_str())?;
+        text(&mut bytes, module.path().as_str())?;
+        scalar(&mut bytes, resolved.nodes().root().index())?;
+        scalar(&mut bytes, resolved.nodes().len())?;
+        for (id, node) in resolved.nodes().iter() {
+            if node.recovery() != RecoveryState::Normal { return None; }
+            match node.kind() {
+                SurfaceNodeKind::Root | SurfaceNodeKind::CompilationUnit | SurfaceNodeKind::ItemList
+                | SurfaceNodeKind::VisibleItem | SurfaceNodeKind::VisibilityMarker
+                | SurfaceNodeKind::JustificationClause | SurfaceNodeKind::ReferenceList
+                | SurfaceNodeKind::Token(_) | SurfaceNodeKind::TheoremItem | SurfaceNodeKind::LemmaItem
+                | SurfaceNodeKind::ProofBlock | SurfaceNodeKind::LetStatement
+                | SurfaceNodeKind::ConclusionStatement | SurfaceNodeKind::Proposition
+                | SurfaceNodeKind::FormulaExpression
+                | SurfaceNodeKind::QuantifiedFormula(mizar_syntax::SurfaceQuantifierKind::Universal)
+                | SurfaceNodeKind::QuantifierVariableSegment | SurfaceNodeKind::QualifiedVariableSegment
+                | SurfaceNodeKind::TypeExpression | SurfaceNodeKind::TypeHead
+                | SurfaceNodeKind::BuiltinPredicateApplication | SurfaceNodeKind::TermExpression
+                | SurfaceNodeKind::TermReference | SurfaceNodeKind::NumeralTerm | SurfaceNodeKind::Reference => {}
+                _ => return None,
+            }
+            scalar(&mut bytes, id.index())?;
+            scalar(&mut bytes, usize::from(node.kind().syntax_kind() as u16))?;
+            if let SurfaceNodeKind::Token(token) = node.kind() {
+                match token.kind {
+                    SurfaceTokenKind::Identifier | SurfaceTokenKind::ReservedWord
+                    | SurfaceTokenKind::ReservedSymbol | SurfaceTokenKind::Numeral
+                    | SurfaceTokenKind::LexemeRun | SurfaceTokenKind::UserSymbol
+                    | SurfaceTokenKind::AnnotationMarker | SurfaceTokenKind::StringLiteral
+                    | SurfaceTokenKind::ErrorRecovery | SurfaceTokenKind::Unknown => {}
+                    _ => return None,
+                }
+                scalar(&mut bytes, usize::from(token.kind.syntax_kind() as u16))?;
+                text(&mut bytes, &token.text)?;
+            }
+            scalar(&mut bytes, node.children().len())?;
+            for child in node.children() { scalar(&mut bytes, child.index())?; }
+            scalar(&mut bytes, match node.resolution() {
+                NodeResolutionState::NotApplicable => 0, NodeResolutionState::Resolved => 1,
+                _ => return None,
+            })?;
+            match node.reference_key() {
+                None => scalar(&mut bytes, 0)?,
+                Some(NodeReferenceKey::Name(id)) => { scalar(&mut bytes, 1)?; scalar(&mut bytes, id.index())?; }
+                Some(NodeReferenceKey::Label(id)) => { scalar(&mut bytes, 2)?; scalar(&mut bytes, id.index())?; }
+                _ => return None,
+            }
+            origin(&mut bytes, node.origin())?;
+        }
+        scalar(&mut bytes, resolved.name_refs().len())?;
+        for (id, entry) in resolved.name_refs().iter() {
+            let NameResolution::ResolvedBuiltin(target) = entry.resolution() else { return None; };
+            if entry.recovery() != RecoveryState::Normal { return None; }
+            scalar(&mut bytes, id.index())?;
+            scalar(&mut bytes, entry.site().node().index())?;
+            text(&mut bytes, entry.site().spelling())?;
+            text(&mut bytes, target.builtin().as_str())?;
+            text(&mut bytes, target.spelling())?;
+            origin(&mut bytes, entry.origin())?;
+        }
+        scalar(&mut bytes, resolved.label_refs().len())?;
+        for (id, entry) in resolved.label_refs().iter() {
+            let LabelResolution::Resolved(target) = entry.resolution() else { return None; };
+            if entry.recovery() != RecoveryState::Normal || target.kind() != LabelKind::Theorem { return None; }
+            scalar(&mut bytes, id.index())?;
+            scalar(&mut bytes, entry.site().node().index())?;
+            text(&mut bytes, entry.site().spelling())?;
+            text(&mut bytes, target.origin().as_str())?;
+            origin(&mut bytes, entry.origin())?;
+        }
+        scalar(&mut bytes, env.symbols().len())?;
+        for entry in env.symbols().iter() {
+            if entry.notation_spelling().is_some() || !entry.relations().is_empty() { return None; }
+            fqn(&mut bytes, entry.symbol())?;
+            scalar(&mut bytes, match entry.kind() { SymbolKind::Theorem => 0, SymbolKind::Lemma => 1, _ => return None })?;
+            scalar(&mut bytes, match entry.visibility() { Visibility::Private => 0, Visibility::Public => 1 })?;
+            scalar(&mut bytes, match entry.export_status() { ExportStatus::LocalOnly => 0, ExportStatus::Exported => 1, _ => return None })?;
+            text(&mut bytes, entry.namespace().as_str())?;
+            text(&mut bytes, entry.primary_spelling())?;
+            scalar(&mut bytes, entry.contribution().index())?;
+            let Some(SignatureShell::Opaque { schema, payload }) = entry.signature() else { return None; };
+            text(&mut bytes, schema)?;
+            text(&mut bytes, payload)?;
+            origin(&mut bytes, entry.origin())?;
+        }
+        scalar(&mut bytes, env.labels().len())?;
+        for entry in env.labels().iter() {
+            if entry.kind() != LabelKind::Theorem || entry.recovery() != RecoveryState::Normal { return None; }
+            text(&mut bytes, entry.origin_path().as_str())?;
+            scalar(&mut bytes, match entry.visibility() { Visibility::Private => 0, Visibility::Public => 1 })?;
+            scalar(&mut bytes, match entry.export_status() { ExportStatus::LocalOnly => 0, ExportStatus::Exported => 1, _ => return None })?;
+            text(&mut bytes, entry.namespace().as_str())?;
+            text(&mut bytes, entry.primary_spelling())?;
+            scalar(&mut bytes, entry.contribution().index())?;
+            origin(&mut bytes, entry.origin())?;
+        }
+        scalar(&mut bytes, env.definitions().len())?;
+        for entry in env.definitions().iter() {
+            if !entry.parameters().is_empty() || !entry.binders().is_empty() || entry.arity().is_some()
+                || entry.notation_shape().is_some() || entry.doc_attachment().is_some() || entry.conflict().is_some() { return None; }
+            scalar(&mut bytes, entry.id().index())?;
+            fqn(&mut bytes, entry.symbol())?;
+            scalar(&mut bytes, match entry.kind() { DefinitionKind::Theorem => 0, DefinitionKind::Lemma => 1, _ => return None })?;
+            scalar(&mut bytes, match entry.visibility() { Visibility::Private => 0, Visibility::Public => 1 })?;
+            scalar(&mut bytes, entry.contribution().index())?;
+            let Some(SignatureShell::Opaque { schema, payload }) = entry.signature() else { return None; };
+            text(&mut bytes, schema)?;
+            text(&mut bytes, payload)?;
+            origin(&mut bytes, entry.origin())?;
+            scalar(&mut bytes, entry.dependencies().len())?;
+            for dependency in entry.dependencies() { scalar(&mut bytes, dependency.index())?; }
+        }
+        scalar(&mut bytes, env.declaration_dependencies().len())?;
+        for entry in env.declaration_dependencies().iter() {
+            let (crate::env::DependencyEndpoint::Symbol(source), crate::env::DependencyEndpoint::Label(target)) = (entry.source(), entry.target()) else { return None; };
+            if entry.kind() != crate::env::DeclarationDependencyKind::LabelCitation { return None; }
+            scalar(&mut bytes, entry.id().index())?;
+            fqn(&mut bytes, source)?;
+            text(&mut bytes, target.as_str())?;
+            scalar(&mut bytes, entry.contribution().index())?;
+        }
+        scalar(&mut bytes, env.contributions().iter().count())?;
+        for entry in env.contributions().iter() {
+            if entry.module() != module || !matches!(entry.kind(), ContributionKind::LocalSource { source_id } if *source_id == ast.source_id) { return None; }
+            let effects = entry.effects();
+            if !effects.overload_groups().is_empty() || !effects.registrations().is_empty()
+                || !effects.lexical_summaries().is_empty() || !effects.namespace_edges().is_empty()
+                || !effects.imports().is_empty() || !effects.exports().is_empty() || !effects.diagnostics().is_empty() { return None; }
+            scalar(&mut bytes, entry.id().index())?;
+            scalar(&mut bytes, effects.symbols().len())?;
+            for symbol in effects.symbols() { fqn(&mut bytes, symbol)?; }
+            scalar(&mut bytes, effects.definitions().len())?;
+            for definition in effects.definitions() { scalar(&mut bytes, definition.index())?; }
+            scalar(&mut bytes, effects.labels().len())?;
+            for label in effects.labels() { text(&mut bytes, label.as_str())?; }
+            scalar(&mut bytes, effects.declaration_dependencies().len())?;
+            for dependency in effects.declaration_dependencies() { scalar(&mut bytes, dependency.index())?; }
+        }
+        Some((resolved, env, bytes))
+    }))
+}
+
 /// Stores the genuine source-profile theorem metadata pair through Syntax storage.
 pub fn source_theorem_module_candidates_canonical_bytes(
     ast: &SurfaceAst,
