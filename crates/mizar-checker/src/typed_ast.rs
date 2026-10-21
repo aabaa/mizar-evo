@@ -4742,7 +4742,112 @@ fn validate_source_type(parts: &TypedAstParts) -> Result<(), TypedAstError> {
     };
     handoff
         .validate_installation(parts.source_id, &parts.module_id, &parts.nodes)
-        .map_err(|_| TypedAstError::InvalidSourceType)
+        .map_err(|_| TypedAstError::InvalidSourceType)?;
+    if let Some(context) = &parts.source_context
+        && context.items().iter().any(|(_, item)| {
+            matches!(
+                item.role,
+                crate::source_context::SourceItemRole::Theorem
+                    | crate::source_context::SourceItemRole::Lemma
+            )
+        })
+    {
+        use crate::source_type::{SourceTypeApplicationForm, SourceTypeHead};
+        let invalid = TypedAstError::InvalidSourceType;
+        if handoff.applications().len() != context.declarations().len()
+            || !handoff.arguments().is_empty()
+            || !handoff.definition_returns().is_empty()
+            || !handoff.mode_rhs().is_empty()
+            || !handoff.structure_members().is_empty()
+        {
+            return Err(invalid);
+        }
+        let mut expressions = BTreeSet::new();
+        let mut heads = BTreeSet::new();
+        let mut resolved = BTreeSet::new();
+        let mut first_use = BTreeSet::new();
+        for ((_, application), (_, declaration)) in handoff
+            .applications()
+            .iter()
+            .zip(context.declarations().iter())
+        {
+            let expression = handoff
+                .expressions()
+                .get(application.root())
+                .ok_or(TypedAstError::InvalidSourceType)?;
+            if first_use.insert(application.root())
+                && application.root().index() != first_use.len() - 1
+            {
+                return Err(invalid);
+            }
+            let site = expression.site().node();
+            let head_site = expression.head_site().node();
+            let node = parts
+                .nodes
+                .node(site)
+                .ok_or(TypedAstError::InvalidSourceType)?;
+            let head = parts
+                .nodes
+                .node(head_site)
+                .ok_or(TypedAstError::InvalidSourceType)?;
+            if application.binding() != declaration.binding
+                || application.source_ordinal() != declaration.source_ordinal
+                || expression.source_range() != declaration.written_type_range
+                || expression.site() != &TypedSiteRef::Node(site)
+                || expression.head_site() != &TypedSiteRef::Node(head_site)
+                || expression.source_id() != parts.source_id
+                || expression.module_id() != &parts.module_id
+                || expression.form() != SourceTypeApplicationForm::Bare
+                || expression.head() != &SourceTypeHead::BuiltinSet
+                || expression.spelling() != "set"
+                || expression.head_spelling() != "set"
+                || expression.recovery() != NodeRecoveryState::Normal
+                || node.kind.as_str() != "TypeExpression"
+                || head.kind.as_str() != "TypeHead"
+                || node.anchor != SourceAnchor::Range(expression.source_range())
+                || head.anchor != SourceAnchor::Range(expression.head_range())
+                || node.children != [head_site]
+                || node.links.context != Some(declaration.local_context)
+                || head.links.context != Some(declaration.local_context)
+            {
+                return Err(invalid);
+            }
+        }
+        for (_, expression) in handoff.expressions().iter() {
+            if !expressions.insert(expression.site().node())
+                || !heads.insert(expression.head_site().node())
+                || !resolved.insert(
+                    parts
+                        .nodes
+                        .node(expression.site().node())
+                        .and_then(|node| node.resolved_node)
+                        .ok_or(TypedAstError::InvalidSourceType)?,
+                )
+                || !resolved.insert(
+                    parts
+                        .nodes
+                        .node(expression.head_site().node())
+                        .and_then(|node| node.resolved_node)
+                        .ok_or(TypedAstError::InvalidSourceType)?,
+                )
+            {
+                return Err(invalid);
+            }
+        }
+        if first_use.len() != handoff.expressions().len()
+            || parts
+                .nodes
+                .iter()
+                .any(|(id, node)| match node.kind.as_str() {
+                    "TypeExpression" => !expressions.contains(&id),
+                    "TypeHead" => !heads.contains(&id),
+                    _ => false,
+                })
+        {
+            return Err(invalid);
+        }
+    }
+    Ok(())
 }
 
 fn validate_source_attribute(parts: &TypedAstParts) -> Result<(), TypedAstError> {

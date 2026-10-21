@@ -1969,3 +1969,6 @@ capture テストは同じ UID で異なる C と Var 同一性を分け、既�
 
 ## Original-source theorem context installation
 [実 original-source theorem handoff](source_context.md#original-source-theorem-context-handoff)では、既存の全 handoff source/module/table/root/item/declaration 検証を維持する。Theorem/Lemma item link だけが item 自身の module binding/local context と異なり得る。非 root SourceFormula/Expression または SourceStatement/Proof context と、その実 item range 内の exact typed boundary owner/kind/range/context、全 binding-to-local link 表を通した parent 対応を要求する。全 local context は1回ずつ link し、item context は実 typed site の context のままとする。cross-item/不一致/欠落/重複を原子的に拒否する。他 role の旧 exact context-link rule と generic A/B/C・他 installer admission は維持する。
+
+## Original-source theorem type installation
+真正な Theorem/Lemma source context と source_type が共存する場合、全宣言順と application を正確な binding、source ordinal、written type range で結ぶ。実在する全 TypeExpression/TypeHead node のみ、一意な node site、正確な node range、normal recovery、resolved link、expression の唯一の head child、宣言と一致する local context を要求する。全 bare BuiltinSet expression が参照され、グループ宣言は共有できるが別の元 node を統合しない。余分な argument/拡張や不一致の対応を既存 InvalidSourceType で原子的に拒否する。type handoff がない場合と他の全 source-context profile は既存規則を保持する。

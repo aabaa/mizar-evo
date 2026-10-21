@@ -6,6 +6,7 @@ use crate::{
         BindingDraft, BindingEnv, BindingEnvParts, BindingId, BindingKind, BindingRecoveryState,
         BindingStatus, BindingTable, BindingTypeSite,
     },
+    source_context::SourceBindingContextProducer,
     source_proof_local_declaration::{
         SourceProofLocalGivenBindingHandoff, SourceProofLocalGivenConditionBindingHandoff,
         SourceProofLocalGivenDescendantBindingHandoff, SourceProofLocalGivenUseBindingHandoff,
@@ -19,11 +20,12 @@ use mizar_resolve::{
     env::{
         ContributionKind, ExportStatus, SourceContributionId, SymbolEnv, SymbolKind, Visibility,
     },
-    resolved_ast::{ModuleId, SemanticOrigin, SymbolId},
+    names::ResolvedVariableScope,
+    resolved_ast::{ModuleId, SemanticOrigin, SurfaceResolvedArena, SymbolId},
 };
 use mizar_session::{SourceAnchor, SourceId, SourceRange};
 use std::{
-    collections::BTreeSet,
+    collections::{BTreeMap, BTreeSet},
     error::Error,
     fmt::{self, Write as _},
 };
@@ -746,6 +748,115 @@ impl SourceTypeArgumentRow {
 pub struct SourceTypeProducer;
 
 impl SourceTypeProducer {
+    pub fn build_source_theorem_equalities(
+        source: &SurfaceResolvedArena,
+        symbols: &SymbolEnv,
+        scope: &ResolvedVariableScope,
+    ) -> Result<
+        (
+            BindingEnv,
+            crate::type_checker::TermFormulaInferenceOutput,
+            crate::typed_ast::TypedAst,
+            Vec<crate::resolved_typed_ast::ExpressionMetadataInput>,
+        ),
+        String,
+    > {
+        use crate::typed_ast::{TypedAst, TypedAstParts};
+        let (bindings, inference, typed, metadata) =
+            SourceBindingContextProducer::build_source_theorem_equalities(source, symbols, scope)?;
+        let invalid = || "theorems.equality.invalid_source_type_association".to_owned();
+        let context = typed.source_context().ok_or_else(invalid)?;
+        let typed_for = typed
+            .nodes()
+            .iter()
+            .map(|(id, node)| {
+                node.resolved_node
+                    .map(|resolved| (resolved, id))
+                    .ok_or_else(invalid)
+            })
+            .collect::<Result<BTreeMap<_, _>, _>>()?;
+        if typed_for.len() != typed.nodes().len() {
+            return Err(invalid());
+        }
+        let mut input = SourceTypeHandoffInput {
+            source_id: source.source_id(),
+            module_id: source.module().clone(),
+            applications: Vec::new(),
+            expressions: Vec::new(),
+            arguments: Vec::new(),
+        };
+        let mut expression_for = BTreeMap::new();
+        for (_, declaration) in context.declarations().iter() {
+            let mut matching = source.arena().iter().filter(|(resolved, original)| {
+                original.origin().anchor() == &SourceAnchor::Range(declaration.written_type_range)
+                    && typed_for
+                        .get(resolved)
+                        .and_then(|id| typed.nodes().node(*id))
+                        .is_some_and(|node| node.kind.as_str() == "TypeExpression")
+            });
+            let (resolved, original) = matching.next().ok_or_else(invalid)?;
+            if matching.next().is_some() || original.children().len() != 1 {
+                return Err(invalid());
+            }
+            let root = if let Some(id) = expression_for.get(&resolved) {
+                *id
+            } else {
+                let head_resolved = original.children()[0];
+                let head_original = source.arena().node(head_resolved).ok_or_else(invalid)?;
+                let SourceAnchor::Range(head_range) = head_original.origin().anchor() else {
+                    return Err(invalid());
+                };
+                let site = *typed_for.get(&resolved).ok_or_else(invalid)?;
+                let head_site = *typed_for.get(&head_resolved).ok_or_else(invalid)?;
+                let node = typed.nodes().node(site).ok_or_else(invalid)?;
+                let id = SourceTypeExpressionId::new(input.expressions.len());
+                // The genuine lower producer admitted the complete original AST as bare set.
+                input.expressions.push(SourceTypeExpressionInput {
+                    source_id: source.source_id(),
+                    module_id: source.module().clone(),
+                    site: TypedSiteRef::Node(site),
+                    source_range: declaration.written_type_range,
+                    spelling: "set".to_owned(),
+                    head_site: TypedSiteRef::Node(head_site),
+                    head_range: *head_range,
+                    head_spelling: "set".to_owned(),
+                    form: SourceTypeApplicationForm::Bare,
+                    head: SourceTypeHead::BuiltinSet,
+                    recovery: node.recovery,
+                });
+                expression_for.insert(resolved, id);
+                id
+            };
+            input.applications.push(SourceTypeApplicationInput {
+                binding: declaration.binding,
+                source_ordinal: declaration.source_ordinal,
+                root,
+            });
+        }
+        let source_type = build_source_type_handoff(input);
+        let primary = typed.source_term().cloned().ok_or_else(invalid)?;
+        let atomic = typed.source_atomic_formula().cloned().ok_or_else(invalid)?;
+        let rebuilt = TypedAst::try_new(TypedAstParts {
+            source_id: typed.source_id(),
+            module_id: typed.module_id().clone(),
+            resolved_root: typed.resolved_root(),
+            source_context: typed.source_context().cloned(),
+            source_type: Some(source_type),
+            source_attribute: typed.source_attribute().cloned(),
+            nodes: typed.nodes().clone(),
+            contexts: typed.contexts().clone(),
+            types: typed.types().clone(),
+            facts: typed.facts().clone(),
+            coercions: typed.coercions().clone(),
+            initial_obligations: typed.initial_obligations().clone(),
+            diagnostics: typed.diagnostics().clone(),
+        })
+        .and_then(|ast| ast.with_source_term(primary))
+        .and_then(|ast| ast.with_source_atomic_formula(atomic))
+        .map_err(|_| invalid())?;
+        Ok((bindings, inference, rebuilt, metadata))
+    }
+
     pub fn build(
         input: SourceTypeHandoffInput,
         bindings: &BindingEnv,
