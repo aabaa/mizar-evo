@@ -18,6 +18,7 @@ mizar-artifact = { path = "../mizar-artifact" }
 mizar-build = { path = "../mizar-build" }
 mizar-cache = { path = "../mizar-cache" }
 mizar-checker = { path = "../mizar-checker" }
+mizar-core = { path = "../mizar-core" }
 mizar-diagnostics = { path = "../mizar-diagnostics" }
 mizar-frontend = { path = "../mizar-frontend" }
 mizar-ir = { path = "../mizar-ir" }

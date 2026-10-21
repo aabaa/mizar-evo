@@ -543,6 +543,7 @@ artifact/test のフォローアップタスクが所有する。本 crate の�
 50. **[Native theorem summary candidate](../../task_contracts/ja/DRIVER-NATIVE-THEOREM-MODULE-SUMMARY-CANDIDATE.md).** [x]
 
 51. **[Native theorem metadata caller](../../task_contracts/ja/DRIVER-NATIVE-THEOREM-METADATA-CALLER.md).** [x]
+52. **[Native theorem Core caller](../../task_contracts/ja/DRIVER-NATIVE-THEOREM-CORE-CALLER.md).** [x]
 
 ## 推奨検証
 

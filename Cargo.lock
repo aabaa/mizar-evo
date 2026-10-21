@@ -516,6 +516,7 @@ dependencies = [
  "mizar-build",
  "mizar-cache",
  "mizar-checker",
+ "mizar-core",
  "mizar-diagnostics",
  "mizar-frontend",
  "mizar-ir",

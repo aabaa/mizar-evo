@@ -22875,3 +22875,411 @@ fn native_theorem_metadata_caller_preserves_refusals() {
         );
     }
 }
+
+#[test]
+fn native_theorem_core_caller_preserves_genuine_outputs() {
+    use mizar_core::core_ir::{
+        CoreCitation, CoreFormulaKind, CoreProofNodeKind, CoreProofStatus, ObligationSeedStatus,
+    };
+    for text in [
+        include_str!(
+            "../../../tests/miz/pass/theorems/pass_proof_verification_lemma_reference_001.miz"
+        ),
+        "theorem T: for X being set holds X = X proof let X be set; thus X = X; end;",
+    ] {
+        for open in [false, true] {
+            for threshold in [usize::MAX, 0] {
+                let fixture = Fixture::new(text.as_bytes());
+                let ids = InMemorySessionIdAllocator::new();
+                let snapshots = SnapshotRegistry::new();
+                let (mut draft, submit) = fixture.submit_request(vec![], vec![]);
+                draft.source_inputs.versions.clear();
+                let descriptor = SourceInput {
+                    package_id: fixture.version.package_id.clone(),
+                    module_path: fixture.version.module_path.clone(),
+                    normalized_path: fixture.version.normalized_path.clone(),
+                    edition: fixture.version.edition.clone(),
+                    origin: if open {
+                        SourceOriginInput::OpenBuffer {
+                            uri: format!(
+                                "file://{}",
+                                fixture.root.join("alpha/src/main.miz").display()
+                            ),
+                            expected_version: 7,
+                            actual_version: 7,
+                            text: std::sync::Arc::from(text),
+                        }
+                    } else {
+                        SourceOriginInput::Disk {
+                            path: "src/main.miz".into(),
+                        }
+                    },
+                };
+                if open {
+                    fixture.write(&[0xff]);
+                }
+                let session = draft
+                    .capture_sources(
+                        &ids,
+                        &snapshots,
+                        vec![(
+                            DiskSourceLoader::new(fixture.root.join("alpha")),
+                            descriptor.clone(),
+                        )],
+                    )
+                    .unwrap();
+                let snapshot = session.captured().snapshot().id;
+                let module = mizar_build::module_index::ModuleId::new(
+                    PackageId::new("alpha"),
+                    ModulePath::new("main"),
+                );
+                let unit = WorkUnit::Module {
+                    module: module.clone(),
+                };
+                let owner = publisher(snapshot, threshold, &unit);
+                allow_frontend(&owner, &unit);
+                let mut builder = PhaseRegistryBuilder::new();
+                builder.register_source_load();
+                builder.register_frontend(vec![]);
+                let submission = CompilerDriver::new(builder.build().unwrap())
+                    .with_output_publisher(owner.clone())
+                    .submit_captured(session, &ids, &snapshots, submit)
+                    .unwrap();
+                let (inputs, source_input) = native_disk_lookup_context(&submission, &ids);
+                let parent = submission
+                    .scheduler_run
+                    .as_ref()
+                    .unwrap()
+                    .phase_results
+                    .values()
+                    .flatten()
+                    .flat_map(|result| &result.output_refs)
+                    .find(|handle| handle.output_kind() == &OutputKind::new("FrontendOutput"))
+                    .unwrap();
+                assert_eq!(
+                    parent.placement() == &StoragePlacement::Resident,
+                    threshold != 0
+                );
+                let input = PhaseInput::new(
+                    unit,
+                    PhaseDispatchInputBundle::new(
+                        snapshot,
+                        source_input.identities().input_hash(),
+                        vec![],
+                        vec![
+                            SealedParentOutputHandle::from_published_output(
+                                &owner,
+                                snapshot,
+                                parent.clone(),
+                            )
+                            .unwrap(),
+                        ],
+                    )
+                    .unwrap(),
+                );
+                let (_, loaded, captured_input) =
+                    &inputs.captured.unwrap().native_sources().unwrap()[0];
+                let source = mizar_frontend::source::source_unit_from_loaded(
+                    loaded.clone(),
+                    mizar_frontend::source::diagnostic_file_path(captured_input),
+                );
+                assert_eq!(source.source_text.as_ref(), text);
+                let output = mizar_frontend::orchestration::Frontend::new(
+                    mizar_frontend::source::FrontendSourceLoader::new(DiskSourceLoader::new(
+                        fixture.root.join("alpha"),
+                    )),
+                    inputs.dependency_lexical_provider(&[]),
+                    MizarParserSeam,
+                )
+                .run_loaded(source)
+                .unwrap();
+                assert!(output.diagnostics.is_empty());
+                let typed = owner
+                    .storage()
+                    .typed_handle::<FrontendOutput<<MizarParserSeam as ParserSeam>::Ast>>(
+                        parent,
+                        &OutputKind::new("FrontendOutput"),
+                    )
+                    .unwrap();
+                assert_eq!(*owner.storage().get(&typed).unwrap(), output);
+                let ast = output.ast.as_ref().unwrap();
+                let resolver_module =
+                    ResolverModuleId::new(module.package.clone(), module.path.clone());
+                let (arena, env) = mizar_resolve::symbols::source_theorem_module_original_inputs(
+                    ast,
+                    &resolver_module,
+                )
+                .unwrap()
+                .unwrap();
+                let (scope, labels, resolved) =
+                    mizar_resolve::symbols::source_proof_inputs(&arena, &env).unwrap();
+                let metadata = mizar_checker::type_checker::check_source_theorem_metadata(
+                    &arena, &env, &scope,
+                )
+                .unwrap();
+                let check = mizar_checker::type_checker::SourceVariableSemanticsChecker::check_theorem_skeletons(
+                    &arena, &metadata.2, &scope, &env, &labels, &resolved, None,
+                ).unwrap();
+                assert!(!check.owners().is_empty());
+                let expected =
+                    mizar_core::elaborator::lower_source_theorem_skeletons(&check, None).unwrap();
+                assert_eq!(expected.source_id(), loaded.source_id);
+                assert_eq!(
+                    expected.module_id(),
+                    &ResolverModuleId::new(PackageId::new("alpha"), ModulePath::new("main"))
+                );
+                assert_eq!(
+                    expected.items().len(),
+                    if text.starts_with("lemma") { 2 } else { 1 }
+                );
+                assert!(!expected.proofs().is_empty());
+                assert!(
+                    expected
+                        .proofs()
+                        .iter()
+                        .all(|(_, proof)| proof.status == CoreProofStatus::PendingAutomaticProof)
+                );
+                assert!(expected.formulas().iter().any(|(_, formula)| matches!(&formula.kind, CoreFormulaKind::Forall { binders, .. } if !binders.is_empty() && binders.iter().all(|binder| binder.source_name.as_deref() == Some("X")))));
+                assert!(expected.proof_nodes().iter().any(|(_, node)| matches!(&node.kind, CoreProofNodeKind::IntroduceBinder { binder, .. } if binder.source_name.as_deref() == Some("X"))));
+                assert!(!expected.obligation_seeds().is_empty());
+                for (_, seed) in expected.obligation_seeds().iter() {
+                    assert_eq!(seed.status, ObligationSeedStatus::Active);
+                    assert!(expected.items().get(seed.owner).is_some());
+                    assert!(matches!(
+                        &expected.formulas().get(seed.goal.unwrap()).unwrap().kind,
+                        CoreFormulaKind::Equals { .. }
+                    ));
+                }
+                if text.starts_with("lemma") {
+                    assert!(expected.proof_nodes().iter().any(|(_, node)| matches!(&node.kind, CoreProofNodeKind::TerminalGoal { citations, .. } if citations.iter().any(|citation| matches!(citation, CoreCitation::Symbol(_))))));
+                }
+                let version = &inputs.snapshot.source_versions[0];
+                assert_eq!(loaded.source_id, version.source_id);
+                assert_eq!(loaded.source_hash, version.source_hash);
+                assert_eq!(loaded.source_hash, mizar_session::source::hash_text(text));
+                assert_eq!(loaded.origin, version.origin);
+                assert_eq!(
+                    matches!(loaded.origin, SourceOrigin::OpenBuffer { .. }),
+                    open
+                );
+                let before = (
+                    inputs.snapshot.clone(),
+                    inputs.build_plan.clone(),
+                    inputs.module_index.clone(),
+                    loaded.clone(),
+                    captured_input.clone(),
+                    input.clone(),
+                    parent.clone(),
+                );
+                for stage in 0..3 {
+                    if stage == 1 {
+                        fixture.write(b"open theorem Changed: 0 = 1;\n");
+                    } else if stage == 2 {
+                        fs::remove_file(fixture.root.join("alpha/src/main.miz")).unwrap();
+                    }
+                    for _ in 0..2 {
+                        assert_eq!(
+                            inputs
+                                .native_theorem_core_with_frontend_parent(&input, &owner)
+                                .unwrap(),
+                            Some(expected.clone()),
+                            "open={open} threshold={threshold} stage={stage}"
+                        );
+                    }
+                    assert_eq!(*owner.storage().get(&typed).unwrap(), output);
+                }
+                assert_eq!(
+                    (
+                        inputs.snapshot.clone(),
+                        inputs.build_plan.clone(),
+                        inputs.module_index.clone(),
+                        loaded.clone(),
+                        captured_input.clone(),
+                        input,
+                        parent.clone()
+                    ),
+                    before
+                );
+                assert_eq!(captured_input, &descriptor);
+            }
+        }
+    }
+}
+
+#[test]
+fn native_theorem_core_caller_preserves_refusals() {
+    let private = include_str!(
+        "../../../tests/miz/pass/resolve/pass_declaration_symbol_private_theorem_visibility_001.miz"
+    );
+    for (text, case) in [
+        (format!("{private}\nreserve Y for set;\n"), "reserve"),
+        (private.replace("by PrivT1", "by Missing"), "citation"),
+        (private.replace("thus X = X;", "thus Y = Y;"), "unbound"),
+        (private.to_owned(), "checker"),
+        (
+            "theorem Empty: for A being set holds A = A proof end;".to_owned(),
+            "skeleton",
+        ),
+    ] {
+        let fixture = Fixture::new(text.as_bytes());
+        let ids = InMemorySessionIdAllocator::new();
+        let snapshots = SnapshotRegistry::new();
+        let (_, submission, adapter, handle, _) =
+            native_disk_frontend_record_submission(&fixture, &ids, &snapshots, 0);
+        let (inputs, source_input) = native_disk_lookup_context(&submission, &ids);
+        let owner = adapter.publisher();
+        let input = PhaseInput::new(
+            source_input.work_unit.clone(),
+            PhaseDispatchInputBundle::new(
+                source_input.snapshot,
+                source_input.identities().input_hash(),
+                vec![],
+                vec![
+                    SealedParentOutputHandle::from_published_output(
+                        owner,
+                        source_input.snapshot,
+                        handle.erase(),
+                    )
+                    .unwrap(),
+                ],
+            )
+            .unwrap(),
+        );
+        let retained = owner.storage().get(&handle).unwrap();
+        let (_, loaded, descriptor) = &inputs.captured.unwrap().native_sources().unwrap()[0];
+        let before = (
+            inputs.snapshot.clone(),
+            inputs.build_plan.clone(),
+            inputs.module_index.clone(),
+            loaded.clone(),
+            descriptor.clone(),
+            input.clone(),
+            handle.clone(),
+            (*retained).clone(),
+        );
+        let metadata = inputs.native_theorem_metadata_with_frontend_parent(&input, owner);
+        let expected = if case == "skeleton" {
+            let metadata = metadata.unwrap().unwrap();
+            let WorkUnit::Module { module } = &input.work_unit else {
+                unreachable!()
+            };
+            let resolver_module =
+                ResolverModuleId::new(module.package.clone(), module.path.clone());
+            let (arena, env) = mizar_resolve::symbols::source_theorem_module_original_inputs(
+                retained.ast.as_ref().unwrap(),
+                &resolver_module,
+            )
+            .unwrap()
+            .unwrap();
+            let (scope, labels, resolved) =
+                mizar_resolve::symbols::source_proof_inputs(&arena, &env).unwrap();
+            let error = mizar_checker::type_checker::SourceVariableSemanticsChecker::check_theorem_skeletons(
+                &arena, &metadata.2, &scope, &env, &labels, &resolved, None,
+            ).unwrap_err();
+            Err(error)
+        } else if case == "unbound" || case == "checker" {
+            Err(metadata.unwrap_err())
+        } else {
+            assert_eq!(metadata, Ok(None));
+            Ok(None)
+        };
+        assert_eq!(
+            inputs.native_theorem_core_with_frontend_parent(&input, owner),
+            expected,
+            "{case}"
+        );
+        assert_eq!(
+            (
+                inputs.snapshot.clone(),
+                inputs.build_plan.clone(),
+                inputs.module_index.clone(),
+                loaded.clone(),
+                descriptor.clone(),
+                input,
+                handle.clone(),
+                (*owner.storage().get(&handle).unwrap()).clone()
+            ),
+            before
+        );
+    }
+    let text = "theorem Empty: for A being set holds A = A proof end;";
+    let fixture = Fixture::new(text.as_bytes());
+    let foreign = Fixture::new(text.as_bytes());
+    let ids = InMemorySessionIdAllocator::new();
+    let snapshots = SnapshotRegistry::new();
+    let (_, foreign_submission, foreign_adapter, foreign_handle, _) =
+        native_disk_frontend_record_submission(&foreign, &ids, &snapshots, 0);
+    for case in ["absent", "foreign", "hash", "obsolete", "collected"] {
+        let (_, submission, adapter, handle, _) =
+            native_disk_frontend_record_submission(&fixture, &ids, &snapshots, 0);
+        let (inputs, source_input) = native_disk_lookup_context(&submission, &ids);
+        let owner = adapter.publisher();
+        let mut parents = vec![
+            SealedParentOutputHandle::from_published_output(
+                owner,
+                source_input.snapshot,
+                handle.erase(),
+            )
+            .unwrap(),
+        ];
+        let mut snapshot = source_input.snapshot;
+        let mut hash = source_input.identities().input_hash();
+        match case {
+            "absent" => parents.clear(),
+            "foreign" => {
+                snapshot = foreign_submission.session.captured().snapshot().id;
+                parents = vec![
+                    SealedParentOutputHandle::from_published_output(
+                        foreign_adapter.publisher(),
+                        snapshot,
+                        foreign_handle.erase(),
+                    )
+                    .unwrap(),
+                ];
+            }
+            "hash" => hash = Hash::from_bytes([0x61; 32]),
+            "obsolete" => owner.mark_obsolete(snapshot).unwrap(),
+            "collected" => {
+                owner.storage().collect(mizar_ir::storage::CollectInput {
+                    snapshot,
+                    protected_outputs: vec![],
+                });
+            }
+            _ => unreachable!(),
+        }
+        let input = PhaseInput::new(
+            source_input.work_unit.clone(),
+            PhaseDispatchInputBundle::new(snapshot, hash, vec![], parents).unwrap(),
+        );
+        let (_, loaded, descriptor) = &inputs.captured.unwrap().native_sources().unwrap()[0];
+        let before = (
+            inputs.snapshot.clone(),
+            inputs.build_plan.clone(),
+            inputs.module_index.clone(),
+            loaded.clone(),
+            descriptor.clone(),
+            input.clone(),
+            handle.clone(),
+        );
+        let expected = inputs
+            .native_theorem_metadata_with_frontend_parent(&input, owner)
+            .unwrap_err();
+        assert_eq!(
+            inputs.native_theorem_core_with_frontend_parent(&input, owner),
+            Err(expected),
+            "{case}"
+        );
+        assert_eq!(
+            (
+                inputs.snapshot.clone(),
+                inputs.build_plan.clone(),
+                inputs.module_index.clone(),
+                loaded.clone(),
+                descriptor.clone(),
+                input,
+                handle
+            ),
+            before
+        );
+    }
+}

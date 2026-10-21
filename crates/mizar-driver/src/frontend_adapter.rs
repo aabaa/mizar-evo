@@ -1243,6 +1243,60 @@ impl<'a> crate::registry::SourceLoadInputs<'a> {
         Ok(Some(result))
     }
 
+    /// Lowers genuine bound native theorem metadata into owned Core IR.
+    pub fn native_theorem_core_with_frontend_parent(
+        self,
+        input: &PhaseInput,
+        publisher: &mizar_ir::publisher::PhaseOutputPublisher,
+    ) -> Result<Option<mizar_core::core_ir::CoreIr>, String> {
+        let Some(metadata) = self.native_theorem_metadata_with_frontend_parent(input, publisher)?
+        else {
+            return Ok(None);
+        };
+        let WorkUnit::Module { module } = &input.work_unit else {
+            return Err("native theorem core requires a module".to_owned());
+        };
+        let parent = input.parent_outputs()[0].as_output_ref();
+        let storage = publisher.storage();
+        let typed = storage
+            .typed_handle::<FrontendOutput<<MizarParserSeam as ParserSeam>::Ast>>(
+                parent,
+                &OutputKind::new("FrontendOutput"),
+            )
+            .map_err(|error| error.to_string())?;
+        let retained = storage.get(&typed).map_err(|error| error.to_string())?;
+        let ast = retained
+            .ast
+            .as_ref()
+            .ok_or_else(|| "native theorem core requires retained syntax".to_owned())?;
+        let resolver_module =
+            mizar_resolve::resolved_ast::ModuleId::new(module.package.clone(), module.path.clone());
+        let Some((arena, env)) =
+            mizar_resolve::symbols::source_theorem_module_original_inputs(ast, &resolver_module)?
+        else {
+            return Ok(None);
+        };
+        let (scope, labels, resolved) = mizar_resolve::symbols::source_proof_inputs(&arena, &env)?;
+        let check =
+            mizar_checker::type_checker::SourceVariableSemanticsChecker::check_theorem_skeletons(
+                &arena,
+                &metadata.2,
+                &scope,
+                &env,
+                &labels,
+                &resolved,
+                None,
+            )?;
+        let core = mizar_core::elaborator::lower_source_theorem_skeletons(&check, None)?;
+        storage
+            .validate_handle(parent)
+            .map_err(|error| error.to_string())?;
+        publisher
+            .validate_published_output(input.snapshot, parent)
+            .map_err(|error| error.to_string())?;
+        Ok(Some(core))
+    }
+
     /// Seals the coherent bounded native theorem pair and its genuine streams.
     pub fn publish_native_theorem_module_candidates(
         self,
