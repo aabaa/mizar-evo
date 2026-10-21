@@ -23283,3 +23283,317 @@ fn native_theorem_core_caller_preserves_refusals() {
         );
     }
 }
+
+#[test]
+fn native_theorem_core_storage_replay_preserves_genuine_outputs() {
+    use mizar_core::core_ir::{CoreProofStatus, ObligationSeedStatus};
+    use mizar_driver::{native_theorem_core_from_storage_bytes, native_theorem_core_storage_bytes};
+    use mizar_resolve::names::{SourceVariableScopeInput, SourceVariableScopeResolver};
+    let module = ResolverModuleId::new(PackageId::new("alpha"), ModulePath::new("main"));
+    for threshold in [usize::MAX, 0] {
+        let mut distinct_storage = Vec::new();
+        for text in [
+            include_str!(
+                "../../../tests/miz/pass/theorems/pass_proof_verification_lemma_reference_001.miz"
+            ),
+            "theorem T: for X being set holds X = X proof let X be set; thus X = X; end;",
+            "theorem T: for Y being set holds Y = Y proof let Y be set; thus Y = Y; end;",
+            "theorem T: for X being set holds X = X\nproof\n  let X be set;\n  thus X = X;\nend;\n",
+        ] {
+            let fixture = Fixture::new(text.as_bytes());
+            let ids = InMemorySessionIdAllocator::new();
+            let snapshots = SnapshotRegistry::new();
+            let captures = [
+                native_disk_frontend_record_submission(&fixture, &ids, &snapshots, threshold),
+                native_disk_frontend_record_submission(&fixture, &ids, &snapshots, threshold),
+            ];
+            let mut baselines = Vec::new();
+            for (_, submission, adapter, handle, _) in &captures {
+                let (inputs, _) = native_disk_lookup_context(submission, &ids);
+                let retained = adapter.publisher().storage().get(handle).unwrap();
+                assert_eq!(
+                    handle.erase().placement() == &StoragePlacement::Resident,
+                    threshold != 0
+                );
+                assert!(retained.diagnostics.is_empty());
+                let ast = retained.ast.as_ref().unwrap();
+                let (_, loaded, _) = &inputs.captured.unwrap().native_sources().unwrap()[0];
+                assert_eq!(loaded.text.as_ref(), text);
+                assert_eq!(ast.source_id, loaded.source_id);
+                let (arena, env) =
+                    mizar_resolve::symbols::source_theorem_module_original_inputs(ast, &module)
+                        .unwrap()
+                        .unwrap();
+                assert!(
+                    mizar_resolve::symbols::source_theorem_module_candidates(ast, &arena, &env,)
+                        .unwrap()
+                        .is_some()
+                );
+                let scope = SourceVariableScopeResolver::resolve_proof_occurrences(
+                    SourceVariableScopeInput::new(ast, &module, &env),
+                )
+                .unwrap();
+                let metadata = mizar_checker::type_checker::check_source_theorem_metadata(
+                    &arena, &env, &scope,
+                )
+                .unwrap();
+                let (scope, labels, resolved) =
+                    mizar_resolve::symbols::source_proof_inputs(&arena, &env).unwrap();
+                let check = mizar_checker::type_checker::SourceVariableSemanticsChecker::check_theorem_skeletons(
+                    &arena, &metadata.2, &scope, &env, &labels, &resolved, None,
+                ).unwrap();
+                assert!(!check.owners().is_empty());
+                let core =
+                    mizar_core::elaborator::lower_source_theorem_skeletons(&check, None).unwrap();
+                assert_eq!(core.source_id(), loaded.source_id);
+                assert_eq!(core.module_id(), &module);
+                assert!(!core.proofs().is_empty());
+                assert!(
+                    core.proofs()
+                        .iter()
+                        .all(|(_, proof)| proof.status == CoreProofStatus::PendingAutomaticProof)
+                );
+                assert!(!core.obligation_seeds().is_empty());
+                assert!(
+                    core.obligation_seeds()
+                        .iter()
+                        .all(|(_, seed)| seed.status == ObligationSeedStatus::Active)
+                );
+                let syntax = ast.canonical_bytes().unwrap();
+                let mut expected_bytes = b"mizar-driver/native-theorem-core-storage/v1\0".to_vec();
+                for field in [b"alpha".as_slice(), b"main".as_slice(), syntax.as_slice()] {
+                    expected_bytes
+                        .extend_from_slice(&u64::try_from(field.len()).unwrap().to_le_bytes());
+                    expected_bytes.extend_from_slice(field);
+                }
+                baselines.push((core, expected_bytes, ast.clone()));
+            }
+            assert_ne!(baselines[0].0.source_id(), baselines[1].0.source_id());
+            assert_eq!(baselines[0].1, baselines[1].1);
+            assert!(!distinct_storage.contains(&baselines[0].1));
+            distinct_storage.push(baselines[0].1.clone());
+            for stage in 0..3 {
+                if stage == 1 {
+                    fixture.write(b"open theorem Changed: 0 = 1;\n");
+                } else if stage == 2 {
+                    fs::remove_file(fixture.root.join("alpha/src/main.miz")).unwrap();
+                }
+                for (core, bytes, ast) in &baselines {
+                    let before = (ast.clone(), module.clone(), core.clone(), bytes.clone());
+                    for _ in 0..2 {
+                        assert_eq!(
+                            native_theorem_core_storage_bytes(ast, &module, core).unwrap(),
+                            Some(bytes.clone())
+                        );
+                        assert_eq!(
+                            native_theorem_core_from_storage_bytes(bytes, ast.source_id, &module)
+                                .unwrap(),
+                            Some(core.clone())
+                        );
+                        assert_eq!(
+                            native_theorem_core_from_storage_bytes(
+                                bytes,
+                                baselines[1].0.source_id(),
+                                &module
+                            )
+                            .unwrap(),
+                            Some(baselines[1].0.clone())
+                        );
+                    }
+                    assert_eq!(
+                        native_theorem_core_storage_bytes(
+                            ast,
+                            &module,
+                            &baselines
+                                [1 - usize::from(ast.source_id == baselines[1].0.source_id())]
+                            .0
+                        )
+                        .unwrap(),
+                        None
+                    );
+                    assert_eq!(
+                        (ast.clone(), module.clone(), core.clone(), bytes.clone()),
+                        before
+                    );
+                }
+            }
+        }
+    }
+}
+
+#[test]
+fn native_theorem_core_storage_replay_preserves_refusals() {
+    use mizar_driver::{native_theorem_core_from_storage_bytes, native_theorem_core_storage_bytes};
+    use mizar_resolve::names::{SourceVariableScopeInput, SourceVariableScopeResolver};
+    let module = ResolverModuleId::new(PackageId::new("alpha"), ModulePath::new("main"));
+    let ids = InMemorySessionIdAllocator::new();
+    let snapshots = SnapshotRegistry::new();
+    let valid = Fixture::new(
+        b"theorem T: for X being set holds X = X proof let X be set; thus X = X; end;",
+    );
+    let (_, submission, adapter, handle, _) =
+        native_disk_frontend_record_submission(&valid, &ids, &snapshots, 0);
+    let (inputs, source_input) = native_disk_lookup_context(&submission, &ids);
+    let owner = adapter.publisher();
+    let input = PhaseInput::new(
+        source_input.work_unit.clone(),
+        PhaseDispatchInputBundle::new(
+            source_input.snapshot,
+            source_input.identities().input_hash(),
+            vec![],
+            vec![
+                SealedParentOutputHandle::from_published_output(
+                    owner,
+                    source_input.snapshot,
+                    handle.erase(),
+                )
+                .unwrap(),
+            ],
+        )
+        .unwrap(),
+    );
+    let foreign_core = inputs
+        .native_theorem_core_with_frontend_parent(&input, owner)
+        .unwrap()
+        .unwrap();
+    let private = include_str!(
+        "../../../tests/miz/pass/resolve/pass_declaration_symbol_private_theorem_visibility_001.miz"
+    );
+    for (text, case) in [
+        (format!("{private}\nreserve Y for set;\n"), "reserve"),
+        (private.replace("by PrivT1", "by Missing"), "citation"),
+        (private.replace("thus X = X;", "thus Y = Y;"), "unbound"),
+        (private.to_owned(), "private"),
+        (
+            "theorem Empty: for A being set holds A = A proof end;".to_owned(),
+            "empty",
+        ),
+    ] {
+        let fixture = Fixture::new(text.as_bytes());
+        let (_, _, adapter, handle, _) =
+            native_disk_frontend_record_submission(&fixture, &ids, &snapshots, 0);
+        let output = adapter.publisher().storage().get(&handle).unwrap();
+        let ast = output.ast.as_ref().unwrap();
+        let (arena, env) =
+            mizar_resolve::symbols::source_theorem_module_original_inputs(ast, &module)
+                .unwrap()
+                .unwrap();
+        let candidate = mizar_resolve::symbols::source_theorem_module_candidates(ast, &arena, &env);
+        let expected: Result<Option<mizar_core::core_ir::CoreIr>, String> = match candidate {
+            Ok(None) => {
+                assert!(matches!(case, "reserve" | "citation"));
+                Ok(None)
+            }
+            Err(error) => {
+                assert_eq!(case, "unbound");
+                Err(error)
+            }
+            Ok(Some(_)) => {
+                let scope = SourceVariableScopeResolver::resolve_proof_occurrences(
+                    SourceVariableScopeInput::new(ast, &module, &env),
+                )
+                .unwrap();
+                let metadata = mizar_checker::type_checker::check_source_theorem_metadata(
+                    &arena, &env, &scope,
+                );
+                if case == "private" {
+                    Err(metadata.unwrap_err())
+                } else {
+                    assert_eq!(case, "empty");
+                    let metadata = metadata.unwrap();
+                    let (scope, labels, resolved) =
+                        mizar_resolve::symbols::source_proof_inputs(&arena, &env).unwrap();
+                    let error = mizar_checker::type_checker::SourceVariableSemanticsChecker::check_theorem_skeletons(
+                        &arena, &metadata.2, &scope, &env, &labels, &resolved, None,
+                    ).unwrap_err();
+                    Err(error)
+                }
+            }
+        };
+        let syntax = ast.canonical_bytes().unwrap();
+        let mut bytes = b"mizar-driver/native-theorem-core-storage/v1\0".to_vec();
+        for field in [b"alpha".as_slice(), b"main".as_slice(), syntax.as_slice()] {
+            bytes.extend_from_slice(&u64::try_from(field.len()).unwrap().to_le_bytes());
+            bytes.extend_from_slice(field);
+        }
+        let before = (
+            ast.clone(),
+            module.clone(),
+            foreign_core.clone(),
+            bytes.clone(),
+        );
+        assert_eq!(
+            native_theorem_core_from_storage_bytes(&bytes, ast.source_id, &module),
+            expected,
+            "{case}"
+        );
+        assert_eq!(
+            native_theorem_core_storage_bytes(ast, &module, &foreign_core),
+            expected.map(|_| None::<Vec<u8>>),
+            "{case}"
+        );
+        assert_eq!(
+            (ast.clone(), module.clone(), foreign_core.clone(), bytes),
+            before
+        );
+    }
+    let output = owner.storage().get(&handle).unwrap();
+    let ast = output.ast.as_ref().unwrap();
+    let syntax = ast.canonical_bytes().unwrap();
+    let domain = b"mizar-driver/native-theorem-core-storage/v1\0";
+    let mut bytes = domain.to_vec();
+    for field in [b"alpha".as_slice(), b"main".as_slice(), syntax.as_slice()] {
+        bytes.extend_from_slice(&u64::try_from(field.len()).unwrap().to_le_bytes());
+        bytes.extend_from_slice(field);
+    }
+    let mut corruptions = vec![
+        Vec::new(),
+        bytes[..domain.len() + 3].to_vec(),
+        bytes[..bytes.len() - 1].to_vec(),
+    ];
+    let mut bad_domain = bytes.clone();
+    bad_domain[0] = b'x';
+    corruptions.push(bad_domain);
+    let mut bad_version = bytes.clone();
+    bad_version[domain.len() - 2] = b'2';
+    corruptions.push(bad_version);
+    let mut bad_length = bytes.clone();
+    bad_length[domain.len()..domain.len() + 8].copy_from_slice(&u64::MAX.to_le_bytes());
+    corruptions.push(bad_length);
+    let mut trailing = bytes.clone();
+    trailing.push(0);
+    corruptions.push(trailing);
+    let mut bad_syntax = bytes.clone();
+    bad_syntax[bytes.len() - syntax.len()] = b'!';
+    corruptions.push(bad_syntax);
+    let mut oversized = bytes.clone();
+    oversized.resize(32 * 1024 * 1024 + 1, 0);
+    corruptions.push(oversized);
+    for malformed in corruptions {
+        assert_eq!(
+            native_theorem_core_from_storage_bytes(&malformed, ast.source_id, &module),
+            Ok(None)
+        );
+    }
+    for wrong_module in [
+        ResolverModuleId::new(PackageId::new("foreign"), ModulePath::new("main")),
+        ResolverModuleId::new(PackageId::new("alpha"), ModulePath::new("other")),
+    ] {
+        assert_eq!(
+            native_theorem_core_from_storage_bytes(&bytes, ast.source_id, &wrong_module),
+            Ok(None)
+        );
+        assert_eq!(
+            native_theorem_core_storage_bytes(ast, &wrong_module, &foreign_core),
+            Ok(None)
+        );
+    }
+    let oversized_module = ResolverModuleId::new(
+        PackageId::new("x".repeat(32 * 1024 * 1024)),
+        ModulePath::new("main"),
+    );
+    assert_eq!(
+        native_theorem_core_storage_bytes(ast, &oversized_module, &foreign_core),
+        Ok(None)
+    );
+}
