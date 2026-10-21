@@ -5376,6 +5376,175 @@ pub struct DeclarationChecker {
 }
 
 impl DeclarationChecker {
+    // reason: Keep the existing pipeline tuple instead of a single-use result type.
+    #[allow(clippy::type_complexity)]
+    pub fn check_source_theorem_equalities(
+        source: &SurfaceResolvedArena,
+        symbols: &SymbolEnv,
+        scope: &ResolvedVariableScope,
+    ) -> Result<
+        (
+            (
+                BindingEnv,
+                TermFormulaInferenceOutput,
+                crate::typed_ast::TypedAst,
+                Vec<crate::resolved_typed_ast::ExpressionMetadataInput>,
+            ),
+            DeclarationCheckingOutput,
+        ),
+        String,
+    > {
+        use crate::source_context::SourceBindingSiteRole;
+        use crate::source_type::SourceTypeProducer;
+        let lower = SourceTypeProducer::build_source_theorem_equalities(source, symbols, scope)?;
+        let (bindings, _, typed, _) = &lower;
+        let invalid = || "theorems.equality.invalid_source_declaration_association".to_owned();
+        let context = typed.source_context().ok_or_else(invalid)?;
+        let types = typed.source_type().ok_or_else(invalid)?;
+        let mut contexts = Vec::new();
+        for (_, link) in context.context_links().iter() {
+            let local = typed
+                .contexts()
+                .get(link.local_context)
+                .ok_or_else(invalid)?;
+            let owner = typed.nodes().node(local.owner.node()).ok_or_else(invalid)?;
+            let SourceAnchor::Range(range) = owner.anchor else {
+                return Err(invalid());
+            };
+            contexts.push(DeclarationContextInput::new(
+                link.binding_context,
+                local.owner.clone(),
+                range,
+            ));
+        }
+        let mut declarations = Vec::new();
+        for (_, declaration) in context.declarations().iter() {
+            let mut applications = types
+                .applications()
+                .iter()
+                .filter(|(_, application)| application.binding() == declaration.binding);
+            let (_, application) = applications.next().ok_or_else(invalid)?;
+            let written = types
+                .expressions()
+                .get(application.root())
+                .ok_or_else(invalid)?;
+            let kind = match declaration.role {
+                SourceBindingSiteRole::QuantifierBinder => DeclarationKind::QuantifiedVariable,
+                SourceBindingSiteRole::ProofLet => DeclarationKind::Let,
+                _ => return Err(invalid()),
+            };
+            declarations.push(
+                DeclarationInput::new(
+                    declaration.binding,
+                    declaration.binding_context,
+                    declaration.site.clone(),
+                    declaration.declaration_range,
+                    kind,
+                )
+                .with_type_expression(TypeExpressionInput::new(
+                    TypedSiteRef::Role {
+                        node: written.site().node(),
+                        role: format!("theorem.declaration.type:{}", declaration.binding.index())
+                            .into(),
+                    },
+                    written.source_range(),
+                    written.spelling(),
+                    TypeHeadInput::BuiltinSet,
+                )),
+            );
+        }
+        let checked = Self::default().check(
+            symbols,
+            bindings,
+            contexts.iter().cloned(),
+            declarations.iter().cloned(),
+        );
+        if !checked.diagnostics().is_empty()
+            || !checked.facts().is_empty()
+            || checked.declarations().len() != declarations.len()
+            || checked.contexts().len() != contexts.len()
+        {
+            return Err(invalid());
+        }
+        let mut checked_bindings = BTreeSet::new();
+        for (_, declaration) in checked.declarations().iter() {
+            let input = declarations
+                .iter()
+                .find(|input| input.binding == declaration.binding)
+                .ok_or_else(invalid)?;
+            let entry = checked
+                .type_entries()
+                .get(declaration.type_entry.ok_or_else(invalid)?)
+                .ok_or_else(invalid)?;
+            let TypeEntryActual::Known(id) = entry.actual else {
+                return Err(invalid());
+            };
+            let normalized = checked.normalized_types().get(id).ok_or_else(invalid)?;
+            if !checked_bindings.insert(declaration.binding)
+                || declaration.site != input.site
+                || declaration.context != input.context
+                || declaration.kind != input.kind
+                || declaration.type_site.as_ref()
+                    != input.type_expression.as_ref().map(|ty| &ty.site)
+                || declaration.status != DeclarationStatus::Checked
+                || !declaration.deferred.is_empty()
+                || !declaration.facts.is_empty()
+                || entry.owner != declaration.site
+                || entry.status != TypeStatus::Known
+                || normalized.status != NormalizedTypeStatus::Known
+                || normalized.head != TypeHeadRef::BuiltinSet
+                || !normalized.args.is_empty()
+                || normalized.attributes != AttributeSet::empty()
+            {
+                return Err(invalid());
+            }
+        }
+        let mut checked_contexts = BTreeMap::new();
+        for input in &contexts {
+            let mut matching = checked
+                .contexts()
+                .iter()
+                .filter(|(_, local)| local.owner == input.site);
+            let (id, local) = matching.next().ok_or_else(invalid)?;
+            let binding = bindings
+                .contexts()
+                .get(input.binding_context)
+                .ok_or_else(invalid)?;
+            let expected_bindings = declarations
+                .iter()
+                .filter(|row| row.context == input.binding_context)
+                .map(|row| BindingTypeRef::Site(row.site.clone()))
+                .collect::<BTreeSet<_>>();
+            if matching.next().is_some()
+                || local.layer != type_context_layer(binding.layer)
+                || local.bindings.iter().cloned().collect::<BTreeSet<_>>() != expected_bindings
+                || !local.introduced_assumptions.is_empty()
+                || !local.visible_facts.is_empty()
+            {
+                return Err(invalid());
+            }
+            checked_contexts.insert(input.binding_context, id);
+        }
+        for input in &contexts {
+            let binding = bindings
+                .contexts()
+                .get(input.binding_context)
+                .ok_or_else(invalid)?;
+            let local = checked
+                .contexts()
+                .get(checked_contexts[&input.binding_context])
+                .ok_or_else(invalid)?;
+            if local.parent
+                != binding
+                    .parent
+                    .and_then(|parent| checked_contexts.get(&parent).copied())
+            {
+                return Err(invalid());
+            }
+        }
+        Ok((lower, checked))
+    }
+
     pub fn new(normalizer: TypeNormalizer) -> Self {
         Self { normalizer }
     }

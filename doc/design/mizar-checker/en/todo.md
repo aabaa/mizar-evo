@@ -23,6 +23,7 @@
 - [x] [Original-source theorem scoped inference](../../task_contracts/en/CHECKER-SOURCE-THEOREM-SCOPED-INFERENCE.md).
 - [x] [Original-source theorem context handoff](../../task_contracts/en/CHECKER-SOURCE-THEOREM-CONTEXT-HANDOFF.md).
 - [x] [Original-source theorem written types](../../task_contracts/en/CHECKER-SOURCE-THEOREM-TYPE-HANDOFF.md).
+- [x] [Original-source theorem declaration checking](../../task_contracts/en/CHECKER-SOURCE-THEOREM-DECLARATION-CHECKING.md).
 
 ## Status Legend
 
