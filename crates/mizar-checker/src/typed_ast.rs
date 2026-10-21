@@ -4759,6 +4759,10 @@ fn validate_source_attribute(parts: &TypedAstParts) -> Result<(), TypedAstError>
 }
 
 fn validate_source_context(parts: &TypedAstParts) -> Result<(), TypedAstError> {
+    use crate::{
+        binding_env::{BindingContextLayer, BindingContextOwner},
+        source_context::SourceItemRole,
+    };
     let Some(handoff) = &parts.source_context else {
         return Ok(());
     };
@@ -4788,13 +4792,25 @@ fn validate_source_context(parts: &TypedAstParts) -> Result<(), TypedAstError> {
     {
         return Err(TypedAstError::InvalidSourceContext);
     }
+    let mut linked_local = BTreeSet::new();
     for (_, link) in handoff.context_links().iter() {
-        if handoff
+        let binding = handoff
             .binding_env()
             .contexts()
             .get(link.binding_context)
-            .is_none()
-            || parts.contexts.get(link.local_context).is_none()
+            .ok_or(TypedAstError::InvalidSourceContext)?;
+        let local = parts
+            .contexts
+            .get(link.local_context)
+            .ok_or(TypedAstError::InvalidSourceContext)?;
+        if !linked_local.insert(link.local_context)
+            || local.parent
+                != binding.parent.and_then(|parent| {
+                    handoff
+                        .context_links()
+                        .get(parent)
+                        .map(|row| row.local_context)
+                })
         {
             return Err(TypedAstError::InvalidSourceContext);
         }
@@ -4803,7 +4819,58 @@ fn validate_source_context(parts: &TypedAstParts) -> Result<(), TypedAstError> {
                 let Some(item) = handoff.items().get(item_id) else {
                     return Err(TypedAstError::InvalidSourceContext);
                 };
-                if item.binding_context != link.binding_context
+                let theorem = matches!(item.role, SourceItemRole::Theorem | SourceItemRole::Lemma);
+                if theorem {
+                    let mut ancestor = binding.parent;
+                    let mut inside_item = false;
+                    while let Some(id) = ancestor {
+                        if id == item.binding_context {
+                            inside_item = true;
+                            break;
+                        }
+                        ancestor = handoff
+                            .binding_env()
+                            .contexts()
+                            .get(id)
+                            .ok_or(TypedAstError::InvalidSourceContext)?
+                            .parent;
+                    }
+                    let (range, kind) = match (&binding.owner, binding.layer, local.layer) {
+                        (
+                            BindingContextOwner::SourceFormula { source_range },
+                            BindingContextLayer::Expression,
+                            TypeContextLayer::Expression,
+                        ) => (source_range, "QuantifiedFormula(Universal)"),
+                        (
+                            BindingContextOwner::SourceStatement { source_range },
+                            BindingContextLayer::Proof,
+                            TypeContextLayer::Proof,
+                        ) => (source_range, "ProofBlock"),
+                        _ => return Err(TypedAstError::InvalidSourceContext),
+                    };
+                    let owner = parts
+                        .nodes
+                        .node(local.owner.node())
+                        .ok_or(TypedAstError::InvalidSourceContext)?;
+                    if !inside_item
+                        || link.binding_context.index() == 0
+                        || local.owner != TypedSiteRef::Node(local.owner.node())
+                        || owner.kind.as_str() != kind
+                        || owner.anchor != SourceAnchor::Range(*range)
+                        || owner.links.context != Some(link.local_context)
+                        || range.source_id != item.source_range.source_id
+                        || range.start < item.source_range.start
+                        || range.end > item.source_range.end
+                        || handoff.items().iter().any(|(other_id, other)| {
+                            other_id != item_id
+                                && other.source_range.source_id == range.source_id
+                                && other.source_range.start <= range.start
+                                && range.end <= other.source_range.end
+                        })
+                    {
+                        return Err(TypedAstError::InvalidSourceContext);
+                    }
+                } else if item.binding_context != link.binding_context
                     || item.local_context != link.local_context
                 {
                     return Err(TypedAstError::InvalidSourceContext);
@@ -4816,6 +4883,9 @@ fn validate_source_context(parts: &TypedAstParts) -> Result<(), TypedAstError> {
             }
         }
     }
+    if linked_local.len() != parts.contexts.len() {
+        return Err(TypedAstError::InvalidSourceContext);
+    }
     for (_, item) in handoff.items().iter() {
         validate_source_context_site(parts, &item.site, item.source_range, item.local_context)?;
         if handoff
@@ -4824,6 +4894,13 @@ fn validate_source_context(parts: &TypedAstParts) -> Result<(), TypedAstError> {
             .get(item.binding_context)
             .is_none()
             || parts.contexts.get(item.local_context).is_none()
+            || (matches!(item.role, SourceItemRole::Theorem | SourceItemRole::Lemma)
+                && handoff
+                    .context_links()
+                    .get(item.binding_context)
+                    .is_none_or(|link| {
+                        link.local_context != item.local_context || link.item.is_some()
+                    }))
         {
             return Err(TypedAstError::InvalidSourceContext);
         }

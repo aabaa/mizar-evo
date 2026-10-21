@@ -21,6 +21,7 @@
 - [x] [Original-source theorem local type contexts](../../task_contracts/en/CHECKER-SOURCE-THEOREM-LOCAL-TYPE-CONTEXTS.md).
 - [x] [Original-source theorem scoped primary references](../../task_contracts/en/CHECKER-SOURCE-THEOREM-SCOPED-PRIMARY.md).
 - [x] [Original-source theorem scoped inference](../../task_contracts/en/CHECKER-SOURCE-THEOREM-SCOPED-INFERENCE.md).
+- [x] [Original-source theorem context handoff](../../task_contracts/en/CHECKER-SOURCE-THEOREM-CONTEXT-HANDOFF.md).
 
 ## Status Legend
 

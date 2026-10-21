@@ -9,17 +9,20 @@ use crate::{
         BindingEnvParts, BindingId, BindingKind, BindingRecoveryState, BindingStatus, BindingTable,
         BindingTypeSite, CapturedFreeVariables,
     },
+    type_checker::TermFormulaChecker,
     typed_ast::{
         BindingTypeRef, ContextRecoveryState, LocalTypeContextDraft, LocalTypeContextId,
         LocalTypeContextTable, TypeContextLayer, TypedSiteRef,
     },
 };
 use mizar_resolve::{
-    declarations::DeclarationShellId,
-    names::{LocalTermBinding, LocalTermScope},
-    resolved_ast::ModuleId,
+    declarations::{DeclarationShellId, DeclarationShellKind, DeclarationShellVisibilityState},
+    env::SymbolEnv,
+    names::{LocalTermBinding, LocalTermScope, ResolvedVariableScope, SourceVariableBindingKind},
+    resolved_ast::{ModuleId, SurfaceResolvedArena},
+    symbols::source_declaration_shells,
 };
-use mizar_session::{SourceId, SourceRange};
+use mizar_session::{SourceAnchor, SourceId, SourceRange};
 use std::{
     collections::{BTreeMap, BTreeSet},
     error::Error,
@@ -78,6 +81,8 @@ pub enum SourceItemRole {
     Reserve,
     DefinitionBlock,
     PropertyImplementation,
+    Theorem,
+    Lemma,
 }
 
 /// Source-shaped visibility. Task 248 admits only `Unspecified`.
@@ -126,6 +131,8 @@ pub struct SourceBindingSiteInput {
 pub enum SourceBindingSiteRole {
     ReserveDefault,
     DefinitionParameter { local: LocalTermBinding },
+    QuantifierBinder,
+    ProofLet,
 }
 
 /// Result of validating and building one source-context input.
@@ -414,6 +421,327 @@ impl SourceBindingContextProducer {
         let validated = validate_input(&input)?;
         build_projection(input, validated)
     }
+
+    /// Installs source context from an admitted original-source theorem check.
+    pub fn build_source_theorem_equalities(
+        source: &SurfaceResolvedArena,
+        symbols: &SymbolEnv,
+        scope: &ResolvedVariableScope,
+    ) -> Result<
+        (
+            BindingEnv,
+            crate::type_checker::TermFormulaInferenceOutput,
+            crate::typed_ast::TypedAst,
+            Vec<crate::resolved_typed_ast::ExpressionMetadataInput>,
+        ),
+        String,
+    > {
+        use crate::typed_ast::{TypedAst, TypedAstParts};
+        let (bindings, inference, typed, expressions) =
+            TermFormulaChecker::check_source_theorem_equalities_with_scoped_inference(
+                source, symbols, scope,
+            )?;
+        let invalid = || "theorems.equality.invalid_source_context_association".to_owned();
+        let shells = source_declaration_shells(source, symbols)?;
+        if shells.declarations().is_empty() || !shells.exports().is_empty() {
+            return Err(invalid());
+        }
+        let typed_for = typed
+            .nodes()
+            .iter()
+            .map(|(id, node)| {
+                node.resolved_node
+                    .map(|resolved| (resolved, id))
+                    .ok_or_else(invalid)
+            })
+            .collect::<Result<BTreeMap<_, _>, _>>()?;
+        if typed_for.len() != typed.nodes().len() {
+            return Err(invalid());
+        }
+        let mut local_for_binding = BTreeMap::new();
+        let mut used_local = BTreeSet::new();
+        for (binding_id, context) in bindings.contexts().iter() {
+            let mut matches = typed.contexts().iter().filter(|(_, local)| {
+                if local.parent
+                    != context
+                        .parent
+                        .and_then(|id| local_for_binding.get(&id).copied())
+                {
+                    return false;
+                }
+                let Some(node) = typed.nodes().node(local.owner.node()) else {
+                    return false;
+                };
+                let Some(resolved) = node.resolved_node else {
+                    return false;
+                };
+                let Some(actual) = source.arena().node(resolved) else {
+                    return false;
+                };
+                let kind = node.kind.as_str();
+                let expected = match (&context.owner, context.layer, local.layer) {
+                    (
+                        BindingContextOwner::Module,
+                        BindingContextLayer::Module,
+                        TypeContextLayer::Module,
+                    ) if kind == "Root" && resolved == source.arena().root() => return true,
+                    (
+                        BindingContextOwner::SourceFormula { source_range },
+                        BindingContextLayer::Expression,
+                        TypeContextLayer::Expression,
+                    ) if kind == "QuantifiedFormula(Universal)" => source_range,
+                    (
+                        BindingContextOwner::SourceStatement { source_range },
+                        BindingContextLayer::Proof,
+                        TypeContextLayer::Proof,
+                    ) if kind == "ProofBlock" => source_range,
+                    _ => return false,
+                };
+                actual.origin().anchor() == &SourceAnchor::Range(*expected)
+            });
+            let (local_id, _) = matches.next().ok_or_else(invalid)?;
+            if matches.next().is_some() || !used_local.insert(local_id) {
+                return Err(invalid());
+            }
+            local_for_binding.insert(binding_id, local_id);
+        }
+        if used_local.len() != typed.contexts().len() {
+            return Err(invalid());
+        }
+        let root = bindings
+            .contexts()
+            .get(BindingContextId::new(0))
+            .ok_or_else(invalid)?;
+        if root.parent.is_some() || root.owner != BindingContextOwner::Module {
+            return Err(invalid());
+        }
+        let mut items = SourceItemTable::default();
+        for shell in shells.declarations() {
+            let role = match shell.kind() {
+                DeclarationShellKind::Theorem => SourceItemRole::Theorem,
+                DeclarationShellKind::Lemma => SourceItemRole::Lemma,
+                _ => return Err(invalid()),
+            };
+            if shell.parent().is_some()
+                || shell.recovered()
+                || shell.visibility().state() != DeclarationShellVisibilityState::Unspecified
+                || shell.module() != source.module()
+                || shell.range().source_id != source.source_id()
+            {
+                return Err(invalid());
+            }
+            let resolved = source
+                .resolved_node_for(shell.node_id())
+                .ok_or_else(invalid)?;
+            let site = TypedSiteRef::Node(*typed_for.get(&resolved).ok_or_else(invalid)?);
+            let node = typed.nodes().node(site.node()).ok_or_else(invalid)?;
+            let local_context = node.links.context.ok_or_else(invalid)?;
+            let binding_context = local_for_binding
+                .iter()
+                .find_map(|(binding, local)| (*local == local_context).then_some(*binding))
+                .ok_or_else(invalid)?;
+            if node.anchor != SourceAnchor::Range(shell.range())
+                || node.kind.as_str()
+                    != match role {
+                        SourceItemRole::Theorem => "TheoremItem",
+                        SourceItemRole::Lemma => "LemmaItem",
+                        _ => return Err(invalid()),
+                    }
+                || items
+                    .iter()
+                    .any(|(_, item)| item.site == site || item.shell == shell.id())
+            {
+                return Err(invalid());
+            }
+            let id = SourceItemId::new(items.len());
+            items.entries.push(SourceItem {
+                id,
+                shell: shell.id(),
+                shell_ordinal: shell.ordinal(),
+                role,
+                source_range: shell.range(),
+                parent: shell.parent(),
+                visibility: SourceItemVisibility::Unspecified,
+                site,
+                local_scope: None,
+                recovery: SourceItemRecovery::Normal,
+                binding_context,
+                local_context,
+                predecessor: id.index().checked_sub(1).map(SourceItemId::new),
+            });
+        }
+        let mut context_links = SourceContextLinkTable::default();
+        for (binding_context, context) in bindings.contexts().iter() {
+            let local_context = *local_for_binding
+                .get(&binding_context)
+                .ok_or_else(invalid)?;
+            let item = if binding_context.index() == 0 {
+                None
+            } else {
+                let range = match context.owner {
+                    BindingContextOwner::SourceFormula { source_range }
+                    | BindingContextOwner::SourceStatement { source_range } => source_range,
+                    _ => return Err(invalid()),
+                };
+                let mut matching = items
+                    .iter()
+                    .filter(|(_, row)| range_contains(row.source_range, range));
+                let (id, _) = matching.next().ok_or_else(invalid)?;
+                if matching.next().is_some() {
+                    return Err(invalid());
+                }
+                Some(id)
+            };
+            if context_links.len() != binding_context.index() {
+                return Err(invalid());
+            }
+            context_links.entries.push(SourceContextLink {
+                binding_context,
+                local_context,
+                item,
+            });
+        }
+        let mut declarations = SourceDeclarationTable::default();
+        let mut seen_bindings = BTreeSet::new();
+        for original in scope.bindings() {
+            let role = match original.kind() {
+                SourceVariableBindingKind::Quantifier => SourceBindingSiteRole::QuantifierBinder,
+                SourceVariableBindingKind::Let => SourceBindingSiteRole::ProofLet,
+                _ => return Err(invalid()),
+            };
+            let mut matching = bindings.bindings().iter().filter(|(_, entry)| {
+                entry.kind == match role {
+                    SourceBindingSiteRole::QuantifierBinder => BindingKind::QuantifierBinder,
+                    _ => BindingKind::LetBinding,
+                } && entry.spelling == original.spelling()
+                    && entry.declaration_range == original.range()
+                    && entry.visible_after_ordinal == original.ordinal()
+                    && matches!(&entry.identity, BinderIdentity::ResolverLocal { scope, ordinal, declaration_range }
+                        if scope == original.scope() && *ordinal == original.ordinal() && *declaration_range == original.range())
+            });
+            let (binding, entry) = matching.next().ok_or_else(invalid)?;
+            if matching.next().is_some() || !seen_bindings.insert(binding) {
+                return Err(invalid());
+            }
+            let mut owners = items
+                .iter()
+                .filter(|(_, row)| range_contains(row.source_range, original.range()));
+            let (item, _) = owners.next().ok_or_else(invalid)?;
+            if owners.next().is_some() {
+                return Err(invalid());
+            }
+            let resolved = source
+                .resolved_node_for(original.node())
+                .ok_or_else(invalid)?;
+            let site = TypedSiteRef::Node(*typed_for.get(&resolved).ok_or_else(invalid)?);
+            let node = typed.nodes().node(site.node()).ok_or_else(invalid)?;
+            let local_context = *local_for_binding
+                .get(&entry.owner_context)
+                .ok_or_else(invalid)?;
+            if node.anchor != SourceAnchor::Range(original.range())
+                || node.links.context != Some(local_context)
+                || context_links
+                    .get(entry.owner_context)
+                    .and_then(|link| link.item)
+                    != Some(item)
+            {
+                return Err(invalid());
+            }
+            let mut segments = source.arena().iter().filter(|(id, row)| {
+                let kind = typed_for
+                    .get(id)
+                    .and_then(|id| typed.nodes().node(*id))
+                    .map(|row| row.kind.as_str());
+                matches!(
+                    kind,
+                    Some("QuantifierVariableSegment" | "QualifiedVariableSegment")
+                ) && row.children().contains(&resolved)
+            });
+            let (_, segment) = segments.next().ok_or_else(invalid)?;
+            if segments.next().is_some() {
+                return Err(invalid());
+            }
+            let type_node = *segment.children().last().ok_or_else(invalid)?;
+            let type_row = source.arena().node(type_node).ok_or_else(invalid)?;
+            if typed_for
+                .get(&type_node)
+                .and_then(|id| typed.nodes().node(*id))
+                .map(|row| row.kind.as_str())
+                != Some("TypeExpression")
+            {
+                return Err(invalid());
+            }
+            let SourceAnchor::Range(written_type_range) = type_row.origin().anchor() else {
+                return Err(invalid());
+            };
+            let mut parent = bindings
+                .contexts()
+                .get(entry.owner_context)
+                .ok_or_else(invalid)?
+                .parent;
+            let mut shadowed_binding = None;
+            while let Some(id) = parent {
+                if let Some(prior) = declarations.entries.iter().rev().find(|prior| {
+                    prior.binding_context == id
+                        && prior.spelling == original.spelling()
+                        && prior.source_ordinal < original.ordinal()
+                }) {
+                    shadowed_binding = Some(prior.binding);
+                    break;
+                }
+                parent = bindings.contexts().get(id).ok_or_else(invalid)?.parent;
+            }
+            let id = SourceDeclarationId::new(declarations.len());
+            declarations.entries.push(SourceDeclaration {
+                id,
+                item,
+                binding,
+                source_ordinal: original.ordinal(),
+                spelling: original.spelling().to_owned(),
+                declaration_range: original.range(),
+                written_type_range: *written_type_range,
+                site,
+                role,
+                binding_context: entry.owner_context,
+                local_context,
+                shadowed_binding,
+                predecessor: id.index().checked_sub(1).map(SourceDeclarationId::new),
+            });
+        }
+        if seen_bindings.len() != bindings.bindings().len() {
+            return Err(invalid());
+        }
+        let handoff = SourceBindingContextHandoff {
+            source_id: source.source_id(),
+            module_id: source.module().clone(),
+            binding_env: bindings.clone(),
+            local_contexts: typed.contexts().clone(),
+            items,
+            declarations,
+            context_links,
+        };
+        let primary = typed.source_term().cloned().ok_or_else(invalid)?;
+        let atomic = typed.source_atomic_formula().cloned().ok_or_else(invalid)?;
+        let rebuilt = TypedAst::try_new(TypedAstParts {
+            source_id: typed.source_id(),
+            module_id: typed.module_id().clone(),
+            resolved_root: typed.resolved_root(),
+            source_context: Some(handoff),
+            source_type: typed.source_type().cloned(),
+            source_attribute: typed.source_attribute().cloned(),
+            nodes: typed.nodes().clone(),
+            contexts: typed.contexts().clone(),
+            types: typed.types().clone(),
+            facts: typed.facts().clone(),
+            coercions: typed.coercions().clone(),
+            initial_obligations: typed.initial_obligations().clone(),
+            diagnostics: typed.diagnostics().clone(),
+        })
+        .and_then(|ast| ast.with_source_term(primary))
+        .and_then(|ast| ast.with_source_atomic_formula(atomic))
+        .map_err(|_| invalid())?;
+        Ok((bindings, inference, rebuilt, expressions))
+    }
 }
 
 #[derive(Debug)]
@@ -426,6 +754,19 @@ struct ValidatedInput {
 fn validate_input(input: &SourceBindingContextInput) -> Result<ValidatedInput, SourceContextError> {
     if input.items.is_empty() {
         return Err(SourceContextError::MissingItems);
+    }
+    if input
+        .items
+        .iter()
+        .any(|item| matches!(item.role, SourceItemRole::Theorem | SourceItemRole::Lemma))
+        || input.bindings.iter().any(|binding| {
+            matches!(
+                binding.role,
+                SourceBindingSiteRole::QuantifierBinder | SourceBindingSiteRole::ProofLet
+            )
+        })
+    {
+        return Err(SourceContextError::UnsupportedTaskShape);
     }
     let mut item_by_shell = BTreeMap::new();
     let mut sites = BTreeSet::from([input.module_site.clone()]);
@@ -441,6 +782,7 @@ fn validate_input(input: &SourceBindingContextInput) -> Result<ValidatedInput, S
             SourceItemRole::Reserve | SourceItemRole::DefinitionBlock => {
                 item.shell_ordinal != index
             }
+            SourceItemRole::Theorem | SourceItemRole::Lemma => unreachable!(),
         };
         if has_stale_ordinal {
             return Err(SourceContextError::StaleShellOrdinal { index });
@@ -498,6 +840,7 @@ fn validate_input(input: &SourceBindingContextInput) -> Result<ValidatedInput, S
                 local_context_ids.push(LocalTypeContextId::new(next_context));
                 next_context += 1;
             }
+            SourceItemRole::Theorem | SourceItemRole::Lemma => unreachable!(),
         }
         if item.recovery == SourceItemRecovery::Recovered
             && (!matches!(
@@ -671,6 +1014,9 @@ fn build_projection(
                 },
                 BindingStatus::Active,
             ),
+            SourceBindingSiteRole::QuantifierBinder | SourceBindingSiteRole::ProofLet => {
+                unreachable!()
+            }
         };
         let binding_id = binding_tables.insert(BindingDraft {
             spelling: binding.spelling.clone(),
@@ -918,6 +1264,8 @@ fn item_role_key(role: SourceItemRole) -> &'static str {
         SourceItemRole::Reserve => "reserve",
         SourceItemRole::DefinitionBlock => "definition-block",
         SourceItemRole::PropertyImplementation => "property-implementation",
+        SourceItemRole::Theorem => "theorem",
+        SourceItemRole::Lemma => "lemma",
     }
 }
 
@@ -925,6 +1273,8 @@ fn binding_role_key(role: &SourceBindingSiteRole) -> &'static str {
     match role {
         SourceBindingSiteRole::ReserveDefault => "reserve-default",
         SourceBindingSiteRole::DefinitionParameter { .. } => "definition-parameter",
+        SourceBindingSiteRole::QuantifierBinder => "quantifier-binder",
+        SourceBindingSiteRole::ProofLet => "proof-let",
     }
 }
 

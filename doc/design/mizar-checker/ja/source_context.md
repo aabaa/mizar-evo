@@ -17,7 +17,7 @@ parameterのdistinct identity、local shadow、checker context linkを保持す�
 
 ## Boundary
 
-module は syntax-free projection のみ受け取る。opaque `DeclarationShellId` は
+generic `build` input は syntax-free projection とし、下記の別 original-source theorem transaction は neutral resolved arena を受け取る。opaque `DeclarationShellId` は
 resolver の実 `DeclarationShellSet` から来なければならず、checker productionはshell
 identityを生成せず`mizar-syntax`をimportしない。checker-only testはexisting
 `mizar-syntax` dev-dependencyとresolver collectorでopaque real shell idを取得できる。
@@ -612,3 +612,13 @@ corruptionはspecified existing errorでfailする。exact tests 2件はPASSし�
 `6e4bc96ef04cb5f011d53c651bb93549992e3c7fd0e7595b851d7181c8a65dcd` /
 `19a0dd0472f0e3b40c486ab9451322be03aab4322c53d30cff03ef5e6f8c8490`。
 runner consumer、Task-264 payload/obligation/proof/fact/acceptance/IR/VC outputはない。
+
+## Original-source theorem context handoff
+`SourceBindingContextProducer::build_source_theorem_equalities(source, symbols, scope)` は[scoped inference](type_checker.md#original-source-theorem-scoped-inference)と同じ実 neutral arena・元 env・occurrence scope を借用し、既存 `(BindingEnv, TermFormulaInferenceOutput, TypedAst, Vec<ExpressionMetadataInput>)` または String を返す。未変更 producer を最初に呼び exact error を伝播し、実 source-context handoff の設置以外は全出力を保持する。caller 製 AST/inference/context/item/declaration 表を受け取らない。旧 generic build/Profile A/B/C の振舞い・error・出力は維持し、新 role は UnsupportedTaskShape として拒否する。
+上流受理後に[実 declaration shells](../../mizar-resolve/ja/symbols.md#original-source-declaration-shells)全体を取得し、全 shell の実 source node を一意の typed resolved link に対応させる。順序・opaque shell id/ordinal・parent/range/visibility を保持する。既存受理済み top-level normal/default-public Theorem/Lemma だけを新 SourceItemRole::Theorem/Lemma に対応させ、余分な shell/export/unmapped node を捨てず拒否する。item の binding/local context は実 typed node と認証済み context link から取得し、新 context は作らず local_scope None と前 item を記録する。
+全 binding context に1件ずつ SourceContextLink を作り、未使用 quantifier/proof boundary を含む既存 local context 全体を保持する。root は実 typed root、非 root は SourceFormula/Expression と SourceStatement/Proof の実 boundary range/kind/typed owner/site/context を対応させ、parent ancestry を保持する。実 ID の明示 mapping を使い namespace cast/数値同一視/scope 再生成は禁止。root link の item は None、非 root は一意の実包含 theorem/lemma item。元 BindingEnv/LocalTypeContextTable を全体保持し、欠落・重複・未対応・cross-item 対応は fail closed。
+全 binding を元 scope/range/ordinal と実 typed site・binding owner/context link により実 resolver declaration 1件へ対応させる。written_type_range は実 containing variable segment の TypeExpression child から得る。BindingId/spelling/source ordinal/range を保ち、実 resolver/binding kind に合う unit SourceBindingSiteRole::QuantifierBinder/ProofLet を追加する。identity/capture/type/status/recovery は元 BindingEnv が保持する。SourceDeclarationId/predecessor は元宣言順。shadowed_binding は厳密祖先 context でこの宣言 ordinal より前に可視の最近同名宣言とし、sibling/後続/同 context を除く。全 binding/item/source/module 対応を保持し、fact/assumption/diagnostic/type/意味上の達成は作らない。
+既存 private handoff 表を原子的に構築し、既存 TypedAst constructor と実 primary/atomic installer で設置する。nodes/root/local contexts/inference tables/expression metadata/全既存 handoff を完全保持する。内部対応失敗は上流呼出し後の internal String とし、部分公開・新 public error/helper/field/holder/adapter/syntax dependency/並列表現は禁止。aggregate 設置条件は[TypedAst](typed_ast.md#original-source-theorem-context-installation)が所有する。旧 producer/consumer/proof/受理方針を維持し、完全 phase・general profile・composition・theorem/Core/VC intake・Artifact/publication/currentness/reuse/受理は deferred。
+### Theorem handoff tests
+既存 mizar-test term_proof_tests に source_theorem_context_handoff_retains_real_tables と source_theorem_context_handoff_preserves_upstream_errors だけを追加する。各成功の前に実 native Disk/OpenBuffer capture と元 collector/occurrence で未変更 scoped-inference baseline を独立取得する。未変更 lemma/rename、grouped/nested/unused/shadowed binder、異変数 equality、空 proof boundary を含める。literal role と独立した実 source/shell/item/declaration/context/parent/type-range/shadow/predecessor 対応・全件被覆・元表/primary/atomic/metadata 完全保持・source identity・全結果反復・capture 間 graph shape・入力不変性を確認する。実結果から再構築して実設置と owner-node/range/context 破損拒否を検査し、正例 AST/env/shell/handoff/phase/VC/Accepted を捏造しない。
+実成功対照後に foreign source/module/env/scope、unsupported/recovered、複合 fault を検査し、同じ負例で未変更 scoped-inference error を先に取得して exact error/反復/不変性を比較する。generic A/B/C テストを保持し、実 capture shell の新 role 拒否を加えるが下位行列を複製しない。外から構築不能な内部対応は静的レビューとし、既存 fixture/expectation/意図/下流証明の達成を変更しない。

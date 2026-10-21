@@ -19,6 +19,7 @@
 - [x] [元ソースの定理 local type context](../../task_contracts/ja/CHECKER-SOURCE-THEOREM-LOCAL-TYPE-CONTEXTS.md).
 - [x] [Original-source theorem scoped primary references](../../task_contracts/ja/CHECKER-SOURCE-THEOREM-SCOPED-PRIMARY.md).
 - [x] [Original-source theorem scoped inference](../../task_contracts/ja/CHECKER-SOURCE-THEOREM-SCOPED-INFERENCE.md).
+- [x] [Original-source theorem context handoff](../../task_contracts/ja/CHECKER-SOURCE-THEOREM-CONTEXT-HANDOFF.md).
 
 ## 状態の凡例
 
