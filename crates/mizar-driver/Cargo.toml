@@ -17,6 +17,7 @@ blake3 = "1.8.5"
 mizar-artifact = { path = "../mizar-artifact" }
 mizar-build = { path = "../mizar-build" }
 mizar-cache = { path = "../mizar-cache" }
+mizar-checker = { path = "../mizar-checker" }
 mizar-diagnostics = { path = "../mizar-diagnostics" }
 mizar-frontend = { path = "../mizar-frontend" }
 mizar-ir = { path = "../mizar-ir" }

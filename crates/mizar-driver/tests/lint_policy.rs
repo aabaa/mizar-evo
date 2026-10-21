@@ -80,6 +80,7 @@ fn driver_dependency_boundary_is_exact_for_scaffold_task() {
         "mizar-frontend".to_owned(),
         "mizar-build".to_owned(),
         "mizar-cache".to_owned(),
+        "mizar-checker".to_owned(),
         "mizar-diagnostics".to_owned(),
         "mizar-ir".to_owned(),
         "mizar-proof".to_owned(),
@@ -126,6 +127,12 @@ fn driver_dependency_boundary_is_exact_for_scaffold_task() {
         &manifest_path,
         "mizar-cache",
         "../mizar-cache",
+    );
+    assert_dependency_path(
+        &dependencies,
+        &manifest_path,
+        "mizar-checker",
+        "../mizar-checker",
     );
     assert_dependency_path(
         &dependencies,

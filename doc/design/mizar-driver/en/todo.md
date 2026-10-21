@@ -574,6 +574,8 @@ the owning producers when the paired tasks land.
 49. **[Native theorem module publication](../../task_contracts/en/DRIVER-NATIVE-THEOREM-MODULE-PUBLICATION.md).** [x]
 50. **[Native theorem summary candidate](../../task_contracts/en/DRIVER-NATIVE-THEOREM-MODULE-SUMMARY-CANDIDATE.md).** [x]
 
+51. **[Native theorem metadata caller](../../task_contracts/en/DRIVER-NATIVE-THEOREM-METADATA-CALLER.md).** [x]
+
 ## Recommended Verification
 
 Run after each task:

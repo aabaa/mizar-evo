@@ -1186,6 +1186,63 @@ impl<'a> crate::registry::SourceLoadInputs<'a> {
         Ok(result)
     }
 
+    /// Returns genuine Checker metadata for the bound original native theorem source.
+    pub fn native_theorem_metadata_with_frontend_parent(
+        self,
+        input: &PhaseInput,
+        publisher: &mizar_ir::publisher::PhaseOutputPublisher,
+    ) -> Result<
+        Option<(
+            mizar_checker::binding_env::BindingEnv,
+            mizar_checker::type_checker::TermFormulaInferenceOutput,
+            mizar_checker::typed_ast::TypedAst,
+            mizar_checker::resolved_typed_ast::ResolvedTypedAst,
+        )>,
+        String,
+    > {
+        let Some(_) =
+            self.native_theorem_module_candidates_with_frontend_parent(input, publisher)?
+        else {
+            return Ok(None);
+        };
+        let WorkUnit::Module { module } = &input.work_unit else {
+            return Err("native theorem metadata requires a module".to_owned());
+        };
+        let parent = input.parent_outputs()[0].as_output_ref();
+        let storage = publisher.storage();
+        let typed = storage
+            .typed_handle::<FrontendOutput<<MizarParserSeam as ParserSeam>::Ast>>(
+                parent,
+                &OutputKind::new("FrontendOutput"),
+            )
+            .map_err(|error| error.to_string())?;
+        let retained = storage.get(&typed).map_err(|error| error.to_string())?;
+        let ast = retained
+            .ast
+            .as_ref()
+            .ok_or_else(|| "native theorem metadata requires retained syntax".to_owned())?;
+        let resolver_module =
+            mizar_resolve::resolved_ast::ModuleId::new(module.package.clone(), module.path.clone());
+        let Some((arena, env)) =
+            mizar_resolve::symbols::source_theorem_module_original_inputs(ast, &resolver_module)?
+        else {
+            return Ok(None);
+        };
+        let scope = mizar_resolve::names::SourceVariableScopeResolver::resolve_proof_occurrences(
+            mizar_resolve::names::SourceVariableScopeInput::new(ast, &resolver_module, &env),
+        )
+        .map_err(|error| format!("{error:?}"))?;
+        let result =
+            mizar_checker::type_checker::check_source_theorem_metadata(&arena, &env, &scope)?;
+        storage
+            .validate_handle(parent)
+            .map_err(|error| error.to_string())?;
+        publisher
+            .validate_published_output(input.snapshot, parent)
+            .map_err(|error| error.to_string())?;
+        Ok(Some(result))
+    }
+
     /// Seals the coherent bounded native theorem pair and its genuine streams.
     pub fn publish_native_theorem_module_candidates(
         self,
