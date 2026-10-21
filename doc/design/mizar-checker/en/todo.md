@@ -18,6 +18,7 @@
 - [x] [Original-source theorem equality producer](../../task_contracts/en/CHECKER-SOURCE-THEOREM-EQUALITY-PRODUCER.md).
 
 - [x] [Original-source theorem lexical contexts](../../task_contracts/en/RESOLVE-CHECKER-SOURCE-THEOREM-LEXICAL-CONTEXTS.md).
+- [x] [Original-source theorem local type contexts](../../task_contracts/en/CHECKER-SOURCE-THEOREM-LOCAL-TYPE-CONTEXTS.md).
 
 ## Status Legend
 

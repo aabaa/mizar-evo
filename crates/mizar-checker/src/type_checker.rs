@@ -6588,6 +6588,198 @@ impl TermFormulaChecker {
         Ok((bindings, inference, typed, expressions))
     }
 
+    /// Links genuine lexical snapshots without changing flat inference or proof intake.
+    pub fn check_source_theorem_equalities_with_local_contexts(
+        source: &SurfaceResolvedArena,
+        symbols: &SymbolEnv,
+        scope: &ResolvedVariableScope,
+    ) -> Result<
+        (
+            BindingEnv,
+            TermFormulaInferenceOutput,
+            crate::typed_ast::TypedAst,
+            Vec<crate::resolved_typed_ast::ExpressionMetadataInput>,
+        ),
+        String,
+    > {
+        use crate::typed_ast::{TypedArena, TypedAst, TypedAstParts};
+        let (bindings, inference, original, mut expressions) =
+            Self::check_source_theorem_equalities_with_expression_metadata(source, symbols, scope)?;
+        let lexical =
+            SourceVariableSemanticsChecker::source_theorem_binding_env(source, symbols, scope)?;
+        let (scopes, parents) =
+            mizar_resolve::symbols::source_proof_scope_maps(source, symbols, scope)?;
+        let invalid = || "theorems.equality.invalid_local_context_association".to_owned();
+        let mut typed_for = BTreeMap::new();
+        for (id, node) in original.nodes().iter() {
+            if typed_for
+                .insert(node.resolved_node.ok_or_else(invalid)?, id)
+                .is_some()
+            {
+                return Err(invalid());
+            }
+        }
+        let mut resolved_scopes = BTreeMap::new();
+        for (node, local) in &scopes {
+            let resolved = source.resolved_node_for(*node).ok_or_else(invalid)?;
+            if !typed_for.contains_key(&resolved)
+                || resolved_scopes.insert(resolved, local).is_some()
+            {
+                return Err(invalid());
+            }
+        }
+        if resolved_scopes.len() != typed_for.len() {
+            return Err(invalid());
+        }
+        let root = source.arena().root();
+        let root_scope = *resolved_scopes.get(&root).ok_or_else(invalid)?;
+        let mut contexts = LocalTypeContextTable::new();
+        let mut local_ids = BTreeMap::new();
+        let mut scope_ids = BTreeMap::new();
+        for (binding_context, context) in lexical.contexts().iter() {
+            let local = context.lexical_scope.as_ref().unwrap_or(root_scope);
+            let parent = context
+                .parent
+                .map(|id| local_ids.get(&id).copied().ok_or_else(invalid))
+                .transpose()?;
+            let (owner, layer) = match (&context.owner, context.layer) {
+                (BindingContextOwner::Module, BindingContextLayer::Module)
+                    if context.parent.is_none() && context.lexical_scope.is_none() =>
+                {
+                    (
+                        *typed_for.get(&root).ok_or_else(invalid)?,
+                        TypeContextLayer::Module,
+                    )
+                }
+                (owner, layer) => {
+                    let (range, typed_layer) = match (owner, layer) {
+                        (
+                            BindingContextOwner::SourceFormula { source_range },
+                            BindingContextLayer::Expression,
+                        ) => (*source_range, TypeContextLayer::Expression),
+                        (
+                            BindingContextOwner::SourceStatement { source_range },
+                            BindingContextLayer::Proof,
+                        ) => (*source_range, TypeContextLayer::Proof),
+                        _ => return Err(invalid()),
+                    };
+                    let mut matching = scopes.iter().filter_map(|(node, actual_scope)| {
+                        let resolved = source.resolved_node_for(*node)?;
+                        let actual = source.arena().node(resolved)?;
+                        let kind_matches = matches!(
+                            (actual.kind(), typed_layer),
+                            (K::QuantifiedFormula(_), TypeContextLayer::Expression)
+                                | (K::ProofBlock, TypeContextLayer::Proof)
+                        );
+                        (actual_scope == local
+                            && kind_matches
+                            && actual.origin().anchor() == &SourceAnchor::Range(range))
+                            .then_some((*node, resolved))
+                    });
+                    let (node, resolved) = matching.next().ok_or_else(invalid)?;
+                    if matching.next().is_some()
+                        || parents
+                            .get(&node)
+                            .and_then(|node| scopes.get(node))
+                            .and_then(|local| scope_ids.get(local))
+                            .copied()
+                            != parent
+                    {
+                        return Err(invalid());
+                    }
+                    (*typed_for.get(&resolved).ok_or_else(invalid)?, typed_layer)
+                }
+            };
+            let mut own = Vec::new();
+            for id in &context.bindings {
+                let binding = lexical.bindings().get(*id).ok_or_else(invalid)?;
+                let BinderIdentity::ResolverLocal {
+                    scope: declaration_scope,
+                    ordinal,
+                    declaration_range,
+                } = &binding.identity
+                else {
+                    return Err(invalid());
+                };
+                let mut matching = scope.bindings().iter().filter(|declaration| {
+                    declaration.scope() == declaration_scope
+                        && declaration.range() == *declaration_range
+                        && declaration.ordinal() == *ordinal
+                });
+                let declaration = matching.next().ok_or_else(invalid)?;
+                if matching.next().is_some()
+                    || binding.owner_context != binding_context
+                    || declaration_scope != local
+                    || scopes.get(&declaration.node()) != Some(declaration_scope)
+                    || binding.declaration_range != declaration.range()
+                {
+                    return Err(invalid());
+                }
+                let resolved = source
+                    .resolved_node_for(declaration.node())
+                    .ok_or_else(invalid)?;
+                own.push(BindingTypeRef::Site(TypedSiteRef::Node(
+                    *typed_for.get(&resolved).ok_or_else(invalid)?,
+                )));
+            }
+            let id = contexts.insert(LocalTypeContextDraft {
+                owner: TypedSiteRef::Node(owner),
+                parent,
+                layer,
+                bindings: own,
+                introduced_assumptions: Vec::new(),
+                visible_facts: Vec::new(),
+                recovery: ContextRecoveryState::Normal,
+            });
+            local_ids.insert(binding_context, id);
+            if scope_ids.insert(local.clone(), id).is_some() {
+                return Err(invalid());
+            }
+        }
+        let mut nodes = Vec::new();
+        for (_, original_node) in original.nodes().iter() {
+            let mut node = original_node.clone();
+            let local = resolved_scopes
+                .get(&node.resolved_node.ok_or_else(invalid)?)
+                .ok_or_else(invalid)?;
+            node.links.context = Some(*scope_ids.get(*local).ok_or_else(invalid)?);
+            nodes.push(node);
+        }
+        let nodes = TypedArena::try_new(original.nodes().root(), nodes).map_err(|_| invalid())?;
+        for expression in &mut expressions {
+            expression.local_context = Some(
+                nodes
+                    .node(expression.typed_site.node())
+                    .and_then(|node| node.links.context)
+                    .ok_or_else(invalid)?,
+            );
+        }
+        let primary = original.source_term().cloned().ok_or_else(invalid)?;
+        let atomic = original
+            .source_atomic_formula()
+            .cloned()
+            .ok_or_else(invalid)?;
+        let typed = TypedAst::try_new(TypedAstParts {
+            source_id: original.source_id(),
+            module_id: original.module_id().clone(),
+            resolved_root: original.resolved_root(),
+            source_context: original.source_context().cloned(),
+            source_type: original.source_type().cloned(),
+            source_attribute: original.source_attribute().cloned(),
+            nodes,
+            contexts,
+            types: original.types().clone(),
+            facts: original.facts().clone(),
+            coercions: original.coercions().clone(),
+            initial_obligations: original.initial_obligations().clone(),
+            diagnostics: original.diagnostics().clone(),
+        })
+        .and_then(|ast| ast.with_source_term(primary))
+        .and_then(|ast| ast.with_source_atomic_formula(atomic))
+        .map_err(|error| error.to_string())?;
+        Ok((bindings, inference, typed, expressions))
+    }
+
     /// Checks bounded predicate and means-functor statements without proof credit.
     pub fn check_source_predicate_statements(
         source: &SurfaceResolvedArena,

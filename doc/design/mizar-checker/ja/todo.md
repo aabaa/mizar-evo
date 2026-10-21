@@ -16,6 +16,7 @@
 - [x] [元ソースの定理等式の抽出と型推論](../../task_contracts/ja/CHECKER-SOURCE-THEOREM-EQUALITY-PRODUCER.md).
 
 - [x] [元ソースの定理 lexical context](../../task_contracts/ja/RESOLVE-CHECKER-SOURCE-THEOREM-LEXICAL-CONTEXTS.md).
+- [x] [元ソースの定理 local type context](../../task_contracts/ja/CHECKER-SOURCE-THEOREM-LOCAL-TYPE-CONTEXTS.md).
 
 ## 状態の凡例
 
