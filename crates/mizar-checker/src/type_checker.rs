@@ -6541,6 +6541,53 @@ impl TermFormulaChecker {
         Ok((bindings, inference, typed))
     }
 
+    /// Retains genuine original-source variable and equality expression sites.
+    pub fn check_source_theorem_equalities_with_expression_metadata(
+        source: &SurfaceResolvedArena,
+        symbols: &SymbolEnv,
+        scope: &ResolvedVariableScope,
+    ) -> Result<
+        (
+            BindingEnv,
+            TermFormulaInferenceOutput,
+            crate::typed_ast::TypedAst,
+            Vec<crate::resolved_typed_ast::ExpressionMetadataInput>,
+        ),
+        String,
+    > {
+        use crate::resolved_typed_ast::{ExprId, ExpressionMetadataInput};
+        let (bindings, inference, typed) =
+            Self::check_source_theorem_equalities_with_typed_tables(source, symbols, scope)?;
+        let invalid = || "theorems.equality.missing_expression_handoff".to_owned();
+        let primary = typed.source_term().ok_or_else(invalid)?;
+        let atomic = typed.source_atomic_formula().ok_or_else(invalid)?;
+        let expressions = primary
+            .terms()
+            .iter()
+            .map(|(_, term)| ExpressionMetadataInput {
+                expr: ExprId::new(format!("source.theorem.term.{}", term.source_ordinal())),
+                typed_site: term.site().clone(),
+                local_context: None,
+                cluster_facts: Vec::new(),
+            })
+            .chain(
+                atomic
+                    .formulas()
+                    .iter()
+                    .map(|(_, formula)| ExpressionMetadataInput {
+                        expr: ExprId::new(format!(
+                            "source.theorem.formula.{}",
+                            formula.source_ordinal()
+                        )),
+                        typed_site: formula.site().clone(),
+                        local_context: None,
+                        cluster_facts: Vec::new(),
+                    }),
+            )
+            .collect();
+        Ok((bindings, inference, typed, expressions))
+    }
+
     /// Checks bounded predicate and means-functor statements without proof credit.
     pub fn check_source_predicate_statements(
         source: &SurfaceResolvedArena,
