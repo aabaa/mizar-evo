@@ -22,6 +22,7 @@
 - [x] [Original-source theorem context handoff](../../task_contracts/ja/CHECKER-SOURCE-THEOREM-CONTEXT-HANDOFF.md).
 - [x] [元ソース定理の記述型](../../task_contracts/ja/CHECKER-SOURCE-THEOREM-TYPE-HANDOFF.md).
 - [x] [元ソース定理の宣言型確認](../../task_contracts/ja/CHECKER-SOURCE-THEOREM-DECLARATION-CHECKING.md).
+- [x] [元ソース定理の宣言型インストール](../../task_contracts/ja/CHECKER-SOURCE-THEOREM-TYPED-DECLARATIONS.md).
 
 ## 状態の凡例
 

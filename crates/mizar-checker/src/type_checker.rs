@@ -5376,6 +5376,98 @@ pub struct DeclarationChecker {
 }
 
 impl DeclarationChecker {
+    /// Installs genuine declaration types in the original theorem typed AST.
+    pub fn check_source_theorem_equalities_with_typed_declarations(
+        source: &SurfaceResolvedArena,
+        symbols: &SymbolEnv,
+        scope: &ResolvedVariableScope,
+    ) -> Result<
+        (
+            BindingEnv,
+            TermFormulaInferenceOutput,
+            crate::typed_ast::TypedAst,
+            Vec<crate::resolved_typed_ast::ExpressionMetadataInput>,
+        ),
+        String,
+    > {
+        use crate::typed_ast::{TypedArena, TypedAst, TypedAstParts, TypingState};
+        let ((bindings, inference, original, metadata), checked) =
+            Self::check_source_theorem_equalities(source, symbols, scope)?;
+        let invalid = || "theorems.equality.invalid_typed_declaration_association".to_owned();
+        let mut normalized_ids = BTreeMap::new();
+        for (id, normalized) in checked.normalized_types().iter() {
+            let mut matching = inference.normalized_types().iter().filter(|(_, row)| {
+                row.status == NormalizedTypeStatus::Known
+                    && row.head == normalized.head
+                    && row.args.is_empty()
+                    && row.attributes == AttributeSet::empty()
+            });
+            let (target, _) = matching.next().ok_or_else(invalid)?;
+            if matching.next().is_some() {
+                return Err(invalid());
+            }
+            normalized_ids.insert(id, target);
+        }
+        let mut types = original.types().clone();
+        let mut entry_ids = BTreeMap::new();
+        for (id, entry) in checked.type_entries().iter() {
+            let TypeEntryActual::Known(actual) = entry.actual else {
+                return Err(invalid());
+            };
+            let actual = *normalized_ids.get(&actual).ok_or_else(invalid)?;
+            let expected = entry
+                .expected
+                .map(|id| normalized_ids.get(&id).copied().ok_or_else(invalid))
+                .transpose()?;
+            let inserted = types.insert(TypeEntryDraft {
+                owner: entry.owner.clone(),
+                expected,
+                actual: TypeEntryActual::Known(actual),
+                status: entry.status,
+                provenance: entry.provenance.clone(),
+            });
+            entry_ids.insert(id, inserted);
+        }
+        let mut nodes = original
+            .nodes()
+            .iter()
+            .map(|(_, node)| node.clone())
+            .collect::<Vec<_>>();
+        for (_, declaration) in checked.declarations().iter() {
+            let entry = declaration.type_entry.ok_or_else(invalid)?;
+            let inserted = *entry_ids.get(&entry).ok_or_else(invalid)?;
+            let node = nodes
+                .get_mut(declaration.site.node().index())
+                .ok_or_else(invalid)?;
+            node.typing = TypingState::Successful;
+            node.links.type_entry = Some(inserted);
+        }
+        let primary = original.source_term().cloned().ok_or_else(invalid)?;
+        let atomic = original
+            .source_atomic_formula()
+            .cloned()
+            .ok_or_else(invalid)?;
+        let typed = TypedAst::try_new(TypedAstParts {
+            source_id: original.source_id(),
+            module_id: original.module_id().clone(),
+            resolved_root: original.resolved_root(),
+            source_context: original.source_context().cloned(),
+            source_type: original.source_type().cloned(),
+            source_attribute: original.source_attribute().cloned(),
+            nodes: TypedArena::try_new(original.nodes().root(), nodes).map_err(|_| invalid())?,
+            contexts: original.contexts().clone(),
+            types,
+            facts: original.facts().clone(),
+            coercions: original.coercions().clone(),
+            initial_obligations: original.initial_obligations().clone(),
+            diagnostics: original.diagnostics().clone(),
+        })
+        .and_then(|ast| ast.with_source_term(primary))
+        .and_then(|ast| ast.with_source_atomic_formula(atomic))
+        .map_err(|_| invalid())?;
+        Ok((bindings, inference, typed, metadata))
+    }
+
     // reason: Keep the existing pipeline tuple instead of a single-use result type.
     #[allow(clippy::type_complexity)]
     pub fn check_source_theorem_equalities(
