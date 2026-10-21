@@ -15793,6 +15793,151 @@ impl SourceVariableSemanticsChecker {
         })
     }
 
+    /// Retains real theorem lexical contexts without changing existing inference handoffs.
+    pub fn source_theorem_binding_env(
+        source: &SurfaceResolvedArena,
+        symbols: &SymbolEnv,
+        scope: &ResolvedVariableScope,
+    ) -> Result<BindingEnv, String> {
+        let (original, _, _) =
+            TermFormulaChecker::check_source_theorem_equalities(source, symbols, scope)?;
+        let (scopes, parents) =
+            mizar_resolve::symbols::source_proof_scope_maps(source, symbols, scope)?;
+        let invalid = || "theorems.bindings.invalid_lexical_association".to_owned();
+        let root_scope = scopes
+            .iter()
+            .find(|(node, _)| source.resolved_node_for(**node) == Some(source.arena().root()))
+            .map(|(_, local)| local)
+            .ok_or_else(invalid)?;
+        let mut boundaries = BTreeMap::from([(
+            root_scope.clone(),
+            (
+                BindingContextOwner::Module,
+                BindingContextLayer::Module,
+                None,
+            ),
+        )]);
+        for (node, local) in &scopes {
+            let Some(parent) = parents.get(node) else {
+                continue;
+            };
+            let parent_scope = scopes.get(parent).ok_or_else(invalid)?;
+            if local == parent_scope {
+                continue;
+            }
+            let actual = source
+                .arena()
+                .node(source.resolved_node_for(*node).ok_or_else(invalid)?)
+                .ok_or_else(invalid)?;
+            let SourceAnchor::Range(source_range) = actual.origin().anchor() else {
+                return Err(invalid());
+            };
+            let (owner, layer) = match actual.kind() {
+                K::QuantifiedFormula(_) => (
+                    BindingContextOwner::SourceFormula {
+                        source_range: *source_range,
+                    },
+                    BindingContextLayer::Expression,
+                ),
+                K::ProofBlock => (
+                    BindingContextOwner::SourceStatement {
+                        source_range: *source_range,
+                    },
+                    BindingContextLayer::Proof,
+                ),
+                _ => return Err(invalid()),
+            };
+            if boundaries
+                .insert(local.clone(), (owner, layer, Some(parent_scope.clone())))
+                .is_some()
+            {
+                return Err(invalid());
+            }
+        }
+        let mut ordered = boundaries.keys().cloned().collect::<Vec<_>>();
+        ordered.sort_by(|left, right| {
+            (left.path().len(), left.path()).cmp(&(right.path().len(), right.path()))
+        });
+        let ids = ordered
+            .iter()
+            .enumerate()
+            .map(|(index, local)| (local.clone(), BindingContextId::new(index)))
+            .collect::<BTreeMap<_, _>>();
+        let mut bindings = BindingTable::new();
+        for (id, entry) in original.bindings().iter() {
+            let BinderIdentity::ResolverLocal {
+                scope: local,
+                ordinal,
+                declaration_range,
+            } = &entry.identity
+            else {
+                return Err(invalid());
+            };
+            let declaration = scope
+                .bindings()
+                .iter()
+                .find(|binding| {
+                    binding.range() == *declaration_range && binding.ordinal() == *ordinal
+                })
+                .ok_or_else(invalid)?;
+            if scopes.get(&declaration.node()) != Some(local) {
+                return Err(invalid());
+            }
+            let owner_context = *ids.get(local).ok_or_else(invalid)?;
+            let inserted = bindings.insert(BindingDraft {
+                spelling: entry.spelling.clone(),
+                kind: entry.kind,
+                identity: entry.identity.clone(),
+                owner_context,
+                declaration_range: entry.declaration_range,
+                visible_after_ordinal: entry.visible_after_ordinal,
+                type_site: entry.type_site.clone(),
+                status: entry.status,
+                captured: entry.captured.clone(),
+                diagnostics: entry.diagnostics.clone(),
+                recovery: entry.recovery,
+            });
+            if inserted != id {
+                return Err(invalid());
+            }
+        }
+        let mut contexts = BindingContextTable::new();
+        for local in ordered {
+            let id = *ids.get(&local).ok_or_else(invalid)?;
+            let (owner, layer, parent_scope) = boundaries.remove(&local).ok_or_else(invalid)?;
+            let parent = parent_scope
+                .as_ref()
+                .map(|local| ids.get(local).copied().ok_or_else(invalid))
+                .transpose()?;
+            let own = bindings
+                .iter()
+                .filter_map(|(binding, entry)| (entry.owner_context == id).then_some(binding))
+                .collect::<Vec<_>>();
+            let mut visible = own.clone();
+            if let Some(parent) = parent {
+                visible
+                    .extend_from_slice(&contexts.get(parent).ok_or_else(invalid)?.visible_bindings);
+            }
+            contexts.insert(BindingContextDraft {
+                owner,
+                parent,
+                layer,
+                lexical_scope: parent.map(|_| local),
+                bindings: own,
+                visible_bindings: visible,
+                recovery: BindingContextRecovery::Normal,
+            });
+        }
+        BindingEnv::try_new(BindingEnvParts {
+            source_id: original.source_id(),
+            module_id: original.module_id().clone(),
+            contexts,
+            bindings,
+            diagnostics: original.diagnostics().clone(),
+        })
+        .map_err(|error| error.to_string())
+    }
+
     /// Projects an authenticated resolver scope into the checker binding
     /// environment used by term/formula inference.
     #[must_use]

@@ -15,6 +15,8 @@
 - [x] [元ソースの型推論表の結合](../../task_contracts/ja/CHECKER-SOURCE-THEOREM-TYPED-INFERENCE.md).
 - [x] [元ソースの定理等式の抽出と型推論](../../task_contracts/ja/CHECKER-SOURCE-THEOREM-EQUALITY-PRODUCER.md).
 
+- [x] [元ソースの定理 lexical context](../../task_contracts/ja/RESOLVE-CHECKER-SOURCE-THEOREM-LEXICAL-CONTEXTS.md).
+
 ## 状態の凡例
 
 - [ ] 未着手

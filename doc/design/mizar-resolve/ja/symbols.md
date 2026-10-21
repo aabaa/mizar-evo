@@ -730,3 +730,9 @@ labels/tests.rs に source_proof_occurrence_validation_preserves_real_rows_and_i
 ### Acquisition tests
 labels/tests.rs に source_proof_inputs_match_actual_collectors_and_preserve_inputs と source_proof_inputs_preserve_original_errors_and_boundaries だけを追加し、既存の実 Frontend helper/fixture を使う。private/public と proof-local label/引用、grouped/nested/未使用 binding、Given/Consider occurrence、空 occurrence/引用、未解決 label、重複 label 診断と実 source 由来の曖昧引用について、別途呼ぶ既存 producer の全 tuple と比較する。先に既存 producer の実 Ambiguous 結果と候補の identity/順序/provenance、source の binding/reference/label の具体的事実を確認し、再実行と入力不変性も確認する。
 実際の成功 source/環境を対照に、別 source/module・拡張環境・実 parser recovery を拒否する。未解決変数を持つ source で既存 occurrence の実失敗と元環境エラーの優先順位を確認する。成功用 AST/scope/contribution/label/resolution/semantic receipt は捏造しない。
+
+## Original-source proof lexical maps
+`source_proof_scope_maps(&SurfaceResolvedArena, &SymbolEnv, &ResolvedVariableScope)` は既存所有型 `(BTreeMap<SurfaceNodeId, LocalTermScope>, BTreeMap<SurfaceNodeId, SurfaceNodeId>)` または String を返す。最初に未変更 validate_source_proof_occurrences を一度呼びエラーを保持する。同じ認証済み非公開 AST から validate_variable_surface_with_mode(ast, true) の実二表を返し、この既存 helper だけを crate 内公開にする。caller map・AST・status は受けない。
+未使用 boundary を含む全 node/scope 対応と実 structural parent を保持し、parser-root の flat-token metadata より structural parent を優先する。root に親はない。ID は同じ source 内の局所 key とし、checker/typed context や artifact identity に変換しない。scope path の再構成・行の選別・名前解決の再実装・既存 admission/error/profile の変更はしない。
+この raw map は source ownership データだけを供給し、BindingEnv・typed context・label・fact・真理・完全 phase・受理・currentness・reuse を作らない。既存 source_proof_inputs と全旧 Resolver 出力を保つ。
+map のテストは実 capture/collector と独立した元 occurrence 認証から、全 node/parent・宣言/参照 scope・boundary range・反復・Disk/OpenBuffer 安定性・入力不変性を確認する。広い Resolver 入力と狭い[定理 binding-context consumer](../../mizar-checker/ja/type_checker.md#original-source-theorem-binding-contexts)を分け、負例は同じ入力の元 validator error を先に得て比較する。

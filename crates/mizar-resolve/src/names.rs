@@ -6723,7 +6723,7 @@ fn validate_variable_surface(
     validate_variable_surface_with_mode(ast, false)
 }
 
-fn validate_variable_surface_with_mode(
+pub(crate) fn validate_variable_surface_with_mode(
     ast: &SurfaceAst,
     comprehension_scopes: bool,
 ) -> Result<VariableSurfaceValidation, SourceVariableScopeError> {

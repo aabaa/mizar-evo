@@ -64,6 +64,26 @@ pub fn validate_source_proof_occurrences(
     Ok(())
 }
 
+/// Returns complete authenticated source-local lexical scopes and structural parents.
+// Rationale: returning both existing resolver maps without a wrapper.
+#[allow(clippy::type_complexity)]
+pub fn source_proof_scope_maps(
+    source: &SurfaceResolvedArena,
+    symbols: &SymbolEnv,
+    scope: &crate::names::ResolvedVariableScope,
+) -> Result<
+    (
+        BTreeMap<SurfaceNodeId, crate::names::LocalTermScope>,
+        BTreeMap<SurfaceNodeId, SurfaceNodeId>,
+    ),
+    String,
+> {
+    validate_source_proof_occurrences(source, symbols, scope)?;
+    let ast = validated_source_symbol_ast(source, symbols)?;
+    crate::names::validate_variable_surface_with_mode(&ast, true)
+        .map_err(|error| format!("{error:?}"))
+}
+
 /// Acquires complete resolver-owned proof inputs from the original source and symbols.
 pub fn source_proof_inputs(
     source: &SurfaceResolvedArena,

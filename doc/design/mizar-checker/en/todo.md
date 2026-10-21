@@ -17,6 +17,8 @@
 - [x] [Original-source typed inference binding](../../task_contracts/en/CHECKER-SOURCE-THEOREM-TYPED-INFERENCE.md).
 - [x] [Original-source theorem equality producer](../../task_contracts/en/CHECKER-SOURCE-THEOREM-EQUALITY-PRODUCER.md).
 
+- [x] [Original-source theorem lexical contexts](../../task_contracts/en/RESOLVE-CHECKER-SOURCE-THEOREM-LEXICAL-CONTEXTS.md).
+
 ## Status Legend
 
 - [ ] not started

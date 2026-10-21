@@ -2,6 +2,8 @@
 
 > Canonical language: English. Japanese companion: [../ja/todo.md](../ja/todo.md).
 
+- [x] [Original-source theorem lexical contexts](../../task_contracts/en/RESOLVE-CHECKER-SOURCE-THEOREM-LEXICAL-CONTEXTS.md).
+
 ## Status Legend
 
 - [ ] not started
