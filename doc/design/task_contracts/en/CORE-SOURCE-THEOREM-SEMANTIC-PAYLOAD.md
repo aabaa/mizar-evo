@@ -1,0 +1,16 @@
+# Task CORE-SOURCE-THEOREM-SEMANTIC-PAYLOAD: bounded Core content
+Canonical language: English; [Japanese pointer](../ja/CORE-SOURCE-THEOREM-SEMANTIC-PAYLOAD.md).
+Status: implemented for the bounded Core profile; publication remains open. Tier: full. Owner: [Core plan](../../mizar-core/en/00.crate_plan.md), task 57; consumers: future genuine Driver IR publication.
+Authority: [spec 16.3.1](../../../spec/en/16.theorems_and_proofs.md#1631-skeleton-extraction), [16.3.3](../../../spec/en/16.theorems_and_proofs.md#1633-skeleton-decomposition-rules), [Core architecture](../../architecture/en/06.elaboration_and_core_ir.md#proof-skeletons-become-core-proof-trees) and [dependency contract](../../architecture/en/18.dependency_fingerprint.md#dependency-slice).
+Dependencies/readiness: genuine opaque SourceTheoremCheck, unchanged theorem lowering and selected local payload operation, [generic canonical forms](../../mizar-core/en/binder_normalization.md#alpha-equivalence); lossless source storage belongs to Driver.
+Gap: source_drift/test_gap; selected local guard/goal content omits the original proposition and item/proof/seed semantic associations needed before genuine IR publication.
+Sole API/profile/grammar/invariant/test owner: [elaborator](../../mizar-core/en/elaborator.md#source-theorem-core-semantic-payload). Supply one additive immutable operation; do not duplicate source checking or lower-stage pipelines.
+Write scope: crates/mizar-core/src/elaborator.rs, crates/mizar-test/src/runner/proof_verification.rs; paired Core elaborator, plan, TODO, source_spec_audit and these contracts. No other source/design edits.
+Placement: insert the one production function before the complete existing lower_source_functorial_registration doc/function marker; append exactly two callback test families before the final term_proof_tests module brace. Preserve every old code/test/helper/import byte outside these insertions.
+Budgets: at most 220 production, 360 test and 70 documentation added lines; no new source file, type, field, helper, adapter, dependency, representation, lint suppression or route activation.
+Preserve: existing selected payload/lowering errors, generic normalization/free identities, whole Core ids/statuses, source checking, public diagnostics/recovery, proof and acceptance policy. Protected spec/.miz/expectation/trace/ledger artifacts stay unchanged.
+Deferrals: broader Core profiles, interface/proof-body fingerprint policy, complete phase/provenance/dependency footprints, currentness, VC identity, trusted factory/publication, artifact/reuse/proof/LSP authority and Steps 6–8 completion remain open with their owners.
+Audit: only source_spec_audit inventories the new operation; no global coverage/trace status or follow-up ownership changes, so spec_coverage_audit stays untouched.
+Reviews: independent SPEC before Rust, then TEST, CODE, VOLUME, CONSISTENCY and parent bounded full gates plus independent cold assessment.
+Verification: narrow genuine new families and Core first; parent cargo fmt --check, cargo clippy --all-targets --all-features -- -D warnings, cargo test.
+Exit: supported actual source/Core pairs produce the exact original-and-local semantic content; unsupported inputs fail atomically without altering existing semantics or granting enclosing credit.

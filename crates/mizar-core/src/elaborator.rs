@@ -15198,6 +15198,165 @@ pub fn source_theorem_formula_payloads(
     Ok(selected)
 }
 
+/// Encodes the original and local semantics of a replay-checked single-local theorem.
+pub fn source_theorem_core_semantic_payload(
+    check: &mizar_checker::type_checker::SourceTheoremCheck<'_>,
+    core: &CoreIr,
+) -> Result<Vec<u8>, String> {
+    use crate::binder_normalization::{
+        CanonicalFormulaKind as F, CanonicalTermKind as T, CanonicalVar, canonical_formula,
+        normalize_core_formula,
+    };
+    let roots = core
+        .obligation_seeds()
+        .iter()
+        .flat_map(|(_, seed)| seed.context.iter().copied().chain(seed.goal))
+        .collect::<Vec<_>>();
+    let local_payloads = source_theorem_formula_payloads(check, core, &roots)?;
+    let invalid = || "unsupported source theorem core semantic payload".to_owned();
+    let (item_id, item) = core.items().iter().next().ok_or_else(invalid)?;
+    let (proof_id, proof) = core.proofs().iter().next().ok_or_else(invalid)?;
+    let (_, seed) = core.obligation_seeds().iter().next().ok_or_else(invalid)?;
+    let CoreProofNodeKind::IntroduceBinder {
+        binder: local,
+        child,
+    } = &core.proof_nodes().get(proof.root).ok_or_else(invalid)?.kind
+    else {
+        return Err(invalid());
+    };
+    let local_guard = local.ty_guard.ok_or_else(invalid)?;
+    let goal = seed.goal.ok_or_else(invalid)?;
+    let proposition = core.formulas().get(proof.proposition).ok_or_else(invalid)?;
+    let CoreFormulaKind::Forall { binders, body } = &proposition.kind else {
+        return Err(invalid());
+    };
+    let [original] = binders.as_slice() else {
+        return Err(invalid());
+    };
+    let original_guard = original.ty_guard.ok_or_else(invalid)?;
+    let formula_ids = [proof.proposition, original_guard, *body, local_guard, goal]
+        .into_iter()
+        .collect::<BTreeSet<_>>();
+    if formula_ids.len() != 5 || formula_ids != core.formulas().iter().map(|(id, _)| id).collect() {
+        return Err(invalid());
+    }
+    let mut term_ids = BTreeSet::new();
+    for id in [original_guard, *body, local_guard, goal] {
+        match &core.formulas().get(id).ok_or_else(invalid)?.kind {
+            CoreFormulaKind::TypePred { subject, .. }
+                if id == original_guard || id == local_guard =>
+            {
+                term_ids.insert(*subject);
+            }
+            CoreFormulaKind::Equals { left, right } if id == *body || id == goal => {
+                term_ids.extend([*left, *right]);
+            }
+            _ => return Err(invalid()),
+        }
+    }
+    let mut refs = vec![
+        CoreNodeRef::Item(item_id),
+        CoreNodeRef::Proof(proof_id),
+        CoreNodeRef::ProofNode(*child),
+        CoreNodeRef::Formula(local_guard),
+        CoreNodeRef::Formula(goal),
+    ];
+    refs.sort();
+    if term_ids.len() != 6
+        || term_ids != core.terms().iter().map(|(id, _)| id).collect()
+        || seed.core_refs != refs
+    {
+        return Err(invalid());
+    }
+    let context = BinderContext::new();
+    let normalized = normalize_core_formula(core, proof.proposition, &context, &proposition.source)
+        .map_err(|_| invalid())?;
+    let canonical =
+        canonical_formula(&normalized, &context, &proposition.source).map_err(|_| invalid())?;
+    let F::Forall { binders, body } = canonical.kind() else {
+        return Err(invalid());
+    };
+    let [binder] = binders.as_slice() else {
+        return Err(invalid());
+    };
+    let F::TypePred { subject, ty } = binder.ty_guard.as_ref().ok_or_else(invalid)?.kind() else {
+        return Err(invalid());
+    };
+    let F::Equals { left, right } = body.kind() else {
+        return Err(invalid());
+    };
+    if binder.role.as_str() != "quantifier"
+        || ty.as_str() != "set"
+        || [subject, left, right]
+            .iter()
+            .any(|term| term.kind() != &T::Var(CanonicalVar::Bound(0)))
+    {
+        return Err(invalid());
+    }
+    let append = |out: &mut Vec<u8>, bytes: &[u8]| -> Result<(), String> {
+        if out.len().checked_add(bytes.len()).ok_or_else(invalid)? > 32 * 1024 * 1024 {
+            return Err(invalid());
+        }
+        out.extend_from_slice(bytes);
+        Ok(())
+    };
+    let mut tree = vec![7];
+    append(
+        &mut tree,
+        &u32::try_from(binders.len())
+            .map_err(|_| invalid())?
+            .to_be_bytes(),
+    )?;
+    append(
+        &mut tree,
+        &u32::try_from(binder.role.as_str().len())
+            .map_err(|_| invalid())?
+            .to_be_bytes(),
+    )?;
+    append(&mut tree, binder.role.as_str().as_bytes())?;
+    append(&mut tree, &[1, 3])?;
+    append(
+        &mut tree,
+        &u32::try_from(ty.as_str().len())
+            .map_err(|_| invalid())?
+            .to_be_bytes(),
+    )?;
+    append(&mut tree, ty.as_str().as_bytes())?;
+    for (index, term) in [subject, left, right].into_iter().enumerate() {
+        if index == 1 {
+            append(&mut tree, &[2])?;
+        }
+        let T::Var(CanonicalVar::Bound(bound)) = term.kind() else {
+            return Err(invalid());
+        };
+        append(&mut tree, &[1])?;
+        append(&mut tree, &bound.to_be_bytes())?;
+    }
+    let mut output = b"mizar-core/source-theorem-core-semantics/v1\0".to_vec();
+    for field in [
+        core.module_id().package().as_str().as_bytes(),
+        core.module_id().path().as_str().as_bytes(),
+        item.symbol.module().package().as_str().as_bytes(),
+        item.symbol.module().path().as_str().as_bytes(),
+        item.symbol.local().as_str().as_bytes(),
+        item.symbol.fqn().as_str().as_bytes(),
+        item.visibility.as_str().as_bytes(),
+        tree.as_slice(),
+        local_payloads
+            .get(&local_guard)
+            .ok_or_else(invalid)?
+            .as_slice(),
+        local_payloads.get(&goal).ok_or_else(invalid)?.as_slice(),
+        seed.local_path.as_str().as_bytes(),
+        seed.semantic_origin.as_str().as_bytes(),
+    ] {
+        let length = u64::try_from(field.len()).map_err(|_| invalid())?;
+        append(&mut output, &length.to_le_bytes())?;
+        append(&mut output, field)?;
+    }
+    Ok(output)
+}
+
 /// Lowers checked local set/identity functorial and reduction correctness goals.
 pub fn lower_source_functorial_registration(
     check: &mizar_checker::registration_resolution::SourceRegistrationCheck<'_>,

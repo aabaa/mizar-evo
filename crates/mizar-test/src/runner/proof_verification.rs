@@ -19810,4 +19810,261 @@ mod term_proof_tests {
         fs::remove_dir_all(root).unwrap();
         Ok(())
     }
+
+    #[test]
+    fn source_theorem_core_semantic_payload_preserves_original_and_local_content() {
+        use mizar_core::{
+            binder_normalization::{
+                BinderContext, CanonicalFormulaKind as F, CanonicalTermKind as T, CanonicalVar,
+                canonical_formula, normalize_core_formula,
+            },
+            core_ir::*,
+            elaborator::{
+                lower_source_theorem_skeletons, source_theorem_core_semantic_payload,
+                source_theorem_formula_payloads,
+            },
+        };
+        use std::collections::BTreeSet;
+        let original =
+            "theorem T: for X being set holds X = X proof let X be set; thus X = X; end;";
+        let mut baseline = None;
+        for (source, same_owner) in [
+            (original.to_owned(), true),
+            ("theorem T: for Bound being set holds Bound = Bound proof let Local be set; thus Local = Local; end;".to_owned(), true),
+            (format!(":: trivia\n{}\n", original.replace(" proof ", "\nproof\n")), true),
+            (original.replace("T:", "Other:"), false),
+        ] {
+            let (core, bytes) = with_step5c14_theorem_check(&source, |check| {
+                let check_before = format!("{check:?}");
+                let core = lower_source_theorem_skeletons(check, None)?;
+                let before = core.clone();
+                assert_eq!(core.items().len(), 1);
+                assert_eq!(core.proofs().len(), 1);
+                assert_eq!(core.proof_nodes().len(), 2);
+                assert_eq!(core.obligation_seeds().len(), 1);
+                assert_eq!(core.formulas().len(), 5);
+                assert_eq!(core.terms().len(), 6);
+                assert!(core.definitions().is_empty());
+                assert!(core.algorithms().is_empty());
+                assert!(core.algorithm_statements().is_empty());
+                assert!(core.generated().is_empty());
+                assert!(core.diagnostics().is_empty());
+                let (item_id, item) = core.items().iter().next().unwrap();
+                let (proof_id, proof) = core.proofs().iter().next().unwrap();
+                let (seed_id, seed) = core.obligation_seeds().iter().next().unwrap();
+                assert_eq!(item.kind, CoreItemKind::Theorem);
+                assert_eq!(item.status, CoreItemStatus::Valid);
+                assert!(item.dependencies.is_empty());
+                assert!(item.diagnostics.is_empty());
+                assert_eq!(proof.item, item_id);
+                assert_eq!(proof.status, CoreProofStatus::PendingAutomaticProof);
+                assert_eq!(seed.owner, item_id);
+                assert_eq!(seed.kind, ObligationSeedKind::TheoremProof);
+                assert_eq!(seed.status, ObligationSeedStatus::Active);
+                assert!(seed.label.is_none());
+                assert!(seed.diagnostics.is_empty());
+                assert_eq!(item.symbol.module(), core.module_id());
+                assert!(!item.visibility.as_str().is_empty());
+                assert_eq!(seed.local_path.as_str(), format!("proof/{}", item.symbol.fqn().as_str()));
+                assert_eq!(seed.semantic_origin.as_str(), format!("{}.proof", item.symbol.fqn().as_str()));
+                let root = core.proof_nodes().get(proof.root).unwrap();
+                let CoreProofNodeKind::IntroduceBinder { binder: local, child } = &root.kind else {
+                    panic!()
+                };
+                let terminal = core.proof_nodes().get(*child).unwrap();
+                let CoreProofNodeKind::TerminalGoal { obligation, citations } = &terminal.kind else {
+                    panic!()
+                };
+                assert_eq!(*obligation, seed_id);
+                assert!(citations.is_empty());
+                assert!(root.diagnostics.is_empty());
+                assert!(terminal.diagnostics.is_empty());
+                let guard = local.ty_guard.unwrap();
+                let goal = seed.goal.unwrap();
+                assert_eq!(seed.context, [guard]);
+                let proposition = core.formulas().get(proof.proposition).unwrap();
+                let CoreFormulaKind::Forall { binders, body } = &proposition.kind else {
+                    panic!()
+                };
+                assert_eq!(binders.len(), 1);
+                assert_ne!(binders[0].var, local.var);
+                assert_eq!(binders[0].role.as_str(), "quantifier");
+                assert_eq!(local.role.as_str(), "proof-let");
+                let original_guard = binders[0].ty_guard.unwrap();
+                let formulas = [proof.proposition, original_guard, *body, guard, goal]
+                    .into_iter().collect::<BTreeSet<_>>();
+                assert_eq!(formulas.len(), 5);
+                assert_eq!(formulas, core.formulas().iter().map(|(id, _)| id).collect());
+                let mut terms = BTreeSet::new();
+                for (id, var) in [(original_guard, binders[0].var), (guard, local.var)] {
+                    let CoreFormulaKind::TypePred { subject, ty } = &core.formulas().get(id).unwrap().kind else {
+                        panic!()
+                    };
+                    assert_eq!(ty.as_str(), "set");
+                    assert_eq!(core.terms().get(*subject).unwrap().kind, CoreTermKind::Var(var));
+                    assert!(terms.insert(*subject));
+                }
+                for (id, var) in [(*body, binders[0].var), (goal, local.var)] {
+                    let CoreFormulaKind::Equals { left, right } = &core.formulas().get(id).unwrap().kind else {
+                        panic!()
+                    };
+                    for term in [*left, *right] {
+                        assert_eq!(core.terms().get(term).unwrap().kind, CoreTermKind::Var(var));
+                        assert!(terms.insert(term));
+                    }
+                }
+                assert_eq!(terms, core.terms().iter().map(|(id, _)| id).collect());
+                let mut refs = vec![CoreNodeRef::Item(item_id), CoreNodeRef::Proof(proof_id),
+                    CoreNodeRef::ProofNode(*child), CoreNodeRef::Formula(guard), CoreNodeRef::Formula(goal)];
+                refs.sort();
+                assert_eq!(seed.core_refs, refs);
+                let context = BinderContext::new();
+                let normalized = normalize_core_formula(&core, proof.proposition, &context, &proposition.source)
+                    .map_err(|e| format!("{e:?}"))?;
+                assert!(normalized.free_variables.is_empty());
+                let canonical = canonical_formula(&normalized, &context, &proposition.source)
+                    .map_err(|e| format!("{e:?}"))?;
+                let F::Forall { binders, body } = canonical.kind() else { panic!() };
+                assert_eq!(binders.len(), 1);
+                assert_eq!(binders[0].role.as_str(), "quantifier");
+                let F::TypePred { subject, ty } = binders[0].ty_guard.as_ref().unwrap().kind() else { panic!() };
+                assert_eq!(ty.as_str(), "set");
+                let F::Equals { left, right } = body.kind() else { panic!() };
+                for term in [subject, left, right] {
+                    assert_eq!(term.kind(), &T::Var(CanonicalVar::Bound(0)));
+                }
+                // Independent grammar vectors precede the new operation.
+                let mut prefix = b"mizar-core/source-theorem-formula/v1\0".to_vec();
+                for text in [core.module_id().package().as_str(), core.module_id().path().as_str(), "proof-let"] {
+                    prefix.extend_from_slice(&u32::try_from(text.len()).unwrap().to_be_bytes());
+                    prefix.extend_from_slice(text.as_bytes());
+                }
+                let mut guard_bytes = prefix.clone();
+                guard_bytes.extend_from_slice(&[3, 0, 0, 0, 3, b's', b'e', b't', 2, 0, 0, 0, 0]);
+                let mut goal_bytes = prefix;
+                goal_bytes.extend_from_slice(&[2, 2, 0, 0, 0, 0, 2, 0, 0, 0, 0]);
+                let expected_locals = [(guard, guard_bytes.clone()), (goal, goal_bytes.clone())].into_iter().collect();
+                assert_eq!(source_theorem_formula_payloads(check, &core, &[guard, goal])?, expected_locals);
+                let mut tree = vec![7, 0, 0, 0, 1, 0, 0, 0, 10];
+                tree.extend_from_slice(b"quantifier");
+                tree.extend_from_slice(&[1, 3, 0, 0, 0, 3, b's', b'e', b't', 1, 0, 0, 0, 0,
+                    2, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0]);
+                let mut expected = b"mizar-core/source-theorem-core-semantics/v1\0".to_vec();
+                for field in [
+                    core.module_id().package().as_str().as_bytes(),
+                    core.module_id().path().as_str().as_bytes(),
+                    item.symbol.module().package().as_str().as_bytes(),
+                    item.symbol.module().path().as_str().as_bytes(),
+                    item.symbol.local().as_str().as_bytes(), item.symbol.fqn().as_str().as_bytes(),
+                    item.visibility.as_str().as_bytes(), tree.as_slice(), guard_bytes.as_slice(),
+                    goal_bytes.as_slice(), seed.local_path.as_str().as_bytes(), seed.semantic_origin.as_str().as_bytes(),
+                ] {
+                    expected.extend_from_slice(&u64::try_from(field.len()).unwrap().to_le_bytes());
+                    expected.extend_from_slice(field);
+                }
+                let bytes = source_theorem_core_semantic_payload(check, &core)?;
+                assert_eq!(bytes, expected);
+                assert_eq!(source_theorem_core_semantic_payload(check, &core)?, bytes);
+                assert_eq!(core, before);
+                assert_eq!(format!("{check:?}"), check_before);
+                Ok((core, bytes))
+            }).unwrap();
+            if let Some((previous, previous_bytes)) = &baseline {
+                assert_ne!(&core, previous);
+                if same_owner {
+                    assert_eq!(&bytes, previous_bytes);
+                } else {
+                    assert_ne!(&bytes, previous_bytes);
+                }
+            } else {
+                baseline = Some((core, bytes));
+            }
+        }
+    }
+
+    #[test]
+    fn source_theorem_core_semantic_payload_preserves_genuine_refusals() {
+        use mizar_core::{
+            core_ir::*,
+            elaborator::{
+                lower_source_theorem_skeletons, source_theorem_core_semantic_payload,
+                source_theorem_formula_payloads,
+            },
+        };
+        let original =
+            "theorem T: for X being set holds X = X proof let X be set; thus X = X; end;";
+        let foreign = step5c14_computation_core(&original.replace("T:", "Foreign:")).unwrap();
+        for source in [
+            original.to_owned(),
+            original.replacen("theorem", "lemma", 1),
+            original.replace("set", "object"),
+            "open theorem O: for X being set holds X = X;".to_owned(),
+        ] {
+            with_step5c14_theorem_check(&source, |check| {
+                let check_before = format!("{check:?}");
+                let core = if source.starts_with("open theorem") {
+                    assert_eq!(
+                        lower_source_theorem_skeletons(check, None).unwrap_err(),
+                        "theorems.core.status_unsupported"
+                    );
+                    foreign.clone()
+                } else {
+                    let lowered = lower_source_theorem_skeletons(check, None)?;
+                    if source == original {
+                        assert_ne!(lowered, foreign);
+                        assert_ne!(
+                            lowered.items().iter().next().unwrap().1.symbol,
+                            foreign.items().iter().next().unwrap().1.symbol
+                        );
+                        foreign.clone()
+                    } else {
+                        let (_, item) = lowered.items().iter().next().unwrap();
+                        if source.starts_with("lemma") {
+                            assert_eq!(item.kind, CoreItemKind::Lemma);
+                        } else {
+                            let proof = lowered.proofs().iter().next().unwrap().1;
+                            let CoreFormulaKind::Forall { binders, .. } =
+                                &lowered.formulas().get(proof.proposition).unwrap().kind
+                            else {
+                                panic!()
+                            };
+                            let seed = lowered.obligation_seeds().iter().next().unwrap().1;
+                            for id in [binders[0].ty_guard.unwrap(), seed.context[0]] {
+                                let CoreFormulaKind::TypePred { ty, .. } =
+                                    &lowered.formulas().get(id).unwrap().kind
+                                else {
+                                    panic!()
+                                };
+                                assert_eq!(ty.as_str(), "object");
+                            }
+                        }
+                        lowered
+                    }
+                };
+                let before = core.clone();
+                let roots = core
+                    .obligation_seeds()
+                    .iter()
+                    .flat_map(|(_, seed)| seed.context.iter().copied().chain(seed.goal))
+                    .collect::<Vec<_>>();
+                let expected = source_theorem_formula_payloads(check, &core, &roots).unwrap_err();
+                assert_eq!(
+                    expected,
+                    if source.starts_with("open theorem") {
+                        "theorems.core.status_unsupported"
+                    } else {
+                        "unsupported source theorem formula payload"
+                    }
+                );
+                assert_eq!(
+                    source_theorem_core_semantic_payload(check, &core).unwrap_err(),
+                    expected
+                );
+                assert_eq!(core, before);
+                assert_eq!(format!("{check:?}"), check_before);
+                Ok(())
+            })
+            .unwrap();
+        }
+    }
 }

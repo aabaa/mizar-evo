@@ -761,6 +761,8 @@ IR264. **Authenticated structure-property definition owner.** [x]
 55. **[Source registration formula payloads](../../task_contracts/en/CORE-SOURCE-REGISTRATION-FORMULA-PAYLOADS.md).** [x]
 56. **[Source theorem formula payloads](../../task_contracts/en/CORE-SOURCE-THEOREM-FORMULA-PAYLOADS.md).** [x] — Bounded local content; full VC/context identity remains open.
 
+57. **[Source theorem Core semantic payload](../../task_contracts/en/CORE-SOURCE-THEOREM-SEMANTIC-PAYLOAD.md).** [x]
+
 ## Recommended Verification
 
 Run after each task:
