@@ -23597,3 +23597,260 @@ fn native_theorem_core_storage_replay_preserves_refusals() {
         Ok(None)
     );
 }
+
+#[test]
+fn native_theorem_core_semantic_payload_preserves_genuine_outputs() {
+    use mizar_core::core_ir::{CoreProofStatus, ObligationSeedStatus};
+    use mizar_driver::{native_theorem_core_semantic_payload, native_theorem_core_storage_bytes};
+    use mizar_resolve::names::{SourceVariableScopeInput, SourceVariableScopeResolver};
+    let module = ResolverModuleId::new(PackageId::new("alpha"), ModulePath::new("main"));
+    for threshold in [usize::MAX, 0] {
+        let mut contents = Vec::new();
+        let mut storage = Vec::new();
+        for text in [
+            "theorem T: for X being set holds X = X proof let X be set; thus X = X; end;",
+            "theorem T: for Y being set holds Y = Y proof let Y be set; thus Y = Y; end;",
+            "theorem T: for X being set holds X = X\nproof\n  let X be set;\n  thus X = X;\nend;\n",
+            "theorem Renamed: for X being set holds X = X proof let X be set; thus X = X; end;",
+        ] {
+            let fixture = Fixture::new(text.as_bytes());
+            let ids = InMemorySessionIdAllocator::new();
+            let snapshots = SnapshotRegistry::new();
+            let captures = [
+                native_disk_frontend_record_submission(&fixture, &ids, &snapshots, threshold),
+                native_disk_frontend_record_submission(&fixture, &ids, &snapshots, threshold),
+            ];
+            let mut baselines = Vec::new();
+            for (_, submission, adapter, handle, _) in &captures {
+                let (inputs, _) = native_disk_lookup_context(submission, &ids);
+                let output = adapter.publisher().storage().get(handle).unwrap();
+                assert_eq!(
+                    handle.erase().placement() == &StoragePlacement::Resident,
+                    threshold != 0
+                );
+                assert!(output.diagnostics.is_empty());
+                let ast = output.ast.as_ref().unwrap();
+                let (_, loaded, _) = &inputs.captured.unwrap().native_sources().unwrap()[0];
+                assert_eq!(loaded.text.as_ref(), text);
+                assert_eq!(ast.source_id, loaded.source_id);
+                let (arena, env) =
+                    mizar_resolve::symbols::source_theorem_module_original_inputs(ast, &module)
+                        .unwrap()
+                        .unwrap();
+                assert!(
+                    mizar_resolve::symbols::source_theorem_module_candidates(ast, &arena, &env)
+                        .unwrap()
+                        .is_some()
+                );
+                let scope = SourceVariableScopeResolver::resolve_proof_occurrences(
+                    SourceVariableScopeInput::new(ast, &module, &env),
+                )
+                .unwrap();
+                let metadata = mizar_checker::type_checker::check_source_theorem_metadata(
+                    &arena, &env, &scope,
+                )
+                .unwrap();
+                let (scope, labels, resolved) =
+                    mizar_resolve::symbols::source_proof_inputs(&arena, &env).unwrap();
+                let check = mizar_checker::type_checker::SourceVariableSemanticsChecker::check_theorem_skeletons(
+                    &arena, &metadata.2, &scope, &env, &labels, &resolved, None,
+                ).unwrap();
+                assert!(!check.owners().is_empty());
+                let core =
+                    mizar_core::elaborator::lower_source_theorem_skeletons(&check, None).unwrap();
+                assert_eq!(core.source_id(), loaded.source_id);
+                assert_eq!(core.module_id(), &module);
+                assert!(!core.proofs().is_empty());
+                assert!(
+                    core.proofs()
+                        .iter()
+                        .all(|(_, proof)| proof.status == CoreProofStatus::PendingAutomaticProof)
+                );
+                assert!(!core.obligation_seeds().is_empty());
+                assert!(
+                    core.obligation_seeds()
+                        .iter()
+                        .all(|(_, seed)| seed.status == ObligationSeedStatus::Active)
+                );
+                let bytes =
+                    mizar_core::elaborator::source_theorem_core_semantic_payload(&check, &core)
+                        .unwrap();
+                let source_storage = native_theorem_core_storage_bytes(ast, &module, &core)
+                    .unwrap()
+                    .unwrap();
+                baselines.push((ast.clone(), core, bytes, source_storage));
+            }
+            assert_ne!(baselines[0].0.source_id, baselines[1].0.source_id);
+            assert_ne!(baselines[0].1, baselines[1].1);
+            assert_eq!(baselines[0].2, baselines[1].2);
+            assert_eq!(baselines[0].3, baselines[1].3);
+            assert!(!storage.contains(&baselines[0].3));
+            storage.push(baselines[0].3.clone());
+            contents.push(baselines[0].2.clone());
+            for stage in 0..3 {
+                if stage == 1 {
+                    fixture.write(b"open theorem Changed: 0 = 1;\n");
+                } else if stage == 2 {
+                    fs::remove_file(fixture.root.join("alpha/src/main.miz")).unwrap();
+                }
+                for (ast, core, bytes, _) in &baselines {
+                    let before = (ast.clone(), module.clone(), core.clone());
+                    for _ in 0..2 {
+                        assert_eq!(
+                            native_theorem_core_semantic_payload(ast, &module, core),
+                            Ok(Some(bytes.clone()))
+                        );
+                    }
+                    assert_eq!((ast.clone(), module.clone(), core.clone()), before);
+                }
+            }
+        }
+        assert_eq!(contents[0], contents[1]);
+        assert_eq!(contents[0], contents[2]);
+        assert_ne!(contents[0], contents[3]);
+    }
+}
+
+#[test]
+fn native_theorem_core_semantic_payload_preserves_refusals() {
+    use mizar_driver::native_theorem_core_semantic_payload;
+    use mizar_resolve::names::{SourceVariableScopeInput, SourceVariableScopeResolver};
+    let module = ResolverModuleId::new(PackageId::new("alpha"), ModulePath::new("main"));
+    let private = include_str!(
+        "../../../tests/miz/pass/resolve/pass_declaration_symbol_private_theorem_visibility_001.miz"
+    );
+    let closed = "theorem T: for X being set holds X = X proof let X be set; thus X = X; end;";
+    let ids = InMemorySessionIdAllocator::new();
+    let snapshots = SnapshotRegistry::new();
+    let mut foreign_core = None;
+    'cases: for (text, case) in [
+        (closed.to_owned(), "foreign-seed"),
+        (closed.to_owned(), "foreign"),
+        (format!("{private}\nreserve Y for set;\n"), "reserve"),
+        (private.replace("by PrivT1", "by Missing"), "citation"),
+        (private.replace("thus X = X;", "thus Y = Y;"), "unbound"),
+        (private.to_owned(), "private"),
+        (
+            "theorem Empty: for A being set holds A = A proof end;".to_owned(),
+            "empty",
+        ),
+        (
+            include_str!(
+                "../../../tests/miz/pass/theorems/pass_proof_verification_lemma_reference_001.miz"
+            )
+            .to_owned(),
+            "lemma",
+        ),
+        (closed.replace("set", "object"), "object"),
+        (
+            "open theorem T: for X being set holds X = X;".to_owned(),
+            "open",
+        ),
+    ] {
+        let fixture = Fixture::new(text.as_bytes());
+        let (_, _, adapter, handle, _) =
+            native_disk_frontend_record_submission(&fixture, &ids, &snapshots, 0);
+        let output = adapter.publisher().storage().get(&handle).unwrap();
+        assert!(output.diagnostics.is_empty(), "{case}");
+        let ast = output.ast.as_ref().unwrap();
+        let mut refusal_owner = "original";
+        let expected = 'baseline: {
+            let (arena, env) =
+                match mizar_resolve::symbols::source_theorem_module_original_inputs(ast, &module) {
+                    Ok(Some(pair)) => pair,
+                    Ok(None) => break 'baseline Ok(None),
+                    Err(error) => break 'baseline Err(error),
+                };
+            refusal_owner = "candidate";
+            match mizar_resolve::symbols::source_theorem_module_candidates(ast, &arena, &env) {
+                Ok(Some(_)) => {}
+                Ok(None) => break 'baseline Ok(None),
+                Err(error) => break 'baseline Err(error),
+            }
+            refusal_owner = "scope";
+            let scope = match SourceVariableScopeResolver::resolve_proof_occurrences(
+                SourceVariableScopeInput::new(ast, &module, &env),
+            ) {
+                Ok(scope) => scope,
+                Err(error) => break 'baseline Err(format!("{error:?}")),
+            };
+            refusal_owner = "metadata";
+            let metadata = match mizar_checker::type_checker::check_source_theorem_metadata(
+                &arena, &env, &scope,
+            ) {
+                Ok(metadata) => metadata,
+                Err(error) => break 'baseline Err(error),
+            };
+            refusal_owner = "proof inputs";
+            let (scope, labels, resolved) =
+                match mizar_resolve::symbols::source_proof_inputs(&arena, &env) {
+                    Ok(inputs) => inputs,
+                    Err(error) => break 'baseline Err(error),
+                };
+            refusal_owner = "skeleton";
+            let check = match mizar_checker::type_checker::SourceVariableSemanticsChecker::check_theorem_skeletons(
+                &arena, &metadata.2, &scope, &env, &labels, &resolved, None,
+            ) {
+                Ok(check) => check,
+                Err(error) => break 'baseline Err(error),
+            };
+            refusal_owner = "lowering";
+            let core = match mizar_core::elaborator::lower_source_theorem_skeletons(&check, None) {
+                Ok(core) => core,
+                Err(error) => break 'baseline Err(error),
+            };
+            if case == "foreign-seed" {
+                foreign_core = Some(core);
+                continue 'cases;
+            }
+            refusal_owner = "semantic";
+            let supplied = if case == "foreign" {
+                foreign_core.as_ref().unwrap()
+            } else {
+                &core
+            };
+            let expected =
+                mizar_core::elaborator::source_theorem_core_semantic_payload(&check, supplied)
+                    .map(Some);
+            assert!(expected.is_err(), "{case}");
+            let before = (ast.clone(), module.clone(), supplied.clone());
+            assert_eq!(
+                native_theorem_core_semantic_payload(ast, &module, supplied),
+                expected,
+                "{case} at {refusal_owner}"
+            );
+            assert_eq!((ast.clone(), module.clone(), supplied.clone()), before);
+            continue 'cases;
+        };
+        match case {
+            "reserve" | "citation" => {
+                assert_eq!(refusal_owner, "candidate");
+                assert_eq!(expected, Ok(None));
+            }
+            "unbound" => {
+                assert_eq!(refusal_owner, "candidate");
+                assert!(expected.is_err());
+            }
+            "private" => {
+                assert_eq!(refusal_owner, "metadata");
+                assert!(expected.is_err());
+            }
+            "empty" => {
+                assert_eq!(refusal_owner, "skeleton");
+                assert!(expected.is_err());
+            }
+            "object" | "open" | "lemma" => {
+                assert!(expected.is_err() || expected == Ok(None));
+            }
+            _ => panic!("unexpected {case} refusal at {refusal_owner}"),
+        }
+        let supplied = foreign_core.as_ref().unwrap();
+        let before = (ast.clone(), module.clone(), supplied.clone());
+        assert_eq!(
+            native_theorem_core_semantic_payload(ast, &module, supplied),
+            expected,
+            "{case} at {refusal_owner}"
+        );
+        assert_eq!((ast.clone(), module.clone(), supplied.clone()), before);
+    }
+}

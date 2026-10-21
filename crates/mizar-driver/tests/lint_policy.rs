@@ -323,6 +323,7 @@ fn lib_code_line_detector_blocks_unexpected_item_forms() {
         "pub mod request;",
         "pub mod registry;",
         "pub use frontend_adapter::native_theorem_core_from_storage_bytes;",
+        "pub use frontend_adapter::native_theorem_core_semantic_payload;",
         "pub use frontend_adapter::native_theorem_core_storage_bytes;",
     ] {
         assert!(!lib_has_unexpected_code_line(line), "{line}");
@@ -656,6 +657,7 @@ fn lib_has_unexpected_code_line(line: &str) -> bool {
         && line != "mod frontend_adapter;"
         && line != "pub mod registry;"
         && line != "pub use frontend_adapter::native_theorem_core_from_storage_bytes;"
+        && line != "pub use frontend_adapter::native_theorem_core_semantic_payload;"
         && line != "pub use frontend_adapter::native_theorem_core_storage_bytes;"
         && !line.is_empty()
         && !ignored_prefixes

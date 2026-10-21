@@ -3456,6 +3456,40 @@ fn blocking() -> PhaseResult {
     }
 }
 
+/// Associates retained source syntax with genuine Core semantic content.
+pub fn native_theorem_core_semantic_payload(
+    ast: &<MizarParserSeam as ParserSeam>::Ast,
+    module: &mizar_resolve::resolved_ast::ModuleId,
+    core: &mizar_core::core_ir::CoreIr,
+) -> Result<Option<Vec<u8>>, String> {
+    let Some((arena, env)) =
+        mizar_resolve::symbols::source_theorem_module_original_inputs(ast, module)?
+    else {
+        return Ok(None);
+    };
+    if mizar_resolve::symbols::source_theorem_module_candidates(ast, &arena, &env)?.is_none() {
+        return Ok(None);
+    }
+    let scope = mizar_resolve::names::SourceVariableScopeResolver::resolve_proof_occurrences(
+        mizar_resolve::names::SourceVariableScopeInput::new(ast, module, &env),
+    )
+    .map_err(|error| format!("{error:?}"))?;
+    let metadata =
+        mizar_checker::type_checker::check_source_theorem_metadata(&arena, &env, &scope)?;
+    let (scope, labels, resolved) = mizar_resolve::symbols::source_proof_inputs(&arena, &env)?;
+    let check =
+        mizar_checker::type_checker::SourceVariableSemanticsChecker::check_theorem_skeletons(
+            &arena,
+            &metadata.2,
+            &scope,
+            &env,
+            &labels,
+            &resolved,
+            None,
+        )?;
+    mizar_core::elaborator::source_theorem_core_semantic_payload(&check, core).map(Some)
+}
+
 /// Stores lossless source syntax only when genuine replay reproduces the supplied Core.
 pub fn native_theorem_core_storage_bytes(
     ast: &<MizarParserSeam as ParserSeam>::Ast,
