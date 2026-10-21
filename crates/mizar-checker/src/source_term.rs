@@ -1376,6 +1376,83 @@ enum SourcePrimaryTermBindingProfile {
 pub struct SourcePrimaryTermProducer;
 
 impl SourcePrimaryTermProducer {
+    pub fn build_from_scoped_theorem_occurrences(
+        input: SourcePrimaryTermHandoffInput,
+        binding_env: &BindingEnv,
+        arena: &TypedArena,
+        source: &mizar_resolve::resolved_ast::SurfaceResolvedArena,
+        symbols: &mizar_resolve::env::SymbolEnv,
+        scope: &ResolvedVariableScope,
+    ) -> Result<SourcePrimaryTermHandoff, SourcePrimaryTermError> {
+        let authentic =
+            crate::type_checker::SourceVariableSemanticsChecker::source_theorem_binding_env(
+                source, symbols, scope,
+            )
+            .map_err(|_| SourcePrimaryTermError::InvalidTransaction)?;
+        if binding_env != &authentic {
+            return Err(SourcePrimaryTermError::InvalidTransaction);
+        }
+        let mut handoff = Self::build(input, binding_env, arena)?;
+        for (id, term) in handoff.terms.iter() {
+            if term.recovery != SourcePrimaryTermRecovery::Normal
+                || term.kind != SourcePrimaryTermKind::VariableReference
+            {
+                return Err(SourcePrimaryTermError::InvalidTerm { term: id });
+            }
+        }
+        let mut matched = std::collections::BTreeSet::new();
+        for (index, reference) in handoff.references.rows.iter_mut().enumerate() {
+            let invalid = || SourcePrimaryTermError::InvalidReference {
+                reference: SourcePrimaryTermReferenceId::new(index),
+            };
+            let term = handoff.terms.get(reference.term).ok_or_else(invalid)?;
+            let resolved = arena
+                .node(term.site.node())
+                .and_then(|node| node.resolved_node)
+                .ok_or_else(invalid)?;
+            let (actual_id, actual) = scope
+                .references()
+                .iter()
+                .enumerate()
+                .find(|(_, actual)| source.resolved_node_for(actual.node()) == Some(resolved))
+                .ok_or_else(invalid)?;
+            let declaration = scope
+                .bindings()
+                .get(actual.binding().index())
+                .ok_or_else(invalid)?;
+            let binding = binding_env
+                .bindings()
+                .get(reference.binding)
+                .ok_or_else(invalid)?;
+            if !matched.insert(actual_id)
+                || actual.kind() != SourceVariableReferenceKind::Term
+                || actual.range() != term.source_range
+                || actual.spelling() != term.spelling
+                || binding.identity
+                    != (BinderIdentity::ResolverLocal {
+                        scope: declaration.scope().clone(),
+                        ordinal: declaration.ordinal(),
+                        declaration_range: declaration.range(),
+                    })
+                || binding_env
+                    .contexts()
+                    .get(term.context)
+                    .and_then(|context| context.lexical_scope.as_ref())
+                    != Some(actual.scope())
+            {
+                return Err(invalid());
+            }
+            reference.lexical_scope = Some(actual.scope().clone());
+            reference.use_ordinal = actual.ordinal();
+        }
+        if matched.len() != scope.references().len() {
+            return Err(SourcePrimaryTermError::InvalidReference {
+                reference: SourcePrimaryTermReferenceId::new(handoff.references.len()),
+            });
+        }
+        Ok(handoff)
+    }
+
     pub fn build(
         input: SourcePrimaryTermHandoffInput,
         binding_env: &BindingEnv,

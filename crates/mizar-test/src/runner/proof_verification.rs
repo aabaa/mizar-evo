@@ -15156,4 +15156,554 @@ mod term_proof_tests {
             assert_eq!(before, (source, symbols, scope));
         }
     }
+
+    #[test]
+    fn source_theorem_scoped_primary_retain_occurrences_and_lookup() -> Result<(), String> {
+        use mizar_checker::{
+            binding_env::*,
+            source_term::{
+                SourcePrimaryTermError as Error, SourcePrimaryTermProducer as Primary, *,
+            },
+            type_checker::{
+                SourceVariableSemanticsChecker as Semantics, TermFormulaChecker as Checker,
+            },
+            typed_ast::{TypedAst, TypedAstParts},
+        };
+        use mizar_frontend::{
+            orchestration::Frontend,
+            parsing::MizarParserSeam,
+            source::{FrontendSourceLoader, SourceUnitRequest},
+        };
+        use mizar_resolve::{
+            declarations::DeclarationShellCollector,
+            env::NamespacePath,
+            names::{SourceVariableScopeInput, SourceVariableScopeResolver},
+            resolved_ast::{ModuleId, SurfaceResolvedArena},
+            symbols::{SignatureProjectionExtractor, source_proof_scope_maps},
+        };
+        use mizar_session::{
+            DiskSourceLoader, Edition, InMemorySessionIdAllocator, ModulePath, PackageId,
+            SourceInput, SourceOriginInput,
+        };
+        let fixture = include_str!(
+            "../../../../tests/miz/pass/theorems/pass_proof_verification_lemma_reference_001.miz"
+        );
+        let sources = [
+            fixture.to_owned(),
+            fixture.replace("Lem1", "Seed").replace("let X be set;", "let Local be set;").replace("thus X = X", "thus Local = Local"),
+            "theorem Pair: for A, Spare, B being set holds A = B proof let L, Unused, R be set; thus L = R; end;".into(),
+            "theorem Nested: for A being set for Unused being set holds for B being set holds A = B proof let L be set; let Idle be set; let R be set; thus L = R; end;".into(),
+            "theorem Groups: for A being set, Unused, B being set holds A = B proof let L be set, Idle, R be set; thus L = R; end;".into(),
+            "theorem Shadow: for A being set holds for A being set holds A = A proof let A be set; thus A = A; end;".into(),
+            "theorem Unused: for A being set holds A = A proof end;".into(),
+        ];
+        let temporary = std::process::Command::new("mktemp")
+            .arg("-d")
+            .output()
+            .unwrap();
+        assert!(temporary.status.success());
+        let root = std::path::PathBuf::from(String::from_utf8(temporary.stdout).unwrap().trim());
+        fs::create_dir(root.join("src")).unwrap();
+        let path = root.join("src/scoped_primary.miz");
+        let ids = InMemorySessionIdAllocator::new();
+        let mut different_clocks = false;
+        for (case, text) in sources.iter().enumerate() {
+            let mut disk_capture = None;
+            for buffer in [false, true] {
+                fs::write(&path, if buffer { "stale disk content" } else { text }).unwrap();
+                let frontend = Frontend::new(
+                    FrontendSourceLoader::new(DiskSourceLoader::new(&root)),
+                    super::super::ParseOnlyImportProvider,
+                    MizarParserSeam,
+                )
+                .run(
+                    SourceUnitRequest {
+                        snapshot: snapshot_id(777),
+                        input: SourceInput {
+                            package_id: PackageId::new("scoped-primary-test"),
+                            module_path: ModulePath::new("owners"),
+                            normalized_path: mizar_session::normalize_path(&root, &path).unwrap(),
+                            edition: Edition::new("2026"),
+                            origin: if buffer {
+                                SourceOriginInput::OpenBuffer {
+                                    uri: format!("file://{}", path.display()),
+                                    expected_version: 3,
+                                    actual_version: 3,
+                                    text: text.clone().into(),
+                                }
+                            } else {
+                                SourceOriginInput::Disk { path: path.clone() }
+                            },
+                        },
+                    },
+                    &ids,
+                )
+                .unwrap();
+                assert!(
+                    frontend.diagnostics.is_empty(),
+                    "{:?}",
+                    frontend.diagnostics
+                );
+                assert_eq!(frontend.source.source_text.as_ref(), text);
+
+                let ast = frontend.ast.as_ref().unwrap();
+                let module = ModuleId::new(
+                    frontend.source.package_id.clone(),
+                    frontend.source.module_path.clone(),
+                );
+                let source = SurfaceResolvedArena::lower(ast, &module).unwrap();
+                let shells = DeclarationShellCollector::new(ast, &module).collect();
+                let collected = SignatureProjectionExtractor::new(
+                    ast,
+                    &shells,
+                    NamespacePath::new(module.path().as_str()),
+                )
+                .collect(&module);
+                assert!(collected.diagnostics().is_empty());
+                let symbols = collected.env();
+                let scope = SourceVariableScopeResolver::resolve_proof_occurrences(
+                    SourceVariableScopeInput::new(ast, &module, symbols),
+                )
+                .unwrap();
+                let original = Checker::check_source_theorem_equalities(&source, symbols, &scope)?;
+                let env = Semantics::source_theorem_binding_env(&source, symbols, &scope)?;
+                let maps = source_proof_scope_maps(&source, symbols, &scope)?;
+                let typed = &original.2;
+                let old = typed.source_term().unwrap();
+                let arena = typed.nodes();
+                let build = Primary::build_from_scoped_theorem_occurrences;
+                let before = (source.clone(), symbols.clone(), scope.clone(), env.clone());
+                let ast_before = ast.snapshot_text();
+                let capture_before = frontend.source.clone();
+                let input = SourcePrimaryTermHandoffInput {
+                    source_id: old.source_id(),
+                    module_id: old.module_id().clone(),
+                    terms: old
+                        .terms()
+                        .iter()
+                        .zip(scope.references())
+                        .map(|((_, term), actual)| {
+                            let context = env
+                                .contexts()
+                                .iter()
+                                .find(|(_, row)| row.lexical_scope.as_ref() == Some(actual.scope()))
+                                .unwrap()
+                                .0;
+                            SourcePrimaryTermInput {
+                                site: term.site().clone(),
+                                source_range: term.source_range(),
+                                source_ordinal: term.source_ordinal(),
+                                context,
+                                recovery: term.recovery(),
+                                spelling: term.spelling().into(),
+                                kind: term.kind(),
+                                role: term.role(),
+                                parent: term.parent(),
+                            }
+                        })
+                        .collect(),
+                    references: old
+                        .references()
+                        .iter()
+                        .map(|(_, row)| SourcePrimaryTermReferenceInput {
+                            term: row.term(),
+                            binding: row.binding(),
+                            role: row.role(),
+                        })
+                        .collect(),
+                    numeric_type_requests: Vec::new(),
+                };
+                let input_before = input.clone();
+                let generic =
+                    Primary::build(input.clone(), &env, arena).map_err(|e| e.to_string())?;
+                let output = build(input.clone(), &env, arena, &source, symbols, &scope)
+                    .map_err(|e| e.to_string())?;
+                assert_eq!(output.source_id(), source.source_id());
+                assert_eq!(output.module_id(), source.module());
+                assert_eq!(output.references(), old.references());
+                assert_eq!(output.numeric_type_requests(), old.numeric_type_requests());
+                assert!(output.numeric_type_requests().is_empty());
+                assert_eq!(output.terms().len(), old.terms().len());
+                assert_eq!(output.terms(), generic.terms());
+                assert_eq!(output.references().len(), scope.references().len());
+                let mut matched = std::collections::BTreeSet::new();
+                for ((id, term), (reference_id, row)) in
+                    output.terms().iter().zip(output.references().iter())
+                {
+                    assert_eq!(row.term(), id);
+                    let node = arena.node(term.site().node()).unwrap();
+                    let actual = scope
+                        .references()
+                        .iter()
+                        .find(|reference| {
+                            source.resolved_node_for(reference.node()) == node.resolved_node
+                        })
+                        .unwrap();
+                    assert!(matched.insert(actual.id()));
+                    assert_eq!(maps.0.get(&actual.node()), Some(actual.scope()));
+                    assert_eq!(term.source_range(), actual.range());
+                    assert_eq!(term.spelling(), actual.spelling());
+                    let declaration = &scope.bindings()[actual.binding().index()];
+                    assert_eq!(
+                        env.bindings().get(row.binding()).unwrap().identity,
+                        BinderIdentity::ResolverLocal {
+                            scope: declaration.scope().clone(),
+                            ordinal: declaration.ordinal(),
+                            declaration_range: declaration.range(),
+                        }
+                    );
+                    assert_eq!(row.lexical_scope(), Some(actual.scope()));
+                    assert_eq!(row.use_ordinal(), actual.ordinal());
+                    let declaration_clock = env
+                        .bindings()
+                        .iter()
+                        .filter(|(_, binding)| {
+                            binding.declaration_range.end <= term.source_range().start
+                        })
+                        .count();
+                    let generic_row = generic.references().get(reference_id).unwrap();
+                    assert_eq!(generic_row.use_ordinal(), declaration_clock);
+                    different_clocks |= declaration_clock != row.use_ordinal();
+                    let context = env.contexts().get(term.context()).unwrap();
+                    assert_eq!(context.lexical_scope.as_ref(), Some(actual.scope()));
+                    assert_eq!(
+                        env.lookup(&BindingLookupSite::new(
+                            term.spelling(),
+                            term.context(),
+                            context.lexical_scope.clone(),
+                            declaration_clock
+                        ))
+                        .unwrap(),
+                        BindingLookupResult::Local(row.binding())
+                    );
+                    let binding = env.bindings().get(row.binding()).unwrap();
+                    let mut ancestor = Some(term.context());
+                    while ancestor != Some(binding.owner_context) {
+                        ancestor = env.contexts().get(ancestor.unwrap()).unwrap().parent;
+                        assert!(ancestor.is_some());
+                    }
+                }
+                assert_eq!(matched.len(), scope.references().len());
+                assert!(
+                    case != 6
+                        || env
+                            .contexts()
+                            .iter()
+                            .any(|(_, context)| context.layer == BindingContextLayer::Proof
+                                && context.bindings.is_empty())
+                );
+                assert_eq!(
+                    Primary::build_from_occurrences(input.clone(), &env, arena, &scope),
+                    Err(Error::InvalidTransaction)
+                );
+                let installed = TypedAst::try_new(TypedAstParts {
+                    source_id: typed.source_id(),
+                    module_id: typed.module_id().clone(),
+                    resolved_root: typed.resolved_root(),
+                    source_context: typed.source_context().cloned(),
+                    source_type: typed.source_type().cloned(),
+                    source_attribute: typed.source_attribute().cloned(),
+                    nodes: arena.clone(),
+                    contexts: typed.contexts().clone(),
+                    types: typed.types().clone(),
+                    facts: typed.facts().clone(),
+                    coercions: typed.coercions().clone(),
+                    initial_obligations: typed.initial_obligations().clone(),
+                    diagnostics: typed.diagnostics().clone(),
+                })
+                .and_then(|ast| ast.with_source_term(output.clone()))
+                .map_err(|e| e.to_string())?;
+                assert_eq!(installed.source_term(), Some(&output));
+                assert_eq!(installed.nodes(), arena);
+                let replay = build(input.clone(), &env, arena, &source, symbols, &scope)
+                    .map_err(|e| e.to_string())?;
+                assert_eq!(replay, output);
+                assert_eq!(
+                    Checker::check_source_theorem_equalities(&source, symbols, &scope)?,
+                    original
+                );
+                let signature = (output.debug_text(), env.debug_text());
+                if let Some((source_id, previous)) = &disk_capture {
+                    assert_ne!(*source_id, output.source_id());
+                    assert_eq!(previous, &signature);
+                } else {
+                    disk_capture = Some((output.source_id(), signature));
+                }
+                assert_eq!(input, input_before);
+                assert_eq!(before, (source, symbols.clone(), scope, env));
+                assert_eq!(ast_before, ast.snapshot_text());
+                assert_eq!(capture_before, frontend.source);
+            }
+        }
+        assert!(different_clocks);
+        fs::remove_dir_all(root).unwrap();
+        Ok(())
+    }
+
+    #[test]
+    fn source_theorem_scoped_primary_reject_mismatched_inputs() -> Result<(), String> {
+        use mizar_checker::{
+            binding_env::*,
+            source_term::{
+                SourcePrimaryTermError as Error, SourcePrimaryTermProducer as Primary,
+                SourcePrimaryTermReferenceId as RefId, *,
+            },
+            type_checker::{
+                SourceVariableSemanticsChecker as Semantics, TermFormulaChecker as Checker,
+            },
+            typed_ast::{NodeRecoveryState, TypedArena},
+        };
+        use mizar_resolve::{
+            declarations::DeclarationShellCollector,
+            env::{NamespacePath, SymbolEnv, SymbolEnvIndexes},
+            names::{SourceVariableScopeInput, SourceVariableScopeResolver},
+            resolved_ast::{ModuleId, SurfaceResolvedArena},
+            symbols::SignatureProjectionExtractor,
+        };
+        use mizar_session::{ModulePath, PackageId};
+        let ast = parse(
+            "theorem Nested: for A being set for Unused being set holds for B being set holds A = B proof let L be set; thus L = L; end; theorem Empty: for Z being set holds Z = Z proof end;",
+        );
+        let module = ModuleId::new(
+            PackageId::new("scoped-primary-test"),
+            ModulePath::new("owners"),
+        );
+        let source = SurfaceResolvedArena::lower(&ast, &module).unwrap();
+        let shells = DeclarationShellCollector::new(&ast, &module).collect();
+        let collected = SignatureProjectionExtractor::new(
+            &ast,
+            &shells,
+            NamespacePath::new(module.path().as_str()),
+        )
+        .collect(&module);
+        assert!(collected.diagnostics().is_empty());
+        let symbols = collected.env();
+        let scope = SourceVariableScopeResolver::resolve_proof_occurrences(
+            SourceVariableScopeInput::new(&ast, &module, symbols),
+        )
+        .unwrap();
+        let original = Checker::check_source_theorem_equalities(&source, symbols, &scope)?;
+        let env = Semantics::source_theorem_binding_env(&source, symbols, &scope)?;
+        let arena = original.2.nodes();
+        let old = original.2.source_term().unwrap();
+        let input = SourcePrimaryTermHandoffInput {
+            source_id: old.source_id(),
+            module_id: old.module_id().clone(),
+            terms: old
+                .terms()
+                .iter()
+                .zip(scope.references())
+                .map(|((_, term), actual)| SourcePrimaryTermInput {
+                    site: term.site().clone(),
+                    source_range: term.source_range(),
+                    source_ordinal: term.source_ordinal(),
+                    context: env
+                        .contexts()
+                        .iter()
+                        .find(|(_, row)| row.lexical_scope.as_ref() == Some(actual.scope()))
+                        .unwrap()
+                        .0,
+                    recovery: term.recovery(),
+                    spelling: term.spelling().into(),
+                    kind: term.kind(),
+                    role: term.role(),
+                    parent: term.parent(),
+                })
+                .collect(),
+            references: old
+                .references()
+                .iter()
+                .map(|(_, row)| SourcePrimaryTermReferenceInput {
+                    term: row.term(),
+                    binding: row.binding(),
+                    role: row.role(),
+                })
+                .collect(),
+            numeric_type_requests: Vec::new(),
+        };
+        let before = (source.clone(), symbols.clone(), scope.clone());
+        let build = Primary::build_from_scoped_theorem_occurrences;
+        let scoped = |input| build(input, &env, arena, &source, symbols, &scope);
+        let generic = Primary::build;
+        let invalid_reference = |index| Error::InvalidReference {
+            reference: RefId::new(index),
+        };
+        assert!(scoped(input.clone()).is_ok());
+        let foreign_module = ModuleId::new(PackageId::new("foreign"), ModulePath::new("other"));
+        let foreign_source = SurfaceResolvedArena::lower(&ast, &foreign_module).unwrap();
+        let foreign_symbols = SymbolEnv::new(foreign_module.clone(), SymbolEnvIndexes::default());
+        let foreign_scope = SourceVariableScopeResolver::resolve_proof_occurrences(
+            SourceVariableScopeInput::new(&ast, &foreign_module, &foreign_symbols),
+        )
+        .unwrap();
+        let empty_symbols = SymbolEnv::new(module.clone(), SymbolEnvIndexes::default());
+        for (source, symbols, scope, env) in [
+            (&foreign_source, symbols, &scope, &env),
+            (&source, &empty_symbols, &scope, &env),
+            (&source, symbols, &foreign_scope, &env),
+            (&source, symbols, &scope, &original.0),
+        ] {
+            assert_eq!(
+                build(input.clone(), env, arena, source, symbols, scope),
+                Err(Error::InvalidTransaction)
+            );
+        }
+        let mut broken = input.clone();
+        broken.terms[0].source_ordinal = usize::MAX;
+        let generic_error = generic(broken.clone(), &env, arena).unwrap_err();
+        assert_eq!(scoped(broken.clone()).unwrap_err(), generic_error);
+        let combined = build(
+            broken,
+            &original.0,
+            arena,
+            &foreign_source,
+            &empty_symbols,
+            &foreign_scope,
+        );
+        assert_eq!(combined, Err(Error::InvalidTransaction));
+        let unused = env
+            .bindings()
+            .iter()
+            .find(|(_, entry)| entry.spelling == "Unused")
+            .unwrap()
+            .0;
+        let unused_context = env
+            .contexts()
+            .iter()
+            .find(|(_, row)| {
+                row.layer == BindingContextLayer::Proof
+                    && row.bindings.is_empty()
+                    && row.visible_bindings.is_empty()
+            })
+            .unwrap()
+            .0;
+        for change_binding in [true, false] {
+            let mut bindings = BindingTable::new();
+            for (id, entry) in env.bindings().iter() {
+                bindings.insert(BindingDraft {
+                    spelling: if change_binding && id == unused {
+                        "Hidden".into()
+                    } else {
+                        entry.spelling.clone()
+                    },
+                    kind: entry.kind,
+                    identity: entry.identity.clone(),
+                    owner_context: entry.owner_context,
+                    declaration_range: entry.declaration_range,
+                    visible_after_ordinal: entry.visible_after_ordinal,
+                    type_site: entry.type_site.clone(),
+                    status: entry.status,
+                    captured: entry.captured.clone(),
+                    diagnostics: entry.diagnostics.clone(),
+                    recovery: entry.recovery,
+                });
+            }
+            let mut contexts = BindingContextTable::new();
+            for (id, row) in env.contexts().iter() {
+                contexts.insert(BindingContextDraft {
+                    owner: row.owner.clone(),
+                    parent: row.parent,
+                    layer: row.layer,
+                    lexical_scope: row.lexical_scope.clone(),
+                    bindings: row.bindings.clone(),
+                    visible_bindings: row.visible_bindings.clone(),
+                    recovery: if !change_binding && id == unused_context {
+                        BindingContextRecovery::Degraded
+                    } else {
+                        row.recovery
+                    },
+                });
+            }
+            let altered = BindingEnv::try_new(BindingEnvParts {
+                source_id: env.source_id(),
+                module_id: env.module_id().clone(),
+                contexts,
+                bindings,
+                diagnostics: env.diagnostics().clone(),
+            })
+            .unwrap();
+            assert!(generic(input.clone(), &altered, arena).is_ok());
+            assert_eq!(
+                build(input.clone(), &altered, arena, &source, symbols, &scope),
+                Err(Error::InvalidTransaction)
+            );
+        }
+        let mut ancestor = input.clone();
+        let index = scope
+            .references()
+            .iter()
+            .position(|actual| {
+                let declared = scope.bindings()[actual.binding().index()].scope();
+                let local = actual.scope();
+                local != declared && local.path().starts_with(declared.path())
+            })
+            .unwrap();
+        let parent = env
+            .bindings()
+            .get(input.references[index].binding)
+            .unwrap()
+            .owner_context;
+        let mut cursor = env
+            .contexts()
+            .get(ancestor.terms[index].context)
+            .unwrap()
+            .parent;
+        while cursor != Some(parent) {
+            cursor = env.contexts().get(cursor.unwrap()).unwrap().parent;
+        }
+        ancestor.terms[index].context = parent;
+        assert!(generic(ancestor.clone(), &env, arena).is_ok());
+        assert_eq!(scoped(ancestor), Err(invalid_reference(index)));
+        let (term, first) = old.terms().iter().next().unwrap();
+        let target = first.site().node();
+        let other = input.terms[1].site.node();
+        let wrong = arena.node(other).unwrap().resolved_node;
+        assert_ne!(arena.node(target).unwrap().resolved_node, wrong);
+        for degraded in [false, true] {
+            let mut altered = input.clone();
+            if degraded {
+                altered.terms[term.index()].recovery = SourcePrimaryTermRecovery::Degraded;
+            }
+            let changed_arena = TypedArena::try_new(
+                arena.root(),
+                arena
+                    .iter()
+                    .map(|(id, node)| match (id == target, degraded) {
+                        (true, true) => node.clone().with_recovery(NodeRecoveryState::Degraded),
+                        (true, false) => node.clone().with_resolved_node(wrong.unwrap()),
+                        _ => node.clone(),
+                    })
+                    .collect(),
+            )
+            .unwrap();
+            assert!(generic(altered.clone(), &env, &changed_arena).is_ok());
+            let expected = if degraded {
+                Error::InvalidTerm { term }
+            } else {
+                invalid_reference(0)
+            };
+            assert_eq!(
+                build(altered, &env, &changed_arena, &source, symbols, &scope),
+                Err(expected)
+            );
+        }
+        let mut incomplete = input.clone();
+        incomplete.terms.pop();
+        incomplete.references.pop();
+        assert!(generic(incomplete.clone(), &env, arena).is_ok());
+        assert_eq!(
+            scoped(incomplete.clone()),
+            Err(invalid_reference(incomplete.references.len()))
+        );
+        let mut broken = [input.clone(), input.clone(), input.clone()];
+        broken[0].references[0].binding = input.references[1].binding;
+        broken[1].terms[0].spelling = "Missing".into();
+        broken[2].terms[0].site = input.terms[1].site.clone();
+        for broken in broken {
+            let expected = generic(broken.clone(), &env, arena).unwrap_err();
+            assert_eq!(scoped(broken).unwrap_err(), expected);
+        }
+        assert_eq!(before, (source.clone(), symbols.clone(), scope.clone()));
+        Ok(())
+    }
 }
