@@ -25,6 +25,7 @@
 - [x] [元ソース定理の宣言型インストール](../../task_contracts/ja/CHECKER-SOURCE-THEOREM-TYPED-DECLARATIONS.md).
 
 - [x] [元ソースの定理の最終メタデータ](../../task_contracts/ja/CHECKER-SOURCE-THEOREM-FINAL-METADATA.md).
+- [x] [Scoped source theorem skeleton intake](../../task_contracts/ja/CHECKER-SCOPED-THEOREM-SKELETON-INTAKE.md).
 
 ## 状態の凡例
 

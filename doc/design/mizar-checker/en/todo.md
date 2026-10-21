@@ -28,6 +28,8 @@
 
 - [x] [Original-source theorem final metadata](../../task_contracts/en/CHECKER-SOURCE-THEOREM-FINAL-METADATA.md).
 
+- [x] [Scoped source theorem skeleton intake](../../task_contracts/en/CHECKER-SCOPED-THEOREM-SKELETON-INTAKE.md).
+
 ## Status Legend
 
 - [ ] not started

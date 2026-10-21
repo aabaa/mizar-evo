@@ -19372,4 +19372,442 @@ mod term_proof_tests {
         }
         fs::remove_dir_all(root).unwrap();
     }
+
+    #[test]
+    fn source_theorem_scoped_skeleton_intake_preserves_genuine_consumers() -> Result<(), String> {
+        use mizar_checker::type_checker::{
+            SourceVariableSemanticsChecker as Checker, check_source_theorem_metadata,
+        };
+        use mizar_core::{
+            core_ir::{CoreCitation, CoreFormulaKind, CoreProofNodeKind, CoreProofStatus},
+            elaborator::lower_source_theorem_skeletons as lower,
+        };
+        use mizar_frontend::{
+            orchestration::Frontend,
+            parsing::MizarParserSeam,
+            source::{FrontendSourceLoader, SourceUnitRequest},
+        };
+        use mizar_resolve::{
+            declarations::DeclarationShellCollector,
+            env::NamespacePath,
+            resolved_ast::{ModuleId, SurfaceResolvedArena},
+            symbols::{SignatureProjectionExtractor, source_proof_inputs},
+        };
+        use mizar_session::{
+            DiskSourceLoader, Edition, InMemorySessionIdAllocator, ModulePath, PackageId,
+            SourceInput, SourceOrigin, SourceOriginInput, hash_text,
+        };
+        let fixture = include_str!(
+            "../../../../tests/miz/pass/theorems/pass_proof_verification_lemma_reference_001.miz"
+        );
+        let texts = [
+            fixture.to_owned(),
+            fixture
+                .replace("Lem1", "Seed")
+                .replace("let X be set;", "let Local be set;")
+                .replace("thus X = X", "thus Local = Local"),
+            "theorem T: for X being set holds X = X proof let X be set; thus X = X; end;".into(),
+        ];
+        let temporary = std::process::Command::new("mktemp")
+            .arg("-d")
+            .output()
+            .unwrap();
+        assert!(temporary.status.success());
+        let root = std::path::PathBuf::from(String::from_utf8(temporary.stdout).unwrap().trim());
+        fs::create_dir(root.join("src")).unwrap();
+        let path = root.join("src/scoped_intake.miz");
+        let ids = InMemorySessionIdAllocator::new();
+        let snapshot = snapshot_id(786);
+        for (case, text) in texts.iter().enumerate() {
+            for buffer in [false, true] {
+                fs::write(&path, if buffer { "stale disk content" } else { text }).unwrap();
+                let frontend = Frontend::new(
+                    FrontendSourceLoader::new(DiskSourceLoader::new(&root)),
+                    super::super::ParseOnlyImportProvider,
+                    MizarParserSeam,
+                )
+                .run(
+                    SourceUnitRequest {
+                        snapshot,
+                        input: SourceInput {
+                            package_id: PackageId::new("scoped-intake"),
+                            module_path: ModulePath::new("owners"),
+                            normalized_path: mizar_session::normalize_path(&root, &path).unwrap(),
+                            edition: Edition::new("2026"),
+                            origin: if buffer {
+                                SourceOriginInput::OpenBuffer {
+                                    uri: format!("file://{}", path.display()),
+                                    expected_version: 4,
+                                    actual_version: 4,
+                                    text: text.clone().into(),
+                                }
+                            } else {
+                                SourceOriginInput::Disk { path: path.clone() }
+                            },
+                        },
+                    },
+                    &ids,
+                )
+                .unwrap();
+                assert!(
+                    frontend.diagnostics.is_empty(),
+                    "{:?}",
+                    frontend.diagnostics
+                );
+                assert_eq!(frontend.source.source_text.as_ref(), text);
+                assert_eq!(frontend.source.source_hash, hash_text(text));
+                assert_eq!(
+                    matches!(
+                        frontend.source.origin,
+                        SourceOrigin::OpenBuffer { version: 4 }
+                    ),
+                    buffer
+                );
+                let ast = frontend.ast.as_ref().unwrap();
+                let module = ModuleId::new(
+                    frontend.source.package_id.clone(),
+                    frontend.source.module_path.clone(),
+                );
+                let source = SurfaceResolvedArena::lower(ast, &module).unwrap();
+                let shells = DeclarationShellCollector::new(ast, &module).collect();
+                let collected = SignatureProjectionExtractor::new(
+                    ast,
+                    &shells,
+                    NamespacePath::new(module.path().as_str()),
+                )
+                .collect(&module);
+                assert!(collected.diagnostics().is_empty());
+                let symbols = collected.env();
+                let (scope, labels, resolved) = source_proof_inputs(&source, symbols)?;
+                let before = (
+                    source.clone(),
+                    symbols.clone(),
+                    scope.clone(),
+                    labels.clone(),
+                    resolved.clone(),
+                );
+                let output = check_source_theorem_metadata(&source, symbols, &scope)?;
+                let (_, inference, typed, metadata) = &output;
+                assert!(typed.source_context().is_some());
+                assert!(!inference.terms().is_empty());
+                assert!(!metadata.expr_metadata().is_empty());
+                let output_before = output.clone();
+                let (expected, expected_vcs, owners) =
+                    with_source_theorem_check(ast, &source, symbols, |legacy| {
+                        assert!(legacy.typed_ast().source_context().is_none());
+                        let core = lower(legacy, None)?;
+                        let vcs = generate_core_vcs(&core, snapshot)?;
+                        Ok((core, vcs, legacy.owners().to_vec()))
+                    })?;
+                let checked = Checker::check_theorem_skeletons(
+                    &source, typed, &scope, symbols, &labels, &resolved, None,
+                )?;
+                assert!(std::ptr::eq(checked.typed_ast(), typed));
+                assert!(std::ptr::eq(checked.scope(), &scope));
+                assert!(std::ptr::eq(checked.labels(), &labels));
+                assert!(std::ptr::eq(checked.resolved_labels(), &resolved));
+                assert_eq!(checked.owners(), owners);
+                let names = if case == 0 {
+                    vec!["Lem1", "UseLem1"]
+                } else if case == 1 {
+                    vec!["Seed", "UseSeed"]
+                } else {
+                    vec!["T"]
+                };
+                assert_eq!(
+                    checked
+                        .owners()
+                        .iter()
+                        .map(|(owner, _)| owner.spelling.as_str())
+                        .collect::<Vec<_>>(),
+                    names
+                );
+                for (owner, visibility) in checked.owners() {
+                    assert_eq!(*visibility, "public");
+                    assert_eq!(owner.source_range.source_id, source.source_id());
+                    assert!(
+                        text[owner.source_range.start..owner.source_range.end]
+                            .contains(&owner.spelling)
+                    );
+                }
+                let core = lower(&checked, None)?;
+                assert_eq!(core, expected);
+                assert_eq!(core.source_id(), source.source_id());
+                assert_eq!(core.module_id(), source.module());
+                assert_eq!(core.proofs().len(), names.len());
+                assert!(
+                    core.proofs()
+                        .iter()
+                        .all(|(_, proof)| proof.status == CoreProofStatus::PendingAutomaticProof)
+                );
+                let binders = core
+                    .proof_nodes()
+                    .iter()
+                    .filter_map(|(_, node)| match &node.kind {
+                        CoreProofNodeKind::IntroduceBinder { binder, .. } => Some(binder),
+                        _ => None,
+                    })
+                    .collect::<Vec<_>>();
+                assert_eq!(binders.len(), names.len());
+                assert!(binders.iter().all(|binder| binder.source_name.as_deref()
+                    == Some(if case == 1 { "Local" } else { "X" })));
+                assert_eq!(core.obligation_seeds().len(), names.len());
+                for (_, seed) in core.obligation_seeds().iter() {
+                    let goal = core.formulas().get(seed.goal.unwrap()).unwrap();
+                    assert!(matches!(goal.kind, CoreFormulaKind::Equals { .. }));
+                }
+                let citations = core
+                    .proof_nodes()
+                    .iter()
+                    .filter_map(|(_, node)| match &node.kind {
+                        CoreProofNodeKind::TerminalGoal { citations, .. } => {
+                            Some(citations.as_slice())
+                        }
+                        _ => None,
+                    })
+                    .flatten()
+                    .collect::<Vec<_>>();
+                if case < 2 {
+                    assert_eq!(labels.references().len(), 1);
+                    assert_eq!(
+                        citations,
+                        vec![&CoreCitation::Symbol(owners[0].0.symbol.clone())]
+                    );
+                } else {
+                    assert!(labels.references().is_empty());
+                    assert!(citations.is_empty());
+                }
+                let vcs = generate_core_vcs(&core, snapshot)?;
+                assert_eq!(vcs, expected_vcs);
+                assert_eq!(vcs.vcs().len(), names.len());
+                assert!(
+                    vcs.vcs()
+                        .iter()
+                        .all(|vc| vc.status == mizar_vc::vc_ir::VcStatus::Open)
+                );
+                let replay = Checker::check_theorem_skeletons(
+                    &source, typed, &scope, symbols, &labels, &resolved, None,
+                )?;
+                assert_eq!(replay.owners(), checked.owners());
+                assert_eq!(lower(&replay, None)?, core);
+                assert_eq!(generate_core_vcs(&core, snapshot)?, vcs);
+                assert_eq!(output, output_before);
+                assert_eq!(
+                    (source.clone(), symbols.clone(), scope, labels, resolved,),
+                    before
+                );
+                if buffer {
+                    assert_eq!(fs::read_to_string(&path).unwrap(), "stale disk content");
+                }
+            }
+        }
+        fs::remove_dir_all(root).unwrap();
+        Ok(())
+    }
+
+    #[test]
+    fn source_theorem_scoped_skeleton_intake_preserves_refusals() -> Result<(), String> {
+        use mizar_checker::type_checker::{
+            SourceVariableSemanticsChecker as Checker, check_source_theorem_metadata,
+        };
+        use mizar_frontend::{
+            orchestration::Frontend,
+            parsing::MizarParserSeam,
+            source::{FrontendSourceLoader, SourceUnitRequest},
+        };
+        use mizar_resolve::{
+            declarations::DeclarationShellCollector,
+            env::NamespacePath,
+            resolved_ast::{ModuleId, SurfaceResolvedArena},
+            symbols::{SignatureProjectionExtractor, source_proof_inputs},
+        };
+        use mizar_session::{
+            DiskSourceLoader, Edition, InMemorySessionIdAllocator, ModulePath, PackageId,
+            SourceInput, SourceOriginInput,
+        };
+        let singleton = include_str!(
+            "../../../../tests/miz/pass/theorems/pass_proof_verification_lemma_reference_001.miz"
+        );
+        let incomplete = include_str!(
+            "../../../../tests/miz/fail/theorems/fail_formula_statement_incomplete_proof_001.miz"
+        );
+        let texts = [
+            singleton,
+            incomplete,
+            "theorem Empty: for X being set holds X = X proof end;",
+            "theorem Pair: for A, B being set holds A = B proof let L, R be set; thus L = R; end;",
+            "theorem Shadow: for A being set holds for A being set holds A = A proof let A be set; thus A = A; end;",
+        ];
+        let temporary = std::process::Command::new("mktemp")
+            .arg("-d")
+            .output()
+            .unwrap();
+        assert!(temporary.status.success());
+        let root = std::path::PathBuf::from(String::from_utf8(temporary.stdout).unwrap().trim());
+        fs::create_dir(root.join("src")).unwrap();
+        let path = root.join("src/scoped_refusals.miz");
+        let ids = InMemorySessionIdAllocator::new();
+        let mut genuine = None;
+        for (case, text) in texts.iter().enumerate() {
+            fs::write(&path, text).unwrap();
+            let frontend = Frontend::new(
+                FrontendSourceLoader::new(DiskSourceLoader::new(&root)),
+                super::super::ParseOnlyImportProvider,
+                MizarParserSeam,
+            )
+            .run(
+                SourceUnitRequest {
+                    snapshot: snapshot_id(787),
+                    input: SourceInput {
+                        package_id: PackageId::new("scoped-refusals"),
+                        module_path: ModulePath::new("owners"),
+                        normalized_path: mizar_session::normalize_path(&root, &path).unwrap(),
+                        edition: Edition::new("2026"),
+                        origin: SourceOriginInput::Disk { path: path.clone() },
+                    },
+                },
+                &ids,
+            )
+            .unwrap();
+            assert!(
+                frontend.diagnostics.is_empty(),
+                "{:?}",
+                frontend.diagnostics
+            );
+            let ast = frontend.ast.as_ref().unwrap();
+            let module = ModuleId::new(
+                frontend.source.package_id.clone(),
+                frontend.source.module_path.clone(),
+            );
+            let source = SurfaceResolvedArena::lower(ast, &module).unwrap();
+            let shells = DeclarationShellCollector::new(ast, &module).collect();
+            let collected = SignatureProjectionExtractor::new(
+                ast,
+                &shells,
+                NamespacePath::new(module.path().as_str()),
+            )
+            .collect(&module);
+            assert!(collected.diagnostics().is_empty());
+            let symbols = collected.env();
+            let (scope, labels, resolved) = source_proof_inputs(&source, symbols)?;
+            let before = (
+                source.clone(),
+                symbols.clone(),
+                scope.clone(),
+                labels.clone(),
+                resolved.clone(),
+            );
+            let metadata = check_source_theorem_metadata(&source, symbols, &scope)?;
+            let typed = &metadata.2;
+            let metadata_before = metadata.clone();
+            if case == 0 {
+                let flat = with_source_theorem_check(ast, &source, symbols, |legacy| {
+                    Ok(legacy.typed_ast().clone())
+                })?;
+                genuine = Some((
+                    source.clone(),
+                    symbols.clone(),
+                    scope.clone(),
+                    labels.clone(),
+                    resolved.clone(),
+                    flat,
+                    typed.clone(),
+                ));
+            } else {
+                let expected =
+                    with_source_theorem_check(ast, &source, symbols, |_| Ok(())).unwrap_err();
+                if case == 1 {
+                    assert_eq!(expected, "theorems.skeleton.incomplete_proof");
+                }
+                assert_eq!(
+                    Checker::check_theorem_skeletons(
+                        &source, typed, &scope, symbols, &labels, &resolved, None
+                    )
+                    .unwrap_err(),
+                    expected
+                );
+                assert_eq!(
+                    Checker::check_theorem_skeletons(
+                        &source, typed, &scope, symbols, &labels, &resolved, None
+                    )
+                    .unwrap_err(),
+                    expected
+                );
+            }
+            if case == 1 {
+                let (original, env, own_scope, own_labels, own_resolved, flat, scoped) =
+                    genuine.as_ref().unwrap();
+                assert_ne!(original.source_id(), source.source_id());
+                let controls = [
+                    (&source, env, own_scope, own_labels, own_resolved),
+                    (original, symbols, own_scope, own_labels, own_resolved),
+                    (original, env, &scope, own_labels, own_resolved),
+                    (original, env, own_scope, &labels, &resolved),
+                    (original, symbols, &scope, &labels, &resolved),
+                ];
+                for (control, (source, symbols, scope, labels, resolved)) in
+                    controls.into_iter().enumerate()
+                {
+                    let inputs_before = (
+                        source.clone(),
+                        symbols.clone(),
+                        scope.clone(),
+                        labels.clone(),
+                        resolved.clone(),
+                        flat.clone(),
+                        scoped.clone(),
+                    );
+                    let lower = mizar_checker::source_context::SourceBindingContextProducer::build_source_theorem_equalities(source, symbols, scope);
+                    let expected = Checker::check_theorem_skeletons(
+                        source, flat, scope, symbols, labels, resolved, None,
+                    )
+                    .unwrap_err();
+                    let legacy_error = expected;
+                    let expected = if control == 2 {
+                        assert_eq!(legacy_error, "formulas.typed_ast_invalid");
+                        lower.as_ref().unwrap_err().clone()
+                    } else {
+                        legacy_error
+                    };
+                    if std::ptr::eq(symbols, collected.env()) {
+                        assert_eq!(expected, source_proof_inputs(source, symbols).unwrap_err());
+                        assert_eq!(lower.unwrap_err(), expected);
+                    }
+                    assert_eq!(
+                        Checker::check_theorem_skeletons(
+                            source, scoped, scope, symbols, labels, resolved, None
+                        )
+                        .unwrap_err(),
+                        expected
+                    );
+                    assert_eq!(
+                        Checker::check_theorem_skeletons(
+                            source, scoped, scope, symbols, labels, resolved, None
+                        )
+                        .unwrap_err(),
+                        expected
+                    );
+                    assert_eq!(
+                        (
+                            source.clone(),
+                            symbols.clone(),
+                            scope.clone(),
+                            labels.clone(),
+                            resolved.clone(),
+                            flat.clone(),
+                            scoped.clone()
+                        ),
+                        inputs_before
+                    );
+                }
+            }
+            assert_eq!(metadata, metadata_before);
+            assert_eq!(
+                (source.clone(), symbols.clone(), scope, labels, resolved,),
+                before
+            );
+        }
+        fs::remove_dir_all(root).unwrap();
+        Ok(())
+    }
 }

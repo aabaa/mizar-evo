@@ -16132,7 +16132,30 @@ impl SourceVariableSemanticsChecker {
                 return Err(invalid());
             }
         } else if !phrase {
-            Self::check_formula_statements_mode(typed, scope, symbols, labels, resolved, true)?;
+            let binding_env = if typed.source_context().is_some() {
+                let (bindings, _, replayed, _) =
+                    crate::source_context::SourceBindingContextProducer::build_source_theorem_equalities(
+                        source, symbols, scope,
+                    )?;
+                if replayed.source_context() != typed.source_context()
+                    || replayed.source_term() != typed.source_term()
+                    || replayed.source_atomic_formula() != typed.source_atomic_formula()
+                {
+                    return Err(invalid());
+                }
+                Some(bindings)
+            } else {
+                None
+            };
+            Self::check_formula_statements_mode(
+                typed,
+                scope,
+                symbols,
+                labels,
+                resolved,
+                true,
+                binding_env.as_ref(),
+            )?;
         }
         let primary = typed.source_term().ok_or_else(invalid)?;
         let atomic = typed.source_atomic_formula().ok_or_else(invalid)?;
@@ -16792,7 +16815,15 @@ impl SourceVariableSemanticsChecker {
         labels: &mizar_resolve::labels::ProofLabelSourceCollection,
         resolved_labels: &mizar_resolve::labels::LabelResolutionResult,
     ) -> Result<(), String> {
-        Self::check_formula_statements_mode(typed, scope, symbols, labels, resolved_labels, false)
+        Self::check_formula_statements_mode(
+            typed,
+            scope,
+            symbols,
+            labels,
+            resolved_labels,
+            false,
+            None,
+        )
     }
 
     fn check_formula_statements_mode(
@@ -16802,6 +16833,7 @@ impl SourceVariableSemanticsChecker {
         labels: &mizar_resolve::labels::ProofLabelSourceCollection,
         resolved_labels: &mizar_resolve::labels::LabelResolutionResult,
         proof_organization: bool,
+        binding_env: Option<&BindingEnv>,
     ) -> Result<(), String> {
         let invalid = || "formulas.typed_ast_invalid".to_owned();
         if typed.source_id() != scope.source_id()
@@ -16815,7 +16847,9 @@ impl SourceVariableSemanticsChecker {
         {
             return Err(invalid());
         }
-        let binding_env = Self::occurrence_binding_env(scope);
+        let binding_env = binding_env
+            .cloned()
+            .unwrap_or_else(|| Self::occurrence_binding_env(scope));
         let primary = typed.source_term().ok_or_else(invalid)?;
         let atomic = typed.source_atomic_formula().ok_or_else(invalid)?;
         if primary.source_id() != typed.source_id()
@@ -17044,7 +17078,15 @@ impl SourceVariableSemanticsChecker {
         labels: &mizar_resolve::labels::ProofLabelSourceCollection,
         resolved_labels: &mizar_resolve::labels::LabelResolutionResult,
     ) -> Result<bool, String> {
-        Self::check_formula_statements_mode(typed, scope, symbols, labels, resolved_labels, true)?;
+        Self::check_formula_statements_mode(
+            typed,
+            scope,
+            symbols,
+            labels,
+            resolved_labels,
+            true,
+            None,
+        )?;
         if resolved_labels.has_unresolved() || !resolved_labels.diagnostics().is_empty() {
             return Err("formulas.label_provenance_invalid".to_owned());
         }
