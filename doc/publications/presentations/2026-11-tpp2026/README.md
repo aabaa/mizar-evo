@@ -151,8 +151,8 @@ benchmark conditions, and HOL-to-FOL encoding/reconstruction, in that order.
   and plans. Shared figures, language specifications, internal designs, and
   Rust sources stay outside the translation scope.
 - The generator keeps both decks at 36 pages, with compact table columns and
-  captions. Existing tracked PDFs/TeX still represent the earlier deck until
-  explicitly regenerated; revised previews live under `target/` in the worktree.
+  captions. Tracked PDFs/TeX reflect the current Markdown deck sources;
+  review previews and build logs live under `target/` in the worktree.
 - Work in a dedicated branch/worktree. Do not merge into main, push, or create
   a PR until instructed.
 
