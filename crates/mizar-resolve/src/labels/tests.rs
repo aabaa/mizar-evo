@@ -8178,3 +8178,232 @@ fn source_proof_inputs_preserve_original_errors_and_boundaries() {
     assert_eq!((frontend, recovered_env, recovered_arena), recovered_before);
     assert_eq!((ast, env, arena, actual), before);
 }
+
+#[test]
+fn source_declaration_shells_match_original_collectors() {
+    use crate::declarations::{
+        DeclarationShellCollector, DeclarationShellKind as K, DeclarationShellVisibilityState as V,
+    };
+    use crate::names::{SourceVariableScopeInput, SourceVariableScopeResolver};
+    use crate::symbols::source_declaration_shells;
+
+    let private = include_str!(
+        "../../../../tests/miz/pass/resolve/pass_declaration_symbol_private_theorem_visibility_001.miz"
+    );
+    let lemma = include_str!(
+        "../../../../tests/miz/pass/theorems/pass_proof_verification_lemma_reference_001.miz"
+    );
+    for (case, text) in [
+        private,
+        lemma,
+        "",
+        "export std.core, .facade;\n",
+        "definition\n let X, Y be set;\n private pred Hidden: X secret Y means X = Y;\nend;\n",
+        "theorem Local: for X being set holds X = X\nproof\n let X be set;\n thus Q = X;\nend;\n",
+    ]
+    .into_iter()
+    .enumerate()
+    {
+        let (ast, module, _, env, arena) = parsed_private_theorem_fixture(text);
+        let before = (ast.clone(), env.clone(), arena.clone());
+        let expected = DeclarationShellCollector::new(&ast, &module).collect();
+        let roles = expected
+            .declarations()
+            .iter()
+            .map(|row| (row.kind(), row.visibility().state()))
+            .collect::<Vec<_>>();
+        assert_eq!(
+            roles,
+            match case {
+                0 => vec![(K::Theorem, V::Private), (K::Theorem, V::Unspecified)],
+                1 => vec![(K::Lemma, V::Unspecified), (K::Theorem, V::Unspecified)],
+                4 => vec![
+                    (K::DefinitionBlock, V::Unspecified),
+                    (K::PredicateDefinition, V::Private)
+                ],
+                5 => vec![(K::Theorem, V::Unspecified)],
+                _ => vec![],
+            }
+        );
+        let mut nodes = ast
+            .node_views()
+            .filter(|node| {
+                matches!(
+                    node.kind(),
+                    SurfaceNodeKind::TheoremItem
+                        | SurfaceNodeKind::LemmaItem
+                        | SurfaceNodeKind::DefinitionBlockItem
+                        | SurfaceNodeKind::PredicateDefinition
+                )
+            })
+            .collect::<Vec<_>>();
+        nodes.sort_by_key(|node| (node.range().start, std::cmp::Reverse(node.range().end)));
+        assert_eq!(nodes.len(), roles.len());
+        for (row, node) in expected.declarations().iter().zip(nodes) {
+            assert_eq!(row.module(), &module);
+            assert_eq!(row.node_id(), node.id());
+            assert_eq!(row.range(), node.range());
+            assert!(!row.recovered());
+            assert_eq!(
+                row.parent(),
+                if row.kind() == K::PredicateDefinition {
+                    Some(expected.declarations()[0].id())
+                } else {
+                    None
+                }
+            );
+            if let Some(marker) = row.visibility().marker_range() {
+                assert_eq!(&text[marker.start..marker.end], "private");
+            } else {
+                assert_eq!(row.visibility().state(), V::Unspecified);
+            }
+        }
+        assert_eq!(expected.is_empty(), case == 2);
+        assert_eq!(expected.exports().len(), usize::from(case == 3));
+        if case == 3 {
+            let export = &expected.exports()[0];
+            let node = ast
+                .node_views()
+                .find(|node| matches!(node.kind(), SurfaceNodeKind::ExportItem))
+                .unwrap();
+            assert_eq!(export.node_id(), node.id());
+            assert_eq!(export.range(), node.range());
+            assert_eq!(export.module(), &module);
+            assert!(!export.recovered());
+            assert_eq!(
+                export
+                    .paths()
+                    .iter()
+                    .map(|path| path.spelling())
+                    .collect::<Vec<_>>(),
+                vec!["std.core", ".facade"]
+            );
+            for path in export.paths() {
+                assert_eq!(&text[path.range().start..path.range().end], path.spelling());
+            }
+        }
+        if case == 5 {
+            assert!(
+                SourceVariableScopeResolver::resolve_proof_occurrences(
+                    SourceVariableScopeInput::new(&ast, &module, &env)
+                )
+                .is_err()
+            );
+        }
+        assert_eq!(source_declaration_shells(&arena, &env).unwrap(), expected);
+        assert_eq!(source_declaration_shells(&arena, &env).unwrap(), expected);
+        assert_eq!((ast, env, arena), before);
+    }
+}
+
+#[test]
+fn source_declaration_shells_preserve_upstream_errors() {
+    use crate::symbols::{source_declaration_shells, validate_source_symbol_env};
+    use mizar_frontend::{
+        orchestration::Frontend, parsing::MizarParserSeam, source::FrontendSourceLoader,
+    };
+    use mizar_session::{
+        DiskSourceLoader, Edition, SourceInput, SourceOriginInput, normalize_path,
+    };
+
+    let text = include_str!(
+        "../../../../tests/miz/pass/resolve/pass_declaration_symbol_private_theorem_visibility_001.miz"
+    );
+    let (ast, module, namespace, env, arena) = parsed_private_theorem_fixture(text);
+    let actual = source_declaration_shells(&arena, &env).unwrap();
+    let before = (ast.clone(), env.clone(), arena.clone(), actual.clone());
+    let (_, _, _, foreign_env, foreign_arena) =
+        parsed_private_theorem_fixture(&text.replace("PrivT1", "Other"));
+    source_declaration_shells(&foreign_arena, &foreign_env).unwrap();
+    let foreign_before = (foreign_env.clone(), foreign_arena.clone());
+    for (source, symbols) in [(&arena, &foreign_env), (&foreign_arena, &env)] {
+        let lower = validate_source_symbol_env(source, symbols).unwrap_err();
+        assert_eq!(
+            source_declaration_shells(source, symbols).unwrap_err(),
+            lower
+        );
+    }
+    assert_eq!((foreign_env, foreign_arena), foreign_before);
+    let other_module = module_id("other", "Nested.Main");
+    let shells = crate::declarations::DeclarationShellCollector::new(&ast, &other_module).collect();
+    let other_env = crate::symbols::SignatureProjectionExtractor::new(
+        &ast,
+        &shells,
+        NamespacePath::new("Nested.Main"),
+    )
+    .collect(&other_module);
+    let other_arena = SurfaceResolvedArena::lower(&ast, &other_module).unwrap();
+    source_declaration_shells(&other_arena, other_env.env()).unwrap();
+    let other_before = (other_env.clone(), other_arena.clone());
+    for (source, symbols) in [(&arena, other_env.env()), (&other_arena, &env)] {
+        let lower = validate_source_symbol_env(source, symbols).unwrap_err();
+        assert_eq!(
+            source_declaration_shells(source, symbols).unwrap_err(),
+            lower
+        );
+    }
+    assert_eq!((other_env, other_arena), other_before);
+    let pair = crate::symbols::source_theorem_module_candidates(&ast, &arena, &env)
+        .unwrap()
+        .unwrap();
+    let pair_before = pair.clone();
+    let lower = validate_source_symbol_env(&arena, &pair.1).unwrap_err();
+    assert_eq!(
+        source_declaration_shells(&arena, &pair.1).unwrap_err(),
+        lower
+    );
+    assert_eq!(pair, pair_before);
+    let root = std::env::temp_dir().join(format!(
+        "mizar-declaration-shells-recovery-{}",
+        std::process::id()
+    ));
+    let path = root.join("src/main.miz");
+    std::fs::create_dir_all(path.parent().unwrap()).unwrap();
+    std::fs::write(&path, "theorem Broken: 0 = ;\n").unwrap();
+    let frontend = Frontend::new(
+        FrontendSourceLoader::new(DiskSourceLoader::new(&root)),
+        NoImportedSummaries,
+        MizarParserSeam,
+    )
+    .run(
+        mizar_frontend::source::SourceUnitRequest {
+            snapshot: BuildSnapshotId::from_published_schema_str(&format!(
+                "mizar-session-build-snapshot-v1:{}",
+                "31".repeat(Hash::BYTE_LEN)
+            ))
+            .unwrap(),
+            input: SourceInput {
+                package_id: PackageId::new("pkg"),
+                module_path: ModulePath::new("main"),
+                normalized_path: normalize_path(&root, &path).unwrap(),
+                edition: Edition::new("2025"),
+                origin: SourceOriginInput::Disk { path },
+            },
+        },
+        &InMemorySessionIdAllocator::new(),
+    )
+    .unwrap();
+    std::fs::remove_dir_all(root).unwrap();
+    assert!(!frontend.diagnostics.is_empty());
+    let recovered = frontend.ast.as_ref().unwrap();
+    assert!(recovered.node_views().any(
+        |node| node.is_recovered() || matches!(node.kind(), SurfaceNodeKind::ErrorRecovery(_))
+    ));
+    let shells = crate::declarations::DeclarationShellCollector::new(recovered, &module).collect();
+    let recovered_env =
+        crate::symbols::SignatureProjectionExtractor::new(recovered, &shells, namespace)
+            .collect(&module);
+    let recovered_arena = SurfaceResolvedArena::lower(recovered, &module).unwrap();
+    let recovered_before = (
+        frontend.clone(),
+        recovered_env.clone(),
+        recovered_arena.clone(),
+    );
+    let lower = validate_source_symbol_env(&recovered_arena, recovered_env.env()).unwrap_err();
+    assert_eq!(
+        source_declaration_shells(&recovered_arena, recovered_env.env()).unwrap_err(),
+        lower
+    );
+    assert_eq!((frontend, recovered_env, recovered_arena), recovered_before);
+    assert_eq!((ast, env, arena, actual), before);
+}

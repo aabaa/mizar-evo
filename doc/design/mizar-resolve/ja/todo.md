@@ -3,6 +3,7 @@
 > 正本は英語です。英語版: [../en/todo.md](../en/todo.md)。
 
 - [x] [元ソースの定理 lexical context](../../task_contracts/ja/RESOLVE-CHECKER-SOURCE-THEOREM-LEXICAL-CONTEXTS.md).
+- [x] [Original-source declaration shells](../../task_contracts/ja/RESOLVE-SOURCE-DECLARATION-SHELLS.md).
 
 ## 状態の凡例
 

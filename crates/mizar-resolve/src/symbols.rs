@@ -42,6 +42,17 @@ pub fn validate_source_symbol_env(
     validated_source_symbol_ast(source, symbols).map(|_| ())
 }
 
+/// Returns all declaration and export shells authenticated against the original source.
+///
+/// Preserves the collector's source-local identities and metadata.
+pub fn source_declaration_shells(
+    source: &SurfaceResolvedArena,
+    symbols: &SymbolEnv,
+) -> Result<DeclarationShellSet, String> {
+    let ast = validated_source_symbol_ast(source, symbols)?;
+    Ok(DeclarationShellCollector::new(&ast, source.module()).collect())
+}
+
 /// Authenticates all proof occurrence rows against the original source and symbols.
 pub fn validate_source_proof_occurrences(
     source: &SurfaceResolvedArena,
