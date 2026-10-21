@@ -18,6 +18,7 @@
 - [x] [元ソースの定理 lexical context](../../task_contracts/ja/RESOLVE-CHECKER-SOURCE-THEOREM-LEXICAL-CONTEXTS.md).
 - [x] [元ソースの定理 local type context](../../task_contracts/ja/CHECKER-SOURCE-THEOREM-LOCAL-TYPE-CONTEXTS.md).
 - [x] [Original-source theorem scoped primary references](../../task_contracts/ja/CHECKER-SOURCE-THEOREM-SCOPED-PRIMARY.md).
+- [x] [Original-source theorem scoped inference](../../task_contracts/ja/CHECKER-SOURCE-THEOREM-SCOPED-INFERENCE.md).
 
 ## 状態の凡例
 

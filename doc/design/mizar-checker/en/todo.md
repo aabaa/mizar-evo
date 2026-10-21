@@ -20,6 +20,7 @@
 - [x] [Original-source theorem lexical contexts](../../task_contracts/en/RESOLVE-CHECKER-SOURCE-THEOREM-LEXICAL-CONTEXTS.md).
 - [x] [Original-source theorem local type contexts](../../task_contracts/en/CHECKER-SOURCE-THEOREM-LOCAL-TYPE-CONTEXTS.md).
 - [x] [Original-source theorem scoped primary references](../../task_contracts/en/CHECKER-SOURCE-THEOREM-SCOPED-PRIMARY.md).
+- [x] [Original-source theorem scoped inference](../../task_contracts/en/CHECKER-SOURCE-THEOREM-SCOPED-INFERENCE.md).
 
 ## Status Legend
 

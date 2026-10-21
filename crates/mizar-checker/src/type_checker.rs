@@ -6780,6 +6780,326 @@ impl TermFormulaChecker {
         Ok((bindings, inference, typed, expressions))
     }
 
+    /// Infers genuine original-source equalities under their lexical contexts.
+    pub fn check_source_theorem_equalities_with_scoped_inference(
+        source: &SurfaceResolvedArena,
+        symbols: &SymbolEnv,
+        scope: &ResolvedVariableScope,
+    ) -> Result<
+        (
+            BindingEnv,
+            TermFormulaInferenceOutput,
+            crate::typed_ast::TypedAst,
+            Vec<crate::resolved_typed_ast::ExpressionMetadataInput>,
+        ),
+        String,
+    > {
+        use crate::source_atomic_formula::*;
+        use crate::source_term::*;
+        use crate::typed_ast::{TypeRole, TypedArena, TypedAst, TypedAstParts, TypingState};
+        let (_, original_inference, original, expressions) =
+            Self::check_source_theorem_equalities_with_local_contexts(source, symbols, scope)?;
+        let bindings =
+            SourceVariableSemanticsChecker::source_theorem_binding_env(source, symbols, scope)?;
+        let (scopes, _) = mizar_resolve::symbols::source_proof_scope_maps(source, symbols, scope)?;
+        let invalid = || "theorems.equality.invalid_scoped_inference_association".to_owned();
+        let context_for = |site: &TypedSiteRef| {
+            let resolved = original
+                .nodes()
+                .node(site.node())
+                .and_then(|node| node.resolved_node)
+                .ok_or_else(invalid)?;
+            let local = scopes
+                .iter()
+                .find(|(node, _)| source.resolved_node_for(**node) == Some(resolved))
+                .map(|(_, local)| local)
+                .ok_or_else(invalid)?;
+            bindings
+                .contexts()
+                .iter()
+                .find(|(_, row)| row.lexical_scope.as_ref() == Some(local))
+                .map(|(id, _)| id)
+                .ok_or_else(invalid)
+        };
+        let old_primary = original.source_term().ok_or_else(invalid)?;
+        let primary_input = SourcePrimaryTermHandoffInput {
+            source_id: old_primary.source_id(),
+            module_id: old_primary.module_id().clone(),
+            terms: old_primary
+                .terms()
+                .iter()
+                .map(|(_, term)| {
+                    Ok(SourcePrimaryTermInput {
+                        site: term.site().clone(),
+                        source_range: term.source_range(),
+                        source_ordinal: term.source_ordinal(),
+                        context: context_for(term.site())?,
+                        recovery: term.recovery(),
+                        spelling: term.spelling().into(),
+                        kind: term.kind(),
+                        role: term.role(),
+                        parent: term.parent(),
+                    })
+                })
+                .collect::<Result<Vec<_>, String>>()?,
+            references: old_primary
+                .references()
+                .iter()
+                .map(|(_, row)| SourcePrimaryTermReferenceInput {
+                    term: row.term(),
+                    binding: row.binding(),
+                    role: row.role(),
+                })
+                .collect(),
+            numeric_type_requests: old_primary
+                .numeric_type_requests()
+                .iter()
+                .map(|(_, row)| SourceNumericTypeRequestInput {
+                    term: row.term(),
+                    owner: row.owner().clone(),
+                    source_range: row.source_range(),
+                    spelling: row.spelling().into(),
+                    request_ordinal: row.request_ordinal(),
+                })
+                .collect(),
+        };
+        let primary = SourcePrimaryTermProducer::build_from_scoped_theorem_occurrences(
+            primary_input,
+            &bindings,
+            original.nodes(),
+            source,
+            symbols,
+            scope,
+        )
+        .map_err(|error| error.to_string())?;
+        let mut terms = Vec::new();
+        for (_, reference) in primary.references().iter() {
+            let term = primary.terms().get(reference.term()).ok_or_else(invalid)?;
+            let resolved = original
+                .nodes()
+                .node(term.site().node())
+                .and_then(|node| node.resolved_node)
+                .ok_or_else(invalid)?;
+            let actual = scope
+                .references()
+                .iter()
+                .find(|actual| source.resolved_node_for(actual.node()) == Some(resolved))
+                .ok_or_else(invalid)?;
+            let declaration = scope
+                .bindings()
+                .get(actual.binding().index())
+                .ok_or_else(invalid)?;
+            let declaration_node = source
+                .resolved_node_for(declaration.node())
+                .ok_or_else(invalid)?;
+            let ty = source
+                .arena()
+                .iter()
+                .find(|(_, node)| {
+                    matches!(
+                        node.kind(),
+                        K::QuantifierVariableSegment | K::QualifiedVariableSegment
+                    ) && node.children().contains(&declaration_node)
+                })
+                .and_then(|(_, node)| node.children().last())
+                .copied()
+                .ok_or_else(invalid)?;
+            let type_node = source.arena().node(ty).ok_or_else(invalid)?;
+            let SourceAnchor::Range(type_range) = type_node.origin().anchor() else {
+                return Err(invalid());
+            };
+            let type_site = TypedSiteRef::Role {
+                node: original
+                    .nodes()
+                    .iter()
+                    .find(|(_, node)| node.resolved_node == Some(ty))
+                    .map(|(id, _)| id)
+                    .ok_or_else(invalid)?,
+                role: TypeRole::new(format!("theorem.equality.use:{}", term.source_ordinal())),
+            };
+            let (_, entry) = original_inference
+                .type_entries()
+                .iter()
+                .find(|(_, entry)| entry.owner == type_site)
+                .ok_or_else(invalid)?;
+            terms.push(
+                TermInput::new(
+                    term.site().clone(),
+                    term.context(),
+                    term.source_range(),
+                    TermKind::Variable,
+                )
+                .with_reference(TermReference::Binding(reference.binding()))
+                .with_result_type(TypeExpressionInput::new(
+                    entry.owner.clone(),
+                    *type_range,
+                    "set",
+                    TypeHeadInput::BuiltinSet,
+                )),
+            );
+        }
+        let old_atomic = original.source_atomic_formula().ok_or_else(invalid)?;
+        if !old_atomic.wrappers().is_empty()
+            || !old_atomic.predicate_segments().is_empty()
+            || !old_atomic.predicate_heads().is_empty()
+            || !old_atomic.candidates().is_empty()
+            || !old_atomic.type_sites().is_empty()
+            || !old_atomic.attributes().is_empty()
+        {
+            return Err(invalid());
+        }
+        let mut atomic_input = SourceAtomicFormulaHandoffInput {
+            source_id: old_atomic.source_id(),
+            module_id: old_atomic.module_id().clone(),
+            formulas: Vec::new(),
+            wrappers: Vec::new(),
+            predicate_segments: Vec::new(),
+            predicate_heads: Vec::new(),
+            candidates: Vec::new(),
+            type_sites: Vec::new(),
+            attributes: Vec::new(),
+            edges: old_atomic
+                .edges()
+                .iter()
+                .map(|(_, row)| SourceAtomicEdgeInput {
+                    formula: row.formula(),
+                    ordinal: row.ordinal(),
+                    role: row.role(),
+                    target: row.target(),
+                })
+                .collect(),
+            requests: old_atomic
+                .requests()
+                .iter()
+                .map(|(_, row)| SourceAtomicRequestInput {
+                    formula: row.formula(),
+                    ordinal: row.ordinal(),
+                    kind: row.kind(),
+                    edge: row.edge(),
+                    candidate: row.candidate(),
+                    type_site: row.type_site(),
+                    attribute: row.attribute(),
+                })
+                .collect(),
+        };
+        let mut formulas = Vec::new();
+        for (id, formula) in old_atomic.formulas().iter() {
+            if formula.kind() != SourceAtomicFormulaKind::Equality {
+                return Err(invalid());
+            }
+            let context = context_for(formula.site())?;
+            atomic_input.formulas.push(SourceAtomicFormulaInput {
+                site: formula.site().clone(),
+                source_range: formula.source_range(),
+                source_ordinal: formula.source_ordinal(),
+                context,
+                recovery: formula.recovery(),
+                spelling: formula.spelling().into(),
+                kind: formula.kind(),
+            });
+            let operands = old_atomic
+                .edges()
+                .iter()
+                .filter(|(_, edge)| edge.formula() == id)
+                .map(|(_, edge)| {
+                    let SourceAtomicTermTarget::Primary(id) = edge.target() else {
+                        return Err(invalid());
+                    };
+                    primary
+                        .terms()
+                        .get(id)
+                        .map(|term| term.site().clone())
+                        .ok_or_else(invalid)
+                })
+                .collect::<Result<Vec<_>, _>>()?;
+            formulas.push(
+                FormulaInput::new(
+                    formula.site().clone(),
+                    context,
+                    formula.source_range(),
+                    FormulaKind::Equality,
+                )
+                .with_terms(operands),
+            );
+        }
+        let atomic = SourceAtomicFormulaProducer::build(
+            atomic_input,
+            &bindings,
+            symbols,
+            &primary,
+            None,
+            None,
+            None,
+            original.nodes(),
+        )
+        .map_err(|error| error.to_string())?;
+        let inference = Self::default().infer(symbols, &bindings, terms, formulas);
+        if inference.terms().len() != primary.terms().len()
+            || inference.formulas().len() != atomic.formulas().len()
+            || !inference.diagnostics().is_empty()
+            || !inference.candidate_sets().is_empty()
+            || !inference.facts().is_empty()
+            || inference
+                .type_entries()
+                .iter()
+                .any(|(_, row)| row.status != TypeStatus::Known)
+            || inference
+                .terms()
+                .iter()
+                .any(|(_, row)| row.status != TermStatus::Inferred || !row.deferred.is_empty())
+            || inference
+                .formulas()
+                .iter()
+                .any(|(_, row)| row.status != FormulaStatus::Checked || !row.deferred.is_empty())
+        {
+            return Err(invalid());
+        }
+        let mut nodes = original
+            .nodes()
+            .iter()
+            .map(|(_, node)| node.clone())
+            .collect::<Vec<_>>();
+        for (_, term) in inference.terms().iter() {
+            let entry = inference
+                .type_entries()
+                .get(term.type_entry)
+                .ok_or_else(invalid)?;
+            if entry.owner != term.site {
+                return Err(invalid());
+            }
+            let node = nodes
+                .get_mut(term.site.node().index())
+                .ok_or_else(invalid)?;
+            node.typing = TypingState::Successful;
+            node.links.type_entry = Some(term.type_entry);
+        }
+        for (_, formula) in inference.formulas().iter() {
+            nodes
+                .get_mut(formula.site.node().index())
+                .ok_or_else(invalid)?
+                .typing = TypingState::Successful;
+        }
+        let typed = TypedAst::try_new(TypedAstParts {
+            source_id: original.source_id(),
+            module_id: original.module_id().clone(),
+            resolved_root: original.resolved_root(),
+            source_context: original.source_context().cloned(),
+            source_type: original.source_type().cloned(),
+            source_attribute: original.source_attribute().cloned(),
+            nodes: TypedArena::try_new(original.nodes().root(), nodes).map_err(|_| invalid())?,
+            contexts: original.contexts().clone(),
+            types: inference.type_entries().clone(),
+            facts: inference.facts().clone(),
+            coercions: original.coercions().clone(),
+            initial_obligations: original.initial_obligations().clone(),
+            diagnostics: inference.diagnostics().clone(),
+        })
+        .and_then(|ast| ast.with_source_term(primary))
+        .and_then(|ast| ast.with_source_atomic_formula(atomic))
+        .map_err(|error| error.to_string())?;
+        Ok((bindings, inference, typed, expressions))
+    }
+
     /// Checks bounded predicate and means-functor statements without proof credit.
     pub fn check_source_predicate_statements(
         source: &SurfaceResolvedArena,

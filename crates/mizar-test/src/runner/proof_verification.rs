@@ -15706,4 +15706,704 @@ mod term_proof_tests {
         assert_eq!(before, (source.clone(), symbols.clone(), scope.clone()));
         Ok(())
     }
+
+    #[test]
+    fn source_theorem_scoped_inference_retains_real_types_and_contexts() -> Result<(), String> {
+        use mizar_checker::{
+            binding_env::{BinderIdentity, BindingContextLayer},
+            type_checker::{
+                FormulaStatus, SourceVariableSemanticsChecker as Semantics,
+                TermFormulaChecker as Checker, TermReference, TermStatus, TypeHeadRef,
+            },
+            typed_ast::{
+                BindingTypeRef, TypeContextLayer, TypeEntryActual, TypeRole, TypeStatus, TypedAst,
+                TypedAstParts, TypedSiteRef,
+            },
+        };
+        use mizar_frontend::{
+            orchestration::Frontend,
+            parsing::MizarParserSeam,
+            source::{FrontendSourceLoader, SourceUnitRequest},
+        };
+        use mizar_resolve::{
+            declarations::DeclarationShellCollector,
+            env::NamespacePath,
+            names::{SourceVariableScopeInput, SourceVariableScopeResolver},
+            resolved_ast::{ModuleId, SurfaceResolvedArena},
+            symbols::{SignatureProjectionExtractor, source_proof_scope_maps},
+        };
+        use mizar_session::{
+            DiskSourceLoader, Edition, InMemorySessionIdAllocator, ModulePath, PackageId,
+            SourceInput, SourceOriginInput,
+        };
+        use mizar_syntax::SurfaceNodeKind as K;
+        use std::collections::{BTreeMap, BTreeSet};
+        let fixture = include_str!(
+            "../../../../tests/miz/pass/theorems/pass_proof_verification_lemma_reference_001.miz"
+        );
+        let sources = [
+            fixture.to_owned(),
+            fixture.replace("Lem1", "Seed").replace("let X be set;", "let Local be set;").replace("thus X = X", "thus Local = Local"),
+            "theorem Pair: for A, Spare, B being set holds A = B proof let L, Unused, R be set; thus L = R; end;".into(),
+            "theorem Nested: for A being set for Unused being set holds for B being set holds A = B proof let L be set; let Idle be set; let R be set; thus L = R; end;".into(),
+            "theorem Groups: for A being set, Unused, B being set holds A = B proof let L be set, Idle, R be set; thus L = R; end;".into(),
+            "theorem Shadow: for A being set holds for A being set holds A = A proof let A be set; thus A = A; end;".into(),
+            "theorem Unused: for A being set holds A = A proof end;".into(),
+        ];
+        let temporary = std::process::Command::new("mktemp")
+            .arg("-d")
+            .output()
+            .unwrap();
+        assert!(temporary.status.success());
+        let root = std::path::PathBuf::from(String::from_utf8(temporary.stdout).unwrap().trim());
+        fs::create_dir(root.join("src")).unwrap();
+        let path = root.join("src/scoped_inference.miz");
+        let ids = InMemorySessionIdAllocator::new();
+        for (case, text) in sources.iter().enumerate() {
+            let mut disk_capture = None;
+            for buffer in [false, true] {
+                fs::write(&path, if buffer { "stale disk content" } else { text }).unwrap();
+                let frontend = Frontend::new(
+                    FrontendSourceLoader::new(DiskSourceLoader::new(&root)),
+                    super::super::ParseOnlyImportProvider,
+                    MizarParserSeam,
+                )
+                .run(
+                    SourceUnitRequest {
+                        snapshot: snapshot_id(777),
+                        input: SourceInput {
+                            package_id: PackageId::new("scoped-inference-test"),
+                            module_path: ModulePath::new("owners"),
+                            normalized_path: mizar_session::normalize_path(&root, &path).unwrap(),
+                            edition: Edition::new("2026"),
+                            origin: if buffer {
+                                SourceOriginInput::OpenBuffer {
+                                    uri: format!("file://{}", path.display()),
+                                    expected_version: 3,
+                                    actual_version: 3,
+                                    text: text.clone().into(),
+                                }
+                            } else {
+                                SourceOriginInput::Disk { path: path.clone() }
+                            },
+                        },
+                    },
+                    &ids,
+                )
+                .unwrap();
+                assert!(
+                    frontend.diagnostics.is_empty(),
+                    "{:?}",
+                    frontend.diagnostics
+                );
+                assert_eq!(frontend.source.source_text.as_ref(), text);
+
+                let ast = frontend.ast.as_ref().unwrap();
+                let module = ModuleId::new(
+                    frontend.source.package_id.clone(),
+                    frontend.source.module_path.clone(),
+                );
+                let source = SurfaceResolvedArena::lower(ast, &module).unwrap();
+                let shells = DeclarationShellCollector::new(ast, &module).collect();
+                let collected = SignatureProjectionExtractor::new(
+                    ast,
+                    &shells,
+                    NamespacePath::new(module.path().as_str()),
+                )
+                .collect(&module);
+                assert!(collected.diagnostics().is_empty());
+                let symbols = collected.env();
+                let scope = SourceVariableScopeResolver::resolve_proof_occurrences(
+                    SourceVariableScopeInput::new(ast, &module, symbols),
+                )
+                .unwrap();
+                let baseline = Checker::check_source_theorem_equalities_with_local_contexts(
+                    &source, symbols, &scope,
+                )?;
+                let before = (
+                    source.clone(),
+                    symbols.clone(),
+                    scope.clone(),
+                    ast.snapshot_text(),
+                    frontend.source.clone(),
+                );
+                let maps = source_proof_scope_maps(&source, symbols, &scope)?;
+                let lexical = Semantics::source_theorem_binding_env(&source, symbols, &scope)?;
+                let output = Checker::check_source_theorem_equalities_with_scoped_inference(
+                    &source, symbols, &scope,
+                )?;
+                let (env, inference, typed, expressions) = &output;
+                let base = &baseline.2;
+                assert_eq!(env, &lexical);
+                assert_eq!(inference.source_id(), source.source_id());
+                assert_eq!(inference.module_id(), source.module());
+                assert_eq!(inference.normalized_types(), baseline.1.normalized_types());
+                assert_eq!(inference.type_entries(), baseline.1.type_entries());
+                assert_eq!(inference.candidate_sets(), baseline.1.candidate_sets());
+                assert_eq!(inference.facts(), baseline.1.facts());
+                assert_eq!(inference.diagnostics(), baseline.1.diagnostics());
+                assert_eq!(typed.nodes().len(), base.nodes().len());
+                assert_eq!(typed.source_context(), base.source_context());
+                assert_eq!(typed.source_type(), base.source_type());
+                assert_eq!(typed.source_id(), source.source_id());
+                assert_eq!(typed.module_id(), source.module());
+                assert_eq!(typed.resolved_root(), base.resolved_root());
+                assert_eq!(typed.nodes().root(), base.nodes().root());
+                assert_eq!(typed.contexts(), base.contexts());
+                assert_eq!(typed.types(), inference.type_entries());
+                assert_eq!(typed.facts(), inference.facts());
+                assert_eq!(typed.diagnostics(), inference.diagnostics());
+                assert_eq!(typed.coercions(), base.coercions());
+                assert_eq!(typed.initial_obligations(), base.initial_obligations());
+                assert_eq!(expressions, &baseline.3);
+                let primary = typed.source_term().unwrap();
+                let old_primary = base.source_term().unwrap();
+                let atomic = typed.source_atomic_formula().unwrap();
+                let old_atomic = base.source_atomic_formula().unwrap();
+                assert_eq!(primary.references(), old_primary.references());
+                assert_eq!(
+                    primary.numeric_type_requests(),
+                    old_primary.numeric_type_requests()
+                );
+                assert_eq!(typed.source_attribute(), base.source_attribute());
+                assert_eq!(inference.terms().len(), primary.terms().len());
+                assert_eq!(inference.formulas().len(), atomic.formulas().len());
+                assert_eq!(atomic.primary_term_fingerprint(), primary.debug_text());
+                assert_ne!(
+                    atomic.primary_term_fingerprint(),
+                    old_atomic.primary_term_fingerprint()
+                );
+                assert_eq!(atomic.edges(), old_atomic.edges());
+                assert_eq!(atomic.requests(), old_atomic.requests());
+                assert_eq!(atomic.wrappers(), old_atomic.wrappers());
+                assert_eq!(atomic.predicate_segments(), old_atomic.predicate_segments());
+                assert_eq!(atomic.predicate_heads(), old_atomic.predicate_heads());
+                assert_eq!(atomic.candidates(), old_atomic.candidates());
+                assert_eq!(atomic.type_sites(), old_atomic.type_sites());
+                assert_eq!(atomic.attributes(), old_atomic.attributes());
+                assert_eq!(
+                    atomic.application_fingerprint(),
+                    old_atomic.application_fingerprint()
+                );
+                assert_eq!(
+                    atomic.structure_fingerprint(),
+                    old_atomic.structure_fingerprint()
+                );
+                assert_eq!(
+                    atomic.set_term_fingerprint(),
+                    old_atomic.set_term_fingerprint()
+                );
+                let typed_for = |surface| {
+                    let resolved = source.resolved_node_for(surface).unwrap();
+                    let matches = typed
+                        .nodes()
+                        .iter()
+                        .filter(|(_, row)| row.resolved_node == Some(resolved))
+                        .collect::<Vec<_>>();
+                    assert_eq!(matches.len(), 1);
+                    matches[0].0
+                };
+                let mut local_ids = BTreeMap::new();
+                let mut binding_ids = BTreeMap::new();
+                for view in ast.node_views() {
+                    let parent = maps.1.get(&view.id());
+                    if parent.is_some_and(|parent| maps.0[parent] == maps.0[&view.id()]) {
+                        continue;
+                    }
+                    let owner = TypedSiteRef::Node(typed_for(view.id()));
+                    let (local_id, local) = typed
+                        .contexts()
+                        .iter()
+                        .find(|(_, row)| row.owner == owner)
+                        .unwrap();
+                    let scope_here = &maps.0[&view.id()];
+                    let (binding_id, _) = env
+                        .contexts()
+                        .iter()
+                        .find(|(_, row)| {
+                            if parent.is_none() {
+                                row.parent.is_none()
+                            } else {
+                                row.lexical_scope.as_ref() == Some(scope_here)
+                            }
+                        })
+                        .unwrap();
+                    let expected_layer = match view.kind() {
+                        K::Root => TypeContextLayer::Module,
+                        K::QuantifiedFormula(_) => TypeContextLayer::Expression,
+                        K::ProofBlock => TypeContextLayer::Proof,
+                        _ => panic!("unexpected lexical boundary"),
+                    };
+                    assert_eq!(local.layer, expected_layer);
+                    local_ids.insert(scope_here.clone(), local_id);
+                    binding_ids.insert(scope_here.clone(), binding_id);
+                }
+                assert_eq!(local_ids.len(), typed.contexts().len());
+                assert_eq!(binding_ids.len(), env.contexts().len());
+                for view in ast.node_views() {
+                    let scope_here = &maps.0[&view.id()];
+                    let node = typed.nodes().node(typed_for(view.id())).unwrap();
+                    assert_eq!(node.links.context, Some(local_ids[scope_here]));
+                    if let Some(parent) = maps.1.get(&view.id()) {
+                        let outer = &maps.0[parent];
+                        if outer != scope_here {
+                            assert_eq!(
+                                typed.contexts().get(local_ids[scope_here]).unwrap().parent,
+                                Some(local_ids[outer])
+                            );
+                            assert_eq!(
+                                env.contexts().get(binding_ids[scope_here]).unwrap().parent,
+                                Some(binding_ids[outer])
+                            );
+                        }
+                    } else {
+                        assert!(
+                            typed
+                                .contexts()
+                                .get(local_ids[scope_here])
+                                .unwrap()
+                                .parent
+                                .is_none()
+                        );
+                    }
+                }
+                for (scope_here, local_id) in &local_ids {
+                    let expected = scope
+                        .bindings()
+                        .iter()
+                        .filter(|decl| decl.scope() == scope_here)
+                        .map(|decl| {
+                            BindingTypeRef::Site(TypedSiteRef::Node(typed_for(decl.node())))
+                        })
+                        .collect::<Vec<_>>();
+                    assert_eq!(typed.contexts().get(*local_id).unwrap().bindings, expected);
+                }
+                let mut seen = BTreeSet::new();
+                for actual in scope.references() {
+                    let site = TypedSiteRef::Node(typed_for(actual.node()));
+                    let (id, term) = primary
+                        .terms()
+                        .iter()
+                        .find(|(_, term)| term.site() == &site)
+                        .unwrap();
+                    assert!(seen.insert(id));
+                    let old = old_primary.terms().get(id).unwrap();
+                    assert_eq!(term.site(), old.site());
+                    assert_eq!(term.source_range(), old.source_range());
+                    assert_eq!(term.source_ordinal(), old.source_ordinal());
+                    assert_eq!(term.recovery(), old.recovery());
+                    assert_eq!(term.spelling(), old.spelling());
+                    assert_eq!(term.kind(), old.kind());
+                    assert_eq!(term.role(), old.role());
+                    assert_eq!(term.parent(), old.parent());
+                    assert_eq!(term.context(), binding_ids[actual.scope()]);
+                    assert_eq!(term.source_range(), actual.range());
+                    assert_eq!(term.spelling(), actual.spelling());
+                    let declaration = &scope.bindings()[actual.binding().index()];
+                    let reference = primary
+                        .references()
+                        .iter()
+                        .find(|(_, row)| row.term() == id)
+                        .unwrap()
+                        .1;
+                    let binding = env.bindings().get(reference.binding()).unwrap();
+                    assert_eq!(
+                        binding.identity,
+                        BinderIdentity::ResolverLocal {
+                            scope: declaration.scope().clone(),
+                            ordinal: declaration.ordinal(),
+                            declaration_range: declaration.range(),
+                        }
+                    );
+                    assert_eq!(reference.lexical_scope(), Some(actual.scope()));
+                    assert_eq!(reference.use_ordinal(), actual.ordinal());
+                    let mut ancestor = Some(term.context());
+                    let mut reached = false;
+                    while let Some(id) = ancestor {
+                        reached |= id == binding.owner_context;
+                        ancestor = env.contexts().get(id).unwrap().parent;
+                    }
+                    assert!(reached);
+                    let decl = ast
+                        .node_views()
+                        .find(|view| {
+                            view.children().contains(&declaration.node())
+                                && matches!(
+                                    view.kind(),
+                                    K::QuantifierVariableSegment | K::QualifiedVariableSegment
+                                )
+                        })
+                        .unwrap();
+                    let type_child = *decl.children().last().unwrap();
+                    assert_eq!(
+                        ast.node_view(type_child).unwrap().kind(),
+                        &K::TypeExpression
+                    );
+                    let role_site = TypedSiteRef::Role {
+                        node: typed_for(type_child),
+                        role: TypeRole::new(format!(
+                            "theorem.equality.use:{}",
+                            old.source_ordinal()
+                        )),
+                    };
+                    let (_, role_entry) = baseline
+                        .1
+                        .type_entries()
+                        .iter()
+                        .find(|(_, row)| row.owner == role_site)
+                        .unwrap();
+                    let (_, real_role) = inference
+                        .type_entries()
+                        .iter()
+                        .find(|(_, row)| row.owner == role_site)
+                        .unwrap();
+                    assert_eq!(real_role, role_entry);
+                    assert_eq!(real_role.status, TypeStatus::Known);
+                    let TypeEntryActual::Known(normalized) = real_role.actual else {
+                        panic!("missing real declared type")
+                    };
+                    assert_eq!(
+                        inference.normalized_types().get(normalized).unwrap().head,
+                        TypeHeadRef::BuiltinSet
+                    );
+                    let checked = inference
+                        .terms()
+                        .iter()
+                        .find(|(_, row)| row.site == site)
+                        .unwrap()
+                        .1;
+                    let mut expected = baseline
+                        .1
+                        .terms()
+                        .iter()
+                        .find(|(_, row)| row.site == site)
+                        .unwrap()
+                        .1
+                        .clone();
+                    expected.context = binding_ids[actual.scope()];
+                    assert_eq!(checked, &expected);
+                    assert_eq!(
+                        checked.reference,
+                        Some(TermReference::Binding(reference.binding()))
+                    );
+                    assert_eq!(checked.status, TermStatus::Inferred);
+                    let node = typed.nodes().node(site.node()).unwrap();
+                    assert_eq!(node.links.type_entry, Some(checked.type_entry));
+                    let entry = typed.types().get(checked.type_entry).unwrap();
+                    assert_eq!(entry.owner, site);
+                    assert_eq!(entry.actual, real_role.actual);
+                    assert_eq!(node.links.context, Some(local_ids[actual.scope()]));
+                }
+                assert_eq!(seen.len(), primary.terms().len());
+                let mut seen_formulas = BTreeSet::new();
+                for view in ast
+                    .node_views()
+                    .filter(|view| view.kind() == &K::BuiltinPredicateApplication)
+                {
+                    let site = TypedSiteRef::Node(typed_for(view.id()));
+                    let (id, formula) = atomic
+                        .formulas()
+                        .iter()
+                        .find(|(_, row)| row.site() == &site)
+                        .unwrap();
+                    assert!(seen_formulas.insert(id));
+                    let old = old_atomic.formulas().get(id).unwrap();
+                    assert_eq!(formula.site(), old.site());
+                    assert_eq!(formula.source_range(), old.source_range());
+                    assert_eq!(formula.source_ordinal(), old.source_ordinal());
+                    assert_eq!(formula.recovery(), old.recovery());
+                    assert_eq!(formula.spelling(), old.spelling());
+                    assert_eq!(formula.kind(), old.kind());
+                    assert_eq!(formula.context(), binding_ids[&maps.0[&view.id()]]);
+                    let checked = inference
+                        .formulas()
+                        .iter()
+                        .find(|(_, row)| row.site == site)
+                        .unwrap()
+                        .1;
+                    let mut expected = baseline
+                        .1
+                        .formulas()
+                        .iter()
+                        .find(|(_, row)| row.site == site)
+                        .unwrap()
+                        .1
+                        .clone();
+                    expected.context = binding_ids[&maps.0[&view.id()]];
+                    assert_eq!(checked, &expected);
+                    assert_eq!(checked.status, FormulaStatus::Checked);
+                    let operands = [view.children()[0], view.children()[2]].map(|child| {
+                        let reference = ast.node_view(child).unwrap().children()[0];
+                        TypedSiteRef::Node(typed_for(reference))
+                    });
+                    assert_eq!(checked.terms, operands);
+                    for operand in &checked.terms {
+                        assert_eq!(
+                            primary
+                                .terms()
+                                .iter()
+                                .find(|(_, row)| row.site() == operand)
+                                .unwrap()
+                                .1
+                                .context(),
+                            formula.context()
+                        );
+                    }
+                }
+                assert_eq!(seen_formulas.len(), atomic.formulas().len());
+                for (id, old) in base.nodes().iter() {
+                    let actual = typed.nodes().node(id).unwrap();
+                    let mut expected = old.clone();
+                    if let Some((_, term)) = inference
+                        .terms()
+                        .iter()
+                        .find(|(_, row)| row.site.node() == id)
+                    {
+                        expected.links.type_entry = Some(term.type_entry);
+                    }
+                    assert_eq!(actual, &expected);
+                    let resolved = source.arena().node(actual.resolved_node.unwrap()).unwrap();
+                    assert_eq!(actual.anchor, *resolved.origin().anchor());
+                    assert_eq!(resolved.origin().source_id(), source.source_id());
+                }
+                for expression in expressions {
+                    assert_eq!(
+                        expression.local_context,
+                        typed
+                            .nodes()
+                            .node(expression.typed_site.node())
+                            .unwrap()
+                            .links
+                            .context
+                    );
+                }
+                if case == 6 {
+                    assert!(
+                        env.contexts()
+                            .iter()
+                            .any(|(_, context)| context.layer == BindingContextLayer::Proof
+                                && context.bindings.is_empty())
+                    );
+                }
+                let installed = TypedAst::try_new(TypedAstParts {
+                    source_id: typed.source_id(),
+                    module_id: typed.module_id().clone(),
+                    resolved_root: typed.resolved_root(),
+                    source_context: typed.source_context().cloned(),
+                    source_type: typed.source_type().cloned(),
+                    source_attribute: typed.source_attribute().cloned(),
+                    nodes: typed.nodes().clone(),
+                    contexts: typed.contexts().clone(),
+                    types: typed.types().clone(),
+                    facts: typed.facts().clone(),
+                    coercions: typed.coercions().clone(),
+                    initial_obligations: typed.initial_obligations().clone(),
+                    diagnostics: typed.diagnostics().clone(),
+                })
+                .and_then(|ast| ast.with_source_term(primary.clone()))
+                .and_then(|ast| ast.with_source_atomic_formula(atomic.clone()))
+                .map_err(|e| e.to_string())?;
+                assert_eq!(&installed, typed);
+                assert_eq!(
+                    Checker::check_source_theorem_equalities_with_local_contexts(
+                        &source, symbols, &scope
+                    )?,
+                    baseline
+                );
+                assert_eq!(
+                    Checker::check_source_theorem_equalities_with_scoped_inference(
+                        &source, symbols, &scope
+                    )?,
+                    output
+                );
+                let signature = (
+                    env.debug_text(),
+                    inference.debug_text(),
+                    typed.debug_text(),
+                    primary.debug_text(),
+                    atomic.debug_text(),
+                    format!("{expressions:?}"),
+                );
+                if let Some((source_id, previous)) = &disk_capture {
+                    assert_ne!(*source_id, source.source_id());
+                    assert_eq!(previous, &signature);
+                } else {
+                    disk_capture = Some((source.source_id(), signature));
+                }
+                assert_eq!(
+                    before,
+                    (
+                        source,
+                        symbols.clone(),
+                        scope,
+                        ast.snapshot_text(),
+                        frontend.source.clone()
+                    )
+                );
+            }
+        }
+        fs::remove_dir_all(root).unwrap();
+        Ok(())
+    }
+
+    #[test]
+    fn source_theorem_scoped_inference_preserves_upstream_errors() {
+        use mizar_checker::type_checker::TermFormulaChecker as Checker;
+        use mizar_resolve::{
+            declarations::DeclarationShellCollector,
+            env::{NamespacePath, SymbolEnv, SymbolEnvIndexes},
+            names::{SourceVariableScopeInput, SourceVariableScopeResolver},
+            resolved_ast::{ModuleId, SurfaceResolvedArena},
+            symbols::{SignatureProjectionExtractor, validate_source_proof_occurrences},
+        };
+        use mizar_session::{ModulePath, PackageId};
+        use mizar_syntax::{SurfaceAstBuilder, SurfaceNodeKind as K};
+        let text = "theorem T: for X being set, Unused being set holds X = X proof let X be set; thus X = X; end;";
+        let ast = parse(text);
+        let module = ModuleId::new(
+            PackageId::new("local-type-context-test"),
+            ModulePath::new("owners"),
+        );
+        let source = SurfaceResolvedArena::lower(&ast, &module).unwrap();
+        let shells = DeclarationShellCollector::new(&ast, &module).collect();
+        let collected = SignatureProjectionExtractor::new(
+            &ast,
+            &shells,
+            NamespacePath::new(module.path().as_str()),
+        )
+        .collect(&module);
+        let symbols = collected.env();
+        let scope = SourceVariableScopeResolver::resolve_proof_occurrences(
+            SourceVariableScopeInput::new(&ast, &module, symbols),
+        )
+        .unwrap();
+        let empty = SymbolEnv::new(module.clone(), SymbolEnvIndexes::default());
+        let foreign_module = ModuleId::new(PackageId::new("foreign"), ModulePath::new("other"));
+        let mut controls = vec![
+            (
+                "foreign environment",
+                source.clone(),
+                empty.clone(),
+                scope.clone(),
+            ),
+            (
+                "foreign source",
+                SurfaceResolvedArena::lower(&ast, &foreign_module).unwrap(),
+                symbols.clone(),
+                scope.clone(),
+            ),
+        ];
+        for control in ["foreign scope", "recovered source"] {
+            let mut builder = SurfaceAstBuilder::new(ast.source_id);
+            let mut rebuilt = Vec::new();
+            for view in ast.node_views() {
+                let children = view
+                    .children()
+                    .iter()
+                    .map(|id| rebuilt[id.index()])
+                    .collect();
+                rebuilt.push(match view.kind() {
+                    K::Token(token)
+                        if control == "foreign scope" && token.text.as_ref() == "Unused" =>
+                    {
+                        builder.add_token(token.kind, "Hidden", view.range())
+                    }
+                    K::Token(token)
+                        if control == "recovered source" && token.text.as_ref() == "=" =>
+                    {
+                        builder.add_recovered_token(token.kind, token.text.clone(), view.range())
+                    }
+                    K::Token(token) => {
+                        builder.add_token(token.kind, token.text.clone(), view.range())
+                    }
+                    kind => builder.add_node(kind.clone(), view.range(), children),
+                });
+            }
+            let changed = builder.finish(Some(rebuilt[ast.root().unwrap().index()]), None);
+            if control == "foreign scope" {
+                let foreign = SourceVariableScopeResolver::resolve_proof_occurrences(
+                    SourceVariableScopeInput::new(&changed, &module, symbols),
+                )
+                .unwrap();
+                assert_eq!(foreign.source_id(), scope.source_id());
+                assert_eq!(foreign.references(), scope.references());
+                assert_ne!(foreign.bindings(), scope.bindings());
+                controls.push((control, source.clone(), symbols.clone(), foreign));
+            } else {
+                controls.push((
+                    control,
+                    SurfaceResolvedArena::lower(&changed, &module).unwrap(),
+                    symbols.clone(),
+                    scope.clone(),
+                ));
+            }
+        }
+        let unsupported = parse(&text.replace("set", "object"));
+        let unsupported_source = SurfaceResolvedArena::lower(&unsupported, &module).unwrap();
+        let shells = DeclarationShellCollector::new(&unsupported, &module).collect();
+        let collected = SignatureProjectionExtractor::new(
+            &unsupported,
+            &shells,
+            NamespacePath::new(module.path().as_str()),
+        )
+        .collect(&module);
+        let unsupported_scope = SourceVariableScopeResolver::resolve_proof_occurrences(
+            SourceVariableScopeInput::new(&unsupported, &module, collected.env()),
+        )
+        .unwrap();
+        controls.push((
+            "unsupported type",
+            unsupported_source.clone(),
+            collected.env().clone(),
+            unsupported_scope.clone(),
+        ));
+        {
+            let text = "theorem T: for X being set holds X = X proof let X be set; now let Y be set; thus Y = Y; end; thus X = X; end;";
+            let ast = parse(text);
+            let source = SurfaceResolvedArena::lower(&ast, &module).unwrap();
+            let shells = DeclarationShellCollector::new(&ast, &module).collect();
+            let collected = SignatureProjectionExtractor::new(
+                &ast,
+                &shells,
+                NamespacePath::new(module.path().as_str()),
+            )
+            .collect(&module);
+            let wider_scope = SourceVariableScopeResolver::resolve_proof_occurrences(
+                SourceVariableScopeInput::new(&ast, &module, collected.env()),
+            )
+            .unwrap();
+            controls.push(("wider source", source, collected.env().clone(), wider_scope));
+        }
+        controls.push(("combined precedence", unsupported_source, empty, scope));
+        for (control, source, symbols, scope) in controls {
+            let before = (source.clone(), symbols.clone(), scope.clone());
+            let expected = Checker::check_source_theorem_equalities_with_local_contexts(
+                &source, &symbols, &scope,
+            )
+            .unwrap_err();
+            if control == "combined precedence" {
+                assert_eq!(
+                    expected,
+                    validate_source_proof_occurrences(&source, &symbols, &scope).unwrap_err()
+                );
+            }
+            assert_eq!(
+                Checker::check_source_theorem_equalities_with_scoped_inference(
+                    &source, &symbols, &scope
+                )
+                .unwrap_err(),
+                expected,
+                "{control}"
+            );
+            assert_eq!(
+                Checker::check_source_theorem_equalities_with_scoped_inference(
+                    &source, &symbols, &scope
+                )
+                .unwrap_err(),
+                expected,
+                "{control}"
+            );
+            assert_eq!(before, (source, symbols, scope));
+        }
+    }
 }
