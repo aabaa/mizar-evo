@@ -24,6 +24,8 @@
 - [x] [元ソース定理の宣言型確認](../../task_contracts/ja/CHECKER-SOURCE-THEOREM-DECLARATION-CHECKING.md).
 - [x] [元ソース定理の宣言型インストール](../../task_contracts/ja/CHECKER-SOURCE-THEOREM-TYPED-DECLARATIONS.md).
 
+- [x] [元ソースの定理の最終メタデータ](../../task_contracts/ja/CHECKER-SOURCE-THEOREM-FINAL-METADATA.md).
+
 ## 状態の凡例
 
 - [ ] 未着手

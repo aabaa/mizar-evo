@@ -43,6 +43,67 @@ use std::{
     fmt::{self, Write as _},
 };
 
+/// Assembles native metadata for the admitted original-source theorem profile.
+pub fn check_source_theorem_metadata(
+    source: &SurfaceResolvedArena,
+    symbols: &SymbolEnv,
+    scope: &ResolvedVariableScope,
+) -> Result<
+    (
+        BindingEnv,
+        TermFormulaInferenceOutput,
+        crate::typed_ast::TypedAst,
+        crate::resolved_typed_ast::ResolvedTypedAst,
+    ),
+    String,
+> {
+    use crate::cluster_trace::{ClusterClosureStatus, ClusterTraceBuilder};
+    use crate::overload_resolution::{
+        CandidateViabilityOutput, OverloadCollectionOutput, OverloadSelectionOutput,
+        SpecificityGraphOutput, TemplateExpansionOutput,
+    };
+    use crate::registration_resolution::RegistrationDatabase;
+    use crate::resolved_typed_ast::{ResolvedTypedAst, ResolvedTypedAstInputs};
+
+    let (bindings, inference, typed, expressions) =
+        DeclarationChecker::check_source_theorem_equalities_with_typed_declarations(
+            source, symbols, scope,
+        )?;
+    // The authenticated lower profile admits no registrations, facts or ordinary
+    // overload requests. Atomic operand requests remain unresolved source intent.
+    let database = RegistrationDatabase::from_symbol_env(symbols, []);
+    let closure = ClusterTraceBuilder::default().close(
+        &database,
+        typed.source_id(),
+        typed.module_id().clone(),
+        [],
+        [],
+    );
+    if closure.status() != ClusterClosureStatus::Complete {
+        return Err("theorems.equality.incomplete_metadata_closure".to_owned());
+    }
+    let collection = OverloadCollectionOutput::collect([], []);
+    let expansion = TemplateExpansionOutput::expand(&collection);
+    let viability = CandidateViabilityOutput::filter(&expansion, []);
+    let specificity = SpecificityGraphOutput::build(&viability, []);
+    let selection = OverloadSelectionOutput::resolve(&specificity, []);
+    let metadata = ResolvedTypedAst::assemble(ResolvedTypedAstInputs {
+        typed_ast: &typed,
+        cluster_facts: closure.closure_facts(),
+        overload_collection: &collection,
+        template_expansion: &expansion,
+        viability: &viability,
+        specificity: &specificity,
+        overload_selection: &selection,
+        expressions,
+        node_hints: Vec::new(),
+        statement_semantics: None,
+        statement_proofs: None,
+    })
+    .map_err(|error| error.to_string())?;
+    Ok((bindings, inference, typed, metadata))
+}
+
 /// Authenticated, immutable source algorithm input for Core lowering.
 #[derive(Debug)]
 pub struct SourceAlgorithmCheck<'a> {

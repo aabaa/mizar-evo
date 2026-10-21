@@ -26,6 +26,8 @@
 - [x] [Original-source theorem declaration checking](../../task_contracts/en/CHECKER-SOURCE-THEOREM-DECLARATION-CHECKING.md).
 - [x] [Original-source theorem typed declarations](../../task_contracts/en/CHECKER-SOURCE-THEOREM-TYPED-DECLARATIONS.md).
 
+- [x] [Original-source theorem final metadata](../../task_contracts/en/CHECKER-SOURCE-THEOREM-FINAL-METADATA.md).
+
 ## Status Legend
 
 - [ ] not started
