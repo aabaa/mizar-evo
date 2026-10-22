@@ -491,6 +491,7 @@ layer consumes both; one alignment task is owned here.
 50. **[Original-source draft acquisition](../../task_contracts/en/PROOF-ORIGINAL-SOURCE-WITNESS-DRAFT.md).** [x]
 51. **[Genuine witness file candidate](../../task_contracts/en/PROOF-SOURCE-THEOREM-WITNESS-FILE.md).** [x]
 52. **[Genuine source return reflexivity](../../task_contracts/en/PROOF-SOURCE-ALGORITHM-RETURN-REFLEXIVITY.md).** [x]
+53. **[Genuine return canonical inputs](../../task_contracts/en/PROOF-SOURCE-ALGORITHM-RETURN-CANONICAL-INPUTS.md).** [x]
 
 ## Recommended Verification
 

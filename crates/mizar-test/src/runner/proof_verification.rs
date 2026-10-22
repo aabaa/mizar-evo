@@ -22935,4 +22935,261 @@ mod term_proof_tests {
             expected
         );
     }
+
+    #[test]
+    fn source_algorithm_return_canonical_inputs_preserve_components_and_slice() {
+        use mizar_checker::type_checker::check_source_algorithm_types;
+        use mizar_core::elaborator::{lower_source_algorithms, source_algorithm_formula_payloads};
+        use mizar_proof::status::source_algorithm_return_canonical_inputs;
+        use mizar_vc::{
+            dependency_slice::{
+                DependencySliceCompleteness, DependencySliceInput, try_compute_dependency_slices,
+            },
+            generator::generate_source_algorithm_postconditions,
+            vc_ir::{
+                AnchorCompleteness, AnchorIngredient, GenerationSchemaVersion, HashMarker,
+                SeedNoVcReason, SeedVcMapping, VcKind, VcSchemaVersion, VcStatus,
+            },
+        };
+
+        let config = config();
+        let plan = crate::harness::build_test_plan(&config).unwrap();
+        let case = plan
+            .cases
+            .iter()
+            .find(|case| case.id.0 == "pass_proof_verification_algorithm_ensures_return_001")
+            .unwrap();
+        let original = fs::read_to_string(&case.source_path).unwrap();
+        for (edit, text) in [
+            original.clone(),
+            original
+                .replace(" a ", " param ")
+                .replace("(a)", "(param)")
+                .replace(" a;", " param;")
+                .replace("= a\n", "= param\n"),
+            format!(":: 世代 neutral trivia\n\n{original}"),
+            original.replace("idalgo", "renamed_algorithm"),
+        ]
+        .into_iter()
+        .enumerate()
+        {
+            let (source, nodes, symbols) = super::super::source_registration_inputs(
+                &config.workspace_root,
+                case,
+                super::super::formula_statement::step5c8_test_frontend(&text),
+            )
+            .unwrap();
+            let check = check_source_algorithm_types(&source, &nodes, &symbols).unwrap();
+            let before_inputs = format!("{source:?}{nodes:?}{symbols:?}{check:?}");
+            for snapshot_ordinal in 0..if edit == 0 { 2 } else { 1 } {
+                let snapshot = snapshot_id(snapshot_ordinal);
+                let core = lower_source_algorithms(&check).unwrap();
+                let generation =
+                    GenerationSchemaVersion::new("mizar-vc-generation-step5c14-return-v1");
+                let schema = VcSchemaVersion::new("mizar-vc-vcset-step5c14-return-v1");
+                let vcs =
+                    generate_source_algorithm_postconditions(&core, snapshot, &generation, &schema)
+                        .unwrap();
+                let [vc] = vcs.vcs() else {
+                    panic!("one genuine return VC")
+                };
+                let [parameter] = core.algorithms().iter().next().unwrap().1.params.as_slice()
+                else {
+                    panic!("one genuine parameter")
+                };
+                let guard = parameter.ty_guard.unwrap();
+                let formulas = source_algorithm_formula_payloads(&check, &core, &[guard]).unwrap();
+                let components = vcs
+                    .source_algorithm_return_canonical_components(
+                        vc.id,
+                        &core,
+                        &generation,
+                        &formulas,
+                    )
+                    .unwrap();
+                let slices = try_compute_dependency_slices(DependencySliceInput {
+                    vc_set: &vcs,
+                    discharge_output: None,
+                })
+                .unwrap();
+                let original_slice = slices.slice_for(vc.id).unwrap();
+                let before_lower = (
+                    core.clone(),
+                    vcs.clone(),
+                    formulas.clone(),
+                    components,
+                    original_slice.clone(),
+                );
+
+                assert_eq!(vc.kind, VcKind::AlgorithmPostcondition);
+                assert_eq!(vc.status, VcStatus::Open);
+                assert!(
+                    matches!(&vc.anchor.completeness, AnchorCompleteness::Incomplete { missing }
+                    if missing == &[AnchorIngredient::CanonicalGoalHash, AnchorIngredient::CanonicalContextHash])
+                );
+                assert!(matches!(
+                    &vc.anchor.canonical_goal_hash,
+                    HashMarker::ConservativeUnknown { .. }
+                ));
+                assert!(matches!(
+                    &vc.anchor.canonical_context_hash,
+                    HashMarker::ConservativeUnknown { .. }
+                ));
+                assert!(vcs.canonical_vc_fingerprint(vc.id).is_none());
+                assert!(vcs.local_context_fingerprint(vc.id).is_none());
+                let [termination, contract] = vcs.seed_accounting() else {
+                    panic!("return accounting")
+                };
+                assert_eq!(
+                    termination.seed_status,
+                    mizar_core::core_ir::ObligationSeedStatus::Deferred
+                );
+                assert!(matches!(
+                    &termination.mapping,
+                    SeedVcMapping::NoConcreteVc {
+                        reason: SeedNoVcReason::DeferredExternal(_),
+                    }
+                ));
+                assert!(matches!(&contract.mapping, SeedVcMapping::One { vc: id } if *id == vc.id));
+
+                let actual =
+                    source_algorithm_return_canonical_inputs(&check, snapshot, vc.id).unwrap();
+                assert_eq!((actual.0, actual.1, actual.2), components);
+                assert_eq!(&actual.3, original_slice);
+                assert_eq!(actual.3.vc(), vc.id);
+                assert_eq!(actual.3.kind(), &VcKind::AlgorithmPostcondition);
+                assert_eq!(actual.3.status(), &VcStatus::Open);
+                assert!(!actual.3.entries().is_empty());
+                assert!(!actual.3.unknowns().is_empty());
+                assert_eq!(
+                    actual.3.completeness(),
+                    DependencySliceCompleteness::IncompleteUncacheable
+                );
+                assert!(actual.3.requires_cache_miss());
+                assert_eq!(
+                    actual,
+                    source_algorithm_return_canonical_inputs(&check, snapshot, vc.id).unwrap()
+                );
+                assert_eq!(
+                    (core, vcs, formulas, components, original_slice.clone()),
+                    before_lower
+                );
+                assert_eq!(
+                    format!("{source:?}{nodes:?}{symbols:?}{check:?}"),
+                    before_inputs
+                );
+            }
+        }
+    }
+
+    #[test]
+    fn source_algorithm_return_canonical_inputs_preserve_upstream_order() {
+        use mizar_checker::type_checker::check_source_algorithm_types;
+        use mizar_core::elaborator::{lower_source_algorithms, source_algorithm_formula_payloads};
+        use mizar_proof::status::source_algorithm_return_canonical_inputs;
+        use mizar_vc::{
+            generator::generate_source_algorithm_postconditions,
+            vc_ir::{GenerationSchemaVersion, VcId, VcSchemaVersion},
+        };
+
+        let config = config();
+        let plan = crate::harness::build_test_plan(&config).unwrap();
+        let case = plan
+            .cases
+            .iter()
+            .find(|case| case.id.0 == "pass_proof_verification_algorithm_ensures_return_001")
+            .unwrap();
+        let original = fs::read_to_string(&case.source_path).unwrap();
+        let generation = GenerationSchemaVersion::new("mizar-vc-generation-step5c14-return-v1");
+        let schema = VcSchemaVersion::new("mizar-vc-vcset-step5c14-return-v1");
+        let absent = VcId::new(usize::MAX);
+        for (kind, case, text) in [
+            ("absent", case, original.clone()),
+            (
+                "zero",
+                case,
+                original.replace("    ensures result = a\n", ""),
+            ),
+            (
+                "broader",
+                plan.cases
+                    .iter()
+                    .find(|case| {
+                        case.id.0 == "pass_proof_verification_algorithm_var_const_assert_001"
+                    })
+                    .unwrap(),
+                String::new(),
+            ),
+            (
+                "two_returns",
+                case,
+                original
+                    .replace("    ensures result = a\n", "")
+                    .replace("return a;", "return a;\n    return a;"),
+            ),
+        ] {
+            let text = if kind == "broader" {
+                fs::read_to_string(&case.source_path).unwrap()
+            } else {
+                text
+            };
+            let (source, nodes, symbols) = super::super::source_registration_inputs(
+                &config.workspace_root,
+                case,
+                super::super::formula_statement::step5c8_test_frontend(&text),
+            )
+            .unwrap();
+            let check = check_source_algorithm_types(&source, &nodes, &symbols).unwrap();
+            let before = format!("{source:?}{nodes:?}{symbols:?}{check:?}");
+            let core = lower_source_algorithms(&check).unwrap();
+            let generated = generate_source_algorithm_postconditions(
+                &core,
+                snapshot_id(0),
+                &generation,
+                &schema,
+            );
+            let (selected, expected) = if kind == "two_returns" {
+                (absent, generated.unwrap_err())
+            } else {
+                let vcs = generated.unwrap();
+                let roots = core
+                    .algorithms()
+                    .iter()
+                    .flat_map(|(_, algorithm)| {
+                        algorithm
+                            .params
+                            .iter()
+                            .filter_map(|parameter| parameter.ty_guard)
+                    })
+                    .collect::<Vec<_>>();
+                let formulas = source_algorithm_formula_payloads(&check, &core, &roots).unwrap();
+                if kind == "zero" {
+                    assert!(vcs.vcs().is_empty());
+                }
+                let selected = if kind == "broader" {
+                    let selected = vcs.vcs().first().expect("broader raw VC").id;
+                    assert!(vcs.vc(selected).is_some());
+                    selected
+                } else {
+                    absent
+                };
+                (
+                    selected,
+                    vcs.source_algorithm_return_canonical_components(
+                        selected,
+                        &core,
+                        &generation,
+                        &formulas,
+                    )
+                    .unwrap_err(),
+                )
+            };
+            assert_eq!(
+                source_algorithm_return_canonical_inputs(&check, snapshot_id(0), selected)
+                    .unwrap_err(),
+                expected
+            );
+            assert_eq!(format!("{source:?}{nodes:?}{symbols:?}{check:?}"), before);
+        }
+    }
 }

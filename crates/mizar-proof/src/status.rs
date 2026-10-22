@@ -25,6 +25,59 @@ use crate::{
 const USED_AXIOMS_HASH_DOMAIN: &str = "mizar-proof-trusted-used-axioms-v1";
 const PROOF_REUSE_VALIDATION_HASH_DOMAIN: &str = "mizar-proof-reuse-validation-v1";
 
+/// Returns genuine source algorithm return components and the full raw dependency slice.
+/// Source/snapshot freshness remains caller-owned; these inputs do not authorize acceptance or reuse.
+pub fn source_algorithm_return_canonical_inputs(
+    check: &mizar_checker::type_checker::SourceAlgorithmCheck<'_>,
+    snapshot: mizar_session::BuildSnapshotId,
+    vc_id: VcId,
+) -> Result<
+    (
+        mizar_vc::vc_ir::CanonicalVcFingerprint,
+        Hash,
+        mizar_vc::vc_ir::LocalContextFingerprint,
+        mizar_vc::dependency_slice::DependencySlice,
+    ),
+    String,
+> {
+    use mizar_vc::{
+        dependency_slice::{DependencySliceInput, try_compute_dependency_slices},
+        vc_ir::{GenerationSchemaVersion, VcSchemaVersion},
+    };
+
+    let core = mizar_core::elaborator::lower_source_algorithms(check)?;
+    let generation = GenerationSchemaVersion::new("mizar-vc-generation-step5c14-return-v1");
+    let vcs = mizar_vc::generator::generate_source_algorithm_postconditions(
+        &core,
+        snapshot,
+        &generation,
+        &VcSchemaVersion::new("mizar-vc-vcset-step5c14-return-v1"),
+    )?;
+    let roots = core
+        .algorithms()
+        .iter()
+        .flat_map(|(_, algorithm)| {
+            algorithm
+                .params
+                .iter()
+                .filter_map(|parameter| parameter.ty_guard)
+        })
+        .collect::<Vec<_>>();
+    let formulas = mizar_core::elaborator::source_algorithm_formula_payloads(check, &core, &roots)?;
+    let (vc, goal, context) =
+        vcs.source_algorithm_return_canonical_components(vc_id, &core, &generation, &formulas)?;
+    let slices = try_compute_dependency_slices(DependencySliceInput {
+        vc_set: &vcs,
+        discharge_output: None,
+    })
+    .map_err(|error| error.to_string())?;
+    let slice = slices
+        .slice_for(vc_id)
+        .cloned()
+        .ok_or_else(|| "algorithm.proof.invalid_source_canonical_inputs".to_owned())?;
+    Ok((vc, goal, context, slice))
+}
+
 /// Returns raw canonical theorem content and its full conservative dependency slice.
 /// Source/snapshot freshness remains caller-owned; these inputs do not authorize acceptance or reuse.
 pub fn source_theorem_canonical_inputs(
