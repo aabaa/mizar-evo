@@ -24345,3 +24345,421 @@ fn native_theorem_core_publication_preserves_refusals_and_publisher_boundaries()
         );
     }
 }
+
+#[test]
+fn native_theorem_vc_caller_preserves_genuine_raw_generation() {
+    use mizar_core::core_ir::{
+        CoreCitation, CoreFormulaKind, CoreItemKind, CoreProofNodeKind, CoreProofStatus,
+        ObligationSeedStatus,
+    };
+    use mizar_vc::vc_ir::{GenerationSchemaVersion, VcSchemaVersion, VcStatus};
+    let lemma = include_str!(
+        "../../../tests/miz/pass/theorems/pass_proof_verification_lemma_reference_001.miz"
+    );
+    for text in [
+        lemma.to_owned(),
+        lemma
+            .replace("let X be set;", "let Local be set;")
+            .replace("thus X = X", "thus Local = Local"),
+        "theorem T: for X being set holds X = X proof let X be set; thus X = X; end;".into(),
+    ] {
+        for open in [false, true] {
+            for threshold in [usize::MAX, 0] {
+                let fixture = Fixture::new(text.as_bytes());
+                let ids = InMemorySessionIdAllocator::new();
+                let snapshots = SnapshotRegistry::new();
+                let (mut draft, submit) = fixture.submit_request(vec![], vec![]);
+                draft.source_inputs.versions.clear();
+                let descriptor = SourceInput {
+                    package_id: fixture.version.package_id.clone(),
+                    module_path: fixture.version.module_path.clone(),
+                    normalized_path: fixture.version.normalized_path.clone(),
+                    edition: fixture.version.edition.clone(),
+                    origin: if open {
+                        SourceOriginInput::OpenBuffer {
+                            uri: format!(
+                                "file://{}",
+                                fixture.root.join("alpha/src/main.miz").display()
+                            ),
+                            expected_version: 7,
+                            actual_version: 7,
+                            text: std::sync::Arc::from(text.as_str()),
+                        }
+                    } else {
+                        SourceOriginInput::Disk {
+                            path: "src/main.miz".into(),
+                        }
+                    },
+                };
+                if open {
+                    fixture.write(&[0xff]);
+                }
+                let session = draft
+                    .capture_sources(
+                        &ids,
+                        &snapshots,
+                        vec![(
+                            DiskSourceLoader::new(fixture.root.join("alpha")),
+                            descriptor.clone(),
+                        )],
+                    )
+                    .unwrap();
+                let snapshot = session.captured().snapshot().id;
+                let unit = WorkUnit::Module {
+                    module: mizar_build::module_index::ModuleId::new(
+                        PackageId::new("alpha"),
+                        ModulePath::new("main"),
+                    ),
+                };
+                let owner = publisher(snapshot, threshold, &unit);
+                allow_frontend(&owner, &unit);
+                let mut builder = PhaseRegistryBuilder::new();
+                builder.register_source_load();
+                builder.register_frontend(vec![]);
+                let submission = CompilerDriver::new(builder.build().unwrap())
+                    .with_output_publisher(owner.clone())
+                    .submit_captured(session, &ids, &snapshots, submit)
+                    .unwrap();
+                let (inputs, source_input) = native_disk_lookup_context(&submission, &ids);
+                let parent = submission
+                    .scheduler_run
+                    .as_ref()
+                    .unwrap()
+                    .phase_results
+                    .values()
+                    .flatten()
+                    .flat_map(|result| &result.output_refs)
+                    .find(|handle| handle.output_kind() == &OutputKind::new("FrontendOutput"))
+                    .unwrap();
+                assert_eq!(
+                    parent.placement() == &StoragePlacement::Resident,
+                    threshold != 0
+                );
+                let input = PhaseInput::new(
+                    unit,
+                    PhaseDispatchInputBundle::new(
+                        snapshot,
+                        source_input.identities().input_hash(),
+                        vec![],
+                        vec![
+                            SealedParentOutputHandle::from_published_output(
+                                &owner,
+                                snapshot,
+                                parent.clone(),
+                            )
+                            .unwrap(),
+                        ],
+                    )
+                    .unwrap(),
+                );
+                let core = inputs
+                    .native_theorem_core_with_frontend_parent(&input, &owner)
+                    .unwrap()
+                    .unwrap();
+                let typed = owner
+                    .storage()
+                    .typed_handle::<FrontendOutput<<MizarParserSeam as ParserSeam>::Ast>>(
+                        parent,
+                        &OutputKind::new("FrontendOutput"),
+                    )
+                    .unwrap();
+                let retained = owner.storage().get(&typed).unwrap();
+                let (_, loaded, captured_input) =
+                    &inputs.captured.unwrap().native_sources().unwrap()[0];
+                assert_eq!(loaded.text.as_ref(), text);
+                assert_eq!(captured_input, &descriptor);
+                assert_eq!(loaded.source_hash, mizar_session::source::hash_text(&text));
+                assert_eq!(
+                    loaded.source_id,
+                    inputs.snapshot.source_versions[0].source_id
+                );
+                assert_eq!(
+                    matches!(loaded.origin, SourceOrigin::OpenBuffer { .. }),
+                    open
+                );
+                assert_eq!(retained.ast.as_ref().unwrap().source_id, loaded.source_id);
+                assert_eq!(core.source_id(), loaded.source_id);
+                assert_eq!(
+                    core.module_id(),
+                    &ResolverModuleId::new(PackageId::new("alpha"), ModulePath::new("main"),)
+                );
+                let names = if text.starts_with("lemma") {
+                    vec!["Lem1", "UseLem1"]
+                } else {
+                    vec!["T"]
+                };
+                assert_eq!(core.items().len(), names.len());
+                assert!(core.items().iter().zip(&names).all(|((_, item), name)| {
+                    item.symbol
+                        .local()
+                        .as_str()
+                        .contains(&format!(":name={name}:"))
+                }));
+                assert_eq!(core.proofs().len(), names.len());
+                assert!(
+                    core.proofs()
+                        .iter()
+                        .all(|(_, proof)| proof.status == CoreProofStatus::PendingAutomaticProof)
+                );
+                assert_eq!(core.obligation_seeds().len(), names.len());
+                for (_, seed) in core.obligation_seeds().iter() {
+                    assert_eq!(seed.status, ObligationSeedStatus::Active);
+                    assert!(core.items().get(seed.owner).is_some());
+                    assert!(matches!(
+                        core.formulas().get(seed.goal.unwrap()).unwrap().kind,
+                        CoreFormulaKind::Equals { .. }
+                    ));
+                }
+                let citations = core
+                    .proof_nodes()
+                    .iter()
+                    .filter_map(|(_, node)| match &node.kind {
+                        CoreProofNodeKind::TerminalGoal { citations, .. } => Some(citations),
+                        _ => None,
+                    })
+                    .flatten()
+                    .cloned()
+                    .collect::<Vec<_>>();
+                if names.len() == 2 {
+                    let (_, first) = core.items().iter().next().unwrap();
+                    assert_eq!(first.kind, CoreItemKind::Lemma);
+                    assert_eq!(citations, vec![CoreCitation::Symbol(first.symbol.clone())]);
+                } else {
+                    assert!(citations.is_empty());
+                }
+                let before = (
+                    inputs.snapshot.clone(),
+                    inputs.build_plan.clone(),
+                    inputs.module_index.clone(),
+                    loaded.clone(),
+                    captured_input.clone(),
+                    (*retained).clone(),
+                    input.clone(),
+                    parent.clone(),
+                    core.clone(),
+                );
+                for (generation, schema) in [
+                    ("driver-native-generation", "driver-native-vc"),
+                    (" \nraw generation\t", ""),
+                ] {
+                    let generation = GenerationSchemaVersion::new(generation);
+                    let schema = VcSchemaVersion::new(schema);
+                    let schemas_before = (generation.clone(), schema.clone());
+                    let expected = mizar_vc::generator::generate_source_theorem_vcs(
+                        &core,
+                        snapshot,
+                        &generation,
+                        &schema,
+                    )
+                    .unwrap();
+                    assert_eq!(expected.source(), loaded.source_id);
+                    assert_eq!(expected.snapshot(), snapshot);
+                    assert_eq!(expected.module().as_str(), "package=5:alpha;module=4:main");
+                    assert_eq!(expected.schema_version(), &schema);
+                    assert_eq!(expected.vcs().len(), names.len());
+                    assert_eq!(
+                        expected.seed_accounting().len(),
+                        core.obligation_seeds().len()
+                    );
+                    assert!(
+                        expected
+                            .seed_accounting()
+                            .iter()
+                            .all(|seed| seed.seed_status == ObligationSeedStatus::Active)
+                    );
+                    assert!(expected.vcs().iter().all(|vc| vc.status == VcStatus::Open
+                        && vc.anchor.generation_schema_version == generation));
+                    for stage in 0..3 {
+                        if stage == 1 {
+                            fixture.write(b"open theorem Changed: 0 = 1;\n");
+                        } else if stage == 2 {
+                            fs::remove_file(fixture.root.join("alpha/src/main.miz")).unwrap();
+                        }
+                        for _ in 0..2 {
+                            assert_eq!(
+                                inputs
+                                    .native_theorem_vcs_with_frontend_parent(
+                                        &input,
+                                        &owner,
+                                        &generation,
+                                        &schema,
+                                    )
+                                    .unwrap(),
+                                Some(expected.clone())
+                            );
+                        }
+                    }
+                    assert_eq!((generation, schema), schemas_before);
+                    // Restore a disk entry for the next schema's edit/removal replay.
+                    fixture.write(&[0xff]);
+                }
+                assert_eq!(
+                    (
+                        inputs.snapshot.clone(),
+                        inputs.build_plan.clone(),
+                        inputs.module_index.clone(),
+                        loaded.clone(),
+                        captured_input.clone(),
+                        (*owner.storage().get(&typed).unwrap()).clone(),
+                        input,
+                        parent.clone(),
+                        core,
+                    ),
+                    before
+                );
+                let collected = owner.storage().collect(mizar_ir::storage::CollectInput {
+                    snapshot,
+                    protected_outputs: vec![],
+                });
+                assert_eq!(collected.outputs_dropped, 2);
+                assert_eq!(collected.abandoned_slots_dropped, 0);
+            }
+        }
+    }
+}
+
+#[test]
+fn native_theorem_vc_caller_preserves_refusals() {
+    use mizar_vc::vc_ir::{GenerationSchemaVersion, VcSchemaVersion};
+    let private = include_str!(
+        "../../../tests/miz/pass/resolve/pass_declaration_symbol_private_theorem_visibility_001.miz"
+    );
+    for (text, case) in [
+        (format!("{private}\nreserve Y for set;\n"), "reserve"),
+        (private.to_owned(), "metadata"),
+        (
+            "theorem Empty: for A being set holds A = A proof end;".to_owned(),
+            "empty",
+        ),
+    ] {
+        let fixture = Fixture::new(text.as_bytes());
+        let ids = InMemorySessionIdAllocator::new();
+        let snapshots = SnapshotRegistry::new();
+        let (_, submission, adapter, handle, _) =
+            native_disk_frontend_record_submission(&fixture, &ids, &snapshots, 0);
+        let (inputs, source_input) = native_disk_lookup_context(&submission, &ids);
+        let owner = adapter.publisher();
+        let input = PhaseInput::new(
+            source_input.work_unit.clone(),
+            PhaseDispatchInputBundle::new(
+                source_input.snapshot,
+                source_input.identities().input_hash(),
+                vec![],
+                vec![
+                    SealedParentOutputHandle::from_published_output(
+                        owner,
+                        source_input.snapshot,
+                        handle.erase(),
+                    )
+                    .unwrap(),
+                ],
+            )
+            .unwrap(),
+        );
+        let old = inputs.native_theorem_core_with_frontend_parent(&input, owner);
+        let expected = match case {
+            "reserve" => {
+                assert_eq!(old, Ok(None));
+                Ok(None)
+            }
+            "metadata" => {
+                assert_eq!(
+                    old,
+                    Err(inputs
+                        .native_theorem_metadata_with_frontend_parent(&input, owner,)
+                        .unwrap_err())
+                );
+                Err(old.unwrap_err())
+            }
+            "empty" => {
+                assert!(
+                    inputs
+                        .native_theorem_metadata_with_frontend_parent(&input, owner,)
+                        .unwrap()
+                        .is_some()
+                );
+                Err(old.unwrap_err())
+            }
+            _ => unreachable!(),
+        };
+        assert_eq!(
+            inputs.native_theorem_vcs_with_frontend_parent(
+                &input,
+                owner,
+                &GenerationSchemaVersion::new(" \n"),
+                &VcSchemaVersion::new(""),
+            ),
+            expected,
+            "{case}"
+        );
+        let collected = owner.storage().collect(mizar_ir::storage::CollectInput {
+            snapshot: source_input.snapshot,
+            protected_outputs: vec![],
+        });
+        assert_eq!(collected.outputs_dropped, 2, "{case}");
+        assert_eq!(collected.abandoned_slots_dropped, 0, "{case}");
+    }
+    for case in ["absent", "obsolete", "collected"] {
+        let fixture = Fixture::new(
+            b"theorem T: for X being set holds X = X proof let X be set; thus X = X; end;",
+        );
+        let ids = InMemorySessionIdAllocator::new();
+        let snapshots = SnapshotRegistry::new();
+        let (_, submission, adapter, handle, _) =
+            native_disk_frontend_record_submission(&fixture, &ids, &snapshots, 0);
+        let (inputs, source_input) = native_disk_lookup_context(&submission, &ids);
+        let owner = adapter.publisher();
+        let snapshot = source_input.snapshot;
+        let mut parents = vec![
+            SealedParentOutputHandle::from_published_output(owner, snapshot, handle.erase())
+                .unwrap(),
+        ];
+        match case {
+            "absent" => parents.clear(),
+            "obsolete" => owner.mark_obsolete(snapshot).unwrap(),
+            "collected" => {
+                let collected = owner.storage().collect(mizar_ir::storage::CollectInput {
+                    snapshot,
+                    protected_outputs: vec![],
+                });
+                assert_eq!(collected.outputs_dropped, 2);
+                assert_eq!(collected.abandoned_slots_dropped, 0);
+            }
+            _ => unreachable!(),
+        }
+        let input = PhaseInput::new(
+            source_input.work_unit.clone(),
+            PhaseDispatchInputBundle::new(
+                snapshot,
+                source_input.identities().input_hash(),
+                vec![],
+                parents,
+            )
+            .unwrap(),
+        );
+        let expected = inputs
+            .native_theorem_core_with_frontend_parent(&input, owner)
+            .unwrap_err();
+        assert_eq!(
+            inputs
+                .native_theorem_vcs_with_frontend_parent(
+                    &input,
+                    owner,
+                    &GenerationSchemaVersion::new(""),
+                    &VcSchemaVersion::new(" \t"),
+                )
+                .unwrap_err(),
+            expected,
+            "{case}"
+        );
+        let collected = owner.storage().collect(mizar_ir::storage::CollectInput {
+            snapshot,
+            protected_outputs: vec![],
+        });
+        assert_eq!(
+            collected.outputs_dropped,
+            if case == "collected" { 0 } else { 2 }
+        );
+        assert_eq!(collected.abandoned_slots_dropped, 0);
+    }
+}

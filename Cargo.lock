@@ -523,6 +523,7 @@ dependencies = [
  "mizar-proof",
  "mizar-resolve",
  "mizar-session",
+ "mizar-vc",
  "salsa",
 ]
 

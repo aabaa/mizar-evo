@@ -87,6 +87,7 @@ fn driver_dependency_boundary_is_exact_for_scaffold_task() {
         "mizar-proof".to_owned(),
         "mizar-resolve".to_owned(),
         "mizar-session".to_owned(),
+        "mizar-vc".to_owned(),
         "salsa".to_owned(),
     ]);
 
@@ -136,6 +137,7 @@ fn driver_dependency_boundary_is_exact_for_scaffold_task() {
         "../mizar-checker",
     );
     assert_dependency_path(&dependencies, &manifest_path, "mizar-core", "../mizar-core");
+    assert_dependency_path(&dependencies, &manifest_path, "mizar-vc", "../mizar-vc");
     assert_dependency_path(
         &dependencies,
         &manifest_path,
