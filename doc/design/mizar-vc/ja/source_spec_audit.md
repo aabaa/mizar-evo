@@ -61,6 +61,7 @@ Evidence: `crates/mizar-vc/tests/lint_policy.rs` の
 `source_theorem_candidate_anchor_hash`: [唯一の API 所有元](./vc_ir.md#source-theorem-candidate-anchor-hash).
 
 [VcSet::source_theorem_canonical_components](./vc_ir.md#source-theorem-canonical-components) が限定 source-theorem method profile を所有する。
+[VcSet::source_algorithm_return_canonical_components](./vc_ir.md#source-algorithm-return-canonical-components) が限定 immutable-return method profile を所有する。
 
 生成 public newtype:
 

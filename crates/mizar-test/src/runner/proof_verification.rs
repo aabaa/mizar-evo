@@ -21357,4 +21357,574 @@ mod term_proof_tests {
             );
         }
     }
+
+    #[test]
+    fn source_algorithm_return_canonical_components_preserve_genuine_content() {
+        use mizar_checker::type_checker::check_source_algorithm_types;
+        use mizar_core::elaborator::{lower_source_algorithms, source_algorithm_formula_payloads};
+        use mizar_session::Hash;
+        use mizar_vc::generator::generate_source_algorithm_postconditions;
+        use mizar_vc::vc_ir::{
+            AnchorCompleteness, AnchorIngredient, ContextEntryKind, HashMarker, PremiseRef,
+            SeedNoVcReason, SeedVcMapping, VcFormulaRef, VcKind, VcStatus,
+        };
+
+        // This is the pre-existing fingerprint primitive, independent of the new method.
+        let old_hash = |domain: &str, bytes: &[u8]| {
+            let mut lanes = [
+                0x6d_69_7a_61_72_2d_76_63_u64,
+                0x70_72_6f_6f_66_2d_69_64_u64,
+                0x74_61_73_6b_32_30_2d_76_u64,
+                0x66_69_6e_67_65_72_2d_31_u64,
+            ];
+            for (index, byte) in domain
+                .as_bytes()
+                .iter()
+                .copied()
+                .chain([0])
+                .chain(bytes.iter().copied())
+                .enumerate()
+            {
+                let lane = index % 4;
+                lanes[lane] ^= u64::from(byte)
+                    .wrapping_add(0x9e37_79b9_7f4a_7c15)
+                    .wrapping_add((index as u64).rotate_left((lane as u32) + 1));
+                lanes[lane] = lanes[lane]
+                    .rotate_left(11 + lane as u32)
+                    .wrapping_mul(0x1000_0000_01b3);
+            }
+            lanes[0] ^= bytes.len() as u64;
+            lanes[1] ^= (domain.len() as u64).rotate_left(17);
+            lanes[2] ^= lanes[0].rotate_left(7);
+            lanes[3] ^= lanes[1].rotate_left(13);
+            let mut output = [0; Hash::BYTE_LEN];
+            for (chunk, lane) in output.as_chunks_mut::<8>().0.iter_mut().zip(lanes) {
+                chunk.copy_from_slice(&lane.to_be_bytes());
+            }
+            Hash::from_bytes(output)
+        };
+        let config = config();
+        let plan = crate::harness::build_test_plan(&config).unwrap();
+        let case = plan
+            .cases
+            .iter()
+            .find(|case| case.id.0 == "pass_proof_verification_algorithm_ensures_return_001")
+            .unwrap();
+        let original = fs::read_to_string(&case.source_path).unwrap();
+        let mut baseline: Option<(
+            (
+                mizar_vc::vc_ir::CanonicalVcFingerprint,
+                Hash,
+                mizar_vc::vc_ir::LocalContextFingerprint,
+            ),
+            Vec<u8>,
+        )> = None;
+        for (edit, text) in [
+            original.clone(),
+            original
+                .replace(" a ", " param ")
+                .replace("(a)", "(param)")
+                .replace(" a;", " param;")
+                .replace("= a\n", "= param\n"),
+            format!(":: neutral algorithm trivia\n\n{original}"),
+            original.replace("idalgo", "renamed_algorithm"),
+        ]
+        .into_iter()
+        .enumerate()
+        {
+            let (source, typed, symbols) = super::super::source_registration_inputs(
+                &config.workspace_root,
+                case,
+                super::super::formula_statement::step5c8_test_frontend(&text),
+            )
+            .unwrap();
+            let check = check_source_algorithm_types(&source, &typed, &symbols).unwrap();
+            let core = lower_source_algorithms(&check).unwrap();
+            let algorithm = &core.algorithms().iter().next().unwrap().1;
+            assert_eq!(algorithm.statements.len(), 1);
+            assert_eq!(algorithm.contracts.ensures.len(), 1);
+            let guard = algorithm.params[0].ty_guard.unwrap();
+            let formulas = source_algorithm_formula_payloads(&check, &core, &[guard]).unwrap();
+            assert_eq!(formulas.len(), 1);
+            let before = (core.clone(), formulas.clone());
+            for (schema_index, (vc_schema, generation_schema, literal_goal)) in [
+                (
+                    "mizar-vc-vcset-step5c14-return-v1",
+                    "mizar-vc-generation-step5c14-return-v1",
+                    "0a4a4e2f40a14a6fb930893deec52bfa09233a485303d7e56a2bb866f8290045",
+                ),
+                (
+                    "mizar-vc-vcset-step5c14-return-v1-changed",
+                    "mizar-vc-generation-step5c14-return-v1",
+                    "8f47d1004f1326a7bb2c42c6180bde668a3027f55cf7155555e8bddc4a60aa6a",
+                ),
+                (
+                    "mizar-vc-vcset-step5c14-return-v1",
+                    "mizar-vc-generation-step5c14-return-v1-changed",
+                    "2b5298d40777953f5fc75e7cf0456cf879b50593ca97cff45f286955047d3974",
+                ),
+                (
+                    "",
+                    " \n世代\t\0",
+                    "4cf1ca2e967115d59067d075cb3327513ab8419139c3d1293426f468560c7cd7",
+                ),
+            ]
+            .into_iter()
+            .take(if edit == 0 { 4 } else { 1 })
+            .enumerate()
+            {
+                let generation_schema = GenerationSchemaVersion::new(generation_schema);
+                let snapshot = snapshot_id(usize::from(edit == 2));
+                let vcs = generate_source_algorithm_postconditions(
+                    &core,
+                    snapshot,
+                    &generation_schema,
+                    &VcSchemaVersion::new(vc_schema),
+                )
+                .unwrap();
+                assert_eq!(vcs.vcs().len(), 1);
+                assert_eq!(vcs.generated_formulas().len(), 1);
+                let vc = &vcs.vcs()[0];
+                assert_eq!(vc.kind, VcKind::AlgorithmPostcondition);
+                assert_eq!(vc.status, VcStatus::Open);
+                assert_eq!(
+                    vc.goal,
+                    VcFormulaRef::Generated(vcs.generated_formulas()[0].id)
+                );
+                assert_eq!(
+                    vc.premises,
+                    [PremiseRef::LocalContext(vc.local_context.entries()[0].id)]
+                );
+                assert_eq!(
+                    vc.local_context.entries()[0].kind,
+                    ContextEntryKind::CheckerFact
+                );
+                assert_eq!(vc.local_context.policy_inputs().len(), 6);
+                assert!(vc.proof_hint.is_none());
+                assert!(vcs.canonical_vc_fingerprint(vc.id).is_none());
+                if edit == 0 && schema_index == 0 {
+                    assert!(vcs.local_context_fingerprint(vc.id).is_none());
+                    assert!(matches!(
+                        &vc.anchor.completeness,
+                        AnchorCompleteness::Incomplete { missing }
+                            if missing == &[AnchorIngredient::CanonicalGoalHash, AnchorIngredient::CanonicalContextHash]
+                    ));
+                    assert!(matches!(
+                        &vc.anchor.canonical_goal_hash,
+                        HashMarker::ConservativeUnknown { .. }
+                    ));
+                    assert!(matches!(
+                        &vc.anchor.canonical_context_hash,
+                        HashMarker::ConservativeUnknown { .. }
+                    ));
+                    let [termination, contract] = vcs.seed_accounting() else {
+                        panic!("expected return accounting")
+                    };
+                    assert_eq!(
+                        termination.seed_status,
+                        mizar_core::core_ir::ObligationSeedStatus::Deferred
+                    );
+                    assert!(matches!(&termination.mapping, SeedVcMapping::NoConcreteVc {
+                        reason: SeedNoVcReason::DeferredExternal(reason),
+                    } if reason.as_str() == "task 7 requires explicit goal formula for AlgorithmTermination site PartialTermination"));
+                    assert_eq!(
+                        contract.seed_status,
+                        mizar_core::core_ir::ObligationSeedStatus::Deferred
+                    );
+                    assert!(
+                        matches!(&contract.mapping, SeedVcMapping::One { vc: id } if *id == vc.id)
+                    );
+                }
+
+                let mut entry = 0u32.to_be_bytes().to_vec();
+                entry.push(1);
+                entry.extend(u32::try_from(formulas[&guard].len()).unwrap().to_be_bytes());
+                entry.extend(&formulas[&guard]);
+                entry.extend(1u32.to_be_bytes());
+                entry.push(1);
+                entry.extend(24u32.to_be_bytes());
+                entry.extend(b"algorithm-parameter-type");
+                entry.extend([1, 1]);
+                entry.extend(38u32.to_be_bytes());
+                entry.extend(b"source-algorithm-return/parameter-type");
+                let mut policy = 6u32.to_be_bytes().to_vec();
+                for (index, (name, value)) in [
+                    ("flow", "0"),
+                    ("site-kind", "Ensures"),
+                    ("ordinal", "0"),
+                    ("statement", "0"),
+                    ("block", "0"),
+                    ("exit", "0"),
+                ]
+                .into_iter()
+                .enumerate()
+                {
+                    for field in [
+                        format!("{index:04}-algorithm-site-{name}"),
+                        format!("algorithm-site-{name}"),
+                        value.to_owned(),
+                    ] {
+                        policy.extend(u32::try_from(field.len()).unwrap().to_be_bytes());
+                        policy.extend(field.as_bytes());
+                    }
+                }
+                let goal = [1, 2, 0, 0, 0, 0, 2, 0, 0, 0, 0];
+                let mut vc_payload = b"mizar-vc/source-algorithm-return-canonical-vc/v1\0".to_vec();
+                let mut goal_payload =
+                    b"mizar-vc/source-algorithm-return-canonical-goal/v1\0".to_vec();
+                let mut context_payload =
+                    b"mizar-vc/source-algorithm-return-canonical-context/v1\0".to_vec();
+                for payload in [&mut vc_payload, &mut goal_payload, &mut context_payload] {
+                    for field in [vc_schema, generation_schema.as_str()] {
+                        payload.extend(u32::try_from(field.len()).unwrap().to_be_bytes());
+                        payload.extend(field.as_bytes());
+                    }
+                }
+                goal_payload.extend(11u32.to_be_bytes());
+                goal_payload.extend(goal);
+                context_payload.extend(1u32.to_be_bytes());
+                context_payload.extend(u32::try_from(entry.len()).unwrap().to_be_bytes());
+                context_payload.extend(&entry);
+                context_payload.extend(&policy);
+                vc_payload.push(1);
+                vc_payload.extend(11u32.to_be_bytes());
+                vc_payload.extend(goal);
+                vc_payload.extend(1u32.to_be_bytes());
+                vc_payload.push(1);
+                vc_payload.extend(u32::try_from(entry.len()).unwrap().to_be_bytes());
+                vc_payload.extend(&entry);
+                vc_payload.extend(&policy);
+                vc_payload.push(0);
+                let expected_vc =
+                    old_hash("mizar-vc-source-algorithm-return-canonical-vc", &vc_payload);
+                let expected_goal = old_hash(
+                    "mizar-vc-source-algorithm-return-canonical-goal",
+                    &goal_payload,
+                );
+                let expected_context = old_hash(
+                    "mizar-vc-source-algorithm-return-canonical-context",
+                    &context_payload,
+                );
+                assert_eq!(
+                    expected_goal
+                        .as_bytes()
+                        .iter()
+                        .map(|byte| format!("{byte:02x}"))
+                        .collect::<String>(),
+                    literal_goal
+                );
+                let graph_before = vcs.clone();
+                let actual = vcs
+                    .source_algorithm_return_canonical_components(
+                        vc.id,
+                        &core,
+                        &generation_schema,
+                        &formulas,
+                    )
+                    .unwrap();
+                assert_eq!(
+                    (actual.0.hash(), actual.1, actual.2.hash()),
+                    (expected_vc, expected_goal, expected_context)
+                );
+                assert_eq!(
+                    actual,
+                    vcs.source_algorithm_return_canonical_components(
+                        vc.id,
+                        &core,
+                        &generation_schema,
+                        &formulas
+                    )
+                    .unwrap()
+                );
+                assert_eq!(vcs, graph_before);
+                if schema_index == 0 {
+                    if let Some((old, old_guard)) = &baseline {
+                        assert_eq!(actual.1, old.1);
+                        if edit == 3 {
+                            assert_ne!(actual.0, old.0);
+                            assert_ne!(actual.2, old.2);
+                            assert_ne!(&formulas[&guard], old_guard);
+                        } else {
+                            assert_eq!(actual, *old);
+                            assert_eq!(&formulas[&guard], old_guard);
+                        }
+                    } else {
+                        baseline = Some((actual, formulas[&guard].clone()));
+                    }
+                }
+            }
+            assert_eq!(before, (core.clone(), formulas.clone()));
+        }
+    }
+
+    #[test]
+    fn source_algorithm_return_canonical_components_preserve_refusals() {
+        use mizar_checker::type_checker::check_source_algorithm_types;
+        use mizar_core::elaborator::{lower_source_algorithms, source_algorithm_formula_payloads};
+        use mizar_vc::generator::generate_source_algorithm_postconditions;
+        use mizar_vc::vc_ir::{GenerationSchemaVersion, VcId, VcSchemaVersion};
+        let config = config();
+        let plan = crate::harness::build_test_plan(&config).unwrap();
+        let case = plan
+            .cases
+            .iter()
+            .find(|case| case.id.0 == "pass_proof_verification_algorithm_ensures_return_001")
+            .unwrap();
+        let text = fs::read_to_string(&case.source_path).unwrap();
+        let (source, typed, symbols) = super::super::source_registration_inputs(
+            &config.workspace_root,
+            case,
+            super::super::formula_statement::step5c8_test_frontend(&text),
+        )
+        .unwrap();
+        let check = check_source_algorithm_types(&source, &typed, &symbols).unwrap();
+        let core = lower_source_algorithms(&check).unwrap();
+        let guard = core.algorithms().iter().next().unwrap().1.params[0]
+            .ty_guard
+            .unwrap();
+        let formulas = source_algorithm_formula_payloads(&check, &core, &[guard]).unwrap();
+        let generation = GenerationSchemaVersion::new("mizar-vc-generation-step5c14-return-v1");
+        let schema = VcSchemaVersion::new("mizar-vc-vcset-step5c14-return-v1");
+        let vcs =
+            generate_source_algorithm_postconditions(&core, snapshot_id(0), &generation, &schema)
+                .unwrap();
+        let invalid = "unsupported source algorithm return canonical components";
+        assert_eq!(
+            vcs.source_algorithm_return_canonical_components(
+                VcId::new(1),
+                &core,
+                &generation,
+                &formulas
+            )
+            .unwrap_err(),
+            invalid
+        );
+        let empty = std::collections::BTreeMap::new();
+        assert_eq!(
+            vcs.source_algorithm_return_canonical_components(
+                VcId::new(0),
+                &core,
+                &generation,
+                &empty
+            )
+            .unwrap_err(),
+            invalid
+        );
+        let mut empty_value = formulas.clone();
+        empty_value.insert(guard, Vec::new());
+        assert_eq!(
+            vcs.source_algorithm_return_canonical_components(
+                VcId::new(0),
+                &core,
+                &generation,
+                &empty_value
+            )
+            .unwrap_err(),
+            invalid
+        );
+        let mut extra = formulas.clone();
+        extra.insert(
+            core.algorithms().iter().next().unwrap().1.contracts.ensures[0],
+            b"extra".to_vec(),
+        );
+        assert_eq!(
+            vcs.source_algorithm_return_canonical_components(
+                VcId::new(0),
+                &core,
+                &generation,
+                &extra
+            )
+            .unwrap_err(),
+            invalid
+        );
+        let mut wrong_root = empty.clone();
+        wrong_root.insert(
+            core.algorithms().iter().next().unwrap().1.contracts.ensures[0],
+            formulas[&guard].clone(),
+        );
+        assert_eq!(
+            vcs.source_algorithm_return_canonical_components(
+                VcId::new(0),
+                &core,
+                &generation,
+                &wrong_root
+            )
+            .unwrap_err(),
+            invalid
+        );
+        let mut parts = mizar_vc::vc_ir::VcSetParts {
+            schema_version: vcs.schema_version().clone(),
+            snapshot: vcs.snapshot(),
+            source: vcs.source(),
+            module: vcs.module().clone(),
+            generated_formulas: vcs.generated_formulas().to_vec(),
+            vcs: vcs.vcs().to_vec(),
+            seed_accounting: vcs.seed_accounting().to_vec(),
+        };
+        let mut entry = parts.vcs[0].local_context.entries()[0].clone();
+        entry.provenance[0].key = "different".into();
+        parts.vcs[0].local_context = mizar_vc::vc_ir::LocalContext::try_new(
+            vec![entry],
+            parts.vcs[0].local_context.policy_inputs().to_vec(),
+        )
+        .unwrap();
+        let drift = mizar_vc::vc_ir::VcSet::try_new(parts).unwrap();
+        assert_eq!(
+            drift
+                .source_algorithm_return_canonical_components(
+                    VcId::new(0),
+                    &core,
+                    &generation,
+                    &formulas
+                )
+                .unwrap_err(),
+            invalid
+        );
+        assert_eq!(
+            vcs.source_algorithm_return_canonical_components(
+                VcId::new(0),
+                &core,
+                &GenerationSchemaVersion::new("different"),
+                &formulas
+            )
+            .unwrap_err(),
+            invalid
+        );
+        for (id, edit) in [
+            (
+                "pass_proof_verification_algorithm_ensures_return_001",
+                "owner",
+            ),
+            (
+                "pass_proof_verification_algorithm_var_const_assert_001",
+                "broader",
+            ),
+            (
+                "pass_proof_verification_algorithm_ensures_return_001",
+                "zero",
+            ),
+        ] {
+            let case = plan.cases.iter().find(|case| case.id.0 == id).unwrap();
+            let original = fs::read_to_string(&case.source_path).unwrap();
+            let text = match edit {
+                "owner" => original.replace("idalgo", "foreign_algorithm"),
+                "zero" => original.replace("    ensures result = a\n", ""),
+                _ => original,
+            };
+            let (source, typed, symbols) = super::super::source_registration_inputs(
+                &config.workspace_root,
+                case,
+                super::super::formula_statement::step5c8_test_frontend(&text),
+            )
+            .unwrap();
+            let check = check_source_algorithm_types(&source, &typed, &symbols).unwrap();
+            let other_core = lower_source_algorithms(&check).unwrap();
+            let other_graph = generate_source_algorithm_postconditions(
+                &other_core,
+                snapshot_id(0),
+                &generation,
+                &schema,
+            )
+            .unwrap();
+            assert_ne!(other_graph, vcs);
+            if edit == "zero" {
+                assert!(other_graph.vcs().is_empty());
+                assert_eq!(
+                    other_graph
+                        .source_algorithm_return_canonical_components(
+                            VcId::new(0),
+                            &other_core,
+                            &generation,
+                            &empty,
+                        )
+                        .unwrap_err(),
+                    invalid
+                );
+            } else {
+                assert!(!other_graph.vcs().is_empty());
+                let other_guard = other_core.algorithms().iter().next().unwrap().1.params[0]
+                    .ty_guard
+                    .unwrap();
+                let other_formulas =
+                    source_algorithm_formula_payloads(&check, &other_core, &[other_guard]).unwrap();
+                assert_eq!(other_formulas.len(), 1);
+                assert!(!other_formulas[&other_guard].is_empty());
+                if edit == "owner" {
+                    assert_eq!(
+                        vcs.source_algorithm_return_canonical_components(
+                            VcId::new(0),
+                            &other_core,
+                            &generation,
+                            &other_formulas,
+                        )
+                        .unwrap_err(),
+                        invalid
+                    );
+                } else {
+                    assert_eq!(
+                        other_graph
+                            .source_algorithm_return_canonical_components(
+                                VcId::new(0),
+                                &other_core,
+                                &generation,
+                                &other_formulas,
+                            )
+                            .unwrap_err(),
+                        invalid
+                    );
+                }
+            }
+        }
+        let two_returns = text
+            .replace("    ensures result = a\n", "")
+            .replace("return a;", "return a;\n    return a;");
+        let (source, typed, symbols) = super::super::source_registration_inputs(
+            &config.workspace_root,
+            case,
+            super::super::formula_statement::step5c8_test_frontend(&two_returns),
+        )
+        .unwrap();
+        let check = check_source_algorithm_types(&source, &typed, &symbols).unwrap();
+        let two_core = lower_source_algorithms(&check).unwrap();
+        assert!(
+            two_core
+                .algorithms()
+                .iter()
+                .next()
+                .unwrap()
+                .1
+                .contracts
+                .ensures
+                .is_empty()
+        );
+        assert_eq!(
+            two_core
+                .algorithms()
+                .iter()
+                .next()
+                .unwrap()
+                .1
+                .statements
+                .len(),
+            2
+        );
+        let upstream = generate_source_algorithm_postconditions(
+            &two_core,
+            snapshot_id(0),
+            &generation,
+            &schema,
+        )
+        .unwrap_err();
+        assert_eq!(upstream, "algorithms.postcondition.unsupported_core");
+        assert_eq!(
+            vcs.source_algorithm_return_canonical_components(
+                VcId::new(99),
+                &two_core,
+                &generation,
+                &empty,
+            )
+            .unwrap_err(),
+            upstream
+        );
+    }
 }

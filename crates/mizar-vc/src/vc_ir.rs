@@ -595,6 +595,191 @@ impl VcSet {
         ))
     }
 
+    /// Hashes the bounded immutable source algorithm return profile after whole-graph replay.
+    /// Formula-byte provenance and currentness remain caller-owned.
+    pub fn source_algorithm_return_canonical_components(
+        &self,
+        vc: VcId,
+        core: &mizar_core::core_ir::CoreIr,
+        generation_schema: &GenerationSchemaVersion,
+        formulas: &BTreeMap<CoreFormulaId, Vec<u8>>,
+    ) -> Result<(CanonicalVcFingerprint, Hash, LocalContextFingerprint), String> {
+        use mizar_core::{
+            binder_normalization::{
+                BinderContext, CanonicalTermKind, CanonicalVar, NormalizedVarClass,
+                NormalizedVarSort, canonical_term, normalize_core_term,
+            },
+            core_ir::{CoreAlgorithmStmtKind, CoreProvenancePhase},
+        };
+        let replay = crate::generator::generate_source_algorithm_postconditions(
+            core,
+            self.snapshot(),
+            generation_schema,
+            self.schema_version(),
+        )?;
+        let invalid = || "unsupported source algorithm return canonical components".to_owned();
+        if replay != *self {
+            return Err(invalid());
+        }
+        let vc = self.vc(vc).ok_or_else(invalid)?;
+        let Some((_, algorithm)) = core.algorithms().iter().next() else {
+            return Err(invalid());
+        };
+        let ([parameter], Some(result), [statement], [_ensures]) = (
+            algorithm.params.as_slice(),
+            algorithm.result.as_ref(),
+            algorithm.statements.as_slice(),
+            algorithm.contracts.ensures.as_slice(),
+        ) else {
+            return Err(invalid());
+        };
+        let Some(CoreAlgorithmStmtKind::Return(Some(_))) = core
+            .algorithm_statements()
+            .get(*statement)
+            .map(|row| &row.kind)
+        else {
+            return Err(invalid());
+        };
+        let guard = parameter.ty_guard.ok_or_else(invalid)?;
+        let [entry] = vc.local_context.entries() else {
+            return Err(invalid());
+        };
+        let [provenance] = entry.provenance.as_slice() else {
+            return Err(invalid());
+        };
+        let guard_source = &core.formulas().get(guard).ok_or_else(invalid)?.source;
+        let [guard_provenance] = guard_source.provenance.as_slice() else {
+            return Err(invalid());
+        };
+        let [generated] = self.generated_formulas() else {
+            return Err(invalid());
+        };
+        let VcGeneratedFormulaShape::Equals { left, right } = &generated.shape else {
+            return Err(invalid());
+        };
+        if self.vcs().len() != 1
+            || vc.kind != VcKind::AlgorithmPostcondition
+            || vc.status != VcStatus::Open
+            || vc.goal != VcFormulaRef::Generated(generated.id)
+            || generated.kind != VcGeneratedFormulaKind::AlgorithmPostcondition
+            || entry.id != ContextEntryId::new(0)
+            || entry.kind != ContextEntryKind::CheckerFact
+            || entry.formula != Some(VcFormulaRef::Core(guard))
+            || entry.sort_key.as_str() != "algorithm-parameter-type-0000"
+            || provenance.phase != VcProvenancePhase::CoreHandoff
+            || provenance.key.as_str() != "algorithm-parameter-type"
+            || provenance.core.as_ref() != Some(guard_provenance)
+            || guard_provenance.phase != CoreProvenancePhase::Checker
+            || vc.premises != [PremiseRef::LocalContext(entry.id)]
+            || vc.proof_hint.is_some()
+            || formulas.len() != 1
+            || formulas.get(&guard).is_none_or(Vec::is_empty)
+            || vc.local_context.policy_inputs().len() != 6
+        {
+            return Err(invalid());
+        }
+        for (index, (name, value)) in [
+            ("flow", "0"),
+            ("site-kind", "Ensures"),
+            ("ordinal", "0"),
+            ("statement", "0"),
+            ("block", "0"),
+            ("exit", "0"),
+        ]
+        .into_iter()
+        .enumerate()
+        {
+            let input = &vc.local_context.policy_inputs()[index];
+            if input.sort_key.as_str() != format!("{index:04}-algorithm-site-{name}")
+                || input.key.as_str() != format!("algorithm-site-{name}")
+                || input.value.as_str() != value
+            {
+                return Err(invalid());
+            }
+        }
+        let mut binders = BinderContext::new();
+        binders.declare_variable(
+            parameter.var,
+            NormalizedVarClass::Free,
+            parameter.role.clone(),
+            NormalizedVarSort::Term,
+        );
+        binders.declare_variable(
+            result.var,
+            NormalizedVarClass::Generated,
+            result.role.clone(),
+            NormalizedVarSort::Term,
+        );
+        for operand in [*left, *right] {
+            let source = &core.terms().get(operand).ok_or_else(invalid)?.source;
+            let normalized =
+                normalize_core_term(core, operand, &binders, source).map_err(|_| invalid())?;
+            let canonical = canonical_term(&normalized, &binders, source).map_err(|_| invalid())?;
+            if canonical.kind() != &CanonicalTermKind::Var(CanonicalVar::Free(parameter.var)) {
+                return Err(invalid());
+            }
+        }
+        let goal = [1, 2, 0, 0, 0, 0, 2, 0, 0, 0, 0];
+        let mut entry_payload = 0u32.to_be_bytes().to_vec();
+        entry_payload.push(1); // CheckerFact.
+        source_registration_frame(&mut entry_payload, &formulas[&guard]).map_err(|_| invalid())?;
+        entry_payload.extend(1u32.to_be_bytes());
+        entry_payload.push(1); // CoreHandoff.
+        source_registration_frame(&mut entry_payload, b"algorithm-parameter-type")
+            .map_err(|_| invalid())?;
+        entry_payload.extend([1, 1]); // Some Checker provenance.
+        source_registration_frame(
+            &mut entry_payload,
+            b"source-algorithm-return/parameter-type",
+        )
+        .map_err(|_| invalid())?;
+        let mut policy_payload = 6u32.to_be_bytes().to_vec();
+        for input in vc.local_context.policy_inputs() {
+            for bytes in [
+                input.sort_key.as_str().as_bytes(),
+                input.key.as_str().as_bytes(),
+                input.value.as_str().as_bytes(),
+            ] {
+                source_registration_frame(&mut policy_payload, bytes).map_err(|_| invalid())?;
+            }
+        }
+        let mut vc_payload = b"mizar-vc/source-algorithm-return-canonical-vc/v1\0".to_vec();
+        let mut goal_payload = b"mizar-vc/source-algorithm-return-canonical-goal/v1\0".to_vec();
+        let mut context_payload =
+            b"mizar-vc/source-algorithm-return-canonical-context/v1\0".to_vec();
+        for payload in [&mut vc_payload, &mut goal_payload, &mut context_payload] {
+            source_registration_frame(payload, self.schema_version.as_str().as_bytes())
+                .map_err(|_| invalid())?;
+            source_registration_frame(payload, generation_schema.as_str().as_bytes())
+                .map_err(|_| invalid())?;
+        }
+        source_registration_frame(&mut goal_payload, &goal).map_err(|_| invalid())?;
+        context_payload.extend(1u32.to_be_bytes());
+        source_registration_frame(&mut context_payload, &entry_payload).map_err(|_| invalid())?;
+        context_payload.extend(&policy_payload);
+        vc_payload.push(1); // AlgorithmPostcondition.
+        source_registration_frame(&mut vc_payload, &goal).map_err(|_| invalid())?;
+        vc_payload.extend(1u32.to_be_bytes());
+        vc_payload.push(1); // LocalContext premise.
+        source_registration_frame(&mut vc_payload, &entry_payload).map_err(|_| invalid())?;
+        vc_payload.extend(&policy_payload);
+        vc_payload.push(0); // No proof hint.
+        Ok((
+            CanonicalVcFingerprint(stable_fingerprint_hash(
+                "mizar-vc-source-algorithm-return-canonical-vc",
+                &vc_payload,
+            )),
+            stable_fingerprint_hash(
+                "mizar-vc-source-algorithm-return-canonical-goal",
+                &goal_payload,
+            ),
+            LocalContextFingerprint(stable_fingerprint_hash(
+                "mizar-vc-source-algorithm-return-canonical-context",
+                &context_payload,
+            )),
+        ))
+    }
+
     pub fn canonical_vc_fingerprint(&self, vc: VcId) -> Option<CanonicalVcFingerprint> {
         let vc = self.vc(vc)?;
         canonical_vc_fingerprint(vc, &generated_formula_map(&self.generated_formulas))

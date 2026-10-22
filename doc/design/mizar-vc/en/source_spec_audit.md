@@ -64,6 +64,7 @@ imports.
 `source_theorem_candidate_anchor_hash`: [sole API owner](./vc_ir.md#source-theorem-candidate-anchor-hash).
 
 [VcSet::source_theorem_canonical_components](./vc_ir.md#source-theorem-canonical-components) owns the bounded source-theorem method profile.
+[VcSet::source_algorithm_return_canonical_components](./vc_ir.md#source-algorithm-return-canonical-components) owns the bounded immutable-return method profile.
 
 Generated public newtypes:
 
