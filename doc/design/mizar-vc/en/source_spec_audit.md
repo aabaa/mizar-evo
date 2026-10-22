@@ -61,6 +61,7 @@ imports.
 
 ### `vc_ir`
 
+`source_algorithm_return_candidate_anchor_hash`: [sole API owner](./vc_ir.md#source-algorithm-return-candidate-anchor-hash).
 `source_theorem_candidate_anchor_hash`: [sole API owner](./vc_ir.md#source-theorem-candidate-anchor-hash).
 
 [VcSet::source_theorem_canonical_components](./vc_ir.md#source-theorem-canonical-components) owns the bounded source-theorem method profile.

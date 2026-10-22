@@ -58,6 +58,7 @@ Evidence: `crates/mizar-vc/tests/lint_policy.rs` の
 
 ### `vc_ir`
 
+`source_algorithm_return_candidate_anchor_hash`: [sole API owner](./vc_ir.md#source-algorithm-return-candidate-anchor-hash).
 `source_theorem_candidate_anchor_hash`: [唯一の API 所有元](./vc_ir.md#source-theorem-candidate-anchor-hash).
 
 [VcSet::source_theorem_canonical_components](./vc_ir.md#source-theorem-canonical-components) が限定 source-theorem method profile を所有する。

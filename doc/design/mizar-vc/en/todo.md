@@ -616,6 +616,7 @@ authorized.
 72. **[Source theorem VC generation](../../task_contracts/en/PROOF-SOURCE-THEOREM-REFLEXIVITY-CHECK.md).** [x]
 73. **[Source algorithm return canonical components](../../task_contracts/en/VC-SOURCE-ALGORITHM-RETURN-CANONICAL-COMPONENTS.md).** [x]
 74. **[Source algorithm return local handoff](../../task_contracts/en/VC-SOURCE-ALGORITHM-RETURN-LOCAL-HANDOFF.md).** [x]
+75. **[Source algorithm return candidate anchor hash](../../task_contracts/en/PROOF-SOURCE-ALGORITHM-RETURN-IDENTITY.md).** [x]
 
 ## Recommended Verification
 

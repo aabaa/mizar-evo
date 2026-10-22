@@ -23192,4 +23192,501 @@ mod term_proof_tests {
             assert_eq!(format!("{source:?}{nodes:?}{symbols:?}{check:?}"), before);
         }
     }
+
+    fn with_source_algorithm_identity_inputs<R>(
+        text: &str,
+        package: &str,
+        module: &str,
+        skip: usize,
+        f: impl FnOnce(
+            &mizar_resolve::resolved_ast::SurfaceResolvedArena,
+            &mizar_checker::typed_ast::TypedArena,
+            &mizar_resolve::env::SymbolEnv,
+            &mizar_checker::type_checker::SourceAlgorithmCheck<'_>,
+        ) -> R,
+    ) -> R {
+        use mizar_checker::typed_ast::{TypedArena, TypedNode, TypedNodeId};
+        let (frontend, source, collected) =
+            super::super::tests::source_registration_owner_inputs(text, package, module, skip);
+        assert!(frontend.diagnostics.is_empty());
+        assert!(collected.diagnostics().is_empty());
+        let typed = TypedArena::try_new(
+            Some(TypedNodeId::new(source.arena().root().index())),
+            source
+                .arena()
+                .iter()
+                .map(|(id, node)| {
+                    TypedNode::new(format!("{:?}", node.kind()), node.origin().anchor().clone())
+                        .with_resolved_node(id)
+                        .with_children(
+                            node.children()
+                                .iter()
+                                .map(|child| TypedNodeId::new(child.index()))
+                                .collect(),
+                        )
+                })
+                .collect(),
+        )
+        .unwrap();
+        let check = mizar_checker::type_checker::check_source_algorithm_types(
+            &source,
+            &typed,
+            collected.env(),
+        )
+        .unwrap();
+        f(&source, &typed, collected.env(), &check)
+    }
+
+    #[test]
+    fn source_algorithm_return_obligation_identity_preserves_genuine_fields_and_slice() {
+        use mizar_artifact::store::{CanonicalJson, canonical_json_bytes};
+        use mizar_proof::status::{
+            source_algorithm_return_canonical_inputs, source_algorithm_return_obligation_identity,
+        };
+        use mizar_vc::vc_ir::source_algorithm_return_candidate_anchor_hash;
+
+        let original = fs::read_to_string(config().workspace_root.join(
+            "tests/miz/pass/algorithms/pass_proof_verification_algorithm_ensures_return_001.miz",
+        ))
+        .unwrap();
+        for (text, candidate_hex, final_hex) in [
+            (
+                original.clone(),
+                "b8754196e63d0faf7227278f18ffe36efe43e368355f83e57e0fd71e3efcb92e",
+                "75a724cd673ed59039baa1873159384ad6ba0c1848b9265264f73af0850e0a47",
+            ),
+            (
+                original.replace("terminating algorithm", "algorithm"),
+                "d466807aeac30ceca7fcb082fb0cfa230031d52413dff814fd25803cef810a1a",
+                "67edf90e23328b9b98f91493286e20c4054999675d53d5b4201f9374116c7f7c",
+            ),
+        ] {
+            with_source_algorithm_identity_inputs(
+                &text,
+                "owner-test",
+                "owners",
+                0,
+                |source, typed, symbols, check| {
+                    let before = format!("{source:?}{typed:?}{symbols:?}{check:?}");
+                    let snapshot = snapshot_id(0);
+                    let core = mizar_core::elaborator::lower_source_algorithms(check).unwrap();
+                    let vcs = mizar_vc::generator::generate_source_algorithm_postconditions(
+                        &core,
+                        snapshot,
+                        &GenerationSchemaVersion::new("mizar-vc-generation-step5c14-return-v1"),
+                        &VcSchemaVersion::new("mizar-vc-vcset-step5c14-return-v1"),
+                    )
+                    .unwrap();
+                    let [target] = vcs.vcs() else {
+                        panic!("one genuine return VC")
+                    };
+                    let old = source_algorithm_return_canonical_inputs(check, snapshot, target.id)
+                        .unwrap();
+                    assert!(!old.3.entries().is_empty());
+                    assert!(!old.3.unknowns().is_empty());
+                    assert!(old.3.requires_cache_miss());
+                    let syntax =
+                        mizar_resolve::symbols::source_algorithm_syntax_payloads_from_arena(
+                            source, symbols,
+                        )
+                        .unwrap();
+                    assert_eq!(syntax.len(), 1);
+                    let semantic = mizar_core::elaborator::source_algorithm_core_semantic_payload(
+                        check, &core,
+                    )
+                    .unwrap();
+                    let mut entries = symbols.symbols().iter().filter(|entry| {
+                        entry.symbol() == &check.algorithm().1
+                            && entry.kind() == mizar_resolve::env::SymbolKind::Algorithm
+                    });
+                    let entry = entries.next().unwrap();
+                    assert!(entries.next().is_none());
+                    let module = entry.symbol().module();
+                    let owner = CanonicalJson::object([
+                        (
+                            "package_id",
+                            CanonicalJson::string(module.package().as_str()),
+                        ),
+                        ("module_path", CanonicalJson::string(module.path().as_str())),
+                        (
+                            "namespace",
+                            CanonicalJson::string(entry.namespace().as_str()),
+                        ),
+                        ("spelling", CanonicalJson::string(entry.primary_spelling())),
+                        ("kind", CanonicalJson::string("algorithm")),
+                        ("visibility", CanonicalJson::string("public")),
+                    ])
+                    .unwrap();
+                    let owner = canonical_json_bytes(&owner);
+                    let syntax = syntax.get(&check.algorithm().1).unwrap();
+                    let hash = source_algorithm_return_candidate_anchor_hash(
+                        &owner, syntax, &semantic, old.0, old.1, old.2,
+                    )
+                    .unwrap();
+                    let hex = |bytes: &[u8]| -> String {
+                        bytes.iter().map(|byte| format!("{byte:02x}")).collect()
+                    };
+                    assert_eq!(hex(hash.as_bytes()), candidate_hex);
+                    assert_eq!(
+                        hash,
+                        source_algorithm_return_candidate_anchor_hash(
+                            &owner, syntax, &semantic, old.0, old.1, old.2,
+                        )
+                        .unwrap()
+                    );
+                    for (owner, syntax, semantic) in [
+                        (&[][..], syntax.as_slice(), semantic.as_slice()),
+                        (owner.as_slice(), &[][..], semantic.as_slice()),
+                        (owner.as_slice(), syntax.as_slice(), &[][..]),
+                    ] {
+                        assert_eq!(
+                            source_algorithm_return_candidate_anchor_hash(
+                                owner, syntax, semantic, old.0, old.1, old.2,
+                            )
+                            .unwrap_err(),
+                            "unsupported source algorithm return candidate anchor"
+                        );
+                    }
+                    let (identity, slice) = source_algorithm_return_obligation_identity(
+                        source, check, symbols, snapshot, target.id,
+                    )
+                    .unwrap();
+                    let anchor =
+                        format!("source-algorithm-return-candidate-anchor-v1:{candidate_hex}");
+                    assert_eq!(identity.obligation_id(), anchor);
+                    assert_eq!(identity.obligation_anchor().as_str(), anchor);
+                    assert_eq!(hex(identity.obligation_fingerprint().as_bytes()), final_hex);
+                    assert_eq!(identity.vc_fingerprint(), old.0.hash());
+                    assert_eq!(identity.local_context_fingerprint(), old.2.hash());
+                    assert_eq!(
+                        identity.dependency_slice_fingerprint(),
+                        old.3.fingerprint().hash()
+                    );
+                    assert_eq!(slice, old.3);
+                    assert_eq!(
+                        (identity.clone(), slice.clone()),
+                        source_algorithm_return_obligation_identity(
+                            source, check, symbols, snapshot, target.id,
+                        )
+                        .unwrap()
+                    );
+                    assert_eq!(
+                        old,
+                        source_algorithm_return_canonical_inputs(check, snapshot, target.id)
+                            .unwrap()
+                    );
+                    assert_eq!(format!("{source:?}{typed:?}{symbols:?}{check:?}"), before);
+                },
+            );
+        }
+    }
+
+    #[test]
+    fn source_algorithm_return_obligation_identity_preserves_source_associations() {
+        use mizar_artifact::store::{CanonicalJson, canonical_json_bytes};
+        use mizar_proof::status::{
+            source_algorithm_return_canonical_inputs, source_algorithm_return_obligation_identity,
+        };
+        let original = fs::read_to_string(config().workspace_root.join(
+            "tests/miz/pass/algorithms/pass_proof_verification_algorithm_ensures_return_001.miz",
+        ))
+        .unwrap();
+        let parameter = original
+            .replace(" a ", " param ")
+            .replace("(a)", "(param)")
+            .replace(" a;", " param;")
+            .replace("= a\n", "= param\n");
+        let mut observed = Vec::new();
+        for (label, text, package, module, skip, expected) in [
+            (
+                "original",
+                original.clone(),
+                "owner-test",
+                "owners",
+                0,
+                "b8754196e63d0faf7227278f18ffe36efe43e368355f83e57e0fd71e3efcb92e",
+            ),
+            (
+                "without-terminating",
+                original.replace("terminating algorithm", "algorithm"),
+                "owner-test",
+                "owners",
+                0,
+                "d466807aeac30ceca7fcb082fb0cfa230031d52413dff814fd25803cef810a1a",
+            ),
+            (
+                "trivia",
+                format!(":: 世代 neutral trivia\n\n{original}"),
+                "owner-test",
+                "owners",
+                0,
+                "b8754196e63d0faf7227278f18ffe36efe43e368355f83e57e0fd71e3efcb92e",
+            ),
+            (
+                "source-relocation",
+                original.clone(),
+                "owner-test",
+                "owners",
+                7,
+                "b8754196e63d0faf7227278f18ffe36efe43e368355f83e57e0fd71e3efcb92e",
+            ),
+            (
+                "package",
+                original.clone(),
+                "other-package",
+                "owners",
+                0,
+                "e137ff9b58ed577c5da787e28f09f0298e5b14bfa6af6a8aeca92f8a29aa1379",
+            ),
+            (
+                "module",
+                original.clone(),
+                "owner-test",
+                "nested.owners",
+                0,
+                "c0abe548fcd249b548741207fb38271ad0d58b85d3085cdd796ca6920711e995",
+            ),
+            (
+                "owner",
+                original.replace("idalgo", "renamed_algorithm"),
+                "owner-test",
+                "owners",
+                0,
+                "f3b43e9245ce0a81e62ec093264dbaa6c644b5fda58aa198b5dafb098f4484a8",
+            ),
+            (
+                "parameter",
+                parameter,
+                "owner-test",
+                "owners",
+                0,
+                "90dc7d7b6880a43db46c7da2b1215ff3bcaca8785191b48172a115341d871286",
+            ),
+        ] {
+            let operands = with_source_algorithm_identity_inputs(
+                &text,
+                package,
+                module,
+                skip,
+                |source, _, symbols, check| {
+                    let snapshot = snapshot_id(0);
+                    let core = mizar_core::elaborator::lower_source_algorithms(check).unwrap();
+                    let vcs = mizar_vc::generator::generate_source_algorithm_postconditions(
+                        &core,
+                        snapshot,
+                        &GenerationSchemaVersion::new("mizar-vc-generation-step5c14-return-v1"),
+                        &VcSchemaVersion::new("mizar-vc-vcset-step5c14-return-v1"),
+                    )
+                    .unwrap();
+                    let [target] = vcs.vcs() else {
+                        panic!("one genuine return VC")
+                    };
+                    let old = source_algorithm_return_canonical_inputs(check, snapshot, target.id)
+                        .unwrap();
+                    assert!(!old.3.unknowns().is_empty());
+                    assert!(old.3.requires_cache_miss());
+                    let syntax =
+                        mizar_resolve::symbols::source_algorithm_syntax_payloads_from_arena(
+                            source, symbols,
+                        )
+                        .unwrap();
+                    assert_eq!(syntax.len(), 1);
+                    let semantic = mizar_core::elaborator::source_algorithm_core_semantic_payload(
+                        check, &core,
+                    )
+                    .unwrap();
+                    let entry = symbols
+                        .symbols()
+                        .iter()
+                        .find(|entry| {
+                            entry.symbol() == &check.algorithm().1
+                                && entry.kind() == mizar_resolve::env::SymbolKind::Algorithm
+                        })
+                        .unwrap();
+                    let owner = CanonicalJson::object([
+                        (
+                            "package_id",
+                            CanonicalJson::string(entry.symbol().module().package().as_str()),
+                        ),
+                        (
+                            "module_path",
+                            CanonicalJson::string(entry.symbol().module().path().as_str()),
+                        ),
+                        (
+                            "namespace",
+                            CanonicalJson::string(entry.namespace().as_str()),
+                        ),
+                        ("spelling", CanonicalJson::string(entry.primary_spelling())),
+                        ("kind", CanonicalJson::string("algorithm")),
+                        ("visibility", CanonicalJson::string("public")),
+                    ])
+                    .unwrap();
+                    let operands = (
+                        canonical_json_bytes(&owner),
+                        syntax[&check.algorithm().1].clone(),
+                        semantic,
+                        old.0,
+                        old.1,
+                        old.2,
+                    );
+                    if let Some((baseline_source_id, baseline)) = observed.first() {
+                        match label {
+                            "trivia" | "source-relocation" => {
+                                assert_eq!(&operands, baseline);
+                                if label == "source-relocation" {
+                                    assert_ne!(source.source_id(), *baseline_source_id);
+                                }
+                            }
+                            "without-terminating" | "parameter" => {
+                                assert_eq!(operands.0, baseline.0);
+                                assert_ne!(operands.1, baseline.1);
+                                assert_eq!(operands.2, baseline.2);
+                                assert_eq!(
+                                    (operands.3, operands.4, operands.5),
+                                    (baseline.3, baseline.4, baseline.5)
+                                );
+                            }
+                            "package" | "module" | "owner" => {
+                                assert_ne!(operands.0, baseline.0);
+                            }
+                            _ => {}
+                        }
+                    }
+                    let (identity, slice) = source_algorithm_return_obligation_identity(
+                        source, check, symbols, snapshot, target.id,
+                    )
+                    .unwrap();
+                    assert_eq!(slice, old.3);
+                    assert_eq!(
+                        identity.obligation_anchor().as_str(),
+                        format!("source-algorithm-return-candidate-anchor-v1:{expected}")
+                    );
+                    if label == "original" {
+                        let old_other = source_algorithm_return_canonical_inputs(
+                            check,
+                            snapshot_id(1),
+                            target.id,
+                        )
+                        .unwrap();
+                        let other = source_algorithm_return_obligation_identity(
+                            source,
+                            check,
+                            symbols,
+                            snapshot_id(1),
+                            target.id,
+                        )
+                        .unwrap();
+                        assert_eq!(other.1, old_other.3);
+                    }
+                    (source.source_id(), operands)
+                },
+            );
+            observed.push(operands);
+        }
+    }
+
+    #[test]
+    fn source_algorithm_return_obligation_identity_preserves_upstream_errors_and_inputs() {
+        use mizar_checker::type_checker::check_source_algorithm_types;
+        use mizar_proof::status::{
+            source_algorithm_return_canonical_inputs, source_algorithm_return_obligation_identity,
+        };
+        use mizar_vc::vc_ir::VcId;
+
+        let root = config().workspace_root;
+        let original = fs::read_to_string(root.join(
+            "tests/miz/pass/algorithms/pass_proof_verification_algorithm_ensures_return_001.miz",
+        ))
+        .unwrap();
+        let broader = fs::read_to_string(root.join(
+            "tests/miz/pass/algorithms/pass_proof_verification_algorithm_var_const_assert_001.miz",
+        ))
+        .unwrap();
+        for (kind, text) in [
+            ("absent", original.clone()),
+            ("zero", original.replace("    ensures result = a\n", "")),
+            ("broader", broader),
+            (
+                "two_returns",
+                original
+                    .replace("    ensures result = a\n", "")
+                    .replace("return a;", "return a;\n    return a;"),
+            ),
+        ] {
+            with_source_algorithm_identity_inputs(
+                &text,
+                "owner-test",
+                "owners",
+                0,
+                |source, typed, symbols, check| {
+                    let before = format!("{source:?}{typed:?}{symbols:?}{check:?}");
+                    let snapshot = snapshot_id(0);
+                    let fresh =
+                        check_source_algorithm_types(source, check.typed(), symbols).unwrap();
+                    assert_eq!(fresh.algorithm(), check.algorithm());
+                    let core = mizar_core::elaborator::lower_source_algorithms(&fresh).unwrap();
+                    let generated = mizar_vc::generator::generate_source_algorithm_postconditions(
+                        &core,
+                        snapshot,
+                        &GenerationSchemaVersion::new("mizar-vc-generation-step5c14-return-v1"),
+                        &VcSchemaVersion::new("mizar-vc-vcset-step5c14-return-v1"),
+                    );
+                    let absent = VcId::new(usize::MAX);
+                    let selected = if kind == "broader" {
+                        generated.as_ref().unwrap().vcs().first().unwrap().id
+                    } else {
+                        absent
+                    };
+                    if kind == "zero" {
+                        assert!(generated.as_ref().unwrap().vcs().is_empty());
+                    }
+                    if kind == "two_returns" {
+                        assert!(generated.is_err());
+                    }
+                    let expected =
+                        source_algorithm_return_canonical_inputs(&fresh, snapshot, selected)
+                            .unwrap_err();
+                    if kind == "two_returns" {
+                        assert_eq!(expected, generated.unwrap_err());
+                    }
+                    assert_eq!(
+                        source_algorithm_return_obligation_identity(
+                            source, check, symbols, snapshot, selected,
+                        )
+                        .unwrap_err(),
+                        expected
+                    );
+                    if kind == "absent" {
+                        for changed in [
+                            original.replace("idalgo", "foreign_algorithm"),
+                            format!("{original}\n{original}"),
+                        ] {
+                            let (_, _, foreign) =
+                                super::super::tests::source_registration_owner_inputs(
+                                    &changed,
+                                    "owner-test",
+                                    "owners",
+                                    0,
+                                );
+                            let actual =
+                                check_source_algorithm_types(source, check.typed(), foreign.env())
+                                    .unwrap_err();
+                            assert_eq!(
+                                source_algorithm_return_obligation_identity(
+                                    source,
+                                    check,
+                                    foreign.env(),
+                                    snapshot,
+                                    absent,
+                                )
+                                .unwrap_err(),
+                                actual
+                            );
+                        }
+                    }
+                    assert_eq!(format!("{source:?}{typed:?}{symbols:?}{check:?}"), before);
+                },
+            );
+        }
+    }
 }

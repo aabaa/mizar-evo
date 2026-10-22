@@ -25,6 +25,119 @@ use crate::{
 const USED_AXIOMS_HASH_DOMAIN: &str = "mizar-proof-trusted-used-axioms-v1";
 const PROOF_REUSE_VALIDATION_HASH_DOMAIN: &str = "mizar-proof-reuse-validation-v1";
 
+/// Binds genuine original algorithm return content to its full raw dependency slice.
+/// Source and snapshot freshness remain caller-owned; this grants no acceptance or reuse.
+pub fn source_algorithm_return_obligation_identity(
+    source: &mizar_resolve::resolved_ast::SurfaceResolvedArena,
+    check: &mizar_checker::type_checker::SourceAlgorithmCheck<'_>,
+    symbols: &mizar_resolve::env::SymbolEnv,
+    snapshot: mizar_session::BuildSnapshotId,
+    vc_id: VcId,
+) -> Result<
+    (
+        ProofObligationIdentity,
+        mizar_vc::dependency_slice::DependencySlice,
+    ),
+    String,
+> {
+    use mizar_artifact::store::{
+        CanonicalHashDomain, CanonicalJson, HashClass, canonical_json_bytes,
+    };
+    use mizar_resolve::env::{SymbolKind, Visibility};
+
+    let fresh =
+        mizar_checker::type_checker::check_source_algorithm_types(source, check.typed(), symbols)?;
+    let invalid = || "algorithm.proof.invalid_source_identity".to_owned();
+    if fresh.algorithm() != check.algorithm() {
+        return Err(invalid());
+    }
+    let (vc, goal, context, slice) =
+        source_algorithm_return_canonical_inputs(&fresh, snapshot, vc_id)?;
+    let syntax =
+        mizar_resolve::symbols::source_algorithm_syntax_payloads_from_arena(source, symbols)?;
+    if syntax.len() != 1 {
+        return Err(invalid());
+    }
+    let syntax = syntax.get(&fresh.algorithm().1).ok_or_else(invalid)?;
+    let core = mizar_core::elaborator::lower_source_algorithms(&fresh)?;
+    let core = mizar_core::elaborator::source_algorithm_core_semantic_payload(&fresh, &core)?;
+    let mut entries = symbols.symbols().iter().filter(|entry| {
+        entry.symbol() == &fresh.algorithm().1 && entry.kind() == SymbolKind::Algorithm
+    });
+    let entry = entries.next().ok_or_else(invalid)?;
+    if entries.next().is_some() || entry.visibility() != Visibility::Public {
+        return Err(invalid());
+    }
+    let module = entry.symbol().module();
+    let owner = CanonicalJson::object([
+        (
+            "package_id",
+            CanonicalJson::string(module.package().as_str()),
+        ),
+        ("module_path", CanonicalJson::string(module.path().as_str())),
+        (
+            "namespace",
+            CanonicalJson::string(entry.namespace().as_str()),
+        ),
+        ("spelling", CanonicalJson::string(entry.primary_spelling())),
+        ("kind", CanonicalJson::string("algorithm")),
+        ("visibility", CanonicalJson::string("public")),
+    ])
+    .map_err(|error| error.to_string())?;
+    let candidate = mizar_vc::vc_ir::source_algorithm_return_candidate_anchor_hash(
+        &canonical_json_bytes(&owner),
+        syntax,
+        &core,
+        vc,
+        goal,
+        context,
+    )?;
+    let candidate = ObligationAnchor::new(format!(
+        "source-algorithm-return-candidate-anchor-v1:{}",
+        source_discharge_hex(candidate.as_bytes()),
+    ))
+    .map_err(|error| error.to_string())?;
+    let obligation = CanonicalJson::object([
+        (
+            "obligation_anchor",
+            CanonicalJson::string(candidate.as_str()),
+        ),
+        (
+            "vc_fingerprint",
+            CanonicalJson::string(source_discharge_hex(vc.hash().as_bytes())),
+        ),
+        (
+            "canonical_goal_hash",
+            CanonicalJson::string(source_discharge_hex(goal.as_bytes())),
+        ),
+        (
+            "local_context_fingerprint",
+            CanonicalJson::string(source_discharge_hex(context.hash().as_bytes())),
+        ),
+        (
+            "vc_local_dependency_slice_fingerprint",
+            CanonicalJson::string(source_discharge_hex(slice.fingerprint().hash().as_bytes())),
+        ),
+    ])
+    .map_err(|error| error.to_string())?;
+    let fingerprint = CanonicalHashDomain::new(
+        HashClass::Interface,
+        "mizar-proof/source-algorithm-return-original-obligation",
+        SchemaVersion::new(1, 0),
+    )
+    .hash(&obligation, &[]);
+    let identity = ProofObligationIdentity::new(
+        candidate.as_str().to_owned(),
+        candidate,
+        fingerprint,
+        vc.hash(),
+        context.hash(),
+        slice.fingerprint().hash(),
+    )
+    .map_err(|error| error.to_string())?;
+    Ok((identity, slice))
+}
+
 /// Returns genuine source algorithm return components and the full raw dependency slice.
 /// Source/snapshot freshness remains caller-owned; these inputs do not authorize acceptance or reuse.
 pub fn source_algorithm_return_canonical_inputs(

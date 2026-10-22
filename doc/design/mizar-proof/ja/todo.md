@@ -468,6 +468,7 @@ kernel の拒否語彙と evidence 契約を訂正した。policy 層はその�
 51. **[Genuine witness file candidate](../../task_contracts/ja/PROOF-SOURCE-THEOREM-WITNESS-FILE.md).** [x]
 52. **[Genuine source return reflexivity](../../task_contracts/ja/PROOF-SOURCE-ALGORITHM-RETURN-REFLEXIVITY.md).** [x]
 53. **[Genuine return canonical inputs](../../task_contracts/ja/PROOF-SOURCE-ALGORITHM-RETURN-CANONICAL-INPUTS.md).** [x]
+54. **[Source algorithm return obligation identity](../../task_contracts/ja/PROOF-SOURCE-ALGORITHM-RETURN-IDENTITY.md).** [x]
 
 ## 推奨検証
 
