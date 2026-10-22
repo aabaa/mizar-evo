@@ -1438,6 +1438,34 @@ impl<'a> crate::registry::SourceLoadInputs<'a> {
         Ok(Some(core))
     }
 
+    /// Generates the unpublished raw algorithm VC graph from parent-bound native Core.
+    pub fn native_algorithm_vcs_with_frontend_parent(
+        self,
+        input: &PhaseInput,
+        publisher: &mizar_ir::publisher::PhaseOutputPublisher,
+        generation_schema: &mizar_vc::vc_ir::GenerationSchemaVersion,
+        vc_schema: &mizar_vc::vc_ir::VcSchemaVersion,
+    ) -> Result<Option<mizar_vc::vc_ir::VcSet>, String> {
+        let Some(core) = self.native_algorithm_core_with_frontend_parent(input, publisher)? else {
+            return Ok(None);
+        };
+        let vcs = mizar_vc::generator::generate_source_algorithm_postconditions(
+            &core,
+            input.snapshot,
+            generation_schema,
+            vc_schema,
+        )?;
+        let parent = input.parent_outputs()[0].as_output_ref();
+        publisher
+            .storage()
+            .validate_handle(parent)
+            .map_err(|error| error.to_string())?;
+        publisher
+            .validate_published_output(input.snapshot, parent)
+            .map_err(|error| error.to_string())?;
+        Ok(Some(vcs))
+    }
+
     /// Generates the unpublished raw VC graph from genuine parent-bound native Core.
     pub fn native_theorem_vcs_with_frontend_parent(
         self,
