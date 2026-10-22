@@ -581,6 +581,7 @@ the owning producers when the paired tasks land.
 55. **[Native theorem Core publication](../../task_contracts/en/DRIVER-NATIVE-THEOREM-CORE-PUBLICATION.md).** [x]
 56. **[Native theorem VC caller](../../task_contracts/en/DRIVER-NATIVE-THEOREM-VC-CALLER.md).** [x]
 57. **[Native theorem VC storage replay](../../task_contracts/en/DRIVER-NATIVE-THEOREM-VC-STORAGE-REPLAY.md).** [x]
+58. **[Native theorem VC publication](../../task_contracts/en/DRIVER-NATIVE-THEOREM-VC-PUBLICATION.md).** [x]
 
 ## Recommended Verification
 
