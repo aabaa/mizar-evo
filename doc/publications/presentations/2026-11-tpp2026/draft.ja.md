@@ -370,9 +370,17 @@ Mizar の soft type、attribute、registration、構造と継承は、一階の�
 新仕様の説明であり、すべての判断を著者に明示指定させる方針ではない。継承経路が曖昧な場合には `qua` でビューを指定する。
 Source: `doc/spec/en/08.type_inference.md` §8.1–8.2; `17.clusters_and_registrations.md` §17.7; `19.overload_resolution.md` §19.1–19.3。
 
-§2.2–2.4 は type の説明として、構造の宣言、継承関係、mode と property の実装の順に示す。
-§2.2 で sample_codes の LoopStr・AddLoopStr を宣言し、§2.3 で `field add from binop`・`property zero from unit` の対応付けを宣言する。field は格納するデータであり、property の宣言は名前と型を与える。Rust trait との類似は型と実装関係の宣言を分離する構成に限る。
-Source: `doc/spec/en/05.structures.md` §5.2–5.3; `sample_codes.md`。
+§2.2–2.4 は、現行 Mizar と Evo の構造宣言の比較、field / property を区別する理由、継承関係、mode と property の実装の順に示す。
+§2.2 は ALGSTR_0 の addLoopStr に基づく宣言例と、Evo の AddLoopStr を並べる。現行側の carrier・addF・ZeroF は構成子に渡すデータで、ZeroF が単位元であるための法則は別途必要。Evo 側では carrier・add を field、zero を property として宣言し、構成子に渡すのは field のみとする。property の宣言だけでは値は決まらず、§2.4の前提と実装・証明が必要。
+両コードは definition 内の抜粋。同じ加法と零元を題材にした表現設計の比較で、機械的な翻訳ではない。現行 Mizar でも導出値は functor で定義できる。
+
+§2.2a では field / property を区別する理由を示す。設計上の理由は、構造を構成するデータと、条件の下でそこから一意に定まる値を分けることにある。現行 Mizar の `strict` は構造ごとに導入される属性で、宣言されたフィールド以外を持たないことを表す。同じ構造の strict な対象同士では全フィールドの一致から等しさが従う。strict addLoopStr は carrier・addF・ZeroF を持ち、ZeroF を持たない strict addMagma とは格納フィールド集合が異なる。
+ZeroF に両側単位元の法則を課す場合、その値は演算から一意に定まる。それでも格納フィールドにすれば構造のデータに含まれる。Evo ではこのような導出値を property にして、追加の格納データとせず、適用可能な実装とその証明から値を得る。単位元の法則を仮定しない任意の ZeroF まで演算から決まるとはしない。
+Evo の外延性も、同一構造 S の exact_S な対象に限定される（仕様 §5.8.4–5.8.5）。property の導入を、strict に相当する対象の限定の撤廃や、異なる構造・ビューの無条件な同一視として説明しない。
+Source: [Grabowski et al., Mizar in a Nutshell](https://www.chimaira.org/archive/MizarInANutshell_1980-4451-1-PB.pdf), §2.3.5; [Kaliszyk & Pąk, Semantics of Mizar as an Isabelle Object Logic](https://project-smart.uibk.ac.at/docs/19/ckkp-jar19.pdf), §8.1; `doc/spec/en/05.structures.md` §5.8.4–5.8.5; `07.modes.md` §7.4.1。
+
+§2.3 は現行の `struct (ZeroStr, addMagma)` による親指定と、Evo の独立した inherit 宣言を対比する。ここで LoopStr を宣言し、`field add from binop`・`property zero from unit` の対応付けを追加する。
+Source: [MML ALGSTR_0](https://mizar.uwb.edu.pl/version/current/html/algstr_0.html), addLoopStr; `doc/spec/en/05.structures.md` §5.2–5.3, 5.5.1; `sample_codes.md`。
 
 §2.4 で mode Unital を定義し、親側の `unit` を実装する（説明用 sketch、証明省略）。`has_unit` は `unit` を使わず両側単位元の存在で定義する属性とする。
 

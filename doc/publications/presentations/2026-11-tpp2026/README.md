@@ -2,7 +2,7 @@
 
 Working materials for the Mizar Evo talk at TPP 2026, the 22nd Theorem Proving
 and Provers meeting, RIKEN AIP Tokyo Office, November 16-17, 2026. The English
-deck and spoken script follow the reviewed Japanese version, with 31 main
+deck and spoken script follow the reviewed Japanese version, with 32 main
 slides and five backups. The provisional 45-minute slot allows 36.5 minutes
 of presentation, seven minutes of questions, and 1.5 minutes of buffer.
 Confirm the official slot and question time with the organizers. Aim for
@@ -101,12 +101,15 @@ external resolution steps are not replayed as kernel acceptance evidence.
 The independent instance finder is planned and unimplemented at the fixed snapshot;
 the trace-extraction diagram is a candidate-generation sketch.
 Frames 2.1-2.6 follow type, registration, then overload: structure
-and property declarations (2.2), post-declaration inheritance (2.3), then the
-Unital mode and its unit implementation, reused as zero through the selected
+declarations in current Mizar and Evo (2.2), then strict field sets and
+why a uniquely determined identity can be a property (2.2a); inline parents versus separate
+inheritance declarations (2.3), then the Unital mode and its unit implementation,
+reused as zero through the selected
 LoopStr view (2.4). Labeled registration chains follow in 2.5, and definition
 selection with explicit inheritance views in 2.6. The latter distinguishes
 the additive AddMagma and multiplicative MulMagma views by obtaining zero
 or one as the neutral element of the same ring.
+Frames 2.2 and 2.2a each take 30 seconds; 2.6 takes 60 seconds, keeping part 2 within five minutes.
 Frames 3.1-3.2 contrast per-type result redefinitions, registrations and proofs
 for complex, real, rational, integer and natural values with one generic sum.
 Frame 3.3 shows a scheme as a theorem; 3.4 gives brief struct VectorSpace[K]
@@ -150,7 +153,7 @@ benchmark conditions, and HOL-to-FOL encoding/reconstruction, in that order.
   data, sources, and the distinction between specification, implementation,
   and plans. Shared figures, language specifications, internal designs, and
   Rust sources stay outside the translation scope.
-- The generator keeps both decks at 36 pages, with compact table columns and
+- The generator keeps both decks at 37 pages, with compact table columns and
   captions. Tracked PDFs/TeX reflect the current Markdown deck sources;
   review previews and build logs live under `target/` in the worktree.
 - Work in a dedicated branch/worktree. Do not merge into main, push, or create

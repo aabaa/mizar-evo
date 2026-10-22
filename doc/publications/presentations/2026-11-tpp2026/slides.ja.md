@@ -188,17 +188,20 @@ Speaker note:
 
 - Source: `doc/spec/en/08.type_inference.md` §8.1–8.2; `17.clusters_and_registrations.md` §17.7; `19.overload_resolution.md` §19.1–19.3。新仕様。type: 2.2–2.4、registration: 2.5、overload とビュー指定: 2.6。
 
-### Frame 2.2 - type: field と property を宣言する
+### Frame 2.2 - struct: 現行 Mizar と Evo の対比
 
-構造の宣言（definition 内の抜粋） (specification example):
+現行 Mizar: 零元も構造のデータ（ALGSTR_0 に基づく宣言例） (sketch):
 
 ```mizar
-struct LoopStr where
-  field carrier -> set;
-  field binop -> BinOp of carrier;
-  property unit -> Element of carrier;
-end;
+struct (ZeroStr, addMagma) addLoopStr
+  (# carrier -> set,
+     addF -> BinOp of the carrier,
+     ZeroF -> Element of the carrier #);
+```
 
+Evo: 格納する field と導出する property (specification example):
+
+```mizar
 struct AddLoopStr where
   field carrier -> set;
   field add -> BinOp of carrier;
@@ -206,33 +209,52 @@ struct AddLoopStr where
 end;
 ```
 
-**field は格納するデータ。property は名前と型を宣言し、実装は別に与える。**
+- 現行: 構成子に carrier・addF・ZeroF を渡す。単位元の法則は別途必要。
+- **Evo: 構成子に渡すのは field のみ。zero の実装と証明は 2.4 で示す。**
 
 Speaker note:
 
-- Source: `doc/spec/en/05.structures.md` §5.2, 5.5.1; `sample_codes.md`, LoopStr・AddLoopStr。構造宣言は definition 内の抜粋。構成子に渡すのは field のみ。継承は2.3、mode と unit の実装は2.4。
+- Source: [MML ALGSTR_0](https://mizar.uwb.edu.pl/version/current/html/algstr_0.html), addLoopStr; `doc/spec/en/05.structures.md` §5.2, 5.5.1; `sample_codes.md`, AddLoopStr。両コードは definition 内の抜粋。現行側は構造宣言を示す sketch（逐語引用ではない）。
+- 同じ加法と零元を題材にした表現設計の比較で、機械的な翻訳ではない。現行でも導出値は functor で定義できる。Evo の宣言だけでは zero の実装も単位元の法則も得られず、2.4の前提と証明が必要。
+### Frame 2.2a - なぜ field と property を分けるか
+
+- **従来の strict: フィールドの範囲を限定する。**
+  同じ構造の strict な対象同士では、全フィールドが一致すれば等しい。
+- **残る課題: 導出できる値も格納データに含まれる。**
+  両側単位元は存在すれば演算から一意に定まるが、ZeroF として格納すればフィールドが増える。
+- **Evo の property: 導出値を追加の格納データにしない。**
+  格納する field と分け、適用可能な実装と証明から値を得る。
+
+Speaker note:
+
+- `strict` は構造ごとに導入される属性で、宣言外のフィールドがないことを表す。strict addLoopStr は ZeroF を含むため strict addMagma ではない。ZeroF に両側単位元の法則を課す場合は、演算から一意に定まる値も格納する設計になる。Source: [Mizar in a Nutshell](https://www.chimaira.org/archive/MizarInANutshell_1980-4451-1-PB.pdf) §2.3.5。
+- 同じ構造の strict な対象同士では全フィールドの一致から等しさが従う（[Kaliszyk & Pąk, §8.1](https://project-smart.uibk.ac.at/docs/19/ckkp-jar19.pdf)）。Evo も仕様 §5.8.4–5.8.5 で同一構造 S の exact_S に外延性を限定する。property は追加の格納フィールドではないが、異なる構造・ビューの無条件な同一視はしない。
 
 ### Frame 2.3 - type: 継承関係を後から宣言する
 
-AddLoopStr の宣言後に、親への対応付けを追加 (specification example):
+現行は `struct (ZeroStr, addMagma)` で親を指定。**Evo は構造の宣言と継承を分離する。**
+
+Evo の親構造と対応付け（definition 内の抜粋） (specification example):
 
 ```mizar
-definition
-  inherit AddLoopStr extends LoopStr where
-    field carrier from carrier;
-    field add from binop;
-    property zero from unit;
-  end;
+struct LoopStr where
+  field carrier -> set;
+  field binop -> BinOp of carrier;
+  property unit -> Element of carrier;
+end;
+inherit AddLoopStr extends LoopStr where
+  field carrier from carrier;
+  field add from binop;
+  property zero from unit;
 end;
 ```
 
-- **構造の宣言と継承関係を分離。型を定義した後で Rust の trait を実装する構成に近い。**
 - `from` で親の役割をリネーム: `binop` を `add`、`unit` を `zero` に対応付ける。
 - 親ごとに一つの宣言。同じメンバー型なら証明不要、型を狭める場合は `coherence` を証明する。
 
 Speaker note:
 
-- Source: `doc/spec/en/05.structures.md` §5.3; `sample_codes.md`, AddLoopStr。Rust との類似は宣言の分離を指す。LoopStr の binop は field、unit は property。
+- Source: `doc/spec/en/05.structures.md` §5.3; `sample_codes.md`, LoopStr・AddLoopStr。現行側の親指定は2.2参照。Evo 側は宣言済みの AddLoopStr に、ここで示す LoopStr への継承関係を追加する。
 
 ### Frame 2.4 - type: Unital の unit を実装し、zero に引き継ぐ
 
