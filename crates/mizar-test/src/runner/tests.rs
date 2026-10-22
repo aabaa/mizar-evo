@@ -23501,3 +23501,302 @@ fn source_theorem_syntax_payloads_preserve_upstream_and_refuse_unsupported_subtr
     assert_eq!(syntax(&source, collected.env()).unwrap(), prior);
     assert_eq!((source, collected.env().clone(), prior), before);
 }
+
+#[test]
+fn source_algorithm_syntax_payloads_preserve_exact_declarations() {
+    use mizar_resolve::{
+        declarations::{DeclarationShellCollector, DeclarationShellKind},
+        env::SymbolKind,
+        symbols::{
+            source_algorithm_syntax_payloads_from_arena as syntax, validate_source_symbol_env,
+        },
+    };
+    let original = include_str!(
+        "../../../../tests/miz/pass/algorithms/pass_proof_verification_algorithm_ensures_return_001.miz"
+    );
+    // Entire 425-byte vector was frozen from the old parser and written grammar before this API.
+    let hex = concat!(
+        "6d697a61722d7265736f6c76652f736f757263652d616c676f726974686d2d73796e7461782f76310000970000",
+        "000900ab00000001000200650000000b7465726d696e6174696e67000000000002006500000009616c676f7269",
+        "74686d0000000000020064000000066964616c676f000000000098000000030002006600000001280000000000",
+        "0200640000000161000000000002006600000001290000000000020066000000022d3e00000000001500000001",
+        "00190000000100020065000000066f626a6563740000000000ad000000020002006500000007656e7375726573",
+        "00000000002c00000001002d00000003001c00000001001d000000010002006400000006726573756c74000000",
+        "0000020066000000013d00000000001c00000001001d0000000100020064000000016100000000009900000003",
+        "0002006500000002646f00000000009a0000000100a000000003000200650000000672657475726e0000000000",
+        "1c00000001001d000000010002006400000001610000000000020066000000013b000000000002006500000003",
+        "656e640000000000020066000000013b00000000",
+    );
+    let expected = hex
+        .as_bytes()
+        .as_chunks::<2>()
+        .0
+        .iter()
+        .map(|pair| u8::from_str_radix(std::str::from_utf8(pair).unwrap(), 16).unwrap())
+        .collect::<Vec<_>>();
+    assert_eq!(expected.len(), 425);
+    let second = original.replace("idalgo", "otheralgo");
+    for (text, count) in [
+        (original.to_owned(), 1),
+        (format!("{original}\n{second}"), 2),
+    ] {
+        let (frontend, source, collected) =
+            source_registration_owner_inputs(&text, "owner-test", "owners", 0);
+        assert!(frontend.diagnostics.is_empty());
+        assert!(collected.diagnostics().is_empty());
+        validate_source_symbol_env(&source, collected.env()).unwrap();
+        let ast = frontend.ast.as_ref().unwrap();
+        let shells = DeclarationShellCollector::new(ast, source.module()).collect();
+        let algorithms = shells
+            .declarations()
+            .iter()
+            .filter(|s| s.kind() == DeclarationShellKind::AlgorithmDefinition)
+            .collect::<Vec<_>>();
+        assert_eq!(algorithms.len(), count);
+        for shell in algorithms {
+            let parent = shells.declaration(shell.parent().unwrap()).unwrap();
+            assert_eq!(parent.kind(), DeclarationShellKind::DefinitionBlock);
+            assert!(parent.parent().is_none());
+        }
+        let entries = collected
+            .env()
+            .symbols()
+            .iter()
+            .filter(|e| e.kind() == SymbolKind::Algorithm)
+            .collect::<Vec<_>>();
+        assert_eq!(entries.len(), count);
+        let before = (source.clone(), collected.env().clone());
+        let values = syntax(&source, collected.env()).unwrap();
+        assert_eq!(values.len(), count);
+        assert_eq!(
+            values.keys().collect::<std::collections::BTreeSet<_>>(),
+            entries
+                .iter()
+                .map(|e| e.symbol())
+                .collect::<std::collections::BTreeSet<_>>()
+        );
+        let original_entry = entries
+            .iter()
+            .find(|e| e.primary_spelling() == "idalgo")
+            .unwrap();
+        assert_eq!(values.get(original_entry.symbol()), Some(&expected));
+        assert_eq!(syntax(&source, collected.env()).unwrap(), values);
+        assert_eq!((source, collected.env().clone()), before);
+    }
+    for text in ["", "theorem T: for X being set holds X = X;"] {
+        let (frontend, source, collected) =
+            source_registration_owner_inputs(text, "owner-test", "owners", 0);
+        assert!(frontend.diagnostics.is_empty());
+        assert!(collected.diagnostics().is_empty());
+        validate_source_symbol_env(&source, collected.env()).unwrap();
+        assert!(
+            !collected
+                .env()
+                .symbols()
+                .iter()
+                .any(|e| e.kind() == SymbolKind::Algorithm)
+        );
+        assert!(syntax(&source, collected.env()).unwrap().is_empty());
+    }
+}
+
+#[test]
+fn source_algorithm_syntax_payloads_preserve_source_associations_and_locality() {
+    use mizar_resolve::{
+        declarations::{DeclarationShellCollector, DeclarationShellKind},
+        env::{SymbolKind, Visibility},
+        symbols::{
+            source_algorithm_syntax_payloads_from_arena as syntax, validate_source_symbol_env,
+        },
+    };
+    let original = include_str!(
+        "../../../../tests/miz/pass/algorithms/pass_proof_verification_algorithm_ensures_return_001.miz"
+    );
+    let second = original.replace("idalgo", "otheralgo");
+    let text = format!("{original}\n{second}");
+    let (_, source, collected) = source_registration_owner_inputs(&text, "owner-test", "owners", 0);
+    validate_source_symbol_env(&source, collected.env()).unwrap();
+    let prior = syntax(&source, collected.env()).unwrap();
+    let baseline = collected
+        .env()
+        .symbols()
+        .iter()
+        .filter(|e| e.kind() == SymbolKind::Algorithm)
+        .map(|e| (e.primary_spelling().to_owned(), prior[e.symbol()].clone()))
+        .collect::<std::collections::BTreeMap<_, _>>();
+    assert_eq!(baseline.len(), 2);
+    let before = (source.clone(), collected.env().clone(), prior.clone());
+    let trivia = format!(":: λ 日本語\n{}", text.replace(' ', "  "));
+    let reordered = format!("{second}\n{original}");
+    let private = format!(
+        "{}\n{second}",
+        original.replace("terminating algorithm", "private terminating algorithm")
+    );
+    let unterminated = format!(
+        "{}\n{second}",
+        original.replace("terminating algorithm", "algorithm")
+    );
+    let renamed = format!("{}\n{second}", original.replace("idalgo", "newalgo"));
+    let parameter = format!("{}\n{second}", original.replace("idalgo(a)", "idalgo(b)"));
+    let returned = format!(
+        "{}\n{second}",
+        original.replace("return a;", "return result;")
+    );
+    let outer = format!(
+        "{}\n{second}",
+        original.replace("let a be object", "let z be object")
+    );
+    for (index, edited, package, module, skip) in [
+        (0, trivia, "owner-test", "owners", 0),
+        (1, text.clone(), "owner-test", "owners", 7),
+        (2, reordered, "owner-test", "owners", 0),
+        (3, text.clone(), "other-package", "owners", 0),
+        (4, text.clone(), "owner-test", "other_module", 0),
+        (5, private, "owner-test", "owners", 0),
+        (6, unterminated, "owner-test", "owners", 0),
+        (7, renamed, "owner-test", "owners", 0),
+        (8, parameter, "owner-test", "owners", 0),
+        (9, returned, "owner-test", "owners", 0),
+        (10, outer, "owner-test", "owners", 0),
+    ] {
+        let (frontend, current, entries) =
+            source_registration_owner_inputs(&edited, package, module, skip);
+        assert!(frontend.diagnostics.is_empty(), "edit {index}");
+        assert!(entries.diagnostics().is_empty(), "edit {index}");
+        validate_source_symbol_env(&current, entries.env()).unwrap();
+        let shells =
+            DeclarationShellCollector::new(frontend.ast.as_ref().unwrap(), current.module())
+                .collect();
+        assert_eq!(
+            shells
+                .declarations()
+                .iter()
+                .filter(|s| s.kind() == DeclarationShellKind::AlgorithmDefinition
+                    && shells
+                        .declaration(s.parent().unwrap())
+                        .is_some_and(|p| p.kind() == DeclarationShellKind::DefinitionBlock
+                            && p.parent().is_none()))
+                .count(),
+            2
+        );
+        let input_before = (current.clone(), entries.env().clone());
+        let values = syntax(&current, entries.env()).unwrap();
+        let actual = entries
+            .env()
+            .symbols()
+            .iter()
+            .filter(|e| e.kind() == SymbolKind::Algorithm)
+            .collect::<Vec<_>>();
+        assert_eq!(actual.len(), 2);
+        assert_eq!(
+            values.keys().collect::<std::collections::BTreeSet<_>>(),
+            actual
+                .iter()
+                .map(|e| e.symbol())
+                .collect::<std::collections::BTreeSet<_>>()
+        );
+        for entry in actual {
+            let name = if entry.primary_spelling() == "newalgo" {
+                "idalgo"
+            } else {
+                entry.primary_spelling()
+            };
+            let value = &values[entry.symbol()];
+            if matches!(index, 6..=9) && name == "idalgo" {
+                assert_ne!(value, &baseline[name], "edit {index}");
+            } else {
+                assert_eq!(value, &baseline[name], "edit {index}");
+            }
+            assert_eq!(entry.symbol().module(), current.module());
+            assert_eq!(
+                entry.visibility(),
+                if index == 5 && name == "idalgo" {
+                    Visibility::Private
+                } else {
+                    Visibility::Public
+                }
+            );
+        }
+        if index == 1 {
+            assert_ne!(current.source_id(), source.source_id());
+        }
+        if matches!(index, 2..=4) {
+            assert_ne!(
+                values.keys().collect::<Vec<_>>(),
+                prior.keys().collect::<Vec<_>>()
+            );
+        }
+        assert_eq!((current, entries.env().clone()), input_before);
+    }
+    assert_eq!((source, collected.env().clone(), prior), before);
+}
+
+#[test]
+fn source_algorithm_syntax_payloads_preserve_upstream_and_atomic_refusals() {
+    use mizar_resolve::{
+        env::SymbolKind,
+        symbols::{
+            source_algorithm_syntax_payloads_from_arena as syntax, validate_source_symbol_env,
+        },
+    };
+    use mizar_syntax::SurfaceNodeKind;
+    let original = include_str!(
+        "../../../../tests/miz/pass/algorithms/pass_proof_verification_algorithm_ensures_return_001.miz"
+    );
+    let (_, source, collected) =
+        source_registration_owner_inputs(original, "owner-test", "owners", 0);
+    validate_source_symbol_env(&source, collected.env()).unwrap();
+    let prior = syntax(&source, collected.env()).unwrap();
+    let before = (source.clone(), collected.env().clone(), prior.clone());
+    for edited in [
+        original.replace("idalgo", "foreignalgo"),
+        format!("{original}\n{}", original.replace("idalgo", "otheralgo")),
+    ] {
+        let (frontend, current, entries) =
+            source_registration_owner_inputs(&edited, "owner-test", "owners", 0);
+        assert!(frontend.diagnostics.is_empty());
+        assert!(entries.diagnostics().is_empty());
+        let mismatch = validate_source_symbol_env(&source, entries.env()).unwrap_err();
+        assert_eq!(syntax(&source, entries.env()).unwrap_err(), mismatch);
+        let mismatch = validate_source_symbol_env(&current, collected.env()).unwrap_err();
+        assert_eq!(syntax(&current, collected.env()).unwrap_err(), mismatch);
+    }
+    let while_source = include_str!(
+        "../../../../tests/miz/pass/algorithms/pass_proof_verification_algorithm_while_invariant_001.miz"
+    );
+    for edited in [
+        while_source.to_owned(),
+        format!("{original}\n{while_source}"),
+    ] {
+        let (frontend, current, entries) =
+            source_registration_owner_inputs(&edited, "owner-test", "owners", 0);
+        assert!(frontend.diagnostics.is_empty());
+        assert!(entries.diagnostics().is_empty());
+        assert!(
+            frontend
+                .ast
+                .as_ref()
+                .unwrap()
+                .node_views()
+                .any(|n| matches!(n.kind(), SurfaceNodeKind::WhileStatement))
+        );
+        assert_eq!(
+            entries
+                .env()
+                .symbols()
+                .iter()
+                .filter(|e| e.kind() == SymbolKind::Algorithm)
+                .count(),
+            if edited == while_source { 1 } else { 2 }
+        );
+        let input_before = (current.clone(), entries.env().clone());
+        validate_source_symbol_env(&current, entries.env()).unwrap();
+        assert_eq!(
+            syntax(&current, entries.env()).unwrap_err(),
+            "unsupported source algorithm syntax payload"
+        );
+        assert_eq!((current, entries.env().clone()), input_before);
+    }
+    assert_eq!(syntax(&source, collected.env()).unwrap(), prior);
+    assert_eq!((source, collected.env().clone(), prior), before);
+}
