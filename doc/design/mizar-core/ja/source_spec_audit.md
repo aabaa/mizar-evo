@@ -146,6 +146,7 @@ Source: `crates/mizar-core/src/elaborator.rs`。owning spec: `elaborator.md`。
 `source_registration_formula_payloads` は [registration formula 内容の所有者](./elaborator.md#source-registration-formula-payloads) を参照。
 `source_theorem_formula_payloads` は [theorem formula 内容の所有者](./elaborator.md#source-theorem-formula-payloads) を参照。
 `source_algorithm_formula_payloads` は [algorithm formula 内容の所有者](./elaborator.md#source-algorithm-formula-payloads) を参照。
+`source_algorithm_core_semantic_payload` は [algorithm Core 全体内容の所有者](./elaborator.md#source-algorithm-core-semantic-payload) を参照。
 
 top-level public API group:
 

@@ -714,6 +714,7 @@ IR264. **Authenticated structure-property definition owner。** [x]
 
 57. **[Source theorem Core semantic payload](../../task_contracts/ja/CORE-SOURCE-THEOREM-SEMANTIC-PAYLOAD.md).** [x]
 58. **[Source algorithm formula payloads](../../task_contracts/ja/CORE-SOURCE-ALGORITHM-FORMULA-PAYLOADS.md).** [x]
+59. **[Source algorithm Core semantic payload](../../task_contracts/ja/CORE-SOURCE-ALGORITHM-SEMANTIC-PAYLOAD.md).** [x]
 
 ## 推奨検証
 

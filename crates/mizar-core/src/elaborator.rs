@@ -15439,6 +15439,344 @@ pub fn source_theorem_formula_payloads(
     Ok(selected)
 }
 
+/// Encodes whole semantic content from a replay-checked bounded source algorithm.
+pub fn source_algorithm_core_semantic_payload(
+    check: &mizar_checker::type_checker::SourceAlgorithmCheck<'_>,
+    core: &CoreIr,
+) -> Result<Vec<u8>, String> {
+    use crate::binder_normalization::{
+        CanonicalTermKind as T, CanonicalVar, canonical_term, normalize_core_term,
+    };
+    fn invalid() -> String {
+        "unsupported source algorithm core semantic payload".to_owned()
+    }
+    fn append(out: &mut Vec<u8>, value: &[u8]) -> Result<(), String> {
+        if out.len().checked_add(value.len()).ok_or_else(invalid)? > 32 * 1024 * 1024 {
+            return Err(invalid());
+        }
+        out.extend_from_slice(value);
+        Ok(())
+    }
+    fn count(out: &mut Vec<u8>, value: usize) -> Result<(), String> {
+        append(
+            out,
+            &u32::try_from(value).map_err(|_| invalid())?.to_be_bytes(),
+        )
+    }
+    fn frame(out: &mut Vec<u8>, value: &[u8]) -> Result<(), String> {
+        count(out, value.len())?;
+        append(out, value)
+    }
+    fn term(
+        out: &mut Vec<u8>,
+        core: &CoreIr,
+        id: CoreTermId,
+        context: &BinderContext,
+        slots: &BTreeMap<CoreVarId, (u8, u32)>,
+    ) -> Result<(), String> {
+        let row = core.terms().get(id).ok_or_else(invalid)?;
+        let normalized =
+            normalize_core_term(core, id, context, &row.source).map_err(|_| invalid())?;
+        let canonical = canonical_term(&normalized, context, &row.source).map_err(|_| invalid())?;
+        let (var, class) = match canonical.kind() {
+            T::Var(CanonicalVar::Free(var)) => (var, 1),
+            T::Var(CanonicalVar::Generated(var)) => (var, 2),
+            _ => return Err(invalid()),
+        };
+        let (actual_class, slot) = slots.get(var).ok_or_else(invalid)?;
+        if class != *actual_class {
+            return Err(invalid());
+        }
+        append(out, &[if class == 1 { 2 } else { 4 }])?;
+        append(out, &slot.to_be_bytes())
+    }
+    // Collect optional roots before authentication without introducing an earlier error.
+    let mut roots = BTreeSet::new();
+    for (_, algorithm) in core.algorithms().iter() {
+        for binder in algorithm.params.iter().chain(algorithm.result.iter()) {
+            roots.extend(binder.ty_guard);
+        }
+        roots.extend(&algorithm.contracts.ensures);
+    }
+    for (_, statement) in core.algorithm_statements().iter() {
+        match &statement.kind {
+            CoreAlgorithmStmtKind::Let { binder, .. } => roots.extend(binder.ty_guard),
+            CoreAlgorithmStmtKind::Pick {
+                binder, witness_ty, ..
+            } => {
+                roots.extend(binder.ty_guard);
+                roots.extend(witness_ty);
+            }
+            CoreAlgorithmStmtKind::Assert { formula } => {
+                roots.insert(*formula);
+            }
+            CoreAlgorithmStmtKind::While {
+                condition,
+                invariants,
+                ..
+            } => {
+                roots.insert(*condition);
+                roots.extend(invariants);
+            }
+            _ => {}
+        }
+    }
+    for (_, seed) in core.obligation_seeds().iter() {
+        roots.extend(&seed.context);
+        roots.extend(seed.goal);
+    }
+    let values =
+        source_algorithm_formula_payloads(check, core, &roots.iter().copied().collect::<Vec<_>>())?;
+    let (item_id, _) = core.items().iter().next().ok_or_else(invalid)?;
+    let (algorithm_id, algorithm) = core.algorithms().iter().next().ok_or_else(invalid)?;
+    let [parameter] = algorithm.params.as_slice() else {
+        return Err(invalid());
+    };
+    let result = algorithm.result.as_ref().ok_or_else(invalid)?;
+    let mut binders = vec![(parameter, 1), (result, 2)];
+    for (_, statement) in core.algorithm_statements().iter() {
+        match &statement.kind {
+            CoreAlgorithmStmtKind::Let { binder, .. } => binders.push((binder, 1)),
+            CoreAlgorithmStmtKind::Pick { binder, .. } => binders.push((binder, 2)),
+            _ => {}
+        }
+    }
+    let mut slots = BTreeMap::new();
+    let mut context = BinderContext::new();
+    for (binder, class) in binders {
+        let slot = u32::try_from(slots.len()).map_err(|_| invalid())?;
+        slots.insert(binder.var, (class, slot));
+        context.declare_variable(
+            binder.var,
+            if class == 1 {
+                NormalizedVarClass::Free
+            } else {
+                NormalizedVarClass::Generated
+            },
+            binder.role.clone(),
+            NormalizedVarSort::Term,
+        );
+    }
+    let mut out = b"mizar-core/source-algorithm-core-semantics/v1\0".to_vec();
+    count(&mut out, algorithm.params.len())?;
+    for binder in &algorithm.params {
+        frame(
+            &mut out,
+            values
+                .get(&binder.ty_guard.ok_or_else(invalid)?)
+                .ok_or_else(invalid)?,
+        )?;
+    }
+    frame(
+        &mut out,
+        values
+            .get(&result.ty_guard.ok_or_else(invalid)?)
+            .ok_or_else(invalid)?,
+    )?;
+    count(&mut out, algorithm.contracts.ensures.len())?;
+    for id in &algorithm.contracts.ensures {
+        frame(&mut out, values.get(id).ok_or_else(invalid)?)?;
+    }
+    count(&mut out, algorithm.statements.len())?;
+    let mut pending = algorithm
+        .statements
+        .iter()
+        .rev()
+        .copied()
+        .collect::<Vec<_>>();
+    let mut ordinals = BTreeMap::new();
+    let mut terms = BTreeSet::new();
+    let mut picks = Vec::new();
+    while let Some(id) = pending.pop() {
+        let ordinal = u32::try_from(ordinals.len()).map_err(|_| invalid())?;
+        if ordinals.insert(id, ordinal).is_some() {
+            return Err(invalid());
+        }
+        let statement = core.algorithm_statements().get(id).ok_or_else(invalid)?;
+        match &statement.kind {
+            CoreAlgorithmStmtKind::Snapshot { name, captures } => {
+                append(&mut out, &[1])?;
+                frame(&mut out, name.as_bytes())?;
+                count(&mut out, captures.len())?;
+                for var in captures {
+                    append(
+                        &mut out,
+                        &slots.get(var).ok_or_else(invalid)?.1.to_be_bytes(),
+                    )?;
+                }
+            }
+            CoreAlgorithmStmtKind::Let {
+                binder,
+                value,
+                ghost,
+            } => {
+                append(&mut out, &[2])?;
+                append(
+                    &mut out,
+                    &slots.get(&binder.var).ok_or_else(invalid)?.1.to_be_bytes(),
+                )?;
+                frame(
+                    &mut out,
+                    values
+                        .get(&binder.ty_guard.ok_or_else(invalid)?)
+                        .ok_or_else(invalid)?,
+                )?;
+                append(&mut out, &[u8::from(*ghost), u8::from(value.is_some())])?;
+                if let Some(value) = value {
+                    terms.insert(*value);
+                    term(&mut out, core, *value, &context, &slots)?;
+                }
+            }
+            CoreAlgorithmStmtKind::AssignLocal { target, value } => {
+                append(&mut out, &[3])?;
+                append(
+                    &mut out,
+                    &slots.get(target).ok_or_else(invalid)?.1.to_be_bytes(),
+                )?;
+                terms.insert(*value);
+                term(&mut out, core, *value, &context, &slots)?;
+            }
+            CoreAlgorithmStmtKind::Assert { formula } => {
+                append(&mut out, &[4])?;
+                frame(&mut out, values.get(formula).ok_or_else(invalid)?)?;
+            }
+            CoreAlgorithmStmtKind::While {
+                condition,
+                invariants,
+                body,
+                ..
+            } => {
+                append(&mut out, &[5])?;
+                frame(&mut out, values.get(condition).ok_or_else(invalid)?)?;
+                count(&mut out, invariants.len())?;
+                for id in invariants {
+                    frame(&mut out, values.get(id).ok_or_else(invalid)?)?;
+                }
+                count(&mut out, body.len())?;
+                pending.extend(body.iter().rev().copied());
+            }
+            CoreAlgorithmStmtKind::Return(value) => {
+                append(&mut out, &[6, u8::from(value.is_some())])?;
+                if let Some(value) = value {
+                    terms.insert(*value);
+                    term(&mut out, core, *value, &context, &slots)?;
+                }
+            }
+            CoreAlgorithmStmtKind::Break => append(&mut out, &[7])?,
+            CoreAlgorithmStmtKind::Pick {
+                binder,
+                witness_ty,
+                ghost,
+            } => {
+                picks.push((id, ordinal));
+                append(&mut out, &[8])?;
+                append(
+                    &mut out,
+                    &slots.get(&binder.var).ok_or_else(invalid)?.1.to_be_bytes(),
+                )?;
+                frame(
+                    &mut out,
+                    values
+                        .get(&binder.ty_guard.ok_or_else(invalid)?)
+                        .ok_or_else(invalid)?,
+                )?;
+                append(&mut out, &[u8::from(witness_ty.is_some())])?;
+                if let Some(id) = witness_ty {
+                    frame(&mut out, values.get(id).ok_or_else(invalid)?)?;
+                }
+                append(&mut out, &[u8::from(*ghost)])?;
+            }
+            _ => return Err(invalid()),
+        }
+    }
+    if ordinals.len() != core.algorithm_statements().len() {
+        return Err(invalid());
+    }
+    let mut formulas = BTreeSet::new();
+    let mut pending = roots.iter().copied().collect::<Vec<_>>();
+    while let Some(id) = pending.pop() {
+        if !formulas.insert(id) {
+            continue;
+        }
+        match &core.formulas().get(id).ok_or_else(invalid)?.kind {
+            CoreFormulaKind::Equals { left, right } => {
+                terms.extend([*left, *right]);
+            }
+            CoreFormulaKind::TypePred { subject, .. } => {
+                terms.insert(*subject);
+            }
+            CoreFormulaKind::Not(child) => pending.push(*child),
+            CoreFormulaKind::Exists { binders, body } => {
+                if binders.iter().any(|binder| binder.ty_guard.is_some()) {
+                    return Err(invalid());
+                }
+                pending.push(*body);
+            }
+            _ => return Err(invalid()),
+        }
+    }
+    if formulas != core.formulas().iter().map(|(id, _)| id).collect() {
+        return Err(invalid());
+    }
+    let unused = core
+        .terms()
+        .iter()
+        .filter(|(id, _)| !terms.contains(id))
+        .collect::<Vec<_>>();
+    let [(id, header)] = unused.as_slice() else {
+        return Err(invalid());
+    };
+    if header.kind != CoreTermKind::Var(parameter.var)
+        || terms.iter().any(|id| core.terms().get(*id).is_none())
+    {
+        return Err(invalid());
+    }
+    let mut header_value = Vec::new();
+    term(&mut header_value, core, *id, &context, &slots)?;
+    if header_value != [2, 0, 0, 0, 0] {
+        return Err(invalid());
+    }
+    count(&mut out, core.obligation_seeds().len())?;
+    match (
+        picks.as_slice(),
+        core.obligation_seeds()
+            .iter()
+            .collect::<Vec<_>>()
+            .as_slice(),
+    ) {
+        ([], []) => {}
+        ([(pick, ordinal)], [(_, seed)]) => {
+            let goal = seed.goal.ok_or_else(invalid)?;
+            let refs = vec![
+                CoreNodeRef::Item(item_id),
+                CoreNodeRef::Algorithm(algorithm_id),
+                CoreNodeRef::AlgorithmStmt(*pick),
+                CoreNodeRef::Formula(goal),
+            ];
+            if seed.owner != item_id
+                || seed.kind != ObligationSeedKind::GeneratedNonEmptiness
+                || seed.status != ObligationSeedStatus::Active
+                || !seed.context.is_empty()
+                || seed.label.is_some()
+                || !seed.diagnostics.is_empty()
+                || seed.core_refs != refs
+                || !matches!(
+                    core.formulas().get(goal).ok_or_else(invalid)?.kind,
+                    CoreFormulaKind::Exists { .. }
+                )
+            {
+                return Err(invalid());
+            }
+            append(&mut out, &ordinal.to_be_bytes())?;
+            frame(&mut out, values.get(&goal).ok_or_else(invalid)?)?;
+            frame(&mut out, seed.local_path.as_str().as_bytes())?;
+            frame(&mut out, seed.semantic_origin.as_str().as_bytes())?;
+        }
+        _ => return Err(invalid()),
+    }
+    Ok(out)
+}
+
 /// Encodes the original and local semantics of a replay-checked single-local theorem.
 pub fn source_theorem_core_semantic_payload(
     check: &mizar_checker::type_checker::SourceTheoremCheck<'_>,
