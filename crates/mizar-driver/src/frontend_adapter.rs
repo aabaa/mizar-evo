@@ -1631,6 +1631,143 @@ impl<'a> crate::registry::SourceLoadInputs<'a> {
             .map(Some)
             .map_err(|error| error.to_string())
     }
+    /// Seals genuine bounded native algorithm Core with its semantic and storage streams.
+    pub fn publish_native_algorithm_core(
+        self,
+        input: &PhaseInput,
+        publisher: &mizar_ir::publisher::PhaseOutputPublisher,
+    ) -> Result<Option<mizar_ir::storage::PhaseOutputRef<mizar_core::core_ir::CoreIr>>, String>
+    {
+        use mizar_checker::typed_ast::{TypedArena, TypedNode, TypedNodeId};
+        let Some(core) = self.native_algorithm_core_with_frontend_parent(input, publisher)? else {
+            return Ok(None);
+        };
+        let WorkUnit::Module { module } = &input.work_unit else {
+            return Err("native algorithm core publication requires a module".to_owned());
+        };
+        let version = unique(self.snapshot.source_versions.iter().filter(|version| {
+            version.package_id == module.package && version.module_path == module.path
+        }))
+        .ok_or_else(|| {
+            "native algorithm core publication requires one captured source".to_owned()
+        })?;
+        let parent = input.parent_outputs()[0].as_output_ref();
+        let storage = publisher.storage();
+        let typed = storage
+            .typed_handle::<FrontendOutput<<MizarParserSeam as ParserSeam>::Ast>>(
+                parent,
+                &OutputKind::new("FrontendOutput"),
+            )
+            .map_err(|error| error.to_string())?;
+        let retained = storage.get(&typed).map_err(|error| error.to_string())?;
+        let ast = retained.ast.as_ref().ok_or_else(|| {
+            "native algorithm core publication requires retained syntax".to_owned()
+        })?;
+        let resolver_module =
+            mizar_resolve::resolved_ast::ModuleId::new(module.package.clone(), module.path.clone());
+        let Some((arena, env)) =
+            mizar_resolve::symbols::source_theorem_module_original_inputs(ast, &resolver_module)?
+        else {
+            return Ok(None);
+        };
+        let neutral = TypedArena::try_new(
+            Some(TypedNodeId::new(arena.arena().root().index())),
+            arena
+                .arena()
+                .iter()
+                .map(|(id, node)| {
+                    TypedNode::new(format!("{:?}", node.kind()), node.origin().anchor().clone())
+                        .with_resolved_node(id)
+                        .with_children(
+                            node.children()
+                                .iter()
+                                .map(|child| TypedNodeId::new(child.index()))
+                                .collect(),
+                        )
+                })
+                .collect(),
+        )
+        .map_err(|error| error.to_string())?;
+        let check =
+            mizar_checker::type_checker::check_source_algorithm_types(&arena, &neutral, &env)?;
+        let semantic_bytes =
+            mizar_core::elaborator::source_algorithm_core_semantic_payload(&check, &core)?;
+        let Some(storage_bytes) =
+            native_algorithm_core_storage_bytes(ast, &resolver_module, &core)?
+        else {
+            return Ok(None);
+        };
+        let storage_hash = Hash::from_bytes(blake3::derive_key(
+            "mizar-driver/native-algorithm-core-storage-side-table/v1",
+            &storage_bytes,
+        ));
+        let phase = IrPipelinePhase::new("Elaboration");
+        let work_unit = IrWorkUnit::new(format!(
+            "{:?}:{:?}",
+            module.package.as_str(),
+            module.path.as_str()
+        ));
+        let output_kind = OutputKind::new("SourceAlgorithmCore");
+        let source_id = version.source_id;
+        storage
+            .validate_handle(parent)
+            .map_err(|error| error.to_string())?;
+        publisher
+            .validate_published_output(input.snapshot, parent)
+            .map_err(|error| error.to_string())?;
+        publisher
+            .publish(PublishOutputInput {
+                slot: publisher.allocate(
+                    input.snapshot,
+                    phase.clone(),
+                    work_unit.clone(),
+                    output_kind.clone(),
+                    SchemaVersion::new(1),
+                ),
+                snapshot: input.snapshot,
+                phase,
+                work_unit,
+                output_kind,
+                schema_version: SchemaVersion::new(1),
+                payload: core,
+                canonical_payload: Some(semantic_bytes),
+                storage_payload: Some(storage_bytes),
+                decode: BlobDecoder::new(move |bytes| {
+                    native_algorithm_core_from_storage_bytes(bytes, source_id, &resolver_module)
+                        .map_err(BlobDecodeError::new)?
+                        .ok_or_else(|| {
+                            BlobDecodeError::new("invalid native algorithm core storage")
+                        })
+                }),
+                parents: vec![parent.clone()],
+                named_input_hashes: vec![NamedInputHash {
+                    name: "source".to_owned(),
+                    domain: SOURCE_UNIT_CACHE_KEY_VERSION.to_owned(),
+                    digest: source_input_hash(version),
+                }],
+                side_tables: IrSideTables {
+                    source_maps: vec![SideTableRecord::new(
+                        "elaborate-algorithm-core-storage",
+                        version.normalized_path.as_str(),
+                        storage_hash,
+                    )],
+                    ..IrSideTables::default()
+                },
+                origin: if matches!(version.origin, SourceOrigin::OpenBuffer { .. }) {
+                    OutputOrigin::OpenBuffer
+                } else {
+                    OutputOrigin::PackageSource
+                },
+                target: if matches!(version.origin, SourceOrigin::OpenBuffer { .. }) {
+                    PublicationTarget::InternalOnly
+                } else {
+                    PublicationTarget::CurrentPackage
+                },
+            })
+            .map(Some)
+            .map_err(|error| error.to_string())
+    }
+
     /// Seals genuine bounded native Core with its semantic and storage streams.
     pub fn publish_native_theorem_core(
         self,
