@@ -548,6 +548,7 @@ artifact/test のフォローアップタスクが所有する。本 crate の�
 54. **[Native theorem Core semantic payload](../../task_contracts/ja/DRIVER-NATIVE-THEOREM-CORE-SEMANTIC-PAYLOAD.md).** [x]
 55. **[Native theorem Core publication](../../task_contracts/ja/DRIVER-NATIVE-THEOREM-CORE-PUBLICATION.md).** [x]
 56. **[Native theorem VC caller](../../task_contracts/ja/DRIVER-NATIVE-THEOREM-VC-CALLER.md).** [x]
+57. **[Native theorem VC storage replay](../../task_contracts/ja/DRIVER-NATIVE-THEOREM-VC-STORAGE-REPLAY.md).** [x]
 
 ## 推奨検証
 
