@@ -493,6 +493,7 @@ layer consumes both; one alignment task is owned here.
 52. **[Genuine source return reflexivity](../../task_contracts/en/PROOF-SOURCE-ALGORITHM-RETURN-REFLEXIVITY.md).** [x]
 53. **[Genuine return canonical inputs](../../task_contracts/en/PROOF-SOURCE-ALGORITHM-RETURN-CANONICAL-INPUTS.md).** [x]
 54. **[Source algorithm return obligation identity](../../task_contracts/en/PROOF-SOURCE-ALGORITHM-RETURN-IDENTITY.md).** [x]
+55. **[Source algorithm return reflexivity status](../../task_contracts/en/PROOF-SOURCE-ALGORITHM-RETURN-STATUS.md).** [x]
 
 ## Recommended Verification
 

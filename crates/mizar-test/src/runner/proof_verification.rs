@@ -23689,4 +23689,313 @@ mod term_proof_tests {
             );
         }
     }
+
+    #[test]
+    fn source_algorithm_return_status_matches_genuine_projection() {
+        use mizar_proof::{
+            policy::{
+                CandidatePolicyClass, KernelEvidenceOrigin, KernelPolicyInput, VerifierPolicy,
+            },
+            selection::{
+                CandidateSourceId, ProofEvidenceCandidate, ProofEvidenceSet, ProofWinnerClass,
+                VcProofSelection, merge_artifact_proof_selections, select_winner,
+            },
+            status::{
+                ArtifactPublicationGap, ArtifactStatusPublication, ProjectedProofStatus,
+                ProofStatusProjectionInput as Input,
+                check_source_algorithm_return_reflexivity as normal,
+                project_source_algorithm_return_reflexivity_status as project, project_status,
+                source_algorithm_return_obligation_identity as identity,
+            },
+        };
+        use mizar_vc::{dependency_slice::DependencySliceCompleteness, vc_ir::VcStatus};
+
+        let original = fs::read_to_string(config().workspace_root.join(
+            "tests/miz/pass/algorithms/pass_proof_verification_algorithm_ensures_return_001.miz",
+        ))
+        .unwrap();
+        let mut baseline_source = None;
+        for (index, text, skip) in [
+            (0, original.clone(), 0),
+            (1, original.replace("terminating algorithm", "algorithm"), 0),
+            (2, format!(":: 世代 neutral trivia\n\n{original}"), 0),
+            (3, original.clone(), 7),
+        ] {
+            with_source_algorithm_identity_inputs(
+                &text,
+                "owner-test",
+                "owners",
+                skip,
+                |source, typed, symbols, check| {
+                    if index == 0 {
+                        baseline_source = Some(source.source_id());
+                    } else if index == 3 {
+                        assert_ne!(Some(source.source_id()), baseline_source);
+                    }
+                    let before = format!("{source:?}{typed:?}{symbols:?}{check:?}");
+                    let core = mizar_core::elaborator::lower_source_algorithms(check).unwrap();
+                    for (policy_case, (snapshot, policy)) in [
+                        (snapshot_id(0), VerifierPolicy::default()),
+                        (snapshot_id(1), VerifierPolicy::default()),
+                        (snapshot_id(0), VerifierPolicy::development()),
+                    ]
+                    .into_iter()
+                    .take(if index == 0 { 3 } else { 1 })
+                    .enumerate()
+                    {
+                        let vcs = mizar_vc::generator::generate_source_algorithm_postconditions(
+                            &core,
+                            snapshot,
+                            &GenerationSchemaVersion::new("mizar-vc-generation-step5c14-return-v1"),
+                            &VcSchemaVersion::new("mizar-vc-vcset-step5c14-return-v1"),
+                        )
+                        .unwrap();
+                        let [vc] = vcs.vcs() else {
+                            panic!("one genuine return VC")
+                        };
+                        let old = identity(source, check, symbols, snapshot, vc.id).unwrap();
+                        let checked =
+                            normal(source, check.typed(), symbols, snapshot, vc.id, &policy)
+                                .unwrap();
+                        assert_eq!(checked.1.class, CandidatePolicyClass::DischargedBuiltin);
+                        let target = checked.0.target_vc_fingerprint().sort_bytes();
+                        let id_text = format!(
+                            "source-algorithm-return-reflexivity-v1:{}",
+                            target
+                                .iter()
+                                .map(|byte| format!("{byte:02x}"))
+                                .collect::<String>()
+                        );
+                        if index == 0 && policy_case == 0 {
+                            assert_eq!(
+                                id_text,
+                                "source-algorithm-return-reflexivity-v1:1200000020d70222e20484e59bc7ee4ef3e1eb0123df719e794ddd40c7a5d09674c21b8ded"
+                            );
+                        }
+                        let input = KernelPolicyInput::from_kernel_result(
+                            &checked.0,
+                            KernelEvidenceOrigin::BuiltinDischarge,
+                        );
+                        let candidate = ProofEvidenceCandidate::from_trusted_kernel_input(
+                            CandidateSourceId::new(id_text.clone()).unwrap(),
+                            &input,
+                        )
+                        .unwrap();
+                        let selected = select_winner(
+                            &ProofEvidenceSet::new(target, None, policy.clone())
+                                .with_candidates([candidate]),
+                        );
+                        assert_eq!(
+                            selected.selected_class(),
+                            ProofWinnerClass::DischargedBuiltin
+                        );
+                        let [row] = <[_; 1]>::try_from(
+                            merge_artifact_proof_selections(
+                                [],
+                                [VcProofSelection::new(vc.id, selected.clone())],
+                            )
+                            .unwrap(),
+                        )
+                        .unwrap();
+                        let expected =
+                            project_status(Input::new(row, policy.clone(), old.0.clone())).unwrap();
+                        let prior = (checked.clone(), policy.clone());
+                        let actual =
+                            project(source, check, symbols, snapshot, vc.id, &policy).unwrap();
+                        assert_eq!(actual, (expected, old.1.clone()));
+                        assert_eq!(
+                            actual.0.selected_class(),
+                            ProofWinnerClass::DischargedBuiltin
+                        );
+                        assert_eq!(actual.0.projected_status(), ProjectedProofStatus::Accepted);
+                        assert_eq!(
+                            actual.0.artifact_publication(),
+                            ArtifactStatusPublication::ExternalDependencyGap(
+                                ArtifactPublicationGap::DischargedBuiltinWitnessUnsupported
+                            )
+                        );
+                        let reuse = actual.0.reuse_metadata();
+                        assert_eq!(reuse.selected_candidate_id().unwrap().as_str(), id_text);
+                        assert!(reuse.selected_evidence_hash().is_some());
+                        assert_eq!(reuse.selected_proof_witness_hash(), None);
+                        assert_eq!(reuse.deterministic_discharge_hash(), None);
+                        assert_eq!(reuse.selected_candidate_provenance_hash(), None);
+                        assert_eq!(reuse.dependency_compatibility(), None);
+                        assert_eq!(reuse.trusted_used_axioms_hash(), None);
+                        assert_eq!(reuse.explanation_ref(), None);
+                        assert!(!reuse.cache_reuse_predicate_complete());
+                        assert_eq!(actual.1.status(), &VcStatus::Open);
+                        assert!(!actual.1.unknowns().is_empty());
+                        assert_eq!(
+                            actual.1.completeness(),
+                            DependencySliceCompleteness::IncompleteUncacheable
+                        );
+                        assert!(actual.1.requires_cache_miss());
+                        assert_eq!(
+                            actual,
+                            project(source, check, symbols, snapshot, vc.id, &policy).unwrap()
+                        );
+                        assert_eq!((checked, policy), prior);
+                    }
+                    assert_eq!(format!("{source:?}{typed:?}{symbols:?}{check:?}"), before);
+                },
+            );
+        }
+    }
+
+    #[test]
+    fn source_algorithm_return_status_preserves_upstream_errors_and_inputs() {
+        use mizar_checker::type_checker::check_source_algorithm_types;
+        use mizar_proof::{
+            policy::VerifierPolicy,
+            status::{
+                check_source_algorithm_return_reflexivity as normal,
+                project_source_algorithm_return_reflexivity_status as project,
+                source_algorithm_return_canonical_inputs as canonical,
+                source_algorithm_return_obligation_identity as identity,
+            },
+        };
+        use mizar_vc::vc_ir::VcId;
+
+        let root = config().workspace_root;
+        let original = fs::read_to_string(root.join(
+            "tests/miz/pass/algorithms/pass_proof_verification_algorithm_ensures_return_001.miz",
+        ))
+        .unwrap();
+        let broader = fs::read_to_string(root.join(
+            "tests/miz/pass/algorithms/pass_proof_verification_algorithm_var_const_assert_001.miz",
+        ))
+        .unwrap();
+        let disabled = VerifierPolicy::default().with_kernel_evidence_formats([]);
+        for (kind, text) in [
+            ("absent", original.clone()),
+            ("zero", original.replace("    ensures result = a\n", "")),
+            ("broader", broader),
+            (
+                "two_returns",
+                original
+                    .replace("    ensures result = a\n", "")
+                    .replace("return a;", "return a;\n    return a;"),
+            ),
+        ] {
+            with_source_algorithm_identity_inputs(
+                &text,
+                "owner-test",
+                "owners",
+                0,
+                |source, typed, symbols, check| {
+                    let before = format!("{source:?}{typed:?}{symbols:?}{check:?}");
+                    let snapshot = snapshot_id(0);
+                    let fresh =
+                        check_source_algorithm_types(source, check.typed(), symbols).unwrap();
+                    assert_eq!(fresh.algorithm(), check.algorithm());
+                    let core = mizar_core::elaborator::lower_source_algorithms(&fresh).unwrap();
+                    let generated = mizar_vc::generator::generate_source_algorithm_postconditions(
+                        &core,
+                        snapshot,
+                        &GenerationSchemaVersion::new("mizar-vc-generation-step5c14-return-v1"),
+                        &VcSchemaVersion::new("mizar-vc-vcset-step5c14-return-v1"),
+                    );
+                    let selected = if kind == "broader" {
+                        generated.as_ref().unwrap().vcs().first().unwrap().id
+                    } else {
+                        VcId::new(usize::MAX)
+                    };
+                    if kind == "zero" {
+                        assert!(generated.as_ref().unwrap().vcs().is_empty());
+                    }
+                    if kind == "two_returns" {
+                        assert!(generated.is_err());
+                    }
+                    let expected = canonical(&fresh, snapshot, selected).unwrap_err();
+                    if kind == "two_returns" {
+                        assert_eq!(expected, generated.unwrap_err());
+                    }
+                    assert_eq!(
+                        identity(source, check, symbols, snapshot, selected).unwrap_err(),
+                        expected
+                    );
+                    assert_eq!(
+                        project(source, check, symbols, snapshot, selected, &disabled).unwrap_err(),
+                        expected
+                    );
+                    if kind == "absent" {
+                        for changed in [
+                            original.replace("idalgo", "foreign_algorithm"),
+                            format!("{original}\n{original}"),
+                        ] {
+                            let (_, _, foreign) =
+                                super::super::tests::source_registration_owner_inputs(
+                                    &changed,
+                                    "owner-test",
+                                    "owners",
+                                    0,
+                                );
+                            let actual =
+                                check_source_algorithm_types(source, check.typed(), foreign.env())
+                                    .unwrap_err();
+                            assert_eq!(
+                                identity(source, check, foreign.env(), snapshot, selected)
+                                    .unwrap_err(),
+                                actual
+                            );
+                            assert_eq!(
+                                project(
+                                    source,
+                                    check,
+                                    foreign.env(),
+                                    snapshot,
+                                    selected,
+                                    &disabled
+                                )
+                                .unwrap_err(),
+                                actual
+                            );
+                        }
+                    }
+                    assert_eq!(format!("{source:?}{typed:?}{symbols:?}{check:?}"), before);
+                },
+            );
+        }
+        with_source_algorithm_identity_inputs(
+            &original,
+            "owner-test",
+            "owners",
+            0,
+            |source, typed, symbols, check| {
+                let before = format!("{source:?}{typed:?}{symbols:?}{check:?}");
+                let snapshot = snapshot_id(0);
+                let core = mizar_core::elaborator::lower_source_algorithms(check).unwrap();
+                let vcs = mizar_vc::generator::generate_source_algorithm_postconditions(
+                    &core,
+                    snapshot,
+                    &GenerationSchemaVersion::new("mizar-vc-generation-step5c14-return-v1"),
+                    &VcSchemaVersion::new("mizar-vc-vcset-step5c14-return-v1"),
+                )
+                .unwrap();
+                let [target] = vcs.vcs() else {
+                    panic!("one genuine return VC")
+                };
+                let old = identity(source, check, symbols, snapshot, target.id).unwrap();
+                let expected = normal(
+                    source,
+                    check.typed(),
+                    symbols,
+                    snapshot,
+                    target.id,
+                    &disabled,
+                )
+                .unwrap_err();
+                assert_eq!(
+                    project(source, check, symbols, snapshot, target.id, &disabled).unwrap_err(),
+                    expected
+                );
+                assert_eq!(
+                    old,
+                    identity(source, check, symbols, snapshot, target.id).unwrap()
+                );
+                assert_eq!(format!("{source:?}{typed:?}{symbols:?}{check:?}"), before);
+            },
+        );
+    }
 }
