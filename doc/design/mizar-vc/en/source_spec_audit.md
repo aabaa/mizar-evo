@@ -180,6 +180,7 @@ Correspondence:
 
 Source path: `crates/mizar-vc/src/kernel_evidence_handoff.rs`.
 [build_source_algorithm_return_kernel_handoff](./kernel_evidence_handoff.md#source-algorithm-return-local-handoff) owns the bounded original return projection.
+[build_source_algorithm_state_kernel_handoff](./kernel_evidence_handoff.md#source-algorithm-state-local-handoff).
 
 Literal top-level public items:
 

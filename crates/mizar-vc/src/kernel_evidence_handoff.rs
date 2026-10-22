@@ -1495,6 +1495,298 @@ pub fn build_source_existential_kernel_handoff(
     .map_err(|e| e.to_string())
 }
 
+/// Projects a whole-replayed flat source algorithm's actual state into normal local evidence.
+pub fn build_source_algorithm_state_kernel_handoff(
+    core: &mizar_core::core_ir::CoreIr,
+    vc_set: &VcSet,
+    vc_id: VcId,
+    generation_schema: &crate::vc_ir::GenerationSchemaVersion,
+) -> Result<VcKernelEvidenceHandoff, String> {
+    use crate::vc_ir::{
+        VcGeneratedFormulaKind, VcGeneratedFormulaShape as Shape, VcProgramValue, VcStatus,
+    };
+    use mizar_core::core_ir::{CoreAlgorithmStmtKind as Stmt, CoreFormulaKind, CoreTermKind};
+
+    let replay = crate::generator::generate_source_algorithm_postconditions(
+        core,
+        vc_set.snapshot(),
+        generation_schema,
+        vc_set.schema_version(),
+    )?;
+    let invalid = || "algorithm.state.handoff.invalid_projection".to_owned();
+    if replay != *vc_set {
+        return Err(invalid());
+    }
+    let vc = vc_set.vc(vc_id).ok_or_else(invalid)?;
+    if core.items().len() != 1 || core.algorithms().len() != 1 || vc_set.vcs().len() != 1 {
+        return Err(invalid());
+    }
+    let (_, algorithm) = core.algorithms().iter().next().ok_or_else(invalid)?;
+    let (_, item) = core.items().iter().next().ok_or_else(invalid)?;
+    let ([parameter], Some(result), [_ensures]) = (
+        algorithm.params.as_slice(),
+        algorithm.result.as_ref(),
+        algorithm.contracts.ensures.as_slice(),
+    ) else {
+        return Err(invalid());
+    };
+    if !algorithm.contracts.requires.is_empty()
+        || !algorithm.contracts.invariants.is_empty()
+        || !algorithm.contracts.assertions.is_empty()
+        || !algorithm.contracts.decreasing.is_empty()
+        || algorithm.statements.len() < 2
+        || parameter.role.as_str() != "parameter"
+        || result.role.as_str() != "result"
+        || parameter.var == result.var
+        || vc.kind != VcKind::AlgorithmPostcondition
+        || vc.status != VcStatus::Open
+        || vc.proof_hint.is_some()
+    {
+        return Err(invalid());
+    }
+    let guard = parameter.ty_guard.ok_or_else(invalid)?;
+    let CoreFormulaKind::TypePred { subject, ty } =
+        &core.formulas().get(guard).ok_or_else(invalid)?.kind
+    else {
+        return Err(invalid());
+    };
+    if ty.as_str() != "object"
+        || !matches!(core.terms().get(*subject).ok_or_else(invalid)?.kind, CoreTermKind::Var(actual) if actual == parameter.var)
+    {
+        return Err(invalid());
+    }
+    let parameter_value = VcProgramValue {
+        var: parameter.var,
+        definition: None,
+    };
+    let mut current = BTreeMap::from([(parameter.var, parameter_value)]);
+    let mut coordinates = vec![parameter_value];
+    let mut mutable = BTreeSet::new();
+    let mut expected = Vec::new();
+    let mut statements = Vec::new();
+    let mut returned = None;
+    for (index, statement_id) in algorithm.statements.iter().enumerate() {
+        let statement = core
+            .algorithm_statements()
+            .get(*statement_id)
+            .ok_or_else(invalid)?;
+        statements.push(statement);
+        let (left, operand, guard) = match &statement.kind {
+            Stmt::Let {
+                binder,
+                value: Some(value),
+                ghost: false,
+            } if index + 1 < algorithm.statements.len()
+                && matches!(binder.role.as_str(), "local:var" | "local:const")
+                && !current.contains_key(&binder.var) =>
+            {
+                if binder.role.as_str() == "local:var" {
+                    mutable.insert(binder.var);
+                }
+                (binder.var, *value, binder.ty_guard.ok_or_else(invalid)?)
+            }
+            Stmt::AssignLocal { target, value }
+                if index + 1 < algorithm.statements.len() && mutable.contains(target) =>
+            {
+                let binder = algorithm.statements[..index]
+                    .iter()
+                    .find_map(
+                        |prior| match &core.algorithm_statements().get(*prior)?.kind {
+                            Stmt::Let { binder, .. } if binder.var == *target => Some(binder),
+                            _ => None,
+                        },
+                    )
+                    .ok_or_else(invalid)?;
+                (*target, *value, binder.ty_guard.ok_or_else(invalid)?)
+            }
+            Stmt::Return(Some(value)) if index + 1 == algorithm.statements.len() => {
+                let CoreTermKind::Var(var) = core.terms().get(*value).ok_or_else(invalid)?.kind
+                else {
+                    return Err(invalid());
+                };
+                returned = current.get(&var).copied();
+                break;
+            }
+            _ => return Err(invalid()),
+        };
+        let CoreFormulaKind::TypePred { ty, .. } =
+            &core.formulas().get(guard).ok_or_else(invalid)?.kind
+        else {
+            return Err(invalid());
+        };
+        if ty.as_str() != "object" {
+            return Err(invalid());
+        }
+        let CoreTermKind::Var(rhs_var) = core.terms().get(operand).ok_or_else(invalid)?.kind else {
+            return Err(invalid());
+        };
+        let right = *current.get(&rhs_var).ok_or_else(invalid)?;
+        let left = VcProgramValue {
+            var: left,
+            definition: Some(*statement_id),
+        };
+        if coordinates.contains(&left) {
+            return Err(invalid());
+        }
+        current.insert(left.var, left);
+        coordinates.push(left);
+        expected.push(Shape::ProgramEquals { left, right });
+        expected.push(Shape::ProgramTypePredicate {
+            subject: left,
+            ty: ty.clone(),
+        });
+    }
+    if returned.is_none() || vc_set.generated_formulas().len() != expected.len() + 1 {
+        return Err(invalid());
+    }
+    let entries = vc.local_context.entries();
+    if entries.len() != expected.len() + 1 || vc.premises.len() != entries.len() {
+        return Err(invalid());
+    }
+    let first = &entries[0];
+    if first.kind != ContextEntryKind::CheckerFact
+        || first.formula != Some(VcFormulaRef::Core(guard))
+        || !first.provenance.is_empty()
+    {
+        return Err(invalid());
+    }
+    for (index, entry) in entries.iter().enumerate() {
+        if entry.id != ContextEntryId::new(index)
+            || vc.premises[index] != PremiseRef::LocalContext(entry.id)
+            || entry.sort_key.as_str() != format!("algorithm-state-{index:08}")
+        {
+            return Err(invalid());
+        }
+        if index == 0 {
+            continue;
+        }
+        let generated = &vc_set.generated_formulas()[index - 1];
+        if generated.kind != VcGeneratedFormulaKind::AlgorithmStateFact
+            || generated.shape != expected[index - 1]
+            || entry.kind != ContextEntryKind::GeneratedFact
+            || entry.formula != Some(VcFormulaRef::Generated(generated.id))
+            || entry.provenance != generated.provenance
+        {
+            return Err(invalid());
+        }
+    }
+    let goal = &vc_set.generated_formulas()[expected.len()];
+    if goal.kind != VcGeneratedFormulaKind::AlgorithmPostcondition
+        || !matches!(&goal.shape, Shape::ProgramEquals { .. })
+        || vc.goal != VcFormulaRef::Generated(goal.id)
+    {
+        return Err(invalid());
+    }
+    let policy = vc.local_context.policy_inputs();
+    if policy.len() != 6 || policy[1].value.as_str() != "Ensures" {
+        return Err(invalid());
+    }
+    let provenance = format!(
+        "source-algorithm-state-local-handoff-v1;source={:?};module={:?};item={:?};algorithm={:?};statements={:?};accounting={:?}",
+        core.source_id(), core.module_id(), item, algorithm, statements, vc_set.seed_accounting()
+    ).into_bytes();
+    let frame = |tag: u8, subtype: u8, payload: Vec<u8>| -> Result<Vec<u8>, String> {
+        let mut bytes = vec![tag, subtype];
+        bytes.extend(
+            u32::try_from(payload.len())
+                .map_err(|_| invalid())?
+                .to_be_bytes(),
+        );
+        bytes.extend(payload);
+        Ok(bytes)
+    };
+    let mut formula_payloads = Vec::new();
+    for reference in entries
+        .iter()
+        .map(|row| row.formula.ok_or_else(invalid))
+        .chain(std::iter::once(Ok(vc.goal)))
+    {
+        let reference = reference?;
+        let (kind, symbol, values) = match reference {
+            VcFormulaRef::Core(id) if id == guard => (4u8, 1u32, vec![parameter_value]),
+            VcFormulaRef::Generated(id) => {
+                let generated = vc_set.generated_formula(id).ok_or_else(invalid)?;
+                match &generated.shape {
+                    Shape::ProgramEquals { left, right } => (3, 0, vec![*left, *right]),
+                    Shape::ProgramTypePredicate { subject, ty } if ty.as_str() == "object" => {
+                        (4, 1, vec![*subject])
+                    }
+                    _ => return Err(invalid()),
+                }
+            }
+            _ => return Err(invalid()),
+        };
+        let arity = u32::try_from(values.len()).map_err(|_| invalid())?;
+        let mut atom = vec![kind];
+        atom.extend(symbol.to_be_bytes());
+        atom.extend(arity.to_be_bytes());
+        atom.extend(arity.to_be_bytes());
+        let mut canonical = atom.clone();
+        for value in values {
+            let coordinate = u32::try_from(
+                coordinates
+                    .iter()
+                    .position(|candidate| *candidate == value)
+                    .ok_or_else(invalid)?,
+            )
+            .map_err(|_| invalid())?;
+            atom.push(1);
+            atom.extend(coordinate.to_be_bytes());
+            canonical.extend(frame(1, 1, coordinate.to_be_bytes().to_vec())?);
+        }
+        let mut wire = vec![1];
+        wire.extend(atom);
+        let mut fingerprint = b"MIZAR_KERNEL_FORMULA\0".to_vec();
+        fingerprint.extend(frame(11, 1, frame(2, kind, canonical)?)?);
+        formula_payloads.push(KernelFormulaPayload {
+            formula_ref: reference,
+            projection: KernelFormulaProjection {
+                formula_fingerprint: KernelEvidenceFingerprint {
+                    algorithm_id: KERNEL_FORMULA_FINGERPRINT_ALGORITHM_ID,
+                    digest: fingerprint,
+                },
+                formula_bytes: wire,
+                provenance_payload: provenance.clone(),
+            },
+        });
+    }
+    let symbol_manifest = [
+        KernelManifestEntry {
+            entry_id: 0,
+            payload: vec![3, 0, 0, 0, 0],
+        },
+        KernelManifestEntry {
+            entry_id: 1,
+            payload: vec![4, 0, 0, 0, 1],
+        },
+    ];
+    let variable_manifest = coordinates
+        .iter()
+        .enumerate()
+        .map(|(index, _)| {
+            let id = u32::try_from(index).map_err(|_| invalid())?;
+            Ok(KernelManifestEntry {
+                entry_id: id,
+                payload: id.to_be_bytes().to_vec(),
+            })
+        })
+        .collect::<Result<Vec<_>, String>>()?;
+    build_kernel_evidence_handoff(KernelEvidenceHandoffInput {
+        vc_set,
+        vc: vc_id,
+        goal_polarity: KernelGoalPolarity::AssertFalseForRefutation,
+        kernel_profile: KernelEvidenceProfile::v1(1, KernelClauseTautologyPolicy::Reject),
+        symbol_manifest: &symbol_manifest,
+        variable_manifest: &variable_manifest,
+        formula_payloads: &formula_payloads,
+        imported_formula_payloads: &[],
+        substitutions: &[],
+        formula_context: None,
+        discharge_output: None,
+    })
+    .map_err(|error| error.to_string())
+}
+
 /// Projects a whole-replayed, bounded source algorithm return into normal local evidence.
 pub fn build_source_algorithm_return_kernel_handoff(
     core: &mizar_core::core_ir::CoreIr,

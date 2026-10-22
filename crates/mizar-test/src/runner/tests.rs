@@ -23800,3 +23800,601 @@ fn source_algorithm_syntax_payloads_preserve_upstream_and_atomic_refusals() {
     assert_eq!(syntax(&source, collected.env()).unwrap(), prior);
     assert_eq!((source, collected.env().clone(), prior), before);
 }
+
+#[test]
+fn source_algorithm_state_handoff_projects_real_versions_and_normal_evidence() {
+    use mizar_core::core_ir::{CoreAlgorithmStmtKind as S, CoreTermKind as T};
+    use mizar_kernel::checker::KernelContextIdentitySource as KernelSource;
+    use mizar_kernel::checker::{KernelContextIdentityEntry, KernelContextIdentityPayload};
+    use mizar_kernel::{
+        certificate_parser::*, checker::*, clause::*, formula_evidence::*, rejection::*,
+    };
+    use mizar_vc::kernel_evidence_handoff::KernelContextIdentitySource as VcSource;
+    use mizar_vc::vc_ir::{
+        VcGeneratedFormulaKind as K, VcGeneratedFormulaShape as F, VcProgramValue as V,
+    };
+    use mizar_vc::{kernel_evidence_handoff::*, vc_ir::*};
+    let case = step5c14_state_case();
+    let original = std::fs::read_to_string(&case.source_path).unwrap();
+    assert_eq!(original.matches("    assert x = a;\n").count(), 1);
+    let source = original.replacen("    assert x = a;\n", "", 1);
+    let core = step5c14_static_core(&case, &source).unwrap();
+    let (_, item) = core.items().iter().next().unwrap();
+    let (_, algorithm) = core.algorithms().iter().next().unwrap();
+    let [xd, cd, assignment, returned] = algorithm.statements.as_slice() else {
+        panic!("actual flat writes")
+    };
+    let [(x, x_rhs), (c, c_rhs)] =
+        [xd, cd].map(
+            |id| match &core.algorithm_statements().get(*id).unwrap().kind {
+                S::Let {
+                    binder,
+                    value: Some(rhs),
+                    ghost: false,
+                } => (binder.var, *rhs),
+                _ => panic!(),
+            },
+        );
+    let assigned_rhs = match core.algorithm_statements().get(*assignment).unwrap().kind {
+        S::AssignLocal { value, .. } => value,
+        _ => panic!(),
+    };
+    let S::Return(Some(return_rhs)) = core.algorithm_statements().get(*returned).unwrap().kind
+    else {
+        panic!()
+    };
+    for (term, var) in [
+        (x_rhs, algorithm.params[0].var),
+        (c_rhs, algorithm.params[0].var),
+        (assigned_rhs, c),
+        (return_rhs, x),
+    ] {
+        assert_eq!(core.terms().get(term).unwrap().kind, T::Var(var));
+    }
+    let value = |var, definition| V { var, definition };
+    let values = [
+        value(algorithm.params[0].var, None),
+        value(x, Some(*xd)),
+        value(c, Some(*cd)),
+        value(x, Some(*assignment)),
+    ];
+    assert_ne!(values[1], values[3]);
+    let vcs = step5c14_state_vcs(&core).unwrap();
+    let [vc] = vcs.vcs() else {
+        panic!("one return VC")
+    };
+    assert_eq!(
+        (vc.kind.clone(), vc.status.clone()),
+        (VcKind::AlgorithmPostcondition, VcStatus::Open)
+    );
+    assert!(!vc.anchor.is_complete());
+    let [termination, contract] = vcs.seed_accounting() else {
+        panic!()
+    };
+    assert!(matches!(
+        termination.mapping,
+        SeedVcMapping::NoConcreteVc {
+            reason: SeedNoVcReason::DeferredExternal(_)
+        }
+    ));
+    assert!(matches!(contract.mapping, SeedVcMapping::One { vc: id } if id == vc.id));
+    let pairs = [
+        (values[1], values[0]),
+        (values[2], values[0]),
+        (values[3], values[2]),
+        (values[3], values[0]),
+    ];
+    assert_eq!(vcs.generated_formulas().len(), 7);
+    for (index, generated) in vcs.generated_formulas().iter().enumerate() {
+        let shape = if index == 6 || index % 2 == 0 {
+            let (left, right) = pairs[if index == 6 { 3 } else { index / 2 }];
+            F::ProgramEquals { left, right }
+        } else {
+            F::ProgramTypePredicate {
+                subject: values[index / 2 + 1],
+                ty: mizar_core::core_ir::CoreTypePredicate::new("object"),
+            }
+        };
+        assert_eq!(generated.shape, shape);
+        assert_eq!(
+            generated.kind,
+            if index == 6 {
+                K::AlgorithmPostcondition
+            } else {
+                K::AlgorithmStateFact
+            }
+        );
+        if index < 6 {
+            let entry = &vc.local_context.entries()[index + 1];
+            assert_eq!(entry.kind, ContextEntryKind::GeneratedFact);
+            assert_eq!(entry.formula, Some(VcFormulaRef::Generated(generated.id)));
+            assert_eq!(entry.provenance, generated.provenance);
+        }
+    }
+    assert_eq!(
+        vc.local_context.entries()[0].formula,
+        Some(VcFormulaRef::Core(algorithm.params[0].ty_guard.unwrap()))
+    );
+    assert_eq!(
+        vc.goal,
+        VcFormulaRef::Generated(vcs.generated_formulas()[6].id)
+    );
+    let premises = vc
+        .local_context
+        .entries()
+        .iter()
+        .map(|row| PremiseRef::LocalContext(row.id))
+        .collect::<Vec<_>>();
+    assert_eq!(vc.premises, premises);
+    assert_eq!(vc.local_context.policy_inputs().len(), 6);
+    let generation = GenerationSchemaVersion::new("mizar-vc-generation-step5c14-state-v1");
+    let before = (core.clone(), vcs.clone());
+    let handoff =
+        build_source_algorithm_state_kernel_handoff(&core, &vcs, vc.id, &generation).unwrap();
+    assert_eq!((core.clone(), vcs.clone()), before);
+    let bytes = handoff.encode_local_evidence(None).unwrap();
+    let hex_bytes = |text: &str| -> Vec<u8> {
+        text.as_bytes()
+            .as_chunks::<2>()
+            .0
+            .iter()
+            .map(|pair| u8::from_str_radix(std::str::from_utf8(pair).unwrap(), 16).unwrap())
+            .collect()
+    };
+    let wires = "
+        01040000000100000001000000010100000000
+        010300000000000000020000000201000000010100000000
+        01040000000100000001000000010100000001
+        010300000000000000020000000201000000020100000000
+        01040000000100000001000000010100000002
+        010300000000000000020000000201000000030100000002
+        01040000000100000001000000010100000003
+        010300000000000000020000000201000000030100000000";
+    let fingerprints = "
+        4d495a41525f4b45524e454c5f464f524d554c41000b010000001d0204000000170400000001000000010000000101010000000400000000
+        4d495a41525f4b45524e454c5f464f524d554c41000b0100000027020300000021030000000000000002000000020101000000040000000101010000000400000000
+        4d495a41525f4b45524e454c5f464f524d554c41000b010000001d0204000000170400000001000000010000000101010000000400000001
+        4d495a41525f4b45524e454c5f464f524d554c41000b0100000027020300000021030000000000000002000000020101000000040000000201010000000400000000
+        4d495a41525f4b45524e454c5f464f524d554c41000b010000001d0204000000170400000001000000010000000101010000000400000002
+        4d495a41525f4b45524e454c5f464f524d554c41000b0100000027020300000021030000000000000002000000020101000000040000000301010000000400000002
+        4d495a41525f4b45524e454c5f464f524d554c41000b010000001d0204000000170400000001000000010000000101010000000400000003
+        4d495a41525f4b45524e454c5f464f524d554c41000b0100000027020300000021030000000000000002000000020101000000040000000301010000000400000000";
+    let literal = wires
+        .split_whitespace()
+        .zip(fingerprints.split_whitespace());
+    let projected = handoff.canonical_evidence();
+    assert_eq!(
+        projected
+            .symbol_manifest()
+            .iter()
+            .map(|row| (row.entry_id, row.payload.as_slice()))
+            .collect::<Vec<_>>(),
+        [(0, &[3, 0, 0, 0, 0][..]), (1, &[4, 0, 0, 0, 1][..])]
+    );
+    let variables = projected.variable_manifest();
+    assert_eq!(variables.len(), 4);
+    for (index, row) in variables.iter().enumerate() {
+        assert_eq!(row.entry_id, index as u32);
+        assert_eq!(row.payload, (index as u32).to_be_bytes());
+    }
+    let provenance = format!("source-algorithm-state-local-handoff-v1;source={:?};module={:?};item={:?};algorithm={:?};statements={:?};accounting={:?}",
+        vcs.source(), core.module_id(), item, algorithm,
+        algorithm.statements.iter().map(|id| core.algorithm_statements().get(*id).unwrap()).collect::<Vec<_>>(), vcs.seed_accounting()).into_bytes();
+    let references = vc
+        .local_context
+        .entries()
+        .iter()
+        .map(|row| row.formula.unwrap())
+        .chain(std::iter::once(vc.goal))
+        .collect::<Vec<_>>();
+    let coords: [&[u32]; 8] = [&[0], &[1, 0], &[1], &[2, 0], &[2], &[3, 2], &[3], &[3, 0]];
+    let manual = references
+        .iter()
+        .zip(literal)
+        .zip(coords)
+        .map(|((reference, (wire, digest)), coords)| {
+            let kind = if coords.len() == 2 { 3 } else { 4 };
+            let pure = Formula::Atom(Atom::new(
+                if kind == 3 {
+                    SymbolKey::new(SymbolKind::Equality, 0)
+                } else {
+                    SymbolKey::new(SymbolKind::BuiltinRelation, 1)
+                },
+                coords
+                    .iter()
+                    .copied()
+                    .map(|i| Term::Variable(VariableId(i)))
+                    .collect(),
+            ))
+            .canonical_hash_input()
+            .unwrap();
+            assert_eq!(pure, hex_bytes(digest));
+            KernelFormulaPayload {
+                formula_ref: *reference,
+                projection: KernelFormulaProjection {
+                    formula_fingerprint: KernelEvidenceFingerprint {
+                        algorithm_id: 2,
+                        digest: pure,
+                    },
+                    formula_bytes: hex_bytes(wire),
+                    provenance_payload: provenance.clone(),
+                },
+            }
+        })
+        .collect::<Vec<_>>();
+    let expected = build_kernel_evidence_handoff(KernelEvidenceHandoffInput {
+        vc_set: &vcs,
+        vc: vc.id,
+        goal_polarity: KernelGoalPolarity::AssertFalseForRefutation,
+        kernel_profile: KernelEvidenceProfile::v1(1, KernelClauseTautologyPolicy::Reject),
+        symbol_manifest: projected.symbol_manifest(),
+        variable_manifest: projected.variable_manifest(),
+        formula_payloads: &manual,
+        imported_formula_payloads: &[],
+        substitutions: &[],
+        formula_context: None,
+        discharge_output: None,
+    })
+    .unwrap();
+    assert_eq!(handoff, expected);
+    assert!(handoff.targets_vc(&vcs, vc.id).unwrap());
+    let fingerprint = projected.target_vc();
+    let target = TargetVcFingerprint::new(fingerprint.algorithm_id, fingerprint.digest.clone());
+    let parsed = parse_formula_evidence(
+        &bytes,
+        &FormulaEvidenceParseContext::v1(
+            Fingerprint::new(fingerprint.algorithm_id, fingerprint.digest.clone()),
+            KernelProfileRecord::v1(1, ClauseTautologyPolicy::Reject),
+        ),
+    )
+    .unwrap();
+    assert!(parsed.equality_instances().is_empty());
+    let entries = handoff
+        .context_identity()
+        .entries()
+        .iter()
+        .map(|row| {
+            let VcSource::LocalHypothesis { local_context_id } = row.source() else {
+                panic!()
+            };
+            let source = KernelSource::LocalHypothesis { local_context_id };
+            let producer = match row.producer_formula_ref() {
+                VcFormulaRef::Core(id) => KernelFormulaProducerRef::Core(id),
+                VcFormulaRef::Generated(id) => {
+                    KernelFormulaProducerRef::Generated(KernelVcGeneratedFormulaId::new(id.index()))
+                }
+                _ => panic!(),
+            };
+            let fingerprint = row.formula_fingerprint();
+            KernelContextIdentityEntry::new(
+                source,
+                row.formula_id(),
+                Fingerprint::new(fingerprint.algorithm_id, fingerprint.digest.clone()),
+                producer,
+            )
+        })
+        .collect();
+    let context = FormulaEvidenceContext::with_context_identity(
+        Some(handoff.context_identity_hash().as_bytes().to_vec()),
+        vec![],
+        vec![],
+        Some(KernelContextIdentityPayload::new(
+            target.clone(),
+            handoff.canonical_hash(),
+            handoff.context_identity_hash(),
+            entries,
+        )),
+        ImportedFactContextLimits::default(),
+    )
+    .unwrap();
+    let checked = check_kernel_evidence(KernelEvidenceCheckInput {
+        target_vc_fingerprint: &target,
+        evidence: &parsed,
+        formula_context: Some(&context),
+        check_kind: KernelEvidenceCheckKind::ProofObligation,
+        policy: KernelCheckPolicy::default(),
+        limits: KernelEvidenceCheckLimits::default(),
+    });
+    assert_eq!(checked.status(), KernelCheckStatus::Rejected);
+    assert_eq!(
+        checked.rejections()[0].detail(),
+        RejectionDetail::InvalidSatRefutation
+    );
+    assert!(!checked.policy_taint());
+}
+
+#[test]
+fn source_algorithm_state_handoff_preserves_distinct_values_and_contexts() {
+    use mizar_core::core_ir::{CoreAlgorithmStmtKind as S, CoreTypePredicate};
+    use mizar_vc::{
+        generator::generate_source_algorithm_postconditions,
+        kernel_evidence_handoff::build_source_algorithm_state_kernel_handoff,
+        vc_ir::{
+            GenerationSchemaVersion, VcFormulaRef, VcGeneratedFormulaShape as F,
+            VcProgramValue as V, VcSchemaVersion,
+        },
+    };
+    let case = step5c14_state_case();
+    let source = std::fs::read_to_string(&case.source_path)
+        .unwrap()
+        .replacen("    assert x = a;\n", "", 1)
+        .replace("    x := c;", "    const d := a;\n    x := c;");
+    let texts = [
+        source.clone(),
+        source.replace("swapalgo", "copyalgo"),
+        format!(":: neutral comment\n\n{source}"),
+        source.replace("ensures result = a", "ensures a = result"),
+        source.replace("ensures result = a", "ensures a = a"),
+        source.replace("ensures result = a", "ensures result = result"),
+    ];
+    for (case_index, snapshot, changed_generation, changed_schema) in [
+        (0, 0, false, false),
+        (1, 0, false, false),
+        (2, 0, false, false),
+        (0, 1, false, false),
+        (0, 0, true, false),
+        (0, 0, false, true),
+        (3, 0, false, false),
+        (4, 0, false, false),
+        (5, 0, false, false),
+    ] {
+        let core = step5c14_static_core(&case, &texts[case_index]).unwrap();
+        let generation = GenerationSchemaVersion::new(if changed_generation {
+            "mizar-vc-generation-step5c14-state-v1-changed"
+        } else {
+            "mizar-vc-generation-step5c14-state-v1"
+        });
+        let schema = VcSchemaVersion::new(if changed_schema {
+            "mizar-vc-vcset-step5c14-state-v1-changed"
+        } else {
+            "mizar-vc-vcset-step5c14-state-v1"
+        });
+        let vcs = generate_source_algorithm_postconditions(
+            &core,
+            super::shared::snapshot_id(snapshot),
+            &generation,
+            &schema,
+        )
+        .unwrap();
+        let [vc] = vcs.vcs() else { panic!() };
+        let before = (core.clone(), vcs.clone());
+        let (_, algorithm) = core.algorithms().iter().next().unwrap();
+        let [xd, cd, dd, assignment, _] = algorithm.statements.as_slice() else {
+            panic!()
+        };
+        let vars =
+            [xd, cd, dd].map(
+                |id| match &core.algorithm_statements().get(*id).unwrap().kind {
+                    S::Let {
+                        binder,
+                        value: Some(_),
+                        ghost: false,
+                    } => binder.var,
+                    _ => panic!(),
+                },
+            );
+        let v = |var, definition| V { var, definition };
+        let values = [
+            v(algorithm.params[0].var, None),
+            v(vars[0], Some(*xd)),
+            v(vars[1], Some(*cd)),
+            v(vars[2], Some(*dd)),
+            v(vars[0], Some(*assignment)),
+        ];
+        if case_index >= 3 {
+            let (left, right) = [
+                (values[0], values[4]),
+                (values[0], values[0]),
+                (values[4], values[4]),
+            ][case_index - 3];
+            let goal = &vcs.generated_formulas()[8];
+            assert_eq!(goal.shape, F::ProgramEquals { left, right });
+            assert_eq!(vc.goal, VcFormulaRef::Generated(goal.id));
+        }
+        if case_index == 0 && snapshot == 0 && !changed_generation && !changed_schema {
+            for (index, value) in values.iter().enumerate() {
+                assert!(!values[..index].contains(value));
+            }
+            let facts = vcs.generated_formulas();
+            assert_eq!((facts.len(), vc.local_context.entries().len()), (9, 9));
+            for (index, left, right) in [
+                (4, values[3], values[0]),
+                (6, values[4], values[2]),
+                (8, values[4], values[0]),
+            ] {
+                assert_eq!(facts[index].shape, F::ProgramEquals { left, right });
+            }
+            for (index, subject) in [(5, values[3]), (7, values[4])] {
+                assert_eq!(
+                    facts[index].shape,
+                    F::ProgramTypePredicate {
+                        subject,
+                        ty: CoreTypePredicate::new("object")
+                    }
+                );
+            }
+            for index in [4, 6, 7] {
+                let entry = &vc.local_context.entries()[index + 1];
+                assert_eq!(
+                    entry.formula,
+                    Some(VcFormulaRef::Generated(facts[index].id))
+                );
+                assert_eq!(entry.provenance, facts[index].provenance);
+            }
+        }
+        let first =
+            build_source_algorithm_state_kernel_handoff(&core, &vcs, vc.id, &generation).unwrap();
+        assert_eq!(
+            first,
+            build_source_algorithm_state_kernel_handoff(&core, &vcs, vc.id, &generation).unwrap()
+        );
+        assert_eq!((core.clone(), vcs.clone()), before);
+        let bytes = |hex: &str| {
+            hex.as_bytes()
+                .as_chunks::<2>()
+                .0
+                .iter()
+                .map(|p| u8::from_str_radix(std::str::from_utf8(p).unwrap(), 16).unwrap())
+                .collect::<Vec<_>>()
+        };
+        if case_index >= 3 {
+            let wires = "010300000000000000020000000201000000000100000004 010300000000000000020000000201000000000100000000 010300000000000000020000000201000000040100000004";
+            let hashes = "4d495a41525f4b45524e454c5f464f524d554c41000b0100000027020300000021030000000000000002000000020101000000040000000001010000000400000004 4d495a41525f4b45524e454c5f464f524d554c41000b0100000027020300000021030000000000000002000000020101000000040000000001010000000400000000 4d495a41525f4b45524e454c5f464f524d554c41000b0100000027020300000021030000000000000002000000020101000000040000000401010000000400000004";
+            let goal = first.canonical_evidence().final_goal();
+            let index = case_index - 3;
+            assert_eq!(goal.producer_formula_ref, vc.goal);
+            assert_eq!(
+                goal.formula_bytes,
+                bytes(wires.split_whitespace().nth(index).unwrap())
+            );
+            assert_eq!(goal.formula_fingerprint.algorithm_id, 2);
+            assert_eq!(
+                goal.formula_fingerprint.digest,
+                bytes(hashes.split_whitespace().nth(index).unwrap())
+            );
+        }
+        if case_index == 0 && snapshot == 0 && !changed_generation && !changed_schema {
+            let envelope = first.canonical_evidence();
+            assert_eq!(envelope.variable_manifest().len(), 5);
+            assert_eq!(envelope.variable_manifest()[4].payload, [0, 0, 0, 4]);
+            assert_eq!(first.context_identity().entries().len(), 9);
+            let wires = "010300000000000000020000000201000000040100000002 01040000000100000001000000010100000004 010300000000000000020000000201000000040100000000";
+            let hashes = "4d495a41525f4b45524e454c5f464f524d554c41000b0100000027020300000021030000000000000002000000020101000000040000000401010000000400000002 4d495a41525f4b45524e454c5f464f524d554c41000b010000001d0204000000170400000001000000010000000101010000000400000004 4d495a41525f4b45524e454c5f464f524d554c41000b0100000027020300000021030000000000000002000000020101000000040000000401010000000400000000";
+            for (id, (wire, hash)) in
+                (6..9).zip(wires.split_whitespace().zip(hashes.split_whitespace()))
+            {
+                let reference = VcFormulaRef::Generated(vcs.generated_formulas()[id].id);
+                let (actual_bytes, fingerprint) = if id == 8 {
+                    let goal = envelope.final_goal();
+                    assert_eq!(goal.producer_formula_ref, reference);
+                    (goal.formula_bytes.as_slice(), &goal.formula_fingerprint)
+                } else {
+                    let row = envelope
+                        .formula_evidence()
+                        .iter()
+                        .find(|r| r.producer_formula_ref() == Some(reference))
+                        .unwrap();
+                    (row.formula_bytes(), row.formula_fingerprint())
+                };
+                assert_eq!(actual_bytes, bytes(wire));
+                assert_eq!(fingerprint.algorithm_id, 2);
+                assert_eq!(fingerprint.digest, bytes(hash));
+            }
+        }
+    }
+}
+
+#[test]
+fn source_algorithm_state_handoff_preserves_refusals_and_upstream_order() {
+    use mizar_vc::{
+        generator::generate_source_algorithm_postconditions,
+        kernel_evidence_handoff::build_source_algorithm_state_kernel_handoff,
+        vc_ir::{GenerationSchemaVersion, VcId, VcKind, VcSet, VcSetParts, VcStatus},
+    };
+    let case = step5c14_state_case();
+    let original = std::fs::read_to_string(&case.source_path).unwrap();
+    let source = original.replacen("    assert x = a;\n", "", 1);
+    let core = step5c14_static_core(&case, &source).unwrap();
+    let generation = GenerationSchemaVersion::new("mizar-vc-generation-step5c14-state-v1");
+    let vcs = step5c14_state_vcs(&core).unwrap();
+    let [vc] = vcs.vcs() else { panic!() };
+    let invalid = "algorithm.state.handoff.invalid_projection";
+    let wrong_generation = GenerationSchemaVersion::new("different");
+    let mut parts = VcSetParts {
+        schema_version: vcs.schema_version().clone(),
+        snapshot: vcs.snapshot(),
+        source: vcs.source(),
+        module: vcs.module().clone(),
+        generated_formulas: vcs.generated_formulas().to_vec(),
+        vcs: vcs.vcs().to_vec(),
+        seed_accounting: vcs.seed_accounting().to_vec(),
+    };
+    parts.vcs[0].local_context = mizar_vc::vc_ir::LocalContext::try_new(
+        {
+            let mut entries = parts.vcs[0].local_context.entries().to_vec();
+            entries[1].sort_key = "algorithm-state-00000000a".into();
+            entries
+        },
+        parts.vcs[0].local_context.policy_inputs().to_vec(),
+    )
+    .unwrap();
+    let drift = VcSet::try_new(parts).unwrap();
+    let original_core = step5c14_static_core(&case, &original).unwrap();
+    let original_vcs = step5c14_state_vcs(&original_core).unwrap();
+    assert_eq!(original_vcs.vcs().len(), 2);
+    let all_open = original_vcs
+        .vcs()
+        .iter()
+        .all(|vc| vc.status == VcStatus::Open);
+    assert!(all_open);
+    let return_vc = original_vcs
+        .vcs()
+        .iter()
+        .find(|vc| vc.kind == VcKind::AlgorithmPostcondition)
+        .unwrap();
+    assert!(return_vc.local_context.entries().iter().any(|row| matches!(
+        row.kind,
+        mizar_vc::vc_ir::ContextEntryKind::PendingAlgorithmAssertion { .. }
+    )));
+    let foreign =
+        step5c14_static_core(&case, &source.replace("swapalgo", "foreign_algorithm")).unwrap();
+    let foreign_vcs = step5c14_state_vcs(&foreign).unwrap();
+    assert_ne!(foreign_vcs, vcs);
+    let zero_core =
+        step5c14_static_core(&case, &source.replace("    ensures result = a\n", "")).unwrap();
+    let zero_vcs = step5c14_state_vcs(&zero_core).unwrap();
+    assert!(zero_vcs.vcs().is_empty());
+    let broader = step5c14_static_core(
+        &case,
+        &source.replace("    x := c;", "    assert x = a;\n    x := c;"),
+    )
+    .unwrap();
+    let broader_vcs = step5c14_state_vcs(&broader).unwrap();
+    assert!(broader_vcs.vcs().len() > 1);
+    let broad_return = broader_vcs
+        .vcs()
+        .iter()
+        .find(|vc| vc.kind == VcKind::AlgorithmPostcondition)
+        .unwrap();
+    let two_returns = source
+        .replace("    ensures result = a\n", "")
+        .replace("    return x;", "    return x;\n    return x;");
+    let two_core = step5c14_static_core(&case, &two_returns).unwrap();
+    let upstream = generate_source_algorithm_postconditions(
+        &two_core,
+        vcs.snapshot(),
+        &generation,
+        vcs.schema_version(),
+    )
+    .unwrap_err();
+    assert_eq!(upstream, "algorithms.postcondition.unsupported_core");
+    for (index, (checked_core, checked_set, target, checked_generation)) in [
+        (&core, &vcs, VcId::new(99), &generation),
+        (&core, &vcs, vc.id, &wrong_generation),
+        (&core, &drift, vc.id, &generation),
+        (&original_core, &original_vcs, return_vc.id, &generation),
+        (&foreign, &vcs, vc.id, &generation),
+        (&zero_core, &zero_vcs, VcId::new(0), &generation),
+        (&broader, &broader_vcs, broad_return.id, &generation),
+        (&two_core, &vcs, VcId::new(99), &generation),
+    ]
+    .into_iter()
+    .enumerate()
+    {
+        let error = build_source_algorithm_state_kernel_handoff(
+            checked_core,
+            checked_set,
+            target,
+            checked_generation,
+        )
+        .unwrap_err();
+        assert_eq!(
+            error,
+            if index == 7 {
+                upstream.as_str()
+            } else {
+                invalid
+            }
+        );
+    }
+}
