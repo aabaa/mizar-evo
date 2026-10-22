@@ -21,8 +21,7 @@ also match the deterministic status projection for the same obligation:
 
 - `KernelVerified` formula/substitution kernel evidence with a matching
   accepted proof-obligation kernel result;
-- `DischargedBuiltin` only as an internal staged outcome until artifact schema
-  support exists.
+- `DischargedBuiltin` as an internal staged outcome; the explicit file route below carries an unpublished reference only.
 
 The draft carries:
 
@@ -49,12 +48,8 @@ Witness handling has three states:
 
 1. `ProofWitnessDraft`: producer-owned bytes plus trusted metadata and matching status projection; not stored, published or cache-validating by itself.
    Metadata fields stay opaque with a crate-internal generic binder; bounded [Status token production](./status.md#source-theorem-trusted-witness-metadata-with-wire) and [Draft composition](./status.md#source-theorem-witness-draft) supply freshly checked metadata.
-2. `ProofWitnessStagedRef`: returned by `stage`. It records a stable witness
-   path candidate, payload hash, payload schema, obligation identity, selected
-   class, provenance metadata, and, for publishable `KernelVerified` evidence,
-   an unpublished `ProofWitnessRef` candidate that the artifact builder may
-   embed in `VerifiedArtifact.proof_witnesses` before commit. It is still not
-   publication-reachable.
+2. `ProofWitnessStagedRef`: generic `stage` records the draft path/hash/schema, obligation, selected class and provenance; its `KernelVerified` reference is an unpublished candidate.
+   The explicit file route below instead records its validated file profile/hash and unpublished builtin reference; neither route establishes committed reachability.
 3. `ProofWitnessPublishedRef`: returned by `publish_ref` only after the
    artifact publication boundary supplies a committed witness publication proof
    that matches the staged tuple and makes it reachable from the committed
@@ -81,7 +76,7 @@ returns a published wrapper for that same reference.
 
 ## Stable Hashing
 
-The proof witness hash is the artifact-framed hash of the exact staged payload
+For generic `stage`, the proof witness hash is the artifact-framed hash of the exact staged payload
 bytes and payload schema identity:
 
 - schema family;
@@ -117,6 +112,16 @@ Artifact retains canonical parsing, duplicate-key/UTF-8/path/I/O integrity and r
 Append only source_theorem_witness_file_matches_genuine_artifact_transport and source_theorem_witness_file_rejects_invalid_schema_and_associations in existing term_proof_tests. Preserve old bytes/imports/helpers/fixtures. Use actual native Disk/OpenBuffer capture, Frontend and original resolver inputs. Before each new success independently call unchanged original-source draft acquisition; compare its whole triple and independently assembled eight-key file/full metadata/hash/ref with the new products. Check actual Artifact write/read whole canonical bytes, hash/domain, recovered wire, replay, received-input purity and real source/policy variants; keep actual original Open/incomplete/miss/publication-gap/stageNone controls.
 Negative file data starts from genuine products and uses actual Artifact transport. Cover compatibility before malformed content, wrong family, unknown/missing/wrong fields, malformed hex, nested metadata, foreign identity/policy/path/reference/hash and absent/wrong read hash. Generic transport may omit expected hash to reach schema errors; that is not proof authority. Compare genuine upstream producer errors/precedence with unchanged acquisition; do not duplicate lower parser/I/O/kernel matrices or construct fake positive Accepted/token/receipt/complete slices. Defensive unconstructible guards receive static review.
 
+## Explicit source theorem file staging
+`ProofWitnessDraft::stage_source_theorem_file(self, read: &PublishedArtifactRead, expected: &ProofWitnessRef) -> Result<ProofWitnessStagedRef, String>` consumes an existing draft and structurally associates its bytes/metadata with the separate file profile; add the inline method immediately before the draft's first getter.
+FIRST call unchanged read_source_theorem_witness_file(read, expected), preserving its error String. Then require draft class DischargedBuiltin, matching obligation id/fingerprint, witness path and WHOLE kernel_acceptance, exact checked-wire family2.0 with canonical_bytes_required=true, recovered bytes equal the entire draft payload, and absent expected_selected_proof_witness_hash. Any mismatch returns internal source theorem witness file staging mismatch.
+Call unchanged stage(self), preserving its error String. Replace only its payload_schema with SOURCE_THEOREM_WITNESS_FILE_SCHEMA_FAMILY1.0/canonical=true, staged_payload_hash with expected.witness_artifact_hash, and artifact_reference_candidate with Some(expected.clone()); preserve all other staged fields. The old generic hash/wire profile and this canonical-file hash/profile are distinct; do not rehash, reinterpret or overwrite the source draft.
+This is an unpublished structural association, not authentication that arbitrary caller-supplied draft bytes were Kernel-checked. Actual source producers retain checked-wire authority; this method does not parse/replay evidence, call Kernel, do I/O or attest filesystem/snapshot currentness. Preserve generic stage, builtin publish_ref refusal, status/reuse gaps and whole raw incomplete/MISS boundaries; no committed token, witness publication, acceptance or enclosing gate credit.
+### Explicit source theorem file staging tests
+Append only source_theorem_file_staging_matches_genuine_file_and_legacy_boundaries, source_theorem_file_staging_rejects_genuine_cross_associations and source_theorem_file_staging_preserves_reader_refusals_and_inputs plus one private with_source_theorem_file_staging_inputs helper used by all three real families; preserve every old byte/helper/fixture.
+Before new calls obtain genuine native Disk/OpenBuffer capture, original unaugmented Resolver inputs, existing whole source file-candidate tuple, generic stage and actual Artifact write/read/recovery. Compare every retained old staged field, exact new file schema/hash/reference, replay/purity and unchanged source status/full slice/publication/MISS; use actual old values without a new hash grammar or cross-edit stability assumption.
+Use genuine independent source/policy/path products to establish matching-reader success before cross-association refusal. Starting from genuine files, also test coherently rehashed untrusted wire/identity/metadata edits and actual lower-reader failures; compare lower Strings before the new call and establish the exercised mismatch. No fake positive draft/check/Core/VC/Accepted/token/commit or duplicate lower matrices; static review covers unconstructible trusted-class/selected-hash guards.
+
 ## Publication References
 
 For `KernelVerified` formula/substitution evidence, `stage` prepares an
@@ -134,15 +139,9 @@ only after committed manifest reachability is proven.
 The store must not publish a `ProofWitnessRef` for non-trusted statuses. It must
 also not rewrite unsupported trusted statuses into `kernel_verified`.
 
-`DischargedBuiltin` currently remains `external_dependency_gap` for artifact
-witness publication. The store may stage an internal draft and expose stable
-reuse metadata, but `publish_ref` must return an unsupported-witness gap until
-`mizar-artifact` supports a distinct trusted `DischargedBuiltin` witness
-status/evidence combination. Any staged `DischargedBuiltin` hash is internal
-and non-artifact-facing; it must not be exported as
-`selected_proof_witness_hash`, must not appear in a `ProofWitnessRef`, and must
-not replace the `deterministic_discharge_hash` required by selection/status
-reuse metadata while this gap remains open.
+`DischargedBuiltin` publication remains an `external_dependency_gap`: `publish_ref` refuses it until real Artifact-owned committed reachability is supplied.
+Generic `stage` retains its internal hash and absent reference. The explicit file route may carry an unpublished reference3.0 to its separate file hash.
+Neither path supplies `selected_proof_witness_hash`, replaces the required deterministic-discharge reuse input, upgrades status or establishes publication/cache authority.
 
 ## Provenance Metadata
 

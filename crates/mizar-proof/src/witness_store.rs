@@ -535,6 +535,38 @@ impl ProofWitnessDraft {
         })
     }
 
+    /// Associates an existing source theorem draft with its unpublished file.
+    pub fn stage_source_theorem_file(
+        self,
+        read: &mizar_artifact::store::PublishedArtifactRead,
+        expected: &ProofWitnessRef,
+    ) -> Result<ProofWitnessStagedRef, String> {
+        let bytes = read_source_theorem_witness_file(read, expected)?;
+        if self.selected_class != ProofWinnerClass::DischargedBuiltin
+            || self.obligation_id != expected.obligation_id
+            || self.obligation_fingerprint != expected.obligation_fingerprint
+            || self.witness_path != expected.witness_path
+            || self.kernel_acceptance != expected.kernel_acceptance
+            || self.payload_schema.family() != "mizar-proof/source-theorem-reflexivity-checked-wire"
+            || self.payload_schema.version() != SchemaVersion::new(2, 0)
+            || !self.payload_schema.canonical_bytes_required()
+            || bytes != self.payload_bytes
+            || self.expected_selected_proof_witness_hash.is_some()
+        {
+            return Err("source theorem witness file staging mismatch".to_owned());
+        }
+        let mut staged = stage(self).map_err(|error| error.to_string())?;
+        staged.payload_schema = ProofWitnessPayloadSchema::with_canonical_bytes_required(
+            SOURCE_THEOREM_WITNESS_FILE_SCHEMA_FAMILY,
+            SchemaVersion::new(1, 0),
+            true,
+        )
+        .map_err(|error| error.to_string())?;
+        staged.staged_payload_hash = expected.witness_artifact_hash.clone();
+        staged.artifact_reference_candidate = Some(expected.clone());
+        Ok(staged)
+    }
+
     #[must_use]
     pub fn obligation_id(&self) -> &str {
         &self.obligation_id

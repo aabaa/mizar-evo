@@ -100,6 +100,7 @@ task 15 は未 exercise だった 3 つの validation path に focused unit cove
 
 ### Witness Store
 `read_source_theorem_witness_file`: [schema and API owner](./witness_store.md#source-theorem-witness-file).
+`ProofWitnessDraft::stage_source_theorem_file`: [explicit file staging](./witness_store.md#explicit-source-theorem-file-staging).
 
 | Public API group | Spec coverage | Test coverage | Result |
 |---|---|---|---|

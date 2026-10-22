@@ -20,7 +20,7 @@ selection に対する `ProofWitnessDraft` だけを消費する:
 
 - 対応する accepted proof-obligation kernel result を持つ `KernelVerified`
   formula/substitution kernel evidence;
-- artifact schema support が存在するまで internal staged outcome に留まる `DischargedBuiltin`。
+- `DischargedBuiltin` は internal staged outcome とし、下記の明示 file route も unpublished reference のみを持つ。
 
 draft は次を持つ:
 
@@ -46,12 +46,8 @@ witness handling には 3 つの状態がある:
 
 1. `ProofWitnessDraft`: producer-owned bytes、trusted metadata、対応 status projection。保存・公開されず、それ自体で cache validation しない。
    metadata field は opaque、generic binder は crate-internal とし、限定 [Status token production](./status.md#source-theorem-trusted-witness-metadata-with-wire) と [Draft composition](./status.md#source-theorem-witness-draft) が fresh な検査済み metadata を供給する。
-2. `ProofWitnessStagedRef`: `stage` が返す。stable witness path candidate、payload hash、
-   payload schema、obligation identity、selected class、provenance metadata と、
-   publish 可能な `KernelVerified` evidence では artifact builder が commit 前に
-   `VerifiedArtifact.proof_witnesses` へ埋め込める unpublished `ProofWitnessRef`
-   candidate を記録する。
-   まだ publication-reachable ではない。
+2. `ProofWitnessStagedRef`: generic `stage` は draft の path/hash/schema、obligation、selected class、provenance と `KernelVerified` の unpublished reference candidate を記録する。
+   下記の明示 file route は検証した file profile/hash と unpublished builtin reference を記録し、どちらも committed reachability を与えない。
 3. `ProofWitnessPublishedRef`: artifact publication boundary が staged tuple と一致し、
    committed main artifact から到達可能にする committed witness publication proof を
    供給した後にだけ `publish_ref` が返す。
@@ -74,7 +70,7 @@ unpublished reference candidate が committed `VerifiedArtifact` と manifest �
 
 ## Stable Hashing
 
-proof witness hash は、正確な staged payload bytes と payload schema identity に対する
+generic `stage` の proof witness hash は、正確な staged payload bytes と payload schema identity に対する
 artifact-framed hash である:
 
 - schema family;
@@ -110,6 +106,16 @@ canonical parse・duplicate key/UTF-8/path/I/O integrity・ref/metadata 検証�
 既存 term_proof_tests に source_theorem_witness_file_matches_genuine_artifact_transport と source_theorem_witness_file_rejects_invalid_schema_and_associations だけを追記し、旧全 byte/import/helper/fixture を保持する。実 native Disk/OpenBuffer・Frontend・元 resolver 入力を使う。新しい各成功の前に未変更の元ソース draft 取得を独立に呼び、triple 全体と独立に組んだ8 key/file/metadata/hash/ref を比較する。実 Artifact write/read の canonical 全 byte・hash/domain・復元 wire・反復・入力不変性・実 source/policy 変化と、元 Open/incomplete/miss/publication gap/stageNone を確認する。
 負例は実生成物から作った非信頼データを実 Artifact transport に通す。内容検証より先の互換性、family、unknown/missing/型、hex、metadata、別 identity/policy/path/ref/hash、read hash 不在/不一致を扱う。schema error に到達する generic read の expected hash 省略は authority ではない。実上流 error/優先順は旧取得と比較し、下位 parser/I/O/kernel 行列を複製せず、架空の正の Accepted/token/receipt/complete slice を作らない。構成不能な guard は静的に確認する。
 
+## Explicit source theorem file staging
+`ProofWitnessDraft::stage_source_theorem_file(self, read: &PublishedArtifactRead, expected: &ProofWitnessRef) -> Result<ProofWitnessStagedRef, String>` は既存 draft を消費し、bytes/metadata と別 file profile を構造的に対応付ける。draft 最初の getter 直前に inline method 一つを加える。
+最初に既存 read_source_theorem_witness_file(read, expected) を呼び、error String を保つ。続いて draft class DischargedBuiltin、obligation id/fingerprint、witness path、kernel_acceptance 全体の一致、checked-wire family2.0/canonical_bytes_required=true、復元 bytes と draft payload 全体の一致、expected_selected_proof_witness_hash absent を要求する。不一致は内部 source theorem witness file staging mismatch とする。
+既存 stage(self) を呼び error String を保つ。payload_schema を SOURCE_THEOREM_WITNESS_FILE_SCHEMA_FAMILY1.0/canonical=true、staged_payload_hash を expected.witness_artifact_hash、artifact_reference_candidate を Some(expected.clone()) にだけ置き換え、他の staged field は全て保つ。旧 generic hash/wire profile と別 canonical-file hash/profile を同一視せず、元 draft の再 hash/再解釈/上書きをしない。
+これは unpublished structural association であり任意の caller draft bytes が Kernel 検査済みという認証ではない。checked-wire authority は実 source producer に残す。evidence の parse/replay、Kernel、I/O、filesystem/snapshot currentness 認証は行わない。generic stage、builtin publish_ref 拒否、status/reuse gap、raw 不完全 slice/MISS を保ち、committed token/witness publication/受理/enclosing gate credit を与えない。
+### Explicit source theorem file staging tests
+既存 term_proof_tests 最後に source_theorem_file_staging_matches_genuine_file_and_legacy_boundaries、source_theorem_file_staging_rejects_genuine_cross_associations、source_theorem_file_staging_preserves_reader_refusals_and_inputs と、それら三つの実 family が使う private with_source_theorem_file_staging_inputs 一つだけを追記する。全 old bytes/helper/fixture を保つ。
+新 API 前に実 native Disk/OpenBuffer capture、元 unaugmented Resolver inputs、既存 source file-candidate tuple 全体、generic stage、実 Artifact write/read/recovery を得る。保持する staged 全 field、別 file schema/hash/reference、反復/不変、元 status/slice 全体/publication/MISS を比較する。実 old 値を使い、新 hash grammar や編集間安定性を仮定しない。
+実 source/policy/path の別 products では先に reader 成功を示してから対応違いを拒否する。実 file 由来の coherent rehash 付き untrusted wire/identity/metadata 編集と実 lower-reader failure も使い、事前の lower String と比較し実拒否条件を示す。架空 positive draft/check/Core/VC/Accepted/token/commit や下位 matrix 重複を作らず、構築不能 trusted-class/selected-hash guard は静的 review とする。
+
 ## Publication References
 
 `KernelVerified` formula/substitution evidence では、`stage` が次を持つ unpublished
@@ -127,14 +133,9 @@ reference を publication-reachable として返す。
 store は non-trusted status の `ProofWitnessRef` を publish してはならない。unsupported
 trusted status を `kernel_verified` に書き換えてもならない。
 
-`DischargedBuiltin` は現在 artifact witness publication の `external_dependency_gap` のままである。
-store は internal draft を stage し、stable reuse metadata を公開してよいが、`mizar-artifact` が
-distinct な trusted `DischargedBuiltin` witness status/evidence combination を support するまで
-`publish_ref` は unsupported-witness gap を返さなければならない。staged
-`DischargedBuiltin` hash は internal かつ non-artifact-facing であり、
-`selected_proof_witness_hash` として export してはならず、`ProofWitnessRef` に現れてはならず、
-この gap が残る間は selection/status reuse metadata が要求する
-`deterministic_discharge_hash` を置き換えてはならない。
+`DischargedBuiltin` publication は `external_dependency_gap` を保ち、実 Artifact 所有 committed reachability が供給されるまで `publish_ref` は拒否する。
+Generic `stage` は internal hash/reference absent を保つ。明示 file route は別 file hash の unpublished reference3.0 のみを保持してよい。
+どちらも selected_proof_witness_hash を供給せず、必須 deterministic-discharge reuse input を置き換えず、status/publication/cache authority を昇格しない。
 
 ## Provenance Metadata
 

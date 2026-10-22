@@ -23998,4 +23998,418 @@ mod term_proof_tests {
             },
         );
     }
+
+    fn with_source_theorem_file_staging_inputs<F>(mut check: F) -> Result<(), String>
+    where
+        F: FnMut(
+            usize,
+            &(
+                (
+                    mizar_proof::status::ProofStatusProjection,
+                    mizar_vc::dependency_slice::DependencySlice,
+                    mizar_proof::witness_store::ProofWitnessDraft,
+                ),
+                mizar_artifact::store::CanonicalJson,
+                mizar_artifact::proof_witness::ProofWitnessRef,
+            ),
+            &mizar_artifact::store::PublishedArtifactRead,
+            &mizar_proof::witness_store::ProofWitnessStagedRef,
+        ) -> Result<(), String>,
+    {
+        use mizar_artifact::store::{
+            PublishedArtifactPath, PublishedArtifactReadOptions, SchemaVersion,
+            artifact_hash_domain, read_published_artifact, write_published_artifact,
+        };
+        use mizar_frontend::{
+            orchestration::Frontend,
+            parsing::MizarParserSeam,
+            source::{FrontendSourceLoader, source_unit_from_loaded},
+        };
+        use mizar_proof::{
+            policy::VerifierPolicy as Policy,
+            status::{
+                source_theorem_reflexivity_witness_draft_from_original as acquire,
+                source_theorem_reflexivity_witness_file_candidate as candidate,
+            },
+            witness_store::{read_source_theorem_witness_file as recover, stage},
+        };
+        use mizar_resolve::{
+            resolved_ast::ModuleId, symbols::source_theorem_module_original_inputs,
+        };
+        use mizar_session::{
+            DiskSourceLoader, Edition, InMemorySessionIdAllocator, ModulePath, PackageId,
+            SessionIdAllocator, SnapshotRegistry, SourceInput, SourceOrigin, SourceOriginInput,
+            ToolchainInfo, WorkspaceRoot, hash_text,
+        };
+
+        let temporary = std::process::Command::new("mktemp")
+            .arg("-d")
+            .output()
+            .unwrap();
+        assert!(temporary.status.success());
+        let root = std::path::PathBuf::from(String::from_utf8(temporary.stdout).unwrap().trim());
+        fs::create_dir(root.join("src")).unwrap();
+        let path = root.join("src/owners.miz");
+        let original =
+            "theorem T: for X being set holds X = X proof let X be set; thus X = X; end;";
+        let renamed = original.replace("T:", "Renamed:").replace(
+            "for X being set holds X = X",
+            "for Bound being set holds Bound = Bound",
+        );
+        let local = original.replace(
+            "let X be set; thus X = X",
+            "let Local be set; thus Local = Local",
+        );
+        let policy = Policy::default();
+        let cases = [
+            (
+                original,
+                false,
+                policy.clone(),
+                "proof-witnesses/stage/a.json",
+            ),
+            (
+                original,
+                true,
+                policy.clone(),
+                "proof-witnesses/stage/a.json",
+            ),
+            (
+                &renamed,
+                false,
+                policy.clone(),
+                "proof-witnesses/stage/a.json",
+            ),
+            (
+                &local,
+                false,
+                policy.clone(),
+                "proof-witnesses/stage/a.json",
+            ),
+            (
+                original,
+                false,
+                policy.clone().with_profile_id("staging-policy"),
+                "proof-witnesses/stage/a.json",
+            ),
+            (original, false, policy, "proof-witnesses/stage/b.json"),
+        ];
+        let registry = SnapshotRegistry::new();
+        let ids = InMemorySessionIdAllocator::new();
+        let domain = artifact_hash_domain(
+            "mizar-proof/source-theorem-witness-file",
+            SchemaVersion::new(1, 0),
+        );
+        for (index, (text, open, policy, witness_path)) in cases.into_iter().enumerate() {
+            fs::write(&path, if open { "stale disk content" } else { text }).unwrap();
+            let input = SourceInput {
+                package_id: PackageId::new("witness-staging-test"),
+                module_path: ModulePath::new("owners"),
+                normalized_path: mizar_session::normalize_path(&root, &path).unwrap(),
+                edition: Edition::new("2026"),
+                origin: if open {
+                    SourceOriginInput::OpenBuffer {
+                        uri: format!("file://{}", path.display()),
+                        expected_version: 3,
+                        actual_version: 3,
+                        text: text.to_owned().into(),
+                    }
+                } else {
+                    SourceOriginInput::Disk { path: path.clone() }
+                },
+            };
+            let (snapshot, lease, mut loaded) = registry
+                .load_snapshot(
+                    ids.next_request_id().unwrap(),
+                    (
+                        WorkspaceRoot::new(root.to_str().unwrap()),
+                        Vec::new(),
+                        hash_text(include_str!("../../../../Cargo.lock")),
+                        ToolchainInfo::new("caller-recorded-witness-staging-test"),
+                        policy.policy_fingerprint().hash(),
+                    ),
+                    vec![(DiskSourceLoader::new(&root), input.clone())],
+                )
+                .unwrap();
+            let (loaded, received) = loaded.pop().unwrap();
+            assert_eq!(received, input);
+            assert_eq!(loaded.source_hash, hash_text(text));
+            assert_eq!(
+                matches!(loaded.origin, SourceOrigin::OpenBuffer { .. }),
+                open
+            );
+            let frontend = Frontend::new(
+                FrontendSourceLoader::new(DiskSourceLoader::new(&root)),
+                super::super::ParseOnlyImportProvider,
+                MizarParserSeam,
+            )
+            .run_loaded(source_unit_from_loaded(loaded, path.clone()))
+            .unwrap();
+            assert!(frontend.diagnostics.is_empty());
+            let module = ModuleId::new(input.package_id, input.module_path);
+            let (source, symbols) =
+                source_theorem_module_original_inputs(frontend.ast.as_ref().unwrap(), &module)?
+                    .unwrap();
+            let before = (
+                source.clone(),
+                symbols.clone(),
+                snapshot.clone(),
+                policy.clone(),
+            );
+            let original_product = acquire(&source, &symbols, &snapshot, &policy, witness_path)?;
+            let actual = candidate(&source, &symbols, &snapshot, &policy, witness_path)?;
+            assert_eq!(actual.0, original_product);
+            let legacy = stage(actual.0.2.clone()).unwrap();
+            assert!(legacy.artifact_reference_candidate().is_none());
+            let transport_path = PublishedArtifactPath::new(witness_path).unwrap();
+            let written = write_published_artifact(
+                root.join("unpublished-staging-files"),
+                &transport_path,
+                &actual.1,
+                &domain,
+                &[],
+            )
+            .unwrap();
+            assert_eq!(written.artifact_hash, actual.2.witness_artifact_hash.digest);
+            let read = read_published_artifact(
+                root.join("unpublished-staging-files"),
+                &transport_path,
+                PublishedArtifactReadOptions {
+                    artifact_hash_domain: Some(&domain),
+                    expected_artifact_hash: Some(written.artifact_hash),
+                    ..PublishedArtifactReadOptions::default()
+                },
+            )
+            .unwrap();
+            assert_eq!(read.value, actual.1);
+            assert_eq!(recover(&read, &actual.2)?, actual.0.2.payload_bytes());
+            let received_before = (actual.clone(), read.clone());
+            check(index, &actual, &read, &legacy)?;
+            assert_eq!((actual, read), received_before);
+            assert_eq!((source, symbols, snapshot.clone(), policy), before);
+            assert_eq!(registry.get(snapshot.id), Some(snapshot.clone()));
+            registry.release_lease(snapshot.id, lease.lease_id).unwrap();
+        }
+        fs::remove_dir_all(root).unwrap();
+        Ok(())
+    }
+
+    #[test]
+    fn source_theorem_file_staging_matches_genuine_file_and_legacy_boundaries() -> Result<(), String>
+    {
+        use mizar_artifact::store::SchemaVersion;
+        use mizar_proof::{
+            status::{ArtifactPublicationGap, ProjectedProofStatus},
+            witness_store::stage,
+        };
+        use mizar_vc::{dependency_slice::DependencySliceCompleteness, vc_ir::VcStatus};
+
+        with_source_theorem_file_staging_inputs(|_, actual, read, legacy| {
+            let draft = &actual.0.2;
+            let old_again = stage(draft.clone()).unwrap();
+            assert_eq!(&old_again, legacy);
+            assert_eq!(legacy.payload_schema(), draft.payload_schema());
+            assert_ne!(
+                legacy.staged_payload_hash(),
+                &actual.2.witness_artifact_hash
+            );
+            let staged = draft.clone().stage_source_theorem_file(read, &actual.2)?;
+            assert_eq!(staged.obligation_id(), legacy.obligation_id());
+            assert_eq!(staged.obligation_anchor(), legacy.obligation_anchor());
+            assert_eq!(
+                staged.obligation_fingerprint(),
+                legacy.obligation_fingerprint()
+            );
+            assert_eq!(staged.selected_class(), legacy.selected_class());
+            assert_eq!(
+                staged.selected_evidence_hash(),
+                legacy.selected_evidence_hash()
+            );
+            assert_eq!(staged.witness_path(), legacy.witness_path());
+            assert_eq!(staged.provenance(), legacy.provenance());
+            assert_eq!(
+                staged.payload_schema().family(),
+                "mizar-proof/source-theorem-witness-file"
+            );
+            assert_eq!(staged.payload_schema().version(), SchemaVersion::new(1, 0));
+            assert!(staged.payload_schema().canonical_bytes_required());
+            assert_eq!(
+                staged.staged_payload_hash(),
+                &actual.2.witness_artifact_hash
+            );
+            assert_eq!(staged.artifact_reference_candidate(), Some(&actual.2));
+            assert_eq!(
+                staged,
+                draft.clone().stage_source_theorem_file(read, &actual.2)?
+            );
+            assert_eq!(
+                actual.0.0.projected_status(),
+                ProjectedProofStatus::Accepted
+            );
+            assert_eq!(
+                actual.0.0.artifact_publication().gap(),
+                Some(ArtifactPublicationGap::DischargedBuiltinWitnessUnsupported)
+            );
+            assert_eq!(actual.0.1.status(), &VcStatus::Open);
+            assert_eq!(
+                actual.0.1.completeness(),
+                DependencySliceCompleteness::IncompleteUncacheable
+            );
+            assert!(actual.0.1.requires_cache_miss());
+            assert!(!actual.0.0.reuse_metadata().cache_reuse_predicate_complete());
+            Ok(())
+        })
+    }
+
+    #[test]
+    fn source_theorem_file_staging_rejects_genuine_cross_associations() -> Result<(), String> {
+        let mut products = Vec::new();
+        with_source_theorem_file_staging_inputs(|_, actual, read, _| {
+            products.push((actual.0.2.clone(), read.clone(), actual.2.clone()));
+            Ok(())
+        })?;
+        for index in [2, 3, 4, 5] {
+            let (baseline_draft, baseline_read, baseline_reference) = &products[0];
+            let (foreign_draft, foreign_read, foreign_reference) = &products[index];
+            assert_eq!(
+                mizar_proof::witness_store::read_source_theorem_witness_file(
+                    baseline_read,
+                    baseline_reference,
+                )?,
+                baseline_draft.payload_bytes(),
+            );
+            assert_eq!(
+                mizar_proof::witness_store::read_source_theorem_witness_file(
+                    foreign_read,
+                    foreign_reference,
+                )?,
+                foreign_draft.payload_bytes(),
+            );
+            assert!(
+                baseline_draft.obligation_id() != foreign_draft.obligation_id()
+                    || baseline_draft.obligation_fingerprint()
+                        != foreign_draft.obligation_fingerprint()
+                    || baseline_draft.witness_path() != foreign_draft.witness_path()
+                    || baseline_draft.kernel_acceptance() != foreign_draft.kernel_acceptance()
+                    || baseline_draft.payload_bytes() != foreign_draft.payload_bytes()
+            );
+            assert_eq!(
+                baseline_draft
+                    .clone()
+                    .stage_source_theorem_file(foreign_read, foreign_reference)
+                    .unwrap_err(),
+                "source theorem witness file staging mismatch",
+            );
+            assert_eq!(
+                foreign_draft
+                    .clone()
+                    .stage_source_theorem_file(baseline_read, baseline_reference)
+                    .unwrap_err(),
+                "source theorem witness file staging mismatch",
+            );
+        }
+        Ok(())
+    }
+
+    #[test]
+    fn source_theorem_file_staging_preserves_reader_refusals_and_inputs() -> Result<(), String> {
+        use mizar_artifact::store::{CanonicalJson, SchemaVersion, artifact_hash_domain};
+        use mizar_proof::witness_store::read_source_theorem_witness_file as recover;
+        use mizar_session::hash_text;
+
+        with_source_theorem_file_staging_inputs(|index, actual, read, _| {
+            if index != 0 {
+                return Ok(());
+            }
+            let draft = &actual.0.2;
+            let mut missing_hash = read.clone();
+            missing_hash.artifact_hash = None;
+            let mut incompatible_version = read.clone();
+            let CanonicalJson::Object(fields) = &mut incompatible_version.value else {
+                panic!("genuine file object")
+            };
+            fields.insert("schema_version".into(), CanonicalJson::string("2.0"));
+            for invalid in [missing_hash, incompatible_version] {
+                let old = recover(&invalid, &actual.2).unwrap_err();
+                assert_eq!(
+                    draft
+                        .clone()
+                        .stage_source_theorem_file(&invalid, &actual.2)
+                        .unwrap_err(),
+                    old,
+                );
+            }
+            let mut wrong_reference = actual.2.clone();
+            wrong_reference.witness_path = "proof-witnesses/foreign.json".into();
+            let old = recover(read, &wrong_reference).unwrap_err();
+            assert_eq!(
+                draft
+                    .clone()
+                    .stage_source_theorem_file(read, &wrong_reference)
+                    .unwrap_err(),
+                old,
+            );
+            let domain = artifact_hash_domain(
+                "mizar-proof/source-theorem-witness-file",
+                SchemaVersion::new(1, 0),
+            );
+            for kind in ["wire", "identity", "metadata"] {
+                let mut edited = read.clone();
+                let mut reference = actual.2.clone();
+                let CanonicalJson::Object(fields) = &mut edited.value else {
+                    panic!("genuine file object")
+                };
+                match kind {
+                    "wire" => {
+                        fields.insert("payload_bytes_hex".into(), CanonicalJson::string("00"));
+                    }
+                    "identity" => {
+                        reference.obligation_id.push_str("-foreign");
+                        fields.insert(
+                            "obligation_id".into(),
+                            CanonicalJson::string(reference.obligation_id.as_str()),
+                        );
+                    }
+                    "metadata" => {
+                        reference
+                            .kernel_acceptance
+                            .verifier_policy_fingerprint
+                            .digest = hash_text("foreign-staging-policy");
+                        let Some(CanonicalJson::Object(metadata)) =
+                            fields.get_mut("kernel_acceptance")
+                        else {
+                            panic!("genuine acceptance object")
+                        };
+                        metadata.insert(
+                            "verifier_policy_fingerprint".into(),
+                            CanonicalJson::string(
+                                reference
+                                    .kernel_acceptance
+                                    .verifier_policy_fingerprint
+                                    .to_artifact_hash_string(),
+                            ),
+                        );
+                    }
+                    _ => unreachable!(),
+                }
+                let hash = domain.hash(&edited.value, &[]);
+                edited.artifact_hash = Some(hash);
+                reference.witness_artifact_hash.digest = hash;
+                let recovered = recover(&edited, &reference)?;
+                if kind == "wire" {
+                    assert_ne!(recovered, draft.payload_bytes());
+                } else {
+                    assert_eq!(recovered, draft.payload_bytes());
+                }
+                assert_eq!(
+                    draft
+                        .clone()
+                        .stage_source_theorem_file(&edited, &reference)
+                        .unwrap_err(),
+                    "source theorem witness file staging mismatch",
+                );
+            }
+            Ok(())
+        })
+    }
 }

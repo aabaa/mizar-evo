@@ -470,6 +470,7 @@ kernel の拒否語彙と evidence 契約を訂正した。policy 層はその�
 53. **[Genuine return canonical inputs](../../task_contracts/ja/PROOF-SOURCE-ALGORITHM-RETURN-CANONICAL-INPUTS.md).** [x]
 54. **[Source algorithm return obligation identity](../../task_contracts/ja/PROOF-SOURCE-ALGORITHM-RETURN-IDENTITY.md).** [x]
 55. **[Source algorithm return reflexivity status](../../task_contracts/ja/PROOF-SOURCE-ALGORITHM-RETURN-STATUS.md).** [x]
+56. **[Explicit source theorem file staging](../../task_contracts/ja/PROOF-SOURCE-THEOREM-WITNESS-FILE-STAGING.md).** [x]
 
 ## 推奨検証
 
