@@ -15056,6 +15056,247 @@ pub fn source_registration_formula_payloads(
     Ok(selected)
 }
 
+/// Encodes selected formula content from a replay-checked bounded source algorithm.
+pub fn source_algorithm_formula_payloads(
+    check: &mizar_checker::type_checker::SourceAlgorithmCheck<'_>,
+    core: &CoreIr,
+    roots: &[CoreFormulaId],
+) -> Result<BTreeMap<CoreFormulaId, Vec<u8>>, String> {
+    use crate::binder_normalization::{
+        CanonicalFormula, CanonicalFormulaKind as F, CanonicalTerm, CanonicalTermKind as T,
+        CanonicalVar, canonical_formula, normalize_core_formula,
+    };
+    fn append(out: &mut Vec<u8>, value: &[u8]) -> Result<(), ()> {
+        if out.len().checked_add(value.len()).ok_or(())? > 32 * 1024 * 1024 {
+            return Err(());
+        }
+        out.extend_from_slice(value);
+        Ok(())
+    }
+    fn frame(out: &mut Vec<u8>, value: &[u8]) -> Result<(), ()> {
+        append(
+            out,
+            &u32::try_from(value.len()).map_err(|_| ())?.to_be_bytes(),
+        )?;
+        append(out, value)
+    }
+    fn term(
+        out: &mut Vec<u8>,
+        value: &CanonicalTerm,
+        slots: &BTreeMap<CoreVarId, (u8, u32)>,
+    ) -> Result<(), ()> {
+        let (tag, index) = match value.kind() {
+            T::Var(CanonicalVar::Bound(index)) => (1, *index),
+            T::Var(CanonicalVar::Free(var)) | T::Var(CanonicalVar::Generated(var)) => {
+                let (class, slot) = slots.get(var).ok_or(())?;
+                let expected = if matches!(value.kind(), T::Var(CanonicalVar::Free(_))) {
+                    1
+                } else {
+                    2
+                };
+                if *class != expected {
+                    return Err(());
+                }
+                (if *class == 1 { 2 } else { 4 }, *slot)
+            }
+            _ => return Err(()),
+        };
+        append(out, &[tag])?;
+        append(out, &index.to_be_bytes())
+    }
+    fn formula(
+        out: &mut Vec<u8>,
+        value: &CanonicalFormula,
+        slots: &BTreeMap<CoreVarId, (u8, u32)>,
+    ) -> Result<(), ()> {
+        match value.kind() {
+            F::Equals { left, right } => {
+                append(out, &[2])?;
+                term(out, left, slots)?;
+                term(out, right, slots)?;
+            }
+            F::TypePred { subject, ty } => {
+                append(out, &[3])?;
+                frame(out, ty.as_str().as_bytes())?;
+                term(out, subject, slots)?;
+            }
+            F::Not(child) => {
+                append(out, &[4])?;
+                formula(out, child, slots)?;
+            }
+            F::Exists { binders, body } => {
+                append(out, &[6])?;
+                append(
+                    out,
+                    &u32::try_from(binders.len()).map_err(|_| ())?.to_be_bytes(),
+                )?;
+                for binder in binders {
+                    if binder.role.as_str() != "term-binder" || binder.ty_guard.is_some() {
+                        return Err(());
+                    }
+                    frame(out, binder.role.as_str().as_bytes())?;
+                    append(out, &[0])?;
+                }
+                formula(out, body, slots)?;
+            }
+            _ => return Err(()),
+        }
+        Ok(())
+    }
+    let invalid = || "unsupported source algorithm formula payload".to_owned();
+    let replay = lower_source_algorithms(check)?;
+    if &replay != core
+        || core.items().len() != 1
+        || core.algorithms().len() != 1
+        || !core.definitions().is_empty()
+        || !core.proofs().is_empty()
+        || !core.proof_nodes().is_empty()
+        || !core.generated().is_empty()
+        || !core.diagnostics().is_empty()
+    {
+        return Err(invalid());
+    }
+    let (item_id, item) = core.items().iter().next().ok_or_else(invalid)?;
+    let (algorithm_id, algorithm) = core.algorithms().iter().next().ok_or_else(invalid)?;
+    if item.kind != CoreItemKind::Algorithm
+        || item.status != CoreItemStatus::Valid
+        || !item.dependencies.is_empty()
+        || !item.diagnostics.is_empty()
+        || algorithm.item != item_id
+        || algorithm.symbol != item.symbol
+        || !algorithm.diagnostics.is_empty()
+        || !algorithm.ghost_effects.is_empty()
+        || !algorithm.contracts.requires.is_empty()
+        || !algorithm.contracts.invariants.is_empty()
+        || !algorithm.contracts.assertions.is_empty()
+        || !algorithm.contracts.decreasing.is_empty()
+    {
+        return Err(invalid());
+    }
+    let mut available = algorithm
+        .contracts
+        .ensures
+        .iter()
+        .copied()
+        .collect::<BTreeSet<_>>();
+    let mut binders = algorithm
+        .params
+        .iter()
+        .map(|binder| (binder, 1, "parameter"))
+        .collect::<Vec<_>>();
+    binders.push((algorithm.result.as_ref().ok_or_else(invalid)?, 2, "result"));
+    for (_, statement) in core.algorithm_statements().iter() {
+        if statement.owner != algorithm_id || !statement.diagnostics.is_empty() {
+            return Err(invalid());
+        }
+        match &statement.kind {
+            CoreAlgorithmStmtKind::Let { binder, .. } => {
+                if !matches!(binder.role.as_str(), "local:var" | "local:const") {
+                    return Err(invalid());
+                }
+                binders.push((binder, 1, binder.role.as_str()));
+            }
+            CoreAlgorithmStmtKind::Pick {
+                binder, witness_ty, ..
+            } => {
+                binders.push((binder, 2, "pick"));
+                available.extend(witness_ty);
+            }
+            CoreAlgorithmStmtKind::Assert { formula } => {
+                available.insert(*formula);
+            }
+            CoreAlgorithmStmtKind::While {
+                condition,
+                invariants,
+                decreasing,
+                ..
+            } => {
+                if !decreasing.is_empty() {
+                    return Err(invalid());
+                }
+                available.insert(*condition);
+                available.extend(invariants);
+            }
+            CoreAlgorithmStmtKind::Snapshot { .. }
+            | CoreAlgorithmStmtKind::AssignLocal { .. }
+            | CoreAlgorithmStmtKind::Return(_)
+            | CoreAlgorithmStmtKind::Break => {}
+            _ => return Err(invalid()),
+        }
+    }
+    for (_, seed) in core.obligation_seeds().iter() {
+        available.extend(&seed.context);
+        available.extend(seed.goal);
+    }
+    let mut context = BinderContext::new();
+    let mut slots = BTreeMap::new();
+    let mut prefix = b"mizar-core/source-algorithm-formula/v1\0".to_vec();
+    for field in [
+        core.module_id().package().as_str(),
+        core.module_id().path().as_str(),
+        item.symbol.module().package().as_str(),
+        item.symbol.module().path().as_str(),
+        item.symbol.local().as_str(),
+        item.symbol.fqn().as_str(),
+        item.visibility.as_str(),
+    ] {
+        frame(&mut prefix, field.as_bytes()).map_err(|_| invalid())?;
+    }
+    append(
+        &mut prefix,
+        &u32::try_from(binders.len())
+            .map_err(|_| invalid())?
+            .to_be_bytes(),
+    )
+    .map_err(|_| invalid())?;
+    for (binder, class, role) in binders {
+        if binder.role.as_str() != role {
+            return Err(invalid());
+        }
+        available.insert(binder.ty_guard.ok_or_else(invalid)?);
+        let slot = u32::try_from(slots.len()).map_err(|_| invalid())?;
+        if slots.insert(binder.var, (class, slot)).is_some() {
+            return Err(invalid());
+        }
+        context.declare_variable(
+            binder.var,
+            if class == 1 {
+                NormalizedVarClass::Free
+            } else {
+                NormalizedVarClass::Generated
+            },
+            binder.role.clone(),
+            NormalizedVarSort::Term,
+        );
+        append(&mut prefix, &[class]).map_err(|_| invalid())?;
+        frame(&mut prefix, binder.role.as_str().as_bytes()).map_err(|_| invalid())?;
+    }
+    if roots.iter().collect::<BTreeSet<_>>().len() != roots.len()
+        || roots.iter().any(|id| !available.contains(id))
+    {
+        return Err(invalid());
+    }
+    let mut selected = BTreeMap::new();
+    let mut total = 0usize;
+    for id in available {
+        let row = core.formulas().get(id).ok_or_else(invalid)?;
+        let normalized =
+            normalize_core_formula(core, id, &context, &row.source).map_err(|_| invalid())?;
+        let canonical =
+            canonical_formula(&normalized, &context, &row.source).map_err(|_| invalid())?;
+        let mut bytes = prefix.clone();
+        formula(&mut bytes, &canonical, &slots).map_err(|_| invalid())?;
+        if roots.contains(&id) {
+            total = total.checked_add(bytes.len()).ok_or_else(invalid)?;
+            if total > 32 * 1024 * 1024 {
+                return Err(invalid());
+            }
+            selected.insert(id, bytes);
+        }
+    }
+    Ok(selected)
+}
+
 /// Encodes the actual local guard and goal of a replay-checked single-local theorem.
 pub fn source_theorem_formula_payloads(
     check: &mizar_checker::type_checker::SourceTheoremCheck<'_>,

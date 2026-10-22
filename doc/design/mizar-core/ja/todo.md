@@ -713,6 +713,7 @@ IR264. **Authenticated structure-property definition owner。** [x]
 56. **[Source theorem formula payloads](../../task_contracts/ja/CORE-SOURCE-THEOREM-FORMULA-PAYLOADS.md).** [x] — 限定した局所内容。完全な VC/context identity は未完了。
 
 57. **[Source theorem Core semantic payload](../../task_contracts/ja/CORE-SOURCE-THEOREM-SEMANTIC-PAYLOAD.md).** [x]
+58. **[Source algorithm formula payloads](../../task_contracts/ja/CORE-SOURCE-ALGORITHM-FORMULA-PAYLOADS.md).** [x]
 
 ## 推奨検証
 

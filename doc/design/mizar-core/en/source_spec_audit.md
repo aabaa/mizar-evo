@@ -146,6 +146,7 @@ Source: `crates/mizar-core/src/elaborator.rs`. Owning spec: `elaborator.md`.
 `normalize_source_membership_proof` consumes checker-sealed membership obligations; `lower_source_functorial_registration` and `lower_source_existential_registration` lower their bounded registration goals as specified in [elaborator.md](./elaborator.md). `lower_source_algorithms` consumes the checker-sealed static algorithm profile under the same owner boundary.
 `source_registration_formula_payloads` follows the [registration formula content owner](./elaborator.md#source-registration-formula-payloads).
 `source_theorem_formula_payloads` follows the [theorem formula content owner](./elaborator.md#source-theorem-formula-payloads).
+`source_algorithm_formula_payloads` follows the [algorithm formula content owner](./elaborator.md#source-algorithm-formula-payloads).
 `source_theorem_core_semantic_payload` follows the [bounded Core content owner](./elaborator.md#source-theorem-core-semantic-payload).
 
 Top-level public API groups:
