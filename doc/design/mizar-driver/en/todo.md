@@ -586,6 +586,7 @@ the owning producers when the paired tasks land.
 60. **[Native algorithm Core storage replay](../../task_contracts/en/DRIVER-NATIVE-ALGORITHM-CORE-STORAGE-REPLAY.md).** [x]
 61. **[Native algorithm Core publication](../../task_contracts/en/DRIVER-NATIVE-ALGORITHM-CORE-PUBLICATION.md).** [x]
 62. **[Native algorithm VC caller](../../task_contracts/en/DRIVER-NATIVE-ALGORITHM-VC-CALLER.md).** [x]
+63. **[Native algorithm VC storage replay](../../task_contracts/en/DRIVER-NATIVE-ALGORITHM-VC-STORAGE-REPLAY.md).** [x]
 
 ## Recommended Verification
 

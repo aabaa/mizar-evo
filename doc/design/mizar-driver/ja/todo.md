@@ -555,6 +555,7 @@ artifact/test のフォローアップタスクが所有する。本 crate の�
 60. **[Native algorithm Core storage replay](../../task_contracts/ja/DRIVER-NATIVE-ALGORITHM-CORE-STORAGE-REPLAY.md).** [x]
 61. **[Native algorithm Core publication](../../task_contracts/ja/DRIVER-NATIVE-ALGORITHM-CORE-PUBLICATION.md).** [x]
 62. **[Native algorithm VC caller](../../task_contracts/ja/DRIVER-NATIVE-ALGORITHM-VC-CALLER.md).** [x]
+63. **[Native algorithm VC storage replay](../../task_contracts/ja/DRIVER-NATIVE-ALGORITHM-VC-STORAGE-REPLAY.md).** [x]
 
 ## 推奨検証
 

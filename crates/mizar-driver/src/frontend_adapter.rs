@@ -4438,6 +4438,112 @@ pub fn native_algorithm_core_from_storage_bytes(
     )?))
 }
 
+/// Stores genuine raw algorithm VCs through lossless Core storage and regeneration.
+pub fn native_algorithm_vc_storage_bytes(
+    ast: &<MizarParserSeam as ParserSeam>::Ast,
+    module: &mizar_resolve::resolved_ast::ModuleId,
+    core: &mizar_core::core_ir::CoreIr,
+    vcs: &mizar_vc::vc_ir::VcSet,
+    snapshot: mizar_session::BuildSnapshotId,
+    generation_schema: &mizar_vc::vc_ir::GenerationSchemaVersion,
+) -> Result<Option<Vec<u8>>, String> {
+    let Some(core_bytes) = native_algorithm_core_storage_bytes(ast, module, core)? else {
+        return Ok(None);
+    };
+    let domain = b"mizar-driver/native-algorithm-vc-storage/v1\0";
+    let fields = [
+        generation_schema.as_str().as_bytes(),
+        vcs.schema_version().as_str().as_bytes(),
+        core_bytes.as_slice(),
+    ];
+    let mut size = domain.len() as u64;
+    for field in fields {
+        let Some(next) = u64::try_from(field.len())
+            .ok()
+            .and_then(|length| size.checked_add(8)?.checked_add(length))
+        else {
+            return Ok(None);
+        };
+        if next > 32 * 1024 * 1024 {
+            return Ok(None);
+        }
+        size = next;
+    }
+    let Ok(size) = usize::try_from(size) else {
+        return Ok(None);
+    };
+    let expected = mizar_vc::generator::generate_source_algorithm_postconditions(
+        core,
+        snapshot,
+        generation_schema,
+        vcs.schema_version(),
+    )?;
+    if expected != *vcs {
+        return Ok(None);
+    }
+    let mut bytes = Vec::with_capacity(size);
+    bytes.extend_from_slice(domain);
+    for field in fields {
+        bytes.extend_from_slice(&(field.len() as u64).to_le_bytes());
+        bytes.extend_from_slice(field);
+    }
+    Ok(Some(bytes))
+}
+
+/// Rebinds stored algorithm syntax to the supplied source, module and snapshot.
+pub fn native_algorithm_vc_from_storage_bytes(
+    bytes: &[u8],
+    source_id: mizar_session::SourceId,
+    module: &mizar_resolve::resolved_ast::ModuleId,
+    snapshot: mizar_session::BuildSnapshotId,
+) -> Result<Option<mizar_vc::vc_ir::VcSet>, String> {
+    if bytes.len() > 32 * 1024 * 1024 {
+        return Ok(None);
+    }
+    let Some(mut remaining) = bytes.strip_prefix(b"mizar-driver/native-algorithm-vc-storage/v1\0")
+    else {
+        return Ok(None);
+    };
+    let mut fields = [&[][..]; 3];
+    for field in &mut fields {
+        let Some(length) = remaining
+            .get(..8)
+            .and_then(|bytes| <[u8; 8]>::try_from(bytes).ok())
+            .map(u64::from_le_bytes)
+            .and_then(|length| usize::try_from(length).ok())
+        else {
+            return Ok(None);
+        };
+        remaining = &remaining[8..];
+        let Some(value) = remaining.get(..length) else {
+            return Ok(None);
+        };
+        *field = value;
+        remaining = &remaining[length..];
+    }
+    if !remaining.is_empty() {
+        return Ok(None);
+    }
+    let (Ok(generation), Ok(schema)) = (
+        std::str::from_utf8(fields[0]),
+        std::str::from_utf8(fields[1]),
+    ) else {
+        return Ok(None);
+    };
+    let generation = mizar_vc::vc_ir::GenerationSchemaVersion::new(generation);
+    let schema = mizar_vc::vc_ir::VcSchemaVersion::new(schema);
+    let Some(core) = native_algorithm_core_from_storage_bytes(fields[2], source_id, module)? else {
+        return Ok(None);
+    };
+    mizar_vc::generator::generate_source_algorithm_postconditions(
+        &core,
+        snapshot,
+        &generation,
+        &schema,
+    )
+    .map(Some)
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
