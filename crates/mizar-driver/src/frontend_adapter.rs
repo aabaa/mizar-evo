@@ -1493,6 +1493,192 @@ impl<'a> crate::registry::SourceLoadInputs<'a> {
             .map_err(|error| error.to_string())?;
         Ok(Some(vcs))
     }
+    /// Seals genuine bounded native algorithm VCs with their content and storage streams.
+    pub fn publish_native_algorithm_vcs(
+        self,
+        input: &PhaseInput,
+        publisher: &mizar_ir::publisher::PhaseOutputPublisher,
+        generation_schema: &mizar_vc::vc_ir::GenerationSchemaVersion,
+        vc_schema: &mizar_vc::vc_ir::VcSchemaVersion,
+    ) -> Result<Option<mizar_ir::storage::PhaseOutputRef<mizar_vc::vc_ir::VcSet>>, String> {
+        use mizar_checker::typed_ast::{TypedArena, TypedNode, TypedNodeId};
+        let Some(core) = self.native_algorithm_core_with_frontend_parent(input, publisher)? else {
+            return Ok(None);
+        };
+        let vcs = mizar_vc::generator::generate_source_algorithm_postconditions(
+            &core,
+            input.snapshot,
+            generation_schema,
+            vc_schema,
+        )?;
+        let parent = input.parent_outputs()[0].as_output_ref();
+        let storage = publisher.storage();
+        storage
+            .validate_handle(parent)
+            .map_err(|error| error.to_string())?;
+        publisher
+            .validate_published_output(input.snapshot, parent)
+            .map_err(|error| error.to_string())?;
+        let WorkUnit::Module { module } = &input.work_unit else {
+            return Err("native algorithm vc publication requires a module".to_owned());
+        };
+        let version = unique(self.snapshot.source_versions.iter().filter(|version| {
+            version.package_id == module.package && version.module_path == module.path
+        }))
+        .ok_or_else(|| "native algorithm vc publication requires one captured source".to_owned())?;
+        let typed = storage
+            .typed_handle::<FrontendOutput<<MizarParserSeam as ParserSeam>::Ast>>(
+                parent,
+                &OutputKind::new("FrontendOutput"),
+            )
+            .map_err(|error| error.to_string())?;
+        let retained = storage.get(&typed).map_err(|error| error.to_string())?;
+        let ast = retained
+            .ast
+            .as_ref()
+            .ok_or_else(|| "native algorithm vc publication requires retained syntax".to_owned())?;
+        let resolver_module =
+            mizar_resolve::resolved_ast::ModuleId::new(module.package.clone(), module.path.clone());
+        let Some((arena, env)) =
+            mizar_resolve::symbols::source_theorem_module_original_inputs(ast, &resolver_module)?
+        else {
+            return Ok(None);
+        };
+        let neutral = TypedArena::try_new(
+            Some(TypedNodeId::new(arena.arena().root().index())),
+            arena
+                .arena()
+                .iter()
+                .map(|(id, node)| {
+                    TypedNode::new(format!("{:?}", node.kind()), node.origin().anchor().clone())
+                        .with_resolved_node(id)
+                        .with_children(
+                            node.children()
+                                .iter()
+                                .map(|child| TypedNodeId::new(child.index()))
+                                .collect(),
+                        )
+                })
+                .collect(),
+        )
+        .map_err(|error| error.to_string())?;
+        let check =
+            mizar_checker::type_checker::check_source_algorithm_types(&arena, &neutral, &env)?;
+        let core_semantic_bytes =
+            mizar_core::elaborator::source_algorithm_core_semantic_payload(&check, &core)?;
+        let domain = b"mizar-driver/native-algorithm-vc-content/v1\0";
+        let fields = [
+            generation_schema.as_str().as_bytes(),
+            vcs.schema_version().as_str().as_bytes(),
+            core_semantic_bytes.as_slice(),
+        ];
+        let mut size = domain.len() as u64;
+        for field in fields {
+            let Some(next) = u64::try_from(field.len())
+                .ok()
+                .and_then(|length| size.checked_add(8)?.checked_add(length))
+            else {
+                return Ok(None);
+            };
+            if next > 32 * 1024 * 1024 {
+                return Ok(None);
+            }
+            size = next;
+        }
+        let Ok(size) = usize::try_from(size) else {
+            return Ok(None);
+        };
+        let mut semantic_bytes = Vec::with_capacity(size);
+        semantic_bytes.extend_from_slice(domain);
+        for field in fields {
+            semantic_bytes.extend_from_slice(&(field.len() as u64).to_le_bytes());
+            semantic_bytes.extend_from_slice(field);
+        }
+        let Some(storage_bytes) = native_algorithm_vc_storage_bytes(
+            ast,
+            &resolver_module,
+            &core,
+            &vcs,
+            input.snapshot,
+            generation_schema,
+        )?
+        else {
+            return Ok(None);
+        };
+        let storage_hash = Hash::from_bytes(blake3::derive_key(
+            "mizar-driver/native-algorithm-vc-storage-side-table/v1",
+            &storage_bytes,
+        ));
+        let phase = IrPipelinePhase::new("VcGenerate");
+        let work_unit = IrWorkUnit::new(format!(
+            "{:?}:{:?}",
+            module.package.as_str(),
+            module.path.as_str()
+        ));
+        let output_kind = OutputKind::new("SourceAlgorithmVC");
+        let source_id = version.source_id;
+        let snapshot = input.snapshot;
+        storage
+            .validate_handle(parent)
+            .map_err(|error| error.to_string())?;
+        publisher
+            .validate_published_output(input.snapshot, parent)
+            .map_err(|error| error.to_string())?;
+        publisher
+            .publish(PublishOutputInput {
+                slot: publisher.allocate(
+                    input.snapshot,
+                    phase.clone(),
+                    work_unit.clone(),
+                    output_kind.clone(),
+                    SchemaVersion::new(1),
+                ),
+                snapshot: input.snapshot,
+                phase,
+                work_unit,
+                output_kind,
+                schema_version: SchemaVersion::new(1),
+                payload: vcs,
+                canonical_payload: Some(semantic_bytes),
+                storage_payload: Some(storage_bytes),
+                decode: BlobDecoder::new(move |bytes| {
+                    native_algorithm_vc_from_storage_bytes(
+                        bytes,
+                        source_id,
+                        &resolver_module,
+                        snapshot,
+                    )
+                    .map_err(BlobDecodeError::new)?
+                    .ok_or_else(|| BlobDecodeError::new("invalid native algorithm vc storage"))
+                }),
+                parents: vec![parent.clone()],
+                named_input_hashes: vec![NamedInputHash {
+                    name: "source".to_owned(),
+                    domain: SOURCE_UNIT_CACHE_KEY_VERSION.to_owned(),
+                    digest: source_input_hash(version),
+                }],
+                side_tables: IrSideTables {
+                    source_maps: vec![SideTableRecord::new(
+                        "generate-algorithm-vc-storage",
+                        version.normalized_path.as_str(),
+                        storage_hash,
+                    )],
+                    ..IrSideTables::default()
+                },
+                origin: if matches!(version.origin, SourceOrigin::OpenBuffer { .. }) {
+                    OutputOrigin::OpenBuffer
+                } else {
+                    OutputOrigin::PackageSource
+                },
+                target: if matches!(version.origin, SourceOrigin::OpenBuffer { .. }) {
+                    PublicationTarget::InternalOnly
+                } else {
+                    PublicationTarget::CurrentPackage
+                },
+            })
+            .map(Some)
+            .map_err(|error| error.to_string())
+    }
     /// Seals a genuine bounded native VC graph with its content and storage streams.
     pub fn publish_native_theorem_vcs(
         self,

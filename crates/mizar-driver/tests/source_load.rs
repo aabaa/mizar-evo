@@ -28685,3 +28685,628 @@ fn native_algorithm_vc_storage_preserves_refusals() {
         Err(direct)
     );
 }
+
+#[test]
+fn native_algorithm_vc_publication_seals_genuine_graph_and_streams() {
+    use mizar_checker::typed_ast::{TypedArena, TypedNode, TypedNodeId};
+    use mizar_driver::{native_algorithm_vc_from_storage_bytes, native_algorithm_vc_storage_bytes};
+    use mizar_vc::vc_ir::{
+        GenerationSchemaVersion, SeedVcMapping, VcKind, VcSchemaVersion, VcStatus,
+    };
+    for (text, obligation, open, generation_text, schema_text) in [
+        (
+            include_str!(
+                "../../../tests/miz/pass/algorithms/pass_proof_verification_algorithm_while_invariant_001.miz"
+            ),
+            "while",
+            false,
+            "native-algorithm-generation",
+            "native-algorithm-vc",
+        ),
+        (
+            include_str!(
+                "../../../tests/miz/fail/algorithms/fail_proof_verification_algorithm_ensures_unprovable_001.miz"
+            ),
+            "pick",
+            true,
+            " \n世代\t\0",
+            "",
+        ),
+        (
+            "definition let a be object; algorithm plain(a) -> object do return a; end; end;",
+            "empty",
+            true,
+            "native-algorithm-generation",
+            "native-algorithm-vc",
+        ),
+    ] {
+        let fixture = Fixture::new(text.as_bytes());
+        let ids = InMemorySessionIdAllocator::new();
+        let snapshots = SnapshotRegistry::new();
+        let (mut draft, submit) = fixture.submit_request(vec![], vec![]);
+        draft.source_inputs.versions.clear();
+        let descriptor = SourceInput {
+            package_id: fixture.version.package_id.clone(),
+            module_path: fixture.version.module_path.clone(),
+            normalized_path: fixture.version.normalized_path.clone(),
+            edition: fixture.version.edition.clone(),
+            origin: if open {
+                SourceOriginInput::OpenBuffer {
+                    uri: format!(
+                        "file://{}",
+                        fixture.root.join("alpha/src/main.miz").display()
+                    ),
+                    expected_version: 7,
+                    actual_version: 7,
+                    text: std::sync::Arc::from(text),
+                }
+            } else {
+                SourceOriginInput::Disk {
+                    path: "src/main.miz".into(),
+                }
+            },
+        };
+        if open {
+            fixture.write(&[0xff]);
+        }
+        let session = draft
+            .capture_sources(
+                &ids,
+                &snapshots,
+                vec![(
+                    DiskSourceLoader::new(fixture.root.join("alpha")),
+                    descriptor,
+                )],
+            )
+            .unwrap();
+        let snapshot = session.captured().snapshot().id;
+        let unit = WorkUnit::Module {
+            module: mizar_build::module_index::ModuleId::new(
+                PackageId::new("alpha"),
+                ModulePath::new("main"),
+            ),
+        };
+        let owner = publisher(snapshot, if open { 0 } else { usize::MAX }, &unit);
+        allow_frontend(&owner, &unit);
+        owner.allow_work_unit(AllowedWorkUnit::new(
+            IrPipelinePhase::new("VcGenerate"),
+            OutputKind::new("SourceAlgorithmVC"),
+            IrWorkUnit::new("\"alpha\":\"main\""),
+        ));
+        let mut builder = PhaseRegistryBuilder::new();
+        builder.register_source_load();
+        builder.register_frontend(vec![]);
+        let submission = CompilerDriver::new(builder.build().unwrap())
+            .with_output_publisher(owner.clone())
+            .submit_captured(session, &ids, &snapshots, submit)
+            .unwrap();
+        let (inputs, source_input) = native_disk_lookup_context(&submission, &ids);
+        let parent = submission
+            .scheduler_run
+            .as_ref()
+            .unwrap()
+            .phase_results
+            .values()
+            .flatten()
+            .flat_map(|result| &result.output_refs)
+            .find(|handle| handle.output_kind() == &OutputKind::new("FrontendOutput"))
+            .unwrap();
+        assert_eq!(parent.placement() == &StoragePlacement::Resident, !open);
+        let input = PhaseInput::new(
+            unit,
+            PhaseDispatchInputBundle::new(
+                snapshot,
+                source_input.identities().input_hash(),
+                vec![],
+                vec![
+                    SealedParentOutputHandle::from_published_output(
+                        &owner,
+                        snapshot,
+                        parent.clone(),
+                    )
+                    .unwrap(),
+                ],
+            )
+            .unwrap(),
+        );
+        let generation = GenerationSchemaVersion::new(generation_text);
+        let schema = VcSchemaVersion::new(schema_text);
+        let schemas_before = (generation.clone(), schema.clone());
+        let core = inputs
+            .native_algorithm_core_with_frontend_parent(&input, &owner)
+            .unwrap()
+            .unwrap();
+        let graph = mizar_vc::generator::generate_source_algorithm_postconditions(
+            &core,
+            snapshot,
+            &generation,
+            &schema,
+        )
+        .unwrap();
+        assert_eq!(
+            inputs.native_algorithm_vcs_with_frontend_parent(&input, &owner, &generation, &schema,),
+            Ok(Some(graph.clone()))
+        );
+        let typed = owner
+            .storage()
+            .typed_handle::<FrontendOutput<<MizarParserSeam as ParserSeam>::Ast>>(
+                parent,
+                &OutputKind::new("FrontendOutput"),
+            )
+            .unwrap();
+        let retained = owner.storage().get(&typed).unwrap();
+        let ast = retained.ast.as_ref().unwrap();
+        let module = ResolverModuleId::new(PackageId::new("alpha"), ModulePath::new("main"));
+        let version = &inputs.snapshot.source_versions[0];
+        let (_, loaded, captured_input) = &inputs.captured.unwrap().native_sources().unwrap()[0];
+        assert_eq!(loaded.text.as_ref(), text);
+        assert_eq!(loaded.source_id, ast.source_id);
+        assert_eq!(core.source_id(), loaded.source_id);
+        assert_eq!(core.module_id(), &module);
+        assert_eq!(graph.source(), loaded.source_id);
+        assert_eq!(graph.snapshot(), snapshot);
+        assert_eq!(graph.module().as_str(), "package=5:alpha;module=4:main");
+        assert_eq!(graph.schema_version(), &schema);
+        assert!(graph.vcs().iter().all(|vc| {
+            vc.status == VcStatus::Open && vc.anchor.generation_schema_version == generation
+        }));
+        match obligation {
+            "while" => assert!(
+                graph
+                    .vcs()
+                    .iter()
+                    .any(|vc| matches!(vc.kind, VcKind::LoopInvariant { .. }))
+            ),
+            "pick" => {
+                assert!(
+                    graph
+                        .vcs()
+                        .iter()
+                        .any(|vc| vc.kind == VcKind::AlgorithmPostcondition)
+                );
+                assert!(
+                    graph
+                        .vcs()
+                        .iter()
+                        .any(|vc| vc.kind == VcKind::GeneratedNonEmptiness)
+                );
+            }
+            "empty" => {
+                assert!(graph.vcs().is_empty());
+                assert!(matches!(
+                    graph.seed_accounting(),
+                    [mizar_vc::vc_ir::SeedAccounting {
+                        seed_status: mizar_core::core_ir::ObligationSeedStatus::Deferred,
+                        mapping: SeedVcMapping::NoConcreteVc { .. },
+                        ..
+                    }]
+                ));
+            }
+            _ => unreachable!(),
+        }
+        let (arena, env) =
+            mizar_resolve::symbols::source_theorem_module_original_inputs(ast, &module)
+                .unwrap()
+                .unwrap();
+        let neutral = TypedArena::try_new(
+            Some(TypedNodeId::new(arena.arena().root().index())),
+            arena
+                .arena()
+                .iter()
+                .map(|(id, node)| {
+                    TypedNode::new(format!("{:?}", node.kind()), node.origin().anchor().clone())
+                        .with_resolved_node(id)
+                        .with_children(
+                            node.children()
+                                .iter()
+                                .map(|child| TypedNodeId::new(child.index()))
+                                .collect(),
+                        )
+                })
+                .collect(),
+        )
+        .unwrap();
+        let check =
+            mizar_checker::type_checker::check_source_algorithm_types(&arena, &neutral, &env)
+                .unwrap();
+        let core_semantic =
+            mizar_core::elaborator::source_algorithm_core_semantic_payload(&check, &core).unwrap();
+        let mut content = b"mizar-driver/native-algorithm-vc-content/v1\0".to_vec();
+        for field in [
+            generation.as_str().as_bytes(),
+            schema.as_str().as_bytes(),
+            core_semantic.as_slice(),
+        ] {
+            content.extend_from_slice(&u64::try_from(field.len()).unwrap().to_le_bytes());
+            content.extend_from_slice(field);
+        }
+        let bytes =
+            native_algorithm_vc_storage_bytes(ast, &module, &core, &graph, snapshot, &generation)
+                .unwrap()
+                .unwrap();
+        assert_eq!(
+            native_algorithm_vc_from_storage_bytes(&bytes, loaded.source_id, &module, snapshot,),
+            Ok(Some(graph.clone()))
+        );
+        assert_ne!(content, bytes);
+        let mut hasher = blake3::Hasher::new();
+        for field in [
+            b"mizar-ir/publisher-content-hash/v1".as_slice(),
+            content.as_slice(),
+        ] {
+            hasher.update(&(field.len() as u64).to_le_bytes());
+            hasher.update(field);
+        }
+        hasher.update(&1_u64.to_le_bytes());
+        hasher.update(&("parent_content".len() as u64).to_le_bytes());
+        hasher.update(b"parent_content");
+        hasher.update(parent.content_hash().as_bytes());
+        hasher.update(&1_u64.to_le_bytes());
+        for field in [
+            "source",
+            SOURCE_UNIT_CACHE_KEY_VERSION,
+            "mizar-ir/publisher-named-input-hash/v1",
+        ] {
+            hasher.update(&(field.len() as u64).to_le_bytes());
+            hasher.update(field.as_bytes());
+        }
+        hasher.update(source_key(version).as_bytes());
+        let content_hash = Hash::from_bytes(*hasher.finalize().as_bytes());
+        let mut blob_hasher = blake3::Hasher::new();
+        let domain = b"mizar-ir/content-blob/v1";
+        blob_hasher.update(&(domain.len() as u64).to_le_bytes());
+        blob_hasher.update(domain);
+        blob_hasher.update(&1_u32.to_le_bytes());
+        blob_hasher.update(&(bytes.len() as u64).to_le_bytes());
+        blob_hasher.update(&bytes);
+        let blob_hash = Hash::from_bytes(*blob_hasher.finalize().as_bytes());
+        let before = (
+            inputs.snapshot.clone(),
+            inputs.build_plan.clone(),
+            inputs.module_index.clone(),
+            loaded.clone(),
+            captured_input.clone(),
+            (*retained).clone(),
+            input.clone(),
+            parent.clone(),
+        );
+        let sealed = inputs
+            .publish_native_algorithm_vcs(&input, &owner, &generation, &schema)
+            .unwrap()
+            .unwrap();
+        for stage in 0..3 {
+            if stage == 1 {
+                fixture.write(b"open theorem Changed: 0 = 1;\n");
+            } else if stage == 2 {
+                fs::remove_file(fixture.root.join("alpha/src/main.miz")).unwrap();
+            }
+            assert_eq!(
+                inputs.native_algorithm_vcs_with_frontend_parent(
+                    &input,
+                    &owner,
+                    &generation,
+                    &schema,
+                ),
+                Ok(Some(graph.clone()))
+            );
+            assert_eq!(
+                native_algorithm_vc_storage_bytes(
+                    ast,
+                    &module,
+                    &core,
+                    &graph,
+                    snapshot,
+                    &generation,
+                ),
+                Ok(Some(bytes.clone()))
+            );
+            assert_eq!(
+                native_algorithm_vc_from_storage_bytes(&bytes, loaded.source_id, &module, snapshot,),
+                Ok(Some(graph.clone()))
+            );
+            assert_eq!(*owner.storage().get(&sealed).unwrap(), graph);
+            assert_eq!(sealed.snapshot(), snapshot);
+            assert_eq!(sealed.phase(), &IrPipelinePhase::new("VcGenerate"));
+            assert_eq!(sealed.output_kind(), &OutputKind::new("SourceAlgorithmVC"));
+            assert_eq!(sealed.work_unit(), &IrWorkUnit::new("\"alpha\":\"main\""));
+            assert_eq!(
+                sealed.schema_version(),
+                mizar_ir::storage::SchemaVersion::new(1)
+            );
+            assert_eq!(sealed.lineage().parents, vec![parent.output()]);
+            assert_eq!(
+                sealed.lineage().named_input_hashes,
+                vec![mizar_ir::identity::NamedInputHash {
+                    name: "source".to_owned(),
+                    domain: SOURCE_UNIT_CACHE_KEY_VERSION.to_owned(),
+                    digest: source_key(version),
+                }]
+            );
+            assert_eq!(sealed.content_hash(), content_hash);
+            match sealed.placement() {
+                StoragePlacement::Resident => assert!(!open),
+                StoragePlacement::Blob { blob, len } => {
+                    assert!(open);
+                    assert_eq!(*len, bytes.len());
+                    assert_eq!(blob.hash(), blob_hash);
+                }
+                _ => panic!("unexpected storage placement"),
+            }
+            assert_eq!(
+                *owner.storage().side_tables(&sealed).unwrap(),
+                mizar_ir::storage::IrSideTables {
+                    source_maps: vec![mizar_ir::storage::SideTableRecord::new(
+                        "generate-algorithm-vc-storage",
+                        version.normalized_path.as_str(),
+                        Hash::from_bytes(blake3::derive_key(
+                            "mizar-driver/native-algorithm-vc-storage-side-table/v1",
+                            &bytes,
+                        )),
+                    )],
+                    ..mizar_ir::storage::IrSideTables::default()
+                }
+            );
+            assert!(
+                owner
+                    .validate_published_output(snapshot, sealed.any())
+                    .is_ok()
+            );
+            assert_eq!(
+                owner
+                    .validate_current_output(snapshot, sealed.any())
+                    .is_ok(),
+                !open
+            );
+            assert_eq!(
+                inputs
+                    .publish_native_algorithm_vcs(&input, &owner, &generation, &schema,)
+                    .unwrap_err(),
+                mizar_ir::publisher::PublishError::Storage {
+                    error: Box::new(mizar_ir::storage::StorageError::OutputAlreadyStored {
+                        output: sealed.output(),
+                    }),
+                }
+                .to_string()
+            );
+        }
+        assert_eq!((generation, schema), schemas_before);
+        assert_eq!(
+            (
+                inputs.snapshot.clone(),
+                inputs.build_plan.clone(),
+                inputs.module_index.clone(),
+                loaded.clone(),
+                captured_input.clone(),
+                (*owner.storage().get(&typed).unwrap()).clone(),
+                input,
+                parent.clone()
+            ),
+            before,
+        );
+    }
+}
+
+#[test]
+fn native_algorithm_vc_publication_preserves_refusals_and_publisher_boundaries() {
+    use mizar_vc::vc_ir::{GenerationSchemaVersion, VcSchemaVersion};
+    let generation = GenerationSchemaVersion::new(" \n\t");
+    let schema = VcSchemaVersion::new("");
+    for (text, case) in [
+        (
+            include_str!(
+                "../../../tests/miz/fail/resolve/fail_resolve_duplicate_theorem_symbol_001.miz"
+            ),
+            "none",
+        ),
+        (
+            "definition let a be object; algorithm unsupported(a) -> object do return 0; end; end;",
+            "unsupported",
+        ),
+        (
+            "definition let a be object; algorithm twice(a) -> object do return a; return a; end; end;",
+            "generator",
+        ),
+    ] {
+        let fixture = Fixture::new(text.as_bytes());
+        let ids = InMemorySessionIdAllocator::new();
+        let snapshots = SnapshotRegistry::new();
+        let (_, submission, adapter, handle, _) =
+            native_disk_frontend_record_submission(&fixture, &ids, &snapshots, 0);
+        let (inputs, source_input) = native_disk_lookup_context(&submission, &ids);
+        let owner = adapter.publisher();
+        let snapshot = source_input.snapshot;
+        let input = PhaseInput::new(
+            source_input.work_unit.clone(),
+            PhaseDispatchInputBundle::new(
+                snapshot,
+                source_input.identities().input_hash(),
+                vec![],
+                vec![
+                    SealedParentOutputHandle::from_published_output(
+                        owner,
+                        snapshot,
+                        handle.erase(),
+                    )
+                    .unwrap(),
+                ],
+            )
+            .unwrap(),
+        );
+        let old_core = inputs.native_algorithm_core_with_frontend_parent(&input, owner);
+        let old_raw =
+            inputs.native_algorithm_vcs_with_frontend_parent(&input, owner, &generation, &schema);
+        let expected = match case {
+            "none" => {
+                assert_eq!(old_core, Ok(None));
+                assert_eq!(old_raw, Ok(None));
+                Ok(None)
+            }
+            "unsupported" => {
+                assert_eq!(
+                    old_core.as_ref().unwrap_err(),
+                    "algorithms.unsupported_source_types"
+                );
+                Err(old_raw.unwrap_err())
+            }
+            "generator" => {
+                let core = old_core.unwrap().unwrap();
+                let direct = mizar_vc::generator::generate_source_algorithm_postconditions(
+                    &core,
+                    snapshot,
+                    &generation,
+                    &schema,
+                )
+                .unwrap_err();
+                assert_eq!(direct, "algorithms.postcondition.unsupported_core");
+                assert_eq!(old_raw, Err(direct.clone()));
+                Err(direct)
+            }
+            _ => unreachable!(),
+        };
+        assert_eq!(
+            inputs
+                .publish_native_algorithm_vcs(&input, owner, &generation, &schema,)
+                .map(|value| value.map(|output| (*owner.storage().get(&output).unwrap()).clone())),
+            expected
+        );
+        let collected = owner.storage().collect(mizar_ir::storage::CollectInput {
+            snapshot,
+            protected_outputs: vec![],
+        });
+        assert_eq!(collected.outputs_dropped, 2);
+        assert_eq!(collected.abandoned_slots_dropped, 0);
+    }
+    let fixture = Fixture::new(
+        b"definition let a be object; algorithm plain(a) -> object do return a; end; end;",
+    );
+    let ids = InMemorySessionIdAllocator::new();
+    let snapshots = SnapshotRegistry::new();
+    let (_, submission, adapter, handle, _) =
+        native_disk_frontend_record_submission(&fixture, &ids, &snapshots, 0);
+    let (inputs, source_input) = native_disk_lookup_context(&submission, &ids);
+    let owner = adapter.publisher();
+    let snapshot = source_input.snapshot;
+    let input = PhaseInput::new(
+        source_input.work_unit.clone(),
+        PhaseDispatchInputBundle::new(
+            snapshot,
+            source_input.identities().input_hash(),
+            vec![],
+            vec![
+                SealedParentOutputHandle::from_published_output(owner, snapshot, handle.erase())
+                    .unwrap(),
+            ],
+        )
+        .unwrap(),
+    );
+    let core = inputs
+        .native_algorithm_core_with_frontend_parent(&input, owner)
+        .unwrap()
+        .unwrap();
+    let huge_schema = VcSchemaVersion::new("x".repeat(32 * 1024 * 1024));
+    let huge_raw = inputs
+        .native_algorithm_vcs_with_frontend_parent(&input, owner, &generation, &huge_schema)
+        .unwrap()
+        .unwrap();
+    assert_eq!(
+        huge_raw,
+        mizar_vc::generator::generate_source_algorithm_postconditions(
+            &core,
+            snapshot,
+            &generation,
+            &huge_schema,
+        )
+        .unwrap()
+    );
+    assert!(huge_raw.vcs().is_empty());
+    drop(huge_raw);
+    assert!(
+        inputs
+            .publish_native_algorithm_vcs(&input, owner, &generation, &huge_schema,)
+            .unwrap()
+            .is_none()
+    );
+    let collected = owner.storage().collect(mizar_ir::storage::CollectInput {
+        snapshot,
+        protected_outputs: vec![],
+    });
+    assert_eq!(collected.outputs_dropped, 2);
+    assert_eq!(collected.abandoned_slots_dropped, 0);
+    for case in ["obsolete", "collected", "denied-kind"] {
+        let fixture = Fixture::new(include_bytes!(
+            "../../../tests/miz/pass/algorithms/pass_proof_verification_algorithm_while_invariant_001.miz"
+        ));
+        let ids = InMemorySessionIdAllocator::new();
+        let snapshots = SnapshotRegistry::new();
+        let (_, submission, adapter, handle, _) =
+            native_disk_frontend_record_submission(&fixture, &ids, &snapshots, 0);
+        let (inputs, source_input) = native_disk_lookup_context(&submission, &ids);
+        let owner = adapter.publisher();
+        let snapshot = source_input.snapshot;
+        owner.allow_work_unit(AllowedWorkUnit::new(
+            IrPipelinePhase::new("VcGenerate"),
+            OutputKind::new(if case == "denied-kind" {
+                "WrongKind"
+            } else {
+                "SourceAlgorithmVC"
+            }),
+            IrWorkUnit::new("\"alpha\":\"main\""),
+        ));
+        let parents = vec![
+            SealedParentOutputHandle::from_published_output(owner, snapshot, handle.erase())
+                .unwrap(),
+        ];
+        match case {
+            "obsolete" => owner.mark_obsolete(snapshot).unwrap(),
+            "collected" => {
+                let dropped = owner.storage().collect(mizar_ir::storage::CollectInput {
+                    snapshot,
+                    protected_outputs: vec![],
+                });
+                assert_eq!(dropped.outputs_dropped, 2);
+            }
+            _ => {}
+        }
+        let input = PhaseInput::new(
+            source_input.work_unit.clone(),
+            PhaseDispatchInputBundle::new(
+                snapshot,
+                source_input.identities().input_hash(),
+                vec![],
+                parents,
+            )
+            .unwrap(),
+        );
+        let old_raw =
+            inputs.native_algorithm_vcs_with_frontend_parent(&input, owner, &generation, &schema);
+        let actual = inputs
+            .publish_native_algorithm_vcs(&input, owner, &generation, &schema)
+            .unwrap_err();
+        if case == "denied-kind" {
+            assert!(old_raw.unwrap().is_some());
+            assert_eq!(
+                actual,
+                mizar_ir::publisher::PublishError::WorkUnitNotAllowed {
+                    phase: IrPipelinePhase::new("VcGenerate"),
+                    work_unit: IrWorkUnit::new("\"alpha\":\"main\""),
+                    output_kind: OutputKind::new("SourceAlgorithmVC"),
+                }
+                .to_string()
+            );
+        } else {
+            assert_eq!(actual, old_raw.unwrap_err(), "{case}");
+        }
+        let collected = owner.storage().collect(mizar_ir::storage::CollectInput {
+            snapshot,
+            protected_outputs: vec![],
+        });
+        assert_eq!(
+            collected.outputs_dropped,
+            if case == "collected" { 0 } else { 2 }
+        );
+        assert_eq!(
+            collected.abandoned_slots_dropped,
+            usize::from(case == "denied-kind")
+        );
+    }
+}
