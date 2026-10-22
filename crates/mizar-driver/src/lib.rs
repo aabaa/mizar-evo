@@ -17,6 +17,8 @@ mod frontend_adapter;
 pub mod registry;
 pub mod request;
 
+pub use frontend_adapter::native_algorithm_core_from_storage_bytes;
+pub use frontend_adapter::native_algorithm_core_storage_bytes;
 pub use frontend_adapter::native_theorem_core_from_storage_bytes;
 pub use frontend_adapter::native_theorem_core_semantic_payload;
 pub use frontend_adapter::native_theorem_core_storage_bytes;
