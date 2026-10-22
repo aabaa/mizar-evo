@@ -22548,4 +22548,391 @@ mod term_proof_tests {
             upstream
         );
     }
+
+    #[test]
+    fn source_algorithm_return_reflexivity_checks_genuine_targets() {
+        use mizar_checker::type_checker::check_source_algorithm_types;
+        use mizar_core::elaborator::lower_source_algorithms;
+        use mizar_kernel::{
+            certificate_parser::{ClauseTautologyPolicy, Fingerprint, KernelProfileRecord},
+            checker::{
+                FormulaEvidenceContext, ImportedFactContextLimits, KernelCheckPolicy,
+                KernelCheckStatus, KernelContextIdentityEntry, KernelContextIdentityPayload,
+                KernelContextIdentitySource, KernelEvidenceCheckInput, KernelEvidenceCheckKind,
+                KernelEvidenceCheckLimits, KernelFormulaProducerRef, check_kernel_evidence,
+            },
+            formula_evidence::{FormulaEvidenceParseContext, parse_formula_evidence},
+            rejection::TargetVcFingerprint,
+        };
+        use mizar_proof::{
+            policy::{
+                AcceptedGoalPolarity, CandidatePolicyClass, KernelEvidenceOrigin,
+                KernelPolicyInput, PolicyCandidate, ProofPolicyEvaluator, VerifierPolicy,
+            },
+            status::check_source_algorithm_return_reflexivity as verify,
+        };
+        use mizar_vc::{
+            generator::generate_source_algorithm_postconditions,
+            kernel_evidence_handoff::{
+                KernelClauseTautologyPolicy, KernelContextIdentitySource as SourceContext,
+                build_source_algorithm_return_kernel_handoff,
+            },
+            vc_ir::{
+                AnchorCompleteness, AnchorIngredient, GenerationSchemaVersion, HashMarker,
+                SeedNoVcReason, SeedVcMapping, VcFormulaRef, VcSchemaVersion, VcStatus,
+            },
+        };
+        let config = config();
+        let plan = crate::harness::build_test_plan(&config).unwrap();
+        let case = plan
+            .cases
+            .iter()
+            .find(|case| case.id.0 == "pass_proof_verification_algorithm_ensures_return_001")
+            .unwrap();
+        let original = fs::read_to_string(&case.source_path).unwrap();
+        let variants = [
+            original.clone(),
+            original
+                .replace(" a ", " param ")
+                .replace("(a)", "(param)")
+                .replace(" a;", " param;")
+                .replace("= a\n", "= param\n"),
+            format!(":: 日本語 λ\n\n{original}"),
+            original.replace("idalgo", "renamed_algorithm"),
+        ];
+        let generation = GenerationSchemaVersion::new("mizar-vc-generation-step5c14-return-v1");
+        let schema = VcSchemaVersion::new("mizar-vc-vcset-step5c14-return-v1");
+        for (variant, text) in variants.into_iter().enumerate() {
+            let (source, nodes, symbols) = super::super::source_registration_inputs(
+                &config.workspace_root,
+                case,
+                super::super::formula_statement::step5c8_test_frontend(&text),
+            )
+            .unwrap();
+            let immutable = (source.clone(), nodes.clone(), symbols.clone());
+            let check = check_source_algorithm_types(&source, &nodes, &symbols).unwrap();
+            let core = lower_source_algorithms(&check).unwrap();
+            let cases = if variant == 0 {
+                vec![
+                    (0, VerifierPolicy::default()),
+                    (1, VerifierPolicy::default()),
+                    (0, VerifierPolicy::development()),
+                    (0, VerifierPolicy::interactive()),
+                ]
+            } else {
+                vec![(0, VerifierPolicy::default())]
+            };
+            for (snapshot, policy) in cases {
+                let snapshot = snapshot_id(snapshot);
+                let vcs =
+                    generate_source_algorithm_postconditions(&core, snapshot, &generation, &schema)
+                        .unwrap();
+                let prior = (core.clone(), vcs.clone(), policy.clone());
+                let [vc] = vcs.vcs() else { panic!() };
+                assert_eq!(vc.status, VcStatus::Open);
+                assert!(matches!(
+                    &vc.anchor.completeness,
+                    AnchorCompleteness::Incomplete { missing }
+                    if missing == &[AnchorIngredient::CanonicalGoalHash, AnchorIngredient::CanonicalContextHash]
+                ));
+                assert!(matches!(
+                    &vc.anchor.canonical_goal_hash,
+                    HashMarker::ConservativeUnknown { .. }
+                ));
+                assert!(matches!(
+                    &vc.anchor.canonical_context_hash,
+                    HashMarker::ConservativeUnknown { .. }
+                ));
+                let [termination, contract] = vcs.seed_accounting() else {
+                    panic!()
+                };
+                assert_eq!(
+                    termination.seed_status,
+                    mizar_core::core_ir::ObligationSeedStatus::Deferred
+                );
+                assert!(matches!(
+                    &termination.mapping,
+                    SeedVcMapping::NoConcreteVc {
+                        reason: SeedNoVcReason::DeferredExternal(_),
+                    }
+                ));
+                assert_eq!(
+                    contract.seed_status,
+                    mizar_core::core_ir::ObligationSeedStatus::Deferred
+                );
+                assert!(matches!(&contract.mapping, SeedVcMapping::One { vc: id } if *id == vc.id));
+                let handoff =
+                    build_source_algorithm_return_kernel_handoff(&core, &vcs, vc.id, &generation)
+                        .unwrap();
+                let envelope = handoff.canonical_evidence();
+                let target = envelope.target_vc();
+                let profile = envelope.kernel_profile();
+                let tautology = match profile.clause_tautology_policy {
+                    KernelClauseTautologyPolicy::Reject => ClauseTautologyPolicy::Reject,
+                    KernelClauseTautologyPolicy::Marker => ClauseTautologyPolicy::Marker,
+                    _ => panic!(),
+                };
+                let mut context = FormulaEvidenceParseContext::v1(
+                    Fingerprint::new(target.algorithm_id, target.digest.clone()),
+                    KernelProfileRecord::v1(profile.profile_id, tautology),
+                );
+                let parsed_v1 =
+                    parse_formula_evidence(&handoff.encode_local_evidence(None).unwrap(), &context)
+                        .unwrap();
+                let names = mizar_atp::backend::encode_local_variable_reflexivity_names(&parsed_v1)
+                    .unwrap();
+                assert_eq!(names, vec![vec![0, 0, 0, 1, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0]]);
+                context.accepted_schema_versions.insert(2);
+                let parsed = parse_formula_evidence(
+                    &handoff.encode_local_evidence(Some(&names)).unwrap(),
+                    &context,
+                )
+                .unwrap();
+                let target = TargetVcFingerprint::new(target.algorithm_id, target.digest.clone());
+                let entries = handoff
+                    .context_identity()
+                    .entries()
+                    .iter()
+                    .map(|entry| {
+                        let SourceContext::LocalHypothesis { local_context_id } = entry.source()
+                        else {
+                            panic!()
+                        };
+                        let VcFormulaRef::Core(formula) = entry.producer_formula_ref() else {
+                            panic!()
+                        };
+                        KernelContextIdentityEntry::new(
+                            KernelContextIdentitySource::LocalHypothesis { local_context_id },
+                            entry.formula_id(),
+                            Fingerprint::new(
+                                entry.formula_fingerprint().algorithm_id,
+                                entry.formula_fingerprint().digest.clone(),
+                            ),
+                            KernelFormulaProducerRef::Core(formula),
+                        )
+                    })
+                    .collect();
+                let formula_context = FormulaEvidenceContext::with_context_identity(
+                    Some(handoff.context_identity_hash().as_bytes().to_vec()),
+                    vec![],
+                    vec![],
+                    Some(KernelContextIdentityPayload::new(
+                        target.clone(),
+                        handoff.canonical_hash(),
+                        handoff.context_identity_hash(),
+                        entries,
+                    )),
+                    ImportedFactContextLimits::default(),
+                )
+                .unwrap();
+                let evaluator = ProofPolicyEvaluator::new(policy.clone());
+                assert!(evaluator.can_schedule_kernel_check(
+                    &PolicyCandidate::UncheckedBuiltinDischarge {
+                        has_stable_kernel_representation: true,
+                    }
+                ));
+                let expected_result = check_kernel_evidence(KernelEvidenceCheckInput {
+                    target_vc_fingerprint: &target,
+                    evidence: &parsed,
+                    formula_context: Some(&formula_context),
+                    check_kind: KernelEvidenceCheckKind::ProofObligation,
+                    policy: KernelCheckPolicy::default(),
+                    limits: KernelEvidenceCheckLimits::default(),
+                });
+                let input = KernelPolicyInput::from_kernel_result(
+                    &expected_result,
+                    KernelEvidenceOrigin::BuiltinDischarge,
+                );
+                let expected_decision =
+                    evaluator.evaluate_candidate(&PolicyCandidate::KernelResult(input.clone()));
+                let actual = verify(&source, &nodes, &symbols, snapshot, vc.id, &policy).unwrap();
+                assert_eq!(actual, (expected_result, expected_decision));
+                assert_eq!(actual.0.status(), KernelCheckStatus::Accepted);
+                assert_eq!(actual.0.target_vc_fingerprint(), &target);
+                assert_eq!(
+                    actual.0.evidence_check_kind(),
+                    Some(KernelEvidenceCheckKind::ProofObligation)
+                );
+                assert!(!actual.0.policy_taint());
+                assert!(actual.0.used_axioms().is_empty());
+                assert!(input.accepted_evidence_hash().is_some());
+                assert_eq!(
+                    input.accepted_goal_polarity(),
+                    Some(AcceptedGoalPolarity::AssertFalseForRefutation)
+                );
+                assert_eq!(actual.1.class, CandidatePolicyClass::DischargedBuiltin);
+                assert_eq!(
+                    actual,
+                    verify(&source, &nodes, &symbols, snapshot, vc.id, &policy).unwrap()
+                );
+                assert_eq!((&core, &vcs, &policy), (&prior.0, &prior.1, &prior.2));
+            }
+            assert_eq!(
+                (&source, &nodes, &symbols),
+                (&immutable.0, &immutable.1, &immutable.2)
+            );
+        }
+    }
+
+    #[test]
+    fn source_algorithm_return_reflexivity_preserves_upstream_and_policy_errors() {
+        use mizar_checker::type_checker::check_source_algorithm_types;
+        use mizar_core::elaborator::lower_source_algorithms;
+        use mizar_proof::{
+            policy::{KernelEvidenceFormat, VerifierPolicy},
+            status::check_source_algorithm_return_reflexivity as verify,
+        };
+        use mizar_vc::{
+            generator::generate_source_algorithm_postconditions,
+            kernel_evidence_handoff::build_source_algorithm_return_kernel_handoff,
+            vc_ir::{GenerationSchemaVersion, VcId, VcSchemaVersion},
+        };
+        let config = config();
+        let plan = crate::harness::build_test_plan(&config).unwrap();
+        let case = plan
+            .cases
+            .iter()
+            .find(|case| case.id.0 == "pass_proof_verification_algorithm_ensures_return_001")
+            .unwrap();
+        let original = fs::read_to_string(&case.source_path).unwrap();
+        let generation = GenerationSchemaVersion::new("mizar-vc-generation-step5c14-return-v1");
+        let schema = VcSchemaVersion::new("mizar-vc-vcset-step5c14-return-v1");
+        let disabled = VerifierPolicy::default().with_kernel_evidence_formats([]);
+        let (source, nodes, symbols) = super::super::source_registration_inputs(
+            &config.workspace_root,
+            case,
+            super::super::formula_statement::step5c8_test_frontend(&original),
+        )
+        .unwrap();
+        let check = check_source_algorithm_types(&source, &nodes, &symbols).unwrap();
+        let core = lower_source_algorithms(&check).unwrap();
+        let vcs =
+            generate_source_algorithm_postconditions(&core, snapshot_id(0), &generation, &schema)
+                .unwrap();
+        let absent = VcId::new(99);
+        let upstream =
+            build_source_algorithm_return_kernel_handoff(&core, &vcs, absent, &generation)
+                .unwrap_err();
+        assert_eq!(
+            verify(&source, &nodes, &symbols, snapshot_id(0), absent, &disabled).unwrap_err(),
+            upstream
+        );
+        for policy in [
+            disabled,
+            VerifierPolicy::default()
+                .with_kernel_evidence_formats([KernelEvidenceFormat::FormulaSubstitution]),
+        ] {
+            assert_eq!(
+                verify(
+                    &source,
+                    &nodes,
+                    &symbols,
+                    snapshot_id(0),
+                    VcId::new(0),
+                    &policy
+                )
+                .unwrap_err(),
+                "algorithm.proof.kernel_policy_rejected"
+            );
+        }
+        for (text, case) in [
+            (original.replace("    ensures result = a\n", ""), case),
+            (
+                String::new(),
+                plan.cases
+                    .iter()
+                    .find(|case| {
+                        case.id.0 == "pass_proof_verification_algorithm_var_const_assert_001"
+                    })
+                    .unwrap(),
+            ),
+        ] {
+            let text = if text.is_empty() {
+                fs::read_to_string(&case.source_path).unwrap()
+            } else {
+                text
+            };
+            let (source, nodes, symbols) = super::super::source_registration_inputs(
+                &config.workspace_root,
+                case,
+                super::super::formula_statement::step5c8_test_frontend(&text),
+            )
+            .unwrap();
+            let check = check_source_algorithm_types(&source, &nodes, &symbols).unwrap();
+            let core = lower_source_algorithms(&check).unwrap();
+            let vcs = generate_source_algorithm_postconditions(
+                &core,
+                snapshot_id(0),
+                &generation,
+                &schema,
+            )
+            .unwrap();
+            let expected = build_source_algorithm_return_kernel_handoff(
+                &core,
+                &vcs,
+                VcId::new(0),
+                &generation,
+            )
+            .unwrap_err();
+            assert_eq!(
+                verify(
+                    &source,
+                    &nodes,
+                    &symbols,
+                    snapshot_id(0),
+                    VcId::new(0),
+                    &VerifierPolicy::default()
+                )
+                .unwrap_err(),
+                expected
+            );
+        }
+        let two_returns = original
+            .replace("    ensures result = a\n", "")
+            .replace("return a;", "return a;\n    return a;");
+        let (source, nodes, symbols) = super::super::source_registration_inputs(
+            &config.workspace_root,
+            case,
+            super::super::formula_statement::step5c8_test_frontend(&two_returns),
+        )
+        .unwrap();
+        let check = check_source_algorithm_types(&source, &nodes, &symbols).unwrap();
+        let core = lower_source_algorithms(&check).unwrap();
+        let expected =
+            generate_source_algorithm_postconditions(&core, snapshot_id(0), &generation, &schema)
+                .unwrap_err();
+        assert_eq!(expected, "algorithms.postcondition.unsupported_core");
+        assert_eq!(
+            verify(
+                &source,
+                &nodes,
+                &symbols,
+                snapshot_id(0),
+                absent,
+                &VerifierPolicy::default()
+            )
+            .unwrap_err(),
+            expected
+        );
+        let bare_return = original.replace("return a;", "return;");
+        let (source, nodes, symbols) = super::super::source_registration_inputs(
+            &config.workspace_root,
+            case,
+            super::super::formula_statement::step5c8_test_frontend(&bare_return),
+        )
+        .unwrap();
+        let expected = check_source_algorithm_types(&source, &nodes, &symbols).unwrap_err();
+        assert_eq!(
+            verify(
+                &source,
+                &nodes,
+                &symbols,
+                snapshot_id(0),
+                absent,
+                &VerifierPolicy::default().with_kernel_evidence_formats([])
+            )
+            .unwrap_err(),
+            expected
+        );
+    }
 }

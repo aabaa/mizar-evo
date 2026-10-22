@@ -490,6 +490,7 @@ layer consumes both; one alignment task is owned here.
 49. **[Existing witness payload hash value](../../task_contracts/en/PROOF-WITNESS-PAYLOAD-HASH-VALUE.md).** [x]
 50. **[Original-source draft acquisition](../../task_contracts/en/PROOF-ORIGINAL-SOURCE-WITNESS-DRAFT.md).** [x]
 51. **[Genuine witness file candidate](../../task_contracts/en/PROOF-SOURCE-THEOREM-WITNESS-FILE.md).** [x]
+52. **[Genuine source return reflexivity](../../task_contracts/en/PROOF-SOURCE-ALGORITHM-RETURN-REFLEXIVITY.md).** [x]
 
 ## Recommended Verification
 
