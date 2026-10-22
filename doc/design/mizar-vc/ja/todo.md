@@ -581,6 +581,7 @@ contract、禁止境界、real-source/corruption requirement を使用する。�
 71. **[Source theorem candidate anchor hash](../../task_contracts/ja/SOURCE-THEOREM-ORIGINAL-IDENTITY.md).** [x]
 72. **[Source theorem VC generation](../../task_contracts/ja/PROOF-SOURCE-THEOREM-REFLEXIVITY-CHECK.md).** [x]
 73. **[Source algorithm return canonical components](../../task_contracts/ja/VC-SOURCE-ALGORITHM-RETURN-CANONICAL-COMPONENTS.md).** [x]
+74. **[Source algorithm return local handoff](../../task_contracts/ja/VC-SOURCE-ALGORITHM-RETURN-LOCAL-HANDOFF.md).** [x]
 
 ## 推奨検証
 

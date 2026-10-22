@@ -1495,6 +1495,213 @@ pub fn build_source_existential_kernel_handoff(
     .map_err(|e| e.to_string())
 }
 
+/// Projects a whole-replayed, bounded source algorithm return into normal local evidence.
+pub fn build_source_algorithm_return_kernel_handoff(
+    core: &mizar_core::core_ir::CoreIr,
+    vc_set: &VcSet,
+    vc_id: VcId,
+    generation_schema: &crate::vc_ir::GenerationSchemaVersion,
+) -> Result<VcKernelEvidenceHandoff, String> {
+    use crate::vc_ir::{
+        ContextEntryId, VcGeneratedFormulaKind, VcGeneratedFormulaShape, VcProvenancePhase,
+        VcStatus,
+    };
+    use mizar_core::{
+        binder_normalization::{
+            BinderContext, CanonicalTermKind, CanonicalVar, NormalizedVarClass, NormalizedVarSort,
+            canonical_term, normalize_core_term,
+        },
+        core_ir::{CoreAlgorithmStmtKind, CoreFormulaKind, CoreProvenancePhase},
+    };
+    let replay = crate::generator::generate_source_algorithm_postconditions(
+        core,
+        vc_set.snapshot(),
+        generation_schema,
+        vc_set.schema_version(),
+    )?;
+    let invalid = || "algorithm.return.handoff.invalid_projection".to_owned();
+    if replay != *vc_set {
+        return Err(invalid());
+    }
+    let vc = vc_set.vc(vc_id).ok_or_else(invalid)?;
+    let [generated] = vc_set.generated_formulas() else {
+        return Err(invalid());
+    };
+    if core.items().len() != 1 || core.algorithms().len() != 1 {
+        return Err(invalid());
+    }
+    let (_, item) = core.items().iter().next().ok_or_else(invalid)?;
+    let (_, algorithm) = core.algorithms().iter().next().ok_or_else(invalid)?;
+    let ([parameter], Some(result), [statement_id], [_ensures]) = (
+        algorithm.params.as_slice(),
+        algorithm.result.as_ref(),
+        algorithm.statements.as_slice(),
+        algorithm.contracts.ensures.as_slice(),
+    ) else {
+        return Err(invalid());
+    };
+    let statement = core
+        .algorithm_statements()
+        .get(*statement_id)
+        .ok_or_else(invalid)?;
+    let CoreAlgorithmStmtKind::Return(Some(_)) = statement.kind else {
+        return Err(invalid());
+    };
+    let [entry] = vc.local_context.entries() else {
+        return Err(invalid());
+    };
+    let [provenance] = entry.provenance.as_slice() else {
+        return Err(invalid());
+    };
+    let guard = parameter.ty_guard.ok_or_else(invalid)?;
+    let guard_formula = core.formulas().get(guard).ok_or_else(invalid)?;
+    let [guard_provenance] = guard_formula.source.provenance.as_slice() else {
+        return Err(invalid());
+    };
+    let CoreFormulaKind::TypePred { subject, ty } = &guard_formula.kind else {
+        return Err(invalid());
+    };
+    let VcGeneratedFormulaShape::Equals { left, right } = &generated.shape else {
+        return Err(invalid());
+    };
+    if vc_set.vcs().len() != 1
+        || vc.kind != VcKind::AlgorithmPostcondition
+        || vc.status != VcStatus::Open
+        || vc.goal != VcFormulaRef::Generated(generated.id)
+        || generated.kind != VcGeneratedFormulaKind::AlgorithmPostcondition
+        || parameter.role.as_str() != "parameter"
+        || result.role.as_str() != "result"
+        || parameter.var == result.var
+        || ty.as_str() != "object"
+        || entry.id != ContextEntryId::new(0)
+        || entry.kind != ContextEntryKind::CheckerFact
+        || entry.formula != Some(VcFormulaRef::Core(guard))
+        || entry.sort_key.as_str() != "algorithm-parameter-type-0000"
+        || provenance.phase != VcProvenancePhase::CoreHandoff
+        || provenance.key.as_str() != "algorithm-parameter-type"
+        || provenance.core.as_ref() != Some(guard_provenance)
+        || guard_provenance.phase != CoreProvenancePhase::Checker
+        || vc.premises != [PremiseRef::LocalContext(entry.id)]
+        || vc.proof_hint.is_some()
+        || vc.local_context.policy_inputs().len() != 6
+    {
+        return Err(invalid());
+    }
+    for (index, (name, value)) in [
+        ("flow", "0"),
+        ("site-kind", "Ensures"),
+        ("ordinal", "0"),
+        ("statement", "0"),
+        ("block", "0"),
+        ("exit", "0"),
+    ]
+    .into_iter()
+    .enumerate()
+    {
+        let input = &vc.local_context.policy_inputs()[index];
+        if input.sort_key.as_str() != format!("{index:04}-algorithm-site-{name}")
+            || input.key.as_str() != format!("algorithm-site-{name}")
+            || input.value.as_str() != value
+        {
+            return Err(invalid());
+        }
+    }
+    let mut binders = BinderContext::new();
+    binders.declare_variable(
+        parameter.var,
+        NormalizedVarClass::Free,
+        parameter.role.clone(),
+        NormalizedVarSort::Term,
+    );
+    binders.declare_variable(
+        result.var,
+        NormalizedVarClass::Generated,
+        result.role.clone(),
+        NormalizedVarSort::Term,
+    );
+    for term_id in [*subject, *left, *right] {
+        let source = &core.terms().get(term_id).ok_or_else(invalid)?.source;
+        let normalized =
+            normalize_core_term(core, term_id, &binders, source).map_err(|_| invalid())?;
+        let canonical = canonical_term(&normalized, &binders, source).map_err(|_| invalid())?;
+        if canonical.kind() != &CanonicalTermKind::Var(CanonicalVar::Free(parameter.var)) {
+            return Err(invalid());
+        }
+    }
+    let symbol_manifest = [
+        KernelManifestEntry {
+            entry_id: 0,
+            payload: vec![3, 0, 0, 0, 0],
+        },
+        KernelManifestEntry {
+            entry_id: 1,
+            payload: vec![4, 0, 0, 0, 1],
+        },
+    ];
+    let variable_manifest = [KernelManifestEntry {
+        entry_id: 0,
+        payload: vec![0, 0, 0, 0],
+    }];
+    let provenance = format!(
+        "source-algorithm-return-local-handoff-v1;source={:?};module={:?};item={:?};algorithm={:?};statement={:?};accounting={:?}",
+        core.source_id(), core.module_id(), item, algorithm, statement, vc_set.seed_accounting()
+    ).into_bytes();
+    let frame = |tag: u8, subtype: u8, payload: Vec<u8>| -> Result<Vec<u8>, String> {
+        let mut bytes = vec![tag, subtype];
+        bytes.extend(
+            u32::try_from(payload.len())
+                .map_err(|_| invalid())?
+                .to_be_bytes(),
+        );
+        bytes.extend(payload);
+        Ok(bytes)
+    };
+    let mut formula_payloads = Vec::new();
+    for (formula_ref, kind, symbol, arity) in [
+        (VcFormulaRef::Core(guard), 4u8, 1u32, 1usize),
+        (VcFormulaRef::Generated(generated.id), 3u8, 0u32, 2usize),
+    ] {
+        let mut atom = vec![kind];
+        atom.extend(symbol.to_be_bytes());
+        atom.extend(u32::try_from(arity).map_err(|_| invalid())?.to_be_bytes());
+        atom.extend(u32::try_from(arity).map_err(|_| invalid())?.to_be_bytes());
+        let mut canonical = atom.clone();
+        for _ in 0..arity {
+            atom.extend([1, 0, 0, 0, 0]);
+            canonical.extend(frame(1, 1, 0u32.to_be_bytes().to_vec())?);
+        }
+        let mut wire = vec![1];
+        wire.extend(atom);
+        let mut fingerprint = b"MIZAR_KERNEL_FORMULA\0".to_vec();
+        fingerprint.extend(frame(11, 1, frame(2, kind, canonical)?)?);
+        formula_payloads.push(KernelFormulaPayload {
+            formula_ref,
+            projection: KernelFormulaProjection {
+                formula_fingerprint: KernelEvidenceFingerprint {
+                    algorithm_id: 2,
+                    digest: fingerprint,
+                },
+                formula_bytes: wire,
+                provenance_payload: provenance.clone(),
+            },
+        });
+    }
+    build_kernel_evidence_handoff(KernelEvidenceHandoffInput {
+        vc_set,
+        vc: vc_id,
+        goal_polarity: KernelGoalPolarity::AssertFalseForRefutation,
+        kernel_profile: KernelEvidenceProfile::v1(1, KernelClauseTautologyPolicy::Reject),
+        symbol_manifest: &symbol_manifest,
+        variable_manifest: &variable_manifest,
+        formula_payloads: &formula_payloads,
+        imported_formula_payloads: &[],
+        substitutions: &[],
+        formula_context: None,
+        discharge_output: None,
+    })
+    .map_err(|e| e.to_string())
+}
+
 /// Replays the original generic theorem VC graph before projecting local evidence.
 pub fn build_source_theorem_kernel_handoff(
     core: &mizar_core::core_ir::CoreIr,

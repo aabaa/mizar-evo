@@ -175,6 +175,7 @@ Correspondence:
 ### `kernel_evidence_handoff`
 
 Source path: `crates/mizar-vc/src/kernel_evidence_handoff.rs`.
+[build_source_algorithm_return_kernel_handoff](./kernel_evidence_handoff.md#source-algorithm-return-local-handoff) owns the bounded original return projection.
 
 literal top-level public item:
 

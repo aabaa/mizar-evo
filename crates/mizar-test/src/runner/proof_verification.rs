@@ -21927,4 +21927,625 @@ mod term_proof_tests {
             upstream
         );
     }
+
+    #[test]
+    fn source_algorithm_return_local_handoff_preserves_genuine_projection() {
+        use mizar_checker::type_checker::check_source_algorithm_types;
+        use mizar_core::{
+            binder_normalization::{
+                BinderContext, CanonicalTermKind, CanonicalVar, NormalizedVarClass,
+                NormalizedVarSort, canonical_term, normalize_core_term,
+            },
+            core_ir::{CoreFormulaKind, CoreProvenancePhase},
+            elaborator::lower_source_algorithms,
+        };
+        use mizar_kernel::{
+            certificate_parser::{ClauseTautologyPolicy, Fingerprint, KernelProfileRecord},
+            checker::{
+                FormulaEvidenceContext, ImportedFactContextLimits, KernelCheckPolicy,
+                KernelCheckStatus, KernelContextIdentityEntry, KernelContextIdentityPayload,
+                KernelContextIdentitySource, KernelEvidenceCheckInput, KernelEvidenceCheckKind,
+                KernelEvidenceCheckLimits, KernelFormulaProducerRef, check_kernel_evidence,
+            },
+            clause::{Atom, SymbolKey, SymbolKind, Term, VariableId},
+            formula_evidence::{Formula, FormulaEvidenceParseContext, parse_formula_evidence},
+            rejection::{RejectionDetail, TargetVcFingerprint},
+        };
+        use mizar_vc::kernel_evidence_handoff::KernelContextIdentitySource as SourceContext;
+        use mizar_vc::{
+            generator::generate_source_algorithm_postconditions,
+            kernel_evidence_handoff::*,
+            vc_ir::{
+                AnchorCompleteness, AnchorIngredient, ContextEntryKind, GenerationSchemaVersion,
+                HashMarker, PremiseRef, SeedNoVcReason, SeedVcMapping, VcFormulaRef,
+                VcGeneratedFormulaKind, VcGeneratedFormulaShape, VcKind, VcProvenancePhase,
+                VcSchemaVersion, VcStatus,
+            },
+        };
+        let config = config();
+        let plan = crate::harness::build_test_plan(&config).unwrap();
+        let case = plan
+            .cases
+            .iter()
+            .find(|case| case.id.0 == "pass_proof_verification_algorithm_ensures_return_001")
+            .unwrap();
+        let original = fs::read_to_string(&case.source_path).unwrap();
+        let guard_wire = [1, 4, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0, 1, 1, 0, 0, 0, 0];
+        let goal_wire = [
+            1, 3, 0, 0, 0, 0, 0, 0, 0, 2, 0, 0, 0, 2, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0,
+        ];
+        let guard_digest = "4d495a41525f4b45524e454c5f464f524d554c41000b010000001d0204000000170400000001000000010000000101010000000400000000";
+        let goal_digest = "4d495a41525f4b45524e454c5f464f524d554c41000b0100000027020300000021030000000000000002000000020101000000040000000001010000000400000000";
+        let pure_guard = Formula::Atom(Atom::new(
+            SymbolKey::new(SymbolKind::BuiltinRelation, 1),
+            vec![Term::Variable(VariableId(0))],
+        ))
+        .canonical_hash_input()
+        .unwrap();
+        let pure_goal = Formula::Atom(Atom::new(
+            SymbolKey::new(SymbolKind::Equality, 0),
+            vec![Term::Variable(VariableId(0)), Term::Variable(VariableId(0))],
+        ))
+        .canonical_hash_input()
+        .unwrap();
+        assert_eq!(
+            pure_guard
+                .iter()
+                .map(|byte| format!("{byte:02x}"))
+                .collect::<String>(),
+            guard_digest
+        );
+        assert_eq!(
+            pure_goal
+                .iter()
+                .map(|byte| format!("{byte:02x}"))
+                .collect::<String>(),
+            goal_digest
+        );
+        let symbols_manifest = [
+            KernelManifestEntry {
+                entry_id: 0,
+                payload: vec![3, 0, 0, 0, 0],
+            },
+            KernelManifestEntry {
+                entry_id: 1,
+                payload: vec![4, 0, 0, 0, 1],
+            },
+        ];
+        let variables_manifest = [KernelManifestEntry {
+            entry_id: 0,
+            payload: vec![0, 0, 0, 0],
+        }];
+        for (edit, text) in [
+            original.clone(),
+            original
+                .replace(" a ", " param ")
+                .replace("(a)", "(param)")
+                .replace(" a;", " param;")
+                .replace("= a\n", "= param\n"),
+            format!(":: neutral algorithm trivia\n\n{original}"),
+            original.replace("idalgo", "renamed_algorithm"),
+        ]
+        .into_iter()
+        .enumerate()
+        {
+            let (source, typed, names) = super::super::source_registration_inputs(
+                &config.workspace_root,
+                case,
+                super::super::formula_statement::step5c8_test_frontend(&text),
+            )
+            .unwrap();
+            let check = check_source_algorithm_types(&source, &typed, &names).unwrap();
+            let core = lower_source_algorithms(&check).unwrap();
+            let (_, item) = core.items().iter().next().unwrap();
+            let (_, algorithm) = core.algorithms().iter().next().unwrap();
+            let [parameter] = algorithm.params.as_slice() else {
+                panic!()
+            };
+            let result = algorithm.result.as_ref().unwrap();
+            let [statement_id] = algorithm.statements.as_slice() else {
+                panic!()
+            };
+            let statement = core.algorithm_statements().get(*statement_id).unwrap();
+            assert_eq!(algorithm.contracts.ensures.len(), 1);
+            assert_eq!(parameter.role.as_str(), "parameter");
+            assert_eq!(result.role.as_str(), "result");
+            let guard = parameter.ty_guard.unwrap();
+            let CoreFormulaKind::TypePred { subject, ty } =
+                &core.formulas().get(guard).unwrap().kind
+            else {
+                panic!()
+            };
+            assert_eq!(ty.as_str(), "object");
+            let guard_source = &core.formulas().get(guard).unwrap().source;
+            assert_eq!(guard_source.provenance.len(), 1);
+            assert_eq!(
+                guard_source.provenance[0].phase,
+                CoreProvenancePhase::Checker
+            );
+            let before_core = core.clone();
+            for (variant, (schema_text, generation_text, snapshot)) in [
+                (
+                    "mizar-vc-vcset-step5c14-return-v1",
+                    "mizar-vc-generation-step5c14-return-v1",
+                    0,
+                ),
+                (
+                    "mizar-vc-vcset-step5c14-return-v1-changed",
+                    "mizar-vc-generation-step5c14-return-v1",
+                    0,
+                ),
+                (
+                    "mizar-vc-vcset-step5c14-return-v1",
+                    "mizar-vc-generation-step5c14-return-v1-changed",
+                    0,
+                ),
+                (
+                    "mizar-vc-vcset-step5c14-return-v1",
+                    "mizar-vc-generation-step5c14-return-v1",
+                    1,
+                ),
+            ]
+            .into_iter()
+            .take(if edit == 0 { 4 } else { 1 })
+            .enumerate()
+            {
+                let generation = GenerationSchemaVersion::new(generation_text);
+                let vcs = generate_source_algorithm_postconditions(
+                    &core,
+                    snapshot_id(snapshot),
+                    &generation,
+                    &VcSchemaVersion::new(schema_text),
+                )
+                .unwrap();
+                let before_vcs = vcs.clone();
+                let [vc] = vcs.vcs() else { panic!() };
+                let [generated] = vcs.generated_formulas() else {
+                    panic!()
+                };
+                assert_eq!(vc.kind, VcKind::AlgorithmPostcondition);
+                assert_eq!(vc.status, VcStatus::Open);
+                assert_eq!(
+                    generated.kind,
+                    VcGeneratedFormulaKind::AlgorithmPostcondition
+                );
+                assert_eq!(vc.goal, VcFormulaRef::Generated(generated.id));
+                let VcGeneratedFormulaShape::Equals { left, right } = generated.shape else {
+                    panic!()
+                };
+                let [entry] = vc.local_context.entries() else {
+                    panic!()
+                };
+                assert_eq!(entry.kind, ContextEntryKind::CheckerFact);
+                assert_eq!(entry.formula, Some(VcFormulaRef::Core(guard)));
+                assert_eq!(entry.sort_key.as_str(), "algorithm-parameter-type-0000");
+                assert_eq!(vc.premises, [PremiseRef::LocalContext(entry.id)]);
+                assert!(vc.proof_hint.is_none());
+                assert_eq!(entry.provenance.len(), 1);
+                assert_eq!(entry.provenance[0].phase, VcProvenancePhase::CoreHandoff);
+                assert_eq!(entry.provenance[0].key.as_str(), "algorithm-parameter-type");
+                assert_eq!(
+                    entry.provenance[0].core.as_ref(),
+                    Some(&guard_source.provenance[0])
+                );
+                assert_eq!(vc.local_context.policy_inputs().len(), 6);
+                for (index, (name, value)) in [
+                    ("flow", "0"),
+                    ("site-kind", "Ensures"),
+                    ("ordinal", "0"),
+                    ("statement", "0"),
+                    ("block", "0"),
+                    ("exit", "0"),
+                ]
+                .into_iter()
+                .enumerate()
+                {
+                    let policy = &vc.local_context.policy_inputs()[index];
+                    assert_eq!(
+                        policy.sort_key.as_str(),
+                        format!("{index:04}-algorithm-site-{name}")
+                    );
+                    assert_eq!(policy.key.as_str(), format!("algorithm-site-{name}"));
+                    assert_eq!(policy.value.as_str(), value);
+                }
+                let mut binders = BinderContext::new();
+                binders.declare_variable(
+                    parameter.var,
+                    NormalizedVarClass::Free,
+                    parameter.role.clone(),
+                    NormalizedVarSort::Term,
+                );
+                binders.declare_variable(
+                    result.var,
+                    NormalizedVarClass::Generated,
+                    result.role.clone(),
+                    NormalizedVarSort::Term,
+                );
+                for term_id in [*subject, left, right] {
+                    let term_source = &core.terms().get(term_id).unwrap().source;
+                    let normalized =
+                        normalize_core_term(&core, term_id, &binders, term_source).unwrap();
+                    let canonical = canonical_term(&normalized, &binders, term_source).unwrap();
+                    assert_eq!(
+                        canonical.kind(),
+                        &CanonicalTermKind::Var(CanonicalVar::Free(parameter.var))
+                    );
+                }
+                let provenance = format!(
+                    "source-algorithm-return-local-handoff-v1;source={:?};module={:?};item={:?};algorithm={:?};statement={:?};accounting={:?}",
+                    core.source_id(), core.module_id(), item, algorithm, statement, vcs.seed_accounting(),
+                ).into_bytes();
+                let formulas = [
+                    KernelFormulaPayload {
+                        formula_ref: VcFormulaRef::Core(guard),
+                        projection: KernelFormulaProjection {
+                            formula_fingerprint: KernelEvidenceFingerprint {
+                                algorithm_id: 2,
+                                digest: pure_guard.clone(),
+                            },
+                            formula_bytes: guard_wire.to_vec(),
+                            provenance_payload: provenance.clone(),
+                        },
+                    },
+                    KernelFormulaPayload {
+                        formula_ref: vc.goal,
+                        projection: KernelFormulaProjection {
+                            formula_fingerprint: KernelEvidenceFingerprint {
+                                algorithm_id: 2,
+                                digest: pure_goal.clone(),
+                            },
+                            formula_bytes: goal_wire.to_vec(),
+                            provenance_payload: provenance.clone(),
+                        },
+                    },
+                ];
+                let expected = build_kernel_evidence_handoff(KernelEvidenceHandoffInput {
+                    vc_set: &vcs,
+                    vc: vc.id,
+                    goal_polarity: KernelGoalPolarity::AssertFalseForRefutation,
+                    kernel_profile: KernelEvidenceProfile::v1(
+                        1,
+                        KernelClauseTautologyPolicy::Reject,
+                    ),
+                    symbol_manifest: &symbols_manifest,
+                    variable_manifest: &variables_manifest,
+                    formula_payloads: &formulas,
+                    imported_formula_payloads: &[],
+                    substitutions: &[],
+                    formula_context: None,
+                    discharge_output: None,
+                })
+                .unwrap();
+                let handoff =
+                    build_source_algorithm_return_kernel_handoff(&core, &vcs, vc.id, &generation)
+                        .unwrap();
+                assert_eq!(handoff, expected);
+                assert_eq!(
+                    handoff,
+                    build_source_algorithm_return_kernel_handoff(&core, &vcs, vc.id, &generation)
+                        .unwrap()
+                );
+                assert_eq!(
+                    handoff.canonical_evidence().symbol_manifest(),
+                    symbols_manifest
+                );
+                assert_eq!(
+                    handoff.canonical_evidence().variable_manifest(),
+                    variables_manifest
+                );
+                assert_eq!(handoff.canonical_evidence().formula_evidence().len(), 1);
+                assert_eq!(
+                    handoff.canonical_evidence().formula_evidence()[0].producer_formula_ref(),
+                    Some(VcFormulaRef::Core(guard))
+                );
+                assert_eq!(
+                    handoff.canonical_evidence().formula_evidence()[0].formula_bytes(),
+                    guard_wire
+                );
+                assert_eq!(
+                    handoff.canonical_evidence().final_goal().formula_bytes,
+                    goal_wire
+                );
+                assert_eq!(
+                    handoff.canonical_evidence().final_goal().polarity,
+                    KernelGoalPolarity::AssertFalseForRefutation
+                );
+                assert!(handoff.canonical_evidence().substitutions().is_empty());
+                assert!(handoff.formula_context_requirements().is_none());
+                assert!(handoff.context_identity_is_consistent());
+                assert!(handoff.targets_vc(&vcs, vc.id).unwrap());
+                for row in handoff.canonical_evidence().provenance() {
+                    assert_eq!(row.payload, provenance);
+                }
+                assert_eq!(core, before_core);
+                assert_eq!(vcs, before_vcs);
+                if edit == 0 && variant == 0 {
+                    assert!(
+                        matches!(&vc.anchor.completeness, AnchorCompleteness::Incomplete { missing }
+                        if missing == &[AnchorIngredient::CanonicalGoalHash, AnchorIngredient::CanonicalContextHash])
+                    );
+                    assert!(matches!(
+                        &vc.anchor.canonical_goal_hash,
+                        HashMarker::ConservativeUnknown { .. }
+                    ));
+                    assert!(matches!(
+                        &vc.anchor.canonical_context_hash,
+                        HashMarker::ConservativeUnknown { .. }
+                    ));
+                    let [termination, contract] = vcs.seed_accounting() else {
+                        panic!()
+                    };
+                    assert_eq!(
+                        termination.seed_status,
+                        mizar_core::core_ir::ObligationSeedStatus::Deferred
+                    );
+                    assert!(matches!(
+                        &termination.mapping,
+                        SeedVcMapping::NoConcreteVc {
+                            reason: SeedNoVcReason::DeferredExternal(_),
+                        }
+                    ));
+                    assert_eq!(
+                        contract.seed_status,
+                        mizar_core::core_ir::ObligationSeedStatus::Deferred
+                    );
+                    assert!(
+                        matches!(&contract.mapping, SeedVcMapping::One { vc: id } if *id == vc.id)
+                    );
+                    let bytes = handoff.encode_local_evidence(None).unwrap();
+                    let target_fp = handoff.canonical_evidence().target_vc();
+                    let parsed = parse_formula_evidence(
+                        &bytes,
+                        &FormulaEvidenceParseContext::v1(
+                            Fingerprint::new(target_fp.algorithm_id, target_fp.digest.clone()),
+                            KernelProfileRecord::v1(1, ClauseTautologyPolicy::Reject),
+                        ),
+                    )
+                    .unwrap();
+                    assert!(parsed.equality_instances().is_empty());
+                    let target =
+                        TargetVcFingerprint::new(target_fp.algorithm_id, target_fp.digest.clone());
+                    let entries = handoff
+                        .context_identity()
+                        .entries()
+                        .iter()
+                        .map(|entry| {
+                            let VcFormulaRef::Core(formula) = entry.producer_formula_ref() else {
+                                panic!()
+                            };
+                            let SourceContext::LocalHypothesis { local_context_id } =
+                                entry.source()
+                            else {
+                                panic!()
+                            };
+                            KernelContextIdentityEntry::new(
+                                KernelContextIdentitySource::LocalHypothesis { local_context_id },
+                                entry.formula_id(),
+                                Fingerprint::new(
+                                    entry.formula_fingerprint().algorithm_id,
+                                    entry.formula_fingerprint().digest.clone(),
+                                ),
+                                KernelFormulaProducerRef::Core(formula),
+                            )
+                        })
+                        .collect();
+                    let context = FormulaEvidenceContext::with_context_identity(
+                        Some(handoff.context_identity_hash().as_bytes().to_vec()),
+                        vec![],
+                        vec![],
+                        Some(KernelContextIdentityPayload::new(
+                            target.clone(),
+                            handoff.canonical_hash(),
+                            handoff.context_identity_hash(),
+                            entries,
+                        )),
+                        ImportedFactContextLimits::default(),
+                    )
+                    .unwrap();
+                    let checked = check_kernel_evidence(KernelEvidenceCheckInput {
+                        target_vc_fingerprint: &target,
+                        evidence: &parsed,
+                        formula_context: Some(&context),
+                        check_kind: KernelEvidenceCheckKind::ProofObligation,
+                        policy: KernelCheckPolicy::default(),
+                        limits: KernelEvidenceCheckLimits::default(),
+                    });
+                    assert_eq!(checked.status(), KernelCheckStatus::Rejected);
+                    assert_eq!(checked.rejections().len(), 1);
+                    assert_eq!(
+                        checked.rejections()[0].detail(),
+                        RejectionDetail::InvalidSatRefutation
+                    );
+                    assert!(!checked.policy_taint());
+                }
+            }
+        }
+    }
+
+    #[test]
+    fn source_algorithm_return_local_handoff_preserves_refusals() {
+        use mizar_checker::type_checker::check_source_algorithm_types;
+        use mizar_core::elaborator::lower_source_algorithms;
+        use mizar_vc::{
+            generator::generate_source_algorithm_postconditions,
+            kernel_evidence_handoff::build_source_algorithm_return_kernel_handoff,
+            vc_ir::{GenerationSchemaVersion, VcId, VcSchemaVersion, VcSet, VcSetParts},
+        };
+        let config = config();
+        let plan = crate::harness::build_test_plan(&config).unwrap();
+        let case = plan
+            .cases
+            .iter()
+            .find(|case| case.id.0 == "pass_proof_verification_algorithm_ensures_return_001")
+            .unwrap();
+        let text = fs::read_to_string(&case.source_path).unwrap();
+        let (source, typed, names) = super::super::source_registration_inputs(
+            &config.workspace_root,
+            case,
+            super::super::formula_statement::step5c8_test_frontend(&text),
+        )
+        .unwrap();
+        let check = check_source_algorithm_types(&source, &typed, &names).unwrap();
+        let core = lower_source_algorithms(&check).unwrap();
+        let generation = GenerationSchemaVersion::new("mizar-vc-generation-step5c14-return-v1");
+        let schema = VcSchemaVersion::new("mizar-vc-vcset-step5c14-return-v1");
+        let vcs =
+            generate_source_algorithm_postconditions(&core, snapshot_id(0), &generation, &schema)
+                .unwrap();
+        let invalid = "algorithm.return.handoff.invalid_projection";
+        assert_eq!(
+            build_source_algorithm_return_kernel_handoff(&core, &vcs, VcId::new(99), &generation)
+                .unwrap_err(),
+            invalid
+        );
+        assert_eq!(
+            build_source_algorithm_return_kernel_handoff(
+                &core,
+                &vcs,
+                VcId::new(0),
+                &GenerationSchemaVersion::new("different")
+            )
+            .unwrap_err(),
+            invalid
+        );
+        let mut parts = VcSetParts {
+            schema_version: vcs.schema_version().clone(),
+            snapshot: vcs.snapshot(),
+            source: vcs.source(),
+            module: vcs.module().clone(),
+            generated_formulas: vcs.generated_formulas().to_vec(),
+            vcs: vcs.vcs().to_vec(),
+            seed_accounting: vcs.seed_accounting().to_vec(),
+        };
+        parts.vcs[0].local_context = mizar_vc::vc_ir::LocalContext::try_new(
+            {
+                let mut entries = parts.vcs[0].local_context.entries().to_vec();
+                entries[0].provenance[0].key = "drift".into();
+                entries
+            },
+            parts.vcs[0].local_context.policy_inputs().to_vec(),
+        )
+        .unwrap();
+        let drift = VcSet::try_new(parts).unwrap();
+        assert_eq!(
+            build_source_algorithm_return_kernel_handoff(&core, &drift, VcId::new(0), &generation)
+                .unwrap_err(),
+            invalid
+        );
+        for (kind, case_id, changed) in [
+            (
+                "foreign",
+                "pass_proof_verification_algorithm_ensures_return_001",
+                text.replace("idalgo", "foreign_algorithm"),
+            ),
+            (
+                "zero",
+                "pass_proof_verification_algorithm_ensures_return_001",
+                text.replace("    ensures result = a\n", ""),
+            ),
+            (
+                "broader",
+                "pass_proof_verification_algorithm_var_const_assert_001",
+                String::new(),
+            ),
+        ] {
+            let case = plan.cases.iter().find(|case| case.id.0 == case_id).unwrap();
+            let changed = if kind == "broader" {
+                fs::read_to_string(&case.source_path).unwrap()
+            } else {
+                changed
+            };
+            let (source, typed, names) = super::super::source_registration_inputs(
+                &config.workspace_root,
+                case,
+                super::super::formula_statement::step5c8_test_frontend(&changed),
+            )
+            .unwrap();
+            let check = check_source_algorithm_types(&source, &typed, &names).unwrap();
+            let other_core = lower_source_algorithms(&check).unwrap();
+            let other_vcs = generate_source_algorithm_postconditions(
+                &other_core,
+                snapshot_id(0),
+                &generation,
+                &schema,
+            )
+            .unwrap();
+            assert_ne!(other_vcs, vcs);
+            if kind == "foreign" {
+                assert_eq!(
+                    build_source_algorithm_return_kernel_handoff(
+                        &other_core,
+                        &vcs,
+                        VcId::new(0),
+                        &generation
+                    )
+                    .unwrap_err(),
+                    invalid
+                );
+            } else {
+                assert_eq!(other_vcs.vcs().is_empty(), kind == "zero");
+                assert_eq!(
+                    build_source_algorithm_return_kernel_handoff(
+                        &other_core,
+                        &other_vcs,
+                        VcId::new(0),
+                        &generation
+                    )
+                    .unwrap_err(),
+                    invalid
+                );
+            }
+        }
+        let two_returns = text
+            .replace("    ensures result = a\n", "")
+            .replace("return a;", "return a;\n    return a;");
+        let (source, typed, names) = super::super::source_registration_inputs(
+            &config.workspace_root,
+            case,
+            super::super::formula_statement::step5c8_test_frontend(&two_returns),
+        )
+        .unwrap();
+        let check = check_source_algorithm_types(&source, &typed, &names).unwrap();
+        let two_core = lower_source_algorithms(&check).unwrap();
+        assert!(
+            two_core
+                .algorithms()
+                .iter()
+                .next()
+                .unwrap()
+                .1
+                .contracts
+                .ensures
+                .is_empty()
+        );
+        assert_eq!(
+            two_core
+                .algorithms()
+                .iter()
+                .next()
+                .unwrap()
+                .1
+                .statements
+                .len(),
+            2
+        );
+        let upstream = generate_source_algorithm_postconditions(
+            &two_core,
+            snapshot_id(0),
+            &generation,
+            &schema,
+        )
+        .unwrap_err();
+        assert_eq!(upstream, "algorithms.postcondition.unsupported_core");
+        assert_eq!(
+            build_source_algorithm_return_kernel_handoff(
+                &two_core,
+                &vcs,
+                VcId::new(99),
+                &generation
+            )
+            .unwrap_err(),
+            upstream
+        );
+    }
 }
