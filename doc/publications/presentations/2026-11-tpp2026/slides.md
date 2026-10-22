@@ -188,17 +188,20 @@ Speaker note:
 
 - Source: spec 08 §8.1–8.2; 17 §17.7; 19 §19.1–19.3. Type: 2.2–2.4; registration: 2.5; overload / views: 2.6.
 
-### Frame 2.2 - type: declare fields and properties
+### Frame 2.2 - struct: current Mizar and Evo
 
-Structure declarations (specification example, inside a definition block):
+Current Mizar: zero is stored data (sketch, based on ALGSTR_0):
 
 ```mizar
-struct LoopStr where
-  field carrier -> set;
-  field binop -> BinOp of carrier;
-  property unit -> Element of carrier;
-end;
+struct (ZeroStr, addMagma) addLoopStr
+  (# carrier -> set,
+     addF -> BinOp of the carrier,
+     ZeroF -> Element of the carrier #);
+```
 
+Evo: stored fields and derived properties (specification example):
+
+```mizar
 struct AddLoopStr where
   field carrier -> set;
   field add -> BinOp of carrier;
@@ -206,33 +209,52 @@ struct AddLoopStr where
 end;
 ```
 
-**A field stores data. A property declares a name and type; its implementation is given separately.**
+- Current: the constructor takes carrier, addF, and ZeroF. Identity laws need separate conditions.
+- **Evo: the constructor takes only fields. We implement zero and prove its laws in 2.4.**
 
 Speaker note:
 
-- Source: `doc/spec/en/05.structures.md` §5.2, 5.5.1; `sample_codes.md`, LoopStr and AddLoopStr. These declarations are excerpts inside a definition block. Only fields are constructor arguments. Inheritance follows in 2.3, then the mode and unit implementation in 2.4.
+- Source: [MML ALGSTR_0](https://mizar.uwb.edu.pl/version/current/html/algstr_0.html), addLoopStr; `doc/spec/en/05.structures.md` §5.2, 5.5.1; `sample_codes.md`, AddLoopStr. Both excerpts belong inside definition blocks. The current-Mizar declaration is a sketch, not an exact quotation.
+- This compares ways to model addition and zero, not a mechanical translation. Current Mizar can also define derived values with functors. The Evo declaration alone gives neither an implementation of zero nor identity laws; it needs the assumptions and proofs in 2.4.
+### Frame 2.2a - Why separate fields and properties?
+
+- **Current strict: limit the fields of a structure.**
+  For strict objects of the same structure, equal fields mean equal objects.
+- **Remaining issue: a derived value is still stored data.**
+  A two-sided identity is unique if it exists, but storing it as ZeroF adds a field.
+- **Evo property: derive a value without an extra stored field.**
+  Keep it separate from fields; obtain its value from an applicable implementation and proofs.
+
+Speaker note:
+
+- Each structure introduces a strict attribute: no fields beyond those declared. A strict addLoopStr has ZeroF, so it is not a strict addMagma. When ZeroF must satisfy the two-sided identity laws, the stored value is already uniquely determined by the operation. Source: [Mizar in a Nutshell](https://www.chimaira.org/archive/MizarInANutshell_1980-4451-1-PB.pdf), §2.3.5.
+- Strict objects of the same structure are equal when all their fields agree ([Kaliszyk & Pąk, §8.1](https://project-smart.uibk.ac.at/docs/19/ckkp-jar19.pdf)). Evo also limits extensionality to exact_S instances of the same structure S (spec §§5.8.4–5.8.5). Properties add no stored fields; this does not identify different structures or views unconditionally.
 
 ### Frame 2.3 - type: declare inheritance after the structure
 
-Add a parent mapping after declaring AddLoopStr (specification example):
+Current Mizar names parents in `struct (ZeroStr, addMagma)`. **Evo separates structure declarations from inheritance.**
+
+Evo parent and mapping (specification example, inside a definition block):
 
 ```mizar
-definition
-  inherit AddLoopStr extends LoopStr where
-    field carrier from carrier;
-    field add from binop;
-    property zero from unit;
-  end;
+struct LoopStr where
+  field carrier -> set;
+  field binop -> BinOp of carrier;
+  property unit -> Element of carrier;
+end;
+inherit AddLoopStr extends LoopStr where
+  field carrier from carrier;
+  field add from binop;
+  property zero from unit;
 end;
 ```
 
-- **Separate structure declarations from inheritance. This is similar to implementing a Rust trait after defining a type.**
 - `from` renames a parent's role: `binop` becomes `add`, and `unit` becomes `zero`.
 - One declaration per parent. Equal member types need no proof; narrower types require `coherence`.
 
 Speaker note:
 
-- Source: `doc/spec/en/05.structures.md` §5.3; `sample_codes.md`, AddLoopStr. The Rust analogy concerns the separation of declarations. In LoopStr, binop is a field and unit is a property.
+- Source: `doc/spec/en/05.structures.md` §5.3; `sample_codes.md`, LoopStr and AddLoopStr. The current-Mizar parent list is in 2.2. The Evo example adds an inheritance relation from the previously declared AddLoopStr to LoopStr, declared here.
 
 ### Frame 2.4 - type: implement unit for Unital, reuse it as zero
 

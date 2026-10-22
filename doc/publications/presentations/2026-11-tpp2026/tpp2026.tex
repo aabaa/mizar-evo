@@ -377,24 +377,31 @@ Readable mathematics relies on many automatic decisions.
 }
 \end{frame}
 
-\begin{frame}[fragile,t]{2.2 - type: declare fields and properties}
+\begin{frame}[fragile,t]{2.2 - struct: current Mizar and Evo}
 \smallskip
-\textbf{Structure declarations}~\badgeSpec~{\footnotesize(inside a definition block)}
-\begin{lstlisting}[language={mizar},basicstyle=\ttfamily\footnotesize]
-struct LoopStr where
-  field carrier -> set;
-  field binop -> BinOp of carrier;
-  property unit -> Element of carrier;
-end;
-
+\textbf{Current Mizar: zero is stored data}~\badgeSketch~{\footnotesize(based on ALGSTR\_0)}
+\begin{lstlisting}[language={mizar},basicstyle=\ttfamily\small]
+struct (ZeroStr, addMagma) addLoopStr
+  (# carrier -> set,
+     addF -> BinOp of the carrier,
+     ZeroF -> Element of the carrier #);
+\end{lstlisting}
+\smallskip
+\textbf{Evo: stored fields and derived properties}~\badgeSpec
+\begin{lstlisting}[language={mizar},basicstyle=\ttfamily\small]
 struct AddLoopStr where
   field carrier -> set;
   field add -> BinOp of carrier;
   property zero -> Element of carrier;
 end;
 \end{lstlisting}
-\textcolor{blue!55!black}{\textbf{A field stores data. A property declares a name and type; its implementation is given separately.}}
-
+\begin{itemize}
+\setlength{\itemsep}{1pt}
+\setlength{\parsep}{0pt}
+\setlength{\parskip}{0pt}
+\item Current: the constructor takes carrier, addF, and ZeroF. Identity laws need separate conditions.
+\item \textcolor{blue!55!black}{\textbf{Evo: the constructor takes only fields. We implement zero and prove its laws in 2.4.}}
+\end{itemize}
 \note{
 \smallskip
 \textbf{Read aloud:}
@@ -402,8 +409,10 @@ end;
 \setlength{\itemsep}{1pt}
 \setlength{\parsep}{0pt}
 \setlength{\parskip}{0pt}
-\item Structure declarations.
-\item \textcolor{blue!55!black}{\textbf{A field stores data. A property declares a name and type; its implementation is given separately.}}
+\item Current Mizar: zero is stored data.
+\item Evo: stored fields and derived properties.
+\item Current: the constructor takes carrier, addF, and ZeroF. Identity laws need separate conditions.
+\item \textcolor{blue!55!black}{\textbf{Evo: the constructor takes only fields. We implement zero and prove its laws in 2.4.}}
 \end{itemize}
 \smallskip
 \textbf{Optional notes and sources:}
@@ -411,28 +420,65 @@ end;
 \setlength{\itemsep}{1pt}
 \setlength{\parsep}{0pt}
 \setlength{\parskip}{0pt}
-\item Source: \texttt{doc/spec/en/05.structures.md} §5.2, 5.5.1; \texttt{sample\_codes.md}, LoopStr and AddLoopStr. These declarations are excerpts inside a definition block. Only fields are constructor arguments. Inheritance follows in 2.3, then the mode and unit implementation in 2.4.
+\item Source: MML ALGSTR\_0 (\url{https://mizar.uwb.edu.pl/version/current/html/algstr\_0.html}), addLoopStr; \texttt{doc/spec/en/05.structures.md} §5.2, 5.5.1; \texttt{sample\_codes.md}, AddLoopStr. Both excerpts belong inside definition blocks. The current-Mizar declaration is a sketch, not an exact quotation.
+\item This compares ways to model addition and zero, not a mechanical translation. Current Mizar can also define derived values with functors. The Evo declaration alone gives neither an implementation of zero nor identity laws; it needs the assumptions and proofs in 2.4.
+\end{itemize}
+}
+\end{frame}
+
+\begin{frame}[fragile,t]{2.2a - Why separate fields and properties?}
+\begin{itemize}
+\setlength{\itemsep}{1pt}
+\setlength{\parsep}{0pt}
+\setlength{\parskip}{0pt}
+\item \textcolor{blue!55!black}{\textbf{Current strict: limit the fields of a structure.}} For strict objects of the same structure, equal fields mean equal objects.
+\item \textcolor{blue!55!black}{\textbf{Remaining issue: a derived value is still stored data.}} A two-sided identity is unique if it exists, but storing it as ZeroF adds a field.
+\item \textcolor{blue!55!black}{\textbf{Evo property: derive a value without an extra stored field.}} Keep it separate from fields; obtain its value from an applicable implementation and proofs.
+\end{itemize}
+\note{
+\smallskip
+\textbf{Read aloud:}
+\begin{itemize}
+\setlength{\itemsep}{1pt}
+\setlength{\parsep}{0pt}
+\setlength{\parskip}{0pt}
+\item \textcolor{blue!55!black}{\textbf{Current strict: limit the fields of a structure.}} For strict objects of the same structure, equal fields mean equal objects.
+\item \textcolor{blue!55!black}{\textbf{Remaining issue: a derived value is still stored data.}} A two-sided identity is unique if it exists, but storing it as ZeroF adds a field.
+\item \textcolor{blue!55!black}{\textbf{Evo property: derive a value without an extra stored field.}} Keep it separate from fields; obtain its value from an applicable implementation and proofs.
+\end{itemize}
+\smallskip
+\textbf{Optional notes and sources:}
+\begin{itemize}
+\setlength{\itemsep}{1pt}
+\setlength{\parsep}{0pt}
+\setlength{\parskip}{0pt}
+\item Each structure introduces a strict attribute: no fields beyond those declared. A strict addLoopStr has ZeroF, so it is not a strict addMagma. When ZeroF must satisfy the two-sided identity laws, the stored value is already uniquely determined by the operation. Source: Mizar in a Nutshell (\url{https://www.chimaira.org/archive/MizarInANutshell\_1980-4451-1-PB.pdf}), §2.3.5.
+\item Strict objects of the same structure are equal when all their fields agree (Kaliszyk \& P\k{a}k, §8.1 (\url{https://project-smart.uibk.ac.at/docs/19/ckkp-jar19.pdf})). Evo also limits extensionality to exact\_S instances of the same structure S (spec §§5.8.4–5.8.5). Properties add no stored fields; this does not identify different structures or views unconditionally.
 \end{itemize}
 }
 \end{frame}
 
 \begin{frame}[fragile,t]{2.3 - type: declare inheritance after the structure}
+Current Mizar names parents in \texttt{struct (ZeroStr, addMagma)}. \textcolor{blue!55!black}{\textbf{Evo separates structure declarations from inheritance.}}
+
 \smallskip
-\textbf{Add a parent mapping after declaring AddLoopStr}~\badgeSpec
-\begin{lstlisting}[language={mizar},basicstyle=\ttfamily\small]
-definition
-  inherit AddLoopStr extends LoopStr where
-    field carrier from carrier;
-    field add from binop;
-    property zero from unit;
-  end;
+\textbf{Evo parent and mapping}~\badgeSpec~{\footnotesize(inside a definition block)}
+\begin{lstlisting}[language={mizar},basicstyle=\ttfamily\footnotesize]
+struct LoopStr where
+  field carrier -> set;
+  field binop -> BinOp of carrier;
+  property unit -> Element of carrier;
+end;
+inherit AddLoopStr extends LoopStr where
+  field carrier from carrier;
+  field add from binop;
+  property zero from unit;
 end;
 \end{lstlisting}
 \begin{itemize}
 \setlength{\itemsep}{1pt}
 \setlength{\parsep}{0pt}
 \setlength{\parskip}{0pt}
-\item \textcolor{blue!55!black}{\textbf{Separate structure declarations from inheritance. This is similar to implementing a Rust trait after defining a type.}}
 \item \texttt{from} renames a parent's role: \texttt{binop} becomes \texttt{add}, and \texttt{unit} becomes \texttt{zero}.
 \item One declaration per parent. Equal member types need no proof; narrower types require \texttt{coherence}.
 \end{itemize}
@@ -443,8 +489,8 @@ end;
 \setlength{\itemsep}{1pt}
 \setlength{\parsep}{0pt}
 \setlength{\parskip}{0pt}
-\item Add a parent mapping after declaring AddLoopStr.
-\item \textcolor{blue!55!black}{\textbf{Separate structure declarations from inheritance. This is similar to implementing a Rust trait after defining a type.}}
+\item Current Mizar names parents in \texttt{struct (ZeroStr, addMagma)}. \textcolor{blue!55!black}{\textbf{Evo separates structure declarations from inheritance.}}
+\item Evo parent and mapping.
 \item \texttt{from} renames a parent's role: \texttt{binop} becomes \texttt{add}, and \texttt{unit} becomes \texttt{zero}.
 \item One declaration per parent. Equal member types need no proof; narrower types require \texttt{coherence}.
 \end{itemize}
@@ -454,7 +500,7 @@ end;
 \setlength{\itemsep}{1pt}
 \setlength{\parsep}{0pt}
 \setlength{\parskip}{0pt}
-\item Source: \texttt{doc/spec/en/05.structures.md} §5.3; \texttt{sample\_codes.md}, AddLoopStr. The Rust analogy concerns the separation of declarations. In LoopStr, binop is a field and unit is a property.
+\item Source: \texttt{doc/spec/en/05.structures.md} §5.3; \texttt{sample\_codes.md}, LoopStr and AddLoopStr. The current-Mizar parent list is in 2.2. The Evo example adds an inheritance relation from the previously declared AddLoopStr to LoopStr, declared here.
 \end{itemize}
 }
 \end{frame}
