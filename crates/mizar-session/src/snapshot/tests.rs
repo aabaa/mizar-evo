@@ -3134,7 +3134,7 @@ fn capture_metadata_fingerprints_bind_retained_values_and_empty_dependencies() {
             .strip_prefix("mizar-session-build-snapshot-v1:")
             .unwrap();
         let mut decoded = [0; Hash::BYTE_LEN];
-        for (index, pair) in hex.as_bytes().chunks_exact(2).enumerate() {
+        for (index, pair) in hex.as_bytes().as_chunks::<2>().0.iter().enumerate() {
             let digits = b"0123456789abcdef";
             let high = digits.iter().position(|digit| *digit == pair[0]).unwrap();
             let low = digits.iter().position(|digit| *digit == pair[1]).unwrap();

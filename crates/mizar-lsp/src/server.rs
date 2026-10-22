@@ -513,7 +513,7 @@ impl Server {
                 && result != response_error.is_some()
                 && response_error.is_none_or(|value| {
                     value.is_object()
-                        && value.get("code").is_some_and(&valid_id)
+                        && value.get("code").is_some_and(valid_id)
                         && value.get("code").is_some_and(Value::is_number)
                         && value.get("message").is_some_and(Value::is_string)
                 })
@@ -701,7 +701,7 @@ impl Server {
             let mut content_type = None;
             let header = std::str::from_utf8(&header).map_err(|_| invalid())?;
             for line in header[..header.len() - 4].split("\r\n") {
-                let (name, value) = line.split_once(':').ok_or_else(&invalid)?;
+                let (name, value) = line.split_once(':').ok_or_else(invalid)?;
                 if name.is_empty()
                     || !name.bytes().all(|byte| {
                         byte.is_ascii_alphanumeric() || b"!#$%&'*+-.^_`|~".contains(&byte)
@@ -731,7 +731,7 @@ impl Server {
                     return Err(invalid());
                 }
             }
-            let mut body = vec![0; length.ok_or_else(&invalid)?];
+            let mut body = vec![0; length.ok_or_else(invalid)?];
             input.read_exact(&mut body)?;
             let supported = content_type.is_none_or(|value| {
                 let mut parts = value.split(';');

@@ -23302,7 +23302,7 @@ fn source_theorem_syntax_payloads_exact_current_keys_and_empty() {
         "000000020066000000013b000000000002006500000003656e640000000000020066000000013b00000000",
     )
     .as_bytes()
-    .chunks_exact(2)
+    .as_chunks::<2>().0.iter()
     .map(|pair| u8::from_str_radix(std::str::from_utf8(pair).unwrap(), 16).unwrap())
     .collect::<Vec<_>>();
     assert_eq!(expected_t.len(), 527);
