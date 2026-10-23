@@ -585,6 +585,7 @@ contract、禁止境界、real-source/corruption requirement を使用する。�
 75. **[Source algorithm return candidate anchor hash](../../task_contracts/ja/PROOF-SOURCE-ALGORITHM-RETURN-IDENTITY.md).** [x]
 76. **[Source algorithm state local handoff](../../task_contracts/ja/VC-SOURCE-ALGORITHM-STATE-HANDOFF.md).** [x]
 77. **[Source algorithm state canonical components](../../task_contracts/ja/VC-SOURCE-ALGORITHM-STATE-CANONICAL-COMPONENTS.md).** [x]
+78. **[Original source state identity](../../task_contracts/ja/PROOF-SOURCE-ALGORITHM-STATE-IDENTITY.md).** [x]
 
 ## 推奨検証
 

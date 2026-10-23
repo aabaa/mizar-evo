@@ -61,6 +61,7 @@ task 15 は未 exercise だった 3 つの validation path に focused unit cove
 ### Status
 `check_source_algorithm_state_transitivity`: [sole API owner](./status.md#source-algorithm-state-transitivity).
 `project_source_algorithm_return_reflexivity_status`: [sole API owner](./status.md#source-algorithm-return-reflexivity-status).
+`source_algorithm_state_obligation_identity`: [sole API owner](./status.md#source-algorithm-state-obligation-identity).
 `source_algorithm_return_obligation_identity`: [sole API owner](./status.md#source-algorithm-return-obligation-identity).
 `source_algorithm_return_canonical_inputs`: [sole API owner](./status.md#source-algorithm-return-canonical-inputs).
 `check_source_algorithm_return_reflexivity`: [sole API owner](./status.md#source-algorithm-return-reflexivity).

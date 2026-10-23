@@ -62,6 +62,7 @@ imports.
 ### `vc_ir`
 
 [VcSet::source_algorithm_state_canonical_components](./vc_ir.md#source-algorithm-state-canonical-components).
+`source_algorithm_state_candidate_anchor_hash`: [sole API owner](./vc_ir.md#source-algorithm-state-candidate-anchor-hash).
 `source_algorithm_return_candidate_anchor_hash`: [sole API owner](./vc_ir.md#source-algorithm-return-candidate-anchor-hash).
 `source_theorem_candidate_anchor_hash`: [sole API owner](./vc_ir.md#source-theorem-candidate-anchor-hash).
 

@@ -473,6 +473,7 @@ kernel の拒否語彙と evidence 契約を訂正した。policy 層はその�
 56. **[Explicit source theorem file staging](../../task_contracts/ja/PROOF-SOURCE-THEOREM-WITNESS-FILE-STAGING.md).** [x]
 
 57. **[Fresh source state transitivity](../../task_contracts/ja/PROOF-SOURCE-ALGORITHM-STATE-TRANSITIVITY.md).** [x]
+58. **[Original source state identity](../../task_contracts/ja/PROOF-SOURCE-ALGORITHM-STATE-IDENTITY.md).** [x]
 
 ## 推奨検証
 

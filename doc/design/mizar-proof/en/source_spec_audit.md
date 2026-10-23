@@ -61,6 +61,7 @@ matching crate or module-level boundary comment:
 ### Status
 `check_source_algorithm_state_transitivity`: [sole API owner](./status.md#source-algorithm-state-transitivity).
 `project_source_algorithm_return_reflexivity_status`: [sole API owner](./status.md#source-algorithm-return-reflexivity-status).
+`source_algorithm_state_obligation_identity`: [sole API owner](./status.md#source-algorithm-state-obligation-identity).
 `source_algorithm_return_obligation_identity`: [sole API owner](./status.md#source-algorithm-return-obligation-identity).
 `source_algorithm_return_canonical_inputs`: [sole API owner](./status.md#source-algorithm-return-canonical-inputs).
 `check_source_algorithm_return_reflexivity`: [sole API owner](./status.md#source-algorithm-return-reflexivity).

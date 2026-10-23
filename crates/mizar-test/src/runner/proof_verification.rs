@@ -25311,4 +25311,453 @@ mod term_proof_tests {
             expected
         );
     }
+
+    #[test]
+    fn source_algorithm_state_obligation_identity_preserves_genuine_fields_and_slice() {
+        use mizar_artifact::store::{CanonicalJson as Json, canonical_json_bytes};
+        use mizar_checker::type_checker::check_source_algorithm_types;
+        use mizar_core::elaborator::{
+            lower_source_algorithms as lower, source_algorithm_core_semantic_payload as semantic,
+            source_algorithm_formula_payloads as guards,
+        };
+        use mizar_proof::status::source_algorithm_state_obligation_identity as identify;
+        use mizar_resolve::symbols::source_algorithm_state_syntax_payloads_from_arena as syntax_from;
+        use mizar_vc::{
+            dependency_slice::{DependencySliceInput, try_compute_dependency_slices},
+            generator::generate_source_algorithm_postconditions as generate,
+            kernel_evidence_handoff::build_source_algorithm_state_kernel_handoff as handoff,
+            vc_ir::source_algorithm_state_candidate_anchor_hash as candidate_hash,
+        };
+        let original = fs::read_to_string(config().workspace_root.join(
+            "tests/miz/pass/algorithms/pass_proof_verification_algorithm_var_const_assert_001.miz",
+        ))
+        .unwrap();
+        assert_eq!(original.matches("    assert x = a;\n").count(), 1);
+        let flat = original.replacen("    assert x = a;\n", "", 1);
+        let renamed = flat
+            .replace("let a be", "let input be")
+            .replace("swapalgo(a)", "copyalgo(input)")
+            .replace("var x :=", "var local :=")
+            .replace("const c :=", "const saved :=")
+            .replace("x := c;", "local := saved;")
+            .replace("return x;", "return local;")
+            .replace("result = a", "result = input")
+            .replace(":= a;", ":= input;");
+        let schema = VcSchemaVersion::new("mizar-vc-vcset-step5c14-state-v1");
+        for (text, candidate_hex, final_hex) in [
+            (
+                flat.clone(),
+                "e5ea8aded6a61a092f8614873d1f0efebef85ac9968dc9b2e13bd3363c1a3544",
+                "abbcc873eb36ff245f37d1325d6fbdb65f9e033e65a9d3ba2c14950c2f1282b9",
+            ),
+            (
+                renamed,
+                "22254f008c24618adfb0934803dcd8ae53f90da81ef95a55cfa532da81c17d18",
+                "fcf65b9cba542e5af3f8ff77b45022e79f5c2fc5310e4d496b01553a7b4f404a",
+            ),
+            (
+                flat.replace("    x := c;", "    const d := a;\n    x := c;"),
+                "ea9790dc8ad7a28a936ca7929daf31fe74ce21939b6dc694df446329093461b0",
+                "2f833d6e863cb9e05144d3f79190aa2dc82898fec348c023abf33b2064fae7dc",
+            ),
+            (
+                flat.replace("terminating algorithm", "algorithm"),
+                "211e70aa92795c7d3ea9e97ab48bb03d8a2e99c39bbd0fbfb3ede6509c109fff",
+                "c6ccea721c8458d54b3f9831a5d54b175195601e686eda721783f5685700c697",
+            ),
+        ] {
+            with_source_algorithm_identity_inputs(
+                &text,
+                "mizar-test-corpus",
+                "tests.miz.pass.algorithms.pass_proof_verification_algorithm_var_const_assert_001",
+                0,
+                |source, typed, symbols, check| {
+                    let before = format!("{source:?}{typed:?}{symbols:?}{check:?}");
+                    let fresh =
+                        check_source_algorithm_types(source, check.typed(), symbols).unwrap();
+                    let core = lower(&fresh).unwrap();
+                    let generation = "mizar-vc-generation-step5c14-state-v1".into();
+                    let vcs = generate(&core, snapshot_id(0), &generation, &schema).unwrap();
+                    let [target] = vcs.vcs() else {
+                        panic!("one genuine state VC")
+                    };
+                    assert_eq!(target.status, mizar_vc::vc_ir::VcStatus::Open);
+                    assert_eq!(
+                        vcs.seed_accounting()[0].seed_status,
+                        mizar_core::core_ir::ObligationSeedStatus::Deferred
+                    );
+                    let roots = [core.algorithms().iter().next().unwrap().1.params[0]
+                        .ty_guard
+                        .unwrap()];
+                    let formulas = guards(&fresh, &core, &roots).unwrap();
+                    handoff(&core, &vcs, target.id, &generation).unwrap();
+                    let old = vcs
+                        .source_algorithm_state_canonical_components(
+                            target.id,
+                            &core,
+                            &generation,
+                            &formulas,
+                        )
+                        .unwrap();
+                    let slices = try_compute_dependency_slices(DependencySliceInput {
+                        vc_set: &vcs,
+                        discharge_output: None,
+                    })
+                    .unwrap();
+                    let expected_slice = slices.slice_for(target.id).unwrap().clone();
+                    assert!(!expected_slice.unknowns().is_empty());
+                    assert!(expected_slice.requires_cache_miss());
+                    let syntax = syntax_from(source, symbols).unwrap();
+                    assert_eq!(syntax.len(), 1);
+                    let semantic = semantic(&fresh, &core).unwrap();
+                    let mut entries = symbols.symbols().iter().filter(|entry| {
+                        entry.symbol() == &fresh.algorithm().1
+                            && entry.kind() == mizar_resolve::env::SymbolKind::Algorithm
+                    });
+                    let entry = entries.next().unwrap();
+                    assert!(entries.next().is_none());
+                    assert_eq!(entry.visibility(), mizar_resolve::env::Visibility::Public);
+                    let module = entry.symbol().module();
+                    let owner = Json::object([
+                        ("package_id", Json::string(module.package().as_str())),
+                        ("module_path", Json::string(module.path().as_str())),
+                        ("namespace", Json::string(entry.namespace().as_str())),
+                        ("spelling", Json::string(entry.primary_spelling())),
+                        ("kind", Json::string("algorithm")),
+                        ("visibility", Json::string("public")),
+                    ])
+                    .unwrap();
+                    let owner = canonical_json_bytes(&owner);
+                    let syntax = &syntax[&fresh.algorithm().1];
+                    let candidate =
+                        candidate_hash(&owner, syntax, &semantic, old.0, old.1, old.2).unwrap();
+                    let hex =
+                        |bytes: &[u8]| bytes.iter().map(|b| format!("{b:02x}")).collect::<String>();
+                    assert_eq!(hex(candidate.as_bytes()), candidate_hex);
+                    assert_eq!(
+                        candidate,
+                        candidate_hash(&owner, syntax, &semantic, old.0, old.1, old.2,).unwrap()
+                    );
+                    if candidate_hex
+                        == "e5ea8aded6a61a092f8614873d1f0efebef85ac9968dc9b2e13bd3363c1a3544"
+                    {
+                        for (owner, syntax, semantic) in [
+                            (&[][..], syntax.as_slice(), semantic.as_slice()),
+                            (owner.as_slice(), &[][..], semantic.as_slice()),
+                            (owner.as_slice(), syntax.as_slice(), &[][..]),
+                        ] {
+                            assert_eq!(
+                                candidate_hash(owner, syntax, semantic, old.0, old.1, old.2,)
+                                    .unwrap_err(),
+                                "unsupported source algorithm state candidate anchor"
+                            );
+                        }
+                    }
+                    let (identity, slice) =
+                        identify(source, check, symbols, snapshot_id(0), target.id).unwrap();
+                    let anchor =
+                        format!("source-algorithm-state-candidate-anchor-v1:{candidate_hex}");
+                    assert_eq!(identity.obligation_id(), anchor);
+                    assert_eq!(identity.obligation_anchor().as_str(), anchor);
+                    assert_eq!(hex(identity.obligation_fingerprint().as_bytes()), final_hex);
+                    assert_eq!(identity.vc_fingerprint(), old.0.hash());
+                    assert_eq!(identity.local_context_fingerprint(), old.2.hash());
+                    assert_eq!(
+                        identity.dependency_slice_fingerprint(),
+                        expected_slice.fingerprint().hash()
+                    );
+                    assert_eq!(slice, expected_slice);
+                    assert_eq!(
+                        (identity.clone(), slice.clone()),
+                        identify(source, check, symbols, snapshot_id(0), target.id,).unwrap()
+                    );
+                    assert_eq!(format!("{source:?}{typed:?}{symbols:?}{check:?}"), before);
+                },
+            );
+        }
+    }
+
+    #[test]
+    fn source_algorithm_state_obligation_identity_preserves_source_participants() {
+        use mizar_artifact::store::{CanonicalJson as Json, canonical_json_bytes};
+        use mizar_core::elaborator::{
+            lower_source_algorithms as lower, source_algorithm_core_semantic_payload as semantic,
+            source_algorithm_formula_payloads as guards,
+        };
+        use mizar_proof::status::source_algorithm_state_obligation_identity as identify;
+        use mizar_resolve::{
+            env::{SymbolKind, Visibility},
+            symbols::source_algorithm_state_syntax_payloads_from_arena as syntax,
+        };
+        use mizar_vc::{
+            dependency_slice::{DependencySliceInput, try_compute_dependency_slices as slices},
+            generator::generate_source_algorithm_postconditions as generate,
+        };
+        let original = fs::read_to_string(config().workspace_root.join(
+            "tests/miz/pass/algorithms/pass_proof_verification_algorithm_var_const_assert_001.miz",
+        ))
+        .unwrap();
+        let flat = original.replacen("    assert x = a;\n", "", 1);
+        let binder = flat
+            .replace(" a ", " input ")
+            .replace("(a)", "(input)")
+            .replace(" a;", " input;")
+            .replace("= a\n", "= input\n");
+        let package = "mizar-test-corpus";
+        let module =
+            "tests.miz.pass.algorithms.pass_proof_verification_algorithm_var_const_assert_001";
+        let generation = "mizar-vc-generation-step5c14-state-v1".into();
+        let schema = VcSchemaVersion::new("mizar-vc-vcset-step5c14-state-v1");
+        let mut baseline = None;
+        for (label, text) in [
+            ("base", flat.clone()),
+            ("trivia", format!(":: 世代 neutral trivia\n\n{flat}")),
+            ("relocated", flat.clone()),
+            ("package", flat.clone()),
+            ("module", flat.clone()),
+            ("binder", binder),
+            ("owner", flat.replace("swapalgo", "otheralgo")),
+            ("assignment", flat.replace("    x := c;", "    x := a;")),
+            ("return", flat.replace("return x;", "return c;")),
+        ] {
+            let package = if label == "package" {
+                "other-package"
+            } else {
+                package
+            };
+            let module = if label == "module" {
+                "nested.owners"
+            } else {
+                module
+            };
+            let skip = if label == "relocated" { 7 } else { 0 };
+            with_source_algorithm_identity_inputs(
+                &text,
+                package,
+                module,
+                skip,
+                |source, _, symbols, check| {
+                    let core = lower(check).unwrap();
+                    let vcs = generate(&core, snapshot_id(0), &generation, &schema).unwrap();
+                    let id = vcs.vcs()[0].id;
+                    let guard = core.algorithms().iter().next().unwrap().1.params[0]
+                        .ty_guard
+                        .unwrap();
+                    let formulas = guards(check, &core, &[guard]).unwrap();
+                    let triple = vcs
+                        .source_algorithm_state_canonical_components(
+                            id,
+                            &core,
+                            &generation,
+                            &formulas,
+                        )
+                        .unwrap();
+                    let old_slices = slices(DependencySliceInput {
+                        vc_set: &vcs,
+                        discharge_output: None,
+                    })
+                    .unwrap();
+                    let old_slice = old_slices.slice_for(id).unwrap();
+                    let syntax = syntax(source, symbols).unwrap();
+                    let semantic = semantic(check, &core).unwrap();
+                    let mut entries = symbols.symbols().iter().filter(|entry| {
+                        entry.symbol() == &check.algorithm().1
+                            && entry.kind() == SymbolKind::Algorithm
+                    });
+                    let entry = entries.next().unwrap();
+                    assert!(entries.next().is_none());
+                    assert_eq!(entry.visibility(), Visibility::Public);
+                    let owner_module = entry.symbol().module();
+                    let owner = Json::object([
+                        ("package_id", Json::string(owner_module.package().as_str())),
+                        ("module_path", Json::string(owner_module.path().as_str())),
+                        ("namespace", Json::string(entry.namespace().as_str())),
+                        ("spelling", Json::string(entry.primary_spelling())),
+                        ("kind", Json::string("algorithm")),
+                        ("visibility", Json::string("public")),
+                    ])
+                    .unwrap();
+                    let operands = (
+                        canonical_json_bytes(&owner),
+                        syntax[&check.algorithm().1].clone(),
+                        semantic,
+                        triple.0.hash(),
+                        triple.1,
+                        triple.2.hash(),
+                    );
+                    let (identity, slice) =
+                        identify(source, check, symbols, snapshot_id(0), id).unwrap();
+                    assert_eq!(slice, *old_slice);
+                    let _ = baseline.get_or_insert((
+                        source.source_id(),
+                        operands.clone(),
+                        identity.obligation_anchor().as_str().to_owned(),
+                    ));
+                    let (source_id, baseline_operands, baseline_anchor) =
+                        baseline.as_ref().unwrap();
+                    if label != "base" {
+                        let changed = [
+                            operands.0 != baseline_operands.0,
+                            operands.1 != baseline_operands.1,
+                            operands.2 != baseline_operands.2,
+                            operands.3 != baseline_operands.3,
+                            operands.4 != baseline_operands.4,
+                            operands.5 != baseline_operands.5,
+                        ];
+                        let expected = match label {
+                            "trivia" | "relocated" => [false, false, false, false, false, false],
+                            "package" | "module" => [true, false, true, true, false, true],
+                            "binder" => [false, true, false, false, false, false],
+                            "owner" => [true, true, true, true, false, true],
+                            "assignment" => [false, true, true, true, false, true],
+                            "return" => [false, true, true, true, true, false],
+                            _ => panic!("unexpected participant"),
+                        };
+                        assert_eq!(changed, expected, "{label} old operands");
+                        assert_eq!(
+                            identity.obligation_anchor().as_str() == baseline_anchor,
+                            label == "trivia" || label == "relocated"
+                        );
+                        if label == "relocated" {
+                            assert_ne!(source.source_id(), *source_id);
+                        }
+                    } else {
+                        let other_vcs =
+                            generate(&core, snapshot_id(1), &generation, &schema).unwrap();
+                        let other_slices = slices(DependencySliceInput {
+                            vc_set: &other_vcs,
+                            discharge_output: None,
+                        })
+                        .unwrap();
+                        let other = identify(source, check, symbols, snapshot_id(1), id).unwrap();
+                        assert_eq!(other.1, *other_slices.slice_for(id).unwrap());
+                    }
+                },
+            );
+        }
+    }
+
+    #[test]
+    fn source_algorithm_state_obligation_identity_preserves_upstream_errors_and_inputs() {
+        use mizar_checker::type_checker::check_source_algorithm_types;
+        use mizar_core::elaborator::{
+            lower_source_algorithms as lower, source_algorithm_formula_payloads as project,
+        };
+        use mizar_proof::status::source_algorithm_state_obligation_identity as identify;
+        use mizar_vc::{
+            generator::generate_source_algorithm_postconditions as generate,
+            kernel_evidence_handoff::build_source_algorithm_state_kernel_handoff as handoff,
+            vc_ir::VcId,
+        };
+        let root = config().workspace_root;
+        let original = fs::read_to_string(root.join(
+            "tests/miz/pass/algorithms/pass_proof_verification_algorithm_var_const_assert_001.miz",
+        ))
+        .unwrap();
+        let flat = original.replacen("    assert x = a;\n", "", 1);
+        let generation = "mizar-vc-generation-step5c14-state-v1".into();
+        let schema = VcSchemaVersion::new("mizar-vc-vcset-step5c14-state-v1");
+        for (kind, text) in [
+            ("absent", flat.clone()),
+            ("zero", flat.replace("    ensures result = a\n", "")),
+            ("assertion", original.clone()),
+        ] {
+            with_source_algorithm_identity_inputs(
+                &text,
+                "mizar-test-corpus",
+                "tests.miz.pass.algorithms.pass_proof_verification_algorithm_var_const_assert_001",
+                0,
+                |source, typed, symbols, check| {
+                    let before = format!("{source:?}{typed:?}{symbols:?}{check:?}");
+                    let fresh =
+                        check_source_algorithm_types(source, check.typed(), symbols).unwrap();
+                    let core = lower(&fresh).unwrap();
+                    let vcs = generate(&core, snapshot_id(0), &generation, &schema).unwrap();
+                    let guard = core.algorithms().iter().next().unwrap().1.params[0]
+                        .ty_guard
+                        .unwrap();
+                    let formulas = project(&fresh, &core, &[guard]).unwrap();
+                    if kind == "absent" {
+                        handoff(&core, &vcs, vcs.vcs()[0].id, &generation).unwrap();
+                    }
+                    let selected = if kind == "assertion" {
+                        vcs.vcs()[0].id
+                    } else {
+                        VcId::new(99)
+                    };
+                    if kind == "zero" {
+                        assert!(vcs.vcs().is_empty());
+                    }
+                    let expected = vcs
+                        .source_algorithm_state_canonical_components(
+                            selected,
+                            &core,
+                            &generation,
+                            &formulas,
+                        )
+                        .unwrap_err();
+                    assert_eq!(
+                        identify(source, check, symbols, snapshot_id(0), selected,).unwrap_err(),
+                        expected
+                    );
+                    if kind == "absent" {
+                        let foreign = with_source_algorithm_identity_inputs(
+                            &flat.replace("swapalgo", "foreign_algorithm"),
+                            "mizar-test-corpus",
+                            "tests.miz.pass.algorithms.pass_proof_verification_algorithm_var_const_assert_001",
+                            0,
+                            |_, _, own_symbols, own_check| {
+                                let own_core = lower(own_check).unwrap();
+                                let own_vcs =
+                                    generate(&own_core, snapshot_id(0), &generation, &schema)
+                                        .unwrap();
+                                handoff(&own_core, &own_vcs, own_vcs.vcs()[0].id, &generation)
+                                    .unwrap();
+                                own_symbols.clone()
+                            },
+                        );
+                        let (_, _, augmented) =
+                            super::super::tests::source_registration_owner_inputs(
+                                &format!("{flat}\n{flat}"),
+                                "mizar-test-corpus",
+                                "tests.miz.pass.algorithms.pass_proof_verification_algorithm_var_const_assert_001",
+                                0,
+                            );
+                        for foreign in [&foreign, augmented.env()] {
+                            let expected =
+                                check_source_algorithm_types(source, check.typed(), foreign)
+                                    .unwrap_err();
+                            assert_eq!(
+                                identify(source, check, foreign, snapshot_id(0), selected,)
+                                    .unwrap_err(),
+                                expected
+                            );
+                        }
+                    }
+                    assert_eq!(format!("{source:?}{typed:?}{symbols:?}{check:?}"), before);
+                },
+            );
+        }
+        let return_source = fs::read_to_string(root.join(
+            "tests/miz/pass/algorithms/pass_proof_verification_algorithm_ensures_return_001.miz",
+        ))
+        .unwrap();
+        let two_returns = return_source
+            .replace("    ensures result = a\n", "")
+            .replace("return a;", "return a;\n    return a;");
+        with_source_algorithm_identity_inputs(
+            &two_returns,
+            "mizar-test-corpus",
+            "tests.miz.pass.algorithms.pass_proof_verification_algorithm_var_const_assert_001",
+            0,
+            |source, _, symbols, check| {
+                let core = lower(check).unwrap();
+                let expected = generate(&core, snapshot_id(0), &generation, &schema).unwrap_err();
+                assert_eq!(
+                    identify(source, check, symbols, snapshot_id(0), VcId::new(99),).unwrap_err(),
+                    expected
+                );
+            },
+        );
+    }
 }

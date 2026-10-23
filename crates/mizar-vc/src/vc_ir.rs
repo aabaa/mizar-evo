@@ -991,6 +991,48 @@ impl VcSet {
     }
 }
 
+/// Hashes opaque caller-owned algorithm state ingredients as a raw candidate.
+/// The result grants no source, completeness, acceptance or reuse authority.
+pub fn source_algorithm_state_candidate_anchor_hash(
+    owner: &[u8],
+    syntax: &[u8],
+    core: &[u8],
+    vc: CanonicalVcFingerprint,
+    goal: Hash,
+    context: LocalContextFingerprint,
+) -> Result<Hash, String> {
+    let invalid = || "unsupported source algorithm state candidate anchor".to_owned();
+    let prefix = b"mizar-vc/source-algorithm-state-candidate-anchor/v1\0";
+    let profile = b"source-algorithm-state/postcondition";
+    if owner.is_empty() || syntax.is_empty() || core.is_empty() {
+        return Err(invalid());
+    }
+    let mut size = prefix.len().checked_add(1).ok_or_else(invalid)?;
+    for bytes in [profile.as_slice(), owner, syntax, core] {
+        u32::try_from(bytes.len()).map_err(|_| invalid())?;
+        size = size
+            .checked_add(4)
+            .and_then(|value| value.checked_add(bytes.len()))
+            .ok_or_else(invalid)?;
+    }
+    size = size.checked_add(3 * Hash::BYTE_LEN).ok_or_else(invalid)?;
+    if size > 32 * 1024 * 1024 {
+        return Err(invalid());
+    }
+    let mut payload = Vec::with_capacity(size);
+    payload.extend_from_slice(prefix);
+    payload.push(1);
+    for bytes in [profile.as_slice(), owner, syntax, core] {
+        source_registration_frame(&mut payload, bytes).map_err(|_| invalid())?;
+    }
+    payload.extend_from_slice(vc.hash().as_bytes());
+    payload.extend_from_slice(goal.as_bytes());
+    payload.extend_from_slice(context.hash().as_bytes());
+    Ok(stable_fingerprint_hash(
+        "mizar-vc-source-algorithm-state-candidate-anchor",
+        &payload,
+    ))
+}
 /// Hashes opaque caller-owned algorithm return ingredients as a raw candidate.
 /// The result grants no source, completeness, acceptance or reuse authority.
 pub fn source_algorithm_return_candidate_anchor_hash(

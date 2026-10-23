@@ -497,6 +497,7 @@ layer consumes both; one alignment task is owned here.
 56. **[Explicit source theorem file staging](../../task_contracts/en/PROOF-SOURCE-THEOREM-WITNESS-FILE-STAGING.md).** [x]
 
 57. **[Fresh source state transitivity](../../task_contracts/en/PROOF-SOURCE-ALGORITHM-STATE-TRANSITIVITY.md).** [x]
+58. **[Original source state identity](../../task_contracts/en/PROOF-SOURCE-ALGORITHM-STATE-IDENTITY.md).** [x]
 
 ## Recommended Verification
 
