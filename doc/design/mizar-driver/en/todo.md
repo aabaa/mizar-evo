@@ -596,6 +596,8 @@ the owning producers when the paired tasks land.
 
 69. **[Native theorem TypedAst signature caller](../../task_contracts/en/DRIVER-NATIVE-THEOREM-TYPED-AST-SIGNATURE-CALLER.md).** [x]
 
+70. **[Native theorem TypedAst publication](../../task_contracts/en/DRIVER-NATIVE-THEOREM-TYPED-AST-PUBLICATION.md).** [x]
+
 ## Recommended Verification
 
 Run after each task:

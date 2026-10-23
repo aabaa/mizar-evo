@@ -565,6 +565,8 @@ artifact/test のフォローアップタスクが所有する。本 crate の�
 
 69. **[Native theorem TypedAst signature caller](../../task_contracts/ja/DRIVER-NATIVE-THEOREM-TYPED-AST-SIGNATURE-CALLER.md).** [x]
 
+70. **[Native theorem TypedAst publication](../../task_contracts/ja/DRIVER-NATIVE-THEOREM-TYPED-AST-PUBLICATION.md).** [x]
+
 ## 推奨検証
 
 各タスクの後で実行する:
