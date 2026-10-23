@@ -602,6 +602,8 @@ the owning producers when the paired tasks land.
 
 72. **[Native theorem registration closure storage replay](../../task_contracts/en/DRIVER-NATIVE-THEOREM-REGISTRATION-CLOSURE-STORAGE-REPLAY.md).** [x]
 
+73. **[Native theorem registration closure Type caller](../../task_contracts/en/DRIVER-NATIVE-THEOREM-REGISTRATION-CLOSURE-TYPE-CALLER.md).** [x]
+
 ## Recommended Verification
 
 Run after each task:

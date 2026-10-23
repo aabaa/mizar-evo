@@ -571,6 +571,8 @@ artifact/test のフォローアップタスクが所有する。本 crate の�
 
 72. **[Native theorem registration closure storage replay](../../task_contracts/ja/DRIVER-NATIVE-THEOREM-REGISTRATION-CLOSURE-STORAGE-REPLAY.md).** [x]
 
+73. **[Native theorem registration closure Type caller](../../task_contracts/ja/DRIVER-NATIVE-THEOREM-REGISTRATION-CLOSURE-TYPE-CALLER.md).** [x]
+
 ## 推奨検証
 
 各タスクの後で実行する:
