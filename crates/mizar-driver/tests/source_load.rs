@@ -29768,7 +29768,8 @@ fn scheduled_theorem_resolver_edits_match_independent_clean_modules() {
         .register_source_theorem_module_resolver()
         .register_source_theorem_signature_collection()
         .register_source_theorem_type_checking()
-        .register_source_theorem_registration_resolution();
+        .register_source_theorem_registration_resolution()
+        .register_source_theorem_overload_resolution();
     let mut driver = CompilerDriver::new(builder.build().unwrap());
     let mut previous: Option<(
         std::sync::Arc<PhaseOutputPublisher>,
@@ -29833,6 +29834,7 @@ fn scheduled_theorem_resolver_edits_match_independent_clean_modules() {
                     ("SignatureCollection", "SourceTheoremModuleSummary"),
                     ("TypeChecking", "SourceTheoremTypedAst"),
                     ("RegistrationResolution", "SourceTheoremRegistrationClosure"),
+                    ("OverloadResolution", "SourceTheoremMetadata"),
                 ] {
                     current.allow_work_unit(AllowedWorkUnit::new(
                         IrPipelinePhase::new(phase),
@@ -29850,7 +29852,8 @@ fn scheduled_theorem_resolver_edits_match_independent_clean_modules() {
             .register_source_theorem_module_resolver()
             .register_source_theorem_signature_collection()
             .register_source_theorem_type_checking()
-            .register_source_theorem_registration_resolution();
+            .register_source_theorem_registration_resolution()
+            .register_source_theorem_overload_resolution();
         let mut clean_driver = CompilerDriver::new(clean_builder.build().unwrap())
             .with_output_publisher(clean_owner.clone());
         let (_, mut clean_input) = fixture.submit_request(vec![], vec![]);
@@ -29880,7 +29883,7 @@ fn scheduled_theorem_resolver_edits_match_independent_clean_modules() {
                 submission
                     .missing_services
                     .iter()
-                    .any(|gap| gap.phase == PipelinePhase::OverloadResolution)
+                    .any(|gap| gap.phase == PipelinePhase::Elaboration)
             );
             assert!(!submission.missing_services.iter().any(|gap| matches!(
                 gap.phase,
@@ -29888,6 +29891,7 @@ fn scheduled_theorem_resolver_edits_match_independent_clean_modules() {
                     | PipelinePhase::SignatureCollection
                     | PipelinePhase::TypeChecking
                     | PipelinePhase::RegistrationResolution
+                    | PipelinePhase::OverloadResolution
             )));
         }
         assert_eq!(actual.missing_services, clean.missing_services);
@@ -29934,6 +29938,7 @@ fn scheduled_theorem_resolver_edits_match_independent_clean_modules() {
                 PipelinePhase::SignatureCollection,
                 PipelinePhase::TypeChecking,
                 PipelinePhase::RegistrationResolution,
+                PipelinePhase::OverloadResolution,
             ] {
                 let task = graph.tasks().iter().find(|task| {
                     task.phases.contains(&phase) && matches!(&task.unit, WorkUnit::Module { module: id } if id.path.as_str() == module)
@@ -29949,6 +29954,7 @@ fn scheduled_theorem_resolver_edits_match_independent_clean_modules() {
                         PipelinePhase::SignatureCollection
                             | PipelinePhase::TypeChecking
                             | PipelinePhase::RegistrationResolution
+                            | PipelinePhase::OverloadResolution
                     ) {
                         TaskState::Blocked
                     } else {
@@ -29963,8 +29969,9 @@ fn scheduled_theorem_resolver_edits_match_independent_clean_modules() {
                         PipelinePhase::SignatureCollection
                             | PipelinePhase::TypeChecking
                             | PipelinePhase::RegistrationResolution
+                            | PipelinePhase::OverloadResolution
                     ) {
-                        if module == "main" && stage > 0 { 3 } else { 2 }
+                        if module == "main" && stage > 0 { 4 } else { 2 }
                     } else {
                         1
                     }
@@ -29972,6 +29979,7 @@ fn scheduled_theorem_resolver_edits_match_independent_clean_modules() {
                 let result_index = match phase {
                     PipelinePhase::TypeChecking => 1,
                     PipelinePhase::RegistrationResolution => 2,
+                    PipelinePhase::OverloadResolution => 3,
                     _ => 0,
                 };
                 let result = &results[result_index];
@@ -29987,7 +29995,25 @@ fn scheduled_theorem_resolver_edits_match_independent_clean_modules() {
                 );
                 assert!(result.diagnostics.is_empty());
                 assert!(result.cache_observation.is_some());
-                let parents = parent
+                let parent_refs = if phase == PipelinePhase::OverloadResolution {
+                    vec![
+                        results[1].output_refs[0].clone(),
+                        results[2].output_refs[0].clone(),
+                    ]
+                } else {
+                    parent.iter().cloned().collect()
+                };
+                let mut expected_parent_ids = parent_refs
+                    .iter()
+                    .map(AnyPhaseOutputRef::output)
+                    .collect::<Vec<_>>();
+                expected_parent_ids
+                    .sort_by(|left, right| left.hash().as_bytes().cmp(right.hash().as_bytes()));
+                let expected_parent_hashes = expected_parent_ids
+                    .iter()
+                    .map(|parent| parent.hash())
+                    .collect::<Vec<_>>();
+                let parents = parent_refs
                     .iter()
                     .map(|p| {
                         SealedParentOutputHandle::from_published_output(&owner, snapshot, p.clone())
@@ -30013,19 +30039,36 @@ fn scheduled_theorem_resolver_edits_match_independent_clean_modules() {
                         .cache_key_for_phase(phase, &query_input)
                         .unwrap()
                 );
-                if matches!(
-                    phase,
-                    PipelinePhase::TypeChecking | PipelinePhase::RegistrationResolution
-                ) {
-                    let expected_parent = if phase == PipelinePhase::TypeChecking {
-                        &results[0].output_refs[0]
-                    } else {
-                        &results[1].output_refs[0]
-                    };
+                if phase == PipelinePhase::TypeChecking {
                     assert_eq!(
                         query_input.parent_outputs()[0].as_output_ref(),
-                        expected_parent
+                        &results[0].output_refs[0]
                     );
+                } else if phase == PipelinePhase::RegistrationResolution {
+                    assert_eq!(
+                        query_input.parent_outputs()[0].as_output_ref(),
+                        &results[1].output_refs[0]
+                    );
+                } else if phase == PipelinePhase::OverloadResolution {
+                    assert_eq!(
+                        query_input
+                            .parent_outputs()
+                            .iter()
+                            .map(SealedParentOutputHandle::output)
+                            .collect::<Vec<_>>(),
+                        expected_parent_ids
+                    );
+                    assert_eq!(
+                        query_input.identities().parent_output_hashes(),
+                        expected_parent_hashes
+                    );
+                }
+                if matches!(
+                    phase,
+                    PipelinePhase::TypeChecking
+                        | PipelinePhase::RegistrationResolution
+                        | PipelinePhase::OverloadResolution
+                ) {
                     let probe = driver
                         .registry()
                         .execute_phase_with_resources(
@@ -30045,10 +30088,7 @@ fn scheduled_theorem_resolver_edits_match_independent_clean_modules() {
                 };
                 let expected = &clean_run.phase_results[&task.id][result_index].output_refs[0];
                 assert!(matches!(output.placement(), StoragePlacement::Blob { .. }));
-                assert_eq!(
-                    output.lineage().parents,
-                    parent.iter().map(|p| p.output()).collect::<Vec<_>>()
-                );
+                assert_eq!(output.lineage().parents, expected_parent_ids);
                 assert_eq!(
                     owner.storage().side_tables_by_ref(output).unwrap(),
                     clean_owner.storage().side_tables_by_ref(expected).unwrap()
@@ -30160,6 +30200,80 @@ fn scheduled_theorem_resolver_edits_match_independent_clean_modules() {
                             .as_str(),
                         "order=cluster-trace-order-v1;max_depth=128;max_generated=4096"
                     );
+                } else if phase == PipelinePhase::OverloadResolution {
+                    assert_eq!(output.phase(), &IrPipelinePhase::new("OverloadResolution"));
+                    assert_eq!(
+                        output.output_kind(),
+                        &OutputKind::new("SourceTheoremMetadata")
+                    );
+                    let actual_handle = owner
+                        .storage()
+                        .typed_handle::<(
+                            mizar_checker::binding_env::BindingEnv,
+                            mizar_checker::type_checker::TermFormulaInferenceOutput,
+                            mizar_checker::typed_ast::TypedAst,
+                            mizar_checker::resolved_typed_ast::ResolvedTypedAst,
+                        )>(output, output.output_kind())
+                        .unwrap();
+                    let expected_handle = clean_owner
+                        .storage()
+                        .typed_handle::<(
+                            mizar_checker::binding_env::BindingEnv,
+                            mizar_checker::type_checker::TermFormulaInferenceOutput,
+                            mizar_checker::typed_ast::TypedAst,
+                            mizar_checker::resolved_typed_ast::ResolvedTypedAst,
+                        )>(expected, expected.output_kind())
+                        .unwrap();
+                    let metadata = owner.storage().get(&actual_handle).unwrap();
+                    let clean_metadata = clean_owner.storage().get(&expected_handle).unwrap();
+                    assert_eq!(*metadata, *clean_metadata);
+                    for source_id in [
+                        metadata.0.source_id(),
+                        metadata.1.source_id(),
+                        metadata.2.source_id(),
+                        metadata.3.source_id(),
+                    ] {
+                        assert_eq!(source_id, version.source_id);
+                    }
+                    for module_id in [
+                        metadata.0.module_id(),
+                        metadata.1.module_id(),
+                        metadata.2.module_id(),
+                        metadata.3.module_id(),
+                    ] {
+                        assert_eq!(
+                            module_id,
+                            &ResolverModuleId::new(
+                                version.package_id.clone(),
+                                version.module_path.clone()
+                            )
+                        );
+                    }
+                    let references = metadata
+                        .3
+                        .nodes()
+                        .iter()
+                        .filter_map(|(_, node)| node.final_type)
+                        .collect::<Vec<_>>();
+                    assert!(!references.is_empty());
+                    for reference in references {
+                        let inferred = metadata.1.normalized_types().get(reference).unwrap();
+                        assert_eq!(
+                            inferred.head,
+                            mizar_checker::type_checker::TypeHeadRef::BuiltinSet
+                        );
+                        assert_eq!(
+                            inferred.status,
+                            mizar_checker::type_checker::NormalizedTypeStatus::Known
+                        );
+                    }
+                    let atomic = metadata.2.source_atomic_formula().unwrap();
+                    assert!(!atomic.requests().is_empty());
+                    assert!(atomic.requests().iter().all(|(_, request)| request.kind()
+                        == mizar_checker::source_atomic_formula::SourceAtomicRequestKind::OperandExpectedType));
+                    assert_eq!(metadata.3.source_atomic_formula(), Some(atomic));
+                    assert!(metadata.3.collection_candidates().is_empty());
+                    assert!(metadata.3.resolved_overloads().is_empty());
                 } else {
                     let [typed, expected] = [&owner, &clean_owner].map(|current| {
                         let handle = current
