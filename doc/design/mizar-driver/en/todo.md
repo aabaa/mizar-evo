@@ -638,6 +638,8 @@ the owning producers when the paired tasks land.
 
 90. **[Native theorem Kernel handoff Core VC caller](../../task_contracts/en/DRIVER-NATIVE-THEOREM-KERNEL-HANDOFF-CORE-VC-CALLER.md).** [x]
 
+91. **[Native theorem reflexivity Core VC caller](../../task_contracts/en/DRIVER-NATIVE-THEOREM-REFLEXIVITY-CORE-VC-CALLER.md).** [x]
+
 ## Recommended Verification
 
 Run after each task:

@@ -3184,6 +3184,134 @@ impl<'a> crate::registry::SourceLoadInputs<'a> {
         Ok(Some(handoff))
     }
 
+    /// Associates one genuine fresh reflexivity check with both retained original graphs.
+    pub fn native_theorem_reflexivity_with_core_vc_parents(
+        self,
+        input: &PhaseInput,
+        publisher: &mizar_ir::publisher::PhaseOutputPublisher,
+        vc_id: mizar_vc::vc_ir::VcId,
+        policy: &mizar_proof::policy::VerifierPolicy,
+    ) -> Result<
+        Option<(
+            mizar_kernel::checker::KernelCheckResult,
+            mizar_proof::policy::PolicyDecision,
+        )>,
+        String,
+    > {
+        if self
+            .native_theorem_kernel_handoff_with_core_vc_parents(input, publisher, vc_id)?
+            .is_none()
+        {
+            return Ok(None);
+        }
+        let core_parent = unique(input.parent_outputs().iter().filter(|parent| {
+            parent.as_output_ref().phase() == &IrPipelinePhase::new("Elaboration")
+                && parent.as_output_ref().output_kind() == &OutputKind::new("SourceTheoremCore")
+        }))
+        .ok_or_else(|| "native theorem reflexivity requires one Core parent".to_owned())?;
+        let vc_parent = unique(input.parent_outputs().iter().filter(|parent| {
+            parent.as_output_ref().phase() == &IrPipelinePhase::new("VcGenerate")
+                && parent.as_output_ref().output_kind() == &OutputKind::new("SourceTheoremVC")
+        }))
+        .ok_or_else(|| "native theorem reflexivity requires one VC parent".to_owned())?;
+        let core_ref = core_parent.as_output_ref();
+        let vc_ref = vc_parent.as_output_ref();
+        let storage = publisher.storage();
+        let core = storage
+            .typed_handle::<mizar_core::core_ir::CoreIr>(
+                core_ref,
+                &OutputKind::new("SourceTheoremCore"),
+            )
+            .map_err(|error| error.to_string())?;
+        let core = storage.get(&core).map_err(|error| error.to_string())?;
+        let vcs = storage
+            .typed_handle::<mizar_vc::vc_ir::VcSet>(vc_ref, &OutputKind::new("SourceTheoremVC"))
+            .map_err(|error| error.to_string())?;
+        let vcs = storage.get(&vcs).map_err(|error| error.to_string())?;
+        let WorkUnit::Module { module } = &input.work_unit else {
+            return Err("native theorem reflexivity requires a module".to_owned());
+        };
+        let version = unique(self.snapshot.source_versions.iter().filter(|version| {
+            version.package_id == module.package && version.module_path == module.path
+        }))
+        .ok_or_else(|| "native theorem reflexivity requires one captured source".to_owned())?;
+        let (source, _) = self
+            .native_source(version)
+            .ok_or_else(|| "native theorem reflexivity capture binding failed".to_owned())?;
+        let package = self
+            .build_plan
+            .packages
+            .iter()
+            .find(|package| package.package_id == module.package)
+            .ok_or_else(|| "native theorem reflexivity requires a bound package".to_owned())?;
+        let PackagePlanSource::Workspace { root, .. } = &package.source else {
+            return Err("native theorem reflexivity requires a workspace package".to_owned());
+        };
+        let output = Frontend::new(
+            FrontendSourceLoader::new(DiskSourceLoader::new(
+                PathBuf::from(self.snapshot.workspace_root.as_str()).join(root),
+            )),
+            self.dependency_lexical_provider(&[]),
+            MizarParserSeam,
+        )
+        .run_loaded(source)
+        .map_err(|error| error.to_string())?;
+        if !output.diagnostics.is_empty() || output.cache_keys.ast.is_none() {
+            return Ok(None);
+        }
+        let Some(ast) = output.ast.as_ref() else {
+            return Ok(None);
+        };
+        let resolver_module =
+            mizar_resolve::resolved_ast::ModuleId::new(module.package.clone(), module.path.clone());
+        let Some((arena, env)) =
+            mizar_resolve::symbols::source_theorem_module_original_inputs(ast, &resolver_module)?
+        else {
+            return Ok(None);
+        };
+        if mizar_resolve::symbols::source_theorem_module_candidates(ast, &arena, &env)?.is_none() {
+            return Ok(None);
+        }
+        let scope = mizar_resolve::names::SourceVariableScopeResolver::resolve_proof_occurrences(
+            mizar_resolve::names::SourceVariableScopeInput::new(ast, &resolver_module, &env),
+        )
+        .map_err(|error| format!("{error:?}"))?;
+        let metadata =
+            mizar_checker::type_checker::check_source_theorem_metadata(&arena, &env, &scope)?;
+        let (scope, labels, resolved) = mizar_resolve::symbols::source_proof_inputs(&arena, &env)?;
+        let check =
+            mizar_checker::type_checker::SourceVariableSemanticsChecker::check_theorem_skeletons(
+                &arena,
+                &metadata.2,
+                &scope,
+                &env,
+                &labels,
+                &resolved,
+                None,
+            )?;
+        let (checked_core, checked_vcs, result, decision) =
+            mizar_proof::status::check_source_theorem_reflexivity_with_original_graph(
+                &arena,
+                &check,
+                &env,
+                input.snapshot,
+                vc_id,
+                policy,
+            )?;
+        if checked_core != *core || checked_vcs != *vcs {
+            return Err("native theorem reflexivity original Core/VC mismatch".to_owned());
+        }
+        for parent in [core_ref, vc_ref] {
+            storage
+                .validate_handle(parent)
+                .map_err(|error| error.to_string())?;
+            publisher
+                .validate_published_output(input.snapshot, parent)
+                .map_err(|error| error.to_string())?;
+        }
+        Ok(Some((result, decision)))
+    }
+
     /// Lowers genuine algorithms after binding a published Frontend to captured source.
     pub fn native_algorithm_core_with_frontend_parent(
         self,

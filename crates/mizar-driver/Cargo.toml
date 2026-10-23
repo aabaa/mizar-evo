@@ -22,6 +22,7 @@ mizar-core = { path = "../mizar-core" }
 mizar-diagnostics = { path = "../mizar-diagnostics" }
 mizar-frontend = { path = "../mizar-frontend" }
 mizar-ir = { path = "../mizar-ir" }
+mizar-kernel = { path = "../mizar-kernel" }
 mizar-proof = { path = "../mizar-proof" }
 mizar-resolve = { path = "../mizar-resolve" }
 mizar-session = { path = "../mizar-session" }
