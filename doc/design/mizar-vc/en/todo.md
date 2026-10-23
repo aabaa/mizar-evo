@@ -618,6 +618,7 @@ authorized.
 74. **[Source algorithm return local handoff](../../task_contracts/en/VC-SOURCE-ALGORITHM-RETURN-LOCAL-HANDOFF.md).** [x]
 75. **[Source algorithm return candidate anchor hash](../../task_contracts/en/PROOF-SOURCE-ALGORITHM-RETURN-IDENTITY.md).** [x]
 76. **[Source algorithm state local handoff](../../task_contracts/en/VC-SOURCE-ALGORITHM-STATE-HANDOFF.md).** [x]
+77. **[Source algorithm state canonical components](../../task_contracts/en/VC-SOURCE-ALGORITHM-STATE-CANONICAL-COMPONENTS.md).** [x]
 
 ## Recommended Verification
 

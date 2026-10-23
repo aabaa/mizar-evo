@@ -24862,4 +24862,453 @@ mod term_proof_tests {
             );
         }
     }
+    #[test]
+    fn source_algorithm_state_canonical_components_preserve_genuine_content() {
+        use mizar_checker::type_checker::check_source_algorithm_types;
+        use mizar_core::{
+            core_ir::ObligationSeedStatus,
+            elaborator::{lower_source_algorithms, source_algorithm_formula_payloads},
+        };
+        use mizar_vc::{
+            generator::generate_source_algorithm_postconditions,
+            kernel_evidence_handoff::build_source_algorithm_state_kernel_handoff,
+            vc_ir::{
+                AnchorCompleteness, AnchorIngredient, GenerationSchemaVersion, HashMarker,
+                SeedVcMapping, VcGeneratedFormulaShape, VcSchemaVersion, VcStatus,
+            },
+        };
+        let config = config();
+        let plan = crate::harness::build_test_plan(&config).unwrap();
+        let case = plan
+            .cases
+            .iter()
+            .find(|case| case.id.0 == "pass_proof_verification_algorithm_var_const_assert_001")
+            .unwrap();
+        let original = fs::read_to_string(&case.source_path).unwrap();
+        assert_eq!(original.matches("    assert x = a;\n").count(), 1);
+        let flat = original.replacen("    assert x = a;\n", "", 1);
+        let renamed = flat
+            .replace("let a be", "let input be")
+            .replace("swapalgo(a)", "copyalgo(input)")
+            .replace("var x :=", "var local :=")
+            .replace("const c :=", "const saved :=")
+            .replace("x := c;", "local := saved;")
+            .replace("return x;", "return local;")
+            .replace("result = a", "result = input")
+            .replace(":= a;", ":= input;");
+        let independent = flat.replace("    x := c;", "    const d := a;\n    x := c;");
+        for (variant, text) in [flat, renamed, independent].into_iter().enumerate() {
+            let (source, typed, symbols) = super::super::source_registration_inputs(
+                &config.workspace_root,
+                case,
+                super::super::formula_statement::step5c8_test_frontend(&text),
+            )
+            .unwrap();
+            let before_inputs = (source.clone(), typed.clone(), symbols.clone());
+            let check = check_source_algorithm_types(&source, &typed, &symbols).unwrap();
+            let core = lower_source_algorithms(&check).unwrap();
+            let algorithm = &core.algorithms().iter().next().unwrap().1;
+            assert_eq!(algorithm.statements.len(), if variant == 2 { 5 } else { 4 });
+            let guard = algorithm.params[0].ty_guard.unwrap();
+            let formulas = source_algorithm_formula_payloads(&check, &core, &[guard]).unwrap();
+            assert_eq!(formulas.len(), 1);
+            assert_eq!(
+                formulas[&guard].len(),
+                if variant == 2 { 1107 } else { 1091 }
+            );
+            let vc_base = "mizar-vc-vcset-step5c14-state-v1";
+            let generation_base = "mizar-vc-generation-step5c14-state-v1";
+            let schemas = [
+                (vc_base, generation_base),
+                ("mizar-vc-vcset-step5c14-state-v1-changed", generation_base),
+                (vc_base, "mizar-vc-generation-step5c14-state-v1-changed"),
+                ("", " \n世代\t\0"),
+            ];
+            for (schema_index, (vc_schema, generation_schema)) in schemas
+                .into_iter()
+                .take(if variant == 0 { 4 } else { 1 })
+                .enumerate()
+            {
+                let generation = GenerationSchemaVersion::new(generation_schema);
+                let schema = VcSchemaVersion::new(vc_schema);
+                let snapshot = snapshot_id(usize::from(variant == 0 && schema_index == 1));
+                let vcs =
+                    generate_source_algorithm_postconditions(&core, snapshot, &generation, &schema)
+                        .unwrap();
+                let [vc] = vcs.vcs() else {
+                    panic!("one actual state VC")
+                };
+                assert_eq!(vc.status, VcStatus::Open);
+                let expected_length = if variant == 2 { 9 } else { 7 };
+                assert_eq!(vcs.generated_formulas().len(), expected_length);
+                assert_eq!(
+                    vc.local_context.entries().len(),
+                    vcs.generated_formulas().len()
+                );
+                let VcGeneratedFormulaShape::ProgramEquals { left, .. } =
+                    vcs.generated_formulas()[0].shape
+                else {
+                    panic!("first write fact")
+                };
+                assert_eq!(left.definition, Some(algorithm.statements[0]));
+                assert_eq!(vc.local_context.policy_inputs().len(), 6);
+                assert_eq!(
+                    vc.local_context.policy_inputs()[3].value.as_str(),
+                    (algorithm.statements.len() - 1).to_string()
+                );
+                build_source_algorithm_state_kernel_handoff(&core, &vcs, vc.id, &generation)
+                    .unwrap();
+                assert!(vcs.canonical_vc_fingerprint(vc.id).is_none());
+                assert!(vcs.local_context_fingerprint(vc.id).is_none());
+                assert!(
+                    matches!(&vc.anchor.completeness, AnchorCompleteness::Incomplete { missing }
+                    if missing == &[AnchorIngredient::CanonicalGoalHash, AnchorIngredient::CanonicalContextHash])
+                );
+                assert!(matches!(
+                    (
+                        &vc.anchor.canonical_goal_hash,
+                        &vc.anchor.canonical_context_hash
+                    ),
+                    (
+                        HashMarker::ConservativeUnknown { .. },
+                        HashMarker::ConservativeUnknown { .. }
+                    )
+                ));
+                let [termination, contract] = vcs.seed_accounting() else {
+                    panic!("state accounting")
+                };
+                assert_eq!(termination.seed_status, ObligationSeedStatus::Deferred);
+                assert!(matches!(
+                    &termination.mapping,
+                    SeedVcMapping::NoConcreteVc { .. }
+                ));
+                assert!(matches!(&contract.mapping, SeedVcMapping::One { vc: id } if *id == vc.id));
+                let before = (core.clone(), vcs.clone(), formulas.clone());
+                let actual = vcs
+                    .source_algorithm_state_canonical_components(
+                        vc.id,
+                        &core,
+                        &generation,
+                        &formulas,
+                    )
+                    .unwrap();
+                let digest = |bytes: &[u8]| {
+                    bytes
+                        .iter()
+                        .map(|byte| format!("{byte:02x}"))
+                        .collect::<String>()
+                };
+                let actual_hex = [
+                    digest(actual.0.hash().as_bytes()),
+                    digest(actual.1.as_bytes()),
+                    digest(actual.2.hash().as_bytes()),
+                ];
+                let row = if variant == 0 {
+                    schema_index
+                } else {
+                    variant + 3
+                };
+                let expected = [
+                    "a99236a729a9774bb09d0511ecba2563c6c916631e8b95414115cca16a2ea926|23be8c3fce29acaf31bdbe99c60680cd6ed0f2b97bfac00fcfa89e4ee70cd909|39def0868c5e0a2e393bf81946180d64234b563418e2ac8f67d3b82afa132ec6",
+                    "6a530e6729c50498509d1bde6b934706c035434eee638e8763730f9c15be0ed7|048529bae147158240f3ea9ce721c2c02df411ef5a6565bc78eed2760a65c23d|a01a7e7df8b0b18fc3b637990949521e67b14611426cd9d646400613d9490687",
+                    "4a691633104b8efbd036fabf0a4b031c70e00632af58bb8a992f0f9b2619d725|7155e83ae45739e770e25039637ae0b5fc2ddc05dc3147706ebe87e0476c606f|736e356e7ea27be3c3b619f34ce2f892faf1ce38f5181b4d102338c62a7415ce",
+                    "e57a4b6923335a3bae2e25a0baf4da893ac4fce488fa8ec7ba7d708b7728c71f|630237a2859bdcee516fd9c095632355c81d1bdf04a7c98e529a6c3d3b13bdf9|9b3f1d0359c93bcf5e2d6684b5370d0f69a4105386177a12691e7385578b327f",
+                    "9f40a766072eac6f25c0264396192061edd3d25fbf94e091466272b8e2ce2aa3|23be8c3fce29acaf31bdbe99c60680cd6ed0f2b97bfac00fcfa89e4ee70cd909|58e887ea695f260f67a0459a4975e145fb1be61fa65ede5b04685d9fb4648efb",
+                    "64771f5a91234d8613b892540592e00a0ae7421b97e7c5a9a0b3c9eec819b475|23be8c3fce29acaf31bdbe99c60680cd6edce6827ffb53cfcfa89e4ee70cd909|72e349ff495082ee367259b7a3874b14e521d60d9db04b17fe3164ee443a5711",
+                ][row];
+                assert_eq!(actual_hex.join("|"), expected);
+                assert_eq!(
+                    actual,
+                    vcs.source_algorithm_state_canonical_components(
+                        vc.id,
+                        &core,
+                        &generation,
+                        &formulas
+                    )
+                    .unwrap()
+                );
+                assert_eq!(before, (core.clone(), vcs.clone(), formulas.clone()));
+            }
+            assert_eq!(before_inputs, (source, typed, symbols));
+        }
+    }
+
+    #[test]
+    fn source_algorithm_state_canonical_components_preserve_source_and_schema_participants() {
+        use mizar_checker::type_checker::check_source_algorithm_types;
+        use mizar_core::elaborator::{lower_source_algorithms, source_algorithm_formula_payloads};
+        use mizar_vc::{
+            generator::generate_source_algorithm_postconditions,
+            kernel_evidence_handoff::build_source_algorithm_state_kernel_handoff,
+            vc_ir::{GenerationSchemaVersion, VcSchemaVersion},
+        };
+        let config = config();
+        let plan = crate::harness::build_test_plan(&config).unwrap();
+        let case = plan
+            .cases
+            .iter()
+            .find(|case| case.id.0 == "pass_proof_verification_algorithm_var_const_assert_001")
+            .unwrap();
+        let original = fs::read_to_string(&case.source_path).unwrap();
+        let flat = original.replacen("    assert x = a;\n", "", 1);
+        let binder = flat
+            .replace(" a ", " input ")
+            .replace("(a)", "(input)")
+            .replace(" a;", " input;")
+            .replace("= a\n", "= input\n");
+        let inputs = [
+            flat.clone(),
+            format!(":: neutral source trivia\n\n{flat}"),
+            binder,
+            flat.replace("    x := c;", "    x := a;"),
+            flat.replace("return x;", "return c;"),
+        ];
+        let generation = GenerationSchemaVersion::new("mizar-vc-generation-step5c14-state-v1");
+        let schema = VcSchemaVersion::new("mizar-vc-vcset-step5c14-state-v1");
+        let mut baseline = None;
+        for (index, text) in inputs.into_iter().enumerate() {
+            let (source, typed, symbols) = super::super::source_registration_inputs(
+                &config.workspace_root,
+                case,
+                super::super::formula_statement::step5c8_test_frontend(&text),
+            )
+            .unwrap();
+            let check = check_source_algorithm_types(&source, &typed, &symbols).unwrap();
+            let core = lower_source_algorithms(&check).unwrap();
+            let guard = core.algorithms().iter().next().unwrap().1.params[0]
+                .ty_guard
+                .unwrap();
+            let formulas = source_algorithm_formula_payloads(&check, &core, &[guard]).unwrap();
+            let vcs = generate_source_algorithm_postconditions(
+                &core,
+                snapshot_id(index),
+                &generation,
+                &schema,
+            )
+            .unwrap();
+            build_source_algorithm_state_kernel_handoff(&core, &vcs, vcs.vcs()[0].id, &generation)
+                .unwrap();
+            let actual = vcs
+                .source_algorithm_state_canonical_components(
+                    vcs.vcs()[0].id,
+                    &core,
+                    &generation,
+                    &formulas,
+                )
+                .unwrap();
+            if index == 0 {
+                baseline = Some(actual);
+            } else if index <= 2 {
+                assert_eq!(actual, baseline.unwrap());
+            } else if index == 3 {
+                assert_ne!(actual.0, baseline.unwrap().0);
+                assert_eq!(actual.1, baseline.unwrap().1);
+                assert_ne!(actual.2, baseline.unwrap().2);
+            } else {
+                assert_ne!(actual.0, baseline.unwrap().0);
+                assert_ne!(actual.1, baseline.unwrap().1);
+            }
+        }
+    }
+
+    #[test]
+    fn source_algorithm_state_canonical_components_preserve_upstream_and_atomic_refusals() {
+        use mizar_checker::type_checker::check_source_algorithm_types;
+        use mizar_core::elaborator::{lower_source_algorithms, source_algorithm_formula_payloads};
+        use mizar_vc::{
+            generator::generate_source_algorithm_postconditions,
+            kernel_evidence_handoff::build_source_algorithm_state_kernel_handoff,
+            vc_ir::{
+                GenerationSchemaVersion, LocalContext, VcId, VcSchemaVersion, VcSet, VcSetParts,
+            },
+        };
+        let config = config();
+        let plan = crate::harness::build_test_plan(&config).unwrap();
+        let case = plan
+            .cases
+            .iter()
+            .find(|case| case.id.0 == "pass_proof_verification_algorithm_var_const_assert_001")
+            .unwrap();
+        let original = fs::read_to_string(&case.source_path).unwrap();
+        let flat = original.replacen("    assert x = a;\n", "", 1);
+        let (source, typed, symbols) = super::super::source_registration_inputs(
+            &config.workspace_root,
+            case,
+            super::super::formula_statement::step5c8_test_frontend(&flat),
+        )
+        .unwrap();
+        let check = check_source_algorithm_types(&source, &typed, &symbols).unwrap();
+        let core = lower_source_algorithms(&check).unwrap();
+        let algorithm = &core.algorithms().iter().next().unwrap().1;
+        let guard = algorithm.params[0].ty_guard.unwrap();
+        let formulas = source_algorithm_formula_payloads(&check, &core, &[guard]).unwrap();
+        let generation = GenerationSchemaVersion::new("mizar-vc-generation-step5c14-state-v1");
+        let schema = VcSchemaVersion::new("mizar-vc-vcset-step5c14-state-v1");
+        let vcs =
+            generate_source_algorithm_postconditions(&core, snapshot_id(0), &generation, &schema)
+                .unwrap();
+        let id = vcs.vcs()[0].id;
+        build_source_algorithm_state_kernel_handoff(&core, &vcs, id, &generation).unwrap();
+        let empty = std::collections::BTreeMap::new();
+        let invalid = "unsupported source algorithm state canonical components";
+        for (target, map) in [(VcId::new(99), &formulas), (id, &empty)] {
+            let expected = if target == id {
+                invalid.to_owned()
+            } else {
+                build_source_algorithm_state_kernel_handoff(&core, &vcs, target, &generation)
+                    .unwrap_err()
+            };
+            assert_eq!(
+                vcs.source_algorithm_state_canonical_components(target, &core, &generation, map)
+                    .unwrap_err(),
+                expected
+            );
+        }
+        let mut empty_value = formulas.clone();
+        empty_value.insert(guard, Vec::new());
+        let mut extra = formulas.clone();
+        extra.insert(algorithm.contracts.ensures[0], b"extra".to_vec());
+        let mut wrong_root = empty.clone();
+        wrong_root.insert(algorithm.contracts.ensures[0], formulas[&guard].clone());
+        for map in [&empty_value, &extra, &wrong_root] {
+            assert_eq!(
+                vcs.source_algorithm_state_canonical_components(id, &core, &generation, map)
+                    .unwrap_err(),
+                invalid
+            );
+        }
+        for drift_kind in 0..3 {
+            let mut parts = VcSetParts {
+                schema_version: vcs.schema_version().clone(),
+                snapshot: vcs.snapshot(),
+                source: vcs.source(),
+                module: vcs.module().clone(),
+                generated_formulas: vcs.generated_formulas().to_vec(),
+                vcs: vcs.vcs().to_vec(),
+                seed_accounting: vcs.seed_accounting().to_vec(),
+            };
+            let mut entries = parts.vcs[0].local_context.entries().to_vec();
+            let mut policy = parts.vcs[0].local_context.policy_inputs().to_vec();
+            match drift_kind {
+                0 => entries[1].sort_key = "algorithm-state-00000001-drift".into(),
+                1 => entries[1].provenance[0].key = "different".into(),
+                _ => policy[3].value = "999".into(),
+            }
+            parts.vcs[0].local_context = LocalContext::try_new(entries, policy).unwrap();
+            let drift = VcSet::try_new(parts).unwrap();
+            let expected =
+                build_source_algorithm_state_kernel_handoff(&core, &drift, id, &generation)
+                    .unwrap_err();
+            assert_eq!(
+                drift
+                    .source_algorithm_state_canonical_components(id, &core, &generation, &empty)
+                    .unwrap_err(),
+                expected
+            );
+        }
+        let foreign = flat.replace("swapalgo", "foreign_algorithm");
+        let (foreign_source, foreign_typed, foreign_symbols) =
+            super::super::source_registration_inputs(
+                &config.workspace_root,
+                case,
+                super::super::formula_statement::step5c8_test_frontend(&foreign),
+            )
+            .unwrap();
+        let foreign_check =
+            check_source_algorithm_types(&foreign_source, &foreign_typed, &foreign_symbols)
+                .unwrap();
+        let foreign_core = lower_source_algorithms(&foreign_check).unwrap();
+        let foreign_vcs = generate_source_algorithm_postconditions(
+            &foreign_core,
+            snapshot_id(0),
+            &generation,
+            &schema,
+        )
+        .unwrap();
+        build_source_algorithm_state_kernel_handoff(
+            &foreign_core,
+            &foreign_vcs,
+            foreign_vcs.vcs()[0].id,
+            &generation,
+        )
+        .unwrap();
+        let expected =
+            build_source_algorithm_state_kernel_handoff(&foreign_core, &vcs, id, &generation)
+                .unwrap_err();
+        assert_eq!(
+            vcs.source_algorithm_state_canonical_components(id, &foreign_core, &generation, &empty)
+                .unwrap_err(),
+            expected
+        );
+        for text in [flat.replace("    ensures result = a\n", ""), original] {
+            let (source, typed, symbols) = super::super::source_registration_inputs(
+                &config.workspace_root,
+                case,
+                super::super::formula_statement::step5c8_test_frontend(&text),
+            )
+            .unwrap();
+            let check = check_source_algorithm_types(&source, &typed, &symbols).unwrap();
+            let other_core = lower_source_algorithms(&check).unwrap();
+            let other_vcs = generate_source_algorithm_postconditions(
+                &other_core,
+                snapshot_id(0),
+                &generation,
+                &schema,
+            )
+            .unwrap();
+            let expected = build_source_algorithm_state_kernel_handoff(
+                &other_core,
+                &other_vcs,
+                VcId::new(0),
+                &generation,
+            )
+            .unwrap_err();
+            assert_eq!(
+                other_vcs
+                    .source_algorithm_state_canonical_components(
+                        VcId::new(0),
+                        &other_core,
+                        &generation,
+                        &empty
+                    )
+                    .unwrap_err(),
+                expected
+            );
+        }
+        let return_case = plan
+            .cases
+            .iter()
+            .find(|case| case.id.0 == "pass_proof_verification_algorithm_ensures_return_001")
+            .unwrap();
+        let return_source = fs::read_to_string(&return_case.source_path).unwrap();
+        let two_returns = return_source
+            .replace("    ensures result = a\n", "")
+            .replace("return a;", "return a;\n    return a;");
+        let (source, typed, symbols) = super::super::source_registration_inputs(
+            &config.workspace_root,
+            return_case,
+            super::super::formula_statement::step5c8_test_frontend(&two_returns),
+        )
+        .unwrap();
+        let check = check_source_algorithm_types(&source, &typed, &symbols).unwrap();
+        let two_core = lower_source_algorithms(&check).unwrap();
+        let expected = generate_source_algorithm_postconditions(
+            &two_core,
+            snapshot_id(0),
+            &generation,
+            &schema,
+        )
+        .unwrap_err();
+        assert_eq!(expected, "algorithms.postcondition.unsupported_core");
+        assert_eq!(
+            vcs.source_algorithm_state_canonical_components(
+                VcId::new(99),
+                &two_core,
+                &generation,
+                &empty
+            )
+            .unwrap_err(),
+            expected
+        );
+    }
 }
