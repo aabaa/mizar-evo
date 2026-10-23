@@ -642,6 +642,8 @@ the owning producers when the paired tasks land.
 
 92. **[Native theorem discharge Core VC caller](../../task_contracts/en/DRIVER-NATIVE-THEOREM-DISCHARGE-CORE-VC-CALLER.md).** [x]
 
+93. **[Native theorem discharge storage replay](../../task_contracts/en/DRIVER-NATIVE-THEOREM-DISCHARGE-STORAGE.md).** [x]
+
 ## Recommended Verification
 
 Run after each task:

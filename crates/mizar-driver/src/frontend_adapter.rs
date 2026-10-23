@@ -7900,6 +7900,119 @@ pub fn native_theorem_preparation_from_storage_bytes(
     Ok(Some((flow, handoff)))
 }
 
+/// Stores genuine discharge through one opaque original-VC stream and explicit policy.
+pub fn native_theorem_discharge_storage_bytes(
+    ast: &<MizarParserSeam as ParserSeam>::Ast,
+    module: &mizar_resolve::resolved_ast::ModuleId,
+    core: &mizar_core::core_ir::CoreIr,
+    input: mizar_vc::discharge::DischargeInput<'_>,
+    output: &mizar_vc::discharge::DischargeOutput,
+    generation_schema: &mizar_vc::vc_ir::GenerationSchemaVersion,
+) -> Result<Option<Vec<u8>>, String> {
+    let Some(original) = native_theorem_vc_storage_bytes(
+        ast,
+        module,
+        core,
+        input.vc_set,
+        input.vc_set.snapshot(),
+        generation_schema,
+    )?
+    else {
+        return Ok(None);
+    };
+    let domain = b"mizar-driver/native-theorem-discharge-storage/v1\0";
+    let limit = input.policy.computation_limit.max_steps.to_le_bytes();
+    let fields = [
+        original.as_slice(),
+        input.policy.computation_limit.policy.as_str().as_bytes(),
+        limit.as_slice(),
+    ];
+    let mut size = domain.len();
+    for field in fields {
+        let Some(next) = u64::try_from(field.len())
+            .ok()
+            .and_then(|_| size.checked_add(8))
+            .and_then(|size| size.checked_add(field.len()))
+        else {
+            return Ok(None);
+        };
+        if next > 32 * 1024 * 1024 {
+            return Ok(None);
+        }
+        size = next;
+    }
+    let actual = mizar_vc::discharge::try_discharge(input).map_err(|error| error.to_string())?;
+    if actual != *output {
+        return Ok(None);
+    }
+    let mut bytes = Vec::with_capacity(size);
+    bytes.extend_from_slice(domain);
+    for field in fields {
+        bytes.extend_from_slice(&(field.len() as u64).to_le_bytes());
+        bytes.extend_from_slice(field);
+    }
+    Ok(Some(bytes))
+}
+
+/// Replays all discharge rows in an existing source, module, snapshot and policy context.
+pub fn native_theorem_discharge_from_storage_bytes(
+    bytes: &[u8],
+    source_id: mizar_session::SourceId,
+    module: &mizar_resolve::resolved_ast::ModuleId,
+    snapshot: mizar_session::BuildSnapshotId,
+    policy: &mizar_vc::discharge::DischargePolicy,
+) -> Result<Option<mizar_vc::discharge::DischargeOutput>, String> {
+    if bytes.len() > 32 * 1024 * 1024 {
+        return Ok(None);
+    }
+    let Some(mut remaining) =
+        bytes.strip_prefix(b"mizar-driver/native-theorem-discharge-storage/v1\0")
+    else {
+        return Ok(None);
+    };
+    let mut fields = [&[][..]; 3];
+    for field in &mut fields {
+        let Some(length) = remaining
+            .get(..8)
+            .and_then(|bytes| <[u8; 8]>::try_from(bytes).ok())
+            .map(u64::from_le_bytes)
+            .and_then(|length| usize::try_from(length).ok())
+        else {
+            return Ok(None);
+        };
+        remaining = &remaining[8..];
+        let Some(value) = remaining.get(..length) else {
+            return Ok(None);
+        };
+        *field = value;
+        remaining = &remaining[length..];
+    }
+    if !remaining.is_empty() {
+        return Ok(None);
+    }
+    let (Ok(key), Ok(limit)) = (
+        std::str::from_utf8(fields[1]),
+        <[u8; 4]>::try_from(fields[2]),
+    ) else {
+        return Ok(None);
+    };
+    let Some(vcs) = native_theorem_vc_from_storage_bytes(fields[0], source_id, module, snapshot)?
+    else {
+        return Ok(None);
+    };
+    if key != policy.computation_limit.policy.as_str()
+        || u32::from_le_bytes(limit) != policy.computation_limit.max_steps
+    {
+        return Ok(None);
+    }
+    mizar_vc::discharge::try_discharge(mizar_vc::discharge::DischargeInput {
+        vc_set: &vcs,
+        policy,
+    })
+    .map(Some)
+    .map_err(|error| error.to_string())
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;

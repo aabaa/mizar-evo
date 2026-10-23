@@ -45459,3 +45459,577 @@ fn native_theorem_discharge_core_vc_caller_preserves_refusals() {
         );
     }
 }
+
+#[test]
+fn native_theorem_discharge_storage_replays_genuine_outputs() {
+    use mizar_core::core_ir::{CoreProofStatus, ObligationSeedStatus};
+    use mizar_driver::{
+        native_theorem_discharge_from_storage_bytes as decode,
+        native_theorem_discharge_storage_bytes as encode,
+        native_theorem_vc_from_storage_bytes as old_decode,
+        native_theorem_vc_storage_bytes as old_encode,
+    };
+    use mizar_vc::{
+        discharge::{ComputationLimit, DischargeInput, DischargePolicy, try_discharge},
+        generator::generate_source_theorem_vcs as generate,
+        vc_ir::{GenerationSchemaVersion, PolicyKey, VcProvenancePhase, VcSchemaVersion, VcStatus},
+    };
+    let singleton = "theorem T: for X being set holds X = X proof let X be set; thus X = X; end;";
+    let multiple = include_str!(
+        "../../../tests/miz/pass/theorems/pass_proof_verification_lemma_reference_001.miz"
+    );
+    for (text, open, threshold, generation, schema, key, max_steps, rows) in [
+        (singleton, false, usize::MAX, " λ\n\0", "", "計算\0", 0, 1),
+        (multiple, true, 0, "", "核\t\0", "", u32::MAX, 2),
+    ] {
+        let fixture = Fixture::new(text.as_bytes());
+        let ids = InMemorySessionIdAllocator::new();
+        let snapshots = SnapshotRegistry::new();
+        let (mut draft, submit) = fixture.submit_request(vec![], vec![]);
+        draft.source_inputs.versions.clear();
+        let descriptor = SourceInput {
+            package_id: fixture.version.package_id.clone(),
+            module_path: fixture.version.module_path.clone(),
+            normalized_path: fixture.version.normalized_path.clone(),
+            edition: fixture.version.edition.clone(),
+            origin: if open {
+                SourceOriginInput::OpenBuffer {
+                    uri: format!(
+                        "file://{}",
+                        fixture.root.join("alpha/src/main.miz").display()
+                    ),
+                    expected_version: 7,
+                    actual_version: 7,
+                    text: std::sync::Arc::from(text),
+                }
+            } else {
+                SourceOriginInput::Disk {
+                    path: "src/main.miz".into(),
+                }
+            },
+        };
+        if open {
+            fixture.write(&[0xff]);
+        }
+        let session = draft
+            .capture_sources(
+                &ids,
+                &snapshots,
+                vec![(
+                    DiskSourceLoader::new(fixture.root.join("alpha")),
+                    descriptor,
+                )],
+            )
+            .unwrap();
+        let snapshot = session.captured().snapshot().id;
+        let unit = WorkUnit::Module {
+            module: mizar_build::module_index::ModuleId::new(
+                PackageId::new("alpha"),
+                ModulePath::new("main"),
+            ),
+        };
+        let owner = publisher(snapshot, threshold, &unit);
+        allow_frontend(&owner, &unit);
+        let mut builder = PhaseRegistryBuilder::new();
+        builder.register_source_load().register_frontend(vec![]);
+        let submission = CompilerDriver::new(builder.build().unwrap())
+            .with_output_publisher(owner.clone())
+            .submit_captured(session, &ids, &snapshots, submit)
+            .unwrap();
+        let (inputs, original) = native_disk_lookup_context(&submission, &ids);
+        let parent = submission
+            .scheduler_run
+            .as_ref()
+            .unwrap()
+            .phase_results
+            .values()
+            .flatten()
+            .flat_map(|result| &result.output_refs)
+            .find(|output| output.phase() == &IrPipelinePhase::new("Frontend"))
+            .unwrap();
+        let input = PhaseInput::new(
+            unit,
+            PhaseDispatchInputBundle::new(
+                snapshot,
+                original.identities().input_hash(),
+                vec![],
+                vec![
+                    SealedParentOutputHandle::from_published_output(
+                        &owner,
+                        snapshot,
+                        parent.clone(),
+                    )
+                    .unwrap(),
+                ],
+            )
+            .unwrap(),
+        );
+        let core = inputs
+            .native_theorem_core_with_frontend_parent(&input, &owner)
+            .unwrap()
+            .unwrap();
+        let parent = owner
+            .storage()
+            .typed_handle::<FrontendOutput<<MizarParserSeam as ParserSeam>::Ast>>(
+                parent,
+                parent.output_kind(),
+            )
+            .unwrap();
+        let frontend = owner.storage().get(&parent).unwrap();
+        let ast = frontend.ast.as_ref().unwrap();
+        let module = ResolverModuleId::new(PackageId::new("alpha"), ModulePath::new("main"));
+        let generation = GenerationSchemaVersion::new(generation);
+        let schema = VcSchemaVersion::new(schema);
+        let policy = DischargePolicy {
+            computation_limit: ComputationLimit {
+                policy: PolicyKey::new(key),
+                max_steps,
+            },
+        };
+        let vcs = generate(&core, snapshot, &generation, &schema).unwrap();
+        let original_bytes = old_encode(ast, &module, &core, &vcs, snapshot, &generation)
+            .unwrap()
+            .unwrap();
+        let discharge_input = DischargeInput {
+            vc_set: &vcs,
+            policy: &policy,
+        };
+        let expected = try_discharge(discharge_input).unwrap();
+        let mut manual = b"mizar-driver/native-theorem-discharge-storage/v1\0".to_vec();
+        for field in [
+            original_bytes.as_slice(),
+            key.as_bytes(),
+            max_steps.to_le_bytes().as_slice(),
+        ] {
+            manual.extend_from_slice(&u64::try_from(field.len()).unwrap().to_le_bytes());
+            manual.extend_from_slice(field);
+        }
+        assert_eq!(core.source_id(), ast.source_id);
+        assert_eq!(core.module_id(), &module);
+        assert_eq!(vcs.source(), ast.source_id);
+        assert_eq!(vcs.module().as_str(), "package=5:alpha;module=4:main");
+        assert_eq!(vcs.snapshot(), snapshot);
+        assert_eq!(vcs.schema_version(), &schema);
+        assert_eq!(vcs.vcs().len(), rows);
+        assert_eq!(core.proofs().len(), rows);
+        assert!(
+            core.proofs()
+                .iter()
+                .all(|(_, proof)| proof.status == CoreProofStatus::PendingAutomaticProof)
+        );
+        assert_eq!(core.obligation_seeds().len(), rows);
+        assert!(
+            core.obligation_seeds()
+                .iter()
+                .all(|(_, seed)| seed.status == ObligationSeedStatus::Active)
+        );
+        assert!(
+            vcs.vcs().iter().all(|vc| vc.status == VcStatus::Open
+                && vc.anchor.generation_schema_version == generation)
+        );
+        assert_eq!(expected.vc_set().vcs().len(), rows);
+        assert_eq!(expected.vc_set().seed_accounting(), vcs.seed_accounting());
+        assert_eq!(expected.explanations().len(), rows);
+        assert!(expected.evidence_records().is_empty());
+        for (processed, original) in expected.vc_set().vcs().iter().zip(vcs.vcs()) {
+            assert_eq!(processed.id, original.id);
+            assert_eq!(processed.status, VcStatus::NeedsAtp);
+            assert_eq!(processed.goal, original.goal);
+            assert_eq!(processed.local_context, original.local_context);
+            assert_eq!(
+                processed.provenance.last().unwrap().phase,
+                VcProvenancePhase::Discharge
+            );
+            assert!(
+                expected
+                    .explanations()
+                    .iter()
+                    .any(|explanation| explanation.vc == original.id)
+            );
+        }
+        assert_eq!(parent.placement() == &StoragePlacement::Resident, !open);
+        let before = (
+            input.clone(),
+            (*frontend).clone(),
+            core.clone(),
+            vcs.clone(),
+            policy.clone(),
+            submission.session.captured().clone(),
+        );
+        let other = Fixture::new(singleton.as_bytes());
+        let (_, other_submission, _, _, _) =
+            native_disk_frontend_record_submission(&other, &ids, &snapshots, threshold);
+        let other_source = other_submission
+            .session
+            .captured()
+            .snapshot()
+            .source_versions[0]
+            .source_id;
+        let other_snapshot = other_submission.session.captured().snapshot().id;
+        assert_ne!(other_source, ast.source_id);
+        assert_ne!(other_snapshot, snapshot);
+        let rebound = old_decode(&original_bytes, other_source, &module, other_snapshot)
+            .unwrap()
+            .unwrap();
+        let rebound_expected = try_discharge(DischargeInput {
+            vc_set: &rebound,
+            policy: &policy,
+        })
+        .unwrap();
+        assert_eq!(rebound.source(), other_source);
+        assert_eq!(rebound.snapshot(), other_snapshot);
+        assert_eq!(
+            decode(&manual, other_source, &module, other_snapshot, &policy).unwrap(),
+            Some(rebound_expected)
+        );
+        for stage in 0..3 {
+            if stage == 1 {
+                fixture.write(if open {
+                    &[0xff]
+                } else {
+                    b"open theorem Changed: 0 = 1;"
+                });
+            }
+            if stage == 2 {
+                fs::remove_file(fixture.root.join("alpha/src/main.miz")).unwrap();
+            }
+            for _ in 0..2 {
+                assert_eq!(
+                    encode(ast, &module, &core, discharge_input, &expected, &generation).unwrap(),
+                    Some(manual.clone())
+                );
+                assert_eq!(
+                    decode(&manual, ast.source_id, &module, snapshot, &policy).unwrap(),
+                    Some(expected.clone())
+                );
+            }
+        }
+        assert_eq!(
+            (
+                input,
+                (*frontend).clone(),
+                core,
+                vcs,
+                policy,
+                submission.session.captured().clone()
+            ),
+            before
+        );
+    }
+}
+
+#[test]
+fn native_theorem_discharge_storage_preserves_refusals() {
+    use mizar_driver::{
+        native_theorem_discharge_from_storage_bytes as decode,
+        native_theorem_discharge_storage_bytes as encode,
+        native_theorem_vc_from_storage_bytes as old_decode,
+        native_theorem_vc_storage_bytes as old_encode,
+    };
+    use mizar_vc::{
+        discharge::{ComputationLimit, DischargeInput, DischargePolicy, try_discharge},
+        generator::generate_source_theorem_vcs as generate,
+        vc_ir::{GenerationSchemaVersion, PolicyKey, VcSchemaVersion},
+    };
+    let ids = InMemorySessionIdAllocator::new();
+    let snapshots = SnapshotRegistry::new();
+    let module = ResolverModuleId::new(PackageId::new("alpha"), ModulePath::new("main"));
+    let generation = GenerationSchemaVersion::new("λ\n\0");
+    let schema = VcSchemaVersion::new("");
+    let policy = DischargePolicy {
+        computation_limit: ComputationLimit {
+            policy: PolicyKey::new(""),
+            max_steps: 0,
+        },
+    };
+    let mut products = Vec::new();
+    for text in [
+        "theorem T: for X being set holds X = X proof let X be set; thus X = X; end;",
+        "theorem Different: for Y being set holds Y = Y proof let Y be set; thus Y = Y; end;",
+    ] {
+        let fixture = Fixture::new(text.as_bytes());
+        let (_, submission, adapter, frontend, _) =
+            native_disk_frontend_record_submission(&fixture, &ids, &snapshots, 0);
+        let (inputs, original) = native_disk_lookup_context(&submission, &ids);
+        let owner = adapter.publisher();
+        let input = PhaseInput::new(
+            original.work_unit.clone(),
+            PhaseDispatchInputBundle::new(
+                original.snapshot,
+                original.identities().input_hash(),
+                vec![],
+                vec![
+                    SealedParentOutputHandle::from_published_output(
+                        owner,
+                        original.snapshot,
+                        frontend.erase(),
+                    )
+                    .unwrap(),
+                ],
+            )
+            .unwrap(),
+        );
+        let core = inputs
+            .native_theorem_core_with_frontend_parent(&input, owner)
+            .unwrap()
+            .unwrap();
+        let output = owner.storage().get(&frontend).unwrap();
+        let ast = output.ast.as_ref().unwrap().clone();
+        let vcs = generate(&core, original.snapshot, &generation, &schema).unwrap();
+        let old = old_encode(&ast, &module, &core, &vcs, original.snapshot, &generation)
+            .unwrap()
+            .unwrap();
+        let result = try_discharge(DischargeInput {
+            vc_set: &vcs,
+            policy: &policy,
+        })
+        .unwrap();
+        let bytes = encode(
+            &ast,
+            &module,
+            &core,
+            DischargeInput {
+                vc_set: &vcs,
+                policy: &policy,
+            },
+            &result,
+            &generation,
+        )
+        .unwrap()
+        .unwrap();
+        assert_eq!(
+            decode(&bytes, ast.source_id, &module, original.snapshot, &policy).unwrap(),
+            Some(result.clone())
+        );
+        products.push((ast, core, vcs, result, old, bytes));
+    }
+    let [
+        (ast, core, vcs, result, old, bytes),
+        (other_ast, other_core, other_vcs, other_result, _, _),
+    ] = products.as_slice()
+    else {
+        panic!("two genuine source products")
+    };
+    assert_ne!(ast.source_id, other_ast.source_id);
+    assert_ne!(result, other_result);
+    let input = DischargeInput {
+        vc_set: vcs,
+        policy: &policy,
+    };
+    assert_eq!(
+        encode(ast, &module, core, input, other_result, &generation),
+        Ok(None)
+    );
+    let other_input = DischargeInput {
+        vc_set: other_vcs,
+        policy: &policy,
+    };
+    let old_foreign = old_encode(
+        ast,
+        &module,
+        other_core,
+        other_vcs,
+        other_vcs.snapshot(),
+        &generation,
+    );
+    assert_eq!(old_foreign, Ok(None));
+    assert_eq!(
+        encode(
+            ast,
+            &module,
+            other_core,
+            other_input,
+            other_result,
+            &generation
+        ),
+        old_foreign
+    );
+    let wrong_generation = GenerationSchemaVersion::new("other-generation");
+    assert!(!vcs.vcs().is_empty());
+    assert_eq!(
+        old_encode(ast, &module, core, vcs, vcs.snapshot(), &wrong_generation),
+        Ok(None)
+    );
+    assert_eq!(
+        encode(ast, &module, core, input, result, &wrong_generation),
+        Ok(None)
+    );
+    let domain = b"mizar-driver/native-theorem-discharge-storage/v1\0";
+    let frame = |fields: [&[u8]; 3]| {
+        let mut bytes = domain.to_vec();
+        for field in fields {
+            bytes.extend_from_slice(&u64::try_from(field.len()).unwrap().to_le_bytes());
+            bytes.extend_from_slice(field);
+        }
+        bytes
+    };
+    assert_eq!(*bytes, frame([old.as_slice(), b"", &0u32.to_le_bytes()]));
+    for other_policy in [
+        DischargePolicy {
+            computation_limit: ComputationLimit {
+                policy: PolicyKey::new("別\0"),
+                max_steps: 0,
+            },
+        },
+        DischargePolicy {
+            computation_limit: ComputationLimit {
+                policy: PolicyKey::new(""),
+                max_steps: u32::MAX,
+            },
+        },
+    ] {
+        let actual = try_discharge(DischargeInput {
+            vc_set: vcs,
+            policy: &other_policy,
+        })
+        .unwrap();
+        assert_eq!(&actual, result);
+        let altered = frame([
+            old.as_slice(),
+            other_policy.computation_limit.policy.as_str().as_bytes(),
+            &other_policy.computation_limit.max_steps.to_le_bytes(),
+        ]);
+        assert_eq!(
+            decode(&altered, ast.source_id, &module, vcs.snapshot(), &policy),
+            Ok(None)
+        );
+        assert_eq!(
+            decode(bytes, ast.source_id, &module, vcs.snapshot(), &other_policy),
+            Ok(None)
+        );
+        assert_eq!(
+            decode(
+                &altered,
+                ast.source_id,
+                &module,
+                vcs.snapshot(),
+                &other_policy
+            )
+            .unwrap(),
+            Some(actual)
+        );
+        assert_eq!(
+            encode(
+                ast,
+                &module,
+                core,
+                DischargeInput {
+                    vc_set: vcs,
+                    policy: &other_policy
+                },
+                result,
+                &generation
+            )
+            .unwrap(),
+            Some(altered)
+        );
+    }
+    let mut corruptions = vec![
+        Vec::new(),
+        bytes[..domain.len() + 3].to_vec(),
+        bytes[..bytes.len() - 1].to_vec(),
+    ];
+    let mut wrong_domain = bytes.clone();
+    wrong_domain[0] = b'x';
+    corruptions.push(wrong_domain);
+    let mut wrong_version = bytes.clone();
+    wrong_version[domain.len() - 2] = b'2';
+    corruptions.push(wrong_version);
+    let mut overflow = bytes.clone();
+    overflow[domain.len()..domain.len() + 8].copy_from_slice(&u64::MAX.to_le_bytes());
+    corruptions.push(overflow);
+    let mut trailing = bytes.clone();
+    trailing.push(0);
+    corruptions.push(trailing);
+    for fields in [
+        [old.as_slice(), &[0xff][..], &[0; 4][..]],
+        [old.as_slice(), b"", &[0; 3][..]],
+    ] {
+        corruptions.push(frame(fields));
+    }
+    let mut oversized = bytes.clone();
+    oversized.resize(32 * 1024 * 1024 + 1, 0);
+    corruptions.push(oversized);
+    for malformed in corruptions {
+        assert_eq!(
+            decode(&malformed, ast.source_id, &module, vcs.snapshot(), &policy),
+            Ok(None)
+        );
+    }
+    let wrong_module = ResolverModuleId::new(PackageId::new("foreign"), ModulePath::new("other"));
+    let old_wrong = old_decode(old, ast.source_id, &wrong_module, vcs.snapshot());
+    assert_eq!(old_wrong, Ok(None));
+    assert_eq!(
+        decode(bytes, ast.source_id, &wrong_module, vcs.snapshot(), &policy),
+        old_wrong.map(|_| None)
+    );
+    let malformed_old = b"invalid original VC stream";
+    let old_refused = old_decode(malformed_old, ast.source_id, &module, vcs.snapshot());
+    assert_eq!(old_refused, Ok(None));
+    let malformed = frame([malformed_old, b"mismatched-key", &u32::MAX.to_le_bytes()]);
+    assert_eq!(
+        decode(&malformed, ast.source_id, &module, vcs.snapshot(), &policy),
+        old_refused.map(|_| None)
+    );
+    let private = include_str!(
+        "../../../tests/miz/pass/resolve/pass_declaration_symbol_private_theorem_visibility_001.miz"
+    );
+    let oversized_policy = DischargePolicy {
+        computation_limit: ComputationLimit {
+            policy: PolicyKey::new("x".repeat(32 * 1024 * 1024)),
+            max_steps: 0,
+        },
+    };
+    assert_eq!(
+        try_discharge(DischargeInput {
+            vc_set: vcs,
+            policy: &oversized_policy
+        })
+        .unwrap(),
+        *result
+    );
+    assert_eq!(
+        encode(
+            ast,
+            &module,
+            core,
+            DischargeInput {
+                vc_set: vcs,
+                policy: &oversized_policy
+            },
+            result,
+            &generation
+        ),
+        Ok(None)
+    );
+    for (text, is_none) in [
+        (format!("{private}\nreserve Y for set;\n"), true),
+        (private.to_owned(), false),
+    ] {
+        let fixture = Fixture::new(text.as_bytes());
+        let (_, _, adapter, frontend, _) =
+            native_disk_frontend_record_submission(&fixture, &ids, &snapshots, 0);
+        let output = adapter.publisher().storage().get(&frontend).unwrap();
+        let refused_ast = output.ast.as_ref().unwrap();
+        let prior = old_encode(refused_ast, &module, core, vcs, vcs.snapshot(), &generation);
+        if is_none {
+            assert_eq!(prior, Ok(None));
+        } else {
+            assert!(prior.is_err());
+        }
+        assert_eq!(
+            encode(
+                refused_ast,
+                &module,
+                core,
+                DischargeInput {
+                    vc_set: vcs,
+                    policy: &oversized_policy
+                },
+                other_result,
+                &generation
+            ),
+            prior
+        );
+    }
+}
