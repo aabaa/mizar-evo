@@ -1,0 +1,13 @@
+# Task PROOF-SOURCE-ALGORITHM-STATE-STATUS: genuine state-VC internal status
+Canonical language: English; [Japanese pointer](../ja/PROOF-SOURCE-ALGORITHM-STATE-STATUS.md). Status: implemented. Tier: full.
+Owner: [Proof plan](../../mizar-proof/en/00.crate_plan.md#task-index) task59; prerequisites: Proof58 original state identity and VC78 state candidate. Consumer: later genuine state witness/status orchestration.
+Authority: [algorithm state and VCs](../../../spec/en/20.algorithm_and_verification.md) §§20.1.4/20.13.3, [normal Kernel evidence](../../../spec/en/21.source_code_annotation_and_atp.md) §§21.7.1/21.7.5, [identity/reuse boundary](../../architecture/en/22.incremental_verification_contract.md), unchanged var_const_assert source test. Gap: source_drift/test_gap; no new language rule.
+Readiness: genuine original state identity/whole raw slice, normal Kernel+policy check, existing selector/merge/projector; independently inspect old genuine results before freezing.
+Sole API/order/id/error/test/boundary owner: [state transitivity status](../../mizar-proof/en/status.md#source-algorithm-state-transitivity-status); lower owners retain their authority.
+Scope: one inline public status.rs facade before complete return-status doccomments/function; exactly two owner-named runner/proof_verification.rs test families; paired Proof owner/plan/TODO/public-inventory and these contracts only. Preserve closed return status.
+Protect every other old byte/mode/API/helper/import/export/Spec/MIZ/expectation/trace/activation/ledger/Cargo/global-roadmap/audit path.
+No new type/field/helper/adapter/dependency, fabricated env/Core/check/VC/result/receipt/Accepted/Complete/Hit, fixture/expectation edit or lower-policy change. Currentness, complete footprints, implicit middle, broader algorithms/assertions, promotion, witness/Artifact/publication/cache/reuse/services/LSP/Steps6–8 remain separate.
+Presented ceilings: 180 production, 450 test, 100 documentation additions; actual 2:1/200 and contract60 limits apply. Global coverage/owner/deferral unchanged leaves spec_coverage_audit untouched.
+Reviews: independent specification/documentation, test sufficiency, implementation, volume/scope and source/documentation consistency; parent owns integration/final verification.
+Verification: focused Proof/runner checks, cargo fmt --check, cargo clippy --all-targets --all-features -- -D warnings, cargo test and git diff --check; logs outside doc/.
+Exit: independent whole projection and original slice match, identity-first and normal error precedence, purity and existing publication/reuse boundaries hold; enclosing gates stay open.

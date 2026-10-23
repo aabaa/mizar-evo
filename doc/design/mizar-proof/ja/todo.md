@@ -474,6 +474,7 @@ kernel の拒否語彙と evidence 契約を訂正した。policy 層はその�
 
 57. **[Fresh source state transitivity](../../task_contracts/ja/PROOF-SOURCE-ALGORITHM-STATE-TRANSITIVITY.md).** [x]
 58. **[Original source state identity](../../task_contracts/ja/PROOF-SOURCE-ALGORITHM-STATE-IDENTITY.md).** [x]
+59. **[Source algorithm state transitivity status](../../task_contracts/ja/PROOF-SOURCE-ALGORITHM-STATE-STATUS.md).** [x]
 
 ## 推奨検証
 

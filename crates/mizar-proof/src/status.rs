@@ -25,6 +25,72 @@ use crate::{
 const USED_AXIOMS_HASH_DOMAIN: &str = "mizar-proof-trusted-used-axioms-v1";
 const PROOF_REUSE_VALIDATION_HASH_DOMAIN: &str = "mizar-proof-reuse-validation-v1";
 
+/// Projects one genuine algorithm state check with its full original dependency slice.
+pub fn project_source_algorithm_state_transitivity_status(
+    source: &mizar_resolve::resolved_ast::SurfaceResolvedArena,
+    check: &mizar_checker::type_checker::SourceAlgorithmCheck<'_>,
+    symbols: &mizar_resolve::env::SymbolEnv,
+    snapshot: mizar_session::BuildSnapshotId,
+    vc_id: VcId,
+    middle: mizar_kernel::clause::VariableId,
+    policy: &VerifierPolicy,
+) -> Result<
+    (
+        ProofStatusProjection,
+        mizar_vc::dependency_slice::DependencySlice,
+    ),
+    String,
+> {
+    use crate::{
+        policy::CandidatePolicyClass,
+        selection::{
+            ProofEvidenceCandidate, ProofEvidenceSet, VcProofSelection,
+            merge_artifact_proof_selections, select_winner,
+        },
+    };
+
+    let (identity, slice) =
+        source_algorithm_state_obligation_identity(source, check, symbols, snapshot, vc_id)?;
+    let (result, decision) = check_source_algorithm_state_transitivity(
+        source,
+        check.typed(),
+        symbols,
+        snapshot,
+        vc_id,
+        middle,
+        policy,
+    )?;
+    let invalid = || "algorithm.proof.invalid_source_state_status".to_owned();
+    let target = result.target_vc_fingerprint().sort_bytes();
+    let candidate_id = CandidateSourceId::new(format!(
+        "source-algorithm-state-transitivity-v1:{}",
+        source_discharge_hex(&target)
+    ))
+    .map_err(|_| invalid())?;
+    let candidate = if decision.class == CandidatePolicyClass::DischargedBuiltin {
+        ProofEvidenceCandidate::from_trusted_kernel_input(
+            candidate_id,
+            &KernelPolicyInput::from_kernel_result(&result, KernelEvidenceOrigin::BuiltinDischarge),
+        )
+        .ok_or_else(invalid)?
+    } else {
+        ProofEvidenceCandidate::new(candidate_id, decision)
+    };
+    let selection = select_winner(
+        &ProofEvidenceSet::new(target, None, policy.clone()).with_candidates([candidate]),
+    );
+    let merged = merge_artifact_proof_selections([], [VcProofSelection::new(vc_id, selection)])
+        .map_err(|error| error.to_string())?;
+    let [selection] = <[_; 1]>::try_from(merged).map_err(|_| invalid())?;
+    let projection = project_status(ProofStatusProjectionInput::new(
+        selection,
+        policy.clone(),
+        identity,
+    ))
+    .map_err(|error| error.to_string())?;
+    Ok((projection, slice))
+}
+
 /// Projects one genuine algorithm return check with its full original dependency slice.
 pub fn project_source_algorithm_return_reflexivity_status(
     source: &mizar_resolve::resolved_ast::SurfaceResolvedArena,

@@ -25760,4 +25760,439 @@ mod term_proof_tests {
             },
         );
     }
+    #[test]
+    fn source_algorithm_state_status_matches_genuine_projection() {
+        use mizar_kernel::{checker::KernelCheckStatus, clause::VariableId};
+        use mizar_proof::{
+            policy::{
+                CandidatePolicyClass, KernelEvidenceOrigin, KernelPolicyInput, VerifierPolicy,
+            },
+            selection::{
+                CandidateSourceId, ProofEvidenceCandidate, ProofEvidenceSet, ProofWinnerClass,
+                VcProofSelection, merge_artifact_proof_selections, select_winner,
+            },
+            status::{
+                ArtifactPublicationGap, ProofStatusProjectionInput,
+                check_source_algorithm_state_transitivity as normal,
+                project_source_algorithm_state_transitivity_status as status, project_status,
+                source_algorithm_state_obligation_identity as identify,
+            },
+        };
+        use mizar_vc::{
+            dependency_slice::{
+                DependencySliceCompleteness, DependencySliceInput, try_compute_dependency_slices,
+            },
+            generator::generate_source_algorithm_postconditions as generate,
+            vc_ir::{GenerationSchemaVersion, VcSchemaVersion, VcStatus},
+        };
+
+        let original = fs::read_to_string(config().workspace_root.join(
+            "tests/miz/pass/algorithms/pass_proof_verification_algorithm_var_const_assert_001.miz",
+        ))
+        .unwrap();
+        assert_eq!(original.matches("    assert x = a;\n").count(), 1);
+        let flat = original.replacen("    assert x = a;\n", "", 1);
+        let renamed = flat
+            .replace("let a be", "let input be")
+            .replace("swapalgo(a)", "copyalgo(input)")
+            .replace("var x :=", "var local :=")
+            .replace("const c :=", "const saved :=")
+            .replace("x := c;", "local := saved;")
+            .replace("return x;", "return local;")
+            .replace("result = a", "result = input")
+            .replace(":= a;", ":= input;");
+        let variants = [
+            (flat.clone(), 0, 4),
+            (renamed, 0, 1),
+            (
+                flat.replacen("    x := c;", "    const d := a;\n    x := c;", 1),
+                0,
+                1,
+            ),
+            (flat.replacen("terminating algorithm", "algorithm", 1), 0, 1),
+            (format!(":: 世代 neutral trivia\n\n{flat}"), 0, 1),
+            (flat, 7, 1),
+        ];
+        let generation = GenerationSchemaVersion::new("mizar-vc-generation-step5c14-state-v1");
+        let schema = VcSchemaVersion::new("mizar-vc-vcset-step5c14-state-v1");
+        for (variant, (text, skip, cases)) in variants.iter().enumerate() {
+            with_source_algorithm_identity_inputs(
+                text,
+                "mizar-test-corpus",
+                "tests.miz.pass.algorithms.pass_proof_verification_algorithm_var_const_assert_001",
+                *skip,
+                |source, typed, symbols, check| {
+                    let before = format!("{source:?}{typed:?}{symbols:?}{check:?}");
+                    if variant == 5 {
+                        assert_eq!(format!("{:?}", source.source_id()), "SourceId(OpaqueId(8))");
+                    }
+                    let core = mizar_core::elaborator::lower_source_algorithms(check).unwrap();
+                    let policies = [
+                        (0, VerifierPolicy::default()),
+                        (1, VerifierPolicy::default()),
+                        (0, VerifierPolicy::development()),
+                        (0, VerifierPolicy::interactive()),
+                    ];
+                    for (ordinal, policy) in policies.into_iter().take(*cases) {
+                        let snapshot = snapshot_id(ordinal);
+                        let vcs = generate(&core, snapshot, &generation, &schema).unwrap();
+                        let [vc] = vcs.vcs() else {
+                            panic!("one genuine state VC")
+                        };
+                        assert_eq!(vc.status, VcStatus::Open);
+                        assert!(vcs.seed_accounting().iter().any(|seed| seed.seed_status
+                            == mizar_core::core_ir::ObligationSeedStatus::Deferred));
+                        let slices = try_compute_dependency_slices(DependencySliceInput {
+                            vc_set: &vcs,
+                            discharge_output: None,
+                        })
+                        .unwrap();
+                        let whole = slices.slice_for(vc.id).unwrap().clone();
+                        assert_eq!(
+                            whole.completeness(),
+                            DependencySliceCompleteness::IncompleteUncacheable
+                        );
+                        assert!(whole.requires_cache_miss());
+                        let (identity, old_slice) =
+                            identify(source, check, symbols, snapshot, vc.id).unwrap();
+                        assert_eq!(old_slice, whole);
+                        let normal_check = || {
+                            normal(
+                                source,
+                                check.typed(),
+                                symbols,
+                                snapshot,
+                                vc.id,
+                                VariableId(2),
+                                &policy,
+                            )
+                        };
+                        let (result, decision) = normal_check().unwrap();
+                        assert_eq!(result.status(), KernelCheckStatus::Accepted);
+                        assert!(!result.policy_taint());
+                        assert_eq!(decision.class, CandidatePolicyClass::DischargedBuiltin);
+                        let target = result.target_vc_fingerprint().sort_bytes();
+                        let id_text = format!(
+                            "source-algorithm-state-transitivity-v1:{}",
+                            target
+                                .iter()
+                                .map(|byte| format!("{byte:02x}"))
+                                .collect::<String>()
+                        );
+                        if variant == 0 && ordinal == 0 {
+                            assert_eq!(
+                                id_text,
+                                "source-algorithm-state-transitivity-v1:1200000020c5b0541068d905693a7b23e1c38b97b88593f8c033353d51d92e377d70142624"
+                            );
+                        }
+                        assert_ne!(id_text, identity.obligation_id());
+                        let id = CandidateSourceId::new(id_text.clone()).unwrap();
+                        let candidate = ProofEvidenceCandidate::from_trusted_kernel_input(
+                            id,
+                            &KernelPolicyInput::from_kernel_result(
+                                &result,
+                                KernelEvidenceOrigin::BuiltinDischarge,
+                            ),
+                        )
+                        .expect("actual accepted untainted Kernel input");
+                        let selected = select_winner(
+                            &ProofEvidenceSet::new(target, None, policy.clone())
+                                .with_candidates([candidate]),
+                        );
+                        let [row] = <[_; 1]>::try_from(
+                            merge_artifact_proof_selections(
+                                [],
+                                [VcProofSelection::new(vc.id, selected)],
+                            )
+                            .unwrap(),
+                        )
+                        .unwrap();
+                        let expected = project_status(ProofStatusProjectionInput::new(
+                            row,
+                            policy.clone(),
+                            identity.clone(),
+                        ))
+                        .unwrap();
+                        let facade = |policy: &VerifierPolicy| {
+                            status(
+                                source,
+                                check,
+                                symbols,
+                                snapshot,
+                                vc.id,
+                                VariableId(2),
+                                policy,
+                            )
+                        };
+                        let actual = facade(&policy).unwrap();
+                        assert_eq!(actual, (expected, whole.clone()));
+                        assert_eq!(actual, facade(&policy).unwrap());
+                        assert_eq!(
+                            actual.0.selected_class(),
+                            ProofWinnerClass::DischargedBuiltin
+                        );
+                        assert_eq!(
+                            actual.0.artifact_publication().gap(),
+                            Some(ArtifactPublicationGap::DischargedBuiltinWitnessUnsupported)
+                        );
+                        assert!(actual.0.accepted_witness_obligation_id().is_none());
+                        assert!(actual.0.trusted_used_axioms().is_none());
+                        assert!(actual.0.explanation_ref().is_none());
+                        let reuse = actual.0.reuse_metadata();
+                        assert_eq!(reuse.selected_candidate_id().unwrap().as_str(), id_text);
+                        assert_eq!(reuse.obligation_anchor(), identity.obligation_anchor());
+                        assert_eq!(
+                            reuse.obligation_fingerprint(),
+                            identity.obligation_fingerprint()
+                        );
+                        assert_eq!(reuse.vc_fingerprint(), identity.vc_fingerprint());
+                        assert_eq!(
+                            reuse.local_context_fingerprint(),
+                            identity.local_context_fingerprint()
+                        );
+                        assert_eq!(
+                            reuse.dependency_slice_fingerprint(),
+                            identity.dependency_slice_fingerprint()
+                        );
+                        assert!(reuse.trusted_used_axioms_hash().is_none());
+                        assert!(reuse.selected_proof_witness_hash().is_none());
+                        assert!(reuse.dependency_compatibility().is_none());
+                        assert!(!reuse.cache_reuse_predicate_complete());
+                        assert_eq!(
+                            (identity, old_slice),
+                            identify(source, check, symbols, snapshot, vc.id).unwrap()
+                        );
+                        assert_eq!((result, decision), normal_check().unwrap());
+                    }
+                    assert_eq!(format!("{source:?}{typed:?}{symbols:?}{check:?}"), before);
+                },
+            );
+        }
+    }
+
+    #[test]
+    fn source_algorithm_state_status_preserves_upstream_errors_and_inputs() {
+        use mizar_checker::type_checker::check_source_algorithm_types;
+        use mizar_kernel::clause::VariableId;
+        use mizar_proof::{
+            policy::VerifierPolicy,
+            status::{
+                check_source_algorithm_state_transitivity as normal,
+                project_source_algorithm_state_transitivity_status as status,
+                source_algorithm_state_obligation_identity as identify,
+            },
+        };
+        use mizar_vc::{
+            generator::generate_source_algorithm_postconditions as generate,
+            vc_ir::{GenerationSchemaVersion, VcId, VcSchemaVersion},
+        };
+        let root = config().workspace_root;
+        let original = fs::read_to_string(root.join(
+            "tests/miz/pass/algorithms/pass_proof_verification_algorithm_var_const_assert_001.miz",
+        ))
+        .unwrap();
+        assert_eq!(original.matches("    assert x = a;\n").count(), 1);
+        let flat = original.replacen("    assert x = a;\n", "", 1);
+        let disabled = VerifierPolicy::default().with_kernel_evidence_formats([]);
+        let generation = GenerationSchemaVersion::new("mizar-vc-generation-step5c14-state-v1");
+        let schema = VcSchemaVersion::new("mizar-vc-vcset-step5c14-state-v1");
+        for (kind, text) in [
+            ("absent", flat.clone()),
+            ("zero", flat.replace("    ensures result = a\n", "")),
+            ("assertion", original),
+        ] {
+            with_source_algorithm_identity_inputs(
+                &text,
+                "mizar-test-corpus",
+                "tests.miz.pass.algorithms.pass_proof_verification_algorithm_var_const_assert_001",
+                0,
+                |source, typed, symbols, check| {
+                    let before = format!("{source:?}{typed:?}{symbols:?}{check:?}");
+                    let core = mizar_core::elaborator::lower_source_algorithms(check).unwrap();
+                    let vcs = generate(&core, snapshot_id(0), &generation, &schema).unwrap();
+                    let selected = if kind == "assertion" {
+                        vcs.vcs()[0].id
+                    } else {
+                        VcId::new(99)
+                    };
+                    if kind == "zero" {
+                        assert!(vcs.vcs().is_empty());
+                    }
+                    let expected =
+                        identify(source, check, symbols, snapshot_id(0), selected).unwrap_err();
+                    let facade = |middle| {
+                        status(
+                            source,
+                            check,
+                            symbols,
+                            snapshot_id(0),
+                            selected,
+                            middle,
+                            &disabled,
+                        )
+                    };
+                    for middle in [VariableId(2), VariableId(99)] {
+                        assert_eq!(facade(middle).unwrap_err(), expected);
+                    }
+                    if kind == "absent" {
+                        let foreign = with_source_algorithm_identity_inputs(
+                            &flat.replace("swapalgo", "foreign_algorithm"),
+                            "mizar-test-corpus",
+                            "tests.miz.pass.algorithms.pass_proof_verification_algorithm_var_const_assert_001",
+                            0,
+                            |own_source, _, own_symbols, own_check| {
+                                let own_core =
+                                    mizar_core::elaborator::lower_source_algorithms(own_check)
+                                        .unwrap();
+                                let own_vcs =
+                                    generate(&own_core, snapshot_id(0), &generation, &schema)
+                                        .unwrap();
+                                let [own_vc] = own_vcs.vcs() else {
+                                    panic!("one renamed source VC")
+                                };
+                                identify(
+                                    own_source,
+                                    own_check,
+                                    own_symbols,
+                                    snapshot_id(0),
+                                    own_vc.id,
+                                )
+                                .unwrap();
+                                normal(
+                                    own_source,
+                                    own_check.typed(),
+                                    own_symbols,
+                                    snapshot_id(0),
+                                    own_vc.id,
+                                    VariableId(2),
+                                    &VerifierPolicy::default(),
+                                )
+                                .unwrap();
+                                own_symbols.clone()
+                            },
+                        );
+                        let (_, _, augmented) =
+                            super::super::tests::source_registration_owner_inputs(
+                                &format!("{flat}\n{flat}"),
+                                "mizar-test-corpus",
+                                "tests.miz.pass.algorithms.pass_proof_verification_algorithm_var_const_assert_001",
+                                0,
+                            );
+                        for other in [&foreign, augmented.env()] {
+                            let expected =
+                                check_source_algorithm_types(source, check.typed(), other)
+                                    .unwrap_err();
+                            assert_eq!(
+                                status(
+                                    source,
+                                    check,
+                                    other,
+                                    snapshot_id(0),
+                                    selected,
+                                    VariableId(99),
+                                    &disabled
+                                )
+                                .unwrap_err(),
+                                expected
+                            );
+                        }
+                    }
+                    assert_eq!(format!("{source:?}{typed:?}{symbols:?}{check:?}"), before);
+                },
+            );
+        }
+        let return_source = fs::read_to_string(root.join(
+            "tests/miz/pass/algorithms/pass_proof_verification_algorithm_ensures_return_001.miz",
+        ))
+        .unwrap();
+        let two_returns = return_source
+            .replace("    ensures result = a\n", "")
+            .replace("return a;", "return a;\n    return a;");
+        with_source_algorithm_identity_inputs(
+            &two_returns,
+            "mizar-test-corpus",
+            "tests.miz.pass.algorithms.pass_proof_verification_algorithm_var_const_assert_001",
+            0,
+            |source, typed, symbols, check| {
+                let before = format!("{source:?}{typed:?}{symbols:?}{check:?}");
+                let core = mizar_core::elaborator::lower_source_algorithms(check).unwrap();
+                let expected = generate(&core, snapshot_id(0), &generation, &schema).unwrap_err();
+                assert_eq!(
+                    identify(source, check, symbols, snapshot_id(0), VcId::new(99)).unwrap_err(),
+                    expected
+                );
+                assert_eq!(
+                    status(
+                        source,
+                        check,
+                        symbols,
+                        snapshot_id(0),
+                        VcId::new(99),
+                        VariableId(99),
+                        &disabled
+                    )
+                    .unwrap_err(),
+                    expected
+                );
+                assert_eq!(format!("{source:?}{typed:?}{symbols:?}{check:?}"), before);
+            },
+        );
+        with_source_algorithm_identity_inputs(
+            &flat,
+            "mizar-test-corpus",
+            "tests.miz.pass.algorithms.pass_proof_verification_algorithm_var_const_assert_001",
+            0,
+            |source, typed, symbols, check| {
+                let before = format!("{source:?}{typed:?}{symbols:?}{check:?}");
+                let core = mizar_core::elaborator::lower_source_algorithms(check).unwrap();
+                let vcs = generate(&core, snapshot_id(0), &generation, &schema).unwrap();
+                let [vc] = vcs.vcs() else {
+                    panic!("one genuine state VC")
+                };
+                let prior = identify(source, check, symbols, snapshot_id(0), vc.id).unwrap();
+                let facade = |middle, policy: &VerifierPolicy| {
+                    status(
+                        source,
+                        check,
+                        symbols,
+                        snapshot_id(0),
+                        vc.id,
+                        middle,
+                        policy,
+                    )
+                };
+                let normal_check = |middle, policy: &VerifierPolicy| {
+                    normal(
+                        source,
+                        check.typed(),
+                        symbols,
+                        snapshot_id(0),
+                        vc.id,
+                        middle,
+                        policy,
+                    )
+                };
+                let prior_result = normal_check(VariableId(2), &VerifierPolicy::default()).unwrap();
+                let success = facade(VariableId(2), &VerifierPolicy::default()).unwrap();
+                let expected = normal_check(VariableId(99), &disabled).unwrap_err();
+                assert_eq!(facade(VariableId(99), &disabled).unwrap_err(), expected);
+                let expected = normal_check(VariableId(2), &disabled).unwrap_err();
+                assert_eq!(expected, "algorithm.proof.kernel_policy_rejected");
+                assert_eq!(facade(VariableId(2), &disabled).unwrap_err(), expected);
+                assert_eq!(
+                    normal_check(VariableId(2), &VerifierPolicy::default()).unwrap(),
+                    prior_result
+                );
+                assert_eq!(
+                    identify(source, check, symbols, snapshot_id(0), vc.id).unwrap(),
+                    prior
+                );
+                assert_eq!(
+                    facade(VariableId(2), &VerifierPolicy::default()).unwrap(),
+                    success
+                );
+                assert_eq!(format!("{source:?}{typed:?}{symbols:?}{check:?}"), before);
+            },
+        );
+    }
 }

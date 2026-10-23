@@ -498,6 +498,7 @@ layer consumes both; one alignment task is owned here.
 
 57. **[Fresh source state transitivity](../../task_contracts/en/PROOF-SOURCE-ALGORITHM-STATE-TRANSITIVITY.md).** [x]
 58. **[Original source state identity](../../task_contracts/en/PROOF-SOURCE-ALGORITHM-STATE-IDENTITY.md).** [x]
+59. **[Source algorithm state transitivity status](../../task_contracts/en/PROOF-SOURCE-ALGORITHM-STATE-STATUS.md).** [x]
 
 ## Recommended Verification
 
