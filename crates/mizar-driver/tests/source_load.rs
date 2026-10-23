@@ -29772,11 +29772,16 @@ fn scheduled_theorem_resolver_edits_match_independent_clean_modules() {
         .register_source_theorem_type_checking()
         .register_source_theorem_registration_resolution()
         .register_source_theorem_overload_resolution()
-        .register_source_theorem_elaboration();
+        .register_source_theorem_elaboration()
+        .register_source_theorem_algorithm_preparation();
     let mut driver = CompilerDriver::new(builder.build().unwrap());
+    #[expect(
+        clippy::type_complexity,
+        reason = "retain genuine Core and preparation handles with their source session"
+    )]
     let mut previous: Option<(
         std::sync::Arc<PhaseOutputPublisher>,
-        AnyPhaseOutputRef,
+        Vec<AnyPhaseOutputRef>,
         mizar_driver::request::BuildSession,
         [Hash; 2],
     )> = None;
@@ -29848,6 +29853,7 @@ fn scheduled_theorem_resolver_edits_match_independent_clean_modules() {
                     ("RegistrationResolution", "SourceTheoremRegistrationClosure"),
                     ("OverloadResolution", "SourceTheoremMetadata"),
                     ("Elaboration", "SourceTheoremCore"),
+                    ("AlgorithmPreparation", "SourceTheoremPreparation"),
                 ] {
                     current.allow_work_unit(AllowedWorkUnit::new(
                         IrPipelinePhase::new(phase),
@@ -29867,7 +29873,8 @@ fn scheduled_theorem_resolver_edits_match_independent_clean_modules() {
             .register_source_theorem_type_checking()
             .register_source_theorem_registration_resolution()
             .register_source_theorem_overload_resolution()
-            .register_source_theorem_elaboration();
+            .register_source_theorem_elaboration()
+            .register_source_theorem_algorithm_preparation();
         let mut clean_driver = CompilerDriver::new(clean_builder.build().unwrap())
             .with_output_publisher(clean_owner.clone());
         let (_, mut clean_input) = fixture.submit_request(vec![], vec![]);
@@ -29897,7 +29904,7 @@ fn scheduled_theorem_resolver_edits_match_independent_clean_modules() {
                 submission
                     .missing_services
                     .iter()
-                    .any(|gap| gap.phase == PipelinePhase::AlgorithmPreparation)
+                    .any(|gap| gap.phase == PipelinePhase::VcGenerate)
             );
             assert!(!submission.missing_services.iter().any(|gap| matches!(
                 gap.phase,
@@ -29907,10 +29914,11 @@ fn scheduled_theorem_resolver_edits_match_independent_clean_modules() {
                     | PipelinePhase::RegistrationResolution
                     | PipelinePhase::OverloadResolution
                     | PipelinePhase::Elaboration
+                    | PipelinePhase::AlgorithmPreparation
             )));
         }
         assert_eq!(actual.missing_services, clean.missing_services);
-        if let Some((old_owner, old_output, old_session, old_hashes)) = previous.take() {
+        if let Some((old_owner, old_outputs, old_session, old_hashes)) = previous.take() {
             assert_ne!(hashes[0], old_hashes[0]);
             assert_eq!(hashes[1], old_hashes[1]);
             let old_snapshot = old_session.captured().snapshot().id;
@@ -29918,12 +29926,14 @@ fn scheduled_theorem_resolver_edits_match_independent_clean_modules() {
             old_owner
                 .replace_current_snapshot(old_snapshot, snapshot)
                 .unwrap();
-            for target in [old_snapshot, snapshot] {
-                assert!(
-                    old_owner
-                        .validate_current_output(target, &old_output)
-                        .is_err()
-                );
+            for old_output in &old_outputs {
+                for target in [old_snapshot, snapshot] {
+                    assert!(
+                        old_owner
+                            .validate_current_output(target, old_output)
+                            .is_err()
+                    );
+                }
             }
             assert_eq!(
                 driver
@@ -29946,6 +29956,7 @@ fn scheduled_theorem_resolver_edits_match_independent_clean_modules() {
                 .find(|v| v.module_path.as_str() == module)
                 .unwrap();
             let mut parent: Option<AnyPhaseOutputRef> = None;
+            let mut stale_outputs = Vec::new();
             for phase in [
                 PipelinePhase::SourceLoad,
                 PipelinePhase::Frontend,
@@ -29955,6 +29966,7 @@ fn scheduled_theorem_resolver_edits_match_independent_clean_modules() {
                 PipelinePhase::RegistrationResolution,
                 PipelinePhase::OverloadResolution,
                 PipelinePhase::Elaboration,
+                PipelinePhase::AlgorithmPreparation,
             ] {
                 let task = graph.tasks().iter().find(|task| {
                     task.phases.contains(&phase) && matches!(&task.unit, WorkUnit::Module { module: id } if id.path.as_str() == module)
@@ -29972,8 +29984,13 @@ fn scheduled_theorem_resolver_edits_match_independent_clean_modules() {
                             | PipelinePhase::RegistrationResolution
                             | PipelinePhase::OverloadResolution
                             | PipelinePhase::Elaboration
+                            | PipelinePhase::AlgorithmPreparation
                     ) {
-                        TaskState::Blocked
+                        if module == "main" && stage >= 3 {
+                            TaskState::Completed
+                        } else {
+                            TaskState::Blocked
+                        }
                     } else {
                         TaskState::Completed
                     }
@@ -29988,8 +30005,15 @@ fn scheduled_theorem_resolver_edits_match_independent_clean_modules() {
                             | PipelinePhase::RegistrationResolution
                             | PipelinePhase::OverloadResolution
                             | PipelinePhase::Elaboration
+                            | PipelinePhase::AlgorithmPreparation
                     ) {
-                        if module == "main" && stage > 0 { 5 } else { 2 }
+                        if module == "main" && stage >= 3 {
+                            6
+                        } else if module == "main" && stage > 0 {
+                            5
+                        } else {
+                            2
+                        }
                     } else {
                         1
                     }
@@ -29999,6 +30023,7 @@ fn scheduled_theorem_resolver_edits_match_independent_clean_modules() {
                     PipelinePhase::RegistrationResolution => 2,
                     PipelinePhase::OverloadResolution => 3,
                     PipelinePhase::Elaboration => 4,
+                    PipelinePhase::AlgorithmPreparation => 5,
                     _ => 0,
                 };
                 let result = &results[result_index];
@@ -30023,6 +30048,8 @@ fn scheduled_theorem_resolver_edits_match_independent_clean_modules() {
                     ]
                 } else if phase == PipelinePhase::Elaboration {
                     vec![results[3].output_refs[0].clone()]
+                } else if phase == PipelinePhase::AlgorithmPreparation {
+                    vec![results[4].output_refs[0].clone()]
                 } else {
                     parent.iter().cloned().collect()
                 };
@@ -30095,6 +30122,16 @@ fn scheduled_theorem_resolver_edits_match_independent_clean_modules() {
                         query_input.identities().parent_output_hashes(),
                         expected_parent_hashes
                     );
+                } else if phase == PipelinePhase::AlgorithmPreparation {
+                    assert_eq!(query_input.parent_outputs().len(), 1);
+                    assert_eq!(
+                        query_input.parent_outputs()[0].as_output_ref(),
+                        &results[4].output_refs[0]
+                    );
+                    assert_eq!(
+                        query_input.identities().parent_output_hashes(),
+                        expected_parent_hashes
+                    );
                 }
                 if matches!(
                     phase,
@@ -30102,6 +30139,7 @@ fn scheduled_theorem_resolver_edits_match_independent_clean_modules() {
                         | PipelinePhase::RegistrationResolution
                         | PipelinePhase::OverloadResolution
                         | PipelinePhase::Elaboration
+                        | PipelinePhase::AlgorithmPreparation
                 ) {
                     let probe = driver
                         .registry()
@@ -30339,6 +30377,54 @@ fn scheduled_theorem_resolver_edits_match_independent_clean_modules() {
                     assert!(core.obligation_seeds().iter().all(|(_, seed)| {
                         seed.status == mizar_core::core_ir::ObligationSeedStatus::Active
                     }));
+                } else if phase == PipelinePhase::AlgorithmPreparation {
+                    assert_eq!(
+                        output.phase(),
+                        &IrPipelinePhase::new("AlgorithmPreparation")
+                    );
+                    assert_eq!(
+                        output.output_kind(),
+                        &OutputKind::new("SourceTheoremPreparation")
+                    );
+                    let [preparation, clean_preparation] =
+                        [(&owner, output), (&clean_owner, expected)].map(|(current, output)| {
+                            let handle = current
+                                .storage()
+                                .typed_handle::<(
+                                    mizar_core::control_flow::ControlFlowOutput,
+                                    mizar_core::control_flow::ObligationSeedHandoff,
+                                )>(output, output.output_kind())
+                                .unwrap();
+                            current.storage().get(&handle).unwrap()
+                        });
+                    assert_eq!(preparation, clean_preparation);
+                    assert!(preparation.0.flows.is_empty());
+                    assert!(preparation.0.flow_map.is_empty());
+                    let core_output = &results[4].output_refs[0];
+                    let core_handle = owner
+                        .storage()
+                        .typed_handle::<mizar_core::core_ir::CoreIr>(
+                            core_output,
+                            core_output.output_kind(),
+                        )
+                        .unwrap();
+                    let core = owner.storage().get(&core_handle).unwrap();
+                    assert_eq!(preparation.1.entries.len(), core.obligation_seeds().len());
+                    assert!(!preparation.1.entries.is_empty());
+                    for (id, entry) in preparation.1.entries.iter() {
+                        let mizar_core::control_flow::ObligationHandoffOrigin::ExistingCore {
+                            seed,
+                        } = entry.origin
+                        else {
+                            panic!("existing Core seed")
+                        };
+                        assert_eq!(&entry.seed, core.obligation_seeds().get(seed).unwrap());
+                        assert_eq!(
+                            preparation.1.source_map.get(&id),
+                            Some(&core.source_map().obligation_sources[&seed])
+                        );
+                        assert!(entry.flow_site.is_none());
+                    }
                 } else {
                     let [typed, expected] = [&owner, &clean_owner].map(|current| {
                         let handle = current
@@ -30371,15 +30457,67 @@ fn scheduled_theorem_resolver_edits_match_independent_clean_modules() {
                         assert!(node.links.type_entry.is_some());
                     }
                 }
+                if matches!(
+                    phase,
+                    PipelinePhase::Elaboration | PipelinePhase::AlgorithmPreparation
+                ) {
+                    stale_outputs.push(output.clone());
+                }
                 parent = Some(output.clone());
             }
+            if module == "main" && stage >= 3 {
+                let check = graph
+                    .tasks()
+                    .iter()
+                    .find(|candidate| {
+                        candidate.kind == TaskKind::CheckAndElaborate
+                            && matches!(&candidate.unit, WorkUnit::Module { module } if module.path.as_str() == "main")
+                    })
+                    .unwrap();
+                let vc = graph
+                    .tasks()
+                    .iter()
+                    .find(|candidate| {
+                        candidate.kind == TaskKind::VcGenerate
+                            && matches!(&candidate.unit, WorkUnit::Module { module } if module.path.as_str() == "main")
+                    })
+                    .unwrap();
+                assert_eq!(vc.phases, [PipelinePhase::VcGenerate]);
+                assert!(vc.dependencies.contains(&check.id));
+                assert_eq!(
+                    run.task_states
+                        .iter()
+                        .find(|state| state.task_id == vc.id)
+                        .unwrap()
+                        .state,
+                    TaskState::Blocked
+                );
+                assert!(!run.phase_results.contains_key(&vc.id));
+                let downstream = graph
+                    .tasks()
+                    .iter()
+                    .filter(|candidate| candidate.dependencies.contains(&vc.id))
+                    .collect::<Vec<_>>();
+                assert!(!downstream.is_empty());
+                for task in downstream {
+                    assert_eq!(
+                        run.task_states
+                            .iter()
+                            .find(|state| state.task_id == task.id)
+                            .unwrap()
+                            .state,
+                        TaskState::Blocked
+                    );
+                    assert!(!run.phase_results.contains_key(&task.id));
+                }
+            }
             if module == "main" {
-                previous = Some((
-                    owner.clone(),
-                    parent.unwrap(),
-                    actual.session.clone(),
-                    hashes,
-                ));
+                let stale_outputs = if stale_outputs.is_empty() {
+                    vec![parent.unwrap()]
+                } else {
+                    stale_outputs
+                };
+                previous = Some((owner.clone(), stale_outputs, actual.session.clone(), hashes));
             }
         }
     }
