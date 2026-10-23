@@ -29764,7 +29764,8 @@ fn scheduled_theorem_resolver_edits_match_independent_clean_modules() {
     builder
         .register_source_load()
         .register_frontend(vec![])
-        .register_source_theorem_module_resolver();
+        .register_source_theorem_module_resolver()
+        .register_source_theorem_signature_collection();
     let mut driver = CompilerDriver::new(builder.build().unwrap());
     let mut previous: Option<(
         std::sync::Arc<PhaseOutputPublisher>,
@@ -29826,6 +29827,7 @@ fn scheduled_theorem_resolver_edits_match_independent_clean_modules() {
                     ("SourceLoad", "SourceUnit"),
                     ("Frontend", "FrontendOutput"),
                     ("ModuleResolve", "SourceTheoremModuleCandidates"),
+                    ("SignatureCollection", "SourceTheoremModuleSummary"),
                 ] {
                     current.allow_work_unit(AllowedWorkUnit::new(
                         IrPipelinePhase::new(phase),
@@ -29840,7 +29842,8 @@ fn scheduled_theorem_resolver_edits_match_independent_clean_modules() {
         clean_builder
             .register_source_load()
             .register_frontend(vec![])
-            .register_source_theorem_module_resolver();
+            .register_source_theorem_module_resolver()
+            .register_source_theorem_signature_collection();
         let mut clean_driver = CompilerDriver::new(clean_builder.build().unwrap())
             .with_output_publisher(clean_owner.clone());
         let (_, mut clean_input) = fixture.submit_request(vec![], vec![]);
@@ -29870,14 +29873,12 @@ fn scheduled_theorem_resolver_edits_match_independent_clean_modules() {
                 submission
                     .missing_services
                     .iter()
-                    .any(|gap| gap.phase == PipelinePhase::SignatureCollection)
+                    .any(|gap| gap.phase == PipelinePhase::TypeChecking)
             );
-            assert!(
-                !submission
-                    .missing_services
-                    .iter()
-                    .any(|gap| gap.phase == PipelinePhase::ModuleResolve)
-            );
+            assert!(!submission.missing_services.iter().any(|gap| matches!(
+                gap.phase,
+                PipelinePhase::ModuleResolve | PipelinePhase::SignatureCollection
+            )));
         }
         assert_eq!(actual.missing_services, clean.missing_services);
         if let Some((old_owner, old_output, old_session, old_hashes)) = previous.take() {
@@ -29920,9 +29921,10 @@ fn scheduled_theorem_resolver_edits_match_independent_clean_modules() {
                 PipelinePhase::SourceLoad,
                 PipelinePhase::Frontend,
                 PipelinePhase::ModuleResolve,
+                PipelinePhase::SignatureCollection,
             ] {
                 let task = graph.tasks().iter().find(|task| {
-                    task.phases == [phase] && matches!(&task.unit, WorkUnit::Module { module: id } if id.path.as_str() == module)
+                    task.phases.first() == Some(&phase) && matches!(&task.unit, WorkUnit::Module { module: id } if id.path.as_str() == module)
                 }).unwrap();
                 assert_eq!(
                     run.task_states
@@ -29930,7 +29932,11 @@ fn scheduled_theorem_resolver_edits_match_independent_clean_modules() {
                         .find(|state| state.task_id == task.id)
                         .unwrap()
                         .state,
-                    TaskState::Completed
+                    if phase == PipelinePhase::SignatureCollection {
+                        TaskState::Blocked
+                    } else {
+                        TaskState::Completed
+                    }
                 );
                 let [result] = run.phase_results[&task.id].as_slice() else {
                     panic!("one real phase result")
@@ -29977,7 +29983,7 @@ fn scheduled_theorem_resolver_edits_match_independent_clean_modules() {
                     assert_eq!(frontend, expected);
                     assert_eq!(frontend.source.source_id, version.source_id);
                     assert_eq!(frontend.source.module_path, version.module_path);
-                } else {
+                } else if phase == PipelinePhase::ModuleResolve {
                     let [pair, expected] = [&owner, &clean_owner].map(|current| {
                         let typed = current
                             .storage()
@@ -29997,6 +30003,21 @@ fn scheduled_theorem_resolver_edits_match_independent_clean_modules() {
                             version.module_path.clone()
                         )
                     );
+                } else {
+                    let [summary, expected] = [&owner, &clean_owner].map(|current| {
+                        let typed = current
+                            .storage()
+                            .typed_handle::<mizar_artifact::module_summary::ModuleSummary>(
+                                output,
+                                output.output_kind(),
+                            )
+                            .unwrap();
+                        current.storage().get(&typed).unwrap()
+                    });
+                    assert_eq!(summary, expected);
+                    assert_eq!(summary.source_hash, version.source_hash);
+                    assert_eq!(summary.module.package_id, version.package_id.as_str());
+                    assert_eq!(summary.module.module_path, version.module_path.as_str());
                 }
                 let parents = parent
                     .iter()
