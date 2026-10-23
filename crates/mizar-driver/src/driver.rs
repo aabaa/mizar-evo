@@ -946,8 +946,8 @@ impl CompilerDriver {
         let built_in_prefix = {
             use crate::{
                 frontend_adapter::{
-                    FrontendService, SourceLoadService, SourceTheoremModuleResolverService,
-                    SourceTheoremOverloadResolutionService,
+                    FrontendService, SourceLoadService, SourceTheoremElaborationService,
+                    SourceTheoremModuleResolverService, SourceTheoremOverloadResolutionService,
                     SourceTheoremRegistrationResolutionService,
                     SourceTheoremSignatureCollectionService, SourceTheoremTypeCheckingService,
                 },
@@ -958,7 +958,13 @@ impl CompilerDriver {
                         || ((self.registry.descriptors().len() == 4
                             || ((self.registry.descriptors().len() == 5
                                 || ((self.registry.descriptors().len() == 6
-                                    || (self.registry.descriptors().len() == 7
+                                    || ((self.registry.descriptors().len() == 7
+                                        || (self.registry.descriptors().len() == 8
+                                            && self.registry.descriptor_for_phase(PipelinePhase::Elaboration).ok()
+                                                == Some(&SourceTheoremElaborationService.phase())
+                                            && self.registry.service_for_phase(PipelinePhase::Elaboration).is_ok_and(|service| {
+                                                std::any::Any::type_id(service) == std::any::TypeId::of::<SourceTheoremElaborationService>()
+                                            })))
                                         && self.registry.descriptor_for_phase(PipelinePhase::OverloadResolution).ok()
                                             == Some(&SourceTheoremOverloadResolutionService.phase())
                                         && self.registry.service_for_phase(PipelinePhase::OverloadResolution).is_ok_and(|service| {

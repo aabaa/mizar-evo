@@ -620,6 +620,8 @@ the owning producers when the paired tasks land.
 
 81. **[Native theorem Core metadata publication](../../task_contracts/en/DRIVER-NATIVE-THEOREM-CORE-METADATA-PUBLICATION.md).** [x]
 
+82. **[Scheduled theorem elaboration](../../task_contracts/en/DRIVER-SCHEDULED-THEOREM-ELABORATION.md).** [x]
+
 ## Recommended Verification
 
 Run after each task:

@@ -153,6 +153,7 @@ fn dispatch_registry_phase(
     let mut type_prefix = false;
     let mut registration_prefix = false;
     let mut overload_prefix = false;
+    let mut elaboration_prefix = false;
     let dispatch_input = match phase_inputs {
         Some(provider) => {
             match provider
@@ -187,8 +188,8 @@ fn dispatch_registry_phase(
         None => {
             use crate::{
                 frontend_adapter::{
-                    FrontendService, SourceLoadService, SourceTheoremModuleResolverService,
-                    SourceTheoremOverloadResolutionService,
+                    FrontendService, SourceLoadService, SourceTheoremElaborationService,
+                    SourceTheoremModuleResolverService, SourceTheoremOverloadResolutionService,
                     SourceTheoremRegistrationResolutionService,
                     SourceTheoremSignatureCollectionService, SourceTheoremTypeCheckingService,
                 },
@@ -279,8 +280,7 @@ fn dispatch_registry_phase(
                     registry.descriptor_for_phase(PipelinePhase::OverloadResolution),
                     Err(PhaseRegistryError::MissingPhaseService { .. })
                 );
-            overload_prefix = registration_profile
-                && registry.descriptors().len() == 7
+            let overload_profile = registration_profile
                 && registry
                     .descriptor_for_phase(PipelinePhase::OverloadResolution)
                     .ok()
@@ -290,15 +290,34 @@ fn dispatch_registry_phase(
                     .is_ok_and(|service| {
                         std::any::Any::type_id(service)
                             == std::any::TypeId::of::<SourceTheoremOverloadResolutionService>()
-                    })
+                    });
+            overload_prefix = overload_profile
+                && registry.descriptors().len() == 7
                 && matches!(
                     registry.descriptor_for_phase(PipelinePhase::Elaboration),
+                    Err(PhaseRegistryError::MissingPhaseService { .. })
+                );
+            elaboration_prefix = overload_profile
+                && registry.descriptors().len() == 8
+                && registry
+                    .descriptor_for_phase(PipelinePhase::Elaboration)
+                    .ok()
+                    == Some(&SourceTheoremElaborationService.phase())
+                && registry
+                    .service_for_phase(PipelinePhase::Elaboration)
+                    .is_ok_and(|service| {
+                        std::any::Any::type_id(service)
+                            == std::any::TypeId::of::<SourceTheoremElaborationService>()
+                    })
+                && matches!(
+                    registry.descriptor_for_phase(PipelinePhase::AlgorithmPreparation),
                     Err(PhaseRegistryError::MissingPhaseService { .. })
                 );
             if !signature_prefix
                 && !type_prefix
                 && !registration_prefix
                 && !overload_prefix
+                && !elaboration_prefix
                 && task.task.phases.iter().any(|phase| {
                     matches!(
                         registry.descriptor_for_phase(*phase),
@@ -343,7 +362,8 @@ fn dispatch_registry_phase(
                     _ if signature_prefix
                         || type_prefix
                         || registration_prefix
-                        || overload_prefix =>
+                        || overload_prefix
+                        || elaboration_prefix =>
                     {
                         SourceTheoremSignatureCollectionService.phase()
                     }
@@ -386,11 +406,13 @@ fn dispatch_registry_phase(
                     || type_prefix
                     || registration_prefix
                     || overload_prefix
+                    || elaboration_prefix
                 {
                     let (parent_phase, parent_kind) = if signature_prefix
                         || type_prefix
                         || registration_prefix
                         || overload_prefix
+                        || elaboration_prefix
                     {
                         (
                             IrPhase::new("ModuleResolve"),
@@ -518,11 +540,13 @@ fn dispatch_registry_phase(
         if !dispatched_descriptors.insert(descriptor_key) {
             continue;
         }
-        let input = if ((type_prefix || registration_prefix || overload_prefix)
-            && *phase == PipelinePhase::TypeChecking)
-            || ((registration_prefix || overload_prefix)
+        let input = if (*phase == PipelinePhase::TypeChecking
+            && (type_prefix || registration_prefix || overload_prefix || elaboration_prefix))
+            || ((registration_prefix || overload_prefix || elaboration_prefix)
                 && *phase == PipelinePhase::RegistrationResolution)
-            || (overload_prefix && *phase == PipelinePhase::OverloadResolution)
+            || ((overload_prefix || elaboration_prefix)
+                && *phase == PipelinePhase::OverloadResolution)
+            || (elaboration_prefix && *phase == PipelinePhase::Elaboration)
         {
             let bundle = (|| {
                 use mizar_ir::{
@@ -538,11 +562,18 @@ fn dispatch_registry_phase(
                         ("SignatureCollection", "SourceTheoremModuleSummary"),
                         ("TypeChecking", "SourceTheoremTypedAst"),
                     ]
+                } else if *phase == PipelinePhase::OverloadResolution {
+                    &[
+                        ("SignatureCollection", "SourceTheoremModuleSummary"),
+                        ("TypeChecking", "SourceTheoremTypedAst"),
+                        ("RegistrationResolution", "SourceTheoremRegistrationClosure"),
+                    ]
                 } else {
                     &[
                         ("SignatureCollection", "SourceTheoremModuleSummary"),
                         ("TypeChecking", "SourceTheoremTypedAst"),
                         ("RegistrationResolution", "SourceTheoremRegistrationClosure"),
+                        ("OverloadResolution", "SourceTheoremMetadata"),
                     ]
                 };
                 if results.len() != expected.len() {
@@ -581,6 +612,20 @@ fn dispatch_registry_phase(
                         return None;
                     }
                     vec![typed, registration]
+                } else if *phase == PipelinePhase::Elaboration {
+                    let [_, typed, registration, metadata] = results.as_slice() else {
+                        return None;
+                    };
+                    let typed = &typed.output_refs[0];
+                    let registration = &registration.output_refs[0];
+                    let metadata = &metadata.output_refs[0];
+                    if metadata.lineage().parents.len() != 2
+                        || !metadata.lineage().parents.contains(&typed.output())
+                        || !metadata.lineage().parents.contains(&registration.output())
+                    {
+                        return None;
+                    }
+                    vec![metadata]
                 } else {
                     let [parent] = results.last()?.output_refs.as_slice() else {
                         return None;
