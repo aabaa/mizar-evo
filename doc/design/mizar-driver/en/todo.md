@@ -606,6 +606,8 @@ the owning producers when the paired tasks land.
 
 74. **[Native theorem registration closure publication](../../task_contracts/en/DRIVER-NATIVE-THEOREM-REGISTRATION-CLOSURE-PUBLICATION.md).** [x]
 
+75. **[Scheduled theorem registration resolution](../../task_contracts/en/DRIVER-SCHEDULED-THEOREM-REGISTRATION-RESOLUTION.md).** [x]
+
 ## Recommended Verification
 
 Run after each task:

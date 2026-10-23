@@ -151,6 +151,7 @@ fn dispatch_registry_phase(
     }
 
     let mut type_prefix = false;
+    let mut registration_prefix = false;
     let dispatch_input = match phase_inputs {
         Some(provider) => {
             match provider
@@ -186,6 +187,7 @@ fn dispatch_registry_phase(
             use crate::{
                 frontend_adapter::{
                     FrontendService, SourceLoadService, SourceTheoremModuleResolverService,
+                    SourceTheoremRegistrationResolutionService,
                     SourceTheoremSignatureCollectionService, SourceTheoremTypeCheckingService,
                 },
                 registry::PhaseService,
@@ -216,8 +218,7 @@ fn dispatch_registry_phase(
                     registry.descriptor_for_phase(PipelinePhase::TypeChecking),
                     Err(PhaseRegistryError::MissingPhaseService { .. })
                 );
-            type_prefix = check_and_elaborate
-                && registry.descriptors().len() == 5
+            let typed_profile = check_and_elaborate
                 && registry
                     .descriptor_for_phase(PipelinePhase::SourceLoad)
                     .ok()
@@ -252,13 +253,32 @@ fn dispatch_registry_phase(
                         && registry
                             .service_for_phase(phase)
                             .is_ok_and(|service| std::any::Any::type_id(service) == concrete)
-                })
+                });
+            type_prefix = typed_profile
+                && registry.descriptors().len() == 5
                 && matches!(
                     registry.descriptor_for_phase(PipelinePhase::RegistrationResolution),
                     Err(PhaseRegistryError::MissingPhaseService { .. })
                 );
+            registration_prefix = typed_profile
+                && registry.descriptors().len() == 6
+                && registry
+                    .descriptor_for_phase(PipelinePhase::RegistrationResolution)
+                    .ok()
+                    == Some(&SourceTheoremRegistrationResolutionService.phase())
+                && registry
+                    .service_for_phase(PipelinePhase::RegistrationResolution)
+                    .is_ok_and(|service| {
+                        std::any::Any::type_id(service)
+                            == std::any::TypeId::of::<SourceTheoremRegistrationResolutionService>()
+                    })
+                && matches!(
+                    registry.descriptor_for_phase(PipelinePhase::OverloadResolution),
+                    Err(PhaseRegistryError::MissingPhaseService { .. })
+                );
             if !signature_prefix
                 && !type_prefix
+                && !registration_prefix
                 && task.task.phases.iter().any(|phase| {
                     matches!(
                         registry.descriptor_for_phase(*phase),
@@ -300,7 +320,7 @@ fn dispatch_registry_phase(
                         }
                         SourceTheoremModuleResolverService.phase()
                     }
-                    _ if signature_prefix || type_prefix => {
+                    _ if signature_prefix || type_prefix || registration_prefix => {
                         SourceTheoremSignatureCollectionService.phase()
                     }
                     _ => return None,
@@ -340,15 +360,17 @@ fn dispatch_registry_phase(
                 let parents = if task.task.phases == [PipelinePhase::ModuleResolve]
                     || signature_prefix
                     || type_prefix
+                    || registration_prefix
                 {
-                    let (parent_phase, parent_kind) = if signature_prefix || type_prefix {
-                        (
-                            IrPhase::new("ModuleResolve"),
-                            OutputKind::new("SourceTheoremModuleCandidates"),
-                        )
-                    } else {
-                        (IrPhase::new("Frontend"), OutputKind::new("FrontendOutput"))
-                    };
+                    let (parent_phase, parent_kind) =
+                        if signature_prefix || type_prefix || registration_prefix {
+                            (
+                                IrPhase::new("ModuleResolve"),
+                                OutputKind::new("SourceTheoremModuleCandidates"),
+                            )
+                        } else {
+                            (IrPhase::new("Frontend"), OutputKind::new("FrontendOutput"))
+                        };
                     let mut parents = task.task.dependencies.iter().filter_map(|id| {
                         let [result] = phase_results.get(id)?.as_slice() else {
                             return None;
@@ -468,19 +490,28 @@ fn dispatch_registry_phase(
         if !dispatched_descriptors.insert(descriptor_key) {
             continue;
         }
-        let input = if type_prefix && *phase == PipelinePhase::TypeChecking {
+        let input = if ((type_prefix || registration_prefix)
+            && *phase == PipelinePhase::TypeChecking)
+            || (registration_prefix && *phase == PipelinePhase::RegistrationResolution)
+        {
             let bundle = (|| {
                 use mizar_ir::{
                     dispatch_input::{PhaseDispatchInputBundle, SealedParentOutputHandle},
                     identity::{OutputKind, PipelinePhase as IrPhase, WorkUnit as IrWorkUnit},
                     storage::SchemaVersion,
                 };
-                let [result] = phase_results.get(&task.task.id)?.as_slice() else {
-                    return None;
+                let results = phase_results.get(&task.task.id)?;
+                let expected: &[(&str, &str)] = if *phase == PipelinePhase::TypeChecking {
+                    &[("SignatureCollection", "SourceTheoremModuleSummary")]
+                } else {
+                    &[
+                        ("SignatureCollection", "SourceTheoremModuleSummary"),
+                        ("TypeChecking", "SourceTheoremTypedAst"),
+                    ]
                 };
-                let [parent] = result.output_refs.as_slice() else {
+                if results.len() != expected.len() {
                     return None;
-                };
+                }
                 let mizar_build::task_graph::WorkUnit::Module { module } = &task.task.unit else {
                     return None;
                 };
@@ -489,16 +520,24 @@ fn dispatch_registry_phase(
                     module.package.as_str(),
                     module.path.as_str()
                 ));
-                if result.status != PhaseStatus::Complete
-                    || !result.diagnostics.is_empty()
-                    || parent.snapshot() != task.snapshot
-                    || parent.work_unit() != &unit
-                    || parent.phase() != &IrPhase::new("SignatureCollection")
-                    || parent.output_kind() != &OutputKind::new("SourceTheoremModuleSummary")
-                    || parent.schema_version() != SchemaVersion::new(1)
-                {
-                    return None;
+                for (result, (phase, kind)) in results.iter().zip(expected) {
+                    let [parent] = result.output_refs.as_slice() else {
+                        return None;
+                    };
+                    if result.status != PhaseStatus::Complete
+                        || !result.diagnostics.is_empty()
+                        || parent.snapshot() != task.snapshot
+                        || parent.work_unit() != &unit
+                        || parent.phase() != &IrPhase::new(*phase)
+                        || parent.output_kind() != &OutputKind::new(*kind)
+                        || parent.schema_version() != SchemaVersion::new(1)
+                    {
+                        return None;
+                    }
                 }
+                let [parent] = results.last()?.output_refs.as_slice() else {
+                    return None;
+                };
                 let publisher = publisher?;
                 let parent = if source_load.is_some_and(|inputs| {
                     inputs
