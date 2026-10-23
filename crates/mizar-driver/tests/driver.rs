@@ -1692,3 +1692,98 @@ fn scheduled_theorem_resolver_prefix_requires_exact_real_services() {
         }
     }
 }
+
+#[test]
+fn scheduled_theorem_signature_prefix_requires_exact_four_services_and_current_publisher() {
+    let mut real = PhaseRegistryBuilder::new();
+    real.register_source_theorem_signature_collection();
+    let real = real.build().unwrap();
+    let descriptor = real
+        .descriptor_for_phase(PipelinePhase::SignatureCollection)
+        .unwrap();
+    for case in [
+        "real",
+        "spoof",
+        "wrong-descriptor",
+        "extra",
+        "missing-resolver",
+        "no-publisher",
+        "obsolete",
+    ] {
+        let ids = InMemorySessionIdAllocator::new();
+        let snapshots = SnapshotRegistry::new();
+        let session = request(1)
+            .allocate(&ids)
+            .unwrap()
+            .capture_snapshot(&snapshots)
+            .unwrap();
+        let publisher = Arc::new(PhaseOutputPublisher::new(
+            Arc::new(IrStorageService::new()),
+            Arc::new(SnapshotHandleRegistry::new()),
+        ));
+        let snapshot = session.captured().snapshot().id;
+        publisher.register_current_snapshot(snapshot);
+        if case == "obsolete" {
+            publisher.mark_obsolete(snapshot).unwrap();
+        }
+        let mut builder = PhaseRegistryBuilder::new();
+        builder.register_source_load().register_frontend(vec![]);
+        if case != "missing-resolver" {
+            builder.register_source_theorem_module_resolver();
+        }
+        if matches!(case, "spoof" | "wrong-descriptor") {
+            let mut descriptor = descriptor.clone();
+            if case == "wrong-descriptor" {
+                descriptor.schema_version = "wrong-schema".into();
+            }
+            builder.register(DescriptorOnlyFixtureService { descriptor });
+        } else {
+            builder.register_source_theorem_signature_collection();
+        }
+        if case == "extra" {
+            builder.register(DescriptorOnlyFixtureService {
+                descriptor: PhaseDescriptor::new(
+                    "ExtraPlanner",
+                    mizar_driver::registry::PhaseOwner::MizarBuild,
+                    vec![PipelinePhase::PackageResolve],
+                    "fixture-v1",
+                    "fixture-output",
+                )
+                .unwrap(),
+            });
+        }
+        let mut driver = CompilerDriver::new(builder.build().unwrap());
+        if case != "no-publisher" {
+            driver = driver.with_output_publisher(publisher);
+        }
+        let submission = driver
+            .submit(
+                request(1),
+                &ids,
+                &snapshots,
+                submit_input(vec![WorkspaceSourceFile::new("src/main.miz", "main.miz")]),
+            )
+            .unwrap();
+        assert!(
+            !submission
+                .missing_services
+                .iter()
+                .any(|gap| gap.phase == PipelinePhase::SignatureCollection)
+        );
+        assert!(
+            submission
+                .missing_services
+                .iter()
+                .any(|gap| gap.phase == PipelinePhase::TypeChecking)
+        );
+        assert_eq!(submission.scheduler_run.is_some(), case == "real", "{case}");
+        assert_eq!(
+            submission.status,
+            if case == "real" {
+                DriverSubmissionStatus::BlockedByPhaseDispatchGap
+            } else {
+                DriverSubmissionStatus::BlockedByMissingPhaseServices
+            }
+        );
+    }
+}

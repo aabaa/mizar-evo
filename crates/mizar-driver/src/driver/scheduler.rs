@@ -182,12 +182,42 @@ fn dispatch_registry_phase(
             }
         }
         None => {
-            if task.task.phases.iter().any(|phase| {
-                matches!(
-                    registry.descriptor_for_phase(*phase),
+            use crate::{
+                frontend_adapter::SourceTheoremSignatureCollectionService, registry::PhaseService,
+            };
+            let signature_prefix = task.task.kind
+                == mizar_build::task_graph::TaskKind::CheckAndElaborate
+                && task.task.phases
+                    == [
+                        PipelinePhase::SignatureCollection,
+                        PipelinePhase::TypeChecking,
+                        PipelinePhase::RegistrationResolution,
+                        PipelinePhase::OverloadResolution,
+                        PipelinePhase::Elaboration,
+                        PipelinePhase::AlgorithmPreparation,
+                    ]
+                && registry
+                    .descriptor_for_phase(PipelinePhase::SignatureCollection)
+                    .ok()
+                    == Some(&SourceTheoremSignatureCollectionService.phase())
+                && registry
+                    .service_for_phase(PipelinePhase::SignatureCollection)
+                    .is_ok_and(|service| {
+                        std::any::Any::type_id(service)
+                            == std::any::TypeId::of::<SourceTheoremSignatureCollectionService>()
+                    })
+                && matches!(
+                    registry.descriptor_for_phase(PipelinePhase::TypeChecking),
                     Err(PhaseRegistryError::MissingPhaseService { .. })
-                )
-            }) {
+                );
+            if !signature_prefix
+                && task.task.phases.iter().any(|phase| {
+                    matches!(
+                        registry.descriptor_for_phase(*phase),
+                        Err(PhaseRegistryError::MissingPhaseService { .. })
+                    )
+                })
+            {
                 return SchedulerDispatchOutcome::blocked(vec![dispatch_diagnostic(
                     task.task,
                     "missing_phase_service",
@@ -222,6 +252,7 @@ fn dispatch_registry_phase(
                         }
                         SourceTheoremModuleResolverService.phase()
                     }
+                    _ if signature_prefix => SourceTheoremSignatureCollectionService.phase(),
                     _ => return None,
                 };
                 if registry.descriptor_for_phase(task.task.phases[0]).ok()? != &expected {
@@ -256,7 +287,17 @@ fn dispatch_registry_phase(
                     module.package.as_str(),
                     module.path.as_str()
                 ));
-                let parents = if task.task.phases == [PipelinePhase::ModuleResolve] {
+                let parents = if task.task.phases == [PipelinePhase::ModuleResolve]
+                    || signature_prefix
+                {
+                    let (parent_phase, parent_kind) = if signature_prefix {
+                        (
+                            IrPhase::new("ModuleResolve"),
+                            OutputKind::new("SourceTheoremModuleCandidates"),
+                        )
+                    } else {
+                        (IrPhase::new("Frontend"), OutputKind::new("FrontendOutput"))
+                    };
                     let mut parents = task.task.dependencies.iter().filter_map(|id| {
                         let [result] = phase_results.get(id)?.as_slice() else {
                             return None;
@@ -266,9 +307,9 @@ fn dispatch_registry_phase(
                         };
                         (result.status == PhaseStatus::Complete
                             && result.diagnostics.is_empty()
-                            && parent.phase() == &IrPhase::new("Frontend")
+                            && parent.phase() == &parent_phase
                             && parent.work_unit() == &unit
-                            && parent.output_kind() == &OutputKind::new("FrontendOutput")
+                            && parent.output_kind() == &parent_kind
                             && parent.schema_version() == mizar_ir::storage::SchemaVersion::new(1))
                         .then_some(parent)
                     });

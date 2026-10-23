@@ -559,6 +559,7 @@ artifact/test のフォローアップタスクが所有する。本 crate の�
 64. **[Native algorithm VC publication](../../task_contracts/ja/DRIVER-NATIVE-ALGORITHM-VC-PUBLICATION.md).** [x]
 65. **[Scheduled source theorem module resolver](../../task_contracts/ja/DRIVER-SCHEDULED-THEOREM-MODULE-RESOLVE.md).** [x]
 66. **[Native theorem summary publication](../../task_contracts/ja/DRIVER-NATIVE-THEOREM-SUMMARY-PUBLICATION.md).** [x]
+67. **[Scheduled source theorem signature collection](../../task_contracts/ja/DRIVER-SCHEDULED-THEOREM-SIGNATURE-COLLECTION.md).** [x]
 
 ## 推奨検証
 

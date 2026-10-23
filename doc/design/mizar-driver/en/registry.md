@@ -89,12 +89,12 @@ registered only when the owner crate exposes all of these seams at once:
 - a canonical producer output that can be stored through `mizar-ir` without a
   synthetic payload;
 - diagnostic records or a documented diagnostics bridge through
-  `mizar-diagnostics`, not message-text identity; the bounded [clean-only resolver](frontend_adapter.md#scheduled-source-theorem-module-resolver) emits no diagnostics and returns Blocking for unsupported/error inputs;
+  `mizar-diagnostics`, not message-text identity; the bounded [resolver](frontend_adapter.md#scheduled-source-theorem-module-resolver) and [signature service](frontend_adapter.md#scheduled-source-theorem-signature-collection) emit no diagnostics and return Blocking for unsupported/error inputs;
 - proof, cache, artifact, and LSP authority remaining in the owning crates.
 
 | Service | D-015 readiness | Classification |
 |---|---|---|
-| `ModuleResolver` | The [bounded theorem producer](frontend_adapter.md#native-theorem-module-publication) supplies sealed resolved data; the [explicit bounded service](frontend_adapter.md#scheduled-source-theorem-module-resolver) covers ModuleResolve only. General resolution, SignatureCollection, public resolver diagnostic adoption and artifact-backed ModuleSummary reuse remain unavailable. | `external_dependency_gap` |
+| `ModuleResolver` | The [bounded theorem producer](frontend_adapter.md#native-theorem-module-publication) supplies sealed resolved data; the explicit bounded [resolver](frontend_adapter.md#scheduled-source-theorem-module-resolver) and [signature service](frontend_adapter.md#scheduled-source-theorem-signature-collection) cover their respective phases. General resolution/signature collection, public resolver diagnostic adoption and artifact-backed ModuleSummary reuse remain unavailable. | `external_dependency_gap` |
 | `SemanticChecker` | `mizar-checker` exposes explicit checker-owned payloads, but source-derived payload extraction, accepted proof/artifact status integration, public diagnostic allocation, artifact emission/reuse, and a unified driver service envelope remain unavailable. | `external_dependency_gap` |
 | `Elaborator` | `mizar-core` exposes explicit lowering/control-flow data and local diagnostics, but source-to-checker extraction, concrete downstream identities, artifact schemas, public diagnostic allocation, and downstream VC/kernel/proof/artifact consumers remain unavailable. | `external_dependency_gap` |
 | `VcService` | `mizar-vc` exposes untrusted VC candidates, handoff hashes, and reuse inputs over explicit payloads, but source-derived `proof_verification` runners, full upstream payload families, downstream proof/cache/artifact consumers, and accepted discharge paths remain unavailable. | `external_dependency_gap` |
@@ -122,7 +122,7 @@ their real owning crate exposes an adapter seam.
 | `WorkspacePlanner` | 0 | `mizar-build` planner | Real bootstrap owner exists; driver task 8 wires it without duplicating planner semantics. |
 | `SourceLoad` | 1 | `mizar-frontend` | Disk source service; see [source services](frontend_adapter.md). |
 | `Frontend` | 2-3 | `mizar-frontend` | Real disk frontend; see [source services](frontend_adapter.md#disk-frontend-service). |
-| `ModuleResolver` | 4-5 | `mizar-resolve` | Explicit [SourceTheoremModuleResolver](frontend_adapter.md#scheduled-source-theorem-module-resolver) covers ModuleResolve only; SignatureCollection and general resolver services remain `external_dependency_gap`. |
+| `ModuleResolver` | 4-5 | `mizar-resolve` | Explicit [SourceTheoremModuleResolver](frontend_adapter.md#scheduled-source-theorem-module-resolver) and [SourceTheoremSignatureCollection](frontend_adapter.md#scheduled-source-theorem-signature-collection) cover bounded phases; general resolver/signature services remain `external_dependency_gap`. |
 | `SemanticChecker` | 6-8 | `mizar-checker` | `external_dependency_gap` until checker services expose real typed outputs. |
 | `Elaborator` | 9-10 | `mizar-core` | `external_dependency_gap` until core/elaboration services land. |
 | `VcService` | 11-12 | `mizar-vc` | `external_dependency_gap` until VC generation and deterministic discharge services land. |

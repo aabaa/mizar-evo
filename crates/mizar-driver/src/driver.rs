@@ -947,11 +947,18 @@ impl CompilerDriver {
             use crate::{
                 frontend_adapter::{
                     FrontendService, SourceLoadService, SourceTheoremModuleResolverService,
+                    SourceTheoremSignatureCollectionService,
                 },
                 registry::PhaseService,
             };
             (self.registry.descriptors().len() == 2
-                || (self.registry.descriptors().len() == 3
+                || ((self.registry.descriptors().len() == 3
+                        || (self.registry.descriptors().len() == 4
+                            && self.registry.descriptor_for_phase(PipelinePhase::SignatureCollection).ok()
+                                == Some(&SourceTheoremSignatureCollectionService.phase())
+                            && self.registry.service_for_phase(PipelinePhase::SignatureCollection).is_ok_and(|service| {
+                                std::any::Any::type_id(service) == std::any::TypeId::of::<SourceTheoremSignatureCollectionService>()
+                            })))
                     && self
                         .registry
                         .descriptor_for_phase(PipelinePhase::ModuleResolve)

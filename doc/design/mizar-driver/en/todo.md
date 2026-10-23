@@ -590,6 +590,7 @@ the owning producers when the paired tasks land.
 64. **[Native algorithm VC publication](../../task_contracts/en/DRIVER-NATIVE-ALGORITHM-VC-PUBLICATION.md).** [x]
 65. **[Scheduled source theorem module resolver](../../task_contracts/en/DRIVER-SCHEDULED-THEOREM-MODULE-RESOLVE.md).** [x]
 66. **[Native theorem summary publication](../../task_contracts/en/DRIVER-NATIVE-THEOREM-SUMMARY-PUBLICATION.md).** [x]
+67. **[Scheduled source theorem signature collection](../../task_contracts/en/DRIVER-SCHEDULED-THEOREM-SIGNATURE-COLLECTION.md).** [x]
 
 ## Recommended Verification
 

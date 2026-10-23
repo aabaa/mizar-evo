@@ -2910,6 +2910,63 @@ impl PhaseService for SourceTheoremModuleResolverService {
     }
 }
 
+pub(crate) struct SourceTheoremSignatureCollectionService;
+
+impl PhaseService for SourceTheoremSignatureCollectionService {
+    fn phase(&self) -> PhaseDescriptor {
+        PhaseDescriptor::new(
+            "SourceTheoremSignatureCollection",
+            PhaseOwner::MizarResolve,
+            vec![PipelinePhase::SignatureCollection],
+            "mizar-resolve/source-theorem-summary-publication/v1",
+            "SourceTheoremModuleSummary",
+        )
+        .expect("source theorem signature collection descriptor is fixed and valid")
+    }
+
+    fn cache_key(&self, _input: &PhaseInput, _context: &PhaseCacheContext) -> PhaseCacheIntent {
+        PhaseCacheIntent::NoKey {
+            reason: "source theorem signature collection has no complete dependency footprint"
+                .to_owned(),
+        }
+    }
+
+    fn execute(&self, input: PhaseInput, context: PhaseExecutionContext<'_>) -> PhaseResult {
+        if context.common.snapshot != input.snapshot || context.common.work_unit != input.work_unit
+        {
+            return blocking();
+        }
+        if let Some(token) = context.cancellation {
+            return if token.snapshot == input.snapshot {
+                PhaseResult {
+                    status: PhaseStatus::Cancelled,
+                    ..blocking()
+                }
+            } else {
+                blocking()
+            };
+        }
+        let Some(publisher) = context.output_publisher else {
+            return blocking();
+        };
+        let Some(inputs) = context.source_load else {
+            return blocking();
+        };
+        if inputs.snapshot.id != input.snapshot
+            || publisher.validate_current_snapshot(input.snapshot).is_err()
+        {
+            return blocking();
+        }
+        match inputs.publish_native_theorem_module_summary(&input, &publisher) {
+            Ok(Some(handle)) => PhaseResult {
+                output_refs: vec![handle.erase()],
+                ..PhaseResult::complete()
+            },
+            Ok(None) | Err(_) => blocking(),
+        }
+    }
+}
+
 pub(crate) struct SourceLoadService;
 
 impl PhaseService for SourceLoadService {
