@@ -587,6 +587,8 @@ artifact/test のフォローアップタスクが所有する。本 crate の�
 
 80. **[Native theorem Core metadata caller](../../task_contracts/ja/DRIVER-NATIVE-THEOREM-CORE-METADATA-CALLER.md).** [x]
 
+81. **[Native theorem Core metadata publication](../../task_contracts/ja/DRIVER-NATIVE-THEOREM-CORE-METADATA-PUBLICATION.md).** [x]
+
 ## 推奨検証
 
 各タスクの後で実行する:

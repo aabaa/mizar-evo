@@ -2339,6 +2339,136 @@ impl<'a> crate::registry::SourceLoadInputs<'a> {
         Ok(Some(core))
     }
 
+    /// Seals genuine bounded Core after authenticating its Metadata parent.
+    pub fn publish_native_theorem_core_with_metadata_parent(
+        self,
+        input: &PhaseInput,
+        publisher: &mizar_ir::publisher::PhaseOutputPublisher,
+    ) -> Result<Option<mizar_ir::storage::PhaseOutputRef<mizar_core::core_ir::CoreIr>>, String>
+    {
+        let Some(core) = self.native_theorem_core_with_metadata_parent(input, publisher)? else {
+            return Ok(None);
+        };
+        let WorkUnit::Module { module } = &input.work_unit else {
+            return Err("native theorem core publication requires a module".to_owned());
+        };
+        let version = unique(self.snapshot.source_versions.iter().filter(|version| {
+            version.package_id == module.package && version.module_path == module.path
+        }))
+        .ok_or_else(|| "native theorem core publication requires one captured source".to_owned())?;
+        let parent = input.parent_outputs()[0].as_output_ref();
+        let storage = publisher.storage();
+        let (source, _) = self.native_source(version).ok_or_else(|| {
+            "native theorem metadata Core publication capture binding failed".to_owned()
+        })?;
+        let package = self
+            .build_plan
+            .packages
+            .iter()
+            .find(|package| package.package_id == module.package)
+            .ok_or_else(|| {
+                "native theorem metadata Core publication requires a bound package".to_owned()
+            })?;
+        let PackagePlanSource::Workspace { root, .. } = &package.source else {
+            return Err(
+                "native theorem metadata Core publication requires a workspace package".to_owned(),
+            );
+        };
+        let output = Frontend::new(
+            FrontendSourceLoader::new(DiskSourceLoader::new(
+                PathBuf::from(self.snapshot.workspace_root.as_str()).join(root),
+            )),
+            self.dependency_lexical_provider(&[]),
+            MizarParserSeam,
+        )
+        .run_loaded(source)
+        .map_err(|error| error.to_string())?;
+        if !output.diagnostics.is_empty() || output.cache_keys.ast.is_none() {
+            return Ok(None);
+        }
+        let Some(ast) = output.ast.as_ref() else {
+            return Ok(None);
+        };
+        let resolver_module =
+            mizar_resolve::resolved_ast::ModuleId::new(module.package.clone(), module.path.clone());
+        let Some(semantic_bytes) =
+            native_theorem_core_semantic_payload(ast, &resolver_module, &core)?
+        else {
+            return Ok(None);
+        };
+        let Some(storage_bytes) = native_theorem_core_storage_bytes(ast, &resolver_module, &core)?
+        else {
+            return Ok(None);
+        };
+        let storage_hash = Hash::from_bytes(blake3::derive_key(
+            "mizar-driver/native-theorem-core-storage-side-table/v1",
+            &storage_bytes,
+        ));
+        let phase = IrPipelinePhase::new("Elaboration");
+        let work_unit = IrWorkUnit::new(format!(
+            "{:?}:{:?}",
+            module.package.as_str(),
+            module.path.as_str()
+        ));
+        let output_kind = OutputKind::new("SourceTheoremCore");
+        let source_id = version.source_id;
+        storage
+            .validate_handle(parent)
+            .map_err(|error| error.to_string())?;
+        publisher
+            .validate_published_output(input.snapshot, parent)
+            .map_err(|error| error.to_string())?;
+        publisher
+            .publish(PublishOutputInput {
+                slot: publisher.allocate(
+                    input.snapshot,
+                    phase.clone(),
+                    work_unit.clone(),
+                    output_kind.clone(),
+                    SchemaVersion::new(1),
+                ),
+                snapshot: input.snapshot,
+                phase,
+                work_unit,
+                output_kind,
+                schema_version: SchemaVersion::new(1),
+                payload: core,
+                canonical_payload: Some(semantic_bytes),
+                storage_payload: Some(storage_bytes),
+                decode: BlobDecoder::new(move |bytes| {
+                    native_theorem_core_from_storage_bytes(bytes, source_id, &resolver_module)
+                        .map_err(BlobDecodeError::new)?
+                        .ok_or_else(|| BlobDecodeError::new("invalid native theorem core storage"))
+                }),
+                parents: vec![parent.clone()],
+                named_input_hashes: vec![NamedInputHash {
+                    name: "source".to_owned(),
+                    domain: SOURCE_UNIT_CACHE_KEY_VERSION.to_owned(),
+                    digest: source_input_hash(version),
+                }],
+                side_tables: IrSideTables {
+                    source_maps: vec![SideTableRecord::new(
+                        "elaborate-theorem-core-storage",
+                        version.normalized_path.as_str(),
+                        storage_hash,
+                    )],
+                    ..IrSideTables::default()
+                },
+                origin: if matches!(version.origin, SourceOrigin::OpenBuffer { .. }) {
+                    OutputOrigin::OpenBuffer
+                } else {
+                    OutputOrigin::PackageSource
+                },
+                target: if matches!(version.origin, SourceOrigin::OpenBuffer { .. }) {
+                    PublicationTarget::InternalOnly
+                } else {
+                    PublicationTarget::CurrentPackage
+                },
+            })
+            .map(Some)
+            .map_err(|error| error.to_string())
+    }
+
     /// Lowers genuine algorithms after binding a published Frontend to captured source.
     pub fn native_algorithm_core_with_frontend_parent(
         self,
