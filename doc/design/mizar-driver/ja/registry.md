@@ -83,12 +83,12 @@ real adapter は、owning crate が次の seam を同時に公開した場合だ
   driver-callable service input;
 - synthetic payload なしで `mizar-ir` に格納できる canonical producer output;
 - message-text identity ではなく `mizar-diagnostics` を通る diagnostic record
-  または文書化された diagnostics bridge;
+  または文書化された diagnostics bridge; [clean-only resolver](frontend_adapter.md#scheduled-source-theorem-module-resolver) は診断を生成せず、unsupported/error は Blocking とする;
 - proof、cache、artifact、LSP authority が owning crate に残ること。
 
 | Service | D-015 readiness | 分類 |
 |---|---|---|
-| `ModuleResolver` | `mizar-resolve` は resolver-owned data shape と deterministic な internal diagnostics を公開しているが、public resolver diagnostic code と artifact-backed `ModuleSummary` reuse は未準備であり、driver service envelope や sealed producer payload は公開されていない。 | `external_dependency_gap` |
+| `ModuleResolver` | [bounded theorem producer](frontend_adapter.md#native-theorem-module-publication) は sealed resolved data を供給し、[明示 bounded service](frontend_adapter.md#scheduled-source-theorem-module-resolver) は ModuleResolve だけを担当する。一般 resolution、SignatureCollection、public resolver 診断の採用と artifact-backed ModuleSummary reuse は未対応。 | `external_dependency_gap` |
 | `SemanticChecker` | `mizar-checker` は explicit checker-owned payload を公開しているが、source-derived payload extraction、accepted proof / artifact status integration、public diagnostic allocation、artifact emission / reuse、統一された driver service envelope は未準備。 | `external_dependency_gap` |
 | `Elaborator` | `mizar-core` は explicit lowering / control-flow data と local diagnostics を公開しているが、source-to-checker extraction、具体的な downstream identity、artifact schema、public diagnostic allocation、downstream VC / kernel / proof / artifact consumer は未準備。 | `external_dependency_gap` |
 | `VcService` | `mizar-vc` は explicit payload 上の untrusted VC candidate、handoff hash、reuse input を公開しているが、source-derived `proof_verification` runner、全 upstream payload family、downstream proof / cache / artifact consumer、accepted discharge path は未準備。 | `external_dependency_gap` |
@@ -115,7 +115,7 @@ adapter seam を公開するまで absent でよい。
 | `WorkspacePlanner` | 0 | `mizar-build` planner | Real bootstrap owner は存在する。driver task 8 が planner semantics を複製せず結線する。 |
 | `SourceLoad` | 1 | `mizar-frontend` | Disk source service。[source services](frontend_adapter.md) を参照。 |
 | `Frontend` | 2-3 | `mizar-frontend` | 実disk frontend。[source services](frontend_adapter.md#disk-frontend-service) を参照。 |
-| `ModuleResolver` | 4-5 | `mizar-resolve` | resolver が service surface を公開するまで `external_dependency_gap`。 |
+| `ModuleResolver` | 4-5 | `mizar-resolve` | 明示 [SourceTheoremModuleResolver](frontend_adapter.md#scheduled-source-theorem-module-resolver) は ModuleResolve のみ。SignatureCollection と一般 resolver service は `external_dependency_gap`。 |
 | `SemanticChecker` | 6-8 | `mizar-checker` | checker service が real typed output を公開するまで `external_dependency_gap`。 |
 | `Elaborator` | 9-10 | `mizar-core` | core/elaboration service が着地するまで `external_dependency_gap`。 |
 | `VcService` | 11-12 | `mizar-vc` | VC generation と deterministic discharge service が着地するまで `external_dependency_gap`。 |

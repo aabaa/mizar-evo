@@ -1625,3 +1625,70 @@ fn noncomplete_publication_retains_batches_without_outputs() {
         assert!(result.output_refs.is_empty());
     }
 }
+
+#[test]
+fn scheduled_theorem_resolver_prefix_requires_exact_real_services() {
+    let mut real = PhaseRegistryBuilder::new();
+    real.register_source_theorem_module_resolver();
+    let real = real.build().unwrap();
+    let descriptor = real
+        .descriptor_for_phase(PipelinePhase::ModuleResolve)
+        .unwrap();
+    for case in ["real", "spoof", "extra"] {
+        let ids = InMemorySessionIdAllocator::new();
+        let snapshots = SnapshotRegistry::new();
+        let session = request(1)
+            .allocate(&ids)
+            .unwrap()
+            .capture_snapshot(&snapshots)
+            .unwrap();
+        let publisher = Arc::new(PhaseOutputPublisher::new(
+            Arc::new(IrStorageService::new()),
+            Arc::new(SnapshotHandleRegistry::new()),
+        ));
+        publisher.register_current_snapshot(session.captured().snapshot().id);
+        let mut builder = PhaseRegistryBuilder::new();
+        builder.register_source_load().register_frontend(vec![]);
+        if case == "spoof" {
+            builder.register(DescriptorOnlyFixtureService {
+                descriptor: descriptor.clone(),
+            });
+        } else {
+            builder.register_source_theorem_module_resolver();
+        }
+        if case == "extra" {
+            builder.register(DescriptorOnlyFixtureService {
+                descriptor: PhaseDescriptor::new(
+                    "ExtraPlanner",
+                    mizar_driver::registry::PhaseOwner::MizarBuild,
+                    vec![PipelinePhase::PackageResolve],
+                    "fixture-v1",
+                    "fixture-output",
+                )
+                .unwrap(),
+            });
+        }
+        let submission = CompilerDriver::new(builder.build().unwrap())
+            .with_output_publisher(publisher)
+            .submit(
+                request(1),
+                &ids,
+                &snapshots,
+                submit_input(vec![WorkspaceSourceFile::new("src/main.miz", "main.miz")]),
+            )
+            .unwrap();
+        assert!(
+            submission
+                .missing_services
+                .iter()
+                .any(|gap| gap.phase == PipelinePhase::SignatureCollection)
+        );
+        assert_eq!(submission.scheduler_run.is_some(), case == "real", "{case}");
+        if case != "real" {
+            assert_eq!(
+                submission.status,
+                DriverSubmissionStatus::BlockedByMissingPhaseServices
+            );
+        }
+    }
+}

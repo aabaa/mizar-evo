@@ -588,6 +588,7 @@ the owning producers when the paired tasks land.
 62. **[Native algorithm VC caller](../../task_contracts/en/DRIVER-NATIVE-ALGORITHM-VC-CALLER.md).** [x]
 63. **[Native algorithm VC storage replay](../../task_contracts/en/DRIVER-NATIVE-ALGORITHM-VC-STORAGE-REPLAY.md).** [x]
 64. **[Native algorithm VC publication](../../task_contracts/en/DRIVER-NATIVE-ALGORITHM-VC-PUBLICATION.md).** [x]
+65. **[Scheduled source theorem module resolver](../../task_contracts/en/DRIVER-SCHEDULED-THEOREM-MODULE-RESOLVE.md).** [x]
 
 ## Recommended Verification
 

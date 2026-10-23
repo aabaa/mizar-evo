@@ -743,8 +743,7 @@ Pre-audit 5B.3 and Gate S1 block only consumers requiring their outputs.
    [Captured native theorem summary candidates](./task_contracts/en/DRIVER-NATIVE-THEOREM-MODULE-SUMMARY-CANDIDATE.md) bind protected captured Frontend execution and the existing native identity projection to that raw shape; complete build authentication, services and publication remain separate.
    [Native theorem module publication](./mizar-driver/en/frontend_adapter.md#native-theorem-module-publication) seals the coherent bounded pair/storage/semantic assembly as a prerequisite; real services, complete summaries and runtime integration remain separate.
 
-   These slices do not register ModuleResolver or later semantic services;
-   their remaining owner-provided payload/publication prerequisites stay open.
+   [Explicit scheduled theorem resolution](./task_contracts/en/DRIVER-SCHEDULED-THEOREM-MODULE-RESOLVE.md) adds bounded ModuleResolve execution; SignatureCollection and general resolver/services remain open.
 2. [~] [Real-service equivalence](./task_contracts/en/STEP6C-REAL-SERVICE-EQUIVALENCE.md)
    (build 28 / BUILD-G-017), with its uncached prefix implemented and remaining
    slices following the contract's producer dependencies.

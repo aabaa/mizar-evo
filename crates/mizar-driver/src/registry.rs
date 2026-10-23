@@ -398,6 +398,10 @@ impl PhaseRegistryBuilder {
         self.register(crate::frontend_adapter::FrontendService { artifact_roots })
     }
 
+    pub fn register_source_theorem_module_resolver(&mut self) -> &mut Self {
+        self.register(crate::frontend_adapter::SourceTheoremModuleResolverService)
+    }
+
     pub fn build(self) -> Result<PhaseRegistry, PhaseRegistryError> {
         let mut services = self
             .services

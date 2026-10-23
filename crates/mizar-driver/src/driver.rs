@@ -945,10 +945,25 @@ impl CompilerDriver {
         };
         let built_in_prefix = {
             use crate::{
-                frontend_adapter::{FrontendService, SourceLoadService},
+                frontend_adapter::{
+                    FrontendService, SourceLoadService, SourceTheoremModuleResolverService,
+                },
                 registry::PhaseService,
             };
-            self.registry.descriptors().len() == 2
+            (self.registry.descriptors().len() == 2
+                || (self.registry.descriptors().len() == 3
+                    && self
+                        .registry
+                        .descriptor_for_phase(PipelinePhase::ModuleResolve)
+                        .ok()
+                        == Some(&SourceTheoremModuleResolverService.phase())
+                    && self
+                        .registry
+                        .service_for_phase(PipelinePhase::ModuleResolve)
+                        .is_ok_and(|service| {
+                            std::any::Any::type_id(service)
+                                == std::any::TypeId::of::<SourceTheoremModuleResolverService>()
+                        })))
                 && self
                     .registry
                     .descriptor_for_phase(PipelinePhase::SourceLoad)

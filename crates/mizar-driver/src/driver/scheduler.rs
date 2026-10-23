@@ -196,7 +196,9 @@ fn dispatch_registry_phase(
             }
             let bundle = (|| {
                 use crate::{
-                    frontend_adapter::{FrontendService, SourceLoadService},
+                    frontend_adapter::{
+                        FrontendService, SourceLoadService, SourceTheoremModuleResolverService,
+                    },
                     registry::PhaseService,
                 };
                 use mizar_ir::{
@@ -209,6 +211,17 @@ fn dispatch_registry_phase(
                         artifact_roots: Vec::new(),
                     }
                     .phase(),
+                    [PipelinePhase::ModuleResolve] => {
+                        if std::any::Any::type_id(
+                            registry
+                                .service_for_phase(PipelinePhase::ModuleResolve)
+                                .ok()?,
+                        ) != std::any::TypeId::of::<SourceTheoremModuleResolverService>()
+                        {
+                            return None;
+                        }
+                        SourceTheoremModuleResolverService.phase()
+                    }
                     _ => return None,
                 };
                 if registry.descriptor_for_phase(task.task.phases[0]).ok()? != &expected {
@@ -243,29 +256,53 @@ fn dispatch_registry_phase(
                     module.package.as_str(),
                     module.path.as_str()
                 ));
-                let parents = task
-                    .task
-                    .dependencies
-                    .iter()
-                    .flat_map(|id| phase_results.get(id).into_iter().flatten())
-                    .filter(|result| result.status == PhaseStatus::Complete)
-                    .flat_map(|result| result.output_refs.iter())
-                    .filter(|parent| {
-                        (parent.phase() == &IrPhase::new("SourceLoad")
+                let parents = if task.task.phases == [PipelinePhase::ModuleResolve] {
+                    let mut parents = task.task.dependencies.iter().filter_map(|id| {
+                        let [result] = phase_results.get(id)?.as_slice() else {
+                            return None;
+                        };
+                        let [parent] = result.output_refs.as_slice() else {
+                            return None;
+                        };
+                        (result.status == PhaseStatus::Complete
+                            && result.diagnostics.is_empty()
+                            && parent.phase() == &IrPhase::new("Frontend")
                             && parent.work_unit() == &unit
-                            && parent.output_kind() == &OutputKind::new("SourceUnit"))
-                            || (parent.phase() == &IrPhase::new("Frontend")
-                                && parent.output_kind() == &OutputKind::new("FrontendOutput"))
-                    })
-                    .collect::<Vec<_>>();
-                if parents
-                    .iter()
-                    .filter(|parent| parent.phase() == &IrPhase::new("SourceLoad"))
-                    .count()
-                    != 1
-                {
-                    return None;
-                }
+                            && parent.output_kind() == &OutputKind::new("FrontendOutput")
+                            && parent.schema_version() == mizar_ir::storage::SchemaVersion::new(1))
+                        .then_some(parent)
+                    });
+                    let parent = parents.next()?;
+                    if parents.next().is_some() {
+                        return None;
+                    }
+                    vec![parent]
+                } else {
+                    let parents = task
+                        .task
+                        .dependencies
+                        .iter()
+                        .flat_map(|id| phase_results.get(id).into_iter().flatten())
+                        .filter(|result| result.status == PhaseStatus::Complete)
+                        .flat_map(|result| result.output_refs.iter())
+                        .filter(|parent| {
+                            (parent.phase() == &IrPhase::new("SourceLoad")
+                                && parent.work_unit() == &unit
+                                && parent.output_kind() == &OutputKind::new("SourceUnit"))
+                                || (parent.phase() == &IrPhase::new("Frontend")
+                                    && parent.output_kind() == &OutputKind::new("FrontendOutput"))
+                        })
+                        .collect::<Vec<_>>();
+                    if parents
+                        .iter()
+                        .filter(|parent| parent.phase() == &IrPhase::new("SourceLoad"))
+                        .count()
+                        != 1
+                    {
+                        return None;
+                    }
+                    parents
+                };
                 let parents = parents
                     .into_iter()
                     .map(|parent| {

@@ -82,7 +82,7 @@ trait adapters are not part of this public API audit.
   `tests/determinism.rs`.
 - `registry.rs`: `PhaseDescriptor::new`,
   `PhaseInput::{new, identities, parent_outputs}`, `PhaseResult::complete`,
-  `PhaseRegistryBuilder::{new, register, register_arc, register_source_load, build}`,
+  `PhaseRegistryBuilder::{new, register, register_arc, register_source_load, register_source_theorem_module_resolver, build}`,
   `PhaseRegistry::{empty, descriptors, query_boundary, descriptor_for_phase,
   cache_key_for_phase, execute_phase, execute_phase_with_resources}`,
   `DriverQueryBoundary::{cache_key, execute}`,

@@ -29310,3 +29310,440 @@ fn native_algorithm_vc_publication_preserves_refusals_and_publisher_boundaries()
         );
     }
 }
+
+#[test]
+fn scheduled_theorem_resolver_matches_genuine_publication_and_worker_replay() {
+    let private = include_str!(
+        "../../../tests/miz/pass/resolve/pass_declaration_symbol_private_theorem_visibility_001.miz"
+    );
+    let lemma = include_str!(
+        "../../../tests/miz/pass/theorems/pass_proof_verification_lemma_reference_001.miz"
+    );
+    let open_assumed = include_str!(
+        "../../../tests/miz/pass/theorems/pass_proof_verification_theorem_status_open_assumed_001.miz"
+    );
+    for (case, (text, open, threshold)) in [
+        (private, false, usize::MAX),
+        (private, true, 0),
+        (lemma, false, 0),
+        (open_assumed, true, usize::MAX),
+    ]
+    .into_iter()
+    .enumerate()
+    {
+        let fixture = Fixture::new(text.as_bytes());
+        let ids = InMemorySessionIdAllocator::new();
+        let snapshots = SnapshotRegistry::new();
+        let (mut draft, submit) = fixture.submit_request(vec![], vec![]);
+        draft.source_inputs.versions.clear();
+        let descriptor = SourceInput {
+            package_id: fixture.version.package_id.clone(),
+            module_path: fixture.version.module_path.clone(),
+            normalized_path: fixture.version.normalized_path.clone(),
+            edition: fixture.version.edition.clone(),
+            origin: if open {
+                SourceOriginInput::OpenBuffer {
+                    uri: format!(
+                        "file://{}",
+                        fixture.root.join("alpha/src/main.miz").display()
+                    ),
+                    expected_version: 7,
+                    actual_version: 7,
+                    text: std::sync::Arc::from(text),
+                }
+            } else {
+                SourceOriginInput::Disk {
+                    path: "src/main.miz".into(),
+                }
+            },
+        };
+        let session = draft
+            .capture_sources(
+                &ids,
+                &snapshots,
+                vec![(
+                    DiskSourceLoader::new(fixture.root.join("alpha")),
+                    descriptor,
+                )],
+            )
+            .unwrap();
+        let captured = session.captured().clone();
+        let snapshot = captured.snapshot().id;
+        let unit = WorkUnit::Module {
+            module: mizar_build::module_index::ModuleId::new(
+                PackageId::new("alpha"),
+                ModulePath::new("main"),
+            ),
+        };
+        let baseline_owner = publisher(snapshot, threshold, &unit);
+        allow_frontend(&baseline_owner, &unit);
+        baseline_owner.allow_work_unit(AllowedWorkUnit::new(
+            IrPipelinePhase::new("ModuleResolve"),
+            OutputKind::new("SourceTheoremModuleCandidates"),
+            IrWorkUnit::new("\"alpha\":\"main\""),
+        ));
+        let mut builder = PhaseRegistryBuilder::new();
+        builder.register_source_load().register_frontend(vec![]);
+        let baseline = CompilerDriver::new(builder.build().unwrap())
+            .with_output_publisher(baseline_owner.clone())
+            .submit_captured(session.clone(), &ids, &snapshots, submit)
+            .unwrap();
+        let (inputs, source_input) = native_disk_lookup_context(&baseline, &ids);
+        let parent = baseline
+            .scheduler_run
+            .as_ref()
+            .unwrap()
+            .phase_results
+            .values()
+            .flatten()
+            .flat_map(|result| &result.output_refs)
+            .find(|parent| parent.output_kind() == &OutputKind::new("FrontendOutput"))
+            .unwrap();
+        let phase_input = PhaseInput::new(
+            unit.clone(),
+            PhaseDispatchInputBundle::new(
+                snapshot,
+                source_input.identities().input_hash(),
+                vec![],
+                vec![
+                    SealedParentOutputHandle::from_published_output(
+                        &baseline_owner,
+                        snapshot,
+                        parent.clone(),
+                    )
+                    .unwrap(),
+                ],
+            )
+            .unwrap(),
+        );
+        let expected = inputs
+            .publish_native_theorem_module_candidates(&phase_input, &baseline_owner)
+            .unwrap()
+            .unwrap();
+        let expected_pair = baseline_owner.storage().get(&expected).unwrap();
+        assert_eq!(
+            expected_pair.0.source_id(),
+            captured.snapshot().source_versions[0].source_id
+        );
+        assert_eq!(
+            expected_pair.0.module_id(),
+            &ResolverModuleId::new(PackageId::new("alpha"), ModulePath::new("main"))
+        );
+        let mut replay = None;
+        for &workers in if case == 0 { &[1, 4][..] } else { &[1][..] } {
+            if open {
+                fixture.write(&[0xff]);
+            }
+            let (_, mut submit) = fixture.submit_request(vec![], vec![]);
+            submit.worker_count = workers;
+            submit.completion_order = if workers == 1 {
+                CompletionOrder::Canonical
+            } else {
+                CompletionOrder::Reverse
+            };
+            let owner = publisher(snapshot, threshold, &unit);
+            allow_frontend(&owner, &unit);
+            owner.allow_work_unit(AllowedWorkUnit::new(
+                IrPipelinePhase::new("ModuleResolve"),
+                OutputKind::new("SourceTheoremModuleCandidates"),
+                IrWorkUnit::new("\"alpha\":\"main\""),
+            ));
+            let mut builder = PhaseRegistryBuilder::new();
+            builder
+                .register_source_load()
+                .register_frontend(vec![])
+                .register_source_theorem_module_resolver();
+            let mut driver =
+                CompilerDriver::new(builder.build().unwrap()).with_output_publisher(owner.clone());
+            let submission = driver
+                .submit_captured(session.clone(), &ids, &snapshots, submit)
+                .unwrap();
+            assert_eq!(
+                submission.status,
+                DriverSubmissionStatus::BlockedByMissingPhaseServices
+            );
+            assert_eq!(
+                submission.session.state(),
+                BuildSessionState::Finished(BuildSessionOutcome::Blocked)
+            );
+            assert!(
+                submission
+                    .missing_services
+                    .iter()
+                    .any(|gap| gap.phase == PipelinePhase::SignatureCollection)
+            );
+            assert!(
+                !submission
+                    .missing_services
+                    .iter()
+                    .any(|gap| gap.phase == PipelinePhase::ModuleResolve)
+            );
+            let task = submission
+                .task_graph
+                .as_ref()
+                .unwrap()
+                .tasks()
+                .iter()
+                .find(|task| task.kind == TaskKind::ModuleResolve && task.unit == unit)
+                .unwrap();
+            let run = submission.scheduler_run.as_ref().unwrap();
+            assert_eq!(
+                run.task_states
+                    .iter()
+                    .find(|record| record.task_id == task.id)
+                    .unwrap()
+                    .state,
+                TaskState::Completed
+            );
+            let [result] = run.phase_results[&task.id].as_slice() else {
+                panic!("one resolver result")
+            };
+            assert_eq!(result.status, PhaseStatus::Complete);
+            assert!(result.diagnostics.is_empty());
+            let [actual] = result.output_refs.as_slice() else {
+                panic!("one genuine resolver output")
+            };
+            assert_eq!(actual, &expected.erase());
+            assert_eq!(
+                actual.placement() == &StoragePlacement::Resident,
+                threshold != 0
+            );
+            let typed = owner
+                .storage()
+                .typed_handle::<(
+                    mizar_resolve::resolved_ast::ResolvedAst,
+                    mizar_resolve::env::SymbolEnv,
+                )>(actual, &OutputKind::new("SourceTheoremModuleCandidates"))
+                .unwrap();
+            assert_eq!(*owner.storage().get(&typed).unwrap(), *expected_pair);
+            assert_eq!(
+                owner.storage().side_tables(&typed).unwrap(),
+                baseline_owner.storage().side_tables(&expected).unwrap()
+            );
+            let cache = driver
+                .registry()
+                .cache_key_for_phase(PipelinePhase::ModuleResolve, &phase_input)
+                .unwrap();
+            assert!(
+                matches!(cache.intent, PhaseCacheIntent::NoKey { reason } if !reason.is_empty())
+            );
+            assert!(result.cache_observation.is_some());
+            if let Some(previous) = &replay {
+                assert_eq!(result, previous);
+            }
+            replay = Some(result.clone());
+            assert_eq!(submission.session.captured(), &captured);
+        }
+        assert_eq!(session.captured(), &captured);
+    }
+}
+
+#[test]
+fn scheduled_theorem_resolver_preserves_genuine_refusals() {
+    let private = include_str!(
+        "../../../tests/miz/pass/resolve/pass_declaration_symbol_private_theorem_visibility_001.miz"
+    );
+    for (text, error) in [
+        (format!("{private}\nreserve Y for set;\n"), false),
+        (private.replace("by PrivT1", "by Missing"), false),
+        (private.replace("thus X = X;", "thus Y = Y;"), true),
+    ] {
+        let fixture = Fixture::new(text.as_bytes());
+        let ids = InMemorySessionIdAllocator::new();
+        let snapshots = SnapshotRegistry::new();
+        let (_, baseline, adapter, parent, _) =
+            native_disk_frontend_record_submission(&fixture, &ids, &snapshots, 0);
+        let owner = adapter.publisher();
+        let (inputs, source_input) = native_disk_lookup_context(&baseline, &ids);
+        let snapshot = source_input.snapshot;
+        owner.allow_work_unit(AllowedWorkUnit::new(
+            IrPipelinePhase::new("ModuleResolve"),
+            OutputKind::new("SourceTheoremModuleCandidates"),
+            parent.work_unit().clone(),
+        ));
+        let input = PhaseInput::new(
+            source_input.work_unit.clone(),
+            PhaseDispatchInputBundle::new(
+                snapshot,
+                source_input.identities().input_hash(),
+                vec![],
+                vec![
+                    SealedParentOutputHandle::from_published_output(
+                        owner,
+                        snapshot,
+                        parent.erase(),
+                    )
+                    .unwrap(),
+                ],
+            )
+            .unwrap(),
+        );
+        let old = inputs.publish_native_theorem_module_candidates(&input, owner);
+        if error {
+            assert!(old.is_err());
+        } else {
+            assert!(matches!(old, Ok(None)));
+        }
+        let mut builder = PhaseRegistryBuilder::new();
+        builder.register_source_theorem_module_resolver();
+        let registry = builder.build().unwrap();
+        let result = registry
+            .execute_phase_with_resources(
+                PipelinePhase::ModuleResolve,
+                input,
+                PhaseExecutionResources {
+                    output_publisher: Some(owner.clone()),
+                    source_load: Some(inputs),
+                    ..PhaseExecutionResources::default()
+                },
+            )
+            .unwrap()
+            .result;
+        assert_eq!(result.status, PhaseStatus::Blocking);
+        assert!(result.output_refs.is_empty());
+        assert!(result.diagnostics.is_empty());
+        assert!(result.cache_observation.is_some());
+        let collected = owner.storage().collect(mizar_ir::storage::CollectInput {
+            snapshot,
+            protected_outputs: vec![],
+        });
+        assert_eq!(
+            collected.outputs_dropped,
+            baseline
+                .scheduler_run
+                .as_ref()
+                .unwrap()
+                .phase_results
+                .values()
+                .flatten()
+                .map(|result| result.output_refs.len())
+                .sum::<usize>()
+        );
+        assert_eq!(collected.abandoned_slots_dropped, 0);
+    }
+}
+
+#[test]
+fn scheduled_theorem_resolver_requires_current_resources_and_honors_cancellation() {
+    let text = include_str!(
+        "../../../tests/miz/pass/theorems/pass_proof_verification_lemma_reference_001.miz"
+    );
+    for case in [
+        "valid",
+        "cancel",
+        "foreign-token",
+        "no-publisher",
+        "no-inputs",
+        "no-capture",
+        "foreign-capture",
+        "no-parent",
+        "collected-parent",
+        "obsolete",
+        "denied",
+    ] {
+        let fixture = Fixture::new(text.as_bytes());
+        let ids = InMemorySessionIdAllocator::new();
+        let snapshots = SnapshotRegistry::new();
+        let (_, baseline, adapter, parent, _) =
+            native_disk_frontend_record_submission(&fixture, &ids, &snapshots, 0);
+        let owner = adapter.publisher();
+        let (mut inputs, source_input) = native_disk_lookup_context(&baseline, &ids);
+        let snapshot = source_input.snapshot;
+        if case != "denied" {
+            owner.allow_work_unit(AllowedWorkUnit::new(
+                IrPipelinePhase::new("ModuleResolve"),
+                OutputKind::new("SourceTheoremModuleCandidates"),
+                parent.work_unit().clone(),
+            ));
+        }
+        let mut parents = vec![
+            SealedParentOutputHandle::from_published_output(owner, snapshot, parent.erase())
+                .unwrap(),
+        ];
+        let foreign = fixture.submit(&ids, &snapshots);
+        if case == "no-capture" {
+            inputs.captured = None;
+        }
+        if case == "foreign-capture" {
+            inputs.captured = Some(foreign.session.captured());
+        }
+        if case == "no-parent" {
+            parents.clear();
+        }
+        let input = PhaseInput::new(
+            source_input.work_unit.clone(),
+            PhaseDispatchInputBundle::new(
+                snapshot,
+                source_input.identities().input_hash(),
+                vec![],
+                parents,
+            )
+            .unwrap(),
+        );
+        if case == "collected-parent" {
+            owner.storage().collect(mizar_ir::storage::CollectInput {
+                snapshot,
+                protected_outputs: vec![],
+            });
+        }
+        if case == "obsolete" {
+            owner.mark_obsolete(snapshot).unwrap();
+        }
+        let old = inputs.native_theorem_module_candidates_with_frontend_parent(&input, owner);
+        if matches!(
+            case,
+            "no-capture" | "foreign-capture" | "no-parent" | "collected-parent" | "obsolete"
+        ) {
+            assert!(old.is_err(), "{case}");
+        } else {
+            assert!(old.unwrap().is_some(), "{case}");
+        }
+        let mut builder = PhaseRegistryBuilder::new();
+        builder.register_source_theorem_module_resolver();
+        let result = builder
+            .build()
+            .unwrap()
+            .execute_phase_with_resources(
+                PipelinePhase::ModuleResolve,
+                input,
+                PhaseExecutionResources {
+                    cancellation: matches!(case, "cancel" | "foreign-token").then_some(
+                        CancellationToken {
+                            snapshot: if case == "foreign-token" {
+                                snapshot_id(0xf4)
+                            } else {
+                                snapshot
+                            },
+                            generation: CancellationGeneration::new(1),
+                            reason: CancellationReason::ExplicitRequest,
+                        },
+                    ),
+                    output_publisher: (case != "no-publisher").then(|| owner.clone()),
+                    source_load: (case != "no-inputs").then_some(inputs),
+                    ..PhaseExecutionResources::default()
+                },
+            )
+            .unwrap()
+            .result;
+        assert_eq!(
+            result.status,
+            match case {
+                "valid" => PhaseStatus::Complete,
+                "cancel" => PhaseStatus::Cancelled,
+                _ => PhaseStatus::Blocking,
+            },
+            "{case}"
+        );
+        assert!(result.diagnostics.is_empty());
+        if case == "valid" {
+            let [actual] = result.output_refs.as_slice() else {
+                panic!("one producer output")
+            };
+            assert_eq!(actual.phase(), &IrPipelinePhase::new("ModuleResolve"));
+            owner.validate_published_output(snapshot, actual).unwrap();
+            owner.storage().validate_handle(actual).unwrap();
+        } else {
+            assert!(result.output_refs.is_empty(), "{case}");
+        }
+    }
+}
