@@ -15,11 +15,11 @@ Where the two differ, the protocol wins.
 - If you write 200 lines and it could be 50, rewrite it.
 - For changes exceeding 300 production lines or adding a public seam, present
   the plan first; this alone does not require user approval.
-- Documentation records decisions and boundaries only. Never write evidence,
-  scores, gate tallies, digests, review outcomes, model names, or reasoning
-  settings into `doc/`. They go in the commit body. `cargo test` enforces this
-  through `tests/coverage/doc_volume_baseline.tsv`; its rows may only be
-  lowered or removed.
+- Documentation records decisions and boundaries only. Per-run evidence,
+  scores, gate tallies, digests, review outcomes, and model/reasoning settings
+  belong in the commit body, never `doc/`. Durable model-routing policy lives
+  only in the protocol. `cargo test` enforces the documentation ratchet in
+  `tests/coverage/doc_volume_baseline.tsv`; rows may only be lowered or removed.
 - A task contract is at most 60 lines per language. Link it only from
   `doc/design/todo.md`, crate plans, crate todos, or the coverage audit.
   Module documents never point back at contracts.
@@ -31,7 +31,8 @@ Where the two differ, the protocol wins.
 
 ## User Invocation
 
-When the user writes something like the following, run the full workflow:
+Requests such as the following invoke the full workflow, including sub-agent
+review and delegation where available:
 
 ```text
 <task description>
@@ -39,37 +40,32 @@ When the user writes something like the following, run the full workflow:
 Codex agent を使い、AGENTS.md のワークフローに従って、完了まで進めてください。
 ```
 
-This wording asks for sub-agents in review and delegation where available.
 Resolve implementation and test-infrastructure gaps autonomously under existing
 specification, test intent, and authorized scope. Ask only for unresolved
 semantic decisions or approvals required by user constraints or the protocol.
 
 ## Task Workflow
 
-Follow the canonical [Task Workflow](doc/design/autonomous_crate_development.md#task-workflow)
-and [Review Standards](doc/design/autonomous_crate_development.md#review-standards).
-Read the specification, tests, and owner documents relevant to the task; expand
-when dependencies or findings require it. Do not load a full repository map or
-completed-task history by default. Use the protocol's authority, contract, and
-gate sections for changes; crate kickoff/exit sections for crate-wide work;
-and migration rules plus `documentation_compaction_rules.md` for migrations.
+Follow the protocol's [Task Workflow](doc/design/autonomous_crate_development.md#task-workflow),
+[Review Standards](doc/design/autonomous_crate_development.md#review-standards),
+and applicable authority, contract, gate, kickoff/exit, and migration rules.
+Read relevant specification, tests, and owner documents; expand as needed,
+without loading a full repository map or completed-task history by default.
+For migrations, also read `doc/design/documentation_compaction_rules.md`.
 
 ## Delegation
 
-The parent agent owns orchestration, integration, final verification, staging,
-and committing. Give each sub-agent a compact self-contained packet (protocol:
-"Economical Review Packets") with a clear write scope; never pre-state the
-desired conclusion. Model and reasoning routing is defined in the protocol
-section "Delegation And Model Routing".
+The parent owns orchestration, integration, final verification, staging, and
+committing. Follow [model routing](doc/design/autonomous_crate_development.md#delegation-and-model-routing)
+and give each sub-agent a self-contained [review packet](doc/design/autonomous_crate_development.md#economical-review-packets)
+with a clear write scope and no pre-stated conclusion.
 
-After each task commit, save a concise resume checkpoint. Include the commit,
-uncommitted changes, next scope, authority/contract paths, unresolved issues,
-and verification state.
-Reference completed work instead of copying its history.
-Rely on the environment's automatic context compaction; do not stop after each
-task to request manual compaction or a resume instruction. After automatic
-compaction, read the checkpoint and continue authorized work. User-directed
-stops, usage-limit thresholds, and protocol stop conditions still apply.
+After each task commit, save a concise checkpoint: commit, uncommitted changes,
+next scope, authority/contract paths, unresolved issues, and verification state.
+Reference completed work; do not copy its history. Use automatic context
+compaction, then read the checkpoint and continue without requesting manual
+compaction or resume instructions. Respect user stops, usage limits, and
+protocol stop conditions.
 
 ## Verification
 
@@ -79,14 +75,12 @@ cargo clippy --all-targets --all-features -- -D warnings
 cargo test
 ```
 
-Run narrow tests first when clearly sufficient, then the full set before
-finalizing Rust changes. If a command cannot run, say why and state the
-remaining risk. The parent owns final verification; reviewers use its command,
-checked revision and working-tree state, exit status, and log location instead
-of repeating the full suite. Rerun affected checks after changes or environment
-differences invalidate a result, or when a finding needs reproduction. Preserve
-full logs outside `doc/`; return concise success summaries and relevant failure
-output. This does not waive any required command or independent review.
+Run narrow tests first when sufficient, then the full set before finalizing
+Rust changes. Reviewers reuse the parent's command, checked revision/worktree,
+exit status, and log location; rerun affected checks if changes or environment
+differences invalidate results, or findings need reproduction. Keep full logs
+outside `doc/`; report concise results, relevant failures, and reasons/risks for
+unrun commands. Required commands and independent reviews remain mandatory.
 
 ## Documentation
 

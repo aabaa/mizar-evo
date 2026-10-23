@@ -562,7 +562,7 @@ Score caps:
 | required verification failure | 74 |
 | task contract longer than 60 lines in either language | 84 |
 | documentation added exceeds twice production added, or 200 lines per task | 84 |
-| evidence, scores, digests, or model routing written under `doc/` | 79 |
+| per-run evidence, scores, digests, or model routing written under `doc/` | 79 |
 | volume and scope review skipped or its findings left unresolved | 79 |
 | unapproved semantic behavior change | 69 |
 | unapproved soundness-boundary change | 59 |
@@ -692,38 +692,35 @@ Open questions:
 
 ## Delegation And Model Routing
 
-The parent agent keeps the user-requested reasoning setting and decides
-authority interpretation, specification or test intent, soundness boundaries,
-public API ownership, semantic acceptance, and final scoring. A lower setting
-for a sub-agent never lowers the parent setting or relaxes a gate.
+Default parent: `gpt-6.1-sol`, `high`; explicit user settings take precedence.
+The parent retains authority interpretation, specification/test intent,
+soundness boundaries, public API ownership, semantic acceptance, and final
+scoring. Delegated analysis never transfers these decisions or relaxes gates.
+When delegation is authorized, the parent selects available sub-agent models
+and effort without repeated confirmation, using these routes and
+[official guidance](https://learn.chatgpt.com/docs/agent-configuration/subagents):
 
-When a session exposes per-agent GPT-5.6 selection, follow the
-[current official OpenAI model guidance](https://developers.openai.com/api/docs/guides/latest-model)
-and these routes; availability and quota are environment facts, not policy:
+| Work | Model | Effort |
+|---|---|---|
+| Deterministic inventory, counts/hashes, link/manifest checks | `gpt-6-luna` | `low`–`medium` |
+| Frozen-contract local implementation, compaction, focused verification, first-pass review | `gpt-6-luna` | `xhigh` |
+| Cross-module implementation, precision review, escalated findings | `gpt-6.1-sol` | `high` |
+| Additional analysis of difficult semantics, soundness, or trust boundaries | `gpt-6-astra` | `high`; `xhigh` with measured gain |
 
-- Sol at the parent setting for the decisions above.
-- Luna `xhigh` for bounded work after the parent has frozen the contract:
-  deterministic inventory, count and hash checks, whole-section compaction,
-  manifest and link validation, focused verification, localized
-  contract-driven implementation, and first-pass independent reviews. Luna
-  must not resolve a `spec_gap`, derive test intent, invent semantics,
-  authorize a lower-stage change, expand scope, or accept a disputed finding;
-  it escalates without editing beyond the frozen scope.
-- Terra `high` (or `xhigh` with measured gain) as the intermediate route for
-  cross-module implementation, precision review, or a disagreement above
-  Luna's assignment that does not yet need a parent decision.
-- Broaden a route only after representative repository trials comparing task
-  success, missed findings, repair loops, gate agreement, tokens, latency, and
-  cost against one lower setting. If a model is not exposed, use the closest
-  eligible route without blocking.
+Sub-agents escalate specification gaps, disputed semantics/findings, scope
+expansion, and lower-stage changes to the parent without unauthorized edits;
+they must not invent semantics or derive new test intent. Broaden routes or
+raise effort only after representative repository trials against one lower
+setting compare success, missed findings, repair loops, gate agreement,
+tokens, latency, and cost. Do not routinely use `max`.
 
-Without per-agent model selection: parent setting for authority conflicts,
-specification gaps, soundness, disputed semantics, and final scoring; `high`
-for bounded implementation and independent reviews after the contract is
-frozen; `medium` or lower only for deterministic inventory and mechanical
-checks. Sub-agent output is subject to the same reviews, verification, gates,
-and commit rules as any other output. Effective model and setting, when they
-matter, are recorded in the final response, never under `doc/`.
+If a model is unavailable, use the closest eligible route. Without model
+selection, retain the parent setting for authority/soundness decisions, use
+`high` for bounded implementation/review and `medium` or lower only for
+mechanical checks. All reviews, verification, and commit rules still apply.
+Record actual per-run routing in the final response (and commit body when
+relevant), never under `doc/`. Only this section may document durable routing
+policy under `doc/`, as an exception to generic documentation bans.
 
 ## PR Type Guidance
 
