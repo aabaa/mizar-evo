@@ -644,6 +644,8 @@ the owning producers when the paired tasks land.
 
 93. **[Native theorem discharge storage replay](../../task_contracts/en/DRIVER-NATIVE-THEOREM-DISCHARGE-STORAGE.md).** [x]
 
+94. **[Native theorem discharge publication](../../task_contracts/en/DRIVER-NATIVE-THEOREM-DISCHARGE-PUBLICATION.md).** [x]
+
 ## Recommended Verification
 
 Run after each task:

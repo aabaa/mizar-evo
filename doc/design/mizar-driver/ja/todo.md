@@ -613,6 +613,8 @@ artifact/test のフォローアップタスクが所有する。本 crate の�
 
 93. **[Native theorem discharge storage replay](../../task_contracts/ja/DRIVER-NATIVE-THEOREM-DISCHARGE-STORAGE.md).** [x]
 
+94. **[Native theorem discharge publication](../../task_contracts/ja/DRIVER-NATIVE-THEOREM-DISCHARGE-PUBLICATION.md).** [x]
+
 ## 推奨検証
 
 各タスクの後で実行する:
