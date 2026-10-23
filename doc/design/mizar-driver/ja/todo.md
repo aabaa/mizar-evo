@@ -593,6 +593,8 @@ artifact/test のフォローアップタスクが所有する。本 crate の�
 
 83. **[Native theorem preparation Core caller](../../task_contracts/ja/DRIVER-NATIVE-THEOREM-PREPARATION-CORE-CALLER.md).** [x]
 
+84. **[Native theorem preparation storage replay](../../task_contracts/ja/DRIVER-NATIVE-THEOREM-PREPARATION-STORAGE-REPLAY.md).** [x]
+
 ## 推奨検証
 
 各タスクの後で実行する:

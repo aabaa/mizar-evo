@@ -6925,6 +6925,90 @@ pub fn native_theorem_metadata_from_storage_bytes(
     mizar_checker::type_checker::check_source_theorem_metadata(&arena, &env, &scope).map(Some)
 }
 
+/// Stores a deterministic replay of the genuine theorem preparation pair.
+pub fn native_theorem_preparation_storage_bytes(
+    ast: &<MizarParserSeam as ParserSeam>::Ast,
+    module: &mizar_resolve::resolved_ast::ModuleId,
+    core: &mizar_core::core_ir::CoreIr,
+    preparation: &(
+        mizar_core::control_flow::ControlFlowOutput,
+        mizar_core::control_flow::ObligationSeedHandoff,
+    ),
+) -> Result<Option<Vec<u8>>, String> {
+    let Some(core_bytes) = native_theorem_core_storage_bytes(ast, module, core)? else {
+        return Ok(None);
+    };
+    if !core.algorithms().is_empty() {
+        return Ok(None);
+    }
+    let domain = b"mizar-driver/native-theorem-preparation-storage/v1\0";
+    let Ok(length) = u64::try_from(core_bytes.len()) else {
+        return Ok(None);
+    };
+    let Some(size) = domain
+        .len()
+        .checked_add(8)
+        .and_then(|size| size.checked_add(core_bytes.len()))
+    else {
+        return Ok(None);
+    };
+    if size > 32 * 1024 * 1024 {
+        return Ok(None);
+    }
+    let flow = mizar_core::control_flow::build_control_flow_ir(core);
+    let handoff = mizar_core::control_flow::build_obligation_seed_handoff(core, &flow);
+    if &(flow, handoff) != preparation {
+        return Ok(None);
+    }
+    let mut bytes = Vec::with_capacity(size);
+    bytes.extend_from_slice(domain);
+    bytes.extend_from_slice(&length.to_le_bytes());
+    bytes.extend_from_slice(&core_bytes);
+    Ok(Some(bytes))
+}
+
+/// Rebuilds the genuine theorem preparation pair from opaque existing Core bytes.
+pub fn native_theorem_preparation_from_storage_bytes(
+    bytes: &[u8],
+    source_id: mizar_session::SourceId,
+    module: &mizar_resolve::resolved_ast::ModuleId,
+) -> Result<
+    Option<(
+        mizar_core::control_flow::ControlFlowOutput,
+        mizar_core::control_flow::ObligationSeedHandoff,
+    )>,
+    String,
+> {
+    let domain = b"mizar-driver/native-theorem-preparation-storage/v1\0";
+    if bytes.len() > 32 * 1024 * 1024 {
+        return Ok(None);
+    }
+    let Some(mut remaining) = bytes.strip_prefix(domain) else {
+        return Ok(None);
+    };
+    let Some(length) = remaining
+        .get(..8)
+        .and_then(|bytes| <[u8; 8]>::try_from(bytes).ok())
+        .map(u64::from_le_bytes)
+        .and_then(|length| usize::try_from(length).ok())
+    else {
+        return Ok(None);
+    };
+    remaining = &remaining[8..];
+    if remaining.len() != length {
+        return Ok(None);
+    }
+    let Some(core) = native_theorem_core_from_storage_bytes(remaining, source_id, module)? else {
+        return Ok(None);
+    };
+    if !core.algorithms().is_empty() {
+        return Ok(None);
+    }
+    let flow = mizar_core::control_flow::build_control_flow_ir(&core);
+    let handoff = mizar_core::control_flow::build_obligation_seed_handoff(&core, &flow);
+    Ok(Some((flow, handoff)))
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;

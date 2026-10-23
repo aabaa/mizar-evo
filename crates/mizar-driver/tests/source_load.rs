@@ -39085,3 +39085,340 @@ fn native_theorem_preparation_core_caller_preserves_refusals() {
         },
     );
 }
+
+#[test]
+fn native_theorem_preparation_storage_replay_preserves_genuine_outputs() {
+    use mizar_core::{
+        control_flow::{
+            ObligationHandoffOrigin, build_control_flow_ir, build_obligation_seed_handoff,
+        },
+        core_ir::{CoreProofStatus, ObligationSeedStatus},
+    };
+    use mizar_driver::{
+        native_theorem_core_storage_bytes as encode_core,
+        native_theorem_preparation_from_storage_bytes as decode,
+        native_theorem_preparation_storage_bytes as encode,
+    };
+    let text = "theorem T: for X being set holds X = X proof let X be set; thus X = X; end;";
+    let module = ResolverModuleId::new(PackageId::new("alpha"), ModulePath::new("main"));
+    for (open, threshold) in [(false, usize::MAX), (true, 0)] {
+        with_native_summary_parent(
+            text,
+            open,
+            threshold,
+            |fixture, inputs, old, owner, outputs, (_, ids, snapshots)| {
+                let frontend = outputs
+                    .iter()
+                    .find(|output| output.phase() == &IrPipelinePhase::new("Frontend"))
+                    .unwrap();
+                let input = PhaseInput::new(
+                    old.work_unit.clone(),
+                    PhaseDispatchInputBundle::new(
+                        old.snapshot,
+                        old.identities().input_hash(),
+                        vec![],
+                        vec![
+                            SealedParentOutputHandle::from_published_output(
+                                owner,
+                                old.snapshot,
+                                frontend.clone(),
+                            )
+                            .unwrap(),
+                        ],
+                    )
+                    .unwrap(),
+                );
+                let core = inputs
+                    .native_theorem_core_with_frontend_parent(&input, owner)
+                    .unwrap()
+                    .unwrap();
+                let frontend_handle = owner
+                    .storage()
+                    .typed_handle::<FrontendOutput<<MizarParserSeam as ParserSeam>::Ast>>(
+                        frontend,
+                        frontend.output_kind(),
+                    )
+                    .unwrap();
+                let frontend_output = owner.storage().get(&frontend_handle).unwrap();
+                let ast = frontend_output.ast.as_ref().unwrap();
+                assert_eq!(
+                    frontend.placement() == &StoragePlacement::Resident,
+                    threshold != 0
+                );
+                assert_eq!(core.source_id(), ast.source_id);
+                assert_eq!(core.module_id(), &module);
+                assert!(core.algorithms().is_empty());
+                assert!(!core.proofs().is_empty());
+                assert!(
+                    core.proofs().iter().all(|(_, proof)| {
+                        proof.status == CoreProofStatus::PendingAutomaticProof
+                    })
+                );
+                assert!(
+                    core.obligation_seeds()
+                        .iter()
+                        .all(|(_, seed)| { seed.status == ObligationSeedStatus::Active })
+                );
+                let flow = build_control_flow_ir(&core);
+                let handoff = build_obligation_seed_handoff(&core, &flow);
+                assert!(flow.flows.is_empty() && flow.flow_map.is_empty());
+                assert!(!handoff.entries.is_empty());
+                for (id, entry) in handoff.entries.iter() {
+                    let ObligationHandoffOrigin::ExistingCore { seed } = entry.origin else {
+                        panic!("existing Core seed")
+                    };
+                    assert_eq!(&entry.seed, core.obligation_seeds().get(seed).unwrap());
+                    assert_eq!(
+                        handoff.source_map.get(&id),
+                        Some(&core.source_map().obligation_sources[&seed])
+                    );
+                    assert_eq!(
+                        entry.seed.source,
+                        core.source_map().obligation_sources[&seed]
+                    );
+                    assert!(core.items().get(entry.seed.owner).is_some());
+                    assert!(core.formulas().get(entry.seed.goal.unwrap()).is_some());
+                    assert!(entry.flow_site.is_none());
+                }
+                let pair = (flow, handoff);
+                let core_bytes = encode_core(ast, &module, &core).unwrap().unwrap();
+                let mut expected = b"mizar-driver/native-theorem-preparation-storage/v1\0".to_vec();
+                expected.extend_from_slice(&u64::try_from(core_bytes.len()).unwrap().to_le_bytes());
+                expected.extend_from_slice(&core_bytes);
+                assert_eq!(
+                    encode(ast, &module, &core, &pair).unwrap(),
+                    Some(expected.clone())
+                );
+                assert_eq!(
+                    decode(&expected, ast.source_id, &module).unwrap(),
+                    Some(pair.clone())
+                );
+                let relocated_fixture = Fixture::new(text.as_bytes());
+                let (_, submission, adapter, relocated_handle, _) =
+                    native_disk_frontend_record_submission(&relocated_fixture, ids, snapshots, 0);
+                let (relocated_inputs, relocated_old) =
+                    native_disk_lookup_context(&submission, ids);
+                let relocated_owner = adapter.publisher();
+                let relocated_input = PhaseInput::new(
+                    relocated_old.work_unit.clone(),
+                    PhaseDispatchInputBundle::new(
+                        relocated_old.snapshot,
+                        relocated_old.identities().input_hash(),
+                        vec![],
+                        vec![
+                            SealedParentOutputHandle::from_published_output(
+                                relocated_owner,
+                                relocated_old.snapshot,
+                                relocated_handle.erase(),
+                            )
+                            .unwrap(),
+                        ],
+                    )
+                    .unwrap(),
+                );
+                let relocated_core = relocated_inputs
+                    .native_theorem_core_with_frontend_parent(&relocated_input, relocated_owner)
+                    .unwrap()
+                    .unwrap();
+                let relocated_frontend = relocated_owner.storage().get(&relocated_handle).unwrap();
+                let relocated_ast = relocated_frontend.ast.as_ref().unwrap();
+                assert_ne!(ast.source_id, relocated_ast.source_id);
+                let relocated_flow = build_control_flow_ir(&relocated_core);
+                let relocated_handoff =
+                    build_obligation_seed_handoff(&relocated_core, &relocated_flow);
+                let relocated_pair = (relocated_flow, relocated_handoff);
+                assert_ne!(pair, relocated_pair);
+                assert_ne!(core, relocated_core);
+                assert_eq!(
+                    decode(&expected, relocated_ast.source_id, &module).unwrap(),
+                    Some(relocated_pair.clone())
+                );
+                assert_eq!(encode_core(ast, &module, &relocated_core).unwrap(), None);
+                assert_eq!(encode(ast, &module, &core, &relocated_pair).unwrap(), None);
+                assert_eq!(encode(ast, &module, &relocated_core, &pair).unwrap(), None);
+                let before = (ast.clone(), module.clone(), core.clone(), pair.clone());
+                for stage in 0..3 {
+                    if stage == 1 {
+                        fixture.write(if open {
+                            &[0xff]
+                        } else {
+                            b"open theorem Changed: 0 = 1;\n"
+                        });
+                    } else if stage == 2 {
+                        fs::remove_file(fixture.root.join("alpha/src/main.miz")).unwrap();
+                    }
+                    assert_eq!(
+                        encode(ast, &module, &core, &pair).unwrap(),
+                        Some(expected.clone())
+                    );
+                    assert_eq!(
+                        decode(&expected, ast.source_id, &module).unwrap(),
+                        Some(pair.clone())
+                    );
+                }
+                assert_eq!(
+                    (ast.clone(), module.clone(), core.clone(), pair.clone()),
+                    before
+                );
+            },
+        );
+    }
+
+    let text = include_str!(
+        "../../../tests/miz/pass/theorems/pass_proof_verification_lemma_reference_001.miz"
+    );
+    let fixture = Fixture::new(text.as_bytes());
+    let ids = InMemorySessionIdAllocator::new();
+    let snapshots = SnapshotRegistry::new();
+    let (_, submission, adapter, handle, _) =
+        native_disk_frontend_record_submission(&fixture, &ids, &snapshots, 0);
+    let (inputs, old) = native_disk_lookup_context(&submission, &ids);
+    let owner = adapter.publisher();
+    let input = PhaseInput::new(
+        old.work_unit.clone(),
+        PhaseDispatchInputBundle::new(
+            old.snapshot,
+            old.identities().input_hash(),
+            vec![],
+            vec![
+                SealedParentOutputHandle::from_published_output(
+                    owner,
+                    old.snapshot,
+                    handle.erase(),
+                )
+                .unwrap(),
+            ],
+        )
+        .unwrap(),
+    );
+    let core = inputs
+        .native_theorem_core_with_frontend_parent(&input, owner)
+        .unwrap()
+        .unwrap();
+    let output = owner.storage().get(&handle).unwrap();
+    let ast = output.ast.as_ref().unwrap();
+    assert!(core.algorithms().is_empty());
+    let core_bytes = encode_core(ast, &module, &core).unwrap().unwrap();
+    let flow = build_control_flow_ir(&core);
+    let handoff = build_obligation_seed_handoff(&core, &flow);
+    let pair = (flow, handoff);
+    let mut outer = b"mizar-driver/native-theorem-preparation-storage/v1\0".to_vec();
+    outer.extend_from_slice(&u64::try_from(core_bytes.len()).unwrap().to_le_bytes());
+    outer.extend_from_slice(&core_bytes);
+    assert_eq!(
+        encode(ast, &module, &core, &pair).unwrap(),
+        Some(outer.clone())
+    );
+    assert_eq!(decode(&outer, ast.source_id, &module).unwrap(), Some(pair));
+}
+
+#[test]
+fn native_theorem_preparation_storage_replay_preserves_refusals() {
+    use mizar_driver::{
+        native_theorem_core_from_storage_bytes as decode_core,
+        native_theorem_core_storage_bytes as encode_core,
+        native_theorem_preparation_from_storage_bytes as decode,
+        native_theorem_preparation_storage_bytes as encode,
+    };
+    let text = "theorem T: for X being set holds X = X proof let X be set; thus X = X; end;";
+    let module = ResolverModuleId::new(PackageId::new("alpha"), ModulePath::new("main"));
+    let fixture = Fixture::new(text.as_bytes());
+    let ids = InMemorySessionIdAllocator::new();
+    let snapshots = SnapshotRegistry::new();
+    let (_, submission, adapter, handle, _) =
+        native_disk_frontend_record_submission(&fixture, &ids, &snapshots, 0);
+    let (inputs, old) = native_disk_lookup_context(&submission, &ids);
+    let owner = adapter.publisher();
+    let input = PhaseInput::new(
+        old.work_unit.clone(),
+        PhaseDispatchInputBundle::new(
+            old.snapshot,
+            old.identities().input_hash(),
+            vec![],
+            vec![
+                SealedParentOutputHandle::from_published_output(
+                    owner,
+                    old.snapshot,
+                    handle.erase(),
+                )
+                .unwrap(),
+            ],
+        )
+        .unwrap(),
+    );
+    let core = inputs
+        .native_theorem_core_with_frontend_parent(&input, owner)
+        .unwrap()
+        .unwrap();
+    let output = owner.storage().get(&handle).unwrap();
+    let ast = output.ast.as_ref().unwrap();
+    let inner = encode_core(ast, &module, &core).unwrap().unwrap();
+    let flow = mizar_core::control_flow::build_control_flow_ir(&core);
+    let handoff = mizar_core::control_flow::build_obligation_seed_handoff(&core, &flow);
+    let pair = (flow, handoff);
+    assert!(core.algorithms().is_empty());
+    let mut outer = b"mizar-driver/native-theorem-preparation-storage/v1\0".to_vec();
+    outer.extend_from_slice(&u64::try_from(inner.len()).unwrap().to_le_bytes());
+    outer.extend_from_slice(&inner);
+    let domain = b"mizar-driver/native-theorem-preparation-storage/v1\0";
+    let mut bad_domain = outer.clone();
+    bad_domain[0] = b'x';
+    let mut bad_version = outer.clone();
+    bad_version[domain.len() - 2] = b'2';
+    let mut bad_length = outer.clone();
+    bad_length[domain.len()..domain.len() + 8].copy_from_slice(&u64::MAX.to_le_bytes());
+    let mut trailing = outer.clone();
+    trailing.push(0);
+    let mut truncated = outer.clone();
+    truncated.pop();
+    let mut short_header = domain.to_vec();
+    short_header.extend_from_slice(&[1, 2, 3]);
+    let mut oversized = outer.clone();
+    oversized.resize(32 * 1024 * 1024 + 1, 0);
+    for malformed in [
+        Vec::new(),
+        bad_domain,
+        bad_version,
+        bad_length,
+        trailing,
+        truncated,
+        short_header,
+        oversized,
+    ] {
+        assert_eq!(decode(&malformed, ast.source_id, &module), Ok(None));
+    }
+    let mut invalid_inner = inner.clone();
+    invalid_inner[inner.len() - ast.canonical_bytes().unwrap().len()] = b'!';
+    assert_eq!(
+        decode_core(&invalid_inner, ast.source_id, &module),
+        Ok(None)
+    );
+    let mut framed_none = domain.to_vec();
+    framed_none.extend_from_slice(&u64::try_from(invalid_inner.len()).unwrap().to_le_bytes());
+    framed_none.extend_from_slice(&invalid_inner);
+    assert_eq!(decode(&framed_none, ast.source_id, &module), Ok(None));
+
+    let private = include_str!(
+        "../../../tests/miz/pass/resolve/pass_declaration_symbol_private_theorem_visibility_001.miz"
+    );
+    let fixture = Fixture::new(private.as_bytes());
+    let (_, _, adapter, handle, _) =
+        native_disk_frontend_record_submission(&fixture, &ids, &snapshots, 0);
+    let output = adapter.publisher().storage().get(&handle).unwrap();
+    let ast = output.ast.as_ref().unwrap();
+    let syntax = ast.canonical_bytes().unwrap();
+    let mut private_inner = b"mizar-driver/native-theorem-core-storage/v1\0".to_vec();
+    for field in [b"alpha".as_slice(), b"main".as_slice(), syntax.as_slice()] {
+        private_inner.extend_from_slice(&u64::try_from(field.len()).unwrap().to_le_bytes());
+        private_inner.extend_from_slice(field);
+    }
+    let old_error = encode_core(ast, &module, &core).unwrap_err();
+    assert_eq!(encode(ast, &module, &core, &pair), Err(old_error.clone()));
+    let expected = decode_core(&private_inner, ast.source_id, &module).map(|_| None);
+    assert!(expected.is_err());
+    assert_eq!(expected.as_ref().unwrap_err(), &old_error);
+    let mut framed_error = domain.to_vec();
+    framed_error.extend_from_slice(&u64::try_from(private_inner.len()).unwrap().to_le_bytes());
+    framed_error.extend_from_slice(&private_inner);
+    assert_eq!(decode(&framed_error, ast.source_id, &module), expected);
+}
