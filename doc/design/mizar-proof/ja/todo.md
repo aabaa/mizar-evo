@@ -472,6 +472,8 @@ kernel の拒否語彙と evidence 契約を訂正した。policy 層はその�
 55. **[Source algorithm return reflexivity status](../../task_contracts/ja/PROOF-SOURCE-ALGORITHM-RETURN-STATUS.md).** [x]
 56. **[Explicit source theorem file staging](../../task_contracts/ja/PROOF-SOURCE-THEOREM-WITNESS-FILE-STAGING.md).** [x]
 
+57. **[Fresh source state transitivity](../../task_contracts/ja/PROOF-SOURCE-ALGORITHM-STATE-TRANSITIVITY.md).** [x]
+
 ## 推奨検証
 
 各タスクの後で実行する:

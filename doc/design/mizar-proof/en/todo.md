@@ -496,6 +496,8 @@ layer consumes both; one alignment task is owned here.
 55. **[Source algorithm return reflexivity status](../../task_contracts/en/PROOF-SOURCE-ALGORITHM-RETURN-STATUS.md).** [x]
 56. **[Explicit source theorem file staging](../../task_contracts/en/PROOF-SOURCE-THEOREM-WITNESS-FILE-STAGING.md).** [x]
 
+57. **[Fresh source state transitivity](../../task_contracts/en/PROOF-SOURCE-ALGORITHM-STATE-TRANSITIVITY.md).** [x]
+
 ## Recommended Verification
 
 Run after each task:
