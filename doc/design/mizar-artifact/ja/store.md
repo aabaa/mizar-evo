@@ -265,3 +265,8 @@ task 2 はこの仕様を導入した。source implementation は後続 task に
 - task 13 は store write、atomicity、root-safe published-path validation、corruption-detecting read を実装する。
 - task 14 は manifest transaction を実装する。
 - schema-specific reader/writer behavior は各 schema task で実装する。
+
+## In-memory canonical JSON parsing
+`parse_canonical_json_bytes(bytes: &[u8], artifact_path: &str) -> Result<CanonicalJson, StoreIoError>` は既存 UTF-8 検査と未変更の private canonical parser を使う。artifact_path は診断 context だけに複写し、filesystem path として検査しない。既存 InvalidUtf8/CorruptCanonicalJson/NonCanonicalJson の分類・位置・path と canonical value grammar を維持する。
+結果は未信頼 data のみで、I/O、hash/schema 検証、source currentness、受理・公開を認めない。read_published_artifact は先行する hash-domain option guard と root/path/read guard の順序を維持し、file read 後に委譲してから従来の hash 計算・expected-hash 比較を行う。parser/serializer/schema と旧 error 順序は維持する。
+既存 store/tests.rs へ nested/Unicode canonical value、malformed UTF-8/JSON/duplicate/noncanonical bytes、実 filesystem read との正確な分類・位置・path 一致、診断 context 専用 path を検証する test を追加する。旧 read fixture/matrix は維持し、将来の ModuleSummary/SignatureCollection 統合は別責務とする。

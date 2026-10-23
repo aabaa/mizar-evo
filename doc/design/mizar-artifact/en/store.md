@@ -282,3 +282,8 @@ later tasks:
   validation, and corruption-detecting reads;
 - task 14 implements manifest transactions;
 - schema-specific reader/writer behavior is implemented by each schema task.
+
+## In-memory canonical JSON parsing
+`parse_canonical_json_bytes(bytes: &[u8], artifact_path: &str) -> Result<CanonicalJson, StoreIoError>` applies the existing UTF-8 validation and unchanged private canonical parser. artifact_path is copied only into diagnostic context, without filesystem-path validation. Preserve existing InvalidUtf8, CorruptCanonicalJson and NonCanonicalJson classification, position and path; accept exactly the existing canonical value grammar.
+The result is untrusted data only: no I/O, hash/schema validation, source currentness, acceptance or publication. read_published_artifact keeps early hash-domain option guards and root/path/read guards in their existing order, delegates after the file read, then preserves hash computation and expected-hash comparison; parser, serializer, schemas and all old error precedence stay intact.
+Append focused tests in existing store/tests.rs: literal nested/Unicode canonical values and malformed UTF-8/JSON/duplicate/noncanonical bytes, exact class/location/path parity with genuine filesystem reads, and diagnostic-context-only path behavior. Reuse old read fixtures/matrices unchanged; future ModuleSummary/SignatureCollection integration remains separate.

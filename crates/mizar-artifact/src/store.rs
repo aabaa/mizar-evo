@@ -889,6 +889,19 @@ pub fn write_published_artifact(
     })
 }
 
+/// Parses untrusted canonical JSON bytes without accessing the filesystem.
+/// The artifact path supplies diagnostic context only.
+pub fn parse_canonical_json_bytes(
+    bytes: &[u8],
+    artifact_path: &str,
+) -> Result<CanonicalJson, StoreIoError> {
+    let text = std::str::from_utf8(bytes).map_err(|error| StoreIoError::InvalidUtf8 {
+        path: artifact_path.to_owned(),
+        location: location_for_byte_prefix(&bytes[..error.valid_up_to()]),
+    })?;
+    parse_canonical_json_artifact(text, artifact_path)
+}
+
 /// Reads and validates a canonical JSON published artifact under an artifact root.
 pub fn read_published_artifact(
     artifact_root: impl AsRef<Path>,
@@ -919,11 +932,7 @@ pub fn read_published_artifact(
 
     let bytes = fs::read(&final_path)
         .map_err(|error| io_error(path.as_str(), StoreIoOperation::Read, error))?;
-    let text = std::str::from_utf8(&bytes).map_err(|error| StoreIoError::InvalidUtf8 {
-        path: path.as_str().to_owned(),
-        location: location_for_byte_prefix(&bytes[..error.valid_up_to()]),
-    })?;
-    let value = parse_canonical_json_artifact(text, path.as_str())?;
+    let value = parse_canonical_json_bytes(&bytes, path.as_str())?;
     let artifact_hash = options
         .artifact_hash_domain
         .map(|domain| domain.hash(&value, options.hash_excluded_paths));

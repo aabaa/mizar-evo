@@ -805,3 +805,82 @@ impl Drop for TestArtifactRoot {
         let _ = fs::remove_dir_all(&self.path);
     }
 }
+
+#[test]
+fn canonical_bytes_parse_matches_literal_value_and_published_read() {
+    let literal =
+        "{\"a\":[null,true,-7,{\"日本語\":\"雪\\n\\u001f\"}],\"z\":\"quote:\\\" slash:\\\\\"}\n";
+    let expected = CanonicalJson::object([
+        (
+            "a",
+            CanonicalJson::array([
+                CanonicalJson::Null,
+                CanonicalJson::Bool(true),
+                CanonicalJson::Integer(-7),
+                CanonicalJson::object([("日本語", CanonicalJson::string("雪\n\u{1f}"))]).unwrap(),
+            ]),
+        ),
+        ("z", CanonicalJson::string("quote:\" slash:\\")),
+    ])
+    .unwrap();
+    let parsed =
+        super::parse_canonical_json_bytes(literal.as_bytes(), "../not-a-file/memory").unwrap();
+    assert_eq!(parsed, expected);
+    assert_eq!(canonical_json_string(&parsed), literal);
+    let root = TestArtifactRoot::new();
+    let path = PublishedArtifactPath::new("value.json").unwrap();
+    write_published_artifact(
+        root.path(),
+        &path,
+        &expected,
+        &artifact_hash_domain("bytes-parse-test", SchemaVersion::new(1, 0)),
+        &[],
+    )
+    .unwrap();
+    assert_eq!(
+        fs::read(root.path().join(path.as_str())).unwrap(),
+        literal.as_bytes()
+    );
+    let read = read_published_artifact(root.path(), &path, PublishedArtifactReadOptions::default())
+        .unwrap();
+    assert_eq!(
+        super::parse_canonical_json_bytes(literal.as_bytes(), path.as_str()).unwrap(),
+        read.value
+    );
+}
+
+#[test]
+fn canonical_bytes_parse_preserves_positioned_read_errors() {
+    let root = TestArtifactRoot::new();
+    let path = PublishedArtifactPath::new("invalid.json").unwrap();
+    for bytes in [
+        b"\n\xff".as_slice(),
+        b"{\"a\":\n",
+        b"{\"a\":1,\"a\":2}\n",
+        b"{\"b\":1,\"a\":2}\n",
+    ] {
+        fs::write(root.path().join(path.as_str()), bytes).unwrap();
+        let read =
+            read_published_artifact(root.path(), &path, PublishedArtifactReadOptions::default())
+                .unwrap_err();
+        let parsed = super::parse_canonical_json_bytes(bytes, path.as_str()).unwrap_err();
+        assert_eq!(parsed, read);
+        if bytes == b"\n\xff" {
+            assert_eq!(
+                parsed,
+                StoreIoError::InvalidUtf8 {
+                    path: path.as_str().to_owned(),
+                    location: super::ArtifactTextLocation {
+                        byte_offset: 1,
+                        line: 2,
+                        column: 1
+                    },
+                }
+            );
+        }
+    }
+    assert!(matches!(
+        super::parse_canonical_json_bytes(b"\xff", "../diagnostic-only").unwrap_err(),
+        StoreIoError::InvalidUtf8 { path, .. } if path == "../diagnostic-only"
+    ));
+}

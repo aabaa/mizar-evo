@@ -343,6 +343,7 @@ internal: [02](../../internal/ja/02.artifact_store_cache_key_and_manifest.md)、
 27. **[Explicit built-in enclosing profile](../../task_contracts/ja/ARTIFACT-BUILTIN-ENCLOSING-PROFILE.md).** [x]
 
 28. **[Retained manifest commit result](../../task_contracts/ja/ARTIFACT-MANIFEST-COMMIT-RESULT-OPAQUE.md).** [x]
+29. **[In-memory canonical bytes parsing](../../task_contracts/ja/ARTIFACT-CANONICAL-BYTES-PARSE.md).** [x]
 
 ## 推奨検証
 
