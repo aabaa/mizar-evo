@@ -35678,3 +35678,469 @@ fn native_theorem_metadata_type_registration_caller_preserves_refusals() {
         );
     }
 }
+
+#[test]
+fn native_theorem_metadata_publication_seals_genuine_payload_and_streams() {
+    use mizar_checker::{
+        source_atomic_formula::SourceAtomicRequestKind,
+        type_checker::{TypeHeadRef, check_source_theorem_metadata as check},
+    };
+    use mizar_frontend::{
+        orchestration::Frontend,
+        source::{FrontendSourceLoader, diagnostic_file_path, source_unit_from_loaded},
+    };
+    use mizar_ir::{
+        publisher::PublishError,
+        storage::{IrSideTables, SchemaVersion, SideTableRecord, StorageError},
+    };
+    use mizar_resolve::{
+        names::{SourceVariableScopeInput as Input, SourceVariableScopeResolver as Resolver},
+        symbols::{
+            source_theorem_module_original_inputs as original_inputs,
+            source_theorem_module_semantic_payload as semantics,
+        },
+    };
+    let module = ResolverModuleId::new(PackageId::new("alpha"), ModulePath::new("main"));
+    let field = |hasher: &mut blake3::Hasher, bytes: &[u8]| {
+        hasher.update(&(bytes.len() as u64).to_le_bytes());
+        hasher.update(bytes);
+    };
+    for (open, threshold) in [(false, usize::MAX), (true, 0)] {
+        let mut representations = Vec::new();
+        for text in [
+            "theorem T: for X being set holds X = X proof let X be set; thus X = X; end;",
+            "theorem T: for X being set holds X = X\nproof\n  let X be set;\n  thus X = X;\nend;\n",
+            "theorem Renamed: for X being set holds X = X proof let X be set; thus X = X; end;",
+            include_str!(
+                "../../../tests/miz/pass/theorems/pass_proof_verification_lemma_reference_001.miz"
+            ),
+        ] {
+            with_native_summary_parent(
+                text,
+                open,
+                threshold,
+                |fixture, inputs, old, owner, _, (session, _, _)| {
+                    let unit = IrWorkUnit::new("\"alpha\":\"main\"");
+                    for (phase, kind) in [
+                        ("SignatureCollection", "SourceTheoremModuleSummary"),
+                        ("TypeChecking", "SourceTheoremTypedAst"),
+                        ("RegistrationResolution", "SourceTheoremRegistrationClosure"),
+                        ("OverloadResolution", "SourceTheoremMetadata"),
+                    ] {
+                        owner.allow_work_unit(AllowedWorkUnit::new(
+                            IrPipelinePhase::new(phase),
+                            OutputKind::new(kind),
+                            unit.clone(),
+                        ));
+                    }
+                    let child = |parents: Vec<AnyPhaseOutputRef>| {
+                        PhaseInput::new(
+                            old.work_unit.clone(),
+                            PhaseDispatchInputBundle::new(
+                                old.snapshot,
+                                old.identities().input_hash(),
+                                vec![],
+                                parents
+                                    .into_iter()
+                                    .map(|parent| {
+                                        SealedParentOutputHandle::from_published_output(
+                                            owner,
+                                            old.snapshot,
+                                            parent,
+                                        )
+                                        .unwrap()
+                                    })
+                                    .collect(),
+                            )
+                            .unwrap(),
+                        )
+                    };
+                    let signature = inputs
+                        .publish_native_theorem_module_summary(old, owner)
+                        .unwrap()
+                        .unwrap();
+                    let type_input = child(vec![signature.erase()]);
+                    let typed = inputs
+                        .publish_native_theorem_typed_ast(&type_input, owner)
+                        .unwrap()
+                        .unwrap();
+                    let reg_input = child(vec![typed.erase()]);
+                    let registration = inputs
+                        .publish_native_theorem_registration_closure(&reg_input, owner)
+                        .unwrap()
+                        .unwrap();
+                    let input = child(vec![typed.erase(), registration.erase()]);
+                    let (_, loaded, descriptor) =
+                        &inputs.captured.unwrap().native_sources().unwrap()[0];
+                    let output = Frontend::new(
+                        FrontendSourceLoader::new(DiskSourceLoader::new(
+                            fixture.root.join("alpha"),
+                        )),
+                        inputs.dependency_lexical_provider(&[]),
+                        MizarParserSeam,
+                    )
+                    .run_loaded(source_unit_from_loaded(
+                        loaded.clone(),
+                        diagnostic_file_path(descriptor),
+                    ))
+                    .unwrap();
+                    assert!(output.diagnostics.is_empty());
+                    assert!(output.cache_keys.ast.is_some());
+                    let ast = output.ast.as_ref().unwrap();
+                    let (arena, env) = original_inputs(ast, &module).unwrap().unwrap();
+                    let scope = Resolver::resolve_proof_occurrences(Input::new(ast, &module, &env))
+                        .unwrap();
+                    let expected = check(&arena, &env, &scope).unwrap();
+                    for id in [
+                        expected.0.source_id(),
+                        expected.1.source_id(),
+                        expected.2.source_id(),
+                        expected.3.source_id(),
+                    ] {
+                        assert_eq!(id, loaded.source_id);
+                    }
+                    for actual_module in [
+                        expected.0.module_id(),
+                        expected.1.module_id(),
+                        expected.2.module_id(),
+                        expected.3.module_id(),
+                    ] {
+                        assert_eq!(actual_module, &module);
+                    }
+                    let normalized = expected
+                        .3
+                        .nodes()
+                        .iter()
+                        .filter_map(|(_, node)| node.final_type)
+                        .collect::<Vec<_>>();
+                    assert!(!normalized.is_empty());
+                    for id in normalized {
+                        assert_eq!(
+                            expected.1.normalized_types().get(id).unwrap().head,
+                            TypeHeadRef::BuiltinSet
+                        );
+                    }
+                    let atomic = expected.2.source_atomic_formula().unwrap();
+                    assert!(!atomic.requests().is_empty());
+                    assert!(atomic.requests().iter().all(|(_, request)| request.kind()
+                        == SourceAtomicRequestKind::OperandExpectedType));
+                    assert_eq!(expected.3.source_atomic_formula(), Some(atomic));
+                    let opaque = semantics(ast, &module).unwrap().unwrap().2;
+                    let mut content_bytes =
+                        b"mizar-driver/native-theorem-metadata-content/v1\0".to_vec();
+                    content_bytes.extend_from_slice(&(opaque.len() as u64).to_le_bytes());
+                    content_bytes.extend_from_slice(&opaque);
+                    let syntax = ast.canonical_bytes().unwrap();
+                    let mut bytes = b"mizar-driver/native-theorem-metadata-storage/v1\0".to_vec();
+                    for value in [b"alpha".as_slice(), b"main".as_slice(), syntax.as_slice()] {
+                        bytes.extend_from_slice(&(value.len() as u64).to_le_bytes());
+                        bytes.extend_from_slice(value);
+                    }
+                    let version = &inputs.snapshot.source_versions[0];
+                    let mut content = blake3::Hasher::new();
+                    field(&mut content, b"mizar-ir/publisher-content-hash/v1");
+                    field(&mut content, &content_bytes);
+                    content.update(&2_u64.to_le_bytes());
+                    let mut parents = [typed.erase(), registration.erase()];
+                    parents.sort_by(|a, b| {
+                        a.content_hash()
+                            .as_bytes()
+                            .cmp(b.content_hash().as_bytes())
+                            .then_with(|| {
+                                a.side_table_hash()
+                                    .as_bytes()
+                                    .cmp(b.side_table_hash().as_bytes())
+                            })
+                    });
+                    for parent in &parents {
+                        field(&mut content, b"parent_content");
+                        content.update(parent.content_hash().as_bytes());
+                    }
+                    content.update(&1_u64.to_le_bytes());
+                    for value in [
+                        "source",
+                        SOURCE_UNIT_CACHE_KEY_VERSION,
+                        "mizar-ir/publisher-named-input-hash/v1",
+                    ] {
+                        field(&mut content, value.as_bytes());
+                    }
+                    content.update(source_key(version).as_bytes());
+                    let expected_content = Hash::from_bytes(*content.finalize().as_bytes());
+                    let mut blob = blake3::Hasher::new();
+                    field(&mut blob, b"mizar-ir/content-blob/v1");
+                    blob.update(&1_u32.to_le_bytes());
+                    field(&mut blob, &bytes);
+                    let expected_blob = Hash::from_bytes(*blob.finalize().as_bytes());
+                    let storage_digest = Hash::from_bytes(blake3::derive_key(
+                        "mizar-driver/native-theorem-metadata-storage-side-table/v1",
+                        &bytes,
+                    ));
+                    let side_tables = IrSideTables {
+                        source_maps: vec![SideTableRecord::new(
+                            "overload-theorem-metadata-storage",
+                            version.normalized_path.as_str(),
+                            storage_digest,
+                        )],
+                        ..IrSideTables::default()
+                    };
+                    let mut side = blake3::Hasher::new();
+                    field(&mut side, b"mizar-ir/publisher-side-table-hash/v1");
+                    for category in [
+                        "source_maps",
+                        "diagnostics",
+                        "explanation_refs",
+                        "documentation_attachments",
+                    ] {
+                        field(&mut side, category.as_bytes());
+                        side.update(&u64::from(category == "source_maps").to_le_bytes());
+                        if category == "source_maps" {
+                            field(&mut side, b"overload-theorem-metadata-storage");
+                            field(&mut side, version.normalized_path.as_str().as_bytes());
+                            field(&mut side, b"side_table_digest");
+                            side.update(storage_digest.as_bytes());
+                        }
+                    }
+                    let expected_side = Hash::from_bytes(*side.finalize().as_bytes());
+                    let before = (
+                        input.clone(),
+                        (*owner.storage().get(&typed).unwrap()).clone(),
+                        (*owner.storage().get(&registration).unwrap()).clone(),
+                        session.captured().clone(),
+                        expected.clone(),
+                    );
+                    let sealed = inputs
+                        .publish_native_theorem_metadata(&input, owner)
+                        .unwrap()
+                        .unwrap();
+                    assert_eq!(sealed.snapshot(), input.snapshot);
+                    assert_eq!(sealed.phase(), &IrPipelinePhase::new("OverloadResolution"));
+                    assert_eq!(
+                        sealed.output_kind(),
+                        &OutputKind::new("SourceTheoremMetadata")
+                    );
+                    assert_eq!(sealed.schema_version(), SchemaVersion::new(1));
+                    assert_eq!(sealed.work_unit(), &unit);
+                    assert_eq!(
+                        sealed.lineage().parents,
+                        input
+                            .parent_outputs()
+                            .iter()
+                            .map(|parent| parent.output())
+                            .collect::<Vec<_>>()
+                    );
+                    assert_eq!(
+                        sealed.lineage().named_input_hashes,
+                        typed.lineage().named_input_hashes
+                    );
+                    assert_eq!(sealed.content_hash(), expected_content);
+                    assert_eq!(sealed.side_table_hash(), expected_side);
+                    assert_eq!(*owner.storage().side_tables(&sealed).unwrap(), side_tables);
+                    match sealed.placement() {
+                        StoragePlacement::Resident => assert!(!open),
+                        StoragePlacement::Blob { blob, len } => {
+                            assert!(open);
+                            assert_eq!(blob.hash(), expected_blob);
+                            assert_eq!(*len, bytes.len());
+                        }
+                        _ => panic!("unexpected placement"),
+                    }
+                    for stage in 0..3 {
+                        if stage == 1 {
+                            fixture.write(if open {
+                                &[0xff]
+                            } else {
+                                b"open theorem Changed: 0 = 1;\n"
+                            });
+                        } else if stage == 2 {
+                            fs::remove_file(fixture.root.join("alpha/src/main.miz")).unwrap();
+                        }
+                        assert_eq!(*owner.storage().get(&sealed).unwrap(), expected);
+                        let duplicate = PublishError::Storage {
+                            error: Box::new(StorageError::OutputAlreadyStored {
+                                output: sealed.output(),
+                            }),
+                        }
+                        .to_string();
+                        assert_eq!(
+                            inputs
+                                .publish_native_theorem_metadata(&input, owner)
+                                .unwrap_err(),
+                            duplicate
+                        );
+                        owner
+                            .validate_published_output(input.snapshot, sealed.any())
+                            .unwrap();
+                        assert_eq!(
+                            owner
+                                .validate_current_output(input.snapshot, sealed.any())
+                                .is_ok(),
+                            !open
+                        );
+                    }
+                    assert_eq!(
+                        (
+                            input,
+                            (*owner.storage().get(&typed).unwrap()).clone(),
+                            (*owner.storage().get(&registration).unwrap()).clone(),
+                            session.captured().clone(),
+                            expected
+                        ),
+                        before
+                    );
+                    let collected = owner.storage().collect(mizar_ir::storage::CollectInput {
+                        snapshot: old.snapshot,
+                        protected_outputs: vec![],
+                    });
+                    assert_eq!(collected.outputs_dropped, 7);
+                    assert_eq!(collected.abandoned_slots_dropped, 3);
+                    representations.push((content_bytes, bytes));
+                },
+            );
+        }
+        assert_eq!(representations[0].0, representations[1].0);
+        assert_ne!(representations[0].0, representations[2].0);
+        assert_ne!(representations[0].1, representations[1].1);
+    }
+}
+
+#[test]
+fn native_theorem_metadata_publication_preserves_refusals() {
+    use mizar_ir::{publisher::PublishError, storage::CollectInput};
+    let text = include_str!(
+        "../../../tests/miz/pass/theorems/pass_proof_verification_lemma_reference_001.miz"
+    );
+    for case in [
+        "missing",
+        "wrong",
+        "hash",
+        "obsolete",
+        "collected",
+        "foreign-owner",
+        "denied",
+    ] {
+        with_native_summary_parent(text, false, 0, |_, inputs, old, owner, _, _| {
+            let unit = IrWorkUnit::new("\"alpha\":\"main\"");
+            for (phase, kind) in [
+                ("SignatureCollection", "SourceTheoremModuleSummary"),
+                ("TypeChecking", "SourceTheoremTypedAst"),
+                ("RegistrationResolution", "SourceTheoremRegistrationClosure"),
+            ] {
+                owner.allow_work_unit(AllowedWorkUnit::new(
+                    IrPipelinePhase::new(phase),
+                    OutputKind::new(kind),
+                    unit.clone(),
+                ));
+            }
+            let child = |parents: Vec<AnyPhaseOutputRef>, key| {
+                PhaseInput::new(
+                    old.work_unit.clone(),
+                    PhaseDispatchInputBundle::new(
+                        old.snapshot,
+                        key,
+                        vec![],
+                        parents
+                            .into_iter()
+                            .map(|parent| {
+                                SealedParentOutputHandle::from_published_output(
+                                    owner,
+                                    old.snapshot,
+                                    parent,
+                                )
+                                .unwrap()
+                            })
+                            .collect(),
+                    )
+                    .unwrap(),
+                )
+            };
+            let signature = inputs
+                .publish_native_theorem_module_summary(old, owner)
+                .unwrap()
+                .unwrap();
+            let type_input = child(vec![signature.erase()], old.identities().input_hash());
+            let typed = inputs
+                .publish_native_theorem_typed_ast(&type_input, owner)
+                .unwrap()
+                .unwrap();
+            let reg_input = child(vec![typed.erase()], old.identities().input_hash());
+            let registration = inputs
+                .publish_native_theorem_registration_closure(&reg_input, owner)
+                .unwrap()
+                .unwrap();
+            let input = child(
+                match case {
+                    "missing" => vec![typed.erase()],
+                    "wrong" => vec![typed.erase(), signature.erase()],
+                    _ => vec![typed.erase(), registration.erase()],
+                },
+                if case == "hash" {
+                    hash(0xd9)
+                } else {
+                    old.identities().input_hash()
+                },
+            );
+            if case != "denied" {
+                owner.allow_work_unit(AllowedWorkUnit::new(
+                    IrPipelinePhase::new("OverloadResolution"),
+                    OutputKind::new("SourceTheoremMetadata"),
+                    unit.clone(),
+                ));
+            }
+            if case == "obsolete" {
+                owner.mark_obsolete(old.snapshot).unwrap();
+            } else if case == "collected" {
+                assert_eq!(
+                    owner
+                        .storage()
+                        .collect(CollectInput {
+                            snapshot: old.snapshot,
+                            protected_outputs: vec![]
+                        })
+                        .outputs_dropped,
+                    6
+                );
+            }
+            let foreign = PhaseOutputPublisher::new(
+                owner.storage().clone(),
+                std::sync::Arc::new(SnapshotHandleRegistry::new()),
+            );
+            foreign.register_current_snapshot(old.snapshot);
+            let selected = if case == "foreign-owner" {
+                &foreign
+            } else {
+                owner.as_ref()
+            };
+            let raw =
+                inputs.native_theorem_metadata_with_type_registration_parents(&input, selected);
+            let actual = inputs
+                .publish_native_theorem_metadata(&input, selected)
+                .unwrap_err();
+            if case == "denied" {
+                assert!(raw.unwrap().is_some());
+                assert_eq!(
+                    actual,
+                    PublishError::WorkUnitNotAllowed {
+                        phase: IrPipelinePhase::new("OverloadResolution"),
+                        work_unit: unit,
+                        output_kind: OutputKind::new("SourceTheoremMetadata")
+                    }
+                    .to_string()
+                );
+            } else {
+                assert_eq!(actual, raw.unwrap_err(), "{case}");
+            }
+            let collected = owner.storage().collect(CollectInput {
+                snapshot: old.snapshot,
+                protected_outputs: vec![],
+            });
+            assert_eq!(
+                collected.outputs_dropped,
+                if case == "collected" { 0 } else { 6 }
+            );
+            assert_eq!(
+                collected.abandoned_slots_dropped,
+                usize::from(case == "denied")
+            );
+        });
+    }
+}

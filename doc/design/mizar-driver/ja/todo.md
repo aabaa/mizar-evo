@@ -581,6 +581,8 @@ artifact/test のフォローアップタスクが所有する。本 crate の�
 
 77. **[Native theorem metadata Type Registration caller](../../task_contracts/ja/DRIVER-NATIVE-THEOREM-METADATA-TYPE-REGISTRATION-CALLER.md).** [x]
 
+78. **[Native theorem metadata publication](../../task_contracts/ja/DRIVER-NATIVE-THEOREM-METADATA-PUBLICATION.md).** [x]
+
 ## 推奨検証
 
 各タスクの後で実行する:
