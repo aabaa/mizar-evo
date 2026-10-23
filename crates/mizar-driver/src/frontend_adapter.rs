@@ -2595,6 +2595,174 @@ impl<'a> crate::registry::SourceLoadInputs<'a> {
         Ok(Some((flow, handoff)))
     }
 
+    /// Seals genuine theorem preparation with coherent semantic and storage streams.
+    pub fn publish_native_theorem_preparation(
+        self,
+        input: &PhaseInput,
+        publisher: &mizar_ir::publisher::PhaseOutputPublisher,
+    ) -> Result<
+        Option<
+            mizar_ir::storage::PhaseOutputRef<(
+                mizar_core::control_flow::ControlFlowOutput,
+                mizar_core::control_flow::ObligationSeedHandoff,
+            )>,
+        >,
+        String,
+    > {
+        let Some(preparation) =
+            self.native_theorem_preparation_with_core_parent(input, publisher)?
+        else {
+            return Ok(None);
+        };
+        let WorkUnit::Module { module } = &input.work_unit else {
+            return Err("native theorem preparation publication requires a module".to_owned());
+        };
+        let version = unique(self.snapshot.source_versions.iter().filter(|version| {
+            version.package_id == module.package && version.module_path == module.path
+        }))
+        .ok_or_else(|| {
+            "native theorem preparation publication requires one captured source".to_owned()
+        })?;
+        let parent = input.parent_outputs()[0].as_output_ref();
+        let storage = publisher.storage();
+        let typed = storage
+            .typed_handle::<mizar_core::core_ir::CoreIr>(
+                parent,
+                &OutputKind::new("SourceTheoremCore"),
+            )
+            .map_err(|error| error.to_string())?;
+        let core = storage.get(&typed).map_err(|error| error.to_string())?;
+        let (source, _) = self.native_source(version).ok_or_else(|| {
+            "native theorem preparation publication capture binding failed".to_owned()
+        })?;
+        let package = self
+            .build_plan
+            .packages
+            .iter()
+            .find(|package| package.package_id == module.package)
+            .ok_or_else(|| {
+                "native theorem preparation publication requires a bound package".to_owned()
+            })?;
+        let PackagePlanSource::Workspace { root, .. } = &package.source else {
+            return Err(
+                "native theorem preparation publication requires a workspace package".to_owned(),
+            );
+        };
+        let output = Frontend::new(
+            FrontendSourceLoader::new(DiskSourceLoader::new(
+                PathBuf::from(self.snapshot.workspace_root.as_str()).join(root),
+            )),
+            self.dependency_lexical_provider(&[]),
+            MizarParserSeam,
+        )
+        .run_loaded(source)
+        .map_err(|error| error.to_string())?;
+        if !output.diagnostics.is_empty() || output.cache_keys.ast.is_none() {
+            return Ok(None);
+        }
+        let Some(ast) = output.ast.as_ref() else {
+            return Ok(None);
+        };
+        let resolver_module =
+            mizar_resolve::resolved_ast::ModuleId::new(module.package.clone(), module.path.clone());
+        let Some(core_semantics) =
+            native_theorem_core_semantic_payload(ast, &resolver_module, &core)?
+        else {
+            return Ok(None);
+        };
+        let Some(storage_bytes) =
+            native_theorem_preparation_storage_bytes(ast, &resolver_module, &core, &preparation)?
+        else {
+            return Ok(None);
+        };
+        let domain = b"mizar-driver/native-theorem-preparation-content/v1\0";
+        let Some(size) = u64::try_from(core_semantics.len())
+            .ok()
+            .and_then(|_| domain.len().checked_add(8))
+            .and_then(|size| size.checked_add(core_semantics.len()))
+            .filter(|size| *size <= 32 * 1024 * 1024)
+        else {
+            return Ok(None);
+        };
+        let mut semantic_bytes = Vec::with_capacity(size);
+        semantic_bytes.extend_from_slice(domain);
+        semantic_bytes.extend_from_slice(&(core_semantics.len() as u64).to_le_bytes());
+        semantic_bytes.extend_from_slice(&core_semantics);
+        let storage_hash = Hash::from_bytes(blake3::derive_key(
+            "mizar-driver/native-theorem-preparation-storage-side-table/v1",
+            &storage_bytes,
+        ));
+        let phase = IrPipelinePhase::new("AlgorithmPreparation");
+        let work_unit = IrWorkUnit::new(format!(
+            "{:?}:{:?}",
+            module.package.as_str(),
+            module.path.as_str()
+        ));
+        let output_kind = OutputKind::new("SourceTheoremPreparation");
+        let source_id = version.source_id;
+        storage
+            .validate_handle(parent)
+            .map_err(|error| error.to_string())?;
+        publisher
+            .validate_published_output(input.snapshot, parent)
+            .map_err(|error| error.to_string())?;
+        publisher
+            .publish(PublishOutputInput {
+                slot: publisher.allocate(
+                    input.snapshot,
+                    phase.clone(),
+                    work_unit.clone(),
+                    output_kind.clone(),
+                    SchemaVersion::new(1),
+                ),
+                snapshot: input.snapshot,
+                phase,
+                work_unit,
+                output_kind,
+                schema_version: SchemaVersion::new(1),
+                payload: preparation,
+                canonical_payload: Some(semantic_bytes),
+                storage_payload: Some(storage_bytes),
+                decode: BlobDecoder::new(move |bytes| {
+                    native_theorem_preparation_from_storage_bytes(
+                        bytes,
+                        source_id,
+                        &resolver_module,
+                    )
+                    .map_err(BlobDecodeError::new)?
+                    .ok_or_else(|| {
+                        BlobDecodeError::new("invalid native theorem preparation storage")
+                    })
+                }),
+                parents: vec![parent.clone()],
+                named_input_hashes: vec![NamedInputHash {
+                    name: "source".to_owned(),
+                    domain: SOURCE_UNIT_CACHE_KEY_VERSION.to_owned(),
+                    digest: source_input_hash(version),
+                }],
+                side_tables: IrSideTables {
+                    source_maps: vec![SideTableRecord::new(
+                        "prepare-theorem-storage",
+                        version.normalized_path.as_str(),
+                        storage_hash,
+                    )],
+                    ..IrSideTables::default()
+                },
+                origin: if matches!(version.origin, SourceOrigin::OpenBuffer { .. }) {
+                    OutputOrigin::OpenBuffer
+                } else {
+                    OutputOrigin::PackageSource
+                },
+                target: if matches!(version.origin, SourceOrigin::OpenBuffer { .. }) {
+                    PublicationTarget::InternalOnly
+                } else {
+                    PublicationTarget::CurrentPackage
+                },
+            })
+            .map(Some)
+            .map_err(|error| error.to_string())
+    }
+
     /// Lowers genuine algorithms after binding a published Frontend to captured source.
     pub fn native_algorithm_core_with_frontend_parent(
         self,
