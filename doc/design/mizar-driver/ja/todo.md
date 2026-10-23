@@ -583,6 +583,8 @@ artifact/test のフォローアップタスクが所有する。本 crate の�
 
 78. **[Native theorem metadata publication](../../task_contracts/ja/DRIVER-NATIVE-THEOREM-METADATA-PUBLICATION.md).** [x]
 
+79. **[Scheduled theorem overload resolution](../../task_contracts/ja/DRIVER-SCHEDULED-THEOREM-OVERLOAD-RESOLUTION.md).** [x]
+
 ## 推奨検証
 
 各タスクの後で実行する:

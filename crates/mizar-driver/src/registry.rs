@@ -414,6 +414,10 @@ impl PhaseRegistryBuilder {
         self.register(crate::frontend_adapter::SourceTheoremRegistrationResolutionService)
     }
 
+    pub fn register_source_theorem_overload_resolution(&mut self) -> &mut Self {
+        self.register(crate::frontend_adapter::SourceTheoremOverloadResolutionService)
+    }
+
     pub fn build(self) -> Result<PhaseRegistry, PhaseRegistryError> {
         let mut services = self
             .services

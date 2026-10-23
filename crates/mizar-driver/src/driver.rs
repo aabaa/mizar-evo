@@ -947,6 +947,7 @@ impl CompilerDriver {
             use crate::{
                 frontend_adapter::{
                     FrontendService, SourceLoadService, SourceTheoremModuleResolverService,
+                    SourceTheoremOverloadResolutionService,
                     SourceTheoremRegistrationResolutionService,
                     SourceTheoremSignatureCollectionService, SourceTheoremTypeCheckingService,
                 },
@@ -956,7 +957,13 @@ impl CompilerDriver {
                 || ((self.registry.descriptors().len() == 3
                         || ((self.registry.descriptors().len() == 4
                             || ((self.registry.descriptors().len() == 5
-                                || (self.registry.descriptors().len() == 6
+                                || ((self.registry.descriptors().len() == 6
+                                    || (self.registry.descriptors().len() == 7
+                                        && self.registry.descriptor_for_phase(PipelinePhase::OverloadResolution).ok()
+                                            == Some(&SourceTheoremOverloadResolutionService.phase())
+                                        && self.registry.service_for_phase(PipelinePhase::OverloadResolution).is_ok_and(|service| {
+                                            std::any::Any::type_id(service) == std::any::TypeId::of::<SourceTheoremOverloadResolutionService>()
+                                        })))
                                     && self.registry.descriptor_for_phase(PipelinePhase::RegistrationResolution).ok()
                                         == Some(&SourceTheoremRegistrationResolutionService.phase())
                                     && self.registry.service_for_phase(PipelinePhase::RegistrationResolution).is_ok_and(|service| {
