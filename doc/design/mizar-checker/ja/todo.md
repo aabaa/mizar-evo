@@ -1268,3 +1268,7 @@ Completion evidence: [central Task-269SDC historical contract](../../task_contra
 
 
 - [ ] [AST-TYPE](../../task_contracts/ja/AST-TYPE.md).
+
+## Source theorem registration closure
+
+- [x] [CHECKER-SOURCE-THEOREM-REGISTRATION-CLOSURE](../../task_contracts/ja/CHECKER-SOURCE-THEOREM-REGISTRATION-CLOSURE.md).

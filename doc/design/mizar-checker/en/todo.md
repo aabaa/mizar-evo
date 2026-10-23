@@ -1283,3 +1283,7 @@ Details archived: [checker_todo_sections.md](../../archive/checker_todo_sections
 ## AST specification implementation follow-up
 
 - [ ] [AST-TYPE](../../task_contracts/en/AST-TYPE.md).
+
+## Source theorem registration closure
+
+- [x] [CHECKER-SOURCE-THEOREM-REGISTRATION-CLOSURE](../../task_contracts/en/CHECKER-SOURCE-THEOREM-REGISTRATION-CLOSURE.md).

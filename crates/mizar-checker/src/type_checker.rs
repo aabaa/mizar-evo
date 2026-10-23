@@ -43,6 +43,50 @@ use std::{
     fmt::{self, Write as _},
 };
 
+/// Returns the real registration closure for authenticated original theorem typing.
+pub fn check_source_theorem_registration_closure(
+    source: &SurfaceResolvedArena,
+    symbols: &SymbolEnv,
+    scope: &ResolvedVariableScope,
+    typed: &crate::typed_ast::TypedAst,
+) -> Result<crate::cluster_trace::ClusterClosureOutput, String> {
+    use crate::cluster_trace::{ClusterClosureStatus, ClusterTraceBuilder};
+    use crate::registration_resolution::RegistrationDatabase;
+
+    let (_, inference, actual, _) =
+        DeclarationChecker::check_source_theorem_equalities_with_typed_declarations(
+            source, symbols, scope,
+        )?;
+    if &actual != typed {
+        return Err("theorems.equality.invalid_registration_closure_association".to_owned());
+    }
+    let database = RegistrationDatabase::from_symbol_env(symbols, []);
+    if !actual.facts().is_empty()
+        || !actual.coercions().is_empty()
+        || !actual.initial_obligations().is_empty()
+        || !inference.facts().is_empty()
+        || !inference.candidate_sets().is_empty()
+        || !database.pending().is_empty()
+        || !database.activated().is_empty()
+        || !database.rejected().is_empty()
+        || !database.diagnostics().is_empty()
+        || !database.initial_obligations().is_empty()
+    {
+        return Err("theorems.equality.unsupported_registration_closure_inputs".to_owned());
+    }
+    let closure = ClusterTraceBuilder::default().close(
+        &database,
+        actual.source_id(),
+        actual.module_id().clone(),
+        [],
+        [],
+    );
+    if closure.status() != ClusterClosureStatus::Complete {
+        return Err("theorems.equality.incomplete_metadata_closure".to_owned());
+    }
+    Ok(closure)
+}
+
 /// Assembles native metadata for the admitted original-source theorem profile.
 pub fn check_source_theorem_metadata(
     source: &SurfaceResolvedArena,
