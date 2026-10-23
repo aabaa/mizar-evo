@@ -29767,7 +29767,8 @@ fn scheduled_theorem_resolver_edits_match_independent_clean_modules() {
         .register_frontend(vec![])
         .register_source_theorem_module_resolver()
         .register_source_theorem_signature_collection()
-        .register_source_theorem_type_checking();
+        .register_source_theorem_type_checking()
+        .register_source_theorem_registration_resolution();
     let mut driver = CompilerDriver::new(builder.build().unwrap());
     let mut previous: Option<(
         std::sync::Arc<PhaseOutputPublisher>,
@@ -29831,6 +29832,7 @@ fn scheduled_theorem_resolver_edits_match_independent_clean_modules() {
                     ("ModuleResolve", "SourceTheoremModuleCandidates"),
                     ("SignatureCollection", "SourceTheoremModuleSummary"),
                     ("TypeChecking", "SourceTheoremTypedAst"),
+                    ("RegistrationResolution", "SourceTheoremRegistrationClosure"),
                 ] {
                     current.allow_work_unit(AllowedWorkUnit::new(
                         IrPipelinePhase::new(phase),
@@ -29847,7 +29849,8 @@ fn scheduled_theorem_resolver_edits_match_independent_clean_modules() {
             .register_frontend(vec![])
             .register_source_theorem_module_resolver()
             .register_source_theorem_signature_collection()
-            .register_source_theorem_type_checking();
+            .register_source_theorem_type_checking()
+            .register_source_theorem_registration_resolution();
         let mut clean_driver = CompilerDriver::new(clean_builder.build().unwrap())
             .with_output_publisher(clean_owner.clone());
         let (_, mut clean_input) = fixture.submit_request(vec![], vec![]);
@@ -29877,13 +29880,14 @@ fn scheduled_theorem_resolver_edits_match_independent_clean_modules() {
                 submission
                     .missing_services
                     .iter()
-                    .any(|gap| gap.phase == PipelinePhase::RegistrationResolution)
+                    .any(|gap| gap.phase == PipelinePhase::OverloadResolution)
             );
             assert!(!submission.missing_services.iter().any(|gap| matches!(
                 gap.phase,
                 PipelinePhase::ModuleResolve
                     | PipelinePhase::SignatureCollection
                     | PipelinePhase::TypeChecking
+                    | PipelinePhase::RegistrationResolution
             )));
         }
         assert_eq!(actual.missing_services, clean.missing_services);
@@ -29929,6 +29933,7 @@ fn scheduled_theorem_resolver_edits_match_independent_clean_modules() {
                 PipelinePhase::ModuleResolve,
                 PipelinePhase::SignatureCollection,
                 PipelinePhase::TypeChecking,
+                PipelinePhase::RegistrationResolution,
             ] {
                 let task = graph.tasks().iter().find(|task| {
                     task.phases.contains(&phase) && matches!(&task.unit, WorkUnit::Module { module: id } if id.path.as_str() == module)
@@ -29941,7 +29946,9 @@ fn scheduled_theorem_resolver_edits_match_independent_clean_modules() {
                         .state,
                     if matches!(
                         phase,
-                        PipelinePhase::SignatureCollection | PipelinePhase::TypeChecking
+                        PipelinePhase::SignatureCollection
+                            | PipelinePhase::TypeChecking
+                            | PipelinePhase::RegistrationResolution
                     ) {
                         TaskState::Blocked
                     } else {
@@ -29953,14 +29960,20 @@ fn scheduled_theorem_resolver_edits_match_independent_clean_modules() {
                     results.len(),
                     if matches!(
                         phase,
-                        PipelinePhase::SignatureCollection | PipelinePhase::TypeChecking
+                        PipelinePhase::SignatureCollection
+                            | PipelinePhase::TypeChecking
+                            | PipelinePhase::RegistrationResolution
                     ) {
-                        2
+                        if module == "main" && stage > 0 { 3 } else { 2 }
                     } else {
                         1
                     }
                 );
-                let result_index = usize::from(phase == PipelinePhase::TypeChecking);
+                let result_index = match phase {
+                    PipelinePhase::TypeChecking => 1,
+                    PipelinePhase::RegistrationResolution => 2,
+                    _ => 0,
+                };
                 let result = &results[result_index];
                 let type_refusal =
                     phase == PipelinePhase::TypeChecking && (module == "leaf" || stage == 0);
@@ -30000,10 +30013,18 @@ fn scheduled_theorem_resolver_edits_match_independent_clean_modules() {
                         .cache_key_for_phase(phase, &query_input)
                         .unwrap()
                 );
-                if phase == PipelinePhase::TypeChecking {
+                if matches!(
+                    phase,
+                    PipelinePhase::TypeChecking | PipelinePhase::RegistrationResolution
+                ) {
+                    let expected_parent = if phase == PipelinePhase::TypeChecking {
+                        &results[0].output_refs[0]
+                    } else {
+                        &results[1].output_refs[0]
+                    };
                     assert_eq!(
                         query_input.parent_outputs()[0].as_output_ref(),
-                        &results[0].output_refs[0]
+                        expected_parent
                     );
                     let probe = driver
                         .registry()
@@ -30017,7 +30038,7 @@ fn scheduled_theorem_resolver_edits_match_independent_clean_modules() {
                 }
                 if type_refusal {
                     assert!(result.output_refs.is_empty());
-                    continue;
+                    break;
                 }
                 let [output] = result.output_refs.as_slice() else {
                     panic!("one genuine output")
@@ -30093,6 +30114,52 @@ fn scheduled_theorem_resolver_edits_match_independent_clean_modules() {
                     assert_eq!(summary.source_hash, version.source_hash);
                     assert_eq!(summary.module.package_id, version.package_id.as_str());
                     assert_eq!(summary.module.module_path, version.module_path.as_str());
+                } else if phase == PipelinePhase::RegistrationResolution {
+                    assert_eq!(
+                        output.phase(),
+                        &IrPipelinePhase::new("RegistrationResolution")
+                    );
+                    assert_eq!(
+                        output.output_kind(),
+                        &OutputKind::new("SourceTheoremRegistrationClosure")
+                    );
+                    let actual_handle = owner
+                        .storage()
+                        .typed_handle::<mizar_checker::cluster_trace::ClusterClosureOutput>(
+                            output,
+                            output.output_kind(),
+                        )
+                        .unwrap();
+                    let expected_handle = clean_owner
+                        .storage()
+                        .typed_handle::<mizar_checker::cluster_trace::ClusterClosureOutput>(
+                            expected,
+                            expected.output_kind(),
+                        )
+                        .unwrap();
+                    let closure = owner.storage().get(&actual_handle).unwrap();
+                    let clean_closure = clean_owner.storage().get(&expected_handle).unwrap();
+                    assert_eq!(*closure, *clean_closure);
+                    assert_eq!(
+                        closure.status(),
+                        mizar_checker::cluster_trace::ClusterClosureStatus::Complete
+                    );
+                    assert_eq!(closure.trace().source_id(), version.source_id);
+                    assert_eq!(
+                        closure.trace().module_id(),
+                        &ResolverModuleId::new(
+                            version.package_id.clone(),
+                            version.module_path.clone()
+                        )
+                    );
+                    assert_eq!(
+                        closure
+                            .trace()
+                            .traversal_profile()
+                            .cache_key_material()
+                            .as_str(),
+                        "order=cluster-trace-order-v1;max_depth=128;max_generated=4096"
+                    );
                 } else {
                     let [typed, expected] = [&owner, &clean_owner].map(|current| {
                         let handle = current
