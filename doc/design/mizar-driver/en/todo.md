@@ -622,6 +622,8 @@ the owning producers when the paired tasks land.
 
 82. **[Scheduled theorem elaboration](../../task_contracts/en/DRIVER-SCHEDULED-THEOREM-ELABORATION.md).** [x]
 
+83. **[Native theorem preparation Core caller](../../task_contracts/en/DRIVER-NATIVE-THEOREM-PREPARATION-CORE-CALLER.md).** [x]
+
 ## Recommended Verification
 
 Run after each task:

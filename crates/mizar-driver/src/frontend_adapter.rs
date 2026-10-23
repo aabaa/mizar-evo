@@ -2469,6 +2469,132 @@ impl<'a> crate::registry::SourceLoadInputs<'a> {
             .map_err(|error| error.to_string())
     }
 
+    /// Derives theorem-only flow and seed handoff from an authenticated Core parent.
+    pub fn native_theorem_preparation_with_core_parent(
+        self,
+        input: &PhaseInput,
+        publisher: &mizar_ir::publisher::PhaseOutputPublisher,
+    ) -> Result<
+        Option<(
+            mizar_core::control_flow::ControlFlowOutput,
+            mizar_core::control_flow::ObligationSeedHandoff,
+        )>,
+        String,
+    > {
+        if input.snapshot != self.snapshot.id {
+            return Err("native theorem preparation snapshot mismatch".to_owned());
+        }
+        let WorkUnit::Module { module } = &input.work_unit else {
+            return Err("native theorem preparation requires a module".to_owned());
+        };
+        let version = unique(self.snapshot.source_versions.iter().filter(|version| {
+            version.package_id == module.package && version.module_path == module.path
+        }))
+        .ok_or_else(|| "native theorem preparation requires one captured source".to_owned())?;
+        let source_key = source_input_hash(version);
+        if input.identities().input_hash() != source_key
+            || !input.identities().dependency_hashes().is_empty()
+            || !self.snapshot.dependency_artifacts.is_empty()
+            || !self.module_index.dependency_summaries.is_empty()
+            || input.parent_outputs().len() != 1
+        {
+            return Err("native theorem preparation requires the leaf input profile".to_owned());
+        }
+        let parent = input.parent_outputs()[0].as_output_ref();
+        let storage = publisher.storage();
+        storage
+            .validate_handle(parent)
+            .map_err(|error| error.to_string())?;
+        publisher
+            .validate_published_output(input.snapshot, parent)
+            .map_err(|error| error.to_string())?;
+        let work_unit = IrWorkUnit::new(format!(
+            "{:?}:{:?}",
+            module.package.as_str(),
+            module.path.as_str()
+        ));
+        let named_input_hashes = vec![NamedInputHash {
+            name: "source".to_owned(),
+            domain: SOURCE_UNIT_CACHE_KEY_VERSION.to_owned(),
+            digest: source_key,
+        }];
+        if parent.snapshot() != input.snapshot
+            || parent.phase() != &IrPipelinePhase::new("Elaboration")
+            || parent.work_unit() != &work_unit
+            || parent.output_kind() != &OutputKind::new("SourceTheoremCore")
+            || parent.schema_version() != SchemaVersion::new(1)
+            || parent.lineage().named_input_hashes != named_input_hashes
+        {
+            return Err("native theorem preparation parent binding mismatch".to_owned());
+        }
+        let [ancestor] = parent.lineage().parents.as_slice() else {
+            return Err("native theorem preparation requires one Metadata ancestor".to_owned());
+        };
+        let ancestor = publisher
+            .registry()
+            .output_lineage(*ancestor)
+            .ok_or_else(|| "native theorem preparation requires registered ancestry".to_owned())?;
+        if ancestor.phase != IrPipelinePhase::new("OverloadResolution")
+            || ancestor.output_kind != OutputKind::new("SourceTheoremMetadata")
+            || ancestor.snapshot != input.snapshot
+            || ancestor.work_unit != work_unit
+            || ancestor.named_input_hashes != named_input_hashes
+        {
+            return Err("native theorem preparation ancestry mismatch".to_owned());
+        }
+        let typed = storage
+            .typed_handle::<mizar_core::core_ir::CoreIr>(
+                parent,
+                &OutputKind::new("SourceTheoremCore"),
+            )
+            .map_err(|error| error.to_string())?;
+        let retained = storage.get(&typed).map_err(|error| error.to_string())?;
+        let (source, _) = self
+            .native_source(version)
+            .ok_or_else(|| "native theorem preparation capture binding failed".to_owned())?;
+        let package = self
+            .build_plan
+            .packages
+            .iter()
+            .find(|package| package.package_id == module.package)
+            .ok_or_else(|| "native theorem preparation requires a bound package".to_owned())?;
+        let PackagePlanSource::Workspace { root, .. } = &package.source else {
+            return Err("native theorem preparation requires a workspace package".to_owned());
+        };
+        let output = Frontend::new(
+            FrontendSourceLoader::new(DiskSourceLoader::new(
+                PathBuf::from(self.snapshot.workspace_root.as_str()).join(root),
+            )),
+            self.dependency_lexical_provider(&[]),
+            MizarParserSeam,
+        )
+        .run_loaded(source)
+        .map_err(|error| error.to_string())?;
+        if !output.diagnostics.is_empty() || output.cache_keys.ast.is_none() {
+            return Ok(None);
+        }
+        let Some(ast) = output.ast.as_ref() else {
+            return Ok(None);
+        };
+        let resolver_module =
+            mizar_resolve::resolved_ast::ModuleId::new(module.package.clone(), module.path.clone());
+        if native_theorem_core_storage_bytes(ast, &resolver_module, &retained)?.is_none() {
+            return Ok(None);
+        }
+        if !retained.algorithms().is_empty() {
+            return Ok(None);
+        }
+        let flow = mizar_core::control_flow::build_control_flow_ir(&retained);
+        let handoff = mizar_core::control_flow::build_obligation_seed_handoff(&retained, &flow);
+        storage
+            .validate_handle(parent)
+            .map_err(|error| error.to_string())?;
+        publisher
+            .validate_published_output(input.snapshot, parent)
+            .map_err(|error| error.to_string())?;
+        Ok(Some((flow, handoff)))
+    }
+
     /// Lowers genuine algorithms after binding a published Frontend to captured source.
     pub fn native_algorithm_core_with_frontend_parent(
         self,

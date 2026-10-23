@@ -38569,3 +38569,519 @@ fn scheduled_theorem_elaboration_preserves_resource_refusals() {
         );
     }
 }
+
+#[test]
+fn native_theorem_preparation_core_caller_preserves_genuine_outputs() {
+    use mizar_core::{
+        control_flow::{
+            ObligationHandoffOrigin, build_control_flow_ir, build_obligation_seed_handoff,
+        },
+        core_ir::{CoreProofStatus, ObligationSeedStatus},
+    };
+    let text = "theorem T: for X being set holds X = X proof let X be set; thus X = X; end;";
+    for (open, threshold) in [(false, usize::MAX), (true, 0)] {
+        with_native_summary_parent(
+            text,
+            open,
+            threshold,
+            |fixture, inputs, old, owner, _, (session, _, _)| {
+                for (phase, kind) in [
+                    ("SignatureCollection", "SourceTheoremModuleSummary"),
+                    ("TypeChecking", "SourceTheoremTypedAst"),
+                    ("RegistrationResolution", "SourceTheoremRegistrationClosure"),
+                    ("OverloadResolution", "SourceTheoremMetadata"),
+                ] {
+                    owner.allow_work_unit(AllowedWorkUnit::new(
+                        IrPipelinePhase::new(phase),
+                        OutputKind::new(kind),
+                        IrWorkUnit::new("\"alpha\":\"main\""),
+                    ));
+                }
+                let child = |parents: Vec<AnyPhaseOutputRef>| {
+                    PhaseInput::new(
+                        old.work_unit.clone(),
+                        PhaseDispatchInputBundle::new(
+                            old.snapshot,
+                            old.identities().input_hash(),
+                            vec![],
+                            parents
+                                .into_iter()
+                                .map(|parent| {
+                                    SealedParentOutputHandle::from_published_output(
+                                        owner,
+                                        old.snapshot,
+                                        parent,
+                                    )
+                                    .unwrap()
+                                })
+                                .collect(),
+                        )
+                        .unwrap(),
+                    )
+                };
+                let signature = inputs
+                    .publish_native_theorem_module_summary(old, owner)
+                    .unwrap()
+                    .unwrap();
+                let type_input = child(vec![signature.erase()]);
+                let typed = inputs
+                    .publish_native_theorem_typed_ast(&type_input, owner)
+                    .unwrap()
+                    .unwrap();
+                let reg_input = child(vec![typed.erase()]);
+                let registration = inputs
+                    .publish_native_theorem_registration_closure(&reg_input, owner)
+                    .unwrap()
+                    .unwrap();
+                let meta_input = child(vec![typed.erase(), registration.erase()]);
+                let parent = inputs
+                    .publish_native_theorem_metadata(&meta_input, owner)
+                    .unwrap()
+                    .unwrap();
+                owner.allow_work_unit(AllowedWorkUnit::new(
+                    IrPipelinePhase::new("Elaboration"),
+                    OutputKind::new("SourceTheoremCore"),
+                    parent.work_unit().clone(),
+                ));
+                let metadata_input = child(vec![parent.erase()]);
+                let core_parent = inputs
+                    .publish_native_theorem_core_with_metadata_parent(&metadata_input, owner)
+                    .unwrap()
+                    .unwrap();
+                let input = child(vec![core_parent.erase()]);
+                let core = owner.storage().get(&core_parent).unwrap();
+                let module =
+                    ResolverModuleId::new(PackageId::new("alpha"), ModulePath::new("main"));
+                assert_eq!(
+                    core.source_id(),
+                    inputs.snapshot.source_versions[0].source_id
+                );
+                assert_eq!(core.module_id(), &module);
+                assert_eq!(
+                    core_parent.placement() == &StoragePlacement::Resident,
+                    !open
+                );
+                assert!(core.algorithms().is_empty());
+                assert!(!core.proofs().is_empty());
+                assert!(
+                    core.proofs()
+                        .iter()
+                        .all(|(_, proof)| proof.status == CoreProofStatus::PendingAutomaticProof)
+                );
+                let flow = build_control_flow_ir(&core);
+                let handoff = build_obligation_seed_handoff(&core, &flow);
+                assert!(flow.flows.is_empty());
+                assert!(flow.flow_map.is_empty());
+                assert!(!handoff.entries.is_empty());
+                assert_eq!(handoff.entries.len(), core.obligation_seeds().len());
+                assert_eq!(handoff.source_map.len(), handoff.entries.len());
+                for (id, entry) in handoff.entries.iter() {
+                    let ObligationHandoffOrigin::ExistingCore { seed } = entry.origin else {
+                        panic!("existing Core seed")
+                    };
+                    let original = core.obligation_seeds().get(seed).unwrap();
+                    assert_eq!(&entry.seed, original);
+                    assert_eq!(entry.seed.status, ObligationSeedStatus::Active);
+                    assert!(core.items().get(entry.seed.owner).is_some());
+                    assert!(core.formulas().get(entry.seed.goal.unwrap()).is_some());
+                    assert_eq!(
+                        handoff.source_map.get(&id),
+                        Some(&core.source_map().obligation_sources[&seed])
+                    );
+                    assert_eq!(
+                        entry.seed.source,
+                        core.source_map().obligation_sources[&seed]
+                    );
+                    assert!(entry.flow_site.is_none());
+                }
+                let expected = (flow, handoff);
+                let before = (
+                    input.clone(),
+                    core_parent.clone(),
+                    (*core).clone(),
+                    session.captured().clone(),
+                );
+                for stage in 0..3 {
+                    if stage == 1 {
+                        fixture.write(if open {
+                            &[0xff]
+                        } else {
+                            b"open theorem Changed: 0 = 1;\n"
+                        });
+                    } else if stage == 2 {
+                        fs::remove_file(fixture.root.join("alpha/src/main.miz")).unwrap();
+                    }
+                    for _ in 0..2 {
+                        assert_eq!(
+                            inputs
+                                .native_theorem_preparation_with_core_parent(&input, owner)
+                                .unwrap(),
+                            Some(expected.clone())
+                        );
+                    }
+                }
+                assert_eq!(
+                    (
+                        input,
+                        core_parent.clone(),
+                        (*owner.storage().get(&core_parent).unwrap()).clone(),
+                        session.captured().clone()
+                    ),
+                    before
+                );
+                let collected = owner.storage().collect(mizar_ir::storage::CollectInput {
+                    snapshot: old.snapshot,
+                    protected_outputs: vec![],
+                });
+                assert_eq!(collected.outputs_dropped, 8);
+                assert_eq!(collected.abandoned_slots_dropped, 0);
+            },
+        );
+    }
+}
+
+#[test]
+fn native_theorem_preparation_core_caller_preserves_refusals() {
+    let text = "theorem T: for X being set holds X = X proof let X be set; thus X = X; end;";
+    for case in [
+        "missing",
+        "wrong",
+        "hash",
+        "obsolete",
+        "collected",
+        "frontend-core",
+    ] {
+        with_native_summary_parent(text, false, 0, |_, inputs, old, owner, outputs, _| {
+            for (phase, kind) in [
+                ("SignatureCollection", "SourceTheoremModuleSummary"),
+                ("TypeChecking", "SourceTheoremTypedAst"),
+                ("RegistrationResolution", "SourceTheoremRegistrationClosure"),
+                ("OverloadResolution", "SourceTheoremMetadata"),
+            ] {
+                owner.allow_work_unit(AllowedWorkUnit::new(
+                    IrPipelinePhase::new(phase),
+                    OutputKind::new(kind),
+                    IrWorkUnit::new("\"alpha\":\"main\""),
+                ));
+            }
+            let child = |parents: Vec<AnyPhaseOutputRef>| {
+                PhaseInput::new(
+                    old.work_unit.clone(),
+                    PhaseDispatchInputBundle::new(
+                        old.snapshot,
+                        old.identities().input_hash(),
+                        vec![],
+                        parents
+                            .into_iter()
+                            .map(|parent| {
+                                SealedParentOutputHandle::from_published_output(
+                                    owner,
+                                    old.snapshot,
+                                    parent,
+                                )
+                                .unwrap()
+                            })
+                            .collect(),
+                    )
+                    .unwrap(),
+                )
+            };
+            let signature = inputs
+                .publish_native_theorem_module_summary(old, owner)
+                .unwrap()
+                .unwrap();
+            let type_input = child(vec![signature.erase()]);
+            let typed = inputs
+                .publish_native_theorem_typed_ast(&type_input, owner)
+                .unwrap()
+                .unwrap();
+            let reg_input = child(vec![typed.erase()]);
+            let registration = inputs
+                .publish_native_theorem_registration_closure(&reg_input, owner)
+                .unwrap()
+                .unwrap();
+            let meta_input = child(vec![typed.erase(), registration.erase()]);
+            let parent = inputs
+                .publish_native_theorem_metadata(&meta_input, owner)
+                .unwrap()
+                .unwrap();
+            owner.allow_work_unit(AllowedWorkUnit::new(
+                IrPipelinePhase::new("Elaboration"),
+                OutputKind::new("SourceTheoremCore"),
+                parent.work_unit().clone(),
+            ));
+            let core_parent = if case == "frontend-core" {
+                let frontend = outputs
+                    .iter()
+                    .find(|output| output.phase() == &IrPipelinePhase::new("Frontend"))
+                    .unwrap();
+                let input = child(vec![frontend.clone()]);
+                inputs
+                    .publish_native_theorem_core(&input, owner)
+                    .unwrap()
+                    .unwrap()
+            } else {
+                let input = child(vec![parent.erase()]);
+                inputs
+                    .publish_native_theorem_core_with_metadata_parent(&input, owner)
+                    .unwrap()
+                    .unwrap()
+            };
+            let input = PhaseInput::new(
+                old.work_unit.clone(),
+                PhaseDispatchInputBundle::new(
+                    old.snapshot,
+                    if case == "hash" {
+                        hash(0xe3)
+                    } else {
+                        old.identities().input_hash()
+                    },
+                    vec![],
+                    match case {
+                        "missing" => vec![],
+                        "wrong" => vec![parent.erase()],
+                        _ => vec![core_parent.erase()],
+                    }
+                    .into_iter()
+                    .map(|parent| {
+                        SealedParentOutputHandle::from_published_output(owner, old.snapshot, parent)
+                            .unwrap()
+                    })
+                    .collect(),
+                )
+                .unwrap(),
+            );
+            if case == "obsolete" {
+                owner.mark_obsolete(old.snapshot).unwrap();
+            } else if case == "collected" {
+                assert_eq!(
+                    owner
+                        .storage()
+                        .collect(mizar_ir::storage::CollectInput {
+                            snapshot: old.snapshot,
+                            protected_outputs: vec![]
+                        })
+                        .outputs_dropped,
+                    8
+                );
+            }
+            let expected = match case {
+                "missing" | "hash" => {
+                    "native theorem preparation requires the leaf input profile".to_owned()
+                }
+                "wrong" => "native theorem preparation parent binding mismatch".to_owned(),
+                "frontend-core" => "native theorem preparation ancestry mismatch".to_owned(),
+                "obsolete" => owner
+                    .validate_published_output(old.snapshot, core_parent.any())
+                    .unwrap_err()
+                    .to_string(),
+                "collected" => owner
+                    .storage()
+                    .validate_handle(core_parent.any())
+                    .unwrap_err()
+                    .to_string(),
+                _ => unreachable!(),
+            };
+            assert_eq!(
+                inputs
+                    .native_theorem_preparation_with_core_parent(&input, owner)
+                    .unwrap_err(),
+                expected,
+                "{case}"
+            );
+            let collected = owner.storage().collect(mizar_ir::storage::CollectInput {
+                snapshot: old.snapshot,
+                protected_outputs: vec![],
+            });
+            assert_eq!(
+                collected.outputs_dropped,
+                if case == "collected" { 0 } else { 8 }
+            );
+            assert_eq!(collected.abandoned_slots_dropped, 0);
+        });
+    }
+    with_native_summary_parent(
+        text,
+        false,
+        0,
+        |_, inputs, old, owner, outputs, (_, ids, snapshots)| {
+            use mizar_driver::{
+                native_theorem_core_from_storage_bytes as decode,
+                native_theorem_core_semantic_payload as semantic,
+                native_theorem_core_storage_bytes as encode,
+            };
+            use mizar_ir::{
+                publisher::{OutputOrigin, PublicationTarget, PublishOutputInput},
+                storage::{BlobDecodeError, BlobDecoder, IrSideTables, SchemaVersion},
+            };
+            for (phase, kind) in [
+                ("SignatureCollection", "SourceTheoremModuleSummary"),
+                ("TypeChecking", "SourceTheoremTypedAst"),
+                ("RegistrationResolution", "SourceTheoremRegistrationClosure"),
+                ("OverloadResolution", "SourceTheoremMetadata"),
+            ] {
+                owner.allow_work_unit(AllowedWorkUnit::new(
+                    IrPipelinePhase::new(phase),
+                    OutputKind::new(kind),
+                    IrWorkUnit::new("\"alpha\":\"main\""),
+                ));
+            }
+            let child = |parents: Vec<AnyPhaseOutputRef>| {
+                PhaseInput::new(
+                    old.work_unit.clone(),
+                    PhaseDispatchInputBundle::new(
+                        old.snapshot,
+                        old.identities().input_hash(),
+                        vec![],
+                        parents
+                            .into_iter()
+                            .map(|parent| {
+                                SealedParentOutputHandle::from_published_output(
+                                    owner,
+                                    old.snapshot,
+                                    parent,
+                                )
+                                .unwrap()
+                            })
+                            .collect(),
+                    )
+                    .unwrap(),
+                )
+            };
+            let signature = inputs
+                .publish_native_theorem_module_summary(old, owner)
+                .unwrap()
+                .unwrap();
+            let type_input = child(vec![signature.erase()]);
+            let typed = inputs
+                .publish_native_theorem_typed_ast(&type_input, owner)
+                .unwrap()
+                .unwrap();
+            let reg_input = child(vec![typed.erase()]);
+            let registration = inputs
+                .publish_native_theorem_registration_closure(&reg_input, owner)
+                .unwrap()
+                .unwrap();
+            let meta_input = child(vec![typed.erase(), registration.erase()]);
+            let parent = inputs
+                .publish_native_theorem_metadata(&meta_input, owner)
+                .unwrap()
+                .unwrap();
+            owner.allow_work_unit(AllowedWorkUnit::new(
+                IrPipelinePhase::new("Elaboration"),
+                OutputKind::new("SourceTheoremCore"),
+                parent.work_unit().clone(),
+            ));
+            let metadata_input = child(vec![parent.erase()]);
+            let core_a = inputs
+                .native_theorem_core_with_metadata_parent(&metadata_input, owner)
+                .unwrap()
+                .unwrap();
+            let frontend_a = outputs
+                .iter()
+                .find(|output| output.phase() == &IrPipelinePhase::new("Frontend"))
+                .unwrap();
+            let handle_a = owner
+                .storage()
+                .typed_handle::<FrontendOutput<<MizarParserSeam as ParserSeam>::Ast>>(
+                    frontend_a,
+                    frontend_a.output_kind(),
+                )
+                .unwrap();
+            let output_a = owner.storage().get(&handle_a).unwrap();
+            let ast_a = output_a.ast.as_ref().unwrap();
+            let changed = Fixture::new(b"theorem Different: for Y being set holds Y = Y proof let Y be set; thus Y = Y; end;");
+            let (_, submission_b, adapter_b, frontend_b, _) =
+                native_disk_frontend_record_submission(&changed, ids, snapshots, 0);
+            let (inputs_b, old_b) = native_disk_lookup_context(&submission_b, ids);
+            let publisher_b = adapter_b.publisher();
+            let input_b = PhaseInput::new(
+                old_b.work_unit.clone(),
+                PhaseDispatchInputBundle::new(
+                    old_b.snapshot,
+                    old_b.identities().input_hash(),
+                    vec![],
+                    vec![
+                        SealedParentOutputHandle::from_published_output(
+                            publisher_b,
+                            old_b.snapshot,
+                            frontend_b.erase(),
+                        )
+                        .unwrap(),
+                    ],
+                )
+                .unwrap(),
+            );
+            let original_b = inputs_b
+                .native_theorem_core_with_frontend_parent(&input_b, publisher_b)
+                .unwrap()
+                .unwrap();
+            let output_b = publisher_b.storage().get(&frontend_b).unwrap();
+            let ast_b = output_b.ast.as_ref().unwrap();
+            assert_ne!(ast_a.source_id, ast_b.source_id);
+            let module = ResolverModuleId::new(PackageId::new("alpha"), ModulePath::new("main"));
+            let bytes = encode(ast_b, &module, &original_b).unwrap().unwrap();
+            let core_b = decode(&bytes, ast_a.source_id, &module).unwrap().unwrap();
+            let rebound = <MizarParserSeam as ParserSeam>::Ast::from_canonical_bytes(
+                &ast_b.canonical_bytes().unwrap(),
+                ast_a.source_id,
+            )
+            .unwrap();
+            assert_eq!(core_a.source_id(), core_b.source_id());
+            assert_eq!(core_a.module_id(), core_b.module_id());
+            assert_ne!(core_a, core_b);
+            assert_eq!(encode(ast_a, &module, &core_b).unwrap(), None);
+            assert_eq!(
+                encode(&rebound, &module, &core_b).unwrap(),
+                Some(bytes.clone())
+            );
+            let canonical = semantic(&rebound, &module, &core_b).unwrap().unwrap();
+            let source_id = ast_a.source_id;
+            let phase = IrPipelinePhase::new("Elaboration");
+            let kind = OutputKind::new("SourceTheoremCore");
+            let negative = owner
+                .publish(PublishOutputInput {
+                    slot: owner.allocate(
+                        old.snapshot,
+                        phase.clone(),
+                        parent.work_unit().clone(),
+                        kind.clone(),
+                        SchemaVersion::new(1),
+                    ),
+                    snapshot: old.snapshot,
+                    phase,
+                    work_unit: parent.work_unit().clone(),
+                    output_kind: kind,
+                    schema_version: SchemaVersion::new(1),
+                    payload: core_b.clone(),
+                    canonical_payload: Some(canonical),
+                    storage_payload: Some(bytes),
+                    decode: BlobDecoder::new(move |bytes| {
+                        decode(bytes, source_id, &module)
+                            .map_err(BlobDecodeError::new)?
+                            .ok_or_else(|| BlobDecodeError::new("negative Core replay"))
+                    }),
+                    parents: vec![parent.erase()],
+                    named_input_hashes: parent.lineage().named_input_hashes.clone(),
+                    side_tables: IrSideTables::default(),
+                    origin: OutputOrigin::PackageSource,
+                    target: PublicationTarget::CurrentPackage,
+                })
+                .unwrap();
+            assert_eq!(*owner.storage().get(&negative).unwrap(), core_b);
+            let input = child(vec![negative.erase()]);
+            assert_eq!(
+                inputs
+                    .native_theorem_preparation_with_core_parent(&input, owner)
+                    .unwrap(),
+                None
+            );
+            let collected = owner.storage().collect(mizar_ir::storage::CollectInput {
+                snapshot: old.snapshot,
+                protected_outputs: vec![],
+            });
+            assert_eq!(collected.outputs_dropped, 8);
+            assert_eq!(collected.abandoned_slots_dropped, 0);
+        },
+    );
+}

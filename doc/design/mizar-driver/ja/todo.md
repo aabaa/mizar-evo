@@ -591,6 +591,8 @@ artifact/test のフォローアップタスクが所有する。本 crate の�
 
 82. **[Scheduled theorem elaboration](../../task_contracts/ja/DRIVER-SCHEDULED-THEOREM-ELABORATION.md).** [x]
 
+83. **[Native theorem preparation Core caller](../../task_contracts/ja/DRIVER-NATIVE-THEOREM-PREPARATION-CORE-CALLER.md).** [x]
+
 ## 推奨検証
 
 各タスクの後で実行する:
