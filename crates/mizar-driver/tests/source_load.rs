@@ -46583,3 +46583,849 @@ fn native_theorem_discharge_publication_preserves_refusals() {
         );
     }
 }
+
+#[test]
+fn scheduled_theorem_vc_discharge_matches_genuine_publication() {
+    use mizar_build::task_graph::{
+        BackendProfileId, EvidenceCandidateId, VcOrderKey, VcTaskDescriptor, VcTaskDescriptorId,
+    };
+    use mizar_core::{
+        control_flow::{ControlFlowOutput, ObligationSeedHandoff},
+        core_ir::{CoreProofStatus, ObligationSeedStatus},
+    };
+    use mizar_vc::{
+        discharge::{
+            ComputationLimit, DischargeExplanationCategory, DischargeOutput, DischargePolicy,
+        },
+        vc_ir::{GenerationSchemaVersion, PolicyKey, SeedOriginRef, VcSchemaVersion, VcStatus},
+    };
+    let text = "theorem T: for X being set holds X = X proof let X be set; thus X = X; end;";
+    let generation = GenerationSchemaVersion::new("λ\n\0");
+    let schema = VcSchemaVersion::new("");
+    for (open, threshold) in [(false, usize::MAX), (true, 0)] {
+        with_native_summary_parent(
+            text,
+            open,
+            threshold,
+            |fixture, _, old, _, _, (session, ids, snapshots)| {
+                let WorkUnit::Module { module } = &old.work_unit else {
+                    panic!("module")
+                };
+                let mut policy_products = Vec::new();
+                for (key, max_steps) in [("", 0), ("α\n\0", 0), ("", u32::MAX)] {
+                    let policy = DischargePolicy {
+                        computation_limit: ComputationLimit {
+                            policy: PolicyKey::new(key),
+                            max_steps,
+                        },
+                    };
+                    let baseline = publisher(old.snapshot, threshold, &old.work_unit);
+                    allow_frontend(&baseline, &old.work_unit);
+                    for (phase, kind) in [
+                        ("ModuleResolve", "SourceTheoremModuleCandidates"),
+                        ("SignatureCollection", "SourceTheoremModuleSummary"),
+                        ("TypeChecking", "SourceTheoremTypedAst"),
+                        ("RegistrationResolution", "SourceTheoremRegistrationClosure"),
+                        ("OverloadResolution", "SourceTheoremMetadata"),
+                        ("Elaboration", "SourceTheoremCore"),
+                        ("AlgorithmPreparation", "SourceTheoremPreparation"),
+                        ("VcGenerate", "SourceTheoremVC"),
+                        ("VcDischarge", "SourceTheoremDischarge"),
+                    ] {
+                        baseline.allow_work_unit(AllowedWorkUnit::new(
+                            IrPipelinePhase::new(phase),
+                            OutputKind::new(kind),
+                            IrWorkUnit::new("\"alpha\":\"main\""),
+                        ));
+                    }
+                    let mut builder = PhaseRegistryBuilder::new();
+                    builder
+                        .register_source_load()
+                        .register_frontend(vec![])
+                        .register_source_theorem_module_resolver()
+                        .register_source_theorem_signature_collection()
+                        .register_source_theorem_type_checking()
+                        .register_source_theorem_registration_resolution()
+                        .register_source_theorem_overload_resolution()
+                        .register_source_theorem_elaboration()
+                        .register_source_theorem_algorithm_preparation()
+                        .register_source_theorem_vc_generation(generation.clone(), schema.clone());
+                    let (_, submit) = fixture.submit_request(vec![], vec![]);
+                    let baseline_submission = CompilerDriver::new(builder.build().unwrap())
+                        .with_output_publisher(baseline.clone())
+                        .submit_captured(session.clone(), ids, snapshots, submit)
+                        .unwrap();
+                    let (inputs, original) = native_disk_lookup_context(&baseline_submission, ids);
+                    let outputs = baseline_submission
+                        .scheduler_run
+                        .as_ref()
+                        .unwrap()
+                        .phase_results
+                        .values()
+                        .flatten()
+                        .flat_map(|row| &row.output_refs)
+                        .collect::<Vec<_>>();
+                    assert_eq!(outputs.len(), 10);
+                    let core_ref = outputs
+                        .iter()
+                        .find(|output| {
+                            output.output_kind() == &OutputKind::new("SourceTheoremCore")
+                        })
+                        .unwrap();
+                    let vc_ref = outputs
+                        .iter()
+                        .find(|output| output.output_kind() == &OutputKind::new("SourceTheoremVC"))
+                        .unwrap();
+                    let input = PhaseInput::new(
+                        original.work_unit.clone(),
+                        PhaseDispatchInputBundle::new(
+                            old.snapshot,
+                            original.identities().input_hash(),
+                            vec![],
+                            [*core_ref, *vc_ref]
+                                .into_iter()
+                                .map(|parent| {
+                                    SealedParentOutputHandle::from_published_output(
+                                        &baseline,
+                                        old.snapshot,
+                                        parent.clone(),
+                                    )
+                                    .unwrap()
+                                })
+                                .collect(),
+                        )
+                        .unwrap(),
+                    );
+                    let vc_handle = baseline
+                        .storage()
+                        .typed_handle::<mizar_vc::vc_ir::VcSet>(vc_ref, vc_ref.output_kind())
+                        .unwrap();
+                    let vcs = baseline.storage().get(&vc_handle).unwrap();
+                    let selected = vcs.vcs()[0].id;
+                    let expected = inputs
+                        .publish_native_theorem_discharge(&input, &baseline, selected, &policy)
+                        .unwrap()
+                        .unwrap();
+                    let expected_value = baseline.storage().get(&expected).unwrap();
+                    let descriptor_id = VcTaskDescriptorId::new("opaque-discharge-label:09");
+                    let vc_unit = WorkUnit::Vc {
+                        module: module.clone(),
+                        descriptor: descriptor_id.clone(),
+                    };
+                    let query_input = PhaseInput::new(
+                        vc_unit.clone(),
+                        PhaseDispatchInputBundle::new(
+                            old.snapshot,
+                            input.identities().input_hash(),
+                            vec![],
+                            input.parent_outputs().to_vec(),
+                        )
+                        .unwrap(),
+                    );
+                    let mut query_builder = PhaseRegistryBuilder::new();
+                    query_builder.register_source_theorem_vc_discharge(policy.clone());
+                    let query_registry = query_builder.build().unwrap();
+                    let descriptor = query_registry
+                        .descriptor_for_phase(PipelinePhase::VcDischarge)
+                        .unwrap();
+                    assert_eq!(descriptor.service_name, "SourceTheoremVcDischarge");
+                    assert_eq!(
+                        descriptor.owner,
+                        mizar_driver::registry::PhaseOwner::MizarVc
+                    );
+                    assert_eq!(descriptor.phases, [PipelinePhase::VcDischarge]);
+                    assert_eq!(descriptor.output_kind, "SourceTheoremDischarge");
+                    assert_eq!(
+                        descriptor.schema_version,
+                        format!(
+                            "mizar-vc/source-theorem-discharge-publication/v1;computation_policy={}:{};max_steps={max_steps}",
+                            key.len(),
+                            key
+                        )
+                    );
+                    let query = query_registry
+                        .cache_key_for_phase(PipelinePhase::VcDischarge, &query_input)
+                        .unwrap();
+                    assert!(matches!(query.intent, PhaseCacheIntent::NoKey { .. }));
+                    policy_products.push(((*expected_value).clone(), query.observation));
+                    let mut prior = None;
+                    for (workers, atp) in [(1, false), (4, false), (1, true)] {
+                        let owner = publisher(old.snapshot, threshold, &old.work_unit);
+                        allow_frontend(&owner, &old.work_unit);
+                        for (phase, kind) in [
+                            ("ModuleResolve", "SourceTheoremModuleCandidates"),
+                            ("SignatureCollection", "SourceTheoremModuleSummary"),
+                            ("TypeChecking", "SourceTheoremTypedAst"),
+                            ("RegistrationResolution", "SourceTheoremRegistrationClosure"),
+                            ("OverloadResolution", "SourceTheoremMetadata"),
+                            ("Elaboration", "SourceTheoremCore"),
+                            ("AlgorithmPreparation", "SourceTheoremPreparation"),
+                            ("VcGenerate", "SourceTheoremVC"),
+                            ("VcDischarge", "SourceTheoremDischarge"),
+                        ] {
+                            owner.allow_work_unit(AllowedWorkUnit::new(
+                                IrPipelinePhase::new(phase),
+                                OutputKind::new(kind),
+                                expected.work_unit().clone(),
+                            ));
+                        }
+                        let mut builder = PhaseRegistryBuilder::new();
+                        builder
+                            .register_source_load()
+                            .register_frontend(vec![])
+                            .register_source_theorem_module_resolver()
+                            .register_source_theorem_signature_collection()
+                            .register_source_theorem_type_checking()
+                            .register_source_theorem_registration_resolution()
+                            .register_source_theorem_overload_resolution()
+                            .register_source_theorem_elaboration()
+                            .register_source_theorem_algorithm_preparation()
+                            .register_source_theorem_vc_generation(
+                                generation.clone(),
+                                schema.clone(),
+                            )
+                            .register_source_theorem_vc_discharge(policy.clone());
+                        let mut driver = CompilerDriver::new(builder.build().unwrap())
+                            .with_output_publisher(owner.clone());
+                        let (_, mut submit) = fixture.submit_request(vec![], vec![]);
+                        submit.worker_count = workers;
+                        submit.completion_order = if workers == 4 {
+                            CompletionOrder::Reverse
+                        } else {
+                            CompletionOrder::Canonical
+                        };
+                        submit.vc_descriptors = vec![VcTaskDescriptor::new(
+                            descriptor_id.clone(),
+                            module.clone(),
+                            VcOrderKey::new("opaque-order"),
+                            if atp {
+                                vec![BackendProfileId::new("backend")]
+                            } else {
+                                vec![]
+                            },
+                            if atp {
+                                vec![EvidenceCandidateId::new("evidence")]
+                            } else {
+                                vec![]
+                            },
+                        )];
+                        let submission = driver
+                            .submit_captured(session.clone(), ids, snapshots, submit)
+                            .unwrap();
+                        assert_eq!(submission.session.captured(), session.captured());
+                        assert_eq!(
+                            submission.session.state(),
+                            BuildSessionState::Finished(BuildSessionOutcome::Blocked)
+                        );
+                        assert!(submission.dispatch_gap_phases.is_empty());
+                        let expected_missing: &[PipelinePhase] = if atp {
+                            &[
+                                PipelinePhase::AtpSolve,
+                                PipelinePhase::BackendRun,
+                                PipelinePhase::KernelCheck,
+                                PipelinePhase::ArtifactCommit,
+                            ]
+                        } else {
+                            &[PipelinePhase::ArtifactCommit]
+                        };
+                        assert!(
+                            submission
+                                .missing_services
+                                .iter()
+                                .map(|gap| gap.phase)
+                                .eq(expected_missing.iter().copied())
+                        );
+                        let graph = submission.task_graph.as_ref().unwrap();
+                        let run = submission.scheduler_run.as_ref().unwrap();
+                        let group = graph
+                            .tasks()
+                            .iter()
+                            .find(|task| task.kind == TaskKind::CheckAndElaborate)
+                            .unwrap();
+                        let vc_task = graph
+                            .tasks()
+                            .iter()
+                            .find(|task| task.kind == TaskKind::VcGenerate)
+                            .unwrap();
+                        let discharge = graph
+                            .tasks()
+                            .iter()
+                            .find(|task| task.kind == TaskKind::VcDischarge)
+                            .unwrap();
+                        assert_eq!(discharge.unit, vc_unit);
+                        assert_eq!(discharge.phases, [PipelinePhase::VcDischarge]);
+                        assert!(discharge.dependencies.contains(&vc_task.id));
+                        assert!(vc_task.dependencies.contains(&group.id));
+                        for task in [group, vc_task, discharge] {
+                            assert_eq!(
+                                run.task_states
+                                    .iter()
+                                    .find(|row| row.task_id == task.id)
+                                    .unwrap()
+                                    .state,
+                                TaskState::Completed
+                            );
+                        }
+                        for task in graph.tasks().iter().filter(|task| {
+                            matches!(
+                                task.kind,
+                                TaskKind::AtpSolve
+                                    | TaskKind::BackendRun
+                                    | TaskKind::KernelCheck
+                                    | TaskKind::ArtifactCommit
+                            )
+                        }) {
+                            assert_eq!(
+                                run.task_states
+                                    .iter()
+                                    .find(|row| row.task_id == task.id)
+                                    .unwrap()
+                                    .state,
+                                TaskState::Blocked
+                            );
+                            assert!(!run.phase_results.contains_key(&task.id));
+                        }
+                        let group_rows = &run.phase_results[&group.id];
+                        assert_eq!(group_rows.len(), 6);
+                        let [vc_row] = run.phase_results[&vc_task.id].as_slice() else {
+                            panic!("one VC row")
+                        };
+                        let [row] = run.phase_results[&discharge.id].as_slice() else {
+                            panic!("one discharge row")
+                        };
+                        for row in group_rows.iter().chain([vc_row, row]) {
+                            assert_eq!(row.status, PhaseStatus::Complete);
+                            assert!(row.diagnostics.is_empty());
+                            assert_eq!(row.output_refs.len(), 1);
+                        }
+                        let actual_core = &group_rows[4].output_refs[0];
+                        let actual_prep = &group_rows[5].output_refs[0];
+                        let actual_vc = &vc_row.output_refs[0];
+                        let actual = &row.output_refs[0];
+                        let typed = owner
+                            .storage()
+                            .typed_handle::<DischargeOutput>(actual, actual.output_kind())
+                            .unwrap();
+                        assert_eq!(*owner.storage().get(&typed).unwrap(), *expected_value);
+                        assert_eq!(actual.phase(), &IrPipelinePhase::new("VcDischarge"));
+                        assert_eq!(actual.snapshot(), old.snapshot);
+                        assert_eq!(
+                            actual.output_kind(),
+                            &OutputKind::new("SourceTheoremDischarge")
+                        );
+                        assert_eq!(
+                            actual.schema_version(),
+                            mizar_ir::storage::SchemaVersion::new(1)
+                        );
+                        assert_eq!(actual.work_unit(), expected.work_unit());
+                        assert_eq!(actual.content_hash(), expected.content_hash());
+                        assert_eq!(actual.side_table_hash(), expected.side_table_hash());
+                        assert_eq!(actual.placement(), expected.placement());
+                        assert_eq!(
+                            *owner.storage().side_tables(&typed).unwrap(),
+                            *baseline.storage().side_tables(&expected).unwrap()
+                        );
+                        assert_eq!(actual.lineage().parents.len(), 2);
+                        assert!(
+                            actual.lineage().parents.contains(&actual_core.output())
+                                && actual.lineage().parents.contains(&actual_vc.output())
+                        );
+                        assert_eq!(
+                            actual.lineage().named_input_hashes,
+                            actual_core.lineage().named_input_hashes
+                        );
+                        let core = owner
+                            .storage()
+                            .get(
+                                &owner
+                                    .storage()
+                                    .typed_handle::<mizar_core::core_ir::CoreIr>(
+                                        actual_core,
+                                        actual_core.output_kind(),
+                                    )
+                                    .unwrap(),
+                            )
+                            .unwrap();
+                        let prep = owner
+                            .storage()
+                            .get(
+                                &owner
+                                    .storage()
+                                    .typed_handle::<(ControlFlowOutput, ObligationSeedHandoff)>(
+                                        actual_prep,
+                                        actual_prep.output_kind(),
+                                    )
+                                    .unwrap(),
+                            )
+                            .unwrap();
+                        let vcs = owner
+                            .storage()
+                            .get(
+                                &owner
+                                    .storage()
+                                    .typed_handle::<mizar_vc::vc_ir::VcSet>(
+                                        actual_vc,
+                                        actual_vc.output_kind(),
+                                    )
+                                    .unwrap(),
+                            )
+                            .unwrap();
+                        assert_eq!(
+                            core.source_id(),
+                            inputs.snapshot.source_versions[0].source_id
+                        );
+                        assert_eq!(
+                            core.module_id(),
+                            &ResolverModuleId::new(
+                                PackageId::new("alpha"),
+                                ModulePath::new("main")
+                            )
+                        );
+                        assert_eq!(vcs.source(), core.source_id());
+                        assert_eq!(vcs.vcs().len(), 1);
+                        assert_eq!(vcs.module().as_str(), "package=5:alpha;module=4:main");
+                        assert_eq!(vcs.snapshot(), old.snapshot);
+                        assert_eq!(vcs.schema_version(), &schema);
+                        assert!(!core.proofs().is_empty() && !vcs.seed_accounting().is_empty());
+                        assert!(core.proofs().iter().all(
+                            |(_, proof)| proof.status == CoreProofStatus::PendingAutomaticProof
+                        ));
+                        assert!(vcs.vcs().iter().all(|vc| vc.status == VcStatus::Open));
+                        for seed in vcs.seed_accounting() {
+                            let SeedOriginRef::ExistingCore { seed: id } = seed.origin else {
+                                panic!("Core seed")
+                            };
+                            let original = core.obligation_seeds().get(id).unwrap();
+                            assert_eq!(seed.seed_status, ObligationSeedStatus::Active);
+                            assert_eq!(original.status, ObligationSeedStatus::Active);
+                            assert_eq!(&prep.1.entries.get(seed.handoff).unwrap().seed, original);
+                        }
+                        assert!(
+                            expected_value
+                                .vc_set()
+                                .vcs()
+                                .iter()
+                                .all(|vc| vc.status == VcStatus::NeedsAtp
+                                    && vc.provenance.last().unwrap().phase
+                                        == mizar_vc::vc_ir::VcProvenancePhase::Discharge)
+                        );
+                        assert_eq!(
+                            expected_value.explanations()[0].category,
+                            DischargeExplanationCategory::UnsupportedRule
+                        );
+                        assert_eq!(expected_value.explanations()[0].rule, None);
+                        assert!(expected_value.evidence_records().is_empty());
+                        let derived = PhaseInput::new(
+                            discharge.unit.clone(),
+                            PhaseDispatchInputBundle::new(
+                                old.snapshot,
+                                source_key(&inputs.snapshot.source_versions[0]),
+                                vec![],
+                                [actual_core, actual_vc]
+                                    .into_iter()
+                                    .map(|parent| {
+                                        SealedParentOutputHandle::from_published_output(
+                                            &owner,
+                                            old.snapshot,
+                                            parent.clone(),
+                                        )
+                                        .unwrap()
+                                    })
+                                    .collect(),
+                            )
+                            .unwrap(),
+                        );
+                        let mut hashes = [actual_core.output().hash(), actual_vc.output().hash()];
+                        hashes.sort_by(|a, b| a.as_bytes().cmp(b.as_bytes()));
+                        assert_eq!(derived.identities().parent_output_hashes(), hashes);
+                        let probe = driver
+                            .registry()
+                            .execute_phase_with_resources(
+                                PipelinePhase::VcDischarge,
+                                derived.clone(),
+                                PhaseExecutionResources::default(),
+                            )
+                            .unwrap();
+                        assert_eq!(row.cache_observation, Some(probe.observation));
+                        let cache = driver
+                            .registry()
+                            .cache_key_for_phase(PipelinePhase::VcDischarge, &derived)
+                            .unwrap();
+                        assert_eq!(cache.observation, query.observation);
+                        assert!(matches!(cache.intent, PhaseCacheIntent::NoKey { .. }));
+                        let module_probe = driver
+                            .registry()
+                            .execute_phase_with_resources(
+                                PipelinePhase::VcDischarge,
+                                PhaseInput::new(
+                                    old.work_unit.clone(),
+                                    PhaseDispatchInputBundle::new(
+                                        old.snapshot,
+                                        derived.identities().input_hash(),
+                                        vec![],
+                                        derived.parent_outputs().to_vec(),
+                                    )
+                                    .unwrap(),
+                                ),
+                                PhaseExecutionResources::default(),
+                            )
+                            .unwrap();
+                        assert_ne!(module_probe.observation, probe.observation);
+                        if !atp {
+                            let rows = (group_rows.clone(), vc_row.clone(), row.clone());
+                            if let Some(prior) = &prior {
+                                assert_eq!(&rows, prior);
+                            }
+                            prior = Some(rows);
+                        }
+                    }
+                }
+                assert!(
+                    policy_products
+                        .iter()
+                        .all(|value| value.0 == policy_products[0].0)
+                );
+                for (index, value) in policy_products.iter().enumerate() {
+                    assert!(
+                        policy_products[..index]
+                            .iter()
+                            .all(|prior| prior.1 != value.1)
+                    );
+                }
+            },
+        );
+    }
+}
+
+#[test]
+fn scheduled_theorem_vc_discharge_preserves_resource_refusals() {
+    use mizar_ir::storage::CollectInput;
+    use mizar_vc::{
+        discharge::{ComputationLimit, DischargePolicy},
+        vc_ir::{GenerationSchemaVersion, PolicyKey, VcSchemaVersion},
+    };
+    let text = "theorem T: for X being set holds X = X proof let X be set; thus X = X; end;";
+    for case in [
+        "cancel",
+        "foreign-token",
+        "no-publisher",
+        "no-inputs",
+        "obsolete",
+        "collected",
+        "denied",
+        "snapshot",
+        "unit",
+        "wrong-vc-module",
+        "private",
+        "lemma",
+    ] {
+        let text = match case {
+            "private" => include_str!(
+                "../../../tests/miz/pass/resolve/pass_declaration_symbol_private_theorem_visibility_001.miz"
+            ),
+            "lemma" => include_str!(
+                "../../../tests/miz/pass/theorems/pass_proof_verification_lemma_reference_001.miz"
+            ),
+            _ => text,
+        };
+        with_native_summary_parent(
+            text,
+            false,
+            0,
+            |fixture, _, old, _, _, (session, ids, snapshots)| {
+                let owner = publisher(old.snapshot, 0, &old.work_unit);
+                allow_frontend(&owner, &old.work_unit);
+                let unit = IrWorkUnit::new("\"alpha\":\"main\"");
+                for (phase, kind) in [
+                    ("ModuleResolve", "SourceTheoremModuleCandidates"),
+                    ("SignatureCollection", "SourceTheoremModuleSummary"),
+                    ("TypeChecking", "SourceTheoremTypedAst"),
+                    ("RegistrationResolution", "SourceTheoremRegistrationClosure"),
+                    ("OverloadResolution", "SourceTheoremMetadata"),
+                    ("Elaboration", "SourceTheoremCore"),
+                    ("AlgorithmPreparation", "SourceTheoremPreparation"),
+                    ("VcGenerate", "SourceTheoremVC"),
+                ] {
+                    owner.allow_work_unit(AllowedWorkUnit::new(
+                        IrPipelinePhase::new(phase),
+                        OutputKind::new(kind),
+                        unit.clone(),
+                    ));
+                }
+                if case != "denied" {
+                    owner.allow_work_unit(AllowedWorkUnit::new(
+                        IrPipelinePhase::new("VcDischarge"),
+                        OutputKind::new("SourceTheoremDischarge"),
+                        unit.clone(),
+                    ));
+                }
+                let policy = DischargePolicy {
+                    computation_limit: ComputationLimit {
+                        policy: PolicyKey::new("α\n\0"),
+                        max_steps: 0,
+                    },
+                };
+                let mut builder = PhaseRegistryBuilder::new();
+                builder
+                    .register_source_load()
+                    .register_frontend(vec![])
+                    .register_source_theorem_module_resolver()
+                    .register_source_theorem_signature_collection()
+                    .register_source_theorem_type_checking()
+                    .register_source_theorem_registration_resolution()
+                    .register_source_theorem_overload_resolution()
+                    .register_source_theorem_elaboration()
+                    .register_source_theorem_algorithm_preparation()
+                    .register_source_theorem_vc_generation(
+                        GenerationSchemaVersion::new("λ\0"),
+                        VcSchemaVersion::new(""),
+                    );
+                let earlier_refusal = matches!(case, "private" | "lemma");
+                if earlier_refusal {
+                    builder.register_source_theorem_vc_discharge(policy.clone());
+                }
+                let (_, mut submit) = fixture.submit_request(vec![], vec![]);
+                if earlier_refusal {
+                    submit.vc_descriptors = vec![mizar_build::task_graph::VcTaskDescriptor::new(
+                        mizar_build::task_graph::VcTaskDescriptorId::new("opaque-refused-source"),
+                        mizar_build::module_index::ModuleId::new(
+                            PackageId::new("alpha"),
+                            ModulePath::new("main"),
+                        ),
+                        mizar_build::task_graph::VcOrderKey::new("opaque-order"),
+                        vec![],
+                        vec![],
+                    )];
+                }
+                let submission = CompilerDriver::new(builder.build().unwrap())
+                    .with_output_publisher(owner.clone())
+                    .submit_captured(session.clone(), ids, snapshots, submit)
+                    .unwrap();
+                if earlier_refusal {
+                    let graph = submission.task_graph.as_ref().unwrap();
+                    let run = submission.scheduler_run.as_ref().unwrap();
+                    let group = graph
+                        .tasks()
+                        .iter()
+                        .find(|task| task.kind == TaskKind::CheckAndElaborate)
+                        .unwrap();
+                    let rows = &run.phase_results[&group.id];
+                    assert_eq!(rows.len(), if case == "private" { 2 } else { 5 });
+                    assert_eq!(
+                        group.phases[rows.len() - 1],
+                        if case == "private" {
+                            PipelinePhase::TypeChecking
+                        } else {
+                            PipelinePhase::Elaboration
+                        }
+                    );
+                    let (blocked, completed) = rows.split_last().unwrap();
+                    assert!(
+                        completed
+                            .iter()
+                            .all(|row| row.status == PhaseStatus::Complete
+                                && row.diagnostics.is_empty()
+                                && row.output_refs.len() == 1)
+                    );
+                    assert_eq!(blocked.status, PhaseStatus::Blocking);
+                    assert!(blocked.diagnostics.is_empty() && blocked.output_refs.is_empty());
+                    for task in graph.tasks().iter().filter(|task| {
+                        matches!(
+                            task.kind,
+                            TaskKind::CheckAndElaborate
+                                | TaskKind::VcGenerate
+                                | TaskKind::VcDischarge
+                        )
+                    }) {
+                        assert_eq!(
+                            run.task_states
+                                .iter()
+                                .find(|row| row.task_id == task.id)
+                                .unwrap()
+                                .state,
+                            TaskState::Blocked
+                        );
+                        if task.kind != TaskKind::CheckAndElaborate {
+                            assert!(!run.phase_results.contains_key(&task.id));
+                        }
+                    }
+                    assert!(
+                        !run.phase_results
+                            .values()
+                            .flatten()
+                            .flat_map(|row| &row.output_refs)
+                            .any(|output| matches!(
+                                output.phase().as_str(),
+                                "VcGenerate" | "VcDischarge"
+                            ))
+                    );
+                    assert_eq!(
+                        submission.session.state(),
+                        BuildSessionState::Finished(BuildSessionOutcome::Blocked)
+                    );
+                    return;
+                }
+                let (inputs, original) = native_disk_lookup_context(&submission, ids);
+                let outputs = submission
+                    .scheduler_run
+                    .as_ref()
+                    .unwrap()
+                    .phase_results
+                    .values()
+                    .flatten()
+                    .flat_map(|result| &result.output_refs)
+                    .collect::<Vec<_>>();
+                assert_eq!(outputs.len(), 10);
+                let core = outputs
+                    .iter()
+                    .find(|output| output.output_kind() == &OutputKind::new("SourceTheoremCore"))
+                    .unwrap();
+                let vcs = outputs
+                    .iter()
+                    .find(|output| output.output_kind() == &OutputKind::new("SourceTheoremVC"))
+                    .unwrap();
+                let input = PhaseInput::new(
+                    original.work_unit.clone(),
+                    PhaseDispatchInputBundle::new(
+                        old.snapshot,
+                        original.identities().input_hash(),
+                        vec![],
+                        [*core, *vcs]
+                            .into_iter()
+                            .map(|parent| {
+                                SealedParentOutputHandle::from_published_output(
+                                    &owner,
+                                    old.snapshot,
+                                    parent.clone(),
+                                )
+                                .unwrap()
+                            })
+                            .collect(),
+                    )
+                    .unwrap(),
+                );
+                let selected = mizar_vc::vc_ir::VcId::new(0);
+                assert!(
+                    inputs
+                        .native_theorem_discharge_with_core_vc_parents(
+                            &input, &owner, selected, &policy
+                        )
+                        .unwrap()
+                        .is_some()
+                );
+                if case == "unit" {
+                    assert!(
+                        inputs
+                            .publish_native_theorem_discharge(&input, &owner, selected, &policy)
+                            .unwrap()
+                            .is_some()
+                    );
+                }
+                let mut builder = PhaseRegistryBuilder::new();
+                builder.register_source_theorem_vc_discharge(policy);
+                let registry = builder.build().unwrap();
+                let work_unit = if case == "unit" {
+                    input.work_unit.clone()
+                } else {
+                    WorkUnit::Vc {
+                        module: mizar_build::module_index::ModuleId::new(
+                            PackageId::new("alpha"),
+                            ModulePath::new(if case == "wrong-vc-module" {
+                                "other"
+                            } else {
+                                "main"
+                            }),
+                        ),
+                        descriptor: mizar_build::task_graph::VcTaskDescriptorId::new(
+                            "opaque-control",
+                        ),
+                    }
+                };
+                let input = PhaseInput::new(
+                    work_unit,
+                    if case == "snapshot" {
+                        PhaseDispatchInputBundle::without_parent_outputs(
+                            snapshot_id(0xa9),
+                            input.identities().input_hash(),
+                            vec![],
+                        )
+                    } else {
+                        PhaseDispatchInputBundle::new(
+                            input.snapshot,
+                            input.identities().input_hash(),
+                            vec![],
+                            input.parent_outputs().to_vec(),
+                        )
+                        .unwrap()
+                    },
+                );
+                if case == "obsolete" {
+                    owner.mark_obsolete(old.snapshot).unwrap();
+                }
+                if case == "collected" {
+                    assert_eq!(
+                        owner
+                            .storage()
+                            .collect(CollectInput {
+                                snapshot: old.snapshot,
+                                protected_outputs: vec![]
+                            })
+                            .outputs_dropped,
+                        10
+                    );
+                }
+                let result = registry
+                    .execute_phase_with_resources(
+                        PipelinePhase::VcDischarge,
+                        input,
+                        PhaseExecutionResources {
+                            cancellation: matches!(case, "cancel" | "foreign-token").then_some(
+                                CancellationToken {
+                                    snapshot: if case == "foreign-token" {
+                                        snapshot_id(0xd5)
+                                    } else {
+                                        old.snapshot
+                                    },
+                                    generation: CancellationGeneration::new(1),
+                                    reason: CancellationReason::ExplicitRequest,
+                                },
+                            ),
+                            output_publisher: (case != "no-publisher").then(|| owner.clone()),
+                            source_load: (case != "no-inputs").then_some(inputs),
+                            ..PhaseExecutionResources::default()
+                        },
+                    )
+                    .unwrap();
+                assert_eq!(
+                    result.result.status,
+                    if case == "cancel" {
+                        PhaseStatus::Cancelled
+                    } else {
+                        PhaseStatus::Blocking
+                    }
+                );
+                assert!(result.result.output_refs.is_empty());
+                assert!(result.result.diagnostics.is_empty());
+                assert_eq!(result.result.cache_observation, Some(result.observation));
+                let collected = owner.storage().collect(CollectInput {
+                    snapshot: old.snapshot,
+                    protected_outputs: vec![],
+                });
+                assert_eq!(
+                    collected.outputs_dropped,
+                    if case == "collected" {
+                        0
+                    } else if case == "unit" {
+                        11
+                    } else {
+                        10
+                    }
+                );
+                assert_eq!(
+                    collected.abandoned_slots_dropped,
+                    usize::from(case == "denied")
+                );
+            },
+        );
+    }
+}

@@ -437,6 +437,13 @@ impl PhaseRegistryBuilder {
         })
     }
 
+    pub fn register_source_theorem_vc_discharge(
+        &mut self,
+        policy: mizar_vc::discharge::DischargePolicy,
+    ) -> &mut Self {
+        self.register(crate::frontend_adapter::SourceTheoremVcDischargeService { policy })
+    }
+
     pub fn build(self) -> Result<PhaseRegistry, PhaseRegistryError> {
         let mut services = self
             .services

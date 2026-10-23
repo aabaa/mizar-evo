@@ -951,11 +951,38 @@ impl CompilerDriver {
                     SourceTheoremOverloadResolutionService,
                     SourceTheoremRegistrationResolutionService,
                     SourceTheoremSignatureCollectionService, SourceTheoremTypeCheckingService,
-                    SourceTheoremVcGenerationService,
+                    SourceTheoremVcDischargeService, SourceTheoremVcGenerationService,
                 },
                 registry::PhaseService,
             };
-            let vc_profile = self.registry.descriptors().len() == 10
+            let discharge_profile = self.registry.descriptors().len() == 11
+                && self
+                    .registry
+                    .service_for_phase(PipelinePhase::VcDischarge)
+                    .is_ok_and(|service| {
+                        std::any::Any::type_id(service)
+                            == std::any::TypeId::of::<SourceTheoremVcDischargeService>()
+                            && self
+                                .registry
+                                .descriptor_for_phase(PipelinePhase::VcDischarge)
+                                .ok()
+                                == Some(&service.phase())
+                    })
+                && {
+                    let mut modules = std::collections::BTreeSet::new();
+                    task_graph
+                        .tasks()
+                        .iter()
+                        .filter(|task| task.kind == mizar_build::task_graph::TaskKind::VcDischarge)
+                        .all(|task| {
+                            let mizar_build::task_graph::WorkUnit::Vc { module, .. } = &task.unit
+                            else {
+                                return false;
+                            };
+                            modules.insert((module.package.as_str(), module.path.as_str()))
+                        })
+                };
+            let vc_profile = (self.registry.descriptors().len() == 10 || discharge_profile)
                 && self
                     .registry
                     .service_for_phase(PipelinePhase::VcGenerate)

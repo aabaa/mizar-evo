@@ -646,6 +646,8 @@ the owning producers when the paired tasks land.
 
 94. **[Native theorem discharge publication](../../task_contracts/en/DRIVER-NATIVE-THEOREM-DISCHARGE-PUBLICATION.md).** [x]
 
+95. **[Scheduled theorem VC discharge](../../task_contracts/en/DRIVER-SCHEDULED-THEOREM-VC-DISCHARGE.md).** [x]
+
 ## Recommended Verification
 
 Run after each task:

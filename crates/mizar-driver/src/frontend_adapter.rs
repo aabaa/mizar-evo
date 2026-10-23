@@ -15,10 +15,11 @@ use mizar_diagnostics::{
     },
     registry::{DiagnosticCode, DiagnosticSeverity},
 };
+pub(crate) use mizar_frontend::cache_key::SOURCE_UNIT_CACHE_KEY_VERSION;
 use mizar_frontend::{
     cache_key::{
-        ACTIVE_LEXICAL_ENVIRONMENT_CACHE_KEY_VERSION, SOURCE_UNIT_CACHE_KEY_VERSION,
-        SourceUnitCacheKey, TOKEN_STREAM_CACHE_KEY_VERSION,
+        ACTIVE_LEXICAL_ENVIRONMENT_CACHE_KEY_VERSION, SourceUnitCacheKey,
+        TOKEN_STREAM_CACHE_KEY_VERSION,
     },
     lexical_env::{
         ExportedSymbolShape, LexicalEnvironmentDiagnosticCode as EnvironmentCode,
@@ -5646,6 +5647,109 @@ impl PhaseService for SourceTheoremVcGenerationService {
             &publisher,
             &self.generation_schema,
             &self.vc_schema,
+        ) {
+            Ok(Some(handle)) => PhaseResult {
+                output_refs: vec![handle.erase()],
+                ..PhaseResult::complete()
+            },
+            Ok(None) | Err(_) => blocking(),
+        }
+    }
+}
+
+pub(crate) struct SourceTheoremVcDischargeService {
+    pub(crate) policy: mizar_vc::discharge::DischargePolicy,
+}
+
+impl PhaseService for SourceTheoremVcDischargeService {
+    fn phase(&self) -> PhaseDescriptor {
+        PhaseDescriptor::new(
+            "SourceTheoremVcDischarge",
+            PhaseOwner::MizarVc,
+            vec![PipelinePhase::VcDischarge],
+            format!(
+                "mizar-vc/source-theorem-discharge-publication/v1;computation_policy={}:{};max_steps={}",
+                self.policy.computation_limit.policy.as_str().len(),
+                self.policy.computation_limit.policy.as_str(),
+                self.policy.computation_limit.max_steps,
+            ),
+            "SourceTheoremDischarge",
+        )
+        .expect("source theorem VC discharge descriptor is fixed and valid")
+    }
+
+    fn cache_key(&self, _input: &PhaseInput, _context: &PhaseCacheContext) -> PhaseCacheIntent {
+        PhaseCacheIntent::NoKey {
+            reason: "source theorem VC discharge has no complete dependency footprint".to_owned(),
+        }
+    }
+
+    fn execute(&self, input: PhaseInput, context: PhaseExecutionContext<'_>) -> PhaseResult {
+        if context.common.snapshot != input.snapshot || context.common.work_unit != input.work_unit
+        {
+            return blocking();
+        }
+        if let Some(token) = context.cancellation {
+            return if token.snapshot == input.snapshot {
+                PhaseResult {
+                    status: PhaseStatus::Cancelled,
+                    ..blocking()
+                }
+            } else {
+                blocking()
+            };
+        }
+        let Some(publisher) = context.output_publisher else {
+            return blocking();
+        };
+        let Some(inputs) = context.source_load else {
+            return blocking();
+        };
+        if inputs.snapshot.id != input.snapshot
+            || publisher.validate_current_snapshot(input.snapshot).is_err()
+        {
+            return blocking();
+        }
+        let WorkUnit::Vc { module, .. } = &input.work_unit else {
+            return blocking();
+        };
+        let Some(parent) = unique(input.parent_outputs().iter().filter(|parent| {
+            parent.as_output_ref().phase() == &IrPipelinePhase::new("VcGenerate")
+                && parent.as_output_ref().output_kind() == &OutputKind::new("SourceTheoremVC")
+        })) else {
+            return blocking();
+        };
+        let Ok(handle) = publisher.storage().typed_handle::<mizar_vc::vc_ir::VcSet>(
+            parent.as_output_ref(),
+            &OutputKind::new("SourceTheoremVC"),
+        ) else {
+            return blocking();
+        };
+        let Ok(vcs) = publisher.storage().get(&handle) else {
+            return blocking();
+        };
+        let [vc] = vcs.vcs() else {
+            return blocking();
+        };
+        let Ok(bundle) = mizar_ir::dispatch_input::PhaseDispatchInputBundle::new(
+            input.snapshot,
+            input.identities().input_hash(),
+            input.identities().dependency_hashes().to_vec(),
+            input.parent_outputs().to_vec(),
+        ) else {
+            return blocking();
+        };
+        let module_input = PhaseInput::new(
+            WorkUnit::Module {
+                module: module.clone(),
+            },
+            bundle,
+        );
+        match inputs.publish_native_theorem_discharge(
+            &module_input,
+            &publisher,
+            vc.id,
+            &self.policy,
         ) {
             Ok(Some(handle)) => PhaseResult {
                 output_refs: vec![handle.erase()],

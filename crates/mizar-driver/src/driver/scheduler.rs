@@ -195,7 +195,7 @@ fn dispatch_registry_phase(
                     SourceTheoremOverloadResolutionService,
                     SourceTheoremRegistrationResolutionService,
                     SourceTheoremSignatureCollectionService, SourceTheoremTypeCheckingService,
-                    SourceTheoremVcGenerationService,
+                    SourceTheoremVcDischargeService, SourceTheoremVcGenerationService,
                 },
                 registry::PhaseService,
             };
@@ -212,6 +212,9 @@ fn dispatch_registry_phase(
                     ];
             let vc_task = task.task.kind == mizar_build::task_graph::TaskKind::VcGenerate
                 && task.task.phases == [PipelinePhase::VcGenerate];
+            let discharge_task = task.task.kind == mizar_build::task_graph::TaskKind::VcDischarge
+                && task.task.phases == [PipelinePhase::VcDischarge]
+                && matches!(task.task.unit, mizar_build::task_graph::WorkUnit::Vc { .. });
             let signature_prefix = check_and_elaborate
                 && registry
                     .descriptor_for_phase(PipelinePhase::SignatureCollection)
@@ -227,7 +230,7 @@ fn dispatch_registry_phase(
                     registry.descriptor_for_phase(PipelinePhase::TypeChecking),
                     Err(PhaseRegistryError::MissingPhaseService { .. })
                 );
-            let typed_profile = (check_and_elaborate || vc_task)
+            let typed_profile = (check_and_elaborate || vc_task || discharge_task)
                 && registry
                     .descriptor_for_phase(PipelinePhase::SourceLoad)
                     .ok()
@@ -342,8 +345,7 @@ fn dispatch_registry_phase(
                     registry.descriptor_for_phase(PipelinePhase::VcGenerate),
                     Err(PhaseRegistryError::MissingPhaseService { .. })
                 );
-            let vc_prefix = preparation_profile
-                && registry.descriptors().len() == 10
+            let vc_profile = preparation_profile
                 && registry
                     .service_for_phase(PipelinePhase::VcGenerate)
                     .is_ok_and(|service| {
@@ -358,6 +360,22 @@ fn dispatch_registry_phase(
                     registry.descriptor_for_phase(PipelinePhase::ArtifactCommit),
                     Err(PhaseRegistryError::MissingPhaseService { .. })
                 );
+            let discharge_profile = vc_profile
+                && registry.descriptors().len() == 11
+                && registry
+                    .service_for_phase(PipelinePhase::VcDischarge)
+                    .is_ok_and(|service| {
+                        std::any::Any::type_id(service)
+                            == std::any::TypeId::of::<SourceTheoremVcDischargeService>()
+                            && registry
+                                .descriptor_for_phase(PipelinePhase::VcDischarge)
+                                .ok()
+                                == Some(&service.phase())
+                    });
+            let vc_prefix = (check_and_elaborate || vc_task)
+                && vc_profile
+                && (registry.descriptors().len() == 10 || discharge_profile);
+            let discharge_prefix = discharge_task && discharge_profile;
             vc_group = vc_prefix && check_and_elaborate;
             if !signature_prefix
                 && !type_prefix
@@ -366,6 +384,7 @@ fn dispatch_registry_phase(
                 && !elaboration_prefix
                 && !preparation_prefix
                 && !vc_prefix
+                && !discharge_prefix
                 && task.task.phases.iter().any(|phase| {
                     matches!(
                         registry.descriptor_for_phase(*phase),
@@ -400,6 +419,10 @@ fn dispatch_registry_phase(
                         .descriptor_for_phase(PipelinePhase::VcGenerate)
                         .ok()?
                         .clone(),
+                    [PipelinePhase::VcDischarge] if discharge_prefix => registry
+                        .descriptor_for_phase(PipelinePhase::VcDischarge)
+                        .ok()?
+                        .clone(),
                     [PipelinePhase::ModuleResolve] => {
                         if std::any::Any::type_id(
                             registry
@@ -432,8 +455,12 @@ fn dispatch_registry_phase(
                 if inputs.snapshot.id != task.snapshot {
                     return None;
                 }
-                let mizar_build::task_graph::WorkUnit::Module { module } = &task.task.unit else {
-                    return None;
+                let module = match &task.task.unit {
+                    mizar_build::task_graph::WorkUnit::Module { module } => module,
+                    mizar_build::task_graph::WorkUnit::Vc { module, .. } if discharge_prefix => {
+                        module
+                    }
+                    _ => return None,
                 };
                 let mut versions = inputs.snapshot.source_versions.iter().filter(|version| {
                     version.package_id == module.package && version.module_path == module.path
@@ -455,9 +482,46 @@ fn dispatch_registry_phase(
                     module.package.as_str(),
                     module.path.as_str()
                 ));
-                let parents = if vc_task && vc_prefix {
-                    let mut dependencies = task.task.dependencies.iter().filter_map(|id| {
-                        let results = phase_results.get(id)?;
+                let named = if discharge_prefix {
+                    vec![mizar_ir::identity::NamedInputHash {
+                        name: "source".to_owned(),
+                        domain: crate::frontend_adapter::SOURCE_UNIT_CACHE_KEY_VERSION.to_owned(),
+                        digest: key,
+                    }]
+                } else {
+                    Vec::new()
+                };
+                let vc = if discharge_prefix {
+                    let mut candidates = task.task.dependencies.iter().filter_map(|id| {
+                        let [result] = phase_results.get(id)?.as_slice() else {
+                            return None;
+                        };
+                        let [output] = result.output_refs.as_slice() else {
+                            return None;
+                        };
+                        (result.status == PhaseStatus::Complete
+                            && result.diagnostics.is_empty()
+                            && output.phase() == &IrPhase::new("VcGenerate")
+                            && output.output_kind() == &OutputKind::new("SourceTheoremVC")
+                            && output.snapshot() == task.snapshot
+                            && output.work_unit() == &unit
+                            && output.schema_version() == mizar_ir::storage::SchemaVersion::new(1)
+                            && output.lineage().named_input_hashes == named)
+                            .then_some(output)
+                    });
+                    let output = candidates.next()?;
+                    if candidates.next().is_some() {
+                        return None;
+                    }
+                    Some(output)
+                } else {
+                    None
+                };
+                let parents = if (vc_task && vc_prefix) || discharge_prefix {
+                    let mut dependencies = phase_results.iter().filter_map(|(id, results)| {
+                        if !discharge_prefix && !task.task.dependencies.contains(id) {
+                            return None;
+                        }
                         let expected = [
                             ("SignatureCollection", "SourceTheoremModuleSummary"),
                             ("TypeChecking", "SourceTheoremTypedAst"),
@@ -479,6 +543,8 @@ fn dispatch_registry_phase(
                                     && output.work_unit() == &unit
                                     && output.schema_version()
                                         == mizar_ir::storage::SchemaVersion::new(1)
+                                    && (!discharge_prefix
+                                        || output.lineage().named_input_hashes == named)
                             })
                         {
                             return None;
@@ -487,14 +553,19 @@ fn dispatch_registry_phase(
                         let core = &results[4].output_refs[0];
                         let preparation = &results[5].output_refs[0];
                         (core.lineage().parents == vec![metadata.output()]
-                            && preparation.lineage().parents == vec![core.output()])
+                            && preparation.lineage().parents == vec![core.output()]
+                            && vc.is_none_or(|vc| {
+                                vc.lineage().parents.len() == 2
+                                    && vc.lineage().parents.contains(&core.output())
+                                    && vc.lineage().parents.contains(&preparation.output())
+                            }))
                         .then_some((core, preparation))
                     });
                     let (core, preparation) = dependencies.next()?;
                     if dependencies.next().is_some() {
                         return None;
                     }
-                    vec![core, preparation]
+                    vec![core, vc.unwrap_or(preparation)]
                 } else if task.task.phases == [PipelinePhase::ModuleResolve]
                     || signature_prefix
                     || type_prefix

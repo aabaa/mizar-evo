@@ -615,6 +615,8 @@ artifact/test のフォローアップタスクが所有する。本 crate の�
 
 94. **[Native theorem discharge publication](../../task_contracts/ja/DRIVER-NATIVE-THEOREM-DISCHARGE-PUBLICATION.md).** [x]
 
+95. **[Scheduled theorem VC discharge](../../task_contracts/ja/DRIVER-SCHEDULED-THEOREM-VC-DISCHARGE.md).** [x]
+
 ## 推奨検証
 
 各タスクの後で実行する:
