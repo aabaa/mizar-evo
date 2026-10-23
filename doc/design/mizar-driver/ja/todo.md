@@ -563,6 +563,8 @@ artifact/test のフォローアップタスクが所有する。本 crate の�
 
 68. **[Native theorem TypedAst storage replay](../../task_contracts/ja/DRIVER-NATIVE-THEOREM-TYPED-AST-STORAGE-REPLAY.md).** [x]
 
+69. **[Native theorem TypedAst signature caller](../../task_contracts/ja/DRIVER-NATIVE-THEOREM-TYPED-AST-SIGNATURE-CALLER.md).** [x]
+
 ## 推奨検証
 
 各タスクの後で実行する:

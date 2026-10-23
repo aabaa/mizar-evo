@@ -1243,6 +1243,152 @@ impl<'a> crate::registry::SourceLoadInputs<'a> {
         Ok(Some(result))
     }
 
+    /// Returns genuine Checker TypedAst bound to a published native theorem summary.
+    pub fn native_theorem_typed_ast_with_signature_parent(
+        self,
+        input: &PhaseInput,
+        publisher: &mizar_ir::publisher::PhaseOutputPublisher,
+    ) -> Result<Option<mizar_checker::typed_ast::TypedAst>, String> {
+        if input.snapshot != self.snapshot.id {
+            return Err("native theorem TypedAst snapshot mismatch".to_owned());
+        }
+        let WorkUnit::Module { module } = &input.work_unit else {
+            return Err("native theorem TypedAst requires a module".to_owned());
+        };
+        let version = unique(self.snapshot.source_versions.iter().filter(|version| {
+            version.package_id == module.package && version.module_path == module.path
+        }))
+        .ok_or_else(|| "native theorem TypedAst requires one captured source".to_owned())?;
+        let source_key = source_input_hash(version);
+        if input.identities().input_hash() != source_key
+            || !input.identities().dependency_hashes().is_empty()
+            || !self.snapshot.dependency_artifacts.is_empty()
+            || !self.module_index.dependency_summaries.is_empty()
+            || input.parent_outputs().len() != 1
+        {
+            return Err("native theorem TypedAst requires the leaf input profile".to_owned());
+        }
+        let parent = input.parent_outputs()[0].as_output_ref();
+        let storage = publisher.storage();
+        storage
+            .validate_handle(parent)
+            .map_err(|error| error.to_string())?;
+        publisher
+            .validate_published_output(input.snapshot, parent)
+            .map_err(|error| error.to_string())?;
+        let work_unit = IrWorkUnit::new(format!(
+            "{:?}:{:?}",
+            module.package.as_str(),
+            module.path.as_str()
+        ));
+        let named_input_hashes = vec![NamedInputHash {
+            name: "source".to_owned(),
+            domain: SOURCE_UNIT_CACHE_KEY_VERSION.to_owned(),
+            digest: source_key,
+        }];
+        if parent.snapshot() != input.snapshot
+            || parent.phase() != &IrPipelinePhase::new("SignatureCollection")
+            || parent.work_unit() != &work_unit
+            || parent.output_kind() != &OutputKind::new("SourceTheoremModuleSummary")
+            || parent.schema_version() != SchemaVersion::new(1)
+            || parent.lineage().named_input_hashes != named_input_hashes
+        {
+            return Err("native theorem TypedAst parent binding mismatch".to_owned());
+        }
+        let [resolved_id] = parent.lineage().parents.as_slice() else {
+            return Err("native theorem TypedAst requires one ModuleResolve ancestor".to_owned());
+        };
+        let resolved = publisher
+            .registry()
+            .output_lineage(*resolved_id)
+            .ok_or_else(|| "native theorem TypedAst requires registered ancestry".to_owned())?;
+        if resolved.snapshot != input.snapshot
+            || resolved.phase != IrPipelinePhase::new("ModuleResolve")
+            || resolved.work_unit != work_unit
+            || resolved.output_kind != OutputKind::new("SourceTheoremModuleCandidates")
+            || resolved.named_input_hashes != named_input_hashes
+        {
+            return Err("native theorem TypedAst ModuleResolve ancestry mismatch".to_owned());
+        }
+        let [frontend_id] = resolved.parents.as_slice() else {
+            return Err("native theorem TypedAst requires one Frontend ancestor".to_owned());
+        };
+        let frontend = publisher
+            .registry()
+            .output_lineage(*frontend_id)
+            .ok_or_else(|| "native theorem TypedAst requires registered ancestry".to_owned())?;
+        if frontend.snapshot != input.snapshot
+            || frontend.phase != IrPipelinePhase::new("Frontend")
+            || frontend.work_unit != work_unit
+            || frontend.output_kind != OutputKind::new("FrontendOutput")
+        {
+            return Err("native theorem TypedAst Frontend ancestry mismatch".to_owned());
+        }
+        let typed = storage
+            .typed_handle::<mizar_artifact::module_summary::ModuleSummary>(
+                parent,
+                &OutputKind::new("SourceTheoremModuleSummary"),
+            )
+            .map_err(|error| error.to_string())?;
+        let retained = storage.get(&typed).map_err(|error| error.to_string())?;
+        let Some(summary) = self.native_theorem_module_summary_candidate(module)? else {
+            return Ok(None);
+        };
+        if *retained != summary {
+            return Err("native theorem TypedAst complete summary mismatch".to_owned());
+        }
+        let (source, _) = self
+            .native_source(version)
+            .ok_or_else(|| "native theorem TypedAst capture binding failed".to_owned())?;
+        let package = self
+            .build_plan
+            .packages
+            .iter()
+            .find(|package| package.package_id == module.package)
+            .ok_or_else(|| "native theorem TypedAst requires a bound package".to_owned())?;
+        let PackagePlanSource::Workspace { root, .. } = &package.source else {
+            return Err("native theorem TypedAst requires a workspace package".to_owned());
+        };
+        let output = Frontend::new(
+            FrontendSourceLoader::new(DiskSourceLoader::new(
+                PathBuf::from(self.snapshot.workspace_root.as_str()).join(root),
+            )),
+            self.dependency_lexical_provider(&[]),
+            MizarParserSeam,
+        )
+        .run_loaded(source)
+        .map_err(|error| error.to_string())?;
+        if !output.diagnostics.is_empty() || output.cache_keys.ast.is_none() {
+            return Ok(None);
+        }
+        let Some(ast) = output.ast.as_ref() else {
+            return Ok(None);
+        };
+        let resolver_module =
+            mizar_resolve::resolved_ast::ModuleId::new(module.package.clone(), module.path.clone());
+        let Some((arena, env)) =
+            mizar_resolve::symbols::source_theorem_module_original_inputs(ast, &resolver_module)?
+        else {
+            return Ok(None);
+        };
+        if mizar_resolve::symbols::source_theorem_module_candidates(ast, &arena, &env)?.is_none() {
+            return Ok(None);
+        }
+        let scope = mizar_resolve::names::SourceVariableScopeResolver::resolve_proof_occurrences(
+            mizar_resolve::names::SourceVariableScopeInput::new(ast, &resolver_module, &env),
+        )
+        .map_err(|error| format!("{error:?}"))?;
+        let checked = mizar_checker::type_checker::DeclarationChecker::
+            check_source_theorem_equalities_with_typed_declarations(&arena, &env, &scope)?;
+        storage
+            .validate_handle(parent)
+            .map_err(|error| error.to_string())?;
+        publisher
+            .validate_published_output(input.snapshot, parent)
+            .map_err(|error| error.to_string())?;
+        Ok(Some(checked.2))
+    }
+
     /// Lowers genuine algorithms after binding a published Frontend to captured source.
     pub fn native_algorithm_core_with_frontend_parent(
         self,
