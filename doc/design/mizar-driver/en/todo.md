@@ -616,6 +616,8 @@ the owning producers when the paired tasks land.
 
 79. **[Scheduled theorem overload resolution](../../task_contracts/en/DRIVER-SCHEDULED-THEOREM-OVERLOAD-RESOLUTION.md).** [x]
 
+80. **[Native theorem Core metadata caller](../../task_contracts/en/DRIVER-NATIVE-THEOREM-CORE-METADATA-CALLER.md).** [x]
+
 ## Recommended Verification
 
 Run after each task:
