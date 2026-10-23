@@ -29756,6 +29756,7 @@ fn scheduled_theorem_resolver_edits_match_independent_clean_modules() {
     let lemma = include_str!(
         "../../../tests/miz/pass/theorems/pass_proof_verification_lemma_reference_001.miz"
     );
+    let renamed = lemma.replace("Lem1", "Lem2");
     let fixture = Fixture::new(private.as_bytes());
     fs::write(fixture.root.join("alpha/src/leaf.miz"), private).unwrap();
     let ids = InMemorySessionIdAllocator::new();
@@ -29765,7 +29766,8 @@ fn scheduled_theorem_resolver_edits_match_independent_clean_modules() {
         .register_source_load()
         .register_frontend(vec![])
         .register_source_theorem_module_resolver()
-        .register_source_theorem_signature_collection();
+        .register_source_theorem_signature_collection()
+        .register_source_theorem_type_checking();
     let mut driver = CompilerDriver::new(builder.build().unwrap());
     let mut previous: Option<(
         std::sync::Arc<PhaseOutputPublisher>,
@@ -29773,7 +29775,7 @@ fn scheduled_theorem_resolver_edits_match_independent_clean_modules() {
         mizar_driver::request::BuildSession,
         [Hash; 2],
     )> = None;
-    for (stage, main) in [private, lemma].into_iter().enumerate() {
+    for (stage, main) in [private, lemma, renamed.as_str()].into_iter().enumerate() {
         fixture.write(main.as_bytes());
         let (mut draft, mut input) = fixture.submit_request(vec![], vec![]);
         draft.source_inputs.versions.clear();
@@ -29828,6 +29830,7 @@ fn scheduled_theorem_resolver_edits_match_independent_clean_modules() {
                     ("Frontend", "FrontendOutput"),
                     ("ModuleResolve", "SourceTheoremModuleCandidates"),
                     ("SignatureCollection", "SourceTheoremModuleSummary"),
+                    ("TypeChecking", "SourceTheoremTypedAst"),
                 ] {
                     current.allow_work_unit(AllowedWorkUnit::new(
                         IrPipelinePhase::new(phase),
@@ -29843,7 +29846,8 @@ fn scheduled_theorem_resolver_edits_match_independent_clean_modules() {
             .register_source_load()
             .register_frontend(vec![])
             .register_source_theorem_module_resolver()
-            .register_source_theorem_signature_collection();
+            .register_source_theorem_signature_collection()
+            .register_source_theorem_type_checking();
         let mut clean_driver = CompilerDriver::new(clean_builder.build().unwrap())
             .with_output_publisher(clean_owner.clone());
         let (_, mut clean_input) = fixture.submit_request(vec![], vec![]);
@@ -29873,11 +29877,13 @@ fn scheduled_theorem_resolver_edits_match_independent_clean_modules() {
                 submission
                     .missing_services
                     .iter()
-                    .any(|gap| gap.phase == PipelinePhase::TypeChecking)
+                    .any(|gap| gap.phase == PipelinePhase::RegistrationResolution)
             );
             assert!(!submission.missing_services.iter().any(|gap| matches!(
                 gap.phase,
-                PipelinePhase::ModuleResolve | PipelinePhase::SignatureCollection
+                PipelinePhase::ModuleResolve
+                    | PipelinePhase::SignatureCollection
+                    | PipelinePhase::TypeChecking
             )));
         }
         assert_eq!(actual.missing_services, clean.missing_services);
@@ -29922,9 +29928,10 @@ fn scheduled_theorem_resolver_edits_match_independent_clean_modules() {
                 PipelinePhase::Frontend,
                 PipelinePhase::ModuleResolve,
                 PipelinePhase::SignatureCollection,
+                PipelinePhase::TypeChecking,
             ] {
                 let task = graph.tasks().iter().find(|task| {
-                    task.phases.first() == Some(&phase) && matches!(&task.unit, WorkUnit::Module { module: id } if id.path.as_str() == module)
+                    task.phases.contains(&phase) && matches!(&task.unit, WorkUnit::Module { module: id } if id.path.as_str() == module)
                 }).unwrap();
                 assert_eq!(
                     run.task_states
@@ -29932,22 +29939,90 @@ fn scheduled_theorem_resolver_edits_match_independent_clean_modules() {
                         .find(|state| state.task_id == task.id)
                         .unwrap()
                         .state,
-                    if phase == PipelinePhase::SignatureCollection {
+                    if matches!(
+                        phase,
+                        PipelinePhase::SignatureCollection | PipelinePhase::TypeChecking
+                    ) {
                         TaskState::Blocked
                     } else {
                         TaskState::Completed
                     }
                 );
-                let [result] = run.phase_results[&task.id].as_slice() else {
-                    panic!("one real phase result")
-                };
-                assert_eq!(result.status, PhaseStatus::Complete);
+                let results = &run.phase_results[&task.id];
+                assert_eq!(
+                    results.len(),
+                    if matches!(
+                        phase,
+                        PipelinePhase::SignatureCollection | PipelinePhase::TypeChecking
+                    ) {
+                        2
+                    } else {
+                        1
+                    }
+                );
+                let result_index = usize::from(phase == PipelinePhase::TypeChecking);
+                let result = &results[result_index];
+                let type_refusal =
+                    phase == PipelinePhase::TypeChecking && (module == "leaf" || stage == 0);
+                assert_eq!(
+                    result.status,
+                    if type_refusal {
+                        PhaseStatus::Blocking
+                    } else {
+                        PhaseStatus::Complete
+                    }
+                );
                 assert!(result.diagnostics.is_empty());
                 assert!(result.cache_observation.is_some());
+                let parents = parent
+                    .iter()
+                    .map(|p| {
+                        SealedParentOutputHandle::from_published_output(&owner, snapshot, p.clone())
+                            .unwrap()
+                    })
+                    .collect();
+                let query_input = PhaseInput::new(
+                    task.unit.clone(),
+                    PhaseDispatchInputBundle::new(snapshot, source_key(version), vec![], parents)
+                        .unwrap(),
+                );
+                let cache = driver
+                    .registry()
+                    .cache_key_for_phase(phase, &query_input)
+                    .unwrap();
+                assert!(
+                    matches!(&cache.intent, PhaseCacheIntent::NoKey { reason } if !reason.is_empty())
+                );
+                assert_eq!(
+                    cache,
+                    clean_driver
+                        .registry()
+                        .cache_key_for_phase(phase, &query_input)
+                        .unwrap()
+                );
+                if phase == PipelinePhase::TypeChecking {
+                    assert_eq!(
+                        query_input.parent_outputs()[0].as_output_ref(),
+                        &results[0].output_refs[0]
+                    );
+                    let probe = driver
+                        .registry()
+                        .execute_phase_with_resources(
+                            phase,
+                            query_input,
+                            PhaseExecutionResources::default(),
+                        )
+                        .unwrap();
+                    assert_eq!(result.cache_observation, Some(probe.observation));
+                }
+                if type_refusal {
+                    assert!(result.output_refs.is_empty());
+                    continue;
+                }
                 let [output] = result.output_refs.as_slice() else {
                     panic!("one genuine output")
                 };
-                let expected = &clean_run.phase_results[&task.id][0].output_refs[0];
+                let expected = &clean_run.phase_results[&task.id][result_index].output_refs[0];
                 assert!(matches!(output.placement(), StoragePlacement::Blob { .. }));
                 assert_eq!(
                     output.lineage().parents,
@@ -30003,7 +30078,7 @@ fn scheduled_theorem_resolver_edits_match_independent_clean_modules() {
                             version.module_path.clone()
                         )
                     );
-                } else {
+                } else if phase == PipelinePhase::SignatureCollection {
                     let [summary, expected] = [&owner, &clean_owner].map(|current| {
                         let typed = current
                             .storage()
@@ -30018,33 +30093,38 @@ fn scheduled_theorem_resolver_edits_match_independent_clean_modules() {
                     assert_eq!(summary.source_hash, version.source_hash);
                     assert_eq!(summary.module.package_id, version.package_id.as_str());
                     assert_eq!(summary.module.module_path, version.module_path.as_str());
+                } else {
+                    let [typed, expected] = [&owner, &clean_owner].map(|current| {
+                        let handle = current
+                            .storage()
+                            .typed_handle::<mizar_checker::typed_ast::TypedAst>(
+                                output,
+                                output.output_kind(),
+                            )
+                            .unwrap();
+                        current.storage().get(&handle).unwrap()
+                    });
+                    assert_eq!(typed, expected);
+                    assert_eq!(typed.source_id(), version.source_id);
+                    assert_eq!(
+                        typed.module_id(),
+                        &ResolverModuleId::new(
+                            version.package_id.clone(),
+                            version.module_path.clone()
+                        )
+                    );
+                    assert!(!typed.types().is_empty());
+                    let declarations = typed.source_context().unwrap().declarations();
+                    assert!(declarations.iter().next().is_some());
+                    for (_, declaration) in declarations.iter() {
+                        let node = typed.nodes().node(declaration.site.node()).unwrap();
+                        assert_eq!(
+                            node.typing,
+                            mizar_checker::typed_ast::TypingState::Successful
+                        );
+                        assert!(node.links.type_entry.is_some());
+                    }
                 }
-                let parents = parent
-                    .iter()
-                    .map(|p| {
-                        SealedParentOutputHandle::from_published_output(&owner, snapshot, p.clone())
-                            .unwrap()
-                    })
-                    .collect();
-                let query_input = PhaseInput::new(
-                    task.unit.clone(),
-                    PhaseDispatchInputBundle::new(snapshot, source_key(version), vec![], parents)
-                        .unwrap(),
-                );
-                let cache = driver
-                    .registry()
-                    .cache_key_for_phase(phase, &query_input)
-                    .unwrap();
-                assert!(
-                    matches!(&cache.intent, PhaseCacheIntent::NoKey { reason } if !reason.is_empty())
-                );
-                assert_eq!(
-                    cache,
-                    clean_driver
-                        .registry()
-                        .cache_key_for_phase(phase, &query_input)
-                        .unwrap()
-                );
                 parent = Some(output.clone());
             }
             if module == "main" {
